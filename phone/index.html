@@ -2,10 +2,45 @@
 <html>
 <head>
     <title>Open Android App</title>
+    
+<style>
+
+body
+{
+	font-size: 50pt;
+	
+}
+
+
+</style>    
 </head>
 <body>
-    <a href="vnd.youtube://"> Open Android Youtube App </a>
+    <a href="vnd.youtube://"> Open Youtube App vnd.youtube </a>
+<br>    
+    <a href="intent://#Intent;package=com.google.android.youtube;scheme=https;end">
+    Open YouTube App
+	</a>
+<br>
+<a href="intent://www.youtube.com/#Intent;scheme=https;package=com.google.android.youtube;end">
+    Open YouTube App
+</a>
 
+
+<hr />
+
+<a href="intent:#Intent;action=com.google.android.youtube;end">
+    Open Youtube
+</a>
+<br>
+
+<a href="intent:#Intent;action=android.settings.SETTINGS;end">
+    Open Android Settings
+</a>
+
+
+<a href="intent:#Intent;action=android.intent.action.DIAL;end">
+    Open Dialer
+</a>
     <script>
         document.querySelector('a').addEventListener('click', function(event) {
             event.preventDefault();
