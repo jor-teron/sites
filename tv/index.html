@@ -15,12 +15,21 @@ body
 </style>    
 </head>
 <body>
+
+
     <a href="vnd.youtube://"> Open Youtube App vnd.youtube </a>
 <br>    
+<a href="whatsapp://">Open WhatsApp</a>
+<a href="whatsapp://"> Open Whatsapp </a>
+<br>    
+<a href="tel://">Open Phone Dialer</a>
+<a href="camera://">Open Camera</a>
     <a href="intent://#Intent;package=com.google.android.youtube;scheme=https;end">
     Open YouTube App
 	</a>
 <br>
+
+
 <a href="intent://www.youtube.com/#Intent;scheme=https;package=com.google.android.youtube;end">
     Open YouTube App
 </a>
@@ -37,14 +46,22 @@ body
     Open Android Settings
 </a>
 
-
-<a href="intent:#Intent;action=android.intent.action.DIAL;end">
-    Open Dialer
+<a href="intent://#Intent;package=com.netflix.mediaclient;end">
+    Open Netflix
 </a>
+
+
+<a href="netflix://">
+    Open Netflix
+</a>
+
+
+
     <script>
+/*
         document.querySelector('a').addEventListener('click', function(event) {
             event.preventDefault();
-            const intentUrl = 'myapp://open?param1=value1';
+            const intentUrl = 'myapp://';
             const fallbackUrl = 'https://play.google.com/store/apps/details?id=com.example.myapp';
 
             // Try to open the app
@@ -58,6 +75,7 @@ body
                 }
             }, 1000); // Wait 1 second to check if app opened
         });
+*/
     </script>
 </body>
 </html>
