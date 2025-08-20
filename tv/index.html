@@ -1,12 +1,63 @@
+<!DOCTYPE html>
 <html>
+<head>
+    <title>Open Android App</title>
+    
+<style>
+
+body
+{
+	font-size: 50pt;
+	
+}
 
 
+</style>    
+</head>
 <body>
-
-Hello World ! 
+    <a href="vnd.youtube://"> Open Youtube App vnd.youtube </a>
+<br>    
+    <a href="intent://#Intent;package=com.google.android.youtube;scheme=https;end">
+    Open YouTube App
+	</a>
 <br>
-Homepage for TV.
+<a href="intent://www.youtube.com/#Intent;scheme=https;package=com.google.android.youtube;end">
+    Open YouTube App
+</a>
 
 
+<hr />
+
+<a href="intent:#Intent;action=com.google.android.youtube;end">
+    Open Youtube
+</a>
+<br>
+
+<a href="intent:#Intent;action=android.settings.SETTINGS;end">
+    Open Android Settings
+</a>
+
+
+<a href="intent:#Intent;action=android.intent.action.DIAL;end">
+    Open Dialer
+</a>
+    <script>
+        document.querySelector('a').addEventListener('click', function(event) {
+            event.preventDefault();
+            const intentUrl = 'myapp://open?param1=value1';
+            const fallbackUrl = 'https://play.google.com/store/apps/details?id=com.example.myapp';
+
+            // Try to open the app
+            window.location.href = intentUrl;
+
+            // Fallback to Play Store if the app doesn't open
+            setTimeout(() => {
+                // Check if the page is still in focus (app didn't open)
+                if (!document.hidden && !document.webkitHidden) {
+                    window.location.href = fallbackUrl;
+                }
+            }, 1000); // Wait 1 second to check if app opened
+        });
+    </script>
 </body>
-</html>  
+</html>
