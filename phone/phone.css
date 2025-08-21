@@ -20,17 +20,25 @@ div.clock
 	margin: 25px 0px;
 }
 
+#home
+{
+	position: fixed;
+	bottom: 50px;
+	left: 0px;
+}
+
 .apps-container
 {
 	display: flex;
 	flex-direction: rows;
 	flex-wrap: wrap;
+	font-size: 1.2em;
 }
 
 .apps-container a
 {
 	display: block;
-	width: 160px;
+	width: 165px;
 	height: auto;
 	min-height: 160px;
 	border: 1px solid blue;
