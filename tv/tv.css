@@ -1,0 +1,33 @@
+
+div.clock
+{
+	font-size: 2em;
+	margin: 25px 0px;
+}
+
+#home
+{
+	position: fixed;
+	top: 40vh;
+	left: 0px;
+}
+
+.apps-container
+{
+	font-size: 1.2em;
+}
+
+.apps-container a
+{
+	width: 20vw;
+	height: auto;
+	min-height: 160px;
+	margin: 10px;
+}
+
+.apps-container a img
+{
+	width: 120px;
+	height: 120px;
+	margin: 10px 0px;
+}
