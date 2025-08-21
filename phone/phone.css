@@ -1,0 +1,45 @@
+
+body
+{
+	background-color: black;
+	color: #999;
+	text-align: center;
+	font-size: 30px;
+	font-weight: 800;
+}
+
+a
+{
+	text-decoration: none;
+	color: white;
+}
+
+div.clock
+{
+	font-size: 2em;
+	margin: 25px 0px;
+}
+
+.apps-container
+{
+	display: flex;
+	flex-direction: rows;
+	flex-wrap: wrap;
+}
+
+.apps-container a
+{
+	display: block;
+	width: 200px;
+	height: 200px;
+	border: 1px solid blue;
+	margin: 15px;
+	border-radius: 20px;
+}
+
+.apps-container a img
+{
+	width: 128px;
+	height: 128px;
+	margin: 10px 0px;
+}
