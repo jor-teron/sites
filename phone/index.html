@@ -3,24 +3,44 @@
 <head>
 <title>Open Android App</title>
 <link type="text/css" rel="stylesheet" href="phone.css">
+<link type="text/css" rel="stylesheet" href="../no-scrollbar.css">
 </head>
 <body>
 
 <script src="../script/html-include.js"></script>
 	
 <div class="clock"></div>
-<!--	<h3> LOCAL </h3>	-->
 
 <div class="apps-container">
 	
-	<a href="https://www.goole.com/"> 
+	<a href="https://www.google.com/" target="_blank"> 
 		<img class="icons" src="https://www.google.com/s2/favicons?domain=google.com&sz=128" >
 		Google
 	</a>
+	<a href="intent://web.whatsapp.com/#Intent;scheme=https;package=com.whatsapp;end"> 
+		<img src="https://www.google.com/s2/favicons?domain=https://web.whatsapp.com/&sz=256">
+		Whatsapp
+	</a>	
+
+	<a href="intent://web.whatsapp.com/#Intent;scheme=https;package=com.whatsapp.w4b;end"> 
+		<img src="https://www.google.com/s2/favicons?domain=https://web.whatsapp.com/&sz=256">
+		Whatsapp 4B
+	</a>	
+
+</div>
+
+
+<div class="apps-container">
+	<a href="vnd.youtube://"> 
+		<img src="https://www.google.com/s2/favicons?domain=https://www.youtube.com/&sz=128" alt="YouTube Logo">
+		YouTube
+	</a>
+<!--
 	<a href="https://www.youtube.com/" target="_blank">
 		<img src="https://www.google.com/s2/favicons?domain=https://www.youtube.com/&sz=128" alt="YouTube Logo">
 		YouTube
 	</a>
+-->
 	<a href="https://mail.google.com/" target="_blank">
 		<img src="https://www.google.com/s2/favicons?domain=https://mail.google.com/&sz=128" alt="Wikipedia Logo">
 		Gmail
@@ -34,20 +54,36 @@
 		<img src="https://www.google.com/s2/favicons?domain=https://www.primevideo.com/&sz=128" alt="Amazon Prime Video Logo">
 		Prime Video
 	</a>
-
 </div>
 
 
 <div class="apps-container">
 
-<a href="intent:#Intent;action=android.settings.SETTINGS;end">    Android Settings	</a>
-<a href="sms://"> Open SMS </a>
-<a href="geo://"> Open Map </a>
+	<a href="tel://">
+			<img src="../image/dialer.png">
+		Dialer
+	</a>
+	<a href="sms://">
+		<img src="../image/sms.png">
+		SMS
+	</a>
+	<a href="geo://">
+		<img src="../image/google-maps.png">
+		Map
+	</a>
+	<a href="intent:#Intent;action=android.settings.SETTINGS;end">
+		<img src="../image/cogwheel.png">
+		Android Settings
+	</a>
+
+
+
+<!--
+
+<a href="tg://"> Telegram</a>
+<a href="content://contacts/people/"> Open Conract </a>
 <a href="mailto://"> Open Mailto </a>
 <a href="mail://"> Open Mail </a>
-<a href="tel://">Open Phone Dialer</a>
-<a href="content://contacts/people/"> Open Conract </a>
-<a href="tg://">Open telegram</a>
 
 <a href="market://"> Open market </a>
 <a href="fb-messenger://"> Open FB MSGR </a>
@@ -63,11 +99,12 @@
 <a href="intent://#Intent;action=com.google.android.youtube;end">
 Youtube| action
 </a>
-<a href="vnd.youtube://"> Open vnd.youtube </a>
 <a href="https://www.youtube.com/" target="_blank">    youtube www	</a>
 <a href="https://www.hotstar.com/" target="_blank">	    www hotstar	</a>
-
+-->
 </div>
+
+<a href=""> Refresh </a>
 
 <script src="../script/time.js"></script>
 </body>
