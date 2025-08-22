@@ -8,8 +8,8 @@ div.clock
 #home
 {
 	position: fixed;
-	top: 40vh;
-	left: 0px;
+	bottom: 50px;
+	left: 20px;
 }
 
 .apps-container
@@ -23,6 +23,13 @@ div.clock
 	height: auto;
 	min-height: 160px;
 	margin: 10px;
+}
+
+.apps-container a:focus
+{
+	border: 1px solid white;
+	outline: 1px solid white;
+	background-color: rgba(255, 255, 255, 0.6);
 }
 
 .apps-container a img
