@@ -9,12 +9,32 @@ div.clock
 {
 	position: fixed;
 	bottom: 50px;
-	left: 0px;
+	left: 20px;
 }
+
+#phone-model
+{
+	color: white;
+	font-size: 1.75em;
+	font-weight: 900;
+    text-shadow: 
+        0 0 20px #bbb,
+        0 0 20px #bbb,
+        0 0 20px #bbb,
+        0 0 20px #bbb;
+}
+
+#phone-company
+{
+	font-size: 1.5em;
+	font-weight: 900;
+	font-style: italic;
+}
+
 
 .apps-container
 {
-	font-size: 1.2em;
+	font-size: 1.5em;
 }
 
 .apps-container a
