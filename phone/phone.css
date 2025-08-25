@@ -26,15 +26,19 @@ div.clock
 
 #phone-company
 {
-	font-size: 1.5em;
-	font-weight: 900;
+	font-size: 0.7em;
+	font-weight: 200;
 	font-style: italic;
 }
-
 
 .apps-container
 {
 	font-size: 1.5em;
+}
+
+#home a
+{
+	border: 0px solid blue;
 }
 
 .apps-container a
