@@ -4,9 +4,17 @@ header
 	position: fixed;
 	top: 10px;
 	left: 0px;
+	width: 100%;
 	text-align: center;
 	font-size:;
-	
+	background-color: rgba(44,44,44, 0.7) ;
+}
+
+#header
+{
+	position: relative;
+	top: 15px;
+	left: 0px;
 }
 
 .apps-container
