@@ -7,9 +7,9 @@
 .apps-container a
 {
 	width: calc( 23vw - 10px);
-	min-width: 60px;
+	max-width: 60px;
 	height: auto;
-	min-height: 60px;
+	max-height: 60px;
 	margin: 5px;
 }
 
