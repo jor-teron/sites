@@ -6,7 +6,8 @@
 
 .apps-container a
 {
-	width: 110px;
+	width: calc( 25vw - 40px);
+	max-width: 110px;
 	height: auto;
 	min-height: 110px;
 	margin: 5px;
@@ -17,4 +18,9 @@
 	width: 100px;
 	height: 100px;
 	margin: 5px 0px;
+}
+
+div.section
+{
+	font-size: 1.5em;
 }
