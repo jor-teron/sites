@@ -1,0 +1,60 @@
+<html>
+<head>
+<title> Homepage </title>
+<link type="text/css" rel="stylesheet" href="media.css">
+<link type="text/css" rel="stylesheet" href="no-scrollbar.css">
+</head>
+<body>
+
+<script src="html-include.js"></script>
+
+<div id="top"></div>
+<nav class="navbar"> </nav>
+
+<h3 id="label-general"> General </h3>
+<div class="grid-container" id="general"> </div>
+
+<h3 id="label-ott"> OTT platform </h3>
+<div class="grid-container" id="ott"> </div>
+
+<h3 id="label-shopping"> Shopping </h3>
+<div class="grid-container" id="shopping"> </div>
+
+<h3 id="label-education"> Education </h3>
+<div class="grid-container" id="education"> </div>
+
+<h3 id="label-social-media"> Social Media </h3>
+<div class="grid-container" id="social-media"> </div>
+
+<h3 id="label-ai"> A.I. </h3>
+<div class="grid-container" id="ai"> </div>
+
+<h3 id="label-other"> Other </h3>
+<div class="grid-container" id="other"> </div>
+
+<hr>
+
+<!--	<nav class="navbar2"> </nav>	-->
+
+<footer>
+<div id="about">
+A collection of common website.
+</div>
+
+Teron Hem &copy;2025
+</footer>
+
+<script>
+	includeHTML("general.html", "#general")	;
+	includeHTML("ai.html", "#ai")	;
+	includeHTML("ott.html", "#ott")	;
+	includeHTML("other.html", "#other")	;
+	includeHTML("shopping.html", "#shopping")	;
+	includeHTML("social-media.html", "#social-media")	;
+	includeHTML("education.html", "#education")	;
+	includeHTML("navbar.html", ".navbar")	;
+	includeHTML("navbar.html", ".navbar2")	;
+</script>
+<script src="cursor.js"></script>
+</body>
+</html>
