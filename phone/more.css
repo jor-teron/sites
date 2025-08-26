@@ -9,16 +9,16 @@
 /*
 	width: calc( 25vw - 10px);
 */	
-	width: 80px;
+	width: 60px;
 	height: auto;
-	min-height: 80px;
+	min-height: 60px;
 	margin: 5px;
 }
 
 .apps-container a img
 {
-	width: 70px;
-	height: 70px;
+	width: 55px;
+	height: 55px;
 	margin: 5px 0px;
 }
 
