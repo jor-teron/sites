@@ -10,32 +10,13 @@
 
 <script src="../script/html-include.js"></script>
 
-<div class="apps-container">
-	<a href="index.html">
-		<img src="../image/more.png">
-	</a>
-	<a href="intent://#Intent;scheme=https;package=com.google.android.googlequicksearchbox;end" target="_blank"> 
-		<img class="icons" src="https://www.google.com/s2/favicons?domain=google.com&sz=128" >
-	</a>
-	<a href="upi://pay">
-		<img src="../image/google-pay.png">
-	</a>
-	
-	<a href="intent://#Intent;scheme=whatsapp;package=com.whatsapp;end"> 
-		<img src="https://www.google.com/s2/favicons?domain=https://web.whatsapp.com/&sz=256">
-	</a>	
-	<a href="intent://#Intent;scheme=w4b;package=com.whatsapp.w4b;end"> 
-		<img src="../image/whatsapp_w4b.png">
-	</a>
-	<a href="https://mail.google.com/" target="_blank">
-		<img src="https://www.google.com/s2/favicons?domain=https://mail.google.com/&sz=128" alt="Wikipedia Logo">
-	</a>
-	<a href="intent://#Intent;scheme=myjio;package=com.jio.myjio;end"> 
-		<img src="../image/app.png">
-		MyJio
-	</a>	
+<div class="apps-container" id="header"> </div>
 
-</div>
+<div class="section"> General </div>
+<div class="apps-container" id="general"> </div>
+
+<div class="section"> O.T.T </div>
+<div class="apps-container" id="ott"> </div>
 
 <div class="section"> Shopping </div>
 <div class="apps-container" id="shopping"> </div>
@@ -43,33 +24,26 @@
 <div class="section"> A.I. </div>
 <div class="apps-container" id="ai"> </div>
 
-<div class="section"> O.T.T </div>
-<div class="apps-container" id="ott"> </div>
-
 <div class="section"> Social Media </div>
 <div class="apps-container" id="social-media"> </div>
 
 
-
-
-
-
+<div class="section"> Other </div>
+<div class="apps-container" id="other"> </div>
 <div class="apps-container">
 
 	<a href="fb:" target="_blank">
 		<img src="https://www.google.com/s2/favicons?domain=https://www.facebook.com/&sz=128" alt="YouTube Logo">
-		
 	</a>
-
 	<a href="twitter:" target="_blank">
 		<img src="https://www.google.com/s2/favicons?domain=https://www.facebook.com/&sz=128" alt="YouTube Logo">
-		
 	</a>
 
 
 
 </div>
 
+<div class="section"> Other </div>
 
 <div class="apps-container">
 
@@ -125,14 +99,6 @@
 <a href="hotstar://home"> Open Hotstar </a>
 <a href="instagram://"> Open Insta </a>
 
-<a href="google://"> Open Google </a>
-
-<a href="intent://#Intent;scheme=https;package=com.google.android.youtube;end">	 YouTube | https, package	</a>
-<a href="intent://#Intent;action=com.google.android.youtube;end">
-Youtube| action
-</a>
-<a href="https://www.youtube.com/" target="_blank">    youtube www	</a>
-<a href="https://www.hotstar.com/" target="_blank">	    www hotstar	</a>
 -->
 </div>
 
@@ -140,7 +106,7 @@ Youtube| action
 
 
 <script>
-//	includeHTML("general.html", "#general")	;
+	includeHTML("general.html", "#general")	;
 	includeHTML("ai.html", "#ai")	;
 	includeHTML("ott.html", "#ott")	;
 	includeHTML("other.html", "#other")	;
