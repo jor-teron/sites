@@ -6,8 +6,10 @@
 
 .apps-container a
 {
+/*
 	width: calc( 25vw - 10px);
-	max-width: 80px;
+*/	
+	width: 80px;
 	height: auto;
 	min-height: 80px;
 	margin: 5px;
@@ -15,8 +17,8 @@
 
 .apps-container a img
 {
-	width: 75px;
-	height: 75px;
+	width: 70px;
+	height: 70px;
 	margin: 5px 0px;
 }
 
