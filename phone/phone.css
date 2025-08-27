@@ -43,7 +43,7 @@ div.clock
 
 .apps-container a
 {
-	width: calc(45vw - 20px) ;
+	width: calc(45vw - 50px) ;
 	max-width: 165px;
 	height: auto;
 	min-height: 160px;
