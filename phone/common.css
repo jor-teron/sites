@@ -14,19 +14,25 @@ a
 	color: white;
 }
 
-
 .apps-container
 {
 	display: flex;
-	flex-direction: rows;
+	flex-direction: row;
 	flex-wrap: wrap;
-	
 }
 
+a ,
 .apps-container a
 {
 	display: block;
-	border: 1px solid blue;
+	border: 1px solid black;
 	border-radius: 20px;
-	
+}
+
+a:focus ,
+.apps-container a:focus
+{
+	border: 1px solid black;
+	outline: 1px solid black;
+	background-color: rgba(255, 255, 255, 0.1);
 }
