@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Open Android App</title>
+<link type="text/css" rel="stylesheet" href="common.css">
+<link type="text/css" rel="stylesheet" href="more-phone.css">
+<link type="text/css" rel="stylesheet" href="../style/no-scrollbar.css">
+</head>
+<body>
+
+<script src="../script/html-include.js"></script>
+<header>
+<!--
+	<a href="#ott"> OTT </a> | 
+-->
+	<a href="#title-shopping"> Shopping </a> | <a href="#title-ai"> A.I </a> | <a href="#title-social-media"> Social </a> | <a href="#title-other"> Other </a> 
+</header>
+
+<div class="apps-container" id="header"> </div>
+
+<div class="section"> General </div>
+<div class="apps-container" id="general"> </div>
+
+<div class="section"> O.T.T </div>
+<div class="apps-container" id="ott"> </div>
+
+<div class="section" id="title-shopping"> Shopping </div>
+<div class="apps-container" id="shopping"> </div>
+
+<div class="section" id="title-ai"> A.I. </div>
+<div class="apps-container" id="ai"> </div>
+
+<div class="section" id="title-social-media"> Social Media </div>
+<div class="apps-container" id="social-media"> </div>
+
+<div class="section" id="title-other"> Other </div>
+<div class="apps-container" id="other"> </div>
+
+<div class="apps-container">
+
+	<a href="fb:" target="_blank">
+		<img src="https://www.google.com/s2/favicons?domain=https://www.facebook.com/&sz=128" alt="YouTube Logo">
+	</a>
+	<a href="setting:" target="_blank">
+		<img src="https://www.google.com/s2/favicons?domain=https://www.x.com/&sz=128" alt="YouTube Logo">
+	</a>
+
+
+
+</div>
+
+<div class="section"> Other </div>
+
+<div class="apps-container">
+
+	<a href="tel://">
+			<img src="../image/dialer.png">
+		Dialer
+	</a>
+	<a href="sms:">
+		<img src="../image/sms.png">
+		SMS
+	</a>
+	<a href="geo://">
+		<img src="../image/google-maps.png">
+		Map
+	</a>
+	<a href="intent:#Intent;action=android.settings.SETTINGS;end">
+		<img src="../image/cogwheel.png">
+		Settings
+	</a>
+
+</div>
+
+<hr>
+<div class="apps-container">
+	
+		<a href="intent://#Intent;action=android.settings.MANAGE_DEFAULT_APPS_SETTINGS;end">
+		<img src="../image/setting.png">
+		Default Apps 
+	</a>
+	<a href="intent://#Intent;action=android.settings.HOME_SETTINGS;end">
+		<img src="../image/setting.png">
+		Default Home
+	</a>
+	<a href="intent://open#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.jio.myjio;end">
+		<img src="../image/app.png">
+		MyJio
+	</a>
+
+
+	
+<!--
+
+<a href="tg://"> Telegram</a>
+<a href="content://contacts/people/"> Open Conract </a>
+<a href="mailto://"> Open Mailto </a>
+<a href="mail://"> Open Mail </a>
+
+<a href="market://"> Open market </a>
+<a href="fb-messenger://"> Open FB MSGR </a>
+<a href="wa://"> Open W/A </a>
+<a href="nflx://www.netfli.com/browse"> Open Netflix </a>
+<a href="primevideo://app/home"> Open PRIME</a>
+<a href="hotstar://home"> Open Hotstar </a>
+<a href="instagram://"> Open Insta </a>
+
+-->
+</div>
+
+<a href=""> Refresh </a>
+<footer>
+Lumo <i>Made by Nokea Pvt. Ltd.</i> &copy;2025
+</footer>
+	
+
+<script>
+	includeHTML("general.html", "#general")	;
+	includeHTML("ai.html", "#ai")	;
+	includeHTML("ott.html", "#ott")	;
+	includeHTML("other.html", "#other")	;
+	includeHTML("shopping.html", "#shopping")	;
+	includeHTML("social-media.html", "#social-media")	;
+	includeHTML("header.html", "#header")	;
+//	includeHTML("navbar.html", ".navbar")	;
+//	includeHTML("navbar.html", ".navbar2")	;
+</script>
+
+</body>
+</html>
