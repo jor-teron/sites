@@ -5,13 +5,6 @@ div.clock
 	margin: 25px 0px;
 }
 
-#home
-{
-	position: fixed;
-	bottom: 20px;
-	left: 20px;
-}
-
 #phone-model
 {
 	color: white;
@@ -36,23 +29,37 @@ div.clock
 	font-size: 1.5em;
 }
 
+#home
+{
+	position: fixed;
+	bottom: 20px;
+	left: 0px;
+	width: calc(100vw - 0px );
+	border: 0px solid blue;
+}
+
 #home a
 {
 	border: 0px solid blue;
+	min-height: 150px;
 }
 
 .apps-container a
 {
-	width: calc(30vw - 50px) ;
+	width: calc(30vw - 10px) ;
 	max-width: ;
 	height: auto;
-	min-height: 160px;
+	min-height: 100px;
 	margin: 0px;
 }
 
 .apps-container a img
 {
-	width: 120px;
-	height: 120px;
+	width: auto ;
+	min-width: 100px;
+	max-width: ;
+	height: auto;
+	min-height: 100px;
+	max-height: 120px;
 	margin: 10px 0px;
 }
