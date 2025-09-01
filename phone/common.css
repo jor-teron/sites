@@ -14,13 +14,11 @@ a
 	color: white;
 }
 
-
 .apps-container
 {
 	display: flex;
 	flex-direction: rows;
 	flex-wrap: wrap;
-	
 }
 
 .apps-container a
@@ -28,5 +26,9 @@ a
 	display: block;
 	border: 0px solid blue;
 	border-radius: 20px;
-	
+}
+
+.apps-container a:focus
+{
+	background-color: rgba(50, 50, 50, 0.2);
 }

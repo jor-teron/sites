@@ -43,11 +43,11 @@ div.clock
 
 .apps-container a
 {
-	width: calc(45vw - 50px) ;
-	max-width: 165px;
+	width: calc(30vw - 50px) ;
+	max-width: ;
 	height: auto;
 	min-height: 160px;
-	margin: 10px;
+	margin: 0px;
 }
 
 .apps-container a img
