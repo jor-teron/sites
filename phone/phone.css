@@ -44,6 +44,12 @@ div.clock
 	margin: 0px;
 }
 
+.home a:focus
+{
+	outline: none;
+	opacity: 0.1;
+}
+
 .home a img
 {
 	width: auto ;
