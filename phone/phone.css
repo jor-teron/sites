@@ -48,9 +48,9 @@ div.clock
 {
 	width: auto ;
 	min-width: ;
-	max-width: 80px;
+	max-width: 100px;
 	height: auto;
 	min-height: ;
-	max-height: 80px;
+	max-height: 100px;
 	margin: 10px 0px;
 }
