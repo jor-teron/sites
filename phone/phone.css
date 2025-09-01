@@ -40,7 +40,7 @@ div.clock
 
 #home a
 {
-	border: 0px solid blue;
+	border: 1px solid blue;
 	min-height: 150px;
 }
 
