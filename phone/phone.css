@@ -24,42 +24,33 @@ div.clock
 	font-style: italic;
 }
 
-.apps-container
-{
-	font-size: 1.5em;
-}
-
-#home
+.home
 {
 	position: fixed;
 	bottom: 20px;
 	left: 10px;
-	width: calc(100vw - 20px );
+	font-size: 1.5em;
+	width: calc( 100vw - 10px );
 	border: 0px solid blue;
 }
 
-#home a
+.home a
 {
-	border: 1px solid blue;
-	min-height: 150px;
-}
-
-.apps-container a
-{
-	width: 32% ;
+	border: 0px solid blue;
+	width: 33% ;
 	max-width: ;
 	height: auto;
-	min-height: 100px;
+	max-height: 100px;
 	margin: 0px;
 }
 
-.apps-container a img
+.home a img
 {
 	width: auto ;
-	min-width: 100px;
-	max-width: ;
+	min-width: ;
+	max-width: 80px;
 	height: auto;
-	min-height: 100px;
-	max-height: 120px;
+	min-height: ;
+	max-height: 80px;
 	margin: 10px 0px;
 }
