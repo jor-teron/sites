@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IPTV Player</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7"></script>
+  <link rel="stylesheet" href="iptv.css">
+  <style>
+    html, body {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    html::-webkit-scrollbar, body::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="main">
+    <div class="sidebar">
+      <div class="sidebar-header">Channels (<span id="channel-count">0</span>)</div>
+      
+      <!-- Special Apps -->
+      <div class="special-apps">
+        <div class="channel app-item" data-action="youtube">
+          <div class="channel-info">
+            <div class="channel-name">YouTube</div>
+            <div class="channel-group">App</div>
+          </div>
+        </div>
+        <div class="channel app-item" data-action="playstore">
+          <div class="channel-info">
+            <div class="channel-name">Play Store</div>
+            <div class="channel-group">App</div>
+          </div>
+        </div>
+        <div class="channel app-item" data-action="settings">
+          <div class="channel-info">
+            <div class="channel-name">Settings</div>
+            <div class="channel-group">App</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="channel-list" id="channel-list"></div>
+    </div>
+
+    <div class="player-area">
+      <video id="video" controls playsinline></video>
+      <div class="overlay-msg" id="overlay">Loading...</div>
+    </div>
+  </div>
+
+  <script src="iptv.js"></script>
+</body>
+</html>
