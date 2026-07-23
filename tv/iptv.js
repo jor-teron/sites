@@ -7,7 +7,12 @@ let items = [];
 let currentIndex = -1;
 let hideTimeout = null;
 
-// Special apps with logos
+// Number input system
+let numberBuffer = '';
+let numberTimeout = null;
+const NUMBER_DELAY = 1500; // 1.5 seconds
+
+// Special apps
 const specialItems = [
   {
     name: "YouTube",
@@ -25,7 +30,7 @@ const specialItems = [
     name: "Settings",
     type: "app",
     logo: "https://cdn-icons-png.flaticon.com/512/3524/3524659.png",
-    action: () => { window.location.href = "intent://settings/#Intent;scheme=android-app;package=com.android.settings;end"; }
+    action: () => { window.location.href = "intent://com.android.settings/#Intent;scheme=android-app;end"; }
   }
 ];
 
@@ -82,7 +87,7 @@ function buildList() {
     div.className = 'channel';
     div.dataset.index = idx;
 
-    // Number first
+    // Number
     const numberSpan = document.createElement('div');
     numberSpan.className = 'channel-number';
     numberSpan.textContent = (idx + 1) + '.';
@@ -122,6 +127,7 @@ function activateItem(index) {
 
   currentIndex = index;
   overlay.style.display = 'none';
+  hideNumberDisplay();
 
   const item = items[index];
 
@@ -152,6 +158,52 @@ function playChannel(ch) {
   }
 }
 
+// ===== Number Input System =====
+function showNumberDisplay(num) {
+  let display = document.getElementById('number-display');
+  if (!display) {
+    display = document.createElement('div');
+    display.id = 'number-display';
+    display.style.cssText = `
+      position: fixed;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 120px;
+      font-weight: bold;
+      color: white;
+      background: rgba(0,0,0,0.7);
+      padding: 20px 50px;
+      border-radius: 16px;
+      z-index: 100;
+      font-family: Arial, sans-serif;
+    `;
+    document.body.appendChild(display);
+  }
+  display.textContent = num;
+  display.style.display = 'block';
+}
+
+function hideNumberDisplay() {
+  const display = document.getElementById('number-display');
+  if (display) display.style.display = 'none';
+}
+
+function handleNumberInput(digit) {
+  numberBuffer += digit;
+  showNumberDisplay(numberBuffer);
+
+  clearTimeout(numberTimeout);
+  numberTimeout = setTimeout(() => {
+    const channelNum = parseInt(numberBuffer);
+    if (!isNaN(channelNum) && channelNum >= 1 && channelNum <= items.length) {
+      activateItem(channelNum - 1); // convert to 0-based index
+    }
+    numberBuffer = '';
+    hideNumberDisplay();
+  }, NUMBER_DELAY);
+}
+
 // Keyboard
 document.addEventListener('keydown', (e) => {
   const sidebar = document.querySelector('.sidebar');
@@ -161,14 +213,10 @@ document.addEventListener('keydown', (e) => {
 
   if (items.length === 0) return;
 
-  // Number pad
-  const num = parseInt(e.key);
-  if (!isNaN(num)) {
-    let target = num === 0 ? 9 : num - 1;
-    if (target < items.length) {
-      activateItem(target);
-      return;
-    }
+  // Number keys (0-9)
+  if (e.key >= '0' && e.key <= '9') {
+    handleNumberInput(e.key);
+    return;
   }
 
   if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {

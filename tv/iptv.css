@@ -107,9 +107,9 @@ body {
 .channel-number {
   font-size: 1.1rem;
   font-weight: bold;
-  min-width: 36px;
+  min-width: 25px;
   color: #e50914;
-  margin-right: 8px;
+  margin-right: 2px;
 }
 
 /* Hide scrollbars cross-browser */
