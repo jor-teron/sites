@@ -72,8 +72,8 @@ body {
 
 .channel:hover,
 .channel.active {
-  border-color: #e50914;
-  background: #2a2a2a;
+  border-color: #6b8e23;
+  background: rgba(40, 40, 40, 0.7);
 }
 
 .channel-number {
