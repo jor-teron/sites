@@ -7,29 +7,29 @@ let items = [];
 let currentIndex = -1;
 let hideTimeout = null;
 
-// Number input system
+// Number input
 let numberBuffer = '';
 let numberTimeout = null;
-const NUMBER_DELAY = 1500; // 1.5 seconds
+const NUMBER_DELAY = 1500;
 
-// Special apps
+// Apps
 const specialItems = [
   {
     name: "YouTube",
     type: "app",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/120px-YouTube_full-color_icon_%282017%29.svg.png",
+    logo: "../image/youtube.png",
     action: () => { window.location.href = "vnd.youtube://"; }
   },
   {
     name: "Play Store",
     type: "app",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/200px-Google_Play_Store_badge_EN.svg.png",
+    logo: "../image/playstore.png",
     action: () => { window.location.href = "intent://play.google.com/store#Intent;scheme=https;package=com.android.vending;end"; }
   },
   {
     name: "Settings",
     type: "app",
-    logo: "https://cdn-icons-png.flaticon.com/512/3524/3524659.png",
+    logo: "../image/settings.png",
     action: () => { window.location.href = "intent://com.android.settings/#Intent;scheme=android-app;end"; }
   }
 ];
@@ -42,7 +42,7 @@ function loadPlaylist() {
       items = [...specialItems, ...channels];
       buildList();
       if (items.length > 3) {
-        setTimeout(() => activateItem(3), 400);
+        setTimeout(() => activateItem(3), 500);
       }
     })
     .catch(() => {
@@ -87,19 +87,16 @@ function buildList() {
     div.className = 'channel';
     div.dataset.index = idx;
 
-    // Number
     const numberSpan = document.createElement('div');
     numberSpan.className = 'channel-number';
     numberSpan.textContent = (idx + 1) + '.';
 
-    // Logo
     const img = document.createElement('img');
-    img.src = item.logo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect fill="%23333" width="48" height="48"/><text x="24" y="30" fill="%23999" text-anchor="middle" font-size="14">📺</text></svg>';
+    img.src = item.logo || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70"><rect fill="%23333" width="70" height="70"/><text x="35" y="40" fill="%23999" text-anchor="middle" font-size="18">TV</text></svg>';
     img.onerror = () => {
-      img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect fill="%23333" width="48" height="48"/><text x="24" y="30" fill="%23999" text-anchor="middle" font-size="14">📺</text></svg>';
+      img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70"><rect fill="%23333" width="70" height="70"/><text x="35" y="40" fill="%23999" text-anchor="middle" font-size="18">TV</text></svg>';
     };
 
-    // Name
     const info = document.createElement('div');
     info.className = 'channel-info';
     info.innerHTML = `
@@ -122,7 +119,7 @@ function activateItem(index) {
   const active = document.querySelector(`.channel[data-index="${index}"]`);
   if (active) {
     active.classList.add('active');
-    active.scrollIntoView({ block: 'nearest' });
+    active.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
 
   currentIndex = index;
@@ -136,6 +133,8 @@ function activateItem(index) {
   } else {
     playChannel(item);
   }
+
+  startHideTimer();
 }
 
 function playChannel(ch) {
@@ -158,7 +157,7 @@ function playChannel(ch) {
   }
 }
 
-// ===== Number Input System =====
+// Number display
 function showNumberDisplay(num) {
   let display = document.getElementById('number-display');
   if (!display) {
@@ -169,14 +168,13 @@ function showNumberDisplay(num) {
       top: 40%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 120px;
+      font-size: 110px;
       font-weight: bold;
       color: white;
-      background: rgba(0,0,0,0.7);
-      padding: 20px 50px;
-      border-radius: 16px;
+      background: rgba(0,0,0,0.75);
+      padding: 15px 40px;
+      border-radius: 12px;
       z-index: 100;
-      font-family: Arial, sans-serif;
     `;
     document.body.appendChild(display);
   }
@@ -197,23 +195,31 @@ function handleNumberInput(digit) {
   numberTimeout = setTimeout(() => {
     const channelNum = parseInt(numberBuffer);
     if (!isNaN(channelNum) && channelNum >= 1 && channelNum <= items.length) {
-      activateItem(channelNum - 1); // convert to 0-based index
+      activateItem(channelNum - 1);
     }
     numberBuffer = '';
     hideNumberDisplay();
   }, NUMBER_DELAY);
 }
 
+function startHideTimer() {
+  clearTimeout(hideTimeout);
+  hideTimeout = setTimeout(() => {
+    channelList.classList.add('hidden');
+  }, 5000);
+}
+
+function showList() {
+  channelList.classList.remove('hidden');
+  startHideTimer();
+}
+
 // Keyboard
 document.addEventListener('keydown', (e) => {
-  const sidebar = document.querySelector('.sidebar');
-  sidebar.classList.remove('hidden');
-  clearTimeout(hideTimeout);
-  hideTimeout = setTimeout(() => sidebar.classList.add('hidden'), 5000);
+  showList();
 
   if (items.length === 0) return;
 
-  // Number keys (0-9)
   if (e.key >= '0' && e.key <= '9') {
     handleNumberInput(e.key);
     return;
@@ -227,8 +233,6 @@ document.addEventListener('keydown', (e) => {
     highlightCurrent();
   } else if (e.key === 'Enter' || e.key === ' ') {
     activateItem(currentIndex);
-  } else if (e.key.toLowerCase() === 'f') {
-    document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
   }
 });
 
@@ -237,16 +241,11 @@ function highlightCurrent() {
   const active = document.querySelector(`.channel[data-index="${currentIndex}"]`);
   if (active) {
     active.classList.add('active');
-    active.scrollIntoView({ block: 'nearest' });
+    active.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
 }
 
-document.addEventListener('click', () => {
-  const sidebar = document.querySelector('.sidebar');
-  sidebar.classList.remove('hidden');
-  clearTimeout(hideTimeout);
-  hideTimeout = setTimeout(() => sidebar.classList.add('hidden'), 5000);
-});
+document.addEventListener('click', showList);
 
 // Start
 loadPlaylist();
