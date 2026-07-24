@@ -7,24 +7,22 @@
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7"></script>
   <link rel="stylesheet" href="iptv.css">
   <style>
-    html, body {
+    /* Your scrollbar fix */
+    html {
       scrollbar-width: none;
       -ms-overflow-style: none;
     }
-    html::-webkit-scrollbar, body::-webkit-scrollbar {
+    ::-webkit-scrollbar {
       display: none;
     }
   </style>
 </head>
 <body>
   <div class="main">
-    <div class="sidebar">
-      <div class="sidebar-header">Menu</div>
-      <div class="channel-list" id="channel-list"></div>
-    </div>
+    <div class="channel-list" id="channel-list"></div>
 
     <div class="player-area">
-      <video id="video" controls playsinline></video>
+      <video id="video" playsinline></video>
       <div class="overlay-msg" id="overlay">Loading...</div>
     </div>
   </div>
