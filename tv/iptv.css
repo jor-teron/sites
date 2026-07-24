@@ -59,7 +59,7 @@ body {
 
 .channel {
   width: 180px;
-  background: rgba(26,26,26,0.6);
+  background: rgba(222,222,222,0.4);
   border-radius: 8px;
   padding: 10px;
   display: flex;
