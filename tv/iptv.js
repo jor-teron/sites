@@ -23,13 +23,13 @@ const specialItems = [
   {
     name: "Play Store",
     type: "app",
-    logo: "../image/playstore.png",
+    logo: "../image/app.png",
     action: () => { window.location.href = "intent://play.google.com/store#Intent;scheme=https;package=com.android.vending;end"; }
   },
   {
     name: "Settings",
     type: "app",
-    logo: "../image/settings.png",
+    logo: "../image/cogwheel.png",
     action: () => { window.location.href = "intent://com.android.settings/#Intent;scheme=android-app;end"; }
   }
 ];
