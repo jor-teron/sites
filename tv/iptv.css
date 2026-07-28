@@ -60,7 +60,7 @@ body {
 
 .channel {
   width: 180px;
-  background: rgba(40,40,40,0.4);
+  background: rgba(40,40,40,0.6);
   border-radius: 0px;
   padding: 10px;
   display: flex;
