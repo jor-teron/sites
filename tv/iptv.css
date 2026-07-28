@@ -14,7 +14,7 @@ body {
 
 .main {
   position: relative;
-  width: 100%;
+  width: 100vw;
   height: 100vh;
 }
 
@@ -28,8 +28,8 @@ body {
 }
 
 #video {
-  width: auto;
-  height: 100vh;
+  width: 100vw;
+  height: auto;
   object-fit: contain;
   background: #000;
 }
@@ -66,16 +66,16 @@ body {
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  border: 10px solid transparent;
+  border: 0px solid transparent;
   transition: all 0.5s;
 }
 
 .channel:hover,
 .channel.active {
   border-color: #6b8e23;
-  border-radius: 10px ;
+  border-radius: 0px ;
   box-shaped: 0 0 10px #9acd32 ;
-  background: rgba(40, 40, 40, 0.6);
+  background: rgba(40, 40, 40, 0.9);
 }
 
 .channel-number {
