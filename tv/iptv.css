@@ -40,10 +40,11 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  padding: 20px;
+  padding: 10px;
   display: flex;
   flex-wrap: wrap;
-  gap: 0px;
+  gap: 3px 0px;
+  margin-bottom: 4px;
   align-content: flex-start;
   overflow-y: auto;
   z-index: 10;
