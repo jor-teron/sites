@@ -60,7 +60,7 @@ body {
 .channel {
   width: 180px;
   background: rgba(40,40,40,0.4);
-  border-radius: 8px;
+  border-radius: 0px;
   padding: 10px;
   display: flex;
   flex-direction: column;
@@ -73,7 +73,8 @@ body {
 .channel:hover,
 .channel.active {
   border-color: #6b8e23;
-  box-shaped: 0 0 12px #9acd32 ;
+  border-radius: 10px ;
+  box-shaped: 0 0 10px #9acd32 ;
   background: rgba(40, 40, 40, 0.6);
 }
 
