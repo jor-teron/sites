@@ -28,7 +28,7 @@ body {
 }
 
 #video {
-  width: 99vw;
+  width: auto;
   height: 100vh;
   object-fit: contain;
   background: #000;
