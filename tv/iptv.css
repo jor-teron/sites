@@ -68,7 +68,7 @@ body {
   align-items: center;
   cursor: pointer;
   border: 0px solid transparent;
-  transition: all 0.5s;
+  transition: all 1.5s;
 }
 
 .channel:hover,
