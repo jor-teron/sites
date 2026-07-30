@@ -30,6 +30,7 @@ body {
 #video {
   width: 100vw;
   height: auto;
+  max-height: 100vh;
   object-fit: contain;
   background: #000;
 }
