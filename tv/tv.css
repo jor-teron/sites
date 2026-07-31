@@ -1,0 +1,121 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  background: rgba(20, 20, 20, 1);
+}
+
+/* ===== HEADER ===== */
+.top-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 52px;
+  background: rgba(255, 255, 255, 1);
+  display: flex;
+  z-index: 100;
+  border-bottom: 1px solid rgba(0,0,0,0.12);
+}
+
+.nav-tile {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(30, 30, 30, 1);
+  cursor: pointer;
+  text-align: center;
+  padding: 0 6px;
+}
+
+.nav-tile.active {
+  background: rgba(140, 180, 60, 1);
+  color: rgba(255, 255, 255, 1);
+}
+
+/* ===== MAIN ===== */
+.main-content {
+  position: absolute;
+  top: 52px;
+  left: 0;
+  width: 100vw;
+  height: calc(100vh - 52px);
+  background: rgba(20, 20, 20, 1);
+}
+
+#video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: rgba(0, 0, 0, 1);
+}
+
+/* ===== CHANNEL OVERLAY ===== */
+.channel-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(40, 40, 40, 1);
+  z-index: 20;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.channel-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 0;
+  padding: 4px;
+}
+
+.channel {
+  width: 20%;
+  min-width: 140px;
+  background: rgba(50, 50, 50, 1);
+  color: rgba(255, 255, 255, 1);
+  padding: 8px 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  border: 10px solid transparent;
+  cursor: pointer;
+}
+
+.channel.active {
+  border-color: rgba(140, 180, 60, 1);
+  background: rgba(60, 60, 55, 1);
+}
+
+.channel img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.channel .num {
+  min-width: 22px;
+  font-weight: bold;
+  color: rgba(180, 180, 180, 1);
+}
+
+.channel .name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

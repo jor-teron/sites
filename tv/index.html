@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> TV Player </title>
+  <link rel="stylesheet" href="tv.css">
+      <style>
+    /* Your scrollbar fix */
+    html {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+  
+</head>
+<body>
+
+  <header class="top-header">
+    <div class="nav-tile active" data-cat="home">Home</div>
+    <div class="nav-tile" data-cat="kids">Kids</div>
+    <div class="nav-tile" data-cat="india">India</div>
+    <div class="nav-tile" data-page="videos">Videos</div>
+    <div class="nav-tile" data-page="photos">Photos</div>
+  </header>
+
+  <main class="main-content">
+    <video id="video" playsinline></video>
+
+    <div id="channelOverlay" class="channel-overlay">
+      <div id="channelList" class="channel-list"></div>
+    </div>
+  </main>
+
+  <script src="tv.js"></script>
+</body>
+</html>
+
