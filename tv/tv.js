@@ -7,14 +7,14 @@ let currentIndex = 0;
 let hls = null;
 let hideTimer = null;
 
-// ========== Playlist sources ==========
+// Playlist sources
 const playlists = {
   home:  'channels/home.m3u',
   kids:  'channels/kids.m3u',
   india: 'https://iptv-org.github.io/iptv/countries/in.m3u'
 };
 
-// ========== Parse M3U ==========
+// Parse M3U
 function parseM3U(text) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   const list = [];
@@ -38,7 +38,7 @@ function parseM3U(text) {
   return list;
 }
 
-// ========== Load playlist ==========
+// Load playlist
 async function loadPlaylist(key) {
   const url = playlists[key];
   if (!url) return;
@@ -50,7 +50,9 @@ async function loadPlaylist(key) {
     channels = parseM3U(text);
     currentIndex = 0;
     renderChannels();
-    if (channels.length > 0) playChannel(0);
+    if (channels.length > 0) {
+      playChannel(0);
+    }
     showOverlay();
   } catch (err) {
     console.error(err);
@@ -60,10 +62,11 @@ async function loadPlaylist(key) {
   }
 }
 
-// ========== Render channel tiles ==========
+// Render channels
 function renderChannels() {
   if (!channelListEl) return;
   channelListEl.innerHTML = '';
+
   channels.forEach((ch, i) => {
     const div = document.createElement('div');
     div.className = 'channel' + (i === currentIndex ? ' active' : '');
@@ -77,7 +80,7 @@ function renderChannels() {
   });
 }
 
-// ========== Play channel ==========
+// Play channel
 function playChannel(index) {
   if (!video || index < 0 || index >= channels.length) return;
   currentIndex = index;
@@ -109,18 +112,19 @@ function playChannel(index) {
   showOverlay();
 }
 
-// ========== Overlay show / hide ==========
+// Show / Hide overlay
 function showOverlay() {
   if (!overlay) return;
+
   overlay.classList.remove('hidden');
 
   clearTimeout(hideTimer);
   hideTimer = setTimeout(() => {
     overlay.classList.add('hidden');
-  }, 2000); // 2 seconds
+  }, 2000);
 }
 
-// ========== Header Navigation ==========
+// Header clicks
 document.querySelectorAll('.nav-tile').forEach(tile => {
   tile.addEventListener('click', () => {
     const page = tile.dataset.page;
@@ -135,13 +139,15 @@ document.querySelectorAll('.nav-tile').forEach(tile => {
       return;
     }
 
-    const currentPage = window.location.pathname;
-    if (currentPage.includes('video.html') || currentPage.includes('photo.html')) {
+    // Coming from video/photo page
+    if (window.location.pathname.includes('video.html') || 
+        window.location.pathname.includes('photo.html')) {
       if (cat) localStorage.setItem('lastCat', cat);
       window.location.href = 'index.html';
       return;
     }
 
+    // Already on Live TV page
     document.querySelectorAll('.nav-tile').forEach(t => t.classList.remove('active'));
     tile.classList.add('active');
 
@@ -149,12 +155,12 @@ document.querySelectorAll('.nav-tile').forEach(tile => {
   });
 });
 
-// ========== Activity detection ==========
+// Activity detection
 function onActivity() {
   showOverlay();
 }
 
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', function(e) {
   onActivity();
 
   if (!channels.length) return;
@@ -174,18 +180,20 @@ document.addEventListener('mousemove', onActivity);
 document.addEventListener('click', onActivity);
 document.addEventListener('touchstart', onActivity);
 
-// ========== Start ==========
+// Start
 const isLivePage = !window.location.pathname.includes('video.html') &&
                    !window.location.pathname.includes('photo.html');
 
 if (isLivePage) {
   const script = document.createElement('script');
   script.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.7';
-  script.onload = () => {
+  script.onload = function() {
     const lastCat = localStorage.getItem('lastCat') || 'home';
+
     document.querySelectorAll('.nav-tile').forEach(t => {
       t.classList.toggle('active', t.dataset.cat === lastCat);
     });
+
     loadPlaylist(lastCat);
   };
   document.head.appendChild(script);
