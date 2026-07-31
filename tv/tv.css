@@ -52,13 +52,18 @@ html, body {
   width: 100vw;
   height: calc(100vh - 52px);
   background: rgba(20, 20, 20, 1);
+  overflow: hidden;
 }
 
 #video {
-  width: 100vw;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   height: 100%;
   object-fit: contain;
   background: rgba(0, 0, 0, 1);
+  z-index: 1;
 }
 
 /* ===== CHANNEL OVERLAY ===== */
@@ -72,12 +77,12 @@ html, body {
   z-index: 20;
   overflow-y: auto;
   overflow-x: hidden;
-  transition: transform 0.25s ease;
-  transform: translateY(0);
+  transition: transform 0.3s ease;
+  transform: translateY(0%);
 }
 
 .channel-overlay.hidden {
-  transform: translateY(105%);
+  transform: translateY(110%);
 }
 
 .channel-list {
@@ -124,17 +129,4 @@ html, body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* ===== Blank pages (video.html / photo.html) ===== */
-.blank-page {
-  background: rgba(245, 245, 245, 1);
-  display: flex;
-  justify-content: center;
-  padding-top: 40px;
-}
-
-.placeholder-text {
-  color: rgba(0, 0, 0, 0.45);
-  font-size: 18px;
 }
