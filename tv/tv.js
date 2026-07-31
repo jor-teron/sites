@@ -5,6 +5,7 @@ const overlay = document.getElementById('channelOverlay');
 let channels = [];
 let currentIndex = 0;
 let hls = null;
+let hideTimer = null;
 
 // ========== Playlist sources ==========
 const playlists = {
@@ -50,6 +51,7 @@ async function loadPlaylist(key) {
     currentIndex = 0;
     renderChannels();
     if (channels.length > 0) playChannel(0);
+    showOverlay();
   } catch (err) {
     console.error(err);
     if (channelListEl) {
@@ -67,7 +69,7 @@ function renderChannels() {
     div.className = 'channel' + (i === currentIndex ? ' active' : '');
     div.innerHTML = `
       <span class="num">${i + 1}</span>
-      ${ch.logo ? `<img src="${ch.logo}" onerror="this.style.display='none'">` : ''}
+      \( {ch.logo ? `<img src=" \){ch.logo}" onerror="this.style.display='none'">` : ''}
       <span class="name">${ch.name}</span>
     `;
     div.onclick = () => playChannel(i);
@@ -96,41 +98,50 @@ function playChannel(index) {
     hls = new Hls();
     hls.loadSource(url);
     hls.attachMedia(video);
-    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(()=>{}));
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      video.play().catch(() => {});
+    });
   } else {
     video.src = url;
-    video.play().catch(()=>{});
+    video.play().catch(() => {});
   }
+
+  showOverlay();
+}
+
+// ========== Overlay show / hide ==========
+function showOverlay() {
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+
+  clearTimeout(hideTimer);
+  hideTimer = setTimeout(() => {
+    overlay.classList.add('hidden');
+  }, 2000); // 2 seconds
 }
 
 // ========== Header Navigation ==========
 document.querySelectorAll('.nav-tile').forEach(tile => {
   tile.addEventListener('click', () => {
-    const page = tile.dataset.page;   // videos / photos
-    const cat  = tile.dataset.cat;    // home / kids / india
+    const page = tile.dataset.page;
+    const cat  = tile.dataset.cat;
 
-    // Go to Videos page
     if (page === 'videos') {
       window.location.href = 'video.html';
       return;
     }
-
-    // Go to Photos page
     if (page === 'photos') {
       window.location.href = 'photo.html';
       return;
     }
 
-    // If we are currently on video.html or photo.html → go back to index.html
     const currentPage = window.location.pathname;
     if (currentPage.includes('video.html') || currentPage.includes('photo.html')) {
-      // Save which category to open
       if (cat) localStorage.setItem('lastCat', cat);
       window.location.href = 'index.html';
       return;
     }
 
-    // Already on index.html → just switch playlist
     document.querySelectorAll('.nav-tile').forEach(t => t.classList.remove('active'));
     tile.classList.add('active');
 
@@ -138,8 +149,14 @@ document.querySelectorAll('.nav-tile').forEach(tile => {
   });
 });
 
-// ========== Keyboard support ==========
+// ========== Activity detection ==========
+function onActivity() {
+  showOverlay();
+}
+
 document.addEventListener('keydown', (e) => {
+  onActivity();
+
   if (!channels.length) return;
 
   if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
@@ -153,17 +170,19 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+document.addEventListener('mousemove', onActivity);
+document.addEventListener('click', onActivity);
+document.addEventListener('touchstart', onActivity);
+
 // ========== Start ==========
-const isLivePage = !window.location.pathname.includes('video.html') && 
+const isLivePage = !window.location.pathname.includes('video.html') &&
                    !window.location.pathname.includes('photo.html');
 
 if (isLivePage) {
-  // Load HLS only on Live TV page
   const script = document.createElement('script');
   script.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.7';
   script.onload = () => {
     const lastCat = localStorage.getItem('lastCat') || 'home';
-    // Highlight correct tile
     document.querySelectorAll('.nav-tile').forEach(t => {
       t.classList.toggle('active', t.dataset.cat === lastCat);
     });
