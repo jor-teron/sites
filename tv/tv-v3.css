@@ -22,7 +22,7 @@ html, body {
   background: rgba(255, 255, 255, 1);
   display: flex;
   z-index: 100;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  border-bottom: 1px solid rgba(0,0,0,0.12);
 }
 
 .nav-tile {
@@ -52,18 +52,13 @@ html, body {
   width: 100vw;
   height: calc(100vh - 52px);
   background: rgba(20, 20, 20, 1);
-  overflow: hidden;
 }
 
 #video {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
+  width: 100vw;
   height: 100%;
   object-fit: contain;
   background: rgba(0, 0, 0, 1);
-  z-index: 1;
 }
 
 /* ===== CHANNEL OVERLAY ===== */
@@ -73,16 +68,17 @@ html, body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(40, 40, 40, 1);
+  background: rgba(40, 40, 40, 0.6);
   z-index: 20;
   overflow-y: auto;
   overflow-x: hidden;
-  transition: transform 0.3s ease;
-  transform: translateY(0%);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .channel-overlay.hidden {
-  transform: translateY(110%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .channel-list {
@@ -95,15 +91,18 @@ html, body {
 .channel {
   width: 20%;
   min-width: 140px;
+  min-height: 72px;
   background: rgba(50, 50, 50, 1);
   color: rgba(255, 255, 255, 1);
-  padding: 8px 6px;
+  padding: 4px 3px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 16px;
   border: 10px solid transparent;
   cursor: pointer;
+  min-height: 110px;
 }
 
 .channel.active {
@@ -112,16 +111,17 @@ html, body {
 }
 
 .channel img {
-  width: 40px;
-  height: 40px;
+  width: 64px;
+  height: 64px;
   object-fit: contain;
   flex-shrink: 0;
 }
 
 .channel .num {
   min-width: 22px;
+  white-space: normal;
   font-weight: bold;
-  color: rgba(180, 180, 180, 1);
+  color: rgba(229, 9, 20, 1);
 }
 
 .channel .name {

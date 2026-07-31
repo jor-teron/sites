@@ -7,6 +7,10 @@ let currentIndex = 0;
 let hls = null;
 let hideTimer = null;
 
+// ===== Number input =====
+let numberBuffer = '';
+let numberTimer = null;
+
 // Playlist sources
 const playlists = {
   home:  'channels/home.m3u',
@@ -72,7 +76,7 @@ function renderChannels() {
     div.className = 'channel' + (i === currentIndex ? ' active' : '');
     div.innerHTML = `
       <span class="num">${i + 1}</span>
-      \( {ch.logo ? `<img src=" \){ch.logo}" onerror="this.style.display='none'">` : ''}
+      ${ch.logo ? `<img src="${ch.logo}" onerror="this.style.display='none'">` : ''}
       <span class="name">${ch.name}</span>
     `;
     div.onclick = () => playChannel(i);
@@ -88,6 +92,10 @@ function playChannel(index) {
   document.querySelectorAll('.channel').forEach((el, i) => {
     el.classList.toggle('active', i === index);
   });
+
+  // Scroll active channel into view
+  const activeEl = document.querySelector('.channel.active');
+  if (activeEl) activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 
   const ch = channels[index];
   const url = ch.url;
@@ -124,6 +132,54 @@ function showOverlay() {
   }, 2000);
 }
 
+// ===== Number input handling =====
+function handleNumberInput(num) {
+  numberBuffer += num;
+
+  // Show the number on screen (optional visual)
+  showNumberDisplay(numberBuffer);
+
+  clearTimeout(numberTimer);
+  numberTimer = setTimeout(() => {
+    const channelNum = parseInt(numberBuffer, 10);
+    numberBuffer = '';
+    hideNumberDisplay();
+
+    if (channelNum >= 1 && channelNum <= channels.length) {
+      playChannel(channelNum - 1); // because array is 0-based
+    }
+  }, 1500); // 1.5 second delay
+}
+
+// Simple number display
+function showNumberDisplay(text) {
+  let el = document.getElementById('numberDisplay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'numberDisplay';
+    el.style.cssText = `
+      position: fixed;
+      top: 45%;
+      right: 45%;
+      background: rgba(0,0,0,0.75);
+      color: white;
+      font-size: 200px;
+      font-weight: bold;
+      padding: 10px 20px;
+      border-radius: 8px;
+      z-index: 200;
+    `;
+    document.body.appendChild(el);
+  }
+  el.textContent = text;
+  el.style.display = 'block';
+}
+
+function hideNumberDisplay() {
+  const el = document.getElementById('numberDisplay');
+  if (el) el.style.display = 'none';
+}
+
 // Header clicks
 document.querySelectorAll('.nav-tile').forEach(tile => {
   tile.addEventListener('click', () => {
@@ -139,15 +195,13 @@ document.querySelectorAll('.nav-tile').forEach(tile => {
       return;
     }
 
-    // Coming from video/photo page
     if (window.location.pathname.includes('video.html') || 
         window.location.pathname.includes('photo.html')) {
       if (cat) localStorage.setItem('lastCat', cat);
-      window.location.href = 'index.html';
+      window.location.href = 'tv-v3.html';
       return;
     }
 
-    // Already on Live TV page
     document.querySelectorAll('.nav-tile').forEach(t => t.classList.remove('active'));
     tile.classList.add('active');
 
@@ -155,13 +209,19 @@ document.querySelectorAll('.nav-tile').forEach(tile => {
   });
 });
 
-// Activity detection
+// Activity + Keyboard
 function onActivity() {
   showOverlay();
 }
 
 document.addEventListener('keydown', function(e) {
   onActivity();
+
+  // Number keys (main keyboard + numpad)
+  if (/^[0-9]$/.test(e.key)) {
+    handleNumberInput(e.key);
+    return;
+  }
 
   if (!channels.length) return;
 
