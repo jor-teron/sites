@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title> TV Player </title>
+  <title>Kids</title>
   <link rel="stylesheet" href="tv-v3.css">
   <style type="text/css">
     /* Your scrollbar fix */
@@ -19,7 +19,7 @@
 <body>
 
   <main class="main-content">
-    <video id="video" autoplay playsinline></video>
+    <video id="video" playsinline></video>
 
     <div id="channelOverlay" class="channel-overlay">
       <div id="channelList" class="channel-list"></div>
@@ -36,22 +36,21 @@
 
   <script>
     async function init() {
-      // 1. Build special tiles
-      const special = SPECIAL_TILES.map(tile => ({
-        name: tile.name || `Slot ${tile.num}`,
-        logo: tile.logo || '',
-        url: '',
-        type: tile.type,
-        action: tile.action
-      }));
+      // Home tile
+      const homeTile = {
+        name: "Home",
+        logo: "../image/home.png",
+        type: "page",
+        action: "tv-v3.html"
+      };
 
-      // 2. Load normal channels
-      const normal = await loadPlaylist('channels/home.m3u');
+      // Load kids channels
+      const normal = await loadPlaylist('https://iptv-org.github.io/iptv/categories/kids.m3u');
 
-      // 3. Combine (special first, then normal)
-      channels = [...special, ...normal];
+      // Home first, then normal channels
+      channels = [homeTile, ...normal];
 
-      // 4. Render
+      // Render
       const listEl = document.getElementById('channelList');
       listEl.innerHTML = '';
 
@@ -72,7 +71,6 @@
         listEl.appendChild(div);
       });
 
-      // 5. Setup input + autoplay
       setupInput();
       startAutoplay();
       showOverlay();
@@ -82,4 +80,3 @@
   </script>
 </body>
 </html>
-
