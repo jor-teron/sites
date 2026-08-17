@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kids</title>
+  <link rel="stylesheet" href="tv-v3.css">
+  <style type="text/css">
+    /* Your scrollbar fix */
+    html {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="main-content">
+    <video id="video" playsinline></video>
+
+    <div id="channelOverlay" class="channel-overlay">
+      <div id="channelList" class="channel-list"></div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7"></script>
+  <script src="js/config.js"></script>
+  <script src="js/playlist.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/overlay.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/autoplay.js"></script>
+
+  <script>
+    async function init() {
+      // Home tile
+      const homeTile = {
+        name: "Home",
+        logo: "../image/home.png",
+        type: "page",
+        action: "tv-v3.html"
+      };
+
+      // Load kids channels
+//      const normal = await loadPlaylist('https://jor-teron.github.io/sites/tv/channels/kids.m3u');
+      const normal = await loadPlaylist('./channels/kids.m3u');
+
+      // Home first, then normal channels
+      channels = [homeTile, ...normal];
+
+      // Render
+      const listEl = document.getElementById('channelList');
+      listEl.innerHTML = '';
+
+      channels.forEach((ch, i) => {
+        const div = document.createElement('div');
+        div.className = 'channel';
+        div.innerHTML = `
+          <span class="num">${i + 1}</span>
+          ${ch.logo ? `<img src="${ch.logo}" onerror="this.style.display='none'">` : ''}
+          <span class="name">${ch.name}</span>
+        `;
+        div.onclick = () => {
+          currentIndex = i;
+          updateActiveTile();
+          playChannel(i);
+          showOverlay();
+        };
+        listEl.appendChild(div);
+      });
+
+      setupInput();
+      startAutoplay();
+      showOverlay();
+    }
+
+    init();
+  </script>
+</body>
+</html>
