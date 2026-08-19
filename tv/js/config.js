@@ -8,30 +8,31 @@ const SPECIAL_TILES = [
   },
   {
     num: 2,
+    name: "YouTube Kids",
+    type: "app",
+    action: "intent://com.google.android.apps.youtube.kids/#Intent;scheme=android-app;end",
+    logo: "../image/youtube-kids.png"
+  },
+  {
+    num: 3,
     name: "Kids",
     type: "page",
     action: "kids-mini.html",
     logo: "../image/golf.png"
   },
   {
-    num: 3,
-    name: "Kids (All)",
-    type: "page",
-    action: "kids.html",
-    logo: "../image/chase.png"
-  },
-  {
     num: 4,
-    name: "India",
-    type: "page",
-    action: "india.html",
-    logo: "../image/india.png"
+    name: "MX Player",
+    type: "app",
+    action: "intent://com.mxtech.videoplayer.ad/#Intent;scheme=android-app;end",
+    logo: "../image/play.png"
+  
   },
   {
     num: 5,
-    name: "More",
+    name: "More . . .",
     type: "page",
     action: "tv-v3-more.html",
-    logo: "../image/menu.png"
+    logo: "../image/arrow_blue.png"
   }
 ];
