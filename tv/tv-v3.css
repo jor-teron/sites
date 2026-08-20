@@ -75,10 +75,10 @@ html, body {
 
 .channel {
   width: 20%;
-  min-width: 140px;
+  min-width: 105px;
   background: rgba(50, 50, 50, 1);
   color: rgba(255, 255, 255, 1);
-  padding: 8px 6px;
+  padding: 4px 2px;
   display: flex;
   flex-direction: column;      /* vertical layout */
   align-items: center;
