@@ -133,11 +133,51 @@
     margin-bottom: 6px;
     color: #e5e7eb;
   }
+
+details summary {
+  font-size: 15px;
+  font-weight: 600;
+  color: #f3f4f6;
+  cursor: pointer;
+  list-style: none;
+  background: #171a21;
+  border: 4px solid #262a33;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+details summary::-webkit-details-marker {
+  display: none;
+}
+details summary::after {
+  content: "▸";
+  color: #3b82f6;
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+details[open] summary::after {
+  transform: rotate(90deg);
+}
+details[open] summary {
+  border-radius: 8px 8px 0 0;
+  border-bottom: none;
+}
+details .details-content {
+  background: #12151b;
+  border: 1px solid #262a33;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 16px;
+}
+
 </style>
 </head>
 <body>
 
-  <h1>Can't Open YouTube ?</h1>
+  <h1><u>Can't Open YouTube ?</u></h1>
   <div class="intro">
 		<br /> Certain websites (including YouTube) are blocked on this network <!-- at the DNS level-->. 
     <br /><br />
@@ -154,7 +194,7 @@
 -->
 <br />
 
-<h1>How to Fix It</h1>
+<h1><u>How to Fix It</u></h1>
 <p>
 The fix is simple - set a different DNS server on the device.
 </p>
@@ -169,24 +209,8 @@ The fix is simple - set a different DNS server on the device.
     <li>Tap <strong>"Save"</strong></li>
   </ol>
 
-  <table>
-    <tr>
-      <th>Provider</th>
-      <th>Hostname to enter</th>
-    </tr>
-    <tr>
-      <td>Google </td>
-      <td><code>dns.google</code></td>
-    </tr>
-    <tr>
-      <td>AdGuard </td>
-      <td><code>family.adguard.com</code></td>
-    </tr>
-    <tr>
-      <td>Cloudflare </td>
-      <td><code>1dot1dot1dot1.cloudflare-dns.com</code></td>
-    </tr>
-  </table>
+  <div class="done">That's it. ✅</div>
+
 <!--
   <div class="note" style="margin-bottom: 20px; font-style:italic;">
     Private DNS only accepts a domain name, not a numeric address — the hostnames above correspond to the
@@ -194,10 +218,13 @@ The fix is simple - set a different DNS server on the device.
   </div>
 -->
 <br />
-  <h2>Method 2 — Per-network DNS (alternative)</h2>
+<details>
+  <summary>Method 2 — Per-network DNS (alternative)</summary>
+<!--
   <p class="what-is">
     Some devices allow setting DNS per WiFi network instead, using numeric addresses directly.
   </p>
+-->
   <ol class="steps">
     <li>Open <strong>Settings → Network &amp; Internet → Wi-Fi</strong></li>
     <li>Tap <strong>"Modify network"</strong> → <strong>Advanced options</strong> </li>
@@ -226,17 +253,37 @@ The fix is simple - set a different DNS server on the device.
     </li>
     <li>Save and reconnect</li>
   </ol>
+</details>
 
 <br />
-  <div class="done">That's it. ✅</div>
-
+<!--
   <h2>Quick Troubleshooting</h2>
+  <table>
+    <tr>
+      <th>Provider</th>
+      <th>Hostname to enter</th>
+    </tr>
+    <tr>
+      <td>Google </td>
+      <td><code>dns.google</code></td>
+    </tr>
+    <tr>
+      <td>AdGuard </td>
+      <td><code>family.adguard.com</code></td>
+    </tr>
+    <tr>
+      <td>Cloudflare </td>
+      <td><code>1dot1dot1dot1.cloudflare-dns.com</code></td>
+    </tr>
+  </table>
   <div class="troubleshoot">
     <ul>
       <li><strong>Don't see "Private DNS"?</strong> Search "Private DNS" in the Settings search bar.</li>
       <li><strong>Still not working?</strong> Try switching between Cloudflare and Google.</li>
     </ul>
   </div>
+
+-->
 
 </body>
 </html>
