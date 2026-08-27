@@ -139,11 +139,10 @@
 
   <h1>Can't Open YouTube ?</h1>
   <div class="intro">
-    Certain websites (including YouTube) are blocked on this network at the DNS level. 
+		<br /> Certain websites (including YouTube) are blocked on this network <!-- at the DNS level-->. 
     <br /><br />
-    Switching to a
-    different DNS server — such as Google (<code>8.8.8.8</code>) or Cloudflare (<code>1.1.1.1</code>) —
-    can restore access to them.
+<!--    Switching to a different DNS server - such as <b>Google</b> or <b>Cloudflare</b> - can restore access to them.
+-->
   </div>
 
 <!--
@@ -153,17 +152,20 @@
     address it can connect to. Pointing to a different DNS server changes where that translation happens.
   </p>
 -->
+<br />
 
-  <h2>Method 1 — Private DNS (recommended)</h2>
+<h1>How to Fix It</h1>
+<p>
+The fix is simple - set a different DNS server on the device.
+</p>
+
+  <h2>Method 1 - Private DNS (recommended)</h2>
   <ol class="steps">
-    <li>Open <strong>Settings</strong>.</li>
-    <li>Tap <strong>"Network &amp; Internet"</strong></li>
-    <li>
-      Tap <strong>"Private DNS"</strong>
+    <li>Open <strong>Settings</strong> → <strong>Network &amp; Internet</strong> → <strong>Private DNS</strong>
       <div class="note">If not visible, check under "Advanced" first</div>
     </li>
     <li>Select <strong>"Private DNS provider hostname"</strong></li>
-    <li>Enter one hostname from the table below</li>
+    <li>Enter <code>dns.google</code> <br />or one hostname from the table below. </li>
     <li>Tap <strong>"Save"</strong></li>
   </ol>
 
@@ -173,53 +175,59 @@
       <th>Hostname to enter</th>
     </tr>
     <tr>
-      <td>Google (8.8.8.8)</td>
+      <td>Google </td>
       <td><code>dns.google</code></td>
     </tr>
     <tr>
-      <td>Cloudflare (1.1.1.1)</td>
+      <td>AdGuard </td>
+      <td><code>family.adguard.com</code></td>
+    </tr>
+    <tr>
+      <td>Cloudflare </td>
       <td><code>1dot1dot1dot1.cloudflare-dns.com</code></td>
     </tr>
   </table>
-
-  <div class="note" style="margin-bottom: 20px;">
+<!--
+  <div class="note" style="margin-bottom: 20px; font-style:italic;">
     Private DNS only accepts a domain name, not a numeric address — the hostnames above correspond to the
     IPs shown in brackets.
   </div>
-
+-->
+<br />
   <h2>Method 2 — Per-network DNS (alternative)</h2>
   <p class="what-is">
     Some devices allow setting DNS per WiFi network instead, using numeric addresses directly.
   </p>
   <ol class="steps">
     <li>Open <strong>Settings → Network &amp; Internet → Wi-Fi</strong></li>
-    <li>Long-press the connected network, tap <strong>"Modify network"</strong></li>
-    <li>Expand <strong>"Advanced options"</strong></li>
+    <li>Tap <strong>"Modify network"</strong> → <strong>Advanced options</strong> </li>
+
     <li>Set <strong>IP settings</strong> to <strong>"Static"</strong></li>
     <li>
       Fill in the following fields:
       <div class="note">
-        IP address: any unused address between <code>10.10.10.101</code> to <code>10.10.10.150</code><br>
+        IP address: any unused address between <code>10.10.10.101</code> to <code>10.10.10.200</code><br>
         Gateway: <code>10.10.10.1</code><br>
 <!--        Network prefix length: <code>24</code><br>	-->
-        IP mask: <code>255.255.255.0</code>
+        Subnet mask: <code>255.255.255.0</code>
       </div>
-    </li>
-    <li>
+<br />
       Fill in the DNS fields:
       <div class="note">
         Cloudflare — Primary DNS: <code>1.1.1.1</code>, Secondary DNS: <code>1.0.0.1</code>
         <br>
         Google — Primary DNS: <code>8.8.8.8</code>, Secondary DNS: <code>8.8.4.4</code>
       </div>
+<br />
+  <div class="note" style="margin-bottom: 0px; font-style:italic;">
+    (Two devices cannot use the same IP address at the same time — if the connection fails, try a different
+    number within the range.)
+  </div>
     </li>
     <li>Save and reconnect</li>
   </ol>
-  <div class="note" style="margin-bottom: 20px;">
-    Two devices cannot use the same IP address at the same time — if the connection fails, try a different
-    number within the range.
-  </div>
 
+<br />
   <div class="done">That's it. ✅</div>
 
   <h2>Quick Troubleshooting</h2>
