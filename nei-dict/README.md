@@ -1,10 +1,10 @@
-# nei-dict (draft)
+# nei-dict
 
-Draft folder for a static Northeast India dictionary front-end on GitHub Pages.
+Northeast India dictionary front-end (under `jor-teron/sites`).
 
-- **Stack:** HTML + CSS + JS only (no PHP)
-- **Data:** [XOBDO](https://xobdo.org) via their public API (not a self-hosted dump in v1)
-- **Planned v1 languages:** English, Karbi, Dimasa, Hmar, Meeteilon, Mizo, Nagamese, Khasi, Kok-Borok, Singpho, Nepali
-- **Deferred:** Assamese (script / input constraints) → v2 or special mode later
+- **Stack:** `index.html`, `about.html`, `dict.css`, `dict.js` (no PHP)
+- **Data:** [XOBDO](https://xobdo.org) public API
+- **v1 languages:** English, Karbi, Dimasa, Hmar, Meeteilon, Mizo, Nagamese, Khasi, Kok-Borok, Singpho, Nepali
+- **Deferred:** Assamese → v2 / special mode
 
-This folder is a scratch draft under `jor-teron/sites`. A dedicated org (`nei-dict`) may host the public site later.
+Open `nei-dict/index.html` via GitHub Pages or any static server.
