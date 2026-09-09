@@ -1,19 +1,22 @@
 :root {
-  --bg: #f7f5f0;
-  --fg: #1a1a1a;
-  --muted: #5c5c5c;
-  --card: #fff;
-  --line: #ddd6c8;
-  --accent: #0b5fff;
-  --exact-border: #1a1a1a;
-  --fuzzy-bg: #f0ebe3;
-  --fuzzy-border: #b8a990;
+  --bg: #12141a;
+  --fg: #e8eaed;
+  --muted: #9aa0a6;
+  --card: #1c1f28;
+  --line: #2a2f3a;
+  --accent: #7aa2ff;
+  --exact-border: #e8eaed;
+  --fuzzy-bg: #181b24;
+  --fuzzy-border: #5c6578;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   background: var(--bg);
   color: var(--fg);
@@ -24,15 +27,14 @@ body {
 .site-footer,
 main {
   max-width: 52rem;
+  width: 100%;
   margin: 0 auto;
   padding: 1rem 1.25rem;
 }
 
+main { flex: 1; }
+
 .site-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
   border-bottom: 1px solid var(--line);
 }
 
@@ -40,14 +42,6 @@ main {
   margin: 0;
   font-size: 1.4rem;
 }
-
-nav a {
-  margin-left: 0.75rem;
-  color: var(--accent);
-  text-decoration: none;
-}
-
-nav a:hover { text-decoration: underline; }
 
 .search-panel {
   background: var(--card);
@@ -66,7 +60,11 @@ label { font-weight: 600; }
   font-size: 1rem;
   border: 1px solid var(--line);
   border-radius: 8px;
+  background: #0e1016;
+  color: var(--fg);
 }
+
+#q::placeholder { color: var(--muted); }
 
 .langs {
   border: 0;
@@ -88,8 +86,9 @@ button#go {
   border: 0;
   border-radius: 8px;
   background: var(--accent);
-  color: #fff;
+  color: #0b1020;
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -107,6 +106,7 @@ button#go {
   font-size: 0.95rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  color: var(--muted);
 }
 
 .block-exact {
@@ -148,10 +148,33 @@ button#go {
 }
 
 .site-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+
+.footer-nav {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.footer-nav a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.footer-nav a:hover { text-decoration: underline; }
+
+.credit {
+  margin: 0;
   color: var(--muted);
   font-size: 0.9rem;
-  border-top: 1px solid var(--line);
 }
+
+.credit a { color: var(--accent); }
 
 .about-table {
   width: 100%;
@@ -168,4 +191,10 @@ button#go {
   border-bottom: 1px solid var(--line);
 }
 
-.about-table th { width: 9rem; background: #efe9dc; }
+.about-table th {
+  width: 9rem;
+  background: #252a36;
+  color: var(--muted);
+}
+
+.about-table a { color: var(--accent); }
