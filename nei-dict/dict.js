@@ -1,8 +1,8 @@
 /* nei-dict — XOBDO-backed search */
 (function () {
   const API = "https://xobdo.org/2025-web/api/wordsalpha.php";
+  const FUZZY_LIMIT = 10;
 
-  // v1 languages (Assamese deferred)
   const LANGS = [
     { id: 1, name: "English", script: "latin" },
     { id: 10, name: "Karbi", script: "latin" },
@@ -33,7 +33,6 @@
     cb.type = "checkbox";
     cb.id = id;
     cb.value = String(lang.id);
-    // skip English by default — large + some letter buckets break on XOBDO
     cb.checked = lang.id !== 1 && i < 5;
     label.appendChild(cb);
     label.appendChild(document.createTextNode(" " + lang.name));
@@ -43,24 +42,31 @@
   function selectedLangs() {
     return Array.from(langsEl.querySelectorAll("input:checked")).map((el) => {
       const meta = LANGS.find((l) => String(l.id) === el.value);
-      return { id: el.value, name: meta?.name || el.value, script: meta?.script || "latin" };
+      return {
+        id: el.value,
+        name: meta?.name || el.value,
+        script: meta?.script || "latin",
+      };
     });
   }
 
-  function matchWord(word, q) {
-    const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-    return re.test(word);
+  function friendlyPos(w) {
+    return (w.posDesc || w.pos || "").trim() || "—";
   }
 
-  /** Prefix window from the query itself — avoids XOBDO empty responses on huge letter buckets (English c/d/h/m/n/p/r). */
-  function rangeForQuery(q, script) {
-    const t = q.trim();
-    if (script === "deva") {
-      const ch = t[0] || "अ";
-      return { start: ch, end: ch + "\uffff" };
-    }
-    const prefix = t.toLowerCase();
-    return { start: prefix, end: prefix + "zzzz" };
+  function meaningText(w) {
+    return (
+      (w.meanings || [])
+        .map((m) => (m.text || "").trim())
+        .filter(Boolean)
+        .join(" · ") || "—"
+    );
+  }
+
+  /** Same start & end keyword — tight, fast response. */
+  function rangeForQuery(q) {
+    const key = q.trim();
+    return { start: key, end: key };
   }
 
   async function fetchRange(langId, start, end) {
@@ -72,14 +78,57 @@
     const res = await fetch(url.toString());
     if (!res.ok) throw new Error("HTTP " + res.status);
     const text = (await res.text()).trim();
-    if (!text) return []; // XOBDO sometimes returns a blank body with HTTP 200
+    if (!text) return [];
     let data;
     try {
       data = JSON.parse(text);
     } catch (e) {
-      throw new Error("Bad JSON from XOBDO (empty or truncated response)");
+      throw new Error("Bad JSON from XOBDO");
     }
     return data?.data?.words || [];
+  }
+
+  function classify(word, q) {
+    const w = (word || "").toLowerCase();
+    const query = q.toLowerCase();
+    if (w === query) return "exact";
+    if (w.startsWith(query) || w.includes(query)) return "fuzzy";
+    return null;
+  }
+
+  function renderItem(r) {
+    const li = document.createElement("li");
+    li.className = "entry";
+
+    const word = document.createElement("div");
+    word.className = "entry-word";
+    word.textContent = r.word;
+
+    const meta = document.createElement("div");
+    meta.className = "entry-grammar";
+    meta.textContent = r.lang + " · " + r.pos;
+
+    const meaning = document.createElement("div");
+    meaning.className = "entry-meaning";
+    meaning.textContent = r.meaning;
+
+    li.appendChild(word);
+    li.appendChild(meta);
+    li.appendChild(meaning);
+    return li;
+  }
+
+  function renderBlock(title, className, rows) {
+    const section = document.createElement("section");
+    section.className = "result-block " + className;
+    const h = document.createElement("h2");
+    h.textContent = title;
+    section.appendChild(h);
+    const ul = document.createElement("ul");
+    ul.className = "entry-list";
+    rows.forEach((r) => ul.appendChild(renderItem(r)));
+    section.appendChild(ul);
+    return section;
   }
 
   async function search() {
@@ -96,57 +145,59 @@
     }
 
     statusEl.textContent = "Searching…";
-    const rows = [];
+    const exact = [];
+    const fuzzy = [];
     const errors = [];
+    const seen = new Set();
+    const { start, end } = rangeForQuery(q);
 
     for (const lang of langs) {
-      const { start, end } = rangeForQuery(q, lang.script);
       try {
         const words = await fetchRange(lang.id, start, end);
         for (const w of words) {
-          if (!matchWord(w.word || "", q)) continue;
-          const meanings = (w.meanings || [])
-            .map((m) => (m.text || "").trim())
-            .filter(Boolean);
-          rows.push({
+          const kind = classify(w.word || "", q);
+          if (!kind) continue;
+          const key = lang.id + "|" + (w.word || "").toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const row = {
             word: w.word,
             lang: lang.name,
-            pos: w.pos || "",
-            meaning: meanings.join(" · ") || "—",
-          });
+            pos: friendlyPos(w),
+            meaning: meaningText(w),
+          };
+          if (kind === "exact") exact.push(row);
+          else fuzzy.push(row);
         }
       } catch (err) {
         errors.push(lang.name + ": " + (err.message || err));
       }
     }
 
-    if (!rows.length) {
+    const fuzzyShown = fuzzy.slice(0, FUZZY_LIMIT);
+
+    if (!exact.length && !fuzzyShown.length) {
       statusEl.textContent = errors.length
         ? "No hits. " + errors.join(" · ")
-        : "No matches for that prefix.";
+        : "No matches.";
       return;
     }
 
     statusEl.textContent =
-      rows.length +
-      " result(s)" +
-      (errors.length ? " · some languages failed: " + errors.join(" · ") : "");
+      exact.length +
+      " exact, " +
+      fuzzyShown.length +
+      " similar" +
+      (errors.length ? " · " + errors.join(" · ") : "");
 
-    const table = document.createElement("table");
-    table.innerHTML =
-      "<thead><tr><th>Word</th><th>Language</th><th>POS</th><th>Meaning</th></tr></thead>";
-    const tbody = document.createElement("tbody");
-    rows.forEach((r) => {
-      const tr = document.createElement("tr");
-      for (let i = 0; i < 4; i++) tr.appendChild(document.createElement("td"));
-      tr.children[0].textContent = r.word;
-      tr.children[1].textContent = r.lang;
-      tr.children[2].textContent = r.pos;
-      tr.children[3].textContent = r.meaning;
-      tbody.appendChild(tr);
-    });
-    table.appendChild(tbody);
-    resultsEl.appendChild(table);
+    if (exact.length) {
+      resultsEl.appendChild(renderBlock("Exact", "block-exact", exact));
+    }
+    if (fuzzyShown.length) {
+      resultsEl.appendChild(
+        renderBlock("Similar", "block-fuzzy", fuzzyShown)
+      );
+    }
   }
 
   goEl?.addEventListener("click", search);
