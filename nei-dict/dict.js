@@ -26,13 +26,16 @@
 
   if (!langEl) return;
 
-  LANGS.forEach((lang) => {
-    const opt = document.createElement("option");
-    opt.value = String(lang.id);
-    opt.textContent = lang.name;
-    if (lang.id === 1) opt.selected = true;
-    langEl.appendChild(opt);
-  });
+  // Options live in index.html; only fill if the select is empty
+  if (!langEl.options.length) {
+    LANGS.forEach((lang) => {
+      const opt = document.createElement("option");
+      opt.value = String(lang.id);
+      opt.textContent = lang.name;
+      if (lang.id === 1) opt.selected = true;
+      langEl.appendChild(opt);
+    });
+  }
 
   function selectedLangs() {
     const id = langEl.value;
