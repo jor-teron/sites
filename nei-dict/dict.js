@@ -1,56 +1,44 @@
-/* nei-dict — XOBDO-backed search */
+/* nei-dict — XOBDO-backed search (API version) */
 (function () {
   const API = "https://xobdo.org/2025-web/api/wordsalpha.php";
   const FUZZY_LIMIT = 10;
 
+  // Display / search order
   const LANGS = [
     { id: 1, name: "English", script: "latin" },
-    { id: 10, name: "Karbi", script: "latin" },
-    { id: 15, name: "Dimasa", script: "latin" },
-    { id: 13, name: "Hmar", script: "latin" },
-    { id: 7, name: "Meeteilon", script: "latin" },
-    { id: 9, name: "Mizo", script: "latin" },
     { id: 14, name: "Nagamese", script: "latin" },
     { id: 5, name: "Khasi", script: "latin" },
+    { id: 9, name: "Mizo", script: "latin" },
+    { id: 23, name: "Nepali", script: "deva" },
+    { id: 10, name: "Karbi", script: "latin" },
+    { id: 15, name: "Dimasa", script: "latin" },
+    { id: 7, name: "Meeteilon", script: "latin" },
+    { id: 13, name: "Hmar", script: "latin" },
     { id: 12, name: "Kok-Borok", script: "latin" },
     { id: 37, name: "Singpho", script: "latin" },
-    { id: 23, name: "Nepali", script: "deva" },
   ];
 
-  const langsEl = document.getElementById("langs");
+  const langEl = document.getElementById("lang");
   const qEl = document.getElementById("q");
   const goEl = document.getElementById("go");
   const statusEl = document.getElementById("status");
   const resultsEl = document.getElementById("results");
 
-  if (!langsEl) return;
+  if (!langEl) return;
 
   LANGS.forEach((lang) => {
-    const id = "lang-" + lang.id;
-    const label = document.createElement("label");
-    label.htmlFor = id;
-    const rb = document.createElement("input");
-    rb.type = "radio";
-    rb.name = "lang";
-    rb.id = id;
-    rb.value = String(lang.id);
-    rb.checked = lang.id === 1; // English default
-    label.appendChild(rb);
-    label.appendChild(document.createTextNode(" " + lang.name));
-    langsEl.appendChild(label);
+    const opt = document.createElement("option");
+    opt.value = String(lang.id);
+    opt.textContent = lang.name;
+    if (lang.id === 1) opt.selected = true;
+    langEl.appendChild(opt);
   });
 
   function selectedLangs() {
-    const el = langsEl.querySelector("input[name=lang]:checked");
-    if (!el) return [];
-    const meta = LANGS.find((l) => String(l.id) === el.value);
-    return [
-      {
-        id: el.value,
-        name: meta?.name || el.value,
-        script: meta?.script || "latin",
-      },
-    ];
+    const id = langEl.value;
+    const meta = LANGS.find((l) => String(l.id) === id);
+    if (!meta) return [];
+    return [{ id: String(meta.id), name: meta.name, script: meta.script || "latin" }];
   }
 
   function friendlyPos(w) {
@@ -197,9 +185,7 @@
       resultsEl.appendChild(renderBlock("Exact", "block-exact", exact));
     }
     if (fuzzyShown.length) {
-      resultsEl.appendChild(
-        renderBlock("Similar", "block-fuzzy", fuzzyShown)
-      );
+      resultsEl.appendChild(renderBlock("Similar", "block-fuzzy", fuzzyShown));
     }
   }
 
