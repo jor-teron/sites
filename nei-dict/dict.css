@@ -52,7 +52,33 @@ main { flex: 1; }
   gap: 0.75rem;
 }
 
-label { font-weight: 600; }
+.search-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.search-row > label[for="q"] {
+  font-weight: 600;
+  margin-right: auto;
+}
+
+.lang-label {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+#lang {
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #0e1016;
+  color: var(--fg);
+  font-size: 0.95rem;
+  max-width: 12rem;
+}
 
 #q {
   width: 100%;
@@ -65,20 +91,6 @@ label { font-weight: 600; }
 }
 
 #q::placeholder { color: var(--muted); }
-
-.langs {
-  border: 0;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 0.85rem;
-}
-
-.langs label {
-  font-weight: 500;
-  font-size: 0.95rem;
-}
 
 button#go {
   justify-self: start;
@@ -157,7 +169,6 @@ button#go {
   display: flex;
   justify-content: center;
   gap: 1.25rem;
-  margin-bottom: 0.5rem;
 }
 
 .footer-nav a {
@@ -167,14 +178,6 @@ button#go {
 }
 
 .footer-nav a:hover { text-decoration: underline; }
-
-.credit {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.credit a { color: var(--accent); }
 
 .about-table {
   width: 100%;
