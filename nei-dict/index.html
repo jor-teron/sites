@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>nei-dict</title>
+  <link rel="stylesheet" href="dict.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>nei-dict</h1>
+    <nav>
+      <a href="index.html">Search</a>
+      <a href="about.html">About</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="search-panel">
+      <label for="q">Search</label>
+      <input id="q" type="search" placeholder="Type a word…" autocomplete="off" />
+      <fieldset class="langs" id="langs"></fieldset>
+      <button type="button" id="go">Search</button>
+    </section>
+    <section id="status" class="status" aria-live="polite"></section>
+    <section id="results" class="results"></section>
+  </main>
+
+  <footer class="site-footer">
+    Word data from <a href="https://xobdo.org" rel="noopener">XOBDO</a>
+  </footer>
+
+  <script src="dict.js"></script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+:root {
+  --bg: #f7f5f0;
+  --fg: #1a1a1a;
+  --muted: #5c5c5c;
+  --card: #fff;
+  --line: #ddd6c8;
+  --accent: #0b5fff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.45;
+}
+
+.site-header,
+.site-footer,
+main {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 1rem 1.25rem;
+}
+
+.site-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.site-header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+nav a {
+  margin-left: 0.75rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+nav a:hover { text-decoration: underline; }
+
+.search-panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+label { font-weight: 600; }
+
+#q {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.langs {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.85rem;
+}
+
+.langs label {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+button#go {
+  justify-self: start;
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.status { color: var(--muted); min-height: 1.25rem; }
+
+.results table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.results th,
+.results td {
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.results th { background: #efe9dc; font-size: 0.9rem; }
+
+.site-footer {
+  color: var(--muted);
+  font-size: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.about-table {
+  width: 100%;
+  max-width: 36rem;
+  border-collapse: collapse;
+  background: var(--card);
+  border: 1px solid var(--line);
+}
+
+.about-table th,
+.about-table td {
+  text-align: left;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.about-table th { width: 9rem; background: #efe9dc; }
