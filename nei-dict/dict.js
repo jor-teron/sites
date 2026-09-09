@@ -25,29 +25,32 @@
 
   if (!langsEl) return;
 
-  LANGS.forEach((lang, i) => {
+  LANGS.forEach((lang) => {
     const id = "lang-" + lang.id;
     const label = document.createElement("label");
     label.htmlFor = id;
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.id = id;
-    cb.value = String(lang.id);
-    cb.checked = lang.id !== 1 && i < 5;
-    label.appendChild(cb);
+    const rb = document.createElement("input");
+    rb.type = "radio";
+    rb.name = "lang";
+    rb.id = id;
+    rb.value = String(lang.id);
+    rb.checked = lang.id === 1; // English default
+    label.appendChild(rb);
     label.appendChild(document.createTextNode(" " + lang.name));
     langsEl.appendChild(label);
   });
 
   function selectedLangs() {
-    return Array.from(langsEl.querySelectorAll("input:checked")).map((el) => {
-      const meta = LANGS.find((l) => String(l.id) === el.value);
-      return {
+    const el = langsEl.querySelector("input[name=lang]:checked");
+    if (!el) return [];
+    const meta = LANGS.find((l) => String(l.id) === el.value);
+    return [
+      {
         id: el.value,
         name: meta?.name || el.value,
         script: meta?.script || "latin",
-      };
-    });
+      },
+    ];
   }
 
   function friendlyPos(w) {
@@ -140,7 +143,7 @@
       return;
     }
     if (!langs.length) {
-      statusEl.textContent = "Pick at least one language.";
+      statusEl.textContent = "Pick a language.";
       return;
     }
 
