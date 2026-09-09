@@ -15,7 +15,7 @@
     { id: 5, name: "Khasi" },
     { id: 12, name: "Kok-Borok" },
     { id: 37, name: "Singpho" },
-    { id: 23, name: "Nepali" },
+    { id: 23, name: "Nepali" }
   ];
 
   const langsEl = document.getElementById("langs");
