@@ -13,9 +13,12 @@
 
   <main>
     <section class="search-panel">
-      <label for="q">Search</label>
+      <div class="search-row">
+        <label for="q">Search</label>
+        <label class="lang-label" for="lang">Language</label>
+        <select id="lang" aria-label="Language"></select>
+      </div>
       <input id="q" type="search" placeholder="Type a word…" autocomplete="off" />
-      <fieldset class="langs" id="langs"></fieldset>
       <button type="button" id="go">Search</button>
     </section>
     <section id="status" class="status" aria-live="polite"></section>
@@ -27,7 +30,6 @@
       <a href="index.html">Search</a>
       <a href="about.html">About</a>
     </nav>
-    <p class="credit">Word data from <a href="https://xobdo.org" rel="noopener">XOBDO</a></p>
   </footer>
 
   <script src="dict.js"></script>
