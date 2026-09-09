@@ -5,6 +5,9 @@
   --card: #fff;
   --line: #ddd6c8;
   --accent: #0b5fff;
+  --exact-border: #1a1a1a;
+  --fuzzy-bg: #f0ebe3;
+  --fuzzy-border: #b8a990;
 }
 
 * { box-sizing: border-box; }
@@ -92,24 +95,57 @@ button#go {
 
 .status { color: var(--muted); min-height: 1.25rem; }
 
-.results table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--card);
-  border: 1px solid var(--line);
+.result-block {
+  margin: 1rem 0 1.25rem;
+  padding: 0.85rem 1rem 1rem;
   border-radius: 10px;
-  overflow: hidden;
+  background: var(--card);
 }
 
-.results th,
-.results td {
-  text-align: left;
-  padding: 0.55rem 0.7rem;
+.result-block h2 {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.block-exact {
+  border: 2px solid var(--exact-border);
+}
+
+.block-fuzzy {
+  border: 1px dashed var(--fuzzy-border);
+  background: var(--fuzzy-bg);
+}
+
+.entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.entry {
+  padding: 0.65rem 0;
   border-bottom: 1px solid var(--line);
-  vertical-align: top;
 }
 
-.results th { background: #efe9dc; font-size: 0.9rem; }
+.entry:last-child { border-bottom: 0; }
+
+.entry-word {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.entry-grammar {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--muted);
+  margin: 0.15rem 0 0.25rem;
+}
+
+.entry-meaning {
+  font-size: 0.98rem;
+}
 
 .site-footer {
   color: var(--muted);
