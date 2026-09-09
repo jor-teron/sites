@@ -1,21 +1,20 @@
-/* nei-dict — minimal XOBDO-backed search scaffold */
+/* nei-dict — XOBDO-backed search */
 (function () {
-  const API =
-    "https://xobdo.org/2025-web/api/wordsalpha.php";
+  const API = "https://xobdo.org/2025-web/api/wordsalpha.php";
 
   // v1 languages (Assamese deferred)
   const LANGS = [
-    { id: 1, name: "English" },
-    { id: 10, name: "Karbi" },
-    { id: 15, name: "Dimasa" },
-    { id: 13, name: "Hmar" },
-    { id: 7, name: "Meeteilon" },
-    { id: 9, name: "Mizo" },
-    { id: 14, name: "Nagamese" },
-    { id: 5, name: "Khasi" },
-    { id: 12, name: "Kok-Borok" },
-    { id: 37, name: "Singpho" },
-    { id: 23, name: "Nepali" }
+    { id: 1, name: "English", script: "latin" },
+    { id: 10, name: "Karbi", script: "latin" },
+    { id: 15, name: "Dimasa", script: "latin" },
+    { id: 13, name: "Hmar", script: "latin" },
+    { id: 7, name: "Meeteilon", script: "latin" },
+    { id: 9, name: "Mizo", script: "latin" },
+    { id: 14, name: "Nagamese", script: "latin" },
+    { id: 5, name: "Khasi", script: "latin" },
+    { id: 12, name: "Kok-Borok", script: "latin" },
+    { id: 37, name: "Singpho", script: "latin" },
+    { id: 23, name: "Nepali", script: "deva" },
   ];
 
   const langsEl = document.getElementById("langs");
@@ -34,23 +33,34 @@
     cb.type = "checkbox";
     cb.id = id;
     cb.value = String(lang.id);
-    cb.checked = i < 4; // a few on by default
+    // skip English by default — large + some letter buckets break on XOBDO
+    cb.checked = lang.id !== 1 && i < 5;
     label.appendChild(cb);
     label.appendChild(document.createTextNode(" " + lang.name));
     langsEl.appendChild(label);
   });
 
   function selectedLangs() {
-    return Array.from(langsEl.querySelectorAll("input:checked")).map((el) => ({
-      id: el.value,
-      name: LANGS.find((l) => String(l.id) === el.value)?.name || el.value,
-    }));
+    return Array.from(langsEl.querySelectorAll("input:checked")).map((el) => {
+      const meta = LANGS.find((l) => String(l.id) === el.value);
+      return { id: el.value, name: meta?.name || el.value, script: meta?.script || "latin" };
+    });
   }
 
-  // Tiny escape for RegExp (2-liner core)
   function matchWord(word, q) {
     const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
     return re.test(word);
+  }
+
+  /** Prefix window from the query itself — avoids XOBDO empty responses on huge letter buckets (English c/d/h/m/n/p/r). */
+  function rangeForQuery(q, script) {
+    const t = q.trim();
+    if (script === "deva") {
+      const ch = t[0] || "अ";
+      return { start: ch, end: ch + "\uffff" };
+    }
+    const prefix = t.toLowerCase();
+    return { start: prefix, end: prefix + "zzzz" };
   }
 
   async function fetchRange(langId, start, end) {
@@ -61,16 +71,15 @@
     url.searchParams.set("p", "0");
     const res = await fetch(url.toString());
     if (!res.ok) throw new Error("HTTP " + res.status);
-    const data = await res.json();
+    const text = (await res.text()).trim();
+    if (!text) return []; // XOBDO sometimes returns a blank body with HTTP 200
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      throw new Error("Bad JSON from XOBDO (empty or truncated response)");
+    }
     return data?.data?.words || [];
-  }
-
-  // First-letter window keeps payloads small for Latin-script langs
-  function rangeForQuery(q) {
-    const ch = (q.trim()[0] || "a").toLowerCase();
-    if (/[a-z]/.test(ch)) return { start: ch, end: ch + "zzzz" };
-    // non-Latin (e.g. Nepali): broader script-ish window using the char itself
-    return { start: ch, end: ch + "\uffff" };
   }
 
   async function search() {
@@ -87,11 +96,12 @@
     }
 
     statusEl.textContent = "Searching…";
-    const { start, end } = rangeForQuery(q);
     const rows = [];
+    const errors = [];
 
-    try {
-      for (const lang of langs) {
+    for (const lang of langs) {
+      const { start, end } = rangeForQuery(q, lang.script);
+      try {
         const words = await fetchRange(lang.id, start, end);
         for (const w of words) {
           if (!matchWord(w.word || "", q)) continue;
@@ -105,26 +115,30 @@
             meaning: meanings.join(" · ") || "—",
           });
         }
+      } catch (err) {
+        errors.push(lang.name + ": " + (err.message || err));
       }
-    } catch (err) {
-      statusEl.textContent = "Search failed: " + (err.message || err);
-      return;
     }
 
     if (!rows.length) {
-      statusEl.textContent = "No exact/regex hits in the loaded range. (Fuzzy suggestions come next.)";
+      statusEl.textContent = errors.length
+        ? "No hits. " + errors.join(" · ")
+        : "No matches for that prefix.";
       return;
     }
 
-    statusEl.textContent = rows.length + " result(s)";
+    statusEl.textContent =
+      rows.length +
+      " result(s)" +
+      (errors.length ? " · some languages failed: " + errors.join(" · ") : "");
+
     const table = document.createElement("table");
     table.innerHTML =
       "<thead><tr><th>Word</th><th>Language</th><th>POS</th><th>Meaning</th></tr></thead>";
     const tbody = document.createElement("tbody");
     rows.forEach((r) => {
       const tr = document.createElement("tr");
-      tr.innerHTML =
-        "<td></td><td></td><td></td><td></td>";
+      for (let i = 0; i < 4; i++) tr.appendChild(document.createElement("td"));
       tr.children[0].textContent = r.word;
       tr.children[1].textContent = r.lang;
       tr.children[2].textContent = r.pos;
