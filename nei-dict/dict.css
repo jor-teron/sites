@@ -92,9 +92,22 @@ button#go {
 
 .entry:last-child { border-bottom: 0; }
 
+.entry-word-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem;
+}
+
 .entry-word {
   font-size: 1.15rem;
   font-weight: 700;
+}
+
+.entry-lang {
+  font-size: 0.8625rem; /* ~75% of 1.15rem */
+  font-weight: 500;
+  color: var(--muted);
 }
 
 .entry-grammar {
