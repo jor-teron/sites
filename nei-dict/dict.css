@@ -107,6 +107,7 @@ button#go {
 .entry-lang {
   font-size: 0.8625rem; /* ~75% of 1.15rem */
   font-weight: 500;
+  font-style: italic;
   color: var(--muted);
 }
 
@@ -131,7 +132,9 @@ button#go {
 .footer-nav {
   display: flex;
   justify-content: center;
-  gap: 1.25rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem 0.85rem;
 }
 
 .footer-nav a {
@@ -141,6 +144,16 @@ button#go {
 }
 
 .footer-nav a:hover { text-decoration: underline; }
+
+.footer-sep {
+  color: var(--muted);
+  user-select: none;
+}
+
+.footer-meta {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
 
 .about-table {
   width: 100%;
