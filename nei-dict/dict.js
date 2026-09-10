@@ -21,8 +21,24 @@
   const statusEl = document.getElementById("status");
   const resultsEl = document.getElementById("results");
 
+  let grammarMap = {};
+
+  async function loadGrammar() {
+    try {
+      const res = await fetch("grammar.json", { cache: "no-cache" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      grammarMap = await res.json();
+    } catch (e) {
+      grammarMap = {};
+    }
+  }
+
   function friendlyPos(w) {
-    return (w.posDesc || w.pos || "").trim() || "—";
+    const pos = (w.pos || "").trim();
+    if (pos && grammarMap[pos]) return grammarMap[pos];
+    const desc = (w.posDesc || "").trim();
+    if (desc) return desc;
+    return pos || "—";
   }
 
   function meaningText(w) {
@@ -71,19 +87,29 @@
     const li = document.createElement("li");
     li.className = "entry";
 
-    const word = document.createElement("div");
+    const wordLine = document.createElement("div");
+    wordLine.className = "entry-word-line";
+
+    const word = document.createElement("span");
     word.className = "entry-word";
     word.textContent = r.word;
 
+    const lang = document.createElement("span");
+    lang.className = "entry-lang";
+    lang.textContent = " (" + r.lang + ")";
+
+    wordLine.appendChild(word);
+    wordLine.appendChild(lang);
+
     const meta = document.createElement("div");
     meta.className = "entry-grammar";
-    meta.textContent = r.lang + " · " + r.pos;
+    meta.textContent = r.pos;
 
     const meaning = document.createElement("div");
     meaning.className = "entry-meaning";
     meaning.textContent = r.meaning;
 
-    li.appendChild(word);
+    li.appendChild(wordLine);
     li.appendChild(meta);
     li.appendChild(meaning);
     return li;
@@ -147,4 +173,6 @@
   qEl?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") search();
   });
+
+  loadGrammar();
 })();
