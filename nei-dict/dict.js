@@ -1,9 +1,7 @@
 /* nei-dict — XOBDO-backed search (API version) */
 (function () {
   const API = "https://xobdo.org/2025-web/api/wordsalpha.php";
-  const FUZZY_LIMIT = 10;
 
-  // Display / search order
   const LANGS = [
     { id: 1, name: "English", script: "latin" },
     { id: 14, name: "Nagamese", script: "latin" },
@@ -18,31 +16,10 @@
     { id: 37, name: "Singpho", script: "latin" },
   ];
 
-  const langEl = document.getElementById("lang");
   const qEl = document.getElementById("q");
   const goEl = document.getElementById("go");
   const statusEl = document.getElementById("status");
   const resultsEl = document.getElementById("results");
-
-  if (!langEl) return;
-
-  // Options live in index.html; only fill if the select is empty
-  if (!langEl.options.length) {
-    LANGS.forEach((lang) => {
-      const opt = document.createElement("option");
-      opt.value = String(lang.id);
-      opt.textContent = lang.name;
-      if (lang.id === 1) opt.selected = true;
-      langEl.appendChild(opt);
-    });
-  }
-
-  function selectedLangs() {
-    const id = langEl.value;
-    const meta = LANGS.find((l) => String(l.id) === id);
-    if (!meta) return [];
-    return [{ id: String(meta.id), name: meta.name, script: meta.script || "latin" }];
-  }
 
   function friendlyPos(w) {
     return (w.posDesc || w.pos || "").trim() || "—";
@@ -57,10 +34,13 @@
     );
   }
 
-  /** Same start & end keyword — tight, fast response. */
-  function rangeForQuery(q) {
+  /** Prefix-ish window: start=query, end=query+"zz" */
+  function rangeForQuery(q, script) {
     const key = q.trim();
-    return { start: key, end: key };
+    if (script === "deva") {
+      return { start: key, end: key + "zz" };
+    }
+    return { start: key.toLowerCase(), end: key.toLowerCase() + "zz" };
   }
 
   async function fetchRange(langId, start, end) {
@@ -82,12 +62,9 @@
     return data?.data?.words || [];
   }
 
-  function classify(word, q) {
-    const w = (word || "").toLowerCase();
-    const query = q.toLowerCase();
-    if (w === query) return "exact";
-    if (w.startsWith(query) || w.includes(query)) return "fuzzy";
-    return null;
+  function matchesQuery(word, q) {
+    const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    return re.test(word || "");
   }
 
   function renderItem(r) {
@@ -112,84 +89,58 @@
     return li;
   }
 
-  function renderBlock(title, className, rows) {
-    const section = document.createElement("section");
-    section.className = "result-block " + className;
-    const h = document.createElement("h2");
-    h.textContent = title;
-    section.appendChild(h);
-    const ul = document.createElement("ul");
-    ul.className = "entry-list";
-    rows.forEach((r) => ul.appendChild(renderItem(r)));
-    section.appendChild(ul);
-    return section;
-  }
-
   async function search() {
     const q = (qEl.value || "").trim();
-    const langs = selectedLangs();
     resultsEl.innerHTML = "";
+    statusEl.textContent = "";
     if (!q) {
       statusEl.textContent = "Type a word to search.";
       return;
     }
-    if (!langs.length) {
-      statusEl.textContent = "Pick a language.";
-      return;
-    }
 
     statusEl.textContent = "Searching…";
-    const exact = [];
-    const fuzzy = [];
+    const rows = [];
     const errors = [];
     const seen = new Set();
-    const { start, end } = rangeForQuery(q);
 
-    for (const lang of langs) {
+    for (const lang of LANGS) {
+      const { start, end } = rangeForQuery(q, lang.script);
       try {
         const words = await fetchRange(lang.id, start, end);
         for (const w of words) {
-          const kind = classify(w.word || "", q);
-          if (!kind) continue;
+          if (!matchesQuery(w.word || "", q)) continue;
           const key = lang.id + "|" + (w.word || "").toLowerCase();
           if (seen.has(key)) continue;
           seen.add(key);
-          const row = {
+          rows.push({
             word: w.word,
             lang: lang.name,
             pos: friendlyPos(w),
             meaning: meaningText(w),
-          };
-          if (kind === "exact") exact.push(row);
-          else fuzzy.push(row);
+          });
         }
       } catch (err) {
         errors.push(lang.name + ": " + (err.message || err));
       }
     }
 
-    const fuzzyShown = fuzzy.slice(0, FUZZY_LIMIT);
+    statusEl.textContent = "";
 
-    if (!exact.length && !fuzzyShown.length) {
+    if (!rows.length) {
       statusEl.textContent = errors.length
-        ? "No hits. " + errors.join(" · ")
+        ? "No matches. " + errors.join(" · ")
         : "No matches.";
       return;
     }
 
-    statusEl.textContent =
-      exact.length +
-      " exact, " +
-      fuzzyShown.length +
-      " similar" +
-      (errors.length ? " · " + errors.join(" · ") : "");
+    if (errors.length) {
+      statusEl.textContent = "Some languages failed: " + errors.join(" · ");
+    }
 
-    if (exact.length) {
-      resultsEl.appendChild(renderBlock("Exact", "block-exact", exact));
-    }
-    if (fuzzyShown.length) {
-      resultsEl.appendChild(renderBlock("Similar", "block-fuzzy", fuzzyShown));
-    }
+    const ul = document.createElement("ul");
+    ul.className = "entry-list";
+    rows.forEach((r) => ul.appendChild(renderItem(r)));
+    resultsEl.appendChild(ul);
   }
 
   goEl?.addEventListener("click", search);
