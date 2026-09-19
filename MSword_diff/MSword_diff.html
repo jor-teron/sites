@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MS Word Diff</title>
+  <link rel="stylesheet" href="MSword_diff.css">
+</head>
+<body>
+  <!-- Slim bar. Drops on the header are ignored. -->
+  <header id="appHeader">
+    <h1>MS Word Diff</h1>
+    <div class="hdr-mid">
+      <button id="btnCompare" type="button">Compare</button>
+      <button id="btnClear" type="button" class="btn-lite">Clear files</button>
+    </div>
+    <div class="opts">
+      <label class="font-opt">Font
+        <select id="fontSize"></select>
+        Pt
+      </label>
+      <label class="font-opt">Group words
+        <select id="wordMode">
+          <option value="on" selected>ON</option>
+          <option value="off">OFF</option>
+        </select>
+      </label>
+      <label class="font-opt">Minimap
+        <select id="minimapOpt">
+          <option value="off" selected>OFF</option>
+          <option value="on">ON</option>
+        </select>
+      </label>
+      <label class="font-opt">Counts
+        <select id="countsOpt">
+          <option value="off" selected>OFF</option>
+          <option value="on">ON</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <p id="status" class="status" hidden></p>
+  <p id="stats" class="stats" hidden></p>
+
+  <!--
+    Panes are the drop targets.
+    1 file = that side. 2 files = Left then Right (any side). Swap if order is wrong.
+  -->
+  <section id="result" class="result">
+    <input id="fileOld" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+    <input id="fileNew" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+    <div class="pane-heads">
+      <div class="gutter-space"></div>
+      <div id="headOld" class="fname" title="Click to choose or drop here">Drop a .docx</div>
+      <button id="btnSwap" type="button" class="btn-lite">Swap</button>
+      <div id="headNew" class="fname" title="Click to choose or drop here">Drop a .docx</div>
+    </div>
+    <div class="diff-board" id="diffBoard">
+      <div id="changeBar" class="change-bar" title="Click a mark to jump to that change"></div>
+      <div id="diffScroll" class="diff-scroll">
+        <p class="hint">Drag & Drop one or two .docx files on the left or right pane.</p>
+      </div>
+    </div>
+  </section>
+
+  <script src="lib/jszip.min.js"></script>
+  <script src="lib/diff_match_patch.js"></script>
+  <script src="MSword_diff.js"></script>
+</body>
+</html>
