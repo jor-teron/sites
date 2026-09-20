@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--
+  WebDesk — desktop-style bookmark page
+  Date: 2026-09-20
+  Files: webdesk.html / webdesk.css / webdesk.js
+  Data: desktop_icons.csv, apps.csv, wallpaper.csv, hash.txt
+-->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -7,6 +13,7 @@
   <link rel="stylesheet" href="webdesk.css">
 </head>
 <body>
+  <!-- PIN lock overlay -->
   <div id="overlay">
     <div class="login-box">
       <h2>WebDesk</h2>
@@ -17,6 +24,7 @@
     </div>
   </div>
 
+  <!-- Desktop surface: clock, icons, dustbin -->
   <div id="desktop">
     <div id="analog-clock" aria-hidden="true">
       <div class="hand hour"></div>
@@ -31,30 +39,36 @@
     </div>
   </div>
 
+  <!-- Start menu: groups | apps or wallpapers -->
   <div id="start-menu" hidden>
     <div id="start-groups"></div>
     <div id="start-apps"></div>
   </div>
 
+  <!-- Taskbar: Start, search, pins, tray -->
   <footer id="taskbar">
     <button id="start-btn" type="button">Start</button>
     <input id="search" type="search" placeholder="Search">
+    <select id="search-type" title="Search type">
+      <option value="web" selected>Web</option>
+      <option value="images">Images</option>
+      <option value="video">Video</option>
+      <option value="news">News</option>
+      <option value="shop">Shopping</option>
+      <option value="maps">Maps</option>
+      <option value="flights">Flights</option>
+      <option value="finance">Finance</option>
+    </select>
     <div id="taskbar-icons"></div>
     <div id="tray">
-      <span id="tray-date"></span>
+      <button id="theme-btn" type="button" title="Theme"><span class="theme-ico">☾</span> <span class="theme-lbl">Dark</span></button>
       <span class="sep">|</span>
-      <button id="lock-btn" type="button">Lock</button>
+      <span id="tray-clock"></span>
+      <span id="tray-week"></span>
+      <span class="sep">|</span>
+      <button id="lock-btn" type="button">LOCK</button>
     </div>
   </footer>
-
-  <div id="win" hidden>
-    <div id="win-bar">
-      <span id="win-title"></span>
-      <button id="win-newtab" type="button" title="Open in new tab">↗</button>
-      <button id="win-close" type="button">×</button>
-    </div>
-    <iframe id="win-frame" title="app"></iframe>
-  </div>
 
   <script src="webdesk.js"></script>
 </body>
