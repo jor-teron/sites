@@ -87,6 +87,7 @@ body.light { background: rgba(210, 219, 228, 1); color: rgba(17, 17, 17, 1); }
   position: fixed; left: 0; right: 0; bottom: 0; height: 52px;
   background: rgba(30, 42, 54, 1); display: flex; align-items: center; gap: 10px;
   padding: 0 10px; z-index: 20; font-weight: 700;
+  overflow: visible;
 }
 #start-btn {
   background: rgba(45, 108, 223, 1); color: rgba(255, 255, 255, 1); border: 0; height: 36px;
@@ -94,10 +95,12 @@ body.light { background: rgba(210, 219, 228, 1); color: rgba(17, 17, 17, 1); }
 }
 #search { height: 36px; width: min(18vw, 220px); flex-shrink: 1; border: 0; padding: 0 14px; font-size: 16px; }
 #search-type { height: 36px; border: 0; padding: 0 8px; font-size: 14px; background: rgba(255, 255, 255, 1); flex-shrink: 0; }
-#taskbar-icons { display: flex; gap: 8px; flex: 1; min-width: 0; overflow: hidden; }
+#taskbar-icons { display: flex; gap: 8px; flex: 1; min-width: 0; overflow: visible; }
 #taskbar-icons a {
   width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  transition: transform 0.5s ease;
 }
+#taskbar-icons a:hover { transform: translateY(-15px); }
 #taskbar-icons img { width: 36px; height: 36px; }
 
 /* Tray: theme | date weekday | LOCK — stays right, no overlap */
@@ -111,8 +114,8 @@ body.light { background: rgba(210, 219, 228, 1); color: rgba(17, 17, 17, 1); }
 .sep { opacity: .5; }
 
 /* Start → Wallpaper tiles */
-.wall-item { display: flex; align-items: center; gap: 10px; padding: 10px; cursor: pointer; }
-.wall-item:hover { background: rgba(232, 238, 248, 1); }
+.wall-item { display: flex; align-items: center; gap: 10px; padding: 10px; cursor: pointer; transition: transform 0.5s ease, background 0.5s ease; }
+.wall-item:hover { background: rgba(232, 238, 248, 1); transform: translateX(15px); }
 body.dark .wall-item:hover { background: rgba(58, 74, 92, 1); }
 .wall-swatch {
   width: 48px; height: 48px; border-radius: 6px; border: 1px solid rgba(0, 0, 0, 0.2);
@@ -158,6 +161,7 @@ body.dark #search, body.dark #search-type { background: rgba(42, 51, 64, 1); col
 .start-app {
   display: flex; align-items: center; gap: 12px; padding: 10px; cursor: pointer;
   text-decoration: none; color: rgba(17, 17, 17, 1); font-size: 16px;
+  transition: transform 0.5s ease, background 0.5s ease;
 }
-.start-app:hover { background: rgba(232, 238, 248, 1); }
+.start-app:hover { background: rgba(232, 238, 248, 1); transform: translateX(15px); }
 .start-app img { width: 48px; height: 48px; }

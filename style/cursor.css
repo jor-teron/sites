@@ -1,0 +1,5 @@
+
+body {
+  cursor: url('image/cursor.png') 2 2, auto; /* Hotspot at 8,8; fallback to auto */
+}
+
