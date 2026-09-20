@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebDesk</title>
+  <link rel="stylesheet" href="webdesk.css">
+</head>
+<body>
+  <div id="overlay">
+    <div class="login-box">
+      <h2>WebDesk</h2>
+      <input type="password" id="pin" placeholder="PIN" maxlength="16" autofocus>
+      <label class="show-pin"><input type="checkbox" id="show-pin"> Show PIN</label>
+      <p id="pin-error" hidden>Wrong PIN</p>
+      <button id="unlock">Unlock</button>
+    </div>
+  </div>
+
+  <div id="desktop">
+    <div id="analog-clock" aria-hidden="true">
+      <div class="hand hour"></div>
+      <div class="hand minute"></div>
+      <div class="hand second"></div>
+      <div class="cap"></div>
+    </div>
+    <div id="desktop-icons"></div>
+    <div id="dustbin" title="Dustbin">
+      <img alt="" src="https://www.google.com/s2/favicons?domain=example.com&sz=64">
+      <span>Dustbin</span>
+    </div>
+  </div>
+
+  <div id="start-menu" hidden>
+    <div id="start-groups"></div>
+    <div id="start-apps"></div>
+  </div>
+
+  <footer id="taskbar">
+    <button id="start-btn" type="button">Start</button>
+    <input id="search" type="search" placeholder="Search">
+    <div id="taskbar-icons"></div>
+    <div id="tray">
+      <span id="tray-date"></span>
+      <span class="sep">|</span>
+      <button id="lock-btn" type="button">Lock</button>
+    </div>
+  </footer>
+
+  <div id="win" hidden>
+    <div id="win-bar">
+      <span id="win-title"></span>
+      <button id="win-newtab" type="button" title="Open in new tab">↗</button>
+      <button id="win-close" type="button">×</button>
+    </div>
+    <iframe id="win-frame" title="app"></iframe>
+  </div>
+
+  <script src="webdesk.js"></script>
+</body>
+</html>
