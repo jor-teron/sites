@@ -48,18 +48,18 @@
     1 file = that side. 2 files = Left then Right (any side). Swap if order is wrong.
   -->
   <section id="result" class="result">
-    <input id="fileOld" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
-    <input id="fileNew" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+    <input id="fileOld" type="file" accept=".docx,.txt,.md,.markdown,.csv,.tsv,.log,.json,.xml,.html,.htm,.js,.css,.ini,.conf,.yaml,.yml,.rst,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+    <input id="fileNew" type="file" accept=".docx,.txt,.md,.markdown,.csv,.tsv,.log,.json,.xml,.html,.htm,.js,.css,.ini,.conf,.yaml,.yml,.rst,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
     <div class="pane-heads">
       <div class="gutter-space"></div>
-      <div id="headOld" class="fname" title="Click to choose or drop here">Drop a .docx</div>
+      <div id="headOld" class="fname" title="Click to choose or drop here">Drop a file</div>
       <button id="btnSwap" type="button" class="btn-lite">Swap</button>
-      <div id="headNew" class="fname" title="Click to choose or drop here">Drop a .docx</div>
+      <div id="headNew" class="fname" title="Click to choose or drop here">Drop a file</div>
     </div>
     <div class="diff-board" id="diffBoard">
       <div id="changeBar" class="change-bar" title="Click a mark to jump to that change"></div>
       <div id="diffScroll" class="diff-scroll">
-        <p class="hint">Drag & Drop one or two .docx files on the left or right pane.</p>
+        <p class="hint">Drop one or two files (.docx or text) on the left or right pane.</p>
       </div>
     </div>
   </section>

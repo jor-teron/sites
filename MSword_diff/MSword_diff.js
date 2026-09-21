@@ -113,7 +113,7 @@
     held.new = null;
     try { fileOld.value = ""; fileNew.value = ""; } catch (e) {}
     pairNodes = [];
-    if (diffScroll) diffScroll.innerHTML = '<p class="hint">Drop one or two .docx files on the left or right pane.</p>';
+    if (diffScroll) diffScroll.innerHTML = '<p class="hint">Drop one or two files (.docx or text) on the left or right pane.</p>';
     if (changeBar) changeBar.textContent = "";
     if (statsEl) statsEl.hidden = true;
     updatePaneHeads();
@@ -137,18 +137,37 @@
   headOld.addEventListener("click", function () { fileOld.click(); });
   headNew.addEventListener("click", function () { fileNew.click(); });
 
+  var TEXT_EXT = /\.(txt|md|markdown|csv|tsv|log|json|xml|html|htm|js|css|ini|conf|yaml|yml|rst)$/i;
+
+  function isDocx(file) {
+    return file && /\.docx$/i.test(file.name);
+  }
+
+  function isTextFile(file) {
+    if (!file) return false;
+    if (TEXT_EXT.test(file.name)) return true;
+    var t = file.type || "";
+    if (t.indexOf("text/") === 0) return true;
+    if (t === "application/json" || t === "application/xml") return true;
+    return false;
+  }
+
+  function isAllowedFile(file) {
+    return isDocx(file) || isTextFile(file);
+  }
+
   function docxFromList(list) {
     var out = [];
     for (var i = 0; i < list.length; i++) {
-      if (/\.docx$/i.test(list[i].name)) out.push(list[i]);
+      if (isAllowedFile(list[i])) out.push(list[i]);
     }
     return out;
   }
 
   function setFile(which, file) {
     if (!file) return;
-    if (!/\.docx$/i.test(file.name)) {
-      showStatus("Only .docx files can be dropped.");
+    if (!isAllowedFile(file)) {
+      showStatus("Use .docx or a text file (.txt, .md, .csv, .json, …).");
       return;
     }
     var input = which === "old" ? fileOld : fileNew;
@@ -165,9 +184,9 @@
 
   function updatePaneHeads() {
     if (!headOld || !headNew) return;
-    headOld.textContent = held.old ? held.old.name : "Drop a .docx";
+    headOld.textContent = held.old ? held.old.name : "Drop a file";
     headOld.title = held.old ? held.old.name : "Click to choose or drop here";
-    headNew.textContent = held.new ? held.new.name : "Drop a .docx";
+    headNew.textContent = held.new ? held.new.name : "Drop a file";
     headNew.title = held.new ? held.new.name : "Click to choose or drop here";
   }
 
@@ -197,7 +216,7 @@
   async function showPreview(side, file) {
     if (typeof JSZip === "undefined") throw new Error("JSZip not loaded.");
     showStatus("Reading file...");
-    var doc = await docxToDoc(file);
+    var doc = await fileToDoc(file);
     var rows = [];
     for (var i = 0; i < doc.paras.length; i++) {
       var tx = doc.paras[i].text;
@@ -221,7 +240,7 @@
     headOld.classList.remove("drag");
     headNew.classList.remove("drag");
     var files = docxFromList(e.dataTransfer.files);
-    if (!files.length) { showStatus("Drop a .docx file."); return; }
+    if (!files.length) { showStatus("Drop a .docx or text file."); return; }
     if (files.length >= 2) { takeTwo(files); return; }
     setFile(sideFromEvent(e), files[0]);
     maybeCompare();
@@ -326,13 +345,13 @@
     if (typeof diff_match_patch === "undefined") throw new Error("diff_match_patch not loaded. Put lib/diff_match_patch.js in lib/.");
     var oldFile = held.old || fileOld.files[0];
     var newFile = held.new || fileNew.files[0];
-    if (!oldFile || !newFile) throw new Error("Choose both Old and New .docx files.");
+    if (!oldFile || !newFile) throw new Error("Choose both Left and Right files.");
     btn.disabled = true;
     showStatus("Reading files…");
     resultEl.hidden = true;
     statsEl.hidden = true;
-    var docOld = await docxToDoc(oldFile);
-    var docNew = await docxToDoc(newFile);
+    var docOld = await fileToDoc(oldFile);
+    var docNew = await fileToDoc(newFile);
     showStatus("Comparing…");
     var dmp = new diff_match_patch();
     dmp.Diff_Timeout = 8;
@@ -399,6 +418,38 @@
     if (docCache) { docCache.set(file, doc); return; }
     docCacheFallback.push({ file: file, doc: doc });
     if (docCacheFallback.length > 8) docCacheFallback.shift();
+  }
+
+  function blankPara(line) {
+    return {
+      text: line,
+      runs: [{ text: line, bold: false, italic: false, underline: false }],
+      align: "left",
+      heading: 0,
+      padLeft: 0,
+      padFirst: 0,
+      spaceBefore: 0,
+      spaceAfter: 0,
+      listKind: null,
+      listLabel: ""
+    };
+  }
+
+  async function textToDoc(file) {
+    var raw = await file.text();
+    raw = raw.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    var lines = raw.split("\n");
+    var paras = [];
+    for (var i = 0; i < lines.length; i++) paras.push(blankPara(lines[i]));
+    return { paras: paras, text: lines.join("\n") };
+  }
+
+  async function fileToDoc(file) {
+    var cached = cacheGet(file);
+    if (cached) return cached;
+    var parsed = isDocx(file) ? await docxToDoc(file) : await textToDoc(file);
+    cacheSet(file, parsed);
+    return parsed;
   }
 
   async function docxToDoc(file) {
