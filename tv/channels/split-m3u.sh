@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # split-m3u.sh
-# Read master M3Us in order, then write category M3U files in CSV row order.
+# Read master M3Us in order, then write <csv-basename>.m3u in CSV row order.
 # Block = #EXTINF plus following lines until the next #EXTINF.
 # Same tvg-id may appear in more than one category file.
 # Only skipped if that tvg-id is already in the same output file.
@@ -272,14 +272,21 @@ process_csv() {
     local csv_path="$1"
     # Current CSV line.
     local line
-    # Raw fields.
+    # Raw first column (tvg-id).
     local raw_id
-    local raw_cat
-    # Clean fields.
+    # Clean tvg-id.
     local tvg_id
+    # Output basename from the CSV filename (home.csv -> home).
     local category
-    # Block after group-title rewrite.
+    # Cleaned channel block.
     local out_block
+    # CSV filename without directory.
+    local csv_base
+
+    csv_base="$(basename "$csv_path")"
+    category="${csv_base%.csv}"
+    category="${category%.txt}"
+    category="${category%.list}"
 
     if [[ ! -f "$csv_path" ]]; then
         ERROR_LINES+=("CSV not found: $csv_path")
@@ -291,16 +298,14 @@ process_csv() {
 
     while IFS= read -r line || [[ -n "$line" ]]; do
         [[ -z "$(trim_text "$line")" ]] && continue
-        [[ "$line" =~ ^[\"\']?tvg-id[\"\']?, ]] && continue
+        # Skip header row if present.
+        [[ "$line" =~ ^[\"\']?tvg-id[\"\']?([,].*)?$ ]] && continue
 
+        # First column only; extra columns are ignored.
         raw_id="${line%%,*}"
-        raw_cat="${line#*,}"
-        raw_cat="${raw_cat%%,*}"
-
         tvg_id="$(trim_text "$(strip_quotes "$raw_id")")"
-        category="$(trim_text "$(strip_quotes "$raw_cat")")"
 
-        [[ -z "$tvg_id" || -z "$category" ]] && continue
+        [[ -z "$tvg_id" ]] && continue
 
         # Key is category + tvg-id so the same channel can go in several files.
         local used_key="${category}|${tvg_id}"
