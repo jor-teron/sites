@@ -51,12 +51,13 @@ body {
   position: absolute;
   inset: 0;
   z-index: 10;
-  padding: 10px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px 0;
-  align-content: flex-start;
-  justify-content: flex-start;
+  padding: 4px;
+  display: grid;
+  /* min 3 cols, max 5; ~100px preferred tile width */
+  grid-template-columns: repeat(auto-fill, minmax(clamp(20%, 100px, 33.333%), 1fr));
+  gap: 4px;
+  align-content: start;
+  justify-content: center;
   overflow-y: auto;
   overflow-x: hidden;
   background: rgba(0, 0, 0, 0.35);
@@ -69,10 +70,11 @@ body {
 }
 
 .channel {
-  width: 180px;
+  width: 100%;
+  min-width: 0;
   background: rgba(40, 40, 40, 0.85);
   border-radius: 0;
-  padding: 10px;
+  padding: 6px 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -99,18 +101,18 @@ body {
 }
 
 .channel-number {
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: bold;
   color: #e50914;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .channel img {
-  width: 70px;
-  height: 70px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
   border-radius: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   background: transparent;
 }
 
@@ -120,7 +122,7 @@ body {
 }
 
 .channel-name {
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
