@@ -35,7 +35,7 @@ const specialItems = [
 ];
 
 function loadPlaylist() {
-  fetch('local.m3u')
+  fetch('channels/home.m3u')
     .then(res => res.text())
     .then(text => {
       const channels = parseM3U(text);
