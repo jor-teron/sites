@@ -18,10 +18,12 @@ const NUMBER_DELAY = 1500;
 const HIDE_DELAY = 5000;
 
 const CATEGORY_TILES = [
-  { key: 'kids', name: 'Kids', group: 'Category' },
-  { key: 'more', name: 'More', group: 'Category' },
-  { key: 'india', name: 'India', group: 'Category' }
+  { key: 'kids', name: 'Kids', group: 'Category', logo: '../image/chase.png' },
+  { key: 'more', name: 'More', group: 'Category', logo: '../image/arrow_blue.png' },
+  { key: 'india', name: 'India', group: 'Category', logo: '../image/india.png' }
 ];
+
+const HOME_CATEGORY_LOGO = '../image/home.png';
 
 const PLACEHOLDER_LOGO =
   'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70"><rect fill="%23333" width="70" height="70"/><text x="35" y="40" fill="%23999" text-anchor="middle" font-size="18">TV</text></svg>';
@@ -120,7 +122,7 @@ function categoryTilesFor(category) {
     return CATEGORY_TILES.map(function (t) {
       return {
         name: t.name,
-        logo: '',
+        logo: t.logo || '',
         group: t.group,
         type: 'category',
         categoryKey: t.key
@@ -130,7 +132,7 @@ function categoryTilesFor(category) {
   return [
     {
       name: 'Home',
-      logo: '',
+      logo: HOME_CATEGORY_LOGO,
       group: 'Category',
       type: 'category',
       categoryKey: 'home'
