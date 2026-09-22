@@ -373,6 +373,43 @@ document.addEventListener('keydown', function (e) {
 
 document.addEventListener('click', showList);
 
+// ========== AUTO PiP (video only) ==========
+// Android Chrome + desktop: enter PiP when page is hidden (Home / other app / tab switch).
+// Floating video only — channel list stays in the page. Best-effort; browsers may deny.
+function pipSupported() {
+  return !!(
+    document.pictureInPictureEnabled &&
+    video &&
+    typeof video.requestPictureInPicture === 'function' &&
+    !video.disablePictureInPicture
+  );
+}
+
+function enterAutoPip() {
+  if (!pipSupported()) return;
+  if (document.pictureInPictureElement) return;
+  if (video.paused || video.ended) return;
+  if (video.readyState < 2) return;
+  video.requestPictureInPicture().catch(function () {});
+}
+
+function exitAutoPip() {
+  if (!document.pictureInPictureElement) return;
+  document.exitPictureInPicture().catch(function () {});
+}
+
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden) {
+    enterAutoPip();
+  } else {
+    exitAutoPip();
+  }
+});
+
+window.addEventListener('pagehide', function () {
+  enterAutoPip();
+});
+
 // ========== START ==========
 (function start() {
   const last = readLast();
