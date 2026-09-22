@@ -349,13 +349,16 @@ function showList() {
 
 // ========== INPUT ==========
 document.addEventListener('keydown', function (e) {
-  showList();
-  if (items.length === 0) return;
-
+  // Digits: number zap only — never open the list, never force-close it.
   if (e.key >= '0' && e.key <= '9') {
+    if (items.length === 0) return;
     handleNumberInput(e.key);
     return;
   }
+
+  // Browse / GUI: arrows, Enter, etc. open the channel list.
+  showList();
+  if (items.length === 0) return;
 
   if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
     e.preventDefault();
