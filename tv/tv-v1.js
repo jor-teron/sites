@@ -18,9 +18,11 @@ const NUMBER_DELAY = 1500;
 const HIDE_DELAY = 5000;
 
 const CATEGORY_TILES = [
-  { key: 'kids', name: 'Kids', group: 'Category', logo: '../image/chase.png' },
-  { key: 'more', name: 'More', group: 'Category', logo: '../image/arrow_blue.png' },
-  { key: 'india', name: 'India', group: 'Category', logo: '../image/india.png' }
+  // type: 'link' → open href (same tab). Edit href/name/logo anytime.
+  { type: 'link', name: 'Hub', href: 'https://www.google.com', group: 'Link', logo: '../image/earth.png' },
+  { type: 'category', key: 'kids', name: 'Kids', group: 'Category', logo: '../image/chase.png' },
+  { type: 'category', key: 'more', name: 'More', group: 'Category', logo: '../image/arrow_blue.png' },
+  { type: 'category', key: 'india', name: 'India', group: 'Category', logo: '../image/india.png' }
 ];
 
 const HOME_CATEGORY_LOGO = '../image/home.png';
@@ -120,10 +122,19 @@ function hideOverlay() {
 function categoryTilesFor(category) {
   if (category === 'home') {
     return CATEGORY_TILES.map(function (t) {
+      if (t.type === 'link') {
+        return {
+          name: t.name,
+          logo: t.logo || '',
+          group: t.group || 'Link',
+          type: 'link',
+          href: t.href
+        };
+      }
       return {
         name: t.name,
         logo: t.logo || '',
-        group: t.group,
+        group: t.group || 'Category',
         type: 'category',
         categoryKey: t.key
       };
@@ -201,7 +212,7 @@ function buildList() {
 
   items.forEach(function (item, idx) {
     const div = document.createElement('div');
-    div.className = 'channel' + (item.type === 'category' ? ' category' : '');
+    div.className = 'channel' + (item.type === 'category' || item.type === 'link' ? ' category' : '');
     div.dataset.index = String(idx);
 
     const numberSpan = document.createElement('div');
@@ -225,7 +236,9 @@ function buildList() {
     const groupEl = document.createElement('div');
     groupEl.className = 'channel-group';
     groupEl.textContent =
-      item.type === 'category' ? 'Category' : item.group || 'Live';
+      item.type === 'category' ? 'Category' :
+      item.type === 'link' ? (item.group || 'Link') :
+      item.group || 'Live';
 
     info.appendChild(nameEl);
     info.appendChild(groupEl);
@@ -266,6 +279,13 @@ function activateItem(index) {
   if (item.type === 'category') {
     loadPlaylist(item.categoryKey);
     startHideTimer();
+    return;
+  }
+
+  if (item.type === 'link') {
+    if (item.href) {
+      window.location.href = item.href;
+    }
     return;
   }
 
