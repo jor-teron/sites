@@ -113,7 +113,7 @@
     held.new = null;
     try { fileOld.value = ""; fileNew.value = ""; } catch (e) {}
     pairNodes = [];
-    if (diffScroll) diffScroll.innerHTML = '<p class="hint">Drop one or two files (.docx or text) on the left or right pane.</p>';
+    if (diffScroll) diffScroll.innerHTML = '<p class="hint">Drop one or two files (.docx or plaintext) on the left or right pane.</p>';
     if (changeBar) changeBar.textContent = "";
     if (statsEl) statsEl.hidden = true;
     updatePaneHeads();
@@ -137,7 +137,9 @@
   headOld.addEventListener("click", function () { fileOld.click(); });
   headNew.addEventListener("click", function () { fileNew.click(); });
 
-  var TEXT_EXT = /\.(txt|md|markdown|csv|tsv|log|json|xml|html|htm|js|css|ini|conf|yaml|yml|rst)$/i;
+  var TEXT_EXT = /\.(txt|text|md|markdown|rst|org|adoc|asciidoc|csv|tsv|ssv|psv|log|out|err|json|jsonl|ndjson|xml|html|htm|xhtml|svg|js|mjs|cjs|ts|tsx|jsx|css|scss|sass|less|ini|conf|cfg|config|env|properties|toml|yaml|yml|sh|bash|zsh|fish|csh|ksh|bat|cmd|ps1|psm1|py|pyw|rb|pl|pm|php|lua|r|sql|go|rs|c|h|cpp|cc|cxx|hpp|hh|cs|java|kt|kts|swift|m|mm|scala|groovy|dart|vue|svelte|mk|cmake|gradle|diff|patch|tex|bib|sty|srt|vtt|ass|vcf|ics|m3u|m3u8|service|timer|socket|desktop)$/i;
+  var TEXT_NAMES = /^(makefile|gnumakefile|dockerfile|containerfile|readme|license|licence|changelog|authors|copying|gitignore|gitattributes|gitmodules|editorconfig|procfile|vagrantfile)$/i;
+
 
   function isDocx(file) {
     return file && /\.docx$/i.test(file.name);
@@ -145,10 +147,14 @@
 
   function isTextFile(file) {
     if (!file) return false;
-    if (TEXT_EXT.test(file.name)) return true;
-    var t = file.type || "";
-    if (t.indexOf("text/") === 0) return true;
-    if (t === "application/json" || t === "application/xml") return true;
+    var name = file.name || "";
+    var base = name.split(/[\\\/]/).pop() || name;
+    if (TEXT_EXT.test(base)) return true;
+    if (TEXT_NAMES.test(base)) return true;
+    if (base.charAt(0) === "." && TEXT_NAMES.test(base.slice(1))) return true;
+    var typ = file.type || "";
+    if (typ.indexOf("text/") === 0) return true;
+    if (/^application\/(json|xml|javascript|x-sh|x-csh|x-shellscript|sql)$/i.test(typ)) return true;
     return false;
   }
 
@@ -167,7 +173,7 @@
   function setFile(which, file) {
     if (!file) return;
     if (!isAllowedFile(file)) {
-      showStatus("Use .docx or a text file (.txt, .md, .csv, .json, …).");
+      showStatus("Use .docx or a text/script file (.txt, .sh, .csv, .py, …).");
       return;
     }
     var input = which === "old" ? fileOld : fileNew;
@@ -240,7 +246,7 @@
     headOld.classList.remove("drag");
     headNew.classList.remove("drag");
     var files = docxFromList(e.dataTransfer.files);
-    if (!files.length) { showStatus("Drop a .docx or text file."); return; }
+    if (!files.length) { showStatus("Drop a .docx or plaintext file."); return; }
     if (files.length >= 2) { takeTwo(files); return; }
     setFile(sideFromEvent(e), files[0]);
     maybeCompare();
@@ -336,6 +342,7 @@
   restoreHeld();
 
   function showStatus(msg) {
+    if (!statusEl) return;
     statusEl.hidden = !msg;
     statusEl.textContent = msg || "";
   }

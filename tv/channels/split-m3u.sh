@@ -52,6 +52,13 @@ RES_TAGS=(
     "SD"
 )
 
+# Name junk in "[...]" — kept for reference. Stripping uses the safe sed below.
+NAME_JUNK=(
+    # Commenting these still strips them via the fixed sed in clean_extinf.
+    # "Geo-blocked"
+    # "Not 24/7"
+)
+
 ############################################
 
 # tvg-id already written to an output file.
@@ -128,15 +135,68 @@ clean_extinf() {
     attrs="${extinf_line%,*}"
     name="${extinf_line##*,}"
 
-    # Build "(tag|tag|...)" regex from RES_TAGS at top of script.
-    local res_regex
-    res_regex="$(IFS='|'; printf '%s' "${RES_TAGS[*]}")"
-    # Remove those tags from the display name.
-    name="$(printf '%s' "$name" | sed -E "s/[[:space:]]*\\((${res_regex})\\)//g")"
+    # One resolution label from RES_TAGS.
+    local res_tag
+
+    # Strip "(1080p)" style tags. Bash replace so / in labels cannot break sed.
+    for res_tag in "${RES_TAGS[@]}"; do
+        name="${name// ($res_tag)/}"
+        name="${name//($res_tag)/}"
+    done
+
+    # Strip "[Geo-blocked]" / "[Not 24/7]" including brackets.
+    # # delimiter so the / in "Not 24/7" does not wipe the name.
+    name="$(printf '%s' "$name" | sed -E 's#[[:space:]]*\[Geo-blocked\]##g')"
+    name="$(printf '%s' "$name" | sed -E 's#[[:space:]]*\[Not 24/7\]##g')"
+    name="$(printf '%s' "$name" | sed -E 's#[[:space:]]*\[Geo-blocked, Not 24/7\]##g')"
+    name="$(printf '%s' "$name" | sed -E 's#[[:space:]]*\[Not 24/7, Geo-blocked\]##g')"
     # Trim leftover spaces on the name.
     name="$(trim_text "$name")"
 
     printf '%s,%s' "$attrs" "$name"
+}
+
+# Replace group-title on an #EXTINF line when CSV group is filled.
+set_group_title() {
+    # Original #EXTINF line.
+    local extinf_line="$1"
+    # Group text from CSV.
+    local group="$2"
+
+    if [[ "$extinf_line" =~ group-title=\" ]]; then
+        printf '%s' "$extinf_line" | sed -E "s#group-title=\"[^\"]*\"#group-title=\"${group}\"#"
+    else
+        printf '%s' "$extinf_line" | sed -E "s#,# group-title=\"${group}\",#"
+    fi
+}
+
+# Apply optional CSV group to the first line of a cleaned block.
+apply_group_to_block() {
+    # Cleaned block text.
+    local block="$1"
+    # Optional group from CSV.
+    local group="$2"
+    # First line.
+    local first
+    # Rest of block.
+    local rest
+
+    [[ -z "$group" ]] && { printf '%s' "$block"; return 0; }
+
+    first="${block%%$'\n'*}"
+    if [[ "$first" == "$block" ]]; then
+        rest=""
+    else
+        rest="${block#*$'\n'}"
+    fi
+
+    first="$(set_group_title "$first" "$group")"
+
+    if [[ -n "$rest" ]]; then
+        printf '%s\n%s' "$first" "$rest"
+    else
+        printf '%s' "$first"
+    fi
 }
 
 # Clean EXTINF and drop #EXTVLCOPT user-agent lines from a block.
@@ -276,6 +336,9 @@ process_csv() {
     local raw_id
     # Clean tvg-id.
     local tvg_id
+    # Optional group from second CSV column.
+    local raw_group
+    local group
     # Output basename from the CSV filename (home.csv -> home).
     local category
     # Cleaned channel block.
@@ -301,9 +364,16 @@ process_csv() {
         # Skip header row if present.
         [[ "$line" =~ ^[\"\']?tvg-id[\"\']?([,].*)?$ ]] && continue
 
-        # First column only; extra columns are ignored.
+        # Column 1 = tvg-id. Column 2 = optional group-title.
         raw_id="${line%%,*}"
+        if [[ "$line" == *,* ]]; then
+            raw_group="${line#*,}"
+            raw_group="${raw_group%%,*}"
+        else
+            raw_group=""
+        fi
         tvg_id="$(trim_text "$(strip_quotes "$raw_id")")"
+        group="$(trim_text "$(strip_quotes "$raw_group")")"
 
         [[ -z "$tvg_id" ]] && continue
 
@@ -325,9 +395,14 @@ process_csv() {
         fi
 
         out_block="$(clean_block "${BLOCK_BY_TVG[$tvg_id]}")"
+        out_block="$(apply_group_to_block "$out_block" "$group")"
         write_block "$category" "$out_block"
         USED_TVG_ID["$used_key"]=1
-        log_msg "OK             $tvg_id  -> ${category}.m3u"
+        if [[ -n "$group" ]]; then
+            log_msg "OK             $tvg_id  -> ${category}.m3u  group=$group"
+        else
+            log_msg "OK             $tvg_id  -> ${category}.m3u  group=keep"
+        fi
     done < "$csv_path"
 }
 
