@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>browser-fps</title>
+  <link rel="stylesheet" href="./browser-fps.css" />
+</head>
+<body>
+  <div id="overlay">
+    <h1>BROWSER FPS</h1>
+    <p>Click to play</p>
+    <p>WASD move · Mouse look · Space jump · Left-click shoot</p>
+    <p>Esc · P · or ` unlocks the mouse</p>
+    <p class="hint">If the mouse sticks, press P or ` — or switch away from the window</p>
+  </div>
+  <div id="hud">
+    <div id="dmg-flash"></div>
+    <div id="crosshair"></div>
+    <div id="hitmarker">
+      <span></span><span></span><span></span><span></span>
+    </div>
+    <div id="health">HP <span id="hp-val">100</span></div>
+    <div id="weapon">
+      <div class="name" id="wep-name">Assault Rifle</div>
+      <div><span id="ammo-val">30</span> / ∞</div>
+    </div>
+  </div>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+    }
+  }
+  </script>
+  <script type="module" src="./browser-fps.js"></script>
+</body>
+</html>
