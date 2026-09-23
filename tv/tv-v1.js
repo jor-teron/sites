@@ -310,15 +310,16 @@ function playChannel(ch) {
       video.play().catch(function () {});
     });
     hls.on(Hls.Events.ERROR, function (_e, data) {
+      // Fatal stream errors: no text overlay — poster (tv_no_signal.jpeg) is the cue.
       if (data && data.fatal) {
-        showOverlay('Stream error');
+        console.error('Stream error', data);
       }
     });
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
     video.src = ch.url;
     video.play().catch(function () {});
   } else {
-    showOverlay('HLS not supported');
+    console.error('HLS not supported');
   }
 }
 
