@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spreadsheet</title>
+  <link rel="stylesheet" href="spreadsheet.css">
+</head>
+<body>
+  <div class="toolbar">
+    <button type="button" id="btn-export">Export CSV</button>
+    <label>Import CSV
+      <input id="file-import" type="file" accept=".csv,text/csv,text/plain" hidden>
+    </label>
+    <button type="button" id="btn-clear">Clear</button>
+    <a href="FUNCTIONS.txt" target="_blank" rel="noopener">Functions</a>
+    <button type="button" id="btn-print">Print / PDF</button>
+    <span class="eq-mark">=</span>
+    <input id="formula-bar" type="text" placeholder="A1+B1" aria-label="Formula bar">
+    <select id="align-sel" title="Align">
+      <option value="left">Left</option>
+      <option value="center" selected>Center</option>
+      <option value="right">Right</option>
+    </select>
+    <button type="button" id="btn-bold" title="Bold"><b>B</b></button>
+    <button type="button" id="btn-italic" title="Italic"><i>I</i></button>
+    <button type="button" id="btn-under" title="Underline"><u>U</u></button>
+    <input id="fill-color" type="color" title="Cell colour" value="#1e1e1e">
+    <input id="text-color" type="color" title="Text colour" value="#e8e8e8">
+  </div>
+  <div id="status" class="status"></div>
+  <div id="sheet-wrap" class="sheet-wrap"></div>
+  <script src="formula.js"></script>
+  <script src="spreadsheet.js"></script>
+</body>
+</html>

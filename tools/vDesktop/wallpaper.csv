@@ -1,26 +1,26 @@
 TYPE,NAME,VALUE
-image,XP Small,../wallpaper/xp_small.jpg
-image,Bess,../wallpaper/bess.jpg
-image,Dalia,../wallpaper/dalia.jpg
-image,Dog 01,../wallpaper/dog_01.jpg
-image,Dog 02,../wallpaper/dog_02.jpg
-image,Dolphin 1,../wallpaper/dolphin_1.jpg
-image,Dolphin 2,../wallpaper/dolphin_2.jpg
-image,Fish 02,../wallpaper/fish_02.jpg
-image,Fish 03,../wallpaper/fish_03.jpg
-image,Fish 04,../wallpaper/fish_04.jpg
-image,Lake 1,../wallpaper/lake_1.jpg
-image,Lake 2,../wallpaper/lake_2.jpg
-image,Lake 3,../wallpaper/lake_3.jpg
-image,Ocean 2,../wallpaper/ocean_2.jpg
-image,Ocean 3,../wallpaper/ocean_3.jpg
-image,Ocean 7,../wallpaper/ocean_7.jpg
-image,Panda 01,../wallpaper/panda_01.jpg
-image,Panda 02,../wallpaper/panda_02.jpg
-image,Panda 1,../wallpaper/panda_1.jpg
-image,Panda 2,../wallpaper/panda_2.jpg
-image,Penguin,../wallpaper/penquin_1.jpg
-image,XP,../wallpaper/xp.jpg
+image,XP Small,../../wallpaper/xp_small.jpg
+image,Bess,../../wallpaper/bess.jpg
+image,Dalia,../../wallpaper/dalia.jpg
+image,Dog 01,../../wallpaper/dog_01.jpg
+image,Dog 02,../../wallpaper/dog_02.jpg
+image,Dolphin 1,../../wallpaper/dolphin_1.jpg
+image,Dolphin 2,../../wallpaper/dolphin_2.jpg
+image,Fish 02,../../wallpaper/fish_02.jpg
+image,Fish 03,../../wallpaper/fish_03.jpg
+image,Fish 04,../../wallpaper/fish_04.jpg
+image,Lake 1,../../wallpaper/lake_1.jpg
+image,Lake 2,../../wallpaper/lake_2.jpg
+image,Lake 3,../../wallpaper/lake_3.jpg
+image,Ocean 2,../../wallpaper/ocean_2.jpg
+image,Ocean 3,../../wallpaper/ocean_3.jpg
+image,Ocean 7,../../wallpaper/ocean_7.jpg
+image,Panda 01,../../wallpaper/panda_01.jpg
+image,Panda 02,../../wallpaper/panda_02.jpg
+image,Panda 1,../../wallpaper/panda_1.jpg
+image,Panda 2,../../wallpaper/panda_2.jpg
+image,Penguin,../../wallpaper/penquin_1.jpg
+image,XP,../../wallpaper/xp.jpg
 color,Ocean Blue,#3d6b99
 color,Forest,#2f5d50
 color,Slate,#4a6670

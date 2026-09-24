@@ -1,0 +1,55 @@
+Supported functions (this sheet)
+
+CELL / TEXT
+  ="text here"          literal text
+  A1 + B1               cell math (spaces allowed)
+  A1 & B2               concatenate
+  CONCAT(a, b, ...)     concatenate
+
+MATH
+  +  -  *  /  ^
+  SUM(range)
+  AVERAGE(range)
+  MIN(range)
+  MAX(range)
+  COUNT(range)          numbers only
+  COUNTA(range)         non-empty cells
+  ROUND(n, digits)
+  ABS(n)
+  INT(n)
+  SQRT(n)
+  MOD(n, d)
+  POWER(n, p)
+
+LOGIC
+  IF(cond, then, else)
+  ISBLANK(cell)
+  IFERROR(value, fallback)
+
+TEXT
+  LEN(text)
+  UPPER(text)
+  LOWER(text)
+  TRIM(text)
+  LEFT(text, n)
+  RIGHT(text, n)
+
+DATE (optional)
+  TODAY()
+  NOW()
+
+RANGES
+  A1:A10    column
+  A1:C1     row
+  A1:C5     block
+
+COMPARE in IF
+  =  <>  <  >  <=  >=
+
+GRID
+  Columns A–Z (26)
+  Rows 1–100
+
+PRINT
+  Use Print / PDF — browser dialog, choose Save as PDF
+

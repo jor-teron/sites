@@ -1,0 +1,206 @@
+/*
+ * spreadsheet.css
+ * Dark theme. Cells min 150px, grow on wide screens.
+ * Print stylesheet for browser Print / Save as PDF.
+ */
+
+:root {
+  --cell-min: 150px;
+  --row-head: 48px;
+  --cell-h: 30px;
+  --bg: #121212;
+  --panel: #1c1c1c;
+  --cell: #1e1e1e;
+  --head: #2a2a2a;
+  --text: #e8e8e8;
+  --muted: #9a9a9a;
+  --border: #3a3a3a;
+  --sel: #4ea1ff;
+  --band: rgba(78, 161, 255, 0.18);
+  --btn: #2b2b2b;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: Segoe UI, system-ui, sans-serif;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 10px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.toolbar button,
+.toolbar a,
+.toolbar label,
+.toolbar select {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  background: var(--btn);
+  color: var(--text);
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.toolbar button:hover,
+.toolbar a:hover,
+.toolbar label:hover { background: #3a3a3a; }
+
+.toolbar button.on { background: #3d5a80; border-color: var(--sel); }
+
+.eq-mark {
+  color: var(--muted);
+  font-weight: 700;
+  padding: 0 2px;
+}
+
+#formula-bar {
+  flex: 1;
+  min-width: 160px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #161616;
+  color: var(--text);
+  font-family: Consolas, monospace;
+}
+
+.toolbar input[type="color"] {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: var(--btn);
+  cursor: pointer;
+}
+
+.status {
+  padding: 3px 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.sheet-wrap {
+  overflow: auto;
+  height: calc(100% - 78px);
+  background: var(--bg);
+}
+
+table.sheet {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  min-width: calc(var(--row-head) + 26 * var(--cell-min));
+}
+
+table.sheet col.row-head { width: var(--row-head); }
+table.sheet col.data {
+  width: calc((100% - var(--row-head)) / 26);
+  min-width: var(--cell-min);
+}
+
+th, td {
+  border: 1px solid var(--border);
+  height: var(--cell-h);
+  padding: 0;
+}
+
+th {
+  background: var(--head);
+  font-weight: 600;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  cursor: pointer;
+}
+
+th.corner {
+  left: 0;
+  z-index: 3;
+  width: var(--row-head);
+  cursor: default;
+}
+
+td.row-num {
+  background: var(--head);
+  text-align: center;
+  font-weight: 600;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: var(--row-head);
+  min-width: var(--row-head);
+  cursor: pointer;
+}
+
+td.cell {
+  position: relative;
+  min-width: var(--cell-min);
+  background: var(--cell);
+}
+
+td.cell input {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: none;
+  padding: 2px 6px;
+  font: inherit;
+  background: transparent;
+  color: inherit;
+  text-align: center;
+}
+
+td.cell.selected { outline: 2px solid var(--sel); outline-offset: -2px; }
+td.cell.sel-band, th.sel-band, td.row-num.sel-band { background: var(--band); }
+td.cell.error input { color: #ff6b6b; }
+
+/* Autofill handle — visible on selected cell */
+.fill-handle {
+  display: none;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  height: 8px;
+  background: var(--sel);
+  cursor: crosshair;
+  z-index: 4;
+}
+
+td.cell.selected .fill-handle { display: block; }
+
+/* Print / Save as PDF */
+@media print {
+  body { background: #fff; color: #000; }
+  .toolbar, .status { display: none !important; }
+  .sheet-wrap {
+    overflow: visible;
+    height: auto;
+  }
+  table.sheet {
+    min-width: 0;
+    width: 100%;
+    font-size: 10px;
+  }
+  table.sheet col.data { min-width: 0; }
+  th, td.row-num { background: #eee !important; color: #000; }
+  td.cell { background: #fff !important; }
+  td.cell input { color: #000; }
+  .fill-handle { display: none !important; }
+  td.cell.selected { outline: none; }
+}
