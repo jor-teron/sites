@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Viewer</title>
+  <link rel="stylesheet" href="photos.css">
+</head>
+<body>
+  <header class="bar">
+    <h1>Photos</h1>
+    <div class="actions">
+      <label class="btn">
+        Add photos
+        <input id="file-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" multiple>
+      </label>
+      <button type="button" id="clear-btn" class="btn ghost">Clear</button>
+    </div>
+  </header>
+
+  <main id="grid" class="grid" aria-label="Photo grid">
+    <p class="empty" id="empty">Add photos to start</p>
+  </main>
+
+  <div id="viewer" class="viewer" hidden>
+    <button type="button" id="close-btn" class="icon-btn close" aria-label="Close">×</button>
+    <button type="button" id="prev-btn" class="icon-btn nav prev" aria-label="Previous">‹</button>
+    <div class="stage">
+      <img id="full-photo" alt="">
+    </div>
+    <button type="button" id="next-btn" class="icon-btn nav next" aria-label="Next">›</button>
+    <div class="meta">
+      <span id="photo-name"></span>
+      <span id="photo-count"></span>
+    </div>
+  </div>
+
+  <script src="filename.js"></script>
+  <script src="photos.js"></script>
+</body>
+</html>

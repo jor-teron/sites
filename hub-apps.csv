@@ -1,15 +1,15 @@
 CATEGORY,NAME,ENTRY_URL,ORDER,HIDDEN
-Tools,Calculator,tools/calculator/,10,0
-Tools,Paint,tools/paint/,20,0
-Tools,Nei Dict,nei-dict/,30,0
-Tools,MS Word Diff,msword_diff/,40,0
-Tools,Notepad,tools/notepad/,50,0
-Tools,Photo Editor,tools/photo-editor/,60,0
-Tools,Learning HTMl (basic),tools/learning-html/,60,0
-Media,TV,tv/,10,0
-Media,Webcam,tools/webcam/,20,0
-Media,Phone,phone/,60,0
-Tools,Weather,tools/weather-chart/,60,0
-Desktop,WebDesk,webdesk/,50,0
 Games,Swell Foop,games/swell-foop/,10,0
 Games,Browser FPS,games/browser-fps/,90,0
+Media,TV,tv/,10,0
+Media,Webcam,media/webcam/,20,0
+Media,Paint,media/paint/,20,0
+Media,Photo Editor,media/photo-editor/,60,0
+Media,Phone,media/phone/,60,0
+Tools,Calculator,tools/calculator/,10,0
+Tools,NE-India Dictionary,tools/nei-dict/,30,0
+Tools,MS Word Diff,tools/msword_diff/,40,0
+Tools,Notepad,tools/notepad/,50,0
+Tools,Weather,tools/weather-chart/,60,0
+Tools,Learning HTMl (basic),tools/learning-html/,100,0
+Desktop,vDesktop,tools/vDesktop/,10,0

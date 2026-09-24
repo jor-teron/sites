@@ -10,7 +10,7 @@
  *   - file   dir/name.html   -> dir/name_icon.png
  */
 (function () {
-  const HEADER_DEFAULT = 'Main';
+  const HEADER_DEFAULT = 'Home';
   const catBtn = document.getElementById('cat-btn');
   const catLabel = document.getElementById('cat-label');
   const menu = document.getElementById('menu');
@@ -18,12 +18,12 @@
   const empty = document.getElementById('empty');
 
   const FALLBACK_APPS = [
-    { category: 'Tools', name: 'Nei Dict', entryUrl: 'nei-dict/', order: 10, hidden: false },
-    { category: 'Tools', name: 'MS Word Diff', entryUrl: 'msword_diff/', order: 20, hidden: false },
-    { category: 'Tools', name: 'Calculator', entryUrl: 'tools/calculator.html', order: 30, hidden: false },
-    { category: 'Desktop', name: 'WebDesk', entryUrl: 'webdesk/', order: 50, hidden: false },
-    { category: 'Media', name: 'Phone', entryUrl: 'phone/', order: 60, hidden: false },
-    { category: 'Games', name: 'Browser FPS', entryUrl: 'games/browser-fps/', order: 90, hidden: false },
+    { category: 'Games', name: 'Browser FPS', entryUrl: 'games/browser-fps/', order: 10, hidden: false },
+    { category: 'Tools', name: 'NE-India Dictionary', entryUrl: 'tools/nei-dict/', order: 20, hidden: false },
+    { category: 'Tools', name: 'MS Word Diff', entryUrl: 'tools/msword_diff/', order: 30, hidden: false },
+    { category: 'Tools', name: 'Calculator', entryUrl: 'tools/calculator.html', order: 40, hidden: false },
+    { category: 'vDesktop', name: 'vDesktop', entryUrl: 'vDesktop/', order: 50, hidden: false },
+    { category: 'Media', name: 'Phone', entryUrl: 'media/phone/', order: 60, hidden: false },
     { category: 'Media', name: 'TV', entryUrl: 'tv/', order: 110, hidden: false },
   ];
 
