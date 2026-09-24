@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Editor</title>
+    <link rel="stylesheet" href="style/photo-editor.css">
+</head>
+<body>
+    <header>
+        <h1>Photo Editor - <span id="currentPhotoName">No Photo Loaded</span></h1>
+    </header>
+
+    <main id="app-container">
+        <aside id="control-panel">
+
+
+            <section class="section-group">
+                <h3>Actions</h3>
+                <button id="newBtn" class="action-btn">New</button>
+                <button id="resetBtn"> Reset </button>
+                <button id="printBtn"> Print </button>
+                <button id="downloadBtn"> Download </button>
+            </section>
+
+            <section class="section-group">
+                <h3>Adjustments</h3>
+                <label for="brightnessSlider">Brightness:</label>
+                <input type="range" id="brightnessSlider" min="0" max="200" value="100">
+                <label for="contrastSlider">Contrast:</label>
+                <input type="range" id="contrastSlider" min="0" max="200" value="100">
+            </section>
+
+
+            <section class="section-group">
+                <h3>Transformations</h3>
+                
+    <h4>Page Setup</h4> 
+    <div class="control-pair">
+        <label for="paperSizeSelect">Paper Size:</label>
+        <select id="paperSizeSelect">
+            <option value="A4">A4 (210 x 297 mm)</option>
+            <option value="legal">Legal (8.5 x 14 in)</option>
+        </select>
+    </div>
+
+    <div class="control-pair">
+        <label for="orientationSelect">Orientation:</label>
+        <select id="orientationSelect">
+            <option value="portrait">Portrait</option>
+            <option value="landscape">Landscape</option>
+        </select>
+    </div>
+
+                <h4>Image Rotation</h4> 
+                <button id="rotateRightBtn">Rotate Right &#x21BB; (90°)</button>
+                
+                <h4>Crop</h4>
+                <button id="startCropBtn">Start Crop</button>
+                <button id="cancelCropBtn" disabled>Cancel Crop</button>
+                <button id="applyCropBtn" disabled>Apply Crop</button>
+            </section>
+
+
+        </aside>
+
+        <section id="canvas-container">
+            <canvas id="photoCanvas"></canvas>
+            <div id="file-overlay">
+                <input type="file" id="imageUploader" accept="image/*">
+                <div id="dropZone">
+                    <p> Click to choose file <br><br> Or drag & drop image here </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="script/photo-editor.js"></script>
+<!--    <script src="script/photo-editor-crop.js"></script> -->
+</body>
+</html>

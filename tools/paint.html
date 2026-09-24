@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paint</title>
+  <link rel="stylesheet" href="style/app-common.css">
+  <link rel="stylesheet" href="style/paint.css">
+  <link rel="stylesheet" href="style/no-scrollbar.css">
+</head>
+<body>
+  <div class="paint">
+    <div class="title-bar"> Paint </div>
+    <div class="toolbar">
+      <button class="tool" data-tool="brush">Brush</button>
+      <button class="tool" data-tool="eraser">Eraser</button>
+<!--      <button class="tool" data-tool="fill">Fill</button> -->
+      <button class="tool" data-tool="circle">Circle</button>
+      <button class="tool" data-tool="triangle">Triangle</button>
+      <button class="tool" data-tool="rectangle">Rectangle</button>
+      <button class="tool" data-tool="square">Square</button>
+
+      <select class="brush-width" title="Brush Width">
+        <option value="2">2px</option>
+        <option value="5" selected>5px</option>
+        <option value="10">10px</option>
+        <option value="20">20px</option>
+        <option value="50">50px</option>
+        <option value="100">100px</option>
+      </select>
+		&nbsp;&nbsp;&nbsp;&nbsp;
+      <button class="action" id="undo">Undo</button>
+      <button class="action" id="redo">Redo</button>
+      <button class="action" id="clear">Clear</button>
+      <button class="action" id="save">Save</button>
+		<br>
+		&nbsp;&nbsp;&nbsp;&nbsp;
+      <div class="colors">
+        <button class="color" style="background: red;" data-color="red"></button>
+        <button class="color" style="background: blue;" data-color="blue"></button>
+        <button class="color" style="background: yellow;" data-color="yellow"></button>
+        <button class="color" style="background: green;" data-color="green"></button>
+        <button class="color" style="background: black;" data-color="black"></button>
+        <button class="color" style="background: white;" data-color="white"></button>
+        <button class="color" style="background: orange;" data-color="orange"></button>
+        <button class="color" style="background: purple;" data-color="purple"></button>
+        <button class="color" style="background: pink;" data-color="pink"></button>
+        <button class="color" style="background: brown;" data-color="brown"></button>
+        <button class="color" style="background: cyan;" data-color="cyan"></button>
+        <button class="color" style="background: magenta;" data-color="magenta"></button>
+      </div>
+    </div>
+    <canvas id="canvas" width="950" height="325"></canvas>
+  </div>
+
+	<script src="script/paint.js"></script>
+	
+</body>
+</html>

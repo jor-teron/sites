@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Weather Chart</title>
+
+<style type="text/css">
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #f9f9f9;
+    color: black;
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: 700; /* Adjusted from 888 to 700 for standard bold */
+    display: flex;
+    justify-content: center;
+    align-items: ;
+    height: 100vh;
+  }
+
+  #weather-graph {
+	position: relative;
+	top: 10%;
+	height: 50%;
+    color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 90vw; /* 90% of viewport width */
+    max-width: 1200px; /* Increased for wider screens */
+    aspect-ratio: 5 / 2; /* Maintains width:height ratio */
+    background-color: #ffffff;
+    border-radius: 16px; /* Slightly larger for a softer look */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); /* Enhanced shadow for depth */
+    padding: 1.5rem; /* Increased padding for balance */
+    box-sizing: border-box; /* Ensures padding is included in width */
+  }
+
+  #tempChart {
+    width: 100%;
+    height: 100%;
+    display: block; /* Ensures canvas respects container dimensions */
+  }
+</style>
+
+</head>
+
+<body>
+
+<div id="weather-graph">
+<canvas id="tempChart"></canvas>
+</div>
+
+<script src="script/weather-chart.js"></script>
+
+</body>
+</html>

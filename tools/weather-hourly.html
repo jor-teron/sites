@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diphu Hourly Weather Forecast</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+	body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #f3f4f6;
+/*            background-color: #f3f4f6; */
+	}
+	h1 {
+		color:white;        
+}
+
+        #weather {
+            flex-grow: 1;
+            background-color: ;
+            
+        }
+    </style>
+</head>
+<body class="font-sans">
+
+<script src="chart.min.js"></script>
+
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">Diphu Hourly Weather Forecast</h1>
+        <div id="weather" class="bg-white shadow-md rounded-lg p-6">
+            <p class="text-gray-500 text-center">Loading weather data...</p>
+        </div>
+    </div>
+
+    <script>
+        // WMO weather code mapping
+        const weatherCodes = {
+            0: "Clear sky",
+            1: "Mainly clear",
+            2: "Partly cloudy",
+            3: "Overcast",
+            51: "Light drizzle",
+            53: "Moderate drizzle",
+            55: "Dense drizzle",
+            61: "Slight rain",
+            63: "Moderate rain",
+            65: "Heavy rain",
+            80: "Slight rain showers",
+            81: "Moderate rain showers",
+            82: "Violent rain showers",
+            95: "Thunderstorm",
+            96: "Thunderstorm with slight hail",
+            99: "Thunderstorm with heavy hail"
+        };
+
+        // Function to fetch and display weather data
+        async function fetchWeather() {
+            const url = "https://api.open-meteo.com/v1/forecast?latitude=25.8387&longitude=93.4373&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m&timezone=auto";
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("Failed to fetch weather data");
+                const data = await response.json();
+
+                // Extract hourly data (limit to first 24 hours)
+                const hourly = data.hourly;
+                const times = hourly.time.slice(0, 24);
+                const temperatures = hourly.temperature_2m.slice(0, 24);
+                const humidities = hourly.relative_humidity_2m.slice(0, 24);
+                const precipitations = hourly.precipitation.slice(0, 24);
+                const weatherCodesData = hourly.weather_code.slice(0, 24);
+                const windSpeeds = hourly.wind_speed_10m.slice(0, 24);
+
+                // Generate table HTML
+                let tableHtml = `
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border-b p-3">Time</th>
+                                <th class="border-b p-3">Temperature (°C)</th>
+                                <th class="border-b p-3">Humidity (%)</th>
+                                <th class="border-b p-3">Precipitation (mm)</th>
+                                <th class="border-b p-3">Wind Speed (km/h)</th>
+                                <th class="border-b p-3">Condition</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                times.forEach((time, index) => {
+                    const date = new Date(time);
+                    const localTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const condition = weatherCodes[weatherCodesData[index]] || "Unknown";
+                    tableHtml += `
+                        <tr class="${index % 2 === 0 ? 'bg-gray-50' : ''}">
+                            <td class="border-b p-3">${localTime}</td>
+                            <td class="border-b p-3">${temperatures[index].toFixed(1)}</td>
+                            <td class="border-b p-3">${humidities[index]}</td>
+                            <td class="border-b p-3">${precipitations[index].toFixed(1)}</td>
+                            <td class="border-b p-3">${windSpeeds[index].toFixed(1)}</td>
+                            <td class="border-b p-3">${condition}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHtml += `
+                        </tbody>
+                    </table>
+                `;
+
+                // Update the weather div
+                document.getElementById("weather").innerHTML = tableHtml;
+            } catch (error) {
+                document.getElementById("weather").innerHTML = `
+                    <p class="text-red-500 text-center">Error: ${error.message}</p>
+                `;
+            }
+        }
+
+        // Run fetchWeather when the page loads
+        window.onload = fetchWeather;
+    </script>
+</body>
+</html>

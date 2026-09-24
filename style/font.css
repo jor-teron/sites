@@ -1,0 +1,15 @@
+/* Font styles with monospaced fonts and Times New Roman fallback */
+
+/* Define font stack for the interface */
+body {
+    font-family: 'Fira Mono', 'Consolas', 'Ubuntu Mono', 'Courier New', 'Times New Roman', monospace;
+    /* Browser handles further fallbacks (e.g., generic monospace) */
+
+}
+
+/* Ensure consistent font rendering across browsers */
+* {
+    font-smooth: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}

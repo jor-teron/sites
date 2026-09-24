@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swell Foop</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the game, overriding or extending Tailwind where necessary */
+        html, body { /* Added html to ensure full height */
+            height: 100%; /* Ensure html and body take full height */
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
+            overflow: hidden; /* Prevent scroll bars */
+        }
+        canvas {
+            background-color: #2d3748; /* Darker canvas background */
+            border-radius: 1rem; /* Rounded corners for canvas */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+            touch-action: none; /* Disable default touch actions like scrolling/zooming */
+        }
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem; /* Space between elements */
+            padding: 1.5rem;
+            background-color: #2d3748; /* Container background */
+            border-radius: 1.5rem; /* More rounded corners for container */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
+            max-width: 90vw; /* Max width for responsiveness */
+            width: 100%; /* Full width within max-width */
+            box-sizing: border-box; /* Include padding in width */
+        }
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 1rem;
+        }
+        .btn {
+            @apply px-6 py-3 rounded-xl font-semibold text-lg transition-all duration-300 ease-in-out;
+            @apply bg-blue-600 text-white shadow-lg hover:bg-blue-700 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50;
+            @apply active:scale-95; /* Click effect */
+            border: none; /* Remove default button border */
+            cursor: pointer;
+        }
+        .message-box {
+            @apply fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50;
+            position: fixed ;
+            top: 5px;
+            left: 100px;
+            width: 90%;
+            min-height: 150px;
+            background: rgba(0,0,0,0);
+            border: 0px solid white;
+            color: black;
+            text-align: center;
+            align-items: center ;
+            align-content: center ;
+            
+        }
+        .message-content {
+            @apply bg-gray-800 p-8 rounded-xl shadow-2xl text-center max-w-sm; /* Added max-w-sm */
+            position: fixed;
+            top: calc( 45vh - 130px ) ;
+            left: calc( 50vw - 250px ) ;
+            width: 500px;
+            height: 260px;
+            background: rgba(250,250,250,0.9);
+            border-radius: 30px;
+            border: 0px solid orange;
+            font-size: 30px;
+            margin-top: 40px;
+            font-weight: 800;
+        }
+        .message-content h2 {
+            @apply text-3xl font-bold mb-4 text-white;
+        }
+        .message-content p {
+            @apply text-xl text-gray-300 mb-6;
+        }
+        .message-content button {
+            @apply btn; /* Apply button styles */
+            width: 100px;
+            height: 50px;
+            color: white;
+            margin: 10px;
+            background: rgba(0,0,0,0.9);
+            border-radius: 10px;
+        }
+        
+        
+        .message-content button:hover {
+            background: rgba(0,0,0,0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="text-4xl font-extrabold text-white mb-4">Swell Foop</h1>
+        <div class="game-info">
+            <div class="text-xl font-medium">Score: <span id="score">0</span></div>
+            <div class="text-xl font-medium">Moves: <span id="moves">0</span></div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+        <div class="flex flex-col md:flex-row gap-4 mt-4 w-full justify-center items-center">
+            <button id="newGameBtn" class="btn">New Game</button>
+        </div>
+    </div>
+
+    <!-- Message Box HTML -->
+    <div id="messageBox" class="message-box hidden">
+        <div class="message-content">
+            <h2 id="messageTitle"></h2>
+            <p id="messageText"></p>
+            <button id="messageButton">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Game configuration
+        const GRID_COLS = 15;
+        const GRID_ROWS = 6;
+        const BALL_SIZE = 50; // Size of each ball in pixels (Updated as per user's previous change)
+        const COLORS = [
+            '#3b82f6', // blue-500
+            '#22c55e', // green-500
+            '#f59e0b', // amber-500
+        ];
+
+        // Game state variables
+        let canvas, ctx;
+        let grid = []; // The main game grid, stores final positions
+        let score = 0;
+        let moves = 0;
+        let isGameOver = false;
+
+        // Animation variables
+        let animationActive = false;
+        let animationStartTime = 0;
+        const animationDuration = 400; // milliseconds for falling animation (fixed)
+        const bounceCount = 0; // Number of bounces (fixed to 0)
+        let currentAnimationMovements = []; // Stores objects like { color, fromR, fromC, toR, toC }
+
+        // DOM elements
+        const scoreDisplay = document.getElementById('score');
+        const movesDisplay = document.getElementById('moves');
+        const newGameBtn = document.getElementById('newGameBtn');
+        const messageBox = document.getElementById('messageBox');
+        const messageTitle = document.getElementById('messageTitle');
+        const messageText = document.getElementById('messageText');
+        const messageButton = document.getElementById('messageButton');
+
+        /**
+         * Initializes the game canvas and context.
+         * Sets up event listeners.
+         */
+        function initCanvas() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+
+            // Set canvas dimensions based on grid and ball size
+            canvas.width = GRID_COLS * BALL_SIZE;
+            canvas.height = GRID_ROWS * BALL_SIZE;
+
+            // Add event listeners for mouse and touch
+            canvas.addEventListener('mousedown', handleInput);
+            canvas.addEventListener('touchstart', handleInput);
+
+            newGameBtn.addEventListener('click', startNewGame);
+            messageButton.addEventListener('click', hideMessageBox);
+
+            // Initial game start
+            startNewGame();
+        }
+
+        /**
+         * Starts a new game: resets score, moves, generates a new grid, and draws it.
+         */
+        function startNewGame() {
+            score = 0;
+            moves = 0;
+            isGameOver = false;
+            animationActive = false; // Ensure animation is off for new game
+            currentAnimationMovements = []; // Clear any pending animation data
+            updateScoreDisplay();
+            generateGrid();
+            drawGrid(); // Initial draw without animation
+            hideMessageBox(); // Ensure message box is hidden on new game
+        }
+
+        /**
+         * Generates a new random grid of colored balls.
+         */
+        function generateGrid() {
+            grid = [];
+            for (let r = 0; r < GRID_ROWS; r++) {
+                grid[r] = [];
+                for (let c = 0; c < GRID_COLS; c++) {
+                    grid[r][c] = COLORS[Math.floor(Math.random() * COLORS.length)];
+                }
+            }
+        }
+
+        /**
+         * Draws a rounded rectangle.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x - The x-coordinate of the upper-left corner of the rectangle.
+         * @param {number} y - The y-coordinate of the upper-left corner of the rectangle.
+         * @param {number} width - The width of the rectangle.
+         * @param {number} height - The height of the rectangle.
+         * @param {number} radius - The corner radius.
+         */
+        function drawRoundedRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            // Corrected typo: quadraticCurveCurveTo changed to quadraticCurveTo
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        /**
+         * Draws the current state of the grid on the canvas, with optional falling animation.
+         * Balls that are part of `currentAnimationMovements` will be drawn at interpolated positions.
+         * Other balls will be drawn at their final, static positions.
+         * @param {DOMHighResTimeStamp} [timestamp] - The current time provided by requestAnimationFrame.
+         */
+        function drawGrid(timestamp) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+
+            let progress = 1; // Default to 1 (no animation)
+            if (animationActive && timestamp) { // Only calculate progress if animation is active and timestamp is provided
+                const elapsedTime = timestamp - animationStartTime;
+                progress = Math.min(elapsedTime / animationDuration, 1);
+            }
+
+            // Keep track of which final positions are being animated to avoid drawing them twice
+            const animatingToPositions = new Set();
+
+            if (animationActive) {
+                for (const move of currentAnimationMovements) {
+                    animatingToPositions.add(`${move.toR},${move.toC}`);
+
+                    // Calculate interpolated position for animated balls (linear fall)
+                    let interpolatedX = move.fromC * BALL_SIZE + 2 + (move.toC - move.fromC) * BALL_SIZE * progress;
+                    let interpolatedY = move.fromR * BALL_SIZE + 2 + (move.toR - move.fromR) * BALL_SIZE * progress;
+
+                    // Apply bounce effect if configured and near the end of the fall
+                    let bounceOffset = 0;
+                    const bounceStartProgress = 0.7; // Start bounce when 70% of fall is complete
+                    const bounceEndProgress = 1.0; // End bounce at 100% of fall
+
+                    if (bounceCount > 0 && progress >= bounceStartProgress && progress <= bounceEndProgress) {
+                        const bouncePhase = (progress - bounceStartProgress) / (bounceEndProgress - bounceStartProgress); // Normalize phase for bounce (0 to 1)
+
+                        if (bounceCount === 1) {
+                            // Single bounce: up and down
+                            bounceOffset = Math.sin(bouncePhase * Math.PI) * (BALL_SIZE * 0.15); // Max bounce height 15% of ball size
+                        } else if (bounceCount === 2) {
+                            // Two bounces: first larger, second smaller
+                            if (bouncePhase < 0.6) { // First bounce phase (0 to 0.6)
+                                bounceOffset = Math.sin(bouncePhase / 0.6 * Math.PI) * (BALL_SIZE * 0.15);
+                            } else { // Second bounce phase (0.6 to 1.0)
+                                bounceOffset = Math.sin((bouncePhase - 0.6) / 0.4 * Math.PI) * (BALL_SIZE * 0.08); // Smaller bounce
+                            }
+                        }
+                    }
+                    interpolatedY -= bounceOffset; // Subtract offset to move ball upwards for bounce
+
+                    const size = BALL_SIZE - 4; // Subtract margin from overall size
+                    const radius = 8; // Radius for rounded corners
+
+                    ctx.fillStyle = move.color;
+                    // Draw a rounded rectangle for each ball
+                    drawRoundedRect(ctx, interpolatedX, interpolatedY, size, size, radius);
+                    ctx.fill();
+                    ctx.strokeStyle = '#cbd5e0'; // Light stroke for definition
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+
+            // Draw static balls (those not part of the current animation)
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const color = grid[r][c]; // This is the FINAL position and color in the main grid
+
+                    // Only draw if there's a ball AND it's not currently animating to this position
+                    if (color && (!animationActive || !animatingToPositions.has(`${r},${c}`))) {
+                        const x = c * BALL_SIZE + 2; // Add a small margin for spacing
+                        const y = r * BALL_SIZE + 2;
+
+                        const size = BALL_SIZE - 4;
+                        const radius = 8;
+
+                        ctx.fillStyle = color;
+                        drawRoundedRect(ctx, x, y, size, size, radius);
+                        ctx.fill();
+                        ctx.strokeStyle = '#cbd5e0';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Continue animation if still active and not finished
+            if (animationActive && progress < 1) {
+                requestAnimationFrame(drawGrid);
+            } else if (animationActive && progress >= 1) {
+                // Animation finished, reset flag and clear movements
+                animationActive = false;
+                currentAnimationMovements = [];
+                checkGameOver();
+            }
+        }
+
+        /**
+         * Handles mouse and touch input on the canvas.
+         * @param {Event} event - The input event (mousedown or touchstart).
+         */
+        function handleInput(event) {
+            if (isGameOver || animationActive) return; // Do nothing if game is over or animation is running
+
+            event.preventDefault(); // Prevent default browser actions (e.g., scrolling on touch)
+
+            let clientX, clientY;
+            if (event.type === 'touchstart') {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+
+            // Get canvas position relative to the viewport
+            const rect = canvas.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            // Calculate grid coordinates
+            const col = Math.floor(x / BALL_SIZE);
+            const row = Math.floor(y / BALL_SIZE);
+
+            // Ensure coordinates are within bounds
+            if (row >= 0 && row < GRID_ROWS && col >= 0 && col < GRID_COLS) {
+                handleClick(row, col);
+            }
+        }
+
+        /**
+         * Processes a click on a specific grid cell.
+         * @param {number} row - The row index of the clicked cell.
+         * @param {number} col - The column index of the clicked cell.
+         */
+        function handleClick(row, col) {
+            const clickedColor = grid[row][col];
+            if (!clickedColor) return; // If clicked an empty space, do nothing
+
+            // Find all connected balls of the same color
+            const connectedBalls = findConnectedBalls(row, col, clickedColor);
+
+            // Only remove if there are at least 2 connected balls
+            if (connectedBalls.length >= 2) {
+                // Create a temporary grid to calculate movements without modifying the main grid yet
+                const tempGridAfterRemoval = JSON.parse(JSON.stringify(grid));
+                removeBallsFromTemp(tempGridAfterRemoval, connectedBalls); // Remove balls from temp grid
+
+                // Calculate gravity movements and get the grid state after gravity
+                const { newGrid: gridAfterGravity, movements: gravityMovements } = calculateGravityMovements(tempGridAfterRemoval);
+
+                // Calculate column shift movements and get the final grid state
+                const { newGrid: finalGrid, movements: columnMovements } = calculateShiftMovements(gridAfterGravity);
+
+                // Update the actual game grid with the final state
+                grid = finalGrid;
+
+                // Combine all movements for animation
+                currentAnimationMovements = [...gravityMovements, ...columnMovements];
+
+                score += calculateScore(connectedBalls.length);
+                moves++;
+                updateScoreDisplay();
+
+                // Start the falling animation
+                animationActive = true;
+                animationStartTime = performance.now();
+                requestAnimationFrame(drawGrid); // Start the animation loop
+            }
+        }
+
+        /**
+         * Finds all connected balls of the same color using Breadth-First Search (BFS).
+         * @param {number} startRow - Starting row for BFS.
+         * @param {number} startCol - Starting column for BFS.
+         * @param {string} targetColor - The color to match.
+         * @returns {Array<Array<number>>} - An array of [row, col] pairs for connected balls.
+         */
+        function findConnectedBalls(startRow, startCol, targetColor) {
+            const connected = [];
+            const queue = [[startRow, startCol]];
+            const visited = new Set(); // Use a Set to store visited coordinates as "row,col" strings
+
+            // Helper to add a coordinate to visited set
+            const visit = (r, c) => visited.add(`${r},${c}`);
+            // Helper to check if a coordinate has been visited
+            const isVisited = (r, c) => visited.has(`${r},${c}`);
+
+            visit(startRow, startCol); // Mark starting cell as visited
+
+            while (queue.length > 0) {
+                const [r, c] = queue.shift();
+                connected.push([r, c]);
+
+                // Check neighbors (up, down, left, right)
+                const neighbors = [
+                    [r - 1, c], // Up
+                    [r + 1, c], // Down
+                    [r, c - 1], // Left
+                    [r, c + 1]  // Right
+                ];
+
+                for (const [nr, nc] of neighbors) {
+                    // Check bounds, if not visited, and if color matches
+                    if (nr >= 0 && nr < GRID_ROWS &&
+                        nc >= 0 && nc < GRID_COLS &&
+                        !isVisited(nr, nc) &&
+                        grid[nr][nc] === targetColor) {
+                        visit(nr, nc);
+                        queue.push([nr, nc]);
+                    }
+                }
+            }
+            return connected;
+        }
+
+        /**
+         * Removes the specified balls from a given grid by setting their color to null.
+         * This operates on a temporary grid, not the main game grid.
+         * @param {Array<Array<string|null>>} tempGrid - The grid to modify.
+         * @param {Array<Array<number>>} ballsToRemove - Array of [row, col] pairs to remove.
+         */
+        function removeBallsFromTemp(tempGrid, ballsToRemove) {
+            for (const [r, c] of ballsToRemove) {
+                tempGrid[r][c] = null; // Set to null to represent an empty space
+            }
+        }
+
+        /**
+         * Calculates gravity movements and returns the new grid state after gravity.
+         * This function works on a copy of the grid and does not modify the original.
+         * @param {Array<Array<string|null>>} inputGrid - The grid state to apply gravity to.
+         * @returns {{newGrid: Array<Array<string|null>>, movements: Array<{color: string, fromR: number, fromC: number, toR: number, toC: number}>}}
+         */
+        function calculateGravityMovements(inputGrid) {
+            const tempGrid = JSON.parse(JSON.stringify(inputGrid)); // Work on a copy
+            const movements = [];
+
+            for (let c = 0; c < GRID_COLS; c++) {
+                let emptySpaces = 0;
+                // Iterate from bottom to top
+                for (let r = GRID_ROWS - 1; r >= 0; r--) {
+                    if (tempGrid[r][c] === null) {
+                        emptySpaces++;
+                    } else if (emptySpaces > 0) {
+                        // This ball at (r, c) will move to (r + emptySpaces, c)
+                        const originalColor = tempGrid[r][c];
+                        tempGrid[r + emptySpaces][c] = originalColor;
+                        tempGrid[r][c] = null; // Clear the original position
+                        movements.push({
+                            color: originalColor,
+                            fromR: r,
+                            fromC: c,
+                            toR: r + emptySpaces,
+                            toC: c
+                        });
+                    }
+                }
+            }
+            return { newGrid: tempGrid, movements: movements };
+        }
+
+        /**
+         * Calculates column shift movements and returns the new grid state after shifts.
+         * This function works on a copy of the grid and does not modify the original.
+         * @param {Array<Array<string|null>>} inputGrid - The grid state to apply column shifts to.
+         * @returns {{newGrid: Array<Array<string|null>>, movements: Array<{color: string, fromR: number, fromC: number, toR: number, toC: number}>}}
+         */
+        function calculateShiftMovements(inputGrid) {
+            const tempGrid = JSON.parse(JSON.stringify(inputGrid)); // Work on a copy
+            const movements = [];
+            let emptyCols = 0;
+            for (let c = 0; c < GRID_COLS; c++) {
+                let isColumnEmpty = true;
+                for (let r = 0; r < GRID_ROWS; r++) {
+                    if (tempGrid[r][c] !== null) {
+                        isColumnEmpty = false;
+                        break;
+                    }
+                }
+
+                if (isColumnEmpty) {
+                    emptyCols++;
+                } else if (emptyCols > 0) {
+                    // Shift this non-empty column left by `emptyCols` positions
+                    for (let r = 0; r < GRID_ROWS; r++) {
+                        if (tempGrid[r][c] !== null) { // Only move if there's a ball
+                            const originalColor = tempGrid[r][c];
+                            tempGrid[r][c - emptyCols] = originalColor;
+                            tempGrid[r][c] = null; // Clear the original position
+                            movements.push({
+                                color: originalColor,
+                                fromR: r,
+                                fromC: c,
+                                toR: r,
+                                toC: c - emptyCols
+                            });
+                        }
+                    }
+                }
+            }
+            return { newGrid: tempGrid, movements: movements };
+        }
+
+        /**
+         * Calculates the score based on the number of balls removed.
+         * Formula: n * (n - 1) where n is the number of balls.
+         * @param {number} numBalls - The number of balls removed in a single move.
+         * @returns {number} - The score for the move.
+         */
+        function calculateScore(numBalls) {
+            return numBalls * (numBalls - 1);
+        }
+
+        /**
+         * Updates the score and moves displayed on the UI.
+         */
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = score;
+            movesDisplay.textContent = moves;
+        }
+
+        /**
+         * Checks if there are any more possible moves left in the game.
+         * Game is over if no group of 2 or more connected balls can be found.
+         */
+        function checkGameOver() {
+            let possibleMovesExist = false;
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const color = grid[r][c];
+                    if (color) {
+                        const connected = findConnectedBalls(r, c, color);
+                        if (connected.length >= 2) {
+                            possibleMovesExist = true;
+                            break; // Found a possible move, no need to check further
+                        }
+                    }
+                }
+                if (possibleMovesExist) break;
+            }
+
+            if (!possibleMovesExist) {
+                isGameOver = true;
+                showMessageBox('Game Over!', `Your final score: ${score}`);
+            }
+        }
+
+        /**
+         * Displays a custom message box.
+         * @param {string} title - The title of the message.
+         * @param {string} text - The main text content of the message.
+         */
+        function showMessageBox(title, text) {
+            messageTitle.textContent = title;
+            messageText.textContent = text;
+            messageBox.classList.remove('hidden');
+        }
+
+        /**
+         * Hides the custom message box.
+         */
+        function hideMessageBox() {
+            messageBox.classList.add('hidden');
+        }
+
+        // Initialize the game when the window loads
+        window.onload = initCanvas;
+    </script>
+</body>
+</html>
+

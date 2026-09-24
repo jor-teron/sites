@@ -1,0 +1,39 @@
+/* webcam.css */
+
+/* Custom font-family for Inter, loaded via Google Fonts in HTML */
+.font-inter {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Ensure video and canvas maintain aspect ratio and fit container */
+video, canvas {
+    max-width: 100%;
+    height: auto; /* Maintain aspect ratio */
+    display: block; /* Remove extra space below inline elements */
+    object-fit: cover; /* Ensures the video/image covers the element without distortion */
+}
+
+/* Basic styling for the container to give it some depth */
+.container {
+    max-width: 600px; /* Limit max width for better readability on large screens */
+}
+
+/* Styling for the hidden elements before they are shown by JS */
+.hidden {
+    display: none !important;
+}
+
+/* Responsive adjustments for smaller screens if needed, though Tailwind handles much of it */
+@media (max-width: 640px) {
+    .container {
+        padding: 1rem; /* Reduce padding on small screens */
+    }
+    h1 {
+        font-size: 2rem; /* Adjust heading size */
+    }
+    button, a {
+        padding: 0.75rem 1.25rem; /* Adjust button padding */
+        font-size: 0.9rem;
+    }
+}
+

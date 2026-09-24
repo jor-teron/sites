@@ -1,0 +1,43 @@
+	body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #f3f4f6;
+/*            background-color: #f3f4f6; */
+	}
+	h1 {
+		color:white;        
+}
+
+        #weather {
+            flex-grow: 1;
+            background-color: ;
+            
+        }
+        
+        
+            #weather-chart {
+      width: 100%;
+      height: 400px;
+      position: relative;
+    }
+    
+    #tempChart {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background-color: olive;
+    }
+    
+iframe {
+  overflow: hidden;
+  border: none;
+}
+
+#city {
+	height: ;
+}
+
+
+    
+    

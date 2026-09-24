@@ -1,0 +1,380 @@
+/* Basic Resets & Global Styles */
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --bg-color: #888;
+/*
+    --bg-color: #f8f9fa;
+*/
+    --panel-bg: #ffffff;
+    --border-color: #dee2e6;
+    --text-color: #343a40;
+    --header-height: 50px;
+    --control-panel-width: 300px;
+    --control-panel-max-width: 500px;
+    --control-panel-min-width: 250px;
+
+    /* A4 Dimensions (Portrait) at 96 DPI for web display */
+    --a4-portrait-width-px: 794px;  /* 210mm * 96dpi / 25.4mm/inch */
+    --a4-portrait-height-px: 1123px; /* 297mm * 96dpi / 25.4mm/inch */
+    --a4-portrait-aspect-ratio: 0.707; /* Width / Height (210/297) */
+    --a4-landscape-aspect-ratio: 1.414; /* Height / Width (297/210) */
+    
+   /* Legal Dimensions (Portrait) at 96 DPI for web display (8.5 x 14 inches) */
+    --legal-portrait-width-px: 816px;  /* 8.5 inches * 96 dpi */
+    --legal-portrait-height-px: 1344px; /* 14 inches * 96 dpi */
+    --legal-portrait-aspect-ratio: 0.607; /* 816/1344 */
+    --legal-landscape-aspect-ratio: 1.647; /* 1344/816 */
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: ;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    /* Removed: overflow: hidden; */ /* Allow content to overflow and be scrollable by children */
+}
+
+/* Hide scrollbar for entire application */
+/*
+body::-webkit-scrollbar,
+#control-panel::-webkit-scrollbar,
+#app-container::-webkit-scrollbar {
+    display: none;
+    width: 0 !important; 
+    height: 0 !important;
+}
+*/
+
+body, #control-panel, #app-container {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+
+/* Header Styling */
+header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 10px 20px;
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.8em;
+}
+
+#currentPhotoName {
+    font-size: 0.8em;
+    opacity: 0.8;
+    margin-left: 10px;
+}
+
+/* Main Application Container */
+#app-container {
+    display: flex;
+    flex-grow: 1;
+    overflow: auto; /* Allow scrolling for the entire app-container */
+    padding: 15px;
+    gap: 15px;
+}
+
+/* Control Panel (Left Sidebar) */
+#control-panel {
+    width: var(--control-panel-width);
+    max-width: var(--control-panel-max-width);
+    min-width: var(--control-panel-min-width);
+    background-color: var(--panel-bg);
+    border-radius: 8px;
+    padding: 15px; /* Reduced padding */
+    box-sizing: border-box;
+    overflow-y: auto; /* Enable scrolling for controls if they exceed height */
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+#control-panel h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--primary-color);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+#control-panel h4 {
+    margin-top: 15px; /* Slightly reduced margin-top */
+    margin-bottom: 10px;
+    color: var(--text-color);
+}
+
+.section-group {
+    margin-bottom: 20px; /* Reduced margin-bottom */
+    padding-bottom: 15px;
+    border: 1px solid var(--border-color); /* Border for each control group */
+    border-radius: 6px; /* Slightly rounded corners for the border */
+    padding: 10px 15px; /* Padding inside the border */
+    margin-top: 15px; /* Add margin-top to separate groups */
+}
+
+.section-group:first-child {
+    margin-top: 0; /* No top margin for the very first group */
+}
+
+.section-group:last-child {
+    border-bottom: 1px solid var(--border-color); /* Ensure last group also has a bottom border if it's the only one */
+    margin-bottom: 0;
+    padding-bottom: 10px; /* Smaller padding-bottom for the last group */
+}
+
+/* Form Elements & Buttons within Control Panel */
+#control-panel label {
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+#control-panel input[type="range"] {
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+#control-panel input[type="file"] {
+    display: none;
+}
+
+#control-panel button {
+    display: inline-block;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    padding: 10px 15px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s ease;
+}
+
+#control-panel button:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+#control-panel button:active:not(:disabled) {
+    background-color: #004085;
+}
+
+#control-panel button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+
+/* Canvas Container (Right Panel) */
+#canvas-container {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #888;
+    /*
+    background-color: #e9ecef;
+*/
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    position: relative;
+
+    /* A4 Paper Dimensions for Display */
+    /* Use max-width/height to ensure it scales down for smaller screens */
+    /* Dynamic width/heig#f8f9faht based on A4 aspect ratio and viewport available space */
+    width: calc((100vw - var(--control-panel-width) - 30px) * var(--a4-portrait-aspect-ratio));
+    height: calc(100vh - var(--header-height) - 30px);
+    max-width: var(--a4-portrait-width-px);
+    max-height: var(--a4-portrait-height-px);
+    aspect-ratio: var(--current-canvas-aspect-ratio, var(--a4-portrait-aspect-ratio)); /* Default to A4 portrait if not set */
+/*    aspect-ratio: var(--a4-portrait-aspect-ratio); */ /* Default aspect ratio *newBtn.addEventListener('click', () => {
+    window.open('./photo-editor.html', '_blank');
+});/
+
+    /* Ensure it scales down if height is the limiting factor */
+    min-width: 0;
+    min-height: 0;
+    border: 0px solid var( --primary-color );
+}
+
+/* Adjust canvas container aspect ratio based on page orientation for CSS display */
+#canvas-container.landscape {
+    width: calc((100vh - var(--header-height) - 30px) * var(--a4-landscape-aspect-ratio));
+    height: calc(100vh - var(--header-height) - 30px);
+    max-width: var(--a4-portrait-height-px); /* Swap for landscape max dimensions */
+    max-height: var(--a4-portrait-width-px);
+    aspect-ratio: var(--a4-landscape-aspect-ratio);
+}
+
+
+#photoCanvas {
+    /* Canvas itself will take up 100% of its parent (#canvas-container) */
+    width: auto;
+    height: 100%;
+    display: block;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border-color);
+    background: ;
+    outline: none;
+    background-color: #e9ecef;
+}
+
+/* File Upload Overlay */
+#file-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    border-radius: 8px;
+    padding: 5%;
+    box-sizing: border-box;
+    border: 1px solid var(--primary-color);
+}
+
+#file-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    z-index: -10;
+    pointer-events: none;
+}
+
+#file-overlay #imageUploader {
+    display: none;
+}
+
+#file-overlay #dropZone {
+    border: 2px dashed var(--secondary-color);
+    border-radius: 8px;
+    padding: 40px 60px;
+    text-align: center;
+    color: var(--secondary-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    background-color: rgba(0,0,0,0.02);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+#file-overlay #dropZone:hover {
+    background-color: #e9f5ff;
+    border-color: var(--primary-color);
+}
+
+#file-overlay #dropZone.highlight {
+    background-color: #d1e7fd;
+    border-color: var(--primary-color);
+}
+
+/* Cropping specific styles */
+#photoCanvas.cropping-mode {
+    cursor: crosshair;
+}
+
+/* Not strictly necessary since canvas drawing handles overlay, but good for consistency */
+#photoCanvas.resize-mode {
+    cursor: default;
+}
+
+.image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0;
+    visibility: hidden;
+    background-color: transparent;
+}
+
+.image-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+#resize-overlay {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+
+.control-pair {
+    margin-bottom: 15px; /* Spacing between pairs */
+}
+
+.control-pair label {
+    display: block; /* Make label take its own line */
+    margin-bottom: 5px; /* Space between label and select */
+    font-weight: bold;
+    font-size: 0.9em; /* Matches other labels */
+    color: var(--text-color); /* Ensures consistent text color */
+}
+
+
+/* Ensure your select elements themselves are consistently styled */
+#paperSizeSelect,
+#orientationSelect {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%205%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M2%200L0%202h4L2%200zM2%205L0%203h4L2%205z%22%2F%3E%3C%2Fsvg%3E'); /* Custom arrow */
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 8px 10px;
+    background-color: #f8f9fa; /* Use a consistent background var */
+    color: var(--text-color); /* Use a consistent text color var */
+}
+
+/* Ensure hover styles apply to both */
+#paperSizeSelect:hover,
+#orientationSelect:hover {
+    border-color: var(--primary-color);
+}
+
+#orientationSelect option {
+    background-color:  ; /* This might work on some browsers, but not all */
+    color: ;
+}
+
+
