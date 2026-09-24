@@ -13,3 +13,6 @@ Tools,Notepad,tools/notepad/,50,0
 Tools,Weather,tools/weather-chart/,60,0
 Tools,Learning HTMl (basic),tools/learning-html/,100,0
 Desktop,vDesktop,tools/vDesktop/,10,0
+About,About,about/,10,0
+About,Contact,about/,20,1
+About,Feedback,about/,30,1

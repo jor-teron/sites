@@ -1,0 +1,244 @@
+.
+├── about
+│   ├── about.html
+│   └── index.html
+├── controller
+├── favicon.ico
+├── games
+│   ├── browser-fps
+│   │   ├── browser-fps.css
+│   │   ├── browser-fps.html
+│   │   ├── browser-fps.js
+│   │   └── index.html
+│   └── swell-foop
+│       ├── index.html
+│       ├── swell-foop.html
+│       └── swell-foop_icon.png
+├── grid.html
+├── hub-apps.csv
+├── hub.css
+├── hub.html
+├── hub.js
+├── image
+│   ├── app.png
+│   ├── arrow_blue.png
+│   ├── box.png
+│   ├── call.png
+│   ├── chase.png
+│   ├── close.png
+│   ├── cogwheel.png
+│   ├── connection.png
+│   ├── dialer.png
+│   ├── digital-nomad-hub.png
+│   ├── drive.png
+│   ├── earth.png
+│   ├── excel.png
+│   ├── folder.png
+│   ├── gallery.png
+│   ├── golf.png
+│   ├── google-docs.png
+│   ├── google-maps.png
+│   ├── google-pay.png
+│   ├── home.png
+│   ├── india.png
+│   ├── mobile.png
+│   ├── more.png
+│   ├── paper.png
+│   ├── photo-camera.png
+│   ├── play.png
+│   ├── qr.png
+│   ├── setting.png
+│   ├── sms.png
+│   ├── tv_no_signal.jpeg
+│   ├── whatsapp_w4b.png
+│   ├── youtube-kids.png
+│   └── youtube.png
+├── index.html
+├── lab
+│   ├── iframe.html
+│   └── index.html
+├── LICENSE
+├── media
+│   ├── gallery
+│   │   ├── filename.js
+│   │   ├── gallery.html
+│   │   ├── gallery_icon.png
+│   │   ├── index.html
+│   │   ├── photos.css
+│   │   └── photos.js
+│   ├── paint
+│   │   ├── index.html
+│   │   ├── paint.css
+│   │   ├── paint.html
+│   │   ├── paint_icon.png
+│   │   └── paint.js
+│   ├── phone
+│   │   ├── ai.html
+│   │   ├── common.css
+│   │   ├── general.html
+│   │   ├── header.html
+│   │   ├── index.html
+│   │   ├── media.html
+│   │   ├── more.css
+│   │   ├── more.html
+│   │   ├── more-phone.css
+│   │   ├── more-phone.html
+│   │   ├── more-tv.css
+│   │   ├── more-tv.html
+│   │   ├── other.html
+│   │   ├── ott.html
+│   │   ├── phone.css
+│   │   ├── phone_icon.png
+│   │   ├── shopping.html
+│   │   ├── social-media.html
+│   │   ├── tv.css
+│   │   ├── upi.css
+│   │   └── upi.html
+│   ├── photo-editor
+│   │   ├── index.html
+│   │   ├── photo-editor.css
+│   │   ├── photo-editor.html
+│   │   ├── photo-editor_icon.png
+│   │   └── photo-editor.js
+│   └── webcam
+│       ├── index.html
+│       ├── webcam.css
+│       ├── webcam.html
+│       ├── webcam_icon.png
+│       └── webcam.js
+├── misc
+│   ├── privatedns.html
+│   └── T&C.html
+├── README.md
+├── script
+│   ├── cursor.js
+│   ├── html-include.js
+│   └── time.js
+├── style
+│   ├── app-common.css
+│   ├── cursor.css
+│   ├── font.css
+│   ├── no-scrollbar.css
+│   └── weather.css
+├── tools
+│   ├── calculator
+│   │   ├── calculator.css
+│   │   ├── calculator.html
+│   │   ├── calculator_icon.png
+│   │   ├── calculator.js
+│   │   ├── calculator-keyboard.js
+│   │   └── index.html
+│   ├── learning-html
+│   │   ├── index.html
+│   │   └── learning-html.html
+│   ├── msword_diff
+│   │   ├── index.html
+│   │   ├── msword_diff.css
+│   │   ├── msword_diff.html
+│   │   ├── msword_diff_icon.png
+│   │   └── msword_diff.js
+│   ├── nei-dict
+│   │   ├── about.html
+│   │   ├── dict.css
+│   │   ├── dict.js
+│   │   ├── grammar.json
+│   │   ├── index.html
+│   │   ├── nei-dict_icon.png
+│   │   └── README.md
+│   ├── notepad
+│   │   ├── index.html
+│   │   ├── notepad.css
+│   │   ├── notepad.html
+│   │   ├── notepad_icon.png
+│   │   └── notepad.js
+│   ├── vDesktop
+│   │   ├── apps.csv
+│   │   ├── desktop_icons.csv
+│   │   ├── hash.txt
+│   │   ├── index.html
+│   │   ├── vDesktop.css
+│   │   ├── vDesktop.html
+│   │   ├── vDesktop_icon.png
+│   │   ├── vDesktop.js
+│   │   └── wallpaper.csv
+│   ├── weather-chart
+│   │   ├── index.html
+│   │   ├── weather-chart.html
+│   │   ├── weather-chart_icon.png
+│   │   └── weather-chart.js
+│   └── weather-hourly.html
+├── tree.txt
+├── tv
+│   ├── channels
+│   │   ├── home.csv
+│   │   ├── home.m3u
+│   │   ├── home-more.csv
+│   │   ├── home-more.m3u
+│   │   ├── kids.csv
+│   │   ├── kids.m3u
+│   │   ├── local.m3u
+│   │   └── split-m3u.sh
+│   ├── index.html
+│   ├── india.html
+│   ├── js
+│   │   ├── autoplay.js
+│   │   ├── config.js
+│   │   ├── config-more.js
+│   │   ├── input.js
+│   │   ├── overlay.js
+│   │   ├── player.js
+│   │   └── playlist.js
+│   ├── kids.html
+│   ├── kids-mini.html
+│   ├── photo.html
+│   ├── tv_icon.png
+│   ├── tv-old
+│   │   ├── common.css
+│   │   ├── index.html
+│   │   ├── more.css
+│   │   ├── more.html
+│   │   ├── more-tv.css
+│   │   ├── more-tv.html
+│   │   ├── phone.css
+│   │   ├── tv.css
+│   │   └── upi.css
+│   ├── tv-v1.css
+│   ├── tv-v1.html
+│   ├── tv-v1.js
+│   ├── tv-v2.css
+│   ├── tv-v2.html
+│   ├── tv-v2.js
+│   ├── tv-v3.css
+│   ├── tv-v3.html
+│   ├── tv-v3.js
+│   ├── tv-v3-more.html
+│   ├── video.html
+│   └── world.html
+├── vendor
+│   ├── diff_match_patch.js
+│   └── jszip.min.js
+└── wallpaper
+    ├── bess.jpg
+    ├── dalia.jpg
+    ├── dog_01.jpg
+    ├── dog_02.jpg
+    ├── dolphin_1.jpg
+    ├── dolphin_2.jpg
+    ├── fish_02.jpg
+    ├── fish_03.jpg
+    ├── fish_04.jpg
+    ├── lake_1.jpg
+    ├── lake_2.jpg
+    ├── lake_3.jpg
+    ├── ocean_2.jpg
+    ├── ocean_3.jpg
+    ├── ocean_7.jpg
+    ├── panda_01.jpg
+    ├── panda_02.jpg
+    ├── panda_1.jpg
+    ├── panda_2.jpg
+    ├── penquin_1.jpg
+    ├── xp.jpg
+    └── xp_small.jpg
+
+31 directories, 211 files

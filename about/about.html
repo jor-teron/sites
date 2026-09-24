@@ -1,13 +1,200 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Redirecting...</title>
-  <script>
-    window.location.href = "calculator.html";
-  </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About</title>
+
+<link rel="icon" href="../favicon.ico">
+<link rel="stylesheet" href="../style/font.css">
+<link rel="stylesheet" href="../style/no-scrollbar.css">
+
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #171a21;
+    --text: #e8eaed;
+    --muted: #9aa0a6;
+    --accent: #4c8bf5;
+    --border: #23262e;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+    min-height: 100%;
+  }
+
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 20px 64px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  header img {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+    margin: 0;
+  }
+
+  header p {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 18px;
+  }
+
+  .card h2 {
+    font-size: 1.05rem;
+    margin: 0 0 10px;
+    color: var(--accent);
+  }
+
+  .card p {
+    margin: 0 0 10px;
+    color: var(--text);
+  }
+
+  .card p:last-child { margin-bottom: 0; }
+
+  ul {
+    margin: 6px 0 0;
+    padding-left: 20px;
+    color: var(--text);
+  }
+
+  li { margin-bottom: 6px; }
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  a:hover { text-decoration: underline; }
+
+  .muted { color: var(--muted); font-size: 0.9rem; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(76, 139, 245, 0.15);
+    color: var(--accent);
+    font-size: 0.75rem;
+    margin-right: 6px;
+  }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-top: 32px;
+  }
+</style>
 </head>
 <body>
-  <p> Redirecting... </p>
+
+<div class="wrap">
+
+  <header>
+    <img src="../image/app.png" alt="App icon">
+    <div>
+      <h1>About</h1>
+      <p>Browser-based hub for games, tools & media</p>
+    </div>
+  </header>
+
+  <div class="card">
+    <h2>What is this?</h2>
+    <p>
+      This is a lightweight, browser-based collection of games, tools, and
+      media apps — all built with plain HTML, CSS, and JavaScript.
+      No installs, no accounts, no trackers.
+    </p>
+    <p>
+      It runs entirely in your browser, works offline once loaded, and is
+      designed to be simple enough for kids and fast enough for everyone.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>What's inside</h2>
+    <ul>
+      <li><span class="badge">Games</span> Playable in the browser</li>
+      <li><span class="badge">Tools</span> Calculator, Notepad, Weather, vDesktop</li>
+      <li><span class="badge">Media</span> Gallery, Paint, Photo Editor, Webcam</li>
+      <li><span class="badge">TV</span> Channels & kids' playlists</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>For kids & parents</h2>
+    <p>
+      The kids section is designed for ages 5–15. No ads, no tracking,
+      no external accounts. Progress and scores are stored locally on your
+      device using <code>localStorage</code>.
+    </p>
+    <p>
+      A phone can be used as a D-pad controller for tablet-based games
+      through the <strong>Controller</strong> module.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Privacy</h2>
+    <p>
+      Nothing is uploaded. Nothing is shared. Everything stays on your device
+      unless you explicitly export or share it.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Tech</h2>
+    <ul>
+      <li>Vanilla HTML, CSS, JavaScript</li>
+      <li>No build step, no framework</li>
+      <li>Works offline (static files)</li>
+      <li>Optional: WebSocket relay for phone-as-remote</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Links</h2>
+    <p><a href="../index.html">← Back to Home</a></p>
+    <p><a href="../misc/T&amp;C.html">Terms &amp; Conditions</a></p>
+    <p><a href="../misc/privatedns.html">Private DNS</a></p>
+  </div>
+
+  <footer>
+    <p>Made with plain JavaScript. No frameworks harmed.</p>
+  </footer>
+
+</div>
+
 </body>
 </html>
