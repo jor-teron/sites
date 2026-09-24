@@ -1,7 +1,7 @@
 CATEGORY,NAME,ENTRY_URL,ORDER,HIDDEN
-Tools,MS Word Diff,MSword_diff/,10,0
-Media,TV,tv/,20,0
-Games,Browser FPS,games/browser-fps/,30,0
-Tools,Nei Dict,nei-dict/,40,0
-Desktop,Webdesk,webdesk/,50,0
+Tools,MS Word Diff,msword_diff/,20,0
+Tools,Nei Dict,nei-dict/,10,0
+Media,TV,tv/,30,0
 Media,Phone,phone/,60,0
+Desktop,WebDesk,webdesk/,50,0
+Games,Browser FPS,games/browser-fps/,30,0
