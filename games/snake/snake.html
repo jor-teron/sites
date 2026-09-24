@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Snake</title>
+  <link rel="stylesheet" href="snake.css" />
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="hud">
+    <span id="score">0</span>
+    <span id="wrap-ind" class="wrap-off" title="Wrap walls">WRAP</span>
+    <span id="best">BEST 0</span>
+  </div>
+  <div id="help">←→↑↓ move · A/Space boost · B/X wrap · Start/Enter pause · Select/Esc restart</div>
+  <div id="overlay" class="overlay">
+    <div class="card">
+      <h1 id="title">SNAKE</h1>
+      <p id="msg">Press Start / Enter</p>
+      <p id="sub" class="sub"></p>
+    </div>
+  </div>
+  <script src="snake.js"></script>
+</body>
+</html>
