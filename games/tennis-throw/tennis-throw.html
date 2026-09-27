@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tennis Ball Blitz</title>
+  <link rel="stylesheet" href="tennis-throw.css" />
+</head>
+<body>
+  <div class="container">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div class="ui">
+      <div class="score">Score: <span id="scoreValue">0</span>/100</div>
+      <div class="timer">Time: <span id="timerValue">0.0</span>s</div>
+    </div>
+    <div class="end-screen" id="endScreen">
+      <div>🎉 FINISHED! 🎉</div>
+      <div class="badge" id="badge">🥇</div>
+      <div class="rank" id="rankText">GOLD</div>
+      <div class="time-display">Time: <span id="finalTime">0.0</span>s</div>
+      <div class="restart-hint">Press SPACE or A to play again</div>
+    </div>
+    <div class="controls-hint">
+      ← → to aim | ↑ ↓ for power | SPACE to throw | R to reset
+    </div>
+  </div>
+
+  <script src="tennis-throw_config.js"></script>
+  <script src="tennis-throw_logic.js"></script>
+</body>
+</html>
