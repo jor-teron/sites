@@ -4,19 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Swell Foop</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="swell-foop.css" />
+    <!-- Self-contained: no CDN / network requests (works offline and from file://) -->
+    <link rel="stylesheet" href="swell-foop.css" />
 </head>
 <body>
     <div class="game-container">
-        <h1 class="text-4xl font-extrabold text-white mb-4">Swell Foop</h1>
+        <!-- Own top bar (hidden with body.in-hub when the sites hub shows it in its header) -->
+        <h1 class="sf-title"><span id="appName">Swell Foop</span> <small id="appVersion" class="sf-version"></small></h1>
         <div class="game-info">
-            <div class="text-xl font-medium">Score: <span id="score">0</span></div>
-            <div class="text-xl font-medium">Moves: <span id="moves">0</span></div>
+            <div class="sf-stat">Score: <span id="score">0</span></div>
+            <div class="sf-stat">Moves: <span id="moves">0</span></div>
         </div>
         <canvas id="gameCanvas"></canvas>
-        <div class="flex flex-col md:flex-row gap-4 mt-4 w-full justify-center items-center">
+        <div class="sf-controls">
             <button id="newGameBtn" class="btn">New Game</button>
         </div>
     </div>
@@ -34,4 +34,3 @@
   <script src="swell-foop_logic.js"></script>
 </body>
 </html>
-

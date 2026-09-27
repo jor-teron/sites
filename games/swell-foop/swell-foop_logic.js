@@ -1,5 +1,8 @@
 /*
  * Swell Foop — game logic. Tunables come from SWELL_FOOP_CONFIG (swell-foop_config.js).
+ * Self-contained (no network). The "Hub bridge" section at the bottom lets the
+ * sites hub show name / Score / Moves / New Game in its header; standalone it
+ * does nothing.
  */
 const CFG = SWELL_FOOP_CONFIG;
 const GRID_COLS = CFG.grid.cols;
@@ -8,6 +11,10 @@ const BALL_SIZE = CFG.grid.ballSize; // Size of each ball in pixels
 const COLORS = CFG.colors;
 const MARGIN = CFG.grid.margin;
 const ANIM = CFG.animation;
+const APP = CFG.APP || { name: 'Swell Foop', version: '' };
+const TEXT = CFG.text || {};
+const BOARD_W = GRID_COLS * BALL_SIZE; // board size in game units (unscaled pixels)
+const BOARD_H = GRID_ROWS * BALL_SIZE;
 
 // Game state variables
 let canvas, ctx;
@@ -40,9 +47,16 @@ function initCanvas() {
     canvas = document.getElementById('gameCanvas');
     ctx = canvas.getContext('2d');
 
-    // Set canvas dimensions based on grid and ball size
-    canvas.width = GRID_COLS * BALL_SIZE;
-    canvas.height = GRID_ROWS * BALL_SIZE;
+    // Title bar from APP info
+    const nameEl = document.getElementById('appName');
+    const verEl = document.getElementById('appVersion');
+    if (nameEl && APP.name) nameEl.textContent = APP.name;
+    if (verEl) verEl.textContent = APP.version ? (TEXT.versionPrefix || '') + APP.version : '';
+    if (APP.name) document.title = APP.name;
+
+    // Canvas size: game units stay BOARD_W x BOARD_H; fitCanvas() scales the display
+    fitCanvas();
+    window.addEventListener('resize', redrawAfterResize);
 
     // Add event listeners for mouse and touch
     canvas.addEventListener('mousedown', handleInput);
@@ -53,6 +67,46 @@ function initCanvas() {
 
     // Initial game start
     startNewGame();
+}
+
+/**
+ * Sizes the canvas to the space it has, keeping the board's aspect ratio.
+ * Standalone: never larger than CFG.maxScale (1 = the original 750x300).
+ * In the hub (body.in-hub): fills the frame up to CFG.maxScaleInHub.
+ * The backing store follows devicePixelRatio and the context is scaled, so
+ * the drawing code keeps using game units (BALL_SIZE).
+ */
+function fitCanvas() {
+    const box = canvas.parentElement;
+    const cs = getComputedStyle(box);
+    const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    const inHub = document.body.classList.contains('in-hub');
+    const availW = Math.max(50, box.clientWidth - padX);
+    let scale = availW / BOARD_W;
+    if (inHub) {
+        const availH = Math.max(50, box.clientHeight - padY);
+        scale = Math.min(scale, availH / BOARD_H, CFG.maxScaleInHub || 3);
+    } else {
+        scale = Math.min(scale, CFG.maxScale || 1);
+    }
+    const cssW = Math.floor(BOARD_W * scale);
+    const cssH = Math.floor(BOARD_H * scale);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.style.width = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    ctx.setTransform(canvas.width / BOARD_W, 0, 0, canvas.height / BOARD_H, 0, 0);
+}
+
+/**
+ * Refit and redraw (a running fall animation redraws itself on its next frame).
+ */
+function redrawAfterResize() {
+    if (!canvas) return;
+    fitCanvas();
+    if (!animationActive) drawGrid();
 }
 
 /**
@@ -114,7 +168,8 @@ function drawRoundedRect(ctx, x, y, width, height, radius) {
  * @param {DOMHighResTimeStamp} [timestamp] - The current time provided by requestAnimationFrame.
  */
 function drawGrid(timestamp) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+    if (!grid.length) return;
+    ctx.clearRect(0, 0, BOARD_W, BOARD_H); // Clear canvas (game units; context is scaled)
 
     let progress = 1; // Default to 1 (no animation)
     if (animationActive && timestamp) { // Only calculate progress if animation is active and timestamp is provided
@@ -220,10 +275,10 @@ function handleInput(event) {
         clientY = event.clientY;
     }
 
-    // Get canvas position relative to the viewport
+    // Get canvas position relative to the viewport, in game units (the canvas may be scaled)
     const rect = canvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    const x = (clientX - rect.left) * (BOARD_W / rect.width);
+    const y = (clientY - rect.top) * (BOARD_H / rect.height);
 
     // Calculate grid coordinates
     const col = Math.floor(x / BALL_SIZE);
@@ -425,6 +480,7 @@ function calculateScore(numBalls) {
 function updateScoreDisplay() {
     scoreDisplay.textContent = score;
     movesDisplay.textContent = moves;
+    hubSendStats();
 }
 
 /**
@@ -471,5 +527,75 @@ function hideMessageBox() {
     messageBox.classList.add('hidden');
 }
 
+/* ---------------------------------------------------------------------------
+ * Hub bridge (optional; no dependency on hub files).
+ * Only active when this page runs inside a frame. Protocol (postMessage, v:1):
+ *   game → hub  {type:'hub-ready'}                      on load (asks for hello)
+ *   hub → game  {type:'hub-hello'}                      → reply hub-app, body.in-hub
+ *   game → hub  {type:'hub-app', app, stats, buttons}
+ *   game → hub  {type:'hub-stat', id, value}            when Score / Moves change
+ *   hub → game  {type:'hub-action', id:'new'}           → New Game
+ * Accepted only from window.parent, and only when it is same-origin or a
+ * file:// / null origin. Standalone (no hello) nothing changes.
+ * ------------------------------------------------------------------------- */
+const HUB_V = 1;
+const IN_FRAME = (() => { try { return window.parent && window.parent !== window; } catch (e) { return true; } })();
+let hubLinked = false;
+const hubLastSent = {};
+
+function hubPost(msg) {
+    if (!IN_FRAME) return;
+    try { window.parent.postMessage(Object.assign({ v: HUB_V }, msg), '*'); } catch (e) { /* ignore */ }
+}
+
+function hubOriginOk(origin) {
+    return origin === location.origin || origin === 'null' || location.origin === 'null' ||
+        String(origin).indexOf('file:') === 0;
+}
+
+function hubStats() {
+    return [
+        { id: 'score', label: TEXT.statScore || 'Score', value: score },
+        { id: 'moves', label: TEXT.statMoves || 'Moves', value: moves },
+    ];
+}
+
+function hubSendStats() {
+    if (!hubLinked) return;
+    hubStats().forEach((st) => {
+        if (hubLastSent[st.id] === st.value) return;
+        hubLastSent[st.id] = st.value;
+        hubPost({ type: 'hub-stat', id: st.id, value: st.value });
+    });
+}
+
+function onHubMessage(event) {
+    if (!IN_FRAME || event.source !== window.parent || !hubOriginOk(event.origin)) return;
+    const d = event.data;
+    if (!d || typeof d !== 'object' || d.v !== HUB_V) return;
+    if (d.type === 'hub-hello') {
+        if (!hubLinked) {
+            hubLinked = true;
+            document.body.classList.add('in-hub');
+            requestAnimationFrame(redrawAfterResize);
+        }
+        const stats = hubStats();
+        stats.forEach((st) => { hubLastSent[st.id] = st.value; });
+        hubPost({
+            type: 'hub-app',
+            app: { name: APP.name, version: APP.version },
+            stats: stats,
+            buttons: [{ id: 'new', label: TEXT.newGame || 'New Game' }],
+        });
+    } else if (d.type === 'hub-action' && hubLinked) {
+        if (d.id === 'new' && canvas) startNewGame();
+    }
+}
+
+if (IN_FRAME) window.addEventListener('message', onHubMessage);
+
 // Initialize the game when the window loads
-window.onload = initCanvas;
+window.onload = function () {
+    initCanvas();
+    hubPost({ type: 'hub-ready' });
+};

@@ -1,8 +1,29 @@
-/* Custom styles for the game, overriding or extending Tailwind where necessary */
-html, body { /* Added html to ensure full height */
-    height: 100%; /* Ensure html and body take full height */
-    margin: 0;
+/*
+ * Swell Foop — styles (plain CSS, no Tailwind / CDN; works offline and from file://).
+ * Reproduces the look the page had with the Tailwind CDN (preflight reset +
+ * utility classes), using semantic class names.
+ */
+
+/* Reset (what Tailwind's preflight did for the elements used here) */
+*, *::before, *::after { box-sizing: border-box; }
+html, body, h1, h2, p { margin: 0; padding: 0; }
+html { line-height: 1.5; -webkit-text-size-adjust: 100%; }
+h1, h2 { font-size: inherit; font-weight: inherit; }
+button {
+    font: inherit;
+    color: inherit;
+    line-height: inherit;
+    background: transparent;
+    border: 0;
     padding: 0;
+    margin: 0;
+    cursor: pointer;
+}
+canvas { display: block; vertical-align: middle; }
+.hidden { display: none; }
+
+html, body {
+    height: 100%;
 }
 body {
     font-family: 'Inter', sans-serif;
@@ -31,67 +52,110 @@ canvas {
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
     max-width: 90vw; /* Max width for responsiveness */
     width: 100%; /* Full width within max-width */
-    box-sizing: border-box; /* Include padding in width */
 }
+
+/* Title bar: name + small version */
+.sf-title {
+    font-size: 2.25rem;   /* 36px */
+    line-height: 2.5rem;  /* 40px */
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 1rem;
+}
+.sf-version {
+    font-size: 0.875rem;
+    line-height: 1;
+    font-weight: 500;
+    color: #a0aec0;
+    vertical-align: middle;
+}
+.sf-version:empty { display: none; }
+
+/* Score / Moves row */
 .game-info {
     display: flex;
     justify-content: space-between;
     width: 100%;
     padding: 0 1rem;
 }
-.btn {
-    @apply px-6 py-3 rounded-xl font-semibold text-lg transition-all duration-300 ease-in-out;
-    @apply bg-blue-600 text-white shadow-lg hover:bg-blue-700 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50;
-    @apply active:scale-95; /* Click effect */
-    border: none; /* Remove default button border */
-    cursor: pointer;
+.sf-stat {
+    font-size: 1.25rem;   /* 20px */
+    line-height: 1.75rem; /* 28px */
+    font-weight: 500;
 }
+
+/* Button row (column on narrow screens, row from 768px) */
+.sf-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+}
+@media (min-width: 768px) {
+    .sf-controls { flex-direction: row; }
+}
+.btn {
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+.btn:hover { color: #fff; }
+
+/* Game-over message box */
 .message-box {
-    @apply fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50;
-    position: fixed ;
+    position: fixed;
     top: 5px;
     left: 100px;
     width: 90%;
     min-height: 150px;
-    background: rgba(0,0,0,0);
-    border: 0px solid white;
+    background: rgba(0, 0, 0, 0);
+    border: 0 solid white;
     color: black;
     text-align: center;
-    align-items: center ;
-    align-content: center ;
-
+    align-items: center;
+    align-content: center;
 }
+.message-box.hidden { display: none; }
 .message-content {
-    @apply bg-gray-800 p-8 rounded-xl shadow-2xl text-center max-w-sm; /* Added max-w-sm */
     position: fixed;
-    top: calc( 45vh - 130px ) ;
-    left: calc( 50vw - 250px ) ;
+    top: calc(45vh - 130px);
+    left: calc(50vw - 250px);
     width: 500px;
     height: 260px;
-    background: rgba(250,250,250,0.9);
+    background: rgba(250, 250, 250, 0.9);
     border-radius: 30px;
-    border: 0px solid orange;
+    border: 0 solid orange;
     font-size: 30px;
     margin-top: 40px;
     font-weight: 800;
 }
-.message-content h2 {
-    @apply text-3xl font-bold mb-4 text-white;
-}
-.message-content p {
-    @apply text-xl text-gray-300 mb-6;
-}
 .message-content button {
-    @apply btn; /* Apply button styles */
     width: 100px;
     height: 50px;
     color: white;
     margin: 10px;
-    background: rgba(0,0,0,0.9);
+    background: rgba(0, 0, 0, 0.9);
     border-radius: 10px;
 }
-
-
 .message-content button:hover {
-    background: rgba(0,0,0,0.8);
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/*
+ * Inside the sites hub (body.in-hub, set by the hub bridge in swell-foop_logic.js):
+ * the hub header shows name / Score / Moves / New Game, so the game's own bar
+ * is hidden and the board takes the whole frame (fitCanvas scales it).
+ */
+body.in-hub .sf-title,
+body.in-hub .game-info,
+body.in-hub .sf-controls { display: none; }
+body.in-hub .game-container {
+    max-width: none;
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    padding: 12px;
+    justify-content: center;
+    border-radius: 1rem;
 }

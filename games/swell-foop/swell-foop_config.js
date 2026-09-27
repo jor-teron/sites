@@ -3,8 +3,12 @@
  * Grid, colors, animation, scoring and on-screen text.
  * swell-foop_logic.js reads everything from SWELL_FOOP_CONFIG.
  * (Mouse/touch game; it had no keyboard controls.)
+ * APP = name / version / author / category (title bar + sites hub header).
  */
 const SWELL_FOOP_CONFIG = {
+    // App info (own title bar, and the sites hub header via the hub bridge)
+    APP: { name: 'Swell Foop', version: '1.0', author: 'Jor Teron', category: 'Games' },
+
     // Grid
     grid: {
         cols: 15,          // columns
@@ -42,9 +46,18 @@ const SWELL_FOOP_CONFIG = {
         bounceSplit: 0.6,      // phase split between first and second bounce
     },
 
+    // Board scaling: standalone never grows past this (1 = original 50px cells);
+    // inside the hub the board fills the frame up to maxScaleInHub.
+    maxScale: 1,
+    maxScaleInHub: 3,
+
     // On-screen text
     text: {
         gameOverTitle: 'Game Over!',            // message box title
         gameOverText: 'Your final score: {score}', // message box text ({score} replaced)
+        versionPrefix: 'v',                     // small version next to the title
+        statScore: 'Score',                     // hub header chip label
+        statMoves: 'Moves',                     // hub header chip label
+        newGame: 'New Game',                    // hub header button label
     },
 };

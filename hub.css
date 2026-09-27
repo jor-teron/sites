@@ -45,6 +45,73 @@ html, body {
 }
 .header-right .sep { opacity: 0.45; }
 
+/* App bar in the header centre (hub-gamebar.js) */
+.header-center {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--text);
+}
+.header-center[hidden] { display: none; }
+.gb-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+}
+.gb-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.gb-ver { font-size: 11px; color: var(--muted); flex: 0 0 auto; }
+.gb-stat {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.05);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+.gb-val { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.gb-btn {
+  appearance: none;
+  flex: 0 0 auto;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(110, 168, 254, 0.14);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.gb-btn:hover { background: rgba(110, 168, 254, 0.26); border-color: var(--accent); }
+@media (max-width: 560px) {
+  .header-center { gap: 5px; }
+  .gb-ver { display: none; }
+  .gb-stat { padding: 2px 6px; }
+}
+@media (max-width: 400px) {
+  .gb-label { display: none; }
+  .gb-name { max-width: 70px; }
+}
+
 .cat-btn {
   appearance: none;
   border: 1px solid transparent;
