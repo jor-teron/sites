@@ -1,6 +1,6 @@
 /**
  * Caption for NEI (Caption for North East India) — caption-for-nei_logic.js
- * Version: 0.14
+ * Version: 0.15
  * First release: 27 Sep 2026
  * Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
@@ -12,12 +12,15 @@
  *   migrateLegacyStorage() copies old lsa_* keys to cfn_* once (boot block).
  *   fillLanguageSelects() builds Input / Output dropdowns from CONFIG.
  *   startSession() opens the mic + Transcribe Live WebSocket.
- *   handleServerMessage() turns speech into transcript lines (commitSpokenText
- *   → addLineToWindow). Lines go into the block of the open time window.
- *   windowTick() closes the window after the user's "Window" seconds (a bit
- *   later if speech is mid-sentence); closeWindow() skips empty windows and
- *   finishBlock() sends ONE chat request per window (translateWindow), which
- *   fills the block's translation line (and the AI ABC lines in AI mode).
+ *   handleServerMessage() turns speech into window text (commitSpokenText →
+ *   applyHypothesis → appendToWindow). A stale partial committed early is
+ *   later replaced / extended by its final (no doubled words).
+ *   renderBlockLines() shows one line per sentence (splitLines).
+ *   windowTick() closes the window after CONFIG.WINDOW_SEC (at once on a
+ *   sentence end, else after a pause or WINDOW_MAX_EXTRA_SEC, carrying an
+ *   unfinished last sentence into the next window); closeWindow() skips empty
+ *   windows and finishBlock() sends ONE chat request per window
+ *   (translateWindow), unless Input and Output are the same language.
  *   renderAbc() fills each line's romanized sub-line (ABC Off / Local / AI).
  *
  * Does not name the cloud vendor in the UI.
@@ -109,8 +112,8 @@ let translateTarget = CONFIG.DEFAULT_OUTPUT || "off";
 const ABC_MODES = ["off", "local", "ai"];
 let abcMode = loadAbcMode();
 
-/* Time windows (v0.14). windowSec = user's window length (STORAGE.WINDOW_SEC) */
-let windowSec = loadWindowSec();
+/* Time windows. windowSec = CONFIG.WINDOW_SEC (config only since v0.15) */
+let windowSec = Number(CONFIG.WINDOW_SEC) > 0 ? Number(CONFIG.WINDOW_SEC) : 4.25;
 /* When the open window started (ms) */
 let winStart = Date.now();
 /* Last time any transcript text (interim or final) arrived */
@@ -119,6 +122,14 @@ let lastTextAt = 0;
 let currentBlock = null;
 /* Blocks made so far (drives the BLOCK_COLORS cycle) */
 let blockSeq = 0;
+/*
+ * Stale partial committed before its final (duplicate fix, v0.15):
+ *   full   = the whole hypothesis committed so far (this utterance)
+ *   frozen = the part of it already in closed blocks (cannot change)
+ *   block / start = block holding the rest, and its text length before it
+ * null when nothing is waiting for a final.
+ */
+let partialCommit = null;
 
 /* Session flags */
 let isRunning = false;
@@ -147,7 +158,6 @@ const keyPanel = document.getElementById("keyPanel");
 const listenSelect = document.getElementById("listenSelect");
 const abcSelect = document.getElementById("abcSelect");
 const translateSelect = document.getElementById("translateSelect");
-const windowInput = document.getElementById("windowInput");
 const toggleBtn = document.getElementById("toggleBtn");
 const interimTextEl = document.getElementById("interimText");
 const lineList = document.getElementById("lineList");
@@ -222,62 +232,6 @@ function loadAbcMode() {
 }
 
 /**
- * Snap a window length to WINDOW_SEC_STEP inside WINDOW_SEC_MIN..MAX.
- * Bad input → WINDOW_SEC_DEFAULT.
- */
-function clampWindowSec(value) {
-  const min = Number(CONFIG.WINDOW_SEC_MIN) || 3;
-  const max = Number(CONFIG.WINDOW_SEC_MAX) || 15;
-  const step = Number(CONFIG.WINDOW_SEC_STEP) || 0.25;
-  let n = parseFloat(value);
-  if (!isFinite(n)) n = Number(CONFIG.WINDOW_SEC_DEFAULT) || 5;
-  n = Math.round(n / step) * step;
-  n = Math.min(max, Math.max(min, n));
-  return Number(n.toFixed(2));
-}
-
-/**
- * Saved window length (STORAGE.WINDOW_SEC), else CONFIG.WINDOW_SEC_DEFAULT.
- */
-function loadWindowSec() {
-  let saved = null;
-  try {
-    saved = localStorage.getItem(STORAGE.WINDOW_SEC);
-  } catch (err) {}
-  return clampWindowSec(saved !== null && saved !== "" ? saved : CONFIG.WINDOW_SEC_DEFAULT);
-}
-
-/**
- * Top-bar Window field changed: snap, save, and use it from the open window on.
- */
-function onWindowChange() {
-  windowSec = clampWindowSec(windowInput.value);
-  windowInput.value = String(windowSec);
-  try {
-    localStorage.setItem(STORAGE.WINDOW_SEC, String(windowSec));
-  } catch (err) {}
-}
-
-/**
- * Set min / max / step / value of the Window field from CONFIG.
- */
-function initWindowInput() {
-  if (!windowInput) return;
-  windowInput.min = String(CONFIG.WINDOW_SEC_MIN);
-  windowInput.max = String(CONFIG.WINDOW_SEC_MAX);
-  windowInput.step = String(CONFIG.WINDOW_SEC_STEP);
-  windowInput.value = String(windowSec);
-  windowInput.title = TEXT.windowTitle || "";
-  const field = document.getElementById("windowField");
-  if (field) {
-    const label = field.querySelector(".win-label");
-    const unit = field.querySelector(".win-unit");
-    if (label && TEXT.windowLabel) label.textContent = TEXT.windowLabel;
-    if (unit && TEXT.windowUnit) unit.textContent = TEXT.windowUnit;
-  }
-}
-
-/**
  * "#3d8bfd" + alpha → "rgba(61, 139, 253, a)" for the block tint.
  */
 function hexToRgba(hex, alpha) {
@@ -309,32 +263,165 @@ function romanizeLocal(text, lang) {
   }
 }
 
+/* Sentence ends: HARD split anywhere, SOFT only before a space / the end */
+const HARD_ENDS = "\u0964\u0965\uFF1F\uFF01\u3002"; /* । ॥ ？ ！ 。 */
+const SOFT_ENDS = ".?!";
+const CLOSERS = "\"')]}\u201D\u2019\u00BB";
+const ABBREVIATIONS = (CONFIG.ABBREVIATIONS || []).map(function (w) {
+  return String(w).toLowerCase();
+});
+
 /**
- * Split on punctuation then word limit.
+ * Line word limit (CONFIG.LINE_MAX_WORDS; WORD_SPLIT is the pre-v0.15 name).
  */
-function splitSentences(text) {
-  const raw = String(text || "").split(/([.?!।])/);
-  const rebuilt = [];
-  for (let i = 0; i < raw.length; i++) {
-    const cur = raw[i];
-    if (!cur) continue;
-    if (/^[.?!।]$/.test(cur) && rebuilt.length) rebuilt[rebuilt.length - 1] += cur;
-    else rebuilt.push(cur);
-  }
+function lineMaxWords() {
+  return Number(CONFIG.LINE_MAX_WORDS) || Number(CONFIG.WORD_SPLIT) || 15;
+}
+
+/**
+ * True if the "." at dotIdx follows an abbreviation (Mr. Dr. e.g.) or a
+ * single-letter initial (J.), so it does not end a sentence.
+ */
+function isAbbrevBefore(text, dotIdx) {
+  const m = text.slice(0, dotIdx).match(/(\S+)$/);
+  if (!m) return false;
+  const w = m[1].replace(/^[("'\u201C\u2018\[]+/, "").toLowerCase();
+  if (/^\p{L}$/u.test(w)) return true;
+  return ABBREVIATIONS.indexOf(w) !== -1;
+}
+
+/**
+ * Text → sentences [{ text, ended }]. ended = closes with . ? ! । ॥ ？ ！ 。
+ * "." "?" "!" end a sentence only before whitespace or the end (so 3.5 and
+ * a.b stay whole), "." not after an abbreviation. Runs like "?!" or "..."
+ * and closing quotes stay with their sentence. A punctuation-only piece is
+ * glued to the sentence before it.
+ */
+function sentenceSplit(text) {
+  const s = String(text || "");
   const out = [];
-  const limit = CONFIG.WORD_SPLIT;
-  for (let i = 0; i < rebuilt.length; i++) {
-    const piece = rebuilt[i].trim();
-    if (!piece) continue;
-    const words = piece.split(/\s+/);
-    if (words.length <= limit) out.push(piece);
-    else {
-      for (let w = 0; w < words.length; w += limit) {
-        out.push(words.slice(w, w + limit).join(" "));
+  let start = 0;
+  let i = 0;
+  const ends = SOFT_ENDS + HARD_ENDS;
+  function push(piece, ended) {
+    const t = piece.trim();
+    if (!t) return;
+    if (!/[\p{L}\p{N}]/u.test(t) && out.length) {
+      out[out.length - 1].text += t;
+      if (ended) out[out.length - 1].ended = true;
+      return;
+    }
+    out.push({ text: t, ended: ended });
+  }
+  while (i < s.length) {
+    if (ends.indexOf(s[i]) === -1) {
+      i++;
+      continue;
+    }
+    let j = i;
+    while (j + 1 < s.length && ends.indexOf(s[j + 1]) !== -1) j++;
+    let k = j;
+    while (k + 1 < s.length && CLOSERS.indexOf(s[k + 1]) !== -1) k++;
+    const run = s.slice(i, j + 1);
+    const next = s[k + 1];
+    let boundary = false;
+    if (/[\u0964\u0965\uFF1F\uFF01\u3002]/.test(run)) boundary = true;
+    else if (next === undefined || /\s/.test(next)) {
+      boundary = !(run === "." && isAbbrevBefore(s, i));
+    }
+    if (boundary) {
+      push(s.slice(start, k + 1), true);
+      start = k + 1;
+    }
+    i = k + 1;
+  }
+  push(s.slice(start), false);
+  return out;
+}
+
+/**
+ * Display lines of a block: one per sentence, long sentences cut every
+ * LINE_MAX_WORDS words.
+ */
+function splitLines(text) {
+  const limit = lineMaxWords();
+  const out = [];
+  sentenceSplit(text).forEach(function (sent) {
+    const words = sent.text.split(/\s+/).filter(Boolean);
+    for (let w = 0; w < words.length; w += limit) out.push(words.slice(w, w + limit).join(" "));
+  });
+  return out;
+}
+
+/**
+ * True if the text ends at a sentence end.
+ */
+function endsSentence(text) {
+  const sents = sentenceSplit(text);
+  return sents.length > 0 && sents[sents.length - 1].ended;
+}
+
+/**
+ * Base language: "en-IN" → "en", "hi" → "hi", "auto" / "off" → "".
+ */
+function baseLang(code) {
+  const c = String(code || "").toLowerCase();
+  if (!c || c === "auto" || c === "off") return "";
+  return c.split(/[-_]/)[0];
+}
+
+/* ---------- Duplicate fix: overlap of a committed partial and a newer hypothesis ---------- */
+
+function wordsOf(text) {
+  return String(text || "").trim().split(/\s+/).filter(Boolean);
+}
+
+/* compare words without case or punctuation (keeps Indic vowel signs) */
+function normWord(w) {
+  return String(w).toLowerCase().replace(/[^\p{L}\p{N}\p{M}]/gu, "");
+}
+
+/**
+ * The part of `text` that is new compared with `prefix` (text already shown).
+ *   text starts with prefix            → the words after it
+ *   text is prefix with a few words revised (>= 60% same, not shorter)
+ *                                      → the words after prefix's length
+ *   prefix's end overlaps text's start → the words after the overlap
+ *   text is covered by prefix          → ""
+ *   no relation                        → all of text
+ */
+function removeOverlap(prefix, text) {
+  const p = wordsOf(prefix).map(normWord);
+  const hw = wordsOf(text);
+  const h = hw.map(normWord);
+  if (!p.length) return hw.join(" ");
+  let k = 0;
+  while (k < p.length && k < h.length && p[k] === h[k]) k++;
+  if (k === p.length) return hw.slice(k).join(" ");
+  if (k === h.length) return "";
+  let same = 0;
+  const n = Math.min(p.length, h.length);
+  for (let i = 0; i < n; i++) if (p[i] === h[i]) same++;
+  if (h.length >= p.length && same >= Math.ceil(p.length * 0.6)) return hw.slice(p.length).join(" ");
+  for (let m = n; m > 0; m--) {
+    let ok = true;
+    for (let i = 0; i < m; i++) {
+      if (p[p.length - m + i] !== h[i]) {
+        ok = false;
+        break;
       }
     }
+    if (ok) return hw.slice(m).join(" ");
   }
-  return out.length ? out : [String(text || "").trim()].filter(Boolean);
+  if (h.length < p.length && same >= Math.ceil(h.length * 0.6)) return "";
+  return hw.join(" ");
+}
+
+/* join two text pieces with one space */
+function joinText(a, b) {
+  a = String(a || "").trim();
+  b = String(b || "").trim();
+  return a && b ? a + " " + b : a || b;
 }
 
 /**
@@ -537,11 +624,13 @@ function pickChatModel(skipIds) {
  * Romanized sub-line (ABC) of one transcript line, from its stored state:
  *   off → hidden; no Indic script → hidden;
  *   local → CFN_ROMAN; ai → AI roman when one arrived, else local.
+ * Input English → hidden in every mode.
  * Called on create, on ABC mode change (all lines) and when word lists load.
  */
 function renderAbc(line) {
   if (!line || !line.abcBox) return;
-  const show = abcMode !== "off" && line.indic;
+  /* Input English: never a romanized line, whatever the ABC mode */
+  const show = abcMode !== "off" && line.indic && baseLang(line.lang) !== "en";
   line.abcRow.hidden = !show;
   if (!show) return;
   if (!line.localRoman || line.localStale) {
@@ -599,7 +688,7 @@ function makeRow(className, area) {
  *        – romanized line      ┘ thin divider between lines
  * Accent colour cycles through CONFIG.BLOCK_COLORS.
  */
-function createBlock() {
+function createBlock(lang) {
   const colors = CONFIG.BLOCK_COLORS && CONFIG.BLOCK_COLORS.length ? CONFIG.BLOCK_COLORS : ["#3d8bfd"];
   const colorIndex = blockSeq % colors.length;
   const color = colors[colorIndex];
@@ -623,9 +712,12 @@ function createBlock() {
     outBox: outBox,
     linesEl: linesEl,
     lines: [],
+    text: "",
+    lang: lang || selectedLang,
     stamp: istNow(),
     closed: false,
     wantTrans: false,
+    sameLang: false,
     pending: false,
     noted: false,
     logged: false,
@@ -636,71 +728,163 @@ function createBlock() {
 }
 
 /**
- * Add one finalised transcript line to the open window's block (made on the
- * first line, so empty windows never draw a block). Lines stay in spoken
- * order inside the block; newest block is on top.
+ * Rebuild the line rows of a block from blk.text: one row per sentence
+ * (splitLines), each with its ABC sub-row. Lines stay in spoken order inside
+ * the block; newest block is on top.
  */
-function addLineToWindow(sourceText) {
-  const text = String(sourceText || "").trim();
-  if (!text) return null;
-  if (!currentBlock || !currentBlock.el.isConnected) currentBlock = createBlock();
-  const blk = currentBlock;
-  const lineEl = document.createElement("div");
-  lineEl.className = "blk-line";
-  const orig = makeArea("orig-line", text);
-  lineEl.appendChild(makeRow("lvl1", orig));
-  const line = {
-    source: text,
-    lang: selectedLang,
-    indic: hasIndicScript(text),
-    origBox: orig,
-    abcRow: null,
-    abcBox: null,
-    localRoman: "",
-    aiRoman: "",
-    localStale: false,
-  };
-  if (line.indic) {
-    line.abcBox = makeArea("abc-line");
-    line.abcRow = makeRow("lvl2", line.abcBox);
-    lineEl.appendChild(line.abcRow);
-  }
-  lineEl.cfn = line;
-  blk.lines.push(line);
-  blk.linesEl.appendChild(lineEl);
-  fitTextarea(orig);
-  renderAbc(line);
-  scrollCaptionsToTop();
-  return line;
+function renderBlockLines(blk) {
+  blk.linesEl.innerHTML = "";
+  blk.lines = [];
+  splitLines(blk.text).forEach(function (text) {
+    const lineEl = document.createElement("div");
+    lineEl.className = "blk-line";
+    const orig = makeArea("orig-line", text);
+    lineEl.appendChild(makeRow("lvl1", orig));
+    const line = {
+      source: text,
+      lang: blk.lang,
+      indic: hasIndicScript(text),
+      origBox: orig,
+      abcRow: null,
+      abcBox: null,
+      localRoman: "",
+      aiRoman: "",
+      localStale: false,
+    };
+    if (line.indic) {
+      line.abcBox = makeArea("abc-line");
+      line.abcRow = makeRow("lvl2", line.abcBox);
+      lineEl.appendChild(line.abcRow);
+    }
+    lineEl.cfn = line;
+    blk.lines.push(line);
+    blk.linesEl.appendChild(lineEl);
+    fitTextarea(orig);
+    renderAbc(line);
+  });
 }
 
 /**
- * Window clock (setInterval CONFIG.WINDOW_TICK_MS). When the user's window
- * length is reached: if speech is mid-sentence (an interim line is not final
- * yet, or text arrived < WINDOW_PAUSE_GAP_MS ago) wait for a pause, but at
- * most WINDOW_MAX_EXTRA_SEC more; then closeWindow().
+ * Set a block's text and redraw its lines.
+ */
+function setBlockText(blk, text) {
+  blk.text = String(text || "").trim();
+  renderBlockLines(blk);
+  scrollCaptionsToTop();
+}
+
+/**
+ * Append text to the open window's block (made on the first text, so empty
+ * windows never draw a block). Returns { blk, start } where start = block
+ * text length before the append, or null when text is empty.
+ */
+function appendToWindow(text) {
+  const t = String(text || "").trim();
+  if (!t) return null;
+  if (!currentBlock || !currentBlock.el.isConnected) currentBlock = createBlock();
+  const blk = currentBlock;
+  const start = blk.text.length;
+  setBlockText(blk, joinText(blk.text, t));
+  return { blk: blk, start: start };
+}
+
+/**
+ * Put one transcript hypothesis H into the window, without doubling words
+ * that a stale partial already committed (partialCommit):
+ *   partial still in the open block → replace it there with H (fixes and extends it);
+ *   partial in a closed block      → append only the words of H not in it.
+ * isFinal = H is the real final: the partial is settled afterwards.
+ */
+function applyHypothesis(H, isFinal) {
+  const pc = partialCommit;
+  if (pc && pc.block && pc.block === currentBlock && pc.block.el.isConnected && !pc.block.closed) {
+    const tail = removeOverlap(pc.frozen, H);
+    setBlockText(pc.block, joinText(pc.block.text.slice(0, pc.start), tail));
+    pc.full = H;
+  } else {
+    const tail = pc ? removeOverlap(pc.full, H) : H;
+    const at = appendToWindow(tail);
+    if (!isFinal && at) {
+      partialCommit = { full: H, frozen: pc ? pc.full : "", block: at.blk, start: at.start };
+    }
+  }
+  if (isFinal) partialCommit = null;
+}
+
+/**
+ * Window clock (setInterval CONFIG.WINDOW_TICK_MS). When WINDOW_SEC is up:
+ *   no text          → close (skip) unless an interim is pending (wait, capped);
+ *   ends a sentence  → close now;
+ *   pause            → close (no interim pending, no text for WINDOW_PAUSE_GAP_MS);
+ *   WINDOW_MAX_EXTRA_SEC used up → close and carry the unfinished last sentence.
  */
 function windowTick() {
   const now = Date.now();
   const len = windowSec * 1000;
   if (now - winStart < len) return;
-  const midSpeech = !!pendingText || (lastTextAt > 0 && now - lastTextAt < (CONFIG.WINDOW_PAUSE_GAP_MS || 0));
-  const maxExtra = (Number(CONFIG.WINDOW_MAX_EXTRA_SEC) || 0) * 1000;
-  if (midSpeech && now - winStart < len + maxExtra) return;
-  closeWindow(now);
+  const capped = now - winStart >= len + (Number(CONFIG.WINDOW_MAX_EXTRA_SEC) || 0) * 1000;
+  const text = currentBlock && currentBlock.el.isConnected ? currentBlock.text : "";
+  if (!text) {
+    if (pendingText && !capped) return;
+    closeWindow(now, false);
+    return;
+  }
+  if (endsSentence(text)) {
+    closeWindow(now, false);
+    return;
+  }
+  const paused = !pendingText && now - lastTextAt >= (CONFIG.WINDOW_PAUSE_GAP_MS || 0);
+  if (paused) {
+    closeWindow(now, false);
+    return;
+  }
+  if (capped) closeWindow(now, true);
 }
 
 /**
- * End the open window and start the next one. A window with no lines sends
+ * End the open window and start the next one. A window with no text sends
  * nothing and draws nothing; otherwise its block is finished (one request).
+ * carry = hard close mid-sentence: the text after the last sentence end moves
+ * into the next window's block (only when a full sentence comes before it,
+ * so a window that is one long unfinished sentence is still translated).
  */
-function closeWindow(now) {
+function closeWindow(now, carry) {
   const blk = currentBlock;
   currentBlock = null;
   winStart = now || Date.now();
-  if (!blk || !blk.lines.length || !blk.el.isConnected) return;
+  if (!blk || !blk.text || !blk.el.isConnected) return;
+  if (carry) carryUnfinished(blk);
   blk.closed = true;
   finishBlock(blk);
+}
+
+/**
+ * Move blk's unfinished last sentence into a new open block (currentBlock),
+ * keeping partialCommit pointing at the right place.
+ */
+function carryUnfinished(blk) {
+  const sents = sentenceSplit(blk.text);
+  const last = sents[sents.length - 1];
+  if (sents.length < 2 || !last || last.ended) return;
+  const orig = blk.text;
+  const carryStart = orig.lastIndexOf(last.text);
+  if (carryStart <= 0) return;
+  setBlockText(blk, orig.slice(0, carryStart));
+  const next = createBlock(blk.lang);
+  setBlockText(next, last.text);
+  currentBlock = next;
+  const pc = partialCommit;
+  if (pc && pc.block === blk) {
+    if (pc.start >= carryStart) {
+      pc.block = next;
+      pc.start = Math.max(0, pc.start - carryStart);
+    } else {
+      /* partial began before the carried sentence: that part is now frozen */
+      pc.frozen = joinText(pc.frozen, orig.slice(pc.start, carryStart));
+      pc.block = next;
+      pc.start = 0;
+    }
+  }
 }
 
 /**
@@ -709,15 +893,25 @@ function closeWindow(now) {
  */
 function finishBlock(blk) {
   const chatOk = CONFIG.OUTPUT_ENGINE !== "live";
-  const wantTrans = chatOk && translateTarget !== "off";
+  const inBase = baseLang(blk.lang);
+  /* Input and Output the same base language (en-IN → en): no translation */
+  const sameLang = translateTarget !== "off" && !!inBase && inBase === baseLang(translateTarget);
+  const wantTrans = chatOk && translateTarget !== "off" && !sameLang;
+  /* AI romanization (never for English Input); rides in the same request */
   const wantAi =
     chatOk &&
     abcMode === "ai" &&
+    inBase !== "en" &&
     blk.lines.some(function (l) {
       return l.indic;
     });
   blk.wantTrans = wantTrans;
-  if (wantTrans) {
+  blk.sameLang = sameLang;
+  if (sameLang) {
+    blk.transRow.hidden = false;
+    setBlockTranslation(blk, TEXT.sameLangNote || "", true);
+    blk.outBox.classList.add("same-lang");
+  } else if (wantTrans) {
     blk.transRow.hidden = false;
     blk.pending = true;
     blk.outBox.classList.add("pending");
@@ -944,15 +1138,13 @@ function logBlock(blk) {
 }
 
 /**
- * Finalised speech → one or more lines (sentence / WORD_SPLIT) in the open window.
+ * Speech text → the open window. isFinal = a real final transcript; else a
+ * stale partial committed early (replaced / extended later, no duplicates).
  */
-function commitSpokenText(text) {
+function commitSpokenText(text, isFinal) {
   const piece = (text || "").trim();
   if (!piece) return;
-  const bits = splitSentences(piece);
-  for (let i = 0; i < bits.length; i++) {
-    addLineToWindow(bits[i]);
-  }
+  applyHypothesis(piece, !!isFinal);
   pendingText = "";
   pendingSince = 0;
 }
@@ -1001,6 +1193,10 @@ function clearCaptionText() {
   lineList.innerHTML = "";
   /* the open window starts a fresh block for its next line */
   currentBlock = null;
+  if (partialCommit) {
+    partialCommit.frozen = partialCommit.full;
+    partialCommit.block = null;
+  }
   interimTextEl.textContent = "";
   if (liveNoteEl && isRunning) {
     liveNoteEl.textContent = TEXT.listeningDots;
@@ -1335,7 +1531,8 @@ async function translateWindow(blk, wantTrans, wantAi) {
 /**
  * Parse one Transcribe Live JSON object.
  * setupComplete → sessionReady
- * interim / final text → commitSpokenText (lines of the open window);
+ * interim / final text → commitSpokenText (text of the open window; a stale
+ * interim is committed after SPLIT_SECONDS or LINE_MAX_WORDS new words);
  * lastTextAt feeds the window's pause check (windowTick)
  * Connects to: onSocketMessage
  */
@@ -1354,19 +1551,21 @@ function handleServerMessage(msg) {
   if (content.interimInputTranscription && content.interimInputTranscription.text) {
     const live = content.interimInputTranscription.text.trim();
     lastTextAt = Date.now();
-    interimTextEl.textContent = live;
+    /* only the words not committed yet (stale partial) count and show */
+    const fresh = partialCommit ? removeOverlap(partialCommit.full, live) : live;
+    interimTextEl.textContent = fresh;
     pendingText = live;
     if (!pendingSince) pendingSince = Date.now();
-    const words = live.split(/\s+/).filter(Boolean).length;
+    const words = wordsOf(fresh).length;
     const aged = Date.now() - pendingSince >= CONFIG.SPLIT_SECONDS * 1000;
-    if (words >= CONFIG.WORD_SPLIT || aged) {
-      commitSpokenText(live);
+    if (fresh && (words >= lineMaxWords() || aged)) {
+      commitSpokenText(live, false);
       interimTextEl.textContent = "";
     }
   }
   if (content.inputTranscription && content.inputTranscription.text) {
     lastTextAt = Date.now();
-    commitSpokenText(content.inputTranscription.text.trim());
+    commitSpokenText(content.inputTranscription.text.trim(), true);
     interimTextEl.textContent = "";
   }
 }
@@ -1505,7 +1704,8 @@ async function stopSession() {
   /* close the open window now so its last lines still get translated */
   pendingText = "";
   pendingSince = 0;
-  closeWindow();
+  partialCommit = null;
+  closeWindow(Date.now(), false);
 }
 
 /**
@@ -1569,7 +1769,6 @@ keyToggleBtn.addEventListener("click", toggleKeyPanel);
 listenSelect.addEventListener("change", onListenChange);
 abcSelect.addEventListener("change", onAbcChange);
 translateSelect.addEventListener("change", onTranslateChange);
-if (windowInput) windowInput.addEventListener("change", onWindowChange);
 if (modelSelect) modelSelect.addEventListener("change", onModelChange);
 toggleBtn.addEventListener("click", onToggleClick);
 copyBtn.addEventListener("click", copyCaptions);
@@ -1580,7 +1779,6 @@ if (logDownloadAllBtn) logDownloadAllBtn.addEventListener("click", downloadAllAn
 migrateLegacyStorage();
 fillLanguageSelects();
 if (abcSelect) abcSelect.value = abcMode;
-initWindowInput();
 loadSavedKey();
 loadRomanWords();
 loadVocabCsv();

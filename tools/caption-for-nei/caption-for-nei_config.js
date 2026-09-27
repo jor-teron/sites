@@ -1,6 +1,6 @@
 /**
  * Caption for NEI (Caption for North East India) — caption-for-nei_config.js
- * Version: 0.14
+ * Version: 0.15
  * First release: 27 Sep 2026
  * Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
@@ -11,27 +11,44 @@
  * Never put a real API key in this file (the site is public). Use the Key panel.
  */
 window.CFN_CONFIG = {
-  /* Max words in one transcript line inside a block (splitSentences) */
-  WORD_SPLIT: 25,
-  /* Max seconds an unfinished (interim) line waits before it is committed as a line */
+  /*
+   * Lines inside a block (v0.15). The window's text is split into one display
+   * line per sentence at . ? ! । ॥ (and full-width ？ ！ 。). "." / "?" / "!"
+   * split only before a space or the end, so decimals (3.5) stay whole, and
+   * not after the abbreviations below. A sentence longer than LINE_MAX_WORDS
+   * words (no punctuation) is cut into LINE_MAX_WORDS-word lines.
+   * (LINE_MAX_WORDS replaces WORD_SPLIT from v0.14 and earlier.)
+   */
+  LINE_MAX_WORDS: 15,
+  /* Words (lower case, no final dot) whose "." never ends a sentence.
+     Single letters (initials such as "J.") never end one either. */
+  ABBREVIATIONS: ["mr", "mrs", "ms", "dr", "prof", "sr", "jr", "st", "vs", "e.g", "i.e", "approx", "govt", "dept"],
+  /*
+   * Stale partial: an interim (not final) transcript is committed into the
+   * window after SPLIT_SECONDS, or once it has LINE_MAX_WORDS new words.
+   * When the real final (or a longer interim) for it arrives, it replaces /
+   * extends that committed text instead of adding the words again.
+   */
   SPLIT_SECONDS: 4.25,
 
   /*
-   * Time-windowed blocks (v0.14). Every line finalised during one window goes
-   * into that window's block, and the window gets ONE chat request (only its
-   * own text, no earlier blocks). Empty windows send nothing and draw nothing.
-   * The user sets the length in the top bar ("Window"), saved in
-   * STORAGE.WINDOW_SEC; these give the default and the allowed range.
+   * Time-windowed blocks. Every line finalised during one window goes into
+   * that window's block, and the window gets ONE chat request (only its own
+   * text, no earlier blocks). Empty windows send nothing and draw nothing.
+   * v0.15: set here only (no top-bar field; the old cfn_window_sec_v1 key is ignored).
    */
-  WINDOW_SEC_DEFAULT: 5,
-  WINDOW_SEC_MIN: 3,
-  WINDOW_SEC_MAX: 15,
-  WINDOW_SEC_STEP: 0.25,
-  /* At window end, speech counts as "mid-sentence" if an interim line is not
-     final yet or the last text arrived less than this many ms ago */
+  WINDOW_SEC: 4.25,
+  /*
+   * When WINDOW_SEC is up:
+   *   window text ends at a sentence end → close now;
+   *   else wait for a sentence end or a pause (no interim pending and no new
+   *   text for WINDOW_PAUSE_GAP_MS), at most WINDOW_MAX_EXTRA_SEC more;
+   *   at that hard close the unfinished last sentence (text after the last
+   *   sentence end) moves into the next window. If the whole window is one
+   *   unfinished sentence it is translated anyway.
+   */
   WINDOW_PAUSE_GAP_MS: 600,
-  /* Mid-sentence: keep the window open up to this many extra seconds, then close */
-  WINDOW_MAX_EXTRA_SEC: 2,
+  WINDOW_MAX_EXTRA_SEC: 1.25,
   /* How often (ms) the window clock is checked */
   WINDOW_TICK_MS: 100,
   /* Block accent colours (left border + faint tint), cycled block by block.
@@ -50,6 +67,7 @@ window.CFN_CONFIG = {
    * local = caption-for-nei_roman.js (rules + word lists, no network).
    * ai = ask the chat model too (falls back to local). The user's choice is
    * remembered in localStorage (STORAGE.ABC_MODE) and wins over this.
+   * Input English: no ABC line at all (any mode), and AI never asks for it.
    */
   ABC_MODE: "local",
   /* Do not play translated audio */
@@ -171,7 +189,8 @@ window.CFN_CONFIG = {
     { code: "bn", label: "Bengali", name: "Bengali" },
     { code: "ne", label: "Nepali", name: "Nepali" },
   ],
-  /* Output dropdown default */
+  /* Output dropdown default. When Output is the same base language as Input
+     (en-IN → en, hi-IN → hi, …) no translation request is sent (TEXT.sameLangNote). */
   DEFAULT_OUTPUT: "off",
   /* Used when an Output code has no name */
   FALLBACK_OUTPUT_NAME: "English",
@@ -185,8 +204,6 @@ window.CFN_CONFIG = {
     HOUR_PREFIX: "cfn_hour_",
     /* ABC mode chosen on the top bar: off | local | ai */
     ABC_MODE: "cfn_abc_mode_v1",
-    /* Window length in seconds (top bar "Window"), v0.14 */
-    WINDOW_SEC: "cfn_window_sec_v1",
   },
   /* Rough browser quota shown in the Log panel */
   STORAGE_QUOTA_KB: 5000,
@@ -264,10 +281,9 @@ window.CFN_CONFIG = {
     translateFailed: "Translate failed.",
     /* Faint placeholder in a block's translation line while its request runs */
     translating: "translating…",
-    /* Top-bar window length field */
-    windowLabel: "Window",
-    windowUnit: "s",
-    windowTitle: "Seconds per caption block (one translation request per block)",
+    /* Small grey note in a block when Input and Output are the same language
+       (no translation request is sent) */
+    sameLangNote: "same language, no translation",
     /* Translation line when no model could translate the window */
     translateNoModel: "(no model free — try later)",
     translateNoKey: "(add an API key to translate)",

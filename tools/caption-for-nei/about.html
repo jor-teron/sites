@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <!--
   Caption for NEI (Caption for North East India) — about.html
-  Version: 0.14 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
+  Version: 0.15 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
   Credit: personal project (Karbi Anglong / Assam)
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>About — Caption for North East India v0.14</title>
+  <title>About — Caption for North East India v0.15</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <style>
     :root {
@@ -82,7 +82,7 @@
   <main>
     <h1>About Caption for North East India</h1>
     <p class="meta">
-      Version <strong>0.14</strong> · API Edition · personal use<br />
+      Version <strong>0.15</strong> · API Edition · personal use<br />
       First release: 27 Sep 2026<br />
       Last edit: 28 Sep 2026<br />
       Formerly “Live Subtitle for Assam”
@@ -99,9 +99,9 @@
       <p><strong>What it does</strong></p>
       <ul>
         <li>Input: Auto / English / Assamese / Hindi / Bengali / Nepali → live transcript</li>
-        <li>Time windows: every line spoken in one window (default 5 s, set 3–15 s in steps of 0.25 with “Window”) goes into one coloured block. Top: translation of the whole window (larger); under it each original line, with its ABC line (everyday Latin letters, only for Indic script) indented below</li>
+        <li>Time windows: everything spoken in one window (4.25 s, set in caption-for-nei_config.js) goes into one coloured block. Top: translation of the whole window (larger); under it one line per sentence (split at . ? ! । ॥; long lines cut after 15 words), each with its ABC line (everyday Latin letters, only for Indic script) indented below</li>
         <li>ABC: Off / Local (rule-based romanizer on this device, with word lists roman_hi / roman_ne / roman_as / roman_bn .csv) / AI (chat model, falls back to Local). Default Local, remembered in this browser</li>
-        <li>Output Off = transcript only. English / Hindi / Assamese / Bengali / Nepali = chat translate, one request per window (only that window’s text). Silent windows send nothing. A window waits up to 2 s more for a pause if speech is mid-sentence</li>
+        <li>Output Off = transcript only. English / Hindi / Assamese / Bengali / Nepali = chat translate, one request per window (only that window’s text). Silent windows send nothing. Output = the Input language sends nothing (“same language, no translation”); English Input never shows an ABC line</li><li>A window closes at once on a sentence end; mid-sentence it waits up to 1.25 s for a pause, then moves the unfinished sentence into the next block. Early partial captions are replaced by their final text, not repeated</li>
         <li>Model: Auto rotate or pin 3.5 Lite / 3.1 Lite</li>
         <li>Mic bar shows loudness. LED green = caption session on</li>
         <li>RPD counters reset 00:00 UTC (set limits in caption-for-nei_config.js)</li>

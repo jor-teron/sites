@@ -6,7 +6,7 @@ Formerly **Live Subtitle for Assam** (`tools/live-subtitle-assam/`, v0.11). The 
 
 | | |
 |---|---|
-| Version | **0.14** (API Edition) |
+| Version | **0.15** (API Edition) |
 | First release | 27 Sep 2026 |
 | Last edit | 28 Sep 2026 |
 | Credit | Personal project (Karbi Anglong / Assam) |
@@ -14,7 +14,7 @@ Formerly **Live Subtitle for Assam** (`tools/live-subtitle-assam/`, v0.11). The 
 **Input engine:** `gemini-3.5-transcribe-live`  
 **Output (optional):** `gemini-3.5-flash-lite`, then `gemini-3.1-flash-lite`  
 **ABC (romanized line):** Off / Local (rule-based, on this device) / AI  
-**Blocks:** one per time window (Window 3–15 s, default 5), one translation request per window  
+**Blocks:** one per time window (`WINDOW_SEC` 4.25 s in config), one translation request per window, one line per sentence  
 **Parked:** 2-panel, Karbi, Local Pack, Live Translate, speaker
 
 ## Run
@@ -31,7 +31,6 @@ python3 -m http.server 8080
 4. Allow microphone  
 5. Output (English, Hindi, Assamese, Bengali, Nepali) only when you need translation (uses Flash-Lite quota)
 6. ABC: Off / Local / AI (default Local; remembered in this browser)
-7. Window: seconds per caption block, 3–15 in steps of 0.25 (default 5; remembered in `cfn_window_sec_v1`)
 
 Key stays in `localStorage` (`cfn_gemini_api_key_v01`). Do not commit it.
 
@@ -57,10 +56,12 @@ Key stays in `localStorage` (`cfn_gemini_api_key_v01`). Do not commit it.
 
 Edit `caption-for-nei_config.js` only when you can. `caption-for-nei_logic.js` can be replaced later.
 
-- `WINDOW_SEC_DEFAULT` / `WINDOW_SEC_MIN` / `WINDOW_SEC_MAX` / `WINDOW_SEC_STEP` — window length (top-bar “Window”, saved in `cfn_window_sec_v1`)  
-- `WINDOW_PAUSE_GAP_MS` / `WINDOW_MAX_EXTRA_SEC` — pause check at window end (default 600 ms / 2 s)  
+- `WINDOW_SEC` — window length in seconds (4.25; config only since v0.15 — the old `cfn_window_sec_v1` key is ignored)  
+- `WINDOW_PAUSE_GAP_MS` / `WINDOW_MAX_EXTRA_SEC` — pause check at window end (600 ms / 1.25 s)  
 - `BLOCK_COLORS` / `BLOCK_TINT_ALPHA` — block accent colours (cycled) and tint strength  
-- `WORD_SPLIT` / `SPLIT_SECONDS` — split long speech into lines inside a block  
+- `LINE_MAX_WORDS` — cut a line without punctuation after this many words (15; was `WORD_SPLIT`)  
+- `ABBREVIATIONS` — words whose `.` does not end a sentence (Mr. Dr. …)  
+- `SPLIT_SECONDS` — commit a stale partial (interim) transcript after this long; its final replaces it later  
 - `MODELS[].rpm` / `rpd` — per-minute and per-UTC-day caps  
 - `PINNED_MODEL` — `"auto"` or a model id  
 - `VOCAB_FILES` — extra csv lists  
@@ -92,7 +93,7 @@ RPD text on the bar resets at **00:00 UTC**.
 
 ## Caption block (time window)
 
-Every transcript line finalised during one window (the **Window** seconds on the top bar) goes into that window's block. Each block has its own accent colour (left border + faint tint, cycled from `BLOCK_COLORS`):
+Everything transcribed during one window (`WINDOW_SEC`, 4.25 s) goes into that window's block, **one line per sentence** (split at `.` `?` `!` `।` `॥` and full-width `？` `！` `。`; `3.5`, `Mr.`, `Dr.`, initials like `J.` do not split; a line with no punctuation is cut after `LINE_MAX_WORDS` = 15 words). Each block has its own accent colour (left border + faint tint, cycled from `BLOCK_COLORS`):
 
 ```
 • Translation of the whole window (larger; faint "translating…" while waiting; only when Output is not Off)
@@ -103,7 +104,9 @@ Every transcript line finalised during one window (the **Window** seconds on the
       – ABC line 2
 ```
 
-- When the window time is up and speech is mid-sentence (an interim line is not final yet, or text arrived < 0.6 s ago), the window stays open for a pause, at most 2 s more.  
+- When the window time is up: if the text ends at a sentence end the window closes at once; otherwise it waits for a sentence end or a pause (no pending interim, no text for 0.6 s), at most `WINDOW_MAX_EXTRA_SEC` = 1.25 s more. At that hard close the unfinished last sentence moves into the next block (only if a full sentence came before it; a window that is one unfinished sentence is translated as is).  
+- A partial (interim) caption committed early (after `SPLIT_SECONDS` or 15 new words) is replaced / extended by its final text, so words are not repeated.  
+- Input and Output the same language (e.g. English → English, Hindi → Hindi): no translation request; the block shows a small grey “same language, no translation”. English Input never has an ABC line (not even in AI mode, which then sends nothing). Other languages still get the Local ABC line; ABC = AI may send one romanization-only request per window.
 - A window with no speech sends nothing and draws no block.  
 - Stop closes the open window at once, so its last lines are still translated.
 
@@ -128,7 +131,7 @@ Switching the mode re-renders the ABC lines on the blocks already on screen. AI 
 
 ## Translation and quota
 
-One chat request per **window**, holding only that window's lines (no earlier blocks as context), so a longer Window uses fewer requests. Silent windows cost nothing. If a model errors or is at its per-minute / per-day cap, the next On model is tried for that window; if none is free, the translation line shows a short note. ABC = AI adds no extra request: the same JSON reply carries the translation and the romanized lines (with Output Off, AI mode costs one request per window that has Indic script). ABC = Local never uses the network.
+One chat request per **window** (none when Input = Output language), holding only that window's lines (no earlier blocks as context), so a longer `WINDOW_SEC` uses fewer requests. Silent windows cost nothing. If a model errors or is at its per-minute / per-day cap, the next On model is tried for that window; if none is free, the translation line shows a short note. ABC = AI adds no extra request: the same JSON reply carries the translation and the romanized lines (with Output Off, AI mode costs one request per window that has Indic script). ABC = Local never uses the network.
 
 ## Logs
 

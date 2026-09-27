@@ -1,6 +1,6 @@
 /*
  * Caption for NEI — caption-for-nei.css
- * Version: 0.14 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
+ * Version: 0.15 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
  * Styles for caption-for-nei.html (moved from the inline <style> block).
  */
@@ -52,7 +52,7 @@ body {
   font-size: 0.75rem;
   color: var(--muted);
 }
-select, button, input[type="password"], input[type="number"] {
+select, button, input[type="password"] {
   background: var(--card);
   color: var(--text);
   border: 1px solid var(--line);
@@ -94,7 +94,6 @@ a.about {
 }
 .log-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 4px 0; }
 #apiKey { flex: 1; min-width: 160px; }
-#windowInput { width: 4.6em; padding: 7px 6px; }
 main { padding: 96px 12px 16px; max-width: 900px; margin: 0 auto; }
 .captions {
   background: var(--card);
@@ -176,6 +175,8 @@ a.about { margin-left: auto; }
 .block textarea.out-line { font-size: 1.12em; font-weight: 550; color: var(--text); }
 .block textarea.out-line.pending { color: var(--muted); font-style: italic; font-weight: 400; opacity: 0.6; }
 .block textarea.out-line.noted { color: var(--muted); font-weight: 400; }
+/* Input = Output language: small grey note instead of a translation */
+.block textarea.out-line.same-lang { font-size: 0.7em; font-style: italic; opacity: 0.75; }
 .block textarea.orig-line { color: #c9d4e0; }
 .block textarea.abc-line { color: var(--muted); }
 /* thin divider between the lines of one block */

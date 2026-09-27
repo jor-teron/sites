@@ -1,6 +1,6 @@
 /**
  * Caption for NEI — caption-for-nei_roman_deva.js
- * Version: 0.14
+ * Version: 0.15
  * First release: 28 Sep 2026
  * Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
