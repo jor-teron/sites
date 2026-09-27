@@ -1,5 +1,6 @@
 /**
  * Dino Run — Chrome offline dino–style endless runner.
+ * Game logic. Tunables come from DINO_RUN_CONFIG (dino-run_config.js).
  */
 (function () {
   'use strict';
@@ -13,21 +14,31 @@
   const msgEl = document.getElementById('msg');
   const subEl = document.getElementById('sub');
 
-  const BEST_KEY = 'dino-run-best';
-  const GRAVITY = 2200;
-  const JUMP_V = -780;
-  const JUMP_HOLD = -120; // extra upward while holding
-  const DUCK_FASTFALL = 1800;
-  const GROUND_Y_FRAC = 0.72;
-  const DINO_W = 44;
-  const DINO_H = 48;
-  const DINO_DUCK_H = 28;
-  const SHIELD_DUR = 0.7;
-  const SHIELD_CD = 3.2;
+  const CFG = DINO_RUN_CONFIG;
+  const K = CFG.keys;
+  const TX = CFG.text;
+  const CL = CFG.colors;
+  const SP = CFG.spawn;
+  const PH = CFG.physics;
+  const isKey = (list, code) => list.indexOf(code) !== -1;
+  const held = (list) => list.some((c) => keys[c]);
+  document.getElementById('help').textContent = TX.help;
+
+  const BEST_KEY = CFG.bestKey;
+  const GRAVITY = PH.gravity;
+  const JUMP_V = PH.jumpVelocity;
+  const JUMP_HOLD = PH.jumpHold; // extra upward while holding
+  const DUCK_FASTFALL = PH.duckFastFall;
+  const GROUND_Y_FRAC = CFG.groundYFrac;
+  const DINO_W = CFG.dino.width;
+  const DINO_H = CFG.dino.height;
+  const DINO_DUCK_H = CFG.dino.duckHeight;
+  const SHIELD_DUR = CFG.shield.duration;
+  const SHIELD_CD = CFG.shield.cooldown;
 
   let dpr = 1, W = 0, H = 0, groundY = 0;
   let state = 'title';
-  let score = 0, best = 0, speed = 320, dist = 0;
+  let score = CFG.start.score, best = 0, speed = CFG.start.speed, dist = 0;
   let dino, obstacles, clouds, particles;
   let keys = Object.create(null);
   let shieldT = 0, shieldCd = 0, jumpHeld = false;
@@ -38,7 +49,7 @@
   bestEl.textContent = 'HI ' + pad(best);
 
   function pad(n) {
-    return String(Math.floor(n)).padStart(5, '0');
+    return String(Math.floor(n)).padStart(CFG.scoreDigits, '0');
   }
 
   function resize() {
@@ -63,7 +74,7 @@
 
   function reset() {
     dino = {
-      x: W * 0.18,
+      x: W * CFG.dino.startXFrac,
       y: groundY - DINO_H,
       vy: 0,
       w: DINO_W,
@@ -75,34 +86,34 @@
     obstacles = [];
     clouds = [];
     particles = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < SP.clouds; i++) {
       clouds.push({
         x: Math.random() * W,
         y: 40 + Math.random() * (groundY * 0.35),
         s: 0.4 + Math.random() * 0.6,
       });
     }
-    score = 0;
+    score = CFG.start.score;
     dist = 0;
-    speed = 320;
-    spawnAcc = 0.8;
+    speed = CFG.start.speed;
+    spawnAcc = CFG.start.spawnDelay;
     shieldT = 0;
     shieldCd = 0;
     jumpHeld = false;
-    scoreEl.textContent = pad(0);
+    scoreEl.textContent = pad(score);
   }
 
   function spawnObstacle() {
     const r = Math.random();
-    if (r < 0.62) {
+    if (r < SP.cactusChance) {
       // cactus cluster
-      const n = 1 + (Math.random() < 0.4 ? 1 : 0) + (Math.random() < 0.15 ? 1 : 0);
+      const n = 1 + (Math.random() < SP.cactusExtra1 ? 1 : 0) + (Math.random() < SP.cactusExtra2 ? 1 : 0);
       let x = W + 20;
       for (let i = 0; i < n; i++) {
-        const h = 34 + Math.floor(Math.random() * 28);
-        const w = 14 + Math.floor(Math.random() * 8);
+        const h = SP.cactusMinH + Math.floor(Math.random() * SP.cactusRandH);
+        const w = SP.cactusMinW + Math.floor(Math.random() * SP.cactusRandW);
         obstacles.push({ type: 'cactus', x: x, y: groundY - h, w: w, h: h });
-        x += w + 4;
+        x += w + SP.cactusGap;
       }
     } else {
       // bird
@@ -115,8 +126,8 @@
         type: 'bird',
         x: W + 20,
         y: y,
-        w: 42,
-        h: 28,
+        w: SP.birdW,
+        h: SP.birdH,
         flap: 0,
       });
     }
@@ -124,7 +135,7 @@
 
   function hitTest() {
     if (shieldT > 0) return false;
-    const pad = 6;
+    const pad = CFG.dino.hitPad;
     const dx = dino.x + pad;
     const dy = dino.y + pad;
     const dw = dino.w - pad * 2;
@@ -144,7 +155,7 @@
       localStorage.setItem(BEST_KEY, String(best));
       bestEl.textContent = 'HI ' + pad(best);
     }
-    showOverlay('GAME OVER', 'Score ' + pad(score), 'Best ' + pad(best) + ' — Start / Enter');
+    showOverlay(TX.gameOver, 'Score ' + pad(score), 'Best ' + pad(best) + ' — Start / Enter');
   }
 
   function startPlay() {
@@ -157,14 +168,14 @@
       hideOverlay();
     } else if (state === 'play') {
       state = 'pause';
-      showOverlay('PAUSED', 'Press Start / Enter', '');
+      showOverlay(TX.paused, TX.pressStart, '');
     }
   }
 
   function toTitle() {
     state = 'title';
     reset();
-    showOverlay('DINO RUN', 'Press Start / Enter', 'or tap / click');
+    showOverlay(TX.title, TX.pressStart, TX.titleSub);
   }
 
   function jump() {
@@ -179,20 +190,20 @@
     const code = e.code;
     keys[code] = down;
     if (down) {
-      if (code === 'ArrowUp' || code === 'Space' || code === 'KeyW') {
+      if (isKey(K.jump, code)) {
         jump();
         e.preventDefault();
-      } else if (code === 'ArrowDown' || code === 'KeyS') {
+      } else if (isKey(K.duck, code)) {
         e.preventDefault();
-      } else if (code === 'KeyX') {
+      } else if (isKey(K.shield, code)) {
         if (shieldCd <= 0 && shieldT <= 0) {
           shieldT = SHIELD_DUR;
           shieldCd = SHIELD_CD;
         }
-      } else if (code === 'Enter') { startPlay(); e.preventDefault(); }
-      else if (code === 'Escape') { toTitle(); e.preventDefault(); }
+      } else if (isKey(K.start, code)) { startPlay(); e.preventDefault(); }
+      else if (isKey(K.restart, code)) { toTitle(); e.preventDefault(); }
     } else {
-      if (code === 'ArrowUp' || code === 'Space' || code === 'KeyW') jumpHeld = false;
+      if (isKey(K.jump, code)) jumpHeld = false;
     }
   }
 
@@ -208,13 +219,13 @@
 
   function update(dt) {
     // horizontal move within range
-    const minX = W * 0.08;
-    const maxX = W * 0.42;
-    if (keys.ArrowLeft || keys.KeyA) dino.x -= 220 * dt;
-    if (keys.ArrowRight || keys.KeyD) dino.x += 220 * dt;
+    const minX = W * PH.minXFrac;
+    const maxX = W * PH.maxXFrac;
+    if (held(K.left)) dino.x -= PH.moveSpeed * dt;
+    if (held(K.right)) dino.x += PH.moveSpeed * dt;
     dino.x = Math.max(minX, Math.min(maxX, dino.x));
 
-    const wantDuck = !!(keys.ArrowDown || keys.KeyS);
+    const wantDuck = held(K.duck);
     if (wantDuck && dino.onGround) {
       dino.ducking = true;
       dino.h = DINO_DUCK_H;
@@ -242,16 +253,16 @@
       }
     }
 
-    speed = Math.min(720, 320 + dist * 0.012);
+    speed = Math.min(CFG.speed.max, CFG.start.speed + dist * CFG.speed.perDistance);
     dist += speed * dt;
-    score = dist * 0.05;
+    score = dist * CFG.speed.scorePerDistance;
     scoreEl.textContent = pad(score);
 
     // spawn
     spawnAcc -= dt;
     if (spawnAcc <= 0) {
       spawnObstacle();
-      spawnAcc = 0.9 + Math.random() * 1.1 - Math.min(0.5, speed / 1400);
+      spawnAcc = SP.intervalBase + Math.random() * SP.intervalRandom - Math.min(SP.intervalSpeedMax, speed / SP.intervalSpeedDiv);
     }
 
     for (const o of obstacles) {
@@ -289,13 +300,13 @@
 
   function drawDino() {
     const x = dino.x, y = dino.y, w = dino.w, h = dino.h;
-    ctx.fillStyle = '#9aa0a6';
+    ctx.fillStyle = CL.dino;
     if (dino.ducking) {
       roundRect(x, y + 4, w + 8, h - 4, 4);
       ctx.fill();
       // head
       ctx.fillRect(x + w - 4, y, 18, 16);
-      ctx.fillStyle = '#121418';
+      ctx.fillStyle = CL.eye;
       ctx.fillRect(x + w + 8, y + 4, 3, 3);
     } else {
       // body
@@ -305,10 +316,10 @@
       // tail
       ctx.fillRect(x, y + 20, 10, 8);
       // eye
-      ctx.fillStyle = '#121418';
+      ctx.fillStyle = CL.eye;
       ctx.fillRect(x + 34, y + 5, 4, 4);
       // legs
-      ctx.fillStyle = '#9aa0a6';
+      ctx.fillStyle = CL.dino;
       const leg = Math.floor(dino.frame) % 2;
       if (dino.onGround) {
         ctx.fillRect(x + 10, y + h - 2, 6, 10 + (leg ? 0 : -4));
@@ -321,7 +332,7 @@
       ctx.fillRect(x + 14, y + 22, 8, 4);
     }
     if (shieldT > 0) {
-      ctx.strokeStyle = 'rgba(110,168,254,' + (0.4 + 0.4 * Math.sin(blink * 20)) + ')';
+      ctx.strokeStyle = 'rgba(' + CL.shieldRGB + ',' + (0.4 + 0.4 * Math.sin(blink * 20)) + ')';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.arc(x + w / 2, y + h / 2, Math.max(w, h) * 0.7, 0, Math.PI * 2);
@@ -332,13 +343,13 @@
   function draw() {
     // sky
     const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#1a1e26');
-    g.addColorStop(1, '#0c1016');
+    g.addColorStop(0, CL.skyTop);
+    g.addColorStop(1, CL.skyBottom);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
     // clouds
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillStyle = CL.cloud;
     for (const c of clouds) {
       ctx.beginPath();
       ctx.ellipse(c.x, c.y, 28 * c.s, 10 * c.s, 0, 0, Math.PI * 2);
@@ -347,16 +358,16 @@
     }
 
     // ground
-    ctx.strokeStyle = '#5a6070';
+    ctx.strokeStyle = CL.groundLine;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(0, groundY + 0.5);
     ctx.lineTo(W, groundY + 0.5);
     ctx.stroke();
-    ctx.fillStyle = '#161a22';
+    ctx.fillStyle = CL.ground;
     ctx.fillRect(0, groundY, W, H - groundY);
     // ground ticks
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.strokeStyle = CL.groundTick;
     const off = (dist * 0.5) % 40;
     for (let x = -off; x < W; x += 40) {
       ctx.beginPath();
@@ -368,16 +379,16 @@
     // obstacles
     for (const o of obstacles) {
       if (o.type === 'cactus') {
-        ctx.fillStyle = '#6b9b5a';
+        ctx.fillStyle = CL.cactus;
         ctx.fillRect(o.x, o.y, o.w, o.h);
         ctx.fillRect(o.x - 6, o.y + o.h * 0.35, 6, 8);
         ctx.fillRect(o.x + o.w, o.y + o.h * 0.25, 6, 8);
       } else {
-        ctx.fillStyle = '#9aa0a6';
+        ctx.fillStyle = CL.bird;
         const flap = Math.sin(o.flap) > 0;
         ctx.fillRect(o.x, o.y + 8, o.w, 12);
         ctx.fillRect(o.x + 28, o.y + 4, 12, 10);
-        ctx.fillStyle = '#7a8088';
+        ctx.fillStyle = CL.birdWing;
         if (flap) ctx.fillRect(o.x + 8, o.y, 16, 8);
         else ctx.fillRect(o.x + 8, o.y + 14, 16, 8);
       }
@@ -389,10 +400,10 @@
     if (state === 'play' || state === 'pause') {
       const bw = 60, bh = 4;
       const bx = 14, by = 14;
-      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      ctx.fillStyle = CL.barBg;
       ctx.fillRect(bx, by, bw, bh);
       const ready = shieldCd <= 0;
-      ctx.fillStyle = ready ? '#6ea8fe' : '#3a4050';
+      ctx.fillStyle = ready ? CL.barReady : CL.barCharging;
       const frac = ready ? 1 : 1 - shieldCd / SHIELD_CD;
       ctx.fillRect(bx, by, bw * frac, bh);
     }
@@ -400,7 +411,7 @@
 
   function loop(ts) {
     if (!last) last = ts;
-    const dt = Math.min(0.05, (ts - last) / 1000);
+    const dt = Math.min(PH.maxDt, (ts - last) / 1000);
     last = ts;
     if (state === 'play') update(dt);
     draw();
@@ -408,7 +419,7 @@
   }
 
   window.addEventListener('resize', () => {
-    const wasX = dino ? dino.x / (W || 1) : 0.18;
+    const wasX = dino ? dino.x / (W || 1) : CFG.dino.startXFrac;
     resize();
     if (dino) {
       dino.x = wasX * W;
@@ -417,6 +428,6 @@
   });
   resize();
   reset();
-  showOverlay('DINO RUN', 'Press Start / Enter', 'or tap / click');
+  showOverlay(TX.title, TX.pressStart, TX.titleSub);
   requestAnimationFrame(loop);
 })();
