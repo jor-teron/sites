@@ -5,6 +5,9 @@
  * Protocol (JSON strings over the PeerJS data connection):
  *   { t:'btn',   b:<button>, s:1|0 }   press / release (original protocol, unchanged)
  *   { t:'stick', x:-1..1,  y:-1..1 }   analog stick (y -1 = up), sent at stick.sendHz while held
+ * Hub → phone:
+ *   { t:'rumble', ms:N } / { t:'rumble', pattern:[...] }   game rumble (e.g. Snake death)
+ *   → navigator.vibrate, only when the Vibe toggle is on; silently nothing without vibrate (iOS)
  * The stick also emulates the D-pad by sending 'btn' up/down/left/right, so games that
  * only understand arrows work unchanged.
  *
@@ -193,6 +196,21 @@
   function vibrate(ms) {
     if (!hapticsOn || !canVibrate || !ms) return;
     try { navigator.vibrate(ms); } catch (_) { /* ignore */ }
+  }
+
+  /** Hub → phone data (rumble from the game in the hub). Unknown messages are ignored. */
+  function onHubData(data) {
+    let m = data;
+    if (typeof data === 'string') { try { m = JSON.parse(data); } catch (_) { return; } }
+    if (!m || m.t !== MSG.rumble) return;
+    const max = CFG.haptics.rumbleMaxMs || 5000;
+    const clamp = (n) => Math.max(0, Math.min(max, Math.round(Number(n) || 0)));
+    if (Array.isArray(m.pattern)) {
+      const p = m.pattern.slice(0, CFG.haptics.rumbleMaxSteps || 20).map(clamp);
+      if (p.some((n) => n > 0)) vibrate(p);
+    } else {
+      vibrate(clamp(m.ms));
+    }
   }
 
   function renderHaptics() {
@@ -649,7 +667,7 @@
         setStatus('connected', TXT.connected);
         requestWakeLock();
       });
-      c.on('data', () => { /* hub may send acks later */ });
+      c.on('data', onHubData);
       c.on('close', () => onLost(seq));
       c.on('error', (err) => {
         console.warn('conn error', err);

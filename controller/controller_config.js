@@ -6,7 +6,7 @@
  * holds structure + fallback theme values (overridden at runtime by themes[].vars).
  */
 const CONTROLLER_CONFIG = {
-  version: '1.1',                  // shown small on the pairing screen
+  version: '1.2',                  // shown small on the pairing screen
 
   // PeerJS pairing
   peer: {
@@ -44,6 +44,7 @@ const CONTROLLER_CONFIG = {
   messages: {
     btn: 'btn',                    // { t:'btn', b:<button>, s:1|0 }  press / release (original protocol)
     stick: 'stick',                // { t:'stick', x:-1..1, y:-1..1 } analog stick (y: -1 up, +1 down)
+    rumble: 'rumble',              // hub → phone { t:'rumble', ms:N | pattern:[...] } game rumble
     stickDecimals: 2,              // rounding of x / y in stick messages
   },
   messageType: 'btn',              // legacy alias of messages.btn
@@ -83,6 +84,8 @@ const CONTROLLER_CONFIG = {
     enabled: true,                 // default on/off (user toggle is remembered)
     shortMs: 50,                   // SHORT pulse: stick / D-pad slides into a new direction (tick)
     longMs: 100,                   // LONG pulse: a button is pressed (press)
+    rumbleMaxMs: 5000,             // game rumble from the hub: longest single pulse / pattern step
+    rumbleMaxSteps: 20,            // game rumble pattern: max steps
   },
 
   // Built-in QR scanner (camera overlay; decodes with the local vendor/jsQR.js)

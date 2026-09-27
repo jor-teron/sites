@@ -1,6 +1,9 @@
 /**
  * Hub phone controller — PeerJS host + QR pairing popover.
  * Forwards D-pad messages into the app iframe as KeyboardEvents + postMessage.
+ * Rumble: an app in the iframe may post {type:'hub-rumble', ms:N} or
+ * {type:'hub-rumble', pattern:[on, off, on, ...]}; it is relayed to the paired phone as
+ * {t:'rumble', ms} / {t:'rumble', pattern} (the phone calls navigator.vibrate).
  *
  * Pairing survives reloads: the code (peer id = PEER_PREFIX + code) is kept in localStorage
  * and registered again as soon as the hub loads, so a phone can reconnect without the
@@ -235,6 +238,33 @@
       console.warn('hub conn error', err);
     });
   }
+
+  // Rumble relay limits (ms per step / steps in a pattern)
+  const RUMBLE_MAX_MS = 5000;
+  const RUMBLE_MAX_STEPS = 20;
+
+  /** App (iframe) → phone: {type:'hub-rumble', ms | pattern} → {t:'rumble', ...}. */
+  function relayRumble(d) {
+    if (!conn || !conn.open) return;
+    const clamp = (n) => Math.max(0, Math.min(RUMBLE_MAX_MS, Math.round(Number(n) || 0)));
+    let msg = null;
+    const pat = Array.isArray(d.pattern) ? d.pattern : (Array.isArray(d.ms) ? d.ms : null);
+    if (pat) {
+      const p = pat.slice(0, RUMBLE_MAX_STEPS).map(clamp);
+      if (p.some((n) => n > 0)) msg = { t: 'rumble', pattern: p };
+    } else {
+      const ms = clamp(d.ms);
+      if (ms > 0) msg = { t: 'rumble', ms: ms };
+    }
+    if (!msg) return;
+    try { conn.send(JSON.stringify(msg)); } catch (err) { console.warn('rumble send', err); }
+  }
+
+  window.addEventListener('message', (e) => {
+    if (!frame || !e.source || e.source !== frame.contentWindow) return;
+    const d = e.data;
+    if (d && typeof d === 'object' && d.type === 'hub-rumble') relayRumble(d);
+  });
 
   /** Register PEER_PREFIX + code on the broker and wait for the phone. */
   function startPairing(isRetry) {

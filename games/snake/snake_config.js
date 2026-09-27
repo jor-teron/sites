@@ -2,8 +2,21 @@
  * Snake — configuration.
  * Grid, speeds, colors, keys and on-screen text.
  * snake_logic.js reads everything from SNAKE_CONFIG.
+ * APP = name / version / author / category (page title + sites hub header).
  */
 const SNAKE_CONFIG = {
+  // App info (page title, and the sites hub header via the hub bridge)
+  APP: { name: 'Snake', version: '1.1', author: 'Jor Teron', category: 'Games' },
+
+  // Wrap-around walls: true = leave one edge, enter from the opposite one (only
+  // running into yourself kills); false = hitting a wall ends the game.
+  // B / X still toggles it during a game.
+  WRAP_WALLS: true,
+
+  // Phone rumble on death (ms), sent to the hub → paired phone controller.
+  // Only inside the hub; 0 = off. An array is a vibrate pattern, e.g. [200, 100, 200].
+  DIE_VIBRATE_MS: 500,
+
   bestKey: 'snake-best',       // localStorage key for the best score
 
   // Grid
@@ -23,8 +36,7 @@ const SNAKE_CONFIG = {
 
   // Starting values
   start: {
-    score: 0,                  // initial score
-    wrap: false,               // wrap walls off at start
+    score: 0,                  // initial score (wrap at start: WRAP_WALLS above)
   },
 
   // Scoring
@@ -35,7 +47,8 @@ const SNAKE_CONFIG = {
 
   // Input
   input: {
-    queueSize: 2,              // max buffered turns between steps
+    queueSize: 2,              // max buffered turns between steps (one is used per step;
+                               // a reverse of the last queued turn is ignored)
     // After a tap/click starts the game, an Enter within this window is treated
     // as "start" (ignored) instead of pausing immediately.
     clickStartGraceMs: 1500,
@@ -62,16 +75,18 @@ const SNAKE_CONFIG = {
     segRadius: 3,              // segment corner radius (px)
   },
 
-  // Key bindings — matched against KeyboardEvent.code OR .key. Phone D-pad: arrows, A=Space, B=KeyX, Start=Enter, Select=Escape
+  // Key bindings — matched against KeyboardEvent.code OR .key.
+  // Phone D-pad (via the hub): arrows, A=Space, B=KeyX, X=KeyZ, Start=Enter, Select=Escape
   keys: {
     up: ['ArrowUp', 'KeyW'],         // turn up
     down: ['ArrowDown', 'KeyS'],     // turn down
     left: ['ArrowLeft', 'KeyA'],     // turn left
     right: ['ArrowRight', 'KeyD'],   // turn right
-    boost: ['Space'],                // hold to boost
-    wrap: ['KeyX'],                  // toggle wrap walls
-    start: ['Enter', 'KeyP'],        // start / pause / resume (Start / P)
-    restart: ['Escape', 'KeyR'],     // back to title (Select / R)
+    pause: ['Space'],                // A: pause / resume
+    boost: ['ShiftLeft', 'ShiftRight', 'KeyZ'], // hold to boost (Shift / phone X)
+    wrap: ['KeyX'],                  // B: toggle wrap walls
+    start: ['Enter', 'KeyP'],        // Start / P: new game (title, game over) · pause / resume
+    restart: ['Escape', 'KeyR'],     // Select / R: back to title
   },
 
   // On-screen text
@@ -81,6 +96,9 @@ const SNAKE_CONFIG = {
     titleSub: 'or tap / click',      // title sub line
     paused: 'PAUSED',                // pause heading
     gameOver: 'GAME OVER',           // game over heading
-    help: '←→↑↓ move · A/Space boost · B/X wrap · Start/Enter pause · Select/Esc restart', // help line
+    help: '←→↑↓ move · A/Space pause · Shift boost · B/X wrap · Start/Enter new game · Select/Esc title', // help line
+    statScore: 'Score',              // hub header stat labels / button
+    statBest: 'Best',
+    newGame: 'New Game',
   },
 };

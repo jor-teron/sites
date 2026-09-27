@@ -44,3 +44,7 @@ html, body {
 .card h1 { font-size: 36px; letter-spacing: 0.12em; margin-bottom: 10px; }
 .card p { color: var(--muted); font-size: 15px; }
 .card .sub { margin-top: 8px; font-size: 13px; color: var(--accent); }
+/* Inside the sites hub (body.in-hub, set by the hub bridge in snake_logic.js):
+   the hub header shows name / Score / Best / New Game, so the own HUD + help hide. */
+body.in-hub #hud,
+body.in-hub #help { display: none; }

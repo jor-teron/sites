@@ -1,6 +1,10 @@
 /**
- * Snake — grid snake with boost, wrap toggle, keyboard + hub D-pad.
+ * Snake — grid snake with boost, wrap-around walls, keyboard + hub D-pad.
  * Game logic. Every tunable value comes from SNAKE_CONFIG (snake_config.js).
+ * Keys: arrows/WASD move, Space (A) pause/resume, Enter/P (Start) new game or
+ * pause/resume, Esc/R (Select) title, X (B) wrap toggle, Shift boost.
+ * Hub bridge at the bottom (header stats + New Game, death rumble); standalone
+ * the page is unchanged and keeps its own HUD.
  */
 (function () {
   'use strict';
@@ -29,14 +33,22 @@
   const BASE_STEP = CFG.timing.baseStep; // seconds per cell
   const BOOST_STEP = CFG.timing.boostStep;
   const BEST_KEY = CFG.bestKey;
+  const APP = CFG.APP || { name: 'Snake', version: '' };
+  const WRAP_START = CFG.WRAP_WALLS !== undefined ? !!CFG.WRAP_WALLS : !!(CFG.start && CFG.start.wrap);
+  if (APP.name) document.title = APP.name;
 
   let dpr = 1, W = 0, H = 0, cell = 0, ox = 0, oy = 0;
   let state = 'title'; // title | play | pause | over
   let snake, dir, nextDir, dirQueue, food, score, best, wrap, boost;
   let acc = 0, last = 0;
   let clickStartAt = -Infinity; // time a tap/click started the game
+  // Hub bridge state (functions at the bottom)
+  const HUB_V = 1;
+  const IN_FRAME = (() => { try { return window.parent && window.parent !== window; } catch (_) { return true; } })();
+  let hubLinked = false;
+  const hubLastSent = {};
 
-  best = Number(localStorage.getItem(BEST_KEY) || 0) || 0;
+  try { best = Number(localStorage.getItem(BEST_KEY) || 0) || 0; } catch (_) { best = 0; }
   bestEl.textContent = 'BEST ' + best;
 
   const OPP = { up: 'down', down: 'up', left: 'right', right: 'left' };
@@ -74,12 +86,13 @@
     for (let i = 0; i < CFG.grid.startLength; i++) snake.push([cx - bdx * i, cy - bdy * i]);
     dirQueue = [];
     score = CFG.start.score;
-    wrap = CFG.start.wrap;
+    wrap = WRAP_START;
     boost = false;
     acc = 0;
     placeFood();
     scoreEl.textContent = String(score);
     wrapInd.className = wrap ? 'wrap-on' : 'wrap-off';
+    hubSendStats();
   }
 
   function placeFood() {
@@ -120,6 +133,7 @@
     if (nx === food[0] && ny === food[1]) {
       score += boost ? CFG.scoring.foodBoosted : CFG.scoring.food;
       scoreEl.textContent = String(score);
+      hubSendStats();
       placeFood();
     } else {
       snake.pop();
@@ -130,9 +144,11 @@
     state = 'over';
     if (score > best) {
       best = score;
-      localStorage.setItem(BEST_KEY, String(best));
+      try { localStorage.setItem(BEST_KEY, String(best)); } catch (_) { /* ignore */ }
       bestEl.textContent = 'BEST ' + best;
+      hubSendStats();
     }
+    hubRumble(CFG.DIE_VIBRATE_MS);
     showOverlay(TX.gameOver, 'Score ' + score, 'Best ' + best + ' — Start / Enter');
   }
 
@@ -166,6 +182,18 @@
     if (wasStarting && state === 'play') clickStartAt = performance.now();
   }
 
+  /** A / Space: pause or resume a running game (nothing on title / game over). */
+  function togglePause() {
+    if (state === 'play' || state === 'pause') startPlay();
+  }
+
+  /** New game at once (hub header "New Game"). */
+  function newGame() {
+    resetGame();
+    state = 'play';
+    hideOverlay();
+  }
+
   function toTitle() {
     state = 'title';
     resetGame();
@@ -178,6 +206,7 @@
       else if (isKey(K.down, e)) { queueDir('down'); e.preventDefault(); }
       else if (isKey(K.left, e)) { queueDir('left'); e.preventDefault(); }
       else if (isKey(K.right, e)) { queueDir('right'); e.preventDefault(); }
+      else if (K.pause && isKey(K.pause, e)) { if (!e.repeat) togglePause(); e.preventDefault(); }
       else if (isKey(K.boost, e)) { boost = true; e.preventDefault(); }
       else if (isKey(K.wrap, e)) {
         if (!e.repeat) {
@@ -280,9 +309,79 @@
     requestAnimationFrame(loop);
   }
 
+  /* ---------------------------------------------------------------------------
+   * Hub bridge (optional; same protocol as Swell Foop / hub-gamebar.js, v:1).
+   * Only active in a frame, after the hub's hello:
+   *   game → hub  {type:'hub-ready'}                     on load
+   *   hub → game  {type:'hub-hello'}                     → body.in-hub, reply hub-app
+   *   game → hub  {type:'hub-app', app, stats, buttons}  Score / Best, New Game
+   *   game → hub  {type:'hub-stat', id, value}           when Score / Best change
+   *   hub → game  {type:'hub-action', id:'new'}          → new game
+   *   game → hub  {type:'hub-rumble', ms}                on death (DIE_VIBRATE_MS;
+   *               an array is sent as pattern) → hub relays to the paired phone
+   * Accepted only from window.parent with a same-origin / file:// origin.
+   * ------------------------------------------------------------------------- */
+  function hubPost(msg) {
+    if (!IN_FRAME) return;
+    try { window.parent.postMessage(Object.assign({ v: HUB_V }, msg), '*'); } catch (_) { /* ignore */ }
+  }
+  function hubOriginOk(origin) {
+    return origin === location.origin || origin === 'null' || location.origin === 'null' ||
+      String(origin).indexOf('file:') === 0;
+  }
+  function hubStats() {
+    return [
+      { id: 'score', label: TX.statScore || 'Score', value: score },
+      { id: 'best', label: TX.statBest || 'Best', value: best },
+    ];
+  }
+  function hubSendStats() {
+    if (!hubLinked) return;
+    hubStats().forEach((st) => {
+      if (hubLastSent[st.id] === st.value) return;
+      hubLastSent[st.id] = st.value;
+      hubPost({ type: 'hub-stat', id: st.id, value: st.value });
+    });
+  }
+  function hubRumble(v) {
+    if (!hubLinked || !v) return;
+    if (Array.isArray(v)) hubPost({ type: 'hub-rumble', pattern: v.slice(0, 20) });
+    else if (Number(v) > 0) hubPost({ type: 'hub-rumble', ms: Number(v) });
+  }
+  function onHubMessage(e) {
+    if (e.source !== window.parent || !hubOriginOk(e.origin)) return;
+    const d = e.data;
+    if (!d || typeof d !== 'object' || d.v !== HUB_V) return;
+    if (d.type === 'hub-hello') {
+      if (!hubLinked) {
+        hubLinked = true;
+        document.body.classList.add('in-hub');
+      }
+      const stats = hubStats();
+      stats.forEach((st) => { hubLastSent[st.id] = st.value; });
+      hubPost({
+        type: 'hub-app',
+        app: { name: APP.name, version: APP.version },
+        stats: stats,
+        buttons: [{ id: 'new', label: TX.newGame || 'New Game' }],
+      });
+    } else if (d.type === 'hub-action' && hubLinked && d.id === 'new') {
+      newGame();
+    }
+  }
+  if (IN_FRAME) window.addEventListener('message', onHubMessage);
+
   window.addEventListener('resize', resize);
   resize();
   resetGame();
   showOverlay(TX.title, TX.pressStart, TX.titleSub);
   requestAnimationFrame(loop);
+  hubPost({ type: 'hub-ready' });
+
+  // Read-only peek for debugging / tests
+  window.__snake = {
+    get state() { return state; }, get dir() { return dir; }, get head() { return snake[0].slice(); },
+    get score() { return score; }, get best() { return best; }, get wrap() { return wrap; },
+    get length() { return snake.length; }, get inHub() { return hubLinked; }, get food() { return food.slice(); },
+  };
 })();
