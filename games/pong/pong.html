@@ -3,32 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pong</title>
+  <title>Ping Pong</title>
   <!--
     ========================================================================
-    Pong — HTML + CSS + JS (split: pong.css, pong_config.js, pong_logic.js)
-    Author: built for local play
+    Ping Pong — HTML + CSS + JS (split: pong.css, pong_config.js, pong_logic.js)
+    Author: Jor Teron
     Description:
-      Classic two-paddle Pong on a canvas. Left paddle is the human player
-      (W / S or Arrow Up / Arrow Down). Right paddle is a lightweight AI
-      that tracks the ball Y with a speed cap (not token-heavy).
-      Space pauses. R restarts after a point or anytime.
+      Classic two-paddle Pong on a canvas that fills the page. Left paddle is
+      the human player, right paddle a lightweight AI. First to
+      PONG_CONFIG.WIN_SCORE wins. Controls: see PONG_CONFIG.keys.
+      In the sites hub the own title / score bar hides and the hub header
+      shows name, version, score and New Game (hub bridge in pong_logic.js).
     ========================================================================
   -->
   <link rel="stylesheet" href="pong.css" />
 </head>
 <body>
-  <!-- Game title -->
-  <h1>Pong</h1>
+  <!-- Own bar: title + live score (hidden inside the hub) -->
+  <div id="topbar">
+    <h1>Ping Pong</h1>
+    <div id="hud">0 — 0</div>
+  </div>
 
-  <!-- Live score and status -->
-  <div id="hud">0 — 0</div>
-
-  <!-- Drawing surface -->
-  <canvas id="court" width="800" height="480"></canvas>
-
-  <!-- Controls reminder -->
-  <div id="hint">W/S or ↑/↓ move · Space pause · R restart</div>
+  <!-- Drawing surface (sized to the page by pong_logic.js) -->
+  <canvas id="court"></canvas>
 
   <script src="pong_config.js"></script>
   <script src="pong_logic.js"></script>

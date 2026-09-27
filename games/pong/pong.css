@@ -1,30 +1,40 @@
-/* Page layout: centered dark court */
+/* Ping Pong — page layout: own bar on top, court fills the rest (sized in pong_logic.js) */
 * {
   box-sizing: border-box;
 }
 
-/* Full-page background */
+/* Full-page background, no scrollbars */
 html, body {
   margin: 0;
   height: 100%;
+  overflow: hidden;
   background: #0b0f14;
   color: #e8eef5;
   font-family: system-ui, sans-serif;
 }
 
-/* Center the game stack */
+/* Stack: bar, then the court centred in the remaining space */
 body {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
+  padding: 8px;
 }
 
-/* Title above the canvas */
+/* Own bar: title + score on one line */
+#topbar {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex: none;
+}
+
+/* Title */
 h1 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-weight: 600;
@@ -37,18 +47,17 @@ h1 {
   opacity: 0.9;
 }
 
-/* Hint text under the court */
-#hint {
-  font-size: 0.8rem;
-  opacity: 0.65;
-}
-
-/* Canvas: the playfield */
+/* Canvas: the playfield (CSS width / height set by fitCourt) */
 canvas {
+  display: block;
+  flex: none;
   background: #111820;
   border: 2px solid #3a4a5c;
   border-radius: 4px;
-  max-width: 96vw;
-  height: auto;
   touch-action: none;
 }
+
+/* Inside the sites hub (body.in-hub, set by the hub bridge): the hub header shows
+   name / score / New Game, so the own bar hides and the court takes the frame. */
+body.in-hub #topbar { display: none; }
+body.in-hub { padding: 6px; }
