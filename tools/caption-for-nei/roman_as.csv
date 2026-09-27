@@ -1,0 +1,40 @@
+# Caption for NEI — roman_as.csv
+# Assamese word list for the local ABC romanizer (caption-for-nei_roman.js).
+# Whole words here win over the rules. Format: native,roman (one per line).
+# Version 0.13 | 28 Sep 2026
+অসম,Axom
+অসমীয়া,Axomiya
+গুৱাহাটী,Guwahati
+ডিফু,Diphu
+কাৰ্বি,Karbi
+আংলং,Anglong
+মোৰ,mor
+নাম,naam
+কি,ki
+আপুনি,apuni
+মই,moi
+তুমি,tumi
+তই,toi
+আমি,ami
+তেওঁ,teo
+সি,xi
+কেনে,kene
+কেনেকুৱা,kenekua
+আছে,ase
+আছোঁ,asu
+ভাল,bhal
+হয়,hoy
+নহয়,nohoy
+নাই,nai
+ধন্যবাদ,dhonyobad
+নমস্কাৰ,nomoskar
+খবৰ,khobor
+আজি,aji
+কালি,kali
+যাম,jam
+আহক,ahok
+পানী,pani
+ভাত,bhat
+চাহ,sah
+ঘৰ,ghor
+মানুহ,manuh

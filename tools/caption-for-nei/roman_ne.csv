@@ -1,0 +1,39 @@
+# Caption for NEI — roman_ne.csv
+# Nepali word list for the local ABC romanizer (caption-for-nei_roman.js).
+# Whole words here win over the rules. Format: native,roman (one per line).
+# Version 0.13 | 28 Sep 2026
+छ,chha
+हो,ho
+म,ma
+तपाईं,tapai
+तपाई,tapai
+नमस्ते,namaste
+मेरो,mero
+नाम,naam
+के,ke
+कस्तो,kasto
+छु,chhu
+छौ,chhau
+छैन,chhaina
+हुन्छ,hunchha
+धन्यवाद,dhanyabaad
+हामी,hami
+तिमी,timi
+उनी,uni
+ठिक,thik
+राम्रो,ramro
+होइन,hoina
+जान्छु,janchhu
+आज,aaja
+भोलि,bholi
+खाना,khana
+पानी,pani
+दाइ,dai
+दिदी,didi
+बहिनी,bahini
+भाइ,bhai
+नेपाल,Nepal
+नेपाली,Nepali
+सन्चै,sanchai
+अनि,ani
+पनि,pani

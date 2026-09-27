@@ -1,6 +1,6 @@
 /*
  * Caption for NEI — caption-for-nei.css
- * Version: 0.12 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
+ * Version: 0.13 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
  * Styles for caption-for-nei.html (moved from the inline <style> block).
  */
@@ -150,6 +150,7 @@ a.about { margin-left: auto; }
   padding: 0;
 }
 .line textarea.orig-line { color: var(--muted); font-size: 1.05rem; margin-bottom: 4px; }
+.line textarea[hidden] { display: none; }
 .line textarea.abc-line { color: #c5d0dc; font-size: 1.15rem; margin-bottom: 4px; }
 .line textarea.out-line { color: var(--text); }
 .status { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }

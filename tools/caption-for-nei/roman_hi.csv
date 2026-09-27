@@ -1,0 +1,46 @@
+# Caption for NEI — roman_hi.csv
+# Hindi word list for the local ABC romanizer (caption-for-nei_roman.js).
+# Whole words here win over the rules. Format: native,roman (one per line).
+# Version 0.13 | 28 Sep 2026
+है,hai
+हैं,hain
+नहीं,nahin
+मैं,main
+में,mein
+और,aur
+क्या,kya
+हम,hum
+तुम,tum
+आप,aap
+यह,yeh
+वह,woh
+ये,ye
+वो,wo
+कैसे,kaise
+बाज़ार,bazaar
+बाजार,bazaar
+हाँ,haan
+हां,haan
+माँ,maa
+भी,bhi
+ही,hi
+कि,ki
+तो,to
+नमस्ते,namaste
+धन्यवाद,dhanyavaad
+शुक्रिया,shukriya
+अच्छा,achha
+ठीक,theek
+आज,aaj
+क्यों,kyon
+कहाँ,kahaan
+यहाँ,yahaan
+वहाँ,wahaan
+मुझे,mujhe
+हमारा,hamara
+तुम्हारा,tumhara
+जी,ji
+दिल्ली,Dilli
+गुवाहाटी,Guwahati
+असम,Assam
+भारत,Bharat

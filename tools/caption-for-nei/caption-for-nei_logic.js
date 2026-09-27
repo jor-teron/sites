@@ -1,17 +1,20 @@
 /**
  * Caption for NEI (Caption for North East India) — caption-for-nei_logic.js
- * Version: 0.12
+ * Version: 0.13
  * First release: 27 Sep 2026
  * Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
  *
  * Flow:
- *   caption-for-nei.html loads caption-for-nei_config.js then this file.
+ *   caption-for-nei.html loads caption-for-nei_config.js, the romanizer
+ *   (caption-for-nei_roman_deva.js, _roman_beng.js, _roman.js = CFN_ROMAN),
+ *   then this file.
  *   migrateLegacyStorage() copies old lsa_* keys to cfn_* once (boot block).
  *   fillLanguageSelects() builds Input / Output dropdowns from CONFIG.
  *   startSession() opens the mic + Transcribe Live WebSocket.
  *   handleServerMessage() turns speech into caption rows (addCaptionBlock).
- *   translateLine() fills the Output box when Output is not Off.
+ *   renderAbc() fills line 2 (ABC Off / Local / AI) on every block.
+ *   translateBlock() sends one chat request per block (line 3 and/or AI ABC).
  *
  * Does not name the cloud vendor in the UI.
  */
@@ -90,8 +93,6 @@ let pinnedModel = "auto";
 const RPD_STORE = STORAGE.RPD;
 /* Hour logs: cfn_hour_YYYY-MM-DD_HH (IST) */
 const HOUR_PREFIX = STORAGE.HOUR_PREFIX;
-let translateQueue = [];
-let translateTimer = null;
 let lastTeeSlot = "";
 
 /* Input language: auto or BCP-47 (CONFIG.INPUT_LANGUAGES) */
@@ -100,8 +101,9 @@ let selectedLang = CONFIG.DEFAULT_INPUT || "auto";
 /* Output target: off | en | hi | as | bn | ne (CONFIG.OUTPUT_LANGUAGES) */
 let translateTarget = CONFIG.DEFAULT_OUTPUT || "off";
 
-/* ABC romanize */
-let abcOn = false;
+/* ABC (line 2): off | local | ai. Saved in STORAGE.ABC_MODE */
+const ABC_MODES = ["off", "local", "ai"];
+let abcMode = loadAbcMode();
 
 /* Session flags */
 let isRunning = false;
@@ -192,86 +194,36 @@ function fitTextarea(el) {
 }
 
 /**
- * True if Devanagari (Hindi, Nepali) or Bengali-script (Assamese, Bengali)
- * letters exist. Only says "Indic script present"; it does not guess the
- * language, because Assamese/Bengali and Hindi/Nepali share scripts.
- * Use selectedLang (session choice) when a language is needed.
+ * Saved ABC mode, else CONFIG.ABC_MODE, else "local".
+ */
+function loadAbcMode() {
+  let saved = null;
+  try {
+    saved = localStorage.getItem(STORAGE.ABC_MODE);
+  } catch (err) {}
+  if (ABC_MODES.indexOf(saved) !== -1) return saved;
+  return ABC_MODES.indexOf(CONFIG.ABC_MODE) !== -1 ? CONFIG.ABC_MODE : "local";
+}
+
+/**
+ * True if Devanagari or Bengali-script letters exist (CFN_ROMAN.hasIndic).
+ * English / Latin text has no ABC line.
  */
 function hasIndicScript(text) {
+  if (window.CFN_ROMAN) return window.CFN_ROMAN.hasIndic(text);
   return /[\u0900-\u097F\u0980-\u09FF]/.test(text);
 }
 
 /**
- * Local romanizer (parked ABC). No API. Works per script, not per language:
- * Devanagari covers Hindi + Nepali; the Bengali-script table covers both
- * Bengali (র) and Assamese (ৰ ৱ).
+ * Local romanizer (caption-for-nei_roman.js). lang = the block's Input code.
  */
-function romanizeIndic(text) {
-  const INDEP = {
-    "अ": "a", "आ": "aa", "इ": "i", "ई": "ee", "उ": "u", "ऊ": "oo",
-    "ए": "e", "ऐ": "ai", "ओ": "o", "औ": "au", "ऋ": "ri",
-    "অ": "o", "আ": "a", "ই": "i", "ঈ": "ee", "উ": "u", "ঊ": "oo",
-    "এ": "e", "ঐ": "oi", "ও": "o", "ঔ": "ou", "ঋ": "ri",
-  };
-  const MATRA = {
-    "ा": "aa", "ि": "i", "ी": "ee", "ु": "u", "ू": "oo",
-    "े": "e", "ै": "ai", "ो": "o", "ौ": "au", "ृ": "ri",
-    "া": "a", "ি": "i", "ী": "ee", "ু": "u", "ূ": "oo",
-    "ে": "e", "ৈ": "oi", "ো": "o", "ৌ": "ou", "ৃ": "ri",
-  };
-  const CONS = {
-    "क": "k", "ख": "kh", "ग": "g", "घ": "gh", "ङ": "ng",
-    "च": "ch", "छ": "chh", "ज": "j", "झ": "jh", "ञ": "ny",
-    "ट": "t", "ठ": "th", "ड": "d", "ढ": "dh", "ण": "n",
-    "त": "t", "थ": "th", "द": "d", "ध": "dh", "न": "n",
-    "प": "p", "फ": "ph", "ब": "b", "भ": "bh", "म": "m",
-    "य": "y", "र": "r", "ल": "l", "व": "v",
-    "श": "sh", "ष": "sh", "स": "s", "ह": "h",
-    "ক": "k", "খ": "kh", "গ": "g", "ঘ": "gh", "ঙ": "ng",
-    "চ": "ch", "ছ": "chh", "জ": "j", "ঝ": "jh", "ঞ": "ny",
-    "ট": "t", "ঠ": "th", "ড": "d", "ঢ": "dh", "ণ": "n",
-    "ত": "t", "থ": "th", "দ": "d", "ধ": "dh", "ন": "n",
-    "প": "p", "ফ": "ph", "ব": "b", "ভ": "bh", "ম": "m",
-    "য": "y", "র": "r", "ল": "l", "ৱ": "w", "ৰ": "r",
-    "শ": "sh", "ষ": "sh", "স": "s", "হ": "h", "য়": "y",
-  };
-  const VIRAMA = /[्্]/;
-  let out = "";
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (INDEP[ch]) {
-      out += INDEP[ch];
-      continue;
-    }
-    if (CONS[ch]) {
-      out += CONS[ch];
-      const next = text[i + 1] || "";
-      if (VIRAMA.test(next)) {
-        i += 1;
-      } else if (MATRA[next]) {
-        out += MATRA[next];
-        i += 1;
-      } else {
-        out += "a";
-      }
-      continue;
-    }
-    if (ch === "ं" || ch === "ঁ" || ch === "ং") {
-      out += "n";
-      continue;
-    }
-    if (ch === "ः" || ch === "ঃ") {
-      out += "h";
-      continue;
-    }
-    if (ch === "।") {
-      out += ".";
-      continue;
-    }
-    if (MATRA[ch] || VIRAMA.test(ch)) continue;
-    out += ch;
+function romanizeLocal(text, lang) {
+  if (!window.CFN_ROMAN) return "";
+  try {
+    return window.CFN_ROMAN.romanize(text, lang);
+  } catch (err) {
+    return "";
   }
-  return out;
 }
 
 /**
@@ -343,7 +295,7 @@ function rpdCount(id) {
 
 /**
  * Add one to today's count for a model, then refresh the bar.
- * Called from translateLine() after a chat request is sent.
+ * Called from translateBlock() before each chat request.
  */
 function bumpRpd(id) {
   const data = readRpd();
@@ -472,13 +424,14 @@ async function startMeter() {
 
 /**
  * Next On model under RPM (60s window in modelHits) and RPD (UTC day).
- * Honours pinnedModel when not "auto".
- * Connects to: translateLine
+ * Honours pinnedModel when not "auto". skipIds = models already tried for
+ * this line (translateBlock fallback).
+ * Connects to: translateBlock
  */
-function pickChatModel() {
+function pickChatModel(skipIds) {
   const now = Date.now();
   let list = CONFIG.MODELS.filter(function (m) {
-    return m.on;
+    return m.on && !(skipIds && skipIds.indexOf(m.id) !== -1);
   });
   if (pinnedModel && pinnedModel !== "auto") {
     list = list.filter(function (m) {
@@ -498,35 +451,77 @@ function pickChatModel() {
 }
 
 /**
- * One caption block at the top.
+ * Line 2 (ABC) for one block, from its stored state:
+ *   off → hidden; no Indic script → hidden;
+ *   local → CFN_ROMAN; ai → AI roman when one arrived, else local.
+ * Called on create, on ABC mode change (all blocks) and when word lists load.
+ */
+function renderAbc(wrap) {
+  const st = wrap && wrap.cfn;
+  if (!st || !st.abcBox) return;
+  const show = abcMode !== "off" && st.indic;
+  st.abcBox.hidden = !show;
+  if (!show) return;
+  if (!st.localRoman || st.localStale) {
+    st.localRoman = romanizeLocal(st.source, st.lang) || st.source;
+    st.localStale = false;
+  }
+  st.abcBox.value = abcMode === "ai" && st.aiRoman ? st.aiRoman : st.localRoman;
+  fitTextarea(st.abcBox);
+}
+
+/**
+ * Re-render line 2 on every block (after ABC mode change or word-list load).
+ */
+function renderAllAbc(recomputeLocal) {
+  const blocks = lineList.querySelectorAll(".line");
+  for (let i = 0; i < blocks.length; i++) {
+    if (recomputeLocal && blocks[i].cfn) blocks[i].cfn.localStale = true;
+    renderAbc(blocks[i]);
+  }
+}
+
+/**
+ * One caption block at the top: line 1 original, line 2 ABC (only for
+ * Indic script), line 3 translation (when Output is not Off).
+ * Starts this block's own chat request (translateBlock) when needed and
+ * writes the hour log once line 2/3 are settled.
  */
 function addCaptionBlock(sourceText) {
+  const text = sourceText || "";
   const wrap = document.createElement("div");
   wrap.className = "line";
   const orig = document.createElement("textarea");
   orig.className = "orig-line";
   orig.rows = 1;
-  orig.value = sourceText || "";
+  orig.value = text;
   orig.addEventListener("input", function () {
     fitTextarea(orig);
   });
   wrap.appendChild(orig);
-  if (abcOn && sourceText) {
+  const st = {
+    source: text,
+    lang: selectedLang,
+    indic: !!text && hasIndicScript(text),
+    abcBox: null,
+    outBox: null,
+    localRoman: "",
+    aiRoman: "",
+    stamp: istNow(),
+  };
+  wrap.cfn = st;
+  if (st.indic) {
     const abcBox = document.createElement("textarea");
     abcBox.className = "abc-line";
     abcBox.rows = 1;
-    abcBox.value = hasIndicScript(sourceText)
-      ? romanizeIndic(sourceText) || sourceText
-      : sourceText;
     abcBox.addEventListener("input", function () {
       fitTextarea(abcBox);
     });
     wrap.appendChild(abcBox);
-    fitTextarea(abcBox);
+    st.abcBox = abcBox;
   }
-  let outBox = null;
-  if (translateTarget !== "off") {
-    outBox = document.createElement("textarea");
+  if (translateTarget !== "off" && text) {
+    const outBox = document.createElement("textarea");
     outBox.className = "out-line";
     outBox.rows = 1;
     outBox.value = "";
@@ -534,11 +529,20 @@ function addCaptionBlock(sourceText) {
       fitTextarea(outBox);
     });
     wrap.appendChild(outBox);
+    st.outBox = outBox;
   }
   lineList.insertBefore(wrap, lineList.firstChild);
   fitTextarea(orig);
+  renderAbc(wrap);
   scrollCaptionsToTop();
-  return outBox;
+  if (text) {
+    const wantAi = abcMode === "ai" && st.indic;
+    const job = st.outBox || wantAi ? translateBlock(wrap, wantAi) : Promise.resolve();
+    job.catch(function () {}).then(function () {
+      logBlock(wrap);
+    });
+  }
+  return wrap;
 }
 
 /**
@@ -595,13 +599,21 @@ function storageUsedBytes() {
 }
 
 /**
- * Append one caption (and optional translation) to this IST hour bucket.
+ * Append one caption to its IST hour bucket. Entry format (v0.13):
+ *   stamp
+ *   original
+ *   ABC: romanized        (only when line 2 is shown; CONFIG.LOG_ABC_PREFIX)
+ *   translation           (only when there is one)
+ *   (blank line)
+ * Older entries (stamp, original, translation) read the same way.
+ * p = istNow() parts from when the block was created (defaults to now).
  */
-function appendHourLog(sourceText, transText) {
-  const p = istNow();
+function appendHourLog(sourceText, transText, romanText, p) {
+  p = p || istNow();
   const key = hourKeyFromParts(p);
   let body = localStorage.getItem(key) || "";
   body += stampFromParts(p) + "\n" + sourceText;
+  if (romanText) body += "\n" + (CONFIG.LOG_ABC_PREFIX || "") + romanText;
   if (transText) body += "\n" + transText;
   body += "\n\n";
   try {
@@ -709,25 +721,17 @@ function tickTee() {
   renderLogList();
 }
 
-function queueTranslate(text, outBox) {
-  if (translateTarget === "off" || !outBox || !text) return;
-  translateQueue.push({ text: text, outBox: outBox });
-  const wait = CONFIG.TRANSLATE_SECONDS * 1000;
-  if (!translateTimer) {
-    translateTimer = setTimeout(flushTranslateQueue, wait);
-  }
-}
-
-async function flushTranslateQueue() {
-  translateTimer = null;
-  const batch = translateQueue.splice(0);
-  if (!batch.length) return;
-  const joined = batch.map(function (b) { return b.text; }).join("\n");
-  const last = batch[batch.length - 1];
-  await translateLine(joined, last.outBox);
-  if (last.outBox && last.outBox.value) {
-    appendHourLog(TEXT.batchOutput, last.outBox.value);
-  }
+/**
+ * Write one block to the hour log: original, line 2 (if shown), line 3.
+ */
+function logBlock(wrap) {
+  const st = wrap && wrap.cfn;
+  if (!st || st.logged) return;
+  st.logged = true;
+  const roman = st.abcBox && !st.abcBox.hidden ? st.abcBox.value.trim() : "";
+  /* skip the "(no model free)" / "(add an API key)" notes */
+  const trans = st.outBox && !st.noted ? st.outBox.value.trim() : "";
+  appendHourLog(st.source, trans, roman, st.stamp);
 }
 
 function commitSpokenText(text) {
@@ -735,9 +739,7 @@ function commitSpokenText(text) {
   if (!piece) return;
   const bits = splitSentences(piece);
   for (let i = bits.length - 1; i >= 0; i--) {
-    const outBox = addCaptionBlock(bits[i]);
-    queueTranslate(bits[i], outBox);
-    appendHourLog(bits[i], "");
+    addCaptionBlock(bits[i]);
   }
   pendingText = "";
   pendingSince = 0;
@@ -753,6 +755,7 @@ async function copyCaptions() {
     const areas = blocks[i].querySelectorAll("textarea");
     const bits = [];
     for (let j = 0; j < areas.length; j++) {
+      if (areas[j].hidden) continue;
       const t = areas[j].value.trim();
       if (t) bits.push(t);
     }
@@ -834,10 +837,16 @@ function onListenChange() {
 }
 
 /**
- * ABC dropdown (hidden/parked). Sets abcOn for new caption rows only.
+ * ABC dropdown (Off / Local / AI). Saves the choice and re-renders line 2
+ * on every existing block. AI does not re-ask old blocks (quota); they show
+ * an AI result only if one arrived earlier, else the local one.
  */
 function onAbcChange() {
-  abcOn = abcSelect.value === "on";
+  abcMode = ABC_MODES.indexOf(abcSelect.value) !== -1 ? abcSelect.value : "local";
+  try {
+    localStorage.setItem(STORAGE.ABC_MODE, abcMode);
+  } catch (err) {}
+  renderAllAbc(false);
 }
 
 /**
@@ -936,57 +945,138 @@ function sendAudioStreamEnd() {
 }
 
 /**
- * Chat translate using the next model under its RPM.
+ * Input language name for the AI ABC prompt.
  */
-async function translateLine(sourceText, outBox) {
-  if (translateTarget === "off" || !outBox || !sourceText) return;
+function inputLangName(code) {
+  const hit = (CONFIG.INPUT_LANGUAGES || []).filter(function (l) {
+    return l.code === code;
+  })[0];
+  return code && code !== "auto" && hit ? hit.label : TEXT.autoSourceName;
+}
+
+/**
+ * Pull {roman, translation} out of a model reply (JSON, maybe in ``` fences).
+ */
+function parseAiJson(textOut) {
+  const raw = String(textOut || "").trim();
+  const a = raw.indexOf("{");
+  const b = raw.lastIndexOf("}");
+  if (a === -1 || b <= a) return null;
+  try {
+    return JSON.parse(raw.slice(a, b + 1));
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * One chat request for one block (every caption line on its own; no batching).
+ * wantAi = ABC is AI and the line has Indic script: the same request also
+ * returns the romanized line as JSON {roman, translation}.
+ * Model fallback: if a model errors, returns nothing, or is at its RPM/RPD cap,
+ * the next On model (pickChatModel skipIds) is tried. If none work, line 3
+ * shows a short note and line 2 keeps the local romanization.
+ */
+async function translateBlock(wrap, wantAi) {
+  const st = wrap && wrap.cfn;
+  if (!st || !st.source) return;
   if (CONFIG.OUTPUT_ENGINE === "live") return;
-  const googleKey =
-    apiKeyInput.value.trim() || (CONFIG.KEYS && CONFIG.KEYS.google) || "";
-  const model = pickChatModel();
-  if (!model) {
-    setStatus(TEXT.rpmCap, "bad");
+  const wantTrans = !!st.outBox;
+  if (!wantTrans && !wantAi) return;
+  const googleKey = apiKeyInput.value.trim() || (CONFIG.KEYS && CONFIG.KEYS.google) || "";
+  function note(msg) {
+    if (st.outBox && !st.outBox.value) {
+      st.noted = true;
+      st.outBox.value = msg;
+      fitTextarea(st.outBox);
+    }
+  }
+  if (!googleKey) {
+    note(TEXT.translateNoKey);
     return;
   }
   const langName = outputLangName(translateTarget);
-  const prompt = fmtText(TEXT.translatePrompt, { lang: langName, text: sourceText });
-  modelHits.push({ id: model.id, t: Date.now() });
-  bumpRpd(model.id);
-  try {
-    if (model.provider !== "google") {
-      setStatus(TEXT.providerOff, "bad");
-      return;
-    }
-    if (!googleKey) return;
-    const res = await fetch(
-      CONFIG.CHAT_API_BASE +
-        model.id +
-        ":generateContent?key=" +
-        encodeURIComponent(googleKey),
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-      }
-    );
-    const data = await res.json();
-    const textOut =
-      data &&
-      data.candidates &&
-      data.candidates[0] &&
-      data.candidates[0].content &&
-      data.candidates[0].content.parts &&
-      data.candidates[0].content.parts[0] &&
-      data.candidates[0].content.parts[0].text;
-    if (textOut) {
-      outBox.value = textOut.trim();
-      fitTextarea(outBox);
-    } else if (data && data.error) {
-      setStatus(data.error.message || TEXT.translateFailedShort, "bad");
-    }
-  } catch (err) {
-    setStatus(TEXT.translateFailed, "bad");
+  let prompt;
+  if (wantAi) {
+    prompt = fmtText(wantTrans ? TEXT.aiRomanBothPrompt : TEXT.aiRomanOnlyPrompt, {
+      src: inputLangName(st.lang),
+      lang: langName,
+      text: st.source,
+    });
+  } else {
+    prompt = fmtText(TEXT.translatePrompt, { lang: langName, text: st.source });
   }
+  const tried = [];
+  let lastError = "";
+  for (;;) {
+    let model = pickChatModel(tried);
+    while (model && model.provider !== "google") {
+      tried.push(model.id);
+      model = pickChatModel(tried);
+    }
+    if (!model) break;
+    tried.push(model.id);
+    modelHits.push({ id: model.id, t: Date.now() });
+    bumpRpd(model.id);
+    try {
+      const body = { contents: [{ parts: [{ text: prompt }] }] };
+      if (wantAi) body.generationConfig = { responseMimeType: "application/json" };
+      const res = await fetch(
+        CONFIG.CHAT_API_BASE + model.id + ":generateContent?key=" + encodeURIComponent(googleKey),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      );
+      const data = await res.json();
+      const textOut =
+        data &&
+        data.candidates &&
+        data.candidates[0] &&
+        data.candidates[0].content &&
+        data.candidates[0].content.parts &&
+        data.candidates[0].content.parts[0] &&
+        data.candidates[0].content.parts[0].text;
+      if (!textOut) {
+        lastError = (data && data.error && data.error.message) || TEXT.translateFailedShort;
+        continue;
+      }
+      if (!wantAi) {
+        st.outBox.value = textOut.trim();
+        fitTextarea(st.outBox);
+        return;
+      }
+      const parsed = parseAiJson(textOut);
+      const roman = parsed && typeof parsed.roman === "string" ? parsed.roman.trim() : "";
+      const trans = parsed && typeof parsed.translation === "string" ? parsed.translation.trim() : "";
+      if (!roman && !(wantTrans && trans)) {
+        lastError = TEXT.translateFailedShort;
+        continue;
+      }
+      if (roman) {
+        st.aiRoman = roman;
+        renderAbc(wrap);
+      }
+      if (wantTrans) {
+        if (trans) {
+          st.outBox.value = trans;
+          fitTextarea(st.outBox);
+        } else {
+          /* AI gave roman only: translate with the plain prompt next round */
+          wantAi = false;
+          prompt = fmtText(TEXT.translatePrompt, { lang: langName, text: st.source });
+          continue;
+        }
+      }
+      return;
+    } catch (err) {
+      lastError = TEXT.translateFailed;
+    }
+  }
+  if (lastError) setStatus(lastError, "bad");
+  else setStatus(TEXT.rpmCap, "bad");
+  note(TEXT.translateNoModel);
 }
 
 /**
@@ -1192,6 +1282,25 @@ function loadVocabCsv() {
   });
 }
 
+/**
+ * Fetch CONFIG.ROMAN_WORD_FILES (roman_xx.csv) into CFN_ROMAN, then
+ * recompute line 2 on blocks made before the lists arrived.
+ */
+function loadRomanWords() {
+  if (!window.CFN_ROMAN) return;
+  const files = CONFIG.ROMAN_WORD_FILES || {};
+  Object.keys(files).forEach(function (lang) {
+    fetch(files[lang])
+      .then(function (res) {
+        return res.ok ? res.text() : "";
+      })
+      .then(function (text) {
+        if (text && window.CFN_ROMAN.addWords(lang, text)) renderAllAbc(true);
+      })
+      .catch(function () {});
+  });
+}
+
 saveKeyBtn.addEventListener("click", saveKey);
 clearKeyBtn.addEventListener("click", clearKey);
 keyToggleBtn.addEventListener("click", toggleKeyPanel);
@@ -1207,7 +1316,9 @@ if (logDownloadAllBtn) logDownloadAllBtn.addEventListener("click", downloadAllAn
 
 migrateLegacyStorage();
 fillLanguageSelects();
+if (abcSelect) abcSelect.value = abcMode;
 loadSavedKey();
+loadRomanWords();
 loadVocabCsv();
 fillModelSelect();
 renderRpd();

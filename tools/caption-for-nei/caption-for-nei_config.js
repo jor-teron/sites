@@ -1,11 +1,12 @@
 /**
  * Caption for NEI (Caption for North East India) — caption-for-nei_config.js
- * Version: 0.12
+ * Version: 0.13
  * First release: 27 Sep 2026
  * Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
  *
- * Loaded before caption-for-nei_logic.js. window.CFN_CONFIG is merged into CONFIG.
+ * Loaded first (before the caption-for-nei_roman*.js files and caption-for-nei_logic.js).
+ * window.CFN_CONFIG is merged into CONFIG and also read by the romanizer.
  * Edit tunables, languages, storage keys and UI text here; leave the logic file for logic.
  * Never put a real API key in this file (the site is public). Use the Key panel.
  */
@@ -20,10 +21,13 @@ window.CFN_CONFIG = {
   SAVE_MINUTES: 5,
   /* How often (ms) the tee slot is checked (setInterval tickTee) */
   TEE_CHECK_MS: 15000,
-  /* One chat translate per this many seconds (batch short talk) */
-  TRANSLATE_SECONDS: 5,
-  /* ABC romanize parked; addCaptionBlock skips ABC when false */
-  ABC_ON: false,
+  /*
+   * ABC (line 2, romanized) default mode: "off" | "local" | "ai".
+   * local = caption-for-nei_roman.js (rules + word lists, no network).
+   * ai = ask the chat model too (falls back to local). The user's choice is
+   * remembered in localStorage (STORAGE.ABC_MODE) and wins over this.
+   */
+  ABC_MODE: "local",
   /* Do not play translated audio */
   SPEAKER: false,
   /* sendSetup() Input WebSocket model */
@@ -38,6 +42,52 @@ window.CFN_CONFIG = {
   PINNED_MODEL: "auto",
   /* loadVocabCsv() fetches these into CUSTOM_VOCAB */
   VOCAB_FILES: ["city.csv", "town.csv", "surname.csv", "vocab.csv"],
+
+  /* Local romanizer (ABC line) */
+  /* Word lists (native,roman) per language; whole words win over the rules */
+  ROMAN_WORD_FILES: {
+    hi: "roman_hi.csv",
+    ne: "roman_ne.csv",
+    as: "roman_as.csv",
+    bn: "roman_bn.csv",
+  },
+  /* Input "auto" (or a script that does not match Input): which rules to use */
+  ROMAN_AUTO_DEVANAGARI_LANG: "hi",
+  ROMAN_AUTO_BENGALI_SCRIPT_LANG: "as",
+  /*
+   * Everyday phone-typing style. Final = last letter of a word.
+   * Assamese/Bengali set their own long vowels in the beng data file
+   * (a / i / u); override per language below with ROMAN_LANG[lang].style.
+   */
+  ROMAN_STYLE: {
+    longA: "aa", longAFinal: "a",   /* naam, mera */
+    longI: "ee", longIFinal: "i",   /* jeevan, hindi */
+    longU: "oo", longUFinal: "u",   /* joote, tu */
+    va: "v",                        /* व: "v" or "w" */
+    nasal: "n",                     /* ं ँ ঁ */
+    nasalLabial: "m",               /* ं before p/b/m: sambandh */
+  },
+  /*
+   * Per-language overrides on top of caption-for-nei_roman_deva.js /
+   * _beng.js langs (keys: inherent, consonants, initialVowels, style,
+   * glideY, diphthong, medialBlockAfterInitial, keepFinalAfterCluster, suffixes).
+   */
+  ROMAN_LANG: {
+    hi: { inherent: "a" },
+    ne: { inherent: "a" },
+    /* Assamese: inherent "o", word-initial অ → "a" (অসম → axom),
+       চ/ছ → "s", স/শ/ষ → "x" */
+    as: {
+      inherent: "o",
+      initialVowels: { "অ": "a" },
+      consonants: { "চ": "s", "ছ": "s", "স": "x", "শ": "x", "ষ": "x" },
+    },
+    /* Bengali: inherent "o", স → "s", শ/ষ → "sh" */
+    bn: {
+      inherent: "o",
+      consonants: { "স": "s", "শ": "sh", "ষ": "sh" },
+    },
+  },
 
   /* Endpoints */
   /* Live WebSocket endpoint (transcribe + optional translate); "?key=" is appended */
@@ -109,6 +159,8 @@ window.CFN_CONFIG = {
     API_KEY: "cfn_gemini_api_key_v01",
     RPD: "cfn_rpd_utc_v1",
     HOUR_PREFIX: "cfn_hour_",
+    /* ABC mode chosen on the top bar: off | local | ai */
+    ABC_MODE: "cfn_abc_mode_v1",
   },
   /* Rough browser quota shown in the Log panel */
   STORAGE_QUOTA_KB: 5000,
@@ -131,6 +183,8 @@ window.CFN_CONFIG = {
   TIME_ZONE_LABEL: "IST",
   /* Downloaded log file names: <prefix>YYYY-MM-DD_HH.txt and <prefix>all-YYYY-MM-DD.txt */
   LOG_FILE_PREFIX: "cfn-",
+  /* Hour log entry: stamp, original, then "ABC: <roman>" (when shown), then translation */
+  LOG_ABC_PREFIX: "ABC: ",
 
   /* Defaults when a MODELS entry leaves rpm / rpd out */
   DEFAULT_RPM: 15,
@@ -145,6 +199,8 @@ window.CFN_CONFIG = {
   /*
    * Chat Output models. pickChatModel() takes the first that is On,
    * under rpm (modelHits / 60s) and under rpd (UTC day store).
+   * Every caption line is its own request; if a model errors or is at its
+   * cap, the next On model is tried for that line.
    */
   MODELS: [
     { id: "gemini-3.5-flash-lite", provider: "google", rpm: 15, rpd: 500, on: true, label: "3.5 Lite" },
@@ -163,7 +219,6 @@ window.CFN_CONFIG = {
     logFull: "Log storage full. Download logs.",
     noLogs: "No logs.",
     confirmDownloadAll: "Download all hour logs as one txt, then delete them?",
-    batchOutput: "(batch output)",
     view: "View",
     download: "Download",
     delete: "Delete",
@@ -179,8 +234,18 @@ window.CFN_CONFIG = {
     providerOff: "Turn that provider on and add KEYS in caption-for-nei_config.js",
     translateFailedShort: "Translate failed",
     translateFailed: "Translate failed.",
-    /* {lang} = OUTPUT_LANGUAGES[].name, {text} = source lines */
+    /* Line 3 when no model could translate the line */
+    translateNoModel: "(no model free — try later)",
+    translateNoKey: "(add an API key to translate)",
+    /* {lang} = OUTPUT_LANGUAGES[].name, {text} = source line */
     translatePrompt: "Translate into {lang}. Return only the translation.\n\n{text}",
+    /* ABC = AI: {src} = Input language name, {lang} = Output language name */
+    aiRomanBothPrompt:
+      "Text in {src}. 1) Write it in everyday Latin letters the way people type it on a phone (not formal transliteration). 2) Translate it into {lang}. Reply only with JSON: {\"roman\": \"...\", \"translation\": \"...\"}\n\n{text}",
+    aiRomanOnlyPrompt:
+      "Text in {src}. Write it in everyday Latin letters the way people type it on a phone (not formal transliteration). Reply only with JSON: {\"roman\": \"...\"}\n\n{text}",
+    /* {src} fallback when Input is Auto */
+    autoSourceName: "an Indian language (Assamese, Hindi, Bengali or Nepali)",
     listening: "Listening",
     addKeyFirst: "Add an API key first.",
     connecting: "Connecting…",

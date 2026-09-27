@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <!--
   Caption for NEI (Caption for North East India) — about.html
-  Version: 0.12 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
+  Version: 0.13 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
   Credit: personal project (Karbi Anglong / Assam)
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>About — Caption for North East India v0.12</title>
+  <title>About — Caption for North East India v0.13</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <style>
     :root {
@@ -82,7 +82,7 @@
   <main>
     <h1>About Caption for North East India</h1>
     <p class="meta">
-      Version <strong>0.12</strong> · API Edition · personal use<br />
+      Version <strong>0.13</strong> · API Edition · personal use<br />
       First release: 27 Sep 2026<br />
       Last edit: 28 Sep 2026<br />
       Formerly “Live Subtitle for Assam”
@@ -99,18 +99,20 @@
       <p><strong>What it does</strong></p>
       <ul>
         <li>Input: Auto / English / Assamese / Hindi / Bengali / Nepali → live transcript</li>
-        <li>Output Off = transcript only. English / Hindi / Assamese / Bengali / Nepali = chat translate</li>
+        <li>Each block: line 1 original, line 2 ABC (everyday Latin letters, only for Indic script), line 3 translation</li>
+        <li>ABC: Off / Local (rule-based romanizer on this device, with word lists roman_hi / roman_ne / roman_as / roman_bn .csv) / AI (chat model, falls back to Local). Default Local, remembered in this browser</li>
+        <li>Output Off = transcript only. English / Hindi / Assamese / Bengali / Nepali = chat translate, one request per caption line (uses more quota)</li>
         <li>Model: Auto rotate or pin 3.5 Lite / 3.1 Lite</li>
         <li>Mic bar shows loudness. LED green = caption session on</li>
         <li>RPD counters reset 00:00 UTC (set limits in caption-for-nei_config.js)</li>
         <li>Vocab files: city.csv, town.csv, surname.csv, vocab.csv</li>
+        <li>Hour logs keep original, ABC line and translation</li>
       </ul>
     </div>
 
     <div class="card">
       <p><strong>Parked</strong></p>
       <ul>
-        <li>ABC / romanization</li>
         <li>2-panel layout</li>
         <li>Karbi</li>
         <li>Local Pack (on-device)</li>

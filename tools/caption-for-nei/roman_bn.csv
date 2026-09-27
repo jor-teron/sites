@@ -1,0 +1,38 @@
+# Caption for NEI — roman_bn.csv
+# Bengali word list for the local ABC romanizer (caption-for-nei_roman.js).
+# Whole words here win over the rules. Format: native,roman (one per line).
+# Version 0.13 | 28 Sep 2026
+আমি,ami
+তুমি,tumi
+আপনি,apni
+কেমন,kemon
+আছো,achho
+আছি,achhi
+আছে,achhe
+আছেন,achhen
+ভালো,bhalo
+ভাল,bhalo
+কী,ki
+কি,ki
+না,na
+হ্যাঁ,haan
+নাম,naam
+আমার,amar
+তোমার,tomar
+এবং,ebong
+কোথায়,kothay
+কেন,keno
+ধন্যবাদ,dhonnobad
+নমস্কার,nomoskar
+খুব,khub
+এখন,ekhon
+আজ,aaj
+কাল,kal
+যাব,jabo
+খাবার,khabar
+বাংলা,Bangla
+কলকাতা,Kolkata
+সে,se
+ঠিক,thik
+হয়,hoy
+সব,sob
