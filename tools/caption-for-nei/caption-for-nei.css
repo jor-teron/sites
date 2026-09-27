@@ -206,3 +206,14 @@ a.about { margin-left: auto; }
   background: var(--ok);
 }
 #rpdNote { font-size: 0.72rem; color: var(--muted); max-width: 100%; }
+a.lite-link { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
+/* Lite page (caption-for-nei_lite.html, body.lite): one slim top bar and
+   full-width transcript lines — no bullets / indents, thin block border.
+   Scoped to body.lite, so caption-for-nei.html is unchanged. */
+body.lite main { padding: 62px 6px 8px; }
+body.lite .captions { padding: 8px; min-height: calc(100vh - 76px); max-height: calc(100vh - 76px); }
+body.lite .block { border-left-width: 2px; padding: 6px 6px 6px 6px; }
+body.lite .blk-row.lvl0,
+body.lite .blk-row.lvl1,
+body.lite .blk-row.lvl2 { padding-left: 0; }
+body.lite .blk-row::before { content: none; }

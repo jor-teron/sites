@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<!--
+  Caption for NEI — Lite (phone / narrow screen) — caption-for-nei_lite.html
+  Version: 0.16-lite | First release: 28 Sep 2026 | Last edit: 28 Sep 2026
+  Credit: personal project (Karbi Anglong / Assam)
+  Same caption-for-nei.css / _config.js / _roman*.js / _logic.js as caption-for-nei.html.
+  Visible: Output (translation) dropdown, Start/Stop, status LED (+ session note).
+  Everything else the logic expects is still in the DOM but hidden (logic unchanged):
+  Input is fixed to Auto (romanisation then picks rules by script: Devanagari → hi,
+  Bengali script → as, see CFN_CONFIG.ROMAN_AUTO_*), ABC = saved mode / CFN_CONFIG.ABC_MODE.
+  The Output dropdown is not saved by the logic, so it always starts at Off here.
+  The API key row (#keyPanel) stays out of sight and only opens itself when Start
+  finds no key saved in this browser (same key as the full page).
+  body.lite = scoped rules in caption-for-nei.css (full-width transcript lines).
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Caption for NEI Lite</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="caption-for-nei.css" />
+</head>
+<body class="lite">
+  <div class="topbar">
+    <label class="field">
+      <span>Output</span>
+      <select id="translateSelect"></select>
+    </label>
+
+    <button type="button" id="toggleBtn" class="primary">Start</button>
+    <span id="liveWrap">
+      <span id="led"></span>
+      <span id="liveNote"></span>
+      <span id="sessionNote" hidden></span>
+      <span id="micMeter" hidden><i id="micFill"></i></span>
+    </span>
+    <a class="about" href="caption-for-nei.html">Full</a>
+
+    <!-- Hidden: controls the shared logic needs, not shown on the lite page -->
+    <div hidden>
+      <select id="listenSelect"></select>
+      <select id="abcSelect">
+        <option value="off">Off</option>
+        <option value="local" selected>Local</option>
+        <option value="ai">AI</option>
+      </select>
+      <select id="modelSelect"></select>
+      <button type="button" id="copyBtn">Copy</button>
+      <button type="button" id="clearTextBtn">Clear</button>
+      <button type="button" id="logBtn">Log</button>
+      <span id="rpdNote"></span>
+      <button type="button" id="keyToggleBtn">Key</button>
+      <div id="logPanel">
+        <div id="logUsed"></div>
+        <div id="logList"></div>
+        <textarea id="logView" readonly></textarea>
+        <button type="button" id="logDownloadAllBtn">Download all + clear</button>
+      </div>
+    </div>
+
+    <!-- Opens only when Start finds no saved API key (logic adds .open) -->
+    <div id="keyPanel">
+      <input id="apiKey" type="password" autocomplete="off" placeholder="API key (this browser only)" />
+      <button type="button" id="saveKeyBtn">Save</button>
+      <button type="button" id="clearKeyBtn">Clear</button>
+    </div>
+  </div>
+
+  <main>
+    <div id="captionBox" class="captions">
+      <div id="interimText" class="interim"></div>
+      <div id="lineList"></div>
+    </div>
+    <div id="status" class="status" hidden>Idle</div>
+  </main>
+
+  <script src="caption-for-nei_config.js"></script>
+  <script>
+    /* Lite: Input fixed to Auto, Output starts at Off (read by the logic at load) */
+    window.CFN_CONFIG.DEFAULT_INPUT = "auto";
+    window.CFN_CONFIG.DEFAULT_OUTPUT = "off";
+  </script>
+  <script src="caption-for-nei_roman_deva.js"></script>
+  <script src="caption-for-nei_roman_beng.js"></script>
+  <script src="caption-for-nei_roman.js"></script>
+  <script src="caption-for-nei_logic.js"></script>
+</body>
+</html>
