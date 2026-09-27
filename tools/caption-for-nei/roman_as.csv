@@ -1,7 +1,7 @@
 # Caption for NEI — roman_as.csv
 # Assamese word list for the local ABC romanizer (caption-for-nei_roman.js).
 # Whole words here win over the rules. Format: native,roman (one per line).
-# Version 0.15 | 28 Sep 2026
+# Version 0.16 | 28 Sep 2026
 অসম,Axom
 অসমীয়া,Axomiya
 গুৱাহাটী,Guwahati

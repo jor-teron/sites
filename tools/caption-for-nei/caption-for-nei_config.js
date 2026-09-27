@@ -1,6 +1,6 @@
 /**
  * Caption for NEI (Caption for North East India) — caption-for-nei_config.js
- * Version: 0.15
+ * Version: 0.16
  * First release: 27 Sep 2026
  * Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
@@ -76,6 +76,32 @@ window.CFN_CONFIG = {
   TRANSCRIBE_MODEL: "gemini-3.5-transcribe-live",
   /* sendSetup() inputAudioTranscription.mode: "SMART" or "VERBATIM" */
   TRANSCRIBE_MODE: "SMART",
+  /*
+   * Auto reconnect (v0.16). When the Live socket closes or errors while Start
+   * is on (Stop not pressed), reconnect after RECONNECT_BASE_MS, doubling each
+   * try up to RECONNECT_MAX_MS (1 s, 2 s, 4 s, 8 s, 15 s, 15 s …). Give up after
+   * RECONNECT_MAX_TRIES tries in a row; the count resets on every good session.
+   * The mic and AudioContext stay alive; the open caption window stays open.
+   * A server GoAway (connection ending soon) reconnects at once.
+   */
+  RECONNECT_BASE_MS: 1000,
+  RECONNECT_MAX_MS: 15000,
+  RECONNECT_MAX_TRIES: 20,
+  /*
+   * Live API session resumption: setup asks for sessionResumption, the latest
+   * handle from sessionResumptionUpdate is sent on reconnect. Google documents
+   * it for the Live API in general, not explicitly for the transcribe model, so
+   * if a setup with it fails, the handle is dropped (fresh session) and after a
+   * clear rejection it is switched off for this page load.
+   */
+  SESSION_RESUMPTION: true,
+  /* contextWindowCompression (slidingWindow). Off: not documented for the
+     transcribe model (sessions there are ~10 min anyway). */
+  CONTEXT_COMPRESSION: false,
+  CONTEXT_COMPRESSION_CONFIG: { slidingWindow: {} },
+  /* Write reconnect events into the hour log as "<stamp>\n# <event>" entries */
+  LOG_SESSION_EVENTS: true,
+  LOG_EVENT_PREFIX: "# ",
   /* Parked Live Translate id (unused while OUTPUT_ENGINE is chat) */
   TRANSLATE_MODEL: "gemini-3.5-live-translate-preview",
   /* chat = translateLine(). live = unused Live Translate path */
@@ -154,8 +180,15 @@ window.CFN_CONFIG = {
     METER_GAIN: 140,
     /* getUserMedia audio constraints */
     MIC_CONSTRAINTS: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
-    /* Start sending audio this long after socket open if setupComplete is late */
-    SETUP_FALLBACK_MS: 800,
+    /*
+     * v0.16: audio is sent only after the server's setupComplete. If it has not
+     * come this long after the socket opened, the connect counts as failed and
+     * the reconnect logic takes over (replaces SETUP_FALLBACK_MS = 800).
+     */
+    SETUP_TIMEOUT_MS: 5000,
+    /* After AudioContext.resume(), check this long later; still "suspended" →
+       show TEXT.tapToStartAudio and resume on the first tap / key press */
+    RESUME_CHECK_MS: 400,
   },
 
   /*
@@ -304,6 +337,20 @@ window.CFN_CONFIG = {
     connected: "Connected",
     connectionError: "Connection error.",
     stoppedServer: "Stopped",
+    /* Session note on the top bar (v0.16) */
+    tapToStartAudio: "Tap anywhere to start audio",
+    /* {n} = try number */
+    reconnecting: "Reconnecting… ({n})",
+    reconnected: "Reconnected",
+    renewing: "Renewing session…",
+    reconnectGaveUp: "Connection lost. Press Start.",
+    setupTimeout: "No answer from the server (setup timeout).",
+    /* Hour-log event lines (after LOG_EVENT_PREFIX); {n} = try, {why} = reason */
+    logReconnect: "Reconnecting ({n}): {why}",
+    logReconnected: "Reconnected",
+    logResumed: "Reconnected (session resumed)",
+    logGoAway: "Server GoAway, renewing session",
+    logGaveUp: "Reconnect gave up",
     stopped: "Stopped.",
   },
 };

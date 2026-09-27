@@ -1,6 +1,6 @@
 /**
  * Caption for NEI (Caption for North East India) — caption-for-nei_logic.js
- * Version: 0.15
+ * Version: 0.16
  * First release: 27 Sep 2026
  * Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
@@ -11,7 +11,11 @@
  *   then this file.
  *   migrateLegacyStorage() copies old lsa_* keys to cfn_* once (boot block).
  *   fillLanguageSelects() builds Input / Output dropdowns from CONFIG.
- *   startSession() opens the mic + Transcribe Live WebSocket.
+ *   startSession() opens the mic + audio graph (resumeAudioContexts: tap hint
+ *   when the browser keeps audio suspended), then openSocket(): audio is sent
+ *   only after setupComplete (AUDIO.SETUP_TIMEOUT_MS, else reconnect).
+ *   Unexpected close / error / GoAway → scheduleReconnect() with backoff and
+ *   Live session resumption; the mic, AudioContext and caption window survive.
  *   handleServerMessage() turns speech into window text (commitSpokenText →
  *   applyHypothesis → appendToWindow). A stale partial committed early is
  *   later replaced / extended by its final (no doubled words).
@@ -147,7 +151,34 @@ let processorNode = null;
 let sourceNode = null;
 let silentGain = null;
 let pcmLeftover = new Int16Array(0);
+/* true only after the server's setupComplete on the current socket (audio gate) */
 let sessionReady = false;
+
+/* Session keeper (v0.16) */
+/* User wants captions on (Start / auto start); false after Stop */
+let wantRunning = false;
+/* Bumped for every new / dropped socket; events from old sockets are ignored */
+let socketGen = 0;
+let setupTimer = 0;
+let reconnectTimer = 0;
+/* Reconnect tries in a row (reset on setupComplete) */
+let reconnectTries = 0;
+/* Set while the socket was replaced after a drop (for the "Reconnected" log) */
+let reconnecting = false;
+/* Latest Live session resumption handle (sessionResumptionUpdate.newHandle) */
+let resumeHandle = "";
+let resumeEnabled = CONFIG.SESSION_RESUMPTION !== false;
+/* What the last setup asked for (to fall back when it fails) */
+let setupUsedHandle = false;
+let setupUsedResumption = false;
+let preSetupFailures = 0;
+/* One-shot tap / key listener armed while audio is suspended */
+let gestureArmed = false;
+/* Shared getUserMedia promise (no double mic prompt) */
+let meterPromise = null;
+/* Top-bar session note parts: reconnect state and audio hint */
+let noteReconnect = "";
+let noteAudio = "";
 
 /* DOM */
 const apiKeyInput = document.getElementById("apiKey");
@@ -163,6 +194,7 @@ const interimTextEl = document.getElementById("interimText");
 const lineList = document.getElementById("lineList");
 const statusEl = document.getElementById("status");
 const liveNoteEl = document.getElementById("liveNote");
+const sessionNoteEl = document.getElementById("sessionNote");
 const ledEl = document.getElementById("led");
 const copyBtn = document.getElementById("copyBtn");
 const clearTextBtn = document.getElementById("clearTextBtn");
@@ -562,34 +594,107 @@ function setMicLevel(samples) {
 
 /**
  * Mic loudness loop that stays on after Stop.
- * Does not open Transcribe Live. Connects to setMicLevel.
+ * Does not open Transcribe Live. Connects to setMicLevel. One shared
+ * promise, so the boot call and startSession() never prompt for the mic twice.
  */
-async function startMeter() {
-  if (meterAnalyser) return;
-  try {
-    if (!meterStream) {
-      meterStream = await navigator.mediaDevices.getUserMedia({
-        audio: AUDIO.MIC_CONSTRAINTS,
-      });
+function startMeter() {
+  if (meterPromise) return meterPromise;
+  meterPromise = (async function () {
+    if (meterAnalyser) return;
+    try {
+      if (!meterStream) {
+        meterStream = await navigator.mediaDevices.getUserMedia({
+          audio: AUDIO.MIC_CONSTRAINTS,
+        });
+      }
+      meterCtx = new AudioContext();
+      const src = meterCtx.createMediaStreamSource(meterStream);
+      meterAnalyser = meterCtx.createAnalyser();
+      meterAnalyser.fftSize = AUDIO.METER_FFT_SIZE;
+      src.connect(meterAnalyser);
+      const buf = new Uint8Array(meterAnalyser.fftSize);
+      function tick() {
+        if (!meterAnalyser) return;
+        meterAnalyser.getByteTimeDomainData(buf);
+        const floats = new Float32Array(buf.length);
+        for (let i = 0; i < buf.length; i++) floats[i] = (buf[i] - 128) / 128;
+        setMicLevel(floats);
+        meterRaf = requestAnimationFrame(tick);
+      }
+      tick();
+      resumeAudioContexts();
+    } catch (err) {
+      meterPromise = null;
+      setStatus(TEXT.micDenied, "bad");
     }
-    meterCtx = new AudioContext();
-    const src = meterCtx.createMediaStreamSource(meterStream);
-    meterAnalyser = meterCtx.createAnalyser();
-    meterAnalyser.fftSize = AUDIO.METER_FFT_SIZE;
-    src.connect(meterAnalyser);
-    const buf = new Uint8Array(meterAnalyser.fftSize);
-    function tick() {
-      if (!meterAnalyser) return;
-      meterAnalyser.getByteTimeDomainData(buf);
-      const floats = new Float32Array(buf.length);
-      for (let i = 0; i < buf.length; i++) floats[i] = (buf[i] - 128) / 128;
-      setMicLevel(floats);
-      meterRaf = requestAnimationFrame(tick);
+  })();
+  return meterPromise;
+}
+
+/**
+ * Top-bar session note (#sessionNote): reconnect state and / or the
+ * "Tap anywhere to start audio" hint. (#status and #liveNote are hidden.)
+ */
+function renderSessionNote() {
+  if (!sessionNoteEl) return;
+  const text = [noteReconnect, noteAudio].filter(Boolean).join(" · ");
+  sessionNoteEl.textContent = text;
+  sessionNoteEl.hidden = !text;
+}
+
+/**
+ * Browsers keep an AudioContext "suspended" until a user gesture (auto start
+ * on page load). Try resume(); if still suspended after AUDIO.RESUME_CHECK_MS,
+ * show TEXT.tapToStartAudio and resume on the first tap / key press.
+ */
+function resumeAudioContexts() {
+  const ctxs = [audioContext, meterCtx].filter(function (c) {
+    return c && c.state === "suspended";
+  });
+  if (!ctxs.length) {
+    if (noteAudio) {
+      noteAudio = "";
+      renderSessionNote();
     }
-    tick();
-  } catch (err) {
-    setStatus(TEXT.micDenied, "bad");
+    return;
   }
+  ctxs.forEach(function (c) {
+    try {
+      const p = c.resume();
+      if (p && p.catch) p.catch(function () {});
+    } catch (err) {}
+  });
+  setTimeout(function () {
+    const still = [audioContext, meterCtx].some(function (c) {
+      return c && c.state === "suspended";
+    });
+    noteAudio = still ? TEXT.tapToStartAudio || "" : "";
+    renderSessionNote();
+    if (still) {
+      setStatus(TEXT.tapToStartAudio, "bad");
+      armGestureResume();
+    }
+  }, AUDIO.RESUME_CHECK_MS || 400);
+}
+
+/**
+ * One-shot pointerdown / keydown / touchstart listener that resumes audio
+ * (resume() must run inside the gesture).
+ */
+function armGestureResume() {
+  if (gestureArmed) return;
+  gestureArmed = true;
+  const events = ["pointerdown", "keydown", "touchstart"];
+  function onGesture() {
+    events.forEach(function (e) {
+      window.removeEventListener(e, onGesture, true);
+    });
+    gestureArmed = false;
+    resumeAudioContexts();
+  }
+  events.forEach(function (e) {
+    window.addEventListener(e, onGesture, true);
+  });
 }
 
 /**
@@ -1340,7 +1445,8 @@ function enqueuePcm(samples) {
 
 /**
  * One ~100 ms PCM frame on the Transcribe WebSocket.
- * Requires sessionReady (set after setupComplete or AUDIO.SETUP_FALLBACK_MS fallback).
+ * Requires sessionReady (set only by the server's setupComplete); frames
+ * before that are dropped, never sent into an unready session.
  */
 function sendPcmChunk(pcmChunk) {
   if (!socket || socket.readyState !== WebSocket.OPEN || !sessionReady) return;
@@ -1530,16 +1636,21 @@ async function translateWindow(blk, wantTrans, wantAi) {
 
 /**
  * Parse one Transcribe Live JSON object.
- * setupComplete → sessionReady
+ * setupComplete → onSetupComplete (audio may flow)
+ * sessionResumptionUpdate → keep the handle; goAway → renew the session
  * interim / final text → commitSpokenText (text of the open window; a stale
  * interim is committed after SPLIT_SECONDS or LINE_MAX_WORDS new words);
  * lastTextAt feeds the window's pause check (windowTick)
  * Connects to: onSocketMessage
  */
 function handleServerMessage(msg) {
+  if (msg.sessionResumptionUpdate) onResumptionUpdate(msg.sessionResumptionUpdate);
+  if (msg.goAway) {
+    onGoAway(msg.goAway);
+    return;
+  }
   if (msg.setupComplete) {
-    sessionReady = true;
-    setStatus(TEXT.listening, "ok");
+    onSetupComplete();
     return;
   }
   if (msg.error) {
@@ -1589,90 +1700,299 @@ async function onSocketMessage(event) {
  * Input socket always uses Transcribe Live — not Live Translate.
  */
 function sendSetup() {
-  socket.send(
-    JSON.stringify({
-      setup: {
-        model: "models/" + CONFIG.TRANSCRIBE_MODEL,
-        generationConfig: { responseModalities: ["TEXT"] },
-        inputAudioTranscription: {
-          languageCodes: selectedLang === "auto" ? [] : [selectedLang],
-          customVocabulary: CUSTOM_VOCAB,
-          mode: CONFIG.TRANSCRIBE_MODE,
-        },
-      },
-    })
-  );
+  const setup = {
+    model: "models/" + CONFIG.TRANSCRIBE_MODEL,
+    generationConfig: { responseModalities: ["TEXT"] },
+    inputAudioTranscription: {
+      languageCodes: selectedLang === "auto" ? [] : [selectedLang],
+      customVocabulary: CUSTOM_VOCAB,
+      mode: CONFIG.TRANSCRIBE_MODE,
+    },
+  };
+  /* Live session resumption: {} asks for handles, {handle} resumes */
+  setupUsedResumption = resumeEnabled;
+  setupUsedHandle = resumeEnabled && !!resumeHandle;
+  if (resumeEnabled) setup.sessionResumption = resumeHandle ? { handle: resumeHandle } : {};
+  if (CONFIG.CONTEXT_COMPRESSION) {
+    setup.contextWindowCompression = CONFIG.CONTEXT_COMPRESSION_CONFIG || { slidingWindow: {} };
+  }
+  socket.send(JSON.stringify({ setup: setup }));
 }
 
 /**
- * Mic + AudioContext + Transcribe Live socket.
- * Connects to: sendSetup, onSocketMessage, setMicLevel, enqueuePcm
+ * Mic + AudioContext + Transcribe Live socket (user Start / auto start).
+ * Connects to: startMeter, ensureAudioGraph, openSocket
  */
 async function startSession() {
-  if (socket && socket.readyState === WebSocket.OPEN) return;
+  if (wantRunning) return;
   const apiKey = apiKeyInput.value.trim();
   if (!apiKey) {
     keyPanel.classList.add("open");
     setStatus(TEXT.addKeyFirst, "bad");
     return;
   }
-  sessionReady = false;
+  wantRunning = true;
+  reconnectTries = 0;
+  reconnecting = false;
+  preSetupFailures = 0;
   pcmLeftover = new Int16Array(0);
   /* first window starts with the session (unless one already has lines) */
   if (!currentBlock) winStart = Date.now();
   setToggleUi(true);
+  if (ledEl) ledEl.className = "wait";
   setStatus(TEXT.connecting);
   try {
     if (!meterStream) await startMeter();
     mediaStream = meterStream;
-    if (!mediaStream) {
-      setStatus(TEXT.micDenied, "bad");
-      setToggleUi(false);
-      return;
-    }
+    if (!mediaStream) throw new Error("no mic");
   } catch (err) {
     setStatus(TEXT.micDenied, "bad");
+    wantRunning = false;
     setToggleUi(false);
     return;
   }
-  audioContext = new AudioContext();
-  sourceNode = audioContext.createMediaStreamSource(mediaStream);
-  processorNode = audioContext.createScriptProcessor(AUDIO.PROCESSOR_BUFFER, 1, 1);
-  silentGain = audioContext.createGain();
-  silentGain.gain.value = 0;
-  processorNode.onaudioprocess = function (ev) {
-    const input = ev.inputBuffer.getChannelData(0);
-    const resampled = resampleTo16k(input, audioContext.sampleRate);
-    setMicLevel(resampled);
-    enqueuePcm(floatToPcm16(resampled));
-  };
-  sourceNode.connect(processorNode);
-  processorNode.connect(silentGain);
-  silentGain.connect(audioContext.destination);
-  socket = new WebSocket(WS_BASE + "?key=" + encodeURIComponent(apiKey));
-  socket.onopen = function () {
+  if (!wantRunning) return; /* Stop pressed while the mic prompt was open */
+  ensureAudioGraph();
+  openSocket();
+}
+
+/**
+ * Audio graph mic → ScriptProcessor → 16 kHz PCM (kept across reconnects;
+ * built once per Start). Resumes the context if the browser suspended it.
+ */
+function ensureAudioGraph() {
+  if (!audioContext) {
+    audioContext = new AudioContext();
+    sourceNode = audioContext.createMediaStreamSource(mediaStream);
+    processorNode = audioContext.createScriptProcessor(AUDIO.PROCESSOR_BUFFER, 1, 1);
+    silentGain = audioContext.createGain();
+    silentGain.gain.value = 0;
+    processorNode.onaudioprocess = function (ev) {
+      const input = ev.inputBuffer.getChannelData(0);
+      const resampled = resampleTo16k(input, audioContext.sampleRate);
+      setMicLevel(resampled);
+      enqueuePcm(floatToPcm16(resampled));
+    };
+    sourceNode.connect(processorNode);
+    processorNode.connect(silentGain);
+    silentGain.connect(audioContext.destination);
+  }
+  resumeAudioContexts();
+}
+
+/**
+ * Open one Live socket and send setup. Audio waits for setupComplete; if it
+ * does not come within AUDIO.SETUP_TIMEOUT_MS the connect counts as failed.
+ * Events from older sockets are ignored (socketGen).
+ */
+function openSocket() {
+  clearTimeout(reconnectTimer);
+  reconnectTimer = 0;
+  if (!wantRunning) return;
+  const apiKey = apiKeyInput.value.trim();
+  if (!apiKey) {
+    wantRunning = false;
+    setToggleUi(false);
+    keyPanel.classList.add("open");
+    setStatus(TEXT.addKeyFirst, "bad");
+    return;
+  }
+  const gen = ++socketGen;
+  sessionReady = false;
+  pcmLeftover = new Int16Array(0);
+  const ws = new WebSocket(WS_BASE + "?key=" + encodeURIComponent(apiKey));
+  socket = ws;
+  ws.onopen = function () {
+    if (gen !== socketGen) return;
     sendSetup();
-    setTimeout(function () {
-      sessionReady = true;
-    }, AUDIO.SETUP_FALLBACK_MS);
     setStatus(TEXT.connected);
+    clearTimeout(setupTimer);
+    setupTimer = setTimeout(function () {
+      if (gen !== socketGen || sessionReady) return;
+      setStatus(TEXT.setupTimeout, "bad");
+      abandonSocket();
+      handleDisconnect({ preSetup: true, reason: "setup timeout" });
+    }, AUDIO.SETUP_TIMEOUT_MS || 5000);
   };
-  socket.onmessage = onSocketMessage;
-  socket.onerror = function () {
+  ws.onmessage = function (ev) {
+    if (gen !== socketGen) return;
+    onSocketMessage(ev);
+  };
+  ws.onerror = function () {
+    if (gen !== socketGen) return;
     setStatus(TEXT.connectionError, "bad");
   };
-  socket.onclose = function () {
-    setStatus(TEXT.stoppedServer);
-    setToggleUi(false);
+  ws.onclose = function (ev) {
+    if (gen !== socketGen) return;
+    const wasReady = sessionReady;
+    socket = null;
+    sessionReady = false;
+    clearTimeout(setupTimer);
+    handleDisconnect({
+      preSetup: !wasReady,
+      code: ev && ev.code,
+      reason: (ev && ev.reason) || "closed" + (ev && ev.code ? " " + ev.code : ""),
+    });
   };
 }
 
 /**
- * Tear down mic graph and Transcribe socket. Meter stops with the session.
+ * Detach the current socket (its events are ignored from now on) and close it.
+ */
+function abandonSocket() {
+  const ws = socket;
+  socketGen++;
+  socket = null;
+  sessionReady = false;
+  clearTimeout(setupTimer);
+  if (ws) {
+    try {
+      ws.close();
+    } catch (err) {}
+  }
+}
+
+/**
+ * Server setupComplete: the session is ready, audio may flow.
+ */
+function onSetupComplete() {
+  sessionReady = true;
+  clearTimeout(setupTimer);
+  if (reconnecting) {
+    logSessionEvent(setupUsedHandle ? TEXT.logResumed : TEXT.logReconnected);
+    if (liveNoteEl) liveNoteEl.textContent = TEXT.reconnected;
+  }
+  reconnecting = false;
+  reconnectTries = 0;
+  preSetupFailures = 0;
+  noteReconnect = "";
+  renderSessionNote();
+  if (wantRunning && ledEl) ledEl.className = "on";
+  setStatus(TEXT.listening, "ok");
+}
+
+/**
+ * sessionResumptionUpdate: keep the newest resumable handle.
+ */
+function onResumptionUpdate(upd) {
+  if (!upd) return;
+  if (upd.resumable === false) return;
+  if (upd.newHandle) resumeHandle = String(upd.newHandle);
+}
+
+/**
+ * GoAway: the server will drop this connection soon. Renew now (with the
+ * resumption handle) instead of waiting for the drop.
+ */
+function onGoAway() {
+  if (!wantRunning) return;
+  logSessionEvent(TEXT.logGoAway);
+  noteReconnect = TEXT.renewing || "";
+  renderSessionNote();
+  setStatus(TEXT.renewing);
+  abandonSocket();
+  handleDisconnect({ preSetup: false, immediate: true, reason: "goAway" });
+}
+
+/**
+ * The socket is gone (close, error, setup timeout, GoAway). The open caption
+ * window stays open; only the unfinished interim is dropped (a new session
+ * starts new utterances). Reconnects unless the user pressed Stop.
+ * A failed setup that used a resumption handle retries fresh; a clear
+ * rejection of sessionResumption switches it off for this page load.
+ */
+function handleDisconnect(info) {
+  if (interimTextEl) interimTextEl.textContent = "";
+  pendingText = "";
+  pendingSince = 0;
+  partialCommit = null;
+  if (!wantRunning) {
+    setToggleUi(false);
+    setStatus(TEXT.stoppedServer);
+    return;
+  }
+  if (info.preSetup && setupUsedResumption) {
+    if (setupUsedHandle) {
+      resumeHandle = "";
+    } else {
+      preSetupFailures++;
+      const why = String(info.reason || "");
+      if (/resum|unknown name|invalid/i.test(why) || info.code === 1007 || preSetupFailures >= 2) {
+        resumeEnabled = false;
+      }
+    }
+  }
+  scheduleReconnect(info.immediate ? 0 : null, info.reason);
+}
+
+/**
+ * Reconnect after a backoff (RECONNECT_BASE_MS doubling to RECONNECT_MAX_MS),
+ * at most RECONNECT_MAX_TRIES in a row. delay 0 = at once (GoAway, not counted).
+ */
+function scheduleReconnect(delay, reason) {
+  clearTimeout(reconnectTimer);
+  reconnecting = true;
+  if (ledEl) ledEl.className = "wait";
+  if (delay === 0) {
+    reconnectTimer = setTimeout(openSocket, 0);
+    return;
+  }
+  reconnectTries++;
+  const maxTries = Number(CONFIG.RECONNECT_MAX_TRIES) || 20;
+  if (reconnectTries > maxTries) {
+    wantRunning = false;
+    reconnecting = false;
+    noteReconnect = TEXT.reconnectGaveUp || "";
+    renderSessionNote();
+    setToggleUi(false);
+    setStatus(TEXT.reconnectGaveUp, "bad");
+    logSessionEvent(TEXT.logGaveUp);
+    return;
+  }
+  const base = Number(CONFIG.RECONNECT_BASE_MS) || 1000;
+  const max = Number(CONFIG.RECONNECT_MAX_MS) || 15000;
+  const wait = delay == null ? Math.min(max, base * Math.pow(2, reconnectTries - 1)) : delay;
+  noteReconnect = fmtText(TEXT.reconnecting, { n: reconnectTries });
+  renderSessionNote();
+  setStatus(noteReconnect, "bad");
+  logSessionEvent(fmtText(TEXT.logReconnect, { n: reconnectTries, why: reason || "" }));
+  reconnectTimer = setTimeout(openSocket, wait);
+}
+
+/**
+ * One short event entry in the hour log ("<stamp>\n# <text>\n\n").
+ */
+function logSessionEvent(text) {
+  if (!CONFIG.LOG_SESSION_EVENTS || !text) return;
+  const p = istNow();
+  const key = hourKeyFromParts(p);
+  const body =
+    (localStorage.getItem(key) || "") + stampFromParts(p) + "\n" + (CONFIG.LOG_EVENT_PREFIX || "") + text + "\n\n";
+  try {
+    localStorage.setItem(key, body);
+  } catch (err) {
+    return;
+  }
+  renderLogList();
+}
+
+/**
+ * User Stop (or Input change): cancel any pending reconnect, tear down mic
+ * graph and socket. Meter stays on.
  */
 async function stopSession() {
+  wantRunning = false;
+  reconnecting = false;
+  clearTimeout(reconnectTimer);
+  reconnectTimer = 0;
+  clearTimeout(setupTimer);
   sendAudioStreamEnd();
+  /* ignore events of the socket being closed */
+  socketGen++;
   sessionReady = false;
+  resumeHandle = "";
+  noteReconnect = "";
+  renderSessionNote();
   if (processorNode) {
     processorNode.disconnect();
     processorNode = null;
@@ -1686,8 +2006,11 @@ async function stopSession() {
     silentGain = null;
   }
   if (audioContext) {
-    await audioContext.close();
+    const ctx = audioContext;
     audioContext = null;
+    try {
+      await ctx.close();
+    } catch (err) {}
   }
   /* Keep meterStream running so the bar still moves after Stop */
   mediaStream = null;

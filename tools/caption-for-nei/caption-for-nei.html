@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   Caption for NEI (Caption for North East India) — caption-for-nei.html
-  Version: 0.15 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
+  Version: 0.16 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
   Credit: personal project (Karbi Anglong / Assam)
   Top bar + caption panel (markup only). Styles: caption-for-nei.css.
   Logic: caption-for-nei_logic.js. Tunables, text, languages: caption-for-nei_config.js.
@@ -10,12 +10,13 @@
   CFN_CONFIG.ABC_MODE, the choice is remembered in localStorage.
   Caption blocks = time windows of CFN_CONFIG.WINDOW_SEC seconds (config only since
   v0.15), one translation request per block, one line per sentence.
+  #sessionNote (v0.16): "Tap anywhere to start audio" / "Reconnecting… (n)".
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Caption for NEI v0.15</title>
+  <title>Caption for NEI v0.16</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="caption-for-nei.css" />
 </head>
@@ -54,6 +55,7 @@
     <span id="liveWrap">
       <span id="led"></span>
       <span id="liveNote"></span>
+      <span id="sessionNote" hidden></span>
       <span id="micMeter"><i id="micFill"></i></span>
     </span>
     <span id="rpdNote"></span>

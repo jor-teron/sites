@@ -6,7 +6,7 @@ Formerly **Live Subtitle for Assam** (`tools/live-subtitle-assam/`, v0.11). The 
 
 | | |
 |---|---|
-| Version | **0.15** (API Edition) |
+| Version | **0.16** (API Edition) |
 | First release | 27 Sep 2026 |
 | Last edit | 28 Sep 2026 |
 | Credit | Personal project (Karbi Anglong / Assam) |
@@ -74,6 +74,12 @@ Edit `caption-for-nei_config.js` only when you can. `caption-for-nei_logic.js` c
 - `INPUT_LANGUAGES` — Input dropdown (BCP-47 codes sent to Transcribe Live; `auto` = detect)  
 - `OUTPUT_LANGUAGES` — Output dropdown (translate targets)  
 - `STORAGE` / `LEGACY_STORAGE_KEYS` / `LEGACY_STORAGE_PREFIXES` — localStorage keys and old → new map  
+- `AUDIO.SETUP_TIMEOUT_MS` — wait this long for the server's `setupComplete` before a connect counts as failed (5000; audio is never sent before it)  
+- `AUDIO.RESUME_CHECK_MS` — when to check that the AudioContext really resumed (400)  
+- `RECONNECT_BASE_MS` / `RECONNECT_MAX_MS` / `RECONNECT_MAX_TRIES` — auto reconnect backoff (1 s doubling to 15 s, 20 tries in a row)  
+- `SESSION_RESUMPTION` — Live session resumption on reconnect (on; falls back to a fresh session)  
+- `CONTEXT_COMPRESSION` / `CONTEXT_COMPRESSION_CONFIG` — sliding-window compression (off)  
+- `LOG_SESSION_EVENTS` / `LOG_EVENT_PREFIX` — reconnect events in the hour log (`# …` lines)  
 - `TEXT` — status and button text  
 
 ## Languages
@@ -148,9 +154,17 @@ TR: My name is Jor. How are you?
 
 `ABC:` lines are present only when shown; the `TR:` line only when there is a translation. Older entries (v0.13: stamp, original, ABC, unprefixed translation) are unchanged.
 
+## Session and audio (v0.16)
+
+- **Audio resume:** browsers keep audio "suspended" until you touch the page (auto start on load). The app calls `resume()`; if audio is still held back the top bar shows **Tap anywhere to start audio** and the first tap / key press starts it (mic bar too).  
+- **Real ready:** audio goes out only after the server's `setupComplete`. No answer within `AUDIO.SETUP_TIMEOUT_MS` (5 s) = failed connect → reconnect.  
+- **Auto reconnect:** when the connection closes or errors and you did not press Stop, the app reconnects after 1 s, 2 s, 4 s, 8 s, then every 15 s (20 tries in a row; resets after each good session). The top bar shows **Reconnecting… (n)**, the LED turns amber. On the server's **GoAway** (sent before the ~10-minute cut) it renews at once. The mic and audio stay open (no new mic prompt) and the open caption block stays open; only an unfinished interim line is dropped. **Stop** cancels any pending reconnect.  
+- **Session resumption:** setup asks for `sessionResumption`; the newest handle from `sessionResumptionUpdate` is sent on reconnect. Google documents this for the Live API in general, not explicitly for `gemini-3.5-transcribe-live`: if a setup with a handle fails the next try is fresh, and a clear rejection switches resumption off until the page is reloaded. Context window compression is off (not documented for the transcribe model).  
+- Hour logs get short `# Reconnecting (n): reason` / `# Reconnected` entries (`LOG_SESSION_EVENTS`).
+
 ## Notes
 
 - Audio goes to Google while Start is on.  
-- Live session ~10 minutes; Start again if it drops.  
+- A live connection lasts ~10 minutes; the app renews it automatically.  
 - Weak Celeron is fine (cloud does the work).  
 - `file://` often blocks the mic — use a local server.

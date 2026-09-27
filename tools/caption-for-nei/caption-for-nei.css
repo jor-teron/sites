@@ -1,6 +1,6 @@
 /*
  * Caption for NEI — caption-for-nei.css
- * Version: 0.15 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
+ * Version: 0.16 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
  * Styles for caption-for-nei.html (moved from the inline <style> block).
  */
@@ -125,7 +125,14 @@ main { padding: 96px 12px 16px; max-width: 900px; margin: 0 auto; }
   background: var(--ok);
   box-shadow: 0 0 10px var(--ok);
 }
+#led.wait {
+  background: #f5a524;
+  box-shadow: 0 0 8px #f5a524;
+}
 #liveNote { display: none; }
+/* Session note (v0.16): audio tap hint, reconnecting */
+#sessionNote { color: #f5a524; font-size: 0.78rem; white-space: nowrap; }
+#sessionNote[hidden] { display: none; }
 #liveNote.on { color: var(--ok); }
 a.about { margin-left: auto; }
 .interim {

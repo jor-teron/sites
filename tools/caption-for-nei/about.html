@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <!--
   Caption for NEI (Caption for North East India) — about.html
-  Version: 0.15 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
+  Version: 0.16 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
   Credit: personal project (Karbi Anglong / Assam)
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>About — Caption for North East India v0.15</title>
+  <title>About — Caption for North East India v0.16</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <style>
     :root {
@@ -82,7 +82,7 @@
   <main>
     <h1>About Caption for North East India</h1>
     <p class="meta">
-      Version <strong>0.15</strong> · API Edition · personal use<br />
+      Version <strong>0.16</strong> · API Edition · personal use<br />
       First release: 27 Sep 2026<br />
       Last edit: 28 Sep 2026<br />
       Formerly “Live Subtitle for Assam”
@@ -103,7 +103,7 @@
         <li>ABC: Off / Local (rule-based romanizer on this device, with word lists roman_hi / roman_ne / roman_as / roman_bn .csv) / AI (chat model, falls back to Local). Default Local, remembered in this browser</li>
         <li>Output Off = transcript only. English / Hindi / Assamese / Bengali / Nepali = chat translate, one request per window (only that window’s text). Silent windows send nothing. Output = the Input language sends nothing (“same language, no translation”); English Input never shows an ABC line</li><li>A window closes at once on a sentence end; mid-sentence it waits up to 1.25 s for a pause, then moves the unfinished sentence into the next block. Early partial captions are replaced by their final text, not repeated</li>
         <li>Model: Auto rotate or pin 3.5 Lite / 3.1 Lite</li>
-        <li>Mic bar shows loudness. LED green = caption session on</li>
+        <li>Mic bar shows loudness. LED green = caption session ready, amber = connecting / reconnecting. If the browser holds audio back, the bar says “Tap anywhere to start audio”</li><li>Drops are reconnected automatically (1 s, 2 s, 4 s … up to 15 s, 20 tries; “Reconnecting… (n)”), before the ~10-minute cut too (server GoAway), without asking for the mic again and without losing the open caption block. Stop cancels it</li>
         <li>RPD counters reset 00:00 UTC (set limits in caption-for-nei_config.js)</li>
         <li>Vocab files: city.csv, town.csv, surname.csv, vocab.csv</li>
         <li>Hour logs keep one entry per window: original lines, ABC lines and the translation</li>
@@ -126,7 +126,7 @@
       <ul>
         <li>API key stays in this browser. Do not publish it.</li>
         <li>Audio is sent to the cloud while Start is on.</li>
-        <li>A live session may drop after about 10 minutes. Tap Start again.</li>
+        <li>A live connection ends after about 10 minutes; the app renews it by itself.</li>
         <li>500 RPD on Lite is a hard project cap if Google applies it that way.</li>
       </ul>
     </div>
