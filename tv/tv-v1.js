@@ -33,7 +33,6 @@ const PLACEHOLDER_LOGO =
 // ========== STATE ==========
 const video = document.getElementById('video');
 const channelList = document.getElementById('channel-list');
-const overlay = document.getElementById('overlay');
 
 let hls = null;
 let items = [];
@@ -110,15 +109,6 @@ function parseM3U(text) {
 }
 
 // ========== PLAYLIST LOAD ==========
-function showOverlay(msg) {
-  overlay.textContent = msg;
-  overlay.style.display = 'block';
-}
-
-function hideOverlay() {
-  overlay.style.display = 'none';
-}
-
 function categoryTilesFor(category) {
   if (category === 'home') {
     return CATEGORY_TILES.map(function (t) {
@@ -155,12 +145,11 @@ function loadPlaylist(category, options) {
   options = options || {};
   const url = PLAYLISTS[category];
   if (!url) {
-    showOverlay('Unknown category: ' + category);
+    console.error('Unknown category: ' + category);
     return;
   }
 
   currentCategory = category;
-  showOverlay('Loading ' + category + '...');
 
   fetch(url)
     .then(function (res) {
@@ -197,12 +186,12 @@ function loadPlaylist(category, options) {
           activateItem(startIndex);
         }, 200);
       } else {
-        showOverlay('No channels in playlist');
+        console.error('No channels in playlist');
       }
     })
     .catch(function (err) {
       console.error(err);
-      showOverlay('Failed to load playlist');
+      console.error('Failed to load playlist');
     });
 }
 
@@ -271,7 +260,6 @@ function activateItem(index) {
 
   currentIndex = index;
   highlightCurrent();
-  hideOverlay();
   hideNumberDisplay();
 
   const item = items[index];
@@ -310,7 +298,7 @@ function playChannel(ch) {
       video.play().catch(function () {});
     });
     hls.on(Hls.Events.ERROR, function (_e, data) {
-      // Fatal stream errors: no text overlay — poster (tv_no_signal.jpeg) is the cue.
+      // Fatal stream errors: console only — poster (tv_no_signal.jpeg) is the cue.
       if (data && data.fatal) {
         console.error('Stream error', data);
       }
