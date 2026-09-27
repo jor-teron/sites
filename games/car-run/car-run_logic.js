@@ -1,8 +1,16 @@
 /**
  * Car Run — pseudo-3D endless lane runner (Temple Run–like driving).
+ * Game logic. Every tunable value comes from CAR_RUN_CONFIG (car-run_config.js).
  */
 (function () {
   'use strict';
+
+  const CFG = CAR_RUN_CONFIG;
+  const T = CFG.track;
+  const C = CFG.colors;
+  const S = CFG.sizes;
+  const K = CFG.keys;
+  const TX = CFG.text;
 
   const canvas = document.getElementById('c');
   const ctx = canvas.getContext('2d');
@@ -15,30 +23,35 @@
   const titleEl = document.getElementById('title');
   const msgEl = document.getElementById('msg');
   const subEl = document.getElementById('sub');
+  document.getElementById('help').textContent = TX.help;
 
-  const BEST_KEY = 'car-run-best';
-  const LANES = 3;
-  const DRAW_DIST = 80;
-  const ROAD_W = 1.0;
-  const JUMP_DUR = 0.55;
-  const JUMP_CD = 1.1;
-  const NITRO_DRAIN = 0.35;
-  const NITRO_REFILL = 0.08;
+  const BEST_KEY = CFG.bestKey;
+  const LANES = T.lanes;
+  const DRAW_DIST = T.drawDist;
+  const ROAD_W = T.roadHalfWidth;
+  const JUMP_DUR = CFG.jump.duration;
+  const JUMP_CD = CFG.jump.cooldown;
+  const NITRO_DRAIN = CFG.nitro.drain;
+  const NITRO_REFILL = CFG.nitro.refill;
 
   let dpr = 1, W = 0, H = 0;
   let state = 'title';
   let keys = Object.create(null);
   let last = 0;
+  let clickStartAt = -Infinity; // time a tap/click started the game
 
   let player, cameraZ, speed, baseSpeed, distance, coins, nitro, best;
   let entities;
   let roadOffset = 0;
   let jumpT = 0, jumpCd = 0, nitroOn = false;
-  let spawnZ = 40;
+  let spawnZ = CFG.start.spawnZ;
   let laneAnim = 0;
 
   best = Number(localStorage.getItem(BEST_KEY) || 0) || 0;
   bestEl.textContent = 'BEST ' + Math.floor(best);
+
+  const isKey = (list, code) => list.indexOf(code) !== -1;
+  const held = (list) => list.some((c) => keys[c]);
 
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 3);
@@ -60,76 +73,81 @@
   function hideOverlay() { overlay.hidden = true; }
 
   function project(x, y, z) {
-    const camY = 1.15;
+    const camY = T.cameraHeight;
     const relZ = z - cameraZ;
-    if (relZ <= 0.15) return null;
+    if (relZ <= T.nearClip) return null;
     const scale = 1 / relZ;
-    const px = W / 2 + x * scale * W * 0.55;
-    const py = H * 0.55 - (y - camY) * scale * H * 0.7;
+    const px = W / 2 + x * scale * W * T.projScaleX;
+    const py = H * T.horizonFrac - (y - camY) * scale * H * T.projScaleY;
     return { x: px, y: py, s: scale };
   }
 
   function laneX(lane) {
-    return (lane - 1) * 0.72;
+    return (lane - (LANES - 1) / 2) * T.laneSpacing;
   }
 
   function spawnAhead() {
-    while (spawnZ < cameraZ + DRAW_DIST + 20) {
+    const SP = CFG.spawn;
+    while (spawnZ < cameraZ + DRAW_DIST + SP.lookAhead) {
       const roll = Math.random();
-      if (roll < 0.45) {
+      if (roll < SP.obstacleChance) {
         entities.push({
-          type: Math.random() < 0.5 ? 'barrier' : 'car',
+          type: Math.random() < SP.carVsBarrier ? 'barrier' : 'car',
           lane: Math.floor(Math.random() * LANES),
           z: spawnZ,
           taken: false,
         });
-      } else if (roll < 0.85) {
-        const n = 3 + Math.floor(Math.random() * 3);
+      } else if (roll < SP.coinChance) {
+        const n = SP.coinRowMin + Math.floor(Math.random() * SP.coinRowExtra);
         const cl = Math.floor(Math.random() * LANES);
         for (let i = 0; i < n; i++) {
-          entities.push({ type: 'coin', lane: cl, z: spawnZ + i * 1.4, taken: false });
+          entities.push({ type: 'coin', lane: cl, z: spawnZ + i * SP.coinSpacing, taken: false });
         }
       }
-      spawnZ += 10 + Math.random() * 12 - Math.min(4, distance / 800);
+      spawnZ += SP.gapBase + Math.random() * SP.gapRandom - Math.min(SP.gapShrinkMax, distance / SP.gapShrinkPerDist);
     }
   }
 
+  function currentScore() {
+    return Math.floor(distance + coins * CFG.coinScore);
+  }
+
   function updateHud() {
-    const sc = Math.floor(distance + coins * 25);
-    scoreEl.textContent = sc + ' m';
+    scoreEl.textContent = currentScore() + ' m';
     coinsEl.textContent = '● ' + coins;
-    speedEl.textContent = Math.floor(speed * 3.2) + ' km/h';
+    speedEl.textContent = Math.floor(speed * CFG.speed.kmhFactor) + ' km/h';
     nitroBar.style.transform = 'scaleX(' + Math.max(0, Math.min(1, nitro)) + ')';
   }
 
   function reset() {
-    player = { lane: 1, x: 0, y: 0 };
-    laneAnim = 1;
+    const st = CFG.start;
+    player = { lane: st.lane, x: 0, y: 0 };
+    laneAnim = st.lane;
     cameraZ = 0;
-    speed = 28;
-    baseSpeed = 28;
-    distance = 0;
-    coins = 0;
-    nitro = 1;
+    speed = st.speed;
+    baseSpeed = st.speed;
+    distance = st.distance;
+    coins = st.coins;
+    nitro = st.nitro;
     entities = [];
     roadOffset = 0;
     jumpT = 0;
     jumpCd = 0;
     nitroOn = false;
-    spawnZ = 55;
+    spawnZ = st.spawnZ;
     spawnAhead();
     updateHud();
   }
 
   function die() {
     state = 'over';
-    const sc = Math.floor(distance + coins * 25);
+    const sc = currentScore();
     if (sc > best) {
       best = sc;
       localStorage.setItem(BEST_KEY, String(best));
       bestEl.textContent = 'BEST ' + Math.floor(best);
     }
-    showOverlay('CRASH!', 'Score ' + sc, 'Best ' + Math.floor(best) + ' — Start / Enter');
+    showOverlay(TX.crash, 'Score ' + sc, 'Best ' + Math.floor(best) + ' — Start / Enter');
   }
 
   function startPlay() {
@@ -142,66 +160,83 @@
       hideOverlay();
     } else if (state === 'play') {
       state = 'pause';
-      showOverlay('PAUSED', 'Press Start / Enter', '');
+      showOverlay(TX.paused, TX.pressStart, '');
     }
+  }
+
+  /** Start key: toggles pause, except right after a tap/click started the game. */
+  function onStartKey() {
+    if (state === 'play' && performance.now() - clickStartAt < CFG.input.clickStartGraceMs) {
+      clickStartAt = -Infinity; // swallow once: the game is already running
+      return;
+    }
+    startPlay();
+  }
+
+  /** Tap/click start (title / game over / resume from pause). */
+  function clickStart() {
+    const wasStarting = state === 'title' || state === 'over';
+    startPlay();
+    if (wasStarting && state === 'play') clickStartAt = performance.now();
   }
 
   function toTitle() {
     state = 'title';
     reset();
-    showOverlay('CAR RUN', 'Press Start / Enter', 'or tap / click');
+    showOverlay(TX.title, TX.pressStart, TX.titleSub);
   }
 
   function onKey(e, down) {
     const code = e.code;
     keys[code] = down;
     if (down) {
-      if (code === 'ArrowLeft' || code === 'KeyA') {
+      if (isKey(K.left, code)) {
         player.lane = Math.max(0, player.lane - 1);
         e.preventDefault();
-      } else if (code === 'ArrowRight' || code === 'KeyD') {
+      } else if (isKey(K.right, code)) {
         player.lane = Math.min(LANES - 1, player.lane + 1);
         e.preventDefault();
-      } else if (code === 'Space') {
+      } else if (isKey(K.nitro, code)) {
         nitroOn = true;
         e.preventDefault();
-      } else if (code === 'KeyX') {
+      } else if (isKey(K.jump, code)) {
         if (jumpCd <= 0 && jumpT <= 0) {
           jumpT = JUMP_DUR;
           jumpCd = JUMP_CD;
         }
         e.preventDefault();
-      } else if (code === 'Enter') {
-        startPlay();
+      } else if (isKey(K.start, code)) {
+        if (!e.repeat) onStartKey();
         e.preventDefault();
-      } else if (code === 'Escape') {
+      } else if (isKey(K.restart, code)) {
         toTitle();
         e.preventDefault();
-      } else if (code === 'ArrowUp' || code === 'ArrowDown') {
+      } else if (isKey(K.accel, code) || isKey(K.brake, code)) {
         e.preventDefault();
       }
     } else {
-      if (code === 'Space') nitroOn = false;
+      if (isKey(K.nitro, code)) nitroOn = false;
     }
   }
 
   document.addEventListener('keydown', (e) => onKey(e, true));
   document.addEventListener('keyup', (e) => onKey(e, false));
   overlay.addEventListener('click', () => {
-    if (state === 'title' || state === 'over' || state === 'pause') startPlay();
+    if (state === 'title' || state === 'over' || state === 'pause') clickStart();
   });
   canvas.addEventListener('click', () => {
-    if (state === 'title' || state === 'over') startPlay();
+    if (state === 'title' || state === 'over') clickStart();
   });
 
   function update(dt) {
-    if (keys.ArrowUp || keys.KeyW) baseSpeed = Math.min(55, baseSpeed + 18 * dt);
-    else if (keys.ArrowDown || keys.KeyS) baseSpeed = Math.max(14, baseSpeed - 28 * dt);
-    else baseSpeed = Math.min(55, baseSpeed + 2 * dt);
+    const SPD = CFG.speed;
+    if (held(K.accel)) baseSpeed = Math.min(SPD.max, baseSpeed + SPD.accel * dt);
+    else if (held(K.brake)) baseSpeed = Math.max(SPD.min, baseSpeed - SPD.brake * dt);
+    else baseSpeed = Math.min(SPD.max, baseSpeed + SPD.cruiseAccel * dt);
 
-    let spd = baseSpeed + Math.min(18, distance * 0.004);
+    let spd = baseSpeed + Math.min(SPD.distanceBonusMax, distance * SPD.distanceBonusRate);
     if (nitroOn && nitro > 0) {
-      spd *= 1.55;
+      spd *= CFG.nitro.multiplier;
       nitro = Math.max(0, nitro - NITRO_DRAIN * dt);
       if (nitro <= 0) nitroOn = false;
     } else {
@@ -213,13 +248,13 @@
     distance += speed * dt;
     roadOffset += speed * dt;
 
-    laneAnim += (player.lane - laneAnim) * Math.min(1, 12 * dt);
+    laneAnim += (player.lane - laneAnim) * Math.min(1, CFG.laneAnimRate * dt);
     player.x = laneX(laneAnim);
 
     if (jumpT > 0) {
       jumpT -= dt;
       const t = 1 - jumpT / JUMP_DUR;
-      player.y = Math.sin(t * Math.PI) * 0.85;
+      player.y = Math.sin(t * Math.PI) * CFG.jump.height;
       if (jumpT <= 0) player.y = 0;
     } else {
       player.y = 0;
@@ -228,14 +263,14 @@
 
     spawnAhead();
 
-    const pz = cameraZ + 3.2;
+    const pz = cameraZ + T.playerAhead;
     for (const e of entities) {
       if (e.taken) continue;
-      if (Math.abs(e.z - pz) < 1.1 && e.lane === player.lane) {
+      if (Math.abs(e.z - pz) < CFG.hitDepth && e.lane === player.lane) {
         if (e.type === 'coin') {
           e.taken = true;
           coins++;
-        } else if (player.y < 0.35) {
+        } else if (player.y < CFG.jump.clearHeight) {
           return die();
         }
       }
@@ -244,24 +279,31 @@
     updateHud();
   }
 
-  function drawSky() {
-    const g = ctx.createLinearGradient(0, 0, 0, H * 0.55);
-    g.addColorStop(0, '#0f172a');
-    g.addColorStop(0.5, '#1e293b');
-    g.addColorStop(1, '#334155');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H * 0.55);
-    const sg = ctx.createRadialGradient(W * 0.7, H * 0.22, 10, W * 0.7, H * 0.22, 120);
-    sg.addColorStop(0, 'rgba(251,191,36,0.35)');
-    sg.addColorStop(1, 'rgba(251,191,36,0)');
-    ctx.fillStyle = sg;
-    ctx.fillRect(0, 0, W, H * 0.55);
+  /** Screen Y of the farthest road segment (where sky meets the road). */
+  function horizonY() {
+    const p = project(0, 0, cameraZ + DRAW_DIST + 1);
+    return p ? Math.ceil(p.y) : H * T.horizonFrac;
   }
 
-  function drawRoad() {
-    const horizon = H * 0.42;
-    ctx.fillStyle = '#0a0c12';
-    ctx.fillRect(0, horizon, W, H - horizon);
+  function drawSky(hy) {
+    const g = ctx.createLinearGradient(0, 0, 0, hy);
+    g.addColorStop(0, C.skyTop);
+    g.addColorStop(0.5, C.skyMid);
+    g.addColorStop(1, C.skyBottom);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, hy);
+    const sx = W * C.sunX, sy = H * C.sunY;
+    const sg = ctx.createRadialGradient(sx, sy, 10, sx, sy, C.sunRadius);
+    sg.addColorStop(0, C.sunGlow);
+    sg.addColorStop(1, C.sunGlowOuter);
+    ctx.fillStyle = sg;
+    ctx.fillRect(0, 0, W, hy);
+  }
+
+  function drawRoad(hy) {
+    // Ground starts exactly where the sky ends (no empty band).
+    ctx.fillStyle = C.ground;
+    ctx.fillRect(0, hy, W, H - hy);
 
     for (let i = DRAW_DIST; i >= 0; i--) {
       const z0 = cameraZ + i;
@@ -273,7 +315,7 @@
       if (!p0L || !p0R || !p1L || !p1R) continue;
 
       const stripe = Math.floor(z0) % 2 === 0;
-      ctx.fillStyle = stripe ? '#14532d' : '#166534';
+      ctx.fillStyle = stripe ? C.grassA : C.grassB;
       ctx.beginPath();
       ctx.moveTo(0, p0L.y);
       ctx.lineTo(p0L.x, p0L.y);
@@ -289,7 +331,7 @@
       ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = stripe ? '#1f2937' : '#111827';
+      ctx.fillStyle = stripe ? C.roadA : C.roadB;
       ctx.beginPath();
       ctx.moveTo(p0L.x, p0L.y);
       ctx.lineTo(p0R.x, p0R.y);
@@ -298,13 +340,13 @@
       ctx.closePath();
       ctx.fill();
 
-      if (Math.floor(z0) % 3 === 0) {
-        for (const lx of [-0.36, 0.36]) {
+      if (Math.floor(z0) % S.laneMarkEvery === 0) {
+        for (const lx of S.laneMarkX) {
           const a = project(lx, 0.01, z0);
-          const b = project(lx, 0.01, z0 + 1.2);
+          const b = project(lx, 0.01, z0 + S.laneMarkLength);
           if (!a || !b) continue;
-          ctx.strokeStyle = 'rgba(251,191,36,0.55)';
-          ctx.lineWidth = Math.max(1, a.s * 6);
+          ctx.strokeStyle = C.laneMark;
+          ctx.lineWidth = Math.max(1, a.s * S.laneMarkWidth);
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
           ctx.lineTo(b.x, b.y);
@@ -316,53 +358,53 @@
 
   function drawEntity(e) {
     const x = laneX(e.lane);
-    const y = e.type === 'coin' ? 0.35 : 0;
+    const y = e.type === 'coin' ? S.coinHeight : 0;
     const p = project(x, y, e.z);
     if (!p) return;
     if (e.type === 'coin') {
-      const r = Math.max(3, p.s * 28);
-      ctx.fillStyle = '#fbbf24';
+      const r = Math.max(S.coinMinRadius, p.s * S.coinRadius);
+      ctx.fillStyle = C.coin;
       ctx.beginPath();
       ctx.arc(p.x, p.y - r, r, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#f59e0b';
+      ctx.fillStyle = C.coinInner;
       ctx.beginPath();
       ctx.arc(p.x, p.y - r, r * 0.55, 0, Math.PI * 2);
       ctx.fill();
     } else if (e.type === 'barrier') {
-      const w = p.s * 70;
-      const h = p.s * 50;
-      ctx.fillStyle = '#ef4444';
+      const w = p.s * S.barrierW;
+      const h = p.s * S.barrierH;
+      ctx.fillStyle = C.barrier;
       ctx.fillRect(p.x - w / 2, p.y - h, w, h);
-      ctx.fillStyle = '#fef3c7';
+      ctx.fillStyle = C.barrierStripe;
       ctx.fillRect(p.x - w / 2, p.y - h * 0.55, w, h * 0.18);
     } else {
-      const w = p.s * 80;
-      const h = p.s * 55;
-      ctx.fillStyle = '#3b82f6';
+      const w = p.s * S.carW;
+      const h = p.s * S.carH;
+      ctx.fillStyle = C.car;
       ctx.fillRect(p.x - w / 2, p.y - h, w, h * 0.7);
-      ctx.fillStyle = '#93c5fd';
+      ctx.fillStyle = C.carGlass;
       ctx.fillRect(p.x - w * 0.35, p.y - h * 0.85, w * 0.7, h * 0.25);
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = C.carWheel;
       ctx.fillRect(p.x - w * 0.4, p.y - h * 0.15, w * 0.25, h * 0.15);
       ctx.fillRect(p.x + w * 0.15, p.y - h * 0.15, w * 0.25, h * 0.15);
     }
   }
 
   function drawPlayer() {
-    const pz = cameraZ + 3.2;
+    const pz = cameraZ + T.playerAhead;
     const p = project(player.x, player.y, pz);
     if (!p) return;
-    const w = p.s * 90;
-    const h = p.s * 70;
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    const w = p.s * S.playerW * S.playerScale;
+    const h = p.s * S.playerH * S.playerScale;
+    ctx.fillStyle = C.playerShadow;
     const sh = project(player.x, 0, pz);
     if (sh) {
       ctx.beginPath();
-      ctx.ellipse(sh.x, sh.y, w * 0.45, Math.max(3, p.s * 10), 0, 0, Math.PI * 2);
+      ctx.ellipse(sh.x, sh.y, w * 0.45, Math.max(3, p.s * 10 * S.playerScale), 0, 0, Math.PI * 2);
       ctx.fill();
     }
-    const body = nitroOn && nitro > 0 ? '#f97316' : '#ef4444';
+    const body = nitroOn && nitro > 0 ? C.playerNitro : C.player;
     ctx.fillStyle = body;
     ctx.beginPath();
     ctx.moveTo(p.x, p.y - h);
@@ -372,7 +414,10 @@
     ctx.lineTo(p.x - w / 2, p.y - h * 0.35);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = 'rgba(147,197,253,0.85)';
+    ctx.strokeStyle = C.playerOutline;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = C.playerGlass;
     ctx.beginPath();
     ctx.moveTo(p.x, p.y - h * 0.88);
     ctx.lineTo(p.x + w * 0.28, p.y - h * 0.5);
@@ -380,7 +425,7 @@
     ctx.closePath();
     ctx.fill();
     if (nitroOn && nitro > 0) {
-      ctx.fillStyle = 'rgba(96,165,250,0.8)';
+      ctx.fillStyle = C.nitroFlame;
       ctx.beginPath();
       ctx.moveTo(p.x - w * 0.15, p.y);
       ctx.lineTo(p.x, p.y + h * 0.45 + Math.random() * 8);
@@ -390,8 +435,9 @@
   }
 
   function draw() {
-    drawSky();
-    drawRoad();
+    const hy = horizonY();
+    drawSky(hy);
+    drawRoad(hy);
     const sorted = entities.slice().sort((a, b) => b.z - a.z);
     for (const e of sorted) drawEntity(e);
     if (player) drawPlayer();
@@ -409,6 +455,6 @@
   window.addEventListener('resize', resize);
   resize();
   reset();
-  showOverlay('CAR RUN', 'Press Start / Enter', 'or tap / click');
+  showOverlay(TX.title, TX.pressStart, TX.titleSub);
   requestAnimationFrame(loop);
 })();
