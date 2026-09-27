@@ -1,0 +1,54 @@
+/* Page layout: centered dark court */
+* {
+  box-sizing: border-box;
+}
+
+/* Full-page background */
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #0b0f14;
+  color: #e8eef5;
+  font-family: system-ui, sans-serif;
+}
+
+/* Center the game stack */
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Title above the canvas */
+h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Score line */
+#hud {
+  font-variant-numeric: tabular-nums;
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+/* Hint text under the court */
+#hint {
+  font-size: 0.8rem;
+  opacity: 0.65;
+}
+
+/* Canvas: the playfield */
+canvas {
+  background: #111820;
+  border: 2px solid #3a4a5c;
+  border-radius: 4px;
+  max-width: 96vw;
+  height: auto;
+  touch-action: none;
+}
