@@ -26,7 +26,8 @@ const overlayMsg = document.getElementById("overlay-msg");
 const CFG = SPACE_INVADER_CONFIG;
 const IC = CFG.invaders;
 const COLR = CFG.colors;
-const isKey = (list, code) => list.indexOf(code) !== -1;
+/** True if the event's code or key is in the binding list. */
+const isKey = (list, e) => list.indexOf(e.code) !== -1 || list.indexOf(e.key) !== -1;
 const W = CFG.width;
 const H = CFG.height;
 const PLAYER_W = CFG.player.w;
@@ -201,17 +202,43 @@ function hit(a, b) {
  * @param {boolean} down
  */
 function onKey(e, down) {
-  if (isKey(CFG.keys.left, e.code)) keys.left = down;
-  if (isKey(CFG.keys.right, e.code)) keys.right = down;
-  if (isKey(CFG.keys.shoot, e.code)) {
+  if (isKey(CFG.keys.left, e)) { keys.left = down; e.preventDefault(); }
+  if (isKey(CFG.keys.right, e)) { keys.right = down; e.preventDefault(); }
+  if (isKey(CFG.keys.shoot, e)) {
     keys.shoot = down;
     e.preventDefault();
-    if (down) tryStartOrShoot();
+    if (down && !e.repeat) tryStartOrShoot();
   }
-  if (isKey(CFG.keys.pause, e.code) && down && state === "playing") {
-    state = "paused";
-    showOverlay(CFG.text.paused);
+  if (!down || e.repeat) return;
+  if (isKey(CFG.keys.start, e)) {
+    e.preventDefault();
+    if (state === "playing") pauseGame();
+    else tryStartOrShoot();
+  } else if (isKey(CFG.keys.pause, e)) {
+    if (state === "playing") pauseGame();
+    else if (state === "paused") tryStartOrShoot();
+  } else if (isKey(CFG.keys.restart, e)) {
+    e.preventDefault();
+    toMenu();
   }
+}
+
+/** Pause a running game. */
+function pauseGame() {
+  state = "paused";
+  showOverlay(CFG.text.paused);
+}
+
+/** Back to the start screen with a fresh game. */
+function toMenu() {
+  resetGame();
+  state = "menu";
+  showOverlay(CFG.text.menu);
+}
+
+/** Focus lost: the keyup would never arrive, so drop held keys. */
+function clearKeys() {
+  keys.left = keys.right = keys.shoot = false;
 }
 
 /**
@@ -245,6 +272,8 @@ function onPointer(e) {
 
 window.addEventListener("keydown", (e) => onKey(e, true));
 window.addEventListener("keyup", (e) => onKey(e, false));
+window.addEventListener("blur", clearKeys);
+document.addEventListener("visibilitychange", () => { if (document.hidden) clearKeys(); });
 canvas.addEventListener("pointerdown", onPointer);
 overlay.addEventListener("pointerdown", onPointer);
 window.addEventListener("resize", resize);

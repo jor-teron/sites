@@ -110,20 +110,27 @@ var CONTRA_ALPHA_CONFIG = {
     playerGun: "#ff3d9a"              /* player gun */
   },
 
-  /* Key bindings (KeyboardEvent.code). Phone D-pad: arrows, A=Space (jump), B=KeyX (fire) */
+  /* Key bindings — matched against KeyboardEvent.code OR .key.
+     Hub / phone controller: D-pad = arrows, A = Space (jump), B = KeyX (fire), X = KeyZ (fire),
+     Start = Enter, Select = Escape */
   keys: {
     left: ["ArrowLeft", "KeyA"],
     right: ["ArrowRight", "KeyD"],
     jump: ["ArrowUp", "KeyW", "Space"],
     fire: ["KeyZ", "KeyX", "ControlLeft", "ControlRight"],
-    preventDefault: ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"] /* keys that must not scroll */
+    start: ["Enter", "Space"],              /* menu: start · end screen: retry (Start / A) */
+    pause: ["Enter", "KeyP"],               /* pause / resume while playing (Start / P) */
+    menu: ["Escape"],                       /* back to the menu (Select) */
+    preventDefault: ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "Enter"] /* keys that must not scroll / click */
   },
+
 
   /* On-screen text */
   text: {
     failed: "MISSION FAILED",
     livesLost: "All lives lost.",
     timeExpired: "Time expired.",
-    clear: "SECTOR CLEAR"
+    clear: "SECTOR CLEAR",
+    paused: "PAUSED — ENTER to resume"
   }
 };

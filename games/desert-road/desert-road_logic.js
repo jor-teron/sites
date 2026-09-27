@@ -4,7 +4,8 @@
  */
 (() => {
   const CFG = DESERT_ROAD_CONFIG;
-  const isKey = (list, key) => list.includes(key);
+  /** True if the event's code or key is in the binding list. */
+  const isKey = (list, e) => list.includes(e.code) || list.includes(e.key);
 
   // ----- Setup -----
   const canvas = document.getElementById('game');
@@ -30,6 +31,8 @@
   // ----- Game State -----
   const state = {
     running: false,
+    paused: false,
+    pausedAt: 0,
     score: CFG.start.score,
     startTime: 0,
     elapsed: 0,
@@ -49,16 +52,61 @@
 
   // ----- Input -----
   function onKeyDown(e) {
-    if (isKey(CFG.keys.left, e.key))  state.keys.left  = true;
-    if (isKey(CFG.keys.right, e.key)) state.keys.right = true;
-    if (isKey(CFG.keys.start, e.key) && !state.running) startGame();
+    if (isKey(CFG.keys.left, e))  { state.keys.left  = true; e.preventDefault(); }
+    if (isKey(CFG.keys.right, e)) { state.keys.right = true; e.preventDefault(); }
+    if (e.repeat) {
+      if (isKey(CFG.keys.start, e) || isKey(CFG.keys.pause, e)) e.preventDefault();
+      return;
+    }
+    if (!state.running) {
+      if (isKey(CFG.keys.start, e)) {
+        // preventDefault: a focused Start button must not also "click" (double start)
+        e.preventDefault();
+        startGame();
+      }
+    } else if (isKey(CFG.keys.pause, e)) {
+      e.preventDefault();
+      togglePause();
+    } else if (isKey(CFG.keys.restart, e)) {
+      e.preventDefault();
+      startGame();
+    } else if (isKey(CFG.keys.start, e)) {
+      e.preventDefault(); // Space while driving: no page scroll
+    }
   }
   function onKeyUp(e) {
-    if (isKey(CFG.keys.left, e.key))  state.keys.left  = false;
-    if (isKey(CFG.keys.right, e.key)) state.keys.right = false;
+    if (isKey(CFG.keys.left, e))  state.keys.left  = false;
+    if (isKey(CFG.keys.right, e)) state.keys.right = false;
+  }
+  /** Focus lost: the keyup would never arrive, so drop held keys. */
+  function clearKeys() {
+    state.keys.left = false;
+    state.keys.right = false;
   }
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup',   onKeyUp);
+  window.addEventListener('blur', clearKeys);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) clearKeys(); });
+
+  /** Start button click: drop focus so a later Space / Enter cannot click it again. */
+  function onStartClick(e) {
+    if (e && e.currentTarget && e.currentTarget.blur) e.currentTarget.blur();
+    if (!state.running) startGame();
+  }
+
+  /** Pause / resume a run (the clock does not count while paused). */
+  function togglePause() {
+    if (!state.running) return;
+    const now = performance.now();
+    if (state.paused) {
+      state.paused = false;
+      state.startTime += now - state.pausedAt;
+      state.lastTime = now;
+    } else {
+      state.paused = true;
+      state.pausedAt = now;
+    }
+  }
 
   // Controller hook — plug your InputBus here later:
   //   InputBus.on(e => {
@@ -71,7 +119,10 @@
 
   // ----- Game Flow -----
   function startGame() {
+    const wasRunning = state.running;
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     state.running = true;
+    state.paused = false;
     state.score = CFG.start.score;
     state.elapsed = 0;
     state.distance = 0;
@@ -88,7 +139,7 @@
     scoreEl.textContent = String(CFG.start.score);
     timeEl.textContent = '0.0';
     overlay.classList.add('hidden');
-    requestAnimationFrame(loop);
+    if (!wasRunning) requestAnimationFrame(loop); // a restart reuses the running loop
   }
 
   function endGame(win) {
@@ -113,7 +164,7 @@
       `;
     }
     overlay.classList.remove('hidden');
-    document.getElementById('startBtn').addEventListener('click', startGame);
+    document.getElementById('startBtn').addEventListener('click', onStartClick);
   }
 
   // ----- Spawning -----
@@ -272,10 +323,27 @@
     ctx.closePath();
   }
 
+  function drawPaused() {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(CFG.text.paused, W / 2, H / 2);
+  }
+
   // ----- Loop -----
   function loop(now) {
     if (!state.running) {
       draw();
+      return;
+    }
+    if (state.paused) {
+      state.lastTime = now;
+      draw();
+      drawPaused();
+      requestAnimationFrame(loop);
       return;
     }
     const dt = Math.min((now - state.lastTime) / 1000, 0.05);
@@ -302,7 +370,7 @@
     }
   }
 
-  startBtn.addEventListener('click', startGame);
+  startBtn.addEventListener('click', onStartClick);
   idleLoop();
 
   // expose for Controller integration

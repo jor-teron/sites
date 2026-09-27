@@ -82,19 +82,23 @@ const TENNIS_THROW_CONFIG = {
     targetFont: 'Arial',                  // font used for emoji targets
   },
 
-  // Key bindings (KeyboardEvent.key). Phone D-pad: arrows, A=Space
+  // Key bindings — matched against KeyboardEvent.code OR .key.
+  // Hub / phone controller: D-pad = arrows, A = Space, Start = Enter, Select = Escape
   keys: {
-    throw: [' ', 'a', 'A'],   // throw ball / play again when finished
-    resetAim: ['r', 'R'],     // reset aim angle and power
-    aimLeft: ['ArrowLeft'],   // decrease angle
-    aimRight: ['ArrowRight'], // increase angle
-    powerUp: ['ArrowUp'],     // more power
-    powerDown: ['ArrowDown'], // less power
+    throw: ['Space', ' ', 'a', 'A'],  // throw ball / play again when finished (A)
+    start: ['Enter', 'KeyP', 'p', 'P'], // pause / resume; play again when finished (Start / P)
+    restart: ['Escape'],              // new game (Select)
+    resetAim: ['KeyR', 'r', 'R'],     // reset aim angle and power
+    aimLeft: ['ArrowLeft'],           // decrease angle (hold)
+    aimRight: ['ArrowRight'],         // increase angle (hold)
+    powerUp: ['ArrowUp'],             // more power (hold)
+    powerDown: ['ArrowDown'],         // less power (hold)
   },
 
   // On-screen text
   text: {
-    controls: '← → to aim | ↑ ↓ for power | SPACE to throw | R to reset', // hint under canvas
-    restart: 'Press SPACE or A to play again',                             // end screen hint
+    paused: 'PAUSED — ENTER to resume',                                   // canvas label while paused
+    controls: '← → aim | ↑ ↓ power | SPACE throw | ENTER pause | R reset aim | ESC new game', // hint under canvas
+    restart: 'Press SPACE / ENTER to play again',                            // end screen hint
   },
 };

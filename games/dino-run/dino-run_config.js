@@ -89,15 +89,24 @@ const DINO_RUN_CONFIG = {
     barCharging: '#3a4050',    // shield bar while charging
   },
 
-  // Key bindings (KeyboardEvent.code). Phone D-pad: arrows, A=Space, B=KeyX, Start=Enter, Select=Escape
+  // Input
+  input: {
+    // After a tap/click starts the game, an Enter within this window is treated
+    // as "start" (ignored) instead of pausing immediately. Clicking to focus the
+    // hub iframe and then pressing Start would otherwise pause the new game.
+    clickStartGraceMs: 1500,
+  },
+
+  // Key bindings — matched against KeyboardEvent.code OR .key.
+  // Phone D-pad: arrows, A=Space, B=KeyX, Start=Enter, Select=Escape
   keys: {
     jump: ['ArrowUp', 'Space', 'KeyW'],  // jump (hold for higher)
     duck: ['ArrowDown', 'KeyS'],         // duck / fast fall
     left: ['ArrowLeft', 'KeyA'],         // move left
     right: ['ArrowRight', 'KeyD'],       // move right
     shield: ['KeyX'],                    // shield
-    start: ['Enter'],                    // start / pause / resume
-    restart: ['Escape'],                 // back to title
+    start: ['Enter', 'KeyP'],            // start / pause / resume (Start / P)
+    restart: ['Escape', 'KeyR'],         // back to title (Select / R)
   },
 
   // On-screen text

@@ -12,8 +12,9 @@ document.querySelector('.controls-hint').textContent = CFG.text.controls;
 document.querySelector('.restart-hint').textContent = CFG.text.restart;
 document.querySelector('.score').lastChild.textContent = '/' + CFG.targetScore;
 
-function isKey(list, key) {
-  return list.includes(key);
+/** True if the event's code or key is in the binding list. */
+function isKey(list, e) {
+  return list.includes(e.code) || list.includes(e.key);
 }
 
 // Game state (initialized from config)
@@ -24,6 +25,8 @@ const game = {
   startTime: null,
   isRunning: false,
   isFinished: false,
+  isPaused: false,
+  pausedAt: 0,
 
   // Physics
   gravity: CFG.physics.gravity,
@@ -48,6 +51,7 @@ function init() {
   game.startTime = Date.now();
   game.isRunning = true;
   game.isFinished = false;
+  game.isPaused = false;
   game.aimAngle = CFG.start.aimAngle;
   game.aimPower = CFG.start.aimPower;
   game.targets = [];
@@ -266,6 +270,15 @@ function draw() {
   if (!game.isFinished) {
     drawAim();
   }
+  if (game.isPaused) {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(CFG.text.paused, canvas.width / 2, canvas.height / 2);
+  }
 }
 
 function gameLoop() {
@@ -281,26 +294,60 @@ function gameLoop() {
 
 // Input handling
 const keys = {};
-window.addEventListener('keydown', (e) => {
-  keys[e.key] = true;
 
-  if (isKey(CFG.keys.throw, e.key)) {
+/** Pause / resume a running game (the timer does not count while paused). */
+function togglePause() {
+  if (game.isFinished) return;
+  if (game.isPaused) {
+    game.isPaused = false;
+    game.startTime += Date.now() - game.pausedAt;
+    game.isRunning = true;
+  } else if (game.isRunning) {
+    game.isPaused = true;
+    game.pausedAt = Date.now();
+    game.isRunning = false;
+  }
+}
+
+/** Focus lost: the keyup would never arrive, so drop held keys. */
+function clearKeys() {
+  for (const k in keys) keys[k] = false;
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.code) keys[e.code] = true;
+  if (e.key) keys[e.key] = true;
+
+  if (isKey(CFG.keys.throw, e)) {
     e.preventDefault();
     if (game.isFinished) {
-      init();
+      if (!e.repeat) init();
     } else if (game.isRunning) {
       throwBall();
     }
+  } else if (isKey(CFG.keys.start, e)) {
+    e.preventDefault();
+    if (e.repeat) return;
+    if (game.isFinished) init();
+    else togglePause();
+  } else if (isKey(CFG.keys.restart, e)) {
+    e.preventDefault();
+    if (!e.repeat) init();
   }
-  if (isKey(CFG.keys.resetAim, e.key)) {
+  if (isKey(CFG.keys.resetAim, e) && !game.isPaused) {
     game.aimAngle = CFG.start.aimAngle;
     game.aimPower = CFG.start.aimPower;
   }
+  if (isKey(CFG.keys.aimLeft, e) || isKey(CFG.keys.aimRight, e) ||
+      isKey(CFG.keys.powerUp, e) || isKey(CFG.keys.powerDown, e)) e.preventDefault();
 });
 
 window.addEventListener('keyup', (e) => {
-  keys[e.key] = false;
+  if (e.code) keys[e.code] = false;
+  if (e.key) keys[e.key] = false;
 });
+window.addEventListener('blur', clearKeys);
+document.addEventListener('visibilitychange', () => { if (document.hidden) clearKeys(); });
 
 function held(list) {
   return list.some(k => keys[k]);

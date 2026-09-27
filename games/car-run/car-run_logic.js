@@ -50,7 +50,8 @@
   best = Number(localStorage.getItem(BEST_KEY) || 0) || 0;
   bestEl.textContent = 'BEST ' + Math.floor(best);
 
-  const isKey = (list, code) => list.indexOf(code) !== -1;
+  // Match a key event against a binding list by KeyboardEvent.code OR .key.
+  const isKey = (list, e) => list.indexOf(e.code) !== -1 || list.indexOf(e.key) !== -1;
   const held = (list) => list.some((c) => keys[c]);
 
   function resize() {
@@ -187,40 +188,48 @@
   }
 
   function onKey(e, down) {
-    const code = e.code;
-    keys[code] = down;
+    if (e.code) keys[e.code] = down;
+    if (e.key) keys[e.key] = down;
     if (down) {
-      if (isKey(K.left, code)) {
+      if (isKey(K.left, e)) {
         player.lane = Math.max(0, player.lane - 1);
         e.preventDefault();
-      } else if (isKey(K.right, code)) {
+      } else if (isKey(K.right, e)) {
         player.lane = Math.min(LANES - 1, player.lane + 1);
         e.preventDefault();
-      } else if (isKey(K.nitro, code)) {
+      } else if (isKey(K.nitro, e)) {
         nitroOn = true;
         e.preventDefault();
-      } else if (isKey(K.jump, code)) {
+      } else if (isKey(K.jump, e)) {
         if (jumpCd <= 0 && jumpT <= 0) {
           jumpT = JUMP_DUR;
           jumpCd = JUMP_CD;
         }
         e.preventDefault();
-      } else if (isKey(K.start, code)) {
+      } else if (isKey(K.start, e)) {
         if (!e.repeat) onStartKey();
         e.preventDefault();
-      } else if (isKey(K.restart, code)) {
-        toTitle();
+      } else if (isKey(K.restart, e)) {
+        if (!e.repeat) toTitle();
         e.preventDefault();
-      } else if (isKey(K.accel, code) || isKey(K.brake, code)) {
+      } else if (isKey(K.accel, e) || isKey(K.brake, e)) {
         e.preventDefault();
       }
     } else {
-      if (isKey(K.nitro, code)) nitroOn = false;
+      if (isKey(K.nitro, e)) nitroOn = false;
     }
   }
 
-  document.addEventListener('keydown', (e) => onKey(e, true));
-  document.addEventListener('keyup', (e) => onKey(e, false));
+  /** Focus lost: the keyup would never arrive, so drop held keys. */
+  function clearKeys() {
+    keys = Object.create(null);
+    nitroOn = false;
+  }
+
+  window.addEventListener('keydown', (e) => onKey(e, true));
+  window.addEventListener('keyup', (e) => onKey(e, false));
+  window.addEventListener('blur', clearKeys);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) clearKeys(); });
   overlay.addEventListener('click', () => {
     if (state === 'title' || state === 'over' || state === 'pause') clickStart();
   });

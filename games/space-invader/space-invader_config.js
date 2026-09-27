@@ -79,17 +79,22 @@ const SPACE_INVADER_CONFIG = {
     enemyBullet: "#ff6b6b",  // enemy bullets
   },
 
-  // Key bindings (KeyboardEvent.code). Phone D-pad: arrows, A=Space
+  // Key bindings — matched against KeyboardEvent.code OR .key.
+  // Hub / phone controller: D-pad = arrows, A = Space, Start = Enter, Select = Escape
   keys: {
-    left: ["ArrowLeft", "KeyA"],   // move left
-    right: ["ArrowRight", "KeyD"], // move right
-    shoot: ["Space"],              // shoot / start / resume
-    pause: ["KeyP"],               // pause
+    left: ["ArrowLeft", "KeyA"],   // move left (hold)
+    right: ["ArrowRight", "KeyD"], // move right (hold)
+    shoot: ["Space", " "],         // shoot (hold) / start / resume (A)
+    start: ["Enter"],              // start / pause / resume / retry (Start)
+    pause: ["KeyP", "p", "P"],     // pause / resume
+    restart: ["Escape", "KeyR", "r", "R"], // back to the start screen (Select / R)
   },
+
 
   // On-screen text
   text: {
-    paused: "PAUSED — SPACE to resume",
+    menu: "Press SPACE / ENTER or TAP to start",
+    paused: "PAUSED — SPACE / ENTER to resume",
     gameOver: "GAME OVER — SPACE / TAP to retry",
     landed: "THEY LANDED — SPACE / TAP to retry",
   },

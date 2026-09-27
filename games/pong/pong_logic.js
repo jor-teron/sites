@@ -70,9 +70,19 @@ const keys = Object.create(null);
 
 // --- Input handlers -----------------------------------------------------
 
-/** True if any of the listed keys is held. */
+/** True if the event's code or key is in the list. */
+function keyIn(list, e) {
+  return list.indexOf(e.code) >= 0 || list.indexOf(e.key) >= 0;
+}
+
+/** True if any of the listed keys (code or key names) is held. */
 function held(list) {
   return list.some(function (k) { return keys[k]; });
+}
+
+/** Forget every held key (focus lost: the keyup would never arrive). */
+function clearKeys() {
+  for (const k in keys) keys[k] = false;
 }
 
 /**
@@ -80,28 +90,37 @@ function held(list) {
  * Pause key toggles pause. Restart key restarts the whole match.
  */
 function onKeyDown(e) {
-  keys[e.key] = true;
+  if (e.code) keys[e.code] = true;
+  if (e.key) keys[e.key] = true;
+  if (keyIn(CFG.keys.up, e) || keyIn(CFG.keys.down, e)) e.preventDefault();
 
   // Pause / unpause
-  if (CFG.keys.pause.includes(e.key) || CFG.keys.pauseCode.includes(e.code)) {
+  if (keyIn(CFG.keys.pause, e)) {
     e.preventDefault();
-    paused = !paused;
-    updateHud();
+    if (!e.repeat) {
+      paused = !paused;
+      updateHud();
+    }
+    return;
   }
 
   // Full reset
-  if (CFG.keys.restart.includes(e.key)) {
-    resetMatch();
+  if (keyIn(CFG.keys.restart, e)) {
+    e.preventDefault();
+    if (!e.repeat) resetMatch();
   }
 }
 
 /** Mark a key as released. */
 function onKeyUp(e) {
-  keys[e.key] = false;
+  if (e.code) keys[e.code] = false;
+  if (e.key) keys[e.key] = false;
 }
 
 window.addEventListener("keydown", onKeyDown);
 window.addEventListener("keyup", onKeyUp);
+window.addEventListener("blur", clearKeys);
+document.addEventListener("visibilitychange", function () { if (document.hidden) clearKeys(); });
 
 // --- Helpers ------------------------------------------------------------
 

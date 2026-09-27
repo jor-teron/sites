@@ -136,7 +136,7 @@ const CAR_RUN_CONFIG = {
     clickStartGraceMs: 1500,
   },
 
-  // Key bindings (KeyboardEvent.code). Phone D-pad: arrows, A=Space, B=KeyX, Start=Enter, Select=Escape
+  // Key bindings — matched against KeyboardEvent.code OR .key. Phone D-pad: arrows, A=Space, B=KeyX, Start=Enter, Select=Escape
   keys: {
     left: ['ArrowLeft', 'KeyA'],     // lane left
     right: ['ArrowRight', 'KeyD'],   // lane right
@@ -144,8 +144,8 @@ const CAR_RUN_CONFIG = {
     brake: ['ArrowDown', 'KeyS'],    // brake (hold)
     nitro: ['Space'],                // nitro (hold)
     jump: ['KeyX'],                  // jump
-    start: ['Enter'],                // start / pause / resume
-    restart: ['Escape'],             // back to title
+    start: ['Enter', 'KeyP'],        // start / pause / resume (Start / P)
+    restart: ['Escape', 'KeyR'],     // back to title (Select / R)
   },
 
   // On-screen text

@@ -7,7 +7,7 @@ const PONG_CONFIG = {
   // On-screen text
   text: {
     title: "Pong",                                        // heading above the court
-    hint: "W/S or ↑/↓ move · Space pause · R restart",    // controls reminder
+    hint: "W/S or ↑/↓ move · Enter/Space pause · Esc/R restart",    // controls reminder
     pausedSuffix: "  ·  PAUSED",                           // appended to HUD while paused
     scoreSeparator: " — ",                                 // between left and right score
   },
@@ -60,12 +60,12 @@ const PONG_CONFIG = {
     dash: [10, 12],     // dash pattern [on, off]
   },
 
-  // Key bindings (KeyboardEvent.key values; phone D-pad sends Arrow keys / Space)
+  // Key bindings — matched against KeyboardEvent.code OR .key.
+  // Hub / phone controller: D-pad = arrows, A = Space, Start = Enter, Select = Escape.
   keys: {
-    up: ["w", "W", "ArrowUp"],       // move paddle up
-    down: ["s", "S", "ArrowDown"],   // move paddle down
-    pause: [" "],                    // toggle pause (also matched by code "Space")
-    pauseCode: ["Space"],            // KeyboardEvent.code values that toggle pause
-    restart: ["r", "R"],             // full match reset
+    up: ["ArrowUp", "KeyW", "w", "W"],             // move paddle up (hold)
+    down: ["ArrowDown", "KeyS", "s", "S"],         // move paddle down (hold)
+    pause: ["Enter", "Space", " ", "KeyP", "p", "P"], // toggle pause (Start / A / P)
+    restart: ["Escape", "KeyR", "r", "R"],         // full match reset (Select / R)
   },
 };

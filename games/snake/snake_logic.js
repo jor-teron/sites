@@ -21,7 +21,8 @@
   const CL = CFG.colors;
   const SZ = CFG.sizes;
   document.getElementById('help').textContent = TX.help;
-  const isKey = (list, code) => list.indexOf(code) !== -1;
+  // Match a key event against a binding list by KeyboardEvent.code OR .key.
+  const isKey = (list, e) => list.indexOf(e.code) !== -1 || list.indexOf(e.key) !== -1;
 
   const COLS = CFG.grid.cols;
   const ROWS = CFG.grid.rows;
@@ -172,32 +173,33 @@
   }
 
   function onKey(e, down) {
-    const code = e.code;
     if (down) {
-      if (isKey(K.up, code)) { queueDir('up'); e.preventDefault(); }
-      else if (isKey(K.down, code)) { queueDir('down'); e.preventDefault(); }
-      else if (isKey(K.left, code)) { queueDir('left'); e.preventDefault(); }
-      else if (isKey(K.right, code)) { queueDir('right'); e.preventDefault(); }
-      else if (isKey(K.boost, code)) { boost = true; e.preventDefault(); }
-      else if (isKey(K.wrap, code)) {
+      if (isKey(K.up, e)) { queueDir('up'); e.preventDefault(); }
+      else if (isKey(K.down, e)) { queueDir('down'); e.preventDefault(); }
+      else if (isKey(K.left, e)) { queueDir('left'); e.preventDefault(); }
+      else if (isKey(K.right, e)) { queueDir('right'); e.preventDefault(); }
+      else if (isKey(K.boost, e)) { boost = true; e.preventDefault(); }
+      else if (isKey(K.wrap, e)) {
         if (!e.repeat) {
           wrap = !wrap;
           wrapInd.className = wrap ? 'wrap-on' : 'wrap-off';
         }
-      } else if (isKey(K.start, code)) { if (!e.repeat) onStartKey(); e.preventDefault(); }
-      else if (isKey(K.restart, code)) { toTitle(); e.preventDefault(); }
+      } else if (isKey(K.start, e)) { if (!e.repeat) onStartKey(); e.preventDefault(); }
+      else if (isKey(K.restart, e)) { if (!e.repeat) toTitle(); e.preventDefault(); }
     } else {
-      if (isKey(K.boost, code)) boost = false;
+      if (isKey(K.boost, e)) boost = false;
     }
   }
 
-  document.addEventListener('keydown', (e) => onKey(e, true));
-  document.addEventListener('keyup', (e) => onKey(e, false));
-  window.addEventListener('message', (ev) => {
-    const d = ev.data;
-    if (!d || d.type !== 'hub-dpad') return;
-    // Already mapped to keys by hub; ignore duplicate if desired
-  });
+  /** Focus lost: the keyup would never arrive, so drop held keys. */
+  function clearKeys() {
+    boost = false;
+  }
+
+  window.addEventListener('keydown', (e) => onKey(e, true));
+  window.addEventListener('keyup', (e) => onKey(e, false));
+  window.addEventListener('blur', clearKeys);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) clearKeys(); });
   overlay.addEventListener('click', () => {
     if (state === 'title' || state === 'over' || state === 'pause') clickStart();
   });

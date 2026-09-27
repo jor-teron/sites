@@ -85,12 +85,16 @@ const DESERT_ROAD_CONFIG = {
     { maxSeconds: Infinity, rank: '🏁 Finished', message: 'You made it!' },
   ],
 
-  // Key bindings (KeyboardEvent.key). Phone D-pad: arrows, A=Space
+  // Key bindings — matched against KeyboardEvent.code OR .key.
+  // Hub / phone controller: D-pad = arrows, A = Space, Start = Enter, Select = Escape
   keys: {
-    left: ['ArrowLeft', 'a', 'A'],    // steer left
-    right: ['ArrowRight', 'd', 'D'],  // steer right
-    start: [' '],                     // start a run when not running
+    left: ['ArrowLeft', 'KeyA', 'a', 'A'],    // steer left (hold)
+    right: ['ArrowRight', 'KeyD', 'd', 'D'],  // steer right (hold)
+    start: ['Enter', 'Space', ' '],           // start a run; Enter also pauses / resumes (Start / A)
+    pause: ['Enter', 'KeyP', 'p', 'P'],       // pause / resume while driving (Start / P)
+    restart: ['Escape', 'KeyR', 'r', 'R'],    // restart the run (Select / R)
   },
+
 
   // On-screen text (HTML allowed)
   text: {
@@ -99,5 +103,6 @@ const DESERT_ROAD_CONFIG = {
     crashTitle: '💥 Crash!',          // overlay heading on crash
     crashBody: 'You scored <strong>{score}</strong> points.<br>Try again!', // {score} replaced
     crashButton: 'Try Again',         // button on crash
+    paused: 'PAUSED — Enter to resume', // canvas label while paused
   },
 };

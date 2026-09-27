@@ -23,9 +23,9 @@ var SHAPES = CFG.shapes;
 var PIECE_NAMES = CFG.pieceNames;
 var KICKS = CFG.kicks;
 
-/* True if key is in the binding list. */
-function isKey(list, key) {
-  return list.indexOf(key) !== -1;
+/* True if the event's code or key is in the binding list. */
+function isKey(list, e) {
+  return list.indexOf(e.code) !== -1 || list.indexOf(e.key) !== -1;
 }
 
 /* --- DOM handles --- */
@@ -505,14 +505,18 @@ function resetGame() {
  * Handle movement, rotate, drop, pause, restart.
  * --------------------------------------------------------------------------- */
 function onKeyDown(e) {
-  var key = e.key;
-  if (isKey(CFG.keys.restart, key)) {
-    resetGame();
+  if (isKey(CFG.keys.restart, e)) {
+    if (!e.repeat) resetGame();
     e.preventDefault();
     return;
   }
-  if (isKey(CFG.keys.pause, key)) {
-    if (!gameOver) {
+  if (isKey(CFG.keys.start, e) && gameOver) {
+    if (!e.repeat) resetGame();
+    e.preventDefault();
+    return;
+  }
+  if (isKey(CFG.keys.pause, e) || isKey(CFG.keys.start, e)) {
+    if (!gameOver && !e.repeat) {
       paused = !paused;
       elStatus.textContent = paused ? CFG.text.paused : "";
     }
@@ -522,19 +526,19 @@ function onKeyDown(e) {
   if (gameOver || paused) {
     return;
   }
-  if (isKey(CFG.keys.left, key)) {
+  if (isKey(CFG.keys.left, e)) {
     tryMove(-1, 0);
     e.preventDefault();
-  } else if (isKey(CFG.keys.right, key)) {
+  } else if (isKey(CFG.keys.right, e)) {
     tryMove(1, 0);
     e.preventDefault();
-  } else if (isKey(CFG.keys.softDrop, key)) {
+  } else if (isKey(CFG.keys.softDrop, e)) {
     softDrop = true;
     e.preventDefault();
-  } else if (isKey(CFG.keys.rotate, key)) {
+  } else if (isKey(CFG.keys.rotate, e)) {
     tryRotate();
     e.preventDefault();
-  } else if (isKey(CFG.keys.hardDrop, key)) {
+  } else if (isKey(CFG.keys.hardDrop, e)) {
     hardDrop();
     e.preventDefault();
   }
@@ -545,13 +549,20 @@ function onKeyDown(e) {
  * Stop soft drop when the down key is released.
  * --------------------------------------------------------------------------- */
 function onKeyUp(e) {
-  if (isKey(CFG.keys.softDrop, e.key)) {
+  if (isKey(CFG.keys.softDrop, e)) {
     softDrop = false;
   }
 }
 
+/* Focus lost: the keyup would never arrive, so drop any held key. */
+function clearKeys() {
+  softDrop = false;
+}
+
 /* --- Wire events and start --- */
-document.addEventListener("keydown", onKeyDown);
-document.addEventListener("keyup", onKeyUp);
+window.addEventListener("keydown", onKeyDown);
+window.addEventListener("keyup", onKeyUp);
+window.addEventListener("blur", clearKeys);
+document.addEventListener("visibilitychange", function () { if (document.hidden) clearKeys(); });
 resetGame();
 requestAnimationFrame(tick);

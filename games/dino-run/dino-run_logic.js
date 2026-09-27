@@ -20,7 +20,8 @@
   const CL = CFG.colors;
   const SP = CFG.spawn;
   const PH = CFG.physics;
-  const isKey = (list, code) => list.indexOf(code) !== -1;
+  // Match a key event against a binding list by KeyboardEvent.code OR .key.
+  const isKey = (list, e) => list.indexOf(e.code) !== -1 || list.indexOf(e.key) !== -1;
   const held = (list) => list.some((c) => keys[c]);
   document.getElementById('help').textContent = TX.help;
 
@@ -43,6 +44,7 @@
   let keys = Object.create(null);
   let shieldT = 0, shieldCd = 0, jumpHeld = false;
   let last = 0, spawnAcc = 0;
+  let clickStartAt = -Infinity; // time a tap/click started the game
   let blink = 0;
 
   best = Number(localStorage.getItem(BEST_KEY) || 0) || 0;
@@ -172,6 +174,22 @@
     }
   }
 
+  /** Start key: toggles pause, except right after a tap/click started the game. */
+  function onStartKey() {
+    if (state === 'play' && performance.now() - clickStartAt < CFG.input.clickStartGraceMs) {
+      clickStartAt = -Infinity; // swallow once: the game is already running
+      return;
+    }
+    startPlay();
+  }
+
+  /** Tap/click start (title / game over / resume from pause). */
+  function clickStart() {
+    const wasStarting = state === 'title' || state === 'over';
+    startPlay();
+    if (wasStarting && state === 'play') clickStartAt = performance.now();
+  }
+
   function toTitle() {
     state = 'title';
     reset();
@@ -187,33 +205,41 @@
   }
 
   function onKey(e, down) {
-    const code = e.code;
-    keys[code] = down;
+    if (e.code) keys[e.code] = down;
+    if (e.key) keys[e.key] = down;
     if (down) {
-      if (isKey(K.jump, code)) {
+      if (isKey(K.jump, e)) {
         jump();
         e.preventDefault();
-      } else if (isKey(K.duck, code)) {
+      } else if (isKey(K.duck, e)) {
         e.preventDefault();
-      } else if (isKey(K.shield, code)) {
+      } else if (isKey(K.shield, e)) {
         if (shieldCd <= 0 && shieldT <= 0) {
           shieldT = SHIELD_DUR;
           shieldCd = SHIELD_CD;
         }
-      } else if (isKey(K.start, code)) { startPlay(); e.preventDefault(); }
-      else if (isKey(K.restart, code)) { toTitle(); e.preventDefault(); }
+      } else if (isKey(K.start, e)) { if (!e.repeat) onStartKey(); e.preventDefault(); }
+      else if (isKey(K.restart, e)) { if (!e.repeat) toTitle(); e.preventDefault(); }
     } else {
-      if (isKey(K.jump, code)) jumpHeld = false;
+      if (isKey(K.jump, e)) jumpHeld = false;
     }
   }
 
-  document.addEventListener('keydown', (e) => onKey(e, true));
-  document.addEventListener('keyup', (e) => onKey(e, false));
+  /** Focus lost: the keyup would never arrive, so drop held keys. */
+  function clearKeys() {
+    keys = Object.create(null);
+    jumpHeld = false;
+  }
+
+  window.addEventListener('keydown', (e) => onKey(e, true));
+  window.addEventListener('keyup', (e) => onKey(e, false));
+  window.addEventListener('blur', clearKeys);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) clearKeys(); });
   overlay.addEventListener('click', () => {
-    if (state === 'title' || state === 'over' || state === 'pause') startPlay();
+    if (state === 'title' || state === 'over' || state === 'pause') clickStart();
   });
   canvas.addEventListener('click', () => {
-    if (state === 'title' || state === 'over') startPlay();
+    if (state === 'title' || state === 'over') clickStart();
     else if (state === 'play') jump();
   });
 

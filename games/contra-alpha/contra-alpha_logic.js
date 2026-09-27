@@ -59,18 +59,63 @@ var AudioBus = {
 var keys = {};
 
 /**
+ * True if the event's code or key is in the list.
+ * @param {string[]} list
+ * @param {KeyboardEvent} e
+ */
+function keyIn(list, e) {
+  return list.indexOf(e.code) >= 0 || list.indexOf(e.key) >= 0;
+}
+
+/** Forget every held key (focus lost / screen change: the keyup may never arrive). */
+function clearKeys() {
+  for (var k in keys) keys[k] = false;
+}
+
+/** True while the start menu / end overlay is on screen. */
+function isShown(id) {
+  return !document.getElementById(id).classList.contains("hidden");
+}
+
+/**
+ * Menu / end-screen / pause keys (Enter / Space / Escape).
+ * @param {KeyboardEvent} e
+ */
+function onScreenKey(e) {
+  if (isShown("menu")) {
+    if (keyIn(CFG.keys.start, e)) { e.preventDefault(); startGame(); }
+  } else if (isShown("overlay")) {
+    if (keyIn(CFG.keys.start, e)) { e.preventDefault(); startGame(); }
+    else if (keyIn(CFG.keys.menu, e)) { e.preventDefault(); showMenu(); }
+  } else if (state && (state.running || state.paused)) {
+    if (keyIn(CFG.keys.pause, e)) { e.preventDefault(); togglePause(); }
+    else if (keyIn(CFG.keys.menu, e)) { e.preventDefault(); showMenu(); }
+  }
+}
+
+/**
  * Bind keyboard listeners.
  */
 function bindInput() {
   window.addEventListener("keydown", function (e) {
-    keys[e.code] = true;
-    if (CFG.keys.preventDefault.indexOf(e.code) >= 0) {
+    if (!e.repeat) {
+      var before = isShown("menu") || isShown("overlay");
+      onScreenKey(e);
+      // the key that started a match must not also jump / fire
+      if (before && !(isShown("menu") || isShown("overlay"))) return;
+    }
+    if (e.code) keys[e.code] = true;
+    if (e.key) keys[e.key] = true;
+    if (keyIn(CFG.keys.preventDefault, e)) {
       e.preventDefault();
     }
   });
   window.addEventListener("keyup", function (e) {
-    keys[e.code] = false;
+    if (e.code) keys[e.code] = false;
+    if (e.key) keys[e.key] = false;
   });
+  window.addEventListener("blur", clearKeys);
+  document.addEventListener("visibilitychange", function () { if (document.hidden) clearKeys(); });
 }
 
 /**
@@ -467,6 +512,18 @@ function draw() {
     ctx.fillStyle = COL.playerGun;
     ctx.fillRect(p.x - cam + (p.facing > 0 ? p.w - 4 : 0), p.y + 10, 4, 8);
   }
+
+  if (state.paused) {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 32px monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(CFG.text.paused, W / 2, H / 2);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+  }
 }
 
 /* ---------- loop ---------- */
@@ -492,12 +549,40 @@ function loop(ts) {
  * Start a match from the selected duration.
  */
 function startGame() {
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  clearKeys();
   var sel = document.getElementById("duration");
   var dur = parseInt(sel.value, 10) || DEFAULT_DURATION;
   state = newState(dur);
   document.getElementById("menu").classList.add("hidden");
   document.getElementById("overlay").classList.add("hidden");
   updateHud();
+}
+
+/**
+ * Back to the start menu (from the end screen or a running / paused match).
+ */
+function showMenu() {
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  if (state) { state.running = false; state.paused = false; }
+  clearKeys();
+  document.getElementById("overlay").classList.add("hidden");
+  document.getElementById("menu").classList.remove("hidden");
+}
+
+/**
+ * Pause / resume a running match.
+ */
+function togglePause() {
+  if (!state) return;
+  if (state.paused) {
+    state.paused = false;
+    state.running = true;
+  } else if (state.running) {
+    state.paused = true;
+    state.running = false;
+    clearKeys();
+  }
 }
 
 /**
@@ -508,10 +593,7 @@ function init() {
   ctx = canvas.getContext("2d");
   bindInput();
   document.getElementById("startBtn").addEventListener("click", startGame);
-  document.getElementById("retryBtn").addEventListener("click", function () {
-    document.getElementById("overlay").classList.add("hidden");
-    document.getElementById("menu").classList.remove("hidden");
-  });
+  document.getElementById("retryBtn").addEventListener("click", showMenu);
   requestAnimationFrame(loop);
 }
 

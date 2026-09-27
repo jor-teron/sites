@@ -109,28 +109,31 @@ var TETRIS_CONFIG = {
   /* Wall-kick offsets tried after a rotate fails in place */
   kicks: [[0, 0], [-1, 0], [1, 0], [0, -1], [-2, 0], [2, 0]],
 
-  /* Key bindings (KeyboardEvent.key). Phone D-pad: arrows, A=Space, B=x */
+  /* Key bindings — matched against KeyboardEvent.code OR .key.
+     Hub / phone controller: D-pad = arrows, A = Space, B = x, Start = Enter, Select = Escape */
   keys: {
-    left: ["ArrowLeft"],            /* move left */
-    right: ["ArrowRight"],          /* move right */
-    softDrop: ["ArrowDown"],        /* hold for soft drop */
-    rotate: ["ArrowUp", "x", "X"],  /* rotate clockwise */
-    hardDrop: [" "],                /* slam to floor */
-    pause: ["p", "P"],              /* toggle pause */
-    restart: ["r", "R"]             /* new game */
+    left: ["ArrowLeft", "KeyA"],                 /* move left */
+    right: ["ArrowRight", "KeyD"],               /* move right */
+    softDrop: ["ArrowDown", "KeyS"],             /* hold for soft drop */
+    rotate: ["ArrowUp", "KeyW", "KeyX", "x", "X"], /* rotate clockwise (B) */
+    hardDrop: ["Space", " "],                    /* slam to floor (A) */
+    start: ["Enter"],                            /* pause / resume; new game after game over (Start) */
+    pause: ["KeyP", "p", "P"],                   /* toggle pause */
+    restart: ["Escape", "KeyR", "r", "R"]        /* new game (Select / R) */
   },
+
 
   /* On-screen text */
   text: {
     title: "TETRIS",                              /* sidebar heading */
     paused: "PAUSED",                             /* status while paused */
-    gameOver: "GAME OVER — R to restart",         /* status on game over */
+    gameOver: "GAME OVER — Enter / R to restart",         /* status on game over */
     helpHtml:                                     /* controls help (HTML) */
       '<kbd>←</kbd> <kbd>→</kbd> move<br />' +
       '<kbd>↑</kbd> / <kbd>X</kbd> rotate<br />' +
       '<kbd>↓</kbd> soft drop<br />' +
       '<kbd>SPACE</kbd> hard drop<br />' +
-      '<kbd>P</kbd> pause<br />' +
-      '<kbd>R</kbd> restart'
+      '<kbd>Enter</kbd> / <kbd>P</kbd> pause<br />' +
+      '<kbd>Esc</kbd> / <kbd>R</kbd> restart'
   }
 };
