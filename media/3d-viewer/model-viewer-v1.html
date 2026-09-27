@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<!--
+  File: model-viewer-v1.html
+  Project: Simple 3D GLB / glTF model viewer (Alpha)
+  Purpose: Load a free .glb, orbit camera, list and play animation clips.
+           Not a game.
+
+  Alpha notes:
+    - Format: GLB / glTF only.
+    - Play/Pause is one button. Spacebar toggles it.
+    - Phone portrait: 3D on top, controls below.
+    - PC / wide: 3D left, clip list right.
+    - Drag and drop a .glb onto the page.
+    - Last successful URL is saved in localStorage.
+    - Landscape lock is NOT forced. Browsers ignore it on normal pages.
+      We only hint; layout stays usable in portrait.
+
+  How to use:
+    1. Open in a browser.
+    2. Default: Khronos Fox (Survey / Walk / Run).
+    3. Paste URL, pick a file, or drop a .glb.
+    4. Drag to rotate, scroll to zoom. Space = play/pause.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Model Viewer Alpha</title>
+  <style>
+    /* Page shell */
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #111;
+      color: #eee;
+      font-family: sans-serif;
+    }
+
+    /* Wide = model left, panel right. Narrow = model top, panel bottom */
+    #app {
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(42vh, 1fr) auto;
+      height: 100%;
+      min-height: 100dvh;
+    }
+
+    /* 3D stage */
+    #stage {
+      position: relative;
+      min-height: 42vh;
+      background: #1a1a1a;
+    }
+
+    #stage canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Drop overlay */
+    #dropMask {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(40, 90, 180, 0.35);
+      border: 2px dashed #9cf;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      pointer-events: none;
+    }
+
+    #dropMask.on {
+      display: flex;
+    }
+
+    /* Controls */
+    #panel {
+      background: #1c1c1c;
+      border-top: 1px solid #333;
+      padding: 8px;
+      max-height: 48vh;
+      overflow: auto;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    #urlInput {
+      flex: 1;
+      min-width: 140px;
+      padding: 6px;
+    }
+
+    button, select, input[type="file"] {
+      padding: 6px 8px;
+    }
+
+    #playBtn {
+      min-width: 88px;
+    }
+
+    #status {
+      font-size: 12px;
+      opacity: 0.85;
+      width: 100%;
+    }
+
+    /* Clip list */
+    #clipList {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    #clipList li {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px;
+      border-bottom: 1px solid #2a2a2a;
+      cursor: pointer;
+    }
+
+    #clipList li.active {
+      background: #2a4a6a;
+    }
+
+    #clipList .name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #clipList .dur {
+      opacity: 0.7;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    /* PC / tablet landscape-ish */
+    @media (min-width: 800px) and (orientation: landscape) {
+      #app {
+        grid-template-columns: 1fr 280px;
+        grid-template-rows: 1fr;
+      }
+      #panel {
+        border-top: none;
+        border-left: 1px solid #333;
+        max-height: none;
+      }
+    }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <div id="stage">
+      <div id="dropMask">Drop GLB / glTF here</div>
+    </div>
+    <aside id="panel">
+      <div class="row">
+        <input id="urlInput" type="text" placeholder="https://… .glb" />
+        <button id="loadUrlBtn" type="button">Load URL</button>
+      </div>
+      <div class="row">
+        <input id="fileInput" type="file" accept=".glb,.gltf" />
+        <button id="playBtn" type="button">Play</button>
+        <button id="resetCamBtn" type="button">Reset cam</button>
+      </div>
+      <div id="status">Ready.</div>
+      <ul id="clipList"></ul>
+    </aside>
+  </div>
+
+  <script type="module">
+    /**
+     * Model Viewer Alpha
+     * Loads one glTF/GLB, lists clips with duration, play/pause + Space.
+     */
+
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+    // --- Storage key for last successful URL ---
+    const LAST_URL_KEY = "mv_alpha_last_url";
+
+    // --- Default sample (small, animated, public) ---
+    const DEFAULT_URL = "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Fox/glTF-Binary/Fox.glb";
+
+    // --- DOM ---
+    const stage = document.getElementById("stage");
+    const dropMask = document.getElementById("dropMask");
+    const urlInput = document.getElementById("urlInput");
+    const loadUrlBtn = document.getElementById("loadUrlBtn");
+    const fileInput = document.getElementById("fileInput");
+    const playBtn = document.getElementById("playBtn");
+    const resetCamBtn = document.getElementById("resetCamBtn");
+    const statusEl = document.getElementById("status");
+    const clipListEl = document.getElementById("clipList");
+
+    // --- Scene ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x202020);
+
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+    camera.position.set(3, 2, 5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    stage.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.1);
+    scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    dirLight.position.set(4, 8, 6);
+    scene.add(dirLight);
+
+    const ground = new THREE.Mesh(
+      new THREE.CircleGeometry(8, 48),
+      new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 1 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
+
+    // --- Runtime ---
+    const loader = new GLTFLoader();
+    const clock = new THREE.Clock();
+    let currentRoot = null;
+    let mixer = null;
+    let currentAction = null;
+    let currentClipIndex = 0;
+    let isPlaying = false;
+    let lastFramedObject = null;
+
+    /**
+     * Show a short status line.
+     * @param {string} text
+     */
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    /**
+     * Format clip length as m:ss.s
+     * @param {number} seconds
+     * @returns {string}
+     */
+    function formatDuration(seconds) {
+      const s = Math.max(0, Number(seconds) || 0);
+      const m = Math.floor(s / 60);
+      const rem = s - m * 60;
+      return m + ":" + rem.toFixed(1).padStart(4, "0");
+    }
+
+    /**
+     * Fit the renderer to the stage box.
+     */
+    function resizeRenderer() {
+      const w = stage.clientWidth || window.innerWidth;
+      const h = stage.clientHeight || window.innerHeight;
+      camera.aspect = w / Math.max(h, 1);
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h, false);
+    }
+
+    /**
+     * Remove previous model and mixer.
+     */
+    function clearModel() {
+      if (currentRoot) {
+        scene.remove(currentRoot);
+        currentRoot = null;
+      }
+      if (mixer) {
+        mixer.stopAllAction();
+        mixer = null;
+      }
+      currentAction = null;
+      isPlaying = false;
+      playBtn.textContent = "Play";
+      clipListEl.innerHTML = "";
+    }
+
+    /**
+     * Frame camera on an object.
+     * @param {THREE.Object3D} object
+     */
+    function frameObject(object) {
+      lastFramedObject = object;
+      const box = new THREE.Box3().setFromObject(object);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
+      const dist = maxDim * 2.2;
+      controls.target.copy(center);
+      camera.position.set(center.x + dist * 0.6, center.y + dist * 0.45, center.z + dist);
+      camera.near = maxDim / 100;
+      camera.far = maxDim * 50;
+      camera.updateProjectionMatrix();
+      controls.update();
+    }
+
+    /**
+     * Build the clip list UI.
+     * @param {THREE.AnimationClip[]} clips
+     */
+    function renderClipList(clips) {
+      clipListEl.innerHTML = "";
+      if (!clips || clips.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "(no animations)";
+        clipListEl.appendChild(li);
+        return;
+      }
+      clips.forEach(function addRow(clip, index) {
+        const li = document.createElement("li");
+        li.dataset.index = String(index);
+        if (index === currentClipIndex) li.classList.add("active");
+
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "name";
+        nameSpan.textContent = clip.name || ("Clip " + index);
+
+        const durSpan = document.createElement("span");
+        durSpan.className = "dur";
+        durSpan.textContent = formatDuration(clip.duration);
+
+        li.appendChild(nameSpan);
+        li.appendChild(durSpan);
+        li.addEventListener("click", function onPick() {
+          playClip(index, true);
+        });
+        clipListEl.appendChild(li);
+      });
+    }
+
+    /**
+     * Mark the active row.
+     * @param {number} index
+     */
+    function highlightClip(index) {
+      const rows = clipListEl.querySelectorAll("li");
+      rows.forEach(function mark(row) {
+        row.classList.toggle("active", row.dataset.index === String(index));
+      });
+    }
+
+    /**
+     * Play a clip by index.
+     * @param {number} index
+     * @param {boolean} startNow
+     */
+    function playClip(index, startNow) {
+      const clips = currentRoot && currentRoot.userData.clips ? currentRoot.userData.clips : [];
+      const clip = clips[index];
+      if (!clip || !mixer) return;
+      if (currentAction) currentAction.stop();
+      currentClipIndex = index;
+      currentAction = mixer.clipAction(clip);
+      currentAction.reset();
+      currentAction.setLoop(THREE.LoopRepeat, Infinity);
+      mixer.timeScale = 1;
+      if (startNow) {
+        currentAction.play();
+        isPlaying = true;
+        playBtn.textContent = "Pause";
+        setStatus("Playing: " + (clip.name || index) + "  (" + formatDuration(clip.duration) + ")");
+      } else {
+        currentAction.play();
+        mixer.timeScale = 0;
+        isPlaying = false;
+        playBtn.textContent = "Play";
+      }
+      highlightClip(index);
+    }
+
+    /**
+     * Toggle play / pause.
+     */
+    function togglePlay() {
+      if (!mixer || !currentAction) return;
+      if (isPlaying) {
+        mixer.timeScale = 0;
+        isPlaying = false;
+        playBtn.textContent = "Play";
+        setStatus("Paused.");
+      } else {
+        mixer.timeScale = 1;
+        currentAction.play();
+        isPlaying = true;
+        playBtn.textContent = "Pause";
+        setStatus("Playing.");
+      }
+    }
+
+    /**
+     * Attach a loaded glTF.
+     * @param {object} gltf
+     * @param {string} label
+     */
+    function onGltfLoaded(gltf, label) {
+      clearModel();
+      currentRoot = gltf.scene;
+      currentRoot.userData.clips = gltf.animations || [];
+      scene.add(currentRoot);
+      mixer = new THREE.AnimationMixer(currentRoot);
+      currentClipIndex = 0;
+      renderClipList(gltf.animations);
+      frameObject(currentRoot);
+      if (gltf.animations && gltf.animations.length) {
+        playClip(0, true);
+      }
+      const n = (gltf.animations && gltf.animations.length) || 0;
+      setStatus("Loaded " + (label || "model") + ". Clips: " + n);
+    }
+
+    /**
+     * Load from a remote URL and remember it if it works.
+     * @param {string} url
+     */
+    function loadFromUrl(url) {
+      setStatus("Loading URL…");
+      loader.load(
+        url,
+        function onOk(gltf) {
+          try {
+            localStorage.setItem(LAST_URL_KEY, url);
+          } catch (e) {}
+          urlInput.value = url;
+          onGltfLoaded(gltf, url.split("/").pop());
+        },
+        undefined,
+        function onError(err) {
+          setStatus("URL failed (CORS or bad file). Use local / drop. " + (err && err.message ? err.message : ""));
+        }
+      );
+    }
+
+    /**
+     * Load a local File.
+     * @param {File} file
+     */
+    function loadFromFile(file) {
+      if (!file) return;
+      const name = file.name || "file";
+      const lower = name.toLowerCase();
+      if (!lower.endsWith(".glb") && !lower.endsWith(".gltf")) {
+        setStatus("Need a .glb or .gltf file.");
+        return;
+      }
+      setStatus("Loading " + name + "…");
+      const objectUrl = URL.createObjectURL(file);
+      loader.load(
+        objectUrl,
+        function onOk(gltf) {
+          URL.revokeObjectURL(objectUrl);
+          onGltfLoaded(gltf, name);
+        },
+        undefined,
+        function onError(err) {
+          URL.revokeObjectURL(objectUrl);
+          setStatus("File failed. " + (err && err.message ? err.message : ""));
+        }
+      );
+    }
+
+    /**
+     * Hint landscape only. Do not lock (browsers block it on normal pages).
+     */
+    function hintOrientation() {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock("landscape").catch(function ignore() {});
+      }
+    }
+
+    /**
+     * Main draw loop.
+     */
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      if (mixer) mixer.update(delta);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // --- Events ---
+    loadUrlBtn.addEventListener("click", function onLoadClick() {
+      const url = urlInput.value.trim();
+      if (url) loadFromUrl(url);
+    });
+
+    fileInput.addEventListener("change", function onFileChange(ev) {
+      const file = ev.target.files && ev.target.files[0];
+      if (file) loadFromFile(file);
+    });
+
+    playBtn.addEventListener("click", togglePlay);
+
+    resetCamBtn.addEventListener("click", function onResetCam() {
+      if (lastFramedObject) frameObject(lastFramedObject);
+    });
+
+    window.addEventListener("keydown", function onKey(ev) {
+      if (ev.code !== "Space") return;
+      const tag = (ev.target && ev.target.tagName) || "";
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      ev.preventDefault();
+      togglePlay();
+    });
+
+    window.addEventListener("resize", resizeRenderer);
+
+    // Drag and drop on the whole page
+    ;["dragenter", "dragover"].forEach(function bindOver(type) {
+      window.addEventListener(type, function onDragOver(ev) {
+        ev.preventDefault();
+        dropMask.classList.add("on");
+      });
+    });
+
+    ;["dragleave", "drop"].forEach(function bindLeave(type) {
+      window.addEventListener(type, function onDragEnd(ev) {
+        ev.preventDefault();
+        if (type === "dragleave" && ev.target !== document.documentElement) return;
+        dropMask.classList.remove("on");
+      });
+    });
+
+    window.addEventListener("drop", function onDrop(ev) {
+      ev.preventDefault();
+      dropMask.classList.remove("on");
+      const file = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
+      if (file) loadFromFile(file);
+    });
+
+    // Start
+    resizeRenderer();
+    hintOrientation();
+    animate();
+
+    let startUrl = DEFAULT_URL;
+    try {
+      const saved = localStorage.getItem(LAST_URL_KEY);
+      if (saved) startUrl = saved;
+    } catch (e) {}
+    urlInput.value = startUrl;
+    loadFromUrl(startUrl);
+  </script>
+</body>
+</html>

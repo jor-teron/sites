@@ -1,0 +1,145 @@
+/*
+ * AR Theme Game — Main app
+ * Starts camera, loads default Pet theme, handles taps and DLC switch.
+ * Header: app.js
+ */
+
+/**
+ * Registry of all theme packs.
+ * Pet is the default. Zombie and Ghost are DLC stubs.
+ */
+const THEMES = {
+  pet: PetTheme,
+  zombie: ZombieTheme,
+  ghost: GhostTheme
+};
+
+/**
+ * Currently loaded theme object
+ */
+let activeTheme = null;
+
+/**
+ * Catch / blast / find score
+ */
+let score = 0;
+
+/**
+ * HUD score node
+ */
+let scoreEl = null;
+
+/**
+ * HUD theme name node
+ */
+let themeEl = null;
+
+/**
+ * Center message node
+ */
+let msgEl = null;
+
+/**
+ * Boot the game after the DOM is ready.
+ */
+async function boot() {
+  // Cache HUD nodes
+  const video = document.getElementById("camera");
+  const canvas = document.getElementById("view");
+  scoreEl = document.getElementById("score");
+  themeEl = document.getElementById("theme-name");
+  msgEl = document.getElementById("msg");
+
+  initAR(canvas);
+
+  try {
+    await startCamera(video);
+    hideMsg();
+  } catch (err) {
+    showMsg("Camera blocked. Allow camera and reload.");
+    console.error(err);
+  }
+
+  // Default theme is Pet
+  loadTheme("pet");
+
+  // Tap / click to catch the target
+  canvas.addEventListener("pointerdown", onTap);
+
+  // Theme / DLC buttons
+  document.querySelectorAll("[data-theme]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      loadTheme(btn.getAttribute("data-theme"));
+    });
+  });
+
+  loop();
+}
+
+/**
+ * Swap the active DLC pack and rebuild the target.
+ * @param {string} id - pet | zombie | ghost
+ */
+function loadTheme(id) {
+  const next = THEMES[id];
+  if (!next) {
+    return;
+  }
+
+  activeTheme = next;
+  setTarget(next.create());
+  themeEl.textContent = next.label;
+
+  // Highlight the active DLC button
+  document.querySelectorAll("[data-theme]").forEach(function (btn) {
+    btn.classList.toggle("active", btn.getAttribute("data-theme") === id);
+  });
+}
+
+/**
+ * Handle a tap on the overlay. Score if the ray hits the target.
+ * @param {PointerEvent} ev
+ */
+function onTap(ev) {
+  if (!activeTheme) {
+    return;
+  }
+  if (hitTest(ev.clientX, ev.clientY)) {
+    score += 1;
+    scoreEl.textContent = String(score);
+    showMsg(activeTheme.onCatch(), 700);
+    // Respawn so the player can chase again
+    setTarget(activeTheme.create());
+  }
+}
+
+/**
+ * Show a short status line.
+ * @param {string} text
+ * @param {number} [ms] auto-hide delay
+ */
+function showMsg(text, ms) {
+  msgEl.textContent = text;
+  msgEl.style.display = "block";
+  if (ms) {
+    setTimeout(hideMsg, ms);
+  }
+}
+
+/**
+ * Hide the center status line.
+ */
+function hideMsg() {
+  msgEl.style.display = "none";
+}
+
+/**
+ * Render loop.
+ */
+function loop() {
+  requestAnimationFrame(loop);
+  renderFrame(activeTheme);
+}
+
+window.addEventListener("load", boot);
+window.addEventListener("pagehide", stopCamera);

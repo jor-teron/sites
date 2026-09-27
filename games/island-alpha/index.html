@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        Island Game — Alpha 5
+        70x35 m island, FPS cap, two hills, pan + look.
+        Author: Jor Teron / Grok
+        Date: 2026-09-26
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Island Alpha</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+    <!-- glTF / GLB loader for flower.glb next to this HTML file -->
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+</head>
+<body>
+    <!-- Tiny top bar: never locks the OS mouse -->
+    <div id="topbar">
+        <span class="brand">Island Alpha</span>
+        <button type="button" id="btnPause">Pause</button>
+        <button type="button" id="btnResetView">Reset view</button>
+        <button type="button" id="btnDayNight">Day/Night</button>
+        <label>Res
+            <select id="selRes">
+                <option value="native" selected>Native</option>
+                <option value="2560">2560</option>
+                <option value="1920">1920</option>
+                <option value="1600">1600</option>
+                <option value="1280">1280</option>
+                <option value="1024">1024</option>
+                <option value="800">800</option>
+            </select>
+        </label>
+        <label>Quality
+            <select id="selQual">
+                <option value="low" selected>Low</option>
+                <option value="normal">Normal</option>
+            </select>
+        </label>
+        <label>Max FPS
+            <select id="selFps">
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="24">24</option>
+                <option value="30" selected>30</option>
+                <option value="60">60</option>
+                <option value="120">120</option>
+            </select>
+        </label>
+        <span id="fps">FPS --</span>
+        <span id="hint">WASD · Space · G wave · C sit · Wheel · LMB look · RMB pan · P</span>
+    </div>
+    <canvas id="renderCanvas"></canvas>
+    <div id="pauseOverlay" hidden>Paused · P or Esc</div>
+    <script src="game.js"></script>
+</body>
+</html>

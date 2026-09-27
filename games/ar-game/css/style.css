@@ -1,0 +1,95 @@
+/*
+ * AR Theme Game — UI styles
+ * Full-screen camera + overlay HUD.
+ */
+
+/* Root layout: fill the phone screen */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family: system-ui, sans-serif;
+  color: #fff;
+}
+
+/* Live camera sits behind the 3D canvas */
+#camera {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+/* Three.js overlay */
+#view {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  touch-action: none;
+}
+
+/* Top HUD */
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.55), transparent);
+  pointer-events: none;
+}
+
+#hud strong {
+  font-size: 18px;
+}
+
+/* Theme buttons stay clickable */
+#themes {
+  position: fixed;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+#themes button {
+  pointer-events: auto;
+  border: 0;
+  border-radius: 20px;
+  padding: 10px 16px;
+  font-size: 14px;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+}
+
+#themes button.active {
+  background: #2ecc71;
+  color: #111;
+}
+
+/* Status / permission message */
+#msg {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  text-align: center;
+  padding: 16px;
+  max-width: 80%;
+}

@@ -1,0 +1,119 @@
+/*
+  Neon Raid Alpha — layout and HUD
+  Dark industrial + cyan/magenta glow.
+  Theme tokens live here so a later skin can swap colors.
+*/
+
+:root {
+  --bg: #07080d;
+  --panel: #0e121c;
+  --cyan: #3cf0ff;
+  --mag: #ff3d9a;
+  --text: #e8f4ff;
+  --dim: #7a8aa0;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: radial-gradient(1200px 600px at 50% 0%, #12182a 0%, var(--bg) 55%);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#wrap {
+  position: relative;
+  width: 960px;
+  max-width: 100%;
+}
+
+#hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 4px 10px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+#title {
+  font-weight: 700;
+  color: var(--cyan);
+}
+
+#title span {
+  color: var(--mag);
+  font-size: 11px;
+  margin-left: 8px;
+}
+
+#stats span {
+  margin-left: 16px;
+  color: var(--dim);
+}
+
+#game {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #05060a;
+  border: 1px solid #1c2436;
+  box-shadow: 0 0 24px rgba(60, 240, 255, 0.12);
+}
+
+#menu,
+#overlay {
+  position: absolute;
+  inset: 42px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 6, 10, 0.82);
+  text-align: center;
+  gap: 12px;
+}
+
+#menu h1,
+#overlay h2 {
+  color: var(--cyan);
+  letter-spacing: 0.16em;
+}
+
+#menu p,
+#overlay p,
+#menu label {
+  color: var(--dim);
+  font-size: 14px;
+}
+
+select,
+button {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--cyan);
+  padding: 8px 16px;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #152033;
+}
+
+.keys {
+  font-size: 12px !important;
+  margin-top: 8px;
+}
+
+.hidden {
+  display: none !important;
+}

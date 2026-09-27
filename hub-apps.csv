@@ -1,23 +1,23 @@
 CATEGORY,NAME,ENTRY_URL,ORDER,HIDDEN
-Games,Swell Foop,games/swell-foop/,10,0
-Games,Snake,games/snake/,20,0
-Games,Dino Run,games/dino-run/,30,0
-Games,Car Run,games/car-run/,40,0
-Games,Browser FPS,games/browser-fps/,90,0
-Games,D-Pad Controller,controller/,95,1
-Media,TV,tv/,10,0
-Media,Webcam,media/webcam/,20,0
-Media,Paint,media/paint/,20,0
-Media,Photo Editor,media/photo-editor/,60,0
-Media,Phone,media/phone/,60,0
-Tools,Calculator,tools/calculator/,10,0
-Tools,NE-India Dictionary,tools/nei-dict/,30,0
-Tools,MS Word Diff,tools/msword_diff/,40,0
-Tools,Notepad,tools/notepad/,50,0
-Tools,Weather,tools/weather-chart/,60,0
-Office,Spreadsheet,office/spreadsheet/,60,0
-Tools,Learning HTMl (basic),tools/learning-html/,100,0
-Desktop,vDesktop,tools/vDesktop/,10,0
-About,About,about/,10,0
-About,Contact,about/contact.txt,20,0
-About,Feedback,about/feedback.txt,30,1
+Games,Swell Foop,games/swell-foop/,100,0
+Games,Snake,games/snake/,120,0
+Games,Dino Run,games/dino-run/,130,0
+Games,Car Run,games/car-run/,140,0
+Games,Browser FPS,games/browser-fps/,190,0
+Games,D-Pad Controller,controller/,195,1
+Media,TV,tv/,210,0
+Media,Webcam,media/webcam/,220,0
+Media,Paint,media/paint/,220,0
+Media,Photo Editor,media/photo-editor/,260,0
+Media,Phone,media/phone/,270,0
+Office,Spreadsheet,office/spreadsheet/,360,0
+Tools,Calculator,tools/calculator/,410,0
+Tools,NE-India Dictionary,tools/nei-dict/,430,0
+Tools,MS Word Diff,tools/msword_diff/,440,0
+Tools,Notepad,tools/notepad/,450,0
+Tools,Weather,tools/weather-chart/,460,0
+Tools,Learning HTMl (basic),tools/learning-html/,499,0
+Desktop,vDesktop,tools/vDesktop/,900,0
+About,About,about/,1000,0
+About,Contact,about/contact.txt,1020,0
+About,Feedback,about/feedback.txt,1030,1
