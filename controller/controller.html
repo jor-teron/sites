@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#07080b" />
   <title>Gamepad Controller</title>
   <link rel="icon" href="controller_icon.png" />
-  <link rel="stylesheet" href="controller.css?v=1.2" />
+  <link rel="stylesheet" href="controller.css?v=1.3" />
   <script src="../vendor/peerjs.min.js"></script>
 </head>
 <body class="theme-dark-gloss mode-both">
@@ -35,6 +35,7 @@
       </div>
       <p id="pair-error" class="error" hidden></p>
       <p class="version" id="version"></p>
+      <button type="button" class="diag-link" id="diag-link" data-text="diagBtn">Diag</button>
     </div>
   </div>
 
@@ -73,6 +74,7 @@
       <div class="toggles">
         <button type="button" class="chip" id="mode-toggle"></button>
         <button type="button" class="chip" id="haptics-toggle"></button>
+        <button type="button" class="chip diag-chip" id="diag-toggle" data-text="diagBtn">Diag</button>
       </div>
       <div class="demo-tag" id="demo-tag" hidden data-text="demo">DEMO</div>
     </div>
@@ -84,6 +86,19 @@
         <button type="button" class="face b" data-btn="b" aria-label="B"><span>B</span></button>
         <button type="button" class="face a" data-btn="a" aria-label="A"><span>A</span></button>
       </div>
+    </div>
+  </div>
+
+  <!-- Vibration diagnostics (Diag chip on the pad / Diag link on the pairing screen) -->
+  <div id="diag-panel" hidden>
+    <div class="diag-head">
+      <b data-text="diagTitle">Vibration diagnostics</b>
+      <button type="button" id="diag-close" aria-label="Close">×</button>
+    </div>
+    <pre id="diag-lines"></pre>
+    <div class="diag-actions">
+      <button type="button" id="diag-test" class="gloss-btn">Test</button>
+      <span id="diag-test-result"></span>
     </div>
   </div>
 
@@ -103,7 +118,7 @@
   </div>
 
   <script src="vendor/jsQR.js"></script>
-  <script src="controller_config.js?v=1.2"></script>
-  <script src="controller_logic.js?v=1.2"></script>
+  <script src="controller_config.js?v=1.3"></script>
+  <script src="controller_logic.js?v=1.3"></script>
 </body>
 </html>

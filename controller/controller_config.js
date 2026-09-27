@@ -6,7 +6,7 @@
  * holds structure + fallback theme values (overridden at runtime by themes[].vars).
  */
 const CONTROLLER_CONFIG = {
-  version: '1.2',                  // shown small on the pairing screen
+  version: '1.3',                  // shown small on the pairing screen
 
   // PeerJS pairing
   peer: {
@@ -86,6 +86,15 @@ const CONTROLLER_CONFIG = {
     longMs: 100,                   // LONG pulse: a button is pressed (press)
     rumbleMaxMs: 5000,             // game rumble from the hub: longest single pulse / pattern step
     rumbleMaxSteps: 20,            // game rumble pattern: max steps
+    rumbleWins: true,              // while a game rumble runs, button / D-pad taps do not vibrate
+                                   // (a new navigator.vibrate call cancels the running one)
+  },
+
+  // Vibration diagnostics panel (Diag chip on the pad, Diag link on the pairing screen)
+  diag: {
+    enabled: true,                 // false hides the Diag chip / link
+    testMs: 500,                   // "Test" button: navigator.vibrate(testMs), ignores the Vibe toggle
+    refreshMs: 1000,               // panel refresh while open (userActivation can change)
   },
 
   // Built-in QR scanner (camera overlay; decodes with the local vendor/jsQR.js)
@@ -213,6 +222,13 @@ const CONTROLLER_CONFIG = {
     hapticsOff: 'Vibe off',
     hapticsNA: 'No vibe',
     hapticsTitle: 'Haptic feedback',
+    diagBtn: 'Diag',
+    diagTitle: 'Vibration diagnostics',
+    diagTest: 'Test {ms} ms',
+    diagYes: 'yes',
+    diagNo: 'no',
+    diagNone: '—',
+    diagNA: 'n/a',
     select: 'SELECT',
     start: 'START',
     demo: 'DEMO',

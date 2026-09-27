@@ -567,3 +567,27 @@ body.mode-dpad .dpad {
 @media (orientation: landscape) {
   #rotate-overlay { display: none !important; }
 }
+
+/* ---------- vibration diagnostics (Diag chip / link, CONTROLLER_CONFIG.diag) ---------- */
+.diag-link {
+  margin-top: 6px; background: none; border: none; color: var(--muted);
+  font-size: 10px; letter-spacing: 0.08em; text-decoration: underline; opacity: 0.7;
+}
+.diag-chip[hidden], .diag-link[hidden] { display: none; }
+#diag-panel {
+  position: fixed; left: 50%; top: 8px; transform: translateX(-50%);
+  z-index: 90; width: min(460px, calc(100vw - 16px));
+  background: rgba(10, 12, 16, 0.94); color: #e8eaed;
+  border: 1px solid rgba(255,255,255,0.18); border-radius: 10px;
+  padding: 8px 10px; font-size: 11px; touch-action: manipulation;
+}
+#diag-panel[hidden] { display: none !important; }
+.diag-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+#diag-close { background: none; border: none; color: inherit; font-size: 18px; line-height: 1; padding: 0 4px; }
+#diag-lines {
+  margin: 0; white-space: pre-wrap; word-break: break-word;
+  font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.diag-actions { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.diag-actions .gloss-btn { padding: 6px 14px; font-size: 12px; }
+#diag-test-result { font-family: ui-monospace, monospace; }

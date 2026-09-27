@@ -8,6 +8,8 @@
  * Hub → phone:
  *   { t:'rumble', ms:N } / { t:'rumble', pattern:[...] }   game rumble (e.g. Snake death)
  *   → navigator.vibrate, only when the Vibe toggle is on; silently nothing without vibrate (iOS)
+ *   While a rumble runs, tap haptics are skipped (haptics.rumbleWins): any new vibrate call
+ *   would cancel it. Diag panel (CFG.diag) shows the vibration state + a direct test button.
  * The stick also emulates the D-pad by sending 'btn' up/down/left/right, so games that
  * only understand arrows work unchanged.
  *
@@ -53,6 +55,13 @@
   const scanCancel = $('scan-cancel');
   const scanType = $('scan-type');
   const versionEl = $('version');
+  const diagToggle = $('diag-toggle');
+  const diagLink = $('diag-link');
+  const diagPanel = $('diag-panel');
+  const diagLines = $('diag-lines');
+  const diagTest = $('diag-test');
+  const diagTestResult = $('diag-test-result');
+  const diagClose = $('diag-close');
 
   const params = new URLSearchParams(location.search);
   const DEMO = params.get(CFG.demo.param) === '1';
@@ -193,9 +202,21 @@
   const canVibrate = typeof navigator.vibrate === 'function';
   let hapticsOn = load(CFG.storage.haptics, CFG.haptics.enabled ? '1' : '0') === '1';
 
+  let rumbleUntil = 0;       // a game rumble is running until this time (ms, performance.now)
+  const diag = { rumble: null, call: null, test: null };
+
+  /** navigator.vibrate(arg) → its boolean result, or null when it threw / is missing. */
+  function callVibrate(arg) {
+    if (!canVibrate) return null;
+    try { return !!navigator.vibrate(arg); } catch (_) { return null; }
+  }
+
+  /** Tap / UI haptics. Skipped while a game rumble runs (it would cut the rumble off). */
   function vibrate(ms) {
     if (!hapticsOn || !canVibrate || !ms) return;
-    try { navigator.vibrate(ms); } catch (_) { /* ignore */ }
+    if (CFG.haptics.rumbleWins !== false && performance.now() < rumbleUntil) return;
+    diag.call = { at: new Date(), arg: ms, src: 'tap', result: callVibrate(ms) };
+    renderDiag();
   }
 
   /** Hub → phone data (rumble from the game in the hub). Unknown messages are ignored. */
@@ -205,11 +226,55 @@
     if (!m || m.t !== MSG.rumble) return;
     const max = CFG.haptics.rumbleMaxMs || 5000;
     const clamp = (n) => Math.max(0, Math.min(max, Math.round(Number(n) || 0)));
+    let arg = 0;
     if (Array.isArray(m.pattern)) {
       const p = m.pattern.slice(0, CFG.haptics.rumbleMaxSteps || 20).map(clamp);
-      if (p.some((n) => n > 0)) vibrate(p);
+      if (p.some((n) => n > 0)) arg = p;
     } else {
-      vibrate(clamp(m.ms));
+      arg = clamp(m.ms);
+    }
+    diag.rumble = { at: new Date(), arg: arg, note: '' };
+    if (!arg) diag.rumble.note = 'empty';
+    else if (!canVibrate) diag.rumble.note = 'no vibrate API';
+    else if (!hapticsOn) diag.rumble.note = 'Vibe off';
+    else {
+      const total = Array.isArray(arg) ? arg.reduce((a, n) => a + n, 0) : arg;
+      rumbleUntil = performance.now() + total;
+      diag.call = { at: new Date(), arg: arg, src: 'rumble', result: callVibrate(arg) };
+      diag.rumble.note = 'vibrate → ' + fmtResult(diag.call.result);
+    }
+    renderDiag();
+  }
+
+  /* ---------- vibration diagnostics panel ---------- */
+  function fmtResult(r) { return r === true ? 'true' : r === false ? 'false' : 'threw / n/a'; }
+  function fmtArg(a) { return Array.isArray(a) ? '[' + a.join(', ') + ']' : a + ' ms'; }
+  function fmtTime(d) { return d ? d.toTimeString().slice(0, 8) : ''; }
+
+  function renderDiag() {
+    if (!diagPanel || diagPanel.hidden) return;
+    const ua = navigator.userActivation;
+    const yn = (b) => (b ? TXT.diagYes : TXT.diagNo);
+    const lines = [
+      'Controller v' + CFG.version,
+      'Vibe toggle: ' + (hapticsOn ? 'on' : 'off'),
+      "'vibrate' in navigator: " + yn('vibrate' in navigator),
+      'User activation: ' + (ua ? 'hasBeenActive ' + yn(ua.hasBeenActive) + ', isActive ' + yn(ua.isActive) : TXT.diagNA),
+      'Hub link: ' + (conn && conn.open ? 'connected' : 'not connected'),
+      'Last rumble: ' + (diag.rumble ? fmtTime(diag.rumble.at) + '  ' + (diag.rumble.arg ? fmtArg(diag.rumble.arg) : '0') + '  (' + diag.rumble.note + ')' : TXT.diagNone),
+      'Last vibrate(): ' + (diag.call ? fmtTime(diag.call.at) + '  ' + diag.call.src + ' ' + fmtArg(diag.call.arg) + ' → ' + fmtResult(diag.call.result) : TXT.diagNone),
+    ];
+    diagLines.textContent = lines.join('\n');
+    diagTestResult.textContent = diag.test ? fmtTime(diag.test.at) + ' → ' + fmtResult(diag.test.result) : '';
+  }
+
+  let diagTimer = 0;
+  function setDiagOpen(open) {
+    diagPanel.hidden = !open;
+    clearInterval(diagTimer);
+    if (open) {
+      renderDiag();
+      diagTimer = setInterval(renderDiag, (CFG.diag && CFG.diag.refreshMs) || 1000);
     }
   }
 
@@ -557,6 +622,23 @@
     renderHaptics();
     vibrate(CFG.haptics.longMs);
   });
+  if (CFG.diag && CFG.diag.enabled !== false) {
+    const testMs = CFG.diag.testMs || 500;
+    diagTest.textContent = TXT.diagTest.replace('{ms}', testMs);
+    bindTap(diagToggle, () => setDiagOpen(diagPanel.hidden));
+    diagLink.addEventListener('click', () => setDiagOpen(diagPanel.hidden));
+    diagClose.addEventListener('click', () => setDiagOpen(false));
+    // Direct call inside the tap (a user gesture); ignores the Vibe toggle on purpose.
+    diagTest.addEventListener('click', () => {
+      diag.test = { at: new Date(), result: callVibrate(testMs) };
+      diag.call = { at: diag.test.at, arg: testMs, src: 'test', result: diag.test.result };
+      renderDiag();
+    });
+  } else {
+    diagToggle.hidden = true;
+    diagLink.hidden = true;
+  }
+
   bindTap(led, () => {
     if (DEMO) { blinkError(); return; }
     // disconnected or waiting for the next automatic retry: try now
