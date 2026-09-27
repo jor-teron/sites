@@ -1,5 +1,6 @@
 /**
  * Snake — grid snake with boost, wrap toggle, keyboard + hub D-pad.
+ * Game logic. Every tunable value comes from SNAKE_CONFIG (snake_config.js).
  */
 (function () {
   'use strict';
@@ -14,16 +15,25 @@
   const msgEl = document.getElementById('msg');
   const subEl = document.getElementById('sub');
 
-  const COLS = 24;
-  const ROWS = 18;
-  const BASE_STEP = 0.14; // seconds per cell
-  const BOOST_STEP = 0.07;
-  const BEST_KEY = 'snake-best';
+  const CFG = SNAKE_CONFIG;
+  const K = CFG.keys;
+  const TX = CFG.text;
+  const CL = CFG.colors;
+  const SZ = CFG.sizes;
+  document.getElementById('help').textContent = TX.help;
+  const isKey = (list, code) => list.indexOf(code) !== -1;
+
+  const COLS = CFG.grid.cols;
+  const ROWS = CFG.grid.rows;
+  const BASE_STEP = CFG.timing.baseStep; // seconds per cell
+  const BOOST_STEP = CFG.timing.boostStep;
+  const BEST_KEY = CFG.bestKey;
 
   let dpr = 1, W = 0, H = 0, cell = 0, ox = 0, oy = 0;
   let state = 'title'; // title | play | pause | over
   let snake, dir, nextDir, dirQueue, food, score, best, wrap, boost;
   let acc = 0, last = 0;
+  let clickStartAt = -Infinity; // time a tap/click started the game
 
   best = Number(localStorage.getItem(BEST_KEY) || 0) || 0;
   bestEl.textContent = 'BEST ' + best;
@@ -56,17 +66,19 @@
   function resetGame() {
     const cx = Math.floor(COLS / 2);
     const cy = Math.floor(ROWS / 2);
-    snake = [[cx, cy], [cx - 1, cy], [cx - 2, cy]];
-    dir = 'right';
-    nextDir = 'right';
+    dir = CFG.grid.startDir;
+    nextDir = dir;
+    const [bdx, bdy] = DELTA[dir];
+    snake = [];
+    for (let i = 0; i < CFG.grid.startLength; i++) snake.push([cx - bdx * i, cy - bdy * i]);
     dirQueue = [];
-    score = 0;
-    wrap = false;
+    score = CFG.start.score;
+    wrap = CFG.start.wrap;
     boost = false;
     acc = 0;
     placeFood();
-    scoreEl.textContent = '0';
-    wrapInd.className = 'wrap-off';
+    scoreEl.textContent = String(score);
+    wrapInd.className = wrap ? 'wrap-on' : 'wrap-off';
   }
 
   function placeFood() {
@@ -85,7 +97,7 @@
     const lastQueued = dirQueue.length ? dirQueue[dirQueue.length - 1] : nextDir;
     if (d === lastQueued) return;
     if (OPP[d] === lastQueued) return;
-    if (dirQueue.length < 2) dirQueue.push(d);
+    if (dirQueue.length < CFG.input.queueSize) dirQueue.push(d);
   }
 
   function step() {
@@ -105,7 +117,7 @@
     }
     snake.unshift([nx, ny]);
     if (nx === food[0] && ny === food[1]) {
-      score += boost ? 2 : 1;
+      score += boost ? CFG.scoring.foodBoosted : CFG.scoring.food;
       scoreEl.textContent = String(score);
       placeFood();
     } else {
@@ -120,7 +132,7 @@
       localStorage.setItem(BEST_KEY, String(best));
       bestEl.textContent = 'BEST ' + best;
     }
-    showOverlay('GAME OVER', 'Score ' + score, 'Best ' + best + ' — Start / Enter');
+    showOverlay(TX.gameOver, 'Score ' + score, 'Best ' + best + ' — Start / Enter');
   }
 
   function startPlay() {
@@ -133,31 +145,49 @@
       hideOverlay();
     } else if (state === 'play') {
       state = 'pause';
-      showOverlay('PAUSED', 'Press Start / Enter', '');
+      showOverlay(TX.paused, TX.pressStart, '');
     }
+  }
+
+  /** Start key: toggles pause, except right after a tap/click started the game. */
+  function onStartKey() {
+    if (state === 'play' && performance.now() - clickStartAt < CFG.input.clickStartGraceMs) {
+      clickStartAt = -Infinity; // swallow once: the game is already running
+      return;
+    }
+    startPlay();
+  }
+
+  /** Tap/click start (title / game over / resume from pause). */
+  function clickStart() {
+    const wasStarting = state === 'title' || state === 'over';
+    startPlay();
+    if (wasStarting && state === 'play') clickStartAt = performance.now();
   }
 
   function toTitle() {
     state = 'title';
     resetGame();
-    showOverlay('SNAKE', 'Press Start / Enter', 'or tap / click');
+    showOverlay(TX.title, TX.pressStart, TX.titleSub);
   }
 
   function onKey(e, down) {
     const code = e.code;
     if (down) {
-      if (code === 'ArrowUp' || code === 'KeyW') queueDir('up');
-      else if (code === 'ArrowDown' || code === 'KeyS') queueDir('down');
-      else if (code === 'ArrowLeft' || code === 'KeyA') queueDir('left');
-      else if (code === 'ArrowRight' || code === 'KeyD') queueDir('right');
-      else if (code === 'Space') { boost = true; e.preventDefault(); }
-      else if (code === 'KeyX') {
-        wrap = !wrap;
-        wrapInd.className = wrap ? 'wrap-on' : 'wrap-off';
-      } else if (code === 'Enter') { startPlay(); e.preventDefault(); }
-      else if (code === 'Escape') { toTitle(); e.preventDefault(); }
+      if (isKey(K.up, code)) { queueDir('up'); e.preventDefault(); }
+      else if (isKey(K.down, code)) { queueDir('down'); e.preventDefault(); }
+      else if (isKey(K.left, code)) { queueDir('left'); e.preventDefault(); }
+      else if (isKey(K.right, code)) { queueDir('right'); e.preventDefault(); }
+      else if (isKey(K.boost, code)) { boost = true; e.preventDefault(); }
+      else if (isKey(K.wrap, code)) {
+        if (!e.repeat) {
+          wrap = !wrap;
+          wrapInd.className = wrap ? 'wrap-on' : 'wrap-off';
+        }
+      } else if (isKey(K.start, code)) { if (!e.repeat) onStartKey(); e.preventDefault(); }
+      else if (isKey(K.restart, code)) { toTitle(); e.preventDefault(); }
     } else {
-      if (code === 'Space') boost = false;
+      if (isKey(K.boost, code)) boost = false;
     }
   }
 
@@ -169,10 +199,10 @@
     // Already mapped to keys by hub; ignore duplicate if desired
   });
   overlay.addEventListener('click', () => {
-    if (state === 'title' || state === 'over' || state === 'pause') startPlay();
+    if (state === 'title' || state === 'over' || state === 'pause') clickStart();
   });
   canvas.addEventListener('click', () => {
-    if (state === 'title' || state === 'over') startPlay();
+    if (state === 'title' || state === 'over') clickStart();
   });
 
   function rr(x, y, w, h, r) {
@@ -186,13 +216,13 @@
   }
 
   function draw() {
-    ctx.fillStyle = '#0c1016';
+    ctx.fillStyle = CL.bg;
     ctx.fillRect(0, 0, W, H);
     // board
-    ctx.fillStyle = '#141a22';
+    ctx.fillStyle = CL.board;
     ctx.fillRect(ox, oy, cell * COLS, cell * ROWS);
     // grid subtle
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.strokeStyle = CL.grid;
     ctx.lineWidth = 1;
     for (let x = 0; x <= COLS; x++) {
       ctx.beginPath();
@@ -210,30 +240,30 @@
     if (food) {
       const fx = ox + food[0] * cell;
       const fy = oy + food[1] * cell;
-      const pad = cell * 0.18;
-      ctx.fillStyle = '#f87171';
-      rr(fx + pad, fy + pad, cell - pad * 2, cell - pad * 2, 4);
+      const pad = cell * SZ.foodPad;
+      ctx.fillStyle = CL.food;
+      rr(fx + pad, fy + pad, cell - pad * 2, cell - pad * 2, SZ.foodRadius);
       ctx.fill();
     }
     // snake
     for (let i = snake.length - 1; i >= 0; i--) {
       const [sx, sy] = snake[i];
       const t = i / Math.max(1, snake.length - 1);
-      const g = Math.floor(80 + (1 - t) * 140);
-      ctx.fillStyle = i === 0 ? '#86efac' : 'rgb(40,' + g + ',80)';
-      const pad = i === 0 ? cell * 0.08 : cell * 0.14;
-      rr(ox + sx * cell + pad, oy + sy * cell + pad, cell - pad * 2, cell - pad * 2, 3);
+      const g = Math.floor(CL.bodyGMin + (1 - t) * CL.bodyGRange);
+      ctx.fillStyle = i === 0 ? CL.head : 'rgb(' + CL.bodyR + ',' + g + ',' + CL.bodyB + ')';
+      const pad = i === 0 ? cell * SZ.headPad : cell * SZ.bodyPad;
+      rr(ox + sx * cell + pad, oy + sy * cell + pad, cell - pad * 2, cell - pad * 2, SZ.segRadius);
       ctx.fill();
     }
     if (boost && state === 'play') {
-      ctx.fillStyle = 'rgba(110,168,254,0.12)';
+      ctx.fillStyle = CL.boostTint;
       ctx.fillRect(ox, oy, cell * COLS, cell * ROWS);
     }
   }
 
   function loop(ts) {
     if (!last) last = ts;
-    const dt = Math.min(0.05, (ts - last) / 1000);
+    const dt = Math.min(CFG.timing.maxDt, (ts - last) / 1000);
     last = ts;
     if (state === 'play') {
       acc += dt;
@@ -251,6 +281,6 @@
   window.addEventListener('resize', resize);
   resize();
   resetGame();
-  showOverlay('SNAKE', 'Press Start / Enter', 'or tap / click');
+  showOverlay(TX.title, TX.pressStart, TX.titleSub);
   requestAnimationFrame(loop);
 })();
