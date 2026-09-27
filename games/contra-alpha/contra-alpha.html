@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!--
+  Contra-style Alpha — HTML entry
+  Futuristic run-and-gun. Keyboard only (Gamepad next).
+  Timer selectable: 250 / 200 / 150 / 100 seconds.
+  Audio hooks exist; assets added later.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEON RAID — Alpha</title>
+  <link rel="stylesheet" href="contra-alpha.css" />
+</head>
+<body>
+  <div id="wrap">
+    <header id="hud">
+      <div id="title">NEON RAID <span>ALPHA</span></div>
+      <div id="stats">
+        <span id="lives">LIVES 3</span>
+        <span id="hp">HP 2</span>
+        <span id="score">SCORE 0</span>
+        <span id="timer">TIME 250</span>
+      </div>
+    </header>
+
+    <canvas id="game" width="960" height="540"></canvas>
+
+    <section id="menu">
+      <h1>NEON RAID</h1>
+      <p>Futuristic Contra-style · Alpha</p>
+      <label for="duration">Mission length</label>
+      <select id="duration">
+        <option value="250" selected>250 seconds</option>
+        <option value="200">200 seconds</option>
+        <option value="150">150 seconds</option>
+        <option value="100">100 seconds</option>
+      </select>
+      <button id="startBtn" type="button">START</button>
+      <p class="keys">← → / A D move · ↑ / W / SPACE jump · Z / X / CTRL fire</p>
+    </section>
+
+    <section id="overlay" class="hidden">
+      <h2 id="overlayTitle">MISSION FAILED</h2>
+      <p id="overlayMsg"></p>
+      <button id="retryBtn" type="button">RETRY</button>
+    </section>
+  </div>
+  <script src="contra-alpha_config.js"></script>
+  <script src="contra-alpha_logic.js"></script>
+</body>
+</html>

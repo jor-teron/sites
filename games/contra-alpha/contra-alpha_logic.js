@@ -1,5 +1,6 @@
 /**
  * Neon Raid — Contra-style Alpha
+ * Game logic. Tunables come from CONTRA_ALPHA_CONFIG (contra-alpha_config.js).
  *
  * HTML + CSS + JS canvas run-and-gun.
  * Theme: futuristic neon (skinnable later).
@@ -11,35 +12,22 @@
  * Alpha: one hand-placed corridor, simple rect sprites, 2 enemy types + end gate.
  */
 
-/* ---------- config (changeable without rewriting systems) ---------- */
-
-/** Default mission length in seconds (overridden by menu). */
-var DEFAULT_DURATION = 250;
-
-/** Player hit points per life. */
-var MAX_HP = 2;
-
-/** Starting lives. */
-var MAX_LIVES = 3;
-
-/** World pixels per second for run speed. */
-var RUN_SPEED = 220;
-
-/** Jump impulse (px/s). */
-var JUMP_VEL = -520;
-
-/** Gravity (px/s^2). */
-var GRAVITY = 1400;
-
-/** Bullet speed. */
-var BULLET_SPEED = 520;
-
-/** Fire cooldown in seconds. */
-var FIRE_COOLDOWN = 0.16;
-
-/** Canvas logical size. */
-var W = 960;
-var H = 540;
+/* ---------- config aliases (values live in contra-alpha_config.js) ---------- */
+var CFG = CONTRA_ALPHA_CONFIG;
+var DEFAULT_DURATION = CFG.defaultDuration;
+var MAX_HP = CFG.maxHp;
+var MAX_LIVES = CFG.maxLives;
+var RUN_SPEED = CFG.player.runSpeed;
+var JUMP_VEL = CFG.player.jumpVel;
+var GRAVITY = CFG.player.gravity;
+var BULLET_SPEED = CFG.bullet.speed;
+var FIRE_COOLDOWN = CFG.bullet.cooldown;
+var W = CFG.width;
+var H = CFG.height;
+var PC = CFG.player;
+var EC = CFG.enemy;
+var BC = CFG.bullet;
+var COL = CFG.colors;
 
 /* ---------- audio stub (fill later) ---------- */
 
@@ -76,7 +64,7 @@ var keys = {};
 function bindInput() {
   window.addEventListener("keydown", function (e) {
     keys[e.code] = true;
-    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].indexOf(e.code) >= 0) {
+    if (CFG.keys.preventDefault.indexOf(e.code) >= 0) {
       e.preventDefault();
     }
   });
@@ -112,39 +100,13 @@ function hits(a, b) {
  * World is wider than the canvas; camera follows the player.
  */
 function makeLevel() {
-  var platforms = [
-    { x: 0, y: 480, w: 4200, h: 60 },
-    { x: 280, y: 380, w: 160, h: 16 },
-    { x: 560, y: 320, w: 140, h: 16 },
-    { x: 820, y: 380, w: 180, h: 16 },
-    { x: 1180, y: 300, w: 200, h: 16 },
-    { x: 1500, y: 360, w: 120, h: 16 },
-    { x: 1720, y: 280, w: 220, h: 16 },
-    { x: 2100, y: 360, w: 160, h: 16 },
-    { x: 2400, y: 300, w: 240, h: 16 },
-    { x: 2780, y: 380, w: 140, h: 16 },
-    { x: 3100, y: 320, w: 200, h: 16 },
-    { x: 3480, y: 260, w: 180, h: 16 },
-    { x: 3800, y: 360, w: 220, h: 16 }
-  ];
-
-  var enemies = [
-    { kind: "drone", x: 520, y: 250, w: 28, h: 22, hp: 1, vx: 40 },
-    { kind: "drone", x: 900, y: 200, w: 28, h: 22, hp: 1, vx: -50 },
-    { kind: "turret", x: 1280, y: 276, w: 32, h: 24, hp: 2, vx: 0 },
-    { kind: "drone", x: 1600, y: 180, w: 28, h: 22, hp: 1, vx: 55 },
-    { kind: "turret", x: 2140, y: 336, w: 32, h: 24, hp: 2, vx: 0 },
-    { kind: "drone", x: 2500, y: 160, w: 28, h: 22, hp: 1, vx: -45 },
-    { kind: "drone", x: 2850, y: 220, w: 28, h: 22, hp: 1, vx: 40 },
-    { kind: "turret", x: 3180, y: 296, w: 32, h: 24, hp: 2, vx: 0 },
-    { kind: "drone", x: 3550, y: 140, w: 28, h: 22, hp: 1, vx: -60 },
-    { kind: "turret", x: 3920, y: 336, w: 32, h: 24, hp: 3, vx: 0 }
-  ];
-
-  /** End gate — reach this to clear before time runs out. */
-  var gate = { x: 4080, y: 360, w: 36, h: 120 };
-
-  return { platforms: platforms, enemies: enemies, gate: gate, width: 4200 };
+  var L = CFG.level;
+  return {
+    platforms: L.platforms.map(function (p) { return { x: p.x, y: p.y, w: p.w, h: p.h }; }),
+    enemies: L.enemies,
+    gate: { x: L.gate.x, y: L.gate.y, w: L.gate.w, h: L.gate.h },
+    width: L.width
+  };
 }
 
 /* ---------- game state ---------- */
@@ -175,10 +137,10 @@ function newState(durationSec) {
     fireCd: 0,
     camX: 0,
     player: {
-      x: 80,
-      y: 400,
-      w: 22,
-      h: 36,
+      x: PC.start.x,
+      y: PC.start.y,
+      w: PC.w,
+      h: PC.h,
       vx: 0,
       vy: 0,
       onGround: false,
@@ -197,7 +159,7 @@ function newState(durationSec) {
         hp: e.hp,
         vx: e.vx,
         alive: true,
-        shootCd: 1 + Math.random()
+        shootCd: EC.shootCdBase + Math.random() * EC.shootCdRandom
       };
     })
   };
@@ -228,7 +190,7 @@ function collidePlatforms(body, platforms) {
     var overlapX = Math.min(body.x + body.w, p.x + p.w) - Math.max(body.x, p.x);
     var overlapY = Math.min(body.y + body.h, p.y + p.h) - Math.max(body.y, p.y);
     if (overlapY < overlapX) {
-      if (body.vy >= 0 && body.y + body.h - overlapY <= p.y + 8) {
+      if (body.vy >= 0 && body.y + body.h - overlapY <= p.y + PC.landTolerance) {
         body.y = p.y - body.h;
         body.vy = 0;
         body.onGround = true;
@@ -253,16 +215,16 @@ function collidePlatforms(body, platforms) {
 function hurtPlayer() {
   if (state.invuln > 0) return;
   state.hp -= 1;
-  state.invuln = 1.1;
+  state.invuln = PC.invulnTime;
   AudioBus.playSfx("hit");
   if (state.hp <= 0) {
     state.lives -= 1;
     state.hp = MAX_HP;
-    state.player.x = Math.max(40, state.player.x - 80);
-    state.player.y = 360;
+    state.player.x = Math.max(PC.respawnMinX, state.player.x - PC.respawnBack);
+    state.player.y = PC.respawnY;
     state.player.vy = 0;
     if (state.lives <= 0) {
-      fail("All lives lost.");
+      fail(CFG.text.livesLost);
     }
   }
 }
@@ -274,7 +236,7 @@ function hurtPlayer() {
 function fail(msg) {
   state.running = false;
   state.lost = true;
-  showOverlay("MISSION FAILED", msg);
+  showOverlay(CFG.text.failed, msg);
 }
 
 /**
@@ -283,9 +245,9 @@ function fail(msg) {
 function win() {
   state.running = false;
   state.won = true;
-  var bonus = Math.floor(state.timeLeft * 10);
+  var bonus = Math.floor(state.timeLeft * CFG.timeBonusPerSecond);
   state.score += bonus;
-  showOverlay("SECTOR CLEAR", "Time bonus " + bonus + " · Score " + state.score);
+  showOverlay(CFG.text.clear, "Time bonus " + bonus + " · Score " + state.score);
 }
 
 /**
@@ -304,10 +266,10 @@ function fire() {
   if (state.fireCd > 0) return;
   var p = state.player;
   state.bullets.push({
-    x: p.x + (p.facing > 0 ? p.w : -8),
-    y: p.y + 12,
-    w: 10,
-    h: 4,
+    x: p.x + (p.facing > 0 ? p.w : -BC.backOffset),
+    y: p.y + BC.offsetY,
+    w: BC.w,
+    h: BC.h,
     vx: BULLET_SPEED * p.facing
   });
   state.fireCd = FIRE_COOLDOWN;
@@ -324,7 +286,7 @@ function step(dt) {
   state.timeLeft -= dt;
   if (state.timeLeft <= 0) {
     state.timeLeft = 0;
-    fail("Time expired.");
+    fail(CFG.text.timeExpired);
     return;
   }
 
@@ -332,10 +294,10 @@ function step(dt) {
   state.fireCd = Math.max(0, state.fireCd - dt);
 
   var p = state.player;
-  var left = keyAny(["ArrowLeft", "KeyA"]);
-  var right = keyAny(["ArrowRight", "KeyD"]);
-  var jump = keyAny(["ArrowUp", "KeyW", "Space"]);
-  var shoot = keyAny(["KeyZ", "KeyX", "ControlLeft", "ControlRight"]);
+  var left = keyAny(CFG.keys.left);
+  var right = keyAny(CFG.keys.right);
+  var jump = keyAny(CFG.keys.jump);
+  var shoot = keyAny(CFG.keys.fire);
 
   p.vx = 0;
   if (left) {
@@ -359,23 +321,23 @@ function step(dt) {
 
   if (p.x < 0) p.x = 0;
   if (p.x > state.level.width - p.w) p.x = state.level.width - p.w;
-  if (p.y > H + 80) {
+  if (p.y > H + PC.fallMargin) {
     hurtPlayer();
-    p.y = 360;
+    p.y = PC.respawnY;
     p.vy = 0;
   }
 
   collidePlatforms(p, state.level.platforms);
 
   /* camera */
-  state.camX = Math.max(0, Math.min(p.x - 200, state.level.width - W));
+  state.camX = Math.max(0, Math.min(p.x - PC.cameraLead, state.level.width - W));
 
   /* bullets */
   var i;
   for (i = state.bullets.length - 1; i >= 0; i--) {
     var b = state.bullets[i];
     b.x += b.vx * dt;
-    if (b.x < state.camX - 40 || b.x > state.camX + W + 40) {
+    if (b.x < state.camX - BC.despawnMargin || b.x > state.camX + W + BC.despawnMargin) {
       state.bullets.splice(i, 1);
     }
   }
@@ -386,20 +348,20 @@ function step(dt) {
     if (!e.alive) continue;
     if (e.kind === "drone") {
       e.x += e.vx * dt;
-      if (e.x < 200 || e.x > state.level.width - 80) e.vx *= -1;
-      e.y += Math.sin(state.timeLeft * 3 + i) * 20 * dt;
+      if (e.x < EC.droneMinX || e.x > state.level.width - EC.droneEdge) e.vx *= -1;
+      e.y += Math.sin(state.timeLeft * EC.droneBobSpeed + i) * EC.droneBobAmp * dt;
     }
     e.shootCd -= dt;
-    if (e.kind === "turret" && e.shootCd <= 0 && Math.abs(e.x - p.x) < 520) {
+    if (e.kind === "turret" && e.shootCd <= 0 && Math.abs(e.x - p.x) < EC.turretRange) {
       var dir = p.x + p.w / 2 > e.x ? 1 : -1;
       state.eBullets.push({
         x: e.x + e.w / 2,
-        y: e.y + 8,
-        w: 8,
-        h: 4,
-        vx: 280 * dir
+        y: e.y + EC.bulletOffsetY,
+        w: EC.bulletW,
+        h: EC.bulletH,
+        vx: EC.bulletSpeed * dir
       });
-      e.shootCd = 1.4;
+      e.shootCd = EC.turretCooldown;
     }
 
     if (hits(p, e) && state.invuln <= 0) hurtPlayer();
@@ -410,7 +372,7 @@ function step(dt) {
         e.hp -= 1;
         if (e.hp <= 0) {
           e.alive = false;
-          state.score += e.kind === "turret" ? 250 : 100;
+          state.score += e.kind === "turret" ? EC.scoreTurret : EC.scoreDrone;
           AudioBus.playSfx("explode");
         }
       }
@@ -420,7 +382,7 @@ function step(dt) {
   for (i = state.eBullets.length - 1; i >= 0; i--) {
     var eb = state.eBullets[i];
     eb.x += eb.vx * dt;
-    if (eb.x < state.camX - 40 || eb.x > state.camX + W + 40) {
+    if (eb.x < state.camX - BC.despawnMargin || eb.x > state.camX + W + BC.despawnMargin) {
       state.eBullets.splice(i, 1);
       continue;
     }
@@ -440,16 +402,16 @@ function step(dt) {
  * Draw one frame.
  */
 function draw() {
-  ctx.fillStyle = "#070914";
+  ctx.fillStyle = COL.bg;
   ctx.fillRect(0, 0, W, H);
 
   var cam = state ? state.camX : 0;
 
   /* backdrop grid */
-  ctx.strokeStyle = "rgba(60,240,255,0.06)";
+  ctx.strokeStyle = COL.grid;
   ctx.lineWidth = 1;
   var gx;
-  for (gx = -((cam | 0) % 48); gx < W; gx += 48) {
+  for (gx = -((cam | 0) % COL.gridSpacing); gx < W; gx += COL.gridSpacing) {
     ctx.beginPath();
     ctx.moveTo(gx, 0);
     ctx.lineTo(gx, H);
@@ -463,34 +425,34 @@ function draw() {
   var i;
   for (i = 0; i < plats.length; i++) {
     var pl = plats[i];
-    ctx.fillStyle = "#1a2438";
+    ctx.fillStyle = COL.platform;
     ctx.fillRect(pl.x - cam, pl.y, pl.w, pl.h);
-    ctx.fillStyle = "#3cf0ff";
+    ctx.fillStyle = COL.platformEdge;
     ctx.fillRect(pl.x - cam, pl.y, pl.w, 3);
   }
 
   /* gate */
   var g = state.level.gate;
-  ctx.fillStyle = "#ff3d9a";
+  ctx.fillStyle = COL.gate;
   ctx.fillRect(g.x - cam, g.y, g.w, g.h);
-  ctx.fillStyle = "rgba(255,61,154,0.25)";
+  ctx.fillStyle = COL.gateGlow;
   ctx.fillRect(g.x - cam - 8, g.y, g.w + 16, g.h);
 
   /* enemies */
   for (i = 0; i < state.enemies.length; i++) {
     var e = state.enemies[i];
     if (!e.alive) continue;
-    ctx.fillStyle = e.kind === "turret" ? "#ff6b3c" : "#7cf0ff";
+    ctx.fillStyle = e.kind === "turret" ? COL.turret : COL.drone;
     ctx.fillRect(e.x - cam, e.y, e.w, e.h);
   }
 
   /* bullets */
-  ctx.fillStyle = "#fff6a8";
+  ctx.fillStyle = COL.bullet;
   for (i = 0; i < state.bullets.length; i++) {
     var b = state.bullets[i];
     ctx.fillRect(b.x - cam, b.y, b.w, b.h);
   }
-  ctx.fillStyle = "#ff4d6d";
+  ctx.fillStyle = COL.enemyBullet;
   for (i = 0; i < state.eBullets.length; i++) {
     var eb = state.eBullets[i];
     ctx.fillRect(eb.x - cam, eb.y, eb.w, eb.h);
@@ -500,9 +462,9 @@ function draw() {
   var p = state.player;
   var blink = state.invuln > 0 && ((state.invuln * 20) | 0) % 2 === 0;
   if (!blink) {
-    ctx.fillStyle = "#3cf0ff";
+    ctx.fillStyle = COL.player;
     ctx.fillRect(p.x - cam, p.y, p.w, p.h);
-    ctx.fillStyle = "#ff3d9a";
+    ctx.fillStyle = COL.playerGun;
     ctx.fillRect(p.x - cam + (p.facing > 0 ? p.w - 4 : 0), p.y + 10, 4, 8);
   }
 }
@@ -517,7 +479,7 @@ var lastTs = 0;
  */
 function loop(ts) {
   if (!lastTs) lastTs = ts;
-  var dt = Math.min(0.033, (ts - lastTs) / 1000);
+  var dt = Math.min(CFG.maxDt, (ts - lastTs) / 1000);
   lastTs = ts;
   if (state && state.running) step(dt);
   draw();
