@@ -5,51 +5,75 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title>D-Pad Controller</title>
+  <meta name="theme-color" content="#07080b" />
+  <title>Gamepad Controller</title>
+  <link rel="icon" href="controller_icon.png" />
   <link rel="stylesheet" href="controller.css" />
   <script src="../vendor/peerjs.min.js"></script>
 </head>
-<body>
+<body class="theme-dark-gloss mode-both">
   <div id="rotate-overlay" hidden>
     <div class="rotate-msg">
       <div class="rotate-icon" aria-hidden="true">⟳</div>
-      <p>Rotate your phone to landscape</p>
+      <p data-text="rotate">Rotate your phone to landscape</p>
     </div>
   </div>
 
   <div id="pair-screen" hidden>
-    <h1>D-Pad Controller</h1>
-    <p class="hint">Enter the pairing code from the hub</p>
-    <input id="code-input" type="text" maxlength="8" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="CODE" />
-    <button type="button" id="connect-btn">Connect</button>
-    <p id="pair-error" class="error" hidden></p>
+    <div class="pair-card">
+      <div class="pair-head">
+        <span class="led led-pair disconnected" id="pair-led" aria-hidden="true"></span>
+        <h1 data-text="title">Gamepad</h1>
+      </div>
+      <p class="hint" data-text="hint">Enter the pairing code shown on the hub</p>
+      <input id="code-input" type="text" maxlength="8" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="CODE" />
+      <button type="button" id="connect-btn" class="gloss-btn" data-text="connectBtn">Connect</button>
+      <p id="pair-error" class="error" hidden></p>
+    </div>
   </div>
 
   <div id="pad" hidden>
-    <div class="status-bar">
-      <span id="status-dot" class="dot disconnected"></span>
-      <span id="status-text">Disconnected</span>
-      <button type="button" id="reconnect-btn" hidden>Reconnect</button>
-      <span id="code-display" class="code-chip"></span>
+    <button type="button" class="shoulder l" data-btn="l" aria-label="L"><span>L</span></button>
+    <button type="button" class="shoulder r" data-btn="r" aria-label="R"><span>R</span></button>
+
+    <div class="left-zone" id="left-zone">
+      <div class="stick-base" id="stick-base" aria-hidden="true">
+        <div class="stick-knob" id="stick-knob"></div>
+      </div>
+      <div class="dpad" id="dpad" aria-label="D-pad">
+        <div class="dpad-arm vert" aria-hidden="true"></div>
+        <div class="dpad-arm horiz" aria-hidden="true"></div>
+        <span class="dir up" data-btn="up" aria-label="Up"></span>
+        <span class="dir left" data-btn="left" aria-label="Left"></span>
+        <span class="dir right" data-btn="right" aria-label="Right"></span>
+        <span class="dir down" data-btn="down" aria-label="Down"></span>
+        <span class="dpad-hub" aria-hidden="true"></span>
+      </div>
     </div>
 
-    <div class="pad-layout">
-      <div class="dpad" id="dpad" aria-label="D-pad">
-        <button type="button" class="dir up" data-btn="up" aria-label="Up"></button>
-        <button type="button" class="dir left" data-btn="left" aria-label="Left"></button>
-        <button type="button" class="dir right" data-btn="right" aria-label="Right"></button>
-        <button type="button" class="dir down" data-btn="down" aria-label="Down"></button>
-        <div class="dpad-center"></div>
+    <div class="center-cluster">
+      <button type="button" class="led" id="led" aria-label="Connection light"></button>
+      <div class="sys-row">
+        <button type="button" class="sys select" data-btn="select" aria-label="Select"><span class="glyph-select" aria-hidden="true"></span></button>
+        <button type="button" class="home" data-btn="home" aria-label="Home"><span class="home-glyph">⌂</span></button>
+        <button type="button" class="sys start" data-btn="start" aria-label="Start"><span class="glyph-start" aria-hidden="true"></span></button>
       </div>
-
-      <div class="mid-btns">
-        <button type="button" class="sys select" data-btn="select">SELECT</button>
-        <button type="button" class="sys start" data-btn="start">START</button>
+      <div class="sys-labels" aria-hidden="true">
+        <span data-text="select">SELECT</span><span></span><span data-text="start">START</span>
       </div>
+      <div class="toggles">
+        <button type="button" class="chip" id="mode-toggle"></button>
+        <button type="button" class="chip" id="haptics-toggle"></button>
+      </div>
+      <div class="demo-tag" id="demo-tag" hidden data-text="demo">DEMO</div>
+    </div>
 
-      <div class="ab-btns">
-        <button type="button" class="face a" data-btn="a" aria-label="A">A</button>
-        <button type="button" class="face b" data-btn="b" aria-label="B">B</button>
+    <div class="right-zone">
+      <div class="face-diamond">
+        <button type="button" class="face y" data-btn="y" aria-label="Y"><span>Y</span></button>
+        <button type="button" class="face x" data-btn="x" aria-label="X"><span>X</span></button>
+        <button type="button" class="face b" data-btn="b" aria-label="B"><span>B</span></button>
+        <button type="button" class="face a" data-btn="a" aria-label="A"><span>A</span></button>
       </div>
     </div>
   </div>

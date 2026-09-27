@@ -8,6 +8,8 @@
   const PEER_PREFIX = 'jtsites-';
   const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I
 
+  // Controller button -> key injected into the app iframe (all buttons also post
+  // { type:'hub-dpad', b, s }). key: null = postMessage only, no key event.
   const BTN_MAP = {
     up:     { key: 'ArrowUp',    code: 'ArrowUp',    keyCode: 38 },
     down:   { key: 'ArrowDown',  code: 'ArrowDown',  keyCode: 40 },
@@ -15,8 +17,13 @@
     right:  { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39 },
     a:      { key: ' ',          code: 'Space',      keyCode: 32 },
     b:      { key: 'x',          code: 'KeyX',       keyCode: 88 },
+    x:      { key: 'z',          code: 'KeyZ',       keyCode: 90 },
+    y:      { key: 'c',          code: 'KeyC',       keyCode: 67 },
+    l:      { key: 'q',          code: 'KeyQ',       keyCode: 81 },
+    r:      { key: 'e',          code: 'KeyE',       keyCode: 69 },
     start:  { key: 'Enter',      code: 'Enter',      keyCode: 13 },
     select: { key: 'Escape',     code: 'Escape',     keyCode: 27 },
+    home:   { key: null },
   };
 
   const frame = document.getElementById('app-frame');
@@ -121,7 +128,7 @@
     const type = s ? 'keydown' : 'keyup';
     try {
       const w = frame && frame.contentWindow;
-      if (w && w.document) {
+      if (map.key && w && w.document) {
         const target = w.document.activeElement || w.document.body || w.document;
         const ev = new w.KeyboardEvent(type, {
           key: map.key,
@@ -148,8 +155,21 @@
     if (typeof data === 'string') {
       try { msg = JSON.parse(data); } catch (_) { return; }
     }
-    if (!msg || msg.t !== 'btn') return;
-    forwardBtn(msg.b, msg.s ? 1 : 0);
+    if (!msg) return;
+    if (msg.t === 'btn') {
+      forwardBtn(msg.b, msg.s ? 1 : 0);
+    } else if (msg.t === 'stick') {
+      // Analog stick: forwarded as postMessage only (the controller also sends
+      // emulated arrow 'btn' messages, so key-based games need nothing).
+      const x = Number(msg.x), y = Number(msg.y);
+      if (!isFinite(x) || !isFinite(y)) return;
+      try {
+        if (frame && frame.contentWindow) {
+          frame.contentWindow.postMessage({ type: 'hub-stick', x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) }, '*');
+        }
+      } catch (_) { /* ignore */ }
+    }
+    // other message types are ignored
   }
 
   function attachConn(c) {
