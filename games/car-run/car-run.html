@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Car Run</title>
+  <link rel="stylesheet" href="car-run.css" />
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="hud">
+    <div class="left">
+      <div id="score">0 m</div>
+      <div id="coins">● 0</div>
+    </div>
+    <div class="right">
+      <div id="speed">0</div>
+      <div class="nitro-wrap"><div id="nitro"></div></div>
+      <div id="best">BEST 0</div>
+    </div>
+  </div>
+  <div id="help">←→ lane · ↑ accel · ↓ brake · A nitro · B jump · Start pause · Select restart</div>
+  <div id="overlay" class="overlay">
+    <div class="card">
+      <h1 id="title">CAR RUN</h1>
+      <p id="msg">Press Start / Enter</p>
+      <p id="sub" class="sub"></p>
+    </div>
+  </div>
+  <script src="car-run.js"></script>
+</body>
+</html>

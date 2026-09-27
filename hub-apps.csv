@@ -1,6 +1,10 @@
 CATEGORY,NAME,ENTRY_URL,ORDER,HIDDEN
 Games,Swell Foop,games/swell-foop/,10,0
+Games,Snake,games/snake/,20,0
+Games,Dino Run,games/dino-run/,30,0
+Games,Car Run,games/car-run/,40,0
 Games,Browser FPS,games/browser-fps/,90,0
+Games,D-Pad Controller,controller/,95,1
 Media,TV,tv/,10,0
 Media,Webcam,media/webcam/,20,0
 Media,Paint,media/paint/,20,0

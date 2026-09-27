@@ -1,3 +1,6 @@
 # comments start with #
 favicon.png
 test.txt
+
+# local playwright harness
+_test/

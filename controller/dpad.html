@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>D-Pad Controller</title>
+  <link rel="stylesheet" href="dpad.css" />
+  <script src="../vendor/peerjs.min.js"></script>
+</head>
+<body>
+  <div id="rotate-overlay" hidden>
+    <div class="rotate-msg">
+      <div class="rotate-icon" aria-hidden="true">⟳</div>
+      <p>Rotate your phone to landscape</p>
+    </div>
+  </div>
+
+  <div id="pair-screen" hidden>
+    <h1>D-Pad Controller</h1>
+    <p class="hint">Enter the pairing code from the hub</p>
+    <input id="code-input" type="text" maxlength="8" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="CODE" />
+    <button type="button" id="connect-btn">Connect</button>
+    <p id="pair-error" class="error" hidden></p>
+  </div>
+
+  <div id="pad" hidden>
+    <div class="status-bar">
+      <span id="status-dot" class="dot disconnected"></span>
+      <span id="status-text">Disconnected</span>
+      <button type="button" id="reconnect-btn" hidden>Reconnect</button>
+      <span id="code-display" class="code-chip"></span>
+    </div>
+
+    <div class="pad-layout">
+      <div class="dpad" id="dpad" aria-label="D-pad">
+        <button type="button" class="dir up" data-btn="up" aria-label="Up"></button>
+        <button type="button" class="dir left" data-btn="left" aria-label="Left"></button>
+        <button type="button" class="dir right" data-btn="right" aria-label="Right"></button>
+        <button type="button" class="dir down" data-btn="down" aria-label="Down"></button>
+        <div class="dpad-center"></div>
+      </div>
+
+      <div class="mid-btns">
+        <button type="button" class="sys select" data-btn="select">SELECT</button>
+        <button type="button" class="sys start" data-btn="start">START</button>
+      </div>
+
+      <div class="ab-btns">
+        <button type="button" class="face a" data-btn="a" aria-label="A">A</button>
+        <button type="button" class="face b" data-btn="b" aria-label="B">B</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="dpad.js"></script>
+</body>
+</html>

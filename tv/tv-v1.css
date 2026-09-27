@@ -1,6 +1,6 @@
 /*
  * TV Player v1 styles
- * Channel grid / overlay from tv-v2; video stage from tv-v3
+ * Channel grid from tv-v2; video stage from tv-v3
  * (height 100%, object-fit contain, centered).
  */
 
@@ -132,19 +132,6 @@ body {
   font-size: 0.75rem;
   color: #aaa;
   margin-top: 3px;
-}
-
-.overlay-msg {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.8);
-  padding: 20px 30px;
-  border-radius: 8px;
-  display: none;
-  z-index: 5;
-  pointer-events: none;
 }
 
 #number-display {
