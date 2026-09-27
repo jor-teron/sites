@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<!--
+  Live Subtitle for Assam — about.html
+  Version: 0.11 | First release: 27 Sep 2026 | Last edit: 27 Sep 2026
+  Credit: personal project (Karbi Anglong / Assam)
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>About — Live Subtitle for Assam v0.11</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --text: #e8eef5;
+      --muted: #8b9bb0;
+      --accent: #3d8bfd;
+      --ok: #3dd68c;
+      --line: #2c3a4f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #121a24;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { font-weight: 650; font-size: 0.95rem; }
+    a.nav {
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-decoration: none;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--card);
+    }
+    a.nav.here { color: var(--text); border-color: var(--accent); }
+    a.about {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-left: auto;
+      text-decoration: none;
+    }
+    main { padding: 88px 16px 32px; max-width: 720px; margin: 0 auto; }
+    h1 { font-size: 1.2rem; margin: 0 0 8px; }
+    .meta { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin: 16px 0;
+    }
+    p, li { color: #b7c3d4; line-height: 1.55; }
+    ul { padding-left: 1.2rem; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="brand">Live Subtitle for Assam</span>
+    <a class="nav" href="index.html">Captions</a>
+    <a class="nav here" href="about.html">About</a>
+  </div>
+
+  <main>
+    <h1>About</h1>
+    <p class="meta">
+      Version <strong>0.11</strong> · API Edition · personal use<br />
+      First release: 27 Sep 2026<br />
+      Last edit: 27 Sep 2026
+    </p>
+
+    <div class="card">
+      <p><strong>Credit</strong><br />
+      Built for personal use in Karbi Anglong / Assam.<br />
+      Captions by Google Transcribe Live. Optional translation by Gemini Flash-Lite.<br />
+      UI and config by the project owner.</p>
+    </div>
+
+    <div class="card">
+      <p><strong>What it does</strong></p>
+      <ul>
+        <li>Input: Auto / English / Assamese / Hindi → live transcript</li>
+        <li>Output Off = transcript only. English / Hindi / Assamese = chat translate</li>
+        <li>Model: Auto rotate or pin 3.5 Lite / 3.1 Lite</li>
+        <li>Mic bar shows loudness. LED green = caption session on</li>
+        <li>RPD counters reset 00:00 UTC (set limits in config.js)</li>
+        <li>Vocab files: city.csv, town.csv, surname.csv, vocab.csv</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <p><strong>Parked</strong></p>
+      <ul>
+        <li>ABC / romanization</li>
+        <li>2-panel layout</li>
+        <li>Karbi</li>
+        <li>Local Pack (on-device)</li>
+        <li>Live Translate output</li>
+        <li>Speaker / translated audio</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <p><strong>Notes</strong></p>
+      <ul>
+        <li>API key stays in this browser. Do not publish it.</li>
+        <li>Audio is sent to the cloud while Start is on.</li>
+        <li>A live session may drop after about 10 minutes. Tap Start again.</li>
+        <li>500 RPD on Lite is a hard project cap if Google applies it that way.</li>
+      </ul>
+    </div>
+  </main>
+</body>
+</html>
