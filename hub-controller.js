@@ -100,15 +100,14 @@
       const qr = qrcode(0, 'M');
       qr.addData(url);
       qr.make();
-      qrHost.innerHTML = qr.createSvgTag(4, 0);
+      qrHost.innerHTML = qr.createSvgTag(4, 16);
       const svg = qrHost.querySelector('svg');
       if (svg) {
-        svg.setAttribute('width', '160');
-        svg.setAttribute('height', '160');
+        svg.setAttribute('width', '188');
+        svg.setAttribute('height', '188');
         svg.style.display = 'block';
-        // invert for dark bg: white modules on dark
+        // dark modules on white; margin is in px (16 = 4 modules x 4px), the quiet zone scanners need
         svg.style.background = '#fff';
-        svg.style.borderRadius = '6px';
       }
     } catch (err) {
       qrHost.textContent = 'QR error';

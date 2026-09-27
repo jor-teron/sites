@@ -307,13 +307,11 @@ html, body {
 #ctrl-close:hover { color: var(--text); }
 
 .ctrl-qr {
-  width: 160px;
-  height: 160px;
+  width: 188px;
+  height: 188px;
   display: grid;
   place-items: center;
-  background: #fff;
-  border-radius: 6px;
-  overflow: hidden;
+  background: #fff;   /* white quiet zone around the code (no rounded clipping) */
 }
 .ctrl-qr svg { display: block; }
 
