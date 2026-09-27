@@ -11,9 +11,9 @@ Tools,NE-India Dictionary,tools/nei-dict/,30,0
 Tools,MS Word Diff,tools/msword_diff/,40,0
 Tools,Notepad,tools/notepad/,50,0
 Tools,Weather,tools/weather-chart/,60,0
-Office,Spreadsheet,tools/spreadsheet/,60,0
+Office,Spreadsheet,office/spreadsheet/,60,0
 Tools,Learning HTMl (basic),tools/learning-html/,100,0
 Desktop,vDesktop,tools/vDesktop/,10,0
 About,About,about/,10,0
-About,Contact,about/,20,1
-About,Feedback,about/,30,1
+About,Contact,about/contact.txt,20,0
+About,Feedback,about/feedback.txt,30,1
