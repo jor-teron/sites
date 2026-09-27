@@ -1,113 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Desert Drive</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body {
-    height: 100%;
-    background: #1a0f0a;
-    overflow: hidden;
-    font-family: system-ui, -apple-system, sans-serif;
-    touch-action: none;
-    user-select: none;
-  }
-  #game {
-    display: block;
-    width: 100vw;
-    height: 100vh;
-    background: #e8b96a;
-  }
-  #hud {
-    position: fixed;
-    top: 12px;
-    left: 12px;
-    right: 12px;
-    display: flex;
-    justify-content: space-between;
-    color: #fff;
-    font-size: 20px;
-    font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    pointer-events: none;
-    font-variant-numeric: tabular-nums;
-  }
-  #overlay {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0,0,0,0.7);
-    color: #fff;
-    text-align: center;
-    padding: 24px;
-    gap: 14px;
-    backdrop-filter: blur(4px);
-  }
-  #overlay.hidden { display: none; }
-  #overlay h1 {
-    font-size: 2.2rem;
-    margin-bottom: 6px;
-    color: #ffd166;
-  }
-  #overlay p {
-    font-size: 1.05rem;
-    opacity: 0.9;
-    max-width: 420px;
-    line-height: 1.5;
-  }
-  #overlay .rank {
-    font-size: 1.6rem;
-    margin: 8px 0;
-  }
-  #overlay button {
-    margin-top: 16px;
-    padding: 14px 32px;
-    font-size: 1.1rem;
-    font-weight: 700;
-    border: none;
-    border-radius: 12px;
-    background: #ffd166;
-    color: #1a0f0a;
-    cursor: pointer;
-    transition: transform 0.1s;
-  }
-  #overlay button:active { transform: scale(0.96); }
-  .keys {
-    display: inline-block;
-    padding: 2px 8px;
-    background: rgba(255,255,255,0.15);
-    border-radius: 6px;
-    font-family: monospace;
-    font-size: 0.9em;
-  }
-</style>
-</head>
-<body>
-
-<canvas id="game"></canvas>
-
-<div id="hud">
-  <div>Score: <span id="score">0</span></div>
-  <div>Time: <span id="time">0.0</span>s</div>
-</div>
-
-<div id="overlay">
-  <h1>🏜️ Desert Drive</h1>
-  <p>
-    Dodge the cacti 🐫 animals and rocks.<br>
-    Reach <strong>100 points</strong> as fast as you can.<br><br>
-    Use <span class="keys">◀ ▶</span> or <span class="keys">A / D</span> to steer
-  </p>
-  <button id="startBtn">Start Driving</button>
-</div>
-
-<script>
+/*
+ * Desert Drive (desert-road) — game logic.
+ * Every tunable value comes from DESERT_ROAD_CONFIG (desert-road_config.js).
+ */
 (() => {
+  const CFG = DESERT_ROAD_CONFIG;
+  const isKey = (list, key) => list.includes(key);
+
   // ----- Setup -----
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -132,38 +30,32 @@
   // ----- Game State -----
   const state = {
     running: false,
-    score: 0,
+    score: CFG.start.score,
     startTime: 0,
     elapsed: 0,
     distance: 0,
-    speed: 4,                 // scroll speed (px per frame at 60fps)
-    car: { x: 0, y: 0, w: 46, h: 70, targetX: 0 },
+    speed: CFG.start.speed,   // scroll speed (px per frame at 60fps)
+    car: { x: 0, y: 0, w: CFG.car.width, h: CFG.car.height, targetX: 0 },
     obstacles: [],
     keys: { left: false, right: false },
     spawnTimer: 0,
-    spawnInterval: 45,        // frames between spawns (decreases slightly)
+    spawnInterval: CFG.start.idleSpawnInterval, // frames between spawns (decreases slightly)
     lastTime: 0,
     roadOffset: 0,
   };
 
   // Obstacle types — family friendly, desert themed
-  const OBSTACLE_TYPES = [
-    { emoji: '🌵', w: 34, h: 48, points: 1 },
-    { emoji: '🐫', w: 48, h: 46, points: 2 },
-    { emoji: '🐍', w: 36, h: 26, points: 2 },
-    { emoji: '🪨', w: 40, h: 34, points: 1 },
-    { emoji: '🦂', w: 34, h: 26, points: 3 },
-  ];
+  const OBSTACLE_TYPES = CFG.obstacles.types;
 
   // ----- Input -----
   function onKeyDown(e) {
-    if (e.key === 'ArrowLeft'  || e.key === 'a' || e.key === 'A') state.keys.left  = true;
-    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') state.keys.right = true;
-    if (e.key === ' ' && !state.running) startGame();
+    if (isKey(CFG.keys.left, e.key))  state.keys.left  = true;
+    if (isKey(CFG.keys.right, e.key)) state.keys.right = true;
+    if (isKey(CFG.keys.start, e.key) && !state.running) startGame();
   }
   function onKeyUp(e) {
-    if (e.key === 'ArrowLeft'  || e.key === 'a' || e.key === 'A') state.keys.left  = false;
-    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') state.keys.right = false;
+    if (isKey(CFG.keys.left, e.key))  state.keys.left  = false;
+    if (isKey(CFG.keys.right, e.key)) state.keys.right = false;
   }
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup',   onKeyUp);
@@ -180,20 +72,20 @@
   // ----- Game Flow -----
   function startGame() {
     state.running = true;
-    state.score = 0;
+    state.score = CFG.start.score;
     state.elapsed = 0;
     state.distance = 0;
-    state.speed = 4;
+    state.speed = CFG.start.speed;
     state.obstacles = [];
     state.spawnTimer = 0;
-    state.spawnInterval = 50;
+    state.spawnInterval = CFG.start.spawnInterval;
     state.startTime = performance.now();
     state.lastTime = performance.now();
     state.roadOffset = 0;
     state.car.x = W / 2;
     state.car.targetX = W / 2;
-    state.car.y = H - 130;
-    scoreEl.textContent = '0';
+    state.car.y = H - CFG.car.bottomOffset;
+    scoreEl.textContent = String(CFG.start.score);
     timeEl.textContent = '0.0';
     overlay.classList.add('hidden');
     requestAnimationFrame(loop);
@@ -204,23 +96,20 @@
 
     if (win) {
       const t = state.elapsed;
-      let rank, message;
-      if (t < 20)      { rank = '🥇 Gold';    message = 'Lightning fast!'; }
-      else if (t < 30) { rank = '🥈 Silver';  message = 'Great driving!'; }
-      else if (t < 45) { rank = '🥉 Bronze';  message = 'Nice work!'; }
-      else             { rank = '🏁 Finished'; message = 'You made it!'; }
+      const r = CFG.ranks.find(x => t < x.maxSeconds) || CFG.ranks[CFG.ranks.length - 1];
+      const rank = r.rank, message = r.message;
 
       overlay.innerHTML = `
-        <h1>You made it! 🎉</h1>
+        <h1>${CFG.text.winTitle}</h1>
         <div class="rank">${rank}</div>
         <p>Time: <strong>${t.toFixed(1)}s</strong><br>${message}</p>
-        <button id="startBtn">Drive Again</button>
+        <button id="startBtn">${CFG.text.winButton}</button>
       `;
     } else {
       overlay.innerHTML = `
-        <h1>💥 Crash!</h1>
-        <p>You scored <strong>${state.score}</strong> points.<br>Try again!</p>
-        <button id="startBtn">Try Again</button>
+        <h1>${CFG.text.crashTitle}</h1>
+        <p>${CFG.text.crashBody.replace('{score}', state.score)}</p>
+        <button id="startBtn">${CFG.text.crashButton}</button>
       `;
     }
     overlay.classList.remove('hidden');
@@ -230,10 +119,10 @@
   // ----- Spawning -----
   function spawnObstacle() {
     const type = OBSTACLE_TYPES[Math.floor(Math.random() * OBSTACLE_TYPES.length)];
-    const margin = 30;
+    const margin = CFG.obstacles.spawnMargin;
     const x = margin + Math.random() * (W - margin * 2 - type.w);
     state.obstacles.push({
-      x, y: -type.h - 10,
+      x, y: -type.h - CFG.obstacles.spawnAbove,
       w: type.w, h: type.h,
       emoji: type.emoji,
       points: type.points,
@@ -249,26 +138,27 @@
     timeEl.textContent = state.elapsed.toFixed(1);
 
     // difficulty ramps up slightly
-    state.speed = 4 + Math.min(state.elapsed * 0.08, 3);
-    state.spawnInterval = Math.max(28, 50 - state.elapsed * 0.4);
+    const D = CFG.difficulty;
+    state.speed = CFG.start.speed + Math.min(state.elapsed * D.speedPerSecond, D.maxExtraSpeed);
+    state.spawnInterval = Math.max(D.minSpawnInterval, CFG.start.spawnInterval - state.elapsed * D.spawnDecayPerSecond);
 
     // road stripes
-    state.roadOffset = (state.roadOffset + state.speed) % 60;
+    state.roadOffset = (state.roadOffset + state.speed) % CFG.road.stripePeriod;
 
     // car movement — smooth follow
-    const moveSpeed = 7;
+    const moveSpeed = CFG.car.moveSpeed;
     if (state.keys.left)  state.car.targetX -= moveSpeed;
     if (state.keys.right) state.car.targetX += moveSpeed;
-    state.car.targetX = Math.max(state.car.w / 2 + 8,
-                          Math.min(W - state.car.w / 2 - 8, state.car.targetX));
-    state.car.x += (state.car.targetX - state.car.x) * 0.25;
+    state.car.targetX = Math.max(state.car.w / 2 + CFG.car.edgeMargin,
+                          Math.min(W - state.car.w / 2 - CFG.car.edgeMargin, state.car.targetX));
+    state.car.x += (state.car.targetX - state.car.x) * CFG.car.follow;
 
     // spawn
     state.spawnTimer++;
     if (state.spawnTimer >= state.spawnInterval) {
       state.spawnTimer = 0;
-      // avoid spawning too many at once — 60% chance
-      if (Math.random() < 0.85) spawnObstacle();
+      // avoid spawning too many at once
+      if (Math.random() < CFG.difficulty.spawnChance) spawnObstacle();
     }
 
     // move obstacles
@@ -277,7 +167,7 @@
       o.y += state.speed;
 
       // collision (AABB, slightly forgiving)
-      const pad = 6;
+      const pad = CFG.obstacles.hitPad;
       const carL = state.car.x - state.car.w / 2 + pad;
       const carR = state.car.x + state.car.w / 2 - pad;
       const carT = state.car.y - state.car.h / 2 + pad;
@@ -296,7 +186,7 @@
         scoreEl.textContent = state.score;
         state.obstacles.splice(i, 1);
 
-        if (state.score >= 100) {
+        if (state.score >= CFG.winScore) {
           endGame(true);
           return;
         }
@@ -308,21 +198,21 @@
   function draw() {
     // sand background
     const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, '#e8b96a');
-    grad.addColorStop(1, '#d99f52');
+    grad.addColorStop(0, CFG.colors.sandTop);
+    grad.addColorStop(1, CFG.colors.sandBottom);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
     // road (center strip)
-    const roadW = Math.min(W * 0.9, 520);
+    const roadW = Math.min(W * CFG.road.widthFraction, CFG.road.maxWidth);
     const roadX = (W - roadW) / 2;
-    ctx.fillStyle = '#c98a45';
+    ctx.fillStyle = CFG.colors.road;
     ctx.fillRect(roadX, 0, roadW, H);
 
     // road edges (dashed)
-    ctx.strokeStyle = '#8a5a2b';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([12, 10]);
+    ctx.strokeStyle = CFG.colors.roadEdge;
+    ctx.lineWidth = CFG.road.edgeWidth;
+    ctx.setLineDash(CFG.road.edgeDash);
     ctx.beginPath();
     ctx.moveTo(roadX, 0); ctx.lineTo(roadX, H);
     ctx.moveTo(roadX + roadW, 0); ctx.lineTo(roadX + roadW, H);
@@ -330,9 +220,9 @@
     ctx.setLineDash([]);
 
     // center dashed stripe scrolling
-    ctx.strokeStyle = '#f4e0b0';
-    ctx.lineWidth = 5;
-    ctx.setLineDash([26, 34]);
+    ctx.strokeStyle = CFG.colors.stripe;
+    ctx.lineWidth = CFG.road.stripeWidth;
+    ctx.setLineDash(CFG.road.stripeDash);
     ctx.lineDashOffset = -state.roadOffset;
     ctx.beginPath();
     ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H);
@@ -355,17 +245,19 @@
     ctx.save();
     ctx.translate(cx, cy);
     // shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillStyle = CFG.colors.carShadow;
     ctx.beginPath();
     ctx.ellipse(0, 6, state.car.w / 2, state.car.h / 2, 0, 0, Math.PI * 2);
     ctx.fill();
     // body
-    ctx.fillStyle = '#d63c3c';
-    roundRect(-state.car.w / 2, -state.car.h / 2, state.car.w, state.car.h, 8);
+    ctx.fillStyle = CFG.colors.carBody;
+    roundRect(-state.car.w / 2, -state.car.h / 2, state.car.w, state.car.h, CFG.car.cornerRadius);
     ctx.fill();
     // windshield
-    ctx.fillStyle = '#8fd0ff';
-    roundRect(-state.car.w / 2 + 8, -state.car.h / 2 + 10, state.car.w - 16, 20, 4);
+    ctx.fillStyle = CFG.colors.windshield;
+    const C = CFG.car;
+    roundRect(-state.car.w / 2 + C.windshieldInset, -state.car.h / 2 + C.windshieldTop,
+              state.car.w - C.windshieldInset * 2, C.windshieldHeight, 4);
     ctx.fill();
     ctx.restore();
   }
@@ -400,10 +292,10 @@
   function idleLoop() {
     if (!state.running) {
       // gentle preview
-      state.roadOffset = (state.roadOffset + 2) % 60;
+      state.roadOffset = (state.roadOffset + CFG.road.idleScroll) % CFG.road.stripePeriod;
       if (state.car.x === 0 && W > 0) {
         state.car.x = W / 2;
-        state.car.y = H - 130;
+        state.car.y = H - CFG.car.bottomOffset;
       }
       draw();
       requestAnimationFrame(idleLoop);
@@ -416,6 +308,3 @@
   // expose for Controller integration
   window.DesertDrive = { start: startGame, setInput: window.setDriveInput };
 })();
-</script>
-</body>
-</html>

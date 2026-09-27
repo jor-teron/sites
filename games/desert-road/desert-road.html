@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Desert Drive</title>
+  <link rel="stylesheet" href="desert-road.css" />
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div>Score: <span id="score">0</span></div>
+  <div>Time: <span id="time">0.0</span>s</div>
+</div>
+
+<div id="overlay">
+  <h1>🏜️ Desert Drive</h1>
+  <p>
+    Dodge the cacti 🐫 animals and rocks.<br>
+    Reach <strong>100 points</strong> as fast as you can.<br><br>
+    Use <span class="keys">◀ ▶</span> or <span class="keys">A / D</span> to steer
+  </p>
+  <button id="startBtn">Start Driving</button>
+</div>
+
+  <script src="desert-road_config.js"></script>
+  <script src="desert-road_logic.js"></script>
+</body>
+</html>
