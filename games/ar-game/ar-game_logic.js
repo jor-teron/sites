@@ -1,7 +1,7 @@
 /*
- * AR Theme Game — Main app
- * Starts camera, loads default Pet theme, handles taps and DLC switch.
- * Header: app.js
+ * AR Theme Game — Main app (ar-game_logic.js)
+ * Starts camera, loads default theme, handles taps and DLC switch.
+ * Tunables come from AR_GAME_CONFIG (ar-game_config.js).
  */
 
 /**
@@ -22,7 +22,7 @@ let activeTheme = null;
 /**
  * Catch / blast / find score
  */
-let score = 0;
+let score = AR_GAME_CONFIG.startScore;
 
 /**
  * HUD score node
@@ -56,12 +56,12 @@ async function boot() {
     await startCamera(video);
     hideMsg();
   } catch (err) {
-    showMsg("Camera blocked. Allow camera and reload.");
+    showMsg(AR_GAME_CONFIG.text.cameraBlocked);
     console.error(err);
   }
 
   // Default theme is Pet
-  loadTheme("pet");
+  loadTheme(AR_GAME_CONFIG.defaultTheme);
 
   // Tap / click to catch the target
   canvas.addEventListener("pointerdown", onTap);
@@ -107,7 +107,7 @@ function onTap(ev) {
   if (hitTest(ev.clientX, ev.clientY)) {
     score += 1;
     scoreEl.textContent = String(score);
-    showMsg(activeTheme.onCatch(), 700);
+    showMsg(activeTheme.onCatch(), AR_GAME_CONFIG.catchMsgMs);
     // Respawn so the player can chase again
     setTarget(activeTheme.create());
   }

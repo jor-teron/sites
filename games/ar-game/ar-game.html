@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<!--
+  AR Theme Game
+  Phone camera + overlay. Default theme: Pet.
+  DLC buttons load Zombie / Ghost packs.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>AR Theme Game</title>
+  <link rel="stylesheet" href="ar-game.css" />
+</head>
+<body>
+  <!-- Live rear camera -->
+  <video id="camera" playsinline autoplay muted></video>
+
+  <!-- Three.js overlay -->
+  <canvas id="view"></canvas>
+
+  <div id="hud">
+    <span>Theme: <strong id="theme-name">Pet</strong></span>
+    <span>Score: <strong id="score">0</strong></span>
+  </div>
+
+  <div id="msg">Allow camera to play</div>
+
+  <div id="themes">
+    <button data-theme="pet" class="active">Pet</button>
+    <button data-theme="zombie">Zombie</button>
+    <button data-theme="ghost">Ghost</button>
+  </div>
+
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="ar-game_config.js"></script>
+  <script src="js/camera.js"></script>
+  <script src="js/ar.js"></script>
+  <script src="js/themes/pet.js"></script>
+  <script src="js/themes/zombie.js"></script>
+  <script src="js/themes/ghost.js"></script>
+  <script src="ar-game_logic.js"></script>
+</body>
+</html>

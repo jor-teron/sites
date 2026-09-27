@@ -7,12 +7,14 @@
 /**
  * Pet theme definition used by the engine.
  */
-const PetTheme = {
+const PetTheme = (function () {
+  const C = AR_GAME_CONFIG.themes.pet;
+  return {
   /** Theme id used by the loader */
   id: "pet",
 
   /** HUD label */
-  label: "Pet",
+  label: C.label,
 
   /**
    * Build the placeholder pet mesh (orange sphere + ears).
@@ -23,14 +25,14 @@ const PetTheme = {
 
     // Body
     const body = new THREE.Mesh(
-      new THREE.SphereGeometry(0.55, 24, 16),
-      new THREE.MeshStandardMaterial({ color: 0xe67e22 })
+      new THREE.SphereGeometry(C.bodyRadius, 24, 16),
+      new THREE.MeshStandardMaterial({ color: C.bodyColor })
     );
     group.add(body);
 
     // Left ear
     const earGeo = new THREE.ConeGeometry(0.18, 0.35, 8);
-    const earMat = new THREE.MeshStandardMaterial({ color: 0xd35400 });
+    const earMat = new THREE.MeshStandardMaterial({ color: C.earColor });
     const earL = new THREE.Mesh(earGeo, earMat);
     earL.position.set(-0.28, 0.55, 0);
     group.add(earL);
@@ -44,8 +46,8 @@ const PetTheme = {
     group.position.set(0, 0, 0);
 
     // Motion state stored on the group
-    group.userData.vx = 1.4;
-    group.userData.vy = 1.1;
+    group.userData.vx = C.vx;
+    group.userData.vy = C.vy;
     return group;
   },
 
@@ -60,17 +62,17 @@ const PetTheme = {
     mesh.position.y += mesh.userData.vy * dt;
 
     // Bounce off invisible walls
-    if (Math.abs(mesh.position.x) > 2.4) {
+    if (Math.abs(mesh.position.x) > C.boundX) {
       mesh.userData.vx *= -1;
-      mesh.position.x = Math.sign(mesh.position.x) * 2.4;
+      mesh.position.x = Math.sign(mesh.position.x) * C.boundX;
     }
-    if (Math.abs(mesh.position.y) > 1.6) {
+    if (Math.abs(mesh.position.y) > C.boundY) {
       mesh.userData.vy *= -1;
-      mesh.position.y = Math.sign(mesh.position.y) * 1.6;
+      mesh.position.y = Math.sign(mesh.position.y) * C.boundY;
     }
 
     // Small spin so it feels alive
-    mesh.rotation.y += dt * 2;
+    mesh.rotation.y += dt * C.spin;
   },
 
   /**
@@ -78,6 +80,7 @@ const PetTheme = {
    * @returns {string} short HUD flash text
    */
   onCatch: function () {
-    return "Caught the pet!";
+    return C.catchText;
   }
-};
+  };
+})();

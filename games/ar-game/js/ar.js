@@ -35,30 +35,31 @@ let targetMesh = null;
  * @param {HTMLCanvasElement} canvas - #view canvas
  */
 function initAR(canvas) {
+  const R = AR_GAME_CONFIG.render;
   // WebGL renderer, transparent so the camera video shows through
   renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     alpha: true,
     antialias: true
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, R.maxPixelRatio));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setClearColor(0x000000, 0);
 
   // Simple perspective camera
   sceneCam = new THREE.PerspectiveCamera(
-    60,
+    R.fov,
     window.innerWidth / window.innerHeight,
-    0.1,
-    100
+    R.near,
+    R.far
   );
-  sceneCam.position.set(0, 0, 6);
+  sceneCam.position.set(0, 0, R.cameraZ);
 
   scene = new THREE.Scene();
   clock = new THREE.Clock();
 
   // Soft light so placeholders read well on camera video
-  const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.1);
+  const light = new THREE.HemisphereLight(R.lightSky, R.lightGround, R.lightIntensity);
   scene.add(light);
 
   window.addEventListener("resize", onResize);

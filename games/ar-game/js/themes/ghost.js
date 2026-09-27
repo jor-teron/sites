@@ -7,12 +7,14 @@
 /**
  * Ghost theme definition.
  */
-const GhostTheme = {
+const GhostTheme = (function () {
+  const C = AR_GAME_CONFIG.themes.ghost;
+  return {
   /** Theme id used by the loader */
   id: "ghost",
 
   /** HUD label */
-  label: "Ghost",
+  label: C.label,
 
   /**
    * Pale sphere placeholder.
@@ -20,11 +22,11 @@ const GhostTheme = {
    */
   create: function () {
     const mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(0.5, 20, 14),
+      new THREE.SphereGeometry(C.radius, 20, 14),
       new THREE.MeshStandardMaterial({
-        color: 0xecf0f1,
+        color: C.color,
         transparent: true,
-        opacity: 0.55
+        opacity: C.opacity
       })
     );
     mesh.userData.t = 0;
@@ -38,9 +40,9 @@ const GhostTheme = {
    */
   update: function (mesh, dt) {
     mesh.userData.t += dt;
-    mesh.position.x = Math.sin(mesh.userData.t * 0.7) * 2.0;
-    mesh.position.y = Math.cos(mesh.userData.t * 0.5) * 1.0;
-    mesh.material.opacity = 0.25 + Math.abs(Math.sin(mesh.userData.t * 2)) * 0.5;
+    mesh.position.x = Math.sin(mesh.userData.t * C.speedX) * C.rangeX;
+    mesh.position.y = Math.cos(mesh.userData.t * C.speedY) * C.rangeY;
+    mesh.material.opacity = C.fadeMin + Math.abs(Math.sin(mesh.userData.t * C.fadeSpeed)) * C.fadeRange;
   },
 
   /**
@@ -48,6 +50,7 @@ const GhostTheme = {
    * @returns {string}
    */
   onCatch: function () {
-    return "Ghost found!";
+    return C.catchText;
   }
-};
+  };
+})();

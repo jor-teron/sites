@@ -24,9 +24,9 @@ async function startCamera(el) {
   const constraints = {
     audio: false,
     video: {
-      facingMode: { ideal: "environment" },
-      width: { ideal: 1280 },
-      height: { ideal: 720 }
+      facingMode: { ideal: AR_GAME_CONFIG.camera.facingMode },
+      width: { ideal: AR_GAME_CONFIG.camera.width },
+      height: { ideal: AR_GAME_CONFIG.camera.height }
     }
   };
 

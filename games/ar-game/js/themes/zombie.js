@@ -7,12 +7,14 @@
 /**
  * Zombie theme definition.
  */
-const ZombieTheme = {
+const ZombieTheme = (function () {
+  const C = AR_GAME_CONFIG.themes.zombie;
+  return {
   /** Theme id used by the loader */
   id: "zombie",
 
   /** HUD label */
-  label: "Zombie",
+  label: C.label,
 
   /**
    * Green box placeholder until a real model is added.
@@ -20,8 +22,8 @@ const ZombieTheme = {
    */
   create: function () {
     const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(0.7, 1.1, 0.5),
-      new THREE.MeshStandardMaterial({ color: 0x27ae60 })
+      new THREE.BoxGeometry(C.size[0], C.size[1], C.size[2]),
+      new THREE.MeshStandardMaterial({ color: C.color })
     );
     mesh.userData.t = 0;
     return mesh;
@@ -34,9 +36,9 @@ const ZombieTheme = {
    */
   update: function (mesh, dt) {
     mesh.userData.t += dt;
-    mesh.position.x = Math.sin(mesh.userData.t * 0.8) * 1.8;
-    mesh.position.y = -0.4;
-    mesh.rotation.y += dt * 0.6;
+    mesh.position.x = Math.sin(mesh.userData.t * C.swaySpeed) * C.sway;
+    mesh.position.y = C.y;
+    mesh.rotation.y += dt * C.spin;
   },
 
   /**
@@ -44,6 +46,7 @@ const ZombieTheme = {
    * @returns {string}
    */
   onCatch: function () {
-    return "Zombie down!";
+    return C.catchText;
   }
-};
+  };
+})();
