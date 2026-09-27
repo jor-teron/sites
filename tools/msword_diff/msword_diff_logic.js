@@ -1,5 +1,7 @@
-/* MSword_diff.js — see HTML comments for UI wiring */
+/* msword_diff_logic.js — see HTML comments for UI wiring. Settings/text come from MSWORD_DIFF_CONFIG (msword_diff_config.js). */
 (function () {
+  var CFG = MSWORD_DIFF_CONFIG;
+  var TXT = CFG.text;
   var fileOld = document.getElementById("fileOld");
   var fileNew = document.getElementById("fileNew");
   var btn = document.getElementById("btnCompare");
@@ -23,14 +25,14 @@
   var docCache = typeof WeakMap === "function" ? new WeakMap() : null;
   var docCacheFallback = [];
 
-  var IDB_NAME = "msword_diff";
-  var IDB_STORE = "files";
+  var IDB_NAME = CFG.storage.idbName;
+  var IDB_STORE = CFG.storage.idbStore;
   var restoring = false;
 
   function idbOpen() {
     return new Promise(function (resolve, reject) {
       if (!window.indexedDB) { reject(new Error("no idb")); return; }
-      var req = indexedDB.open(IDB_NAME, 1);
+      var req = indexedDB.open(IDB_NAME, CFG.storage.idbVersion);
       req.onupgradeneeded = function () {
         var db = req.result;
         if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
@@ -64,13 +66,13 @@
   function fileToRec(file) {
     if (!file) return Promise.resolve(null);
     return file.arrayBuffer().then(function (buf) {
-      return { name: file.name, type: file.type || "application/vnd.openxmlformats-officedocument.wordprocessingml.document", buf: buf };
+      return { name: file.name, type: file.type || CFG.files.docxMime, buf: buf };
     });
   }
 
   function recToFile(rec) {
     if (!rec || !rec.buf) return null;
-    return new File([rec.buf], rec.name || "document.docx", { type: rec.type || "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+    return new File([rec.buf], rec.name || CFG.files.fallbackName, { type: rec.type || CFG.files.docxMime });
   }
 
   function saveHeld() {
@@ -113,7 +115,7 @@
     held.new = null;
     try { fileOld.value = ""; fileNew.value = ""; } catch (e) {}
     pairNodes = [];
-    if (diffScroll) diffScroll.innerHTML = '<p class="hint">Drop one or two files (.docx or plaintext) on the left or right pane.</p>';
+    if (diffScroll) diffScroll.innerHTML = '<p class="hint">' + TXT.hint + '</p>';
     if (changeBar) changeBar.textContent = "";
     if (statsEl) statsEl.hidden = true;
     updatePaneHeads();
@@ -123,6 +125,12 @@
     restoring = false;
   }
 
+
+  fileOld.accept = CFG.files.accept;
+  fileNew.accept = CFG.files.accept;
+  wordMode.value = CFG.defaults.wordMode;
+  if (minimapOpt) minimapOpt.value = CFG.defaults.minimap;
+  if (countsOpt) countsOpt.value = CFG.defaults.counts;
 
   fileOld.addEventListener("change", function () {
     held.old = fileOld.files[0] || null;
@@ -137,12 +145,12 @@
   headOld.addEventListener("click", function () { fileOld.click(); });
   headNew.addEventListener("click", function () { fileNew.click(); });
 
-  var TEXT_EXT = /\.(txt|text|md|markdown|rst|org|adoc|asciidoc|csv|tsv|ssv|psv|log|out|err|json|jsonl|ndjson|xml|html|htm|xhtml|svg|js|mjs|cjs|ts|tsx|jsx|css|scss|sass|less|ini|conf|cfg|config|env|properties|toml|yaml|yml|sh|bash|zsh|fish|csh|ksh|bat|cmd|ps1|psm1|py|pyw|rb|pl|pm|php|lua|r|sql|go|rs|c|h|cpp|cc|cxx|hpp|hh|cs|java|kt|kts|swift|m|mm|scala|groovy|dart|vue|svelte|mk|cmake|gradle|diff|patch|tex|bib|sty|srt|vtt|ass|vcf|ics|m3u|m3u8|service|timer|socket|desktop)$/i;
-  var TEXT_NAMES = /^(makefile|gnumakefile|dockerfile|containerfile|readme|license|licence|changelog|authors|copying|gitignore|gitattributes|gitmodules|editorconfig|procfile|vagrantfile)$/i;
+  var TEXT_EXT = CFG.files.textExtPattern;
+  var TEXT_NAMES = CFG.files.textNamePattern;
 
 
   function isDocx(file) {
-    return file && /\.docx$/i.test(file.name);
+    return file && CFG.files.docxPattern.test(file.name);
   }
 
   function isTextFile(file) {
@@ -153,8 +161,8 @@
     if (TEXT_NAMES.test(base)) return true;
     if (base.charAt(0) === "." && TEXT_NAMES.test(base.slice(1))) return true;
     var typ = file.type || "";
-    if (typ.indexOf("text/") === 0) return true;
-    if (/^application\/(json|xml|javascript|x-sh|x-csh|x-shellscript|sql)$/i.test(typ)) return true;
+    if (typ.indexOf(CFG.files.textMimePrefix) === 0) return true;
+    if (CFG.files.textMimePattern.test(typ)) return true;
     return false;
   }
 
@@ -173,7 +181,7 @@
   function setFile(which, file) {
     if (!file) return;
     if (!isAllowedFile(file)) {
-      showStatus("Use .docx or a text/script file (.txt, .sh, .csv, .py, …).");
+      showStatus(TXT.badFileType);
       return;
     }
     var input = which === "old" ? fileOld : fileNew;
@@ -190,10 +198,10 @@
 
   function updatePaneHeads() {
     if (!headOld || !headNew) return;
-    headOld.textContent = held.old ? held.old.name : "Drop a file";
-    headOld.title = held.old ? held.old.name : "Click to choose or drop here";
-    headNew.textContent = held.new ? held.new.name : "Drop a file";
-    headNew.title = held.new ? held.new.name : "Click to choose or drop here";
+    headOld.textContent = held.old ? held.old.name : TXT.dropFile;
+    headOld.title = held.old ? held.old.name : TXT.headTitle;
+    headNew.textContent = held.new ? held.new.name : TXT.dropFile;
+    headNew.title = held.new ? held.new.name : TXT.headTitle;
   }
 
   function takeTwo(files) {
@@ -207,21 +215,21 @@
     var b = held.new || fileNew.files[0];
     if (a && b) {
       runCompare().catch(function (err) {
-        showStatus("Error: " + (err && err.message ? err.message : err));
+        showStatus(TXT.errorPrefix + (err && err.message ? err.message : err));
         btn.disabled = false;
       });
       return;
     }
     if (a || b) {
       showPreview(a ? "old" : "new", a || b).catch(function (err) {
-        showStatus("Error: " + (err && err.message ? err.message : err));
+        showStatus(TXT.errorPrefix + (err && err.message ? err.message : err));
       });
     }
   }
 
   async function showPreview(side, file) {
-    if (typeof JSZip === "undefined") throw new Error("JSZip not loaded.");
-    showStatus("Reading file...");
+    if (typeof JSZip === "undefined") throw new Error(TXT.jszipMissingPreview);
+    showStatus(TXT.readingFile);
     var doc = await fileToDoc(file);
     var rows = [];
     for (var i = 0; i < doc.paras.length; i++) {
@@ -246,7 +254,7 @@
     headOld.classList.remove("drag");
     headNew.classList.remove("drag");
     var files = docxFromList(e.dataTransfer.files);
-    if (!files.length) { showStatus("Drop a .docx or plaintext file."); return; }
+    if (!files.length) { showStatus(TXT.noUsableDrop); return; }
     if (files.length >= 2) { takeTwo(files); return; }
     setFile(sideFromEvent(e), files[0]);
     maybeCompare();
@@ -287,16 +295,17 @@
 
   btn.addEventListener("click", function () {
     runCompare().catch(function (err) {
-      showStatus("Error: " + (err && err.message ? err.message : err));
+      showStatus(TXT.errorPrefix + (err && err.message ? err.message : err));
       btn.disabled = false;
     });
   });
 
   function fillFontOptions() {
     if (fontSize.options.length) return;
-    var saved = parseInt(localStorage.getItem("msword_diff_pt") || "12", 10);
-    if (isNaN(saved) || saved < 10 || saved > 24 || saved % 2) saved = 12;
-    for (var pt = 10; pt <= 24; pt += 2) {
+    var F = CFG.font;
+    var saved = parseInt(localStorage.getItem(CFG.storage.fontKey) || String(F.default), 10);
+    if (isNaN(saved) || saved < F.min || saved > F.max || (saved - F.min) % F.step) saved = F.default;
+    for (var pt = F.min; pt <= F.max; pt += F.step) {
       var opt = document.createElement("option");
       opt.value = String(pt);
       opt.textContent = String(pt);
@@ -306,9 +315,9 @@
     applyFontSize();
   }
   function applyFontSize() {
-    var pt = fontSize.value || "12";
-    diffScroll.style.setProperty("--diff-pt", pt + "pt");
-    try { localStorage.setItem("msword_diff_pt", pt); } catch (e) {}
+    var pt = fontSize.value || String(CFG.font.default);
+    diffScroll.style.setProperty(CFG.font.cssVar, pt + "pt");
+    try { localStorage.setItem(CFG.storage.fontKey, pt); } catch (e) {}
   }
   function applyViewOptions() {
     var mapOn = minimapOpt && minimapOpt.value === "on";
@@ -319,15 +328,15 @@
     if (changeBar) changeBar.hidden = !mapOn;
     if (statsEl && !countOn) statsEl.hidden = true;
     try {
-      localStorage.setItem("msword_diff_map", mapOn ? "on" : "off");
-      localStorage.setItem("msword_diff_counts", countOn ? "on" : "off");
+      localStorage.setItem(CFG.storage.minimapKey, mapOn ? "on" : "off");
+      localStorage.setItem(CFG.storage.countsKey, countOn ? "on" : "off");
     } catch (e) {}
   }
 
   function restoreViewOptions() {
     try {
-      var m = localStorage.getItem("msword_diff_map");
-      var c = localStorage.getItem("msword_diff_counts");
+      var m = localStorage.getItem(CFG.storage.minimapKey);
+      var c = localStorage.getItem(CFG.storage.countsKey);
       if (minimapOpt && (m === "on" || m === "off")) minimapOpt.value = m;
       if (countsOpt && (c === "on" || c === "off")) countsOpt.value = c;
     } catch (e) {}
@@ -348,20 +357,20 @@
   }
 
   async function runCompare() {
-    if (typeof JSZip === "undefined") throw new Error("JSZip not loaded. Put lib/jszip.min.js in lib/.");
-    if (typeof diff_match_patch === "undefined") throw new Error("diff_match_patch not loaded. Put lib/diff_match_patch.js in lib/.");
+    if (typeof JSZip === "undefined") throw new Error(TXT.jszipMissing);
+    if (typeof diff_match_patch === "undefined") throw new Error(TXT.dmpMissing);
     var oldFile = held.old || fileOld.files[0];
     var newFile = held.new || fileNew.files[0];
-    if (!oldFile || !newFile) throw new Error("Choose both Left and Right files.");
+    if (!oldFile || !newFile) throw new Error(TXT.needBoth);
     btn.disabled = true;
-    showStatus("Reading files…");
+    showStatus(TXT.readingFiles);
     resultEl.hidden = true;
     statsEl.hidden = true;
     var docOld = await fileToDoc(oldFile);
     var docNew = await fileToDoc(newFile);
-    showStatus("Comparing…");
+    showStatus(TXT.comparing);
     var dmp = new diff_match_patch();
-    dmp.Diff_Timeout = 8;
+    dmp.Diff_Timeout = CFG.diff.timeoutSec;
     var diffs = dmp.diff_main(docOld.text, docNew.text);
     if ((wordMode.value === "on")) dmp.diff_cleanupSemantic(diffs);
     var rows = pairChangeRows(diffsToRows(diffs));
@@ -412,7 +421,7 @@
   function twipToPx(v) {
     var n = parseInt(v, 10);
     if (!n) return 0;
-    return Math.round(n / 20 * 96 / 72);
+    return Math.round(n / CFG.docx.twipsPerPoint * CFG.docx.pxPerInch / CFG.docx.ptPerInch);
   }
   function cacheGet(file) {
     if (docCache) return docCache.get(file) || null;
@@ -424,7 +433,7 @@
   function cacheSet(file, doc) {
     if (docCache) { docCache.set(file, doc); return; }
     docCacheFallback.push({ file: file, doc: doc });
-    if (docCacheFallback.length > 8) docCacheFallback.shift();
+    if (docCacheFallback.length > CFG.diff.cacheFallbackMax) docCacheFallback.shift();
   }
 
   function blankPara(line) {
@@ -460,15 +469,15 @@
   }
 
   async function docxToDoc(file) {
-    if (!/\.docx$/i.test(file.name)) throw new Error(file.name + " is not a .docx file (old .doc is not supported).");
+    if (!CFG.files.docxPattern.test(file.name)) throw new Error(file.name + TXT.notDocx);
     var cached = cacheGet(file);
     if (cached) return cached;
     var zip = await JSZip.loadAsync(file);
-    var xmlFile = zip.file("word/document.xml");
-    if (!xmlFile) throw new Error(file.name + " has no word/document.xml. Is it a valid Word file?");
+    var xmlFile = zip.file(CFG.docx.documentPath);
+    if (!xmlFile) throw new Error(file.name + TXT.noDocumentXml);
     var styleMap = {}, numMap = {};
-    var stylesFile = zip.file("word/styles.xml");
-    var numFile = zip.file("word/numbering.xml");
+    var stylesFile = zip.file(CFG.docx.stylesPath);
+    var numFile = zip.file(CFG.docx.numberingPath);
     if (stylesFile) styleMap = parseStyles(await stylesFile.async("string"));
     if (numFile) numMap = parseNumbering(await numFile.async("string"));
     var parsed = parseBody(await xmlFile.async("string"), styleMap, numMap);
@@ -485,7 +494,7 @@
       var nameEl = firstChildLocal(styles[i], "name");
       var name = (attrVal(nameEl, "val") || id).toLowerCase();
       var heading = 0;
-      var m = name.match(/heading\s*([1-3])/);
+      var m = name.match(CFG.docx.headingPattern);
       if (m) heading = parseInt(m[1], 10);
       if (!heading && /heading\s*1/i.test(id)) heading = 1;
       if (!heading && /heading\s*2/i.test(id)) heading = 2;
@@ -519,7 +528,7 @@
 
   function parseBody(xml, styleMap, numMap) {
     var doc = new DOMParser().parseFromString(xml, "text/xml");
-    if (doc.querySelector("parsererror")) throw new Error("Could not parse Word XML.");
+    if (doc.querySelector("parsererror")) throw new Error(TXT.badXml);
     var paras = [], counters = {};
     var body = firstByLocal(doc, "body") || doc;
     walkBlocks(body, paras, styleMap, numMap, counters);
@@ -563,7 +572,7 @@
         for (var c = n.firstElementChild; c; c = c.nextElementSibling) {
           if ((c.localName || "") === "tc") cells.push(cellPlain(c));
         }
-        var line = cells.join(" | ");
+        var line = cells.join(CFG.docx.tableCellSeparator);
         paras.push({
           text: line,
           runs: [{ text: line, bold: false, italic: false, underline: false }],
@@ -571,8 +580,8 @@
           heading: 0,
           padLeft: 0,
           padFirst: 0,
-          spaceBefore: 4,
-          spaceAfter: 4,
+          spaceBefore: CFG.docx.tableRowSpacingPx,
+          spaceAfter: CFG.docx.tableRowSpacingPx,
           listKind: null,
           listLabel: ""
         });
@@ -603,19 +612,19 @@
       var numId = attrVal(firstChildLocal(numPr, "numId"), "val") || "0";
       var spec = (numMap[numId] || {})[ilvl] || { kind: "bullet" };
       listKind = spec.kind;
-      left += parseInt(ilvl, 10) * 24;
+      left += parseInt(ilvl, 10) * CFG.docx.listIndentPx;
       if (listKind === "number") {
         var key = numId + ":" + ilvl;
         counters[key] = (counters[key] || 0) + 1;
-        listLabel = counters[key] + ".";
-        for (var wipe = parseInt(ilvl, 10) + 1; wipe < 9; wipe++) delete counters[numId + ":" + wipe];
-      } else listLabel = "•";
+        listLabel = counters[key] + CFG.docx.numberSuffix;
+        for (var wipe = parseInt(ilvl, 10) + 1; wipe < CFG.docx.listLevels; wipe++) delete counters[numId + ":" + wipe];
+      } else listLabel = CFG.docx.bulletLabel;
     }
     var runs = [];
     collectRuns(p, runs, st);
     var text = "";
     for (var r = 0; r < runs.length; r++) text += runs[r].text;
-    return { text: text, runs: runs, align: align, heading: heading, padLeft: left, padFirst: first - hang, spaceBefore: Math.min(before, 36), spaceAfter: Math.min(after, 36), listKind: listKind, listLabel: listLabel };
+    return { text: text, runs: runs, align: align, heading: heading, padLeft: left, padFirst: first - hang, spaceBefore: Math.min(before, CFG.docx.maxSpacingPx), spaceAfter: Math.min(after, CFG.docx.maxSpacingPx), listKind: listKind, listLabel: listLabel };
   }
 
   function collectRuns(el, runs, st) {
@@ -721,8 +730,8 @@
       mark.type = "button";
       mark.className = "mark " + pairNodes[i].kind;
       mark.style.top = ((i / total) * 100) + "%";
-      mark.style.height = Math.max(3, (100 / total)) + "%";
-      mark.title = "Jump to change";
+      mark.style.height = Math.max(CFG.minimap.minMarkPct, (100 / total)) + "%";
+      mark.title = TXT.jumpTitle;
       mark.setAttribute("data-i", String(i));
       changeBar.appendChild(mark);
     }
@@ -795,9 +804,9 @@
         var take = Math.min(room, data.length - s);
         var chunk = data.slice(s, s + take);
         var el = op === 1 ? document.createElement("ins") : (op === -1 ? document.createElement("del") : document.createElement("span"));
-        if (st.bold) el.style.fontWeight = "700";
-        if (st.italic) el.style.fontStyle = "italic";
-        if (st.underline) el.style.textDecoration = "underline";
+        if (st.bold) el.style.fontWeight = CFG.runStyle.boldWeight;
+        if (st.italic) el.style.fontStyle = CFG.runStyle.italicStyle;
+        if (st.underline) el.style.textDecoration = CFG.runStyle.underlineDecoration;
         el.textContent = chunk;
         tx.appendChild(el);
         empty = false;
@@ -817,7 +826,7 @@
     for (var j = 0; j < rows.length; j++) {
       if (rows[j].leftKind !== "eq" || rows[j].rightKind !== "eq") changedRows++;
     }
-    statsEl.textContent = "Changed lines: " + changedRows + " · Added chars: " + add + " · Removed chars: " + del;
+    statsEl.textContent = TXT.statsChanged + changedRows + TXT.statsAdded + add + TXT.statsRemoved + del;
     statsEl.hidden = !(countsOpt && countsOpt.value === "on");
   }
 })();

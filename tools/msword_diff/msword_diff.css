@@ -1,8 +1,8 @@
 /* ============================================================
-   MSword_diff.css
-   Looks for the markup in MSword_diff.html.
+   msword_diff.css
+   Looks for the markup in msword_diff.html.
    JS toggles: .drag on drop zones; .row.eq/.del/.add/.mod/.empty on cells.
-   --diff-pt is set by applyFontSize() (10–24 pt).
+   --diff-pt is set by applyFontSize() (range in msword_diff_config.js, 10–24 pt).
    ============================================================ */
 
 /* ---- Page shell ---- */

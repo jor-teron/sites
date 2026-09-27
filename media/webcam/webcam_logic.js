@@ -1,6 +1,9 @@
-// webcam.js
+// webcam_logic.js — settings and text come from WEBCAM_CONFIG (webcam_config.js)
 
 document.addEventListener('DOMContentLoaded', () => {
+    const CFG = WEBCAM_CONFIG;
+    const TXT = CFG.text;
+
     // Get references to HTML elements
     const webcamFeed = document.getElementById('webcamFeed');
     const photoCanvas = document.getElementById('photoCanvas');
@@ -18,13 +21,13 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function displayMessage(msg, type = 'info') {
         messageDiv.textContent = msg;
-        messageDiv.className = 'mt-4 text-sm'; // Reset classes
+        messageDiv.className = CFG.classes.messageBase; // Reset classes
         if (type === 'error') {
-            messageDiv.classList.add('text-red-600', 'font-semibold');
+            messageDiv.classList.add(...CFG.classes.messageError);
         } else if (type === 'success') {
-            messageDiv.classList.add('text-green-600', 'font-semibold');
+            messageDiv.classList.add(...CFG.classes.messageSuccess);
         } else {
-            messageDiv.classList.add('text-gray-600');
+            messageDiv.classList.add(...CFG.classes.messageInfo);
         }
     }
 
@@ -32,10 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
      * Initializes the webcam stream.
      */
     async function initWebcam() {
-        displayMessage('Requesting webcam access...');
+        displayMessage(TXT.requesting);
         try {
             // Request access to the user's media devices (webcam)
-            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            stream = await navigator.mediaDevices.getUserMedia(CFG.mediaConstraints);
 
             // Attach the stream to the video element
             webcamFeed.srcObject = stream;
@@ -43,18 +46,18 @@ document.addEventListener('DOMContentLoaded', () => {
             // When the video metadata is loaded, play the video
             webcamFeed.onloadedmetadata = () => {
                 webcamFeed.play();
-                displayMessage('Webcam feed active. Click "Capture Photo" to take a picture.');
+                displayMessage(TXT.active);
                 captureButton.disabled = false; // Enable capture button once stream is ready
             };
         } catch (err) {
             // Handle errors if webcam access is denied or not available
-            console.error('Error accessing webcam:', err);
-            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                displayMessage('Webcam access denied. Please allow camera access in your browser settings.', 'error');
-            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-                displayMessage('No webcam found. Please ensure a webcam is connected and working.', 'error');
+            console.error(TXT.consoleError, err);
+            if (CFG.errorNames.denied.includes(err.name)) {
+                displayMessage(TXT.denied, 'error');
+            } else if (CFG.errorNames.notFound.includes(err.name)) {
+                displayMessage(TXT.notFound, 'error');
             } else {
-                displayMessage(`Error: ${err.message}`, 'error');
+                displayMessage(`${TXT.errorPrefix}${err.message}`, 'error');
             }
             captureButton.disabled = true; // Keep capture button disabled on error
         }
@@ -65,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function capturePhoto() {
         if (!stream) {
-            displayMessage('Webcam not active. Please allow camera access first.', 'error');
+            displayMessage(TXT.notActive, 'error');
             return;
         }
 
@@ -77,18 +80,21 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.drawImage(webcamFeed, 0, 0, photoCanvas.width, photoCanvas.height);
 
         // Convert the canvas content to a data URL (PNG image)
-        const imageDataURL = photoCanvas.toDataURL('image/png');
+        const imageDataURL = photoCanvas.toDataURL(CFG.photo.mimeType);
 
         // Show the canvas and the download link
-        photoCanvas.classList.remove('hidden');
-        downloadLink.classList.remove('hidden');
+        photoCanvas.classList.remove(CFG.classes.hidden);
+        downloadLink.classList.remove(CFG.classes.hidden);
 
         // Set the download link's href to the image data URL
         downloadLink.href = imageDataURL;
-        downloadLink.textContent = 'Download Photo'; // Reset text in case it changed
+        downloadLink.textContent = TXT.downloadLabel; // Reset text in case it changed
 
-        displayMessage('Photo captured! Click "Download Photo" to save it.', 'success');
+        displayMessage(TXT.captured, 'success');
     }
+
+    // File name offered by the download link
+    downloadLink.download = CFG.photo.downloadName;
 
     // Add event listener to the capture button
     captureButton.addEventListener('click', capturePhoto);

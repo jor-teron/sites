@@ -48,10 +48,11 @@
   <!--
     Panes are the drop targets.
     1 file = that side. 2 files = Left then Right (any side). Swap if order is wrong.
+    Accepted file types (the pickers' accept list) come from msword_diff_config.js.
   -->
   <section id="result" class="result">
-    <input id="fileOld" type="file" accept=".docx,.txt,.text,.md,.markdown,.rst,.org,.adoc,.asciidoc,.csv,.tsv,.ssv,.psv,.log,.out,.err,.json,.jsonl,.ndjson,.xml,.html,.htm,.xhtml,.svg,.js,.mjs,.cjs,.ts,.tsx,.jsx,.css,.scss,.sass,.less,.ini,.conf,.cfg,.config,.env,.properties,.toml,.yaml,.yml,.sh,.bash,.zsh,.fish,.csh,.ksh,.bat,.cmd,.ps1,.psm1,.py,.pyw,.rb,.pl,.pm,.php,.lua,.r,.sql,.go,.rs,.c,.h,.cpp,.cc,.cxx,.hpp,.hh,.cs,.java,.kt,.kts,.swift,.m,.mm,.scala,.groovy,.dart,.vue,.svelte,.makefile,.mk,.cmake,.gradle,.sbt,.diff,.patch,.gitignore,.gitattributes,.gitmodules,.editorconfig,.dockerfile,.containerfile,.service,.timer,.socket,.desktop,.tex,.bib,.sty,.srt,.vtt,.ass,.vcf,.ics,.m3u,.m3u8,text/plain,text/csv,application/json,application/xml,application/x-sh,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
-    <input id="fileNew" type="file" accept=".docx,.txt,.text,.md,.markdown,.rst,.org,.adoc,.asciidoc,.csv,.tsv,.ssv,.psv,.log,.out,.err,.json,.jsonl,.ndjson,.xml,.html,.htm,.xhtml,.svg,.js,.mjs,.cjs,.ts,.tsx,.jsx,.css,.scss,.sass,.less,.ini,.conf,.cfg,.config,.env,.properties,.toml,.yaml,.yml,.sh,.bash,.zsh,.fish,.csh,.ksh,.bat,.cmd,.ps1,.psm1,.py,.pyw,.rb,.pl,.pm,.php,.lua,.r,.sql,.go,.rs,.c,.h,.cpp,.cc,.cxx,.hpp,.hh,.cs,.java,.kt,.kts,.swift,.m,.mm,.scala,.groovy,.dart,.vue,.svelte,.makefile,.mk,.cmake,.gradle,.sbt,.diff,.patch,.gitignore,.gitattributes,.gitmodules,.editorconfig,.dockerfile,.containerfile,.service,.timer,.socket,.desktop,.tex,.bib,.sty,.srt,.vtt,.ass,.vcf,.ics,.m3u,.m3u8,text/plain,text/csv,application/json,application/xml,application/x-sh,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+    <input id="fileOld" type="file" hidden>
+    <input id="fileNew" type="file" hidden>
     <div class="pane-heads">
       <div class="gutter-space"></div>
       <div id="headOld" class="fname" title="Click to choose or drop here">Drop a file</div>
@@ -66,8 +67,9 @@
     </div>
   </section>
 
-  <script src="../vendor/jszip.min.js"></script>
-  <script src="../vendor/diff_match_patch.js"></script>
-  <script src="msword_diff.js"></script>
+  <script src="../../vendor/jszip.min.js"></script>
+  <script src="../../vendor/diff_match_patch.js"></script>
+  <script src="msword_diff_config.js"></script>
+  <script src="msword_diff_logic.js"></script>
 </body>
 </html>
