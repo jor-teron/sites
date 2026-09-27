@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<!--
+  Caption for NEI (Caption for North East India) — caption-for-nei.html
+  Version: 0.12 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
+  Credit: personal project (Karbi Anglong / Assam)
+  Top bar + caption panel (markup only). Styles: caption-for-nei.css.
+  Logic: caption-for-nei_logic.js. Tunables, text, languages: caption-for-nei_config.js.
+  The Input / Output language dropdowns are filled from CFN_CONFIG at load.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Caption for NEI v0.12</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="caption-for-nei.css" />
+</head>
+<body>
+  <div class="topbar">
+    <span class="brand">Caption for NEI</span>
+
+    <label class="field">
+      <span>Input</span>
+      <select id="listenSelect"></select>
+    </label>
+
+    <label class="field" id="abcField" hidden>
+      <span>ABC</span>
+      <select id="abcSelect">
+        <option value="on">On</option>
+        <option value="off" selected>Off</option>
+      </select>
+    </label>
+
+    <label class="field">
+      <span>Output</span>
+      <select id="translateSelect"></select>
+    </label>
+
+    <label class="field">
+      <span>Model</span>
+      <select id="modelSelect"></select>
+    </label>
+
+    <button type="button" id="toggleBtn" class="primary">Start</button>
+    <button type="button" id="copyBtn">Copy</button>
+    <button type="button" id="clearTextBtn">Clear</button>
+    <button type="button" id="logBtn">Log</button>
+    <span id="liveWrap">
+      <span id="led"></span>
+      <span id="liveNote"></span>
+      <span id="micMeter"><i id="micFill"></i></span>
+    </span>
+    <span id="rpdNote"></span>
+    <button type="button" id="keyToggleBtn">Key</button>
+    <a class="about" href="about.html">About</a>
+
+    <div id="keyPanel">
+      <input id="apiKey" type="password" autocomplete="off" placeholder="API key (this browser only)" />
+      <button type="button" id="saveKeyBtn">Save</button>
+      <button type="button" id="clearKeyBtn">Clear</button>
+    </div>
+    <div id="logPanel">
+      <div id="logUsed"></div>
+      <div id="logList"></div>
+      <textarea id="logView" readonly placeholder="View an hour log here"></textarea>
+      <div class="log-row">
+        <button type="button" id="logDownloadAllBtn">Download all + clear</button>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <div id="captionBox" class="captions">
+      <div id="interimText" class="interim"></div>
+      <div id="lineList"></div>
+    </div>
+    <div id="status" class="status" hidden>Idle</div>
+  </main>
+
+  <script src="caption-for-nei_config.js"></script>
+  <script src="caption-for-nei_logic.js"></script>
+</body>
+</html>

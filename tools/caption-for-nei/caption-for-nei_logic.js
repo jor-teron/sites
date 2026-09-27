@@ -1,12 +1,14 @@
 /**
- * Live Subtitle for Assam — app.js
- * Version: 0.11
+ * Caption for NEI (Caption for North East India) — caption-for-nei_logic.js
+ * Version: 0.12
  * First release: 27 Sep 2026
- * Last edit: 27 Sep 2026
+ * Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
  *
  * Flow:
- *   index.html loads config.js then this file.
+ *   caption-for-nei.html loads caption-for-nei_config.js then this file.
+ *   migrateLegacyStorage() copies old lsa_* keys to cfn_* once (boot block).
+ *   fillLanguageSelects() builds Input / Output dropdowns from CONFIG.
  *   startSession() opens the mic + Transcribe Live WebSocket.
  *   handleServerMessage() turns speech into caption rows (addCaptionBlock).
  *   translateLine() fills the Output box when Output is not Off.
@@ -14,52 +16,62 @@
  * Does not name the cloud vendor in the UI.
  */
 
+/* All tunables, endpoints, languages, storage keys and text: caption-for-nei_config.js */
+const CONFIG = Object.assign({}, window.CFN_CONFIG || {});
+if (!CONFIG.MODELS) CONFIG.MODELS = [];
+const TEXT = CONFIG.TEXT || {};
+const AUDIO = CONFIG.AUDIO || {};
+const STORAGE = CONFIG.STORAGE || {};
+
 /* localStorage key name for the API key */
-const STORAGE_KEY_NAME = "lsa_gemini_api_key_v01";
+const STORAGE_KEY_NAME = STORAGE.API_KEY;
 
 /* Live WebSocket endpoint (transcribe + optional translate) */
-const WS_BASE =
-  "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
-
-/* Speech model for Input captions */
-const MODEL_NAME = "gemini-3.5-transcribe-live";
-
-/* Output dropdown value → language name for the translate prompt */
-const OUTPUT_LANG_NAME = {
-  en: "English",
-  hi: "Hindi",
-  as: "Assamese",
-};
+const WS_BASE = CONFIG.WS_BASE;
 
 /* Target sample rate required by live transcription */
-const TARGET_SAMPLE_RATE = 16000;
+const TARGET_SAMPLE_RATE = AUDIO.SAMPLE_RATE;
 
 /* PCM chunk size in samples (~100 ms at 16 kHz) */
-const PCM_CHUNK_SAMPLES = 1600;
+const PCM_CHUNK_SAMPLES = AUDIO.CHUNK_SAMPLES;
 
-/* Values from config.js */
-const CONFIG = Object.assign(
-  {
-    WORD_SPLIT: 25,
-    SPLIT_SECONDS: 4,
-    AUTO_START: true,
-    TRANSCRIBE_MODEL: "gemini-3.5-transcribe-live",
-    TRANSLATE_MODEL: "gemini-3.5-live-translate-preview",
-    SPEAKER: false,
-    VOCAB_URL: "vocab.csv",
-    OUTPUT_ENGINE: "chat",
-    MODELS: [
-      { id: "gemini-3.1-flash-lite", provider: "google", rpm: 15, on: true },
-      { id: "gemini-3.5-flash-lite", provider: "google", rpm: 15, on: true },
-    ],
-  },
-  window.LSA_CONFIG || {}
-);
-if (!CONFIG.MODELS) {
-  CONFIG.MODELS = [
-    { id: "gemini-3.1-flash-lite", provider: "google", rpm: 15, on: true },
-    { id: "gemini-3.5-flash-lite", provider: "google", rpm: 15, on: true },
-  ];
+/**
+ * Fill {name} placeholders in a CONFIG.TEXT template.
+ */
+function fmtText(template, values) {
+  return String(template || "").replace(/\{(\w+)\}/g, function (m, k) {
+    return values && values[k] !== undefined ? values[k] : m;
+  });
+}
+
+/**
+ * One-time copy of old "Live Subtitle for Assam" (v0.11) localStorage keys
+ * to the new cfn_* keys. Map: CONFIG.LEGACY_STORAGE_KEYS (exact keys) and
+ * CONFIG.LEGACY_STORAGE_PREFIXES (hour logs). Copies only when the new key is
+ * empty; old keys are never deleted. Runs in the boot block before loadSavedKey().
+ */
+function migrateLegacyStorage() {
+  try {
+    const exact = CONFIG.LEGACY_STORAGE_KEYS || {};
+    Object.keys(exact).forEach(function (oldKey) {
+      const newKey = exact[oldKey];
+      const oldVal = localStorage.getItem(oldKey);
+      if (oldVal !== null && !localStorage.getItem(newKey)) localStorage.setItem(newKey, oldVal);
+    });
+    const prefixes = CONFIG.LEGACY_STORAGE_PREFIXES || {};
+    const allKeys = [];
+    for (let i = 0; i < localStorage.length; i++) allKeys.push(localStorage.key(i));
+    Object.keys(prefixes).forEach(function (oldPrefix) {
+      const newPrefix = prefixes[oldPrefix];
+      allKeys.forEach(function (k) {
+        if (!k || k.indexOf(oldPrefix) !== 0) return;
+        const newKey = newPrefix + k.slice(oldPrefix.length);
+        if (!localStorage.getItem(newKey)) localStorage.setItem(newKey, localStorage.getItem(k));
+      });
+    });
+  } catch (err) {
+    /* storage blocked or full: keep going with whatever is there */
+  }
 }
 
 /* Rolling timestamps of chat translate calls */
@@ -75,18 +87,18 @@ let CUSTOM_VOCAB = [];
 /* Pinned chat model id or "auto" */
 let pinnedModel = "auto";
 
-const RPD_STORE = "lsa_rpd_utc_v1";
-/* Hour logs: lsa_hour_YYYY-MM-DD_HH (IST) */
-const HOUR_PREFIX = "lsa_hour_";
+const RPD_STORE = STORAGE.RPD;
+/* Hour logs: cfn_hour_YYYY-MM-DD_HH (IST) */
+const HOUR_PREFIX = STORAGE.HOUR_PREFIX;
 let translateQueue = [];
 let translateTimer = null;
 let lastTeeSlot = "";
 
-/* Input language: auto or BCP-47 */
-let selectedLang = "auto";
+/* Input language: auto or BCP-47 (CONFIG.INPUT_LANGUAGES) */
+let selectedLang = CONFIG.DEFAULT_INPUT || "auto";
 
-/* Output target: off | en | hi | as */
-let translateTarget = "off";
+/* Output target: off | en | hi | as | bn | ne (CONFIG.OUTPUT_LANGUAGES) */
+let translateTarget = CONFIG.DEFAULT_OUTPUT || "off";
 
 /* ABC romanize */
 let abcOn = false;
@@ -157,7 +169,7 @@ function setStatus(message, kind) {
 function setToggleUi(running) {
   isRunning = running;
   if (toggleBtn) {
-    toggleBtn.textContent = running ? "Stop" : "Start";
+    toggleBtn.textContent = running ? TEXT.stop : TEXT.start;
     toggleBtn.className = running ? "danger" : "primary";
   }
   if (ledEl) ledEl.className = running ? "on" : "";
@@ -180,14 +192,19 @@ function fitTextarea(el) {
 }
 
 /**
- * True if Devanagari or Bengali/Assamese letters exist.
+ * True if Devanagari (Hindi, Nepali) or Bengali-script (Assamese, Bengali)
+ * letters exist. Only says "Indic script present"; it does not guess the
+ * language, because Assamese/Bengali and Hindi/Nepali share scripts.
+ * Use selectedLang (session choice) when a language is needed.
  */
 function hasIndicScript(text) {
   return /[\u0900-\u097F\u0980-\u09FF]/.test(text);
 }
 
 /**
- * Local romanizer. No API.
+ * Local romanizer (parked ABC). No API. Works per script, not per language:
+ * Devanagari covers Hindi + Nepali; the Bengali-script table covers both
+ * Bengali (র) and Assamese (ৰ ৱ).
  */
 function romanizeIndic(text) {
   const INDEP = {
@@ -270,7 +287,7 @@ function splitSentences(text) {
     else rebuilt.push(cur);
   }
   const out = [];
-  const limit = CONFIG.WORD_SPLIT || 25;
+  const limit = CONFIG.WORD_SPLIT;
   for (let i = 0; i < rebuilt.length; i++) {
     const piece = rebuilt[i].trim();
     if (!piece) continue;
@@ -343,7 +360,7 @@ function renderRpd() {
   const bits = CONFIG.MODELS.filter(function (m) {
     return m.on;
   }).map(function (m) {
-    return (m.label || m.id) + " " + rpdCount(m.id) + "/" + (m.rpd || 500);
+    return (m.label || m.id) + " " + rpdCount(m.id) + "/" + (m.rpd || CONFIG.DEFAULT_RPD);
   });
   rpdNote.textContent = bits.join(" · ");
 }
@@ -357,7 +374,7 @@ function fillModelSelect() {
   modelSelect.innerHTML = "";
   const auto = document.createElement("option");
   auto.value = "auto";
-  auto.textContent = "Auto";
+  auto.textContent = TEXT.auto;
   modelSelect.appendChild(auto);
   CONFIG.MODELS.forEach(function (m) {
     if (!m.on) return;
@@ -368,6 +385,37 @@ function fillModelSelect() {
   });
   pinnedModel = CONFIG.PINNED_MODEL || "auto";
   modelSelect.value = pinnedModel;
+}
+
+/**
+ * Fill #listenSelect from CONFIG.INPUT_LANGUAGES and #translateSelect from
+ * CONFIG.OUTPUT_LANGUAGES, then select DEFAULT_INPUT / DEFAULT_OUTPUT.
+ * Connects to: onListenChange, onTranslateChange, boot block at bottom
+ */
+function fillLanguageSelects() {
+  function fill(select, list, value) {
+    if (!select) return;
+    select.innerHTML = "";
+    (list || []).forEach(function (lang) {
+      const opt = document.createElement("option");
+      opt.value = lang.code;
+      opt.textContent = lang.label || lang.code;
+      select.appendChild(opt);
+    });
+    select.value = value;
+  }
+  fill(listenSelect, CONFIG.INPUT_LANGUAGES, selectedLang);
+  fill(translateSelect, CONFIG.OUTPUT_LANGUAGES, translateTarget);
+}
+
+/**
+ * Output code → language name for the translate prompt.
+ */
+function outputLangName(code) {
+  const hit = (CONFIG.OUTPUT_LANGUAGES || []).filter(function (l) {
+    return l.code === code;
+  })[0];
+  return (hit && hit.name) || CONFIG.FALLBACK_OUTPUT_NAME;
 }
 
 /**
@@ -386,7 +434,7 @@ function setMicLevel(samples) {
   let sum = 0;
   for (let i = 0; i < samples.length; i++) sum += samples[i] * samples[i];
   const rms = Math.sqrt(sum / samples.length);
-  let pct = Math.min(100, Math.round(rms * 140));
+  let pct = Math.min(100, Math.round(rms * AUDIO.METER_GAIN));
   micFill.style.width = pct + "%";
 }
 
@@ -399,13 +447,13 @@ async function startMeter() {
   try {
     if (!meterStream) {
       meterStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
+        audio: AUDIO.MIC_CONSTRAINTS,
       });
     }
     meterCtx = new AudioContext();
     const src = meterCtx.createMediaStreamSource(meterStream);
     meterAnalyser = meterCtx.createAnalyser();
-    meterAnalyser.fftSize = 512;
+    meterAnalyser.fftSize = AUDIO.METER_FFT_SIZE;
     src.connect(meterAnalyser);
     const buf = new Uint8Array(meterAnalyser.fftSize);
     function tick() {
@@ -418,7 +466,7 @@ async function startMeter() {
     }
     tick();
   } catch (err) {
-    setStatus("Mic permission denied.", "bad");
+    setStatus(TEXT.micDenied, "bad");
   }
 }
 
@@ -439,12 +487,12 @@ function pickChatModel() {
   }
   for (let i = 0; i < list.length; i++) {
     const m = list[i];
-    if (rpdCount(m.id) >= (m.rpd || 500)) continue;
+    if (rpdCount(m.id) >= (m.rpd || CONFIG.DEFAULT_RPD)) continue;
     let n = 0;
     for (let h = 0; h < modelHits.length; h++) {
       if (modelHits[h].id === m.id && now - modelHits[h].t < 60000) n++;
     }
-    if (n < (m.rpm || 15)) return m;
+    if (n < (m.rpm || CONFIG.DEFAULT_RPM)) return m;
   }
   return null;
 }
@@ -502,7 +550,7 @@ function addCaptionBlock(sourceText) {
  */
 function istNow() {
   const fmt = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Kolkata",
+    timeZone: CONFIG.TIME_ZONE,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -523,7 +571,7 @@ function hourKeyFromParts(p) {
 }
 
 function stampFromParts(p) {
-  return p.year + "-" + p.month + "-" + p.day + " " + p.hour + ":" + p.minute + ":" + p.second + " IST";
+  return p.year + "-" + p.month + "-" + p.day + " " + p.hour + ":" + p.minute + ":" + p.second + " " + CONFIG.TIME_ZONE_LABEL;
 }
 
 function listHourKeys() {
@@ -559,7 +607,7 @@ function appendHourLog(sourceText, transText) {
   try {
     localStorage.setItem(key, body);
   } catch (err) {
-    setStatus("Log storage full. Download logs.", "bad");
+    setStatus(TEXT.logFull, "bad");
   }
   renderLogList();
 }
@@ -580,7 +628,7 @@ function renderLogList() {
   logList.innerHTML = "";
   if (logUsed) {
     const kb = Math.round(storageUsedBytes() / 1024);
-    logUsed.textContent = "Storage ~" + kb + " KB / 5000 KB";
+    logUsed.textContent = fmtText(TEXT.storageUsed, { used: kb, quota: CONFIG.STORAGE_QUOTA_KB });
   }
   listHourKeys().forEach(function (key) {
     const label = key.replace(HOUR_PREFIX, "").replace("_", " ") + ":00";
@@ -590,19 +638,19 @@ function renderLogList() {
     name.textContent = label;
     const viewBtn = document.createElement("button");
     viewBtn.type = "button";
-    viewBtn.textContent = "View";
+    viewBtn.textContent = TEXT.view;
     viewBtn.onclick = function () {
       if (logView) logView.value = localStorage.getItem(key) || "";
     };
     const dlBtn = document.createElement("button");
     dlBtn.type = "button";
-    dlBtn.textContent = "Download";
+    dlBtn.textContent = TEXT.download;
     dlBtn.onclick = function () {
-      downloadText(key.replace(HOUR_PREFIX, "lsa-") + ".txt", localStorage.getItem(key) || "");
+      downloadText(key.replace(HOUR_PREFIX, CONFIG.LOG_FILE_PREFIX) + ".txt", localStorage.getItem(key) || "");
     };
     const delBtn = document.createElement("button");
     delBtn.type = "button";
-    delBtn.textContent = "Delete";
+    delBtn.textContent = TEXT.delete;
     delBtn.onclick = function () {
       localStorage.removeItem(key);
       renderLogList();
@@ -625,10 +673,10 @@ function toggleLogPanel() {
 function downloadAllAndClear() {
   const keys = listHourKeys();
   if (!keys.length) {
-    setStatus("No logs.", "bad");
+    setStatus(TEXT.noLogs, "bad");
     return;
   }
-  if (!confirm("Download all hour logs as one txt, then delete them?")) return;
+  if (!confirm(TEXT.confirmDownloadAll)) return;
   let all = "";
   keys.slice().reverse().forEach(function (key) {
     all += "===== " + key.replace(HOUR_PREFIX, "") + " =====\n";
@@ -636,7 +684,7 @@ function downloadAllAndClear() {
     all += "\n";
   });
   const p = istNow();
-  downloadText("lsa-all-" + p.year + "-" + p.month + "-" + p.day + ".txt", all);
+  downloadText(CONFIG.LOG_FILE_PREFIX + "all-" + p.year + "-" + p.month + "-" + p.day + ".txt", all);
   keys.forEach(function (key) {
     localStorage.removeItem(key);
   });
@@ -645,11 +693,12 @@ function downloadAllAndClear() {
 }
 
 /**
- * Clock slot id for 5-minute tee (HH:00 HH:05 ...).
+ * Clock slot id for SAVE_MINUTES tee (HH:00 HH:05 ... when 5).
  */
 function teeSlotId() {
   const p = istNow();
-  const m = String(Math.floor(Number(p.minute) / 5) * 5).padStart(2, "0");
+  const step = CONFIG.SAVE_MINUTES;
+  const m = String(Math.floor(Number(p.minute) / step) * step).padStart(2, "0");
   return p.year + "-" + p.month + "-" + p.day + "_" + p.hour + ":" + m;
 }
 
@@ -663,7 +712,7 @@ function tickTee() {
 function queueTranslate(text, outBox) {
   if (translateTarget === "off" || !outBox || !text) return;
   translateQueue.push({ text: text, outBox: outBox });
-  const wait = (CONFIG.TRANSLATE_SECONDS || 5) * 1000;
+  const wait = CONFIG.TRANSLATE_SECONDS * 1000;
   if (!translateTimer) {
     translateTimer = setTimeout(flushTranslateQueue, wait);
   }
@@ -677,7 +726,7 @@ async function flushTranslateQueue() {
   const last = batch[batch.length - 1];
   await translateLine(joined, last.outBox);
   if (last.outBox && last.outBox.value) {
-    appendHourLog("(batch output)", last.outBox.value);
+    appendHourLog(TEXT.batchOutput, last.outBox.value);
   }
 }
 
@@ -711,14 +760,14 @@ async function copyCaptions() {
   }
   const blob = chunks.join("\n\n");
   if (!blob) {
-    setStatus("Nothing to copy.", "bad");
+    setStatus(TEXT.nothingToCopy, "bad");
     return;
   }
   try {
     await navigator.clipboard.writeText(blob);
-    if (liveNoteEl) liveNoteEl.textContent = "Copied";
+    if (liveNoteEl) liveNoteEl.textContent = TEXT.copied;
   } catch (err) {
-    setStatus("Copy failed.", "bad");
+    setStatus(TEXT.copyFailed, "bad");
   }
 }
 
@@ -729,7 +778,7 @@ function clearCaptionText() {
   lineList.innerHTML = "";
   interimTextEl.textContent = "";
   if (liveNoteEl && isRunning) {
-    liveNoteEl.textContent = "Listening..";
+    liveNoteEl.textContent = TEXT.listeningDots;
     liveNoteEl.className = "on";
   }
 }
@@ -748,11 +797,11 @@ function loadSavedKey() {
 function saveKey() {
   const value = apiKeyInput.value.trim();
   if (!value) {
-    setStatus("Paste a key first.", "bad");
+    setStatus(TEXT.pasteKeyFirst, "bad");
     return;
   }
   localStorage.setItem(STORAGE_KEY_NAME, value);
-  setStatus("Key saved on this device.", "ok");
+  setStatus(TEXT.keySaved, "ok");
   keyPanel.classList.remove("open");
 }
 
@@ -762,7 +811,7 @@ function saveKey() {
 function clearKey() {
   localStorage.removeItem(STORAGE_KEY_NAME);
   apiKeyInput.value = "";
-  setStatus("Key cleared.");
+  setStatus(TEXT.keyCleared);
 }
 
 /**
@@ -864,7 +913,7 @@ function enqueuePcm(samples) {
 
 /**
  * One ~100 ms PCM frame on the Transcribe WebSocket.
- * Requires sessionReady (set after setupComplete or 800 ms fallback).
+ * Requires sessionReady (set after setupComplete or AUDIO.SETUP_FALLBACK_MS fallback).
  */
 function sendPcmChunk(pcmChunk) {
   if (!socket || socket.readyState !== WebSocket.OPEN || !sessionReady) return;
@@ -872,7 +921,7 @@ function sendPcmChunk(pcmChunk) {
   socket.send(
     JSON.stringify({
       realtimeInput: {
-        audio: { data: b64, mimeType: "audio/pcm;rate=16000" },
+        audio: { data: b64, mimeType: AUDIO.MIME_TYPE },
       },
     })
   );
@@ -896,22 +945,21 @@ async function translateLine(sourceText, outBox) {
     apiKeyInput.value.trim() || (CONFIG.KEYS && CONFIG.KEYS.google) || "";
   const model = pickChatModel();
   if (!model) {
-    setStatus("All chat models at RPM cap. Wait.", "bad");
+    setStatus(TEXT.rpmCap, "bad");
     return;
   }
-  const langName = OUTPUT_LANG_NAME[translateTarget] || "English";
-  const prompt =
-    "Translate into " + langName + ". Return only the translation.\n\n" + sourceText;
+  const langName = outputLangName(translateTarget);
+  const prompt = fmtText(TEXT.translatePrompt, { lang: langName, text: sourceText });
   modelHits.push({ id: model.id, t: Date.now() });
   bumpRpd(model.id);
   try {
     if (model.provider !== "google") {
-      setStatus("Turn that provider on and add KEYS in config.js", "bad");
+      setStatus(TEXT.providerOff, "bad");
       return;
     }
     if (!googleKey) return;
     const res = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/" +
+      CONFIG.CHAT_API_BASE +
         model.id +
         ":generateContent?key=" +
         encodeURIComponent(googleKey),
@@ -934,10 +982,10 @@ async function translateLine(sourceText, outBox) {
       outBox.value = textOut.trim();
       fitTextarea(outBox);
     } else if (data && data.error) {
-      setStatus(data.error.message || "Translate failed", "bad");
+      setStatus(data.error.message || TEXT.translateFailedShort, "bad");
     }
   } catch (err) {
-    setStatus("Translate failed.", "bad");
+    setStatus(TEXT.translateFailed, "bad");
   }
 }
 
@@ -950,7 +998,7 @@ async function translateLine(sourceText, outBox) {
 function handleServerMessage(msg) {
   if (msg.setupComplete) {
     sessionReady = true;
-    setStatus("Listening", "ok");
+    setStatus(TEXT.listening, "ok");
     return;
   }
   if (msg.error) {
@@ -965,8 +1013,8 @@ function handleServerMessage(msg) {
     pendingText = live;
     if (!pendingSince) pendingSince = Date.now();
     const words = live.split(/\s+/).filter(Boolean).length;
-    const aged = Date.now() - pendingSince >= (CONFIG.SPLIT_SECONDS || 4) * 1000;
-    if (words >= (CONFIG.WORD_SPLIT || 25) || aged) {
+    const aged = Date.now() - pendingSince >= CONFIG.SPLIT_SECONDS * 1000;
+    if (words >= CONFIG.WORD_SPLIT || aged) {
       commitSpokenText(live);
       interimTextEl.textContent = "";
     }
@@ -999,12 +1047,12 @@ function sendSetup() {
   socket.send(
     JSON.stringify({
       setup: {
-        model: "models/" + (CONFIG.TRANSCRIBE_MODEL || MODEL_NAME),
+        model: "models/" + CONFIG.TRANSCRIBE_MODEL,
         generationConfig: { responseModalities: ["TEXT"] },
         inputAudioTranscription: {
           languageCodes: selectedLang === "auto" ? [] : [selectedLang],
           customVocabulary: CUSTOM_VOCAB,
-          mode: "SMART",
+          mode: CONFIG.TRANSCRIBE_MODE,
         },
       },
     })
@@ -1020,29 +1068,29 @@ async function startSession() {
   const apiKey = apiKeyInput.value.trim();
   if (!apiKey) {
     keyPanel.classList.add("open");
-    setStatus("Add an API key first.", "bad");
+    setStatus(TEXT.addKeyFirst, "bad");
     return;
   }
   sessionReady = false;
   pcmLeftover = new Int16Array(0);
   setToggleUi(true);
-  setStatus("Connecting…");
+  setStatus(TEXT.connecting);
   try {
     if (!meterStream) await startMeter();
     mediaStream = meterStream;
     if (!mediaStream) {
-      setStatus("Mic permission denied.", "bad");
+      setStatus(TEXT.micDenied, "bad");
       setToggleUi(false);
       return;
     }
   } catch (err) {
-    setStatus("Mic permission denied.", "bad");
+    setStatus(TEXT.micDenied, "bad");
     setToggleUi(false);
     return;
   }
   audioContext = new AudioContext();
   sourceNode = audioContext.createMediaStreamSource(mediaStream);
-  processorNode = audioContext.createScriptProcessor(4096, 1, 1);
+  processorNode = audioContext.createScriptProcessor(AUDIO.PROCESSOR_BUFFER, 1, 1);
   silentGain = audioContext.createGain();
   silentGain.gain.value = 0;
   processorNode.onaudioprocess = function (ev) {
@@ -1059,15 +1107,15 @@ async function startSession() {
     sendSetup();
     setTimeout(function () {
       sessionReady = true;
-    }, 800);
-    setStatus("Connected");
+    }, AUDIO.SETUP_FALLBACK_MS);
+    setStatus(TEXT.connected);
   };
   socket.onmessage = onSocketMessage;
   socket.onerror = function () {
-    setStatus("Connection error.", "bad");
+    setStatus(TEXT.connectionError, "bad");
   };
   socket.onclose = function () {
-    setStatus("Stopped");
+    setStatus(TEXT.stoppedServer);
     setToggleUi(false);
   };
 }
@@ -1105,7 +1153,7 @@ async function stopSession() {
     socket = null;
   }
   setToggleUi(false);
-  setStatus("Stopped.");
+  setStatus(TEXT.stopped);
 }
 
 /**
@@ -1133,7 +1181,7 @@ function addVocabLines(text) {
  * Fetch CONFIG.VOCAB_FILES and merge names into CUSTOM_VOCAB for sendSetup().
  */
 function loadVocabCsv() {
-  const files = CONFIG.VOCAB_FILES || (CONFIG.VOCAB_URL ? [CONFIG.VOCAB_URL] : []);
+  const files = CONFIG.VOCAB_FILES || [];
   files.forEach(function (file) {
     fetch(file)
       .then(function (res) {
@@ -1157,11 +1205,13 @@ clearTextBtn.addEventListener("click", clearCaptionText);
 if (logBtn) logBtn.addEventListener("click", toggleLogPanel);
 if (logDownloadAllBtn) logDownloadAllBtn.addEventListener("click", downloadAllAndClear);
 
+migrateLegacyStorage();
+fillLanguageSelects();
 loadSavedKey();
 loadVocabCsv();
 fillModelSelect();
 renderRpd();
 renderLogList();
-setInterval(tickTee, 15000);
+setInterval(tickTee, CONFIG.TEE_CHECK_MS);
 startMeter();
 if (CONFIG.AUTO_START) startSession();

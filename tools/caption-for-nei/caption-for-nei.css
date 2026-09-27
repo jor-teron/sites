@@ -1,0 +1,171 @@
+/*
+ * Caption for NEI — caption-for-nei.css
+ * Version: 0.12 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
+ * Credit: personal project (Karbi Anglong / Assam)
+ * Styles for caption-for-nei.html (moved from the inline <style> block).
+ */
+/* Compact caption tool: one fixed top bar, captions scroll under it */
+:root {
+  --bg: #0f1419;
+  --card: #1a2332;
+  --text: #e8eef5;
+  --muted: #8b9bb0;
+  --accent: #3d8bfd;
+  --ok: #3dd68c;
+  --bad: #ff6b6b;
+  --line: #2c3a4f;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Noto Sans", "Noto Sans Bengali", "Noto Sans Devanagari", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #121a24;
+  border-bottom: 1px solid var(--line);
+}
+.brand {
+  font-weight: 650;
+  font-size: 0.95rem;
+  margin-right: 4px;
+  white-space: nowrap;
+}
+.field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.field span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+select, button, input[type="password"] {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.9rem;
+}
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.danger { background: #8b2d3b; border-color: #8b2d3b; color: #fff; }
+a.about {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-left: auto;
+  text-decoration: none;
+}
+#keyPanel {
+  display: none;
+  width: 100%;
+  gap: 8px;
+  align-items: center;
+}
+#keyPanel.open { display: flex; flex-wrap: wrap; }
+#logPanel {
+  display: none;
+  width: 100%;
+  flex-direction: column;
+  gap: 8px;
+}
+#logPanel.open { display: flex; }
+#logList { max-height: 220px; overflow: auto; font-size: 0.85rem; }
+#logView {
+  width: 100%;
+  min-height: 120px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+}
+.log-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 4px 0; }
+#apiKey { flex: 1; min-width: 160px; }
+main { padding: 96px 12px 16px; max-width: 900px; margin: 0 auto; }
+.captions {
+  background: var(--card);
+  border-radius: 12px;
+  min-height: calc(100vh - 130px);
+  max-height: calc(100vh - 130px);
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 18px;
+  font-size: 1.35rem;
+  line-height: 1.45;
+}
+.captions::-webkit-scrollbar { display: none; }
+#liveWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+#led {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #5b6570;
+  box-shadow: none;
+}
+#led.on {
+  background: var(--ok);
+  box-shadow: 0 0 10px var(--ok);
+}
+#liveNote { display: none; }
+#liveNote.on { color: var(--ok); }
+a.about { margin-left: auto; }
+.interim {
+  color: var(--muted);
+  font-style: italic;
+  margin-bottom: 8px;
+  min-height: 1.2em;
+}
+.line {
+  border-bottom: 1px solid var(--line);
+  padding: 8px 0 10px;
+}
+.line textarea {
+  width: 100%;
+  display: block;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  resize: none;
+  font: inherit;
+  line-height: 1.4;
+  padding: 0;
+}
+.line textarea.orig-line { color: var(--muted); font-size: 1.05rem; margin-bottom: 4px; }
+.line textarea.abc-line { color: #c5d0dc; font-size: 1.15rem; margin-bottom: 4px; }
+.line textarea.out-line { color: var(--text); }
+.status { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+.status.ok { color: var(--ok); }
+.status.bad { color: var(--bad); }
+#micMeter {
+  width: 72px;
+  height: 8px;
+  background: #2c3a4f;
+  border-radius: 4px;
+  overflow: hidden;
+}
+#micFill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--ok);
+}
+#rpdNote { font-size: 0.72rem; color: var(--muted); max-width: 100%; }
