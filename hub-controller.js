@@ -105,6 +105,8 @@
     popover.hidden = true;
     popoverBackdrop.hidden = true;
     // Keep connection alive when closing popover; only stop advertising if never connected
+    // Hand keyboard focus back to the app (hub.js).
+    if (typeof window.__hubFocusFrame === 'function') window.__hubFocusFrame();
   }
 
   function destroyPeer() {
@@ -270,6 +272,10 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && popover && !popover.hidden) closePopover();
   });
+
+  // Another app picked (iframe src changes): release held phone buttons so the old
+  // page gets its keyup and nothing stays "pressed" for the next one.
+  if (frame) new MutationObserver(releaseHeld).observe(frame, { attributes: true, attributeFilter: ['src'] });
 
   // Expose tiny API for debugging
   window.__hubController = { openPopover, closePopover, disconnect, startPairing };

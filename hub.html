@@ -4,8 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Main — sites hub</title>
-  <link rel="stylesheet" href="hub.css" />
-  <link rel="stylesheet" href="style/no-scrollbar.css" />
+  <!-- Cache busting: GitHub Pages lets browsers cache files for ~10 min, so every hub
+       file below carries ?v=HUB_VERSION. When you change hub.css / hub*.js (or vendor/),
+       bump the version: replace every "?v=20260928" in this file with today's date
+       (YYYYMMDD, add a letter for a second deploy the same day, e.g. 20260928b). -->
+  <link rel="stylesheet" href="hub.css?v=20260928" />
+  <link rel="stylesheet" href="style/no-scrollbar.css?v=20260928" />
 </head>
 <body>
   <header id="header">
@@ -52,10 +56,10 @@
     <iframe id="app-frame" title="WebApp" scrolling="no"></iframe>
   </div>
 
-  <script src="vendor/peerjs.min.js"></script>
-  <script src="vendor/qrcode.js"></script>
-  <script src="hub.js"></script>
-  <script src="hub-controller.js"></script>
-  <script src="hub-gamebar.js"></script>
+  <script src="vendor/peerjs.min.js?v=20260928"></script>
+  <script src="vendor/qrcode.js?v=20260928"></script>
+  <script src="hub.js?v=20260928"></script>
+  <script src="hub-controller.js?v=20260928"></script>
+  <script src="hub-gamebar.js?v=20260928"></script>
 </body>
 </html>

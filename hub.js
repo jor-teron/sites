@@ -6,6 +6,13 @@
  *   - a folder:  tv/  or  games/browser-fps/   (served via its index.html)
  *   - a file:    tools/calculator.html          (used exactly as written)
  *   - a text file: about/contact.txt            (shown in the dark viewer script/txt-view.html)
+ * Loading: hub-apps.csv is fetched with cache:'no-store' plus a ?t= buster and a timeout.
+ * The built-in FALLBACK_APPS list is shown only when that fetch really fails (network error,
+ * HTTP error, timeout, empty/unparsable CSV); the hub then retries a few times (and when the
+ * browser comes back online / the menu is opened) and re-renders the menu once the CSV arrives.
+ * Focus: the app iframe gets keyboard focus after it loads, after an app is picked and when the
+ * menu closes, so real keys reach the game without clicking into it first (never while the
+ * menu or the controller popover is open).
  * Icons are derived, never listed in the CSV:
  *   - folder xxx/            -> xxx/xxx_icon.png
  *   - file   dir/name.ext    -> dir/name_icon.png   (e.g. about/contact.txt -> about/contact_icon.png)
@@ -29,6 +36,16 @@
   ];
 
   const TXT_VIEWER = 'script/txt-view.html';
+  const CSV_URL = 'hub-apps.csv';
+  const CSV_TIMEOUT_MS = 8000;               // abort a hanging CSV fetch after this
+  const CSV_RETRY_MS = [1500, 4000, 10000];  // retry delays after a failed CSV load
+
+  let currentEntry = '';     // entryUrl of the app in the iframe (for the active highlight)
+  let usingFallback = false; // true while the built-in list is on screen
+  let menuRendered = false;
+  let csvInFlight = false;
+  let csvAttempt = 0;
+  let csvRetryTimer = 0;
 
   /** True when ENTRY_URL points at a file (last segment has an extension) rather than a folder. */
   function isFileUrl(url) {
@@ -124,10 +141,33 @@
     catBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
   }
 
+  /** Give the app iframe keyboard focus, unless the user is busy with the hub UI. */
+  function focusFrame() {
+    if (!frame.getAttribute('src')) return;
+    if (menu.classList.contains('open')) return;
+    const pop = document.getElementById('ctrl-popover');
+    if (pop && !pop.hidden) return;
+    const ae = document.activeElement;
+    if (ae && ae !== document.body && ae !== frame && ae.matches &&
+        ae.matches('input, textarea, select, [contenteditable]')) return;
+    try {
+      frame.focus();
+      if (frame.contentWindow) frame.contentWindow.focus();
+    } catch (_) { /* ignore */ }
+  }
+
+  function closeMenu() {
+    const wasOpen = menu.classList.contains('open');
+    setOpen(false);
+    if (wasOpen) focusFrame();
+  }
+
   function loadApp(app) {
+    currentEntry = app.entryUrl;
     frame.src = frameUrlFor(app.entryUrl);
     empty.classList.add('hidden');
     setOpen(false);
+    focusFrame();
     document.title = app.name + ' — sites hub';
     catLabel.textContent = HEADER_DEFAULT;
     menu.querySelectorAll('button.app').forEach((b) => {
@@ -136,6 +176,7 @@
   }
 
   function renderMenu(apps) {
+    menuRendered = true;
     menu.innerHTML = '';
     const { order, map } = groupByCategory(visibleSorted(apps));
     for (const cat of order) {
@@ -149,6 +190,7 @@
         btn.className = 'app';
         btn.setAttribute('role', 'menuitem');
         btn.dataset.entryUrl = app.entryUrl;
+        if (app.entryUrl === currentEntry) btn.classList.add('active');
 
         const img = document.createElement('img');
         img.className = 'icon';
@@ -168,15 +210,22 @@
 
   catBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    setOpen(!menu.classList.contains('open'));
+    const open = !menu.classList.contains('open');
+    if (open && usingFallback && !csvInFlight) loadApps(); // still on the built-in list: try again
+    if (open) setOpen(true);
+    else closeMenu();
   });
-  document.addEventListener('click', () => setOpen(false));
+  // A click anywhere else in the hub closes the menu and hands focus back to the app.
+  document.addEventListener('click', () => { setOpen(false); focusFrame(); });
   menu.addEventListener('click', (e) => e.stopPropagation());
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') setOpen(false);
+    if (e.key === 'Escape' && menu.classList.contains('open')) { closeMenu(); return; }
+    // A key pressed while the hub itself has focus: move focus into the app so the
+    // following keys reach it (this first key is not forwarded).
+    if (document.activeElement === document.body) focusFrame();
   });
 
-  // Hide scrollbars inside same-origin apps.
+  // Hide scrollbars inside same-origin apps; give the new page keyboard focus.
   frame.addEventListener('load', () => {
     try {
       const doc = frame.contentDocument;
@@ -185,19 +234,51 @@
         if (doc.body) doc.body.style.overflow = 'hidden';
       }
     } catch (_) { /* cross-origin: ignore */ }
+    focusFrame();
   });
 
-  async function boot() {
-    let apps = FALLBACK_APPS;
+  /** Fetch + parse hub-apps.csv (fresh copy, with a timeout). Throws on any failure. */
+  async function fetchApps() {
+    const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), CSV_TIMEOUT_MS) : 0;
     try {
-      const res = await fetch('hub-apps.csv', { cache: 'no-store' });
-      if (res.ok) {
-        const parsed = parseCsv(await res.text());
-        if (parsed.length) apps = parsed;
-      }
-    } catch (_) { /* file:// or offline: use fallback */ }
-    renderMenu(apps);
+      const res = await fetch(CSV_URL + '?t=' + Date.now(), {
+        cache: 'no-store',
+        signal: ctrl ? ctrl.signal : undefined,
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const parsed = parseCsv(await res.text());
+      if (!parsed.length) throw new Error('empty or unparsable CSV');
+      return parsed;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
-  boot();
+  /** Load the menu from the CSV; on failure show the built-in list and retry. */
+  async function loadApps() {
+    clearTimeout(csvRetryTimer);
+    csvInFlight = true;
+    try {
+      const apps = await fetchApps();
+      usingFallback = false;
+      renderMenu(apps);
+    } catch (err) {
+      const more = csvAttempt < CSV_RETRY_MS.length;
+      console.warn('hub: could not load ' + CSV_URL + ' (' + ((err && err.message) || err) + ')' +
+        (more ? ', retrying' : '') + '; showing the built-in app list');
+      if (!menuRendered || usingFallback) {
+        usingFallback = true;
+        renderMenu(FALLBACK_APPS);
+      }
+      if (more) csvRetryTimer = setTimeout(loadApps, CSV_RETRY_MS[csvAttempt++]);
+    } finally {
+      csvInFlight = false;
+    }
+  }
+
+  window.addEventListener('online', () => { if (usingFallback && !csvInFlight) loadApps(); });
+
+  window.__hubFocusFrame = focusFrame;
+  loadApps();
 })();
