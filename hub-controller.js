@@ -1,12 +1,24 @@
 /**
  * Hub phone controller — PeerJS host + QR pairing popover.
  * Forwards D-pad messages into the app iframe as KeyboardEvents + postMessage.
+ *
+ * Pairing survives reloads: the code (peer id = PEER_PREFIX + code) is kept in localStorage
+ * and registered again as soon as the hub loads, so a phone can reconnect without the
+ * popover being opened. If the broker still holds the id from the previous page
+ * ('unavailable-id'), registration is retried with backoff (the code is never switched
+ * silently). "New code" in the popover makes a fresh code.
  */
 (function () {
   'use strict';
 
   const PEER_PREFIX = 'jtsites-';
   const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I
+  const CODE_KEY = 'jtsites-hub-ctrl-code';              // localStorage: current pairing code
+  const CODE_RE = /^[A-Z0-9]{4,8}$/;
+  // 'unavailable-id' (old page's peer still registered on the broker): retry delays, then give up
+  const ID_RETRY_MS = [1000, 2000, 3000, 5000, 5000, 8000, 10000, 10000, 15000, 15000];
+  // broker connection lost / network errors: reconnect delays (last one repeats)
+  const NET_RETRY_MS = [2000, 4000, 8000, 15000, 30000];
 
   // Controller button -> key injected into the app iframe (all buttons also post
   // { type:'hub-dpad', b, s }). key: null = postMessage only, no key event.
@@ -36,12 +48,23 @@
   const statusEl = document.getElementById('ctrl-status');
   const disconnectBtn = document.getElementById('ctrl-disconnect');
   const closeBtn = document.getElementById('ctrl-close');
+  const newCodeBtn = document.getElementById('ctrl-newcode');
 
   let peer = null;
   let conn = null;
   let code = '';
   let pairing = false;
+  let idRetry = 0;       // unavailable-id retries used
+  let netRetry = 0;      // network retries used
+  let retryTimer = 0;
   const held = Object.create(null);
+
+  function loadCode() {
+    try { const c = (localStorage.getItem(CODE_KEY) || '').toUpperCase(); return CODE_RE.test(c) ? c : ''; } catch (_) { return ''; }
+  }
+  function saveCode(c) {
+    try { localStorage.setItem(CODE_KEY, c); } catch (_) { /* ignore */ }
+  }
 
   function randomCode(len) {
     len = len || 6;
@@ -93,11 +116,26 @@
     }
   }
 
+  function renderPairing() {
+    if (!code) {
+      if (codeEl) codeEl.textContent = '——';
+      if (urlEl) { urlEl.textContent = ''; urlEl.removeAttribute('href'); }
+      if (qrHost) qrHost.innerHTML = '';
+      return;
+    }
+    const url = controllerUrl(code);
+    if (codeEl) codeEl.textContent = code;
+    if (urlEl) { urlEl.textContent = url; urlEl.href = url; }
+    renderQr(url);
+  }
+
   function openPopover() {
     if (!popover) return;
     popover.hidden = false;
     popoverBackdrop.hidden = false;
-    startPairing();
+    if (!code) newCode();                 // first time: make and remember a code
+    else if (!peer || peer.destroyed) startPairing(); // stopped / gave up: listen again
+    renderPairing();
   }
 
   function closePopover() {
@@ -110,11 +148,14 @@
   }
 
   function destroyPeer() {
-    try { if (conn) conn.close(); } catch (_) {}
+    clearTimeout(retryTimer);
+    retryTimer = 0;
+    const c = conn, p = peer;
     conn = null;
-    try { if (peer) peer.destroy(); } catch (_) {}
     peer = null;
     pairing = false;
+    try { if (c) c.close(); } catch (_) {}
+    try { if (p) p.destroy(); } catch (_) {}
   }
 
   function releaseHeld() {
@@ -196,64 +237,101 @@
     });
   }
 
-  function startPairing() {
+  /** Register PEER_PREFIX + code on the broker and wait for the phone. */
+  function startPairing(isRetry) {
     if (typeof Peer === 'undefined') {
       setStatus('PeerJS missing');
       return;
     }
-    // Always regenerate code when (re)starting pairing UI
+    if (!code) return;
+    if (!isRetry) { idRetry = 0; netRetry = 0; }
     destroyPeer();
     releaseHeld();
     setConnectedIndicator(false);
-    code = randomCode(6);
-    if (codeEl) codeEl.textContent = code;
-    const url = controllerUrl(code);
-    if (urlEl) {
-      urlEl.textContent = url;
-      urlEl.href = url;
-    }
-    renderQr(url);
-    setStatus('Starting…');
+    renderPairing();
+    setStatus(isRetry ? 'Re-registering code…' : 'Starting…');
     pairing = true;
 
-    const id = PEER_PREFIX + code;
-    peer = new Peer(id, { debug: 0 });
+    const myPeer = peer = new Peer(PEER_PREFIX + code, { debug: 0 });
 
-    peer.on('open', () => {
-      setStatus('Waiting for controller…');
+    myPeer.on('open', () => {
+      if (peer !== myPeer) return;
+      idRetry = 0;
+      netRetry = 0;
+      setStatus(conn ? 'Controller connected' : 'Waiting for controller…');
     });
 
-    peer.on('connection', (c) => {
+    myPeer.on('connection', (c) => {
+      if (peer !== myPeer) return;
       // One controller at a time
       attachConn(c);
     });
 
-    peer.on('error', (err) => {
+    myPeer.on('error', (err) => {
+      if (peer !== myPeer) return;
       const type = err && err.type;
       if (type === 'unavailable-id') {
-        // regenerate and retry
-        setStatus('Code taken, retrying…');
-        setTimeout(() => { if (pairing) startPairing(); }, 200);
+        // The previous page (reload) may still hold this id on the broker for a while:
+        // keep the same code and retry with backoff.
+        if (idRetry < ID_RETRY_MS.length) {
+          const d = ID_RETRY_MS[idRetry++];
+          setStatus('Code still in use (previous session) — retrying ' + idRetry + '/' + ID_RETRY_MS.length + '…');
+          scheduleRetry(d);
+        } else {
+          destroyPeer();
+          setStatus('Code ' + code + ' is still in use — press "New code"');
+        }
+      } else if (type === 'network' || type === 'server-error' || type === 'socket-error' || type === 'socket-closed') {
+        const d = NET_RETRY_MS[Math.min(netRetry++, NET_RETRY_MS.length - 1)];
+        setStatus('Network problem — retrying…');
+        scheduleRetry(d);
+      } else if (type === 'peer-unavailable') {
+        /* only happens for outgoing connects; ignore */
       } else {
         setStatus('Error: ' + (type || 'unknown'));
         console.warn('hub peer error', err);
       }
     });
 
-    peer.on('disconnected', () => {
-      setStatus('Peer disconnected');
-      setConnectedIndicator(false);
+    myPeer.on('disconnected', () => {
+      if (peer !== myPeer || myPeer.destroyed) return;
+      // Lost the broker (the phone link may still be up): re-register the same id.
+      setConnectedIndicator(!!(conn && conn.open));
+      setStatus(conn && conn.open ? 'Controller connected (broker offline)' : 'Reconnecting to broker…');
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(() => {
+        if (peer !== myPeer || myPeer.destroyed) return;
+        try { myPeer.reconnect(); } catch (_) { startPairing(true); }
+      }, NET_RETRY_MS[Math.min(netRetry++, NET_RETRY_MS.length - 1)]);
     });
   }
 
+  function scheduleRetry(ms) {
+    const keep = code;
+    const c = conn, p = peer;
+    conn = null; peer = null;
+    try { if (c) c.close(); } catch (_) {}
+    try { if (p) p.destroy(); } catch (_) {}
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(() => { if (code === keep) startPairing(true); }, ms);
+  }
+
+  /** Make and remember a fresh pairing code, then listen on it. */
+  function newCode() {
+    releaseHeld();
+    destroyPeer();
+    code = randomCode(6);
+    saveCode(code);
+    startPairing();
+  }
+
+  /** Close the phone link and stop listening (the code is kept; opening the popover or
+   *  reloading the hub listens again). */
   function disconnect() {
     releaseHeld();
     destroyPeer();
     setConnectedIndicator(false);
-    setStatus('Disconnected');
-    if (codeEl) codeEl.textContent = '——';
-    if (urlEl) { urlEl.textContent = ''; urlEl.removeAttribute('href'); }
-    if (qrHost) qrHost.innerHTML = '';
+    setStatus('Disconnected (open this panel again to listen)');
     closePopover();
   }
 
@@ -268,6 +346,7 @@
   if (popoverBackdrop) popoverBackdrop.addEventListener('click', () => closePopover());
   if (popover) popover.addEventListener('click', (e) => e.stopPropagation());
   if (disconnectBtn) disconnectBtn.addEventListener('click', () => disconnect());
+  if (newCodeBtn) newCodeBtn.addEventListener('click', (e) => { e.stopPropagation(); newCode(); });
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && popover && !popover.hidden) closePopover();
@@ -277,6 +356,19 @@
   // page gets its keyup and nothing stays "pressed" for the next one.
   if (frame) new MutationObserver(releaseHeld).observe(frame, { attributes: true, attributeFilter: ['src'] });
 
-  // Expose tiny API for debugging
-  window.__hubController = { openPopover, closePopover, disconnect, startPairing };
+  // Leaving / reloading the page: free the peer id on the broker right away so the
+  // reloaded hub can register the same code again.
+  window.addEventListener('pagehide', () => { releaseHeld(); destroyPeer(); });
+
+  // Boot: a remembered code starts listening at once (phone can reconnect after a reload).
+  code = loadCode();
+  if (code) startPairing();
+
+  // Expose tiny API for debugging / tests
+  window.__hubController = {
+    openPopover, closePopover, disconnect, startPairing, newCode,
+    get code() { return code; },
+    get status() { return statusEl ? statusEl.textContent : ''; },
+    get connected() { return !!(conn && conn.open); },
+  };
 })();

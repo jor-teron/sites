@@ -6,11 +6,24 @@
  * holds structure + fallback theme values (overridden at runtime by themes[].vars).
  */
 const CONTROLLER_CONFIG = {
+  version: '1.1',                  // shown small on the pairing screen
+
   // PeerJS pairing
   peer: {
     idPrefix: 'jtsites-',          // hub peer id = idPrefix + pairing code (must match hub-controller.js)
     options: { debug: 0 },         // options passed to new Peer(...)
     connectOptions: { reliable: true }, // options passed to peer.connect(...)
+  },
+
+  // Auto-reconnect (hub reloaded, Wi-Fi blip, phone page reloaded). The LED is amber while
+  // trying; tap the LED to retry at once. A code that never connected is not retried
+  // (a mistyped code shows "Hub not found" instead).
+  reconnect: {
+    enabled: true,
+    delaysMs: [1000, 2000, 3000, 5000, 8000, 10000], // backoff; the last value repeats
+    giveUpMs: 5 * 60 * 1000,       // stop trying after this long without success (0 = never)
+    attemptTimeoutMs: 15000,       // an attempt that neither opens nor fails within this is retried
+    autoConnectOnLoad: true,       // page (re)load: connect to the last code automatically
   },
 
   // Pairing code rules
@@ -68,8 +81,19 @@ const CONTROLLER_CONFIG = {
   // Haptics (navigator.vibrate — not available on iOS Safari; visual flash is always shown)
   haptics: {
     enabled: true,                 // default on/off (user toggle is remembered)
-    pressMs: 12,                   // button press pulse
-    tickMs: 6,                     // softer tick when the stick enters a new direction sector
+    shortMs: 50,                   // SHORT pulse: stick / D-pad slides into a new direction (tick)
+    longMs: 100,                   // LONG pulse: a button is pressed (press)
+  },
+
+  // Built-in QR scanner (camera overlay; decodes with the local vendor/jsQR.js)
+  qrScanner: {
+    icon: 'controller_qr_icon.png', // button icon (relative to controller.html)
+    facingMode: 'environment',     // back camera
+    idealWidth: 1280,              // camera resolution hint
+    scanWidth: 480,                // frames are downscaled to this width before decoding
+    scanEveryMs: 120,              // decode interval
+    inversionAttempts: 'attemptBoth', // jsQR option: 'dontInvert' | 'onlyInvert' | 'attemptBoth'
+    useBarcodeDetector: false,     // true: try the browser's BarcodeDetector first (jsQR is always the fallback)
   },
 
   // Remembered user choices (localStorage keys)
@@ -77,6 +101,7 @@ const CONTROLLER_CONFIG = {
     leftMode: 'jtsites-ctrl-leftmode',
     haptics: 'jtsites-ctrl-haptics',
     theme: 'jtsites-ctrl-theme',
+    lastCode: 'jtsites-ctrl-lastcode', // last pairing code that connected (auto-connect on load)
   },
 
   // Debug: controller.html?demo=1 skips pairing, shows the pad and logs outgoing
@@ -172,6 +197,7 @@ const CONTROLLER_CONFIG = {
     connecting: 'Connecting…',
     connected: 'Connected',
     disconnected: 'Disconnected — tap the light to reconnect',
+    reconnecting: 'Reconnecting… (tap the light to retry now)',
     error: 'Error',
     peerMissing: 'PeerJS missing',
     hubNotFound: 'Hub not found',
@@ -187,5 +213,19 @@ const CONTROLLER_CONFIG = {
     select: 'SELECT',
     start: 'START',
     demo: 'DEMO',
+    scanBtn: 'Scan QR',            // pairing screen button
+    scanTitle: 'Scan the QR code on the hub',
+    scanStarting: 'Starting camera…',
+    scanLooking: 'Point the camera at the hub QR code',
+    scanFound: 'Code found: {code}',
+    scanNotController: 'That QR code is not a hub pairing code',
+    scanInsecure: 'Camera needs a secure (https) page — type the code instead',
+    scanNoCamera: 'No camera found — type the code instead',
+    scanDenied: 'Camera permission denied — allow it or type the code instead',
+    scanError: 'Camera error — type the code instead',
+    scanUnavailable: 'QR decoder missing — type the code instead',
+    scanCancel: 'Cancel',
+    scanTypeCode: 'Type code',
+    scanIconAlt: 'Scan QR',
   },
 };

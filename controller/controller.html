@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#07080b" />
   <title>Gamepad Controller</title>
   <link rel="icon" href="controller_icon.png" />
-  <link rel="stylesheet" href="controller.css" />
+  <link rel="stylesheet" href="controller.css?v=1.1" />
   <script src="../vendor/peerjs.min.js"></script>
 </head>
 <body class="theme-dark-gloss mode-both">
@@ -27,8 +27,14 @@
       </div>
       <p class="hint" data-text="hint">Enter the pairing code shown on the hub</p>
       <input id="code-input" type="text" maxlength="8" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="CODE" />
-      <button type="button" id="connect-btn" class="gloss-btn" data-text="connectBtn">Connect</button>
+      <div class="pair-actions">
+        <button type="button" id="connect-btn" class="gloss-btn" data-text="connectBtn">Connect</button>
+        <button type="button" id="scan-btn" class="gloss-btn scan-btn" aria-label="Scan QR">
+          <img class="qr-icon" alt="" data-qr-icon /><span data-text="scanBtn">Scan QR</span>
+        </button>
+      </div>
       <p id="pair-error" class="error" hidden></p>
+      <p class="version" id="version"></p>
     </div>
   </div>
 
@@ -52,7 +58,10 @@
     </div>
 
     <div class="center-cluster">
-      <button type="button" class="led" id="led" aria-label="Connection light"></button>
+      <div class="top-row">
+        <button type="button" class="led" id="led" aria-label="Connection light"></button>
+        <button type="button" class="qr-btn" id="qr-btn" aria-label="Scan QR"><img class="qr-icon" alt="" data-qr-icon /></button>
+      </div>
       <div class="sys-row">
         <button type="button" class="sys select" data-btn="select" aria-label="Select"><span class="glyph-select" aria-hidden="true"></span></button>
         <button type="button" class="home" data-btn="home" aria-label="Home"><span class="home-glyph">⌂</span></button>
@@ -78,7 +87,23 @@
     </div>
   </div>
 
-  <script src="controller_config.js"></script>
-  <script src="controller_logic.js"></script>
+  <!-- QR scanner overlay (camera) -->
+  <div id="scan-overlay" hidden>
+    <video id="scan-video" playsinline muted autoplay></video>
+    <canvas id="scan-canvas" hidden></canvas>
+    <div class="scan-frame" aria-hidden="true"></div>
+    <div class="scan-ui">
+      <p class="scan-title" data-text="scanTitle">Scan the QR code on the hub</p>
+      <p class="scan-status" id="scan-status"></p>
+      <div class="scan-actions">
+        <button type="button" id="scan-cancel" class="gloss-btn" data-text="scanCancel">Cancel</button>
+        <button type="button" id="scan-type" class="gloss-btn" data-text="scanTypeCode">Type code</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="vendor/jsQR.js"></script>
+  <script src="controller_config.js?v=1.1"></script>
+  <script src="controller_logic.js?v=1.1"></script>
 </body>
 </html>

@@ -8,6 +8,10 @@
  * The stick also emulates the D-pad by sending 'btn' up/down/left/right, so games that
  * only understand arrows work unchanged.
  *
+ * Pairing: the last code that connected is remembered (localStorage) and used again on
+ * page load; a dropped connection (hub reloaded, network blip) is retried with backoff
+ * (LED amber). A built-in QR scanner (camera + local vendor/jsQR.js) reads the hub QR.
+ *
  * All settings / text come from CONTROLLER_CONFIG (controller_config.js).
  */
 (function () {
@@ -37,6 +41,15 @@
   const modeToggle = $('mode-toggle');
   const hapticsToggle = $('haptics-toggle');
   const demoTag = $('demo-tag');
+  const qrBtn = $('qr-btn');
+  const scanBtn = $('scan-btn');
+  const scanOverlay = $('scan-overlay');
+  const scanVideo = $('scan-video');
+  const scanCanvas = $('scan-canvas');
+  const scanStatus = $('scan-status');
+  const scanCancel = $('scan-cancel');
+  const scanType = $('scan-type');
+  const versionEl = $('version');
 
   const params = new URLSearchParams(location.search);
   const DEMO = params.get(CFG.demo.param) === '1';
@@ -83,6 +96,11 @@
     codeInput.maxLength = CFG.code.maxLength;
     modeToggle.title = TXT.modeTitle;
     hapticsToggle.title = TXT.hapticsTitle;
+    document.querySelectorAll('[data-qr-icon]').forEach((img) => { img.src = CFG.qrScanner.icon; });
+    qrBtn.title = TXT.scanIconAlt;
+    qrBtn.setAttribute('aria-label', TXT.scanIconAlt);
+    scanBtn.setAttribute('aria-label', TXT.scanIconAlt);
+    if (versionEl) versionEl.textContent = CFG.version ? 'v' + CFG.version : '';
   }
 
   /* ------------------------------------------------------------------ */
@@ -262,7 +280,7 @@
       onFirstTouch();
       capture(el, e);
       pointers.set(e.pointerId, { kind: 'btn', btn: b, el });
-      if (setSource('p' + e.pointerId, [b]).length) vibrate(CFG.haptics.pressMs);
+      if (setSource('p' + e.pointerId, [b]).length) vibrate(CFG.haptics.longMs);
     });
     const up = (e) => {
       const p = pointers.get(e.pointerId);
@@ -303,13 +321,13 @@
       onFirstTouch();
       capture(dpadEl, e);
       pointers.set(e.pointerId, { kind: 'dpad', el: dpadEl });
-      if (setSource('p' + e.pointerId, dpadDirs(e.clientX, e.clientY)).length) vibrate(CFG.haptics.pressMs);
+      if (setSource('p' + e.pointerId, dpadDirs(e.clientX, e.clientY)).length) vibrate(CFG.haptics.longMs);
     });
     dpadEl.addEventListener('pointermove', (e) => {
       const p = pointers.get(e.pointerId);
       if (!p || p.kind !== 'dpad') return;
       e.preventDefault();
-      if (setSource('p' + e.pointerId, dpadDirs(e.clientX, e.clientY)).length) vibrate(CFG.haptics.tickMs);
+      if (setSource('p' + e.pointerId, dpadDirs(e.clientX, e.clientY)).length) vibrate(CFG.haptics.shortMs);
     });
     const up = (e) => {
       const p = pointers.get(e.pointerId);
@@ -399,7 +417,7 @@
     if (dirs.join() !== stick.dirs.join()) {
       stick.dirs = dirs;
       setSource('stick', dirs);
-      if (dirs.length) vibrate(CFG.haptics.tickMs);
+      if (dirs.length) vibrate(CFG.haptics.shortMs);
     }
   }
 
@@ -512,42 +530,103 @@
     leftMode = CFG.leftModes[(i + 1) % CFG.leftModes.length];
     save(CFG.storage.leftMode, leftMode);
     applyMode(leftMode);
-    vibrate(CFG.haptics.pressMs);
+    vibrate(CFG.haptics.longMs);
   });
   bindTap(hapticsToggle, () => {
     if (!canVibrate) return;
     hapticsOn = !hapticsOn;
     save(CFG.storage.haptics, hapticsOn ? '1' : '0');
     renderHaptics();
-    vibrate(CFG.haptics.pressMs);
+    vibrate(CFG.haptics.longMs);
   });
   bindTap(led, () => {
     if (DEMO) { blinkError(); return; }
-    if (connState === 'disconnected') connectToHub(code || codeInput.value);
+    // disconnected or waiting for the next automatic retry: try now
+    if (connState !== 'connected') connectToHub(code || codeInput.value || lastGood);
   });
+  bindTap(qrBtn, () => openScanner());
 
   /* ------------------------------------------------------------------ */
-  /* PeerJS                                                              */
+  /* PeerJS + auto-reconnect                                             */
   /* ------------------------------------------------------------------ */
-  function disconnectPeer() {
-    releaseAll();
-    try { if (conn) conn.close(); } catch (_) {}
-    conn = null;
-    try { if (peer) peer.destroy(); } catch (_) {}
-    peer = null;
+  const RC = CFG.reconnect;
+  let lastGood = load(CFG.storage.lastCode, '');   // last code that connected
+  let attemptSeq = 0;      // bumps on every attempt / loss, so stale PeerJS events are ignored
+  let retryTimer = 0;
+  let attemptTimer = 0;
+  let retryIndex = 0;
+  let retryStartedAt = 0;
+
+  function normalizeCode(v) {
+    return String(v || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
   }
 
-  function connectToHub(pairingCode) {
-    code = String(pairingCode || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  function cancelRetry() {
+    clearTimeout(retryTimer);
+    retryTimer = 0;
+    retryIndex = 0;
+    retryStartedAt = 0;
+  }
+
+  function disconnectPeer() {
+    releaseAll();
+    clearTimeout(attemptTimer);
+    const c = conn, p = peer;
+    conn = null;
+    peer = null;
+    try { if (c) c.close(); } catch (_) {}
+    try { if (p) p.destroy(); } catch (_) {}
+  }
+
+  /** Only a code that connected before is retried automatically. */
+  function canRetry() {
+    return !!(RC && RC.enabled && code && code === lastGood);
+  }
+
+  /** The connection (or an attempt) was lost: schedule a retry or show "disconnected". */
+  function onLost(seq, msg) {
+    if (seq !== attemptSeq) return;   // already handled / superseded
+    attemptSeq++;
+    disconnectPeer();                  // also releases every held button
+    if (!canRetry()) {
+      setStatus('disconnected', msg || TXT.disconnected);
+      return;
+    }
+    if (!retryStartedAt) retryStartedAt = Date.now();
+    if (RC.giveUpMs && Date.now() - retryStartedAt > RC.giveUpMs) {
+      cancelRetry();
+      setStatus('disconnected', TXT.disconnected);
+      blinkError();
+      return;
+    }
+    const delays = RC.delaysMs && RC.delaysMs.length ? RC.delaysMs : [3000];
+    const d = delays[Math.min(retryIndex, delays.length - 1)];
+    retryIndex++;
+    setStatus('connecting', TXT.reconnecting);
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(() => connectToHub(code, { retry: true }), d);
+  }
+
+  /**
+   * Connect to the hub peer for a pairing code.
+   * opts.retry: part of an automatic retry sequence (keeps the backoff position).
+   */
+  function connectToHub(pairingCode, opts) {
+    opts = opts || {};
+    code = normalizeCode(pairingCode);
     if (code.length < CFG.code.minLength) {
+      cancelRetry();
       showPairScreen(TXT.invalidCode);
       blinkError();
       return;
     }
+    if (!opts.retry) cancelRetry();
+    else clearTimeout(retryTimer);
     showPairError('');
+    attemptSeq++;
     disconnectPeer();
     showPad();
-    setStatus('connecting', TXT.connecting);
+    setStatus('connecting', opts.retry ? TXT.reconnecting : TXT.connecting);
 
     if (typeof Peer === 'undefined') {
       setStatus('disconnected', TXT.peerMissing);
@@ -555,50 +634,190 @@
       return;
     }
 
+    const seq = attemptSeq;
     const myPeer = peer = new Peer(Object.assign({}, CFG.peer.options));
+    attemptTimer = setTimeout(() => onLost(seq), RC.attemptTimeoutMs || 15000);
     myPeer.on('open', () => {
-      if (peer !== myPeer) return;
+      if (seq !== attemptSeq) return;
       const c = conn = myPeer.connect(CFG.peer.idPrefix + code, Object.assign({}, CFG.peer.connectOptions));
       c.on('open', () => {
-        if (conn !== c) return;
+        if (seq !== attemptSeq) return;
+        clearTimeout(attemptTimer);
+        cancelRetry();
+        lastGood = code;
+        save(CFG.storage.lastCode, code);
         setStatus('connected', TXT.connected);
         requestWakeLock();
       });
       c.on('data', () => { /* hub may send acks later */ });
-      c.on('close', () => {
-        if (conn !== c) return;
-        releaseAll();
-        setStatus('disconnected', TXT.disconnected);
-      });
+      c.on('close', () => onLost(seq));
       c.on('error', (err) => {
-        if (conn !== c) return;
-        setStatus('disconnected', TXT.error);
-        blinkError();
         console.warn('conn error', err);
+        onLost(seq, TXT.error);
       });
     });
     myPeer.on('error', (err) => {
-      if (peer !== myPeer) return;
+      if (seq !== attemptSeq) return;
       const type = err && err.type;
-      blinkError();
-      if (type === 'peer-unavailable') {
+      if (type === 'peer-unavailable' && !canRetry()) {
+        // a new / mistyped code: tell the user instead of retrying
+        attemptSeq++;
+        disconnectPeer();
+        blinkError();
         setStatus('disconnected', TXT.hubNotFound);
         codeInput.value = code;
         showPairScreen(TXT.hubNotFoundHint);
-      } else {
-        setStatus('disconnected', type || TXT.genericError);
-        console.warn('peer error', err);
+        return;
       }
+      if (type !== 'peer-unavailable') console.warn('peer error', err);
+      onLost(seq, type || TXT.genericError);
     });
     myPeer.on('disconnected', () => {
       // signalling server lost; an open data connection may survive
-      if (peer !== myPeer) return;
-      if (!(conn && conn.open)) {
-        releaseAll();
-        setStatus('disconnected', TXT.disconnected);
-      }
+      if (seq !== attemptSeq) return;
+      if (!(conn && conn.open)) onLost(seq);
     });
   }
+
+  /* ------------------------------------------------------------------ */
+  /* QR scanner (camera + local jsQR; BarcodeDetector optional)          */
+  /* ------------------------------------------------------------------ */
+  const QS = CFG.qrScanner;
+  const scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true });
+  let scanStream = null;
+  let scanTimer = 0;
+  let scanning = false;
+  let detector = null;
+
+  /** Pairing code from a hash string: "code=ABC123" or a bare "ABC123". */
+  function codeFromHash(h) {
+    h = String(h || '').replace(/^#/, '');
+    const hp = new URLSearchParams(h.includes('=') ? h : '');
+    let c = (hp.get(CFG.code.hashParam) || '').trim();
+    if (!c && CFG.code.bareHashPattern.test(h)) c = h;
+    return normalizeCode(c);
+  }
+
+  /** Pairing code from scanned QR text: a controller URL (#code= / ?code=) or a bare code. */
+  function codeFromText(text) {
+    const t = String(text || '').trim();
+    let c = '';
+    if (CFG.code.bareHashPattern.test(t)) c = t;
+    else {
+      try {
+        const u = new URL(t);
+        c = codeFromHash(u.hash) || normalizeCode(u.searchParams.get(CFG.code.hashParam));
+      } catch (_) { c = ''; }
+    }
+    c = normalizeCode(c);
+    return c.length >= CFG.code.minLength && c.length <= CFG.code.maxLength ? c : '';
+  }
+
+  function setScanStatus(msg, isError) {
+    scanStatus.textContent = msg || '';
+    scanStatus.classList.toggle('error', !!isError);
+  }
+
+  function stopTracks(stream) {
+    try { stream.getTracks().forEach((t) => t.stop()); } catch (_) { /* ignore */ }
+  }
+
+  async function openScanner() {
+    if (scanning) return;
+    releaseAll();
+    scanning = true;
+    scanOverlay.hidden = false;
+    setScanStatus(TXT.scanStarting);
+    const haveBD = QS.useBarcodeDetector && 'BarcodeDetector' in window;
+    if (typeof jsQR !== 'function' && !haveBD) { setScanStatus(TXT.scanUnavailable, true); return; }
+    if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setScanStatus(TXT.scanInsecure, true);
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: QS.facingMode }, width: { ideal: QS.idealWidth } },
+        audio: false,
+      });
+      if (!scanning) { stopTracks(stream); return; } // cancelled while the prompt was open
+      scanStream = stream;
+      scanVideo.srcObject = stream;
+      try { await scanVideo.play(); } catch (_) { /* autoplay attribute covers it */ }
+      setScanStatus(TXT.scanLooking);
+      clearTimeout(scanTimer);
+      scanTimer = setTimeout(scanFrame, QS.scanEveryMs);
+    } catch (err) {
+      const name = err && err.name;
+      if (name === 'NotAllowedError' || name === 'SecurityError') setScanStatus(TXT.scanDenied, true);
+      else if (name === 'NotFoundError' || name === 'OverconstrainedError' || name === 'DevicesNotFoundError') setScanStatus(TXT.scanNoCamera, true);
+      else { setScanStatus(TXT.scanError, true); console.warn('camera error', err); }
+    }
+  }
+
+  function closeScanner() {
+    scanning = false;
+    clearTimeout(scanTimer);
+    if (scanStream) stopTracks(scanStream);
+    scanStream = null;
+    try { scanVideo.pause(); } catch (_) { /* ignore */ }
+    scanVideo.srcObject = null;
+    scanOverlay.hidden = true;
+  }
+
+  async function scanFrame() {
+    if (!scanning) return;
+    const vw = scanVideo.videoWidth, vh = scanVideo.videoHeight;
+    if (scanVideo.readyState >= 2 && vw && vh) {
+      const w = Math.min(QS.scanWidth, vw);
+      const h = Math.round(vh * w / vw);
+      if (scanCanvas.width !== w) scanCanvas.width = w;
+      if (scanCanvas.height !== h) scanCanvas.height = h;
+      scanCtx.drawImage(scanVideo, 0, 0, w, h);
+      let text = null;
+      if (QS.useBarcodeDetector && 'BarcodeDetector' in window) {
+        try {
+          detector = detector || new BarcodeDetector({ formats: ['qr_code'] });
+          const found = await detector.detect(scanCanvas);
+          if (found && found[0]) text = found[0].rawValue;
+        } catch (_) { /* fall back to jsQR */ }
+      }
+      if (text == null && typeof jsQR === 'function') {
+        const img = scanCtx.getImageData(0, 0, w, h);
+        const r = jsQR(img.data, w, h, { inversionAttempts: QS.inversionAttempts });
+        if (r) text = r.data;
+      }
+      if (!scanning) return;
+      if (text != null) {
+        const c = codeFromText(text);
+        if (c) {
+          setScanStatus(TXT.scanFound.replace('{code}', c));
+          closeScanner();
+          codeInput.value = c;
+          if (!(c === code && conn && conn.open)) connectToHub(c);
+          return;
+        }
+        setScanStatus(TXT.scanNotController, true);
+      }
+    }
+    scanTimer = setTimeout(scanFrame, QS.scanEveryMs);
+  }
+
+  scanBtn.addEventListener('click', () => openScanner());
+  scanCancel.addEventListener('click', () => closeScanner());
+  scanType.addEventListener('click', () => {
+    closeScanner();
+    if (!(conn && conn.open)) {
+      cancelRetry();
+      attemptSeq++;
+      disconnectPeer();
+      setStatus('disconnected', TXT.disconnected);
+      codeInput.value = code || lastGood || '';
+      showPairScreen('');
+    } else {
+      codeInput.value = '';
+      showPairScreen('');   // connected: the pad keeps the link until a new code connects
+    }
+  });
 
   /* ------------------------------------------------------------------ */
   /* global guards                                                       */
@@ -617,8 +836,13 @@
   window.addEventListener('blur', () => releaseAll());
   window.addEventListener('pagehide', () => releaseAll());
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') requestWakeLock();
-    else releaseAll();
+    if (document.visibilityState === 'visible') {
+      requestWakeLock();
+      // back from the lock screen / another app: retry at once instead of waiting
+      if (!DEMO && retryTimer && canRetry()) connectToHub(code, { retry: true });
+    } else {
+      releaseAll();
+    }
   });
   window.addEventListener('orientationchange', updateOrientation);
   window.addEventListener('resize', updateOrientation);
@@ -653,17 +877,15 @@
     window.__controller = { releaseAll, setMode: (m) => { leftMode = m; applyMode(m); }, stick, sent };
   } else {
     setStatus('disconnected', TXT.disconnected);
-    const fromHash = (function parseCodeFromHash() {
-      const h = (location.hash || '').replace(/^#/, '');
-      const hp = new URLSearchParams(h.includes('=') ? h : '');
-      let c = (hp.get(CFG.code.hashParam) || '').trim().toUpperCase();
-      if (!c && CFG.code.bareHashPattern.test(h)) c = h.toUpperCase();
-      return c.replace(/[^A-Z0-9]/g, '');
-    })();
+    const fromHash = codeFromHash(location.hash);
     if (fromHash) {
       codeInput.value = fromHash;
       connectToHub(fromHash);
+    } else if (RC.autoConnectOnLoad && lastGood) {
+      codeInput.value = lastGood;      // page reload: reconnect to the last hub
+      connectToHub(lastGood, { retry: true });
     } else {
+      codeInput.value = lastGood || '';
       showPairScreen('');
     }
   }

@@ -354,6 +354,20 @@ html, body {
   cursor: pointer;
   margin-top: 2px;
 }
+.ctrl-actions { display: flex; gap: 8px; justify-content: center; }
+.ctrl-newcode {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+  margin-top: 2px;
+}
+.ctrl-newcode:hover { background: rgba(110, 168, 254, 0.16); border-color: var(--accent); }
 .ctrl-disconnect:hover {
   background: rgba(248, 113, 113, 0.16);
   border-color: #f87171;
