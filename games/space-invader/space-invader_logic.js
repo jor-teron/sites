@@ -22,47 +22,36 @@ const overlay = document.getElementById("overlay");
 /** Overlay message line */
 const overlayMsg = document.getElementById("overlay-msg");
 
-// ---------- constants ----------
-/** Logical playfield width (scaled to screen) */
-const W = 480;
-/** Logical playfield height */
-const H = 640;
-/** Player ship width */
-const PLAYER_W = 36;
-/** Player ship height */
-const PLAYER_H = 18;
-/** Player horizontal speed (px per frame at 60fps) */
-const PLAYER_SPEED = 4.2;
-/** Player bullet speed (up) */
-const BULLET_SPEED = 8;
-/** Cooldown between player shots (ms) */
-const SHOT_COOLDOWN = 280;
-/** Invader cell width */
-const INV_W = 28;
-/** Invader cell height */
-const INV_H = 20;
-/** Columns of invaders */
-const COLS = 8;
-/** Rows of invaders */
-const ROWS = 5;
-/** Horizontal gap between invaders */
-const INV_GAP_X = 12;
-/** Vertical gap between invaders */
-const INV_GAP_Y = 14;
-/** Starting Y of top invader row */
-const INV_START_Y = 70;
-/** Max player lives */
-const MAX_LIVES = 3;
+// ---------- constants (from space-invader_config.js) ----------
+const CFG = SPACE_INVADER_CONFIG;
+const IC = CFG.invaders;
+const COLR = CFG.colors;
+const isKey = (list, code) => list.indexOf(code) !== -1;
+const W = CFG.width;
+const H = CFG.height;
+const PLAYER_W = CFG.player.w;
+const PLAYER_H = CFG.player.h;
+const PLAYER_SPEED = CFG.player.speed;
+const BULLET_SPEED = CFG.bullets.speed;
+const SHOT_COOLDOWN = CFG.player.shotCooldownMs;
+const INV_W = IC.w;
+const INV_H = IC.h;
+const COLS = IC.cols;
+const ROWS = IC.rows;
+const INV_GAP_X = IC.gapX;
+const INV_GAP_Y = IC.gapY;
+const INV_START_Y = IC.startY;
+const MAX_LIVES = CFG.start.lives;
 
 // ---------- runtime state ----------
 /** Current game state string */
 let state = "menu";
 /** Player score */
-let score = 0;
+let score = CFG.start.score;
 /** Remaining lives */
 let lives = MAX_LIVES;
 /** Current wave number */
-let wave = 1;
+let wave = CFG.start.wave;
 /** Last timestamp from rAF */
 let lastTs = 0;
 /** Keys currently held */
@@ -72,7 +61,7 @@ let lastShot = 0;
 /** Invincibility timer after hit (ms remaining) */
 let invuln = 0;
 /** Player object */
-let player = { x: W / 2, y: H - 50 };
+let player = { x: W / 2, y: H - CFG.player.bottomOffset };
 /** Player bullets array */
 let bullets = [];
 /** Enemy bullets array */
@@ -82,9 +71,9 @@ let invaders = [];
 /** Invader formation: direction 1=right, -1=left */
 let invDir = 1;
 /** Invader step speed this wave */
-let invSpeed = 0.6;
+let invSpeed = IC.speedBase + CFG.start.wave * IC.speedPerWave;
 /** Drop amount when hitting a wall */
-const INV_DROP = 16;
+const INV_DROP = IC.drop;
 /** Stars for background */
 let stars = [];
 
@@ -93,7 +82,7 @@ let stars = [];
  * Resize canvas to device pixels while keeping logical W x H.
  */
 function resize() {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, CFG.maxDpr);
   canvas.width = W * dpr;
   canvas.height = H * dpr;
   canvas.style.width = "100vw";
@@ -131,12 +120,13 @@ function hideOverlay() {
  */
 function makeStars() {
   stars = [];
-  for (let i = 0; i < 60; i++) {
+  const S = CFG.stars;
+  for (let i = 0; i < S.count; i++) {
     stars.push({
       x: Math.random() * W,
       y: Math.random() * H,
-      s: Math.random() * 1.4 + 0.3,
-      v: Math.random() * 0.4 + 0.1
+      s: Math.random() * S.sizeRange + S.minSize,
+      v: Math.random() * S.speedRange + S.minSpeed
     });
   }
 }
@@ -161,19 +151,19 @@ function spawnInvaders() {
     }
   }
   invDir = 1;
-  invSpeed = 0.55 + wave * 0.18;
+  invSpeed = IC.speedBase + wave * IC.speedPerWave;
 }
 
 /**
  * Reset a full game from wave 1.
  */
 function resetGame() {
-  score = 0;
+  score = CFG.start.score;
   lives = MAX_LIVES;
-  wave = 1;
+  wave = CFG.start.wave;
   bullets = [];
   eBullets = [];
-  player = { x: W / 2, y: H - 50 };
+  player = { x: W / 2, y: H - CFG.player.bottomOffset };
   invuln = 0;
   lastShot = 0;
   spawnInvaders();
@@ -211,16 +201,16 @@ function hit(a, b) {
  * @param {boolean} down
  */
 function onKey(e, down) {
-  if (e.code === "ArrowLeft" || e.code === "KeyA") keys.left = down;
-  if (e.code === "ArrowRight" || e.code === "KeyD") keys.right = down;
-  if (e.code === "Space") {
+  if (isKey(CFG.keys.left, e.code)) keys.left = down;
+  if (isKey(CFG.keys.right, e.code)) keys.right = down;
+  if (isKey(CFG.keys.shoot, e.code)) {
     keys.shoot = down;
     e.preventDefault();
     if (down) tryStartOrShoot();
   }
-  if (e.code === "KeyP" && down && state === "playing") {
+  if (isKey(CFG.keys.pause, e.code) && down && state === "playing") {
     state = "paused";
-    showOverlay("PAUSED — SPACE to resume");
+    showOverlay(CFG.text.paused);
   }
 }
 
@@ -270,8 +260,8 @@ function firePlayer() {
   bullets.push({
     x: player.x - 2,
     y: player.y - PLAYER_H,
-    w: 4,
-    h: 10
+    w: CFG.bullets.w,
+    h: CFG.bullets.h
   });
 }
 
@@ -282,14 +272,14 @@ function maybeEnemyShot() {
   const living = invaders.filter((i) => i.alive);
   if (!living.length) return;
   // more shots on later waves
-  const chance = 0.008 + wave * 0.002;
+  const chance = IC.shotChanceBase + wave * IC.shotChancePerWave;
   if (Math.random() > chance) return;
   const shooter = living[Math.floor(Math.random() * living.length)];
   eBullets.push({
     x: shooter.x + shooter.w / 2 - 2,
     y: shooter.y + shooter.h,
-    w: 4,
-    h: 10
+    w: CFG.bullets.w,
+    h: CFG.bullets.h
   });
 }
 
@@ -301,10 +291,10 @@ function playerHit() {
   lives -= 1;
   updateHud();
   eBullets = [];
-  invuln = 1500;
+  invuln = CFG.player.invulnMs;
   if (lives <= 0) {
     state = "over";
-    showOverlay("GAME OVER — SPACE / TAP to retry");
+    showOverlay(CFG.text.gameOver);
   }
 }
 
@@ -335,7 +325,7 @@ function update(dt) {
   bullets = bullets.filter((b) => b.y + b.h > 0);
 
   // enemy bullets
-  for (const b of eBullets) b.y += BULLET_SPEED * 0.7;
+  for (const b of eBullets) b.y += BULLET_SPEED * CFG.bullets.enemySpeedFactor;
   eBullets = eBullets.filter((b) => b.y < H);
 
   // invader march
@@ -344,7 +334,7 @@ function update(dt) {
   for (const inv of invaders) {
     if (!inv.alive) continue;
     inv.x += invDir * invSpeed;
-    if (inv.x <= 8 || inv.x + inv.w >= W - 8) hitEdge = true;
+    if (inv.x <= IC.edgeMargin || inv.x + inv.w >= W - IC.edgeMargin) hitEdge = true;
     if (inv.y + inv.h > lowest) lowest = inv.y + inv.h;
   }
   if (hitEdge) {
@@ -355,9 +345,9 @@ function update(dt) {
   }
 
   // invaders reached player line
-  if (lowest >= player.y - 8) {
+  if (lowest >= player.y - IC.landMargin) {
     state = "over";
-    showOverlay("THEY LANDED — SPACE / TAP to retry");
+    showOverlay(CFG.text.landed);
     return;
   }
 
@@ -368,7 +358,7 @@ function update(dt) {
       if (hit(b, inv)) {
         inv.alive = false;
         b.y = -99;
-        score += (inv.type + 1) * 10;
+        score += (inv.type + 1) * IC.pointsPerType;
         updateHud();
       }
     }
@@ -404,7 +394,7 @@ function update(dt) {
  */
 function drawInvader(inv) {
   const { x, y, w, h, type } = inv;
-  ctx.fillStyle = type === 2 ? "#ff6b6b" : type === 1 ? "#7cff7c" : "#7cc8ff";
+  ctx.fillStyle = type === 2 ? COLR.invaderTop : type === 1 ? COLR.invaderMid : COLR.invaderLow;
   // body
   ctx.fillRect(x + 4, y + 6, w - 8, h - 10);
   // "eyes"
@@ -422,13 +412,13 @@ function drawInvader(inv) {
  * Draw player cannon.
  */
 function drawPlayer() {
-  if (invuln > 0 && Math.floor(invuln / 80) % 2 === 0) return;
+  if (invuln > 0 && Math.floor(invuln / CFG.player.blinkMs) % 2 === 0) return;
   const x = player.x - PLAYER_W / 2;
   const y = player.y - PLAYER_H;
-  ctx.fillStyle = "#e8f0ff";
+  ctx.fillStyle = COLR.player;
   ctx.fillRect(x + 4, y + 8, PLAYER_W - 8, PLAYER_H - 8);
   ctx.fillRect(x + PLAYER_W / 2 - 3, y, 6, 10);
-  ctx.fillStyle = "#7cff7c";
+  ctx.fillStyle = COLR.playerTip;
   ctx.fillRect(x + PLAYER_W / 2 - 2, y - 2, 4, 4);
 }
 
@@ -436,10 +426,10 @@ function drawPlayer() {
  * Render one frame.
  */
 function draw() {
-  ctx.fillStyle = "#050508";
+  ctx.fillStyle = COLR.bg;
   ctx.fillRect(0, 0, W, H);
 
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = COLR.star;
   for (const s of stars) {
     ctx.globalAlpha = 0.35 + s.s * 0.3;
     ctx.fillRect(s.x, s.y, s.s, s.s);
@@ -447,17 +437,17 @@ function draw() {
   ctx.globalAlpha = 1;
 
   // ground line
-  ctx.fillStyle = "#1a3a1a";
-  ctx.fillRect(0, H - 28, W, 2);
+  ctx.fillStyle = COLR.ground;
+  ctx.fillRect(0, H - COLR.groundOffset, W, 2);
 
   for (const inv of invaders) {
     if (inv.alive) drawInvader(inv);
   }
 
-  ctx.fillStyle = "#fff8a0";
+  ctx.fillStyle = COLR.bullet;
   for (const b of bullets) ctx.fillRect(b.x, b.y, b.w, b.h);
 
-  ctx.fillStyle = "#ff6b6b";
+  ctx.fillStyle = COLR.enemyBullet;
   for (const b of eBullets) ctx.fillRect(b.x, b.y, b.w, b.h);
 
   drawPlayer();
@@ -468,7 +458,7 @@ function draw() {
  * @param {number} ts
  */
 function loop(ts) {
-  const dt = Math.min(ts - lastTs, 40);
+  const dt = Math.min(ts - lastTs, CFG.maxDtMs);
   lastTs = ts;
   update(dt);
   draw();

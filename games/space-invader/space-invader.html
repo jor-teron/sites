@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<!--
+  Space Invaders Clone — WebApp
+  Files: space-invader.html, space-invader.css, space-invader_config.js, space-invader_logic.js
+  Pure HTML + CSS + Canvas JS. No libraries.
+  Controls: Arrow Left/Right or A/D to move. Space or click/tap to shoot.
+  Goal: Destroy all invaders. They speed up as rows clear. You have 3 lives.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Space Invaders Clone</title>
+  <link rel="stylesheet" href="space-invader.css" />
+</head>
+<body>
+  <!-- Top HUD: score, lives, wave -->
+  <header class="hud">
+    <div>SCORE <span id="score">0</span></div>
+    <div>LIVES <span id="lives">3</span></div>
+    <div>WAVE <span id="wave">1</span></div>
+  </header>
+
+  <!-- Game canvas. Size set in JS to fit screen. -->
+  <canvas id="game"></canvas>
+
+  <!-- Overlay for start / pause / game over -->
+  <div id="overlay" class="overlay">
+    <h1>SPACE INVADERS</h1>
+    <p id="overlay-msg">Press SPACE or TAP to start</p>
+    <p class="hint">← → move &nbsp; SPACE shoot</p>
+  </div>
+
+  <script src="space-invader_config.js"></script>
+  <script src="space-invader_logic.js"></script>
+</body>
+</html>
