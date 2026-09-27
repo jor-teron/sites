@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Text — sites hub</title>
+  <!--
+    Dark text viewer used by the hub for .txt entries.
+    Usage: script/txt-view.html?file=about/contact.txt
+    (file path is relative to the site root, i.e. the hub's folder; same-origin .txt only)
+  -->
+  <style>
+    :root { --bg: #121418; --text: #e8eaed; --muted: #9aa0a6; --accent: #6ea8fe; --err: #ff8a80; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--bg); color: var(--text); }
+    /* The hub hides overflow on html/body of framed apps, so scroll an inner box instead. */
+    #view {
+      position: fixed; inset: 0;
+      overflow: auto;
+      padding: 24px 28px 48px;
+      font: 15px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      tab-size: 4;
+    }
+    #view a { color: var(--accent); }
+    #view.error { color: var(--err); font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    #view.loading { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main id="view" class="loading">Loading…</main>
+  <script>
+    (function () {
+      const view = document.getElementById('view');
+      const siteRoot = new URL('../', location.href);
+      const file = new URLSearchParams(location.search).get('file') || '';
+
+      function showError(msg) {
+        view.className = 'error';
+        view.textContent = msg;
+      }
+
+      // Append text, turning http(s):// URLs and e-mail addresses into links (DOM nodes only, no innerHTML).
+      function render(text) {
+        const re = /\bhttps?:\/\/[^\s<>"']+[^\s<>"'.,;:!?)\]}]|[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g;
+        const frag = document.createDocumentFragment();
+        let last = 0, m;
+        while ((m = re.exec(text))) {
+          if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+          const a = document.createElement('a');
+          const isUrl = /^https?:/i.test(m[0]);
+          a.href = isUrl ? m[0] : 'mailto:' + m[0];
+          if (isUrl) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+          a.textContent = m[0];
+          frag.appendChild(a);
+          last = m.index + m[0].length;
+        }
+        if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+        view.className = '';
+        view.textContent = '';
+        view.appendChild(frag);
+      }
+
+      let url;
+      try { url = new URL(file, siteRoot); } catch (_) { url = null; }
+      if (!file || !url || url.origin !== location.origin || !/\.txt$/i.test(url.pathname)) {
+        showError('Cannot open "' + file + '": only .txt files from this site can be shown.');
+        return;
+      }
+      document.title = decodeURIComponent(url.pathname.split('/').pop()) + ' — sites hub';
+
+      fetch(url, { cache: 'no-cache' })
+        .then((res) => {
+          if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + res.statusText);
+          return res.text();
+        })
+        .then(render)
+        .catch((err) => showError('Could not load "' + file + '".\n\n' + (err && err.message ? err.message : err)));
+    })();
+  </script>
+</body>
+</html>

@@ -5,9 +5,10 @@
  * ENTRY_URL can be either:
  *   - a folder:  tv/  or  games/browser-fps/   (served via its index.html)
  *   - a file:    tools/calculator.html          (used exactly as written)
+ *   - a text file: about/contact.txt            (shown in the dark viewer script/txt-view.html)
  * Icons are derived, never listed in the CSV:
  *   - folder xxx/            -> xxx/xxx_icon.png
- *   - file   dir/name.html   -> dir/name_icon.png
+ *   - file   dir/name.ext    -> dir/name_icon.png   (e.g. about/contact.txt -> about/contact_icon.png)
  */
 (function () {
   const HEADER_DEFAULT = 'Home';
@@ -27,10 +28,21 @@
     { category: 'Media', name: 'TV', entryUrl: 'tv/', order: 110, hidden: false },
   ];
 
-  /** True when ENTRY_URL points at a page file rather than a folder. */
+  const TXT_VIEWER = 'script/txt-view.html';
+
+  /** True when ENTRY_URL points at a file (last segment has an extension) rather than a folder. */
   function isFileUrl(url) {
     const path = url.split(/[?#]/)[0];
-    return /\.html?$/i.test(path);
+    return /\.[a-z0-9]+$/i.test(path);
+  }
+
+  function isTxtUrl(url) {
+    return /\.txt$/i.test(url.split(/[?#]/)[0]);
+  }
+
+  /** What the iframe should load: .txt files go through the dark text viewer. */
+  function frameUrlFor(entryUrl) {
+    return isTxtUrl(entryUrl) ? TXT_VIEWER + '?file=' + encodeURIComponent(entryUrl) : entryUrl;
   }
 
   /** Folders get a trailing slash; file paths are left untouched. */
@@ -44,8 +56,8 @@
   function iconPathFor(entryUrl) {
     const path = entryUrl.split(/[?#]/)[0];
     if (isFileUrl(path)) {
-      // tools/calculator.html -> tools/calculator_icon.png
-      return path.replace(/\.html?$/i, '_icon.png');
+      // tools/calculator.html -> tools/calculator_icon.png, about/contact.txt -> about/contact_icon.png
+      return path.replace(/\.[a-z0-9]+$/i, '_icon.png');
     }
     const parts = path.replace(/\/+$/, '').split('/').filter(Boolean);
     const folder = parts[parts.length - 1];
@@ -113,7 +125,7 @@
   }
 
   function loadApp(app) {
-    frame.src = app.entryUrl;
+    frame.src = frameUrlFor(app.entryUrl);
     empty.classList.add('hidden');
     setOpen(false);
     document.title = app.name + ' — sites hub';
