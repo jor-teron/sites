@@ -54,7 +54,7 @@
   }
 
   function controllerUrl(c) {
-    const u = new URL('controller/dpad.html', location.href);
+    const u = new URL('controller/controller.html', location.href);
     u.hash = 'code=' + c;
     return u.href;
   }

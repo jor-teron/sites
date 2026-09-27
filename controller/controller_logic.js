@@ -1,12 +1,16 @@
 /**
  * Phone D-Pad controller — PeerJS client that sends button press/release
  * messages to the sites hub.
+ * Settings and text come from CONTROLLER_CONFIG (controller_config.js).
  */
 (function () {
   'use strict';
 
-  const PEER_PREFIX = 'jtsites-';
-  const BTNS = ['up', 'down', 'left', 'right', 'a', 'b', 'start', 'select'];
+  const CFG = CONTROLLER_CONFIG;
+  const TXT = CFG.text;
+  const CLS = CFG.classes;
+  const PEER_PREFIX = CFG.peer.idPrefix;
+  const BTNS = CFG.buttons;
 
   const pairScreen = document.getElementById('pair-screen');
   const pad = document.getElementById('pad');
@@ -31,13 +35,13 @@
   function parseCodeFromHash() {
     const h = (location.hash || '').replace(/^#/, '');
     const params = new URLSearchParams(h.includes('=') ? h : '');
-    let c = (params.get('code') || '').trim().toUpperCase();
-    if (!c && /^[A-Z0-9]{4,8}$/i.test(h)) c = h.toUpperCase();
+    let c = (params.get(CFG.code.hashParam) || '').trim().toUpperCase();
+    if (!c && CFG.code.bareHashPattern.test(h)) c = h.toUpperCase();
     return c.replace(/[^A-Z0-9]/g, '');
   }
 
   function setStatus(state, msg) {
-    statusDot.className = 'dot ' + state;
+    statusDot.className = CLS.dot + ' ' + state;
     statusText.textContent = msg || state;
     reconnectBtn.hidden = state === 'connected' || state === 'connecting';
   }
@@ -48,7 +52,7 @@
   }
 
   function updateOrientation() {
-    const portrait = window.matchMedia('(orientation: portrait)').matches;
+    const portrait = window.matchMedia(CFG.browser.portraitQuery).matches;
     rotateOverlay.hidden = !portrait;
     if (portrait) {
       // keep pad mounted but overlay covers; CSS also hides pad visibility
@@ -65,7 +69,7 @@
     } catch (_) { /* ignore */ }
     try {
       if (screen.orientation && screen.orientation.lock) {
-        await screen.orientation.lock('landscape');
+        await screen.orientation.lock(CFG.browser.orientationLock);
       }
     } catch (_) { /* ignore — many browsers disallow */ }
   }
@@ -73,7 +77,7 @@
   async function requestWakeLock() {
     try {
       if (navigator.wakeLock && navigator.wakeLock.request) {
-        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock = await navigator.wakeLock.request(CFG.browser.wakeLockType);
         wakeLock.addEventListener('release', () => { wakeLock = null; });
       }
     } catch (_) { /* ignore */ }
@@ -81,7 +85,7 @@
 
   function vibrate() {
     try {
-      if (navigator.vibrate) navigator.vibrate(15);
+      if (navigator.vibrate) navigator.vibrate(CFG.touch.vibrateMs);
     } catch (_) { /* ignore */ }
   }
 
@@ -91,7 +95,7 @@
     const now = s ? 1 : 0;
     if (was === !!now) return;
     pressed[b] = !!now;
-    const msg = JSON.stringify({ t: 'btn', b: b, s: now });
+    const msg = JSON.stringify({ t: CFG.messageType, b: b, s: now });
     if (conn && conn.open) {
       try { conn.send(msg); } catch (_) { /* ignore */ }
     }
@@ -101,15 +105,15 @@
     for (const b of BTNS) {
       if (pressed[b]) sendBtn(b, 0);
     }
-    document.querySelectorAll('.dir.active, .face.active, .sys.active').forEach((el) => {
-      el.classList.remove('active');
+    document.querySelectorAll(CLS.activeSelector).forEach((el) => {
+      el.classList.remove(CLS.active);
     });
     activePointers.clear();
   }
 
   function setBtnVisual(b, on) {
     const el = document.querySelector('[data-btn="' + b + '"]');
-    if (el) el.classList.toggle('active', !!on);
+    if (el) el.classList.toggle(CLS.active, !!on);
   }
 
   function press(b) {
@@ -135,7 +139,7 @@
     // Prefer cardinal zones; center is dead
     const dx = x - 0.5;
     const dy = y - 0.5;
-    if (Math.abs(dx) < 0.12 && Math.abs(dy) < 0.12) return null;
+    if (Math.abs(dx) < CFG.touch.dpadDeadZone && Math.abs(dy) < CFG.touch.dpadDeadZone) return null;
     if (Math.abs(dx) > Math.abs(dy)) {
       return dx < 0 ? 'left' : 'right';
     }
@@ -254,8 +258,8 @@
 
   function connectToHub(pairingCode) {
     code = String(pairingCode || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (code.length < 4) {
-      showPairError('Enter a valid code');
+    if (code.length < CFG.code.minLength) {
+      showPairError(TXT.invalidCode);
       return;
     }
     showPairError('');
@@ -263,44 +267,44 @@
     codeDisplay.textContent = code;
     pairScreen.hidden = true;
     pad.hidden = false;
-    setStatus('connecting', 'Connecting…');
+    setStatus('connecting', TXT.connecting);
 
     if (typeof Peer === 'undefined') {
-      setStatus('disconnected', 'PeerJS missing');
+      setStatus('disconnected', TXT.peerMissing);
       return;
     }
 
-    peer = new Peer({ debug: 0 });
+    peer = new Peer(Object.assign({}, CFG.peer.options));
     peer.on('open', () => {
       const remoteId = PEER_PREFIX + code;
-      conn = peer.connect(remoteId, { reliable: true });
+      conn = peer.connect(remoteId, Object.assign({}, CFG.peer.connectOptions));
       conn.on('open', () => {
-        setStatus('connected', 'Connected');
+        setStatus('connected', TXT.connected);
         requestWakeLock();
       });
       conn.on('data', () => { /* hub may send acks later */ });
       conn.on('close', () => {
-        setStatus('disconnected', 'Disconnected');
+        setStatus('disconnected', TXT.disconnected);
         releaseAll();
       });
       conn.on('error', (err) => {
-        setStatus('disconnected', 'Error');
+        setStatus('disconnected', TXT.error);
         console.warn('conn error', err);
       });
     });
     peer.on('error', (err) => {
       const type = err && err.type;
       if (type === 'peer-unavailable') {
-        setStatus('disconnected', 'Hub not found');
-        showPairError('Hub not found — check the code');
+        setStatus('disconnected', TXT.hubNotFound);
+        showPairError(TXT.hubNotFoundHint);
         // stay on pad with reconnect
       } else {
-        setStatus('disconnected', (type || 'error'));
+        setStatus('disconnected', (type || TXT.genericError));
         console.warn('peer error', err);
       }
     });
     peer.on('disconnected', () => {
-      setStatus('disconnected', 'Disconnected');
+      setStatus('disconnected', TXT.disconnected);
       releaseAll();
     });
   }
@@ -313,14 +317,14 @@
   document.body.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
   // Bind face/sys buttons (not dpad dirs — sliding handles those)
-  document.querySelectorAll('.face, .sys').forEach(bindButton);
+  document.querySelectorAll(CLS.boundButtons).forEach(bindButton);
   setupDpadSliding();
 
   connectBtn.addEventListener('click', () => {
     connectToHub(codeInput.value);
   });
   codeInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') connectToHub(codeInput.value);
+    if (e.key === CFG.keys.connect) connectToHub(codeInput.value);
   });
   reconnectBtn.addEventListener('click', () => connectToHub(code || codeInput.value));
 

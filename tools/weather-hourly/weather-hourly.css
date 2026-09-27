@@ -1,0 +1,75 @@
+/* Weather Hourly page styles. Values are supplied by weather-hourly_config.js. */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--weather-page-background);
+  color: var(--weather-body-text);
+  font-family: var(--weather-font-family);
+  line-height: var(--weather-body-line-height);
+}
+
+.container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding: var(--weather-container-vertical) var(--weather-container-horizontal);
+}
+
+h1 {
+  margin: 0 0 var(--weather-heading-margin-bottom);
+  color: var(--weather-heading-text);
+  font-size: var(--weather-heading-size);
+  line-height: var(--weather-heading-line-height);
+  font-weight: var(--weather-heading-weight);
+  text-align: center;
+}
+
+#weather {
+  flex-grow: 1;
+  background-color: var(--weather-panel-background);
+  box-shadow: var(--weather-panel-shadow);
+  border-radius: var(--weather-panel-radius);
+  padding: var(--weather-panel-padding);
+}
+
+.loading {
+  margin: 0;
+  color: var(--weather-muted-text);
+  text-align: center;
+}
+
+.error-message {
+  margin: 0;
+  color: var(--weather-error-text);
+  text-align: center;
+}
+
+.weather-table {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+.weather-table thead tr {
+  background-color: var(--weather-header-background);
+}
+
+.weather-table th,
+.weather-table td {
+  border-bottom: var(--weather-cell-border);
+  padding: var(--weather-cell-padding);
+}
+
+.weather-table .weather-row-even {
+  background-color: var(--weather-even-row-background);
+}

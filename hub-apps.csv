@@ -12,11 +12,11 @@ Games,Contra (alpha),games/contra-alpha/,170,0
 Games,Space Invaders,games/space-invader/,175,0
 Games,AR Game,games/ar-game/,180,0
 Games,Browser FPS,games/browser-fps/,190,0
-Games,Island (Alpha),games/island-alpha/,190,0
+Games,Island (Alpha),games/island-alpha/,192,0
 Games,D-Pad Controller,controller/,195,1
 Media,TV,tv/,210,0
 Media,Webcam,media/webcam/,220,0
-Media,Paint,media/paint/,220,0
+Media,Paint,media/paint/,230,0
 Media,Photo Editor,media/photo-editor/,260,0
 Media,Phone,media/phone/,270,0
 Office,Spreadsheet,office/spreadsheet/,360,0
@@ -25,7 +25,9 @@ Tools,NE-India Dictionary,tools/nei-dict/,430,0
 Tools,MS Word Diff,tools/msword_diff/,440,0
 Tools,Notepad,tools/notepad/,450,0
 Tools,Weather,tools/weather-chart/,460,0
-Tools,Learning HTMl (basic),tools/learning-html/,499,0
+Tools,Weather Hourly,tools/weather-hourly/,465,0
+Tools,Live Subtitle Assam,tools/live-subtitle-assam/,470,0
+Tools,Learning HTML (basic),tools/learning-html/,499,0
 Desktop,vDesktop,tools/vDesktop/,900,0
 About,About,about/,1000,0
 About,Contact,about/contact.txt,1020,0

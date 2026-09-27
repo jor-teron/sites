@@ -1,31 +1,37 @@
 /*
- * spreadsheet.js
- * Grid UI: 26 columns (A-Z) x 100 rows
+ * spreadsheet_logic.js
+ * Grid UI: columns x rows from SPREADSHEET_CONFIG (spreadsheet_config.js)
  * LocalStorage, CSV, print, styles, selection, autofill drag
- * Formula engine lives in formula.js
+ * Formula engine lives in formula.js (uses the COLS, ROWS, COL_LETTERS, cells globals below)
  */
 
+/* Configuration shortcut */
+var CFG = SPREADSHEET_CONFIG;
+var TXT = CFG.text;
+var CLS = CFG.classes;
+var KEYS = CFG.keys;
+
 /* Number of columns A..Z */
-var COLS = 26;
+var COLS = CFG.grid.cols;
 
 /* Number of data rows */
-var ROWS = 100;
+var ROWS = CFG.grid.rows;
 
 /* LocalStorage key */
-var STORE_KEY = "sheet-v2";
+var STORE_KEY = CFG.storage.key;
 
 /* Column letters A-Z */
-var COL_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var COL_LETTERS = CFG.grid.colLetters;
 
 /* cells[r][c] store */
 var cells = [];
 
 /* Selected cell */
-var selR = 0;
-var selC = 0;
+var selR = CFG.start.row;
+var selC = CFG.start.col;
 
 /* Column or row selection: "cell" | "col" | "row" */
-var selMode = "cell";
+var selMode = CFG.start.mode;
 
 /* Autofill drag state */
 var fillDrag = null;
@@ -35,14 +41,7 @@ var inpGrid = [];
 
 /* Default cell style */
 function defaultStyle() {
-  return {
-    align: "center",
-    bold: false,
-    italic: false,
-    underline: false,
-    bg: "",
-    color: ""
-  };
+  return Object.assign({}, CFG.defaultStyle);
 }
 
 /**
@@ -74,9 +73,9 @@ function cellStyle(r, c) {
 function saveStore() {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify({ cols: COLS, rows: ROWS, cells: cells }));
-    setStatus("Saved");
+    setStatus(TXT.saved);
   } catch (e) {
-    setStatus("Save failed");
+    setStatus(TXT.saveFailed);
   }
 }
 
@@ -87,7 +86,7 @@ function loadStore() {
   var raw, data, r, c, src;
   try {
     raw = localStorage.getItem(STORE_KEY);
-    if (!raw) raw = localStorage.getItem("sheet-v1");
+    if (!raw) raw = localStorage.getItem(CFG.storage.legacyKey);
     if (!raw) return false;
     data = JSON.parse(raw);
     if (!data || !data.cells) return false;
@@ -132,14 +131,14 @@ function exportCsv() {
     }
     lines.push(row.join(","));
   }
-  downloadText("sheet.csv", lines.join("\n"));
+  downloadText(CFG.csv.exportName, lines.join("\n"));
 }
 
 /**
  * File download helper
  */
 function downloadText(name, text) {
-  var blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  var blob = new Blob([text], { type: CFG.csv.mime });
   var a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = name;
@@ -163,7 +162,7 @@ function importCsvText(text) {
   recalcAll();
   paintAll();
   saveStore();
-  setStatus("CSV loaded");
+  setStatus(TXT.csvLoaded);
 }
 
 /**
@@ -214,27 +213,27 @@ function printSheet() {
 function buildTable() {
   var wrap = document.getElementById("sheet-wrap");
   var table = document.createElement("table");
-  table.className = "sheet";
+  table.className = CLS.table;
   var colgroup = document.createElement("colgroup");
   var col, r, c, tr, th, td, inp, handle;
 
   col = document.createElement("col");
-  col.className = "row-head";
+  col.className = CLS.rowHeadCol;
   colgroup.appendChild(col);
   for (c = 0; c < COLS; c++) {
     col = document.createElement("col");
-    col.className = "data";
+    col.className = CLS.dataCol;
     colgroup.appendChild(col);
   }
   table.appendChild(colgroup);
 
   tr = document.createElement("tr");
   th = document.createElement("th");
-  th.className = "corner";
+  th.className = CLS.corner;
   tr.appendChild(th);
   for (c = 0; c < COLS; c++) {
     th = document.createElement("th");
-    th.className = "col-head";
+    th.className = CLS.colHead;
     th.textContent = colLetter(c);
     th.dataset.c = String(c);
     th.addEventListener("click", onColHeadClick);
@@ -247,14 +246,14 @@ function buildTable() {
     inpGrid[r] = [];
     tr = document.createElement("tr");
     td = document.createElement("td");
-    td.className = "row-num";
+    td.className = CLS.rowNum;
     td.textContent = String(r + 1);
     td.dataset.r = String(r);
     td.addEventListener("click", onRowHeadClick);
     tr.appendChild(td);
     for (c = 0; c < COLS; c++) {
       td = document.createElement("td");
-      td.className = "cell";
+      td.className = CLS.cell;
       td.dataset.r = String(r);
       td.dataset.c = String(c);
       inp = document.createElement("input");
@@ -265,7 +264,7 @@ function buildTable() {
       inpGrid[r][c] = inp;
       td.appendChild(inp);
       handle = document.createElement("span");
-      handle.className = "fill-handle";
+      handle.className = CLS.fillHandle;
       handle.dataset.r = String(r);
       handle.dataset.c = String(c);
       handle.addEventListener("mousedown", onFillStart);
@@ -287,7 +286,7 @@ function onColHeadClick(ev) {
   selR = 0;
   selMode = "col";
   highlightSel();
-  setStatus("Column " + colLetter(c));
+  setStatus(TXT.columnPrefix + colLetter(c));
 }
 
 /**
@@ -299,7 +298,7 @@ function onRowHeadClick(ev) {
   selC = 0;
   selMode = "row";
   highlightSel();
-  setStatus("Row " + (r + 1));
+  setStatus(TXT.rowPrefix + (r + 1));
 }
 
 /**
@@ -327,27 +326,27 @@ function bindCell(inp, r, c) {
 function onCellKey(ev) {
   var r = selR;
   var c = selC;
-  if (ev.key === "Enter") {
+  if (ev.key === KEYS.commit) {
     ev.preventDefault();
     ev.target.blur();
     focusCell(Math.min(ROWS - 1, r + 1), c);
-  } else if (ev.key === "Tab") {
+  } else if (ev.key === KEYS.next) {
     ev.preventDefault();
     ev.target.blur();
     focusCell(r, ev.shiftKey ? Math.max(0, c - 1) : Math.min(COLS - 1, c + 1));
-  } else if (ev.key === "ArrowUp" && !ev.shiftKey) {
+  } else if (ev.key === KEYS.up && !ev.shiftKey) {
     ev.preventDefault();
     ev.target.blur();
     focusCell(Math.max(0, r - 1), c);
-  } else if (ev.key === "ArrowDown" && !ev.shiftKey) {
+  } else if (ev.key === KEYS.down && !ev.shiftKey) {
     ev.preventDefault();
     ev.target.blur();
     focusCell(Math.min(ROWS - 1, r + 1), c);
-  } else if (ev.key === "ArrowLeft" && ev.target.selectionStart === 0) {
+  } else if (ev.key === KEYS.left && ev.target.selectionStart === 0) {
     ev.preventDefault();
     ev.target.blur();
     focusCell(r, Math.max(0, c - 1));
-  } else if (ev.key === "ArrowRight" && ev.target.selectionStart === ev.target.value.length) {
+  } else if (ev.key === KEYS.right && ev.target.selectionStart === ev.target.value.length) {
     ev.preventDefault();
     ev.target.blur();
     focusCell(r, Math.min(COLS - 1, c + 1));
@@ -360,16 +359,16 @@ function onCellKey(ev) {
 function onDocKey(ev) {
   var tag = ev.target && ev.target.tagName;
   if (tag === "INPUT" || tag === "TEXTAREA") return;
-  if (ev.key === "ArrowUp") {
+  if (ev.key === KEYS.up) {
     ev.preventDefault();
     focusCell(Math.max(0, selR - 1), selC);
-  } else if (ev.key === "ArrowDown") {
+  } else if (ev.key === KEYS.down) {
     ev.preventDefault();
     focusCell(Math.min(ROWS - 1, selR + 1), selC);
-  } else if (ev.key === "ArrowLeft") {
+  } else if (ev.key === KEYS.left) {
     ev.preventDefault();
     focusCell(selR, Math.max(0, selC - 1));
-  } else if (ev.key === "ArrowRight") {
+  } else if (ev.key === KEYS.right) {
     ev.preventDefault();
     focusCell(selR, Math.min(COLS - 1, selC + 1));
   }
@@ -400,38 +399,38 @@ function focusCell(r, c) {
  * Highlight selection
  */
 function highlightSel() {
-  var all = document.querySelectorAll(".selected, .sel-band");
+  var all = document.querySelectorAll("." + CLS.selected + ", ." + CLS.band);
   var i, r, c, td, th;
-  for (i = 0; i < all.length; i++) all[i].classList.remove("selected", "sel-band");
+  for (i = 0; i < all.length; i++) all[i].classList.remove(CLS.selected, CLS.band);
 
   if (selMode === "col") {
-    th = document.querySelector("th.col-head[data-c=\"" + selC + "\"]");
-    if (th) th.classList.add("sel-band");
+    th = document.querySelector("th." + CLS.colHead + "[data-c=\"" + selC + "\"]");
+    if (th) th.classList.add(CLS.band);
     for (r = 0; r < ROWS; r++) {
-      td = document.querySelector('td.cell[data-r="' + r + '"][data-c="' + selC + '"]');
-      if (td) td.classList.add("sel-band");
+      td = document.querySelector("td." + CLS.cell + '[data-r="' + r + '"][data-c="' + selC + '"]');
+      if (td) td.classList.add(CLS.band);
     }
     return;
   }
   if (selMode === "row") {
-    td = document.querySelector("td.row-num[data-r=\"" + selR + "\"]");
-    if (td) td.classList.add("sel-band");
+    td = document.querySelector("td." + CLS.rowNum + "[data-r=\"" + selR + "\"]");
+    if (td) td.classList.add(CLS.band);
     for (c = 0; c < COLS; c++) {
-      td = document.querySelector('td.cell[data-r="' + selR + '"][data-c="' + c + '"]');
-      if (td) td.classList.add("sel-band");
+      td = document.querySelector("td." + CLS.cell + '[data-r="' + selR + '"][data-c="' + c + '"]');
+      if (td) td.classList.add(CLS.band);
     }
     return;
   }
-  td = document.querySelector('td.cell[data-r="' + selR + '"][data-c="' + selC + '"]');
-  if (td) td.classList.add("selected");
+  td = document.querySelector("td." + CLS.cell + '[data-r="' + selR + '"][data-c="' + selC + '"]');
+  if (td) td.classList.add(CLS.selected);
 }
 
 /**
  * Apply style object to a td + input
  */
 function applyLook(td, inp, st) {
-  inp.style.textAlign = st.align || "center";
-  inp.style.fontWeight = st.bold ? "700" : "";
+  inp.style.textAlign = st.align || CFG.defaultStyle.align;
+  inp.style.fontWeight = st.bold ? CFG.boldWeight : "";
   inp.style.fontStyle = st.italic ? "italic" : "";
   inp.style.textDecoration = st.underline ? "underline" : "";
   td.style.background = st.bg || "";
@@ -454,8 +453,8 @@ function paintAll() {
       if (inp === active) continue;
       v = cells[r][c].value;
       inp.value = v === undefined || v === null ? "" : String(v);
-      if (v === ERR || v === "#DIV/0!") td.classList.add("error");
-      else td.classList.remove("error");
+      if (v === ERR || CFG.errorValues.indexOf(v) !== -1) td.classList.add(CLS.error);
+      else td.classList.remove(CLS.error);
     }
   }
 }
@@ -465,12 +464,12 @@ function paintAll() {
  */
 function syncStyleUi() {
   var st = cellStyle(selR, selC);
-  document.getElementById("align-sel").value = st.align || "center";
-  document.getElementById("btn-bold").classList.toggle("on", !!st.bold);
-  document.getElementById("btn-italic").classList.toggle("on", !!st.italic);
-  document.getElementById("btn-under").classList.toggle("on", !!st.underline);
-  document.getElementById("fill-color").value = st.bg || "#1e1e1e";
-  document.getElementById("text-color").value = st.color || "#e8e8e8";
+  document.getElementById("align-sel").value = st.align || CFG.defaultStyle.align;
+  document.getElementById("btn-bold").classList.toggle(CLS.toggleOn, !!st.bold);
+  document.getElementById("btn-italic").classList.toggle(CLS.toggleOn, !!st.italic);
+  document.getElementById("btn-under").classList.toggle(CLS.toggleOn, !!st.underline);
+  document.getElementById("fill-color").value = st.bg || CFG.colors.fillPicker;
+  document.getElementById("text-color").value = st.color || CFG.colors.textPicker;
 }
 
 /**
@@ -504,7 +503,7 @@ function onFillStart(ev) {
 function onFillMove(ev) {
   var el = document.elementFromPoint(ev.clientX, ev.clientY);
   if (!el) return;
-  var td = el.closest ? el.closest("td.cell") : null;
+  var td = el.closest ? el.closest("td." + CLS.cell) : null;
   if (!td) return;
   fillDrag.r1 = parseInt(td.dataset.r, 10);
   fillDrag.c1 = parseInt(td.dataset.c, 10);
@@ -574,7 +573,7 @@ function wireUi() {
   document.getElementById("btn-export").addEventListener("click", exportCsv);
   document.getElementById("btn-print").addEventListener("click", printSheet);
   document.getElementById("btn-clear").addEventListener("click", function () {
-    if (!confirm("Clear entire sheet?")) return;
+    if (!confirm(TXT.confirmClear)) return;
     emptyGrid();
     recalcAll();
     paintAll();
@@ -589,7 +588,7 @@ function wireUi() {
     ev.target.value = "";
   });
   document.getElementById("formula-bar").addEventListener("keydown", function (ev) {
-    if (ev.key === "Enter") {
+    if (ev.key === KEYS.commit) {
       ev.preventDefault();
       commitCell(selR, selC, ev.target.value);
       focusCell(selR, selC);
@@ -641,7 +640,7 @@ function boot() {
   buildTable();
   paintAll();
   wireUi();
-  setStatus("A–Z × 100");
+  setStatus(TXT.ready);
 }
 
 document.addEventListener("DOMContentLoaded", boot);

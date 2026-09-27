@@ -1,10 +1,16 @@
+/*
+ * Gallery — logic.
+ * Settings, photo list and text come from GALLERY_CONFIG (gallery_config.js).
+ */
+const GCFG = GALLERY_CONFIG;
+
 const PhotoStore = {
   items: [],
   current: 0,
 
   photoUrl(name) {
     if (/^https?:\/\//i.test(name) || name.includes("/")) return name;
-    return "photos/" + name;
+    return GCFG.photoDir + name;
   },
 
   photoName(name) {
@@ -24,9 +30,9 @@ const PhotoStore = {
   },
 
   isImage(file) {
-    const types = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    const types = GCFG.imageTypes;
     if (types.includes(file.type)) return true;
-    return /\.(jpe?g|png|webp|gif)$/i.test(file.name);
+    return GCFG.imageExtPattern.test(file.name);
   },
 
   addFiles(fileList) {
@@ -86,7 +92,7 @@ const PhotoStore = {
   const closeBtn = document.getElementById("close-btn");
 
   function renderGrid() {
-    grid.querySelectorAll(".tile").forEach((tile) => tile.remove());
+    grid.querySelectorAll("." + GCFG.classes.tile).forEach((tile) => tile.remove());
 
     if (!PhotoStore.items.length) {
       empty.hidden = false;
@@ -97,7 +103,7 @@ const PhotoStore = {
     PhotoStore.items.forEach((photo, index) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "tile";
+      button.className = GCFG.classes.tile;
       button.setAttribute("aria-label", photo.name);
 
       const img = document.createElement("img");
@@ -119,7 +125,7 @@ const PhotoStore = {
     fullPhoto.src = photo.url;
     fullPhoto.alt = photo.name;
     photoName.textContent = photo.name;
-    photoCount.textContent = PhotoStore.current + 1 + " / " + PhotoStore.items.length;
+    photoCount.textContent = PhotoStore.current + 1 + GCFG.text.countSeparator + PhotoStore.items.length;
     prevBtn.hidden = PhotoStore.current === 0;
     nextBtn.hidden = PhotoStore.current === PhotoStore.items.length - 1;
   }
@@ -143,15 +149,15 @@ const PhotoStore = {
 
   function columnCount() {
     const style = getComputedStyle(grid).gridTemplateColumns;
-    return style.split(" ").filter(Boolean).length || 3;
+    return style.split(" ").filter(Boolean).length || GCFG.fallbackColumns;
   }
 
   function highlightTile(index) {
-    const tiles = grid.querySelectorAll(".tile");
+    const tiles = grid.querySelectorAll("." + GCFG.classes.tile);
     if (!tiles.length) return;
     PhotoStore.setCurrent(index);
     tiles.forEach((tile, i) => {
-      tile.classList.toggle("selected", i === PhotoStore.current);
+      tile.classList.toggle(GCFG.classes.selected, i === PhotoStore.current);
     });
     tiles[PhotoStore.current].focus();
   }
@@ -189,22 +195,22 @@ const PhotoStore = {
   closeBtn.addEventListener("click", closeViewer);
 
   viewer.addEventListener("click", (event) => {
-    if (event.target === viewer || event.target.classList.contains("stage")) {
+    if (event.target === viewer || event.target.classList.contains(GCFG.classes.stage)) {
       closeViewer();
     }
   });
 
   document.addEventListener("keydown", (event) => {
-    const keys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"];
-    if (keys.includes(event.key)) event.preventDefault();
+    const K = GCFG.keys;
+    if (K.arrows.includes(event.key)) event.preventDefault();
 
     if (!viewer.hidden) {
-      if (event.key === "Escape") closeViewer();
-      if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      if (event.key === K.close) closeViewer();
+      if (K.viewerPrev.includes(event.key)) {
         PhotoStore.prev();
         showCurrent();
       }
-      if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      if (K.viewerNext.includes(event.key)) {
         PhotoStore.next();
         showCurrent();
       }
@@ -212,17 +218,17 @@ const PhotoStore = {
     }
 
     if (!PhotoStore.items.length) return;
-    if (event.key === "ArrowLeft") moveGrid(-1, 0);
-    if (event.key === "ArrowRight") moveGrid(1, 0);
-    if (event.key === "ArrowUp") moveGrid(0, -1);
-    if (event.key === "ArrowDown") moveGrid(0, 1);
-    if (event.key === "Enter") openViewer(PhotoStore.current);
+    if (event.key === K.left) moveGrid(-1, 0);
+    if (event.key === K.right) moveGrid(1, 0);
+    if (event.key === K.up) moveGrid(0, -1);
+    if (event.key === K.down) moveGrid(0, 1);
+    if (event.key === K.open) openViewer(PhotoStore.current);
   });
 
   ["dragenter", "dragover"].forEach((type) => {
     document.addEventListener(type, (event) => {
       event.preventDefault();
-      document.body.classList.add("dragging");
+      document.body.classList.add(GCFG.classes.dragging);
     });
   });
 
@@ -230,10 +236,10 @@ const PhotoStore = {
     document.addEventListener(type, (event) => {
       event.preventDefault();
       if (type === "drop") addFromList(event.dataTransfer.files);
-      document.body.classList.remove("dragging");
+      document.body.classList.remove(GCFG.classes.dragging);
     });
   });
 
-  PhotoStore.loadList(typeof photoFiles !== "undefined" ? photoFiles : []);
+  PhotoStore.loadList(GCFG.photos || []);
   renderGrid();
 })();

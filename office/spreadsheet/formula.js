@@ -1,7 +1,8 @@
 /*
  * formula.js
  * Spreadsheet formula parser and evaluator.
- * Grid size and cell store come from spreadsheet.js (COLS, ROWS, cells).
+ * Grid size and cell store come from spreadsheet_logic.js (COLS, ROWS, COL_LETTERS, cells),
+ * which reads them from SPREADSHEET_CONFIG in spreadsheet_config.js.
  * Supported: =expr, cell refs, ranges, listed functions, + - * / ^ &
  */
 
