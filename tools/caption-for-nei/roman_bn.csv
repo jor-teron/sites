@@ -1,7 +1,7 @@
 # Caption for NEI — roman_bn.csv
 # Bengali word list for the local ABC romanizer (caption-for-nei_roman.js).
 # Whole words here win over the rules. Format: native,roman (one per line).
-# Version 0.13 | 28 Sep 2026
+# Version 0.14 | 28 Sep 2026
 আমি,ami
 তুমি,tumi
 আপনি,apni

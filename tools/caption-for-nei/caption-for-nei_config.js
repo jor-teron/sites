@@ -1,6 +1,6 @@
 /**
  * Caption for NEI (Caption for North East India) — caption-for-nei_config.js
- * Version: 0.13
+ * Version: 0.14
  * First release: 27 Sep 2026
  * Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
@@ -11,10 +11,34 @@
  * Never put a real API key in this file (the site is public). Use the Key panel.
  */
 window.CFN_CONFIG = {
-  /* Max words in one caption block (splitSentences) */
+  /* Max words in one transcript line inside a block (splitSentences) */
   WORD_SPLIT: 25,
-  /* Max seconds before a new row (handleServerMessage) */
+  /* Max seconds an unfinished (interim) line waits before it is committed as a line */
   SPLIT_SECONDS: 4.25,
+
+  /*
+   * Time-windowed blocks (v0.14). Every line finalised during one window goes
+   * into that window's block, and the window gets ONE chat request (only its
+   * own text, no earlier blocks). Empty windows send nothing and draw nothing.
+   * The user sets the length in the top bar ("Window"), saved in
+   * STORAGE.WINDOW_SEC; these give the default and the allowed range.
+   */
+  WINDOW_SEC_DEFAULT: 5,
+  WINDOW_SEC_MIN: 3,
+  WINDOW_SEC_MAX: 15,
+  WINDOW_SEC_STEP: 0.25,
+  /* At window end, speech counts as "mid-sentence" if an interim line is not
+     final yet or the last text arrived less than this many ms ago */
+  WINDOW_PAUSE_GAP_MS: 600,
+  /* Mid-sentence: keep the window open up to this many extra seconds, then close */
+  WINDOW_MAX_EXTRA_SEC: 2,
+  /* How often (ms) the window clock is checked */
+  WINDOW_TICK_MS: 100,
+  /* Block accent colours (left border + faint tint), cycled block by block.
+     Pick colours that read well on the dark theme. */
+  BLOCK_COLORS: ["#3d8bfd", "#3dd68c", "#f5a524", "#c77dff", "#ff7a90", "#2ec4d6"],
+  /* Background tint strength of a block (0 = none, 1 = solid accent) */
+  BLOCK_TINT_ALPHA: 0.08,
   /* Call startSession() on load if a key is saved */
   AUTO_START: true,
   /* Append/tee hour log on these clock minutes (0,5,10,...) */
@@ -22,7 +46,7 @@ window.CFN_CONFIG = {
   /* How often (ms) the tee slot is checked (setInterval tickTee) */
   TEE_CHECK_MS: 15000,
   /*
-   * ABC (line 2, romanized) default mode: "off" | "local" | "ai".
+   * ABC (romanized line under each original line) default mode: "off" | "local" | "ai".
    * local = caption-for-nei_roman.js (rules + word lists, no network).
    * ai = ask the chat model too (falls back to local). The user's choice is
    * remembered in localStorage (STORAGE.ABC_MODE) and wins over this.
@@ -161,6 +185,8 @@ window.CFN_CONFIG = {
     HOUR_PREFIX: "cfn_hour_",
     /* ABC mode chosen on the top bar: off | local | ai */
     ABC_MODE: "cfn_abc_mode_v1",
+    /* Window length in seconds (top bar "Window"), v0.14 */
+    WINDOW_SEC: "cfn_window_sec_v1",
   },
   /* Rough browser quota shown in the Log panel */
   STORAGE_QUOTA_KB: 5000,
@@ -183,8 +209,10 @@ window.CFN_CONFIG = {
   TIME_ZONE_LABEL: "IST",
   /* Downloaded log file names: <prefix>YYYY-MM-DD_HH.txt and <prefix>all-YYYY-MM-DD.txt */
   LOG_FILE_PREFIX: "cfn-",
-  /* Hour log entry: stamp, original, then "ABC: <roman>" (when shown), then translation */
+  /* Hour log entry (one per window block): stamp, then each original line with
+     "ABC: <roman>" under it (when shown), then "TR: <translation>" (when there is one) */
   LOG_ABC_PREFIX: "ABC: ",
+  LOG_TRANS_PREFIX: "TR: ",
 
   /* Defaults when a MODELS entry leaves rpm / rpd out */
   DEFAULT_RPM: 15,
@@ -199,8 +227,8 @@ window.CFN_CONFIG = {
   /*
    * Chat Output models. pickChatModel() takes the first that is On,
    * under rpm (modelHits / 60s) and under rpd (UTC day store).
-   * Every caption line is its own request; if a model errors or is at its
-   * cap, the next On model is tried for that line.
+   * Each time window (block) is ONE request; if a model errors or is at its
+   * cap, the next On model is tried for that window.
    */
   MODELS: [
     { id: "gemini-3.5-flash-lite", provider: "google", rpm: 15, rpd: 500, on: true, label: "3.5 Lite" },
@@ -234,16 +262,24 @@ window.CFN_CONFIG = {
     providerOff: "Turn that provider on and add KEYS in caption-for-nei_config.js",
     translateFailedShort: "Translate failed",
     translateFailed: "Translate failed.",
-    /* Line 3 when no model could translate the line */
+    /* Faint placeholder in a block's translation line while its request runs */
+    translating: "translating…",
+    /* Top-bar window length field */
+    windowLabel: "Window",
+    windowUnit: "s",
+    windowTitle: "Seconds per caption block (one translation request per block)",
+    /* Translation line when no model could translate the window */
     translateNoModel: "(no model free — try later)",
     translateNoKey: "(add an API key to translate)",
-    /* {lang} = OUTPUT_LANGUAGES[].name, {text} = source line */
-    translatePrompt: "Translate into {lang}. Return only the translation.\n\n{text}",
-    /* ABC = AI: {src} = Input language name, {lang} = Output language name */
+    /* {lang} = OUTPUT_LANGUAGES[].name, {text} = the window's lines (one per row) */
+    translatePrompt:
+      "Translate into {lang}. The lines are one short stretch of live speech; translate them together as one text. Return only the translation.\n\n{text}",
+    /* ABC = AI (same single request per window): {src} = Input language name,
+       {lang} = Output language name, {lines} = JSON array of the window's lines */
     aiRomanBothPrompt:
-      "Text in {src}. 1) Write it in everyday Latin letters the way people type it on a phone (not formal transliteration). 2) Translate it into {lang}. Reply only with JSON: {\"roman\": \"...\", \"translation\": \"...\"}\n\n{text}",
+      "Live speech in {src}, one line per item of this JSON array:\n{lines}\n1) For each item, write it in everyday Latin letters the way people type it on a phone (not formal transliteration). 2) Translate all items together into {lang} as one text. Reply only with JSON: {\"roman\": [\"one string per item, same order\"], \"translation\": \"...\"}",
     aiRomanOnlyPrompt:
-      "Text in {src}. Write it in everyday Latin letters the way people type it on a phone (not formal transliteration). Reply only with JSON: {\"roman\": \"...\"}\n\n{text}",
+      "Live speech in {src}, one line per item of this JSON array:\n{lines}\nFor each item, write it in everyday Latin letters the way people type it on a phone (not formal transliteration). Reply only with JSON: {\"roman\": [\"one string per item, same order\"]}",
     /* {src} fallback when Input is Auto */
     autoSourceName: "an Indian language (Assamese, Hindi, Bengali or Nepali)",
     listening: "Listening",

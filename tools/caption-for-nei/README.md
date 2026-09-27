@@ -6,14 +6,15 @@ Formerly **Live Subtitle for Assam** (`tools/live-subtitle-assam/`, v0.11). The 
 
 | | |
 |---|---|
-| Version | **0.13** (API Edition) |
+| Version | **0.14** (API Edition) |
 | First release | 27 Sep 2026 |
 | Last edit | 28 Sep 2026 |
 | Credit | Personal project (Karbi Anglong / Assam) |
 
 **Input engine:** `gemini-3.5-transcribe-live`  
 **Output (optional):** `gemini-3.5-flash-lite`, then `gemini-3.1-flash-lite`  
-**ABC (line 2):** Off / Local (rule-based, on this device) / AI  
+**ABC (romanized line):** Off / Local (rule-based, on this device) / AI  
+**Blocks:** one per time window (Window 3–15 s, default 5), one translation request per window  
 **Parked:** 2-panel, Karbi, Local Pack, Live Translate, speaker
 
 ## Run
@@ -30,6 +31,7 @@ python3 -m http.server 8080
 4. Allow microphone  
 5. Output (English, Hindi, Assamese, Bengali, Nepali) only when you need translation (uses Flash-Lite quota)
 6. ABC: Off / Local / AI (default Local; remembered in this browser)
+7. Window: seconds per caption block, 3–15 in steps of 0.25 (default 5; remembered in `cfn_window_sec_v1`)
 
 Key stays in `localStorage` (`cfn_gemini_api_key_v01`). Do not commit it.
 
@@ -40,8 +42,8 @@ Key stays in `localStorage` (`cfn_gemini_api_key_v01`). Do not commit it.
 | `index.html` | Redirect to `caption-for-nei.html` |
 | `caption-for-nei.html` | App + top bar (markup only) |
 | `caption-for-nei.css` | Styles |
-| `caption-for-nei_config.js` | Split, models, RPM/RPD, vocab list, languages, storage keys, UI text |
-| `caption-for-nei_logic.js` | Mic, Live captions, ABC line, chat translate, logs, storage migration |
+| `caption-for-nei_config.js` | Window, block colours, split, models, RPM/RPD, vocab list, languages, storage keys, UI text |
+| `caption-for-nei_logic.js` | Mic, Live captions, time windows / blocks, ABC line, chat translate, logs, storage migration |
 | `caption-for-nei_roman.js` | Local romanizer engine (`CFN_ROMAN.romanize(text, lang)`) |
 | `caption-for-nei_roman_deva.js` | Devanagari tables (Hindi, Nepali) |
 | `caption-for-nei_roman_beng.js` | Bengali-script tables (Assamese, Bengali) |
@@ -55,7 +57,10 @@ Key stays in `localStorage` (`cfn_gemini_api_key_v01`). Do not commit it.
 
 Edit `caption-for-nei_config.js` only when you can. `caption-for-nei_logic.js` can be replaced later.
 
-- `WORD_SPLIT` / `SPLIT_SECONDS` — new caption block  
+- `WINDOW_SEC_DEFAULT` / `WINDOW_SEC_MIN` / `WINDOW_SEC_MAX` / `WINDOW_SEC_STEP` — window length (top-bar “Window”, saved in `cfn_window_sec_v1`)  
+- `WINDOW_PAUSE_GAP_MS` / `WINDOW_MAX_EXTRA_SEC` — pause check at window end (default 600 ms / 2 s)  
+- `BLOCK_COLORS` / `BLOCK_TINT_ALPHA` — block accent colours (cycled) and tint strength  
+- `WORD_SPLIT` / `SPLIT_SECONDS` — split long speech into lines inside a block  
 - `MODELS[].rpm` / `rpd` — per-minute and per-UTC-day caps  
 - `PINNED_MODEL` — `"auto"` or a model id  
 - `VOCAB_FILES` — extra csv lists  
@@ -64,7 +69,7 @@ Edit `caption-for-nei_config.js` only when you can. `caption-for-nei_logic.js` c
 - `ROMAN_AUTO_DEVANAGARI_LANG` / `ROMAN_AUTO_BENGALI_SCRIPT_LANG` — rules used for Input Auto (`hi` / `as`)  
 - `ROMAN_STYLE` — everyday spelling (`aa`/`a`, `ee`/`i`, `oo`/`u`, `v`/`w`, nasal `n`/`m`)  
 - `ROMAN_LANG` — per-language tweaks (inherent vowel, Assamese `x`/`s`, word-initial অ → `a`, …)  
-- `LOG_ABC_PREFIX` — prefix of the ABC line in hour logs  
+- `LOG_ABC_PREFIX` / `LOG_TRANS_PREFIX` — prefixes of the ABC and translation lines in hour logs  
 - `INPUT_LANGUAGES` — Input dropdown (BCP-47 codes sent to Transcribe Live; `auto` = detect)  
 - `OUTPUT_LANGUAGES` — Output dropdown (translate targets)  
 - `STORAGE` / `LEGACY_STORAGE_KEYS` / `LEGACY_STORAGE_PREFIXES` — localStorage keys and old → new map  
@@ -85,21 +90,32 @@ Assamese and Bengali share the Bengali script; Hindi and Nepali share Devanagari
 
 RPD text on the bar resets at **00:00 UTC**.
 
-## Caption block
+## Caption block (time window)
 
-1. Original transcript (native script)  
-2. **ABC** — the same words in everyday Latin letters (phone-typing style), only when the line has Devanagari or Bengali script (English lines have no line 2)  
-3. Translation (only when Output is not Off)
+Every transcript line finalised during one window (the **Window** seconds on the top bar) goes into that window's block. Each block has its own accent colour (left border + faint tint, cycled from `BLOCK_COLORS`):
+
+```
+• Translation of the whole window (larger; faint "translating…" while waiting; only when Output is not Off)
+   ◦ Original line 1 (native script)
+      – ABC: the same words in everyday Latin letters (only for Devanagari / Bengali script)
+   ─────────
+   ◦ Original line 2
+      – ABC line 2
+```
+
+- When the window time is up and speech is mid-sentence (an interim line is not final yet, or text arrived < 0.6 s ago), the window stays open for a pause, at most 2 s more.  
+- A window with no speech sends nothing and draws no block.  
+- Stop closes the open window at once, so its last lines are still translated.
 
 ### ABC modes
 
-| Mode | What line 2 shows |
+| Mode | What the ABC line shows |
 |---|---|
 | Off | Hidden |
 | Local (default) | Rule-based romanizer in the browser, no network, no quota |
-| AI | Local result first, then the chat model's romanization (same request as the translation). Falls back to Local on any error. Old blocks are not re-asked when you switch to AI. |
+| AI | Local result first, then the chat model's romanization of each line, carried in the window's single request (with the translation, or alone when Output is Off). Falls back to Local on any error. Old blocks are not re-asked when you switch to AI. |
 
-Switching the mode re-renders line 2 on the blocks already on screen. AI mode is kept separate so it can be removed later.
+Switching the mode re-renders the ABC lines on the blocks already on screen. AI mode is kept separate so it can be removed later.
 
 ### Local romanizer
 
@@ -112,20 +128,22 @@ Switching the mode re-renders line 2 on the blocks already on screen. AI mode is
 
 ## Translation and quota
 
-Every caption line is translated on its own (one request per block, no batching). If a model errors or is at its per-minute / per-day cap, the next On model is tried for that line; if none is free, line 3 shows a short note. This uses **one request per caption line** (more than the old 5-second batching): with two Lite models at 15 RPM each, fast speech can hit the per-minute caps, and a long session uses the daily RPD faster. Keep Output Off when you do not need it. ABC = AI adds no extra request when Output is on (one JSON reply carries both); with Output Off it costs one request per Indic line.
+One chat request per **window**, holding only that window's lines (no earlier blocks as context), so a longer Window uses fewer requests. Silent windows cost nothing. If a model errors or is at its per-minute / per-day cap, the next On model is tried for that window; if none is free, the translation line shows a short note. ABC = AI adds no extra request: the same JSON reply carries the translation and the romanized lines (with Output Off, AI mode costs one request per window that has Indic script). ABC = Local never uses the network.
 
 ## Logs
 
-Hour logs (Log panel, `cfn_hour_YYYY-MM-DD_HH`) keep one entry per block:
+Hour logs (Log panel, `cfn_hour_YYYY-MM-DD_HH`) keep one entry per window block:
 
 ```
 2026-09-28 10:15:02 IST
-मेरा नाम जोर है
-ABC: mera naam jor hai
-My name is Jor.
+मेरा नाम जोर है।
+ABC: mera naam jor hai.
+आप कैसे हैं
+ABC: aap kaise hain
+TR: My name is Jor. How are you?
 ```
 
-The `ABC:` line is present only when line 2 was shown; the translation line only when there is one. Older entries (stamp, original, translation) are unchanged.
+`ABC:` lines are present only when shown; the `TR:` line only when there is a translation. Older entries (v0.13: stamp, original, ABC, unprefixed translation) are unchanged.
 
 ## Notes
 

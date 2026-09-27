@@ -1,6 +1,6 @@
 /**
  * Caption for NEI (Caption for North East India) — caption-for-nei_logic.js
- * Version: 0.13
+ * Version: 0.14
  * First release: 27 Sep 2026
  * Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
@@ -12,9 +12,13 @@
  *   migrateLegacyStorage() copies old lsa_* keys to cfn_* once (boot block).
  *   fillLanguageSelects() builds Input / Output dropdowns from CONFIG.
  *   startSession() opens the mic + Transcribe Live WebSocket.
- *   handleServerMessage() turns speech into caption rows (addCaptionBlock).
- *   renderAbc() fills line 2 (ABC Off / Local / AI) on every block.
- *   translateBlock() sends one chat request per block (line 3 and/or AI ABC).
+ *   handleServerMessage() turns speech into transcript lines (commitSpokenText
+ *   → addLineToWindow). Lines go into the block of the open time window.
+ *   windowTick() closes the window after the user's "Window" seconds (a bit
+ *   later if speech is mid-sentence); closeWindow() skips empty windows and
+ *   finishBlock() sends ONE chat request per window (translateWindow), which
+ *   fills the block's translation line (and the AI ABC lines in AI mode).
+ *   renderAbc() fills each line's romanized sub-line (ABC Off / Local / AI).
  *
  * Does not name the cloud vendor in the UI.
  */
@@ -101,9 +105,20 @@ let selectedLang = CONFIG.DEFAULT_INPUT || "auto";
 /* Output target: off | en | hi | as | bn | ne (CONFIG.OUTPUT_LANGUAGES) */
 let translateTarget = CONFIG.DEFAULT_OUTPUT || "off";
 
-/* ABC (line 2): off | local | ai. Saved in STORAGE.ABC_MODE */
+/* ABC (romanized sub-line): off | local | ai. Saved in STORAGE.ABC_MODE */
 const ABC_MODES = ["off", "local", "ai"];
 let abcMode = loadAbcMode();
+
+/* Time windows (v0.14). windowSec = user's window length (STORAGE.WINDOW_SEC) */
+let windowSec = loadWindowSec();
+/* When the open window started (ms) */
+let winStart = Date.now();
+/* Last time any transcript text (interim or final) arrived */
+let lastTextAt = 0;
+/* Block of the open window; null until its first line (empty windows draw nothing) */
+let currentBlock = null;
+/* Blocks made so far (drives the BLOCK_COLORS cycle) */
+let blockSeq = 0;
 
 /* Session flags */
 let isRunning = false;
@@ -132,6 +147,7 @@ const keyPanel = document.getElementById("keyPanel");
 const listenSelect = document.getElementById("listenSelect");
 const abcSelect = document.getElementById("abcSelect");
 const translateSelect = document.getElementById("translateSelect");
+const windowInput = document.getElementById("windowInput");
 const toggleBtn = document.getElementById("toggleBtn");
 const interimTextEl = document.getElementById("interimText");
 const lineList = document.getElementById("lineList");
@@ -203,6 +219,73 @@ function loadAbcMode() {
   } catch (err) {}
   if (ABC_MODES.indexOf(saved) !== -1) return saved;
   return ABC_MODES.indexOf(CONFIG.ABC_MODE) !== -1 ? CONFIG.ABC_MODE : "local";
+}
+
+/**
+ * Snap a window length to WINDOW_SEC_STEP inside WINDOW_SEC_MIN..MAX.
+ * Bad input → WINDOW_SEC_DEFAULT.
+ */
+function clampWindowSec(value) {
+  const min = Number(CONFIG.WINDOW_SEC_MIN) || 3;
+  const max = Number(CONFIG.WINDOW_SEC_MAX) || 15;
+  const step = Number(CONFIG.WINDOW_SEC_STEP) || 0.25;
+  let n = parseFloat(value);
+  if (!isFinite(n)) n = Number(CONFIG.WINDOW_SEC_DEFAULT) || 5;
+  n = Math.round(n / step) * step;
+  n = Math.min(max, Math.max(min, n));
+  return Number(n.toFixed(2));
+}
+
+/**
+ * Saved window length (STORAGE.WINDOW_SEC), else CONFIG.WINDOW_SEC_DEFAULT.
+ */
+function loadWindowSec() {
+  let saved = null;
+  try {
+    saved = localStorage.getItem(STORAGE.WINDOW_SEC);
+  } catch (err) {}
+  return clampWindowSec(saved !== null && saved !== "" ? saved : CONFIG.WINDOW_SEC_DEFAULT);
+}
+
+/**
+ * Top-bar Window field changed: snap, save, and use it from the open window on.
+ */
+function onWindowChange() {
+  windowSec = clampWindowSec(windowInput.value);
+  windowInput.value = String(windowSec);
+  try {
+    localStorage.setItem(STORAGE.WINDOW_SEC, String(windowSec));
+  } catch (err) {}
+}
+
+/**
+ * Set min / max / step / value of the Window field from CONFIG.
+ */
+function initWindowInput() {
+  if (!windowInput) return;
+  windowInput.min = String(CONFIG.WINDOW_SEC_MIN);
+  windowInput.max = String(CONFIG.WINDOW_SEC_MAX);
+  windowInput.step = String(CONFIG.WINDOW_SEC_STEP);
+  windowInput.value = String(windowSec);
+  windowInput.title = TEXT.windowTitle || "";
+  const field = document.getElementById("windowField");
+  if (field) {
+    const label = field.querySelector(".win-label");
+    const unit = field.querySelector(".win-unit");
+    if (label && TEXT.windowLabel) label.textContent = TEXT.windowLabel;
+    if (unit && TEXT.windowUnit) unit.textContent = TEXT.windowUnit;
+  }
+}
+
+/**
+ * "#3d8bfd" + alpha → "rgba(61, 139, 253, a)" for the block tint.
+ */
+function hexToRgba(hex, alpha) {
+  let h = String(hex || "").replace("#", "");
+  if (h.length === 3) h = h.replace(/(.)/g, "$1$1");
+  const n = parseInt(h, 16);
+  if (h.length !== 6 || !isFinite(n)) return "transparent";
+  return "rgba(" + ((n >> 16) & 255) + ", " + ((n >> 8) & 255) + ", " + (n & 255) + ", " + (alpha || 0) + ")";
 }
 
 /**
@@ -295,7 +378,7 @@ function rpdCount(id) {
 
 /**
  * Add one to today's count for a model, then refresh the bar.
- * Called from translateBlock() before each chat request.
+ * Called from translateWindow() before each chat request.
  */
 function bumpRpd(id) {
   const data = readRpd();
@@ -425,8 +508,8 @@ async function startMeter() {
 /**
  * Next On model under RPM (60s window in modelHits) and RPD (UTC day).
  * Honours pinnedModel when not "auto". skipIds = models already tried for
- * this line (translateBlock fallback).
- * Connects to: translateBlock
+ * this window (translateWindow fallback).
+ * Connects to: translateWindow
  */
 function pickChatModel(skipIds) {
   const now = Date.now();
@@ -451,98 +534,215 @@ function pickChatModel(skipIds) {
 }
 
 /**
- * Line 2 (ABC) for one block, from its stored state:
+ * Romanized sub-line (ABC) of one transcript line, from its stored state:
  *   off → hidden; no Indic script → hidden;
  *   local → CFN_ROMAN; ai → AI roman when one arrived, else local.
- * Called on create, on ABC mode change (all blocks) and when word lists load.
+ * Called on create, on ABC mode change (all lines) and when word lists load.
  */
-function renderAbc(wrap) {
-  const st = wrap && wrap.cfn;
-  if (!st || !st.abcBox) return;
-  const show = abcMode !== "off" && st.indic;
-  st.abcBox.hidden = !show;
+function renderAbc(line) {
+  if (!line || !line.abcBox) return;
+  const show = abcMode !== "off" && line.indic;
+  line.abcRow.hidden = !show;
   if (!show) return;
-  if (!st.localRoman || st.localStale) {
-    st.localRoman = romanizeLocal(st.source, st.lang) || st.source;
-    st.localStale = false;
+  if (!line.localRoman || line.localStale) {
+    line.localRoman = romanizeLocal(line.source, line.lang) || line.source;
+    line.localStale = false;
   }
-  st.abcBox.value = abcMode === "ai" && st.aiRoman ? st.aiRoman : st.localRoman;
-  fitTextarea(st.abcBox);
+  line.abcBox.value = abcMode === "ai" && line.aiRoman ? line.aiRoman : line.localRoman;
+  fitTextarea(line.abcBox);
 }
 
 /**
- * Re-render line 2 on every block (after ABC mode change or word-list load).
+ * Re-render the ABC sub-line on every line of every block (after ABC mode
+ * change or word-list load).
  */
 function renderAllAbc(recomputeLocal) {
-  const blocks = lineList.querySelectorAll(".line");
+  const blocks = lineList.querySelectorAll(".block");
   for (let i = 0; i < blocks.length; i++) {
-    if (recomputeLocal && blocks[i].cfn) blocks[i].cfn.localStale = true;
-    renderAbc(blocks[i]);
+    const blk = blocks[i].cfn;
+    if (!blk) continue;
+    blk.lines.forEach(function (line) {
+      if (recomputeLocal) line.localStale = true;
+      renderAbc(line);
+    });
   }
 }
 
 /**
- * One caption block at the top: line 1 original, line 2 ABC (only for
- * Indic script), line 3 translation (when Output is not Off).
- * Starts this block's own chat request (translateBlock) when needed and
- * writes the hour log once line 2/3 are settled.
+ * Editable, auto-growing textarea for a block.
  */
-function addCaptionBlock(sourceText) {
-  const text = sourceText || "";
-  const wrap = document.createElement("div");
-  wrap.className = "line";
-  const orig = document.createElement("textarea");
-  orig.className = "orig-line";
-  orig.rows = 1;
-  orig.value = text;
-  orig.addEventListener("input", function () {
-    fitTextarea(orig);
+function makeArea(className, value) {
+  const area = document.createElement("textarea");
+  area.className = className;
+  area.rows = 1;
+  area.value = value || "";
+  area.addEventListener("input", function () {
+    fitTextarea(area);
   });
-  wrap.appendChild(orig);
-  const st = {
+  return area;
+}
+
+/**
+ * One bulleted row: lvl0 = translation, lvl1 = original, lvl2 = romanized.
+ */
+function makeRow(className, area) {
+  const row = document.createElement("div");
+  row.className = "blk-row " + className;
+  row.appendChild(area);
+  return row;
+}
+
+/**
+ * New block (one time window) at the top of the list. Layout:
+ *   • translation of the whole window (hidden until the window closes)
+ *     ◦ original line          ┐ one .blk-line per transcript line,
+ *        – romanized line      ┘ thin divider between lines
+ * Accent colour cycles through CONFIG.BLOCK_COLORS.
+ */
+function createBlock() {
+  const colors = CONFIG.BLOCK_COLORS && CONFIG.BLOCK_COLORS.length ? CONFIG.BLOCK_COLORS : ["#3d8bfd"];
+  const colorIndex = blockSeq % colors.length;
+  const color = colors[colorIndex];
+  blockSeq++;
+  const el = document.createElement("div");
+  el.className = "block";
+  el.dataset.color = String(colorIndex);
+  el.style.setProperty("--blk", color);
+  el.style.setProperty("--blk-tint", hexToRgba(color, CONFIG.BLOCK_TINT_ALPHA));
+  const outBox = makeArea("out-line");
+  const transRow = makeRow("lvl0 trans-row", outBox);
+  transRow.hidden = true;
+  const linesEl = document.createElement("div");
+  linesEl.className = "blk-lines";
+  el.appendChild(transRow);
+  el.appendChild(linesEl);
+  const blk = {
+    el: el,
+    color: color,
+    transRow: transRow,
+    outBox: outBox,
+    linesEl: linesEl,
+    lines: [],
+    stamp: istNow(),
+    closed: false,
+    wantTrans: false,
+    pending: false,
+    noted: false,
+    logged: false,
+  };
+  el.cfn = blk;
+  lineList.insertBefore(el, lineList.firstChild);
+  return blk;
+}
+
+/**
+ * Add one finalised transcript line to the open window's block (made on the
+ * first line, so empty windows never draw a block). Lines stay in spoken
+ * order inside the block; newest block is on top.
+ */
+function addLineToWindow(sourceText) {
+  const text = String(sourceText || "").trim();
+  if (!text) return null;
+  if (!currentBlock || !currentBlock.el.isConnected) currentBlock = createBlock();
+  const blk = currentBlock;
+  const lineEl = document.createElement("div");
+  lineEl.className = "blk-line";
+  const orig = makeArea("orig-line", text);
+  lineEl.appendChild(makeRow("lvl1", orig));
+  const line = {
     source: text,
     lang: selectedLang,
-    indic: !!text && hasIndicScript(text),
+    indic: hasIndicScript(text),
+    origBox: orig,
+    abcRow: null,
     abcBox: null,
-    outBox: null,
     localRoman: "",
     aiRoman: "",
-    stamp: istNow(),
+    localStale: false,
   };
-  wrap.cfn = st;
-  if (st.indic) {
-    const abcBox = document.createElement("textarea");
-    abcBox.className = "abc-line";
-    abcBox.rows = 1;
-    abcBox.addEventListener("input", function () {
-      fitTextarea(abcBox);
-    });
-    wrap.appendChild(abcBox);
-    st.abcBox = abcBox;
+  if (line.indic) {
+    line.abcBox = makeArea("abc-line");
+    line.abcRow = makeRow("lvl2", line.abcBox);
+    lineEl.appendChild(line.abcRow);
   }
-  if (translateTarget !== "off" && text) {
-    const outBox = document.createElement("textarea");
-    outBox.className = "out-line";
-    outBox.rows = 1;
-    outBox.value = "";
-    outBox.addEventListener("input", function () {
-      fitTextarea(outBox);
-    });
-    wrap.appendChild(outBox);
-    st.outBox = outBox;
-  }
-  lineList.insertBefore(wrap, lineList.firstChild);
+  lineEl.cfn = line;
+  blk.lines.push(line);
+  blk.linesEl.appendChild(lineEl);
   fitTextarea(orig);
-  renderAbc(wrap);
+  renderAbc(line);
   scrollCaptionsToTop();
-  if (text) {
-    const wantAi = abcMode === "ai" && st.indic;
-    const job = st.outBox || wantAi ? translateBlock(wrap, wantAi) : Promise.resolve();
-    job.catch(function () {}).then(function () {
-      logBlock(wrap);
+  return line;
+}
+
+/**
+ * Window clock (setInterval CONFIG.WINDOW_TICK_MS). When the user's window
+ * length is reached: if speech is mid-sentence (an interim line is not final
+ * yet, or text arrived < WINDOW_PAUSE_GAP_MS ago) wait for a pause, but at
+ * most WINDOW_MAX_EXTRA_SEC more; then closeWindow().
+ */
+function windowTick() {
+  const now = Date.now();
+  const len = windowSec * 1000;
+  if (now - winStart < len) return;
+  const midSpeech = !!pendingText || (lastTextAt > 0 && now - lastTextAt < (CONFIG.WINDOW_PAUSE_GAP_MS || 0));
+  const maxExtra = (Number(CONFIG.WINDOW_MAX_EXTRA_SEC) || 0) * 1000;
+  if (midSpeech && now - winStart < len + maxExtra) return;
+  closeWindow(now);
+}
+
+/**
+ * End the open window and start the next one. A window with no lines sends
+ * nothing and draws nothing; otherwise its block is finished (one request).
+ */
+function closeWindow(now) {
+  const blk = currentBlock;
+  currentBlock = null;
+  winStart = now || Date.now();
+  if (!blk || !blk.lines.length || !blk.el.isConnected) return;
+  blk.closed = true;
+  finishBlock(blk);
+}
+
+/**
+ * Closed block: show the faint "translating…" line and send the window's one
+ * request (translation and/or AI ABC), then write the hour log.
+ */
+function finishBlock(blk) {
+  const chatOk = CONFIG.OUTPUT_ENGINE !== "live";
+  const wantTrans = chatOk && translateTarget !== "off";
+  const wantAi =
+    chatOk &&
+    abcMode === "ai" &&
+    blk.lines.some(function (l) {
+      return l.indic;
     });
+  blk.wantTrans = wantTrans;
+  if (wantTrans) {
+    blk.transRow.hidden = false;
+    blk.pending = true;
+    blk.outBox.classList.add("pending");
+    blk.outBox.value = TEXT.translating || "…";
+    fitTextarea(blk.outBox);
   }
-  return wrap;
+  const job = wantTrans || wantAi ? translateWindow(blk, wantTrans, wantAi) : Promise.resolve();
+  job
+    .catch(function () {})
+    .then(function () {
+      if (blk.pending) setBlockTranslation(blk, TEXT.translateNoModel, true);
+      logBlock(blk);
+    });
+}
+
+/**
+ * Fill a block's translation line (note = a short "(no model free)" style note).
+ */
+function setBlockTranslation(blk, text, note) {
+  blk.pending = false;
+  blk.noted = !!note;
+  blk.outBox.classList.remove("pending");
+  blk.outBox.classList.toggle("noted", !!note);
+  blk.outBox.value = text || "";
+  fitTextarea(blk.outBox);
 }
 
 /**
@@ -599,22 +799,26 @@ function storageUsedBytes() {
 }
 
 /**
- * Append one caption to its IST hour bucket. Entry format (v0.13):
+ * Append one window block to its IST hour bucket. Entry format (v0.14):
  *   stamp
- *   original
- *   ABC: romanized        (only when line 2 is shown; CONFIG.LOG_ABC_PREFIX)
- *   translation           (only when there is one)
+ *   original line 1
+ *   ABC: romanized 1      (only when shown; CONFIG.LOG_ABC_PREFIX)
+ *   original line 2 ...
+ *   TR: translation       (whole window, only when there is one; CONFIG.LOG_TRANS_PREFIX)
  *   (blank line)
- * Older entries (stamp, original, translation) read the same way.
- * p = istNow() parts from when the block was created (defaults to now).
+ * Older entries (v0.13: stamp, original, ABC, unprefixed translation) stay as they are.
+ * lines = [{ source, roman }]. p = istNow() parts from when the block was made.
  */
-function appendHourLog(sourceText, transText, romanText, p) {
+function appendHourLog(lines, transText, p) {
   p = p || istNow();
   const key = hourKeyFromParts(p);
   let body = localStorage.getItem(key) || "";
-  body += stampFromParts(p) + "\n" + sourceText;
-  if (romanText) body += "\n" + (CONFIG.LOG_ABC_PREFIX || "") + romanText;
-  if (transText) body += "\n" + transText;
+  body += stampFromParts(p);
+  (lines || []).forEach(function (l) {
+    body += "\n" + l.source;
+    if (l.roman) body += "\n" + (CONFIG.LOG_ABC_PREFIX || "") + l.roman;
+  });
+  if (transText) body += "\n" + (CONFIG.LOG_TRANS_PREFIX || "") + transText;
   body += "\n\n";
   try {
     localStorage.setItem(key, body);
@@ -722,24 +926,32 @@ function tickTee() {
 }
 
 /**
- * Write one block to the hour log: original, line 2 (if shown), line 3.
+ * Write one window block to the hour log: each original line with its ABC
+ * line (if shown), then the window's translation.
  */
-function logBlock(wrap) {
-  const st = wrap && wrap.cfn;
-  if (!st || st.logged) return;
-  st.logged = true;
-  const roman = st.abcBox && !st.abcBox.hidden ? st.abcBox.value.trim() : "";
-  /* skip the "(no model free)" / "(add an API key)" notes */
-  const trans = st.outBox && !st.noted ? st.outBox.value.trim() : "";
-  appendHourLog(st.source, trans, roman, st.stamp);
+function logBlock(blk) {
+  if (!blk || blk.logged) return;
+  blk.logged = true;
+  const lines = blk.lines.map(function (l) {
+    return {
+      source: l.source,
+      roman: l.abcRow && !l.abcRow.hidden ? l.abcBox.value.trim() : "",
+    };
+  });
+  /* skip the "(no model free)" / "(add an API key)" notes and the placeholder */
+  const trans = blk.wantTrans && !blk.noted && !blk.pending ? blk.outBox.value.trim() : "";
+  appendHourLog(lines, trans, blk.stamp);
 }
 
+/**
+ * Finalised speech → one or more lines (sentence / WORD_SPLIT) in the open window.
+ */
 function commitSpokenText(text) {
   const piece = (text || "").trim();
   if (!piece) return;
   const bits = splitSentences(piece);
-  for (let i = bits.length - 1; i >= 0; i--) {
-    addCaptionBlock(bits[i]);
+  for (let i = 0; i < bits.length; i++) {
+    addLineToWindow(bits[i]);
   }
   pendingText = "";
   pendingSince = 0;
@@ -749,16 +961,24 @@ function commitSpokenText(text) {
  * Copy visible text.
  */
 async function copyCaptions() {
-  const blocks = lineList.querySelectorAll(".line");
+  const blocks = lineList.querySelectorAll(".block");
   const chunks = [];
   for (let i = 0; i < blocks.length; i++) {
-    const areas = blocks[i].querySelectorAll("textarea");
+    const blk = blocks[i].cfn;
+    if (!blk) continue;
     const bits = [];
-    for (let j = 0; j < areas.length; j++) {
-      if (areas[j].hidden) continue;
-      const t = areas[j].value.trim();
+    if (!blk.transRow.hidden && !blk.pending) {
+      const t = blk.outBox.value.trim();
       if (t) bits.push(t);
     }
+    blk.lines.forEach(function (l) {
+      const o = l.origBox.value.trim();
+      if (o) bits.push(o);
+      if (l.abcRow && !l.abcRow.hidden) {
+        const r = l.abcBox.value.trim();
+        if (r) bits.push(r);
+      }
+    });
     if (bits.length) chunks.push(bits.join("\n"));
   }
   const blob = chunks.join("\n\n");
@@ -779,6 +999,8 @@ async function copyCaptions() {
  */
 function clearCaptionText() {
   lineList.innerHTML = "";
+  /* the open window starts a fresh block for its next line */
+  currentBlock = null;
   interimTextEl.textContent = "";
   if (liveNoteEl && isRunning) {
     liveNoteEl.textContent = TEXT.listeningDots;
@@ -837,8 +1059,8 @@ function onListenChange() {
 }
 
 /**
- * ABC dropdown (Off / Local / AI). Saves the choice and re-renders line 2
- * on every existing block. AI does not re-ask old blocks (quota); they show
+ * ABC dropdown (Off / Local / AI). Saves the choice and re-renders the ABC
+ * sub-line on every existing block. AI does not re-ask old blocks (quota); they show
  * an AI result only if one arrived earlier, else the local one.
  */
 function onAbcChange() {
@@ -850,7 +1072,7 @@ function onAbcChange() {
 }
 
 /**
- * Output language changed. New rows use this; old rows stay as they are.
+ * Output language changed. Windows that close from now on use this; old blocks stay.
  */
 function onTranslateChange() {
   translateTarget = translateSelect.value;
@@ -954,8 +1176,14 @@ function inputLangName(code) {
   return code && code !== "auto" && hit ? hit.label : TEXT.autoSourceName;
 }
 
+/* ---------- ABC = AI (kept separate so AI mode can be removed later) ----------
+ * The AI romanization rides in the window's single request (no extra call).
+ * To drop AI mode: remove this section, the wantAi branches in finishBlock()
+ * and translateWindow(), and the "ai" option in the HTML / ABC_MODES.
+ */
+
 /**
- * Pull {roman, translation} out of a model reply (JSON, maybe in ``` fences).
+ * Pull a JSON object out of a model reply (maybe in ``` fences).
  */
 function parseAiJson(textOut) {
   const raw = String(textOut || "").trim();
@@ -970,42 +1198,75 @@ function parseAiJson(textOut) {
 }
 
 /**
- * One chat request for one block (every caption line on its own; no batching).
- * wantAi = ABC is AI and the line has Indic script: the same request also
- * returns the romanized line as JSON {roman, translation}.
- * Model fallback: if a model errors, returns nothing, or is at its RPM/RPD cap,
- * the next On model (pickChatModel skipIds) is tried. If none work, line 3
- * shows a short note and line 2 keeps the local romanization.
+ * Prompt for one window in AI mode: the window's lines as a JSON array;
+ * the reply carries one romanized string per line (+ the translation).
  */
-async function translateBlock(wrap, wantAi) {
-  const st = wrap && wrap.cfn;
-  if (!st || !st.source) return;
-  if (CONFIG.OUTPUT_ENGINE === "live") return;
-  const wantTrans = !!st.outBox;
+function aiWindowPrompt(blk, wantTrans, langName) {
+  return fmtText(wantTrans ? TEXT.aiRomanBothPrompt : TEXT.aiRomanOnlyPrompt, {
+    src: inputLangName(blk.lines[0] && blk.lines[0].lang),
+    lang: langName,
+    lines: JSON.stringify(
+      blk.lines.map(function (l) {
+        return l.source;
+      })
+    ),
+  });
+}
+
+/**
+ * Apply an AI reply {roman: [..per line..], translation} to a block.
+ * Lines without a usable AI roman keep the local one.
+ * Returns { roman: true if any line got one, trans: translation or "" }.
+ */
+function applyAiWindowReply(blk, textOut) {
+  const parsed = parseAiJson(textOut);
+  if (!parsed) return { roman: false, trans: "" };
+  let romans = parsed.roman;
+  if (typeof romans === "string") romans = blk.lines.length === 1 ? [romans] : romans.split(/\n/);
+  let any = false;
+  if (Array.isArray(romans)) {
+    blk.lines.forEach(function (line, i) {
+      const r = typeof romans[i] === "string" ? romans[i].trim() : "";
+      if (!r || !line.indic) return;
+      line.aiRoman = r;
+      any = true;
+      renderAbc(line);
+    });
+  }
+  const trans = typeof parsed.translation === "string" ? parsed.translation.trim() : "";
+  return { roman: any, trans: trans };
+}
+
+/* ---------- end ABC = AI ---------- */
+
+/**
+ * ONE chat request for one closed window, holding only that window's lines
+ * (no earlier blocks as context). wantTrans = Output is on (fills the block's
+ * translation line); wantAi = ABC is AI and a line has Indic script (the same
+ * request returns JSON with the romanized lines).
+ * Model fallback: if a model errors, returns nothing, or is at its RPM/RPD
+ * cap, the next On model (pickChatModel skipIds) is tried. If none work, the
+ * translation line shows a short note and ABC keeps the local romanization.
+ */
+async function translateWindow(blk, wantTrans, wantAi) {
+  if (!blk || !blk.lines.length) return;
   if (!wantTrans && !wantAi) return;
+  const text = blk.lines
+    .map(function (l) {
+      return l.source;
+    })
+    .join("\n");
   const googleKey = apiKeyInput.value.trim() || (CONFIG.KEYS && CONFIG.KEYS.google) || "";
   function note(msg) {
-    if (st.outBox && !st.outBox.value) {
-      st.noted = true;
-      st.outBox.value = msg;
-      fitTextarea(st.outBox);
-    }
+    if (wantTrans && blk.pending) setBlockTranslation(blk, msg, true);
   }
   if (!googleKey) {
     note(TEXT.translateNoKey);
     return;
   }
   const langName = outputLangName(translateTarget);
-  let prompt;
-  if (wantAi) {
-    prompt = fmtText(wantTrans ? TEXT.aiRomanBothPrompt : TEXT.aiRomanOnlyPrompt, {
-      src: inputLangName(st.lang),
-      lang: langName,
-      text: st.source,
-    });
-  } else {
-    prompt = fmtText(TEXT.translatePrompt, { lang: langName, text: st.source });
-  }
+  const plainPrompt = fmtText(TEXT.translatePrompt, { lang: langName, text: text });
+  let prompt = wantAi ? aiWindowPrompt(blk, wantTrans, langName) : plainPrompt;
   const tried = [];
   let lastError = "";
   for (;;) {
@@ -1043,29 +1304,21 @@ async function translateBlock(wrap, wantAi) {
         continue;
       }
       if (!wantAi) {
-        st.outBox.value = textOut.trim();
-        fitTextarea(st.outBox);
+        setBlockTranslation(blk, textOut.trim(), false);
         return;
       }
-      const parsed = parseAiJson(textOut);
-      const roman = parsed && typeof parsed.roman === "string" ? parsed.roman.trim() : "";
-      const trans = parsed && typeof parsed.translation === "string" ? parsed.translation.trim() : "";
-      if (!roman && !(wantTrans && trans)) {
+      const got = applyAiWindowReply(blk, textOut);
+      if (!got.roman && !(wantTrans && got.trans)) {
         lastError = TEXT.translateFailedShort;
         continue;
       }
-      if (roman) {
-        st.aiRoman = roman;
-        renderAbc(wrap);
-      }
       if (wantTrans) {
-        if (trans) {
-          st.outBox.value = trans;
-          fitTextarea(st.outBox);
+        if (got.trans) {
+          setBlockTranslation(blk, got.trans, false);
         } else {
           /* AI gave roman only: translate with the plain prompt next round */
           wantAi = false;
-          prompt = fmtText(TEXT.translatePrompt, { lang: langName, text: st.source });
+          prompt = plainPrompt;
           continue;
         }
       }
@@ -1082,7 +1335,8 @@ async function translateBlock(wrap, wantAi) {
 /**
  * Parse one Transcribe Live JSON object.
  * setupComplete → sessionReady
- * interim / final text → commitSpokenText when word or time split hits
+ * interim / final text → commitSpokenText (lines of the open window);
+ * lastTextAt feeds the window's pause check (windowTick)
  * Connects to: onSocketMessage
  */
 function handleServerMessage(msg) {
@@ -1099,6 +1353,7 @@ function handleServerMessage(msg) {
   if (!content) return;
   if (content.interimInputTranscription && content.interimInputTranscription.text) {
     const live = content.interimInputTranscription.text.trim();
+    lastTextAt = Date.now();
     interimTextEl.textContent = live;
     pendingText = live;
     if (!pendingSince) pendingSince = Date.now();
@@ -1110,6 +1365,7 @@ function handleServerMessage(msg) {
     }
   }
   if (content.inputTranscription && content.inputTranscription.text) {
+    lastTextAt = Date.now();
     commitSpokenText(content.inputTranscription.text.trim());
     interimTextEl.textContent = "";
   }
@@ -1163,6 +1419,8 @@ async function startSession() {
   }
   sessionReady = false;
   pcmLeftover = new Int16Array(0);
+  /* first window starts with the session (unless one already has lines) */
+  if (!currentBlock) winStart = Date.now();
   setToggleUi(true);
   setStatus(TEXT.connecting);
   try {
@@ -1244,6 +1502,10 @@ async function stopSession() {
   }
   setToggleUi(false);
   setStatus(TEXT.stopped);
+  /* close the open window now so its last lines still get translated */
+  pendingText = "";
+  pendingSince = 0;
+  closeWindow();
 }
 
 /**
@@ -1284,7 +1546,7 @@ function loadVocabCsv() {
 
 /**
  * Fetch CONFIG.ROMAN_WORD_FILES (roman_xx.csv) into CFN_ROMAN, then
- * recompute line 2 on blocks made before the lists arrived.
+ * recompute the ABC lines made before the lists arrived.
  */
 function loadRomanWords() {
   if (!window.CFN_ROMAN) return;
@@ -1307,6 +1569,7 @@ keyToggleBtn.addEventListener("click", toggleKeyPanel);
 listenSelect.addEventListener("change", onListenChange);
 abcSelect.addEventListener("change", onAbcChange);
 translateSelect.addEventListener("change", onTranslateChange);
+if (windowInput) windowInput.addEventListener("change", onWindowChange);
 if (modelSelect) modelSelect.addEventListener("change", onModelChange);
 toggleBtn.addEventListener("click", onToggleClick);
 copyBtn.addEventListener("click", copyCaptions);
@@ -1317,6 +1580,7 @@ if (logDownloadAllBtn) logDownloadAllBtn.addEventListener("click", downloadAllAn
 migrateLegacyStorage();
 fillLanguageSelects();
 if (abcSelect) abcSelect.value = abcMode;
+initWindowInput();
 loadSavedKey();
 loadRomanWords();
 loadVocabCsv();
@@ -1324,5 +1588,6 @@ fillModelSelect();
 renderRpd();
 renderLogList();
 setInterval(tickTee, CONFIG.TEE_CHECK_MS);
+setInterval(windowTick, CONFIG.WINDOW_TICK_MS || 100);
 startMeter();
 if (CONFIG.AUTO_START) startSession();

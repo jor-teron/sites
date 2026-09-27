@@ -1,19 +1,21 @@
 <!DOCTYPE html>
 <!--
   Caption for NEI (Caption for North East India) — caption-for-nei.html
-  Version: 0.13 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
+  Version: 0.14 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
   Credit: personal project (Karbi Anglong / Assam)
   Top bar + caption panel (markup only). Styles: caption-for-nei.css.
   Logic: caption-for-nei_logic.js. Tunables, text, languages: caption-for-nei_config.js.
   The Input / Output language dropdowns are filled from CFN_CONFIG at load.
-  ABC (line 2, romanized): Off / Local (caption-for-nei_roman*.js) / AI; default from
+  ABC (romanized sub-line): Off / Local (caption-for-nei_roman*.js) / AI; default from
   CFN_CONFIG.ABC_MODE, the choice is remembered in localStorage.
+  Window (v0.14): seconds per caption block (one translation request per block);
+  range/default from CFN_CONFIG.WINDOW_SEC_*, remembered in localStorage.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Caption for NEI v0.13</title>
+  <title>Caption for NEI v0.14</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="caption-for-nei.css" />
 </head>
@@ -38,6 +40,12 @@
     <label class="field">
       <span>Output</span>
       <select id="translateSelect"></select>
+    </label>
+
+    <label class="field" id="windowField">
+      <span class="win-label">Window</span>
+      <input id="windowInput" type="number" min="3" max="15" step="0.25" value="5" inputmode="decimal" />
+      <span class="win-unit">s</span>
     </label>
 
     <label class="field">
