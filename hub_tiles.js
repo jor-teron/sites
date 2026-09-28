@@ -1,7 +1,10 @@
 /*
  * sites hub — quick-access tiles on the hub home screen (hub_tiles.js).
  * Loaded by hub.html before hub.js. Shown until an app is opened.
- * 4 in a row on wide screens, 2 x 2 on phones (hub.css .tiles).
+ * Grid of 2 columns on every screen (hub.css .tiles); 6 tiles = 2 x 3.
+ * label is the tile text only; the menu keeps the NAME from hub_apps.js.
+ * Tiles that open in the hub frame get a hash link + last-app memory like menu apps
+ * (hub.html#snake); NEW_TAB tiles are not remembered.
  *
  * Tile types:
  *   { type: 'qr', label, caption? }
@@ -17,7 +20,9 @@
 window.HUB_TILES = [
   { type: 'qr', label: 'Open on another device', caption: '' },
   // Phone gamepad: a new tab gives it the full screen (fullscreen / wake lock)
-  { type: 'app', label: 'Controller', url: 'controller/', icon: '', NEW_TAB: 1 },
-  { type: 'app', label: 'Caption for NEI', url: 'tools/caption-for-nei/caption-for-nei.html', icon: '' },
+  { type: 'app', label: 'GamePad', url: 'controller/', icon: '', NEW_TAB: 1 },
+  { type: 'app', label: 'Accessibility for Deaf', url: 'tools/caption-for-nei/caption-for-nei.html', icon: '' },
   { type: 'app', label: 'Snake', url: 'games/snake/', icon: '' },
+  { type: 'app', label: 'TV', url: 'tv/', icon: '', NEW_TAB: 1 },
+  { type: 'app', label: 'Webcam', url: 'media/webcam/', icon: '' },
 ];

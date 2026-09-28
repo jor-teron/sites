@@ -381,9 +381,9 @@
     if (e.key === 'Escape' && popover && !popover.hidden) closePopover();
   });
 
-  // Another app picked (iframe src changes): release held phone buttons so the old
+  // Another app picked (iframe src / data-app changes, see hub.js navigateFrame): release held phone buttons so the old
   // page gets its keyup and nothing stays "pressed" for the next one.
-  if (frame) new MutationObserver(releaseHeld).observe(frame, { attributes: true, attributeFilter: ['src'] });
+  if (frame) new MutationObserver(releaseHeld).observe(frame, { attributes: true, attributeFilter: ['src', 'data-app'] });
 
   // Leaving / reloading the page: free the peer id on the broker right away so the
   // reloaded hub can register the same code again.

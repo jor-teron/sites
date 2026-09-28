@@ -227,12 +227,12 @@ html, body {
 #empty-text.error { color: #ff8a8a; font-weight: 600; }
 .menu .menu-error { padding: 10px 12px; color: #ff8a8a; font-size: 13px; max-width: 260px; }
 
-/* Home screen quick-access tiles (hub_tiles.js): 4 in a row, 2 x 2 on phones */
-.home { width: min(880px, 100%); }
+/* Home screen quick-access tiles (hub_tiles.js): 2 columns on every screen (6 tiles = 2 x 3) */
+.home { width: min(640px, 100%); }
 .tiles {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(8px, 2vw, 14px);
 }
 .tiles[hidden] { display: none; }
 .tile {
@@ -242,8 +242,8 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  min-height: 170px;
-  padding: 14px 10px;
+  min-height: clamp(120px, 22vh, 190px);
+  padding: 12px 10px;
   background: var(--bar);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -253,10 +253,10 @@ html, body {
 }
 .tile-app { cursor: pointer; }
 .tile-app:hover, .tile-app:focus-visible { border-color: var(--accent); background: var(--menu); outline: none; }
-.tile-icon { width: 64px; height: 64px; object-fit: contain; border-radius: 12px; }
+.tile-icon { width: clamp(44px, 8vh, 72px); height: clamp(44px, 8vh, 72px); object-fit: contain; border-radius: 12px; }
 .tile-icon.missing { visibility: hidden; }
 .tile-label { font-size: 14px; font-weight: 600; }
-.tile-qr-box { width: 118px; max-width: 100%; background: #fff; line-height: 0; }
+.tile-qr-box { width: clamp(88px, 16vh, 140px); max-width: 100%; background: #fff; line-height: 0; }
 .tile-qr-box svg { display: block; width: 100%; height: auto; }
 .tile-caption {
   color: var(--muted);
@@ -266,12 +266,9 @@ html, body {
   max-width: 100%;
 }
 .tile-caption:hover { color: var(--accent); }
-@media (max-width: 640px) {
-  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .tile { min-height: 140px; }
-  .tile-icon { width: 52px; height: 52px; }
-  .tile-qr-box { width: 104px; }
-}
+
+.menu .home-item { border-bottom: 1px solid var(--line); }
+.menu .home-icon { display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
 
 /* Phone controller button + popover */
 .ctrl-btn {

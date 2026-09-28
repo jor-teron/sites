@@ -15,6 +15,12 @@
  * If HUB_APPS_CSV is missing or has no usable rows, the menu and the home screen say
  * "hub_apps.js failed to load or has an error".
  * Home screen: quick-access tiles from hub_tiles.js (window.HUB_TILES; types qr / app).
+ * App links + last-app memory: an app opened in the hub frame puts a short id in the hash
+ *   (hub.html#snake, #tv, #webcam, #caption-for-nei; id = folder name or file name without
+ *   extension, see appIdFor) and in localStorage ('sites-hub.lastApp'). On load the hash wins,
+ *   else the saved app opens; an unknown hash shows home. Back / Forward switch apps. The
+ *   "Home screen" menu item clears both. NEW_TAB apps are never remembered.
+ *   The frame is navigated with location.replace so only the hub adds history entries.
  * Focus: the app iframe gets keyboard focus after it loads, after an app is picked and when the
  * menu closes, so real keys reach the game without clicking into it first (never while the
  * menu or the controller popover is open).
@@ -37,6 +43,9 @@
 
   let currentEntry = '';     // entryUrl of the app in the iframe (for the active highlight)
   let apps = [];             // parsed HUB_APPS_CSV (hidden rows included)
+  const LAST_KEY = 'sites-hub.lastApp';
+  const idToApp = new Map(); // hash id → app (first row wins)
+  const entryToId = new Map(); // entryUrl → hash id
 
   /** True when ENTRY_URL points at a file (last segment has an extension) rather than a folder. */
   function isFileUrl(url) {
@@ -168,7 +177,7 @@
 
   /** Give the app iframe keyboard focus, unless the user is busy with the hub UI. */
   function focusFrame() {
-    if (!frame.getAttribute('src')) return;
+    if (!currentEntry) return;
     if (menu.classList.contains('open')) return;
     const pop = document.getElementById('ctrl-popover');
     if (pop && !pop.hidden) return;
@@ -187,15 +196,106 @@
     if (wasOpen) focusFrame();
   }
 
-  /** Open an app: NEW_TAB → new browser tab, else the hub iframe. */
-  function loadApp(app) {
-    if (app.newTab) {
+  /* ---------- app ids (hash links) + last-app memory ---------- */
+
+  function slug(s) {
+    return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
+  /**
+   * Short readable id for an ENTRY_URL: folder name (games/snake/ → snake) or file name
+   * without extension (about/contact.txt → contact). If that id is taken by another entry,
+   * the whole path is used (tools/caption-for-nei/ → tools-caption-for-nei).
+   */
+  function appIdFor(entryUrl) {
+    if (entryToId.has(entryUrl)) return entryToId.get(entryUrl);
+    const path = entryUrl.split(/[?#]/)[0].replace(/\/+$/, '');
+    const last = path.split('/').pop() || '';
+    let id = slug(isFileUrl(path) ? last.replace(/\.[a-z0-9]+$/i, '') : last);
+    if (!id || idToApp.has(id)) id = slug(path.replace(/\.[a-z0-9]+$/i, ''));
+    let n = 2;
+    const base = id || 'app';
+    while (!id || idToApp.has(id)) id = base + '-' + n++;
+    return id;
+  }
+
+  function registerApp(app) {
+    if (!app || !app.entryUrl || entryToId.has(app.entryUrl)) return;
+    const id = appIdFor(app.entryUrl);
+    entryToId.set(app.entryUrl, id);
+    idToApp.set(id, app);
+  }
+
+  function storageGet() {
+    try { return window.localStorage.getItem(LAST_KEY) || ''; } catch (_) { return ''; }
+  }
+  function storageSet(id) {
+    try {
+      if (id) window.localStorage.setItem(LAST_KEY, id);
+      else window.localStorage.removeItem(LAST_KEY);
+    } catch (_) { /* storage blocked: ignore */ }
+  }
+
+  function hashId() {
+    try { return decodeURIComponent(location.hash.replace(/^#/, '')); } catch (_) { return ''; }
+  }
+
+  /** Set the hash (push = new history entry) without reloading; '' clears it. */
+  function setHash(id, push) {
+    if (hashId() === id) return;
+    const url = location.pathname + location.search + (id ? '#' + encodeURIComponent(id) : '');
+    try {
+      history[push ? 'pushState' : 'replaceState'](null, '', url);
+    } catch (_) {
+      if (id) location.hash = id;
+      else if (location.hash) location.hash = '';
+    }
+  }
+
+  /**
+   * Navigate the iframe without adding a history entry (the hub owns Back / Forward).
+   * Chrome still adds one when the frame's very first document redirects (folder
+   * index.html pages do), so the frame is primed with about:blank first (primeFrame).
+   */
+  let frameReady = false;
+  let pendingUrl = '';
+  function replaceFrame(url) {
+    try {
+      frame.contentWindow.location.replace(new URL(url, location.href).href);
+    } catch (_) {
+      frame.src = url;
+    }
+  }
+  function navigateFrame(url) {
+    frame.dataset.app = url + '#' + Date.now(); // src-like signal for gamebar / controller
+    if (frameReady) replaceFrame(url);
+    else pendingUrl = url;
+  }
+  function primeFrame() {
+    const done = () => {
+      if (frameReady) return;
+      frameReady = true;
+      frame.removeEventListener('load', done);
+      if (pendingUrl) { const u = pendingUrl; pendingUrl = ''; replaceFrame(u); }
+    };
+    frame.addEventListener('load', done);
+    setTimeout(done, 1500); // never wait forever
+    replaceFrame('about:blank');
+  }
+
+  /** Open an app: NEW_TAB → new browser tab, else the hub iframe (+ hash + memory). */
+  function loadApp(app, opts) {
+    opts = opts || {};
+    if (app.newTab && !opts.forceFrame) {
       setOpen(false);
       window.open(frameUrlFor(app.entryUrl), '_blank', 'noopener');
       return;
     }
+    const id = appIdFor(app.entryUrl);
+    if (!opts.fromHistory) setHash(id, !opts.replaceHash);
+    storageSet(id);
+    if (currentEntry !== app.entryUrl || opts.reload) navigateFrame(frameUrlFor(app.entryUrl));
     currentEntry = app.entryUrl;
-    frame.src = frameUrlFor(app.entryUrl);
     empty.classList.add('hidden');
     setOpen(false);
     focusFrame();
@@ -206,8 +306,47 @@
     });
   }
 
+  /** Back to the home screen: clears the hash, the saved app and the frame. */
+  function goHome(opts) {
+    opts = opts || {};
+    if (!opts.fromHistory) setHash('', true);
+    storageSet('');
+    if (currentEntry) navigateFrame('about:blank');
+    currentEntry = '';
+    empty.classList.remove('hidden');
+    setOpen(false);
+    document.title = 'Main — sites hub';
+    catLabel.textContent = HEADER_DEFAULT;
+    menu.querySelectorAll('button.app').forEach((b) => b.classList.remove('active'));
+  }
+
+  /** Hash (or, at start-up only, the saved app) → open it; unknown / empty → home. */
+  function applyHash(fromStart) {
+    const id = hashId();
+    let app = id ? idToApp.get(id) : null;
+    if (!id && fromStart) {
+      const saved = storageGet();
+      app = saved ? idToApp.get(saved) : null;
+      if (app) { loadApp(app, { forceFrame: true, replaceHash: true }); return; }
+      if (saved) storageSet('');
+    }
+    if (app) loadApp(app, { forceFrame: true, fromHistory: true });
+    else if (fromStart) { if (id) setHash('', false); }
+    else goHome({ fromHistory: true });
+  }
+
   function renderMenu(apps) {
     menu.innerHTML = '';
+    const homeBtn = document.createElement('button');
+    homeBtn.type = 'button';
+    homeBtn.className = 'app home-item';
+    homeBtn.setAttribute('role', 'menuitem');
+    homeBtn.innerHTML = '<span class="icon home-icon" aria-hidden="true">\u2302</span>';
+    const homeLabel = document.createElement('span');
+    homeLabel.textContent = 'Home screen';
+    homeBtn.appendChild(homeLabel);
+    homeBtn.addEventListener('click', () => goHome());
+    menu.appendChild(homeBtn);
     const { order, map } = groupByCategory(visibleSorted(apps));
     for (const cat of order) {
       const label = document.createElement('div');
@@ -292,6 +431,7 @@
     }
     if (!apps.length) { showLoadError('no usable rows'); return false; }
     window.HUB_APPS = apps;
+    apps.forEach(registerApp);
     renderMenu(apps);
     return true;
   }
@@ -345,12 +485,14 @@
       name: t.label || (known && known.name) || entryUrl,
       entryUrl: entryUrl,
       iconUrl: t.icon || (known ? iconFor(known) : ''),
+      // (tile label only; the menu keeps the hub_apps.js NAME)
       newTab: newTabRaw === undefined || newTabRaw === '' ? !!(known && known.newTab) : parseFlag(newTabRaw),
     };
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'tile tile-app';
     btn.dataset.entryUrl = entryUrl;
+    if (!known) registerApp(app);    // tile-only app: still gets a hash id
     const img = document.createElement('img');
     img.className = 'tile-icon';
     img.alt = '';
@@ -381,6 +523,12 @@
   }
 
   window.__hubFocusFrame = focusFrame;
+  window.__hubGoHome = goHome;
+  primeFrame();
   loadApps();
   renderTiles();
+  applyHash(true);
+  // Back / Forward (and hand-edited hashes): switch apps without adding entries.
+  window.addEventListener('popstate', () => applyHash(false));
+  window.addEventListener('hashchange', () => applyHash(false));
 })();

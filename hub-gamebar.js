@@ -125,8 +125,9 @@
     clearBar();
     helloBurst();
   });
-  // Another app picked (src changes before the new page loads): clear at once.
-  new MutationObserver(clearBar).observe(frame, { attributes: true, attributeFilter: ['src'] });
+  // Another app picked (src / data-app changes before the new page loads; hub.js sets
+  // data-app on every switch): clear at once.
+  new MutationObserver(clearBar).observe(frame, { attributes: true, attributeFilter: ['src', 'data-app'] });
 
   window.__hubGamebar = { clear: clearBar, hello: sendHello };
 })();
