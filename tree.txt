@@ -1,222 +1,397 @@
 .
 ├── about
-│   ├── about.html
-│   └── index.html
+│   ├── about.html
+│   ├── about_icon.png
+│   ├── contact.txt
+│   ├── contact_icon.png
+│   ├── feedback.txt
+│   ├── feedback_icon.png
+│   └── index.html
 ├── controller
+│   ├── controller.css
+│   ├── controller.html
+│   ├── controller_config.js
+│   ├── controller_icon.png
+│   ├── controller_logic.js
+│   ├── controller_qr_icon.png
+│   ├── dpad.html
+│   ├── index.html
+│   └── vendor
+│       ├── jsQR.js
+│       └── jsQR.LICENSE
 ├── favicon.ico
 ├── games
-│   ├── browser-fps
-│   │   ├── browser-fps.css
-│   │   ├── browser-fps.html
-│   │   ├── browser-fps.js
-│   │   └── index.html
-│   └── swell-foop
-│       ├── index.html
-│       ├── swell-foop.html
-│       └── swell-foop_icon.png
+│   ├── ar-game
+│   │   ├── ar-game.css
+│   │   ├── ar-game.html
+│   │   ├── ar-game_config.js
+│   │   ├── ar-game_icon.png
+│   │   ├── ar-game_logic.js
+│   │   ├── index.html
+│   │   ├── js
+│   │   │   ├── ar.js
+│   │   │   ├── camera.js
+│   │   │   └── themes
+│   │   │       ├── ghost.js
+│   │   │       ├── pet.js
+│   │   │       └── zombie.js
+│   │   └── README.md
+│   ├── browser-fps
+│   │   ├── browser-fps.css
+│   │   ├── browser-fps.html
+│   │   ├── browser-fps_config.js
+│   │   ├── browser-fps_icon.png
+│   │   ├── browser-fps_logic.js
+│   │   └── index.html
+│   ├── car-run
+│   │   ├── car-run.css
+│   │   ├── car-run.html
+│   │   ├── car-run_config.js
+│   │   ├── car-run_icon.png
+│   │   ├── car-run_logic.js
+│   │   └── index.html
+│   ├── contra-alpha
+│   │   ├── contra-alpha.css
+│   │   ├── contra-alpha.html
+│   │   ├── contra-alpha_config.js
+│   │   ├── contra-alpha_icon.png
+│   │   ├── contra-alpha_logic.js
+│   │   └── index.html
+│   ├── desert-road
+│   │   ├── desert-road.css
+│   │   ├── desert-road.html
+│   │   ├── desert-road_config.js
+│   │   ├── desert-road_icon.png
+│   │   ├── desert-road_logic.js
+│   │   └── index.html
+│   ├── dino-run
+│   │   ├── dino-run.css
+│   │   ├── dino-run.html
+│   │   ├── dino-run_config.js
+│   │   ├── dino-run_icon.png
+│   │   ├── dino-run_logic.js
+│   │   └── index.html
+│   ├── island-alpha
+│   │   ├── Cow.gltf
+│   │   ├── Flamingo.glb
+│   │   ├── Flower.glb
+│   │   ├── index.html
+│   │   ├── island-alpha_icon.png
+│   │   ├── island.css
+│   │   ├── island.html
+│   │   ├── island.js
+│   │   └── Stork.glb
+│   ├── pong
+│   │   ├── index.html
+│   │   ├── pong.css
+│   │   ├── pong.html
+│   │   ├── pong_config.js
+│   │   ├── pong_icon.png
+│   │   └── pong_logic.js
+│   ├── snake
+│   │   ├── index.html
+│   │   ├── snake.css
+│   │   ├── snake.html
+│   │   ├── snake_config.js
+│   │   ├── snake_icon.png
+│   │   └── snake_logic.js
+│   ├── space-invader
+│   │   ├── index.html
+│   │   ├── space-invader.css
+│   │   ├── space-invader.html
+│   │   ├── space-invader_config.js
+│   │   ├── space-invader_icon.png
+│   │   └── space-invader_logic.js
+│   ├── swell-foop
+│   │   ├── index.html
+│   │   ├── swell-foop.css
+│   │   ├── swell-foop.html
+│   │   ├── swell-foop_config.js
+│   │   ├── swell-foop_icon.png
+│   │   └── swell-foop_logic.js
+│   ├── tennis-throw
+│   │   ├── index.html
+│   │   ├── tennis-throw.css
+│   │   ├── tennis-throw.html
+│   │   ├── tennis-throw_config.js
+│   │   ├── tennis-throw_icon.png
+│   │   └── tennis-throw_logic.js
+│   ├── tetris
+│   │   ├── index.html
+│   │   ├── tetris.css
+│   │   ├── tetris.html
+│   │   ├── tetris_config.js
+│   │   ├── tetris_icon.png
+│   │   └── tetris_logic.js
+│   └── tic-tac-toe
+│       ├── index.html
+│       ├── tic-tac-toe.css
+│       ├── tic-tac-toe.html
+│       ├── tic-tac-toe_config.js
+│       ├── tic-tac-toe_icon.png
+│       └── tic-tac-toe_logic.js
 ├── grid.html
-├── hub-apps.csv
+├── hub-controller.js
+├── hub-gamebar.js
 ├── hub.css
 ├── hub.html
 ├── hub.js
+├── hub_apps.js
+├── hub_tiles.js
 ├── image
-│   ├── app.png
-│   ├── arrow_blue.png
-│   ├── box.png
-│   ├── call.png
-│   ├── chase.png
-│   ├── close.png
-│   ├── cogwheel.png
-│   ├── connection.png
-│   ├── dialer.png
-│   ├── digital-nomad-hub.png
-│   ├── drive.png
-│   ├── earth.png
-│   ├── excel.png
-│   ├── folder.png
-│   ├── gallery.png
-│   ├── golf.png
-│   ├── google-docs.png
-│   ├── google-maps.png
-│   ├── google-pay.png
-│   ├── home.png
-│   ├── india.png
-│   ├── mobile.png
-│   ├── more.png
-│   ├── paper.png
-│   ├── photo-camera.png
-│   ├── play.png
-│   ├── qr.png
-│   ├── setting.png
-│   ├── sms.png
-│   ├── tv_no_signal.jpeg
-│   ├── whatsapp_w4b.png
-│   ├── youtube-kids.png
-│   └── youtube.png
+│   ├── app.png
+│   ├── arrow_blue.png
+│   ├── box.png
+│   ├── call.png
+│   ├── chase.png
+│   ├── close.png
+│   ├── cogwheel.png
+│   ├── connection.png
+│   ├── dialer.png
+│   ├── digital-nomad-hub.png
+│   ├── drive.png
+│   ├── earth.png
+│   ├── excel.png
+│   ├── folder.png
+│   ├── gallery.png
+│   ├── golf.png
+│   ├── google-docs.png
+│   ├── google-maps.png
+│   ├── google-pay.png
+│   ├── home.png
+│   ├── india.png
+│   ├── mobile.png
+│   ├── more.png
+│   ├── paper.png
+│   ├── photo-camera.png
+│   ├── play.png
+│   ├── qr.png
+│   ├── setting.png
+│   ├── sms.png
+│   ├── tv_no_signal.jpeg
+│   ├── whatsapp_w4b.png
+│   ├── youtube-kids.png
+│   └── youtube.png
 ├── index.html
 ├── lab
-│   ├── iframe.html
-│   └── index.html
+│   ├── iframe.html
+│   └── index.html
 ├── LICENSE
 ├── media
-│   ├── gallery
-│   │   ├── filename.js
-│   │   ├── gallery.html
-│   │   ├── gallery_icon.png
-│   │   ├── index.html
-│   │   ├── photos.css
-│   │   └── photos.js
-│   ├── paint
-│   │   ├── index.html
-│   │   ├── paint.css
-│   │   ├── paint.html
-│   │   ├── paint_icon.png
-│   │   └── paint.js
-│   ├── phone
-│   │   ├── ai.html
-│   │   ├── common.css
-│   │   ├── general.html
-│   │   ├── header.html
-│   │   ├── index.html
-│   │   ├── media.html
-│   │   ├── more.css
-│   │   ├── more.html
-│   │   ├── more-phone.css
-│   │   ├── more-phone.html
-│   │   ├── more-tv.css
-│   │   ├── more-tv.html
-│   │   ├── other.html
-│   │   ├── ott.html
-│   │   ├── phone.css
-│   │   ├── phone_icon.png
-│   │   ├── shopping.html
-│   │   ├── social-media.html
-│   │   ├── tv.css
-│   │   ├── upi.css
-│   │   └── upi.html
-│   ├── photo-editor
-│   │   ├── index.html
-│   │   ├── photo-editor.css
-│   │   ├── photo-editor.html
-│   │   ├── photo-editor_icon.png
-│   │   └── photo-editor.js
-│   └── webcam
-│       ├── index.html
-│       ├── webcam.css
-│       ├── webcam.html
-│       ├── webcam_icon.png
-│       └── webcam.js
+│   ├── 3d-viewer
+│   │   ├── model-viewer-v1.html
+│   │   ├── model.url
+│   │   ├── Panda.glb
+│   │   └── SciFi_Head.fbx
+│   ├── gallery
+│   │   ├── gallery.css
+│   │   ├── gallery.html
+│   │   ├── gallery_config.js
+│   │   ├── gallery_icon.png
+│   │   ├── gallery_logic.js
+│   │   └── index.html
+│   ├── paint
+│   │   ├── index.html
+│   │   ├── paint.css
+│   │   ├── paint.html
+│   │   ├── paint.js
+│   │   └── paint_icon.png
+│   ├── phone
+│   │   ├── ai.html
+│   │   ├── common.css
+│   │   ├── general.html
+│   │   ├── header.html
+│   │   ├── index.html
+│   │   ├── media.html
+│   │   ├── more-phone.css
+│   │   ├── more-phone.html
+│   │   ├── more-tv.css
+│   │   ├── more-tv.html
+│   │   ├── more.css
+│   │   ├── more.html
+│   │   ├── other.html
+│   │   ├── ott.html
+│   │   ├── phone.css
+│   │   ├── phone_icon.png
+│   │   ├── shopping.html
+│   │   ├── social-media.html
+│   │   ├── tv.css
+│   │   ├── upi.css
+│   │   └── upi.html
+│   ├── photo-editor
+│   │   ├── index.html
+│   │   ├── photo-editor.css
+│   │   ├── photo-editor.html
+│   │   ├── photo-editor.js
+│   │   └── photo-editor_icon.png
+│   └── webcam
+│       ├── index.html
+│       ├── webcam.css
+│       ├── webcam.html
+│       ├── webcam_config.js
+│       ├── webcam_icon.png
+│       └── webcam_logic.js
 ├── misc
-│   ├── privatedns.html
-│   └── T&C.html
+│   ├── privatedns.html
+│   └── T&C.html
+├── office
+│   └── spreadsheet
+│       ├── formula.js
+│       ├── FUNCTIONS.txt
+│       ├── index.html
+│       ├── spreadsheet.css
+│       ├── spreadsheet.html
+│       ├── spreadsheet_config.js
+│       ├── spreadsheet_icon.png
+│       └── spreadsheet_logic.js
 ├── README.md
 ├── script
-│   ├── cursor.js
-│   ├── html-include.js
-│   └── time.js
+│   ├── api_keys.js
+│   ├── api_keys.sample.js
+│   ├── cursor.js
+│   ├── html-include.js
+│   ├── time.js
+│   └── txt-view.html
 ├── style
-│   ├── app-common.css
-│   ├── cursor.css
-│   ├── font.css
-│   ├── no-scrollbar.css
-│   └── weather.css
+│   ├── app-common.css
+│   ├── cursor.css
+│   ├── font.css
+│   ├── no-scrollbar.css
+│   └── weather.css
 ├── tools
-│   ├── calculator
-│   │   ├── calculator.css
-│   │   ├── calculator.html
-│   │   ├── calculator_icon.png
-│   │   ├── calculator.js
-│   │   ├── calculator-keyboard.js
-│   │   └── index.html
-│   ├── learning-html
-│   │   ├── index.html
-│   │   └── learning-html.html
-│   ├── msword_diff
-│   │   ├── index.html
-│   │   ├── msword_diff.css
-│   │   ├── msword_diff.html
-│   │   ├── msword_diff_icon.png
-│   │   └── msword_diff.js
-│   ├── nei-dict
-│   │   ├── about.html
-│   │   ├── dict.css
-│   │   ├── dict.js
-│   │   ├── grammar.json
-│   │   ├── index.html
-│   │   ├── nei-dict_icon.png
-│   │   └── README.md
-│   ├── notepad
-│   │   ├── index.html
-│   │   ├── notepad.css
-│   │   ├── notepad.html
-│   │   ├── notepad_icon.png
-│   │   └── notepad.js
-│   ├── vDesktop
-│   │   ├── apps.csv
-│   │   ├── desktop_icons.csv
-│   │   ├── hash.txt
-│   │   ├── index.html
-│   │   ├── vDesktop.css
-│   │   ├── vDesktop.html
-│   │   ├── vDesktop_icon.png
-│   │   ├── vDesktop.js
-│   │   └── wallpaper.csv
-│   ├── weather-chart
-│   │   ├── index.html
-│   │   ├── weather-chart.html
-│   │   ├── weather-chart_icon.png
-│   │   └── weather-chart.js
-│   └── weather-hourly.html
+│   ├── calculator
+│   │   ├── calculator-keyboard.js
+│   │   ├── calculator.css
+│   │   ├── calculator.html
+│   │   ├── calculator.js
+│   │   ├── calculator_icon.png
+│   │   └── index.html
+│   ├── caption-for-nei
+│   │   ├── about.html
+│   │   ├── caption-for-nei.css
+│   │   ├── caption-for-nei.html
+│   │   ├── caption-for-nei_config.js
+│   │   ├── caption-for-nei_full.html
+│   │   ├── caption-for-nei_icon.png
+│   │   ├── caption-for-nei_lite.html
+│   │   ├── caption-for-nei_logic.js
+│   │   ├── caption-for-nei_roman.js
+│   │   ├── caption-for-nei_roman_beng.js
+│   │   ├── caption-for-nei_roman_deva.js
+│   │   ├── city.csv
+│   │   ├── favicon.svg
+│   │   ├── index.html
+│   │   ├── README.md
+│   │   ├── roman_as.csv
+│   │   ├── roman_bn.csv
+│   │   ├── roman_hi.csv
+│   │   ├── roman_ne.csv
+│   │   ├── surname.csv
+│   │   ├── town.csv
+│   │   └── vocab.csv
+│   ├── learning-html
+│   │   ├── index.html
+│   │   ├── learning-html.html
+│   │   └── learning-html_icon.png
+│   ├── live-subtitle-assam
+│   │   └── index.html
+│   ├── msword_diff
+│   │   ├── index.html
+│   │   ├── msword_diff.css
+│   │   ├── msword_diff.html
+│   │   ├── msword_diff_config.js
+│   │   ├── msword_diff_icon.png
+│   │   └── msword_diff_logic.js
+│   ├── nei-dict
+│   │   ├── about.html
+│   │   ├── dict.css
+│   │   ├── dict.js
+│   │   ├── grammar.json
+│   │   ├── index.html
+│   │   ├── nei-dict_icon.png
+│   │   └── README.md
+│   ├── notepad
+│   │   ├── index.html
+│   │   ├── notepad.css
+│   │   ├── notepad.html
+│   │   ├── notepad.js
+│   │   └── notepad_icon.png
+│   ├── vDesktop
+│   │   ├── apps.csv
+│   │   ├── desktop_icons.csv
+│   │   ├── hash.txt
+│   │   ├── index.html
+│   │   ├── vDesktop.css
+│   │   ├── vDesktop.html
+│   │   ├── vDesktop.js
+│   │   ├── vDesktop_icon.png
+│   │   └── wallpaper.csv
+│   ├── weather-chart
+│   │   ├── index.html
+│   │   ├── weather-chart.css
+│   │   ├── weather-chart.html
+│   │   ├── weather-chart_config.js
+│   │   ├── weather-chart_icon.png
+│   │   └── weather-chart_logic.js
+│   └── weather-hourly
+│       ├── index.html
+│       ├── weather-hourly.css
+│       ├── weather-hourly.html
+│       ├── weather-hourly_config.js
+│       ├── weather-hourly_icon.png
+│       └── weather-hourly_logic.js
 ├── tree.txt
 ├── tv
-│   ├── channels
-│   │   ├── home.csv
-│   │   ├── home.m3u
-│   │   ├── home-more.csv
-│   │   ├── home-more.m3u
-│   │   ├── kids.csv
-│   │   ├── kids.m3u
-│   │   ├── local.m3u
-│   │   └── split-m3u.sh
-│   ├── index.html
-│   ├── india.html
-│   ├── js
-│   │   ├── autoplay.js
-│   │   ├── config.js
-│   │   ├── config-more.js
-│   │   ├── input.js
-│   │   ├── overlay.js
-│   │   ├── player.js
-│   │   └── playlist.js
-│   ├── kids.html
-│   ├── kids-mini.html
-│   ├── photo.html
-│   ├── tv_icon.png
-│   ├── tv-old
-│   │   ├── common.css
-│   │   ├── index.html
-│   │   ├── more.css
-│   │   ├── more.html
-│   │   ├── more-tv.css
-│   │   ├── more-tv.html
-│   │   ├── phone.css
-│   │   ├── tv.css
-│   │   └── upi.css
-│   ├── tv-v1.css
-│   ├── tv-v1.html
-│   ├── tv-v1.js
-│   ├── tv-v2.css
-│   ├── tv-v2.html
-│   ├── tv-v2.js
-│   ├── tv-v3.css
-│   ├── tv-v3.html
-│   ├── tv-v3.js
-│   ├── tv-v3-more.html
-│   ├── video.html
-│   └── world.html
+│   ├── channels
+│   │   ├── home-more.csv
+│   │   ├── home-more.m3u
+│   │   ├── home.csv
+│   │   ├── home.m3u
+│   │   ├── kids.csv
+│   │   ├── kids.m3u
+│   │   ├── local.m3u
+│   │   └── split-m3u.sh
+│   ├── index.html
+│   ├── india.html
+│   ├── js
+│   │   ├── autoplay.js
+│   │   ├── config-more.js
+│   │   ├── config.js
+│   │   ├── input.js
+│   │   ├── overlay.js
+│   │   ├── player.js
+│   │   └── playlist.js
+│   ├── kids-mini.html
+│   ├── kids.html
+│   ├── photo.html
+│   ├── tv-old
+│   │   ├── common.css
+│   │   ├── index.html
+│   │   ├── more-tv.css
+│   │   ├── more-tv.html
+│   │   ├── more.css
+│   │   ├── more.html
+│   │   ├── phone.css
+│   │   ├── tv.css
+│   │   └── upi.css
+│   ├── tv-v1.css
+│   ├── tv-v1.html
+│   ├── tv-v1.js
+│   ├── tv-v2.css
+│   ├── tv-v2.html
+│   ├── tv-v2.js
+│   ├── tv-v3-more.html
+│   ├── tv-v3.css
+│   ├── tv-v3.html
+│   ├── tv-v3.js
+│   ├── tv_icon.png
+│   ├── video.html
+│   └── world.html
 ├── vendor
-│   ├── diff_match_patch.js
-│   └── jszip.min.js
+│   ├── diff_match_patch.js
+│   ├── jszip.min.js
+│   ├── peerjs.min.js
+│   └── qrcode.js
 └── wallpaper
     ├── bess.jpg
     ├── dalia.jpg
@@ -241,4 +416,4 @@
     ├── xp.jpg
     └── xp_small.jpg
 
-31 directories, 211 files
+51 directories, 365 files

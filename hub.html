@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Main — sites hub</title>
   <!-- Cache busting: GitHub Pages lets browsers cache files for ~10 min, so every hub
-       file below carries ?v=HUB_VERSION. When you change hub.css / hub*.js (or vendor/),
-       bump the version: replace every "?v=20260928d" in this file with today's date
+       file below carries ?v=HUB_VERSION. When you change hub.css / hub*.js / hub_apps.js /
+       hub_tiles.js (or vendor/),
+       bump the version: replace every "?v=20260928f" in this file with today's date
        (YYYYMMDD, add a letter for a second deploy the same day, e.g. 20260928b). -->
-  <link rel="stylesheet" href="hub.css?v=20260928d" />
-  <link rel="stylesheet" href="style/no-scrollbar.css?v=20260928d" />
+  <link rel="stylesheet" href="hub.css?v=20260928f" />
+  <link rel="stylesheet" href="style/no-scrollbar.css?v=20260928f" />
 </head>
 <body>
   <header id="header">
@@ -55,14 +56,25 @@
   </div>
 
   <div id="frame-wrap">
-    <div id="empty">Open 'Home' and pick an App</div>
-    <iframe id="app-frame" title="WebApp" scrolling="no"></iframe>
+    <!-- Home screen: hint + quick-access tiles (hub_tiles.js); hidden once an app opens -->
+    <div id="empty">
+      <div class="home">
+        <div id="empty-text">Open 'Home' and pick an App</div>
+        <div id="tiles" class="tiles" hidden></div>
+      </div>
+    </div>
+    <!-- allow: apps may use camera / mic (Webcam, Caption for NEI), fullscreen, gamepad… -->
+    <iframe id="app-frame" title="WebApp" scrolling="no"
+      allow="camera; microphone; fullscreen; autoplay; clipboard-read; clipboard-write; gamepad; screen-wake-lock; picture-in-picture; display-capture; accelerometer; gyroscope"></iframe>
   </div>
 
-  <script src="vendor/peerjs.min.js?v=20260928d"></script>
-  <script src="vendor/qrcode.js?v=20260928d"></script>
-  <script src="hub.js?v=20260928d"></script>
-  <script src="hub-controller.js?v=20260928d"></script>
-  <script src="hub-gamebar.js?v=20260928d"></script>
+  <script src="vendor/peerjs.min.js?v=20260928f"></script>
+  <script src="vendor/qrcode.js?v=20260928f"></script>
+  <!-- App list + home tiles (plain JS data, work over http and file://) -->
+  <script src="hub_apps.js?v=20260928f"></script>
+  <script src="hub_tiles.js?v=20260928f"></script>
+  <script src="hub.js?v=20260928f"></script>
+  <script src="hub-controller.js?v=20260928f"></script>
+  <script src="hub-gamebar.js?v=20260928f"></script>
 </body>
 </html>
