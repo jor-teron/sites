@@ -9,7 +9,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>AR Theme Game</title>
-  <link rel="stylesheet" href="ar-game.css" />
+  <link rel="stylesheet" href="ar-game.css?v=20260928m" />
   <script type="importmap">
   {
     "imports": {
@@ -27,31 +27,34 @@
     <!-- Three.js overlay (also used as the XR canvas) -->
     <canvas id="view"></canvas>
 
-    <div id="hud">
-      <span>Theme: <strong id="theme-name">Pet</strong></span>
-      <span>Score: <strong id="score">0</strong></span>
-    </div>
-
     <div id="msg">Allow camera to play</div>
 
     <!-- Ghost chase: edge arrow toward an off-screen ghost -->
     <div id="ghost-arrow" hidden aria-hidden="true"></div>
 
-    <div id="pet-picker" hidden>
-      <button type="button" data-pet="dog">Dog</button>
-      <button type="button" data-pet="cat">Cat</button>
-      <button type="button" data-pet="chicken">Chicken</button>
-      <button type="button" data-pet="bunny">Bunny</button>
-      <button type="button" data-pet="ours" class="active">Ours</button>
-    </div>
+    <!-- Controls live in a TOP toolbar: the top edge is never cut off by the
+         mobile URL bar, the Android nav bar, or a 100vh hub iframe. -->
+    <div id="topbar">
+      <div id="hud">
+        <span>Theme: <strong id="theme-name">Pet</strong></span>
+        <span>Score: <strong id="score">0</strong></span>
+      </div>
 
-    <div id="themes">
-      <button type="button" data-theme="pet" class="active">Pet</button>
-      <button type="button" data-theme="zombie">Zombie</button>
-      <button type="button" data-theme="ghost">Ghost</button>
-    </div>
+      <div id="themes">
+        <button type="button" data-theme="pet" class="active">Pet</button>
+        <button type="button" data-theme="zombie">Zombie</button>
+        <button type="button" data-theme="ghost">Ghost</button>
+        <button type="button" id="ar-btn" hidden>Enter AR</button>
+      </div>
 
-    <button type="button" id="ar-btn" hidden>Enter AR</button>
+      <div id="pet-picker" hidden>
+        <button type="button" data-pet="dog">Dog</button>
+        <button type="button" data-pet="cat">Cat</button>
+        <button type="button" data-pet="chicken">Chicken</button>
+        <button type="button" data-pet="bunny">Bunny</button>
+        <button type="button" data-pet="ours" class="active">Ours</button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="ar-game_logic.js"></script>

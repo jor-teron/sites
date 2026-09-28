@@ -62,12 +62,16 @@ function updateArrow(root, onScreen) {
     sy = 0;
   }
   const ang = Math.atan2(-sy, sx); // CSS: 0 = right, +90° = down
+  // Keep the arrow inside the play area: below the top toolbar, off the edges
   const w = window.innerWidth;
   const h = window.innerHeight;
+  const bar = document.getElementById("topbar");
+  const top = (bar ? bar.getBoundingClientRect().bottom : 0) + 12;
+  const bottom = h - 28;
   const cx = w / 2;
-  const cy = h / 2;
-  const mx = cx - 36;
-  const my = cy - 90;
+  const cy = (top + bottom) / 2;
+  const mx = Math.max(10, cx - 30);
+  const my = Math.max(10, (bottom - top) / 2 - 18);
   const k = Math.min(mx / Math.max(1e-6, Math.abs(Math.cos(ang))), my / Math.max(1e-6, Math.abs(Math.sin(ang))));
   const x = cx + Math.cos(ang) * k;
   const y = cy + Math.sin(ang) * k;

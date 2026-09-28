@@ -90,6 +90,12 @@ function loadTheme(id) {
   const next = THEMES[id];
   if (!next) return;
   if (game.theme && game.theme !== next && typeof game.theme.exit === "function") game.theme.exit();
+  // Drop any temporary message from the previous theme (e.g. the ghost hint);
+  // a lasting message such as "Camera blocked" comes back.
+  if (game.msgTimer) {
+    clearMsgTimer();
+    onMsgTimeout();
+  }
   game.themeId = id;
   game.theme = next;
   game.catchT = 0;
