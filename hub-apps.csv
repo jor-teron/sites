@@ -1,4 +1,6 @@
 CATEGORY,NAME,ENTRY_URL,ORDER,HIDDEN
+Favorite,TV,tv/,10,0
+Favorite,Caption for NEI,tools/caption-for-nei/caption-for-nei_lite.html,70,0
 Games,Swell Foop,games/swell-foop/,100,0
 Games,Pong,games/pong/,105,0
 Games,Tetris,games/tetris/,110,0
