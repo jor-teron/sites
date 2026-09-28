@@ -84,9 +84,49 @@ function onResize() {
 function setTarget(mesh) {
   if (targetMesh) {
     scene.remove(targetMesh);
+    disposeObject(targetMesh);
+    targetMesh = null;
   }
   targetMesh = mesh;
   scene.add(targetMesh);
+}
+
+/**
+ * Free GPU resources (geometries, materials, textures) held by an object
+ * and all of its children. Shared resources (e.g. Pet ears share one
+ * geometry + material) are disposed only once.
+ * @param {THREE.Object3D} root - Object removed from the scene
+ */
+function disposeObject(root) {
+  const seen = new Set();
+
+  function disposeOnce(res) {
+    if (res && !seen.has(res) && typeof res.dispose === "function") {
+      seen.add(res);
+      res.dispose();
+    }
+  }
+
+  function disposeMaterial(mat) {
+    // Dispose any textures referenced by the material (map, normalMap, ...)
+    Object.keys(mat).forEach(function (key) {
+      const value = mat[key];
+      if (value && value.isTexture) {
+        disposeOnce(value);
+      }
+    });
+    disposeOnce(mat);
+  }
+
+  root.traverse(function (obj) {
+    if (obj.geometry) {
+      disposeOnce(obj.geometry);
+    }
+    if (obj.material) {
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+      mats.forEach(disposeMaterial);
+    }
+  });
 }
 
 /**

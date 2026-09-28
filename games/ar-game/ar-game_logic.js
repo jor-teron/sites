@@ -40,6 +40,17 @@ let themeEl = null;
 let msgEl = null;
 
 /**
+ * Pending auto-hide timer for a temporary message (0 = none)
+ */
+let msgTimer = 0;
+
+/**
+ * Lasting message (e.g. "Camera blocked…") restored after a temporary
+ * message hides. Empty string = nothing to restore.
+ */
+let lastingMsg = "";
+
+/**
  * Boot the game after the DOM is ready.
  */
 async function boot() {
@@ -114,22 +125,54 @@ function onTap(ev) {
 }
 
 /**
- * Show a short status line.
+ * Show a status line.
+ * With ms > 0 the message is temporary: it hides after ms, and any lasting
+ * message (e.g. "Camera blocked…") comes back. Without ms (or 0) the message
+ * is lasting: it stays until replaced and is remembered for restore.
+ * Only one auto-hide timer is active at a time.
  * @param {string} text
  * @param {number} [ms] auto-hide delay
  */
 function showMsg(text, ms) {
+  clearMsgTimer();
   msgEl.textContent = text;
   msgEl.style.display = "block";
   if (ms) {
-    setTimeout(hideMsg, ms);
+    msgTimer = setTimeout(onMsgTimeout, ms);
+  } else {
+    lastingMsg = text;
   }
 }
 
 /**
- * Hide the center status line.
+ * Temporary message expired: restore the lasting message, or hide.
+ */
+function onMsgTimeout() {
+  msgTimer = 0;
+  if (lastingMsg) {
+    msgEl.textContent = lastingMsg;
+    msgEl.style.display = "block";
+  } else {
+    msgEl.style.display = "none";
+  }
+}
+
+/**
+ * Cancel a pending auto-hide timer, if any.
+ */
+function clearMsgTimer() {
+  if (msgTimer) {
+    clearTimeout(msgTimer);
+    msgTimer = 0;
+  }
+}
+
+/**
+ * Hide the center status line and forget any lasting message.
  */
 function hideMsg() {
+  clearMsgTimer();
+  lastingMsg = "";
   msgEl.style.display = "none";
 }
 
