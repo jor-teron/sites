@@ -21,7 +21,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Caption for NEI v0.17</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="caption-for-nei.css" />
+  <!-- Cache busting: bump ?v= on every caption-for-nei.css / _*.js change -->
+  <link rel="stylesheet" href="caption-for-nei.css?v=20260928h" />
 </head>
 <body class="normal">
   <div class="topbar">
@@ -74,17 +75,7 @@
     <div id="status" class="status" hidden>Idle</div>
   </main>
 
-  <script>
-    /* Captions start under the top bar, also when it wraps or the Key / Log row opens */
-    (function () {
-      var bar = document.querySelector(".topbar");
-      function fit() { document.body.style.setProperty("--bar-h", bar.offsetHeight + "px"); }
-      fit();
-      if (window.ResizeObserver) new ResizeObserver(fit).observe(bar);
-      else window.addEventListener("resize", fit);
-    })();
-  </script>
-  <script src="caption-for-nei_config.js"></script>
+  <script src="caption-for-nei_config.js?v=20260928h"></script>
   <script>
     /* Normal page: Input fixed to Auto, Output starts at Off (read by the logic at load) */
     window.CFN_CONFIG.DEFAULT_INPUT = "auto";
@@ -92,9 +83,9 @@
   </script>
   <!-- Optional shared key file (may be missing; the app still works) -->
   <script src="../../script/api_keys.js"></script>
-  <script src="caption-for-nei_roman_deva.js"></script>
-  <script src="caption-for-nei_roman_beng.js"></script>
-  <script src="caption-for-nei_roman.js"></script>
-  <script src="caption-for-nei_logic.js"></script>
+  <script src="caption-for-nei_roman_deva.js?v=20260928h"></script>
+  <script src="caption-for-nei_roman_beng.js?v=20260928h"></script>
+  <script src="caption-for-nei_roman.js?v=20260928h"></script>
+  <script src="caption-for-nei_logic.js?v=20260928h"></script>
 </body>
 </html>

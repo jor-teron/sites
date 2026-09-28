@@ -21,7 +21,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Caption for NEI v0.17 (Full)</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="caption-for-nei.css" />
+  <!-- Cache busting: bump ?v= on every caption-for-nei.css / _*.js change -->
+  <link rel="stylesheet" href="caption-for-nei.css?v=20260928h" />
 </head>
 <body>
   <div class="topbar">
@@ -68,7 +69,6 @@
     </label>
     <span id="rpdNote"></span>
     <button type="button" id="keyToggleBtn">Key</button>
-    <a class="about" href="about.html">About</a>
     <a class="lite-link" href="caption-for-nei.html">Normal</a>
 
     <div id="keyPanel">
@@ -94,12 +94,12 @@
     <div id="status" class="status" hidden>Idle</div>
   </main>
 
-  <script src="caption-for-nei_config.js"></script>
+  <script src="caption-for-nei_config.js?v=20260928h"></script>
   <!-- Optional shared key file (may be missing; the app still works) -->
   <script src="../../script/api_keys.js"></script>
-  <script src="caption-for-nei_roman_deva.js"></script>
-  <script src="caption-for-nei_roman_beng.js"></script>
-  <script src="caption-for-nei_roman.js"></script>
-  <script src="caption-for-nei_logic.js"></script>
+  <script src="caption-for-nei_roman_deva.js?v=20260928h"></script>
+  <script src="caption-for-nei_roman_beng.js?v=20260928h"></script>
+  <script src="caption-for-nei_roman.js?v=20260928h"></script>
+  <script src="caption-for-nei_logic.js?v=20260928h"></script>
 </body>
 </html>

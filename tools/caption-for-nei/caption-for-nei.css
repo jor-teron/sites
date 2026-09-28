@@ -4,7 +4,8 @@
  * Credit: personal project (Karbi Anglong / Assam)
  * Styles for caption-for-nei.html (moved from the inline <style> block).
  */
-/* Compact caption tool: one fixed top bar, captions scroll under it */
+/* Compact caption tool: top bar in normal page flow (scrolls away with the page);
+   the whole page scrolls, newest caption lines at the top, scrollbar hidden */
 :root {
   --bg: #0f1419;
   --card: #1a2332;
@@ -23,12 +24,20 @@ body {
   color: var(--text);
   min-height: 100vh;
 }
+/* Whole-page scroll (top bar + captions) with a hidden scrollbar. body is the
+   scroller, not the window: the sites hub frame has scrolling="no" and puts
+   overflow:hidden on same-origin apps; !important wins over that inline style. */
+html { height: 100%; overflow: hidden !important; }
+body {
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+body::-webkit-scrollbar { display: none; }
 .topbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 20;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -62,12 +71,6 @@ select, button, input[type="password"] {
 }
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 button.danger { background: #8b2d3b; border-color: #8b2d3b; color: #fff; }
-a.about {
-  color: var(--muted);
-  font-size: 0.85rem;
-  margin-left: auto;
-  text-decoration: none;
-}
 #keyPanel {
   display: none;
   width: 100%;
@@ -94,19 +97,14 @@ a.about {
 }
 .log-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 4px 0; }
 #apiKey { flex: 1; min-width: 160px; }
-main { padding: 96px 12px 16px; max-width: 900px; margin: 0 auto; }
+main { padding: 12px 12px 16px; max-width: 900px; margin: 0 auto; }
 .captions {
   background: var(--card);
   border-radius: 12px;
-  min-height: calc(100vh - 130px);
-  max-height: calc(100vh - 130px);
-  overflow-y: auto;
-  scrollbar-width: none;
   padding: 18px;
   font-size: 1.35rem;
   line-height: 1.45;
 }
-.captions::-webkit-scrollbar { display: none; }
 #liveWrap {
   display: inline-flex;
   align-items: center;
@@ -134,7 +132,6 @@ main { padding: 96px 12px 16px; max-width: 900px; margin: 0 auto; }
 #sessionNote { color: #f5a524; font-size: 0.78rem; white-space: nowrap; }
 #sessionNote[hidden] { display: none; }
 #liveNote.on { color: var(--ok); }
-a.about { margin-left: auto; }
 .interim {
   color: var(--muted);
   font-style: italic;
@@ -206,7 +203,7 @@ a.about { margin-left: auto; }
   background: var(--ok);
 }
 #rpdNote { font-size: 0.72rem; color: var(--muted); max-width: 100%; }
-a.lite-link { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
+a.lite-link { color: var(--muted); font-size: 0.85rem; text-decoration: none; margin-left: auto; }
 /* Gain slider (Full page, v0.17): mic boost */
 #gainSlider { width: 90px; accent-color: var(--accent); }
 #gainValue { min-width: 2.6em; font-variant-numeric: tabular-nums; }
@@ -225,9 +222,8 @@ body.normal #micMeter { width: 40px; flex: none; }
 body.normal a.full-link { color: var(--muted); font-size: 0.8rem; text-decoration: none; margin-left: auto; }
 body.normal #keyPanel.open,
 body.normal #logPanel.open { margin-top: 2px; }
-/* --bar-h = top bar height, set by a small script in caption-for-nei.html */
-body.normal main { padding: calc(var(--bar-h, 50px) + 6px) 6px 8px; }
-body.normal .captions { padding: 8px; min-height: calc(100vh - var(--bar-h, 50px) - 20px); max-height: calc(100vh - var(--bar-h, 50px) - 20px); }
+body.normal main { padding: 6px 6px 8px; }
+body.normal .captions { padding: 8px; }
 body.normal .block { border-left-width: 2px; padding: 6px 6px 6px 6px; }
 body.normal .blk-row.lvl0,
 body.normal .blk-row.lvl1,
