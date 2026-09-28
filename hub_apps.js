@@ -21,7 +21,7 @@
 window.HUB_APPS_CSV = `
 CATEGORY, NAME,                  ENTRY_URL,                                  ICON_URL, NEW_TAB, HIDDEN, ORDER
 Favorite, TV,                    tv/,                                        ,         0,       0,      10
-Favorite, Caption for NEI,       tools/caption-for-nei/caption-for-nei.html, ,         0,       0,      70
+Favorite, Caption for NEI,       tools/caption-for-nei/, ,         0,       0,      70
 Games,    Swell Foop,            games/swell-foop/,                          ,         0,       0,      100
 Games,    Ping Pong,             games/pong/,                                ,         0,       0,      105
 Games,    Tetris,                games/tetris/,                              ,         0,       0,      110
