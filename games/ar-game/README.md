@@ -7,6 +7,19 @@ Phone camera AR-style game with an optional **WebXR immersive-ar** mode.
 - **Overlay mode (every browser):** live rear camera + Three.js overlay. Tap the target to score.
 - **AR mode (where supported):** WebXR `immersive-ar` with hit-test + DOM overlay. Tap a surface to place, then tap the pet to catch. The pet wanders within ~1 m of the placement.
 
+## Ghost chase (Ghost theme)
+
+Works in the normal camera-overlay mode, so no WebXR is needed.
+
+- **Look around in 360°:** the phone's gyroscope (`deviceorientation`) turns a virtual camera and the live video stays as the background. The ghost sits in a direction around you and only appears when you point the phone at it.
+- **Find it:** when the ghost is off-screen, a white arrow at the screen edge points toward it. A synthesized hum/whoosh (Web Audio, no sound files) gets louder and brighter as you aim closer, panned left or right toward it. Audio starts on your tap.
+- **Chase it:** aim at the ghost and it slides away. Sometimes it dashes behind you, so turn around. Evasion speed is capped. After a few seconds of being chased it gets **tired**: it barely moves and becomes more opaque. Tap it to catch (+1 score, then a new ghost spawns somewhere else around you).
+- **iOS:** the motion permission prompt (`DeviceOrientationEvent.requestPermission`) is triggered by tapping **Ghost**. If that fails, tap the screen again to retry.
+- **No gyroscope (desktop) or motion denied:** drag/swipe to look around (drag right turns left, "grab the world"). Drag also adds a yaw offset on phones.
+- Tunables live in `ar-game_config.js` → `themes.ghost.chase` (distance, evade angle/speed/cap, dash chance, tiredness, drag sensitivity).
+- Leaving the Ghost theme restores the normal overlay camera, removes the listeners, hides the arrow and suspends audio.
+- In WebXR AR mode the ghost keeps the simple hover/pulse behaviour.
+
 ## Run / test
 
 Camera and WebXR need a **secure context** (HTTPS or `localhost`).
@@ -64,6 +77,8 @@ ar-game_logic.js      boot, scoring, theme/pet switch, XR toggle
 js/camera.js          getUserMedia start/stop
 js/ar.js              Three.js renderer / scene / hit tests
 js/xr.js              immersive-ar session, reticle, place, wander
+js/look.js            360° look: deviceorientation → camera, drag fallback, iOS permission
+js/ghost_audio.js     Web Audio proximity hum/whoosh for the Ghost chase
 js/pets.js            GLB cache, SkeletonUtils.clone, AnimationMixer, procedural pet
 js/themes/{pet,zombie,ghost}.js
 assets/models/pet/{dog,cat,chicken,bunny,ours}/

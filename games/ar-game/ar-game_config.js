@@ -113,6 +113,27 @@ export const AR_GAME_CONFIG = {
       fadeRange: 0.5,
       fadeSpeed: 2,
       catchText: "Ghost found!",
+
+      // Ghost chase (overlay mode, 360° look via gyro or drag)
+      chase: {
+        distance: 3.5,          // ghost distance from the viewer (world units)
+        hitRadius: 0.8,         // invisible tap target radius (easier catching)
+        spawnMinDeg: 35,        // spawn this far from where you look...
+        spawnMaxDeg: 110,       // ...up to this far (so you usually have to turn)
+        pitchMinDeg: -25,       // ghost stays within this vertical band
+        pitchMaxDeg: 35,
+        wanderDegPerSec: 8,     // idle drift speed
+        evadeAngleDeg: 18,      // aim within this angle → ghost slides away
+        evadeDegPerSec: 55,     // evade speed at full energy
+        evadeMaxDegPerSec: 70,  // hard cap (keeps it catchable)
+        dashChance: 0.25,       // chance an evade becomes a dash behind you
+        dashDegPerSec: 90,      // dash speed (capped)
+        drainPerSec: 0.35,      // energy lost per second of evading
+        recoverPerSec: 0.08,    // energy regained per second when not evading
+        tiredBelow: 0.25,       // energy below this → tired
+        tiredSec: 4,            // tired this long (barely moves), then recovers to 0.6
+        dragDegPerScreen: 90,   // drag across the full screen height = this many degrees
+      },
     },
   },
 
@@ -121,5 +142,9 @@ export const AR_GAME_CONFIG = {
     arUnsupported: "AR not supported on this device/browser.",
     arPlace: "Tap a surface to place the pet",
     arCatch: "Tap the pet to catch it",
+    ghostHint: "Turn around to find the ghost",
+    ghostHintDrag: "Drag to look around and find the ghost",
+    ghostMotionTap: "Tap to enable motion controls",
+    ghostMotionDenied: "Motion access denied: drag to look around",
   },
 };

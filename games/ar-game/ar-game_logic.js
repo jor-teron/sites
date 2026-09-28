@@ -89,6 +89,7 @@ function spawnTarget() {
 function loadTheme(id) {
   const next = THEMES[id];
   if (!next) return;
+  if (game.theme && game.theme !== next && typeof game.theme.exit === "function") game.theme.exit();
   game.themeId = id;
   game.theme = next;
   game.catchT = 0;
@@ -98,6 +99,13 @@ function loadTheme(id) {
     btn.classList.toggle("active", btn.getAttribute("data-theme") === id);
   });
   game.els.petPicker.hidden = id !== "pet";
+  // Optional per-theme session hooks (Ghost chase: gyro/drag look, arrow, audio).
+  // Called synchronously from the button click so iOS permission + audio unlock work.
+  if (typeof next.enter === "function") next.enter(themeCtx());
+}
+
+function themeCtx() {
+  return { canvas: game.els.canvas, arrow: game.els.ghostArrow, showMsg, xr: isPresenting() };
 }
 
 function selectPet(petId) {
@@ -155,6 +163,7 @@ async function toggleAr() {
 }
 
 function onArStart() {
+  if (game.theme && typeof game.theme.exit === "function") game.theme.exit();
   // XR provides camera passthrough — stop and hide our own camera
   stopCamera();
   game.els.video.classList.add("xr-hidden");
@@ -171,6 +180,7 @@ async function onArEnd() {
   game.els.video.classList.remove("xr-hidden");
   hideMsg();
   spawnTarget(); // back to overlay-scale target
+  if (game.theme && typeof game.theme.enter === "function") game.theme.enter(themeCtx());
   await tryStartCamera();
 }
 
@@ -219,6 +229,7 @@ async function boot() {
     msg: $("msg"),
     petPicker: $("pet-picker"),
     arBtn: $("ar-btn"),
+    ghostArrow: $("ghost-arrow"),
   };
 
   initRenderer(game.els.canvas);
@@ -272,4 +283,5 @@ window.__arGame = {
     hasMixer: !!(game.themeRoot && game.themeRoot.userData.mixer),
     anim: game.themeRoot ? game.themeRoot.userData.animState : null,
   }),
+  ghost: () => GhostTheme.debugState(),
 };

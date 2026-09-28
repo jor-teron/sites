@@ -147,3 +147,22 @@ html, body {
 #ar-btn.active {
   background: #e74c3c;
 }
+
+/* Ghost chase: off-screen direction arrow (positioned/rotated from JS) */
+#ghost-arrow {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 36px;
+  height: 36px;
+  z-index: 2;
+  pointer-events: none;
+  background: rgba(236, 240, 241, 0.9);
+  clip-path: polygon(100% 50%, 15% 5%, 35% 50%, 15% 95%);
+  filter: drop-shadow(0 0 4px rgba(0,0,0,0.6));
+  will-change: transform;
+}
+
+#ghost-arrow[hidden] {
+  display: none;
+}
