@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
   AR Theme Game
-  Phone camera + overlay. Default theme: Pet.
-  DLC buttons load Zombie / Ghost packs.
+  Phone camera + Three.js overlay, optional WebXR immersive-ar.
+  Default theme: Pet (multi-pet picker). DLC: Zombie / Ghost.
 -->
 <html lang="en">
 <head>
@@ -10,35 +10,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>AR Theme Game</title>
   <link rel="stylesheet" href="ar-game.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/build/three.module.min.js",
+      "three/addons/": "./vendor/three/addons/"
+    }
+  }
+  </script>
 </head>
 <body>
-  <!-- Live rear camera -->
-  <video id="camera" playsinline autoplay muted></video>
+  <div id="ui-root">
+    <!-- Live rear camera (hidden during WebXR AR — XR provides passthrough) -->
+    <video id="camera" playsinline autoplay muted></video>
 
-  <!-- Three.js overlay -->
-  <canvas id="view"></canvas>
+    <!-- Three.js overlay (also used as the XR canvas) -->
+    <canvas id="view"></canvas>
 
-  <div id="hud">
-    <span>Theme: <strong id="theme-name">Pet</strong></span>
-    <span>Score: <strong id="score">0</strong></span>
+    <div id="hud">
+      <span>Theme: <strong id="theme-name">Pet</strong></span>
+      <span>Score: <strong id="score">0</strong></span>
+    </div>
+
+    <div id="msg">Allow camera to play</div>
+
+    <div id="pet-picker" hidden>
+      <button type="button" data-pet="dog">Dog</button>
+      <button type="button" data-pet="cat">Cat</button>
+      <button type="button" data-pet="chicken">Chicken</button>
+      <button type="button" data-pet="bunny">Bunny</button>
+      <button type="button" data-pet="ours" class="active">Ours</button>
+    </div>
+
+    <div id="themes">
+      <button type="button" data-theme="pet" class="active">Pet</button>
+      <button type="button" data-theme="zombie">Zombie</button>
+      <button type="button" data-theme="ghost">Ghost</button>
+    </div>
+
+    <button type="button" id="ar-btn" hidden>Enter AR</button>
   </div>
 
-  <div id="msg">Allow camera to play</div>
-
-  <div id="themes">
-    <button data-theme="pet" class="active">Pet</button>
-    <button data-theme="zombie">Zombie</button>
-    <button data-theme="ghost">Ghost</button>
-  </div>
-
-  <!-- Three.js r160, vendored locally (same bytes as unpkg three@0.160.0/build/three.min.js) -->
-  <script src="vendor/three.min.js"></script>
-  <script src="ar-game_config.js"></script>
-  <script src="js/camera.js"></script>
-  <script src="js/ar.js"></script>
-  <script src="js/themes/pet.js"></script>
-  <script src="js/themes/zombie.js"></script>
-  <script src="js/themes/ghost.js"></script>
-  <script src="ar-game_logic.js"></script>
+  <script type="module" src="ar-game_logic.js"></script>
 </body>
 </html>

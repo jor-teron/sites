@@ -1,0 +1,17 @@
+chicken.glb — "Chicken" by Quaternius
+======================================
+
+Source page : https://poly.pizza/m/ineV9pU5VL  (Poly Pizza, "Chicken")
+Download    : https://static.poly.pizza/a0001762-9352-48c3-9abd-be91e42db114.glb
+Author      : Quaternius (https://quaternius.com/)
+Licence     : Creative Commons Zero v1.0 Universal (CC0 1.0) — Public Domain Dedication
+              https://creativecommons.org/publicdomain/zero/1.0/
+              Poly Pizza lists the model as "Public Domain (CC0)" / "CC0 1.0".
+              Quaternius FAQ (https://quaternius.com/faq.html): "All models are under the CC0 License."
+Retrieved   : 2026-09-28
+File        : unmodified GLB, 140,112 bytes,
+              sha256 3390f6f6944210ed9f612bd0010165d1c443c6186638f9fc4380574bd9e5fce1
+Animation clips (short names after last '|'):
+              Bite_Front, Dance, Death, HitRecieve, Idle, Jump, No, Walk, Yes
+
+Credit is not required by CC0, but is given here with thanks.

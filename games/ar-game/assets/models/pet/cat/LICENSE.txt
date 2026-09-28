@@ -1,0 +1,17 @@
+cat.glb — "Cat" by Quaternius
+==============================
+
+Source page : https://poly.pizza/m/2f54vbV0In  (Poly Pizza, "Cat")
+Download    : https://static.poly.pizza/7ccb71fe-dabb-4a6f-a98a-8992bb5e6bc7.glb
+Author      : Quaternius (https://quaternius.com/)
+Licence     : Creative Commons Zero v1.0 Universal (CC0 1.0) — Public Domain Dedication
+              https://creativecommons.org/publicdomain/zero/1.0/
+              Poly Pizza lists the model as "Public Domain (CC0)" / "CC0 1.0".
+              Quaternius FAQ (https://quaternius.com/faq.html): "All models are under the CC0 License."
+Retrieved   : 2026-09-28
+File        : unmodified GLB, 111,948 bytes,
+              sha256 aa098d43c1006110d5a4fa3a6e6d4c843c8d8d90ffccc48f5bf32e3aadf7a3a9
+Animation clips (short names after last '|'):
+              Bite_Front, Dance, Death, HitRecieve, Idle, Jump, No, Walk, Yes
+
+Credit is not required by CC0, but is given here with thanks.

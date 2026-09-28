@@ -1,0 +1,17 @@
+bunny.glb — "Bunny" by Quaternius
+==================================
+
+Source page : https://poly.pizza/m/irZjWFARyl  (Poly Pizza, "Bunny")
+Download    : https://static.poly.pizza/084b5ebe-c3eb-4e64-9b17-06e2d1e3da5d.glb
+Author      : Quaternius (https://quaternius.com/)
+Licence     : Creative Commons Zero v1.0 Universal (CC0 1.0) — Public Domain Dedication
+              https://creativecommons.org/publicdomain/zero/1.0/
+              Poly Pizza lists the model as "Public Domain (CC0)" / "CC0 1.0".
+              Quaternius FAQ (https://quaternius.com/faq.html): "All models are under the CC0 License."
+Retrieved   : 2026-09-28
+File        : unmodified GLB, 538,360 bytes,
+              sha256 4a71eb8a80a573560fd93b39cd3c547c978d54ddd288b63000667df757dd50a2
+Animation clips (short names after last '|'):
+              Death, Duck, HitReact, Idle, Jump, Jump_Idle, Jump_Land, No, Punch, Run, Walk, Wave, Weapon, Yes
+
+Credit is not required by CC0, but is given here with thanks.

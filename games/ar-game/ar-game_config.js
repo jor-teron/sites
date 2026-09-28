@@ -1,75 +1,125 @@
 /*
- * AR Theme Game — configuration (classic script, loaded first).
- * Camera, renderer, theme tunables and on-screen text.
- * ar-game_logic.js, js/camera.js, js/ar.js and js/themes/*.js read AR_GAME_CONFIG.
- * Colors are hex numbers (0xRRGGBB) as used by Three.js.
+ * AR Theme Game — configuration (ES module).
+ * Camera, renderer, theme tunables, pet roster and on-screen text.
  */
-const AR_GAME_CONFIG = {
-  defaultTheme: "pet",         // theme loaded on start
-  startScore: 0,               // initial score
-  catchMsgMs: 700,             // how long the catch message stays on screen
 
-  // Camera (getUserMedia) request
+/** @typedef {{ id: string, label: string, glb: string|null, preferredHeight: number }} PetDef */
+
+export const AR_GAME_CONFIG = {
+  defaultTheme: "pet",
+  startScore: 0,
+  catchMsgMs: 700,
+
+  // localStorage key for last-chosen pet
+  petStorageKey: "ar-game.petId",
+  defaultPetId: "ours",
+
   camera: {
-    facingMode: "environment", // rear camera when available
-    width: 1280,               // ideal capture width
-    height: 720,               // ideal capture height
+    facingMode: "environment",
+    width: 1280,
+    height: 720,
   },
 
-  // Three.js overlay
   render: {
-    maxPixelRatio: 2,          // renderer pixel ratio cap
-    fov: 60,                   // camera field of view
-    near: 0.1,                 // near plane
-    far: 100,                  // far plane
-    cameraZ: 6,                // camera distance from the play plane
-    lightSky: 0xffffff,        // hemisphere light sky color
-    lightGround: 0x444444,     // hemisphere light ground color
-    lightIntensity: 1.1,       // hemisphere light intensity
+    maxPixelRatio: 2,
+    fov: 60,
+    near: 0.1,
+    far: 100,
+    cameraZ: 6,
+    lightSky: 0xffffff,
+    lightGround: 0x444444,
+    lightIntensity: 1.1,
   },
 
-  // Theme tunables
+  // Overlay-mode wander bounds (world units at z≈0, camera at cameraZ)
+  overlay: {
+    boundX: 2.0,
+    boundY: 1.4,
+    petSpeed: 1.2,
+  },
+
+  // WebXR AR
+  xr: {
+    petHeightM: 0.25,       // ~25 cm tall in real world
+    wanderRadiusM: 1.0,     // stay within 1 m of placement
+    wanderSpeedM: 0.35,     // m/s
+    reticleOuter: 0.08,
+    reticleInner: 0.04,
+  },
+
+  /**
+   * Pet roster. glb is a path relative to ar-game.html, or null for
+   * procedural-only. "ours" prefers assets/models/pet/ours/pet.glb when
+   * present, else the procedural cartoon pet.
+   * @type {Record<string, PetDef>}
+   */
+  pets: {
+    dog: {
+      id: "dog",
+      label: "Dog",
+      glb: "assets/models/pet/dog/dog.glb",
+      preferredHeight: 1.1,
+    },
+    cat: {
+      id: "cat",
+      label: "Cat",
+      glb: "assets/models/pet/cat/cat.glb",
+      preferredHeight: 1.0,
+    },
+    chicken: {
+      id: "chicken",
+      label: "Chicken",
+      glb: "assets/models/pet/chicken/chicken.glb",
+      preferredHeight: 0.9,
+    },
+    bunny: {
+      id: "bunny",
+      label: "Bunny",
+      glb: "assets/models/pet/bunny/bunny.glb",
+      preferredHeight: 1.0,
+    },
+    ours: {
+      id: "ours",
+      label: "Ours",
+      glb: "assets/models/pet/ours/pet.glb", // optional; falls back to procedural
+      preferredHeight: 1.1,
+    },
+  },
+
   themes: {
     pet: {
-      label: "Pet",            // HUD label
-      bodyColor: 0xe67e22,     // body sphere
-      earColor: 0xd35400,      // ears
-      bodyRadius: 0.55,        // body size
-      vx: 1.4,                 // horizontal speed
-      vy: 1.1,                 // vertical speed
-      boundX: 2.4,             // bounce limit x
-      boundY: 1.6,             // bounce limit y
-      spin: 2,                 // spin speed (rad/s)
-      catchText: "Caught the pet!", // message on catch
+      label: "Pet",               // catch text is built per pet in js/themes/pet.js
     },
     zombie: {
       label: "Zombie",
-      color: 0x27ae60,         // box color
-      size: [0.7, 1.1, 0.5],   // box size
-      sway: 1.8,               // side-to-side range
-      swaySpeed: 0.8,          // side-to-side speed
-      y: -0.4,                 // height
-      spin: 0.6,               // spin speed
+      color: 0x27ae60,
+      size: [0.7, 1.1, 0.5],
+      sway: 1.8,
+      swaySpeed: 0.8,
+      y: -0.4,
+      spin: 0.6,
       catchText: "Zombie down!",
     },
     ghost: {
       label: "Ghost",
-      color: 0xecf0f1,         // sphere color
-      radius: 0.5,             // sphere size
-      opacity: 0.55,           // initial opacity
-      rangeX: 2.0,             // drift range x
-      rangeY: 1.0,             // drift range y
-      speedX: 0.7,             // drift speed x
-      speedY: 0.5,             // drift speed y
-      fadeMin: 0.25,           // min opacity while pulsing
-      fadeRange: 0.5,          // opacity pulse amount
-      fadeSpeed: 2,            // pulse speed
+      color: 0xecf0f1,
+      radius: 0.5,
+      opacity: 0.55,
+      rangeX: 2.0,
+      rangeY: 1.0,
+      speedX: 0.7,
+      speedY: 0.5,
+      fadeMin: 0.25,
+      fadeRange: 0.5,
+      fadeSpeed: 2,
       catchText: "Ghost found!",
     },
   },
 
-  // On-screen text
   text: {
-    cameraBlocked: "Camera blocked. Allow camera and reload.", // shown if camera fails
+    cameraBlocked: "Camera blocked. Allow camera and reload.",
+    arUnsupported: "AR not supported on this device/browser.",
+    arPlace: "Tap a surface to place the pet",
+    arCatch: "Tap the pet to catch it",
   },
 };

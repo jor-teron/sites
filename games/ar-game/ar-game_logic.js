@@ -1,188 +1,275 @@
 /*
- * AR Theme Game — Main app (ar-game_logic.js)
- * Starts camera, loads default theme, handles taps and DLC switch.
- * Tunables come from AR_GAME_CONFIG (ar-game_config.js).
+ * AR Theme Game — main entry (ES module).
+ * Overlay mode: camera <video> + transparent Three.js canvas (all browsers).
+ * WebXR mode: immersive-ar with hit-test + dom-overlay (Android Chrome/ARCore).
  */
+import { AR_GAME_CONFIG } from "./ar-game_config.js";
+import { startCamera, stopCamera } from "./js/camera.js";
+import { view, initRenderer, setTarget, hitTestScreen } from "./js/ar.js";
+import { isArSupported, startAr, endAr, isPresenting, isPlaced, wrapForAr, respawnNearby, updateXr } from "./js/xr.js";
+import { prefetchPets, loadSavedPetId, savePetId } from "./js/pets.js";
+import { PetTheme } from "./js/themes/pet.js";
+import { ZombieTheme } from "./js/themes/zombie.js";
+import { GhostTheme } from "./js/themes/ghost.js";
 
-/**
- * Registry of all theme packs.
- * Pet is the default. Zombie and Ghost are DLC stubs.
- */
-const THEMES = {
-  pet: PetTheme,
-  zombie: ZombieTheme,
-  ghost: GhostTheme
+const THEMES = { pet: PetTheme, zombie: ZombieTheme, ghost: GhostTheme };
+
+/** All mutable game state in one object (no top-level globals leak: module scope). */
+const game = {
+  themeId: AR_GAME_CONFIG.defaultTheme,
+  theme: null,
+  themeRoot: null,      // theme object (inside AR holder when in XR)
+  score: AR_GAME_CONFIG.startScore,
+  cameraFailed: false,
+  catchT: 0,            // >0 while the catch/happy animation plays
+  els: {},
+  msgTimer: 0,
+  lastingMsg: "",
 };
 
-/**
- * Currently loaded theme object
- */
-let activeTheme = null;
+/* ---------------- messages (single timer, lasting message restore) ---------------- */
 
-/**
- * Catch / blast / find score
- */
-let score = AR_GAME_CONFIG.startScore;
+function showMsg(text, ms) {
+  clearMsgTimer();
+  const el = game.els.msg;
+  el.textContent = text;
+  el.style.display = "block";
+  if (ms) {
+    game.msgTimer = setTimeout(onMsgTimeout, ms);
+  } else {
+    game.lastingMsg = text;
+  }
+}
 
-/**
- * HUD score node
- */
-let scoreEl = null;
+function onMsgTimeout() {
+  game.msgTimer = 0;
+  const el = game.els.msg;
+  if (game.lastingMsg) {
+    el.textContent = game.lastingMsg;
+    el.style.display = "block";
+  } else {
+    el.style.display = "none";
+  }
+}
 
-/**
- * HUD theme name node
- */
-let themeEl = null;
+function clearMsgTimer() {
+  if (game.msgTimer) {
+    clearTimeout(game.msgTimer);
+    game.msgTimer = 0;
+  }
+}
 
-/**
- * Center message node
- */
-let msgEl = null;
+function hideMsg() {
+  clearMsgTimer();
+  game.lastingMsg = "";
+  game.els.msg.style.display = "none";
+}
 
-/**
- * Pending auto-hide timer for a temporary message (0 = none)
- */
-let msgTimer = 0;
+/* ---------------- theme / pet management ---------------- */
 
-/**
- * Lasting message (e.g. "Camera blocked…") restored after a temporary
- * message hides. Empty string = nothing to restore.
- */
-let lastingMsg = "";
+function disposeTarget(old) {
+  // `old` is either the theme root (overlay) or an AR holder wrapping it
+  const themeRoot = old.userData.themeRoot || old;
+  const owner = themeRoot.userData.themeOwner || game.theme;
+  if (owner && typeof owner.dispose === "function") owner.dispose(themeRoot);
+}
 
-/**
- * Boot the game after the DOM is ready.
- */
-async function boot() {
-  // Cache HUD nodes
-  const video = document.getElementById("camera");
-  const canvas = document.getElementById("view");
-  scoreEl = document.getElementById("score");
-  themeEl = document.getElementById("theme-name");
-  msgEl = document.getElementById("msg");
+function spawnTarget() {
+  const theme = game.theme;
+  const root = theme.create();
+  root.userData.themeOwner = theme;
+  game.themeRoot = root;
+  if (isPresenting()) {
+    setTarget(wrapForAr(root, theme.height()), disposeTarget);
+  } else {
+    setTarget(root, disposeTarget);
+  }
+}
 
-  initAR(canvas);
+function loadTheme(id) {
+  const next = THEMES[id];
+  if (!next) return;
+  game.themeId = id;
+  game.theme = next;
+  game.catchT = 0;
+  spawnTarget();
+  game.els.themeName.textContent = next.label;
+  document.querySelectorAll("[data-theme]").forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("data-theme") === id);
+  });
+  game.els.petPicker.hidden = id !== "pet";
+}
 
+function selectPet(petId) {
+  PetTheme.setPetId(petId);
+  savePetId(petId);
+  document.querySelectorAll("[data-pet]").forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("data-pet") === petId);
+  });
+  if (game.themeId === "pet") spawnTarget();
+}
+
+/* ---------------- catching ---------------- */
+
+function onCatch() {
+  if (game.catchT > 0 || !game.themeRoot) return;
+  game.score += 1;
+  game.els.score.textContent = String(game.score);
+  showMsg(game.theme.onCatch(game.themeRoot), AR_GAME_CONFIG.catchMsgMs);
+  game.catchT = AR_GAME_CONFIG.catchMsgMs / 1000; // let the happy anim play, then respawn
+}
+
+function finishCatch() {
+  if (isPresenting()) {
+    // Fresh instance (resets anim state), then move it to a nearby spot
+    spawnTarget();
+    respawnNearby();
+  } else {
+    spawnTarget();
+  }
+}
+
+function onPointerDown(ev) {
+  if (isPresenting()) return; // XR uses 'select'
+  if (hitTestScreen(ev.clientX, ev.clientY)) onCatch();
+}
+
+/* ---------------- WebXR ---------------- */
+
+async function toggleAr() {
+  if (isPresenting()) {
+    endAr();
+    return;
+  }
   try {
-    await startCamera(video);
+    await startAr(game.els.uiRoot, {
+      onStart: onArStart,
+      onEnd: onArEnd,
+      onPlace: () => showMsg(AR_GAME_CONFIG.text.arCatch, 1500),
+      onSelectHit: onCatch,
+    });
+  } catch (err) {
+    console.error("[ar-game] AR session failed:", err);
+    showMsg(AR_GAME_CONFIG.text.arUnsupported, 2000);
+  }
+}
+
+function onArStart() {
+  // XR provides camera passthrough — stop and hide our own camera
+  stopCamera();
+  game.els.video.classList.add("xr-hidden");
+  game.els.arBtn.textContent = "Exit AR";
+  game.els.arBtn.classList.add("active");
+  game.lastingMsg = ""; // "camera blocked" doesn't apply inside XR
+  showMsg(AR_GAME_CONFIG.text.arPlace);
+  spawnTarget(); // rebuild at AR scale inside a holder (hidden until placed)
+}
+
+async function onArEnd() {
+  game.els.arBtn.textContent = "Enter AR";
+  game.els.arBtn.classList.remove("active");
+  game.els.video.classList.remove("xr-hidden");
+  hideMsg();
+  spawnTarget(); // back to overlay-scale target
+  await tryStartCamera();
+}
+
+/* ---------------- boot / loop ---------------- */
+
+async function tryStartCamera() {
+  try {
+    await startCamera(game.els.video);
+    game.cameraFailed = false;
     hideMsg();
   } catch (err) {
+    game.cameraFailed = true;
     showMsg(AR_GAME_CONFIG.text.cameraBlocked);
     console.error(err);
   }
+}
 
-  // Default theme is Pet
+function frame(_time, xrFrame) {
+  const dt = Math.min(0.1, view.clock.getDelta());
+  const root = game.themeRoot;
+
+  if (game.catchT > 0) {
+    game.catchT -= dt;
+    if (game.catchT <= 0) {
+      game.catchT = 0;
+      finishCatch();
+    }
+  }
+
+  if (isPresenting()) {
+    updateXr(xrFrame, dt, game.theme, game.catchT > 0);
+  } else if (root && game.theme) {
+    game.theme.update(root, dt);
+  }
+  view.renderer.render(view.scene, view.camera);
+}
+
+async function boot() {
+  const $ = (id) => document.getElementById(id);
+  game.els = {
+    uiRoot: $("ui-root"),
+    video: $("camera"),
+    canvas: $("view"),
+    score: $("score"),
+    themeName: $("theme-name"),
+    msg: $("msg"),
+    petPicker: $("pet-picker"),
+    arBtn: $("ar-btn"),
+  };
+
+  initRenderer(game.els.canvas);
+  prefetchPets();
+
+  // Restore saved pet before first spawn
+  const savedPet = loadSavedPetId();
+  PetTheme.setPetId(savedPet);
+  document.querySelectorAll("[data-pet]").forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("data-pet") === savedPet);
+    btn.addEventListener("click", () => selectPet(btn.getAttribute("data-pet")));
+  });
+
+  document.querySelectorAll("[data-theme]").forEach((btn) => {
+    btn.addEventListener("click", () => loadTheme(btn.getAttribute("data-theme")));
+  });
+
+  // UI taps inside the XR dom-overlay must not also fire an XR 'select'
+  [game.els.petPicker, $("themes"), game.els.arBtn].forEach((el) => {
+    el.addEventListener("beforexrselect", (ev) => ev.preventDefault());
+  });
+
+  game.els.canvas.addEventListener("pointerdown", onPointerDown);
+  game.els.arBtn.addEventListener("click", toggleAr);
+
   loadTheme(AR_GAME_CONFIG.defaultTheme);
+  view.renderer.setAnimationLoop(frame);
 
-  // Tap / click to catch the target
-  canvas.addEventListener("pointerdown", onTap);
+  await tryStartCamera();
 
-  // Theme / DLC buttons
-  document.querySelectorAll("[data-theme]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      loadTheme(btn.getAttribute("data-theme"));
-    });
-  });
-
-  loop();
-}
-
-/**
- * Swap the active DLC pack and rebuild the target.
- * @param {string} id - pet | zombie | ghost
- */
-function loadTheme(id) {
-  const next = THEMES[id];
-  if (!next) {
-    return;
-  }
-
-  activeTheme = next;
-  setTarget(next.create());
-  themeEl.textContent = next.label;
-
-  // Highlight the active DLC button
-  document.querySelectorAll("[data-theme]").forEach(function (btn) {
-    btn.classList.toggle("active", btn.getAttribute("data-theme") === id);
-  });
-}
-
-/**
- * Handle a tap on the overlay. Score if the ray hits the target.
- * @param {PointerEvent} ev
- */
-function onTap(ev) {
-  if (!activeTheme) {
-    return;
-  }
-  if (hitTest(ev.clientX, ev.clientY)) {
-    score += 1;
-    scoreEl.textContent = String(score);
-    showMsg(activeTheme.onCatch(), AR_GAME_CONFIG.catchMsgMs);
-    // Respawn so the player can chase again
-    setTarget(activeTheme.create());
+  if (await isArSupported()) {
+    game.els.arBtn.hidden = false;
   }
 }
 
-/**
- * Show a status line.
- * With ms > 0 the message is temporary: it hides after ms, and any lasting
- * message (e.g. "Camera blocked…") comes back. Without ms (or 0) the message
- * is lasting: it stays until replaced and is remembered for restore.
- * Only one auto-hide timer is active at a time.
- * @param {string} text
- * @param {number} [ms] auto-hide delay
- */
-function showMsg(text, ms) {
-  clearMsgTimer();
-  msgEl.textContent = text;
-  msgEl.style.display = "block";
-  if (ms) {
-    msgTimer = setTimeout(onMsgTimeout, ms);
-  } else {
-    lastingMsg = text;
-  }
-}
+// Module scripts are deferred, so the DOM is ready here.
+boot();
+window.addEventListener("pagehide", () => {
+  if (!isPresenting()) stopCamera();
+});
 
-/**
- * Temporary message expired: restore the lasting message, or hide.
- */
-function onMsgTimeout() {
-  msgTimer = 0;
-  if (lastingMsg) {
-    msgEl.textContent = lastingMsg;
-    msgEl.style.display = "block";
-  } else {
-    msgEl.style.display = "none";
-  }
-}
-
-/**
- * Cancel a pending auto-hide timer, if any.
- */
-function clearMsgTimer() {
-  if (msgTimer) {
-    clearTimeout(msgTimer);
-    msgTimer = 0;
-  }
-}
-
-/**
- * Hide the center status line and forget any lasting message.
- */
-function hideMsg() {
-  clearMsgTimer();
-  lastingMsg = "";
-  msgEl.style.display = "none";
-}
-
-/**
- * Render loop.
- */
-function loop() {
-  requestAnimationFrame(loop);
-  renderFrame(activeTheme);
-}
-
-window.addEventListener("load", boot);
-window.addEventListener("pagehide", stopCamera);
+// Debug hook for automated checks (read-only snapshot)
+window.__arGame = {
+  state: () => ({
+    theme: game.themeId,
+    pet: PetTheme.getPetId(),
+    score: game.score,
+    xr: isPresenting(),
+    placed: isPlaced(),
+    hasModel: !!(game.themeRoot && game.themeRoot.userData.model),
+    hasMixer: !!(game.themeRoot && game.themeRoot.userData.mixer),
+    anim: game.themeRoot ? game.themeRoot.userData.animState : null,
+  }),
+};

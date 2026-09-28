@@ -1,0 +1,17 @@
+dog.glb — "Dog" by Quaternius
+==============================
+
+Source page : https://poly.pizza/m/2kUk0QqpCg  (Poly Pizza, "Dog")
+Download    : https://static.poly.pizza/de55d76a-f578-4979-97ff-2a62edac32f3.glb
+Author      : Quaternius (https://quaternius.com/)
+Licence     : Creative Commons Zero v1.0 Universal (CC0 1.0) — Public Domain Dedication
+              https://creativecommons.org/publicdomain/zero/1.0/
+              Poly Pizza lists the model as "Public Domain (CC0)" / "CC0 1.0".
+              Quaternius FAQ (https://quaternius.com/faq.html): "All models are under the CC0 License."
+Retrieved   : 2026-09-28
+File        : unmodified GLB, 296,880 bytes,
+              sha256 4beaff05eca771dab58479316e410a721e5c04660169e5b6e231839855bbec2d
+Animation clips (short names after last '|'):
+              Death, Headbutt, Idle, Idle_Eating, Jump_Loop, Jump_Start, Run, Walk
+
+Credit is not required by CC0, but is given here with thanks.
