@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<!--
+  Caption for NEI (Caption for North East India) — caption-for-nei.html (normal page)
+  Version: 0.17 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
+  Credit: personal project (Karbi Anglong / Assam)
+  Normal page (phones / narrow screens; was caption-for-nei_lite.html until v0.16).
+  The page with every setting is caption-for-nei_full.html. Both use the same
+  caption-for-nei.css / _config.js / _roman*.js / _logic.js.
+  Visible: LED, Output (translation) dropdown (starts at Off), Start/Stop, mic level
+  bar, Key (API key row), Clear (captions), Log (hour logs → download).
+  Everything else the logic expects is still in the DOM but hidden:
+  Input is fixed to Auto (romanisation picks rules by script: Devanagari → hi,
+  Bengali script → as, see CFN_CONFIG.ROMAN_AUTO_*), ABC = saved mode / CFN_CONFIG.ABC_MODE.
+  API key: saved in this browser → shared ../../script/api_keys.js (optional file,
+  window.SITES_KEYS.GEMINI) → Key row opens when Start finds none.
+  body.normal = scoped rules in caption-for-nei.css (one compact bar, full-width lines).
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Caption for NEI v0.17</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="caption-for-nei.css" />
+</head>
+<body class="normal">
+  <div class="topbar">
+    <span id="liveWrap">
+      <span id="led"></span>
+      <span id="liveNote"></span>
+    </span>
+    <select id="translateSelect" title="Translate to (Output)" aria-label="Translate to"></select>
+    <button type="button" id="toggleBtn" class="primary">Start</button>
+    <span id="micMeter" title="Mic level"><i id="micFill"></i></span>
+    <button type="button" id="keyToggleBtn" class="icon-btn" title="API key" aria-label="API key">&#x1F511;</button>
+    <button type="button" id="clearTextBtn" class="icon-btn" title="Clear captions" aria-label="Clear captions">&#x1F5D1;</button>
+    <button type="button" id="logBtn" class="icon-btn" title="Hour logs (download)" aria-label="Log (download)">&#x2B07;</button>
+    <a class="full-link" href="caption-for-nei_full.html" title="All settings">Full</a>
+    <span id="sessionNote" hidden></span>
+
+    <!-- Hidden: controls the shared logic needs, not shown on the normal page -->
+    <div hidden>
+      <select id="listenSelect"></select>
+      <select id="abcSelect">
+        <option value="off">Off</option>
+        <option value="local" selected>Local</option>
+        <option value="ai">AI</option>
+      </select>
+      <select id="modelSelect"></select>
+      <button type="button" id="copyBtn">Copy</button>
+      <span id="rpdNote"></span>
+    </div>
+
+    <div id="keyPanel">
+      <input id="apiKey" type="password" autocomplete="off" placeholder="API key (this browser only)" />
+      <button type="button" id="saveKeyBtn">Save</button>
+      <button type="button" id="clearKeyBtn">Clear</button>
+    </div>
+    <div id="logPanel">
+      <div id="logUsed"></div>
+      <div id="logList"></div>
+      <textarea id="logView" readonly placeholder="View an hour log here"></textarea>
+      <div class="log-row">
+        <button type="button" id="logDownloadAllBtn">Download all + clear</button>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <div id="captionBox" class="captions">
+      <div id="interimText" class="interim"></div>
+      <div id="lineList"></div>
+    </div>
+    <div id="status" class="status" hidden>Idle</div>
+  </main>
+
+  <script>
+    /* Captions start under the top bar, also when it wraps or the Key / Log row opens */
+    (function () {
+      var bar = document.querySelector(".topbar");
+      function fit() { document.body.style.setProperty("--bar-h", bar.offsetHeight + "px"); }
+      fit();
+      if (window.ResizeObserver) new ResizeObserver(fit).observe(bar);
+      else window.addEventListener("resize", fit);
+    })();
+  </script>
+  <script src="caption-for-nei_config.js"></script>
+  <script>
+    /* Normal page: Input fixed to Auto, Output starts at Off (read by the logic at load) */
+    window.CFN_CONFIG.DEFAULT_INPUT = "auto";
+    window.CFN_CONFIG.DEFAULT_OUTPUT = "off";
+  </script>
+  <!-- Optional shared key file (may be missing; the app still works) -->
+  <script src="../../script/api_keys.js"></script>
+  <script src="caption-for-nei_roman_deva.js"></script>
+  <script src="caption-for-nei_roman_beng.js"></script>
+  <script src="caption-for-nei_roman.js"></script>
+  <script src="caption-for-nei_logic.js"></script>
+</body>
+</html>

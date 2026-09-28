@@ -1,6 +1,6 @@
 /**
  * Caption for NEI (Caption for North East India) — caption-for-nei_logic.js
- * Version: 0.16
+ * Version: 0.17
  * First release: 27 Sep 2026
  * Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
@@ -208,6 +208,13 @@ const logList = document.getElementById("logList");
 const logView = document.getElementById("logView");
 const logUsed = document.getElementById("logUsed");
 const logDownloadAllBtn = document.getElementById("logDownloadAllBtn");
+const gainSlider = document.getElementById("gainSlider");
+const gainValueEl = document.getElementById("gainValue");
+
+/* Mic gain (v0.17): GainNodes in the meter and session graphs (mic → gain → …) */
+let micGain = loadMicGain();
+let meterGainNode = null;
+let sessionGainNode = null;
 
 /**
  * Status + LED text.
@@ -261,6 +268,69 @@ function loadAbcMode() {
   } catch (err) {}
   if (ABC_MODES.indexOf(saved) !== -1) return saved;
   return ABC_MODES.indexOf(CONFIG.ABC_MODE) !== -1 ? CONFIG.ABC_MODE : "local";
+}
+
+/** Clamp a gain value to CONFIG.MIC_GAIN_MIN … MIC_GAIN_MAX. */
+function clampGain(v) {
+  const lo = Number(CONFIG.MIC_GAIN_MIN) || 0.5;
+  const hi = Number(CONFIG.MIC_GAIN_MAX) || 4;
+  const n = Number(v);
+  return Math.min(hi, Math.max(lo, isFinite(n) && n > 0 ? n : 1));
+}
+
+/** Saved slider gain (Full page), else CONFIG.MIC_GAIN. */
+function loadMicGain() {
+  let saved = null;
+  try {
+    saved = STORAGE.MIC_GAIN ? localStorage.getItem(STORAGE.MIC_GAIN) : null;
+  } catch (err) {}
+  return clampGain(saved !== null && saved !== "" ? saved : (CONFIG.MIC_GAIN !== undefined ? CONFIG.MIC_GAIN : 1));
+}
+
+/** Set the mic gain live on both graphs (and optionally remember it). */
+function setMicGain(v, save) {
+  micGain = clampGain(v);
+  [meterGainNode, sessionGainNode].forEach(function (g) {
+    if (g) g.gain.value = micGain;
+  });
+  if (gainValueEl) gainValueEl.textContent = micGain.toFixed(1) + "\u00d7";
+  if (save && STORAGE.MIC_GAIN) {
+    try {
+      localStorage.setItem(STORAGE.MIC_GAIN, String(micGain));
+    } catch (err) {}
+  }
+}
+
+/** getUserMedia audio constraints: AUDIO.MIC_CONSTRAINTS + the MIC_* switches. */
+function micConstraints() {
+  return Object.assign({}, AUDIO.MIC_CONSTRAINTS || {}, {
+    echoCancellation: CONFIG.MIC_ECHO_CANCEL !== undefined ? !!CONFIG.MIC_ECHO_CANCEL : true,
+    noiseSuppression: !!CONFIG.MIC_NOISE_SUPPRESSION,
+    autoGainControl: CONFIG.MIC_AUTO_GAIN !== undefined ? !!CONFIG.MIC_AUTO_GAIN : true,
+  });
+}
+
+/**
+ * API key in use: the #apiKey field (key saved in this browser, or typed) →
+ * window.SITES_KEYS.GEMINI from ../../script/api_keys.js (optional) → "".
+ */
+function sharedApiKey() {
+  const k = window.SITES_KEYS && window.SITES_KEYS.GEMINI;
+  if (typeof k !== "string") return "";
+  const t = k.trim();
+  return t && t !== (CONFIG.SHARED_KEY_PLACEHOLDER || "PASTE_YOUR_KEY_HERE") ? t : "";
+}
+function getApiKey() {
+  return (apiKeyInput && apiKeyInput.value.trim()) || sharedApiKey();
+}
+
+/** #apiKey placeholder tells when the shared key is in use. */
+function renderKeyPlaceholder() {
+  if (!apiKeyInput) return;
+  if (!apiKeyInput.dataset.placeholder) apiKeyInput.dataset.placeholder = apiKeyInput.placeholder || "";
+  apiKeyInput.placeholder = sharedApiKey() && TEXT.sharedKeyPlaceholder
+    ? TEXT.sharedKeyPlaceholder
+    : apiKeyInput.dataset.placeholder;
 }
 
 /**
@@ -604,14 +674,18 @@ function startMeter() {
     try {
       if (!meterStream) {
         meterStream = await navigator.mediaDevices.getUserMedia({
-          audio: AUDIO.MIC_CONSTRAINTS,
+          audio: micConstraints(),
         });
       }
       meterCtx = new AudioContext();
       const src = meterCtx.createMediaStreamSource(meterStream);
+      /* mic → gain (MIC_GAIN) → analyser: the bar shows the boosted level */
+      meterGainNode = meterCtx.createGain();
+      meterGainNode.gain.value = micGain;
       meterAnalyser = meterCtx.createAnalyser();
       meterAnalyser.fftSize = AUDIO.METER_FFT_SIZE;
-      src.connect(meterAnalyser);
+      src.connect(meterGainNode);
+      meterGainNode.connect(meterAnalyser);
       const buf = new Uint8Array(meterAnalyser.fftSize);
       function tick() {
         if (!meterAnalyser) return;
@@ -1558,7 +1632,7 @@ async function translateWindow(blk, wantTrans, wantAi) {
       return l.source;
     })
     .join("\n");
-  const googleKey = apiKeyInput.value.trim() || (CONFIG.KEYS && CONFIG.KEYS.google) || "";
+  const googleKey = getApiKey() || (CONFIG.KEYS && CONFIG.KEYS.google) || "";
   function note(msg) {
     if (wantTrans && blk.pending) setBlockTranslation(blk, msg, true);
   }
@@ -1725,7 +1799,7 @@ function sendSetup() {
  */
 async function startSession() {
   if (wantRunning) return;
-  const apiKey = apiKeyInput.value.trim();
+  const apiKey = getApiKey();
   if (!apiKey) {
     keyPanel.classList.add("open");
     setStatus(TEXT.addKeyFirst, "bad");
@@ -1757,13 +1831,15 @@ async function startSession() {
 }
 
 /**
- * Audio graph mic → ScriptProcessor → 16 kHz PCM (kept across reconnects;
- * built once per Start). Resumes the context if the browser suspended it.
+ * Audio graph mic → gain (MIC_GAIN) → ScriptProcessor → 16 kHz PCM (kept across
+ * reconnects; built once per Start). Resumes the context if the browser suspended it.
  */
 function ensureAudioGraph() {
   if (!audioContext) {
     audioContext = new AudioContext();
     sourceNode = audioContext.createMediaStreamSource(mediaStream);
+    sessionGainNode = audioContext.createGain();
+    sessionGainNode.gain.value = micGain;
     processorNode = audioContext.createScriptProcessor(AUDIO.PROCESSOR_BUFFER, 1, 1);
     silentGain = audioContext.createGain();
     silentGain.gain.value = 0;
@@ -1773,7 +1849,8 @@ function ensureAudioGraph() {
       setMicLevel(resampled);
       enqueuePcm(floatToPcm16(resampled));
     };
-    sourceNode.connect(processorNode);
+    sourceNode.connect(sessionGainNode);
+    sessionGainNode.connect(processorNode);
     processorNode.connect(silentGain);
     silentGain.connect(audioContext.destination);
   }
@@ -1789,7 +1866,7 @@ function openSocket() {
   clearTimeout(reconnectTimer);
   reconnectTimer = 0;
   if (!wantRunning) return;
-  const apiKey = apiKeyInput.value.trim();
+  const apiKey = getApiKey();
   if (!apiKey) {
     wantRunning = false;
     setToggleUi(false);
@@ -2005,6 +2082,10 @@ async function stopSession() {
     silentGain.disconnect();
     silentGain = null;
   }
+  if (sessionGainNode) {
+    sessionGainNode.disconnect();
+    sessionGainNode = null;
+  }
   if (audioContext) {
     const ctx = audioContext;
     audioContext = null;
@@ -2086,6 +2167,16 @@ function loadRomanWords() {
   });
 }
 
+if (gainSlider) {
+  gainSlider.min = String(Number(CONFIG.MIC_GAIN_MIN) || 0.5);
+  gainSlider.max = String(Number(CONFIG.MIC_GAIN_MAX) || 4);
+  gainSlider.value = String(micGain);
+  if (TEXT.gainTitle) gainSlider.title = TEXT.gainTitle;
+  gainSlider.addEventListener("input", function () {
+    setMicGain(gainSlider.value, true);
+  });
+}
+setMicGain(micGain, false);
 saveKeyBtn.addEventListener("click", saveKey);
 clearKeyBtn.addEventListener("click", clearKey);
 keyToggleBtn.addEventListener("click", toggleKeyPanel);
@@ -2103,6 +2194,7 @@ migrateLegacyStorage();
 fillLanguageSelects();
 if (abcSelect) abcSelect.value = abcMode;
 loadSavedKey();
+renderKeyPlaceholder();
 loadRomanWords();
 loadVocabCsv();
 fillModelSelect();

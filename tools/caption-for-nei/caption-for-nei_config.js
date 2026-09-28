@@ -1,6 +1,6 @@
 /**
  * Caption for NEI (Caption for North East India) — caption-for-nei_config.js
- * Version: 0.16
+ * Version: 0.17
  * First release: 27 Sep 2026
  * Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
@@ -8,9 +8,31 @@
  * Loaded first (before the caption-for-nei_roman*.js files and caption-for-nei_logic.js).
  * window.CFN_CONFIG is merged into CONFIG and also read by the romanizer.
  * Edit tunables, languages, storage keys and UI text here; leave the logic file for logic.
- * Never put a real API key in this file (the site is public). Use the Key panel.
+ * Never put a real API key in this file (the site is public). Use the Key panel,
+ * or the shared (restricted) key file ../../script/api_keys.js (v0.17).
  */
 window.CFN_CONFIG = {
+  /*
+   * Mic (v0.17). MIC_GAIN = software boost (GainNode) before the audio goes to
+   * Google and to the level bar, clamped to MIC_GAIN_MIN … MIC_GAIN_MAX. The Full
+   * page has a Gain slider; its value is saved (STORAGE.MIC_GAIN) and used by both pages.
+   * getUserMedia switches: noise suppression off keeps quiet / far voices,
+   * auto gain on lets the browser level the mic, echo cancel as before (on).
+   */
+  MIC_GAIN: 2.0,
+  MIC_GAIN_MIN: 0.5,
+  MIC_GAIN_MAX: 4,
+  MIC_NOISE_SUPPRESSION: false,
+  MIC_AUTO_GAIN: true,
+  MIC_ECHO_CANCEL: true,
+
+  /*
+   * Shared key (v0.17): window.SITES_KEYS.GEMINI from ../../script/api_keys.js
+   * (optional file). Order: key saved in this browser → shared key (when non-empty
+   * and not this placeholder) → ask (Key panel).
+   */
+  SHARED_KEY_PLACEHOLDER: "PASTE_YOUR_KEY_HERE",
+
   /*
    * Lines inside a block (v0.15). The window's text is split into one display
    * line per sentence at . ? ! । ॥ (and full-width ？ ！ 。). "." / "?" / "!"
@@ -178,8 +200,8 @@ window.CFN_CONFIG = {
     METER_FFT_SIZE: 512,
     /* RMS → percent multiplier for the mic bar */
     METER_GAIN: 140,
-    /* getUserMedia audio constraints */
-    MIC_CONSTRAINTS: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
+    /* getUserMedia audio constraints (echo / noise / auto gain: MIC_* switches at the top) */
+    MIC_CONSTRAINTS: { channelCount: 1 },
     /*
      * v0.16: audio is sent only after the server's setupComplete. If it has not
      * come this long after the socket opened, the connect counts as failed and
@@ -237,6 +259,8 @@ window.CFN_CONFIG = {
     HOUR_PREFIX: "cfn_hour_",
     /* ABC mode chosen on the top bar: off | local | ai */
     ABC_MODE: "cfn_abc_mode_v1",
+    /* Mic gain from the Full page slider (v0.17) */
+    MIC_GAIN: "cfn_mic_gain_v1",
   },
   /* Rough browser quota shown in the Log panel */
   STORAGE_QUOTA_KB: 5000,
@@ -333,6 +357,8 @@ window.CFN_CONFIG = {
     autoSourceName: "an Indian language (Assamese, Hindi, Bengali or Nepali)",
     listening: "Listening",
     addKeyFirst: "Add an API key first.",
+    sharedKeyPlaceholder: "Using the shared key — paste your own to override",
+    gainTitle: "Mic boost (software gain before sending)",
     connecting: "Connecting…",
     connected: "Connected",
     connectionError: "Connection error.",

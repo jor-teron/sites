@@ -1,6 +1,6 @@
 /*
  * Caption for NEI — caption-for-nei.css
- * Version: 0.16 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
+ * Version: 0.17 | First release: 27 Sep 2026 | Last edit: 28 Sep 2026
  * Credit: personal project (Karbi Anglong / Assam)
  * Styles for caption-for-nei.html (moved from the inline <style> block).
  */
@@ -207,13 +207,29 @@ a.about { margin-left: auto; }
 }
 #rpdNote { font-size: 0.72rem; color: var(--muted); max-width: 100%; }
 a.lite-link { color: var(--muted); font-size: 0.85rem; text-decoration: none; }
-/* Lite page (caption-for-nei_lite.html, body.lite): one slim top bar and
+/* Gain slider (Full page, v0.17): mic boost */
+#gainSlider { width: 90px; accent-color: var(--accent); }
+#gainValue { min-width: 2.6em; font-variant-numeric: tabular-nums; }
+
+/* Normal page (caption-for-nei.html, body.normal; v0.17, was body.lite): one compact
+   top bar (LED, Output, Start, level bar, Key / Clear / Log, Full link) and
    full-width transcript lines — no bullets / indents, thin block border.
-   Scoped to body.lite, so caption-for-nei.html is unchanged. */
-body.lite main { padding: 62px 6px 8px; }
-body.lite .captions { padding: 8px; min-height: calc(100vh - 76px); max-height: calc(100vh - 76px); }
-body.lite .block { border-left-width: 2px; padding: 6px 6px 6px 6px; }
-body.lite .blk-row.lvl0,
-body.lite .blk-row.lvl1,
-body.lite .blk-row.lvl2 { padding-left: 0; }
-body.lite .blk-row::before { content: none; }
+   Scoped to body.normal, so caption-for-nei_full.html is unchanged. */
+body.normal .topbar { gap: 6px; padding: 8px; }
+body.normal .topbar select,
+body.normal .topbar button { padding: 6px 8px; font-size: 0.85rem; }
+body.normal .topbar .icon-btn { padding: 5px 6px; font-size: 0.95rem; line-height: 1.1; }
+body.normal #translateSelect { max-width: 78px; }
+body.normal #led { width: 14px; height: 14px; }
+body.normal #micMeter { width: 40px; flex: none; }
+body.normal a.full-link { color: var(--muted); font-size: 0.8rem; text-decoration: none; margin-left: auto; }
+body.normal #keyPanel.open,
+body.normal #logPanel.open { margin-top: 2px; }
+/* --bar-h = top bar height, set by a small script in caption-for-nei.html */
+body.normal main { padding: calc(var(--bar-h, 50px) + 6px) 6px 8px; }
+body.normal .captions { padding: 8px; min-height: calc(100vh - var(--bar-h, 50px) - 20px); max-height: calc(100vh - var(--bar-h, 50px) - 20px); }
+body.normal .block { border-left-width: 2px; padding: 6px 6px 6px 6px; }
+body.normal .blk-row.lvl0,
+body.normal .blk-row.lvl1,
+body.normal .blk-row.lvl2 { padding-left: 0; }
+body.normal .blk-row::before { content: none; }

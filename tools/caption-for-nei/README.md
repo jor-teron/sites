@@ -6,7 +6,7 @@ Formerly **Live Subtitle for Assam** (`tools/live-subtitle-assam/`, v0.11). The 
 
 | | |
 |---|---|
-| Version | **0.16** (API Edition) |
+| Version | **0.17** (API Edition) |
 | First release | 27 Sep 2026 |
 | Last edit | 28 Sep 2026 |
 | Credit | Personal project (Karbi Anglong / Assam) |
@@ -20,6 +20,12 @@ Formerly **Live Subtitle for Assam** (`tools/live-subtitle-assam/`, v0.11). The 
 ## Run
 
 Open `caption-for-nei.html` (or the folder / `index.html`, which redirects) in Chrome over **https** or **localhost**. GitHub Pages works.
+
+**Pages (v0.17):** `caption-for-nei.html` is the normal page (phones: LED, Output, Start/Stop, level bar, Key, Clear, Log; Input fixed to Auto). `caption-for-nei_full.html` has every setting (Input, ABC, Model, Copy, Gain slider…). `caption-for-nei_lite.html` (old name of the normal page) redirects.
+
+**Mic (v0.17):** `MIC_GAIN` (2.0, clamped 0.5–4) boosts the mic with a GainNode before audio goes to Google and to the level bar; the Full page slider changes it live and saves it. `MIC_NOISE_SUPPRESSION` false, `MIC_AUTO_GAIN` true, `MIC_ECHO_CANCEL` true.
+
+**Shared key (v0.17):** both pages load `../../script/api_keys.js` (optional; `window.SITES_KEYS.GEMINI`, template `script/api_keys.sample.js`). Key order: saved in this browser → shared key (non-empty, not `PASTE_YOUR_KEY_HERE`) → the Key row asks. That file is public: restrict the key in Google Cloud (referrers, Generative Language API only, no billing).
 
 ```bash
 python3 -m http.server 8080
@@ -39,7 +45,9 @@ Key stays in `localStorage` (`cfn_gemini_api_key_v01`). Do not commit it.
 | File | Role |
 |---|---|
 | `index.html` | Redirect to `caption-for-nei.html` |
-| `caption-for-nei.html` | App + top bar (markup only) |
+| `caption-for-nei.html` | Normal page (compact top bar, markup only) |
+| `caption-for-nei_full.html` | Full page (all settings, markup only) |
+| `caption-for-nei_lite.html` | Redirect to `caption-for-nei.html` (old lite URL) |
 | `caption-for-nei.css` | Styles |
 | `caption-for-nei_config.js` | Window, block colours, split, models, RPM/RPD, vocab list, languages, storage keys, UI text |
 | `caption-for-nei_logic.js` | Mic, Live captions, time windows / blocks, ABC line, chat translate, logs, storage migration |
