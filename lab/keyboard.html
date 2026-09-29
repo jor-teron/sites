@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--
+    Demo: landscape-only on-screen keyboard (HTML + CSS + tiny JS).
+    Purpose: phone web keyboard UI for a same-site controller page.
+    Layout: locked to landscape via CSS orientation query.
+    Portrait: hide keys, show rotate hint.
+    JS: only logs key taps + optional vibrate. No OS inject.
+  -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Demo Keyboard</title>
+  <style>
+    /* Reset + lock page so the phone does not rubber-band */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: #111;
+      color: #eee;
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    /* Portrait: hide keyboard, ask user to rotate */
+    #rotateHint {
+      display: none;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      font-size: 1.2rem;
+    }
+    @media (orientation: portrait) {
+      #rotateHint { display: flex; }
+      #kb { display: none !important; }
+    }
+
+    /* Landscape keyboard shell */
+    #kb {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 8px;
+      gap: 8px;
+    }
+
+    /* Last-tapped key readout */
+    #out {
+      height: 28px;
+      line-height: 28px;
+      font-size: 14px;
+      color: #9cf;
+      padding: 0 6px;
+    }
+
+    /* One keyboard row */
+    .row {
+      display: flex;
+      flex: 1;
+      gap: 6px;
+    }
+
+    /* Base key look */
+    button.key {
+      flex: 1;
+      border: 0;
+      border-radius: 8px;
+      background: #2a2a2a;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    button.key:active { background: #4a7; }
+
+    /* Wider modifier / action keys */
+    button.wide { flex: 1.5; }
+    button.space { flex: 5; background: #333; }
+    button.enter { background: #245; }
+    button.back { background: #522; }
+  </style>
+</head>
+<body>
+  <!-- Shown only when the phone is upright -->
+  <div id="rotateHint">Rotate the phone to landscape</div>
+
+  <!-- Landscape keyboard -->
+  <div id="kb">
+    <div id="out">tap a key</div>
+
+    <div class="row">
+      <button class="key" data-key="1">1</button>
+      <button class="key" data-key="2">2</button>
+      <button class="key" data-key="3">3</button>
+      <button class="key" data-key="4">4</button>
+      <button class="key" data-key="5">5</button>
+      <button class="key" data-key="6">6</button>
+      <button class="key" data-key="7">7</button>
+      <button class="key" data-key="8">8</button>
+      <button class="key" data-key="9">9</button>
+      <button class="key" data-key="0">0</button>
+      <button class="key back wide" data-key="Backspace">⌫</button>
+    </div>
+
+    <div class="row">
+      <button class="key" data-key="q">Q</button>
+      <button class="key" data-key="w">W</button>
+      <button class="key" data-key="e">E</button>
+      <button class="key" data-key="r">R</button>
+      <button class="key" data-key="t">T</button>
+      <button class="key" data-key="y">Y</button>
+      <button class="key" data-key="u">U</button>
+      <button class="key" data-key="i">I</button>
+      <button class="key" data-key="o">O</button>
+      <button class="key" data-key="p">P</button>
+    </div>
+
+    <div class="row">
+      <button class="key" data-key="a">A</button>
+      <button class="key" data-key="s">S</button>
+      <button class="key" data-key="d">D</button>
+      <button class="key" data-key="f">F</button>
+      <button class="key" data-key="g">G</button>
+      <button class="key" data-key="h">H</button>
+      <button class="key" data-key="j">J</button>
+      <button class="key" data-key="k">K</button>
+      <button class="key" data-key="l">L</button>
+      <button class="key enter wide" data-key="Enter">↵</button>
+    </div>
+
+    <div class="row">
+      <button class="key wide" data-key="Shift">⇧</button>
+      <button class="key" data-key="z">Z</button>
+      <button class="key" data-key="x">X</button>
+      <button class="key" data-key="c">C</button>
+      <button class="key" data-key="v">V</button>
+      <button class="key" data-key="b">B</button>
+      <button class="key" data-key="n">N</button>
+      <button class="key" data-key="m">M</button>
+      <button class="key wide" data-key="ArrowLeft">←</button>
+      <button class="key wide" data-key="ArrowRight">→</button>
+    </div>
+
+    <div class="row">
+      <button class="key space" data-key=" ">space</button>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * handleKey
+     * Called when any .key button is pressed.
+     * Later: send {type:"key", key} over your existing gamepad channel.
+     */
+    function handleKey(key) {
+      // Last key label on screen
+      var out = document.getElementById("out");
+      out.textContent = "key: " + key;
+
+      // Short buzz on Android; ignored on many iPhones
+      if (navigator.vibrate) {
+        navigator.vibrate(20);
+      }
+
+      // Placeholder for your link to the PC page
+      // sendToPc({ type: "key", key: key });
+      console.log("key", key);
+    }
+
+    /**
+     * Bind every key once.
+     * touchend is used so the phone does not wait for a 300ms click delay.
+     */
+    document.querySelectorAll("button.key").forEach(function (btn) {
+      btn.addEventListener("touchend", function (ev) {
+        ev.preventDefault();
+        handleKey(btn.getAttribute("data-key"));
+      });
+      btn.addEventListener("click", function () {
+        handleKey(btn.getAttribute("data-key"));
+      });
+    });
+  </script>
+</body>
+</html>
