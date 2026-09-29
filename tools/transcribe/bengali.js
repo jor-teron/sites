@@ -26,7 +26,7 @@ const BN_CONS = {
   "প": "p", "ফ": "ph", "ব": "b", "ভ": "bh", "ম": "m",
   "য": "j", "র": "r", "ল": "l",
   "শ": "sh", "ষ": "sh", "স": "sh", "হ": "h",
-  "ক্ষ": "kkh", "জ্ঞ": "gy",
+  "ক্ষ": "kkh", "জ্ঞ": "gy", "চ্ছ": "chh",
   /* Assamese letters, in case they show up */
   "ৰ": "r", "ৱ": "w",
   /* Nukta letters (arrive as base + ় in NFC text) */
@@ -44,6 +44,9 @@ const BN_S_BEFORE = {
   "প": 1, "ফ": 1, "ম": 1, "ল": 1, "র": 1
 };
 
+/* Endings split off when the stem is in the word list. Longest match first. */
+const BN_SUFFIXES = ["ের", "র", "কে", "তে", "রা", "দের", "টা", "টি", "গুলো", "ও"];
+
 /* Virama / nukta */
 const BN_VIRAMA = "্";
 const BN_NUKTA = "়";
@@ -54,10 +57,21 @@ const BN_MARKS = { "ং": "anusvara", "ঁ": "chandrabindu", "ঃ": "visarga" };
 /* Stand-alone symbols */
 const BN_PUNCT = { "।": ".", "॥": ".", "ঽ": "'" };
 
-/* Whole-word spellings that the rules get wrong (final "o" kept, etc.) */
+/* Whole-word spellings (final "o" kept, etc.). Checked before the rules;
+   also the stem for STEM + suffix words. Includes caption-for-nei
+   roman_bn.csv (the user's everyday spellings). */
 const BN_WORDS = {
-  "হল": "holo", "ছিল": "chhilo", "গেল": "gelo", "দিল": "dilo", "নিল": "nilo",
-  "এল": "elo", "বলল": "bollo", "করল": "korlo", "কত": "koto", "মত": "moto",
-  "যত": "joto", "তত": "toto", "এত": "eto", "হত": "hoto", "ভাল": "bhalo",
-  "বড়": "boro", "ছোট": "chhoto", "শুভ": "shubho", "কমলা": "komola"
+  "হল": "holo", "ছিল": "chhilo", "গেল": "gelo", "দিল": "dilo",
+  "নিল": "nilo", "এল": "elo", "বলল": "bollo", "করল": "korlo",
+  "কত": "koto", "মত": "moto", "যত": "joto", "তত": "toto",
+  "এত": "eto", "হত": "hoto", "ভাল": "bhalo", "বড়": "boro",
+  "ছোট": "chhoto", "শুভ": "shubho", "কমলা": "komola", "আমি": "ami",
+  "তুমি": "tumi", "আপনি": "apni", "কেমন": "kemon", "আছো": "achho",
+  "আছি": "achhi", "আছে": "achhe", "আছেন": "achhen", "ভালো": "bhalo",
+  "কী": "ki", "কি": "ki", "না": "na", "হ্যাঁ": "haan",
+  "নাম": "naam", "আমার": "amar", "তোমার": "tomar", "এবং": "ebong",
+  "কোথায়": "kothay", "কেন": "keno", "ধন্যবাদ": "dhonnobad", "নমস্কার": "nomoskar",
+  "খুব": "khub", "এখন": "ekhon", "আজ": "aaj", "কাল": "kal",
+  "যাব": "jabo", "খাবার": "khabar", "বাংলা": "Bangla", "কলকাতা": "Kolkata",
+  "সে": "se", "ঠিক": "thik", "হয়": "hoy", "সব": "sob"
 };

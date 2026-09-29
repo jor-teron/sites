@@ -71,10 +71,40 @@ const DEV_LABIALS = { "प": 1, "फ": 1, "ब": 1, "भ": 1, "म": 1 };
 /* Hindi: keep word-final "a" after a conjunct ending in these (मित्र → mitra) */
 const DEV_KEEP_FINAL = { "य": 1, "र": 1, "व": 1, "ण": 1, "त्र": 1, "ज्ञ": 1 };
 
-/* Whole-word spellings that the rules get wrong */
-const DEV_WORDS = {
-  "में": "mein"
+/* Whole-word spellings (Hindi). Checked before the rules; also used as the
+   stem for STEM + suffix words (दिल्ली + से → Dillise).
+   Ported from caption-for-nei roman_hi.csv (the user's everyday spellings). */
+const HI_WORDS = {
+  "में": "mein", "है": "hai", "हैं": "hain", "नहीं": "nahin",
+  "मैं": "main", "और": "aur", "क्या": "kya", "हम": "hum",
+  "तुम": "tum", "आप": "aap", "यह": "yeh", "वह": "woh",
+  "ये": "ye", "वो": "wo", "कैसे": "kaise", "बाज़ार": "bazaar",
+  "बाजार": "bazaar", "हाँ": "haan", "हां": "haan", "माँ": "maa",
+  "भी": "bhi", "ही": "hi", "कि": "ki", "तो": "to",
+  "नमस्ते": "namaste", "धन्यवाद": "dhanyavaad", "शुक्रिया": "shukriya", "अच्छा": "achha",
+  "ठीक": "theek", "आज": "aaj", "क्यों": "kyon", "कहाँ": "kahaan",
+  "यहाँ": "yahaan", "वहाँ": "wahaan", "मुझे": "mujhe", "हमारा": "hamara",
+  "तुम्हारा": "tumhara", "जी": "ji", "दिल्ली": "Dilli", "गुवाहाटी": "Guwahati",
+  "असम": "Assam", "भारत": "Bharat"
 };
+
+/* Whole-word spellings (Nepali). Ported from caption-for-nei roman_ne.csv. */
+const NE_WORDS = {
+  "छ": "chha", "हो": "ho", "म": "ma", "तपाईं": "tapai",
+  "तपाई": "tapai", "नमस्ते": "namaste", "मेरो": "mero", "नाम": "naam",
+  "के": "ke", "कस्तो": "kasto", "छु": "chhu", "छौ": "chhau",
+  "छैन": "chhaina", "हुन्छ": "hunchha", "धन्यवाद": "dhanyabaad", "हामी": "hami",
+  "तिमी": "timi", "उनी": "uni", "ठिक": "thik", "राम्रो": "ramro",
+  "होइन": "hoina", "जान्छु": "janchhu", "आज": "aaja", "भोलि": "bholi",
+  "खाना": "khana", "पानी": "pani", "दाइ": "dai", "दिदी": "didi",
+  "बहिनी": "bahini", "भाइ": "bhai", "नेपाल": "Nepal", "नेपाली": "Nepali",
+  "सन्चै": "sanchai", "अनि": "ani", "पनि": "pani"
+};
+
+/* Postpositions split off when the stem is in the word list
+   (तपाईं + लाई → tapailai). Longest match first. */
+const HI_SUFFIXES = ["ने", "को", "से", "में", "का", "की", "के", "पर", "वाला", "वाले", "वाली", "जी"];
+const NE_SUFFIXES = ["लाई", "को", "का", "की", "मा", "ले", "हरू", "हरु", "बाट", "सँग", "देखि", "जी"];
 
 /* Words / endings that mark Devanagari text as Nepali when Language = Auto */
 const NE_MARKER_WORDS = [
