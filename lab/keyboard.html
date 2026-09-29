@@ -2,28 +2,33 @@
 <html lang="en">
 <head>
   <!--
-    Demo: landscape-only on-screen keyboard (HTML + CSS + tiny JS).
-    Purpose: phone web keyboard UI for a same-site controller page.
-    Layout: locked to landscape via CSS orientation query.
-    Portrait: hide keys, show rotate hint.
-    JS: only logs key taps + optional vibrate. No OS inject.
+    Landscape phone keyboard demo (HTML + CSS + JS).
+    Scope:
+      - Letters, digits, common punctuation
+      - Esc, Tab, Enter, Backspace, Delete
+      - Shift, Caps Lock, Ctrl, Alt (sticky modifiers)
+      - Space and arrow keys
+      - No F-keys, no Fn layer, no numpad
+    Portrait: hide the board and ask to rotate.
+    Output: last key + modifier state. Hook sendKey() to your gamepad channel later.
   -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Demo Keyboard</title>
+  <title>Web Keyboard</title>
   <style>
-    /* Reset + lock page so the phone does not rubber-band */
+    /* Page reset — stop bounce/zoom on phone */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       height: 100%;
-      background: #111;
+      background: #0e0e10;
       color: #eee;
       font-family: system-ui, sans-serif;
       overflow: hidden;
       touch-action: manipulation;
+      user-select: none;
     }
 
-    /* Portrait: hide keyboard, ask user to rotate */
+    /* Portrait-only message */
     #rotateHint {
       display: none;
       height: 100%;
@@ -31,157 +36,298 @@
       justify-content: center;
       text-align: center;
       padding: 2rem;
-      font-size: 1.2rem;
+      font-size: 1.15rem;
     }
     @media (orientation: portrait) {
       #rotateHint { display: flex; }
-      #kb { display: none !important; }
+      #wrap { display: none !important; }
     }
 
-    /* Landscape keyboard shell */
-    #kb {
+    /* Landscape shell */
+    #wrap {
       display: flex;
       flex-direction: column;
       height: 100%;
-      padding: 8px;
-      gap: 8px;
-    }
-
-    /* Last-tapped key readout */
-    #out {
-      height: 28px;
-      line-height: 28px;
-      font-size: 14px;
-      color: #9cf;
-      padding: 0 6px;
-    }
-
-    /* One keyboard row */
-    .row {
-      display: flex;
-      flex: 1;
+      padding: 6px;
       gap: 6px;
     }
 
-    /* Base key look */
+    /* Status line: modifiers + last key */
+    #status {
+      height: 22px;
+      font-size: 12px;
+      color: #8ab4ff;
+      padding: 0 4px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    /* Keyboard row */
+    .row {
+      display: flex;
+      flex: 1;
+      gap: 4px;
+    }
+
+    /* Base key */
     button.key {
       flex: 1;
       border: 0;
-      border-radius: 8px;
-      background: #2a2a2a;
-      color: #fff;
-      font-size: 16px;
-      font-weight: 600;
+      border-radius: 6px;
+      background: #2b2b30;
+      color: #f2f2f2;
+      font-size: 13px;
+      font-weight: 650;
     }
-    button.key:active { background: #4a7; }
+    button.key:active { background: #4a7c59; }
 
-    /* Wider modifier / action keys */
-    button.wide { flex: 1.5; }
-    button.space { flex: 5; background: #333; }
-    button.enter { background: #245; }
-    button.back { background: #522; }
+    /* Wider action keys */
+    button.w15 { flex: 1.5; }
+    button.w2 { flex: 2; }
+    button.space { flex: 6; background: #33353c; }
+
+    /* Modifier looks "latched" when .on */
+    button.mod { background: #3a3d48; }
+    button.mod.on { background: #3d6ea5; }
+
+    /* Special colors */
+    button.esc { background: #5a3a3a; }
+    button.enter { background: #2a4a62; }
+    button.back { background: #5a3232; }
+    button.del { background: #4a3038; }
   </style>
 </head>
 <body>
-  <!-- Shown only when the phone is upright -->
+  <!-- Shown only in portrait -->
   <div id="rotateHint">Rotate the phone to landscape</div>
 
-  <!-- Landscape keyboard -->
-  <div id="kb">
-    <div id="out">tap a key</div>
+  <div id="wrap">
+    <!-- Live modifier + last-key readout -->
+    <div id="status">ready</div>
 
+    <!-- Number + punctuation row -->
     <div class="row">
-      <button class="key" data-key="1">1</button>
-      <button class="key" data-key="2">2</button>
-      <button class="key" data-key="3">3</button>
-      <button class="key" data-key="4">4</button>
-      <button class="key" data-key="5">5</button>
-      <button class="key" data-key="6">6</button>
-      <button class="key" data-key="7">7</button>
-      <button class="key" data-key="8">8</button>
-      <button class="key" data-key="9">9</button>
-      <button class="key" data-key="0">0</button>
-      <button class="key back wide" data-key="Backspace">⌫</button>
+      <button class="key esc" data-key="Escape">Esc</button>
+      <button class="key" data-key="1" data-shift="!">1</button>
+      <button class="key" data-key="2" data-shift="@">2</button>
+      <button class="key" data-key="3" data-shift="#">3</button>
+      <button class="key" data-key="4" data-shift="$">4</button>
+      <button class="key" data-key="5" data-shift="%">5</button>
+      <button class="key" data-key="6" data-shift="^">6</button>
+      <button class="key" data-key="7" data-shift="&amp;">7</button>
+      <button class="key" data-key="8" data-shift="*">8</button>
+      <button class="key" data-key="9" data-shift="(">9</button>
+      <button class="key" data-key="0" data-shift=")">0</button>
+      <button class="key" data-key="-" data-shift="_">-</button>
+      <button class="key" data-key="=" data-shift="+">=</button>
+      <button class="key back w15" data-key="Backspace">⌫</button>
     </div>
 
+    <!-- QWERTY top -->
     <div class="row">
-      <button class="key" data-key="q">Q</button>
-      <button class="key" data-key="w">W</button>
-      <button class="key" data-key="e">E</button>
-      <button class="key" data-key="r">R</button>
-      <button class="key" data-key="t">T</button>
-      <button class="key" data-key="y">Y</button>
-      <button class="key" data-key="u">U</button>
-      <button class="key" data-key="i">I</button>
-      <button class="key" data-key="o">O</button>
-      <button class="key" data-key="p">P</button>
+      <button class="key w15" data-key="Tab">Tab</button>
+      <button class="key letter" data-key="q">Q</button>
+      <button class="key letter" data-key="w">W</button>
+      <button class="key letter" data-key="e">E</button>
+      <button class="key letter" data-key="r">R</button>
+      <button class="key letter" data-key="t">T</button>
+      <button class="key letter" data-key="y">Y</button>
+      <button class="key letter" data-key="u">U</button>
+      <button class="key letter" data-key="i">I</button>
+      <button class="key letter" data-key="o">O</button>
+      <button class="key letter" data-key="p">P</button>
+      <button class="key" data-key="[" data-shift="{">[</button>
+      <button class="key" data-key="]" data-shift="}">]</button>
+      <button class="key" data-key="\\" data-shift="|">\</button>
     </div>
 
+    <!-- Home row -->
     <div class="row">
-      <button class="key" data-key="a">A</button>
-      <button class="key" data-key="s">S</button>
-      <button class="key" data-key="d">D</button>
-      <button class="key" data-key="f">F</button>
-      <button class="key" data-key="g">G</button>
-      <button class="key" data-key="h">H</button>
-      <button class="key" data-key="j">J</button>
-      <button class="key" data-key="k">K</button>
-      <button class="key" data-key="l">L</button>
-      <button class="key enter wide" data-key="Enter">↵</button>
+      <button class="key mod w15" data-mod="caps">Caps</button>
+      <button class="key letter" data-key="a">A</button>
+      <button class="key letter" data-key="s">S</button>
+      <button class="key letter" data-key="d">D</button>
+      <button class="key letter" data-key="f">F</button>
+      <button class="key letter" data-key="g">G</button>
+      <button class="key letter" data-key="h">H</button>
+      <button class="key letter" data-key="j">J</button>
+      <button class="key letter" data-key="k">K</button>
+      <button class="key letter" data-key="l">L</button>
+      <button class="key" data-key=";" data-shift=":">;</button>
+      <button class="key" data-key="'" data-shift="&quot;">'</button>
+      <button class="key enter w15" data-key="Enter">Enter</button>
     </div>
 
+    <!-- Bottom letter row + arrows -->
     <div class="row">
-      <button class="key wide" data-key="Shift">⇧</button>
-      <button class="key" data-key="z">Z</button>
-      <button class="key" data-key="x">X</button>
-      <button class="key" data-key="c">C</button>
-      <button class="key" data-key="v">V</button>
-      <button class="key" data-key="b">B</button>
-      <button class="key" data-key="n">N</button>
-      <button class="key" data-key="m">M</button>
-      <button class="key wide" data-key="ArrowLeft">←</button>
-      <button class="key wide" data-key="ArrowRight">→</button>
+      <button class="key mod w15" data-mod="shift">Shift</button>
+      <button class="key letter" data-key="z">Z</button>
+      <button class="key letter" data-key="x">X</button>
+      <button class="key letter" data-key="c">C</button>
+      <button class="key letter" data-key="v">V</button>
+      <button class="key letter" data-key="b">B</button>
+      <button class="key letter" data-key="n">N</button>
+      <button class="key letter" data-key="m">M</button>
+      <button class="key" data-key="," data-shift="&lt;">,</button>
+      <button class="key" data-key="." data-shift="&gt;">.</button>
+      <button class="key" data-key="/" data-shift="?">/</button>
+      <button class="key del" data-key="Delete">Del</button>
     </div>
 
+    <!-- Modifiers + space + arrows -->
     <div class="row">
-      <button class="key space" data-key=" ">space</button>
+      <button class="key mod" data-mod="ctrl">Ctrl</button>
+      <button class="key mod" data-mod="alt">Alt</button>
+      <button class="key space" data-key=" ">Space</button>
+      <button class="key" data-key="ArrowLeft">←</button>
+      <button class="key" data-key="ArrowUp">↑</button>
+      <button class="key" data-key="ArrowDown">↓</button>
+      <button class="key" data-key="ArrowRight">→</button>
     </div>
   </div>
 
   <script>
     /**
-     * handleKey
-     * Called when any .key button is pressed.
-     * Later: send {type:"key", key} over your existing gamepad channel.
+     * Sticky modifier flags.
+     * caps stays until tapped again.
+     * shift / ctrl / alt stay until the next non-modifier key (one-shot),
+     * or until tapped again to cancel.
      */
-    function handleKey(key) {
-      // Last key label on screen
-      var out = document.getElementById("out");
-      out.textContent = "key: " + key;
+    var mods = {
+      shift: false,
+      caps: false,
+      ctrl: false,
+      alt: false
+    };
 
-      // Short buzz on Android; ignored on many iPhones
-      if (navigator.vibrate) {
-        navigator.vibrate(20);
-      }
+    /** Status line element */
+    var statusEl = document.getElementById("status");
 
-      // Placeholder for your link to the PC page
-      // sendToPc({ type: "key", key: key });
-      console.log("key", key);
+    /**
+     * paintMods
+     * Refresh modifier button .on class and the status text.
+     */
+    function paintMods() {
+      document.querySelectorAll("button.mod").forEach(function (btn) {
+        var name = btn.getAttribute("data-mod");
+        if (mods[name]) btn.classList.add("on");
+        else btn.classList.remove("on");
+      });
     }
 
     /**
-     * Bind every key once.
-     * touchend is used so the phone does not wait for a 300ms click delay.
+     * setStatus
+     * Show active modifiers plus the last sent key.
+     */
+    function setStatus(lastKey) {
+      var bits = [];
+      if (mods.ctrl) bits.push("Ctrl");
+      if (mods.alt) bits.push("Alt");
+      if (mods.shift) bits.push("Shift");
+      if (mods.caps) bits.push("Caps");
+      var prefix = bits.length ? bits.join("+") + " + " : "";
+      statusEl.textContent = prefix + lastKey;
+    }
+
+    /**
+     * sendKey
+     * Payload you will later forward on the same channel as the gamepad.
+     */
+    function sendKey(payload) {
+      console.log(payload);
+      setStatus(payload.key);
+      if (navigator.vibrate) {
+        navigator.vibrate(18);
+      }
+    }
+
+    /**
+     * resolveLetter
+     * Apply Caps and Shift to a letter key.
+     */
+    function resolveLetter(base) {
+      var upper = mods.shift !== mods.caps;
+      return upper ? base.toUpperCase() : base.toLowerCase();
+    }
+
+    /**
+     * resolveSymbol
+     * If Shift is on and the key has data-shift, use that glyph.
+     */
+    function resolveSymbol(btn) {
+      var shifted = btn.getAttribute("data-shift");
+      if (mods.shift && shifted !== null) return shifted;
+      return btn.getAttribute("data-key");
+    }
+
+    /**
+     * tapMod
+     * Toggle a modifier and update the UI.
+     */
+    function tapMod(name) {
+      mods[name] = !mods[name];
+      paintMods();
+      setStatus("(" + name + (mods[name] ? " on" : " off") + ")");
+    }
+
+    /**
+     * consumeOneShotMods
+     * After a real key, drop Shift / Ctrl / Alt. Caps stays.
+     */
+    function consumeOneShotMods() {
+      mods.shift = false;
+      mods.ctrl = false;
+      mods.alt = false;
+      paintMods();
+    }
+
+    /**
+     * onKeyButton
+     * Handle one physical tap on the board.
+     */
+    function onKeyButton(btn) {
+      var modName = btn.getAttribute("data-mod");
+      if (modName) {
+        tapMod(modName);
+        return;
+      }
+
+      var raw = btn.getAttribute("data-key");
+      var outKey = raw;
+
+      if (btn.classList.contains("letter")) {
+        outKey = resolveLetter(raw);
+      } else if (btn.getAttribute("data-shift") !== null) {
+        outKey = resolveSymbol(btn);
+      }
+
+      sendKey({
+        type: "key",
+        key: outKey,
+        ctrl: mods.ctrl,
+        alt: mods.alt,
+        shift: mods.shift,
+        caps: mods.caps
+      });
+
+      consumeOneShotMods();
+    }
+
+    /**
+     * Bind touchend + click on every key.
+     * touchend avoids the 300ms mobile click delay.
      */
     document.querySelectorAll("button.key").forEach(function (btn) {
       btn.addEventListener("touchend", function (ev) {
         ev.preventDefault();
-        handleKey(btn.getAttribute("data-key"));
+        onKeyButton(btn);
       });
       btn.addEventListener("click", function () {
-        handleKey(btn.getAttribute("data-key"));
+        onKeyButton(btn);
       });
     });
+
+    paintMods();
   </script>
 </body>
 </html>
