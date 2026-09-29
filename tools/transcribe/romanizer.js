@@ -4,6 +4,9 @@
   Uses CONFIG.ROMANIZER_STYLE ("simple" | "iast") and the #langSelect value:
     hi / ne     → Devanagari rules (Auto: Nepali if the text looks Nepali)
     as / bn     → Bengali-script rules (Auto: Assamese if ৰ / ৱ / Assamese words)
+  Per word (simple style): word list first (HI_WORDS / NE_WORDS / AS_WORDS /
+  BN_WORDS, the user's everyday spellings), then listed stem + known suffix
+  (तपाईंलाई → tapailai), then the letter rules + schwa deletion.
 =============================================================================*/
 
 /* Zero-width joiners that may sit inside words */
@@ -66,23 +69,41 @@ function nfcKeys(map) {
 }
 
 /*----------------------------------------------------------------------------
+  suffixList
+  NFC suffixes, longest first (so वाला wins over ला-like shorter endings).
+----------------------------------------------------------------------------*/
+function suffixList(list) {
+  return (list || []).map(toNfc).sort(function (a, b) {
+    return Array.from(b).length - Array.from(a).length;
+  });
+}
+
+/*----------------------------------------------------------------------------
   prepareTables
   Build the per-language tables once (after all map files are loaded).
 ----------------------------------------------------------------------------*/
 function prepareTables() {
-  const dev = {
+  const devBase = {
     script: "dev",
     vowels: DEV_VOWELS, matra: DEV_MATRA, cons: nfcKeys(DEV_CONS),
     consIast: nfcKeys(DEV_CONS_IAST), virama: DEV_VIRAMA, nukta: DEV_NUKTA,
     marks: DEV_MARKS, punct: DEV_PUNCT, punctIast: DEV_PUNCT_IAST,
-    words: nfcKeys(DEV_WORDS), dead: {}, digits: ROMAN_DIGITS_DEV, inherent: "a"
+    dead: {}, digits: ROMAN_DIGITS_DEV, inherent: "a", initial: {}
   };
+  /* Hindi and Nepali share the letters but not the word lists */
+  const hi = Object.assign({}, devBase, {
+    words: nfcKeys(HI_WORDS), suffixes: suffixList(HI_SUFFIXES)
+  });
+  const ne = Object.assign({}, devBase, {
+    words: nfcKeys(NE_WORDS), suffixes: suffixList(NE_SUFFIXES)
+  });
   const as = {
     script: "beng",
     vowels: AS_VOWELS, matra: AS_MATRA, cons: nfcKeys(AS_CONS), consIast: {},
     virama: AS_VIRAMA, nukta: AS_NUKTA, marks: AS_MARKS, punct: AS_PUNCT,
-    punctIast: {}, words: nfcKeys(AS_WORDS), dead: AS_DEAD,
-    digits: ROMAN_DIGITS_BENG, inherent: "o"
+    punctIast: {}, words: nfcKeys(AS_WORDS), suffixes: suffixList(AS_SUFFIXES),
+    dead: AS_DEAD, digits: ROMAN_DIGITS_BENG, inherent: "o",
+    initial: AS_INITIAL
   };
   /* bengali.js missing → fall back to the Assamese letters */
   const hasBn = typeof BN_CONS !== "undefined";
@@ -90,17 +111,17 @@ function prepareTables() {
     script: "beng",
     vowels: BN_VOWELS, matra: BN_MATRA, cons: nfcKeys(BN_CONS), consIast: {},
     virama: BN_VIRAMA, nukta: BN_NUKTA, marks: BN_MARKS, punct: BN_PUNCT,
-    punctIast: {}, words: nfcKeys(BN_WORDS), dead: BN_DEAD,
-    digits: ROMAN_DIGITS_BENG, inherent: "o"
+    punctIast: {}, words: nfcKeys(BN_WORDS), suffixes: suffixList(BN_SUFFIXES),
+    dead: BN_DEAD, digits: ROMAN_DIGITS_BENG, inherent: "o", initial: {}
   };
-  [dev, as, bn].forEach(function (t) {
+  [hi, ne, as, bn].forEach(function (t) {
     t.maxCons = 1;
     Object.keys(t.cons).forEach(function (k) {
       t.maxCons = Math.max(t.maxCons, Array.from(k).length);
     });
   });
   return {
-    hi: dev, ne: dev, as: as, bn: bn,
+    hi: hi, ne: ne, as: as, bn: bn,
     neMarkers: new Set(NE_MARKER_WORDS.map(toNfc)),
     asMarkers: new Set(AS_MARKER_WORDS.map(toNfc))
   };
@@ -274,15 +295,16 @@ function keepFinalVowel(toks, i, lang, t) {
   Mark inherent vowels that are not spoken (tok.del):
   1. word-final (unless the word has one syllable or keepFinalVowel says so)
   2. medial, right to left: V C [a] C V → drop, never two in a row,
-     never inside a conjunct or before य. Bengali/Assamese only after a consonant
-     syllable (অসম stays "oxom", not "oxm").
+     never inside a conjunct or before य. Bengali/Assamese: not right after a
+     word-initial অ (অসম stays "axom", not "axm"; আমরা → amra).
 ----------------------------------------------------------------------------*/
-function deleteSchwa(toks, lang, t) {
+function deleteSchwa(toks, lang, t, asSuffix) {
   let voiced = 0;
   toks.forEach(function (k) {
     if (k.t === "V" || (k.t === "C" && !k.hal)) voiced += 1;
   });
-  if (voiced <= 1) return;
+  /* A suffix glued to a listed stem (-ক, -ৰ, -ত) is never a word on its own */
+  if (voiced <= 1 && !asSuffix) return;
 
   const last = toks.length - 1;
   const lt = toks[last];
@@ -301,7 +323,9 @@ function deleteSchwa(toks, lang, t) {
     if (p < 0) continue;
     const prev = toks[p];
     if (prev.t === "C" && (prev.hal || prev.del)) continue;
-    if (t.script === "beng" && prev.t !== "C") continue;
+    /* Bengali script: keep the vowel only right after a word-initial অ
+       (অসম oxom/axom), but আমরা amra, আপনি apni */
+    if (t.script === "beng" && prev.t === "V" && p === 0 && prev.src === "অ") continue;
     tok.del = true;
   }
 }
@@ -358,17 +382,53 @@ function markText(kind, next, t, style) {
 }
 
 /*----------------------------------------------------------------------------
+  stemSuffixWord
+  Listed stem + known suffix (तपाईंलाई → tapai + lai, দিল্লীতে …): the stem
+  from the word list, the suffix by the rules. "" when nothing matches.
+  Stems must be 2+ letters so one-letter words do not grab endings.
+----------------------------------------------------------------------------*/
+function stemSuffixWord(native, lang, t) {
+  const sufs = t.suffixes || [];
+  for (let k = 0; k < sufs.length; k++) {
+    const suf = sufs[k];
+    if (native.length <= suf.length || native.slice(-suf.length) !== suf) continue;
+    const stem = native.slice(0, native.length - suf.length);
+    if (Array.from(stem).length < 2 || !hasKey(t.words, stem)) continue;
+    const sufToks = tokenize(Array.from(suf), t, "simple");
+    const head = t.words[stem];
+    /* One bare letter after a consonant sound takes the inherent vowel:
+       অসম + ত → Axomot, but গুৱাহাটী + ত → Guwahatit */
+    if (sufToks.length === 1 && sufToks[0].t === "C" && sufToks[0].inh && !/[aeiouy]$/i.test(head)) {
+      return head + t.inherent + sufToks[0].c;
+    }
+    return head + renderWord(sufToks, lang, t, "simple", true);
+  }
+  return "";
+}
+
+/*----------------------------------------------------------------------------
   renderWord
   Spell one word's tokens (schwa rules only in the simple style).
 ----------------------------------------------------------------------------*/
-function renderWord(toks, lang, t, style) {
+function renderWord(toks, lang, t, style, asSuffix) {
   if (!toks.length) return "";
-  if (style === "simple") {
+  const simple = style === "simple";
+  if (simple && !asSuffix) {
     const native = toks.map(function (k) { return k.src; }).join("");
     if (hasKey(t.words, native)) return t.words[native];
-    deleteSchwa(toks, lang, t);
+    const listed = stemSuffixWord(native, lang, t);
+    if (listed) return listed;
+  }
+  if (simple) {
+    deleteSchwa(toks, lang, t, asSuffix);
     if (t.script === "beng") bengaliClusters(toks, lang);
   }
+  const dev = t.script === "dev";
+  /* Spoken syllables (after schwa deletion) for the final आ → a rule */
+  let syl = 0;
+  toks.forEach(function (k) {
+    if (k.t === "V" || (k.t === "C" && !k.hal && !k.del)) syl += 1;
+  });
 
   let out = "";
   for (let i = 0; i < toks.length; i++) {
@@ -376,12 +436,29 @@ function renderWord(toks, lang, t, style) {
     const atEnd = i === toks.length - 1;
     let restNasal = !atEnd;
     for (let j = i + 1; j < toks.length; j++) if (toks[j].t !== "N") restNasal = false;
+    /* Everyday Hindi/Nepali: final आ → a in longer words (karna, mera);
+       one-syllable words keep aa (jaa). A suffix continues its stem. */
+    const shortA = simple && dev && atEnd && tok.v === "aa" && (syl > 1 || asSuffix);
+    const prevTok = toks[i - 1];
 
     if (tok.t === "C") {
-      out += style === "iast" && hasKey(t.consIast, tok.key) ? t.consIast[tok.key] : tok.c;
-      if (!tok.hal && !tok.del) out += vowelText(tok.v, lang, style, atEnd, restNasal);
+      let c = style === "iast" && hasKey(t.consIast, tok.key) ? t.consIast[tok.key] : tok.c;
+      /* व after a virama is a glide: स्व sw, द्व dw */
+      if (simple && dev && tok.key === "व" && prevTok && prevTok.t === "C" && prevTok.hal) c = "w";
+      out += c;
+      if (!tok.hal && !tok.del) out += shortA ? "a" : vowelText(tok.v, lang, style, atEnd, restNasal);
     } else if (tok.t === "V") {
-      let v = vowelText(tok.v, lang, style, atEnd, restNasal);
+      let v = shortA ? "a" : vowelText(tok.v, lang, style, atEnd, restNasal);
+      /* Assamese word-initial অ → a (অসম axom) */
+      if (simple && i === 0 && !asSuffix && hasKey(t.initial, tok.src)) v = t.initial[tok.src];
+      /* Nepali diphthong: आ/अ + इ ई उ ऊ → ai / au (दाइ dai, तपाई tapai, आउनु aunu) */
+      if (simple && lang === "ne" && /^(i|ii|u|uu)$/.test(tok.v) && prevTok) {
+        const pv = prevTok.t === "V" ? prevTok.v : (prevTok.t === "C" && !prevTok.hal && !prevTok.del ? prevTok.v : "");
+        if (pv === "a" || pv === "aa") {
+          if (/aa$/.test(out)) out = out.slice(0, -1);
+          v = tok.v.charAt(0);
+        }
+      }
       /* Hindi/Nepali glide: गए gaye, लिए liye */
       const prev = toks[i - 1];
       if (style === "simple" && t.script === "dev" && tok.v === "e" && prev &&
