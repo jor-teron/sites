@@ -1,14 +1,20 @@
 /*=============================================================================
   romanizer.js — local Indic → Latin (not translation)
-  Needs hindi.js + assamese.js loaded first. Uses CONFIG.ROMANIZER_STYLE.
+  Needs hindi.js + assamese.js + bengali.js loaded first.
+  Uses CONFIG.ROMANIZER_STYLE ("simple" | "iast") and the #langSelect value:
+    hi / ne     → Devanagari rules (Auto: Nepali if the text looks Nepali)
+    as / bn     → Bengali-script rules (Auto: Assamese if ৰ / ৱ / Assamese words)
 =============================================================================*/
 
-/* IAST overlays when ROMANIZER_STYLE === "iast" */
-const IAST_SWAP = {
-  aa: "ā", ii: "ī", uu: "ū",
-  kh: "kh", gh: "gh", ch: "c", chh: "ch",
-  sh: "ś", ng: "ṅ", ny: "ñ"
-};
+/* Zero-width joiners that may sit inside words */
+const ROMAN_ZW = { "\u200C": 1, "\u200D": 1 };
+
+/* Native digits → 0-9 (index = value) */
+const ROMAN_DIGITS_DEV = "०१२३४५६७८९";
+const ROMAN_DIGITS_BENG = "০১২৩৪৫৬৭৮৯";
+
+/* Prepared (NFC-keyed) tables, built on first use */
+let ROMAN_TABLES = null;
 
 /*----------------------------------------------------------------------------
   isDevanagari
@@ -29,109 +35,424 @@ function isBengaliAssamese(ch) {
 }
 
 /*----------------------------------------------------------------------------
-  applyStyle
-  Optional IAST polish on a simple syllable token.
+  hasKey
+  Own-property test (map values may be "").
 ----------------------------------------------------------------------------*/
-function applyStyle(token) {
-  if (typeof CONFIG === "undefined" || CONFIG.ROMANIZER_STYLE !== "iast") return token;
-  return IAST_SWAP[token] || token;
+function hasKey(map, key) {
+  return !!map && Object.prototype.hasOwnProperty.call(map, key);
 }
 
 /*----------------------------------------------------------------------------
-  romanizeScript
-  Walk one Indic script using the given maps.
+  toNfc
+  NFC-normalize a string (live transcripts arrive as NFC).
 ----------------------------------------------------------------------------*/
-function romanizeScript(text, maps) {
-  const vowels = maps.vowels;
-  const cons = maps.cons;
-  const matra = maps.matra;
-  const virama = maps.virama;
-  const nukta = maps.nukta;
-  const signs = maps.signs;
-  /* Inherent vowel after a bare consonant */
-  const inherent = maps.inherent;
+function toNfc(s) {
+  return String(s).normalize ? String(s).normalize("NFC") : String(s);
+}
 
-  let out = "";
+/*----------------------------------------------------------------------------
+  nfcKeys
+  Copy of a map with every key NFC-normalized, so tables can be written
+  with precomposed or decomposed nukta letters alike.
+----------------------------------------------------------------------------*/
+function nfcKeys(map) {
+  const out = {};
+  if (!map) return out;
+  Object.keys(map).forEach(function (k) {
+    out[k] = map[k];
+    out[toNfc(k)] = map[k];
+  });
+  return out;
+}
+
+/*----------------------------------------------------------------------------
+  prepareTables
+  Build the per-language tables once (after all map files are loaded).
+----------------------------------------------------------------------------*/
+function prepareTables() {
+  const dev = {
+    script: "dev",
+    vowels: DEV_VOWELS, matra: DEV_MATRA, cons: nfcKeys(DEV_CONS),
+    consIast: nfcKeys(DEV_CONS_IAST), virama: DEV_VIRAMA, nukta: DEV_NUKTA,
+    marks: DEV_MARKS, punct: DEV_PUNCT, punctIast: DEV_PUNCT_IAST,
+    words: nfcKeys(DEV_WORDS), dead: {}, digits: ROMAN_DIGITS_DEV, inherent: "a"
+  };
+  const as = {
+    script: "beng",
+    vowels: AS_VOWELS, matra: AS_MATRA, cons: nfcKeys(AS_CONS), consIast: {},
+    virama: AS_VIRAMA, nukta: AS_NUKTA, marks: AS_MARKS, punct: AS_PUNCT,
+    punctIast: {}, words: nfcKeys(AS_WORDS), dead: AS_DEAD,
+    digits: ROMAN_DIGITS_BENG, inherent: "o"
+  };
+  /* bengali.js missing → fall back to the Assamese letters */
+  const hasBn = typeof BN_CONS !== "undefined";
+  const bn = !hasBn ? as : {
+    script: "beng",
+    vowels: BN_VOWELS, matra: BN_MATRA, cons: nfcKeys(BN_CONS), consIast: {},
+    virama: BN_VIRAMA, nukta: BN_NUKTA, marks: BN_MARKS, punct: BN_PUNCT,
+    punctIast: {}, words: nfcKeys(BN_WORDS), dead: BN_DEAD,
+    digits: ROMAN_DIGITS_BENG, inherent: "o"
+  };
+  [dev, as, bn].forEach(function (t) {
+    t.maxCons = 1;
+    Object.keys(t.cons).forEach(function (k) {
+      t.maxCons = Math.max(t.maxCons, Array.from(k).length);
+    });
+  });
+  return {
+    hi: dev, ne: dev, as: as, bn: bn,
+    neMarkers: new Set(NE_MARKER_WORDS.map(toNfc)),
+    asMarkers: new Set(AS_MARKER_WORDS.map(toNfc))
+  };
+}
+
+/*----------------------------------------------------------------------------
+  romanTables
+  Prepared tables (lazy).
+----------------------------------------------------------------------------*/
+function romanTables() {
+  if (!ROMAN_TABLES) ROMAN_TABLES = prepareTables();
+  return ROMAN_TABLES;
+}
+
+/*----------------------------------------------------------------------------
+  romanStyle
+  "iast" or "simple" from CONFIG.
+----------------------------------------------------------------------------*/
+function romanStyle() {
+  if (typeof CONFIG !== "undefined" && CONFIG.ROMANIZER_STYLE === "iast") return "iast";
+  return "simple";
+}
+
+/*----------------------------------------------------------------------------
+  selectedLang
+  Current Language dropdown value ("auto" when there is no page).
+----------------------------------------------------------------------------*/
+function selectedLang() {
+  if (typeof document === "undefined") return "auto";
+  const sel = document.getElementById("langSelect");
+  return sel && sel.value ? sel.value : "auto";
+}
+
+/*----------------------------------------------------------------------------
+  splitWords
+  Words of a text (split on anything that is not a letter or mark).
+----------------------------------------------------------------------------*/
+function splitWords(text) {
+  return text.split(/[\s.,!?;:"'()\[\]\u0964\u0965\-]+/).filter(Boolean);
+}
+
+/*----------------------------------------------------------------------------
+  looksNepali
+  Devanagari text with Nepali marker words or word-final halant.
+----------------------------------------------------------------------------*/
+function looksNepali(text) {
+  const markers = romanTables().neMarkers;
+  return splitWords(text).some(function (w) {
+    return markers.has(w) || (w.length > 1 && w.charAt(w.length - 1) === DEV_VIRAMA);
+  });
+}
+
+/*----------------------------------------------------------------------------
+  looksAssamese
+  Bengali-script text with ৰ / ৱ, Assamese marker words or -টো.
+----------------------------------------------------------------------------*/
+function looksAssamese(text) {
+  if (/[\u09F0\u09F1]/.test(text)) return true;
+  const markers = romanTables().asMarkers;
+  return splitWords(text).some(function (w) {
+    return markers.has(w) || (w.length > 2 && /টো$/.test(w));
+  });
+}
+
+/*----------------------------------------------------------------------------
+  resolveLang
+  Pick the rule set for one script from the dropdown value and the text.
+----------------------------------------------------------------------------*/
+function resolveLang(script, want, text) {
+  if (script === "dev") {
+    if (want === "hi" || want === "ne") return want;
+    return looksNepali(text) ? "ne" : "hi";
+  }
+  if (want === "as" || want === "bn") return want;
+  return looksAssamese(text) ? "as" : "bn";
+}
+
+/*----------------------------------------------------------------------------
+  tokenize
+  Turn one run of Indic letters into tokens:
+    C = consonant {c, v, hal, inh}, V = vowel, N = nasal/visarga mark,
+    B = break (punctuation / digit, spelled in s).
+  Consonants use longest match so क्ष, ज्ञ, ক্ষ and base+nukta keys hit.
+----------------------------------------------------------------------------*/
+function tokenize(chars, t, style) {
+  const toks = [];
   let i = 0;
-  const chars = Array.from(text);
-
   while (i < chars.length) {
     const ch = chars[i];
+    if (ROMAN_ZW[ch]) { i += 1; continue; }
 
-    if (vowels[ch]) {
-      out += applyStyle(vowels[ch]);
-      i += 1;
-      continue;
+    let hit = null;
+    for (let len = Math.min(t.maxCons, chars.length - i); len >= 1; len--) {
+      const key = chars.slice(i, i + len).join("");
+      if (hasKey(t.cons, key)) { hit = { key: key, len: len }; break; }
     }
-
-    if (cons[ch]) {
-      const base = cons[ch];
-      i += 1;
-      if (chars[i] === nukta) i += 1;
-
-      const mark = chars[i] || "";
-      if (mark === virama) {
-        out += base;
+    if (hit) {
+      const start = i;
+      i += hit.len;
+      if (chars[i] === t.nukta) i += 1; /* unknown nukta combo: base sound */
+      while (ROMAN_ZW[chars[i]]) i += 1;
+      const tok = { t: "C", key: hit.key, c: t.cons[hit.key], v: "",
+        hal: false, inh: false, del: false, src: "" };
+      const mark = chars[i];
+      if (hasKey(t.dead, hit.key)) {
+        tok.hal = true;
+      } else if (mark === t.virama) {
+        tok.hal = true;
         i += 1;
-        continue;
-      }
-      if (matra[mark]) {
-        out += base + applyStyle(matra[mark]);
+      } else if (hasKey(t.matra, mark)) {
+        tok.v = t.matra[mark];
         i += 1;
-        continue;
+      } else {
+        tok.v = t.inherent;
+        tok.inh = true;
       }
-      out += base + inherent;
+      tok.src = chars.slice(start, i).join("");
+      toks.push(tok);
       continue;
     }
 
-    if (matra[ch]) {
-      out += applyStyle(matra[ch]);
-      i += 1;
-      continue;
-    }
-    if (ch === virama || ch === nukta) {
-      i += 1;
-      continue;
-    }
-    if (signs[ch]) {
-      out += signs[ch];
-      i += 1;
-      continue;
-    }
-
-    out += ch;
     i += 1;
+    if (hasKey(t.vowels, ch)) {
+      toks.push({ t: "V", v: t.vowels[ch], src: ch });
+    } else if (hasKey(t.matra, ch)) {
+      toks.push({ t: "V", v: t.matra[ch], src: ch });
+    } else if (hasKey(t.marks, ch)) {
+      toks.push({ t: "N", kind: t.marks[ch], src: ch });
+    } else if (t.digits.indexOf(ch) >= 0) {
+      toks.push({ t: "B", s: String(t.digits.indexOf(ch)) });
+    } else if (hasKey(t.punct, ch)) {
+      const s = style === "iast" && hasKey(t.punctIast, ch) ? t.punctIast[ch] : t.punct[ch];
+      toks.push({ t: "B", s: s });
+    }
+    /* stray virama / nukta / unknown signs are dropped */
+  }
+  return toks;
+}
+
+/*----------------------------------------------------------------------------
+  isCluster
+  True if consonant token i is the second half of a conjunct.
+----------------------------------------------------------------------------*/
+function isCluster(toks, i, t) {
+  const tok = toks[i];
+  if (tok.key.indexOf(t.virama) >= 0) return true;
+  const prev = toks[i - 1];
+  return !!prev && prev.t === "C" && prev.hal;
+}
+
+/*----------------------------------------------------------------------------
+  keepFinalVowel
+  Should the last consonant keep its inherent vowel?
+----------------------------------------------------------------------------*/
+function keepFinalVowel(toks, i, lang, t) {
+  const tok = toks[i];
+  const conj = isCluster(toks, i, t);
+  if (lang === "hi") return conj && hasKey(DEV_KEEP_FINAL, tok.key);
+  if (lang === "ne") return conj || tok.key === "छ";
+  if (lang === "bn") {
+    /* করছ korchho: verb ending -ছ after a bare consonant keeps its "o" */
+    const prev = toks[i - 1];
+    return conj || tok.key === "হ" ||
+      (tok.key === "ছ" && !!prev && prev.t === "C" && prev.inh);
+  }
+  return conj; /* as */
+}
+
+/*----------------------------------------------------------------------------
+  deleteSchwa
+  Mark inherent vowels that are not spoken (tok.del):
+  1. word-final (unless the word has one syllable or keepFinalVowel says so)
+  2. medial, right to left: V C [a] C V → drop, never two in a row,
+     never inside a conjunct or before य. Bengali/Assamese only after a consonant
+     syllable (অসম stays "oxom", not "oxm").
+----------------------------------------------------------------------------*/
+function deleteSchwa(toks, lang, t) {
+  let voiced = 0;
+  toks.forEach(function (k) {
+    if (k.t === "V" || (k.t === "C" && !k.hal)) voiced += 1;
+  });
+  if (voiced <= 1) return;
+
+  const last = toks.length - 1;
+  const lt = toks[last];
+  if (lt.t === "C" && lt.inh && !keepFinalVowel(toks, last, lang, t)) lt.del = true;
+
+  for (let i = last - 1; i > 0; i--) {
+    const tok = toks[i];
+    if (tok.t !== "C" || !tok.inh || tok.del) continue;
+    if (isCluster(toks, i, t)) continue;
+    const next = toks[i + 1];
+    if (!next || next.t !== "C" || next.hal || next.del) continue;
+    if (next.key.indexOf(t.virama) >= 0) continue;
+    if (next.key === "य") continue; /* खानुभयो, not khaanubhyo */
+    let p = i - 1;
+    while (p >= 0 && toks[p].t === "N") p -= 1;
+    if (p < 0) continue;
+    const prev = toks[p];
+    if (prev.t === "C" && (prev.hal || prev.del)) continue;
+    if (t.script === "beng" && prev.t !== "C") continue;
+    tok.del = true;
+  }
+}
+
+/*----------------------------------------------------------------------------
+  bengaliClusters
+  Bengali-script conjunct sounds: য-phala → y, ব-phala mostly silent,
+  Bengali স → s before stops/nasals, initial ক্ষ → kh.
+----------------------------------------------------------------------------*/
+function bengaliClusters(toks, lang) {
+  for (let i = 0; i < toks.length; i++) {
+    const tok = toks[i];
+    if (tok.t !== "C") continue;
+    const prev = toks[i - 1];
+    const afterHal = !!prev && prev.t === "C" && prev.hal && prev.key !== "ৎ";
+    if (tok.key === "য" && afterHal) tok.c = "y";
+    if (tok.key === "ব" && afterHal && !/^[মরৰবল]$/.test(prev.key)) tok.c = "";
+    if (lang === "bn") {
+      const next = toks[i + 1];
+      if (tok.key === "স" && tok.hal && next && next.t === "C" &&
+          hasKey(BN_S_BEFORE, next.key.charAt(0))) tok.c = "s";
+      if (tok.key === "ক্ষ" && i === 0) tok.c = "kh";
+    }
+  }
+}
+
+/*----------------------------------------------------------------------------
+  vowelText
+  Spell one vowel name for the language/style.
+  Hindi simple: ii → ee (i at word end / before a final nasal),
+                uu → oo (u at word end).
+----------------------------------------------------------------------------*/
+function vowelText(v, lang, style, atEnd, beforeEndNasal) {
+  if (lang !== "hi" && lang !== "ne") return v;
+  if (style === "iast") return DEV_VOWEL_IAST[v] || v;
+  if (v === "ii") return lang === "ne" || atEnd || beforeEndNasal ? "i" : "ee";
+  if (v === "uu") return lang === "ne" || atEnd ? "u" : "oo";
+  if (v === "rii") return "ri";
+  if (v === "ae") return "e";
+  if (v === "ao") return "o";
+  return v;
+}
+
+/*----------------------------------------------------------------------------
+  markText
+  Spell anusvara / chandrabindu / visarga.
+----------------------------------------------------------------------------*/
+function markText(kind, next, t, style) {
+  if (kind === "visarga") return style === "iast" ? "ḥ" : "h";
+  if (kind === "chandrabindu") return style === "iast" ? "ṁ" : "n";
+  if (t.script === "beng") return "ng";
+  if (style === "iast") return "ṃ";
+  return next && next.t === "C" && hasKey(DEV_LABIALS, next.key.charAt(0)) ? "m" : "n";
+}
+
+/*----------------------------------------------------------------------------
+  renderWord
+  Spell one word's tokens (schwa rules only in the simple style).
+----------------------------------------------------------------------------*/
+function renderWord(toks, lang, t, style) {
+  if (!toks.length) return "";
+  if (style === "simple") {
+    const native = toks.map(function (k) { return k.src; }).join("");
+    if (hasKey(t.words, native)) return t.words[native];
+    deleteSchwa(toks, lang, t);
+    if (t.script === "beng") bengaliClusters(toks, lang);
+  }
+
+  let out = "";
+  for (let i = 0; i < toks.length; i++) {
+    const tok = toks[i];
+    const atEnd = i === toks.length - 1;
+    let restNasal = !atEnd;
+    for (let j = i + 1; j < toks.length; j++) if (toks[j].t !== "N") restNasal = false;
+
+    if (tok.t === "C") {
+      out += style === "iast" && hasKey(t.consIast, tok.key) ? t.consIast[tok.key] : tok.c;
+      if (!tok.hal && !tok.del) out += vowelText(tok.v, lang, style, atEnd, restNasal);
+    } else if (tok.t === "V") {
+      let v = vowelText(tok.v, lang, style, atEnd, restNasal);
+      /* Hindi/Nepali glide: गए gaye, लिए liye */
+      const prev = toks[i - 1];
+      if (style === "simple" && t.script === "dev" && tok.v === "e" && prev &&
+          /^(a|aa|i|ii)$/.test(prev.t === "V" ? prev.v : (prev.t === "C" && !prev.hal && !prev.del ? prev.v : ""))) {
+        v = "y" + v;
+      }
+      out += v;
+    } else if (tok.t === "N") {
+      out += markText(tok.kind, toks[i + 1], t, style);
+    }
   }
   return out;
 }
 
 /*----------------------------------------------------------------------------
-  romanize
-  Transliterate Hindi (Devanagari) and Assamese/Bengali letters to Latin.
+  romanizeRun
+  Romanize one run of a single script with the given language rules.
 ----------------------------------------------------------------------------*/
-function romanize(text) {
+function romanizeRun(run, lang) {
+  const t = romanTables()[lang];
+  const style = t.script === "dev" ? romanStyle() : "simple";
+  const toks = tokenize(Array.from(run), t, style);
+  let out = "";
+  let word = [];
+  toks.forEach(function (tok) {
+    if (tok.t === "B") {
+      out += renderWord(word, lang, t, style) + tok.s;
+      word = [];
+    } else {
+      word.push(tok);
+    }
+  });
+  return out + renderWord(word, lang, t, style);
+}
+
+/*----------------------------------------------------------------------------
+  cleanRoman
+  Drop leftover Indic marks / joiners, tidy spaces around punctuation.
+----------------------------------------------------------------------------*/
+function cleanRoman(s) {
+  return s
+    .replace(/[\u0900-\u09FF\u200C\u200D]/g, "")
+    .replace(/[ \t\u00A0]+/g, " ")
+    .replace(/ +([.,!?;:])/g, "$1")
+    .trim();
+}
+
+/*----------------------------------------------------------------------------
+  romanize
+  Transliterate Hindi/Nepali (Devanagari) and Assamese/Bengali letters to
+  Latin. lang: "hi" | "ne" | "as" | "bn" | "auto"; defaults to #langSelect.
+----------------------------------------------------------------------------*/
+function romanize(text, lang) {
   if (!text) return "";
-  const chars = Array.from(text);
+  const src = toNfc(text);
+  const want = lang || selectedLang();
+  const chars = Array.from(src);
   let out = "";
   let buf = "";
-  let mode = ""; /* "" | "dev" | "as" */
+  let mode = ""; /* "" | "dev" | "beng" */
+  let devLang = "";
+  let bengLang = "";
 
   function flush() {
     if (!buf) return;
     if (mode === "dev") {
-      out += romanizeScript(buf, {
-        vowels: DEV_VOWELS, cons: DEV_CONS, matra: DEV_MATRA,
-        virama: DEV_VIRAMA, nukta: DEV_NUKTA, signs: DEV_SIGN,
-        inherent: "a"
-      });
-    } else if (mode === "as") {
-      out += romanizeScript(buf, {
-        vowels: AS_VOWELS, cons: AS_CONS, matra: AS_MATRA,
-        virama: AS_VIRAMA, nukta: AS_NUKTA, signs: AS_SIGN,
-        inherent: "o"
-      });
-    } else {
-      out += buf;
+      devLang = devLang || resolveLang("dev", want, src);
+      out += romanizeRun(buf, devLang);
+    } else if (mode === "beng") {
+      bengLang = bengLang || resolveLang("beng", want, src);
+      out += romanizeRun(buf, bengLang);
     }
     buf = "";
     mode = "";
@@ -139,7 +460,8 @@ function romanize(text) {
 
   for (let i = 0; i < chars.length; i++) {
     const ch = chars[i];
-    const nextMode = isDevanagari(ch) ? "dev" : isBengaliAssamese(ch) ? "as" : "";
+    if (ROMAN_ZW[ch] && mode) { buf += ch; continue; }
+    const nextMode = isDevanagari(ch) ? "dev" : isBengaliAssamese(ch) ? "beng" : "";
     if (nextMode !== mode) flush();
     if (!nextMode) {
       out += ch;
@@ -149,7 +471,7 @@ function romanize(text) {
     }
   }
   flush();
-  return out.replace(/ +/g, " ").trim();
+  return cleanRoman(out);
 }
 
 /*----------------------------------------------------------------------------
