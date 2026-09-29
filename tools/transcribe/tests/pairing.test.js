@@ -164,18 +164,5 @@ function items(call) {
     ok(ff.calls.length === 1, "requests again after turning on");
   }
 
-  console.log("== Copy all order unchanged (ENG, Roman, Original) ==");
-  {
-    const ff = fakeFetch();
-    const app = session(ff, 0);
-    let copied = "";
-    app.ctx.navigator.clipboard.writeText = function (t) { copied = t; return Promise.resolve(); };
-    sayCard(app, "मेरा नाम जोर है।");
-    ff.answer(ff.calls[0], function () { return "My name is Jor."; }); await flush();
-    app.run("copyAll()");
-    ok(copied.split("\n").join(" | ") === "(ENG) My name is Jor. | (Roman) mera naam jor hai. | (Original) मेरा नाम जोर है।",
-      "copy text", copied);
-  }
-
   H.done("pairing");
 })();

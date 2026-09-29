@@ -1,7 +1,8 @@
 /*=============================================================================
   smoke.jsdom.js — load transcribe.html in jsdom (real HTML + scripts) with a
   fake mic, fake WebSocket and fake fetch; press Start, replay a short
-  transcript, let a card close and get its English, press Stop.
+  transcript, let a card close and get its English, press Download (object
+  URLs stubbed), press Stop and Clear.
   Needs the jsdom package (not part of the repo):
     NODE_PATH=/path/to/node_modules node tools/transcribe/tests/smoke.jsdom.js
   Without jsdom it prints "skipped" and exits 0.
@@ -94,6 +95,11 @@ function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   ok(socket && socket.sent[0].setup.inputAudioTranscription.mode === "SMART", "setup sent with SMART");
   ok(socket.sent[0].setup.inputAudioTranscription.languageCodes[0] === "hi-IN", "language hint hi-IN");
   ok(w.document.querySelectorAll("#blocks .block.live").length === 1, "live card shown");
+  ok($("btnDownload").disabled, "Download disabled before any text");
+  ok(!$("btnCopy"), "Copy all button gone");
+  const bs = w.getComputedStyle($("blocks"));
+  ok(bs.overflowY === "auto" && w.getComputedStyle(w.document.body).overflow === "hidden",
+    "cards area is its own scroller: " + bs.overflowY);
   socket.emit({ serverContent: { interimInputTranscription: { text: "मेरा नाम" } } });
   socket.emit({ serverContent: { interimInputTranscription: { text: "मेरा नाम जोर" } } });
   socket.emit({ serverContent: { inputTranscription: { text: "मेरा नाम जोर है।" } } });
@@ -105,11 +111,36 @@ function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   ok(!!closed, "card closed after pause");
   ok(fetchCalls.length === 1 && fetchCalls[0].url.indexOf("gemini-3.5-flash-lite:generateContent") !== -1, "one translate request");
   ok(closed && closed.querySelector(".en").textContent === "(ENG) My name is Jor.", "English on the card");
+  const rows = closed ? Array.from(closed.children).map(function (c) { return c.className; }).join(" | ") : "";
+  ok(rows === "meta | line en | line txt | line rom", "row order: English, Original, Roman", rows);
+  /* Download: stub object URLs, catch the <a download> click */
+  const blobs = [];
+  const revoked = [];
+  let clicked = null;
+  w.URL.createObjectURL = function (b) { blobs.push(b); return "blob:smoke/1"; };
+  w.URL.revokeObjectURL = function (u) { revoked.push(u); };
+  w.HTMLAnchorElement.prototype.click = function () { clicked = { href: this.href, download: this.download }; };
+  ok(!$("btnDownload").disabled, "Download enabled with cards");
+  $("btnDownload").click();
+  ok(blobs.length === 1 && blobs[0].type === "text/plain;charset=utf-8", "Download made one UTF-8 text blob");
+  ok(clicked && clicked.href === "blob:smoke/1" && /^transcribe-\d{4}-\d\d-\d\d-\d{4}\.txt$/.test(clicked.download),
+    "anchor clicked with file name " + (clicked && clicked.download));
+  /* jsdom's Blob has no text(): read it with FileReader */
+  const txt = blobs.length ? await new Promise(function (r) {
+    const fr = new w.FileReader();
+    fr.onload = function () { r(String(fr.result)); };
+    fr.readAsText(blobs[0]);
+  }) : "";
+  ok(/^Transcribe — \d{4}-\d\d-\d\d \d\d:\d\d\nLanguage: Hindi \(hi-IN\)\n\n\[\d\d:\d\d:\d\d – \d\d:\d\d:\d\d\]\n\(ENG\) My name is Jor\.\n\(Original\) मेरा नाम जोर है।\n\(Roman\) mera naam jor hai\.\n/.test(txt),
+    "downloaded text", txt);
+  await wait(1700);
+  ok(revoked.length === 1 && revoked[0] === "blob:smoke/1", "object URL revoked");
   $("btnStop").click();
   await wait(100);
   ok($("status").textContent === "Stopped", "Stop → Stopped: " + $("status").textContent);
   $("btnClear").click();
   ok(w.document.querySelectorAll("#blocks .block").length === 0, "Clear empties the list");
+  ok($("btnDownload").disabled, "Clear disables Download");
   ok(errors.length === 0, "no page errors", errors.join("\n"));
   console.log("\nsmoke: " + (fails ? fails + " failed" : "all passed"));
   w.close();

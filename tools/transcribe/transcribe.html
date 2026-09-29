@@ -7,30 +7,38 @@
   <link rel="stylesheet" href="transcribe.css" />
 </head>
 <body>
-  <h1>Transcribe</h1>
+  <!-- Pinned top area; the cards scroll on their own below it -->
+  <header id="top">
+    <h1>Transcribe</h1>
 
-  <label for="apiKey">API Key</label>
-  <input id="apiKey" type="password" autocomplete="off" placeholder="API Key" />
+    <div class="fields">
+      <div class="field key">
+        <label for="apiKey">API Key</label>
+        <input id="apiKey" type="password" autocomplete="off" placeholder="API Key" />
+      </div>
+      <div class="field lang">
+        <label for="langSelect">Language</label>
+        <select id="langSelect">
+          <option value="auto" selected>Auto</option>
+          <option value="as">Assamese</option>
+          <option value="hi">Hindi</option>
+          <option value="bn">Bengali</option>
+          <option value="ne">Nepali</option>
+        </select>
+      </div>
+    </div>
 
-  <label for="langSelect">Language</label>
-  <select id="langSelect">
-    <option value="auto" selected>Auto</option>
-    <option value="as">Assamese</option>
-    <option value="hi">Hindi</option>
-    <option value="bn">Bengali</option>
-    <option value="ne">Nepali</option>
-  </select>
-
-  <div class="row">
-    <button id="btnStart" class="primary" type="button">Start</button>
-    <button id="btnStop" class="danger" type="button" disabled>Stop</button>
-    <button id="btnCopy" type="button">Copy all</button>
-    <button id="btnClear" type="button">Clear</button>
-    <button id="btnRoman" type="button">Romanizer: on</button>
-    <button id="btnTrans" type="button">Translate: on</button>
-  </div>
-  <div id="status">Idle</div>
-  <div id="blocks"></div>
+    <div class="row">
+      <button id="btnStart" class="primary" type="button">Start</button>
+      <button id="btnStop" class="danger" type="button" disabled>Stop</button>
+      <button id="btnDownload" type="button" disabled>Download</button>
+      <button id="btnClear" type="button">Clear</button>
+      <button id="btnRoman" type="button">Romanizer: on</button>
+      <button id="btnTrans" type="button">Translate: on</button>
+    </div>
+    <div id="status">Idle</div>
+  </header>
+  <main id="blocks"></main>
 
   <!-- Order matters: maps → romanizer → vocab → translation → app -->
   <script src="hindi.js"></script>

@@ -39,6 +39,15 @@ const SOURCE_LANG_NAMES = {
 ----------------------------------------------------------------------------*/
 function paintEn(blockEl, enText) {
   if (!blockEl) return;
+  if (typeof keepScroll === "function") {
+    keepScroll(function () { paintEnRow(blockEl, enText); });
+  } else {
+    paintEnRow(blockEl, enText);
+  }
+}
+
+/* paintEn body: the English row sits right after the meta row */
+function paintEnRow(blockEl, enText) {
   let en = blockEl.querySelector(".en");
   if (!CONFIG.ENABLE_TRANSLATION) {
     if (en) {
@@ -59,14 +68,18 @@ function paintEn(blockEl, enText) {
 /*----------------------------------------------------------------------------
   setEnPending
   Toggle the "translating…" marker on a block's English line.
-  The marker is CSS ::after, so copyAll never picks it up.
+  The marker is CSS ::after, so the download never picks it up.
 ----------------------------------------------------------------------------*/
 function setEnPending(blockEl, on) {
   if (!blockEl) return;
   const en = blockEl.querySelector(".en");
   if (!en) return;
-  if (on) en.classList.add("pending");
-  else en.classList.remove("pending");
+  const apply = function () {
+    if (on) en.classList.add("pending");
+    else en.classList.remove("pending");
+  };
+  if (typeof keepScroll === "function") keepScroll(apply);
+  else apply();
 }
 
 /*----------------------------------------------------------------------------
