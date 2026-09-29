@@ -358,8 +358,39 @@ function cardText() {
 }
 
 /*----------------------------------------------------------------------------
+  keepScroll
+  Run fn (which changes cards) without moving what the reader is looking
+  at. Newest cards go on top, so when the card list is scrolled down
+  (scrollTop > SCROLL_KEEP_PX) the first card still in view is the anchor:
+  after fn, scrollTop moves by however far that card moved. At the top the
+  list stays at the top (new cards show up). Nested calls are safe
+  (scrollTop is set, not incremented).
+----------------------------------------------------------------------------*/
+const SCROLL_KEEP_PX = 40;
+function keepScroll(fn) {
+  const host = document.getElementById("blocks");
+  const top = host ? host.scrollTop : 0;
+  if (!host || typeof top !== "number" || top <= SCROLL_KEEP_PX) return fn();
+  const kids = host.children || [];
+  let anchor = null;
+  for (let i = 0; i < kids.length; i++) {
+    if (kids[i].offsetTop + kids[i].offsetHeight > top) { anchor = kids[i]; break; }
+  }
+  const anchorTop = anchor ? anchor.offsetTop : 0;
+  const height = host.scrollHeight;
+  const out = fn();
+  if (anchor && anchor.parentNode === host) {
+    host.scrollTop = top + (anchor.offsetTop - anchorTop);
+  } else {
+    host.scrollTop = top + (host.scrollHeight - height);
+  }
+  return out;
+}
+
+/*----------------------------------------------------------------------------
   ensureLiveBlock
   Create or reuse the top live card.
+  Rows: meta, English (main bullet), Original, Roman (one level in).
 ----------------------------------------------------------------------------*/
 function ensureLiveBlock() {
   const host = document.getElementById("blocks");
@@ -371,13 +402,14 @@ function ensureLiveBlock() {
   liveBlockEl.dataset.seq = String(cardSeq);
   liveBlockEl.style.background = nextColor();
   [["meta", "LIVE · " + formatTime(new Date())], ["line en", ""],
-   ["line rom", ""], ["line txt", ""]].forEach(function (part) {
+   ["line txt", ""], ["line rom", ""]].forEach(function (part) {
     const d = document.createElement("div");
     d.className = part[0];
     d.textContent = part[1];
     liveBlockEl.appendChild(d);
   });
-  host.insertBefore(liveBlockEl, host.firstChild);
+  const el = liveBlockEl;
+  keepScroll(function () { host.insertBefore(el, host.firstChild); });
   return liveBlockEl;
 }
 
@@ -388,10 +420,15 @@ function ensureLiveBlock() {
 function renderLiveText() {
   const text = cardText();
   if (!text && !liveBlockEl) return;
-  const el = ensureLiveBlock();
-  el.dataset.original = text;
-  el.querySelector(".txt").textContent = text ? ("(Original) " + text) : "";
-  paintRoman(el, text);
+  keepScroll(function () {
+    const el = ensureLiveBlock();
+    el.dataset.original = text;
+    /* card start time (download): when it first gets text */
+    if (text && !el.dataset.start) el.dataset.start = String(liveStartedAt || now());
+    el.querySelector(".txt").textContent = text ? ("(Original) " + text) : "";
+    paintRoman(el, text);
+  });
+  syncDownloadButton();
 }
 
 /*----------------------------------------------------------------------------
@@ -419,17 +456,24 @@ function commitLiveBlock() {
   lastTextAt = 0;
   if (!el) return;
   if (!text) {
-    el.remove();
+    keepScroll(function () { el.remove(); });
+    syncDownloadButton();
     return;
   }
-  el.classList.remove("live");
-  el.dataset.original = text;
-  el.dataset.frozenAt = String(now());
-  const meta = el.querySelector(".meta");
-  if (meta) meta.textContent = formatTime(new Date());
-  el.querySelector(".txt").textContent = "(Original) " + text;
-  paintRoman(el, text);
-  requestTranslation(el);
+  keepScroll(function () {
+    el.classList.remove("live");
+    el.dataset.original = text;
+    el.dataset.frozenAt = String(now());
+    /* card end time (download) */
+    el.dataset.end = el.dataset.frozenAt;
+    if (!el.dataset.start) el.dataset.start = el.dataset.frozenAt;
+    const meta = el.querySelector(".meta");
+    if (meta) meta.textContent = formatTime(new Date());
+    el.querySelector(".txt").textContent = "(Original) " + text;
+    paintRoman(el, text);
+    requestTranslation(el);
+  });
+  syncDownloadButton();
 }
 
 /*----------------------------------------------------------------------------
@@ -936,31 +980,116 @@ async function stopAll(closeSocket) {
 }
 
 /*----------------------------------------------------------------------------
-  copyAll
-  Copy blocks in display order: ENG, Roman, Original.
+  Download helpers — a .txt of all cards, oldest first.
 ----------------------------------------------------------------------------*/
-function copyAll() {
-  const parts = [];
-  document.querySelectorAll("#blocks .block").forEach(function (block) {
-    const e = (block.querySelector(".en") && block.querySelector(".en").textContent || "").trim();
-    const r = (block.querySelector(".rom") && block.querySelector(".rom").textContent || "").trim();
-    const t = (block.querySelector(".txt") && block.querySelector(".txt").textContent || "").trim();
+/* Dropdown value → name for the file header */
+const LANGUAGE_LABELS = { auto: "Auto", as: "Assamese", hi: "Hindi", bn: "Bengali", ne: "Nepali" };
+
+function pad2(n) {
+  return (n < 10 ? "0" : "") + n;
+}
+
+/* YYYY-MM-DD, local time */
+function dateStamp(d) {
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+}
+
+/* HH:MM:SS (24 h), local time, from ms */
+function clockStamp(ms) {
+  const d = new Date(Number(ms));
+  return pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
+}
+
+/* transcribe-YYYY-MM-DD-HHMM.txt, local time */
+function downloadFileName(d) {
+  return "transcribe-" + dateStamp(d) + "-" + pad2(d.getHours()) + pad2(d.getMinutes()) + ".txt";
+}
+
+/* Cards that have text, oldest first */
+function cardsWithText() {
+  return Array.prototype.slice.call(document.querySelectorAll("#blocks .block"))
+    .filter(function (el) { return (el.dataset.original || "").trim(); })
+    .sort(function (a, b) { return Number(a.dataset.seq) - Number(b.dataset.seq); });
+}
+
+function rowText(block, cls) {
+  const el = block.querySelector("." + cls);
+  return el ? (el.textContent || "").trim() : "";
+}
+
+/*----------------------------------------------------------------------------
+  buildDownloadText
+  Header (date, language), then each card oldest first:
+    [start – end]   ((live) and "…" as end for the open card)
+    (ENG) …         ("(translation pending)" if not back yet)
+    (Original) …
+    (Roman) …       (only when the Romanizer line has text)
+  Blank line between cards. "" when there are no cards.
+----------------------------------------------------------------------------*/
+function buildDownloadText(date) {
+  const cards = cardsWithText();
+  if (!cards.length) return "";
+  const sel = document.getElementById("langSelect");
+  const langKey = sel ? sel.value : "auto";
+  const codes = CONFIG.LANGUAGE_OPTIONS[langKey] || [];
+  const out = [
+    "Transcribe — " + dateStamp(date) + " " + pad2(date.getHours()) + ":" + pad2(date.getMinutes()),
+    "Language: " + (LANGUAGE_LABELS[langKey] || langKey) + (codes.length ? " (" + codes.join(", ") + ")" : ""),
+    ""
+  ];
+  cards.forEach(function (block) {
+    const live = block.classList.contains("live");
+    const start = block.dataset.start || block.dataset.frozenAt;
+    const end = block.dataset.end || block.dataset.frozenAt;
     const lines = [];
-    if (e) lines.push(e);
-    if (r) lines.push(r);
-    if (t) lines.push(t);
-    if (lines.length) parts.push(lines.join("\n"));
+    lines.push("[" + (start ? clockStamp(start) : "--:--:--") + " – " +
+      (live || !end ? "…" : clockStamp(end)) + "]" + (live ? " (live)" : ""));
+    let en = rowText(block, "en");
+    if (!en) en = CONFIG.ENABLE_TRANSLATION ? "(ENG) (translation pending)" : "(ENG) (translation off)";
+    lines.push(en);
+    lines.push(rowText(block, "txt") || ("(Original) " + block.dataset.original.trim()));
+    const rom = rowText(block, "rom");
+    if (CONFIG.ENABLE_ROMANIZER && rom) lines.push(rom);
+    out.push(lines.join("\n"), "");
   });
-  const blob = parts.join("\n\n");
-  if (!blob) {
-    setStatus("Nothing to copy");
+  return out.join("\n");
+}
+
+/*----------------------------------------------------------------------------
+  syncDownloadButton
+  Download is only enabled when some card has text.
+----------------------------------------------------------------------------*/
+function syncDownloadButton() {
+  const btn = document.getElementById("btnDownload");
+  if (btn) btn.disabled = cardsWithText().length === 0;
+}
+
+/*----------------------------------------------------------------------------
+  downloadAll
+  Save all cards as a UTF-8 .txt (Blob + object URL + <a download>).
+  The URL is revoked a moment later (revoking at once breaks some mobile
+  browsers).
+----------------------------------------------------------------------------*/
+function downloadAll() {
+  const date = new Date();
+  const text = buildDownloadText(date);
+  if (!text) {
+    setStatus("Nothing to download");
+    syncDownloadButton();
     return;
   }
-  navigator.clipboard.writeText(blob).then(function () {
-    setStatus("Copied", "ok");
-  }).catch(function () {
-    setStatus("Copy failed", "err");
-  });
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = downloadFileName(date);
+  a.rel = "noopener";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+  setStatus("Downloaded " + a.download, "ok");
 }
 
 /*----------------------------------------------------------------------------
@@ -982,6 +1111,7 @@ function clearAll() {
   }
   colorIndex = 0;
   if (running) ensureLiveBlock();
+  syncDownloadButton();
   setStatus("Cleared");
 }
 
@@ -1002,7 +1132,8 @@ function boot() {
   document.getElementById("btnStop").addEventListener("click", function () {
     stopAll(true);
   });
-  document.getElementById("btnCopy").addEventListener("click", copyAll);
+  document.getElementById("btnDownload").addEventListener("click", downloadAll);
+  syncDownloadButton();
   document.getElementById("btnClear").addEventListener("click", clearAll);
 
   function applyLanguageSelect() {
@@ -1021,8 +1152,10 @@ function boot() {
   document.getElementById("btnRoman").addEventListener("click", function () {
     CONFIG.ENABLE_ROMANIZER = !CONFIG.ENABLE_ROMANIZER;
     syncRomanButton();
-    document.querySelectorAll("#blocks .block").forEach(function (block) {
-      paintRoman(block, block.dataset.original || "");
+    keepScroll(function () {
+      document.querySelectorAll("#blocks .block").forEach(function (block) {
+        paintRoman(block, block.dataset.original || "");
+      });
     });
   });
 
@@ -1038,9 +1171,11 @@ function boot() {
     if (!CONFIG.ENABLE_TRANSLATION) {
       /* Off: cancel pending requests, hide English, send nothing more */
       clearTranslations();
-      document.querySelectorAll("#blocks .block .en").forEach(function (el) {
-        el.textContent = "";
-        el.classList.remove("pending");
+      keepScroll(function () {
+        document.querySelectorAll("#blocks .block .en").forEach(function (el) {
+          el.textContent = "";
+          el.classList.remove("pending");
+        });
       });
     }
   });

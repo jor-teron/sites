@@ -1,5 +1,8 @@
 /*=============================================================================
   Transcribe — page styles
+  Layout: body is a full-height flex column. The header (title, key,
+  language, buttons, status) stays pinned; #blocks is the only scrolling
+  region, so live-card updates never move the page itself.
 =============================================================================*/
 :root {
   --bg: #12141a;
@@ -17,11 +20,27 @@ html, body {
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  min-height: 100%;
+  height: 100%;
 }
-body { padding: 16px; padding-bottom: 28px; }
-h1 { font-size: 1.15rem; margin: 0 0 12px; font-weight: 650; }
-label { display: block; font-size: 0.75rem; color: var(--muted); margin: 8px 0 4px; }
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;   /* fallback */
+  height: 100dvh;  /* follows the mobile URL bar */
+  overflow: hidden;
+}
+#top {
+  flex: none;
+  padding: 12px 16px 8px;
+  padding-top: max(12px, env(safe-area-inset-top));
+  border-bottom: 1px solid #232833;
+}
+h1 { font-size: 1.15rem; margin: 0 0 10px; font-weight: 650; }
+label { display: block; font-size: 0.75rem; color: var(--muted); margin: 0 0 4px; }
+.fields { display: flex; gap: 8px; }
+.field { min-width: 0; }
+.field.key { flex: 2 1 0; }
+.field.lang { flex: 1 1 0; }
 input[type="password"], input[type="text"], select {
   width: 100%;
   padding: 10px 12px;
@@ -29,9 +48,9 @@ input[type="password"], input[type="text"], select {
   border: 1px solid #2d3340;
   background: var(--panel);
   color: var(--text);
-  font-size: 16px;
+  font-size: 16px; /* 16px stops iOS zooming on focus */
 }
-.row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 button {
   border: 0;
   border-radius: 10px;
@@ -46,7 +65,7 @@ button.primary { background: var(--accent); color: #0b1220; }
 button.danger { background: var(--danger); color: #1a0b0b; }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
 #status {
-  margin-top: 10px;
+  margin-top: 8px;
   font-size: 0.8rem;
   color: var(--muted);
   min-height: 1.2em;
@@ -54,12 +73,21 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 #status.ok { color: var(--ok); }
 #status.err { color: var(--danger); }
 #blocks {
-  margin-top: 14px;
+  position: relative; /* card offsetTop is measured from here (keepScroll) */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  overflow-anchor: none; /* keepScroll() in transcribe.js does the anchoring */
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 12px 16px;
+  padding-bottom: calc(28px + env(safe-area-inset-bottom));
 }
 .block {
+  flex: none;
   border-radius: 12px;
   padding: 10px 12px;
   line-height: 1.45;
@@ -75,11 +103,13 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   opacity: 0.7;
   margin-bottom: 4px;
 }
+/* Rows: English (main bullet), then Original and Roman one level in */
 .block .line {
   margin-top: 2px;
   list-style: disc;
   display: list-item;
 }
+.block .line:empty:not(.pending) { display: none; }
 .block .en {
   margin-left: 1.1em;
   font-weight: 650;
@@ -91,11 +121,33 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 .block .en.pending:empty::after { content: "translating…"; }
 .block .en.pending:not(:empty)::after { content: " …"; }
+.block .txt,
 .block .rom {
   margin-left: 2.4em;
+  list-style: circle;
+}
+.block .rom {
   font-style: italic;
   opacity: 0.92;
 }
-.block .txt {
-  margin-left: 3.7em;
+
+/* Phones (portrait or landscape): compact header so the cards get most
+   of the screen */
+@media (max-width: 560px), (max-height: 500px) {
+  #top { padding: 8px 10px 6px; padding-top: max(8px, env(safe-area-inset-top)); }
+  h1 { font-size: 1rem; margin-bottom: 6px; }
+  .fields label {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+  }
+  input[type="password"], input[type="text"], select { padding: 7px 10px; border-radius: 8px; }
+  .row { gap: 6px; margin-top: 6px; }
+  button { padding: 7px 10px; font-size: 0.85rem; border-radius: 8px; }
+  #status { margin-top: 4px; font-size: 0.75rem; }
+  #blocks { padding: 8px 10px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+}
+
+/* Short screens (phone in landscape): drop the title line too */
+@media (max-height: 500px) {
+  h1 { display: none; }
 }

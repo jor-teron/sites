@@ -1,7 +1,7 @@
 /*=============================================================================
   harness.js — load the Transcribe page scripts in Node with a tiny fake DOM,
   fake clock, fake WebSocket and fake fetch (no npm packages needed).
-  Used by dedupe.test.js and pairing.test.js.
+  Used by dedupe.test.js, pairing.test.js and download.test.js.
 =============================================================================*/
 
 const fs = require("fs");
@@ -71,7 +71,7 @@ class FakeEl {
 function makePage() {
   const doc = {};
   doc.body = new FakeEl("body", doc);
-  ["apiKey", "langSelect", "btnStart", "btnStop", "btnCopy", "btnClear", "btnRoman", "btnTrans",
+  ["apiKey", "langSelect", "btnStart", "btnStop", "btnDownload", "btnClear", "btnRoman", "btnTrans",
    "status", "blocks"].forEach(function (id) {
     const el = new FakeEl(id === "blocks" || id === "status" ? "div" : "input", doc);
     el.id = id;
@@ -107,14 +107,27 @@ function loadApp(opts) {
   }
   FakeWS.OPEN = 1; FakeWS.CONNECTING = 0;
   const store = {};
+  /* fake Blob / object URLs: downloads[] records { url, text, type } */
+  class FakeBlob {
+    constructor(parts, o) { this.parts = parts || []; this.type = (o && o.type) || ""; }
+    text() { return Promise.resolve(this.parts.join("")); }
+  }
+  const downloads = [];
+  const revoked = [];
+  const FakeURL = {
+    createObjectURL: function (b) { const url = "blob:fake/" + (downloads.length + 1); downloads.push({ url: url, text: b.parts.join(""), type: b.type }); return url; },
+    revokeObjectURL: function (u) { revoked.push(u); }
+  };
   const ctx = vm.createContext({
     document: doc,
     window: {},
     console: console,
     localStorage: { getItem: function (k) { return store[k] || null; }, setItem: function (k, v) { store[k] = String(v); } },
-    navigator: { clipboard: { writeText: function () { return Promise.resolve(); } } },
+    navigator: {},
     WebSocket: FakeWS,
-    Blob: function () {},
+    Blob: FakeBlob,
+    URL: FakeURL,
+    Date: Date,
     AbortController: AbortController,
     fetch: opts.fetch || function () { return Promise.reject(new Error("no fetch in test")); },
     setTimeout: setTimeoutFake,
@@ -155,7 +168,7 @@ function loadApp(opts) {
     });
   }
   return { ctx: ctx, doc: doc, clock: clock, run: run, advance: advance, interim: interim, final: final,
-    cards: cards, sent: sent, timers: timers };
+    cards: cards, sent: sent, timers: timers, downloads: downloads, revoked: revoked };
 }
 
 /*----------------------------------------------------------------------------
