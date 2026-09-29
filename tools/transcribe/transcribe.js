@@ -20,8 +20,30 @@ const CONFIG = {
   SAMPLE_RATE: 16000,
   PCM_MIME: "audio/pcm;rate=16000",
 
-  /* New colored block every N milliseconds of capture */
-  SEGMENT_MS: 4000,
+  /* Card boundaries. A card is frozen at a pause / turn boundary:
+     - the transcribe socket says the turn or transcription finished, or
+     - no new transcript text for PAUSE_MS,
+     but never before SEGMENT_MIN_MS. SEGMENT_MAX_MS is the hard fallback
+     so a long run-on stretch still gets split. */
+  SEGMENT_MIN_MS: 1500,
+  SEGMENT_MAX_MS: 8000,
+  PAUSE_MS: 1200,
+
+  /* Housekeeping tick (card boundaries + translation queue) */
+  TICK_MS: 250,
+
+  /* Translation pairing. English is late, so frozen cards wait in a queue.
+     The oldest waiting card gets all incoming English until the translate
+     socket signals turnComplete / generationComplete, or a safety timeout:
+     - EN_IDLE_MS: card has English but none arrived for this long, and a
+       later card already has transcript → move on.
+     - EN_WAIT_MAX_MS: card never got English this long after freezing, and
+       a later card has transcript → give up on it. */
+  EN_IDLE_MS: 3000,
+  EN_WAIT_MAX_MS: 12000,
+
+  /* After Stop, keep the translate socket open this long for late English */
+  STOP_GRACE_MS: 4000,
 
   /* ScriptProcessor buffer size (power of 2) */
   PROCESSOR_BUFFER: 4096,
@@ -80,21 +102,29 @@ let mediaStream = null;
 let audioContext = null;
 let processorNode = null;
 let sourceNode = null;
-/* 4-second segment timer id */
+/* Housekeeping tick id (card boundaries + translation queue) */
 let segmentTimer = null;
 /* Which color index is next */
 let colorIndex = 0;
-/* Live (uncommitted) text for the current 4s window */
+/* Live (uncommitted) text for the current card */
 let liveText = "";
-/* Live English translation for the current 4s window */
-let liveEn = "";
-/* Already-committed original / EN — used to drop model repeats */
+/* When the live card got its first / latest transcript text (ms) */
+let liveStartedAt = 0;
+let lastTranscriptAt = 0;
+/* Transcribe socket signalled a turn / transcription boundary */
+let boundaryPending = false;
+/* Already-committed original — used to drop model repeats */
 let committedText = "";
-let committedEn = "";
 /* DOM node of the live block at the top */
 let liveBlockEl = null;
-/* Last frozen card — late ENG attaches here so it stays with that Original */
-let lastFrozenBlock = null;
+/* Running card number (data-seq on each card) */
+let cardSeq = 0;
+/* FIFO of cards still waiting for (more) English. Head gets incoming EN. */
+let enQueue = [];
+/* True once English landed since the last translate turn boundary */
+let enSinceBoundary = false;
+/* After Stop: time (ms) when the translate socket gets closed; 0 = none */
+let graceUntil = 0;
 /* True while capturing */
 let running = false;
 
@@ -150,15 +180,25 @@ function formatTime(date) {
 }
 
 /*----------------------------------------------------------------------------
+  now
+  Current time in ms (one place, so a test harness can fake the clock).
+----------------------------------------------------------------------------*/
+function now() {
+  return Date.now();
+}
+
+/*----------------------------------------------------------------------------
   ensureLiveBlock
-  Create or reuse the top live card for the current 4s window.
+  Create or reuse the top live card. New cards join the English queue.
 ----------------------------------------------------------------------------*/
 function ensureLiveBlock() {
   const host = document.getElementById("blocks");
   if (liveBlockEl && liveBlockEl.parentNode === host) return liveBlockEl;
 
+  cardSeq += 1;
   liveBlockEl = document.createElement("div");
   liveBlockEl.className = "block live";
+  liveBlockEl.dataset.seq = String(cardSeq);
   liveBlockEl.style.background = nextColor();
   liveBlockEl.innerHTML =
     '<div class="meta">LIVE · ' + formatTime(new Date()) + "</div>" +
@@ -166,55 +206,57 @@ function ensureLiveBlock() {
     '<div class="line rom"></div>' +
     '<div class="line txt"></div>';
   host.insertBefore(liveBlockEl, host.firstChild);
+  enqueueForEn(liveBlockEl);
   return liveBlockEl;
 }
 
 /*----------------------------------------------------------------------------
   renderLiveText
-  Paint current window text into the live card.
+  Paint current card text into the live card. (EN paints itself.)
 ----------------------------------------------------------------------------*/
 function renderLiveText() {
-  if (!liveText && !liveEn) return;
+  if (!liveText) return;
   const el = ensureLiveBlock();
   el.dataset.original = liveText || "";
   const txt = el.querySelector(".txt");
   txt.textContent = liveText ? ("(Original) " + liveText) : "";
   paintRoman(el, liveText);
-  paintEn(el, liveEn);
+  refreshEnPending(el);
 }
 
 /*----------------------------------------------------------------------------
   commitLiveBlock
-  Freeze the current 4s window as a finished block.
+  Freeze the live card. It stays in the English queue until its EN is done.
 ----------------------------------------------------------------------------*/
 function commitLiveBlock() {
+  const el = liveBlockEl;
   const text = (liveText || "").trim();
-  if (liveBlockEl) {
-    liveBlockEl.classList.remove("live");
-    liveBlockEl.dataset.original = liveText || "";
-    const meta = liveBlockEl.querySelector(".meta");
-    if (meta && (text || liveEn)) {
-      meta.textContent = formatTime(new Date());
-    }
-    if (!text && !(liveEn || "").trim()) {
-      liveBlockEl.remove();
-      lastFrozenBlock = lastFrozenBlock;
+  liveBlockEl = null;
+  if (el) {
+    const en = (el.dataset.en || "").trim();
+    el.classList.remove("live");
+    el.dataset.original = liveText || "";
+    if (!text && !en) {
+      dropFromEnQueue(el);
+      el.remove();
     } else {
-      if (liveEn) liveBlockEl.dataset.en = liveEn;
-      paintEn(liveBlockEl, liveBlockEl.dataset.en || liveEn);
-      paintRoman(liveBlockEl, liveText);
-      lastFrozenBlock = liveBlockEl;
+      const meta = el.querySelector(".meta");
+      if (meta) meta.textContent = formatTime(new Date());
+      el.dataset.frozenAt = String(now());
+      paintEn(el, en);
+      paintRoman(el, liveText);
+      /* Translate turn already ended while this card was live → done */
+      if (el.dataset.enDone === "1") closeEn(el);
+      else refreshEnPending(el);
     }
   }
   if (text) {
     committedText = (committedText ? committedText + " " : "") + text;
   }
-  if ((liveEn || "").trim()) {
-    committedEn = (committedEn ? committedEn + " " : "") + liveEn.trim();
-  }
-  liveBlockEl = null;
   liveText = "";
-  liveEn = "";
+  liveStartedAt = 0;
+  lastTranscriptAt = 0;
+  boundaryPending = false;
 }
 
 /*----------------------------------------------------------------------------
@@ -269,39 +311,185 @@ function appendTranscript(incoming) {
   if (!incoming) return;
   const sliced = stripCommitted(incoming, committedText, liveText);
   if (!sliced) return;
-  liveText = mergePiece(liveText, sliced);
+  const merged = mergePiece(liveText, sliced);
+  if (merged === liveText) return;
+  const t = now();
+  if (!liveText) liveStartedAt = t;
+  lastTranscriptAt = t;
+  liveText = merged;
   renderLiveText();
 }
 
 /*----------------------------------------------------------------------------
+  markSegmentBoundary
+  Transcribe socket says a turn / utterance ended: freeze now, or at the
+  first tick after SEGMENT_MIN_MS if the card is still very short.
+----------------------------------------------------------------------------*/
+function markSegmentBoundary() {
+  if (!running || !(liveText || "").trim()) return;
+  if (now() - liveStartedAt >= CONFIG.SEGMENT_MIN_MS) commitLiveBlock();
+  else boundaryPending = true;
+}
+
+/*----------------------------------------------------------------------------
+  translationActive
+  True if English is on and the translate socket is (being) opened.
+----------------------------------------------------------------------------*/
+function translationActive() {
+  return !!(CONFIG.ENABLE_TRANSLATION && wsTranslate &&
+    (wsTranslate.readyState === WebSocket.CONNECTING ||
+     wsTranslate.readyState === WebSocket.OPEN));
+}
+
+/*----------------------------------------------------------------------------
+  refreshEnPending
+  Show "translating…" on a queued card once it has something to translate.
+----------------------------------------------------------------------------*/
+function refreshEnPending(el) {
+  if (!el) return;
+  const queued = enQueue.indexOf(el) !== -1;
+  const hasSomething = !!((el.dataset.original || "").trim() || (el.dataset.en || "").trim());
+  setEnPending(el, queued && hasSomething && CONFIG.ENABLE_TRANSLATION);
+}
+
+/*----------------------------------------------------------------------------
+  enqueueForEn
+  Add a card to the back of the English queue (if translation is running).
+----------------------------------------------------------------------------*/
+function enqueueForEn(el) {
+  if (!el || !translationActive()) return;
+  if (enQueue.indexOf(el) !== -1) return;
+  enQueue.push(el);
+  refreshEnPending(el);
+}
+
+/*----------------------------------------------------------------------------
+  dropFromEnQueue
+  Remove a card from the English queue without touching its text.
+----------------------------------------------------------------------------*/
+function dropFromEnQueue(el) {
+  const i = enQueue.indexOf(el);
+  if (i !== -1) enQueue.splice(i, 1);
+}
+
+/*----------------------------------------------------------------------------
+  closeEn
+  A card's English is finished: leave the queue, hide the marker.
+----------------------------------------------------------------------------*/
+function closeEn(el) {
+  if (!el) return;
+  if (enQueue[0] === el) enSinceBoundary = false;
+  dropFromEnQueue(el);
+  el.dataset.enClosed = "1";
+  delete el.dataset.enDone;
+  setEnPending(el, false);
+}
+
+/*----------------------------------------------------------------------------
+  flushEnQueue
+  Close every waiting card (Stop, Clear, translate off / socket gone).
+----------------------------------------------------------------------------*/
+function flushEnQueue() {
+  enQueue.slice().forEach(closeEn);
+  enQueue = [];
+  enSinceBoundary = false;
+}
+
+/*----------------------------------------------------------------------------
+  pruneEnQueue
+  Forget queued cards that are no longer on the page.
+----------------------------------------------------------------------------*/
+function pruneEnQueue() {
+  const host = document.getElementById("blocks");
+  enQueue = enQueue.filter(function (el) { return el.parentNode === host; });
+}
+
+/*----------------------------------------------------------------------------
+  laterCardHasText
+  True if some card behind the queue head already has transcript.
+----------------------------------------------------------------------------*/
+function laterCardHasText() {
+  for (let i = 1; i < enQueue.length; i++) {
+    if ((enQueue[i].dataset.original || "").trim()) return true;
+  }
+  return false;
+}
+
+/*----------------------------------------------------------------------------
+  advanceEnQueue
+  Safety net when no turn signal comes: close a frozen head whose English
+  went quiet (or never came) once a later card has transcript.
+----------------------------------------------------------------------------*/
+function advanceEnQueue(t) {
+  pruneEnQueue();
+  while (enQueue.length > 1) {
+    const head = enQueue[0];
+    if (head === liveBlockEl || !laterCardHasText()) return;
+    const hasEn = !!(head.dataset.en || "").trim();
+    const lastEnAt = Number(head.dataset.lastEnAt || 0);
+    const frozenAt = Number(head.dataset.frozenAt || t);
+    if (hasEn && t - lastEnAt >= CONFIG.EN_IDLE_MS) {
+      closeEn(head);
+    } else if (!hasEn && t - frozenAt >= CONFIG.EN_WAIT_MAX_MS) {
+      closeEn(head);
+    } else {
+      return;
+    }
+  }
+}
+
+/*----------------------------------------------------------------------------
+  translationTurnEnded
+  Translate socket sent turnComplete / generationComplete: the head card's
+  English is done. If the head is still live, close it when it freezes.
+----------------------------------------------------------------------------*/
+function translationTurnEnded() {
+  if (!enSinceBoundary) return;
+  enSinceBoundary = false;
+  pruneEnQueue();
+  const head = enQueue[0];
+  if (!head || !(head.dataset.en || "").trim()) return;
+  if (head === liveBlockEl) {
+    head.dataset.enDone = "1";
+    return;
+  }
+  closeEn(head);
+}
+
+/*----------------------------------------------------------------------------
   targetEnBlock
-  Pair ENG with the Original card it belongs to.
-  Late translate text goes on the last frozen card until that card has ENG
-  and a new Original line has started.
+  Pair ENG with the Original card it belongs to: the oldest card still
+  waiting for English. Null = nothing to attach to (stopped + drained).
 ----------------------------------------------------------------------------*/
 function targetEnBlock() {
-  const frozen = lastFrozenBlock && lastFrozenBlock.parentNode ? lastFrozenBlock : null;
-  const frozenEn = frozen ? (frozen.dataset.en || "") : "";
-  if (frozen && !frozenEn) return frozen;
-  if (liveBlockEl && liveText) return liveBlockEl;
-  if (frozen) return frozen;
-  return ensureLiveBlock();
+  pruneEnQueue();
+  if (enQueue.length) return enQueue[0];
+  if (running) return ensureLiveBlock();
+  return null;
 }
 
 /*----------------------------------------------------------------------------
   appendTranslation
-  Merge English onto the paired card, not a random new 4s window.
+  Merge English onto the paired card, not whatever card is newest.
 ----------------------------------------------------------------------------*/
 function appendTranslation(incoming) {
-  if (!incoming) return;
+  if (!incoming || !CONFIG.ENABLE_TRANSLATION) return;
+  const t = now();
+  advanceEnQueue(t);
   const el = targetEnBlock();
-  const current = (el.dataset.en || (el === liveBlockEl ? liveEn : "") || "").trim();
+  if (!el) return;
+  const current = (el.dataset.en || "").trim();
   const sliced = stripCommitted(incoming, "", current);
   if (!sliced) return;
   const merged = mergePiece(current, sliced);
+  if (merged === current) return;
   el.dataset.en = merged;
+  el.dataset.lastEnAt = String(t);
+  /* More English after a turn end on a still-live card = a new turn */
+  delete el.dataset.enDone;
+  enSinceBoundary = true;
   paintEn(el, merged);
-  if (el === liveBlockEl) liveEn = merged;
+  refreshEnPending(el);
 }
 
 /*----------------------------------------------------------------------------
@@ -432,23 +620,51 @@ function handleServerMessage(raw) {
 
   if (interim) appendTranscript(interim);
   if (final) appendTranscript(final);
+
+  /* Pause / turn boundary → good place to freeze the card */
+  const finished =
+    (content.inputTranscription && content.inputTranscription.finished) ||
+    (content.input_transcription && content.input_transcription.finished);
+  const turnDone =
+    content.turnComplete || content.turn_complete ||
+    content.generationComplete || content.generation_complete;
+  if (finished || turnDone) markSegmentBoundary();
+}
+
+/*----------------------------------------------------------------------------
+  tick
+  Every TICK_MS: freeze the live card at a boundary / pause / max length,
+  run the English queue safety net, end the Stop grace period.
+----------------------------------------------------------------------------*/
+function tick() {
+  const t = now();
+  if (running && liveBlockEl && (liveText || "").trim()) {
+    const age = t - liveStartedAt;
+    const quiet = t - lastTranscriptAt;
+    if (age >= CONFIG.SEGMENT_MAX_MS) {
+      commitLiveBlock();
+    } else if (age >= CONFIG.SEGMENT_MIN_MS && (boundaryPending || quiet >= CONFIG.PAUSE_MS)) {
+      commitLiveBlock();
+    }
+  }
+  advanceEnQueue(t);
+  if (graceUntil && (!enQueue.length || t >= graceUntil)) {
+    finishTranslate();
+  }
 }
 
 /*----------------------------------------------------------------------------
   startSegmentTimer
-  Commit a block every SEGMENT_MS.
+  Start the housekeeping tick.
 ----------------------------------------------------------------------------*/
 function startSegmentTimer() {
   stopSegmentTimer();
-  segmentTimer = setInterval(function () {
-    if (!running) return;
-    commitLiveBlock();
-  }, CONFIG.SEGMENT_MS);
+  segmentTimer = setInterval(tick, CONFIG.TICK_MS);
 }
 
 /*----------------------------------------------------------------------------
   stopSegmentTimer
-  Clear the 4s ticker.
+  Clear the housekeeping tick.
 ----------------------------------------------------------------------------*/
 function stopSegmentTimer() {
   if (segmentTimer) {
@@ -518,7 +734,8 @@ function stopMic() {
 function connectWs(apiKey) {
   return new Promise(function (resolve, reject) {
     const url = CONFIG.WS_URL + "?key=" + encodeURIComponent(apiKey);
-    ws = new WebSocket(url);
+    const sock = new WebSocket(url);
+    ws = sock;
 
     ws.onopen = function () {
       sendSetup();
@@ -541,7 +758,7 @@ function connectWs(apiKey) {
     };
 
     ws.onclose = function (ev) {
-      if (running) {
+      if (running && sock === ws) {
         setStatus("Connection closed: " + (ev.reason || ev.code), "err");
         stopAll(false);
       }
@@ -551,7 +768,7 @@ function connectWs(apiKey) {
 
 /*----------------------------------------------------------------------------
   startAll
-  Validate key, connect both pipes, start mic + 4s clock.
+  Validate key, connect both pipes, start mic + housekeeping tick.
 ----------------------------------------------------------------------------*/
 async function startAll() {
   const key = getApiKey();
@@ -565,10 +782,13 @@ async function startAll() {
     ? document.getElementById("langSelect").value
     : "auto";
   CONFIG.LANGUAGE_CODES = CONFIG.LANGUAGE_OPTIONS[langKey] || [];
+  /* A previous Stop may still be in its translation grace period */
+  if (graceUntil) finishTranslate();
   committedText = "";
-  committedEn = "";
   liveText = "";
-  liveEn = "";
+  liveStartedAt = 0;
+  lastTranscriptAt = 0;
+  boundaryPending = false;
 
   document.getElementById("btnStart").disabled = true;
   setStatus("Connecting…");
@@ -592,24 +812,44 @@ async function startAll() {
       try { ws.close(); } catch (e) {}
       ws = null;
     }
-    closeTranslateWs();
+    finishTranslate();
   }
 }
 
 /*----------------------------------------------------------------------------
+  finishTranslate
+  End of session: close the translate socket and the English queue.
+----------------------------------------------------------------------------*/
+function finishTranslate() {
+  graceUntil = 0;
+  closeTranslateWs();
+  flushEnQueue();
+  if (!running) stopSegmentTimer();
+}
+
+/*----------------------------------------------------------------------------
   stopAll
-  Stop capture, commit last block, close sockets.
+  Stop capture, commit last block, close transcribe socket. The translate
+  socket stays open STOP_GRACE_MS so late English can still land, then
+  closes. closeSocket=false: transcribe socket already closed itself.
 ----------------------------------------------------------------------------*/
 function stopAll(closeSocket) {
   running = false;
-  stopSegmentTimer();
   stopMic();
   commitLiveBlock();
-  if (closeSocket !== false && ws) {
-    try { ws.close(); } catch (e) {}
+  if (ws) {
+    if (closeSocket !== false) {
+      try { ws.close(); } catch (e) {}
+    }
     ws = null;
   }
-  if (closeSocket !== false) closeTranslateWs();
+  pruneEnQueue();
+  if (translationActive() && enQueue.length && CONFIG.STOP_GRACE_MS > 0) {
+    graceUntil = now() + CONFIG.STOP_GRACE_MS;
+    if (!segmentTimer) startSegmentTimer();
+  } else {
+    finishTranslate();
+  }
   document.getElementById("btnStart").disabled = false;
   document.getElementById("btnStop").disabled = true;
   if (document.getElementById("status").className !== "err") {
@@ -652,11 +892,12 @@ function copyAll() {
 function clearAll() {
   document.getElementById("blocks").innerHTML = "";
   liveBlockEl = null;
-  lastFrozenBlock = null;
+  flushEnQueue();
   liveText = "";
-  liveEn = "";
+  liveStartedAt = 0;
+  lastTranscriptAt = 0;
+  boundaryPending = false;
   committedText = "";
-  committedEn = "";
   colorIndex = 0;
   setStatus("Cleared");
 }
@@ -712,9 +953,12 @@ function boot() {
     CONFIG.ENABLE_TRANSLATION = !CONFIG.ENABLE_TRANSLATION;
     syncTransButton();
     if (!CONFIG.ENABLE_TRANSLATION) {
+      flushEnQueue();
       document.querySelectorAll("#blocks .block .en").forEach(function (el) {
         el.textContent = "";
       });
+    } else if (liveBlockEl) {
+      enqueueForEn(liveBlockEl);
     }
   });
 }

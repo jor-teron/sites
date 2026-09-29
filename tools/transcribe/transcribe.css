@@ -84,6 +84,13 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   margin-left: 1.1em;
   font-weight: 650;
 }
+.block .en.pending::after {
+  font-weight: 400;
+  font-style: italic;
+  opacity: 0.6;
+}
+.block .en.pending:empty::after { content: "translating…"; }
+.block .en.pending:not(:empty)::after { content: " …"; }
 .block .rom {
   margin-left: 2.4em;
   font-style: italic;

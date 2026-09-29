@@ -1,6 +1,7 @@
 /*=============================================================================
   translation.js — Gemini Live Translate socket
-  Needs CONFIG + appendTranslation / setStatus from transcribe.js.
+  Needs CONFIG + appendTranslation / translationTurnEnded / flushEnQueue /
+  setStatus from transcribe.js.
 =============================================================================*/
 
 /* Second WebSocket to Gemini Live Translate */
@@ -14,7 +15,10 @@ function paintEn(blockEl, enText) {
   if (!blockEl) return;
   let en = blockEl.querySelector(".en");
   if (!CONFIG.ENABLE_TRANSLATION) {
-    if (en) en.textContent = "";
+    if (en) {
+      en.textContent = "";
+      en.classList.remove("pending");
+    }
     return;
   }
   if (!en) {
@@ -24,6 +28,19 @@ function paintEn(blockEl, enText) {
   }
   const t = (enText || "").trim();
   en.textContent = t ? ("(ENG) " + t) : "";
+}
+
+/*----------------------------------------------------------------------------
+  setEnPending
+  Toggle the "translating…" marker on a block's English line.
+  The marker is CSS ::after, so copyAll never picks it up.
+----------------------------------------------------------------------------*/
+function setEnPending(blockEl, on) {
+  if (!blockEl) return;
+  const en = blockEl.querySelector(".en");
+  if (!en) return;
+  if (on) en.classList.add("pending");
+  else en.classList.remove("pending");
 }
 
 /*----------------------------------------------------------------------------
@@ -52,7 +69,8 @@ function sendTranslateSetup() {
 
 /*----------------------------------------------------------------------------
   handleTranslateMessage
-  Use outputTranscription as English meaning.
+  Use outputTranscription as English meaning. turnComplete /
+  generationComplete = the current stretch of English is finished.
 ----------------------------------------------------------------------------*/
 function handleTranslateMessage(raw) {
   let data;
@@ -72,8 +90,14 @@ function handleTranslateMessage(raw) {
   const out =
     (content.outputTranscription && content.outputTranscription.text) ||
     (content.output_transcription && content.output_transcription.text) ||
-    (content.interimOutputTranscription && content.interimOutputTranscription.text);
+    (content.interimOutputTranscription && content.interimOutputTranscription.text) ||
+    (content.interim_output_transcription && content.interim_output_transcription.text);
   if (out) appendTranslation(out);
+
+  const done =
+    content.turnComplete || content.turn_complete ||
+    content.generationComplete || content.generation_complete;
+  if (done) translationTurnEnded();
 }
 
 /*----------------------------------------------------------------------------
@@ -87,12 +111,15 @@ function connectTranslateWs(apiKey) {
       return;
     }
     const url = CONFIG.WS_URL + "?key=" + encodeURIComponent(apiKey);
-    wsTranslate = new WebSocket(url);
+    const sock = new WebSocket(url);
+    wsTranslate = sock;
     wsTranslate.onopen = function () {
       sendTranslateSetup();
       resolve();
     };
     wsTranslate.onmessage = function (ev) {
+      /* Ignore a socket we already replaced or closed */
+      if (sock !== wsTranslate) return;
       if (typeof ev.data === "string") {
         handleTranslateMessage(ev.data);
         return;
@@ -106,7 +133,12 @@ function connectTranslateWs(apiKey) {
       resolve();
     };
     wsTranslate.onclose = function () {
-      /* Do not stop the whole app if only translate drops */
+      /* Do not stop the whole app if only translate drops; just stop
+         waiting for English that will never come. */
+      if (sock !== wsTranslate) return;
+      wsTranslate = null;
+      flushEnQueue();
+      resolve();
     };
   });
 }
