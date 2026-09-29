@@ -278,8 +278,8 @@ html, body {
   border: 1px solid transparent;
   background: transparent;
   color: var(--muted);
-  width: 28px;
-  height: 28px;
+  width: auto;
+  height: 100%;
   padding: 0;
   border-radius: 6px;
   cursor: pointer;
@@ -290,9 +290,16 @@ html, body {
 }
 .ctrl-btn:hover {
   color: var(--text);
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.00);
   border-color: var(--line);
 }
+
+.ctrl-btn img {
+height: 33px;
+width: auto;
+
+}
+
 .ctrl-btn .ctrl-dot {
   position: absolute;
   top: 3px;
