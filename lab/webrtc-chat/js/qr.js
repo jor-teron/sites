@@ -9,25 +9,45 @@ let qrScanner = null;
 
 /**
  * Draw a QR code for text into the #qr-box element.
+ * Tries the QRCode library, then an image API fallback.
  */
 function drawQr(text) {
   /* Target box. */
   const box = document.getElementById("qr-box");
   box.innerHTML = "";
-  /* Fresh canvas target. */
-  const canvas = document.createElement("canvas");
-  box.appendChild(canvas);
-  /* QRCode lib from CDN (global QRCode). */
-  QRCode.toCanvas(
-    canvas,
-    text,
-    { width: 220, margin: 1 },
-    function onQrDrawn(err) {
-      if (err) {
-        box.textContent = "QR failed";
+  /* Prefer local canvas if the CDN lib loaded. */
+  if (typeof QRCode !== "undefined" && QRCode && QRCode.toCanvas) {
+    const canvas = document.createElement("canvas");
+    box.appendChild(canvas);
+    QRCode.toCanvas(
+      canvas,
+      String(text),
+      { width: 220, margin: 1 },
+      function onQrDrawn(err) {
+        if (err) {
+          drawQrImageFallback(box, text);
+        }
       }
-    }
-  );
+    );
+    return;
+  }
+  drawQrImageFallback(box, text);
+}
+
+/**
+ * Fallback: render QR as an <img> from a public QR API.
+ */
+function drawQrImageFallback(box, text) {
+  /* Clear and insert image. */
+  box.innerHTML = "";
+  const img = document.createElement("img");
+  img.alt = "QR " + text;
+  img.width = 220;
+  img.height = 220;
+  img.src =
+    "https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=" +
+    encodeURIComponent(String(text));
+  box.appendChild(img);
 }
 
 /**

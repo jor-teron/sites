@@ -50,6 +50,11 @@
         <button type="button" id="opt-generate">Generate QR</button>
         <button type="button" id="opt-scan">Scan QR</button>
       </div>
+      <p class="hint">Camera needs HTTPS. On HTTP type the 6-digit code. Wait until host status is Ready.</p>
+      <div class="row">
+        <input id="join-code" type="text" inputmode="numeric" maxlength="6" placeholder="000000" />
+        <button type="button" id="join-code-btn">Join</button>
+      </div>
       <div class="row">
         <button type="button" class="ghost" data-close>Cancel</button>
       </div>
@@ -62,7 +67,7 @@
       <h2>Show this QR</h2>
       <div id="qr-box"></div>
       <p id="session-code">------</p>
-      <p class="hint">Other phone: QR → Scan</p>
+      <p class="hint">Keep this page open. Guest types this code after status says Ready.</p>
       <div class="row">
         <button type="button" class="ghost" data-close>Close</button>
       </div>

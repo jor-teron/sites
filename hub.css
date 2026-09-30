@@ -114,7 +114,7 @@ html, body {
 
 .cat-btn {
   appearance: none;
-  border: 1px solid transparent;
+  border: 0px solid transparent;
   background: transparent;
   color: var(--text);
   font: inherit;
@@ -142,10 +142,10 @@ html, body {
 
 .menu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 2px);
   left: 0;
-  min-width: 260px;
-  max-height: min(70vh, 480px);
+  min-width: 300px;
+  max-height: min(95vh, 750px);
   overflow: auto;
   background: var(--menu);
   border: 1px solid var(--line);

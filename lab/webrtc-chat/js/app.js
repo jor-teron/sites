@@ -128,11 +128,15 @@ function init() {
     document.getElementById("choice-modal").classList.add("show");
   });
 
-  /* Generate: host a 6-digit room + QR. */
+  /* Generate: show 6-digit + QR immediately, then host. */
   document.getElementById("opt-generate").addEventListener("click", function onGen() {
     document.getElementById("choice-modal").classList.remove("show");
     document.getElementById("qr-modal").classList.add("show");
-    startHost(profile, makeHooks());
+    /* Code first so QR never waits on PeerJS. */
+    const code = makeSessionCode();
+    document.getElementById("session-code").textContent = code;
+    drawQr(code);
+    startHost(profile, makeHooks(), code);
   });
 
   /* Scan: camera then guest connect. */
@@ -147,6 +151,19 @@ function init() {
       .catch(function onScanErr(err) {
         setStatus("bad", "Camera: " + err);
       });
+  });
+
+  /* Fallback: type the 6-digit code. */
+  document.getElementById("join-code-btn").addEventListener("click", function onJoinCode() {
+    const raw = document.getElementById("join-code").value;
+    const code = String(raw).replace(/\D/g, "").slice(0, 6);
+    if (code.length !== 6) {
+      setStatus("bad", "Enter 6 digits");
+      return;
+    }
+    hideOverlays();
+    addLine("sys", "", "Joining " + code);
+    startGuest(code, profile, makeHooks());
   });
 
   /* Close buttons on modals. */

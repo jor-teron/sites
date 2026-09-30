@@ -13,6 +13,34 @@ let conn = null;
 let isHost = false;
 /* Current 6-digit session code, or empty. */
 let sessionCode = "";
+/* Guest retry timer id. */
+let joinRetryTimer = null;
+/* Guest retry count. */
+let joinTries = 0;
+
+/**
+ * PeerJS cloud + STUN. Same options for host and guest.
+ */
+const PEER_OPTS = {
+  host: "0.peerjs.com",
+  port: 443,
+  path: "/",
+  secure: true,
+  debug: 1,
+  config: {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun.cloudflare.com:3478" }
+    ]
+  }
+};
+
+/**
+ * Map 6-digit UI code to a PeerJS id (short numeric ids are flaky).
+ */
+function peerIdFromCode(code) {
+  return "p2pc" + String(code);
+}
 
 /**
  * Build a random 6-digit session code (string).
@@ -52,6 +80,11 @@ function teardownPeer() {
   }
   isHost = false;
   sessionCode = "";
+  if (joinRetryTimer) {
+    clearTimeout(joinRetryTimer);
+    joinRetryTimer = null;
+  }
+  joinTries = 0;
 }
 
 /**
@@ -94,15 +127,16 @@ function sendPayload(obj) {
 
 /**
  * Host: listen as peer id = 6-digit code.
+ * code may be passed in so the QR can show before PeerJS opens.
  */
-function startHost(profile, hooks) {
+function startHost(profile, hooks, code) {
   teardownPeer();
   isHost = true;
-  sessionCode = makeSessionCode();
-  /* Peer id is the room code so guest can dial it. */
-  peer = new Peer(sessionCode, { debug: 0 });
+  sessionCode = code || makeSessionCode();
+  /* Peer id is prefixed room code so guest can dial it. */
+  peer = new Peer(peerIdFromCode(sessionCode), PEER_OPTS);
   peer.on("open", function onOpen() {
-    hooks.onStatus("wait", "Waiting for scan… " + sessionCode);
+    hooks.onStatus("wait", "Ready. Code " + sessionCode);
     hooks.onHostReady(sessionCode);
   });
   peer.on("connection", function onIncoming(c) {
@@ -121,10 +155,11 @@ function startHost(profile, hooks) {
   peer.on("error", function onPeerErr(err) {
     /* Id taken: make a new code. */
     if (err && err.type === "unavailable-id") {
+      hooks.onStatus("bad", "Code busy, new code…");
       startHost(profile, hooks);
       return;
     }
-    hooks.onStatus("bad", String(err));
+    hooks.onStatus("bad", (err && err.type) || String(err));
   });
   return sessionCode;
 }
@@ -136,22 +171,54 @@ function startGuest(code, profile, hooks) {
   teardownPeer();
   isHost = false;
   sessionCode = code;
-  peer = new Peer({ debug: 0 });
+  peer = new Peer(PEER_OPTS);
   peer.on("open", function onOpen() {
-    /* Dial the host peer id. */
-    const c = peer.connect(code, { reliable: true });
-    bindConn(c, profile, hooks);
-    c.on("open", function onChanOpen() {
-      sendPayload({
-        type: "hello",
-        name: profile.name,
-        uniqId: profile.uniqId
-      });
-      hooks.onStatus("ok", "Connected");
-      hooks.onConnected();
-    });
+    hooks.onStatus("wait", "Dialing " + code);
+    tryConnectGuest(code, profile, hooks);
   });
   peer.on("error", function onPeerErr(err) {
-    hooks.onStatus("bad", String(err));
+    const typ = (err && err.type) || "";
+    /* Host not on broker yet — retry a few times. */
+    if (typ === "peer-unavailable" && joinTries < 8) {
+      scheduleGuestRetry(code, profile, hooks);
+      return;
+    }
+    hooks.onStatus("bad", typ || String(err));
   });
+}
+
+/**
+ * Guest: open a data connection to the host peer id.
+ */
+function tryConnectGuest(code, profile, hooks) {
+  joinTries += 1;
+  /* Dial prefixed id, reliable data channel. */
+  const c = peer.connect(peerIdFromCode(code), { reliable: true });
+  bindConn(c, profile, hooks);
+  c.on("open", function onChanOpen() {
+    if (joinRetryTimer) {
+      clearTimeout(joinRetryTimer);
+      joinRetryTimer = null;
+    }
+    sendPayload({
+      type: "hello",
+      name: profile.name,
+      uniqId: profile.uniqId
+    });
+    hooks.onStatus("ok", "Connected");
+    hooks.onConnected();
+  });
+}
+
+/**
+ * Wait, then dial the host again.
+ */
+function scheduleGuestRetry(code, profile, hooks) {
+  hooks.onStatus("wait", "Host not ready, retry " + joinTries);
+  joinRetryTimer = setTimeout(function retryJoin() {
+    if (!peer || peer.destroyed) {
+      return;
+    }
+    tryConnectGuest(code, profile, hooks);
+  }, 1500);
 }
