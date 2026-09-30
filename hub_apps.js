@@ -42,11 +42,11 @@ Media,    TV,                    tv/,                                        ,  
 Media,    Webcam,                media/webcam/,                              ,         0,       0,      220
 Media,    Paint,                 media/paint/,                               ,         0,       0,      230
 Media,    Photo Editor,          media/photo-editor/,                        ,         0,       0,      260
-Media,    Phone,                 media/phone/,                               ,         0,       0,      270
 Office,   Spreadsheet,           office/spreadsheet/,                        ,         0,       0,      320
 Office,   OCR,                   office/ocr/,                                ,         0,       0,      360
 Office,   MS Word Diff,          tools/msword_diff/,                         ,         0,       0,      440
 Tools,    Calculator,            tools/calculator/,                          ,         0,       0,      410
+Tools,    FileDrop,              lab/file-drop/,                             ,         0,       0,      410
 Tools,    NE-India Dictionary,   tools/nei-dict/,                            ,         0,       0,      430
 Tools,    Notepad,               tools/notepad/,                             ,         0,       0,      450
 Tools,    Weather,               tools/weather-chart/,                       ,         0,       0,      460
@@ -54,9 +54,10 @@ Tools,    Weather Hourly,        tools/weather-hourly/,                      ,  
 Tools,    Caption for NEI,       tools/caption-for-nei/,                     ,         0,       0,      470
 Desktop,  Learning HTML (Basic), tools/learning-html/,                       ,         0,       0,      910
 Desktop,  vDesktop,              tools/vDesktop/,                            ,         0,       0,      900
-Lab,      WebRTC Chat,           lab/webrtc-chat/,                           ,         0,       0,      2010
-Lab,      P2P Chat,              lab/p2pchat.html,                           ,         0,       0,      2001
-About,    About,                 about/,                                     ,         0,       0,      1000
-About,    Contact,               about/contact.txt,                          ,         0,       0,      1020
-About,    Feedback,              about/feedback.txt,                         ,         0,       1,      1030
+Tools,    AirDrop,               tools/airdrop-web/,                           ,         0,       0,      1010
+Lab,      P2P Chat,              lab/p2pchat.html,                           ,         0,       0,      1001
+Lab,      Phone,                 media/phone/,                               ,         0,       0,      1070
+About,    About,                 about/,                                     ,         0,       0,      2000
+About,    Contact,               about/contact.txt,                          ,         0,       0,      2020
+About,    Feedback,              about/feedback.txt,                         ,         0,       1,      2030
 `;
