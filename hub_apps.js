@@ -53,6 +53,7 @@ Tools,    Weather Hourly,        tools/weather-hourly/,                      ,  
 Tools,    Caption for NEI,       tools/caption-for-nei/,                     ,         0,       0,      470
 Tools,    Learning HTML (basic), tools/learning-html/,                       ,         0,       0,      499
 Desktop,  vDesktop,              tools/vDesktop/,                            ,         0,       0,      900
+Lab,    WebRTC Chat,                 lab/webrtc-chat/,                       ,         0,       0,      2001
 About,    About,                 about/,                                     ,         0,       0,      1000
 About,    Contact,               about/contact.txt,                          ,         0,       0,      1020
 About,    Feedback,              about/feedback.txt,                         ,         0,       1,      1030
