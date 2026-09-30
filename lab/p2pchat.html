@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P2P Chat · Share 4‑digit code</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: linear-gradient(145deg, #0b1a2e 0%, #1a2f3f 100%);
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; margin: 0; padding: 16px;
+    }
+    .chat-app {
+      width: 100%; max-width: 900px; height: 90vh;
+      background: rgba(18, 30, 41, 0.8);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-radius: 28px;
+      box-shadow: 0 25px 50px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      display: flex; flex-direction: column; overflow: hidden;
+      border: 1px solid rgba(72, 187, 255, 0.2);
+    }
+    .header {
+      padding: 16px 22px;
+      background: rgba(10, 20, 30, 0.6);
+      border-bottom: 1px solid rgba(72, 187, 255, 0.2);
+      display: flex; flex-wrap: wrap; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .header h1 {
+      font-size: 1.3rem; font-weight: 500; color: #e2f0ff;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .header h1 span {
+      font-size: 0.7rem; background: #1e3b4f; color: #8ec9ff;
+      padding: 4px 10px; border-radius: 40px; border: 1px solid #2e5775;
+    }
+    .status-badge {
+      font-size: 0.8rem; padding: 6px 14px; border-radius: 30px;
+      background: #0f1e2a; color: #b0d4f0;
+      border-left: 3px solid #f0b34b;
+      display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+    }
+    .status-badge.connected {
+      border-left-color: #3bc97f; color: #b8f0d0; background: #12312a;
+    }
+    .status-badge.waiting {
+      border-left-color: #f0b34b; color: #ffe6b0; background: #2a2412;
+    }
+
+    /* Top control panel: host + join */
+    .control-panel {
+      padding: 22px 24px;
+      background: rgba(10, 20, 30, 0.5);
+      border-bottom: 1px solid rgba(72, 187, 255, 0.15);
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .control-section {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .section-label {
+      font-size: 0.75rem; color: #8ec9ff; letter-spacing: 1px;
+      text-transform: uppercase; font-weight: 600;
+    }
+    .host-row {
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    }
+    .join-row {
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    }
+    .join-row input {
+      background: #0f1e2a; border: 1px solid #2c5775;
+      border-radius: 40px; padding: 12px 18px;
+      font-size: 1.4rem; font-weight: 600; letter-spacing: 8px;
+      width: 180px; text-align: center; color: #d0e8ff;
+      outline: none; font-family: 'Inter', monospace;
+      transition: 0.15s;
+    }
+    .join-row input:focus {
+      border-color: #3c8ed6; box-shadow: 0 0 0 3px rgba(60, 142, 214, 0.25);
+    }
+    .join-row input::placeholder {
+      color: #4a6f8a; font-weight: 400; letter-spacing: 3px;
+    }
+    .divider {
+      display: flex; align-items: center; gap: 10px;
+      color: #4a6f8a; font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: 1px; padding: 2px 4px;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: #244b63;
+    }
+
+    /* Code panel shown when hosting */
+    .code-panel {
+      display: none;
+      flex-direction: column; gap: 12px;
+      align-items: center; text-align: center;
+      padding: 18px 20px;
+      background: linear-gradient(135deg, rgba(13, 75, 122, 0.35), rgba(10, 95, 158, 0.2));
+      border-radius: 20px;
+      border: 1px solid rgba(72, 187, 255, 0.3);
+      animation: slideDown 0.3s ease;
+    }
+    .code-panel.active { display: flex; }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .code-label {
+      font-size: 0.8rem; color: #8ec9ff; letter-spacing: 1px;
+      text-transform: uppercase; font-weight: 500;
+    }
+    .code-display {
+      display: flex; align-items: center; gap: 14px;
+      flex-wrap: wrap; justify-content: center;
+    }
+    .code-digits {
+      font-size: 3rem; font-weight: 700; letter-spacing: 14px;
+      color: #ffffff; text-shadow: 0 0 24px rgba(80, 180, 255, 0.6);
+      font-family: 'Inter', monospace;
+      background: linear-gradient(135deg, #0a5f9e, #0d4b7a);
+      padding: 8px 20px 8px 34px;
+      border-radius: 18px;
+      border: 2px solid #3c8ed6;
+      box-shadow: 0 0 30px rgba(60, 142, 214, 0.4);
+    }
+    .code-hint {
+      font-size: 0.8rem; color: #a8cce8; max-width: 460px;
+      line-height: 1.5;
+    }
+    .code-hint strong { color: #ffe6b0; }
+
+    .btn {
+      background: #1e3b4f; border: none; color: #d0e8ff;
+      padding: 10px 20px; border-radius: 40px;
+      font-size: 0.9rem; font-weight: 500; cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      border: 1px solid rgba(100, 180, 255, 0.2);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      white-space: nowrap;
+    }
+    .btn:hover { background: #265a7a; color: white; border-color: #4a9eff; }
+    .btn:active { transform: scale(0.96); }
+    .btn:disabled { opacity: 0.4; pointer-events: none; filter: grayscale(0.6); }
+    .btn-primary { background: #0a66c2; border-color: #2e7fd6; color: white; }
+    .btn-primary:hover { background: #1a7ad6; }
+    .btn-success { background: #1a7a4a; border-color: #2eb06a; color: white; }
+    .btn-success:hover { background: #229455; }
+    .btn-danger { background: #4a2a2a; border-color: #a15555; color: #ffb3b3; }
+    .btn-danger:hover { background: #6b3333; color: white; }
+    .btn-warning { background: #7a5a1a; border-color: #b09030; color: #ffe0a0; }
+    .btn-warning:hover { background: #956e22; color: white; }
+
+    .chat-box {
+      flex: 1; padding: 18px 22px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 12px;
+      background: rgba(8, 18, 28, 0.4);
+    }
+    .chat-box::-webkit-scrollbar { width: 6px; }
+    .chat-box::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+    .chat-box::-webkit-scrollbar-thumb { background: #2e5775; border-radius: 8px; }
+
+    .message {
+      max-width: 80%; display: flex; flex-direction: column;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .message.own { align-self: flex-end; align-items: flex-end; }
+    .message.remote { align-self: flex-start; align-items: flex-start; }
+    .bubble {
+      padding: 12px 16px; border-radius: 22px;
+      font-size: 0.95rem; line-height: 1.5;
+      word-break: break-word;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    .own .bubble {
+      background: linear-gradient(135deg, #0d4b7a, #0a5f9e);
+      color: #ffffff; border-bottom-right-radius: 6px; border: 1px solid #2277bb;
+    }
+    .remote .bubble {
+      background: #1f2e3b; color: #d9ecff;
+      border-bottom-left-radius: 6px; border: 1px solid #315e7a;
+    }
+    .meta {
+      font-size: 0.7rem; color: #88aac2; margin-top: 5px; padding: 0 6px;
+    }
+    .system-message {
+      align-self: center; background: #0d1c28; color: #98b8d0;
+      font-size: 0.8rem; padding: 8px 20px; border-radius: 40px;
+      border: 1px solid #244b63; max-width: 90%; text-align: center;
+    }
+    .input-area {
+      padding: 16px 20px 20px;
+      background: rgba(12, 24, 34, 0.8);
+      border-top: 1px solid rgba(72, 187, 255, 0.15);
+      display: flex; gap: 12px; align-items: center;
+    }
+    .input-area input {
+      flex: 1; background: #0f1e2a; border: 1px solid #2c5775;
+      border-radius: 50px; padding: 14px 22px;
+      font-size: 0.95rem; color: #e7f3ff; outline: none;
+      transition: border 0.15s, box-shadow 0.15s; font-family: inherit;
+    }
+    .input-area input:focus {
+      border-color: #3c8ed6; box-shadow: 0 0 0 3px rgba(60, 142, 214, 0.25);
+    }
+    .input-area input::placeholder { color: #6a8ca8; font-weight: 300; }
+    .input-area input:disabled { opacity: 0.5; background: #0a131c; }
+    .send-btn {
+      background: #0a66c2; border: none; width: 52px; height: 52px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.15s; border: 1px solid #3e8fd9;
+      box-shadow: 0 4px 12px rgba(0, 100, 200, 0.3);
+    }
+    .send-btn:hover { background: #1a7ad6; transform: scale(1.02); }
+    .send-btn:active { transform: scale(0.94); }
+    .send-btn:disabled {
+      background: #1d3242; border-color: #2c4a5e;
+      box-shadow: none; cursor: not-allowed; opacity: 0.6;
+    }
+    .send-btn svg { fill: white; width: 24px; height: 24px; }
+    .send-btn:disabled svg { fill: #63849c; }
+    .hint {
+      font-size: 0.7rem; color: #6a8ca8; margin-top: 4px; text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-app">
+    <!-- Header -->
+    <div class="header">
+      <h1>
+        🔒 P2P Chat
+        <span>WebRTC</span>
+      </h1>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <div id="statusBadge" class="status-badge">⚪ Disconnected</div>
+        <button id="hostDisconnectBtn" class="btn btn-warning" style="display:none;" disabled>🛑 End Host Session</button>
+        <button id="disconnectBtn" class="btn btn-danger" disabled>✖ Disconnect</button>
+      </div>
+    </div>
+
+    <!-- Control panel: Host on top, Join below -->
+    <div id="controlPanel" class="control-panel">
+      <!-- HOST section -->
+      <div class="control-section">
+        <div class="section-label">① Host a chat — generate a code</div>
+        <div class="host-row">
+          <button id="hostBtn" class="btn btn-primary">🎲 Generate a code & Host</button>
+          <button id="stopHostBtn" class="btn btn-warning" style="display:none;">⏹ Stop hosting</button>
+        </div>
+      </div>
+
+      <!-- Code display panel (shown when hosting) -->
+      <div id="hostPanel" class="code-panel">
+        <div class="code-label">📢 Share this code with your friend</div>
+        <div class="code-display">
+          <div class="code-digits" id="codeDisplay">0000</div>
+          <button id="copyCodeBtn" class="btn btn-success" title="Copy code">📋 Copy</button>
+        </div>
+        <div class="code-hint">
+          Tell them to open this same page and enter <strong>this code</strong> in the "Join" section below.
+        </div>
+      </div>
+
+      <!-- JOIN section -->
+      <div class="control-section" id="joinSection">
+        <div class="section-label">② Or join a chat — enter the 4‑digit code</div>
+        <div class="join-row">
+          <input type="text" id="joinCodeInput" placeholder="0000" maxlength="4" inputmode="numeric" pattern="\d*" />
+          <button id="joinBtn" class="btn btn-primary">🔗 Join Chat</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat messages -->
+    <div id="chatBox" class="chat-box">
+      <div class="system-message">👋 Welcome! Generate a code to host, or enter a friend's code to join.</div>
+    </div>
+
+    <!-- Input area -->
+    <div class="input-area">
+      <input type="text" id="messageInput" placeholder="Type a message..." disabled autocomplete="off" />
+      <button id="sendBtn" class="send-btn" disabled>
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+    <div class="hint" id="connectionHint">Not connected. Generate or enter a code to begin.</div>
+  </div>
+
+  <!-- PeerJS: free signaling server -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+  <script>
+    (function() {
+      // ---------- DOM ----------
+      const chatBox = document.getElementById('chatBox');
+      const messageInput = document.getElementById('messageInput');
+      const sendBtn = document.getElementById('sendBtn');
+      const disconnectBtn = document.getElementById('disconnectBtn');
+      const hostDisconnectBtn = document.getElementById('hostDisconnectBtn');
+      const statusBadge = document.getElementById('statusBadge');
+      const connectionHint = document.getElementById('connectionHint');
+      const hostPanel = document.getElementById('hostPanel');
+      const controlPanel = document.getElementById('controlPanel');
+      const joinSection = document.getElementById('joinSection');
+      const codeDisplay = document.getElementById('codeDisplay');
+      const copyCodeBtn = document.getElementById('copyCodeBtn');
+      const joinCodeInput = document.getElementById('joinCodeInput');
+      const joinBtn = document.getElementById('joinBtn');
+      const hostBtn = document.getElementById('hostBtn');
+      const stopHostBtn = document.getElementById('stopHostBtn');
+
+      // ---------- State ----------
+      let peer = null;
+      let conn = null;
+      let isConnected = false;
+      let myCode = null;        // The code we generated (if hosting)
+      let isHosting = false;    // Host session active (waiting or connected)
+
+      // ---------- Helpers ----------
+      function addMessage(text, type = 'remote', timestamp = new Date()) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${type}`;
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.textContent = text;
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        msgDiv.appendChild(bubble);
+        msgDiv.appendChild(meta);
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function addSystemMessage(text) {
+        const sysDiv = document.createElement('div');
+        sysDiv.className = 'system-message';
+        sysDiv.textContent = text;
+        chatBox.appendChild(sysDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function setStatus(text, cls) {
+        statusBadge.textContent = text;
+        statusBadge.className = 'status-badge' + (cls ? ' ' + cls : '');
+      }
+
+      function setConnectedState(connected) {
+        isConnected = connected;
+        if (connected) {
+          setStatus('🟢 Connected', 'connected');
+          disconnectBtn.disabled = false;
+          messageInput.disabled = false;
+          sendBtn.disabled = false;
+          connectionHint.textContent = 'Secure P2P channel open. Messages are encrypted (DTLS).';
+          messageInput.focus();
+          // Hide join section while connected
+          joinSection.style.display = 'none';
+        } else {
+          setStatus('⚪ Disconnected', '');
+          disconnectBtn.disabled = true;
+          messageInput.disabled = true;
+          sendBtn.disabled = true;
+          connectionHint.textContent = 'Not connected. Generate or enter a code to begin.';
+          // Show join section if not hosting
+          if (!isHosting) {
+            joinSection.style.display = 'flex';
+          }
+        }
+      }
+
+      function setWaitingForPeer() {
+        setStatus('⏳ Waiting…', 'waiting');
+        connectionHint.textContent = 'Waiting for your friend to join with the code…';
+      }
+
+      // ---------- Generate a unique 4-digit code ----------
+      function generateUniqueCode(callback, attempts = 0) {
+        if (attempts > 10) {
+          addSystemMessage('❌ Could not find an available code. Please try again.');
+          return;
+        }
+        const code = String(Math.floor(1000 + Math.random() * 9000));
+        const testPeer = new Peer(code, { debug: 0 });
+
+        let settled = false;
+        const cleanup = () => {
+          if (settled) return true;
+          settled = true;
+          try { testPeer.destroy(); } catch (e) {}
+          return false;
+        };
+
+        testPeer.on('open', () => {
+          if (cleanup()) return;
+          callback(code);
+        });
+
+        testPeer.on('error', (err) => {
+          if (cleanup()) return;
+          generateUniqueCode(callback, attempts + 1);
+        });
+
+        setTimeout(() => {
+          if (cleanup()) return;
+          generateUniqueCode(callback, attempts + 1);
+        }, 3000);
+      }
+
+      // ---------- Cleanup ----------
+      function cleanup() {
+        if (conn) {
+          try { conn.close(); } catch (e) {}
+          conn = null;
+        }
+        if (peer) {
+          try { peer.destroy(); } catch (e) {}
+          peer = null;
+        }
+        myCode = null;
+        isHosting = false;
+        hostPanel.classList.remove('active');
+        stopHostBtn.style.display = 'none';
+        hostDisconnectBtn.style.display = 'none';
+        hostDisconnectBtn.disabled = true;
+        hostBtn.disabled = false;
+        joinSection.style.display = 'flex';
+        setConnectedState(false);
+      }
+
+      // ---------- Full disconnect (close everything) ----------
+      function disconnect() {
+        cleanup();
+        addSystemMessage('🔌 Disconnected.');
+      }
+
+      // ---------- Stop hosting only (end host session) ----------
+      function stopHosting() {
+        if (!isHosting && !conn) return;
+        cleanup();
+        addSystemMessage('🛑 Host session ended.');
+      }
+
+      // ---------- Attach handlers to a data connection ----------
+      function attachConnection(connection) {
+        conn = connection;
+
+        conn.on('open', () => {
+          console.log('Data connection open');
+          setConnectedState(true);
+          addSystemMessage('✅ Secure P2P connection established.');
+          // Show "End Host Session" if we are hosting
+          if (isHosting) {
+            hostDisconnectBtn.style.display = 'inline-flex';
+            hostDisconnectBtn.disabled = false;
+          }
+        });
+
+        conn.on('data', (data) => {
+          if (typeof data === 'string') {
+            addMessage(data, 'remote');
+          } else if (data && data.text) {
+            addMessage(data.text, 'remote');
+          } else {
+            addMessage(JSON.stringify(data), 'remote');
+          }
+        });
+
+        conn.on('close', () => {
+          console.log('Data connection closed');
+          addSystemMessage('⚠️ Peer disconnected.');
+          setConnectedState(false);
+          // If hosting, go back to waiting state
+          if (isHosting && peer && !peer.destroyed) {
+            setWaitingForPeer();
+            hostDisconnectBtn.style.display = 'inline-flex';
+            hostDisconnectBtn.disabled = false;
+          } else {
+            cleanup();
+          }
+        });
+
+        conn.on('error', (err) => {
+          console.error('Connection error:', err);
+          addSystemMessage(`❌ Connection error: ${err}`);
+        });
+      }
+
+      // ---------- HOST: generate a code and wait for a peer ----------
+      function hostChat() {
+        cleanup();
+        isHosting = true;
+        hostBtn.disabled = true;
+        stopHostBtn.style.display = 'inline-flex';
+        joinSection.style.display = 'none';
+        addSystemMessage('🎲 Generating a unique 4‑digit code…');
+
+        generateUniqueCode((code) => {
+          myCode = code;
+          codeDisplay.textContent = code;
+          hostPanel.classList.add('active');
+          addSystemMessage(`✅ Your code is ${code}. Share it with your friend.`);
+          setWaitingForPeer();
+
+          // Show "End Host Session" button immediately (host can end before anyone joins)
+          hostDisconnectBtn.style.display = 'inline-flex';
+          hostDisconnectBtn.disabled = false;
+
+          // Create the actual Peer with this code
+          peer = new Peer(code, {
+            debug: 2,
+            config: {
+              iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+              ]
+            }
+          });
+
+          peer.on('open', (id) => {
+            console.log('Host peer open:', id);
+          });
+
+          peer.on('connection', (incomingConn) => {
+            console.log('Incoming connection from:', incomingConn.peer);
+            if (conn) {
+              addSystemMessage('⚠️ Already connected. Rejecting new connection.');
+              incomingConn.close();
+              return;
+            }
+            attachConnection(incomingConn);
+          });
+
+          peer.on('error', (err) => {
+            console.error('Host peer error:', err);
+            if (err.type === 'unavailable-id') {
+              addSystemMessage('⚠️ Code became unavailable. Regenerating…');
+              hostChat();
+            } else {
+              addSystemMessage(`❌ Error: ${err.type}`);
+              cleanup();
+            }
+          });
+        });
+      }
+
+      // ---------- JOIN: connect to a host using their code ----------
+      function joinChat() {
+        const code = joinCodeInput.value.trim();
+        if (!/^\d{4}$/.test(code)) {
+          addSystemMessage('⚠️ Please enter exactly 4 digits.');
+          return;
+        }
+
+        cleanup();
+        addSystemMessage(`🔗 Joining chat with code ${code}…`);
+        setStatus('🔌 Connecting…', 'waiting');
+        connectionHint.textContent = `Looking for host with code ${code}…`;
+
+        peer = new Peer({
+          debug: 2,
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+          }
+        });
+
+        peer.on('open', () => {
+          const connection = peer.connect(code, { reliable: true });
+          attachConnection(connection);
+
+          const timeout = setTimeout(() => {
+            if (!isConnected) {
+              addSystemMessage('⏰ Host not responding. Check the code and try again.');
+              cleanup();
+            }
+          }, 15000);
+
+          connection.on('open', () => clearTimeout(timeout));
+        });
+
+        peer.on('error', (err) => {
+          console.error('Join peer error:', err);
+          if (err.type === 'peer-unavailable') {
+            addSystemMessage(`❌ No host found with code ${code}. Make sure they are hosting.`);
+          } else {
+            addSystemMessage(`❌ Connection error: ${err.type}`);
+          }
+          cleanup();
+        });
+      }
+
+      // ---------- Send message ----------
+      function sendMessage() {
+        const text = messageInput.value.trim();
+        if (!text) return;
+        if (conn && conn.open) {
+          conn.send(text);
+          addMessage(text, 'own');
+          messageInput.value = '';
+        } else {
+          addSystemMessage('⚠️ Not connected. Cannot send message.');
+        }
+      }
+
+      // ---------- Copy code ----------
+      function copyCode() {
+        if (!myCode) return;
+        navigator.clipboard.writeText(myCode).then(() => {
+          copyCodeBtn.textContent = '✅ Copied!';
+          setTimeout(() => { copyCodeBtn.textContent = '📋 Copy'; }, 1500);
+        }).catch(() => {
+          const ta = document.createElement('textarea');
+          ta.value = myCode;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          copyCodeBtn.textContent = '✅ Copied!';
+          setTimeout(() => { copyCodeBtn.textContent = '📋 Copy'; }, 1500);
+        });
+      }
+
+      // ---------- Event listeners ----------
+      hostBtn.addEventListener('click', hostChat);
+      joinBtn.addEventListener('click', joinChat);
+      copyCodeBtn.addEventListener('click', copyCode);
+      disconnectBtn.addEventListener('click', disconnect);
+      hostDisconnectBtn.addEventListener('click', stopHosting);
+      stopHostBtn.addEventListener('click', stopHosting);
+      sendBtn.addEventListener('click', sendMessage);
+
+      messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
+      });
+
+      joinCodeInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); joinChat(); }
+      });
+
+      joinCodeInput.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
+      });
+
+      // ---------- Initial state ----------
+      setConnectedState(false);
+      addSystemMessage('🔐 Generate a code to host, or enter a friend\'s code to join.');
+    })();
+  </script>
+</body>
+</html>
