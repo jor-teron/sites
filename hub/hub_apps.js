@@ -21,58 +21,58 @@
 window.HUB_APPS_CSV = `
 CATEGORY, NAME,                  ENTRY_URL,                                  ICON_URL, NEW_TAB, HIDDEN, ORDER
 Favorite, TV,                    tv/,                                        ,         0,       0,      10
-Favorite, Transcribe,            tools/transcribe/,                          ,         0,       0,      20
-Favorite, Caption for NEI,       tools/caption-for-nei/,                     ,         0,       0,      70
+Favorite, Transcribe,            apps/tools/transcribe/,                     ,         0,       1,      20
+Favorite, Caption for NEI,       apps/tools/caption-for-nei/,                ,         0,       0,      70
 
 Games,    D-Pad Controller,      controller/,                                ,         1,       0,      199
-Games,    2048,                  games/2048/,                                ,         0,       0,      101
-Games,    Swell Foop,            games/swell-foop/,                          ,         0,       0,      102
-Games,    Ping Pong,             games/pong/,                                ,         0,       0,      105
-Games,    Tetris,                games/tetris/,                              ,         0,       0,      110
-Games,    Tic-Tac-Toe,           games/tic-tac-toe/,                         ,         0,       0,      115
-Games,    Snake,                 games/snake/,                               ,         0,       0,      120
-Games,    Dino Run,              games/dino-run/,                            ,         0,       0,      130
-Games,    Car Run,               games/car-run/,                             ,         0,       0,      140
-Games,    Tennis Ball Blitz,     games/tennis-throw/,                        ,         0,       0,      150
-Games,    Desert Road,           games/desert-road/,                         ,         0,       0,      160
-Games,    Contra (alpha),        games/contra-alpha/,                        ,         0,       0,      170
-Games,    Space Invaders,        games/space-invader/,                       ,         0,       0,      175
-Games,    AR Game,               games/ar-game/,                             ,         0,       0,      180
-Games,    Browser FPS,           games/browser-fps/,                         ,         0,       0,      190
-Games,    Island (Alpha),        games/island-alpha/,                        ,         0,       0,      192
-Games,    Tower Defence,         games/tower-defence/,                       ,         0,       0,      111
-Games,    Demolisher,            games/demolisher/,                          ,         0,       0,      195
+Games,    2048,                  apps/games/2048/,                           ,         0,       0,      101
+Games,    Swell Foop,            apps/games/swell-foop/,                     ,         0,       0,      102
+Games,    Ping Pong,             apps/games/pong/,                           ,         0,       0,      105
+Games,    Tetris,                apps/games/tetris/,                         ,         0,       0,      110
+Games,    Tic-Tac-Toe,           apps/games/tic-tac-toe/,                    ,         0,       0,      115
+Games,    Snake,                 apps/games/snake/,                          ,         0,       0,      120
+Games,    Dino Run,              apps/games/dino-run/,                       ,         0,       0,      130
+Games,    Car Run,               apps/games/car-run/,                        ,         0,       0,      140
+Games,    Tennis Ball Blitz,     apps/games/tennis-throw/,                   ,         0,       0,      150
+Games,    Desert Road,           apps/games/desert-road/,                    ,         0,       0,      160
+Games,    Contra (alpha),        apps/games/contra-alpha/,                   ,         0,       0,      170
+Games,    Space Invaders,        apps/games/space-invader/,                  ,         0,       0,      175
+Games,    AR Game,               apps/games/ar-game/,                        ,         0,       0,      180
+Games,    Browser FPS,           apps/games/browser-fps/,                    ,         0,       0,      190
+Games,    Island (Alpha),        apps/games/island-alpha/,                   ,         0,       0,      192
+Games,    Tower Defence,         apps/games/tower-defence/,                  ,         0,       0,      111
+Games,    Demolisher,            apps/games/demolisher/,                     ,         0,       0,      195
 
 Media,    TV,                    tv/,                                        ,         0,       0,      210
-Media,    Webcam,                media/webcam/,                              ,         0,       0,      220
-Media,    3D Viewer,             media/3d-viewer/,                               ,         0,       0,      240
-Media,    Paint,                 media/paint/,                               ,         0,       0,      230
-Media,    Photo Editor,          media/photo-editor/,                        ,         0,       0,      260
+Media,    Webcam,                apps/media/webcam/,                         ,         0,       0,      220
+Media,    3D Viewer,             apps/media/3d-viewer/,                      ,         0,       0,      240
+Media,    Paint,                 apps/media/paint/,                          ,         0,       0,      230
+Media,    Photo Editor,          apps/media/photo-editor/,                   ,         0,       0,      260
 
-Office,   Spreadsheet,           office/spreadsheet/,                        ,         0,       0,      320
-Office,   Draft-ly,              office/draftly/,                            ,         0,       0,      310
-Office,   OCR,                   office/ocr/,                                ,         0,       0,      360
-Office,   MS Word Diff,          tools/msword_diff/,                         ,         0,       0,      440
+Office,   Spreadsheet,           apps/office/spreadsheet/,                   ,         0,       0,      320
+Office,   Draft-ly,              apps/office/draftly/,                       ,         0,       0,      310
+Office,   OCR,                   apps/office/ocr/,                           ,         0,       0,      360
+Office,   MS Word Diff,          apps/tools/msword_diff/,                         ,         0,       0,      440
 
-Connectivity, AirDrop,           connectivity/airdrop-web/,                  ,         0,       0,      1010
-Connectivity, Pooh Chat,         connectivity/pooh-chat/,                    ,         0,       0,      401
-Connectivity, WebChat,           connectivity/webrtc-chat/,                  ,         0,       0,      402
-Connectivity, Peer Chat,         lab/p2pchat.html,                           ,         0,       0,      403
+Connectivity, AirDrop,           apps/connectivity/airdrop-web/,             ,         0,       0,      1010
+Connectivity, Pooh Chat,         apps/connectivity/pooh-chat/,               ,         0,       0,      401
+Connectivity, WebChat,           apps/connectivity/webrtc-chat/,             ,         0,       0,      402
+Connectivity, Peer Chat,         apps/connectivity/p2pchat.html,             ,         0,       0,      403
 
-Tools,    Calculator,            tools/calculator/,                          ,         0,       0,      410
-Tools,    FileDrop,              lab/file-drop/,                             ,         0,       0,      410
-Tools,    NE-India Dictionary,   tools/nei-dict/,                            ,         0,       0,      430
-Tools,    Notepad,               tools/notepad/,                             ,         0,       0,      450
-Tools,    Weather,               tools/weather-chart/,                       ,         0,       0,      460
-Tools,    Weather Hourly,        tools/weather-hourly/,                      ,         0,       0,      465
-Tools,    Caption for NEI,       tools/caption-for-nei/,                     ,         0,       0,      470
+Tools,    Calculator,            apps/tools/calculator/,                     ,         0,       0,      410
+Tools,    FileDrop,              apps/lab/file-drop/,                        ,         0,       0,      410
+Tools,    NE-India Dictionary,   apps/tools/nei-dict/,                       ,         0,       0,      430
+Tools,    Notepad,               apps/tools/notepad/,                        ,         0,       0,      450
+Tools,    Weather,               apps/tools/weather-chart/,                  ,         0,       0,      460
+Tools,    Weather Hourly,        apps/tools/weather-hourly/,                 ,         0,       0,      465
+Tools,    Caption for NEI,       apps/tools/caption-for-nei/,                ,         0,       0,      470
 
-Desktop,  Learning HTML (Basic), tools/learning-html/,                       ,         0,       0,      910
-Desktop,  vDesktop,              tools/vDesktop/,                            ,         0,       0,      900
+Desktop,  Learning HTML (Basic), apps/tools/learning-html/,                  ,         0,       0,      910
+Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,         0,       0,      900
 
-Lab,      Phone,                 media/phone/,                               ,         0,       0,      1070
+Lab,      Phone,                 apps/media/phone/,                          ,         0,       0,      1070
 
-About,    About,                 about/,                                     ,         0,       0,      2000
-About,    Contact,               about/contact.txt,                          ,         0,       0,      2020
-About,    Feedback,              about/feedback.txt,                         ,         0,       1,      2030
+About,    About,                 apps/about/,                                ,         0,       0,      2000
+About,    Contact,               apps/about/contact.txt,                     ,         0,       0,      2020
+About,    Feedback,              apps/about/feedback.txt,                    ,         0,       1,      2030
 `;

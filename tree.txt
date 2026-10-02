@@ -1,12 +1,384 @@
 .
-├── about
-│   ├── about.html
-│   ├── about_icon.png
-│   ├── contact_icon.png
-│   ├── contact.txt
-│   ├── feedback_icon.png
-│   ├── feedback.txt
-│   └── index.html
+├── apps
+│   ├── about
+│   │   ├── about.html
+│   │   ├── contact.txt
+│   │   ├── feedback.txt
+│   │   └── index.html
+│   ├── connectivity
+│   │   ├── airdrop-web
+│   │   │   ├── app.js
+│   │   │   ├── index.html
+│   │   │   ├── style.css
+│   │   │   └── vendor
+│   │   │       └── peerjs.min.js
+│   │   ├── p2pchat.html
+│   │   ├── pooh-chat
+│   │   │   ├── index.html
+│   │   │   ├── modules
+│   │   │   │   ├── pooh-chat-chat.js
+│   │   │   │   ├── pooh-chat-dom.js
+│   │   │   │   ├── pooh-chat-peer.js
+│   │   │   │   ├── pooh-chat-qr.js
+│   │   │   │   ├── pooh-chat-scanner.js
+│   │   │   │   ├── pooh-chat-theme.js
+│   │   │   │   └── pooh-chat-views.js
+│   │   │   ├── pooh-chat-config.js
+│   │   │   ├── pooh-chat.css
+│   │   │   ├── pooh-chat.html
+│   │   │   └── pooh-chat.js
+│   │   └── webrtc-chat
+│   │       ├── css
+│   │       │   └── style.css
+│   │       ├── index.html
+│   │       └── js
+│   │           ├── app.js
+│   │           ├── qr.js
+│   │           ├── storage.js
+│   │           └── webrtc.js
+│   ├── games
+│   │   ├── 2048
+│   │   │   ├── 2048.css
+│   │   │   ├── 2048.html
+│   │   │   ├── 2048.js
+│   │   │   └── index.html
+│   │   ├── ar-game
+│   │   │   ├── ar-game_config.js
+│   │   │   ├── ar-game.css
+│   │   │   ├── ar-game.html
+│   │   │   ├── ar-game_icon.png
+│   │   │   ├── ar-game_logic.js
+│   │   │   ├── assets
+│   │   │   │   └── models
+│   │   │   │       └── pet
+│   │   │   │           ├── bunny
+│   │   │   │           │   ├── bunny.glb
+│   │   │   │           │   └── LICENSE.txt
+│   │   │   │           ├── cat
+│   │   │   │           │   ├── cat.glb
+│   │   │   │           │   └── LICENSE.txt
+│   │   │   │           ├── chicken
+│   │   │   │           │   ├── chicken.glb
+│   │   │   │           │   └── LICENSE.txt
+│   │   │   │           ├── dog
+│   │   │   │           │   ├── dog.glb
+│   │   │   │           │   └── LICENSE.txt
+│   │   │   │           └── ours
+│   │   │   │               └── README.txt
+│   │   │   ├── index.html
+│   │   │   ├── js
+│   │   │   │   ├── ar.js
+│   │   │   │   ├── camera.js
+│   │   │   │   ├── ghost_audio.js
+│   │   │   │   ├── look.js
+│   │   │   │   ├── pets.js
+│   │   │   │   ├── themes
+│   │   │   │   │   ├── ghost.js
+│   │   │   │   │   ├── pet.js
+│   │   │   │   │   └── zombie.js
+│   │   │   │   └── xr.js
+│   │   │   ├── README.md
+│   │   │   └── vendor
+│   │   │       └── three
+│   │   │           ├── addons
+│   │   │           │   ├── loaders
+│   │   │           │   │   └── GLTFLoader.js
+│   │   │           │   └── utils
+│   │   │           │       ├── BufferGeometryUtils.js
+│   │   │           │       └── SkeletonUtils.js
+│   │   │           ├── build
+│   │   │           │   └── three.module.min.js
+│   │   │           └── LICENSE
+│   │   ├── browser-fps
+│   │   │   ├── browser-fps_config.js
+│   │   │   ├── browser-fps.css
+│   │   │   ├── browser-fps.html
+│   │   │   ├── browser-fps_logic.js
+│   │   │   └── index.html
+│   │   ├── car-run
+│   │   │   ├── car-run_config.js
+│   │   │   ├── car-run.css
+│   │   │   ├── car-run.html
+│   │   │   ├── car-run_icon.png
+│   │   │   ├── car-run_logic.js
+│   │   │   └── index.html
+│   │   ├── contra-alpha
+│   │   │   ├── contra-alpha_config.js
+│   │   │   ├── contra-alpha.css
+│   │   │   ├── contra-alpha.html
+│   │   │   ├── contra-alpha_icon.png
+│   │   │   ├── contra-alpha_logic.js
+│   │   │   └── index.html
+│   │   ├── demolisher
+│   │   │   ├── demolisher.css
+│   │   │   ├── demolisher.html
+│   │   │   ├── demolisher.js
+│   │   │   └── index.html
+│   │   ├── desert-road
+│   │   │   ├── desert-road_config.js
+│   │   │   ├── desert-road.css
+│   │   │   ├── desert-road.html
+│   │   │   ├── desert-road_icon.png
+│   │   │   ├── desert-road_logic.js
+│   │   │   └── index.html
+│   │   ├── dino-run
+│   │   │   ├── dino-run_config.js
+│   │   │   ├── dino-run.css
+│   │   │   ├── dino-run.html
+│   │   │   ├── dino-run_icon.png
+│   │   │   ├── dino-run_logic.js
+│   │   │   └── index.html
+│   │   ├── island-alpha
+│   │   │   ├── Cow.gltf
+│   │   │   ├── Flamingo.glb
+│   │   │   ├── Flower.glb
+│   │   │   ├── index.html
+│   │   │   ├── island-alpha_icon.png
+│   │   │   ├── island.css
+│   │   │   ├── island.html
+│   │   │   ├── island.js
+│   │   │   └── Stork.glb
+│   │   ├── pong
+│   │   │   ├── index.html
+│   │   │   ├── pong_config.js
+│   │   │   ├── pong.css
+│   │   │   ├── pong.html
+│   │   │   ├── pong_icon.png
+│   │   │   └── pong_logic.js
+│   │   ├── snake
+│   │   │   ├── index.html
+│   │   │   ├── snake_config.js
+│   │   │   ├── snake.css
+│   │   │   ├── snake.html
+│   │   │   ├── snake_icon.png
+│   │   │   └── snake_logic.js
+│   │   ├── space-invader
+│   │   │   ├── index.html
+│   │   │   ├── space-invader_config.js
+│   │   │   ├── space-invader.css
+│   │   │   ├── space-invader.html
+│   │   │   ├── space-invader_icon.png
+│   │   │   └── space-invader_logic.js
+│   │   ├── swell-foop
+│   │   │   ├── index.html
+│   │   │   ├── swell-foop_config.js
+│   │   │   ├── swell-foop.css
+│   │   │   ├── swell-foop.html
+│   │   │   └── swell-foop_logic.js
+│   │   ├── tennis-throw
+│   │   │   ├── index.html
+│   │   │   ├── tennis-throw_config.js
+│   │   │   ├── tennis-throw.css
+│   │   │   ├── tennis-throw.html
+│   │   │   ├── tennis-throw_icon.png
+│   │   │   └── tennis-throw_logic.js
+│   │   ├── tetris
+│   │   │   ├── index.html
+│   │   │   ├── tetris_config.js
+│   │   │   ├── tetris.css
+│   │   │   ├── tetris.html
+│   │   │   ├── tetris_icon.png
+│   │   │   └── tetris_logic.js
+│   │   ├── tic-tac-toe
+│   │   │   ├── index.html
+│   │   │   ├── tic-tac-toe_config.js
+│   │   │   ├── tic-tac-toe.css
+│   │   │   ├── tic-tac-toe.html
+│   │   │   ├── tic-tac-toe_icon.png
+│   │   │   └── tic-tac-toe_logic.js
+│   │   └── tower-defence
+│   │       ├── index.html
+│   │       ├── modules
+│   │       │   ├── config.js
+│   │       │   ├── enemies.js
+│   │       │   ├── input.js
+│   │       │   ├── main.js
+│   │       │   ├── path.js
+│   │       │   ├── projectiles.js
+│   │       │   ├── render.js
+│   │       │   ├── state.js
+│   │       │   ├── towers.js
+│   │       │   └── waves.js
+│   │       ├── tower-defence.css
+│   │       └── tower-defence.html
+│   ├── lab
+│   │   ├── angry-bird
+│   │   │   └── index.html
+│   │   ├── iframe.html
+│   │   ├── index.html
+│   │   ├── keyboard.html
+│   │   └── pacman
+│   │       └── index.html
+│   ├── media
+│   │   ├── 3d-viewer
+│   │   │   ├── model.url
+│   │   │   ├── model-viewer-v1.html
+│   │   │   ├── Panda.glb
+│   │   │   └── SciFi_Head.fbx
+│   │   ├── gallery
+│   │   │   ├── gallery_config.js
+│   │   │   ├── gallery.css
+│   │   │   ├── gallery.html
+│   │   │   ├── gallery_logic.js
+│   │   │   └── index.html
+│   │   ├── paint
+│   │   │   ├── index.html
+│   │   │   ├── paint.css
+│   │   │   ├── paint.html
+│   │   │   └── paint.js
+│   │   ├── phone
+│   │   │   ├── ai.html
+│   │   │   ├── common.css
+│   │   │   ├── general.html
+│   │   │   ├── header.html
+│   │   │   ├── index.html
+│   │   │   ├── media.html
+│   │   │   ├── more.css
+│   │   │   ├── more.html
+│   │   │   ├── more-phone.css
+│   │   │   ├── more-phone.html
+│   │   │   ├── more-tv.css
+│   │   │   ├── more-tv.html
+│   │   │   ├── other.html
+│   │   │   ├── ott.html
+│   │   │   ├── phone.css
+│   │   │   ├── shopping.html
+│   │   │   ├── social-media.html
+│   │   │   ├── tv.css
+│   │   │   ├── upi.css
+│   │   │   └── upi.html
+│   │   ├── photo-editor
+│   │   │   ├── index.html
+│   │   │   ├── photo-editor.css
+│   │   │   ├── photo-editor.html
+│   │   │   └── photo-editor.js
+│   │   └── webcam
+│   │       ├── index.html
+│   │       ├── webcam_config.js
+│   │       ├── webcam.css
+│   │       ├── webcam.html
+│   │       └── webcam_logic.js
+│   ├── office
+│   │   ├── draftly
+│   │   │   ├── assets
+│   │   │   │   └── fonts
+│   │   │   │       └── tinos
+│   │   │   │           └── OFL.txt
+│   │   │   ├── draftly.css
+│   │   │   ├── draftly.html
+│   │   │   ├── index.html
+│   │   │   └── modules
+│   │   │       ├── draftly-app.js
+│   │   │       ├── draftly-config.js
+│   │   │       ├── draftly-editor.js
+│   │   │       ├── draftly-export.js
+│   │   │       ├── draftly-lists.js
+│   │   │       ├── draftly-pages.js
+│   │   │       ├── draftly-storage.js
+│   │   │       └── draftly-ui.js
+│   │   ├── ocr
+│   │   │   ├── index.html
+│   │   │   └── ocr.html
+│   │   └── spreadsheet
+│   │       ├── formula.js
+│   │       ├── FUNCTIONS.txt
+│   │       ├── index.html
+│   │       ├── spreadsheet_config.js
+│   │       ├── spreadsheet.css
+│   │       ├── spreadsheet.html
+│   │       └── spreadsheet_logic.js
+│   └── tools
+│       ├── calculator
+│       │   ├── calculator.css
+│       │   ├── calculator.html
+│       │   ├── calculator.js
+│       │   ├── calculator-keyboard.js
+│       │   └── index.html
+│       ├── caption-for-nei
+│       │   ├── about.html
+│       │   ├── caption-for-nei_config.js
+│       │   ├── caption-for-nei.css
+│       │   ├── caption-for-nei_full.html
+│       │   ├── caption-for-nei.html
+│       │   ├── caption-for-nei_lite.html
+│       │   ├── caption-for-nei_logic.js
+│       │   ├── caption-for-nei_roman_beng.js
+│       │   ├── caption-for-nei_roman_deva.js
+│       │   ├── caption-for-nei_roman.js
+│       │   ├── city.csv
+│       │   ├── favicon.svg
+│       │   ├── index.html
+│       │   ├── README.md
+│       │   ├── roman_as.csv
+│       │   ├── roman_bn.csv
+│       │   ├── roman_hi.csv
+│       │   ├── roman_ne.csv
+│       │   ├── surname.csv
+│       │   ├── town.csv
+│       │   └── vocab.csv
+│       ├── learning-html
+│       │   ├── index.html
+│       │   └── learning-html.html
+│       ├── live-subtitle-assam
+│       │   └── index.html
+│       ├── msword_diff
+│       │   ├── index.html
+│       │   ├── msword_diff_config.js
+│       │   ├── msword_diff.css
+│       │   ├── msword_diff.html
+│       │   └── msword_diff_logic.js
+│       ├── nei-dict
+│       │   ├── about.html
+│       │   ├── dict.css
+│       │   ├── dict.js
+│       │   ├── grammar.json
+│       │   ├── index.html
+│       │   └── README.md
+│       ├── notepad
+│       │   ├── index.html
+│       │   ├── notepad.css
+│       │   ├── notepad.html
+│       │   └── notepad.js
+│       ├── transcribe
+│       │   ├── assamese.js
+│       │   ├── bengali.js
+│       │   ├── hindi.js
+│       │   ├── index.html
+│       │   ├── romanizer.js
+│       │   ├── subtitle_icon.png
+│       │   ├── tests
+│       │   │   ├── dedupe.test.js
+│       │   │   ├── download.test.js
+│       │   │   ├── harness.js
+│       │   │   ├── pairing.test.js
+│       │   │   ├── romanizer.test.js
+│       │   │   └── smoke.jsdom.js
+│       │   ├── transcribe.css
+│       │   ├── transcribe.html
+│       │   ├── transcribe.js
+│       │   ├── translation.js
+│       │   └── vocab.js
+│       ├── vDesktop
+│       │   ├── apps.csv
+│       │   ├── desktop_icons.csv
+│       │   ├── hash.txt
+│       │   ├── index.html
+│       │   ├── vDesktop.css
+│       │   ├── vDesktop.html
+│       │   ├── vDesktop.js
+│       │   └── wallpaper.csv
+│       ├── weather-chart
+│       │   ├── index.html
+│       │   ├── weather-chart_config.js
+│       │   ├── weather-chart.css
+│       │   ├── weather-chart.html
+│       │   └── weather-chart_logic.js
+│       └── weather-hourly
+│           ├── index.html
+│           ├── weather-hourly_config.js
+│           ├── weather-hourly.css
+│           ├── weather-hourly.html
+│           └── weather-hourly_logic.js
 ├── controller
 │   ├── controller_config.js
 │   ├── controller.css
@@ -20,149 +392,6 @@
 │       ├── jsQR.js
 │       └── jsQR.LICENSE
 ├── favicon.ico
-├── games
-│   ├── ar-game
-│   │   ├── ar-game_config.js
-│   │   ├── ar-game.css
-│   │   ├── ar-game.html
-│   │   ├── ar-game_icon.png
-│   │   ├── ar-game_logic.js
-│   │   ├── assets
-│   │   │   └── models
-│   │   │       └── pet
-│   │   │           ├── bunny
-│   │   │           │   ├── bunny.glb
-│   │   │           │   └── LICENSE.txt
-│   │   │           ├── cat
-│   │   │           │   ├── cat.glb
-│   │   │           │   └── LICENSE.txt
-│   │   │           ├── chicken
-│   │   │           │   ├── chicken.glb
-│   │   │           │   └── LICENSE.txt
-│   │   │           ├── dog
-│   │   │           │   ├── dog.glb
-│   │   │           │   └── LICENSE.txt
-│   │   │           └── ours
-│   │   │               └── README.txt
-│   │   ├── index.html
-│   │   ├── js
-│   │   │   ├── ar.js
-│   │   │   ├── camera.js
-│   │   │   ├── ghost_audio.js
-│   │   │   ├── look.js
-│   │   │   ├── pets.js
-│   │   │   ├── themes
-│   │   │   │   ├── ghost.js
-│   │   │   │   ├── pet.js
-│   │   │   │   └── zombie.js
-│   │   │   └── xr.js
-│   │   ├── README.md
-│   │   └── vendor
-│   │       └── three
-│   │           ├── addons
-│   │           │   ├── loaders
-│   │           │   │   └── GLTFLoader.js
-│   │           │   └── utils
-│   │           │       ├── BufferGeometryUtils.js
-│   │           │       └── SkeletonUtils.js
-│   │           ├── build
-│   │           │   └── three.module.min.js
-│   │           └── LICENSE
-│   ├── browser-fps
-│   │   ├── browser-fps_config.js
-│   │   ├── browser-fps.css
-│   │   ├── browser-fps.html
-│   │   ├── browser-fps_icon.png
-│   │   ├── browser-fps_logic.js
-│   │   └── index.html
-│   ├── car-run
-│   │   ├── car-run_config.js
-│   │   ├── car-run.css
-│   │   ├── car-run.html
-│   │   ├── car-run_icon.png
-│   │   ├── car-run_logic.js
-│   │   └── index.html
-│   ├── contra-alpha
-│   │   ├── contra-alpha_config.js
-│   │   ├── contra-alpha.css
-│   │   ├── contra-alpha.html
-│   │   ├── contra-alpha_icon.png
-│   │   ├── contra-alpha_logic.js
-│   │   └── index.html
-│   ├── desert-road
-│   │   ├── desert-road_config.js
-│   │   ├── desert-road.css
-│   │   ├── desert-road.html
-│   │   ├── desert-road_icon.png
-│   │   ├── desert-road_logic.js
-│   │   └── index.html
-│   ├── dino-run
-│   │   ├── dino-run_config.js
-│   │   ├── dino-run.css
-│   │   ├── dino-run.html
-│   │   ├── dino-run_icon.png
-│   │   ├── dino-run_logic.js
-│   │   └── index.html
-│   ├── island-alpha
-│   │   ├── Cow.gltf
-│   │   ├── Flamingo.glb
-│   │   ├── Flower.glb
-│   │   ├── index.html
-│   │   ├── island-alpha_icon.png
-│   │   ├── island.css
-│   │   ├── island.html
-│   │   ├── island.js
-│   │   └── Stork.glb
-│   ├── pong
-│   │   ├── index.html
-│   │   ├── pong_config.js
-│   │   ├── pong.css
-│   │   ├── pong.html
-│   │   ├── pong_icon.png
-│   │   └── pong_logic.js
-│   ├── snake
-│   │   ├── index.html
-│   │   ├── snake_config.js
-│   │   ├── snake.css
-│   │   ├── snake.html
-│   │   ├── snake_icon.png
-│   │   └── snake_logic.js
-│   ├── space-invader
-│   │   ├── index.html
-│   │   ├── space-invader_config.js
-│   │   ├── space-invader.css
-│   │   ├── space-invader.html
-│   │   ├── space-invader_icon.png
-│   │   └── space-invader_logic.js
-│   ├── swell-foop
-│   │   ├── index.html
-│   │   ├── swell-foop_config.js
-│   │   ├── swell-foop.css
-│   │   ├── swell-foop.html
-│   │   ├── swell-foop_icon.png
-│   │   └── swell-foop_logic.js
-│   ├── tennis-throw
-│   │   ├── index.html
-│   │   ├── tennis-throw_config.js
-│   │   ├── tennis-throw.css
-│   │   ├── tennis-throw.html
-│   │   ├── tennis-throw_icon.png
-│   │   └── tennis-throw_logic.js
-│   ├── tetris
-│   │   ├── index.html
-│   │   ├── tetris_config.js
-│   │   ├── tetris.css
-│   │   ├── tetris.html
-│   │   ├── tetris_icon.png
-│   │   └── tetris_logic.js
-│   └── tic-tac-toe
-│       ├── index.html
-│       ├── tic-tac-toe_config.js
-│       ├── tic-tac-toe.css
-│       ├── tic-tac-toe.html
-│       ├── tic-tac-toe_icon.png
-│       └── tic-tac-toe_logic.js
-├── grid.html
 ├── hub
 │   ├── hub_apps.js
 │   ├── hub-controller.js
@@ -171,130 +400,11 @@
 │   ├── hub.js
 │   └── hub_tiles.js
 ├── hub.html
-├── image
-│   ├── app.png
-│   ├── arrow_blue.png
-│   ├── box.png
-│   ├── call.png
-│   ├── chase.png
-│   ├── close.png
-│   ├── cogwheel.png
-│   ├── connection.png
-│   ├── dialer.png
-│   ├── digital-nomad-hub.png
-│   ├── drive.png
-│   ├── earth.png
-│   ├── excel.png
-│   ├── folder.png
-│   ├── gallery.png
-│   ├── gamepad_blue.png
-│   ├── gamepad_green.png
-│   ├── gamepad_orange.png
-│   ├── gamepad_purple.png
-│   ├── golf.png
-│   ├── google-docs.png
-│   ├── google-maps.png
-│   ├── google-pay.png
-│   ├── home.png
-│   ├── india.png
-│   ├── mobile.png
-│   ├── more.png
-│   ├── paper.png
-│   ├── photo-camera.png
-│   ├── play.png
-│   ├── qr.png
-│   ├── setting.png
-│   ├── sms.png
-│   ├── tv_no_signal.jpeg
-│   ├── whatsapp_w4b.png
-│   ├── youtube-kids.png
-│   └── youtube.png
 ├── index.html
-├── lab
-│   ├── 2048.html
-│   ├── angry-bird
-│   │   └── index.html
-│   ├── demolisher.html
-│   ├── iframe.html
-│   ├── index.html
-│   ├── keyboard.html
-│   ├── p2pchat.html
-│   ├── pacman
-│   │   └── index.html
-│   ├── tower-defence.html
-│   └── webrtc_chat.html
 ├── LICENSE
-├── media
-│   ├── 3d-viewer
-│   │   ├── model.url
-│   │   ├── model-viewer-v1.html
-│   │   ├── Panda.glb
-│   │   └── SciFi_Head.fbx
-│   ├── gallery
-│   │   ├── gallery_config.js
-│   │   ├── gallery.css
-│   │   ├── gallery.html
-│   │   ├── gallery_icon.png
-│   │   ├── gallery_logic.js
-│   │   └── index.html
-│   ├── paint
-│   │   ├── index.html
-│   │   ├── paint.css
-│   │   ├── paint.html
-│   │   ├── paint_icon.png
-│   │   └── paint.js
-│   ├── phone
-│   │   ├── ai.html
-│   │   ├── common.css
-│   │   ├── general.html
-│   │   ├── header.html
-│   │   ├── index.html
-│   │   ├── media.html
-│   │   ├── more.css
-│   │   ├── more.html
-│   │   ├── more-phone.css
-│   │   ├── more-phone.html
-│   │   ├── more-tv.css
-│   │   ├── more-tv.html
-│   │   ├── other.html
-│   │   ├── ott.html
-│   │   ├── phone.css
-│   │   ├── phone_icon.png
-│   │   ├── shopping.html
-│   │   ├── social-media.html
-│   │   ├── tv.css
-│   │   ├── upi.css
-│   │   └── upi.html
-│   ├── photo-editor
-│   │   ├── index.html
-│   │   ├── photo-editor.css
-│   │   ├── photo-editor.html
-│   │   ├── photo-editor_icon.png
-│   │   └── photo-editor.js
-│   └── webcam
-│       ├── index.html
-│       ├── webcam_config.js
-│       ├── webcam.css
-│       ├── webcam.html
-│       ├── webcam_icon.png
-│       └── webcam_logic.js
 ├── misc
 │   ├── privatedns.html
 │   └── T&C.html
-├── office
-│   ├── ocr
-│   │   ├── index.html
-│   │   ├── ocr.html
-│   │   └── ocr_icon.png
-│   └── spreadsheet
-│       ├── formula.js
-│       ├── FUNCTIONS.txt
-│       ├── index.html
-│       ├── spreadsheet_config.js
-│       ├── spreadsheet.css
-│       ├── spreadsheet.html
-│       ├── spreadsheet_icon.png
-│       └── spreadsheet_logic.js
 ├── README.md
 ├── script
 │   ├── api_keys.js
@@ -304,121 +414,13 @@
 │   ├── time.js
 │   └── txt-view.html
 ├── shared
+│   └── image
 ├── style
 │   ├── app-common.css
 │   ├── cursor.css
 │   ├── font.css
 │   ├── no-scrollbar.css
 │   └── weather.css
-├── tools
-│   ├── airdrop-web
-│   │   ├── airdrop-web_icon.png
-│   │   ├── app.js
-│   │   ├── index.html
-│   │   ├── style.css
-│   │   └── vendor
-│   │       └── peerjs.min.js
-│   ├── calculator
-│   │   ├── calculator.css
-│   │   ├── calculator.html
-│   │   ├── calculator_icon.png
-│   │   ├── calculator.js
-│   │   ├── calculator-keyboard.js
-│   │   └── index.html
-│   ├── caption-for-nei
-│   │   ├── about.html
-│   │   ├── caption-for-nei_config.js
-│   │   ├── caption-for-nei.css
-│   │   ├── caption-for-nei_full.html
-│   │   ├── caption-for-nei.html
-│   │   ├── caption-for-nei_icon.png
-│   │   ├── caption-for-nei_lite.html
-│   │   ├── caption-for-nei_logic.js
-│   │   ├── caption-for-nei_roman_beng.js
-│   │   ├── caption-for-nei_roman_deva.js
-│   │   ├── caption-for-nei_roman.js
-│   │   ├── city.csv
-│   │   ├── favicon.svg
-│   │   ├── index.html
-│   │   ├── README.md
-│   │   ├── roman_as.csv
-│   │   ├── roman_bn.csv
-│   │   ├── roman_hi.csv
-│   │   ├── roman_ne.csv
-│   │   ├── surname.csv
-│   │   ├── town.csv
-│   │   └── vocab.csv
-│   ├── learning-html
-│   │   ├── index.html
-│   │   ├── learning-html.html
-│   │   └── learning-html_icon.png
-│   ├── live-subtitle-assam
-│   │   └── index.html
-│   ├── msword_diff
-│   │   ├── index.html
-│   │   ├── msword_diff_config.js
-│   │   ├── msword_diff.css
-│   │   ├── msword_diff.html
-│   │   ├── msword_diff_icon.png
-│   │   └── msword_diff_logic.js
-│   ├── nei-dict
-│   │   ├── about.html
-│   │   ├── dict.css
-│   │   ├── dict.js
-│   │   ├── grammar.json
-│   │   ├── index.html
-│   │   ├── nei-dict_icon.png
-│   │   └── README.md
-│   ├── notepad
-│   │   ├── index.html
-│   │   ├── notepad.css
-│   │   ├── notepad.html
-│   │   ├── notepad_icon.png
-│   │   └── notepad.js
-│   ├── transcribe
-│   │   ├── assamese.js
-│   │   ├── bengali.js
-│   │   ├── hindi.js
-│   │   ├── index.html
-│   │   ├── romanizer.js
-│   │   ├── subtitle_icon.png
-│   │   ├── tests
-│   │   │   ├── dedupe.test.js
-│   │   │   ├── download.test.js
-│   │   │   ├── harness.js
-│   │   │   ├── pairing.test.js
-│   │   │   ├── romanizer.test.js
-│   │   │   └── smoke.jsdom.js
-│   │   ├── transcribe.css
-│   │   ├── transcribe.html
-│   │   ├── transcribe_icon.png
-│   │   ├── transcribe.js
-│   │   ├── translation.js
-│   │   └── vocab.js
-│   ├── vDesktop
-│   │   ├── apps.csv
-│   │   ├── desktop_icons.csv
-│   │   ├── hash.txt
-│   │   ├── index.html
-│   │   ├── vDesktop.css
-│   │   ├── vDesktop.html
-│   │   ├── vDesktop_icon.png
-│   │   ├── vDesktop.js
-│   │   └── wallpaper.csv
-│   ├── weather-chart
-│   │   ├── index.html
-│   │   ├── weather-chart_config.js
-│   │   ├── weather-chart.css
-│   │   ├── weather-chart.html
-│   │   ├── weather-chart_icon.png
-│   │   └── weather-chart_logic.js
-│   └── weather-hourly
-│       ├── index.html
-│       ├── weather-hourly_config.js
-│       ├── weather-hourly.css
-│       ├── weather-hourly.html
-│       ├── weather-hourly_icon.png
-│       └── weather-hourly_logic.js
 ├── tree.txt
 ├── tv
 │   ├── channels
@@ -495,4 +497,4 @@
     ├── xp.jpg
     └── xp_small.jpg
 
-75 directories, 421 files
+91 directories, 407 files
