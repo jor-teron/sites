@@ -1,0 +1,170 @@
+/*
+  ============================================================
+  File:        2048.css
+  Project:     2048
+  Purpose:     Visual styles for the 2048 board, HUD, tiles,
+               overlay, and control buttons.
+  Location:    2048/2048.css
+  Palette:     Dark page, indigo board (#1919A6), gold text
+               (#FFD700). Tile colors are set inline by JS.
+  Notes:       Full-viewport, no scroll, touch-action none
+               so swipes do not pan the page.
+  ============================================================
+*/
+
+/* Reset box model and kill tap highlight on mobile */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+/* Full-screen dark page, no scroll, no text selection */
+html, body {
+  margin: 0; padding: 0;
+  width: 100%; height: 100%;
+  background: #0a0a0f; color: #fff;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+/* App column: HUD, stage, controls. Respects safe areas. */
+#app {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-start;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Top bar: title plus score and best */
+#hud {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 520px;
+  display: flex; justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  font-size: 13px; letter-spacing: 1px;
+  color: #FFD700;
+  gap: 8px;
+}
+
+/* Score / best pill */
+#hud .stat {
+  background: #1919A6;
+  padding: 6px 10px;
+  border-radius: 4px;
+  display: flex; flex-direction: column;
+  align-items: center;
+  min-width: 72px;
+  line-height: 1.1;
+}
+#hud .stat .label { font-size: 10px; opacity: 0.7; }
+#hud .stat .value { font-size: 16px; color: #FFD700; font-weight: bold; }
+#hud .title { font-size: 18px; color: #FFD700; letter-spacing: 3px; font-weight: bold; }
+
+/* Flexible middle area that centers the board */
+#stage {
+  flex: 1 1 auto;
+  position: relative;
+  width: 100%;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 0;
+  padding: 8px;
+}
+
+/* Indigo frame around the grid */
+#board-wrap {
+  position: relative;
+  background: #1919A6;
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 0 24px rgba(25, 25, 166, 0.5);
+  touch-action: none;
+}
+
+/* 4x4 grid of empty cells. Size is set by JS. */
+#board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 8px;
+  touch-action: none;
+}
+
+/* Empty slot behind a tile */
+.cell {
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 4px;
+}
+
+/* Moving number tile. Positioned absolutely by JS transform. */
+.tile {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  border-radius: 4px;
+  transition: transform 120ms ease-out;
+  will-change: transform;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Spawn and merge animations */
+.tile.new { animation: appear 150ms ease-out; }
+.tile.merged { animation: pop 180ms ease-out; }
+
+@keyframes appear {
+  0%   { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+@keyframes pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+/* Win / lose panel over the board */
+#overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.85);
+  text-align: center; padding: 20px;
+  border-radius: 8px;
+  z-index: 10;
+  gap: 8px;
+}
+#overlay.hidden { display: none; }
+#overlay h2 { margin: 0; font-size: 26px; color: #FFD700; letter-spacing: 3px; }
+#overlay p { margin: 4px 0; font-size: 14px; color: #ccc; }
+#overlay button {
+  margin-top: 10px; padding: 10px 22px;
+  background: #FFD700; color: #000;
+  border: none; border-radius: 6px;
+  font-family: inherit; font-size: 15px;
+  font-weight: bold; cursor: pointer;
+  letter-spacing: 2px;
+}
+#overlay button:active { transform: scale(0.96); }
+
+/* Bottom undo / new game row */
+#controls {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+}
+#controls button {
+  padding: 8px 16px;
+  background: #1919A6;
+  color: #FFD700;
+  border: 1px solid #3B3BFF;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+#controls button:active { transform: scale(0.96); }
+#controls button:disabled { opacity: 0.35; cursor: not-allowed; }

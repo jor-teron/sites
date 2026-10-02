@@ -1,0 +1,110 @@
+/**
+ * =============================================================================
+ * Project : pooh-chat
+ * File    : pooh-chat.css
+ * Purpose : Theme tokens and small layout rules Tailwind does not cover.
+ *           Light is the default. Dark is body.theme-dark.
+ * Author  : pooh-chat refactor
+ * Notes   : Loaded by pooh-chat.html. Colors mirror POOH_CHAT_CONFIG intent.
+ * =============================================================================
+ */
+
+/**
+ * Page font. Fredoka keeps the honey-pot look on both themes.
+ */
+body {
+    font-family: "Fredoka", cursive, sans-serif;
+}
+
+/**
+ * Dark theme surface. Amber accent stays; backgrounds drop to stone.
+ */
+body.theme-dark {
+    background-color: #1c1917;
+    color: #fef3c7;
+}
+
+/**
+ * Card shells in dark mode.
+ */
+body.theme-dark .pooh-card {
+    background-color: #292524;
+    border-color: #b45309;
+    color: #fef3c7;
+}
+
+/**
+ * Soft panels (pin box, scanner frame, message list) in dark mode.
+ */
+body.theme-dark .pooh-panel {
+    background-color: #1c1917;
+    border-color: #92400e;
+    color: #fef3c7;
+}
+
+/**
+ * Secondary text in dark mode.
+ */
+body.theme-dark .pooh-muted {
+    color: #fcd34d;
+}
+
+/**
+ * Headings in dark mode.
+ */
+body.theme-dark .pooh-title {
+    color: #fde68a;
+}
+
+/**
+ * Manual pin field in dark mode.
+ */
+body.theme-dark .pooh-input {
+    background-color: #1c1917;
+    border-color: #b45309;
+    color: #fef3c7;
+}
+
+/**
+ * Incoming chat bubble in dark mode. Outgoing stays amber.
+ */
+body.theme-dark .bubble-friend {
+    background-color: #44403c;
+    border-color: #b45309;
+    color: #fef3c7;
+}
+
+/**
+ * System pill in dark mode.
+ */
+body.theme-dark .bubble-system {
+    background-color: rgba(180, 83, 9, 0.35);
+    color: #fde68a;
+}
+
+/**
+ * QR holder stays light so the code scans. Border only changes.
+ */
+body.theme-dark #qrcode {
+    background-color: #ffffff;
+    border-color: #b45309;
+}
+
+/**
+ * Theme toggle button.
+ */
+.theme-toggle {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid #f59e0b;
+    background: #fffbeb;
+    color: #92400e;
+}
+
+body.theme-dark .theme-toggle {
+    background: #44403c;
+    color: #fde68a;
+    border-color: #d97706;
+}

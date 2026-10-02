@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>P2P Chat</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div>
+        <h1>P2P Chat</h1>
+        <div id="peer-label">
+          <span id="me-name">—</span>
+          · <span id="me-id">----------</span>
+        </div>
+      </div>
+      <span id="status">Idle</span>
+      <button type="button" class="ghost" id="edit-name">Name</button>
+      <button type="button" id="qr-btn">QR</button>
+    </header>
+
+    <div id="log"></div>
+
+    <div id="composer">
+      <input id="msg" type="text" placeholder="Message" maxlength="500" disabled />
+      <button type="button" id="send" disabled>Send</button>
+    </div>
+  </div>
+
+  <!-- First-run / edit name -->
+  <div class="overlay" id="setup">
+    <div class="card">
+      <h2>Your name</h2>
+      <input id="name-input" type="text" maxlength="10" placeholder="3–10 characters" />
+      <p class="hint">Saved on this device. A 10-digit id is created once.</p>
+      <p class="error" id="name-err"></p>
+      <div class="row">
+        <button type="button" id="save-name">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate or Scan -->
+  <div class="overlay" id="choice-modal">
+    <div class="card">
+      <h2>Connect</h2>
+      <div class="row">
+        <button type="button" id="opt-generate">Generate QR</button>
+        <button type="button" id="opt-scan">Scan QR</button>
+      </div>
+      <p class="hint">Camera needs HTTPS. On HTTP type the 6-digit code. Wait until host status is Ready.</p>
+      <div class="row">
+        <input id="join-code" type="text" inputmode="numeric" maxlength="6" placeholder="000000" />
+        <button type="button" id="join-code-btn">Join</button>
+      </div>
+      <div class="row">
+        <button type="button" class="ghost" data-close>Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Host QR -->
+  <div class="overlay" id="qr-modal">
+    <div class="card">
+      <h2>Show this QR</h2>
+      <div id="qr-box"></div>
+      <p id="session-code">------</p>
+      <p class="hint">Keep this page open. Guest types this code after status says Ready.</p>
+      <div class="row">
+        <button type="button" class="ghost" data-close>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Camera scan -->
+  <div class="overlay" id="scan-modal">
+    <div class="card">
+      <h2>Scan QR</h2>
+      <div id="reader"></div>
+      <div class="row">
+        <button type="button" class="ghost" data-close>Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/qr.js"></script>
+  <script src="js/webrtc.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

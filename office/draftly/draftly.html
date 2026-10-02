@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  FILE: draftly.html
+  PROJECT: draftly
+  ROLE: Shell only. Styles live in draftly.css.
+        Behavior lives in modules/. This file does not
+        contain magic numbers or editor logic.
+  LOAD ORDER: config, storage, ui, editor, pages, export, app.
+  ============================================================
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>draftly · A4 multi-page</title>
+  <link rel="stylesheet" href="draftly.css">
+</head>
+<body>
+
+  <!-- ============================================================
+       TOOLBAR
+       ============================================================ -->
+  <div class="toolbar" id="toolbar">
+    <!-- Recent documents -->
+    <div class="tool-group recent-wrap">
+      <button class="tool-btn wide" id="recentBtn" title="Recent documents">Recent</button>
+      <div class="recent-menu" id="recentMenu" hidden></div>
+    </div>
+
+    <!-- Font family -->
+    <div class="tool-group">
+      <select id="fontFamilySelect" title="Font family">
+        <option value="Times New Roman" selected>Times New Roman</option>
+        <option value="Tinos">Tinos</option>
+      </select>
+    </div>
+
+    <!-- Font size -->
+    <div class="tool-group">
+      <select id="fontSizeSelect" class="size-select" title="Font size">
+        <option value="1">8 pt</option>
+        <option value="2">10 pt</option>
+        <option value="3" selected>12 pt</option>
+        <option value="4">14 pt</option>
+        <option value="5">18 pt</option>
+        <option value="6">24 pt</option>
+        <option value="7">36 pt</option>
+      </select>
+    </div>
+
+    <!-- B / I / U -->
+    <div class="tool-group">
+      <button class="tool-btn" id="boldBtn" title="Bold (Ctrl+B)"><b>B</b></button>
+      <button class="tool-btn" id="italicBtn" title="Italic (Ctrl+I)"><i>I</i></button>
+      <button class="tool-btn" id="underlineBtn" title="Underline (Ctrl+U)"><u>U</u></button>
+    </div>
+
+    <!-- Alignment: Left | Center | Right -->
+    <div class="tool-group">
+      <button class="tool-btn" id="alignLeftBtn" title="Align left">◀</button>
+      <button class="tool-btn" id="alignCenterBtn" title="Align center">◆</button>
+      <button class="tool-btn" id="alignRightBtn" title="Align right">▶</button>
+    </div>
+
+    <!-- Lists -->
+    <div class="tool-group">
+      <select id="listKindSelect" title="List kind">
+        <option value="bullet">Bullet</option>
+        <option value="1">1 2 3</option>
+        <option value="a">a b c</option>
+        <option value="A">A B C</option>
+      </select>
+      <select id="listSuffixSelect" title="Number suffix" disabled>
+        <option value=".">.</option>
+        <option value=",">,</option>
+        <option value=")">)</option>
+        <option value="none">none</option>
+      </select>
+    </div>
+
+    <!-- Orientation -->
+    <div class="tool-group">
+      <select id="orientationSelect" title="Page orientation">
+        <option value="portrait" selected>Portrait</option>
+        <option value="landscape">Landscape</option>
+      </select>
+    </div>
+
+    <!-- Margins (cm) -->
+    <div class="tool-group">
+      <label class="margin-label">T<input id="marginTopInput" class="margin-input" type="number" min="0" max="5" step="0.1" value="0.5" title="Top margin cm"></label>
+      <label class="margin-label">B<input id="marginBottomInput" class="margin-input" type="number" min="0" max="5" step="0.1" value="0.5" title="Bottom margin cm"></label>
+      <label class="margin-label">L<input id="marginLeftInput" class="margin-input" type="number" min="0" max="5" step="0.1" value="2" title="Left margin cm"></label>
+      <label class="margin-label">R<input id="marginRightInput" class="margin-input" type="number" min="0" max="5" step="0.1" value="2" title="Right margin cm"></label>
+    </div>
+
+    <!-- Theme + non-printing -->
+    <div class="tool-group" style="margin-left: auto;">
+      <button class="tool-btn wide" id="nonPrintingBtn" title="Show/hide non-printing characters">¶ Show format</button>
+      <button class="tool-btn wide" id="themeToggleBtn" title="Toggle Light/Dark theme">🌙 Dark</button>
+    </div>
+
+    <!-- Filename | Save | Print | Docx | PDF -->
+    <div class="tool-group">
+      <input id="fileNameInput" class="file-name" type="text" spellcheck="false" title="Document name" aria-label="Document name">
+      <button class="tool-btn wide" id="saveBtn" title="Save (Ctrl+S)">💾 Save</button>
+      <button class="tool-btn wide" id="printBtn" title="Print document">🖨️ Print</button>
+      <button class="tool-btn wide" id="exportDocxBtn" title="Export as DOCX">📄 DOCX</button>
+      <button class="tool-btn wide" id="exportPdfBtn" title="Export as PDF">📄 PDF</button>
+    </div>
+
+    <!-- Version. Click opens the about panel. -->
+    <button class="tool-btn wide version-btn" id="versionBtn" title="About draftly">v0.7</button>
+  </div>
+
+  <!-- ============================================================
+       WORKSPACE — multiple pages rendered here
+       ============================================================ -->
+  <div class="workspace" id="workspace">
+    <div class="paper" id="paper">
+      <div class="editor" contenteditable="true" data-placeholder="Start typing here…" spellcheck="false"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       STATUS BAR
+       ============================================================ -->
+  <div class="status-bar">
+    <span>📄 A4 · <span id="orientationLabel">Portrait</span> · Margins: T/B 0.5cm, L/R 2cm · <span id="pageCountLabel">1 page</span></span>
+    <span>
+      <kbd>Ctrl</kbd>+<kbd>S</kbd> save &nbsp;|&nbsp;
+      <kbd>Enter</kbd> paragraph &nbsp;|&nbsp;
+      <kbd>Shift</kbd>+<kbd>Enter</kbd> new line
+    </span>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- About panel. Not a browser popup. -->
+  <div class="about-backdrop" id="aboutBackdrop" hidden>
+    <div class="about-panel" role="dialog" aria-labelledby="aboutTitle">
+      <h2 id="aboutTitle">draftly</h2>
+      <p id="aboutVersion">v0.7</p>
+      <p>A small A4 editor. Times New Roman by default. Tinos is the embedded fallback.</p>
+      <button class="tool-btn wide" id="aboutCloseBtn" type="button">Close</button>
+    </div>
+  </div>
+
+  <!-- html-docx-js for DOCX export -->
+  <script src="https://cdn.jsdelivr.net/npm/html-docx-js/dist/html-docx.min.js"></script>
+
+  <!-- Modules. Order matters. app.js boots last. -->
+  <script src="modules/draftly-config.js"></script>
+  <script src="modules/draftly-storage.js"></script>
+  <script src="modules/draftly-ui.js"></script>
+  <script src="modules/draftly-editor.js"></script>
+  <script src="modules/draftly-pages.js"></script>
+  <script src="modules/draftly-export.js"></script>
+  <script src="modules/draftly-lists.js"></script>
+  <script src="modules/draftly-app.js"></script>
+</body>
+</html>

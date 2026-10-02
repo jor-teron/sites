@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  File:        index.html
+  Project:     2048
+  Purpose:     Entry redirect. Opens the main game page
+               (2048.html) so the folder has a standard
+               index entry point.
+  Location:    2048/index.html
+  Notes:       Instant meta refresh plus a fallback link.
+               No game logic lives in this file.
+  ============================================================
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2048</title>
+  <!-- Immediate redirect to the main game HTML -->
+  <meta http-equiv="refresh" content="0; url=2048.html" />
+  <link rel="canonical" href="2048.html" />
+</head>
+<body>
+  <p>Opening <a href="2048.html">2048</a>…</p>
+  <script>
+    // Fallback if meta refresh is blocked
+    window.location.replace('2048.html');
+  </script>
+</body>
+</html>

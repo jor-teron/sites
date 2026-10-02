@@ -23,7 +23,10 @@ CATEGORY, NAME,                  ENTRY_URL,                                  ICO
 Favorite, TV,                    tv/,                                        ,         0,       0,      10
 Favorite, Transcribe,            tools/transcribe/,                          ,         0,       0,      20
 Favorite, Caption for NEI,       tools/caption-for-nei/,                     ,         0,       0,      70
-Games,    Swell Foop,            games/swell-foop/,                          ,         0,       0,      100
+
+Games,    D-Pad Controller,      controller/,                                ,         1,       0,      199
+Games,    2048,                  games/2048/,                                ,         0,       0,      101
+Games,    Swell Foop,            games/swell-foop/,                          ,         0,       0,      102
 Games,    Ping Pong,             games/pong/,                                ,         0,       0,      105
 Games,    Tetris,                games/tetris/,                              ,         0,       0,      110
 Games,    Tic-Tac-Toe,           games/tic-tac-toe/,                         ,         0,       0,      115
@@ -37,14 +40,25 @@ Games,    Space Invaders,        games/space-invader/,                       ,  
 Games,    AR Game,               games/ar-game/,                             ,         0,       0,      180
 Games,    Browser FPS,           games/browser-fps/,                         ,         0,       0,      190
 Games,    Island (Alpha),        games/island-alpha/,                        ,         0,       0,      192
-Games,    D-Pad Controller,      controller/,                                ,         0,       1,      195
+Games,    Tower Defence,         games/tower-defence/,                       ,         0,       0,      111
+Games,    Demolisher,            games/demolisher/,                          ,         0,       0,      195
+
 Media,    TV,                    tv/,                                        ,         0,       0,      210
 Media,    Webcam,                media/webcam/,                              ,         0,       0,      220
+Media,    3D Viewer,             media/3d-viewer/,                               ,         0,       0,      240
 Media,    Paint,                 media/paint/,                               ,         0,       0,      230
 Media,    Photo Editor,          media/photo-editor/,                        ,         0,       0,      260
+
 Office,   Spreadsheet,           office/spreadsheet/,                        ,         0,       0,      320
+Office,   Draft-ly,              office/draftly/,                            ,         0,       0,      310
 Office,   OCR,                   office/ocr/,                                ,         0,       0,      360
 Office,   MS Word Diff,          tools/msword_diff/,                         ,         0,       0,      440
+
+Connectivity, AirDrop,           connectivity/airdrop-web/,                  ,         0,       0,      1010
+Connectivity, Pooh Chat,         connectivity/pooh-chat/,                    ,         0,       0,      401
+Connectivity, WebChat,           connectivity/webrtc-chat/,                  ,         0,       0,      402
+Connectivity, Peer Chat,         lab/p2pchat.html,                           ,         0,       0,      403
+
 Tools,    Calculator,            tools/calculator/,                          ,         0,       0,      410
 Tools,    FileDrop,              lab/file-drop/,                             ,         0,       0,      410
 Tools,    NE-India Dictionary,   tools/nei-dict/,                            ,         0,       0,      430
@@ -52,11 +66,12 @@ Tools,    Notepad,               tools/notepad/,                             ,  
 Tools,    Weather,               tools/weather-chart/,                       ,         0,       0,      460
 Tools,    Weather Hourly,        tools/weather-hourly/,                      ,         0,       0,      465
 Tools,    Caption for NEI,       tools/caption-for-nei/,                     ,         0,       0,      470
+
 Desktop,  Learning HTML (Basic), tools/learning-html/,                       ,         0,       0,      910
 Desktop,  vDesktop,              tools/vDesktop/,                            ,         0,       0,      900
-Tools,    AirDrop,               tools/airdrop-web/,                           ,         0,       0,      1010
-Lab,      P2P Chat,              lab/p2pchat.html,                           ,         0,       0,      1001
+
 Lab,      Phone,                 media/phone/,                               ,         0,       0,      1070
+
 About,    About,                 about/,                                     ,         0,       0,      2000
 About,    Contact,               about/contact.txt,                          ,         0,       0,      2020
 About,    Feedback,              about/feedback.txt,                         ,         0,       1,      2030

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<!--
+  File: tower-defence.html
+  Project: tower-defence
+  Purpose: Game shell. Markup only. Styles live in tower-defence.css.
+           Logic lives in modules/ and boots from modules/main.js.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Tower Defense</title>
+  <link rel="stylesheet" href="tower-defence.css" />
+</head>
+<body>
+  <div id="app">
+    <div id="hud">
+      <div class="stat"><span class="label">HP</span><span class="value" id="hud-lives">20</span></div>
+      <div class="stat"><span class="label">GOLD</span><span class="value" id="hud-gold">150</span></div>
+      <div class="stat"><span class="label">WAVE</span><span class="value" id="hud-wave">0</span></div>
+      <div class="stat"><span class="label">SCORE</span><span class="value" id="hud-score">0</span></div>
+    </div>
+
+    <div id="stage">
+      <canvas id="game"></canvas>
+      <div id="hint"></div>
+      <div id="overlay">
+        <h2 id="overlay-title">TOWER DEFENSE</h2>
+        <p id="overlay-msg">Build towers • Stop the waves • Survive</p>
+        <p id="overlay-msg2" style="font-size:11px;opacity:0.7;">Tap a tower button, then tap a grass tile</p>
+        <button id="overlay-btn">START</button>
+      </div>
+    </div>
+
+    <div id="toolbar">
+      <button class="tbtn" data-tower="gun">GUN<span class="cost">$50</span></button>
+      <button class="tbtn" data-tower="cannon">CANNON<span class="cost">$100</span></button>
+      <button class="tbtn" data-tower="frost">FROST<span class="cost">$75</span></button>
+      <div id="ctrls">
+        <button class="abtn" id="btn-upgrade" disabled>UPGRADE</button>
+        <button class="abtn" id="btn-sell" disabled>SELL</button>
+        <button class="abtn" id="btn-speed">1×</button>
+        <button class="abtn warn" id="btn-pause">PAUSE</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="modules/main.js"></script>
+</body>
+</html>

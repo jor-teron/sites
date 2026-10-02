@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  FILE: index.html
+  PROJECT: draftly
+  ROLE: Entry redirect only. Opens the real editor shell.
+  NOTE: Does not contain editor markup, styles, or logic.
+  ============================================================
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>draftly</title>
+  <!-- Immediate redirect so a folder open still lands on the editor. -->
+  <meta http-equiv="refresh" content="0; url=draftly.html">
+  <script>
+    /* Replace history so Back does not stick on this redirect page. */
+    location.replace('draftly.html');
+  </script>
+</head>
+<body>
+  <p><a href="draftly.html">Open draftly</a></p>
+</body>
+</html>

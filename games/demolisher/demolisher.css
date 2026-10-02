@@ -1,0 +1,238 @@
+/*
+  File: demolisher.css
+  Project: Demolisher
+  Purpose: Layout, HUD, toolbar, overlay, and touch controls for the destructible sandbox.
+  No game logic lives here.
+*/
+
+/* Reset box model and kill the mobile tap flash. */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+/* Full-viewport dark shell. Touch scroll is disabled so joysticks own the gesture. */
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  background: #0a0a0f; color: #fff;
+  font-family: 'Courier New', monospace;
+  overflow: hidden; touch-action: none; user-select: none;
+}
+
+/* Column: HUD, stage, weapon bar. Safe-area insets keep controls off notches. */
+#app {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Top stat row. */
+#hud {
+  flex: 0 0 auto;
+  display: flex; justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  color: #FFD700;
+  font-size: 11px;
+  letter-spacing: 1px;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* One HUD chip (HP, score, counts). */
+#hud .stat {
+  background: #1919A6;
+  padding: 4px 10px;
+  border-radius: 4px;
+  display: flex; flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+  line-height: 1.1;
+}
+#hud .stat .label { font-size: 9px; opacity: 0.7; letter-spacing: 1px; }
+#hud .stat .value { font-size: 14px; font-weight: bold; color: #FFD700; }
+#hud .stat.health .value { color: #6BFF6B; }
+#hud .stat.health.low .value { color: #FF5B5B; }
+
+/* Reset and other HUD buttons. */
+#hud button {
+  background: #2a2a3a; color: #fff;
+  border: 1px solid #444; border-radius: 4px;
+  padding: 8px 10px;
+  font-family: inherit; font-size: 10px;
+  letter-spacing: 1px; cursor: pointer;
+}
+#hud button:active { transform: scale(0.96); }
+
+/* Canvas host. Fills leftover height. */
+#stage {
+  flex: 1 1 auto;
+  position: relative;
+  min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+
+/* Game view. Crosshair cursor on desktop. */
+canvas {
+  display: block;
+  touch-action: none;
+  background: #0a0a12;
+  cursor: crosshair;
+}
+
+/* Touch layer. Hidden until a touch device is detected. */
+#mobile-controls {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  display: none;
+  z-index: 5;
+}
+#mobile-controls.show { display: block; }
+
+/* Virtual joystick base. */
+.joy {
+  position: absolute;
+  bottom: 20px;
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,255,255,0.2);
+  pointer-events: auto;
+  touch-action: none;
+}
+.joy-left  { left: 20px; }
+.joy-right { right: 20px; }
+.joy .knob {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 40px; height: 40px;
+  margin: -20px 0 0 -20px;
+  background: rgba(255,255,255,0.4);
+  border-radius: 50%;
+}
+.joy .label {
+  position: absolute;
+  bottom: -16px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 1px;
+}
+
+/* Hold-to-fire button. */
+#btn-fire {
+  position: absolute;
+  right: 130px;
+  bottom: 40px;
+  width: 70px; height: 70px;
+  border-radius: 50%;
+  background: rgba(255,80,80,0.5);
+  border: 2px solid rgba(255,80,80,0.8);
+  color: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+/* Jump button. */
+#btn-jump {
+  position: absolute;
+  right: 30px;
+  bottom: 120px;
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: rgba(80,180,255,0.5);
+  border: 2px solid rgba(80,180,255,0.8);
+  color: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+/* Weapon bar under the stage. */
+#toolbar {
+  flex: 0 0 auto;
+  display: flex; gap: 6px;
+  padding: 6px 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.weapon {
+  background: #1919A6;
+  color: #FFD700;
+  border: 1px solid #3B3BFF;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  display: flex; flex-direction: column;
+  align-items: center;
+  min-width: 80px;
+  gap: 2px;
+}
+.weapon .ammo { font-size: 10px; color: #FFB852; }
+.weapon.active { background: #FFD700; color: #000; border-color: #FFD700; }
+.weapon.active .ammo { color: #333; }
+.weapon.empty { opacity: 0.45; }
+
+/* Short toast near the top of the stage. */
+#hint {
+  position: absolute;
+  top: 8px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.75);
+  border: 1px solid #FFD700;
+  padding: 5px 12px;
+  border-radius: 16px;
+  font-size: 11px;
+  color: #FFD700;
+  letter-spacing: 1px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 250ms;
+  z-index: 4;
+  white-space: nowrap;
+}
+#hint.show { opacity: 1; }
+
+/* Menu, death, and win card. Content is filled by script from game state. */
+#overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.9);
+  text-align: center; padding: 20px;
+  z-index: 10;
+  gap: 8px;
+}
+#overlay.hidden { display: none; }
+#overlay h2 { margin: 0 0 8px; font-size: 30px; color: #FFD700; letter-spacing: 4px; }
+#overlay p { margin: 4px 0; font-size: 13px; color: #ccc; letter-spacing: 1px; max-width: 500px; }
+#overlay .accent { color: #FFD700; }
+#overlay .keys { font-size: 11px; opacity: 0.7; line-height: 1.6; }
+#overlay button {
+  margin-top: 14px; padding: 12px 26px;
+  background: #FFD700; color: #000;
+  border: none; border-radius: 6px;
+  font-family: inherit; font-size: 15px;
+  font-weight: bold; letter-spacing: 2px;
+  cursor: pointer;
+}
+#overlay button:active { transform: scale(0.96); }
+#overlay button.alt {
+  background: #1919A6; color: #FFD700;
+  border: 1px solid #3B3BFF;
+  margin-left: 8px;
+}
+.mode-btns {
+  display: flex; gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}

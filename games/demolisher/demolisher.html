@@ -1,0 +1,63 @@
+<!--
+  File: demolisher.html
+  Project: Demolisher
+  Purpose: Shell only. Styles and simulation live in demolisher.css and demolisher.js.
+  Matter.js is loaded from CDN before the game script.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Demolisher</title>
+  <link rel="stylesheet" href="demolisher.css" />
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div class="stat health" id="stat-health"><span class="label">HP</span><span class="value" id="hud-hp">100</span></div>
+    <div class="stat"><span class="label">SCORE</span><span class="value" id="hud-score">0</span></div>
+    <div class="stat"><span class="label">TARGETS</span><span class="value" id="hud-targets">0</span></div>
+    <div class="stat"><span class="label">ENEMIES</span><span class="value" id="hud-enemies">0</span></div>
+    <button id="btn-reset" type="button">RESET</button>
+  </div>
+
+  <div id="stage">
+    <canvas id="game"></canvas>
+    <div id="hint"></div>
+
+    <div id="mobile-controls">
+      <div class="joy joy-left" id="joy-move">
+        <div class="knob" id="joy-move-knob"></div>
+        <div class="label">MOVE</div>
+      </div>
+      <div class="joy joy-right" id="joy-aim">
+        <div class="knob" id="joy-aim-knob"></div>
+        <div class="label">AIM</div>
+      </div>
+      <button id="btn-fire" type="button">FIRE</button>
+      <button id="btn-jump" type="button">JUMP</button>
+    </div>
+
+    <div id="overlay">
+      <h2 id="overlay-title">DEMOLISHER</h2>
+      <p id="overlay-line"></p>
+      <p class="keys" id="overlay-keys"></p>
+      <div class="mode-btns">
+        <button id="overlay-btn" type="button">SANDBOX</button>
+        <button id="overlay-btn2" class="alt" type="button">MISSION</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toolbar">
+    <button class="weapon active" data-w="pistol" type="button">PISTOL <span class="ammo" id="ammo-pistol">∞</span></button>
+    <button class="weapon" data-w="rocket" type="button">ROCKET <span class="ammo" id="ammo-rocket">10</span></button>
+    <button class="weapon" data-w="grenade" type="button">GRENADE <span class="ammo" id="ammo-grenade">5</span></button>
+    <button class="weapon" data-w="laser" type="button">LASER <span class="ammo" id="ammo-laser">50</span></button>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<script src="demolisher.js"></script>
+</body>
+</html>

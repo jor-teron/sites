@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<!--
+  File: index.html
+  Project: tower-defence
+  Purpose: Entry redirect. Always sends the browser to the real game page
+           so the project folder has a stable root URL.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="refresh" content="0; url=tower-defence.html" />
+  <title>Tower Defense</title>
+  <script>
+    /* Immediate replace so history does not keep the redirect page. */
+    location.replace('tower-defence.html');
+  </script>
+</head>
+<body>
+  <p><a href="tower-defence.html">Open Tower Defense</a></p>
+</body>
+</html>

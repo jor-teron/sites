@@ -1,0 +1,480 @@
+/* ============================================================
+   FILE: draftly.css
+   PROJECT: draftly
+   ROLE: All visual rules for chrome, paper, editor, print.
+   NOTE: Numeric paper and type defaults are also set from
+         modules/draftly-config.js onto :root at startup.
+   FONTS: Times New Roman is not embedded.
+          Tinos is embedded from assets/fonts/tinos/.
+          Liberation Serif is a named fallback only.
+   ============================================================ */
+
+/* ============================================================
+   EMBEDDED FONT — Tinos (OFL). Not a substitute name for
+   Times New Roman. Used only when Times is missing.
+   ============================================================ */
+@font-face {
+  font-family: 'Tinos';
+  src: url('assets/fonts/tinos/Tinos-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Tinos';
+  src: url('assets/fonts/tinos/Tinos-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Tinos';
+  src: url('assets/fonts/tinos/Tinos-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Tinos';
+  src: url('assets/fonts/tinos/Tinos-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ============================================================
+   USER CONFIGURATION — change these values as needed
+   Runtime overrides come from draftly-config.js
+   ============================================================ */
+:root {
+  /* ----- Paper configuration ----- */
+  --paper-width-cm: 21;          /* A4 portrait width  (cm)  */
+  --paper-height-cm: 29.7;       /* A4 portrait height (cm)  */
+  --paper-orientation: portrait; /* portrait | landscape     */
+
+  /* ----- Margins (cm) ----- */
+  --margin-top-cm: 0.5;
+  --margin-bottom-cm: 0.5;
+  --margin-left-cm: 2;
+  --margin-right-cm: 2;
+
+  /* ----- Default font ----- */
+  --font-family: 'Times New Roman', Tinos, 'Liberation Serif', serif;
+  --font-size-pt: 12;
+  --line-height: 1.6;
+
+  /* ----- Theme: light (default) ----- */
+  --bg-app: #e6e9ef;
+  --bg-paper: #ffffff;
+  --bg-toolbar: #f8fafd;
+  --text-primary: #121926;
+  --text-secondary: #3e5068;
+  --border-light: #cfd8e6;
+  --border-toolbar: #cbd2dc;
+  --shadow: rgba(0, 0, 0, 0.12);
+  --btn-hover: #eef2f7;
+  --btn-active: #d9e2f0;
+  --btn-active-border: #7a8ca3;
+  --select-bg: #ffffff;
+  --select-border: #b8c4d4;
+  --placeholder: #9aa8bb;
+  --status-bg: #f0f4fa;
+  --scroll-thumb: #b0b8c5;
+  --scroll-track: #eef2f7;
+  --nonprint-color: #c0a86a;
+  --nonprint-bg: rgba(192, 168, 106, 0.12);
+  --page-gap: 24px;
+}
+
+/* ----- Theme: dark ----- */
+body.dark {
+  --bg-app: #1a1e26;
+  --bg-paper: #1e222a;
+  --bg-toolbar: #252a34;
+  --text-primary: #e8ecf2;
+  --text-secondary: #a8b4c8;
+  --border-light: #3a4250;
+  --border-toolbar: #3a4250;
+  --shadow: rgba(0, 0, 0, 0.5);
+  --btn-hover: #2f3644;
+  --btn-active: #3b4658;
+  --btn-active-border: #6a7c94;
+  --select-bg: #2a303c;
+  --select-border: #4a5468;
+  --placeholder: #6a7688;
+  --status-bg: #1e232e;
+  --scroll-thumb: #3a4250;
+  --scroll-track: #252a34;
+  --nonprint-color: #d4b87a;
+  --nonprint-bg: rgba(212, 184, 122, 0.18);
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--bg-app);
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-primary);
+  transition: background 0.2s ease, color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+   TOOLBAR
+   ============================================================ */
+.toolbar {
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-toolbar);
+  padding: 8px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-paper);
+  padding: 3px 5px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.tool-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0 6px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: 0.1s;
+  font-family: var(--font-family);
+  white-space: nowrap;
+}
+
+.tool-btn:hover { background: var(--btn-hover); border-color: var(--border-light); }
+.tool-btn.active {
+  background: var(--btn-active);
+  border-color: var(--btn-active-border);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.tool-btn.wide { font-size: 13px; }
+
+select {
+  font-family: var(--font-family);
+  font-size: 13px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--select-border);
+  background: var(--select-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  outline: none;
+  min-width: 90px;
+}
+select:focus { border-color: #2b5797; box-shadow: 0 0 0 2px rgba(43, 87, 151, 0.2); }
+.size-select { min-width: 70px; }
+
+/* Document name box in the save group. */
+.file-name {
+  min-width: 220px;
+  font-family: system-ui, sans-serif;
+}
+
+/* Recent list under the Recent button. */
+.recent-wrap { position: relative; }
+.recent-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 260px;
+  max-height: 280px;
+  overflow: auto;
+  background: var(--bg-paper);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--shadow);
+  z-index: 20;
+  padding: 4px;
+}
+.recent-menu[hidden] { display: none; }
+.recent-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: var(--text-primary);
+  font: 13px system-ui, sans-serif;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.recent-item:hover { background: var(--btn-hover); }
+.version-btn {
+  margin-left: 4px;
+  font-family: system-ui, sans-serif;
+  letter-spacing: 0.04em;
+}
+
+/* Short about panel. In-page, not a window popup. */
+.about-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.about-backdrop[hidden] { display: none; }
+.about-panel {
+  background: var(--bg-paper);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 22px 24px;
+  width: min(420px, calc(100% - 32px));
+  box-shadow: 0 12px 32px var(--shadow);
+}
+.about-panel h2 { font-size: 20px; margin-bottom: 4px; }
+.about-panel p { margin: 8px 0 14px; line-height: 1.5; }
+
+/* ============================================================
+   WORKSPACE — scrollable canvas area
+   ============================================================ */
+.workspace {
+  flex: 1;
+  overflow: auto;
+  background: var(--bg-app);
+  padding: 30px 20px 60px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--page-gap);
+  transition: background 0.2s;
+}
+
+/* ============================================================
+   PAPER (A4) — dynamically sized via CSS variables
+   ============================================================ */
+.paper {
+  width: calc(var(--paper-width-cm) * 1cm);
+  min-height: calc(var(--paper-height-cm) * 1cm);
+  background: var(--bg-paper);
+  box-shadow: 0 6px 24px var(--shadow), 0 1px 3px rgba(0,0,0,0.08);
+  border-radius: 2px;
+  padding-top: calc(var(--margin-top-cm) * 1cm);
+  padding-bottom: calc(var(--margin-bottom-cm) * 1cm);
+  padding-left: calc(var(--margin-left-cm) * 1cm);
+  padding-right: calc(var(--margin-right-cm) * 1cm);
+  transition: background 0.2s, box-shadow 0.2s, width 0.2s, min-height 0.2s, padding 0.2s;
+  position: relative;
+  flex-shrink: 0;
+}
+
+body.landscape .paper {
+  width: calc(var(--paper-height-cm) * 1cm);
+  min-height: calc(var(--paper-width-cm) * 1cm);
+}
+
+.paper::after {
+  content: none;
+}
+
+/* Page number badge — hidden for this release. */
+.paper .page-number { display: none; }
+
+/* ============================================================
+   EDITOR — contenteditable inside paper
+   Class .editor is used so each page can have its own node
+   without duplicating an id.
+   ============================================================ */
+.editor {
+  width: 100%;
+  min-height: calc(var(--paper-height-cm) * 1cm - var(--margin-top-cm) * 1cm - var(--margin-bottom-cm) * 1cm - 4px);
+  outline: none;
+  font-family: var(--font-family);
+  font-size: calc(var(--font-size-pt) * 1pt);
+  line-height: var(--line-height);
+  color: var(--text-primary);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  caret-color: var(--text-primary);
+}
+
+/* Keep the stack when the editor stamps Times New Roman on a run.
+   If that face is missing, Tinos (embedded) is used. */
+.editor font[face="Times New Roman"],
+.editor span[style*="Times New Roman"] {
+  font-family: var(--font-family);
+}
+
+body.landscape .editor {
+  min-height: calc(var(--paper-width-cm) * 1cm - var(--margin-top-cm) * 1cm - var(--margin-bottom-cm) * 1cm - 4px);
+}
+
+.editor:empty:before {
+  content: attr(data-placeholder);
+  color: var(--placeholder);
+  font-style: italic;
+  pointer-events: none;
+}
+
+/* ============================================================
+   NON-PRINTING CHARACTERS — shown at END of lines/paragraphs
+   ============================================================ */
+/* Paragraph and line-break marks are real inline nodes, not ::after. */
+.show-nonprinting p::after,
+.show-nonprinting br::after { content: none; display: none; }
+
+.np-mark {
+  display: inline;
+  color: var(--nonprint-color);
+  background: var(--nonprint-bg);
+  font-size: 0.8em;
+  padding: 0 3px;
+  border-radius: 3px;
+  margin-left: 2px;
+  font-family: monospace;
+  user-select: none;
+  vertical-align: baseline;
+}
+
+.margin-label {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.margin-input {
+  width: 52px;
+  min-width: 52px;
+  font-family: system-ui, sans-serif;
+}
+
+/* Numbered lists. Suffix is painted, not typed. */
+.editor ol[data-style] { list-style: none; padding-left: 1.6em; }
+.editor ol[data-style] > li { counter-increment: item; }
+.editor ol[data-style="1"] { counter-reset: item; }
+.editor ol[data-style="a"] { counter-reset: item; }
+.editor ol[data-style="A"] { counter-reset: item; }
+.editor ol[data-style="1"][data-suffix="."] > li::before { content: counter(item) ". "; }
+.editor ol[data-style="1"][data-suffix=","] > li::before { content: counter(item) ", "; }
+.editor ol[data-style="1"][data-suffix=")"] > li::before { content: counter(item) ") "; }
+.editor ol[data-style="1"][data-suffix="none"] > li::before { content: counter(item) " "; }
+.editor ol[data-style="a"][data-suffix="."] > li::before { content: counter(item, lower-alpha) ". "; }
+.editor ol[data-style="a"][data-suffix=","] > li::before { content: counter(item, lower-alpha) ", "; }
+.editor ol[data-style="a"][data-suffix=")"] > li::before { content: counter(item, lower-alpha) ") "; }
+.editor ol[data-style="a"][data-suffix="none"] > li::before { content: counter(item, lower-alpha) " "; }
+.editor ol[data-style="A"][data-suffix="."] > li::before { content: counter(item, upper-alpha) ". "; }
+
+/* ============================================================
+   STATUS BAR
+   ============================================================ */
+.status-bar {
+  background: var(--status-bg);
+  border-top: 1px solid var(--border-toolbar);
+  padding: 6px 20px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.status-bar span { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+kbd {
+  background: var(--bg-paper);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-primary);
+}
+
+/* scrollbar styling */
+.workspace::-webkit-scrollbar { width: 12px; height: 12px; }
+.workspace::-webkit-scrollbar-track { background: var(--scroll-track); }
+.workspace::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 6px;
+  border: 2px solid var(--scroll-track);
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast {
+  position: fixed;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #2b5797;
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 999;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ============================================================
+   PRINT STYLES
+   ============================================================ */
+@media print {
+  body { background: #fff !important; overflow: visible !important; height: auto !important; }
+  .toolbar, .status-bar, .toast { display: none !important; }
+  .workspace {
+    overflow: visible !important;
+    padding: 0 !important;
+    background: #fff !important;
+    display: block !important;
+    gap: 0 !important;
+  }
+  .paper {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    page-break-after: always;
+    page-break-inside: avoid;
+    min-height: auto !important;
+  }
+  .paper:last-child { page-break-after: auto; }
+  .paper .page-number { display: none !important; }
+  .editor { color: #000 !important; min-height: auto !important; }
+  .editor.show-nonprinting p::after,
+  .editor.show-nonprinting br::after { display: none !important; content: none !important; }
+  .np-mark { display: none !important; }
+}
