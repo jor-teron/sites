@@ -22,6 +22,27 @@ const PONG_CONFIG = {
     statLeft: "You",                                       // hub header score labels / button
     statRight: "CPU",
     newGame: "New Game",
+    // Two players on one device (touch on the right half takes the right paddle)
+    p1Wins: "P1 WINS",
+    p2Wins: "P2 WINS",
+    statP1: "P1",
+    statP2: "P2",
+    twoPlayerTag: "2P",                                    // shown in the own bar
+    tapAgain: "Tap / Enter — play again",                  // under the win message (touch device)
+    pauseTitle: "Pause",
+    resumeTitle: "Resume",
+  },
+
+  // Touch / mouse on the court (pointer events)
+  touch: {
+    follow: "glide",       // 'glide' = move toward the finger at glideSpeed x playerSpeed,
+                           // 'instant' = paddle centre jumps to the finger
+    glideSpeed: 2.2,       // glide speed multiplier (x paddle.playerSpeed)
+    twoPlayer: true,       // a touch on the RIGHT half takes the right paddle (CPU off
+                           // until the match is restarted)
+    mouse: true,           // PC: moving the mouse over the LEFT half moves the left paddle
+    tapMaxMs: 300,         // a tap: released within this time ...
+    tapMaxMovePx: 12,      // ... and moved less than this (CSS px): start / resume / new match
   },
 
   // Court in game units. Width is fixed; height follows the free space

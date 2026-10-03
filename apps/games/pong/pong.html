@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Ping Pong</title>
   <!--
     ========================================================================
@@ -11,12 +11,15 @@
     Description:
       Classic two-paddle Pong on a canvas that fills the page. Left paddle is
       the human player, right paddle a lightweight AI. First to
-      PONG_CONFIG.WIN_SCORE wins. Controls: see PONG_CONFIG.keys.
+      PONG_CONFIG.WIN_SCORE wins. Controls: see PONG_CONFIG.keys; touch / mouse:
+      drag on the left half moves the left paddle, a touch on the right half
+      makes it a 2-player match (PONG_CONFIG.touch), tap = start / resume.
+      Cache-busting: bump ?v= on the CSS / JS below when they change.
       In the sites hub the own title / score bar hides and the hub header
       shows name, version, score and New Game (hub bridge in pong_logic.js).
     ========================================================================
   -->
-  <link rel="stylesheet" href="pong.css" />
+  <link rel="stylesheet" href="pong.css?v=20261004a" />
 </head>
 <body>
   <!-- Own bar: title + live score (hidden inside the hub) -->
@@ -25,10 +28,13 @@
     <div id="hud">0 — 0</div>
   </div>
 
-  <!-- Drawing surface (sized to the page by pong_logic.js) -->
-  <canvas id="court"></canvas>
+  <!-- Drawing surface (sized to the page by pong_logic.js) + pause button in its corner -->
+  <div id="court-wrap">
+    <canvas id="court"></canvas>
+    <button type="button" id="pause-btn" aria-label="Pause">⏸</button>
+  </div>
 
-  <script src="pong_config.js"></script>
-  <script src="pong_logic.js"></script>
+  <script src="pong_config.js?v=20261004a"></script>
+  <script src="pong_logic.js?v=20261004a"></script>
 </body>
 </html>
