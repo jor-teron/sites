@@ -49,6 +49,7 @@ Media,    3D Viewer,             apps/media/3d-viewer/,                      ,  
 Media,    Paint,                 apps/media/paint/,                          ,         0,       0,      230
 Media,    Draw,                  apps/media/draw/,                           ,         0,       0,      225
 Media,    Photo Editor,          apps/media/photo-editor/,                   ,         0,       0,      260
+Media,    Photo Editor v2,       apps/media/photo-editor-v2/,                ,         0,       0,      265
 
 Office,   Spreadsheet,           apps/office/spreadsheet/,                   ,         0,       0,      320
 Office,   Draft-ly,              apps/office/draftly/,                       ,         0,       0,      310
