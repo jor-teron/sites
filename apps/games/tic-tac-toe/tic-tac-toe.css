@@ -1,3 +1,10 @@
+/*
+ * Tic-tac-toe — styles. Same colours as before.
+ * Layout: full dynamic-viewport page (100dvh, 100vh fallback, plus a JS --app-h
+ * fallback when dvh is unsupported). Portrait: info / board / buttons in a column.
+ * Landscape: info left, board centre, buttons right. The board side and mark size
+ * are set by JS (largest square that fits #boardWrap). body.in-hub: only the board.
+ */
 :root {
     --bg-primary: #0f172a;
     --bg-secondary: #1e293b;
@@ -7,70 +14,90 @@
     --o-color: #ef4444;
     --accent: #10b981;
     --border: #334155;
+    --app-h: 100vh;
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 html, body {
-    height: 100%;
     width: 100%;
+    height: 100%;
+    height: var(--app-h);
+    height: 100dvh;
     background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     overflow: hidden;
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
 }
+html.no-dvh, html.no-dvh body { height: var(--app-h); }
 
+/* Portrait (default): column */
 .container {
-    width: 90vmin;
-    height: 90vmin;
-    max-width: 90vw;
-    max-height: 90vh;
+    position: fixed;
+    inset: 0;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
-    padding: 2rem;
+    align-items: stretch;
+    gap: 10px;
+    padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+             max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
 }
 
-.header {
-    text-align: center;
+.side {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
+.side-info { flex-direction: column; gap: 6px; text-align: center; }
+.side-btns { flex-wrap: wrap; }
 
 .title {
-    font-size: clamp(1.5rem, 5vw, 3rem);
+    font-size: clamp(1.2rem, 4.5vmin, 2.2rem);
     font-weight: 700;
     letter-spacing: -0.02em;
-    margin-bottom: 0.5rem;
+    line-height: 1.1;
 }
 
 .status {
-    font-size: clamp(0.875rem, 2.5vw, 1.25rem);
+    font-size: clamp(0.9rem, 3vmin, 1.25rem);
     color: var(--text-secondary);
-    height: 1.5em;
-    min-height: 1.5em;
+    min-height: 1.4em;
+    line-height: 1.4;
 }
+.status.x-turn { color: var(--x-color); }
+.status.o-turn { color: var(--o-color); }
+.status.winner { color: var(--accent); font-weight: 600; }
 
-.status.x-turn {
-    color: var(--x-color);
+.score { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 58px;
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+    background: rgba(30, 41, 59, 0.7);
 }
-
-.status.o-turn {
-    color: var(--o-color);
-}
-
-.status.winner {
-    color: var(--accent);
-    font-weight: 600;
-}
+.chip-label { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+.chip-val { font-size: 1.05rem; font-weight: 700; }
+.chip-x .chip-val { color: var(--x-color); }
+.chip-o .chip-val { color: var(--o-color); }
 
 .board-container {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -79,10 +106,11 @@ html, body {
 .board {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 0.75vmin;
-    aspect-ratio: 1;
-    width: 100%;
-    max-width: 100%;
+    grid-template-rows: repeat(3, 1fr);
+    gap: 6px;
+    width: 300px;      /* JS sets the real side */
+    height: 300px;
+    font-size: 100px;  /* JS sets mark size from cell size */
 }
 
 .cell {
@@ -93,80 +121,66 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: clamp(2rem, 12vw, 5rem);
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    font-size: 1em;
+    line-height: 1;
     font-weight: 700;
-    transition: all 0.2s ease;
-    user-select: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
 }
-
-.cell:hover:not(.filled) {
-    background: var(--border);
-    transform: scale(1.05);
+@media (hover: hover) {
+    .cell:hover:not(.filled) { background: var(--border); }
 }
-
-.cell.filled {
-    cursor: default;
-}
-
-.cell.x {
-    color: var(--x-color);
-}
-
-.cell.o {
-    color: var(--o-color);
-}
-
+.cell.filled { cursor: default; }
+.cell.x { color: var(--x-color); }
+.cell.o { color: var(--o-color); }
 .cell.winner {
     background: rgba(16, 185, 129, 0.1);
     border-color: var(--accent);
     box-shadow: 0 0 0.5rem rgba(16, 185, 129, 0.3);
 }
-
-.footer {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    align-items: center;
+/* Keyboard / gamepad focus (shown once a key was used) */
+body.kbd .cell.focus {
+    border-color: var(--text-primary);
+    box-shadow: inset 0 0 0 3px rgba(241, 245, 249, 0.55);
 }
+body.cpu-turn .cell { cursor: wait; }
 
-.reset-btn {
-    padding: 0.75rem 1.5rem;
-    font-size: clamp(0.875rem, 2vw, 1rem);
+.reset-btn, .mode-btn {
+    padding: 0.65rem 1.2rem;
+    font-size: clamp(0.875rem, 2.4vmin, 1rem);
     font-weight: 600;
-    background: var(--accent);
-    color: var(--bg-primary);
-    border: none;
     border-radius: 0.375rem;
     cursor: pointer;
-    transition: all 0.2s ease;
     letter-spacing: -0.01em;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.reset-btn { background: var(--accent); color: var(--bg-primary); border: none; }
+.reset-btn:hover { background: #059669; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+.mode-btn { background: transparent; color: var(--text-primary); border: 2px solid var(--border); }
+.mode-btn:hover { background: var(--border); }
+.link-btn {
+    background: none; border: none; color: var(--text-secondary);
+    font-size: 0.8rem; text-decoration: underline; cursor: pointer; padding: 4px 6px;
 }
 
-.reset-btn:hover {
-    background: #059669;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+/* Landscape: info left, board centre, buttons right */
+@media (orientation: landscape) {
+    .container { flex-direction: row; }
+    .side { width: clamp(130px, 22vw, 240px); }
+    .side-btns { flex-direction: column; flex-wrap: nowrap; }
+    .side-btns .reset-btn, .side-btns .mode-btn { width: 100%; }
+}
+@media (orientation: landscape) and (max-height: 420px) {
+    .container { gap: 8px; padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+    .title { font-size: 1.1rem; }
 }
 
-.reset-btn:active {
-    transform: translateY(0);
-}
+/* Inside the sites hub: the hub bar shows status / score / buttons */
+body.in-hub .side { display: none; }
+body.in-hub .container { padding: 6px; }
 
 @media (prefers-reduced-motion: reduce) {
-    .cell,
-    .reset-btn {
-        transition: none;
-        transform: none !important;
-    }
-}
-
-@media (max-width: 600px) {
-    .container {
-        gap: 1.5rem;
-        padding: 1rem;
-    }
-
-    .footer {
-        gap: 0.5rem;
-    }
+    .cell, .reset-btn, .mode-btn { transition: none; }
 }

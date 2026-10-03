@@ -1,19 +1,30 @@
 <!DOCTYPE html>
+<!--
+  Tic-tac-toe — page. Board is the hero: info (status + score) / board / buttons,
+  stacked in portrait, side by side in landscape. Keyboard / gamepad, vs CPU,
+  saved score, sites hub bridge (body.in-hub hides own title / score / buttons).
+  Rules / text / CPU settings: tic-tac-toe_config.js. Logic: tic-tac-toe_logic.js.
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Tic-tac-toe</title>
-    <link rel="stylesheet" href="tic-tac-toe.css" />
+    <link rel="stylesheet" href="tic-tac-toe.css?v=20261004b" />
 </head>
 <body>
-    <div class="container">
-        <div class="header">
+    <div class="container" id="app">
+        <div class="side side-info">
             <h1 class="title">Tic-tac-toe</h1>
             <p class="status" id="status">X's turn</p>
+            <div class="score" id="score">
+                <div class="chip chip-x"><span class="chip-label" id="lblX">X</span><span class="chip-val" id="scX">0</span></div>
+                <div class="chip chip-o"><span class="chip-label" id="lblO">O</span><span class="chip-val" id="scO">0</span></div>
+                <div class="chip chip-d"><span class="chip-label" id="lblD">Draws</span><span class="chip-val" id="scD">0</span></div>
+            </div>
         </div>
 
-        <div class="board-container">
+        <div class="board-container" id="boardWrap">
             <div class="board" id="board">
                 <div class="cell" data-index="0"></div>
                 <div class="cell" data-index="1"></div>
@@ -27,12 +38,14 @@
             </div>
         </div>
 
-        <div class="footer">
+        <div class="side side-btns footer">
             <button class="reset-btn" id="resetBtn">New game</button>
+            <button class="mode-btn" id="modeBtn">2 Players</button>
+            <button class="link-btn" id="clearBtn">Reset score</button>
         </div>
     </div>
 
-    <script src="tic-tac-toe_config.js"></script>
-    <script src="tic-tac-toe_logic.js"></script>
+    <script src="tic-tac-toe_config.js?v=20261004b"></script>
+    <script src="tic-tac-toe_logic.js?v=20261004b"></script>
 </body>
 </html>
