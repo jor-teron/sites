@@ -1,6 +1,6 @@
 /**
  * Snake — configuration.
- * Grid, speeds, colors, keys and on-screen text.
+ * Grid, speeds, colors, keys, touch and on-screen text.
  * snake_logic.js reads everything from SNAKE_CONFIG.
  * APP = name / version / author / category (page title + sites hub header).
  */
@@ -54,6 +54,16 @@ const SNAKE_CONFIG = {
     clickStartGraceMs: 1500,
   },
 
+  // Touch / mouse (pointer events anywhere on screen)
+  touch: {
+    swipeMinPx: 24,            // movement that counts as a swipe (a turn is queued at once,
+                               // no need to lift; keep moving for another swipe)
+    tapMaxMs: 300,             // a tap: released within this time ...
+    tapMaxMovePx: 12,          // ... and moved less than this (start / pause / restart)
+    showDpad: false,           // on-screen D-pad shown by default (toggle is remembered)
+    dpadKey: 'snake-dpad',     // localStorage key for the D-pad toggle
+  },
+
   // Colors / drawing
   colors: {
     bg: '#0c1016',                     // page / canvas background
@@ -93,12 +103,16 @@ const SNAKE_CONFIG = {
   text: {
     title: 'SNAKE',                  // title card heading
     pressStart: 'Press Start / Enter', // title / pause message
-    titleSub: 'or tap / click',      // title sub line
+    titleSub: 'or tap · swipe to turn', // title sub line
     paused: 'PAUSED',                // pause heading
     gameOver: 'GAME OVER',           // game over heading
     help: '←→↑↓ move · A/Space pause · Shift boost · B/X wrap · Start/Enter new game · Select/Esc title', // help line
     statScore: 'Score',              // hub header stat labels / button
     statBest: 'Best',
     newGame: 'New Game',
+    hubDpadOn: 'D-pad: On',          // hub bar D-pad toggle button
+    hubDpadOff: 'D-pad: Off',
+    dpadShow: 'Show D-pad',          // standalone toggle tooltip
+    dpadHide: 'Hide D-pad',
   },
 };

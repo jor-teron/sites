@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Snake</title>
-  <link rel="stylesheet" href="snake.css" />
+  <link rel="stylesheet" href="snake.css?v=20261004c" />
 </head>
 <body>
   <canvas id="c"></canvas>
@@ -14,6 +14,13 @@
     <span id="best">BEST 0</span>
   </div>
   <div id="help">←→↑↓ move · A/Space boost · B/X wrap · Start/Enter pause · Select/Esc restart</div>
+  <button id="dpad-toggle" class="ui" type="button" aria-pressed="false" title="Show D-pad">✛</button>
+  <div id="dpad" class="ui" hidden>
+    <button type="button" data-dir="up" class="d-up" aria-label="Up">▲</button>
+    <button type="button" data-dir="left" class="d-left" aria-label="Left">◀</button>
+    <button type="button" data-dir="right" class="d-right" aria-label="Right">▶</button>
+    <button type="button" data-dir="down" class="d-down" aria-label="Down">▼</button>
+  </div>
   <div id="overlay" class="overlay">
     <div class="card">
       <h1 id="title">SNAKE</h1>
@@ -21,7 +28,7 @@
       <p id="sub" class="sub"></p>
     </div>
   </div>
-  <script src="snake_config.js"></script>
-  <script src="snake_logic.js"></script>
+  <script src="snake_config.js?v=20261004c"></script>
+  <script src="snake_logic.js?v=20261004c"></script>
 </body>
 </html>

@@ -3,6 +3,8 @@
  * Game logic. Every tunable value comes from SNAKE_CONFIG (snake_config.js).
  * Keys: arrows/WASD move, Space (A) pause/resume, Enter/P (Start) new game or
  * pause/resume, Esc/R (Select) title, X (B) wrap toggle, Shift boost.
+ * Touch / mouse: swipe anywhere to turn, tap = start / pause / restart,
+ * optional on-screen D-pad (CFG.touch).
  * Hub bridge at the bottom (header stats + New Game, death rumble); standalone
  * the page is unchanged and keeps its own HUD.
  */
@@ -229,12 +231,73 @@
   window.addEventListener('keyup', (e) => onKey(e, false));
   window.addEventListener('blur', clearKeys);
   document.addEventListener('visibilitychange', () => { if (document.hidden) clearKeys(); });
-  overlay.addEventListener('click', () => {
-    if (state === 'title' || state === 'over' || state === 'pause') clickStart();
+
+  /* ---------------------------------------------------------------------------
+   * Touch / mouse (pointer events, anywhere on screen; one pointer at a time).
+   * Swipe: a direction is queued as soon as the finger moves CFG.touch.swipeMinPx
+   * from the anchor; the anchor then moves to that point, so a new swipe can be
+   * chained in the same touch. queueDir() ignores reverses / repeats and keeps up
+   * to input.queueSize turns. Tap (short, small move) = start / restart after
+   * game over / pause-resume. The D-pad and its toggle are excluded (.ui).
+   * ------------------------------------------------------------------------- */
+  const TC = Object.assign({ swipeMinPx: 24, tapMaxMs: 300, tapMaxMovePx: 12, showDpad: false, dpadKey: 'snake-dpad' }, CFG.touch || {});
+  let ptr = null; // {id, x0, y0, ax, ay, t0, swiped, maxMove}
+  function onTap() {
+    if (state === 'play') togglePause();
+    else clickStart(); // title / over → new game, pause → resume
+  }
+  window.addEventListener('pointerdown', (e) => {
+    if (e.target.closest && e.target.closest('.ui')) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (ptr) return;
+    ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, ax: e.clientX, ay: e.clientY, t0: performance.now(), swiped: false, maxMove: 0 };
   });
-  canvas.addEventListener('click', () => {
-    if (state === 'title' || state === 'over') clickStart();
+  window.addEventListener('pointermove', (e) => {
+    if (!ptr || e.pointerId !== ptr.id) return;
+    ptr.maxMove = Math.max(ptr.maxMove, Math.hypot(e.clientX - ptr.x0, e.clientY - ptr.y0));
+    const dx = e.clientX - ptr.ax, dy = e.clientY - ptr.ay;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < TC.swipeMinPx) return;
+    const d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+    ptr.ax = e.clientX; ptr.ay = e.clientY; ptr.swiped = true;
+    if (state === 'play' || state === 'pause') queueDir(d);
   });
+  function endPtr(e, cancelled) {
+    if (!ptr || e.pointerId !== ptr.id) return;
+    const p = ptr; ptr = null;
+    if (cancelled || p.swiped) return;
+    if (performance.now() - p.t0 <= TC.tapMaxMs && p.maxMove <= TC.tapMaxMovePx) onTap();
+  }
+  window.addEventListener('pointerup', (e) => endPtr(e, false));
+  window.addEventListener('pointercancel', (e) => endPtr(e, true));
+  document.addEventListener('contextmenu', (e) => e.preventDefault());
+  document.addEventListener('dblclick', (e) => e.preventDefault());
+  document.addEventListener('touchmove', (e) => { if (e.cancelable) e.preventDefault(); }, { passive: false });
+
+  // Optional on-screen D-pad (off by default; toggle saved in localStorage)
+  const dpadEl = document.getElementById('dpad');
+  const dpadToggle = document.getElementById('dpad-toggle');
+  let dpadOn = !!TC.showDpad;
+  try { const v = localStorage.getItem(TC.dpadKey); if (v === '1' || v === '0') dpadOn = v === '1'; } catch (_) { /* ignore */ }
+  function renderDpad() {
+    dpadEl.hidden = !dpadOn;
+    dpadToggle.classList.toggle('on', dpadOn);
+    dpadToggle.setAttribute('aria-pressed', String(dpadOn));
+    dpadToggle.title = dpadOn ? (TX.dpadHide || 'Hide D-pad') : (TX.dpadShow || 'Show D-pad');
+  }
+  function setDpad(on) {
+    dpadOn = !!on;
+    try { localStorage.setItem(TC.dpadKey, dpadOn ? '1' : '0'); } catch (_) { /* ignore */ }
+    renderDpad();
+    hubSendApp();
+  }
+  dpadToggle.addEventListener('click', () => { setDpad(!dpadOn); dpadToggle.blur(); });
+  dpadEl.querySelectorAll('[data-dir]').forEach((b) => {
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (state === 'play' || state === 'pause') queueDir(b.dataset.dir);
+    });
+  });
+  renderDpad();
 
   function rr(x, y, w, h, r) {
     ctx.beginPath();
@@ -343,6 +406,20 @@
       hubPost({ type: 'hub-stat', id: st.id, value: st.value });
     });
   }
+  function hubSendApp() {
+    if (!hubLinked) return;
+    const stats = hubStats();
+    stats.forEach((st) => { hubLastSent[st.id] = st.value; });
+    hubPost({
+      type: 'hub-app',
+      app: { name: APP.name, version: APP.version },
+      stats: stats,
+      buttons: [
+        { id: 'new', label: TX.newGame || 'New Game' },
+        { id: 'dpad', label: dpadOn ? (TX.hubDpadOn || 'D-pad: On') : (TX.hubDpadOff || 'D-pad: Off') },
+      ],
+    });
+  }
   function hubRumble(v) {
     if (!hubLinked || !v) return;
     if (Array.isArray(v)) hubPost({ type: 'hub-rumble', pattern: v.slice(0, 20) });
@@ -357,16 +434,11 @@
         hubLinked = true;
         document.body.classList.add('in-hub');
       }
-      const stats = hubStats();
-      stats.forEach((st) => { hubLastSent[st.id] = st.value; });
-      hubPost({
-        type: 'hub-app',
-        app: { name: APP.name, version: APP.version },
-        stats: stats,
-        buttons: [{ id: 'new', label: TX.newGame || 'New Game' }],
-      });
+      hubSendApp();
     } else if (d.type === 'hub-action' && hubLinked && d.id === 'new') {
       newGame();
+    } else if (d.type === 'hub-action' && hubLinked && d.id === 'dpad') {
+      setDpad(!dpadOn);
     }
   }
   if (IN_FRAME) window.addEventListener('message', onHubMessage);
@@ -383,5 +455,6 @@
     get state() { return state; }, get dir() { return dir; }, get head() { return snake[0].slice(); },
     get score() { return score; }, get best() { return best; }, get wrap() { return wrap; },
     get length() { return snake.length; }, get inHub() { return hubLinked; }, get food() { return food.slice(); },
+    get queue() { return dirQueue.slice(); }, get dpad() { return dpadOn; },
   };
 })();
