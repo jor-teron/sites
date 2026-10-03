@@ -170,9 +170,11 @@
   }
 
   function setOpen(open) {
+    const was = menu.classList.contains('open');
     menu.classList.toggle('open', open);
     menu.hidden = !open;
     catBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open && !was) prepareMenu();
   }
 
   /** Give the app iframe keyboard focus, unless the user is busy with the hub UI. */
@@ -335,6 +337,8 @@
     else goHome({ fromHistory: true });
   }
 
+  /* ---------- menu: Home screen + collapsible categories (accordion, one open) ---------- */
+
   function renderMenu(apps) {
     menu.innerHTML = '';
     const homeBtn = document.createElement('button');
@@ -348,12 +352,28 @@
     homeBtn.addEventListener('click', () => goHome());
     menu.appendChild(homeBtn);
     const { order, map } = groupByCategory(visibleSorted(apps));
-    for (const cat of order) {
-      const label = document.createElement('div');
-      label.className = 'menu-group';
-      label.textContent = cat;
-      menu.appendChild(label);
-      for (const app of map.get(cat)) {
+    order.forEach((cat, i) => {
+      const list = map.get(cat);
+      const head = document.createElement('button');
+      head.type = 'button';
+      head.className = 'menu-cat';
+      head.setAttribute('role', 'menuitem');
+      head.setAttribute('aria-expanded', 'false');
+      head.setAttribute('aria-controls', 'menu-sub-' + i);
+      head.dataset.cat = cat;
+      head.textContent = cat + ' (' + list.length + ')';
+      head.addEventListener('click', () => toggleCat(head));
+      menu.appendChild(head);
+
+      const sub = document.createElement('div');
+      sub.className = 'menu-sub';
+      sub.id = 'menu-sub-' + i;
+      sub.setAttribute('role', 'group');
+      sub.setAttribute('aria-label', cat);
+      const inner = document.createElement('div');
+      inner.className = 'menu-sub-inner';
+      inner.inert = true;
+      for (const app of list) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'app';
@@ -364,6 +384,7 @@
         const img = document.createElement('img');
         img.className = 'icon';
         img.alt = '';
+        img.loading = 'lazy';
         img.src = iconFor(app);
         img.addEventListener('error', () => img.classList.add('missing'));
 
@@ -373,9 +394,134 @@
         btn.append(img, span);
         if (app.newTab) btn.title = 'Opens in a new tab';
         btn.addEventListener('click', () => loadApp(app));
-        menu.appendChild(btn);
+        inner.appendChild(btn);
       }
+      sub.appendChild(inner);
+      menu.appendChild(sub);
+    });
+  }
+
+  const subOf = (head) => head && document.getElementById(head.getAttribute('aria-controls'));
+  const headOf = (btn) => {
+    const sub = btn && btn.closest('.menu-sub');
+    return sub ? menu.querySelector('.menu-cat[aria-controls="' + sub.id + '"]') : null;
+  };
+
+  /** Open one category (null = all closed). instant: no animation (menu just opened). */
+  function expandCat(head, instant) {
+    menu.classList.toggle('no-anim', !!instant);
+    menu.querySelectorAll('.menu-cat').forEach((h) => {
+      const on = h === head;
+      h.setAttribute('aria-expanded', on ? 'true' : 'false');
+      const sub = subOf(h);
+      if (!sub) return;
+      sub.classList.toggle('open', on);
+      sub.firstChild.inert = !on;
+    });
+    if (instant) { void menu.offsetHeight; menu.classList.remove('no-anim'); }
+    if (head && !instant) setTimeout(() => keepVisible(head, subOf(head)), 170);
+  }
+  function toggleCat(head) {
+    expandCat(head.getAttribute('aria-expanded') === 'true' ? null : head);
+  }
+  /** Scroll the menu so the header (and as much of its list as fits) is visible. */
+  function keepVisible(head, sub) {
+    const m = menu.getBoundingClientRect();
+    const h = head.getBoundingClientRect();
+    const bottom = sub ? sub.getBoundingClientRect().bottom : h.bottom;
+    if (bottom > m.bottom) menu.scrollTop += Math.min(bottom - m.bottom + 6, h.top - m.top - 6);
+    else if (h.top < m.top) menu.scrollTop -= m.top - h.top + 6;
+  }
+
+  /** Menu just opened: all folded on the home screen; else the current app's category open. */
+  function prepareMenu() {
+    menu.querySelectorAll('.kfocus').forEach((b) => b.classList.remove('kfocus'));
+    const active = currentEntry ? menu.querySelector('button.app.active') : null;
+    const head = active ? headOf(active) : null;
+    expandCat(head, true);
+    menu.scrollTop = 0;
+    const target = active || menu.querySelector('.home-item');
+    if (target) {
+      if (active) active.scrollIntoView({ block: 'nearest' });
+      try { target.focus({ preventScroll: !!active }); } catch (_) { target.focus(); }
     }
+  }
+
+  /** Keyboard / phone D-pad inside the open menu. Returns true when the key was used. */
+  function menuRows() {
+    return Array.from(menu.querySelectorAll('.home-item, .menu-cat, .menu-sub.open button.app'));
+  }
+  function focusRow(el) {
+    if (!el) return;
+    menu.querySelectorAll('.kfocus').forEach((b) => b.classList.remove('kfocus'));
+    el.classList.add('kfocus');
+    try { el.focus({ preventScroll: true }); } catch (_) { el.focus(); }
+    el.scrollIntoView({ block: 'nearest' });
+  }
+  function menuKey(key) {
+    if (!menu.classList.contains('open')) return false;
+    const rows = menuRows();
+    if (!rows.length) return false;
+    const ae = document.activeElement;
+    const cur = rows.indexOf(ae) >= 0 ? ae : null;
+    const isHead = !!(cur && cur.classList.contains('menu-cat'));
+    const isOpen = isHead && cur.getAttribute('aria-expanded') === 'true';
+    switch (key) {
+      case 'ArrowDown':
+      case 'ArrowUp': {
+        if (!cur) { focusRow(menu.querySelector('button.app.active') || rows[0]); return true; }
+        const i = rows.indexOf(cur) + (key === 'ArrowDown' ? 1 : -1);
+        focusRow(rows[Math.max(0, Math.min(rows.length - 1, i))]);
+        return true;
+      }
+      case 'Enter':
+      case ' ':
+        if (!cur) { focusRow(rows[0]); return true; }
+        if (isHead) { toggleCat(cur); focusRow(cur); return true; }
+        cur.click();
+        return true;
+      case 'ArrowRight':
+        if (isHead) {
+          if (!isOpen) expandCat(cur);
+          const first = subOf(cur).querySelector('button.app');
+          focusRow(first || cur);
+          return true;
+        }
+        return !!cur;
+      case 'ArrowLeft':
+        if (cur && !isHead && cur.closest('.menu-sub')) {
+          const head = headOf(cur);
+          expandCat(null);
+          focusRow(head);
+          return true;
+        }
+        if (isOpen) { expandCat(null); focusRow(cur); return true; }
+        closeMenu();
+        return true;
+      case 'Escape':
+        if (isOpen) { expandCat(null); focusRow(cur); return true; }
+        closeMenu();
+        return true;
+    }
+    return false;
+  }
+  const MENU_KEYS = { ArrowUp: 1, ArrowDown: 1, ArrowLeft: 1, ArrowRight: 1, Enter: 1, ' ': 1, Escape: 1 };
+
+  // The phone controller (hub-controller.js) dispatches its keys into the app frame's document.
+  // While the menu is open, catch them there first (capture) so they drive the menu instead.
+  function hookFrameKeys() {
+    let w;
+    try { w = frame.contentWindow; if (!w || !w.document || w.__hubMenuKeys) return; } catch (_) { return; }
+    w.__hubMenuKeys = true;
+    const grab = (e) => {
+      if (!menu.classList.contains('open') || !MENU_KEYS[e.key]) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (e.type === 'keydown') menuKey(e.key);
+    };
+    w.addEventListener('keydown', grab, true);
+    w.addEventListener('keyup', grab, true);
+    w.addEventListener('keypress', grab, true);
   }
 
   catBtn.addEventListener('click', (e) => {
@@ -388,14 +534,19 @@
   document.addEventListener('click', () => { setOpen(false); focusFrame(); });
   menu.addEventListener('click', (e) => e.stopPropagation());
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && menu.classList.contains('open')) { closeMenu(); return; }
+    if (menu.classList.contains('open')) {
+      if (MENU_KEYS[e.key] && menuKey(e.key)) e.preventDefault();
+      return;
+    }
     // A key pressed while the hub itself has focus: move focus into the app so the
     // following keys reach it (this first key is not forwarded).
     if (document.activeElement === document.body) focusFrame();
   });
 
   // Hide scrollbars inside same-origin apps; give the new page keyboard focus.
+  hookFrameKeys();
   frame.addEventListener('load', () => {
+    hookFrameKeys();
     try {
       const doc = frame.contentDocument;
       if (doc && doc.documentElement) {
