@@ -1,665 +1,92 @@
 <!DOCTYPE html>
+<!--
+  OCR — scan images or PDFs to text. Page shell only.
+  Styles: ocr.css. Settings: ocr_config.js. Logic: the other ocr_*.js files (one job each),
+  loaded as plain scripts sharing window.OCR. Libraries are local in ./vendor (no CDN):
+  tesseract.js 5.1.1 (+ wasm core + English data), pdf.js 3.11.174 (legacy build), JSZip 3.10.1.
+-->
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Document OCR</title>
-  <!-- Tesseract.js: in-browser OCR engine -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <!-- JSZip: pack a minimal .docx -->
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <style>
-    /* Dark theme */
-    :root {
-      --bg: #121418;
-      --panel: #1b1f27;
-      --border: #2c3340;
-      --text: #e8eaed;
-      --muted: #9aa0a6;
-      --accent: #6ea8fe;
-      --danger: #f07178;
-      --ok: #7fd99a;
-    }
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: Segoe UI, system-ui, sans-serif;
-    }
-    body { display: flex; flex-direction: column; }
-    header {
-      padding: 10px 16px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px 10px;
-      align-items: center;
-    }
-    header h1 { font-size: 16px; margin: 0 8px 0 0; font-weight: 600; }
-    /* Left cluster: engine, key, file, page controls */
-    .left-tools {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px 10px;
-      align-items: center;
-      flex: 1;
-    }
-    /* Right cluster: copy + downloads */
-    .right-tools {
-      display: flex;
-      gap: 6px;
-      margin-left: auto;
-    }
-    label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-    select, input[type="password"], input[type="number"], button {
-      background: var(--panel);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 7px 10px;
-      font-size: 13px;
-    }
-    button { cursor: pointer; }
-    button:hover { border-color: var(--accent); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    #apiKey { min-width: 200px; }
-    #pageNum { width: 64px; }
-    #pageMeta { font-size: 12px; color: var(--muted); }
-    #status {
-      width: 100%;
-      font-size: 12px;
-      color: var(--muted);
-    }
-    #status.err { color: var(--danger); }
-    #status.ok { color: var(--ok); }
-    main {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      min-height: 0;
-    }
-    .panel {
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-    }
-    .panel:last-child { border-right: none; }
-    #drop {
-      flex: 1;
-      margin: 12px;
-      border: 1px dashed var(--border);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      position: relative;
-      background: #161920;
-    }
-    #drop.drag { border-color: var(--accent); }
-    #preview {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-      display: none;
-    }
-    #dropHint { color: var(--muted); text-align: center; padding: 16px; }
-    #ocrText {
-      flex: 1;
-      margin: 12px;
-      background: #161920;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px;
-      resize: none;
-      color: var(--text);
-      font-family: Consolas, ui-monospace, monospace;
-      font-size: 14px;
-      line-height: 1.45;
-    }
-    @media (max-width: 900px) {
-      main { grid-template-columns: 1fr; }
-      .panel { min-height: 40vh; }
-      .right-tools { margin-left: 0; }
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#121418">
+  <title>OCR</title>
+  <link rel="stylesheet" href="ocr.css?v=20261004a">
 </head>
-<body>
-  <header>
-    <div class="left-tools">
-      <h1>Document OCR</h1>
-      <label>
-        Engine
-        <select id="engine">
-          <option value="tesseract">Tesseract (default)</option>
-          <option value="vision">Google Cloud Vision</option>
-        </select>
-      </label>
-      <label>
-        Vision API key
-        <input id="apiKey" type="password" placeholder="Paste key (stored locally)" autocomplete="off" />
-      </label>
-      <label>
-        Open file
-        <input id="filePick" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" />
-      </label>
-      <button id="btnPrev" type="button" disabled>Prev</button>
-      <input id="pageNum" type="number" min="1" value="1" disabled />
-      <span id="pageMeta">—</span>
-      <button id="btnNext" type="button" disabled>Next</button>
-      <button id="btnOcrPage" type="button" disabled>OCR this page</button>
+<body class="empty">
+<div id="app">
+  <header id="bar">
+    <div class="seg" id="engine-seg" role="group" aria-label="Engine">
+      <button type="button" data-engine="tesseract">Tesseract</button><button type="button" data-engine="vision">Cloud Vision</button>
     </div>
-    <div class="right-tools">
-      <button id="btnCopy" type="button" disabled>Copy</button>
-      <button id="btnTxt" type="button" disabled>Download .txt</button>
-      <button id="btnDocx" type="button" disabled>Download .docx</button>
+    <button type="button" class="btn" id="key-btn" hidden>Key 🗝️</button>
+    <div id="nav" hidden>
+      <button type="button" class="btn icon" id="prev" aria-label="Previous page">‹</button>
+      <button type="button" class="btn plain" id="page-label" title="Go to page">1 / 1</button>
+      <input type="number" id="page-input" inputmode="numeric" hidden aria-label="Page number">
+      <button type="button" class="btn icon" id="next" aria-label="Next page">›</button>
     </div>
-    <div id="status" hidden>Drop a JPG, PNG, or PDF</div>
+    <button type="button" class="btn primary" id="start" disabled>Start OCR</button>
+    <button type="button" class="btn" id="all" hidden>All pages</button>
+    <span class="grow"></span>
+    <button type="button" class="btn" id="copy" disabled>Copy</button>
+    <span class="dl"><span class="dl-label">Download</span><button type="button" class="btn small" id="dl-txt" disabled>.txt</button><button type="button" class="btn small" id="dl-docx" disabled>.docx</button></span>
   </header>
-  <main>
-    <section class="panel">
-      <div id="drop">
-        <div id="dropHint">Drag & drop JPG / PNG / PDF<br />max 20 MB</div>
-        <img id="preview" alt="Preview" />
+
+  <div id="status" role="status" aria-live="polite"></div>
+
+  <nav id="tabs">
+    <button type="button" data-tab="preview">Preview</button>
+    <button type="button" data-tab="text">Text</button>
+  </nav>
+
+  <main id="panels">
+    <section class="panel" id="panel-preview" aria-label="Preview — drop files here">
+      <img id="preview" alt="Preview" hidden>
+      <div class="hint" id="hint-preview">
+        <div class="big">Tap to open, drop or paste</div>
+        <div>JPG · PNG · WebP · PDF · max 20 MB</div>
+      </div>
+      <div class="corner">
+        <button type="button" class="corner-btn" id="cam-btn" title="Take photo" aria-label="Take photo">📷</button>
+        <button type="button" class="corner-btn plus" title="Open files" aria-label="Open files">＋</button>
       </div>
     </section>
-    <section class="panel">
-      <textarea id="ocrText" placeholder="Recognized text will appear here"></textarea>
+    <section class="panel" id="panel-text" aria-label="Recognised text — drop files here">
+      <textarea id="ocr-text" spellcheck="false" aria-label="Recognised text"></textarea>
+      <div class="hint" id="hint-text">
+        <div class="big">Recognised text appears here</div>
+        <div>Tap to open a file</div>
+      </div>
+      <div class="corner">
+        <button type="button" class="corner-btn plus" title="Open files" aria-label="Open files">＋</button>
+      </div>
     </section>
   </main>
 
-  <script type="module">
-    /*
-     * Document OCR WebApp
-     * Dark two-panel UI. No side-panel titles.
-     * Header: engine / key / file / page controls on the left;
-     * Copy, .txt, .docx on the right.
-     * Images: OCR automatically after drop.
-     * PDFs: render with pdf.js, user picks a page, then "OCR this page".
-     * Engines: Tesseract.js or Google Cloud Vision DOCUMENT_TEXT_DETECTION.
-     */
+  <div id="key-pop" class="pop" hidden>
+    <label for="key-input">API Key</label>
+    <input type="password" id="key-input" autocomplete="off" spellcheck="false" placeholder="Cloud Vision API key">
+    <div class="row">
+      <button type="button" class="btn" id="key-show">Show</button>
+      <button type="button" class="btn" id="key-clear">Clear</button>
+      <button type="button" class="btn primary" id="key-save">Save</button>
+    </div>
+    <p class="note">Saved only in this browser.</p>
+  </div>
 
-    /* ========== CONFIG ========== */
-    const CONFIG = {
-      // Allowed MIME types
-      allowedTypes: ["image/jpeg", "image/png", "application/pdf"],
-      // Allowed extensions
-      allowedExt: [".jpg", ".jpeg", ".png", ".pdf"],
-      // Max upload size (20 MB)
-      maxBytes: 20 * 1024 * 1024,
-      // Tesseract language (Roman / Latin)
-      tesseractLang: "eng",
-      // Vision document OCR feature
-      visionFeature: "DOCUMENT_TEXT_DETECTION",
-      // Vision REST URL
-      visionUrl: "https://vision.googleapis.com/v1/images:annotate",
-      // localStorage name for the API key
-      storageKeyName: "ocr_vision_api_key",
-      // Download filename stem
-      downloadBase: "ocr-text",
-      // pdf.js worker (must match the library version above)
-      pdfWorker: "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.worker.min.mjs",
-      // Render scale for PDF pages (higher = sharper, slower)
-      pdfScale: 2
-    };
-
-    /* pdf.js ESM */
-    import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.min.mjs";
-    pdfjsLib.GlobalWorkerOptions.workerSrc = CONFIG.pdfWorker;
-
-    /* ========== DOM ========== */
-    // Engine select
-    const engineEl = document.getElementById("engine");
-    // Vision API key field
-    const apiKeyEl = document.getElementById("apiKey");
-    // File picker
-    const filePickEl = document.getElementById("filePick");
-    // Status line
-    const statusEl = document.getElementById("status");
-    // Drop zone
-    const dropEl = document.getElementById("drop");
-    // Drop hint
-    const dropHintEl = document.getElementById("dropHint");
-    // Preview image
-    const previewEl = document.getElementById("preview");
-    // Result textarea
-    const ocrTextEl = document.getElementById("ocrText");
-    // Copy
-    const btnCopy = document.getElementById("btnCopy");
-    // .txt
-    const btnTxt = document.getElementById("btnTxt");
-    // .docx
-    const btnDocx = document.getElementById("btnDocx");
-    // PDF prev
-    const btnPrev = document.getElementById("btnPrev");
-    // PDF next
-    const btnNext = document.getElementById("btnNext");
-    // Current page number input
-    const pageNumEl = document.getElementById("pageNum");
-    // "3 / 12" label
-    const pageMetaEl = document.getElementById("pageMeta");
-    // Run OCR on the visible page
-    const btnOcrPage = document.getElementById("btnOcrPage");
-
-    /* ========== State ========== */
-    // Loaded pdf.js document, or null for a plain image
-    let pdfDoc = null;
-    // Total pages in the current PDF
-    let pageCount = 1;
-    // Current 1-based page
-    let currentPage = 1;
-    // Data URL currently shown (image or rendered PDF page)
-    let currentDataUrl = "";
-    // True when the source is a PDF
-    let isPdf = false;
-
-    /* ========== Helpers ========== */
-
-    /**
-     * setStatus
-     * Writes the header status line.
-     */
-    function setStatus(msg, kind) {
-      statusEl.textContent = msg;
-      statusEl.className = kind || "";
-    }
-
-    /**
-     * setExportEnabled
-     * Toggles Copy / download buttons.
-     */
-    function setExportEnabled(on) {
-      btnCopy.disabled = !on;
-      btnTxt.disabled = !on;
-      btnDocx.disabled = !on;
-    }
-
-    /**
-     * updatePageControls
-     * Enables Prev / Next / page box / OCR-this-page for PDFs.
-     */
-    function updatePageControls() {
-      const hasPdf = isPdf && pdfDoc;
-      btnPrev.disabled = !hasPdf || currentPage <= 1;
-      btnNext.disabled = !hasPdf || currentPage >= pageCount;
-      pageNumEl.disabled = !hasPdf;
-      pageNumEl.max = pageCount;
-      pageNumEl.value = currentPage;
-      pageMetaEl.textContent = hasPdf ? ("/ " + pageCount) : "—";
-      btnOcrPage.disabled = !currentDataUrl;
-    }
-
-    /**
-     * isAllowedFile
-     * MIME or extension check.
-     */
-    function isAllowedFile(file) {
-      const name = (file.name || "").toLowerCase();
-      const typeOk = CONFIG.allowedTypes.indexOf(file.type) !== -1;
-      const extOk = CONFIG.allowedExt.some(function (ext) {
-        return name.endsWith(ext);
-      });
-      return typeOk || extOk;
-    }
-
-    /**
-     * isPdfFile
-     * Detects a PDF from type or name.
-     */
-    function isPdfFile(file) {
-      const name = (file.name || "").toLowerCase();
-      return file.type === "application/pdf" || name.endsWith(".pdf");
-    }
-
-    /**
-     * fileToDataUrl
-     * FileReader helper for images.
-     */
-    function fileToDataUrl(file) {
-      return new Promise(function (resolve, reject) {
-        const reader = new FileReader();
-        reader.onload = function () { resolve(reader.result); };
-        reader.onerror = function () { reject(new Error("Could not read file")); };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    /**
-     * fileToArrayBuffer
-     * Needed by pdf.js.
-     */
-    function fileToArrayBuffer(file) {
-      return new Promise(function (resolve, reject) {
-        const reader = new FileReader();
-        reader.onload = function () { resolve(reader.result); };
-        reader.onerror = function () { reject(new Error("Could not read PDF")); };
-        reader.readAsArrayBuffer(file);
-      });
-    }
-
-    /**
-     * dataUrlToBase64
-     * Strips the data: prefix for Vision.
-     */
-    function dataUrlToBase64(dataUrl) {
-      const parts = String(dataUrl).split(",");
-      return parts.length > 1 ? parts[1] : parts[0];
-    }
-
-    /**
-     * xmlEscape
-     * Escapes text for Word XML.
-     */
-    function xmlEscape(text) {
-      return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    }
-
-    /**
-     * triggerDownload
-     * Saves a blob under filename.
-     */
-    function triggerDownload(blob, filename) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    /**
-     * showPreview
-     * Puts a data URL in the left panel.
-     */
-    function showPreview(dataUrl) {
-      currentDataUrl = dataUrl;
-      previewEl.src = dataUrl;
-      previewEl.style.display = "block";
-      dropHintEl.style.display = "none";
-    }
-
-    /* ========== PDF render ========== */
-
-    /**
-     * renderPdfPage
-     * Draws one PDF page to a JPEG data URL and shows it.
-     */
-    async function renderPdfPage(pageNo) {
-      const page = await pdfDoc.getPage(pageNo);
-      const viewport = page.getViewport({ scale: CONFIG.pdfScale });
-      const canvas = document.createElement("canvas");
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      await page.render({
-        canvasContext: canvas.getContext("2d"),
-        viewport: viewport
-      }).promise;
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-      currentPage = pageNo;
-      showPreview(dataUrl);
-      updatePageControls();
-    }
-
-    /* ========== OCR ========== */
-
-    /**
-     * ocrTesseract
-     * In-browser OCR of the preview image.
-     */
-    async function ocrTesseract() {
-      setStatus("Tesseract: loading worker…");
-      const result = await Tesseract.recognize(previewEl, CONFIG.tesseractLang, {
-        logger: function (info) {
-          if (info.status === "recognizing text") {
-            const pct = Math.round((info.progress || 0) * 100);
-            setStatus("Tesseract: " + pct + "%");
-          }
-        }
-      });
-      return (result && result.data && result.data.text) ? result.data.text : "";
-    }
-
-    /**
-     * ocrVision
-     * Google Cloud Vision DOCUMENT_TEXT_DETECTION.
-     */
-    async function ocrVision(dataUrl, apiKey) {
-      setStatus("Google Vision: sending image…");
-      const body = {
-        requests: [{
-          image: { content: dataUrlToBase64(dataUrl) },
-          features: [{ type: CONFIG.visionFeature }]
-        }]
-      };
-      const res = await fetch(CONFIG.visionUrl + "?key=" + encodeURIComponent(apiKey), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        const msg = (json.error && json.error.message) ? json.error.message : ("HTTP " + res.status);
-        throw new Error(msg);
-      }
-      const anno = json.responses && json.responses[0];
-      if (anno && anno.error && anno.error.message) {
-        throw new Error(anno.error.message);
-      }
-      if (anno && anno.fullTextAnnotation && anno.fullTextAnnotation.text) {
-        return anno.fullTextAnnotation.text;
-      }
-      if (anno && anno.textAnnotations && anno.textAnnotations[0]) {
-        return anno.textAnnotations[0].description || "";
-      }
-      return "";
-    }
-
-    /**
-     * runOcr
-     * Runs the selected engine on currentDataUrl.
-     */
-    async function runOcr() {
-      if (!currentDataUrl) return;
-      const engine = engineEl.value;
-      const key = (apiKeyEl.value || "").trim();
-      setExportEnabled(false);
-      ocrTextEl.value = "";
-      btnOcrPage.disabled = true;
-      try {
-        let text = "";
-        if (engine === "vision") {
-          if (!key) throw new Error("Paste a Google Vision API key first");
-          text = await ocrVision(currentDataUrl, key);
-        } else {
-          text = await ocrTesseract();
-        }
-        ocrTextEl.value = text.trim();
-        const hasText = ocrTextEl.value.length > 0;
-        setExportEnabled(hasText);
-        setStatus(hasText ? "Done" : "No text found", hasText ? "ok" : "err");
-      } catch (err) {
-        setStatus(err.message || String(err), "err");
-      } finally {
-        updatePageControls();
-      }
-    }
-
-    /**
-     * handleFile
-     * Image: preview + auto OCR.
-     * PDF: load pages, show page 1, wait for "OCR this page".
-     */
-    async function handleFile(file) {
-      if (!file) return;
-      if (!isAllowedFile(file)) {
-        setStatus("Only JPG, JPEG, PNG, PDF allowed", "err");
-        return;
-      }
-      if (file.size > CONFIG.maxBytes) {
-        setStatus("File is over 20 MB", "err");
-        return;
-      }
-
-      pdfDoc = null;
-      isPdf = false;
-      currentPage = 1;
-      pageCount = 1;
-      currentDataUrl = "";
-      ocrTextEl.value = "";
-      setExportEnabled(false);
-
-      try {
-        if (isPdfFile(file)) {
-          setStatus("Loading PDF…");
-          const buf = await fileToArrayBuffer(file);
-          pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
-          isPdf = true;
-          pageCount = pdfDoc.numPages;
-          currentPage = 1;
-          await renderPdfPage(1);
-          setStatus("PDF loaded. Pick a page, then OCR this page.");
-        } else {
-          const dataUrl = await fileToDataUrl(file);
-          showPreview(dataUrl);
-          updatePageControls();
-          await runOcr();
-        }
-      } catch (err) {
-        const msg = String(err && err.message ? err.message : err);
-        if (/password/i.test(msg)) {
-          setStatus("Password-protected PDFs are not supported", "err");
-        } else {
-          setStatus(msg, "err");
-        }
-        updatePageControls();
-      }
-    }
-
-    /* ========== Downloads ========== */
-
-    /**
-     * downloadTxt
-     * UTF-8 text file.
-     */
-    function downloadTxt() {
-      const blob = new Blob([ocrTextEl.value], { type: "text/plain;charset=utf-8" });
-      triggerDownload(blob, CONFIG.downloadBase + ".txt");
-    }
-
-    /**
-     * downloadDocx
-     * Minimal Word document via JSZip.
-     */
-    async function downloadDocx() {
-      const lines = ocrTextEl.value.split(/\r?\n/);
-      const paragraphs = lines.map(function (line) {
-        const t = xmlEscape(line || " ");
-        return '<w:p><w:r><w:t xml:space="preserve">' + t + "</w:t></w:r></w:p>";
-      }).join("");
-
-      const documentXml =
-        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
-        "<w:body>" + paragraphs + "</w:body></w:document>";
-
-      const contentTypes =
-        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
-        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
-        '<Default Extension="xml" ContentType="application/xml"/>' +
-        '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
-        "</Types>";
-
-      const rels =
-        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
-        "</Relationships>";
-
-      const zip = new JSZip();
-      zip.file("[Content_Types].xml", contentTypes);
-      zip.folder("_rels").file(".rels", rels);
-      zip.folder("word").file("document.xml", documentXml);
-      const blob = await zip.generateAsync({ type: "blob" });
-      triggerDownload(blob, CONFIG.downloadBase + ".docx");
-    }
-
-    /* ========== Events ========== */
-
-    apiKeyEl.value = localStorage.getItem(CONFIG.storageKeyName) || "";
-    apiKeyEl.addEventListener("change", function () {
-      localStorage.setItem(CONFIG.storageKeyName, apiKeyEl.value.trim());
-    });
-
-    dropEl.addEventListener("dragover", function (e) {
-      e.preventDefault();
-      dropEl.classList.add("drag");
-    });
-    dropEl.addEventListener("dragleave", function () {
-      dropEl.classList.remove("drag");
-    });
-    dropEl.addEventListener("drop", function (e) {
-      e.preventDefault();
-      dropEl.classList.remove("drag");
-      handleFile(e.dataTransfer.files && e.dataTransfer.files[0]);
-    });
-
-    filePickEl.addEventListener("change", function () {
-      handleFile(filePickEl.files && filePickEl.files[0]);
-      filePickEl.value = "";
-    });
-
-    btnCopy.addEventListener("click", async function () {
-      try {
-        await navigator.clipboard.writeText(ocrTextEl.value);
-        setStatus("Copied", "ok");
-      } catch (err) {
-        ocrTextEl.select();
-        document.execCommand("copy");
-        setStatus("Copied", "ok");
-      }
-    });
-
-    btnTxt.addEventListener("click", downloadTxt);
-    btnDocx.addEventListener("click", downloadDocx);
-    btnOcrPage.addEventListener("click", runOcr);
-
-    btnPrev.addEventListener("click", async function () {
-      if (currentPage > 1) {
-        ocrTextEl.value = "";
-        setExportEnabled(false);
-        await renderPdfPage(currentPage - 1);
-        setStatus("Page " + currentPage + ". Click OCR this page.");
-      }
-    });
-
-    btnNext.addEventListener("click", async function () {
-      if (currentPage < pageCount) {
-        ocrTextEl.value = "";
-        setExportEnabled(false);
-        await renderPdfPage(currentPage + 1);
-        setStatus("Page " + currentPage + ". Click OCR this page.");
-      }
-    });
-
-    pageNumEl.addEventListener("change", async function () {
-      let n = parseInt(pageNumEl.value, 10);
-      if (isNaN(n) || n < 1) n = 1;
-      if (n > pageCount) n = pageCount;
-      ocrTextEl.value = "";
-      setExportEnabled(false);
-      await renderPdfPage(n);
-      setStatus("Page " + currentPage + ". Click OCR this page.");
-    });
-
-    updatePageControls();
-  </script>
+  <input type="file" id="file-in" multiple hidden>
+  <input type="file" id="camera-in" accept="image/*" capture="environment" hidden>
+</div>
+<script src="vendor/tesseract.min.js?v=20261004a"></script>
+<script src="vendor/pdf.min.js?v=20261004a"></script>
+<script src="vendor/jszip.min.js?v=20261004a"></script>
+<script src="ocr_config.js?v=20261004a"></script>
+<script src="ocr_state.js?v=20261004a"></script>
+<script src="ocr_engine.js?v=20261004a"></script>
+<script src="ocr_pdf.js?v=20261004a"></script>
+<script src="ocr_io.js?v=20261004a"></script>
+<script src="ocr_jobs.js?v=20261004a"></script>
+<script src="ocr_ui.js?v=20261004a"></script>
 </body>
 </html>
