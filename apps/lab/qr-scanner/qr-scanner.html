@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<!--
+  File: qr-scanner.html
+  Project: qr-scanner
+  Purpose: Full-screen QR and barcode scanner page.
+  Behavior: Camera fills the screen. Scan frame is fixed at 70% of screen width.
+  Controls and the result card float with transparency. Nothing is saved.
+  Decoder: zxing-wasm reader (multi-format 1D and 2D) from jsDelivr.
+-->
+<html lang="en">
+<head>
+  <!-- Character encoding. -->
+  <meta charset="UTF-8">
+  <!-- Mobile viewport, including notch-safe layout. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Theme color matches the dark camera page. -->
+  <meta name="theme-color" content="#000000">
+  <!-- Page title. -->
+  <title>qr-scanner</title>
+  <!-- Project stylesheet. -->
+  <link rel="stylesheet" href="qr-scanner.css">
+</head>
+<body>
+  <!-- Full-screen stage. Video, frame, and floating controls live here. -->
+  <main class="stage" id="stage">
+    <!-- Live camera. object-fit cover is set in CSS so it fills the viewport. -->
+    <video class="camera" id="camera" autoplay playsinline muted></video>
+
+    <!-- Fixed scan frame. 70% of screen width, square, centered. Does not scroll. -->
+    <div class="frame" id="frame" aria-hidden="true"></div>
+
+    <!-- Floating controls. Semi-transparent. Do not cover the scan frame center. -->
+    <div class="controls" id="controls">
+      <!-- Torch toggle. Hidden by script if the camera has no torch. -->
+      <button type="button" class="btn" id="torchBtn" aria-pressed="false">Light</button>
+      <!-- Opens the image picker. Same decoder as the camera. -->
+      <button type="button" class="btn" id="imageBtn">Image</button>
+      <!-- Step zoom out. -->
+      <button type="button" class="btn" id="zoomOutBtn" aria-label="Zoom out">−</button>
+      <!-- Step zoom in. -->
+      <button type="button" class="btn" id="zoomInBtn" aria-label="Zoom in">+</button>
+    </div>
+
+    <!-- Hidden file input for the image fallback. -->
+    <input class="file" id="fileInput" type="file" accept="image/*">
+
+    <!-- One result card. Created in the DOM, shown only after a scan. Not saved. -->
+    <section class="result" id="result" hidden>
+      <!-- Format name and local date-time of this scan. -->
+      <p class="meta" id="resultMeta"></p>
+      <!-- Decoded text. Becomes a link when the text is a URL, mailto, or tel. -->
+      <p class="text" id="resultText"></p>
+      <!-- Card actions. -->
+      <div class="result-actions">
+        <!-- Copies the raw text. -->
+        <button type="button" class="btn" id="copyBtn">Copy</button>
+        <!-- Hides the card. Camera and controls stay. -->
+        <button type="button" class="btn" id="closeBtn">Close</button>
+      </div>
+    </section>
+
+    <!-- Short status line for permission or decoder errors. Floating, transparent. -->
+    <p class="status" id="status" hidden></p>
+  </main>
+
+  <!--
+    zxing-wasm reader build. Global name is ZXingWASM.
+    WASM file is loaded from jsDelivr by the library default locateFile.
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/zxing-wasm@2.2.4/dist/iife/reader/index.js"></script>
+  <!-- Project script. Classic script so it can use the ZXingWASM global. -->
+  <script src="qr-scanner.js"></script>
+</body>
+</html>

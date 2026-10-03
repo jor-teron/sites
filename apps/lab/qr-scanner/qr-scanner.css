@@ -1,0 +1,137 @@
+/*
+  File: qr-scanner.css
+  Project: qr-scanner
+  Purpose: Full-screen camera layout, fixed scan frame, floating transparent controls and result.
+  Notes: No saved history. Result card is the only extra panel.
+*/
+
+/* Page margin reset so the camera can use the full viewport. */
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #000;
+  color: #fff;
+  font-family: system-ui, sans-serif;
+}
+
+/* Stage fills the screen. Overflow hidden keeps the zoomed video inside. */
+.stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+/* Camera fills the stage. Cover crops edges; the frame marks the decode area. */
+.camera {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+  transform-origin: center center;
+}
+
+/* Fixed square frame. Width is 70% of the screen. Centered. Does not scroll. */
+.frame {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 70vw;
+  height: 70vw;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Floating control row. Transparent dark panel. Safe-area aware. */
+.controls {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 3;
+}
+
+/* Shared button look. Transparent enough that the camera shows through. */
+.btn {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font: 600 14px/1 system-ui, sans-serif;
+}
+
+/* Pressed torch state. */
+.btn[aria-pressed="true"] {
+  background: rgba(255, 196, 0, 0.55);
+  color: #111;
+}
+
+/* File input is triggered by the Image button. Never shown. */
+.file {
+  display: none;
+}
+
+/* One floating result. About 70% opacity. Session only. */
+.result {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 4;
+}
+
+/* Format and local date-time line. */
+.meta {
+  margin: 0 0 6px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Decoded text. Wraps long payloads. */
+.text {
+  margin: 0 0 10px;
+  font-size: 16px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+/* Link style when the payload is openable. */
+.text a {
+  color: #9cf;
+}
+
+/* Copy and Close sit on one row. */
+.result-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Short error or waiting line. Floating, transparent. */
+.status {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 14px;
+  z-index: 4;
+}

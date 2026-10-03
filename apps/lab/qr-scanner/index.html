@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<!--
+  File: index.html
+  Project: qr-scanner
+  Purpose: Redirect entry point. Opens the main scanner page.
+  Notes: Camera access needs HTTPS or localhost. This file only forwards.
+-->
+<html lang="en">
+<head>
+  <!-- Character encoding for the redirect page. -->
+  <meta charset="UTF-8">
+  <!-- Viewport so the redirect is safe on phones before the main page loads. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Immediate redirect to the project HTML file. -->
+  <meta http-equiv="refresh" content="0; url=qr-scanner.html">
+  <!-- Title shown if the redirect is slow. -->
+  <title>qr-scanner</title>
+  <!-- Script fallback if meta refresh is ignored. -->
+  <script>
+    /* Replace the current history entry so Back does not return to this stub. */
+    location.replace("qr-scanner.html");
+  </script>
+</head>
+<body>
+  <!-- Plain link if both redirect methods fail. -->
+  <p><a href="qr-scanner.html">Open qr-scanner</a></p>
+</body>
+</html>
