@@ -80,7 +80,7 @@ const CONTROLLER_CONFIG = {
     repeatDelayMs: 450,            // hold a key this long → auto-repeat keydown (repeat:1)
     repeatMs: 60,                  // auto-repeat interval
     repeatKeys: true,              // false: no auto-repeat at all
-    hapticMs: 12,                  // tick on every key press (Vibe toggle respected)
+    hapticMs: 12,                  // tick on every key press (Vib toggle respected)
     // PC keyboard: keys with a thin accent border (gaming keys). Values are data-key
     // ('w', 'ArrowUp', ' ' = Space, 'Enter', 'Escape') or a modifier ('shift').
     // [] = no highlight.
@@ -126,7 +126,7 @@ const CONTROLLER_CONFIG = {
   // Vibration diagnostics panel (hold menu of the mode button, Diag link on the pairing screen)
   diag: {
     enabled: true,                 // false hides the Diag menu item / link
-    testMs: 500,                   // "Test" button: navigator.vibrate(testMs), ignores the Vibe toggle
+    testMs: 250,                   // "Test" button: navigator.vibrate(testMs), ignores the Vib toggle
     refreshMs: 1000,               // panel refresh while open (userActivation can change)
   },
 
@@ -295,8 +295,8 @@ const CONTROLLER_CONFIG = {
     genericError: 'error',         // shown when a peer error has no type
     modeLabels: { both: 'Both', stick: 'Stick', dpad: 'D-pad' },
     modeTitle: 'Left side: stick / D-pad / both',
-    hapticsOn: 'Vibe on',
-    hapticsOff: 'Vibe off',
+    hapticsOn: 'Vib on',
+    hapticsOff: 'Vib off',
     hapticsNA: 'No vibe',
     hapticsTitle: 'Haptic feedback',
     diagBtn: 'Diag',

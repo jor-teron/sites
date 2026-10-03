@@ -17,6 +17,9 @@ const SNAKE_CONFIG = {
   // Only inside the hub; 0 = off. An array is a vibrate pattern, e.g. [200, 100, 200].
   DIE_VIBRATE_MS: 500,
 
+  // Short phone buzz each time the snake eats food (ms). Only inside the hub; 0 = off.
+  EAT_VIBRATE_MS: 100,
+
   bestKey: 'snake-best',       // localStorage key for the best score
 
   // Grid

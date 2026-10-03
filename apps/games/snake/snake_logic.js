@@ -136,6 +136,7 @@
       score += boost ? CFG.scoring.foodBoosted : CFG.scoring.food;
       scoreEl.textContent = String(score);
       hubSendStats();
+      hubRumble(CFG.EAT_VIBRATE_MS);
       placeFood();
     } else {
       snake.pop();
@@ -380,7 +381,7 @@
    *   game → hub  {type:'hub-app', app, stats, buttons}  Score / Best, New Game
    *   game → hub  {type:'hub-stat', id, value}           when Score / Best change
    *   hub → game  {type:'hub-action', id:'new'}          → new game
-   *   game → hub  {type:'hub-rumble', ms}                on death (DIE_VIBRATE_MS;
+   *   game → hub  {type:'hub-rumble', ms}                on death (DIE_VIBRATE_MS) and on eating (EAT_VIBRATE_MS;
    *               an array is sent as pattern) → hub relays to the paired phone
    * Accepted only from window.parent with a same-origin / file:// origin.
    * ------------------------------------------------------------------------- */

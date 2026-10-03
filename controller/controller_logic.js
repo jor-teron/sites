@@ -9,7 +9,7 @@
  *     (the hub dispatches KeyboardEvents into the app frame and types into focused text fields)
  * Hub → phone:
  *   { t:'rumble', ms:N } / { t:'rumble', pattern:[...] }   game rumble (e.g. Snake death)
- *   → navigator.vibrate, only when the Vibe toggle is on; silently nothing without vibrate (iOS)
+ *   → navigator.vibrate, only when the Vib toggle is on; silently nothing without vibrate (iOS)
  *   While a rumble runs, tap haptics are skipped (haptics.rumbleWins): any new vibrate call
  *   would cancel it. Diag panel (CFG.diag) shows the vibration state + a direct test button.
  * The stick also emulates the D-pad by sending 'btn' up/down/left/right, so games that
@@ -330,7 +330,7 @@
     diag.rumble = { at: new Date(), arg: arg, note: '' };
     if (!arg) diag.rumble.note = 'empty';
     else if (!canVibrate) diag.rumble.note = 'no vibrate API';
-    else if (!hapticsOn) diag.rumble.note = 'Vibe off';
+    else if (!hapticsOn) diag.rumble.note = 'Vib off';
     else {
       const total = Array.isArray(arg) ? arg.reduce((a, n) => a + n, 0) : arg;
       rumbleUntil = performance.now() + total;
@@ -351,7 +351,7 @@
     const yn = (b) => (b ? TXT.diagYes : TXT.diagNo);
     const lines = [
       'Controller v' + CFG.version,
-      'Vibe toggle: ' + (hapticsOn ? 'on' : 'off'),
+      'Vib toggle: ' + (hapticsOn ? 'on' : 'off'),
       "'vibrate' in navigator: " + yn('vibrate' in navigator),
       'User activation: ' + (ua ? 'hasBeenActive ' + yn(ua.hasBeenActive) + ', isActive ' + yn(ua.isActive) : TXT.diagNA),
       'Hub link: ' + (conn && conn.open ? 'connected' : 'not connected'),
@@ -756,7 +756,7 @@
     menuDiag.addEventListener('click', () => { closeMenu(); setDiagOpen(true); });
     diagLink.addEventListener('click', () => setDiagOpen(diagPanel.hidden));
     diagClose.addEventListener('click', () => setDiagOpen(false));
-    // Direct call inside the tap (a user gesture); ignores the Vibe toggle on purpose.
+    // Direct call inside the tap (a user gesture); ignores the Vib toggle on purpose.
     diagTest.addEventListener('click', () => {
       diag.test = { at: new Date(), result: callVibrate(testMs) };
       diag.call = { at: diag.test.at, arg: testMs, src: 'test', result: diag.test.result };
