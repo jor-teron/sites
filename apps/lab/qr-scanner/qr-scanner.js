@@ -399,26 +399,38 @@ function onTouchMove(event) {
   setZoom(pinchStartZoom * ratio);
 }
 
-/* Torch control. */
-torchBtn.addEventListener("click", toggleTorch);
+/* Torch control. Missing buttons must not block the camera. */
+if (torchBtn) {
+  torchBtn.addEventListener("click", toggleTorch);
+}
 /* Image control opens the file picker. */
-imageBtn.addEventListener("click", function () {
-  fileInput.click();
-});
+if (imageBtn && fileInput) {
+  imageBtn.addEventListener("click", function () {
+    fileInput.click();
+  });
+}
 /* File picker result. */
-fileInput.addEventListener("change", function () {
-  const file = fileInput.files && fileInput.files[0];
-  if (file) {
-    decodeFile(file);
-  }
-  fileInput.value = "";
-});
+if (fileInput) {
+  fileInput.addEventListener("change", function () {
+    const file = fileInput.files && fileInput.files[0];
+    if (file) {
+      decodeFile(file);
+    }
+    fileInput.value = "";
+  });
+}
 /* Result actions. */
-copyBtn.addEventListener("click", copyResult);
-closeBtn.addEventListener("click", closeResult);
+if (copyBtn) {
+  copyBtn.addEventListener("click", copyResult);
+}
+if (closeBtn) {
+  closeBtn.addEventListener("click", closeResult);
+}
 /* Pinch on the stage. Passive false so preventDefault can block page scroll. */
-stageEl.addEventListener("touchstart", onTouchStart, { passive: true });
-stageEl.addEventListener("touchmove", onTouchMove, { passive: false });
+if (stageEl) {
+  stageEl.addEventListener("touchstart", onTouchStart, { passive: true });
+  stageEl.addEventListener("touchmove", onTouchMove, { passive: false });
+}
 
-/* Start after the decoder script has registered ZXingWASM. */
+/* Camera starts even if a control failed to bind. */
 startCamera();

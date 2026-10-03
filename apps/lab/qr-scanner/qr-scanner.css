@@ -49,15 +49,17 @@ body {
   z-index: 2;
 }
 
-/* Bottom tile row. Two equal tiles. Stays above the result card. */
+/* Bottom tile row. Two equal tiles. top:auto overrides any cached top rule. */
 .controls {
   position: absolute;
   left: 12px;
   right: 12px;
+  top: auto;
   bottom: calc(12px + env(safe-area-inset-bottom));
   display: flex;
   gap: 8px;
   z-index: 5;
+  transform: none;
 }
 
 /* Shared button look. Used by tiles and by Copy / Close. */

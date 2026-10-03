@@ -17,8 +17,8 @@
   <meta name="theme-color" content="#000000">
   <!-- Page title. -->
   <title>qr-scanner</title>
-  <!-- Project stylesheet. -->
-  <link rel="stylesheet" href="qr-scanner.css">
+  <!-- Project stylesheet. Version query avoids a stale top-tile layout. -->
+  <link rel="stylesheet" href="qr-scanner.css?v=3">
 </head>
 <body>
   <!-- Full-screen stage. Video, frame, and floating controls live here. -->
@@ -29,8 +29,8 @@
     <!-- Fixed scan frame. 90% of screen width, square, centered. Does not scroll. -->
     <div class="frame" id="frame" aria-hidden="true"></div>
 
-    <!-- Bottom tiles. Light and Image only. Pinch is the zoom control. -->
-    <div class="controls" id="controls">
+    <!-- Bottom tiles. Inline position so a cached stylesheet cannot pin them to the top. -->
+    <div class="controls" id="controls" style="position:absolute;left:12px;right:12px;bottom:12px;top:auto;display:flex;gap:8px;z-index:5;">
       <!-- Torch toggle. Hidden by script if the camera has no torch. -->
       <button type="button" class="btn tile" id="torchBtn" aria-pressed="false">Light</button>
       <!-- Opens the image picker. Same decoder as the camera. -->
@@ -64,7 +64,7 @@
     WASM file is loaded from jsDelivr by the library default locateFile.
   -->
   <script src="https://cdn.jsdelivr.net/npm/zxing-wasm@2.2.4/dist/iife/reader/index.js"></script>
-  <!-- Project script. Classic script so it can use the ZXingWASM global. -->
-  <script src="qr-scanner.js"></script>
+  <!-- Project script. Version query avoids a stale script that blocked the camera. -->
+  <script src="qr-scanner.js?v=3"></script>
 </body>
 </html>
