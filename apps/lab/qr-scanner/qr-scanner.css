@@ -1,8 +1,8 @@
 /*
   File: qr-scanner.css
   Project: qr-scanner
-  Purpose: Full-screen camera layout, fixed scan frame, floating transparent controls and result.
-  Notes: No saved history. Result card is the only extra panel.
+  Purpose: Full-screen camera, 90% frame, bottom tiles, centered result.
+  Notes: No saved history. Pinch is the only zoom. Light and Image stay at the bottom.
 */
 
 /* Page margin reset so the camera can use the full viewport. */
@@ -34,13 +34,13 @@ body {
   transform-origin: center center;
 }
 
-/* Fixed square frame. Width is 70% of the screen. Centered. Does not scroll. */
+/* Fixed square frame. Width is 90% of the screen. Centered. Does not scroll. */
 .frame {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 70vw;
-  height: 70vw;
+  width: 90vw;
+  height: 90vw;
   transform: translate(-50%, -50%);
   border: 2px solid rgba(255, 255, 255, 0.85);
   border-radius: 12px;
@@ -49,21 +49,18 @@ body {
   z-index: 2;
 }
 
-/* Floating control row. Transparent dark panel. Safe-area aware. */
+/* Bottom tile row. Two equal tiles. Stays above the result card. */
 .controls {
   position: absolute;
-  top: calc(12px + env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
   display: flex;
   gap: 8px;
-  padding: 8px;
-  border-radius: 14px;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 3;
+  z-index: 5;
 }
 
-/* Shared button look. Transparent enough that the camera shows through. */
+/* Shared button look. Used by tiles and by Copy / Close. */
 .btn {
   border: 0;
   border-radius: 10px;
@@ -71,6 +68,15 @@ body {
   background: rgba(255, 255, 255, 0.18);
   color: #fff;
   font: 600 14px/1 system-ui, sans-serif;
+}
+
+/* Equal bottom tiles. Transparent so the camera shows through. Overrides the shared button fill. */
+.btn.tile {
+  flex: 1;
+  min-height: 52px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.45);
+  font-size: 16px;
 }
 
 /* Pressed torch state. */
@@ -84,16 +90,19 @@ body {
   display: none;
 }
 
-/* One floating result. About 70% opacity. Session only. */
+/* One result card. Centered on the screen. About 70% opacity. Session only. */
 .result {
   position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: calc(12px + env(safe-area-inset-bottom));
-  padding: 12px;
+  left: 24px;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 16px;
   border-radius: 14px;
   background: rgba(0, 0, 0, 0.7);
   z-index: 4;
+  max-height: 46vh;
+  overflow: auto;
 }
 
 /* Format and local date-time line. */
@@ -103,10 +112,10 @@ body {
   opacity: 0.8;
 }
 
-/* Decoded text. Wraps long payloads. */
+/* Decoded text. Larger than the meta line. Wraps long payloads. */
 .text {
-  margin: 0 0 10px;
-  font-size: 16px;
+  margin: 0 0 12px;
+  font-size: 22px;
   line-height: 1.35;
   word-break: break-word;
 }
@@ -122,12 +131,12 @@ body {
   gap: 8px;
 }
 
-/* Short error or waiting line. Floating, transparent. */
+/* Short error or waiting line. Sits just above the bottom tiles. */
 .status {
   position: absolute;
   left: 12px;
   right: 12px;
-  bottom: calc(12px + env(safe-area-inset-bottom));
+  bottom: calc(76px + env(safe-area-inset-bottom));
   margin: 0;
   padding: 10px 12px;
   border-radius: 12px;

@@ -3,8 +3,8 @@
   File: qr-scanner.html
   Project: qr-scanner
   Purpose: Full-screen QR and barcode scanner page.
-  Behavior: Camera fills the screen. Scan frame is fixed at 70% of screen width.
-  Controls and the result card float with transparency. Nothing is saved.
+  Behavior: Camera fills the screen. Scan frame is fixed at 90% of screen width.
+  Light and Image are bottom tiles. Pinch zooms. Result sits in the center. Nothing is saved.
   Decoder: zxing-wasm reader (multi-format 1D and 2D) from jsDelivr.
 -->
 <html lang="en">
@@ -26,25 +26,21 @@
     <!-- Live camera. object-fit cover is set in CSS so it fills the viewport. -->
     <video class="camera" id="camera" autoplay playsinline muted></video>
 
-    <!-- Fixed scan frame. 70% of screen width, square, centered. Does not scroll. -->
+    <!-- Fixed scan frame. 90% of screen width, square, centered. Does not scroll. -->
     <div class="frame" id="frame" aria-hidden="true"></div>
 
-    <!-- Floating controls. Semi-transparent. Do not cover the scan frame center. -->
+    <!-- Bottom tiles. Light and Image only. Pinch is the zoom control. -->
     <div class="controls" id="controls">
       <!-- Torch toggle. Hidden by script if the camera has no torch. -->
-      <button type="button" class="btn" id="torchBtn" aria-pressed="false">Light</button>
+      <button type="button" class="btn tile" id="torchBtn" aria-pressed="false">Light</button>
       <!-- Opens the image picker. Same decoder as the camera. -->
-      <button type="button" class="btn" id="imageBtn">Image</button>
-      <!-- Step zoom out. -->
-      <button type="button" class="btn" id="zoomOutBtn" aria-label="Zoom out">−</button>
-      <!-- Step zoom in. -->
-      <button type="button" class="btn" id="zoomInBtn" aria-label="Zoom in">+</button>
+      <button type="button" class="btn tile" id="imageBtn">Image</button>
     </div>
 
     <!-- Hidden file input for the image fallback. -->
     <input class="file" id="fileInput" type="file" accept="image/*">
 
-    <!-- One result card. Created in the DOM, shown only after a scan. Not saved. -->
+    <!-- One result card. Centered. Shown only after a scan. Not saved. -->
     <section class="result" id="result" hidden>
       <!-- Format name and local date-time of this scan. -->
       <p class="meta" id="resultMeta"></p>

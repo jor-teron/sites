@@ -2,14 +2,14 @@
   File: qr-scanner.js
   Project: qr-scanner
   Purpose: Full-screen multi-format scanner.
-  Camera fills the viewport. Decode region is the fixed 70% width frame.
-  Torch, image upload, pinch and button zoom. One closable result. No storage.
+  Camera fills the viewport. Decode region is the fixed 90% width frame.
+  Torch and image tiles at the bottom. Pinch zoom only. One centered result. No storage.
   Decoder: ZXingWASM.readBarcodes from zxing-wasm 2.2.4 (loaded by the HTML).
 */
 
 /* Live camera element. */
 const cameraEl = document.getElementById("camera");
-/* Fixed scan frame. Used only as a visual; crop math uses the same 70vw square. */
+/* Fixed scan frame. Visual only; crop math uses the same 90vw square. */
 const frameEl = document.getElementById("frame");
 /* Stage used for pinch tracking. */
 const stageEl = document.getElementById("stage");
@@ -17,10 +17,6 @@ const stageEl = document.getElementById("stage");
 const torchBtn = document.getElementById("torchBtn");
 /* Image fallback button. */
 const imageBtn = document.getElementById("imageBtn");
-/* Zoom out button. */
-const zoomOutBtn = document.getElementById("zoomOutBtn");
-/* Zoom in button. */
-const zoomInBtn = document.getElementById("zoomInBtn");
 /* Hidden file input. */
 const fileInput = document.getElementById("fileInput");
 /* Result card. Hidden until a scan. */
@@ -59,8 +55,8 @@ let zoomValue = 1;
 const ZOOM_MIN = 1;
 /* Maximum zoom when the camera does not report a range. */
 const ZOOM_MAX_FALLBACK = 5;
-/* Button zoom step. */
-const ZOOM_STEP = 0.5;
+/* Frame width as a fraction of the viewport width. Matches the CSS frame. */
+const FRAME_WIDTH_RATIO = 0.9;
 /* True when the track exposes a real zoom capability. */
 let hardwareZoom = false;
 /* Hardware zoom range from the track, if any. */
@@ -190,7 +186,7 @@ function frameCrop() {
   const displayedHeight = videoHeight * coverScale;
   const offsetX = (displayedWidth - viewWidth) / 2;
   const offsetY = (displayedHeight - viewHeight) / 2;
-  const frameSize = viewWidth * 0.7;
+  const frameSize = viewWidth * FRAME_WIDTH_RATIO;
   const frameLeft = (viewWidth - frameSize) / 2;
   const frameTop = (viewHeight - frameSize) / 2;
   /* CSS scale is only used when the camera has no hardware zoom. */
@@ -416,13 +412,6 @@ fileInput.addEventListener("change", function () {
     decodeFile(file);
   }
   fileInput.value = "";
-});
-/* Zoom buttons. */
-zoomOutBtn.addEventListener("click", function () {
-  setZoom(zoomValue - ZOOM_STEP);
-});
-zoomInBtn.addEventListener("click", function () {
-  setZoom(zoomValue + ZOOM_STEP);
 });
 /* Result actions. */
 copyBtn.addEventListener("click", copyResult);
