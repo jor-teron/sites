@@ -15,8 +15,11 @@
 <body>
   <div class="app">
     <header class="top">
-      <h1>Paper Keyboard</h1>
-      <p id="status">Pick a role</p>
+      <div class="brand">
+        <h1>Paper Keyboard</h1>
+        <span id="status">Pick a role</span>
+      </div>
+      <span id="echo"></span>
     </header>
 
     <!-- Home. Desktop picks Output. Phone picks Input, or arrives from the QR link. -->
@@ -42,7 +45,6 @@
         <button type="button" id="peer-go">Connect</button>
       </div>
       <div id="key-box" class="hidden">
-        <p id="echo" class="hint"></p>
         <div class="modes">
           <button type="button" id="mode-touch" class="active">Screen keyboard</button>
           <button type="button" id="mode-paper">Paper keyboard</button>
@@ -63,7 +65,7 @@
             <span id="led-bl">BL</span>
             <span id="led-br">BR</span>
           </div>
-          <p id="paper-status">Tap the sheet to focus. Marks can sit inside the picture.</p>
+          <p id="paper-status">Turn the phone landscape. Tap the sheet to focus.</p>
         </div>
       </div>
     </section>

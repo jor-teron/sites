@@ -65,6 +65,7 @@ let scanStream = null;
 */
 function setStatus(text) {
   statusLine.textContent = text;
+  statusLine.classList.toggle("connected", text === "Connected");
 }
 
 /*
@@ -152,7 +153,7 @@ function connectTo(remoteId) {
 function bindLink(conn, side) {
   link = conn;
   conn.on("open", function () {
-    setStatus(side + " connected.");
+    setStatus("Connected");
     if (side === "Input") {
       connectBox.classList.add("hidden");
       keyBox.classList.remove("hidden");
@@ -565,7 +566,7 @@ function checkCorners() {
   });
   document.getElementById("paper-status").textContent = held
     ? "Aligned. Marks found anywhere in frame."
-    : "Tap the sheet to focus. Marks can sit inside the picture.";
+    : "Turn the phone landscape. Tap the sheet to focus.";
   ctx.clearRect(0, 0, width, height);
   if (named) {
     ctx.beginPath();
