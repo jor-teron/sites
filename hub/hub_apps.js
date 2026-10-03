@@ -52,25 +52,27 @@ Media,    Photo Editor,          apps/media/photo-editor/,                   ,  
 Office,   Spreadsheet,           apps/office/spreadsheet/,                   ,         0,       0,      320
 Office,   Draft-ly,              apps/office/draftly/,                       ,         0,       0,      310
 Office,   OCR,                   apps/office/ocr/,                           ,         0,       0,      360
-Office,   MS Word Diff,          apps/tools/msword_diff/,                         ,         0,       0,      440
+Office,   MS Word Diff,          apps/tools/msword_diff/,                    ,         0,       0,      440
 
-Connectivity, AirDrop,           apps/connectivity/airdrop-web/,             ,         0,       0,      1010
-Connectivity, Pooh Chat,         apps/connectivity/pooh-chat/,               ,         0,       0,      401
-Connectivity, WebChat,           apps/connectivity/webrtc-chat/,             ,         0,       0,      402
-Connectivity, Peer Chat,         apps/connectivity/p2pchat.html,             ,         0,       0,      403
+Connectivity, AirDrop,           apps/connectivity/airdrop-web/,             ,         0,       0,      405
+Connectivity, QR Scanner,        apps/connectivity/qr-scanner/,              ,         0,       0,      406
+Connectivity, Pooh Chat,         apps/connectivity/pooh-chat/,               ,         0,       0,      450
+Connectivity, WebChat,           apps/connectivity/webrtc-chat/,             ,         0,       0,      455
+Connectivity, Peer Chat,         apps/connectivity/p2pchat.html,             ,         0,       0,      460
 
 Tools,    Calculator,            apps/tools/calculator/,                     ,         0,       0,      410
-Tools,    FileDrop,              apps/lab/file-drop/,                        ,         0,       0,      410
+Tools,    FileDrop,              apps/lab/file-drop/,                        ,         0,       1,      410
 Tools,    NE-India Dictionary,   apps/tools/nei-dict/,                       ,         0,       0,      430
 Tools,    Notepad,               apps/tools/notepad/,                        ,         0,       0,      450
-Tools,    Weather,               apps/tools/weather-chart/,                  ,         0,       0,      460
+Tools,    Weather,               apps/tools/weather-chart/,                  ,         0,       0,      420
 Tools,    Weather Hourly,        apps/tools/weather-hourly/,                 ,         0,       0,      465
-Tools,    Caption for NEI,       apps/tools/caption-for-nei/,                ,         0,       0,      470
+Tools,    Caption for NEI,       apps/tools/caption-for-nei/,                ,         0,       0,      440
 
 Desktop,  Learning HTML (Basic), apps/tools/learning-html/,                  ,         0,       0,      910
-Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,         0,       0,      900
+Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,         1,       0,      900
 
 Lab,      Phone,                 apps/media/phone/,                          ,         0,       0,      1070
+Lab,      Paper Keyboard,        apps/lab/paper-keyboard/,                   ,         0,       0,      1040
 
 About,    About,                 apps/about/,                                ,         0,       0,      2000
 About,    Contact,               apps/about/contact.txt,                     ,         0,       0,      2020

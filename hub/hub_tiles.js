@@ -22,7 +22,7 @@ window.HUB_TILES = [
   // Phone gamepad: a new tab gives it the full screen (fullscreen / wake lock)
   { type: 'app', label: 'GamePad', url: 'controller/', icon: '', NEW_TAB: 1 },
   { type: 'app', label: 'TV', url: 'tv/', icon: '', NEW_TAB: 1 },
-  { type: 'app', label: 'Webcam', url: 'media/webcam/', icon: '' },
+  { type: 'app', label: 'QR Scanner', url: 'apps/connectivity/qr-scanner/', icon: '' },
   { type: 'app', label: 'Snake', url: 'games/snake/', icon: '' },
   { type: 'app', label: 'Accessibility for Deaf', url: 'tools/caption-for-nei/caption-for-nei.html', icon: '' },
 ];

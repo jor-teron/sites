@@ -27,6 +27,12 @@
 │   │   │   ├── pooh-chat.css
 │   │   │   ├── pooh-chat.html
 │   │   │   └── pooh-chat.js
+│   │   ├── qr-scanner
+│   │   │   ├── index.html
+│   │   │   ├── qr-scanner.css
+│   │   │   ├── qr-scanner.html
+│   │   │   ├── qr-scanner_icon.png
+│   │   │   └── qr-scanner.js
 │   │   └── webrtc-chat
 │   │       ├── css
 │   │       │   └── style.css
@@ -207,8 +213,13 @@
 │   │   ├── iframe.html
 │   │   ├── index.html
 │   │   ├── keyboard.html
-│   │   └── pacman
-│   │       └── index.html
+│   │   ├── pacman
+│   │   │   └── index.html
+│   │   └── paper-keyboard
+│   │       ├── index.html
+│   │       ├── paper-keyboard.css
+│   │       ├── paper-keyboard.html
+│   │       └── paper-keyboard.js
 │   ├── media
 │   │   ├── 3d-viewer
 │   │   │   ├── model.url
@@ -497,4 +508,4 @@
     ├── xp.jpg
     └── xp_small.jpg
 
-91 directories, 407 files
+93 directories, 416 files
