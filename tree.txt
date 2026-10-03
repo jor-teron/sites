@@ -44,9 +44,10 @@
 │   │           └── webrtc.js
 │   ├── games
 │   │   ├── 2048
+│   │   │   ├── 2048_config.js
 │   │   │   ├── 2048.css
 │   │   │   ├── 2048.html
-│   │   │   ├── 2048.js
+│   │   │   ├── 2048_logic.js
 │   │   │   └── index.html
 │   │   ├── ar-game
 │   │   │   ├── ar-game_config.js
@@ -511,4 +512,4 @@
     ├── xp.jpg
     └── xp_small.jpg
 
-93 directories, 419 files
+93 directories, 420 files

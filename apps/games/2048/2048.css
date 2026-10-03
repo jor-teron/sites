@@ -4,11 +4,13 @@
   Project:     2048
   Purpose:     Visual styles for the 2048 board, HUD, tiles,
                overlay, and control buttons.
-  Location:    2048/2048.css
+  Location:    apps/games/2048/2048.css
   Palette:     Dark page, indigo board (#1919A6), gold text
                (#FFD700). Tile colors are set inline by JS.
   Notes:       Full-viewport, no scroll, touch-action none
-               so swipes do not pan the page.
+               so swipes do not pan the page. Landscape on a
+               short screen: HUD and buttons beside the board.
+               body.in-hub (sites hub): HUD / buttons hidden.
   ============================================================
 */
 
@@ -19,6 +21,7 @@
 html, body {
   margin: 0; padding: 0;
   width: 100%; height: 100%;
+  height: 100dvh;
   background: #0a0a0f; color: #fff;
   font-family: 'Courier New', monospace;
   overflow: hidden;
@@ -97,22 +100,28 @@ html, body {
   border-radius: 4px;
 }
 
-/* Moving number tile. Positioned absolutely by JS transform. */
+/* Moving number tile. The outer element is positioned by JS (translate);
+   colour, label and the appear / pop animation live on .tile-inner so an
+   animation never overrides the position. */
 .tile {
   position: absolute;
+  left: 0; top: 0;
+  transition: transform 120ms ease-out;
+  will-change: transform;
+}
+.tile-inner {
+  width: 100%; height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
   border-radius: 4px;
-  transition: transform 120ms ease-out;
-  will-change: transform;
   font-variant-numeric: tabular-nums;
 }
 
-/* Spawn and merge animations */
-.tile.new { animation: appear 150ms ease-out; }
-.tile.merged { animation: pop 180ms ease-out; }
+/* Spawn and merge animations (inner element only) */
+.tile-inner.new { animation: appear 150ms ease-out; }
+.tile-inner.merged { animation: pop 180ms ease-out; }
 
 @keyframes appear {
   0%   { transform: scale(0); }
@@ -147,6 +156,8 @@ html, body {
   letter-spacing: 2px;
 }
 #overlay button:active { transform: scale(0.96); }
+#overlay button.secondary { margin-top: 2px; background: transparent; color: #FFD700; border: 1px solid #FFD700; padding: 7px 18px; font-size: 12px; }
+#overlay button[hidden] { display: none; }
 
 /* Bottom undo / new game row */
 #controls {
@@ -168,3 +179,19 @@ html, body {
 }
 #controls button:active { transform: scale(0.96); }
 #controls button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Landscape on a short screen (phones): HUD left, board centre, buttons right */
+@media (orientation: landscape) and (max-height: 600px) {
+  #app { flex-direction: row; align-items: stretch; justify-content: center; }
+  #hud {
+    width: auto; max-width: none;
+    flex-direction: column; justify-content: center;
+    padding: 10px 6px 10px 12px;
+  }
+  #stage { width: auto; flex: 1 1 auto; }
+  #controls { flex-direction: column; justify-content: center; padding: 10px 12px 10px 6px; }
+}
+
+/* Inside the sites hub: Score / Best / New Game / Undo are in the hub bar */
+body.in-hub #hud,
+body.in-hub #controls { display: none; }

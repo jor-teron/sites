@@ -4,12 +4,16 @@
   File:        2048.html
   Project:     2048
   Purpose:     Markup only for the 2048 board game.
-               Styles live in 2048.css. Logic lives in 2048.js.
-  Location:    2048/2048.html
+               Styles live in 2048.css. Logic lives in
+               2048_logic.js, tunables in 2048_config.js.
+  Location:    apps/games/2048/2048.html
   Layout:      HUD (title, score, best) → stage/board →
                overlay → undo / new-game controls.
   Notes:       Touch-friendly, no user scaling. Board cells
                and tiles are injected by the script.
+               Inside the sites hub the HUD / buttons hide and
+               Score / Best / New Game / Undo move to the hub bar.
+               Cache-busting: bump ?v= on the CSS / JS when they change.
   ============================================================
 -->
 <html lang="en">
@@ -17,7 +21,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>2048</title>
-  <link rel="stylesheet" href="2048.css" />
+  <link rel="stylesheet" href="2048.css?v=20261003c" />
 </head>
 <body>
   <div id="app">
@@ -36,6 +40,7 @@
           <h2 id="overlay-title">GAME OVER</h2>
           <p id="overlay-msg">No more moves</p>
           <button id="overlay-btn">NEW GAME</button>
+          <button id="overlay-undo" class="secondary" hidden>UNDO</button>
         </div>
       </div>
     </div>
@@ -46,6 +51,7 @@
     </div>
   </div>
 
-  <script src="2048.js"></script>
+  <script src="2048_config.js?v=20261003c"></script>
+  <script src="2048_logic.js?v=20261003c"></script>
 </body>
 </html>
