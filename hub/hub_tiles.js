@@ -1,7 +1,8 @@
 /*
  * sites hub — quick-access tiles on the hub home screen (hub_tiles.js).
  * Loaded by hub.html before hub.js. Shown until an app is opened.
- * Grid of 2 columns on every screen (hub.css .tiles); 6 tiles = 2 x 3.
+ * 4 tiles: a 2 x 2 grid (hub.css .tiles); one row of 4 on a short landscape phone.
+ * Snake / Accessibility for Deaf are only in the Home menu (hub_apps.js), not tiles.
  * label is the tile text only; the menu keeps the NAME from hub_apps.js.
  * Tiles that open in the hub frame get a hash link + last-app memory like menu apps
  * (hub.html#snake); NEW_TAB tiles are not remembered.
@@ -23,6 +24,4 @@ window.HUB_TILES = [
   { type: 'app', label: 'GamePad', url: 'controller/', icon: '', NEW_TAB: 1 },
   { type: 'app', label: 'TV', url: 'tv/', icon: '', NEW_TAB: 1 },
   { type: 'app', label: 'QR Scanner', url: 'apps/connectivity/qr-scanner/', icon: '' },
-  { type: 'app', label: 'Snake', url: 'games/snake/', icon: '' },
-  { type: 'app', label: 'Accessibility for Deaf', url: 'tools/caption-for-nei/caption-for-nei.html', icon: '' },
 ];
