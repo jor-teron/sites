@@ -33,6 +33,12 @@ const PONG_CONFIG = {
     resumeTitle: "Resume",
   },
 
+  // Phone-controller rumble, sent to the hub (only inside the hub) which relays it
+  // to the paired phone. ms, or a vibrate pattern array; 0 = off.
+  rumble: {
+    point: 200,            // every point, whichever side loses the ball
+  },
+
   // Touch / mouse on the court (pointer events)
   touch: {
     follow: "glide",       // 'glide' = move toward the finger at glideSpeed x playerSpeed,

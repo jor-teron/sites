@@ -242,6 +242,7 @@ function updateHud() {
 /** A side scored: win check, else serve after serveDelayMs toward dir. */
 function pointScored(dir) {
   waitingServe = true;
+  hubRumble(CFG.rumble && CFG.rumble.point);   // buzz the paired phone on every point
   if (WIN_SCORE > 0 && (scoreL >= WIN_SCORE || scoreR >= WIN_SCORE)) {
     winner = scoreL >= WIN_SCORE ? "L" : "R";
     ballX = COURT_W / 2;
@@ -440,6 +441,8 @@ function tick() {
  *   game → hub  {type:'hub-app', app, stats, buttons}  You / CPU score, New Game
  *   game → hub  {type:'hub-stat', id, value}           when a score changes
  *   hub → game  {type:'hub-action', id:'new'}          → new match
+ *   game → hub  {type:'hub-rumble', ms | pattern}      every point (CFG.rumble.point)
+ *               → the hub relays it to the paired phone controller
  * Accepted only from window.parent with a same-origin / file:// origin.
  * ------------------------------------------------------------------------- */
 const HUB_V = 1;
@@ -474,6 +477,13 @@ function hubSendApp() {
     stats: stats,
     buttons: [{ id: "new", label: CFG.text.newGame || "New Game" }],
   });
+}
+
+/** Phone rumble via the hub (same as Snake / 2048): ms, or a pattern array; 0 = off. */
+function hubRumble(v) {
+  if (!hubLinked || !v) return;
+  if (Array.isArray(v)) hubPost({ type: "hub-rumble", pattern: v.slice(0, 20) });
+  else if (Number(v) > 0) hubPost({ type: "hub-rumble", ms: Number(v) });
 }
 
 function hubSendStats() {
