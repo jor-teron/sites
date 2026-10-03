@@ -1,0 +1,205 @@
+/*
+  Project: paper-keyboard
+  File: paper-keyboard.css
+  Role: Home, output QR, phone input, and the screen keyboard.
+  Touch keys are phone-sized. They are not the 18 mm paper print.
+*/
+
+/* Page shell. Dark, fits a phone width and a desktop window. */
+:root {
+  --bg: #121418;
+  --panel: #1c2028;
+  --key: #2c323c;
+  --key-text: #f2f4f8;
+  --accent: #3d7eff;
+  --line: #3a4150;
+  --muted: #9aa3b2;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--key-text);
+  font-family: system-ui, sans-serif;
+}
+
+/* Narrow column so the touch keyboard stays thumb-sized. */
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 12px;
+}
+
+h1 {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+
+.status, .hint {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Role and connect buttons. */
+.role, #peer-go {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  padding: 14px;
+  font-size: 16px;
+}
+
+#peer-manual {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #0e1116;
+  color: var(--key-text);
+}
+
+/* Typed output on the desktop page. */
+#note {
+  width: 100%;
+  height: 140px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0e1116;
+  color: var(--key-text);
+  font-size: 18px;
+  padding: 8px;
+}
+
+#qr {
+  margin: 12px 0;
+  background: white;
+  width: 220px;
+  padding: 8px;
+}
+
+#scan-video {
+  width: 100%;
+  border-radius: 8px;
+  background: black;
+}
+
+/* Touch / Paper mode switch. */
+.modes {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.modes button {
+  flex: 1;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--key-text);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 15px;
+}
+
+.modes button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* One row of touch keys. */
+.row {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+/* Phone key. Wide hit target, not the paper pitch. */
+.key {
+  flex: 1;
+  min-height: 46px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--key);
+  color: var(--key-text);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.key.wide {
+  flex: 1.4;
+}
+
+.key.space {
+  flex: 4;
+}
+
+.key.small-label {
+  font-size: 13px;
+}
+
+/* Hidden when the other mode is selected. */
+.hidden {
+  display: none;
+}
+
+.paper-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.paper-panel strong {
+  color: var(--key-text);
+}
+
+/* Half-screen viewfinder. Video and corner overlay share the box. */
+.finder {
+  position: relative;
+  width: 100%;
+  height: 50vh;
+  background: black;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+#paper-video, #paper-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* One lamp per printed corner mark. */
+.leds {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.leds span {
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+  border-radius: 8px;
+  background: #6b1d1d;
+  color: white;
+  font-weight: 700;
+}
+
+.leds span.ok {
+  background: #1d7a3a;
+}

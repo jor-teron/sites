@@ -1,0 +1,75 @@
+<!--
+  Project: paper-keyboard
+  File: paper-keyboard.html
+  Role: Demo page. Home role pick, desktop output with QR, phone input.
+  Screen keyboard sends characters over PeerJS. Paper panel stays on this page.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paper Keyboard</title>
+  <link rel="stylesheet" href="paper-keyboard.css">
+</head>
+<body>
+  <div class="app">
+    <h1>Paper Keyboard</h1>
+    <p id="status" class="status">Pick a role.</p>
+
+    <!-- Home. Desktop picks Output. Phone picks Input, or arrives from the QR link. -->
+    <section id="home">
+      <button type="button" id="pick-output" class="role">Use as Output</button>
+      <button type="button" id="pick-input" class="role">Use as Input</button>
+    </section>
+
+    <!-- Desktop output. Text lands here. QR is a normal URL any scanner can open. -->
+    <section id="output-view" class="hidden">
+      <textarea id="note" placeholder="Input text appears here"></textarea>
+      <div id="qr"></div>
+      <p id="qr-link" class="hint"></p>
+    </section>
+
+    <!-- Phone input. Connect, then screen keyboard or paper panel. -->
+    <section id="input-view" class="hidden">
+      <div id="connect-box">
+        <button type="button" id="scan-qr" class="role">Scan QR</button>
+        <video id="scan-video" class="hidden" playsinline></video>
+        <label class="hint" for="peer-manual">Or paste the output link / peer id</label>
+        <input id="peer-manual" type="text" placeholder="peer id or full link">
+        <button type="button" id="peer-go">Connect</button>
+      </div>
+      <div id="key-box" class="hidden">
+        <p id="echo" class="hint"></p>
+        <div class="modes">
+          <button type="button" id="mode-touch" class="active">Screen keyboard</button>
+          <button type="button" id="mode-paper">Paper keyboard</button>
+        </div>
+        <div id="touch-board">
+          <div class="row" id="row-top"></div>
+          <div class="row" id="row-mid"></div>
+          <div class="row" id="row-low"></div>
+          <div class="row" id="row-bottom"></div>
+          <div class="row" id="row-arrows"></div>
+        </div>
+        <div id="paper-board" class="paper-panel hidden">
+          <div class="finder">
+            <video id="paper-video" playsinline autoplay muted></video>
+            <canvas id="paper-overlay"></canvas>
+          </div>
+          <div class="leds">
+            <span id="led-tl">TL</span>
+            <span id="led-tr">TR</span>
+            <span id="led-bl">BL</span>
+            <span id="led-br">BR</span>
+          </div>
+          <p id="paper-status">Hold the phone landscape, 25–35 cm above the sheet.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="paper-keyboard.js"></script>
+</body>
+</html>
