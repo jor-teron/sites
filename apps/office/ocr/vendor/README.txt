@@ -7,3 +7,5 @@ lang/eng.traineddata.gz                @tesseract.js-data/eng 1.0.0, model 4.0.0
 pdf.min.js, pdf.worker.min.js          pdfjs-dist 3.11.174, legacy UMD build  Apache-2.0  (LICENSE-pdf.js.txt)
 standard_fonts/                        pdfjs-dist 3.11.174 standard fonts (Foxit / Liberation, see their LICENSE files)
 jszip.min.js                           JSZip 3.10.1                MIT or GPLv3 (LICENSE-jszip.txt)
+peerjs.min.js                          PeerJS 1.5.4 (copy of /vendor/peerjs.min.js)  MIT — phone → computer transfer (QR send)
+qrcode.js                              QR Code Generator, Kazuhiko Arase (copy of /vendor/qrcode.js)  MIT (header in file)

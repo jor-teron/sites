@@ -6,7 +6,7 @@
 window.OCR = window.OCR || {};
 
 OCR.config = {
-  version: '2.0',
+  version: '2.1',
 
   // Accepted files
   accept: {
@@ -55,6 +55,28 @@ OCR.config = {
   download: {
     base: 'ocr-text',                   // used when there is no source file name
     revokeDelayMs: 30000
+  },
+
+  // Send from phone (QR). The computer page registers a fresh random PeerJS id per QR on the
+  // default public PeerJS server (same as the hub controller); the phone page ocr_send.html
+  // connects to it. Only one phone per session; the QR token is single-session.
+  send: {
+    publicBaseUrl: 'https://jor-teron.github.io/sites/apps/office/ocr/', // used on file:// / localhost / LAN
+    phonePage: 'ocr_send.html',
+    peerPrefix: 'jtocr',                // + random → ~16-char peer id
+    peerIdLength: 16,
+    tokenLength: 12,
+    peerOptions: { debug: 0 },
+    idleMs: 10 * 60 * 1000,             // session ends after 10 min with no files / activity
+    helloTimeoutMs: 10000,              // a new connection must send hello{token} within this
+    rxStallMs: 30000,                   // transfer aborted when no chunk arrives for this long
+    chunkBytes: 16000,                  // ≈16 KB binary chunks (kept under PeerJS's 16300-byte MTU)
+    ackEvery: 16,                       // receiver acks every N chunks (progress on the phone)
+    maxBuffered: 1024 * 1024,           // phone waits while more than this is queued to send
+    replyTimeoutMs: 15000,              // phone: wait this long for go / ✓ replies
+    reconnectDelaysMs: [1000, 2000, 3000, 5000, 8000, 10000], // phone backoff (last repeats)
+    reconnectGiveUpMs: 120000,
+    brokerRetryMs: [2000, 5000, 10000, 20000] // computer: re-register with the PeerJS server
   },
 
   text: {

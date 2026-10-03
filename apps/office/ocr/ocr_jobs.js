@@ -18,6 +18,7 @@
 
   J.cancel = () => {
     if (!S.busy) return;
+    if (S.job === 'recv') { if (OCR.send) OCR.send.abort(); return; }  // file coming from the phone
     cancelled = true;
     OCR.engine.cancel();
     OCR.status('Cancelling…', 'work');
@@ -167,7 +168,9 @@
   // Open picked / dropped / pasted files. One file: an image is read at once, a PDF waits
   // for Start OCR / All pages. Several files: each is read in turn (PDFs: all pages),
   // results joined under "=== name ===" headers.
-  J.openFiles = async (files, skipped) => {
+  // opts.auto (file sent from the phone): a PDF also reads page 1 at once.
+  J.openFiles = async (files, skipped, opts) => {
+    opts = opts || {};
     const note = skipped && skipped.length ? ' (' + skipped.length + ' skipped: ' + skipped[0] + ')' : '';
     if (files.length === 1) {
       OCR.setBusy(true, 'load');
@@ -177,7 +180,7 @@
       OCR.setBusy(false);
       OCR.ui.setText('', false);
       OCR.ui.showTab('preview');
-      if (doc.kind === 'image') await J.runOne();
+      if (doc.kind === 'image' || opts.auto) await J.runOne();
       else OCR.status('PDF · ' + doc.pages + ' page' + (doc.pages > 1 ? 's' : '') + ' — Start OCR (this page) or All pages' + note, '');
       if (note && doc.kind === 'image') OCR.status(document.getElementById('status').textContent + note, '');
       return;

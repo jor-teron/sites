@@ -133,6 +133,33 @@ body.empty #ocr-text { pointer-events: none; }
 .pop .row { display: flex; gap: 6px; justify-content: flex-end; margin-top: 10px; }
 .pop .note { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
 
+/* ---------- send from phone: QR box + connected chip ---------- */
+.chip {
+  display: inline-flex; align-items: center; gap: 2px; min-height: 36px; padding: 0 2px 0 10px;
+  background: #1f3a2a; border: 1px solid #3f8a5b; border-radius: 18px; color: #d9ffe6;
+  font-size: 13px; white-space: nowrap;
+}
+.chip.off { background: #3a3220; border-color: #8a7440; color: #ffe9b8; }
+.chip button {
+  width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: inherit;
+  font-size: 15px; cursor: pointer; padding: 0; touch-action: manipulation;
+}
+#qr-pop {
+  width: auto; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 12px 10px;
+  max-height: calc(100% - 8px);
+}
+#qr-pop[hidden] { display: none; }
+.qr-head { align-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; color: #c6cad1; }
+.qr-head .btn.icon { font-size: 16px; }
+#qr-img svg { border-radius: 6px; }
+#qr-state { font-size: 13px; color: var(--accent); }
+#qr-state.err { color: var(--danger); }
+#qr-link {
+  max-width: 260px; font-size: 11px; color: var(--muted); word-break: break-all; text-align: center;
+  line-height: 1.3;
+}
+
 /* ---------- narrow screens: one panel at a time ---------- */
 @media (max-width: 699px) {
   #tabs { display: flex; }

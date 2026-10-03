@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<!--
+  OCR — send a file from the phone to the OCR app on a computer.
+  Opened from the QR code on the computer (ocr_send.html#s=<peer id>.<token>).
+  Styles: ocr_send.css. Logic: ocr_send_phone.js (+ shared ocr_config.js, ocr_send_common.js).
+  PeerJS is local in ./vendor.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#121418">
+  <title>Send to OCR</title>
+  <link rel="stylesheet" href="ocr_send.css?v=20261004b">
+</head>
+<body>
+<main id="app">
+  <header><img src="ocr_icon.png" alt="" width="32" height="32"><h1>Send to OCR</h1></header>
+
+  <div id="state" class="state connecting" role="status" aria-live="polite">Connecting…</div>
+
+  <button type="button" id="choose" class="big" disabled>Choose file</button>
+  <button type="button" id="retry" class="big secondary" hidden>Reconnect</button>
+  <input type="file" id="file" accept="image/jpeg,image/png,image/webp,application/pdf" hidden>
+
+  <div id="prog" hidden><div id="prog-bar"></div></div>
+  <div id="detail"></div>
+
+  <p class="note">Photo or file: JPG, PNG, WebP or PDF, up to 20 MB.<br>The text appears on the computer. Send as many as you like, one at a time.</p>
+</main>
+<script src="vendor/peerjs.min.js?v=20261004b"></script>
+<script src="ocr_config.js?v=20261004b"></script>
+<script src="ocr_send_common.js?v=20261004b"></script>
+<script src="ocr_send_phone.js?v=20261004b"></script>
+</body>
+</html>

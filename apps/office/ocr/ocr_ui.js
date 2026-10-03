@@ -115,17 +115,20 @@
   }
 
   // Act on pointerup (taps after a drag sometimes lose their click); click still works for keyboard.
+  // The browser's click that follows a handled tap is ignored on every button (lastTap), so a
+  // popup opening under the finger (QR box ✕) cannot be hit by that ghost click.
+  let lastTap = 0;
   U.onTap = (el, fn) => {
-    let downId = null, handled = 0;
+    let downId = null;
     el.addEventListener('pointerdown', (e) => { if (e.button > 0) return; downId = e.pointerId; });
     el.addEventListener('pointerup', (e) => {
       if (e.pointerId !== downId) return;
       downId = null;
       if (el.disabled) return;
-      handled = Date.now(); fn(e);
+      lastTap = Date.now(); fn(e);
     });
     el.addEventListener('pointercancel', () => { downId = null; });
-    el.addEventListener('click', (e) => { if (Date.now() - handled < 700 || el.disabled) return; fn(e); });
+    el.addEventListener('click', (e) => { if (Date.now() - lastTap < 600 || el.disabled) return; fn(e); });
   };
 
   function key(e) {
@@ -209,6 +212,7 @@
     OCR.pdf.init();
     OCR.io.init();
     U.init();
+    if (OCR.send) OCR.send.init();
     if (typeof Tesseract === 'undefined' || !OCR.pdf.available()) {
       OCR.status('Some app files failed to load — reload the page', 'err');
     }

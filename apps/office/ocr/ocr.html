@@ -3,7 +3,7 @@
   OCR — scan images or PDFs to text. Page shell only.
   Styles: ocr.css. Settings: ocr_config.js. Logic: the other ocr_*.js files (one job each),
   loaded as plain scripts sharing window.OCR. Libraries are local in ./vendor (no CDN):
-  tesseract.js 5.1.1 (+ wasm core + English data), pdf.js 3.11.174 (legacy build), JSZip 3.10.1.
+  tesseract.js 5.1.1 (+ wasm core + English data), pdf.js 3.11.174 (legacy build), JSZip 3.10.1, PeerJS 1.5.4 + qrcode.js (send from phone, ocr_send*.js).
 -->
 <html lang="en">
 <head>
@@ -11,7 +11,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#121418">
   <title>OCR</title>
-  <link rel="stylesheet" href="ocr.css?v=20261004a">
+  <link rel="stylesheet" href="ocr.css?v=20261004b">
 </head>
 <body class="empty">
 <div id="app">
@@ -28,6 +28,8 @@
     </div>
     <button type="button" class="btn primary" id="start" disabled>Start OCR</button>
     <button type="button" class="btn" id="all" hidden>All pages</button>
+    <button type="button" class="btn" id="qr-btn" title="Send a file from your phone">QR</button>
+    <span class="chip" id="phone-chip" hidden><span id="phone-chip-text">📱 Connected</span><button type="button" id="phone-x" title="Disconnect phone" aria-label="Disconnect phone">✕</button></span>
     <span class="grow"></span>
     <button type="button" class="btn" id="copy" disabled>Copy</button>
     <span class="dl"><span class="dl-label">Download</span><button type="button" class="btn small" id="dl-txt" disabled>.txt</button><button type="button" class="btn small" id="dl-docx" disabled>.docx</button></span>
@@ -75,18 +77,29 @@
     <p class="note">Saved only in this browser.</p>
   </div>
 
+  <div id="qr-pop" class="pop" hidden role="dialog" aria-label="Send from phone">
+    <div class="qr-head"><span>Scan with your phone</span><button type="button" class="btn icon" id="qr-close" aria-label="Close">✕</button></div>
+    <div id="qr-img"></div>
+    <div id="qr-state">Waiting for phone…</div>
+    <a id="qr-link" target="_blank" rel="noopener"></a>
+  </div>
+
   <input type="file" id="file-in" multiple hidden>
   <input type="file" id="camera-in" accept="image/*" capture="environment" hidden>
 </div>
 <script src="vendor/tesseract.min.js?v=20261004a"></script>
 <script src="vendor/pdf.min.js?v=20261004a"></script>
 <script src="vendor/jszip.min.js?v=20261004a"></script>
-<script src="ocr_config.js?v=20261004a"></script>
+<script src="ocr_config.js?v=20261004b"></script>
 <script src="ocr_state.js?v=20261004a"></script>
 <script src="ocr_engine.js?v=20261004a"></script>
 <script src="ocr_pdf.js?v=20261004a"></script>
 <script src="ocr_io.js?v=20261004a"></script>
-<script src="ocr_jobs.js?v=20261004a"></script>
-<script src="ocr_ui.js?v=20261004a"></script>
+<script src="ocr_jobs.js?v=20261004b"></script>
+<script src="vendor/peerjs.min.js?v=20261004b"></script>
+<script src="vendor/qrcode.js?v=20261004b"></script>
+<script src="ocr_send_common.js?v=20261004b"></script>
+<script src="ocr_send.js?v=20261004b"></script>
+<script src="ocr_ui.js?v=20261004b"></script>
 </body>
 </html>
