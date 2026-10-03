@@ -1,61 +1,153 @@
-
-.calculator {
-  width: 300px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid #666;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
+/*
+ * Calculator — styles (plain CSS, nothing from outside this folder).
+ * Fills the dynamic viewport (100dvh, vh fallback) and never scrolls. Portrait: display +
+ * 4×6 keypad. Landscape / wide: scientific keys on the left (7×5 grid). Keys stretch to fill.
+ */
+:root {
+  --bg: #121418; --panel: #161920; --key: #1f242d; --key-fn: #2a2f3a; --key-sci: #181c23;
+  --border: #2c3340; --text: #e8eaed; --muted: #9aa0a6; --accent: #6ea8fe; --op: #23365a;
+  --op-text: #cfe0ff; --eq: #2f5fb8; --danger: #f07178; --ok: #7fd99a;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+html, body {
+  margin: 0; height: 100%; height: 100vh; height: 100dvh; overflow: hidden; overscroll-behavior: none;
+  background: var(--bg); color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  -webkit-user-select: none; user-select: none;
+}
+#app {
+  position: fixed; inset: 0; margin: 0 auto; max-width: 1000px;
+  display: flex; flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
-.display {
-  width: 100%;
-  height: 60px;
-  background: #fff;
-  border: 1px solid #999;
-  border-radius: 4px;
-  font-size: 28px;
-  text-align: right;
-  padding: 10px;
-  box-sizing: border-box;
-  margin-bottom: 20px;
+/* ---------- display ---------- */
+#display {
+  position: relative; flex: 0 0 auto; min-height: 30%;
+  display: flex; flex-direction: column; justify-content: flex-end; gap: 4px;
+  padding: 12px 16px 10px 16px;
+}
+#expr {
+  --fmax: 46; --fmin: 22;
+  font-size: 46px; line-height: 1.2; text-align: right; white-space: nowrap; overflow: hidden;
+  font-variant-numeric: tabular-nums; color: var(--text); min-height: 1.2em;
+  padding-left: 40px;
+}
+#expr.wrap { white-space: normal; overflow-wrap: anywhere; overflow-y: auto; max-height: 3.7em; }
+#expr .ghost { color: #4a5160; }
+#result {
+  font-size: 26px; line-height: 1.25; min-height: 1.25em; text-align: right; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums;
+}
+#result.copyable { cursor: copy; }
+#display.done #expr { font-size: 22px !important; color: var(--muted); --fmax: 22; --fmin: 14; }
+#display.done #result { font-size: 46px; color: var(--text); font-weight: 500; }
+#display.err #result { color: var(--danger); font-size: 22px; }
+.dbtn {
+  position: absolute; top: 8px; left: 8px; width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--panel); color: var(--text); font-size: 20px;
+  cursor: pointer; padding: 0; touch-action: manipulation;
+}
+.dbtn.on { background: var(--op); border-color: #3a5788; }
+#angle-ind {
+  position: absolute; top: 60px; left: 14px; font-size: 12px; color: var(--muted); letter-spacing: 0.05em;
+  display: none;
 }
 
-.buttons {
-  display: grid;
+/* ---------- keypad ---------- */
+#pad { position: relative; flex: 1 1 auto; min-height: 0; display: flex; }
+#keys {
+  flex: 1 1 auto; display: grid; gap: 8px; padding: 6px 10px 10px;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  grid-template-rows: repeat(6, 1fr);
+  grid-template-areas:
+    "c   bs  pct div"
+    "plp prp neg mul"
+    "d7  d8  d9  sub"
+    "d4  d5  d6  add"
+    "d1  d2  d3  eq"
+    "d0  d0  dot eq";
+}
+.key {
+  min-width: 0; min-height: 0; border: 0; border-radius: 14px;
+  background: var(--key); color: var(--text); font: inherit; font-size: 28px;
+  cursor: pointer; touch-action: manipulation; padding: 0;
+  transition: filter 0.08s, transform 0.08s;
+}
+.key.fk { background: var(--key-fn); color: #d3d7de; font-size: 24px; }
+.key.clr { color: var(--danger); }
+.key.op { background: var(--op); color: var(--op-text); font-size: 32px; }
+.key.eq { background: var(--eq); color: #fff; font-size: 34px; }
+.key.sci { background: var(--key-sci); color: #c6cad1; font-size: 18px; display: none; }
+.key[data-k="angle"] { color: var(--accent); font-size: 15px; letter-spacing: 0.05em; }
+.key.down { filter: brightness(1.35); transform: scale(0.97); }
+@media (hover: hover) { .key:hover { filter: brightness(1.15); } }
+
+/* ---------- landscape / wide: scientific keys ---------- */
+@media (orientation: landscape) {
+  #display { min-height: 0; padding: 8px 14px 6px 60px; }
+  #angle-ind { display: block; top: 56px; }
+  #keys {
+    grid-template-columns: repeat(3, 0.8fr) repeat(4, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    grid-template-areas:
+      "lp  rp  ang  c  bs pct div"
+      "sin cos tan  d7 d8 d9  mul"
+      "ln  log sqrt d4 d5 d6  sub"
+      "sq  pow fact d1 d2 d3  add"
+      "pi  e   ans  neg d0 dot eq";
+  }
+  .key.sci { display: block; }
+  .key.port { display: none; }
+  #expr { padding-left: 0; }
+}
+/* short landscape (phones sideways, hub play area) */
+@media (orientation: landscape) and (max-height: 500px) {
+  #display { padding: 4px 12px 4px 56px; gap: 0; }
+  .dbtn { width: 40px; height: 40px; top: 6px; left: 6px; font-size: 18px; }
+  #angle-ind { top: 50px; left: 12px; font-size: 11px; }
+  #expr { --fmax: 30; --fmin: 16; font-size: 30px; }
+  #expr.wrap { max-height: 2.5em; }
+  #result { font-size: 18px; }
+  #display.done #expr { font-size: 16px !important; --fmax: 16; --fmin: 12; }
+  #display.done #result { font-size: 30px; }
+  #display.err #result { font-size: 16px; }
+  #keys { gap: 5px; padding: 2px 8px 6px; }
+  .key { font-size: 20px; border-radius: 10px; }
+  .key.fk { font-size: 18px; } .key.op { font-size: 22px; } .key.eq { font-size: 24px; }
+  .key.sci { font-size: 15px; } .key[data-k="angle"] { font-size: 12px; }
 }
 
-.button {
-  background: linear-gradient(#a9a9a9, #fafafa);
-  border: 1px solid #666;
-  border-radius: 4px;
-  padding: 15px;
-  font-size: 18px;
-  cursor: pointer;
-  text-align: center;
+/* ---------- history drawer (covers the keypad) ---------- */
+#hist {
+  position: absolute; inset: 0 10px 10px; z-index: 5;
+  display: flex; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
 }
-
-.button:hover {
-/*  background: linear-gradient(#b0b0b0, #e0e0e0); 	*/
+.hhead { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-bottom: 1px solid var(--border); font-size: 15px; color: #c6cad1; }
+.hhead span { flex: 1 1 auto; }
+.hbtn {
+  min-height: 40px; min-width: 44px; padding: 0 12px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--key); color: var(--text); font: inherit; font-size: 14px;
+  touch-action: manipulation;
 }
-
-.clear , .del {
-  background: rgba(255, 165, 0, 1);
+.hbtn:disabled { opacity: 0.4; cursor: default; }
+#hist-list { list-style: none; margin: 0; padding: 4px 0; overflow-y: auto; flex: 1 1 auto; overscroll-behavior: contain; }
+#hist-list button {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 2px; width: 100%;
+  padding: 8px 14px; border: 0; border-bottom: 1px solid #1f242d; background: transparent; color: var(--text);
+  font: inherit; text-align: right; cursor: pointer; touch-action: manipulation;
 }
+#hist-list button:active { background: #1c2230; }
+.he { font-size: 14px; color: var(--muted); word-break: break-all; }
+.hr { font-size: 20px; font-variant-numeric: tabular-nums; }
+#hist-empty { padding: 24px; text-align: center; color: var(--muted); font-size: 14px; }
 
-.clear {
-  grid-column: span 2;
-}
-
-.zero {
-  grid-column: span 2;
-}
-
-.equals {
-  background: rgba(80, 200, 120, 1);
-  grid-column: span 1;
+/* ---------- toast ---------- */
+#toast {
+  position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 20;
+  padding: 8px 16px; border-radius: 18px; background: #2a3a2f; border: 1px solid #3f8a5b; color: #d9ffe6;
+  font-size: 14px; white-space: nowrap; max-width: calc(100vw - 24px); overflow: hidden; text-overflow: ellipsis;
+  pointer-events: none;
 }

@@ -1,44 +1,87 @@
 <!DOCTYPE html>
+<!--
+  Calculator — page shell only. Styles: calculator.css. Settings: calc_config.js.
+  Logic: calc_parse.js (safe parser, no eval), calc_format.js, calc_state.js, calc_ui.js,
+  calc_keys.js — plain scripts sharing window.CALC. Nothing is loaded from outside this folder.
+  Unit tests: node calc_test.js
+-->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#121418">
   <title>Calculator</title>
-  <link rel="stylesheet" href="calculator.css">
-  <link rel="stylesheet" href="../../style/app-common.css">
-  <link rel="stylesheet" href="../../style/no-scrollbar.css">
+  <link rel="stylesheet" href="calculator.css?v=20261004a">
 </head>
-
 <body>
+<div id="app">
+  <header id="display">
+    <button type="button" id="hist-btn" class="dbtn" title="History" aria-label="History">🕘</button>
+    <span id="angle-ind">DEG</span>
+    <div id="expr" aria-label="Expression"></div>
+    <div id="result" aria-live="polite" title="Tap to copy"></div>
+  </header>
 
-  <div class="calculator">
-  <div class="title-bar"> Calculator </div>
-    <input type="text" class="display" readonly>
-    <div class="buttons">
-      <button class="button clear">C</button>
-      <button class="button del"><</button>
-<!--      <button class="button">±</button> -->
-      <button class="button">/</button>
-      <button class="button">7</button>
-      <button class="button">8</button>
-      <button class="button">9</button>
-      <button class="button">*</button>
-      <button class="button">4</button>
-      <button class="button">5</button>
-      <button class="button">6</button>
-      <button class="button">-</button>
-      <button class="button">1</button>
-      <button class="button">2</button>
-      <button class="button">3</button>
-      <button class="button">+</button>
-      <button class="button zero">0</button>
-      <button class="button">.</button>
-      <button class="button equals">=</button>
-    </div>
+  <div id="pad">
+    <main id="keys">
+      <button type="button" class="key sci" data-k="(" style="grid-area:lp">(</button>
+      <button type="button" class="key sci" data-k=")" style="grid-area:rp">)</button>
+      <button type="button" class="key sci" data-k="angle" style="grid-area:ang" title="Degrees / radians">DEG</button>
+      <button type="button" class="key sci" data-k="sin" style="grid-area:sin">sin</button>
+      <button type="button" class="key sci" data-k="cos" style="grid-area:cos">cos</button>
+      <button type="button" class="key sci" data-k="tan" style="grid-area:tan">tan</button>
+      <button type="button" class="key sci" data-k="ln" style="grid-area:ln">ln</button>
+      <button type="button" class="key sci" data-k="log" style="grid-area:log">log</button>
+      <button type="button" class="key sci" data-k="sqrt" style="grid-area:sqrt">√</button>
+      <button type="button" class="key sci" data-k="sq" style="grid-area:sq">x²</button>
+      <button type="button" class="key sci" data-k="^" style="grid-area:pow">xʸ</button>
+      <button type="button" class="key sci" data-k="!" style="grid-area:fact">!</button>
+      <button type="button" class="key sci" data-k="pi" style="grid-area:pi">π</button>
+      <button type="button" class="key sci" data-k="e" style="grid-area:e">e</button>
+      <button type="button" class="key sci" data-k="ans" style="grid-area:ans">Ans</button>
+
+      <button type="button" class="key fk clr" data-k="clear" style="grid-area:c" title="Clear (Esc)">C</button>
+      <button type="button" class="key fk" data-k="back" style="grid-area:bs" title="Backspace (hold to clear)" aria-label="Backspace">⌫</button>
+      <button type="button" class="key fk" data-k="%" style="grid-area:pct">%</button>
+      <button type="button" class="key op" data-k="/" style="grid-area:div" aria-label="Divide">÷</button>
+      <button type="button" class="key fk port" data-k="(" style="grid-area:plp">(</button>
+      <button type="button" class="key fk port" data-k=")" style="grid-area:prp">)</button>
+      <button type="button" class="key fk" data-k="neg" style="grid-area:neg" aria-label="Plus minus">±</button>
+      <button type="button" class="key op" data-k="*" style="grid-area:mul" aria-label="Multiply">×</button>
+      <button type="button" class="key" data-k="7" style="grid-area:d7">7</button>
+      <button type="button" class="key" data-k="8" style="grid-area:d8">8</button>
+      <button type="button" class="key" data-k="9" style="grid-area:d9">9</button>
+      <button type="button" class="key op" data-k="-" style="grid-area:sub" aria-label="Minus">−</button>
+      <button type="button" class="key" data-k="4" style="grid-area:d4">4</button>
+      <button type="button" class="key" data-k="5" style="grid-area:d5">5</button>
+      <button type="button" class="key" data-k="6" style="grid-area:d6">6</button>
+      <button type="button" class="key op" data-k="+" style="grid-area:add" aria-label="Plus">+</button>
+      <button type="button" class="key" data-k="1" style="grid-area:d1">1</button>
+      <button type="button" class="key" data-k="2" style="grid-area:d2">2</button>
+      <button type="button" class="key" data-k="3" style="grid-area:d3">3</button>
+      <button type="button" class="key eq" data-k="=" style="grid-area:eq" aria-label="Equals">=</button>
+      <button type="button" class="key" data-k="0" style="grid-area:d0">0</button>
+      <button type="button" class="key" data-k="." style="grid-area:dot" aria-label="Decimal point">.</button>
+    </main>
+
+    <section id="hist" hidden aria-label="History">
+      <div class="hhead">
+        <span>History</span>
+        <button type="button" class="hbtn" id="hist-clear">Clear</button>
+        <button type="button" class="hbtn" id="hist-close" aria-label="Close history">✕</button>
+      </div>
+      <ol id="hist-list"></ol>
+      <div id="hist-empty"></div>
+    </section>
   </div>
 
-<script src="calculator.js"></script>
-<script src="calculator-keyboard.js"></script>
-
+  <div id="toast" hidden role="status"></div>
+</div>
+<script src="calc_config.js?v=20261004a"></script>
+<script src="calc_parse.js?v=20261004a"></script>
+<script src="calc_format.js?v=20261004a"></script>
+<script src="calc_state.js?v=20261004a"></script>
+<script src="calc_ui.js?v=20261004a"></script>
+<script src="calc_keys.js?v=20261004a"></script>
 </body>
 </html>

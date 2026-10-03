@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Redirecting...</title>
-  <script>
-    window.location.href = "calculator.html";
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="0; url=calculator.html">
+  <title>Calculator</title>
+  <script>location.replace('calculator.html' + location.search + location.hash);</script>
 </head>
-<body>
-  <p> Redirecting... </p>
+<body style="background:#121418;color:#9aa0a6;font-family:sans-serif">
+  <p><a href="calculator.html" style="color:#6ea8fe">Open Calculator</a></p>
 </body>
 </html>

@@ -63,6 +63,7 @@ Connectivity, WebChat,           apps/connectivity/webrtc-chat/,             ,  
 Connectivity, Peer Chat,         apps/connectivity/p2pchat.html,             ,         0,       0,      460
 
 Tools,    Calculator,            apps/tools/calculator/,                     ,         0,       0,      410
+Tools,    Calculator (Beta),     apps/tools/calculator-beta/,                ,         0,       0,      411
 Tools,    FileDrop,              apps/lab/file-drop/,                        ,         0,       1,      410
 Tools,    NE-India Dictionary,   apps/tools/nei-dict/,                       ,         0,       0,      430
 Tools,    Notepad,               apps/tools/notepad/,                        ,         0,       0,      450
