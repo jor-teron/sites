@@ -1,8 +1,9 @@
 <!--
   File: demolisher.html
   Project: Demolisher
-  Purpose: Shell only. Styles and simulation live in demolisher.css and demolisher.js.
-  Matter.js is loaded from CDN before the game script.
+  Purpose: Shell only. Styles: demolisher.css. Settings: demolisher_config.js.
+  Logic: demolisher_logic.js. Matter.js is a local copy in vendor/ (no CDN).
+  Buttons use tabindex="-1" so Enter / Space never re-click them (game keys).
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -10,7 +11,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Demolisher</title>
-  <link rel="stylesheet" href="demolisher.css" />
+  <link rel="stylesheet" href="demolisher.css?v=20261004a" />
 </head>
 <body>
 <div id="app">
@@ -19,12 +20,13 @@
     <div class="stat"><span class="label">SCORE</span><span class="value" id="hud-score">0</span></div>
     <div class="stat"><span class="label">TARGETS</span><span class="value" id="hud-targets">0</span></div>
     <div class="stat"><span class="label">ENEMIES</span><span class="value" id="hud-enemies">0</span></div>
-    <button id="btn-reset" type="button">RESET</button>
+    <button id="btn-reset" type="button" tabindex="-1">RESET</button>
   </div>
 
   <div id="stage">
     <canvas id="game"></canvas>
     <div id="hint"></div>
+    <button id="btn-pause" type="button" tabindex="-1" aria-label="Pause" hidden>❚❚</button>
 
     <div id="mobile-controls">
       <div class="joy joy-left" id="joy-move">
@@ -35,8 +37,8 @@
         <div class="knob" id="joy-aim-knob"></div>
         <div class="label">AIM</div>
       </div>
-      <button id="btn-fire" type="button">FIRE</button>
-      <button id="btn-jump" type="button">JUMP</button>
+      <button id="btn-fire" type="button" tabindex="-1">FIRE</button>
+      <button id="btn-jump" type="button" tabindex="-1">JUMP</button>
     </div>
 
     <div id="overlay">
@@ -44,20 +46,21 @@
       <p id="overlay-line"></p>
       <p class="keys" id="overlay-keys"></p>
       <div class="mode-btns">
-        <button id="overlay-btn" type="button">SANDBOX</button>
-        <button id="overlay-btn2" class="alt" type="button">MISSION</button>
+        <button id="overlay-btn" type="button" tabindex="-1">SANDBOX</button>
+        <button id="overlay-btn2" class="alt" type="button" tabindex="-1">MISSION</button>
       </div>
     </div>
   </div>
 
   <div id="toolbar">
-    <button class="weapon active" data-w="pistol" type="button">PISTOL <span class="ammo" id="ammo-pistol">∞</span></button>
-    <button class="weapon" data-w="rocket" type="button">ROCKET <span class="ammo" id="ammo-rocket">10</span></button>
-    <button class="weapon" data-w="grenade" type="button">GRENADE <span class="ammo" id="ammo-grenade">5</span></button>
-    <button class="weapon" data-w="laser" type="button">LASER <span class="ammo" id="ammo-laser">50</span></button>
+    <button class="weapon active" data-w="pistol" type="button" tabindex="-1">PISTOL <span class="ammo" id="ammo-pistol">∞</span></button>
+    <button class="weapon" data-w="rocket" type="button" tabindex="-1">ROCKET <span class="ammo" id="ammo-rocket">10</span></button>
+    <button class="weapon" data-w="grenade" type="button" tabindex="-1">GRENADE <span class="ammo" id="ammo-grenade">5</span></button>
+    <button class="weapon" data-w="laser" type="button" tabindex="-1">LASER <span class="ammo" id="ammo-laser">50</span></button>
   </div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-<script src="demolisher.js"></script>
+<script src="vendor/matter.min.js?v=0.19.0"></script>
+<script src="demolisher_config.js?v=20261004a"></script>
+<script src="demolisher_logic.js?v=20261004a"></script>
 </body>
 </html>

@@ -1,9 +1,14 @@
 /*
-  File: demolisher.js
+  File: demolisher_logic.js
   Project: Demolisher
   Purpose: Destructible-terrain sandbox. Matter.js moves the player and enemies.
            Terrain is a tile grid. Only nearby solid runs become static bodies.
-  Depends: Matter 0.19 global, demolisher.html element ids, demolisher.css.
+           Every tunable value lives in demolisher_config.js (DEMOLISHER_CONFIG).
+  Input:   keyboard / hub controller (arrows move, Up/W jump, Space fire, Q/E aim,
+           X next weapon, 1-4 pick, Enter pause / start, Esc menu, hub-stick aim),
+           mouse (aim + click fire), touch (floating sticks, FIRE / JUMP / pause).
+  Hub:     sites hub bridge at the bottom (stats, buttons, rumble; body.in-hub).
+  Depends: vendor/matter.min.js (Matter 0.19, local copy), demolisher.html ids, demolisher.css.
 */
 
 (() => {
@@ -13,67 +18,45 @@
   const { Engine, Composite, Bodies, Body, Events } = Matter;
 
   /* ============================================================
-     CONFIG
+     CONFIG (from demolisher_config.js)
      ============================================================ */
+  const CFG = DEMOLISHER_CONFIG;
+  const TX = CFG.text;
+  const RUMBLE = CFG.rumble || {};
+  const APP = CFG.APP || { name: 'Demolisher', version: '' };
+  if (APP.name) document.title = APP.name;
+  const fmt = (t, o) => String(t).replace(/\{(\w+)\}/g, (m, k) => (o && o[k] !== undefined ? o[k] : m));
 
-  /* World width in pixels. Wider than the view so the camera can scroll. */
-  const WORLD_W = 5000;
-  /* World height in pixels. Ground sits near 45 percent of this. */
-  const WORLD_H = 1400;
-  /* Tile edge in pixels. Render and collision share this size. */
-  const TILE = 14;
-  /* Tile columns. */
+  const WORLD_W = CFG.world.width;
+  const WORLD_H = CFG.world.height;
+  const TILE = CFG.world.tile;
   const GRID_W = Math.ceil(WORLD_W / TILE);
-  /* Tile rows. */
   const GRID_H = Math.ceil(WORLD_H / TILE);
-  /* Matter gravity. Positive Y is down. */
-  const GRAVITY = 1.0;
-  /* Player body width. */
-  const PLAYER_W = 22;
-  /* Player body height. */
-  const PLAYER_H = 34;
-  /* Target horizontal speed in Matter pixels per tick (Engine.update). */
-  const PLAYER_SPEED = 4.6;
-  /* Jump velocity in Matter pixels per tick. Negative is up. */
-  const PLAYER_JUMP = 10.5;
-  /* Starting and maximum hit points. */
-  const MAX_HP = 100;
+  const GRAVITY = CFG.world.gravity;
+  const PLAYER_W = CFG.player.w;
+  const PLAYER_H = CFG.player.h;
+  const PLAYER_SPEED = CFG.player.speed;
+  const PLAYER_JUMP = CFG.player.jump;
+  const MAX_HP = CFG.player.maxHp;
   /* Fixed sim step in seconds. Render stays on requestAnimationFrame. */
   const FIXED_DT = 1 / 60;
-  /* Chunk edge in tiles. One static compound per chunk. */
-  const CHUNK = 32;
-  /* Max chunk body rebuilds per step so a blast does not hitch the frame. */
-  const MAX_CHUNK_REBUILDS = 2;
+  const CHUNK = CFG.world.chunk;
+  const MAX_CHUNK_REBUILDS = CFG.world.maxChunkRebuilds;
   /* Material ids. Zero is empty. */
-  const MAT = {
-    AIR: 0,
-    DIRT: 1,
-    GRASS: 2,
-    STONE: 3,
-    WATER: 4,
-    CRATE: 5,
-    METAL: 6,
-    LAVA: 7,
-    TARGET: 8
-  };
+  const MAT = { AIR: 0, DIRT: 1, GRASS: 2, STONE: 3, WATER: 4, CRATE: 5, METAL: 6, LAVA: 7, TARGET: 8 };
+  const MAT_NAMES = { 1: 'dirt', 2: 'grass', 3: 'stone', 4: 'water', 5: 'crate', 6: 'metal', 7: 'lava', 8: 'target' };
   /* Per-material paint and durability. solid false means no chunk body. */
-  const MAT_INFO = {
-    [MAT.DIRT]:   { color: '#7a4a2a', dark: '#2a140c', hp: 30,  solid: true },
-    [MAT.GRASS]:  { color: '#3a7a3a', dark: '#102010', hp: 30,  solid: true },
-    [MAT.STONE]:  { color: '#6a6a6a', dark: '#222222', hp: 80,  solid: true },
-    [MAT.WATER]:  { color: '#2a5a9a', dark: '#1a3a6a', hp: 9999, solid: false },
-    [MAT.CRATE]:  { color: '#c68a4a', dark: '#5a3010', hp: 20,  solid: true },
-    [MAT.METAL]:  { color: '#9a9a9a', dark: '#3a3a3a', hp: 250, solid: true },
-    [MAT.LAVA]:   { color: '#d05020', dark: '#8a2010', hp: 9999, solid: false },
-    [MAT.TARGET]: { color: '#e03030', dark: '#5a0808', hp: 40,  solid: true }
-  };
-  /* Weapon table. Speeds are pixels per second. explosion 0 is a direct hit. */
-  const WEAPONS = {
-    pistol:  { name: 'pistol',  ammo: Infinity, cooldown: 0.16, speed: 980,  damage: 8,  radius: 3, color: '#FFE66D', explosion: 0,  gravity: 0,    fuse: 1.6, auto: true },
-    rocket:  { name: 'rocket',  ammo: 10,       cooldown: 0.85, speed: 460,  damage: 60, radius: 4, color: '#FF8C42', explosion: 62, gravity: 40,   fuse: 3.2, auto: false },
-    grenade: { name: 'grenade', ammo: 5,        cooldown: 1.0,  speed: 380,  damage: 50, radius: 4, color: '#A050FF', explosion: 70, gravity: 520,  fuse: 1.35, auto: false },
-    laser:   { name: 'laser',   ammo: 50,       cooldown: 0.07, speed: 1500, damage: 4,  radius: 2, color: '#6BE8FF', explosion: 0,  gravity: 0,    fuse: 1.1, auto: true }
-  };
+  const MAT_INFO = {};
+  for (const id in MAT_NAMES) MAT_INFO[id] = CFG.materials[MAT_NAMES[id]];
+  /* Weapon table (name added from the key). */
+  const WEAPON_ORDER = CFG.weaponOrder;
+  const WEAPONS = {};
+  for (const k of WEAPON_ORDER) WEAPONS[k] = Object.assign({ name: k }, CFG.weapons[k]);
+  function startAmmo() {
+    const a = {};
+    for (const k of WEAPON_ORDER) a[k] = WEAPONS[k].ammo === undefined ? Infinity : WEAPONS[k].ammo;
+    return a;
+  }
 
   /* ============================================================
      DOM
@@ -96,12 +79,8 @@
   /* HP chip. Gets class low under 30. */
   const statHealth = document.getElementById('stat-health');
   /* Ammo labels keyed by weapon id. */
-  const ammoEls = {
-    pistol: document.getElementById('ammo-pistol'),
-    rocket: document.getElementById('ammo-rocket'),
-    grenade: document.getElementById('ammo-grenade'),
-    laser: document.getElementById('ammo-laser')
-  };
+  const ammoEls = {};
+  for (const k of WEAPON_ORDER) ammoEls[k] = document.getElementById('ammo-' + k);
   /* Weapon bar buttons. */
   const weaponBtns = document.querySelectorAll('.weapon');
   /* Reset button. Reloads the current mode. */
@@ -134,6 +113,8 @@
   const btnFire = document.getElementById('btn-fire');
   /* Touch jump. */
   const btnJump = document.getElementById('btn-jump');
+  /* Pause button (top-right of the stage). */
+  const btnPause = document.getElementById('btn-pause');
 
   /* ============================================================
      VIEW
@@ -158,8 +139,8 @@
   */
   function resize() {
     const rect = stage.getBoundingClientRect();
-    CW = Math.max(200, Math.floor(rect.width));
-    CH = Math.max(200, Math.floor(rect.height));
+    CW = Math.max(40, Math.floor(rect.width));
+    CH = Math.max(40, Math.floor(rect.height));
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.floor(CW * dpr);
     canvas.height = Math.floor(CH * dpr);
@@ -190,8 +171,19 @@
   let terrainCanvas = null;
   /* Context for the offscreen terrain. */
   let terrainCtx = null;
-  /* True when the offscreen image must be rebuilt. */
+  /* True when the whole offscreen image must be rebuilt (new world). */
   let terrainDirty = true;
+  /* Damaged tile rectangle still to repaint (tile coords, inclusive); null = none. */
+  let dirtyRect = null;
+  function markDirty(x, y) {
+    if (!dirtyRect) dirtyRect = { x0: x, y0: y, x1: x, y1: y };
+    else {
+      if (x < dirtyRect.x0) dirtyRect.x0 = x;
+      if (x > dirtyRect.x1) dirtyRect.x1 = x;
+      if (y < dirtyRect.y0) dirtyRect.y0 = y;
+      if (y > dirtyRect.y1) dirtyRect.y1 = y;
+    }
+  }
 
   /*
     Allocate grids and the offscreen canvas.
@@ -199,13 +191,14 @@
   */
   function initTerrain() {
     terrain = new Uint8Array(GRID_W * GRID_H);
-    terrainHp = new Uint16Array(GRID_W * GRID_H);
+    terrainHp = new Float32Array(GRID_W * GRID_H); // float: hits below 0 must not wrap
     terrainCanvas = document.createElement('canvas');
     terrainCanvas.width = GRID_W;
     terrainCanvas.height = GRID_H;
     terrainCtx = terrainCanvas.getContext('2d', { willReadFrequently: true });
     terrainCtx.imageSmoothingEnabled = false;
     terrainDirty = true;
+    dirtyRect = null;
   }
 
   /*
@@ -238,7 +231,7 @@
     const i = ti(x, y);
     terrain[i] = m;
     terrainHp[i] = m ? MAT_INFO[m].hp : 0;
-    terrainDirty = true;
+    markDirty(x, y);
   }
 
   /*
@@ -262,19 +255,22 @@
     };
   }
 
-  /*
-    Blend intact color toward the dark color as HP falls.
-  */
-  function tileColor(m, hp) {
-    const info = MAT_INFO[m];
-    const c = hexToRgb(info.color);
-    const d = hexToRgb(info.dark);
-    const k = Math.max(0, Math.min(1, hp / info.hp));
-    return {
-      r: Math.round(d.r + (c.r - d.r) * k),
-      g: Math.round(d.g + (c.g - d.g) * k),
-      b: Math.round(d.b + (c.b - d.b) * k)
-    };
+  /* Precomputed paint: per material, COLOR_STEPS+1 shades from dark (0 hp) to intact. */
+  const COLOR_STEPS = 16;
+  const SHADES = {};
+  for (const id in MAT_INFO) {
+    const c = hexToRgb(MAT_INFO[id].color), d = hexToRgb(MAT_INFO[id].dark);
+    const arr = [];
+    for (let k = 0; k <= COLOR_STEPS; k++) {
+      const f = k / COLOR_STEPS;
+      arr.push([Math.round(d.r + (c.r - d.r) * f), Math.round(d.g + (c.g - d.g) * f), Math.round(d.b + (c.b - d.b) * f)]);
+    }
+    SHADES[id] = arr;
+  }
+  /* Shade for a tile: [r, g, b]. */
+  function tileShade(m, hp) {
+    const k = Math.max(0, Math.min(1, hp / MAT_INFO[m].hp));
+    return SHADES[m][Math.round(k * COLOR_STEPS)];
   }
 
   /* ============================================================
@@ -329,7 +325,7 @@
       for (let x = 102; x < 108; x++) {
         for (let y = surfaceY - 5; y < surfaceY - 1; y++) setMat(x, y, MAT.AIR);
       }
-      for (let i = 0; i < 40; i++) {
+      for (let i = 0; i < CFG.world.crates; i++) {
         const x = Math.floor(Math.random() * GRID_W);
         const y = surfaceY - Math.floor(Math.random() * 6) - 1;
         if (getMat(x, y) === MAT.AIR) setMat(x, y, MAT.CRATE);
@@ -474,13 +470,24 @@
 
   /* Player record: Matter body, HP, ground flag, facing, timers. */
   let player = null;
-  /* Keyboard state. Lowercase and raw key both stored. */
+  /* Keyboard state: KeyboardEvent.code (and .key) → held. */
   const keys = {};
+  const KEYS = CFG.keys;
+  /* True if any binding of an action is held. */
+  function held(action) {
+    const list = KEYS[action] || [];
+    for (let i = 0; i < list.length; i++) if (keys[list[i]]) return true;
+    return false;
+  }
+  function matches(action, e) {
+    const list = KEYS[action] || [];
+    return list.indexOf(e.code) !== -1 || list.indexOf(e.key) !== -1;
+  }
   /* Left stick axes, -1 to 1. */
   let joyMoveAxis = { x: 0, y: 0 };
   /* Right stick axes. */
   let joyAimAxis = { x: 0, y: 0 };
-  /* Edge detect is unused. Hold-jump uses jumpLock on the player instead. */
+  /* Touch / mouse JUMP button held. Hold-jump uses jumpLock on the player. */
   let jumpHeld = false;
 
   /*
@@ -518,18 +525,19 @@
     if (!player) return;
     const b = player.body;
     let input = 0;
-    if (keys['a'] || keys['arrowleft'] || joyMoveAxis.x < -0.3) input -= 1;
-    if (keys['d'] || keys['arrowright'] || joyMoveAxis.x > 0.3) input += 1;
+    if (held('left') || joyMoveAxis.x < -0.3) input -= 1;
+    if (held('right') || joyMoveAxis.x > 0.3) input += 1;
     if (input !== 0) player.facing = input;
     const want = input * PLAYER_SPEED;
     const vx = b.velocity.x + (want - b.velocity.x) * (player.onGround ? 0.35 : 0.12);
     Body.setVelocity(b, { x: vx, y: b.velocity.y });
     if (player.jumpLock > 0) player.jumpLock -= FIXED_DT;
-    const jumpPressed = keys['w'] || keys['arrowup'] || keys[' '] || joyMoveAxis.y < -0.55 || jumpHeld;
+    /* No stick-up jump: diagonal thumbs made accidental hops. JUMP button / keys only. */
+    const jumpPressed = held('jump') || jumpHeld;
     if (jumpPressed && player.onGround && player.jumpLock <= 0) {
       Body.setVelocity(b, { x: b.velocity.x, y: -PLAYER_JUMP });
       player.onGround = false;
-      player.jumpLock = 0.32;
+      player.jumpLock = CFG.player.jumpLock;
     }
   }
 
@@ -569,18 +577,24 @@
     if (m === MAT.LAVA) {
       player.lavaTick -= dt;
       if (player.lavaTick <= 0) {
-        player.lavaTick = 0.35;
-        hurtPlayer(8, b.position.x, b.position.y - 24);
+        player.lavaTick = CFG.lava.tick;
+        hurtPlayer(CFG.lava.damage, b.position.x, b.position.y - 24, null);
+        const now = performance.now();
+        if (now - lastLavaRumble >= (RUMBLE.lavaEveryMs || 0)) { lastLavaRumble = now; hubRumble(RUMBLE.lava); }
       }
     }
   }
 
+  /* Last lava rumble time (throttle). */
+  let lastLavaRumble = 0;
+
   /*
-    Apply damage, float a red number, refresh HUD.
+    Apply damage, float a red number, refresh HUD. rumble: value sent to the phone.
   */
-  function hurtPlayer(amount, x, y) {
+  function hurtPlayer(amount, x, y, rumble) {
     if (!player || gameState !== 'playing') return;
     player.hp = Math.max(0, player.hp - amount);
+    if (rumble) hubRumble(rumble);
     addFloater(x, y, '-' + Math.ceil(amount), '#FF5B5B');
     updateHud();
   }
@@ -592,7 +606,7 @@
   /* Active weapon id. */
   let currentWeapon = 'pistol';
   /* Remaining shots. Pistol stays Infinity. */
-  let ammoRemaining = { pistol: Infinity, rocket: 10, grenade: 5, laser: 50 };
+  let ammoRemaining = startAmmo();
   /* Live shots. */
   const projectiles = [];
   /* Expanding blasts. flash true is a muzzle pop. */
@@ -609,6 +623,15 @@
   let mouseDown = false;
   /* True after the mouse has moved, so aim is not stuck at origin. */
   let mouseAimReady = false;
+  /* Aim source: 'facing' (keys / no mouse: aimRel relative to facing), 'mouse',
+     'touch' (aim stick), 'stick' (hub analog stick). */
+  let aimMode = 'facing';
+  /* Facing-relative aim elevation in radians (+ = up). Q / E change it. */
+  let aimRel = 0;
+  /* Hub analog stick (from hub-stick messages). */
+  let hubStick = { x: 0, y: 0 };
+  /* Space (fire key) held. */
+  let fireKeyHeld = false;
   /* Touch fire held. */
   let fireHeld = false;
 
@@ -620,12 +643,44 @@
   }
 
   /*
-    Point aim at the mouse when it has moved.
+    Turn an absolute aim angle into facing + elevation, so the aim keeps its tilt
+    and flips with the player (used when a stick is released).
   */
-  function updateAimFromMouse() {
-    if (!player || !mouseAimReady) return;
-    const w = screenToWorld(mouseScreenPos.x, mouseScreenPos.y);
-    aimAngle = Math.atan2(w.y - (player.body.position.y - 4), w.x - player.body.position.x);
+  function absorbAim(angle) {
+    if (!player) return;
+    const cx = Math.cos(angle), sy = Math.sin(angle);
+    player.facing = cx >= 0 ? 1 : -1;
+    aimRel = Math.max(-CFG.aim.maxDown, Math.min(CFG.aim.maxUp, Math.atan2(-sy, Math.abs(cx))));
+    aimMode = 'facing';
+  }
+
+  /*
+    Update aimAngle from the current source: Q / E (relative to facing), hub
+    stick, touch stick, or the mouse.
+  */
+  function updateAim(dt) {
+    if (!player) return;
+    const up = held('aimUp'), down = held('aimDown');
+    if (up || down) {
+      if (aimMode !== 'facing') absorbAim(aimAngle);
+      aimRel += (up ? 1 : -1) * CFG.aim.keyRate * dt;
+      aimRel = Math.max(-CFG.aim.maxDown, Math.min(CFG.aim.maxUp, aimRel));
+    }
+    const sm = Math.hypot(hubStick.x, hubStick.y);
+    if (sm > CFG.aim.stickDead) {
+      aimMode = 'stick';
+      aimAngle = Math.atan2(hubStick.y, hubStick.x);
+      return;
+    } else if (aimMode === 'stick') {
+      absorbAim(aimAngle);
+    }
+    if (aimMode === 'touch') return;          // set by the aim stick handler
+    if (aimMode === 'mouse' && mouseAimReady) {
+      const w = screenToWorld(mouseScreenPos.x, mouseScreenPos.y);
+      aimAngle = Math.atan2(w.y - (player.body.position.y - 4), w.x - player.body.position.x);
+      return;
+    }
+    aimAngle = player.facing > 0 ? -aimRel : Math.PI + aimRel;
   }
 
   /*
@@ -636,7 +691,9 @@
     if (player.fireCooldown > 0) return;
     const w = WEAPONS[currentWeapon];
     if (ammoRemaining[currentWeapon] <= 0) {
-      showHint('No ammo', 700);
+      player.fireCooldown = 0.4;
+      showHint(TX.noAmmo, 700);
+      hubRumble(RUMBLE.outOfAmmo);
       return;
     }
     player.fireCooldown = w.cooldown;
@@ -827,12 +884,14 @@
       const d = Math.hypot(player.body.position.x - x, player.body.position.y - y);
       if (d < radiusPx + 20) {
         const falloff = 1 - d / (radiusPx + 20);
-        hurtPlayer(damage * 0.35 * falloff, player.body.position.x, player.body.position.y - 30);
+        hurtPlayer(damage * CFG.selfBlast * falloff, player.body.position.x, player.body.position.y - 30, RUMBLE.selfBlast);
         const ang = Math.atan2(player.body.position.y - y, player.body.position.x - x);
         Body.setVelocity(player.body, {
           x: player.body.velocity.x + Math.cos(ang) * 8,
           y: player.body.velocity.y + Math.sin(ang) * 8 - 2
         });
+      } else if (d < (RUMBLE.nearExplosionPx || 0) && gameState === 'playing') {
+        hubRumble(RUMBLE.nearExplosion);
       }
     }
     for (const t of targets) {
@@ -851,9 +910,9 @@
     const i = ti(gx, gy);
     const m = terrain[i];
     if (m === MAT.AIR || m === MAT.WATER || m === MAT.LAVA) return false;
-    terrainHp[i] -= dmg;
-    terrainDirty = true;
-    if (terrainHp[i] > 0) return false;
+    const left = terrainHp[i] - dmg;
+    markDirty(gx, gy);
+    if (left > 0) { terrainHp[i] = left; return false; }   // destroyed at <= 0
     const wx = gx * TILE + TILE / 2;
     const wy = gy * TILE + TILE / 2;
     terrain[i] = MAT.AIR;
@@ -862,8 +921,9 @@
       for (const t of targets) {
         if (!t.destroyed && Math.hypot(t.x - wx, t.y - wy) < TILE * 2) {
           t.destroyed = true;
-          score += 500;
-          addFloater(t.x, t.y - 20, '+500', '#FFD700');
+          score += CFG.mission.targetScore;
+          addFloater(t.x, t.y - 20, '+' + CFG.mission.targetScore, '#FFD700');
+          hubRumble(RUMBLE.target);
           updateHud();
         }
       }
@@ -880,8 +940,9 @@
     addFloater(t.x, t.y - 16, '-' + Math.ceil(dmg), '#FF8C42');
     if (t.hp <= 0) {
       t.destroyed = true;
-      score += 500;
-      addFloater(t.x, t.y - 28, '+500', '#FFD700');
+      score += CFG.mission.targetScore;
+      addFloater(t.x, t.y - 28, '+' + CFG.mission.targetScore, '#FFD700');
+      hubRumble(RUMBLE.target);
       doExplosion(t.x, t.y, 28, 10);
       updateHud();
     }
@@ -911,8 +972,8 @@
     Composite.add(engine.world, body);
     enemies.push({
       body,
-      hp: 40,
-      maxHp: 40,
+      hp: CFG.enemies.hp,
+      maxHp: CFG.enemies.hp,
       alive: true,
       radius: 16,
       facing: -1,
@@ -932,9 +993,9 @@
       const dx = player ? player.body.position.x - b.position.x : 0;
       const dy = player ? player.body.position.y - b.position.y : 0;
       const dist = Math.hypot(dx, dy);
-      e.alerted = dist < 360;
+      e.alerted = dist < CFG.enemies.alertDist;
       e.facing = e.alerted ? (dx > 0 ? 1 : -1) : e.walkDir;
-      const speed = e.alerted ? 2.1 : 1.3;
+      const speed = e.alerted ? CFG.enemies.alertSpeed : CFG.enemies.walkSpeed;
       const dir = e.alerted ? e.facing : e.walkDir;
       Body.setVelocity(b, { x: dir * speed, y: b.velocity.y });
       const lookX = b.position.x + dir * 16;
@@ -943,16 +1004,16 @@
       const gyBody = Math.floor(b.position.y / TILE);
       if (isSolid(gxA, gyBody) || !isSolid(gxA, gyFoot)) e.walkDir *= -1;
       e.lastShot -= dt;
-      if (e.alerted && e.lastShot <= 0 && dist < 420 && dist > 24) {
-        e.lastShot = 1.4 + Math.random();
+      if (e.alerted && e.lastShot <= 0 && dist < CFG.enemies.shootDist && dist > 24 && gameState === 'playing') {
+        e.lastShot = CFG.enemies.reload + Math.random() * CFG.enemies.reloadJitter;
         const angle = Math.atan2(dy, dx);
         enemyProjectiles.push({
           x: b.position.x + Math.cos(angle) * 18,
           y: b.position.y + Math.sin(angle) * 18,
-          vx: Math.cos(angle) * 420,
-          vy: Math.sin(angle) * 420,
+          vx: Math.cos(angle) * CFG.enemies.bulletSpeed,
+          vy: Math.sin(angle) * CFG.enemies.bulletSpeed,
           life: 2.2,
-          damage: 8
+          damage: CFG.enemies.bulletDamage
         });
       }
     }
@@ -983,7 +1044,7 @@
         const dx = p.x - player.body.position.x;
         const dy = p.y - player.body.position.y;
         if (dx * dx + dy * dy < 18 * 18) {
-          hurtPlayer(p.damage, player.body.position.x, player.body.position.y - 28);
+          hurtPlayer(p.damage, player.body.position.x, player.body.position.y - 28, RUMBLE.hit);
           enemyProjectiles.splice(i, 1);
         }
       }
@@ -996,8 +1057,9 @@
   function killEnemy(e) {
     if (!e.alive) return;
     e.alive = false;
-    score += 100;
-    addFloater(e.body.position.x, e.body.position.y - 26, '+100', '#FFD700');
+    score += CFG.enemies.score;
+    addFloater(e.body.position.x, e.body.position.y - 26, '+' + CFG.enemies.score, '#FFD700');
+    hubRumble(RUMBLE.enemyKill);
     for (let i = 0; i < 12; i++) {
       const a = Math.random() * Math.PI * 2;
       const sp = 50 + Math.random() * 110;
@@ -1024,7 +1086,7 @@
     Place a ring and a small target-tile block under it.
   */
   function spawnTarget(x, y) {
-    targets.push({ x, y, r: 22, hp: 46, maxHp: 46, destroyed: false });
+    targets.push({ x, y, r: 22, hp: CFG.mission.targetHp, maxHp: CFG.mission.targetHp, destroyed: false });
     const gx = Math.floor(x / TILE);
     const gy = Math.floor(y / TILE);
     for (let dy = -1; dy <= 1; dy++) {
@@ -1044,8 +1106,10 @@
   let currentMode = 'sandbox';
   /* Points from kills and targets. */
   let score = 0;
-  /* menu, playing, dead, won. Overlay is derived from this. */
+  /* menu, playing, paused, dead, won, exit. Overlay is derived from this. */
   let gameState = 'menu';
+  /* Last "gate locked" hint time (throttle). */
+  let lastGateHint = 0;
 
   /*
     Remove actors. Does not call Engine.clear, which drops engine state.
@@ -1065,7 +1129,7 @@
   }
 
   /*
-    Left wall, floor, and a soft right stop so the body cannot leave the map.
+    Left wall and floor so the body cannot leave the map.
     The right edge is the exit, checked in checkGameConditions.
   */
   function addWorldBounds() {
@@ -1092,10 +1156,17 @@
     rebuildChunksInView();
   }
   function resetLoadout() {
-    currentWeapon = 'pistol';
-    ammoRemaining = { pistol: Infinity, rocket: 10, grenade: 5, laser: 50 };
+    currentWeapon = WEAPON_ORDER[0];
+    ammoRemaining = startAmmo();
     updateAmmoUI();
-    for (const btn of weaponBtns) btn.classList.toggle('active', btn.dataset.w === 'pistol');
+    for (const btn of weaponBtns) btn.classList.toggle('active', btn.dataset.w === currentWeapon);
+  }
+  /* Fresh aim / input state for a new run. */
+  function resetAim() {
+    aimMode = mouseAimReady ? 'mouse' : 'facing';
+    aimRel = 0;
+    aimAngle = 0;
+    accumulator = 0;
   }
 
   /*
@@ -1111,14 +1182,16 @@
     spawnPlayer(GRID_W * 0.18 * TILE, (sy - 4) * TILE);
     warmChunks();
     resetLoadout();
+    resetAim();
     gameState = 'playing';
     updateHud();
     hideOverlay();
-    showHint('SANDBOX — walk east to the gold gate', 2600);
+    showHint(TX.sandboxHint, 2600);
+    hubSendApp();
   }
 
   /*
-    Open mission: three targets and a line of walkers.
+    Open mission: targets and a line of walkers.
   */
   function setupMission() {
     currentMode = 'mission';
@@ -1130,26 +1203,68 @@
     spawnPlayer(GRID_W * 0.12 * TILE, (sy - 4) * TILE);
     warmChunks();
     resetLoadout();
-    const spots = [0.42, 0.62, 0.84];
-    for (const f of spots) {
+    resetAim();
+    for (const f of CFG.mission.targets) {
       const tx = Math.floor(GRID_W * f);
       spawnTarget(tx * TILE, (sy - 3) * TILE);
     }
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < CFG.enemies.count; i++) {
       spawnEnemy((0.32 + i * 0.08) * WORLD_W, (sy - 3) * TILE);
     }
     gameState = 'playing';
     updateHud();
     hideOverlay();
-    showHint('MISSION — targets, then the east gate', 2600);
+    showHint(TX.missionHint, 2600);
+    hubSendApp();
+  }
+
+  /* Start (or restart) a mode. */
+  function startMode(mode) {
+    if (mode === 'mission') setupMission();
+    else setupSandbox();
+  }
+  /* New run in the current mode (RESET / hub New Game). */
+  function newGame() { startMode(currentMode); }
+  /* Switch Sandbox <-> Mission and start it (hub Mode button). */
+  function cycleMode() { startMode(currentMode === 'mission' ? 'sandbox' : 'mission'); }
+
+  /* Pause / resume a running game. */
+  function togglePause() {
+    if (gameState === 'playing') {
+      gameState = 'paused';
+      clearInput();
+      showOverlay('paused');
+    } else if (gameState === 'paused') {
+      gameState = 'playing';
+      accumulator = 0;
+      hideOverlay();
+    }
+    updatePauseBtn();
+  }
+  /* Enter / Start / tap on the card: start from the menu or an end card, else pause. */
+  function primaryAction() {
+    if (gameState === 'menu') startMode(currentMode);
+    else if (gameState === 'playing' || gameState === 'paused') togglePause();
+    else startMode(currentMode);            // dead / won / exit: play again
+  }
+  /* Escape / Select: back to the menu. */
+  function toMenu() {
+    if (gameState === 'menu') return;
+    gameState = 'menu';
+    clearInput();
+    showOverlay('menu');
+    updatePauseBtn();
   }
 
   /* ============================================================
      HUD AND OVERLAY
      ============================================================ */
 
+  function targetsLeft() { return targets.filter(t => !t.destroyed).length; }
+  function enemiesLeft() { return enemies.filter(e => e.alive).length; }
+
   /*
-    Push HP, score, and counts into the chips.
+    Push HP, score, and counts into the chips (and the hub bar).
   */
   function updateHud() {
     if (player) {
@@ -1157,21 +1272,20 @@
       statHealth.classList.toggle('low', player.hp < 30);
     }
     hudScore.textContent = score;
-    hudTargets.textContent = targets.filter(t => !t.destroyed).length;
-    hudEnemies.textContent = enemies.filter(e => e.alive).length;
+    hudTargets.textContent = targetsLeft();
+    hudEnemies.textContent = enemiesLeft();
+    hubSendStats();
   }
 
   /*
     Write ammo counts and grey empty weapons.
   */
   function updateAmmoUI() {
-    ammoEls.pistol.textContent = ammoRemaining.pistol === Infinity ? '∞' : ammoRemaining.pistol;
-    ammoEls.rocket.textContent = ammoRemaining.rocket;
-    ammoEls.grenade.textContent = ammoRemaining.grenade;
-    ammoEls.laser.textContent = ammoRemaining.laser;
+    for (const k of WEAPON_ORDER) {
+      if (ammoEls[k]) ammoEls[k].textContent = ammoRemaining[k] === Infinity ? '∞' : ammoRemaining[k];
+    }
     for (const btn of weaponBtns) {
-      const w = btn.dataset.w;
-      const ammo = ammoRemaining[w];
+      const ammo = ammoRemaining[btn.dataset.w];
       btn.classList.toggle('empty', ammo !== Infinity && ammo <= 0);
     }
   }
@@ -1194,38 +1308,48 @@
   */
   function hideOverlay() {
     overlay.classList.add('hidden');
+    updatePauseBtn();
+  }
+
+  /* Pause button glyph; hidden while a card is up. */
+  function updatePauseBtn() {
+    if (!btnPause) return;
+    btnPause.textContent = gameState === 'paused' ? '▶' : '❚❚';
+    btnPause.hidden = !(gameState === 'playing' || gameState === 'paused');
   }
 
   /*
     Fill the card from state. Buttons are never removed, only relabeled.
   */
   function showOverlay(state) {
-    const keysText = 'MOVE A/D or arrows  •  JUMP W / SPACE\nAIM mouse  •  FIRE click  •  WEAPONS 1-4';
+    const keysText = IS_TOUCH ? TX.keysTouch : TX.keysPc;
     if (state === 'menu') {
-      overlayTitle.textContent = 'DEMOLISHER';
-      overlayLine.innerHTML = 'Destroy the world. Blow up <span class="accent">red targets</span>. Kill <span class="accent">enemies</span>.';
+      overlayTitle.textContent = TX.title;
+      overlayLine.innerHTML = TX.tagline;
       overlayKeys.textContent = keysText;
-      overlayBtn.textContent = 'SANDBOX';
-      overlayBtn2.textContent = 'MISSION';
-      overlayBtn2.style.display = '';
-    } else if (state === 'dead') {
-      overlayTitle.textContent = 'YOU DIED';
+      overlayBtn.textContent = TX.sandbox;
+      overlayBtn2.textContent = TX.mission;
+    } else if (state === 'paused') {
+      overlayTitle.textContent = TX.paused;
       overlayLine.textContent = 'Score: ' + score;
-      overlayKeys.textContent = '';
-      overlayBtn.textContent = 'RETRY';
-      overlayBtn2.textContent = 'MENU';
-      overlayBtn2.style.display = '';
+      overlayKeys.textContent = keysText;
+      overlayBtn.textContent = TX.resume;
+      overlayBtn2.textContent = TX.menu;
+    } else if (state === 'dead') {
+      overlayTitle.textContent = TX.died;
+      overlayLine.textContent = 'Score: ' + score;
+      overlayKeys.textContent = TX.endKeys;
+      overlayBtn.textContent = TX.retry;
+      overlayBtn2.textContent = TX.menu;
     } else if (state === 'won' || state === 'exit') {
-      overlayTitle.textContent = state === 'exit' ? 'EDGE OF THE MAP' : 'MISSION COMPLETE';
-      overlayLine.textContent = state === 'exit'
-        ? 'The ridge stops here. Past the gold gate there is nothing. Score: ' + score
-        : 'The targets are down. The ridge is quiet. Score: ' + score;
-      overlayKeys.textContent = 'Nothing past this line. Turn back, or leave.';
-      overlayBtn.textContent = 'PLAY AGAIN';
-      overlayBtn2.textContent = 'MENU';
-      overlayBtn2.style.display = '';
+      overlayTitle.textContent = state === 'exit' ? TX.exit : TX.won;
+      overlayLine.textContent = fmt(state === 'exit' ? TX.exitLine : TX.wonLine, { score });
+      overlayKeys.textContent = TX.endKeys;
+      overlayBtn.textContent = TX.playAgain;
+      overlayBtn2.textContent = TX.menu;
     }
     overlay.classList.remove('hidden');
+    updatePauseBtn();
   }
 
   /*
@@ -1235,18 +1359,27 @@
     floaters.push({ x, y, text, color: color || '#FFD700', life: 0.8, maxLife: 0.8 });
   }
 
+  /* True while Mission targets remain (the east gate is locked). */
+  function gateLocked() {
+    return currentMode === 'mission' && targetsLeft() > 0;
+  }
+
   /*
-    Death and mission-clear checks. Overlay text comes from state, not DOM edits.
+    Death, mission-clear and east-gate checks.
   */
   function checkGameConditions() {
     if (!player || gameState !== 'playing') return;
     if (player.hp <= 0) {
       gameState = 'dead';
+      clearInput();
+      hubRumble(RUMBLE.death);
       showOverlay('dead');
       return;
     }
     if (currentMode === 'mission' && targets.length > 0 && targets.every(t => t.destroyed)) {
       gameState = 'won';
+      clearInput();
+      hubRumble(RUMBLE.missionComplete);
       showOverlay('won');
       return;
     }
@@ -1254,10 +1387,23 @@
       Body.setPosition(player.body, { x: player.body.position.x, y: WORLD_H - 80 });
       Body.setVelocity(player.body, { x: player.body.velocity.x, y: 0 });
     }
-    if (player.body.position.x > WORLD_W - 40) {
-      Body.setPosition(player.body, { x: WORLD_W - 40, y: player.body.position.y });
+    const gateX = WORLD_W - 40;
+    if (gateLocked() && player.body.position.x > gateX - 30) {
+      // Locked: push back and say why
+      Body.setPosition(player.body, { x: gateX - 30, y: player.body.position.y });
+      Body.setVelocity(player.body, { x: Math.min(0, player.body.velocity.x), y: player.body.velocity.y });
+      const now = performance.now();
+      if (now - lastGateHint > 1500) {
+        lastGateHint = now;
+        showHint(fmt(TX.gateLocked, { n: targetsLeft() }), 1600);
+      }
+      return;
+    }
+    if (player.body.position.x > gateX) {
+      Body.setPosition(player.body, { x: gateX, y: player.body.position.y });
       Body.setVelocity(player.body, { x: 0, y: player.body.velocity.y });
       gameState = 'exit';
+      clearInput();
       showOverlay('exit');
     }
   }
@@ -1266,153 +1412,339 @@
      INPUT
      ============================================================ */
 
+  /* Touch-capable device: show the touch layer and touch help text. */
+  const IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+
   /*
     Select a weapon if it still has ammo.
   */
   function selectWeapon(name) {
     if (!WEAPONS[name]) return;
     if (ammoRemaining[name] <= 0) {
-      showHint('No ammo', 700);
+      showHint(TX.noAmmo, 700);
+      hubRumble(RUMBLE.outOfAmmo);
       return;
     }
+    const changed = currentWeapon !== name;
     currentWeapon = name;
     for (const btn of weaponBtns) btn.classList.toggle('active', btn.dataset.w === name);
+    if (changed) {
+      showHint(WEAPONS[name].label || name, 600);
+      hubSendApp();
+    }
+  }
+  /* X / B / hub Weapon button: next weapon that still has ammo. */
+  function nextWeapon() {
+    const n = WEAPON_ORDER.length;
+    let i = WEAPON_ORDER.indexOf(currentWeapon);
+    for (let k = 1; k <= n; k++) {
+      const w = WEAPON_ORDER[(i + k) % n];
+      if (ammoRemaining[w] > 0) { selectWeapon(w); return; }
+    }
+  }
+
+  /* Drop everything held (focus lost, tab hidden, pause, end card). */
+  function clearInput() {
+    for (const k in keys) keys[k] = false;
+    mouseDown = false;
+    fireHeld = false;
+    jumpHeld = false;
+    fireKeyHeld = false;
+    hubStick.x = 0; hubStick.y = 0;
+    joyMoveAxis.x = 0; joyMoveAxis.y = 0;
+    joyAimAxis.x = 0; joyAimAxis.y = 0;
+    releaseStick(sticks.move);
+    releaseStick(sticks.aim);
+    btnFire.classList.remove('held');
+    btnJump.classList.remove('held');
   }
 
   window.addEventListener('keydown', (e) => {
-    const k = e.key;
-    if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(k)) e.preventDefault();
-    keys[k.toLowerCase()] = true;
-    if (k === '1') selectWeapon('pistol');
-    if (k === '2') selectWeapon('rocket');
-    if (k === '3') selectWeapon('grenade');
-    if (k === '4') selectWeapon('laser');
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const game = ['left', 'right', 'jump', 'fire', 'aimUp', 'aimDown', 'nextWeapon', 'pause', 'menu', 'weapons'].some(a => matches(a, e));
+    if (game || e.key === ' ' || e.key.indexOf('Arrow') === 0) e.preventDefault(); // also stops focused buttons re-firing
+    if (e.code) keys[e.code] = true;
+    keys[e.key] = true;
+    if (e.repeat) return;
+    if (matches('fire', e)) {
+      fireKeyHeld = true;
+      if (gameState === 'playing') { updateAim(0); fire(); }
+    } else if (matches('nextWeapon', e)) {
+      nextWeapon();
+    } else if (matches('pause', e)) {
+      primaryAction();
+    } else if (matches('menu', e)) {
+      toMenu();
+    } else {
+      const wi = KEYS.weapons.indexOf(e.code);
+      const wk = ['1', '2', '3', '4', '5', '6', '7', '8', '9'].indexOf(e.key);
+      const idx = wi >= 0 ? wi : wk;
+      if (idx >= 0 && WEAPON_ORDER[idx]) selectWeapon(WEAPON_ORDER[idx]);
+    }
   });
   window.addEventListener('keyup', (e) => {
-    keys[e.key.toLowerCase()] = false;
+    if (e.code) keys[e.code] = false;
+    keys[e.key] = false;
+    if (matches('fire', e)) fireKeyHeld = false;
   });
+  window.addEventListener('blur', clearInput);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) return;
+    clearInput();
+    if (gameState === 'playing') togglePause();
+  });
+
+  /* Mouse: aim with the pointer, click to fire (touch uses the sticks below). */
   canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
     mouseScreenPos.x = e.clientX - rect.left;
     mouseScreenPos.y = e.clientY - rect.top;
     mouseAimReady = true;
+    aimMode = 'mouse';
   });
   canvas.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
     e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    mouseScreenPos.x = e.clientX - rect.left;
+    mouseScreenPos.y = e.clientY - rect.top;
+    mouseAimReady = true;
+    aimMode = 'mouse';
     mouseDown = true;
-    updateAimFromMouse();
+    updateAim(0);
     fire();
   });
   window.addEventListener('mouseup', (e) => {
     if (e.button === 0) mouseDown = false;
   });
-  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  /* No context menu / selection / double-tap zoom anywhere on the page. */
+  document.addEventListener('contextmenu', (e) => e.preventDefault());
+  document.addEventListener('selectstart', (e) => e.preventDefault());
+  document.addEventListener('dblclick', (e) => e.preventDefault());
 
   /*
-    Bind a joystick element. onUpdate receives axes in -1..1.
+    Floating touch sticks: a thumb on the left half of the stage = MOVE stick, on
+    the right half = AIM stick; the stick base jumps to where the thumb lands.
+    Released sticks go back to their resting spot (CSS).
   */
-  function setupJoystick(el, knobEl, onUpdate) {
-    let active = false;
-    let id = null;
-    let startX = 0;
-    let startY = 0;
-    const R = 40;
-    function move(cx, cy) {
-      let dx = cx - startX;
-      let dy = cy - startY;
-      const len = Math.hypot(dx, dy);
-      if (len > R) {
-        dx = dx / len * R;
-        dy = dy / len * R;
+  const TOUCH = CFG.touch;
+  const sticks = {
+    move: { el: joyMove, knob: joyMoveKnob, id: null, bx: 0, by: 0 },
+    aim: { el: joyAim, knob: joyAimKnob, id: null, bx: 0, by: 0 },
+  };
+  function stickAt(st, x, y) {
+    st.bx = x; st.by = y;
+    st.el.style.left = (x - TOUCH.stick / 2) + 'px';
+    st.el.style.top = (y - TOUCH.stick / 2) + 'px';
+    st.el.style.right = 'auto';
+    st.el.style.bottom = 'auto';
+    st.el.classList.add('active');
+  }
+  function releaseStick(st) {
+    if (!st) return;
+    st.id = null;
+    st.el.style.left = st.el.style.top = st.el.style.right = st.el.style.bottom = '';
+    st.el.classList.remove('active');
+    st.knob.style.transform = '';
+  }
+  function stickMove(st, x, y) {
+    let dx = x - st.bx, dy = y - st.by;
+    const len = Math.hypot(dx, dy), R = TOUCH.range;
+    if (len > R) { dx = dx / len * R; dy = dy / len * R; }
+    st.knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    return { x: dx / R, y: dy / R };
+  }
+  function stagePoint(e) {
+    const r = stage.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top, w: r.width };
+  }
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' || gameState !== 'playing') return;
+    e.preventDefault();                               // no emulated mouse events
+    const p = stagePoint(e);
+    const st = p.x < p.w / 2 ? sticks.move : sticks.aim;
+    if (st.id !== null) return;
+    st.id = e.pointerId;
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    stickAt(st, p.x, p.y);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    const st = e.pointerId === sticks.move.id ? sticks.move : e.pointerId === sticks.aim.id ? sticks.aim : null;
+    if (!st) return;
+    e.preventDefault();
+    const p = stagePoint(e);
+    const a = stickMove(st, p.x, p.y);
+    if (st === sticks.move) {
+      joyMoveAxis.x = a.x; joyMoveAxis.y = a.y;
+    } else {
+      joyAimAxis.x = a.x; joyAimAxis.y = a.y;
+      if (Math.hypot(a.x, a.y) > CFG.aim.stickDead) {
+        aimMode = 'touch';
+        aimAngle = Math.atan2(a.y, a.x);
       }
-      knobEl.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
-      onUpdate(dx / R, dy / R);
     }
-    function end(e) {
-      for (const t of e.changedTouches) {
-        if (t.identifier === id) {
-          active = false;
-          id = null;
-          knobEl.style.transform = '';
-          onUpdate(0, 0);
-        }
-      }
+  });
+  function stickEnd(e) {
+    if (e.pointerId === sticks.move.id) {
+      releaseStick(sticks.move);
+      joyMoveAxis.x = 0; joyMoveAxis.y = 0;
+    } else if (e.pointerId === sticks.aim.id) {
+      releaseStick(sticks.aim);
+      joyAimAxis.x = 0; joyAimAxis.y = 0;
+      if (aimMode === 'touch') absorbAim(aimAngle);   // keep the tilt, flip with facing
     }
-    el.addEventListener('touchstart', (e) => {
+  }
+  canvas.addEventListener('pointerup', stickEnd);
+  canvas.addEventListener('pointercancel', stickEnd);
+
+  /* FIRE / JUMP: pointer events, so touch, pen and mouse all work. */
+  function holdButton(btn, onDown, onUp) {
+    btn.addEventListener('pointerdown', (e) => {
       e.preventDefault();
-      const t = e.changedTouches[0];
-      id = t.identifier;
-      const rect = el.getBoundingClientRect();
-      startX = rect.left + rect.width / 2;
-      startY = rect.top + rect.height / 2;
-      active = true;
-      move(t.clientX, t.clientY);
-    }, { passive: false });
-    el.addEventListener('touchmove', (e) => {
-      if (!active) return;
-      for (const t of e.changedTouches) {
-        if (t.identifier === id) {
-          e.preventDefault();
-          move(t.clientX, t.clientY);
-        }
-      }
-    }, { passive: false });
-    el.addEventListener('touchend', end, { passive: false });
-    el.addEventListener('touchcancel', end, { passive: false });
+      try { btn.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+      btn.classList.add('held');
+      onDown();
+    });
+    const up = () => { btn.classList.remove('held'); onUp(); };
+    btn.addEventListener('pointerup', up);
+    btn.addEventListener('pointercancel', up);
+    btn.addEventListener('lostpointercapture', up);
   }
+  holdButton(btnFire, () => { fireHeld = true; updateAim(0); fire(); }, () => { fireHeld = false; });
+  holdButton(btnJump, () => { jumpHeld = true; }, () => { jumpHeld = false; });
 
-  setupJoystick(joyMove, joyMoveKnob, (x, y) => {
-    joyMoveAxis.x = x;
-    joyMoveAxis.y = y;
-  });
-  setupJoystick(joyAim, joyAimKnob, (x, y) => {
-    joyAimAxis.x = x;
-    joyAimAxis.y = y;
-    if (Math.hypot(x, y) > 0.35) aimAngle = Math.atan2(y, x);
-  });
-  btnFire.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    fireHeld = true;
-    if (Math.hypot(joyAimAxis.x, joyAimAxis.y) < 0.35 && player) {
-      aimAngle = player.facing > 0 ? 0 : Math.PI;
-    }
-    fire();
-  }, { passive: false });
-  btnFire.addEventListener('touchend', () => { fireHeld = false; });
-  btnFire.addEventListener('touchcancel', () => { fireHeld = false; });
-  btnJump.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    jumpHeld = true;
-  }, { passive: false });
-  btnJump.addEventListener('touchend', () => { jumpHeld = false; });
-  btnJump.addEventListener('touchcancel', () => { jumpHeld = false; });
-
-  if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-    mobileCtrls.classList.add('show');
-  }
+  if (IS_TOUCH) mobileCtrls.classList.add('show');
 
   for (const btn of weaponBtns) {
     btn.addEventListener('click', () => selectWeapon(btn.dataset.w));
   }
   resetBtn.addEventListener('click', () => {
-    if (currentMode === 'mission' && gameState !== 'menu') setupMission();
-    else if (gameState !== 'menu') setupSandbox();
+    if (gameState !== 'menu') newGame();
   });
+  if (btnPause) btnPause.addEventListener('click', togglePause);
   overlayBtn.addEventListener('click', () => {
-    if (gameState === 'menu') setupSandbox();
-    else if (currentMode === 'mission') setupMission();
-    else setupSandbox();
+    if (gameState === 'menu') startMode('sandbox');
+    else primaryAction();
   });
   overlayBtn2.addEventListener('click', () => {
-    if (gameState === 'menu') setupMission();
-    else {
-      gameState = 'menu';
-      showOverlay('menu');
-    }
+    if (gameState === 'menu') startMode('mission');
+    else toMenu();
   });
+  /* Buttons never keep focus: Enter / Space must not click them again (RESET!). */
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('button');
+    if (b) b.blur();
+  });
+  /* Tap the card (not a button) = start / resume / play again. */
+  let cardTap = null;
+  overlay.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button')) return;
+    cardTap = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
+  });
+  overlay.addEventListener('pointerup', (e) => {
+    const t = cardTap; cardTap = null;
+    if (!t || t.id !== e.pointerId || e.target.closest('button')) return;
+    if (performance.now() - t.t <= TOUCH.tapMaxMs && Math.hypot(e.clientX - t.x, e.clientY - t.y) <= TOUCH.tapMaxMovePx) primaryAction();
+  });
+
+  /* Re-measure whenever the stage box changes (rotate, hub bar, side toolbar). */
   window.addEventListener('resize', resize);
   window.addEventListener('orientationchange', () => setTimeout(resize, 60));
+  if (window.ResizeObserver) new ResizeObserver(() => resize()).observe(stage);
+
+  /* ============================================================
+     HUB BRIDGE
+     ============================================================ */
+  /*
+    Optional; same protocol as Snake / 2048 / hub-gamebar.js (v:1). Only in a frame:
+      game → hub  {type:'hub-ready'}                     on load
+      hub → game  {type:'hub-hello'}                     → body.in-hub, reply hub-app
+      game → hub  {type:'hub-app', app, stats, buttons}  HP / Score / Targets|Enemies;
+                                                         New Game / Mode / Weapon
+      game → hub  {type:'hub-stat', id, value}           on change
+      hub → game  {type:'hub-action', id:'new'|'mode'|'weapon'}
+      game → hub  {type:'hub-rumble', ms | pattern}      CFG.rumble events
+      hub → game  {type:'hub-stick', x, y}               analog stick → aim
+    Accepted only from window.parent with a same-origin / file:// origin.
+  */
+  const HUB_V = 1;
+  const IN_FRAME = (() => { try { return window.parent && window.parent !== window; } catch (_) { return true; } })();
+  let hubLinked = false;
+  const hubLastSent = {};
+  let lastRumbleAt = 0;
+  function hubPost(msg) {
+    if (!IN_FRAME) return;
+    try { window.parent.postMessage(Object.assign({ v: HUB_V }, msg), '*'); } catch (_) { /* ignore */ }
+  }
+  function hubOriginOk(origin) {
+    return origin === location.origin || origin === 'null' || location.origin === 'null' ||
+      String(origin).indexOf('file:') === 0;
+  }
+  function hubStats() {
+    const mission = currentMode === 'mission';
+    return [
+      { id: 'hp', label: TX.statHp, value: player ? Math.max(0, Math.floor(player.hp)) : MAX_HP },
+      { id: 'score', label: TX.statScore, value: score },
+      { id: 'obj', label: mission ? TX.statTargets : TX.statEnemies, value: mission ? targetsLeft() : enemiesLeft() },
+    ];
+  }
+  function hubSendStats() {
+    if (!hubLinked) return;
+    hubStats().forEach((st) => {
+      if (hubLastSent[st.id] === st.value) return;
+      hubLastSent[st.id] = st.value;
+      hubPost({ type: 'hub-stat', id: st.id, value: st.value });
+    });
+  }
+  function hubSendApp() {
+    if (!hubLinked) return;
+    const stats = hubStats();
+    stats.forEach((st) => { hubLastSent[st.id] = st.value; });
+    hubPost({
+      type: 'hub-app',
+      app: { name: APP.name, version: APP.version },
+      stats: stats,
+      buttons: [
+        { id: 'new', label: TX.newGame },
+        { id: 'mode', label: fmt(TX.modeBtn, { mode: currentMode === 'mission' ? (TX.modeMission || TX.mission) : (TX.modeSandbox || TX.sandbox) }) },
+        { id: 'weapon', label: fmt(TX.weaponBtn, { weapon: WEAPONS[currentWeapon].label || currentWeapon }) },
+      ],
+    });
+  }
+  /* Phone rumble via the hub: ms or a pattern; 0 / empty = off. Short buzzes are
+     throttled (50 ms) so auto-fire kills do not flood the link. */
+  function hubRumble(v) {
+    if (!hubLinked || !v) return;
+    const now = performance.now();
+    if (!Array.isArray(v) && now - lastRumbleAt < 50) return;
+    lastRumbleAt = now;
+    if (Array.isArray(v)) hubPost({ type: 'hub-rumble', pattern: v.slice(0, 20) });
+    else if (Number(v) > 0) hubPost({ type: 'hub-rumble', ms: Number(v) });
+  }
+  function onHubMessage(e) {
+    if (e.source !== window.parent || !hubOriginOk(e.origin)) return;
+    const d = e.data;
+    if (!d || typeof d !== 'object') return;
+    if (d.type === 'hub-stick') {                     // no v field on this one
+      const x = Number(d.x), y = Number(d.y);
+      if (isFinite(x) && isFinite(y)) { hubStick.x = x; hubStick.y = y; }
+      return;
+    }
+    if (d.v !== HUB_V) return;
+    if (d.type === 'hub-hello') {
+      if (!hubLinked) {
+        hubLinked = true;
+        document.body.classList.add('in-hub');        // own top bar + RESET hidden
+        requestAnimationFrame(resize);
+      }
+      hubSendApp();
+    } else if (d.type === 'hub-action' && hubLinked) {
+      if (d.id === 'new') newGame();
+      else if (d.id === 'mode') cycleMode();
+      else if (d.id === 'weapon') nextWeapon();
+    }
+  }
+  if (IN_FRAME) window.addEventListener('message', onHubMessage);
 
   /* ============================================================
      RENDER
@@ -1448,33 +1780,47 @@
   }
 
   /*
-    Rebuild the 1px-per-tile image if dirty, then blit the camera window.
-    Damaged tiles are darker than full-HP tiles.
+    Paint one tile rectangle (inclusive) into the 1px-per-tile image with the
+    precomputed shades. Damaged tiles are darker than full-HP tiles.
+  */
+  function paintTerrain(x0, y0, x1, y1) {
+    x0 = Math.max(0, x0); y0 = Math.max(0, y0);
+    x1 = Math.min(GRID_W - 1, x1); y1 = Math.min(GRID_H - 1, y1);
+    const w = x1 - x0 + 1, h = y1 - y0 + 1;
+    if (w <= 0 || h <= 0) return;
+    const img = terrainCtx.createImageData(w, h);
+    const data = img.data;
+    let idx = 0;
+    for (let y = y0; y <= y1; y++) {
+      let i = y * GRID_W + x0;
+      for (let x = x0; x <= x1; x++, i++, idx += 4) {
+        const m = terrain[i];
+        if (m === MAT.AIR) continue;              // createImageData is all 0 (transparent)
+        const c = tileShade(m, terrainHp[i]);
+        data[idx] = c[0];
+        data[idx + 1] = c[1];
+        data[idx + 2] = c[2];
+        data[idx + 3] = m === MAT.WATER ? 170 : 255;
+      }
+    }
+    terrainCtx.putImageData(img, x0, y0);
+  }
+
+  /*
+    Repaint the whole image for a new world, otherwise only the damaged
+    rectangle; then blit the camera window.
   */
   function drawTerrain() {
-    if (terrainDirty && terrain) {
-      const img = terrainCtx.createImageData(GRID_W, GRID_H);
-      const data = img.data;
-      for (let y = 0; y < GRID_H; y++) {
-        for (let x = 0; x < GRID_W; x++) {
-          const i = ti(x, y);
-          const m = terrain[i];
-          const idx = i * 4;
-          if (m === MAT.AIR) {
-            data[idx + 3] = 0;
-          } else {
-            const c = tileColor(m, terrainHp[i]);
-            data[idx] = c.r;
-            data[idx + 1] = c.g;
-            data[idx + 2] = c.b;
-            data[idx + 3] = m === MAT.WATER ? 170 : 255;
-          }
-        }
-      }
-      terrainCtx.putImageData(img, 0, 0);
+    if (!terrain) return;
+    if (terrainDirty) {
+      paintTerrain(0, 0, GRID_W - 1, GRID_H - 1);
       terrainDirty = false;
+      dirtyRect = null;
+    } else if (dirtyRect) {
+      const r = dirtyRect;
+      dirtyRect = null;
+      paintTerrain(r.x0, r.y0, r.x1, r.y1);
     }
-    if (!terrainCanvas) return;
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(
       terrainCanvas,
@@ -1647,10 +1993,11 @@
     World strip: player, enemies, targets.
   */
   function drawMinimap() {
-    const mw = 150;
-    const mh = 42;
-    const mx = CW - mw - 8;
-    const my = CH - mh - 8;
+    /* Top-left: clear of the touch sticks / FIRE (bottom) and pause (top-right). */
+    const mw = Math.min(150, Math.max(80, CW * 0.25));
+    const mh = Math.round(mw * 0.28);
+    const mx = 8;
+    const my = 8;
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillRect(mx, my, mw, mh);
     ctx.strokeStyle = 'rgba(255,215,0,0.4)';
@@ -1677,11 +2024,16 @@
   function drawExit() {
     const x = WORLD_W - 28 - camX;
     if (x < -40 || x > CW + 40) return;
-    ctx.fillStyle = '#FFD700';
+    const locked = gateLocked();
+    ctx.fillStyle = locked ? '#FF5B5B' : '#FFD700';
     ctx.fillRect(x, 40, 6, CH - 80);
     ctx.fillRect(x - 18, 40, 42, 6);
+    if (locked) {
+      for (let yy = 60; yy < CH - 40; yy += 26) ctx.fillRect(x - 18, yy, 42, 3);
+    }
     ctx.font = '12px Courier New';
-    ctx.fillText('EXIT', x - 8, 32);
+    ctx.textAlign = 'left';
+    ctx.fillText(locked ? 'LOCKED' : 'EXIT', x - (locked ? 16 : 8), 32);
   }
 
   /*
@@ -1760,9 +2112,9 @@
     updatePlayerInput();
     if (player) player.onGround = false;
     if (player) player.fireCooldown = Math.max(0, player.fireCooldown - FIXED_DT);
-    updateAimFromMouse();
+    updateAim(FIXED_DT);
     const w = WEAPONS[currentWeapon];
-    if ((mouseDown || fireHeld) && w.auto) fire();
+    if ((mouseDown || fireHeld || fireKeyHeld) && w.auto) fire();
     Engine.update(engine, FIXED_DT * 1000);
     rebuildChunksInView();
     updateProjectiles(FIXED_DT);
@@ -1789,7 +2141,7 @@
         accumulator -= FIXED_DT;
         guard++;
       }
-    } else {
+    } else if (gameState !== 'paused') {
       updateFx(frameDt);
     }
     render();
@@ -1797,8 +2149,21 @@
 
   /* Boot into the menu. World is built when a mode button is pressed. */
   Events.on(engine, 'collisionActive', onCollisionActive);
+  /* Touch sizes from config → CSS variables. */
+  const rootStyle = document.documentElement.style;
+  rootStyle.setProperty('--stick', TOUCH.stick + 'px');
+  rootStyle.setProperty('--knob', TOUCH.knob + 'px');
+  rootStyle.setProperty('--fire', TOUCH.fire + 'px');
+  rootStyle.setProperty('--jump', TOUCH.jump + 'px');
+  /* Weapon labels from config. */
+  for (const btn of weaponBtns) {
+    const w = WEAPONS[btn.dataset.w];
+    if (w && btn.firstChild && btn.firstChild.nodeType === 3) btn.firstChild.textContent = (w.label || w.name).toUpperCase() + ' ';
+  }
   resize();
+  updateAmmoUI();
   showOverlay('menu');
+  hubPost({ type: 'hub-ready' });
   requestAnimationFrame((t) => {
     lastTime = t;
     requestAnimationFrame(loop);

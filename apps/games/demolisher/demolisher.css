@@ -2,7 +2,10 @@
   File: demolisher.css
   Project: Demolisher
   Purpose: Layout, HUD, toolbar, overlay, and touch controls for the destructible sandbox.
-  No game logic lives here.
+  No game logic lives here. Height: 100dvh (100% fallback). Short landscape screens
+  (phones, the sites hub) get the weapons as a side column. body.in-hub hides the
+  own top bar (the hub bar shows HP / Score / buttons). Touch sizes come from
+  demolisher_config.js as --stick / --knob / --fire / --jump.
 */
 
 /* Reset box model and kill the mobile tap flash. */
@@ -11,10 +14,14 @@
 /* Full-viewport dark shell. Touch scroll is disabled so joysticks own the gesture. */
 html, body {
   margin: 0; padding: 0; width: 100%; height: 100%;
+  height: 100dvh;
   background: #0a0a0f; color: #fff;
   font-family: 'Courier New', monospace;
   overflow: hidden; touch-action: none; user-select: none;
+  -webkit-user-select: none; -webkit-touch-callout: none;
+  overscroll-behavior: none;
 }
+:root { --stick: 80px; --knob: 34px; --fire: 64px; --jump: 54px; }
 
 /* Column: HUD, stage, weapon bar. Safe-area insets keep controls off notches. */
 #app {
@@ -70,8 +77,9 @@ html, body {
   overflow: hidden;
 }
 
-/* Game view. Crosshair cursor on desktop. */
+/* Game view. Crosshair cursor on desktop. Absolute so it never sizes the stage. */
 canvas {
+  position: absolute; left: 0; top: 0;
   display: block;
   touch-action: none;
   background: #0a0a12;
@@ -87,44 +95,47 @@ canvas {
 }
 #mobile-controls.show { display: block; }
 
-/* Virtual joystick base. */
+/* Floating stick base (pointer-events none: the canvas takes the touches). Resting
+   spot here; while held, script moves it to where the thumb landed. */
 .joy {
   position: absolute;
-  bottom: 20px;
-  width: 100px; height: 100px;
+  bottom: 16px;
+  width: var(--stick); height: var(--stick);
   border-radius: 50%;
-  background: rgba(255,255,255,0.08);
-  border: 2px solid rgba(255,255,255,0.2);
-  pointer-events: auto;
-  touch-action: none;
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.18);
+  pointer-events: none;
+  opacity: 0.55;
 }
-.joy-left  { left: 20px; }
-.joy-right { right: 20px; }
+.joy.active { opacity: 1; background: rgba(255,255,255,0.1); }
+.joy-left  { left: 16px; }
+.joy-right { right: calc(var(--fire) + 34px); }
 .joy .knob {
   position: absolute;
   top: 50%; left: 50%;
-  width: 40px; height: 40px;
-  margin: -20px 0 0 -20px;
+  width: var(--knob); height: var(--knob);
+  margin: calc(var(--knob) / -2) 0 0 calc(var(--knob) / -2);
   background: rgba(255,255,255,0.4);
   border-radius: 50%;
 }
 .joy .label {
   position: absolute;
-  bottom: -16px; left: 50%;
+  bottom: -14px; left: 50%;
   transform: translateX(-50%);
   font-size: 9px;
   color: rgba(255,255,255,0.5);
   letter-spacing: 1px;
 }
+.joy.active .label { display: none; }
 
-/* Hold-to-fire button. */
+/* Hold-to-fire button (pointer events: touch and mouse). */
 #btn-fire {
   position: absolute;
-  right: 130px;
-  bottom: 40px;
-  width: 70px; height: 70px;
+  right: 14px;
+  bottom: 18px;
+  width: var(--fire); height: var(--fire);
   border-radius: 50%;
-  background: rgba(255,80,80,0.5);
+  background: rgba(255,80,80,0.45);
   border: 2px solid rgba(255,80,80,0.8);
   color: #fff;
   font-family: inherit;
@@ -135,14 +146,14 @@ canvas {
   touch-action: none;
 }
 
-/* Jump button. */
+/* Jump button, above FIRE. */
 #btn-jump {
   position: absolute;
-  right: 30px;
-  bottom: 120px;
-  width: 60px; height: 60px;
+  right: calc(14px + (var(--fire) - var(--jump)) / 2);
+  bottom: calc(28px + var(--fire));
+  width: var(--jump); height: var(--jump);
   border-radius: 50%;
-  background: rgba(80,180,255,0.5);
+  background: rgba(80,180,255,0.45);
   border: 2px solid rgba(80,180,255,0.8);
   color: #fff;
   font-family: inherit;
@@ -152,6 +163,19 @@ canvas {
   pointer-events: auto;
   touch-action: none;
 }
+#btn-fire.held { background: rgba(255,80,80,0.75); }
+#btn-jump.held { background: rgba(80,180,255,0.75); }
+
+/* Pause button, top-right of the stage (minimap is top-left). */
+#btn-pause {
+  position: absolute; top: 8px; right: 8px;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(0,0,0,0.5); color: #FFD700;
+  border: 1px solid rgba(255,215,0,0.6);
+  font-family: inherit; font-size: 12px; font-weight: bold;
+  z-index: 6; cursor: pointer; touch-action: none; padding: 0;
+}
+#btn-pause[hidden] { display: none; }
 
 /* Weapon bar under the stage. */
 #toolbar {
@@ -215,7 +239,7 @@ canvas {
 #overlay h2 { margin: 0 0 8px; font-size: 30px; color: #FFD700; letter-spacing: 4px; }
 #overlay p { margin: 4px 0; font-size: 13px; color: #ccc; letter-spacing: 1px; max-width: 500px; }
 #overlay .accent { color: #FFD700; }
-#overlay .keys { font-size: 11px; opacity: 0.7; line-height: 1.6; }
+#overlay .keys { font-size: 11px; opacity: 0.7; line-height: 1.6; white-space: pre-line; }
 #overlay button {
   margin-top: 14px; padding: 12px 26px;
   background: #FFD700; color: #000;
@@ -236,3 +260,28 @@ canvas {
   flex-wrap: wrap;
   justify-content: center;
 }
+
+/* Short landscape (phones, the sites hub): weapons as a right-hand column. */
+@media (orientation: landscape) and (max-height: 560px) {
+  #app {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto 1fr;
+  }
+  #hud { grid-column: 1 / -1; padding: 4px 10px; }
+  #hud .stat { padding: 2px 8px; }
+  #hud button { padding: 5px 10px; }
+  #stage { grid-column: 1; grid-row: 2; }
+  #toolbar {
+    grid-column: 2; grid-row: 2;
+    flex-direction: column; flex-wrap: nowrap;
+    justify-content: center; padding: 4px 6px; gap: 4px;
+  }
+  .weapon { min-width: 78px; padding: 4px 6px; }
+  #overlay { padding: 8px; gap: 2px; }
+  #overlay h2 { font-size: 22px; margin-bottom: 2px; }
+  #overlay button { margin-top: 6px; padding: 8px 18px; font-size: 13px; }
+}
+
+/* Inside the sites hub: the hub bar shows HP / Score / New Game, so hide the own bar. */
+body.in-hub #hud { display: none; }
