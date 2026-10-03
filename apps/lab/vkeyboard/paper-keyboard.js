@@ -312,7 +312,13 @@ function makeKey(label, className, onPress) {
   button.type = "button";
   button.className = "key" + (className ? " " + className : "");
   button.textContent = label;
-  button.addEventListener("click", onPress);
+  button.addEventListener("click", function () {
+    button.classList.add("lit");
+    setTimeout(function () {
+      button.classList.remove("lit");
+    }, 400);
+    onPress();
+  });
   return button;
 }
 
@@ -417,11 +423,18 @@ async function startPaperCamera() {
     video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
     audio: false
   });
+  const track = paperStream.getVideoTracks()[0];
+  if (track.applyConstraints) {
+    track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(function () {});
+  }
   const video = document.getElementById("paper-video");
   video.srcObject = paperStream;
   await video.play();
   paperTimer = setInterval(checkCorners, 300);
 }
+
+/* Last time all four marks were seen. Keeps the quad green through a wobble. */
+let marksSeenAt = 0;
 
 /*
   Stop the paper camera when the user leaves the panel.
@@ -440,38 +453,93 @@ function stopPaperCamera() {
 }
 
 /*
-  A printed mark is a dark square with a bright hole.
-  Score one corner of the frame. True when that pattern is present.
+  Find dark squares with a bright hole anywhere in the frame.
+  Returns center points. Marks do not have to sit in the camera corners.
 */
-function cornerHasMark(data, width, height, x0, y0, x1, y1) {
-  let dark = 0;
-  let sumX = 0;
-  let sumY = 0;
-  const step = 3;
-  for (let y = y0; y < y1; y += step) {
-    for (let x = x0; x < x1; x += step) {
-      const i = (y * width + x) * 4;
+function findMarks(data, width, height) {
+  const seen = new Uint8Array(width * height);
+  const marks = [];
+  const step = 2;
+  for (let y = 2; y < height - 2; y += step) {
+    for (let x = 2; x < width - 2; x += step) {
+      const start = y * width + x;
+      if (seen[start]) {
+        continue;
+      }
+      const i = start * 4;
       const lum = data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
-      if (lum < 70) {
-        dark += 1;
-        sumX += x;
-        sumY += y;
+      if (lum > 75) {
+        continue;
+      }
+      const stack = [start];
+      seen[start] = 1;
+      let count = 0;
+      let sumX = 0;
+      let sumY = 0;
+      let minX = x;
+      let maxX = x;
+      let minY = y;
+      let maxY = y;
+      while (stack.length && count < 400) {
+        const p = stack.pop();
+        const px = p % width;
+        const py = (p - px) / width;
+        count += 1;
+        sumX += px;
+        sumY += py;
+        if (px < minX) minX = px;
+        if (px > maxX) maxX = px;
+        if (py < minY) minY = py;
+        if (py > maxY) maxY = py;
+        const near = [p - 1, p + 1, p - width, p + width];
+        near.forEach(function (n) {
+          if (n < 0 || n >= seen.length || seen[n]) {
+            return;
+          }
+          const nx = n % width;
+          const ny = (n - nx) / width;
+          if (nx < 1 || ny < 1 || nx >= width - 1 || ny >= height - 1) {
+            return;
+          }
+          const k = n * 4;
+          const nLum = data[k] * 0.3 + data[k + 1] * 0.59 + data[k + 2] * 0.11;
+          if (nLum < 75) {
+            seen[n] = 1;
+            stack.push(n);
+          }
+        });
+      }
+      const bw = maxX - minX;
+      const bh = maxY - minY;
+      if (count < 8 || count > 180 || bw < 3 || bh < 3 || bw > 28 || bh > 28) {
+        continue;
+      }
+      const cx = Math.round(sumX / count);
+      const cy = Math.round(sumY / count);
+      const j = (cy * width + cx) * 4;
+      const center = data[j] * 0.3 + data[j + 1] * 0.59 + data[j + 2] * 0.11;
+      if (center > 150) {
+        marks.push({ x: cx, y: cy });
       }
     }
   }
-  if (dark < 12) {
-    return false;
-  }
-  const cx = Math.round(sumX / dark);
-  const cy = Math.round(sumY / dark);
-  const j = (cy * width + cx) * 4;
-  const center = data[j] * 0.3 + data[j + 1] * 0.59 + data[j + 2] * 0.11;
-  return center > 140;
+  return marks;
 }
 
 /*
-  Sample the viewfinder and light TL TR BL BR.
-  Each mark must sit in its own corner of the frame.
+  Name four points from their own layout, not from the camera edges.
+*/
+function nameMarks(marks) {
+  const tl = marks.slice().sort(function (a, b) { return (a.x + a.y) - (b.x + b.y); })[0];
+  const br = marks.slice().sort(function (a, b) { return (b.x + b.y) - (a.x + a.y); })[0];
+  const tr = marks.slice().sort(function (a, b) { return (b.x - b.y) - (a.x - a.y); })[0];
+  const bl = marks.slice().sort(function (a, b) { return (a.x - a.y) - (b.x - b.y); })[0];
+  return { tl: tl, tr: tr, bl: bl, br: br };
+}
+
+/*
+  Sample the viewfinder, find marks anywhere, draw the sheet quad.
+  The quad stays green for a short hold after the marks were last seen.
 */
 function checkCorners() {
   const video = document.getElementById("paper-video");
@@ -486,24 +554,30 @@ function checkCorners() {
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   ctx.drawImage(video, 0, 0, width, height);
   const frame = ctx.getImageData(0, 0, width, height);
-  const mx = Math.round(width * 0.34);
-  const my = Math.round(height * 0.34);
-  const marks = {
-    tl: cornerHasMark(frame.data, width, height, 0, 0, mx, my),
-    tr: cornerHasMark(frame.data, width, height, width - mx, 0, width, my),
-    bl: cornerHasMark(frame.data, width, height, 0, height - my, mx, height),
-    br: cornerHasMark(frame.data, width, height, width - mx, height - my, width, height)
-  };
+  const found = findMarks(frame.data, width, height);
+  const named = found.length >= 4 ? nameMarks(found) : null;
+  if (named) {
+    marksSeenAt = Date.now();
+  }
+  const held = Date.now() - marksSeenAt < 600;
   ["tl", "tr", "bl", "br"].forEach(function (name) {
-    document.getElementById("led-" + name).classList.toggle("ok", marks[name]);
+    document.getElementById("led-" + name).classList.toggle("ok", held);
   });
-  const ready = marks.tl && marks.tr && marks.bl && marks.br;
-  document.getElementById("paper-status").textContent = ready
-    ? "Aligned. All four marks are in frame."
-    : "Landscape phone, 25–35 cm up, all four marks inside the corners.";
-  ctx.strokeStyle = ready ? "#1d7a3a" : "#c44747";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(2, 2, width - 4, height - 4);
+  document.getElementById("paper-status").textContent = held
+    ? "Aligned. Marks found anywhere in frame."
+    : "Tap the sheet to focus. Marks can sit inside the picture.";
+  ctx.clearRect(0, 0, width, height);
+  if (named) {
+    ctx.beginPath();
+    ctx.moveTo(named.tl.x, named.tl.y);
+    ctx.lineTo(named.tr.x, named.tr.y);
+    ctx.lineTo(named.br.x, named.br.y);
+    ctx.lineTo(named.bl.x, named.bl.y);
+    ctx.closePath();
+    ctx.strokeStyle = held ? "#1d7a3a" : "#c44747";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
 }
 
 /*

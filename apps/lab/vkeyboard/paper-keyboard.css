@@ -36,7 +36,23 @@ body {
 
 h1 {
   font-size: 16px;
-  margin: 0 0 8px;
+  margin: 0;
+}
+
+/* Title and connection share one line. */
+.top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: right;
 }
 
 .status, .hint {
@@ -142,8 +158,8 @@ h1 {
   flex: 4;
 }
 
-.key.small-label {
-  font-size: 13px;
+.key.lit {
+  background: var(--accent);
 }
 
 /* Hidden when the other mode is selected. */
@@ -165,12 +181,12 @@ h1 {
   color: var(--key-text);
 }
 
-/* Half-screen viewfinder. Video and corner overlay share the box. */
+/* Viewfinder fills the space under the mode switch. No side bars. */
 .finder {
   position: relative;
   width: 100%;
-  height: 50vh;
-  background: black;
+  height: 62vh;
+  background: #1a1a1a;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -180,26 +196,28 @@ h1 {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: fill;
 }
 
-/* One lamp per printed corner mark. */
-.leds {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.leds span {
-  flex: 1;
+/* Lamps sit on the picture corners, not in a row. */
+.finder span {
+  position: absolute;
+  z-index: 2;
+  min-width: 42px;
   text-align: center;
-  padding: 10px 0;
-  border-radius: 8px;
+  padding: 6px 0;
+  border-radius: 6px;
   background: #6b1d1d;
   color: white;
   font-weight: 700;
+  font-size: 13px;
 }
 
-.leds span.ok {
+#led-tl { top: 8px; left: 8px; }
+#led-tr { top: 8px; right: 8px; }
+#led-bl { bottom: 8px; left: 8px; }
+#led-br { bottom: 8px; right: 8px; }
+
+.finder span.ok {
   background: #1d7a3a;
 }

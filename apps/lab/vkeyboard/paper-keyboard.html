@@ -14,8 +14,10 @@
 </head>
 <body>
   <div class="app">
-    <h1>Paper Keyboard</h1>
-    <p id="status" class="status">Pick a role.</p>
+    <header class="top">
+      <h1>Paper Keyboard</h1>
+      <p id="status">Pick a role</p>
+    </header>
 
     <!-- Home. Desktop picks Output. Phone picks Input, or arrives from the QR link. -->
     <section id="home">
@@ -56,14 +58,12 @@
           <div class="finder">
             <video id="paper-video" playsinline autoplay muted></video>
             <canvas id="paper-overlay"></canvas>
-          </div>
-          <div class="leds">
             <span id="led-tl">TL</span>
             <span id="led-tr">TR</span>
             <span id="led-bl">BL</span>
             <span id="led-br">BR</span>
           </div>
-          <p id="paper-status">Hold the phone landscape, 25–35 cm above the sheet.</p>
+          <p id="paper-status">Tap the sheet to focus. Marks can sit inside the picture.</p>
         </div>
       </div>
     </section>
