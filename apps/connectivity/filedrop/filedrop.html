@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#121418">
+<title>File Drop</title>
+<link rel="icon" href="filedrop_icon.png?v=20261004a">
+<link rel="apple-touch-icon" href="filedrop_icon.png?v=20261004a">
+<link rel="stylesheet" href="filedrop.css?v=20261004a">
+</head>
+<body>
+<header class="top">
+  <img class="logo" src="filedrop_icon.png?v=20261004a" alt="" width="26" height="26">
+  <h1><b>File Drop</b><span class="sub"> · Send files between devices</span></h1>
+  <button id="files-btn" class="btn chip" type="button" hidden>Files <span id="files-n">0</span></button>
+</header>
+
+<main id="main">
+  <!-- Pair: show my QR + code, and scan / type the other device's -->
+  <section id="pair" class="pair">
+    <div class="card mine">
+      <div id="qr-wrap" class="qr-wrap"><div id="qr" class="qr" role="img" aria-label="QR code to connect to this device"></div></div>
+      <div class="code-row">
+        <div id="code" class="code" aria-live="polite" aria-label="This device's code">····</div>
+        <div class="code-meta">This device&rsquo;s code<br><span id="code-timer">&nbsp;</span></div>
+      </div>
+    </div>
+    <div class="card join">
+      <div class="cam">
+        <video id="cam" muted playsinline autoplay></video>
+        <div class="cam-frame" aria-hidden="true"></div>
+        <p id="cam-msg" class="cam-msg">Starting camera…</p>
+      </div>
+      <form id="code-form" class="code-form" autocomplete="off">
+        <input id="code-in" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="Other device&rsquo;s code" aria-label="Other device's 4-digit code" autocomplete="off" spellcheck="false">
+        <button id="code-go" class="btn primary" type="submit">Connect</button>
+      </form>
+      <button id="pick-pre" class="btn" type="button">Choose files <span id="pre-n" class="muted"></span></button>
+    </div>
+    <div id="pair-state" class="pair-state" hidden><div class="spinner" aria-hidden="true"></div><span>Connecting…</span></div>
+  </section>
+
+  <!-- Room: connected (or reconnecting) — send, receive, list -->
+  <section id="room" class="room" hidden>
+    <div class="status">
+      <span id="dot" class="dot" aria-hidden="true"></span>
+      <span id="peer" class="peer" role="status">Connected</span>
+      <button id="disc" class="btn ghost" type="button">Disconnect</button>
+      <button id="back" class="btn ghost" type="button" hidden>Pair</button>
+    </div>
+    <div class="actions">
+      <button id="pick" class="btn primary" type="button">Send files</button>
+      <button id="save-all" class="btn" type="button" hidden>Save all (.zip)</button>
+    </div>
+    <div id="overall" class="overall" hidden>
+      <div class="ov-text"><span id="ov-left"></span><span id="ov-right"></span></div>
+      <div class="track"><span id="ov-bar"></span></div>
+    </div>
+    <ul id="list" class="list" aria-label="Files"></ul>
+    <p id="empty" class="empty">Drop files anywhere, or tap <b>Send files</b>.</p>
+  </section>
+</main>
+
+<div id="veil" class="veil" hidden><div>Drop to send</div></div>
+
+<div id="viewer" class="viewer" hidden role="dialog" aria-modal="true" aria-labelledby="v-name">
+  <div class="v-top">
+    <span id="v-name" class="v-name"></span>
+    <button id="v-share" class="btn" type="button" hidden>Share</button>
+    <button id="v-save" class="btn primary" type="button">Save</button>
+    <button id="v-close" class="btn ghost" type="button" aria-label="Close">✕</button>
+  </div>
+  <div id="v-body" class="v-body"></div>
+</div>
+
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+<input id="file" type="file" multiple hidden>
+<noscript><p class="noscript">File Drop needs JavaScript.</p></noscript>
+
+<script src="vendor/peerjs.min.js?v=20261004a"></script>
+<script src="vendor/qrcode.js?v=20261004a"></script>
+<script src="vendor/jsQR.js?v=20261004a"></script>
+<script src="vendor/jszip.min.js?v=20261004a"></script>
+<script src="filedrop_config.js?v=20261004a"></script>
+<script src="filedrop_proto.js?v=20261004a"></script>
+<script src="filedrop_pair.js?v=20261004a"></script>
+<script src="filedrop_send.js?v=20261004a"></script>
+<script src="filedrop_recv.js?v=20261004a"></script>
+<script src="filedrop_scan.js?v=20261004a"></script>
+<script src="filedrop_ui.js?v=20261004a"></script>
+</body>
+</html>

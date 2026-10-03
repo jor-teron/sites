@@ -56,7 +56,7 @@ Office,   Draft-ly,              apps/office/draftly/,                       ,  
 Office,   OCR,                   apps/office/ocr/,                           ,         0,       0,      360
 Office,   MS Word Diff,          apps/tools/msword_diff/,                    ,         0,       0,      440
 
-Connectivity, AirDrop,           apps/connectivity/airdrop-web/,             ,         0,       0,      405
+Connectivity, File Drop,         apps/connectivity/filedrop/,                ,         0,       0,      405
 Connectivity, QR Scanner,        apps/connectivity/qr-scanner/,              ,         0,       0,      406
 Connectivity, Pooh Chat,         apps/connectivity/pooh-chat/,               ,         0,       0,      450
 Connectivity, WebChat,           apps/connectivity/webrtc-chat/,             ,         0,       0,      455
