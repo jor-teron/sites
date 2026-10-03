@@ -90,6 +90,7 @@
     for (const id of ['copy', 'dl-txt', 'dl-docx']) $(id).disabled = !hasText || busy;
     ta.readOnly = busy || (!d && !hasText);
     for (const b of document.querySelectorAll('.corner-btn')) b.disabled = busy;
+    $('camera-btn').disabled = busy;
 
     const img = $('preview');
     const url = d && d.previewUrl ? d.previewUrl : '';
@@ -190,7 +191,6 @@
 
     for (const b of document.querySelectorAll('#tabs [data-tab]')) U.onTap(b, () => U.showTab(b.dataset.tab));
     for (const b of document.querySelectorAll('.corner-btn.plus')) U.onTap(b, (e) => { e.stopPropagation(); OCR.io.pick(); });
-    U.onTap($('cam-btn'), (e) => { e.stopPropagation(); OCR.io.camera(); });
 
     // Before anything is loaded, tapping either panel opens the file picker.
     for (const p of document.querySelectorAll('.panel')) {
@@ -204,7 +204,6 @@
 
     OCR.on((kind, data) => { if (kind === 'status') setStatus(data); else U.sync(); });
     U.showTab('preview');
-    OCR.status(cfg().text.status.ready, '');
     U.sync();
   };
 
@@ -213,6 +212,7 @@
     OCR.io.init();
     U.init();
     if (OCR.send) OCR.send.init();
+    if (OCR.camera) OCR.camera.init();
     if (typeof Tesseract === 'undefined' || !OCR.pdf.available()) {
       OCR.status('Some app files failed to load — reload the page', 'err');
     }

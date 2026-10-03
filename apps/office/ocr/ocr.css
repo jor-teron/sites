@@ -32,6 +32,7 @@ html, body {
   background: var(--bar); border-bottom: 1px solid var(--border);
 }
 .grow { flex: 1 1 0; min-width: 0; }
+.pair { display: inline-flex; align-items: center; gap: inherit; }  /* Camera + QR wrap together */
 .btn, .seg button, #tabs button {
   min-height: 36px; padding: 0 12px;
   background: var(--panel); color: var(--text);
@@ -62,6 +63,7 @@ html, body {
 .dl-label { font-size: 13px; color: var(--muted); margin: 0 2px 0 4px; }
 
 /* ---------- status line ---------- */
+#status:empty { display: none; }   /* no row until there is something to say */
 #status {
   flex: 0 0 auto;
   height: 24px; line-height: 24px; padding: 0 10px;
@@ -116,8 +118,6 @@ body.empty #ocr-text { pointer-events: none; }
   font-size: 18px; line-height: 1; cursor: pointer; padding: 0;
 }
 .corner-btn:disabled { opacity: 0.4; }
-#cam-btn { display: none; }
-@media (pointer: coarse) { #cam-btn { display: block; } }
 
 /* ---------- key popover ---------- */
 .pop {
@@ -160,18 +160,56 @@ body.empty #ocr-text { pointer-events: none; }
   line-height: 1.3;
 }
 
+/* toolbar icons */
+.btn .ico { width: 15px; height: 15px; vertical-align: -2px; margin-left: 2px; }
+
+/* ---------- camera overlay ---------- */
+#cam { outline: none; position: fixed; inset: 0; z-index: 30; background: #000; display: flex; align-items: center; justify-content: center; }
+#cam video, #cam canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+#cam-msg {
+  position: relative; z-index: 1; padding: 10px 16px; border-radius: 10px;
+  background: rgba(27,31,39,0.85); color: var(--text); font-size: 15px;
+}
+.cam-round {
+  position: absolute; z-index: 2; top: calc(10px + env(safe-area-inset-top)); width: 44px; height: 44px;
+  border-radius: 50%; border: 1px solid rgba(255,255,255,0.35); background: rgba(0,0,0,0.5); color: #fff;
+  font-size: 20px; line-height: 1; cursor: pointer; padding: 0; touch-action: manipulation;
+}
+#cam-close { right: calc(10px + env(safe-area-inset-right)); }
+#cam-switch { left: calc(10px + env(safe-area-inset-left)); }
+.cam-bar {
+  position: absolute; z-index: 2; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom));
+  display: flex; align-items: center; justify-content: center; gap: 28px;
+}
+.cam-shutter {
+  width: 72px; height: 72px; border-radius: 50%; padding: 0; cursor: pointer; touch-action: manipulation;
+  background: #fff; border: 5px solid rgba(255,255,255,0.45); background-clip: padding-box;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.4);
+}
+.cam-shutter:active { transform: scale(0.94); }
+.cam-shutter:disabled { opacity: 0.35; }
+.cam-btn2 { min-height: 48px; min-width: 104px; font-size: 16px; }
+/* short landscape (phone sideways, hub play area): controls in a column on the right */
+@media (orientation: landscape) and (max-height: 500px) {
+  .cam-bar { left: auto; top: 0; bottom: 0; right: calc(14px + env(safe-area-inset-right)); flex-direction: column-reverse; gap: 14px; }
+  .cam-shutter { width: 64px; height: 64px; }
+  #cam-close { right: auto; left: calc(10px + env(safe-area-inset-left)); }
+  #cam-switch { left: calc(10px + env(safe-area-inset-left)); top: auto; bottom: calc(10px + env(safe-area-inset-bottom)); }
+}
+
 /* ---------- narrow screens: one panel at a time ---------- */
 @media (max-width: 699px) {
   #tabs { display: flex; }
   #panels { grid-template-columns: 1fr; }
   body[data-tab="preview"] #panel-text, body[data-tab="text"] #panel-preview { display: none; }
-  .btn, .seg button { padding: 0 10px; }
+  .btn, .seg button { padding: 0 8px; }
+  .btn.icon { padding: 0; }
   .grow { display: none; }
 }
 /* short landscape (phones, hub play area): tighter bar */
 @media (max-height: 420px) {
   #bar { gap: 4px; padding: 4px 6px; }
-  .btn, .seg button, #tabs button { font-size: 13px; padding: 0 9px; }
+  .btn, .seg button, #tabs button { font-size: 13px; padding: 0 8px; }
   .btn.icon { padding: 0; }
   #status { height: 20px; line-height: 20px; font-size: 12px; }
   #panels { padding: 4px 6px 6px; gap: 6px; }

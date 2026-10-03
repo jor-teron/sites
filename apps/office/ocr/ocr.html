@@ -11,7 +11,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#121418">
   <title>OCR</title>
-  <link rel="stylesheet" href="ocr.css?v=20261004b">
+  <link rel="stylesheet" href="ocr.css?v=20261004c">
 </head>
 <body class="empty">
 <div id="app">
@@ -26,10 +26,13 @@
       <input type="number" id="page-input" inputmode="numeric" hidden aria-label="Page number">
       <button type="button" class="btn icon" id="next" aria-label="Next page">›</button>
     </div>
+    <span class="pair">
+      <button type="button" class="btn" id="camera-btn" title="Take a photo with the camera">Camera 📷</button>
+      <button type="button" class="btn" id="qr-btn" title="Send a file from your phone">QR <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1 1h6v6H1zm1.5 1.5v3h3v-3zM9 1h6v6H9zm1.5 1.5v3h3v-3zM1 9h6v6H1zm1.5 1.5v3h3v-3zM3 3h2v2H3zm8 0h2v2h-2zM3 11h2v2H3zm6-2h2v2H9zm2 2h2v2h-2zm2-2h2v2h-2zm-4 4h2v2H9zm4 0h2v2h-2z"/></svg></button>
+      <span class="chip" id="phone-chip" hidden><span id="phone-chip-text">📱 Connected</span><button type="button" id="phone-x" title="Disconnect phone" aria-label="Disconnect phone">✕</button></span>
+    </span>
     <button type="button" class="btn primary" id="start" disabled>Start OCR</button>
     <button type="button" class="btn" id="all" hidden>All pages</button>
-    <button type="button" class="btn" id="qr-btn" title="Send a file from your phone">QR</button>
-    <span class="chip" id="phone-chip" hidden><span id="phone-chip-text">📱 Connected</span><button type="button" id="phone-x" title="Disconnect phone" aria-label="Disconnect phone">✕</button></span>
     <span class="grow"></span>
     <button type="button" class="btn" id="copy" disabled>Copy</button>
     <span class="dl"><span class="dl-label">Download</span><button type="button" class="btn small" id="dl-txt" disabled>.txt</button><button type="button" class="btn small" id="dl-docx" disabled>.docx</button></span>
@@ -50,7 +53,6 @@
         <div>JPG · PNG · WebP · PDF · max 20 MB</div>
       </div>
       <div class="corner">
-        <button type="button" class="corner-btn" id="cam-btn" title="Take photo" aria-label="Take photo">📷</button>
         <button type="button" class="corner-btn plus" title="Open files" aria-label="Open files">＋</button>
       </div>
     </section>
@@ -84,13 +86,26 @@
     <a id="qr-link" target="_blank" rel="noopener"></a>
   </div>
 
+  <div id="cam" hidden role="dialog" aria-label="Camera" tabindex="-1">
+    <video id="cam-video" playsinline muted autoplay></video>
+    <canvas id="cam-shot" hidden></canvas>
+    <div id="cam-msg" hidden></div>
+    <button type="button" class="cam-round" id="cam-switch" hidden title="Switch camera" aria-label="Switch camera">🔄</button>
+    <button type="button" class="cam-round" id="cam-close" title="Close (Esc)" aria-label="Close camera">✕</button>
+    <div class="cam-bar">
+      <button type="button" class="btn cam-btn2" id="cam-retake" hidden>Retake</button>
+      <button type="button" class="cam-shutter" id="cam-capture" title="Capture (Space)" aria-label="Capture"></button>
+      <button type="button" class="btn primary cam-btn2" id="cam-use" hidden>Use</button>
+    </div>
+  </div>
+
   <input type="file" id="file-in" multiple hidden>
   <input type="file" id="camera-in" accept="image/*" capture="environment" hidden>
 </div>
 <script src="vendor/tesseract.min.js?v=20261004a"></script>
 <script src="vendor/pdf.min.js?v=20261004a"></script>
 <script src="vendor/jszip.min.js?v=20261004a"></script>
-<script src="ocr_config.js?v=20261004b"></script>
+<script src="ocr_config.js?v=20261004c"></script>
 <script src="ocr_state.js?v=20261004a"></script>
 <script src="ocr_engine.js?v=20261004a"></script>
 <script src="ocr_pdf.js?v=20261004a"></script>
@@ -100,6 +115,7 @@
 <script src="vendor/qrcode.js?v=20261004b"></script>
 <script src="ocr_send_common.js?v=20261004b"></script>
 <script src="ocr_send.js?v=20261004b"></script>
-<script src="ocr_ui.js?v=20261004b"></script>
+<script src="ocr_camera.js?v=20261004c"></script>
+<script src="ocr_ui.js?v=20261004c"></script>
 </body>
 </html>

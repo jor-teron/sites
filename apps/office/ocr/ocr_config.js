@@ -57,6 +57,23 @@ OCR.config = {
     revokeDelayMs: 30000
   },
 
+  // Live camera (Camera 📷, ocr_camera.js, getUserMedia). Falls back to the photo picker.
+  camera: {
+    idealWidth: 1920,                   // requested resolution (the camera gives its closest)
+    idealHeight: 1080,
+    phoneFacing: 'environment',         // touch devices: back camera first
+    jpegQuality: 0.92,                  // captured photo
+    text: {
+      starting: 'Starting camera…',
+      denied: 'Camera permission denied — allow the camera for this site and try again',
+      none: 'No camera found',
+      inUse: 'Camera is busy in another app',
+      insecure: 'Camera needs the app opened over http(s)',
+      lost: 'Camera disconnected',
+      failed: 'Camera failed to start'
+    }
+  },
+
   // Send from phone (QR). The computer page registers a fresh random PeerJS id per QR on the
   // default public PeerJS server (same as the hub controller); the phone page ocr_send.html
   // connects to it. Only one phone per session; the QR token is single-session.
@@ -83,7 +100,6 @@ OCR.config = {
     pageMarker: (n) => '— Page ' + n + ' —',
     fileMarker: (name) => '=== ' + name + ' ===',
     status: {
-      ready: 'Drop, paste or tap to open a JPG, PNG, WebP or PDF',
       wrongType: 'Only JPG, PNG, WebP or PDF files',
       tooBig: 'File is over 20 MB',
       busy: 'Busy — wait or Cancel first',
