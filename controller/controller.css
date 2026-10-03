@@ -3,7 +3,36 @@
  * Theme colours are CSS custom properties grouped under body.theme-<id>.
  * The values below are fallbacks; controller_logic.js applies CONTROLLER_CONFIG.themes[].vars
  * and CONTROLLER_CONFIG.layout at runtime.
+ * Height-based sizes use dvh (dynamic viewport, excludes the browser address bar) with a
+ * vh fallback first for older browsers.
  */
+
+/* ---------- theme: light (default; fallback values, see controller_config.js) ---------- */
+body.theme-light {
+  --bg-1: #f7f8fa;
+  --bg-2: #dde1e7;
+  --text: #1d232b;
+  --muted: #5d6672;
+  --accent: #2563d9;
+  --btn-1: #ffffff;
+  --btn-2: #e9ecf0;
+  --btn-rim: #c2c8d0;
+  --btn-hi: rgba(255,255,255,0.9);
+  --shadow: rgba(40,52,72,0.22);
+  --glyph: #2a313b;
+  --glow: rgba(37,99,217,0.35);
+  --a: #14955a;
+  --b: #d6283c;
+  --x: #2563d9;
+  --y: #c08a00;
+  --stick-ring: rgba(30,40,60,0.16);
+  --stick-ghost: rgba(30,40,60,0.05);
+  --led-off: #ecc9cc;
+  --led-red: #e5262f;
+  --led-amber: #f08c00;
+  --led-green: #10b358;
+  --panel: rgba(255,255,255,0.94);
+}
 
 /* ---------- theme: dark-gloss (fallback values; see controller_config.js) ---------- */
 body.theme-dark-gloss {
@@ -33,29 +62,46 @@ body.theme-dark-gloss {
 }
 
 /* ---------- layout fallbacks (see CONTROLLER_CONFIG.layout) ---------- */
+/* vh values for browsers without dvh; the @supports block below switches to dvh. */
 body {
   --shoulder-w: min(24vw, 210px);
-  --shoulder-h: min(13vh, 52px);
+  --shoulder-h: min(15vh, 58px);
   --left-zone-w: 42vw;
   --right-zone-w: 40vw;
-  --stick-base: min(34vh, 150px);
-  --stick-knob: min(17vh, 72px);
-  --dpad-size: min(36vh, 150px);
-  --dpad-size-solo: min(52vh, 200px);
+  --stick-base: min(50vh, 185px);
+  --stick-knob: min(24vh, 88px);
+  --dpad-size: min(50vh, 185px);
+  --dpad-size-solo: min(64vh, 245px);
   --dpad-arm: 34%;
-  --face-size: min(16vh, 66px);
-  --face-spread: min(15vh, 62px);
+  --face-size: min(21vh, 80px);
+  --face-spread: min(23vh, 86px);
   --sys-w: min(13vw, 58px);
-  --sys-h: min(7vh, 26px);
+  --sys-h: min(7.5vh, 28px);
   --home-size: min(13vh, 48px);
   --led-size: 10px;
   --press-scale: 0.94;
+  --mode-btn: 28px;
+  --kb-tab-h: 30px;
+}
+@supports (height: 1dvh) {
+  body {
+    --shoulder-h: min(15dvh, 58px);
+    --stick-base: min(50dvh, 185px);
+    --stick-knob: min(24dvh, 88px);
+    --dpad-size: min(50dvh, 185px);
+    --dpad-size-solo: min(64dvh, 245px);
+    --face-size: min(21dvh, 80px);
+    --face-spread: min(23dvh, 86px);
+    --sys-h: min(7.5dvh, 28px);
+    --home-size: min(13dvh, 48px);
+  }
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
   width: 100%;
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
   color: var(--text);
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
@@ -86,7 +132,7 @@ button {
 }
 
 /* ---------- shared glossy surface ---------- */
-.gloss, .shoulder, .face, .sys, .home, .dpad-arm, .stick-knob, .gloss-btn, .chip, .qr-btn {
+.gloss, .shoulder, .face, .sys, .home, .dpad-arm, .stick-knob, .gloss-btn, .chip, .qr-btn, #mode-btn, .kk, .menu-item {
   background:
     radial-gradient(120% 80% at 50% 0%, var(--btn-hi) 0%, rgba(255,255,255,0) 55%),
     linear-gradient(180deg, var(--btn-1) 0%, var(--btn-2) 100%);
@@ -304,7 +350,8 @@ body.stick-active .stick-knob {
 /* D-pad */
 .dpad {
   position: absolute;
-  right: 6%;
+  /* keep the D-pad square clear of the centre toggles (about 92px each side of centre) */
+  right: max(6%, calc(var(--left-zone-w) - 50vw + 92px));
   bottom: 7%;
   width: var(--dpad-size);
   height: var(--dpad-size);
@@ -379,7 +426,8 @@ body.mode-dpad .dpad {
 .center-cluster {
   position: absolute;
   left: 50%;
-  top: calc(env(safe-area-inset-top) + 10px);
+  /* starts below the mode button (fixed at the top centre) */
+  top: calc(env(safe-area-inset-top) + var(--mode-btn) + 8px);
   bottom: calc(env(safe-area-inset-bottom) + 10px);
   transform: translateX(-50%);
   display: flex;
@@ -392,8 +440,7 @@ body.mode-dpad .dpad {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-top: calc(var(--shoulder-h) * 0.35);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .qr-btn {
   width: 30px;
@@ -406,6 +453,9 @@ body.mode-dpad .dpad {
   touch-action: manipulation;
 }
 .qr-btn:active { transform: scale(var(--press-scale)); filter: brightness(1.25); }
+.fs-btn { font-size: 17px; line-height: 1; padding: 0; color: var(--glyph); }
+.fs-btn.on { color: var(--accent); }
+.fs-btn[hidden] { display: none; }
 .qr-icon { width: 100%; height: 100%; display: block; pointer-events: none; opacity: 0.9; }
 .pair-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
 .scan-btn { display: inline-flex; align-items: center; gap: 8px; padding-left: 18px; padding-right: 22px; }
@@ -502,9 +552,9 @@ body.mode-dpad .dpad {
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--muted);
-  padding: 6px 10px;
+  padding: 6px 9px;
   border-radius: 999px;
-  min-width: 56px;
+  min-width: 52px;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 0 0 1px var(--btn-rim), 0 3px 8px var(--shadow);
 }
 .chip.off { opacity: 0.55; }
@@ -563,6 +613,7 @@ body.mode-dpad .dpad {
 
 @media (orientation: portrait) {
   #pad { visibility: hidden; }
+  body.view-pc #kb-view { visibility: hidden; }
 }
 @media (orientation: landscape) {
   #rotate-overlay { display: none !important; }
@@ -591,3 +642,173 @@ body.mode-dpad .dpad {
 .diag-actions { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
 .diag-actions .gloss-btn { padding: 6px 14px; font-size: 12px; }
 #diag-test-result { font-family: ui-monospace, monospace; }
+
+/* ---------- light theme details (colours that are not plain variables) ---------- */
+body.theme-light :where(.shoulder, .face, .sys, .home, .dpad-arm, .stick-knob, .gloss-btn, .chip, .qr-btn, #mode-btn, .kk, .menu-item) {
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -2px 4px rgba(30,40,60,0.12),
+    0 0 0 1px var(--btn-rim),
+    0 4px 10px var(--shadow);
+}
+body.theme-light :where(.dpad-arm.horiz) { box-shadow: inset 0 1px 0 #fff, inset 0 -2px 4px rgba(30,40,60,0.12), 0 4px 10px var(--shadow); }
+body.theme-light :where(.face) {
+  text-shadow: none;
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -3px 6px rgba(30,40,60,0.12),
+    0 0 0 2px color-mix(in srgb, var(--c) 65%, #fff),
+    0 4px 10px var(--shadow);
+}
+body.theme-light .face.active { background: var(--c); color: #fff; }
+body.theme-light .stick-base {
+  background: radial-gradient(circle, rgba(30,40,60,0.16) 0%, rgba(30,40,60,0.07) 60%, var(--stick-ghost) 72%, rgba(0,0,0,0) 73%);
+  box-shadow: 0 0 0 2px var(--stick-ring), inset 0 4px 12px rgba(30,40,60,0.18);
+}
+body.theme-light .stick-knob::after { background: radial-gradient(circle at 50% 60%, rgba(30,40,60,0.14), rgba(255,255,255,0.4) 70%); box-shadow: inset 0 2px 4px rgba(30,40,60,0.18); }
+body.theme-light .dpad-hub { background: radial-gradient(circle at 50% 40%, rgba(30,40,60,0.14), rgba(255,255,255,0.3)); box-shadow: inset 0 2px 3px rgba(30,40,60,0.2); }
+body.theme-light .dir::after { filter: none; }
+body.theme-light .dir.active { background: radial-gradient(circle, rgba(37,99,217,0.16), rgba(37,99,217,0) 70%); }
+body.theme-light #code-input { background: linear-gradient(180deg, #ffffff, #eef1f4); box-shadow: inset 0 2px 5px rgba(30,40,60,0.15), 0 0 0 1px var(--btn-rim); }
+body.theme-light #code-input:focus { box-shadow: inset 0 2px 5px rgba(30,40,60,0.15), 0 0 0 1px var(--accent), 0 0 12px var(--glow); }
+body.theme-light .led { box-shadow: 0 0 0 2px rgba(30,40,60,0.25), 0 0 6px var(--led-red); }
+body.theme-light .led.connecting { box-shadow: 0 0 0 2px rgba(30,40,60,0.25), 0 0 8px var(--led-amber); }
+body.theme-light .led.connected { box-shadow: 0 0 0 2px rgba(30,40,60,0.25), 0 0 8px var(--led-green); }
+
+/* ---------- mode button (top centre, every mode) + menu + toast ---------- */
+#mode-btn {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 1px);
+  left: 50%;
+  margin-left: calc(var(--mode-btn) / -2);
+  width: var(--mode-btn);
+  height: var(--mode-btn);
+  border-radius: 50%;
+  z-index: 1100;               /* above the rotate overlay: modes can be switched in portrait */
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--mode-btn) * 0.55);
+  line-height: 1;
+  padding: 0;
+  touch-action: none;
+}
+#mode-btn::before { content: ''; position: absolute; inset: -8px -18px; } /* bigger hit / swipe area */
+#mode-btn.active { transform: scale(var(--press-scale)); filter: brightness(1.15); }
+#mode-btn[hidden] { display: none !important; }
+#mode-toast {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + var(--mode-btn) + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1150;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px var(--btn-rim), 0 6px 16px var(--shadow);
+  pointer-events: none;
+}
+#mode-toast[hidden] { display: none; }
+#mode-menu {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + var(--mode-btn) + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1200;
+  min-width: 190px;
+  max-height: calc(100vh - var(--mode-btn) - 16px);
+  max-height: calc(100dvh - var(--mode-btn) - 16px);
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 0 0 1px var(--btn-rim), 0 12px 30px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  touch-action: manipulation;
+}
+#mode-menu[hidden] { display: none; }
+#menu-modes { display: flex; flex-direction: column; gap: 6px; }
+.menu-title { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); padding: 0 4px; }
+.menu-sep { height: 1px; background: var(--btn-rim); opacity: 0.6; margin: 2px 0; }
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--glyph);
+  touch-action: manipulation;
+}
+.menu-item.on { color: var(--accent); box-shadow: 0 0 0 2px var(--accent), 0 4px 10px var(--shadow); }
+.menu-item:active { transform: scale(var(--press-scale)); }
+.menu-item[hidden] { display: none; }
+
+/* ---------- keyboard modes (kb_*.js) ---------- */
+#kb-view {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  touch-action: none;
+}
+#kb-view[hidden] { display: none !important; }
+#kb-bar {
+  /* the only space taken from the keys: a slim strip that holds the mode button */
+  flex: 0 0 var(--kb-tab-h);
+  height: var(--kb-tab-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+}
+#kb-echo { font-size: 11px; color: var(--muted); max-width: 35vw; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#kb-host { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 2px 5px 5px; }
+.kb { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 5px; }
+.kb[hidden] { display: none; }
+.kb-row { flex: 1 1 0; min-height: 0; display: flex; gap: 5px; }
+.kk {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 2px;
+  border-radius: 8px;
+  color: var(--glyph);
+  font-size: clamp(13px, 5vh, 21px);
+  font-size: clamp(13px, 5dvh, 21px);
+  font-weight: 600;
+  line-height: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  touch-action: none;
+}
+.kk.fn { font-size: clamp(11px, 3.6vh, 15px); font-size: clamp(11px, 3.6dvh, 15px); color: var(--muted); font-weight: 700; }
+.kk.on { color: var(--accent); box-shadow: inset 0 1px 0 var(--btn-hi), 0 0 0 2px var(--accent), 0 3px 8px var(--shadow); }
+.kk.active {
+  transform: scale(var(--press-scale));
+  filter: brightness(1.12);
+  color: var(--accent);
+  box-shadow: inset 0 1px 0 var(--btn-hi), 0 0 0 1px var(--accent), 0 0 12px var(--glow);
+}
+.kb-phone { justify-content: flex-end; }
+.kb-phone .kb-row { max-height: 62px; }
+.kb-phone .kk.wide { flex-grow: 1.5; }
+.kb-phone .kk.space { flex-grow: 4; }
+.kb-phone .kk { font-size: clamp(15px, 2.6vh, 20px); font-size: clamp(15px, 2.6dvh, 20px); }
+.kb-phone .kk.fn { font-size: clamp(12px, 2.1vh, 15px); font-size: clamp(12px, 2.1dvh, 15px); }
+@media (orientation: landscape) {
+  .kb-phone .kk { font-size: clamp(14px, 5vh, 20px); font-size: clamp(14px, 5dvh, 20px); }
+  .kb-phone .kk.fn { font-size: clamp(11px, 3.6vh, 15px); font-size: clamp(11px, 3.6dvh, 15px); }
+}
+body.theme-light .qr-icon { filter: invert(0.8) brightness(0.6); }

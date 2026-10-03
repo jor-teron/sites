@@ -399,6 +399,9 @@
 │   ├── controller_qr_icon.png
 │   ├── dpad.html
 │   ├── index.html
+│   ├── kb_common.js
+│   ├── kb_pc.js
+│   ├── kb_phone.js
 │   └── vendor
 │       ├── jsQR.js
 │       └── jsQR.LICENSE
@@ -508,4 +511,4 @@
     ├── xp.jpg
     └── xp_small.jpg
 
-93 directories, 416 files
+93 directories, 419 files

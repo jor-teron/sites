@@ -1,6 +1,10 @@
 /**
  * Hub phone controller — PeerJS host + QR pairing popover.
  * Forwards D-pad messages into the app iframe as KeyboardEvents + postMessage.
+ * Keyboard modes of the controller send {t:'key', key, code, s:1|0, shift, ctrl, alt, repeat}:
+ * dispatched as keydown / keypress / keyup into the (same-origin) app frame's focused element,
+ * and typed into a focused input / textarea / contenteditable (synthetic events do not type),
+ * incl. Backspace / Delete / Enter / ←→. Also posted as {type:'hub-key', ...}.
  * Rumble: an app in the iframe may post {type:'hub-rumble', ms:N} or
  * {type:'hub-rumble', pattern:[on, off, on, ...]}; it is relayed to the paired phone as
  * {t:'rumble', ms} / {t:'rumble', pattern} (the phone calls navigator.vibrate).
@@ -61,6 +65,7 @@
   let netRetry = 0;      // network retries used
   let retryTimer = 0;
   const held = Object.create(null);
+  const heldKeys = new Map();   // code|key -> last keydown message (keyup sent on release)
 
   function loadCode() {
     try { const c = (localStorage.getItem(CODE_KEY) || '').toUpperCase(); return CODE_RE.test(c) ? c : ''; } catch (_) { return ''; }
@@ -164,6 +169,143 @@
     for (const b of Object.keys(held)) {
       if (held[b]) forwardBtn(b, 0);
     }
+    for (const m of Array.from(heldKeys.values())) forwardKey(Object.assign({}, m, { s: 0, repeat: 0 }));
+  }
+
+  /* ---------- keyboard keys from the controller's keyboard modes ---------- */
+  const KEYCODES = {
+    Backspace: 8, Tab: 9, Enter: 13, Shift: 16, Control: 17, Alt: 18, CapsLock: 20, Escape: 27, ' ': 32,
+    PageUp: 33, PageDown: 34, End: 35, Home: 36, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, Delete: 46,
+  };
+  const CODE_KEYCODES = {
+    Semicolon: 186, Equal: 187, Comma: 188, Minus: 189, Period: 190, Slash: 191, Backquote: 192,
+    BracketLeft: 219, Backslash: 220, BracketRight: 221, Quote: 222,
+  };
+  function keyCodeOf(key, code) {
+    if (KEYCODES[key] != null) return KEYCODES[key];
+    if (/^Key[A-Z]$/.test(code)) return code.charCodeAt(3);
+    if (/^Digit\d$/.test(code)) return code.charCodeAt(5);
+    if (CODE_KEYCODES[code]) return CODE_KEYCODES[code];
+    if (key && key.length === 1) return key.toUpperCase().charCodeAt(0);
+    return 0;
+  }
+
+  /** Focused element of the app frame, following nested same-origin iframes. */
+  function deepActive(doc) {
+    let el = doc.activeElement || doc.body;
+    for (let i = 0; i < 4 && el && el.tagName === 'IFRAME'; i++) {
+      let inner = null;
+      try { inner = el.contentDocument; } catch (_) { inner = null; }
+      if (!inner) break;
+      el = inner.activeElement || inner.body;
+    }
+    return el;
+  }
+
+  const TEXT_TYPES = /^(text|search|url|tel|password|email|number|)$/i;
+  function editableOf(el) {
+    if (!el) return null;
+    if (el.tagName === 'TEXTAREA' && !el.readOnly && !el.disabled) return el;
+    if (el.tagName === 'INPUT' && TEXT_TYPES.test(el.type || '') && !el.readOnly && !el.disabled) return el;
+    if (el.isContentEditable) return el;
+    return null;
+  }
+
+  /** Type into a text field (what a real key would do). Returns true when handled. */
+  function typeInto(el, msg) {
+    const key = msg.key;
+    const doc = el.ownerDocument;
+    const win = doc.defaultView;
+    const fire = (inputType, data) => {
+      try { el.dispatchEvent(new win.InputEvent('input', { bubbles: true, inputType: inputType, data: data == null ? null : data })); }
+      catch (_) { el.dispatchEvent(new win.Event('input', { bubbles: true })); }
+    };
+    if (el.isContentEditable) {
+      // execCommand keeps undo + fires input itself
+      if (key.length === 1) return doc.execCommand('insertText', false, key);
+      if (key === 'Enter') return doc.execCommand('insertParagraph', false) || doc.execCommand('insertText', false, '\n');
+      if (key === 'Backspace') return doc.execCommand('delete', false);
+      if (key === 'Delete') return doc.execCommand('forwardDelete', false);
+      return false;
+    }
+    let start = null, end = null;
+    try { start = el.selectionStart; end = el.selectionEnd; } catch (_) { /* email / number: no selection API */ }
+    const hasSel = typeof start === 'number' && typeof end === 'number';
+    const v = el.value;
+    if (key === 'Enter' && el.tagName !== 'TEXTAREA') {
+      const form = el.form;
+      if (form) { try { form.requestSubmit ? form.requestSubmit() : form.submit(); } catch (_) { /* ignore */ } }
+      return true;
+    }
+    const text = key === 'Enter' ? '\n' : (key.length === 1 ? key : null);
+    if (text != null) {
+      if (el.maxLength > 0 && v.length - (hasSel ? end - start : 0) + text.length > el.maxLength) return true;
+      if (hasSel) el.setRangeText(text, start, end, 'end');
+      else el.value = v + text;
+      fire(key === 'Enter' ? 'insertLineBreak' : 'insertText', text);
+      return true;
+    }
+    if (key === 'Backspace' || key === 'Delete') {
+      if (!hasSel) { el.value = key === 'Backspace' ? Array.from(v).slice(0, -1).join('') : v; fire('deleteContentBackward'); return true; }
+      if (start !== end) el.setRangeText('', start, end, 'end');
+      else if (key === 'Backspace' && start > 0) {
+        const n = start > 1 && /[\uDC00-\uDFFF]/.test(v[start - 1]) ? 2 : 1;   // surrogate pair (emoji)
+        el.setRangeText('', start - n, start, 'end');
+      } else if (key === 'Delete' && start < v.length) {
+        const n = /[\uD800-\uDBFF]/.test(v[start]) ? 2 : 1;
+        el.setRangeText('', start, start + n, 'end');
+      } else return true;
+      fire(key === 'Backspace' ? 'deleteContentBackward' : 'deleteContentForward');
+      return true;
+    }
+    if ((key === 'ArrowLeft' || key === 'ArrowRight') && hasSel) {
+      const p = key === 'ArrowLeft' ? (start !== end ? start : Math.max(0, start - 1)) : (start !== end ? end : Math.min(v.length, end + 1));
+      el.setSelectionRange(p, p);
+      return true;
+    }
+    if ((key === 'Home' || key === 'End') && hasSel) {
+      const p = key === 'Home' ? 0 : v.length;
+      el.setSelectionRange(p, p);
+      return true;
+    }
+    return false;
+  }
+
+  function forwardKey(msg) {
+    const key = typeof msg.key === 'string' ? msg.key.slice(0, 32) : '';
+    if (!key) return;
+    const code = typeof msg.code === 'string' ? msg.code.slice(0, 32) : '';
+    const down = !!msg.s;
+    const id = code || key;
+    const m = { t: 'key', key: key, code: code, s: down ? 1 : 0, shift: msg.shift ? 1 : 0, ctrl: msg.ctrl ? 1 : 0, alt: msg.alt ? 1 : 0, repeat: msg.repeat ? 1 : 0 };
+    if (down) heldKeys.set(id, m); else heldKeys.delete(id);
+    try {
+      const w = frame && frame.contentWindow;
+      const doc = w && w.document;   // throws for a cross-origin app: postMessage only
+      if (doc) {
+        const target = deepActive(doc) || doc;
+        const tw = (target.ownerDocument && target.ownerDocument.defaultView) || w;
+        const keyCode = keyCodeOf(key, code);
+        const init = (type, kc) => new tw.KeyboardEvent(type, {
+          key: key, code: code, keyCode: kc, which: kc, charCode: type === 'keypress' ? kc : 0,
+          shiftKey: !!m.shift, ctrlKey: !!m.ctrl, altKey: !!m.alt, repeat: !!m.repeat,
+          bubbles: true, cancelable: true, composed: true,
+        });
+        const ok = target.dispatchEvent(init(down ? 'keydown' : 'keyup', keyCode));
+        if (down && ok) {
+          const printable = key.length === 1 || key === 'Enter';
+          let pressOk = true;
+          if (printable && !m.ctrl && !m.alt) pressOk = target.dispatchEvent(init('keypress', key === 'Enter' ? 13 : key.charCodeAt(0)));
+          const ed = editableOf(target);
+          if (ed && pressOk && !m.ctrl && !m.alt) typeInto(ed, m);
+        }
+      }
+    } catch (err) {
+      if (!(err && err.name === 'SecurityError')) console.warn('forward key', err);
+    }
+    try {
+      if (frame && frame.contentWindow) frame.contentWindow.postMessage(Object.assign({ type: 'hub-key' }, m), '*');
+    } catch (_) { /* ignore */ }
   }
 
   function forwardBtn(b, s) {
@@ -213,6 +355,8 @@
           frame.contentWindow.postMessage({ type: 'hub-stick', x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) }, '*');
         }
       } catch (_) { /* ignore */ }
+    } else if (msg.t === 'key') {
+      forwardKey(msg);
     }
     // other message types are ignored
   }

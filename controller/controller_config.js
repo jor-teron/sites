@@ -1,12 +1,13 @@
 /*
  * Gamepad Controller — configuration.
  * Every tunable lives here: PeerJS pairing, buttons, message types, stick / D-pad
- * tuning, haptics, layout sizes, themes (colours) and all UI text.
+ * tuning, haptics, layout sizes, themes (colours), controller modes (gamepad /
+ * keyboards) and all UI text.
  * controller_logic.js reads everything from CONTROLLER_CONFIG; controller.css only
  * holds structure + fallback theme values (overridden at runtime by themes[].vars).
  */
 const CONTROLLER_CONFIG = {
-  version: '1.3',                  // shown small on the pairing screen
+  version: '1.4',                  // shown small on the pairing screen
 
   // PeerJS pairing
   peer: {
@@ -45,6 +46,8 @@ const CONTROLLER_CONFIG = {
     btn: 'btn',                    // { t:'btn', b:<button>, s:1|0 }  press / release (original protocol)
     stick: 'stick',                // { t:'stick', x:-1..1, y:-1..1 } analog stick (y: -1 up, +1 down)
     rumble: 'rumble',              // hub → phone { t:'rumble', ms:N | pattern:[...] } game rumble
+    key: 'key',                    // keyboard modes: { t:'key', key:'a', code:'KeyA', s:1|0,
+                                   //   shift:0|1, ctrl:0|1, alt:0|1, repeat:0|1 }  keydown / keyup
     stickDecimals: 2,              // rounding of x / y in stick messages
   },
   messageType: 'btn',              // legacy alias of messages.btn
@@ -52,6 +55,32 @@ const CONTROLLER_CONFIG = {
   // Keyboard
   keys: {
     connect: 'Enter',              // key in the code box that connects (KeyboardEvent.key)
+  },
+
+  // Controller modes, cycled by the round mode button at the top centre.
+  // One entry + one file adds a mode: 'board' names a keyboard registered by a script
+  // (kb_pc.js → CTRL_KB.register('pc', ...)); the 'pad' entry is the built-in gamepad.
+  //   landscape: true → portrait shows the "rotate" overlay (the mode button stays usable).
+  modes: [
+    { id: 'pad',   label: 'Gamepad',        icon: '🎮', landscape: true },
+    { id: 'pc',    label: 'PC keyboard',    icon: '⌨️', landscape: true,  board: 'pc' },
+    { id: 'phone', label: 'Phone keyboard', icon: '📱', landscape: false, board: 'phone' },
+  ],
+  defaultMode: 'pad',
+
+  // Mode button gestures
+  modeButton: {
+    longPressMs: 500,              // hold this long → menu (modes, fullscreen, light / dark)
+    swipePx: 24,                   // horizontal swipe on the button: left = previous, right = next
+    toastMs: 1000,                 // mode name toast after a change
+  },
+
+  // Keyboard modes (kb_common.js)
+  keyboard: {
+    repeatDelayMs: 450,            // hold a key this long → auto-repeat keydown (repeat:1)
+    repeatMs: 60,                  // auto-repeat interval
+    repeatKeys: true,              // false: no auto-repeat at all
+    hapticMs: 12,                  // tick on every key press (Vibe toggle respected)
   },
 
   // Left-side control mode: analog stick, D-pad, or both
@@ -114,6 +143,7 @@ const CONTROLLER_CONFIG = {
     haptics: 'jtsites-ctrl-haptics',
     theme: 'jtsites-ctrl-theme',
     lastCode: 'jtsites-ctrl-lastcode', // last pairing code that connected (auto-connect on load)
+    mode: 'jtsites-ctrl-mode',     // last controller mode (pad / pc / phone)
   },
 
   // Debug: controller.html?demo=1 skips pairing, shows the pad and logs outgoing
@@ -123,9 +153,13 @@ const CONTROLLER_CONFIG = {
     logLimit: 500,
   },
 
-  // Browser features requested on first touch
+  // Browser features requested on touch
   browser: {
-    orientationLock: 'landscape',  // screen.orientation.lock(...) target
+    autoFullscreen: true,          // try fullscreen on touch (retried until it works; stops once
+                                   // the user leaves fullscreen with the ⛶ button / menu)
+    fullscreenIcon: '⛶',           // ⛶ button glyph: not fullscreen
+    fullscreenExitIcon: '⊡',        // ⛶ button glyph: fullscreen (tap to leave)
+    orientationLock: 'landscape',  // screen.orientation.lock(...) target (landscape modes)
     wakeLockType: 'screen',        // navigator.wakeLock.request(...) type
     portraitQuery: '(orientation: portrait)', // shows the rotate overlay when it matches
   },
@@ -135,30 +169,68 @@ const CONTROLLER_CONFIG = {
     errorBlinkMs: 900,             // brief blink on error
   },
 
-  // Layout sizes -> CSS custom properties on <body> (any CSS length / expression)
+  // Layout sizes -> CSS custom properties on <body> (any CSS length / expression).
+  // Heights use dvh (dynamic viewport: excludes the browser address bar); browsers without
+  // dvh get the same value with vh (controller_logic.js applyLayout swaps the unit).
+  // Sized so nothing overlaps on a ~360 px tall landscape phone.
   layout: {
     '--shoulder-w': 'min(24vw, 210px)',
-    '--shoulder-h': 'min(13vh, 52px)',
+    '--shoulder-h': 'min(15dvh, 58px)',
     '--left-zone-w': '42vw',
     '--right-zone-w': '40vw',
-    '--stick-base': 'min(34vh, 150px)',
-    '--stick-knob': 'min(17vh, 72px)',
-    '--dpad-size': 'min(36vh, 150px)',
-    '--dpad-size-solo': 'min(52vh, 200px)',
+    '--stick-base': 'min(50dvh, 185px)',
+    '--stick-knob': 'min(24dvh, 88px)',
+    '--dpad-size': 'min(50dvh, 185px)',
+    '--dpad-size-solo': 'min(64dvh, 245px)',
     '--dpad-arm': '34%',            // arm thickness (fraction of D-pad size)
-    '--face-size': 'min(16vh, 66px)',
-    '--face-spread': 'min(15vh, 62px)', // distance from diamond centre to each face button centre
+    '--face-size': 'min(21dvh, 80px)',
+    '--face-spread': 'min(23dvh, 86px)', // distance from diamond centre to each face button centre
     '--sys-w': 'min(13vw, 58px)',
-    '--sys-h': 'min(7vh, 26px)',
-    '--home-size': 'min(13vh, 48px)',
+    '--sys-h': 'min(7.5dvh, 28px)',
+    '--home-size': 'min(13dvh, 48px)',
     '--led-size': '10px',
     '--press-scale': '0.94',
+    '--mode-btn': '28px',           // round mode button (top centre, every mode)
+    '--kb-tab-h': '30px',           // keyboards: strip reserved at the top for the mode button
   },
 
   // Themes. Colours are applied as CSS custom properties on <body> together with the
   // class "theme-<id>". Add another entry (plus optional CSS under body.theme-<id>) for new pads.
-  defaultTheme: 'dark-gloss',
+  // The Light / Dark toggle (mode button menu) switches between lightTheme and darkTheme;
+  // the choice is remembered (storage.theme).
+  defaultTheme: 'light',
+  lightTheme: 'light',
+  darkTheme: 'dark-gloss',
   themes: [
+    {
+      id: 'light',
+      label: 'Light',
+      vars: {
+        '--bg-1': '#f7f8fa',
+        '--bg-2': '#dde1e7',
+        '--text': '#1d232b',
+        '--muted': '#5d6672',
+        '--accent': '#2563d9',
+        '--btn-1': '#ffffff',
+        '--btn-2': '#e9ecf0',
+        '--btn-rim': '#c2c8d0',
+        '--btn-hi': 'rgba(255,255,255,0.9)',
+        '--shadow': 'rgba(40,52,72,0.22)',
+        '--glyph': '#2a313b',
+        '--glow': 'rgba(37,99,217,0.35)',
+        '--a': '#14955a',
+        '--b': '#d6283c',
+        '--x': '#2563d9',
+        '--y': '#c08a00',
+        '--stick-ring': 'rgba(30,40,60,0.16)',
+        '--stick-ghost': 'rgba(30,40,60,0.05)',
+        '--led-off': '#ecc9cc',
+        '--led-red': '#e5262f',
+        '--led-amber': '#f08c00',
+        '--led-green': '#10b358',
+        '--panel': 'rgba(255,255,255,0.94)',
+      },
+    },
     {
       id: 'dark-gloss',
       label: 'Dark Gloss',
@@ -196,7 +268,8 @@ const CONTROLLER_CONFIG = {
     flash: 'flash',                // visual press flash (always; the haptic fallback)
     stickActive: 'stick-active',
     themePrefix: 'theme-',
-    modePrefix: 'mode-',
+    modePrefix: 'mode-',           // left-side mode (both / stick / dpad)
+    viewPrefix: 'view-',           // controller mode (pad / pc / phone) on <body>
   },
 
   // UI / status text
@@ -246,5 +319,12 @@ const CONTROLLER_CONFIG = {
     scanCancel: 'Cancel',
     scanTypeCode: 'Type code',
     scanIconAlt: 'Scan QR',
+    modeBtnTitle: 'Mode: tap = next, swipe = prev / next, hold = menu',
+    menuModes: 'Mode',
+    menuFullscreen: 'Fullscreen',
+    menuExitFullscreen: 'Exit fullscreen',
+    menuDark: 'Dark theme',
+    menuLight: 'Light theme',
+    fullscreenTitle: 'Fullscreen',
   },
 };

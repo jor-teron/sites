@@ -5,6 +5,8 @@
  * Protocol (JSON strings over the PeerJS data connection):
  *   { t:'btn',   b:<button>, s:1|0 }   press / release (original protocol, unchanged)
  *   { t:'stick', x:-1..1,  y:-1..1 }   analog stick (y -1 = up), sent at stick.sendHz while held
+ *   { t:'key', key, code, s:1|0, shift, ctrl, alt, repeat }   keyboard modes: keydown / keyup
+ *     (the hub dispatches KeyboardEvents into the app frame and types into focused text fields)
  * Hub → phone:
  *   { t:'rumble', ms:N } / { t:'rumble', pattern:[...] }   game rumble (e.g. Snake death)
  *   → navigator.vibrate, only when the Vibe toggle is on; silently nothing without vibrate (iOS)
@@ -16,6 +18,11 @@
  * Pairing: the last code that connected is remembered (localStorage) and used again on
  * page load; a dropped connection (hub reloaded, network blip) is retried with backoff
  * (LED amber). A built-in QR scanner (camera + local vendor/jsQR.js) reads the hub QR.
+ *
+ * Modes (CONTROLLER_CONFIG.modes): the gamepad plus keyboards (kb_pc.js, kb_phone.js via
+ * kb_common.js). The round mode button at the top centre switches them: tap = next,
+ * swipe left / right = previous / next, hold = menu (modes, fullscreen, light / dark).
+ * Every held button / key is released on a mode switch, disconnect, blur or hide.
  *
  * All settings / text come from CONTROLLER_CONFIG (controller_config.js).
  */
@@ -30,6 +37,7 @@
   const DIRS = ['up', 'down', 'left', 'right'];
 
   const $ = (id) => document.getElementById(id);
+  const stop = (e) => e.preventDefault();
   const body = document.body;
   const pairScreen = $('pair-screen');
   const pad = $('pad');
@@ -62,6 +70,18 @@
   const diagTest = $('diag-test');
   const diagTestResult = $('diag-test-result');
   const diagClose = $('diag-close');
+  const fsBtn = $('fs-btn');
+  const modeBtn = $('mode-btn');
+  const modeToast = $('mode-toast');
+  const modeMenu = $('mode-menu');
+  const menuModes = $('menu-modes');
+  const menuFs = $('menu-fs');
+  const menuTheme = $('menu-theme');
+  const kbView = $('kb-view');
+  const kbHost = $('kb-host');
+  const kbLed = $('kb-led');
+  const kbEcho = $('kb-echo');
+  const LEDS = [led, pairLed, kbLed];
 
   const params = new URLSearchParams(location.search);
   const DEMO = params.get(CFG.demo.param) === '1';
@@ -70,7 +90,8 @@
   let conn = null;
   let code = '';
   let wakeLock = null;
-  let fullscreenTried = false;
+  let fullscreenOptOut = false;   // the user left fullscreen on purpose: stop auto-trying
+  let themeId = '';
   let connState = 'disconnected';
 
   /* ------------------------------------------------------------------ */
@@ -86,8 +107,13 @@
   /* ------------------------------------------------------------------ */
   /* theme, layout, text                                                 */
   /* ------------------------------------------------------------------ */
+  // dvh where supported; older browsers get the same value with vh (a custom property with
+  // an unknown unit would otherwise break every size that uses it).
+  const HAS_DVH = !!(window.CSS && CSS.supports && CSS.supports('height', '1dvh'));
   function applyLayout() {
-    for (const [k, v] of Object.entries(CFG.layout || {})) body.style.setProperty(k, v);
+    for (const [k, v] of Object.entries(CFG.layout || {})) {
+      body.style.setProperty(k, HAS_DVH ? v : String(v).replace(/(\d)dvh/g, '$1vh'));
+    }
   }
 
   function applyTheme(id) {
@@ -97,6 +123,17 @@
     for (const t of themes) body.classList.remove(CLS.themePrefix + t.id);
     body.classList.add(CLS.themePrefix + theme.id);
     for (const [k, v] of Object.entries(theme.vars || {})) body.style.setProperty(k, v);
+    themeId = theme.id;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta && theme.vars && theme.vars['--bg-2']) meta.setAttribute('content', theme.vars['--bg-2']);
+  }
+
+  function isDarkTheme() { return themeId === CFG.darkTheme; }
+  function toggleTheme() {
+    const next = isDarkTheme() ? (CFG.lightTheme || CFG.defaultTheme) : CFG.darkTheme;
+    applyTheme(next);
+    save(CFG.storage.theme, themeId);
+    renderMenu();
   }
 
   function applyText() {
@@ -120,25 +157,26 @@
   /* ------------------------------------------------------------------ */
   function setStatus(state, msg) {
     connState = state;
-    for (const el of [led, pairLed]) {
+    for (const el of LEDS) {
       el.classList.remove('connecting', 'connected', 'disconnected');
       el.classList.add(state);
     }
-    led.title = msg || state;
-    led.setAttribute('aria-label', msg || state);
+    for (const el of [led, kbLed]) {
+      el.title = msg || state;
+      el.setAttribute('aria-label', msg || state);
+    }
   }
 
   let blinkTimer = 0;
   function blinkError() {
-    for (const el of [led, pairLed]) {
+    for (const el of LEDS) {
       el.classList.remove('error-blink');
       void el.offsetWidth; // restart animation
       el.classList.add('error-blink');
     }
     clearTimeout(blinkTimer);
     blinkTimer = setTimeout(() => {
-      led.classList.remove('error-blink');
-      pairLed.classList.remove('error-blink');
+      for (const el of LEDS) el.classList.remove('error-blink');
     }, CFG.led.errorBlinkMs);
   }
 
@@ -150,13 +188,19 @@
   function showPairScreen(msg) {
     releaseAll();
     pad.hidden = true;
+    kbView.hidden = true;
+    modeBtn.hidden = true;
+    closeMenu();
     pairScreen.hidden = false;
     showPairError(msg || '');
+    updateOrientation();
   }
 
+  /** Show the controller for the current mode (gamepad or a keyboard). */
   function showPad() {
     pairScreen.hidden = true;
-    pad.hidden = false;
+    modeBtn.hidden = false;
+    renderView();
   }
 
   /* ------------------------------------------------------------------ */
@@ -164,21 +208,63 @@
   /* ------------------------------------------------------------------ */
   function updateOrientation() {
     const portrait = window.matchMedia(CFG.browser.portraitQuery).matches;
-    rotateOverlay.hidden = !portrait;
-    if (portrait) releaseAll();
+    // the pairing screen and portrait-friendly modes (phone keyboard) need no rotation
+    const needsLandscape = pairScreen.hidden && currentMode().landscape !== false;
+    const show = portrait && needsLandscape;
+    rotateOverlay.hidden = !show;
+    if (show) releaseAll();
   }
 
-  async function tryFullscreenAndLock() {
-    if (fullscreenTried || DEMO) return;
-    fullscreenTried = true;
+  /* ---------- fullscreen (⛶ button, menu, auto-try on touch) ---------- */
+  const docEl = document.documentElement;
+  const FS_OK = !!((docEl.requestFullscreen || docEl.webkitRequestFullscreen) &&
+    (document.fullscreenEnabled || document.webkitFullscreenEnabled));   // false on iPhone Safari
+  function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+
+  async function enterFullscreen() {
+    if (!FS_OK || isFullscreen()) return isFullscreen();
     try {
-      const el = document.documentElement;
-      if (el.requestFullscreen) await el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      if (docEl.requestFullscreen) await docEl.requestFullscreen({ navigationUI: 'hide' });
+      else docEl.webkitRequestFullscreen();
+    } catch (_) { return false; }
+    lockOrientation();
+    return true;
+  }
+  async function exitFullscreen() {
+    try {
+      if (document.exitFullscreen) await document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
     } catch (_) { /* ignore */ }
+  }
+  function toggleFullscreen() {
+    if (isFullscreen()) { fullscreenOptOut = true; exitFullscreen(); }
+    else { fullscreenOptOut = false; enterFullscreen(); }
+  }
+  async function lockOrientation() {
+    const so = screen.orientation;
+    if (!so) return;
     try {
-      if (screen.orientation && screen.orientation.lock) await screen.orientation.lock(CFG.browser.orientationLock);
+      if (currentMode().landscape !== false) { if (so.lock) await so.lock(CFG.browser.orientationLock); }
+      else if (so.unlock) so.unlock();
     } catch (_) { /* ignore — many browsers disallow */ }
+  }
+  function renderFullscreen() {
+    const on = isFullscreen();
+    fsBtn.hidden = !FS_OK;
+    fsBtn.textContent = on ? CFG.browser.fullscreenExitIcon : CFG.browser.fullscreenIcon;
+    fsBtn.classList.toggle('on', on);
+    const t = on ? TXT.menuExitFullscreen : TXT.fullscreenTitle;
+    fsBtn.title = t;
+    fsBtn.setAttribute('aria-label', t);
+    renderMenu();
+  }
+  document.addEventListener('fullscreenchange', renderFullscreen);
+  document.addEventListener('webkitfullscreenchange', renderFullscreen);
+
+  /** Auto-try on touch (CFG.browser.autoFullscreen): retried on later touches until it works. */
+  function tryFullscreenAndLock() {
+    if (DEMO || !CFG.browser.autoFullscreen || fullscreenOptOut || !FS_OK || isFullscreen()) return;
+    enterFullscreen();
   }
 
   async function requestWakeLock() {
@@ -343,7 +429,41 @@
     pointers.clear();
     setSource('__none__', null);
     endStick(true);
+    releaseKeys();
   }
+
+  /* ------------------------------------------------------------------ */
+  /* keyboard modes: key messages over the same connection               */
+  /* ------------------------------------------------------------------ */
+  const heldKeys = new Map();   // id -> { key, code, flags } (keydown sent, keyup pending)
+
+  function keyMsg(down, k, repeat) {
+    return {
+      t: MSG.key, key: k.key, code: k.code, s: down ? 1 : 0,
+      shift: k.flags.shift ? 1 : 0, ctrl: k.flags.ctrl ? 1 : 0, alt: k.flags.alt ? 1 : 0,
+      repeat: repeat ? 1 : 0,
+    };
+  }
+  function keyDown(id, key, code, flags, repeat) {
+    const k = { key: key, code: code || '', flags: flags || {} };
+    if (repeat && !heldKeys.has(id)) return;
+    if (!repeat && heldKeys.has(id)) keyUp(id);
+    heldKeys.set(id, k);
+    send(keyMsg(true, k, repeat));
+    if (!repeat) kbEcho.textContent = key === ' ' ? 'Space' : key;
+  }
+  function keyUp(id) {
+    const k = heldKeys.get(id);
+    if (!k) return;
+    heldKeys.delete(id);
+    send(keyMsg(false, k, false));
+  }
+  /** keyup for every held key (also resets the boards' pressed / modifier state). */
+  function releaseKeys() {
+    for (const id of Array.from(heldKeys.keys())) keyUp(id);
+    for (const b of Object.values(builtBoards)) { try { b.release(); } catch (_) { /* ignore */ } }
+  }
+  const builtBoards = Object.create(null);   // board id -> { el, release }
 
   /* ------------------------------------------------------------------ */
   /* pointers                                                            */
@@ -645,6 +765,161 @@
     if (connState !== 'connected') connectToHub(code || codeInput.value || lastGood);
   });
   bindTap(qrBtn, () => openScanner());
+  bindTap(kbLed, () => {
+    if (DEMO) { blinkError(); return; }
+    if (connState !== 'connected') connectToHub(code || codeInput.value || lastGood);
+  });
+  bindTap(fsBtn, () => { toggleFullscreen(); vibrate(CFG.haptics.shortMs); });
+
+  /* ------------------------------------------------------------------ */
+  /* controller modes (gamepad / keyboards) + the mode button            */
+  /* ------------------------------------------------------------------ */
+  const MODES = (CFG.modes && CFG.modes.length) ? CFG.modes : [{ id: 'pad', label: 'Gamepad', icon: '🎮', landscape: true }];
+  const MB = CFG.modeButton || {};
+  let modeId = load(CFG.storage.mode, CFG.defaultMode);
+  if (!MODES.some((m) => m.id === modeId)) modeId = (MODES.find((m) => m.id === CFG.defaultMode) || MODES[0]).id;
+
+  function currentMode() { return MODES.find((m) => m.id === modeId) || MODES[0]; }
+
+  // Keyboard boards send through these (kb_common.js kit.api).
+  if (window.CTRL_KB) {
+    Object.assign(CTRL_KB.kit.api, {
+      keyDown: keyDown,
+      keyUp: keyUp,
+      vibrate: (ms) => vibrate(ms),
+      firstTouch: () => onFirstTouch(),
+    });
+  }
+
+  /** Board element for a mode (built once, on first use). */
+  function boardFor(mode) {
+    if (!mode.board) return null;
+    if (builtBoards[mode.board]) return builtBoards[mode.board];
+    const build = window.CTRL_KB && CTRL_KB.boards[mode.board];
+    if (!build) return null;
+    const b = build(kbHost, CTRL_KB.kit);
+    builtBoards[mode.board] = b;
+    return b;
+  }
+
+  /** Show the view of the current mode (pairing screen excluded). */
+  function renderView() {
+    const m = currentMode();
+    for (const x of MODES) body.classList.remove(CLS.viewPrefix + x.id);
+    body.classList.add(CLS.viewPrefix + m.id);
+    modeBtn.textContent = m.icon || '?';
+    modeBtn.title = m.label + ' — ' + TXT.modeBtnTitle;
+    modeBtn.setAttribute('aria-label', m.label);
+    if (!pairScreen.hidden) return;
+    const board = boardFor(m);
+    pad.hidden = !!m.board;
+    kbView.hidden = !m.board;
+    for (const b of Object.values(builtBoards)) b.el.hidden = b !== board;
+    updateOrientation();
+    renderMenu();
+  }
+
+  let toastTimer = 0;
+  function showToast(text) {
+    modeToast.textContent = text;
+    modeToast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { modeToast.hidden = true; }, MB.toastMs || 1000);
+  }
+
+  /** Switch mode: release everything held, remember, redraw, toast. */
+  function setControllerMode(id, quiet) {
+    if (!MODES.some((m) => m.id === id)) return;
+    releaseAll();
+    modeId = id;
+    save(CFG.storage.mode, id);
+    renderView();
+    if (isFullscreen()) lockOrientation();
+    if (!quiet) { showToast(currentMode().label); vibrate(CFG.haptics.longMs); }
+  }
+  function stepMode(dir) {
+    const i = MODES.findIndex((m) => m.id === modeId);
+    setControllerMode(MODES[(i + dir + MODES.length) % MODES.length].id);
+  }
+
+  /* ---------- long-press menu ---------- */
+  function renderMenu() {
+    if (modeMenu.hidden) return;
+    menuModes.replaceChildren();
+    for (const m of MODES) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'menu-item' + (m.id === modeId ? ' on' : '');
+      b.setAttribute('role', 'menuitem');
+      b.dataset.mode = m.id;
+      b.textContent = (m.icon ? m.icon + '  ' : '') + m.label;
+      menuModes.appendChild(b);
+    }
+    menuFs.hidden = !FS_OK;
+    menuFs.textContent = '⛶  ' + (isFullscreen() ? TXT.menuExitFullscreen : TXT.menuFullscreen);
+    menuTheme.textContent = isDarkTheme() ? '☀  ' + TXT.menuLight : '☾  ' + TXT.menuDark;
+  }
+  function openMenu() {
+    releaseAll();
+    modeToast.hidden = true;
+    modeMenu.hidden = false;
+    renderMenu();
+    vibrate(CFG.haptics.longMs);
+  }
+  function closeMenu() { modeMenu.hidden = true; }
+
+  menuModes.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-mode]');
+    if (!b) return;
+    closeMenu();
+    if (b.dataset.mode !== modeId) setControllerMode(b.dataset.mode);
+  });
+  menuFs.addEventListener('click', () => { toggleFullscreen(); closeMenu(); });
+  menuTheme.addEventListener('click', () => { toggleTheme(); });
+  // a touch outside the menu (and outside the mode button) closes it
+  document.addEventListener('pointerdown', (e) => {
+    if (!modeMenu.hidden && !modeMenu.contains(e.target) && e.target !== modeBtn) closeMenu();
+  }, true);
+
+  /* ---------- mode button gestures: tap / swipe / long-press ---------- */
+  (function bindModeButton() {
+    let g = null;   // { id, x, y, timer, long, swiped }
+    modeBtn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (g) return;
+      try { modeBtn.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+      modeBtn.classList.add(CLS.active);
+      const menuWasOpen = !modeMenu.hidden;
+      g = { id: e.pointerId, x: e.clientX, y: e.clientY, long: false, menuWasOpen: menuWasOpen, timer: 0 };
+      g.timer = setTimeout(() => { if (g) { g.long = true; openMenu(); } }, MB.longPressMs || 500);
+    });
+    modeBtn.addEventListener('pointermove', (e) => {
+      if (!g || e.pointerId !== g.id || g.long) return;
+      if (Math.abs(e.clientX - g.x) > (MB.swipePx || 24)) clearTimeout(g.timer);  // a swipe, not a hold
+    });
+    const end = (e, cancelled) => {
+      if (!g || e.pointerId !== g.id) return;
+      const st = g;
+      g = null;
+      clearTimeout(st.timer);
+      modeBtn.classList.remove(CLS.active);
+      if (cancelled || st.long) return;
+      onFirstTouch();
+      const dx = e.clientX - st.x;
+      if (Math.abs(dx) > (MB.swipePx || 24) && Math.abs(dx) > Math.abs(e.clientY - st.y)) {
+        closeMenu();
+        stepMode(dx > 0 ? 1 : -1);
+      } else if (st.menuWasOpen) {
+        closeMenu();     // tap while the menu is open: just close it
+      } else {
+        stepMode(1);
+      }
+    };
+    modeBtn.addEventListener('pointerup', (e) => end(e, false));
+    modeBtn.addEventListener('pointercancel', (e) => end(e, true));
+    modeBtn.addEventListener('touchstart', stop, { passive: false });
+  })();
 
   /* ------------------------------------------------------------------ */
   /* PeerJS + auto-reconnect                                             */
@@ -922,7 +1197,6 @@
   /* ------------------------------------------------------------------ */
   /* global guards                                                       */
   /* ------------------------------------------------------------------ */
-  const stop = (e) => e.preventDefault();
   document.addEventListener('gesturestart', stop);
   document.addEventListener('gesturechange', stop);
   document.addEventListener('contextmenu', stop);
@@ -931,7 +1205,12 @@
   // Block scroll / pinch / double-tap zoom / long-press callouts on the pad
   pad.addEventListener('touchstart', stop, { passive: false });
   pad.addEventListener('touchmove', stop, { passive: false });
-  document.addEventListener('touchmove', (e) => { if (e.touches.length > 1 || !pad.hidden) e.preventDefault(); }, { passive: false });
+  kbView.addEventListener('touchstart', stop, { passive: false });
+  kbView.addEventListener('touchmove', stop, { passive: false });
+  document.addEventListener('touchmove', (e) => { if (e.touches.length > 1 || !pad.hidden || !kbView.hidden) e.preventDefault(); }, { passive: false });
+  // Fullscreen needs a user activation; touch activation counts on pointerup / touchend,
+  // so the auto-try runs there too (and keeps retrying until it works).
+  document.addEventListener('pointerup', () => { if (pairScreen.hidden) tryFullscreenAndLock(); }, true);
   document.addEventListener('touchcancel', () => releaseAll(), { passive: true });
   window.addEventListener('blur', () => releaseAll());
   window.addEventListener('pagehide', () => releaseAll());
@@ -954,6 +1233,8 @@
   applyTheme(load(CFG.storage.theme, CFG.defaultTheme));
   applyText();
   renderHaptics();
+  renderFullscreen();
+  renderView();
   document.querySelectorAll('.face, .shoulder, .sys, .home').forEach(bindButton);
   setupDpad();
   setupStick();
@@ -974,7 +1255,11 @@
     demoTag.hidden = false;
     showPad();
     setStatus('connected', TXT.demo);
-    window.__controller = { releaseAll, setMode: (m) => { leftMode = m; applyMode(m); }, stick, sent };
+    window.__controller = {
+      releaseAll, setMode: (m) => { leftMode = m; applyMode(m); }, stick, sent,
+      setControllerMode, stepMode, getMode: () => modeId, toggleTheme, getTheme: () => themeId,
+      heldKeys, openMenu, closeMenu,
+    };
   } else {
     setStatus('disconnected', TXT.disconnected);
     const fromHash = codeFromHash(location.hash);

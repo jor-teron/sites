@@ -5,13 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="theme-color" content="#07080b" />
+  <meta name="theme-color" content="#dde1e7" />
   <title>Gamepad Controller</title>
   <link rel="icon" href="controller_icon.png" />
-  <link rel="stylesheet" href="controller.css?v=1.3" />
-  <script src="../vendor/peerjs.min.js"></script>
+  <!-- Cache-busting: bump ?v= on every asset below when any of them changes (e.g. 20261003a). -->
+  <link rel="stylesheet" href="controller.css?v=20261003a" />
+  <script src="../vendor/peerjs.min.js?v=20261003a"></script>
 </head>
-<body class="theme-dark-gloss mode-both">
+<body class="theme-light mode-both view-pad">
   <div id="rotate-overlay" hidden>
     <div class="rotate-msg">
       <div class="rotate-icon" aria-hidden="true">⟳</div>
@@ -62,6 +63,7 @@
       <div class="top-row">
         <button type="button" class="led" id="led" aria-label="Connection light"></button>
         <button type="button" class="qr-btn" id="qr-btn" aria-label="Scan QR"><img class="qr-icon" alt="" data-qr-icon /></button>
+        <button type="button" class="qr-btn fs-btn" id="fs-btn" aria-label="Fullscreen" hidden>⛶</button>
       </div>
       <div class="sys-row">
         <button type="button" class="sys select" data-btn="select" aria-label="Select"><span class="glyph-select" aria-hidden="true"></span></button>
@@ -87,6 +89,27 @@
         <button type="button" class="face a" data-btn="a" aria-label="A"><span>A</span></button>
       </div>
     </div>
+  </div>
+
+  <!-- Keyboard modes (boards from kb_*.js). The top strip keeps room for the mode button. -->
+  <div id="kb-view" hidden>
+    <div id="kb-bar">
+      <button type="button" class="led" id="kb-led" aria-label="Connection light"></button>
+      <span id="kb-echo" aria-live="off"></span>
+    </div>
+    <div id="kb-host"></div>
+  </div>
+
+  <!-- Mode button: fixed at the top centre in every mode. Tap = next, swipe = prev / next,
+       hold = menu. Modes come from CONTROLLER_CONFIG.modes. -->
+  <button type="button" id="mode-btn" aria-label="Mode" hidden>🎮</button>
+  <div id="mode-toast" aria-live="polite" hidden></div>
+  <div id="mode-menu" role="menu" hidden>
+    <div class="menu-title" data-text="menuModes">Mode</div>
+    <div id="menu-modes"></div>
+    <div class="menu-sep"></div>
+    <button type="button" class="menu-item" id="menu-fs" role="menuitem"></button>
+    <button type="button" class="menu-item" id="menu-theme" role="menuitem"></button>
   </div>
 
   <!-- Vibration diagnostics (Diag chip on the pad / Diag link on the pairing screen) -->
@@ -117,8 +140,11 @@
     </div>
   </div>
 
-  <script src="vendor/jsQR.js"></script>
-  <script src="controller_config.js?v=1.3"></script>
-  <script src="controller_logic.js?v=1.3"></script>
+  <script src="vendor/jsQR.js?v=20261003a"></script>
+  <script src="controller_config.js?v=20261003a"></script>
+  <script src="kb_common.js?v=20261003a"></script>
+  <script src="kb_pc.js?v=20261003a"></script>
+  <script src="kb_phone.js?v=20261003a"></script>
+  <script src="controller_logic.js?v=20261003a"></script>
 </body>
 </html>
