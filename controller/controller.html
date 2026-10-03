@@ -8,9 +8,9 @@
   <meta name="theme-color" content="#dde1e7" />
   <title>Gamepad Controller</title>
   <link rel="icon" href="controller_icon.png" />
-  <!-- Cache-busting: bump ?v= on every asset below when any of them changes (e.g. 20261003a). -->
-  <link rel="stylesheet" href="controller.css?v=20261003a" />
-  <script src="../vendor/peerjs.min.js?v=20261003a"></script>
+  <!-- Cache-busting: bump ?v= on every asset below when any of them changes (e.g. 20261003d). -->
+  <link rel="stylesheet" href="controller.css?v=20261003d" />
+  <script src="../vendor/peerjs.min.js?v=20261003d"></script>
 </head>
 <body class="theme-light mode-both view-pad">
   <div id="rotate-overlay" hidden>
@@ -76,7 +76,7 @@
       <div class="toggles">
         <button type="button" class="chip" id="mode-toggle"></button>
         <button type="button" class="chip" id="haptics-toggle"></button>
-        <button type="button" class="chip diag-chip" id="diag-toggle" data-text="diagBtn">Diag</button>
+        <button type="button" class="chip theme-chip" id="theme-toggle"></button>
       </div>
       <div class="demo-tag" id="demo-tag" hidden data-text="demo">DEMO</div>
     </div>
@@ -110,9 +110,10 @@
     <div class="menu-sep"></div>
     <button type="button" class="menu-item" id="menu-fs" role="menuitem"></button>
     <button type="button" class="menu-item" id="menu-theme" role="menuitem"></button>
+    <button type="button" class="menu-item" id="menu-diag" role="menuitem" data-text="menuDiag">Vibration test (Diag)</button>
   </div>
 
-  <!-- Vibration diagnostics (Diag chip on the pad / Diag link on the pairing screen) -->
+  <!-- Vibration diagnostics (mode button hold menu / Diag link on the pairing screen) -->
   <div id="diag-panel" hidden>
     <div class="diag-head">
       <b data-text="diagTitle">Vibration diagnostics</b>
@@ -140,11 +141,11 @@
     </div>
   </div>
 
-  <script src="vendor/jsQR.js?v=20261003a"></script>
-  <script src="controller_config.js?v=20261003a"></script>
-  <script src="kb_common.js?v=20261003a"></script>
-  <script src="kb_pc.js?v=20261003a"></script>
-  <script src="kb_phone.js?v=20261003a"></script>
-  <script src="controller_logic.js?v=20261003a"></script>
+  <script src="vendor/jsQR.js?v=20261003d"></script>
+  <script src="controller_config.js?v=20261003d"></script>
+  <script src="kb_common.js?v=20261003d"></script>
+  <script src="kb_pc.js?v=20261003d"></script>
+  <script src="kb_phone.js?v=20261003d"></script>
+  <script src="controller_logic.js?v=20261003d"></script>
 </body>
 </html>

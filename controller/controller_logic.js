@@ -63,7 +63,8 @@
   const scanCancel = $('scan-cancel');
   const scanType = $('scan-type');
   const versionEl = $('version');
-  const diagToggle = $('diag-toggle');
+  const themeToggle = $('theme-toggle');
+  const menuDiag = $('menu-diag');
   const diagLink = $('diag-link');
   const diagPanel = $('diag-panel');
   const diagLines = $('diag-lines');
@@ -124,11 +125,18 @@
     body.classList.add(CLS.themePrefix + theme.id);
     for (const [k, v] of Object.entries(theme.vars || {})) body.style.setProperty(k, v);
     themeId = theme.id;
+    renderThemeChip();
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta && theme.vars && theme.vars['--bg-2']) meta.setAttribute('content', theme.vars['--bg-2']);
   }
 
   function isDarkTheme() { return themeId === CFG.darkTheme; }
+  /** Pad chip: ☾ while light (tap → dark), ☀ while dark (tap → light). */
+  function renderThemeChip() {
+    themeToggle.textContent = isDarkTheme() ? TXT.themeChipToLight : TXT.themeChipToDark;
+    themeToggle.title = TXT.themeChipTitle;
+    themeToggle.setAttribute('aria-label', TXT.themeChipTitle);
+  }
   function toggleTheme() {
     const next = isDarkTheme() ? (CFG.lightTheme || CFG.defaultTheme) : CFG.darkTheme;
     applyTheme(next);
@@ -745,7 +753,7 @@
   if (CFG.diag && CFG.diag.enabled !== false) {
     const testMs = CFG.diag.testMs || 500;
     diagTest.textContent = TXT.diagTest.replace('{ms}', testMs);
-    bindTap(diagToggle, () => setDiagOpen(diagPanel.hidden));
+    menuDiag.addEventListener('click', () => { closeMenu(); setDiagOpen(true); });
     diagLink.addEventListener('click', () => setDiagOpen(diagPanel.hidden));
     diagClose.addEventListener('click', () => setDiagOpen(false));
     // Direct call inside the tap (a user gesture); ignores the Vibe toggle on purpose.
@@ -755,9 +763,11 @@
       renderDiag();
     });
   } else {
-    diagToggle.hidden = true;
+    menuDiag.hidden = true;
     diagLink.hidden = true;
   }
+
+  bindTap(themeToggle, () => { toggleTheme(); vibrate(CFG.haptics.shortMs); });
 
   bindTap(led, () => {
     if (DEMO) { blinkError(); return; }

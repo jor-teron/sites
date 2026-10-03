@@ -81,6 +81,10 @@ const CONTROLLER_CONFIG = {
     repeatMs: 60,                  // auto-repeat interval
     repeatKeys: true,              // false: no auto-repeat at all
     hapticMs: 12,                  // tick on every key press (Vibe toggle respected)
+    // PC keyboard: keys with a thin accent border (gaming keys). Values are data-key
+    // ('w', 'ArrowUp', ' ' = Space, 'Enter', 'Escape') or a modifier ('shift').
+    // [] = no highlight.
+    highlightKeys: ['w', 'a', 's', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Enter', 'Escape', 'shift'],
   },
 
   // Left-side control mode: analog stick, D-pad, or both
@@ -119,9 +123,9 @@ const CONTROLLER_CONFIG = {
                                    // (a new navigator.vibrate call cancels the running one)
   },
 
-  // Vibration diagnostics panel (Diag chip on the pad, Diag link on the pairing screen)
+  // Vibration diagnostics panel (hold menu of the mode button, Diag link on the pairing screen)
   diag: {
-    enabled: true,                 // false hides the Diag chip / link
+    enabled: true,                 // false hides the Diag menu item / link
     testMs: 500,                   // "Test" button: navigator.vibrate(testMs), ignores the Vibe toggle
     refreshMs: 1000,               // panel refresh while open (userActivation can change)
   },
@@ -326,5 +330,9 @@ const CONTROLLER_CONFIG = {
     menuDark: 'Dark theme',
     menuLight: 'Light theme',
     fullscreenTitle: 'Fullscreen',
+    menuDiag: 'Vibration test (Diag)',
+    themeChipToDark: '☾',          // theme chip on the pad while light (tap → dark)
+    themeChipToLight: '☀',         // theme chip on the pad while dark (tap → light)
+    themeChipTitle: 'Light / dark theme',
   },
 };

@@ -2,7 +2,9 @@
  * Gamepad Controller — PC keyboard mode (landscape, compact).
  * Layout ported from apps/lab/keyboard.html: Esc / digits / ⌫, Tab / qwerty, Caps / Enter,
  * Shift / Del, Ctrl / Alt / Space / arrows. Shift, Ctrl, Alt: hold = held, tap = one-shot.
- * Caps toggles. Registered as board 'pc' (see CONTROLLER_CONFIG.modes).
+ * Caps toggles. Letter labels are always capitals (A-Z); typing sends lowercase unless
+ * Shift / Caps. Gaming keys (CONTROLLER_CONFIG.keyboard.highlightKeys) get an accent border.
+ * Registered as board 'pc' (see CONTROLLER_CONFIG.modes).
  */
 (function () {
   'use strict';
@@ -26,6 +28,8 @@
     const root = kit.el('div', 'kb kb-pc');
     let caps = false;
     let ctl = null;
+    const kcfg = (typeof CONTROLLER_CONFIG !== 'undefined' && CONTROLLER_CONFIG.keyboard) || {};
+    const highlight = new Set(Array.isArray(kcfg.highlightKeys) ? kcfg.highlightKeys : []);
 
     for (const row of ROWS) {
       const r = kit.el('div', 'kb-row');
@@ -36,7 +40,8 @@
         const letter = key.length === 1 && /[a-z]/.test(key);
         const k = kit.el('button', 'kk' + (letter ? ' letter' : '') + (label.length > 1 ? ' fn' : ''), {
           key: key || null, shift: def[2] || null, mod: extra.mod || null, action: extra.action || null, label: label,
-        }, label);
+        }, letter ? label.toUpperCase() : label);
+        if (highlight.has(key) || (extra.mod && highlight.has(extra.mod))) k.classList.add('game');
         if (def[3]) k.style.flexGrow = def[3];
         r.appendChild(k);
       }
@@ -63,8 +68,8 @@
       repaint() {
         const sh = shiftOn();
         root.querySelectorAll('.kk').forEach((k) => {
-          if (k.classList.contains('letter')) k.textContent = sh !== caps ? k.dataset.key.toUpperCase() : k.dataset.key;
-          else if (k.dataset.shift) k.textContent = sh ? k.dataset.shift : k.dataset.label;
+          if (k.classList.contains('letter')) return;   // labels stay capitals
+          if (k.dataset.shift) k.textContent = sh ? k.dataset.shift : k.dataset.label;
         });
       },
     };

@@ -2,6 +2,7 @@
  * Gamepad Controller — phone keyboard mode (smartphone style, works in portrait).
  * Layout ported from apps/lab/paper-keyboard (screen keyboard): qwerty letter layer with a
  * one-shot Shift, 123 number / symbol layer, Space / Enter, arrows + Del.
+ * Letter labels are always capitals; a letter sends lowercase unless Shift is on.
  * Registered as board 'phone' (see CONTROLLER_CONFIG.modes).
  */
 (function () {
@@ -32,7 +33,7 @@
       for (let i = 0; i < 5; i++) { rows.push(kit.el('div', 'kb-row')); root.appendChild(rows[i]); }
       const chars = (list, row) => list.forEach((c) => {
         const v = !numbers && shift ? c.toUpperCase() : c;
-        row.appendChild(key(v, v, 'char'));
+        row.appendChild(key(c.toUpperCase(), v, 'char'));
       });
       chars(numbers ? NUM_TOP : ROW_TOP, rows[0]);
       chars(numbers ? NUM_MID : ROW_MID, rows[1]);
