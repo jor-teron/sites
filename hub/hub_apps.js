@@ -47,6 +47,7 @@ Media,    TV,                    tv/,                                        ,  
 Media,    Webcam,                apps/media/webcam/,                         ,         0,       0,      220
 Media,    3D Viewer,             apps/media/3d-viewer/,                      ,         0,       0,      240
 Media,    Paint,                 apps/media/paint/,                          ,         0,       0,      230
+Media,    Draw,                  apps/media/draw/,                           ,         0,       0,      225
 Media,    Photo Editor,          apps/media/photo-editor/,                   ,         0,       0,      260
 
 Office,   Spreadsheet,           apps/office/spreadsheet/,                   ,         0,       0,      320

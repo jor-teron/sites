@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<!--
+  Draw — minimalist drawing app. Page shell only.
+  Styles: draw.css. Settings: draw_config.js. Logic: draw_logic.js.
+  Layout: canvas fills the screen, one slim toolbar (bottom in portrait, right side in
+  landscape). No libraries, no CDN; the folder is self-contained.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Draw</title>
+  <link rel="stylesheet" href="draw.css?v=20261004a">
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="view"></canvas>
+    <button id="zoom-reset" type="button" tabindex="-1" hidden>100%</button>
+    <div id="toast"></div>
+  </div>
+
+  <nav id="toolbar">
+    <button class="tb tool" data-tool="pen" type="button" tabindex="-1" title="Pen (P)">
+      <svg viewBox="0 0 24 24"><path d="M4 20l4.2-1 10.6-10.6a2 2 0 0 0 0-2.8l-.4-.4a2 2 0 0 0-2.8 0L5 15.8z"/><path d="M14 7l3 3"/></svg>
+    </button>
+    <button class="tb tool" data-tool="eraser" type="button" tabindex="-1" title="Eraser (E)">
+      <svg viewBox="0 0 24 24"><path d="M9 20h11"/><path d="M4.6 14.6l8.5-8.5a2 2 0 0 1 2.8 0l2.5 2.5a2 2 0 0 1 0 2.8L10 20H7.8l-3.2-3.2a1.6 1.6 0 0 1 0-2.2z"/><path d="M9 10.2l5 5"/></svg>
+    </button>
+    <button class="tb tool" data-tool="fill" type="button" tabindex="-1" title="Fill (F)">
+      <svg viewBox="0 0 24 24"><path d="M11 4l7.5 7.5-6.8 6.8a1.6 1.6 0 0 1-2.2 0l-5.3-5.3a1.6 1.6 0 0 1 0-2.2z"/><path d="M4.5 12h13"/><path d="M20 15.5c0 1.6-.9 2.5-1.5 2.5s-1.5-.9-1.5-2.5S18.5 12 18.5 12 20 13.9 20 15.5z"/></svg>
+    </button>
+    <button class="tb tool" data-tool="shape" id="shape-btn" type="button" tabindex="-1" title="Shape (S): tap again for line / rectangle / circle">
+      <svg viewBox="0 0 24 24" class="sh sh-line"><path d="M5 19L19 5"/></svg>
+      <svg viewBox="0 0 24 24" class="sh sh-rect"><rect x="4.5" y="6.5" width="15" height="11" rx="1"/></svg>
+      <svg viewBox="0 0 24 24" class="sh sh-circle"><circle cx="12" cy="12" r="7.5"/></svg>
+    </button>
+    <span class="sep"></span>
+    <button class="tb" id="color-btn" type="button" tabindex="-1" title="Colour"><span class="dot" id="color-dot"></span></button>
+    <button class="tb" id="size-btn" type="button" tabindex="-1" title="Size ([ ])"><span class="sdot" id="size-dot"></span></button>
+    <span class="sep"></span>
+    <button class="tb" id="undo-btn" type="button" tabindex="-1" title="Undo (Ctrl+Z)">
+      <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+    </button>
+    <button class="tb" id="redo-btn" type="button" tabindex="-1" title="Redo (Ctrl+Y)">
+      <svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>
+    </button>
+    <button class="tb" id="more-btn" type="button" tabindex="-1" title="More">
+      <svg viewBox="0 0 24 24" class="filled"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+    </button>
+  </nav>
+
+  <div id="pop-color" class="pop" hidden></div>
+  <div id="pop-size" class="pop" hidden></div>
+  <div id="pop-more" class="pop menu" hidden>
+    <button type="button" tabindex="-1" data-act="clear">Clear</button>
+    <button type="button" tabindex="-1" data-act="save">Save PNG</button>
+    <button type="button" tabindex="-1" data-act="open">Open image</button>
+  </div>
+
+  <div id="confirm" hidden>
+    <div class="card">
+      <p id="confirm-text">Clear the whole drawing?</p>
+      <div class="row">
+        <button type="button" tabindex="-1" id="confirm-no">Cancel</button>
+        <button type="button" tabindex="-1" id="confirm-yes" class="danger">Clear</button>
+      </div>
+    </div>
+  </div>
+  <input type="file" id="file-in" accept="image/*" hidden>
+</div>
+<script src="draw_config.js?v=20261004a"></script>
+<script src="draw_logic.js?v=20261004a"></script>
+</body>
+</html>
