@@ -1,6 +1,6 @@
 /* ============================================================
    FILE: modules/draftly-config.js
-   PROJECT: draftly
+   PROJECT: Draftly
    ROLE: Single source of magic values.
    RULE: Other modules read Draftly.config. They must not
          hard-code sizes, keys, timings, or default copy.
@@ -21,10 +21,8 @@ Draftly.config = {
   paperHeightCm: 29.7,
   /* Orientation when nothing is stored yet. */
   defaultOrientation: 'portrait',
-  /* App version. Increment by 0.1 each release. */
-  version: '0.7',
-  /* Label shown at the right of the top bar. */
-  versionLabel: 'v0.7',
+  /* App version (not shown in the UI). */
+  version: '0.8',
 
   /* ----- Margins (cm) ----- */
   /* Top page margin. */
@@ -75,7 +73,7 @@ Draftly.config = {
   storageKeyTheme: 'draftly_theme',
   /* Key for non-printing character toggle. */
   storageKeyNonPrint: 'draftly_nonprinting',
-  /* Key for saved margins, JSON. */
+  /* Legacy key for saved margins: removed at startup, margins come from this file. */
   storageKeyMargins: 'draftly_margins',
   /* Default list kind: bullet | 1 | a | A. */
   defaultListKind: 'bullet',
@@ -142,9 +140,9 @@ Draftly.config = {
   /* Placeholder shown in an empty editor. */
   placeholder: 'Start typing here…',
   /* First-run body when nothing is stored. */
-  defaultHtml: '<p>Welcome to draftly. Use the toolbar to format text.</p>',
+  defaultHtml: '<p>Welcome to Draftly. Use the toolbar to format text.</p>',
   /* Fallback body if storage throws. */
-  fallbackHtml: '<p>Welcome to draftly.</p>',
+  fallbackHtml: '<p>Welcome to Draftly.</p>',
 
   /* ----- DOM hooks ----- */
   /* Class used on every page editor. Ids are not duplicated. */

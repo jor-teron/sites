@@ -1,6 +1,6 @@
 /* ============================================================
    FILE: modules/draftly-storage.js
-   PROJECT: draftly
+   PROJECT: Draftly
    ROLE: Load and save editor HTML, theme flag, and marks flag.
    DEPENDS: Draftly.config
    ISOLATION: Failures are swallowed. A bad store does not
@@ -16,7 +16,7 @@ Draftly.storage = {};
 
 /* ============================================================
    FILE: modules/draftly-storage.js
-   PROJECT: draftly
+   PROJECT: Draftly
    ROLE: IndexedDB documents, plus theme and orientation flags.
    DEPENDS: Draftly.config
    ISOLATION: Failures are swallowed. A bad store does not

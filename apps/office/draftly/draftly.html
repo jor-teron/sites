@@ -2,153 +2,141 @@
 <!--
   ============================================================
   FILE: draftly.html
-  PROJECT: draftly
+  PROJECT: Draftly
   ROLE: Shell only. Styles live in draftly.css.
         Behavior lives in modules/. This file does not
         contain magic numbers or editor logic.
   LOAD ORDER: vendor libs (html-docx, jspdf, html2canvas; all local, works
   offline / file://), then config, storage, ui, editor, pages, flow, marks,
-  export, pdf, lists, app.
+  export, pdf, lists, view, app.
   ============================================================
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>draftly · A4 multi-page</title>
+  <title>Draftly</title>
+  <meta name="theme-color" content="#5b5bf0">
+  <link rel="icon" href="draftly_icon.png">
   <link rel="stylesheet" href="draftly.css">
 </head>
 <body>
 
   <!-- ============================================================
-       TOOLBAR
+       TOOLBAR — one slim row; scrolls sideways on narrow screens
        ============================================================ -->
-  <div class="toolbar" id="toolbar">
-    <!-- Recent documents -->
-    <div class="tool-group recent-wrap">
-      <button class="tool-btn wide" id="recentBtn" title="Recent documents">Recent</button>
-      <div class="recent-menu" id="recentMenu" hidden></div>
+  <header class="toolbar" id="toolbar">
+    <div class="brand" title="Draftly">
+      <span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h4"/></svg></span>
+      <span class="brand-name">Draftly</span>
     </div>
 
-    <!-- Font family -->
+    <div class="tool-group recent-wrap">
+      <button class="tool-btn" id="recentBtn" title="Recent documents" aria-label="Recent documents"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></button>
+    </div>
+
     <div class="tool-group">
-      <select id="fontFamilySelect" title="Font family">
+      <select id="fontFamilySelect" class="font-select" title="Font family">
         <option value="Times New Roman" selected>Times New Roman</option>
         <option value="Tinos">Tinos</option>
       </select>
-    </div>
-
-    <!-- Font size -->
-    <div class="tool-group">
       <select id="fontSizeSelect" class="size-select" title="Font size">
-        <option value="1">8 pt</option>
-        <option value="2">10 pt</option>
-        <option value="3" selected>12 pt</option>
-        <option value="4">14 pt</option>
-        <option value="5">18 pt</option>
-        <option value="6">24 pt</option>
-        <option value="7">36 pt</option>
+        <option value="1">8</option>
+        <option value="2">10</option>
+        <option value="3" selected>12</option>
+        <option value="4">14</option>
+        <option value="5">18</option>
+        <option value="6">24</option>
+        <option value="7">36</option>
       </select>
     </div>
 
-    <!-- B / I / U -->
     <div class="tool-group">
-      <button class="tool-btn" id="boldBtn" title="Bold (Ctrl+B)"><b>B</b></button>
-      <button class="tool-btn" id="italicBtn" title="Italic (Ctrl+I)"><i>I</i></button>
-      <button class="tool-btn" id="underlineBtn" title="Underline (Ctrl+U)"><u>U</u></button>
+      <button class="tool-btn" id="boldBtn" title="Bold (Ctrl/⌘+B)" aria-label="Bold"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5h6a3.5 3.5 0 0 1 0 7H7z"/><path d="M7 11.5h7a3.75 3.75 0 0 1 0 7.5H7z"/></svg></button>
+      <button class="tool-btn" id="italicBtn" title="Italic (Ctrl/⌘+I)" aria-label="Italic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5h8M6 19.5h8M14.5 4.5l-5 15"/></svg></button>
+      <button class="tool-btn" id="underlineBtn" title="Underline (Ctrl/⌘+U)" aria-label="Underline"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v7a5 5 0 0 0 10 0V4"/><path d="M5 20.5h14"/></svg></button>
     </div>
 
-    <!-- Alignment: Left | Center | Right -->
     <div class="tool-group">
-      <button class="tool-btn" id="alignLeftBtn" title="Align left">◀</button>
-      <button class="tool-btn" id="alignCenterBtn" title="Align center">◆</button>
-      <button class="tool-btn" id="alignRightBtn" title="Align right">▶</button>
+      <button class="tool-btn" id="alignLeftBtn" title="Align left" aria-label="Align left"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg></button>
+      <button class="tool-btn" id="alignCenterBtn" title="Align center" aria-label="Align center"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg></button>
+      <button class="tool-btn" id="alignRightBtn" title="Align right" aria-label="Align right"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg></button>
     </div>
 
-    <!-- Lists -->
     <div class="tool-group">
-      <select id="listKindSelect" title="List kind">
-        <option value="bullet">Bullet</option>
+      <select id="listKindSelect" class="list-select" title="List kind">
+        <option value="bullet">• List</option>
         <option value="1">1 2 3</option>
         <option value="a">a b c</option>
         <option value="A">A B C</option>
       </select>
-      <select id="listSuffixSelect" title="Number suffix" disabled>
+      <select id="listSuffixSelect" class="suffix-select" title="Number suffix" disabled>
         <option value=".">.</option>
         <option value=",">,</option>
         <option value=")">)</option>
-        <option value="none">none</option>
+        <option value="none">–</option>
       </select>
     </div>
 
-    <!-- Orientation -->
     <div class="tool-group">
-      <select id="orientationSelect" title="Page orientation">
-        <option value="portrait" selected>Portrait</option>
-        <option value="landscape">Landscape</option>
-      </select>
+      <button class="tool-btn" id="nonPrintingBtn" title="Show format marks (¶ ↵)" aria-label="Show format marks" aria-pressed="false"><span class="glyph">¶</span></button>
+      <button class="tool-btn" id="themeToggleBtn" title="Dark theme" aria-label="Toggle theme">
+        <span class="icon-moon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></span>
+        <span class="icon-sun"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg></span>
+      </button>
+      <button class="tool-btn" id="pageBtn" title="Page setup" aria-label="Page setup" aria-haspopup="dialog" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8.5 7h7M8.5 17h7" stroke-dasharray="1.5 2"/></svg></button>
     </div>
 
-    <!-- Margins (cm) -->
-    <div class="tool-group">
-      <label class="margin-label">T<input id="marginTopInput" class="margin-input" type="number" min="0" max="5" step="0.1" value="0.5" title="Top margin cm"></label>
-      <label class="margin-label">B<input id="marginBottomInput" class="margin-input" type="number" min="0" max="5" step="0.1" value="0.5" title="Bottom margin cm"></label>
-      <label class="margin-label">L<input id="marginLeftInput" class="margin-input" type="number" min="0" max="5" step="0.1" value="2" title="Left margin cm"></label>
-      <label class="margin-label">R<input id="marginRightInput" class="margin-input" type="number" min="0" max="5" step="0.1" value="2" title="Right margin cm"></label>
-    </div>
-
-    <!-- Theme + non-printing -->
-    <div class="tool-group" style="margin-left: auto;">
-      <button class="tool-btn wide" id="nonPrintingBtn" title="Show/hide non-printing characters">¶ Show format</button>
-      <button class="tool-btn wide" id="themeToggleBtn" title="Toggle Light/Dark theme">🌙 Dark</button>
-    </div>
-
-    <!-- Filename | Save | Print | Docx | PDF -->
-    <div class="tool-group">
+    <div class="tool-group file-group">
       <input id="fileNameInput" class="file-name" type="text" spellcheck="false" title="Document name" aria-label="Document name">
-      <button class="tool-btn wide" id="saveBtn" title="Save (Ctrl+S)">💾 Save</button>
-      <button class="tool-btn wide" id="printBtn" title="Print document">🖨️ Print</button>
-      <button class="tool-btn wide" id="exportDocxBtn" title="Export as DOCX">📄 DOCX</button>
-      <button class="tool-btn wide" id="exportPdfBtn" title="Export as PDF">📄 PDF</button>
+      <button class="tool-btn" id="saveBtn" title="Save (Ctrl/⌘+S)" aria-label="Save"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg></button>
     </div>
 
-    <!-- Version. Click opens the about panel. -->
-    <button class="tool-btn wide version-btn" id="versionBtn" title="About draftly">v0.7</button>
+    <div class="tool-group">
+      <button class="tool-btn" id="printBtn" title="Print" aria-label="Print"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="1.5"/><path d="M7 14h10v6H7z"/></svg></button>
+      <button class="tool-btn labeled" id="exportDocxBtn" title="Download DOCX"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>DOCX</span></button>
+      <button class="tool-btn labeled accent" id="exportPdfBtn" title="Download PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>PDF</span></button>
+    </div>
+  </header>
+
+  <!-- Recent documents menu (in-app) -->
+  <div class="pop-menu recent-menu" id="recentMenu" hidden></div>
+
+  <!-- Page setup panel (in-app, not a browser popup) -->
+  <div class="pop-menu page-panel" id="pagePanel" role="dialog" aria-label="Page setup" hidden>
+    <div class="panel-title">Page</div>
+    <div class="seg" role="group" aria-label="Orientation">
+      <button type="button" class="seg-btn" data-orient="portrait"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3.5" width="10" height="17" rx="1.5"/></svg><span>Portrait</span></button>
+      <button type="button" class="seg-btn" data-orient="landscape"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7" width="17" height="10" rx="1.5"/></svg><span>Landscape</span></button>
+    </div>
+    <select id="orientationSelect" class="visually-hidden" tabindex="-1" aria-hidden="true">
+      <option value="portrait" selected>Portrait</option>
+      <option value="landscape">Landscape</option>
+    </select>
+    <dl class="panel-info">
+      <dt>Size</dt><dd>A4 · <span id="orientationLabel">Portrait</span></dd>
+      <dt>Margins</dt><dd id="marginInfo">—</dd>
+      <dt>Pages</dt><dd id="pageCountLabel">1 page</dd>
+    </dl>
+    <p class="panel-hint">Enter = new paragraph · Shift+Enter = line break</p>
   </div>
 
   <!-- ============================================================
-       WORKSPACE — multiple pages rendered here
+       WORKSPACE — pages are scaled to fit narrow screens
+       (#pagesScaler holds the scaled size, #pages is laid out at true A4)
        ============================================================ -->
-  <div class="workspace" id="workspace">
-    <div class="paper" id="paper">
-      <div class="editor" contenteditable="true" data-placeholder="Start typing here…" spellcheck="false"></div>
+  <main class="workspace" id="workspace">
+    <div class="pages-scaler" id="pagesScaler">
+      <div class="pages" id="pages">
+        <div class="paper" id="paper">
+          <div class="editor" contenteditable="true" data-placeholder="Start typing here…" spellcheck="false"></div>
+        </div>
+      </div>
     </div>
-  </div>
-
-  <!-- ============================================================
-       STATUS BAR
-       ============================================================ -->
-  <div class="status-bar">
-    <span>📄 A4 · <span id="orientationLabel">Portrait</span> · Margins: T/B 0.5cm, L/R 2cm · <span id="pageCountLabel">1 page</span></span>
-    <span>
-      <kbd>Ctrl</kbd>+<kbd>S</kbd> save &nbsp;|&nbsp;
-      <kbd>Enter</kbd> paragraph &nbsp;|&nbsp;
-      <kbd>Shift</kbd>+<kbd>Enter</kbd> new line
-    </span>
-  </div>
+  </main>
 
   <!-- Toast -->
-  <div class="toast" id="toast"></div>
-
-  <!-- About panel. Not a browser popup. -->
-  <div class="about-backdrop" id="aboutBackdrop" hidden>
-    <div class="about-panel" role="dialog" aria-labelledby="aboutTitle">
-      <h2 id="aboutTitle">draftly</h2>
-      <p id="aboutVersion">v0.7</p>
-      <p>A small A4 editor. Times New Roman by default. Tinos is the embedded fallback.</p>
-      <button class="tool-btn wide" id="aboutCloseBtn" type="button">Close</button>
-    </div>
-  </div>
+  <div class="toast" id="toast" role="status"></div>
 
   <!-- Vendored libraries (vendor/, offline): DOCX export, PDF download. -->
   <script src="vendor/html-docx.js"></script>
@@ -166,6 +154,7 @@
   <script src="modules/draftly-export.js"></script>
   <script src="modules/draftly-pdf.js"></script>
   <script src="modules/draftly-lists.js"></script>
+  <script src="modules/draftly-view.js"></script>
   <script src="modules/draftly-app.js"></script>
 </body>
 </html>

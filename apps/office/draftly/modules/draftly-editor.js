@@ -1,6 +1,6 @@
 /* ============================================================
    FILE: modules/draftly-editor.js
-   PROJECT: draftly
+   PROJECT: Draftly
    ROLE: Selection, execCommand, font, paste, legacy mark cleanup.
    DEPENDS: Draftly.config, Draftly.ui
    ISOLATION: Commands no-op if no editor is focused.

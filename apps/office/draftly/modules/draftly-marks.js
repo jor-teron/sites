@@ -1,6 +1,6 @@
 /* ============================================================
    FILE: modules/draftly-marks.js
-   PROJECT: draftly
+   PROJECT: Draftly
    ROLE: Non-printing marks ("Show format"): ¶ at the end of
          every paragraph, ↵ at every Shift+Enter line break.
    HOW: Drawn on an overlay layer (.np-layer) inside each paper,
@@ -52,10 +52,11 @@ Draftly.marks.put = function put(layer, base, glyph, x, top, h) {
   var s = document.createElement('span');
   s.className = 'np-glyph';
   s.textContent = glyph;
-  s.style.left = (x - base.left) + 'px';
-  s.style.top = (top - base.top) + 'px';
-  s.style.height = h + 'px';
-  s.style.lineHeight = h + 'px';
+  var z = (Draftly.view && Draftly.view.zoom) || 1;   // rects are scaled; the layer is not
+  s.style.left = (x - base.left) / z + 'px';
+  s.style.top = (top - base.top) / z + 'px';
+  s.style.height = h / z + 'px';
+  s.style.lineHeight = h / z + 'px';
   layer.appendChild(s);
 };
 

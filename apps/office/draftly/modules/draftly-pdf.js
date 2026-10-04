@@ -1,6 +1,6 @@
 /* ============================================================
    FILE: modules/draftly-pdf.js
-   PROJECT: draftly
+   PROJECT: Draftly
    ROLE: Download a real .pdf (true A4, current orientation and
          margins), one PDF page per paper card.
    HOW: Each paper is rendered by html2canvas (vendor/) in a
@@ -46,6 +46,7 @@ Draftly.pdf.download = function download() {
     var st = cloneDoc.createElement('style');
     st.textContent =
       '.np-layer{display:none!important}' +
+      '#pages{transform:none!important}' +
       '.paper{box-shadow:none!important;border-radius:0!important;background:#fff!important;transition:none!important}' +
       '.editor{color:#000!important;caret-color:transparent!important}' +
       '.editor:empty:before{content:none!important}';

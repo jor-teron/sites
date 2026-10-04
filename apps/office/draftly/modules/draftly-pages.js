@@ -1,6 +1,6 @@
 /* ============================================================
    FILE: modules/draftly-pages.js
-   PROJECT: draftly
+   PROJECT: Draftly
    ROLE: Paper cards (create / number / reset) and pagination entry points.
    DEPENDS: Draftly.config, Draftly.ui, Draftly.editor
    FLOW: The line-by-line split lives in draftly-flow.js.
@@ -81,7 +81,7 @@ Draftly.pages.createNewPage = function createNewPage(index) {
 
   paper.appendChild(ed);
   paper.appendChild(pn);
-  document.getElementById('workspace').appendChild(paper);
+  (document.getElementById('pages') || document.getElementById('workspace')).appendChild(paper);
 
   if (Draftly.ui && Draftly.ui.isNonPrinting()) ed.classList.add(cfg.nonPrintClass);
   return paper;

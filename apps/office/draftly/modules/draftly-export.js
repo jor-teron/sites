@@ -1,6 +1,6 @@
 /* ============================================================
    FILE: modules/draftly-export.js
-   PROJECT: draftly
+   PROJECT: Draftly
    ROLE: DOCX download (offline, vendor/html-docx.js) and Print dialog.
          PDF download lives in draftly-pdf.js.
    DEPENDS: Draftly.config, Draftly.pages, Draftly.ui, htmlDocx
@@ -37,8 +37,11 @@ Draftly.export.setupPrintStyles = function setupPrintStyles() {
     '@page { size: ' + cfg.pageSizeName + ' ' + (isLandscape ? 'landscape' : 'portrait') + '; margin: 0; }' +
     '@media print {' +
     ' body { background: #fff !important; overflow: visible !important; height: auto !important; }' +
-    ' .toolbar, .status-bar, .toast, .np-layer { display: none !important; }' +
+    ' .toolbar, .toast, .np-layer { display: none !important; }' +
     ' .workspace { overflow: visible !important; padding: 0 !important; background: #fff !important; display: block !important; }' +
+    ' .pages-scaler { width: auto !important; height: auto !important; }' +
+    ' .pages { transform: none !important; width: auto !important; gap: 0 !important; }' +
+    ' .pop-menu { display: none !important; }' +
     ' .paper { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important;' +
     ' width: ' + w + ' !important; height: ' + h + ' !important; min-height: 0 !important;' +
     ' padding: ' + cfg.marginTopCm + 'cm ' + cfg.marginRightCm + 'cm ' + cfg.marginBottomCm + 'cm ' + cfg.marginLeftCm + 'cm !important;' +

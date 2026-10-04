@@ -1,6 +1,6 @@
 /* ============================================================
    FILE: modules/draftly-flow.js
-   PROJECT: draftly
+   PROJECT: Draftly
    ROLE: Line-by-line flow of content across fixed-height A4
          pages. Overflow moves to the next page; a block that
          straddles the bottom margin is split at the last line
@@ -185,7 +185,8 @@ Draftly.flow.push = function push(eds, i) {
   var ed = eds[i];
   ed.scrollTop = 0;                       // caret may have scrolled the clipped box
   if (!Draftly.flow.overflows(ed)) return false;
-  var limit = ed.getBoundingClientRect().top + Draftly.flow.boxHeight(ed);
+  var er = ed.getBoundingClientRect();     // screen space (pages may be scaled to fit)
+  var limit = er.top + er.height;
   var blocks = ed.children;
   var j = blocks.length - 1;
   while (j > 0 && blocks[j].getBoundingClientRect().top >= limit) j--;

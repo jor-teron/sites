@@ -52,7 +52,7 @@ Media,    Photo Editor,          apps/media/photo-editor/,                   ,  
 Media,    Photo Editor v2,       apps/media/photo-editor-v2/,                ,         0,       0,      265
 
 Office,   Spreadsheet,           apps/office/spreadsheet/,                   ,         0,       0,      320
-Office,   Draft-ly,              apps/office/draftly/,                       ,         0,       0,      310
+Office,   Draftly,               apps/office/draftly/,                       ,         0,       0,      310
 Office,   OCR,                   apps/office/ocr/,                           ,         0,       0,      360
 Office,   MS Word Diff,          apps/tools/msword_diff/,                    ,         0,       0,      440
 

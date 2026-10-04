@@ -1,6 +1,6 @@
 /* ============================================================
    FILE: modules/draftly-ui.js
-   PROJECT: draftly
+   PROJECT: Draftly
    ROLE: Toast, theme, orientation label, toolbar active state.
    DEPENDS: Draftly.config, Draftly.storage
    ISOLATION: Missing buttons are skipped. No throw to app.js.
@@ -49,13 +49,9 @@ Draftly.ui.toggleNonPrinting = function toggleNonPrinting() {
     else editors[i].classList.remove(cfg.nonPrintClass);
   }
   if (btn) {
-    if (Draftly.ui.showNonPrinting) {
-      btn.classList.add('active');
-      btn.textContent = '¶ Hide format';
-    } else {
-      btn.classList.remove('active');
-      btn.textContent = '¶ Show format';
-    }
+    btn.classList.toggle('active', Draftly.ui.showNonPrinting);
+    btn.setAttribute('aria-pressed', Draftly.ui.showNonPrinting ? 'true' : 'false');
+    btn.title = Draftly.ui.showNonPrinting ? 'Hide format marks (¶ ↵)' : 'Show format marks (¶ ↵)';
   }
   if (Draftly.storage) Draftly.storage.save();
   if (Draftly.marks) Draftly.marks.redraw();
@@ -72,10 +68,10 @@ Draftly.ui.setTheme = function setTheme(dark) {
   var btn = document.getElementById('themeToggleBtn');
   if (dark) {
     body.classList.add(Draftly.config.darkClass);
-    if (btn) btn.textContent = '☀️ Light';
+    if (btn) btn.title = 'Light theme';
   } else {
     body.classList.remove(Draftly.config.darkClass);
-    if (btn) btn.textContent = '🌙 Dark';
+    if (btn) btn.title = 'Dark theme';
   }
   if (Draftly.storage) Draftly.storage.saveTheme(dark);
 };
@@ -105,6 +101,7 @@ Draftly.ui.setOrientation = function setOrientation(mode) {
   var i;
   for (i = 0; i < papers.length; i++) papers[i].setAttribute('data-orientation', mode);
   if (Draftly.storage) Draftly.storage.saveOrientation(mode);
+  if (Draftly.view) { Draftly.view.fit(); Draftly.view.syncPagePanel(); }
   if (Draftly.pages) Draftly.pages.layoutAll();
 };
 

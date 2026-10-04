@@ -1,6 +1,6 @@
 /* ============================================================
    FILE: modules/draftly-app.js
-   PROJECT: draftly
+   PROJECT: Draftly
    ROLE: Boot and event wiring. Does not own paper math.
    DEPENDS: config, storage, ui, editor, pages, export
    ISOLATION: Each feature is started only if its module
@@ -83,7 +83,7 @@ Draftly.app.toggleRecent = function toggleRecent() {
   var menu = document.getElementById('recentMenu');
   if (!menu) return;
   if (!menu.hidden) {
-    menu.hidden = true;
+    Draftly.view.togglePop('recentMenu', 'recentBtn', false);
     return;
   }
   Draftly.storage.listDocs().then(function (rows) {
@@ -98,11 +98,11 @@ Draftly.app.toggleRecent = function toggleRecent() {
       btn.textContent = row.name;
       btn.addEventListener('click', function () {
         Draftly.app.openDoc(row.name);
-        menu.hidden = true;
+        Draftly.view.togglePop('recentMenu', 'recentBtn', false);
       });
       menu.appendChild(btn);
     });
-    menu.hidden = false;
+    Draftly.view.togglePop('recentMenu', 'recentBtn', true);
   }).catch(function () {
     Draftly.ui.showToast('Could not read recent documents');
   });
@@ -125,15 +125,6 @@ Draftly.app.openDoc = function openDoc(name) {
   });
 };
 
-/* Show or hide the in-page about panel. */
-Draftly.app.toggleAbout = function toggleAbout(force) {
-  var panel = document.getElementById('aboutBackdrop');
-  if (!panel) return;
-  if (force === false) panel.hidden = true;
-  else if (force === true) panel.hidden = false;
-  else panel.hidden = !panel.hidden;
-};
-
 /* Save the open name. No prompt. */
 Draftly.app.saveDocument = function saveDocument() {
   Draftly.storage.save().then(function (name) {
@@ -154,7 +145,7 @@ Draftly.app.bindKeys = function bindKeys() {
     else Draftly.editor.execCmd('insertParagraph');
   });
   document.addEventListener('keydown', function (e) {
-    if (!(e.ctrlKey && !e.altKey && !e.metaKey)) return;
+    if (!((e.ctrlKey || e.metaKey) && !e.altKey)) return;   /* Ctrl or Cmd */
     var key = e.key.toLowerCase();
     if (key === 's') {
       e.preventDefault();
@@ -189,21 +180,11 @@ Draftly.app.bindUi = function bindUi() {
   Draftly.app.onClick('printBtn', function () { Draftly.export.printDocument(); });
   Draftly.app.onClick('exportDocxBtn', function () { Draftly.export.exportDocx(); });
   Draftly.app.onClick('exportPdfBtn', function () { Draftly.pdf.download(); });
-  Draftly.app.onClick('versionBtn', function () { Draftly.app.toggleAbout(); });
-  Draftly.app.onClick('aboutCloseBtn', function () { Draftly.app.toggleAbout(false); });
+  Draftly.app.onClick('pageBtn', function () {
+    Draftly.view.syncPagePanel();
+    Draftly.view.togglePop('pagePanel', 'pageBtn');
+  });
 
-  var versionBtn = document.getElementById('versionBtn');
-  if (versionBtn) versionBtn.textContent = cfg.versionLabel;
-  var aboutVersion = document.getElementById('aboutVersion');
-  if (aboutVersion) aboutVersion.textContent = cfg.versionLabel;
-
-  var orientationSelect = document.getElementById('orientationSelect');
-  if (orientationSelect) {
-    orientationSelect.addEventListener('change', function (e) {
-      Draftly.ui.setOrientation(e.target.value);
-      Draftly.ui.showToast('Orientation: ' + e.target.value);
-    });
-  }
 
   var fontFamilySelect = document.getElementById('fontFamilySelect');
   if (fontFamilySelect) {
@@ -234,56 +215,12 @@ Draftly.app.bindUi = function bindUi() {
     });
   }
 
-  /* Margins in centimetres. Applied live and stored. */
-  Draftly.app.bindMargins = function bindMargins() {
-    var map = {
-      marginTopInput: 'marginTopCm',
-      marginBottomInput: 'marginBottomCm',
-      marginLeftInput: 'marginLeftCm',
-      marginRightInput: 'marginRightCm'
-    };
-    var id;
-    var node;
-    function applyMargins() {
-      var key;
-      var el;
-      var n;
-      for (key in map) {
-        el = document.getElementById(key);
-        n = el ? parseFloat(el.value) : NaN;
-        if (!isNaN(n)) Draftly.config[map[key]] = n;
-      }
-      Draftly.config.applyToDocument();
-      Draftly.config.docxMarginTop = Math.round(Draftly.config.marginTopCm * 567);
-      Draftly.config.docxMarginBottom = Math.round(Draftly.config.marginBottomCm * 567);
-      Draftly.config.docxMarginLeft = Math.round(Draftly.config.marginLeftCm * 567);
-      Draftly.config.docxMarginRight = Math.round(Draftly.config.marginRightCm * 567);
-      try {
-        localStorage.setItem(Draftly.config.storageKeyMargins, JSON.stringify({
-          top: Draftly.config.marginTopCm,
-          bottom: Draftly.config.marginBottomCm,
-          left: Draftly.config.marginLeftCm,
-          right: Draftly.config.marginRightCm
-        }));
-      } catch (e) {}
-      if (Draftly.pages && Draftly.app.ready) Draftly.pages.layoutAll();
-    }
-    try {
-      var saved = JSON.parse(localStorage.getItem(Draftly.config.storageKeyMargins) || 'null');
-      if (saved) {
-        document.getElementById('marginTopInput').value = saved.top;
-        document.getElementById('marginBottomInput').value = saved.bottom;
-        document.getElementById('marginLeftInput').value = saved.left;
-        document.getElementById('marginRightInput').value = saved.right;
-      }
-    } catch (e) {}
-    for (id in map) {
-      node = document.getElementById(id);
-      if (node) node.addEventListener('change', applyMargins);
-    }
-    applyMargins();
-  };
-  Draftly.app.bindMargins();
+  /* Margins come from draftly-config.js only. Drop margins stored by older versions. */
+  try { localStorage.removeItem(cfg.storageKeyMargins); } catch (e) {}
+  cfg.docxMarginTop = Math.round(cfg.marginTopCm * 567);
+  cfg.docxMarginBottom = Math.round(cfg.marginBottomCm * 567);
+  cfg.docxMarginLeft = Math.round(cfg.marginLeftCm * 567);
+  cfg.docxMarginRight = Math.round(cfg.marginRightCm * 567);
 
   document.addEventListener('selectionchange', function () {
     var active = document.activeElement;
@@ -339,14 +276,6 @@ Draftly.app.bindUi = function bindUi() {
     if (Draftly.app.ready) Draftly.storage.save();
   });
 
-  document.addEventListener('click', function (e) {
-    var menu = document.getElementById('recentMenu');
-    var btn = document.getElementById('recentBtn');
-    if (!menu || menu.hidden) return;
-    if (btn && (btn === e.target || btn.contains(e.target))) return;
-    if (menu.contains(e.target)) return;
-    menu.hidden = true;
-  });
 };
 
 /* Start the editor after modules have loaded. */
@@ -358,6 +287,7 @@ Draftly.app.init = function init() {
     try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) {}
     Draftly.app.bindKeys();
     Draftly.app.bindUi();
+    if (Draftly.view) Draftly.view.init();
     Draftly.app.loadDocument().then(function () {
       var editor = Draftly.pages.firstEditor();
       if (editor) {

@@ -1,6 +1,6 @@
 /* ============================================================
    FILE: modules/draftly-lists.js
-   PROJECT: draftly
+   PROJECT: Draftly
    ROLE: Bullet and numbered lists. Suffix is display only.
    DEPENDS: Draftly.config, Draftly.editor
    ISOLATION: A missing select skips the command.
