@@ -43,6 +43,11 @@ RANGES
   A1:C1     row
   A1:C5     block
 
+ABSOLUTE REFS ($)
+  $A$1      column and row fixed when copied / filled
+  A$1       row fixed
+  $A1       column fixed
+
 COMPARE in IF
   =  <>  <  >  <=  >=
 
@@ -56,6 +61,18 @@ ERRORS
   #REF!     reference outside the sheet (e.g. A150)
   #LOOP!    circular reference (A1=B1, B1=A1)
   #ERR      formula not understood
+
+NUMBER FORMATS (toolbar list, display only)
+  General · 0 · 0.00 · 1,000 · % · ₹ Currency
+
+SHORTCUTS (Ctrl or Cmd)
+  Z undo · Y / Shift+Z redo · A select all
+  C / X / V copy, cut, paste (tab-separated)
+  D fill down · R fill right
+  Shift+arrows / drag / Shift+click   select a block
+  Delete / Backspace                  clear selection
+  F2 / double-click                   edit, keeping the text
+  Esc                                 cancel the edit
 
 PRINT
   Use Print / PDF — browser dialog, choose Save as PDF

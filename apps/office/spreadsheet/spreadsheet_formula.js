@@ -26,7 +26,7 @@ function fail(value) { throw new CellError(value); }
 function isErrorValue(v) { return typeof v === "string" && ALL_ERRORS.indexOf(v) !== -1; }
 
 /* Looks like a cell reference (letters + digits), in range or not */
-var REF_LIKE = /^[A-Z]{1,3}[0-9]+$/;
+var REF_LIKE = /^\$?[A-Z]{1,3}\$?[0-9]+$/;
 
 /* Round float noise away, keep a number (precision from config, default 15) */
 function roundNum(x) {
@@ -46,7 +46,7 @@ function colLetter(c) {
  * Parse A1-style address. Returns {r,c} 0-based or null
  */
 function parseAddr(token) {
-  var m = String(token).trim().toUpperCase().match(/^([A-Z])([1-9][0-9]*)$/);
+  var m = String(token).trim().toUpperCase().match(/^\$?([A-Z])\$?([1-9][0-9]*)$/);   // $A$1, $A1, A$1 ok
   if (!m) return null;
   var c = COL_LETTERS.indexOf(m[1]);
   var r = parseInt(m[2], 10) - 1;
@@ -404,6 +404,8 @@ function evalExpr(expr) {
 
   bag = [];
   s = pullStrings(s, bag);
+  if (s.indexOf(ERR_REF) !== -1) fail(ERR_REF);       // a ref removed by delete row / column
+  s = s.replace(/\$/g, "");                          // $ only matters when copying / filling
 
   var guard = 0;
   while (guard++ < 40) {
@@ -547,15 +549,86 @@ function evalFormula(f) {
 }
 
 /**
- * Shift A1 refs in a formula by dr, dc (autofill)
+ * Call fn on every cell ref / range in a formula (outside "strings").
+ * fn(ref) gets { r1, c1, ar1, ac1, r2, c2, ar2, ac2, range } (0-based, a* = "$" absolute)
+ * and returns replacement text. Used by fill, paste, sort and insert/delete.
+ */
+var REF_RE = /(\$?)\b([A-Za-z])(\$?)([0-9]+)\b(?:\s*:\s*(\$?)\b([A-Za-z])(\$?)([0-9]+)\b)?/g;
+function mapRefs(formula, fn) {
+  var f = String(formula);
+  if (f.charAt(0) !== "=") return f;
+  return f.split('"').map(function (part, i) {
+    if (i % 2) return part;                           // inside a quoted string
+    return part.replace(REF_RE, function (m, a1, l1, b1, n1, a2, l2, b2, n2) {
+      var ref = {
+        ac1: !!a1, c1: COL_LETTERS.indexOf(l1.toUpperCase()), ar1: !!b1, r1: parseInt(n1, 10) - 1,
+        range: !!l2
+      };
+      if (ref.c1 < 0) return m;
+      if (l2) {
+        ref.ac2 = !!a2; ref.c2 = COL_LETTERS.indexOf(l2.toUpperCase()); ref.ar2 = !!b2; ref.r2 = parseInt(n2, 10) - 1;
+        if (ref.c2 < 0) return m;
+      }
+      return fn(ref);
+    });
+  }).join('"');
+}
+
+/* Text for one ref end; out of the sheet → #REF! */
+function refText(ac, c, ar, r) {
+  if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return ERR_REF;
+  return (ac ? "$" : "") + COL_LETTERS.charAt(c) + (ar ? "$" : "") + String(r + 1);
+}
+function refsText(x) {
+  var a = refText(x.ac1, x.c1, x.ar1, x.r1);
+  if (!x.range) return a;
+  var b = refText(x.ac2, x.c2, x.ar2, x.r2);
+  return a === ERR_REF || b === ERR_REF ? ERR_REF : a + ":" + b;
+}
+
+/**
+ * Shift relative A1 refs by dr, dc (fill, paste, sort). $ parts stay put.
+ * A ref pushed outside the sheet becomes #REF!.
  */
 function shiftFormula(formula, dr, dc) {
   if (!formula || String(formula).charAt(0) !== "=") return formula;
-  return String(formula).replace(/\b([A-Za-z])([1-9][0-9]*)\b/g, function (tok, letter, rowStr) {
-    var c = COL_LETTERS.indexOf(letter.toUpperCase()) + dc;
-    var r = parseInt(rowStr, 10) - 1 + dr;
-    if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return tok;
-    return COL_LETTERS.charAt(c) + String(r + 1);
+  return mapRefs(formula, function (x) {
+    if (!x.ac1) x.c1 += dc;
+    if (!x.ar1) x.r1 += dr;
+    if (x.range) { if (!x.ac2) x.c2 += dc; if (!x.ar2) x.r2 += dr; }
+    return refsText(x);
+  });
+}
+
+/**
+ * Fix refs after inserting (delta 1) or deleting (delta -1) row/column `at`.
+ * axis "r" or "c". Absolute ($) refs move too. Refs to a deleted cell → #REF!;
+ * ranges grow / shrink.
+ */
+function adjustRefs(formula, axis, at, delta) {
+  if (!formula || String(formula).charAt(0) !== "=") return formula;
+  var limit = axis === "r" ? ROWS : COLS;
+  var k1 = axis === "r" ? "r1" : "c1", k2 = axis === "r" ? "r2" : "c2";
+  return mapRefs(formula, function (x) {
+    if (!x.range) {
+      if (delta > 0) { if (x[k1] >= at) x[k1]++; }
+      else if (x[k1] === at) return ERR_REF;
+      else if (x[k1] > at) x[k1]--;
+      return refsText(x);
+    }
+    var swap = x[k1] > x[k2], lo = swap ? x[k2] : x[k1], hi = swap ? x[k1] : x[k2];
+    if (delta > 0) {
+      if (lo >= at) lo++;
+      if (hi >= at) hi++;
+      if (lo >= limit) return ERR_REF;
+      if (hi >= limit) hi = limit - 1;
+    } else {
+      if (lo === at && hi === at) return ERR_REF;
+      if (lo > at) lo--;
+      if (hi >= at) hi--;
+    }
+    if (swap) { x[k1] = hi; x[k2] = lo; } else { x[k1] = lo; x[k2] = hi; }
+    return refsText(x);
   });
 }
 
@@ -563,7 +636,7 @@ function shiftFormula(formula, dr, dc) {
  * Cells a formula refers to (single refs and ranges inside the sheet), as r*COLS+c indexes
  */
 function formulaDeps(f) {
-  var s = String(f).slice(1).replace(/"[^"]*"/g, " ");
+  var s = String(f).slice(1).replace(/"[^"]*"/g, " ").replace(/\$/g, "");
   var out = [], seen = {};
   function add(r, c) { var k = r * COLS + c; if (!seen[k]) { seen[k] = 1; out.push(k); } }
   s = s.replace(/\b([A-Za-z]{1,3}[0-9]+)\s*:\s*([A-Za-z]{1,3}[0-9]+)\b/g, function (m, x, y) {

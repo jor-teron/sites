@@ -9,6 +9,8 @@
 </head>
 <body>
   <div class="toolbar">
+    <button type="button" id="btn-undo" title="Undo (Ctrl/⌘+Z)">↶</button>
+    <button type="button" id="btn-redo" title="Redo (Ctrl/⌘+Y, Ctrl/⌘+Shift+Z)">↷</button>
     <button type="button" id="btn-export">Export CSV</button>
     <label>Import CSV
       <input id="file-import" type="file" accept=".csv,text/csv,text/plain" hidden>
@@ -28,11 +30,34 @@
     <button type="button" id="btn-under" title="Underline"><u>U</u></button>
     <input id="fill-color" type="color" title="Cell colour" value="#1e1e1e">
     <input id="text-color" type="color" title="Text colour" value="#e8e8e8">
+    <select id="fmt-sel" title="Number format">
+      <option value="general">General</option>
+      <option value="int">0</option>
+      <option value="dec2">0.00</option>
+      <option value="thousands">1,000</option>
+      <option value="percent">%</option>
+      <option value="currency">₹ Currency</option>
+    </select>
+    <span class="tool-sep"></span>
+    <button type="button" id="btn-row-ins" title="Insert row above the selection">+ Row</button>
+    <button type="button" id="btn-row-del" title="Delete selected row(s)">− Row</button>
+    <button type="button" id="btn-col-ins" title="Insert column left of the selection">+ Col</button>
+    <button type="button" id="btn-col-del" title="Delete selected column(s)">− Col</button>
+    <button type="button" id="btn-sort-asc" title="Sort A→Z by the active column">Sort A→Z</button>
+    <button type="button" id="btn-sort-desc" title="Sort Z→A by the active column">Sort Z→A</button>
   </div>
   <div id="status" class="status"></div>
   <div id="sheet-wrap" class="sheet-wrap"></div>
   <script src="spreadsheet_config.js"></script>
   <script src="spreadsheet_formula.js"></script>
   <script src="spreadsheet_logic.js"></script>
+  <script src="spreadsheet_format.js"></script>
+  <script src="spreadsheet_undo.js"></script>
+  <script src="spreadsheet_select.js"></script>
+  <script src="spreadsheet_clipboard.js"></script>
+  <script src="spreadsheet_rows.js"></script>
+  <script src="spreadsheet_sort.js"></script>
+  <script src="spreadsheet_resize.js"></script>
+  <script src="spreadsheet_keys.js"></script>
 </body>
 </html>

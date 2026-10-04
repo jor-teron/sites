@@ -67,10 +67,30 @@ const SPREADSHEET_CONFIG = {
     rowNum: "row-num",
     cell: "cell",
     fillHandle: "fill-handle",
+    colGrip: "col-grip",
     selected: "selected",
     band: "sel-band",
     error: "error",
     toggleOn: "on",
+  },
+
+  // Undo / redo
+  undo: {
+    limit: 100,                          // steps kept
+    mergeMs: 800,                        // colour-picker drags within this time = one step
+  },
+
+  // Number formats (display only)
+  numberFormat: {
+    currency: "₹",                       // symbol for the Currency format
+    locale: "en-IN",                     // grouping style ("en-US" → 1,234,567; "en-IN" → 12,34,567)
+  },
+
+  // Column widths (px)
+  colWidth: {
+    auto: 100,                           // narrowest automatic column
+    min: 30,                             // narrowest a dragged column can get
+    rowHead: 40,                         // row-number column
   },
 
   // Numeric formula results are rounded to this many significant digits (0.1+0.2 → 0.3)
@@ -88,5 +108,14 @@ const SPREADSHEET_CONFIG = {
     rowPrefix: "Row ",                   // + number, when a row number is clicked
     ready: "A–Z × 100",                  // status after start-up
     confirmClear: "Clear entire sheet?",
+    selectAll: "All cells",
+    undone: "Undo",
+    redone: "Redo",
+    copied: "Copied",
+    cut: "Cut",
+    pasted: "Pasted",
+    insertFull: "Can't insert: the last row / column has data",
+    sortedAsc: "Sorted A→Z",
+    sortedDesc: "Sorted Z→A",
   },
 };
