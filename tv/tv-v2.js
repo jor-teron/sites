@@ -17,19 +17,19 @@ const specialItems = [
   {
     name: "YouTube",
     type: "app",
-    logo: "../image/youtube.png",
+    logo: "../shared/image/placeholder.png",
     action: () => { window.location.href = "vnd.youtube://"; }
   },
   {
     name: "Play Store",
     type: "app",
-    logo: "../image/app.png",
+    logo: "../shared/image/placeholder.png",
     action: () => { window.location.href = "intent://play.google.com/store#Intent;scheme=https;package=com.android.vending;end"; }
   },
   {
     name: "Settings",
     type: "app",
-    logo: "../image/cogwheel.png",
+    logo: "../shared/image/placeholder.png",
     action: () => { window.location.href = "intent://com.android.settings/#Intent;scheme=android-app;end"; }
   }
 ];

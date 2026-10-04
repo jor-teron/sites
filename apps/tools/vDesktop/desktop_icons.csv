@@ -2,8 +2,8 @@ GROUP,NAME,URL,ICON
 Desktop,,,
 Desktop,Google,https://www.google.com/ncr,https://www.google.com/s2/favicons?domain=google.com&sz=128
 Desktop,Drive,https://drive.google.com/drive/my-drive,https://www.google.com/s2/favicons?domain=https://drive.google.com&sz=128
-Desktop,Docs,https://docs.google.com/document/u/0/,../../image/google-docs.png
-Desktop,Sheets,https://docs.google.com/spreadsheets/u/0/,../../image/excel.png
+Desktop,Docs,https://docs.google.com/document/u/0/,../../shared/image/placeholder.png
+Desktop,Sheets,https://docs.google.com/spreadsheets/u/0/,../../shared/image/placeholder.png
 Desktop,YouTube,https://www.youtube.com,
 Desktop,Dustbin,,
 Taskbar,,,

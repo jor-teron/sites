@@ -19,13 +19,13 @@ const HIDE_DELAY = 5000;
 
 const CATEGORY_TILES = [
   // type: 'link' → open href (same tab). Edit href/name/logo anytime.
-  { type: 'link', name: 'Hub', href: '../', group: 'Link', logo: '../image/connection.png' },
-  { type: 'category', key: 'kids', name: 'Kids', group: 'Category', logo: '../image/chase.png' },
-  { type: 'category', key: 'more', name: 'More', group: 'Category', logo: '../image/arrow_blue.png' },
-  { type: 'category', key: 'india', name: 'India', group: 'Category', logo: '../image/india.png' }
+  { type: 'link', name: 'Hub', href: '../', group: 'Link', logo: '../shared/image/placeholder.png' },
+  { type: 'category', key: 'kids', name: 'Kids', group: 'Category', logo: '../shared/image/placeholder.png' },
+  { type: 'category', key: 'more', name: 'More', group: 'Category', logo: '../shared/image/placeholder.png' },
+  { type: 'category', key: 'india', name: 'India', group: 'Category', logo: '../shared/image/placeholder.png' }
 ];
 
-const HOME_CATEGORY_LOGO = '../image/home.png';
+const HOME_CATEGORY_LOGO = '../shared/image/placeholder.png';
 
 const PLACEHOLDER_LOGO =
   'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70"><rect fill="%23333" width="70" height="70"/><text x="35" y="40" fill="%23999" text-anchor="middle" font-size="18">TV</text></svg>';
