@@ -312,7 +312,7 @@ function micConstraints() {
 
 /**
  * API key in use: the #apiKey field (key saved in this browser, or typed) →
- * window.SITES_KEYS.GEMINI from ../../script/api_keys.js (optional) → "".
+ * window.SITES_KEYS.GEMINI from ../../../shared/script/api_keys.js (optional) → "".
  */
 function sharedApiKey() {
   const k = window.SITES_KEYS && window.SITES_KEYS.GEMINI;

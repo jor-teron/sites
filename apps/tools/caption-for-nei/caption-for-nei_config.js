@@ -9,7 +9,7 @@
  * window.CFN_CONFIG is merged into CONFIG and also read by the romanizer.
  * Edit tunables, languages, storage keys and UI text here; leave the logic file for logic.
  * Never put a real API key in this file (the site is public). Use the Key panel,
- * or the shared (restricted) key file ../../script/api_keys.js (v0.17).
+ * or the shared (restricted) key file ../../../shared/script/api_keys.js (v0.17).
  */
 window.CFN_CONFIG = {
   /*
@@ -27,7 +27,7 @@ window.CFN_CONFIG = {
   MIC_ECHO_CANCEL: true,
 
   /*
-   * Shared key (v0.17): window.SITES_KEYS.GEMINI from ../../script/api_keys.js
+   * Shared key (v0.17): window.SITES_KEYS.GEMINI from ../../../shared/script/api_keys.js
    * (optional file). Order: key saved in this browser → shared key (when non-empty
    * and not this placeholder) → ask (Key panel).
    */
