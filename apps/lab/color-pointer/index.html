@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<!--
+  File: index.html
+  Project: color-pointer
+  Purpose: Entry redirect so a local server or file open lands on the main page.
+  The real app lives in color-pointer.html. This file only forwards the browser.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url=color-pointer.html">
+  <title>color-pointer</title>
+  <script>
+    /* Immediate redirect. Meta refresh is the fallback if script is blocked. */
+    window.location.replace("color-pointer.html");
+  </script>
+</head>
+<body>
+  <p><a href="color-pointer.html">Open color-pointer</a></p>
+</body>
+</html>

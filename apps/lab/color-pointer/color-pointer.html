@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<!--
+  File: color-pointer.html
+  Project: color-pointer
+  Purpose: Webcam color-marker pointer for a non-touch laptop or desktop.
+  A bright sticker (red tape, nail polish, LED) is sampled, tracked, and mapped
+  onto this page as a cursor. A short hold fires a click.
+  This does not move the operating-system mouse. It only drives this page.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>color-pointer</title>
+  <link rel="stylesheet" href="color-pointer.css">
+</head>
+<body>
+  <div id="stage">
+    <h1>color-pointer</h1>
+    <p class="hint">
+      Stick a bright color on one finger. Start the camera, click the sticker in the preview to lock the color,
+      then point. Hold still for about 0.6 s to click. Mirror is on so left and right match your hand.
+    </p>
+    <div class="grid" id="grid">
+      <div class="tile" data-name="Play"><b>Play</b><span>media</span></div>
+      <div class="tile" data-name="Pause"><b>Pause</b><span>media</span></div>
+      <div class="tile" data-name="Next"><b>Next</b><span>channel</span></div>
+      <div class="tile" data-name="Back"><b>Back</b><span>channel</span></div>
+      <div class="tile" data-name="Vol +"><b>Vol +</b><span>sound</span></div>
+      <div class="tile" data-name="Vol −"><b>Vol −</b><span>sound</span></div>
+      <div class="tile" data-name="Home"><b>Home</b><span>menu</span></div>
+      <div class="tile" data-name="OK"><b>OK</b><span>confirm</span></div>
+    </div>
+    <div id="log">No click yet.</div>
+  </div>
+
+  <div id="cursor"></div>
+
+  <div id="dock">
+    <video id="preview" autoplay playsinline muted></video>
+    <canvas id="frame"></canvas>
+    <div class="row">
+      <button id="start" type="button">Start camera</button>
+      <button id="mirror" class="on" type="button">Mirror</button>
+      <button id="swatch" type="button" title="Locked color"></button>
+    </div>
+    <select id="cams" aria-label="Camera"></select>
+    <div id="status">Camera off. Open over http://localhost, not as a file.</div>
+  </div>
+
+  <script src="color-pointer.js"></script>
+</body>
+</html>
