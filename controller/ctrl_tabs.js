@@ -1,13 +1,17 @@
 /*
- * Gamepad Controller — tabs (top centre) + the Keyboard & Mouse 3-way switch.
- * Tabs come from CONTROLLER_CONFIG.tabs: 🎮 Gamepad · ⌨️ Keyboard & Mouse · 📤 Send Files.
- * A tab shows one controller mode (CONTROLLER_CONFIG.modes); Keyboard & Mouse shows the mode
- * picked on its switch (PC Keys / Trackpad / Phone Keys, remembered in storage.kmMode).
- * The last tab is remembered through the last mode (storage.mode, controller_logic.js).
- * ⋯ opens the existing menu (modes, fullscreen, light / dark, diagnostics).
- * controller_logic.js calls CTRL_TABS.init(app) once and CTRL_TABS.render(modeId, paired)
- * whenever the view changes. Switching modes still goes through app.setMode, so every held
- * button / key is released exactly as before.
+ * Gamepad Controller — pages + the Keyboard & Mouse 3-way switch.
+ * Pages come from CONTROLLER_CONFIG.tabs: 🎮 Gamepad → ⌨️ Keyboard & Mouse → 📤 Send Files.
+ * There is no tab bar: the compact round mode button (#mode-btn, controller_logic.js) cycles
+ * the pages in that order (tap = next, swipe = previous / next, hold = menu) and shows the
+ * icon of the NEXT page. A page shows one controller mode (CONTROLLER_CONFIG.modes);
+ * Keyboard & Mouse shows the mode picked on its switch (PC Keys / Trackpad / Phone Keys,
+ * remembered in storage.kmMode). The last page is remembered through the last mode
+ * (storage.mode, controller_logic.js).
+ * A small ⋯ button next to the mode button opens the existing menu (modes, fullscreen,
+ * light / dark, diagnostics).
+ * controller_logic.js calls CTRL_TABS.init(app) once, CTRL_TABS.render(modeId, paired)
+ * whenever the view changes and CTRL_TABS.step(dir) from the mode button. Switching modes
+ * still goes through app.setMode, so every held button / key is released exactly as before.
  */
 (function () {
   'use strict';
@@ -17,7 +21,7 @@
   const TABS = CFG.tabs || [];
   const SW = CFG.kmSwitch || [];
   let app = null;
-  let bar = null;
+  let more = null;
   let sw = null;
 
   function load(key, fb) { try { const v = localStorage.getItem(key); return v == null ? fb : v; } catch (_) { return fb; } }
@@ -59,43 +63,32 @@
     app.setMode(target);
   }
 
+  /** Page after (dir 1) / before (dir -1) the page of modeId, wrapping around. */
+  function tabAfter(modeId, dir) {
+    const i = Math.max(0, TABS.indexOf(tabOf(modeId)));
+    return TABS[(i + (dir || 1) + TABS.length) % TABS.length];
+  }
+
+  /** Mode button: go to the next / previous page. */
+  function step(dir) {
+    if (TABS.length) pickTab(tabAfter(app.getMode(), dir));
+  }
+
   function pickKm(mode) {
     save(CFG.storage.kmMode, mode);
     if (app.getMode() !== mode) app.setMode(mode);
   }
 
   function build() {
-    bar = document.createElement('nav');
-    bar.id = 'ctrl-tabs';
-    bar.setAttribute('role', 'tablist');
-    for (const t of TABS) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'ctab';
-      b.dataset.tab = t.id;
-      b.title = t.title || t.label;
-      b.setAttribute('role', 'tab');
-      b.setAttribute('aria-label', t.title || t.label);
-      const ic = document.createElement('span');
-      ic.className = 'ctab-ic';
-      ic.textContent = t.icon || '';
-      const lb = document.createElement('span');
-      lb.className = 'ctab-lb';
-      lb.textContent = t.label;
-      b.append(ic, lb);
-      onTap(b, () => { pickTab(t); });
-      bar.appendChild(b);
-    }
-    const more = document.createElement('button');
+    more = document.createElement('button');
     more.type = 'button';
-    more.className = 'ctab ctab-more';
     more.id = 'ctrl-more';
     more.textContent = '⋯';
     more.title = TXT.tabsMenu;
     more.setAttribute('aria-label', TXT.tabsMenu);
+    more.hidden = true;
     onTap(more, () => app.openMenu());
-    bar.appendChild(more);
-    document.body.appendChild(bar);
+    document.body.appendChild(more);
 
     sw = document.createElement('div');
     sw.id = 'km-switch';
@@ -114,18 +107,12 @@
     const kbBar = document.getElementById('kb-bar');
     const led = document.getElementById('kb-led');
     if (kbBar) kbBar.insertBefore(sw, led ? led.nextSibling : kbBar.firstChild);
-    document.body.classList.add('has-tabs');
   }
 
   function render(modeId, paired) {
-    if (!bar) return;
-    bar.hidden = !paired;
+    if (!more) return;
+    more.hidden = !paired;
     const t = tabOf(modeId);
-    bar.querySelectorAll('[data-tab]').forEach((b) => {
-      const on = b.dataset.tab === t.id;
-      b.classList.toggle('on', on);
-      b.setAttribute('aria-selected', on ? 'true' : 'false');
-    });
     const inKm = t.id === 'km';
     sw.hidden = !inKm;
     document.body.classList.toggle('tab-km', inKm);
@@ -142,7 +129,9 @@
   window.CTRL_TABS = {
     init(a) { app = a; if (TABS.length) build(); },
     render: render,
+    step: step,
     tabOf: tabOf,
+    nextTab: (modeId) => tabAfter(modeId, 1),
     kmMode: kmMode,
   };
 })();

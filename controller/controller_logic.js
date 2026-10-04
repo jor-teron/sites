@@ -23,10 +23,11 @@
  * (LED amber). A built-in QR scanner (camera + local vendor/jsQR.js) reads the hub QR.
  *
  * Modes (CONTROLLER_CONFIG.modes): the gamepad plus boards (kb_pc.js, kb_phone.js,
- * ctrl_trackpad.js, ctrl_sendfiles.js via kb_common.js). Tabs at the top centre
- * (ctrl_tabs.js: Gamepad / Keyboard & Mouse / Send Files, ⋯ = menu with modes, fullscreen,
- * light / dark) switch them. Without ctrl_tabs.js the round mode button is used instead:
- * tap = next, swipe left / right = previous / next, hold = menu.
+ * ctrl_trackpad.js, ctrl_sendfiles.js via kb_common.js). The round mode button at the top
+ * centre switches pages (ctrl_tabs.js: Gamepad → Keyboard & Mouse → Send Files → Gamepad):
+ * tap = next, swipe left / right = previous / next, hold = menu; its icon shows the NEXT page.
+ * A small ⋯ button next to it also opens the menu (modes, fullscreen, light / dark).
+ * Without ctrl_tabs.js the button steps through every mode instead (icon = current mode).
  * Every held button / key is released on a mode switch, disconnect, blur or hide.
  *
  * All settings / text come from CONTROLLER_CONFIG (controller_config.js).
@@ -828,9 +829,17 @@
     const m = currentMode();
     for (const x of MODES) body.classList.remove(CLS.viewPrefix + x.id);
     body.classList.add(CLS.viewPrefix + m.id);
-    modeBtn.textContent = m.icon || '?';
-    modeBtn.title = m.label + ' — ' + TXT.modeBtnTitle;
-    modeBtn.setAttribute('aria-label', m.label);
+    if (window.CTRL_TABS && CTRL_TABS.nextTab) {
+      const nt = CTRL_TABS.nextTab(m.id);       // the button shows the page a tap goes to
+      const name = nt.title || nt.label;
+      modeBtn.textContent = nt.icon || '?';
+      modeBtn.title = TXT.modeBtnNext.replace('{page}', name) + ' — ' + TXT.modeBtnTitle;
+      modeBtn.setAttribute('aria-label', TXT.modeBtnNext.replace('{page}', name));
+    } else {
+      modeBtn.textContent = m.icon || '?';
+      modeBtn.title = m.label + ' — ' + TXT.modeBtnTitle;
+      modeBtn.setAttribute('aria-label', m.label);
+    }
     if (window.CTRL_TABS) CTRL_TABS.render(m.id, pairScreen.hidden);
     if (!pairScreen.hidden) return;
     const board = boardFor(m);
@@ -860,6 +869,7 @@
     if (!quiet) { showToast(currentMode().label); vibrate(CFG.haptics.longMs); }
   }
   function stepMode(dir) {
+    if (window.CTRL_TABS && CTRL_TABS.step) { CTRL_TABS.step(dir); return; }   // pages
     const i = MODES.findIndex((m) => m.id === modeId);
     setControllerMode(MODES[(i + dir + MODES.length) % MODES.length].id);
   }

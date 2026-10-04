@@ -74,8 +74,9 @@ const CONTROLLER_CONFIG = {
   ],
   defaultMode: 'pad',
 
-  // Tabs (ctrl_tabs.js): each tab shows one of its modes. The last tab is remembered through
-  // storage.mode; the Keyboard & Mouse pick through storage.kmMode.
+  // Pages (ctrl_tabs.js): the round mode button cycles them in this order (its icon = the next
+  // page). Each page shows one of its modes. The last page is remembered through storage.mode;
+  // the Keyboard & Mouse pick through storage.kmMode.
   tabs: [
     { id: 'pad',   icon: '🎮', label: 'Gamepad',    title: 'Gamepad',          modes: ['pad'] },
     { id: 'km',    icon: '⌨️', label: 'Keys+Mouse', title: 'Keyboard & Mouse', modes: ['pc', 'trackpad', 'phone'] },
@@ -366,7 +367,8 @@ const CONTROLLER_CONFIG = {
     scanCancel: 'Cancel',
     scanTypeCode: 'Type code',
     scanIconAlt: 'Scan QR',
-    modeBtnTitle: 'Mode: tap = next, swipe = prev / next, hold = menu',
+    modeBtnTitle: 'Page: tap = next, swipe = prev / next, hold = menu',
+    modeBtnNext: 'Next: {page}',   // mode button tooltip / label ({page} = the page a tap goes to)
     menuModes: 'Mode',
     menuFullscreen: 'Fullscreen',
     menuExitFullscreen: 'Exit fullscreen',

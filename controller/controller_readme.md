@@ -5,10 +5,10 @@ Turns a phone into a controller for the hub. Pair once with the hub's QR or code
 
 ## 2. Files
 - `controller.html` / `controller.css`: pairing screen, gamepad, menu, overlays
-- `ctrl_tabs.css`: tab strip and Keyboard & Mouse switch
+- `ctrl_tabs.css`: ⋯ button, Keyboard & Mouse switch, Trackpad and Send Files styles
 - `controller_config.js`: every setting (pairing, buttons, messages, modes, tabs, stick / D-pad tuning, haptics, QR scanner, storage keys, layout sizes, themes, all texts)
 - `controller_logic.js`: PeerJS link to the hub, gamepad, stick, haptics, rumble, reconnect, QR scanner, menu, demo mode
-- `ctrl_tabs.js`: tabs (Gamepad · Keys+Mouse · Files) and the ⋯ menu button
+- `ctrl_tabs.js`: pages (Gamepad → Keys+Mouse → Files) for the mode button, Keys+Mouse switch, ⋯ menu button
 - `kb_common.js`: shared keyboard-board code (keys, modifiers, auto-repeat)
 - `kb_pc.js`: PC keyboard (landscape)
 - `kb_phone.js`: phone-style keyboard (portrait ok)
@@ -22,7 +22,7 @@ Turns a phone into a controller for the hub. Pair once with the hub's QR or code
 ## 3. Behaviour rules
 - **Pairing:** type the hub's code (4–8 characters) and Connect, tap Scan QR and point at the hub's QR, or open the hub's link (`controller.html#code=XXXXXX`). The phone connects to peer `jtsites-` + code.
 - **Stays paired:** the last code that worked is remembered and connects by itself on page load. A dropped link retries with backoff (1–10 s; gives up after 5 minutes); the LED goes amber, and you can tap the light to retry now.
-- **Tabs (top centre):** 🎮 Gamepad · ⌨️ Keys+Mouse (switch: PC Keys / Trackpad / Phone Keys) · 📤 Files. The last tab and the last Keys+Mouse pick are remembered. ⋯ opens the menu: all modes, fullscreen, Light / Dark, Diag.
+- **Pages (round mode button, top centre):** tap cycles 🎮 Gamepad → ⌨️ Keyboard & Mouse → 📤 Send Files → Gamepad; the button's icon shows the NEXT page. Swipe left / right = previous / next, hold = menu. Keyboard & Mouse has its own switch (PC Keys / Trackpad / Phone Keys). The last page and the last Keys+Mouse pick are remembered. The small ⋯ button next to it opens the menu: all modes, fullscreen, Light / Dark, Diag.
 - **Gamepad (landscape):** D-pad / stick on the left, A B X Y on the right, L / R shoulders, Select / Start / Home. The left side can be Both (floating stick + D-pad), Stick or D-pad. The stick also presses the arrows (8 directions), so arrow-key games work. Portrait shows "Rotate your phone to landscape".
 - **What the hub does with buttons:** D-pad = arrows, A = Space, B = `x`, X = `z`, Y = `c`, L = `q`, R = `e`, Start = Enter, Select = Esc, Home = message only (see `../hub/hub_readme.md`).
 - **Keyboards:** PC Keys (Esc, digits, qwerty, Tab, Caps, Enter, Shift, Del, Ctrl, Alt, Space, arrows) and Phone Keys (letters, 123 layer, Space / Enter, arrows, Del). Shift / Ctrl / Alt: hold = held, tap = for the next key only. Holding a key repeats it. Gaming keys (WASD, arrows, Space, Enter, Esc, Shift) have an accent border. The hub types into the focused field.
@@ -39,7 +39,7 @@ Turns a phone into a controller for the hub. Pair once with the hub's QR or code
 
 ## 5. Saved data (localStorage)
 - `jtsites-ctrl-lastcode`: last code that connected (auto-connect)
-- `jtsites-ctrl-mode`: last mode (`pad` / `pc` / `trackpad` / `phone` / `files`) = last tab
+- `jtsites-ctrl-mode`: last mode (`pad` / `pc` / `trackpad` / `phone` / `files`) = last page
 - `jtsites-ctrl-kmmode`: last Keys+Mouse pick
 - `jtsites-ctrl-leftmode`: Both / Stick / D-pad
 - `jtsites-ctrl-haptics`: Vib on / off
@@ -52,7 +52,7 @@ Turns a phone into a controller for the hub. Pair once with the hub's QR or code
 - Files: a failed file shows its reason and can be tapped to retry
 
 ## 7. Screen sizes
-- Gamepad and PC Keys need landscape (rotate overlay in portrait; tabs still work).
+- Gamepad and PC Keys need landscape (rotate overlay in portrait; the mode button still works).
 - Trackpad, Phone Keys and Files work in portrait.
 - Sizes use `vw` / `dvh` (`layout` in the config), so the pad fits phones and tablets.
 
@@ -65,7 +65,7 @@ Turns a phone into a controller for the hub. Pair once with the hub's QR or code
 - `qrScanner` (camera, scan rate), `browser` (autoFullscreen, orientationLock, wake lock)
 - `layout` sizes, `themes`, `defaultTheme`, `text`
 - Keep `peer.idPrefix` = the hub's `PEER_PREFIX` (`jtsites-`) and the `buttons` names the same as the hub's map.
-- **Cache-buster:** bump every `?v=` in `controller.html` after a change (currently `20261004f`).
+- **Cache-buster:** bump every `?v=` in `controller.html` after a change (currently `20261004g`).
 
 ## 9. Browser checklist
 1. Open the hub, open the controller popover; on the phone scan the QR: "Connected", the hub's dot turns on.
@@ -90,6 +90,7 @@ Turns a phone into a controller for the hub. Pair once with the hub's QR or code
 - 2026-10-03 23:50 IST: theme chip, Diag in the hold menu, capital key labels, gaming key borders (commit 5183d8a).
 - 2026-10-04 00:39 IST: Vib label, 250 ms diag test (commit 4f9ae8f).
 - 2026-10-04 23:16 IST: tabs Gamepad / Keys+Mouse / Files, trackpad, Send Files to the hub (commit 5809f29).
+- 2026-10-04 23:54 IST: tab bar removed; the compact round mode button cycles Gamepad → Keys+Mouse → Files and shows the next page; taller Choose files tile.
 
 ## 12. Related apps
 - Hub (receiving side): `../hub/hub_readme.md`

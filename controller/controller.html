@@ -9,9 +9,9 @@
   <title>Gamepad Controller</title>
   <link rel="icon" href="controller_icon.png" />
   <!-- Cache-busting: bump ?v= on every asset below when any of them changes (e.g. 20261003d). -->
-  <link rel="stylesheet" href="controller.css?v=20261004f" />
-  <link rel="stylesheet" href="ctrl_tabs.css?v=20261004f" />
-  <script src="../vendor/peerjs.min.js?v=20261004f"></script>
+  <link rel="stylesheet" href="controller.css?v=20261004g" />
+  <link rel="stylesheet" href="ctrl_tabs.css?v=20261004g" />
+  <script src="../vendor/peerjs.min.js?v=20261004g"></script>
 </head>
 <body class="theme-light mode-both view-pad">
   <div id="rotate-overlay" hidden>
@@ -101,10 +101,10 @@
     <div id="kb-host"></div>
   </div>
 
-  <!-- Tabs (Gamepad / Keyboard & Mouse / Send Files) are added by ctrl_tabs.js at the top centre
-       and replace the mode button below (kept as the fallback when ctrl_tabs.js is missing). -->
-  <!-- Mode button: fixed at the top centre in every mode. Tap = next, swipe = prev / next,
-       hold = menu. Modes come from CONTROLLER_CONFIG.modes. -->
+  <!-- Mode button: fixed at the top centre in every mode. Cycles the pages
+       Gamepad → Keyboard & Mouse → Send Files (CONTROLLER_CONFIG.tabs, ctrl_tabs.js); its icon is
+       the NEXT page. Tap = next, swipe = prev / next, hold = menu. ctrl_tabs.js adds a small ⋯
+       menu button next to it. -->
   <button type="button" id="mode-btn" aria-label="Mode" hidden>🎮</button>
   <div id="mode-toast" aria-live="polite" hidden></div>
   <div id="mode-menu" role="menu" hidden>
@@ -144,14 +144,14 @@
     </div>
   </div>
 
-  <script src="vendor/jsQR.js?v=20261004f"></script>
-  <script src="controller_config.js?v=20261004f"></script>
-  <script src="kb_common.js?v=20261004f"></script>
-  <script src="kb_pc.js?v=20261004f"></script>
-  <script src="kb_phone.js?v=20261004f"></script>
-  <script src="ctrl_trackpad.js?v=20261004f"></script>
-  <script src="ctrl_sendfiles.js?v=20261004f"></script>
-  <script src="ctrl_tabs.js?v=20261004f"></script>
-  <script src="controller_logic.js?v=20261004f"></script>
+  <script src="vendor/jsQR.js?v=20261004g"></script>
+  <script src="controller_config.js?v=20261004g"></script>
+  <script src="kb_common.js?v=20261004g"></script>
+  <script src="kb_pc.js?v=20261004g"></script>
+  <script src="kb_phone.js?v=20261004g"></script>
+  <script src="ctrl_trackpad.js?v=20261004g"></script>
+  <script src="ctrl_sendfiles.js?v=20261004g"></script>
+  <script src="ctrl_tabs.js?v=20261004g"></script>
+  <script src="controller_logic.js?v=20261004g"></script>
 </body>
 </html>
