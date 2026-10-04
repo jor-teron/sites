@@ -1,0 +1,63 @@
+/* Notely — notely.css (colours come from notely_config.js as CSS variables) */
+:root { --bg: #121418; --bar: #181b21; --border: #2c3340; --text: #e8eaed; --muted: #9aa0a6; --btn: #232831; --btn-hover: #2c323d; --accent: #6ea8fe; --accent-ink: #0b1220; --paper: #121418; --caret: #6ea8fe; --selection: rgba(110,168,254,0.3); }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  height: 100vh; height: 100dvh; overflow: hidden;
+  display: flex; flex-direction: column;
+  background: var(--bg); color: var(--text);
+  font: 15px/1.3 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  -webkit-tap-highlight-color: transparent;
+}
+[hidden] { display: none !important; }
+.bar {
+  flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: 6px 8px; background: var(--bar); border-bottom: 1px solid var(--border);
+}
+.grp { display: inline-flex; gap: 6px; }
+button {
+  min-height: 40px; min-width: 44px; padding: 0 12px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--btn); color: var(--text);
+  font: inherit; font-weight: 600; cursor: pointer; touch-action: manipulation; user-select: none;
+}
+button:hover { background: var(--btn-hover); }
+button:active { transform: translateY(1px); }
+button:disabled { opacity: 0.45; cursor: default; }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.status {
+  margin-left: auto; color: var(--muted); font-size: 13px; white-space: nowrap; padding: 0 4px;
+  font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+.status.flash { color: var(--accent); }
+.status.flash::before { content: attr(data-msg); }
+.status.flash { font-size: 0; }
+.status.flash::before { font-size: 13px; }
+textarea {
+  flex: 1; min-height: 0; width: 100%; display: block; resize: none; margin: 0;
+  border: 0; outline: none; border-radius: 0;
+  padding: 12px 14px; background: var(--paper); color: var(--text); caret-color: var(--caret);
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+  font-size: 17px; line-height: 1.5; tab-size: 4;
+}
+textarea::placeholder { color: var(--muted); }
+textarea::selection { background: var(--selection); }
+body.dragging textarea { outline: 3px dashed var(--accent); outline-offset: -8px; }
+.undo {
+  position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  display: flex; align-items: center; gap: 12px; padding: 6px 6px 6px 16px; border-radius: 12px;
+  background: var(--text); color: var(--bg); box-shadow: 0 8px 24px rgba(0,0,0,0.35); z-index: 5;
+}
+.undo button { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+/* narrow phones: smaller buttons so the bar takes at most two rows */
+@media (max-width: 420px) {
+  .bar { gap: 4px; padding: 4px 6px; }
+  .grp { gap: 4px; }
+  button { padding: 0 7px; min-width: 40px; font-size: 13.5px; }
+  .status { flex-basis: 100%; margin-left: 0; text-align: right; font-size: 12px; line-height: 1.2; }
+}
+@media (max-height: 420px) {
+  .bar { padding: 3px 6px; }
+  button { min-height: 36px; }
+  textarea { padding: 8px 12px; }
+}

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#181b21">
+<title>Notely</title>
+<link rel="icon" href="notely_icon.png?v=20261004a">
+<link rel="stylesheet" href="notely.css?v=20261004a">
+</head>
+<body>
+<div class="bar" role="toolbar" aria-label="Notely">
+  <button id="btn-open" type="button" title="Open a text file (Ctrl+O)">Open</button>
+  <button id="btn-download" type="button" title="Download as Notely.txt (Ctrl+S)">Download</button>
+  <button id="btn-clear" type="button" title="Clear all text">Clear</button>
+  <span class="grp">
+    <button id="btn-smaller" type="button" title="Smaller text" aria-label="Smaller text">A&minus;</button>
+    <button id="btn-bigger" type="button" title="Bigger text" aria-label="Bigger text">A+</button>
+  </span>
+  <button id="btn-theme" type="button">Light</button>
+  <span id="status" class="status" role="status" aria-live="polite"></span>
+</div>
+<textarea id="text" spellcheck="true" autocomplete="off" autocapitalize="sentences" aria-label="Notes" placeholder="Start typing… (saved automatically)"></textarea>
+<div id="undo-bar" class="undo" hidden role="alert"><span>Text cleared.</span><button id="btn-undo" type="button">Undo</button></div>
+<input id="file" type="file" accept=".txt,.md,.markdown,.csv,.log,.json,text/*" hidden>
+<script src="notely_config.js?v=20261004a"></script>
+<script src="nl_store.js?v=20261004a"></script>
+<script src="nl_theme.js?v=20261004a"></script>
+<script src="nl_editor.js?v=20261004a"></script>
+<script src="nl_files.js?v=20261004a"></script>
+<script src="nl_clear.js?v=20261004a"></script>
+<script src="nl_keys.js?v=20261004a"></script>
+<script src="nl_main.js?v=20261004a"></script>
+</body>
+</html>

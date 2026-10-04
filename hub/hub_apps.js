@@ -67,6 +67,7 @@ Tools,    Calculator (Beta),     apps/tools/calculator-beta/,                ,  
 Tools,    FileDrop,              apps/lab/file-drop/,                        ,         0,       1,      410
 Tools,    NE-India Dictionary,   apps/tools/nei-dict/,                       ,         0,       0,      430
 Tools,    Notepad,               apps/tools/notepad/,                        ,         0,       0,      450
+Tools,    Notely,                apps/tools/notely/,                         ,         0,       0,      450
 Tools,    Weather,               apps/tools/weather-chart/,                  ,         0,       0,      420
 Tools,    Weather Hourly,        apps/tools/weather-hourly/,                 ,         0,       0,      465
 Tools,    Caption for NEI,       apps/tools/caption-for-nei/,                ,         0,       0,      440
