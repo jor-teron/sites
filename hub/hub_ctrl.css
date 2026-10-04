@@ -1,4 +1,5 @@
-/* Hub phone controller extras: trackpad pointer (hub_pointer.js) + received-file cards (hub_notify.js). */
+/* Hub phone controller extras: trackpad pointer (hub_pointer.js) + received-file cards (hub_notify.js)
+   + image viewer (hub_viewer.js). */
 
 /* ---------- trackpad pointer ---------- */
 #hub-pointer {
@@ -31,7 +32,7 @@
 /* ---------- received-file cards ---------- */
 #hub-notify {
   position: fixed;
-  top: calc(var(--header-h, 35px) + var(--hn-inset, 12px));
+  bottom: var(--hn-inset, 12px);   /* default bottom-right (the browser's download popup is top-right) */
   right: var(--hn-inset, 12px);
   z-index: 2147482000;
   display: flex;
@@ -42,6 +43,10 @@
   pointer-events: none;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
+/* bottom: newest card nearest the corner, "+N more" on top */
+#hub-notify.hn-bottom-right { flex-direction: column-reverse; }
+#hub-notify.hn-top-right { bottom: auto; top: calc(var(--header-h, 35px) + var(--hn-inset, 12px)); }
+#hub-notify.hn-top-center { bottom: auto; top: calc(var(--header-h, 35px) + var(--hn-inset, 12px)); right: auto; left: 50%; transform: translateX(-50%); align-items: center; }
 .hn-card {
   pointer-events: auto;
   position: relative;
@@ -104,6 +109,15 @@
   box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
 }
 .hn-more[hidden] { display: none; }
+
+/* ---------- image viewer (hub_viewer.js) ---------- */
+#hub-viewer { position: fixed; inset: 0; z-index: 2147482500;   /* above the cards, below the pointer */
+  background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; }
+#hub-viewer[hidden] { display: none; }
+#hub-viewer img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 4px; box-shadow: 0 8px 40px rgba(0,0,0,0.6); }
+.hv-bar { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; }
+.hv-bar button { font: 600 14px system-ui, sans-serif; color: #fff; background: rgba(30,34,43,0.92); border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.hv-bar button:hover { background: rgba(60,66,80,0.95); }
 
 @media (prefers-reduced-motion: reduce) {
   #hub-pointer, #hub-pointer.show { transition: none; }

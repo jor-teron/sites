@@ -26,8 +26,9 @@ window.HUB_CTRL_CONFIG = {
     partBytes: 8 * 1024 * 1024,  // received chunks folded into Blob parts of this size
   },
 
-  // Received-file cards (top-right, under the hub bar)
+  // Received-file cards
   notify: {
+    position: 'bottom-right',    // 'bottom-right' (default; the browser's download popup is top-right) | 'top-right' | 'top-center'
     durationMs: 5000,            // a finished card stays this long (hover pauses; 0 = until closed)
     maxStack: 3,                 // more cards wait behind a "+N more" line
     previewSize: 56,             // thumbnail / icon box in px

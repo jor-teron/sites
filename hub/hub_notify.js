@@ -1,11 +1,14 @@
 /**
- * Hub — received-file cards (top-right, under the hub bar).
+ * Hub — received-file cards (bottom-right by default; notify.position: 'bottom-right' |
+ * 'top-right' | 'top-center'). Bottom is the default because the browser's own download popup
+ * appears top-right and would cover the cards.
  * API (used by hub_receive.js):
  *   HubNotify.start(id, {name, type, size})   card with a progress bar
  *   HubNotify.progress(id, bytes)
  *   HubNotify.done(id, {url, blob})            preview (images) or type icon, "Received ✓", auto-hide
  *   HubNotify.fail(id, text)
- * Tap a finished card = open the file (blob URL, new tab); ✕ closes. Hover pauses the timer.
+ * Tap a finished card = images open in the hub viewer (hub_viewer.js), other files open in a
+ * new tab (blob URL); ✕ closes. Hover pauses the timer.
  * At most notify.maxStack cards show (newest on top); the rest wait behind "+N more" and appear
  * as cards close. Blob URLs are revoked notify.revokeAfterMs after their card closes.
  * Settings: HUB_CTRL_CONFIG.notify. prefers-reduced-motion: no slide / fade (hub_ctrl.css).
@@ -15,6 +18,7 @@
 
   const CFG = Object.assign({
     durationMs: 5000, maxStack: 3, previewSize: 56, showPreviews: true, insetPx: 12, revokeAfterMs: 600000,
+    position: 'bottom-right',
   }, (window.HUB_CTRL_CONFIG || {}).notify || {});
   const reduced = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
 
@@ -27,6 +31,8 @@
     if (host) return host;
     host = document.createElement('div');
     host.id = 'hub-notify';
+    const pos = ['bottom-right', 'top-right', 'top-center'].indexOf(CFG.position) >= 0 ? CFG.position : 'bottom-right';
+    host.className = 'hn-' + pos;
     host.setAttribute('aria-live', 'polite');
     host.style.setProperty('--hn-inset', CFG.insetPx + 'px');
     host.style.setProperty('--hn-preview', CFG.previewSize + 'px');
@@ -121,6 +127,7 @@
   }
 
   function open(c) {
+    if (c.kind === 'image' && window.HubViewer) { HubViewer.open(c.url, c.name); return; }
     try { window.open(c.url, '_blank', 'noopener'); } catch (_) { /* ignore */ }
   }
 

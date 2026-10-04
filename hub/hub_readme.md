@@ -14,8 +14,9 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - `hub_controller_config.js`: settings for trackpad pointer, phone → hub files, file cards (`window.HUB_CTRL_CONFIG`)
 - `hub_pointer.js`: trackpad arrow drawn over the page, synthetic clicks / wheel
 - `hub_receive.js`: receives files from the controller's Files tab
-- `hub_notify.js`: received-file cards (top right)
-- `hub_ctrl.css`: controller popover, pointer, file cards
+- `hub_notify.js`: received-file cards (bottom right by default)
+- `hub_viewer.js`: image viewer opened from a received-image card
+- `hub_ctrl.css`: controller popover, pointer, file cards, image viewer
 - Shared: `../vendor/peerjs.min.js`, `../vendor/qrcode.js`, `../style/no-scrollbar.css`, `../script/txt-view.html` (viewer for `.txt` entries)
 
 ## 3. Behaviour rules
@@ -32,7 +33,8 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - **Menu by controller:** while the menu is open, arrows / Enter / Space / Esc drive the menu instead of the app (→ opens a category, ← / Esc closes).
 - **Rumble:** an app may post `{type:'hub-rumble', ms}` or `{pattern:[…]}`; it is passed to the phone's vibration.
 - **Trackpad:** the hub draws its own arrow (a page can't move the real mouse) and sends synthetic pointer / mouse / wheel events to the element under it, inside same-origin frames too. Fades after 4 s idle.
-- **Phone → hub files:** the controller's Files tab opens a second link; each finished file downloads at once under its own name (up to 2 GB, no resume) and shows a card with a preview; tap opens it, ✕ closes; at most 3 cards, then "+N more".
+- **Phone → hub files:** the controller's Files tab opens a second link; each finished file downloads at once under its own name (up to 2 GB, no resume) and shows a card with a preview; ✕ closes; at most 3 cards, then "+N more". Cards sit bottom-right (the browser's own download popup is top-right); `notify.position` can be `bottom-right`, `top-right` or `top-center`.
+- **Image viewer:** tapping a received image's card opens it over a dark backdrop (90% of the screen, fitted) with Download and ✕. Esc, the controller's B button (sent as `x`) or a click on the backdrop closes it. Other files open in a new tab, as before.
 
 ## 4. Keyboard
 - Menu open: ↑ ↓ move, → / Enter / Space open a category or app, ← / Esc close
@@ -57,8 +59,8 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 ## 8. Safe settings
 - `hub_apps.js`: add / move / hide apps, ORDER numbers
 - `hub_tiles.js`: tile list (`qr` / `app`)
-- `hub_controller_config.js`: `pointer` (speed, acceleration, size, hideAfterMs, scrollSpeed, colours), `receive` (autoSave, maxBytes, ackEveryBytes), `notify` (durationMs, maxStack, previewSize, showPreviews, revokeAfterMs)
-- **Cache-buster:** after changing any hub file, bump every `?v=` in `../hub.html` (currently `20261004b`), or browsers keep the old copy.
+- `hub_controller_config.js`: `pointer` (speed, acceleration, size, hideAfterMs, scrollSpeed, colours), `receive` (autoSave, maxBytes, ackEveryBytes), `notify` (position, durationMs, maxStack, previewSize, showPreviews, revokeAfterMs)
+- **Cache-buster:** after changing any hub file, bump every `?v=` in `../hub.html` (currently `20261005a`), or browsers keep the old copy.
 - Don't change `PEER_PREFIX` / the button map in `hub-controller.js` without updating the controller too.
 
 ## 9. Browser checklist
@@ -68,7 +70,7 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 4. Keyboard: arrows work in a game straight after picking it.
 5. Pair a phone (QR in the popover): the dot turns on; D-pad moves the game.
 6. Reload the hub: the phone reconnects with the same code.
-7. Trackpad tab: the arrow moves and clicks; Files tab: a photo downloads and a card shows.
+7. Trackpad tab: the arrow moves and clicks; Files tab: a photo downloads and a card shows bottom-right; tapping it opens the viewer; B / Esc closes it.
 
 ## 10. Known limits
 - Synthetic keys can't trigger browser actions (file pickers, fullscreen, typing into fields without the hub's help).
@@ -86,6 +88,7 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - 2026-10-04 04:49 IST: collapsible category menu (commit f6a0fd3).
 - 2026-10-04 23:16 IST: controller tabs (Gamepad / Keyboard & Mouse / Send Files), trackpad pointer, phone → hub files with cards (commit 5809f29).
 - 2026-10-04 23:24 IST: Notepad and Notely moved to Office (commit 3a32f4e).
+- 2026-10-05 00:55 IST: file cards moved to bottom-right (position option); image viewer for received images.
 
 ## 12. Related apps
 - Controller (phone side): `../controller/controller_readme.md`
