@@ -36,7 +36,7 @@
   const emptyText = document.getElementById('empty-text');
   const tilesEl = document.getElementById('tiles');
 
-  const TXT_VIEWER = 'script/txt-view.html';
+  const TXT_VIEWER = 'shared/script/txt-view.html';
   const LOAD_ERROR = 'hub_apps.js failed to load or has an error';
   const QR_CELL = 4;                  // px per module in the tile QR (SVG, scaled by CSS)
   const QR_QUIET_MODULES = 4;         // white quiet zone; createSvgTag's margin is in px

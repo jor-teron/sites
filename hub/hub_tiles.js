@@ -21,7 +21,7 @@
 window.HUB_TILES = [
   { type: 'qr', label: 'Open on another device', caption: '' },
   // Phone gamepad: a new tab gives it the full screen (fullscreen / wake lock)
-  { type: 'app', label: 'GamePad', url: 'controller/', icon: '', NEW_TAB: 1 },
+  { type: 'app', label: 'GamePad', url: 'hub/controller/', icon: '', NEW_TAB: 1 },
   { type: 'app', label: 'TV', url: 'tv/', icon: '', NEW_TAB: 1 },
   { type: 'app', label: 'QR Scanner', url: 'apps/connectivity/qr-scanner/', icon: '' },
 ];

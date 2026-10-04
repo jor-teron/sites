@@ -24,7 +24,7 @@ Favorite, TV,                    tv/,                                        ,  
 Favorite, Transcribe,            apps/tools/transcribe/,                     ,         0,       1,      20
 Favorite, Caption for NEI,       apps/tools/caption-for-nei/,                ,         0,       0,      70
 
-Games,    D-Pad Controller,      controller/,                                ,         1,       0,      199
+Games,    D-Pad Controller,      hub/controller/,                            ,         1,       0,      199
 Games,    2048,                  apps/games/2048/,                           ,         0,       0,      101
 Games,    Swell Foop,            apps/games/swell-foop/,                     ,         0,       0,      102
 Games,    Ping Pong,             apps/games/pong/,                           ,         0,       0,      105
