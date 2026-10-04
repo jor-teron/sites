@@ -62,6 +62,7 @@
   --font-family: 'Times New Roman', Tinos, 'Liberation Serif', serif;
   --font-size-pt: 12;
   --line-height: 1.6;
+  --para-space: 6pt;             /* space after each paragraph (config.paragraphSpacingPt) */
 
   /* ----- Theme: light (default) ----- */
   --bg-app: #e6e9ef;
@@ -81,7 +82,7 @@
   --status-bg: #f0f4fa;
   --scroll-thumb: #b0b8c5;
   --scroll-track: #eef2f7;
-  --nonprint-color: #c0a86a;
+  --nonprint-color: #9a9a9a;   /* ¶ and ↵ marks, same grey */
   --nonprint-bg: rgba(192, 168, 106, 0.12);
   --page-gap: 24px;
 }
@@ -105,7 +106,7 @@ body.dark {
   --status-bg: #1e232e;
   --scroll-thumb: #3a4250;
   --scroll-track: #252a34;
-  --nonprint-color: #d4b87a;
+  --nonprint-color: #8a8a8a;
   --nonprint-bg: rgba(212, 184, 122, 0.18);
 }
 
@@ -279,7 +280,8 @@ select:focus { border-color: #2b5797; box-shadow: 0 0 0 2px rgba(43, 87, 151, 0.
    ============================================================ */
 .paper {
   width: calc(var(--paper-width-cm) * 1cm);
-  min-height: calc(var(--paper-height-cm) * 1cm);
+  height: calc(var(--paper-height-cm) * 1cm);   /* fixed A4: content never stretches it */
+  overflow: hidden;
   background: var(--bg-paper);
   box-shadow: 0 6px 24px var(--shadow), 0 1px 3px rgba(0,0,0,0.08);
   border-radius: 2px;
@@ -287,14 +289,14 @@ select:focus { border-color: #2b5797; box-shadow: 0 0 0 2px rgba(43, 87, 151, 0.
   padding-bottom: calc(var(--margin-bottom-cm) * 1cm);
   padding-left: calc(var(--margin-left-cm) * 1cm);
   padding-right: calc(var(--margin-right-cm) * 1cm);
-  transition: background 0.2s, box-shadow 0.2s, width 0.2s, min-height 0.2s, padding 0.2s;
+  transition: background 0.2s, box-shadow 0.2s;   /* no size transitions: flow measures at once */
   position: relative;
   flex-shrink: 0;
 }
 
 body.landscape .paper {
   width: calc(var(--paper-height-cm) * 1cm);
-  min-height: calc(var(--paper-width-cm) * 1cm);
+  height: calc(var(--paper-width-cm) * 1cm);
 }
 
 .paper::after {
@@ -311,7 +313,9 @@ body.landscape .paper {
    ============================================================ */
 .editor {
   width: 100%;
-  min-height: calc(var(--paper-height-cm) * 1cm - var(--margin-top-cm) * 1cm - var(--margin-bottom-cm) * 1cm - 4px);
+  height: 100%;                 /* the page content box; draftly-flow.js moves overflow on */
+  overflow: hidden;
+  position: relative;           /* offsetTop of blocks is measured from here */
   outline: none;
   font-family: var(--font-family);
   font-size: calc(var(--font-size-pt) * 1pt);
@@ -329,9 +333,8 @@ body.landscape .paper {
   font-family: var(--font-family);
 }
 
-body.landscape .editor {
-  min-height: calc(var(--paper-width-cm) * 1cm - var(--margin-top-cm) * 1cm - var(--margin-bottom-cm) * 1cm - 4px);
-}
+/* Paragraph spacing: same value on screen, print, DOCX and PDF. */
+.editor p { margin: 0 0 var(--para-space); }
 
 .editor:empty:before {
   content: attr(data-placeholder);
@@ -343,22 +346,25 @@ body.landscape .editor {
 /* ============================================================
    NON-PRINTING CHARACTERS — shown at END of lines/paragraphs
    ============================================================ */
-/* Paragraph and line-break marks are real inline nodes, not ::after. */
-.show-nonprinting p::after,
-.show-nonprinting br::after { content: none; display: none; }
-
-.np-mark {
-  display: inline;
-  color: var(--nonprint-color);
-  background: var(--nonprint-bg);
-  font-size: 0.8em;
-  padding: 0 3px;
-  border-radius: 3px;
-  margin-left: 2px;
-  font-family: monospace;
-  user-select: none;
-  vertical-align: baseline;
+/* Marks are drawn on an overlay (.np-layer, draftly-marks.js). They are never
+   part of the document: not saved, printed or exported. */
+.np-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
 }
+.np-glyph {
+  position: absolute;
+  color: var(--nonprint-color);
+  font-family: var(--font-family);
+  font-size: calc(var(--font-size-pt) * 0.85pt);
+  white-space: pre;
+  user-select: none;
+}
+/* Legacy inline marks from old saves (stripped on load). */
+.np-mark { display: none; }
 
 .margin-label {
   display: flex;
@@ -455,7 +461,7 @@ kbd {
    ============================================================ */
 @media print {
   body { background: #fff !important; overflow: visible !important; height: auto !important; }
-  .toolbar, .status-bar, .toast { display: none !important; }
+  .toolbar, .status-bar, .toast, .np-layer { display: none !important; }
   .workspace {
     overflow: visible !important;
     padding: 0 !important;
@@ -469,12 +475,9 @@ kbd {
     margin: 0 !important;
     page-break-after: always;
     page-break-inside: avoid;
-    min-height: auto !important;
   }
   .paper:last-child { page-break-after: auto; }
   .paper .page-number { display: none !important; }
-  .editor { color: #000 !important; min-height: auto !important; }
-  .editor.show-nonprinting p::after,
-  .editor.show-nonprinting br::after { display: none !important; content: none !important; }
+  .editor { color: #000 !important; }
   .np-mark { display: none !important; }
 }

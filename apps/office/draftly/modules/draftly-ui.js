@@ -58,7 +58,7 @@ Draftly.ui.toggleNonPrinting = function toggleNonPrinting() {
     }
   }
   if (Draftly.storage) Draftly.storage.save();
-  if (Draftly.editor) Draftly.editor.syncMarks();
+  if (Draftly.marks) Draftly.marks.redraw();
 };
 
 /* Apply a known non-printing state without toggling. */
@@ -105,7 +105,7 @@ Draftly.ui.setOrientation = function setOrientation(mode) {
   var i;
   for (i = 0; i < papers.length; i++) papers[i].setAttribute('data-orientation', mode);
   if (Draftly.storage) Draftly.storage.saveOrientation(mode);
-  if (Draftly.pages) Draftly.pages.checkPagination();
+  if (Draftly.pages) Draftly.pages.layoutAll();
 };
 
 /* Sync bold, italic, underline, and align buttons with the selection. */

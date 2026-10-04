@@ -1,7 +1,8 @@
 /* ============================================================
    FILE: modules/draftly-export.js
    PROJECT: draftly
-   ROLE: DOCX download and print / PDF via the browser dialog.
+   ROLE: DOCX download (offline, vendor/html-docx.js) and Print dialog.
+         PDF download lives in draftly-pdf.js.
    DEPENDS: Draftly.config, Draftly.pages, Draftly.ui, htmlDocx
    ISOLATION: DOCX failure shows a toast and does not throw
               out to the click handler.
@@ -14,24 +15,10 @@ window.Draftly = Draftly;
 /* Export helpers. */
 Draftly.export = {};
 
-/* Join every page into one HTML string, with a break between pages. */
+/* Whole document as one HTML string: continuation pieces re-joined, no marks.
+   No forced page breaks: Word re-paginates with the same page size and margins. */
 Draftly.export.combinedHtml = function combinedHtml() {
-  var cfg = Draftly.config;
-  var papers = document.querySelectorAll('.paper');
-  var combinedHTML = '';
-  var i;
-  var ed;
-  var clone;
-  for (i = 0; i < papers.length; i++) {
-    ed = papers[i].querySelector('.' + cfg.editorClass);
-    if (!ed) continue;
-    clone = ed.cloneNode(true);
-    clone.classList.remove(cfg.nonPrintClass);
-    if (Draftly.editor) Draftly.editor.stripMarks(clone);
-    combinedHTML += clone.innerHTML;
-    if (i < papers.length - 1) combinedHTML += cfg.pageBreakHtml;
-  }
-  return combinedHTML;
+  return Draftly.flow.joinedHtml();
 };
 
 /* Inject a print stylesheet that matches the current orientation. */
@@ -43,19 +30,22 @@ Draftly.export.setupPrintStyles = function setupPrintStyles() {
   var isLandscape = document.body.classList.contains(cfg.landscapeClass);
   var printStyle = document.createElement('style');
   printStyle.id = cfg.printStyleId;
+  var w = (isLandscape ? cfg.paperHeightCm : cfg.paperWidthCm) + 'cm';
+  var h = (isLandscape ? cfg.paperWidthCm : cfg.paperHeightCm) + 'cm';
+  /* Each paper card is printed as one fixed A4 sheet, exactly as on screen. */
   printStyle.textContent =
-    '@page { size: ' + cfg.pageSizeName + ' ' + (isLandscape ? 'landscape' : 'portrait') + ';' +
-    ' margin: ' + cfg.marginTopCm + 'cm ' + cfg.marginRightCm + 'cm; }' +
+    '@page { size: ' + cfg.pageSizeName + ' ' + (isLandscape ? 'landscape' : 'portrait') + '; margin: 0; }' +
     '@media print {' +
     ' body { background: #fff !important; overflow: visible !important; height: auto !important; }' +
-    ' .toolbar, .status-bar, .toast { display: none !important; }' +
+    ' .toolbar, .status-bar, .toast, .np-layer { display: none !important; }' +
     ' .workspace { overflow: visible !important; padding: 0 !important; background: #fff !important; display: block !important; }' +
-    ' .paper { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; padding: ' +
-    cfg.marginTopCm + 'cm ' + cfg.marginRightCm + 'cm !important; width: auto !important; min-height: auto !important; background: #fff !important; page-break-after: always; }' +
-    ' .paper:last-child { page-break-after: auto; }' +
+    ' .paper { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important;' +
+    ' width: ' + w + ' !important; height: ' + h + ' !important; min-height: 0 !important;' +
+    ' padding: ' + cfg.marginTopCm + 'cm ' + cfg.marginRightCm + 'cm ' + cfg.marginBottomCm + 'cm ' + cfg.marginLeftCm + 'cm !important;' +
+    ' overflow: hidden !important; background: #fff !important; page-break-after: always; break-after: page; }' +
+    ' .paper:last-child { page-break-after: auto; break-after: auto; }' +
     ' .paper .page-number { display: none !important; }' +
-    ' .editor { color: #000 !important; min-height: auto !important; }' +
-    ' .editor.show-nonprinting p::after, .editor.show-nonprinting br::after { display: none !important; content: none !important; }' +
+    ' .editor { color: #000 !important; }' +
     '}';
   document.head.appendChild(printStyle);
   return printStyle;
@@ -68,7 +58,7 @@ Draftly.export.cleanupPrintStyles = function cleanupPrintStyles() {
   if (Draftly.editor) Draftly.editor.restoreSelection();
 };
 
-/* Open the print dialog. Used for Print and PDF. */
+/* Open the print dialog (Print button only). */
 Draftly.export.printDocument = function printDocument() {
   if (Draftly.editor) Draftly.editor.saveSelection();
   Draftly.export.setupPrintStyles();
@@ -94,7 +84,7 @@ Draftly.export.exportDocx = function exportDocx() {
     '@page { size: ' + cfg.pageSizeName + ' ' + (isLandscape ? 'landscape' : 'portrait') + ';' +
     ' margin: ' + cfg.marginTopCm + 'cm ' + cfg.marginRightCm + 'cm; }' +
     'body { font-family: ' + cfg.fontFamily + '; font-size: ' + cfg.fontSizePt + 'pt; line-height: ' + cfg.lineHeight + '; }' +
-    'p { margin: 0 0 0.5em 0; }' +
+    'p { margin: 0 0 ' + cfg.paragraphSpacingPt + 'pt 0; }' +
     '</style></head><body>' + Draftly.export.combinedHtml() + '</body></html>';
 
   try {

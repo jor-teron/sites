@@ -19,6 +19,8 @@ Draftly.config = {
   paperWidthCm: 21,
   /* A4 portrait height in centimetres. */
   paperHeightCm: 29.7,
+  /* Orientation when nothing is stored yet. */
+  defaultOrientation: 'portrait',
   /* App version. Increment by 0.1 each release. */
   version: '0.7',
   /* Label shown at the right of the top bar. */
@@ -51,6 +53,8 @@ Draftly.config = {
   defaultFontSizeCommand: '3',
   /* Editor line-height multiplier. */
   lineHeight: 1.6,
+  /* Space after every paragraph, in points. Same on screen, print, DOCX, PDF. */
+  paragraphSpacingPt: 6,
 
   /* ----- Layout chrome ----- */
   /* Gap between page cards in the workspace, in pixels. */
@@ -77,7 +81,7 @@ Draftly.config = {
   defaultListKind: 'bullet',
   /* Default numbered suffix: . | , | ) | none. */
   defaultListSuffix: '.',
-  /* Class on inline format marks. Not saved. */
+  /* Class of legacy inline format marks (old saves). Stripped on load / save. */
   markClass: 'np-mark',
   /* Stored value that means dark theme is on. */
   themeDarkValue: 'dark',
@@ -97,6 +101,10 @@ Draftly.config = {
   resizeDebounceMs: 300,
   /* Wait for first layout before the first pagination pass. */
   initialPaginationMs: 100,
+  /* Debounce between typing and the line-by-line page flow. */
+  flowDebounceMs: 40,
+  /* Delay before non-printing marks are redrawn. */
+  marksDelayMs: 30,
   /* Fallback cleanup if afterprint never fires. */
   printCleanupMs: 1500,
   /* How long to keep a DOCX object URL before revoke. */
@@ -121,7 +129,13 @@ Draftly.config = {
   docxMarginBottom: 283,
   /* DOCX margin left in twips (2cm). */
   docxMarginLeft: 1134,
-  /* HTML inserted between exported pages. */
+  /* PDF: render scale per page (2 = sharp, bigger file). */
+  pdfScale: 2,
+  /* PDF: JPEG quality of each page image. */
+  pdfJpegQuality: 0.92,
+  /* PDF: file name when the name box is empty. */
+  pdfFileName: 'document',
+  /* HTML inserted between exported pages (unused: Word paginates by itself). */
   pageBreakHtml: '<br clear="all" style="page-break-before:always" />',
 
   /* ----- Copy ----- */
@@ -158,5 +172,6 @@ Draftly.config.applyToDocument = function applyToDocument() {
   root.style.setProperty('--font-family', cfg.fontFamily);
   root.style.setProperty('--font-size-pt', String(cfg.fontSizePt));
   root.style.setProperty('--line-height', String(cfg.lineHeight));
+  root.style.setProperty('--para-space', cfg.paragraphSpacingPt + 'pt');
   root.style.setProperty('--page-gap', cfg.pageGapPx + 'px');
 };

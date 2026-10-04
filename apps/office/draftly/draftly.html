@@ -6,7 +6,9 @@
   ROLE: Shell only. Styles live in draftly.css.
         Behavior lives in modules/. This file does not
         contain magic numbers or editor logic.
-  LOAD ORDER: config, storage, ui, editor, pages, export, app.
+  LOAD ORDER: vendor libs (html-docx, jspdf, html2canvas; all local, works
+  offline / file://), then config, storage, ui, editor, pages, flow, marks,
+  export, pdf, lists, app.
   ============================================================
 -->
 <html lang="en">
@@ -148,8 +150,10 @@
     </div>
   </div>
 
-  <!-- html-docx-js for DOCX export -->
-  <script src="https://cdn.jsdelivr.net/npm/html-docx-js/dist/html-docx.min.js"></script>
+  <!-- Vendored libraries (vendor/, offline): DOCX export, PDF download. -->
+  <script src="vendor/html-docx.js"></script>
+  <script src="vendor/jspdf.umd.min.js"></script>
+  <script src="vendor/html2canvas.min.js"></script>
 
   <!-- Modules. Order matters. app.js boots last. -->
   <script src="modules/draftly-config.js"></script>
@@ -157,7 +161,10 @@
   <script src="modules/draftly-ui.js"></script>
   <script src="modules/draftly-editor.js"></script>
   <script src="modules/draftly-pages.js"></script>
+  <script src="modules/draftly-flow.js"></script>
+  <script src="modules/draftly-marks.js"></script>
   <script src="modules/draftly-export.js"></script>
+  <script src="modules/draftly-pdf.js"></script>
   <script src="modules/draftly-lists.js"></script>
   <script src="modules/draftly-app.js"></script>
 </body>

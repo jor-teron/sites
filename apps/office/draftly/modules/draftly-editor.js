@@ -1,7 +1,7 @@
 /* ============================================================
    FILE: modules/draftly-editor.js
    PROJECT: draftly
-   ROLE: Selection, execCommand, font, paste, line-break marks.
+   ROLE: Selection, execCommand, font, paste, legacy mark cleanup.
    DEPENDS: Draftly.config, Draftly.ui
    ISOLATION: Commands no-op if no editor is focused.
    ============================================================ */
@@ -60,60 +60,51 @@ Draftly.editor.focusEditor = function focusEditor() {
   }
 };
 
-/* Remove inline format marks so they are not saved or printed. */
+/* Remove legacy inline mark spans (older versions inserted ¶ / ↵ as DOM
+   nodes). Marks are now drawn by draftly-marks.js on an overlay only. */
 Draftly.editor.stripMarks = function stripMarks(root) {
   if (!root) return;
-  var marks = root.querySelectorAll('.' + Draftly.config.markClass);
+  var marks = root.querySelectorAll('.' + Draftly.config.markClass + ', span[data-np]');
   var i;
   for (i = marks.length - 1; i >= 0; i--) marks[i].remove();
+  var brs = root.querySelectorAll('br[data-br]');
+  for (i = 0; i < brs.length; i++) brs[i].removeAttribute('data-br');
 };
 
-/* Build one inline mark. The caret cannot enter it. */
-Draftly.editor.makeMark = function makeMark(glyph) {
-  var span = document.createElement('span');
-  span.className = Draftly.config.markClass;
-  span.setAttribute('contenteditable', 'false');
-  span.setAttribute('data-np', glyph);
-  span.textContent = glyph;
-  return span;
-};
-
-/* Put ¶ at the end of each block and ↵ just after each br. */
+/* Kept for callers: marks are display-only now, so just redraw them. */
 Draftly.editor.syncMarks = function syncMarks() {
-  var cfg = Draftly.config;
-  var editors = document.querySelectorAll('.' + cfg.editorClass);
-  var i;
-  var blocks;
-  var b;
-  var brs;
-  var br;
-  var next;
-  Draftly.editor.stripMarks(document);
-  if (!Draftly.ui || !Draftly.ui.isNonPrinting()) return;
-  for (i = 0; i < editors.length; i++) {
-    blocks = editors[i].querySelectorAll('p, div, li');
-    for (b = 0; b < blocks.length; b++) {
-      blocks[b].appendChild(Draftly.editor.makeMark('¶'));
-    }
-    brs = editors[i].querySelectorAll('br');
-    for (b = 0; b < brs.length; b++) {
-      br = brs[b];
-      next = br.nextSibling;
-      if (next && next.classList && next.classList.contains(cfg.markClass)) continue;
-      br.parentNode.insertBefore(Draftly.editor.makeMark('↵'), next);
-    }
-  }
+  if (Draftly.marks) Draftly.marks.schedule();
+};
+Draftly.editor.markLineBreaks = function markLineBreaks() {
+  if (Draftly.marks) Draftly.marks.schedule();
 };
 
-/* Mark br nodes, then refresh visible format marks if they are on. */
-Draftly.editor.markLineBreaks = function markLineBreaks(root) {
-  var scope = root || document;
-  var list = scope.querySelectorAll('.' + Draftly.config.editorClass + ' br');
-  var i;
-  for (i = 0; i < list.length; i++) {
-    if (!list[i].hasAttribute('data-br')) list[i].setAttribute('data-br', '');
+/* Shift+Enter: insert a real <br> (Chrome's insertLineBreak types "\n" under
+   pre-wrap). A trailing placeholder <br> keeps an empty last line visible. */
+Draftly.editor.insertLineBreak = function insertLineBreak() {
+  var sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return;
+  var range = sel.getRangeAt(0);
+  range.deleteContents();
+  var br = document.createElement('br');
+  range.insertNode(br);
+  var n = br;
+  var needsPlaceholder = true;
+  while (n && !(n.classList && n.classList.contains(Draftly.config.editorClass))) {
+    var sib = n.nextSibling;
+    while (sib && sib.nodeType === 3 && !sib.nodeValue.length) sib = sib.nextSibling;
+    if (sib) { needsPlaceholder = false; break; }
+    n = n.parentNode;
+    if (n && n.nodeType === 1 && /^(P|DIV|LI|H[1-6]|BLOCKQUOTE|PRE)$/.test(n.tagName)) break;
   }
-  Draftly.editor.syncMarks();
+  if (needsPlaceholder) br.parentNode.insertBefore(document.createElement('br'), br.nextSibling);
+  var r = document.createRange();
+  r.setStartAfter(br);
+  r.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(r);
+  var host = br.parentElement && br.parentElement.closest('.' + Draftly.config.editorClass);
+  if (host) host.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertLineBreak' }));
 };
 
 /* Run a contenteditable command, then refresh toolbar and pages. */
@@ -124,7 +115,6 @@ Draftly.editor.execCmd = function execCmd(command, value) {
   Draftly.editor.saveSelection();
   if (command === 'insertLineBreak' || command === 'insertParagraph') {
     setTimeout(function () {
-      Draftly.editor.markLineBreaks();
       if (Draftly.pages) Draftly.pages.checkPagination();
     }, Draftly.config.paginationAfterInsertMs);
   }
@@ -158,6 +148,5 @@ Draftly.editor.onPaste = function onPaste(e) {
   document.execCommand('insertText', false, text);
   Draftly.editor.setTimesNewRoman();
   Draftly.editor.saveSelection();
-  Draftly.editor.markLineBreaks();
   if (Draftly.pages) Draftly.pages.checkPagination();
 };

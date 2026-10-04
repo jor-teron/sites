@@ -69,8 +69,8 @@ Draftly.app.loadDocument = function loadDocument() {
       editor.innerHTML = cfg.defaultHtml;
       Draftly.storage.fillNameIfEmpty();
     }
+    if (editor) Draftly.editor.stripMarks(editor);
     Draftly.app.ready = true;
-    if (Draftly.pages) Draftly.pages.checkPagination();
   }).catch(function () {
     if (editor) editor.innerHTML = cfg.fallbackHtml;
     Draftly.storage.fillNameIfEmpty();
@@ -116,8 +116,9 @@ Draftly.app.openDoc = function openDoc(name) {
     Draftly.pages.rebuildSinglePage();
     editor = Draftly.pages.firstEditor();
     editor.innerHTML = doc.html || Draftly.config.defaultHtml;
+    Draftly.editor.stripMarks(editor);
     Draftly.storage.setCurrentName(doc.name, true);
-    Draftly.pages.checkPagination();
+    Draftly.pages.layoutAll();
     Draftly.ui.showToast('Opened ' + doc.name);
   }).catch(function () {
     Draftly.ui.showToast('Could not open document');
@@ -144,6 +145,14 @@ Draftly.app.saveDocument = function saveDocument() {
 
 /* Keyboard shortcuts on the document, so any page editor works. */
 Draftly.app.bindKeys = function bindKeys() {
+  /* Enter = new <p>, Shift+Enter = <br> line break. */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+    if (!Draftly.editor.isInEditor(e.target)) return;
+    e.preventDefault();
+    if (e.shiftKey) Draftly.editor.insertLineBreak();
+    else Draftly.editor.execCmd('insertParagraph');
+  });
   document.addEventListener('keydown', function (e) {
     if (!(e.ctrlKey && !e.altKey && !e.metaKey)) return;
     var key = e.key.toLowerCase();
@@ -179,7 +188,7 @@ Draftly.app.bindUi = function bindUi() {
   Draftly.app.onClick('saveBtn', function () { Draftly.app.saveDocument(); });
   Draftly.app.onClick('printBtn', function () { Draftly.export.printDocument(); });
   Draftly.app.onClick('exportDocxBtn', function () { Draftly.export.exportDocx(); });
-  Draftly.app.onClick('exportPdfBtn', function () { Draftly.export.printDocument(); });
+  Draftly.app.onClick('exportPdfBtn', function () { Draftly.pdf.download(); });
   Draftly.app.onClick('versionBtn', function () { Draftly.app.toggleAbout(); });
   Draftly.app.onClick('aboutCloseBtn', function () { Draftly.app.toggleAbout(false); });
 
@@ -257,7 +266,7 @@ Draftly.app.bindUi = function bindUi() {
           right: Draftly.config.marginRightCm
         }));
       } catch (e) {}
-      if (Draftly.pages) Draftly.pages.checkPagination();
+      if (Draftly.pages && Draftly.app.ready) Draftly.pages.layoutAll();
     }
     try {
       var saved = JSON.parse(localStorage.getItem(Draftly.config.storageKeyMargins) || 'null');
@@ -303,15 +312,18 @@ Draftly.app.bindUi = function bindUi() {
     });
   }
 
+  /* Flow pages quickly after typing; save on a slower timer. */
   var inputTimer = null;
+  var flowTimer = null;
   document.addEventListener('input', function (e) {
     if (!Draftly.editor.isInEditor(e.target)) return;
+    clearTimeout(flowTimer);
+    flowTimer = setTimeout(function () {
+      if (Draftly.app.ready) Draftly.pages.checkPagination();
+    }, cfg.flowDebounceMs);
     clearTimeout(inputTimer);
     inputTimer = setTimeout(function () {
-      if (!Draftly.app.ready) return;
-      Draftly.storage.save();
-      Draftly.editor.markLineBreaks();
-      Draftly.pages.checkPagination();
+      if (Draftly.app.ready) Draftly.storage.save();
     }, cfg.inputDebounceMs);
   });
 
@@ -319,7 +331,7 @@ Draftly.app.bindUi = function bindUi() {
   window.addEventListener('resize', function () {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {
-      Draftly.pages.checkPagination();
+      if (Draftly.marks) Draftly.marks.redraw();
     }, cfg.resizeDebounceMs);
   });
 
@@ -343,6 +355,7 @@ Draftly.app.init = function init() {
   try {
     Draftly.config.applyToDocument();
     Draftly.ui.loadTheme();
+    try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) {}
     Draftly.app.bindKeys();
     Draftly.app.bindUi();
     Draftly.app.loadDocument().then(function () {
@@ -351,8 +364,7 @@ Draftly.app.init = function init() {
         editor.focus();
         Draftly.editor.activeEditor = editor;
       }
-      Draftly.editor.markLineBreaks();
-      Draftly.pages.checkPagination();
+      Draftly.pages.layoutAll();
     });
   } catch (err) {
     console.warn('draftly: init failed', err);
