@@ -1,13 +1,13 @@
 /*
  * Spreadsheet — configuration.
  * Grid size, storage keys, default cell style, colours, keys and on-screen text.
- * spreadsheet_logic.js (and, through its globals, formula.js) reads from SPREADSHEET_CONFIG.
+ * spreadsheet_logic.js (and, through its globals, spreadsheet_formula.js) reads from SPREADSHEET_CONFIG.
  */
 const SPREADSHEET_CONFIG = {
   // Grid
   grid: {
-    cols: 26,                            // number of columns (A..Z); formula refs support A-Z only
-    rows: 100,                           // number of data rows
+    cols: 26,                            // number of columns (A..Z, max 26); refs beyond it → #REF!
+    rows: 100,                           // number of data rows; refs beyond it (e.g. A150) → #REF!
     colLetters: "ABCDEFGHIJKLMNOPQRSTUVWXYZ", // column header letters
   },
 
@@ -73,8 +73,11 @@ const SPREADSHEET_CONFIG = {
     toggleOn: "on",
   },
 
-  // Cell values painted with the error style (ERR from formula.js is added by the logic)
-  errorValues: ["#DIV/0!"],
+  // Numeric formula results are rounded to this many significant digits (0.1+0.2 → 0.3)
+  precision: 15,
+
+  // Cell values painted with the error style (ERR "#ERR" from spreadsheet_formula.js is added by the logic)
+  errorValues: ["#DIV/0!", "#NUM!", "#REF!", "#LOOP!"],
 
   // On-screen text
   text: {

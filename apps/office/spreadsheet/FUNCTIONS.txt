@@ -50,6 +50,13 @@ GRID
   Columns A–Z (26)
   Rows 1–100
 
+ERRORS
+  #DIV/0!   division by zero
+  #NUM!     number too large / not a number (e.g. 10^400, SQRT(-1))
+  #REF!     reference outside the sheet (e.g. A150)
+  #LOOP!    circular reference (A1=B1, B1=A1)
+  #ERR      formula not understood
+
 PRINT
   Use Print / PDF — browser dialog, choose Save as PDF
 

@@ -1,13 +1,39 @@
 /*
- * formula.js
+ * spreadsheet_formula.js
  * Spreadsheet formula parser and evaluator.
+ * Recalc is dependency-aware: refs (incl. ranges) form a graph, cells are evaluated in
+ * topological order, cells on (or fed by) a cycle show #LOOP!. Arithmetic uses a small
+ * parser (no eval / Function). Errors: #DIV/0! (real division by zero), #NUM! (overflow /
+ * not a number), #REF! (ref outside the sheet), #ERR (bad formula). An error in a referenced
+ * cell flows on to the formula (IFERROR catches it). Numeric results are rounded to
+ * SPREADSHEET_CONFIG.precision significant digits (0.1+0.2 → 0.3).
  * Grid size and cell store come from spreadsheet_logic.js (COLS, ROWS, COL_LETTERS, cells),
  * which reads them from SPREADSHEET_CONFIG in spreadsheet_config.js.
  * Supported: =expr, cell refs, ranges, listed functions, + - * / ^ &
  */
 
-/* Formula error token shown in cells */
+/* Formula error tokens shown in cells */
 var ERR = "#ERR";
+var ERR_DIV0 = "#DIV/0!";
+var ERR_NUM = "#NUM!";
+var ERR_REF = "#REF!";
+var ERR_LOOP = "#LOOP!";
+var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP];
+
+/* Thrown inside evaluation; evalFormula turns it into the cell's value */
+function CellError(value) { this.value = value; }
+function fail(value) { throw new CellError(value); }
+function isErrorValue(v) { return typeof v === "string" && ALL_ERRORS.indexOf(v) !== -1; }
+
+/* Looks like a cell reference (letters + digits), in range or not */
+var REF_LIKE = /^[A-Z]{1,3}[0-9]+$/;
+
+/* Round float noise away, keep a number (precision from config, default 15) */
+function roundNum(x) {
+  var p = (typeof SPREADSHEET_CONFIG !== "undefined" && SPREADSHEET_CONFIG.precision) || 15;
+  if (typeof x !== "number" || x === 0) return x;
+  return Number(x.toPrecision(p));
+}
 
 /**
  * Convert column index 0..25 to letter A..Z
@@ -20,7 +46,7 @@ function colLetter(c) {
  * Parse A1-style address. Returns {r,c} 0-based or null
  */
 function parseAddr(token) {
-  var m = String(token).trim().toUpperCase().match(/^([A-Z])([1-9][0-9]{0,2})$/);
+  var m = String(token).trim().toUpperCase().match(/^([A-Z])([1-9][0-9]*)$/);
   if (!m) return null;
   var c = COL_LETTERS.indexOf(m[1]);
   var r = parseInt(m[2], 10) - 1;
@@ -111,7 +137,10 @@ function rangeValues(token, numericOnly) {
     parts = token.split(":");
     a = parseAddr(parts[0]);
     b = parseAddr(parts[1]);
-    if (!a || !b) return null;
+    if (!a || !b) {
+      if (parts.length === 2 && REF_LIKE.test(parts[0].trim()) && REF_LIKE.test(parts[1].trim())) fail(ERR_REF);
+      return null;
+    }
     list = expandRange(a, b);
   } else {
     a = parseAddr(token);
@@ -119,6 +148,7 @@ function rangeValues(token, numericOnly) {
     list = [a];
   }
   for (i = 0; i < list.length; i++) {
+    if (isErrorValue(rawVal(list[i].r, list[i].c))) fail(rawVal(list[i].r, list[i].c));
     if (numericOnly) {
       v = numVal(list[i].r, list[i].c);
       if (!isNaN(v)) out.push(v);
@@ -139,7 +169,10 @@ function rangeCells(token) {
     parts = token.split(":");
     a = parseAddr(parts[0]);
     b = parseAddr(parts[1]);
-    if (!a || !b) return null;
+    if (!a || !b) {
+      if (parts.length === 2 && REF_LIKE.test(parts[0].trim()) && REF_LIKE.test(parts[1].trim())) fail(ERR_REF);
+      return null;
+    }
     return expandRange(a, b);
   }
   a = parseAddr(token);
@@ -231,7 +264,7 @@ function evalFunc(name, args) {
     if (args.length < 2) return ERR;
     try {
       v = evalExpr(args[0]);
-      if (v === ERR || v === "#DIV/0!") return evalExpr(args[1]);
+      if (isErrorValue(v)) return evalExpr(args[1]);
       return v;
     } catch (e) {
       return evalExpr(args[1]);
@@ -265,14 +298,16 @@ function evalFunc(name, args) {
 
   if (n === "SQRT") {
     a0 = Number(evalExpr(args[0]));
-    if (isNaN(a0) || a0 < 0) return ERR;
+    if (isNaN(a0)) return ERR;
+    if (a0 < 0) return ERR_NUM;
     return Math.sqrt(a0);
   }
 
   if (n === "MOD") {
     a0 = Number(evalExpr(args[0]));
     a1 = Number(evalExpr(args[1]));
-    if (isNaN(a0) || isNaN(a1) || a1 === 0) return ERR;
+    if (isNaN(a0) || isNaN(a1)) return ERR;
+    if (a1 === 0) return ERR_DIV0;
     return a0 % a1;
   }
 
@@ -375,8 +410,12 @@ function evalExpr(expr) {
     m = s.match(/([A-Za-z][A-Za-z0-9]*)\(([^()]*)\)/);
     if (!m) break;
     name = m[1];
-    inside = pushStrings(m[2], bag);
+    /* put string literals back WITH their quotes so each argument stays a string */
+    inside = m[2].replace(/__S(\d+)__/g, function (x, i) { return '"' + bag[parseInt(i, 10)] + '"'; });
     out = evalFunc(name, splitArgs(inside));
+    /* errors are kept as text here so an outer IFERROR can still see them */
+    if (typeof out === "number" && (isNaN(out) || !isFinite(out))) out = ERR_NUM;
+    if (typeof out === "boolean") out = out ? "TRUE" : "FALSE";
     if (typeof out === "string") {
       bag.push(out);
       s = s.replace(m[0], "__S" + (bag.length - 1) + "__");
@@ -385,9 +424,10 @@ function evalExpr(expr) {
     }
   }
 
-  s = s.replace(/\b([A-Za-z][1-9][0-9]{0,2})\b/g, function (tok) {
+  s = s.replace(/\b([A-Za-z]{1,3}[0-9]+)\b/g, function (tok) {
     addr = parseAddr(tok);
-    if (!addr) return tok;
+    if (!addr) fail(ERR_REF);                      // outside the sheet (rows/cols from config)
+    if (isErrorValue(rawVal(addr.r, addr.c))) fail(rawVal(addr.r, addr.c));
     n = numVal(addr.r, addr.c);
     if (!isNaN(n)) return String(n);
     bag.push(String(rawVal(addr.r, addr.c)));
@@ -397,10 +437,14 @@ function evalExpr(expr) {
   if (s.indexOf("&") >= 0) {
     out = s.split("&").map(function (part) {
       part = part.trim();
-      if (/^__S\d+__$/.test(part)) return pushStrings(part, bag);
+      if (/^__S\d+__$/.test(part)) {
+        if (isErrorValue(pushStrings(part, bag))) fail(pushStrings(part, bag));
+        return pushStrings(part, bag);
+      }
       try {
-        return String(simpleMath(part));
+        return String(roundNum(simpleMath(part)));
       } catch (e) {
+        if (e instanceof CellError) throw e;
         return pushStrings(part, bag);
       }
     });
@@ -409,6 +453,7 @@ function evalExpr(expr) {
 
   s = s.replace(/__S(\d+)__/g, function (m, i) {
     var val = bag[parseInt(i, 10)];
+    if (isErrorValue(val)) fail(val);
     var num = Number(val);
     if (val !== "" && !isNaN(num)) return String(num);
     return JSON.stringify(val);
@@ -417,23 +462,63 @@ function evalExpr(expr) {
   try {
     return simpleMath(s);
   } catch (e) {
+    if (e instanceof CellError) throw e;
     return ERR;
   }
 }
 
 /**
- * Arithmetic only: digits and + - * / ^ ( )
+ * Arithmetic only: numbers and + - * / ^ ( ), or one quoted string.
+ * Small recursive-descent parser (no eval / Function). ^ is right-associative
+ * (2^3^2 = 512, as before); a leading minus applies after ^ (-2^2 = -4).
+ * Division by zero → #DIV/0!; overflow / NaN → #NUM!; bad syntax throws (→ #ERR).
  */
 function simpleMath(s) {
-  var safe = s.replace(/\s+/g, "");
-  if (safe === "") return "";
-  if (!/^[0-9+\-*/^().eE]+$/.test(safe)) {
-    if (/^".*"$/.test(s.trim())) return JSON.parse(s.trim());
-    throw new Error("bad");
+  var src = String(s).trim();
+  if (src === "") return "";
+  if (/^".*"$/.test(src)) return JSON.parse(src);
+  var toks = src.match(/(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?|[+\-*/^()]|\S/g) || [];
+  var pos = 0;
+  function peek() { return toks[pos]; }
+  function next() { return toks[pos++]; }
+  function bad() { throw new Error("bad"); }
+  function num(x) {
+    if (isNaN(x) || !isFinite(x)) fail(ERR_NUM);
+    return x;
   }
-  safe = safe.replace(/\^/g, "**");
-  var result = Function('"use strict"; return (' + safe + ")")();
-  if (typeof result === "number" && !isFinite(result)) return "#DIV/0!";
+  function primary() {
+    var t = next();
+    if (t === undefined) bad();
+    if (t === "(") { var v = sum(); if (next() !== ")") bad(); return v; }
+    if (t === "-") return -power();
+    if (t === "+") return power();
+    if (/^(\d|\.\d)/.test(t)) { var n = Number(t); if (isNaN(n)) bad(); return num(n); }
+    bad();
+  }
+  function power() {
+    var base = primary();
+    if (peek() === "^") { next(); return num(Math.pow(base, power())); }
+    return base;
+  }
+  function product() {
+    var v = power(), op, r;
+    while (peek() === "*" || peek() === "/") {
+      op = next(); r = power();
+      if (op === "/") { if (r === 0) fail(ERR_DIV0); v = num(v / r); }
+      else v = num(v * r);
+    }
+    return v;
+  }
+  function sum() {
+    var v = product(), op;
+    while (peek() === "+" || peek() === "-") {
+      op = next();
+      v = num(op === "+" ? v + product() : v - product());
+    }
+    return v;
+  }
+  var result = sum();
+  if (pos !== toks.length) bad();
   return result;
 }
 
@@ -449,9 +534,15 @@ function evalFormula(f) {
     if (end > 0 && s.slice(end + 1).trim() === "") return s.slice(1, end);
   }
   try {
-    return evalExpr(s);
+    var v = evalExpr(s);
+    if (typeof v === "number") {
+      if (!isFinite(v) || isNaN(v)) return ERR_NUM;
+      return roundNum(v);
+    }
+    return v;
   } catch (e) {
-    return ERR;
+    if (e instanceof CellError) return e.value;
+    return ERR;                                      // bad formula (or a stack overflow)
   }
 }
 
@@ -460,7 +551,7 @@ function evalFormula(f) {
  */
 function shiftFormula(formula, dr, dc) {
   if (!formula || String(formula).charAt(0) !== "=") return formula;
-  return String(formula).replace(/\b([A-Za-z])([1-9][0-9]{0,2})\b/g, function (tok, letter, rowStr) {
+  return String(formula).replace(/\b([A-Za-z])([1-9][0-9]*)\b/g, function (tok, letter, rowStr) {
     var c = COL_LETTERS.indexOf(letter.toUpperCase()) + dc;
     var r = parseInt(rowStr, 10) - 1 + dr;
     if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return tok;
@@ -469,20 +560,67 @@ function shiftFormula(formula, dr, dc) {
 }
 
 /**
- * Recalculate entire sheet
+ * Cells a formula refers to (single refs and ranges inside the sheet), as r*COLS+c indexes
+ */
+function formulaDeps(f) {
+  var s = String(f).slice(1).replace(/"[^"]*"/g, " ");
+  var out = [], seen = {};
+  function add(r, c) { var k = r * COLS + c; if (!seen[k]) { seen[k] = 1; out.push(k); } }
+  s = s.replace(/\b([A-Za-z]{1,3}[0-9]+)\s*:\s*([A-Za-z]{1,3}[0-9]+)\b/g, function (m, x, y) {
+    var a = parseAddr(x), b = parseAddr(y), list, i;
+    if (a && b) { list = expandRange(a, b); for (i = 0; i < list.length; i++) add(list[i].r, list[i].c); }
+    return " ";
+  });
+  s.replace(/\b([A-Za-z]{1,3}[0-9]+)\b/g, function (tok) {
+    var a = parseAddr(tok);
+    if (a) add(a.r, a.c);
+    return tok;
+  });
+  return out;
+}
+
+function isFormula(f) { return !!f && String(f).charAt(0) === "="; }
+
+/**
+ * Recalculate entire sheet: plain cells first, then formulas in dependency order.
+ * Formulas left over after the topological sort sit on, or depend on, a cycle → #LOOP!.
  */
 function recalcAll() {
-  var r, c, f, pass;
-  for (pass = 0; pass < 2; pass++) {
-    for (r = 0; r < ROWS; r++) {
-      for (c = 0; c < COLS; c++) {
-        f = cells[r][c].formula;
-        if (f && String(f).charAt(0) === "=") {
-          cells[r][c].value = evalFormula(f);
-        } else {
-          cells[r][c].value = f;
-        }
+  var r, c, k, i, f, n = ROWS * COLS;
+  var deps = [], users = [], indeg = [], queue = [], done = 0, total = 0;
+  for (k = 0; k < n; k++) { users.push(null); indeg.push(0); deps.push(null); }
+  for (r = 0; r < ROWS; r++) {
+    for (c = 0; c < COLS; c++) {
+      f = cells[r][c].formula;
+      if (!isFormula(f)) cells[r][c].value = f == null ? "" : f;
+    }
+  }
+  for (r = 0; r < ROWS; r++) {
+    for (c = 0; c < COLS; c++) {
+      f = cells[r][c].formula;
+      if (!isFormula(f)) continue;
+      k = r * COLS + c;
+      total++;
+      deps[k] = formulaDeps(f);
+      for (i = 0; i < deps[k].length; i++) {
+        var d = deps[k][i];
+        if (!isFormula(cells[Math.floor(d / COLS)][d % COLS].formula)) continue;
+        indeg[k]++;
+        (users[d] || (users[d] = [])).push(k);
       }
+      if (indeg[k] === 0) queue.push(k);
+    }
+  }
+  for (i = 0; i < queue.length; i++) {
+    k = queue[i];
+    r = Math.floor(k / COLS); c = k % COLS;
+    cells[r][c].value = evalFormula(cells[r][c].formula);
+    done++;
+    if (users[k]) users[k].forEach(function (u) { if (--indeg[u] === 0) queue.push(u); });
+  }
+  if (done < total) {
+    for (k = 0; k < n; k++) {
+      if (deps[k] && indeg[k] > 0) cells[Math.floor(k / COLS)][k % COLS].value = ERR_LOOP;
     }
   }
 }

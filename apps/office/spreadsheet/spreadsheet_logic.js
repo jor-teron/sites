@@ -2,7 +2,7 @@
  * spreadsheet_logic.js
  * Grid UI: columns x rows from SPREADSHEET_CONFIG (spreadsheet_config.js)
  * LocalStorage, CSV, print, styles, selection, autofill drag
- * Formula engine lives in formula.js (uses the COLS, ROWS, COL_LETTERS, cells globals below)
+ * Formula engine lives in spreadsheet_formula.js (uses the COLS, ROWS, COL_LETTERS, cells globals below)
  */
 
 /* Configuration shortcut */
@@ -116,13 +116,23 @@ function setStatus(msg) {
 }
 
 /**
- * Export formulas as CSV
+ * Export formulas as CSV. Trailing empty rows and columns are left out
+ * (blank cells inside the used area are kept).
  */
 function exportCsv() {
-  var r, c, row, f, lines = [];
+  var r, c, row, f, lines = [], lastR = -1, lastC = -1;
   for (r = 0; r < ROWS; r++) {
-    row = [];
     for (c = 0; c < COLS; c++) {
+      f = cells[r][c].formula;
+      if (f != null && String(f) !== "") {
+        if (r > lastR) lastR = r;
+        if (c > lastC) lastC = c;
+      }
+    }
+  }
+  for (r = 0; r <= lastR; r++) {
+    row = [];
+    for (c = 0; c <= lastC; c++) {
       f = cells[r][c].formula;
       if (f == null) f = "";
       f = String(f);
