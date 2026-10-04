@@ -55,6 +55,8 @@ Office,   Spreadsheet,           apps/office/spreadsheet/,                   ,  
 Office,   Draftly,               apps/office/draftly/,                       ,         0,       0,      310
 Office,   OCR,                   apps/office/ocr/,                           ,         0,       0,      360
 Office,   MS Word Diff,          apps/tools/msword_diff/,                    ,         0,       0,      440
+Office,   Notepad,               apps/office/notepad/,                       ,         0,       0,      450
+Office,   Notely,                apps/office/notely/,                        ,         0,       0,      450
 
 Connectivity, File Drop,         apps/connectivity/filedrop/,                ,         0,       0,      405
 Connectivity, QR Scanner,        apps/connectivity/qr-scanner/,              ,         0,       0,      406
@@ -66,8 +68,6 @@ Tools,    Calculator,            apps/tools/calculator/,                     ,  
 Tools,    Calculator (Beta),     apps/tools/calculator-beta/,                ,         0,       0,      411
 Tools,    FileDrop,              apps/lab/file-drop/,                        ,         0,       1,      410
 Tools,    NE-India Dictionary,   apps/tools/nei-dict/,                       ,         0,       0,      430
-Tools,    Notepad,               apps/tools/notepad/,                        ,         0,       0,      450
-Tools,    Notely,                apps/tools/notely/,                         ,         0,       0,      450
 Tools,    Weather,               apps/tools/weather-chart/,                  ,         0,       0,      420
 Tools,    Weather Hourly,        apps/tools/weather-hourly/,                 ,         0,       0,      465
 Tools,    Caption for NEI,       apps/tools/caption-for-nei/,                ,         0,       0,      440
