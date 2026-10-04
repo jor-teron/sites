@@ -11,7 +11,7 @@
   <!-- Cache-busting: bump ?v= on every asset below when any of them changes (e.g. 20261003d). -->
   <link rel="stylesheet" href="controller.css?v=20261004g" />
   <link rel="stylesheet" href="ctrl_tabs.css?v=20261004g" />
-  <script src="../vendor/peerjs.min.js?v=20261004g"></script>
+  <script src="../../vendor/peerjs.min.js?v=20261004g"></script>
 </head>
 <body class="theme-light mode-both view-pad">
   <div id="rotate-overlay" hidden>
@@ -113,13 +113,13 @@
     <div class="menu-sep"></div>
     <button type="button" class="menu-item" id="menu-fs" role="menuitem"></button>
     <button type="button" class="menu-item" id="menu-theme" role="menuitem"></button>
-    <button type="button" class="menu-item" id="menu-diag" role="menuitem" data-text="menuDiag">Vibration test (Diag)</button>
+    <button type="button" class="menu-item" id="menu-diag" role="menuitem" data-text="menuDiag">Vibration test</button>
   </div>
 
   <!-- Vibration diagnostics (mode button hold menu / Diag link on the pairing screen) -->
   <div id="diag-panel" hidden>
     <div class="diag-head">
-      <b data-text="diagTitle">Vibration diagnostics</b>
+      <b data-text="diagTitle">Vibration test</b>
       <button type="button" id="diag-close" aria-label="Close">×</button>
     </div>
     <pre id="diag-lines"></pre>
@@ -144,7 +144,7 @@
     </div>
   </div>
 
-  <script src="vendor/jsQR.js?v=20261004g"></script>
+  <script src="../vendor/jsQR.js?v=20261004g"></script>
   <script src="controller_config.js?v=20261004g"></script>
   <script src="kb_common.js?v=20261004g"></script>
   <script src="kb_pc.js?v=20261004g"></script>
