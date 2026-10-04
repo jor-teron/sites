@@ -9,6 +9,11 @@
  * {type:'hub-rumble', pattern:[on, off, on, ...]}; it is relayed to the paired phone as
  * {t:'rumble', ms} / {t:'rumble', pattern} (the phone calls navigator.vibrate).
  *
+ * Extensions (window.HubCtrlExt, filled by hub_pointer.js / hub_receive.js): other message types
+ * go to ext.handlers (trackpad pointer), a connection with metadata {kind:'files'} goes to
+ * ext.files (phone → hub files) instead of replacing the controller link, and ext.onClose runs
+ * when the controller link closes. Key / button forwarding above is unchanged.
+ *
  * Pairing survives reloads: the code (peer id = PEER_PREFIX + code) is kept in localStorage
  * and registered again as soon as the hub loads, so a phone can reconnect without the
  * popover being opened. If the broker still holds the id from the previous page
@@ -357,14 +362,27 @@
       } catch (_) { /* ignore */ }
     } else if (msg.t === 'key') {
       forwardKey(msg);
+    } else {
+      // Extensions (trackpad pointer: hub_pointer.js); unknown types are ignored.
+      const ext = window.HubCtrlExt;
+      if (ext && ext.handlers) {
+        for (const fn of ext.handlers) {
+          try { if (fn(msg)) break; } catch (err) { console.warn('hub ext', err); }
+        }
+      }
     }
-    // other message types are ignored
+  }
+
+  function extClosed() {
+    const ext = window.HubCtrlExt;
+    if (ext && ext.onClose) for (const fn of ext.onClose) { try { fn(); } catch (_) { /* ignore */ } }
   }
 
   function attachConn(c) {
     if (conn && conn !== c) {
       try { conn.close(); } catch (_) {}
       releaseHeld();
+      extClosed();
     }
     conn = c;
     setStatus('Controller connected');
@@ -374,6 +392,7 @@
       if (conn === c) {
         conn = null;
         releaseHeld();
+        extClosed();
         setConnectedIndicator(false);
         setStatus(pairing ? 'Waiting for controller…' : 'Disconnected');
       }
@@ -436,6 +455,13 @@
 
     myPeer.on('connection', (c) => {
       if (peer !== myPeer) return;
+      // Phone → hub files: a second link from the same phone (hub_receive.js), not a new controller
+      const ext = window.HubCtrlExt;
+      if (c.metadata && c.metadata.kind === 'files') {
+        if (ext && typeof ext.files === 'function') ext.files(c);
+        else c.on('open', () => { try { c.close(); } catch (_) {} });
+        return;
+      }
       // One controller at a time
       attachConn(c);
     });

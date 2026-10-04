@@ -1,0 +1,173 @@
+/* Gamepad Controller — tabs, Keyboard & Mouse switch, Trackpad and Send Files boards
+   (ctrl_tabs.js, ctrl_trackpad.js, ctrl_sendfiles.js). Colours come from the theme variables. */
+
+/* ---------- tabs (top centre, every mode; replaces the round mode button) ---------- */
+body.has-tabs #mode-btn { display: none !important; }
+#ctrl-tabs {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 1px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1100;                  /* above the rotate overlay: tabs work in portrait too */
+  height: var(--mode-btn);
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--panel);
+  box-shadow: 0 0 0 1px var(--btn-rim), 0 3px 10px var(--shadow);
+  touch-action: none;
+  white-space: nowrap;
+}
+#ctrl-tabs[hidden] { display: none; }
+.ctab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  line-height: 1;
+}
+.ctab-ic { font-size: 13px; line-height: 1; }
+.ctab.on { color: var(--text); background: var(--btn-1); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.ctab.active { transform: scale(var(--press-scale)); }
+.ctab-more { padding: 0 9px; font-size: 15px; letter-spacing: 0; }
+/* small landscape phones: only the active tab keeps its label (room for the L / R shoulders) */
+@media (max-width: 620px) and (orientation: landscape) {
+  .ctab:not(.on) .ctab-lb { display: none; }
+}
+@media (max-width: 380px) {
+  .ctab { padding: 0 7px; }
+  .ctab-lb { font-size: 10.5px; }
+}
+/* the menu / toast sit under the tab strip */
+body.has-tabs #mode-menu, body.has-tabs #mode-toast { top: calc(env(safe-area-inset-top) + var(--mode-btn) + 6px); }
+
+/* ---------- Keyboard & Mouse 3-way switch (inside #kb-bar, right of the tabs) ---------- */
+#kb-bar { justify-content: flex-start; gap: 10px; }
+#kb-echo { order: 1; max-width: calc(50vw - 190px); }     /* left of the tabs */
+#km-switch {
+  order: 2;
+  margin-left: auto;
+  display: inline-flex;
+  height: 22px;
+  padding: 2px;
+  gap: 2px;
+  border-radius: 999px;
+  background: var(--btn-2);
+  box-shadow: inset 0 0 0 1px var(--btn-rim);
+}
+#km-switch[hidden] { display: none; }
+.km-opt {
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+  line-height: 18px;
+}
+.km-opt.on { background: var(--accent); color: #fff; }
+.km-opt.active { transform: scale(var(--press-scale)); }
+/* narrow (portrait): the switch gets its own row under the tabs */
+@media (max-width: 640px) {
+  body.tab-km #kb-bar {
+    flex-basis: calc(var(--kb-tab-h) + 28px);
+    height: calc(var(--kb-tab-h) + 28px);
+    align-items: flex-end;
+    padding-bottom: 3px;
+  }
+  body.tab-km #km-switch { margin: 0 auto; order: 0; }
+  body.tab-km #kb-echo { display: none; }
+}
+
+/* ---------- Trackpad ---------- */
+.kb.tp { gap: 6px; }
+.tp-surface {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--btn-1), var(--btn-2));
+  box-shadow: inset 0 0 0 1px var(--btn-rim), inset 0 2px 10px var(--shadow);
+  touch-action: none;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.tp-surface.touching { box-shadow: inset 0 0 0 1.5px var(--accent), inset 0 2px 10px var(--shadow); }
+.tp-hint {
+  max-width: 80%;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+  opacity: 0.8;
+  pointer-events: none;
+}
+.tp-bar { flex: 0 0 auto; height: clamp(38px, 15dvh, 54px); display: flex; gap: 6px; }
+.tp-btn { flex: 1 1 0; font-size: 13px; }
+.tp-btn.mid { flex-grow: 0.7; }
+.tp-drag { flex-grow: 1.2; }
+.tp-drag.on { color: #fff; background: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 12px var(--glow); }
+
+/* ---------- Send Files ---------- */
+.kb.sf { flex-direction: row; gap: 10px; padding: 4px 6px 6px; touch-action: auto; }
+.sf-left {
+  flex: 0 0 38%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+}
+.sf-choose { padding: 16px 12px; font-size: 17px; font-weight: 800; border-radius: 16px; touch-action: manipulation; }
+.sf-hint { font-size: 11.5px; color: var(--muted); text-align: center; line-height: 1.4; }
+.sf-clear { align-self: center; touch-action: manipulation; }
+.sf-list {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px;
+}
+.sf-empty { margin: auto; color: var(--muted); font-size: 13px; }
+.sf-empty[hidden] { display: none; }
+.sf-item {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 0 0 0 1px var(--btn-rim);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.sf-item[data-state="failed"] { cursor: pointer; }
+.sf-row { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.sf-name { flex: 1 1 auto; min-width: 0; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sf-size { flex: 0 0 auto; font-size: 11px; color: var(--muted); }
+.sf-bar { height: 5px; border-radius: 3px; background: var(--btn-2); overflow: hidden; box-shadow: inset 0 0 0 1px var(--btn-rim); }
+.sf-bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.15s linear; }
+.sf-item[data-state="done"] .sf-bar i { background: var(--a); }
+.sf-item[data-state="failed"] .sf-bar i, .sf-item[data-state="refused"] .sf-bar i { background: var(--b); }
+.sf-state { font-size: 11px; color: var(--muted); }
+.sf-item[data-state="done"] .sf-state { color: var(--a); font-weight: 700; }
+.sf-item[data-state="failed"] .sf-state, .sf-item[data-state="refused"] .sf-state, .sf-item[data-state="toobig"] .sf-state { color: var(--b); }
+@media (orientation: portrait) {
+  .kb.sf { flex-direction: column; }
+  .sf-left { flex: 0 0 auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sf-bar i { transition: none; }
+}

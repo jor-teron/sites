@@ -7,10 +7,11 @@
   <!-- Cache busting: GitHub Pages lets browsers cache files for ~10 min, so every hub
        file below carries ?v=HUB_VERSION. When you change hub.css / hub*.js / hub_apps.js /
        hub_tiles.js (or vendor/),
-       bump the version: replace every "?v=20261004a" in this file with today's date
+       bump the version: replace every "?v=20261004b" in this file with today's date
        (YYYYMMDD, add a letter for a second deploy the same day, e.g. 20260928b). -->
-  <link rel="stylesheet" href="hub/hub.css?v=20261004a" />
-  <link rel="stylesheet" href="style/no-scrollbar.css?v=20261004a" />
+  <link rel="stylesheet" href="hub/hub.css?v=20261004b" />
+  <link rel="stylesheet" href="style/no-scrollbar.css?v=20261004b" />
+  <link rel="stylesheet" href="hub/hub_ctrl.css?v=20261004b" />
 </head>
 <body>
   <header id="header">
@@ -82,13 +83,18 @@
       allow="camera; microphone; fullscreen; autoplay; clipboard-read; clipboard-write; gamepad; screen-wake-lock; picture-in-picture; display-capture; accelerometer; gyroscope"></iframe>
   </div>
 
-  <script src="vendor/peerjs.min.js?v=20261004a"></script>
-  <script src="vendor/qrcode.js?v=20261004a"></script>
+  <script src="vendor/peerjs.min.js?v=20261004b"></script>
+  <script src="vendor/qrcode.js?v=20261004b"></script>
   <!-- App list + home tiles (plain JS data, work over http and file://) -->
-  <script src="hub/hub_apps.js?v=20261004a"></script>
-  <script src="hub/hub_tiles.js?v=20261004a"></script>
-  <script src="hub/hub.js?v=20261004a"></script>
-  <script src="hub/hub-controller.js?v=20261004a"></script>
-  <script src="hub/hub-gamebar.js?v=20261004a"></script>
+  <script src="hub/hub_apps.js?v=20261004b"></script>
+  <script src="hub/hub_tiles.js?v=20261004b"></script>
+  <script src="hub/hub.js?v=20261004b"></script>
+  <!-- Phone controller: settings, trackpad pointer, received-file cards, phone → hub files -->
+  <script src="hub/hub_controller_config.js?v=20261004b"></script>
+  <script src="hub/hub_notify.js?v=20261004b"></script>
+  <script src="hub/hub_pointer.js?v=20261004b"></script>
+  <script src="hub/hub_receive.js?v=20261004b"></script>
+  <script src="hub/hub-controller.js?v=20261004b"></script>
+  <script src="hub/hub-gamebar.js?v=20261004b"></script>
 </body>
 </html>

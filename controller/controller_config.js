@@ -7,7 +7,7 @@
  * holds structure + fallback theme values (overridden at runtime by themes[].vars).
  */
 const CONTROLLER_CONFIG = {
-  version: '1.4',                  // shown small on the pairing screen
+  version: '1.5',                  // shown small on the pairing screen
 
   // PeerJS pairing
   peer: {
@@ -48,6 +48,10 @@ const CONTROLLER_CONFIG = {
     rumble: 'rumble',              // hub → phone { t:'rumble', ms:N | pattern:[...] } game rumble
     key: 'key',                    // keyboard modes: { t:'key', key:'a', code:'KeyA', s:1|0,
                                    //   shift:0|1, ctrl:0|1, alt:0|1, repeat:0|1 }  keydown / keyup
+    ptr: 'ptr',                    // trackpad: { t:'ptr', dx, dy } finger movement (phone px, batched per frame)
+    tap: 'tap',                    // trackpad: { t:'tap', b:0|1|2 } click (left / middle / right)
+    mb: 'mb',                      // trackpad: { t:'mb', b:0|1|2, s:1|0 } mouse button held / released
+    wheel: 'wheel',                // trackpad: { t:'wheel', dx, dy } two-finger drag (phone px)
     stickDecimals: 2,              // rounding of x / y in stick messages
   },
   messageType: 'btn',              // legacy alias of messages.btn
@@ -57,16 +61,54 @@ const CONTROLLER_CONFIG = {
     connect: 'Enter',              // key in the code box that connects (KeyboardEvent.key)
   },
 
-  // Controller modes, cycled by the round mode button at the top centre.
-  // One entry + one file adds a mode: 'board' names a keyboard registered by a script
+  // Controller modes, picked with the tabs at the top centre (ctrl_tabs.js) or the ⋯ menu.
+  // One entry + one file adds a mode: 'board' names a board registered by a script
   // (kb_pc.js → CTRL_KB.register('pc', ...)); the 'pad' entry is the built-in gamepad.
-  //   landscape: true → portrait shows the "rotate" overlay (the mode button stays usable).
+  //   landscape: true → portrait shows the "rotate" overlay (the tabs stay usable).
   modes: [
-    { id: 'pad',   label: 'Gamepad',        icon: '🎮', landscape: true },
-    { id: 'pc',    label: 'PC keyboard',    icon: '⌨️', landscape: true,  board: 'pc' },
-    { id: 'phone', label: 'Phone keyboard', icon: '📱', landscape: false, board: 'phone' },
+    { id: 'pad',      label: 'Gamepad',        icon: '🎮', landscape: true },
+    { id: 'pc',       label: 'PC keyboard',    icon: '⌨️', landscape: true,  board: 'pc' },
+    { id: 'trackpad', label: 'Trackpad',       icon: '🖱️', landscape: false, board: 'trackpad' },
+    { id: 'phone',    label: 'Phone keyboard', icon: '📱', landscape: false, board: 'phone' },
+    { id: 'files',    label: 'Send Files',     icon: '📤', landscape: false, board: 'files' },
   ],
   defaultMode: 'pad',
+
+  // Tabs (ctrl_tabs.js): each tab shows one of its modes. The last tab is remembered through
+  // storage.mode; the Keyboard & Mouse pick through storage.kmMode.
+  tabs: [
+    { id: 'pad',   icon: '🎮', label: 'Gamepad',    title: 'Gamepad',          modes: ['pad'] },
+    { id: 'km',    icon: '⌨️', label: 'Keys+Mouse', title: 'Keyboard & Mouse', modes: ['pc', 'trackpad', 'phone'] },
+    { id: 'files', icon: '📤', label: 'Files',      title: 'Send Files',       modes: ['files'] },
+  ],
+  // 3-way switch at the top of Keyboard & Mouse (order = left to right)
+  kmSwitch: [
+    { mode: 'pc',       label: 'PC Keys' },
+    { mode: 'trackpad', label: 'Trackpad' },
+    { mode: 'phone',    label: 'Phone Keys' },
+  ],
+  defaultKmMode: 'pc',             // first time the Keyboard & Mouse tab opens
+
+  // Trackpad (ctrl_trackpad.js). Pointer speed / acceleration / scroll speed are hub settings
+  // (hub/hub_controller_config.js); the phone sends raw finger movement.
+  trackpad: {
+    tapMs: 250,                    // touch shorter than this …
+    tapSlopPx: 10,                 // … that moved less than this = a tap (click)
+    decimals: 1,                   // rounding of dx / dy in messages
+    hapticMs: 15,                  // tick on tap / button (Vib toggle respected)
+  },
+
+  // Send Files (ctrl_sendfiles.js): second PeerJS link to the hub, chunked like File Drop
+  sendFiles: {
+    chunkMax: 64 * 1024,           // frame size cap (also limited by the link's maxMessageSize)
+    chunkMin: 16 * 1024,
+    bufferHigh: 4 * 1024 * 1024,   // pause above this many queued bytes …
+    bufferLow: 1024 * 1024,        // … resume below this
+    openTimeoutMs: 12000,          // file link must open within this
+    answerTimeoutMs: 20000,        // hub must answer an offer / confirm the end within this
+    retryEveryMs: 2000,            // queued files wait for the hub link and retry this often
+    maxBytes: 2 * 1024 * 1024 * 1024, // larger files are not sent
+  },
 
   // Mode button gestures
   modeButton: {
@@ -147,7 +189,8 @@ const CONTROLLER_CONFIG = {
     haptics: 'jtsites-ctrl-haptics',
     theme: 'jtsites-ctrl-theme',
     lastCode: 'jtsites-ctrl-lastcode', // last pairing code that connected (auto-connect on load)
-    mode: 'jtsites-ctrl-mode',     // last controller mode (pad / pc / phone)
+    mode: 'jtsites-ctrl-mode',     // last controller mode (pad / pc / trackpad / phone / files) = last tab
+    kmMode: 'jtsites-ctrl-kmmode', // last Keyboard & Mouse pick (pc / trackpad / phone)
   },
 
   // Debug: controller.html?demo=1 skips pairing, shows the pad and logs outgoing
@@ -194,7 +237,7 @@ const CONTROLLER_CONFIG = {
     '--home-size': 'min(13dvh, 48px)',
     '--led-size': '10px',
     '--press-scale': '0.94',
-    '--mode-btn': '28px',           // round mode button (top centre, every mode)
+    '--mode-btn': '28px',           // tab strip height (top centre, every mode)
     '--kb-tab-h': '30px',           // keyboards: strip reserved at the top for the mode button
   },
 
@@ -334,5 +377,23 @@ const CONTROLLER_CONFIG = {
     themeChipToDark: '☾',          // theme chip on the pad while light (tap → dark)
     themeChipToLight: '☀',         // theme chip on the pad while dark (tap → light)
     themeChipTitle: 'Light / dark theme',
+    tabsMenu: 'More: modes, fullscreen, theme, diagnostics',
+    tpHint: 'Drag = move · Tap = click · 2-finger tap = right-click · 2-finger drag = scroll',
+    tpLeft: 'Left',
+    tpMiddle: 'Middle',
+    tpRight: 'Right',
+    tpDrag: 'Hold-drag',
+    tpDragOn: 'Dragging…',
+    sfChoose: 'Choose files',
+    sfHint: 'Files go straight to the hub screen and are saved there',
+    sfEmpty: 'No files yet',
+    sfQueued: 'Queued',
+    sfWaiting: 'Waiting for the hub…',
+    sfSending: 'Sending',
+    sfDone: 'Sent ✓',
+    sfFailed: 'Failed — tap to retry',
+    sfRefused: 'Refused by the hub',
+    sfTooBig: 'Too large',
+    sfClear: 'Clear sent',
   },
 };

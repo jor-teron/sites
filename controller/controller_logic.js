@@ -7,6 +7,9 @@
  *   { t:'stick', x:-1..1,  y:-1..1 }   analog stick (y -1 = up), sent at stick.sendHz while held
  *   { t:'key', key, code, s:1|0, shift, ctrl, alt, repeat }   keyboard modes: keydown / keyup
  *     (the hub dispatches KeyboardEvents into the app frame and types into focused text fields)
+ *   { t:'ptr'|'tap'|'mb'|'wheel', … }   trackpad (ctrl_trackpad.js → hub/hub_pointer.js)
+ * Send Files (ctrl_sendfiles.js) uses a second connection to the same hub peer
+ * (metadata {kind:'files'}, serialization 'raw'), so this link is never blocked by file data.
  * Hub → phone:
  *   { t:'rumble', ms:N } / { t:'rumble', pattern:[...] }   game rumble (e.g. Snake death)
  *   → navigator.vibrate, only when the Vib toggle is on; silently nothing without vibrate (iOS)
@@ -19,9 +22,11 @@
  * page load; a dropped connection (hub reloaded, network blip) is retried with backoff
  * (LED amber). A built-in QR scanner (camera + local vendor/jsQR.js) reads the hub QR.
  *
- * Modes (CONTROLLER_CONFIG.modes): the gamepad plus keyboards (kb_pc.js, kb_phone.js via
- * kb_common.js). The round mode button at the top centre switches them: tap = next,
- * swipe left / right = previous / next, hold = menu (modes, fullscreen, light / dark).
+ * Modes (CONTROLLER_CONFIG.modes): the gamepad plus boards (kb_pc.js, kb_phone.js,
+ * ctrl_trackpad.js, ctrl_sendfiles.js via kb_common.js). Tabs at the top centre
+ * (ctrl_tabs.js: Gamepad / Keyboard & Mouse / Send Files, ⋯ = menu with modes, fullscreen,
+ * light / dark) switch them. Without ctrl_tabs.js the round mode button is used instead:
+ * tap = next, swipe left / right = previous / next, hold = menu.
  * Every held button / key is released on a mode switch, disconnect, blur or hide.
  *
  * All settings / text come from CONTROLLER_CONFIG (controller_config.js).
@@ -200,6 +205,7 @@
     modeBtn.hidden = true;
     closeMenu();
     pairScreen.hidden = false;
+    if (window.CTRL_TABS) CTRL_TABS.render(modeId, false);
     showPairError(msg || '');
     updateOrientation();
   }
@@ -798,6 +804,11 @@
       keyUp: keyUp,
       vibrate: (ms) => vibrate(ms),
       firstTouch: () => onFirstTouch(),
+      // trackpad / Send Files
+      send: (obj) => send(obj),
+      isOpen: () => !!(conn && conn.open),
+      peer: () => peer,
+      hubId: () => CFG.peer.idPrefix + code,
     });
   }
 
@@ -820,6 +831,7 @@
     modeBtn.textContent = m.icon || '?';
     modeBtn.title = m.label + ' — ' + TXT.modeBtnTitle;
     modeBtn.setAttribute('aria-label', m.label);
+    if (window.CTRL_TABS) CTRL_TABS.render(m.id, pairScreen.hidden);
     if (!pairScreen.hidden) return;
     const board = boardFor(m);
     pad.hidden = !!m.board;
@@ -888,7 +900,8 @@
   menuTheme.addEventListener('click', () => { toggleTheme(); });
   // a touch outside the menu (and outside the mode button) closes it
   document.addEventListener('pointerdown', (e) => {
-    if (!modeMenu.hidden && !modeMenu.contains(e.target) && e.target !== modeBtn) closeMenu();
+    if (!modeMenu.hidden && !modeMenu.contains(e.target) && e.target !== modeBtn &&
+        !(e.target.closest && e.target.closest('#ctrl-more'))) closeMenu();
   }, true);
 
   /* ---------- mode button gestures: tap / swipe / long-press ---------- */
@@ -1244,6 +1257,13 @@
   applyText();
   renderHaptics();
   renderFullscreen();
+  if (window.CTRL_TABS) {
+    CTRL_TABS.init({
+      setMode: (id) => setControllerMode(id),
+      getMode: () => modeId,
+      openMenu: () => { if (modeMenu.hidden) openMenu(); else closeMenu(); },
+    });
+  }
   renderView();
   document.querySelectorAll('.face, .shoulder, .sys, .home').forEach(bindButton);
   setupDpad();
