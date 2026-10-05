@@ -1,15 +1,16 @@
 /**
  * Hub — received-file overlay (images + PDFs). HubViewer.push(item) adds {url,name,type}
  * to a queue and auto-opens; HubViewer.open(url,name,type) jumps to / adds one item.
- * White 80% backdrop, content ~80% of the screen. Esc / controller B ("x") closes;
+ * White 95% backdrop, content ~95% of the screen. Filename + ✕ at the top; ← → sit
+ * mid-left / mid-right when the queue has 2+ items. Esc / controller B ("x") closes;
  * ← → (and hub D-pad) move the queue; ↑ ↓ / wheel / touch scroll a multi-page PDF.
- * Download keeps the existing save. Uses each card's blob URL (hub_notify.js revokes it).
- * PDF pages: hub_viewer_pdf.js + shared/vendor/pdfjs/.
+ * Files are already auto-saved (no Download button). Uses each card's blob URL
+ * (hub_notify.js revokes it). PDF pages: hub_viewer_pdf.js + shared/vendor/pdfjs/.
  */
 (function () {
   'use strict';
   const queue = [];          // {url, name, type, kind}
-  let box = null, stage = null, img = null, pdfHost = null, bar = null, prevBtn = null, nextBtn = null, label = null;
+  let box = null, stage = null, img = null, pdfHost = null, bar = null, prevBtn = null, nextBtn = null, label = null, closeBtn = null;
   let idx = -1, cur = null, frameWin = null, pdfHandle = null, loading = 0;
 
   function kindOf(type, name) {
@@ -31,28 +32,31 @@
     box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true');
     stage = document.createElement('div'); stage.className = 'hv-stage';
     stage.addEventListener('click', (e) => e.stopPropagation());
-    img = document.createElement('img'); img.hidden = true; img.alt = '';
+    img = document.createElement('img'); img.alt = '';
     pdfHost = document.createElement('div'); pdfHost.className = 'hv-pdf'; pdfHost.hidden = true;
-    stage.append(img, pdfHost);
+    stage.appendChild(pdfHost);   // img is attached only while showing an image (no empty-src glyph)
     bar = document.createElement('div'); bar.className = 'hv-bar';
-    prevBtn = btn('←', 'hv-nav', () => step(-1));
-    nextBtn = btn('→', 'hv-nav', () => step(1));
     label = document.createElement('span'); label.className = 'hv-label';
-    bar.append(prevBtn, nextBtn, label, btn('Download', '', save), btn('✕', '', close));
-    box.append(stage, bar);
+    closeBtn = btn('✕', 'hv-close', close);
+    closeBtn.title = 'Close'; closeBtn.setAttribute('aria-label', 'Close');
+    bar.append(label, closeBtn);
+    prevBtn = btn('←', 'hv-nav hv-prev', () => step(-1));
+    nextBtn = btn('→', 'hv-nav hv-next', () => step(1));
+    prevBtn.title = 'Previous'; nextBtn.title = 'Next';
+    prevBtn.setAttribute('aria-label', 'Previous'); nextBtn.setAttribute('aria-label', 'Next');
+    box.append(stage, bar, prevBtn, nextBtn);
     box.addEventListener('click', close);
     document.body.appendChild(box);
   }
-  function save() {
-    if (!cur) return;
-    const a = document.createElement('a');
-    a.href = cur.url; a.download = cur.name || 'file'; a.rel = 'noopener';
-    document.body.appendChild(a); a.click(); a.remove();
+  function detachImg() {
+    img.removeAttribute('src');
+    img.removeAttribute('alt');
+    if (img.parentNode) img.parentNode.removeChild(img);
   }
   function clearStage() {
     if (pdfHandle) { try { pdfHandle.clear(); } catch (_) { /* ignore */ } pdfHandle = null; }
     pdfHost.innerHTML = ''; pdfHost.hidden = true;
-    img.hidden = true; img.removeAttribute('src');
+    detachImg();
   }
   async function show(i) {
     if (!queue.length) { close(); return; }
@@ -62,13 +66,14 @@
     const my = loading;
     clearStage();
     box.setAttribute('aria-label', cur.name);
-    label.textContent = (idx + 1) + ' / ' + queue.length + ' · ' + cur.name;
+    label.textContent = cur.name + (queue.length > 1 ? '  ·  ' + (idx + 1) + ' / ' + queue.length : '');
     const many = queue.length > 1;
     prevBtn.hidden = nextBtn.hidden = !many;
-    box.hidden = false;                 // visible before PDF layout (clientWidth)
+    box.hidden = false;
     syncWatch();
     if (cur.kind === 'image') {
-      img.hidden = false; img.alt = cur.name; img.src = cur.url;
+      img.alt = cur.name; img.src = cur.url;
+      stage.appendChild(img);
     } else if (cur.kind === 'pdf') {
       pdfHost.hidden = false;
       const tip = document.createElement('div'); tip.className = 'hv-tip'; tip.textContent = 'Loading PDF…';
@@ -77,7 +82,7 @@
         if (!window.HubViewerPdf) throw new Error('PDF viewer missing');
         const h = await HubViewerPdf.render(pdfHost, cur.url);
         tip.remove();
-        if (my !== loading) { h.clear(); return; }   // a newer show() won
+        if (my !== loading) { h.clear(); return; }
         pdfHandle = h;
       } catch (err) {
         if (my !== loading) return;
@@ -127,7 +132,7 @@
     if (!item || !item.url) return -1;
     if (!box) build();
     const kind = item.kind || kindOf(item.type, item.name);
-    if (kind !== 'image' && kind !== 'pdf') return -1;   // only images + PDFs join the overlay queue
+    if (kind !== 'image' && kind !== 'pdf') return -1;
     const i = queue.findIndex((x) => x.url === item.url);
     if (i >= 0) return i;
     queue.push({ url: item.url, name: item.name || 'file', type: item.type || '', kind: kind });
@@ -138,15 +143,14 @@
     if (i < 0) return;
     show(i);
   }
-  /** Add and show (auto-open on receive). */
   function pushAndShow(item) {
     const i = push(item);
     if (i < 0) return;
     show(i);
   }
   function close() {
-    if (box.hidden && !cur) return;
-    loading++;                         // cancel any in-flight PDF render
+    if ((!box || box.hidden) && !cur) return;
+    loading++;
     clearStage();
     cur = null; idx = -1;
     if (box) box.hidden = true;

@@ -18,7 +18,7 @@
   'use strict';
 
   const CFG = Object.assign({
-    durationMs: 600000, maxStack: 3, previewSize: 56, showPreviews: true, insetPx: 12, revokeAfterMs: 600000,
+    durationMs: 10000, maxStack: 3, previewSize: 56, showPreviews: true, insetPx: 12, revokeAfterMs: 600000,
     position: 'bottom-right',
   }, (window.HUB_CTRL_CONFIG || {}).notify || {});
   const reduced = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
