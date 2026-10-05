@@ -17,6 +17,9 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - `hub_notify.js`: received-file cards (bottom right by default)
 - `hub_viewer.js`: image viewer opened from a received-image card
 - `hub_ctrl.css`: controller popover, pointer, file cards, image viewer
+- `hub_sw.js`: service worker (shell precache, network-first, offline page); loaded by the root `../sw.js` stub
+- `hub_offline.html`: "You're offline" page shown by the service worker
+- `../manifest.webmanifest`, `../shared/image/hub_icon_192.png`, `hub_icon_512.png`: PWA manifest and icons
 - Shared: `../vendor/peerjs.min.js`, `../vendor/qrcode.js`, `../style/no-scrollbar.css`, `../script/txt-view.html` (viewer for `.txt` entries)
 
 ## 3. Behaviour rules
@@ -35,6 +38,9 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - **Trackpad:** the hub draws its own arrow (a page can't move the real mouse) and sends synthetic pointer / mouse / wheel events to the element under it, inside same-origin frames too. Fades after 4 s idle.
 - **Phone → hub files:** the controller's Files tab opens a second link; each finished file downloads at once under its own name (up to 2 GB, no resume) and shows a card with a preview; ✕ closes; at most 3 cards, then "+N more". Cards sit bottom-right (the browser's own download popup is top-right); `notify.position` can be `bottom-right`, `top-right` or `top-center`.
 - **Image viewer:** tapping a received image's card opens it over a dark backdrop (90% of the screen, fitted) with Download and ✕. Esc, the controller's B button (sent as `x`) or a click on the backdrop closes it. Other files open in a new tab, as before.
+
+- **Install as an app (PWA):** Chrome on Android offers "Install app" / "Add to Home screen" (name "Jor Teron Hub", short name "Hub", night-blue icon, standalone window, opens `hub.html`). The manifest uses relative paths, so it works under `/sites/` on GitHub Pages. `hub.html` registers `sw.js` (only over http/https, not file://). The service worker is always network-first, so new pushes show at once; the cache (hub shell + visited pages) is only used offline, and a page that was never visited shows `hub/hub_offline.html`. Cross-origin requests (PeerJS, CDNs) are not touched.
+- **Why `sw.js` is at the root:** a service worker only controls pages in its own folder and below. `sw.js` must sit next to `hub.html` (one line: `importScripts('hub/hub_sw.js')`); the real code stays in `hub/`. Change the shell list or bump `CACHE` (`hub-shell-v1`) in `hub_sw.js`; old caches are deleted on activate.
 
 ## 4. Keyboard
 - Menu open: ↑ ↓ move, → / Enter / Space open a category or app, ← / Esc close
@@ -60,7 +66,7 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - `hub_apps.js`: add / move / hide apps, ORDER numbers
 - `hub_tiles.js`: tile list (`qr` / `app`)
 - `hub_controller_config.js`: `pointer` (speed, acceleration, size, hideAfterMs, scrollSpeed, colours), `receive` (autoSave, maxBytes, ackEveryBytes), `notify` (position, durationMs, maxStack, previewSize, showPreviews, revokeAfterMs)
-- **Cache-buster:** after changing any hub file, bump every `?v=` in `../hub.html` (currently `20261005a`), or browsers keep the old copy.
+- **Cache-buster:** after changing any hub file, bump every `?v=` in `../hub.html` (currently `20261005b`), or browsers keep the old copy.
 - Don't change `PEER_PREFIX` / the button map in `hub-controller.js` without updating the controller too.
 
 ## 9. Browser checklist
@@ -89,6 +95,7 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - 2026-10-04 23:16 IST: controller tabs (Gamepad / Keyboard & Mouse / Send Files), trackpad pointer, phone → hub files with cards (commit 5809f29).
 - 2026-10-04 23:24 IST: Notepad and Notely moved to Office (commit 3a32f4e).
 - 2026-10-05 00:55 IST: file cards moved to bottom-right (position option); image viewer for received images.
+- 2026-10-05 07:16 IST: installable PWA: manifest, icons, root `sw.js` → `hub/hub_sw.js`, offline page.
 
 ## 12. Related apps
 - Controller (phone side): `../controller/controller_readme.md`

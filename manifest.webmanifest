@@ -1,0 +1,14 @@
+{
+  "name": "Jor Teron Hub",
+  "short_name": "Hub",
+  "description": "Jor Teron's web apps hub",
+  "start_url": "hub.html",
+  "scope": "./",
+  "display": "standalone",
+  "theme_color": "#0B1033",
+  "background_color": "#0B1033",
+  "icons": [
+    { "src": "shared/image/hub_icon_192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "shared/image/hub_icon_512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0B1033">
+<title>Offline — Hub</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #fff; text-align: center;
+    background: #0B1033 linear-gradient(160deg, #0B1033 0%, #26307A 55%, #5562C4 100%);
+  }
+  h1 { margin: 0; font-size: 26px; }
+  p { margin: 0; color: rgba(255,255,255,0.75); font-size: 15px; }
+  button {
+    margin-top: 6px; padding: 10px 26px; font: 600 16px inherit; font-family: inherit; color: #0B1033;
+    background: #fff; border: 0; border-radius: 999px; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <h1>You&rsquo;re offline</h1>
+  <p>Check the connection and try again.</p>
+  <button type="button" onclick="location.reload()">Retry</button>
+</body>
+</html>
