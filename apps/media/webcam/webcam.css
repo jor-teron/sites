@@ -1,39 +1,139 @@
-/* webcam.css */
+/* Webcam — full-bleed camera with thin overlay chrome. Themes: .theme-dark / .theme-light */
 
-/* Custom font-family for Inter, loaded via Google Fonts in HTML */
-.font-inter {
-    font-family: 'Inter', sans-serif;
+:root, .theme-dark {
+  --bg: #0b0d10;
+  --fg: #f2f4f7;
+  --muted: rgba(242,244,247,0.7);
+  --chrome: rgba(12,14,18,0.55);
+  --chrome-border: rgba(255,255,255,0.16);
+  --shutter: #fff;
+  --shutter-ring: rgba(255,255,255,0.85);
+  --msg: rgba(12,14,18,0.72);
+  --ok: #3ddc84;
+  --err: #ff6b6b;
+  --theme-icon: '☾';
+}
+.theme-light {
+  --bg: #e8eaed;
+  --fg: #121418;
+  --muted: rgba(18,20,24,0.65);
+  --chrome: rgba(255,255,255,0.72);
+  --chrome-border: rgba(0,0,0,0.12);
+  --shutter: #121418;
+  --shutter-ring: rgba(18,20,24,0.75);
+  --msg: rgba(255,255,255,0.82);
+  --ok: #0f7a3a;
+  --err: #c62828;
+  --theme-icon: '☀';
 }
 
-/* Ensure video and canvas maintain aspect ratio and fit container */
-video, canvas {
-    max-width: 100%;
-    height: auto; /* Maintain aspect ratio */
-    display: block; /* Remove extra space below inline elements */
-    object-fit: cover; /* Ensures the video/image covers the element without distortion */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%;
+  width: 100dvw; height: 100dvh;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
+.theme-dark { color-scheme: dark; }
+.theme-light { color-scheme: light; }
 
-/* Basic styling for the container to give it some depth */
-.container {
-    max-width: 600px; /* Limit max width for better readability on large screens */
+#webcamFeed, #photoCanvas {
+  position: fixed; inset: 0;
+  width: 100%; height: 100%;
+  width: 100dvw; height: 100dvh;
+  object-fit: cover;
+  background: #000;
+  display: block;
 }
+#photoCanvas { z-index: 1; }
 
-/* Styling for the hidden elements before they are shown by JS */
-.hidden {
-    display: none !important;
+.hidden { display: none !important; }
+
+.chrome {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, transparent, var(--chrome));
+  pointer-events: none;
 }
+.chrome > * { pointer-events: auto; }
 
-/* Responsive adjustments for smaller screens if needed, though Tailwind handles much of it */
-@media (max-width: 640px) {
-    .container {
-        padding: 1rem; /* Reduce padding on small screens */
-    }
-    h1 {
-        font-size: 2rem; /* Adjust heading size */
-    }
-    button, a {
-        padding: 0.75rem 1.25rem; /* Adjust button padding */
-        font-size: 0.9rem;
-    }
+.chip {
+  appearance: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; height: 44px; padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--chrome-border);
+  background: var(--chrome);
+  color: var(--fg);
+  font: 600 15px/1 system-ui, sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
+.chip:hover { filter: brightness(1.08); }
+.chip:active { transform: scale(0.96); }
+.chip[hidden] { display: none !important; }
+#themeBtn::before { content: var(--theme-icon); font-size: 18px; }
+#themeBtn { font-size: 0; } /* icon via ::before only */
 
+.shutter {
+  appearance: none;
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  border: 3px solid var(--shutter-ring);
+  background: transparent;
+  padding: 5px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.shutter::after {
+  content: '';
+  display: block;
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  background: var(--shutter);
+}
+.shutter:disabled { opacity: 0.35; cursor: default; }
+.shutter:not(:disabled):active::after { transform: scale(0.92); }
+
+.download { font-size: 14px; }
+
+.msg {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  max-width: min(92vw, 420px);
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--msg);
+  color: var(--muted);
+  font: 600 13px/1.35 system-ui, sans-serif;
+  text-align: center;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.msg:empty { display: none; }
+.msg.err { color: var(--err); }
+.msg.ok { color: var(--ok); }
+.msg.info { color: var(--fg); }
+
+/* Short landscape phones: shrink chrome a little */
+@media (orientation: landscape) and (max-height: 420px) {
+  .chrome { gap: 10px; padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); }
+  .shutter { width: 56px; height: 56px; }
+  .chip { min-width: 40px; height: 40px; }
+}

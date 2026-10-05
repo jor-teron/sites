@@ -1,43 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webcam Photo Capture</title>
-    <!-- Tailwind CSS CDN for easy styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Custom CSS for additional styling -->
-    <link rel="stylesheet" href="webcam.css">
-    <!-- Google Fonts - Inter for a clean look -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0d10">
+  <title>Webcam</title>
+  <link rel="stylesheet" href="webcam.css?v=20261005a">
 </head>
-<body class="font-inter bg-gray-100 flex items-center justify-center min-h-screen p-4">
-    <div class="container bg-white p-8 rounded-xl shadow-lg max-w-2xl w-full text-center">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6">Capture Your Photo</h1>
+<body class="theme-dark">
+  <video id="webcamFeed" autoplay playsinline muted></video>
+  <canvas id="photoCanvas" class="hidden" aria-hidden="true"></canvas>
 
-        <!-- Video element to display webcam stream -->
-        <video id="webcamFeed" class="w-full rounded-lg border-2 border-gray-300 mb-6 bg-gray-200" autoplay playsinline></video>
+  <div class="chrome" aria-label="Controls">
+    <button type="button" id="themeBtn" class="chip" title="Theme" aria-label="Toggle theme">☾</button>
+    <button type="button" id="flipBtn" class="chip" title="Flip camera" aria-label="Flip camera" hidden>⟲</button>
+    <button type="button" id="captureButton" class="shutter" title="Capture" aria-label="Capture photo" disabled></button>
+    <a id="downloadLink" class="chip download hidden" download>Save</a>
+  </div>
 
-        <!-- Button to trigger photo capture -->
-        <button id="captureButton" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
-            Capture Photo
-        </button>
+  <div id="message" class="msg" role="status" aria-live="polite"></div>
 
-        <!-- Canvas to draw the captured image -->
-        <canvas id="photoCanvas" class="hidden w-full rounded-lg border-2 border-gray-300 mt-6 bg-gray-200"></canvas>
-
-        <!-- Download link for the captured image (initially hidden) -->
-        <a id="downloadLink" class="hidden bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md mt-4 inline-block transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75" download>
-            Download Photo
-        </a>
-
-        <!-- Message display area for user feedback -->
-        <div id="message" class="mt-4 text-sm text-gray-600"></div>
-    </div>
-
-    <!-- Settings and text, then the code that reads them -->
-    <script src="webcam_config.js"></script>
-    <script src="webcam_logic.js"></script>
+  <script src="webcam_config.js?v=20261005a"></script>
+  <script src="webcam_logic.js?v=20261005a"></script>
 </body>
 </html>
-
