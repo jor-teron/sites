@@ -83,10 +83,12 @@
 /* ---------- received-file overlay (hub_viewer.js); cards stay above it ---------- */
 #hub-viewer {
   position: fixed; inset: 0; z-index: 2147481000;   /* below #hub-notify (2147482000) and the pointer */
-  width: 100vw; height: 100vh; width: 100dvw; height: 100dvh;
+  left:0px; top:35px;
+  width: 100vw; height: calc(100vh-35px); width: 100dvw; height: calc(100dvh-35px);
   background: rgba(255,255,255,0.1);
   display: flex; align-items: center; justify-content: center;
 }
+
 #hub-viewer[hidden] { display: none; }
 .hv-stage {
   width: 95vw; height: 95vh; max-width: 95dvw; max-height: 95dvh;
@@ -95,8 +97,9 @@
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
   border-radius: 6px;
 }
+
 #hub-viewer img {
-  max-width: 100%; max-height: 95vh; max-height: 95dvh; width: auto; height: auto;
+  max-width: 100%; max-height: 98vh; max-height: 98dvh; width: auto; height: auto;
   object-fit: contain; display: block; margin: auto;
   box-shadow: 0 8px 32px rgba(0,0,0,0.18); background: #fff;
 }
@@ -104,16 +107,23 @@
 .hv-pdf canvas { box-shadow: 0 4px 16px rgba(0,0,0,0.12); background: #fff; }
 .hv-tip { padding: 24px; color: #333; font: 600 15px system-ui, sans-serif; text-align: center; }
 .hv-bar {
-  position: absolute; top: 10px; left: 12px; right: 12px;
+  position: absolute; top: 0px; left: 0px; right: 15px; height: 35px;
   display: flex; gap: 8px; align-items: center;
+  background: rgba(100,100,100,0);
+  border-radius: 0px;
   pointer-events: none;
+  display: ;
 }
 .hv-bar > * { pointer-events: auto; }
 .hv-label {
   flex: 1 1 auto; min-width: 0;
-  font: 600 14px system-ui, sans-serif; color: #111;
-  background: rgba(255,255,255,0.92); border-radius: 999px; padding: 6px 14px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font: 600 20px system-ui, sans-serif; 
+  background: rgba(255,255,255,0); border-radius: 0px; padding: 0px 0px;
+  white-space: nowrap; overflow: hidden; 
+  text-overflow: ellipsis;
+  text-align: right;
+	color: white;
+  -webkit-text-stroke: 0px black;
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 .hv-close {
