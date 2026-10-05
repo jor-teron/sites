@@ -1,34 +1,4 @@
-/* Hub phone controller extras: trackpad pointer (hub_pointer.js) + received-file cards (hub_notify.js)
-   + image viewer (hub_viewer.js). */
-
-/* ---------- trackpad pointer ---------- */
-#hub-pointer {
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 2147483000;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.35s ease;
-  will-change: transform;
-}
-#hub-pointer.show { opacity: 1; transition-duration: 0.08s; }
-#hub-pointer svg { display: block; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.55)); overflow: visible; }
-#hub-pointer.down svg { transform: scale(0.86); transform-origin: 0 0; }
-#hub-pointer .ring {
-  position: absolute;
-  left: -14px; top: -14px;
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  border: 2px solid rgba(110,168,254,0.9);
-  opacity: 0;
-  transform: scale(0.4);
-  pointer-events: none;
-}
-#hub-pointer .ring.go { animation: hub-ptr-ring 0.35s ease-out; }
-#hub-pointer.drag .ring { opacity: 0.9; transform: scale(0.8); animation: none; }
-@keyframes hub-ptr-ring { 0% { opacity: 0.95; transform: scale(0.4); } 100% { opacity: 0; transform: scale(1.3); } }
-
+/* Hub — received-file cards + viewer overlay (hub_notification.css). */
 /* ---------- received-file cards ---------- */
 #hub-notify {
   position: fixed;
@@ -114,7 +84,7 @@
 #hub-viewer {
   position: fixed; inset: 0; z-index: 2147481000;   /* below #hub-notify (2147482000) and the pointer */
   width: 100vw; height: 100vh; width: 100dvw; height: 100dvh;
-  background: rgba(255,255,255,0.95);
+  background: rgba(255,255,255,0.1);
   display: flex; align-items: center; justify-content: center;
 }
 #hub-viewer[hidden] { display: none; }
@@ -168,8 +138,6 @@
 .hv-nav[hidden] { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  #hub-pointer, #hub-pointer.show { transition: none; }
-  #hub-pointer .ring.go { animation: none; }
   .hn-card, .hn-card.out { animation: none; }
   .hn-bar i { transition: none; }
 }
