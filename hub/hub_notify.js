@@ -7,8 +7,9 @@
  *   HubNotify.progress(id, bytes)
  *   HubNotify.done(id, {url, blob})            preview (images) or type icon, "Received ✓", auto-hide
  *   HubNotify.fail(id, text)
- * Tap a finished card = images open in the hub viewer (hub_viewer.js), other files open in a
- * new tab (blob URL); ✕ closes. Hover pauses the timer.
+ * Tap a finished card = images / PDFs open in the hub viewer (hub_viewer.js), other files open
+ * in a new tab (blob URL); ✕ dismisses early. Hover pauses the timer. New images / PDFs also
+ * auto-open in the viewer when they finish receiving.
  * At most notify.maxStack cards show (newest on top); the rest wait behind "+N more" and appear
  * as cards close. Blob URLs are revoked notify.revokeAfterMs after their card closes.
  * Settings: HUB_CTRL_CONFIG.notify. prefers-reduced-motion: no slide / fade (hub_ctrl.css).
@@ -17,7 +18,7 @@
   'use strict';
 
   const CFG = Object.assign({
-    durationMs: 5000, maxStack: 3, previewSize: 56, showPreviews: true, insetPx: 12, revokeAfterMs: 600000,
+    durationMs: 600000, maxStack: 3, previewSize: 56, showPreviews: true, insetPx: 12, revokeAfterMs: 600000,
     position: 'bottom-right',
   }, (window.HUB_CTRL_CONFIG || {}).notify || {});
   const reduced = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
@@ -127,7 +128,9 @@
   }
 
   function open(c) {
-    if (c.kind === 'image' && window.HubViewer) { HubViewer.open(c.url, c.name); return; }
+    if ((c.kind === 'image' || c.kind === 'pdf') && window.HubViewer) {
+      HubViewer.open(c.url, c.name, c.type); return;
+    }
     try { window.open(c.url, '_blank', 'noopener'); } catch (_) { /* ignore */ }
   }
 
@@ -187,6 +190,9 @@
       img.decoding = 'async';
       img.onload = () => { c.thumb.textContent = ''; c.thumb.appendChild(img); };
       img.src = c.url;
+    }
+    if ((c.kind === 'image' || c.kind === 'pdf') && c.url && window.HubViewer) {
+      HubViewer.pushAndShow({ url: c.url, name: c.name, type: c.type, kind: c.kind });
     }
     startTimer(c);
   }

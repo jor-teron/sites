@@ -29,7 +29,7 @@ window.HUB_CTRL_CONFIG = {
   // Received-file cards
   notify: {
     position: 'bottom-right',    // 'bottom-right' (default; the browser's download popup is top-right) | 'top-right' | 'top-center'
-    durationMs: 5000,            // a finished card stays this long (hover pauses; 0 = until closed)
+    durationMs: 10 * 60 * 1000,  // a finished card stays this long (default 10 min; hover pauses; ✕ dismisses; 0 = until closed)
     maxStack: 3,                 // more cards wait behind a "+N more" line
     previewSize: 56,             // thumbnail / icon box in px
     showPreviews: true,          // false: type icons only, no image thumbnails

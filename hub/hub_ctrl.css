@@ -110,14 +110,49 @@
 }
 .hn-more[hidden] { display: none; }
 
-/* ---------- image viewer (hub_viewer.js) ---------- */
-#hub-viewer { position: fixed; inset: 0; z-index: 2147482500;   /* above the cards, below the pointer */
-  background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; }
+/* ---------- received-file overlay (hub_viewer.js); cards stay above it ---------- */
+#hub-viewer {
+  position: fixed; inset: 0; z-index: 2147481000;   /* below #hub-notify (2147482000) and the pointer */
+  width: 100vw; height: 100vh;
+  background: rgba(255,255,255,0.8);
+  display: flex; align-items: center; justify-content: center;
+}
 #hub-viewer[hidden] { display: none; }
-#hub-viewer img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 4px; box-shadow: 0 8px 40px rgba(0,0,0,0.6); }
-.hv-bar { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; }
-.hv-bar button { font: 600 14px system-ui, sans-serif; color: #fff; background: rgba(30,34,43,0.92); border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
-.hv-bar button:hover { background: rgba(60,66,80,0.95); }
+.hv-stage {
+  width: 80vw; height: 80vh; max-width: 80vw; max-height: 80vh;
+  overflow: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  border-radius: 6px;
+}
+#hub-viewer img {
+  max-width: 100%; max-height: 80vh; width: auto; height: auto;
+  object-fit: contain; display: block; margin: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18); background: #fff;
+}
+.hv-pdf { width: 100%; }
+.hv-pdf canvas { box-shadow: 0 4px 16px rgba(0,0,0,0.12); background: #fff; }
+.hv-tip { padding: 24px; color: #333; font: 600 15px system-ui, sans-serif; text-align: center; }
+.hv-bar {
+  position: absolute; top: 12px; right: 12px; left: 12px;
+  display: flex; gap: 8px; align-items: center; justify-content: flex-end;
+  pointer-events: none;
+}
+.hv-bar > * { pointer-events: auto; }
+.hv-label {
+  margin-right: auto; max-width: 45vw;
+  font: 600 13px system-ui, sans-serif; color: #111;
+  background: rgba(255,255,255,0.9); border-radius: 999px; padding: 6px 12px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hv-bar button {
+  font: 600 14px system-ui, sans-serif; color: #111;
+  background: rgba(255,255,255,0.95); border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 999px; padding: 6px 14px; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.hv-bar button:hover { background: #fff; }
+.hv-bar .hv-nav { font-size: 18px; padding: 6px 12px; }
+.hv-bar .hv-nav[hidden] { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   #hub-pointer, #hub-pointer.show { transition: none; }
