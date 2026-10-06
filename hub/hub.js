@@ -174,6 +174,9 @@
     menu.classList.toggle('open', open);
     menu.hidden = !open;
     catBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    // While open, let clicks pass through the app iframe so "click outside" reaches the hub
+    // (same idea as the Windows Start menu closing when you click the desktop).
+    document.body.classList.toggle('hub-menu-open', open);
     if (open && !was) prepareMenu();
   }
 
@@ -530,8 +533,14 @@
     if (open) setOpen(true);
     else closeMenu();
   });
-  // A click anywhere else in the hub closes the menu and hands focus back to the app.
-  document.addEventListener('click', () => { setOpen(false); focusFrame(); });
+  // Click / tap outside the menu (or the Hub Menu button) closes it — like Windows Start.
+  // Capture phase so it still runs when a child stops bubbling; iframe is pointer-events:none
+  // while open (see .hub-menu-open in hub_main.css).
+  document.addEventListener('pointerdown', (e) => {
+    if (!menu.classList.contains('open')) return;
+    if (menu.contains(e.target) || catBtn.contains(e.target)) return;
+    closeMenu();
+  }, true);
   menu.addEventListener('click', (e) => e.stopPropagation());
   document.addEventListener('keydown', (e) => {
     if (menu.classList.contains('open')) {
@@ -599,7 +608,14 @@
   }
 
   function qrTile(t) {
-    const url = hubUrl();
+    // Optional url: relative ENTRY_URL → absolute (Gamepad QR); empty → this hub's link (Site QR).
+    let url = hubUrl();
+    if (t.url) {
+      try {
+        const entry = normalizeEntryUrl(t.url) || String(t.url).trim();
+        url = new URL(entry, location.href).href.split('#')[0].split('?')[0];
+      } catch (_) { /* keep hubUrl */ }
+    }
     const tile = document.createElement('div');
     tile.className = 'tile tile-qr';
     const box = document.createElement('div');

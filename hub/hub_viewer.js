@@ -4,8 +4,8 @@
  * White 95% backdrop, content ~95% of the screen. Filename + ✕ at the top; ← → sit
  * mid-left / mid-right when the queue has 2+ items. Esc / controller B ("x") closes;
  * ← → (and hub D-pad) move the queue; ↑ ↓ / wheel / touch scroll a multi-page PDF.
- * Video/audio autoplay muted (browser rule) with native controls; Space (controller A)
- * plays/pauses. "Print 🖨" hands the image/PDF alone to the browser's print dialog.
+ * Video/audio autoplay muted (browser rule) with native controls; video loops by default.
+ * Space (controller A) plays/pauses. "Print 🖨" hands the image/PDF alone to the browser's print dialog.
  * Files are already auto-saved (no Download button). Uses each card's blob URL
  * (hub_notify.js revokes it). PDF pages: hub_viewer_pdf.js + shared/vendor/pdfjs/.
  */
@@ -70,6 +70,7 @@
     media = document.createElement(kind === 'audio' ? 'audio' : 'video');
     media.className = 'hv-media hv-' + kind;
     media.controls = true; media.autoplay = true; media.muted = true; media.playsInline = true;
+    if (kind === 'video') media.loop = true;   // reel-style: keep looping
     media.setAttribute('playsinline', ''); media.preload = 'auto';
     media.src = cur.url;
     stage.appendChild(media);

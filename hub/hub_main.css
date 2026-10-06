@@ -177,6 +177,9 @@ html, body {
   height: calc(100dvh - var(--header-h));  /* mobile: follows the URL bar, so the app's bottom isn't cut off */
   background: #000;
 }
+/* Menu open: clicks on the app area reach the hub (iframe would otherwise eat them). */
+body.hub-menu-open #app-frame { pointer-events: none; }
+
 #app-frame {
   display: block;
   width: 100%;
