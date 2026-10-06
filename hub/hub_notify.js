@@ -128,7 +128,7 @@
   }
 
   function open(c) {
-    if ((c.kind === 'image' || c.kind === 'pdf') && window.HubViewer) {
+    if (/^(image|pdf|video|audio)$/.test(c.kind) && window.HubViewer) {
       HubViewer.open(c.url, c.name, c.type); return;
     }
     try { window.open(c.url, '_blank', 'noopener'); } catch (_) { /* ignore */ }
@@ -191,7 +191,7 @@
       img.onload = () => { c.thumb.textContent = ''; c.thumb.appendChild(img); };
       img.src = c.url;
     }
-    if ((c.kind === 'image' || c.kind === 'pdf') && c.url && window.HubViewer) {
+    if (/^(image|pdf|video|audio)$/.test(c.kind) && c.url && window.HubViewer) {
       HubViewer.pushAndShow({ url: c.url, name: c.name, type: c.type, kind: c.kind });
     }
     startTimer(c);
