@@ -1,0 +1,34 @@
+<!--
+  qrprint / qrprint.html
+  PC print homepage and the phone sender opened by the QR.
+  Homepage: theme toggle and one QR. Internet only.
+  Sender: Camera, or pick an image or PDF. Connects as soon as the QR opens.
+  Printing is PC only.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>qrprint</title>
+  <link rel="stylesheet" href="qrprint.css">
+</head>
+<body>
+  <main id="home">
+    <header class="bar">
+      <button id="theme-toggle" type="button">Dark</button>
+    </header>
+    <div id="qr" role="img" aria-label="Room QR"></div>
+  </main>
+  <main id="sender" hidden>
+    <p id="send-status">Connecting</p>
+    <button id="camera-btn" type="button">Camera</button>
+    <button id="pick-btn" type="button">Pick image or PDF</button>
+    <input id="camera" type="file" accept="image/*" capture="environment" hidden>
+    <input id="file" type="file" accept="image/*,application/pdf" hidden>
+  </main>
+  <script src="vendor/qrcode.min.js"></script>
+  <script src="vendor/peerjs.min.js"></script>
+  <script src="qrprint.js"></script>
+</body>
+</html>
