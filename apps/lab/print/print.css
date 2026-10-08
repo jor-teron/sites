@@ -2,10 +2,11 @@
   Project: print
   File: print.css
   Role: Shared layout for the host station and the phone sender.
-  Dark screen, large Ready line, history under it. Host: QR with a white
-  quiet zone, big 4-digit code, short link. Sender: join screen with big
-  tap targets (Reconnect, code box, Connect, Scan QR) and a full-width
-  in-page scanner.
+  Dark screen. Header row: title, short status, common actions only.
+  Host: QR with a white quiet zone, big 4-digit code, short link, receive
+  bar, history with Clear. Sender: join / retry / linked views with big tap
+  targets, transfer bar (tap to retry when failed), sent list, full-width
+  scanner, and the in-page camera (uncropped preview + A4 guide).
 */
 
 /* hidden must win over the display rules below (buttons are display:block). */
@@ -29,7 +30,16 @@ body {
   padding: 24px 16px 48px;
 }
 
-/* Title row and live status. */
+/* Header row: title, status, actions. Wraps on narrow phones. */
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
 .top h1 {
   margin: 0;
   font-size: 1.1rem;
@@ -37,10 +47,34 @@ body {
   text-transform: lowercase;
 }
 
-/* Status line under the title. */
+/* Short connection status. Takes the free space; one line. */
 .status {
-  margin: 8px 0 0;
+  flex: 1 1 8em;
+  min-width: 0;
+  margin: 0;
   color: #aaa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Header buttons sit at the right. */
+.top-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.top-actions button {
+  margin: 0;
+  min-height: 48px;
+  padding: 10px 16px;
+}
+
+/* Host note while the known phone is expected back. */
+.wait-note {
+  margin: 0 0 16px;
+  font-weight: 650;
+  color: #ffcf7a;
 }
 
 /* Idle QR block. Hidden after a sender connects. */
@@ -107,8 +141,16 @@ body {
   margin-top: 36px;
 }
 
+/* Files heading with the small Clear button. */
+.history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
 .history h2 {
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 0.9rem;
   color: #888;
   text-transform: uppercase;
@@ -169,6 +211,155 @@ button.ghost {
   background: transparent;
   color: #ddd;
   border: 1px solid #444;
+}
+
+/* Small quiet button (history Clear). */
+button.small {
+  min-height: 40px;
+  padding: 6px 14px;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Locked while a file is sending. */
+button:disabled {
+  opacity: 0.45;
+}
+
+/* Transfer bar (both pages). Body only, never the header. */
+.xfer {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 18px 0 8px;
+  padding: 14px 16px;
+  border: 1px solid #333;
+  border-radius: 12px;
+  background: #1b1b1b;
+  color: #f4f4f4;
+  text-align: left;
+  font-weight: 400;
+}
+
+/* A button bar keeps full opacity; only the failed state is tappable. */
+button.xfer:disabled {
+  opacity: 1;
+}
+
+.xfer-top {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  font-weight: 650;
+}
+
+.xfer-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xfer-pct {
+  font-variant-numeric: tabular-nums;
+}
+
+.xfer-track {
+  display: block;
+  height: 10px;
+  margin: 10px 0 8px;
+  border-radius: 5px;
+  background: #333;
+  overflow: hidden;
+}
+
+.xfer-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: #f4f4f4;
+  transition: width 0.12s linear;
+}
+
+.xfer-sub {
+  display: block;
+  color: #aaa;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.xfer.ok .xfer-fill {
+  background: #5fd38a;
+}
+
+.xfer.ok .xfer-sub {
+  color: #8fe3ad;
+}
+
+.xfer.fail {
+  border-color: #a8443d;
+}
+
+.xfer.fail .xfer-fill {
+  background: #e0574c;
+}
+
+.xfer.fail .xfer-sub {
+  color: #ff8a80;
+  font-weight: 650;
+}
+
+/* Sender's recent sends under the bar. */
+.sent-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  text-align: left;
+}
+
+.sent-list li {
+  padding: 10px 0;
+  border-top: 1px solid #2a2a2a;
+}
+
+.sent-list strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.sent-list span {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.sent-list li.fail span {
+  color: #ff8a80;
+}
+
+/* Auto-reconnect view. */
+.retry-panel {
+  margin-top: 48px;
+  text-align: center;
+}
+
+/* Simple ring spinner while reconnecting. */
+.spinner {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 18px;
+  border: 4px solid #333;
+  border-top-color: #f4f4f4;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Full-width phone buttons. Bigger is better for thumbs. */
@@ -253,12 +444,41 @@ button.big {
   color: #ff8a80;
 }
 
-/* Camera preview on the sender. */
-.camera-panel video {
-  width: 100%;
-  max-height: 60vh;
+/* In-page camera on the sender. */
+.camera-panel {
+  margin-top: 8px;
+}
+
+/* Box around the preview; the A4 guide is centred on it. */
+.cam-wrap {
+  position: relative;
+  line-height: 0;
   background: #000;
-  border-radius: 8px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Whole frame, uncropped (letterboxed if needed). */
+.cam-wrap video {
+  display: block;
+  width: 100%;
+  height: 70vh;
+  object-fit: contain;
+  background: #000;
+}
+
+/* A4 portrait guide, 1 : 1.414, centred. Visual only. */
+.a4-guide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  height: 88%;
+  aspect-ratio: 1 / 1.414;
+  transform: translate(-50%, -50%);
+  border: 2px dashed rgba(255, 255, 255, 0.85);
+  border-radius: 4px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
 }
 
 /* Off-screen print target. Size zero so it does not cover the station. */

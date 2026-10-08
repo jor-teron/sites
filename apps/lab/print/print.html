@@ -3,10 +3,13 @@
   Project: print
   File: print.html
   Role: Host station. Registers a 4-digit code (peer jtprint-1234), shows a
-  QR of print-send.html?code=1234 while idle, the 4 digits big, a short link
-  to type on a phone, and New code. Hides the QR and shows Ready when a
-  sender connects (a new sender takes over), lists received files with a
-  Print button, and opens the browser print dialog for each file.
+  QR of print-send.html?code=1234 while idle, the 4 digits big and a short
+  link to type on a phone. Header: title, short status, New code (idle) /
+  Disconnect (linked). Body: Ready when a phone is linked, a receive bar
+  (name, x / y MB, speed, then Received ✓ — printing), and the file history
+  (name · size · time · kind, Print, Clear) kept across reloads in
+  localStorage + IndexedDB. A reload keeps the code and the phone link
+  (the phone reconnects by itself); only a manual Disconnect ends it.
   Internet path only: PeerJS public broker + its TURN relay, no LAN discovery.
   All libraries are local in vendor/.
 -->
@@ -19,29 +22,43 @@
 </head>
 <body data-page="host">
   <main class="station">
+    <!-- Header: title, short status, common actions only. -->
     <header class="top">
       <h1>print</h1>
-      <p id="host-status" class="status">Starting peer…</p>
-      <button id="host-disconnect" class="ghost" type="button" hidden>Disconnect</button>
+      <p id="host-status" class="status">Starting…</p>
+      <div class="top-actions">
+        <button id="new-code" class="ghost" type="button">New code</button>
+        <button id="host-disconnect" class="ghost" type="button" hidden>Disconnect</button>
+      </div>
     </header>
 
     <!-- Shown only while no sender is linked. -->
     <section id="qr-panel" class="qr-panel">
+      <p id="wait-note" class="wait-note" hidden>Waiting for the phone to reconnect… or scan to link another.</p>
       <div id="qr" class="qr" aria-label="Scan to send a file"></div>
       <p id="host-code" class="code" aria-label="Station code">----</p>
       <p class="hint">Scan to send an image or PDF, or open this link on the phone and type the code.</p>
       <p id="join-url" class="join-url"></p>
-      <button id="new-code" class="ghost" type="button">New code</button>
     </section>
 
     <!-- Shown only while a sender is linked. -->
     <section id="ready-panel" class="ready-panel" hidden>
       <p class="ready">Ready</p>
-      <p class="hint">Sender is connected. Files print as they arrive.</p>
+      <p class="hint">Phone is connected. Files print as they arrive.</p>
     </section>
 
+    <!-- Receive bar. Stays after a file so the last result is visible. -->
+    <div id="host-bar" class="xfer" role="status" hidden>
+      <span class="xfer-top"><span class="xfer-name"></span><span class="xfer-pct"></span></span>
+      <span class="xfer-track"><span class="xfer-fill"></span></span>
+      <span class="xfer-sub"></span>
+    </div>
+
     <section class="history">
-      <h2>Files</h2>
+      <div class="history-head">
+        <h2>Files</h2>
+        <button id="clear-history" class="ghost small" type="button" hidden>Clear</button>
+      </div>
       <ul id="file-list" class="file-list">
         <li class="empty">No files yet.</li>
       </ul>
@@ -54,6 +71,8 @@
   <script src="vendor/peerjs.min.js"></script>
   <script src="vendor/qrcode.js"></script>
   <script src="print_common.js"></script>
+  <script src="print_bar.js"></script>
+  <script src="print_store.js"></script>
   <script src="print_host.js"></script>
 </body>
 </html>

@@ -3,16 +3,30 @@
   File: print_host.js
   Role: Host station (print.html). Registers peer id PEER_PREFIX + 4 digits
   and shows a QR of print-send.html?code=1234, the 4 digits big, and a
-  short link to type on a phone. The code is kept in localStorage so a
-  reload keeps it; if the old tab still holds the id on the broker, the
-  same code is retried with backoff, then a new one is picked.
-  On connect the QR hides and Ready is shown. A new sender takes over from
-  the old one (no 'busy'). Files arrive in base64 chunks, are listed under
-  Files with a Print button, and the browser print dialog opens on arrival.
+  short link to type on a phone. Header: title, short status, New code
+  (idle) / Disconnect (linked). Transfer bar and history live in the body.
+  Reconnect rules:
+  - The code is kept in localStorage 'jtprint-host-code', so a reload keeps
+    it; if the old tab still holds the id on the broker, the same code is
+    retried with backoff, then a new one is picked.
+  - 'jtprint-host-linked' is set while a phone is linked and kept when the
+    link drops without a bye (phone reload, network), so after a drop or a
+    host reload the station says 'Waiting for phone to reconnect…'; the phone
+    reconnects by itself. A manual Disconnect on either side (bye) or New
+    code clears it. Leaving the page only destroys the peer (no bye), which
+    frees the code on the broker fast.
+  - A new phone takes over from the old one (old one gets bye 'replaced').
+  Files arrive in base64 chunks with a live 'Receiving … x / y MB' bar, are
+  saved to history (print_store.js: localStorage list + IndexedDB blobs,
+  last 50) and the browser print dialog opens on arrival. History rows show
+  name · size · time · kind with a Print button; Clear empties it.
 */
 
 /* localStorage key for this station's code. */
 const HOST_CODE_KEY = 'jtprint-host-code';
+
+/* localStorage flag: a phone was linked and has not manually disconnected. */
+const HOST_LINKED_KEY = 'jtprint-host-linked';
 
 /* Delays (ms) for re-trying a remembered code that the broker still holds. */
 const ID_RETRY_MS = [1500, 3000, 5000, 8000];
@@ -22,6 +36,9 @@ const NET_RETRY_MS = [2000, 4000, 8000, 15000];
 
 /* Fresh random codes to try before giving up (each clash picks another). */
 const MAX_NEW_CODES = 8;
+
+/* Minimum ms between receive bar repaints. */
+const BAR_EVERY_MS = 120;
 
 /* Local PeerJS peer. */
 let peer = null;
@@ -44,14 +61,44 @@ let retryTimer = 0;
 /* In-progress file assemblies, keyed by transfer id. */
 const incoming = {};
 
-/* File history rows, newest last. */
-const fileHistory = [];
+/* File history rows {id,name,mime,size,ts}, oldest first. Loaded from storage. */
+let fileHistory = [];
+
+/* Blobs received this session, keyed by history id (saves an IndexedDB read). */
+const sessionBlobs = {};
+
+/* Object URL of the last printed file, revoked on the next print. */
+let lastPrintUrl = '';
+
+/* Counter for history ids. */
+let historyCount = 0;
 
 /*
-  Status line in the header.
+  Shortcut for getElementById.
+*/
+function el(id) {
+  return document.getElementById(id);
+}
+
+/*
+  Short status line in the header.
 */
 function setHostStatus(text) {
-  document.getElementById('host-status').textContent = text;
+  el('host-status').textContent = text;
+}
+
+/*
+  True while a phone was linked and has not manually disconnected.
+*/
+function phoneExpected() {
+  return loadKey(HOST_LINKED_KEY) === '1';
+}
+
+/*
+  Header status while idle: waiting for the known phone, or for a scan.
+*/
+function idleStatus() {
+  return phoneExpected() ? 'Waiting for phone to reconnect…' : 'Waiting · code ' + hostCode;
 }
 
 /*
@@ -67,13 +114,17 @@ function blobFromBase64(b64, mime) {
 }
 
 /*
-  Open the browser print dialog for a received blob.
+  Open the browser print dialog for a blob.
   Images are written into the iframe. PDFs are loaded as the iframe src.
   print() may be blocked because the receive is not a click; history has a retry.
 */
 function printBlob(blob, mime, name) {
-  const frame = document.getElementById('print-frame');
+  const frame = el('print-frame');
+  if (lastPrintUrl) {
+    URL.revokeObjectURL(lastPrintUrl);
+  }
   const url = URL.createObjectURL(blob);
+  lastPrintUrl = url;
   if (mime === 'application/pdf') {
     frame.onload = function () {
       try {
@@ -84,14 +135,14 @@ function printBlob(blob, mime, name) {
       }
     };
     frame.src = url;
-    return url;
+    return;
   }
   frame.onload = null;
   const doc = frame.contentDocument || frame.contentWindow.document;
   doc.open();
   doc.write(
     '<!DOCTYPE html><html><head><title>' +
-      name.replace(/[<>&"]/g, '') +
+      String(name).replace(/[<>&"]/g, '') +
       '</title><style>@page{margin:12mm}html,body{margin:0}img{max-width:100%;height:auto;display:block}</style></head><body><img src="' +
       url +
       '"></body></html>'
@@ -111,15 +162,34 @@ function printBlob(blob, mime, name) {
   } else {
     setTimeout(fire, 150);
   }
-  return url;
 }
 
 /*
-  Paint the file history under Ready.
+  Print a history row. Uses this session's blob, else loads it from IndexedDB.
+*/
+async function printItem(item) {
+  let blob = sessionBlobs[item.id];
+  if (!blob) {
+    try {
+      blob = await PrintStore.getBlob(item.id);
+    } catch (err) {
+      blob = null;
+    }
+  }
+  if (!blob) {
+    PrintBar.set(el('host-bar'), { name: item.name, state: 'fail', sub: 'File is no longer stored on this PC' });
+    return;
+  }
+  printBlob(blob, item.mime, item.name);
+}
+
+/*
+  Paint the file history, newest first.
 */
 function renderHistory() {
-  const list = document.getElementById('file-list');
+  const list = el('file-list');
   list.innerHTML = '';
+  el('clear-history').hidden = !fileHistory.length;
   if (!fileHistory.length) {
     const empty = document.createElement('li');
     empty.className = 'empty';
@@ -127,21 +197,21 @@ function renderHistory() {
     list.appendChild(empty);
     return;
   }
-  fileHistory.forEach(function (item) {
+  fileHistory.slice().reverse().forEach(function (item) {
     const row = document.createElement('li');
     const meta = document.createElement('div');
     meta.className = 'file-meta';
     const title = document.createElement('strong');
     title.textContent = item.name;
     const sub = document.createElement('span');
-    sub.textContent = item.when + ' · ' + item.mime;
+    sub.textContent = formatSize(item.size) + ' · ' + formatTime(item.ts) + ' · ' + formatKind(item.mime, item.name);
     meta.appendChild(title);
     meta.appendChild(sub);
     const again = document.createElement('button');
     again.type = 'button';
     again.textContent = 'Print';
     again.addEventListener('click', function () {
-      printBlob(item.blob, item.mime, item.name);
+      printItem(item);
     });
     row.appendChild(meta);
     row.appendChild(again);
@@ -150,24 +220,80 @@ function renderHistory() {
 }
 
 /*
-  Store a finished file and try to print it.
+  Store a finished file (session + IndexedDB), trim to the cap, and print it.
 */
 function acceptFile(name, mime, blob) {
-  fileHistory.push({
+  historyCount += 1;
+  const item = {
+    id: 'f' + Date.now().toString(36) + '-' + historyCount,
     name: name,
     mime: mime,
-    blob: blob,
-    when: new Date().toLocaleTimeString()
+    size: blob.size,
+    ts: Date.now()
+  };
+  fileHistory.push(item);
+  sessionBlobs[item.id] = blob;
+  while (fileHistory.length > PrintStore.MAX_FILES) {
+    const old = fileHistory.shift();
+    delete sessionBlobs[old.id];
+    PrintStore.deleteBlob(old.id).catch(function () {
+      /* Already gone. */
+    });
+  }
+  PrintStore.saveList(fileHistory);
+  PrintStore.putBlob(item.id, blob).catch(function () {
+    /* Storage full or blocked. Printable this session only. */
   });
   renderHistory();
   printBlob(blob, mime, name);
 }
 
 /*
-  Forget half-received files when the sender goes away.
+  Clear button in the history heading. Empties the list and IndexedDB.
+*/
+function clearHistory() {
+  if (!fileHistory.length) {
+    return;
+  }
+  if (!window.confirm('Clear all ' + fileHistory.length + ' files from this station?')) {
+    return;
+  }
+  fileHistory = [];
+  Object.keys(sessionBlobs).forEach(function (id) {
+    delete sessionBlobs[id];
+  });
+  PrintStore.clearAll().catch(function () {
+    /* Nothing stored. */
+  });
+  renderHistory();
+}
+
+/*
+  Paint the receive bar for one job.
+*/
+function paintReceive(job, force) {
+  const now = Date.now();
+  if (!force && now - job.painted < BAR_EVERY_MS) {
+    return;
+  }
+  job.painted = now;
+  const total = job.size || 1;
+  const done = Math.min(job.size, job.bytes);
+  const speed = formatSpeed(done, now - job.start);
+  PrintBar.set(el('host-bar'), {
+    name: 'Receiving ' + job.name + '…',
+    pct: (done / total) * 100,
+    sub: formatProgress(done, job.size) + (speed ? ' · ' + speed : ''),
+    state: 'busy'
+  });
+}
+
+/*
+  Forget half-received files when the sender goes away; mark the bar stopped.
 */
 function clearIncoming() {
   Object.keys(incoming).forEach(function (id) {
+    PrintBar.set(el('host-bar'), { name: incoming[id].name, state: 'fail', sub: 'Stopped — phone link lost' });
     delete incoming[id];
   });
 }
@@ -184,45 +310,62 @@ function onHostData(conn, data) {
     return;
   }
   if (data.t === 'bye') {
-    dropSender(conn, 'Sender disconnected');
+    /* Only sent on a manual Disconnect (or by an old build). Forget the phone. */
+    removeKey(HOST_LINKED_KEY);
+    dropSender(conn);
     return;
   }
   if (data.t === 'meta') {
     incoming[data.id] = {
       name: data.name || 'file',
       mime: data.mime || '',
+      size: Number(data.size) || 0,
+      bytes: 0,
+      start: Date.now(),
+      painted: 0,
       parts: []
     };
-    setHostStatus('Receiving ' + (data.name || 'file') + '…');
+    paintReceive(incoming[data.id], true);
     return;
   }
   if (data.t === 'chunk' && incoming[data.id]) {
-    incoming[data.id].parts.push(data.d);
+    const job = incoming[data.id];
+    job.parts.push(data.d);
+    /* base64 length to bytes, about 3/4. */
+    job.bytes += Math.floor(((data.d || '').length * 3) / 4);
+    paintReceive(job, false);
     return;
   }
   if (data.t === 'end' && incoming[data.id]) {
     const job = incoming[data.id];
     delete incoming[data.id];
     const blob = blobFromBase64(job.parts.join(''), job.mime);
-    setHostStatus('Received ' + job.name);
+    PrintBar.set(el('host-bar'), {
+      name: job.name,
+      state: 'ok',
+      sub: 'Received ✓ — printing · ' + formatSize(blob.size)
+    });
     acceptFile(job.name, job.mime, blob);
   }
 }
 
 /*
-  Host UI: idle shows QR, linked shows Ready and Disconnect.
+  Host UI: idle shows QR + New code, linked shows Ready + Disconnect.
 */
-function setHostLinked(linked, text) {
-  document.getElementById('qr-panel').hidden = linked;
-  document.getElementById('ready-panel').hidden = !linked;
-  document.getElementById('host-disconnect').hidden = !linked;
-  setHostStatus(text || (linked ? 'Sender connected' : 'Waiting for a scan · code ' + hostCode));
+function setHostLinked(linked) {
+  el('qr-panel').hidden = linked;
+  el('ready-panel').hidden = !linked;
+  el('host-disconnect').hidden = !linked;
+  el('new-code').hidden = linked;
+  el('wait-note').hidden = linked || !phoneExpected();
+  setHostStatus(linked ? 'Phone connected' : idleStatus());
 }
 
 /*
   Forget one sender connection. Only the active one changes the UI.
+  The linked flag stays unless a bye cleared it, so the phone may come back.
 */
-function dropSender(conn, text) {
+function dropSender(conn) {
   if (conn !== activeConn) {
     tryClose(conn);
     return;
@@ -230,18 +373,20 @@ function dropSender(conn, text) {
   activeConn = null;
   clearIncoming();
   tryClose(conn);
-  setHostLinked(false, text ? text + ' · waiting for a scan' : '');
+  setHostLinked(false);
 }
 
 /*
-  Disconnect button. Never throws; the UI always returns to the QR.
+  Disconnect button. Never throws; tells the phone (bye) so it stops
+  reconnecting, clears the linked flag, and returns to the QR.
 */
 function hostDisconnect() {
   const conn = activeConn;
   activeConn = null;
+  removeKey(HOST_LINKED_KEY);
   clearIncoming();
   if (conn) {
-    trySend(conn, { t: 'bye' });
+    trySend(conn, { t: 'bye', manual: true });
     /* Let the bye leave before the channel closes. */
     setTimeout(function () {
       tryClose(conn);
@@ -265,6 +410,7 @@ function takeConnection(conn) {
     }
     activeConn = conn;
     clearIncoming();
+    saveKey(HOST_LINKED_KEY, '1');
     setHostLinked(true);
     /* Confirm the data channel, not only the peer link. */
     trySend(conn, { t: 'ready' });
@@ -275,10 +421,10 @@ function takeConnection(conn) {
     }
   });
   conn.on('close', function () {
-    dropSender(conn, 'Sender left');
+    dropSender(conn);
   });
   conn.on('error', function () {
-    dropSender(conn, 'Link error');
+    dropSender(conn);
   });
 }
 
@@ -288,7 +434,7 @@ function takeConnection(conn) {
 */
 function showQr(code) {
   const url = senderUrl(code);
-  const box = document.getElementById('qr');
+  const box = el('qr');
   box.innerHTML = '';
   if (typeof qrcode === 'undefined') {
     box.textContent = 'QR lib missing';
@@ -304,8 +450,8 @@ function showQr(code) {
       svg.removeAttribute('height');
     }
   }
-  document.getElementById('host-code').textContent = code;
-  document.getElementById('join-url').textContent = senderLinkText();
+  el('host-code').textContent = code;
+  el('join-url').textContent = senderLinkText();
 }
 
 /*
@@ -409,7 +555,7 @@ function startPeer(code, isRetry) {
       return;
     }
     /* Lost the broker. An open sender link keeps working; re-register for new scans. */
-    setHostStatus(activeConn ? 'Sender connected (broker offline)' : 'Reconnecting to broker…');
+    setHostStatus(activeConn ? 'Phone connected (broker offline)' : 'Reconnecting to broker…');
     clearTimeout(retryTimer);
     retryTimer = setTimeout(function () {
       if (peer !== myPeer || myPeer.destroyed) {
@@ -426,29 +572,44 @@ function startPeer(code, isRetry) {
 }
 
 /*
-  New code button. Drops any sender and registers a fresh code.
+  New code button. Drops any sender, forgets it, and registers a fresh code.
 */
 function newCode() {
   if (activeConn) {
     hostDisconnect();
   }
+  removeKey(HOST_LINKED_KEY);
   codeRemembered = false;
   newCodeTries = 0;
   startPeer(randomCode(hostCode), false);
 }
 
 /*
+  Load saved history rows and drop blobs nothing points at.
+*/
+function loadHistory() {
+  fileHistory = PrintStore.loadList();
+  while (fileHistory.length > PrintStore.MAX_FILES) {
+    fileHistory.shift();
+  }
+  renderHistory();
+  PrintStore.prune(fileHistory.map(function (item) {
+    return item.id;
+  })).catch(function () {
+    /* No IndexedDB. History rows still show. */
+  });
+}
+
+/*
   Start the host station. Reuse the remembered code when there is one.
 */
 function startHost() {
-  document.getElementById('host-disconnect').addEventListener('click', hostDisconnect);
-  document.getElementById('new-code').addEventListener('click', newCode);
-  renderHistory();
-  /* Leaving: tell the sender, and free the id on the broker so a reload gets it back fast. */
+  el('host-disconnect').addEventListener('click', hostDisconnect);
+  el('new-code').addEventListener('click', newCode);
+  el('clear-history').addEventListener('click', clearHistory);
+  loadHistory();
+  /* Leaving (or reloading): no bye, so the phone keeps trying; just free the id on the broker. */
   window.addEventListener('pagehide', function () {
-    if (activeConn) {
-      trySend(activeConn, { t: 'bye' });
-    }
     destroyPeer();
   });
   /* Back from the browser page cache: register the same code again. */

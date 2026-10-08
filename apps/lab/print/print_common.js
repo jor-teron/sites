@@ -8,6 +8,11 @@
   manual code box all carry only the 4 digits.
   PeerJS runs with its default config (public broker + its free TURN relay),
   so phones on mobile data or another Wi-Fi can still reach the station.
+  Protocol (JSON): hello / ready, meta {id,name,mime,size bytes}, chunk
+  {id,d base64}, end {id}, bye {manual:true | reason:'replaced'}.
+  A bye is only sent on a manual Disconnect or a takeover, never on reload,
+  so both pages can reconnect by themselves after a reload.
+  Also holds the size / time / kind formatters used by both pages.
 */
 
 /* Raw slice size of the base64 payload. Kept small so one JSON message fits the data channel. */
@@ -62,6 +67,104 @@ function loadKey(key) {
   } catch (err) {
     return '';
   }
+}
+
+/*
+  Safe localStorage remove. Failures are ignored.
+*/
+function removeKey(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch (err) {
+    /* Storage blocked. */
+  }
+}
+
+/*
+  Safe JSON read from localStorage. Bad or missing data returns fallback.
+*/
+function loadJson(key, fallback) {
+  try {
+    const value = JSON.parse(loadKey(key) || 'null');
+    return value == null ? fallback : value;
+  } catch (err) {
+    return fallback;
+  }
+}
+
+/*
+  Safe JSON write to localStorage. Quota errors are ignored.
+*/
+function saveJson(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    /* Storage full or blocked. */
+  }
+}
+
+/*
+  Human file size: 512 B, 84 KB, 2.1 MB.
+*/
+function formatSize(bytes) {
+  const n = Number(bytes) || 0;
+  if (n < 1024) {
+    return n + ' B';
+  }
+  if (n < 1024 * 1024) {
+    return Math.round(n / 1024) + ' KB';
+  }
+  return (n / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+/*
+  Progress pair in one unit: '1.2 / 3.4 MB', or KB for small files.
+*/
+function formatProgress(done, total) {
+  const mb = 1024 * 1024;
+  if (total >= mb) {
+    return (done / mb).toFixed(1) + ' / ' + (total / mb).toFixed(1) + ' MB';
+  }
+  return Math.round(done / 1024) + ' / ' + Math.round(total / 1024) + ' KB';
+}
+
+/*
+  Transfer speed from bytes and elapsed ms: '1.4 MB/s'.
+*/
+function formatSpeed(bytes, ms) {
+  if (!ms || ms < 200) {
+    return '';
+  }
+  return formatSize(Math.round((bytes * 1000) / ms)) + '/s';
+}
+
+/*
+  Clock time for a timestamp: '8:31 PM', with the day when it is not today.
+*/
+function formatTime(ts) {
+  const date = new Date(ts);
+  const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (date.toDateString() === new Date().toDateString()) {
+    return time;
+  }
+  return date.toLocaleDateString([], { day: 'numeric', month: 'short' }) + ', ' + time;
+}
+
+/*
+  Short file kind for lists: PDF, JPG, PNG, else the extension.
+*/
+function formatKind(mime, name) {
+  if (mime === 'application/pdf') {
+    return 'PDF';
+  }
+  if (mime === 'image/jpeg') {
+    return 'JPG';
+  }
+  if (mime && mime.indexOf('image/') === 0) {
+    return mime.slice(6).toUpperCase();
+  }
+  const dot = String(name || '').lastIndexOf('.');
+  return dot > 0 ? String(name).slice(dot + 1).toUpperCase() : 'FILE';
 }
 
 /*
@@ -192,7 +295,8 @@ function readAsDataUrl(blob) {
 
 /*
   Push one file across the data channel.
-  Meta, then base64 slices, then end. Each slice waits for the buffer to drain.
+  Meta (with the real byte size), then base64 slices, then end.
+  Each slice waits for the buffer to drain. onProgress(doneBytes, totalBytes).
 */
 async function sendFile(conn, file, onProgress) {
   const id = nextTransferId();
@@ -201,13 +305,14 @@ async function sendFile(conn, file, onProgress) {
   const b64 = dataUrl.slice(comma + 1);
   const name = file.name || ('photo-' + Date.now() + '.jpg');
   const mime = file.type || CAMERA_MIME;
+  const size = file.size || Math.floor((b64.length * 3) / 4);
   await waitForDrain(conn);
   sendControl(conn, {
     t: 'meta',
     id: id,
     name: name,
     mime: mime,
-    size: file.size || b64.length
+    size: size
   });
   let offset = 0;
   while (offset < b64.length) {
@@ -219,7 +324,7 @@ async function sendFile(conn, file, onProgress) {
     });
     offset += CHUNK_SIZE;
     if (onProgress) {
-      onProgress(Math.min(offset, b64.length), b64.length);
+      onProgress(Math.min(size, Math.floor((Math.min(offset, b64.length) * 3) / 4)), size);
     }
   }
   await waitForDrain(conn);

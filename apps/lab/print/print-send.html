@@ -3,10 +3,14 @@
   Project: print
   File: print-send.html
   Role: Sender page opened by the QR (print-send.html?code=1234) or typed in.
-  With no code, or after any drop, shows the join screen: reason, Reconnect,
-  4-digit code box + Connect, and Scan QR (in-page camera). The join screen
-  hides once connected; then camera capture or file pick sends to the
-  station. Either side may disconnect. All libraries are local in vendor/.
+  Header: title, short status, Disconnect. Body views:
+  - join (no code, or after a final drop): reason, Reconnect, 4-digit code
+    box + Connect, Scan QR (in-page camera). Hidden once connected.
+  - retry: 'Link lost — reconnecting…' while the link auto-reconnects
+    (also after a reload; only a manual Disconnect ends the link).
+  - linked: Take photo (camera app), In-page camera (hi-res, A4 guide),
+    Pick image or PDF, the transfer bar (tap to retry on failure) and the
+    sent list. All libraries are local in vendor/.
 -->
 <html lang="en">
 <head>
@@ -17,14 +21,17 @@
 </head>
 <body data-page="send">
   <main class="station">
+    <!-- Header: title, short status, common actions only. -->
     <header class="top">
       <h1>print</h1>
       <p id="send-status" class="status">Starting…</p>
-      <button id="send-disconnect" class="ghost" type="button" hidden>Disconnect</button>
+      <div class="top-actions">
+        <button id="send-disconnect" class="ghost" type="button" hidden>Disconnect</button>
+      </div>
     </header>
 
-    <!-- Join screen. Hidden while connected, shown again on any drop. -->
-    <section id="join-panel" class="join-panel">
+    <!-- Join screen. Hidden while connected or auto-reconnecting. -->
+    <section id="join-panel" class="join-panel" hidden>
       <p id="join-msg" class="join-msg"></p>
       <button id="reconnect" class="big" type="button" hidden>Reconnect <span id="reconnect-code" class="code-tag"></span></button>
       <form id="code-form" class="code-form" autocomplete="off">
@@ -43,28 +50,50 @@
       </div>
     </section>
 
+    <!-- Auto-reconnect screen. Disconnect in the header stops it. -->
+    <section id="retry-panel" class="retry-panel" hidden>
+      <p class="spinner" aria-hidden="true"></p>
+      <p id="retry-msg" class="join-msg">Reconnecting…</p>
+      <p class="hint">Keep this page open. Press Disconnect to stop.</p>
+    </section>
+
     <!-- Connected screen. -->
     <section id="send-actions" class="actions" hidden>
       <p class="ready">Connected</p>
-      <button id="open-camera" class="big" type="button">Open camera</button>
+      <button id="take-photo" class="big" type="button">Take photo (camera app)</button>
+      <button id="open-camera" class="big" type="button">In-page camera</button>
       <button id="pick-file" class="big" type="button">Pick image or PDF</button>
+      <input id="photo-input" type="file" accept="image/*" capture="environment" hidden>
       <input id="file-input" type="file" accept="image/*,application/pdf" hidden>
-      <p id="send-progress" class="hint"></p>
-    </section>
 
-    <section id="camera-panel" class="camera-panel" hidden>
-      <video id="camera" autoplay playsinline muted></video>
-      <div class="actions">
-        <button id="snap" class="big" type="button">Send photo</button>
+      <!-- In-page camera: whole frame, A4 portrait guide on top. -->
+      <div id="camera-panel" class="camera-panel" hidden>
+        <div class="cam-wrap">
+          <video id="camera" autoplay playsinline muted></video>
+          <div class="a4-guide" aria-hidden="true"></div>
+        </div>
+        <p id="camera-info" class="hint"></p>
+        <button id="snap" class="big" type="button">Snap &amp; send</button>
         <button id="close-camera" class="big ghost" type="button">Close camera</button>
       </div>
+
+      <!-- Transfer bar. A button so a failed send can be tapped to retry. -->
+      <button id="send-bar" class="xfer" type="button" hidden disabled>
+        <span class="xfer-top"><span class="xfer-name"></span><span class="xfer-pct"></span></span>
+        <span class="xfer-track"><span class="xfer-fill"></span></span>
+        <span class="xfer-sub"></span>
+      </button>
+
+      <ul id="sent-list" class="sent-list" hidden></ul>
     </section>
   </main>
 
   <script src="vendor/peerjs.min.js"></script>
   <script src="vendor/jsQR.js"></script>
   <script src="print_common.js"></script>
+  <script src="print_bar.js"></script>
   <script src="print_scan.js"></script>
+  <script src="print_camera.js"></script>
   <script src="print_send.js"></script>
 </body>
 </html>
