@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<!--
+  Project: print
+  File: index.html
+  Role: Entry redirect. Always sends the browser to the host station page.
+  The host page is print.html. Phones join through print-send.html via the QR.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>print</title>
+  <!-- Immediate redirect so a folder open lands on the host station. -->
+  <meta http-equiv="refresh" content="0; url=print.html">
+  <script>
+    /* Replace history so Back does not stick on this redirect stub. */
+    location.replace('print.html');
+  </script>
+</head>
+<body>
+  <p><a href="print.html">Open print</a></p>
+</body>
+</html>

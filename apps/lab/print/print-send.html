@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<!--
+  Project: print
+  File: print-send.html
+  Role: Sender page opened by the QR. Connects to the host peer id in the
+  query string, shows Connected, and offers camera capture or file pick.
+  Either side may disconnect.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>print send</title>
+  <link rel="stylesheet" href="print.css">
+</head>
+<body data-page="send">
+  <main class="station">
+    <header class="top">
+      <h1>print</h1>
+      <p id="send-status" class="status">Connecting…</p>
+      <button id="send-disconnect" class="ghost" type="button" hidden>Disconnect</button>
+    </header>
+
+    <section id="send-actions" class="actions" hidden>
+      <p class="ready">Connected</p>
+      <button id="open-camera" type="button">Open camera</button>
+      <button id="pick-file" type="button">Pick image or PDF</button>
+      <input id="file-input" type="file" accept="image/*,application/pdf" hidden>
+      <p id="send-progress" class="hint"></p>
+    </section>
+
+    <section id="camera-panel" class="camera-panel" hidden>
+      <video id="camera" autoplay playsinline muted></video>
+      <div class="actions">
+        <button id="snap" type="button">Send photo</button>
+        <button id="close-camera" class="ghost" type="button">Close camera</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="print.js"></script>
+</body>
+</html>

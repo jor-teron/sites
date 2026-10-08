@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<!--
+  Project: print
+  File: print.html
+  Role: Host station. Creates a PeerJS peer, shows a QR while idle,
+  hides the QR and shows Ready when a sender connects, lists received
+  files, and opens the browser print dialog for each file.
+  Internet path only: PeerJS public broker, no LAN discovery.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>print</title>
+  <link rel="stylesheet" href="print.css">
+</head>
+<body data-page="host">
+  <main class="station">
+    <header class="top">
+      <h1>print</h1>
+      <p id="host-status" class="status">Starting peer…</p>
+      <button id="host-disconnect" class="ghost" type="button" hidden>Disconnect</button>
+    </header>
+
+    <!-- Shown only while no sender is linked. -->
+    <section id="qr-panel" class="qr-panel">
+      <div id="qr" class="qr" aria-label="Scan to send a file"></div>
+      <p class="hint">Scan to send an image or PDF. Internet link, not LAN.</p>
+      <p id="join-url" class="join-url"></p>
+    </section>
+
+    <!-- Shown only while a sender is linked. -->
+    <section id="ready-panel" class="ready-panel" hidden>
+      <p class="ready">Ready</p>
+      <p class="hint">Sender is connected. Files print as they arrive.</p>
+    </section>
+
+    <section class="history">
+      <h2>Files</h2>
+      <ul id="file-list" class="file-list">
+        <li class="empty">No files yet.</li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- Hidden frame used only to call print() on a received blob. -->
+  <iframe id="print-frame" class="print-frame" title="print frame"></iframe>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="print.js"></script>
+</body>
+</html>
