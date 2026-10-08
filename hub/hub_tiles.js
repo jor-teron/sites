@@ -7,10 +7,12 @@
  * (hub.html#snake); NEW_TAB tiles are not remembered.
  *
  * Tile types:
- *   { type: 'qr', label, caption?, url? }
- *       QR of url (relative to the hub), or of this hub's own link when url is empty.
- *       caption: text under the QR; empty = the link itself.
- *   { type: 'app', label, url, icon?, NEW_TAB? }
+ *   { type: 'qr', label, pair? }
+ *       QR code + title only (no caption, no link). QR of this hub's own link, or with
+ *       pair: 1 the phone-controller link with the hub's live pairing code — the same
+ *       QR as the gamepad icon's popover (hub-controller.js), redrawn on "New code".
+ *   { type: 'app', label, url, icon?, NEW_TAB?, pair? }
+ *       pair: 1 = open the controller carrying the pairing code (new tab)
  *       url     ENTRY_URL like in hub_apps.js (folder, file or .txt)
  *       icon    optional; empty = the icon of the same app in hub_apps.js, else the
  *               app's own icon (xxx/xxx_icon.png)
@@ -18,8 +20,8 @@
  *               empty = the NEW_TAB of that app in hub_apps.js (else 0)
  */
 window.HUB_TILES = [
-  { type: 'qr', label: 'Site QR', caption: '' },
-  { type: 'qr', label: 'Gamepad QR', url: 'hub/controller/', caption: '' },
+  { type: 'qr', label: 'Site QR' },
+  { type: 'qr', label: 'Gamepad QR', pair: 1 },
   { type: 'app', label: 'QR Scanner', url: 'apps/connectivity/qr-scanner/', icon: '' },
-  { type: 'app', label: 'Gamepad', url: 'hub/controller/', icon: '', NEW_TAB: 1 },
+  { type: 'app', label: 'Gamepad', url: 'hub/controller/', icon: '', NEW_TAB: 1, pair: 1 },
 ];

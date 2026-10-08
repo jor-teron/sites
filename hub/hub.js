@@ -607,19 +607,9 @@
     return apps.filter((a) => a.entryUrl === entryUrl)[0] || null;
   }
 
-  function qrTile(t) {
-    // Optional url: relative ENTRY_URL → absolute (Gamepad QR); empty → this hub's link (Site QR).
-    let url = hubUrl();
-    if (t.url) {
-      try {
-        const entry = normalizeEntryUrl(t.url) || String(t.url).trim();
-        url = new URL(entry, location.href).href.split('#')[0].split('?')[0];
-      } catch (_) { /* keep hubUrl */ }
-    }
-    const tile = document.createElement('div');
-    tile.className = 'tile tile-qr';
-    const box = document.createElement('div');
-    box.className = 'tile-qr-box';
+  function drawQr(box, url) {
+    box.innerHTML = '';
+    if (!url) { box.textContent = 'Starting…'; return; }
     try {
       if (typeof qrcode !== 'function') throw new Error('qrcode.js missing');
       const qr = qrcode(0, 'M');
@@ -630,16 +620,29 @@
       box.textContent = 'QR unavailable';
       console.warn('hub tile QR', err);
     }
+  }
+
+  /** QR + title only (no caption, no link). pair: 1 = the live phone-controller link with
+   *  the hub's pairing code (hub-controller.js), so it matches the gamepad icon's QR. */
+  function qrTile(t) {
+    const tile = document.createElement('div');
+    tile.className = 'tile tile-qr';
+    const box = document.createElement('div');
+    box.className = 'tile-qr-box';
+    if (parseFlag(t.pair)) {
+      drawQr(box, window.HubCtrlLink ? window.HubCtrlLink.url : '');
+      let last = '';
+      window.addEventListener('hub-ctrl-link', (e) => {
+        const url = (e.detail && e.detail.url) || '';
+        if (url && url !== last) { last = url; drawQr(box, url); }
+      });
+    } else {
+      drawQr(box, hubUrl());
+    }
     const label = document.createElement('span');
     label.className = 'tile-label';
     label.textContent = t.label || 'This hub';
-    const cap = document.createElement('a');
-    cap.className = 'tile-caption';
-    cap.href = url;
-    cap.target = '_blank';
-    cap.rel = 'noopener';
-    cap.textContent = t.caption || url;
-    tile.append(box, label, cap);
+    tile.append(box, label);
     return tile;
   }
 
@@ -672,6 +675,11 @@
     if (app.newTab) btn.title = 'Opens in a new tab';
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
+      // pair: 1 = open the controller already carrying this hub's pairing code
+      if (parseFlag(t.pair) && window.HubCtrlLink) {
+        const url = window.HubCtrlLink.ensure();
+        if (url) { window.open(url, '_blank', 'noopener'); return; }
+      }
       loadApp(app);
     });
     return btn;

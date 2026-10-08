@@ -139,6 +139,14 @@
     if (codeEl) codeEl.textContent = code;
     if (urlEl) { urlEl.textContent = url; urlEl.href = url; }
     renderQr(url);
+    announceLink();
+  }
+
+  /** Tell the home tiles (hub.js) the current controller link, so the Gamepad QR tile
+   *  shows the exact same QR / code as the popover. */
+  function announceLink() {
+    const url = code ? controllerUrl(code) : '';
+    try { window.dispatchEvent(new CustomEvent('hub-ctrl-link', { detail: { url: url, code: code } })); } catch (_) { /* old browser */ }
   }
 
   function openPopover() {
@@ -560,8 +568,21 @@
   window.addEventListener('pagehide', () => { releaseHeld(); destroyPeer(); });
 
   // Boot: a remembered code starts listening at once (phone can reconnect after a reload).
+  // The Gamepad QR tile needs a live code too, so a first visit makes one here.
   code = loadCode();
   if (code) startPairing();
+  else newCode();
+
+  /** Shared link for the home tiles: same code as the popover QR; listens again if stopped. */
+  window.HubCtrlLink = {
+    get url() { return code ? controllerUrl(code) : ''; },
+    ensure() {
+      if (!code) newCode();
+      else if (!peer || peer.destroyed) startPairing();
+      return code ? controllerUrl(code) : '';
+    },
+  };
+  announceLink();
 
   // Expose tiny API for debugging / tests
   window.__hubController = {
