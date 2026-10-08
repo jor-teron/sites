@@ -2,10 +2,13 @@
 <!--
   Project: print
   File: print.html
-  Role: Host station. Creates a PeerJS peer, shows a QR while idle,
-  hides the QR and shows Ready when a sender connects, lists received
-  files, and opens the browser print dialog for each file.
-  Internet path only: PeerJS public broker, no LAN discovery.
+  Role: Host station. Registers a 4-digit code (peer jtprint-1234), shows a
+  QR of print-send.html?code=1234 while idle, the 4 digits big, a short link
+  to type on a phone, and New code. Hides the QR and shows Ready when a
+  sender connects (a new sender takes over), lists received files with a
+  Print button, and opens the browser print dialog for each file.
+  Internet path only: PeerJS public broker + its TURN relay, no LAN discovery.
+  All libraries are local in vendor/.
 -->
 <html lang="en">
 <head>
@@ -25,8 +28,10 @@
     <!-- Shown only while no sender is linked. -->
     <section id="qr-panel" class="qr-panel">
       <div id="qr" class="qr" aria-label="Scan to send a file"></div>
-      <p class="hint">Scan to send an image or PDF. Internet link, not LAN.</p>
+      <p id="host-code" class="code" aria-label="Station code">----</p>
+      <p class="hint">Scan to send an image or PDF, or open this link on the phone and type the code.</p>
       <p id="join-url" class="join-url"></p>
+      <button id="new-code" class="ghost" type="button">New code</button>
     </section>
 
     <!-- Shown only while a sender is linked. -->
@@ -46,8 +51,9 @@
   <!-- Hidden frame used only to call print() on a received blob. -->
   <iframe id="print-frame" class="print-frame" title="print frame"></iframe>
 
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="print.js"></script>
+  <script src="vendor/peerjs.min.js"></script>
+  <script src="vendor/qrcode.js"></script>
+  <script src="print_common.js"></script>
+  <script src="print_host.js"></script>
 </body>
 </html>

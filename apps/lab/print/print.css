@@ -2,8 +2,16 @@
   Project: print
   File: print.css
   Role: Shared layout for the host station and the phone sender.
-  Dark screen, large Ready line, history under it.
+  Dark screen, large Ready line, history under it. Host: QR with a white
+  quiet zone, big 4-digit code, short link. Sender: join screen with big
+  tap targets (Reconnect, code box, Connect, Scan QR) and a full-width
+  in-page scanner.
 */
+
+/* hidden must win over the display rules below (buttons are display:block). */
+[hidden] {
+  display: none !important;
+}
 
 /* Page base. Dark, full viewport, no browser margin. */
 body {
@@ -41,18 +49,37 @@ body {
   text-align: center;
 }
 
-/* White pad so the QR stays scannable on a dark page. */
+/* White box; the SVG carries its own 4-module white quiet zone. */
 .qr {
   display: inline-block;
-  padding: 12px;
   background: #fff;
+  line-height: 0;
+  border-radius: 6px;
 }
 
-/* Join URL under the QR, for manual open if scan fails. */
+/* SVG has no fixed size; scale it to the screen. */
+.qr svg {
+  display: block;
+  width: min(72vw, 300px);
+  height: auto;
+}
+
+/* Big 4-digit station code under the QR. */
+.code {
+  margin: 16px 0 4px;
+  font-size: 3.4rem;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  font-variant-numeric: tabular-nums;
+  /* Offset the trailing letter-spacing so the digits stay centered. */
+  padding-left: 0.25em;
+}
+
+/* Short link under the QR (no scheme, no query), for typing on a phone. */
 .join-url {
   word-break: break-all;
-  font-size: 0.8rem;
-  color: #888;
+  font-size: 0.95rem;
+  color: #bbb;
 }
 
 /* Connected state. Ready is the main signal. */
@@ -133,7 +160,8 @@ button {
   margin: 8px;
   background: #f4f4f4;
   color: #111;
-  font-size: 1rem;
+  min-height: 56px;
+  font-size: 1.05rem;
   font-weight: 650;
 }
 
@@ -141,6 +169,88 @@ button.ghost {
   background: transparent;
   color: #ddd;
   border: 1px solid #444;
+}
+
+/* Full-width phone buttons. Bigger is better for thumbs. */
+button.big {
+  display: block;
+  width: 100%;
+  min-height: 64px;
+  margin: 14px 0;
+  font-size: 1.35rem;
+  border-radius: 12px;
+}
+
+/* Join screen on the sender. */
+.join-panel {
+  margin-top: 24px;
+  text-align: center;
+}
+
+/* What happened: Disconnected, Code not found, ... */
+.join-msg {
+  margin: 0 0 12px;
+  min-height: 1.4em;
+  font-size: 1.2rem;
+  font-weight: 650;
+  color: #ffcf7a;
+}
+
+/* Last code inside the Reconnect button. */
+.code-tag {
+  margin-left: 8px;
+  letter-spacing: 0.15em;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+/* Code box + Connect. */
+.code-form {
+  margin: 24px 0 8px;
+  padding-top: 16px;
+  border-top: 1px solid #2a2a2a;
+}
+
+.code-form label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* Big 4-digit input. */
+.code-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 80px;
+  padding: 8px 12px;
+  border: 2px solid #444;
+  border-radius: 12px;
+  background: #1b1b1b;
+  color: #fff;
+  font-size: 2.8rem;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.4em;
+  font-variant-numeric: tabular-nums;
+}
+
+.code-input:focus {
+  outline: none;
+  border-color: #f4f4f4;
+}
+
+/* In-page QR scanner: full-width rear camera. */
+.scan-panel video {
+  display: block;
+  width: 100%;
+  max-height: 65vh;
+  object-fit: cover;
+  background: #000;
+  border-radius: 12px;
+}
+
+/* Problem messages (camera blocked, wrong QR). */
+.hint.bad {
+  color: #ff8a80;
 }
 
 /* Camera preview on the sender. */

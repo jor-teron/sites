@@ -2,9 +2,11 @@
 <!--
   Project: print
   File: print-send.html
-  Role: Sender page opened by the QR. Connects to the host peer id in the
-  query string, shows Connected, and offers camera capture or file pick.
-  Either side may disconnect.
+  Role: Sender page opened by the QR (print-send.html?code=1234) or typed in.
+  With no code, or after any drop, shows the join screen: reason, Reconnect,
+  4-digit code box + Connect, and Scan QR (in-page camera). The join screen
+  hides once connected; then camera capture or file pick sends to the
+  station. Either side may disconnect. All libraries are local in vendor/.
 -->
 <html lang="en">
 <head>
@@ -17,14 +19,35 @@
   <main class="station">
     <header class="top">
       <h1>print</h1>
-      <p id="send-status" class="status">Connecting…</p>
+      <p id="send-status" class="status">Starting…</p>
       <button id="send-disconnect" class="ghost" type="button" hidden>Disconnect</button>
     </header>
 
+    <!-- Join screen. Hidden while connected, shown again on any drop. -->
+    <section id="join-panel" class="join-panel">
+      <p id="join-msg" class="join-msg"></p>
+      <button id="reconnect" class="big" type="button" hidden>Reconnect <span id="reconnect-code" class="code-tag"></span></button>
+      <form id="code-form" class="code-form" autocomplete="off">
+        <label for="code-input" class="hint">Station code</label>
+        <input id="code-input" class="code-input" type="text" inputmode="numeric"
+          pattern="[0-9]{4}" maxlength="4" placeholder="0000" required
+          title="4 digits shown on the print station">
+        <button class="big" type="submit">Connect</button>
+      </form>
+      <button id="scan-open" class="big ghost" type="button">Scan QR</button>
+      <!-- In-page scanner. Rear camera; stops on a hit or Cancel. -->
+      <div id="scan-panel" class="scan-panel" hidden>
+        <video id="scan-video" autoplay playsinline muted></video>
+        <p id="scan-msg" class="hint"></p>
+        <button id="scan-cancel" class="big ghost" type="button">Cancel scan</button>
+      </div>
+    </section>
+
+    <!-- Connected screen. -->
     <section id="send-actions" class="actions" hidden>
       <p class="ready">Connected</p>
-      <button id="open-camera" type="button">Open camera</button>
-      <button id="pick-file" type="button">Pick image or PDF</button>
+      <button id="open-camera" class="big" type="button">Open camera</button>
+      <button id="pick-file" class="big" type="button">Pick image or PDF</button>
       <input id="file-input" type="file" accept="image/*,application/pdf" hidden>
       <p id="send-progress" class="hint"></p>
     </section>
@@ -32,13 +55,16 @@
     <section id="camera-panel" class="camera-panel" hidden>
       <video id="camera" autoplay playsinline muted></video>
       <div class="actions">
-        <button id="snap" type="button">Send photo</button>
-        <button id="close-camera" class="ghost" type="button">Close camera</button>
+        <button id="snap" class="big" type="button">Send photo</button>
+        <button id="close-camera" class="big ghost" type="button">Close camera</button>
       </div>
     </section>
   </main>
 
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script src="print.js"></script>
+  <script src="vendor/peerjs.min.js"></script>
+  <script src="vendor/jsQR.js"></script>
+  <script src="print_common.js"></script>
+  <script src="print_scan.js"></script>
+  <script src="print_send.js"></script>
 </body>
 </html>
