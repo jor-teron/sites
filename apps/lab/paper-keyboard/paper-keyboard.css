@@ -243,12 +243,21 @@ h1 {
   }
 }
 
-#paper-video, #paper-overlay {
+/* Keep the camera's own shape. The overlay is moved onto the picture in JS. */
+#paper-video {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: fill;
+  object-fit: contain;
+}
+
+#paper-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
 }
 
 /* Lamps sit on the picture corners, not in a row. */

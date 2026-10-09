@@ -414,6 +414,21 @@ function stopPaperCamera() {
 }
 
 /*
+  Put the overlay exactly on the shown picture (video uses object-fit: contain).
+*/
+function fitOverlay(video, canvas) {
+  const boxW = video.clientWidth;
+  const boxH = video.clientHeight;
+  const scale = Math.min(boxW / video.videoWidth, boxH / video.videoHeight);
+  const w = video.videoWidth * scale;
+  const h = video.videoHeight * scale;
+  canvas.style.width = w + "px";
+  canvas.style.height = h + "px";
+  canvas.style.left = (boxW - w) / 2 + "px";
+  canvas.style.top = (boxH - h) / 2 + "px";
+}
+
+/*
   Sample the viewfinder, find each corner shape, light its LED.
   All four held: green sheet outline. Otherwise dots on the found ones.
 */
@@ -427,12 +442,13 @@ function checkCorners() {
   const height = Math.round(width * video.videoHeight / video.videoWidth);
   canvas.width = width;
   canvas.height = height;
+  fitOverlay(video, canvas);
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   ctx.drawImage(video, 0, 0, width, height);
   const frame = ctx.getImageData(0, 0, width, height);
   const found = window.PaperCorners.detect(frame.data, width, height);
   const now = Date.now();
-  const names = { tl: "circle", tr: "square", bl: "triangle", br: "plus" };
+  const names = { tl: "circle", tr: "square", bl: "triangle", br: "diamond" };
   const have = [];
   const missing = [];
   Object.keys(names).forEach(function (key) {
@@ -440,7 +456,8 @@ function checkCorners() {
       cornerSeenAt[key] = now;
       cornerLast[key] = found[key];
     }
-    const held = now - cornerSeenAt[key] < 500;
+    /* 800 ms hold rides over a frame or two of blur. */
+    const held = now - cornerSeenAt[key] < 800;
     document.getElementById("led-" + key).classList.toggle("ok", held);
     (held ? have : missing).push(names[key]);
   });

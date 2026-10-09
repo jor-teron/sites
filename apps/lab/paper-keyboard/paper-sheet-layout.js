@@ -60,9 +60,8 @@
     corners: {
       size: 18,
       inset: 10,
-      /* TL circle, TR square, BL triangle, BR plus (bar 6 mm). */
-      shapes: { tl: "circle", tr: "square", bl: "triangle", br: "plus" },
-      plusBar: 6
+      /* TL circle, TR square, BL triangle, BR diamond (square turned 45 deg, tips touch the 18 mm box). */
+      shapes: { tl: "circle", tr: "square", bl: "triangle", br: "diamond" }
     },
     rows: rows
   };

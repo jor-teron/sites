@@ -15,7 +15,7 @@ Corner shapes (solid black, 18 mm, 10 mm from the edge):
 | Top-left | Circle |
 | Top-right | Square |
 | Bottom-left | Triangle |
-| Bottom-right | Plus |
+| Bottom-right | Diamond |
 
 `paper-sheet-layout.js` holds the millimetre grid (`window.PAPER_LAYOUT`). The
 PDF and the future camera key-map use the same numbers.
@@ -66,9 +66,11 @@ always gets the latest push (cache is only an offline fallback).
 ## Known limit
 
 Paper mode finds the four corner shapes only (`paper-corners.js`): circle,
-square, triangle, plus, judged against the local paper white so dim rooms and
+square, triangle, diamond, judged against the local paper white so dim rooms and
 screens work. Each TL/TR/BL/BR light goes green on its own shape; all four
-draw a green outline ("Locked"). A turned sheet still names the right corners.
+draw a green outline ("Locked"). A turned sheet still names the right corners. The diamond is a square turned
+45°, so square and diamond are told apart by their angle to the sheet edge
+(circle→triangle line, or the triangle's tip). Lights hold 800 ms.
 
 Showing the PDF on a tablet works for testing: full screen, brightness down a
 bit, auto-rotate off.

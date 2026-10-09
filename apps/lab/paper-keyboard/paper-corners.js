@@ -2,20 +2,27 @@
   Project: paper-keyboard
   File: paper-corners.js
   Role: Find the four solid corner shapes on the printed sheet in one camera frame.
-  TL circle, TR square, BL triangle, BR plus. Each corner is named by its shape,
+  TL circle, TR square, BL triangle, BR diamond. Each corner is named by its shape,
   so a turned sheet still names the right corners. No DOM here.
+  The diamond is a square turned 45 deg, so square and diamond share one shape test
+  and are told apart by how their edges sit against the sheet's own axis.
 */
 (function () {
-  /* Shape numbers, tuned on pixel-sized shapes (math ideal: circle 0.564/0.159,
-     square 0.707/0.167, triangle 0.943/0.194, plus 0.71/0.193). */
   /* Ideal shape numbers. rmax = farthest pixel from the centre / sqrt(area).
      spread = (mu20 + mu02) / area^2. Both stay the same when the shape turns. */
   const SHAPES = {
     tl: { name: "circle", rmax: 0.564, spread: 0.159 },
     tr: { name: "square", rmax: 0.707, spread: 0.167 },
     bl: { name: "triangle", rmax: 0.89, spread: 0.194 },
-    br: { name: "plus", rmax: 0.73, spread: 0.197 }
+    br: { name: "diamond", rmax: 0.707, spread: 0.167 }
   };
+
+  /* Wrap an angle into -PI..PI. */
+  function wrap(a) {
+    while (a > Math.PI) a -= 2 * Math.PI;
+    while (a < -Math.PI) a += 2 * Math.PI;
+    return a;
+  }
 
   /*
     Paper white per block: block means, then the brightest block nearby.
@@ -89,11 +96,15 @@
     }
 
     const minSide = w * 0.025;
+    /* The diamond's box is only 0.71x the square's when the sheet turns, so it may be smaller. */
+    const minDiamond = w * 0.017;
     const maxSide = w * 0.2;
     const seen = new Uint8Array(n);
     const stack = new Int32Array(n);
     const list = new Int32Array(n);
     const best = { tl: null, tr: null, bl: null, br: null };
+    /* Square-type blobs: square (TR) or diamond (BR), sorted out after the scan. */
+    const quads = [];
 
     for (let start = 0; start < n; start += 1) {
       if (!dark[start] || seen[start]) {
@@ -133,7 +144,8 @@
       const bw = maxX - minX + 1;
       const bh = maxY - minY + 1;
       const aspect = bw / bh;
-      if (edge || bw < minSide || bh < minSide || bw > maxSide || bh > maxSide ||
+      const small = bw < minSide || bh < minSide;
+      if (edge || bw < minDiamond || bh < minDiamond || bw > maxSide || bh > maxSide ||
           aspect < 0.6 || aspect > 1.6 || count < 30) {
         continue;
       }
@@ -141,13 +153,20 @@
       const cy = sumY / count;
       let mu = 0;
       let far = 0;
+      let farX = 0;
+      let farY = 0;
+      let c4 = 0;
+      let s4 = 0;
       for (let i = 0; i < count; i += 1) {
         const px = list[i] % w;
         const dx = px - cx;
         const dy = (list[i] - px) / w - cy;
         const d2 = dx * dx + dy * dy;
         mu += d2;
-        if (d2 > far) far = d2;
+        if (d2 > far) { far = d2; farX = dx; farY = dy; }
+        /* r^4 cos 4t and r^4 sin 4t: a square's 90 deg turn. */
+        c4 += dx * dx * dx * dx - 6 * dx * dx * dy * dy + dy * dy * dy * dy;
+        s4 += 4 * (dx * dx * dx * dy - dx * dy * dy * dy);
       }
       /* +0.5 px: pixel centres sit half a pixel inside the true outline. */
       const feat = {
@@ -160,19 +179,52 @@
         continue;
       }
       const center = dark[Math.round(cy) * w + Math.round(cx)];
-      Object.keys(SHAPES).forEach(function (key) {
+      if (!center) {
+        continue;
+      }
+      ["tl", "bl"].forEach(function (key) {
         const d = distance(feat, SHAPES[key]);
-        if (d >= 1 || !center) {
-          return;
-        }
-        if (key === "tr" && feat.fill < 0.6) {
-          return;
-        }
-        if (!best[key] || d < best[key].score) {
-          best[key] = { x: cx, y: cy, size: Math.max(bw, bh), score: d };
+        if (d < 1 && !small && (!best[key] || d < best[key].score)) {
+          /* Triangle apex points to the sheet top: gives the sheet axis. */
+          best[key] = { x: cx, y: cy, size: Math.max(bw, bh), score: d,
+            apex: Math.atan2(farY, farX) };
         }
       });
+      const dq = distance(feat, SHAPES.tr);
+      /* A blurred triangle can pass as a square: it must look more square than triangle. */
+      if (dq < 1 && dq < distance(feat, SHAPES.bl)) {
+        quads.push({ x: cx, y: cy, size: Math.max(bw, bh), score: dq,
+          turn: Math.atan2(s4, c4), fill: feat.fill, small: small });
+      }
     }
+
+    /* Sheet axis, times 4 (any sheet edge works, a square repeats every 90 deg). */
+    let axis4 = null;
+    if (best.tl && best.bl) {
+      axis4 = 4 * Math.atan2(best.bl.y - best.tl.y, best.bl.x - best.tl.x);
+    } else if (best.bl) {
+      axis4 = 4 * best.bl.apex;
+    } else if (quads.length >= 2) {
+      quads.sort(function (a, b) { return a.score - b.score; });
+      axis4 = 4 * Math.atan2(quads[1].y - quads[0].y, quads[1].x - quads[0].x);
+    }
+    quads.forEach(function (q) {
+      let key;
+      if (axis4 === null) {
+        /* No reference: assume an upright sheet. Full box = square. */
+        key = q.fill >= 0.75 ? "tr" : "br";
+      } else {
+        /* Diamond tips along the sheet axis: turn matches axis. Square: off by PI. */
+        key = Math.abs(wrap(q.turn - axis4)) < Math.PI / 2 ? "br" : "tr";
+      }
+      /* Small blobs may only be the diamond: the other shapes keep their old size floor. */
+      if (q.small && key !== "br") {
+        return;
+      }
+      if (!best[key] || q.score < best[key].score) {
+        best[key] = q;
+      }
+    });
 
     const out = {};
     Object.keys(best).forEach(function (key) {
