@@ -8,8 +8,11 @@
   - join: reason, Reconnect (last code), 4-digit code box + Connect, and
     Scan QR (in-page camera, print_scan.js). Hidden once connected.
   - retry: 'Link lost — reconnecting…' while auto-retrying a dropped link.
-  - linked: Take photo (camera app), In-page camera (print_camera.js, A4
-    guide), Pick image or PDF, a transfer bar (name, %, x.x / y.y MB, speed,
+  - linked: Take photo (camera app; sent as picked, untouched), In-page
+    camera (print_camera.js, A4 guide, Low / Medium / Good size picker kept
+    in 'jtprint-inpage-size'; a snap is cropped to A4 from the centre,
+    resized, and shown full-screen to confirm: ✕ retake or ✓ send; nothing
+    is sent before ✓), Pick image or PDF, a transfer bar (name, %, x.x / y.y MB, speed,
     then 'Sent ✓' or 'Failed — tap to retry', which resends the same file)
     and a small sent list. Send buttons are locked while a file is sending.
   Persistence / reconnect rules:
@@ -34,6 +37,9 @@ const LINKED_KEY = 'jtprint-linked';
 
 /* localStorage key for the sent list. */
 const SENT_KEY = 'jtprint-sent';
+
+/* localStorage key for the in-page camera size preset (low | medium | good). */
+const INPAGE_SIZE_KEY = 'jtprint-inpage-size';
 
 /* Sent list length cap. */
 const SENT_MAX = 20;
@@ -72,6 +78,11 @@ let retryTimer = 0;
 /* True while the page is being hidden / unloaded (no retries then). */
 let leaving = false;
 
+/* In-page camera size preset and the cropped shot waiting for ✓ / ✕. */
+let inPageSize = 'medium';
+let pendingShot = null;
+let confirmUrl = '';
+
 /* Send state: one file at a time; the last file is kept for retry. */
 let sending = false;
 let lastFile = null;
@@ -107,9 +118,23 @@ function closeScanner() {
 }
 
 /*
-  Close the in-page photo camera.
+  Drop the shot waiting on the confirm screen and hide it.
+*/
+function discardShot() {
+  pendingShot = null;
+  el('confirm-panel').hidden = true;
+  el('confirm-img').removeAttribute('src');
+  if (confirmUrl) {
+    URL.revokeObjectURL(confirmUrl);
+    confirmUrl = '';
+  }
+}
+
+/*
+  Close the in-page photo camera (and any unconfirmed shot).
 */
 function closeCamera() {
+  discardShot();
   PrintCamera.close();
   el('camera-panel').hidden = true;
 }
@@ -512,27 +537,80 @@ async function openCamera() {
 }
 
 /*
-  Snap with the in-page camera, show the resolution, and send it.
+  Mark the chosen size button in the in-page camera picker.
 */
-async function snapAndSend() {
-  if (sending) {
+function renderSizePicker() {
+  const buttons = el('size-picker').querySelectorAll('button[data-size]');
+  Array.prototype.forEach.call(buttons, function (button) {
+    const on = button.dataset.size === inPageSize;
+    button.classList.toggle('on', on);
+    button.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+}
+
+/*
+  Pick Low / Medium / Good and remember it.
+*/
+function chooseSize(key) {
+  if (!Object.prototype.hasOwnProperty.call(IN_PAGE_SIZES, key)) {
+    return;
+  }
+  inPageSize = key;
+  saveKey(INPAGE_SIZE_KEY, key);
+  renderSizePicker();
+}
+
+/*
+  Snap with the in-page camera, crop to A4, resize to the chosen size,
+  and show it on the confirm screen. Nothing is sent here.
+*/
+async function snapForConfirm() {
+  if (sending || pendingShot) {
     return;
   }
   const info = el('camera-info');
+  const size = IN_PAGE_SIZES[inPageSize] || IN_PAGE_SIZES.medium;
   el('snap').disabled = true;
   info.textContent = 'Taking photo…';
-  let shot = null;
   try {
-    shot = await PrintCamera.snap();
+    const shot = await PrintCamera.snap();
+    info.textContent = 'Captured ' + shot.width + ' × ' + shot.height + ' · cropping to A4…';
+    const a4 = await cropToA4(shot.file, size);
+    if (el('camera-panel').hidden) {
+      /* Camera was closed (or the link dropped) while cropping. */
+      return;
+    }
+    pendingShot = a4;
+    confirmUrl = URL.createObjectURL(a4.file);
+    el('confirm-img').src = confirmUrl;
+    el('confirm-size').textContent = a4.width + ' × ' + a4.height + ' · ' + size.label + ' · ' + formatSize(a4.file.size);
+    el('confirm-panel').hidden = false;
+    info.textContent = 'Captured ' + shot.width + ' × ' + shot.height;
   } catch (err) {
     info.textContent = 'Could not take photo: ' + err.message;
-    el('snap').disabled = false;
+  } finally {
+    el('snap').disabled = sending;
+  }
+}
+
+/*
+  ✕ on the confirm screen: throw the shot away, back to the live camera.
+*/
+function retakeShot() {
+  discardShot();
+  el('camera-info').textContent = 'Fit the page inside the A4 guide';
+}
+
+/*
+  ✓ on the confirm screen: close the camera and send through the normal flow.
+*/
+function confirmShot() {
+  if (!pendingShot || sending) {
     return;
   }
-  info.textContent = describeShot(shot.width, shot.height);
-  await startSend(shot.file);
-  /* startSend may return early (not connected); never leave Snap stuck. */
-  el('snap').disabled = sending;
+  const file = pendingShot.file;
+  closeCamera();
+  startSend(file);
 }
 
 /*
@@ -586,7 +664,18 @@ function bindSend() {
   });
   el('open-camera').addEventListener('click', openCamera);
   el('close-camera').addEventListener('click', closeCamera);
-  el('snap').addEventListener('click', snapAndSend);
+  el('snap').addEventListener('click', snapForConfirm);
+  el('confirm-retake').addEventListener('click', retakeShot);
+  el('confirm-send').addEventListener('click', confirmShot);
+  el('size-picker').addEventListener('click', function (event) {
+    const button = event.target.closest('button[data-size]');
+    if (button) {
+      chooseSize(button.dataset.size);
+    }
+  });
+  const savedSize = loadKey(INPAGE_SIZE_KEY);
+  inPageSize = Object.prototype.hasOwnProperty.call(IN_PAGE_SIZES, savedSize) ? savedSize : 'medium';
+  renderSizePicker();
   /* A failed bar is a button: tap resends the same file. */
   el('send-bar').addEventListener('click', function () {
     if (!sending && lastFile) {

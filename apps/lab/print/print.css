@@ -6,7 +6,8 @@
   Host: QR with a white quiet zone, big 4-digit code, short link, receive
   bar, history with Clear. Sender: join / retry / linked views with big tap
   targets, transfer bar (tap to retry when failed), sent list, full-width
-  scanner, and the in-page camera (uncropped preview + A4 guide).
+  scanner, and the in-page camera (uncropped preview + A4 guide, size
+  picker, full-screen A4 confirm with big ✕ / ✓).
 */
 
 /* hidden must win over the display rules below (buttons are display:block). */
@@ -489,4 +490,94 @@ button.big {
   border: 0;
   right: 0;
   bottom: 0;
+}
+
+/* In-page camera size picker: three big segments. */
+.size-picker {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+
+.size-picker button {
+  flex: 1 1 0;
+  margin: 0;
+  min-height: 64px;
+  padding: 8px 4px;
+  background: transparent;
+  color: #ddd;
+  border: 1px solid #444;
+  border-radius: 12px;
+  font-size: 1.1rem;
+}
+
+.size-picker button small {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #999;
+  font-variant-numeric: tabular-nums;
+}
+
+.size-picker button.on {
+  background: #f4f4f4;
+  color: #111;
+  border-color: #f4f4f4;
+}
+
+.size-picker button.on small {
+  color: #444;
+}
+
+/* Full-screen confirm: whole A4 image, size, then ✕ / ✓. */
+.confirm-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.confirm-img {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  object-fit: contain;
+}
+
+.confirm-size {
+  margin: 10px 0;
+  text-align: center;
+  color: #ccc;
+  font-variant-numeric: tabular-nums;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Huge round-cornered ✕ and ✓ for thumbs. */
+.confirm-btn {
+  flex: 1 1 0;
+  margin: 0;
+  min-height: 84px;
+  border-radius: 16px;
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+.confirm-btn.retake {
+  background: #2a2a2a;
+  color: #fff;
+  border: 1px solid #555;
+}
+
+.confirm-btn.send {
+  background: #5fd38a;
+  color: #08210f;
 }

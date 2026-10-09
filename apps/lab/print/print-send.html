@@ -8,8 +8,9 @@
     box + Connect, Scan QR (in-page camera). Hidden once connected.
   - retry: 'Link lost — reconnecting…' while the link auto-reconnects
     (also after a reload; only a manual Disconnect ends the link).
-  - linked: Take photo (camera app), In-page camera (hi-res, A4 guide),
-    Pick image or PDF, the transfer bar (tap to retry on failure) and the
+  - linked: Take photo (camera app), In-page camera (hi-res, A4 guide,
+    Low / Medium / Good size, A4 crop + full-screen ✕ / ✓ confirm before
+    sending), Pick image or PDF, the transfer bar (tap to retry on failure) and the
     sent list. All libraries are local in vendor/.
 -->
 <html lang="en">
@@ -66,15 +67,31 @@
       <input id="photo-input" type="file" accept="image/*" capture="environment" hidden>
       <input id="file-input" type="file" accept="image/*,application/pdf" hidden>
 
-      <!-- In-page camera: whole frame, A4 portrait guide on top. -->
+      <!-- In-page camera: whole frame, A4 portrait guide on top, size picker. -->
       <div id="camera-panel" class="camera-panel" hidden>
         <div class="cam-wrap">
           <video id="camera" autoplay playsinline muted></video>
           <div class="a4-guide" aria-hidden="true"></div>
         </div>
         <p id="camera-info" class="hint"></p>
-        <button id="snap" class="big" type="button">Snap &amp; send</button>
+        <!-- Output size, long × short px. Remembered in jtprint-inpage-size. -->
+        <div id="size-picker" class="size-picker" role="group" aria-label="Photo size">
+          <button type="button" data-size="low">Low<small>1600 × 1131</small></button>
+          <button type="button" data-size="medium">Medium<small>2000 × 1414</small></button>
+          <button type="button" data-size="good">Good<small>2480 × 1754</small></button>
+        </div>
+        <button id="snap" class="big" type="button">Snap</button>
         <button id="close-camera" class="big ghost" type="button">Close camera</button>
+
+        <!-- Confirm screen: cropped A4 result. Nothing is sent before ✓. -->
+        <div id="confirm-panel" class="confirm-panel" hidden>
+          <img id="confirm-img" class="confirm-img" alt="Cropped A4 photo">
+          <p id="confirm-size" class="confirm-size"></p>
+          <div class="confirm-actions">
+            <button id="confirm-retake" class="confirm-btn retake" type="button" aria-label="Retake">✕</button>
+            <button id="confirm-send" class="confirm-btn send" type="button" aria-label="Send">✓</button>
+          </div>
+        </div>
       </div>
 
       <!-- Transfer bar. A button so a failed send can be tapped to retry. -->

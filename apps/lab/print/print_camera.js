@@ -10,7 +10,13 @@
   to drawing the video frame at its native videoWidth × videoHeight as a
   JPEG at 0.92. Returns { file, width, height } so the page can show e.g.
   '3024 × 4032 · ~366 DPI on A4' (shorter side px / 8.27 in).
-  API: PrintCamera.open(video), PrintCamera.snap(), PrintCamera.close().
+  cropToA4(blob, size) then cover-crops that photo from the centre to the
+  A4 ratio (1 : √2, trimming the longer side) and resizes it on a canvas to
+  the chosen size (long × short px), keeping the photo's orientation:
+  portrait → short × long, landscape → long × short. JPEG 0.92.
+  IN_PAGE_SIZES lists the picker presets (Low / Medium / Good).
+  API: PrintCamera.open(video), PrintCamera.snap(), PrintCamera.close(),
+  cropToA4(blob, size), describeShot(w, h).
 */
 
 /* JPEG quality for the canvas fallback. */
@@ -18,6 +24,16 @@ const SNAP_QUALITY = 0.92;
 
 /* A4 short side in inches, for the DPI hint. */
 const A4_SHORT_IN = 8.27;
+
+/* A4 long : short ratio (√2). */
+const A4_RATIO = Math.SQRT2;
+
+/* In-page camera output sizes, long × short px. Medium is the default. */
+const IN_PAGE_SIZES = {
+  low: { label: 'Low', long: 1600, short: 1131 },
+  medium: { label: 'Medium', long: 2000, short: 1414 },
+  good: { label: 'Good', long: 2480, short: 1754 }
+};
 
 const PrintCamera = (function () {
   /* Constraint steps, best first. */
@@ -172,4 +188,87 @@ function describeShot(width, height) {
   }
   const dpi = Math.round(Math.min(width, height) / A4_SHORT_IN);
   return width + ' × ' + height + ' · ~' + dpi + ' DPI on A4';
+}
+
+/*
+  Decode an image blob for drawing. createImageBitmap when available
+  (EXIF orientation applied), else an <img> from an object URL.
+*/
+async function decodeImage(blob) {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' });
+      return { source: bitmap, width: bitmap.width, height: bitmap.height, done: function () {
+        if (bitmap.close) {
+          bitmap.close();
+        }
+      } };
+    } catch (err) {
+      /* Fall back to <img>. */
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  await new Promise(function (resolve, reject) {
+    img.onload = resolve;
+    img.onerror = function () {
+      reject(new Error('Could not read photo'));
+    };
+    img.src = url;
+  });
+  return { source: img, width: img.naturalWidth, height: img.naturalHeight, done: function () {
+    URL.revokeObjectURL(url);
+  } };
+}
+
+/*
+  Cover-crop a photo to A4 (1 : √2) from the centre and resize it to size
+  ({ long, short } px), keeping its orientation. Resolves { file, width, height }.
+*/
+async function cropToA4(blob, size) {
+  const image = await decodeImage(blob);
+  try {
+    const sw = image.width;
+    const sh = image.height;
+    if (!sw || !sh) {
+      throw new Error('Empty photo');
+    }
+    const landscape = sw > sh;
+    /* Source crop box: target ratio long/short along the photo's own long side. */
+    const ratio = landscape ? A4_RATIO : 1 / A4_RATIO;
+    let cw = sw;
+    let ch = Math.round(sw / ratio);
+    if (ch > sh) {
+      ch = sh;
+      cw = Math.round(sh * ratio);
+    }
+    const cx = Math.round((sw - cw) / 2);
+    const cy = Math.round((sh - ch) / 2);
+    const width = landscape ? size.long : size.short;
+    const height = landscape ? size.short : size.long;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(image.source, cx, cy, cw, ch, 0, 0, width, height);
+    const out = await new Promise(function (resolve) {
+      canvas.toBlob(resolve, 'image/jpeg', SNAP_QUALITY);
+    });
+    if (!out) {
+      throw new Error('Could not encode photo');
+    }
+    const name = 'a4-' + width + 'x' + height + '-' + Date.now() + '.jpg';
+    let file = out;
+    try {
+      file = new File([out], name, { type: 'image/jpeg' });
+    } catch (err) {
+      /* Old browser without the File constructor. */
+      file.name = name;
+    }
+    return { file: file, width: width, height: height };
+  } finally {
+    image.done();
+  }
 }
