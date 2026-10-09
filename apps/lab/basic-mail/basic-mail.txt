@@ -4,10 +4,14 @@ Gmail setup for basic-mail. Personal use only.
 2. Enable the Gmail API for that project.
 3. OAuth consent screen: External, Testing. Add your Gmail as a test user.
 4. Create an OAuth client id of type Web application.
-5. Authorized JavaScript origins: the exact site you open, for example http://localhost:8080
+5. Authorized JavaScript origins: the exact site you open: https://jor-teron.github.io
+   (and for local tests, for example http://localhost:8080)
    file:// will not work. A password login will not work.
 6. Paste the client id into basic-mail-config.js as clientId.
 7. Serve the folder and open index.html. Use Connect, then allow the unverified-app warning.
 
 Theme default is theme in basic-mail-config.js. The Theme button only saves a browser override.
 No client secret belongs in these files.
+
+Sign out (top bar) revokes access at Google. The sign-in lasts about 60 minutes per tab; then tap Connect.
+Behaviour, security rules and files: README.md.

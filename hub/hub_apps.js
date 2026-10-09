@@ -77,6 +77,7 @@ Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,  
 
 Lab,      Phone,                 apps/media/phone/,                          ,         0,       0,      1070
 Lab,      Paper Keyboard,        apps/lab/paper-keyboard/,                   ,         0,       0,      1040
+Lab,      Basic Mail,            apps/lab/basic-mail/,                       ,         0,       0,      1050
 
 About,    About,                 apps/about/,                                ,         0,       0,      2000
 About,    Contact,               apps/about/contact.txt,                     ,         0,       0,      2020

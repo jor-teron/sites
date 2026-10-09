@@ -4,23 +4,12 @@
   Purpose: Personal Gmail client. Google sign-in, then Gmail API.
   Theme default is basic-mail-config.js. Browser override key is basic-mail-theme.
   No sample inbox. Empty until Connect succeeds.
-  Access token survives refresh in this tab for 60 minutes. No refresh token.
+  Sign-in and token life: basic-mail-auth.js. Mail rendering: basic-mail-view.js and
+  basic-mail-sanitize.js. D-pad and keys: basic-mail-keys.js.
 */
 
 /* Browser key for the theme override. Does not rewrite config. */
 var THEME_KEY = "basic-mail-theme";
-
-/* Access token from Google. Restored from this tab only, never a refresh token. */
-var accessToken = "";
-
-/* Session key for the access token and its hard expiry. Dies with the tab. */
-var TOKEN_KEY = "basic-mail-token";
-
-/* Fixed life of a stored token. Google still expires the token at about 60 minutes. */
-var TOKEN_MS = 60 * 60 * 1000;
-
-/* Google token client, created after the GIS script loads. */
-var tokenClient = null;
 
 /* Active folder key. */
 var currentFolder = "inbox";
@@ -30,6 +19,18 @@ var currentId = "";
 
 /* Search box text. */
 var query = "";
+
+/* Bumped by every list load. A reply for an older number is ignored. */
+var listSeq = 0;
+
+/* Bumped by every open. A late reply for an older message is ignored. */
+var openSeq = 0;
+
+/* Debounce timer for typing in Search. */
+var searchTimer = 0;
+
+/* Wait after the last key before searching. */
+var SEARCH_WAIT_MS = 400;
 
 /* Last list from Gmail, already shaped for the row renderer. */
 var rows = [];
@@ -156,56 +157,44 @@ function bodyHtml(payload) {
   return found;
 }
 
-/* Drop scripts and event handlers. Keep layout, links, and images. */
-function sanitizeHtml(html) {
-  var doc = new DOMParser().parseFromString(html, "text/html");
-  doc.querySelectorAll("script, iframe, object, embed, form, link, meta").forEach(function (node) {
-    node.remove();
-  });
-  doc.querySelectorAll("*").forEach(function (node) {
-    Array.prototype.slice.call(node.attributes).forEach(function (attr) {
-      var name = attr.name.toLowerCase();
-      var value = attr.value || "";
-      if (name.indexOf("on") === 0) {
-        node.removeAttribute(attr.name);
-      }
-      if ((name === "href" || name === "src") && /^\s*javascript:/i.test(value)) {
-        node.removeAttribute(attr.name);
-      }
-    });
-    if (node.tagName === "A") {
-      node.setAttribute("target", "_blank");
-      node.setAttribute("rel", "noopener noreferrer");
+/* Readable text from a Gmail error body. Falls back to the HTTP status. */
+function gmailError(text, status) {
+  try {
+    var data = JSON.parse(text);
+    if (data && data.error && data.error.message) {
+      return data.error.message;
     }
-  });
-  return doc.body.innerHTML;
-}
-
-/* Paint HTML when the mail has it, otherwise plain text. */
-function showBody(item) {
-  var pane = document.getElementById("read-body");
-  if (item.html) {
-    pane.classList.remove("is-plain");
-    pane.innerHTML = sanitizeHtml(item.html);
-    return;
+  } catch (err) {
+    /* Not JSON. */
   }
-  pane.classList.add("is-plain");
-  pane.textContent = item.body || "(No text body)";
+  return "Gmail error " + status + ".";
 }
 
-/* Gmail REST call with the current token. */
+/* Gmail REST call with the current token. A 401 or an expired token ends the session. */
 function gmail(path, options) {
+  if (!hasToken()) {
+    var had = !!accessToken;
+    if (had) {
+      expireSession();
+    }
+    return Promise.reject(new Error(had ? "Session expired. Tap Connect." : "Connect Gmail first."));
+  }
   return fetch("https://gmail.googleapis.com/gmail/v1/users/me" + path, {
     method: (options && options.method) || "GET",
     headers: {
       Authorization: "Bearer " + accessToken,
       "Content-Type": "application/json"
     },
-    body: options && options.body ? JSON.stringify(options.body) : undefined
+    body: options && options.body ? JSON.stringify(options.body) : undefined,
+    referrerPolicy: "no-referrer"
   }).then(function (res) {
+    if (res.status === 401) {
+      expireSession();
+      throw new Error("Session expired. Tap Connect.");
+    }
     if (!res.ok) {
       return res.text().then(function (text) {
-        throw new Error(text || ("Gmail HTTP " + res.status));
+        throw new Error(gmailError(text, res.status));
       });
     }
     return res.json();
@@ -220,8 +209,13 @@ function timeLabel(ms) {
 
 /* Load the active folder from Gmail. */
 function loadList() {
-  if (!accessToken) {
-    setStatus("Connect Gmail first.");
+  var seq = ++listSeq;
+  if (!hasToken()) {
+    if (accessToken) {
+      expireSession();
+    } else {
+      setStatus("Connect Gmail first.");
+    }
     return;
   }
   setStatus("Loading…");
@@ -230,6 +224,9 @@ function loadList() {
     q += " " + query;
   }
   gmail("/messages?maxResults=20&q=" + encodeURIComponent(q)).then(function (data) {
+    if (seq !== listSeq) {
+      return;
+    }
     var ids = data.messages || [];
     if (!ids.length) {
       rows = [];
@@ -240,6 +237,9 @@ function loadList() {
     return Promise.all(ids.map(function (item) {
       return gmail("/messages/" + item.id + "?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date");
     })).then(function (list) {
+      if (seq !== listSeq) {
+        return;
+      }
       rows = list.map(function (msg) {
         var from = header(msg.payload.headers, "From");
         return {
@@ -257,7 +257,9 @@ function loadList() {
       setStatus("");
     });
   }).catch(function (err) {
-    setStatus(err.message || "Could not load mail.");
+    if (seq === listSeq) {
+      setStatus(err.message || "Could not load mail.");
+    }
   });
 }
 
@@ -285,14 +287,18 @@ function renderList() {
 
 /* Open one full message. */
 function openMail(id) {
+  var seq = ++openSeq;
   setStatus("Opening…");
   gmail("/messages/" + id + "?format=full").then(function (msg) {
+    if (seq !== openSeq) {
+      return;
+    }
     var from = header(msg.payload.headers, "From");
     openItem = {
       id: msg.id,
       threadId: msg.threadId,
       from: from.replace(/<[^>]+>/, "").trim() || from,
-      email: (from.match(/<([^>]+)>/) || [, ""])[1],
+      email: (from.match(/<([^>]+)>/) || [, /^[^\s@<>]+@[^\s@<>]+$/.test(from.trim()) ? from.trim() : ""])[1],
       subject: header(msg.payload.headers, "Subject") || "(No subject)",
       time: header(msg.payload.headers, "Date"),
       body: bodyText(msg.payload),
@@ -303,22 +309,31 @@ function openMail(id) {
     document.getElementById("read-from").textContent = openItem.from;
     document.getElementById("read-email").textContent = openItem.email;
     document.getElementById("read-time").textContent = openItem.time;
-    showBody(openItem);
+    showBody(openItem, false);
     document.getElementById("read-pane").hidden = false;
     document.getElementById("app").classList.add("is-reading");
     gmail("/messages/" + id + "/modify", { method: "POST", body: { removeLabelIds: ["UNREAD"] } }).catch(function () {});
+    rows.forEach(function (row) {
+      if (row.id === id) {
+        row.unread = false;
+      }
+    });
     setStatus("");
     renderList();
   }).catch(function (err) {
-    setStatus(err.message || "Could not open message.");
+    if (seq === openSeq) {
+      setStatus(err.message || "Could not open message.");
+    }
   });
 }
 
 /* Leave the reader on a phone. */
 function closeRead() {
+  openSeq++;
   currentId = "";
   openItem = null;
   document.getElementById("read-pane").hidden = true;
+  document.getElementById("read-body").innerHTML = "";
   document.getElementById("app").classList.remove("is-reading");
   renderList();
 }
@@ -333,6 +348,7 @@ function openCompose(kind) {
   to.value = "";
   subject.value = "";
   body.value = "";
+  setComposeStatus("");
   if (openItem && kind === "reply") {
     title.textContent = "Reply";
     to.value = openItem.email;
@@ -345,6 +361,17 @@ function openCompose(kind) {
     body.value = "\n\n---------- Forwarded ----------\n" + openItem.body;
   }
   document.getElementById("compose").hidden = false;
+  (to.value ? body : to).focus();
+}
+
+/* Message line inside the compose sheet (the list status is behind it). */
+function setComposeStatus(text) {
+  document.getElementById("compose-status").textContent = text;
+}
+
+/* One header line value: no CR or LF, so a value cannot add headers. */
+function headerSafe(value) {
+  return String(value || "").replace(/[\r\n\u2028\u2029]+/g, " ").trim();
 }
 
 /* Hide compose. */
@@ -355,14 +382,20 @@ function closeCompose() {
 /* Send through Gmail and refresh Sent. */
 function sendMail(event) {
   event.preventDefault();
-  var to = document.getElementById("to").value;
-  var subject = document.getElementById("subject").value;
-  var body = document.getElementById("body").value;
-  var raw = "To: " + to + "\r\nSubject: " + subject + "\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n" + body;
+  var to = headerSafe(document.getElementById("to").value);
+  var subject = headerSafe(document.getElementById("subject").value);
+  var body = document.getElementById("body").value.replace(/\r?\n/g, "\r\n");
+  if (!to) {
+    setComposeStatus("Add a recipient.");
+    return;
+  }
+  var raw = "To: " + to + "\r\nSubject: " + subject + "\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n" + body;
+  setComposeStatus("Sending…");
   gmail("/messages/send", { method: "POST", body: { raw: encodeRaw(raw) } }).then(function () {
     closeCompose();
     setFolder("sent");
   }).catch(function (err) {
+    setComposeStatus(err.message || "Send failed.");
     setStatus(err.message || "Send failed.");
   });
 }
@@ -403,73 +436,23 @@ function setFolder(name) {
   loadList();
 }
 
-/* Save the access token for this tab. Hard stop is 60 minutes from Connect. */
-function storeToken(token) {
-  accessToken = token;
-  try {
-    sessionStorage.setItem(TOKEN_KEY, JSON.stringify({ token: token, exp: Date.now() + TOKEN_MS }));
-  } catch (err) {
-    /* Private mode may block storage. The token still works until reload. */
-  }
-}
-
-/* Restore a token after refresh if the 60 minutes are not up. */
-function restoreToken() {
-  try {
-    var raw = sessionStorage.getItem(TOKEN_KEY);
-    if (!raw) {
-      return false;
-    }
-    var saved = JSON.parse(raw);
-    if (!saved.token || !saved.exp || saved.exp <= Date.now()) {
-      sessionStorage.removeItem(TOKEN_KEY);
-      return false;
-    }
-    accessToken = saved.token;
-    return true;
-  } catch (err) {
-    return false;
-  }
-}
-
-/* Show mail controls after a token exists. */
-function markConnected() {
-  document.getElementById("connect").hidden = true;
-  document.getElementById("compose-open").hidden = false;
-}
-
-/* Start Google sign-in. Needs a client id and the GIS script. */
-function connect() {
-  var clientId = (window.BASIC_MAIL_CONFIG && BASIC_MAIL_CONFIG.clientId) || "";
-  if (!clientId) {
-    setStatus("Set clientId in basic-mail-config.js. Steps are in basic-mail.txt.");
+/* Search after typing stops, or at once with Enter. */
+function searchSoon(now) {
+  clearTimeout(searchTimer);
+  query = document.getElementById("search").value.trim();
+  if (now) {
+    loadList();
     return;
   }
-  if (!window.google || !google.accounts || !google.accounts.oauth2) {
-    setStatus("Google sign-in script has not loaded. Check the network and reload.");
-    return;
-  }
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: clientId,
-    scope: BASIC_MAIL_CONFIG.scopes,
-    callback: function (resp) {
-      if (resp.error) {
-        setStatus(resp.error);
-        return;
-      }
-      accessToken = resp.access_token;
-      storeToken(resp.access_token);
-      markConnected();
-      loadList();
-    }
-  });
-  tokenClient.requestAccessToken();
+  searchTimer = setTimeout(loadList, SEARCH_WAIT_MS);
 }
 
 /* Wire controls. */
 function bind() {
   document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
   document.getElementById("connect").addEventListener("click", connect);
+  document.getElementById("sign-out").addEventListener("click", signOut);
+  document.getElementById("img-show").addEventListener("click", showImagesNow);
   document.getElementById("compose-open").addEventListener("click", function () {
     openCompose("new");
   });
@@ -484,9 +467,14 @@ function bind() {
   });
   document.getElementById("act-archive").addEventListener("click", archiveMail);
   document.getElementById("act-delete").addEventListener("click", deleteMail);
-  document.getElementById("search").addEventListener("input", function (event) {
-    query = event.target.value.trim();
-    loadList();
+  document.getElementById("search").addEventListener("input", function () {
+    searchSoon(false);
+  });
+  document.getElementById("search").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      searchSoon(true);
+    }
   });
   document.querySelectorAll(".rail-btn").forEach(function (button) {
     button.addEventListener("click", function () {
@@ -498,6 +486,6 @@ function bind() {
 loadTheme();
 bind();
 if (restoreToken()) {
-  markConnected();
+  markConnected(true);
   loadList();
 }
