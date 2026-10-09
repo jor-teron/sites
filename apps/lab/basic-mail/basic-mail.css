@@ -1,0 +1,296 @@
+/*
+  File: basic-mail.css
+  Project: basic-mail
+  Purpose: Minimal mail layout. Two themes via data-theme.
+  Dark is near-black. Light is off-white. Accent is the same teal.
+*/
+
+/* Box model for every element. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Hidden text for the search label. */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+/* Dark tokens. */
+:root,
+[data-theme="dark"] {
+  --bg: #121212;
+  --bg-2: #1a1a1a;
+  --line: #2a2a2a;
+  --text: #f3f3f1;
+  --muted: #9a9a96;
+  --accent: #3dbeb6;
+  --accent-text: #06211f;
+  --row-on: #222826;
+}
+
+/* Light tokens. */
+[data-theme="light"] {
+  --bg: #f7f7f5;
+  --bg-2: #ffffff;
+  --line: #e4e4e0;
+  --text: #1a1a1a;
+  --muted: #6d6d68;
+  --accent: #1f8f86;
+  --accent-text: #ffffff;
+  --row-on: #e7f3f1;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.45 "Segoe UI", system-ui, sans-serif;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 148px 340px 1fr;
+  grid-template-rows: 56px 1fr;
+  height: 100%;
+  min-height: 100vh;
+}
+
+.topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  font-weight: 650;
+  min-width: 48px;
+}
+
+.search {
+  flex: 1;
+}
+
+.search input,
+.sheet input,
+.sheet textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+}
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.ghost,
+.actions button,
+.back {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+
+.accent {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 8px;
+  border-right: 1px solid var(--line);
+}
+
+.rail-btn {
+  height: 40px;
+  border-radius: 8px;
+  color: var(--muted);
+  text-align: left;
+  padding: 0 12px;
+}
+
+.rail-btn.is-on {
+  color: var(--accent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.list-pane {
+  border-right: 1px solid var(--line);
+  overflow: auto;
+}
+
+.status {
+  margin: 16px;
+  color: var(--muted);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+}
+
+.row.is-on {
+  background: var(--row-on);
+}
+
+.row-top,
+.meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.preview,
+.muted,
+time {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.unread .who {
+  font-weight: 700;
+}
+
+.read-pane {
+  padding: 20px 28px 32px;
+  overflow: auto;
+}
+
+.read-pane h1 {
+  font-size: 22px;
+  font-weight: 650;
+  margin: 8px 0 16px;
+}
+
+.meta {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+#read-body {
+  padding: 16px 0 24px;
+  overflow-wrap: anywhere;
+}
+
+/* Plain-text mail keeps line breaks. HTML mail uses the browser layout. */
+#read-body.is-plain {
+  white-space: pre-wrap;
+}
+
+/* Links in a rendered message stay visible in both themes. */
+#read-body a {
+  color: var(--accent);
+}
+
+/* Mail images stay inside the pane. */
+#read-body img {
+  max-width: 100%;
+  height: auto;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.back {
+  display: none;
+}
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.sheet[hidden] {
+  display: none;
+}
+
+.sheet form {
+  width: min(520px, 100%);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.sheet-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sheet label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+@media (max-width: 800px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: 56px auto 1fr;
+  }
+
+  .rail {
+    flex-direction: row;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .list-pane,
+  .read-pane {
+    border-right: 0;
+  }
+
+  .app.is-reading .list-pane,
+  .app.is-reading .rail {
+    display: none;
+  }
+
+  .app.is-reading .back {
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+}
