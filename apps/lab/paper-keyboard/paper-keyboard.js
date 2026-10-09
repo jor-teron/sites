@@ -2,7 +2,7 @@
   Project: paper-keyboard
   File: paper-keyboard.js
   Role: Role pick, PeerJS link, QR url, screen keyboard send, paper panel switch.
-  Output inserts received characters. Input sends them. Paper camera is not in this test.
+  Output inserts received characters. Input sends them. Paper camera finds the corner shapes (paper-corners.js).
 */
 
 /* Home, output, and input panels. */
@@ -434,8 +434,11 @@ async function startPaperCamera() {
   paperTimer = setInterval(checkCorners, 300);
 }
 
-/* Last time all four marks were seen. Keeps the quad green through a wobble. */
-let marksSeenAt = 0;
+/* Last time each corner shape was seen. Holds each light through a wobble. */
+const cornerSeenAt = { tl: 0, tr: 0, bl: 0, br: 0 };
+
+/* Last spot of each corner, kept for the hold. */
+const cornerLast = { tl: null, tr: null, bl: null, br: null };
 
 /*
   Stop the paper camera when the user leaves the panel.
@@ -454,93 +457,8 @@ function stopPaperCamera() {
 }
 
 /*
-  Find dark squares with a bright hole anywhere in the frame.
-  Returns center points. Marks do not have to sit in the camera corners.
-*/
-function findMarks(data, width, height) {
-  const seen = new Uint8Array(width * height);
-  const marks = [];
-  const step = 2;
-  for (let y = 2; y < height - 2; y += step) {
-    for (let x = 2; x < width - 2; x += step) {
-      const start = y * width + x;
-      if (seen[start]) {
-        continue;
-      }
-      const i = start * 4;
-      const lum = data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
-      if (lum > 75) {
-        continue;
-      }
-      const stack = [start];
-      seen[start] = 1;
-      let count = 0;
-      let sumX = 0;
-      let sumY = 0;
-      let minX = x;
-      let maxX = x;
-      let minY = y;
-      let maxY = y;
-      while (stack.length && count < 400) {
-        const p = stack.pop();
-        const px = p % width;
-        const py = (p - px) / width;
-        count += 1;
-        sumX += px;
-        sumY += py;
-        if (px < minX) minX = px;
-        if (px > maxX) maxX = px;
-        if (py < minY) minY = py;
-        if (py > maxY) maxY = py;
-        const near = [p - 1, p + 1, p - width, p + width];
-        near.forEach(function (n) {
-          if (n < 0 || n >= seen.length || seen[n]) {
-            return;
-          }
-          const nx = n % width;
-          const ny = (n - nx) / width;
-          if (nx < 1 || ny < 1 || nx >= width - 1 || ny >= height - 1) {
-            return;
-          }
-          const k = n * 4;
-          const nLum = data[k] * 0.3 + data[k + 1] * 0.59 + data[k + 2] * 0.11;
-          if (nLum < 75) {
-            seen[n] = 1;
-            stack.push(n);
-          }
-        });
-      }
-      const bw = maxX - minX;
-      const bh = maxY - minY;
-      if (count < 8 || count > 180 || bw < 3 || bh < 3 || bw > 28 || bh > 28) {
-        continue;
-      }
-      const cx = Math.round(sumX / count);
-      const cy = Math.round(sumY / count);
-      const j = (cy * width + cx) * 4;
-      const center = data[j] * 0.3 + data[j + 1] * 0.59 + data[j + 2] * 0.11;
-      if (center > 150) {
-        marks.push({ x: cx, y: cy });
-      }
-    }
-  }
-  return marks;
-}
-
-/*
-  Name four points from their own layout, not from the camera edges.
-*/
-function nameMarks(marks) {
-  const tl = marks.slice().sort(function (a, b) { return (a.x + a.y) - (b.x + b.y); })[0];
-  const br = marks.slice().sort(function (a, b) { return (b.x + b.y) - (a.x + a.y); })[0];
-  const tr = marks.slice().sort(function (a, b) { return (b.x - b.y) - (a.x - a.y); })[0];
-  const bl = marks.slice().sort(function (a, b) { return (a.x - a.y) - (b.x - b.y); })[0];
-  return { tl: tl, tr: tr, bl: bl, br: br };
-}
-
-/*
-  Sample the viewfinder, find marks anywhere, draw the sheet quad.
-  The quad stays green for a short hold after the marks were last seen.
+  Sample the viewfinder, find each corner shape, light its LED.
+  All four held: green sheet outline. Otherwise dots on the found ones.
 */
 function checkCorners() {
   const video = document.getElementById("paper-video");
@@ -548,37 +466,52 @@ function checkCorners() {
   if (!video.videoWidth) {
     return;
   }
-  const width = 160;
+  const width = 320;
   const height = Math.round(width * video.videoHeight / video.videoWidth);
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
   ctx.drawImage(video, 0, 0, width, height);
   const frame = ctx.getImageData(0, 0, width, height);
-  const found = findMarks(frame.data, width, height);
-  const named = found.length >= 4 ? nameMarks(found) : null;
-  if (named) {
-    marksSeenAt = Date.now();
-  }
-  const held = Date.now() - marksSeenAt < 600;
-  ["tl", "tr", "bl", "br"].forEach(function (name) {
-    document.getElementById("led-" + name).classList.toggle("ok", held);
+  const found = window.PaperCorners.detect(frame.data, width, height);
+  const now = Date.now();
+  const names = { tl: "circle", tr: "square", bl: "triangle", br: "plus" };
+  const have = [];
+  const missing = [];
+  Object.keys(names).forEach(function (key) {
+    if (found[key]) {
+      cornerSeenAt[key] = now;
+      cornerLast[key] = found[key];
+    }
+    const held = now - cornerSeenAt[key] < 500;
+    document.getElementById("led-" + key).classList.toggle("ok", held);
+    (held ? have : missing).push(names[key]);
   });
-  document.getElementById("paper-status").textContent = held
-    ? "Aligned. Marks found anywhere in frame."
-    : "Turn the phone landscape. Tap the sheet to focus.";
+  const locked = missing.length === 0;
+  document.getElementById("paper-status").textContent = locked
+    ? "Locked. All four corners found."
+    : "Found: " + (have.join(", ") || "none") + ". Missing: " + missing.join(", ") +
+      ". Keep all four shapes in view.";
   ctx.clearRect(0, 0, width, height);
-  if (named) {
+  ctx.strokeStyle = "#1d7a3a";
+  ctx.lineWidth = 3;
+  if (locked) {
     ctx.beginPath();
-    ctx.moveTo(named.tl.x, named.tl.y);
-    ctx.lineTo(named.tr.x, named.tr.y);
-    ctx.lineTo(named.br.x, named.br.y);
-    ctx.lineTo(named.bl.x, named.bl.y);
+    ctx.moveTo(cornerLast.tl.x, cornerLast.tl.y);
+    ctx.lineTo(cornerLast.tr.x, cornerLast.tr.y);
+    ctx.lineTo(cornerLast.br.x, cornerLast.br.y);
+    ctx.lineTo(cornerLast.bl.x, cornerLast.bl.y);
     ctx.closePath();
-    ctx.strokeStyle = held ? "#1d7a3a" : "#c44747";
-    ctx.lineWidth = 3;
     ctx.stroke();
+    return;
   }
+  Object.keys(names).forEach(function (key) {
+    if (found[key]) {
+      ctx.beginPath();
+      ctx.arc(found[key].x, found[key].y, Math.max(4, found[key].size / 2), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  });
 }
 
 /*

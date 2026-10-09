@@ -33,5 +33,12 @@ PDF and the future camera key-map use the same numbers.
 
 ## Known limit
 
-Paper mode only looks for corner marks today. Finger detection, hold-to-press,
-and sending from the sheet are not built yet.
+Paper mode finds the four corner shapes only (`paper-corners.js`): circle,
+square, triangle, plus, judged against the local paper white so dim rooms and
+screens work. Each TL/TR/BL/BR light goes green on its own shape; all four
+draw a green outline ("Locked"). A turned sheet still names the right corners.
+
+Showing the PDF on a tablet works for testing: full screen, brightness down a
+bit, auto-rotate off.
+
+Finger detection, hold-to-press, and sending from the sheet are not built yet.
