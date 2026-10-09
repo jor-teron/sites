@@ -57,6 +57,8 @@ Office,   OCR,                   apps/office/ocr/,                           ,  
 Office,   MS Word Diff,          apps/tools/msword_diff/,                    ,         0,       0,      440
 Office,   Notepad,               apps/office/notepad/,                       ,         0,       0,      450
 Office,   Notely,                apps/office/notely/,                        ,         0,       0,      450
+Office,   Print,                 apps/lab/print/,                            ,         0,       0,      460
+Office,   Basic Mail,            apps/lab/basic-mail/,                       ,         0,       0,      470
 
 Connectivity, File Drop,         apps/connectivity/filedrop/,                ,         0,       0,      405
 Connectivity, QR Scanner,        apps/connectivity/qr-scanner/,              ,         0,       0,      406
@@ -77,7 +79,6 @@ Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,  
 
 Lab,      Phone,                 apps/media/phone/,                          ,         0,       0,      1070
 Lab,      Paper Keyboard,        apps/lab/paper-keyboard/,                   ,         0,       0,      1040
-Lab,      Basic Mail,            apps/lab/basic-mail/,                       ,         0,       0,      1050
 
 About,    About,                 apps/about/,                                ,         0,       0,      2000
 About,    Contact,               apps/about/contact.txt,                     ,         0,       0,      2020
