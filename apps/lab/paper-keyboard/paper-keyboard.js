@@ -1,7 +1,7 @@
 /*
   Project: paper-keyboard
   File: paper-keyboard.js
-  Role: Role pick, PeerJS link, QR url, screen keyboard send, paper panel switch.
+  Role: Role pick, pairing UI (link logic in paper-link.js), screen keyboard send, paper panel switch.
   Output inserts received characters. Input sends them. Paper camera finds the corner shapes (paper-corners.js).
 */
 
@@ -17,7 +17,8 @@ const note = document.getElementById("note");
 /* Connect controls on the phone. */
 const connectBox = document.getElementById("connect-box");
 const keyBox = document.getElementById("key-box");
-const peerManual = document.getElementById("peer-manual");
+const codeInput = document.getElementById("code-input");
+const disconnectBtn = document.getElementById("disconnect");
 const scanVideo = document.getElementById("scan-video");
 const echo = document.getElementById("echo");
 
@@ -43,19 +44,8 @@ let numbersOn = false;
 /* True while Shift is latched for one letter. */
 let shiftOn = false;
 
-/* Public PeerJS broker. Not a server on the Debian machine. */
-const PEER_CLOUD = {
-  host: "0.peerjs.com",
-  port: 443,
-  path: "/",
-  secure: true
-};
-
-/* This browser's PeerJS node. */
-let peer = null;
-
-/* Data channel to the other role. Output receives. Input sends. */
-let link = null;
+/* Active pairing from paper-link.js. Output or input, never both. */
+let session = null;
 
 /* Camera stream used only while scanning a QR. */
 let scanStream = null;
@@ -63,114 +53,83 @@ let scanStream = null;
 /*
   Set the short status line.
 */
-function setStatus(text) {
+function setStatus(text, connected) {
   statusLine.textContent = text;
-  statusLine.classList.toggle("connected", text === "Connected");
+  statusLine.classList.toggle("connected", !!connected);
 }
 
 /*
-  Show one panel: home, output, or input.
+  Show one panel: home, output, or input. Disconnect shows once a role runs.
 */
 function showPanel(name) {
   home.classList.toggle("hidden", name !== "home");
   outputView.classList.toggle("hidden", name !== "output");
   inputView.classList.toggle("hidden", name !== "input");
+  disconnectBtn.classList.toggle("hidden", name === "home");
 }
 
 /*
-  Build the URL any QR scanner can open.
-  The phone browser loads this page as input and connects to the desktop id.
+  Desktop: open the saved code (or a new one), draw the big code and the QR.
+  The long link is never shown as text.
 */
-function outputUrl(peerId) {
-  const url = new URL(window.location.href);
-  url.search = "";
-  url.hash = "";
-  url.searchParams.set("role", "input");
-  url.searchParams.set("peer", peerId);
-  return url.toString();
-}
-
-/*
-  Pull a PeerJS id from a scanned or pasted value.
-  Accepts a full URL or a bare id.
-*/
-function peerFromText(raw) {
-  const text = (raw || "").trim();
-  if (!text) {
-    return "";
-  }
-  try {
-    const url = new URL(text);
-    return url.searchParams.get("peer") || "";
-  } catch (err) {
-    return text;
-  }
-}
-
-/*
-  Start PeerJS. Output shows a QR when the id is ready.
-  Input connects after the id is known.
-*/
-function startPeer(role, remoteId) {
-  setStatus("Opening PeerJS…");
-  peer = new Peer(undefined, PEER_CLOUD);
-  peer.on("open", function (id) {
-    if (role === "output") {
-      const linkText = outputUrl(id);
+function startOutput() {
+  showPanel("output");
+  session = window.PaperLink.startOutput({
+    onCode: function (code) {
+      document.getElementById("code-big").textContent = code;
       const box = document.getElementById("qr");
       box.replaceChildren();
-      new QRCode(box, { text: linkText, width: 200, height: 200 });
-      document.getElementById("qr-link").textContent = linkText;
-      setStatus("Output ready. Scan the QR on the phone.");
-    } else {
-      setStatus("Input ready. Connecting…");
-      connectTo(remoteId);
-    }
-  });
-  peer.on("connection", function (conn) {
-    bindLink(conn, "Output");
-  });
-  peer.on("error", function (err) {
-    setStatus("PeerJS error: " + err.type);
+      new QRCode(box, { text: window.PaperLink.inputUrl(code), width: 200, height: 200 });
+      box.removeAttribute("title");
+    },
+    onStatus: setStatus,
+    onData: applyIncoming
   });
 }
 
 /*
-  Connect the phone to the desktop peer id.
+  Phone: connect to a 4-digit code. Retries until Disconnect.
 */
-function connectTo(remoteId) {
-  if (!remoteId) {
-    setStatus("No peer id.");
+function startInput(code) {
+  if (!code) {
+    setStatus("Enter the 4-digit code from the desktop.");
     return;
   }
-  link = peer.connect(remoteId, { reliable: true });
-  bindLink(link, "Input");
+  stopScan();
+  if (session) {
+    session.stop();
+  }
+  showPanel("input");
+  codeInput.value = code;
+  session = window.PaperLink.startInput(code, {
+    onStatus: setStatus,
+    onOpen: function () {
+      connectBox.classList.add("hidden");
+      keyBox.classList.remove("hidden");
+    },
+    onDrop: function () {
+      connectBox.classList.remove("hidden");
+    }
+  });
 }
 
 /*
-  Attach data handlers. Output writes the text box. Input marks the link open.
+  Manual Disconnect. The only thing that ends a link; clears the saved code.
 */
-function bindLink(conn, side) {
-  link = conn;
-  conn.on("open", function () {
-    setStatus("Connected");
-    if (side === "Input") {
-      connectBox.classList.add("hidden");
-      keyBox.classList.remove("hidden");
-      stopScan();
-    }
-  });
-  conn.on("data", function (payload) {
-    if (side === "Output") {
-      applyIncoming(payload);
-    }
-  });
-  conn.on("close", function () {
-    setStatus("Link closed.");
-  });
-  conn.on("error", function () {
-    setStatus("Link error.");
-  });
+function disconnect() {
+  stopScan();
+  stopPaperCamera();
+  if (session) {
+    session.stop();
+    session = null;
+  }
+  connectBox.classList.remove("hidden");
+  keyBox.classList.add("hidden");
+  document.getElementById("qr").replaceChildren();
+  document.getElementById("code-big").textContent = "";
+  showPanel("home");
+  setStatus("Pick a role");
+  history.replaceState(null, "", window.location.pathname);
 }
 
 /*
@@ -203,11 +162,9 @@ function applyIncoming(payload) {
 */
 function sendPayload(payload) {
   echo.textContent = "Sent: " + (payload.v || payload.op);
-  if (!link || !link.open) {
-    setStatus("Not connected.");
-    return;
+  if (!session || !session.send || !session.send(payload)) {
+    echo.textContent = "Not sent: not connected";
   }
-  link.send(payload);
 }
 
 /*
@@ -532,7 +489,7 @@ function stopScan() {
 */
 async function startScan() {
   if (!("BarcodeDetector" in window)) {
-    setStatus("This browser has no QR detector. Paste the link.");
+    setStatus("No QR detector in this browser. Type the 4-digit code.");
     return;
   }
   scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -545,35 +502,44 @@ async function startScan() {
       clearInterval(timer);
       return;
     }
-    const codes = await detector.detect(scanVideo);
-    if (codes.length && codes[0].rawValue) {
+    let codes = [];
+    try {
+      codes = await detector.detect(scanVideo);
+    } catch (err) {
+      return;
+    }
+    const code = codes.length ? window.PaperLink.parseCode(codes[0].rawValue) : "";
+    if (code) {
       clearInterval(timer);
-      stopScan();
-      const remoteId = peerFromText(codes[0].rawValue);
-      startPeer("input", remoteId);
+      startInput(code);
     }
   }, 400);
 }
 
-document.getElementById("pick-output").addEventListener("click", function () {
-  showPanel("output");
-  startPeer("output");
-});
+document.getElementById("pick-output").addEventListener("click", startOutput);
 
 document.getElementById("pick-input").addEventListener("click", function () {
   showPanel("input");
-  setStatus("Scan the desktop QR, or paste the link.");
+  setStatus("Enter the 4-digit code, or scan the QR.");
+  codeInput.focus();
 });
 
 document.getElementById("scan-qr").addEventListener("click", function () {
   startScan().catch(function () {
-    setStatus("Camera blocked. Paste the link.");
+    setStatus("Camera blocked. Type the 4-digit code.");
   });
 });
 
-document.getElementById("peer-go").addEventListener("click", function () {
-  startPeer("input", peerFromText(peerManual.value));
+document.getElementById("code-go").addEventListener("click", function () {
+  startInput(window.PaperLink.parseCode(codeInput.value));
 });
+codeInput.addEventListener("keydown", function (event) {
+  if (event.key === "Enter") {
+    startInput(window.PaperLink.parseCode(codeInput.value));
+  }
+});
+
+disconnectBtn.addEventListener("click", disconnect);
 
 modeTouch.addEventListener("click", function () {
   setMode("touch");
@@ -585,10 +551,15 @@ modePaper.addEventListener("click", function () {
 drawBoard();
 
 /*
-  QR open path. role=input and peer=id skips the home pick and connects.
+  Boot. A QR link (role=input&code=1234, or an old peer= link) connects at once.
+  Otherwise a saved desktop code reopens Output, and a saved phone code reconnects Input.
 */
 const params = new URLSearchParams(window.location.search);
-if (params.get("role") === "input" && params.get("peer")) {
-  showPanel("input");
-  startPeer("input", params.get("peer"));
+const urlCode = window.PaperLink.parseCode(window.location.search);
+if (params.get("role") === "input" && urlCode) {
+  startInput(urlCode);
+} else if (window.PaperLink.loadKey(window.PaperLink.KEY_HOST)) {
+  startOutput();
+} else if (window.PaperLink.loadKey(window.PaperLink.KEY_LAST)) {
+  startInput(window.PaperLink.loadKey(window.PaperLink.KEY_LAST));
 }

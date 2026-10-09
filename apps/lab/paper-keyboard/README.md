@@ -20,6 +20,36 @@ Corner shapes (solid black, 18 mm, 10 mm from the edge):
 `paper-sheet-layout.js` holds the millimetre grid (`window.PAPER_LAYOUT`). The
 PDF and the future camera key-map use the same numbers.
 
+## Pairing (4-digit code)
+
+`paper-link.js` holds all link logic (`window.PaperLink`).
+
+- **Desktop (Output):** PeerJS id `jtpkb-` + random 4 digits. Shows a big code
+  and a QR. The long link is never shown as text. If the code is taken by
+  someone else (`unavailable-id`), a new one is picked; after a reload the
+  saved code is retried a few times first (the broker may still hold it).
+- **QR link:** this page with `?role=input&code=1234` only. No version tags;
+  there is one always-latest page.
+- **Phone (Input):** type the 4 digits + Connect, or Scan QR. Scan accepts a URL
+  with `code=`, an old URL with `peer=jtpkb-1234`, or bare digits.
+- **Survives reload / hard reload.** Both sides reopen on load and the phone
+  reconnects with backoff (1, 2, 4, 8, 15 s) whenever the link drops.
+- **Disconnect** (header, both sides) is the only way to end it; it clears the
+  saved code.
+- PeerJS default config is kept on purpose (no `iceServers` override): its TURN
+  relay is needed behind CGNAT.
+
+Saved keys (localStorage):
+
+| Key | Side | Value |
+|-----|------|-------|
+| `jtpkb-host-code` | Desktop | Its 4-digit code |
+| `jtpkb-last-code` | Phone | Last code it connected to |
+
+Fresh pages: the hub service worker (`hub/hub_sw.js`) is network-first and
+fetches app pages and `apps/*` files with `cache: 'no-cache'`, so a phone
+always gets the latest push (cache is only an offline fallback).
+
 ## Libraries
 
 - PeerJS stays on the online unpkg URL (by choice for this demo).
@@ -27,9 +57,11 @@ PDF and the future camera key-map use the same numbers.
 
 ## Manual test
 
-1. Desktop: open `paper-keyboard.html` → Use as Output → scan the QR with a phone.
-2. Phone: Screen keyboard should type into the desktop box.
-3. Tap Download keyboard, print the PDF; check key size and that all four corner shapes are clear of the edge.
+1. Desktop: open `paper-keyboard.html` → Use as Output. A big 4-digit code and a QR show; no long link.
+2. Phone: Use as Input → type the code → Connect (or Scan QR). Screen keyboard types into the desktop box.
+3. Reload (and hard reload) the phone: it reconnects by itself. Reload the desktop: same code comes back and the phone rejoins.
+4. Tap Disconnect on either side: back to the role pick; a reload stays on the role pick.
+5. Tap Download keyboard, print the PDF; check key size and that all four corner shapes are clear of the edge.
 
 ## Known limit
 

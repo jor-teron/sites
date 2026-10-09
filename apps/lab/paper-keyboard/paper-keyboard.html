@@ -20,6 +20,7 @@
         <span id="status">Pick a role</span>
       </div>
       <span id="echo"></span>
+      <button type="button" id="disconnect" class="hidden">Disconnect</button>
     </header>
 
     <!-- Home. Desktop picks Output. Phone picks Input, or arrives from the QR link. -->
@@ -32,18 +33,19 @@
     <!-- Desktop output. Text lands here. QR is a normal URL any scanner can open. -->
     <section id="output-view" class="hidden">
       <textarea id="note" placeholder="Input text appears here"></textarea>
+      <p class="hint">On the phone: Use as Input, then type this code or scan the QR.</p>
+      <div id="code-big" aria-label="Pairing code"></div>
       <div id="qr"></div>
-      <p id="qr-link" class="hint"></p>
     </section>
 
     <!-- Phone input. Connect, then screen keyboard or paper panel. -->
     <section id="input-view" class="hidden">
       <div id="connect-box">
+        <label class="hint" for="code-input">4-digit code from the desktop</label>
+        <input id="code-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="0000">
+        <button type="button" id="code-go">Connect</button>
         <button type="button" id="scan-qr" class="role">Scan QR</button>
         <video id="scan-video" class="hidden" playsinline></video>
-        <label class="hint" for="peer-manual">Or paste the output link / peer id</label>
-        <input id="peer-manual" type="text" placeholder="peer id or full link">
-        <button type="button" id="peer-go">Connect</button>
       </div>
       <div id="key-box" class="hidden">
         <div class="modes">
@@ -73,6 +75,7 @@
   </div>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script src="vendor/qrcode.min.js"></script>
+  <script src="paper-link.js"></script>
   <script src="paper-corners.js"></script>
   <script src="paper-keyboard.js"></script>
 </body>

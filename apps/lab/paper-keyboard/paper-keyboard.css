@@ -76,7 +76,7 @@ h1 {
 }
 
 /* Role and connect buttons. */
-.role, #peer-go {
+.role, #code-go {
   display: block;
   width: 100%;
   margin: 8px 0;
@@ -88,10 +88,14 @@ h1 {
   font-size: 16px;
 }
 
-#peer-manual {
+/* Big code box: easy to hit and read on a phone. */
+#code-input {
   width: 100%;
   margin-top: 8px;
-  padding: 10px;
+  padding: 14px;
+  font-size: 40px;
+  letter-spacing: 0.3em;
+  text-align: center;
   border-radius: 8px;
   border: 1px solid var(--line);
   background: #0e1116;
@@ -109,6 +113,26 @@ h1 {
   color: var(--key-text);
   font-size: 18px;
   padding: 8px;
+}
+
+/* Header Disconnect, phone and desktop. */
+#disconnect {
+  margin-left: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--key-text);
+  padding: 10px 14px;
+  font-size: 15px;
+}
+
+/* Big pairing code on the desktop. */
+#code-big {
+  margin: 8px 0;
+  font-size: 72px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  font-variant-numeric: tabular-nums;
 }
 
 #qr {

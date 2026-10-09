@@ -4,9 +4,11 @@
  * push shows at once); the cache is only a fallback when offline. Navigations fall back to
  * the cached page, then hub/hub_offline.html. Only navigations and the shell files are
  * (re)stored, so ordinary app files are not cached. Cross-origin (PeerJS, CDNs) is not touched.
+ * App pages and apps/* files skip the browser HTTP cache (cache:'no-cache' revalidates via ETag),
+ * so a phone never gets a stale copy after a push.
  * Bump CACHE when the shell list changes; old caches are deleted on activate.
  */
-const CACHE = 'hub-shell-v1';
+const CACHE = 'hub-shell-v2';
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',
@@ -40,7 +42,8 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   const bare = url.origin + url.pathname;                 // shell files are kept without ?v=
   const keep = req.mode === 'navigate' || SHELL_SET.has(bare);   // don't fill the cache with every app file
-  e.respondWith(fetch(req).then((res) => {
+  const fresh = req.mode === 'navigate' || url.pathname.includes('/apps/');   // revalidate, never a stale HTTP-cache copy
+  e.respondWith((fresh ? fetch(req, { cache: 'no-cache' }) : fetch(req)).then((res) => {
     if (keep && res && res.status === 200 && res.type === 'basic') {
       const copy = res.clone();
       caches.open(CACHE).then((c) => c.put(req.mode === 'navigate' ? req : bare, copy)).catch(() => {});
