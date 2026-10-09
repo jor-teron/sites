@@ -249,3 +249,12 @@ h1 {
 .finder span.ok {
   background: #1d7a3a;
 }
+
+/* Download keyboard link looks like the role buttons. */
+a.role {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: inherit;
+}
