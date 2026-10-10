@@ -1,0 +1,67 @@
+<!--
+  File: devbench.html
+  Project: devbench
+  Role: Page shell for system info plus CPU, GPU, and disk tests.
+  Scripts stay in separate files. This file only marks up the panels.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>devbench</title>
+  <!-- Visual styles for cards, buttons, and progress. -->
+  <link rel="stylesheet" href="devbench.css">
+</head>
+<body>
+  <main class="wrap">
+    <h1>devbench</h1>
+    <p class="note">Browser scores only. Disk is private storage, not the raw drive. GPU needs WebGL.</p>
+
+    <!-- System facts, filled on load by info.js. No run button. -->
+    <section class="card" id="sys-card">
+      <h2>System</h2>
+      <p>What this browser will expose. Missing lines mean the API is blocked.</p>
+      <dl class="facts" id="sys-out">
+        <div><dt>Status</dt><dd>Loading…</dd></div>
+      </dl>
+    </section>
+
+    <!-- CPU stress panel. 10 second worker run. -->
+    <section class="card" id="cpu-card">
+      <h2>CPU</h2>
+      <p>Multi-worker math loop for 10 seconds. Score is operations per second.</p>
+      <button type="button" id="cpu-run">Run CPU</button>
+      <div class="bar"><span id="cpu-bar"></span></div>
+      <div class="out" id="cpu-out">Idle</div>
+    </section>
+
+    <!-- GPU fill-rate panel. 10 second draw run. -->
+    <section class="card" id="gpu-card">
+      <h2>GPU</h2>
+      <p>WebGL full-canvas draws for 10 seconds. Score is megapixels per second.</p>
+      <button type="button" id="gpu-run">Run GPU</button>
+      <div class="bar"><span id="gpu-bar"></span></div>
+      <div class="out" id="gpu-out">Idle</div>
+      <!-- Hidden draw target used only during the GPU test. -->
+      <canvas id="gpu-canvas" width="512" height="512" hidden></canvas>
+    </section>
+
+    <!-- Disk OPFS panel. 64 MB write then read. -->
+    <section class="card" id="disk-card">
+      <h2>Disk</h2>
+      <p>OPFS write then read of 64 MB. Score is MB/s in browser private storage.</p>
+      <button type="button" id="disk-run">Run disk</button>
+      <div class="bar"><span id="disk-bar"></span></div>
+      <div class="out" id="disk-out">Idle</div>
+    </section>
+  </main>
+
+  <!-- Info and test engines load before the page controller. -->
+  <script src="info.js"></script>
+  <script src="cpu.js"></script>
+  <script src="gpu.js"></script>
+  <script src="disk.js"></script>
+  <script src="devbench.js"></script>
+</body>
+</html>

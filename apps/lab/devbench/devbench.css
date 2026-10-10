@@ -1,0 +1,114 @@
+/*
+  File: devbench.css
+  Project: devbench
+  Role: Layout and visual styles for the device bench page.
+  No test logic lives here. Colors assume a dark UI.
+*/
+
+/* Page background and default text. */
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #121418;
+  color: #e8eaed;
+}
+
+/* Centers the app column. */
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+/* App title. */
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+}
+
+/* Short limit note under the title. */
+.note {
+  color: #9aa0a6;
+  font-size: 0.9rem;
+  margin: 0 0 20px;
+}
+
+/* One card per test. */
+.card {
+  background: #1c1f26;
+  border: 1px solid #2c313a;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+/* Card heading. */
+.card h2 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+
+/* What the test actually measures. */
+.card p {
+  margin: 0 0 12px;
+  color: #b8bec7;
+  font-size: 0.88rem;
+}
+
+/* Run button. */
+button {
+  background: #3d7eff;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.95rem;
+}
+
+/* Disabled while a test is running. */
+button:disabled {
+  opacity: 0.5;
+}
+
+/* Progress track. */
+.bar {
+  height: 8px;
+  background: #2c313a;
+  border-radius: 99px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+/* Filled portion of the progress track. */
+.bar > span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: #3d7eff;
+}
+
+/* Label and value rows inside the system card. */
+.facts {
+  margin: 0;
+}
+
+/* One fact row. */
+.facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-top: 1px solid #2c313a;
+  font-size: 0.88rem;
+}
+
+/* Fact label. */
+.facts dt {
+  color: #9aa0a6;
+}
+
+/* Fact value. */
+.facts dd {
+  margin: 0;
+  text-align: right;
+}

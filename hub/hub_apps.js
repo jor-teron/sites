@@ -77,6 +77,8 @@ Tools,    Caption for NEI,       apps/tools/caption-for-nei/,                ,  
 Desktop,  Learning HTML (Basic), apps/tools/learning-html/,                  ,         0,       0,      910
 Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,         1,       0,      900
 
+Lab,      Device Benchmark,      apps/lab/devbench/,                         ,         0,       0,      1050
+Lab,      Island Game Demo,      apps/lab/island-demo/,                      ,         0,       0,      1080
 Lab,      Phone,                 apps/media/phone/,                          ,         0,       0,      1070
 Lab,      Paper Keyboard,        apps/lab/paper-keyboard/,                   ,         0,       0,      1040
 
