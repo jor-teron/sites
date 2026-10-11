@@ -51,27 +51,18 @@ async function devbenchJpegRun(onProgress) {
   return { encMs: enc, decMs: dec, encMPs: mp / (enc / 1000), decMPs: mp / (dec / 1000), sizeKB: blob.size / 1024 };
 }
 
-/* First codec the browser can encode at 1080p. */
-async function devbenchPickCodec() {
-  var list = ["avc1.42E028", "vp8", "vp09.00.10.08"];
-  for (var i = 0; i < list.length; i++) {
-    var cfg = { codec: list[i], width: DEVBENCH_VID_W, height: DEVBENCH_VID_H, bitrate: 8e6, framerate: 30, hardwareAcceleration: "no-preference" };
-    if (list[i].indexOf("avc1") === 0) { cfg.avc = { format: "annexb" }; }
-    try {
-      var s = await VideoEncoder.isConfigSupported(cfg);
-      if (s.supported) { return cfg; }
-    } catch (err) { /* try next */ }
-  }
-  return null;
+/* Encoder configs to try, in order. AVC uses Annex B so chunks carry their own SPS/PPS. */
+var DEVBENCH_VID_CODECS = ["avc1.42E028", "vp8", "vp09.00.10.08"];
+
+/* Encoder config for one codec string. */
+function devbenchEncCfg(codec) {
+  var cfg = { codec: codec, width: DEVBENCH_VID_W, height: DEVBENCH_VID_H, bitrate: 8e6, framerate: 30, hardwareAcceleration: "no-preference" };
+  if (codec.indexOf("avc1") === 0) { cfg.avc = { format: "annexb" }; }
+  return cfg;
 }
 
-/* Encode 120 canvas frames, then decode the produced chunks. */
-async function devbenchVideoRun(onProgress) {
-  if (!("VideoEncoder" in window) || !("VideoDecoder" in window)) {
-    return { supported: false };
-  }
-  var cfg = await devbenchPickCodec();
-  if (!cfg) { return { supported: false }; }
+/* Encode 120 canvas frames with cfg. Returns { chunks, decoderConfig, encFps }. */
+async function devbenchEncode(cfg, onProgress) {
   var c = document.createElement("canvas");
   c.width = DEVBENCH_VID_W; c.height = DEVBENCH_VID_H;
   var ctx = c.getContext("2d");
@@ -85,7 +76,7 @@ async function devbenchVideoRun(onProgress) {
   });
   encoder.configure(cfg);
   var t0 = performance.now();
-  for (var i = 0; i < DEVBENCH_VID_FRAMES; i++) {
+  for (var i = 0; i < DEVBENCH_VID_FRAMES && !encErr; i++) {
     devbenchMediaPattern(ctx, c.width, c.height, i);
     var frame = new VideoFrame(c, { timestamp: i * 33333 });
     encoder.encode(frame, { keyFrame: i % 60 === 0 });
@@ -93,23 +84,68 @@ async function devbenchVideoRun(onProgress) {
     if (encoder.encodeQueueSize > 4) { await new Promise(function (r) { setTimeout(r, 0); }); }
     onProgress(0.5 * (i + 1) / DEVBENCH_VID_FRAMES);
   }
-  await encoder.flush();
+  try { await encoder.flush(); } catch (err) { encErr = encErr || err; }
   var encSec = (performance.now() - t0) / 1000;
-  encoder.close();
-  if (encErr) { throw encErr; }
+  try { encoder.close(); } catch (err) { /* already closed */ }
+  if (encErr || !chunks.length) { throw encErr || new Error("no frames encoded"); }
+  return { chunks: chunks, decoderConfig: decoderConfig, encFps: DEVBENCH_VID_FRAMES / encSec };
+}
+
+/*
+  Decoder config for the encoded stream.
+  Annex B streams carry SPS/PPS in-band, so any avcC "description" a hardware
+  encoder returned is dropped; a mismatch there was the decode error on phones.
+*/
+function devbenchDecCfg(cfg, decoderConfig) {
+  var d = { codec: (decoderConfig && decoderConfig.codec) || cfg.codec, codedWidth: DEVBENCH_VID_W, codedHeight: DEVBENCH_VID_H };
+  if (decoderConfig && decoderConfig.description && !cfg.avc) { d.description = decoderConfig.description; }
+  return d;
+}
+
+/* Decode chunks. Returns fps, or throws when the decoder rejects the stream. */
+async function devbenchDecode(dcfg, chunks, onProgress) {
+  var s = await VideoDecoder.isConfigSupported(dcfg);
+  if (!s.supported) { throw new Error("decoder does not support " + dcfg.codec); }
   var decoded = 0, decErr = null;
   var decoder = new VideoDecoder({
     output: function (f) { decoded++; f.close(); onProgress(0.5 + 0.5 * decoded / chunks.length); },
     error: function (e) { decErr = e; }
   });
-  decoder.configure(decoderConfig || { codec: cfg.codec, codedWidth: DEVBENCH_VID_W, codedHeight: DEVBENCH_VID_H });
+  decoder.configure(dcfg);
   var t1 = performance.now();
-  chunks.forEach(function (ch) { decoder.decode(ch); });
-  await decoder.flush();
+  for (var i = 0; i < chunks.length && !decErr; i++) { decoder.decode(chunks[i]); }
+  try { await decoder.flush(); } catch (err) { decErr = decErr || err; }
   var decSec = (performance.now() - t1) / 1000;
-  decoder.close();
-  if (decErr) { throw decErr; }
-  return { supported: true, codec: cfg.codec, hw: cfg.hardwareAcceleration, encFps: DEVBENCH_VID_FRAMES / encSec, decFps: decoded / decSec };
+  try { decoder.close(); } catch (err) { /* already closed */ }
+  if (decErr || !decoded) { throw decErr || new Error("no frames decoded"); }
+  return decoded / decSec;
+}
+
+/*
+  Video test. Tries each codec: encode, then decode the same chunks.
+  Never throws: a codec that fails moves on to the next one, and if decoding
+  fails everywhere the encode result is still returned with decFps null.
+*/
+async function devbenchVideoRun(onProgress) {
+  if (!("VideoEncoder" in window) || !("VideoDecoder" in window)) {
+    return { supported: false };
+  }
+  var encOnly = null;
+  for (var i = 0; i < DEVBENCH_VID_CODECS.length; i++) {
+    var cfg = devbenchEncCfg(DEVBENCH_VID_CODECS[i]);
+    try {
+      var s = await VideoEncoder.isConfigSupported(cfg);
+      if (!s.supported) { continue; }
+      var enc = await devbenchEncode(cfg, onProgress);
+      try {
+        var decFps = await devbenchDecode(devbenchDecCfg(cfg, enc.decoderConfig), enc.chunks, onProgress);
+        return { supported: true, codec: cfg.codec, hw: cfg.hardwareAcceleration, encFps: enc.encFps, decFps: decFps };
+      } catch (decErr) {
+        if (!encOnly) { encOnly = { supported: true, codec: cfg.codec, hw: cfg.hardwareAcceleration, encFps: enc.encFps, decFps: null, decNote: String(decErr && decErr.message || decErr) }; }
+      }
+    } catch (err) { /* encode failed for this codec; try next */ }
+  }
+  return encOnly || { supported: false };
 }
 
 window.DevbenchMedia = { jpeg: devbenchJpegRun, video: devbenchVideoRun };

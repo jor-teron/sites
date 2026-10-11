@@ -89,7 +89,8 @@ function devbenchInit() {
   devbenchBind("video-run", "video-bar", "video-out", async function (p) {
     var r = await window.DevbenchMedia.video(p);
     if (!r.supported) { return "Not supported (no WebCodecs encoder)"; }
-    return r.codec + " · encode " + devbenchFmt(r.encFps, 0) + " fps · decode " + devbenchFmt(r.decFps, 0) + " fps · hw: " + r.hw;
+    var dec = r.decFps == null ? "decode not supported" : "decode " + devbenchFmt(r.decFps, 0) + " fps";
+    return r.codec + " · encode " + devbenchFmt(r.encFps, 0) + " fps · " + dec + " · hw: " + r.hw;
   });
   devbenchBind("ping-run", "ping-bar", "ping-out", async function (p) {
     var r = await window.DevbenchNet.ping(p);
