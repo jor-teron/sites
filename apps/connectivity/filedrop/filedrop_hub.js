@@ -107,6 +107,7 @@
     li.append(el('span', 'hub-rx-name', file.name + ' · ' + fmt(file.size)));
     li.append(btn('Save', '', save));
     if (window.FD_PRINT && FD_PRINT.can(file)) li.append(btn('Print 🖨', '', () => FD_PRINT.print(file)));
+    if (window.ShareWA) li.append(btn('WhatsApp ↗', '', () => ShareWA.files([file])));   // release 4
     $('hub-rx').prepend(li);
     $('hub-rx').hidden = false;
     if (autoOn() && !(FD.send && FD.send.isIOS)) save();

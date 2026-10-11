@@ -711,6 +711,12 @@
   window.__hubFocusFrame = focusFrame;
   window.__hubGoHome = goHome;
   window.__hubOpenUrl = navigateFrame;   // hub_link.js: "Open in…" a receiver app
+  // hub_chat.js (release 4): open a Hub app by part of its entry url ('pooh-chat').
+  window.__hubOpenApp = (match) => {
+    const a = (window.HUB_APPS || []).find((x) => String(x.entryUrl || '').indexOf(match) >= 0);
+    if (a) loadApp(a);
+    return !!a;
+  };
   primeFrame();
   loadApps();
   renderTiles();

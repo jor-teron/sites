@@ -1,110 +1,56 @@
-/**
- * =============================================================================
- * Project : pooh-chat
- * File    : pooh-chat.css
- * Purpose : Theme tokens and small layout rules Tailwind does not cover.
- *           Light is the default. Dark is body.theme-dark.
- * Author  : pooh-chat refactor
- * Notes   : Loaded by pooh-chat.html. Colors mirror POOH_CHAT_CONFIG intent.
- * =============================================================================
- */
-
-/**
- * Page font. Fredoka keeps the honey-pot look on both themes.
- */
+/*
+  Pooh Chat — styles (release 4). WebRTC Chat's dark neon look (deep navy, electric
+  blue / violet gradients, glow, pop-in bubbles) mixed with Pooh's honey amber and
+  rounded friendly shapes. Message log takes nearly all the height. Big tap targets.
+  prefers-reduced-motion: no animation.
+*/
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
 body {
-    font-family: "Fredoka", cursive, sans-serif;
+  font-family: "Fredoka", system-ui, sans-serif;
+  color: #f3ecff;
+  background: radial-gradient(120% 80% at 10% 0%, #3a1d6e 0%, transparent 55%),
+              radial-gradient(100% 70% at 100% 100%, #6b3a00 0%, transparent 55%),
+              linear-gradient(160deg, #0b1020, #121a33 60%, #1a1030);
+  background-attachment: fixed;
 }
+#app { display: flex; flex-direction: column; height: 100dvh; max-width: 640px; margin: 0 auto; }
 
-/**
- * Dark theme surface. Amber accent stays; backgrounds drop to stone.
- */
-body.theme-dark {
-    background-color: #1c1917;
-    color: #fef3c7;
+#top {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  background: linear-gradient(90deg, rgba(43,124,255,.35), rgba(160,80,255,.3), rgba(255,178,46,.35));
+  background-size: 200% 100%; animation: shimmer 8s ease-in-out infinite alternate;
+  border-bottom: 1px solid rgba(255,255,255,.12); box-shadow: 0 4px 24px rgba(120,80,255,.25);
 }
+#top h1 { flex: 1; margin: 0; font-size: 18px; font-weight: 700; letter-spacing: .02em; text-shadow: 0 0 12px rgba(255,190,80,.6); white-space: nowrap; }
+.honey { display: inline-block; animation: bob 3s ease-in-out infinite; }
+.status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #c9c2e8; max-width: 40%; overflow: hidden; }
+.status b { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: #ff6b6b; flex: none; }
+.status.ok .dot { background: #3dd68c; box-shadow: 0 0 10px #3dd68c; animation: pulse 2s infinite; }
 
-/**
- * Card shells in dark mode.
- */
-body.theme-dark .pooh-card {
-    background-color: #292524;
-    border-color: #b45309;
-    color: #fef3c7;
-}
+button { min-height: 44px; min-width: 44px; border: 0; border-radius: 14px; padding: 0 14px; font: inherit; font-size: 15px; color: #fff; cursor: pointer; }
+button.ghost { background: rgba(255,255,255,.1); }
+button:active { transform: scale(.95); }
 
-/**
- * Soft panels (pin box, scanner frame, message list) in dark mode.
- */
-body.theme-dark .pooh-panel {
-    background-color: #1c1917;
-    border-color: #92400e;
-    color: #fef3c7;
-}
+#log { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 10px; display: flex; flex-direction: column; gap: 8px; }
+.msg { position: relative; max-width: 82%; padding: 8px 12px 6px; border-radius: 18px; font-size: 15px; line-height: 1.35; word-wrap: break-word; animation: pop .25s ease-out; }
+.msg .who { display: block; font-size: 11px; font-weight: 600; opacity: .8; margin-bottom: 2px; }
+.msg .when { font-size: 10px; opacity: .6; margin-left: 6px; }
+.msg.me { align-self: flex-end; background: linear-gradient(135deg, #2b7cff, #8a4dff); border-bottom-right-radius: 6px; box-shadow: 0 4px 18px rgba(80,90,255,.35); }
+.msg.them { align-self: flex-start; background: linear-gradient(135deg, #3a2a10, #5a3c0c); border: 1px solid rgba(255,190,80,.35); border-bottom-left-radius: 6px; box-shadow: 0 4px 16px rgba(255,170,40,.15); }
+.msg .wa-one { position: absolute; top: -8px; right: -8px; min-height: 28px; min-width: 28px; padding: 0; font-size: 13px; border-radius: 50%; background: #25d366; opacity: 0; transition: opacity .2s; }
+.msg:hover .wa-one, .msg:focus-within .wa-one, .msg.sel .wa-one { opacity: 1; }
+.sys { align-self: center; font-size: 12px; color: #a99fd0; padding: 4px 10px; border-radius: 10px; background: rgba(255,255,255,.05); }
 
-/**
- * Secondary text in dark mode.
- */
-body.theme-dark .pooh-muted {
-    color: #fcd34d;
-}
+#composer { display: flex; gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); background: rgba(10,14,30,.85); border-top: 1px solid rgba(255,255,255,.1); }
+#input { flex: 1; min-width: 0; min-height: 48px; border: 2px solid rgba(255,190,80,.35); border-radius: 16px; padding: 0 14px; font: inherit; font-size: 16px; color: #fff; background: rgba(255,255,255,.06); outline: none; }
+#input:focus { border-color: #ffb22e; box-shadow: 0 0 0 3px rgba(255,178,46,.2); }
+.send { background: linear-gradient(135deg, #ffb22e, #ff7a2e); color: #2a1500; font-weight: 700; }
+.wa { background: #1a8f4a; font-size: 18px; padding: 0 10px; }
 
-/**
- * Headings in dark mode.
- */
-body.theme-dark .pooh-title {
-    color: #fde68a;
-}
-
-/**
- * Manual pin field in dark mode.
- */
-body.theme-dark .pooh-input {
-    background-color: #1c1917;
-    border-color: #b45309;
-    color: #fef3c7;
-}
-
-/**
- * Incoming chat bubble in dark mode. Outgoing stays amber.
- */
-body.theme-dark .bubble-friend {
-    background-color: #44403c;
-    border-color: #b45309;
-    color: #fef3c7;
-}
-
-/**
- * System pill in dark mode.
- */
-body.theme-dark .bubble-system {
-    background-color: rgba(180, 83, 9, 0.35);
-    color: #fde68a;
-}
-
-/**
- * QR holder stays light so the code scans. Border only changes.
- */
-body.theme-dark #qrcode {
-    background-color: #ffffff;
-    border-color: #b45309;
-}
-
-/**
- * Theme toggle button.
- */
-.theme-toggle {
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    border: 1px solid #f59e0b;
-    background: #fffbeb;
-    color: #92400e;
-}
-
-body.theme-dark .theme-toggle {
-    background: #44403c;
-    color: #fde68a;
-    border-color: #d97706;
-}
+@keyframes pop { from { transform: scale(.85) translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes pulse { 50% { box-shadow: 0 0 2px #3dd68c; } }
+@keyframes bob { 50% { transform: translateY(-3px) rotate(-6deg); } }
+@keyframes shimmer { to { background-position: 100% 0; } }
+@media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }

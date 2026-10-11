@@ -172,6 +172,7 @@
         if (SEND.isIOS && RECV.canShareFiles(it.file)) r.btns.append(btn('Save', 'primary', () => RECV.share(it)));
         else r.btns.append(btn('Save', '', () => RECV.download(it)));
         if (window.FD_PRINT && FD_PRINT.can(it.file)) r.btns.append(btn('Print 🖨', '', () => FD_PRINT.print(it.file)));
+        if (window.ShareWA) r.btns.append(btn('WhatsApp ↗', '', () => ShareWA.files([it.file])));   // release 4
         if (it.kind === 'image' && !r.thumb.querySelector('img')) { const th = thumbFor(it); r.thumb.replaceWith(th); r.thumb = th; }
       }
     }
