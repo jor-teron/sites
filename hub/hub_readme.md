@@ -116,3 +116,6 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - PeerJS loads from the pinned CDN (shared/link/link_core.js), not shared/vendor.
 - App frames get a `<style id="hub-noscrollbar">` that hides scrollbars without blocking scroll.
 - D-pad one-liner for apps: arrows/Space/Enter/Escape arrive as real key events; `window.addEventListener('message', e => e.data.type === 'hub-dpad' && …)` for raw buttons.
+
+## Release 4 (2026-10-11)
+- 🐻 chat bubble before the Gamepad icon (`hub_chat.js`, `hub_chat.css`): unread badge, drop-down with last 20 messages + Send, "Full chat" opens Pooh Chat; one quiet toast. `window.__hubOpenApp(match)`. Cache `hub-shell-v5`, `?v=20261011d`.

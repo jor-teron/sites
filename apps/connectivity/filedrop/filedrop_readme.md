@@ -104,3 +104,6 @@ Received images and PDFs get a "Print 🖨" button beside Save (`filedrop_print.
 - Received files (from another device, or inside the Hub for files tagged `app:'filedrop'`) get Save + Print 🖨 and download by themselves while Auto-download is on (per device, `shared-link-auto-download`, default on).
 - Only Disconnect in the Hub panel (or the Hub's Disconnect) forgets the Hub code; reloads reconnect.
 - Manual test: pair Gamepad, tap 📤 → File Drop shows "Hub connected"; pick 3 files → Hub toasts + downloads; second phone joined → "Send to" lists it; send → that phone gets Save / Print.
+
+## Release 4
+- Received files get "WhatsApp ↗" (`shared/share/share_wa.js`: share sheet, else download). Unknown Hub code → "Hub not found" banner with Retry.

@@ -83,3 +83,6 @@ Finger detection, hold-to-press, and sending from the sheet are not built yet.
 - Output standalone: own 4-digit code (`jtpkb-`, kept in `jtpkb-host-code`). Input: SharedLink join with backoff; only Disconnect ends it.
 - Text ops and corner detection are unchanged.
 - Manual test: open Paper Keyboard in the Hub → Output → scan its QR → type on the phone → text appears; reload the desktop → phone reconnects. Standalone page: same with its own code.
+
+## Release 4
+- Phone: a typed 4-digit code is tried as a Paper Keyboard desktop, then as the Hub code. Unknown code → "Hub not found" with Retry.

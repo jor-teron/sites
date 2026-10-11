@@ -95,3 +95,6 @@ Toasts:
 - Save menu → Send 📤 renders the current edits (JPEG) and sends them over the one Hub link (`shared/link`, `pe_send.js`).
 - Inside the Hub: pick a connected device by name; the Hub sends it. Standalone (phone): uses the saved Hub code (`shared-link-join-code`) or asks for it, then sends to the Hub (`app:''`, Hub routes it) or to another device by name.
 - Manual test: phone paired via the Hub QR → open Photo Editor on the phone, edit, Send → Hub shows the edited photo; inside the Hub with a phone paired → Send → phone gets it (File Drop open on the phone shows Save / Print).
+
+## Release 4
+- Standalone Send: code entry + Scan QR dialog (`shared/link/link_scan.js`, `vendor/jsQR.js`, BarcodeDetector when available) instead of a prompt. Unknown code → "Hub not found" with Retry.

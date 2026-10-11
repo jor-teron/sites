@@ -61,3 +61,11 @@ Any other `t` (Gamepad `btn`/`stick`/`key`/`ptr`…, Hub → pad `rumble`) is em
 - `shared/vendor/peerjs.min.js` and every per-app PeerJS copy were removed; PeerJS loads only through `loadPeer()` (P2P Chat, WebRTC Chat and Pooh Chat still use their own script tag of the same pinned CDN URL until release 4).
 - `stop()` only destroys the peer it stopped, so a new `join()` / `host()` right after a Disconnect survives.
 - Manual test (release 3): scan the Hub QR once on a phone → Gamepad works → 📤 File Drop is already connected → send 3 files → Open OCR / Paper Keyboard / Print in the Hub → the phone pages (`ocr_send.html#hub=`, `?role=input&hub=1`, `print-send.html?hub=1`) join the same link; reload the Hub → everything reconnects.
+
+## Release 4 (2026-10-11)
+- `link_chat.js` — `window.SharedChat`: group chat `{type:'chat', id, from, name, text, ts}`, history `shared-chat-history` (last 200). Devices send with `bcast:true`; the host re-broadcasts to every other device and emits `message` locally.
+- `link_scan.js` — `SharedLinkScan.ask()` code entry + Scan QR (BarcodeDetector, else the app's `vendor/jsQR.js`); `parse(text)`.
+- `../share/share_wa.js` — `ShareWA.text(t)` (`https://wa.me/?text=`) and `ShareWA.files(list)` (`navigator.share`, else download). WhatsApp and WhatsApp Business via the OS chooser.
+- Unknown code: `join()` on `peer-unavailable` for a code that never connected stops, sets status state `notfound`, emits `notfound`, and shows a "Hub not found — check the code" banner with Retry (`noBanner:true` to skip). Codes that connected once (`shared-link-ok-codes`) keep auto-reconnecting with backoff.
+- Hub ↔ app: app → Hub `{sharedLink:'chat', text}` (Pooh Chat inside the Hub).
+- Manual test: phone A + phone B open Pooh Chat (standalone, scan the Hub QR) → messages appear on both and in the Hub 🐻 panel; type a wrong code → banner, Retry.
