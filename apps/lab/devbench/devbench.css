@@ -112,3 +112,26 @@ button:disabled {
   margin: 0;
   text-align: right;
 }
+
+/* Section headings between card groups. */
+.group {
+  margin: 24px 0 8px;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+/* Full-width big buttons: Run all and Download result. */
+button.big {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  margin: 12px 0;
+  font-size: 1.05rem;
+}
+
+/* Data-use warning on the download card. */
+.warn {
+  color: #ffb74d;
+}

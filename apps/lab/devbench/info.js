@@ -53,11 +53,12 @@ async function devbenchLoadInfo() {
   var high = {};
   if (ua && ua.getHighEntropyValues) {
     try {
-      high = await ua.getHighEntropyValues(["architecture", "bitness", "model", "platform", "platformVersion"]);
+      high = await ua.getHighEntropyValues(["architecture", "bitness", "model", "platform", "platformVersion", "fullVersionList"]);
     } catch (err) {
       high = {};
     }
   }
+  var dpr = window.devicePixelRatio || 1;
   var gpu = devbenchGpuStrings();
   var quota = DEVBENCH_INFO_NA;
   if (navigator.storage && navigator.storage.estimate) {
@@ -77,11 +78,71 @@ async function devbenchLoadInfo() {
     ["Architecture", high.architecture || DEVBENCH_INFO_NA],
     ["Bitness", high.bitness || DEVBENCH_INFO_NA],
     ["Model", high.model || DEVBENCH_INFO_NA],
-    ["Screen", screen.width + "×" + screen.height + " @ " + (window.devicePixelRatio || 1) + "x"],
+    ["Browser", devbenchBrowser(high)],
+    ["Screen (CSS px)", screen.width + "×" + screen.height],
+    ["Screen (physical px)", Math.round(screen.width * dpr) + "×" + Math.round(screen.height * dpr)],
+    ["Pixel density", dpr + "x (≈" + Math.round(96 * dpr) + " dpi)"],
+    ["Refresh rate", "Measuring…"],
     ["GPU vendor", gpu.vendor],
     ["GPU renderer", gpu.renderer],
     ["Storage quota", quota]
   ]);
+  var hz = await devbenchRefreshRate();
+  devbenchSetFact("Refresh rate", hz);
+}
+
+/* Common panel rates used to round the measured frame rate. */
+const DEVBENCH_INFO_RATES = [30, 50, 60, 75, 90, 120, 144, 165, 240];
+
+/*
+  Count requestAnimationFrame frames for ~2 s, round to nearest common rate.
+*/
+function devbenchRefreshRate() {
+  return new Promise(function (resolve) {
+    var frames = 0, start = 0;
+    function tick(t) {
+      if (!start) { start = t; }
+      frames++;
+      if (t - start < 2000) { requestAnimationFrame(tick); return; }
+      var fps = (frames - 1) / ((t - start) / 1000);
+      var best = DEVBENCH_INFO_RATES.reduce(function (a, b) { return Math.abs(b - fps) < Math.abs(a - fps) ? b : a; });
+      resolve(best + " Hz (measured " + fps.toFixed(1) + " fps)");
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+/* Replace one fact value by its label. */
+function devbenchSetFact(label, value) {
+  document.querySelectorAll("#sys-out > div").forEach(function (row) {
+    if (row.firstChild.textContent === label) { row.lastChild.textContent = value; }
+  });
+}
+
+/*
+  Browser name + version + OS. Client hints first, user-agent text fallback.
+*/
+function devbenchBrowser(high) {
+  var ua = navigator.userAgent, name = "", ver = "", os = "";
+  var list = high.fullVersionList || [];
+  list.forEach(function (b) {
+    if (!/Not.?A.?Brand|Chromium/i.test(b.brand) && !name) { name = b.brand; ver = b.version; }
+  });
+  if (!name && list.length) { name = list[list.length - 1].brand; ver = list[list.length - 1].version; }
+  if (!name) {
+    var m = ua.match(/(Edg|OPR|SamsungBrowser|Firefox|Chrome|Version)\/([\d.]+)/);
+    if (m) {
+      name = { Edg: "Edge", OPR: "Opera", Version: "Safari" }[m[1]] || m[1];
+      ver = m[2];
+    }
+  }
+  if (high.platform) {
+    os = high.platform + (high.platformVersion ? " " + high.platformVersion : "");
+  } else {
+    var o = ua.match(/Android [\d.]+|Windows NT [\d.]+|Mac OS X [\d_]+|iPhone OS [\d_]+|CrOS|Linux/);
+    os = o ? o[0].replace(/_/g, ".") : "";
+  }
+  return (name || DEVBENCH_INFO_NA) + (ver ? " " + ver : "") + (os ? " on " + os : "");
 }
 
 /* Public info API. Page controller calls load on startup. */

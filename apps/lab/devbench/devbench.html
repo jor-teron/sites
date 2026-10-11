@@ -1,7 +1,7 @@
 <!--
   File: devbench.html
   Project: devbench
-  Role: Page shell for system info plus CPU, GPU, and disk tests.
+  Role: Page shell for device info plus performance, storage, media and network tests.
   Scripts stay in separate files. This file only marks up the panels.
 -->
 <!DOCTYPE html>
@@ -16,17 +16,19 @@
 <body>
   <main class="wrap">
     <h1>devbench</h1>
+    <button type="button" id="run-all" class="big">Run all (skips download)</button>
     <p class="note">Browser scores only. Disk is private storage, not the raw drive. GPU needs WebGL.</p>
 
     <!-- System facts, filled on load by info.js. No run button. -->
     <section class="card" id="sys-card">
-      <h2>System</h2>
+      <h2>Device info</h2>
       <p>What this browser will expose. Missing lines mean the API is blocked.</p>
       <dl class="facts" id="sys-out">
         <div><dt>Status</dt><dd>Loading…</dd></div>
       </dl>
     </section>
 
+    <h2 class="group">Performance</h2>
     <!-- CPU stress panel. 10 second worker run. -->
     <section class="card" id="cpu-card">
       <h2>CPU</h2>
@@ -47,6 +49,25 @@
       <canvas id="gpu-canvas" width="512" height="512" hidden></canvas>
     </section>
 
+    <!-- Memory speed panel. 64 MB copy and read. -->
+    <section class="card" id="mem-card">
+      <h2>Memory</h2>
+      <p>64 MB buffer copy and sequential read, best of 5. Score is GB/s.</p>
+      <button type="button" id="mem-run">Run memory</button>
+      <div class="bar"><span id="mem-bar"></span></div>
+      <div class="out" id="mem-out">Idle</div>
+    </section>
+
+    <!-- JavaScript speed panel. Mixed rounds for 3 seconds. -->
+    <section class="card" id="js-card">
+      <h2>JavaScript</h2>
+      <p>Sort, JSON, regex and DOM work for 3 seconds. Score is rounds per second.</p>
+      <button type="button" id="js-run">Run JavaScript</button>
+      <div class="bar"><span id="js-bar"></span></div>
+      <div class="out" id="js-out">Idle</div>
+    </section>
+
+    <h2 class="group">Storage</h2>
     <!-- Disk OPFS panel. 64 MB write then read. -->
     <section class="card" id="disk-card">
       <h2>Disk</h2>
@@ -55,6 +76,45 @@
       <div class="bar"><span id="disk-bar"></span></div>
       <div class="out" id="disk-out">Idle</div>
     </section>
+    <h2 class="group">Media</h2>
+    <!-- JPEG panel. 12 MP encode and decode. -->
+    <section class="card" id="jpeg-card">
+      <h2>JPEG</h2>
+      <p>12 MP canvas encode (quality 0.9) and decode, average of 5.</p>
+      <button type="button" id="jpeg-run">Run JPEG</button>
+      <div class="bar"><span id="jpeg-bar"></span></div>
+      <div class="out" id="jpeg-out">Idle</div>
+    </section>
+
+    <!-- Video panel. WebCodecs encode then decode 120 frames at 1080p. -->
+    <section class="card" id="video-card">
+      <h2>Video</h2>
+      <p>WebCodecs: encode 120 frames at 1920×1080, then decode them. Score is fps.</p>
+      <button type="button" id="video-run">Run video</button>
+      <div class="bar"><span id="video-bar"></span></div>
+      <div class="out" id="video-out">Idle</div>
+    </section>
+
+    <h2 class="group">Network</h2>
+    <!-- Ping panel. Own site and PeerJS server, 5 each. -->
+    <section class="card" id="ping-card">
+      <h2>Ping</h2>
+      <p>5 small no-cache requests to this site and the PeerJS server.</p>
+      <button type="button" id="ping-run">Run ping</button>
+      <div class="bar"><span id="ping-bar"></span></div>
+      <div class="out" id="ping-out">Idle</div>
+    </section>
+
+    <!-- Download speed panel. Own button only, not in Run all. -->
+    <section class="card" id="dl-card">
+      <h2>Download speed</h2>
+      <p class="warn" id="dl-warn">Uses ~12 MB data. Not part of Run all.</p>
+      <button type="button" id="dl-run">Run download</button>
+      <div class="bar"><span id="dl-bar"></span></div>
+      <div class="out" id="dl-out">Idle</div>
+    </section>
+
+    <button type="button" id="save-run" class="big">Download result (.txt)</button>
   </main>
 
   <!-- Info and test engines load before the page controller. -->
@@ -62,6 +122,10 @@
   <script src="cpu.js"></script>
   <script src="gpu.js"></script>
   <script src="disk.js"></script>
+  <script src="memory.js"></script>
+  <script src="jsspeed.js"></script>
+  <script src="media.js"></script>
+  <script src="network.js"></script>
   <script src="devbench.js"></script>
 </body>
 </html>

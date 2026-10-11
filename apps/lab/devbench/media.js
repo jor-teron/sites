@@ -1,0 +1,115 @@
+/*
+  File: media.js
+  Project: devbench
+  Role: Media tests. JPEG encode/decode on a 12 MP canvas, and WebCodecs
+  video encode then decode of 120 frames at 1920x1080.
+  Exposes window.DevbenchMedia.jpeg(onProgress) and .video(onProgress).
+*/
+
+/* 12 MP test image, 4000 x 3000. */
+const DEVBENCH_JPEG_W = 4000;
+const DEVBENCH_JPEG_H = 3000;
+const DEVBENCH_JPEG_RUNS = 5;
+const DEVBENCH_VID_W = 1920;
+const DEVBENCH_VID_H = 1080;
+const DEVBENCH_VID_FRAMES = 120;
+
+/* Draw a busy synthetic pattern so JPEG has real detail to compress. */
+function devbenchMediaPattern(ctx, w, h, t) {
+  var g = ctx.createLinearGradient(0, 0, w, h);
+  g.addColorStop(0, "hsl(" + (t * 3 % 360) + ",70%,40%)");
+  g.addColorStop(1, "hsl(" + ((t * 3 + 180) % 360) + ",70%,60%)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  for (var i = 0; i < 200; i++) {
+    ctx.fillStyle = "hsl(" + ((i * 37 + t * 5) % 360) + ",80%,50%)";
+    ctx.fillRect((i * 97 + t * 11) % w, (i * 53) % h, w / 20, h / 30);
+  }
+  ctx.fillStyle = "#fff";
+  ctx.font = Math.round(h / 10) + "px sans-serif";
+  ctx.fillText("devbench " + t, w / 10, h / 2);
+}
+
+/* JPEG encode via toBlob and decode via createImageBitmap. */
+async function devbenchJpegRun(onProgress) {
+  var c = document.createElement("canvas");
+  c.width = DEVBENCH_JPEG_W; c.height = DEVBENCH_JPEG_H;
+  devbenchMediaPattern(c.getContext("2d"), c.width, c.height, 1);
+  var enc = 0, dec = 0, blob = null;
+  for (var i = 0; i < DEVBENCH_JPEG_RUNS; i++) {
+    var t0 = performance.now();
+    blob = await new Promise(function (r) { c.toBlob(r, "image/jpeg", 0.9); });
+    var t1 = performance.now();
+    var bmp = await createImageBitmap(blob);
+    var t2 = performance.now();
+    if (bmp.close) { bmp.close(); }
+    enc += t1 - t0; dec += t2 - t1;
+    onProgress((i + 1) / DEVBENCH_JPEG_RUNS);
+  }
+  var mp = (DEVBENCH_JPEG_W * DEVBENCH_JPEG_H) / 1e6;
+  enc /= DEVBENCH_JPEG_RUNS; dec /= DEVBENCH_JPEG_RUNS;
+  return { encMs: enc, decMs: dec, encMPs: mp / (enc / 1000), decMPs: mp / (dec / 1000), sizeKB: blob.size / 1024 };
+}
+
+/* First codec the browser can encode at 1080p. */
+async function devbenchPickCodec() {
+  var list = ["avc1.42E028", "vp8", "vp09.00.10.08"];
+  for (var i = 0; i < list.length; i++) {
+    var cfg = { codec: list[i], width: DEVBENCH_VID_W, height: DEVBENCH_VID_H, bitrate: 8e6, framerate: 30, hardwareAcceleration: "no-preference" };
+    if (list[i].indexOf("avc1") === 0) { cfg.avc = { format: "annexb" }; }
+    try {
+      var s = await VideoEncoder.isConfigSupported(cfg);
+      if (s.supported) { return cfg; }
+    } catch (err) { /* try next */ }
+  }
+  return null;
+}
+
+/* Encode 120 canvas frames, then decode the produced chunks. */
+async function devbenchVideoRun(onProgress) {
+  if (!("VideoEncoder" in window) || !("VideoDecoder" in window)) {
+    return { supported: false };
+  }
+  var cfg = await devbenchPickCodec();
+  if (!cfg) { return { supported: false }; }
+  var c = document.createElement("canvas");
+  c.width = DEVBENCH_VID_W; c.height = DEVBENCH_VID_H;
+  var ctx = c.getContext("2d");
+  var chunks = [], decoderConfig = null, encErr = null;
+  var encoder = new VideoEncoder({
+    output: function (chunk, meta) {
+      if (meta && meta.decoderConfig && !decoderConfig) { decoderConfig = meta.decoderConfig; }
+      chunks.push(chunk);
+    },
+    error: function (e) { encErr = e; }
+  });
+  encoder.configure(cfg);
+  var t0 = performance.now();
+  for (var i = 0; i < DEVBENCH_VID_FRAMES; i++) {
+    devbenchMediaPattern(ctx, c.width, c.height, i);
+    var frame = new VideoFrame(c, { timestamp: i * 33333 });
+    encoder.encode(frame, { keyFrame: i % 60 === 0 });
+    frame.close();
+    if (encoder.encodeQueueSize > 4) { await new Promise(function (r) { setTimeout(r, 0); }); }
+    onProgress(0.5 * (i + 1) / DEVBENCH_VID_FRAMES);
+  }
+  await encoder.flush();
+  var encSec = (performance.now() - t0) / 1000;
+  encoder.close();
+  if (encErr) { throw encErr; }
+  var decoded = 0, decErr = null;
+  var decoder = new VideoDecoder({
+    output: function (f) { decoded++; f.close(); onProgress(0.5 + 0.5 * decoded / chunks.length); },
+    error: function (e) { decErr = e; }
+  });
+  decoder.configure(decoderConfig || { codec: cfg.codec, codedWidth: DEVBENCH_VID_W, codedHeight: DEVBENCH_VID_H });
+  var t1 = performance.now();
+  chunks.forEach(function (ch) { decoder.decode(ch); });
+  await decoder.flush();
+  var decSec = (performance.now() - t1) / 1000;
+  decoder.close();
+  if (decErr) { throw decErr; }
+  return { supported: true, codec: cfg.codec, hw: cfg.hardwareAcceleration, encFps: DEVBENCH_VID_FRAMES / encSec, decFps: decoded / decSec };
+}
+
+window.DevbenchMedia = { jpeg: devbenchJpegRun, video: devbenchVideoRun };
