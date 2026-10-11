@@ -1009,7 +1009,7 @@
     showPad();
     setStatus('connecting', opts.retry ? TXT.reconnecting : TXT.connecting);
     if (!window.SharedLink) { setStatus('disconnected', TXT.peerMissing); blinkError(); return; }
-    SharedLink.join({ prefix: CFG.peer.idPrefix, code: code, meta: { pad: 1 } })
+    SharedLink.join({ prefix: CFG.peer.idPrefix, code: code, meta: { pad: 1 }, noBanner: true })
       .catch(() => { setStatus('disconnected', TXT.peerMissing); blinkError(); });
   }
 

@@ -8,7 +8,7 @@
     {sharedLink:'message', msg:{type:'pk', app:'paper-keyboard', payload}}.
   - Output standalone: SharedLink host role, 'jtpkb-' + 4-digit code kept in
     'jtpkb-host-code' across reloads (SharedLink retries a held id with backoff).
-  - Input (phone): SharedLink join ('jtsites-' for hub=1, else 'jtpkb-'); code kept in
+  - Input (phone): typed code tries own desktop, then Hub (release 4). SharedLink join ('jtsites-' for hub=1, else 'jtpkb-'); code kept in
     'jtpkb-last-code'; SharedLink reconnects with backoff until stop().
   Payloads go as SharedLink messages {type:'pk', app:'paper-keyboard', payload}.
   Only a manual Disconnect (stop) ends a link. PeerJS comes from SharedLink's pinned loader.
@@ -155,9 +155,22 @@
     sub("close", function () { hooks.onDrop(); });
     sub("bye", function () { hooks.onStatus("Desktop disconnected.", false); hooks.onDrop(); });
     hooks.onStatus("Connecting to " + code + "…", false);
-    SharedLink.join({ prefix: hub ? HUB_PREFIX : PREFIX, code: code }).catch(function () {
-      hooks.onStatus("PeerJS could not load (offline?)", false);
-    });
+    // Release 4: a typed code is tried as a Paper Keyboard desktop first; if that code is
+    // unknown, the same code is tried as a Hub code (jtsites-) before "Hub not found".
+    function go(asHub, last) {
+      SharedLink.join({ prefix: asHub ? HUB_PREFIX : PREFIX, code: code, noBanner: !last }).catch(function () {
+        hooks.onStatus("PeerJS could not load (offline?)", false);
+      });
+    }
+    if (!hub) {
+      sub("notfound", function once() {
+        SharedLink.off("notfound", once);
+        saveKey(KEY_LAST_HUB, "1");
+        hooks.onStatus("Trying " + code + " as a Hub code…", false);
+        go(true, true);
+      });
+    }
+    go(hub, hub);
     return {
       send: function (payload) {
         return SharedLink.send({ type: "pk", app: "paper-keyboard", payload: payload });

@@ -147,6 +147,11 @@
     if (msg.t === 'msg') {
       // Host relays messages addressed to another device.
       if (S.role === 'host' && msg.to && msg.to !== 'host') { send(Object.assign({}, msg, { from: from }), msg.to); return; }
+      // Release 4: host re-broadcasts group messages (bcast) to every other device (group chat via the Hub).
+      if (S.role === 'host' && msg.bcast) {
+        var fw = Object.assign({}, msg, { from: from });
+        S.links.forEach(function (l, id) { if (!l.legacy && id !== from) safeSend(l.conn, fw); });
+      }
       emit('message', msg, from);
       return;
     }
@@ -235,6 +240,35 @@
   /* ---------- join ---------- */
 
   var JOIN_KEY = 'shared-link-join-code';
+  var OK_KEY = 'shared-link-ok-codes';   // codes that connected at least once (auto-reconnect)
+  function okCodes() { try { return JSON.parse(load(OK_KEY) || '[]') || []; } catch (_) { return []; } }
+  function markOk(code) { var l = okCodes().filter(function (c) { return c !== code; }); l.unshift(code); save(OK_KEY, JSON.stringify(l.slice(0, 10))); }
+
+  /* Release 4: unknown code (never connected + peer-unavailable) → stop, banner with Retry. */
+  var banner = null;
+  function notFound() {
+    destroy();
+    status('Hub not found — check the code', 'notfound');
+    emit('notfound', S.code);
+    if (S.opts.noBanner || !document.body) return;
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.className = 'sl-notfound';
+      banner.setAttribute('role', 'alert');
+      banner.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;display:flex;gap:8px;align-items:center;padding:12px;border-radius:14px;background:#3a1420;color:#fff;font:15px system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.4)';
+      var t = document.createElement('span'); t.style.flex = '1';
+      var r = document.createElement('button'); r.type = 'button'; r.textContent = 'Retry';
+      var x = document.createElement('button'); x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', 'Close');
+      [r, x].forEach(function (b) { b.style.cssText = 'min-height:44px;min-width:44px;padding:0 14px;border:0;border-radius:10px;background:#ff5d8f;color:#fff;font-size:15px'; });
+      r.addEventListener('click', function () { hideBanner(); S.netRetry = 0; loadPeer().then(startJoin); });
+      x.addEventListener('click', hideBanner);
+      banner.append(t, r, x);
+      document.body.appendChild(banner);
+    }
+    banner.firstChild.textContent = 'Hub not found — check the code (' + S.code + ')';
+    banner.hidden = false;
+  }
+  function hideBanner() { if (banner) banner.hidden = true; }
 
   function join(opts) {
     S.role = 'join';
@@ -249,6 +283,7 @@
 
   function startJoin() {
     destroy();
+    hideBanner();
     status('Connecting · ' + S.code + '…', 'starting');
     var p = S.peer = new window.Peer({ debug: 0 });
     p.on('open', function () {
@@ -258,7 +293,7 @@
       S.hostConn = conn;
       var rec = { conn: conn, name: 'Host' };
       S.links = new Map([['host', rec]]);
-      conn.on('open', function () { S.netRetry = 0; safeSend(conn, { t: 'hello', name: name }); emit('open', 'host'); });
+      conn.on('open', function () { S.netRetry = 0; markOk(S.code); safeSend(conn, { t: 'hello', name: name }); emit('open', 'host'); });
       conn.on('data', function (d) { onData(conn, rec, d); });
       conn.on('close', function () {
         if (S.hostConn !== conn) return;
@@ -271,6 +306,7 @@
       if (S.peer !== p) return;
       if (S.hostConn && S.hostConn.open) return;
       var type = err && err.type;
+      if (type === 'peer-unavailable' && okCodes().indexOf(S.code) < 0) { notFound(); return; }
       status(type === 'peer-unavailable' ? 'Host not found — retrying…' : 'Network problem — retrying…', 'retry');
       retry(NET_RETRY_MS[Math.min(S.netRetry++, NET_RETRY_MS.length - 1)]);
     });
@@ -327,6 +363,7 @@
     trackLegacy: trackLegacy,
     broadcastDevices: broadcastDevices,
     _targets: targets, _safeSend: safeSend,
+    everConnected: function (c) { return okCodes().indexOf(String(c || S.code)) >= 0; },
     get code() { return S.code; },
     get role() { return S.role; },
     get id() { return S.peer && S.peer.open ? S.peer.id : ''; },

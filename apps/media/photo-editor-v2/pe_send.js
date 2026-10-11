@@ -5,7 +5,8 @@
  *   ({sharedLink:'sendFile'} postMessage contract, hub/hub_link.js).
  * - Standalone (e.g. phone): joins the Hub with the shared saved code
  *   ('shared-link-join-code', same as Gamepad / File Drop) or asks for it, then sends to the
- *   Hub as app:'' (Hub routes it to the open app or its viewer), or to another device by name.
+ *   Hub as app:''. Release 4: no saved code → SharedLinkScan dialog (code + Scan QR, vendor/jsQR.js).
+ *   (Hub routes it to the open app or its viewer), or to another device by name.
  */
 (function (PE) {
   'use strict';
@@ -51,8 +52,10 @@
   function waitLinked(ms) {
     return new Promise((res) => {
       if (SharedLink.connected) return res(true);
-      const t = setTimeout(() => { SharedLink.off('open', f); res(false); }, ms);
-      const f = SharedLink.on('open', () => { clearTimeout(t); SharedLink.off('open', f); res(true); });
+      const end = (v) => { clearTimeout(t); SharedLink.off('open', f); SharedLink.off('notfound', g); res(v); };
+      const t = setTimeout(() => end(false), ms);
+      const f = SharedLink.on('open', () => end(true));
+      const g = SharedLink.on('notfound', () => end(false));   // banner with Retry is shown by link_core
     });
   }
 
@@ -61,10 +64,10 @@
     if (!SharedLink.connected) {
       let code = '';
       try { code = localStorage.getItem('shared-link-join-code') || ''; } catch (_) { /* blocked */ }
-      if (!code) code = String(window.prompt('Hub code (shown under the Hub QR):') || '').trim().toUpperCase();
+      if (!code || !SharedLink.everConnected(code)) code = window.SharedLinkScan ? (await SharedLinkScan.ask({ title: 'Send to the Hub' })) || '' : '';   // release 4: code entry + Scan QR
       if (!code) return;
       if (SharedLink.role !== 'join' || SharedLink.code !== code) await SharedLink.join({ prefix: 'jtsites-', code: code });
-      if (!(await waitLinked(15000))) { alert('Could not reach Hub ' + code + '.'); return; }
+      if (!(await waitLinked(15000))) { if (SharedLink.status.indexOf('not found') < 0) alert('Could not reach Hub ' + code + '.'); return; }
     }
     const me = SharedLink.id;
     const others = SharedLink.devices.filter((d) => d.online && d.id !== me && d.id !== 'host');
