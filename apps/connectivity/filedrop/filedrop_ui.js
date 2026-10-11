@@ -313,13 +313,17 @@
     window.addEventListener('pointerdown', unlockAudio, { once: true });
     if (window.ResizeObserver) new ResizeObserver(() => renderQr()).observe($('qr-wrap'));
 
-    if (typeof Peer === 'undefined' || !window.RTCPeerConnection) {
-      toast('This browser cannot run WebRTC, or PeerJS failed to load.', 'err');
-      $('code-go').disabled = true;
-      return;
-    }
-    PAIR.start();
-    sync();
+    // PeerJS comes from SharedLink's pinned CDN loader (shared/link/link_core.js).
+    const go = () => {
+      if (typeof Peer === 'undefined' || !window.RTCPeerConnection) {
+        toast('This browser cannot run WebRTC, or PeerJS failed to load.', 'err');
+        $('code-go').disabled = true;
+        return;
+      }
+      PAIR.start();
+      sync();
+    };
+    if (window.SharedLink) SharedLink.loadPeer().then(go, go); else go();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
   FD.ui = { sync: sync, toast: toast };

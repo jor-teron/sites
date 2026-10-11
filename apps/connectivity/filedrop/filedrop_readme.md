@@ -13,7 +13,8 @@ Send files between any two devices with a browser (phone ↔ PC, phone ↔ phone
 - `filedrop_scan.js`: live camera QR scan (BarcodeDetector, else jsQR)
 - `filedrop_ui.js`: screens, list, progress, drag-drop, keys, start-up
 - `filedrop_test.js`: Node tests for the pure parts (`node filedrop_test.js`, 90 passing)
-- `vendor/`: PeerJS 1.5.4, qrcode.js, JSZip 3.10.1, jsQR 1.4.0 (all local, no CDN; see `vendor/README.txt`)
+- `filedrop_hub.js`: Hub panel (release 3): join the Hub with SharedLink, Send to, received list
+- `vendor/`: qrcode.js, JSZip 3.10.1, jsQR 1.4.0 (local; PeerJS 1.5.4 comes from SharedLink's pinned CDN loader, `shared/link/link_core.js`)
 - `filedrop_icon.png`, `index.html` (opens `filedrop.html`)
 
 ## 3. Behaviour rules
@@ -96,3 +97,10 @@ Toasts and camera messages:
 ## Print
 
 Received images and PDFs get a "Print 🖨" button beside Save (`filedrop_print.js`): the file alone goes to the browser's own print dialog (PDF in a hidden iframe, image fitted to the page; fallback opens it in a new tab). Other file types have no Print button.
+
+## 8. Hub mode (release 3)
+- File Drop is the default way to send files to the Hub. The Hub panel at the top joins the Hub with the shared saved code (`shared-link-join-code`, written by the Gamepad / Print / OCR phones), `?hub=CODE`, the Hub code box, or by scanning the Hub QR with the File Drop camera.
+- Send files to Hub… (several at once) → if only the Hub is connected they go straight to it; with more devices a "Send to" list shows the Hub first, then each device by name (relayed through the Hub). Files go as `app:''`, so the Hub puts them in the open app that wants them or in its viewer.
+- Received files (from another device, or inside the Hub for files tagged `app:'filedrop'`) get Save + Print 🖨 and download by themselves while Auto-download is on (per device, `shared-link-auto-download`, default on).
+- Only Disconnect in the Hub panel (or the Hub's Disconnect) forgets the Hub code; reloads reconnect.
+- Manual test: pair Gamepad, tap 📤 → File Drop shows "Hub connected"; pick 3 files → Hub toasts + downloads; second phone joined → "Send to" lists it; send → that phone gets Save / Print.

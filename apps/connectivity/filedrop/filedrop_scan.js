@@ -74,6 +74,7 @@
         if (r) text = r.data;
       }
       if (!on) return;
+      if (text != null && FD.hub && FD.hub.tryText(text)) { SCAN.stop(); return; }   // Hub QR → join the Hub
       if (text != null) {
         const target = P.parseLink(text, C());
         if (target && target.id !== (FD.pair.me() || {}).id) {

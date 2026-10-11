@@ -144,3 +144,17 @@ main { flex: 1; min-height: 0; position: relative; }
   .item { min-height: 50px; padding: 3px 4px 3px 6px; }
 }
 @media (prefers-reduced-motion: reduce) { .spinner, .dot.wait { animation: none; } .track span { transition: none; } }
+
+/* Release 3: Hub panel (filedrop_hub.js) */
+.hub { margin: 12px auto; max-width: 1000px; display: grid; gap: 10px; }
+.hub-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.hub .dot { width: 10px; height: 10px; border-radius: 50%; background: #888; }
+.hub.on .dot { background: #3c3; }
+.hub-actions, .hub-to { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hub-to-title { width: 100%; font-weight: 600; }
+.hub .big { min-height: 48px; padding: 0 18px; font-size: 16px; }
+.hub-auto { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+.hub-bar .track { height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+.hub-bar .track span { display: block; height: 100%; width: 0; background: #4a8; }
+.hub-rx { display: flex; gap: 8px; align-items: center; }
+.hub-rx-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
