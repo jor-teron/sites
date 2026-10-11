@@ -118,7 +118,8 @@
   };
 
   // Render the edits on the full-size photo (strip by strip) and download it.
-  IO.save = async (fmt) => {
+  // onBlob (optional): receive the rendered blob instead of downloading it (used by Print).
+  IO.save = async (fmt, onBlob) => {
     if (!S.photo || busy) return;
     fmt = fmt === 'png' ? 'png' : (fmt === 'jpeg' ? 'jpeg' : IO.defaultFormat());
     if (PE.crop.active) PE.crop.apply();
@@ -147,6 +148,7 @@
       const mime = fmt === 'png' ? 'image/png' : 'image/jpeg';
       const blob = await new Promise((res) => c.toBlob(res, mime, fmt === 'png' ? undefined : cs.jpegQuality));
       if (!blob) throw new Error('encode failed');
+      if (onBlob) { PE.ui.busy(false); onBlob(blob); return; }
       const name = IO.fileName(fmt);
       const url = URL.createObjectURL(blob), a = document.createElement('a');
       a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();

@@ -1,0 +1,12 @@
+# Lab apps — one per line: name, path, icon (optional; empty = <folder>/<folder>_icon.png or a letter tile)
+# Paths are relative to this folder. Lines starting with # are comments.
+name, path, icon
+Print, print/,
+Basic Mail, basic-mail/,
+Paper Keyboard, paper-keyboard/,
+Device Benchmark, devbench/,
+Island Game Demo, island-demo/,
+Angry Bird, angry-bird/,
+Pacman, pacman/,
+WebRTC Chat, ../connectivity/webrtc-chat/,
+P2P Chat, ../connectivity/p2pchat.html,

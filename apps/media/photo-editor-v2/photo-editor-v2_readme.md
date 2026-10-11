@@ -86,3 +86,7 @@ Toasts:
 ## 12. Related apps
 - Photo Editor: the older version, left unchanged.
 - Draw: drawing on a blank page.
+
+## Print
+
+"Print 🖨" in the Save menu (`pe_print.js`) renders the current edits full-size (same path as Save, `PE.io.save(fmt, onBlob)`) and hands the image to the browser's print dialog.

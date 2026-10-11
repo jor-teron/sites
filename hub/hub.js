@@ -304,7 +304,7 @@
     empty.classList.add('hidden');
     setOpen(false);
     focusFrame();
-    document.title = app.name + ' — sites hub';
+    document.title = 'Hub - ' + app.name;
     catLabel.textContent = HEADER_DEFAULT;
     menu.querySelectorAll('button.app').forEach((b) => {
       b.classList.toggle('active', b.dataset.entryUrl === app.entryUrl);
@@ -320,7 +320,7 @@
     currentEntry = '';
     empty.classList.remove('hidden');
     setOpen(false);
-    document.title = 'Main — sites hub';
+    document.title = 'Hub';
     catLabel.textContent = HEADER_DEFAULT;
     menu.querySelectorAll('button.app').forEach((b) => b.classList.remove('active'));
   }

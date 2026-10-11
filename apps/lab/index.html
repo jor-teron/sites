@@ -1,27 +1,20 @@
-<html>
-
-
-<style>
-
-iframe {
-	width: 100%;
-	height: 100%;
-	
-	
-}
-
-</style>
-
-<body>
-
-
-<img src="../../shared/wallpaper/xp.jpg" >
-
-
+<!doctype html>
 <!--
-<iframe src="iframe.html">
-</iframe>
+  Lab page (apps/lab/index.html) — test apps that are not on the Hub home menu.
+  Tiles come from lab-apps.csv next to this file (fetched, so serve over http, not file://).
+  Logic in lab.js, look in lab.css.
 -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lab</title>
+  <link rel="stylesheet" href="lab.css?v=20261011a" />
+</head>
+<body>
+  <h1>Lab</h1>
+  <main id="grid" class="grid" aria-label="Lab apps"></main>
+  <p id="msg" class="msg" hidden></p>
+  <script src="lab.js?v=20261011a"></script>
 </body>
-
 </html>

@@ -92,3 +92,7 @@ Toasts and camera messages:
 - Hub + controller: the hub can also receive files from the controller's Files tab.
 - QR Scanner: general QR reader.
 - Note: `hub_apps.js` still has an old hidden Tools row "FileDrop" → `apps/lab/file-drop/`, which no longer exists (harmless while hidden).
+
+## Print
+
+Received images and PDFs get a "Print 🖨" button beside Save (`filedrop_print.js`): the file alone goes to the browser's own print dialog (PDF in a hidden iframe, image fitted to the page; fallback opens it in a new tab). Other file types have no Print button.

@@ -63,12 +63,9 @@ Office,   Basic Mail,            apps/lab/basic-mail/,                       ,  
 Connectivity, File Drop,         apps/connectivity/filedrop/,                ,         0,       0,      405
 Connectivity, QR Scanner,        apps/connectivity/qr-scanner/,              ,         0,       0,      406
 Connectivity, Pooh Chat,         apps/connectivity/pooh-chat/,               ,         0,       0,      450
-Connectivity, WebChat,           apps/connectivity/webrtc-chat/,             ,         0,       0,      455
-Connectivity, Peer Chat,         apps/connectivity/p2pchat.html,             ,         0,       0,      460
 
 Tools,    Calculator,            apps/tools/calculator/,                     ,         0,       0,      410
 Tools,    Calculator (Beta),     apps/tools/calculator-beta/,                ,         0,       0,      411
-Tools,    FileDrop,              apps/lab/file-drop/,                        ,         0,       1,      410
 Tools,    NE-India Dictionary,   apps/tools/nei-dict/,                       ,         0,       0,      430
 Tools,    Weather,               apps/tools/weather-chart/,                  ,         0,       0,      420
 Tools,    Weather Hourly,        apps/tools/weather-hourly/,                 ,         0,       0,      465
@@ -77,6 +74,7 @@ Tools,    Caption for NEI,       apps/tools/caption-for-nei/,                ,  
 Desktop,  Learning HTML (Basic), apps/tools/learning-html/,                  ,         0,       0,      910
 Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,         1,       0,      900
 
+Lab,      Lab Page,              apps/lab/,                                  ,         0,       0,      1000
 Lab,      Device Benchmark,      apps/lab/devbench/,                         ,         0,       0,      1050
 Lab,      Island Game Demo,      apps/lab/island-demo/,                      ,         0,       0,      1080
 Lab,      Phone,                 apps/media/phone/,                          ,         0,       0,      1070

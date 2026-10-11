@@ -47,7 +47,7 @@
 
   U.act = (a) => {
     const C = PE.crop, T = PE.transform, has = !!S.photo;
-    if (a !== 'save' && a !== 'saveJpeg' && a !== 'savePng') $('pop-save').hidden = true;
+    if (a !== 'save' && a !== 'saveJpeg' && a !== 'savePng' && a !== 'print') $('pop-save').hidden = true;
     switch (a) {
       case 'open': PE.io.pick(); break;
       case 'undo': if (!C.active) S.undo(); break;
@@ -73,6 +73,7 @@
         break;
       case 'saveJpeg': $('pop-save').hidden = true; PE.io.save('jpeg'); break;
       case 'savePng': $('pop-save').hidden = true; PE.io.save('png'); break;
+      case 'print': $('pop-save').hidden = true; if (has && PE.print) PE.print(); break;
       case 'saveDefault': PE.io.save(); break;
       case 'resetZoom': PE.view.resetZoom(); break;
       case 'cancel':
