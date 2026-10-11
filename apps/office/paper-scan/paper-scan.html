@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<!-- Paper Scan — photos of pages → one PDF (release 1). See README.md. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Paper Scan</title>
+  <link rel="icon" href="paper-scan_icon.png">
+  <link rel="stylesheet" href="paper-scan.css">
+</head>
+<body>
+<header class="ps-top">
+  <h1>📄 Paper Scan</h1>
+  <label class="ps-q">Quality
+    <select id="quality">
+      <option value="low">Low</option>
+      <option value="medium">Medium</option>
+      <option value="good">Good</option>
+    </select>
+  </label>
+  <button id="newscan" type="button" class="ps-btn ghost" title="Clear all pages">🗑 New scan</button>
+</header>
+
+<main id="main">
+  <p id="empty" class="ps-empty">No pages yet.<br>Tap <b>📷 Camera</b> or <b>🖼 Photos</b> to add pages.</p>
+  <ol id="pages" class="ps-pages"></ol>
+  <p id="status" class="ps-status" role="status"></p>
+</main>
+
+<footer class="ps-bar">
+  <button id="cam" type="button" class="ps-btn">📷 Camera</button>
+  <button id="pick" type="button" class="ps-btn">🖼 Photos</button>
+  <button id="export" type="button" class="ps-btn primary" title="Download PDF (Ctrl+S)">⬇ PDF</button>
+  <button id="print" type="button" class="ps-btn">🖨 Print</button>
+  <button id="share" type="button" class="ps-btn">↗ Share</button>
+  <button id="send" type="button" class="ps-btn">📤 Send</button>
+</footer>
+<input id="in-cam" type="file" accept="image/*" capture="environment" multiple hidden>
+<input id="in-pick" type="file" accept="image/*" multiple hidden>
+<input id="in-retake" type="file" accept="image/*" capture="environment" hidden>
+
+<section id="editor" class="ps-editor" hidden aria-label="Edit page">
+  <div class="ps-ed-top">
+    <button id="ed-done" type="button" class="ps-btn primary">✓ Done</button>
+    <span id="ed-title"></span>
+    <button id="ed-rot" type="button" class="ps-btn" title="Rotate 90°">⟳ Rotate</button>
+    <button id="ed-full" type="button" class="ps-btn ghost" title="Whole photo">⛶ Full</button>
+  </div>
+  <div id="ed-stage" class="ps-stage">
+    <canvas id="ed-canvas"></canvas>
+    <svg id="ed-quad" class="ps-quad"><polygon points=""></polygon></svg>
+    <div class="ps-h" data-i="0"></div><div class="ps-h" data-i="1"></div>
+    <div class="ps-h" data-i="2"></div><div class="ps-h" data-i="3"></div>
+  </div>
+  <div class="ps-filters" id="ed-filters">
+    <button type="button" data-f="original" class="ps-btn">Original</button>
+    <button type="button" data-f="document" class="ps-btn">Document</button>
+    <button type="button" data-f="gray" class="ps-btn">Grayscale</button>
+    <button type="button" data-f="bw" class="ps-btn">B&amp;W</button>
+  </div>
+</section>
+
+<script src="../../../shared/link/link_core.js?v=20261011d"></script>
+<script src="../../../shared/link/link_devices.js?v=20261011c"></script>
+<script src="../../../shared/link/link_files.js?v=20261011c"></script>
+<script src="../../../shared/link/link_scan.js"></script>
+<script src="vendor/jsQR.js"></script>
+<script src="ps_store.js"></script>
+<script src="ps_filter.js"></script>
+<script src="ps_crop.js"></script>
+<script src="ps_pdf.js"></script>
+<script src="ps_capture.js"></script>
+<script src="ps_pages.js"></script>
+<script src="ps_send.js"></script>
+<script src="paper-scan.js"></script>
+</body>
+</html>

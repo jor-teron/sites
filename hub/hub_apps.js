@@ -59,6 +59,7 @@ Office,   Notepad,               apps/office/notepad/,                       ,  
 Office,   Notely,                apps/office/notely/,                        ,         0,       0,      450
 Office,   Print,                 apps/lab/print/,                            ,         0,       0,      460
 Office,   Basic Mail,            apps/lab/basic-mail/,                       ,         0,       0,      470
+Office,   Paper Scan,            apps/office/paper-scan/,                    ,         0,       0,      480
 
 Connectivity, File Drop,         apps/connectivity/filedrop/,                ,         0,       0,      405
 Connectivity, QR Scanner,        apps/connectivity/qr-scanner/,              ,         0,       0,      406
