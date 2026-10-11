@@ -1249,7 +1249,7 @@
     if (e.key === CFG.keys.connect) connectToHub(codeInput.value);
   });
   codeInput.addEventListener('input', () => {
-    const v = codeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const v = codeInput.value.replace(/\D/g, '').slice(0, 4);
     if (v !== codeInput.value) codeInput.value = v;
   });
 

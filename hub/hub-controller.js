@@ -30,7 +30,7 @@
 
   const PEER_PREFIX = 'jtsites-';
   const CODE_KEY = 'jtsites-hub-ctrl-code';              // localStorage: current pairing code
-  const CODE_RE = /^[A-Z0-9]{4,8}$/;
+  const CODE_RE = /^\d{4}$/;                            // 4 digits only; older letter codes are replaced
   // Retry / backoff lives in shared/link/link_core.js now.
 
   // Controller button -> key injected into the app iframe (all buttons also post
