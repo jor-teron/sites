@@ -76,3 +76,10 @@ Showing the PDF on a tablet works for testing: full screen, brightness down a
 bit, auto-rotate off.
 
 Finger detection, hold-to-press, and sending from the sheet are not built yet.
+
+## Release 3: one Hub link
+- Pairing now runs on `shared/link` (SharedLink); PeerJS comes from its pinned CDN loader.
+- Output inside the Hub uses the Hub's connection: the code / QR shown is the Hub's (`?role=input&hub=1&code=…`), so a phone already paired with the Hub joins the same link. Payloads go as SharedLink messages `{type:'pk', app:'paper-keyboard', payload}`.
+- Output standalone: own 4-digit code (`jtpkb-`, kept in `jtpkb-host-code`). Input: SharedLink join with backoff; only Disconnect ends it.
+- Text ops and corner detection are unchanged.
+- Manual test: open Paper Keyboard in the Hub → Output → scan its QR → type on the phone → text appears; reload the desktop → phone reconnects. Standalone page: same with its own code.

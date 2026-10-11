@@ -90,7 +90,7 @@ function startOutput() {
 /*
   Phone: connect to a 4-digit code. Retries until Disconnect.
 */
-function startInput(code) {
+function startInput(code, hub) {
   if (!code) {
     setStatus("Enter the 4-digit code from the desktop.");
     return;
@@ -110,7 +110,7 @@ function startInput(code) {
     onDrop: function () {
       connectBox.classList.remove("hidden");
     }
-  });
+  }, hub);
 }
 
 /*
@@ -526,9 +526,10 @@ async function startScan() {
       return;
     }
     const code = codes.length ? window.PaperLink.parseCode(codes[0].rawValue) : "";
+    const hubQr = codes.length ? /[?&#]hub=1/.test(codes[0].rawValue) : false;
     if (code) {
       clearInterval(timer);
-      startInput(code);
+      startInput(code, hubQr);
     }
   }, 400);
 }
