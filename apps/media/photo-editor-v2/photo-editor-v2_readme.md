@@ -90,3 +90,8 @@ Toasts:
 ## Print
 
 "Print 🖨" in the Save menu (`pe_print.js`) renders the current edits full-size (same path as Save, `PE.io.save(fmt, onBlob)`) and hands the image to the browser's print dialog.
+
+## Send 📤 (release 3)
+- Save menu → Send 📤 renders the current edits (JPEG) and sends them over the one Hub link (`shared/link`, `pe_send.js`).
+- Inside the Hub: pick a connected device by name; the Hub sends it. Standalone (phone): uses the saved Hub code (`shared-link-join-code`) or asks for it, then sends to the Hub (`app:''`, Hub routes it) or to another device by name.
+- Manual test: phone paired via the Hub QR → open Photo Editor on the phone, edit, Send → Hub shows the edited photo; inside the Hub with a phone paired → Send → phone gets it (File Drop open on the phone shows Save / Print).

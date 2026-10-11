@@ -45,7 +45,7 @@ Any other `t` (Gamepad `btn`/`stick`/`key`/`ptr`…, Hub → pad `rumble`) is em
 ## Hub ↔ app (iframe) contract
 - app → Hub `{sharedLink:'ready', app:'print', types:['image/','application/pdf']}`
 - Hub → app `{sharedLink:'hello', code, prefix, devices}`, `{sharedLink:'file', name, type, blob, from}`, `{sharedLink:'devices'}`, `{sharedLink:'message'}`
-- app → Hub `{sharedLink:'send', msg, to?}`
+- app → Hub `{sharedLink:'send', msg, to?}`, `{sharedLink:'sendFile', blob, name, type, app, to}` (release 3)
 - Files whose `app` does not match the open receiver → Hub viewer + toast, "Open in…", auto-download (`hub-auto-download`, on by default), IndexedDB `hub-received` (last 30).
 
 ## Manual test

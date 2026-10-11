@@ -8,7 +8,8 @@
  *   Toast "Open in…" lists apps that registered for that type before (remembered).
  * - The Hub answers {sharedLink:'ready'} with {sharedLink:'hello', code, prefix, devices} so an
  *   app can show a QR for the Hub's own code (no own peer in the Hub).
- * - Apps may send through the Hub: {sharedLink:'send', msg, to?}.
+ * - Apps may send through the Hub: {sharedLink:'send', msg, to?} and (release 3)
+ *   {sharedLink:'sendFile', blob, name, type, app, to} (file to a device).
  * - Every received file is kept in IndexedDB 'hub-received' (last 30) → Received list.
  * - Popover extras: device list, this device's name, Auto-download toggle, Received list.
  */
@@ -138,6 +139,10 @@
         const f = pending.file; pending = null;
         post({ sharedLink: 'file', name: f.name, type: f.type, blob: f.blob, from: f.from });
       }
+    } else if (d.sharedLink === 'sendFile' && d.blob) {
+      // Release 3: an app in the Hub sends a file to a device through the Hub's link.
+      const file = new File([d.blob], String(d.name || 'file'), { type: d.type || d.blob.type || '' });
+      SharedLink.sendFile(file, { app: String(d.app || ''), to: d.to || undefined }).catch((err) => console.warn('Hub sendFile', err));
     } else if (d.sharedLink === 'send' && d.msg && typeof d.msg === 'object') {
       SharedLink.send(d.msg, d.to);
     }
