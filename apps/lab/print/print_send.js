@@ -240,10 +240,8 @@ function openConn(code) {
   let c = null;
   try {
     const opts = { reliable: true, serialization: 'json' };
-    if (HUB_MODE) {
-      /* SharedLink device: listed by name in the Hub's device list. */
-      opts.metadata = { kind: 'link', name: window.SharedLinkDevices ? SharedLinkDevices.name() : 'Phone' };
-    }
+    /* SharedLink device (Hub and, since release 3, the standalone station): listed by name. */
+    opts.metadata = { kind: 'link', name: window.SharedLinkDevices ? SharedLinkDevices.name() : 'Phone' };
     c = peer.connect(PEER_PREFIX + code, opts);
   } catch (err) {
     c = null;
