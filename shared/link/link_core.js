@@ -286,7 +286,13 @@
     S.hostConn = null;
     S.role = role === 'join' ? '' : role;
     if (role === 'join' && !keepCode) drop(JOIN_KEY);
-    setTimeout(function () { conns.forEach(function (c) { try { c.close(); } catch (_) { /* gone */ } }); destroy(); }, 150);
+    // Destroy only the peer we stopped: a join/host started right after must survive.
+    var p = S.peer;
+    clearTimeout(S.timer);
+    setTimeout(function () {
+      conns.forEach(function (c) { try { c.close(); } catch (_) { /* gone */ } });
+      if (S.peer === p) destroy(); else { try { if (p) p.destroy(); } catch (_) { /* gone */ } }
+    }, 150);
     status('Disconnected', 'idle');
     broadcastDevices();
   }

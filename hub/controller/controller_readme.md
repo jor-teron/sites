@@ -13,7 +13,7 @@ Turns a phone into a controller for the hub. Pair once with the hub's QR or code
 - `kb_pc.js`: PC keyboard (landscape)
 - `kb_phone.js`: phone-style keyboard (portrait ok)
 - `ctrl_trackpad.js`: trackpad board
-- `vendor/jsQR.js`: local QR decoder; PeerJS comes from `../vendor/peerjs.min.js`
+- `vendor/jsQR.js`: local QR decoder; PeerJS comes from SharedLink's pinned CDN loader (`shared/link/link_core.js`)
 - `controller_icon.png`, `controller_qr_icon.png`
 - `index.html`: redirects to `controller.html`
 - `dpad.html` and the untracked `dpad.css`, `dpad.js`, `dpad_icon.png`: an old D-pad page, stale and not used by the hub

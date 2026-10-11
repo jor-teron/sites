@@ -55,3 +55,9 @@ Any other `t` (Gamepad `btn`/`stick`/`key`/`ptr`…, Hub → pad `rumble`) is em
 4. Send from print-send with Home open → toast + viewer + download; Received list in the gamepad popover.
 5. Open Print standalone (`apps/lab/print/print.html`) → own 4-digit code, QR, history work as before.
 6. Disconnect in the popover → devices get bye and stop.
+
+## Release 3 (2026-10-11)
+- On SharedLink: Hub, Gamepad (pad over the link, `raw`), File Drop (Hub panel + Send to), Photo Editor v2 (Send), OCR, Paper Keyboard, Print (Hub and standalone host).
+- `shared/vendor/peerjs.min.js` and every per-app PeerJS copy were removed; PeerJS loads only through `loadPeer()` (P2P Chat, WebRTC Chat and Pooh Chat still use their own script tag of the same pinned CDN URL until release 4).
+- `stop()` only destroys the peer it stopped, so a new `join()` / `host()` right after a Disconnect survives.
+- Manual test (release 3): scan the Hub QR once on a phone → Gamepad works → 📤 File Drop is already connected → send 3 files → Open OCR / Paper Keyboard / Print in the Hub → the phone pages (`ocr_send.html#hub=`, `?role=input&hub=1`, `print-send.html?hub=1`) join the same link; reload the Hub → everything reconnects.

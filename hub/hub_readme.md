@@ -23,7 +23,7 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - `hub_sw.js`: service worker (shell precache, network-first, offline page); loaded by the root `../sw.js` stub
 - `hub_offline.html`: "You're offline" page shown by the service worker
 - `../manifest.webmanifest`, `../shared/image/hub_icon_192.png`, `hub_icon_512.png`: PWA manifest and icons
-- Shared: `../vendor/peerjs.min.js`, `../vendor/qrcode.js`, `../style/no-scrollbar.css`, `../script/txt-view.html` (viewer for `.txt` entries)
+- Shared: `../vendor/qrcode.js`, `../style/no-scrollbar.css`, `../script/txt-view.html` (viewer for `.txt` entries)
 
 ## 3. Behaviour rules
 - **App list (`hub_apps.js`):** columns by header name: `CATEGORY, NAME, ENTRY_URL, ICON_URL, NEW_TAB, HIDDEN, ORDER`. ENTRY_URL is a folder (opens its `index.html`), a file, or a `.txt` (shown in the text viewer). Empty ICON_URL = `folder/folder_icon.png` (or `dir/name_icon.png`). NEW_TAB 1 = new browser tab. HIDDEN 1 = not in the menu (still usable by tiles). Categories appear in the order of their first row; apps sort by ORDER. No backticks, no `${`, no commas inside a cell. A broken file shows "hub_apps.js failed to load or has an error".
