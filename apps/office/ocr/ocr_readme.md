@@ -101,3 +101,10 @@ Status line messages:
 - File Drop: general two-way file transfer with the same QR idea.
 - QR Scanner: reads QR codes and barcodes.
 - MS Word Diff / Notely: for working with the text afterwards.
+
+## Send from phone (release 3: one Hub link)
+- Uses `shared/link` (SharedLink). PeerJS comes from its pinned CDN loader; `vendor/peerjs.min.js` is gone.
+- Inside the Hub: the QR opens `ocr_send.html#hub=<Hub code>`; a phone already paired with the Hub just opens the page. Files tagged `app:'ocr'` go straight into OCR.
+- Standalone: QR / 4-digit code (`jtocr-` + code, kept across reloads in `jtocr-host-code`). The phone page also has a code box.
+- Only Disconnect (✕ on the phone chip, or Disconnect on the phone) ends the link; reloads reconnect.
+- Manual test: Hub → phone scans Hub QR once → open OCR in the Hub → open `ocr_send.html` on the phone → send a photo → text appears. Standalone `ocr.html` → QR → send → reload the computer → phone reconnects.

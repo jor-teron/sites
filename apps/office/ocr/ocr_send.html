@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <!--
   OCR — send a file from the phone to the OCR app on a computer.
-  Opened from the QR code on the computer (ocr_send.html#s=<peer id>.<token>).
-  Styles: ocr_send.css. Logic: ocr_send_phone.js (+ shared ocr_config.js, ocr_send_common.js).
-  PeerJS is local in ./vendor.
+  Opened from the QR (ocr_send.html#hub=<Hub code> or #code=<code>&p=jtocr-).
+  Logic: ocr_send_phone.js; connection: shared/link (PeerJS from its pinned CDN loader).
 -->
 <html lang="en">
 <head>
@@ -21,6 +20,12 @@
 
   <button type="button" id="choose" class="big" disabled>Choose file</button>
   <button type="button" id="retry" class="big secondary" hidden>Reconnect</button>
+  <form id="code-form" autocomplete="off">
+    <input id="code-in" maxlength="8" placeholder="Code" aria-label="Code" autocapitalize="characters" style="min-height:48px;font-size:20px;width:8em">
+    <button type="submit" class="big">Connect</button>
+    <label style="display:block;min-height:44px"><input type="checkbox" id="code-ocr"> Code from the OCR page (not the Hub)</label>
+  </form>
+  <button type="button" id="disc" class="big secondary">Disconnect</button>
   <input type="file" id="file" accept="image/jpeg,image/png,image/webp,application/pdf" hidden>
 
   <div id="prog" hidden><div id="prog-bar"></div></div>
@@ -28,9 +33,11 @@
 
   <p class="note">Photo or file: JPG, PNG, WebP or PDF, up to 20 MB.<br>The text appears on the computer. Send as many as you like, one at a time.</p>
 </main>
-<script src="vendor/peerjs.min.js?v=20261004b"></script>
+<script src="../../../shared/link/link_core.js?v=20261011c"></script>
+<script src="../../../shared/link/link_devices.js?v=20261011c"></script>
+<script src="../../../shared/link/link_files.js?v=20261011c"></script>
 <script src="ocr_config.js?v=20261004b"></script>
 <script src="ocr_send_common.js?v=20261004b"></script>
-<script src="ocr_send_phone.js?v=20261004b"></script>
+<script src="ocr_send_phone.js?v=20261011c"></script>
 </body>
 </html>

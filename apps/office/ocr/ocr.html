@@ -3,7 +3,7 @@
   OCR — scan images or PDFs to text. Page shell only.
   Styles: ocr.css. Settings: ocr_config.js. Logic: the other ocr_*.js files (one job each),
   loaded as plain scripts sharing window.OCR. Libraries are local in ./vendor (no CDN):
-  tesseract.js 5.1.1 (+ wasm core + English data), pdf.js 3.11.174 (legacy build), JSZip 3.10.1, PeerJS 1.5.4 + qrcode.js (send from phone, ocr_send*.js).
+  tesseract.js 5.1.1 (+ wasm core + English data), pdf.js 3.11.174 (legacy build), JSZip 3.10.1, qrcode.js (send from phone, ocr_send*.js; PeerJS via shared/link).
 -->
 <html lang="en">
 <head>
@@ -111,10 +111,12 @@
 <script src="ocr_pdf.js?v=20261004a"></script>
 <script src="ocr_io.js?v=20261004a"></script>
 <script src="ocr_jobs.js?v=20261004b"></script>
-<script src="vendor/peerjs.min.js?v=20261004b"></script>
+<script src="../../../shared/link/link_core.js?v=20261011c"></script>
+<script src="../../../shared/link/link_devices.js?v=20261011c"></script>
+<script src="../../../shared/link/link_files.js?v=20261011c"></script>
 <script src="vendor/qrcode.js?v=20261004b"></script>
 <script src="ocr_send_common.js?v=20261004b"></script>
-<script src="ocr_send.js?v=20261004b"></script>
+<script src="ocr_send.js?v=20261011c"></script>
 <script src="ocr_camera.js?v=20261004c"></script>
 <script src="ocr_ui.js?v=20261004c"></script>
 </body>
