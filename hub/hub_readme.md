@@ -109,3 +109,10 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 ## 12. Related apps
 - Controller (phone side): `../controller/controller_readme.md`
 - File Drop: two-way file transfer between any devices (same frame format as phone → hub files)
+
+## SharedLink (release 2, v 20261011b)
+- `hub-controller.js` now uses `shared/link` (window.SharedLink) for the peer: same `jtsites-` prefix and saved code, so paired Gamepads keep working; new codes are 4 digits. Gamepad keys / HubCtrlLink / 'hub-ctrl-link' unchanged.
+- `hub_link.js`: file routing by `meta.app` to the open app (iframe contract in `shared/link/README.md`), else viewer + toast + "Open in…"; auto-download on by default (`hub-auto-download`, toggle in the gamepad popover); Received list (IndexedDB `hub-received`); device list under the Gamepad QR tile and in the popover; this device's name.
+- PeerJS loads from the pinned CDN (shared/link/link_core.js), not shared/vendor.
+- App frames get a `<style id="hub-noscrollbar">` that hides scrollbars without blocking scroll.
+- D-pad one-liner for apps: arrows/Space/Enter/Escape arrive as real key events; `window.addEventListener('message', e => e.data.type === 'hub-dpad' && …)` for raw buttons.

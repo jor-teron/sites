@@ -1,0 +1,17 @@
+/* shared/link/link.css — SharedLink widgets: device list, name box. */
+.sl-devices { display: flex; flex-direction: column; gap: 4px; font-size: 14px; margin-top: 6px; }
+.sl-dev { display: flex; align-items: center; gap: 8px; min-height: 28px; opacity: .6; }
+.sl-dev.on { opacity: 1; }
+.sl-dot { width: 10px; height: 10px; border-radius: 50%; background: #888; flex: none; }
+.sl-dev.on .sl-dot { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+.sl-empty { opacity: .6; font-size: 13px; }
+.sl-name { display: flex; align-items: center; gap: 6px; font-size: 13px; margin-top: 8px; }
+.sl-name input { flex: 1; min-height: 36px; padding: 4px 8px; font: inherit; border-radius: 6px; border: 1px solid #888; }
+.sl-row { display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: 14px; }
+.sl-row input[type=checkbox] { width: 22px; height: 22px; }
+.sl-received { max-height: 160px; overflow: auto; font-size: 13px; }
+.sl-received button { min-height: 32px; margin: 2px 0; width: 100%; text-align: left; }
+#ctrl-popover { max-height: calc(100vh - 80px); overflow: auto; }
+.tile-devices { font-size: 12px; margin-top: 4px; }
+.sl-openin { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 9999; background: #222; color: #fff; padding: 8px 12px; border-radius: 10px; display: flex; gap: 8px; align-items: center; box-shadow: 0 4px 16px #0008; }
+.sl-openin button { min-height: 40px; min-width: 40px; padding: 0 12px; border-radius: 8px; border: 0; cursor: pointer; }

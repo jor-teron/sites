@@ -14,6 +14,10 @@
  * ext.files (phone → hub files) instead of replacing the controller link, and ext.onClose runs
  * when the controller link closes. Key / button forwarding above is unchanged.
  *
+ * Connection layer: shared/link (window.SharedLink) owns the PeerJS host peer, retry/backoff
+ * and the device list; old-style Gamepad / files connections come back here via onLegacy.
+ * SharedLink devices (metadata kind 'link') are handled by SharedLink + hub_link.js.
+ *
  * Pairing survives reloads: the code (peer id = PEER_PREFIX + code) is kept in localStorage
  * and registered again as soon as the hub loads, so a phone can reconnect without the
  * popover being opened. If the broker still holds the id from the previous page
@@ -24,13 +28,9 @@
   'use strict';
 
   const PEER_PREFIX = 'jtsites-';
-  const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I
   const CODE_KEY = 'jtsites-hub-ctrl-code';              // localStorage: current pairing code
   const CODE_RE = /^[A-Z0-9]{4,8}$/;
-  // 'unavailable-id' (old page's peer still registered on the broker): retry delays, then give up
-  const ID_RETRY_MS = [1000, 2000, 3000, 5000, 5000, 8000, 10000, 10000, 15000, 15000];
-  // broker connection lost / network errors: reconnect delays (last one repeats)
-  const NET_RETRY_MS = [2000, 4000, 8000, 15000, 30000];
+  // Retry / backoff lives in shared/link/link_core.js now.
 
   // Controller button -> key injected into the app iframe (all buttons also post
   // { type:'hub-dpad', b, s }). key: null = postMessage only, no key event.
@@ -62,13 +62,9 @@
   const closeBtn = document.getElementById('ctrl-close');
   const newCodeBtn = document.getElementById('ctrl-newcode');
 
-  let peer = null;
   let conn = null;
   let code = '';
   let pairing = false;
-  let idRetry = 0;       // unavailable-id retries used
-  let netRetry = 0;      // network retries used
-  let retryTimer = 0;
   const held = Object.create(null);
   const heldKeys = new Map();   // code|key -> last keydown message (keyup sent on release)
 
@@ -79,13 +75,9 @@
     try { localStorage.setItem(CODE_KEY, c); } catch (_) { /* ignore */ }
   }
 
-  function randomCode(len) {
-    len = len || 6;
-    let s = '';
-    const buf = new Uint8Array(len);
-    (crypto.getRandomValues ? crypto.getRandomValues(buf) : buf.fill(Math.random() * 256));
-    for (let i = 0; i < len; i++) s += CODE_CHARS[buf[i] % CODE_CHARS.length];
-    return s;
+  /** New codes are 4 digits (SharedLink); older saved 6-letter codes keep working. */
+  function randomCode() {
+    return window.SharedLink ? SharedLink.randomCode(code) : String(Math.floor(Math.random() * 10000)).padStart(4, '0');
   }
 
   function setStatus(text) {
@@ -154,7 +146,7 @@
     popover.hidden = false;
     popoverBackdrop.hidden = false;
     if (!code) newCode();                 // first time: make and remember a code
-    else if (!peer || peer.destroyed) startPairing(); // stopped / gave up: listen again
+    else if (!SharedLink.live) startPairing(); // stopped / gave up: listen again
     renderPairing();
   }
 
@@ -167,15 +159,13 @@
     if (typeof window.__hubFocusFrame === 'function') window.__hubFocusFrame();
   }
 
+  /** Close the gamepad link and the host peer quietly (no bye: devices reconnect). */
   function destroyPeer() {
-    clearTimeout(retryTimer);
-    retryTimer = 0;
-    const c = conn, p = peer;
+    const c = conn;
     conn = null;
-    peer = null;
     pairing = false;
     try { if (c) c.close(); } catch (_) {}
-    try { if (p) p.destroy(); } catch (_) {}
+    if (window.SharedLink) SharedLink.pause();
   }
 
   function releaseHeld() {
@@ -437,97 +427,39 @@
     if (d && typeof d === 'object' && d.type === 'hub-rumble') relayRumble(d);
   });
 
-  /** Register PEER_PREFIX + code on the broker and wait for the phone. */
-  function startPairing(isRetry) {
-    if (typeof Peer === 'undefined') {
-      setStatus('PeerJS missing');
+  /** Old-style connections (Gamepad without kind 'link', phone → hub files). */
+  function onLegacy(c) {
+    const ext = window.HubCtrlExt;
+    if (c.metadata && c.metadata.kind === 'files') {
+      if (ext && typeof ext.files === 'function') ext.files(c);
+      else c.on('open', () => { try { c.close(); } catch (_) {} });
       return;
     }
-    if (!code) return;
-    if (!isRetry) { idRetry = 0; netRetry = 0; }
-    destroyPeer();
-    releaseHeld();
-    setConnectedIndicator(false);
-    renderPairing();
-    setStatus(isRetry ? 'Re-registering code…' : 'Starting…');
-    pairing = true;
-
-    const myPeer = peer = new Peer(PEER_PREFIX + code, { debug: 0 });
-
-    myPeer.on('open', () => {
-      if (peer !== myPeer) return;
-      idRetry = 0;
-      netRetry = 0;
-      setStatus(conn ? 'Controller connected' : 'Waiting for controller…');
-    });
-
-    myPeer.on('connection', (c) => {
-      if (peer !== myPeer) return;
-      // Phone → hub files: a second link from the same phone (hub_receive.js), not a new controller
-      const ext = window.HubCtrlExt;
-      if (c.metadata && c.metadata.kind === 'files') {
-        if (ext && typeof ext.files === 'function') ext.files(c);
-        else c.on('open', () => { try { c.close(); } catch (_) {} });
-        return;
-      }
-      // One controller at a time
-      attachConn(c);
-    });
-
-    myPeer.on('error', (err) => {
-      if (peer !== myPeer) return;
-      const type = err && err.type;
-      if (type === 'unavailable-id') {
-        // The previous page (reload) may still hold this id on the broker for a while:
-        // keep the same code and retry with backoff.
-        if (idRetry < ID_RETRY_MS.length) {
-          const d = ID_RETRY_MS[idRetry++];
-          setStatus('Code still in use (previous session) — retrying ' + idRetry + '/' + ID_RETRY_MS.length + '…');
-          scheduleRetry(d);
-        } else {
-          destroyPeer();
-          setStatus('Code ' + code + ' is still in use — press "New code"');
-        }
-      } else if (type === 'network' || type === 'server-error' || type === 'socket-error' || type === 'socket-closed') {
-        const d = NET_RETRY_MS[Math.min(netRetry++, NET_RETRY_MS.length - 1)];
-        setStatus('Network problem — retrying…');
-        scheduleRetry(d);
-      } else if (type === 'peer-unavailable') {
-        /* only happens for outgoing connects; ignore */
-      } else {
-        setStatus('Error: ' + (type || 'unknown'));
-        console.warn('hub peer error', err);
-      }
-    });
-
-    myPeer.on('disconnected', () => {
-      if (peer !== myPeer || myPeer.destroyed) return;
-      // Lost the broker (the phone link may still be up): re-register the same id.
-      setConnectedIndicator(!!(conn && conn.open));
-      setStatus(conn && conn.open ? 'Controller connected (broker offline)' : 'Reconnecting to broker…');
-      clearTimeout(retryTimer);
-      retryTimer = setTimeout(() => {
-        if (peer !== myPeer || myPeer.destroyed) return;
-        try { myPeer.reconnect(); } catch (_) { startPairing(true); }
-      }, NET_RETRY_MS[Math.min(netRetry++, NET_RETRY_MS.length - 1)]);
-    });
+    attachConn(c);   // one controller at a time
   }
 
-  function scheduleRetry(ms) {
-    const keep = code;
-    const c = conn, p = peer;
-    conn = null; peer = null;
-    try { if (c) c.close(); } catch (_) {}
-    try { if (p) p.destroy(); } catch (_) {}
-    clearTimeout(retryTimer);
-    retryTimer = setTimeout(() => { if (code === keep) startPairing(true); }, ms);
+  /** Register PEER_PREFIX + code through SharedLink and wait for the phone. */
+  function startPairing() {
+    if (!code || !window.SharedLink) { setStatus('SharedLink missing'); return; }
+    releaseHeld();
+    setConnectedIndicator(!!(conn && conn.open));
+    renderPairing();
+    pairing = true;
+    SharedLink.host({ prefix: PEER_PREFIX, code: code, onLegacy: onLegacy }).catch(() => setStatus('PeerJS could not load (offline?)'));
+  }
+
+  if (window.SharedLink) {
+    SharedLink.on('status', (text, state) => {
+      if (state === 'listening' && conn && conn.open) text = 'Controller connected';
+      setStatus(text);
+    });
   }
 
   /** Make and remember a fresh pairing code, then listen on it. */
   function newCode() {
     releaseHeld();
     destroyPeer();
-    code = randomCode(6);
+    code = randomCode();
     saveCode(code);
     startPairing();
   }
@@ -537,6 +469,7 @@
   function disconnect() {
     releaseHeld();
     destroyPeer();
+    if (window.SharedLink) SharedLink.stop(true);
     setConnectedIndicator(false);
     setStatus('Disconnected (open this panel again to listen)');
     closePopover();
@@ -578,7 +511,7 @@
     get url() { return code ? controllerUrl(code) : ''; },
     ensure() {
       if (!code) newCode();
-      else if (!peer || peer.destroyed) startPairing();
+      else if (!SharedLink.live) startPairing();
       return code ? controllerUrl(code) : '';
     },
   };

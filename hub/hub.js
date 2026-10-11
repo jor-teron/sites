@@ -558,9 +558,12 @@
     hookFrameKeys();
     try {
       const doc = frame.contentDocument;
-      if (doc && doc.documentElement) {
-        doc.documentElement.style.overflow = 'hidden';
-        if (doc.body) doc.body.style.overflow = 'hidden';
+      // Hide scrollbars only (scrolling by touch / wheel / D-pad still works); once per doc.
+      if (doc && doc.head && !doc.getElementById('hub-noscrollbar')) {
+        const st = doc.createElement('style');
+        st.id = 'hub-noscrollbar';
+        st.textContent = 'html,body{scrollbar-width:none;-ms-overflow-style:none} ::-webkit-scrollbar{width:0;height:0;display:none}';
+        doc.head.appendChild(st);
       }
     } catch (_) { /* cross-origin: ignore */ }
     focusFrame();
@@ -636,6 +639,14 @@
         const url = (e.detail && e.detail.url) || '';
         if (url && url !== last) { last = url; drawQr(box, url); }
       });
+      // Connected devices (SharedLink) under the Gamepad QR: name + green online dot
+      setTimeout(() => {   // link_ui.js loads after hub.js
+        if (!window.SharedLinkUI) return;
+        const devs = document.createElement('div');
+        devs.className = 'tile-devices';
+        SharedLinkUI.mountDevices(devs);
+        tile.appendChild(devs);
+      }, 0);
     } else {
       drawQr(box, hubUrl());
     }
@@ -699,6 +710,7 @@
 
   window.__hubFocusFrame = focusFrame;
   window.__hubGoHome = goHome;
+  window.__hubOpenUrl = navigateFrame;   // hub_link.js: "Open in…" a receiver app
   primeFrame();
   loadApps();
   renderTiles();

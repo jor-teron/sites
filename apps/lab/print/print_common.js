@@ -13,6 +13,11 @@
   A bye is only sent on a manual Disconnect or a takeover, never on reload,
   so both pages can reconnect by themselves after a reload.
   Also holds the size / time / kind formatters used by both pages.
+  Hub mode (release 2): print-send.html?hub=1&code=XXXX joins the Hub's
+  SharedLink host (prefix 'jtsites-', metadata kind 'link') instead of a
+  print station; meta carries app:'print' so the Hub routes the file into
+  the Print app open in its iframe. SharedLink uses the same frames.
+  PeerJS is loaded by shared/link/link_core.js (pinned CDN), not vendored.
 */
 
 /* Raw slice size of the base64 payload. Kept small so one JSON message fits the data channel. */
@@ -24,11 +29,14 @@ const BUFFER_HIGH = 64 * 1024;
 /* Mime used when the camera capture has no file type. */
 const CAMERA_MIME = 'image/jpeg';
 
-/* Peer id prefix. Must differ from the hub controller's 'jtsites-'. */
-const PEER_PREFIX = 'jtprint-';
+/* Hub mode: the sender joins the Hub's shared connection (?hub=1). */
+const HUB_MODE = new URLSearchParams(window.location.search).has('hub');
 
-/* A station code is exactly 4 digits. */
-const CODE_RE = /^[0-9]{4}$/;
+/* Peer id prefix. Standalone station 'jtprint-'; the Hub (SharedLink) uses 'jtsites-'. */
+const PEER_PREFIX = HUB_MODE ? 'jtsites-' : 'jtprint-';
+
+/* A station code is exactly 4 digits; a Hub code is 4-8 letters/digits (older hubs used 6 letters). */
+const CODE_RE = HUB_MODE ? /^[A-Z0-9]{4,8}$/ : /^[0-9]{4}$/;
 
 /* Page role set on body: host or send. */
 const PAGE = document.body.dataset.page;
@@ -182,8 +190,11 @@ function saveKey(key, value) {
   Absolute URL of the sender page for a code.
   The QR encodes this so a scan opens the sender and auto-connects.
 */
-function senderUrl(code) {
+function senderUrl(code, hub) {
   const url = new URL('print-send.html', window.location.href);
+  if (hub) {
+    url.searchParams.set('hub', '1');
+  }
   url.searchParams.set('code', code);
   return url.toString();
 }
@@ -203,8 +214,12 @@ function senderLinkText() {
 */
 function parseCode(text) {
   const raw = String(text || '').trim();
-  if (CODE_RE.test(raw)) {
-    return raw;
+  if (CODE_RE.test(raw.toUpperCase())) {
+    return raw.toUpperCase();
+  }
+  if (HUB_MODE) {
+    const hub = raw.match(/[?&#]code=([A-Za-z0-9]{4,8})(?![A-Za-z0-9])/);
+    return hub ? hub[1].toUpperCase() : '';
   }
   let match = raw.match(/[?&#]code=([0-9]{4})(?![0-9])/);
   if (match) {
@@ -312,7 +327,8 @@ async function sendFile(conn, file, onProgress) {
     id: id,
     name: name,
     mime: mime,
-    size: size
+    size: size,
+    app: 'print'
   });
   let offset = 0;
   while (offset < b64.length) {

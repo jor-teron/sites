@@ -20,7 +20,18 @@
   saved to history (print_store.js: localStorage list + IndexedDB blobs,
   last 50) and the browser print dialog opens on arrival. History rows show
   name · size · time · kind with a Print button; Clear empties it.
+  Inside the Hub (release 2): the page posts {sharedLink:'ready', app:'print'}
+  to the Hub. If the Hub answers {sharedLink:'hello', code}, Print uses the
+  Hub's connection: no own peer, the QR opens print-send.html?hub=1&code=<hub
+  code>, and files arrive as {sharedLink:'file', name, type, blob}. No answer
+  within HUB_WAIT_MS = standalone station as before.
 */
+
+/* Wait this long for the Hub's hello before running a standalone station. */
+const HUB_WAIT_MS = 700;
+
+/* True while Print rides on the Hub's shared connection. */
+let viaHub = false;
 
 /* localStorage key for this station's code. */
 const HOST_CODE_KEY = 'jtprint-host-code';
@@ -629,7 +640,79 @@ function startHost() {
   }
 }
 
+/*
+  Hub mode: show the Hub's code, take files from the Hub.
+*/
+function startViaHub(code) {
+  viaHub = true;
+  el('new-code').hidden = true;
+  el('host-disconnect').hidden = true;
+  el('host-code').textContent = code;
+  showHubQr(code);
+  setHostStatus('Using the Hub connection · scan to send');
+}
+
+function showHubQr(code) {
+  const box = el('qr');
+  box.innerHTML = '';
+  if (typeof qrcode === 'undefined') {
+    box.textContent = 'QR lib missing';
+    return;
+  }
+  const qr = qrcode(0, 'M');
+  qr.addData(senderUrl(code, true));
+  qr.make();
+  box.innerHTML = qr.createSvgTag(6, 24);
+  const svg = box.querySelector('svg');
+  if (svg) {
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+  }
+  el('join-url').textContent = senderLinkText();
+}
+
+/*
+  Ask the Hub (parent frame) for its connection; fall back to standalone.
+*/
+function bootHost() {
+  const inFrame = window.parent && window.parent !== window;
+  if (!inFrame) {
+    SharedLink.loadPeer().catch(function () {
+      setHostStatus('Could not load PeerJS. Check internet.');
+    }).then(startHost);
+    return;
+  }
+  let decided = false;
+  window.addEventListener('message', function (event) {
+    if (event.source !== window.parent) {
+      return;
+    }
+    const d = event.data;
+    if (!d || typeof d !== 'object') {
+      return;
+    }
+    if (d.sharedLink === 'hello' && d.code && !decided) {
+      decided = true;
+      loadHistory();
+      el('clear-history').addEventListener('click', clearHistory);
+      startViaHub(String(d.code));
+    } else if (d.sharedLink === 'file' && viaHub && d.blob) {
+      acceptFile(String(d.name || 'file'), d.type || d.blob.type || CAMERA_MIME, d.blob);
+      setHostStatus('Received ' + String(d.name || 'file') + ' via the Hub');
+    }
+  });
+  window.parent.postMessage({ sharedLink: 'ready', app: 'print', types: ['image/', 'application/pdf'] }, '*');
+  setTimeout(function () {
+    if (!decided) {
+      decided = true;
+      SharedLink.loadPeer().catch(function () {
+        setHostStatus('Could not load PeerJS. Check internet.');
+      }).then(startHost);
+    }
+  }, HUB_WAIT_MS);
+}
+
 /* Boot only on the host page. */
 if (PAGE === 'host') {
-  startHost();
+  bootHost();
 }
