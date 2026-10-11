@@ -16,7 +16,8 @@
  *
  * Connection layer: shared/link (window.SharedLink) owns the PeerJS host peer, retry/backoff
  * and the device list; old-style Gamepad / files connections come back here via onLegacy.
- * SharedLink devices (metadata kind 'link') are handled by SharedLink + hub_link.js.
+ * SharedLink devices (metadata kind 'link') are handled by SharedLink + hub_link.js; a Gamepad
+ * that joins as a SharedLink device (metadata.pad, release 3) sends its keys as SharedLink 'raw'.
  *
  * Pairing survives reloads: the code (peer id = PEER_PREFIX + code) is kept in localStorage
  * and registered again as soon as the hub loads, so a phone can reconnect without the
@@ -376,7 +377,8 @@
     if (ext && ext.onClose) for (const fn of ext.onClose) { try { fn(); } catch (_) { /* ignore */ } }
   }
 
-  function attachConn(c) {
+  function attachConn(c, viaLink) {
+    if (conn === c) return;
     if (conn && conn !== c) {
       try { conn.close(); } catch (_) {}
       releaseHeld();
@@ -385,7 +387,7 @@
     conn = c;
     setStatus('Controller connected');
     setConnectedIndicator(true);
-    c.on('data', onConnData);
+    if (!viaLink) c.on('data', onConnData);   // SharedLink pads: data arrives as SharedLink 'raw'
     c.on('close', () => {
       if (conn === c) {
         conn = null;
@@ -449,6 +451,18 @@
   }
 
   if (window.SharedLink) {
+    // Release 3: the Gamepad joins as a SharedLink device (metadata.pad) and sends its keys
+    // over that link; they arrive here as 'raw'. The newest pad that speaks becomes the
+    // controller (rumble goes back to it).
+    SharedLink.on('raw', (msg, from, c) => {
+      if (!c || !(c.metadata && c.metadata.pad)) return;
+      attachConn(c, true);
+      onConnData(msg);
+    });
+    SharedLink.on('open', (id) => {
+      // A pad that just (re)joined is the controller even before its first key.
+      SharedLink._targets(id).forEach((c) => { if (c.metadata && c.metadata.pad && c.peer === id) attachConn(c, true); });
+    });
     SharedLink.on('status', (text, state) => {
       if (state === 'listening' && conn && conn.open) text = 'Controller connected';
       setStatus(text);

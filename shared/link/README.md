@@ -39,7 +39,8 @@ SharedLink.code / role / devices / connected / live
 | meta / chunk / end | id, name, mime, size, app?, to? / id, d (base64) / id | file (same frames as Print) |
 | bye | manual / reason | manual Disconnect only |
 
-Gamepad keys keep the old `{t:'btn'|'stick'|'key'}` legacy channel.
+Any other `t` (Gamepad `btn`/`stick`/`key`/`ptr`…, Hub → pad `rumble`) is emitted as `raw(msg, from, conn)`. Since release 3 the Gamepad joins as a SharedLink device (`metadata.pad`) and sends its keys over the link; old Gamepad pages without `kind:'link'` still use the legacy channel.
+`SharedLink.id` = this device's own peer id (to hide yourself in the device list).
 
 ## Hub ↔ app (iframe) contract
 - app → Hub `{sharedLink:'ready', app:'print', types:['image/','application/pdf']}`

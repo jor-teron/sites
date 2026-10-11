@@ -9,9 +9,10 @@
     it across reloads (code in localStorage), with unavailable-id / network
     backoff. Connections with metadata.kind 'link' speak the SharedLink
     protocol; anything else (old Gamepad, kind 'files') goes to onLegacy(conn).
-  - join({prefix, code}): phone side, reconnects with backoff until leave().
+  - join({prefix, code, meta}): phone side (meta = extra connection metadata), reconnects with backoff until leave().
   Wire protocol (JSON objects, key t): see README.md. Files: link_files.js.
-  Events: status, devices, message, file, progress, open, close.
+  Events: status, devices, message, file, progress, open, close, bye,
+  raw(msg, from, conn) for any other JSON message (Gamepad keys, rumble).
 */
 (function () {
   'use strict';
@@ -73,6 +74,7 @@
   function status(text, state) { S.status = text; emit('status', text, state || ''); }
 
   function destroy() {
+    S.hostConn = null;   // its close event must not schedule a rejoin after pause()
     clearTimeout(S.timer);
     S.timer = 0;
     var p = S.peer;
@@ -146,7 +148,10 @@
       // Host relays messages addressed to another device.
       if (S.role === 'host' && msg.to && msg.to !== 'host') { send(Object.assign({}, msg, { from: from }), msg.to); return; }
       emit('message', msg, from);
+      return;
     }
+    // Anything else (Gamepad {t:'btn'|'stick'|'key'|'ptr'…}, Hub → pad {t:'rumble'}) → 'raw'.
+    emit('raw', msg, from, conn);
   }
 
   function host(opts) {
@@ -249,7 +254,7 @@
     p.on('open', function () {
       if (S.peer !== p) return;
       var name = window.SharedLinkDevices ? SharedLinkDevices.name() : '';
-      var conn = p.connect(S.prefix + S.code, { reliable: true, serialization: 'json', metadata: { kind: 'link', name: name } });
+      var conn = p.connect(S.prefix + S.code, { reliable: true, serialization: 'json', metadata: Object.assign({ kind: 'link', name: name }, S.opts.meta || {}) });
       S.hostConn = conn;
       var rec = { conn: conn, name: 'Host' };
       S.links = new Map([['host', rec]]);
@@ -318,6 +323,7 @@
     _targets: targets, _safeSend: safeSend,
     get code() { return S.code; },
     get role() { return S.role; },
+    get id() { return S.peer && S.peer.open ? S.peer.id : ''; },
     get status() { return S.status || ''; },
     get devices() { return S.devices.slice(); },
     get live() { return !!(S.peer && !S.peer.destroyed); },

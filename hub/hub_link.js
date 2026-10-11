@@ -4,7 +4,7 @@
  *   the open app in #app-frame that registered as a receiver
  *   (iframe posts {sharedLink:'ready', app:'print', types:['image/','application/pdf']})
  *   gets {sharedLink:'file', name, type, blob, from}; otherwise the file goes to the Hub
- *   viewer + toast (hub_notify.js) and, when 'hub-auto-download' is on (default), downloads.
+ *   viewer + toast (hub_notify.js). Either way, when 'hub-auto-download' is on (default), it downloads.
  *   Toast "Open in…" lists apps that registered for that type before (remembered).
  * - The Hub answers {sharedLink:'ready'} with {sharedLink:'hello', code, prefix, devices} so an
  *   app can show a QR for the Hub's own code (no own peer in the Hub).
@@ -82,6 +82,7 @@
     const app = appOf(f);
     if (active && app && active.app === app && typeOk(active.types, f.type)) {
       post({ sharedLink: 'file', name: f.name, type: f.type, blob: f.blob, from: f.from });
+      if (autoDownload()) download(f.blob, f.name);   // release 3: also for files that go into an app
       return;
     }
     if (autoDownload()) download(f.blob, f.name);

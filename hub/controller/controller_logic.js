@@ -8,8 +8,8 @@
  *   { t:'key', key, code, s:1|0, shift, ctrl, alt, repeat }   keyboard modes: keydown / keyup
  *     (the hub dispatches KeyboardEvents into the app frame and types into focused text fields)
  *   { t:'ptr'|'tap'|'mb'|'wheel', … }   trackpad (ctrl_trackpad.js → hub/hub_pointer.js)
- * Send Files (ctrl_sendfiles.js) uses a second connection to the same hub peer
- * (metadata {kind:'files'}, serialization 'raw'), so this link is never blocked by file data.
+ * Release 3: joins the Hub through SharedLink (shared/link, metadata {kind:'link', pad:1}); the
+ * messages above travel over that link. Files are sent from File Drop (📤 link in the header).
  * Hub → phone:
  *   { t:'rumble', ms:N } / { t:'rumble', pattern:[...] }   game rumble (e.g. Snake death)
  *   → navigator.vibrate, only when the Vib toggle is on; silently nothing without vibrate (iOS)
@@ -23,8 +23,8 @@
  * (LED amber). A built-in QR scanner (camera + local vendor/jsQR.js) reads the hub QR.
  *
  * Modes (CONTROLLER_CONFIG.modes): the gamepad plus boards (kb_pc.js, kb_phone.js,
- * ctrl_trackpad.js, ctrl_sendfiles.js via kb_common.js). The round mode button at the top
- * centre switches pages (ctrl_tabs.js: Gamepad → Keyboard & Mouse → Send Files → Gamepad):
+ * ctrl_trackpad.js via kb_common.js). The round mode button at the top
+ * centre switches pages (ctrl_tabs.js: Gamepad → Keyboard & Mouse → Gamepad):
  * tap = next, swipe left / right = previous / next, hold = menu; its icon shows the NEXT page.
  * A small ⋯ button next to it also opens the menu (modes, fullscreen, light / dark).
  * Without ctrl_tabs.js the button steps through every mode instead (icon = current mode).
@@ -805,10 +805,9 @@
       keyUp: keyUp,
       vibrate: (ms) => vibrate(ms),
       firstTouch: () => onFirstTouch(),
-      // trackpad / Send Files
+      // trackpad
       send: (obj) => send(obj),
       isOpen: () => !!(conn && conn.open),
-      peer: () => peer,
       hubId: () => CFG.peer.idPrefix + code,
     });
   }
@@ -958,7 +957,7 @@
   /* PeerJS + auto-reconnect                                             */
   /* ------------------------------------------------------------------ */
   const RC = CFG.reconnect;
-  let lastGood = load(CFG.storage.lastCode, '');   // last code that connected
+  let lastGood = load(CFG.storage.lastCode, '') || load('shared-link-join-code', '');   // last code that connected
   let attemptSeq = 0;      // bumps on every attempt / loss, so stale PeerJS events are ignored
   let retryTimer = 0;
   let attemptTimer = 0;
@@ -976,14 +975,12 @@
     retryStartedAt = 0;
   }
 
+  /** Drop the link quietly (no bye, the Hub keeps the device). */
   function disconnectPeer() {
     releaseAll();
     clearTimeout(attemptTimer);
-    const c = conn, p = peer;
     conn = null;
-    peer = null;
-    try { if (c) c.close(); } catch (_) {}
-    try { if (p) p.destroy(); } catch (_) {}
+    if (window.SharedLink) SharedLink.pause();
   }
 
   /** Only a code that connected before is retried automatically. */
@@ -991,33 +988,10 @@
     return !!(RC && RC.enabled && code && code === lastGood);
   }
 
-  /** The connection (or an attempt) was lost: schedule a retry or show "disconnected". */
-  function onLost(seq, msg) {
-    if (seq !== attemptSeq) return;   // already handled / superseded
-    attemptSeq++;
-    disconnectPeer();                  // also releases every held button
-    if (!canRetry()) {
-      setStatus('disconnected', msg || TXT.disconnected);
-      return;
-    }
-    if (!retryStartedAt) retryStartedAt = Date.now();
-    if (RC.giveUpMs && Date.now() - retryStartedAt > RC.giveUpMs) {
-      cancelRetry();
-      setStatus('disconnected', TXT.disconnected);
-      blinkError();
-      return;
-    }
-    const delays = RC.delaysMs && RC.delaysMs.length ? RC.delaysMs : [3000];
-    const d = delays[Math.min(retryIndex, delays.length - 1)];
-    retryIndex++;
-    setStatus('connecting', TXT.reconnecting);
-    clearTimeout(retryTimer);
-    retryTimer = setTimeout(() => connectToHub(code, { retry: true }), d);
-  }
-
-  /**
-   * Connect to the hub peer for a pairing code.
-   * opts.retry: part of an automatic retry sequence (keeps the backoff position).
+  /*
+   * Release 3: the pad joins the Hub as a SharedLink device (metadata.pad). SharedLink owns
+   * retry / backoff; the saved code is shared with File Drop / OCR / Print phones
+   * ('shared-link-join-code') and with the old key CFG.storage.lastCode.
    */
   function connectToHub(pairingCode, opts) {
     opts = opts || {};
@@ -1028,48 +1002,34 @@
       blinkError();
       return;
     }
-    if (!opts.retry) cancelRetry();
-    else clearTimeout(retryTimer);
+    cancelRetry();
     showPairError('');
     attemptSeq++;
     disconnectPeer();
     showPad();
     setStatus('connecting', opts.retry ? TXT.reconnecting : TXT.connecting);
+    if (!window.SharedLink) { setStatus('disconnected', TXT.peerMissing); blinkError(); return; }
+    SharedLink.join({ prefix: CFG.peer.idPrefix, code: code, meta: { pad: 1 } })
+      .catch(() => { setStatus('disconnected', TXT.peerMissing); blinkError(); });
+  }
 
-    if (typeof Peer === 'undefined') {
-      setStatus('disconnected', TXT.peerMissing);
-      blinkError();
-      return;
-    }
-
-    const seq = attemptSeq;
-    const myPeer = peer = new Peer(Object.assign({}, CFG.peer.options));
-    attemptTimer = setTimeout(() => onLost(seq), RC.attemptTimeoutMs || 15000);
-    myPeer.on('open', () => {
-      if (seq !== attemptSeq) return;
-      const c = conn = myPeer.connect(CFG.peer.idPrefix + code, Object.assign({}, CFG.peer.connectOptions));
-      c.on('open', () => {
-        if (seq !== attemptSeq) return;
-        clearTimeout(attemptTimer);
-        cancelRetry();
-        lastGood = code;
-        save(CFG.storage.lastCode, code);
-        setStatus('connected', TXT.connected);
-        requestWakeLock();
-      });
-      c.on('data', onHubData);
-      c.on('close', () => onLost(seq));
-      c.on('error', (err) => {
-        console.warn('conn error', err);
-        onLost(seq, TXT.error);
-      });
+  if (window.SharedLink) {
+    SharedLink.on('open', () => {
+      conn = SharedLink._targets()[0] || null;
+      lastGood = code;
+      save(CFG.storage.lastCode, code);
+      setStatus('connected', TXT.connected);
+      requestWakeLock();
     });
-    myPeer.on('error', (err) => {
-      if (seq !== attemptSeq) return;
-      const type = err && err.type;
-      if (type === 'peer-unavailable' && !canRetry()) {
+    SharedLink.on('close', () => {
+      conn = null;
+      releaseAll();
+      if (SharedLink.role === 'join') setStatus('connecting', TXT.reconnecting);
+    });
+    SharedLink.on('status', (text, state) => {
+      if (state !== 'retry' || (conn && conn.open)) return;
+      if (/not found/i.test(text) && !canRetry()) {
         // a new / mistyped code: tell the user instead of retrying
-        attemptSeq++;
         disconnectPeer();
         blinkError();
         setStatus('disconnected', TXT.hubNotFound);
@@ -1077,13 +1037,17 @@
         showPairScreen(TXT.hubNotFoundHint);
         return;
       }
-      if (type !== 'peer-unavailable') console.warn('peer error', err);
-      onLost(seq, type || TXT.genericError);
+      setStatus('connecting', TXT.reconnecting);
     });
-    myPeer.on('disconnected', () => {
-      // signalling server lost; an open data connection may survive
-      if (seq !== attemptSeq) return;
-      if (!(conn && conn.open)) onLost(seq);
+    SharedLink.on('raw', (m) => onHubData(m));
+    SharedLink.on('bye', () => {
+      // Hub pressed Disconnect: stop and show the pairing screen.
+      conn = null;
+      releaseAll();
+      SharedLink.stop(true);
+      setStatus('disconnected', TXT.disconnected);
+      codeInput.value = code;
+      showPairScreen('');
     });
   }
 
@@ -1251,7 +1215,7 @@
     if (document.visibilityState === 'visible') {
       requestWakeLock();
       // back from the lock screen / another app: retry at once instead of waiting
-      if (!DEMO && retryTimer && canRetry()) connectToHub(code, { retry: true });
+      if (!DEMO && window.SharedLink && SharedLink.role === 'join' && !SharedLink.connected) SharedLink.restart();
     } else {
       releaseAll();
     }

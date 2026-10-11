@@ -13,7 +13,6 @@ Turns a phone into a controller for the hub. Pair once with the hub's QR or code
 - `kb_pc.js`: PC keyboard (landscape)
 - `kb_phone.js`: phone-style keyboard (portrait ok)
 - `ctrl_trackpad.js`: trackpad board
-- `ctrl_sendfiles.js`: Send Files board (phone → hub)
 - `vendor/jsQR.js`: local QR decoder; PeerJS comes from `../vendor/peerjs.min.js`
 - `controller_icon.png`, `controller_qr_icon.png`
 - `index.html`: redirects to `controller.html`
@@ -22,7 +21,7 @@ Turns a phone into a controller for the hub. Pair once with the hub's QR or code
 ## 3. Behaviour rules
 - **Pairing:** type the hub's code (4–8 characters) and Connect, tap Scan QR and point at the hub's QR, or open the hub's link (`controller.html#code=XXXXXX`). The phone connects to peer `jtsites-` + code.
 - **Stays paired:** the last code that worked is remembered and connects by itself on page load. A dropped link retries with backoff (1–10 s; gives up after 5 minutes); the LED goes amber, and you can tap the light to retry now.
-- **Pages (round mode button, top centre):** tap cycles 🎮 Gamepad → ⌨️ Keyboard & Mouse → 📤 Send Files → Gamepad; the button's icon shows the NEXT page. Swipe left / right = previous / next, hold = menu. Keyboard & Mouse has its own switch (PC Keys / Trackpad / Phone Keys). The last page and the last Keys+Mouse pick are remembered. The small ⋯ button next to it opens the menu: all modes, fullscreen, Light / Dark, Diag.
+- **Pages (round mode button, top centre):** tap cycles 🎮 Gamepad → ⌨️ Keyboard & Mouse → Gamepad; the button's icon shows the NEXT page. Swipe left / right = previous / next, hold = menu. Keyboard & Mouse has its own switch (PC Keys / Trackpad / Phone Keys). The last page and the last Keys+Mouse pick are remembered. The small ⋯ button next to it opens the menu: all modes, fullscreen, Light / Dark, Diag.
 - **Gamepad (landscape):** D-pad / stick on the left, A B X Y on the right, L / R shoulders, Select / Start / Home. The left side can be Both (floating stick + D-pad), Stick or D-pad. The stick also presses the arrows (8 directions), so arrow-key games work. Portrait shows "Rotate your phone to landscape".
 - **What the hub does with buttons:** D-pad = arrows, A = Space, B = `x`, X = `z`, Y = `c`, L = `q`, R = `e`, Start = Enter, Select = Esc, Home = message only (see `../hub/hub_readme.md`).
 - **Keyboards:** PC Keys (Esc, digits, qwerty, Tab, Caps, Enter, Shift, Del, Ctrl, Alt, Space, arrows) and Phone Keys (letters, 123 layer, Space / Enter, arrows, Del). Shift / Ctrl / Alt: hold = held, tap = for the next key only. Holding a key repeats it. Gaming keys (WASD, arrows, Space, Enter, Esc, Shift) have an accent border. The hub types into the focused field.
@@ -96,3 +95,9 @@ Turns a phone into a controller for the hub. Pair once with the hub's QR or code
 - Hub (receiving side): `../hub/hub_readme.md`
 - File Drop: two-way file transfer between any devices
 - QR Scanner: general QR reader
+
+## Release 3 (2026-10-11): one Hub link
+- The pad joins the Hub as a SharedLink device (`shared/link`, metadata `{kind:'link', pad:1}`), so it has a device name and is listed under the Hub QR. Keys / stick / trackpad / rumble travel over that link unchanged. Old saved codes (`jtsites-` prefix) keep working; the code is also saved as `shared-link-join-code` so File Drop / OCR / Paper Keyboard phones reuse it.
+- Send Files was removed. The 📤 button in the header (and in the keyboard bar) opens File Drop in a new tab, already connected to the same Hub.
+- Only the Hub's Disconnect (bye) ends the link; reloads and network drops reconnect by themselves.
+- Manual test: scan Hub QR → pad works, device listed; reload phone → reconnects; tap 📤 → File Drop shows "Hub" connected; Hub Disconnect → pad shows the pairing screen.

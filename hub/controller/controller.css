@@ -815,3 +815,7 @@ body.theme-light .led.connected { box-shadow: 0 0 0 2px rgba(30,40,60,0.25), 0 0
   .kb-phone .kk.fn { font-size: clamp(11px, 3.6vh, 15px); font-size: clamp(11px, 3.6dvh, 15px); }
 }
 body.theme-light .qr-icon { filter: invert(0.8) brightness(0.6); }
+
+/* Release 3: File Drop link (files are sent from File Drop, not the Gamepad). */
+.fd-link { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; text-decoration: none; font-size: 20px; }
+#kb-bar .fd-link { margin-left: auto; padding: 0 12px; font-size: 15px; color: inherit; }

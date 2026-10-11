@@ -10,6 +10,8 @@ const CONTROLLER_CONFIG = {
   version: '1.5',                  // shown small on the pairing screen
 
   // PeerJS pairing
+  // Release 3: files go through File Drop (header link), which reuses the saved Hub code.
+  fileDropUrl: '../../apps/connectivity/filedrop/filedrop.html',
   peer: {
     idPrefix: 'jtsites-',          // hub peer id = idPrefix + pairing code (must match hub-controller.js)
     options: { debug: 0 },         // options passed to new Peer(...)
@@ -70,7 +72,6 @@ const CONTROLLER_CONFIG = {
     { id: 'pc',       label: 'PC keyboard',    icon: '⌨️', landscape: true,  board: 'pc' },
     { id: 'trackpad', label: 'Trackpad',       icon: '🖱️', landscape: false, board: 'trackpad' },
     { id: 'phone',    label: 'Phone keyboard', icon: '📱', landscape: false, board: 'phone' },
-    { id: 'files',    label: 'Send Files',     icon: '📤', landscape: false, board: 'files' },
   ],
   defaultMode: 'pad',
 
@@ -80,7 +81,6 @@ const CONTROLLER_CONFIG = {
   tabs: [
     { id: 'pad',   icon: '🎮', label: 'Gamepad',    title: 'Gamepad',          modes: ['pad'] },
     { id: 'km',    icon: '⌨️', label: 'Keys+Mouse', title: 'Keyboard & Mouse', modes: ['pc', 'trackpad', 'phone'] },
-    { id: 'files', icon: '📤', label: 'Files',      title: 'Send Files',       modes: ['files'] },
   ],
   // 3-way switch at the top of Keyboard & Mouse (order = left to right)
   kmSwitch: [
