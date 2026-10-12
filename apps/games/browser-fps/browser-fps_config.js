@@ -15,7 +15,7 @@ window.BROWSER_FPS_CONFIG = {
     mouseSens: 0.0022,    // mouse look sensitivity (radians per pixel)
     pitchLimitPad: 0.05,  // keep pitch this far from straight up/down
     maxHealth: 100,       // starting / max health
-    start: [0, 8],        // spawn position [x, z]
+    start: [0, 17],       // spawn position [x, z]: south end near the wall, facing north (-z)
   },
 
   // Weapon
@@ -85,7 +85,8 @@ window.BROWSER_FPS_CONFIG = {
     ],
   },
 
-  // Enemies: humanoid targets (browser-fps_target.js). pos = [x, centreY, z]; feet stand at centreY - 1.
+  // Enemies: humanoid targets (browser-fps_target.js). NOTE: specs below are no longer used for placement
+  // (spawn.initialEnemies are placed randomly in the far half); kept for reference.
   enemies: {
     specs: [
       { pos: [8, 1, -8], color: 0xcc3333, hp: 100 },
@@ -99,6 +100,9 @@ window.BROWSER_FPS_CONFIG = {
 
   // Spawning: a new humanoid every `interval` seconds (initial ones above stay)
   spawn: {
+    initialEnemies: 5,    // enemies placed at random valid spots when a game starts / on Retry
+    initialGap: 3.5,      // min spacing between the initial enemies
+    farHalfMaxZ: 0,       // enemies only appear where z <= this (the half away from the player's start)
     interval: 15,         // seconds between spawns
     maxAlive: 8,          // never more than this many alive
     poolMax: 16,          // total target objects ever created (bodies are reused only after their corpse time)

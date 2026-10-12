@@ -144,33 +144,19 @@ function newTarget(spec) {
   return en;
 }
 
-function spawnEnemies() {
-  const [sx, sz] = CFG.player.start;
-  for (const s of CFG.enemies.specs) {
-    // Face the player's spawn point
-    const faceYaw = Math.atan2(sx - s.pos[0], sz - s.pos[2]);
-    newTarget({ ...s, faceYaw });
-  }
-}
-
-/** Reset the initial targets to their config positions (used by Retry). */
+/** Retry / start: hide every target, then place the initial ones at random far-half spots. */
 function resetEnemies() {
-  const [sx, sz] = CFG.player.start;
-  enemies.forEach((en, i) => {
-    const s = CFG.enemies.specs[i];
-    if (s) {
-      en.respawn(s.pos[0], s.pos[2], Math.atan2(sx - s.pos[0], sz - s.pos[2]), s.hp, false);
-    } else {
-      en.alive = false; en.dying = false; en.group.visible = false; en.collider.disabled = true;
-    }
-  });
+  for (const en of enemies) {
+    en.alive = false; en.dying = false; en.rising = 0; en.group.visible = false; en.collider.disabled = true;
+  }
+  placeInitialEnemies();
 }
 
 // ─── Timed spawning (random valid spot, rise-up animation, pooled) ─────────
 const SP = CFG.spawn;
 let spawnTimer = SP.interval;
 
-function spotIsFree(x, z) {
+function spotIsFree(x, z, gap = SP.targetGap) {
   const m = SP.coverMargin;
   for (const c of colliders) {
     if (c.disabled || c.target) continue;
@@ -180,29 +166,41 @@ function spotIsFree(x, z) {
   for (const en of enemies) {
     if (!en.alive) continue;
     const p = en.group.position;
-    if (Math.hypot(p.x - x, p.z - z) < SP.targetGap) return false;
+    if (Math.hypot(p.x - x, p.z - z) < gap) return false;
   }
   return Math.hypot(player.pos.x - x, player.pos.z - z) >= SP.minPlayerDist;
 }
 
-/** Try to spawn one target. Returns it, or null if capped / no valid spot. */
-function spawnRandomTarget() {
-  if (enemies.filter((e) => e.alive).length >= SP.maxAlive) return null;
+/** Random point in the far half of the arena (z from the far wall up to farHalfMaxZ). */
+function randomFarSpot() {
   const lim = ARENA.w / 2 - SP.edgeMargin;
+  const zMin = -(ARENA.d / 2 - SP.edgeMargin);
+  return [(Math.random() * 2 - 1) * lim, zMin + Math.random() * (SP.farHalfMaxZ - zMin)];
+}
+
+/** Try to spawn one target. Returns it, or null if capped / no valid spot. */
+function spawnRandomTarget(rise = true, gap = SP.targetGap) {
+  if (enemies.filter((e) => e.alive).length >= SP.maxAlive) return null;
   for (let i = 0; i < SP.tries; i++) {
-    const x = (Math.random() * 2 - 1) * lim;
-    const z = (Math.random() * 2 - 1) * (ARENA.d / 2 - SP.edgeMargin);
-    if (!spotIsFree(x, z)) continue;
+    const [x, z] = randomFarSpot();
+    if (!spotIsFree(x, z, gap)) continue;
     const yaw = Math.atan2(player.pos.x - x, player.pos.z - z);
     let en = enemies.find((e) => !e.alive && !e.dying);
     if (!en) {
       if (enemies.length >= SP.poolMax) return null;
       en = newTarget({ pos: [x, 1, z], color: SP.colors[enemies.length % SP.colors.length], hp: SP.hp, faceYaw: yaw });
     }
-    en.respawn(x, z, yaw, SP.hp, true);
+    en.respawn(x, z, yaw, SP.hp, rise);
     return en;
   }
   return null;
+}
+
+/** Initial enemies: random valid far-half spots, spaced apart, already standing (no rise). */
+function placeInitialEnemies() {
+  for (let i = 0; i < SP.initialEnemies; i++) {
+    if (!spawnRandomTarget(false, SP.initialGap)) spawnRandomTarget(false, SP.targetGap);  // relax spacing if crowded
+  }
 }
 
 function updateSpawning(dt) {
@@ -213,7 +211,6 @@ function updateSpawning(dt) {
   }
 }
 
-spawnEnemies();
 
 // ─── Player state ───────────────────────────────────────────────────────────
 const player = {
@@ -774,6 +771,7 @@ function tick() {
   renderer.render(vm.scene, vm.camera);
 }
 
+placeInitialEnemies();
 tick();
 
 // Expose a tiny debug hook in console
