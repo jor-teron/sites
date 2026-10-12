@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Paper Notebook</title>
+<!--
+  Project: notebook
+  File: notebook.html
+  Role: Markup only. Paper Notebook: 50 pages, LocalStorage, no undo, crumble page, PNG/PDF export.
+  Scripts are plain (no build step) and share globals; order matters (store first, notebook.js last).
+-->
+<link rel="stylesheet" href="notebook.css">
+</head>
+<body>
+<div id="main">
+  <canvas id="canvas"></canvas>
+  <div id="overlay"></div>
+  <div id="floatBtn">☰</div>
+  <div id="pageToast"></div>
+  <div id="pagesGrid"><h3>Pages</h3><div id="gridContainer"></div></div>
+  <div id="settingsPanel">
+    <h2>Settings</h2>
+    <button id="closeSettings">Close</button>
+    <button id="dlPng">Download Page PNG</button>
+    <button id="dlPdf">Download Notebook PDF</button>
+    <button id="resetNotebook">Reset Notebook</button>
+    <p style="margin-top:30px;color:#888;font-size:13px;">50 pages · LocalStorage · No undo</p>
+  </div>
+</div>
+
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="nb_store.js"></script>
+<script src="nb_canvas.js"></script>
+<script src="nb_pages.js"></script>
+<script src="nb_draw.js"></script>
+<script src="nb_export.js"></script>
+<script src="nb_settings.js"></script>
+<script src="nb_float.js"></script>
+<script src="notebook.js"></script>
+</body>
+</html>
