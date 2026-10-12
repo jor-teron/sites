@@ -282,7 +282,21 @@ export function render() {
     }
   }
 
+  drawPops();
   drawSling();
   drawGround();
   drawTrajectory();
+}
+
+// Pig "pop" effect (the physics body is already gone)
+function drawPops() {
+  for (const p of S.pops) {
+    const k = p.t / 0.35;
+    const sp = w2s(p.x, p.y);
+    ctx.strokeStyle = `rgba(123, 255, 123, ${1 - k})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(sp.x, sp.y, p.r * SCALE * (1 + k), 0, Math.PI * 2);
+    ctx.stroke();
+  }
 }

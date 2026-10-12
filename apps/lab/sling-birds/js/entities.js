@@ -1,5 +1,5 @@
 // Shared game state plus world/level building and bird loading.
-import { Engine, Bodies, Body, Composite, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, SLING_X, SLING_Y, MAT } from './config.js';
+import { Engine, Bodies, Body, Composite, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, SLING_X, SLING_Y, MAT, GRAVITY, BIRD_FRICTION_AIR } from './config.js';
 import { LEVELS } from './levels.js';
 import { engine } from './physics.js';
 import { updateHud, endGame, hideOverlay } from './ui.js';
@@ -18,13 +18,20 @@ export const S = {
   dragPos: { x: 0, y: 0 },
   gameState: 'idle',     // 'idle' | 'aiming' | 'flying' | 'waiting' | 'levelclear' | 'gameover'
   turnResolveTimer: 0,   // countdown to next turn after birds settle
-  levelEnding: false
+  levelEnding: false,
+  winTimer: 0,           // pending level-clear timeout
+  flightTime: 0,         // seconds since last launch
+  pops: []               // pig pop effects { x, y, r, t }
 };
 
 export function clearWorld() {
   Composite.clear(engine.world, false, true);
   Engine.clear(engine);
-  engine.gravity.y = 1.0;
+  engine.gravity.y = GRAVITY;
+  clearTimeout(S.winTimer);
+  S.winTimer = 0;
+  S.flightTime = 0;
+  S.pops = [];
   S.activeBirds = [];
   S.pigs = [];
   S.blocks = [];
@@ -102,7 +109,8 @@ export function loadNextBird() {
   const body = Bodies.circle(SLING_X, SLING_Y, 18, {
     friction: 0.6,
     restitution: 0.4,
-    density: 0.004
+    density: 0.004,
+    frictionAir: BIRD_FRICTION_AIR
   });
   Body.setStatic(body, true);
   Composite.add(engine.world, body);

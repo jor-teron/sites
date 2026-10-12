@@ -1,23 +1,20 @@
 // Mouse/touch input for aiming the slingshot.
-import { SLING_X, SLING_Y } from './config.js';
+import { SLING_X, SLING_Y, MAX_PULL, GRAB_RADIUS, GRAB_MIN_PX } from './config.js';
 import { S } from './entities.js';
-import { canvas, s2w } from './render.js';
+import { canvas, s2w, SCALE } from './render.js';
 import { releaseSling } from './slingshot.js';
 
 function pointerWorld(e) {
   const rect = canvas.getBoundingClientRect();
-  let cx, cy;
-  if (e.touches && e.touches.length > 0) {
-    cx = e.touches[0].clientX;
-    cy = e.touches[0].clientY;
-  } else if (e.changedTouches && e.changedTouches.length > 0) {
-    cx = e.changedTouches[0].clientX;
-    cy = e.changedTouches[0].clientY;
-  } else {
-    cx = e.clientX;
-    cy = e.clientY;
-  }
-  return s2w(cx - rect.left, cy - rect.top);
+  return s2w(e.clientX - rect.left, e.clientY - rect.top);
+}
+
+// Clamp a world point to within MAX_PULL of the slingshot
+function clampPull(p) {
+  const dx = p.x - SLING_X, dy = p.y - SLING_Y;
+  const d = Math.hypot(dx, dy);
+  const k = d > MAX_PULL ? MAX_PULL / d : 1;
+  return { x: SLING_X + dx * k, y: SLING_Y + dy * k };
 }
 
 function onDown(e) {
@@ -26,24 +23,31 @@ function onDown(e) {
   const p = pointerWorld(e);
   const dx = p.x - SLING_X;
   const dy = p.y - SLING_Y;
-  if (Math.hypot(dx, dy) > 100) return;
+  // Grab radius never smaller than GRAB_MIN_PX on screen (small phones)
+  if (Math.hypot(dx, dy) > Math.max(GRAB_RADIUS, GRAB_MIN_PX / SCALE)) return;
   S.isDragging = true;
-  S.dragPos = { x: p.x, y: p.y };
+  S.pointerId = e.pointerId;
+  canvas.setPointerCapture(e.pointerId);
+  S.dragPos = clampPull(p);
   S.gameState = 'aiming';
 }
 
 function onMove(e) {
-  if (!S.isDragging) return;
+  if (!S.isDragging || e.pointerId !== S.pointerId) return;
   if (e.cancelable) e.preventDefault();
-  S.dragPos = pointerWorld(e);
+  S.dragPos = clampPull(pointerWorld(e));
 }
 
 function onUp(e) {
-  if (!S.isDragging) return;
+  if (!S.isDragging || e.pointerId !== S.pointerId) return;
   if (e.cancelable) e.preventDefault();
   S.isDragging = false;
 
   if (!S.currentBird || S.gameState !== 'aiming') {
+    S.gameState = 'idle';
+    return;
+  }
+  if (e.type === 'pointercancel') {   // OS cancelled the gesture: don't fire
     S.gameState = 'idle';
     return;
   }
@@ -52,12 +56,9 @@ function onUp(e) {
 }
 
 export function initInput() {
-  canvas.addEventListener('mousedown', onDown);
-  canvas.addEventListener('mousemove', onMove);
-  canvas.addEventListener('mouseup', onUp);
-  canvas.addEventListener('mouseleave', onUp);
-  canvas.addEventListener('touchstart', onDown, { passive: false });
-  canvas.addEventListener('touchmove', onMove, { passive: false });
-  canvas.addEventListener('touchend', onUp, { passive: false });
-  canvas.addEventListener('touchcancel', onUp, { passive: false });
+  // Pointer events + capture: dragging off the canvas no longer fires the bird
+  canvas.addEventListener('pointerdown', onDown);
+  canvas.addEventListener('pointermove', onMove);
+  canvas.addEventListener('pointerup', onUp);
+  canvas.addEventListener('pointercancel', onUp);
 }

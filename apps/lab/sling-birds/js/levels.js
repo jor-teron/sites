@@ -30,8 +30,9 @@ export const LEVELS = [
     ],
     pigs: [
       { x: 835, y: GROUND_Y - 30, r: 24 },
-      { x: 780, y: GROUND_Y - 215, r: 20 },
-      { x: 890, y: GROUND_Y - 215, r: 20 }
+      // between the wooden posts (x 790..880), resting on the stone slab
+      { x: 812, y: GROUND_Y - 213, r: 20 },
+      { x: 858, y: GROUND_Y - 213, r: 20 }
     ]
   },
   {

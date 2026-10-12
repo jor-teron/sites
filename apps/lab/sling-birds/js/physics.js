@@ -1,11 +1,11 @@
 // Physics engine, collision handling (pig hits) and turn resolution.
-import { Engine, Composite, Events, Vector, WORLD_WIDTH, WORLD_HEIGHT } from './config.js';
+import { Engine, Composite, Events, Vector, WORLD_WIDTH, WORLD_HEIGHT, GRAVITY, SETTLE_SPEED, SETTLE_MAX_TIME } from './config.js';
 import { S } from './entities.js';
 import { updateHud, endGame, showHint } from './ui.js';
 import { loadNextBird } from './entities.js';
 
 export const engine = Engine.create();
-engine.gravity.y = 0.4;
+engine.gravity.y = GRAVITY;
 
 // ---------- COLLISION HANDLING ----------
 Events.on(engine, 'collisionStart', (event) => {
@@ -32,16 +32,16 @@ function killPig(pigEntry) {
   S.score += 500;
   updateHud();
 
-  // Remove body after a brief delay so it visually "pops"
-  setTimeout(() => {
-    Composite.remove(engine.world, pigEntry.body);
-  }, 250);
+  // Remove the body immediately (no invisible collider); draw a separate pop effect
+  Composite.remove(engine.world, pigEntry.body);
+  S.pops.push({ x: pigEntry.body.position.x, y: pigEntry.body.position.y, r: pigEntry.r, t: 0 });
 
   // Win condition
   if (S.pigs.every(p => p.dead) && !S.levelEnding) {
     S.levelEnding = true;
     // Small delay so the player sees the last pig die
-    setTimeout(() => endGame(true), 900);
+    // Cancelled by clearWorld() on reset / level change
+    S.winTimer = setTimeout(() => { S.winTimer = 0; endGame(true); }, 900);
   }
 }
 
@@ -58,17 +58,21 @@ export function updateTurnResolution(dt) {
     }
   }
 
+  // Pop effects
+  for (const p of S.pops) p.t += dt;
+  S.pops = S.pops.filter(p => p.t < 0.35);
+
   if (S.gameState !== 'flying') return;
-  if (S.activeBirds.length === 0) return;
+  S.flightTime += dt;
 
-  // Are all active birds essentially stopped?
-  const allStopped = S.activeBirds.every(b => {
-    const v = Vector.magnitude(b.body.velocity);
-    const w = Math.abs(b.body.angularVelocity);
-    return v < 0.8 && w < 0.05;
-  });
+  // Has the whole world settled? (birds + blocks + live pigs). Works with 0 birds left (off-screen shot).
+  const slow = body => body.speed < SETTLE_SPEED && Math.abs(body.angularVelocity) < 0.05;
+  const settled =
+    S.activeBirds.every(b => slow(b.body)) &&
+    S.blocks.every(b => slow(b.body)) &&
+    S.pigs.every(p => p.dead || slow(p.body));
 
-  if (allStopped) {
+  if (settled || S.flightTime > SETTLE_MAX_TIME) {
     // Start resolve countdown once
     if (S.turnResolveTimer <= 0) S.turnResolveTimer = 0.6;
   }

@@ -1,37 +1,39 @@
 // Slingshot: launch on release, band drawing and trajectory preview.
-import { Body, SLING_X, SLING_Y, MAX_PULL, LAUNCH_POWER, GROUND_Y, WORLD_WIDTH } from './config.js';
+import { Body, SLING_X, SLING_Y, LAUNCH_POWER, GROUND_Y, WORLD_WIDTH, STEP_MS, BIRD_FRICTION_AIR } from './config.js';
 import { S } from './entities.js';
 import { engine } from './physics.js';
 import { ctx, w2s, SCALE } from './render.js';
 import { updateHud } from './ui.js';
 
-// Called from input on release while aiming. Returns early (back to idle) for tiny pulls.
+// Launch velocity (px per 60Hz step) for the current (already clamped) drag position, or null if too small.
+function launchVelocity() {
+  const pullX = S.dragPos.x - SLING_X;
+  const pullY = S.dragPos.y - SLING_Y;
+  if (Math.hypot(pullX, pullY) < 10) return null;
+  // Velocity: opposite of pull, scaled by LAUNCH_POWER
+  return { x: -pullX * LAUNCH_POWER, y: -pullY * LAUNCH_POWER };
+}
+
+// Called from input on release while aiming. Tiny pulls go back to idle.
 export function releaseSling() {
-  let pullX = S.dragPos.x - SLING_X;
-  let pullY = S.dragPos.y - SLING_Y;
-  const dist = Math.hypot(pullX, pullY);
-  if (dist < 10) {
+  const v = launchVelocity();
+  if (!v) {
     S.gameState = 'idle';
     return;
   }
-  if (dist > MAX_PULL) {
-    const k = MAX_PULL / dist;
-    pullX *= k;
-    pullY *= k;
-  }
 
-  // Velocity: opposite of pull, scaled by LAUNCH_POWER
-  const vx = -pullX * LAUNCH_POWER;
-  const vy = -pullY * LAUNCH_POWER;
-
-  Body.setStatic(S.currentBird.body, false);
-  Body.setVelocity(S.currentBird.body, { x: vx, y: vy });
-  Body.setAngularVelocity(S.currentBird.body, -vx * 0.01);
+  // Launch from where the bird is drawn (the clamped drag position)
+  const body = S.currentBird.body;
+  Body.setPosition(body, { x: S.dragPos.x, y: S.dragPos.y });
+  Body.setStatic(body, false);
+  Body.setVelocity(body, v);
+  Body.setAngularVelocity(body, -v.x * 0.01);
   S.currentBird.launched = true;
 
   // Move to active list
   S.activeBirds.push(S.currentBird);
   S.currentBird = null;
+  S.flightTime = 0;
   S.gameState = 'flying';
   updateHud();
 }
@@ -70,34 +72,25 @@ export function drawSling() {
 
 export function drawTrajectory() {
   if (!S.isDragging || !S.currentBird) return;
+  const v = launchVelocity();
+  if (!v) return;
 
-  let pullX = S.dragPos.x - SLING_X;
-  let pullY = S.dragPos.y - SLING_Y;
-  const dist = Math.hypot(pullX, pullY);
-  if (dist < 10) return;
-  if (dist > MAX_PULL) {
-    const k = MAX_PULL / dist;
-    pullX *= k;
-    pullY *= k;
-  }
-  let vx = -pullX * LAUNCH_POWER;
-  let vy = -pullY * LAUNCH_POWER;
-
-  // Simulate a preview arc — Matter.js uses per-step velocity roughly in pixels/step at 60fps
-  // Use small timestep to approximate
-  const dt = 1 / 60;
-  const gravity = engine.gravity.y * 0.00098 * 1000; // approx pixels/sec²
-  // Matter works in px/step, so use simpler approximation:
-  let px = SLING_X;
-  let py = SLING_Y;
-  const steps = 45;
+  // Mirrors Matter 0.19 Body.update at a fixed 1000/60 ms step:
+  //   v = v * (1 - frictionAir) + gravity.y * gravity.scale * dt^2 ;  p += v
+  const g = engine.gravity.y * engine.gravity.scale * STEP_MS * STEP_MS;
+  const air = 1 - BIRD_FRICTION_AIR;
+  let vx = v.x, vy = v.y;
+  let px = S.dragPos.x;
+  let py = S.dragPos.y;
+  const steps = 90;
   for (let i = 0; i < steps; i++) {
-    // Approximate Matter's physics: velocity is px/step, gravity adds each step
+    vx *= air;
+    vy = vy * air + g;
     px += vx;
     py += vy;
-    vy += engine.gravity.y * 1; // per-step gravity add (rough)
     if (py > GROUND_Y) break;
     if (px < 0 || px > WORLD_WIDTH) break;
+    if (i % 2) continue;           // draw every other step
     const sp = w2s(px, py);
     const alpha = 0.55 * (1 - i / steps);
     ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
