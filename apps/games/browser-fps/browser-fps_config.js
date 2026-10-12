@@ -177,6 +177,7 @@ window.BROWSER_FPS_CONFIG = {
     sprint: ['ShiftLeft', 'ShiftRight'],// sprint
     reload: ['KeyR'],                   // reload
     grenade: ['KeyG'],                  // throw a grenade
+    mute: ['KeyM'],                     // toggle sound
     unlock: ['Escape', 'KeyP', 'Backquote'], // free the mouse
   },
   pickups: {
@@ -218,6 +219,19 @@ window.BROWSER_FPS_CONFIG = {
     pickRadius: 0.9, minPlayerDist: 4, clearance: 0.6,
     hoverY: 0.3, bobAmp: 0.07, spinSpeed: 1.4, flashMs: 220, popMs: 900,
   },
+  // Sound (Web Audio, procedural). M toggles mute (saved in localStorage).
+  audio: {
+    masterVolume: 0.7,
+    storageKey: 'browser-fps-muted',
+    maxVoices: 14,      // max sounds playing at once (oldest cut)
+    refDist: 3,         // positional sounds: full volume within this distance ...
+    maxDist: 45,        // ... silent beyond this
+    stepEvery: 2.6,     // footstep every N units walked
+    volumes: { shot: 0.55, dryClick: 0.6, reload: 0.6, enemyShot: 0.5, hitBody: 0.5, hitHead: 0.6, enemyDeath: 0.5,
+      hurt: 0.7, playerDeath: 0.8, grenadeThrow: 0.6, grenadeBounce: 0.5, explosion: 1.0, medkit: 0.6, grenadePickup: 0.6, footstep: 0.25 },
+    minGap: { shot: 0.05, grenadeBounce: 0.06, hurt: 0.08, footstep: 0.12, dryClick: 0.15 },          // per-sound rate limit (s)
+    voiceLen: { reload: 1.4, explosion: 1.3, playerDeath: 2, enemyDeath: 0.8 },                     // voice slot hold time (s)
+  },
   // Which model module to use for each asset slot (see assets/README.md).
   // A value is a built-in id ('guns/rifle_hq') or { glb: 'assets/…/model.glb', fallback: 'guns/rifle_hq', scale: 1 }.
   assets: {
@@ -227,6 +241,7 @@ window.BROWSER_FPS_CONFIG = {
     medkit: 'pickups/medkit_basic',
     grenade: 'weapons/grenade_frag',           // thrown grenade
     grenadePickup: 'pickups/grenade_crate',    // grenade pickup on the map
+    sounds: 'sounds/procedural',               // sound pack (Web Audio synth, no files)
     // Procedural textures (assets/textures/*); null = plain colours
     textures: {
       floor: 'textures/floor_concrete',

@@ -85,3 +85,6 @@
     #weapon .nades { font-size: 0.85rem; opacity: 0.9; }
     #nade-pop { color: #ffc040; opacity: 0; transition: opacity 0.3s; }
     #nade-pop.show { opacity: 1; }
+
+    .mute-btn { position: absolute; top: 16px; right: 16px; font-size: 22px; line-height: 1; padding: 6px 9px;
+      background: rgba(0,0,0,0.35); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; cursor: pointer; }

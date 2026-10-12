@@ -7,11 +7,16 @@ import { loadAssets, loadLog } from './assets/registry.js';
 import { createViewmodel } from './browser-fps_viewmodel.js';
 import { createPickups } from './browser-fps_pickups.js';
 import { createGrenades } from './browser-fps_grenades.js';
+import { createAudio } from './browser-fps_audio.js';
 
 // ─── Tunables (from browser-fps_config.js) ──────────────────────────────────
 const CFG = window.BROWSER_FPS_CONFIG;
 // Models (gun, arms, enemy, medkit) chosen by CFG.assets; .glb models fall back to code models on failure
 const ASSETS = await loadAssets(CFG.assets);
+const audio = createAudio(CFG.audio, ASSETS.sounds);
+const listenerPos = () => player.pos;
+/** Positional sound at a world point (volume by distance, pan by yaw). */
+const sfxAt = (name, pos, vol) => audio.play(name, { pos, listener: listenerPos(), yaw, vol });
 const createTarget = (spec) => ASSETS.enemy.createTarget(spec);
 const PLAYER_HEIGHT = CFG.player.height;
 const PLAYER_RADIUS = CFG.player.radius;
@@ -294,7 +299,15 @@ function syncPointerLockUi() {
 }
 
 // ─── Input ──────────────────────────────────────────────────────────────────
+// Mute: M key, or the speaker buttons on the start/pause and death screens (no in-game buttons)
+const muteBtns = document.querySelectorAll('.mute-btn');
+function syncMuteUi(m) { muteBtns.forEach((b) => { b.textContent = m ? '🔇' : '🔊'; b.title = m ? 'Sound off (M)' : 'Sound on (M)'; }); }
+audio.onMute = syncMuteUi; syncMuteUi(audio.muted);
+muteBtns.forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); audio.unlock(); audio.toggleMute(); }));
+// AudioContext is created / resumed on the first user gesture
+for (const ev of ['pointerdown', 'keydown']) document.addEventListener(ev, () => audio.unlock(), { capture: true });
 overlay.addEventListener('click', () => {
+  audio.unlock();
   renderer.domElement.requestPointerLock();
 });
 retryBtn.addEventListener('click', () => {
@@ -329,6 +342,7 @@ document.addEventListener('keydown', (e) => {
     unlockPointer();
     return;
   }
+  if (KEYS.mute.includes(e.code) && !e.repeat) { audio.toggleMute(); return; }
   if (!pointerLocked) return;
   keys[e.code] = true;
   if (KEYS.reload.includes(e.code) && !player.reloading && player.ammo < MAG_SIZE) startReload();
@@ -500,6 +514,7 @@ function isDead() { return player.health <= 0; }
 function damagePlayer(n, flashMs) {
   if (isDead()) return;
   player.health = Math.max(0, player.health - n);
+  if (player.health > 0) audio.play('hurt');
   hpVal.textContent = String(player.health);
   dmgFlash.classList.add('show');
   clearTimeout(damagePlayer._ft);
@@ -508,6 +523,7 @@ function damagePlayer(n, flashMs) {
 }
 
 function showDeath() {
+  audio.play('playerDeath');
   shooting = false;
   const kills = player.kills || 0;
   deathMsg.textContent = `Targets down: ${kills}`;
@@ -598,6 +614,7 @@ function enemyFire(en, spreadMult = 1) {
   aiTo.copy(from).addScaledVector(aiDir, dist);
   spawnTracer(from, aiTo, AI.tracerColor);
   en.showMuzzleFlash();
+  sfxAt('enemyShot', from);
   if (hit) damagePlayer(damageAt(Math.hypot(player.pos.x - from.x, player.pos.z - from.z)), AI.flashMs);
 }
 
@@ -788,6 +805,7 @@ function spawnTracer(from, to, color) {
 
 function startReload() {
   vm.startReload(RELOAD_TIME);
+  audio.play('reload');
   player.reloading = true;
   player.reloadT = RELOAD_TIME;
 }
@@ -809,13 +827,15 @@ function bulletDamage(zone, d) {
 function damageEnemy(en, dmg, zone, dir) {
   if (!en.alive) return;
   en.lastDealt = en.hit(zone, dmg, dir, true);   // final damage (no head multiplier); flash, knockback, death
-  if (!en.alive) player.kills = (player.kills || 0) + 1;
+  audio.play(zone === 'head' ? 'hitHead' : 'hitBody');
+  if (!en.alive) { player.kills = (player.kills || 0) + 1; sfxAt('enemyDeath', en.group.position); }
   showHitmarker();
 }
 
 function fire() {
   if (player.reloading || player.fireCooldown > 0) return;
   if (player.ammo <= 0) {
+    audio.play('dryClick');
     startReload();
     return;
   }
@@ -823,6 +843,7 @@ function fire() {
   player.ammo--;
   player.fireCooldown = FIRE_RATE;
   ammoVal.textContent = String(player.ammo);
+  audio.play('shot', { vol: aimT > 0.5 ? 0.95 : 1 });
 
   // Muzzle flash + tracer start at the viewmodel's barrel tip
   shootDir.set(0, 0, -1).applyQuaternion(camera.quaternion);
@@ -973,6 +994,7 @@ const pickups = createPickups(scene, PK, {
     healTimers.f = setTimeout(() => healFlash.classList.remove('show'), PK.flashMs);
     healPop.textContent = '+' + (player.health - before);   // actual amount healed (capped at max)
     pickups.lastHeal = player.health - before;
+    audio.play('medkit');
     healPop.classList.remove('show'); void healPop.offsetWidth; healPop.classList.add('show');
     clearTimeout(healTimers.p);
     healTimers.p = setTimeout(() => healPop.classList.remove('show'), PK.popMs);
@@ -992,7 +1014,9 @@ function blastBlocked(from, to) {
 }
 const grenades = createGrenades(scene, GR, ASSETS.grenade, {
   solids: () => colliders.filter((c) => !c.target && !c.disabled),
+  onBounce: (p) => sfxAt('grenadeBounce', p),
   onExplode(p) {
+    sfxAt('explosion', p);
     const from = nadeTmp.copy(p).setY(Math.max(p.y, 0.3)).clone();
     for (const en of enemies) {
       if (!en.alive) continue;
@@ -1012,6 +1036,7 @@ function throwGrenade() {
   if (player.grenades <= 0 || player.nadeCd > 0) return null;
   player.grenades--; player.nadeCd = GR.cooldown;
   nadeVal.textContent = String(player.grenades);
+  audio.play('grenadeThrow');
   const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
   const origin = camera.position.clone().addScaledVector(dir, 0.5).add(new THREE.Vector3(0, -0.15, 0));
   return grenades.throwFrom(origin, dir, player.vel);
@@ -1031,6 +1056,7 @@ const nadePickups = createPickups(scene, CFG.grenadePickups, {
     player.grenades = Math.min(GR.max, player.grenades + amount);
     nadeVal.textContent = String(player.grenades);
     nadePickups.lastGain = player.grenades - before;
+    audio.play('grenadePickup');
     nadePop.textContent = '+' + (player.grenades - before);
     nadePop.classList.remove('show'); void nadePop.offsetWidth; nadePop.classList.add('show');
     clearTimeout(nadeTimer); nadeTimer = setTimeout(() => nadePop.classList.remove('show'), CFG.grenadePickups.popMs);
@@ -1042,8 +1068,14 @@ nadeVal.textContent = String(player.grenades);
 const clock = new THREE.Clock();
 
 /** One simulation step while playing (also used by the headless test hook). */
+let stepDist = 0;
 function gameStep(dt) {
   updateMovement(dt);
+  // footsteps: one every audio.stepEvery units walked on the ground
+  if (player.onGround) {
+    stepDist += Math.hypot(player.vel.x, player.vel.z) * dt;
+    if (stepDist >= CFG.audio.stepEvery) { stepDist = 0; audio.play('footstep'); }
+  }
   updateWeapon(dt);
   updateSpawning(dt);
   updateEnemyAI(dt);
@@ -1111,7 +1143,7 @@ window.__fps = {
   spawnRandomTarget, hasLineOfSight, restartGame,
   get spawnTimer() { return spawnTimer; },
   damageAt, hitsCover, pickups, validPickupSpot,
-  grenades, nadePickups, throwGrenade, bulletDamage,
+  grenades, nadePickups, throwGrenade, bulletDamage, audio,
   assets: Object.fromEntries(Object.entries(ASSETS).map(([k, a]) => [k, k === 'textures'
     ? Object.fromEntries(Object.entries(a).map(([t, m]) => [t, m ? m.name : null])) : a.name])), assetLog: loadLog, renderer,
   setLook: (y, p) => { yaw = y; pitch = p; },

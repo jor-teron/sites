@@ -17,8 +17,9 @@ const DEFAULTS = {
   medkit: 'pickups/medkit_basic',
   grenade: 'weapons/grenade_frag',
   grenadePickup: 'pickups/grenade_crate',
+  sounds: 'sounds/procedural',
 };
-const KIND = { gun: 'gun', arms: 'arms', enemy: 'enemy', medkit: 'medkit', grenade: 'grenade', grenadePickup: 'pickup' };
+const KIND = { gun: 'gun', arms: 'arms', enemy: 'enemy', medkit: 'medkit', grenade: 'grenade', grenadePickup: 'pickup', sounds: 'sounds' };
 const BASE = new URL('./', import.meta.url);           // .../browser-fps/assets/
 const GAME = new URL('../', import.meta.url);          // .../browser-fps/
 

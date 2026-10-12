@@ -40,6 +40,7 @@ fallback (or the slot default), so the game always starts. `window.__fps.assets`
 | `pickups/`    | `medkit` | `medkit` |
 | `pickups/`    | `grenadePickup` | `pickup` |
 | `weapons/`    | `grenade` | `grenade` |
+| `sounds/`     | `sounds` | `sounds` (Web Audio synth pack: `make(ctx)` -> named sound fns) |
 | `textures/`   | `textures.floor/wall/cover` | `texture` |
 
 `wear.js` holds shared helpers (procedural wear/roughness textures, capsule/limb meshes).

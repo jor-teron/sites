@@ -46,6 +46,7 @@ export function createGrenades(scene, cfg, model, hooks) {
       if (g.pos.x + r <= c.min.x || g.pos.x - r >= c.max.x || g.pos.y + r <= c.min.y || g.pos.y - r >= c.max.y ||
           g.pos.z + r <= c.min.z || g.pos.z - r >= c.max.z) continue;
       g.pos[axis] = d > 0 ? c.min[axis] - r - 1e-4 : c.max[axis] + r + 1e-4;
+      if (Math.abs(g.vel[axis]) > 1.2 && hooks.onBounce) hooks.onBounce(g.pos);
       g.vel[axis] = -g.vel[axis] * cfg.bounce;
       if (axis === 'y' && d < 0) {          // landed on top: rolling friction
         g.vel.x *= cfg.friction; g.vel.z *= cfg.friction;
@@ -86,7 +87,7 @@ export function createGrenades(scene, cfg, model, hooks) {
         moveAxis(g, 'x', g.vel.x * h, solids);
         moveAxis(g, 'z', g.vel.z * h, solids);
         moveAxis(g, 'y', g.vel.y * h, solids);
-        if (g.pos.y < cfg.radius) { g.pos.y = cfg.radius; g.vel.y = Math.abs(g.vel.y) * cfg.bounce; g.vel.x *= cfg.friction; g.vel.z *= cfg.friction; if (g.vel.y < 0.6) g.vel.y = 0; }
+        if (g.pos.y < cfg.radius) { if (g.vel.y < -1.2 && hooks.onBounce) hooks.onBounce(g.pos); g.pos.y = cfg.radius; g.vel.y = Math.abs(g.vel.y) * cfg.bounce; g.vel.x *= cfg.friction; g.vel.z *= cfg.friction; if (g.vel.y < 0.6) g.vel.y = 0; }
       }
       g.mesh.position.copy(g.pos);
       g.mesh.rotation.x += g.spin.x * dt; g.mesh.rotation.y += g.spin.y * dt; g.mesh.rotation.z += g.spin.z * dt;
