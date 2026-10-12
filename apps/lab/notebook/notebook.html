@@ -10,12 +10,13 @@
   Role: Markup only. Paper Notebook: 50 pages, LocalStorage, no undo, crumble page, PNG/PDF export.
   Scripts are plain (no build step) and share globals; order matters (store first, notebook.js last).
 -->
-<link rel="stylesheet" href="notebook.css?v=20261012m">
+<link rel="stylesheet" href="notebook.css?v=20261012n">
 </head>
 <body>
 <div id="main">
   <canvas id="canvas"></canvas>
   <div id="wrinkle" hidden></div>
+  <div id="curl" hidden><div id="curlUnder"></div><canvas id="curlPage"></canvas><div id="curlFlapWrap"><div id="curlFlap"></div></div></div>
   <div id="overlay"></div>
   <svg id="jelly" viewBox="0 0 240 240" aria-hidden="true"></svg>
   <div id="floatBtn" aria-label="Notebook menu">☰</div>
@@ -45,23 +46,29 @@
   </div>
   <!-- Quick menu: hold ☰ (nb_popup.js) -->
   <div id="nbPopup" hidden>
+    <div class="penDots">
+      <button type="button" class="pen" data-pen="black" aria-label="Black pen" style="--c:#222"></button>
+      <button type="button" class="pen" data-pen="blue" aria-label="Blue pen" style="--c:#1f4fbf"></button>
+      <button type="button" class="pen" data-pen="red" aria-label="Red pen" style="--c:#c62828"></button>
+    </div>
     <button type="button" data-act="png">Download this page (PNG)</button>
     <button type="button" data-act="settings">Go to settings page</button>
   </div>
 </div>
 
 <script src="vendor/jspdf.umd.min.js"></script>
-<script src="nb_store.js?v=20261012m"></script>
-<script src="nb_wrinkle.js?v=20261012m"></script>
-<script src="nb_cover.js?v=20261012m"></script>
-<script src="nb_canvas.js?v=20261012m"></script>
-<script src="nb_pages.js?v=20261012m"></script>
-<script src="nb_draw.js?v=20261012m"></script>
-<script src="nb_export.js?v=20261012m"></script>
-<script src="nb_settings.js?v=20261012m"></script>
-<script src="nb_jelly.js?v=20261012m"></script>
-<script src="nb_popup.js?v=20261012m"></script>
-<script src="nb_float.js?v=20261012m"></script>
-<script src="notebook.js?v=20261012m"></script>
+<script src="nb_store.js?v=20261012n"></script>
+<script src="nb_wrinkle.js?v=20261012n"></script>
+<script src="nb_cover.js?v=20261012n"></script>
+<script src="nb_canvas.js?v=20261012n"></script>
+<script src="nb_pages.js?v=20261012n"></script>
+<script src="nb_draw.js?v=20261012n"></script>
+<script src="nb_export.js?v=20261012n"></script>
+<script src="nb_settings.js?v=20261012n"></script>
+<script src="nb_jelly.js?v=20261012n"></script>
+<script src="nb_popup.js?v=20261012n"></script>
+<script src="nb_curl.js?v=20261012n"></script>
+<script src="nb_float.js?v=20261012n"></script>
+<script src="notebook.js?v=20261012n"></script>
 </body>
 </html>

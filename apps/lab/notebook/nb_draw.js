@@ -30,7 +30,7 @@ function startDraw(e) {
   isDrawing = true;
   const pos = getPos(e);
   currentStroke = {
-    color: '#222',
+    color: PEN_COLORS[penName] || '#222',
     width: e.pointerType === 'pen' ? 1.8 : 2.2,
     points: [pos]
   };

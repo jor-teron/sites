@@ -5,7 +5,7 @@
  *   tap = nothing; HOLD still ~500 ms = quick menu popup (nb_popup.js);
  *   release past 1/3 of the screen ("armed", jelly glows): swipe right / left = next / previous
  *   page, pull UP = pages grid, pull DOWN = crumple +1 level (cap 10) with a jiggle.
- *   Shorter pulls = jelly play only. Feedback is the jelly blob (nb_jelly.js).
+ *   Shorter pulls = jelly play only. Horizontal drags drive the page curl (nb_curl.js). Feedback is the jelly blob (nb_jelly.js).
  */
 // Visual feedback (floatFollow / floatRelease / floatShake / floatPress) lives in nb_jelly.js;
 // no-op stand-ins below keep gestures working if that file failed to load.
@@ -80,6 +80,9 @@ function onFloatMove(e) {
   if (!floatMoved) return;                 // jitter while holding: ignore
   floatFollow(dx, dy);
   floatArm(!!floatAction(dx, dy));
+  // page curl follows horizontal swipes (right = next, left = previous)
+  if (Math.abs(dx) > Math.abs(dy)) curlUpdate(dx > 0 ? 'next' : 'prev', Math.abs(dx) / armDistance());
+  else curlUpdate('', 0);
 }
 
 function onFloatUp(e) {
@@ -90,17 +93,22 @@ function onFloatUp(e) {
   floatStartTime = 0;
   floatPointer = null;
   floatRelease();
-  if (floatHeld || !floatMoved) return;   // hold = popup already open; tap = nothing
+  if (floatHeld || !floatMoved) { curlFinish(false); return; }   // hold = popup open; tap = nothing
   const act = floatAction(dx, dy);
-  if (act === 'next') goToPage(currentPage + 1);
-  else if (act === 'prev') goToPage(currentPage - 1);
-  else if (act === 'grid') openPagesGrid();
+  if (act === 'next' || act === 'prev') {
+    const to = currentPage + (act === 'next' ? 1 : -1);
+    curlFinish(true, () => goToPage(to));
+    return;
+  }
+  curlFinish(false);
+  if (act === 'grid') openPagesGrid();
   else if (act === 'crumple') { crumblePage(); floatShake(); }
 }
 
 // Pointer cancelled (system gesture, etc.): stop everything, spring home.
 function onFloatCancel() {
   stopHold();
+  curlFinish(false);
   floatStartTime = 0;
   floatPointer = null;
   floatRelease();

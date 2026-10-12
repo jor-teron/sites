@@ -53,16 +53,26 @@ function drawBackground() {
     ctx.stroke();
   }
 
-  // Page number (subtle, bottom right) for all pages
-  ctx.fillStyle = '#bbb';
-  ctx.font = '12px system-ui';
+}
+
+// Big handwritten page number "n/50", top-right (clear of ☰ at top-centre). Not a stroke;
+// drawn on the canvas so PNG / PDF exports include it.
+function drawPageNumber() {
+  const w = canvas.width;
+  ctx.save();
+  ctx.font = '26px "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive';
   ctx.textAlign = 'right';
-  ctx.fillText((currentPage + 1).toString(), w - 16, h - 12);
+  ctx.textBaseline = 'alphabetic';
+  const cover = currentPage === 0 || currentPage === TOTAL_PAGES - 1;
+  ctx.fillStyle = cover ? 'rgba(255,248,225,0.9)' : 'rgba(44,74,122,0.75)';
+  ctx.fillText((currentPage + 1) + '/' + TOTAL_PAGES, w - (cover ? 64 : 18), 46);
+  ctx.restore();
 }
 
 // Redraw current page
 function redraw() {
   drawBackground();
+  drawPageNumber();
   const strokes = pages[currentPage] || [];
   strokes.forEach(stroke => {
     if (!stroke.points || stroke.points.length < 2) return;

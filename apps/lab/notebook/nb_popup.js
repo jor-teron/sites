@@ -2,12 +2,17 @@
  * Project: notebook
  * File: nb_popup.js
  * Role: Small quick-menu popup under the ☰ button, opened by HOLD (nb_float.js).
- *   Download PNG (current page), go to the settings page (49).
+ *   Pen colour dots (black / blue / red, saved), Download PNG (current page), go to the settings page (49).
  *   Closes on any tap outside it.
  */
 const nbPopup = document.getElementById('nbPopup');
 
+function paintPens() {
+  nbPopup.querySelectorAll('.pen').forEach((b) => b.classList.toggle('on', b.dataset.pen === penName));
+}
+
 function openPopup() {
+  paintPens();
   nbPopup.hidden = false;
 }
 
@@ -18,6 +23,7 @@ function closePopup() {
 nbPopup.addEventListener('click', (e) => {
   const b = e.target.closest('button');
   if (!b) return;
+  if (b.dataset.pen) { setPen(b.dataset.pen); paintPens(); setTimeout(closePopup, 180); return; }
   const act = b.dataset.act;
   closePopup();
   if (act === 'png') downloadPNG();

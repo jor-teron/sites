@@ -1,13 +1,24 @@
 /*
  * Project: notebook
  * File: nb_store.js
- * Role: Shared state (pages, current page, canvas refs) and LocalStorage load/save. Key paperNotebook_v2.
+ * Role: Shared state (pages, current page, canvas refs) and LocalStorage load/save. Keys paperNotebook_v2 (pages), paperNotebook_pen (pen colour).
  */
 // Total number of pages (fixed, light version)
 const TOTAL_PAGES = 50;
 
 // LocalStorage key (v2 for 50 pages)
 const STORAGE_KEY = 'paperNotebook_v2';
+
+// Pen colour (quick menu dots), saved separately
+const PEN_KEY = 'paperNotebook_pen';
+const PEN_COLORS = { black: '#222', blue: '#1f4fbf', red: '#c62828' };
+let penName = 'black';
+try { const v = localStorage.getItem(PEN_KEY); if (PEN_COLORS[v]) penName = v; } catch (_) { /* ignore */ }
+function setPen(name) {
+  if (!PEN_COLORS[name]) return;
+  penName = name;
+  try { localStorage.setItem(PEN_KEY, name); } catch (_) { /* ignore */ }
+}
 
 // Current page index (0-based)
 let currentPage = 0;
