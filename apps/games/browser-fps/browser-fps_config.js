@@ -85,6 +85,35 @@ window.BROWSER_FPS_CONFIG = {
     ],
   },
 
+  // Spawning: a new humanoid every `interval` seconds (initial ones above stay)
+  spawn: {
+    interval: 15,         // seconds between spawns
+    maxAlive: 8,          // never more than this many alive
+    poolMax: 12,          // total target objects ever created (dead ones are reused)
+    minPlayerDist: 6,     // spawn at least this far from the player
+    coverMargin: 0.6,     // keep this clear of cover / walls
+    targetGap: 1.6,       // keep this far from other targets
+    edgeMargin: 1.5,      // keep this far inside the outer walls
+    tries: 60,            // random positions to try per spawn
+    hp: 100,              // spawned target HP
+    colors: [0xcc3333, 0xdd4422, 0xbb2222, 0xee5533, 0xaa1111, 0xff6644],
+  },
+
+  // Enemy shooting AI
+  ai: {
+    range: 24,            // only shoot within this distance
+    turnRate: 3.2,        // rad/s turning toward the player
+    aimTolerance: 0.25,   // must face within this angle (rad) to shoot
+    reaction: 1.0,        // seconds of continuous sight before the first shot
+    cooldownMin: 1.6,     // seconds between shots ...
+    cooldownRandom: 0.8,  // ... plus up to this
+    spread: 0.06,         // random aim error (rad, each axis) - not perfect aim
+    damage: 8,            // HP per hit on the player
+    eyeHeight: 1.6,       // line-of-sight check height on the enemy
+    tracerColor: 0xff6a4a,// enemy tracer color
+    flashMs: 140,         // red screen flash when hit
+  },
+
   // Scene / camera / lights
   scene: {
     background: 0x9ec6e6, // sky / clear color (bright daytime)

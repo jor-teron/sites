@@ -34,6 +34,9 @@ const hpVal = document.getElementById('hp-val');
 const ammoVal = document.getElementById('ammo-val');
 const hitmarker = document.getElementById('hitmarker');
 const dmgFlash = document.getElementById('dmg-flash');
+const deathEl = document.getElementById('death');
+const deathMsg = document.getElementById('death-msg');
+const retryBtn = document.getElementById('retry-btn');
 
 // ─── Renderer / Scene / Camera ──────────────────────────────────────────────
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -130,15 +133,80 @@ buildArena();
 // ─── Enemies (humanoid targets, see browser-fps_target.js) ──────────────────
 const enemies = [];
 
+function newTarget(spec) {
+  const en = createTarget(spec);
+  scene.add(en.group);
+  colliders.push(en.collider);   // player can't walk through targets (skipped for bullets)
+  enemies.push(en);
+  return en;
+}
+
 function spawnEnemies() {
   const [sx, sz] = CFG.player.start;
   for (const s of CFG.enemies.specs) {
     // Face the player's spawn point
     const faceYaw = Math.atan2(sx - s.pos[0], sz - s.pos[2]);
-    const en = createTarget({ ...s, faceYaw });
-    scene.add(en.group);
-    colliders.push(en.collider);   // player can't walk through targets (skipped for bullets)
-    enemies.push(en);
+    newTarget({ ...s, faceYaw });
+  }
+}
+
+/** Reset the initial targets to their config positions (used by Retry). */
+function resetEnemies() {
+  const [sx, sz] = CFG.player.start;
+  enemies.forEach((en, i) => {
+    const s = CFG.enemies.specs[i];
+    if (s) {
+      en.respawn(s.pos[0], s.pos[2], Math.atan2(sx - s.pos[0], sz - s.pos[2]), s.hp, false);
+    } else {
+      en.alive = false; en.dying = false; en.group.visible = false; en.collider.disabled = true;
+    }
+  });
+}
+
+// ─── Timed spawning (random valid spot, rise-up animation, pooled) ─────────
+const SP = CFG.spawn;
+let spawnTimer = SP.interval;
+
+function spotIsFree(x, z) {
+  const m = SP.coverMargin;
+  for (const c of colliders) {
+    if (c.disabled || c.target) continue;
+    if (c.max.y <= 0.05) continue;                        // the floor
+    if (x > c.min.x - m - 0.42 && x < c.max.x + m + 0.42 && z > c.min.z - m - 0.42 && z < c.max.z + m + 0.42) return false;
+  }
+  for (const en of enemies) {
+    if (!en.alive) continue;
+    const p = en.group.position;
+    if (Math.hypot(p.x - x, p.z - z) < SP.targetGap) return false;
+  }
+  return Math.hypot(player.pos.x - x, player.pos.z - z) >= SP.minPlayerDist;
+}
+
+/** Try to spawn one target. Returns it, or null if capped / no valid spot. */
+function spawnRandomTarget() {
+  if (enemies.filter((e) => e.alive).length >= SP.maxAlive) return null;
+  const lim = ARENA.w / 2 - SP.edgeMargin;
+  for (let i = 0; i < SP.tries; i++) {
+    const x = (Math.random() * 2 - 1) * lim;
+    const z = (Math.random() * 2 - 1) * (ARENA.d / 2 - SP.edgeMargin);
+    if (!spotIsFree(x, z)) continue;
+    const yaw = Math.atan2(player.pos.x - x, player.pos.z - z);
+    let en = enemies.find((e) => !e.alive && !e.dying);
+    if (!en) {
+      if (enemies.length >= SP.poolMax) return null;
+      en = newTarget({ pos: [x, 1, z], color: SP.colors[enemies.length % SP.colors.length], hp: SP.hp, faceYaw: yaw });
+    }
+    en.respawn(x, z, yaw, SP.hp, true);
+    return en;
+  }
+  return null;
+}
+
+function updateSpawning(dt) {
+  spawnTimer -= dt;
+  if (spawnTimer <= 0) {
+    spawnTimer += SP.interval;
+    spawnRandomTarget();
   }
 }
 
@@ -172,19 +240,23 @@ function unlockPointer() {
     document.exitPointerLock();
   }
   pointerLocked = false;
-  overlay.classList.remove('hidden');
+  overlay.classList.toggle('hidden', isDead());
   hud.classList.remove('visible');
 }
 
 function syncPointerLockUi() {
   pointerLocked = document.pointerLockElement === renderer.domElement;
-  overlay.classList.toggle('hidden', pointerLocked);
+  overlay.classList.toggle('hidden', pointerLocked || isDead());
   hud.classList.toggle('visible', pointerLocked);
   if (!pointerLocked) clearInput();
 }
 
 // ─── Input ──────────────────────────────────────────────────────────────────
 overlay.addEventListener('click', () => {
+  renderer.domElement.requestPointerLock();
+});
+retryBtn.addEventListener('click', () => {
+  restartGame();
   renderer.domElement.requestPointerLock();
 });
 
@@ -357,6 +429,110 @@ function updateMovement(dt) {
   camera.rotation.y = yaw;
 }
 
+// ─── Player damage / death ──────────────────────────────────────────────────
+function isDead() { return player.health <= 0; }
+
+function damagePlayer(n, flashMs) {
+  if (isDead()) return;
+  player.health = Math.max(0, player.health - n);
+  hpVal.textContent = String(player.health);
+  dmgFlash.classList.add('show');
+  clearTimeout(damagePlayer._ft);
+  damagePlayer._ft = setTimeout(() => dmgFlash.classList.remove('show'), flashMs);
+  if (isDead()) showDeath();
+}
+
+function showDeath() {
+  shooting = false;
+  const kills = player.kills || 0;
+  deathMsg.textContent = `Targets down: ${kills}`;
+  deathEl.classList.remove('hidden');
+  overlay.classList.add('hidden');
+  if (document.pointerLockElement) document.exitPointerLock();
+}
+
+function restartGame() {
+  player.pos.set(CFG.player.start[0], PLAYER_HEIGHT, CFG.player.start[1]);
+  player.vel.set(0, 0, 0);
+  player.health = MAX_HEALTH;
+  player.ammo = MAG_SIZE;
+  player.reloading = false;
+  player.fireCooldown = 0;
+  player.kills = 0;
+  yaw = 0; pitch = 0;
+  hpVal.textContent = String(player.health);
+  ammoVal.textContent = String(player.ammo);
+  resetEnemies();
+  spawnTimer = SP.interval;
+  deathEl.classList.add('hidden');
+}
+
+// ─── Enemy AI: face the player, shoot with line of sight ────────────────────
+const AI = CFG.ai;
+const aiFrom = new THREE.Vector3(), aiDir = new THREE.Vector3(), aiTo = new THREE.Vector3();
+const playerHalf = new THREE.Vector3(PLAYER_RADIUS, PLAYER_HEIGHT / 2, PLAYER_RADIUS);
+const playerCenter = new THREE.Vector3();
+
+/** Distance along the ray to the nearest wall/cover (targets ignored), or Infinity. */
+function wallHit(origin, dir) {
+  let best = Infinity;
+  for (const c of colliders) {
+    if (c.target || c.disabled) continue;
+    // walls / cover never move: cache centre + half extents
+    if (!c._half) {
+      c._half = new THREE.Vector3().subVectors(c.max, c.min).multiplyScalar(0.5);
+      c._center = new THREE.Vector3().addVectors(c.min, c.max).multiplyScalar(0.5);
+    }
+    const t = rayAABB(origin, dir, c._center, c._half);
+    if (t !== null && t > 0.05 && t < best) best = t;
+  }
+  return best;
+}
+
+/** Line of sight from an enemy's eyes to the player's head. */
+function hasLineOfSight(en) {
+  const p = en.group.position;
+  aiFrom.set(p.x, AI.eyeHeight, p.z);
+  aiDir.subVectors(player.pos, aiFrom);
+  const dist = aiDir.length();
+  aiDir.normalize();
+  return wallHit(aiFrom, aiDir) > dist;
+}
+
+function enemyFire(en) {
+  const from = en.muzzleWorld(aiFrom);
+  playerCenter.set(player.pos.x, player.pos.y - PLAYER_HEIGHT * 0.4, player.pos.z);
+  aiDir.subVectors(playerCenter, from).normalize();
+  // aim error
+  const e = new THREE.Euler((Math.random() * 2 - 1) * AI.spread, (Math.random() * 2 - 1) * AI.spread, 0, 'YXZ');
+  aiDir.applyEuler(e).normalize();
+  const tWall = wallHit(from, aiDir);
+  playerCenter.y = player.pos.y - PLAYER_HEIGHT / 2;
+  const tPlayer = rayAABB(from, aiDir, playerCenter, playerHalf);
+  const hit = tPlayer !== null && tPlayer > 0 && tPlayer < tWall;
+  const dist = Math.min(hit ? tPlayer : tWall, W.tracerMaxDist);
+  aiTo.copy(from).addScaledVector(aiDir, dist);
+  spawnTracer(from, aiTo, AI.tracerColor);
+  en.showMuzzleFlash();
+  if (hit) damagePlayer(AI.damage, AI.flashMs);
+}
+
+function updateEnemyAI(dt) {
+  for (const en of enemies) {
+    if (!en.alive || en.rising > 0) continue;
+    const p = en.group.position;
+    const dist = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
+    const err = en.turnToward(player.pos.x, player.pos.z, AI.turnRate, dt);
+    if (en.shootCd > 0) en.shootCd -= dt;
+    const sees = dist <= AI.range && hasLineOfSight(en);
+    en.seenT = sees ? en.seenT + dt : 0;
+    if (sees && err <= AI.aimTolerance && en.seenT >= AI.reaction && en.shootCd <= 0) {
+      enemyFire(en);
+      en.shootCd = AI.cooldownMin + Math.random() * AI.cooldownRandom;
+    }
+  }
+}
+
 // ─── Weapon / hitscan ───────────────────────────────────────────────────────
 const raycaster = new THREE.Raycaster();
 const shootDir = new THREE.Vector3();
@@ -368,9 +544,11 @@ let flashT = 0;
 const tracerMat = new THREE.LineBasicMaterial({ color: W.tracerColor, transparent: true, opacity: W.tracerOpacity });
 const tracers = [];
 
-function spawnTracer(from, to) {
+function spawnTracer(from, to, color) {
   const geo = new THREE.BufferGeometry().setFromPoints([from.clone(), to.clone()]);
-  const line = new THREE.Line(geo, tracerMat.clone());
+  const mat = tracerMat.clone();
+  if (color !== undefined) mat.color.setHex(color);
+  const line = new THREE.Line(geo, mat);
   scene.add(line);
   tracers.push({ line, life: W.tracerLife });
 }
@@ -390,6 +568,7 @@ function showHitmarker() {
 function damageEnemy(en, dmg, zone, dir) {
   if (!en.alive) return;
   en.hit(zone, dmg, dir);   // head x2.5, hit flash, knockback, death animation
+  if (!en.alive) player.kills = (player.kills || 0) + 1;
   showHitmarker();
 }
 
@@ -509,29 +688,32 @@ function updateWeapon(dt) {
 // ─── Main loop ──────────────────────────────────────────────────────────────
 const clock = new THREE.Clock();
 
+/** One simulation step while playing (also used by the headless test hook). */
+function gameStep(dt) {
+  updateMovement(dt);
+  updateWeapon(dt);
+  updateSpawning(dt);
+  updateEnemyAI(dt);
+  // Contact damage
+  for (const en of enemies) {
+    if (!en.alive) continue;
+    if (en.touchCd > 0) en.touchCd -= dt;
+    // Targets are solid, so contact = touching the collider (small margin)
+    if (en.touches(player.pos, PLAYER_RADIUS, PLAYER_HEIGHT)) {
+      if (!en.touchCd || en.touchCd <= 0) {
+        damagePlayer(CFG.contact.damage, CFG.contact.flashMs);
+        en.touchCd = CFG.contact.cooldown;
+      }
+    }
+  }
+}
+
 function tick() {
   requestAnimationFrame(tick);
   const dt = Math.min(clock.getDelta(), 0.05);
 
-  if (pointerLocked && player.health > 0) {
-    updateMovement(dt);
-    updateWeapon(dt);
-    // Contact damage with real dt
-    for (const en of enemies) {
-      if (!en.alive) continue;
-      if (en.touchCd > 0) en.touchCd -= dt;
-      // Targets are solid now, so contact = touching the collider (small margin)
-      if (en.touches(player.pos, PLAYER_RADIUS, PLAYER_HEIGHT)) {
-        if (!en.touchCd || en.touchCd <= 0) {
-          player.health = Math.max(0, player.health - CFG.contact.damage);
-          hpVal.textContent = String(player.health);
-          dmgFlash.classList.add('show');
-          clearTimeout(tick._ft);
-          tick._ft = setTimeout(() => dmgFlash.classList.remove('show'), CFG.contact.flashMs);
-          en.touchCd = CFG.contact.cooldown;
-        }
-      }
-    }
+  if (pointerLocked && !isDead()) {
+    gameStep(dt);
   } else if (pointerLocked) {
     // Dead: still allow look, no move
     camera.rotation.x = pitch;
@@ -540,7 +722,7 @@ function tick() {
 
   for (const en of enemies) en.update(dt);
   vm.update(dt, {
-    moving: pointerLocked && player.health > 0 && (held(KEYS.forward) || held(KEYS.back) || held(KEYS.left) || held(KEYS.right)),
+    moving: pointerLocked && !isDead() && (held(KEYS.forward) || held(KEYS.back) || held(KEYS.left) || held(KEYS.right)),
     sprint: held(KEYS.sprint),
     onGround: player.onGround,
     yaw, pitch,
@@ -554,4 +736,11 @@ function tick() {
 tick();
 
 // Expose a tiny debug hook in console
-window.__fps = { player, enemies, colliders, scene, camera, fire, vm, startReload };
+window.__fps = {
+  player, enemies, colliders, scene, camera, fire, vm, startReload,
+  // test helpers: run game steps without pointer lock, spawning, line-of-sight
+  step: (dt, n = 1) => { for (let i = 0; i < n; i++) { if (isDead()) break; gameStep(dt); for (const en of enemies) en.update(dt); } },
+  spawnRandomTarget, hasLineOfSight, restartGame,
+  get spawnTimer() { return spawnTimer; },
+  setLook: (y, p) => { yaw = y; pitch = p; },
+};

@@ -18,6 +18,10 @@ const KNOCK_RETURN = 10;            // knockback recovery rate (1/s)
 const FALL_TIME = 0.45;             // death fall duration (s)
 const HIDE_AFTER = 0.35;            // stay on the ground this long, then hide (s)
 const CONTACT_MARGIN = 0.15;        // contact damage reach beyond the collider
+const RISE_TIME = 0.6;              // spawn rise-up animation (s)
+const RISE_DEPTH = 2.1;             // starts this far below the floor
+const ENEMY_FLASH_TIME = 0.06;      // enemy muzzle flash (s)
+const MUZZLE_LOCAL = new THREE.Vector3(0.1, 1.3, 0.78); // enemy gun barrel tip (local, facing +Z)
 
 // ─── Shared geometry (one instance for all targets) ─────────────────────────
 const G = {
@@ -30,7 +34,17 @@ const G = {
   leg: new THREE.BoxGeometry(0.2, 0.9, 0.22),
   panel: new THREE.CircleGeometry(0.15, 16),
   ring: new THREE.RingGeometry(0.05, 0.09, 16),
+  forearm: new THREE.CylinderGeometry(0.055, 0.06, 1, 6),   // unit length, scaled per arm
+  hand: new THREE.BoxGeometry(0.08, 0.08, 0.09),
+  gunBody: new THREE.BoxGeometry(0.06, 0.09, 0.42),
+  gunBarrel: new THREE.CylinderGeometry(0.014, 0.014, 0.18, 6),
+  gunMag: new THREE.BoxGeometry(0.04, 0.12, 0.06),
+  gunStock: new THREE.BoxGeometry(0.05, 0.07, 0.14),
+  flash: new THREE.PlaneGeometry(0.18, 0.18),
 };
+const GUN_MAT = new THREE.MeshStandardMaterial({ color: 0x222428, roughness: 0.6, metalness: 0.3 });
+const FLASH_MAT = new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0.95,
+  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
 
 // Hit zones in the target's local space (origin at feet, facing +Z)
 const HEAD = { c: new THREE.Vector3(0, 1.84, 0), r: 0.19 };
@@ -99,8 +113,32 @@ export function createTarget(spec) {
   part(G.torso, bodyMat, 0, 1.38, 0);
   part(G.upperArm, bodyMat, -0.36, 1.48, 0);
   part(G.upperArm, bodyMat, 0.36, 1.48, 0);
-  part(G.lowerArm, skinMat, -0.36, 1.1, 0.02);
-  part(G.lowerArm, skinMat, 0.36, 1.1, 0.02);
+  // Forearms reach forward to hold the gun
+  const forearm = (from, to) => {
+    const dir = new THREE.Vector3().subVectors(to, from);
+    const m = new THREE.Mesh(G.forearm, skinMat);
+    m.scale.y = dir.length();
+    m.position.copy(from).addScaledVector(dir, 0.5);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+    m.castShadow = true;
+    pivot.add(m);
+  };
+  forearm(new THREE.Vector3(-0.36, 1.3, 0.02), new THREE.Vector3(0.04, 1.24, 0.42));  // left hand on the handguard
+  forearm(new THREE.Vector3(0.36, 1.3, 0.02), new THREE.Vector3(0.14, 1.22, 0.16));   // right hand on the grip
+  part(G.hand, skinMat, 0.06, 1.23, 0.44);
+  part(G.hand, skinMat, 0.13, 1.21, 0.16);
+  // Gun (points +Z, the way the target faces)
+  part(G.gunBody, GUN_MAT, 0.1, 1.3, 0.38);
+  const brl = part(G.gunBarrel, GUN_MAT, 0.1, 1.31, 0.68); brl.rotation.x = Math.PI / 2;
+  part(G.gunMag, GUN_MAT, 0.1, 1.2, 0.36);
+  part(G.gunStock, GUN_MAT, 0.1, 1.27, 0.12);
+  const flashA = new THREE.Mesh(G.flash, FLASH_MAT), flashB = new THREE.Mesh(G.flash, FLASH_MAT);
+  flashB.rotation.y = Math.PI / 2;
+  const muzzleFlash = new THREE.Group();
+  muzzleFlash.add(flashA, flashB);
+  muzzleFlash.position.copy(MUZZLE_LOCAL);
+  muzzleFlash.visible = false;
+  pivot.add(muzzleFlash);
   part(G.neck, skinMat, 0, 1.71, 0);
   part(G.head, skinMat, 0, 1.84, 0);
   // Bullseye on the chest (front = +Z)
@@ -120,6 +158,11 @@ export function createTarget(spec) {
   };
 
   const t = {
+    spec,
+    rising: 0,            // > 0 while the spawn rise animation plays
+    shootCd: 0,           // AI: seconds until it may fire again
+    seenT: 0,             // AI: how long the player has been in sight (reaction delay)
+    muzzleT: 0,
     group,
     mesh: group,          // compatibility with code that reads en.mesh.position
     collider,
@@ -136,7 +179,7 @@ export function createTarget(spec) {
     raycast(origin, dir) {
       if (!this.alive) return null;
       group.updateMatrixWorld(true);
-      _inv.copy(group.matrixWorld).invert();
+      _inv.copy(pivot.matrixWorld).invert();   // pivot carries rise/knockback offsets
       _o.copy(origin).applyMatrix4(_inv);
       _d.copy(dir).transformDirection(_inv);
       let best = null;
@@ -169,7 +212,52 @@ export function createTarget(spec) {
       return dealt;
     },
 
+    /** Reuse this target (pool) at a new place, rising out of the floor. */
+    respawn(x, z, faceYaw, hp, rise = true) {
+      this.hp = this.maxHp = hp;
+      this.alive = true;
+      this.dying = false;
+      this.deathT = 0;
+      this.flash = 0;
+      this.knock = 0;
+      this.shootCd = 0;
+      this.seenT = 0;
+      for (const m of mats) m.emissive.setRGB(0, 0, 0);
+      group.position.set(x, 0, z);
+      group.rotation.y = faceYaw;
+      group.visible = true;
+      pivot.rotation.set(0, 0, 0);
+      this.rising = rise ? RISE_TIME : 0;
+      pivot.position.set(0, rise ? -RISE_DEPTH : 0, 0);
+      collider.min.set(x - COL_HALF, 0, z - COL_HALF);
+      collider.max.set(x + COL_HALF, COL_H, z + COL_HALF);
+      collider.disabled = false;
+    },
+
+    /** Turn toward a world point at most `rate` rad/s. Returns remaining angle error (rad). */
+    turnToward(px, pz, rate, dt) {
+      const want = Math.atan2(px - group.position.x, pz - group.position.z);
+      let d = want - group.rotation.y;
+      d = Math.atan2(Math.sin(d), Math.cos(d));
+      const step = Math.max(-rate * dt, Math.min(rate * dt, d));
+      group.rotation.y += step;
+      return Math.abs(d - step);
+    },
+
+    /** World position of the gun's barrel tip. */
+    muzzleWorld(out = new THREE.Vector3()) {
+      group.updateMatrixWorld(true);
+      return out.copy(MUZZLE_LOCAL).applyMatrix4(pivot.matrixWorld);
+    },
+
+    showMuzzleFlash() {
+      this.muzzleT = ENEMY_FLASH_TIME;
+      muzzleFlash.visible = true;
+      muzzleFlash.rotation.z = Math.random() * Math.PI;
+    },
+
     update(dt) {
+      if (this.muzzleT > 0) { this.muzzleT -= dt; if (this.muzzleT <= 0) muzzleFlash.visible = false; }
       if (this.flash > 0) {
         this.flash -= dt;
         if (this.flash <= 0) for (const m of mats) m.emissive.setRGB(0, 0, 0);
@@ -179,7 +267,13 @@ export function createTarget(spec) {
       const k = this.knock * KNOCK_DIST;
       const c = Math.cos(group.rotation.y), s = Math.sin(group.rotation.y);
       const kx = this.knockDir.x * k, kz = this.knockDir.z * k;
-      pivot.position.set(kx * c - kz * s, 0, kx * s + kz * c);
+      let riseY = 0;
+      if (this.rising > 0) {
+        this.rising = Math.max(0, this.rising - dt);
+        const u = 1 - this.rising / RISE_TIME;
+        riseY = -RISE_DEPTH * (1 - u) * (1 - u);          // ease out of the floor
+      }
+      pivot.position.set(kx * c - kz * s, riseY, kx * s + kz * c);
       if (this.dying) {
         this.deathT += dt;
         const f = Math.min(1, this.deathT / FALL_TIME);
