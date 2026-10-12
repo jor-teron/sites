@@ -43,12 +43,15 @@
   <div class="ps-ed-top">
     <button id="ed-done" type="button" class="ps-btn primary">✓ Done</button>
     <span id="ed-title"></span>
-    <button id="ed-rot" type="button" class="ps-btn" title="Rotate 90°">⟳ Rotate</button>
+    <button id="ed-rotl" type="button" class="ps-btn" title="Rotate 90° left">⟲</button>
+    <button id="ed-rot" type="button" class="ps-btn" title="Rotate 90° right">⟳</button>
+    <button id="ed-auto" type="button" class="ps-btn" title="Find paper edges">🪄 Auto</button>
     <button id="ed-full" type="button" class="ps-btn ghost" title="Whole photo">⛶ Full</button>
   </div>
   <div id="ed-stage" class="ps-stage">
     <canvas id="ed-canvas"></canvas>
     <svg id="ed-quad" class="ps-quad"><polygon points=""></polygon></svg>
+    <canvas id="ed-prev" class="ps-prev" title="Result preview"></canvas>
     <div class="ps-h" data-i="0"></div><div class="ps-h" data-i="1"></div>
     <div class="ps-h" data-i="2"></div><div class="ps-h" data-i="3"></div>
   </div>
@@ -67,6 +70,8 @@
 <script src="vendor/jsQR.js"></script>
 <script src="ps_store.js"></script>
 <script src="ps_filter.js"></script>
+<script src="ps_edge.js"></script>
+<script src="ps_loupe.js"></script>
 <script src="ps_crop.js"></script>
 <script src="ps_pdf.js"></script>
 <script src="ps_live.js"></script>

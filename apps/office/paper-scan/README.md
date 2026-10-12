@@ -5,7 +5,7 @@ Works in the Hub and responds to the hub's D-pad.
 
 ## Behaviour rules
 - **Capture:** 📷 Camera (phone camera, several shots) or 🖼 Photos (picker, several). One new photo opens the crop editor; several land in the grid.
-- **Crop:** 4 big corner handles, default 5% inset. ⛶ Full = whole photo. ⟳ Rotate turns the result 90°. The quad is perspective-corrected (homography, bilinear) to an A4-shaped page; landscape when the quad is wider than tall.
+- **Crop:** 4 big corner handles, default 5% inset. ⛶ Full = whole photo. ⟲ / ⟳ rotate the result 90° left/right, shown live in the mini-preview. 🪄 Auto finds the paper edges (also runs on each new photo; falls back to a centred A4 crop). A round magnifier shows the spot under your finger while dragging a corner. The quad is perspective-corrected (homography, bilinear) to an A4-shaped page; landscape when the quad is wider than tall.
 - **Filter:** Original / Document (default: white balance from the paper, whiter paper, darker ink) / Grayscale / B&W (adaptive threshold).
 - **Pages:** tap a thumbnail to re-edit; ↑ ↓ reorder (mouse can also drag tiles); ⟲ retake/replace; ✕ delete (asks).
 - **Quality:** Low 1600×1131, Medium 2000×1414 (default), Good 2480×1754, JPEG 0.8. Small photos are not upscaled. Status line shows the estimated, then the actual PDF size.
@@ -17,7 +17,7 @@ Works in the Hub and responds to the hub's D-pad.
 ## Files
 - `paper-scan.html`, `paper-scan.css`, `index.html` (redirect), `paper-scan_icon.png`
 - `paper-scan.js` main: state, render queue, export/print/share, keys
-- `ps_capture.js` camera / photo inputs · `ps_crop.js` editor + homography warp · `ps_filter.js` filters
+- `ps_capture.js` camera / photo inputs · `ps_crop.js` editor + homography warp · `ps_edge.js` auto edge detection · `ps_loupe.js` corner magnifier · `ps_filter.js` filters
 - `ps_pages.js` thumbnail grid · `ps_pdf.js` PDF writer · `ps_send.js` Hub send · `ps_store.js` saving
 - `vendor/jsQR.js` (+ LICENSE) for Scan QR when BarcodeDetector is missing
 
@@ -41,6 +41,6 @@ IndexedDB `paper-scan` / `pages` (original photo + processed JPEG + corners, rot
 7. In the Hub on desktop: arrows move focus, Ctrl+S downloads, Delete removes a focused page, Ctrl+Z undoes.
 
 ## Known limits
-- No automatic edge detection yet (release 2) — corners are placed by hand.
-- No magnifier on handles; editor shows the photo unrotated (rotation applies to the result).
+- Auto edge detection works best with light paper on a darker background; low contrast falls back to the centred A4 crop.
+- The editor photo stays unrotated; the mini-preview (bottom-right) shows the rotated result.
 - Very large photos (>20 MP) may be slow on old phones; pages are processed one at a time.

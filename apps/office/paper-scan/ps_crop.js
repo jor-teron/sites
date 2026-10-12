@@ -7,6 +7,8 @@
  * - PS.crop.open(page, onDone): full-screen editor with 4 big draggable corner handles,
  *   Rotate, Full (largest A4 area — never stretched), filter chips. Default/Full crops keep true A4
  *   proportions (defCorners(iw, ih)); page.corners null → filled once the photo size is known.
+ *   Release 2: auto edge detection on new photos + 🪄 Auto button, loupe while dragging (ps_loupe.js),
+ *   ⟲/⟳ rotate buttons and a live rotated mini-preview of the output page (bottom-right).
  *   PS.crop.undo() reverts the last crop/rotate/filter change.
  */
 (function () {
@@ -24,7 +26,13 @@
     const x0 = (iw - w) / 2 / iw, y0 = (ih - h) / 2 / ih, x1 = 1 - x0, y1 = 1 - y0;
     return [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
   }
-  const fill = (p, im) => { if (!p.corners) p.corners = defCorners(im.naturalWidth, im.naturalHeight); };
+  // New photo: try auto edge detection (ps_edge.js), else centred A4 crop. p.auto = true when found.
+  const autoCorners = (im) => (PS.edge && PS.edge.detect(im)) || null;
+  const fill = (p, im) => {
+    if (p.corners) return;
+    const a = autoCorners(im); p.auto = !!a;
+    p.corners = a || defCorners(im.naturalWidth, im.naturalHeight);
+  };
 
   function loadImg(blob) {
     return new Promise((res, rej) => {
@@ -141,6 +149,33 @@
     $('ed-quad').querySelector('polygon').setAttribute('points', pts.map((p) => p.join(',')).join(' '));
     $('ed-title').textContent = 'Page ' + (PS.pages ? PS.pages.indexOf(cur) + 1 : '') + ((cur.rot || 0) % 4 ? ' · ⟳ ' + ((cur.rot % 4) * 90) + '°' : '');
     document.querySelectorAll('#ed-filters [data-f]').forEach((b) => b.classList.toggle('on', b.dataset.f === cur.filter));
+    preview();
+  }
+
+  // Small live preview of the flattened page, rotated like the final output (true A4 shape).
+  let prevT = 0, small = null;
+  function preview() {
+    clearTimeout(prevT);
+    prevT = setTimeout(() => {
+      if (!cur || !im) return;
+      const pv = $('ed-prev'); if (!pv) return;
+      if (!small || small.im !== im) {
+        const k = Math.min(1, 500 / Math.max(im.naturalWidth, im.naturalHeight));
+        const c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+        const cx = c.getContext('2d', { willReadFrequently: true }); cx.drawImage(im, 0, 0, c.width, c.height);
+        small = { im, data: cx.getImageData(0, 0, c.width, c.height) };
+      }
+      const sw = small.data.width, sh = small.data.height;
+      const quad = cur.corners.map(([x, y]) => [x * sw, y * sh]);
+      const qw = (dist(quad[0], quad[1]) + dist(quad[3], quad[2])) / 2, qh = (dist(quad[0], quad[3]) + dist(quad[1], quad[2])) / 2;
+      const land = qw > qh, W = land ? 170 : 120, H = land ? 120 : 170;
+      let img; try { img = warp(small.data, quad, W, H); } catch (e) { return; }
+      const flat = document.createElement('canvas'); flat.width = W; flat.height = H; flat.getContext('2d').putImageData(img, 0, 0);
+      const r = ((cur.rot || 0) % 4 + 4) % 4;
+      pv.width = r % 2 ? H : W; pv.height = r % 2 ? W : H;
+      const px = pv.getContext('2d');
+      px.save(); px.translate(pv.width / 2, pv.height / 2); px.rotate(r * Math.PI / 2); px.drawImage(flat, -W / 2, -H / 2); px.restore();
+    }, 60);
   }
 
   function bind() {
@@ -154,11 +189,20 @@
         const x = (e.clientX - r.left - box.x) / box.w, y = (e.clientY - r.top - box.y) / box.h;
         cur.corners[drag] = [Math.max(0, Math.min(1, x)), Math.max(0, Math.min(1, y))];
         drawQuad();
+        const c = cur.corners[drag];
+        if (PS.loupe) PS.loupe.show($('ed-stage'), im, c[0], c[1], box.x + c[0] * box.w, box.y + c[1] * box.h, box.w / im.naturalWidth);
       });
-      const up = () => { drag = -1; };
+      const up = () => { drag = -1; if (PS.loupe) PS.loupe.hide(); };
       h.addEventListener('pointerup', up); h.addEventListener('pointercancel', up);
     });
     $('ed-rot').addEventListener('click', () => { remember(); cur.rot = ((cur.rot || 0) + 1) % 4; drawQuad(); });
+    $('ed-rotl').addEventListener('click', () => { remember(); cur.rot = ((cur.rot || 0) + 3) % 4; drawQuad(); });
+    $('ed-auto').addEventListener('click', () => {
+      remember(); const a = autoCorners(im);
+      cur.corners = a || defCorners(im.naturalWidth, im.naturalHeight);
+      if (PS.ui && PS.ui.status) PS.ui.status(a ? '🪄 Found the paper edges' : '🤔 No clear paper edges — using A4 crop');
+      drawQuad();
+    });
     $('ed-full').addEventListener('click', () => { remember(); cur.corners = defCorners(im.naturalWidth, im.naturalHeight, 0); drawQuad(); });
     $('ed-filters').addEventListener('click', (e) => {
       const b = e.target.closest('[data-f]'); if (!b || !cur) return;
@@ -179,7 +223,7 @@
   }
   function close() {
     if (!cur) return;
-    const p = cur; cur = null; $('editor').hidden = true;
+    const p = cur; cur = null; $('editor').hidden = true; if (PS.loupe) PS.loupe.hide();
     if (done) done(p);
   }
 

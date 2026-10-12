@@ -43,3 +43,6 @@ main { flex: 1; overflow: auto; padding: 12px; }
 .ps-live-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 10px; padding-bottom: max(10px, env(safe-area-inset-bottom)); background: #000; position: relative; z-index: 1; }
 .ps-shut { font-size: 30px; min-height: 72px; }
 .ps-live.flash video { opacity: .4; }
+/* release 2: loupe + rotated preview */
+.ps-loupe { position: absolute; width: 120px; height: 120px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 6px 18px rgba(0,0,0,.5); pointer-events: none; z-index: 5; }
+.ps-prev { position: absolute; right: 10px; bottom: 10px; max-width: 34%; border: 3px solid #fff; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,.45); background: #fff; pointer-events: none; z-index: 4; }
