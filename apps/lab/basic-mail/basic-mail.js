@@ -281,6 +281,7 @@ function timeLabel(ms) {
 
 /* Load the active folder from Gmail. */
 function loadList() {
+  loadProfile();
   var seq = ++listSeq;
   if (!hasToken()) {
     if (accessToken) {
@@ -376,6 +377,10 @@ function openMail(id) {
       body: bodyText(msg.payload),
       html: bodyHtml(msg.payload),
       messageId: header(msg.payload.headers, "Message-ID") || header(msg.payload.headers, "Message-Id"),
+      fromRaw: from,
+      to: header(msg.payload.headers, "To"),
+      cc: header(msg.payload.headers, "Cc"),
+      attachments: listAttachments(msg.payload),
       references: header(msg.payload.headers, "References")
     };
     currentId = id;
@@ -384,6 +389,7 @@ function openMail(id) {
     document.getElementById("read-email").textContent = openItem.email;
     document.getElementById("read-time").textContent = openItem.time;
     showBody(openItem, false);
+    renderAttachments(openItem);
     document.getElementById("read-pane").hidden = false;
     document.getElementById("app").classList.add("is-reading");
     gmail("/messages/" + id + "/modify", { method: "POST", body: { removeLabelIds: ["UNREAD"] } }).catch(function () {});
@@ -408,6 +414,7 @@ function closeRead() {
   openItem = null;
   document.getElementById("read-pane").hidden = true;
   document.getElementById("read-body").innerHTML = "";
+  document.getElementById("read-attach").textContent = "";
   document.getElementById("app").classList.remove("is-reading");
   renderList();
 }
@@ -418,6 +425,9 @@ var replyCtx = null;
 /* Compose sheet for new, reply, or forward. */
 function openCompose(kind) {
   replyCtx = null;
+  document.getElementById("cc").value = "";
+  document.getElementById("files").value = "";
+  document.getElementById("compose-attach").textContent = "";
   var title = document.getElementById("compose-title");
   var to = document.getElementById("to");
   var subject = document.getElementById("subject");
@@ -427,6 +437,18 @@ function openCompose(kind) {
   subject.value = "";
   body.value = "";
   setComposeStatus("");
+  if (openItem && kind === "replyall") {
+    // To = original sender + other To; Cc kept; own address dropped everywhere.
+    var me = myEmail ? [myEmail.toLowerCase()] : [];
+    var toList = uniqueAddresses([openItem.fromRaw].concat(splitAddresses(openItem.to)), me);
+    var ccList = uniqueAddresses(splitAddresses(openItem.cc), me.concat(toList.map(addrOf)));
+    kind = "reply";
+    setTimeout(function () {
+      to.value = toList.join(", ");
+      document.getElementById("cc").value = ccList.join(", ");
+      title.textContent = "Reply all";
+    }, 0);
+  }
   if (openItem && kind === "reply") {
     title.textContent = "Reply";
     to.value = openItem.email;
@@ -441,6 +463,12 @@ function openCompose(kind) {
   if (openItem && kind === "forward") {
     title.textContent = "Forward";
     subject.value = openItem.subject.indexOf("Fwd:") === 0 ? openItem.subject : "Fwd: " + openItem.subject;
+    // forward stays in the thread and carries the original attachments
+    replyCtx = { threadId: openItem.threadId, inReplyTo: "", references: "", messageId: openItem.id, attachments: openItem.attachments || [] };
+    if (replyCtx.attachments.length) {
+      document.getElementById("compose-attach").textContent = "Original attachments included: " +
+        replyCtx.attachments.map(function (a) { return safeFileName(a.filename); }).join(", ");
+    }
     body.value = "\n\n---------- Forwarded ----------\nFrom: " + openItem.from + (openItem.email ? " <" + openItem.email + ">" : "") +
       "\nDate: " + openItem.time + "\nSubject: " + openItem.subject + "\n\n" + (openItem.body || htmlToText(openItem.html));
   }
@@ -463,36 +491,98 @@ function closeCompose() {
   document.getElementById("compose").hidden = true;
 }
 
-/* Send through Gmail and refresh Sent. */
+/* Own address (for Reply all), fetched once after connect. */
+var myEmail = "";
+function loadProfile() {
+  if (myEmail) return;
+  gmail("/profile").then(function (p) { myEmail = p.emailAddress || ""; }).catch(function () {});
+}
+
+/* Send through Gmail and refresh Sent. Attachments → multipart/mixed via the upload endpoint. */
 function sendMail(event) {
   event.preventDefault();
   var to = headerSafe(document.getElementById("to").value);
+  var cc = headerSafe(document.getElementById("cc").value);
   var subject = headerSafe(document.getElementById("subject").value);
   var body = document.getElementById("body").value.replace(/\r?\n/g, "\r\n");
   if (!to) {
     setComposeStatus("Add a recipient.");
     return;
   }
-  // Headers are pure ASCII: non-ASCII subject → RFC 2047, body → UTF-8 base64.
-  var lines = ["To: " + to, "Subject: " + encodeHeaderWord(subject)];
-  if (replyCtx && replyCtx.inReplyTo) {
-    lines.push("In-Reply-To: " + replyCtx.inReplyTo);
-    lines.push("References: " + (replyCtx.references || replyCtx.inReplyTo));
+  var ctx = replyCtx;
+  var files = Array.from(document.getElementById("files").files || []);
+  var fwd = (ctx && ctx.attachments) || [];
+  var total = files.reduce(function (n, f) { return n + f.size; }, 0) + fwd.reduce(function (n, a) { return n + (a.size || 0); }, 0);
+  if (total > ATTACH_MAX) {
+    setComposeStatus("Attachments too big: " + sizeLabel(total) + " (max " + sizeLabel(ATTACH_MAX) + "). Remove some files.");
+    return;
   }
-  lines.push("MIME-Version: 1.0", "Content-Type: text/plain; charset=utf-8", "Content-Transfer-Encoding: base64");
-  var raw = lines.join("\r\n") + "\r\n\r\n" + bodyBase64(body);
-  var payload = { raw: encodeRaw(raw) };
-  if (replyCtx && replyCtx.threadId) {
-    payload.threadId = replyCtx.threadId;   // keeps the reply in the same Gmail conversation
-  }
-  setComposeStatus("Sending…");
-  gmail("/messages/send", { method: "POST", body: payload }).then(function () {
+  setComposeStatus(files.length || fwd.length ? "Preparing attachments…" : "Sending…");
+  Promise.all(files.map(readFileB64).concat(fwd.map(function (a) {
+    return fetchAttachment(ctx.messageId, a).then(function (b64) {
+      return { filename: a.filename, mimeType: a.mimeType, size: a.size, b64: b64 };
+    });
+  }))).then(function (atts) {
+    // Headers are pure ASCII: non-ASCII subject / names → RFC 2047, body → UTF-8 base64.
+    var lines = ["To: " + encodeAddressList(to)];
+    if (cc) {
+      lines.push("Cc: " + encodeAddressList(cc));
+    }
+    lines.push("Subject: " + encodeHeaderWord(subject));
+    if (ctx && ctx.inReplyTo) {
+      lines.push("In-Reply-To: " + ctx.inReplyTo);
+      lines.push("References: " + (ctx.references || ctx.inReplyTo));
+    }
+    lines.push("MIME-Version: 1.0");
+    var textPart = "Content-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" + bodyBase64(body);
+    var raw;
+    if (!atts.length) {
+      raw = lines.join("\r\n") + "\r\n" + textPart;
+    } else {
+      var bnd = "bm_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      raw = lines.join("\r\n") + "\r\nContent-Type: multipart/mixed; boundary=\"" + bnd + "\"\r\n\r\n" +
+        "--" + bnd + "\r\n" + textPart + "\r\n" +
+        atts.map(function (a) { return "--" + bnd + "\r\n" + attachmentPart(a) + "\r\n"; }).join("") +
+        "--" + bnd + "--\r\n";
+    }
+    setComposeStatus("Sending…");
+    return atts.length ? sendUpload(raw, ctx && ctx.threadId) : gmail("/messages/send", {
+      method: "POST",
+      body: ctx && ctx.threadId ? { raw: encodeRaw(raw), threadId: ctx.threadId } : { raw: encodeRaw(raw) }
+    });
+  }).then(function () {
     replyCtx = null;
     closeCompose();
     setFolder("sent");
   }).catch(function (err) {
     setComposeStatus(err.message || "Send failed.");
     setStatus(err.message || "Send failed.");
+  });
+}
+
+/* Large messages: Gmail upload endpoint (multipart: JSON metadata with threadId + message/rfc822). */
+function sendUpload(raw, threadId) {
+  if (!hasToken()) {
+    return Promise.reject(new Error("Session expired. Tap Connect."));
+  }
+  var bnd = "up_" + Date.now().toString(36);
+  var meta = JSON.stringify(threadId ? { threadId: threadId } : {});
+  var payload = "--" + bnd + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + meta + "\r\n" +
+    "--" + bnd + "\r\nContent-Type: message/rfc822\r\n\r\n" + raw + "\r\n--" + bnd + "--";
+  return fetch("https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=multipart", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + accessToken, "Content-Type": "multipart/related; boundary=" + bnd },
+    body: payload,
+    referrerPolicy: "no-referrer"
+  }).then(function (res) {
+    if (res.status === 401) {
+      expireSession();
+      throw new Error("Session expired. Tap Connect.");
+    }
+    if (!res.ok) {
+      return res.text().then(function (text) { throw new Error(gmailError(text, res.status)); });
+    }
+    return res.json();
   });
 }
 
@@ -557,6 +647,10 @@ function bind() {
   document.getElementById("back").addEventListener("click", closeRead);
   document.getElementById("act-reply").addEventListener("click", function () {
     openCompose("reply");
+  });
+  document.getElementById("act-replyall").addEventListener("click", function () {
+    loadProfile();
+    openCompose("replyall");
   });
   document.getElementById("act-forward").addEventListener("click", function () {
     openCompose("forward");

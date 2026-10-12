@@ -59,8 +59,10 @@
         <button type="button" id="img-show" class="ghost">Show images</button>
       </div>
       <article id="read-body"></article>
+      <div id="read-attach" class="read-attach" hidden></div>
       <div class="actions">
         <button type="button" id="act-reply">Reply</button>
+        <button type="button" id="act-replyall">Reply all</button>
         <button type="button" id="act-forward">Forward</button>
         <button type="button" id="act-archive">Archive</button>
         <button type="button" id="act-delete">Delete</button>
@@ -74,9 +76,12 @@
         <strong id="compose-title">New message</strong>
         <button type="button" id="compose-close" class="ghost">Close</button>
       </header>
-      <label>To <input id="to" type="email" multiple required autocomplete="email" placeholder="a@example.com, b@example.com"></label>
+      <label>To <input id="to" type="text" required autocomplete="email" placeholder="a@example.com, Name &lt;b@example.com&gt;"></label>
+      <label>Cc <input id="cc" type="text" autocomplete="email" placeholder="optional"></label>
       <label>Subject <input id="subject" type="text" required></label>
       <label>Message <textarea id="body" rows="8" required></textarea></label>
+      <label class="attach-pick">Attach <input id="files" type="file" multiple></label>
+      <p id="compose-attach" class="muted"></p>
       <p id="compose-status" class="compose-status" role="status"></p>
       <button type="submit" class="accent">Send</button>
     </form>
@@ -87,6 +92,7 @@
   <script src="basic-mail-sanitize.js"></script>
   <script src="basic-mail-view.js"></script>
   <script src="basic-mail-auth.js"></script>
+  <script src="basic-mail-attach.js"></script>
   <script src="basic-mail.js"></script>
   <script src="basic-mail-keys.js"></script>
 </body>

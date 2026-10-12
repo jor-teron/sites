@@ -14,7 +14,8 @@ Setup steps (Google Cloud, client id) are in `basic-mail.txt`.
 | `basic-mail-sanitize.js` | Untrusted mail HTML → safe srcdoc page (+ frame CSP). |
 | `basic-mail-view.js` | Reader body: sandboxed iframe or plain text, "Show images". |
 | `basic-mail-auth.js` | GIS token client, token storage, expiry, sign out (revoke). |
-| `basic-mail.js` | Gmail calls, list, search, open, compose/send, archive, delete. |
+| `basic-mail.js` | Gmail calls, list, search, open, compose/send (reply, reply all, forward), archive, delete. |
+| `basic-mail-attach.js` | Address lists (split, own address, RFC 2047 names), attachments in and out. |
 | `basic-mail-keys.js` | Keyboard and hub D-pad: ↑↓ rows, ←→ folders, Enter, Esc. |
 | `basic-mail.css` | Layout, dark/light themes, 44px tap targets. |
 | `basic-mail_icon.png` | Hub icon (128×128). |
@@ -54,6 +55,20 @@ Setup steps (Google Cloud, client id) are in `basic-mail.txt`.
   stays in the same conversation for you and the recipient.
 - **Quotes**: reply quotes every line with `> `; HTML-only mails are turned into plain text for
   the quote (DOMParser, text only, nothing rendered or loaded). Forward adds From / Date / Subject.
+- **Reply all**: To = original sender + the other To addresses, Cc = original Cc; your own
+  address (from Gmail `/profile`) and duplicates are removed. Threaded like Reply.
+- **Display names**: non-ASCII names in To / Cc are RFC 2047 encoded (`=?UTF-8?B?…?= <a@b>`).
+- **Attachments (send)**: Attach (file picker, several files). Sent as `multipart/mixed` with base64
+  parts through Gmail's upload endpoint. Total limit 20 MB; above it a clear message and nothing is
+  sent. Non-ASCII file names use RFC 2231 `filename*` plus an ASCII fallback.
+- **Attachments (read)**: listed under the mail as "📎 name (size)" buttons. Tap = download via the
+  Gmail attachments API into a Blob of type `application/octet-stream` with the `download`
+  attribute — the browser saves it, nothing is opened or rendered. File names are cleaned (no
+  paths, control or reserved characters, no leading dots, max 120 chars).
+- **Forward** keeps the Gmail thread (`threadId`) and re-attaches the original attachments
+  (fetched, counted in the 20 MB limit).
+- **CSP**: unchanged. Uploads go to `gmail.googleapis.com` (already allowed); blob downloads are
+  plain downloads, not page loads, so no `blob:` source was needed.
 - **Charsets**: each part is decoded with its own `charset=` (TextDecoder), UTF-8 if missing/unknown.
 - Opening a mail marks it read in Gmail and un-bolds its row at once.
 
@@ -75,13 +90,17 @@ Setup steps (Google Cloud, client id) are in `basic-mail.txt`.
 3. Type in Search: one request after you stop typing; Enter searches at once.
 4. Compose to two addresses with a comma; both receive it. Subject "नमस्ते ✓" and a non-English
    body arrive intact.
+4c. Reply all on a mail with several To/Cc: you are not in the list, Cc stays Cc.
+4d. Attach two files and send; open a mail with attachments → buttons → files download, nothing opens.
+    Try > 20 MB → "Attachments too big".
+4e. Forward a mail with attachments → the recipient gets them; it stays in your thread.
 4b. Reply to a mail: it appears in the same Gmail conversation (yours and theirs), quoted with `>`.
 5. Sign out, or wait for expiry / revoke the app in Google account settings: next action shows
    "Session expired. Tap Connect."
 6. In the Hub, use the D-pad: ↑↓ move rows, Enter opens, ←→ change folder, Esc goes back.
 7. DevTools console: no CSP errors during Connect.
 
-## Known limits (release 2)
+## Known limits (release 3)
 
-Non-ASCII display names in To are sent as typed (not RFC 2047), forward does not keep the thread,
-no attachments, 20 messages per list, no reply-all.
+20 MB total attachments per mail, files are read fully into memory (slow on old phones),
+no inline images in sent mail, 20 messages per list, From is always your Gmail account.

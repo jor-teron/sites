@@ -361,3 +361,8 @@ button:focus-visible,
     margin-bottom: 8px;
   }
 }
+
+/* Release 3: attachments */
+.read-attach { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0; }
+.attach-btn { min-height: 44px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attach-pick input { min-height: 44px; }
