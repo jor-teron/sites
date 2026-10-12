@@ -5,7 +5,7 @@ A paper sketch notebook: 50 fixed pages, draw with finger, mouse or pen. Saved i
 Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself needs touch, mouse or pen.
 
 ## Behaviour rules
-- Page 1 = front cover, pages 2–3 = Index, pages 4–44 = ruled drawing pages (blank top margin, red left margin), pages 45–49 = Notes, page 50 = back cover.
+- Page 1 = front cover: soft woven cloth, stitched spine, elastic band, a stitched star and an empty name label (write your name on it with the pen). Pages 2–3 = a ruled index table (Topic | Page No.) to fill in by hand, pages 4–44 = ruled drawing pages (blank top margin, red left margin), pages 45–49 = Notes, page 50 = back cover: the same cloth with an embossed logo and the settings printed on a card (always there; hold ☰ still opens settings from any page).
 - Floating ☰ button (top middle):
   - tap → toast "Page N / 50"
   - hold (~0.55 s) → Settings
@@ -24,6 +24,7 @@ Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself 
 - `nb_store.js` — shared state + LocalStorage load/save
 - `nb_canvas.js` — resize, ruled background, redraw, special-page overlay
 - `nb_pages.js` — go to page, crumple, page toast, pages grid
+- `nb_cover.js` — cloth covers (woven pattern, spine, band, name label, embossed logo) + index table
 - `nb_wrinkle.js` — crumple levels + SVG wrinkle overlay (feTurbulence + lighting, seeded per page) and its export image
 - `nb_draw.js` — pointer drawing
 - `nb_export.js` — PNG / PDF download

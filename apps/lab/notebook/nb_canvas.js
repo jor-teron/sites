@@ -1,7 +1,8 @@
 /*
  * Project: notebook
  * File: nb_canvas.js
- * Role: Canvas resize, ruled background, redraw of strokes, special-page overlay text.
+ * Role: Canvas resize, page backgrounds (cloth covers + index via nb_cover.js, ruled pages),
+ *   redraw of strokes, Notes overlay text, back cover settings card toggle.
  */
 // Resize canvas to fit container
 function resizeCanvas() {
@@ -18,21 +19,15 @@ function drawBackground() {
   const w = canvas.width;
   const h = canvas.height;
 
-  // Cover colors - cool gradients
-  if (currentPage === 0) {
-    const grad = ctx.createLinearGradient(0, 0, w, h);
-    grad.addColorStop(0, '#a8edea');
-    grad.addColorStop(1, '#fed6e3');
-    ctx.fillStyle = grad; // cool front cover
-  } else if (currentPage === TOTAL_PAGES - 1) {
-    const grad = ctx.createLinearGradient(0, 0, w, h);
-    grad.addColorStop(0, '#d299c2');
-    grad.addColorStop(1, '#fef9d7');
-    ctx.fillStyle = grad; // cool back cover
-  } else {
-    ctx.fillStyle = '#fffef9';
+  // Covers: woven cloth (nb_cover.js); no page number on them
+  if (currentPage === 0 || currentPage === TOTAL_PAGES - 1) {
+    drawCover(currentPage === 0);
+    return;
   }
+  ctx.fillStyle = '#fffef9';
   ctx.fillRect(0, 0, w, h);
+  // Pages 2–3: printed index table
+  if (currentPage === 1 || currentPage === 2) drawIndexTable();
 
   // Only draw lines on main drawing pages (4 to 44 → 0-based 3 to 43)
   if (currentPage >= 3 && currentPage <= 43) {
@@ -90,14 +85,10 @@ function redraw() {
 function updateOverlay() {
   overlay.classList.remove('hidden');
   overlay.innerHTML = '';
-  if (currentPage === 0) {
-    overlay.innerHTML = '<h1>Sketch Notebook</h1><p>50 pages · Scribble freely</p>';
-  } else if (currentPage === 1 || currentPage === 2) {
-    overlay.innerHTML = '<h2>Index</h2><p>Page ' + (currentPage + 1) + '</p>';
-  } else if (currentPage >= 44 && currentPage <= 48) {
+  // Back cover inside = settings card (nb_settings.js / CSS .backcover)
+  document.getElementById('settingsPanel').classList.toggle('backcover', currentPage === TOTAL_PAGES - 1);
+  if (currentPage >= 44 && currentPage <= 48) {
     overlay.innerHTML = '<h2>Notes</h2><p>Page ' + (currentPage + 1) + '</p>';
-  } else if (currentPage === TOTAL_PAGES - 1) {
-    overlay.innerHTML = '<h1>Back Cover</h1><p>End of notebook</p>';
   } else {
     overlay.classList.add('hidden');
   }
