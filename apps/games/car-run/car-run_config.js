@@ -14,16 +14,17 @@ const CAR_RUN_CONFIG = {
     roadHalfWidth: 1.0,        // half road width in world units
     cameraHeight: 1.15,        // camera Y in world units
     horizonFrac: 0.55,         // vanishing point Y as fraction of screen height
-    projScaleX: 0.55,          // horizontal projection scale (x W)
-    projScaleY: 0.7,           // vertical projection scale (x H)
+    projScaleX: 0.55,          // horizontal projection scale (x U, U = min(W, H * aspect))
+    projScaleY: 0.44,          // vertical projection scale (x U); 0.44 * 1.6 = old 0.7 x H on a 16:10 screen
+    aspect: 1.6,               // U = min(W, H * aspect): one scale for both axes, so portrait doesn't stretch
     nearClip: 0.15,            // don't draw closer than this (world z)
-    playerAhead: 3.2,          // player z distance in front of the camera
+    playerAhead: 2.2,          // player z distance in front of the camera (closer = bigger car)
   },
 
   // Starting values
   start: {
     lane: 1,                   // starting lane (0 = left)
-    speed: 28,                 // initial speed
+    speed: 12,                 // initial speed (world units/s; a car is ~1 unit long)
     nitro: 1,                  // nitro tank (0..1)
     coins: 0,                  // coins collected
     distance: 0,               // distance travelled
@@ -32,19 +33,19 @@ const CAR_RUN_CONFIG = {
 
   // Speed control
   speed: {
-    max: 55,                   // max base speed
-    min: 14,                   // min base speed when braking
-    accel: 18,                 // base speed gained per second while holding up
-    brake: 28,                 // base speed lost per second while holding down
-    cruiseAccel: 2,            // passive speed gain per second
-    distanceBonusRate: 0.004,  // extra speed per unit of distance
-    distanceBonusMax: 18,      // cap on distance speed bonus
-    kmhFactor: 3.2,            // speed -> km/h display factor
+    max: 26,                   // max base speed
+    min: 8,                    // min base speed when braking
+    accel: 8,                  // base speed gained per second while holding up
+    brake: 16,                 // base speed lost per second while holding down / swipe-down
+    cruiseAccel: 0.4,          // passive speed gain per second (~35 s to cruise max)
+    distanceBonusRate: 0.002,  // extra speed per unit of distance
+    distanceBonusMax: 8,       // cap on distance speed bonus (normal top ~34)
+    kmhFactor: 6,              // speed -> km/h display factor
   },
 
   // Nitro
   nitro: {
-    multiplier: 1.55,          // speed multiplier while nitro is on
+    multiplier: 1.3,           // speed multiplier while nitro is on (peak ~44)
     drain: 0.35,               // tank drained per second
     refill: 0.08,              // tank refilled per second when off
   },
@@ -69,29 +70,37 @@ const CAR_RUN_CONFIG = {
     coinRowMin: 3,             // minimum coins in a row
     coinRowExtra: 3,           // up to this many extra coins (random)
     coinSpacing: 1.4,          // z gap between coins
-    gapBase: 10,               // base z gap between spawns
-    gapRandom: 12,             // random extra gap
-    gapShrinkPerDist: 800,     // gap shrinks by distance / this ...
-    gapShrinkMax: 4,           // ... up to this much
+    // Gaps are in SECONDS of driving at the current speed (z gap = speed * time)
+    gapTimeBase: 0.9,          // base time gap between spawns
+    gapTimeRandom: 0.8,        // random extra time
+    gapTimeShrinkPerDist: 3000,// gap shrinks by distance / this ...
+    gapTimeShrinkMax: 0.4,     // ... up to this many seconds
+    gapTimeMin: 0.5,           // never closer than this
+    gapMinZ: 3,                // and never closer than this many world units
   },
 
   // Collisions & scoring
-  hitDepth: 1.1,               // z distance that counts as a hit / pickup
+  // Hitboxes come from the world sizes below (length along z, width along x).
+  hitWidthFactor: 0.8,         // x overlap needed, as a fraction of the combined half widths (forgiveness)
   coinScore: 25,               // score per coin (score = distance + coins * this)
 
-  // Sizes (pixels at scale 1)
+  // Sizes in WORLD UNITS (projected with the road math; lane spacing is 0.72)
   sizes: {
-    coinRadius: 28,            // coin radius
-    coinMinRadius: 3,          // minimum coin radius on screen
-    coinHeight: 0.35,          // coin float height (world units)
-    barrierW: 70,              // barrier width
-    barrierH: 50,              // barrier height
-    carW: 80,                  // traffic car width
-    carH: 55,                  // traffic car height
-    playerW: 90,               // player car width
-    playerH: 70,               // player car height
-    playerScale: 2.2,          // extra size multiplier for the player car (visibility)
-    laneMarkWidth: 6,          // lane mark width
+    coinRadius: 0.14,          // coin radius
+    coinLen: 0.3,              // coin pickup length (z)
+    coinMinRadius: 3,          // minimum coin radius on screen (px)
+    coinHeight: 0.35,          // coin float height
+    barrierW: 0.65,            // barrier width
+    barrierH: 0.35,            // barrier height
+    barrierLen: 0.4,           // barrier length (z)
+    carW: 0.6,                 // traffic car width
+    carH: 0.4,                 // traffic car height
+    carLen: 1.0,               // traffic car length (z)
+    playerW: 0.62,             // player car width (~15% of screen width at playerAhead 2.2)
+    playerH: 0.42,             // player car height
+    playerLen: 1.0,            // player car length (z)
+    nitroFlame: 0.3,           // nitro flame length (x player height)
+    laneMarkWidth: 0.012,      // lane mark width
     laneMarkLength: 1.2,       // lane mark length (world units)
     laneMarkEvery: 3,          // draw lane marks every N segments
     laneMarkX: [-0.36, 0.36],  // lane mark x positions (world units)
@@ -130,6 +139,9 @@ const CAR_RUN_CONFIG = {
 
   // Input
   input: {
+    // Touch / mouse gestures (pointer events, no on-screen buttons)
+    swipeMin: 30,              // px of movement to count as a swipe
+    holdMs: 220,               // press this long without moving = nitro (while held)
     // After a tap/click starts the game, an Enter within this window is treated
     // as "start" (ignored) instead of pausing immediately. Clicking to focus the
     // hub iframe and then pressing Start would otherwise pause the new game.
@@ -155,6 +167,6 @@ const CAR_RUN_CONFIG = {
     titleSub: 'or tap / click',                         // title sub line
     paused: 'PAUSED',                                   // pause heading
     crash: 'CRASH!',                                    // game over heading
-    help: '←→ lane · ↑ accel · ↓ brake · A nitro · B jump · Start pause · Select restart', // help line
+    help: '←→ lane · ↑ accel · ↓ brake · A nitro · B jump · Start pause · Select restart · Touch: swipe ←→ lane · swipe ↑ jump · swipe ↓ brake · hold nitro', // help line
   },
 };

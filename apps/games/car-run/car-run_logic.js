@@ -34,7 +34,7 @@
   const NITRO_DRAIN = CFG.nitro.drain;
   const NITRO_REFILL = CFG.nitro.refill;
 
-  let dpr = 1, W = 0, H = 0;
+  let dpr = 1, W = 0, H = 0, U = 0; // U = uniform projection scale = min(W, H * aspect)
   let state = 'title';
   let keys = Object.create(null);
   let last = 0;
@@ -63,6 +63,7 @@
     canvas.style.width = W + 'px';
     canvas.style.height = H + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    U = Math.min(W, H * T.aspect);
   }
 
   function showOverlay(title, msg, sub) {
@@ -78,9 +79,17 @@
     const relZ = z - cameraZ;
     if (relZ <= T.nearClip) return null;
     const scale = 1 / relZ;
-    const px = W / 2 + x * scale * W * T.projScaleX;
-    const py = H * T.horizonFrac - (y - camY) * scale * H * T.projScaleY;
-    return { x: px, y: py, s: scale };
+    const px = W / 2 + x * scale * U * T.projScaleX;
+    const py = H * T.horizonFrac - (y - camY) * scale * U * T.projScaleY;
+    // k: pixels per world unit at this depth (same for both axes -> no stretching)
+    return { x: px, y: py, s: scale, k: scale * U * T.projScaleX };
+  }
+
+  /** World-unit footprint of an entity (width along x, length along z). */
+  function entityDims(e) {
+    if (e.type === 'coin') return { w: S.coinRadius * 2, len: S.coinLen };
+    if (e.type === 'barrier') return { w: S.barrierW, len: S.barrierLen };
+    return { w: S.carW, len: S.carLen };
   }
 
   function laneX(lane) {
@@ -91,6 +100,7 @@
     const SP = CFG.spawn;
     while (spawnZ < cameraZ + DRAW_DIST + SP.lookAhead) {
       const roll = Math.random();
+      let rowLen = 0;
       if (roll < SP.obstacleChance) {
         entities.push({
           type: Math.random() < SP.carVsBarrier ? 'barrier' : 'car',
@@ -104,8 +114,12 @@
         for (let i = 0; i < n; i++) {
           entities.push({ type: 'coin', lane: cl, z: spawnZ + i * SP.coinSpacing, taken: false });
         }
+        rowLen = (n - 1) * SP.coinSpacing;
       }
-      spawnZ += SP.gapBase + Math.random() * SP.gapRandom - Math.min(SP.gapShrinkMax, distance / SP.gapShrinkPerDist);
+      // Time-based spacing: gap (seconds) * current speed, so faster != denser
+      const t = Math.max(SP.gapTimeMin,
+        SP.gapTimeBase + Math.random() * SP.gapTimeRandom - Math.min(SP.gapTimeShrinkMax, distance / SP.gapTimeShrinkPerDist));
+      spawnZ += Math.max(SP.gapMinZ, rowLen + 1, t * Math.max(speed || 0, CFG.start.speed));
     }
   }
 
@@ -142,6 +156,7 @@
 
   function die() {
     state = 'over';
+    gestureEnd();
     const sc = currentScore();
     if (sc > best) {
       best = sc;
@@ -201,10 +216,7 @@
         nitroOn = true;
         e.preventDefault();
       } else if (isKey(K.jump, e)) {
-        if (jumpCd <= 0 && jumpT <= 0) {
-          jumpT = JUMP_DUR;
-          jumpCd = JUMP_CD;
-        }
+        tryJump();
         e.preventDefault();
       } else if (isKey(K.start, e)) {
         if (!e.repeat) onStartKey();
@@ -224,6 +236,7 @@
   function clearKeys() {
     keys = Object.create(null);
     nitroOn = false;
+    if (typeof gestureEnd === 'function' && touch.id !== null) gestureEnd();
   }
 
   window.addEventListener('keydown', (e) => onKey(e, true));
@@ -237,10 +250,56 @@
     if (state === 'title' || state === 'over') clickStart();
   });
 
+  // ---------- Touch / mouse gestures (pointer events, no on-screen buttons) ----------
+  // swipe left/right = lane, swipe up = jump, swipe down = brake (while finger stays down),
+  // press-and-hold without moving = nitro (while held). Tap on the title / crash screen starts.
+  const touch = { id: null, x0: 0, y0: 0, t0: 0, swiped: false, brake: false, nitro: false, holdTimer: 0 };
+
+  function gestureEnd() {
+    clearTimeout(touch.holdTimer);
+    if (touch.nitro) nitroOn = false;
+    touch.id = null; touch.brake = false; touch.nitro = false;
+  }
+
+  window.addEventListener('pointerdown', (e) => {
+    if (state !== 'play' || touch.id !== null) return;
+    touch.id = e.pointerId; touch.x0 = e.clientX; touch.y0 = e.clientY; touch.t0 = performance.now();
+    touch.swiped = false;
+    touch.holdTimer = setTimeout(() => {
+      if (touch.id !== null && !touch.swiped && state === 'play') { touch.nitro = true; nitroOn = true; }
+    }, CFG.input.holdMs);
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (e.pointerId !== touch.id || touch.swiped || state !== 'play') return;
+    const dx = e.clientX - touch.x0, dy = e.clientY - touch.y0;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < CFG.input.swipeMin) return;
+    if (touch.nitro) return;             // already holding nitro: ignore drift
+    touch.swiped = true;
+    clearTimeout(touch.holdTimer);
+    if (Math.abs(dx) > Math.abs(dy)) {
+      player.lane = dx < 0 ? Math.max(0, player.lane - 1) : Math.min(LANES - 1, player.lane + 1);
+    } else if (dy < 0) {
+      tryJump();
+    } else {
+      touch.brake = true;
+    }
+  });
+  window.addEventListener('pointerup', (e) => { if (e.pointerId === touch.id) gestureEnd(); });
+  window.addEventListener('pointercancel', (e) => { if (e.pointerId === touch.id) gestureEnd(); });
+  // No page scrolling / pull-to-refresh while playing (touch-action: none in CSS as well)
+  window.addEventListener('touchmove', (e) => { if (e.cancelable) e.preventDefault(); }, { passive: false });
+
+  function tryJump() {
+    if (jumpCd <= 0 && jumpT <= 0) {
+      jumpT = JUMP_DUR;
+      jumpCd = JUMP_CD;
+    }
+  }
+
   function update(dt) {
     const SPD = CFG.speed;
-    if (held(K.accel)) baseSpeed = Math.min(SPD.max, baseSpeed + SPD.accel * dt);
-    else if (held(K.brake)) baseSpeed = Math.max(SPD.min, baseSpeed - SPD.brake * dt);
+    if (held(K.accel) && !touch.brake) baseSpeed = Math.min(SPD.max, baseSpeed + SPD.accel * dt);
+    else if (held(K.brake) || touch.brake) baseSpeed = Math.max(SPD.min, baseSpeed - SPD.brake * dt);
     else baseSpeed = Math.min(SPD.max, baseSpeed + SPD.cruiseAccel * dt);
 
     let spd = baseSpeed + Math.min(SPD.distanceBonusMax, distance * SPD.distanceBonusRate);
@@ -272,10 +331,18 @@
 
     spawnAhead();
 
+    // Swept collision: the player's box covered [prevPz - len/2, pz + len/2] this frame,
+    // so nothing is skipped even when one frame moves several units (nitro / slow frames).
     const pz = cameraZ + T.playerAhead;
+    const prevPz = pz - speed * dt;
+    const halfP = S.playerLen / 2;
     for (const e of entities) {
       if (e.taken) continue;
-      if (Math.abs(e.z - pz) < CFG.hitDepth && e.lane === player.lane) {
+      const dim = entityDims(e);
+      const zHit = e.z - dim.len / 2 <= pz + halfP && e.z + dim.len / 2 >= prevPz - halfP;
+      // x overlap against the car's VISUAL position (mid lane change counts)
+      const xHit = Math.abs(laneX(e.lane) - player.x) < (S.playerW + dim.w) / 2 * CFG.hitWidthFactor;
+      if (zHit && xHit) {
         if (e.type === 'coin') {
           e.taken = true;
           coins++;
@@ -315,7 +382,8 @@
     ctx.fillRect(0, hy, W, H - hy);
 
     for (let i = DRAW_DIST; i >= 0; i--) {
-      const z0 = cameraZ + i;
+      // nearest segment starts at the near clip so the road reaches the screen bottom (portrait too)
+      const z0 = i === 0 ? cameraZ + T.nearClip + 0.001 : cameraZ + i;
       const z1 = cameraZ + i + 1;
       const p0L = project(-ROAD_W, 0, z0);
       const p0R = project(ROAD_W, 0, z0);
@@ -355,7 +423,7 @@
           const b = project(lx, 0.01, z0 + S.laneMarkLength);
           if (!a || !b) continue;
           ctx.strokeStyle = C.laneMark;
-          ctx.lineWidth = Math.max(1, a.s * S.laneMarkWidth);
+          ctx.lineWidth = Math.max(1, a.k * S.laneMarkWidth);
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
           ctx.lineTo(b.x, b.y);
@@ -371,7 +439,7 @@
     const p = project(x, y, e.z);
     if (!p) return;
     if (e.type === 'coin') {
-      const r = Math.max(S.coinMinRadius, p.s * S.coinRadius);
+      const r = Math.max(S.coinMinRadius, p.k * S.coinRadius);
       ctx.fillStyle = C.coin;
       ctx.beginPath();
       ctx.arc(p.x, p.y - r, r, 0, Math.PI * 2);
@@ -381,15 +449,15 @@
       ctx.arc(p.x, p.y - r, r * 0.55, 0, Math.PI * 2);
       ctx.fill();
     } else if (e.type === 'barrier') {
-      const w = p.s * S.barrierW;
-      const h = p.s * S.barrierH;
+      const w = p.k * S.barrierW;
+      const h = p.k * S.barrierH;
       ctx.fillStyle = C.barrier;
       ctx.fillRect(p.x - w / 2, p.y - h, w, h);
       ctx.fillStyle = C.barrierStripe;
       ctx.fillRect(p.x - w / 2, p.y - h * 0.55, w, h * 0.18);
     } else {
-      const w = p.s * S.carW;
-      const h = p.s * S.carH;
+      const w = p.k * S.carW;
+      const h = p.k * S.carH;
       ctx.fillStyle = C.car;
       ctx.fillRect(p.x - w / 2, p.y - h, w, h * 0.7);
       ctx.fillStyle = C.carGlass;
@@ -404,13 +472,13 @@
     const pz = cameraZ + T.playerAhead;
     const p = project(player.x, player.y, pz);
     if (!p) return;
-    const w = p.s * S.playerW * S.playerScale;
-    const h = p.s * S.playerH * S.playerScale;
+    const w = p.k * S.playerW;
+    const h = p.k * S.playerH;
     ctx.fillStyle = C.playerShadow;
     const sh = project(player.x, 0, pz);
     if (sh) {
       ctx.beginPath();
-      ctx.ellipse(sh.x, sh.y, w * 0.45, Math.max(3, p.s * 10 * S.playerScale), 0, 0, Math.PI * 2);
+      ctx.ellipse(sh.x, sh.y, w * 0.45, Math.max(3, h * 0.12), 0, 0, Math.PI * 2);
       ctx.fill();
     }
     const body = nitroOn && nitro > 0 ? C.playerNitro : C.player;
@@ -437,7 +505,7 @@
       ctx.fillStyle = C.nitroFlame;
       ctx.beginPath();
       ctx.moveTo(p.x - w * 0.15, p.y);
-      ctx.lineTo(p.x, p.y + h * 0.45 + Math.random() * 8);
+      ctx.lineTo(p.x, p.y + h * (0.45 + Math.random() * S.nitroFlame));
       ctx.lineTo(p.x + w * 0.15, p.y);
       ctx.fill();
     }
