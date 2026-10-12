@@ -53,7 +53,7 @@ Any other `t` (Gamepad `btn`/`stick`/`key`/`ptr`…, Hub → pad `rumble`) is em
 2. Reload the Hub (also hard reload) → phone reconnects by itself with the same code.
 3. Open Print inside the Hub → it shows the Hub's code; scan its QR → print-send (hub mode) → send a photo → Print dialog opens; device list shows the phone's name.
 4. Send from print-send with Home open → toast + viewer + download; Received list in the gamepad popover.
-5. Open Print standalone (`apps/lab/print/print.html`) → own 4-digit code, QR, history work as before.
+5. Open Print standalone (`apps/office/print/print.html`) → own 4-digit code, QR, history work as before.
 6. Disconnect in the popover → devices get bye and stop.
 
 ## Release 3 (2026-10-11)

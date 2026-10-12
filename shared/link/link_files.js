@@ -2,7 +2,7 @@
   Project: sites (shared)
   File: shared/link/link_files.js
   Role: Chunked file transfer over SharedLink. Same frames as Print
-  (apps/lab/print/print_common.js) plus routing fields:
+  (apps/office/print/print_common.js) plus routing fields:
     {t:'meta', id, name, mime, size, app?, to?}  {t:'chunk', id, d base64}  {t:'end', id}
   Sender waits for the data-channel buffer to drain between chunks.
   Receiver emits SharedLink 'progress' {id,name,size,done,from,app} and
