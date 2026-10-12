@@ -158,6 +158,7 @@ window.BROWSER_FPS_CONFIG = {
     near: 0.05,           // camera near plane
     far: 200,             // camera far plane
     maxPixelRatio: 2,     // renderer pixel ratio cap
+    fpsCap: 30,           // frame-rate cap (both maps); 0 = uncapped
     ambientColor: 0x8899aa, ambientIntensity: 0.9,    // ambient light
     sunColor: 0xfff0dd, sunIntensity: 2.6,            // directional light
     sunPos: [12, 28, 8],  // sun position
@@ -219,6 +220,32 @@ window.BROWSER_FPS_CONFIG = {
     pickRadius: 0.9, minPlayerDist: 4, clearance: 0.6,
     hoverY: 0.3, bobAmp: 0.07, spinSpeed: 1.4, flashMs: 220, popMs: 900,
   },
+  // Island map (start screen: Training Camp | Island). Everything scales from `radius`.
+  island: {
+    radius: 40,          // shoreline radius (m). Try 50 for a bigger island.
+    seed: 1337,          // prop layout / hills seed
+    beachFrac: 0.8,      // beach ring starts at radius * beachFrac
+    beachHeight: 0.45,   // beach height at its inner edge (slopes to 0 at the waterline)
+    hillHeight: 3.2,     // max extra height of inland hills
+    wetWidth: 1.6,       // wet-sand strip width at the waterline
+    seaSlope: 0.28, seaDepth: 1.6, seaApron: 10,   // underwater slope outside the shore
+    wade: 2.2,           // player can wade this far into the sea, then is blocked
+    waterSlow: 0.6,      // move speed multiplier while wading
+    terrainCell: 1,      // terrain mesh resolution (m)
+    waterLevel: 0, waterSegments: 40, oceanExtra: 90, waveHeight: 0.06,
+    startFrac: 0.86,     // player starts on the south beach at z = radius * startFrac, facing north
+    startClear: 5,       // no props this close to the start
+    palmDensity: 0.016, rockDensity: 0.006, bushDensity: 0.02,   // per m² (scales with area)
+    propShadows: true,   // palms / rocks cast shadows (shadow box follows the player)
+    colors: { sand: 0xe8d6a6, wetSand: 0xb39b6e, seabed: 0x2f8f8c, grass: 0x7fb24e, forest: 0x4a7a32, water: 0x1f9eb8 },
+    scene: {             // overrides for scene.* on this map (island-demo look)
+      background: 0x8ec8ea, fogNear: 30, fogFar: 120,
+      sunColor: 0xffe2b8, sunIntensity: 2.8, hemiSky: 0xcfeaff, hemiGround: 0x7a6a48, hemiIntensity: 1.0,
+      ambientIntensity: 0.6,
+    },
+  },
+  maps: { default: 'camp', storageKey: 'browser-fps-map' },   // 'camp' | 'island'
+
   // Sound (Web Audio, procedural). M toggles mute (saved in localStorage).
   audio: {
     masterVolume: 0.7,
@@ -241,12 +268,14 @@ window.BROWSER_FPS_CONFIG = {
     medkit: 'pickups/medkit_basic',
     grenade: 'weapons/grenade_frag',           // thrown grenade
     grenadePickup: 'pickups/grenade_crate',    // grenade pickup on the map
-    sounds: 'sounds/procedural',               // sound pack (Web Audio synth, no files)
+    sounds: 'sounds/procedural',
+    palm: 'props/palm_tree', bush: 'props/bush_round', rock: 'props/rock_boulder',   // island props               // sound pack (Web Audio synth, no files)
     // Procedural textures (assets/textures/*); null = plain colours
     textures: {
       floor: 'textures/floor_concrete',
       wall: 'textures/wall_brick',
       cover: 'textures/cover_concrete_block',
+      island: 'textures/island_ground',   // island terrain grain (over vertex colours)
     },
   },
 };

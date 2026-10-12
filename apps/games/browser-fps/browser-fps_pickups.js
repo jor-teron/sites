@@ -21,10 +21,11 @@ export function createPickups(scene, cfg, hooks, model = medkitBasic) {
     const spot = hooks.randomSpot();
     if (!spot) return null;
     const mesh = pool.pop() || model.build();
-    mesh.root.position.set(spot[0], 0, spot[1]);
+    const gy = hooks.groundAt ? hooks.groundAt(spot[0], spot[1]) : 0;
+    mesh.root.position.set(spot[0], gy, spot[1]);
     mesh.root.visible = true;
     scene.add(mesh.root);
-    const it = { mesh, x: spot[0], z: spot[1], age: 0, phase: Math.random() * 6.28 };
+    const it = { mesh, gy, x: spot[0], z: spot[1], age: 0, phase: Math.random() * 6.28 };
     items.push(it);
     return it;
   }
@@ -55,7 +56,7 @@ export function createPickups(scene, cfg, hooks, model = medkitBasic) {
       if (left <= 0) { remove(i); continue; }
       // pickup: walk over it (feet near the floor), only if it would heal
       const d = Math.hypot(playerPos.x - it.x, playerPos.z - it.z);
-      if (d < cfg.pickRadius && playerFeetY < 1.2 && hooks.canPick()) {
+      if (d < cfg.pickRadius && playerFeetY - it.gy < 1.2 && hooks.canPick()) {
         hooks.onPick(cfg.amount ?? cfg.heal);
         remove(i);
       }

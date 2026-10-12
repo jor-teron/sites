@@ -3,7 +3,7 @@
  *
  * createGrenades(scene, cfg, model, hooks):
  *   cfg   = CONFIG.grenades;  model = grenade asset ({ build() -> Group })
- *   hooks = { solids(): AABB colliders [{min,max}],  onExplode(pos) }
+ *   hooks = { solids(): AABB colliders [{min,max}],  onExplode(pos),  onBounce(pos),  groundAt(x, z) (floor height, default 0) }
  * Returns { throwFrom(origin, dir, inheritVel), update(dt), reset(), live, blasts }.
  */
 import * as THREE from 'three';
@@ -87,7 +87,8 @@ export function createGrenades(scene, cfg, model, hooks) {
         moveAxis(g, 'x', g.vel.x * h, solids);
         moveAxis(g, 'z', g.vel.z * h, solids);
         moveAxis(g, 'y', g.vel.y * h, solids);
-        if (g.pos.y < cfg.radius) { if (g.vel.y < -1.2 && hooks.onBounce) hooks.onBounce(g.pos); g.pos.y = cfg.radius; g.vel.y = Math.abs(g.vel.y) * cfg.bounce; g.vel.x *= cfg.friction; g.vel.z *= cfg.friction; if (g.vel.y < 0.6) g.vel.y = 0; }
+        const gy = hooks.groundAt ? hooks.groundAt(g.pos.x, g.pos.z) : 0;
+        if (g.pos.y < gy + cfg.radius) { if (g.vel.y < -1.2 && hooks.onBounce) hooks.onBounce(g.pos); g.pos.y = gy + cfg.radius; g.vel.y = Math.abs(g.vel.y) * cfg.bounce; g.vel.x *= cfg.friction; g.vel.z *= cfg.friction; if (g.vel.y < 0.6) g.vel.y = 0; }
       }
       g.mesh.position.copy(g.pos);
       g.mesh.rotation.x += g.spin.x * dt; g.mesh.rotation.y += g.spin.y * dt; g.mesh.rotation.z += g.spin.z * dt;

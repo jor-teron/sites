@@ -8,6 +8,7 @@ import { createViewmodel } from './browser-fps_viewmodel.js';
 import { createPickups } from './browser-fps_pickups.js';
 import { createGrenades } from './browser-fps_grenades.js';
 import { createAudio } from './browser-fps_audio.js';
+import { buildIsland } from './browser-fps_island.js';
 
 // ─── Tunables (from browser-fps_config.js) ──────────────────────────────────
 const CFG = window.BROWSER_FPS_CONFIG;
@@ -31,8 +32,18 @@ const MAG_SIZE = CFG.weapon.magSize;
 const RELOAD_TIME = CFG.weapon.reloadTime;
 const HIT_DAMAGE = CFG.weapon.hitDamage;
 const MAX_HEALTH = CFG.player.maxHealth;
-const ARENA = CFG.arena;
-const SC = CFG.scene;
+// Map: 'camp' (Training Camp, walled box) or 'island'. ?map=island in the URL overrides the saved choice.
+const MAPS = ['camp', 'island'];
+const MAP = (() => {
+  const q = new URLSearchParams(location.search).get('map');
+  const m = q || localStorage.getItem(CFG.maps.storageKey) || CFG.maps.default;
+  return MAPS.includes(m) ? m : 'camp';
+})();
+const IS = CFG.island;
+const ISLAND = MAP === 'island';
+// Island: a square world box around the circle (grid / bounds), no walls or cover boxes
+const ARENA = ISLAND ? { ...CFG.arena, w: 2 * (IS.radius + IS.wade + 2), d: 2 * (IS.radius + IS.wade + 2), covers: [] } : CFG.arena;
+const SC = ISLAND ? { ...CFG.scene, ...IS.scene } : CFG.scene;
 const W = CFG.weapon;
 const KEYS = CFG.keys;
 const held = (list) => list.some((c) => keys[c]);
@@ -170,13 +181,23 @@ function buildArena() {
   }
 }
 
-buildArena();
+let island = null;
+if (ISLAND) {
+  island = buildIsland(scene, IS, ASSETS, renderer);
+  for (const c of island.colliders) colliders.push(c);
+  scene.add(sun.target);
+} else buildArena();
+/** Ground height under (x, z): 0 in the camp, the terrain on the island. */
+const groundAt = ISLAND ? island.heightAt : () => 0;
+const onLand = ISLAND ? island.onLand : () => true;
+const START = ISLAND ? island.start : CFG.player.start;
 
 // ─── Enemies (humanoid targets, see browser-fps_target.js) ──────────────────
 const enemies = [];
 
 function newTarget(spec) {
   const en = createTarget(spec);
+  en.groundAt = groundAt;   // feet follow the terrain
   scene.add(en.group);
   colliders.push(en.collider);   // player can't walk through targets (skipped for bullets)
   enemies.push(en);
@@ -207,11 +228,13 @@ function spotIsFree(x, z, gap = SP.targetGap) {
     const p = en.group.position;
     if (Math.hypot(p.x - x, p.z - z) < gap) return false;
   }
+  if (!onLand(x, z, SP.edgeMargin)) return false;
   return Math.hypot(player.pos.x - x, player.pos.z - z) >= SP.minPlayerDist;
 }
 
 /** Random point in the far half of the arena (z from the far wall up to farHalfMaxZ). */
 function randomFarSpot() {
+  if (ISLAND) return island.randomSpot(Math.random, { zMax: SP.farHalfMaxZ, margin: SP.edgeMargin + 1 });
   const lim = ARENA.w / 2 - SP.edgeMargin;
   const zMin = -(ARENA.d / 2 - SP.edgeMargin);
   return [(Math.random() * 2 - 1) * lim, zMin + Math.random() * (SP.farHalfMaxZ - zMin)];
@@ -253,7 +276,7 @@ function updateSpawning(dt) {
 
 // ─── Player state ───────────────────────────────────────────────────────────
 const player = {
-  pos: new THREE.Vector3(CFG.player.start[0], PLAYER_HEIGHT, CFG.player.start[1]),
+  pos: new THREE.Vector3(START[0], PLAYER_HEIGHT + groundAt(START[0], START[1]), START[1]),
   vel: new THREE.Vector3(0, 0, 0),
   onGround: false,
   health: MAX_HEALTH,
@@ -306,6 +329,17 @@ audio.onMute = syncMuteUi; syncMuteUi(audio.muted);
 muteBtns.forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); audio.unlock(); audio.toggleMute(); }));
 // AudioContext is created / resumed on the first user gesture
 for (const ev of ['pointerdown', 'keydown']) document.addEventListener(ev, () => audio.unlock(), { capture: true });
+// Map selector on the start screen (reloads the page to build the other map; choice saved in localStorage)
+function setMap(m) {
+  if (!MAPS.includes(m)) return;
+  localStorage.setItem(CFG.maps.storageKey, m);
+  const u = new URL(location.href); u.searchParams.delete('map');
+  if (m !== MAP || u.href !== location.href) location.href = u.href;
+}
+document.querySelectorAll('.map-btn').forEach((b) => {
+  b.classList.toggle('active', b.dataset.map === MAP);
+  b.addEventListener('click', (e) => { e.stopPropagation(); setMap(b.dataset.map); });
+});
 overlay.addEventListener('click', () => {
   audio.unlock();
   renderer.domElement.requestPointerLock();
@@ -435,10 +469,11 @@ function collideWorld(pos, vel, dt) {
   player.onGround = false;
   box = playerAABB(pos.x, pos.y, pos.z);
 
-  // Floor at y=0
+  // Ground: floor at y=0 (camp) or the terrain (island); snap down small steps so slopes don't go airborne
+  const gy = groundAt(pos.x, pos.z);
   const feet = pos.y - PLAYER_HEIGHT;
-  if (feet < 0) {
-    pos.y = PLAYER_HEIGHT;
+  if (feet < gy || (ISLAND && player.wasGround && vel.y <= 0 && feet - gy < 0.35)) {
+    pos.y = gy + PLAYER_HEIGHT;
     vel.y = 0;
     player.onGround = true;
     box = playerAABB(pos.x, pos.y, pos.z);
@@ -469,9 +504,15 @@ function collideWorld(pos, vel, dt) {
   }
 
   // Soft arena bounds (inside outer walls already collide, but clamp as safety)
-  const lim = ARENA.w / 2 - PLAYER_RADIUS - 0.3;
-  pos.x = Math.max(-lim, Math.min(lim, pos.x));
-  pos.z = Math.max(-lim, Math.min(lim, pos.z));
+  if (ISLAND) {   // ocean boundary: wade out a little, then blocked
+    const r = Math.hypot(pos.x, pos.z), m = island.wadeR;
+    if (r > m) { pos.x *= m / r; pos.z *= m / r; }
+  } else {
+    const lim = ARENA.w / 2 - PLAYER_RADIUS - 0.3;
+    pos.x = Math.max(-lim, Math.min(lim, pos.x));
+    pos.z = Math.max(-lim, Math.min(lim, pos.z));
+  }
+  player.wasGround = player.onGround;
 }
 
 // ─── Movement ───────────────────────────────────────────────────────────────
@@ -492,8 +533,9 @@ function updateMovement(dt) {
 
   const sprint = held(KEYS.sprint) && aimT === 0;          // no sprint while scoped
   const speed = MOVE_SPEED * (sprint ? SPRINT_MULT : 1) * (1 + (SCOPE.moveMult - 1) * aimT);
-  player.vel.x = wish.x * speed;
-  player.vel.z = wish.z * speed;
+  const wade = ISLAND && groundAt(player.pos.x, player.pos.z) < IS.waterLevel - 0.15 ? IS.waterSlow : 1;
+  player.vel.x = wish.x * speed * wade;
+  player.vel.z = wish.z * speed * wade;
 
   if (held(KEYS.jump) && player.onGround) {
     player.vel.y = JUMP_VEL;
@@ -533,7 +575,7 @@ function showDeath() {
 }
 
 function restartGame() {
-  player.pos.set(CFG.player.start[0], PLAYER_HEIGHT, CFG.player.start[1]);
+  player.pos.set(START[0], PLAYER_HEIGHT + groundAt(START[0], START[1]), START[1]);
   player.vel.set(0, 0, 0);
   player.health = MAX_HEALTH;
   player.ammo = MAG_SIZE;
@@ -567,6 +609,26 @@ const playerHalf = new THREE.Vector3(PLAYER_RADIUS, PLAYER_HEIGHT / 2, PLAYER_RA
 const playerCenter = new THREE.Vector3();
 
 /** Distance along the ray to the nearest wall/cover (targets ignored), or Infinity. */
+/** Island: march the ray over the heightfield; distance where it dips under the terrain, or Infinity. */
+function terrainHit(origin, dir, maxT = 100) {
+  if (!ISLAND) return Infinity;
+  for (let t = 0.5; t < maxT; t += 0.6) {
+    if (origin.y + dir.y * t < groundAt(origin.x + dir.x * t, origin.z + dir.z * t)) return Math.max(0.05, t - 0.3);
+  }
+  return Infinity;
+}
+/** Island: does the segment from -> (dir, dist) pass through a bush (concealment)? */
+function bushBlocks(from, dir, dist) {
+  if (!ISLAND) return false;
+  for (const b of island.bushes) {
+    const ox = b.x - from.x, oy = b.y - from.y, oz = b.z - from.z;
+    const t = ox * dir.x + oy * dir.y + oz * dir.z;
+    if (t < 0 || t > dist) continue;
+    const dx = ox - dir.x * t, dy = oy - dir.y * t, dz = oz - dir.z * t;
+    if (dx * dx + dy * dy + dz * dz < b.r * b.r) return true;
+  }
+  return false;
+}
 function wallHit(origin, dir) {
   let best = Infinity;
   for (const c of colliders) {
@@ -579,17 +641,17 @@ function wallHit(origin, dir) {
     const t = rayAABB(origin, dir, c._center, c._half);
     if (t !== null && t > 0.05 && t < best) best = t;
   }
-  return best;
+  return Math.min(best, terrainHit(origin, dir, Math.min(best, 100)));
 }
 
 /** Line of sight from an enemy's eyes to the player's head. */
 function hasLineOfSight(en) {
   const p = en.group.position;
-  aiFrom.set(p.x, AI.eyeHeight, p.z);
+  aiFrom.set(p.x, p.y + AI.eyeHeight, p.z);
   aiDir.subVectors(player.pos, aiFrom);
   const dist = aiDir.length();
   aiDir.normalize();
-  return wallHit(aiFrom, aiDir) > dist;
+  return wallHit(aiFrom, aiDir) > dist && !bushBlocks(aiFrom, aiDir, dist);
 }
 
 /** Distance falloff: damageNear at <= falloffNear, linearly down to damageFar at >= falloffFar. */
@@ -650,7 +712,7 @@ function hitsCover(x, z, r) {
 function buildBlocked() {
   const r = AI.radius + 0.05;
   for (let j = 0; j < GD; j++) for (let i = 0; i < GW; i++) {
-    blocked[j * GW + i] = hitsCover(cellCx(i), cellCz(j), r) ? 1 : 0;
+    blocked[j * GW + i] = hitsCover(cellCx(i), cellCz(j), r) || !onLand(cellCx(i), cellCz(j), r + 0.3) ? 1 : 0;
   }
 }
 
@@ -706,7 +768,7 @@ function steer(x, z) {
 function enemySpotFree(self, x, z) {
   const r = AI.radius;
   const lim = ARENA.w / 2 - r - 0.3, limZ = ARENA.d / 2 - r - 0.3;
-  if (x < -lim || x > lim || z < -limZ || z > limZ) return false;
+  if (x < -lim || x > lim || z < -limZ || z > limZ || !onLand(x, z, r + 0.2)) return false;
   if (hitsCover(x, z, r + 0.02)) return false;
   for (const o of enemies) {
     if (o === self || !o.alive) continue;
@@ -887,6 +949,7 @@ function fire() {
     const t = rayAABB(camera.position, shootDir, center, half);
     if (t !== null && t > 0.1 && t < wallT) wallT = t;
   }
+  wallT = Math.min(wallT, terrainHit(camera.position, shootDir, Math.min(wallT, W.range)));
 
   const hitDist = Math.min(bestT, wallT, W.tracerMaxDist);
   const hitPoint = camera.position.clone().add(shootDir.clone().multiplyScalar(hitDist));
@@ -956,7 +1019,7 @@ const reachable = new Uint8Array(GW * GD);
 /** Static reachability from the player start over the cover grid (cover never moves). */
 function buildReachable() {
   reachable.fill(0);
-  const s0 = cellZ(CFG.player.start[1]) * GW + cellX(CFG.player.start[0]);
+  const s0 = cellZ(START[1]) * GW + cellX(START[0]);
   const q = new Int32Array(GW * GD); let h = 0, t = 0;
   if (!blocked[s0]) { reachable[s0] = 1; q[t++] = s0; }
   while (h < t) {
@@ -970,13 +1033,14 @@ function buildReachable() {
 function validPickupSpot(x, z) {
   const k = cellZ(z) * GW + cellX(x);
   if (!reachable[k] || hitsCover(x, z, PK.clearance)) return false;
-  if (Math.abs(x) > ARENA.w / 2 - 1 || Math.abs(z) > ARENA.d / 2 - 1) return false;
+  if (Math.abs(x) > ARENA.w / 2 - 1 || Math.abs(z) > ARENA.d / 2 - 1 || !onLand(x, z, 1.5)) return false;
   if (Math.hypot(player.pos.x - x, player.pos.z - z) < PK.minPlayerDist) return false;
   for (const it of pickups.items) if (Math.hypot(it.x - x, it.z - z) < 3) return false;
   return true;
 }
 let healTimers;
 const pickups = createPickups(scene, PK, {
+  groundAt,
   randomSpot() {
     for (let n = 0; n < 60; n++) {
       const x = (Math.random() - 0.5) * ARENA.w, z = (Math.random() - 0.5) * ARENA.d;
@@ -1015,12 +1079,13 @@ function blastBlocked(from, to) {
 const grenades = createGrenades(scene, GR, ASSETS.grenade, {
   solids: () => colliders.filter((c) => !c.target && !c.disabled),
   onBounce: (p) => sfxAt('grenadeBounce', p),
+  groundAt,
   onExplode(p) {
     sfxAt('explosion', p);
-    const from = nadeTmp.copy(p).setY(Math.max(p.y, 0.3)).clone();
+    const from = nadeTmp.copy(p).setY(Math.max(p.y, groundAt(p.x, p.z) + 0.3)).clone();
     for (const en of enemies) {
       if (!en.alive) continue;
-      const c = en.group.position.clone().setY(1.0);
+      const c = en.group.position.clone(); c.y += 1.0;
       const d = c.distanceTo(from), k = grenades.falloff(d);
       if (k <= 0 || blastBlocked(from, c)) continue;
       const dir = new THREE.Vector3().subVectors(c, from).setY(0);
@@ -1043,6 +1108,7 @@ function throwGrenade() {
 }
 let nadeTimer = 0;
 const nadePickups = createPickups(scene, CFG.grenadePickups, {
+  groundAt,
   randomSpot() {
     for (let n = 0; n < 60; n++) {
       const x = (Math.random() - 0.5) * ARENA.w, z = (Math.random() - 0.5) * ARENA.d;
@@ -1097,9 +1163,21 @@ function gameStep(dt) {
   }
 }
 
-function tick() {
+// Frame-rate cap (CFG.scene.fpsCap, both maps): skip rAF callbacks until a frame interval has passed
+let lastFrameMs = -1e9;
+let frames = 0;
+function tick(now = performance.now()) {
   requestAnimationFrame(tick);
+  if (SC.fpsCap > 0 && now - lastFrameMs < 1000 / SC.fpsCap - 2) return;
+  lastFrameMs = now;
+  frames++;
   const dt = Math.min(clock.getDelta(), 0.05);
+  if (ISLAND) {
+    island.update(clock.elapsedTime);
+    // shadow box follows the player (island is bigger than the shadow camera)
+    sun.target.position.set(player.pos.x, 0, player.pos.z);
+    sun.position.set(player.pos.x + SC.sunPos[0], SC.sunPos[1], player.pos.z + SC.sunPos[2]);
+  }
 
   if (pointerLocked && !isDead()) {
     gameStep(dt);
@@ -1138,6 +1216,7 @@ tick();
 // Expose a tiny debug hook in console
 window.__fps = {
   player, enemies, colliders, scene, camera, fire, vm, startReload,
+  map: MAP, island, groundAt, get frames() { return frames; }, setMap,
   // test helpers: run game steps without pointer lock, spawning, line-of-sight
   step: (dt, n = 1) => { for (let i = 0; i < n; i++) { if (isDead()) break; updateScope(dt); gameStep(dt); for (const en of enemies) en.update(dt); } },
   spawnRandomTarget, hasLineOfSight, restartGame,

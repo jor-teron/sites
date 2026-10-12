@@ -18,8 +18,11 @@ const DEFAULTS = {
   grenade: 'weapons/grenade_frag',
   grenadePickup: 'pickups/grenade_crate',
   sounds: 'sounds/procedural',
+  palm: 'props/palm_tree',
+  bush: 'props/bush_round',
+  rock: 'props/rock_boulder',
 };
-const KIND = { gun: 'gun', arms: 'arms', enemy: 'enemy', medkit: 'medkit', grenade: 'grenade', grenadePickup: 'pickup', sounds: 'sounds' };
+const KIND = { gun: 'gun', arms: 'arms', enemy: 'enemy', medkit: 'medkit', grenade: 'grenade', grenadePickup: 'pickup', sounds: 'sounds', palm: 'prop', bush: 'prop', rock: 'prop' };
 const BASE = new URL('./', import.meta.url);           // .../browser-fps/assets/
 const GAME = new URL('../', import.meta.url);          // .../browser-fps/
 
@@ -86,6 +89,7 @@ function wrapGlb(slot, scene, fb, spec) {
   if (slot === 'enemy') {
     return { ...fb, name, createTarget: (s, o = {}) => fb.createTarget(s, { ...o, visual: fit(scene.clone(true)) }) };
   }
+  if (KIND[slot] === 'prop') { console.warn(`[assets] ${slot}: .glb props not supported yet; using ${fb.name}`); return fb; }
   if (slot === 'grenade') {
     return { kind: 'grenade', name, build() { const g = fb.build(); g.clear(); g.add(fit(scene.clone(true))); return g; } };
   }
@@ -135,6 +139,7 @@ const TEX_DEFAULTS = {
   floor: 'textures/floor_concrete',
   wall: 'textures/wall_brick',
   cover: 'textures/cover_concrete_block',
+  island: 'textures/island_ground',
 };
 
 /** Texture slot: built-in id, or null/false for plain colours. Falls back to the default on failure. */

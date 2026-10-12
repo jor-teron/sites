@@ -269,23 +269,24 @@ export function createTarget(spec, opts = {}, body = buildBasicBody) {
       this.shootCd = 0;
       this.seenT = 0;
       for (const m of mats) m.emissive.setRGB(0, 0, 0);
-      group.position.set(x, 0, z);
+      const gy = this.groundAt ? this.groundAt(x, z) : 0;
+      group.position.set(x, gy, z);
       group.rotation.y = faceYaw;
       group.visible = true;
       pivot.rotation.set(0, 0, 0);
       this.rising = rise ? RISE_TIME : 0;
       pivot.position.set(0, rise ? -RISE_DEPTH : 0, 0);
-      collider.min.set(x - COL_HALF, 0, z - COL_HALF);
-      collider.max.set(x + COL_HALF, COL_H, z + COL_HALF);
+      collider.min.set(x - COL_HALF, gy, z - COL_HALF);
+      collider.max.set(x + COL_HALF, gy + COL_H, z + COL_HALF);
       collider.disabled = false;
     },
 
     /** Move the feet to (x, z) and keep the collider in sync. */
     moveTo(x, z) {
-      group.position.x = x;
-      group.position.z = z;
-      collider.min.set(x - COL_HALF, 0, z - COL_HALF);
-      collider.max.set(x + COL_HALF, COL_H, z + COL_HALF);
+      const gy = this.groundAt ? this.groundAt(x, z) : 0;   // optional terrain (island map)
+      group.position.set(x, gy, z);
+      collider.min.set(x - COL_HALF, gy, z - COL_HALF);
+      collider.max.set(x + COL_HALF, gy + COL_H, z + COL_HALF);
     },
 
     /** Turn toward a world point at most `rate` rad/s. Returns remaining angle error (rad). */

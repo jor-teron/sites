@@ -88,3 +88,8 @@
 
     .mute-btn { position: absolute; top: 16px; right: 16px; font-size: 22px; line-height: 1; padding: 6px 9px;
       background: rgba(0,0,0,0.35); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; cursor: pointer; }
+
+    #map-select { display: flex; gap: 10px; margin: 6px 0 10px; }
+    .map-btn { font: inherit; font-size: 0.95rem; padding: 7px 14px; border-radius: 8px; cursor: pointer;
+      background: rgba(255,255,255,0.08); color: #eee; border: 1px solid rgba(255,255,255,0.3); }
+    .map-btn.active { background: #2f8f4e; border-color: #8fe0a0; }
