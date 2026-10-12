@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Sling Birds</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div class="stat"><span class="label">LEVEL</span><span class="value" id="hud-level">1</span></div>
+    <div class="stat"><span class="label">BIRDS</span><span class="value" id="hud-birds">3</span></div>
+    <div class="stat"><span class="label">PIGS</span><span class="value" id="hud-pigs">0</span></div>
+    <div class="stat"><span class="label">SCORE</span><span class="value" id="hud-score">0</span></div>
+    <button id="btn-reset">RESET</button>
+  </div>
+
+  <div id="stage">
+    <canvas id="game"></canvas>
+    <div id="hint">DRAG FROM THE SLINGSHOT</div>
+    <div id="overlay" class="hidden">
+      <h2 id="overlay-title">LEVEL CLEAR</h2>
+      <div class="stars" id="overlay-stars">☆☆☆</div>
+      <p id="overlay-msg"></p>
+      <div>
+        <button id="overlay-btn">NEXT LEVEL</button>
+        <button id="overlay-btn2" class="alt">RETRY</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
