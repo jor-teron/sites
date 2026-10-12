@@ -299,6 +299,7 @@
       return;
     }
     const id = appIdFor(app.entryUrl);
+    if (!opts.forceFrame) setFromLab(false);
     if (!opts.fromHistory) setHash(id, !opts.replaceHash);
     storageSet(id);
     if (currentEntry !== app.entryUrl || opts.reload) navigateFrame(frameUrlFor(app.entryUrl));
@@ -316,8 +317,23 @@
 
   /* ---------- in-frame navigation (e.g. a Lab tile link) is remembered too ---------- */
 
+  // Lab button shows only on Lab pages or an app reached from the Lab tiles (flag survives refresh).
+  const FROM_LAB_KEY = 'sites-hub.fromLab';
+  let fromLab = false;
+  try { fromLab = window.localStorage.getItem(FROM_LAB_KEY) === '1'; } catch (_) { /* ignore */ }
+  function setFromLab(on) {
+    fromLab = !!on;
+    try {
+      if (fromLab) window.localStorage.setItem(FROM_LAB_KEY, '1');
+      else window.localStorage.removeItem(FROM_LAB_KEY);
+    } catch (_) { /* ignore */ }
+  }
+  const inLab = () => !!currentEntry && currentEntry.indexOf(LAB_ENTRY) === 0;
   function updateLabBtn() {
-    if (labBtn) labBtn.classList.toggle('active', currentEntry.indexOf(LAB_ENTRY) === 0);
+    if (!labBtn) return;
+    const lab = inLab();
+    labBtn.hidden = !(currentEntry && (lab || fromLab));
+    labBtn.classList.toggle('active', lab);
   }
 
   /** Safe hub-relative path: no scheme, no "..", no leading slash. */
@@ -361,6 +377,7 @@
     const id = app ? appIdFor(app.entryUrl) : '~' + rel;
     if (!app) app = appForId(id);
     if (!app) return;
+    setFromLab(inLab() || fromLab);
     currentEntry = app.entryUrl;
     setHash(id, false);
     storageSet(id);
@@ -377,6 +394,7 @@
     opts = opts || {};
     if (!opts.fromHistory) setHash('', true);
     storageSet('');
+    setFromLab(false);
     if (currentEntry) navigateFrame('about:blank');
     currentEntry = '';
     empty.classList.remove('hidden');
