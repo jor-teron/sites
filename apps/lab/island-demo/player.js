@@ -206,6 +206,19 @@ export function createPlayer(scene, camera) {
       legs[0].rotation.x = -swing;
       legs[1].rotation.x = swing;
     }
+    const acts = body.userData.actions;
+    if (acts && acts.idle) {
+      /* idle by default, walk while any move key is held (run with Shift), crossfade */
+      let want = acts.idle;
+      if (moving) want = (speed === RUN && acts.run) || acts.walk || acts.idle;
+      const cur = body.userData.current;
+      if (want !== cur) {
+        want.reset().play();
+        if (cur) cur.crossFadeTo(want, 0.25, false);
+        body.userData.current = want;
+      }
+      body.userData.anim = want.getClip().name;
+    }
     if (body.userData.mixer) body.userData.mixer.update(dt);
 
     const look = body.position.clone();
@@ -264,7 +277,7 @@ function fitHeight(root, meters) {
 async function loadModels(scene, getBodies) {
   const loader = new GLTFLoader();
   const jobs = [
-    ["female", "models/female/body.glb", FEMALE_HEIGHT],
+    ["female", "models/female/body_1k.glb", FEMALE_HEIGHT],
     ["male", "models/male/body.glb", MALE_HEIGHT]
   ];
   for (const [who, url, height] of jobs) {
@@ -279,9 +292,19 @@ async function loadModels(scene, getBodies) {
       });
       fitHeight(model, height);
       const mixer = new THREE.AnimationMixer(model);
-      const clip = gltf.animations.find((a) => /walk/i.test(a.name)) || gltf.animations[0];
-      if (clip) mixer.clipAction(clip).play();
+      const find = (re) => gltf.animations.find((a) => re.test(a.name));
+      const idle = find(/idle/i);
+      const walk = find(/walk/i);
+      const run = find(/run/i);
+      const actions = {};
+      if (idle) actions.idle = mixer.clipAction(idle);
+      if (walk) actions.walk = mixer.clipAction(walk);
+      if (run) actions.run = mixer.clipAction(run);
+      const first = actions.idle || actions.walk || (gltf.animations[0] && mixer.clipAction(gltf.animations[0]));
+      if (first) first.play();
       model.userData.mixer = mixer;
+      model.userData.actions = actions;
+      model.userData.current = first;
       model.userData.label = who === "female" ? "Female" : "Male";
       model.userData.height = height;
       scene.add(model);
