@@ -313,7 +313,7 @@ window.BROWSER_FPS_CONFIG = {
   assets: {
     gun: 'guns/rifle_hq',
     arms: 'characters/arms_hq',
-    enemy: 'enemies/soldier_mk2',         // or 'enemies/soldier_hq' / 'enemies/humanoid_basic'
+    enemy: 'enemies/soldier_mk3',         // or 'enemies/soldier_mk2' / 'enemies/soldier_hq' / 'enemies/humanoid_basic'
     medkit: 'pickups/medkit_basic',
     grenade: 'weapons/grenade_frag',           // thrown grenade
     grenadePickup: 'pickups/grenade_crate',    // grenade pickup on the map

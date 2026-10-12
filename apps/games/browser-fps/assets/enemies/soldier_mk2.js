@@ -282,5 +282,6 @@ function mk2Body(k) {
   return { mats, legL, legR };
 }
 
+export { textures as mk2Textures, S as MK2_GEO };
 export function createTarget(spec, opts = {}) { return createHumanoid(spec, opts, mk2Body); }
 export default { kind: 'enemy', name: 'soldier_mk2', createTarget, HEAD_MULT };
