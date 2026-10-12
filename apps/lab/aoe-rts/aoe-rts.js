@@ -1,5 +1,7 @@
 /**
  * AOE RTS - Tiny Slice Isometric Game (Phaser 3)
+ * R4: command bar (big touch buttons with costs), Town Center trains villagers (queue + progress),
+ *     population cap raised by Houses that villagers build over time.
  * R3: Town Center drop-off, villagers gather over time (carry 10) and walk back,
  *     resources deplete gradually, trees / berries / gold / stone, 4-resource HUD.
  */
@@ -17,6 +19,13 @@ const CARRY_MAX = 10;
 const GATHER_INTERVAL = 0.6;      // seconds per 1 unit gathered
 const START_RES = { wood: 200, food: 200, gold: 100, stone: 200 };
 const START_VILLAGERS = 3;
+const VILLAGER_COST = { food: 50 };
+const TRAIN_TIME = 6;             // seconds per villager
+const QUEUE_MAX = 5;
+const HOUSE_COST = { wood: 25 };
+const HOUSE_BUILD_TIME = 8;       // seconds for one villager
+const POP_BASE = 5;               // Town Center supports 5
+const POP_PER_HOUSE = 5;
 
 /** Resource node definitions */
 const RES_TYPES = {
@@ -36,6 +45,8 @@ const config = {
     height: 600,
     parent: 'game-container',
     backgroundColor: '#2d4a2d',
+    fps: { target: 30, limit: 30 },
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: { create: create, update: update }
 };
 const game = new Phaser.Game(config);
@@ -51,6 +62,17 @@ let townCenter = null;   // { x, y, w, h } tile rect (top-left tile)
 let gfx = null;
 let hudText = null;
 let infoText = null;
+let trainQueue = 0;      // villagers queued at the Town Center
+let trainTimer = 0;      // seconds into the current villager
+let placing = null;      // 'house' while waiting for a tile tap
+let houses = [];         // { x, y, progress, done }
+
+function popCount() { return villagers.length; }
+function popCap() { return POP_BASE + POP_PER_HOUSE * houses.filter(h => h.done).length; }
+function canAfford(cost) { return Object.keys(cost).every(k => resources[k] >= cost[k]); }
+function pay(cost) { Object.keys(cost).forEach(k => resources[k] -= cost[k]); }
+function refund(cost) { Object.keys(cost).forEach(k => resources[k] += cost[k]); }
+function costText(cost) { return Object.keys(cost).map(k => cost[k] + ' ' + k).join(', '); }
 
 // ============================================================================
 // COORDINATES
@@ -82,7 +104,7 @@ function initMap() {
 
     const place = (kind, cx, cy) => {
         if (!inMap(cx, cy) || mapData[cy][cx]) return;
-        if (Math.abs(cx - 6.5) < 2.6 && Math.abs(cy - 6.5) < 2.6) return; // keep TC area clear
+        if (Math.abs(cx - 6.5) < 2.2 && Math.abs(cy - 6.5) < 2.2) return; // keep TC area clear
         const a = RES_TYPES[kind].amount;
         mapData[cy][cx] = { kind, amount: a, max: a };
     };
@@ -114,11 +136,17 @@ function dropPoint(v) {
 function orderGather(v, tx, ty) {
     const cell = mapData[ty][tx];
     if (v.carry > 0 && v.carryType !== RES_TYPES[cell.kind].res) { v.carry = 0; } // drop other type
+    v.house = null;
     v.node = { x: tx, y: ty };
     v.state = 'toNode';
     v.target = tileCenter(tx, ty);
 }
+function orderBuild(v, h) {
+    v.node = null; v.house = h; v.state = 'toBuild';
+    const p = tileCenter(h.x, h.y); v.target = { x: p.x, y: p.y + 6 };
+}
 function orderMove(v, tx, ty) {
+    v.house = null;
     v.node = null; v.state = 'moving'; v.target = tileCenter(tx, ty);
 }
 /** Find nearest node of the same kind to continue gathering */
@@ -164,6 +192,19 @@ function updateVillager(v, dt) {
             if (v.carry >= CARRY_MAX) goDrop(v);
             break;
         }
+        case 'toBuild': {
+            const h = v.house;
+            if (!h || h.done) { v.state = 'idle'; v.house = null; break; }
+            if (stepTo(v, v.target, dt, 14)) v.state = 'building';
+            break;
+        }
+        case 'building': {
+            const h = v.house;
+            if (!h || h.done) { v.state = 'idle'; v.house = null; break; }
+            h.progress += dt / HOUSE_BUILD_TIME;
+            if (h.progress >= 1) { h.progress = 1; h.done = true; v.state = 'idle'; v.house = null; }
+            break;
+        }
         case 'returning':
             if (stepTo(v, dropPoint(v), dt, 3)) {
                 resources[v.carryType] += v.carry;
@@ -201,7 +242,7 @@ function create() {
     hudText = this.add.text(10, 10, '', {
         fontSize: '18px', fill: '#ffffff', backgroundColor: '#000000aa', padding: { x: 10, y: 6 }
     }).setDepth(100);
-    infoText = this.add.text(10, 46, 'Tap a villager to select, then tap a tree, berry bush, gold or stone to gather', {
+    infoText = this.add.text(10, 46, 'Tap villagers to select, tap a resource to gather. Tap the Town Center to train.', {
         fontSize: '13px', fill: '#dddddd', backgroundColor: '#00000066', padding: { x: 6, y: 3 }
     }).setDepth(100);
 
@@ -211,7 +252,12 @@ function create() {
 function update(time, delta) {
     const dt = Math.min(delta, 100) / 1000;
     villagers.forEach(v => updateVillager(v, dt));
-    hudText.setText(`Wood ${resources.wood}   Food ${resources.food}   Gold ${resources.gold}   Stone ${resources.stone}`);
+    if (trainQueue > 0 && popCount() < popCap()) {
+        trainTimer += dt;
+        if (trainTimer >= TRAIN_TIME) { trainTimer = 0; trainQueue--; spawnFromTC(); }
+    }
+    hudText.setText(`Wood ${resources.wood}   Food ${resources.food}   Gold ${resources.gold}   Stone ${resources.stone}   Pop ${popCount()}/${popCap()}`);
+    updateBar();
     render();
 }
 
@@ -236,7 +282,8 @@ function render() {
     const items = [];
     for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) {
         const c = mapData[y][x];
-        if (c && c.kind !== 'tc') items.push({ d: tileCenter(x, y).y, draw: () => drawNode(g, x, y, c) });
+        if (c && c.kind === 'house') items.push({ d: tileCenter(x, y).y, draw: () => drawHouse(g, x, y, c.house) });
+        else if (c && c.kind !== 'tc') items.push({ d: tileCenter(x, y).y, draw: () => drawNode(g, x, y, c) });
     }
     const tcC = tileCenter(townCenter.x + 0.5, townCenter.y + 0.5);
     items.push({ d: tcC.y + 16, draw: () => drawTC(g) });
@@ -265,6 +312,34 @@ function drawTC(g) {
     g.fillStyle(0x7a2e1e, 1); g.fillTriangle(c.x - 42, c.y - 44, c.x + 42, c.y - 44, c.x, c.y - 78);
     g.fillStyle(0x3a2a1a, 1); g.fillRect(c.x - 8, c.y - 20, 16, 20);
     if (t.selected) { g.lineStyle(3, 0xffffff, 1); g.strokeEllipse(c.x, c.y, 140, 70); }
+    if (trainQueue > 0) {          // training progress bar above the roof
+        const f = trainTimer / TRAIN_TIME;
+        g.fillStyle(0x000000, 0.7); g.fillRect(c.x - 36, c.y - 96, 72, 9);
+        g.fillStyle(popCount() < popCap() ? 0x55dd55 : 0xdd5555, 1); g.fillRect(c.x - 35, c.y - 95, 70 * f, 7);
+    }
+}
+function drawHouse(g, x, y, h) {
+    const p = tileCenter(x, y);
+    diamond(g, x, y, 0x8a7a5a);
+    if (!h.done) {
+        g.lineStyle(2, 0xc8a46a, 1); g.strokeRect(p.x - 14, p.y - 22, 28, 20);
+        const hgt = 20 * h.progress;
+        g.fillStyle(0xb08a55, 1); g.fillRect(p.x - 14, p.y - 2 - hgt, 28, hgt);
+        g.fillStyle(0x000000, 0.7); g.fillRect(p.x - 18, p.y - 34, 36, 6);
+        g.fillStyle(0x55aaff, 1); g.fillRect(p.x - 17, p.y - 33, 34 * h.progress, 4);
+    } else {
+        g.fillStyle(0xc49a60, 1); g.fillRect(p.x - 14, p.y - 22, 28, 20);
+        g.fillStyle(0x7a2e1e, 1); g.fillTriangle(p.x - 18, p.y - 22, p.x + 18, p.y - 22, p.x, p.y - 38);
+        g.fillStyle(0x3a2a1a, 1); g.fillRect(p.x - 4, p.y - 12, 8, 10);
+    }
+}
+/** Spawn a trained villager on a free tile around the Town Center */
+function spawnFromTC() {
+    const t = townCenter, ring = [];
+    for (let y = t.y - 1; y <= t.y + t.h; y++) for (let x = t.x - 1; x <= t.x + t.w; x++)
+        if (inMap(x, y) && !mapData[y][x]) ring.push({ x, y });
+    const spot = ring[Math.floor(Math.random() * ring.length)] || { x: t.x + 2, y: t.y + 2 };
+    spawnVillager(spot.x, spot.y);
 }
 function drawVillager(g, v) {
     if (v.selected) { g.lineStyle(2, 0xffff66, 1); g.strokeEllipse(v.x, v.y + 2, 26, 12); }
@@ -284,13 +359,25 @@ function villagerAt(px, py) {
 }
 function onPointerDown(pointer) {
     const px = pointer.worldX, py = pointer.worldY;
+    const t0 = screenToTile(px, py);
+    if (placing === 'house') {
+        placing = null;
+        const builders = villagers.filter(u => u.selected);
+        if (!inMap(t0.x, t0.y) || mapData[t0.y][t0.x] || !builders.length || !canAfford(HOUSE_COST)) { flash('Can\'t build there'); return; }
+        pay(HOUSE_COST);
+        const h = { x: t0.x, y: t0.y, progress: 0, done: false };
+        houses.push(h); mapData[t0.y][t0.x] = { kind: 'house', house: h };
+        builders.forEach(u => orderBuild(u, h));
+        return;
+    }
     const v = villagerAt(px, py);
-    if (v) {                       // toggle-select villager (tap several to group)
+    if (v) {
+        townCenter.selected = false;                       // toggle-select villager (tap several to group)
         v.selected = !v.selected;
         return;
     }
     const t = screenToTile(px, py);
-    if (!inMap(t.x, t.y)) { villagers.forEach(u => u.selected = false); return; }
+    if (!inMap(t.x, t.y)) { villagers.forEach(u => u.selected = false); townCenter.selected = false; return; }
     const cell = mapData[t.y][t.x];
     let sel = villagers.filter(u => u.selected);
     if (cell && RES_TYPES[cell.kind]) {
@@ -301,8 +388,56 @@ function onPointerDown(pointer) {
         }
         sel.forEach(u => orderGather(u, t.x, t.y));
     } else if (cell && cell.kind === 'tc') {
-        sel.forEach(u => { if (u.carry > 0) u.state = 'returning'; });
+        if (sel.length) sel.forEach(u => { if (u.carry > 0) u.state = 'returning'; });
+        else townCenter.selected = !townCenter.selected;   // select TC to train villagers
+    } else if (cell && cell.kind === 'house') {
+        if (!cell.house.done) sel.forEach(u => orderBuild(u, cell.house));
     } else {
         sel.forEach(u => orderMove(u, t.x, t.y));
     }
 }
+
+// ============================================================================
+// COMMAND BAR (DOM, big touch buttons)
+// ============================================================================
+const bar = document.getElementById('command-bar');
+let flashTimer = 0;
+function flash(msg) {
+    infoText.setText(msg); clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => infoText.setText(DEFAULT_INFO), 1800);
+}
+const DEFAULT_INFO = 'Tap villagers to select, tap a resource to gather. Tap the Town Center to train.';
+let barKey = '';
+function button(id, label, sub, enabled) {
+    return `<button class="cmd" data-cmd="${id}" ${enabled ? '' : 'disabled'}><b>${label}</b><small>${sub}</small></button>`;
+}
+function updateBar() {
+    const sel = villagers.filter(u => u.selected);
+    let html = '';
+    if (townCenter.selected) {
+        const full = popCount() >= popCap();
+        const pct = trainQueue ? Math.round(trainTimer / TRAIN_TIME * 100) : 0;
+        html = `<span class="sel">Town Center</span>` +
+            button('train', 'Train Villager', costText(VILLAGER_COST) + ` · ${TRAIN_TIME}s`, canAfford(VILLAGER_COST) && trainQueue < QUEUE_MAX) +
+            (trainQueue ? button('cancel', 'Cancel', 'refund 50 food', true) : '') +
+            `<span class="queue">Queue ${trainQueue}${trainQueue ? ' · ' + pct + '%' : ''}${full && trainQueue ? ' · need House!' : ''}</span>`;
+    } else if (sel.length) {
+        html = `<span class="sel">${sel.length} villager${sel.length > 1 ? 's' : ''}</span>` +
+            button('house', placing ? 'Tap a tile…' : 'Build House', costText(HOUSE_COST) + ` · +${POP_PER_HOUSE} pop`, canAfford(HOUSE_COST)) +
+            button('deselect', 'Deselect', 'clear selection', true);
+    } else {
+        html = `<span class="sel">Nothing selected</span>` + button('idle', 'Select Idle', villagers.filter(u => u.state === 'idle').length + ' idle', true);
+    }
+    if (html !== barKey) { bar.innerHTML = html; barKey = html; }
+}
+bar.addEventListener('pointerdown', e => {
+    const b = e.target.closest('button.cmd');
+    e.stopPropagation();
+    if (!b || b.disabled) return;
+    const cmd = b.dataset.cmd;
+    if (cmd === 'train') { if (canAfford(VILLAGER_COST) && trainQueue < QUEUE_MAX) { pay(VILLAGER_COST); trainQueue++; } }
+    else if (cmd === 'cancel') { if (trainQueue) { trainQueue--; refund(VILLAGER_COST); if (!trainQueue) trainTimer = 0; } }
+    else if (cmd === 'house') { placing = placing ? null : 'house'; if (placing) flash('Tap a free tile to place the House'); }
+    else if (cmd === 'deselect') { villagers.forEach(u => u.selected = false); placing = null; }
+    else if (cmd === 'idle') { villagers.forEach(u => u.selected = u.state === 'idle'); }
+});
