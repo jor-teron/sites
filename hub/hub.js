@@ -32,7 +32,9 @@
   const menu = document.getElementById('menu');
   const frame = document.getElementById('app-frame');
   const empty = document.getElementById('empty');
-  const labBtn = document.getElementById('lab-btn');
+  const labLabel = document.getElementById('lab-label');
+  const labLabelName = document.getElementById('lab-label-name');
+  const gamebarEl = document.getElementById('gamebar');
   const LAB_ENTRY = 'apps/lab/';
 
   const emptyText = document.getElementById('empty-text');
@@ -329,11 +331,18 @@
     } catch (_) { /* ignore */ }
   }
   const inLab = () => !!currentEntry && currentEntry.indexOf(LAB_ENTRY) === 0;
+  /** Lab label in the bar: "Lab" on the tiles page, else the app name; hidden elsewhere or when the app has its own bar. */
   function updateLabBtn() {
-    if (!labBtn) return;
-    const lab = inLab();
-    labBtn.hidden = !(currentEntry && (lab || fromLab));
-    labBtn.classList.toggle('active', lab);
+    if (!labLabel) return;
+    const show = !!currentEntry && (inLab() || fromLab) && !(gamebarEl && !gamebarEl.hidden);
+    labLabel.hidden = !show;
+    if (!show) return;
+    const name = currentEntry === LAB_ENTRY ? 'Lab' : document.title.replace(/^Hub - /, '');
+    labLabelName.textContent = name;
+    labLabelName.title = name;
+  }
+  if (gamebarEl && window.MutationObserver) {
+    new MutationObserver(() => updateLabBtn()).observe(gamebarEl, { attributes: true, attributeFilter: ['hidden'] });
   }
 
   /** Safe hub-relative path: no scheme, no "..", no leading slash. */
@@ -622,11 +631,6 @@
     w.addEventListener('keyup', grab, true);
     w.addEventListener('keypress', grab, true);
   }
-
-  if (labBtn) labBtn.addEventListener('click', () => {
-    const lab = apps.find((a) => a.entryUrl === LAB_ENTRY) || appForId('~' + LAB_ENTRY);
-    loadApp(lab, { reload: true });
-  });
 
   catBtn.addEventListener('click', (e) => {
     e.stopPropagation();
