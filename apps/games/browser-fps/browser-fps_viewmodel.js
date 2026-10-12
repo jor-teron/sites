@@ -16,7 +16,7 @@
 import * as THREE from 'three';
 
 const FOV = 60;                       // viewmodel camera FOV (independent of the world FOV)
-const GUN_POS = new THREE.Vector3(0.12, -0.085, -0.33);  // rest position (camera space, lower right)
+const GUN_POS = new THREE.Vector3(0.115, -0.07, -0.34);  // rest position (camera space, lower right)
 const GUN_SCALE = 0.6;                                   // overall viewmodel size
 const GUN_YAW = 0.06;                                    // angle the barrel slightly toward the crosshair
 const MUZZLE_LOCAL = new THREE.Vector3(0, 0.022, -0.52); // barrel tip in gun space
@@ -57,8 +57,8 @@ function limb(a, b, r0, r1, mat) {
 export function createViewmodel() {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(FOV, window.innerWidth / window.innerHeight, 0.01, 5);
-  scene.add(new THREE.HemisphereLight(0xbfd4ff, 0x30281f, 0.9));
-  const key = new THREE.DirectionalLight(0xfff0dd, 1.1);
+  scene.add(new THREE.HemisphereLight(0xdfeaff, 0x5a5040, 1.8));
+  const key = new THREE.DirectionalLight(0xfff0dd, 2.4);
   key.position.set(1, 2, 1.5);
   scene.add(key);
 
@@ -76,7 +76,7 @@ export function createViewmodel() {
   const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.14, 8), M.dark);
   barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.022, -0.45); gun.add(barrel);
   gun.add(box(0.03, 0.03, 0.05, M.dark, 0, 0.022, -0.5));             // muzzle brake
-  gun.add(box(0.05, 0.075, 0.2, M.poly, 0, -0.015, 0.18));            // stock
+  gun.add(box(0.042, 0.06, 0.13, M.poly, 0, -0.012, 0.15));           // stock (kept short so it doesn't fill the view)
   gun.add(box(0.02, 0.03, 0.12, M.dark, 0, 0.055, -0.06));            // top rail / sight base
   gun.add(box(0.012, 0.03, 0.012, M.dark, 0, 0.08, -0.36));           // front sight
   gun.add(box(0.026, 0.02, 0.02, M.dark, 0, 0.075, 0.02));            // rear sight

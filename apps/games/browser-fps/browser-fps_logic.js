@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { createTarget } from './browser-fps_target.js';
 import { createViewmodel } from './browser-fps_viewmodel.js';
+import { makeFloorTexture } from './browser-fps_textures.js';
 
 // ─── Tunables (from browser-fps_config.js) ──────────────────────────────────
 const CFG = window.BROWSER_FPS_CONFIG;
@@ -39,6 +40,8 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, SC.maxPixelRatio));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = SC.toneMappingExposure;
 renderer.autoClear = false;   // world pass, then viewmodel pass on a cleared depth buffer
 document.body.appendChild(renderer.domElement);
 
@@ -83,6 +86,7 @@ function addBox(w, h, d, x, y, z, color, opts = {}) {
     color,
     roughness: opts.roughness ?? 0.85,
     metalness: opts.metalness ?? 0.05,
+    map: opts.map || null,
   });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.set(x, y, z);
@@ -106,7 +110,10 @@ function buildArena() {
   const th = ARENA.wallThickness; // wall thickness
 
   // Floor
-  addBox(ARENA.w, 0.4, ARENA.d, 0, -0.2, 0, ARENA.floorColor, { castShadow: false });
+  const floorTex = makeFloorTexture(renderer);
+  // 4 tiles per texture repeat -> repeat so each tile is floorTileSize world units
+  floorTex.repeat.set(ARENA.w / (ARENA.floorTileSize * 4), ARENA.d / (ARENA.floorTileSize * 4));
+  addBox(ARENA.w, 0.4, ARENA.d, 0, -0.2, 0, ARENA.floorColor, { castShadow: false, map: floorTex, roughness: 0.95 });
 
   // Outer walls
   addBox(ARENA.w + th * 2, ARENA.wallH, th, 0, ARENA.wallH / 2, -hd - th / 2, ARENA.wallColorNS);

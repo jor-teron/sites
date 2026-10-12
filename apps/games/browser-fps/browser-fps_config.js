@@ -52,9 +52,10 @@ window.BROWSER_FPS_CONFIG = {
     d: 40,                // arena depth
     wallH: 6,             // outer wall height
     wallThickness: 0.5,   // outer wall thickness
-    floorColor: 0x3a4a3a, // floor
-    wallColorNS: 0x555a62,// north/south walls
-    wallColorEW: 0x4e535b,// east/west walls
+    floorColor: 0xd6dad2, // floor tint (multiplies the procedural floor texture)
+    floorTileSize: 2,     // world units per floor tile (texture has 4 tiles)
+    wallColorNS: 0x9aa1aa,// north/south walls
+    wallColorEW: 0x8e959e,// east/west walls
     // Cover boxes: [w, h, d, x, y, z, color]
     covers: [
       [3, 1.4, 1.2, -8, 0.7, -6, 0x8b6914],
@@ -86,20 +87,21 @@ window.BROWSER_FPS_CONFIG = {
 
   // Scene / camera / lights
   scene: {
-    background: 0x1a1e24, // sky / clear color
-    fogNear: 25,          // fog start
-    fogFar: 70,           // fog end
+    background: 0x9ec6e6, // sky / clear color (bright daytime)
+    fogNear: 35,          // fog start
+    fogFar: 110,          // fog end
+    toneMappingExposure: 1.05, // ACES filmic exposure
     fov: 75,              // camera field of view
     near: 0.05,           // camera near plane
     far: 200,             // camera far plane
     maxPixelRatio: 2,     // renderer pixel ratio cap
-    ambientColor: 0x8899aa, ambientIntensity: 0.55,   // ambient light
-    sunColor: 0xfff0dd, sunIntensity: 1.1,            // directional light
+    ambientColor: 0x8899aa, ambientIntensity: 0.9,    // ambient light
+    sunColor: 0xfff0dd, sunIntensity: 2.6,            // directional light
     sunPos: [12, 28, 8],  // sun position
     shadowMapSize: 1024,  // shadow map resolution
     shadowExtent: 25,     // shadow camera half-size
     shadowFar: 60,        // shadow camera far plane
-    hemiSky: 0x6688aa, hemiGround: 0x334422, hemiIntensity: 0.35, // hemisphere fill
+    hemiSky: 0xcfe6ff, hemiGround: 0x6b6250, hemiIntensity: 1.1, // hemisphere fill
   },
 
   // Key bindings (KeyboardEvent.code)
