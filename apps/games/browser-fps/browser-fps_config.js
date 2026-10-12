@@ -38,9 +38,11 @@ window.BROWSER_FPS_CONFIG = {
 
   // Scope / aim down sights (hold right mouse button)
   scope: {
-    zoom: 2,              // FOV zoom factor when fully scoped
-    blendTime: 0.15,      // seconds to go in / out of scope
-    sensMult: 0.45,       // mouse sensitivity multiplier while scoped
+    zoom: 4,              // FOV zoom factor when fully scoped (75 -> 18.75)
+    blendTime: 0.2,       // seconds to raise the gun / go in or out of scope
+    sensMult: 0.25,       // mouse sensitivity multiplier while scoped (~1 / zoom)
+    overlayStart: 0.7,    // scope overlay fades in over the last 30% of the raise
+    hideGunAt: 0.98,      // viewmodel hidden once the scope is (almost) fully up
     moveMult: 0.55,       // walk speed multiplier while scoped (no sprint)
     hipSpread: 0.012,     // shot spread from the hip (rad, each axis)
     scopedSpread: 0.0015, // shot spread while scoped

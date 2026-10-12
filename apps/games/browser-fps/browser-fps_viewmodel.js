@@ -20,7 +20,7 @@ const GUN_POS = new THREE.Vector3(0.115, -0.07, -0.34);  // rest position (camer
 const GUN_SCALE = 0.6;                                   // overall viewmodel size
 const GUN_YAW = 0.06;                                    // angle the barrel slightly toward the crosshair
 // Aim-down-sights pose: gun centred, front sight post (gun-local tip y ~0.095 x 0.6 scale) just below the crosshair
-const ADS_POS = new THREE.Vector3(0, -0.062, -0.32);   // front sight post tip just under the screen centre
+const ADS_POS = new THREE.Vector3(0, -0.066, -0.2);    // eye behind the scope tube (tube axis gun-local y 0.11 x 0.6 scale)
 const MUZZLE_LOCAL = new THREE.Vector3(0, 0.022, -0.52); // barrel tip in gun space
 
 const RECOIL_BACK = 0.045, RECOIL_UP = 0.07, RECOIL_RETURN = 16;   // kick and recovery rate (1/s)
@@ -36,6 +36,7 @@ const M = {
   sleeve: new THREE.MeshLambertMaterial({ color: 0x3d4a5c }),   // jacket sleeves
   glove: new THREE.MeshLambertMaterial({ color: 0x5a4a3c }),    // gloves
   skin: new THREE.MeshLambertMaterial({ color: 0xc89878 }),     // wrists
+  lens: new THREE.MeshBasicMaterial({ color: 0x5aa0d0 }),        // scope glass
   flash: new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0.95,
     blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
 };
@@ -81,6 +82,20 @@ export function createViewmodel() {
   gun.add(box(0.042, 0.06, 0.13, M.poly, 0, -0.012, 0.15));           // stock (kept short so it doesn't fill the view)
   gun.add(box(0.02, 0.03, 0.12, M.dark, 0, 0.055, -0.06));            // top rail / sight base
   gun.add(box(0.012, 0.03, 0.012, M.dark, 0, 0.08, -0.36));           // front sight
+  // Scope: two ring mounts on the rail, tube, bells, lenses
+  gun.add(box(0.03, 0.035, 0.02, M.dark, 0, 0.08, -0.11));
+  gun.add(box(0.03, 0.035, 0.02, M.dark, 0, 0.08, 0.0));
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.2, 10), M.metal);
+  tube.rotation.x = Math.PI / 2; tube.position.set(0, 0.11, -0.055); gun.add(tube);
+  const bellF = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.019, 0.05, 10), M.metal);
+  bellF.rotation.x = Math.PI / 2; bellF.position.set(0, 0.11, -0.175); gun.add(bellF);
+  const bellR = new THREE.Mesh(new THREE.CylinderGeometry(0.019, 0.024, 0.04, 10), M.metal);
+  bellR.rotation.x = Math.PI / 2; bellR.position.set(0, 0.11, 0.06); gun.add(bellR);
+  gun.add(box(0.012, 0.016, 0.016, M.dark, 0, 0.132, -0.06));         // turret
+  const lensF = new THREE.Mesh(new THREE.CircleGeometry(0.024, 12), M.lens);
+  lensF.position.set(0, 0.11, -0.201); lensF.rotation.y = Math.PI; gun.add(lensF);
+  const lensR = new THREE.Mesh(new THREE.CircleGeometry(0.022, 12), M.lens);
+  lensR.position.set(0, 0.11, 0.081); gun.add(lensR);
   gun.add(box(0.026, 0.02, 0.02, M.dark, 0, 0.075, 0.02));            // rear sight
   const grip = box(0.035, 0.09, 0.04, M.poly, 0, -0.08, 0.05);
   grip.rotation.x = 0.35; gun.add(grip);

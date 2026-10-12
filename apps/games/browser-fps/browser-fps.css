@@ -64,3 +64,12 @@
   font-size: 18px; padding: 10px 28px; border: 0; border-radius: 6px;
   background: #fff; color: #600; font-weight: bold; letter-spacing: 2px; cursor: pointer;
 }
+
+/* Scope overlay: black outside a circle + thin crosshair; opacity driven by JS */
+#scope-overlay {
+  position: fixed; inset: 0; z-index: 4; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle closest-side at 50% 50%, transparent 0 94%, #000 96%);
+}
+#scope-overlay .reticle { position: absolute; background: rgba(0,0,0,0.85); }
+#scope-overlay .reticle.h { left: calc(50% - 45vmin); width: 90vmin; top: 50%; height: 1px; }
+#scope-overlay .reticle.v { top: 5vmin; height: 90vmin; left: 50%; width: 1px; }

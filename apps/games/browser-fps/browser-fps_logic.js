@@ -36,6 +36,8 @@ const ammoVal = document.getElementById('ammo-val');
 const hitmarker = document.getElementById('hitmarker');
 const dmgFlash = document.getElementById('dmg-flash');
 const deathEl = document.getElementById('death');
+const scopeOverlay = document.getElementById('scope-overlay');
+const crosshairEl = document.getElementById('crosshair');
 const deathMsg = document.getElementById('death-msg');
 const retryBtn = document.getElementById('retry-btn');
 
@@ -323,6 +325,11 @@ function updateScope(dt) {
     camera.updateProjectionMatrix();
   }
   vm.setAim(aimT);
+  // Overlay fades in near the end of the raise; the gun is hidden once the scope is up
+  const o = Math.max(0, Math.min(1, (aimT - SCOPE.overlayStart) / (1 - SCOPE.overlayStart)));
+  scopeOverlay.style.opacity = o.toFixed(3);
+  crosshairEl.style.opacity = (1 - o).toFixed(3);
+  vm.root.visible = aimT < SCOPE.hideGunAt;
 }
 
 window.addEventListener('resize', () => {
@@ -491,6 +498,9 @@ function restartGame() {
   aimHeld = false; aimT = 0;
   camera.fov = SC.fov; camera.updateProjectionMatrix();
   vm.setAim(0);
+  vm.root.visible = true;
+  scopeOverlay.style.opacity = '0';
+  crosshairEl.style.opacity = '1';
   deathEl.classList.add('hidden');
 }
 
@@ -720,7 +730,6 @@ const clock = new THREE.Clock();
 
 /** One simulation step while playing (also used by the headless test hook). */
 function gameStep(dt) {
-  updateScope(dt);
   updateMovement(dt);
   updateWeapon(dt);
   updateSpawning(dt);
@@ -751,6 +760,7 @@ function tick() {
     camera.rotation.y = yaw;
   }
 
+  updateScope(dt);   // always (also eases out of scope when paused / dead)
   for (const en of enemies) en.update(dt);
   vm.update(dt, {
     moving: pointerLocked && !isDead() && (held(KEYS.forward) || held(KEYS.back) || held(KEYS.left) || held(KEYS.right)),
@@ -770,7 +780,7 @@ tick();
 window.__fps = {
   player, enemies, colliders, scene, camera, fire, vm, startReload,
   // test helpers: run game steps without pointer lock, spawning, line-of-sight
-  step: (dt, n = 1) => { for (let i = 0; i < n; i++) { if (isDead()) break; gameStep(dt); for (const en of enemies) en.update(dt); } },
+  step: (dt, n = 1) => { for (let i = 0; i < n; i++) { if (isDead()) break; updateScope(dt); gameStep(dt); for (const en of enemies) en.update(dt); } },
   spawnRandomTarget, hasLineOfSight, restartGame,
   get spawnTimer() { return spawnTimer; },
   setLook: (y, p) => { yaw = y; pitch = p; },
