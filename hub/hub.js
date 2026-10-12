@@ -342,6 +342,9 @@
 
   /* ---------- menu: Home screen + collapsible categories (accordion, one open) ---------- */
 
+  /** Categories whose menu header opens a tiles page instead of expanding (CATEGORY → ENTRY_URL). */
+  const CAT_PAGES = { Lab: 'apps/lab/' };
+
   function renderMenu(apps) {
     menu.innerHTML = '';
     const homeBtn = document.createElement('button');
@@ -364,6 +367,17 @@
       head.setAttribute('aria-expanded', 'false');
       head.setAttribute('aria-controls', 'menu-sub-' + i);
       head.dataset.cat = cat;
+      const pageApp = CAT_PAGES[cat] ? apps.find((a) => a.entryUrl === CAT_PAGES[cat]) : null;
+      if (pageApp) {
+        // Page category (e.g. Lab): the header opens its tiles page in the frame, no app list.
+        head.removeAttribute('aria-expanded');
+        head.removeAttribute('aria-controls');
+        head.dataset.page = '1';
+        head.textContent = cat;
+        head.addEventListener('click', () => loadApp(pageApp));
+        menu.appendChild(head);
+        return;
+      }
       head.textContent = cat + ' (' + list.length + ')';
       head.addEventListener('click', () => toggleCat(head));
       menu.appendChild(head);
@@ -480,10 +494,12 @@
       case 'Enter':
       case ' ':
         if (!cur) { focusRow(rows[0]); return true; }
+        if (isHead && cur.dataset.page) { cur.click(); return true; }
         if (isHead) { toggleCat(cur); focusRow(cur); return true; }
         cur.click();
         return true;
       case 'ArrowRight':
+        if (isHead && cur.dataset.page) { cur.click(); return true; }
         if (isHead) {
           if (!isOpen) expandCat(cur);
           const first = subOf(cur).querySelector('button.app');
