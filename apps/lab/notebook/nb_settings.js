@@ -1,13 +1,7 @@
 /*
  * Project: notebook
  * File: nb_settings.js
- * Role: Settings panel. Shown only as a printed card on page 49 (CSS .backcover, toggled in
- *   nb_canvas.js). openSettings() (full overlay) is kept but no gesture calls it any more.
+ * Role: Page 49 = settings / About / How to / Tips written on ruled paper. #settingsPanel is a
+ *   text layer shown only on that page (class .onpage, toggled in nb_canvas.js); it does not take
+ *   taps except its small PNG link, so drawing and the ☰ gestures still work there.
  */
-function openSettings() {
-  document.getElementById('settingsPanel').classList.add('show');
-}
-
-function closeSettings() {
-  document.getElementById('settingsPanel').classList.remove('show');
-}

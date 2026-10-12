@@ -14,18 +14,8 @@ floatBtn.addEventListener('contextmenu', (e) => e.preventDefault());
 floatBtn.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
 floatBtn.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
-// Settings buttons
-document.getElementById('closeSettings').addEventListener('click', closeSettings);
-document.getElementById('dlPng').addEventListener('click', () => { downloadPNG(); closeSettings(); });
-document.getElementById('dlPdf').addEventListener('click', () => { downloadPDF(); closeSettings(); });
-document.getElementById('resetNotebook').addEventListener('click', () => {
-  if (confirm('Reset entire notebook? All pages will be cleared.')) {
-    initPages();
-    saveToStorage();
-    goToPage(0);
-    closeSettings();
-  }
-});
+// Page-49 PNG link
+document.getElementById('dlPng').addEventListener('click', () => downloadPNG());
 
 // Close grid by tapping outside thumbnails (on the grid background)
 document.getElementById('pagesGrid').addEventListener('click', (e) => {

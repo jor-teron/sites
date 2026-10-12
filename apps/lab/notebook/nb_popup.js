@@ -2,7 +2,7 @@
  * Project: notebook
  * File: nb_popup.js
  * Role: Small quick-menu popup under the ☰ button, opened by HOLD (nb_float.js).
- *   Download PNG (current page), Download PDF, go to the settings page (49), Reset.
+ *   Download PNG (current page), go to the settings page (49).
  *   Closes on any tap outside it.
  */
 const nbPopup = document.getElementById('nbPopup');
@@ -21,9 +21,7 @@ nbPopup.addEventListener('click', (e) => {
   const act = b.dataset.act;
   closePopup();
   if (act === 'png') downloadPNG();
-  else if (act === 'pdf') downloadPDF();
   else if (act === 'settings') goToPage(SETTINGS_PAGE);
-  else if (act === 'reset') document.getElementById('resetNotebook').click();
 });
 
 // Outside tap closes (capture, so it runs before the canvas / button handlers).

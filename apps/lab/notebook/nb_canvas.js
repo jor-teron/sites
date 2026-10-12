@@ -30,7 +30,7 @@ function drawBackground() {
   if (currentPage === 1 || currentPage === 2) drawIndexTable();
 
   // Only draw lines on main drawing pages (4 to 44 → 0-based 3 to 43)
-  if (currentPage >= 3 && currentPage <= 43) {
+  if ((currentPage >= 3 && currentPage <= 43) || currentPage === TOTAL_PAGES - 2) {   // + page 49 (settings)
     // Top blank margin (no lines)
     const topMargin = 90;
     // Horizontal rules starting after top margin
@@ -81,7 +81,7 @@ function redraw() {
   updateWrinkle();
 }
 
-// Page that carries the settings card
+// Page that carries the settings text (ruled like a normal page)
 const SETTINGS_PAGE = TOTAL_PAGES - 2;
 
 // Update special page overlay text
@@ -89,7 +89,7 @@ function updateOverlay() {
   overlay.classList.remove('hidden');
   overlay.innerHTML = '';
   // Page 49 (index TOTAL_PAGES-2) = printed settings card (CSS .backcover)
-  document.getElementById('settingsPanel').classList.toggle('backcover', currentPage === SETTINGS_PAGE);
+  document.getElementById('settingsPanel').classList.toggle('onpage', currentPage === SETTINGS_PAGE);
   if (currentPage >= 44 && currentPage < SETTINGS_PAGE) {
     overlay.innerHTML = '<h2>Notes</h2><p>Page ' + (currentPage + 1) + '</p>';
   } else {

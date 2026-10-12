@@ -1,8 +1,8 @@
 /*
  * Project: notebook
  * File: nb_export.js
- * Role: Download current page as PNG, whole notebook as PDF (local vendor/jspdf.umd.min.js).
- *   Both include the crumple wrinkles (SVG → Image → drawn over the page, multiply).
+ * Role: Download the current page as PNG (PDF export removed).
+ *   Includes the crumple wrinkles (SVG → Image → drawn over the page, multiply).
  */
 // Current canvas + the page's wrinkles → data URL (wrinkles drawn with multiply, like on screen)
 async function pageDataUrl(page, type, quality) {
@@ -26,23 +26,3 @@ async function downloadPNG() {
   link.click();
 }
 
-// Download whole notebook as PDF (uses local vendor/jspdf.umd.min.js)
-async function downloadPDF() {
-  if (typeof window.jspdf === 'undefined') {
-    alert('PDF library loading... try again in a moment.');
-    return;
-  }
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
-  const originalPage = currentPage;
-  for (let i = 0; i < TOTAL_PAGES; i++) {
-    currentPage = i;
-    redraw();
-    const img = await pageDataUrl(i, 'image/jpeg', 0.7);
-    if (i > 0) pdf.addPage([canvas.width, canvas.height]);
-    pdf.addImage(img, 'JPEG', 0, 0, canvas.width, canvas.height);
-  }
-  currentPage = originalPage;
-  redraw();
-  pdf.save('paper-notebook.pdf');
-}

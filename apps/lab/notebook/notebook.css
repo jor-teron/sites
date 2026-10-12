@@ -107,52 +107,36 @@ body.jelly-on #floatBtn { background: transparent; color: transparent; box-shado
   padding: 1px 4px;
   border-radius: 3px;
 }
-/* Settings overlay */
+/* Page 49 text layer: written on the ruled lines (top margin 90px, 28px rules, red margin 9%) */
 #settingsPanel {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(255,255,255,0.97);
-  z-index: 20;
+  inset: 0;
+  z-index: 5;                      /* below ☰ (10) and jelly (9) */
   display: none;
-  padding: 60px 20px 20px;
-  text-align: center;
+  pointer-events: none;            /* pen + gestures pass through; only .inkBtn takes taps */
+  padding: 66px 16px 0 calc(9% + 12px);
+  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  font-size: 15px;
+  line-height: 28px;
+  color: #2c4a7a;                  /* blue ink */
+  overflow: hidden;
 }
-#settingsPanel.show { display: block; }
-/* Page 49: the settings, printed on a card (class name kept from the back cover version) */
-#settingsPanel.backcover:not(.show) {
-  display: block;
-  top: 50%; left: 50%; right: auto; bottom: auto;
-  transform: translate(-50%, -55%) rotate(-1.5deg);
-  width: min(84%, 340px);
-  max-height: 86%;
-  overflow-y: auto;
-  padding: 22px 18px 16px;
-  background: #fbf5e6;
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.35), inset 0 0 0 6px #fbf5e6, inset 0 0 0 8px #d9b77a;
-  font-family: Georgia, serif;
-  color: #5a4a35;
-}
-#settingsPanel.backcover:not(.show) h2 { font-size: 18px; margin-bottom: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #7b6a55; }
-#settingsPanel.backcover:not(.show) #closeSettings { display: none; }
-#settingsPanel.backcover:not(.show) button {
-  background: transparent;
-  border: 1.5px dashed #c9a96a;
-  color: #5a4a35;
-  font-family: inherit;
-  padding: 10px 14px;
-  margin: 6px auto;
-}
-#settingsPanel h2 { font-weight: 400; margin-bottom: 20px; color: #444; }
-#settingsPanel button {
-  display: block;
-  margin: 10px auto;
-  padding: 10px 20px;
-  border: 1px solid #ccc;
-  background: #fff;
-  border-radius: 6px;
+#settingsPanel.onpage { display: block; }
+#settingsPanel h2, #settingsPanel h3, #settingsPanel p, #settingsPanel ul { margin: 0; font-size: 15px; line-height: 28px; }
+#settingsPanel h2 { font-size: 20px; color: #7a2c2c; padding-left: 72px; } /* sits right of the ☰ home area */
+#settingsPanel h3 { color: #7a2c2c; text-decoration: underline; font-weight: 600; }
+#settingsPanel ul { padding-left: 18px; }
+#settingsPanel .note { color: #8a8a8a; font-size: 13px; }
+#settingsPanel .inkBtn {
+  pointer-events: auto;
+  font: inherit;
+  color: #1f5fbf;
+  background: none;
+  border: 0;
+  border-bottom: 1.5px dashed #1f5fbf;
+  padding: 0 2px;
+  line-height: 22px;
   cursor: pointer;
-  min-width: 180px;
 }
 /* Main area */
 #main {
@@ -202,10 +186,6 @@ body.jelly-on #floatBtn { background: transparent; color: transparent; box-shado
 }
 #nbPopup button:active { background: #e3eefc; }
 @keyframes nbPop { from { transform: translateX(-50%) scale(0.6); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
-/* Page-49 card: About / How to / Tips */
-.cardInfo { text-align: left; margin-top: 12px; font-size: 13px; line-height: 1.45; }
-.cardInfo h3 { font-size: 13px; letter-spacing: 0.15em; text-transform: uppercase; color: #7b6a55; margin: 10px 0 4px; font-weight: 600; }
-.cardInfo ul { padding-left: 18px; }
 /* Overlay for special pages (cover, index, etc.) */
 #overlay {
   position: absolute;
