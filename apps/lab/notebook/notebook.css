@@ -23,9 +23,11 @@ body {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: transparent;          /* invisible hit target; the look is #jelly (nb_jelly.js) */
-  color: transparent;
+  /* Fallback look: plain blue round button. When nb_jelly.js draws, body.jelly-on hides it. */
+  background: radial-gradient(circle at 35% 30%, #cfeaff, #4a9af0 60%, #2a63c9);
+  color: #fff;
   border: 0;
+  box-shadow: 0 3px 8px rgba(30,70,140,0.35);
   -webkit-tap-highlight-color: transparent;
   z-index: 10;
   cursor: pointer;
@@ -36,7 +38,7 @@ body {
   user-select: none;
   touch-action: none;
 }
-#floatBtn:active { background: transparent; }
+body.jelly-on #floatBtn { background: transparent; color: transparent; box-shadow: none; }
 /* Jelly blob drawn over the button home (top 12px + 24px = centre 36px) */
 #jelly {
   position: absolute;

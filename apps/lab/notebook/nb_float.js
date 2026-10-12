@@ -5,7 +5,9 @@
  *   Feedback is the jelly blob (nb_jelly.js): stretch + gooey tail while dragging, soft bouncy
  *   settle on release, jiggle on crumple. The hit target itself never moves.
  */
-// Visual feedback (floatFollow / floatRelease / floatShake / floatPress) lives in nb_jelly.js.
+// Visual feedback (floatFollow / floatRelease / floatShake / floatPress) lives in nb_jelly.js;
+// no-op stand-ins below keep gestures working if that file failed to load.
+if (typeof floatFollow !== 'function') { window.floatFollow = function () {}; window.floatRelease = function () {}; window.floatShake = function () {}; window.floatPress = function () {}; }
 
 // Floating button gesture state
 let floatStartX = 0;

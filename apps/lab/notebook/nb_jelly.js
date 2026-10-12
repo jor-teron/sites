@@ -7,6 +7,7 @@
  *   gooey tail blob stays home (merged by an SVG goo filter: feGaussianBlur + feColorMatrix);
  *   the soft shadow stretches with it. Release: a slow, soft spring with squash-and-stretch that
  *   settles over several bounces. Crumple: whole-body jiggle.
+ *   If anything fails, body never gets .jelly-on and the plain blue CSS button stays visible.
  *   API used by nb_float.js: floatFollow(dx, dy), floatRelease(), floatShake().
  */
 const JELLY_HOME = 120;       // centre of the 240×240 SVG = button home
@@ -41,6 +42,7 @@ function buildJelly() {
   jTail = document.getElementById('jTail');
   jShadow = document.getElementById('jShadow');
   jellyDraw(1, 1);
+  document.body.classList.add('jelly-on');   // only now hide the plain fallback button
 }
 
 // Paint the blob: offset (x, y), stretch sx along angle ang, thin sy across it, extra rotation.

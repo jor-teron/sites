@@ -57,6 +57,8 @@ Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself 
 7. Reset Notebook → confirm → all pages empty, back to cover.
 
 ## Known limits
+- If the jelly cannot draw (old browser, script error), a plain blue round ☰ button is shown instead; gestures still work.
+- Script/CSS tags carry ?v=… cache-busting; bump it when files change.
 - No undo; crumple and reset are permanent. Wrinkles can never be removed.
 - Grid thumbnails do not show wrinkles.
 - Wrinkles are drawn at the current screen size; they look a bit different after rotating.
