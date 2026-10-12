@@ -4,7 +4,7 @@
  * Role: Printed parts of special pages, drawn on the canvas (so PNG/PDF export and wrinkles work):
  *   - drawCover(front): soft woven CLOTH (no leather) with rounded corners, a stitched spine on
  *     the left; front = elastic band strap + an empty name label (write on it with the pen) +
- *     a little stitched star; back = embossed logo (the settings card sits on it, nb_settings).
+ *     a little stitched star; back = plain cloth + spine + embossed logo (settings are on page 49).
  *   - drawIndexTable(): pages 2–3, a real ruled index with columns "Topic" and "Page No.".
  */
 const CLOTH = { base: '#3e8a9a', dark: '#2f6f7d', light: '#5aa6b5', spine: '#2a5f6b' };

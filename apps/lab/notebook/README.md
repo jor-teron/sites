@@ -5,17 +5,16 @@ A paper sketch notebook: 50 fixed pages, draw with finger, mouse or pen. Saved i
 Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself needs touch, mouse or pen.
 
 ## Behaviour rules
-- Page 1 = front cover: soft woven cloth, stitched spine, elastic band, a stitched star and an empty name label (write your name on it with the pen). Pages 2–3 = a ruled index table (Topic | Page No.) to fill in by hand, pages 4–44 = ruled drawing pages (blank top margin, red left margin), pages 45–49 = Notes, page 50 = back cover: the same cloth with an embossed logo and the settings printed on a card (always there; hold ☰ still opens settings from any page).
+- Page 1 = front cover: soft woven cloth, stitched spine, elastic band, a stitched star and an empty name label (write your name on it with the pen). Pages 2–3 = a ruled index table (Topic | Page No.) to fill in by hand, pages 4–44 = ruled drawing pages (blank top margin, red left margin), pages 45–48 = Notes, page 49 = Settings (printed card: Download PNG, Download PDF, Reset), page 50 = back cover: cloth, spine and an embossed logo.
 - Floating ☰ button (top middle). Actions fire on **release**, and only when the finger went past **1/3 of the screen** (smaller side); then the jelly glows ("armed"). Shorter pulls just play with the jelly.
   - tap → toast "Page N / 50"
-  - hold (~0.55 s) → Settings
   - swipe right / left (armed) → next / previous page
   - pull **up** (armed) → pages grid (tap a thumbnail to open it; tap the background or title to close). Pull down does nothing.
-  - **circle crumple**: drag in circles around the button. After 1.25 turns the page gets a mini crumple, then one more level every extra half turn, live while you circle (the jelly jiggles each time). Levels 1–10: level 1 very light, 10 very dirty. Drawings stay. Permanent: no undo, Reset Notebook does not remove wrinkles. Circling cancels any swipe/pull on release.
+  - **hold to crumple**: keep the finger still on ☰ (< 15 px): the jelly shakes, after 0.5 s a mini crumple, then one more level every 0.5 s while you hold (cap 10). Moving away turns it into a drag instead. Levels 1–10: 1 very light, 10 very dirty. Drawings stay. Permanent: no undo, Reset Notebook does not remove wrinkles.
 - The ☰ button is a glossy blue jelly. Its home never moves, but while you drag it follows your finger all the way, stretching soft and long, joined to a gooey blob at home by a bridge that thins with distance and a stretching shadow; on release it squashes and bounces softly back over several wobbles; a crumple makes the whole jelly jiggle. Press = small squish.
 - Every finished stroke and every page change is saved at once.
 - Palm rejection: very large touches (width > 50) are ignored.
-- Settings: Close, Download Page PNG, Download Notebook PDF, Reset Notebook (asks first).
+- Settings (card on page 49 only, no gesture opens it): Download Page PNG, Download Notebook PDF, Reset Notebook (asks first).
 
 ## Files
 - `index.html` — redirect to `notebook.html`
@@ -52,11 +51,12 @@ Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself 
 2. Swipe the ☰ right → page 2 (Index); keep going to page 4 → ruled lines.
 3. Draw a few strokes, reload → strokes still there.
 4. Tap ☰ → page toast. Pull ☰ down → grid with thumbnails; tap one → opens.
-5. Circle around ☰ (1.25 turns) → jelly jiggles, page gets light wrinkles; keep circling → more, drawing stays; repeat → more wrinkles; reload → still there. Export PNG/PDF → wrinkles included.
-6. Hold ☰ → Settings → Download PNG, then Download PDF (50 pages), offline too.
+5. Hold ☰ still → jelly shakes, after 0.5 s light wrinkles, more every 0.5 s; move while holding → becomes a drag, no crumple; drawing stays; reload → still there. Export PNG/PDF → wrinkles included.
+6. Go to page 49 → settings card → Download PNG, then Download PDF (50 pages), offline too.
 7. Reset Notebook → confirm → all pages empty, back to cover.
 
 ## Known limits
+- Download Page PNG sits on page 49, so it saves page 49 (the card itself is not in the image).
 - If the jelly cannot draw (old browser, script error), a plain blue round ☰ button is shown instead; gestures still work.
 - Script/CSS tags carry ?v=… cache-busting; bump it when files change.
 - No undo; crumple and reset are permanent. Wrinkles can never be removed.

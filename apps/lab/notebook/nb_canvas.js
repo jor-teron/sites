@@ -2,7 +2,7 @@
  * Project: notebook
  * File: nb_canvas.js
  * Role: Canvas resize, page backgrounds (cloth covers + index via nb_cover.js, ruled pages),
- *   redraw of strokes, Notes overlay text, back cover settings card toggle.
+ *   redraw of strokes, Notes overlay text, settings card toggle on page 49.
  */
 // Resize canvas to fit container
 function resizeCanvas() {
@@ -81,13 +81,16 @@ function redraw() {
   updateWrinkle();
 }
 
+// Page that carries the settings card
+const SETTINGS_PAGE = TOTAL_PAGES - 2;
+
 // Update special page overlay text
 function updateOverlay() {
   overlay.classList.remove('hidden');
   overlay.innerHTML = '';
-  // Back cover inside = settings card (nb_settings.js / CSS .backcover)
-  document.getElementById('settingsPanel').classList.toggle('backcover', currentPage === TOTAL_PAGES - 1);
-  if (currentPage >= 44 && currentPage <= 48) {
+  // Page 49 (index TOTAL_PAGES-2) = printed settings card (CSS .backcover)
+  document.getElementById('settingsPanel').classList.toggle('backcover', currentPage === SETTINGS_PAGE);
+  if (currentPage >= 44 && currentPage < SETTINGS_PAGE) {
     overlay.innerHTML = '<h2>Notes</h2><p>Page ' + (currentPage + 1) + '</p>';
   } else {
     overlay.classList.add('hidden');

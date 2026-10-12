@@ -7,7 +7,12 @@
 floatBtn.addEventListener('pointerdown', onFloatDown);
 floatBtn.addEventListener('pointermove', onFloatMove);
 floatBtn.addEventListener('pointerup', onFloatUp);
-floatBtn.addEventListener('pointercancel', () => { if (floatHoldTimer) clearTimeout(floatHoldTimer); floatStartTime = 0; floatRelease(); });
+floatBtn.addEventListener('pointercancel', onFloatCancel);
+floatBtn.addEventListener('lostpointercapture', (e) => { if (floatStartTime) onFloatUp(e); });
+// Android Chrome: no long-press menu / text selection / scrolling from the button
+floatBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+floatBtn.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+floatBtn.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
 // Settings buttons
 document.getElementById('closeSettings').addEventListener('click', closeSettings);
