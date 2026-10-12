@@ -11,14 +11,14 @@
   <!-- Cache busting: GitHub Pages lets browsers cache files for ~10 min, so every hub
        file below carries ?v=HUB_VERSION. When you change hub_main.css / hub_controller.css / hub_notification.css /
        hub*.js / hub_apps.js / hub_tiles.js (or vendor/),
-       bump the version: replace every "?v=20261012a" in this file with today's date
+       bump the version: replace every "?v=20261012b" in this file with today's date
        (YYYYMMDD, add a letter for a second deploy the same day, e.g. 20260928b). -->
-  <link rel="stylesheet" href="hub/hub_main.css?v=20261012a" />
-  <link rel="stylesheet" href="hub/hub_controller.css?v=20261012a" />
-  <link rel="stylesheet" href="hub/hub_notification.css?v=20261012a" />
-  <link rel="stylesheet" href="shared/style/no-scrollbar.css?v=20261012a" />
-  <link rel="stylesheet" href="shared/link/link.css?v=20261012a" />
-  <link rel="stylesheet" href="hub/hub_chat.css?v=20261012a" />
+  <link rel="stylesheet" href="hub/hub_main.css?v=20261012b" />
+  <link rel="stylesheet" href="hub/hub_controller.css?v=20261012b" />
+  <link rel="stylesheet" href="hub/hub_notification.css?v=20261012b" />
+  <link rel="stylesheet" href="shared/style/no-scrollbar.css?v=20261012b" />
+  <link rel="stylesheet" href="shared/link/link.css?v=20261012b" />
+  <link rel="stylesheet" href="hub/hub_chat.css?v=20261012b" />
 </head>
 <body>
   <header id="header">
@@ -35,7 +35,7 @@
       <button type="button" class="ctrl-btn chat-btn" id="chat-btn" title="Chat" aria-label="Chat" aria-haspopup="dialog" aria-expanded="false">
         <span class="chat-ico" aria-hidden="true">🐻</span><span class="chat-badge" id="chat-badge" hidden>0</span>
       </button>
-      <button type="button" class="ctrl-btn" id="ctrl-btn" title="Phone controller" aria-label="Phone controller">
+      <button type="button" class="ctrl-btn" id="ctrl-btn" title="Devices" aria-label="Devices">
 
 <svg width="34.5" height="34.5" viewBox="0 0 35 35" fill="none" aria-hidden="true">
   <rect x="3" y="11.5" width="30" height="15" rx="5" stroke="currentColor" stroke-width="3"/>
@@ -53,19 +53,12 @@
   </header>
 
   <div id="ctrl-backdrop" hidden></div>
-  <div id="ctrl-popover" role="dialog" aria-label="Phone controller pairing" hidden>
+  <div id="ctrl-popover" role="dialog" aria-label="Devices" hidden>
     <div class="ctrl-pop-head">
-      <strong>Phone controller</strong>
+      <strong>Devices</strong>
       <button type="button" id="ctrl-close" aria-label="Close">×</button>
     </div>
-    <div id="ctrl-qr" class="ctrl-qr" aria-hidden="true"></div>
-    <div id="ctrl-code" class="ctrl-code">——</div>
-    <a id="ctrl-url" class="ctrl-url" href="#" target="_blank" rel="noopener"></a>
-    <div id="ctrl-status" class="ctrl-status">Idle</div>
-    <div class="ctrl-actions">
-      <button type="button" id="ctrl-newcode" class="ctrl-newcode" title="Make a fresh pairing code (the phone must pair again)">New code</button>
-      <button type="button" id="ctrl-disconnect" class="ctrl-disconnect">Disconnect</button>
-    </div>
+    <!-- hub_link.js mounts this device's name + connected devices list -->
   </div>
 
   <div id="frame-wrap">
@@ -82,31 +75,31 @@
   </div>
 
   <!-- One-connection release: role first (phone remote Hub joins instead of hosting) -->
-  <script src="hub/hub_role.js?v=20261012a"></script>
-  <script src="shared/vendor/qrcode.js?v=20261012a"></script>
+  <script src="hub/hub_role.js?v=20261012b"></script>
+  <script src="shared/vendor/qrcode.js?v=20261012b"></script>
   <!-- App list + home tiles (plain JS data, work over http and file://) -->
-  <script src="hub/hub_apps.js?v=20261012a"></script>
-  <script src="hub/hub_tiles.js?v=20261012a"></script>
-  <script src="hub/hub.js?v=20261012a"></script>
+  <script src="hub/hub_apps.js?v=20261012b"></script>
+  <script src="hub/hub_tiles.js?v=20261012b"></script>
+  <script src="hub/hub.js?v=20261012b"></script>
   <!-- Phone controller: settings, trackpad pointer, received-file cards, phone → hub files -->
-  <script src="hub/hub_controller_config.js?v=20261012a"></script>
-  <script src="hub/hub_notify.js?v=20261012a"></script>
-  <script src="hub/hub_viewer_pdf.js?v=20261012a"></script>
-  <script src="hub/hub_viewer.js?v=20261012a"></script>
-  <script src="hub/hub_pointer.js?v=20261012a"></script>
-  <script src="hub/hub_receive.js?v=20261012a"></script>
+  <script src="hub/hub_controller_config.js?v=20261012b"></script>
+  <script src="hub/hub_notify.js?v=20261012b"></script>
+  <script src="hub/hub_viewer_pdf.js?v=20261012b"></script>
+  <script src="hub/hub_viewer.js?v=20261012b"></script>
+  <script src="hub/hub_pointer.js?v=20261012b"></script>
+  <script src="hub/hub_receive.js?v=20261012b"></script>
   <!-- SharedLink: one connection layer (PeerJS from the pinned CDN url in link_core.js) -->
-  <script src="shared/link/link_core.js?v=20261012a"></script>
-  <script src="shared/link/link_devices.js?v=20261012a"></script>
-  <script src="shared/link/link_files.js?v=20261012a"></script>
-  <script src="shared/link/link_ui.js?v=20261012a"></script>
-  <script src="shared/link/link_chat.js?v=20261012a"></script>
-  <script src="hub/hub-controller.js?v=20261012a"></script>
-  <script src="hub/hub_link.js?v=20261012a"></script>
-  <script src="shared/link/link_scan.js?v=20261012a"></script>
-  <script src="hub/hub_remote.js?v=20261012a"></script>
-  <script src="hub/hub_chat.js?v=20261012a"></script>
-  <script src="hub/hub-gamebar.js?v=20261012a"></script>
+  <script src="shared/link/link_core.js?v=20261012b"></script>
+  <script src="shared/link/link_devices.js?v=20261012b"></script>
+  <script src="shared/link/link_files.js?v=20261012b"></script>
+  <script src="shared/link/link_ui.js?v=20261012b"></script>
+  <script src="shared/link/link_chat.js?v=20261012b"></script>
+  <script src="hub/hub-controller.js?v=20261012b"></script>
+  <script src="hub/hub_link.js?v=20261012b"></script>
+  <script src="shared/link/link_scan.js?v=20261012b"></script>
+  <script src="hub/hub_remote.js?v=20261012b"></script>
+  <script src="hub/hub_chat.js?v=20261012b"></script>
+  <script src="hub/hub-gamebar.js?v=20261012b"></script>
   <script>
     // PWA service worker (root sw.js so it covers the whole site). Not on file://.
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

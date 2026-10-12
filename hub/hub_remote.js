@@ -4,10 +4,10 @@
  * touch device). Then this Hub never hosts: it JOINS the desktop Hub through SharedLink
  * (meta pad:1, so Gamepad keys sent over it count as the controller) and
  *   - shows the state in the bar: green dot + "Hub 1234" (tap = re-scan / type a code);
- *   - the 🎮 bar button opens the Gamepad inside the app frame (same tab: the embedded
- *     controller borrows this link, see shared/link/link_core.js), so nothing disconnects;
- *   - while the Gamepad is open the bar gets ⛶ Full screen and ⚙ Gamepad settings
- *     (posted into the frame as {type:'ctrl-settings'});
+ *   - the 🎮 bar button opens the Devices popover (name + connected list) via
+ *     hub-controller.js — never the Gamepad (that is the home tile, next release);
+ *   - while the Gamepad is open in the frame the bar gets ⛶ Full screen and ⚙ Gamepad
+ *     settings (posted into the frame as {type:'ctrl-settings'});
  *   - menu item "Disconnect · use this device as Hub": manual Disconnect (bye, forget code),
  *     then reload as a normal host Hub. Reloads otherwise rejoin from the saved code.
  */
@@ -71,14 +71,7 @@
     try { frame.contentWindow.postMessage({ type: 'ctrl-settings' }, '*'); } catch (_) { /* gone */ }
   });
 
-  function openGamepad() {
-    const t = Array.from(document.querySelectorAll('.tile-app')).find((b) => /controller/.test(b.dataset.entryUrl || ''));
-    if (t) t.click();
-  }
-  if (ctrlBtn) {
-    ctrlBtn.title = 'Gamepad';
-    ctrlBtn.addEventListener('click', (e) => { e.stopPropagation(); openGamepad(); });
-  }
+  // 🎮 click → Devices popover (hub-controller.js remote branch). Do not open Gamepad here.
 
   /* ---------- menu: manual Disconnect ---------- */
   function disconnect() {

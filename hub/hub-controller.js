@@ -26,9 +26,10 @@
  * One-connection release (2026-10-12): the home tile "Connect QR" encodes hub.html?join=CODE
  * (same code; announced as detail.connectUrl). The connected light is green while ANY device
  * is joined. On a phone remote Hub (window.__hubRemote, hub_role.js) this file does not host:
- * hub_remote.js joins instead and owns the light and the Gamepad button. If the broker still holds the id from the previous page
- * ('unavailable-id'), registration is retried with backoff (the code is never switched
- * silently). "New code" in the popover makes a fresh code.
+ * hub_remote.js joins instead; this file still announces Connect QR and opens the Devices
+ * popover (name + connected list) from the 🎮 icon. The Gamepad itself is the home tile.
+ * If the broker still holds the id from the previous page ('unavailable-id'), registration
+ * is retried with backoff (the code is never switched silently).
  */
 (function () {
   'use strict';
@@ -466,10 +467,60 @@
     SharedLink.host({ prefix: PEER_PREFIX, code: code, onLegacy: onLegacy }).catch(() => setStatus('PeerJS could not load (offline?)'));
   }
 
-  // Phone remote Hub: no host, no popover; hub_remote.js does the joining.
+  // Phone remote Hub: no host; hub_remote.js joins. Still announce Connect QR
+  // (hub.html?join=CODE) so the home tile draws, and the 🎮 icon opens the
+  // name + devices popover (never the Gamepad — that is the home tile).
   if (window.__hubRemote) {
-    window.HubCtrlLink = { url: '', connectUrl: '', ensure() { return ''; } };
-    window.__hubController = { get connected() { return window.SharedLink ? SharedLink.connected : false; } };
+    const R = window.__hubRemote;
+    const connect = (() => {
+      const u = new URL(location.href);
+      u.search = '?join=' + R.code;
+      u.hash = '';
+      return u.href;
+    })();
+    window.HubCtrlLink = {
+      url: connect,
+      connectUrl: connect,
+      ensure() { return connect; },
+    };
+    try {
+      window.dispatchEvent(new CustomEvent('hub-ctrl-link', {
+        detail: { url: connect, code: R.code, connectUrl: connect },
+      }));
+    } catch (_) { /* old browser */ }
+
+    function openPopoverRemote() {
+      if (!popover) return;
+      popover.hidden = false;
+      if (popoverBackdrop) popoverBackdrop.hidden = false;
+    }
+    function closePopoverRemote() {
+      if (!popover) return;
+      popover.hidden = true;
+      if (popoverBackdrop) popoverBackdrop.hidden = true;
+      if (typeof window.__hubFocusFrame === 'function') window.__hubFocusFrame();
+    }
+    if (ctrlBtn) {
+      ctrlBtn.title = 'Devices';
+      ctrlBtn.setAttribute('aria-label', 'Devices');
+      ctrlBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!popover.hidden) closePopoverRemote();
+        else openPopoverRemote();
+      });
+    }
+    if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closePopoverRemote(); });
+    if (popoverBackdrop) popoverBackdrop.addEventListener('click', () => closePopoverRemote());
+    if (popover) popover.addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && popover && !popover.hidden) closePopoverRemote();
+    });
+
+    window.__hubController = {
+      openPopover: openPopoverRemote,
+      closePopover: closePopoverRemote,
+      get connected() { return window.SharedLink ? SharedLink.connected : false; },
+    };
     return;
   }
 
@@ -514,6 +565,8 @@
   }
 
   if (ctrlBtn) {
+    ctrlBtn.title = 'Devices';
+    ctrlBtn.setAttribute('aria-label', 'Devices');
     ctrlBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (!popover.hidden) closePopover();

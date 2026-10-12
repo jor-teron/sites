@@ -10,8 +10,9 @@
  *   app can show a QR for the Hub's own code (no own peer in the Hub).
  * - Apps may send through the Hub: {sharedLink:'send', msg, to?} and (release 3)
  *   {sharedLink:'sendFile', blob, name, type, app, to} (file to a device).
- * - Every received file is kept in IndexedDB 'hub-received' (last 30) → Received list.
- * - Popover extras: device list, this device's name, Auto-download toggle, Received list.
+ * - Every received file is kept in IndexedDB 'hub-received' (last 30); no Received UI in the
+ *   Gamepad popover (icon shows name + devices only). Auto-download stays on by default.
+ * - Popover extras: this device's name (edit) and the connected devices list.
  */
 (function () {
   'use strict';
@@ -55,7 +56,7 @@
     return tx('readwrite', (s) => s.put({ id: Date.now() + '-' + f.id, name: f.name, type: f.type, size: f.size, blob: f.blob, app: f.app, ts: Date.now() }))
       .then(() => tx('readonly', (s) => s.getAllKeys()))
       .then((keys) => { keys = (keys || []).sort(); const old = keys.slice(0, Math.max(0, keys.length - MAX_KEEP)); if (old.length) return tx('readwrite', (s) => old.forEach((k) => s.delete(k))); })
-      .then(paintReceived).catch(() => { /* no IndexedDB */ });
+      .catch(() => { /* no IndexedDB */ });
   }
 
   function download(blob, name) {
@@ -152,52 +153,16 @@
   SharedLink.on('devices', (list) => post({ sharedLink: 'devices', devices: list }));
   SharedLink.on('message', (m, from) => post({ sharedLink: 'message', msg: m, from: from }));
 
-  /* ---------- popover extras ---------- */
-  let recvBox = null;
-  function paintReceived() {
-    if (!recvBox) return;
-    tx('readonly', (s) => s.getAll()).then((rows) => {
-      recvBox.textContent = '';
-      (rows || []).sort((a, b) => b.ts - a.ts).forEach((r) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.textContent = r.name + ' · ' + (N() ? N().fmtSize(r.size) : r.size + ' B');
-        b.addEventListener('click', () => {
-          const url = URL.createObjectURL(r.blob);
-          if (window.HubViewer) HubViewer.open(url, r.name, r.type); else download(r.blob, r.name);
-        });
-        recvBox.appendChild(b);
-      });
-      if (!recvBox.childNodes.length) recvBox.textContent = 'Nothing received yet';
-    }).catch(() => { recvBox.textContent = 'Storage unavailable'; });
-  }
-
+  /* ---------- popover extras (name + devices only) ---------- */
   const pop = document.getElementById('ctrl-popover');
   if (pop && window.SharedLinkUI) {
     const wrap = document.createElement('div');
     wrap.className = 'sl-extra';
+    SharedLinkUI.mountName(wrap);
     const devs = document.createElement('div');
     SharedLinkUI.mountDevices(devs);
     wrap.appendChild(devs);
-    SharedLinkUI.mountName(wrap);
-    const row = document.createElement('label');
-    row.className = 'sl-row';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = autoDownload();
-    cb.addEventListener('change', () => { try { localStorage.setItem(AUTO_KEY, cb.checked ? '1' : '0'); } catch (_) { /* blocked */ } });
-    row.append(cb, document.createTextNode(' Auto-download received files'));
-    wrap.appendChild(row);
-    const det = document.createElement('details');
-    const sum = document.createElement('summary');
-    sum.textContent = 'Received';
-    recvBox = document.createElement('div');
-    recvBox.className = 'sl-received';
-    det.append(sum, recvBox);
-    det.addEventListener('toggle', () => { if (det.open) paintReceived(); });
-    wrap.appendChild(det);
-    const actions = pop.querySelector('.ctrl-actions');
-    pop.insertBefore(wrap, actions || null);
+    pop.appendChild(wrap);
   }
 
   window.__hubLink = { get active() { return active; }, autoDownload: autoDownload };
