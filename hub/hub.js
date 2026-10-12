@@ -295,6 +295,13 @@
   /** Open an app: NEW_TAB → new browser tab, else the hub iframe (+ hash + memory). */
   function loadApp(app, opts) {
     opts = opts || {};
+    // Phone remote Hub (hub_role.js): the Gamepad (menu row, tile, chat link) always opens IN the
+    // frame so it borrows the Hub's SharedLink — never a new tab with its own connection.
+    if (window.__hubRemote && /^hub\/controller\/(index\.html|controller\.html)?$/.test(app.entryUrl.split(/[?#]/)[0])) {
+      const gp = idToApp.get(entryToId.get('hub/controller/controller.html'));
+      if (gp && gp !== app) { loadApp(gp, Object.assign({}, opts, { forceFrame: true })); return; }
+      opts = Object.assign({}, opts, { forceFrame: true });
+    }
     if (app.newTab && !opts.forceFrame) {
       setOpen(false);
       window.open(frameUrlFor(app.entryUrl), '_blank', 'noopener');
