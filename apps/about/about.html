@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>About</title>
 
-<link rel="icon" href="../favicon.ico">
-<link rel="stylesheet" href="../style/font.css">
-<link rel="stylesheet" href="../style/no-scrollbar.css">
+<link rel="icon" href="../../favicon.ico">
+<link rel="stylesheet" href="../../shared/style/font.css">
+<link rel="stylesheet" href="../../shared/style/no-scrollbar.css">
 
 <style>
   :root {
@@ -115,22 +115,27 @@
     font-size: 0.8rem;
     margin-top: 32px;
   }
+
+  /* Three big stacked cards: About, Contact, Feedback (#about / #contact / #feedback) */
+  .big { padding: 24px 22px; border-radius: 18px; scroll-margin-top: 12px; }
+  .big > h2 { font-size: 1.4rem; margin-bottom: 14px; }
+  .big h3 { font-size: 1rem; margin: 18px 0 6px; color: var(--accent); }
+  .big:target { box-shadow: 0 0 0 3px var(--accent); }
+  .tap { display: block; min-height: 52px; padding: 14px 16px; margin: 10px 0 0; border-radius: 12px;
+    background: rgba(76, 139, 245, 0.15); color: var(--text); font-size: 1.05rem; }
+  .tap small { display: block; color: var(--muted); font-size: 0.85rem; }
 </style>
 </head>
 <body>
-
+<!--
+  About page (apps/about/about.html). Hub Menu "About" opens this page.
+  Three cards: #about, #contact, #feedback. Old contact.html / feedback.html redirect here
+  with those anchors. Contact details come from contact.txt / feedback.txt (name only so far).
+-->
 <div class="wrap">
 
-  <header>
-    <img src="../shared/image/placeholder.png" alt="App icon">
-    <div>
-      <h1>About</h1>
-      <p>Browser-based hub for games, tools & media</p>
-    </div>
-  </header>
-
-  <div class="card">
-    <h2>What is this?</h2>
+  <section class="card big" id="about">
+    <h2>About</h2>
     <p>
       This is a lightweight, browser-based collection of games, tools, and
       media apps — all built with plain HTML, CSS, and JavaScript.
@@ -140,20 +145,14 @@
       It runs entirely in your browser, works offline once loaded, and is
       designed to be simple enough for kids and fast enough for everyone.
     </p>
-  </div>
-
-  <div class="card">
-    <h2>What's inside</h2>
+    <h3>What's inside</h3>
     <ul>
       <li><span class="badge">Games</span> Playable in the browser</li>
       <li><span class="badge">Tools</span> Calculator, Notepad, Weather, vDesktop</li>
       <li><span class="badge">Media</span> Gallery, Paint, Photo Editor, Webcam</li>
-      <li><span class="badge">TV</span> Channels & kids' playlists</li>
+      <li><span class="badge">TV</span> Channels &amp; kids' playlists</li>
     </ul>
-  </div>
-
-  <div class="card">
-    <h2>For kids & parents</h2>
+    <h3>For kids &amp; parents</h3>
     <p>
       The kids section is designed for ages 5–15. No ads, no tracking,
       no external accounts. Progress and scores are stored locally on your
@@ -163,32 +162,33 @@
       A phone can be used as a D-pad controller for tablet-based games
       through the <strong>Controller</strong> module.
     </p>
-  </div>
-
-  <div class="card">
-    <h2>Privacy</h2>
+    <h3>Privacy</h3>
     <p>
       Nothing is uploaded. Nothing is shared. Everything stays on your device
       unless you explicitly export or share it.
     </p>
-  </div>
-
-  <div class="card">
-    <h2>Tech</h2>
+    <h3>Tech</h3>
     <ul>
       <li>Vanilla HTML, CSS, JavaScript</li>
       <li>No build step, no framework</li>
       <li>Works offline (static files)</li>
       <li>Optional: WebSocket relay for phone-as-remote</li>
     </ul>
-  </div>
+    <h3>Links</h3>
+    <a class="tap" href="../../misc/T&amp;C.html">Terms &amp; Conditions</a>
+    <a class="tap" href="../../misc/privatedns.html">Private DNS</a>
+  </section>
 
-  <div class="card">
-    <h2>Links</h2>
-    <p><a href="../index.html">← Back to Home</a></p>
-    <p><a href="../misc/T&amp;C.html">Terms &amp; Conditions</a></p>
-    <p><a href="../misc/privatedns.html">Private DNS</a></p>
-  </div>
+  <section class="card big" id="contact">
+    <h2>Contact</h2>
+    <a class="tap" href="contact.txt">Jor Teron<small>Name</small></a>
+  </section>
+
+  <section class="card big" id="feedback">
+    <h2>Feedback</h2>
+    <p>Send feedback to the contact below.</p>
+    <a class="tap" href="feedback.txt">Jor Teron<small>Name</small></a>
+  </section>
 
   <footer>
     <p>Made with plain JavaScript. No frameworks harmed.</p>

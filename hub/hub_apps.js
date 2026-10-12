@@ -89,6 +89,6 @@ Lab,      Paper Keyboard,        apps/lab/paper-keyboard/,                   ,  
 Lab,      Notebook,              apps/lab/notebook/,                         ,         0,       0,      1045
 
 About,    About,                 apps/about/,                                ,         0,       0,      2000
-About,    Contact,               apps/about/contact.txt,                     ,         0,       0,      2020
-About,    Feedback,              apps/about/feedback.txt,                    ,         0,       1,      2030
+About,    Contact,               apps/about/contact.html,                    ,         0,       1,      2020
+About,    Feedback,              apps/about/feedback.html,                   ,         0,       1,      2030
 `;
