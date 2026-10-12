@@ -1,14 +1,14 @@
 /*
  * Project: notebook
  * File: nb_wrinkle.js
- * Role: Crumple wrinkles. Per-page crumple level (0..CRUMPLE_MAX = 10) in localStorage key
+ * Role: Crumple wrinkles. Per-page crumple level (0..CRUMPLE_MAX = 5) in localStorage key
  *   paperNotebook_crumple; strokes are never erased. Wrinkles are an SVG overlay (<div id="wrinkle"> holding an <svg> string,
  *   pointer-events:none) built from feTurbulence + diffuse/specular lighting and seeded crease
  *   lines (seed = page). Permanent: no undo, Reset Notebook does not clear them.
  *   wrinkleImage() turns the same SVG into an Image for PNG/PDF export.
  */
 const CRUMPLE_KEY = 'paperNotebook_crumple';
-const CRUMPLE_MAX = 10;   // was 6; old saved levels 0..6 load unchanged
+const CRUMPLE_MAX = 5;    // saved levels above 5 clamp to 5 on load
 let crumple = [];
 
 function loadCrumple() {
@@ -48,13 +48,13 @@ function wrinkleSvg(page, w, h) {
   const level = crumple[page] || 0;
   if (!level || !w || !h) return '';
   const rnd = seededRandom((page + 1) * 7919 + level);
-  // fine steps: level 1 barely there … level 10 very dirty
-  const f = level / CRUMPLE_MAX;
+  // 5 levels = the top half of the old 10-step scale: level 1 = old 5 (f 0.6) … level 5 = old 10 (f 1)
+  const f = (level + 5) / 10;
   const freq = (0.005 + f * 0.03).toFixed(4);
   const relief = (0.5 + f * 9).toFixed(2);
   const op = (0.08 + f * 0.72).toFixed(2);
   let lines = '';
-  const n = Math.round(level * 1.6);
+  const n = Math.round((level + 5) * 1.6);
   for (let i = 0; i < n; i++) {
     // crease: a slightly bent line across the page, dark side + light side
     const x1 = rnd() * w, y1 = rnd() * h, x2 = rnd() * w, y2 = rnd() * h;

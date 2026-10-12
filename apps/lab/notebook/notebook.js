@@ -16,6 +16,7 @@ floatBtn.addEventListener('touchmove', (e) => e.preventDefault(), { passive: fal
 
 // Page-49 PNG link
 document.getElementById('dlPng').addEventListener('click', () => downloadPNG());
+document.getElementById('dlPdf').addEventListener('click', () => downloadPDF());
 
 // Close grid by tapping outside thumbnails (on the grid background)
 document.getElementById('pagesGrid').addEventListener('click', (e) => {
