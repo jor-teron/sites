@@ -3,6 +3,7 @@
  * Three.js r170 via import map. No build step.
  */
 import * as THREE from 'three';
+import { createTarget } from './browser-fps_target.js';
 
 // ─── Tunables (from browser-fps_config.js) ──────────────────────────────────
 const CFG = window.BROWSER_FPS_CONFIG;
@@ -114,29 +115,18 @@ function buildArena() {
 
 buildArena();
 
-// ─── Enemies (static colored boxes) ─────────────────────────────────────────
+// ─── Enemies (humanoid targets, see browser-fps_target.js) ──────────────────
 const enemies = [];
 
 function spawnEnemies() {
-  const specs = CFG.enemies.specs;
-  const [ew, eh, ed] = CFG.enemies.size;
-  for (const s of specs) {
-    const geo = new THREE.BoxGeometry(ew, eh, ed);
-    const mat = new THREE.MeshStandardMaterial({ color: s.color, roughness: 0.7 });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(s.pos[0], s.pos[1], s.pos[2]);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    scene.add(mesh);
-    enemies.push({
-      mesh,
-      hp: s.hp,
-      maxHp: s.hp,
-      alive: true,
-      baseColor: s.color,
-      // AABB for hitscan
-      half: new THREE.Vector3(ew / 2, eh / 2, ed / 2),
-    });
+  const [sx, sz] = CFG.player.start;
+  for (const s of CFG.enemies.specs) {
+    // Face the player's spawn point
+    const faceYaw = Math.atan2(sx - s.pos[0], sz - s.pos[2]);
+    const en = createTarget({ ...s, faceYaw });
+    scene.add(en.group);
+    colliders.push(en.collider);   // player can't walk through targets (skipped for bullets)
+    enemies.push(en);
   }
 }
 
@@ -258,7 +248,7 @@ function collideWorld(pos, vel, dt) {
   pos.x += vel.x * dt;
   let box = playerAABB(pos.x, pos.y, pos.z);
   for (const c of colliders) {
-    if (!aabbOverlap(box, c)) continue;
+    if (c.disabled || !aabbOverlap(box, c)) continue;
     if (vel.x > 0) pos.x = c.min.x - PLAYER_RADIUS - 0.001;
     else if (vel.x < 0) pos.x = c.max.x + PLAYER_RADIUS + 0.001;
     vel.x = 0;
@@ -269,7 +259,7 @@ function collideWorld(pos, vel, dt) {
   pos.z += vel.z * dt;
   box = playerAABB(pos.x, pos.y, pos.z);
   for (const c of colliders) {
-    if (!aabbOverlap(box, c)) continue;
+    if (c.disabled || !aabbOverlap(box, c)) continue;
     if (vel.z > 0) pos.z = c.min.z - PLAYER_RADIUS - 0.001;
     else if (vel.z < 0) pos.z = c.max.z + PLAYER_RADIUS + 0.001;
     vel.z = 0;
@@ -291,7 +281,7 @@ function collideWorld(pos, vel, dt) {
   }
 
   for (const c of colliders) {
-    if (!aabbOverlap(box, c)) continue;
+    if (c.disabled || !aabbOverlap(box, c)) continue;
     // Standing on top
     if (vel.y <= 0 && (pos.y - PLAYER_HEIGHT) < c.max.y && (pos.y - PLAYER_HEIGHT - vel.y * dt) >= c.max.y - 0.15) {
       pos.y = c.max.y + PLAYER_HEIGHT;
@@ -383,17 +373,10 @@ function showHitmarker() {
   showHitmarker._t = setTimeout(() => hitmarker.classList.remove('show'), W.hitmarkerMs);
 }
 
-function damageEnemy(en, dmg) {
+function damageEnemy(en, dmg, zone, dir) {
   if (!en.alive) return;
-  en.hp -= dmg;
-  // Flash whitish then tint by remaining HP
-  const t = Math.max(0, en.hp / en.maxHp);
-  en.mesh.material.color.setRGB(0.9, 0.9 * t, 0.85 * t);
+  en.hit(zone, dmg, dir);   // head x2.5, hit flash, knockback, death animation
   showHitmarker();
-  if (en.hp <= 0) {
-    en.alive = false;
-    en.mesh.visible = false;
-  }
 }
 
 function fire() {
@@ -421,18 +404,21 @@ function fire() {
   // Hit enemies via AABB ray (more reliable than mesh for boxes)
   let bestT = Infinity;
   let bestEn = null;
+  let bestZone = null;
   for (const en of enemies) {
     if (!en.alive) continue;
-    const t = rayAABB(camera.position, shootDir, en.mesh.position, en.half);
-    if (t !== null && t < bestT && t > 0) {
-      bestT = t;
+    const r = en.raycast(camera.position, shootDir);
+    if (r && r.t > 0 && r.t < bestT) {
+      bestT = r.t;
       bestEn = en;
+      bestZone = r.zone;
     }
   }
 
   // Also check world colliders so bullets don't pass walls
   let wallT = Infinity;
   for (const c of colliders) {
+    if (c.target) continue;   // target colliders are for movement only
     const half = new THREE.Vector3(
       (c.max.x - c.min.x) / 2,
       (c.max.y - c.min.y) / 2,
@@ -448,7 +434,7 @@ function fire() {
   spawnTracer(muzzle, hitPoint);
 
   if (bestEn && bestT <= wallT) {
-    damageEnemy(bestEn, HIT_DAMAGE);
+    damageEnemy(bestEn, HIT_DAMAGE, bestZone, shootDir);
   }
 
   if (player.ammo <= 0) startReload();
@@ -519,10 +505,8 @@ function tick() {
     for (const en of enemies) {
       if (!en.alive) continue;
       if (en.touchCd > 0) en.touchCd -= dt;
-      const dx = player.pos.x - en.mesh.position.x;
-      const dz = player.pos.z - en.mesh.position.z;
-      const dy = (player.pos.y - PLAYER_HEIGHT / 2) - en.mesh.position.y;
-      if (Math.abs(dx) < CFG.contact.rangeX && Math.abs(dz) < CFG.contact.rangeZ && Math.abs(dy) < CFG.contact.rangeY) {
+      // Targets are solid now, so contact = touching the collider (small margin)
+      if (en.touches(player.pos, PLAYER_RADIUS, PLAYER_HEIGHT)) {
         if (!en.touchCd || en.touchCd <= 0) {
           player.health = Math.max(0, player.health - CFG.contact.damage);
           hpVal.textContent = String(player.health);
@@ -539,10 +523,11 @@ function tick() {
     camera.rotation.y = yaw;
   }
 
+  for (const en of enemies) en.update(dt);
   renderer.render(scene, camera);
 }
 
 tick();
 
 // Expose a tiny debug hook in console
-window.__fps = { player, enemies, colliders, scene };
+window.__fps = { player, enemies, colliders, scene, camera, fire };

@@ -40,7 +40,7 @@ window.BROWSER_FPS_CONFIG = {
   contact: {
     damage: 8,            // HP lost per touch
     cooldown: 0.8,        // seconds between touches per enemy
-    rangeX: 0.7,          // touch distance on x
+    rangeX: 0.7,          // (unused since humanoid targets: contact = touching the target collider)
     rangeZ: 0.6,          // touch distance on z
     rangeY: 1.4,          // touch distance on y
     flashMs: 120,         // red damage flash time
@@ -72,16 +72,15 @@ window.BROWSER_FPS_CONFIG = {
     ],
   },
 
-  // Enemies (static boxes)
+  // Enemies: humanoid targets (browser-fps_target.js). pos = [x, centreY, z]; feet stand at centreY - 1.
   enemies: {
-    size: [0.9, 2, 0.7],  // box size [w, h, d]
     specs: [
       { pos: [8, 1, -8], color: 0xcc3333, hp: 100 },
       { pos: [-10, 1, 4], color: 0xdd4422, hp: 100 },
       { pos: [0, 1, -14], color: 0xbb2222, hp: 100 },
       { pos: [14, 1, 2], color: 0xee5533, hp: 80 },
       { pos: [-6, 1, 14], color: 0xaa1111, hp: 100 },
-      { pos: [5, 1.5, 8], color: 0xff6644, hp: 60 },
+      { pos: [5, 1, 8], color: 0xff6644, hp: 60 },   // was floating at y 1.5
     ],
   },
 
