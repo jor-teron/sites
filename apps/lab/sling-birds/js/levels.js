@@ -46,7 +46,7 @@ export const LEVELS = [
       { x: 850, y: GROUND_Y - 95, w: 360, h: 30, material: 'wood' },
       { x: 760, y: GROUND_Y - 175, w: 24, h: 130, material: 'wood' },
       { x: 940, y: GROUND_Y - 175, w: 24, h: 130, material: 'wood' },
-      { x: 850, y: GROUND_Y - 250, w: 220, h: 24, material: 'stone' },
+      { x: 850, y: GROUND_Y - 250, w: 220, h: 24, material: 'wood' },
       { x: 810, y: GROUND_Y - 310, w: 20, h: 100, material: 'wood' },
       { x: 890, y: GROUND_Y - 310, w: 20, h: 100, material: 'wood' },
       { x: 850, y: GROUND_Y - 370, w: 120, h: 20, material: 'wood' }
@@ -55,7 +55,8 @@ export const LEVELS = [
       { x: 750, y: GROUND_Y - 30, r: 20 },
       { x: 850, y: GROUND_Y - 145, r: 22 },
       { x: 950, y: GROUND_Y - 30, r: 20 },
-      { x: 850, y: GROUND_Y - 290, r: 22 }
+      // former top pig: now on the lower slab, outside the left post, so it can be hit directly
+      { x: 705, y: GROUND_Y - 133, r: 22 }
     ]
   }
 ];
