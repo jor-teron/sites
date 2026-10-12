@@ -35,7 +35,6 @@
   const labLabel = document.getElementById('lab-label');
   const labLabelName = document.getElementById('lab-label-name');
   const gamebarEl = document.getElementById('gamebar');
-  const LAB_ENTRY = 'apps/lab/';
   /** Categories whose menu header opens a tiles page instead of expanding (CATEGORY → ENTRY_URL). */
   const CAT_PAGES = { Lab: 'apps/lab/', Games: 'apps/games/' };
 
