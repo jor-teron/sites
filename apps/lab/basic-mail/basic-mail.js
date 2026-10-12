@@ -85,8 +85,8 @@ function setStatus(text) {
   document.getElementById("status").textContent = text;
 }
 
-/* Decode Gmail base64url into text. */
-function decodeB64(data) {
+/* Decode Gmail base64url into text using the part's charset (default UTF-8). */
+function decodeB64(data, charset) {
   if (!data) {
     return "";
   }
@@ -94,16 +94,88 @@ function decodeB64(data) {
   while (pad.length % 4) {
     pad += "=";
   }
+  var bin;
   try {
-    return decodeURIComponent(escape(atob(pad)));
+    bin = atob(pad);
   } catch (err) {
-    return atob(pad);
+    return "";
+  }
+  var bytes = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) {
+    bytes[i] = bin.charCodeAt(i);
+  }
+  try {
+    return new TextDecoder(charset || "utf-8").decode(bytes);
+  } catch (err) {
+    return new TextDecoder("utf-8").decode(bytes);   // unknown charset label
   }
 }
 
-/* Encode a raw RFC822 message for Gmail send. */
+/* charset=… from a MIME part's Content-Type header ("" if none). */
+function partCharset(part) {
+  var ct = header(part.headers || [], "Content-Type");
+  var m = /charset\s*=\s*"?([^";\s]+)/i.exec(ct);
+  return m ? m[1] : "";
+}
+
+/* UTF-8 string → standard base64. */
+function b64utf8(text) {
+  var bytes = new TextEncoder().encode(text);
+  var bin = "";
+  for (var i = 0; i < bytes.length; i++) {
+    bin += String.fromCharCode(bytes[i]);
+  }
+  return btoa(bin);
+}
+
+/* Encode a raw RFC822 message (already pure ASCII) for Gmail send (base64url). */
 function encodeRaw(text) {
-  return btoa(unescape(encodeURIComponent(text))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return b64utf8(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/* RFC 2047 header value: ASCII stays as is; anything else becomes =?UTF-8?B?…?= words
+   (split on whole characters so no word exceeds ~75 chars). */
+function encodeHeaderWord(value) {
+  if (/^[\x20-\x7e]*$/.test(value)) {
+    return value;
+  }
+  var words = [];
+  var chunk = "";
+  Array.from(value).forEach(function (ch) {
+    if (new TextEncoder().encode(chunk + ch).length > 45) {
+      words.push(chunk);
+      chunk = "";
+    }
+    chunk += ch;
+  });
+  if (chunk) {
+    words.push(chunk);
+  }
+  return words.map(function (w) { return "=?UTF-8?B?" + b64utf8(w) + "?="; }).join("\r\n ");
+}
+
+/* Body as base64 lines of 76 chars (Content-Transfer-Encoding: base64). */
+function bodyBase64(text) {
+  return (b64utf8(text).match(/.{1,76}/g) || []).join("\r\n");
+}
+
+/* Plain text from an HTML-only mail, for reply / forward quotes. DOMParser never runs scripts
+   or loads resources; only textContent is read. */
+function htmlToText(html) {
+  try {
+    var doc = new DOMParser().parseFromString(html, "text/html");
+    doc.querySelectorAll("script,style,head").forEach(function (n) { n.remove(); });
+    doc.querySelectorAll("br").forEach(function (n) { n.replaceWith("\n"); });
+    doc.querySelectorAll("p,div,li,tr,h1,h2,h3,h4").forEach(function (n) { n.append("\n"); });
+    return (doc.body ? doc.body.textContent : "").replace(/\n{3,}/g, "\n\n").trim();
+  } catch (err) {
+    return "";
+  }
+}
+
+/* Quote: every line prefixed with "> ". */
+function quoteText(text) {
+  return String(text || "").split(/\r?\n/).map(function (l) { return "> " + l; }).join("\n");
 }
 
 /* Header value from a Gmail payload header list. */
@@ -125,14 +197,14 @@ function bodyText(payload) {
       return;
     }
     if (part.mimeType === "text/plain" && part.body && part.body.data) {
-      found = decodeB64(part.body.data);
+      found = decodeB64(part.body.data, partCharset(part));
       return;
     }
     (part.parts || []).forEach(walk);
   }
   walk(payload);
   if (!found && payload.body && payload.body.data && payload.mimeType === "text/plain") {
-    found = decodeB64(payload.body.data);
+    found = decodeB64(payload.body.data, partCharset(payload));
   }
   return found || "";
 }
@@ -145,14 +217,14 @@ function bodyHtml(payload) {
       return;
     }
     if (part.mimeType === "text/html" && part.body && part.body.data) {
-      found = decodeB64(part.body.data);
+      found = decodeB64(part.body.data, partCharset(part));
       return;
     }
     (part.parts || []).forEach(walk);
   }
   walk(payload);
   if (!found && payload.body && payload.body.data && payload.mimeType === "text/html") {
-    found = decodeB64(payload.body.data);
+    found = decodeB64(payload.body.data, partCharset(payload));
   }
   return found;
 }
@@ -302,7 +374,9 @@ function openMail(id) {
       subject: header(msg.payload.headers, "Subject") || "(No subject)",
       time: header(msg.payload.headers, "Date"),
       body: bodyText(msg.payload),
-      html: bodyHtml(msg.payload)
+      html: bodyHtml(msg.payload),
+      messageId: header(msg.payload.headers, "Message-ID") || header(msg.payload.headers, "Message-Id"),
+      references: header(msg.payload.headers, "References")
     };
     currentId = id;
     document.getElementById("read-subject").textContent = openItem.subject;
@@ -338,8 +412,12 @@ function closeRead() {
   renderList();
 }
 
+/* Reply context for the open compose sheet: { threadId, inReplyTo, references } or null. */
+var replyCtx = null;
+
 /* Compose sheet for new, reply, or forward. */
 function openCompose(kind) {
+  replyCtx = null;
   var title = document.getElementById("compose-title");
   var to = document.getElementById("to");
   var subject = document.getElementById("subject");
@@ -353,12 +431,18 @@ function openCompose(kind) {
     title.textContent = "Reply";
     to.value = openItem.email;
     subject.value = openItem.subject.indexOf("Re:") === 0 ? openItem.subject : "Re: " + openItem.subject;
-    body.value = "\n\nOn " + openItem.time + ", " + openItem.from + " wrote:\n" + openItem.body;
+    body.value = "\n\nOn " + openItem.time + ", " + openItem.from + " wrote:\n" + quoteText(openItem.body || htmlToText(openItem.html));
+    replyCtx = {
+      threadId: openItem.threadId,
+      inReplyTo: headerSafe(openItem.messageId),
+      references: headerSafe(((openItem.references || "") + " " + (openItem.messageId || "")).trim())
+    };
   }
   if (openItem && kind === "forward") {
     title.textContent = "Forward";
     subject.value = openItem.subject.indexOf("Fwd:") === 0 ? openItem.subject : "Fwd: " + openItem.subject;
-    body.value = "\n\n---------- Forwarded ----------\n" + openItem.body;
+    body.value = "\n\n---------- Forwarded ----------\nFrom: " + openItem.from + (openItem.email ? " <" + openItem.email + ">" : "") +
+      "\nDate: " + openItem.time + "\nSubject: " + openItem.subject + "\n\n" + (openItem.body || htmlToText(openItem.html));
   }
   document.getElementById("compose").hidden = false;
   (to.value ? body : to).focus();
@@ -389,9 +473,21 @@ function sendMail(event) {
     setComposeStatus("Add a recipient.");
     return;
   }
-  var raw = "To: " + to + "\r\nSubject: " + subject + "\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n" + body;
+  // Headers are pure ASCII: non-ASCII subject → RFC 2047, body → UTF-8 base64.
+  var lines = ["To: " + to, "Subject: " + encodeHeaderWord(subject)];
+  if (replyCtx && replyCtx.inReplyTo) {
+    lines.push("In-Reply-To: " + replyCtx.inReplyTo);
+    lines.push("References: " + (replyCtx.references || replyCtx.inReplyTo));
+  }
+  lines.push("MIME-Version: 1.0", "Content-Type: text/plain; charset=utf-8", "Content-Transfer-Encoding: base64");
+  var raw = lines.join("\r\n") + "\r\n\r\n" + bodyBase64(body);
+  var payload = { raw: encodeRaw(raw) };
+  if (replyCtx && replyCtx.threadId) {
+    payload.threadId = replyCtx.threadId;   // keeps the reply in the same Gmail conversation
+  }
   setComposeStatus("Sending…");
-  gmail("/messages/send", { method: "POST", body: { raw: encodeRaw(raw) } }).then(function () {
+  gmail("/messages/send", { method: "POST", body: payload }).then(function () {
+    replyCtx = null;
     closeCompose();
     setFolder("sent");
   }).catch(function (err) {

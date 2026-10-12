@@ -46,7 +46,15 @@ Setup steps (Google Cloud, client id) are in `basic-mail.txt`.
 - **Search** waits 400 ms after typing; Enter searches at once. Every list load has a sequence
   number, so a slow old reply never replaces a newer list. Same for opening messages.
 - **Compose**: To accepts several addresses separated by commas. CR/LF are stripped from To and
-  Subject so a value cannot inject headers. Plain-text UTF-8 body.
+  Subject so a value cannot inject headers. Plain-text UTF-8 body sent as base64
+  (`Content-Transfer-Encoding: base64`), so any language survives.
+- **Non-ASCII subjects** are RFC 2047 encoded (`=?UTF-8?B?…?=`, split into words ≤ 75 chars).
+- **Replies are threaded**: the reply carries `In-Reply-To` (the original `Message-ID`) and
+  `References` (original References + Message-ID), and is sent with the Gmail `threadId`, so it
+  stays in the same conversation for you and the recipient.
+- **Quotes**: reply quotes every line with `> `; HTML-only mails are turned into plain text for
+  the quote (DOMParser, text only, nothing rendered or loaded). Forward adds From / Date / Subject.
+- **Charsets**: each part is decoded with its own `charset=` (TextDecoder), UTF-8 if missing/unknown.
 - Opening a mail marks it read in Gmail and un-bolds its row at once.
 
 ## Key data
@@ -65,7 +73,9 @@ Setup steps (Google Cloud, client id) are in `basic-mail.txt`.
 2. Open a newsletter: it renders styled inside the white frame; "Images hidden" bar shows;
    Show images loads them. Links open in a new tab.
 3. Type in Search: one request after you stop typing; Enter searches at once.
-4. Compose to two addresses with a comma; both receive it.
+4. Compose to two addresses with a comma; both receive it. Subject "नमस्ते ✓" and a non-English
+   body arrive intact.
+4b. Reply to a mail: it appears in the same Gmail conversation (yours and theirs), quoted with `>`.
 5. Sign out, or wait for expiry / revoke the app in Google account settings: next action shows
    "Session expired. Tap Connect."
 6. In the Hub, use the D-pad: ↑↓ move rows, Enter opens, ←→ change folder, Esc goes back.
@@ -73,5 +83,5 @@ Setup steps (Google Cloud, client id) are in `basic-mail.txt`.
 
 ## Known limits (release 2)
 
-No threading headers (In-Reply-To), non-ASCII subjects are not RFC 2047 encoded, charset is
-assumed UTF-8, HTML-only mails quote nothing on reply, no attachments, 20 messages per list.
+Non-ASCII display names in To are sent as typed (not RFC 2047), forward does not keep the thread,
+no attachments, 20 messages per list, no reply-all.
