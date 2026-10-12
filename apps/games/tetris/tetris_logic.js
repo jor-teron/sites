@@ -559,9 +559,80 @@ function clearKeys() {
   softDrop = false;
 }
 
+/* -----------------------------------------------------------------------------
+ * Touch gestures (pointer events, no on-screen buttons)
+ *  tap = rotate (or new game after game over / resume when paused)
+ *  horizontal drag = move cell-by-cell following the finger
+ *  slow drag down = soft drop while held, quick flick down = hard drop
+ * --------------------------------------------------------------------------- */
+var gesture = null;
+
+function cellPx() {
+  return canvas.getBoundingClientRect().width / COLS;
+}
+
+function onPointerDown(e) {
+  if (gesture) return;
+  gesture = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(),
+    anchorX: e.clientX, axis: null, moved: false, samples: [[performance.now(), e.clientY]] };
+  if (e.cancelable) e.preventDefault();
+}
+
+function onPointerMove(e) {
+  var g = gesture;
+  if (!g || e.pointerId !== g.id) return;
+  if (e.cancelable) e.preventDefault();
+  var now = performance.now();
+  g.samples.push([now, e.clientY]);
+  while (g.samples.length > 2 && now - g.samples[0][0] > 80) g.samples.shift();
+  var dx = e.clientX - g.x0, dy = e.clientY - g.y0;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) > CFG.touch.tapMaxMove) g.moved = true;
+  if (!g.axis && Math.max(Math.abs(dx), Math.abs(dy)) >= CFG.touch.axisLockPx) {
+    g.axis = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
+  }
+  if (gameOver || paused) return;
+  if (g.axis === "h") {
+    var c = cellPx();
+    while (e.clientX - g.anchorX >= c) { tryMove(1, 0); g.anchorX += c; }
+    while (e.clientX - g.anchorX <= -c) { tryMove(-1, 0); g.anchorX -= c; }
+  } else if (g.axis === "v") {
+    softDrop = dy > cellPx() && now - g.t0 >= CFG.touch.softDelayMs;
+  }
+}
+
+function onPointerUp(e) {
+  var g = gesture;
+  if (!g || e.pointerId !== g.id) return;
+  gesture = null;
+  softDrop = false;
+  if (e.type === "pointercancel") return;
+  var now = performance.now();
+  var dt = now - g.t0, dy = e.clientY - g.y0;
+  if (!g.moved && dt < CFG.touch.tapMaxMs) {
+    if (gameOver) { resetGame(); return; }
+    if (paused) { paused = false; elStatus.textContent = ""; return; }
+    tryRotate();
+    return;
+  }
+  if (gameOver || paused || g.axis !== "v") return;
+  var s0 = g.samples[0];
+  /* speed: the faster of the recent (~80 ms) and the whole-gesture average */
+  var v = Math.max((e.clientY - s0[1]) / Math.max(1, now - s0[0]), dy / Math.max(1, dt));
+  if (dy >= CFG.touch.flickMinPx && dt <= CFG.touch.flickMaxMs && v >= CFG.touch.flickMinSpeed) {
+    hardDrop();
+  }
+}
+
 /* --- Wire events and start --- */
 window.addEventListener("keydown", onKeyDown);
 window.addEventListener("keyup", onKeyUp);
+window.addEventListener("pointerdown", onPointerDown);
+window.addEventListener("pointermove", onPointerMove);
+window.addEventListener("pointerup", onPointerUp);
+window.addEventListener("pointercancel", onPointerUp);
+/* No page scroll / pinch zoom / pull-to-refresh */
+window.addEventListener("touchmove", function (e) { if (e.cancelable) e.preventDefault(); }, { passive: false });
+window.addEventListener("gesturestart", function (e) { e.preventDefault(); });
 window.addEventListener("blur", clearKeys);
 document.addEventListener("visibilitychange", function () { if (document.hidden) clearKeys(); });
 resetGame();

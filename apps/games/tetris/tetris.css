@@ -10,6 +10,9 @@ html, body {
   align-items: center;
   justify-content: center;
   user-select: none;
+  touch-action: none;
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
 }
 #wrap {
   display: flex;
@@ -43,3 +46,36 @@ kbd {
   font-size: 12px;
 }
 .muted { color: #aaa; font-size: 12px; }
+
+/* Portrait phones: stats on top in a compact row, board scaled to fit the screen */
+@media (max-aspect-ratio: 3/4) {
+  #wrap {
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: 100%;
+    padding: 8px;
+    justify-content: center;
+  }
+  #game {
+    height: min(calc(100dvh - 120px), calc((100vw - 20px) * 2));
+    width: auto;
+  }
+  #side {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px 14px;
+    min-width: 0;
+    font-size: 12px;
+    line-height: 1.2;
+    text-align: center;
+  }
+  #side h1 { display: none; }
+  #nextBox { width: 48px; height: 48px; margin: 0; }
+  #side .kbd-help { display: none; }
+  #side .muted:not(#status) { width: 100%; font-size: 11px; }
+  #status { width: 100%; margin: 0; }
+}

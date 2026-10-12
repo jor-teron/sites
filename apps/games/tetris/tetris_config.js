@@ -129,11 +129,23 @@ var TETRIS_CONFIG = {
     paused: "PAUSED",                             /* status while paused */
     gameOver: "GAME OVER — Enter / R to restart",         /* status on game over */
     helpHtml:                                     /* controls help (HTML) */
-      '<kbd>←</kbd> <kbd>→</kbd> move<br />' +
+      '<span class="kbd-help"><kbd>←</kbd> <kbd>→</kbd> move<br />' +
       '<kbd>↑</kbd> / <kbd>X</kbd> rotate<br />' +
       '<kbd>↓</kbd> soft drop<br />' +
       '<kbd>SPACE</kbd> hard drop<br />' +
       '<kbd>Enter</kbd> / <kbd>P</kbd> pause<br />' +
-      '<kbd>Esc</kbd> / <kbd>R</kbd> restart'
+      '<kbd>Esc</kbd> / <kbd>R</kbd> restart<br /><br /></span>' +
+      '<span class="touch-help">TOUCH: tap rotate · drag ←→ move · drag ↓ soft drop · flick ↓ hard drop · tap after game over = new game</span>'
+  },
+
+  /* Touch gestures (pointer events; no on-screen buttons) */
+  touch: {
+    tapMaxMs: 250,        /* a press shorter than this with little movement = tap (rotate) */
+    tapMaxMove: 10,       /* px of movement still counted as a tap */
+    axisLockPx: 10,       /* movement before the gesture locks to horizontal or vertical */
+    softDelayMs: 120,     /* downward drag held at least this long = soft drop */
+    flickMinPx: 40,       /* downward distance for a hard-drop flick */
+    flickMinSpeed: 0.6,   /* px/ms (recent or whole-gesture average) for a hard-drop flick */
+    flickMaxMs: 300       /* the whole flick must be quicker than this */
   }
 };
