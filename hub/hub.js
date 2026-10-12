@@ -32,6 +32,8 @@
   const menu = document.getElementById('menu');
   const frame = document.getElementById('app-frame');
   const empty = document.getElementById('empty');
+  const labBtn = document.getElementById('lab-btn');
+  const LAB_ENTRY = 'apps/lab/';
 
   const emptyText = document.getElementById('empty-text');
   const tilesEl = document.getElementById('tiles');
@@ -309,6 +311,65 @@
     menu.querySelectorAll('button.app').forEach((b) => {
       b.classList.toggle('active', b.dataset.entryUrl === app.entryUrl);
     });
+    updateLabBtn();
+  }
+
+  /* ---------- in-frame navigation (e.g. a Lab tile link) is remembered too ---------- */
+
+  function updateLabBtn() {
+    if (labBtn) labBtn.classList.toggle('active', currentEntry.indexOf(LAB_ENTRY) === 0);
+  }
+
+  /** Safe hub-relative path: no scheme, no "..", no leading slash. */
+  function safeRel(rel) {
+    return !!rel && !/^[a-z][a-z0-9+.-]*:/i.test(rel) && rel[0] !== '/' && rel.indexOf('..') < 0;
+  }
+
+  /** Id → app. "~path" ids are pages reached inside the frame that are not in hub_apps.js. */
+  function appForId(id) {
+    const known = idToApp.get(id);
+    if (known) return known;
+    if (id[0] !== '~' || !safeRel(id.slice(1))) return null;
+    const entryUrl = id.slice(1);
+    const name = entryUrl.replace(/\/+$/, '').split('/').pop().replace(/\.[a-z0-9]+$/i, '') || 'App';
+    const app = { category: '', name, entryUrl, newTab: false, hidden: true };
+    entryToId.set(entryUrl, id);
+    idToApp.set(id, app);
+    return app;
+  }
+
+  /** Frame finished loading: if it moved to another page by itself, remember that page. */
+  function trackFrame() {
+    if (!currentEntry) return;
+    let loc, doc;
+    try { loc = frame.contentWindow.location; doc = frame.contentDocument; } catch (_) { return; }
+    if (!loc || (loc.protocol !== 'http:' && loc.protocol !== 'https:' && loc.protocol !== 'file:')) return;
+    const base = location.pathname.replace(/[^/]*$/, '');
+    if (loc.pathname.indexOf(base) !== 0) return;
+    let rel;
+    try { rel = decodeURI(loc.pathname.slice(base.length)).replace(/index\.html$/i, ''); } catch (_) { return; }
+    if (!safeRel(rel) || rel === TXT_VIEWER) return;
+    const dir = rel.replace(/[^/]*$/, '');
+    const cur = currentEntry.split(/[?#]/)[0];
+    if (cur === rel || cur === dir) { updateLabBtn(); return; } // still the opened app
+    let app = null;
+    for (const a of apps) {
+      const e = a.entryUrl.split(/[?#]/)[0];
+      if (!a.newTab && (e === rel || e === dir)) { app = a; break; }
+    }
+    if (app) registerApp(app);
+    const id = app ? appIdFor(app.entryUrl) : '~' + rel;
+    if (!app) app = appForId(id);
+    if (!app) return;
+    currentEntry = app.entryUrl;
+    setHash(id, false);
+    storageSet(id);
+    const t = app.hidden && doc && doc.title ? doc.title : app.name;
+    document.title = 'Hub - ' + t;
+    menu.querySelectorAll('button.app').forEach((b) => {
+      b.classList.toggle('active', b.dataset.entryUrl === app.entryUrl);
+    });
+    updateLabBtn();
   }
 
   /** Back to the home screen: clears the hash, the saved app and the frame. */
@@ -323,15 +384,16 @@
     document.title = 'Hub';
     catLabel.textContent = HEADER_DEFAULT;
     menu.querySelectorAll('button.app').forEach((b) => b.classList.remove('active'));
+    updateLabBtn();
   }
 
   /** Hash (or, at start-up only, the saved app) → open it; unknown / empty → home. */
   function applyHash(fromStart) {
     const id = hashId();
-    let app = id ? idToApp.get(id) : null;
+    let app = id ? appForId(id) : null;
     if (!id && fromStart) {
       const saved = storageGet();
-      app = saved ? idToApp.get(saved) : null;
+      app = saved ? appForId(saved) : null;
       if (app) { loadApp(app, { forceFrame: true, replaceHash: true }); return; }
       if (saved) storageSet('');
     }
@@ -543,6 +605,11 @@
     w.addEventListener('keypress', grab, true);
   }
 
+  if (labBtn) labBtn.addEventListener('click', () => {
+    const lab = apps.find((a) => a.entryUrl === LAB_ENTRY) || appForId('~' + LAB_ENTRY);
+    loadApp(lab, { reload: true });
+  });
+
   catBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const open = !menu.classList.contains('open');
@@ -572,6 +639,7 @@
   hookFrameKeys();
   frame.addEventListener('load', () => {
     hookFrameKeys();
+    trackFrame();
     try {
       const doc = frame.contentDocument;
       // Hide scrollbars only (scrolling by touch / wheel / D-pad still works); once per doc.

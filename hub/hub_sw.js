@@ -8,7 +8,7 @@
  * so a phone never gets a stale copy after a push.
  * Bump CACHE when the shell list changes; old caches are deleted on activate.
  */
-const CACHE = 'hub-shell-v8';   // 2026-10-12c: Lab menu header opens the Lab tiles page
+const CACHE = 'hub-shell-v9';   // 2026-10-12d: Lab bar button, Hub remembers in-frame navigation
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',
