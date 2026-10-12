@@ -8,7 +8,7 @@
  * so a phone never gets a stale copy after a push.
  * Bump CACHE when the shell list changes; old caches are deleted on activate.
  */
-const CACHE = 'hub-shell-v14';  // 2026-10-12i: Mail + Print moved to apps/office/
+const CACHE = 'hub-shell-v15';  // 2026-10-12j: every menu category except Desktop/About opens a tiles page (shared/tiles)
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',

@@ -20,6 +20,7 @@
  */
 window.HUB_APPS_CSV = `
 CATEGORY, NAME,                  ENTRY_URL,                                  ICON_URL, NEW_TAB, HIDDEN, ORDER
+Favorite, Favorite Page,         apps/favorite/,                             ,         0,       0,      9
 Favorite, TV,                    tv/,                                        ,         0,       0,      10
 Favorite, Transcribe,            apps/tools/transcribe/,                     ,         0,       1,      20
 Favorite, Caption for NEI,       apps/tools/caption-for-nei/,                ,         0,       0,      70
@@ -44,6 +45,7 @@ Games,    Island (Alpha),        apps/games/island-alpha/,                   ,  
 Games,    Tower Defence,         apps/games/tower-defence/,                  ,         0,       0,      111
 Games,    Demolisher,            apps/games/demolisher/,                     ,         0,       0,      195
 
+Media,    Media Page,            apps/media/,                                ,         0,       0,      209
 Media,    TV,                    tv/,                                        ,         0,       0,      210
 Media,    Webcam,                apps/media/webcam/,                         ,         0,       0,      220
 Media,    3D Viewer,             apps/media/3d-viewer/,                      ,         0,       0,      240
@@ -52,6 +54,7 @@ Media,    Draw,                  apps/media/draw/,                           ,  
 Media,    Photo Editor,          apps/media/photo-editor/,                   ,         0,       0,      260
 Media,    Photo Editor v2,       apps/media/photo-editor-v2/,                ,         0,       0,      265
 
+Office,   Office Page,           apps/office/,                               ,         0,       0,      309
 Office,   Spreadsheet,           apps/office/spreadsheet/,                   ,         0,       0,      320
 Office,   Draftly,               apps/office/draftly/,                       ,         0,       0,      310
 Office,   OCR,                   apps/office/ocr/,                           ,         0,       0,      360
@@ -62,10 +65,12 @@ Office,   Print,                 apps/office/print/,                         ,  
 Office,   Mail,                  apps/office/mail/,                          ,         0,       0,      470
 Office,   Paper Scan,            apps/office/paper-scan/,                    ,         0,       0,      480
 
+Connectivity,Connectivity Page,     apps/connectivity/,                         ,         0,       0,      404
 Connectivity, File Drop,         apps/connectivity/filedrop/,                ,         0,       0,      405
 Connectivity, QR Scanner,        apps/connectivity/qr-scanner/,              ,         0,       0,      406
 Connectivity, Pooh Chat,         apps/connectivity/pooh-chat/,               ,         0,       0,      450
 
+Tools,    Tools Page,            apps/tools/,                                ,         0,       0,      409
 Tools,    Calculator,            apps/tools/calculator/,                     ,         0,       0,      410
 Tools,    Calculator (Beta),     apps/tools/calculator-beta/,                ,         0,       0,      411
 Tools,    NE-India Dictionary,   apps/tools/nei-dict/,                       ,         0,       0,      430

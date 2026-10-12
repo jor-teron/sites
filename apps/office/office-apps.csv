@@ -1,0 +1,12 @@
+# Office — generated from hub/hub_apps.js (Office rows, hidden ones left out). Keep in step with it.
+# name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop)
+name, path, icon, newtab
+Draftly, draftly/, , 
+Spreadsheet, spreadsheet/, , 
+OCR, ocr/, , 
+MS Word Diff, ../tools/msword_diff/, , 
+Notepad, notepad/, , 
+Notely, notely/, , 
+Print, print/, , 
+Mail, mail/, , 
+Paper Scan, paper-scan/, , 

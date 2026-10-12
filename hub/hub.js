@@ -36,7 +36,10 @@
   const labLabelName = document.getElementById('lab-label-name');
   const gamebarEl = document.getElementById('gamebar');
   /** Categories whose menu header opens a tiles page instead of expanding (CATEGORY → ENTRY_URL). */
-  const CAT_PAGES = { Lab: 'apps/lab/', Games: 'apps/games/' };
+  const CAT_PAGES = {
+    Favorite: 'apps/favorite/', Games: 'apps/games/', Media: 'apps/media/', Office: 'apps/office/',
+    Connectivity: 'apps/connectivity/', Tools: 'apps/tools/', Lab: 'apps/lab/'
+  };   // Desktop and About still expand as lists
 
   const emptyText = document.getElementById('empty-text');
   const tilesEl = document.getElementById('tiles');
@@ -340,10 +343,13 @@
       else window.localStorage.removeItem(FROM_CAT_KEY);
     } catch (_) { /* ignore */ }
   }
-  /** Category whose folder holds the current frame entry ('' = none). */
+  /** Category whose tiles page IS this entry ('' = none). Apps are labelled by fromCat, not by
+   *  folder, so e.g. Phone (apps/media/) opened from Lab says Lab, and apps/tools/learning-html
+   *  opened from the Desktop menu shows no label. */
   function catOf(entry) {
     if (!entry) return '';
-    for (const c in CAT_PAGES) if (entry.indexOf(CAT_PAGES[c]) === 0) return c;
+    const e = entry.split(/[?#]/)[0].replace(/index\.html$/i, '');
+    for (const c in CAT_PAGES) if (e === CAT_PAGES[c]) return c;
     return '';
   }
   /** Bar label: the category name on its tiles page, else the app name; hidden elsewhere or when the app has its own bar. */

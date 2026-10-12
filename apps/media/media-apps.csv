@@ -1,0 +1,10 @@
+# Media — generated from hub/hub_apps.js (Media rows, hidden ones left out). Keep in step with it.
+# name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop)
+name, path, icon, newtab
+TV, ../../tv/, , 
+Webcam, webcam/, , 
+Draw, draw/, , 
+Paint, paint/, , 
+3D Viewer, 3d-viewer/, , 
+Photo Editor, photo-editor/, , 
+Photo Editor v2, photo-editor-v2/, , 

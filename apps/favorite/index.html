@@ -1,0 +1,18 @@
+<!doctype html>
+<!--
+  Favorite page (apps/favorite/index.html) — the Hub Favorite menu category opens this tiles page.
+  Tiles from favorite-apps.csv; shared logic and look in shared/tiles/ (tiles.js, tiles.css).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Favorite</title>
+  <link rel="stylesheet" href="../../shared/tiles/tiles.css?v=20261012a" />
+</head>
+<body data-csv="favorite-apps.csv">
+  <main id="grid" class="grid" aria-label="Favorite"></main>
+  <p id="msg" class="msg" hidden></p>
+  <script src="../../shared/tiles/tiles.js?v=20261012a"></script>
+</body>
+</html>
