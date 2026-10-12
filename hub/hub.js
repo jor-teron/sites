@@ -38,8 +38,9 @@
   /** Categories whose menu header opens a tiles page instead of expanding (CATEGORY → ENTRY_URL). */
   const CAT_PAGES = {
     Favorite: 'apps/favorite/', Games: 'apps/games/', Media: 'apps/media/', Office: 'apps/office/',
-    Connectivity: 'apps/connectivity/', Tools: 'apps/tools/', Lab: 'apps/lab/'
-  };   // Desktop and About still expand as lists
+    Connectivity: 'apps/connectivity/', Tools: 'apps/tools/', Lab: 'apps/lab/',
+    Desktop: 'apps/tools/vDesktop/'   // Desktop opens vDesktop directly (its NEW_TAB row = own tab)
+  };
 
   const emptyText = document.getElementById('empty-text');
   const tilesEl = document.getElementById('tiles');
