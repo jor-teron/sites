@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Paper Notebook</title>
 <!--
   Project: notebook
@@ -10,7 +10,7 @@
   Role: Markup only. Paper Notebook: 50 pages, LocalStorage, no undo, crumble page, PNG/PDF export.
   Scripts are plain (no build step) and share globals; order matters (store first, notebook.js last).
 -->
-<link rel="stylesheet" href="notebook.css?v=20261012n">
+<link rel="stylesheet" href="notebook.css?v=20261012o">
 </head>
 <body>
 <div id="main">
@@ -29,13 +29,9 @@
     <p class="note">50 pages · saved in this browser · no undo</p>
     <h3>About</h3>
     <p><b>Paper Notebook</b> — a 50-page sketch pad for finger, mouse or pen. Pages can be crumpled, never erased.</p>
+    <p>Button: <button type="button" id="togPos" class="inkBtn">bottom</button> · Swap gestures: <button type="button" id="togSwap" class="inkBtn">off</button></p>
     <h3>How to</h3>
-    <ul>
-      <li>swipe ☰ left / right → turn the page</li>
-      <li>pull ☰ up → all pages</li>
-      <li>pull ☰ down → crumple this page</li>
-      <li>hold ☰ → quick menu (PNG, this page)</li>
-    </ul>
+    <ul id="howTo"></ul>
     <h3>Tips</h3>
     <ul>
       <li>pull past a third of the screen — the jelly glows when it will fire</li>
@@ -57,18 +53,18 @@
 </div>
 
 <script src="vendor/jspdf.umd.min.js"></script>
-<script src="nb_store.js?v=20261012n"></script>
-<script src="nb_wrinkle.js?v=20261012n"></script>
-<script src="nb_cover.js?v=20261012n"></script>
-<script src="nb_canvas.js?v=20261012n"></script>
-<script src="nb_pages.js?v=20261012n"></script>
-<script src="nb_draw.js?v=20261012n"></script>
-<script src="nb_export.js?v=20261012n"></script>
-<script src="nb_settings.js?v=20261012n"></script>
-<script src="nb_jelly.js?v=20261012n"></script>
-<script src="nb_popup.js?v=20261012n"></script>
-<script src="nb_curl.js?v=20261012n"></script>
-<script src="nb_float.js?v=20261012n"></script>
-<script src="notebook.js?v=20261012n"></script>
+<script src="nb_store.js?v=20261012o"></script>
+<script src="nb_wrinkle.js?v=20261012o"></script>
+<script src="nb_cover.js?v=20261012o"></script>
+<script src="nb_canvas.js?v=20261012o"></script>
+<script src="nb_pages.js?v=20261012o"></script>
+<script src="nb_draw.js?v=20261012o"></script>
+<script src="nb_export.js?v=20261012o"></script>
+<script src="nb_settings.js?v=20261012o"></script>
+<script src="nb_jelly.js?v=20261012o"></script>
+<script src="nb_popup.js?v=20261012o"></script>
+<script src="nb_curl.js?v=20261012o"></script>
+<script src="nb_float.js?v=20261012o"></script>
+<script src="notebook.js?v=20261012o"></script>
 </body>
 </html>

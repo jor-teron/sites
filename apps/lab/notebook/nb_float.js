@@ -3,9 +3,10 @@
  * File: nb_float.js
  * Role: Floating button gestures (pointer events + pointer capture, works on Android Chrome):
  *   tap = nothing; HOLD still ~500 ms = quick menu popup (nb_popup.js);
- *   release past 1/3 of the screen ("armed", jelly glows): swipe right / left = next / previous
- *   page, pull UP = pages grid, pull DOWN = crumple +1 level (cap 10) with a jiggle.
- *   Shorter pulls = jelly play only. Horizontal drags drive the page curl (nb_curl.js). Feedback is the jelly blob (nb_jelly.js).
+ *   release past 1/3 of the screen ("armed", jelly glows), book style: drag LEFT = next page,
+ *   RIGHT = previous, UP = pages grid, DOWN = crumple (+1 level). "Swap gestures" on page 49
+ *   flips left<->right and up<->down (gestureFor in nb_store.js).
+ *   Shorter pulls = jelly play only. Horizontal drags drive the page curl (nb_curl.js).
  */
 // Visual feedback (floatFollow / floatRelease / floatShake / floatPress) lives in nb_jelly.js;
 // no-op stand-ins below keep gestures working if that file failed to load.
@@ -28,11 +29,9 @@ function armDistance() { return Math.min(window.innerWidth, window.innerHeight) 
 function floatAction(dx, dy) {
   const need = armDistance();
   if (Math.abs(dx) >= Math.abs(dy)) {
-    if (Math.abs(dx) >= need) return dx > 0 ? 'next' : 'prev';
-  } else if (-dy >= need) {
-    return 'grid';
-  } else if (dy >= need) {
-    return 'crumple';
+    if (Math.abs(dx) >= need) return gestureFor(dx > 0 ? 'right' : 'left');
+  } else if (Math.abs(dy) >= need) {
+    return gestureFor(dy < 0 ? 'up' : 'down');
   }
   return '';
 }
@@ -80,8 +79,8 @@ function onFloatMove(e) {
   if (!floatMoved) return;                 // jitter while holding: ignore
   floatFollow(dx, dy);
   floatArm(!!floatAction(dx, dy));
-  // page curl follows horizontal swipes (right = next, left = previous)
-  if (Math.abs(dx) > Math.abs(dy)) curlUpdate(dx > 0 ? 'next' : 'prev', Math.abs(dx) / armDistance());
+  // page curl follows horizontal swipes (book style: left = next, right = previous; swappable)
+  if (Math.abs(dx) > Math.abs(dy)) curlUpdate(gestureFor(dx > 0 ? 'right' : 'left'), Math.abs(dx) / armDistance());
   else curlUpdate('', 0);
 }
 
@@ -96,7 +95,8 @@ function onFloatUp(e) {
   if (floatHeld || !floatMoved) { curlFinish(false); return; }   // hold = popup open; tap = nothing
   const act = floatAction(dx, dy);
   if (act === 'next' || act === 'prev') {
-    const to = currentPage + (act === 'next' ? 1 : -1);
+    const base = curlFrom >= 0 ? curlFrom : currentPage;   // during a curl the target is already shown
+    const to = base + (act === 'next' ? 1 : -1);
     curlFinish(true, () => goToPage(to));
     return;
   }

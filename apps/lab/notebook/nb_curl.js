@@ -4,8 +4,8 @@
  * Role: Page-curl animation driven by a horizontal drag on ☰ (no libraries, CSS clip-path only).
  *   On the first horizontal move a copy of the page canvas is taken (#curlPage). The drag
  *   progress folds a corner: the page is clipped along a fold line and the lifted flap (#curlFlap,
- *   the paper's back with a soft shadow) is the reflected corner. Swipe right = next page folds the
- *   bottom-right corner, swipe left = previous folds the bottom-left. Release past the armed
+ *   the paper's back with a soft shadow) is the reflected corner. The real target page is rendered on the
+ *   main canvas underneath. Next folds the bottom-right corner, previous the bottom-left. Release past the armed
  *   distance completes the flip, else it springs back. No curl past the first / last page.
  */
 const curlEl = document.getElementById('curl');
@@ -14,14 +14,25 @@ const curlFlap = document.getElementById('curlFlap');
 let curlDir = '';        // 'next' | 'prev' | ''
 let curlP = 0;           // 0 = flat … 1 = armed … ~1.9 = gone
 let curlAnim = 0;
+let curlFrom = -1;       // page under the finger when the curl started (restored on cancel)
 
+// Copy the current page onto the lifting sheet, then render the REAL target page on the main
+// canvas underneath (lines, strokes, number, wrinkles, covers / index / page 49 layers).
 function curlStart(dir) {
   const target = currentPage + (dir === 'next' ? 1 : -1);
   if (target < 0 || target >= TOTAL_PAGES) return false;
   curlDir = dir;
   curlPage.width = canvas.width;
   curlPage.height = canvas.height;
-  curlPage.getContext('2d').drawImage(canvas, 0, 0);
+  const pc = curlPage.getContext('2d');
+  pc.drawImage(canvas, 0, 0);
+  const wr = document.querySelector('#wrinkle svg');   // current wrinkles onto the sheet too
+  if (wr) wrinkleImage(currentPage, canvas.width, canvas.height).then((img) => {
+    if (img && curlDir === dir) { pc.globalCompositeOperation = 'multiply'; pc.drawImage(img, 0, 0); pc.globalCompositeOperation = 'source-over'; }
+  });
+  curlFrom = currentPage;
+  currentPage = target;
+  redraw();
   curlEl.hidden = false;
   return true;
 }
@@ -62,11 +73,14 @@ function curlUpdate(dir, p) {
   curlDraw(curlP);
 }
 
-function curlEnd() {
+// Hide the curl; restore = put the original page back (cancelled curl).
+function curlEnd(restore) {
   if (curlAnim) cancelAnimationFrame(curlAnim);
   curlAnim = 0;
   curlDir = '';
   curlEl.hidden = true;
+  if (restore !== false && curlFrom >= 0 && currentPage !== curlFrom) { currentPage = curlFrom; redraw(); }
+  curlFrom = -1;
 }
 
 // Release: complete (then onDone, e.g. goToPage) or spring back.
@@ -74,7 +88,7 @@ function curlFinish(complete, onDone) {
   if (!curlDir) { if (onDone) onDone(); return; }
   const from = curlP, to = complete ? 1.95 : 0;
   const t0 = performance.now(), dur = complete ? 260 : 220;
-  if (complete && onDone) onDone();            // new page renders under the lifting sheet
+  if (complete) { if (onDone) onDone(); curlFrom = -1; }   // target already under the sheet
   const step = (now) => {
     const k = Math.min(1, (now - t0) / dur);
     const e = complete ? k * k : 1 - Math.pow(1 - k, 3);

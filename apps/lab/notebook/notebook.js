@@ -38,6 +38,7 @@ canvas.addEventListener('touchmove', e => e.preventDefault(), { passive: false }
 window.addEventListener('resize', resizeCanvas);
 loadFromStorage();
 loadCrumple();
+applyPrefs();
 try { buildJelly(); } catch (e) { console.warn('Jelly button failed, using plain button', e); }
 updatePageInfo();
 resizeCanvas();

@@ -1,7 +1,8 @@
 /*
  * Project: notebook
  * File: nb_store.js
- * Role: Shared state (pages, current page, canvas refs) and LocalStorage load/save. Keys paperNotebook_v2 (pages), paperNotebook_pen (pen colour).
+ * Role: Shared state (pages, current page, canvas refs) and LocalStorage load/save. Keys paperNotebook_v2 (pages), paperNotebook_pen (pen colour),
+ *   paperNotebook_btnPos (bottom|top), paperNotebook_swap (1|0).
  */
 // Total number of pages (fixed, light version)
 const TOTAL_PAGES = 50;
@@ -18,6 +19,22 @@ function setPen(name) {
   if (!PEN_COLORS[name]) return;
   penName = name;
   try { localStorage.setItem(PEN_KEY, name); } catch (_) { /* ignore */ }
+}
+
+// Button position ('bottom' default | 'top') and swapped gestures, saved separately
+const BTNPOS_KEY = 'paperNotebook_btnPos';
+const SWAP_KEY = 'paperNotebook_swap';
+let btnTop = false, swapGestures = false;
+try { btnTop = localStorage.getItem(BTNPOS_KEY) === 'top'; swapGestures = localStorage.getItem(SWAP_KEY) === '1'; } catch (_) { /* ignore */ }
+function savePrefs() {
+  try { localStorage.setItem(BTNPOS_KEY, btnTop ? 'top' : 'bottom'); localStorage.setItem(SWAP_KEY, swapGestures ? '1' : '0'); } catch (_) { /* ignore */ }
+}
+// Direction → action. Book style: drag left = next, right = previous, up = grid, down = crumple.
+function gestureFor(dir) {
+  const m = swapGestures
+    ? { left: 'prev', right: 'next', up: 'crumple', down: 'grid' }
+    : { left: 'next', right: 'prev', up: 'grid', down: 'crumple' };
+  return m[dir] || '';
 }
 
 // Current page index (0-based)
