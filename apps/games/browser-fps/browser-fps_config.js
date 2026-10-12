@@ -311,8 +311,8 @@ window.BROWSER_FPS_CONFIG = {
   // Which model module to use for each asset slot (see assets/README.md).
   // A value is a built-in id ('guns/rifle_hq') or { glb: 'assets/…/model.glb', fallback: 'guns/rifle_hq', scale: 1 }.
   assets: {
-    gun: 'guns/rifle_hq',
-    arms: 'characters/arms_hq',
+    gun: 'guns/rifle_mk2',                // or 'guns/rifle_hq' / 'guns/rifle_basic'
+    arms: 'characters/arms_mk2',          // or 'characters/arms_hq' / 'characters/arms_basic'
     enemy: 'enemies/soldier_mk3',         // or 'enemies/soldier_mk2' / 'enemies/soldier_hq' / 'enemies/humanoid_basic'
     medkit: 'pickups/medkit_basic',
     grenade: 'weapons/grenade_frag',           // thrown grenade

@@ -5,8 +5,8 @@ Models are ES modules (code-built with Three.js) or optional `.glb` files, chose
 
 ```js
 assets: {
-  gun:    'guns/rifle_hq',            // or 'guns/rifle_basic'
-  arms:   'characters/arms_hq',       // or 'characters/arms_basic'
+  gun:    'guns/rifle_mk2',           // or 'guns/rifle_hq' / 'guns/rifle_basic'
+  arms:   'characters/arms_mk2',      // or 'characters/arms_hq' / 'characters/arms_basic'
   enemy:  'enemies/soldier_mk3',      // or 'enemies/soldier_mk2' / 'enemies/soldier_hq' / 'enemies/humanoid_basic'
   medkit: 'pickups/medkit_basic',
   grenade: 'weapons/grenade_frag',        // thrown grenade: build() -> Group (origin at centre)
