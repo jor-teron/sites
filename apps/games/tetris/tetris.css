@@ -13,6 +13,7 @@ html, body {
   touch-action: none;
   overscroll-behavior: none;
   -webkit-touch-callout: none;
+  overflow: hidden;
 }
 #wrap {
   display: flex;
@@ -57,11 +58,9 @@ kbd {
     height: 100%;
     padding: 8px;
     justify-content: center;
+    overflow: hidden;
   }
-  #game {
-    height: min(calc(100dvh - 120px), calc((100vw - 20px) * 2));
-    width: auto;
-  }
+  #game { flex: 0 0 auto; }   /* size set by fitBoard() in tetris_logic.js */
   #side {
     display: flex;
     flex-wrap: wrap;

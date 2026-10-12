@@ -135,7 +135,7 @@ var TETRIS_CONFIG = {
       '<kbd>SPACE</kbd> hard drop<br />' +
       '<kbd>Enter</kbd> / <kbd>P</kbd> pause<br />' +
       '<kbd>Esc</kbd> / <kbd>R</kbd> restart<br /><br /></span>' +
-      '<span class="touch-help">TOUCH: tap rotate · drag ←→ move · drag ↓ soft drop · flick ↓ hard drop · tap after game over = new game</span>'
+      '<span class="touch-help">TOUCH: tap rotate · drag ←→ move · drag ↓ soft drop · flick ↓ or swipe ↑ hard drop · tap after game over = new game</span>'
   },
 
   /* Touch gestures (pointer events; no on-screen buttons) */
@@ -146,6 +146,8 @@ var TETRIS_CONFIG = {
     softDelayMs: 120,     /* downward drag held at least this long = soft drop */
     flickMinPx: 40,       /* downward distance for a hard-drop flick */
     flickMinSpeed: 0.6,   /* px/ms (recent or whole-gesture average) for a hard-drop flick */
-    flickMaxMs: 300       /* the whole flick must be quicker than this */
+    flickMaxMs: 300,      /* the whole flick must be quicker than this */
+    swipeUpMinPx: 40,     /* upward swipe distance for hard drop */
+    swipeUpMaxMs: 600     /* upward swipe must be quicker than this */
   }
 };

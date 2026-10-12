@@ -179,6 +179,8 @@ function fits(piece, rot, ox, oy) {
  * Move next into current and roll a new next. End the game if spawn is blocked.
  * --------------------------------------------------------------------------- */
 function spawn() {
+  /* A touch gesture in progress belongs to the previous piece: stop soft drop / steering */
+  if (gesture) { gesture.done = true; softDrop = false; }
   current = nextPiece || makePiece(takeFromBag());
   nextPiece = makePiece(takeFromBag());
   current.x = CFG.board.spawnX;
@@ -574,7 +576,8 @@ function cellPx() {
 function onPointerDown(e) {
   if (gesture) return;
   gesture = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(),
-    anchorX: e.clientX, axis: null, moved: false, samples: [[performance.now(), e.clientY]] };
+    anchorX: e.clientX, axis: null, moved: false, samples: [[performance.now(), e.clientY]],
+    piece: current, done: false };
   if (e.cancelable) e.preventDefault();
 }
 
@@ -590,7 +593,9 @@ function onPointerMove(e) {
   if (!g.axis && Math.max(Math.abs(dx), Math.abs(dy)) >= CFG.touch.axisLockPx) {
     g.axis = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
   }
-  if (gameOver || paused) return;
+  if (gameOver || paused || g.done) return;
+  /* The piece locked mid-gesture: don't steer / soft-drop the next piece until the finger lifts */
+  if (current !== g.piece) { g.done = true; softDrop = false; return; }
   if (g.axis === "h") {
     var c = cellPx();
     while (e.clientX - g.anchorX >= c) { tryMove(1, 0); g.anchorX += c; }
@@ -608,13 +613,19 @@ function onPointerUp(e) {
   if (e.type === "pointercancel") return;
   var now = performance.now();
   var dt = now - g.t0, dy = e.clientY - g.y0;
-  if (!g.moved && dt < CFG.touch.tapMaxMs) {
+  /* Tap only if the finger never left the tap radius (a drag that returns home is not a tap) */
+  if (!g.moved && !g.axis && dt < CFG.touch.tapMaxMs) {
     if (gameOver) { resetGame(); return; }
     if (paused) { paused = false; elStatus.textContent = ""; return; }
     tryRotate();
     return;
   }
-  if (gameOver || paused || g.axis !== "v") return;
+  if (gameOver || paused || g.done || g.axis !== "v" || current !== g.piece) return;
+  /* Swipe up (any speed, but reasonably quick) = hard drop */
+  if (dy <= -CFG.touch.swipeUpMinPx && dt <= CFG.touch.swipeUpMaxMs) {
+    hardDrop();
+    return;
+  }
   var s0 = g.samples[0];
   /* speed: the faster of the recent (~80 ms) and the whole-gesture average */
   var v = Math.max((e.clientY - s0[1]) / Math.max(1, now - s0[0]), dy / Math.max(1, dt));
@@ -623,10 +634,30 @@ function onPointerUp(e) {
   }
 }
 
+/* -----------------------------------------------------------------------------
+ * fitBoard
+ * Portrait phones: size the board to the space left under the stats row so the
+ * page never overflows (390x844, 360x800, short screens with browser bars).
+ * --------------------------------------------------------------------------- */
+function fitBoard() {
+  var portrait = window.matchMedia("(max-aspect-ratio: 3/4)").matches;
+  if (!portrait) { canvas.style.height = ""; canvas.style.width = ""; return; }
+  var vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  var vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+  var side = document.getElementById("side");
+  var avail = vh - side.offsetHeight - 8 /* gap */ - 16 /* padding */ - 4 /* border */;
+  var h = Math.floor(Math.max(120, Math.min(avail, (vw - 20) * ROWS / COLS)));
+  canvas.style.height = h + "px";
+  canvas.style.width = Math.floor(h * COLS / ROWS) + "px";
+}
+
 /* --- Wire events and start --- */
 window.addEventListener("keydown", onKeyDown);
 window.addEventListener("keyup", onKeyUp);
 window.addEventListener("pointerdown", onPointerDown);
+window.addEventListener("resize", fitBoard);
+window.addEventListener("orientationchange", function () { setTimeout(fitBoard, 100); });
+if (window.visualViewport) window.visualViewport.addEventListener("resize", fitBoard);
 window.addEventListener("pointermove", onPointerMove);
 window.addEventListener("pointerup", onPointerUp);
 window.addEventListener("pointercancel", onPointerUp);
@@ -636,4 +667,5 @@ window.addEventListener("gesturestart", function (e) { e.preventDefault(); });
 window.addEventListener("blur", clearKeys);
 document.addEventListener("visibilitychange", function () { if (document.hidden) clearKeys(); });
 resetGame();
+fitBoard();
 requestAnimationFrame(tick);
