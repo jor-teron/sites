@@ -30,10 +30,10 @@
 */
 
 /* localStorage key for the last station code. */
-const LAST_CODE_KEY = HUB_MODE ? 'jtprint-last-hub-code' : 'jtprint-last-code';
+const LAST_CODE_KEY = 'jtprint-last-code';
 
 /* localStorage key holding the code while linked (cleared by manual Disconnect). */
-const LINKED_KEY = HUB_MODE ? 'jtprint-hub-linked' : 'jtprint-linked';
+const LINKED_KEY = 'jtprint-linked';
 
 /* localStorage key for the sent list. */
 const SENT_KEY = 'jtprint-sent';
@@ -239,10 +239,7 @@ function openConn(code) {
   pendingCode = '';
   let c = null;
   try {
-    const opts = { reliable: true, serialization: 'json' };
-    /* SharedLink device (Hub and, since release 3, the standalone station): listed by name. */
-    opts.metadata = { kind: 'link', name: window.SharedLinkDevices ? SharedLinkDevices.name() : 'Phone' };
-    c = peer.connect(PEER_PREFIX + code, opts);
+    c = peer.connect(PEER_PREFIX + code, { reliable: true, serialization: 'json' });
   } catch (err) {
     c = null;
   }
@@ -624,9 +621,7 @@ function bindJoin() {
     connectTo(lastCode);
   });
   el('code-input').addEventListener('input', function () {
-    const clean = HUB_MODE
-      ? this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8)
-      : this.value.replace(/[^0-9]/g, '').slice(0, 4);
+    const clean = this.value.replace(/[^0-9]/g, '').slice(0, 4);
     if (clean !== this.value) {
       this.value = clean;
     }
@@ -762,8 +757,5 @@ function startSender() {
 
 /* Boot only on the sender page. */
 if (PAGE === 'send') {
-  /* PeerJS comes from SharedLink's pinned CDN loader. */
-  SharedLink.loadPeer().catch(function () {
-    setStatus('Could not load PeerJS. Check internet.');
-  }).then(startSender);
+  startSender();
 }
