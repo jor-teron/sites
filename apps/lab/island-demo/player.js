@@ -238,10 +238,24 @@ export function createPlayer(scene, camera) {
 }
 
 function fitHeight(root, meters) {
+  /* skinned meshes: measure the bind pose, not unset bone matrices */
+  root.updateMatrixWorld(true);
+  root.traverse((o) => {
+    if (o.isSkinnedMesh) {
+      o.skeleton.update();
+      o.computeBoundingBox();
+    }
+  });
   const box = new THREE.Box3().setFromObject(root);
   const h = box.max.y - box.min.y || 1;
   root.scale.multiplyScalar(meters / h);
   root.updateMatrixWorld(true);
+  root.traverse((o) => {
+    if (o.isSkinnedMesh) {
+      o.skeleton.update();
+      o.computeBoundingBox();
+    }
+  });
   const fitted = new THREE.Box3().setFromObject(root);
   root.position.y -= fitted.min.y;
   root.userData.footLift = root.position.y;
