@@ -533,12 +533,19 @@ function hasLineOfSight(en) {
   return wallHit(aiFrom, aiDir) > dist;
 }
 
-function enemyFire(en) {
+/** Distance falloff: damageNear at <= falloffNear, linearly down to damageFar at >= falloffFar. */
+function damageAt(d) {
+  const u = Math.max(0, Math.min(1, (d - AI.falloffNear) / (AI.falloffFar - AI.falloffNear)));
+  return Math.round(AI.damageNear + (AI.damageFar - AI.damageNear) * u);
+}
+
+function enemyFire(en, spreadMult = 1) {
   const from = en.muzzleWorld(aiFrom);
   playerCenter.set(player.pos.x, player.pos.y - PLAYER_HEIGHT * 0.4, player.pos.z);
   aiDir.subVectors(playerCenter, from).normalize();
   // aim error
-  const e = new THREE.Euler((Math.random() * 2 - 1) * AI.spread, (Math.random() * 2 - 1) * AI.spread, 0, 'YXZ');
+  const sp = AI.spread * spreadMult;
+  const e = new THREE.Euler((Math.random() * 2 - 1) * sp, (Math.random() * 2 - 1) * sp, 0, 'YXZ');
   aiDir.applyEuler(e).normalize();
   const tWall = wallHit(from, aiDir);
   playerCenter.y = player.pos.y - PLAYER_HEIGHT / 2;
@@ -548,21 +555,170 @@ function enemyFire(en) {
   aiTo.copy(from).addScaledVector(aiDir, dist);
   spawnTracer(from, aiTo, AI.tracerColor);
   en.showMuzzleFlash();
-  if (hit) damagePlayer(AI.damage, AI.flashMs);
+  if (hit) damagePlayer(damageAt(Math.hypot(player.pos.x - from.x, player.pos.z - from.z)), AI.flashMs);
+}
+
+// ─── Enemy movement: flow field toward the player + sliding collision ───────
+// Grid over the arena; cells blocked by cover/walls (inflated by the enemy radius).
+// BFS from the player's cell gives each free cell a step count; enemies walk downhill.
+const GRID = AI.gridCell;
+const GW = Math.ceil(ARENA.w / GRID), GD = Math.ceil(ARENA.d / GRID);
+const blocked = new Uint8Array(GW * GD);
+const field = new Int32Array(GW * GD);
+let fieldT = 0;
+const cellX = (x) => Math.max(0, Math.min(GW - 1, Math.floor((x + ARENA.w / 2) / GRID)));
+const cellZ = (z) => Math.max(0, Math.min(GD - 1, Math.floor((z + ARENA.d / 2) / GRID)));
+const cellCx = (i) => -ARENA.w / 2 + (i + 0.5) * GRID;
+const cellCz = (j) => -ARENA.d / 2 + (j + 0.5) * GRID;
+
+/** Static cover/wall boxes (not the floor, not targets). */
+let solidCache = null;
+function solidBoxes() {
+  // cover / walls never change: cache the list once
+  if (!solidCache) solidCache = colliders.filter((c) => !c.target && !c.disabled && c.max.y > 0.05);
+  return solidCache;
+}
+
+/** Does a body of radius r at (x, z) overlap any cover/wall box? */
+function hitsCover(x, z, r) {
+  for (const c of solidBoxes()) {
+    if (x + r > c.min.x && x - r < c.max.x && z + r > c.min.z && z - r < c.max.z) return true;
+  }
+  return false;
+}
+
+function buildBlocked() {
+  const r = AI.radius + 0.05;
+  for (let j = 0; j < GD; j++) for (let i = 0; i < GW; i++) {
+    blocked[j * GW + i] = hitsCover(cellCx(i), cellCz(j), r) ? 1 : 0;
+  }
+}
+
+function buildField() {
+  field.fill(-1);
+  let pi = cellX(player.pos.x), pj = cellZ(player.pos.z);
+  const q = new Int32Array(GW * GD);
+  let head = 0, tail = 0;
+  // if the player stands on/inside an inflated cell, seed from the nearest free neighbours
+  const seed = (i, j) => { const k = j * GW + i; if (!blocked[k] && field[k] < 0) { field[k] = 0; q[tail++] = k; } };
+  seed(pi, pj);
+  for (let rr = 1; tail === 0 && rr < 6; rr++) {
+    for (let dj = -rr; dj <= rr; dj++) for (let di = -rr; di <= rr; di++) {
+      const i = pi + di, j = pj + dj;
+      if (i >= 0 && j >= 0 && i < GW && j < GD) seed(i, j);
+    }
+  }
+  while (head < tail) {
+    const k = q[head++], i = k % GW, j = (k - i) / GW, d = field[k] + 1;
+    if (i > 0 && !blocked[k - 1] && field[k - 1] < 0) { field[k - 1] = d; q[tail++] = k - 1; }
+    if (i < GW - 1 && !blocked[k + 1] && field[k + 1] < 0) { field[k + 1] = d; q[tail++] = k + 1; }
+    if (j > 0 && !blocked[k - GW] && field[k - GW] < 0) { field[k - GW] = d; q[tail++] = k - GW; }
+    if (j < GD - 1 && !blocked[k + GW] && field[k + GW] < 0) { field[k + GW] = d; q[tail++] = k + GW; }
+  }
+}
+
+/** Unit direction (dx, dz) to walk from (x, z) toward the player along the field. */
+const steerOut = { x: 0, z: 0 };
+function steer(x, z) {
+  const i = cellX(x), j = cellZ(z), k = j * GW + i;
+  let best = field[k] >= 0 ? field[k] : 1e9, bi = -1, bj = -1;
+  for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+    if (!di && !dj) continue;
+    const ni = i + di, nj = j + dj;
+    if (ni < 0 || nj < 0 || ni >= GW || nj >= GD) continue;
+    const nk = nj * GW + ni;
+    if (blocked[nk] || field[nk] < 0) continue;
+    if (di && dj && (blocked[j * GW + ni] || blocked[nj * GW + i])) continue;   // no corner cutting
+    const v = field[nk] + (di && dj ? 0.4 : 0);
+    if (v < best) { best = v; bi = ni; bj = nj; }
+  }
+  if (bi < 0) {   // already at the bottom (or no path): head straight for the player
+    steerOut.x = player.pos.x - x; steerOut.z = player.pos.z - z;
+  } else {
+    steerOut.x = cellCx(bi) - x; steerOut.z = cellCz(bj) - z;
+  }
+  const l = Math.hypot(steerOut.x, steerOut.z) || 1;
+  steerOut.x /= l; steerOut.z /= l;
+  return steerOut;
+}
+
+/** Is (x, z) free for enemy `self` (cover, walls, other enemies, the player)? */
+function enemySpotFree(self, x, z) {
+  const r = AI.radius;
+  const lim = ARENA.w / 2 - r - 0.3, limZ = ARENA.d / 2 - r - 0.3;
+  if (x < -lim || x > lim || z < -limZ || z > limZ) return false;
+  if (hitsCover(x, z, r + 0.02)) return false;
+  for (const o of enemies) {
+    if (o === self || !o.alive) continue;
+    const p = o.group.position;
+    if (Math.hypot(p.x - x, p.z - z) < r * 2 + 0.1) return false;
+  }
+  return Math.hypot(player.pos.x - x, player.pos.z - z) >= r + PLAYER_RADIUS + 0.3;
+}
+
+/** Slide: try the full move, else each axis separately. Returns distance actually moved. */
+function moveEnemy(en, vx, vz, dt) {
+  const p = en.group.position;
+  const x0 = p.x, z0 = p.z;
+  const nx = p.x + vx * dt, nz = p.z + vz * dt;
+  if (enemySpotFree(en, nx, nz)) en.moveTo(nx, nz);
+  else if (enemySpotFree(en, nx, p.z)) en.moveTo(nx, p.z);
+  else if (enemySpotFree(en, p.x, nz)) en.moveTo(p.x, nz);
+  return Math.hypot(p.x - x0, p.z - z0);
 }
 
 function updateEnemyAI(dt) {
+  fieldT -= dt;
+  if (fieldT <= 0) {
+    fieldT = AI.fieldRefresh;
+    buildField();
+  }
   for (const en of enemies) {
-    if (!en.alive || en.rising > 0) continue;
+    if (!en.alive || en.rising > 0) { en.walkSpeed = 0; continue; }   // corpses / risers don't move
     const p = en.group.position;
     const dist = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
     const err = en.turnToward(player.pos.x, player.pos.z, AI.turnRate, dt);
     if (en.shootCd > 0) en.shootCd -= dt;
     const sees = dist <= AI.range && hasLineOfSight(en);
     en.seenT = sees ? en.seenT + dt : 0;
+
+    // Movement: approach along the flow field until in position with line of sight, then strafe a little
+    let moved = 0;
+    if (!sees || dist > AI.preferredDist) {
+      const d = steer(p.x, p.z);
+      moved = moveEnemy(en, d.x * AI.walkSpeed, d.z * AI.walkSpeed, dt);
+    } else {
+      en.strafeT -= dt;
+      if (en.strafeT <= 0) {
+        en.strafeT = AI.strafeMinS + Math.random() * (AI.strafeMaxS - AI.strafeMinS);
+        const r = Math.random();
+        en.strafeDir = r < 0.4 ? -1 : r < 0.8 ? 1 : 0;   // sometimes stand still
+      }
+      const tx = (player.pos.z - p.z) / (dist || 1), tz = -(player.pos.x - p.x) / (dist || 1); // perpendicular
+      let vx = tx * AI.strafeSpeed * en.strafeDir, vz = tz * AI.strafeSpeed * en.strafeDir;
+      if (dist < AI.tooClose) {   // back off slowly
+        vx -= (player.pos.x - p.x) / dist * AI.walkSpeed * 0.6;
+        vz -= (player.pos.z - p.z) / dist * AI.walkSpeed * 0.6;
+      }
+      if (vx || vz) {
+        moved = moveEnemy(en, vx, vz, dt);
+        if (moved < 1e-4) en.strafeDir = -en.strafeDir;   // bumped into something: switch side
+      }
+    }
+    const walking = moved / dt > 0.2;
+    en.walkSpeed = moved / dt;
+
+    // Shooting: from a standstill as before; while walking only sometimes, and less accurately
     if (sees && err <= AI.aimTolerance && en.seenT >= AI.reaction && en.shootCd <= 0) {
-      enemyFire(en);
-      en.shootCd = AI.cooldownMin + Math.random() * AI.cooldownRandom;
+      if (!walking) {
+        enemyFire(en);
+        en.shootCd = AI.cooldownMin + Math.random() * AI.cooldownRandom;
+      } else if (Math.random() < AI.moveFireChance) {
+        enemyFire(en, AI.moveSpreadMult);
+        en.shootCd = (AI.cooldownMin + Math.random() * AI.cooldownRandom) * 1.5;
+      } else {
+        en.shootCd = 0.5;   // decided not to shoot on the move; re-check shortly
+      }
     }
   }
 }
@@ -771,6 +927,7 @@ function tick() {
   renderer.render(vm.scene, vm.camera);
 }
 
+buildBlocked();
 placeInitialEnemies();
 tick();
 
@@ -781,6 +938,7 @@ window.__fps = {
   step: (dt, n = 1) => { for (let i = 0; i < n; i++) { if (isDead()) break; updateScope(dt); gameStep(dt); for (const en of enemies) en.update(dt); } },
   spawnRandomTarget, hasLineOfSight, restartGame,
   get spawnTimer() { return spawnTimer; },
+  damageAt, hitsCover,
   setLook: (y, p) => { yaw = y; pitch = p; },
   setAimHeld: (v) => { aimHeld = v; },
   get aimT() { return aimT; },

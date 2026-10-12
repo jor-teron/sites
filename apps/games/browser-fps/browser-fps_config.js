@@ -124,7 +124,22 @@ window.BROWSER_FPS_CONFIG = {
     cooldownMin: 1.6,     // seconds between shots ...
     cooldownRandom: 0.8,  // ... plus up to this
     spread: 0.06,         // random aim error (rad, each axis) - not perfect aim
-    damage: 8,            // HP per hit on the player
+    damageNear: 12,       // HP per hit at <= falloffNear units ...
+    damageFar: 3,         // ... falling linearly to this at >= falloffFar units
+    falloffNear: 6,
+    falloffFar: 24,
+    // Movement
+    walkSpeed: 1.9,       // u/s approaching (player walks at 12)
+    strafeSpeed: 0.8,     // u/s side-steps once in position
+    strafeMinS: 1.5,      // strafe direction changes every 1.5 ..
+    strafeMaxS: 3.0,      // .. 3 s (sometimes pausing)
+    preferredDist: 7,     // stop approaching at about this distance (with line of sight)
+    tooClose: 5,          // back off slowly if closer than this
+    radius: 0.42,         // body radius for steering / collisions (matches the target collider)
+    gridCell: 0.5,        // flow-field cell size (world units)
+    fieldRefresh: 0.3,    // seconds between flow-field rebuilds
+    moveSpreadMult: 2.5,  // aim spread multiplier while walking
+    moveFireChance: 0.35, // chance to take a ready shot while walking (else waits)
     eyeHeight: 1.6,       // line-of-sight check height on the enemy
     tracerColor: 0xff6a4a,// enemy tracer color
     flashMs: 140,         // red screen flash when hit

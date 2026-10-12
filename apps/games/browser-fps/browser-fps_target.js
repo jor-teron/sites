@@ -109,8 +109,18 @@ export function createTarget(spec) {
     pivot.add(m);
     return m;
   };
-  part(G.leg, darkMat, -0.12, 0.45, 0);
-  part(G.leg, darkMat, 0.12, 0.45, 0);
+  // Legs hang from hip pivots so they can swing while walking
+  const hip = (x) => {
+    const h = new THREE.Group();
+    h.position.set(x, 0.9, 0);
+    const m = new THREE.Mesh(G.leg, darkMat);
+    m.position.y = -0.45;
+    m.castShadow = true; m.receiveShadow = true;
+    h.add(m);
+    pivot.add(h);
+    return h;
+  };
+  const legL = hip(-0.12), legR = hip(0.12);
   part(G.pelvis, darkMat, 0, 0.98, 0);
   part(G.torso, bodyMat, 0, 1.38, 0);
   part(G.upperArm, bodyMat, -0.36, 1.48, 0);
@@ -165,6 +175,10 @@ export function createTarget(spec) {
     shootCd: 0,           // AI: seconds until it may fire again
     seenT: 0,             // AI: how long the player has been in sight (reaction delay)
     muzzleT: 0,
+    walkSpeed: 0,         // current walking speed (u/s) -> animation
+    walkPhase: 0,
+    strafeDir: 1,         // AI strafe direction (+1 / -1)
+    strafeT: 0,           // AI time until the strafe direction changes
     group,
     mesh: group,          // compatibility with code that reads en.mesh.position
     collider,
@@ -236,6 +250,14 @@ export function createTarget(spec) {
       collider.disabled = false;
     },
 
+    /** Move the feet to (x, z) and keep the collider in sync. */
+    moveTo(x, z) {
+      group.position.x = x;
+      group.position.z = z;
+      collider.min.set(x - COL_HALF, 0, z - COL_HALF);
+      collider.max.set(x + COL_HALF, COL_H, z + COL_HALF);
+    },
+
     /** Turn toward a world point at most `rate` rad/s. Returns remaining angle error (rad). */
     turnToward(px, pz, rate, dt) {
       const want = Math.atan2(px - group.position.x, pz - group.position.z);
@@ -275,7 +297,14 @@ export function createTarget(spec) {
         const u = 1 - this.rising / RISE_TIME;
         riseY = -RISE_DEPTH * (1 - u) * (1 - u);          // ease out of the floor
       }
-      pivot.position.set(kx * c - kz * s, riseY, kx * s + kz * c);
+      // walk cycle: legs swing from the hips, body bobs a little (corpses / risers don't walk)
+      const walking = this.alive && this.rising <= 0 ? Math.min(1, this.walkSpeed / 1.5) : 0;
+      this.walkPhase += dt * (2 + this.walkSpeed * 3.2) * (walking > 0 ? 1 : 0);
+      const swing = Math.sin(this.walkPhase) * 0.55 * walking;
+      legL.rotation.x = swing;
+      legR.rotation.x = -swing;
+      const bob = Math.abs(Math.cos(this.walkPhase)) * 0.04 * walking;
+      pivot.position.set(kx * c - kz * s, riseY + bob, kx * s + kz * c);
       if (this.dying) {
         this.deathT += dt;
         const f = Math.min(1, this.deathT / FALL_TIME);
