@@ -36,6 +36,8 @@
   const labLabelName = document.getElementById('lab-label-name');
   const gamebarEl = document.getElementById('gamebar');
   const LAB_ENTRY = 'apps/lab/';
+  /** Categories whose menu header opens a tiles page instead of expanding (CATEGORY → ENTRY_URL). */
+  const CAT_PAGES = { Lab: 'apps/lab/', Games: 'apps/games/' };
 
   const emptyText = document.getElementById('empty-text');
   const tilesEl = document.getElementById('tiles');
@@ -308,7 +310,7 @@
       return;
     }
     const id = appIdFor(app.entryUrl);
-    if (!opts.forceFrame) setFromLab(false);
+    if (!opts.forceFrame) setFromCat('');
     if (!opts.fromHistory) setHash(id, !opts.replaceHash);
     storageSet(id);
     if (currentEntry !== app.entryUrl || opts.reload) navigateFrame(frameUrlFor(app.entryUrl));
@@ -326,25 +328,33 @@
 
   /* ---------- in-frame navigation (e.g. a Lab tile link) is remembered too ---------- */
 
-  // Lab button shows only on Lab pages or an app reached from the Lab tiles (flag survives refresh).
-  const FROM_LAB_KEY = 'sites-hub.fromLab';
-  let fromLab = false;
-  try { fromLab = window.localStorage.getItem(FROM_LAB_KEY) === '1'; } catch (_) { /* ignore */ }
-  function setFromLab(on) {
-    fromLab = !!on;
+  // Category label (Lab / Games): shown only on a category tiles page or an app reached from it
+  // (the category name survives refresh in localStorage).
+  const FROM_CAT_KEY = 'sites-hub.fromCat';
+  let fromCat = '';
+  try { fromCat = window.localStorage.getItem(FROM_CAT_KEY) || ''; window.localStorage.removeItem('sites-hub.fromLab'); } catch (_) { /* ignore */ }
+  if (fromCat && !CAT_PAGES[fromCat]) fromCat = '';
+  function setFromCat(cat) {
+    fromCat = cat && CAT_PAGES[cat] ? cat : '';
     try {
-      if (fromLab) window.localStorage.setItem(FROM_LAB_KEY, '1');
-      else window.localStorage.removeItem(FROM_LAB_KEY);
+      if (fromCat) window.localStorage.setItem(FROM_CAT_KEY, fromCat);
+      else window.localStorage.removeItem(FROM_CAT_KEY);
     } catch (_) { /* ignore */ }
   }
-  const inLab = () => !!currentEntry && currentEntry.indexOf(LAB_ENTRY) === 0;
-  /** Lab label in the bar: "Lab" on the tiles page, else the app name; hidden elsewhere or when the app has its own bar. */
+  /** Category whose folder holds the current frame entry ('' = none). */
+  function catOf(entry) {
+    if (!entry) return '';
+    for (const c in CAT_PAGES) if (entry.indexOf(CAT_PAGES[c]) === 0) return c;
+    return '';
+  }
+  /** Bar label: the category name on its tiles page, else the app name; hidden elsewhere or when the app has its own bar. */
   function updateLabBtn() {
     if (!labLabel) return;
-    const show = !!currentEntry && (inLab() || fromLab) && !(gamebarEl && !gamebarEl.hidden);
+    const cat = currentEntry ? (catOf(currentEntry) || fromCat) : '';
+    const show = !!cat && !(gamebarEl && !gamebarEl.hidden);
     labLabel.hidden = !show;
     if (!show) return;
-    const name = currentEntry === LAB_ENTRY ? 'Lab' : document.title.replace(/^Hub - /, '');
+    const name = currentEntry === CAT_PAGES[cat] ? cat : document.title.replace(/^Hub - /, '');
     labLabelName.textContent = name;
     labLabelName.title = name;
   }
@@ -393,7 +403,7 @@
     const id = app ? appIdFor(app.entryUrl) : '~' + rel;
     if (!app) app = appForId(id);
     if (!app) return;
-    setFromLab(inLab() || fromLab);
+    setFromCat(catOf(currentEntry) || fromCat);
     currentEntry = app.entryUrl;
     setHash(id, false);
     storageSet(id);
@@ -410,7 +420,7 @@
     opts = opts || {};
     if (!opts.fromHistory) setHash('', true);
     storageSet('');
-    setFromLab(false);
+    setFromCat('');
     if (currentEntry) navigateFrame('about:blank');
     currentEntry = '';
     empty.classList.remove('hidden');
@@ -438,8 +448,6 @@
 
   /* ---------- menu: Home screen + collapsible categories (accordion, one open) ---------- */
 
-  /** Categories whose menu header opens a tiles page instead of expanding (CATEGORY → ENTRY_URL). */
-  const CAT_PAGES = { Lab: 'apps/lab/' };
 
   function renderMenu(apps) {
     menu.innerHTML = '';

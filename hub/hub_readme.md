@@ -131,3 +131,4 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
   ⚙ Gamepad settings.
 - Menu → **Disconnect · use this device as Hub** is the manual Disconnect (forgets the code, reloads as host).
 - The desktop's connected light is green while any device is joined.
+- 2026-10-12 (v=20261012h, hub-shell-v13): Menu headers Lab and Games open their tiles pages (`apps/lab/`, `apps/games/` + `games-apps.csv`) instead of expanding; the bar label shows the category name on its tiles page or the app name for an app opened from it (`sites-hub.fromCat`, survives refresh). D-Pad Controller tile opens in a new tab on desktop, in the frame on a joined phone.

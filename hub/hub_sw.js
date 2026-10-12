@@ -8,7 +8,7 @@
  * so a phone never gets a stale copy after a push.
  * Bump CACHE when the shell list changes; old caches are deleted on activate.
  */
-const CACHE = 'hub-shell-v12';  // 2026-10-12g: phone Hub always opens the Gamepad in the frame
+const CACHE = 'hub-shell-v13';  // 2026-10-12h: Games menu opens the Games tiles page; category label generalised
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',

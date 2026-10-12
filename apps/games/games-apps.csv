@@ -1,0 +1,21 @@
+# Games — one per line: name, path, icon, newtab (icon empty = <folder>/<folder>_icon.png or a letter tile; newtab 1 = own tab on desktop)
+# Paths are relative to this folder. Lines starting with # are comments. Keep in step with hub/hub_apps.js (Games).
+name, path, icon, newtab
+2048, 2048/,,
+Swell Foop, swell-foop/,,
+Ping Pong, pong/,,
+Tetris, tetris/,,
+Tower Defence, tower-defence/,,
+Tic-Tac-Toe, tic-tac-toe/,,
+Snake, snake/,,
+Dino Run, dino-run/,,
+Car Run, car-run/,,
+Tennis Ball Blitz, tennis-throw/,,
+Desert Road, desert-road/,,
+Contra (alpha), contra-alpha/,,
+Space Invaders, space-invader/,,
+AR Game, ar-game/,,
+Browser FPS, browser-fps/,,
+Island (Alpha), island-alpha/,,
+Demolisher, demolisher/,,
+D-Pad Controller, ../../hub/controller/, ../../hub/controller/controller_icon.png, 1
