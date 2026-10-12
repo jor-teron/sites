@@ -9,7 +9,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>AR Theme Game</title>
-  <link rel="stylesheet" href="ar-game.css?v=20261013z" />
+  <link rel="stylesheet" href="ar-game.css?v=20261013g" />
   <script type="importmap">
   {
     "imports": {
@@ -53,6 +53,18 @@
         <button type="button" data-pet="chicken">Chicken</button>
         <button type="button" data-pet="bunny">Bunny</button>
         <button type="button" data-pet="ours" class="active">Ours</button>
+      </div>
+    </div>
+
+    <!-- Shown when the phone has no WebXR immersive-ar -->
+    <div id="ar-gate" hidden role="dialog" aria-modal="true" aria-labelledby="ar-gate-text">
+      <div class="ar-gate-card">
+        <p id="ar-gate-text">Your phone doesn't support AR — you'll get camera mode instead</p>
+        <p class="ar-gate-sub">Zombie and Ghost work with camera + gyro. Pet needs AR.</p>
+        <div class="ar-gate-btns">
+          <button type="button" id="ar-gate-back">Back</button>
+          <button type="button" id="ar-gate-enter" class="primary">Enter anyway</button>
+        </div>
       </div>
     </div>
   </div>

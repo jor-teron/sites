@@ -273,14 +273,44 @@ async function boot() {
   game.els.canvas.addEventListener("pointerdown", onPointerDown);
   game.els.arBtn.addEventListener("click", toggleAr);
 
-  loadTheme(AR_GAME_CONFIG.defaultTheme);
+  // AR gate: without immersive-ar, Pet is AR-only; Zombie/Ghost run in camera + gyro mode.
+  const arOk = await isArSupported();
+  const petBtn = document.querySelector('[data-theme="pet"]');
+  if (!arOk && petBtn) {
+    petBtn.disabled = true;
+    petBtn.classList.add("ar-only");
+    petBtn.textContent = "Pet (AR only)";
+    petBtn.title = "Pet mode needs a phone with AR";
+  }
+  let first = AR_GAME_CONFIG.defaultTheme;
+  if (!arOk && first === "pet") first = "zombie";
   view.renderer.setAnimationLoop(frame);
 
-  await tryStartCamera();
-
-  if (await isArSupported()) {
+  if (arOk) {
+    loadTheme(first);
     game.els.arBtn.hidden = false;
+    await tryStartCamera();
+  } else {
+    await showArGate(); // theme (and Zombie waves) start only after "Enter anyway"
+    loadTheme(first);
+    await tryStartCamera();
   }
+}
+
+function showArGate() {
+  const gate = document.getElementById("ar-gate");
+  if (!gate) return Promise.resolve();
+  gate.hidden = false;
+  return new Promise((resolve) => {
+    document.getElementById("ar-gate-enter").addEventListener("click", () => {
+      gate.hidden = true;
+      resolve();
+    }, { once: true });
+    document.getElementById("ar-gate-back").addEventListener("click", () => {
+      if (history.length > 1) history.back();
+      else location.href = "../../../";
+    });
+  });
 }
 
 // Module scripts are deferred, so the DOM is ready here.
@@ -300,6 +330,7 @@ window.__arGame = {
     hasModel: !!(game.themeRoot && game.themeRoot.userData.model),
     hasMixer: !!(game.themeRoot && game.themeRoot.userData.mixer),
     anim: game.themeRoot ? game.themeRoot.userData.animState : null,
+    gate: !document.getElementById("ar-gate").hidden,
   }),
   ghost: () => GhostTheme.debugState(),
   zombie: () => ZombieTheme.debugState(),

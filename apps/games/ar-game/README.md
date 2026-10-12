@@ -61,6 +61,8 @@ On a phone over LAN, plain `http://192.168.…` will **not** get a camera. Use o
 | iOS Safari / Chrome                      | yes     | no (no WebXR AR) |
 | Desktop Chrome / Firefox                 | yes     | no (no AR headset / ARCore) |
 
+**No-AR phones:** on open the game checks `navigator.xr.isSessionSupported('immersive-ar')`. If AR is missing, an overlay says "Your phone doesn't support AR — you'll get camera mode instead" with **Enter anyway** / **Back**. Pet is greyed out as **Pet (AR only)** and the game opens in Zombie; Zombie and Ghost play in camera + gyro mode. Phones with AR see no change.
+
 When AR is available an **Enter AR** button appears at the top. Exit with the same button (becomes **Exit AR**) or the browser's XR UI.
 
 ## Tech

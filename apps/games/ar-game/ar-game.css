@@ -356,3 +356,13 @@ html, body {
 #zombie-hud[hidden], #zombie-flash[hidden], #zombie-banner[hidden], #zombie-over[hidden] {
   display: none;
 }
+
+/* AR gate (no immersive-ar) */
+#ar-gate { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.72); padding: 24px; }
+#ar-gate[hidden] { display: none; }
+.ar-gate-card { max-width: 340px; background: #1c1f26; color: #fff; border-radius: 16px; padding: 22px 20px; text-align: center; font: 16px/1.4 system-ui, sans-serif; }
+.ar-gate-sub { opacity: 0.7; font-size: 14px; }
+.ar-gate-btns { display: flex; gap: 12px; justify-content: center; margin-top: 16px; }
+.ar-gate-btns button { min-height: 48px; min-width: 120px; border-radius: 12px; border: 0; font-size: 16px; background: #3a3f4b; color: #fff; }
+.ar-gate-btns button.primary { background: #3c8cff; }
+#themes button.ar-only, #themes button:disabled { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
