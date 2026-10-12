@@ -106,5 +106,5 @@
   }
 
   window.SharedLinkFiles = { sendFile: sendFile, handle: handle };
-  if (window.SharedLink) window.SharedLink.sendFile = sendFile;
+  if (window.SharedLink && !window.SharedLink.borrowed) window.SharedLink.sendFile = sendFile;   // borrowed: the Hub's sendFile
 })();

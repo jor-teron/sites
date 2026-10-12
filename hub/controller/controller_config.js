@@ -223,16 +223,16 @@ const CONTROLLER_CONFIG = {
   // Sized so nothing overlaps on a ~360 px tall landscape phone.
   layout: {
     '--shoulder-w': 'min(24vw, 210px)',
-    '--shoulder-h': 'min(15dvh, 58px)',
+    '--shoulder-h': '0px',            // L / R removed (2026-10-12): zones use the full height,
     '--left-zone-w': '42vw',
     '--right-zone-w': '40vw',
     '--stick-base': 'min(50dvh, 185px)',
     '--stick-knob': 'min(24dvh, 88px)',
-    '--dpad-size': 'min(50dvh, 185px)',
-    '--dpad-size-solo': 'min(64dvh, 245px)',
+    '--dpad-size': 'min(58dvh, 215px)',
+    '--dpad-size-solo': 'min(72dvh, 275px)',
     '--dpad-arm': '34%',            // arm thickness (fraction of D-pad size)
-    '--face-size': 'min(21dvh, 80px)',
-    '--face-spread': 'min(23dvh, 86px)', // distance from diamond centre to each face button centre
+    '--face-size': 'min(24dvh, 92px)',
+    '--face-spread': 'min(27dvh, 100px)', // distance from diamond centre to each face button centre
     '--sys-w': 'min(13vw, 58px)',
     '--sys-h': 'min(7.5dvh, 28px)',
     '--home-size': 'min(13dvh, 48px)',

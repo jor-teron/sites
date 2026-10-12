@@ -35,6 +35,11 @@
 (function () {
   'use strict';
 
+  // One-connection release: inside a phone Hub's app frame the link is the Hub's own
+  // (shared/link/link_core.js borrowed proxy) — no own peer, no auto full screen.
+  const EMBED = !!(window.SharedLink && window.SharedLink.borrowed);
+  if (EMBED) document.body.classList.add('embedded');
+
   const CFG = CONTROLLER_CONFIG;
   const TXT = CFG.text;
   const CLS = CFG.classes;
@@ -278,7 +283,7 @@
 
   /** Auto-try on touch (CFG.browser.autoFullscreen): retried on later touches until it works. */
   function tryFullscreenAndLock() {
-    if (DEMO || !CFG.browser.autoFullscreen || fullscreenOptOut || !FS_OK || isFullscreen()) return;
+    if (DEMO || EMBED || !CFG.browser.autoFullscreen || fullscreenOptOut || !FS_OK || isFullscreen()) return;
     enterFullscreen();
   }
 
@@ -957,7 +962,8 @@
   /* PeerJS + auto-reconnect                                             */
   /* ------------------------------------------------------------------ */
   const RC = CFG.reconnect;
-  let lastGood = load(CFG.storage.lastCode, '') || load('shared-link-join-code', '');   // last code that connected
+  // Embedded in a phone Hub: the Hub's code (borrowed link) wins over older saved codes.
+  let lastGood = (EMBED && SharedLink.code) || load('shared-link-join-code', '') || load(CFG.storage.lastCode, '');   // last code that connected
   let attemptSeq = 0;      // bumps on every attempt / loss, so stale PeerJS events are ignored
   let retryTimer = 0;
   let attemptTimer = 0;
@@ -1078,7 +1084,7 @@
     else {
       try {
         const u = new URL(t);
-        c = codeFromHash(u.hash) || normalizeCode(u.searchParams.get(CFG.code.hashParam));
+        c = codeFromHash(u.hash) || normalizeCode(u.searchParams.get(CFG.code.hashParam) || u.searchParams.get('join'));
       } catch (_) { c = ''; }
     }
     c = normalizeCode(c);
@@ -1239,10 +1245,42 @@
     });
   }
   renderView();
-  document.querySelectorAll('.face, .shoulder, .sys, .home').forEach(bindButton);
+  document.querySelectorAll('.face, .sys, .home').forEach(bindButton);
   setupDpad();
   setupStick();
   applyMode(leftMode);
+
+  /** Manual Disconnect (settings page): the only thing that ends the link. */
+  function disconnectHub() {
+    releaseAll();
+    if (EMBED) {
+      try { if (window.parent.__hubRemoteApi) window.parent.__hubRemoteApi.disconnect(); } catch (_) { /* gone */ }
+      return;
+    }
+    cancelRetry();
+    attemptSeq++;
+    conn = null;
+    if (window.SharedLink) SharedLink.stop();   // says bye, forgets the shared join code
+    save(CFG.storage.lastCode, '');
+    lastGood = '';
+    setStatus('disconnected', TXT.disconnected);
+    codeInput.value = '';
+    showPairScreen('');
+  }
+  window.__ctrlApi = {
+    embedded: EMBED,
+    modes: MODES,
+    setMode: (id) => setControllerMode(id),
+    getMode: () => modeId,
+    toggleTheme: toggleTheme,
+    isDark: isDarkTheme,
+    get canVibrate() { return canVibrate; },
+    get hapticsOn() { return hapticsOn; },
+    setHaptics: (on) => { hapticsOn = !!on; save(CFG.storage.haptics, hapticsOn ? '1' : '0'); renderHaptics(); vibrate(CFG.haptics.longMs); },
+    releaseAll: releaseAll,
+    disconnect: disconnectHub,
+    statusText: () => (connState === 'connected' ? 'Connected' : connState === 'connecting' ? 'Connecting…' : 'Not connected') + (code ? ' · Hub ' + code : ''),
+  };
 
   connectBtn.addEventListener('click', () => connectToHub(codeInput.value));
   codeInput.addEventListener('keydown', (e) => {

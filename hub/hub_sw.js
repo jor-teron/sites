@@ -8,13 +8,14 @@
  * so a phone never gets a stale copy after a push.
  * Bump CACHE when the shell list changes; old caches are deleted on activate.
  */
-const CACHE = 'hub-shell-v5';
+const CACHE = 'hub-shell-v6';   // 2026-10-12a: hub_role.js / hub_remote.js (one Connect QR)
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',
   'hub/hub.css', 'hub/hub_ctrl.css', 'shared/style/no-scrollbar.css',
   'hub/hub_apps.js', 'hub/hub_tiles.js', 'hub/hub.js', 'hub/hub_controller_config.js',
   'hub/hub_notify.js', 'hub/hub_viewer.js', 'hub/hub_pointer.js', 'hub/hub_receive.js',
+  'hub/hub_role.js', 'hub/hub_remote.js', 'shared/link/link_scan.js',
   'hub/hub-controller.js', 'hub/hub_link.js', 'hub/hub_chat.js', 'hub/hub_chat.css', 'shared/link/link_chat.js', 'hub/hub-gamebar.js',
   'shared/link/link_core.js', 'shared/link/link_devices.js', 'shared/link/link_files.js', 'shared/link/link_ui.js', 'shared/link/link.css',
   'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', 'shared/vendor/qrcode.js',

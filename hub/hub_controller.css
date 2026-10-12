@@ -254,3 +254,11 @@ width: auto;
   #hub-pointer, #hub-pointer.show { transition: none; }
   #hub-pointer .ring.go { animation: none; }
 }
+
+/* ---------- phone remote Hub (hub_remote.js, 2026-10-12) ---------- */
+.rm-btn { font-size: 20px; min-width: 44px; min-height: 44px; }
+.rm-btn[hidden] { display: none; }
+.rm-hub { gap: 6px; padding: 0 10px; font-size: 14px; font-weight: 700; width: auto; }
+.rm-dot { width: 10px; height: 10px; border-radius: 50%; background: #d9534f; }
+.rm-hub.connected .rm-dot { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+.rm-disc { color: #ff6b81; }

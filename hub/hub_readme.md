@@ -119,3 +119,15 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 
 ## Release 4 (2026-10-11)
 - 🐻 chat bubble before the Gamepad icon (`hub_chat.js`, `hub_chat.css`): unread badge, drop-down with last 20 messages + Send, "Full chat" opens Pooh Chat; one quiet toast. `window.__hubOpenApp(match)`. Cache `hub-shell-v5`, `?v=20261011d`.
+
+## One Connect QR (2026-10-12a)
+
+- The home tile **Connect QR** (was "Gamepad QR") encodes `hub.html?join=CODE` — the same 4-digit Hub code.
+- A phone opening `hub.html?join=CODE` (or any touch device with a saved `shared-link-join-code`) runs the Hub as a
+  **joiner** (`hub/hub_role.js` → `hub/hub_remote.js`): no own code or QR, bar shows a green dot + `Hub 1234`
+  (tap to scan another code). Desktop without `?join` stays the host.
+- On the phone, the 🎮 button / Gamepad tile opens the controller **inside the app frame** (same tab); it borrows the
+  Hub's link (`shared/link/link_core.js`), so it never disconnects. While it is open the bar adds ⛶ Full screen and
+  ⚙ Gamepad settings.
+- Menu → **Disconnect · use this device as Hub** is the manual Disconnect (forgets the code, reloads as host).
+- The desktop's connected light is green while any device is joined.

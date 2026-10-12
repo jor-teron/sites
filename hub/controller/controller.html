@@ -9,8 +9,8 @@
   <title>Gamepad Controller</title>
   <link rel="icon" href="controller_icon.png" />
   <!-- Cache-busting: bump ?v= on every asset below when any of them changes (e.g. 20261003d). -->
-  <link rel="stylesheet" href="controller.css?v=20261004g" />
-  <link rel="stylesheet" href="ctrl_tabs.css?v=20261004g" />
+  <link rel="stylesheet" href="controller.css?v=20261012a" />
+  <link rel="stylesheet" href="ctrl_tabs.css?v=20261012a" />
 </head>
 <body class="theme-light mode-both view-pad">
   <div id="rotate-overlay" hidden>
@@ -41,8 +41,6 @@
   </div>
 
   <div id="pad" hidden>
-    <button type="button" class="shoulder l" data-btn="l" aria-label="L"><span>L</span></button>
-    <button type="button" class="shoulder r" data-btn="r" aria-label="R"><span>R</span></button>
 
     <div class="left-zone" id="left-zone">
       <div class="stick-base" id="stick-base" aria-hidden="true">
@@ -60,11 +58,12 @@
     </div>
 
     <div class="center-cluster">
+      <!-- One-connection release: the old top row (LED / QR / full screen) is hidden by CSS;
+           the Hub bar provides them when embedded, the Settings page (☰) when standalone. -->
       <div class="top-row">
         <button type="button" class="led" id="led" aria-label="Connection light"></button>
         <button type="button" class="qr-btn" id="qr-btn" aria-label="Scan QR"><img class="qr-icon" alt="" data-qr-icon /></button>
         <button type="button" class="qr-btn fs-btn" id="fs-btn" aria-label="Fullscreen" hidden>⛶</button>
-        <a class="qr-btn fd-link" id="fd-link" href="../../apps/connectivity/filedrop/filedrop.html" target="_blank" rel="noopener" aria-label="File Drop" title="Send files (File Drop)">📤</a>
       </div>
       <div class="sys-row">
         <button type="button" class="sys select" data-btn="select" aria-label="Select"><span class="glyph-select" aria-hidden="true"></span></button>
@@ -97,7 +96,6 @@
     <div id="kb-bar">
       <button type="button" class="led" id="kb-led" aria-label="Connection light"></button>
       <span id="kb-echo" aria-live="off"></span>
-      <a class="fd-link" href="../../apps/connectivity/filedrop/filedrop.html" target="_blank" rel="noopener" aria-label="File Drop">📤 File Drop</a>
     </div>
     <div id="kb-host"></div>
   </div>
@@ -107,6 +105,8 @@
        the NEXT page. Tap = next, swipe = prev / next, hold = menu. ctrl_tabs.js adds a small ⋯
        menu button next to it. -->
   <button type="button" id="mode-btn" aria-label="Mode" hidden>🎮</button>
+  <!-- Settings page (ctrl_settings.js). Hidden when embedded: the Hub bar has ⚙ instead. -->
+  <button type="button" id="set-btn" aria-label="Gamepad settings" title="Gamepad settings">☰</button>
   <div id="mode-toast" aria-live="polite" hidden></div>
   <div id="mode-menu" role="menu" hidden>
     <div class="menu-title" data-text="menuModes">Mode</div>
@@ -145,15 +145,16 @@
     </div>
   </div>
 
-  <script src="vendor/jsQR.js?v=20261004g"></script>
-  <script src="controller_config.js?v=20261011c"></script>
-  <script src="kb_common.js?v=20261004g"></script>
-  <script src="kb_pc.js?v=20261004g"></script>
-  <script src="kb_phone.js?v=20261004g"></script>
-  <script src="ctrl_trackpad.js?v=20261004g"></script>
-  <script src="ctrl_tabs.js?v=20261004g"></script>
-  <script src="../../shared/link/link_core.js?v=20261011d"></script>
+  <script src="vendor/jsQR.js?v=20261012a"></script>
+  <script src="controller_config.js?v=20261012a"></script>
+  <script src="kb_common.js?v=20261012a"></script>
+  <script src="kb_pc.js?v=20261012a"></script>
+  <script src="kb_phone.js?v=20261012a"></script>
+  <script src="ctrl_trackpad.js?v=20261012a"></script>
+  <script src="ctrl_tabs.js?v=20261012a"></script>
+  <script src="../../shared/link/link_core.js?v=20261012a"></script>
   <script src="../../shared/link/link_devices.js?v=20261011c"></script>
-  <script src="controller_logic.js?v=20261011d"></script>
+  <script src="controller_logic.js?v=20261012a"></script>
+  <script src="ctrl_settings.js?v=20261012a"></script>
 </body>
 </html>

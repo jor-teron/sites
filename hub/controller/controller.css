@@ -819,3 +819,40 @@ body.theme-light .qr-icon { filter: invert(0.8) brightness(0.6); }
 /* Release 3: File Drop link (files are sent from File Drop, not the Gamepad). */
 .fd-link { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; text-decoration: none; font-size: 20px; }
 #kb-bar .fd-link { margin-left: auto; padding: 0 12px; font-size: 15px; color: inherit; }
+
+/* ---------- One-connection release (2026-10-12) ----------
+   L / R are gone; the old top row (LED, QR, full screen, File Drop), the Vib / theme chips,
+   the mode button, ⋯ menu and Keyboard & Mouse switch moved to the Settings page (☰). */
+.center-cluster .top-row, #haptics-toggle, #theme-toggle, #mode-btn, #ctrl-more, #km-switch { display: none !important; }
+body.embedded #kb-led, body.embedded #set-btn { display: none !important; }
+#set-btn {
+  position: fixed; top: calc(6px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+  z-index: 40; min-width: 52px; min-height: 48px; border: 0; border-radius: 14px;
+  background: var(--btn-2, #ccc); color: inherit; font-size: 24px; touch-action: manipulation;
+}
+body:has(#pair-screen:not([hidden])) #set-btn { display: none; }
+.set-page {
+  position: fixed; inset: 0; z-index: 100; overflow-y: auto; padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+  background: var(--bg-2, #eee); color: var(--text, #222); font: 16px system-ui, sans-serif;
+}
+.set-page[hidden] { display: none; }
+.set-head { display: flex; align-items: center; gap: 12px; }
+.set-head h2 { margin: 0; font-size: 20px; }
+.set-back { min-width: 52px; min-height: 52px; border: 0; border-radius: 14px; font-size: 24px; background: var(--btn-2, #ddd); color: inherit; }
+.set-page h3 { margin: 16px 0 8px; font-size: 15px; opacity: .75; }
+.set-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.set-tile {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  min-height: 92px; border: 2px solid transparent; border-radius: 18px; font-size: 16px; font-weight: 700;
+  background: var(--btn-2, #ddd); color: inherit; touch-action: manipulation;
+}
+.set-tile.on { border-color: var(--accent, #3b82f6); }
+.set-ico { font-size: 30px; }
+.set-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 16px; }
+.set-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 56px; padding: 0 16px;
+  border: 0; border-radius: 14px; background: var(--btn-2, #ddd); color: inherit; font-size: 16px; text-align: left;
+}
+.set-name input { flex: 1; min-width: 0; min-height: 40px; font-size: 16px; border-radius: 10px; border: 1px solid var(--btn-rim, #aaa); padding: 0 10px; }
+.set-disc { background: #c62f4a; color: #fff; justify-content: center; font-weight: 700; }
+.set-status { opacity: .7; font-size: 14px; }

@@ -12,7 +12,7 @@
 
   function parse(text) {
     text = String(text || '').trim();
-    var m = text.match(/[#?&](?:code|hub|c|pin)=([A-Za-z0-9]{4,6})\b/) || text.match(/^([A-Za-z0-9]{4,6})$/);
+    var m = text.match(/[#?&](?:code|hub|join|c|pin)=([A-Za-z0-9]{4,6})\b/) || text.match(/^([A-Za-z0-9]{4,6})$/);
     return m ? m[1].toUpperCase() : '';
   }
 

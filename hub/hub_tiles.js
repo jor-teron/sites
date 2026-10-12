@@ -10,7 +10,8 @@
  *   { type: 'qr', label, pair? }
  *       QR code + title only (no caption, no link). QR of this hub's own link, or with
  *       pair: 1 the phone-controller link with the hub's live pairing code — the same
- *       QR as the gamepad icon's popover (hub-controller.js), redrawn on "New code".
+ *       Hub code as a hub.html?join=CODE link (Connect QR: the phone opens the Hub joined),
+ *       redrawn on "New code".
  *   { type: 'app', label, url, icon?, NEW_TAB?, pair? }
  *       pair: 1 = open the controller carrying the pairing code (new tab)
  *       url     ENTRY_URL like in hub_apps.js (folder, file or .txt)
@@ -21,7 +22,7 @@
  */
 window.HUB_TILES = [
   { type: 'qr', label: 'Site QR' },
-  { type: 'qr', label: 'Gamepad QR', pair: 1 },
+  { type: 'qr', label: 'Connect QR', pair: 1 },   // hub.html?join=CODE: phone opens the Hub, joined
   { type: 'app', label: 'QR Scanner', url: 'apps/connectivity/qr-scanner/', icon: '' },
   { type: 'app', label: 'Gamepad', url: 'hub/controller/', icon: '', NEW_TAB: 1, pair: 1 },
 ];

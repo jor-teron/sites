@@ -21,7 +21,12 @@
  *
  * Pairing survives reloads: the code (peer id = PEER_PREFIX + code) is kept in localStorage
  * and registered again as soon as the hub loads, so a phone can reconnect without the
- * popover being opened. If the broker still holds the id from the previous page
+ * popover being opened.
+ *
+ * One-connection release (2026-10-12): the home tile "Connect QR" encodes hub.html?join=CODE
+ * (same code; announced as detail.connectUrl). The connected light is green while ANY device
+ * is joined. On a phone remote Hub (window.__hubRemote, hub_role.js) this file does not host:
+ * hub_remote.js joins instead and owns the light and the Gamepad button. If the broker still holds the id from the previous page
  * ('unavailable-id'), registration is retried with backoff (the code is never switched
  * silently). "New code" in the popover makes a fresh code.
  */
@@ -86,7 +91,17 @@
   }
 
   function setConnectedIndicator(on) {
-    if (ctrlBtn) ctrlBtn.classList.toggle('connected', !!on);
+    // Green while the Gamepad link is open OR any SharedLink device is online.
+    const any = window.SharedLink && SharedLink.devices.some((d) => d.online);
+    if (ctrlBtn) ctrlBtn.classList.toggle('connected', !!on || !!any);
+  }
+
+  /** Connect QR: the phone opens the Hub homepage already joined (hub_role.js). */
+  function connectUrl(c) {
+    const u = new URL('hub.html', location.href);
+    u.search = '?join=' + c;
+    u.hash = '';
+    return u.href;
   }
 
   function controllerUrl(c) {
@@ -139,7 +154,8 @@
    *  shows the exact same QR / code as the popover. */
   function announceLink() {
     const url = code ? controllerUrl(code) : '';
-    try { window.dispatchEvent(new CustomEvent('hub-ctrl-link', { detail: { url: url, code: code } })); } catch (_) { /* old browser */ }
+    const cu = code ? connectUrl(code) : '';
+    try { window.dispatchEvent(new CustomEvent('hub-ctrl-link', { detail: { url: url, code: code, connectUrl: cu } })); } catch (_) { /* old browser */ }
   }
 
   function openPopover() {
@@ -450,7 +466,15 @@
     SharedLink.host({ prefix: PEER_PREFIX, code: code, onLegacy: onLegacy }).catch(() => setStatus('PeerJS could not load (offline?)'));
   }
 
+  // Phone remote Hub: no host, no popover; hub_remote.js does the joining.
+  if (window.__hubRemote) {
+    window.HubCtrlLink = { url: '', connectUrl: '', ensure() { return ''; } };
+    window.__hubController = { get connected() { return window.SharedLink ? SharedLink.connected : false; } };
+    return;
+  }
+
   if (window.SharedLink) {
+    SharedLink.on('devices', () => setConnectedIndicator(!!(conn && conn.open)));
     // Release 3: the Gamepad joins as a SharedLink device (metadata.pad) and sends its keys
     // over that link; they arrive here as 'raw'. The newest pad that speaks becomes the
     // controller (rumble goes back to it).
@@ -523,6 +547,7 @@
   /** Shared link for the home tiles: same code as the popover QR; listens again if stopped. */
   window.HubCtrlLink = {
     get url() { return code ? controllerUrl(code) : ''; },
+    get connectUrl() { return code ? connectUrl(code) : ''; },
     ensure() {
       if (!code) newCode();
       else if (!SharedLink.live) startPairing();

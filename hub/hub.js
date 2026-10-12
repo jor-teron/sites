@@ -633,10 +633,11 @@
     const box = document.createElement('div');
     box.className = 'tile-qr-box';
     if (parseFlag(t.pair)) {
-      drawQr(box, window.HubCtrlLink ? window.HubCtrlLink.url : '');
+      // Connect QR: hub.html?join=CODE (phone remote Hub: the code it is joined to, hub_remote.js)
+      drawQr(box, window.HubCtrlLink ? window.HubCtrlLink.connectUrl : '');
       let last = '';
       window.addEventListener('hub-ctrl-link', (e) => {
-        const url = (e.detail && e.detail.url) || '';
+        const url = (e.detail && e.detail.connectUrl) || '';
         if (url && url !== last) { last = url; drawQr(box, url); }
       });
       // Connected devices (SharedLink) under the Gamepad QR: name + green online dot
@@ -669,6 +670,12 @@
       // (tile label only; the menu keeps the hub_apps.js NAME)
       newTab: newTabRaw === undefined || newTabRaw === '' ? !!(known && known.newTab) : parseFlag(newTabRaw),
     };
+    // Phone remote Hub (hub_role.js): the Gamepad tile is a frame app (remembered across reloads).
+    let gpApp = null;
+    if (parseFlag(t.pair) && window.__hubRemote) {
+      gpApp = { name: app.name, entryUrl: 'hub/controller/controller.html', iconUrl: app.iconUrl, newTab: false };
+      registerApp(gpApp);
+    }
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'tile tile-app';
@@ -686,6 +693,8 @@
     if (app.newTab) btn.title = 'Opens in a new tab';
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
+      // Phone remote Hub: the controller opens IN the app frame (same tab, borrowed link).
+      if (gpApp) { loadApp(gpApp, { forceFrame: true }); return; }
       // pair: 1 = open the controller already carrying this hub's pairing code
       if (parseFlag(t.pair) && window.HubCtrlLink) {
         const url = window.HubCtrlLink.ensure();

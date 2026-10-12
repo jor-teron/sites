@@ -13,9 +13,48 @@
   Wire protocol (JSON objects, key t): see README.md. Files: link_files.js.
   Events: status, devices, message, file, progress, open, close, bye,
   raw(msg, from, conn) for any other JSON message (Gamepad keys, rumble).
+  Borrowed link (one-connection release): a page inside a phone Hub's app frame
+  (parent sets window.__hubRemote) does NOT make its own peer: window.SharedLink
+  becomes a thin proxy of window.parent.SharedLink (borrowed: true). join() with the
+  same code only replays open/status; host/stop/pause are no-ops; listeners are
+  removed on pagehide.
 */
 (function () {
   'use strict';
+
+  /* ---------- borrowed link (inside a remote phone Hub) ---------- */
+  var P = null;
+  try {
+    if (window.parent !== window && window.parent.__hubRemote && window.parent.SharedLink) P = window.parent.SharedLink;
+  } catch (_) { P = null; }   // cross-origin parent
+  if (P) {
+    var mine = [];
+    var B = Object.create(P);
+    B.borrowed = true;
+    B.on = function (ev, fn) { mine.push([ev, fn]); return P.on(ev, fn); };
+    B.off = function (ev, fn) { mine = mine.filter(function (m) { return m[1] !== fn; }); P.off(ev, fn); };
+    B.join = function (o) {
+      var c = String((o && o.code) || '').toUpperCase();
+      if (c && c !== P.code) return P.join(Object.assign({}, o, { meta: { pad: 1 } }));
+      setTimeout(function () {   // replay for the late listener (the link is already up)
+        mine.forEach(function (m) {
+          try {
+            if (m[0] === 'status') m[1](P.status, P.connected ? 'linked' : '');
+            if (m[0] === 'open' && P.connected) m[1]('host');
+            if (m[0] === 'devices') m[1](P.devices);
+          } catch (_) { /* app error */ }
+        });
+      }, 0);
+      return Promise.resolve(P.code);
+    };
+    B.host = function () { return Promise.reject(new Error('Inside a remote Hub: no own host')); };
+    B.stop = function () { /* the Hub owns the link: Disconnect lives in the Hub bar */ };
+    B.pause = function () {};
+    B.restart = function () {};
+    window.addEventListener('pagehide', function () { mine.forEach(function (m) { P.off(m[0], m[1]); }); mine = []; });
+    window.SharedLink = B;
+    return;
+  }
 
   var PEERJS_URL = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
   var ID_RETRY_MS = [1000, 2000, 3000, 5000, 5000, 8000, 10000, 10000, 15000, 15000];

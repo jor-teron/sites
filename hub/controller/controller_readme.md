@@ -101,3 +101,13 @@ Turns a phone into a controller for the hub. Pair once with the hub's QR or code
 - Send Files was removed. The 📤 button in the header (and in the keyboard bar) opens File Drop in a new tab, already connected to the same Hub.
 - Only the Hub's Disconnect (bye) ends the link; reloads and network drops reconnect by themselves.
 - Manual test: scan Hub QR → pad works, device listed; reload phone → reconnects; tap 📤 → File Drop shows "Hub" connected; Hub Disconnect → pad shows the pairing screen.
+
+## 2026-10-12a — one connection + Settings page
+
+- L / R removed (no Hub game used Q / E); D-pad and face buttons are bigger.
+- Own top row (LED, QR, File Drop link) and the Keyboard & Mouse switch / mode button are gone.
+- **Settings page** (☰ when standalone, ⚙ in the Hub bar when embedded): Input method tiles (Gamepad, PC keyboard,
+  Phone keyboard, Trackpad — tap opens it, last used remembered), Vibration, Theme, Device name, Disconnect.
+- Inside a phone Hub the controller runs in the Hub's app frame and sends through the Hub's link
+  (`SharedLink.borrowed`); opened on its own it still auto-joins with the saved code.
+- Mapping unchanged: arrows, A = Space, B = X, X = Z, Y = C, Start = Enter, Select = Esc.
