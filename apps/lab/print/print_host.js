@@ -6,10 +6,10 @@
   short link to type on a phone. Header: title, short status, New code
   (idle) / Disconnect (linked). Transfer bar and history live in the body.
   Reconnect rules:
-  - The code is kept in localStorage 'jtprint-host-code', so a reload keeps
+  - The code is kept in localStorage 'jtprint-station-code', so a reload keeps
     it; if the old tab still holds the id on the broker, the same code is
     retried with backoff, then a new one is picked.
-  - 'jtprint-host-linked' is set while a phone is linked and kept when the
+  - 'jtprint-station-linked' is set while a phone is linked and kept when the
     link drops without a bye (phone reload, network), so after a drop or a
     host reload the station says 'Waiting for phone to reconnect…'; the phone
     reconnects by itself. A manual Disconnect on either side (bye) or New
@@ -23,10 +23,10 @@
 */
 
 /* localStorage key for this station's code. */
-const HOST_CODE_KEY = 'jtprint-host-code';
+const HOST_CODE_KEY = 'jtprint-station-code';
 
 /* localStorage flag: a phone was linked and has not manually disconnected. */
-const HOST_LINKED_KEY = 'jtprint-host-linked';
+const HOST_LINKED_KEY = 'jtprint-station-linked';
 
 /* Delays (ms) for re-trying a remembered code that the broker still holds. */
 const ID_RETRY_MS = [1500, 3000, 5000, 8000];

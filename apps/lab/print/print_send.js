@@ -16,8 +16,8 @@
     then 'Sent ✓' or 'Failed — tap to retry', which resends the same file)
     and a small sent list. Send buttons are locked while a file is sending.
   Persistence / reconnect rules:
-  - 'jtprint-last-code': last code tried (Reconnect, code box).
-  - 'jtprint-linked': the code while linked. On load, if set, the page goes
+  - 'jtprint-send-last-code': last code tried (Reconnect, code box).
+  - 'jtprint-send-linked': the code while linked. On load, if set, the page goes
     straight to 'Reconnecting…' and connects. If the link drops without a
     bye, it retries with backoff (1, 2, 4, 8, 15 s, then every 15 s while the
     page is open); after RETRY_SHOW_JOIN failed tries the join screen shows
@@ -30,10 +30,10 @@
 */
 
 /* localStorage key for the last station code. */
-const LAST_CODE_KEY = 'jtprint-last-code';
+const LAST_CODE_KEY = 'jtprint-send-last-code';
 
 /* localStorage key holding the code while linked (cleared by manual Disconnect). */
-const LINKED_KEY = 'jtprint-linked';
+const LINKED_KEY = 'jtprint-send-linked';
 
 /* localStorage key for the sent list. */
 const SENT_KEY = 'jtprint-sent';
