@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { createTarget } from './browser-fps_target.js';
 import { createViewmodel } from './browser-fps_viewmodel.js';
 import { makeFloorTexture } from './browser-fps_textures.js';
+import { createPickups } from './browser-fps_pickups.js';
 
 // ─── Tunables (from browser-fps_config.js) ──────────────────────────────────
 const CFG = window.BROWSER_FPS_CONFIG;
@@ -35,6 +36,8 @@ const hpVal = document.getElementById('hp-val');
 const ammoVal = document.getElementById('ammo-val');
 const hitmarker = document.getElementById('hitmarker');
 const dmgFlash = document.getElementById('dmg-flash');
+const healFlash = document.getElementById('heal-flash');
+const healPop = document.getElementById('heal-pop');
 const deathEl = document.getElementById('death');
 const scopeOverlay = document.getElementById('scope-overlay');
 const crosshairEl = document.getElementById('crosshair');
@@ -498,6 +501,7 @@ function restartGame() {
   vm.root.visible = true;
   scopeOverlay.style.opacity = '0';
   crosshairEl.style.opacity = '1';
+  pickups.reset();
   deathEl.classList.add('hidden');
 }
 
@@ -878,6 +882,57 @@ function updateWeapon(dt) {
   }
 }
 
+// ─── Medkits ────────────────────────────────────────────────────────────────
+const PK = CFG.pickups;
+const reachable = new Uint8Array(GW * GD);
+/** Static reachability from the player start over the cover grid (cover never moves). */
+function buildReachable() {
+  reachable.fill(0);
+  const s0 = cellZ(CFG.player.start[1]) * GW + cellX(CFG.player.start[0]);
+  const q = new Int32Array(GW * GD); let h = 0, t = 0;
+  if (!blocked[s0]) { reachable[s0] = 1; q[t++] = s0; }
+  while (h < t) {
+    const k = q[h++], i = k % GW;
+    for (const n of [i > 0 ? k - 1 : -1, i < GW - 1 ? k + 1 : -1, k - GW, k + GW]) {
+      if (n < 0 || n >= GW * GD || blocked[n] || reachable[n]) continue;
+      reachable[n] = 1; q[t++] = n;
+    }
+  }
+}
+function validPickupSpot(x, z) {
+  const k = cellZ(z) * GW + cellX(x);
+  if (!reachable[k] || hitsCover(x, z, PK.clearance)) return false;
+  if (Math.abs(x) > ARENA.w / 2 - 1 || Math.abs(z) > ARENA.d / 2 - 1) return false;
+  if (Math.hypot(player.pos.x - x, player.pos.z - z) < PK.minPlayerDist) return false;
+  for (const it of pickups.items) if (Math.hypot(it.x - x, it.z - z) < 3) return false;
+  return true;
+}
+let healTimers;
+const pickups = createPickups(scene, PK, {
+  randomSpot() {
+    for (let n = 0; n < 60; n++) {
+      const x = (Math.random() - 0.5) * ARENA.w, z = (Math.random() - 0.5) * ARENA.d;
+      if (validPickupSpot(x, z)) return [x, z];
+    }
+    return null;
+  },
+  canPick: () => player.health > 0 && player.health < MAX_HEALTH,
+  onPick(amount) {
+    const before = player.health;
+    player.health = Math.min(MAX_HEALTH, player.health + amount);
+    hpVal.textContent = String(player.health);
+    healFlash.classList.add('show');
+    clearTimeout(healTimers.f);
+    healTimers.f = setTimeout(() => healFlash.classList.remove('show'), PK.flashMs);
+    healPop.textContent = '+' + amount;
+    healPop.classList.remove('show'); void healPop.offsetWidth; healPop.classList.add('show');
+    clearTimeout(healTimers.p);
+    healTimers.p = setTimeout(() => healPop.classList.remove('show'), PK.popMs);
+    pickups.lastHeal = player.health - before;
+  },
+});
+healTimers = { f: 0, p: 0 };
+
 // ─── Main loop ──────────────────────────────────────────────────────────────
 const clock = new THREE.Clock();
 
@@ -887,6 +942,7 @@ function gameStep(dt) {
   updateWeapon(dt);
   updateSpawning(dt);
   updateEnemyAI(dt);
+  pickups.update(dt, player.pos, player.pos.y - PLAYER_HEIGHT);
   // Contact damage
   for (const en of enemies) {
     if (!en.alive) continue;
@@ -928,6 +984,7 @@ function tick() {
 }
 
 buildBlocked();
+buildReachable();
 placeInitialEnemies();
 tick();
 
@@ -938,7 +995,7 @@ window.__fps = {
   step: (dt, n = 1) => { for (let i = 0; i < n; i++) { if (isDead()) break; updateScope(dt); gameStep(dt); for (const en of enemies) en.update(dt); } },
   spawnRandomTarget, hasLineOfSight, restartGame,
   get spawnTimer() { return spawnTimer; },
-  damageAt, hitsCover,
+  damageAt, hitsCover, pickups, validPickupSpot,
   setLook: (y, p) => { yaw = y; pitch = p; },
   setAimHeld: (v) => { aimHeld = v; },
   get aimT() { return aimT; },

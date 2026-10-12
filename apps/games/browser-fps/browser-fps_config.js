@@ -100,7 +100,7 @@ window.BROWSER_FPS_CONFIG = {
 
   // Spawning: a new humanoid every `interval` seconds (initial ones above stay)
   spawn: {
-    initialEnemies: 5,    // enemies placed at random valid spots when a game starts / on Retry
+    initialEnemies: 2,    // enemies placed at random valid spots when a game starts / on Retry
     initialGap: 3.5,      // min spacing between the initial enemies
     farHalfMaxZ: 0,       // enemies only appear where z <= this (the half away from the player's start)
     interval: 15,         // seconds between spawns
@@ -174,5 +174,19 @@ window.BROWSER_FPS_CONFIG = {
     sprint: ['ShiftLeft', 'ShiftRight'],// sprint
     reload: ['KeyR'],                   // reload
     unlock: ['Escape', 'KeyP', 'Backquote'], // free the mouse
+  },
+  pickups: {
+    interval: 20,      // seconds between medkit spawns
+    firstDelay: 20,    // first medkit after this many seconds
+    maxOnMap: 2,       // max medkits alive at once
+    lifetime: 30,      // despawn after this many seconds
+    blinkTime: 5,      // blink during the last N seconds
+    blinkHz: 4,
+    heal: 35,          // HP restored (capped at max health)
+    pickRadius: 0.9,   // horizontal distance to pick up
+    minPlayerDist: 4,  // don't spawn right on top of the player
+    clearance: 0.6,    // keep this far from cover/walls
+    hoverY: 0.35, bobAmp: 0.07, spinSpeed: 1.4,
+    flashMs: 220, popMs: 900,
   },
 };

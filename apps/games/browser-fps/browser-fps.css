@@ -51,6 +51,14 @@
       background: rgba(180, 0, 0, 0.25); opacity: 0; transition: opacity 0.1s;
     }
     #dmg-flash.show { opacity: 1; }
+    #heal-flash {
+      position: absolute; inset: 0; pointer-events: none;
+      background: rgba(40, 220, 90, 0.22); opacity: 0; transition: opacity 0.15s;
+    }
+    #heal-flash.show { opacity: 1; }
+    #heal-pop { color: #5dff8a; font-weight: bold; opacity: 0; display: inline-block; }
+    #heal-pop.show { animation: healpop 0.9s ease-out forwards; }
+    @keyframes healpop { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-18px); } }
 
 #death {
   position: fixed; inset: 0; z-index: 20;
