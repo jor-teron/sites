@@ -36,6 +36,16 @@ window.BROWSER_FPS_CONFIG = {
     hitmarkerMs: 80,      // hitmarker display time
   },
 
+  // Scope / aim down sights (hold right mouse button)
+  scope: {
+    zoom: 2,              // FOV zoom factor when fully scoped
+    blendTime: 0.15,      // seconds to go in / out of scope
+    sensMult: 0.45,       // mouse sensitivity multiplier while scoped
+    moveMult: 0.55,       // walk speed multiplier while scoped (no sprint)
+    hipSpread: 0.012,     // shot spread from the hip (rad, each axis)
+    scopedSpread: 0.0015, // shot spread while scoped
+  },
+
   // Contact damage from enemies
   contact: {
     damage: 8,            // HP lost per touch
@@ -89,7 +99,7 @@ window.BROWSER_FPS_CONFIG = {
   spawn: {
     interval: 15,         // seconds between spawns
     maxAlive: 8,          // never more than this many alive
-    poolMax: 12,          // total target objects ever created (dead ones are reused)
+    poolMax: 16,          // total target objects ever created (bodies are reused only after their corpse time)
     minPlayerDist: 6,     // spawn at least this far from the player
     coverMargin: 0.6,     // keep this clear of cover / walls
     targetGap: 1.6,       // keep this far from other targets

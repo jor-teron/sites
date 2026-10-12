@@ -16,6 +16,7 @@ const SPRINT_MULT = CFG.player.sprintMult;
 const JUMP_VEL = CFG.player.jumpVel;
 const GRAVITY = CFG.player.gravity;
 const MOUSE_SENS = CFG.player.mouseSens;
+const SCOPE = CFG.scope;
 const FIRE_RATE = CFG.weapon.fireRate;
 const MAG_SIZE = CFG.weapon.magSize;
 const RELOAD_TIME = CFG.weapon.reloadTime;
@@ -227,10 +228,16 @@ const player = {
 const keys = Object.create(null);
 let pointerLocked = false;
 let shooting = false;
+let aimHeld = false;   // right mouse button held
+let aimT = 0;          // 0 = hip, 1 = fully scoped (smoothed)
+/** Scoping is blocked / cancelled while reloading. */
+const wantsAim = () => aimHeld && !player.reloading && !isDead();
+const sensNow = () => MOUSE_SENS * (1 + (SCOPE.sensMult - 1) * aimT);
 
 function clearInput() {
   for (const k of Object.keys(keys)) delete keys[k];
   shooting = false;
+  aimHeld = false;
 }
 
 /** Always free the mouse — do not rely on the browser's default Esc alone. */
@@ -273,8 +280,8 @@ document.addEventListener('visibilitychange', () => {
 
 document.addEventListener('mousemove', (e) => {
   if (!pointerLocked) return;
-  yaw -= e.movementX * MOUSE_SENS;
-  pitch -= e.movementY * MOUSE_SENS;
+  yaw -= e.movementX * sensNow();
+  pitch -= e.movementY * sensNow();
   const lim = Math.PI / 2 - CFG.player.pitchLimitPad;
   pitch = Math.max(-lim, Math.min(lim, pitch));
 });
@@ -296,10 +303,27 @@ document.addEventListener('keyup', (e) => { keys[e.code] = false; });
 document.addEventListener('mousedown', (e) => {
   if (!pointerLocked) return;
   if (e.button === 0) shooting = true;
+  if (e.button === 2) aimHeld = true;
 });
 document.addEventListener('mouseup', (e) => {
   if (e.button === 0) shooting = false;
+  if (e.button === 2) aimHeld = false;
 });
+// Right mouse button is aim: never open the context menu over the game
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+/** Smooth scope in/out: FOV zoom + viewmodel pose. */
+function updateScope(dt) {
+  const target = wantsAim() ? 1 : 0;
+  const step = dt / SCOPE.blendTime;
+  aimT = target > aimT ? Math.min(target, aimT + step) : Math.max(target, aimT - step);
+  const fov = SC.fov / (1 + (SCOPE.zoom - 1) * aimT);
+  if (Math.abs(camera.fov - fov) > 1e-4) {
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
+  }
+  vm.setAim(aimT);
+}
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -411,8 +435,8 @@ function updateMovement(dt) {
   if (held(KEYS.left)) wish.sub(right);
   if (wish.lengthSq() > 0) wish.normalize();
 
-  const sprint = held(KEYS.sprint);
-  const speed = MOVE_SPEED * (sprint ? SPRINT_MULT : 1);
+  const sprint = held(KEYS.sprint) && aimT === 0;          // no sprint while scoped
+  const speed = MOVE_SPEED * (sprint ? SPRINT_MULT : 1) * (1 + (SCOPE.moveMult - 1) * aimT);
   player.vel.x = wish.x * speed;
   player.vel.z = wish.z * speed;
 
@@ -464,6 +488,9 @@ function restartGame() {
   ammoVal.textContent = String(player.ammo);
   resetEnemies();
   spawnTimer = SP.interval;
+  aimHeld = false; aimT = 0;
+  camera.fov = SC.fov; camera.updateProjectionMatrix();
+  vm.setAim(0);
   deathEl.classList.add('hidden');
 }
 
@@ -585,6 +612,9 @@ function fire() {
 
   // Muzzle flash + tracer start at the viewmodel's barrel tip
   shootDir.set(0, 0, -1).applyQuaternion(camera.quaternion);
+  // spread: wider from the hip, tight when scoped
+  const spread = SCOPE.hipSpread + (SCOPE.scopedSpread - SCOPE.hipSpread) * aimT;
+  shootDir.applyEuler(new THREE.Euler((Math.random() * 2 - 1) * spread, (Math.random() * 2 - 1) * spread, 0, 'YXZ')).normalize();
   camera.updateMatrixWorld();
   const muzzle = vm.muzzleWorld(camera);
   vm.onFire();
@@ -690,6 +720,7 @@ const clock = new THREE.Clock();
 
 /** One simulation step while playing (also used by the headless test hook). */
 function gameStep(dt) {
+  updateScope(dt);
   updateMovement(dt);
   updateWeapon(dt);
   updateSpawning(dt);
@@ -723,7 +754,7 @@ function tick() {
   for (const en of enemies) en.update(dt);
   vm.update(dt, {
     moving: pointerLocked && !isDead() && (held(KEYS.forward) || held(KEYS.back) || held(KEYS.left) || held(KEYS.right)),
-    sprint: held(KEYS.sprint),
+    sprint: held(KEYS.sprint) && aimT === 0,
     onGround: player.onGround,
     yaw, pitch,
   });
@@ -743,4 +774,9 @@ window.__fps = {
   spawnRandomTarget, hasLineOfSight, restartGame,
   get spawnTimer() { return spawnTimer; },
   setLook: (y, p) => { yaw = y; pitch = p; },
+  setAimHeld: (v) => { aimHeld = v; },
+  get aimT() { return aimT; },
+  get sens() { return sensNow(); },
+  get moveSpeedNow() { return Math.hypot(player.vel.x, player.vel.z); },
+  keys,
 };

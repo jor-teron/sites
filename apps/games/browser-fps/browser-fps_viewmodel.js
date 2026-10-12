@@ -19,6 +19,8 @@ const FOV = 60;                       // viewmodel camera FOV (independent of th
 const GUN_POS = new THREE.Vector3(0.115, -0.07, -0.34);  // rest position (camera space, lower right)
 const GUN_SCALE = 0.6;                                   // overall viewmodel size
 const GUN_YAW = 0.06;                                    // angle the barrel slightly toward the crosshair
+// Aim-down-sights pose: gun centred, front sight post (gun-local tip y ~0.095 x 0.6 scale) just below the crosshair
+const ADS_POS = new THREE.Vector3(0, -0.062, -0.32);   // front sight post tip just under the screen centre
 const MUZZLE_LOCAL = new THREE.Vector3(0, 0.022, -0.52); // barrel tip in gun space
 
 const RECOIL_BACK = 0.045, RECOIL_UP = 0.07, RECOIL_RETURN = 16;   // kick and recovery rate (1/s)
@@ -123,6 +125,7 @@ export function createViewmodel() {
   let recoil = 0, flashT = 0, bobT = 0, bobW = 0;
   let reloadT = 0, reloadDur = 0;
   let lastYaw = null, lastPitch = null, swayX = 0, swayY = 0;
+  let aim = 0;   // 0 = hip, 1 = aiming down sights
   const tmp = new THREE.Vector3();
 
   function setAspect(a) { camera.aspect = a; camera.updateProjectionMatrix(); }
@@ -149,6 +152,7 @@ export function createViewmodel() {
   }
 
   function startReload(seconds) { reloadDur = seconds; reloadT = seconds; }
+  function setAim(a) { aim = Math.max(0, Math.min(1, a)); }
 
   const smooth = (x) => x * x * (3 - 2 * x);
   const seg = (u, a, b) => Math.max(0, Math.min(1, (u - a) / (b - a)));
@@ -176,8 +180,13 @@ export function createViewmodel() {
     swayX *= ret; swayY *= ret;
 
     const sprintDrop = st.sprint && moving ? 1 : 0;
-    root.position.set(GUN_POS.x + bx + swayX * 0.6, GUN_POS.y + by + swayY * 0.6 - 0.02 * sprintDrop, GUN_POS.z);
-    root.rotation.set(swayY * 0.8, GUN_YAW + swayX * 0.8, -0.12 * sprintDrop);
+    const k = 1 - aim * 0.85;                       // less bob/sway while aiming
+    const bx2 = bx * k, by2 = by * k, sx = swayX * k, sy = swayY * k;
+    const px = GUN_POS.x + (ADS_POS.x - GUN_POS.x) * aim;
+    const py = GUN_POS.y + (ADS_POS.y - GUN_POS.y) * aim;
+    const pz = GUN_POS.z + (ADS_POS.z - GUN_POS.z) * aim;
+    root.position.set(px + bx2 + sx * 0.6, py + by2 + sy * 0.6 - 0.02 * sprintDrop, pz);
+    root.rotation.set(sy * 0.8, GUN_YAW * (1 - aim) + sx * 0.8, -0.12 * sprintDrop);
 
     // recoil on the gun
     gun.position.set(0, recoil * 0.01, recoil * RECOIL_BACK);
@@ -208,6 +217,6 @@ export function createViewmodel() {
     gun.rotation.set(rx, ry, rz);
   }
 
-  return { scene, camera, setAspect, muzzleWorld, onFire, startReload, update,
+  return { scene, camera, setAspect, muzzleWorld, onFire, startReload, setAim, root, update,
     get reloading() { return reloadT > 0; }, get recoil() { return recoil; }, gun, mag, lArm };
 }

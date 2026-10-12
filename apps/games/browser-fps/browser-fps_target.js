@@ -16,7 +16,9 @@ const FLASH_TIME = 0.08;            // hit flash (s)
 const KNOCK_DIST = 0.12;            // knockback offset (world units)
 const KNOCK_RETURN = 10;            // knockback recovery rate (1/s)
 const FALL_TIME = 0.45;             // death fall duration (s)
-const HIDE_AFTER = 0.35;            // stay on the ground this long, then hide (s)
+const CORPSE_TIME = 10;             // corpse stays on the floor this long after the fall (s)
+const SINK_TIME = 1;                // then sinks into the floor over this long (s)
+const SINK_DEPTH = 0.6;             // how far it sinks (body lies ~0.35 thick)
 const CONTACT_MARGIN = 0.15;        // contact damage reach beyond the collider
 const RISE_TIME = 0.6;              // spawn rise-up animation (s)
 const RISE_DEPTH = 2.1;             // starts this far below the floor
@@ -279,8 +281,11 @@ export function createTarget(spec) {
         const f = Math.min(1, this.deathT / FALL_TIME);
         const ease = f * f;                                   // accelerate like falling
         pivot.rotation.x = this.fallSign * ease * (Math.PI / 2 - 0.05);
-        if (this.deathT >= FALL_TIME + HIDE_AFTER) {
-          this.dying = false;
+        // Corpse: lie still for CORPSE_TIME, then sink out of sight and return to the pool
+        const sinkT = this.deathT - FALL_TIME - CORPSE_TIME;
+        if (sinkT > 0) pivot.position.y -= SINK_DEPTH * Math.min(1, sinkT / SINK_TIME);
+        if (sinkT >= SINK_TIME) {
+          this.dying = false;          // pool may reuse it now
           group.visible = false;
         }
       }
