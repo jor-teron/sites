@@ -1,4 +1,4 @@
-Gmail setup for basic-mail. Personal use only.
+Gmail setup for mail. Personal use only.
 
 1. Open https://console.cloud.google.com/ and create a project.
 2. Enable the Gmail API for that project.
@@ -7,10 +7,10 @@ Gmail setup for basic-mail. Personal use only.
 5. Authorized JavaScript origins: the exact site you open: https://jor-teron.github.io
    (and for local tests, for example http://localhost:8080)
    file:// will not work. A password login will not work.
-6. Paste the client id into basic-mail-config.js as clientId.
+6. Paste the client id into mail-config.js as clientId.
 7. Serve the folder and open index.html. Use Connect, then allow the unverified-app warning.
 
-Theme default is theme in basic-mail-config.js. The Theme button only saves a browser override.
+Theme default is theme in mail-config.js. The Theme button only saves a browser override.
 No client secret belongs in these files.
 
 Sign out (top bar) revokes access at Google. The sign-in lasts about 60 minutes per tab; then tap Connect.

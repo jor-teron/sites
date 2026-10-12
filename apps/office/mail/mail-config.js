@@ -1,6 +1,6 @@
 /*
-  File: basic-mail-config.js
-  Project: basic-mail
+  File: mail-config.js
+  Project: mail
   Purpose: Defaults for the personal Gmail client.
   theme: "dark" or "light". First paint if the browser has no saved choice.
   clientId: OAuth client id from Google Cloud. Empty until you paste yours.

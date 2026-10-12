@@ -1,24 +1,24 @@
-# basic-mail
+# mail
 
-Minimal personal Gmail client (own UI, Gmail REST API after Google sign-in). Lab app.
-Works in the Hub (Lab → Basic Mail) and responds to the hub's D-pad.
-Setup steps (Google Cloud, client id) are in `basic-mail.txt`.
+Minimal personal Gmail client (own UI, Gmail REST API after Google sign-in). Office app (moved from apps/lab/basic-mail; old links redirect). Storage keys keep the old basic-mail-* names so the theme and session survive the move.
+Works in the Hub (Office → Mail) and responds to the hub's D-pad.
+Setup steps (Google Cloud, client id) are in `mail.txt`.
 
 ## Files
 
 | File | Job |
 | --- | --- |
-| `index.html` | Redirect to `basic-mail.html`. |
-| `basic-mail.html` | Page, page CSP, script order. |
-| `basic-mail-config.js` | Theme, app name, OAuth client id, scopes. No secrets. |
-| `basic-mail-sanitize.js` | Untrusted mail HTML → safe srcdoc page (+ frame CSP). |
-| `basic-mail-view.js` | Reader body: sandboxed iframe or plain text, "Show images". |
-| `basic-mail-auth.js` | GIS token client, token storage, expiry, sign out (revoke). |
-| `basic-mail.js` | Gmail calls, list, search, open, compose/send (reply, reply all, forward), archive, delete. |
-| `basic-mail-attach.js` | Address lists (split, own address, RFC 2047 names), attachments in and out. |
-| `basic-mail-keys.js` | Keyboard and hub D-pad: ↑↓ rows, ←→ folders, Enter, Esc. |
-| `basic-mail.css` | Layout, dark/light themes, 44px tap targets. |
-| `basic-mail_icon.png` | Hub icon (128×128). |
+| `index.html` | Redirect to `mail.html`. |
+| `mail.html` | Page, page CSP, script order. |
+| `mail-config.js` | Theme, app name, OAuth client id, scopes. No secrets. |
+| `mail-sanitize.js` | Untrusted mail HTML → safe srcdoc page (+ frame CSP). |
+| `mail-view.js` | Reader body: sandboxed iframe or plain text, "Show images". |
+| `mail-auth.js` | GIS token client, token storage, expiry, sign out (revoke). |
+| `mail.js` | Gmail calls, list, search, open, compose/send (reply, reply all, forward), archive, delete. |
+| `mail-attach.js` | Address lists (split, own address, RFC 2047 names), attachments in and out. |
+| `mail-keys.js` | Keyboard and hub D-pad: ↑↓ rows, ←→ folders, Enter, Esc. |
+| `mail.css` | Layout, dark/light themes, 44px tap targets. |
+| `mail_icon.png` | Hub icon (128×128). |
 
 ## Behaviour rules
 
@@ -34,7 +34,7 @@ Setup steps (Google Cloud, client id) are in `basic-mail.txt`.
 - **Remote images blocked by default.** Remote `img src`, `srcset`, `background=` and CSS `url(...)`
   (style attributes and `<style>` blocks, plus `@import`) are removed. A bar "Images hidden — Show images"
   re-renders this one message with them. Per open only; nothing is remembered per sender.
-- **Page CSP** (meta in `basic-mail.html`): scripts only from this folder and
+- **Page CSP** (meta in `mail.html`): scripts only from this folder and
   `https://accounts.google.com/gsi/client`; connect only to Gmail, GIS and `oauth2.googleapis.com`
   (revoke); frames only GIS. `img-src` includes `https:` because a srcdoc frame inherits the page
   policy, so "Show images" would fail otherwise; the page itself never renders mail HTML.

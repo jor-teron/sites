@@ -1,9 +1,9 @@
 /*
-  File: basic-mail-view.js
-  Project: basic-mail
+  File: mail-view.js
+  Project: mail
   Purpose: Paint a message body in the reader.
   HTML mail goes into a sandboxed iframe (srcdoc, no scripts, no same-origin) built by
-  basic-mail-sanitize.js. Plain text stays plain text (textContent).
+  mail-sanitize.js. Plain text stays plain text (textContent).
   Remote images start hidden. "Show images" re-renders this one message with them.
   Nothing is remembered per sender.
 */

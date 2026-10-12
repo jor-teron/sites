@@ -1,6 +1,6 @@
 /*
-  File: basic-mail-keys.js
-  Project: basic-mail
+  File: mail-keys.js
+  Project: mail
   Purpose: Keyboard and hub D-pad control. The hub sends synthetic key events into
   this page, so Enter on a focused button is turned into a click here.
   Up / Down: move through the mail rows. Left / Right: previous / next folder.

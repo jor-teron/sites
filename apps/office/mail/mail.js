@@ -1,11 +1,11 @@
 /*
-  File: basic-mail.js
-  Project: basic-mail
+  File: mail.js
+  Project: mail
   Purpose: Personal Gmail client. Google sign-in, then Gmail API.
-  Theme default is basic-mail-config.js. Browser override key is basic-mail-theme.
+  Theme default is mail-config.js. Browser override key is basic-mail-theme.
   No sample inbox. Empty until Connect succeeds.
-  Sign-in and token life: basic-mail-auth.js. Mail rendering: basic-mail-view.js and
-  basic-mail-sanitize.js. D-pad and keys: basic-mail-keys.js.
+  Sign-in and token life: mail-auth.js. Mail rendering: mail-view.js and
+  mail-sanitize.js. D-pad and keys: mail-keys.js.
 */
 
 /* Browser key for the theme override. Does not rewrite config. */

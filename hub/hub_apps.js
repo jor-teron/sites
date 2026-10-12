@@ -59,7 +59,7 @@ Office,   MS Word Diff,          apps/tools/msword_diff/,                    ,  
 Office,   Notepad,               apps/office/notepad/,                       ,         0,       0,      450
 Office,   Notely,                apps/office/notely/,                        ,         0,       0,      450
 Office,   Print,                 apps/lab/print/,                            ,         0,       0,      460
-Office,   Basic Mail,            apps/lab/basic-mail/,                       ,         0,       0,      470
+Office,   Mail,                  apps/office/mail/,                          ,         0,       0,      470
 Office,   Paper Scan,            apps/office/paper-scan/,                    ,         0,       0,      480
 
 Connectivity, File Drop,         apps/connectivity/filedrop/,                ,         0,       0,      405

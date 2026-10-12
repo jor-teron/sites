@@ -1,5 +1,5 @@
 /*
- * basic-mail — addresses and attachments (basic-mail-attach.js). Loaded before basic-mail.js.
+ * mail — addresses and attachments (mail-attach.js). Loaded before mail.js.
  * - Address lists: split "Name <a@b>, c@d" safely, drop own address, RFC 2047 display names.
  * - Received attachments: list from the Gmail payload, download through the Gmail attachments
  *   API into a Blob (application/octet-stream) with a cleaned file name. Never opened or shown.

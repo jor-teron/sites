@@ -1,6 +1,6 @@
 /*
-  File: basic-mail-sanitize.js
-  Project: basic-mail
+  File: mail-sanitize.js
+  Project: mail
   Purpose: Turn untrusted email HTML into a srcdoc page for the sandboxed reader frame.
   Removes active content (scripts, frames, forms, handlers, javascript:/data: links).
   Keeps the mail's own CSS so it looks right, but the frame contains it.

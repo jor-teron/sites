@@ -1,6 +1,6 @@
 /*
-  File: basic-mail-auth.js
-  Project: basic-mail
+  File: mail-auth.js
+  Project: mail
   Purpose: Google sign-in (GIS token client), token storage, expiry, and sign out.
   The access token lives in memory and in sessionStorage (this tab only) until Google's
   expiry (about 60 minutes). No refresh token, no client secret.
@@ -88,7 +88,7 @@ function expireSession() {
 function connect() {
   var clientId = (window.BASIC_MAIL_CONFIG && BASIC_MAIL_CONFIG.clientId) || "";
   if (!clientId) {
-    setStatus("Set clientId in basic-mail-config.js. Steps are in basic-mail.txt.");
+    setStatus("Set clientId in mail-config.js. Steps are in mail.txt.");
     return;
   }
   if (!window.google || !google.accounts || !google.accounts.oauth2) {

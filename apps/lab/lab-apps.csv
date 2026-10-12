@@ -3,7 +3,6 @@
 name, path, icon
 Print, print/,
 Notebook, notebook/,
-Basic Mail, basic-mail/,
 Paper Keyboard, paper-keyboard/,
 Device Benchmark, devbench/,
 Island Game Demo, island-demo/,
