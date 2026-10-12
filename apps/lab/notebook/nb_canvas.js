@@ -83,6 +83,7 @@ function redraw() {
     ctx.stroke();
   });
   updateOverlay();
+  updateWrinkle();
 }
 
 // Update special page overlay text

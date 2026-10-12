@@ -1,7 +1,7 @@
 /*
  * Project: notebook
  * File: nb_pages.js
- * Role: Page navigation, crumble, page toast, pages grid.
+ * Role: Page navigation, crumple (adds wrinkles, nb_wrinkle.js), page toast, pages grid.
  */
 // Update page info display (now only used for toast)
 function updatePageInfo() {
@@ -18,11 +18,9 @@ function goToPage(index) {
   saveToStorage();
 }
 
-// Crumble current page (permanent, no undo, can be done multiple times)
+// Crumple current page: strokes stay, wrinkles grow one level (permanent, no undo, cap CRUMPLE_MAX)
 function crumblePage() {
-  pages[currentPage] = [];
-  redraw();
-  saveToStorage();
+  addCrumple();
 }
 
 // Show temporary page number
