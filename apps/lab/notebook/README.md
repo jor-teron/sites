@@ -27,7 +27,7 @@ Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself 
 - `nb_cover.js` — cloth covers (woven pattern, spine, band, name label, embossed logo) + index table
 - `nb_wrinkle.js` — crumple levels + SVG wrinkle overlay (feTurbulence + lighting, seeded per page) and its export image
 - `nb_draw.js` — pointer drawing
-- `nb_export.js` — PNG / PDF download
+- `nb_export.js` — PNG download (with wrinkles)
 - `nb_settings.js` — settings panel open/close
 - `nb_float.js` — floating button gestures
 - `nb_popup.js` — hold quick menu
@@ -51,7 +51,7 @@ Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself 
 2. Swipe the ☰ right → page 2 (Index); keep going to page 4 → ruled lines.
 3. Draw a few strokes, reload → strokes still there.
 4. Tap ☰ → nothing. Pull ☰ up past 1/3 → grid with thumbnails; tap one → opens.
-5. Pull ☰ down past 1/3 → jelly jiggles, light wrinkles; again → more; reload → still there. Export PNG/PDF → wrinkles included.
+5. Pull ☰ down past 1/3 → jelly jiggles, light wrinkles; again → more; reload → still there. Export PNG → wrinkles included.
 6. Hold ☰ → quick menu → Download PNG (current page); page 49 → text on the lines, ☰ visible, swipe back works.
 
 ## Known limits
