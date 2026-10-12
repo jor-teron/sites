@@ -5,14 +5,26 @@
  *   with a homography (inverse mapping + bilinear sampling), apply page.filter, rotate page.rot×90°,
  *   encode JPEG 0.8. Output size: preset long × short side (A4 ratio), portrait unless the quad is wider.
  * - PS.crop.open(page, onDone): full-screen editor with 4 big draggable corner handles,
- *   Rotate, Full (whole photo), filter chips. PS.crop.undo() reverts the last crop/rotate/filter change.
+ *   Rotate, Full (largest A4 area — never stretched), filter chips. Default/Full crops keep true A4
+ *   proportions (defCorners(iw, ih)); page.corners null → filled once the photo size is known.
+ *   PS.crop.undo() reverts the last crop/rotate/filter change.
  */
 (function () {
   'use strict';
   const PS = window.PS = window.PS || {};
   const PRESETS = { low: [1600, 1131], medium: [2000, 1414], good: [2480, 1754] };
   const INSET = 0.05;
-  const defCorners = () => [[INSET, INSET], [1 - INSET, INSET], [1 - INSET, 1 - INSET], [INSET, 1 - INSET]];
+  const A4 = 1.414;
+  // Centered A4-portrait rect (true proportions) in a iw×ih photo, normalized 0..1. Unknown size → inset box.
+  function defCorners(iw, ih, inset) {
+    const m = inset == null ? INSET : inset;
+    if (!iw || !ih) return [[m, m], [1 - m, m], [1 - m, 1 - m], [m, 1 - m]];
+    let w = iw * (1 - 2 * m), h = w * A4;
+    if (h > ih * (1 - 2 * m)) { h = ih * (1 - 2 * m); w = h / A4; }
+    const x0 = (iw - w) / 2 / iw, y0 = (ih - h) / 2 / ih, x1 = 1 - x0, y1 = 1 - y0;
+    return [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+  }
+  const fill = (p, im) => { if (!p.corners) p.corners = defCorners(im.naturalWidth, im.naturalHeight); };
 
   function loadImg(blob) {
     return new Promise((res, rej) => {
@@ -77,6 +89,7 @@
     const [L, S] = PRESETS[preset] || PRESETS.medium;
     const im = await loadImg(page.src);
     const iw = im.naturalWidth, ih = im.naturalHeight;
+    fill(page, im);
     const quad = page.corners.map(([x, y]) => [x * iw, y * ih]);
     const qw = (dist(quad[0], quad[1]) + dist(quad[3], quad[2])) / 2, qh = (dist(quad[0], quad[3]) + dist(quad[1], quad[2])) / 2;
     const land = qw > qh;
@@ -106,7 +119,7 @@
   const $ = (id) => document.getElementById(id);
   const undoStack = [];
   let cur = null, done = null, im = null, box = { x: 0, y: 0, w: 1, h: 1 };
-  const snap = (p) => ({ id: p.id, corners: p.corners.map((c) => c.slice()), rot: p.rot || 0, filter: p.filter });
+  const snap = (p) => ({ id: p.id, corners: p.corners && p.corners.map((c) => c.slice()), rot: p.rot || 0, filter: p.filter });
   function remember() { if (cur) { undoStack.push(snap(cur)); if (undoStack.length > 50) undoStack.shift(); } }
 
   function layout() {
@@ -146,7 +159,7 @@
       h.addEventListener('pointerup', up); h.addEventListener('pointercancel', up);
     });
     $('ed-rot').addEventListener('click', () => { remember(); cur.rot = ((cur.rot || 0) + 1) % 4; drawQuad(); });
-    $('ed-full').addEventListener('click', () => { remember(); cur.corners = [[0, 0], [1, 0], [1, 1], [0, 1]]; drawQuad(); });
+    $('ed-full').addEventListener('click', () => { remember(); cur.corners = defCorners(im.naturalWidth, im.naturalHeight, 0); drawQuad(); });
     $('ed-filters').addEventListener('click', (e) => {
       const b = e.target.closest('[data-f]'); if (!b || !cur) return;
       remember(); cur.filter = b.dataset.f; drawQuad();
@@ -160,6 +173,7 @@
     cur = page; done = onDone;
     $('editor').hidden = false;
     im = await loadImg(page.src);
+    fill(page, im);
     layout();
     $('ed-done').focus();
   }

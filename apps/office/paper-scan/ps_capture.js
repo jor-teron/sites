@@ -2,6 +2,7 @@
  * Paper Scan — ps_capture.js
  * 'Camera' (file input, capture=environment, multiple) and 'Photos' (picker, multiple).
  * PS.capture.init(onFiles) ; PS.capture.retake() → Promise<File|null> (one photo, camera).
+ * Camera prefers the live A4-frame camera (ps_live.js); falls back to the file input.
  * Only image/* files pass; others are reported and skipped.
  */
 (function () {
@@ -11,15 +12,22 @@
   const images = (list) => Array.from(list || []).filter((f) => /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic|gif|bmp)$/i.test(f.name));
 
   function init(onFiles) {
-    const wire = (btn, input) => {
-      $(btn).addEventListener('click', () => { input.value = ''; input.click(); });
+    const wire = (btn, input, live) => {
+      $(btn).addEventListener('click', () => {
+        if (live && PS.live && PS.live.ok()) {
+          PS.live.shoot().then((fs) => { if (fs.length) onFiles(fs); })
+            .catch(() => { PS.ui.status('Live camera blocked — using the phone camera app'); input.value = ''; input.click(); });
+          return;
+        }
+        input.value = ''; input.click();
+      });
       input.addEventListener('change', () => {
         const all = Array.from(input.files || []), ok = images(all);
         if (all.length && ok.length < all.length) PS.ui.status('Skipped ' + (all.length - ok.length) + ' file(s) that are not photos');
         if (ok.length) onFiles(ok);
       });
     };
-    wire('cam', $('in-cam'));
+    wire('cam', $('in-cam'), true);
     wire('pick', $('in-pick'));
   }
 

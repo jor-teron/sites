@@ -1,6 +1,7 @@
 /*
  * Paper Scan — paper-scan.js  (main: state, page processing queue, export, keys)
- * PS.pages = ordered page records (see ps_store.js). New photos → default corners inset 5%,
+ * PS.pages = ordered page records (see ps_store.js). New photos → centered A4 crop (true proportions;
+ * live-camera shots are already A4 → full corners),
  * filter Document → rendered at the chosen quality → saved. Export builds one PDF (ps_pdf.js):
  * ⬇ PDF download, 🖨 Print (hidden iframe + browser print dialog), ↗ Share (navigator.share files),
  * 📤 Send (ps_send.js). Keys: Ctrl+S export, Delete removes the focused/edited page, Ctrl+Z undo,
@@ -47,12 +48,12 @@
 
   function addFiles(files) {
     files.forEach((f) => {
-      const p = { id: uid(), src: f, corners: PS.crop.defCorners(), rot: 0, filter: 'document' };
+      const p = { id: uid(), src: f, corners: f.a4 ? [[0, 0], [1, 0], [1, 1], [0, 1]] : null, rot: 0, filter: 'document' };
       PS.pages.push(p); process(p);
     });
     saveOrder();
     // One new photo → straight into crop; several → review in the grid.
-    if (files.length === 1) edit(PS.pages[PS.pages.length - 1]);
+    if (files.length === 1 && !files[0].a4) edit(PS.pages[PS.pages.length - 1]);
   }
 
   function edit(p) { PS.crop.open(p, (q) => process(q)).catch((e) => PS.ui.status(e.message)); }
@@ -67,7 +68,7 @@
   async function retake(p) {
     const f = await PS.capture.retake(); if (!f) return;
     PS.crop.remember(p);
-    p.src = f; p.corners = PS.crop.defCorners(); p.rot = 0;
+    p.src = f; p.corners = f.a4 ? [[0, 0], [1, 0], [1, 1], [0, 1]] : null; p.rot = 0;
     process(p); edit(p);
   }
   function remove(p) {
@@ -121,6 +122,7 @@
     const ctrl = e.ctrlKey || e.metaKey, tag = (e.target.tagName || '').toLowerCase();
     if (ctrl && e.key.toLowerCase() === 's') { e.preventDefault(); act(download)(); return; }
     if (ctrl && e.key.toLowerCase() === 'z') { e.preventDefault(); const p = PS.crop.undo(); if (p) process(p); return; }
+    if (e.key === 'Escape' && PS.live && PS.live.isOpen()) { PS.live.close(); return; }
     if (e.key === 'Escape' && PS.crop.isOpen()) { PS.crop.close(); return; }
     if (e.key === 'Delete' && tag !== 'input' && tag !== 'select') {
       const li = e.target.closest && e.target.closest('.ps-page');
