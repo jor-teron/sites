@@ -60,3 +60,10 @@ html, body {
 #command-bar button.cmd small { font-size: 12px; color: #f0d9a0; margin-top: 2px; }
 #command-bar button.cmd:active { background: #7a5c36; }
 #command-bar button.cmd:disabled { opacity: 0.45; }
+
+/* R9 mute toggle */
+#mute-btn {
+    position: fixed; top: 8px; right: 8px; z-index: 30; width: 48px; height: 48px;
+    font-size: 22px; border-radius: 50%; border: 2px solid #c8a46a; background: rgba(20,16,10,0.8);
+    color: #fff; touch-action: manipulation;
+}
