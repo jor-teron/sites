@@ -147,7 +147,7 @@ function hits(a, b) {
 function makeLevel() {
   var L = CFG.level;
   return {
-    platforms: L.platforms.map(function (p) { return { x: p.x, y: p.y, w: p.w, h: p.h }; }),
+    platforms: L.platforms.map(function (p) { return { x: p.x, y: p.y, w: p.w, h: p.h, solid: !!p.solid }; }),
     enemies: L.enemies,
     gate: { x: L.gate.x, y: L.gate.y, w: L.gate.w, h: L.gate.h },
     width: L.width
@@ -189,6 +189,11 @@ function newState(durationSec) {
       vx: 0,
       vy: 0,
       onGround: false,
+      coyote: 0,        /* s left to still jump after leaving the ground */
+      jumpBuf: 0,       /* s left on a buffered jump press */
+      jumpHeld: false,  /* jump key state last frame (press = edge) */
+      jumpCutDone: true, /* the short-hop cut is applied once per jump */
+      prevBottom: 0,    /* feet y before this frame's move (one-way platforms) */
       facing: 1
     },
     bullets: [],
@@ -231,6 +236,19 @@ function collidePlatforms(body, platforms) {
   body.onGround = false;
   for (var i = 0; i < platforms.length; i++) {
     var p = platforms[i];
+    if (!p.solid) {
+      /* One-way platform: land only when falling and the feet were at/above the top last frame.
+         Rising through it or walking under/past it never collides (no snagging). */
+      var bottom = body.y + body.h;
+      if (body.vy >= 0 &&
+          body.x + body.w > p.x && body.x < p.x + p.w &&
+          body.prevBottom <= p.y + PC.oneWayEps && bottom >= p.y) {
+        body.y = p.y - body.h;
+        body.vy = 0;
+        body.onGround = true;
+      }
+      continue;
+    }
     if (!hits(body, p)) continue;
     var overlapX = Math.min(body.x + body.w, p.x + p.w) - Math.max(body.x, p.x);
     var overlapY = Math.min(body.y + body.h, p.y + p.h) - Math.max(body.y, p.y);
@@ -353,16 +371,30 @@ function step(dt) {
     p.vx = RUN_SPEED;
     p.facing = 1;
   }
-  if (jump && p.onGround) {
+  /* Jump: triggered on the press (edge), buffered briefly, with coyote time after leaving a ledge */
+  var pressed = jump && !p.jumpHeld;
+  p.jumpHeld = jump;
+  if (pressed) p.jumpBuf = PC.jumpBuffer;
+  else p.jumpBuf = Math.max(0, p.jumpBuf - dt);
+  if (p.onGround) p.coyote = PC.coyoteTime;
+  else p.coyote = Math.max(0, p.coyote - dt);
+  if (p.jumpBuf > 0 && p.coyote > 0) {
     p.vy = JUMP_VEL;
     p.onGround = false;
+    p.coyote = 0;
+    p.jumpBuf = 0;
+    p.jumpCutDone = false;
     AudioBus.playSfx("jump");
   }
+  /* Variable height: letting go while rising cuts the jump short */
+  if (!jump && p.vy < 0 && !p.jumpCutDone) { p.vy *= PC.jumpCut; p.jumpCutDone = true; }
   if (shoot) fire();
 
-  p.vy += GRAVITY * dt;
+  /* Exact constant-gravity integration: same jump height at any frame rate */
+  p.prevBottom = p.y + p.h;
   p.x += p.vx * dt;
-  p.y += p.vy * dt;
+  p.y += p.vy * dt + 0.5 * GRAVITY * dt * dt;
+  p.vy += GRAVITY * dt;
 
   if (p.x < 0) p.x = 0;
   if (p.x > state.level.width - p.w) p.x = state.level.width - p.w;

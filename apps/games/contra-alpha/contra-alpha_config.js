@@ -17,7 +17,10 @@ var CONTRA_ALPHA_CONFIG = {
   /* Player */
   player: {
     runSpeed: 220,        /* px/s */
-    jumpVel: -520,        /* jump impulse (px/s) */
+    jumpVel: -620,        /* jump impulse (px/s); peak = v^2 / 2g ~ 137 px (first steps need 100-120) */
+    jumpCut: 0.45,        /* releasing jump while rising multiplies upward speed by this (short hop) */
+    coyoteTime: 0.1,      /* s after walking off a ledge during which a jump still works */
+    jumpBuffer: 0.12,     /* s a jump press is remembered before landing */
     gravity: 1400,        /* px/s^2 */
     start: { x: 80, y: 400 }, /* spawn position */
     w: 22,                /* width */
@@ -28,7 +31,8 @@ var CONTRA_ALPHA_CONFIG = {
     respawnY: 360,        /* y after losing a life or falling */
     fallMargin: 80,       /* falling this far below the canvas hurts */
     cameraLead: 200,      /* camera keeps the player this far from the left edge */
-    landTolerance: 8,     /* px tolerance for landing on a platform */
+    landTolerance: 8,     /* px tolerance for landing on the solid ground */
+    oneWayEps: 0.5,       /* px slack for 'feet were above the platform top last frame' */
   },
 
   /* Player bullets */
@@ -63,7 +67,7 @@ var CONTRA_ALPHA_CONFIG = {
   level: {
     width: 4200,
     platforms: [
-      { x: 0, y: 480, w: 4200, h: 60 },
+      { x: 0, y: 480, w: 4200, h: 60, solid: true },  /* ground: solid; all others are one-way (jump up through, land from above) */
       { x: 280, y: 380, w: 160, h: 16 },
       { x: 560, y: 320, w: 140, h: 16 },
       { x: 820, y: 380, w: 180, h: 16 },
