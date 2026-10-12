@@ -115,7 +115,7 @@ body.jelly-on #floatBtn { background: transparent; color: transparent; box-shado
   z-index: 5;                      /* below ☰ (10) and jelly (9) */
   display: none;
   pointer-events: none;            /* pen + gestures pass through; only .inkBtn takes taps */
-  padding: 66px 16px 0 calc(9% + 12px);
+  padding: 32px 16px 0 calc(9% + 12px);   /* first text line sits on RULE_TOP (56px) */
   font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
   font-size: 15px;
   line-height: 28px;
@@ -124,7 +124,7 @@ body.jelly-on #floatBtn { background: transparent; color: transparent; box-shado
 }
 #settingsPanel.onpage { display: block; }
 #settingsPanel h2, #settingsPanel h3, #settingsPanel p, #settingsPanel ul { margin: 0; font-size: 15px; line-height: 28px; }
-#settingsPanel h2 { font-size: 20px; color: #7a2c2c; padding-left: 72px; } /* sits right of the ☰ home area */
+#settingsPanel h2 { font-size: 20px; color: #7a2c2c; } /* sits right of the ☰ home area */
 #settingsPanel h3 { color: #7a2c2c; text-decoration: underline; font-weight: 600; }
 #settingsPanel ul { padding-left: 18px; }
 #settingsPanel .note { color: #8a8a8a; font-size: 13px; }

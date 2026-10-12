@@ -2,7 +2,7 @@
  * Project: notebook
  * File: nb_canvas.js
  * Role: Canvas resize, page backgrounds (cloth covers + index via nb_cover.js, ruled pages),
- *   redraw of strokes, Notes overlay text, settings card toggle on page 49.
+ *   redraw of strokes, notes heading, settings text toggle on page 49.
  */
 // Resize canvas to fit container
 function resizeCanvas() {
@@ -12,6 +12,10 @@ function resizeCanvas() {
   canvas.height = rect.height;
   redraw();
 }
+
+// First rule (raised for more writing space) and rule spacing; index / notes / page 49 align to these
+const RULE_TOP = 56;
+const RULE_GAP = 28;
 
 // Draw notebook lines and margin (only on main drawing pages)
 // Top area is left blank (no lines) as a header margin
@@ -29,14 +33,14 @@ function drawBackground() {
   // Pages 2–3: printed index table
   if (currentPage === 1 || currentPage === 2) drawIndexTable();
 
-  // Only draw lines on main drawing pages (4 to 44 → 0-based 3 to 43)
-  if ((currentPage >= 3 && currentPage <= 43) || currentPage === TOTAL_PAGES - 2) {   // + page 49 (settings)
+  // Ruled lines on pages 4–49 (notes and the settings page use the same rules)
+  if (currentPage >= 3 && currentPage <= TOTAL_PAGES - 2) {   // 4–44 drawing, 45–48 notes, 49 settings
     // Top blank margin (no lines)
-    const topMargin = 90;
+    const topMargin = RULE_TOP;
     // Horizontal rules starting after top margin
     ctx.strokeStyle = '#e8e4dc';
     ctx.lineWidth = 1;
-    const lineSpacing = 28;
+    const lineSpacing = RULE_GAP;
     for (let y = topMargin; y < h - 40; y += lineSpacing) {
       ctx.beginPath();
       ctx.moveTo(0, y);
@@ -51,11 +55,21 @@ function drawBackground() {
     ctx.moveTo(marginX, topMargin);
     ctx.lineTo(marginX, h - 30);
     ctx.stroke();
+    // Notes pages 45–48: small printed heading + date line on the first rule
+    if (currentPage >= 44 && currentPage < TOTAL_PAGES - 2) {
+      ctx.fillStyle = '#7b6a55';
+      ctx.font = '600 13px system-ui';
+      ctx.textAlign = 'left';
+      ctx.fillText('N O T E S', marginX + 10, RULE_TOP - 18);
+      ctx.fillStyle = '#9a8a75';
+      ctx.font = '14px system-ui';
+      ctx.fillText('Date: ________________', marginX + 10, RULE_TOP + RULE_GAP - 7);
+    }
   }
 
 }
 
-// Big handwritten page number "n/50", top-right (clear of ☰ at top-centre). Not a stroke;
+// Big handwritten page number "n/50", tucked into the top-right corner (clear of ☰ at top-centre). Not a stroke;
 // drawn on the canvas so PNG / PDF exports include it.
 function drawPageNumber() {
   const w = canvas.width;
@@ -65,7 +79,7 @@ function drawPageNumber() {
   ctx.textBaseline = 'alphabetic';
   const cover = currentPage === 0 || currentPage === TOTAL_PAGES - 1;
   ctx.fillStyle = cover ? 'rgba(255,248,225,0.9)' : 'rgba(44,74,122,0.75)';
-  ctx.fillText((currentPage + 1) + '/' + TOTAL_PAGES, w - (cover ? 64 : 18), 46);
+  ctx.fillText((currentPage + 1) + '/' + TOTAL_PAGES, w - (cover ? 64 : 10), 30);
   ctx.restore();
 }
 
@@ -100,9 +114,5 @@ function updateOverlay() {
   overlay.innerHTML = '';
   // Page 49 (index TOTAL_PAGES-2) = printed settings card (CSS .backcover)
   document.getElementById('settingsPanel').classList.toggle('onpage', currentPage === SETTINGS_PAGE);
-  if (currentPage >= 44 && currentPage < SETTINGS_PAGE) {
-    overlay.innerHTML = '<h2>Notes</h2><p>Page ' + (currentPage + 1) + '</p>';
-  } else {
-    overlay.classList.add('hidden');
-  }
+  overlay.classList.add('hidden');   // notes pages are drawn on the canvas now
 }

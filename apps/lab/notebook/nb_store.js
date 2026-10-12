@@ -29,11 +29,11 @@ try { btnTop = localStorage.getItem(BTNPOS_KEY) === 'top'; swapGestures = localS
 function savePrefs() {
   try { localStorage.setItem(BTNPOS_KEY, btnTop ? 'top' : 'bottom'); localStorage.setItem(SWAP_KEY, swapGestures ? '1' : '0'); } catch (_) { /* ignore */ }
 }
-// Direction → action. Book style: drag left = next, right = previous, up = grid, down = crumple.
+// Direction → action. Book style: drag left = next, right = previous, up = grid, down = nothing.
 function gestureFor(dir) {
   const m = swapGestures
-    ? { left: 'prev', right: 'next', up: 'crumple', down: 'grid' }
-    : { left: 'next', right: 'prev', up: 'grid', down: 'crumple' };
+    ? { left: 'prev', right: 'next', up: '', down: 'grid' }
+    : { left: 'next', right: 'prev', up: 'grid', down: '' };
   return m[dir] || '';
 }
 

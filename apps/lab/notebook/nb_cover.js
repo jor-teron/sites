@@ -110,12 +110,12 @@ function drawBackExtras(w, h) {
 // Ruled index table: header row + rows, columns Topic | Page No.
 function drawIndexTable() {
   const w = canvas.width, h = canvas.height;
-  const left = w * 0.07, right = w - w * 0.06, top = 70, rowH = 32;
+  const left = w * 0.07, right = w - w * 0.06, top = RULE_TOP, rowH = RULE_GAP;   // same rules as normal pages
   const colX = left + (right - left) * 0.76;
   const bottom = top + Math.floor((h - 50 - top) / rowH) * rowH;
   ctx.save();
   ctx.fillStyle = '#7b6a55'; ctx.font = '600 15px Georgia, serif'; ctx.textAlign = 'center';
-  ctx.fillText('I N D E X', w / 2, 46);
+  ctx.fillText('I N D E X', w / 2, RULE_TOP - 18);
   ctx.fillStyle = 'rgba(120,170,210,0.15)'; ctx.fillRect(left, top, right - left, rowH);
   ctx.strokeStyle = '#a9c4d8'; ctx.lineWidth = 1;
   for (let y = top + rowH; y < bottom; y += rowH) {
@@ -127,7 +127,7 @@ function drawIndexTable() {
   ctx.strokeStyle = '#d4a5a5';
   ctx.beginPath(); ctx.moveTo(colX, top); ctx.lineTo(colX, bottom); ctx.stroke();
   ctx.fillStyle = '#4b6f8c'; ctx.font = '600 14px system-ui';
-  ctx.textAlign = 'left'; ctx.fillText('Topic', left + 12, top + 21);
-  ctx.textAlign = 'center'; ctx.fillText('Page No.', (colX + right) / 2, top + 21);
+  ctx.textAlign = 'left'; ctx.fillText('Topic', left + 12, top + 19);
+  ctx.textAlign = 'center'; ctx.fillText('Page No.', (colX + right) / 2, top + 19);
   ctx.restore();
 }

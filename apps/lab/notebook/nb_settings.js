@@ -12,10 +12,12 @@ function applyPrefs() {
   document.body.classList.toggle('btn-top', btnTop);
   document.getElementById('togPos').textContent = btnTop ? 'top' : 'bottom';
   document.getElementById('togSwap').textContent = swapGestures ? 'on' : 'off';
-  const name = { next: 'next page', prev: 'previous page', grid: 'all pages', crumple: 'crumple this page' };
+  const name = { next: 'next page', prev: 'previous page', grid: 'all pages' };
   const rows = [['left', 'drag ☰ left'], ['right', 'drag ☰ right'], ['up', 'pull ☰ up'], ['down', 'pull ☰ down']]
+    .filter(([d]) => gestureFor(d))
     .map(([d, t]) => '<li>' + t + ' → ' + name[gestureFor(d)] + '</li>');
-  rows.push('<li>hold ☰ → quick menu (pen colour, PNG, this page)</li>');
+  rows.unshift('<li>tap ☰ → quick menu (pen colour, PNG, settings)</li>');
+  rows.push('<li>hold ☰ still 1 s → crumple this page (+1, max 5)</li>');
   document.getElementById('howTo').innerHTML = rows.join('');
 }
 
