@@ -129,7 +129,7 @@ window.BROWSER_FPS_CONFIG = {
     falloffNear: 6,
     falloffFar: 24,
     // Movement
-    walkSpeed: 1.9,       // u/s approaching (player walks at 12)
+    walkSpeed: 1.14,      // u/s approaching (player walks at 12)
     strafeSpeed: 0.8,     // u/s side-steps once in position
     strafeMinS: 1.5,      // strafe direction changes every 1.5 ..
     strafeMaxS: 3.0,      // .. 3 s (sometimes pausing)
@@ -176,17 +176,25 @@ window.BROWSER_FPS_CONFIG = {
     unlock: ['Escape', 'KeyP', 'Backquote'], // free the mouse
   },
   pickups: {
-    interval: 20,      // seconds between medkit spawns
-    firstDelay: 20,    // first medkit after this many seconds
+    interval: 60,      // seconds between medkit spawns
+    firstDelay: 60,    // first medkit after this many seconds
     maxOnMap: 2,       // max medkits alive at once
-    lifetime: 30,      // despawn after this many seconds
+    lifetime: 60,      // despawn after this many seconds
     blinkTime: 5,      // blink during the last N seconds
     blinkHz: 4,
-    heal: 35,          // HP restored (capped at max health)
+    heal: 30,          // HP restored (capped at max health)
     pickRadius: 0.9,   // horizontal distance to pick up
     minPlayerDist: 4,  // don't spawn right on top of the player
     clearance: 0.6,    // keep this far from cover/walls
     hoverY: 0.35, bobAmp: 0.07, spinSpeed: 1.4,
     flashMs: 220, popMs: 900,
+  },
+  // Which model module to use for each asset slot (see assets/README.md).
+  // A value is a built-in id ('guns/rifle_hq') or { glb: 'assets/…/model.glb', fallback: 'guns/rifle_hq', scale: 1 }.
+  assets: {
+    gun: 'guns/rifle_hq',
+    arms: 'characters/arms_hq',
+    enemy: 'enemies/humanoid_basic',
+    medkit: 'pickups/medkit_basic',
   },
 };

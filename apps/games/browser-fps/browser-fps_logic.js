@@ -3,13 +3,16 @@
  * Three.js r170 via import map. No build step.
  */
 import * as THREE from 'three';
-import { createTarget } from './browser-fps_target.js';
+import { loadAssets, loadLog } from './assets/registry.js';
 import { createViewmodel } from './browser-fps_viewmodel.js';
 import { makeFloorTexture } from './browser-fps_textures.js';
 import { createPickups } from './browser-fps_pickups.js';
 
 // ─── Tunables (from browser-fps_config.js) ──────────────────────────────────
 const CFG = window.BROWSER_FPS_CONFIG;
+// Models (gun, arms, enemy, medkit) chosen by CFG.assets; .glb models fall back to code models on failure
+const ASSETS = await loadAssets(CFG.assets);
+const createTarget = (spec) => ASSETS.enemy.createTarget(spec);
 const PLAYER_HEIGHT = CFG.player.height;
 const PLAYER_RADIUS = CFG.player.radius;
 const MOVE_SPEED = CFG.player.moveSpeed;
@@ -62,7 +65,7 @@ const camera = new THREE.PerspectiveCamera(SC.fov, window.innerWidth / window.in
 camera.rotation.order = 'YXZ';
 
 // First-person arms + rifle (own scene/camera, drawn last so it never clips into walls)
-const vm = createViewmodel();
+const vm = createViewmodel(ASSETS.gun, ASSETS.arms);
 
 // Pitch helper: camera.rotation.x = pitch, camera.rotation.y = yaw
 let yaw = 0;
@@ -924,13 +927,13 @@ const pickups = createPickups(scene, PK, {
     healFlash.classList.add('show');
     clearTimeout(healTimers.f);
     healTimers.f = setTimeout(() => healFlash.classList.remove('show'), PK.flashMs);
-    healPop.textContent = '+' + amount;
+    healPop.textContent = '+' + (player.health - before);   // actual amount healed (capped at max)
+    pickups.lastHeal = player.health - before;
     healPop.classList.remove('show'); void healPop.offsetWidth; healPop.classList.add('show');
     clearTimeout(healTimers.p);
     healTimers.p = setTimeout(() => healPop.classList.remove('show'), PK.popMs);
-    pickups.lastHeal = player.health - before;
   },
-});
+}, ASSETS.medkit);
 healTimers = { f: 0, p: 0 };
 
 // ─── Main loop ──────────────────────────────────────────────────────────────
@@ -996,6 +999,7 @@ window.__fps = {
   spawnRandomTarget, hasLineOfSight, restartGame,
   get spawnTimer() { return spawnTimer; },
   damageAt, hitsCover, pickups, validPickupSpot,
+  assets: Object.fromEntries(Object.entries(ASSETS).map(([k, a]) => [k, a.name])), assetLog: loadLog, renderer,
   setLook: (y, p) => { yaw = y; pitch = p; },
   setAimHeld: (v) => { aimHeld = v; },
   get aimT() { return aimT; },

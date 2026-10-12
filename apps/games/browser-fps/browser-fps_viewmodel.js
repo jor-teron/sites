@@ -5,7 +5,7 @@
  * so it never clips into walls. Cheap: shared Lambert materials, ~400 triangles.
  *
  * API (used by browser-fps_logic.js):
- *   const vm = createViewmodel();
+ *   const vm = createViewmodel(gunAsset, armsAsset);   // defaults: rifle_hq + arms_hq
  *   vm.scene, vm.camera            render these after the world (renderer.clearDepth() first)
  *   vm.setAspect(aspect)           on resize
  *   vm.muzzleWorld(mainCamera, out) world position of the barrel tip (for flash light / tracers)
@@ -14,50 +14,25 @@
  *   vm.update(dt, { moving, sprint, onGround, yaw, pitch })
  */
 import * as THREE from 'three';
+import rifleHq from './assets/guns/rifle_hq.js';
+import armsHq from './assets/characters/arms_hq.js';
 
 const FOV = 60;                       // viewmodel camera FOV (independent of the world FOV)
 const GUN_POS = new THREE.Vector3(0.115, -0.07, -0.34);  // rest position (camera space, lower right)
 const GUN_SCALE = 0.6;                                   // overall viewmodel size
 const GUN_YAW = 0.06;                                    // angle the barrel slightly toward the crosshair
 // Aim-down-sights pose: gun centred, front sight post (gun-local tip y ~0.095 x 0.6 scale) just below the crosshair
-const ADS_POS = new THREE.Vector3(0, -0.066, -0.2);    // eye behind the scope tube (tube axis gun-local y 0.11 x 0.6 scale)
-const MUZZLE_LOCAL = new THREE.Vector3(0, 0.022, -0.52); // barrel tip in gun space
+const ADS_POS_DEFAULT = new THREE.Vector3(0, -0.066, -0.2);    // eye behind the scope tube (tube axis gun-local y 0.11 x 0.6 scale)
 
 const RECOIL_BACK = 0.045, RECOIL_UP = 0.07, RECOIL_RETURN = 16;   // kick and recovery rate (1/s)
 const FLASH_TIME = 0.05;
 const BOB_WALK = 9, BOB_SPRINT = 13, BOB_AMP = 0.012;
 const SWAY_K = 0.6, SWAY_MAX = 0.05, SWAY_RETURN = 8;
 
-// ─── Shared materials ───────────────────────────────────────────────────────
-const M = {
-  metal: new THREE.MeshLambertMaterial({ color: 0x2b2e33 }),
-  dark: new THREE.MeshLambertMaterial({ color: 0x17191c }),
-  poly: new THREE.MeshLambertMaterial({ color: 0x4a4f3a }),     // olive furniture
-  sleeve: new THREE.MeshLambertMaterial({ color: 0x3d4a5c }),   // jacket sleeves
-  glove: new THREE.MeshLambertMaterial({ color: 0x5a4a3c }),    // gloves
-  skin: new THREE.MeshLambertMaterial({ color: 0xc89878 }),     // wrists
-  lens: new THREE.MeshBasicMaterial({ color: 0x5aa0d0 }),        // scope glass
-  flash: new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0.95,
-    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
-};
+const FLASH_MAT = new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0.95,
+  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
 
-function box(w, h, d, mat, x, y, z) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-  m.position.set(x, y, z);
-  return m;
-}
-
-/** Cylinder limb from a to b (gun space). */
-function limb(a, b, r0, r1, mat) {
-  const dir = new THREE.Vector3().subVectors(b, a);
-  const len = dir.length();
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, len, 7), mat);
-  m.position.copy(a).addScaledVector(dir, 0.5);
-  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
-  return m;
-}
-
-export function createViewmodel() {
+export function createViewmodel(gunAsset = rifleHq, armsAsset = armsHq) {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(FOV, window.innerWidth / window.innerHeight, 0.01, 5);
   scene.add(new THREE.HemisphereLight(0xdfeaff, 0x5a5040, 1.8));
@@ -73,60 +48,27 @@ export function createViewmodel() {
   const gun = new THREE.Group();
   root.add(gun);
 
-  // ── Rifle (forward = -Z) ──
-  gun.add(box(0.06, 0.08, 0.3, M.metal, 0, 0, -0.05));                 // receiver
-  gun.add(box(0.064, 0.07, 0.2, M.poly, 0, -0.005, -0.3));            // handguard
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.14, 8), M.dark);
-  barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 0.022, -0.45); gun.add(barrel);
-  gun.add(box(0.03, 0.03, 0.05, M.dark, 0, 0.022, -0.5));             // muzzle brake
-  gun.add(box(0.042, 0.06, 0.13, M.poly, 0, -0.012, 0.15));           // stock (kept short so it doesn't fill the view)
-  gun.add(box(0.02, 0.03, 0.12, M.dark, 0, 0.055, -0.06));            // top rail / sight base
-  gun.add(box(0.012, 0.03, 0.012, M.dark, 0, 0.08, -0.36));           // front sight
-  // Scope: two ring mounts on the rail, tube, bells, lenses
-  gun.add(box(0.03, 0.035, 0.02, M.dark, 0, 0.08, -0.11));
-  gun.add(box(0.03, 0.035, 0.02, M.dark, 0, 0.08, 0.0));
-  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.2, 10), M.metal);
-  tube.rotation.x = Math.PI / 2; tube.position.set(0, 0.11, -0.055); gun.add(tube);
-  const bellF = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.019, 0.05, 10), M.metal);
-  bellF.rotation.x = Math.PI / 2; bellF.position.set(0, 0.11, -0.175); gun.add(bellF);
-  const bellR = new THREE.Mesh(new THREE.CylinderGeometry(0.019, 0.024, 0.04, 10), M.metal);
-  bellR.rotation.x = Math.PI / 2; bellR.position.set(0, 0.11, 0.06); gun.add(bellR);
-  gun.add(box(0.012, 0.016, 0.016, M.dark, 0, 0.132, -0.06));         // turret
-  const lensF = new THREE.Mesh(new THREE.CircleGeometry(0.024, 12), M.lens);
-  lensF.position.set(0, 0.11, -0.201); lensF.rotation.y = Math.PI; gun.add(lensF);
-  const lensR = new THREE.Mesh(new THREE.CircleGeometry(0.022, 12), M.lens);
-  lensR.position.set(0, 0.11, 0.081); gun.add(lensR);
-  gun.add(box(0.026, 0.02, 0.02, M.dark, 0, 0.075, 0.02));            // rear sight
-  const grip = box(0.035, 0.09, 0.04, M.poly, 0, -0.08, 0.05);
-  grip.rotation.x = 0.35; gun.add(grip);
-  gun.add(box(0.008, 0.03, 0.02, M.dark, 0, -0.05, -0.005));          // trigger
-  const mag = new THREE.Group();
-  const magMesh = box(0.04, 0.13, 0.06, M.dark, 0, -0.065, 0);
-  magMesh.rotation.x = -0.2; mag.add(magMesh);
-  mag.position.set(0, -0.04, -0.12);
-  gun.add(mag);
+  // ── Gun + arms from asset modules ──
+  const G = gunAsset.build();
+  gun.add(G.group);
+  const mag = G.mag || new THREE.Group();
+  if (!mag.parent) gun.add(mag);
   const magRest = mag.position.clone();
-
-  // ── Right arm: hand on grip / trigger ──
-  const rHand = box(0.05, 0.075, 0.06, M.glove, 0.012, -0.085, 0.055);
-  rHand.rotation.x = 0.35; gun.add(rHand);
-  gun.add(box(0.035, 0.022, 0.03, M.glove, 0.0, -0.045, 0.0));        // trigger finger
-  gun.add(limb(new THREE.Vector3(0.03, -0.12, 0.1), new THREE.Vector3(0.05, -0.15, 0.17), 0.032, 0.03, M.skin)); // wrist
-  gun.add(limb(new THREE.Vector3(0.05, -0.15, 0.16), new THREE.Vector3(0.18, -0.35, 0.42), 0.042, 0.05, M.sleeve)); // sleeve
-
-  // ── Left arm: hand under the handguard (animated during reload) ──
-  const lArm = new THREE.Group();
+  const MUZZLE_LOCAL = G.muzzle.clone();
+  // ADS: put the sight/eyepiece axis on the camera's centre line (default if the gun gives no sight)
+  const ADS_POS = G.sight
+    ? new THREE.Vector3(-G.sight.x * GUN_SCALE, -G.sight.y * GUN_SCALE, ADS_POS_DEFAULT.z)
+    : ADS_POS_DEFAULT.clone();
+  const A = armsAsset.build(G);
+  gun.add(A.right);
+  const lArm = A.left;
   gun.add(lArm);
-  const lHand = box(0.075, 0.045, 0.07, M.glove, 0, -0.05, -0.3); lArm.add(lHand);
-  lArm.add(box(0.02, 0.05, 0.06, M.glove, -0.04, -0.02, -0.3));      // thumb wrapping the side
-  lArm.add(limb(new THREE.Vector3(-0.02, -0.07, -0.28), new THREE.Vector3(-0.06, -0.11, -0.2), 0.03, 0.028, M.skin));
-  lArm.add(limb(new THREE.Vector3(-0.06, -0.11, -0.21), new THREE.Vector3(-0.26, -0.32, 0.05), 0.042, 0.05, M.sleeve));
   const lArmRest = lArm.position.clone();
 
   // ── Muzzle flash (two crossed quads) ──
   const flash = new THREE.Group();
   const fq = new THREE.PlaneGeometry(0.09, 0.09);
-  const f1 = new THREE.Mesh(fq, M.flash), f2 = new THREE.Mesh(fq, M.flash), f3 = new THREE.Mesh(fq, M.flash);
+  const f1 = new THREE.Mesh(fq, FLASH_MAT), f2 = new THREE.Mesh(fq, FLASH_MAT), f3 = new THREE.Mesh(fq, FLASH_MAT);
   f2.rotation.y = Math.PI / 2; f3.rotation.x = Math.PI / 2;
   flash.add(f1, f2, f3);
   flash.position.copy(MUZZLE_LOCAL).add(new THREE.Vector3(0, 0, -0.03));
@@ -227,11 +169,11 @@ export function createViewmodel() {
       }
       // left hand: leaves the handguard, goes down to the mag well, pushes the new mag up, returns
       const toWell = smooth(seg(u, 0.12, 0.3)) * (1 - smooth(seg(u, 0.72, 0.9)));
-      lArm.position.set(0.02 * toWell, -0.12 * toWell - 0.12 * fetch, 0.17 * toWell);
+      lArm.position.set(lArmRest.x + 0.02 * toWell, lArmRest.y - 0.12 * toWell - 0.12 * fetch, lArmRest.z + 0.17 * toWell);
     }
     gun.rotation.set(rx, ry, rz);
   }
 
   return { scene, camera, setAspect, muzzleWorld, onFire, startReload, setAim, root, update,
-    get reloading() { return reloadT > 0; }, get recoil() { return recoil; }, gun, mag, lArm };
+    get reloading() { return reloadT > 0; }, get recoil() { return recoil; }, gun, mag, lArm, assets: { gun: gunAsset.name, arms: armsAsset.name } };
 }
