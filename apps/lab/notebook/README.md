@@ -12,7 +12,7 @@ Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself 
   - swipe right / left → next / previous page
   - pull down → pages grid (tap a thumbnail to open it; tap the background or title to close)
   - scribble back and forth → **crumple**: the page gets more wrinkles (levels 0–6). Drawings stay. Permanent: no undo, Reset Notebook does not remove wrinkles.
-- The ☰ button stays in place but reacts: follows the finger a little (max ~40 px), leans toward a swipe, dips on pull-down, springs back with a wobble, shakes on crumple.
+- The ☰ button is a glossy blue jelly. Its home never moves, but while you drag it stretches long and thin toward your finger (max ~55 px) with a gooey blob left at home and a stretching shadow; on release it squashes and bounces softly back over several wobbles; a crumple makes the whole jelly jiggle. Press = small squish.
 - Every finished stroke and every page change is saved at once.
 - Palm rejection: very large touches (width > 50) are ignored.
 - Settings: Close, Download Page PNG, Download Notebook PDF, Reset Notebook (asks first).
@@ -28,7 +28,8 @@ Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself 
 - `nb_draw.js` — pointer drawing
 - `nb_export.js` — PNG / PDF download
 - `nb_settings.js` — settings panel open/close
-- `nb_float.js` — floating button gestures + follow / spring / shake feedback
+- `nb_float.js` — floating button gestures
+- `nb_jelly.js` — jelly look: SVG blob, goo filter tail, spring bounce, jiggle
 - `notebook.js` — event wiring + start-up (loaded last)
 - `vendor/jspdf.umd.min.js` — jsPDF 2.5.1, stored locally
 - `notebook_icon.png` — Lab / Hub icon

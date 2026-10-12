@@ -2,36 +2,10 @@
  * Project: notebook
  * File: nb_float.js
  * Role: Floating button gestures: tap = page toast, hold = settings, swipe left/right = page, pull down = grid, scribble = crumple.
- *   Feedback: the button follows the finger (damped, max FLOAT_MAX px), leans toward a
- *   horizontal swipe, dips on pull-down, springs back with a wobble, shakes on crumple.
+ *   Feedback is the jelly blob (nb_jelly.js): stretch + gooey tail while dragging, soft bouncy
+ *   settle on release, jiggle on crumple. The hit target itself never moves.
  */
-const FLOAT_DAMP = 0.35;
-const FLOAT_MAX = 40;
-
-// Follow the finger: damped offset, capped; lean (rotate) toward horizontal swipes, dip on pull-down.
-function floatFollow(dx, dy) {
-  const cap = (v) => Math.max(-FLOAT_MAX, Math.min(FLOAT_MAX, v * FLOAT_DAMP));
-  const ox = cap(dx), oy = cap(dy);
-  const horiz = Math.abs(dx) > Math.abs(dy);
-  const lean = horiz ? ox * 0.4 : 0;               // degrees
-  const dip = !horiz && dy > 0 ? 0.9 : 1;           // squash a little when pulling down
-  floatBtn.style.transform = 'translateX(-50%) translate(' + ox + 'px,' + oy + 'px) rotate(' + lean + 'deg) scale(1,' + dip + ')';
-}
-
-// Release: spring back to the fixed spot (CSS .spring overshoots = wobble).
-function floatRelease() {
-  floatBtn.classList.add('spring');
-  floatBtn.style.transform = '';
-  setTimeout(() => floatBtn.classList.remove('spring'), 500);
-}
-
-// Crumple happened: shake.
-function floatShake() {
-  floatBtn.classList.remove('shake');
-  void floatBtn.offsetWidth;
-  floatBtn.classList.add('shake');
-  setTimeout(() => floatBtn.classList.remove('shake'), 500);
-}
+// Visual feedback (floatFollow / floatRelease / floatShake / floatPress) lives in nb_jelly.js.
 
 // Floating button gesture state
 let floatStartX = 0;
@@ -49,7 +23,7 @@ function onFloatDown(e) {
   floatStartY = pt.clientY;
   floatStartTime = Date.now();
   floatMoved = false;
-  floatBtn.classList.remove('spring', 'shake');
+  floatPress();
   floatPath = [{x: pt.clientX, y: pt.clientY}];
   floatHoldTimer = setTimeout(() => {
     if (!floatMoved) openSettings();
