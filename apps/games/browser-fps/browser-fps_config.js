@@ -133,6 +133,8 @@ window.BROWSER_FPS_CONFIG = {
     falloffFar: 24,
     // Movement
     walkSpeed: 1.14,      // u/s approaching (player walks at 12)
+    runSpeed: 2.2,        // u/s jog when far (> runDist) and out of sight; 0 = never run
+    runDist: 12,
     strafeSpeed: 0.8,     // u/s side-steps once in position
     strafeMinS: 1.5,      // strafe direction changes every 1.5 ..
     strafeMaxS: 3.0,      // .. 3 s (sometimes pausing)

@@ -811,16 +811,21 @@ function updateEnemyAI(dt) {
     if (!en.alive || en.rising > 0) { en.walkSpeed = 0; continue; }   // corpses / risers don't move
     const p = en.group.position;
     const dist = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
-    const err = en.turnToward(player.pos.x, player.pos.z, AI.turnRate, dt);
     if (en.shootCd > 0) en.shootCd -= dt;
     const sees = dist <= AI.range && hasLineOfSight(en);
+    // Turn (eased, capped): face the player when in sight, else the walking direction
+    const err = sees || !en.moveDirSet ? en.turnToward(player.pos.x, player.pos.z, AI.turnRate, dt)
+      : en.turnToward(p.x + en.moveDx * 4, p.z + en.moveDz * 4, AI.turnRate, dt);
     en.seenT = sees ? en.seenT + dt : 0;
 
     // Movement: approach along the flow field until in position with line of sight, then strafe a little
     let moved = 0;
+    const x0m = p.x, z0m = p.z;
     if (!sees || dist > AI.preferredDist) {
       const d = steer(p.x, p.z);
-      moved = moveEnemy(en, d.x * AI.walkSpeed, d.z * AI.walkSpeed, dt);
+      // jog when far away and out of sight (run animation); walk otherwise
+      const spd = AI.runSpeed && !sees && dist > AI.runDist ? AI.runSpeed : AI.walkSpeed;
+      moved = moveEnemy(en, d.x * spd, d.z * spd, dt);
     } else {
       en.strafeT -= dt;
       if (en.strafeT <= 0) {
@@ -839,6 +844,12 @@ function updateEnemyAI(dt) {
         if (moved < 1e-4) en.strafeDir = -en.strafeDir;   // bumped into something: switch side
       }
     }
+    if (moved > 1e-4 && !sees) {   // remember the smoothed walking direction for facing
+      const k = Math.min(1, dt * 5), mx = (p.x - x0m) / moved, mz = (p.z - z0m) / moved;
+      en.moveDx = en.moveDirSet ? en.moveDx + (mx - en.moveDx) * k : mx;
+      en.moveDz = en.moveDirSet ? en.moveDz + (mz - en.moveDz) * k : mz;
+      en.moveDirSet = true;
+    } else if (sees) en.moveDirSet = false;
     const walking = moved / dt > 0.2;
     en.walkSpeed = moved / dt;
 

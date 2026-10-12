@@ -13,6 +13,8 @@
  *   touches(pos, radius, height) -> bool  contact test against the collider (+ margin)
  */
 import * as THREE from 'three';
+import { buildRig, createAnimator, ANIM } from '../../browser-fps_enemy_anim.js';
+const FALLS = ANIM.falls;
 
 export const HEAD_MULT = 2.5;       // head shots deal this many times the damage
 const FLASH_TIME = 0.08;            // hit flash (s)
@@ -26,6 +28,7 @@ const CONTACT_MARGIN = 0.15;        // contact damage reach beyond the collider
 const RISE_TIME = 0.6;              // spawn rise-up animation (s)
 const RISE_DEPTH = 2.1;             // starts this far below the floor
 const ENEMY_FLASH_TIME = 0.06;      // enemy muzzle flash (s)
+const _as = { speed: 0, alive: true, rising: 0, turnErr: 0, deathT: -1 };   // animator input (reused)
 const MUZZLE_LOCAL = new THREE.Vector3(0.1, 1.3, 0.78); // enemy gun barrel tip (local, facing +Z)
 
 // ─── Shared geometry (one instance for all targets; exported for other humanoid models) ─────────────────────────
@@ -187,6 +190,10 @@ export function createTarget(spec, opts = {}, body = buildBasicBody) {
     pivot.add(v);
   }
 
+  // Procedural animation rig (browser-fps_enemy_anim.js): hips / spine / head / knees, muzzle marker on the spine
+  const rig = buildRig(pivot, legL, legR, MUZZLE_LOCAL);
+  const anim = createAnimator(rig);
+
   const feetY = spec.pos[1] - 1;       // spec positions were box centres (2 tall)
   group.position.set(spec.pos[0], feetY, spec.pos[2]);
   group.rotation.y = spec.faceYaw || 0;
@@ -246,6 +253,10 @@ export function createTarget(spec, opts = {}, body = buildBasicBody) {
       for (const m of mats) m.emissive.setRGB(1, 1, 1);
       this.knock = 1;
       this.knockDir.set(dir.x, 0, dir.z).normalize();
+      // shot direction in the target's local frame (+Z = facing) -> flinch away from it
+      const cy = Math.cos(group.rotation.y), sy = Math.sin(group.rotation.y);
+      const lx = this.knockDir.x * cy - this.knockDir.z * sy, lz = this.knockDir.x * sy + this.knockDir.z * cy;
+      anim.hit(lx, lz, zone === 'head');
       if (this.hp <= 0) {
         this.alive = false;
         this.dying = true;
@@ -254,6 +265,17 @@ export function createTarget(spec, opts = {}, body = buildBasicBody) {
         // Fall away from the shooter: compare shot direction with the target's facing (+Z local)
         const fwd = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), group.rotation.y);
         this.fallSign = fwd.dot(this.knockDir) > 0 ? 1 : -1;
+        // death variant by hit: shot from behind -> forward; headshot -> backward; body from the front -> back or crumple
+        const v = this.fallSign > 0 ? 'forward' : zone === 'head' ? 'back' : (Math.random() < 0.5 ? 'back' : 'crumple');
+        this.deathVariant = v;
+        // slope along the fall direction (island terrain): body ends up lying on the ground
+        const sgn = v === 'back' ? -1 : 1, L = v === 'crumple' ? 1.3 : 1.6;
+        let slope = 0;
+        if (this.groundAt) {
+          const x = group.position.x + Math.sin(group.rotation.y) * sgn * L, z = group.position.z + Math.cos(group.rotation.y) * sgn * L;
+          slope = Math.atan2(this.groundAt(x, z) - group.position.y, L);
+        }
+        anim.die(v, Math.max(-0.5, Math.min(0.5, slope)));
       }
       return dealt;
     },
@@ -273,7 +295,8 @@ export function createTarget(spec, opts = {}, body = buildBasicBody) {
       group.position.set(x, gy, z);
       group.rotation.y = faceYaw;
       group.visible = true;
-      pivot.rotation.set(0, 0, 0);
+      anim.reset();
+      this.turnVel = 0; this.turnErr = 0; this.deathVariant = null;
       this.rising = rise ? RISE_TIME : 0;
       pivot.position.set(0, rise ? -RISE_DEPTH : 0, 0);
       collider.min.set(x - COL_HALF, gy, z - COL_HALF);
@@ -294,15 +317,20 @@ export function createTarget(spec, opts = {}, body = buildBasicBody) {
       const want = Math.atan2(px - group.position.x, pz - group.position.z);
       let d = want - group.rotation.y;
       d = Math.atan2(Math.sin(d), Math.cos(d));
-      const step = Math.max(-rate * dt, Math.min(rate * dt, d));
+      // eased turn: desired angular speed falls off near the target, capped at `rate`, reached with smoothing
+      const wantVel = Math.max(-rate, Math.min(rate, d * 6));
+      this.turnVel = (this.turnVel || 0) + (wantVel - (this.turnVel || 0)) * Math.min(1, dt * 12);
+      let step = this.turnVel * dt;
+      if (Math.abs(step) > Math.abs(d)) step = d;
       group.rotation.y += step;
+      this.turnErr = d - step;
       return Math.abs(d - step);
     },
 
     /** World position of the gun's barrel tip. */
     muzzleWorld(out = new THREE.Vector3()) {
       group.updateMatrixWorld(true);
-      return out.copy(MUZZLE_LOCAL).applyMatrix4(pivot.matrixWorld);
+      return rig.muzzle.getWorldPosition(out);
     },
 
     showMuzzleFlash() {
@@ -328,22 +356,16 @@ export function createTarget(spec, opts = {}, body = buildBasicBody) {
         const u = 1 - this.rising / RISE_TIME;
         riseY = -RISE_DEPTH * (1 - u) * (1 - u);          // ease out of the floor
       }
-      // walk cycle: legs swing from the hips, body bobs a little (corpses / risers don't walk)
-      // cadence scales with speed (stride ~1.3 u per cycle), so slower enemies take slower steps
-      const walking = this.alive && this.rising <= 0 ? Math.min(1, this.walkSpeed / 0.9) : 0;
-      this.walkPhase += dt * this.walkSpeed * 4.8 * (walking > 0 ? 1 : 0);
-      const swing = Math.sin(this.walkPhase) * 0.55 * walking;
-      legL.rotation.x = swing;
-      legR.rotation.x = -swing;
-      const bob = Math.abs(Math.cos(this.walkPhase)) * 0.04 * walking;
-      pivot.position.set(kx * c - kz * s, riseY + bob, kx * s + kz * c);
+      // procedural animation (walk / run / idle blend, turn lead, flinch, death fall): browser-fps_enemy_anim.js
+      pivot.position.set(kx * c - kz * s, riseY, kx * s + kz * c);
+      if (this.dying) this.deathT += dt;
+      _as.speed = this.walkSpeed; _as.alive = this.alive; _as.rising = this.rising;
+      _as.turnErr = this.alive ? (this.turnErr || 0) : 0; _as.deathT = this.dying ? this.deathT : -1;
+      anim.update(dt, _as);
       if (this.dying) {
-        this.deathT += dt;
-        const f = Math.min(1, this.deathT / FALL_TIME);
-        const ease = f * f;                                   // accelerate like falling
-        pivot.rotation.x = this.fallSign * ease * (Math.PI / 2 - 0.05);
         // Corpse: lie still for CORPSE_TIME, then sink out of sight and return to the pool
-        const sinkT = this.deathT - FALL_TIME - CORPSE_TIME;
+        const fallT = this.deathVariant ? FALLS[this.deathVariant] : FALL_TIME;
+        const sinkT = this.deathT - fallT - CORPSE_TIME;
         if (sinkT > 0) pivot.position.y -= SINK_DEPTH * Math.min(1, sinkT / SINK_TIME);
         if (sinkT >= SINK_TIME) {
           this.dying = false;          // pool may reuse it now
@@ -360,6 +382,7 @@ export function createTarget(spec, opts = {}, body = buildBasicBody) {
              pos.y > collider.min.y && pos.y - height < collider.max.y;
     },
   };
+  t.anim = anim; t.rig = rig;
   return t;
 }
 
