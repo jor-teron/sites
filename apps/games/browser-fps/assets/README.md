@@ -7,8 +7,13 @@ Models are ES modules (code-built with Three.js) or optional `.glb` files, chose
 assets: {
   gun:    'guns/rifle_hq',            // or 'guns/rifle_basic'
   arms:   'characters/arms_hq',       // or 'characters/arms_basic'
-  enemy:  'enemies/humanoid_basic',
+  enemy:  'enemies/soldier_hq',       // or 'enemies/humanoid_basic'
   medkit: 'pickups/medkit_basic',
+  textures: {                         // null = plain colours
+    floor: 'textures/floor_concrete',
+    wall:  'textures/wall_brick',
+    cover: 'textures/cover_concrete_block',
+  },
 }
 ```
 
@@ -31,6 +36,7 @@ fallback (or the slot default), so the game always starts. `window.__fps.assets`
 | `characters/` | `arms`   | `arms`   (player first-person arms/hands) |
 | `enemies/`    | `enemy`  | `enemy`  |
 | `pickups/`    | `medkit` | `medkit` |
+| `textures/`   | `textures.floor/wall/cover` | `texture` |
 
 `wear.js` holds shared helpers (procedural wear/roughness textures, capsule/limb meshes).
 
@@ -56,6 +62,13 @@ Every module has a default export `{ kind, name, ... }`. Share geometry/material
 * Sleeves should run back/down toward the camera (+Z, -Y) so they leave the screen edge.
 
 ### enemy — `createTarget(spec, opts) -> target`
+* Built-ins: `soldier_hq` (default: vest, pouches, belt, shaped arms, cargo trousers, knee pads, boots;
+  ~1.2k tris) and `humanoid_basic` (~420 tris).
+* New humanoid models: write a body builder and call `createTarget(spec, opts, myBody)` from
+  `humanoid_basic.js` (see `soldier_hq.js`). The builder gets `{ spec, pivot, part, G, THREE }` and returns
+  `{ mats, legL, legR }`. It must call `buildHead(part, skinMat)` (shared head = shared head hit zone).
+  `legL`/`legR` are hip pivots at y 0.9 (walk swing), and `mats` get the white hit flash. The rig keeps
+  hit zones, collider, knockback, death fall, corpse sink and the muzzle flash.
 * See the header of `enemies/humanoid_basic.js` for the full target object (raycast/hit/update/touches/…).
 * Local space: origin at the **feet**, facing **+Z**, about 2 units tall.
 * **Hit zones** (in `humanoid_basic.js`): head sphere `c (0,1.84,0) r 0.19` (×2.5 damage), body boxes
@@ -65,6 +78,15 @@ Every module has a default export `{ kind, name, ... }`. Share geometry/material
 * A `.glb` enemy is passed as `opts.visual`: the code humanoid's meshes are hidden and the model is added
   to its pivot. Hit zones, collider, knockback, death fall, rise and walk bob still work. Leg swing does
   not (no skeleton). Animate the glb yourself if it has clips.
+
+### texture — `make(renderer, { tileSize }) -> { map, bumpMap?, bumpScale?, tile: [w, h], roughness?, tint? }`
+* Procedural CanvasTextures, made once and cloned per box. `tile` is the world size covered by one
+  repeat; the arena sets `repeat = (max(box w, d) / tile[0], box h / tile[1])` for walls/cover and
+  `(arena w / tile[0], arena d / tile[1])` for the floor, so bricks/blocks keep their real size.
+* Use RepeatWrapping and draw seams on the texture edges so it tiles. `tint` (0..1) = how much of the
+  per-box config colour is kept (cover). Otherwise the box colour is white so the texture shows true.
+* Built-ins: `floor_concrete` (tile 4 x floorTileSize), `wall_brick` (2 x 2 u, bricks 0.5 x 0.25,
+  bump map), `cover_concrete_block` (1 x 1 u, bump map).
 
 ### medkit — `build() -> { root, kit, glow }`
 * `root` stands on the floor (y = 0). The pickup logic bobs/spins `kit` and pulses `glow.material.opacity`

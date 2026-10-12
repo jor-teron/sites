@@ -5,7 +5,6 @@
 import * as THREE from 'three';
 import { loadAssets, loadLog } from './assets/registry.js';
 import { createViewmodel } from './browser-fps_viewmodel.js';
-import { makeFloorTexture } from './browser-fps_textures.js';
 import { createPickups } from './browser-fps_pickups.js';
 
 // ─── Tunables (from browser-fps_config.js) ──────────────────────────────────
@@ -99,6 +98,8 @@ function addBox(w, h, d, x, y, z, color, opts = {}) {
     roughness: opts.roughness ?? 0.85,
     metalness: opts.metalness ?? 0.05,
     map: opts.map || null,
+    bumpMap: opts.bumpMap || null,
+    bumpScale: opts.bumpScale ?? 1,
   });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.set(x, y, z);
@@ -121,20 +122,44 @@ function buildArena() {
   const hd = ARENA.d / 2;
   const th = ARENA.wallThickness; // wall thickness
 
-  // Floor
-  const floorTex = makeFloorTexture(renderer);
-  // 4 tiles per texture repeat -> repeat so each tile is floorTileSize world units
-  floorTex.repeat.set(ARENA.w / (ARENA.floorTileSize * 4), ARENA.d / (ARENA.floorTileSize * 4));
-  addBox(ARENA.w, 0.4, ARENA.d, 0, -0.2, 0, ARENA.floorColor, { castShadow: false, map: floorTex, roughness: 0.95 });
+  // Textures from CFG.assets.textures (generated once, cloned per box with a size-correct repeat)
+  const TX = ASSETS.textures;
+  const made = {};
+  const tex = (slot) => (TX[slot] ? (made[slot] ||= TX[slot].make(renderer, { tileSize: ARENA.floorTileSize })) : null);
+  /** Box material options with repeat = box size / texture tile (long side x height for walls/cover). */
+  function texOpts(slot, w, h, d, color) {
+    const t = tex(slot);
+    if (!t) return { color, opts: {} };
+    const rep = (src) => { if (!src) return null; const c = src.clone(); c.repeat.set(Math.max(w, d) / t.tile[0], h / t.tile[1]); c.needsUpdate = true; return c; };
+    const tint = t.tint != null ? new THREE.Color(color).lerp(new THREE.Color(0xffffff), 1 - t.tint) : 0xffffff;
+    return { color: tint, opts: { map: rep(t.map), bumpMap: rep(t.bumpMap), bumpScale: t.bumpScale, roughness: t.roughness } };
+  }
+
+  // Floor (repeat over its top face: w x d)
+  {
+    const t = tex('floor');
+    const o = { castShadow: false, roughness: 0.95 };
+    if (t) {
+      o.map = t.map.clone();
+      o.map.repeat.set(ARENA.w / t.tile[0], ARENA.d / t.tile[1]);
+      o.map.needsUpdate = true;
+      o.roughness = t.roughness ?? 0.95;
+    }
+    addBox(ARENA.w, 0.4, ARENA.d, 0, -0.2, 0, ARENA.floorColor, o);
+  }
 
   // Outer walls
-  addBox(ARENA.w + th * 2, ARENA.wallH, th, 0, ARENA.wallH / 2, -hd - th / 2, ARENA.wallColorNS);
-  addBox(ARENA.w + th * 2, ARENA.wallH, th, 0, ARENA.wallH / 2, hd + th / 2, ARENA.wallColorNS);
-  addBox(th, ARENA.wallH, ARENA.d, -hw - th / 2, ARENA.wallH / 2, 0, ARENA.wallColorEW);
-  addBox(th, ARENA.wallH, ARENA.d, hw + th / 2, ARENA.wallH / 2, 0, ARENA.wallColorEW);
+  const wall = (w, h, d, x, y, z, color) => { const t = texOpts('wall', w, h, d, color); addBox(w, h, d, x, y, z, t.color, t.opts); };
+  wall(ARENA.w + th * 2, ARENA.wallH, th, 0, ARENA.wallH / 2, -hd - th / 2, ARENA.wallColorNS);
+  wall(ARENA.w + th * 2, ARENA.wallH, th, 0, ARENA.wallH / 2, hd + th / 2, ARENA.wallColorNS);
+  wall(th, ARENA.wallH, ARENA.d, -hw - th / 2, ARENA.wallH / 2, 0, ARENA.wallColorEW);
+  wall(th, ARENA.wallH, ARENA.d, hw + th / 2, ARENA.wallH / 2, 0, ARENA.wallColorEW);
 
   // Cover boxes (low-poly crates / barriers) + center stack
-  for (const c of ARENA.covers) addBox(...c);
+  for (const [w, h, d, x, y, z, color] of ARENA.covers) {
+    const t = texOpts('cover', w, h, d, color);
+    addBox(w, h, d, x, y, z, t.color, t.opts);
+  }
 }
 
 buildArena();
@@ -505,6 +530,7 @@ function restartGame() {
   scopeOverlay.style.opacity = '0';
   crosshairEl.style.opacity = '1';
   pickups.reset();
+  syncCamera();
   deathEl.classList.add('hidden');
 }
 
@@ -986,6 +1012,13 @@ function tick() {
   renderer.render(vm.scene, vm.camera);
 }
 
+/** Put the camera at the player's eye. Without this the start screen rendered from (0,0,0): the eye sat
+ *  exactly in the floor's top plane, so the floor was edge-on and the sky/fog colour filled the lower half. */
+function syncCamera() {
+  camera.position.copy(player.pos);
+  camera.rotation.set(pitch, yaw, 0);
+}
+syncCamera();
 buildBlocked();
 buildReachable();
 placeInitialEnemies();
@@ -999,7 +1032,8 @@ window.__fps = {
   spawnRandomTarget, hasLineOfSight, restartGame,
   get spawnTimer() { return spawnTimer; },
   damageAt, hitsCover, pickups, validPickupSpot,
-  assets: Object.fromEntries(Object.entries(ASSETS).map(([k, a]) => [k, a.name])), assetLog: loadLog, renderer,
+  assets: Object.fromEntries(Object.entries(ASSETS).map(([k, a]) => [k, k === 'textures'
+    ? Object.fromEntries(Object.entries(a).map(([t, m]) => [t, m ? m.name : null])) : a.name])), assetLog: loadLog, renderer,
   setLook: (y, p) => { yaw = y; pitch = p; },
   setAimHeld: (v) => { aimHeld = v; },
   get aimT() { return aimT; },

@@ -13,7 +13,7 @@
 const DEFAULTS = {
   gun: 'guns/rifle_hq',
   arms: 'characters/arms_hq',
-  enemy: 'enemies/humanoid_basic',
+  enemy: 'enemies/soldier_hq',
   medkit: 'pickups/medkit_basic',
 };
 const KIND = { gun: 'gun', arms: 'arms', enemy: 'enemy', medkit: 'medkit' };
@@ -125,8 +125,36 @@ async function loadSlot(slot, spec) {
   }
 }
 
+const TEX_DEFAULTS = {
+  floor: 'textures/floor_concrete',
+  wall: 'textures/wall_brick',
+  cover: 'textures/cover_concrete_block',
+};
+
+/** Texture slot: built-in id, or null/false for plain colours. Falls back to the default on failure. */
+async function loadTexture(slot, spec) {
+  if (spec === null || spec === false) { loadLog.push({ slot: `textures.${slot}`, requested: 'none', used: 'none' }); return null; }
+  const def = TEX_DEFAULTS[slot], req = spec || def;
+  try {
+    const a = await loadModule(req);
+    if (a.kind !== 'texture') throw new Error(`${req} is not a texture asset`);
+    loadLog.push({ slot: `textures.${slot}`, requested: req, used: a.name });
+    return a;
+  } catch (e) {
+    console.warn(`[assets] textures.${slot}: ${e.message || e}; using ${def}`);
+    const a = await loadModule(def);
+    loadLog.push({ slot: `textures.${slot}`, requested: req, used: a.name, error: String(e.message || e) });
+    return a;
+  }
+}
+
 export async function loadAssets(cfg = {}) {
-  const slots = Object.keys(DEFAULTS);
-  const mods = await Promise.all(slots.map((s) => loadSlot(s, cfg[s])));
-  return Object.fromEntries(slots.map((s, i) => [s, mods[i]]));
+  const slots = Object.keys(DEFAULTS), tslots = Object.keys(TEX_DEFAULTS), tcfg = cfg.textures || {};
+  const [mods, texs] = await Promise.all([
+    Promise.all(slots.map((s) => loadSlot(s, cfg[s]))),
+    Promise.all(tslots.map((s) => loadTexture(s, tcfg[s]))),
+  ]);
+  const out = Object.fromEntries(slots.map((s, i) => [s, mods[i]]));
+  out.textures = Object.fromEntries(tslots.map((s, i) => [s, texs[i]]));
+  return out;
 }

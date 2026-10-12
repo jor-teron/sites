@@ -194,7 +194,13 @@ window.BROWSER_FPS_CONFIG = {
   assets: {
     gun: 'guns/rifle_hq',
     arms: 'characters/arms_hq',
-    enemy: 'enemies/humanoid_basic',
+    enemy: 'enemies/soldier_hq',          // or 'enemies/humanoid_basic'
     medkit: 'pickups/medkit_basic',
+    // Procedural textures (assets/textures/*); null = plain colours
+    textures: {
+      floor: 'textures/floor_concrete',
+      wall: 'textures/wall_brick',
+      cover: 'textures/cover_concrete_block',
+    },
   },
 };

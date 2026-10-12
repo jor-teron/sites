@@ -28,8 +28,8 @@ const RISE_DEPTH = 2.1;             // starts this far below the floor
 const ENEMY_FLASH_TIME = 0.06;      // enemy muzzle flash (s)
 const MUZZLE_LOCAL = new THREE.Vector3(0.1, 1.3, 0.78); // enemy gun barrel tip (local, facing +Z)
 
-// ─── Shared geometry (one instance for all targets) ─────────────────────────
-const G = {
+// ─── Shared geometry (one instance for all targets; exported for other humanoid models) ─────────────────────────
+export const G = {
   head: new THREE.SphereGeometry(0.17, 10, 8),
   neck: new THREE.CylinderGeometry(0.06, 0.07, 0.1, 6),
   torso: new THREE.BoxGeometry(0.56, 0.6, 0.3),
@@ -47,7 +47,7 @@ const G = {
   gunStock: new THREE.BoxGeometry(0.05, 0.07, 0.14),
   flash: new THREE.PlaneGeometry(0.18, 0.18),
 };
-const GUN_MAT = new THREE.MeshStandardMaterial({ color: 0x222428, roughness: 0.6, metalness: 0.3 });
+export const GUN_MAT = new THREE.MeshStandardMaterial({ color: 0x222428, roughness: 0.6, metalness: 0.3 });
 const FLASH_MAT = new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0.95,
   blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
 
@@ -89,10 +89,20 @@ function rayBox(o, d, min, max) {
   return tmin >= 0 ? tmin : tmax;
 }
 
+/** Head + neck (shared by every humanoid model so the head hit zone always matches). */
+export function buildHead(part, skinMat) {
+  part(G.neck, skinMat, 0, 1.71, 0);
+  part(G.head, skinMat, 0, 1.84, 0);
+}
+
 /**
- * @param {{pos:number[], color:number, hp:number, faceYaw?:number}} spec
+ * Body builder for the basic humanoid. A body builder gets
+ *   k = { spec, pivot, part(geo, mat, x, y, z), G, THREE }
+ * and returns { mats (per-target materials, flashed white on hit), legL, legR (hip pivots at y 0.9) }.
+ * Must call buildHead(). Hit zones / collider / animation live in createTarget and stay identical.
  */
-export function createTarget(spec, opts = {}) {
+export function buildBasicBody(k) {
+  const { spec, part } = k;
   const bodyMat = new THREE.MeshStandardMaterial({ color: spec.color, roughness: 0.7 });
   const darkMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(spec.color).multiplyScalar(0.55), roughness: 0.8 });
   const skinMat = new THREE.MeshStandardMaterial({ color: 0xd9b38c, roughness: 0.8 });
@@ -100,18 +110,6 @@ export function createTarget(spec, opts = {}) {
   const ringMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.6 });
   const mats = [bodyMat, darkMat, skinMat, panelMat, ringMat];
 
-  const group = new THREE.Group();     // positioned at the feet; knockback/death move `pivot`
-  const pivot = new THREE.Group();
-  group.add(pivot);
-
-  const part = (geo, mat, x, y, z) => {
-    const m = new THREE.Mesh(geo, mat);
-    m.position.set(x, y, z);
-    m.castShadow = true;
-    m.receiveShadow = true;
-    pivot.add(m);
-    return m;
-  };
   // Legs hang from hip pivots so they can swing while walking
   const hip = (x) => {
     const h = new THREE.Group();
@@ -120,7 +118,7 @@ export function createTarget(spec, opts = {}) {
     m.position.y = -0.45;
     m.castShadow = true; m.receiveShadow = true;
     h.add(m);
-    pivot.add(h);
+    k.pivot.add(h);
     return h;
   };
   const legL = hip(-0.12), legR = hip(0.12);
@@ -136,7 +134,7 @@ export function createTarget(spec, opts = {}) {
     m.position.copy(from).addScaledVector(dir, 0.5);
     m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
     m.castShadow = true;
-    pivot.add(m);
+    k.pivot.add(m);
   };
   forearm(new THREE.Vector3(-0.36, 1.3, 0.02), new THREE.Vector3(0.04, 1.24, 0.42));  // left hand on the handguard
   forearm(new THREE.Vector3(0.36, 1.3, 0.02), new THREE.Vector3(0.14, 1.22, 0.16));   // right hand on the grip
@@ -147,6 +145,33 @@ export function createTarget(spec, opts = {}) {
   const brl = part(G.gunBarrel, GUN_MAT, 0.1, 1.31, 0.68); brl.rotation.x = Math.PI / 2;
   part(G.gunMag, GUN_MAT, 0.1, 1.2, 0.36);
   part(G.gunStock, GUN_MAT, 0.1, 1.27, 0.12);
+  buildHead(part, skinMat);
+  // Bullseye on the chest (front = +Z)
+  const p = part(G.panel, panelMat, 0, 1.4, 0.151); p.castShadow = false;
+  const r = part(G.ring, ringMat, 0, 1.4, 0.152); r.castShadow = false;
+
+  return { mats, legL, legR };
+}
+
+/**
+ * @param {{pos:number[], color:number, hp:number, faceYaw?:number}} spec
+ * @param {{visual?: THREE.Object3D}} [opts]
+ * @param {Function} [body]  body builder (default buildBasicBody)
+ */
+export function createTarget(spec, opts = {}, body = buildBasicBody) {
+  const group = new THREE.Group();     // positioned at the feet; knockback/death move `pivot`
+  const pivot = new THREE.Group();
+  group.add(pivot);
+
+  const part = (geo, mat, x, y, z) => {
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(x, y, z);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    pivot.add(m);
+    return m;
+  };
+  const { mats, legL, legR } = body({ spec, pivot, part, G, THREE });
   const flashA = new THREE.Mesh(G.flash, FLASH_MAT), flashB = new THREE.Mesh(G.flash, FLASH_MAT);
   flashB.rotation.y = Math.PI / 2;
   const muzzleFlash = new THREE.Group();
@@ -154,12 +179,6 @@ export function createTarget(spec, opts = {}) {
   muzzleFlash.position.copy(MUZZLE_LOCAL);
   muzzleFlash.visible = false;
   pivot.add(muzzleFlash);
-  part(G.neck, skinMat, 0, 1.71, 0);
-  part(G.head, skinMat, 0, 1.84, 0);
-  // Bullseye on the chest (front = +Z)
-  const p = part(G.panel, panelMat, 0, 1.4, 0.151); p.castShadow = false;
-  const r = part(G.ring, ringMat, 0, 1.4, 0.152); r.castShadow = false;
-
   if (opts.visual) {
     // Swap the visuals: hide the built meshes (legs too), keep the muzzle flash, add the model (feet at origin, facing +Z)
     for (const c of pivot.children) if (c !== muzzleFlash) c.visible = false;
@@ -343,4 +362,4 @@ export function createTarget(spec, opts = {}) {
   return t;
 }
 
-export default { kind: 'enemy', name: 'humanoid_basic', createTarget, HEAD_MULT };
+export default { kind: 'enemy', name: 'humanoid_basic', createTarget: (spec, opts) => createTarget(spec, opts), HEAD_MULT };
