@@ -52,7 +52,7 @@ Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself 
 1. Open `apps/lab/notebook/` → lands on `notebook.html`, cover shows.
 2. Swipe the ☰ right → page 2 (Index); keep going to page 4 → ruled lines.
 3. Draw a few strokes, reload → strokes still there.
-4. Tap ☰ → page toast. Pull ☰ down → grid with thumbnails; tap one → opens.
+4. Tap ☰ → nothing. Pull ☰ up past 1/3 → grid with thumbnails; tap one → opens.
 5. Pull ☰ down past 1/3 → jelly jiggles, light wrinkles; again → more; reload → still there. Export PNG/PDF → wrinkles included.
 6. Hold ☰ → quick menu → Download PNG (current page); page 49 card → Download PNG, then Download PDF (50 pages), offline too.
 7. Reset Notebook → confirm → all pages empty, back to cover.
