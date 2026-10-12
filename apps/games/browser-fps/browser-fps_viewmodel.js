@@ -11,6 +11,8 @@
  *   vm.muzzleWorld(mainCamera, out) world position of the barrel tip (for flash light / tracers)
  *   vm.onFire()                    recoil kick + muzzle flash
  *   vm.startReload(seconds)        reload animation (mag drops, left hand fetches a new one)
+ *   vm.setNadeModel(obj)           grenade mesh shown in the raised hand while aiming a throw
+ *   vm.setNade(mode)               'hold' (rifle lowers, grenade up) | 'throw' (throw swing, then rifle returns) | 'none' (cancel)
  *   vm.update(dt, { moving, sprint, onGround, yaw, pitch })
  */
 import * as THREE from 'three';
@@ -77,6 +79,24 @@ export function createViewmodel(gunAsset = rifleHq, armsAsset = armsHq) {
   const muzzleMarker = new THREE.Object3D();
   muzzleMarker.position.copy(MUZZLE_LOCAL);
   gun.add(muzzleMarker);
+
+  // ── Grenade hand (camera space, outside the gun root): glove fist + sleeve holding the grenade ──
+  const nadeHand = new THREE.Group();
+  const gloveMat = new THREE.MeshStandardMaterial({ color: 0x34352f, roughness: 0.9 });
+  const sleeveMat = new THREE.MeshStandardMaterial({ color: 0x55603f, roughness: 1 });
+  const fist = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 8), gloveMat); fist.scale.set(1.1, 0.9, 1.2); fist.position.set(0.012, -0.03, 0.01);
+  const thumb = new THREE.Mesh(new THREE.CapsuleGeometry(0.009, 0.03, 2, 6), gloveMat); thumb.position.set(-0.022, -0.005, 0.0); thumb.rotation.z = 0.6;
+  const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.042, 0.28, 12, 1, true), sleeveMat);
+  forearm.position.set(0.04, -0.17, 0.08); forearm.rotation.set(0.45, 0, -0.25);
+  const nadeSlot = new THREE.Group(); nadeSlot.position.set(0, 0.012, -0.008);
+  nadeHand.add(fist, thumb, forearm, nadeSlot);
+  nadeHand.visible = false;
+  scene.add(nadeHand);
+  const NH_HIDE = new THREE.Vector3(0.18, -0.45, -0.32), NH_HOLD = new THREE.Vector3(0.14, -0.1, -0.33);
+  let nadeMode = 'none', nadeT = 0, nadeLower = 0, nadeRaise = 0;
+  const THROW_TIME = 0.4;
+  function setNadeModel(obj) { nadeSlot.clear(); if (obj) { const sz = new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3()); obj.scale.multiplyScalar(0.075 / Math.max(1e-3, sz.y)); nadeSlot.add(obj); } }
+  function setNade(mode) { nadeMode = mode; nadeT = 0; }
 
   // ── State ──
   let recoil = 0, flashT = 0, bobT = 0, bobW = 0;
@@ -172,8 +192,34 @@ export function createViewmodel(gunAsset = rifleHq, armsAsset = armsHq) {
       lArm.position.set(lArmRest.x + 0.02 * toWell, lArmRest.y - 0.12 * toWell - 0.12 * fetch, lArmRest.z + 0.17 * toWell);
     }
     gun.rotation.set(rx, ry, rz);
+
+    // grenade: hold = rifle lowered + hand up; throw = forward swing (grenade leaves at ~35%), then rifle returns
+    nadeT += dt;
+    let lowerTarget = 0, raiseTarget = 0, swing = 0;
+    if (nadeMode === 'hold') { lowerTarget = 1; raiseTarget = 1; }
+    else if (nadeMode === 'throw') {
+      const u = Math.min(1, nadeT / THROW_TIME);
+      swing = Math.sin(Math.min(1, u * 1.4) * Math.PI);
+      lowerTarget = u < 0.8 ? 1 : 0; raiseTarget = u < 0.6 ? 1 : 0;
+      nadeSlot.visible = u < 0.35;
+      if (u >= 1) nadeMode = 'none';
+    } else nadeSlot.visible = true;
+    if (nadeMode === 'hold') nadeSlot.visible = true;
+    const ek = Math.min(1, dt * 12);
+    nadeLower += (lowerTarget - nadeLower) * ek;
+    nadeRaise += (raiseTarget - nadeRaise) * ek;
+    if (nadeLower > 1e-3) {
+      root.position.y -= 0.2 * nadeLower; root.position.x += 0.03 * nadeLower;
+      root.rotation.x -= 0.7 * nadeLower; root.rotation.z -= 0.25 * nadeLower;
+    }
+    nadeHand.visible = nadeRaise > 0.02;
+    if (nadeHand.visible) {
+      nadeHand.position.lerpVectors(NH_HIDE, NH_HOLD, nadeRaise);
+      nadeHand.position.x += bx2 + sx * 0.6 - 0.08 * swing; nadeHand.position.y += by2 + sy * 0.6 + 0.06 * swing; nadeHand.position.z -= 0.2 * swing;
+      nadeHand.rotation.set(-0.2 - 0.9 * swing, 0.3, 0.15);
+    }
   }
 
-  return { scene, camera, setAspect, muzzleWorld, onFire, startReload, setAim, root, update,
+  return { scene, camera, setAspect, muzzleWorld, onFire, startReload, setAim, setNade, setNadeModel, get nadeMode() { return nadeMode; }, nadeHand, root, update,
     get reloading() { return reloadT > 0; }, get recoil() { return recoil; }, gun, mag, lArm, assets: { gun: gunAsset.name, arms: armsAsset.name } };
 }

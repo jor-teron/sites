@@ -299,7 +299,7 @@ let shooting = false;
 let aimHeld = false;   // right mouse button held
 let aimT = 0;          // 0 = hip, 1 = fully scoped (smoothed)
 /** Scoping is blocked / cancelled while reloading. */
-const wantsAim = () => aimHeld && !player.reloading && !isDead();
+const wantsAim = () => aimHeld && !player.reloading && !nadeAim.holding && !isDead();
 const sensNow = () => MOUSE_SENS * (1 + (SCOPE.sensMult - 1) * aimT);
 
 function clearInput() {
@@ -384,15 +384,15 @@ document.addEventListener('keydown', (e) => {
   if (KEYS.mute.includes(e.code) && !e.repeat) { audio.toggleMute(); return; }
   if (!pointerLocked) return;
   keys[e.code] = true;
-  if (KEYS.reload.includes(e.code) && !player.reloading && player.ammo < MAG_SIZE) startReload();
-  if (KEYS.grenade.includes(e.code) && !e.repeat && !isDead()) throwGrenade();
+  if (KEYS.reload.includes(e.code) && !player.reloading && !nadeAim.holding && player.ammo < MAG_SIZE) startReload();
+  if (KEYS.grenade.includes(e.code) && !e.repeat && !isDead()) holdGrenade();
 });
-document.addEventListener('keyup', (e) => { keys[e.code] = false; });
+document.addEventListener('keyup', (e) => { keys[e.code] = false; if (KEYS.grenade.includes(e.code)) releaseGrenade(); });
 
 document.addEventListener('mousedown', (e) => {
   if (!pointerLocked) return;
   if (e.button === 0) shooting = true;
-  if (e.button === 2) aimHeld = true;
+  if (e.button === 2) { if (nadeAim.holding) cancelGrenade(); else aimHeld = true; }
 });
 document.addEventListener('mouseup', (e) => {
   if (e.button === 0) shooting = false;
@@ -566,7 +566,7 @@ function damagePlayer(n, flashMs) {
   dmgFlash.classList.add('show');
   clearTimeout(damagePlayer._ft);
   damagePlayer._ft = setTimeout(() => dmgFlash.classList.remove('show'), flashMs);
-  if (isDead()) showDeath();
+  if (isDead()) { cancelGrenade(); showDeath(); }
 }
 
 function showDeath() {
@@ -592,6 +592,7 @@ function restartGame() {
   ammoVal.textContent = String(player.ammo);
   resetEnemies();
   spawnTimer = SP.interval;
+  cancelGrenade();
   aimHeld = false; aimT = 0;
   camera.fov = SC.fov; camera.updateProjectionMatrix();
   vm.setAim(0);
@@ -947,7 +948,7 @@ function surfaceNormal(c, p) {
 }
 
 function fire() {
-  if (player.reloading || player.fireCooldown > 0) return;
+  if (player.reloading || player.fireCooldown > 0 || nadeAim.holding) return;
   if (player.ammo <= 0) {
     audio.play('dryClick');
     startReload();
@@ -1133,7 +1134,7 @@ function blastBlocked(from, to) {
   return wallHit(nadeFrom, nadeDir) < d - 0.05;
 }
 const grenades = createGrenades(scene, GR, ASSETS.grenade, {
-  solids: () => colliders.filter((c) => !c.target && !c.disabled),
+  solids: () => refreshNadeSolids(),
   onBounce: (p) => sfxAt('grenadeBounce', p),
   groundAt,
   onExplode(p) {
@@ -1153,14 +1154,71 @@ const grenades = createGrenades(scene, GR, ASSETS.grenade, {
     if (k > 0 && GR.selfDamage > 0 && !blastBlocked(from, pc)) damagePlayer(Math.round(GR.selfDamage * k), CFG.contact.flashMs * 2);
   },
 });
+// Hold-to-aim throw: preview arc (preallocated dots) + landing ring, both from grenades.predict (same sim as live)
+const GP = GR.preview;
+const nadeAim = { holding: false, count: 0, rest: new THREE.Vector3() };
+const nadeOrigin = new THREE.Vector3(), nadeLook = new THREE.Vector3(), nadeDown = new THREE.Vector3(0, -0.15, 0);
+const previewPos = new Float32Array(GP.points * 3);
+const previewGeo = new THREE.BufferGeometry();
+previewGeo.setAttribute('position', new THREE.BufferAttribute(previewPos, 3).setUsage(THREE.DynamicDrawUsage));
+previewGeo.setDrawRange(0, 0);
+const dotTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 32; const g = c.getContext('2d');
+  const grd = g.createRadialGradient(16, 16, 0, 16, 16, 16); grd.addColorStop(0, 'rgba(255,255,255,1)'); grd.addColorStop(0.6, 'rgba(255,255,255,0.9)'); grd.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, 32, 32); return new THREE.CanvasTexture(c); })();
+const previewDots = new THREE.Points(previewGeo, new THREE.PointsMaterial({ map: dotTex, alphaTest: 0.05, color: GP.color, size: GP.dotSize, sizeAttenuation: false, transparent: true, opacity: 0.95, depthWrite: false }));
+previewDots.frustumCulled = false; previewDots.visible = false; previewDots.renderOrder = 5;
+const ringGeo = new THREE.RingGeometry(GP.ringRadius * 0.7, GP.ringRadius, 32); ringGeo.rotateX(-Math.PI / 2);
+const previewRing = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: GP.ringColor, transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide }));
+previewRing.visible = false; previewRing.renderOrder = 5;
+scene.add(previewDots, previewRing);
+const nadeSolids = [];
+function refreshNadeSolids() { nadeSolids.length = 0; for (const c of colliders) if (!c.target && !c.disabled) nadeSolids.push(c); return nadeSolids; }
+vm.setNadeModel(ASSETS.grenade.build());
+
+/** Throw origin + direction from the camera (shared by the preview and the real throw). */
+function nadeLaunch() {
+  camera.updateMatrixWorld();
+  nadeLook.set(0, 0, -1).applyQuaternion(camera.quaternion);
+  nadeOrigin.copy(camera.position).addScaledVector(nadeLook, 0.5).add(nadeDown);
+}
+function updateGrenadePreview() {
+  if (!nadeAim.holding) return;
+  nadeLaunch();
+  const n = grenades.predict(nadeOrigin, nadeLook, player.vel, previewPos, GP.points, nadeAim.rest, refreshNadeSolids());
+  nadeAim.count = n;
+  previewGeo.setDrawRange(GP.skipNear, Math.max(0, n - GP.skipNear));   // first dots sit right at the hand
+  previewGeo.attributes.position.needsUpdate = true;
+  previewDots.visible = true;
+  previewRing.position.copy(nadeAim.rest); previewRing.position.y = Math.max(nadeAim.rest.y - GR.radius, groundAt(nadeAim.rest.x, nadeAim.rest.z)) + 0.03;
+  previewRing.visible = true;
+}
+function hidePreview() { previewDots.visible = false; previewRing.visible = false; }
+function holdGrenade() {
+  if (nadeAim.holding || isDead() || player.grenades <= 0 || player.nadeCd > 0 || player.reloading) return false;
+  nadeAim.holding = true; shooting = false;
+  vm.setNade('hold');
+  updateGrenadePreview();
+  return true;
+}
+function cancelGrenade() {
+  if (!nadeAim.holding) return false;
+  nadeAim.holding = false; hidePreview(); vm.setNade('none');
+  return true;
+}
+function releaseGrenade() {
+  if (!nadeAim.holding) return null;
+  nadeAim.holding = false; hidePreview();
+  if (isDead()) { vm.setNade('none'); return null; }
+  vm.setNade('throw');
+  return throwGrenade();
+}
 function throwGrenade() {
   if (player.grenades <= 0 || player.nadeCd > 0) return null;
   player.grenades--; player.nadeCd = GR.cooldown;
   nadeVal.textContent = String(player.grenades);
   audio.play('grenadeThrow');
-  const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-  const origin = camera.position.clone().addScaledVector(dir, 0.5).add(new THREE.Vector3(0, -0.15, 0));
-  return grenades.throwFrom(origin, dir, player.vel);
+  nadeLaunch();
+  return grenades.throwFrom(nadeOrigin, nadeLook, player.vel);
 }
 let nadeTimer = 0;
 const nadePickups = createPickups(scene, CFG.grenadePickups, {
@@ -1205,6 +1263,7 @@ function gameStep(dt) {
   nadePickups.update(dt, player.pos, player.pos.y - PLAYER_HEIGHT);
   if (player.nadeCd > 0) player.nadeCd -= dt;
   grenades.update(dt);
+  updateGrenadePreview();
   fx.update(dt);
   // Contact damage
   for (const en of enemies) {
@@ -1279,7 +1338,7 @@ window.__fps = {
   spawnRandomTarget, hasLineOfSight, restartGame,
   get spawnTimer() { return spawnTimer; },
   damageAt, hitsCover, pickups, validPickupSpot,
-  grenades, nadePickups, throwGrenade, bulletDamage, audio,
+  grenades, nadePickups, throwGrenade, holdGrenade, releaseGrenade, cancelGrenade, nadeAim, previewDots, previewRing, previewPos, bulletDamage, audio,
   assets: Object.fromEntries(Object.entries(ASSETS).map(([k, a]) => [k, k === 'textures'
     ? Object.fromEntries(Object.entries(a).map(([t, m]) => [t, m ? m.name : null])) : a.name])), assetLog: loadLog, renderer,
   setLook: (y, p) => { yaw = y; pitch = p; },

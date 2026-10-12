@@ -179,7 +179,7 @@ window.BROWSER_FPS_CONFIG = {
     jump: ['Space'],                    // jump
     sprint: ['ShiftLeft', 'ShiftRight'],// sprint
     reload: ['KeyR'],                   // reload
-    grenade: ['KeyG'],                  // throw a grenade
+    grenade: ['KeyG'],                  // hold to aim a grenade (arc preview), release to throw; right-click cancels
     mute: ['KeyM'],                     // toggle sound
     unlock: ['Escape', 'KeyP', 'Backquote'], // free the mouse
   },
@@ -215,6 +215,16 @@ window.BROWSER_FPS_CONFIG = {
     selfDamage: 35,    // player damage at the centre (modest), same falloff
     needsLineOfSight: true, // walls / cover block the blast
     fxTime: 0.6,       // explosion effect duration
+    simStep: 1 / 120,  // fixed physics step (s) — live grenades and the aim preview use the same sim
+    // Hold G to aim (rifle lowers, grenade raised, arc preview); release throws, right-click cancels
+    preview: {
+      points: 48,          // preallocated dots along the predicted arc (until the fuse)
+      dotSize: 7,          // dot size in pixels (constant on screen)
+      skipNear: 2,         // don't draw the first N dots (too close to the camera)
+      color: 0xfff1b0,
+      ringRadius: 0.6,     // landing ring at the predicted detonation point
+      ringColor: 0xffb347,
+    },
   },
   grenadePickups: {
     interval: 45, firstDelay: 45, maxOnMap: 2, lifetime: 60, blinkTime: 5, blinkHz: 4,
