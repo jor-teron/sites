@@ -8,7 +8,7 @@
  *   group      THREE.Group, origin at the FEET (stands on y = spec.pos[1] - 1, i.e. the floor)
  *   collider   world AABB { min, max, target: true, disabled } pushed into the player colliders
  *   raycast(origin, dir) -> { t, zone: 'head' | 'body' } | null   (exact per-zone test)
- *   hit(zone, dmg, dir)  apply damage (head x HEAD_MULT), flash, knockback, death
+ *   hit(zone, dmg, dir, raw)  apply damage (head x HEAD_MULT unless raw), flash, knockback, death
  *   update(dt)           animations (flash, knockback, death fall)
  *   touches(pos, radius, height) -> bool  contact test against the collider (+ margin)
  */
@@ -238,9 +238,9 @@ export function createTarget(spec, opts = {}, body = buildBasicBody) {
       return best;   // scale is 1, so local t == world t
     },
 
-    hit(zone, dmg, dir) {
+    hit(zone, dmg, dir, raw = false) {
       if (!this.alive) return 0;
-      const dealt = zone === 'head' ? dmg * HEAD_MULT : dmg;
+      const dealt = raw || zone !== 'head' ? dmg : dmg * HEAD_MULT;   // raw: caller already chose the final damage
       this.hp -= dealt;
       this.flash = FLASH_TIME;
       for (const m of mats) m.emissive.setRGB(1, 1, 1);

@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { loadAssets, loadLog } from './assets/registry.js';
 import { createViewmodel } from './browser-fps_viewmodel.js';
 import { createPickups } from './browser-fps_pickups.js';
+import { createGrenades } from './browser-fps_grenades.js';
 
 // ─── Tunables (from browser-fps_config.js) ──────────────────────────────────
 const CFG = window.BROWSER_FPS_CONFIG;
@@ -36,6 +37,8 @@ const overlay = document.getElementById('overlay');
 const hud = document.getElementById('hud');
 const hpVal = document.getElementById('hp-val');
 const ammoVal = document.getElementById('ammo-val');
+const nadeVal = document.getElementById('nade-val');
+const nadePop = document.getElementById('nade-pop');
 const hitmarker = document.getElementById('hitmarker');
 const dmgFlash = document.getElementById('dmg-flash');
 const healFlash = document.getElementById('heal-flash');
@@ -253,6 +256,8 @@ const player = {
   reloading: false,
   reloadT: 0,
   fireCooldown: 0,
+  grenades: CFG.grenades.start,
+  nadeCd: 0,
 };
 
 const keys = Object.create(null);
@@ -327,6 +332,7 @@ document.addEventListener('keydown', (e) => {
   if (!pointerLocked) return;
   keys[e.code] = true;
   if (KEYS.reload.includes(e.code) && !player.reloading && player.ammo < MAG_SIZE) startReload();
+  if (KEYS.grenade.includes(e.code) && !e.repeat && !isDead()) throwGrenade();
 });
 document.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
@@ -530,6 +536,10 @@ function restartGame() {
   scopeOverlay.style.opacity = '0';
   crosshairEl.style.opacity = '1';
   pickups.reset();
+  nadePickups.reset();
+  grenades.reset();
+  player.grenades = CFG.grenades.start; player.nadeCd = 0;
+  nadeVal.textContent = String(player.grenades);
   syncCamera();
   deathEl.classList.add('hidden');
 }
@@ -788,9 +798,17 @@ function showHitmarker() {
   showHitmarker._t = setTimeout(() => hitmarker.classList.remove('show'), W.hitmarkerMs);
 }
 
+/** Player bullet damage by zone and distance (config weapon.damage): near value at <= falloffNear, linear to far. */
+const WD = W.damage;
+function bulletDamage(zone, d) {
+  const u = Math.max(0, Math.min(1, (d - WD.falloffNear) / (WD.falloffFar - WD.falloffNear)));
+  const [near, far] = zone === 'head' ? [WD.headNear, WD.headFar] : [WD.bodyNear, WD.bodyFar];
+  return Math.round(near + (far - near) * u);
+}
+
 function damageEnemy(en, dmg, zone, dir) {
   if (!en.alive) return;
-  en.hit(zone, dmg, dir);   // head x2.5, hit flash, knockback, death animation
+  en.lastDealt = en.hit(zone, dmg, dir, true);   // final damage (no head multiplier); flash, knockback, death
   if (!en.alive) player.kills = (player.kills || 0) + 1;
   showHitmarker();
 }
@@ -854,7 +872,7 @@ function fire() {
   spawnTracer(muzzle, hitPoint);
 
   if (bestEn && bestT <= wallT) {
-    damageEnemy(bestEn, HIT_DAMAGE, bestZone, shootDir);
+    damageEnemy(bestEn, bulletDamage(bestZone, bestT), bestZone, shootDir);
   }
 
   if (player.ammo <= 0) startReload();
@@ -962,6 +980,64 @@ const pickups = createPickups(scene, PK, {
 }, ASSETS.medkit);
 healTimers = { f: 0, p: 0 };
 
+// ─── Grenades ───────────────────────────────────────────────────────────────
+const GR = CFG.grenades;
+const nadeFrom = new THREE.Vector3(), nadeDir = new THREE.Vector3(), nadeTmp = new THREE.Vector3();
+function blastBlocked(from, to) {
+  if (!GR.needsLineOfSight) return false;
+  nadeDir.subVectors(to, from); const d = nadeDir.length(); if (d < 0.05) return false;
+  nadeDir.divideScalar(d);
+  nadeFrom.copy(from).addScaledVector(nadeDir, 0.02);
+  return wallHit(nadeFrom, nadeDir) < d - 0.05;
+}
+const grenades = createGrenades(scene, GR, ASSETS.grenade, {
+  solids: () => colliders.filter((c) => !c.target && !c.disabled),
+  onExplode(p) {
+    const from = nadeTmp.copy(p).setY(Math.max(p.y, 0.3)).clone();
+    for (const en of enemies) {
+      if (!en.alive) continue;
+      const c = en.group.position.clone().setY(1.0);
+      const d = c.distanceTo(from), k = grenades.falloff(d);
+      if (k <= 0 || blastBlocked(from, c)) continue;
+      const dir = new THREE.Vector3().subVectors(c, from).setY(0);
+      if (dir.lengthSq() < 1e-6) dir.set(0, 0, -1);
+      damageEnemy(en, Math.round(GR.damage * k), 'body', dir.normalize());
+    }
+    const pc = player.pos.clone().setY(player.pos.y - PLAYER_HEIGHT / 2);
+    const k = grenades.falloff(pc.distanceTo(from));
+    if (k > 0 && GR.selfDamage > 0 && !blastBlocked(from, pc)) damagePlayer(Math.round(GR.selfDamage * k), CFG.contact.flashMs * 2);
+  },
+});
+function throwGrenade() {
+  if (player.grenades <= 0 || player.nadeCd > 0) return null;
+  player.grenades--; player.nadeCd = GR.cooldown;
+  nadeVal.textContent = String(player.grenades);
+  const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+  const origin = camera.position.clone().addScaledVector(dir, 0.5).add(new THREE.Vector3(0, -0.15, 0));
+  return grenades.throwFrom(origin, dir, player.vel);
+}
+let nadeTimer = 0;
+const nadePickups = createPickups(scene, CFG.grenadePickups, {
+  randomSpot() {
+    for (let n = 0; n < 60; n++) {
+      const x = (Math.random() - 0.5) * ARENA.w, z = (Math.random() - 0.5) * ARENA.d;
+      if (validPickupSpot(x, z) && !nadePickups.items.some((it) => Math.hypot(it.x - x, it.z - z) < 3)) return [x, z];
+    }
+    return null;
+  },
+  canPick: () => player.health > 0 && player.grenades < GR.max,
+  onPick(amount) {
+    const before = player.grenades;
+    player.grenades = Math.min(GR.max, player.grenades + amount);
+    nadeVal.textContent = String(player.grenades);
+    nadePickups.lastGain = player.grenades - before;
+    nadePop.textContent = '+' + (player.grenades - before);
+    nadePop.classList.remove('show'); void nadePop.offsetWidth; nadePop.classList.add('show');
+    clearTimeout(nadeTimer); nadeTimer = setTimeout(() => nadePop.classList.remove('show'), CFG.grenadePickups.popMs);
+  },
+}, ASSETS.grenadePickup);
+nadeVal.textContent = String(player.grenades);
+
 // ─── Main loop ──────────────────────────────────────────────────────────────
 const clock = new THREE.Clock();
 
@@ -972,6 +1048,9 @@ function gameStep(dt) {
   updateSpawning(dt);
   updateEnemyAI(dt);
   pickups.update(dt, player.pos, player.pos.y - PLAYER_HEIGHT);
+  nadePickups.update(dt, player.pos, player.pos.y - PLAYER_HEIGHT);
+  if (player.nadeCd > 0) player.nadeCd -= dt;
+  grenades.update(dt);
   // Contact damage
   for (const en of enemies) {
     if (!en.alive) continue;
@@ -1032,6 +1111,7 @@ window.__fps = {
   spawnRandomTarget, hasLineOfSight, restartGame,
   get spawnTimer() { return spawnTimer; },
   damageAt, hitsCover, pickups, validPickupSpot,
+  grenades, nadePickups, throwGrenade, bulletDamage,
   assets: Object.fromEntries(Object.entries(ASSETS).map(([k, a]) => [k, k === 'textures'
     ? Object.fromEntries(Object.entries(a).map(([t, m]) => [t, m ? m.name : null])) : a.name])), assetLog: loadLog, renderer,
   setLook: (y, p) => { yaw = y; pitch = p; },

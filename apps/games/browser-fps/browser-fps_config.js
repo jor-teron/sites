@@ -23,7 +23,10 @@ window.BROWSER_FPS_CONFIG = {
     fireRate: 0.1,        // seconds between shots
     magSize: 30,          // rounds per magazine
     reloadTime: 1.4,      // seconds to reload
-    hitDamage: 34,        // damage per hit
+    hitDamage: 34,        // (legacy, unused) — see weapon.damage
+    // Player bullet damage vs enemies (enemy HP 100). Same distance bands as the enemies' falloff:
+    // full value at <= falloffNear units, linear down to the far value at >= falloffFar.
+    damage: { bodyNear: 20, bodyFar: 10, headNear: 50, headFar: 15, falloffNear: 6, falloffFar: 24 },
     range: 100,           // raycast max distance
     tracerMaxDist: 80,    // tracer length cap
     tracerLife: 0.06,     // tracer lifetime (s)
@@ -173,6 +176,7 @@ window.BROWSER_FPS_CONFIG = {
     jump: ['Space'],                    // jump
     sprint: ['ShiftLeft', 'ShiftRight'],// sprint
     reload: ['KeyR'],                   // reload
+    grenade: ['KeyG'],                  // throw a grenade
     unlock: ['Escape', 'KeyP', 'Backquote'], // free the mouse
   },
   pickups: {
@@ -189,6 +193,31 @@ window.BROWSER_FPS_CONFIG = {
     hoverY: 0.35, bobAmp: 0.07, spinSpeed: 1.4,
     flashMs: 220, popMs: 900,
   },
+  // Grenades (G to throw)
+  grenades: {
+    start: 5,          // grenades at game start / Retry
+    max: 10,           // carry cap
+    throwSpeed: 15,    // launch speed (u/s) along the look direction ...
+    throwUp: 3.5,      // ... plus this much upward
+    cooldown: 0.6,     // seconds between throws
+    gravity: 20,
+    radius: 0.09,      // physics radius
+    bounce: 0.38,      // restitution on floor / walls / cover
+    friction: 0.72,    // horizontal speed kept per floor bounce
+    fuse: 2.5,         // seconds from throw to boom
+    blastRadius: 4,    // damage radius (world units)
+    fullRadius: 1.2,   // full damage inside this radius, linear falloff to 0 at blastRadius
+    damage: 150,       // enemy damage at the centre (enemy HP 100)
+    selfDamage: 35,    // player damage at the centre (modest), same falloff
+    needsLineOfSight: true, // walls / cover block the blast
+    fxTime: 0.6,       // explosion effect duration
+  },
+  grenadePickups: {
+    interval: 45, firstDelay: 45, maxOnMap: 2, lifetime: 60, blinkTime: 5, blinkHz: 4,
+    amount: 2,         // grenades per pickup (capped at grenades.max)
+    pickRadius: 0.9, minPlayerDist: 4, clearance: 0.6,
+    hoverY: 0.3, bobAmp: 0.07, spinSpeed: 1.4, flashMs: 220, popMs: 900,
+  },
   // Which model module to use for each asset slot (see assets/README.md).
   // A value is a built-in id ('guns/rifle_hq') or { glb: 'assets/…/model.glb', fallback: 'guns/rifle_hq', scale: 1 }.
   assets: {
@@ -196,6 +225,8 @@ window.BROWSER_FPS_CONFIG = {
     arms: 'characters/arms_hq',
     enemy: 'enemies/soldier_hq',          // or 'enemies/humanoid_basic'
     medkit: 'pickups/medkit_basic',
+    grenade: 'weapons/grenade_frag',           // thrown grenade
+    grenadePickup: 'pickups/grenade_crate',    // grenade pickup on the map
     // Procedural textures (assets/textures/*); null = plain colours
     textures: {
       floor: 'textures/floor_concrete',

@@ -9,6 +9,8 @@ assets: {
   arms:   'characters/arms_hq',       // or 'characters/arms_basic'
   enemy:  'enemies/soldier_hq',       // or 'enemies/humanoid_basic'
   medkit: 'pickups/medkit_basic',
+  grenade: 'weapons/grenade_frag',        // thrown grenade: build() -> Group (origin at centre)
+  grenadePickup: 'pickups/grenade_crate', // map pickup: build() -> { root, kit, glow }
   textures: {                         // null = plain colours
     floor: 'textures/floor_concrete',
     wall:  'textures/wall_brick',
@@ -36,6 +38,8 @@ fallback (or the slot default), so the game always starts. `window.__fps.assets`
 | `characters/` | `arms`   | `arms`   (player first-person arms/hands) |
 | `enemies/`    | `enemy`  | `enemy`  |
 | `pickups/`    | `medkit` | `medkit` |
+| `pickups/`    | `grenadePickup` | `pickup` |
+| `weapons/`    | `grenade` | `grenade` |
 | `textures/`   | `textures.floor/wall/cover` | `texture` |
 
 `wear.js` holds shared helpers (procedural wear/roughness textures, capsule/limb meshes).

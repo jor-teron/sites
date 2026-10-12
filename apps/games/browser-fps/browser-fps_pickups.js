@@ -1,5 +1,5 @@
 /**
- * Browser FPS — pickups (medkits).
+ * Browser FPS — pickups (medkits, grenade crates: any model with build() -> { root, kit, glow }).
  *
  * createPickups(scene, cfg, hooks):
  *   cfg   = CONFIG.pickups
@@ -56,7 +56,7 @@ export function createPickups(scene, cfg, hooks, model = medkitBasic) {
       // pickup: walk over it (feet near the floor), only if it would heal
       const d = Math.hypot(playerPos.x - it.x, playerPos.z - it.z);
       if (d < cfg.pickRadius && playerFeetY < 1.2 && hooks.canPick()) {
-        hooks.onPick(cfg.heal);
+        hooks.onPick(cfg.amount ?? cfg.heal);
         remove(i);
       }
     }

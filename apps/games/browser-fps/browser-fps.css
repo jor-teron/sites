@@ -81,3 +81,7 @@
 #scope-overlay .reticle { position: absolute; background: rgba(0,0,0,0.85); }
 #scope-overlay .reticle.h { left: calc(50% - 45vmin); width: 90vmin; top: 50%; height: 1px; }
 #scope-overlay .reticle.v { top: 5vmin; height: 90vmin; left: 50%; width: 1px; }
+
+    #weapon .nades { font-size: 0.85rem; opacity: 0.9; }
+    #nade-pop { color: #ffc040; opacity: 0; transition: opacity 0.3s; }
+    #nade-pop.show { opacity: 1; }

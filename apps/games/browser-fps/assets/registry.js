@@ -15,8 +15,10 @@ const DEFAULTS = {
   arms: 'characters/arms_hq',
   enemy: 'enemies/soldier_hq',
   medkit: 'pickups/medkit_basic',
+  grenade: 'weapons/grenade_frag',
+  grenadePickup: 'pickups/grenade_crate',
 };
-const KIND = { gun: 'gun', arms: 'arms', enemy: 'enemy', medkit: 'medkit' };
+const KIND = { gun: 'gun', arms: 'arms', enemy: 'enemy', medkit: 'medkit', grenade: 'grenade', grenadePickup: 'pickup' };
 const BASE = new URL('./', import.meta.url);           // .../browser-fps/assets/
 const GAME = new URL('../', import.meta.url);          // .../browser-fps/
 
@@ -83,8 +85,11 @@ function wrapGlb(slot, scene, fb, spec) {
   if (slot === 'enemy') {
     return { ...fb, name, createTarget: (s, o = {}) => fb.createTarget(s, { ...o, visual: fit(scene.clone(true)) }) };
   }
-  // medkit
-  return { kind: 'medkit', name, build() {
+  if (slot === 'grenade') {
+    return { kind: 'grenade', name, build() { const g = fb.build(); g.clear(); g.add(fit(scene.clone(true))); return g; } };
+  }
+  // medkit / grenadePickup (same { root, kit, glow } interface)
+  return { kind: KIND[slot], name, build() {
     const b = fb.build();
     b.kit.clear();
     b.kit.add(fit(scene.clone(true)));
