@@ -4,6 +4,7 @@
  */
 import * as THREE from 'three';
 import { createTarget } from './browser-fps_target.js';
+import { createViewmodel } from './browser-fps_viewmodel.js';
 
 // ─── Tunables (from browser-fps_config.js) ──────────────────────────────────
 const CFG = window.BROWSER_FPS_CONFIG;
@@ -38,6 +39,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, SC.maxPixelRatio));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
+renderer.autoClear = false;   // world pass, then viewmodel pass on a cleared depth buffer
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -46,6 +48,9 @@ scene.fog = new THREE.Fog(SC.background, SC.fogNear, SC.fogFar);
 
 const camera = new THREE.PerspectiveCamera(SC.fov, window.innerWidth / window.innerHeight, SC.near, SC.far);
 camera.rotation.order = 'YXZ';
+
+// First-person arms + rifle (own scene/camera, drawn last so it never clips into walls)
+const vm = createViewmodel();
 
 // Pitch helper: camera.rotation.x = pitch, camera.rotation.y = yaw
 let yaw = 0;
@@ -220,6 +225,7 @@ document.addEventListener('mouseup', (e) => {
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
+  vm.setAspect(window.innerWidth / window.innerHeight);
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
@@ -363,6 +369,7 @@ function spawnTracer(from, to) {
 }
 
 function startReload() {
+  vm.startReload(RELOAD_TIME);
   player.reloading = true;
   player.reloadT = RELOAD_TIME;
 }
@@ -390,10 +397,11 @@ function fire() {
   player.fireCooldown = FIRE_RATE;
   ammoVal.textContent = String(player.ammo);
 
-  // Muzzle flash near camera
+  // Muzzle flash + tracer start at the viewmodel's barrel tip
   shootDir.set(0, 0, -1).applyQuaternion(camera.quaternion);
-  const muzzle = camera.position.clone().add(shootDir.clone().multiplyScalar(0.6));
-  muzzle.y -= 0.15;
+  camera.updateMatrixWorld();
+  const muzzle = vm.muzzleWorld(camera);
+  vm.onFire();
   muzzleFlashLight.position.copy(muzzle);
   muzzleFlashLight.intensity = W.flashIntensity;
   flashT = W.flashTime;
@@ -524,10 +532,19 @@ function tick() {
   }
 
   for (const en of enemies) en.update(dt);
+  vm.update(dt, {
+    moving: pointerLocked && player.health > 0 && (held(KEYS.forward) || held(KEYS.back) || held(KEYS.left) || held(KEYS.right)),
+    sprint: held(KEYS.sprint),
+    onGround: player.onGround,
+    yaw, pitch,
+  });
+  renderer.clear();
   renderer.render(scene, camera);
+  renderer.clearDepth();
+  renderer.render(vm.scene, vm.camera);
 }
 
 tick();
 
 // Expose a tiny debug hook in console
-window.__fps = { player, enemies, colliders, scene, camera, fire };
+window.__fps = { player, enemies, colliders, scene, camera, fire, vm, startReload };
