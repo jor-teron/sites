@@ -18,7 +18,7 @@ Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself 
 - Every finished stroke and every page change is saved at once.
 - Palm rejection: very large touches (width > 50) are ignored.
 - Page 49 settings: **Button: bottom / top** and **Swap gestures: off / on** (flips left↔right and up↔down: pull down = grid, pull up = nothing). Saved, applied at once and after reload; the How-to list on page 49 always shows the current mapping.
-- No Reset (removed). PNG of the current page: hold ☰ → quick menu or the page-49 link; whole notebook PDF: page-49 link.
+- No Reset (removed). PNG of the current page: tap ☰ → quick menu or the page-49 link; whole notebook PDF: page-49 link.
 
 ## Files
 - `index.html` — redirect to `notebook.html`
