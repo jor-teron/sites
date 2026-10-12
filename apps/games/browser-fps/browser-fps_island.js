@@ -14,7 +14,48 @@ function mulberry32(a) {
 }
 const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
-export function buildIsland(scene, cfg, assets, renderer) {
+/**
+ * 'reflect' water quality: MeshStandardMaterial with a generated sky (equirect gradient + sun) as its env map, so the
+ * low roughness gives fresnel sky reflection + a sun glint; plus a cheap animated normal shimmer in the fragment shader.
+ */
+function reflectWater(color, w) {
+  const W = 256, H = 128, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  const grd = g.createLinearGradient(0, 0, 0, H);
+  const top = '#' + new THREE.Color(w.skyTop).getHexString(), hor = '#' + new THREE.Color(w.skyHorizon).getHexString();
+  grd.addColorStop(0, top); grd.addColorStop(0.48, hor); grd.addColorStop(0.52, hor); grd.addColorStop(1, '#2a6f86');
+  g.fillStyle = grd; g.fillRect(0, 0, W, H);
+  // sun (equirect: u = atan2(dir.z, dir.x), v = acos(dir.y))
+  const [sx, sy, sz] = w.sunDir, l = Math.hypot(sx, sy, sz);
+  const u = (0.5 + Math.atan2(sz / l, sx / l) / (2 * Math.PI)) * W, v = (Math.acos(sy / l) / Math.PI) * H;
+  const sg = g.createRadialGradient(u, v, 0, u, v, 18);
+  sg.addColorStop(0, 'rgba(255,250,230,1)'); sg.addColorStop(1, 'rgba(255,250,230,0)');
+  g.fillStyle = sg; g.fillRect(0, 0, W, H);
+  const env = new THREE.CanvasTexture(c);
+  env.mapping = THREE.EquirectangularReflectionMapping;
+  env.colorSpace = THREE.SRGBColorSpace;
+  const m = new THREE.MeshStandardMaterial({ color, envMap: env, envMapIntensity: w.reflect ?? 0.5, roughness: w.roughness, metalness: 0.0, transparent: true, opacity: w.opacity });
+  const time = { value: 0 };
+  m.userData.time = time;
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uTime = time;
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;')
+      .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nuniform float uTime;')
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+        {
+          float t = uTime * ${w.shimmerSpeed.toFixed(3)};
+          vec2 p = vWPos.xz;
+          vec2 d = vec2(sin(p.x * 1.7 + t * 1.3) + sin(p.y * 2.3 - t * 1.7) * 0.7 + sin((p.x + p.y) * 4.1 + t * 2.9) * 0.35,
+                        cos(p.y * 1.9 + t * 1.1) + cos(p.x * 2.7 + t * 1.5) * 0.7 + cos((p.x - p.y) * 3.7 - t * 2.3) * 0.35);
+          vec3 nW = normalize(vec3(d.x * ${w.shimmer.toFixed(3)}, 1.0, d.y * ${w.shimmer.toFixed(3)}));
+          normal = normalize((viewMatrix * vec4(nW, 0.0)).xyz);
+        }`);
+  };
+  return m;
+}
+
+export function buildIsland(scene, cfg, assets, renderer, opt = {}) {
   const R = cfg.radius;
   const rand = mulberry32(cfg.seed);
   const beachIn = R * cfg.beachFrac;            // inner edge of the beach ring
@@ -72,7 +113,7 @@ export function buildIsland(scene, cfg, assets, renderer) {
   const wgeo = new THREE.PlaneGeometry(wsize, wsize, wseg, wseg);
   wgeo.rotateX(-Math.PI / 2);
   const wbase = Float32Array.from(wgeo.attributes.position.array);
-  const water = new THREE.Mesh(wgeo, new THREE.MeshStandardMaterial({ color: cfg.colors.water, transparent: true, opacity: 0.82, roughness: 0.25, metalness: 0.1 }));
+  const water = new THREE.Mesh(wgeo, opt.waterFx ? reflectWater(cfg.colors.water, opt.waterFx) : new THREE.MeshStandardMaterial({ color: cfg.colors.water, transparent: true, opacity: 0.82, roughness: 0.25, metalness: 0.1 }));
   water.position.y = cfg.waterLevel;
   scene.add(water);
   const foam = new THREE.Mesh(new THREE.RingGeometry(R - 0.5, R + 0.7, 96, 1),
@@ -140,6 +181,7 @@ export function buildIsland(scene, cfg, assets, renderer) {
 
   const wp = wgeo.attributes.position;
   function update(t) {
+    if (water.material.userData.time) water.material.userData.time.value = t;
     const A = cfg.waveHeight;
     for (let i = 0; i < wp.count; i++) {
       const x = wbase[i * 3], z = wbase[i * 3 + 2];

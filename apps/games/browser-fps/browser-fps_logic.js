@@ -9,6 +9,7 @@ import { createPickups } from './browser-fps_pickups.js';
 import { createGrenades } from './browser-fps_grenades.js';
 import { createAudio } from './browser-fps_audio.js';
 import { buildIsland } from './browser-fps_island.js';
+import { createFx } from './browser-fps_fx.js';
 
 // ─── Tunables (from browser-fps_config.js) ──────────────────────────────────
 const CFG = window.BROWSER_FPS_CONFIG;
@@ -43,6 +44,9 @@ const IS = CFG.island;
 const ISLAND = MAP === 'island';
 // Island: a square world box around the circle (grid / bounds), no walls or cover boxes
 const ARENA = ISLAND ? { ...CFG.arena, w: 2 * (IS.radius + IS.wade + 2), d: 2 * (IS.radius + IS.wade + 2), covers: [] } : CFG.arena;
+// Effects quality ('high' | 'low'); ?quality=low in the URL overrides the config
+const FXQ = (() => { const q = new URLSearchParams(location.search).get('quality') || CFG.fx.quality; return CFG.fx.presets[q] ? q : 'high'; })();
+const FX = { ...CFG.fx, ...CFG.fx.presets[FXQ], quality: FXQ };
 const SC = ISLAND ? { ...CFG.scene, ...IS.scene } : CFG.scene;
 const W = CFG.weapon;
 const KEYS = CFG.keys;
@@ -183,10 +187,11 @@ function buildArena() {
 
 let island = null;
 if (ISLAND) {
-  island = buildIsland(scene, IS, ASSETS, renderer);
+  island = buildIsland(scene, IS, ASSETS, renderer, { water: FX.water, waterFx: FX.water === 'reflect' ? CFG.fx.water : null });
   for (const c of island.colliders) colliders.push(c);
   scene.add(sun.target);
 } else buildArena();
+const fx = createFx(scene, FX);
 /** Ground height under (x, z): 0 in the camp, the terrain on the island. */
 const groundAt = ISLAND ? island.heightAt : () => 0;
 const onLand = ISLAND ? island.onLand : () => true;
@@ -595,6 +600,7 @@ function restartGame() {
   crosshairEl.style.opacity = '1';
   pickups.reset();
   nadePickups.reset();
+  fx.reset();
   grenades.reset();
   player.grenades = CFG.grenades.start; player.nadeCd = 0;
   nadeVal.textContent = String(player.grenades);
@@ -613,7 +619,11 @@ const playerCenter = new THREE.Vector3();
 function terrainHit(origin, dir, maxT = 100) {
   if (!ISLAND) return Infinity;
   for (let t = 0.5; t < maxT; t += 0.6) {
-    if (origin.y + dir.y * t < groundAt(origin.x + dir.x * t, origin.z + dir.z * t)) return Math.max(0.05, t - 0.3);
+    if (origin.y + dir.y * t < groundAt(origin.x + dir.x * t, origin.z + dir.z * t)) {
+      let a = t - 0.6, b = t;                         // refine the crossing (exact impact point)
+      for (let k = 0; k < 6; k++) { const m = (a + b) / 2; if (origin.y + dir.y * m < groundAt(origin.x + dir.x * m, origin.z + dir.z * m)) b = m; else a = m; }
+      return Math.max(0.05, b);
+    }
   }
   return Infinity;
 }
@@ -676,6 +686,8 @@ function enemyFire(en, spreadMult = 1) {
   aiTo.copy(from).addScaledVector(aiDir, dist);
   spawnTracer(from, aiTo, AI.tracerColor);
   en.showMuzzleFlash();
+  fx.enemyFlash(from);
+  fx.muzzleSmoke(from, aiDir);
   sfxAt('enemyShot', from);
   if (hit) damagePlayer(damageAt(Math.hypot(player.pos.x - from.x, player.pos.z - from.z)), AI.flashMs);
 }
@@ -894,6 +906,35 @@ function damageEnemy(en, dmg, zone, dir) {
   showHitmarker();
 }
 
+// ─── Impact surfaces (for effects) ──────────────────────────────────────────
+const fxPoint = new THREE.Vector3(), fxNormal = new THREE.Vector3();
+/** Surface name for a bullet hit: a collider (camp floor / wall / cover, island rock / palm) or the island terrain (null). */
+function surfaceOf(c, p) {
+  if (!c) {
+    if (!ISLAND) return 'concrete';
+    const r = Math.hypot(p.x, p.z);
+    return r > IS.radius * IS.beachFrac - 1 ? 'sand' : r < IS.radius * 0.45 ? 'dirt' : 'grass';
+  }
+  if (c.prop === 'palm_tree') return 'wood';
+  if (c.prop === 'rock_boulder') return 'rock';
+  if (c.prop) return 'rock';
+  if (c.max.y <= 0.05) return 'concrete';                                     // camp floor
+  const hw = ARENA.w / 2, hd = ARENA.d / 2;
+  return (c.max.x > hw || c.min.x < -hw || c.max.z > hd || c.min.z < -hd) ? 'brick' : 'concrete';   // outer walls / cover
+}
+/** Outward normal at p: nearest AABB face, or the terrain slope. */
+function surfaceNormal(c, p) {
+  if (!c) {
+    if (!ISLAND) return fxNormal.set(0, 1, 0);
+    const e = 0.25;
+    return fxNormal.set(groundAt(p.x - e, p.z) - groundAt(p.x + e, p.z), 2 * e, groundAt(p.x, p.z - e) - groundAt(p.x, p.z + e)).normalize();
+  }
+  const d = [p.x - c.min.x, c.max.x - p.x, p.y - c.min.y, c.max.y - p.y, p.z - c.min.z, c.max.z - p.z];
+  let k = 0; for (let i = 1; i < 6; i++) if (d[i] < d[k]) k = i;
+  const n = [[-1, 0, 0], [1, 0, 0], [0, -1, 0], [0, 1, 0], [0, 0, -1], [0, 0, 1]][k];
+  return fxNormal.set(n[0], n[1], n[2]);
+}
+
 function fire() {
   if (player.reloading || player.fireCooldown > 0) return;
   if (player.ammo <= 0) {
@@ -917,6 +958,7 @@ function fire() {
   vm.onFire();
   muzzleFlashLight.position.copy(muzzle);
   muzzleFlashLight.intensity = W.flashIntensity;
+  fx.muzzleSmoke(muzzle, shootDir);
   flashT = W.flashTime;
 
   raycaster.set(camera.position, shootDir);
@@ -937,26 +979,29 @@ function fire() {
   }
 
   // Also check world colliders so bullets don't pass walls
-  let wallT = Infinity;
+  let wallT = Infinity, wallC = null;
   for (const c of colliders) {
-    if (c.target) continue;   // target colliders are for movement only
-    const half = new THREE.Vector3(
-      (c.max.x - c.min.x) / 2,
-      (c.max.y - c.min.y) / 2,
-      (c.max.z - c.min.z) / 2
-    );
-    const center = new THREE.Vector3().addVectors(c.min, c.max).multiplyScalar(0.5);
-    const t = rayAABB(camera.position, shootDir, center, half);
-    if (t !== null && t > 0.1 && t < wallT) wallT = t;
+    if (c.target || c.disabled) continue;   // target colliders are for movement only
+    if (!c._half) {
+      c._half = new THREE.Vector3().subVectors(c.max, c.min).multiplyScalar(0.5);
+      c._center = new THREE.Vector3().addVectors(c.min, c.max).multiplyScalar(0.5);
+    }
+    const t = rayAABB(camera.position, shootDir, c._center, c._half);
+    if (t !== null && t > 0.1 && t < wallT) { wallT = t; wallC = c; }
   }
-  wallT = Math.min(wallT, terrainHit(camera.position, shootDir, Math.min(wallT, W.range)));
+  const tTerrain = terrainHit(camera.position, shootDir, Math.min(wallT, W.range));
+  if (tTerrain < wallT) { wallT = tTerrain; wallC = null; }
 
   const hitDist = Math.min(bestT, wallT, W.tracerMaxDist);
   const hitPoint = camera.position.clone().add(shootDir.clone().multiplyScalar(hitDist));
   spawnTracer(muzzle, hitPoint);
 
   if (bestEn && bestT <= wallT) {
+    fx.enemyHit(hitPoint, shootDir, bestZone === 'head');
     damageEnemy(bestEn, bulletDamage(bestZone, bestT), bestZone, shootDir);
+  } else if (wallT <= W.range) {
+    const pt = fxPoint.copy(camera.position).addScaledVector(shootDir, wallT);
+    fx.impact(pt, surfaceNormal(wallC, pt), surfaceOf(wallC, pt), shootDir);
   }
 
   if (player.ammo <= 0) startReload();
@@ -1149,6 +1194,7 @@ function gameStep(dt) {
   nadePickups.update(dt, player.pos, player.pos.y - PLAYER_HEIGHT);
   if (player.nadeCd > 0) player.nadeCd -= dt;
   grenades.update(dt);
+  fx.update(dt);
   // Contact damage
   for (const en of enemies) {
     if (!en.alive) continue;
@@ -1216,7 +1262,7 @@ tick();
 // Expose a tiny debug hook in console
 window.__fps = {
   player, enemies, colliders, scene, camera, fire, vm, startReload,
-  map: MAP, island, groundAt, get frames() { return frames; }, setMap,
+  map: MAP, island, fx, fxQuality: FXQ, surfaceOf, groundAt, get frames() { return frames; }, setMap,
   // test helpers: run game steps without pointer lock, spawning, line-of-sight
   step: (dt, n = 1) => { for (let i = 0; i < n; i++) { if (isDead()) break; updateScope(dt); gameStep(dt); for (const en of enemies) en.update(dt); } },
   spawnRandomTarget, hasLineOfSight, restartGame,

@@ -246,6 +246,53 @@ window.BROWSER_FPS_CONFIG = {
   },
   maps: { default: 'camp', storageKey: 'browser-fps-map' },   // 'camp' | 'island'
 
+  // Effects (both maps). quality: 'high' | 'low' (phones) — or ?quality=low in the URL. Presets override the base values.
+  fx: {
+    quality: 'high',
+    presets: {
+      high: { maxParticles: 600, particleMult: 1, maxDecals: 48, water: 'reflect' },
+      low:  { maxParticles: 220, particleMult: 0.5, maxDecals: 0, water: 'simple' },
+    },
+    decalSize: 0.06, decalLife: 12,                 // bullet marks: radius (m), seconds before fading out
+    enemyLights: 2, enemyFlashColor: 0xffb060, enemyFlashIntensity: 3, enemyFlashRange: 7, enemyFlashTime: 0.06,
+    muzzleSmoke: { count: 3, speed: 0.7, spread: 0.5, up: 0.4, size: 0.07, life: 0.4, gravity: -0.4, drag: 2.5, grow: 2.2, alpha: 0.22, colors: [0xcfcfcf, 0xb8b8b8] },
+    // Impact layers by surface: count, speed (m/s), spread, up bias, size (m), life (s), gravity, drag, grow, alpha, colors
+    surfaces: {
+      sand:     { layers: [{ count: 9, speed: 1.6, spread: 0.7, up: 0.8, size: 0.16, life: 0.7, gravity: 1.5, drag: 3, grow: 1.8, alpha: 0.7, colors: [0xe2cf9c, 0xd4bf88, 0xf0e2b8] },
+                           { count: 6, speed: 3.2, spread: 0.6, up: 1.0, size: 0.03, life: 0.45, gravity: 9, drag: 0.5, colors: [0xcbb47c] }],
+                  mark: { color: 0x9c8658, opacity: 0.55 } },
+      dirt:     { layers: [{ count: 8, speed: 1.4, spread: 0.7, up: 0.7, size: 0.15, life: 0.7, gravity: 1.2, drag: 3, grow: 1.8, alpha: 0.65, colors: [0x8a7458, 0x7a6448, 0x9a8668] },
+                           { count: 5, speed: 3, spread: 0.6, up: 0.9, size: 0.03, life: 0.45, gravity: 9, drag: 0.5, colors: [0x5a4a36] }],
+                  mark: { color: 0x2a2218, opacity: 0.6 } },
+      grass:    { layers: [{ count: 7, speed: 1.3, spread: 0.7, up: 0.7, size: 0.14, life: 0.6, gravity: 1.2, drag: 3, grow: 1.6, alpha: 0.6, colors: [0x8a7a58, 0x7a6a4a] },
+                           { count: 6, speed: 2.6, spread: 0.8, up: 1.0, size: 0.035, life: 0.6, gravity: 6, drag: 1, colors: [0x5f9a3c, 0x4a7f2c, 0x77ad4a] }],
+                  mark: { color: 0x2c3a1c, opacity: 0.5 } },
+      rock:     { layers: [{ count: 6, speed: 4.5, spread: 0.8, up: 0.4, size: 0.055, life: 0.6, gravity: 9, drag: 0.4, colors: [0x8d887f, 0x6e6a62, 0xaaa59b] },
+                           { count: 3, speed: 6, spread: 0.9, size: 0.04, life: 0.14, gravity: 2, drag: 1, colors: [0xffe9a0, 0xffc860] },
+                           { count: 3, speed: 0.8, spread: 0.6, up: 0.4, size: 0.2, life: 0.75, gravity: 0.3, drag: 3, grow: 2, alpha: 0.6, colors: [0xb5b0a6] }],
+                  mark: { color: 0x2e2c28, opacity: 0.75 } },
+      concrete: { layers: [{ count: 6, speed: 4, spread: 0.8, up: 0.4, size: 0.055, life: 0.6, gravity: 9, drag: 0.4, colors: [0xb8bab4, 0x9a9c96] },
+                           { count: 3, speed: 6, spread: 0.9, size: 0.04, life: 0.14, gravity: 2, drag: 1, colors: [0xffe9a0, 0xffc860] },
+                           { count: 4, speed: 0.8, spread: 0.6, up: 0.4, size: 0.22, life: 0.8, gravity: 0.3, drag: 3, grow: 2, alpha: 0.65, colors: [0xcfd0ca] }],
+                  mark: { color: 0x34322e, opacity: 0.75 } },
+      brick:    { layers: [{ count: 7, speed: 4, spread: 0.8, up: 0.4, size: 0.055, life: 0.6, gravity: 9, drag: 0.4, colors: [0xa04a32, 0x8a3a26, 0xc06a4a] },
+                           { count: 2, speed: 6, spread: 0.9, size: 0.04, life: 0.14, gravity: 2, drag: 1, colors: [0xffe0a0] },
+                           { count: 4, speed: 0.8, spread: 0.6, up: 0.4, size: 0.22, life: 0.8, gravity: 0.3, drag: 3, grow: 2, alpha: 0.65, colors: [0xc89a84] }],
+                  mark: { color: 0x2a1a14, opacity: 0.75 } },
+      wood:     { layers: [{ count: 7, speed: 3.2, spread: 0.8, up: 0.5, size: 0.055, life: 0.7, gravity: 8, drag: 0.6, colors: [0x6a4a2a, 0x8a6a45, 0xb08a5a] },
+                           { count: 2, speed: 0.6, spread: 0.6, up: 0.3, size: 0.1, life: 0.5, gravity: 0.5, drag: 3, grow: 1.5, alpha: 0.4, colors: [0xa89070] }],
+                  mark: { color: 0x2a1c10, opacity: 0.8 } },
+    },
+    hit: {   // enemy hit puffs (no gore): body = grey-white fabric dust, head = brighter + a quick white/yellow spark ring
+      body: [{ count: 6, speed: 1.2, spread: 0.8, up: 0.3, size: 0.12, life: 0.4, gravity: 0.5, drag: 3, grow: 1.5, alpha: 0.6, colors: [0xd8d8d0, 0xbfbfb5] }],
+      head: [{ count: 8, speed: 1.6, spread: 0.9, up: 0.4, size: 0.14, life: 0.45, gravity: 0.5, drag: 3, grow: 1.7, alpha: 0.75, colors: [0xffffff, 0xe8e8e0] },
+             { count: 6, speed: 4, spread: 1.2, size: 0.03, life: 0.18, gravity: 1, drag: 1, colors: [0xfff4b0, 0xffffff] }],
+    },
+    water: {   // island ocean ('reflect' quality): sky reflection + shimmer
+      skyTop: 0x5fa8e0, skyHorizon: 0xa8d4ee, sunDir: [0.45, 0.55, 0.3], shimmer: 0.05, shimmerSpeed: 1.2, roughness: 0.1, opacity: 0.88, reflect: 0.45,
+    },
+  },
+
   // Sound (Web Audio, procedural). M toggles mute (saved in localStorage).
   audio: {
     masterVolume: 0.7,
