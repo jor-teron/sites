@@ -78,7 +78,7 @@ Tools,    Weather,               apps/tools/weather-chart/,                  ,  
 Tools,    Weather Hourly,        apps/tools/weather-hourly/,                 ,         0,       0,      465
 Tools,    Caption for NEI,       apps/tools/caption-for-nei/,                ,         0,       0,      440
 
-Desktop,  Learning HTML (Basic), apps/tools/learning-html/,                  ,         0,       0,      910
+Tools,    Learning HTML (Basic), apps/tools/learning-html/,                  ,         0,       0,      910
 Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,         1,       0,      900
 
 Lab,      Lab Page,              apps/lab/,                                  ,         0,       0,      1000
