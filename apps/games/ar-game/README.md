@@ -20,6 +20,22 @@ Works in the normal camera-overlay mode, so no WebXR is needed.
 - Leaving the Ghost theme restores the normal overlay camera, removes the listeners, hides the arrow and suspends audio.
 - In WebXR AR mode the ghost keeps the simple hover/pulse behaviour.
 
+## Zombie survival (Zombie theme)
+
+The real game mode (Pet = playful, Ghost = finding). Works in the normal camera-overlay mode.
+
+- **360° look** like Ghost: gyroscope, or drag/swipe when there is no gyro.
+- **Zombies** (code-built, ~1.6k triangles each, 256 px canvas textures: pale green skin with veins and wounds, torn plaid shirt with ragged hem and holes, ripped trousers, glowing eyes) spawn 11–15 m around you and shamble toward you (arms forward, limping, head lolling), growing larger as they get close. Wave 1 spawns roughly ahead of you; later waves come from every side.
+- **Tap a zombie 2–3 times** to drop it. It flinches, flashes red and is knocked back on each hit, then falls over and fades. +1 score per kill.
+- **If one reaches you:** red screen flash, vibration, -1 life. 3 lives (hearts at the bottom). At 0: **Game over** card with score, wave and best, plus **Retry**.
+- **Waves:** a "Wave N" banner; each wave adds 2 zombies and +10% speed (capped at 2x).
+- **Red edge arrow** points to the nearest zombie when it is off-screen.
+- **Sound:** synthesized groans (louder and panned toward nearby zombies), hit thuds, death groans, damage boom (Web Audio, starts on your tap). `navigator.vibrate` on hits and damage where supported.
+- **Best score** saved in `localStorage` (`ar-game.zombieBest`).
+- Tunables: `ar-game_config.js` → `themes.zombie` (lives, distances, speed, wave sizes, spawn gaps, taps to kill, knockback, drag sensitivity).
+- Leaving the theme restores the overlay camera and the previous score, hides the HUD/arrow and suspends audio.
+- **WebXR AR mode:** falls back to one shambling zombie placed on the floor that wanders near you; tap it to drop it (+1).
+
 ## Run / test
 
 Camera and WebXR need a **secure context** (HTTPS or `localhost`).
@@ -78,6 +94,9 @@ js/camera.js          getUserMedia start/stop
 js/ar.js              Three.js renderer / scene / hit tests
 js/xr.js              immersive-ar session, reticle, place, wander
 js/look.js            360° look: deviceorientation → camera, drag fallback, iOS permission
+js/zombie_model.js    code-built zombie: textures, pivots, shamble / flinch / death poses
+js/zombie_audio.js    Web Audio groans, hits, death, damage
+js/themes/zombie.js   zombie survival game (waves, lives, taps, arrow, HUD)
 js/ghost_audio.js     Web Audio proximity hum/whoosh for the Ghost chase
 js/pets.js            GLB cache, SkeletonUtils.clone, AnimationMixer, procedural pet
 js/themes/{pet,zombie,ghost}.js

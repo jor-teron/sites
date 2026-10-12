@@ -92,13 +92,31 @@ export const AR_GAME_CONFIG = {
     },
     zombie: {
       label: "Zombie",
-      color: 0x27ae60,
-      size: [0.7, 1.1, 0.5],
-      sway: 1.8,
-      swaySpeed: 0.8,
-      y: -0.4,
-      spin: 0.6,
-      catchText: "Zombie down!",
+      catchText: "Zombie down!",   // WebXR fallback (single zombie) catch text
+      bestKey: "ar-game.zombieBest",
+      lives: 3,
+      eyeHeight: 1.6,           // camera height above the virtual floor (m)
+      spawnMin: 11,             // spawn distance range (m)
+      spawnMax: 15,
+      firstWaveSpreadDeg: 60,   // wave 1 spawns within ±this of where you look
+      reachDist: 1.1,           // closer than this = it got you (-1 life)
+      speed: 0.85,              // base walk speed (m/s)
+      speedPerWave: 0.1,        // +10% speed per wave...
+      maxSpeedMul: 2.0,         // ...capped at 2x
+      baseCount: 3,             // zombies in wave 1
+      countPerWave: 2,          // +2 per wave
+      maxPerWave: 20,
+      firstSpawnDelay: 1.2,     // s after the wave banner
+      spawnGap: 1.8,            // s between spawns (shrinks 0.15 s per wave)
+      minSpawnGap: 0.6,
+      wavePauseSec: 1.5,        // pause after a cleared wave
+      hpMin: 2,                 // taps to kill: random 2..3
+      hpMax: 3,
+      stunSec: 0.35,            // flinch pause per hit
+      knockback: 0.35,          // m pushed back per hit
+      dragDegPerScreen: 90,     // drag look sensitivity (no gyro)
+      hint: "Zombies are coming! Look around and tap them",
+      hintMotionTap: "Tap to enable motion controls",
     },
     ghost: {
       label: "Ghost",

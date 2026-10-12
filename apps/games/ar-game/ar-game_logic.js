@@ -111,7 +111,18 @@ function loadTheme(id) {
 }
 
 function themeCtx() {
-  return { canvas: game.els.canvas, arrow: game.els.ghostArrow, showMsg, xr: isPresenting() };
+  return {
+    canvas: game.els.canvas,
+    arrow: game.els.ghostArrow,
+    uiRoot: game.els.uiRoot,
+    showMsg,
+    xr: isPresenting(),
+    getScore: () => game.score,
+    setScore: (n) => {
+      game.score = n;
+      game.els.score.textContent = String(n);
+    },
+  };
 }
 
 function selectPet(petId) {
@@ -145,6 +156,7 @@ function finishCatch() {
 
 function onPointerDown(ev) {
   if (isPresenting()) return; // XR uses 'select'
+  if (game.theme && game.theme.handlesTaps) return; // theme runs its own taps (Zombie)
   if (hitTestScreen(ev.clientX, ev.clientY)) onCatch();
 }
 
@@ -290,4 +302,5 @@ window.__arGame = {
     anim: game.themeRoot ? game.themeRoot.userData.animState : null,
   }),
   ghost: () => GhostTheme.debugState(),
+  zombie: () => ZombieTheme.debugState(),
 };

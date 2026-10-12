@@ -235,3 +235,124 @@ html, body {
 #ghost-arrow[hidden] {
   display: none;
 }
+
+/* ---------------- Zombie game ---------------- */
+
+#ghost-arrow.zombie {
+  background: rgba(231, 76, 60, 0.95);
+}
+
+#zombie-hud {
+  position: fixed;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 18px;
+  background: rgba(0,0,0,0.5);
+  font-size: 15px;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+  pointer-events: none;
+}
+
+#zombie-hud .zh-lives {
+  color: #ff4d4d;
+  font-size: 19px;
+  letter-spacing: 2px;
+}
+
+#zombie-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(200,0,0,0.15) 30%, rgba(200,0,0,0.75) 100%);
+  opacity: 0;
+}
+
+#zombie-flash.hit {
+  animation: zombie-flash 0.6s ease-out;
+}
+
+@keyframes zombie-flash {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+#zombie-banner {
+  position: fixed;
+  top: 32%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: #c6f06a;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+  pointer-events: none;
+}
+
+#zombie-banner.show {
+  animation: zombie-banner 1.8s ease-out forwards;
+}
+
+@keyframes zombie-banner {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+#zombie-over {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(40,0,0,0.55);
+}
+
+#zombie-over .zo-card {
+  text-align: center;
+  padding: 22px 30px;
+  border-radius: 16px;
+  background: rgba(0,0,0,0.75);
+  box-shadow: 0 0 30px rgba(200,0,0,0.5);
+}
+
+#zombie-over h2 {
+  margin: 0 0 10px;
+  font-size: 30px;
+  color: #ff4d4d;
+  letter-spacing: 2px;
+}
+
+#zombie-over p {
+  margin: 6px 0;
+  font-size: 17px;
+}
+
+#zombie-over .zo-retry {
+  margin-top: 14px;
+  min-height: 48px;
+  padding: 0 32px;
+  border: 0;
+  border-radius: 24px;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  background: #2ecc71;
+  color: #111;
+  cursor: pointer;
+}
+
+#zombie-hud[hidden], #zombie-flash[hidden], #zombie-banner[hidden], #zombie-over[hidden] {
+  display: none;
+}
