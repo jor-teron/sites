@@ -1,5 +1,5 @@
 // Physics engine, collision handling (pig hits) and turn resolution.
-import { Engine, Composite, Events, Vector, WORLD_WIDTH, WORLD_HEIGHT, GRAVITY, SETTLE_SPEED, SETTLE_MAX_TIME } from './config.js';
+import { Engine, Composite, Events, Vector, WORLD_WIDTH, WORLD_HEIGHT, GRAVITY, SETTLE_SPEED, SETTLE_MAX_TIME, MAT, PIG_SCORE, DMG_MIN, DMG_K, DMG_MASS_MIN, DMG_MASS_MAX, SPAWN_GRACE_MS, HIT_FLASH } from './config.js';
 import { S } from './entities.js';
 import { updateHud, endGame, showHint } from './ui.js';
 import { loadNextBird } from './entities.js';
@@ -7,31 +7,47 @@ import { loadNextBird } from './entities.js';
 export const engine = Engine.create();
 engine.gravity.y = GRAVITY;
 
-// ---------- COLLISION HANDLING ----------
+// ---------- COLLISION DAMAGE (HP) ----------
+// Damage = (normal relative speed - DMG_MIN) * DMG_K * clamp(otherMass / ownMass)
 Events.on(engine, 'collisionStart', (event) => {
+  if (engine.timing.timestamp - S.spawnTime < SPAWN_GRACE_MS) return;
   for (const pair of event.pairs) {
-    checkPigHit(pair.bodyA, pair.bodyB);
-    checkPigHit(pair.bodyB, pair.bodyA);
+    applyHit(pair.bodyA, pair.bodyB, pair);
+    applyHit(pair.bodyB, pair.bodyA, pair);
   }
 });
 
-function checkPigHit(bodyA, bodyB) {
-  const pigEntry = S.pigs.find(p => p.body === bodyA && !p.dead);
-  if (!pigEntry) return;
-
-  const relV = Vector.magnitude(Vector.sub(bodyA.velocity, bodyB.velocity));
-  // Kill pig if impact is strong enough
-  if (relV > 2.5) {
-    killPig(pigEntry);
+function applyHit(self, other, pair) {
+  const e = self.plugin.entity;
+  if (!e || e.dead) return;
+  const n = pair.collision.normal;
+  const relN = Math.abs(Vector.dot(Vector.sub(self.velocity, other.velocity), n));
+  if (relN < DMG_MIN) return;
+  const ratio = other.isStatic ? 1 : Math.min(DMG_MASS_MAX, Math.max(DMG_MASS_MIN, other.mass / self.mass));
+  const dmg = (relN - DMG_MIN) * DMG_K * ratio;
+  e.hp -= dmg;
+  e.flash = HIT_FLASH;
+  if (e.hp <= 0) {
+    if (e.kind === 'pig') killPig(e); else breakBlock(e);
   }
+}
+
+function breakBlock(entry) {
+  if (entry.dead) return;
+  entry.dead = true;
+  Composite.remove(engine.world, entry.body);
+  S.blocks = S.blocks.filter(b => b !== entry);
+  S.score += MAT[entry.material].score;
+  S.pops.push({ x: entry.body.position.x, y: entry.body.position.y, r: entry.r || Math.max(entry.w, entry.h) / 2, t: 0, material: entry.material });
+  updateHud();
 }
 
 function killPig(pigEntry) {
   if (pigEntry.dead) return;
   pigEntry.dead = true;
-  S.score += 500;
+  pigEntry.hp = 0;
+  S.score += PIG_SCORE;
   updateHud();
-
   // Remove the body immediately (no invisible collider); draw a separate pop effect
   Composite.remove(engine.world, pigEntry.body);
   S.pops.push({ x: pigEntry.body.position.x, y: pigEntry.body.position.y, r: pigEntry.r, t: 0 });
@@ -57,6 +73,10 @@ export function updateTurnResolution(dt) {
       S.activeBirds.splice(i, 1);
     }
   }
+
+  // Hit flashes
+  for (const e of S.pigs) if (e.flash > 0) e.flash -= dt;
+  for (const e of S.blocks) if (e.flash > 0) e.flash -= dt;
 
   // Pop effects
   for (const p of S.pops) p.t += dt;

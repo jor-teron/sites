@@ -1,5 +1,5 @@
 // Shared game state plus world/level building and bird loading.
-import { Engine, Bodies, Body, Composite, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, SLING_X, SLING_Y, MAT, GRAVITY, BIRD_FRICTION_AIR } from './config.js';
+import { Engine, Bodies, Body, Composite, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, SLING_X, SLING_Y, MAT, GRAVITY, BIRD_FRICTION_AIR, PIG_HP } from './config.js';
 import { LEVELS } from './levels.js';
 import { engine } from './physics.js';
 import { updateHud, endGame, hideOverlay } from './ui.js';
@@ -9,8 +9,9 @@ export const S = {
   birdQueue: [],         // array of bird types remaining
   currentBird: null,     // { body, type, launched }
   activeBirds: [],       // birds in flight
-  pigs: [],              // { body, r, dead }
-  blocks: [],            // { body, material, w, h }
+  pigs: [],              // { kind:'pig', body, r, hp, maxHp, flash, dead }
+  blocks: [],            // { kind:'block', body, material, w, h, r?, hp, maxHp, flash, dead }
+  spawnTime: 0,          // engine timestamp when the level was built (damage grace)
   ground: null,
 
   score: 0,
@@ -63,14 +64,15 @@ export function buildLevel(index) {
   // Blocks
   for (const b of level.blocks) {
     const mat = MAT[b.material];
-    const body = Bodies.rectangle(b.x, b.y, b.w, b.h, {
-      friction: mat.friction,
-      restitution: mat.restitution,
-      density: mat.density
-    });
+    const opts = { friction: mat.friction, restitution: mat.restitution, density: mat.density };
+    const body = b.r
+      ? Bodies.circle(b.x, b.y, b.r, opts)
+      : Bodies.rectangle(b.x, b.y, b.w, b.h, opts);
     if (b.angle) Body.setAngle(body, b.angle);
     Composite.add(engine.world, body);
-    S.blocks.push({ body, material: b.material, w: b.w, h: b.h });
+    const entry = { kind: 'block', body, material: b.material, w: b.w, h: b.h, r: b.r, hp: mat.hp, maxHp: mat.hp, flash: 0, dead: false };
+    body.plugin.entity = entry;
+    S.blocks.push(entry);
   }
 
   // Pigs
@@ -81,8 +83,12 @@ export function buildLevel(index) {
       density: 0.0008
     });
     Composite.add(engine.world, body);
-    S.pigs.push({ body, r: p.r, dead: false });
+    const entry = { kind: 'pig', body, r: p.r, hp: PIG_HP, maxHp: PIG_HP, flash: 0, dead: false };
+    body.plugin.entity = entry;
+    S.pigs.push(entry);
   }
+
+  S.spawnTime = engine.timing.timestamp;
 
   // Bird queue
   S.birdQueue = Array(level.birds).fill('red');

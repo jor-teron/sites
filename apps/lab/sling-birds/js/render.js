@@ -211,66 +211,139 @@ function drawPig(pigEntry) {
   ctx.restore();
 }
 
+const BLOCK_STYLE = {
+  wood:  { fill: '#c68a4a', stroke: '#5a3a1a', highlight: 'rgba(255, 220, 160, 0.4)' },
+  stone: { fill: '#888',    stroke: '#333',    highlight: 'rgba(220, 220, 220, 0.4)' },
+  glass: { fill: 'rgba(170, 220, 255, 0.45)', stroke: 'rgba(200, 240, 255, 0.9)', highlight: 'rgba(255, 255, 255, 0.5)' }
+};
+
+// Deterministic crack lines; more cracks as HP drops
+function drawCracks(w, h, damage, seed) {
+  const n = Math.ceil(damage * 4);
+  ctx.strokeStyle = 'rgba(20, 10, 0, 0.7)';
+  ctx.lineWidth = 1.2;
+  for (let i = 0; i < n; i++) {
+    const r = (k) => { const v = Math.sin(seed * 12.9898 + i * 78.233 + k * 37.719) * 43758.5453; return v - Math.floor(v); };
+    let x = (r(1) - 0.5) * w, y = (r(2) - 0.5) * h;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    for (let s = 0; s < 3; s++) {
+      x += (r(3 + s) - 0.5) * w * 0.6;
+      y += (r(6 + s) - 0.5) * h * 0.6;
+      ctx.lineTo(Math.max(-w / 2, Math.min(w / 2, x)), Math.max(-h / 2, Math.min(h / 2, y)));
+    }
+    ctx.stroke();
+  }
+}
+
 function drawBlock(blockEntry) {
   const body = blockEntry.body;
-  const w = blockEntry.w * SCALE;
-  const h = blockEntry.h * SCALE;
   const p = w2s(body.position.x, body.position.y);
+  const mat = blockEntry.material;
+  const st = BLOCK_STYLE[mat];
+  const damage = 1 - blockEntry.hp / blockEntry.maxHp;
 
   ctx.save();
   ctx.translate(p.x, p.y);
   ctx.rotate(body.angle);
 
-  const mat = blockEntry.material;
-  const fill = mat === 'wood' ? '#c68a4a' : '#888';
-  const stroke = mat === 'wood' ? '#5a3a1a' : '#333';
-  const highlight = mat === 'wood' ? 'rgba(255, 220, 160, 0.4)' : 'rgba(220, 220, 220, 0.4)';
+  if (blockEntry.r) {
+    // Round block (e.g. loose stone ball)
+    const r = blockEntry.r * SCALE;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.arc(3, 3, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = st.fill;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    ctx.save(); ctx.clip();
+    if (damage > 0) drawCracks(r * 2, r * 2, damage, body.id);
+    ctx.restore();
+    ctx.strokeStyle = st.stroke; ctx.lineWidth = 2; ctx.stroke();
+    // marker so rolling is visible
+    ctx.fillStyle = 'rgba(60,60,60,0.5)';
+    ctx.beginPath(); ctx.arc(r * 0.4, -r * 0.2, r * 0.18, 0, Math.PI * 2); ctx.fill();
+  } else {
+    const w = blockEntry.w * SCALE;
+    const h = blockEntry.h * SCALE;
 
-  // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.fillRect(-w / 2 + 3, -h / 2 + 3, w, h);
+    // Shadow
+    ctx.fillStyle = mat === 'glass' ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.35)';
+    ctx.fillRect(-w / 2 + 3, -h / 2 + 3, w, h);
 
-  // Body
-  ctx.fillStyle = fill;
-  ctx.fillRect(-w / 2, -h / 2, w, h);
+    // Body
+    ctx.fillStyle = st.fill;
+    ctx.fillRect(-w / 2, -h / 2, w, h);
 
-  // Texture hints
-  if (mat === 'wood') {
-    ctx.strokeStyle = 'rgba(90, 58, 26, 0.35)';
-    ctx.lineWidth = 1;
-    const lines = 3;
-    for (let i = 1; i <= lines; i++) {
-      const ly = -h / 2 + (h / (lines + 1)) * i;
+    // Texture hints
+    if (mat === 'wood') {
+      ctx.strokeStyle = 'rgba(90, 58, 26, 0.35)';
+      ctx.lineWidth = 1;
+      const lines = 3;
+      for (let i = 1; i <= lines; i++) {
+        const ly = -h / 2 + (h / (lines + 1)) * i;
+        ctx.beginPath();
+        ctx.moveTo(-w / 2 + 3, ly);
+        ctx.lineTo(w / 2 - 3, ly);
+        ctx.stroke();
+      }
+    } else if (mat === 'stone') {
+      ctx.fillStyle = 'rgba(60, 60, 60, 0.35)';
       ctx.beginPath();
-      ctx.moveTo(-w / 2 + 3, ly);
-      ctx.lineTo(w / 2 - 3, ly);
+      ctx.arc(-w * 0.2, h * 0.1, w * 0.08, 0, Math.PI * 2);
+      ctx.arc(w * 0.25, -h * 0.15, w * 0.06, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (mat === 'glass') {
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.3, -h * 0.4); ctx.lineTo(-w * 0.1, -h * 0.1);
       ctx.stroke();
     }
-  } else if (mat === 'stone') {
-    ctx.fillStyle = 'rgba(60, 60, 60, 0.35)';
-    ctx.beginPath();
-    ctx.arc(-w * 0.2, h * 0.1, w * 0.08, 0, Math.PI * 2);
-    ctx.arc(w * 0.25, -h * 0.15, w * 0.06, 0, Math.PI * 2);
-    ctx.fill();
+
+    if (damage > 0) drawCracks(w, h, damage, body.id);
+
+    // Highlight
+    ctx.fillStyle = st.highlight;
+    ctx.fillRect(-w / 2, -h / 2, w, Math.max(2, h * 0.12));
+
+    // Border
+    ctx.strokeStyle = st.stroke;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-w / 2, -h / 2, w, h);
+
+    if (blockEntry.flash > 0) {
+      ctx.fillStyle = `rgba(255,255,255,${blockEntry.flash / 0.15 * 0.6})`;
+      ctx.fillRect(-w / 2, -h / 2, w, h);
+    }
   }
 
-  // Highlight
-  ctx.fillStyle = highlight;
-  ctx.fillRect(-w / 2, -h / 2, w, Math.max(2, h * 0.12));
-
-  // Border
-  ctx.strokeStyle = stroke;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(-w / 2, -h / 2, w, h);
-
   ctx.restore();
+}
+
+// HP bar above damaged pigs + white hit flash
+function drawPigStatus(pigEntry) {
+  const body = pigEntry.body;
+  const p = w2s(body.position.x, body.position.y);
+  const r = pigEntry.r * SCALE;
+  if (pigEntry.flash > 0) {
+    ctx.fillStyle = `rgba(255,255,255,${pigEntry.flash / 0.15 * 0.7})`;
+    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  if (pigEntry.hp < pigEntry.maxHp) {
+    const k = Math.max(0, pigEntry.hp / pigEntry.maxHp);
+    const bw = Math.max(20, r * 2), bh = Math.max(3, 5 * SCALE);
+    const x = p.x - bw / 2, y = p.y - r - bh - 4;
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(x - 1, y - 1, bw + 2, bh + 2);
+    ctx.fillStyle = k > 0.5 ? '#5f5' : k > 0.25 ? '#fd3' : '#f44';
+    ctx.fillRect(x, y, bw * k, bh);
+  }
 }
 
 export function render() {
   drawBackground();
 
   for (const b of S.blocks) drawBlock(b);
-  for (const p of S.pigs) if (!p.dead) drawPig(p);
+  for (const p of S.pigs) if (!p.dead) { drawPig(p); drawPigStatus(p); }
   for (const b of S.activeBirds) drawBird(b.body, b.type);
 
   if (S.currentBird && !S.currentBird.launched) {
@@ -293,7 +366,8 @@ function drawPops() {
   for (const p of S.pops) {
     const k = p.t / 0.35;
     const sp = w2s(p.x, p.y);
-    ctx.strokeStyle = `rgba(123, 255, 123, ${1 - k})`;
+    const col = p.material === 'glass' ? '170, 220, 255' : p.material === 'wood' ? '198, 138, 74' : p.material === 'stone' ? '160, 160, 160' : '123, 255, 123';
+    ctx.strokeStyle = `rgba(${col}, ${1 - k})`;
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(sp.x, sp.y, p.r * SCALE * (1 + k), 0, Math.PI * 2);

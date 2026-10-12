@@ -26,21 +26,23 @@ export function endGame(won) {
     S.score += unusedBirds * 1000;
     updateHud();
 
-    const stars = unusedBirds >= 2 ? 3 : unusedBirds >= 1 ? 2 : 1;
-    overlayTitle.textContent = `LEVEL ${S.currentLevelIndex + 1} CLEAR`;
+    // Stars from score: 1 = cleared, 2 = base + 1000, 3 = base + 2500 (base = 500 per pig; blocks + spare birds add)
+    const base = S.pigs.length * 500;
+    const stars = S.score >= base + 2500 ? 3 : S.score >= base + 1000 ? 2 : 1;
+    overlayTitle.textContent = `LEVEL ${S.currentLevelIndex + 1}/${LEVELS.length} CLEAR`;
     overlayStars.textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
     overlayMsg.textContent = `Score ${S.score}` + (unusedBirds ? `  •  +${unusedBirds * 1000} bird bonus` : '');
 
     if (S.currentLevelIndex + 1 < LEVELS.length) {
       overlayBtn.textContent = 'NEXT LEVEL';
     } else {
-      overlayBtn.textContent = 'PLAY AGAIN';
+      overlayBtn.textContent = 'BACK TO LEVEL 1';
     }
     overlayBtn2.classList.remove('hidden');
     overlay.classList.remove('hidden');
   } else {
     S.gameState = 'gameover';
-    overlayTitle.textContent = 'OUT OF BIRDS';
+    overlayTitle.textContent = `LEVEL ${S.currentLevelIndex + 1}/${LEVELS.length}: OUT OF BIRDS`;
     overlayStars.textContent = '☆☆☆';
     overlayMsg.textContent = `Score ${S.score}`;
     overlayBtn.textContent = 'RETRY';
@@ -53,7 +55,7 @@ export function hideOverlay() {
   overlay.classList.add('hidden');
 }
 export function updateHud() {
-  levelEl.textContent = S.currentLevelIndex + 1;
+  levelEl.textContent = `${S.currentLevelIndex + 1}/${LEVELS.length}`;
   birdsEl.textContent = S.birdQueue.length + (S.currentBird && !S.currentBird.launched ? 1 : 0);
   pigsEl.textContent = S.pigs.filter(p => !p.dead).length;
   scoreEl.textContent = S.score;
