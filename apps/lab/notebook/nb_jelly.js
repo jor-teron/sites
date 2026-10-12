@@ -8,15 +8,15 @@
  *   the soft shadow stretches with it. Release: a slow, soft spring with squash-and-stretch that
  *   settles over several bounces. Crumple: whole-body jiggle.
  *   If anything fails, body never gets .jelly-on and the plain blue CSS button stays visible.
- *   API used by nb_float.js: floatFollow(dx, dy), floatRelease(), floatShake().
+ *   No distance cap: the blob reaches the finger, joined home by a thinning goo bridge.
+ *   API used by nb_float.js: floatFollow(dx, dy), floatRelease(), floatShake(), floatPress(), floatArm(on).
  */
 const JELLY_HOME = 120;       // centre of the 240×240 SVG = button home
-const JELLY_DAMP = 0.45;      // finger → blob offset
-const JELLY_MAX = 55;         // px, max offset
+// The blob follows the finger all the way (no cap); a goo bridge + home tail thin with distance.
 const SVGNS = 'http://www.w3.org/2000/svg';
 
 const jelly = { x: 0, y: 0, vx: 0, vy: 0, sq: 0, vsq: 0, rot: 0, vrot: 0, ang: 0, tail: 0, raf: 0 };
-let jBody, jGloss, jTail, jShadow;
+let jBody, jGloss, jTail, jShadow, jBridge;
 
 function buildJelly() {
   const host = document.getElementById('jelly');
@@ -32,7 +32,8 @@ function buildJelly() {
     '<filter id="jsh" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="4"/></filter>' +
     '</defs>' +
     '<ellipse id="jShadow" cx="120" cy="150" rx="22" ry="5" fill="rgba(30,70,140,0.35)" filter="url(#jsh)"/>' +
-    '<g filter="url(#goo)"><circle id="jTail" cx="120" cy="120" r="0" fill="#5aa8f5"/>' +
+    '<g filter="url(#goo)"><line id="jBridge" x1="120" y1="120" x2="120" y2="120" stroke="#5aa8f5" stroke-linecap="round" stroke-width="0"/>' +
+    '<circle id="jTail" cx="120" cy="120" r="0" fill="#5aa8f5"/>' +
     '<g id="jBody"><ellipse rx="25" ry="25" fill="url(#jg)"/></g></g>' +
     '<g id="jGloss"><ellipse cx="-8" cy="-11" rx="9" ry="5" fill="#fff" opacity="0.75" transform="rotate(-25 -8 -11)"/>' +
     '<circle cx="10" cy="-14" r="2" fill="#fff" opacity="0.6"/>' +
@@ -41,6 +42,7 @@ function buildJelly() {
   jGloss = document.getElementById('jGloss');
   jTail = document.getElementById('jTail');
   jShadow = document.getElementById('jShadow');
+  jBridge = document.getElementById('jBridge');
   jellyDraw(1, 1);
   document.body.classList.add('jelly-on');   // only now hide the plain fallback button
 }
@@ -56,7 +58,12 @@ function jellyDraw(sx, sy) {
   const gx = 1 + (sx - 1) * 0.5, gy = 1 + (sy - 1) * 0.5;
   jGloss.setAttribute('transform', 'translate(' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ') rotate(' + (jelly.ang + jelly.rot * 0.6).toFixed(1) +
     ') scale(' + gx.toFixed(3) + ' ' + gy.toFixed(3) + ') rotate(' + (-jelly.ang).toFixed(1) + ')');
-  jTail.setAttribute('r', Math.max(0, jelly.tail).toFixed(1));
+  const tr = Math.max(0, jelly.tail);
+  jTail.setAttribute('r', tr.toFixed(1));
+  // goo bridge home → blob, thinner the farther it goes (only while the tail exists)
+  jBridge.setAttribute('x2', cx.toFixed(1));
+  jBridge.setAttribute('y2', cy.toFixed(1));
+  jBridge.setAttribute('stroke-width', (tr > 0.5 ? Math.min(tr * 1.6, 26) : 0).toFixed(1));
   jShadow.setAttribute('cx', (JELLY_HOME + jelly.x * 0.8).toFixed(1));
   jShadow.setAttribute('cy', (150 + jelly.y * 0.4).toFixed(1));
   jShadow.setAttribute('rx', (22 * Math.max(sx, 0.7) + Math.abs(jelly.x) * 0.2).toFixed(1));
@@ -65,33 +72,39 @@ function jellyDraw(sx, sy) {
 
 function jellyStop() { if (jelly.raf) cancelAnimationFrame(jelly.raf); jelly.raf = 0; }
 
-// Drag: follow the finger (damped, capped), stretch toward it, tail stays home.
+// Drag: blob goes all the way to the finger, stretches along the pull, tail thins with distance.
 function floatFollow(dx, dy) {
   jellyStop();
-  let x = dx * JELLY_DAMP, y = dy * JELLY_DAMP;
-  const d = Math.hypot(x, y);
-  if (d > JELLY_MAX) { x *= JELLY_MAX / d; y *= JELLY_MAX / d; }
-  const dist = Math.min(d, JELLY_MAX);
-  jelly.x = x; jelly.y = y; jelly.vx = jelly.vy = 0;
-  if (dist > 1) jelly.ang = Math.atan2(y, x) * 180 / Math.PI;
-  jelly.sq = Math.min(dist / 70, 0.75);       // stretch amount (cap)
+  const dist = Math.hypot(dx, dy);
+  jelly.x = dx; jelly.y = dy; jelly.vx = jelly.vy = 0;
+  if (dist > 1) jelly.ang = Math.atan2(dy, dx) * 180 / Math.PI;
+  jelly.sq = Math.min(dist / 260, 0.65);       // soft stretch along the pull
   jelly.vsq = 0; jelly.rot = 0; jelly.vrot = 0;
-  jelly.tail = dist > 6 ? Math.max(9, 17 - dist * 0.12) : 0;
-  jellyDraw(1 + jelly.sq, 1 - jelly.sq * 0.4);
+  jelly.tail = dist > 6 ? Math.max(3, 17 - dist * 0.045) : 0;
+  jellyDraw(1 + jelly.sq, 1 - jelly.sq * 0.45);
+}
+
+// Armed (gesture will fire on release): soft glow.
+function floatArm(on) {
+  const el = document.getElementById('jelly');
+  if (el) el.classList.toggle('armed', !!on);
 }
 
 // Soft spring loop: offset, squash-stretch and rotation all settle over several bounces.
 function jellyAnimate() {
   jellyStop();
   const step = () => {
-    jelly.vx = (jelly.vx - jelly.x * 0.07) * 0.88;
-    jelly.vy = (jelly.vy - jelly.y * 0.07) * 0.88;
+    // soft, slow spring: low stiffness, little damping → many squishy settle wobbles
+    jelly.vx = (jelly.vx - jelly.x * 0.04) * 0.9;
+    jelly.vy = (jelly.vy - jelly.y * 0.04) * 0.9;
     jelly.x += jelly.vx; jelly.y += jelly.vy;
-    jelly.vsq = (jelly.vsq - jelly.sq * 0.11) * 0.9;
+    const sp = Math.hypot(jelly.vx, jelly.vy);
+    if (sp > 0.5) jelly.ang = Math.atan2(jelly.vy, jelly.vx) * 180 / Math.PI;
+    jelly.vsq = (jelly.vsq - jelly.sq * 0.06 + Math.min(sp, 30) * 0.0012) * 0.94;
     jelly.sq += jelly.vsq;
-    jelly.vrot = (jelly.vrot - jelly.rot * 0.09) * 0.88;
+    jelly.vrot = (jelly.vrot - jelly.rot * 0.06) * 0.92;
     jelly.rot += jelly.vrot;
-    jelly.tail *= 0.82;
+    jelly.tail *= 0.9;
     const sq = Math.max(-0.45, Math.min(0.8, jelly.sq));
     jellyDraw(1 + sq, 1 - sq * 0.55);
     const busy = Math.abs(jelly.x) + Math.abs(jelly.y) + Math.abs(jelly.vx) + Math.abs(jelly.vy) > 0.15 ||
@@ -104,6 +117,7 @@ function jellyAnimate() {
 
 // Release: snap the stretch into a squash and let it bounce home.
 function floatRelease() {
+  floatArm(false);
   jelly.vsq = -jelly.sq * 0.6;     // stretched → overshoots into a squash
   jelly.vx = -jelly.x * 0.15; jelly.vy = -jelly.y * 0.15;
   jellyAnimate();

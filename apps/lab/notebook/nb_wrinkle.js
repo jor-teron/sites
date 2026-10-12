@@ -1,14 +1,14 @@
 /*
  * Project: notebook
  * File: nb_wrinkle.js
- * Role: Crumple wrinkles. Per-page crumple level (0..CRUMPLE_MAX) in localStorage key
+ * Role: Crumple wrinkles. Per-page crumple level (0..CRUMPLE_MAX = 10) in localStorage key
  *   paperNotebook_crumple; strokes are never erased. Wrinkles are an SVG overlay (#wrinkle,
  *   pointer-events:none) built from feTurbulence + diffuse/specular lighting and seeded crease
  *   lines (seed = page). Permanent: no undo, Reset Notebook does not clear them.
  *   wrinkleImage() turns the same SVG into an Image for PNG/PDF export.
  */
 const CRUMPLE_KEY = 'paperNotebook_crumple';
-const CRUMPLE_MAX = 6;
+const CRUMPLE_MAX = 10;   // was 6; old saved levels 0..6 load unchanged
 let crumple = [];
 
 function loadCrumple() {
@@ -48,17 +48,19 @@ function wrinkleSvg(page, w, h) {
   const level = crumple[page] || 0;
   if (!level || !w || !h) return '';
   const rnd = seededRandom((page + 1) * 7919 + level);
-  const freq = (0.006 + level * 0.004).toFixed(4);
-  const relief = (1 + level * 1.2).toFixed(2);
-  const op = (0.18 + level * 0.07).toFixed(2);
+  // fine steps: level 1 barely there … level 10 very dirty
+  const f = level / CRUMPLE_MAX;
+  const freq = (0.005 + f * 0.03).toFixed(4);
+  const relief = (0.5 + f * 9).toFixed(2);
+  const op = (0.08 + f * 0.72).toFixed(2);
   let lines = '';
-  const n = level * 2;
+  const n = Math.round(level * 1.6);
   for (let i = 0; i < n; i++) {
     // crease: a slightly bent line across the page, dark side + light side
     const x1 = rnd() * w, y1 = rnd() * h, x2 = rnd() * w, y2 = rnd() * h;
     const cx = (x1 + x2) / 2 + (rnd() - 0.5) * w * 0.2, cy = (y1 + y2) / 2 + (rnd() - 0.5) * h * 0.2;
     const d = 'M' + x1.toFixed(1) + ' ' + y1.toFixed(1) + ' Q' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ' ' + x2.toFixed(1) + ' ' + y2.toFixed(1);
-    lines += '<path d="' + d + '" stroke="rgba(0,0,0,0.10)" stroke-width="1.4" fill="none"/>' +
+    lines += '<path d="' + d + '" stroke="rgba(0,0,0,' + (0.04 + f * 0.14).toFixed(3) + ')" stroke-width="1.4" fill="none"/>' +
       '<path d="' + d + '" stroke="rgba(255,255,255,0.55)" stroke-width="1.2" fill="none" transform="translate(1.2 1.2)"/>';
   }
   return '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">' +

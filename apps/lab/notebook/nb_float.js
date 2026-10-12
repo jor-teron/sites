@@ -1,21 +1,48 @@
 /*
  * Project: notebook
  * File: nb_float.js
- * Role: Floating button gestures: tap = page toast, hold = settings, swipe left/right = page, pull down = grid, scribble = crumple.
- *   Feedback is the jelly blob (nb_jelly.js): stretch + gooey tail while dragging, soft bouncy
- *   settle on release, jiggle on crumple. The hit target itself never moves.
+ * Role: Floating button gestures (fire on RELEASE, only past 1/3 of the screen = "armed", jelly glows):
+ *   tap = page toast, hold = settings, swipe right / left = next / previous page,
+ *   pull UP = pages grid (pull down does nothing), short pulls = jelly play only.
+ *   Circle crumple: circling the finger around the button home adds wrinkles live —
+ *   1.25 turns = first (mini) crumple, then +1 level every further 0.5 turn, jiggle each time.
+ *   Circling cancels the swipe / pull action on release.
+ *   Feedback is the jelly blob (nb_jelly.js); the hit target itself never moves.
  */
 // Visual feedback (floatFollow / floatRelease / floatShake / floatPress) lives in nb_jelly.js;
 // no-op stand-ins below keep gestures working if that file failed to load.
-if (typeof floatFollow !== 'function') { window.floatFollow = function () {}; window.floatRelease = function () {}; window.floatShake = function () {}; window.floatPress = function () {}; }
+if (typeof floatFollow !== 'function') { window.floatFollow = function () {}; window.floatRelease = function () {}; window.floatShake = function () {}; window.floatPress = function () {}; window.floatArm = function () {}; }
 
 // Floating button gesture state
 let floatStartX = 0;
 let floatStartY = 0;
 let floatStartTime = 0;
 let floatMoved = false;
-let floatPath = [];
 let floatHoldTimer = null;
+// circle crumple state
+let floatCX = 0, floatCY = 0;      // button home centre
+let floatLastAng = null;           // last finger angle around home (radians)
+let floatTurnSum = 0;              // cumulative signed angle
+let floatCrumples = 0;             // levels added during this drag
+let floatCircled = false;          // circling → no swipe/pull action on release
+
+const FLOAT_HOLD_MS = 550;
+const CIRCLE_FIRST = 1.25;         // turns for the first (mini) crumple
+const CIRCLE_STEP = 0.5;           // further turns per extra level
+const CIRCLE_MIN_R = 18;           // ignore angle noise right on the centre
+
+function armDistance() { return Math.min(window.innerWidth, window.innerHeight) / 3; }
+
+// Which action a release at (dx, dy) would fire ('' = none).
+function floatAction(dx, dy) {
+  const need = armDistance();
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    if (Math.abs(dx) >= need) return dx > 0 ? 'next' : 'prev';
+  } else if (-dy >= need) {
+    return 'grid';
+  }
+  return '';
+}
 
 function onFloatDown(e) {
   e.preventDefault();
@@ -25,11 +52,18 @@ function onFloatDown(e) {
   floatStartY = pt.clientY;
   floatStartTime = Date.now();
   floatMoved = false;
+  const r = floatBtn.getBoundingClientRect();
+  floatCX = r.left + r.width / 2;
+  floatCY = r.top + r.height / 2;
+  floatLastAng = null;
+  floatTurnSum = 0;
+  floatCrumples = 0;
+  floatCircled = false;
+  try { floatBtn.setPointerCapture(e.pointerId); } catch (_) { /* old browser */ }
   floatPress();
-  floatPath = [{x: pt.clientX, y: pt.clientY}];
   floatHoldTimer = setTimeout(() => {
     if (!floatMoved) openSettings();
-  }, 550);
+  }, FLOAT_HOLD_MS);
 }
 
 function onFloatMove(e) {
@@ -37,11 +71,33 @@ function onFloatMove(e) {
   const pt = e.touches ? e.touches[0] : e;
   const dx = pt.clientX - floatStartX;
   const dy = pt.clientY - floatStartY;
-  floatPath.push({x: pt.clientX, y: pt.clientY});
   floatFollow(dx, dy);
   if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
     floatMoved = true;
     if (floatHoldTimer) clearTimeout(floatHoldTimer);
+  }
+  trackCircle(pt.clientX - floatCX, pt.clientY - floatCY);
+  floatArm(!floatCircled && !!floatAction(dx, dy));
+}
+
+// Add up the signed angle around home; crumple live at 1.25 turns, then every 0.5 turn.
+function trackCircle(rx, ry) {
+  if (Math.hypot(rx, ry) < CIRCLE_MIN_R) return;
+  const a = Math.atan2(ry, rx);
+  if (floatLastAng !== null) {
+    let d = a - floatLastAng;
+    if (d > Math.PI) d -= 2 * Math.PI;
+    else if (d < -Math.PI) d += 2 * Math.PI;
+    floatTurnSum += d;
+  }
+  floatLastAng = a;
+  const turns = Math.abs(floatTurnSum) / (2 * Math.PI);
+  if (turns >= 0.75) floatCircled = true;
+  const want = turns >= CIRCLE_FIRST ? 1 + Math.floor((turns - CIRCLE_FIRST) / CIRCLE_STEP) : 0;
+  while (floatCrumples < want) {
+    floatCrumples++;
+    crumblePage();
+    floatShake();
   }
 }
 
@@ -59,35 +115,10 @@ function onFloatUp(e) {
     showPageToast();
     return;
   }
+  if (floatCircled) return;          // circling = crumple only
 
-  // Detect random drag (crumble) vs directional pulls
-  const isRandom = floatPath.length > 8 && isPathRandom(floatPath);
-  if (isRandom && (Math.abs(dx) > 30 || Math.abs(dy) > 30)) {
-    crumblePage();
-    floatShake();
-    return;
-  }
-
-  // Directional gestures
-  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-    if (dx > 0) goToPage(currentPage + 1);
-    else goToPage(currentPage - 1);
-  } else if (dy > 50 && Math.abs(dy) > Math.abs(dx)) {
-    openPagesGrid();
-  }
-}
-
-// Simple random path detector (direction changes)
-function isPathRandom(path) {
-  if (path.length < 6) return false;
-  let changes = 0;
-  for (let i = 2; i < path.length; i++) {
-    const dx1 = path[i-1].x - path[i-2].x;
-    const dy1 = path[i-1].y - path[i-2].y;
-    const dx2 = path[i].x - path[i-1].x;
-    const dy2 = path[i].y - path[i-1].y;
-    const dot = dx1*dx2 + dy1*dy2;
-    if (dot < 0) changes++;
-  }
-  return changes >= 2;
+  const act = floatAction(dx, dy);
+  if (act === 'next') goToPage(currentPage + 1);
+  else if (act === 'prev') goToPage(currentPage - 1);
+  else if (act === 'grid') openPagesGrid();
 }

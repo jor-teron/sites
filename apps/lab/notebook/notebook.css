@@ -48,7 +48,9 @@ body.jelly-on #floatBtn { background: transparent; color: transparent; box-shado
   pointer-events: none;
   z-index: 9;
   overflow: visible;
+  transition: filter 0.2s;
 }
+#jelly.armed { filter: drop-shadow(0 0 10px #8fd8ff) drop-shadow(0 0 18px rgba(120,200,255,0.8)); }
 /* Temporary page number toast */
 #pageToast {
   position: absolute;
