@@ -2,7 +2,7 @@
  * Project: notebook
  * File: nb_wrinkle.js
  * Role: Crumple wrinkles. Per-page crumple level (0..CRUMPLE_MAX = 10) in localStorage key
- *   paperNotebook_crumple; strokes are never erased. Wrinkles are an SVG overlay (#wrinkle,
+ *   paperNotebook_crumple; strokes are never erased. Wrinkles are an SVG overlay (<div id="wrinkle"> holding an <svg> string,
  *   pointer-events:none) built from feTurbulence + diffuse/specular lighting and seeded crease
  *   lines (seed = page). Permanent: no undo, Reset Notebook does not clear them.
  *   wrinkleImage() turns the same SVG into an Image for PNG/PDF export.
@@ -79,7 +79,7 @@ function updateWrinkle() {
   if (!el) return;
   const svg = wrinkleSvg(currentPage, canvas.width, canvas.height);
   el.innerHTML = svg;
-  el.hidden = !svg;
+  el.hidden = !svg;   // #wrinkle is a <div> (SVGElement has no .hidden property)
 }
 
 // Wrinkles of one page as a loaded Image (null when level 0 or on error).

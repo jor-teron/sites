@@ -2,13 +2,10 @@
  * Project: notebook
  * File: nb_float.js
  * Role: Floating button gestures (pointer events + pointer capture, works on Android Chrome):
- *   tap = page toast; swipe right / left past 1/3 of the screen = next / previous page;
- *   pull UP past 1/3 = pages grid (pull down does nothing); shorter pulls = jelly play only;
- *   the jelly glows when a release would fire ("armed").
- *   HOLD (finger still, < FLOAT_SLOP px) = crumple: the jelly shakes, after 500 ms a mini
- *   crumple, then +1 level every 500 ms while held (cap 10). Moving past FLOAT_SLOP cancels the
- *   hold and it becomes a drag. Hold no longer opens settings (settings = card on page 49).
- *   Feedback is the jelly blob (nb_jelly.js); the hit target itself never moves.
+ *   tap = nothing; HOLD still ~500 ms = quick menu popup (nb_popup.js);
+ *   release past 1/3 of the screen ("armed", jelly glows): swipe right / left = next / previous
+ *   page, pull UP = pages grid, pull DOWN = crumple +1 level (cap 10) with a jiggle.
+ *   Shorter pulls = jelly play only. Feedback is the jelly blob (nb_jelly.js).
  */
 // Visual feedback (floatFollow / floatRelease / floatShake / floatPress) lives in nb_jelly.js;
 // no-op stand-ins below keep gestures working if that file failed to load.
@@ -19,14 +16,11 @@ let floatStartX = 0;
 let floatStartY = 0;
 let floatStartTime = 0;
 let floatMoved = false;
-let floatHoldTimer = null;     // first crumple / repeat timer
-let floatShakeTimer = null;    // shaking while held
-let floatCrumples = 0;         // levels added by this hold
+let floatHoldTimer = null;     // hold → popup
 let floatPointer = null;
 
 const FLOAT_SLOP = 15;         // px of jitter allowed for tap / hold
-const HOLD_FIRST_MS = 500;
-const HOLD_STEP_MS = 500;
+const HOLD_MS = 500;
 
 function armDistance() { return Math.min(window.innerWidth, window.innerHeight) / 3; }
 
@@ -37,26 +31,27 @@ function floatAction(dx, dy) {
     if (Math.abs(dx) >= need) return dx > 0 ? 'next' : 'prev';
   } else if (-dy >= need) {
     return 'grid';
+  } else if (dy >= need) {
+    return 'crumple';
   }
   return '';
 }
 
 function stopHold() {
   if (floatHoldTimer) { clearTimeout(floatHoldTimer); floatHoldTimer = null; }
-  if (floatShakeTimer) { clearInterval(floatShakeTimer); floatShakeTimer = null; }
 }
 
-// Held still: shake, then crumple every HOLD_STEP_MS (crumblePage caps at CRUMPLE_MAX).
+// Held still for HOLD_MS: quick menu.
+let floatHeld = false;
 function startHold() {
   stopHold();
-  floatShakeTimer = setInterval(() => floatShake(), 260);
-  const step = () => {
-    floatCrumples++;
-    crumblePage();
+  floatHeld = false;
+  floatHoldTimer = setTimeout(() => {
+    floatHoldTimer = null;
+    floatHeld = true;
     floatShake();
-    floatHoldTimer = setTimeout(step, HOLD_STEP_MS);
-  };
-  floatHoldTimer = setTimeout(step, HOLD_FIRST_MS);
+    openPopup();
+  }, HOLD_MS);
 }
 
 function onFloatDown(e) {
@@ -69,7 +64,6 @@ function onFloatDown(e) {
   floatStartY = e.clientY;
   floatStartTime = Date.now();
   floatMoved = false;
-  floatCrumples = 0;
   floatPress();
   startHold();
 }
@@ -79,8 +73,8 @@ function onFloatMove(e) {
   e.preventDefault();
   const dx = e.clientX - floatStartX;
   const dy = e.clientY - floatStartY;
-  if (!floatMoved && Math.hypot(dx, dy) > FLOAT_SLOP && !floatCrumples) {
-    floatMoved = true;                     // became a drag: no crumple
+  if (!floatMoved && Math.hypot(dx, dy) > FLOAT_SLOP && !floatHeld) {
+    floatMoved = true;                     // became a drag: no popup
     stopHold();
   }
   if (!floatMoved) return;                 // jitter while holding: ignore
@@ -93,19 +87,15 @@ function onFloatUp(e) {
   stopHold();
   const dx = e.clientX - floatStartX;
   const dy = e.clientY - floatStartY;
-  const dt = Date.now() - floatStartTime;
   floatStartTime = 0;
   floatPointer = null;
   floatRelease();
-  if (floatCrumples) return;               // a hold crumpled: nothing else
-  if (!floatMoved) {
-    if (dt < HOLD_FIRST_MS) showPageToast();
-    return;
-  }
+  if (floatHeld || !floatMoved) return;   // hold = popup already open; tap = nothing
   const act = floatAction(dx, dy);
   if (act === 'next') goToPage(currentPage + 1);
   else if (act === 'prev') goToPage(currentPage - 1);
   else if (act === 'grid') openPagesGrid();
+  else if (act === 'crumple') { crumblePage(); floatShake(); }
 }
 
 // Pointer cancelled (system gesture, etc.): stop everything, spring home.

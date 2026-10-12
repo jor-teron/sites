@@ -10,12 +10,12 @@
   Role: Markup only. Paper Notebook: 50 pages, LocalStorage, no undo, crumble page, PNG/PDF export.
   Scripts are plain (no build step) and share globals; order matters (store first, notebook.js last).
 -->
-<link rel="stylesheet" href="notebook.css?v=20261012j">
+<link rel="stylesheet" href="notebook.css?v=20261012k">
 </head>
 <body>
 <div id="main">
   <canvas id="canvas"></canvas>
-  <svg id="wrinkle" hidden></svg>
+  <div id="wrinkle" hidden></div>
   <div id="overlay"></div>
   <svg id="jelly" viewBox="0 0 240 240" aria-hidden="true"></svg>
   <div id="floatBtn" aria-label="Notebook menu">☰</div>
@@ -27,21 +27,47 @@
     <button id="dlPng">Download Page PNG</button>
     <button id="dlPdf">Download Notebook PDF</button>
     <button id="resetNotebook">Reset Notebook</button>
-    <p style="margin-top:30px;color:#888;font-size:13px;">50 pages · LocalStorage · No undo</p>
+    <p style="margin-top:14px;color:#888;font-size:13px;">50 pages · LocalStorage · No undo</p>
+    <section class="cardInfo">
+      <h3>About</h3>
+      <p><b>Paper Notebook</b> — a 50-page sketch pad for finger, mouse or pen. Everything is saved in this browser. Pages can be crumpled, never erased.</p>
+      <h3>How to</h3>
+      <ul>
+        <li><b>Swipe ☰ left / right</b> — previous / next page</li>
+        <li><b>Pull ☰ up</b> — all pages grid</li>
+        <li><b>Pull ☰ down</b> — crumple this page (+1 wrinkle level, max 10)</li>
+        <li><b>Hold ☰</b> — quick menu (PNG, PDF, reset)</li>
+      </ul>
+      <h3>Tips</h3>
+      <ul>
+        <li>Pull or swipe past a third of the screen — the jelly glows when it will fire.</li>
+        <li>Short pulls do nothing; play with the jelly.</li>
+        <li>Write your name on the cover label; fill the index on pages 2–3.</li>
+        <li>Crumples are permanent — no undo.</li>
+      </ul>
+    </section>
+  </div>
+  <!-- Quick menu: hold ☰ (nb_popup.js) -->
+  <div id="nbPopup" hidden>
+    <button type="button" data-act="png">Download this page (PNG)</button>
+    <button type="button" data-act="pdf">Download notebook (PDF)</button>
+    <button type="button" data-act="settings">Go to settings page</button>
+    <button type="button" data-act="reset">Reset notebook…</button>
   </div>
 </div>
 
 <script src="vendor/jspdf.umd.min.js"></script>
-<script src="nb_store.js?v=20261012j"></script>
-<script src="nb_wrinkle.js?v=20261012j"></script>
-<script src="nb_cover.js?v=20261012j"></script>
-<script src="nb_canvas.js?v=20261012j"></script>
-<script src="nb_pages.js?v=20261012j"></script>
-<script src="nb_draw.js?v=20261012j"></script>
-<script src="nb_export.js?v=20261012j"></script>
-<script src="nb_settings.js?v=20261012j"></script>
-<script src="nb_jelly.js?v=20261012j"></script>
-<script src="nb_float.js?v=20261012j"></script>
-<script src="notebook.js?v=20261012j"></script>
+<script src="nb_store.js?v=20261012k"></script>
+<script src="nb_wrinkle.js?v=20261012k"></script>
+<script src="nb_cover.js?v=20261012k"></script>
+<script src="nb_canvas.js?v=20261012k"></script>
+<script src="nb_pages.js?v=20261012k"></script>
+<script src="nb_draw.js?v=20261012k"></script>
+<script src="nb_export.js?v=20261012k"></script>
+<script src="nb_settings.js?v=20261012k"></script>
+<script src="nb_jelly.js?v=20261012k"></script>
+<script src="nb_popup.js?v=20261012k"></script>
+<script src="nb_float.js?v=20261012k"></script>
+<script src="notebook.js?v=20261012k"></script>
 </body>
 </html>
