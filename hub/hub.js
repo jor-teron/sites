@@ -39,7 +39,7 @@
   const CAT_PAGES = {
     Favorite: 'apps/favorite/', Games: 'apps/games/', Media: 'apps/media/', Office: 'apps/office/',
     Connectivity: 'apps/connectivity/', Tools: 'apps/tools/', Lab: 'apps/lab/',
-    Desktop: 'apps/tools/vDesktop/',  // Desktop opens vDesktop directly (its NEW_TAB row = own tab)
+    Desktop: 'apps/tools/vDesktop/',  // Desktop opens vDesktop directly (in the hub frame)
     About: 'apps/about/'              // one About page: About / Contact / Feedback cards
   };
 

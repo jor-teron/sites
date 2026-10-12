@@ -261,4 +261,4 @@ width: auto;
 .rm-hub { gap: 6px; padding: 0 10px; font-size: 14px; font-weight: 700; width: auto; }
 .rm-dot { width: 10px; height: 10px; border-radius: 50%; background: #d9534f; }
 .rm-hub.connected .rm-dot { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
-.rm-disc { color: #ff6b81; }
+.rm-disc { border-top: 1px solid rgba(255,255,255,.15); }   /* plain row, not error-red */

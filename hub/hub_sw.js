@@ -8,7 +8,7 @@
  * so a phone never gets a stale copy after a push.
  * Bump CACHE when the shell list changes; old caches are deleted on activate.
  */
-const CACHE = 'hub-shell-v16';  // 2026-10-12k: Desktop opens vDesktop, About opens one About page
+const CACHE = 'hub-shell-v17';  // 2026-10-12l: Desktop in frame, clearer Disconnect row
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',

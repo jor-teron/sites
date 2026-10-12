@@ -8,7 +8,7 @@
  *     hub-controller.js — never the Gamepad (that is the home tile, next release);
  *   - while the Gamepad is open in the frame the bar gets ⛶ Full screen and ⚙ Gamepad
  *     settings (posted into the frame as {type:'ctrl-settings'});
- *   - menu item "Disconnect · use this device as Hub": manual Disconnect (bye, forget code),
+ *   - menu item "Disconnect from desktop Hub": manual Disconnect (bye, forget code),
  *     then reload as a normal host Hub. Reloads otherwise rejoin from the saved code.
  */
 (function () {
@@ -82,7 +82,7 @@
     if (!menu || menu.querySelector('#rm-disc')) return;
     const b = document.createElement('button');
     b.type = 'button'; b.id = 'rm-disc'; b.className = 'menu-item rm-disc';
-    b.textContent = '⏏ Disconnect · use this device as Hub';
+    b.textContent = '⏏ Disconnect from desktop Hub';
     b.addEventListener('click', (e) => { e.stopPropagation(); disconnect(); });
     menu.appendChild(b);
   }
