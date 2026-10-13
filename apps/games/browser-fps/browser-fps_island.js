@@ -222,7 +222,7 @@ export function buildIsland(scene, cfg, assets, renderer, opt = {}) {
       const im = new THREE.InstancedMesh(part.geometry, part.material, Math.max(1, n));
       im.count = n;
       mats.forEach((m, i) => im.setMatrixAt(i, m));
-      im.castShadow = !!part.castShadow && cfg.propShadows;
+      im.castShadow = (!!part.castShadow || !!cfg.look) && cfg.propShadows;
       im.receiveShadow = true;
       im.instanceMatrix.needsUpdate = true;
       im.computeBoundingSphere();
@@ -261,5 +261,5 @@ export function buildIsland(scene, cfg, assets, renderer, opt = {}) {
     foam.scale.setScalar(1 + 0.006 * s);
   }
 
-  return { R, wadeR, start, heightAt, onLand, colliders, bushes, randomSpot, update, counts, terrain, water };
+  return { R, wadeR, beachIn, windTime, wind: W, isOpen, start, heightAt, onLand, colliders, bushes, randomSpot, update, counts, terrain, water };
 }

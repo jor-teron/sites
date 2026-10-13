@@ -9,6 +9,7 @@ import { createPickups } from './browser-fps_pickups.js';
 import { createGrenades } from './browser-fps_grenades.js';
 import { createAudio } from './browser-fps_audio.js';
 import { buildIsland } from './browser-fps_island.js';
+import { setupIslandLook } from './browser-fps_look.js';
 import { createFx } from './browser-fps_fx.js';
 
 // ─── Tunables (from browser-fps_config.js) ──────────────────────────────────
@@ -185,11 +186,12 @@ function buildArena() {
   }
 }
 
-let island = null;
+let island = null, islandLook = null;
 if (ISLAND) {
-  island = buildIsland(scene, IS, ASSETS, renderer, { water: FX.water, waterFx: FX.water === 'reflect' ? CFG.fx.water : null });
+  island = buildIsland(scene, { ...IS, look: FX.look ? IS.look : null }, ASSETS, renderer, { water: FX.water, waterFx: FX.water === 'reflect' ? CFG.fx.water : null });
   for (const c of island.colliders) colliders.push(c);
   scene.add(sun.target);
+  if (FX.look && IS.look) islandLook = setupIslandLook({ scene, renderer, camera, sun, island, cfg: IS.look, sc: SC, colliders: island.colliders });
 } else buildArena();
 const fx = createFx(scene, FX);
 /** Ground height under (x, z): 0 in the camp, the terrain on the island. */
@@ -1293,6 +1295,7 @@ function tick(now = performance.now()) {
     // shadow box follows the player (island is bigger than the shadow camera)
     sun.target.position.set(player.pos.x, 0, player.pos.z);
     sun.position.set(player.pos.x + SC.sunPos[0], SC.sunPos[1], player.pos.z + SC.sunPos[2]);
+    if (islandLook) islandLook.update(clock.elapsedTime, player.pos);
   }
 
   if (pointerLocked && !isDead()) {
@@ -1313,6 +1316,7 @@ function tick(now = performance.now()) {
   });
   renderer.clear();
   renderer.render(scene, camera);
+  if (islandLook && islandLook.flare) islandLook.flare.render();
   renderer.clearDepth();
   renderer.render(vm.scene, vm.camera);
 }
@@ -1332,7 +1336,7 @@ tick();
 // Expose a tiny debug hook in console
 window.__fps = {
   player, enemies, colliders, scene, camera, fire, vm, startReload,
-  map: MAP, island, fx, fxQuality: FXQ, surfaceOf, groundAt, get frames() { return frames; }, setMap,
+  map: MAP, island, get islandLook() { return islandLook; }, fx, fxQuality: FXQ, surfaceOf, groundAt, get frames() { return frames; }, setMap,
   // test helpers: run game steps without pointer lock, spawning, line-of-sight
   step: (dt, n = 1) => { for (let i = 0; i < n; i++) { if (isDead()) break; updateScope(dt); gameStep(dt); for (const en of enemies) en.update(dt); } },
   spawnRandomTarget, hasLineOfSight, restartGame,

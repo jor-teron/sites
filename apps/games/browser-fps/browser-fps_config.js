@@ -252,12 +252,22 @@ window.BROWSER_FPS_CONFIG = {
     clearings: [{ x: 0, z: 0.05, r: 0.2 }, { x: -0.45, z: -0.3, r: 0.16 }, { x: 0.42, z: 0.32, r: 0.14 }],
     paths: [{ from: [0, 0.86], to: [0, 0.05], w: 4 }, { from: [0, 0.05], to: [-0.45, -0.3], w: 3.5 }, { from: [0, 0.05], to: [0.42, 0.32], w: 3 }],
     wind: { strength: 0.22, bushStrength: 0.06, speed: 1.4, gust: 0.35 },   // vertex sway (m at the top), 0 = off
-    propShadows: true,   // palms / rocks cast shadows (shadow box follows the player)
+    propShadows: true,   // palms / rocks / bushes cast shadows (shadow box follows the player)
+    // Map Visuals 2 (island only). Each block can be switched off with enabled: false.
+    look: {
+      softShadows: true, shadowRadius: 3, shadowBias: -0.0004, shadowNormalBias: 0.04, shadowSnap: true,   // PCFSoft, texel-snapped follow
+      sky: { enabled: true, top: 0x3f86d0, horizon: 0xbfd9ea, sunGlow: 0xffe6b0, glowSize: 0.12, glowStrength: 0.6 },   // dome; horizon = fog colour
+      flare: { enabled: true, size: 260, color: 0xfff1d0, ghosts: 4, ghostAlpha: 0.22, maxAlpha: 0.9 },   // sun glare sprites (fade when occluded / off-axis)
+      grass: { enabled: true, clumps: 3600, flowers: 380, radius: 24, cell: 0.7, fadeStart: 15, height: 0.45, sway: 0.08,
+               colors: [0x5f9a3a, 0x77ad44, 0x4c8530], flowerColors: [0xffffff, 0xffd84a, 0xff7aa8, 0xc49bff] },
+    },
     colors: { sand: 0xe8d6a6, wetSand: 0xb39b6e, seabed: 0x2f8f8c, grass: 0x7fb24e, forest: 0x4a7a32, water: 0x1f9eb8 },
     scene: {             // overrides for scene.* on this map (island-demo look)
-      background: 0x8ec8ea, fogNear: 30, fogFar: 120,
-      sunColor: 0xffe2b8, sunIntensity: 2.8, hemiSky: 0xcfeaff, hemiGround: 0x7a6a48, hemiIntensity: 1.0,
-      ambientIntensity: 0.6,
+      // Map Visuals 2: warm low-ish sun to the north (start view faces it), soft shadows, haze that matches the sky horizon
+      background: 0xbfd9ea, fogNear: 28, fogFar: 135,
+      sunColor: 0xffd59a, sunIntensity: 3.1, sunPos: [16, 22, -30], hemiSky: 0xbfe0ff, hemiGround: 0x8a7650, hemiIntensity: 0.85,
+      ambientIntensity: 0.35, toneMappingExposure: 1.0,
+      shadowMapSize: 2048, shadowExtent: 32, shadowFar: 90,
     },
   },
   maps: { default: 'camp', storageKey: 'browser-fps-map' },   // 'camp' | 'island'
@@ -266,8 +276,8 @@ window.BROWSER_FPS_CONFIG = {
   fx: {
     quality: 'high',
     presets: {
-      high: { maxParticles: 600, particleMult: 1, maxDecals: 48, water: 'reflect' },
-      low:  { maxParticles: 220, particleMult: 0.5, maxDecals: 0, water: 'simple' },
+      high: { maxParticles: 600, particleMult: 1, maxDecals: 48, water: 'reflect', look: true },
+      low:  { maxParticles: 220, particleMult: 0.5, maxDecals: 0, water: 'simple', look: false },   // look: island grass / flare / sky dome
     },
     decalSize: 0.06, decalLife: 12,                 // bullet marks: radius (m), seconds before fading out
     enemyLights: 2, enemyFlashColor: 0xffb060, enemyFlashIntensity: 3, enemyFlashRange: 7, enemyFlashTime: 0.06,
@@ -305,9 +315,9 @@ window.BROWSER_FPS_CONFIG = {
              { count: 6, speed: 4, spread: 1.2, size: 0.03, life: 0.18, gravity: 1, drag: 1, colors: [0xfff4b0, 0xffffff] }],
     },
     water: {   // island ocean ('reflect' quality): sky reflection + shimmer
-      skyTop: 0x5fa8e0, skyHorizon: 0xa8d4ee, sunDir: [0.45, 0.55, 0.3], shimmer: 0.07, shimmerSpeed: 1.2, roughness: 0.06, opacity: 0.9, reflect: 0.9,
+      skyTop: 0x5fa8e0, skyHorizon: 0xa8d4ee, sunDir: [0.39, 0.54, -0.74], shimmer: 0.07, shimmerSpeed: 1.2, roughness: 0.06, opacity: 0.9, reflect: 0.75,
       shallow: 0x46d6c8, deep: 0x0b4f7a, deepDist: 14,   // depth colour: turquoise at the shore -> deep blue deepDist m out
-      shoreAlpha: 0.45, foam: 0.85, foamWidth: 1.3, fresnel: 0.45,   // see-through shallows, shoreline foam band, extra sky at grazing angles
+      shoreAlpha: 0.45, foam: 0.85, foamWidth: 1.3, fresnel: 0.3,   // see-through shallows, shoreline foam band, extra sky at grazing angles
     },
   },
 
