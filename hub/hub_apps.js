@@ -87,6 +87,11 @@ Lab,      Island Game Demo,      apps/lab/island-demo/,                      ,  
 Lab,      Phone,                 apps/media/phone/,                          ,         0,       0,      1070
 Lab,      Paper Keyboard,        apps/lab/paper-keyboard/,                   ,         0,       0,      1040
 Lab,      Notebook,              apps/lab/notebook/,                         ,         0,       0,      1045
+Lab,      Sling Birds,           apps/lab/sling-birds/,                      ,         0,       0,      1085
+Lab,      AoE RTS,               apps/lab/aoe-rts/,                          ,         0,       0,      1086
+Lab,      Pacman,                apps/lab/pacman/,                           ,         0,       0,      1090
+Lab,      WebRTC Chat,           apps/connectivity/webrtc-chat/,             ,         0,       0,      1095
+Lab,      P2P Chat,              apps/connectivity/p2pchat.html,             ,         0,       0,      1096
 
 About,    About,                 apps/about/,                                ,         0,       0,      2000
 About,    Contact,               apps/about/contact.html,                    ,         0,       1,      2020
