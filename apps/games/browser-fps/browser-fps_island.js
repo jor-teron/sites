@@ -18,7 +18,7 @@ const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a
  * 'reflect' water quality: MeshStandardMaterial with a generated sky (equirect gradient + sun) as its env map, so the
  * low roughness gives fresnel sky reflection + a sun glint; plus a cheap animated normal shimmer in the fragment shader.
  */
-function reflectWater(color, w) {
+function reflectWater(color, w, R) {
   const W = 256, H = 128, c = document.createElement('canvas'); c.width = W; c.height = H;
   const g = c.getContext('2d');
   const grd = g.createLinearGradient(0, 0, 0, H);
@@ -37,17 +37,43 @@ function reflectWater(color, w) {
   const m = new THREE.MeshStandardMaterial({ color, envMap: env, envMapIntensity: w.reflect ?? 0.5, roughness: w.roughness, metalness: 0.0, transparent: true, opacity: w.opacity });
   const time = { value: 0 };
   m.userData.time = time;
+  const C3 = (h) => { const c = new THREE.Color(h); return `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`; };
+  const f = (v) => (+v).toFixed(4);
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uTime = time;
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;')
       .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nuniform float uTime;')
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nuniform float uTime;\nfloat vFoam;')
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        {
+          float dr = length(vWPos.xz) - ${f(R)};                       // metres out from the shoreline
+          float dd = clamp(dr / ${f(w.deepDist)}, 0.0, 1.0);
+          diffuseColor.rgb = mix(${C3(w.shallow)}, ${C3(w.deep)}, smoothstep(0.0, 1.0, sqrt(dd)));
+          diffuseColor.a = mix(${f(w.shoreAlpha)}, ${f(w.opacity)}, smoothstep(0.0, 0.35, dd));
+          // shoreline foam: a broken, sliding band at the waterline + a second fainter wave line further out
+          float ang = atan(vWPos.z, vWPos.x);
+          float n = sin(ang * 37.0 + uTime * 0.7) * 0.5 + sin(ang * 91.0 - uTime * 1.3) * 0.3 + sin(ang * 13.0 + uTime * 0.4) * 0.2;
+          float lap = sin(uTime * 1.1) * 0.35;
+          float band = 1.0 - smoothstep(0.0, ${f(w.foamWidth)} * (0.75 + 0.25 * n), abs(dr - lap + 0.2));
+          float wave2 = (1.0 - smoothstep(0.0, 0.35, abs(dr - 2.6 - sin(uTime * 0.8 + ang * 3.0) * 0.6))) * (0.5 + 0.5 * n);
+          vFoam = clamp(band * (0.65 + 0.35 * n) + wave2 * 0.35, 0.0, 1.0) * ${f(w.foam)};
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.97, 0.99, 1.0), vFoam);
+          diffuseColor.a = max(diffuseColor.a, vFoam);
+        }`)
+      .replace('#include <opaque_fragment>', `{
+          vec3 V = normalize(vViewPosition);
+          float fr = pow(1.0 - clamp(dot(normal, V), 0.0, 1.0), 4.0) * ${f(w.fresnel)} * (1.0 - vFoam);
+          outgoingLight = mix(outgoingLight, ${C3(w.skyHorizon)} * 1.15, fr);
+          diffuseColor.a = max(diffuseColor.a, fr);
+        }
+        #include <opaque_fragment>`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
         {
           float t = uTime * ${w.shimmerSpeed.toFixed(3)};
           vec2 p = vWPos.xz;
           vec2 d = vec2(sin(p.x * 1.7 + t * 1.3) + sin(p.y * 2.3 - t * 1.7) * 0.7 + sin((p.x + p.y) * 4.1 + t * 2.9) * 0.35,
                         cos(p.y * 1.9 + t * 1.1) + cos(p.x * 2.7 + t * 1.5) * 0.7 + cos((p.x - p.y) * 3.7 - t * 2.3) * 0.35);
+          d += vec2(sin(p.x * 7.3 - p.y * 5.1 + t * 3.7), cos(p.y * 6.7 + p.x * 4.3 - t * 3.1)) * 0.25;
           vec3 nW = normalize(vec3(d.x * ${w.shimmer.toFixed(3)}, 1.0, d.y * ${w.shimmer.toFixed(3)}));
           normal = normalize((viewMatrix * vec4(nW, 0.0)).xyz);
         }`);
@@ -113,11 +139,12 @@ export function buildIsland(scene, cfg, assets, renderer, opt = {}) {
   const wgeo = new THREE.PlaneGeometry(wsize, wsize, wseg, wseg);
   wgeo.rotateX(-Math.PI / 2);
   const wbase = Float32Array.from(wgeo.attributes.position.array);
-  const water = new THREE.Mesh(wgeo, opt.waterFx ? reflectWater(cfg.colors.water, opt.waterFx) : new THREE.MeshStandardMaterial({ color: cfg.colors.water, transparent: true, opacity: 0.82, roughness: 0.25, metalness: 0.1 }));
+  const water = new THREE.Mesh(wgeo, opt.waterFx ? reflectWater(cfg.colors.water, opt.waterFx, R) : new THREE.MeshStandardMaterial({ color: cfg.colors.water, transparent: true, opacity: 0.82, roughness: 0.25, metalness: 0.1 }));
   water.position.y = cfg.waterLevel;
   scene.add(water);
   const foam = new THREE.Mesh(new THREE.RingGeometry(R - 0.5, R + 0.7, 96, 1),
     new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false }));
+  foam.visible = !opt.waterFx;   // 'reflect' water draws its own shader foam
   foam.rotation.x = -Math.PI / 2;
   foam.position.y = cfg.waterLevel + 0.03;
   scene.add(foam);
@@ -125,11 +152,24 @@ export function buildIsland(scene, cfg, assets, renderer, opt = {}) {
   // ── Props (seeded, instanced) ──
   const colliders = [], bushes = [], placed = [];
   const start = [0, R * cfg.startFrac];
-  function sample(weightFn, minGap, tries = 40) {
+  const clear = (cfg.clearings || []).map((c) => ({ x: c.x * R, z: c.z * R, r: c.r * R }));
+  const paths = (cfg.paths || []).map((p) => ({ ax: p.from[0] * R, az: p.from[1] * R, bx: p.to[0] * R, bz: p.to[1] * R, w: p.w }));
+  /** Inside a clearing or on a path (no palms / bushes there). */
+  function isOpen(x, z) {
+    if (clear.some((c) => Math.hypot(x - c.x, z - c.z) < c.r)) return true;
+    for (const p of paths) {
+      const dx = p.bx - p.ax, dz = p.bz - p.az, L2 = dx * dx + dz * dz || 1;
+      const u = Math.max(0, Math.min(1, ((x - p.ax) * dx + (z - p.az) * dz) / L2));
+      if (Math.hypot(x - p.ax - dx * u, z - p.az - dz * u) < p.w * 0.5 + 0.6) return true;
+    }
+    return false;
+  }
+  function sample(weightFn, minGap, tries = 40, open = false) {
     for (let n = 0; n < tries; n++) {
       const a = rand() * Math.PI * 2, r = Math.sqrt(rand()) * (R - 1.2);
       const x = Math.cos(a) * r, z = Math.sin(a) * r;
       if (rand() > weightFn(r / R)) continue;
+      if (!open && isOpen(x, z)) continue;
       if (Math.hypot(x - start[0], z - start[1]) < cfg.startClear) continue;
       if (placed.some((p) => Math.hypot(p.x - x, p.z - z) < minGap + p.gap)) continue;
       return [x, z];
@@ -137,11 +177,38 @@ export function buildIsland(scene, cfg, assets, renderer, opt = {}) {
     return null;
   }
   const area = Math.PI * R * R;
-  function scatter(asset, count, weightFn, gap, sMin, sMax, tilt) {
+  // ── Wind sway: vertex shader bend (height-weighted, per-instance phase from the instance position) ──
+  const windTime = { value: 0 };
+  const W = cfg.wind || { strength: 0 };
+  function addWind(mat, strength, height) {
+    if (!(strength > 0)) return;
+    mat.onBeforeCompile = (sh) => {
+      sh.uniforms.uWindT = windTime;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float uWindT;')
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+        {
+          #ifdef USE_INSTANCING
+            vec3 ip = vec3(instanceMatrix[3][0], instanceMatrix[3][1], instanceMatrix[3][2]);
+          #else
+            vec3 ip = vec3(0.0);
+          #endif
+          float hw = clamp(transformed.y / ${height.toFixed(3)}, 0.0, 1.0); hw *= hw;
+          float ph = ip.x * 0.37 + ip.z * 0.53;
+          float t = uWindT * ${(+W.speed).toFixed(3)};
+          float g = 1.0 + ${(+W.gust).toFixed(3)} * sin(t * 0.23 + ip.x * 0.05);
+          float a = ${strength.toFixed(3)} * hw * g;
+          transformed.x += (sin(t + ph) * 0.8 + sin(t * 2.3 + ph * 1.7) * 0.2) * a;
+          transformed.z += cos(t * 0.8 + ph * 1.3) * a * 0.5;
+        }`);
+    };
+    mat.customProgramCacheKey = () => 'wind' + strength + '_' + height;
+  }
+  function scatter(asset, count, weightFn, gap, sMin, sMax, tilt, wind = null) {
     const def = asset.build(), mats = [];
+    if (wind) for (const part of def.parts) addWind(part.material, wind.strength, wind.height);
     let n = 0;
     for (let i = 0; i < count; i++) {
-      const s = sample(weightFn, gap); if (!s) continue;
+      const s = sample(weightFn, gap, 40, !wind); if (!s) continue;
       const sc = sMin + rand() * (sMax - sMin), yaw = rand() * 6.28, y = heightAt(s[0], s[1]) - 0.05;
       const m = new THREE.Matrix4().compose(new THREE.Vector3(s[0], y, s[1]),
         new THREE.Quaternion().setFromEuler(new THREE.Euler((rand() - 0.5) * tilt, yaw, (rand() - 0.5) * tilt)), new THREE.Vector3(sc, sc, sc));
@@ -164,9 +231,9 @@ export function buildIsland(scene, cfg, assets, renderer, opt = {}) {
     return n;
   }
   const counts = {
-    palms: scatter(assets.palm, Math.round(area * cfg.palmDensity), (u) => (u < cfg.beachFrac * 0.85 ? 1 : 0.35), 2.4, 0.85, 1.25, 0.12),
+    palms: scatter(assets.palm, Math.round(area * cfg.palmDensity), (u) => (u < cfg.beachFrac * 0.85 ? 1 : 0.35), 2.4, 0.85, 1.25, 0.12, { strength: W.strength || 0, height: 3.8 }),
     rocks: scatter(assets.rock, Math.round(area * cfg.rockDensity), () => 1, 2.2, 0.8, 1.7, 0.4),
-    bushes: scatter(assets.bush, Math.round(area * cfg.bushDensity), (u) => (u < cfg.beachFrac * 0.9 ? 1 : 0.15), 1.6, 0.8, 1.4, 0.1),
+    bushes: scatter(assets.bush, Math.round(area * cfg.bushDensity), (u) => (u < cfg.beachFrac * 0.9 ? 1 : 0.15), 1.6, 0.8, 1.4, 0.1, { strength: W.bushStrength || 0, height: 1.3 }),
   };
 
   /** Random land spot (uniform over the disk) with optional z limit. */
@@ -182,6 +249,7 @@ export function buildIsland(scene, cfg, assets, renderer, opt = {}) {
   const wp = wgeo.attributes.position;
   function update(t) {
     if (water.material.userData.time) water.material.userData.time.value = t;
+    windTime.value = t;
     const A = cfg.waveHeight;
     for (let i = 0; i < wp.count; i++) {
       const x = wbase[i * 3], z = wbase[i * 3 + 2];

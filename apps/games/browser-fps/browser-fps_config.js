@@ -247,7 +247,11 @@ window.BROWSER_FPS_CONFIG = {
     waterLevel: 0, waterSegments: 40, oceanExtra: 90, waveHeight: 0.06,
     startFrac: 0.86,     // player starts on the south beach at z = radius * startFrac, facing north
     startClear: 5,       // no props this close to the start
-    palmDensity: 0.016, rockDensity: 0.006, bushDensity: 0.02,   // per m² (scales with area)
+    palmDensity: 0.0096, rockDensity: 0.006, bushDensity: 0.012,   // per m² (scales with area). Was 0.016 / 0.02 (Map Visuals 1: ~40% fewer)
+    // Open areas with no palms / bushes (rocks still allowed). x, z, r are fractions of radius; paths are segments of width w (m).
+    clearings: [{ x: 0, z: 0.05, r: 0.2 }, { x: -0.45, z: -0.3, r: 0.16 }, { x: 0.42, z: 0.32, r: 0.14 }],
+    paths: [{ from: [0, 0.86], to: [0, 0.05], w: 4 }, { from: [0, 0.05], to: [-0.45, -0.3], w: 3.5 }, { from: [0, 0.05], to: [0.42, 0.32], w: 3 }],
+    wind: { strength: 0.22, bushStrength: 0.06, speed: 1.4, gust: 0.35 },   // vertex sway (m at the top), 0 = off
     propShadows: true,   // palms / rocks cast shadows (shadow box follows the player)
     colors: { sand: 0xe8d6a6, wetSand: 0xb39b6e, seabed: 0x2f8f8c, grass: 0x7fb24e, forest: 0x4a7a32, water: 0x1f9eb8 },
     scene: {             // overrides for scene.* on this map (island-demo look)
@@ -301,7 +305,9 @@ window.BROWSER_FPS_CONFIG = {
              { count: 6, speed: 4, spread: 1.2, size: 0.03, life: 0.18, gravity: 1, drag: 1, colors: [0xfff4b0, 0xffffff] }],
     },
     water: {   // island ocean ('reflect' quality): sky reflection + shimmer
-      skyTop: 0x5fa8e0, skyHorizon: 0xa8d4ee, sunDir: [0.45, 0.55, 0.3], shimmer: 0.05, shimmerSpeed: 1.2, roughness: 0.1, opacity: 0.88, reflect: 0.45,
+      skyTop: 0x5fa8e0, skyHorizon: 0xa8d4ee, sunDir: [0.45, 0.55, 0.3], shimmer: 0.07, shimmerSpeed: 1.2, roughness: 0.06, opacity: 0.9, reflect: 0.9,
+      shallow: 0x46d6c8, deep: 0x0b4f7a, deepDist: 14,   // depth colour: turquoise at the shore -> deep blue deepDist m out
+      shoreAlpha: 0.45, foam: 0.85, foamWidth: 1.3, fresnel: 0.45,   // see-through shallows, shoreline foam band, extra sky at grazing angles
     },
   },
 
