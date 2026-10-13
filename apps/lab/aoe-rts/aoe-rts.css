@@ -67,3 +67,22 @@ html, body {
     font-size: 22px; border-radius: 50%; border: 2px solid #c8a46a; background: rgba(20,16,10,0.8);
     color: #fff; touch-action: manipulation;
 }
+
+/* R1a: full-window game, top bar, minimap, pause */
+#game-container { display: block; }
+#topbar { position: fixed; top: 0; left: 0; right: 0; height: 40px; z-index: 25; pointer-events: none;
+    background: rgba(20,16,10,0.85); border-bottom: 2px solid #8a6a3a; display: flex; align-items: center; padding: 0 12px; box-sizing: border-box; }
+#hud { font-size: 16px; font-weight: bold; color: #f0d9a0; }
+#info { position: fixed; top: 46px; left: 10px; z-index: 25; pointer-events: none; font-size: 13px; color: #ddd;
+    background: rgba(0,0,0,0.45); padding: 3px 8px; border-radius: 4px; }
+#minimap-wrap { position: fixed; left: 8px; bottom: 80px; z-index: 25; line-height: 0; }
+#minimap { display: block; border: 2px solid #c8a46a; background: #111; cursor: pointer; }
+#mute-btn { top: 2px; width: 36px; height: 36px; font-size: 18px; }
+#pause-btn { position: fixed; top: 2px; right: 52px; z-index: 30; width: 36px; height: 36px; font-size: 16px; border-radius: 50%;
+    border: 2px solid #c8a46a; background: rgba(20,16,10,0.8); color: #fff; cursor: pointer; }
+#pause-overlay { position: fixed; inset: 40px 0 72px 0; z-index: 24; display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.35); pointer-events: none; }
+#pause-overlay > div { pointer-events: auto; text-align: center; background: rgba(20,16,10,0.9); border: 2px solid #c8a46a; border-radius: 10px; padding: 16px 28px; }
+#pause-overlay h2 { margin: 0 0 10px; color: #f0d9a0; }
+#pause-overlay button { font-size: 18px; padding: 8px 20px; background: #5a4426; color: #fff; border: 2px solid #c8a46a; border-radius: 8px; cursor: pointer; }
+#pause-overlay p { font-size: 12px; color: #ccc; margin: 8px 0 0; }

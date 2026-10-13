@@ -1,5 +1,8 @@
 /**
  * AOE RTS - Tiny Slice Isometric Game (Phaser 3)
+ * R1a: 48x48 map (MAP_SIZE), full-window canvas, zoomable/pannable camera (wheel, right/middle drag,
+ *     screen edge, WASD/arrows, Space = TC), chunked grass, minimap, mouse selection (click, drag box,
+ *     Shift toggle, Ctrl+A, Esc), right-click orders, villager spreading, pause (P / button, tab hidden).
  * R9: code-drawn graphics (baked grass, villagers with tools/animation, TC, house stages, trees,
  *     berries, gold, stone depletion) + procedural Web Audio sounds with mute toggle.
  * R4: command bar (big touch buttons with costs), Town Center trains villagers (queue + progress),
@@ -13,9 +16,17 @@
 // ============================================================================
 const TILE_WIDTH = 64;
 const TILE_HEIGHT = 32;
-const MAP_SIZE = 14;
-const ORIGIN_X = 480;             // screen x of tile (0,0) top corner
-const ORIGIN_Y = 90;              // screen y of tile (0,0) top corner
+const MAP_SIZE = 48;              // tiles per side (config)
+const WORLD_MARGIN = 96;          // px of empty border around the map diamond
+const WORLD_W = MAP_SIZE * TILE_WIDTH + WORLD_MARGIN * 2;
+const WORLD_H = MAP_SIZE * TILE_HEIGHT + WORLD_MARGIN * 2 + 64;
+const ORIGIN_X = WORLD_W / 2;     // world x of tile (0,0) top corner
+const ORIGIN_Y = WORLD_MARGIN + 64; // world y of tile (0,0) top corner (room for tall sprites)
+const ZOOM_DEFAULT = 2.2, ZOOM_MAX = 4, ZOOM_MIN_ABS = 0.3;
+const PAN_SPEED = 900;            // screen px / s for keys + edge scroll
+const EDGE_PX = 14;               // screen edge scroll band
+const CHUNK = 8;                  // grass chunk size in tiles
+const MINIMAP_W = 180;
 const VILLAGER_SPEED = 70;        // px / s
 const CARRY_MAX = 10;
 const GATHER_INTERVAL = 0.6;      // seconds per 1 unit gathered
@@ -43,12 +54,11 @@ const CARRY_COLORS = { wood: 0x8b5a2b, food: 0xc0306a, gold: 0xe8c33a, stone: 0x
 // ============================================================================
 const config = {
     type: Phaser.AUTO,
-    width: 960,
-    height: 600,
     parent: 'game-container',
     backgroundColor: '#2d4a2d',
     fps: { target: 30, limit: 30 },
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' },
+    disableContextMenu: true,
     scene: { create: create, update: update }
 };
 const game = new Phaser.Game(config);
@@ -68,6 +78,13 @@ let trainQueue = 0;      // villagers queued at the Town Center
 let trainTimer = 0;      // seconds into the current villager
 let placing = null;      // 'house' while waiting for a tile tap
 let houses = [];         // { x, y, progress, done }
+let paused = false;
+let animT = 0;           // animation clock (ms), frozen while paused
+let scene = null, cam = null, groundChunks = [];
+let dragSel = null;      // { sx, sy, ex, ey, active } left-drag box (world coords)
+let panDrag = null;      // { x, y, sx, sy, moved } right/middle drag
+let hoverTile = null;
+let keys = null, pointerInside = false;
 
 function popCount() { return villagers.length; }
 function popCap() { return POP_BASE + POP_PER_HOUSE * houses.filter(h => h.done).length; }
@@ -101,23 +118,30 @@ function initMap() {
     mapData = [];
     for (let y = 0; y < MAP_SIZE; y++) { mapData[y] = []; for (let x = 0; x < MAP_SIZE; x++) mapData[y][x] = null; }
     // Town Center 2x2 in the middle
-    townCenter = { x: 6, y: 6, w: 2, h: 2 };
-    for (let y = 6; y < 8; y++) for (let x = 6; x < 8; x++) mapData[y][x] = { kind: 'tc' };
-
+    const m = Math.floor(MAP_SIZE / 2) - 1;
+    townCenter = { x: m, y: m, w: 2, h: 2 };
+    for (let y = m; y < m + 2; y++) for (let x = m; x < m + 2; x++) mapData[y][x] = { kind: 'tc' };
+    const cx0 = m + 0.5, cy0 = m + 0.5;
+    let rnd = 1234567; const R = () => (rnd = (rnd * 16807) % 2147483647) / 2147483647;  // seeded
     const place = (kind, cx, cy) => {
+        cx = Math.round(cx); cy = Math.round(cy);
         if (!inMap(cx, cy) || mapData[cy][cx]) return;
-        if (Math.abs(cx - 6.5) < 2.2 && Math.abs(cy - 6.5) < 2.2) return; // keep TC area clear
+        if (Math.abs(cx - cx0) < 4 && Math.abs(cy - cy0) < 4) return; // keep TC area clear
         const a = RES_TYPES[kind].amount;
         mapData[cy][cx] = { kind, amount: a, max: a };
     };
-    // Forest patches
-    for (let i = 0; i < 26; i++) place('tree', Math.floor(Math.random() * MAP_SIZE), Math.floor(Math.random() * 4));
-    for (let i = 0; i < 14; i++) place('tree', Math.floor(Math.random() * 3), Math.floor(Math.random() * MAP_SIZE));
-    // Berry bushes cluster near TC
-    [[3, 9], [4, 9], [3, 10], [4, 10]].forEach(p => place('berry', p[0], p[1]));
-    // Gold and stone
-    [[11, 9], [12, 9], [11, 10]].forEach(p => place('gold', p[0], p[1]));
-    [[9, 12], [10, 12], [9, 13]].forEach(p => place('stone', p[0], p[1]));
+    const blob = (kind, cx, cy, r, n) => { for (let i = 0; i < n; i++) { const a = R() * 6.283, d = Math.sqrt(R()) * r; place(kind, cx + Math.cos(a) * d, cy + Math.sin(a) * d); } };
+    // Forest belts near the map edges + scattered woods
+    const S = MAP_SIZE;
+    for (let i = 0; i < S * 5; i++) { const e = Math.floor(R() * 4), t = R() * S, d = R() * R() * 5;
+        place('tree', e === 0 ? t : e === 1 ? d : e === 2 ? t : S - 1 - d, e === 0 ? d : e === 1 ? t : e === 2 ? S - 1 - d : t); }
+    for (let i = 0; i < 9; i++) { const a = R() * 6.283, d = 9 + R() * (S / 2 - 12); blob('tree', cx0 + Math.cos(a) * d, cy0 + Math.sin(a) * d, 2 + R() * 2.5, 18 + R() * 20); }
+    blob('tree', cx0 - 7, cy0 - 6, 2.5, 22);               // a wood line close to home
+    // Berries, gold, stone near the TC, more further out
+    blob('berry', cx0 - 6, cy0 + 4, 1.4, 6);
+    blob('gold', cx0 + 7, cy0 + 3, 1.2, 5); blob('stone', cx0 + 3, cy0 + 7, 1.2, 4);
+    for (let i = 0; i < 3; i++) { const a = R() * 6.283, d = 13 + R() * 6;
+        blob(['gold', 'stone', 'berry'][i], cx0 + Math.cos(a) * d, cy0 + Math.sin(a) * d, 1.3, 5); }
 }
 
 // ============================================================================
@@ -147,9 +171,22 @@ function orderBuild(v, h) {
     v.node = null; v.house = h; v.state = 'toBuild';
     const p = tileCenter(h.x, h.y); v.target = { x: p.x, y: p.y + 6 };
 }
-function orderMove(v, tx, ty) {
+function orderMove(v, tx, ty, idx) {
     v.house = null;
     v.node = null; v.state = 'moving'; v.target = tileCenter(tx, ty);
+    if (idx) { const a = idx * 2.4, r = 9 * Math.sqrt(idx); v.target.x += Math.cos(a) * r * 1.6; v.target.y += Math.sin(a) * r * 0.8; }
+}
+/** Idle villagers push apart so a stack can be clicked one by one */
+function spreadIdle(dt) {
+    const idle = villagers.filter(v => v.state === 'idle');
+    for (let i = 0; i < idle.length; i++) for (let j = i + 1; j < idle.length; j++) {
+        const a = idle[i], b = idle[j]; let dx = b.x - a.x, dy = (b.y - a.y) * 2, d = Math.hypot(dx, dy);
+        if (d < 18) {
+            if (d < 0.01) { dx = Math.cos(i + j); dy = Math.sin(i + j); d = 1; }
+            const push = Math.min(18 - d, 40 * dt) / 2, ux = dx / d, uy = dy / d / 2;
+            a.x -= ux * push; a.y -= uy * push; b.x += ux * push; b.y += uy * push;
+        }
+    }
 }
 /** Find nearest node of the same kind to continue gathering */
 function findNearest(kind, from) {
@@ -240,32 +277,121 @@ function retarget(v) {
 // SCENE
 // ============================================================================
 function create() {
+    scene = this; cam = this.cameras.main;
     initMap();
     bakeGround(this);
     gfx = this.add.graphics();
     const c = townCenter;
     [[c.x - 1, c.y + 2], [c.x + 2, c.y - 1], [c.x + 2, c.y + 2]].slice(0, START_VILLAGERS).forEach(p => spawnVillager(p[0], p[1]));
+    hudText = document.getElementById('hud');
+    infoText = { setText: t => { document.getElementById('info').textContent = t; } };
+    infoText.setText(DEFAULT_INFO);
 
-    hudText = this.add.text(10, 10, '', {
-        fontSize: '18px', fill: '#ffffff', backgroundColor: '#000000aa', padding: { x: 10, y: 6 }
-    }).setDepth(100);
-    infoText = this.add.text(10, 46, 'Tap villagers to select, tap a resource to gather. Tap the Town Center to train.', {
-        fontSize: '13px', fill: '#dddddd', backgroundColor: '#00000066', padding: { x: 6, y: 3 }
-    }).setDepth(100);
+    cam.setBounds(0, 0, WORLD_W, WORLD_H);
+    cam.setZoom(ZOOM_DEFAULT);
+    centerOnTC();
+    this.scale.on('resize', () => { cam.setZoom(Phaser.Math.Clamp(cam.zoom, minZoom(), ZOOM_MAX)); });
 
+    this.input.mouse.disableContextMenu();
     this.input.on('pointerdown', onPointerDown, this);
+    this.input.on('pointermove', onPointerMove, this);
+    this.input.on('pointerup', onPointerUp, this);
+    this.input.on('wheel', onWheel, this);
+    this.input.on('gameout', () => { pointerInside = false; });
+    this.input.on('gameover', () => { pointerInside = true; });
+    keys = this.input.keyboard.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT');
+    initMinimap();
 }
+function centerOnTC() { const p = tileCenter(townCenter.x + 0.5, townCenter.y + 0.5); cam.centerOn(p.x, p.y - 20); }
+function minZoom() { return Math.max(ZOOM_MIN_ABS, Math.min(cam.width / WORLD_W, cam.height / WORLD_H)); }
 
 function update(time, delta) {
     const dt = Math.min(delta, 100) / 1000;
-    villagers.forEach(v => { v.walking = false; updateVillager(v, dt); });
-    if (trainQueue > 0 && popCount() < popCap()) {
-        trainTimer += dt;
-        if (trainTimer >= TRAIN_TIME) { trainTimer = 0; trainQueue--; spawnFromTC(); }
+    updateCameraKeys(dt);
+    if (!paused) {
+        animT += dt * 1000;
+        villagers.forEach(v => { v.walking = false; updateVillager(v, dt); });
+        spreadIdle(dt);
+        if (trainQueue > 0 && popCount() < popCap()) {
+            trainTimer += dt;
+            if (trainTimer >= TRAIN_TIME) { trainTimer = 0; trainQueue--; spawnFromTC(); }
+        }
     }
-    hudText.setText(`Wood ${resources.wood}   Food ${resources.food}   Gold ${resources.gold}   Stone ${resources.stone}   Pop ${popCount()}/${popCap()}`);
+    const hud = `Wood ${resources.wood} · Food ${resources.food} · Gold ${resources.gold} · Stone ${resources.stone} · Pop ${popCount()}/${popCap()}`;
+    if (hudText.textContent !== hud) hudText.textContent = hud;
     updateBar();
     render();
+    updateMinimap(time);
+}
+
+// ============================================================================
+// CAMERA
+// ============================================================================
+function updateCameraKeys(dt) {
+    let vx = 0, vy = 0;
+    if (keys.A.isDown || keys.LEFT.isDown) vx--; if (keys.D.isDown || keys.RIGHT.isDown) vx++;
+    if (keys.W.isDown || keys.UP.isDown) vy--; if (keys.S.isDown || keys.DOWN.isDown) vy++;
+    const p = scene.input.activePointer;
+    if (pointerInside && !panDrag && !dragSel && p.x >= 0) {
+        if (p.x < EDGE_PX) vx--; else if (p.x > cam.width - EDGE_PX) vx++;
+        if (p.y < EDGE_PX) vy--; else if (p.y > cam.height - EDGE_PX) vy++;
+    }
+    if (vx || vy) { cam.scrollX += vx * PAN_SPEED * dt / cam.zoom; cam.scrollY += vy * PAN_SPEED * dt / cam.zoom; }
+}
+function onWheel(pointer, objs, dx, dy) {
+    const z1 = cam.zoom, z2 = Phaser.Math.Clamp(z1 * Math.pow(1.0015, -dy), minZoom(), ZOOM_MAX);
+    if (z2 === z1) return;
+    const hw = cam.width / 2, hh = cam.height / 2;
+    const wx = cam.scrollX + hw + (pointer.x - hw) / z1, wy = cam.scrollY + hh + (pointer.y - hh) / z1;
+    cam.setZoom(z2);
+    cam.scrollX = wx - hw - (pointer.x - hw) / z2; cam.scrollY = wy - hh - (pointer.y - hh) / z2;
+}
+/** World rect currently visible (+margin) */
+function viewRect(m) {
+    const hw = cam.width / 2, hh = cam.height / 2, z = cam.zoom;
+    return { x0: cam.scrollX + hw - hw / z - m, y0: cam.scrollY + hh - hh / z - m, x1: cam.scrollX + hw + hw / z + m, y1: cam.scrollY + hh + hh / z + m };
+}
+
+// ============================================================================
+// MINIMAP (DOM canvas, ~4 refreshes / s + camera frame)
+// ============================================================================
+let mm = null, mmCtx = null, mmBase = null, mmScale = 1, mmNext = 0, mmDrag = false;
+function initMinimap() {
+    mm = document.getElementById('minimap');
+    mmScale = MINIMAP_W / WORLD_W;
+    mm.width = MINIMAP_W; mm.height = Math.round(WORLD_H * mmScale);
+    mmCtx = mm.getContext('2d', { willReadFrequently: true }); // CPU canvas: avoids a GPU layer ghost seen in Chromium
+    mmBase = document.createElement('canvas'); mmBase.width = mm.width; mmBase.height = mm.height;
+    const b = mmBase.getContext('2d'), s = mmScale;
+    b.fillStyle = '#1a2a16'; b.fillRect(0, 0, mm.width, mm.height);
+    const a = tileCenter(0, 0), r = tileCenter(MAP_SIZE - 1, 0), d = tileCenter(MAP_SIZE - 1, MAP_SIZE - 1), l = tileCenter(0, MAP_SIZE - 1);
+    b.fillStyle = '#4a7d3a'; b.beginPath();
+    b.moveTo(a.x * s, (a.y - 16) * s); b.lineTo((r.x + 32) * s, r.y * s); b.lineTo(d.x * s, (d.y + 16) * s); b.lineTo((l.x - 32) * s, l.y * s); b.closePath(); b.fill();
+    const move = e => { const rc = mm.getBoundingClientRect(); cam.centerOn((e.clientX - rc.left) / rc.width * WORLD_W, (e.clientY - rc.top) / rc.height * WORLD_H); };
+    mm.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); if (e.button !== 0) return; mmDrag = true; mm.setPointerCapture(e.pointerId); move(e); });
+    mm.addEventListener('pointermove', e => { if (mmDrag) move(e); });
+    mm.addEventListener('pointerup', () => { mmDrag = false; });
+    mm.addEventListener('contextmenu', e => e.preventDefault());
+}
+const MM_COL = { tree: '#1d4a1a', berry: '#d04a8a', gold: '#f0d040', stone: '#b0b0b0', house: '#3a6ad0', tc: '#3a6ad0' };
+let mmDots = null;
+function updateMinimap(time) {
+    const c = mmCtx, s = mmScale;
+    if (time >= mmNext || !mmDots) {      // rebuild resource/building layer 4x / s
+        mmNext = time + 250;
+        mmDots = document.createElement('canvas'); mmDots.width = mm.width; mmDots.height = mm.height;
+        const d = mmDots.getContext('2d'); d.drawImage(mmBase, 0, 0);
+        for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) {
+            const cell = mapData[y][x]; if (!cell) continue;
+            const p = tileCenter(x, y); d.fillStyle = MM_COL[cell.kind] || '#fff';
+            const z = cell.kind === 'tc' ? 4 : cell.kind === 'tree' ? 2 : 3; d.fillRect(p.x * s - z / 2, p.y * s - z / 2, z, z);
+        }
+    }
+    c.drawImage(mmDots, 0, 0);
+    c.fillStyle = '#ffffff';
+    villagers.forEach(v => { c.fillStyle = v.selected ? '#ffff66' : '#ffffff'; c.fillRect(v.x * s - 1.5, v.y * s - 1.5, 3, 3); });
+    const r = viewRect(0);
+    c.strokeStyle = '#ffffff'; c.lineWidth = 1; c.strokeRect(r.x0 * s + 0.5, r.y0 * s + 0.5, (r.x1 - r.x0) * s, (r.y1 - r.y0) * s);
 }
 
 // ============================================================================
@@ -277,42 +403,49 @@ function shade(col, f) {
     const r = Math.min(255, ((col >> 16) & 255) * f) | 0, g = Math.min(255, ((col >> 8) & 255) * f) | 0, b = Math.min(255, (col & 255) * f) | 0;
     return (r << 16) | (g << 8) | b;
 }
-/** Bake the whole grass map once into a canvas texture (cheap: one image per frame) */
+/** Bake the grass into CHUNK x CHUNK tile canvases (one image each, hidden when off screen) */
 function bakeGround(scene) {
-    const W = 960, H = 600, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    const c = cv.getContext('2d'), hw = TILE_WIDTH / 2, hh = TILE_HEIGHT / 2;
-    c.fillStyle = '#24401f'; c.fillRect(0, 0, W, H);
+    const hw = TILE_WIDTH / 2, hh = TILE_HEIGHT / 2;
     const greens = ['#4a7d3a', '#44753a', '#4f8540', '#3f6e35', '#538a43'];
-    for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) {
-        const p = tileCenter(x, y);
-        c.save(); c.beginPath();
-        c.moveTo(p.x, p.y - hh); c.lineTo(p.x + hw, p.y); c.lineTo(p.x, p.y + hh); c.lineTo(p.x - hw, p.y); c.closePath();
-        c.fillStyle = greens[Math.floor(hash(x, y) * greens.length)]; c.fill(); c.clip();
-        // light/dark patches
-        for (let i = 0; i < 3; i++) {
-            c.fillStyle = hash(x, y, i + 10) > 0.5 ? 'rgba(255,255,200,0.07)' : 'rgba(0,30,0,0.10)';
-            c.beginPath(); c.ellipse(p.x + (hash(x, y, i) - 0.5) * 50, p.y + (hash(x, y, i + 3) - 0.5) * 24, 10 + hash(x, y, i + 6) * 12, 5 + hash(x, y, i + 7) * 5, 0, 0, 7); c.fill();
-        }
-        // grass blades
-        c.strokeStyle = 'rgba(120,170,80,0.55)'; c.lineWidth = 1;
-        for (let i = 0; i < 14; i++) {
-            const bx = p.x + (hash(x, y, i + 20) - 0.5) * 56, by = p.y + (hash(x, y, i + 40) - 0.5) * 28;
-            c.beginPath(); c.moveTo(bx, by); c.lineTo(bx + (hash(x, y, i + 60) - 0.5) * 3, by - 3 - hash(x, y, i + 80) * 3); c.stroke();
-        }
-        // occasional flowers / pebbles
-        if (hash(x, y, 99) > 0.8) { c.fillStyle = hash(x, y, 98) > 0.5 ? '#f2e46a' : '#f4f4f4'; for (let i = 0; i < 3; i++) c.fillRect(p.x + (hash(x, y, i + 90) - 0.5) * 36, p.y + (hash(x, y, i + 95) - 0.5) * 14, 2, 2); }
-        if (hash(x, y, 97) > 0.88) { c.fillStyle = '#8c8c7c'; c.beginPath(); c.ellipse(p.x + 10, p.y + 4, 3, 2, 0, 0, 7); c.fill(); }
-        c.restore();
-        c.strokeStyle = 'rgba(0,0,0,0.08)'; c.beginPath();
-        c.moveTo(p.x, p.y - hh); c.lineTo(p.x + hw, p.y); c.lineTo(p.x, p.y + hh); c.lineTo(p.x - hw, p.y); c.closePath(); c.stroke();
-    }
-    // dirt around the Town Center
     const t = townCenter, tc = tileCenter(t.x + 0.5, t.y + 0.5);
-    const grd = c.createRadialGradient(tc.x, tc.y, 10, tc.x, tc.y, 90);
-    grd.addColorStop(0, 'rgba(150,120,80,0.9)'); grd.addColorStop(0.6, 'rgba(140,110,70,0.5)'); grd.addColorStop(1, 'rgba(140,110,70,0)');
-    c.fillStyle = grd; c.beginPath(); c.ellipse(tc.x, tc.y, 100, 52, 0, 0, 7); c.fill();
-    scene.textures.addCanvas('ground', cv);
-    scene.add.image(0, 0, 'ground').setOrigin(0, 0).setDepth(-1);
+    let n = 0;
+    for (let cy0 = 0; cy0 < MAP_SIZE; cy0 += CHUNK) for (let cx0 = 0; cx0 < MAP_SIZE; cx0 += CHUNK) {
+        const x1 = Math.min(MAP_SIZE, cx0 + CHUNK), y1 = Math.min(MAP_SIZE, cy0 + CHUNK);
+        const left = tileCenter(cx0, y1 - 1).x - hw, right = tileCenter(x1 - 1, cy0).x + hw;
+        const top = tileCenter(cx0, cy0).y - hh, bottom = tileCenter(x1 - 1, y1 - 1).y + hh;
+        const W = Math.ceil(right - left), H = Math.ceil(bottom - top);
+        const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+        const c = cv.getContext('2d'); c.translate(-left, -top);
+        for (let y = cy0; y < y1; y++) for (let x = cx0; x < x1; x++) {
+            const p = tileCenter(x, y);
+            c.save(); c.beginPath();
+            c.moveTo(p.x, p.y - hh - 0.5); c.lineTo(p.x + hw + 0.5, p.y); c.lineTo(p.x, p.y + hh + 0.5); c.lineTo(p.x - hw - 0.5, p.y); c.closePath();
+            c.fillStyle = greens[Math.floor(hash(x, y) * greens.length)]; c.fill(); c.clip();
+            for (let i = 0; i < 3; i++) {
+                c.fillStyle = hash(x, y, i + 10) > 0.5 ? 'rgba(255,255,200,0.07)' : 'rgba(0,30,0,0.10)';
+                c.beginPath(); c.ellipse(p.x + (hash(x, y, i) - 0.5) * 50, p.y + (hash(x, y, i + 3) - 0.5) * 24, 10 + hash(x, y, i + 6) * 12, 5 + hash(x, y, i + 7) * 5, 0, 0, 7); c.fill();
+            }
+            c.strokeStyle = 'rgba(120,170,80,0.55)'; c.lineWidth = 1;
+            for (let i = 0; i < 14; i++) {
+                const bx = p.x + (hash(x, y, i + 20) - 0.5) * 56, by = p.y + (hash(x, y, i + 40) - 0.5) * 28;
+                c.beginPath(); c.moveTo(bx, by); c.lineTo(bx + (hash(x, y, i + 60) - 0.5) * 3, by - 3 - hash(x, y, i + 80) * 3); c.stroke();
+            }
+            if (hash(x, y, 99) > 0.8) { c.fillStyle = hash(x, y, 98) > 0.5 ? '#f2e46a' : '#f4f4f4'; for (let i = 0; i < 3; i++) c.fillRect(p.x + (hash(x, y, i + 90) - 0.5) * 36, p.y + (hash(x, y, i + 95) - 0.5) * 14, 2, 2); }
+            if (hash(x, y, 97) > 0.88) { c.fillStyle = '#8c8c7c'; c.beginPath(); c.ellipse(p.x + 10, p.y + 4, 3, 2, 0, 0, 7); c.fill(); }
+            c.restore();
+            c.strokeStyle = 'rgba(0,0,0,0.08)'; c.beginPath();
+            c.moveTo(p.x, p.y - hh); c.lineTo(p.x + hw, p.y); c.lineTo(p.x, p.y + hh); c.lineTo(p.x - hw, p.y); c.closePath(); c.stroke();
+        }
+        if (Math.abs(tc.x - (left + right) / 2) < W / 2 + 110 && Math.abs(tc.y - (top + bottom) / 2) < H / 2 + 60) {  // dirt around TC
+            const grd = c.createRadialGradient(tc.x, tc.y, 10, tc.x, tc.y, 90);
+            grd.addColorStop(0, 'rgba(150,120,80,0.9)'); grd.addColorStop(0.6, 'rgba(140,110,70,0.5)'); grd.addColorStop(1, 'rgba(140,110,70,0)');
+            c.fillStyle = grd; c.beginPath(); c.ellipse(tc.x, tc.y, 100, 52, 0, 0, 7); c.fill();
+        }
+        const key = 'ground' + (n++);
+        scene.textures.addCanvas(key, cv);
+        const img = scene.add.image(left, top, key).setOrigin(0, 0).setDepth(-1);
+        groundChunks.push({ img, x0: left, y0: top, x1: right, y1: bottom });
+    }
 }
 function diamond(g, cx, cy, color, alpha) {
     const p = tileCenter(cx, cy), hw = TILE_WIDTH / 2, hh = TILE_HEIGHT / 2;
@@ -325,19 +458,32 @@ function shadow(g, x, y, w, h) { g.fillStyle(0x000000, 0.22); g.fillEllipse(x, y
 function render() {
     const g = gfx;
     g.clear();
-    if (placing === 'house') {              // show free tiles while placing
-        for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) if (!mapData[y][x]) diamond(g, x, y, 0xffffff, 0.06);
+    const vr = viewRect(80);
+    groundChunks.forEach(c => c.img.setVisible(c.x1 > vr.x0 && c.x0 < vr.x1 && c.y1 > vr.y0 && c.y0 < vr.y1));
+    // visible tile range (iso: check the 4 view corners)
+    const cs = [screenToTile(vr.x0, vr.y0), screenToTile(vr.x1, vr.y0), screenToTile(vr.x0, vr.y1), screenToTile(vr.x1, vr.y1)];
+    const tx0 = Math.max(0, Math.min(...cs.map(c => c.x)) - 1), tx1 = Math.min(MAP_SIZE - 1, Math.max(...cs.map(c => c.x)) + 1);
+    const ty0 = Math.max(0, Math.min(...cs.map(c => c.y)) - 1), ty1 = Math.min(MAP_SIZE - 1, Math.max(...cs.map(c => c.y)) + 3);
+    const vis = (x, y) => { const p = tileCenter(x, y); return p.x > vr.x0 && p.x < vr.x1 && p.y > vr.y0 && p.y < vr.y1 + 60; };
+    if (placing === 'house') {              // show free tiles + hover preview while placing
+        for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) if (!mapData[y][x] && vis(x, y)) diamond(g, x, y, 0xffffff, 0.06);
+        if (hoverTile && inMap(hoverTile.x, hoverTile.y)) diamond(g, hoverTile.x, hoverTile.y, mapData[hoverTile.y][hoverTile.x] ? 0xff3333 : 0x33ff33, 0.45);
     }
     const items = [];
-    for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) {
+    for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) {
+        if (!vis(x, y)) continue;
         const c = mapData[y][x];
         if (c && c.kind === 'house') items.push({ d: tileCenter(x, y).y, draw: () => drawHouse(g, x, y, c.house) });
         else if (c && c.kind !== 'tc') items.push({ d: tileCenter(x, y).y, draw: () => drawNode(g, x, y, c) });
     }
     const tcC = tileCenter(townCenter.x + 0.5, townCenter.y + 0.5);
     items.push({ d: tcC.y + 16, draw: () => drawTC(g) });
-    villagers.forEach(v => items.push({ d: v.y, draw: () => drawVillager(g, v) }));
+    villagers.forEach(v => { if (v.x > vr.x0 && v.x < vr.x1 && v.y > vr.y0 && v.y < vr.y1 + 40) items.push({ d: v.y, draw: () => drawVillager(g, v) }); });
     items.sort((a, b) => a.d - b.d).forEach(i => i.draw());
+    if (dragSel && dragSel.active) {        // selection rectangle
+        const x = Math.min(dragSel.sx, dragSel.ex), y = Math.min(dragSel.sy, dragSel.ey), w = Math.abs(dragSel.ex - dragSel.sx), h = Math.abs(dragSel.ey - dragSel.sy);
+        g.fillStyle(0xffffff, 0.08); g.fillRect(x, y, w, h); g.lineStyle(1.5 / cam.zoom, 0xffffff, 0.9); g.strokeRect(x, y, w, h);
+    }
 }
 function drawNode(g, x, y, c) {
     const p = tileCenter(x, y), frac = c.amount / c.max, s = hash(x, y, 5);
@@ -390,7 +536,7 @@ function drawNode(g, x, y, c) {
                 g.fillStyle(0xfff2a0, 1); g.fillCircle(p.x + r[0] + 1.5, p.y + r[1] - 3.5, sz * 0.07);
             }
         }
-        if (gold && Math.sin(game.loop.time / 300 + x * 3 + y) > 0.97) { g.fillStyle(0xffffff, 0.9); g.fillCircle(p.x + 4, p.y - 8, 1.6); }
+        if (gold && Math.sin(animT / 300 + x * 3 + y) > 0.97) { g.fillStyle(0xffffff, 0.9); g.fillCircle(p.x + 4, p.y - 8, 1.6); }
     }
 }
 function drawTC(g) {
@@ -420,7 +566,7 @@ function drawTC(g) {
     g.fillStyle(0x9e3c26, 1); g.fillTriangle(c.x - w - 6, ry, c.x, ry - rh, c.x - 2, ry - d - 2);
     g.lineStyle(1, 0x4a160c, 0.5); for (let i = 1; i < 4; i++) { const f = i / 4; g.lineBetween(c.x - (w + 6) * (1 - f), ry - rh * f, c.x, ry + d + 3 - (d + 3 + rh) * f); g.lineBetween(c.x + (w + 6) * (1 - f), ry - rh * f, c.x, ry + d + 3 - (d + 3 + rh) * f); }
     // flag
-    const fl = Math.sin(game.loop.time / 200) * 2;
+    const fl = Math.sin(animT / 200) * 2;
     g.lineStyle(2, 0x3a2a1a, 1); g.lineBetween(c.x, ry - rh, c.x, ry - rh - 22);
     g.fillStyle(0x2a5ab0, 1); g.fillTriangle(c.x, ry - rh - 22, c.x + 14, ry - rh - 18 + fl, c.x, ry - rh - 13);
     if (trainQueue > 0) {          // training progress bar
@@ -474,7 +620,7 @@ function spawnFromTC() {
     Sfx.play('train');
 }
 function drawVillager(g, v) {
-    const T = game.loop.time, x = v.x, y = v.y, face = v.face || 1;
+    const T = animT, x = v.x, y = v.y, face = v.face || 1;
     const walking = v.walking, working = v.state === 'gathering' || v.state === 'building';
     const ph = (T / 1000) * 10 + (v.seed || 0) * 6;
     const bob = walking ? Math.abs(Math.sin(ph)) * 2 : 0;
@@ -523,61 +669,112 @@ function drawVillager(g, v) {
 // INPUT
 // ============================================================================
 function villagerAt(px, py) {
-    let best = null, bd = 22;
-    villagers.forEach(v => { const d = Math.hypot(v.x - px, (v.y - 10) - py); if (d < bd) { bd = d; best = v; } });
+    let best = null, bd = 16;
+    villagers.forEach(v => { const d = Math.hypot(v.x - px, (v.y - 12) - py); if (d < bd) { bd = d; best = v; } });
     return best;
 }
+function deselectAll() { villagers.forEach(u => u.selected = false); townCenter.selected = false; }
 function onPointerDown(pointer) {
     const px = pointer.worldX, py = pointer.worldY;
+    if (pointer.rightButtonDown() || pointer.middleButtonDown()) {
+        if (placing) { placing = null; flash('Placement cancelled'); panDrag = null; return; }
+        panDrag = { x: pointer.x, y: pointer.y, sx: cam.scrollX, sy: cam.scrollY, moved: false, right: pointer.rightButtonDown(), wx: px, wy: py };
+        return;
+    }
     Sfx.play('tap', 0.05);
-    const t0 = screenToTile(px, py);
-    if (placing === 'house') {
-        placing = null;
-        const builders = villagers.filter(u => u.selected);
-        if (!inMap(t0.x, t0.y) || mapData[t0.y][t0.x] || !builders.length || !canAfford(HOUSE_COST)) { flash('Can\'t build there'); Sfx.play('error'); return; }
-        pay(HOUSE_COST);
-        const h = { x: t0.x, y: t0.y, progress: 0, done: false };
-        houses.push(h); mapData[t0.y][t0.x] = { kind: 'house', house: h };
-        builders.forEach(u => orderBuild(u, h));
-        return;
-    }
-    const v = villagerAt(px, py);
-    if (v) {
-        townCenter.selected = false;                       // toggle-select villager (tap several to group)
-        v.selected = !v.selected;
-        return;
-    }
-    const t = screenToTile(px, py);
-    if (!inMap(t.x, t.y)) { villagers.forEach(u => u.selected = false); townCenter.selected = false; return; }
-    const cell = mapData[t.y][t.x];
-    let sel = villagers.filter(u => u.selected);
-    if (cell && RES_TYPES[cell.kind]) {
-        if (!sel.length) {         // nobody selected: send the nearest idle villager
-            const p = tileCenter(t.x, t.y);
-            const idle = villagers.filter(u => u.state === 'idle').sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y));
-            sel = idle.slice(0, 1);
-        }
-        sel.forEach(u => orderGather(u, t.x, t.y));
-    } else if (cell && cell.kind === 'tc') {
-        if (sel.length) sel.forEach(u => { if (u.carry > 0) u.state = 'returning'; });
-        else townCenter.selected = !townCenter.selected;   // select TC to train villagers
-    } else if (cell && cell.kind === 'house') {
-        if (!cell.house.done) sel.forEach(u => orderBuild(u, cell.house));
-    } else {
-        sel.forEach(u => orderMove(u, t.x, t.y));
+    if (placing === 'house') { placeHouse(screenToTile(px, py)); return; }
+    dragSel = { sx: px, sy: py, ex: px, ey: py, x: pointer.x, y: pointer.y, active: false, shift: pointer.event.shiftKey };
+}
+function onPointerMove(pointer) {
+    hoverTile = screenToTile(pointer.worldX, pointer.worldY);
+    if (panDrag) {
+        const dx = pointer.x - panDrag.x, dy = pointer.y - panDrag.y;
+        if (Math.hypot(dx, dy) > 6) panDrag.moved = true;
+        if (panDrag.moved) { cam.scrollX = panDrag.sx - dx / cam.zoom; cam.scrollY = panDrag.sy - dy / cam.zoom; }
+    } else if (dragSel) {
+        dragSel.ex = pointer.worldX; dragSel.ey = pointer.worldY;
+        if (Math.hypot(pointer.x - dragSel.x, pointer.y - dragSel.y) > 6) dragSel.active = true;
     }
 }
+function onPointerUp(pointer) {
+    if (panDrag) {
+        const p = panDrag; panDrag = null;
+        if (!p.moved && p.right) rightClick(p.wx, p.wy);
+        return;
+    }
+    if (!dragSel) return;
+    const d = dragSel; dragSel = null;
+    if (d.active) {
+        const x0 = Math.min(d.sx, d.ex), x1 = Math.max(d.sx, d.ex), y0 = Math.min(d.sy, d.ey), y1 = Math.max(d.sy, d.ey);
+        const inside = villagers.filter(v => v.x >= x0 && v.x <= x1 && v.y - 12 >= y0 - 10 && v.y - 12 <= y1 + 10);
+        if (!d.shift) deselectAll();
+        townCenter.selected = false;
+        inside.forEach(v => v.selected = true);
+        return;
+    }
+    leftClick(d.sx, d.sy, d.shift);
+}
+function leftClick(px, py, shift) {
+    const v = villagerAt(px, py);
+    if (v) {
+        townCenter.selected = false;
+        if (shift) v.selected = !v.selected; else { deselectAll(); v.selected = true; }
+        return;
+    }
+    const t = screenToTile(px, py), cell = inMap(t.x, t.y) && mapData[t.y][t.x];
+    if (cell && cell.kind === 'tc' && !shift) { deselectAll(); townCenter.selected = true; return; }
+    if (!shift) deselectAll();     // empty ground / resource: deselect
+}
+/** AoE2-style right-click order for the selection */
+function rightClick(px, py) {
+    const sel = villagers.filter(u => u.selected);
+    if (!sel.length) return;
+    const t = screenToTile(px, py);
+    if (!inMap(t.x, t.y)) return;
+    const cell = mapData[t.y][t.x];
+    Sfx.play('tap', 0.05);
+    if (cell && RES_TYPES[cell.kind]) sel.forEach(u => orderGather(u, t.x, t.y));
+    else if (cell && cell.kind === 'tc') sel.forEach((u, i) => { if (u.carry > 0) u.state = 'returning'; else orderMove(u, t.x, t.y + 2, i); });
+    else if (cell && cell.kind === 'house') { if (!cell.house.done) sel.forEach(u => orderBuild(u, cell.house)); }
+    else sel.forEach((u, i) => orderMove(u, t.x, t.y, i));
+}
+function placeHouse(t0) {
+    const builders = villagers.filter(u => u.selected);
+    if (!inMap(t0.x, t0.y) || mapData[t0.y][t0.x] || !builders.length || !canAfford(HOUSE_COST)) { flash('Can\'t build there'); Sfx.play('error'); return; }
+    placing = null;
+    pay(HOUSE_COST);
+    const h = { x: t0.x, y: t0.y, progress: 0, done: false };
+    houses.push(h); mapData[t0.y][t0.x] = { kind: 'house', house: h };
+    builders.forEach(u => orderBuild(u, h));
+}
+
+// ============================================================================
+// PAUSE + KEYS
+// ============================================================================
+const pauseBtn = document.getElementById('pause-btn'), pauseOv = document.getElementById('pause-overlay');
+function setPaused(p) {
+    paused = p; pauseBtn.textContent = p ? '▶' : '⏸'; pauseOv.style.display = p ? 'flex' : 'none';
+}
+pauseBtn.addEventListener('pointerdown', e => { e.stopPropagation(); setPaused(!paused); });
+document.getElementById('resume-btn').addEventListener('pointerdown', e => { e.stopPropagation(); setPaused(false); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) setPaused(true); });
+window.addEventListener('keydown', e => {
+    if (e.key === 'p' || e.key === 'P') setPaused(!paused);
+    else if (e.key === 'Escape') { if (placing) { placing = null; flash('Placement cancelled'); } else deselectAll(); }
+    else if (e.key === ' ') { e.preventDefault(); if (cam) centerOnTC(); }
+    else if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); townCenter.selected = false; villagers.forEach(u => u.selected = true); }
+});
 
 // ============================================================================
 // COMMAND BAR (DOM, big touch buttons)
 // ============================================================================
 const bar = document.getElementById('command-bar');
+const DEFAULT_INFO = 'Left-click/drag to select · right-click to gather, move or build · wheel zoom · right-drag pan · Space = Town Center · P pause';
 let flashTimer = 0;
 function flash(msg) {
     infoText.setText(msg); clearTimeout(flashTimer);
     flashTimer = setTimeout(() => infoText.setText(DEFAULT_INFO), 1800);
 }
-const DEFAULT_INFO = 'Tap villagers to select, tap a resource to gather. Tap the Town Center to train.';
 let barKey = '';
 function button(id, label, sub, enabled) {
     return `<button class="cmd" data-cmd="${id}" ${enabled ? '' : 'disabled'}><b>${label}</b><small>${sub}</small></button>`;
@@ -594,7 +791,7 @@ function updateBar() {
             `<span class="queue">Queue ${trainQueue}${trainQueue ? ' · ' + pct + '%' : ''}${full && trainQueue ? ' · need House!' : ''}</span>`;
     } else if (sel.length) {
         html = `<span class="sel">${sel.length} villager${sel.length > 1 ? 's' : ''}</span>` +
-            button('house', placing ? 'Tap a tile…' : 'Build House', costText(HOUSE_COST) + ` · +${POP_PER_HOUSE} pop`, canAfford(HOUSE_COST)) +
+            button('house', placing ? 'Click a tile… (Esc)' : 'Build House', costText(HOUSE_COST) + ` · +${POP_PER_HOUSE} pop`, canAfford(HOUSE_COST)) +
             button('deselect', 'Deselect', 'clear selection', true);
     } else {
         html = `<span class="sel">Nothing selected</span>` + button('idle', 'Select Idle', villagers.filter(u => u.state === 'idle').length + ' idle', true);
@@ -609,7 +806,7 @@ bar.addEventListener('pointerdown', e => {
     Sfx.init(); Sfx.play('tap');
     if (cmd === 'train') { if (canAfford(VILLAGER_COST) && trainQueue < QUEUE_MAX) { pay(VILLAGER_COST); trainQueue++; } }
     else if (cmd === 'cancel') { if (trainQueue) { trainQueue--; refund(VILLAGER_COST); if (!trainQueue) trainTimer = 0; } }
-    else if (cmd === 'house') { placing = placing ? null : 'house'; if (placing) flash('Tap a free tile to place the House'); }
+    else if (cmd === 'house') { placing = placing ? null : 'house'; if (placing) flash('Left-click a free tile to place the House · right-click or Esc cancels'); }
     else if (cmd === 'deselect') { villagers.forEach(u => u.selected = false); placing = null; }
     else if (cmd === 'idle') { villagers.forEach(u => u.selected = u.state === 'idle'); }
 });

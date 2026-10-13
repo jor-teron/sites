@@ -12,6 +12,12 @@
     <div id="game-container"></div>
     <!-- Bottom command bar (touch buttons) -->
     <div id="command-bar"></div>
+    <!-- R1a: top bar (resources), info line, minimap, pause -->
+    <div id="topbar"><span id="hud"></span></div>
+    <div id="info"></div>
+    <div id="minimap-wrap"><canvas id="minimap"></canvas></div>
+    <button id="pause-btn" aria-label="Pause">⏸</button>
+    <div id="pause-overlay"><div><h2>Paused</h2><button id="resume-btn">▶ Resume</button><p>P to toggle · camera still moves</p></div></div>
     <!-- Mute toggle -->
     <button id="mute-btn" aria-label="Mute">🔊</button>
     <!-- Phaser library from local vendor folder -->
