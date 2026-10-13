@@ -299,6 +299,20 @@ window.BROWSER_FPS_CONFIG = {
     },
   },
   maps: { default: 'camp', storageKey: 'browser-fps-map' },   // 'camp' | 'island' | 'snow'
+  mapNames: { camp: 'Training Camp', island: 'Island', snow: 'Snow' },
+  // Doors between maps: each entry is one gate on `map` leading to `to`. The return spot on arrival is the gate on the
+  // destination map whose `to` is the map you came from. pos [x, z] (m); face = direction the gate opens toward (player
+  // spawns there, looking that way). Add rows here to link new maps.
+  doors: {
+    promptRadius: 3.2, triggerDepth: 0.35, spawnDist: 3, fadeMs: 600, key: 'KeyE', clear: 4,   // clear: no props this close
+    styles: { tiki: { width: 2.2, height: 3.2, glow: 0xffb24a }, stone: { width: 2.4, height: 3.2, glow: 0x8fd8ff }, metal: { width: 2.4, height: 3.0, glow: 0x5cff9a } },
+    list: [
+      { id: 'island-snow', map: 'island', to: 'snow', pos: [-30, 22], face: [30, -22], style: 'tiki' },
+      { id: 'island-camp', map: 'island', to: 'camp', pos: [30, 22], face: [-30, -22], style: 'tiki' },
+      { id: 'snow-island', map: 'snow', to: 'island', pos: [-40, 28], face: [1, 0], style: 'stone' },
+      { id: 'camp-island', map: 'camp', to: 'island', pos: [18.4, 3], face: [-1, 0], style: 'metal' },
+    ],
+  },
 
   // Effects (both maps). quality: 'high' | 'low' (phones) — or ?quality=low in the URL. Presets override the base values.
   fx: {

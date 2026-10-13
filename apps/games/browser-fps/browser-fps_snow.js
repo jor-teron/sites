@@ -134,6 +134,7 @@ export function buildSnow(scene, cfg, assets, renderer) {
   const colliders = [], placed = [];
   const start = [0, H * cfg.startFrac];
   const blocked = (x, z, gap) => Math.hypot(x - start[0], z - start[1]) < cfg.startClear
+    || (cfg.keepClear || []).some((k) => Math.hypot(x - k[0], z - k[1]) < k[2])
     || Math.hypot(x - lake.x, z - lake.z) < lake.r + 1.2
     || cfg.cabins.some((c) => Math.hypot(x - c.x, z - c.z) < 5)
     || placed.some((p) => Math.hypot(p.x - x, p.z - z) < gap + p.gap);

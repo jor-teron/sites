@@ -10,6 +10,7 @@ import { createGrenades } from './browser-fps_grenades.js';
 import { createAudio } from './browser-fps_audio.js';
 import { buildIsland } from './browser-fps_island.js';
 import { buildSnow } from './browser-fps_snow.js';
+import { createDoors } from './browser-fps_doors.js';
 import { setupIslandLook } from './browser-fps_look.js';
 import { createFx } from './browser-fps_fx.js';
 
@@ -190,7 +191,8 @@ function buildArena() {
 
 let island = null, islandLook = null;
 if (ISLAND) {
-  island = (SNOW ? buildSnow : buildIsland)(scene, { ...IS, look: FX.look ? IS.look : null }, ASSETS, renderer, { water: FX.water, waterFx: FX.water === 'reflect' ? CFG.fx.water : null });
+  const keepClear = CFG.doors.list.filter((d) => d.map === MAP).map((d) => [d.pos[0], d.pos[1], CFG.doors.clear]);
+  island = (SNOW ? buildSnow : buildIsland)(scene, { ...IS, keepClear, look: FX.look ? IS.look : null }, ASSETS, renderer, { water: FX.water, waterFx: FX.water === 'reflect' ? CFG.fx.water : null });
   for (const c of island.colliders) colliders.push(c);
   scene.add(sun.target);
   if (FX.look && IS.look) islandLook = setupIslandLook({ scene, renderer, camera, sun, island, cfg: IS.look, sc: SC, colliders: island.colliders });
@@ -199,7 +201,11 @@ const fx = createFx(scene, FX);
 /** Ground height under (x, z): 0 in the camp, the terrain on the island. */
 const groundAt = ISLAND ? island.heightAt : () => 0;
 const onLand = ISLAND ? island.onLand : () => true;
-const START = ISLAND ? island.start : CFG.player.start;
+// Doors between maps (CFG.doors); arriving through one (?from=<map>) spawns in front of the matching return door
+const doors = createDoors({ scene, map: MAP, cfg: CFG.doors, groundAt, colliders, mapNames: CFG.mapNames });
+const FROM = new URLSearchParams(location.search).get('from');
+const ARRIVAL = FROM ? doors.arrival(FROM) : null;
+const START = ARRIVAL ? [ARRIVAL.x, ARRIVAL.z] : ISLAND ? island.start : CFG.player.start;
 
 // ─── Enemies (humanoid targets, see browser-fps_target.js) ──────────────────
 const enemies = [];
@@ -388,6 +394,7 @@ document.addEventListener('keydown', (e) => {
   if (KEYS.mute.includes(e.code) && !e.repeat) { audio.toggleMute(); return; }
   if (!pointerLocked) return;
   keys[e.code] = true;
+  if (e.code === CFG.doors.key && !e.repeat && nearDoor && !isDead()) useDoor(nearDoor);
   if (KEYS.reload.includes(e.code) && !player.reloading && !nadeAim.holding && player.ammo < MAG_SIZE) startReload();
   if (KEYS.grenade.includes(e.code) && !e.repeat && !isDead()) holdGrenade();
 });
@@ -1263,6 +1270,7 @@ function gameStep(dt) {
     if (stepDist >= CFG.audio.stepEvery) { stepDist = 0; audio.play(SNOW ? 'snowstep' : 'footstep'); }
   }
   updateWeapon(dt);
+  updateDoors(dt);
   updateSpawning(dt);
   updateEnemyAI(dt);
   pickups.update(dt, player.pos, player.pos.y - PLAYER_HEIGHT);
@@ -1331,6 +1339,32 @@ function syncCamera() {
   camera.position.copy(player.pos);
   camera.rotation.set(pitch, yaw, 0);
 }
+// Arrived through a door: face away from it and restore carried state (health, ammo, grenades, score)
+const doorFade = document.getElementById('door-fade'), doorPrompt = document.getElementById('door-prompt');
+let arrivedState = null;
+if (ARRIVAL) {
+  yaw = ARRIVAL.yaw;
+  const c = doors.takeCarry();
+  if (c) {
+    arrivedState = c;
+    player.health = Math.max(1, Math.min(MAX_HEALTH, c.health | 0)); player.ammo = Math.max(0, Math.min(MAG_SIZE, c.ammo | 0));
+    player.grenades = Math.max(0, Math.min(GR.max, c.grenades | 0)); player.kills = c.kills | 0;
+    hpVal.textContent = String(player.health); ammoVal.textContent = String(player.ammo); nadeVal.textContent = String(player.grenades);
+  }
+  doorFade.classList.add('in'); requestAnimationFrame(() => { doorFade.classList.remove('in'); });   // fade in from black
+}
+let nearDoor = null;
+function useDoor(d) {
+  if (doors.going) return;
+  doors.go(d, { health: player.health, ammo: player.ammo, grenades: player.grenades, kills: player.kills || 0 });
+}
+function updateDoors() {
+  nearDoor = doors.update(0, player.pos, clock.elapsedTime);
+  if (nearDoor && nearDoor.through && !doors.going) useDoor(nearDoor);
+  const show = nearDoor && !doors.going;
+  doorPrompt.classList.toggle('hidden', !show);
+  if (show) doorPrompt.textContent = `E — go to ${CFG.mapNames[nearDoor.to] || nearDoor.to}`;
+}
 syncCamera();
 buildBlocked();
 buildReachable();
@@ -1340,7 +1374,7 @@ tick();
 // Expose a tiny debug hook in console
 window.__fps = {
   player, enemies, colliders, scene, camera, fire, vm, startReload,
-  map: MAP, island, get islandLook() { return islandLook; }, fx, fxQuality: FXQ, surfaceOf, groundAt, get frames() { return frames; }, setMap,
+  map: MAP, island, doors, useDoor, get nearDoor() { return nearDoor; }, arrival: ARRIVAL, get arrivedState() { return arrivedState; }, get yaw() { return yaw; }, get islandLook() { return islandLook; }, fx, fxQuality: FXQ, surfaceOf, groundAt, get frames() { return frames; }, setMap,
   // test helpers: run game steps without pointer lock, spawning, line-of-sight
   step: (dt, n = 1) => { for (let i = 0; i < n; i++) { if (isDead()) break; updateScope(dt); gameStep(dt); for (const en of enemies) en.update(dt); } },
   spawnRandomTarget, hasLineOfSight, restartGame,

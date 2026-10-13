@@ -93,3 +93,11 @@
     .map-btn { font: inherit; font-size: 0.95rem; padding: 7px 14px; border-radius: 8px; cursor: pointer;
       background: rgba(255,255,255,0.08); color: #eee; border: 1px solid rgba(255,255,255,0.3); }
     .map-btn.active { background: #2f8f4e; border-color: #8fe0a0; }
+
+/* Doors between maps: fade + loading text, "E" prompt */
+#door-fade { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity 0.5s; z-index: 50; display: flex; align-items: center; justify-content: center; }
+#door-fade.on { opacity: 1; pointer-events: auto; }
+#door-fade.in { opacity: 1; transition: none; }
+#door-fade-text { color: #fff; font: 600 28px system-ui, sans-serif; letter-spacing: 0.08em; }
+#door-prompt { position: fixed; left: 50%; top: 60%; transform: translateX(-50%); color: #fff; font: 600 18px system-ui, sans-serif; background: rgba(0,0,0,0.5); padding: 6px 14px; border-radius: 6px; z-index: 20; pointer-events: none; }
+#door-prompt.hidden { display: none; }

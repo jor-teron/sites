@@ -171,6 +171,7 @@ export function buildIsland(scene, cfg, assets, renderer, opt = {}) {
       if (rand() > weightFn(r / R)) continue;
       if (!open && isOpen(x, z)) continue;
       if (Math.hypot(x - start[0], z - start[1]) < cfg.startClear) continue;
+      if ((cfg.keepClear || []).some((k) => Math.hypot(x - k[0], z - k[1]) < k[2])) continue;
       if (placed.some((p) => Math.hypot(p.x - x, p.z - z) < minGap + p.gap)) continue;
       return [x, z];
     }
