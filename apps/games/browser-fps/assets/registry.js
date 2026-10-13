@@ -11,7 +11,7 @@
  * Any failure (missing file, bad module, network) logs a warning and falls back to the built-in default.
  */
 const DEFAULTS = {
-  gun: 'guns/rifle_mk2',
+  gun: 'guns/rifle_mk3',
   arms: 'characters/arms_mk2',
   enemy: 'enemies/soldier_hq',
   medkit: 'pickups/medkit_basic',
