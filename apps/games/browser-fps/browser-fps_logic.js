@@ -9,6 +9,7 @@ import { createPickups } from './browser-fps_pickups.js';
 import { createGrenades } from './browser-fps_grenades.js';
 import { createAudio } from './browser-fps_audio.js';
 import { buildIsland } from './browser-fps_island.js';
+import { buildSnow } from './browser-fps_snow.js';
 import { setupIslandLook } from './browser-fps_look.js';
 import { createFx } from './browser-fps_fx.js';
 
@@ -35,14 +36,15 @@ const RELOAD_TIME = CFG.weapon.reloadTime;
 const HIT_DAMAGE = CFG.weapon.hitDamage;
 const MAX_HEALTH = CFG.player.maxHealth;
 // Map: 'camp' (Training Camp, walled box) or 'island'. ?map=island in the URL overrides the saved choice.
-const MAPS = ['camp', 'island'];
+const MAPS = ['camp', 'island', 'snow'];
 const MAP = (() => {
   const q = new URLSearchParams(location.search).get('map');
   const m = q || localStorage.getItem(CFG.maps.storageKey) || CFG.maps.default;
   return MAPS.includes(m) ? m : 'camp';
 })();
-const IS = CFG.island;
-const ISLAND = MAP === 'island';
+const SNOW = MAP === 'snow';
+const IS = SNOW ? CFG.snow : CFG.island;   // terrain-map config (island or snow)
+const ISLAND = MAP === 'island' || SNOW;   // terrain map (heightfield, props, no camp walls)
 // Island: a square world box around the circle (grid / bounds), no walls or cover boxes
 const ARENA = ISLAND ? { ...CFG.arena, w: 2 * (IS.radius + IS.wade + 2), d: 2 * (IS.radius + IS.wade + 2), covers: [] } : CFG.arena;
 // Effects quality ('high' | 'low'); ?quality=low in the URL overrides the config
@@ -188,7 +190,7 @@ function buildArena() {
 
 let island = null, islandLook = null;
 if (ISLAND) {
-  island = buildIsland(scene, { ...IS, look: FX.look ? IS.look : null }, ASSETS, renderer, { water: FX.water, waterFx: FX.water === 'reflect' ? CFG.fx.water : null });
+  island = (SNOW ? buildSnow : buildIsland)(scene, { ...IS, look: FX.look ? IS.look : null }, ASSETS, renderer, { water: FX.water, waterFx: FX.water === 'reflect' ? CFG.fx.water : null });
   for (const c of island.colliders) colliders.push(c);
   scene.add(sun.target);
   if (FX.look && IS.look) islandLook = setupIslandLook({ scene, renderer, camera, sun, island, cfg: IS.look, sc: SC, colliders: island.colliders });
@@ -511,7 +513,8 @@ function collideWorld(pos, vel, dt) {
   }
 
   // Soft arena bounds (inside outer walls already collide, but clamp as safety)
-  if (ISLAND) {   // ocean boundary: wade out a little, then blocked
+  if (ISLAND && island.clampPos) island.clampPos(pos);   // snow: soft square boundary up the snow banks
+  else if (ISLAND) {   // ocean boundary: wade out a little, then blocked
     const r = Math.hypot(pos.x, pos.z), m = island.wadeR;
     if (r > m) { pos.x *= m / r; pos.z *= m / r; }
   } else {
@@ -926,10 +929,11 @@ const fxPoint = new THREE.Vector3(), fxNormal = new THREE.Vector3();
 function surfaceOf(c, p) {
   if (!c) {
     if (!ISLAND) return 'concrete';
+    if (island.surfaceAt) return island.surfaceAt(p);
     const r = Math.hypot(p.x, p.z);
     return r > IS.radius * IS.beachFrac - 1 ? 'sand' : r < IS.radius * 0.45 ? 'dirt' : 'grass';
   }
-  if (c.prop === 'palm_tree') return 'wood';
+  if (c.prop === 'palm_tree' || c.prop === 'pine_tree' || c.prop === 'cabin') return 'wood';
   if (c.prop === 'rock_boulder') return 'rock';
   if (c.prop) return 'rock';
   if (c.max.y <= 0.05) return 'concrete';                                     // camp floor
@@ -1256,7 +1260,7 @@ function gameStep(dt) {
   // footsteps: one every audio.stepEvery units walked on the ground
   if (player.onGround) {
     stepDist += Math.hypot(player.vel.x, player.vel.z) * dt;
-    if (stepDist >= CFG.audio.stepEvery) { stepDist = 0; audio.play('footstep'); }
+    if (stepDist >= CFG.audio.stepEvery) { stepDist = 0; audio.play(SNOW ? 'snowstep' : 'footstep'); }
   }
   updateWeapon(dt);
   updateSpawning(dt);
@@ -1291,7 +1295,7 @@ function tick(now = performance.now()) {
   frames++;
   const dt = Math.min(clock.getDelta(), 0.05);
   if (ISLAND) {
-    island.update(clock.elapsedTime);
+    island.update(clock.elapsedTime, camera.position);
     // shadow box follows the player (island is bigger than the shadow camera)
     sun.target.position.set(player.pos.x, 0, player.pos.z);
     sun.position.set(player.pos.x + SC.sunPos[0], SC.sunPos[1], player.pos.z + SC.sunPos[2]);

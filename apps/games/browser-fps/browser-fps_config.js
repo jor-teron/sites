@@ -270,7 +270,35 @@ window.BROWSER_FPS_CONFIG = {
       shadowMapSize: 2048, shadowExtent: 32, shadowFar: 90,
     },
   },
-  maps: { default: 'camp', storageKey: 'browser-fps-map' },   // 'camp' | 'island'
+  // Snow map (?map=snow): ~100×100 m valley, soft snow-bank boundary. Same look system as the island (look.*).
+  snow: {
+    half: 50,            // half size of the playable square (m)
+    seed: 2026,
+    bankWidth: 7, bankHeight: 6, walkIntoBank: 2.5,   // edge banks/cliffs: width, height; player can climb this far into them
+    hillHeight: 3.4, terrainCell: 1, apron: 22,
+    radius: 50, wade: 0, beachFrac: 0.86, waterLevel: -99,   // shared-code fields (world box, wading off)
+    startFrac: 0.78, startClear: 6,
+    lake: { x: -14, z: -4, r: 11, shore: 6, iceY: 0.05 },
+    ice: { color: 0xdff2ff, roughness: 0.12, reflect: 1.0, texRepeat: 3, skyTop: 0x6d93c4, skyHorizon: 0xd8e6f2 },
+    cabins: [{ x: 14, z: 6, w: 5, d: 4, yaw: 0 }, { x: 22, z: -14, w: 4.5, d: 3.8, yaw: Math.PI / 2 }, { x: -24, z: 22, w: 5.5, d: 4.2, yaw: Math.PI }, { x: 6, z: -28, w: 4.5, d: 4, yaw: -Math.PI / 2 }],
+    pineDensity: 0.0075, bankPines: 70, rockDensity: 0.0028,   // per m² of the 100×100 square
+    propShadows: true,
+    wind: { strength: 0.16, speed: 1.1, gust: 0.4 },
+    snowfall: { enabled: true, count: 2600, box: [36, 18, 36], speed: 1.1, drift: 0.35, size: 0.09, alpha: 0.95 },
+    colors: { snow: 0xf4f8fc, snowShade: 0xb9cbe0, cliff: 0x6e7680, rock: 0x7d828a },
+    scene: {             // cold blue-white light, soft shadows, haze
+      background: 0xd3dfea, fogNear: 18, fogFar: 95,
+      sunColor: 0xe6efff, sunIntensity: 2.2, sunPos: [-18, 20, -26], hemiSky: 0xd6e6ff, hemiGround: 0x9aa6b8, hemiIntensity: 1.0,
+      ambientIntensity: 0.35, toneMappingExposure: 0.95, shadowMapSize: 2048, shadowExtent: 32, shadowFar: 90,
+    },
+    look: {
+      softShadows: true, shadowRadius: 4, shadowBias: -0.0004, shadowNormalBias: 0.04, shadowSnap: true,
+      sky: { enabled: true, top: 0x7c9cc8, horizon: 0xd3dfea, sunGlow: 0xf2f6ff, glowSize: 0.18, glowStrength: 0.35 },
+      flare: { enabled: true, size: 200, color: 0xeef4ff, ghosts: 3, ghostAlpha: 0.12, maxAlpha: 0.6 },
+      grass: { enabled: false },
+    },
+  },
+  maps: { default: 'camp', storageKey: 'browser-fps-map' },   // 'camp' | 'island' | 'snow'
 
   // Effects (both maps). quality: 'high' | 'low' (phones) — or ?quality=low in the URL. Presets override the base values.
   fx: {
@@ -305,6 +333,12 @@ window.BROWSER_FPS_CONFIG = {
                            { count: 2, speed: 6, spread: 0.9, size: 0.04, life: 0.14, gravity: 2, drag: 1, colors: [0xffe0a0] },
                            { count: 4, speed: 0.8, spread: 0.6, up: 0.4, size: 0.22, life: 0.8, gravity: 0.3, drag: 3, grow: 2, alpha: 0.65, colors: [0xc89a84] }],
                   mark: { color: 0x2a1a14, opacity: 0.75 } },
+      snow:     { layers: [{ count: 10, speed: 1.5, spread: 0.8, up: 0.9, size: 0.17, life: 0.8, gravity: 1.2, drag: 3, grow: 1.8, alpha: 0.8, colors: [0xffffff, 0xeef4fa, 0xdfe8f2] },
+                           { count: 6, speed: 3, spread: 0.6, up: 1.0, size: 0.03, life: 0.5, gravity: 8, drag: 0.5, colors: [0xffffff] }],
+                  mark: { color: 0x8a9aae, opacity: 0.45 } },
+      ice:      { layers: [{ count: 7, speed: 4, spread: 0.8, up: 0.5, size: 0.04, life: 0.5, gravity: 9, drag: 0.4, colors: [0xe8f6ff, 0xbfe2f2, 0xffffff] },
+                           { count: 3, speed: 0.8, spread: 0.6, up: 0.4, size: 0.18, life: 0.6, gravity: 0.3, drag: 3, grow: 2, alpha: 0.5, colors: [0xf0f8ff] }],
+                  mark: { color: 0xf4fbff, opacity: 0.7 } },
       wood:     { layers: [{ count: 7, speed: 3.2, spread: 0.8, up: 0.5, size: 0.055, life: 0.7, gravity: 8, drag: 0.6, colors: [0x6a4a2a, 0x8a6a45, 0xb08a5a] },
                            { count: 2, speed: 0.6, spread: 0.6, up: 0.3, size: 0.1, life: 0.5, gravity: 0.5, drag: 3, grow: 1.5, alpha: 0.4, colors: [0xa89070] }],
                   mark: { color: 0x2a1c10, opacity: 0.8 } },

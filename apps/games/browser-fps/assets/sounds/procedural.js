@@ -61,6 +61,11 @@ export function make(ctx) {
     },
     medkit(out, nb, t) { tone(out, { t, type: 'triangle', f: 660, peak: 0.3, dec: 0.12 }); tone(out, { t: t + 0.1, type: 'triangle', f: 990, peak: 0.3, dec: 0.25 }); },
     grenadePickup(out, nb, t) { click(out, nb, t, 2000, 0.5); click(out, nb, t + 0.07, 2800, 0.4); tone(out, { t: t + 0.05, type: 'triangle', f: 520, peak: 0.2, dec: 0.15 }); },
+    snowstep(out, nb, t) {   // crunch: low thump + gritty band-passed crackle
+      noise(out, nb, { t, f: r(250, 380), peak: 0.28, att: 0.006, dec: 0.09 });
+      noise(out, nb, { t: t + 0.01, type: 'bandpass', f: r(1600, 2400), f2: r(900, 1200), q: 1.6, peak: 0.3, att: 0.01, dec: 0.16, rate: r(0.8, 1.1) });
+      noise(out, nb, { t: t + 0.05, type: 'highpass', f: 3000, peak: 0.08, att: 0.005, dec: 0.06 });
+    },
     footstep(out, nb, t) { noise(out, nb, { t, f: r(350, 500), peak: 0.35, att: 0.004, dec: 0.07 }); },
   };
 }
