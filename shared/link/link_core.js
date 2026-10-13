@@ -13,6 +13,9 @@
   Wire protocol (JSON objects, key t): see README.md. Files: link_files.js.
   Events: status, devices, message, file, progress, open, close, bye,
   raw(msg, from, conn) for any other JSON message (Gamepad keys, rumble).
+  Health (2026-10-13): the join side counts as connected only after the host's 'ready'
+  ack (S.acked), not on bare DataChannel open. Both sides ping every PING_MS; a link with
+  no data for DEAD_MS is closed (host: dropped from devices; join: reconnects with backoff).
   Borrowed link (one-connection release): a page inside a phone Hub's app frame
   (parent sets window.__hubRemote) does NOT make its own peer: window.SharedLink
   becomes a thin proxy of window.parent.SharedLink (borrowed: true). join() with the
@@ -60,6 +63,8 @@
   var ID_RETRY_MS = [1000, 2000, 3000, 5000, 5000, 8000, 10000, 10000, 15000, 15000];
   var NET_RETRY_MS = [2000, 4000, 8000, 15000, 30000];
 
+  var PING_MS = 5000, DEAD_MS = 16000;
+
   var listeners = {};
   var loading = null;
 
@@ -106,6 +111,7 @@
     role: '', prefix: '', code: '', peer: null, timer: 0, idRetry: 0, netRetry: 0,
     links: new Map(),      // peer id -> { conn, name, legacy }
     hostConn: null,        // join role: the conn to the host
+    acked: false,          // join role: host answered 'ready' on the current conn
     devices: [],           // last known list [{id,name,online}]
     opts: {}
   };
@@ -113,6 +119,7 @@
   function status(text, state) { S.status = text; emit('status', text, state || ''); }
 
   function destroy() {
+    S.acked = false;
     S.hostConn = null;   // its close event must not schedule a rejoin after pause()
     clearTimeout(S.timer);
     S.timer = 0;
@@ -144,7 +151,7 @@
     var md = conn.metadata || {};
     var old = S.links.get(id);
     if (old && old.conn !== conn) { try { old.conn.close(); } catch (_) { /* gone */ } }
-    var rec = { conn: conn, name: String(md.name || '').slice(0, 40), legacy: false };
+    var rec = { conn: conn, name: String(md.name || '').slice(0, 40), legacy: false, last: Date.now() };
     S.links.set(id, rec);
     conn.on('open', function () { safeSend(conn, { t: 'ready' }); broadcastDevices(); emit('open', id); });
     conn.on('data', function (data) { onData(conn, rec, data); });
@@ -172,6 +179,9 @@
     var msg = data;
     if (typeof data === 'string') { try { msg = JSON.parse(data); } catch (_) { return; } }
     if (!msg || typeof msg !== 'object') return;
+    rec.last = Date.now();
+    if (msg.t === 'ping') { safeSend(conn, { t: 'pong' }); return; }
+    if (msg.t === 'pong') return;
     var from = conn.peer;
     if (msg.t === 'hello' || msg.t === 'name') {
       if (msg.name) rec.name = String(msg.name).slice(0, 40);
@@ -179,8 +189,8 @@
       if (S.role === 'host') broadcastDevices();
       return;
     }
-    if (msg.t === 'ready') { status('Connected', 'linked'); return; }
-    if (msg.t === 'devices') { S.devices = Array.isArray(msg.list) ? msg.list : []; emit('devices', S.devices); return; }
+    if (msg.t === 'ready') { ack(); return; }
+    if (msg.t === 'devices') { if (S.role === 'join') ack(); S.devices = Array.isArray(msg.list) ? msg.list : []; emit('devices', S.devices); return; }
     if (msg.t === 'bye') { emit('bye', from, msg); try { conn.close(); } catch (_) { /* gone */ } return; }
     if (window.SharedLinkFiles && SharedLinkFiles.handle(msg, from)) return;
     if (msg.t === 'msg') {
@@ -276,6 +286,32 @@
     return loadPeer().then(function () { startHost(false); return S.code; });
   }
 
+  /* Join side: the host answered on this conn → really connected. */
+  function ack() {
+    if (S.role !== 'join' || S.acked) return;
+    S.acked = true;
+    S.netRetry = 0;
+    markOk(S.code);
+    status('Connected', 'linked');
+    emit('open', 'host');
+  }
+
+  /* ---------- heartbeat (both roles) ---------- */
+  setInterval(function () {
+    var now = Date.now();
+    S.links.forEach(function (l, id) {
+      if (l.legacy || !l.conn || !l.conn.open) return;
+      if (now - (l.last || now) > DEAD_MS) {
+        // Dead link (other side slept / reloaded without bye): close it for real.
+        try { l.conn.close(); } catch (_) { /* gone */ }
+        if (S.role === 'host' && S.links.get(id) === l) { S.links.delete(id); broadcastDevices(); emit('close', id); }
+        else if (S.role === 'join' && S.hostConn === l.conn) dropHost(l.conn);
+        return;
+      }
+      safeSend(l.conn, { t: 'ping' });
+    });
+  }, PING_MS);
+
   /* ---------- join ---------- */
 
   var JOIN_KEY = 'shared-link-join-code';
@@ -330,16 +366,23 @@
       var name = window.SharedLinkDevices ? SharedLinkDevices.name() : '';
       var conn = p.connect(S.prefix + S.code, { reliable: true, serialization: 'json', metadata: Object.assign({ kind: 'link', name: name }, S.opts.meta || {}) });
       S.hostConn = conn;
-      var rec = { conn: conn, name: 'Host' };
+      var rec = { conn: conn, name: 'Host', last: Date.now() };
       S.links = new Map([['host', rec]]);
-      conn.on('open', function () { S.netRetry = 0; markOk(S.code); safeSend(conn, { t: 'hello', name: name }); emit('open', 'host'); });
-      conn.on('data', function (d) { onData(conn, rec, d); });
-      conn.on('close', function () {
-        if (S.hostConn !== conn) return;
-        S.hostConn = null;
-        emit('close', 'host');
-        if (S.role === 'join') { status('Link lost — reconnecting…', 'retry'); retry(NET_RETRY_MS[Math.min(S.netRetry++, NET_RETRY_MS.length - 1)]); }
+      S.acked = false;
+      // Not "connected" yet: wait for the host's 'ready' (ack). Resend hello until it comes.
+      conn.on('open', function () {
+        rec.last = Date.now();
+        status('Waiting for Hub to answer…', 'starting');
+        var n = 0;
+        (function hello() {
+          if (S.hostConn !== conn || S.acked) return;
+          if (n++ >= 4) { dropHost(conn); return; }   // host never answered: rejoin
+          safeSend(conn, { t: 'hello', name: name });
+          setTimeout(hello, 2500);
+        })();
       });
+      conn.on('data', function (d) { onData(conn, rec, d); });
+      conn.on('close', function () { dropHost(conn); });
     });
     p.on('error', function (err) {
       if (S.peer !== p) return;
@@ -351,6 +394,16 @@
     });
   }
 
+  /* Join side: lose the host conn → not connected, reconnect with backoff. */
+  function dropHost(conn) {
+    if (S.hostConn !== conn) return;
+    S.hostConn = null;
+    S.acked = false;
+    try { conn.close(); } catch (_) { /* gone */ }
+    emit('close', 'host');
+    if (S.role === 'join') { status('Link lost — reconnecting…', 'retry'); retry(NET_RETRY_MS[Math.min(S.netRetry++, NET_RETRY_MS.length - 1)]); }
+  }
+
   /* Manual Disconnect: the only thing that ends a link (says bye, forgets join code). */
   function stop(keepCode) {
     var role = S.role;
@@ -359,6 +412,7 @@
     S.links.forEach(function (l) { if (!l.legacy) conns.push(l.conn); });
     S.links = new Map();
     S.hostConn = null;
+    S.acked = false;
     S.role = role === 'join' ? '' : role;
     if (role === 'join' && !keepCode) drop(JOIN_KEY);
     // Destroy only the peer we stopped: a join/host started right after must survive.
@@ -409,6 +463,9 @@
     get status() { return S.status || ''; },
     get devices() { return S.devices.slice(); },
     get live() { return !!(S.peer && !S.peer.destroyed); },
-    get connected() { return targets().some(function (c) { return c.open; }); }
+    get connected() {
+      if (S.role === 'join') return !!(S.acked && S.hostConn && S.hostConn.open);
+      return targets().some(function (c) { return c.open; });
+    }
   };
 })();

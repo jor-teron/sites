@@ -8,7 +8,7 @@
  *     hub-controller.js — never the Gamepad (that is the home tile, next release);
  *   - while the Gamepad is open in the frame the bar gets ⛶ Full screen and ⚙ Gamepad
  *     settings (posted into the frame as {type:'ctrl-settings'});
- *   - menu item "Disconnect from desktop Hub": manual Disconnect (bye, forget code),
+ *   - Disconnect (button in the 🎮 Devices popover, hub_linkstate.js): manual Disconnect (bye, forget code),
  *     then reload as a normal host Hub. Reloads otherwise rejoin from the saved code.
  */
 (function () {
@@ -19,7 +19,6 @@
   const frame = document.getElementById('app-frame');
   const right = document.querySelector('.header-right');
   const ctrlBtn = document.getElementById('ctrl-btn');
-  const menu = document.getElementById('menu');
 
   function btn(id, text, label) {
     const b = document.createElement('button');
@@ -73,21 +72,11 @@
 
   // 🎮 click → Devices popover (hub-controller.js remote branch). Do not open Gamepad here.
 
-  /* ---------- menu: manual Disconnect ---------- */
+  /* ---------- manual Disconnect (button lives in the 🎮 popover: hub_linkstate.js) ---------- */
   function disconnect() {
     SharedLink.stop();   // bye + forget 'shared-link-join-code'
     setTimeout(() => location.replace(location.pathname), 300);
   }
-  function addMenuItem() {
-    if (!menu || menu.querySelector('#rm-disc')) return;
-    const b = document.createElement('button');
-    b.type = 'button'; b.id = 'rm-disc'; b.className = 'menu-item rm-disc';
-    b.textContent = '⏏ Disconnect from desktop Hub';
-    b.addEventListener('click', (e) => { e.stopPropagation(); disconnect(); });
-    menu.appendChild(b);
-  }
-  if (menu) new MutationObserver(addMenuItem).observe(menu, { childList: true });
-  addMenuItem();
 
   /* ---------- join ---------- */
   SharedLink.join({ prefix: 'jtsites-', code: R.code, meta: { pad: 1 } });

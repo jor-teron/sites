@@ -262,3 +262,11 @@ width: auto;
 .rm-dot { width: 10px; height: 10px; border-radius: 50%; background: #d9534f; }
 .rm-hub.connected .rm-dot { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
 .rm-disc { border-top: 1px solid rgba(255,255,255,.15); }   /* plain row, not error-red */
+
+/* hub_linkstate.js — popover state row (New code / Disconnect) + device count badge */
+.ls-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.15); }
+.ls-info { flex: 1; min-width: 120px; font-size: 15px; }
+.ls-btn { min-height: 48px; padding: 0 16px; border: 0; border-radius: 12px; background: #2d6cdf; color: #fff; font-size: 16px; cursor: pointer; }
+.ls-btn.ls-disc { background: #444b57; }
+#ctrl-btn { position: relative; }
+.ls-count { position: absolute; top: -2px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #2ecc71; color: #000; font: 700 12px/18px system-ui, sans-serif; text-align: center; pointer-events: none; }
