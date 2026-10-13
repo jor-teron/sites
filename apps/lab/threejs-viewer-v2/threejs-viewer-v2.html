@@ -1,0 +1,57 @@
+<!--
+  File: threejs-viewer-v2.html
+  Project: threejs-viewer-v2
+  Role: Page shell. Drop a .js file, paste code, or load a repo asset by URL and view it.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Three.js Viewer v2</title>
+  <link rel="stylesheet" href="threejs-viewer-v2.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+<div id="app">
+  <div id="view">
+    <div id="hud">
+      <span id="tris">0 tris</span>
+      <label><input type="checkbox" id="opt-grid" checked> Grid</label>
+      <label><input type="checkbox" id="opt-wire"> Wireframe</label>
+      <label><input type="checkbox" id="opt-spin"> Spin</label>
+      <button id="btn-frame">Frame</button>
+      <button id="btn-shot">Screenshot</button>
+      <button id="btn-glb">Export GLB</button>
+    </div>
+    <div id="dropzone">Drop a .js file to run it</div>
+  </div>
+  <div id="side">
+    <div class="bar">
+      <button id="btn-run" class="run">▶ Run</button>
+      <button id="btn-open">Open file</button>
+      <button id="btn-save">Save</button>
+      <button id="btn-reset">Reset</button>
+      <button id="btn-dl">Download .js</button>
+      <input type="file" id="file" accept=".js,.mjs,text/javascript" hidden>
+    </div>
+    <div class="bar">
+      <input id="url" type="text" placeholder="../../games/browser-fps/assets/guns/rifle_mk3.js">
+      <button id="btn-url">Load URL</button>
+    </div>
+    <textarea id="editor" spellcheck="false"></textarea>
+    <div id="status">Ready. Paste code or drop a .js file, then press Run (Ctrl+Enter).</div>
+    <pre id="errors" hidden></pre>
+    <div id="hint">Module code (import/export) runs as a real ES module. Plain code gets THREE, scene, hero, setModel(), setStatus() and helpers box cyl sph cone orb cap ring cone2. Return or export an Object3D or a build function.</div>
+  </div>
+</div>
+<script type="module" src="threejs-viewer-v2.js"></script>
+</body>
+</html>

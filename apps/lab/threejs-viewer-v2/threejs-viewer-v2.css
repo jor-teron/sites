@@ -1,0 +1,24 @@
+/* File: threejs-viewer-v2.css — layout and theme for the viewer. */
+html, body { margin: 0; height: 100%; background: #0b0d16; color: #dde; font: 13px system-ui, sans-serif; }
+#app { display: flex; height: 100vh; }
+#view { flex: 1; position: relative; min-width: 0; }
+#view canvas { display: block; }
+#hud { position: absolute; top: 8px; left: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  background: rgba(10,12,24,.75); padding: 6px 10px; border-radius: 8px; z-index: 2; }
+#tris { font-weight: 600; color: #8fd; min-width: 80px; }
+#dropzone { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font-size: 22px;
+  background: rgba(40,120,255,.25); border: 3px dashed #6af; z-index: 3; pointer-events: none; }
+#dropzone.on { display: flex; }
+#side { width: 440px; display: flex; flex-direction: column; background: #151827; border-left: 1px solid #262a40; }
+.bar { display: flex; gap: 6px; padding: 8px; border-bottom: 1px solid #262a40; }
+.bar input[type=text] { flex: 1; background: #0e1020; color: #dde; border: 1px solid #333a5a; border-radius: 5px; padding: 5px; }
+button { background: #2a3050; color: #eef; border: 0; border-radius: 5px; padding: 6px 10px; cursor: pointer; }
+button:hover { background: #3a4270; }
+button.run { background: #2f6fd8; font-weight: 700; }
+#editor { flex: 1; background: #0e1020; color: #d8dcf0; border: 0; padding: 10px; resize: none; outline: none;
+  font: 13px/1.45 Consolas, 'Fira Code', monospace; white-space: pre; tab-size: 2; }
+#status { padding: 6px 10px; border-top: 1px solid #262a40; }
+#status.ok { color: #7e7; } #status.err { color: #f77; font-weight: 600; }
+#errors { margin: 0; max-height: 34vh; overflow: auto; background: #3a0d14; color: #ffd5d5; padding: 10px;
+  font: 13px/1.4 Consolas, monospace; white-space: pre-wrap; border-top: 3px solid #f44; }
+#hint { padding: 6px 10px 10px; color: #889; font-size: 11px; }
