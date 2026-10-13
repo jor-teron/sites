@@ -33,3 +33,6 @@ button.run { background: #2f6fd8; font-weight: 700; }
   #app.code-hidden #view { flex: 1; }
   #app.code-hidden #side { display: none; }
 }
+#anim { display: inline-flex; gap: 4px; align-items: center; }
+#anim[hidden] { display: none; }
+#clip { background: #0e1020; color: #dde; border: 1px solid #333a5a; border-radius: 5px; padding: 5px; }

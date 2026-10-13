@@ -2,7 +2,7 @@
  * File: threejs-viewer-v2.js
  * Project: threejs-viewer-v2
  * Role: Viewer + runner. Runs pasted/dropped/URL-loaded Three.js code as a real ES module (blob URL)
- * when it has import/export, otherwise as plain code with THREE, scene, hero, setModel(), setStatus()
+ * when it has import/export, otherwise as plain code with THREE, scene, hero, setModel(), setAnimations(), setStatus()
  * and box/cyl/sph/cone/orb/cap/ring/cone2 helpers. Shows every error (syntax, runtime, async) with a line number.
  */
 import * as THREE from 'three';
@@ -58,7 +58,42 @@ document.getElementById('btn-code').onclick = (e) => {
   const hidden = document.getElementById('app').classList.toggle('code-hidden');
   e.target.textContent = hidden ? 'Show code' : 'Hide code';
 };
+/* ---------------- animation ---------------- */
+let mixer = null, clips = [], action = null, paused = false;
+const clock = new THREE.Clock();
+function stopAnim() { if (mixer) { mixer.stopAllAction(); mixer.uncacheRoot(mixer.getRoot()); } mixer = null; clips = []; action = null; updateClipUI(); }
+function addClips(list, root) {
+  if (!Array.isArray(list)) return;
+  for (const c of list) if (c && Array.isArray(c.tracks) && !clips.includes(c)) clips.push(c);
+  if (!clips.length) return;
+  if (!mixer) mixer = new THREE.AnimationMixer(content);
+  if (root && !root.animations?.length) root.animations = list;
+}
+function setAnimations(list) { addClips(list); startAnim(); return clips; }
+function playClip(i) {
+  if (!mixer || !clips[i]) return;
+  if (action) action.stop();
+  action = mixer.clipAction(clips[i]); action.reset().play(); action.paused = paused;
+  $('clip').value = String(i);
+}
+function startAnim() {
+  updateClipUI();
+  if (!clips.length) return;
+  const i = clips.findIndex((c) => c.name === 'idle');
+  playClip(i >= 0 ? i : 0);
+}
+function updateClipUI() {
+  const sel = $('clip'); sel.innerHTML = '';
+  clips.forEach((c, i) => sel.add(new Option(c.name || `clip ${i + 1}`, String(i))));
+  $('anim').hidden = !clips.length;
+}
+$('clip').onchange = (e) => playClip(+e.target.value);
+$('btn-play').onclick = () => {
+  paused = !paused; if (action) action.paused = paused;
+  $('btn-play').textContent = paused ? '▶' : '❚❚';
+};
 renderer.setAnimationLoop(() => {
+  const dt = clock.getDelta(); if (mixer) mixer.update(dt);
   if ($('opt-spin').checked) content.rotation.y += 0.005;
   controls.update(); renderer.render(scene, camera);
 });
@@ -129,20 +164,24 @@ function disposeTree(o) {
 function clearContent() {
   for (const c of [...content.children]) { content.remove(c); disposeTree(c); }
   content.rotation.set(0, 0, 0);
+  stopAnim();
 }
 function setModel(obj) {
   if (!obj || !obj.isObject3D) throw new TypeError('setModel() needs a THREE.Object3D (Mesh, Group, Scene...)');
   for (const c of [...content.children]) if (c !== hero) { content.remove(c); disposeTree(c); }
+  stopAnim();
   content.add(obj);
+  if (obj.animations?.length) setAnimations(obj.animations);
   return obj;
 }
 async function adopt(v, depth = 0) {
   if (v == null || depth > 3) return;
   if (typeof v.then === 'function') return adopt(await v, depth + 1);
-  if (v.isObject3D) { if (v.parent !== content) content.add(v); return; }
+  if (v.isObject3D) { if (v.parent !== content) content.add(v); addClips(v.animations); return; }
   if (typeof v === 'function') return adopt(await v(THREE, scene), depth + 1);
   if (typeof v.build === 'function') return adopt(await v.build(THREE, scene), depth + 1);
   if (typeof v.create === 'function') return adopt(await v.create(THREE, scene), depth + 1);
+  if (Array.isArray(v.animations)) for (const k of ['model', 'mesh', 'group', 'object', 'scene']) if (v[k] && v[k].isObject3D) { addClips(v.animations, v[k]); return adopt(v[k], depth + 1); }
   for (const k of ['model', 'mesh', 'group', 'object', 'scene']) if (v[k] && v[k].isObject3D) return adopt(v[k], depth + 1);
 }
 function stats() {
@@ -208,7 +247,7 @@ async function run(label) {
   try {
     if (isModule(src)) {
       currentBlob = URL.createObjectURL(new Blob([rewriteRelative(src, baseURL)], { type: 'text/javascript' }));
-      window.__viewer = { THREE, scene, hero, setModel, setStatus, camera, renderer, ...helpers };
+      window.__viewer = { THREE, scene, hero, setModel, setAnimations, setStatus, camera, renderer, ...helpers };
       let mod;
       try { mod = await import(currentBlob); }
       catch (e) {
@@ -219,18 +258,18 @@ async function run(label) {
       await adopt(v);
     } else {
       currentBlob = '';
-      const names = ['THREE', 'scene', 'hero', 'setModel', 'setStatus', 'camera', 'renderer', 'controls', ...Object.keys(helpers)];
+      const names = ['THREE', 'scene', 'hero', 'setModel', 'setAnimations', 'setStatus', 'camera', 'renderer', 'controls', ...Object.keys(helpers)];
       let fn;
       try { fn = new Function(...names, src + '\n//# sourceURL=user-code.js'); }
       catch (e) { const p = await syntaxLine(src, false); if (p) { e.__line = p.line; e.__col = p.col; } throw e; }
-      await adopt(fn(THREE, scene, hero, setModel, setStatus, camera, renderer, controls, ...Object.values(helpers)));
+      await adopt(fn(THREE, scene, hero, setModel, setAnimations, setStatus, camera, renderer, controls, ...Object.values(helpers)));
     }
     // anything the code added straight to the scene becomes part of the model
     for (const c of [...scene.children]) if (!before.has(c)) content.add(c);
     if (!hero.children.length) content.remove(hero);
-    stats(); frame();
+    stats(); frame(); startAnim();
     if (statusEl.textContent === 'Running…' || statusEl.className !== 'ok')
-      setStatus(`✓ Ran ${currentLabel} in ${Math.round(performance.now() - t0)} ms`);
+      setStatus(`✓ Ran ${currentLabel} in ${Math.round(performance.now() - t0)} ms` + (clips.length ? ` · ${clips.length} clip${clips.length > 1 ? 's' : ''}` : ''));
   } catch (e) { showError(e); stats(); frame(); }
 }
 
@@ -255,10 +294,17 @@ $('btn-dl').onclick = () => download(new Blob([editor.value], { type: 'text/java
 $('btn-shot').onclick = () => { renderer.render(scene, camera); renderer.domElement.toBlob((b) => download(b, 'threejs-viewer.png')); };
 $('btn-glb').onclick = async () => {
   try {
-    const glb = await new GLTFExporter().parseAsync(content, { binary: true });
+    const glb = await new GLTFExporter().parseAsync(content, { binary: true, animations: clips });
     download(new Blob([glb], { type: 'model/gltf-binary' }), 'model.glb');
-    setStatus(`Exported model.glb (${(glb.byteLength / 1024).toFixed(0)} KB)`);
+    setStatus(`Exported model.glb (${(glb.byteLength / 1024).toFixed(0)} KB, ${clips.length} clips)`);
   } catch (e) { showError(e, 'Export GLB: '); }
+};
+$('btn-gltf').onclick = async () => {
+  try {
+    const json = JSON.stringify(await new GLTFExporter().parseAsync(content, { binary: false, animations: clips }));
+    download(new Blob([json], { type: 'model/gltf+json' }), 'model.gltf');
+    setStatus(`Exported model.gltf (${(json.length / 1024).toFixed(0)} KB, ${clips.length} clips)`);
+  } catch (e) { showError(e, 'Export glTF: '); }
 };
 $('btn-frame').onclick = frame;
 $('opt-grid').onchange = (e) => (grid.visible = e.target.checked);

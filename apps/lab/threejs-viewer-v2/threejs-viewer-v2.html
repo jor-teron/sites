@@ -29,7 +29,9 @@
       <label><input type="checkbox" id="opt-spin"> Spin</label>
       <button id="btn-frame">Frame</button>
       <button id="btn-shot">Screenshot</button>
+      <span id="anim" hidden><select id="clip"></select> <button id="btn-play" title="Play/pause">❚❚</button></span>
       <button id="btn-glb">Export GLB</button>
+      <button id="btn-gltf">Export glTF</button>
       <button id="btn-code">Hide code</button>
     </div>
     <div id="dropzone">Drop a .js file to run it</div>
@@ -50,7 +52,7 @@
     <textarea id="editor" spellcheck="false"></textarea>
     <div id="status">Ready. Paste code or drop a .js file, then press Run (Ctrl+Enter).</div>
     <pre id="errors" hidden></pre>
-    <div id="hint">Module code (import/export) runs as a real ES module. Plain code gets THREE, scene, hero, setModel(), setStatus() and helpers box cyl sph cone orb cap ring cone2. Return or export an Object3D or a build function.</div>
+    <div id="hint">Module code (import/export) runs as a real ES module. Plain code gets THREE, scene, hero, setModel(), setAnimations(), setStatus() and helpers box cyl sph cone orb cap ring cone2. Return or export an Object3D or a build function.</div>
   </div>
 </div>
 <script type="module" src="threejs-viewer-v2.js"></script>
