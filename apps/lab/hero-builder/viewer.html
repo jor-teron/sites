@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Hero Viewer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: system-ui, sans-serif; background: #0a0a1a; color: #ddd; }
+  #app { display: flex; height: 100vh; }
+  #viewer { flex: 1; position: relative; min-width: 0; }
+  #viewer canvas { display: block; }
+  #editor-panel { width: 42%; min-width: 320px; display: flex; flex-direction: column; background: #12121e; border-left: 1px solid #222; }
+  #toolbar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #1a1a2a; border-bottom: 1px solid #222; font-size: 13px; flex-wrap: wrap; }
+  #toolbar .title { color: #8899aa; margin-right: auto; font-weight: 600; }
+  #toolbar button { background: #2a5bd7; color: white; border: 0; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; }
+  #toolbar button:hover { background: #3a6be7; }
+  #toolbar button.alt { background: #333; }
+  #toolbar button.alt:hover { background: #444; }
+  #status { font-size: 11px; padding: 2px 6px; border-radius: 3px; }
+  #status.ok { color: #6f6; }
+  #status.err { color: #f55; background: #300; }
+  #editor { flex: 1; width: 100%; background: #0d0d18; color: #d4d4d4; border: 0; padding: 12px; font-family: Consolas, Monaco, monospace; font-size: 13px; line-height: 1.5; resize: none; outline: none; tab-size: 2; }
+  #hint { padding: 6px 12px; background: #1a1a2a; border-top: 1px solid #222; font-size: 11px; color: #667; }
+  #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); background: #2a5bd7; color: white; padding: 10px 20px; border-radius: 6px; font-size: 13px; transition: transform 0.25s; pointer-events: none; z-index: 999; }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  @media (max-width: 800px) { #app { flex-direction: column; } #viewer { height: 50vh; } #editor-panel { width: 100%; height: 50vh; } }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="viewer"></div>
+  <div id="editor-panel">
+    <div id="toolbar">
+      <span class="title">hero.js</span>
+      <span id="status">ready</span>
+      <button class="alt" id="btn-copy">Copy</button>
+      <button class="alt" id="btn-save">Save</button>
+      <button class="alt" id="btn-download">Download</button>
+      <button class="alt" id="btn-reset">Reset</button>
+      <button id="btn-run">▶ Run</button>
+    </div>
+    <textarea id="editor" spellcheck="false"></textarea>
+    <div id="hint">Ctrl+Enter run • Ctrl+S save • helpers: box cyl sph cone orb cap ring cone2</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Three.js as classic scripts — no modules, no import map, no "THREE is not defined" -->
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+<script>
+/* ============================================================
+   VIEWER — sets up scene, camera, renderer, controls, lights.
+   Runs whatever code is in the editor, with all helpers in scope.
+   ============================================================ */
+
+const viewerEl = document.getElementById('viewer');
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a1a);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+camera.position.set(0, 1.5, 5);
+
+const renderer = new THREE.WebGLRenderer({ antialias: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+viewerEl.appendChild(renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+const dir = new THREE.DirectionalLight(0xffffff, 2);
+dir.position.set(5, 10, 5);
+scene.add(dir);
+const fill = new THREE.DirectionalLight(0x4466ff, 0.8);
+fill.position.set(-5, 5, -5);
+scene.add(fill);
+
+const grid = new THREE.GridHelper(20, 20, 0x223, 0x112);
+grid.position.y = -0.8;
+scene.add(grid);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enablePan = false;
+controls.minDistance = 1.5;
+controls.maxDistance = 15;
+controls.target.set(0, 0.8, 0);
+
+function resize() {
+  const w = viewerEl.clientWidth;
+  const h = viewerEl.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+}
+window.addEventListener('resize', resize);
+
+/* ============================================================
+   HELPERS — available to editor code
+   ============================================================ */
+
+function box(w, h, d, color, x, y, z, opts) {
+  opts = opts || {};
+  const mat = new THREE.MeshStandardMaterial({
+    color: color,
+    metalness: opts.metal != null ? opts.metal : 0,
+    roughness: opts.rough != null ? opts.rough : 0.6,
+    emissive: opts.emissive != null ? opts.emissive : 0x000000,
+    emissiveIntensity: opts.emissiveIntensity != null ? opts.emissiveIntensity : 0,
+    flatShading: !!opts.flat
+  });
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z);
+  if (opts.rot) m.rotation.set(opts.rot[0], opts.rot[1], opts.rot[2]);
+  return m;
+}
+
+function cyl(rTop, rBot, h, color, x, y, z, opts) {
+  opts = opts || {};
+  const mat = new THREE.MeshStandardMaterial({
+    color: color,
+    metalness: opts.metal != null ? opts.metal : 0,
+    roughness: opts.rough != null ? opts.rough : 0.6,
+    flatShading: !!opts.flat
+  });
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, h, opts.seg || 12), mat);
+  m.position.set(x, y, z);
+  if (opts.rot) m.rotation.set(opts.rot[0], opts.rot[1], opts.rot[2]);
+  return m;
+}
+
+function sph(r, color, x, y, z, opts) {
+  opts = opts || {};
+  const mat = new THREE.MeshStandardMaterial({
+    color: color,
+    metalness: opts.metal != null ? opts.metal : 0,
+    roughness: opts.rough != null ? opts.rough : 0.6,
+    emissive: opts.emissive != null ? opts.emissive : 0x000000,
+    emissiveIntensity: opts.emissiveIntensity != null ? opts.emissiveIntensity : 0,
+    flatShading: !!opts.flat
+  });
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, opts.seg || 16, opts.seg || 16), mat);
+  m.position.set(x, y, z);
+  return m;
+}
+
+function cone(r, h, color, x, y, z, opts) {
+  opts = opts || {};
+  const mat = new THREE.MeshStandardMaterial({
+    color: color,
+    metalness: opts.metal != null ? opts.metal : 0,
+    roughness: opts.rough != null ? opts.rough : 0.6,
+    flatShading: !!opts.flat
+  });
+  const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, opts.seg || 12), mat);
+  m.position.set(x, y, z);
+  if (opts.rot) m.rotation.set(opts.rot[0], opts.rot[1], opts.rot[2]);
+  return m;
+}
+
+// scaled sphere — for organic shapes (bust, cheeks, jaw)
+function orb(r, color, x, y, z, sx, sy, sz, opts) {
+  opts = opts || {};
+  sx = sx != null ? sx : 1;
+  sy = sy != null ? sy : 1;
+  sz = sz != null ? sz : 1;
+  const mat = new THREE.MeshStandardMaterial({
+    color: color,
+    metalness: opts.metal != null ? opts.metal : 0,
+    roughness: opts.rough != null ? opts.rough : 0.7,
+    emissive: opts.emissive != null ? opts.emissive : 0x000000,
+    emissiveIntensity: opts.emissiveIntensity != null ? opts.emissiveIntensity : 0,
+    flatShading: !!opts.flat
+  });
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, opts.seg || 24, opts.seg || 24), mat);
+  m.position.set(x, y, z);
+  m.scale.set(sx, sy, sz);
+  if (opts.rot) m.rotation.set(opts.rot[0], opts.rot[1], opts.rot[2]);
+  return m;
+}
+
+// capsule — rounded cylinder, for neck, limbs, jaw
+function cap(r, len, color, x, y, z, opts) {
+  opts = opts || {};
+  const mat = new THREE.MeshStandardMaterial({
+    color: color,
+    metalness: opts.metal != null ? opts.metal : 0,
+    roughness: opts.rough != null ? opts.rough : 0.7,
+    flatShading: !!opts.flat
+  });
+  const m = new THREE.Mesh(
+    new THREE.CapsuleGeometry(r, len, opts.seg || 8, opts.seg2 || 12),
+    mat
+  );
+  m.position.set(x, y, z);
+  if (opts.rot) m.rotation.set(opts.rot[0], opts.rot[1], opts.rot[2]);
+  return m;
+}
+
+// torus — ears, rings
+function ring(r, tube, color, x, y, z, opts) {
+  opts = opts || {};
+  const mat = new THREE.MeshStandardMaterial({
+    color: color,
+    metalness: opts.metal != null ? opts.metal : 0,
+    roughness: opts.rough != null ? opts.rough : 0.7,
+    flatShading: !!opts.flat
+  });
+  const m = new THREE.Mesh(
+    new THREE.TorusGeometry(r, tube, opts.seg || 8, opts.seg2 || 24),
+    mat
+  );
+  m.position.set(x, y, z);
+  if (opts.rot) m.rotation.set(opts.rot[0], opts.rot[1], opts.rot[2]);
+  return m;
+}
+
+// scaled cone — nose, chin
+function cone2(r, h, color, x, y, z, sx, sy, sz, opts) {
+  opts = opts || {};
+  sx = sx != null ? sx : 1;
+  sy = sy != null ? sy : 1;
+  sz = sz != null ? sz : 1;
+  const mat = new THREE.MeshStandardMaterial({
+    color: color,
+    metalness: opts.metal != null ? opts.metal : 0,
+    roughness: opts.rough != null ? opts.rough : 0.7,
+    flatShading: !!opts.flat
+  });
+  const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, opts.seg || 16), mat);
+  m.position.set(x, y, z);
+  m.scale.set(sx, sy, sz);
+  if (opts.rot) m.rotation.set(opts.rot[0], opts.rot[1], opts.rot[2]);
+  return m;
+}
+
+/* ============================================================
+   DEFAULT CODE — what shows in the editor on first load
+   ============================================================ */
+
+const DEFAULT_CODE = [
+  '// Human bust — organic shapes from scaled spheres/capsules',
+  '// hero, THREE, scene, and helpers (box, cyl, sph, cone, orb, cap, ring, cone2)',
+  '// are already in scope. Do NOT redeclare them.',
+  '',
+  'const SKIN  = 0xe8b98a;',
+  'const SKIN2 = 0xd6a878;',
+  'const HAIR  = 0x2a1a0a;',
+  'const LIP   = 0xc46a5a;',
+  'const EYE_W = 0xf2f2f2;',
+  'const EYE_I = 0x3a2a1a;',
+  'const BROW  = 0x2a1a0a;',
+  '',
+  '// neck',
+  'hero.add(cyl(0.28, 0.32, 0.7, SKIN, 0, 0.35, 0));',
+  '',
+  '// shoulders',
+  'hero.add(orb(0.55, SKIN, -0.62, -0.15, 0, 1, 0.7, 1));',
+  'hero.add(orb(0.55, SKIN,  0.62, -0.15, 0, 1, 0.7, 1));',
+  'hero.add(orb(0.7, SKIN, 0, -0.2, 0.15, 1.2, 0.5, 0.8));',
+  '',
+  '// skull',
+  'hero.add(orb(0.62, SKIN, 0, 1.95, 0, 0.92, 1.05, 0.98));',
+  'hero.add(orb(0.5, SKIN, 0, 1.95, -0.15, 0.95, 1, 1));',
+  'hero.add(orb(0.55, SKIN, 0, 2.15, 0.08, 1, 0.7, 0.9));',
+  '',
+  '// brow',
+  'hero.add(box(0.7, 0.08, 0.1, SKIN, 0, 2.1, 0.5));',
+  '',
+  '// eye sockets',
+  'hero.add(orb(0.11, 0x8a6a4a, -0.2, 2.02, 0.45, 1, 0.7, 0.5));',
+  'hero.add(orb(0.11, 0x8a6a4a,  0.2, 2.02, 0.45, 1, 0.7, 0.5));',
+  '',
+  '// eyeballs',
+  'hero.add(orb(0.09, EYE_W, -0.2, 2.02, 0.5, 1, 1, 0.8));',
+  'hero.add(orb(0.09, EYE_W,  0.2, 2.02, 0.5, 1, 1, 0.8));',
+  '',
+  '// irises',
+  'hero.add(orb(0.04, EYE_I, -0.2, 2.02, 0.57));',
+  'hero.add(orb(0.04, EYE_I,  0.2, 2.02, 0.57));',
+  '',
+  '// eyelids',
+  'hero.add(orb(0.11, SKIN, -0.2, 2.06, 0.48, 1, 0.4, 0.9));',
+  'hero.add(orb(0.11, SKIN,  0.2, 2.06, 0.48, 1, 0.4, 0.9));',
+  '',
+  '// nose',
+  'hero.add(box(0.08, 0.3, 0.08, SKIN, 0, 1.98, 0.55));',
+  'hero.add(orb(0.07, SKIN, 0, 1.82, 0.6, 1, 1, 1.2));',
+  'hero.add(orb(0.025, 0x6a4a3a, -0.05, 1.8, 0.58));',
+  'hero.add(orb(0.025, 0x6a4a3a,  0.05, 1.8, 0.58));',
+  '',
+  '// cheeks',
+  'hero.add(orb(0.18, SKIN2, -0.28, 1.82, 0.42, 1, 0.9, 0.8));',
+  'hero.add(orb(0.18, SKIN2,  0.28, 1.82, 0.42, 1, 0.9, 0.8));',
+  '',
+  '// mouth',
+  'hero.add(orb(0.08, LIP, 0, 1.72, 0.52, 1.6, 0.5, 0.8));',
+  'hero.add(orb(0.09, LIP, 0, 1.67, 0.53, 1.5, 0.6, 0.8));',
+  'hero.add(box(0.22, 0.015, 0.05, 0x6a2a2a, 0, 1.7, 0.56));',
+  '',
+  '// chin & jaw',
+  'hero.add(orb(0.15, SKIN, 0, 1.55, 0.48, 1, 1, 0.9));',
+  'hero.add(cap(0.08, 0.35, SKIN, -0.35, 1.65, 0.3, { rot: [0, 0.4, 0.5] }));',
+  'hero.add(cap(0.08, 0.35, SKIN,  0.35, 1.65, 0.3, { rot: [0, -0.4, -0.5] }));',
+  '',
+  '// ears',
+  'hero.add(ring(0.09, 0.04, SKIN, -0.6, 1.95, -0.05, { rot: [0, Math.PI/2, 0] }));',
+  'hero.add(ring(0.09, 0.04, SKIN,  0.6, 1.95, -0.05, { rot: [0, -Math.PI/2, 0] }));',
+  '',
+  '// hair',
+  'hero.add(orb(0.65, HAIR, 0, 2.05, -0.05, 0.95, 0.8, 1));',
+  'hero.add(orb(0.25, HAIR, -0.55, 1.95, -0.1, 1, 1.4, 1.2));',
+  'hero.add(orb(0.25, HAIR,  0.55, 1.95, -0.1, 1, 1.4, 1.2));',
+  'hero.add(orb(0.55, HAIR, 0, 2.25, 0.2, 0.95, 0.4, 1));',
+  '',
+  '// eyebrows',
+  'hero.add(box(0.2, 0.04, 0.05, BROW, -0.2, 2.15, 0.52, { rot: [0, 0, 0.15] }));',
+  'hero.add(box(0.2, 0.04, 0.05, BROW,  0.2, 2.15, 0.52, { rot: [0, 0, -0.15] }));',
+  '',
+  'hero.position.y = -0.3;'
+].join('\n');
+
+/* ============================================================
+   EDITOR + RUN
+   ============================================================ */
+
+const editorEl = document.getElementById('editor');
+const statusEl = document.getElementById('status');
+const toastEl = document.getElementById('toast');
+const STORAGE_KEY = 'hero-viewer-code-v2';
+
+const savedCode = localStorage.getItem(STORAGE_KEY);
+editorEl.value = savedCode || DEFAULT_CODE;
+
+let hero = null;
+
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(function () { toastEl.classList.remove('show'); }, 1800);
+}
+function setStatus(t, err) {
+  statusEl.textContent = t;
+  statusEl.className = err ? 'err' : 'ok';
+}
+function clearHero() {
+  if (!hero) return;
+  scene.remove(hero);
+  hero.traverse(function (o) {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) o.material.dispose();
+  });
+  hero = null;
+}
+
+function runCode() {
+  setStatus('running…', false);
+  clearHero();
+
+  hero = new THREE.Group();
+  scene.add(hero);
+
+  try {
+    // Build function that has everything in scope.
+    // Note: parameters shadow globals — so 'hero', 'THREE', etc. inside
+    // your code refer to these, not the outer ones. That's what we want.
+    const fn = new Function(
+      'THREE', 'scene', 'hero',
+      'box', 'cyl', 'sph', 'cone', 'orb', 'cap', 'ring', 'cone2',
+      editorEl.value
+    );
+    fn(THREE, scene, hero, box, cyl, sph, cone, orb, cap, ring, cone2);
+    setStatus('✓ ok', false);
+  } catch (err) {
+    setStatus('✗ ' + err.message, true);
+    console.error(err);
+  }
+}
+
+document.getElementById('btn-run').addEventListener('click', runCode);
+
+document.getElementById('btn-copy').addEventListener('click', function () {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(editorEl.value).then(function () { showToast('Copied'); });
+  } else {
+    editorEl.select();
+    document.execCommand('copy');
+    showToast('Copied');
+  }
+});
+
+document.getElementById('btn-save').addEventListener('click', function () {
+  localStorage.setItem(STORAGE_KEY, editorEl.value);
+  showToast('Saved');
+});
+
+document.getElementById('btn-download').addEventListener('click', function () {
+  const blob = new Blob([editorEl.value], { type: 'text/javascript' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'hero.js';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Downloaded hero.js');
+});
+
+document.getElementById('btn-reset').addEventListener('click', function () {
+  if (!confirm('Reset to default code?')) return;
+  editorEl.value = DEFAULT_CODE;
+  localStorage.removeItem(STORAGE_KEY);
+  runCode();
+  showToast('Reset');
+});
+
+editorEl.addEventListener('keydown', function (e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runCode(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault();
+    localStorage.setItem(STORAGE_KEY, editorEl.value);
+    showToast('Saved');
+    return;
+  }
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = editorEl.selectionStart;
+    const e2 = editorEl.selectionEnd;
+    editorEl.value = editorEl.value.substring(0, s) + '  ' + editorEl.value.substring(e2);
+    editorEl.selectionStart = editorEl.selectionEnd = s + 2;
+  }
+});
+
+/* ============================================================
+   LOOP
+   ============================================================ */
+const clock = new THREE.Clock();
+let dragging = false;
+controls.addEventListener('start', function () { dragging = true; });
+controls.addEventListener('end', function () { dragging = false; });
+
+function animate() {
+  requestAnimationFrame(animate);
+  const delta = clock.getDelta();
+  if (hero && !dragging) hero.rotation.y += delta * 0.3;
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+resize();
+runCode();
+animate();
+</script>
+
+<script src="helper.js"></script>
+
+</body>
+</html>

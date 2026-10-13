@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Hero Viewer</title>
+  <style>
+    body { margin: 0; background: #0a0a1a; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ---- Scene ----
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a1a);
+
+    // ---- Camera ----
+    const camera = new THREE.PerspectiveCamera(
+      45,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      100
+    );
+    camera.position.set(0, 1.5, 5);
+
+    // ---- Renderer ----
+    const renderer = new THREE.WebGLRenderer({ antialias: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    document.body.appendChild(renderer.domElement);
+
+    // ---- Lights ----
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+    dirLight.position.set(5, 10, 5);
+    scene.add(dirLight);
+
+    const fillLight = new THREE.DirectionalLight(0x4466ff, 0.8);
+    fillLight.position.set(-5, 5, -5);
+    scene.add(fillLight);
+
+    // ---- Hero (made of boxes) ----
+    const hero = new THREE.Group();
+
+    // helper to make a colored box
+    function box(w, h, d, color, x, y, z, metal = 0, rough = 0.6) {
+      const geo = new THREE.BoxGeometry(w, h, d);
+      const mat = new THREE.MeshStandardMaterial({
+        color: color,
+        metalness: metal,
+        roughness: rough
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, y, z);
+      return mesh;
+    }
+
+    // body parts
+    hero.add(box(0.9, 1.1, 0.5, 0x2a5bd7, 0, 1.2, 0));        // torso
+    hero.add(box(0.95, 0.6, 0.15, 0xd43a2a, 0, 1.4, 0.28, 0.8, 0.3)); // chest armor
+    hero.add(box(0.55, 0.55, 0.55, 0xe8b98a, 0, 2.05, 0));     // head
+    hero.add(box(0.65, 0.35, 0.65, 0x1a1a2e, 0, 2.25, 0, 0.7, 0.4)); // helmet
+    hero.add(box(0.28, 0.95, 0.28, 0x2a5bd7, -0.65, 1.35, 0)); // left arm
+    hero.add(box(0.32, 0.32, 0.32, 0xe8b98a, -0.65, 0.75, 0)); // left hand
+    hero.add(box(0.28, 0.95, 0.28, 0x2a5bd7, 0.65, 1.35, 0));  // right arm
+    hero.add(box(0.32, 0.32, 0.32, 0xe8b98a, 0.65, 0.75, 0));  // right hand
+    hero.add(box(0.32, 1.0, 0.32, 0x1a1a2e, -0.25, 0.25, 0));  // left leg
+    hero.add(box(0.32, 1.0, 0.32, 0x1a1a2e, 0.25, 0.25, 0));   // right leg
+
+    // eyes (glowing)
+    const eyeGeo = new THREE.BoxGeometry(0.08, 0.08, 0.02);
+    const eyeMat = new THREE.MeshStandardMaterial({
+      color: 0x00e5ff,
+      emissive: 0x00e5ff,
+      emissiveIntensity: 2
+    });
+    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeL.position.set(-0.14, 2.08, 0.29);
+    hero.add(eyeL);
+    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeR.position.set(0.14, 2.08, 0.29);
+    hero.add(eyeR);
+
+    // drop hero down so feet are at y=0
+    hero.position.y = -1.5;
+    scene.add(hero);
+
+    // ---- Controls ----
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enablePan = false;
+    controls.minDistance = 3;
+    controls.maxDistance = 9;
+    controls.maxPolarAngle = Math.PI / 2;
+    controls.target.set(0, 0.5, 0);
+
+    // ---- Animation loop ----
+    let dragging = false;
+    controls.addEventListener('start', () => dragging = true);
+    controls.addEventListener('end', () => dragging = false);
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+
+      // slow turntable when not dragging
+      if (!dragging) {
+        hero.rotation.y += delta * 0.3;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // ---- Resize ----
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

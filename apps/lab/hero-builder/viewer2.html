@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Model Viewer & Editor</title>
+  <!-- Three.js from CDN -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+      }
+    }
+  </script>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    #app {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+    }
+    /* Left: 3D Viewer */
+    #viewer-container {
+      flex: 3;
+      position: relative;
+      background-color: #111;
+      overflow: hidden;
+    }
+    #viewer-container canvas {
+      display: block;
+    }
+    /* Right: Code Editor Panel */
+    #editor-panel {
+      flex: 1.2;
+      min-width: 320px;
+      background-color: #1e1e2f;
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid #2a2a3a;
+      box-shadow: -2px 0 10px rgba(0,0,0,0.5);
+    }
+    .panel-header {
+      padding: 16px 18px 8px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #a0a0c0;
+      border-bottom: 1px solid #2a2a3a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-header span {
+      background: #2a2a3a;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      color: #b0b0d0;
+    }
+    #code-editor {
+      flex: 1;
+      background: #1e1e2f;
+      border: none;
+      color: #d4d4e0;
+      font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 16px;
+      resize: none;
+      outline: none;
+      tab-size: 2;
+      border-bottom: 1px solid #2a2a3a;
+      overflow: auto;
+      white-space: pre;
+    }
+    #code-editor::selection {
+      background: #3a3a5a;
+    }
+    .button-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 16px;
+      background: #181825;
+      border-top: 1px solid #2a2a3a;
+    }
+    .btn {
+      flex: 1 0 auto;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      letter-spacing: 0.3px;
+      background: #2a2a3a;
+      color: #e0e0e0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .btn:hover {
+      background: #3a3a5a;
+      transform: scale(1.02);
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .btn.run {
+      background: #3a6ea5;
+      color: white;
+      box-shadow: 0 2px 8px rgba(58, 110, 165, 0.5);
+    }
+    .btn.run:hover {
+      background: #4a7eb5;
+    }
+    .btn.download {
+      background: #2a5a3a;
+      color: white;
+    }
+    .btn.download:hover {
+      background: #3a6a4a;
+    }
+    .btn.copy {
+      background: #3a3a6a;
+      color: white;
+    }
+    .btn.copy:hover {
+      background: #4a4a7a;
+    }
+    .btn.clear {
+      background: #5a2a3a;
+      color: white;
+    }
+    .btn.clear:hover {
+      background: #6a3a4a;
+    }
+    .status {
+      padding: 6px 16px 12px 16px;
+      font-size: 12px;
+      color: #8080a0;
+      background: #181825;
+      border-top: 1px solid #2a2a3a;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Left: 3D Viewer -->
+    <div id="viewer-container"></div>
+
+    <!-- Right: Code Editor Panel -->
+    <div id="editor-panel">
+      <div class="panel-header">
+        <span>📝 Code Editor</span>
+        <span>Three.js</span>
+      </div>
+      <textarea id="code-editor" spellcheck="false"></textarea>
+      <div class="button-bar">
+        <button class="btn download" id="download-btn">⬇ Download</button>
+        <button class="btn copy" id="copy-btn">📋 Copy</button>
+        <button class="btn clear" id="clear-btn">🗑 Clear</button>
+        <button class="btn run" id="run-btn">▶ RUN</button>
+      </div>
+      <div class="status" id="status">Ready</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+    import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+
+    // --- Setup Scene, Camera, Renderer ---
+    const container = document.getElementById('viewer-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111122);
+
+    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(3, 2, 5);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
+
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.autoRotate = false;
+    controls.screenSpacePanning = true;
+    controls.maxPolarAngle = Math.PI / 2;
+
+    // Lighting
+    // Ambient
+    const ambientLight = new THREE.AmbientLight(0x404060);
+    scene.add(ambientLight);
+
+    // Main directional light
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(5, 10, 7);
+    dirLight.castShadow = true;
+    dirLight.receiveShadow = true;
+    dirLight.shadow.mapSize.width = 1024;
+    dirLight.shadow.mapSize.height = 1024;
+    scene.add(dirLight);
+
+    // Fill light
+    const fillLight = new THREE.PointLight(0x4466ff, 0.5);
+    fillLight.position.set(-5, 2, 3);
+    scene.add(fillLight);
+
+    // Back light
+    const backLight = new THREE.PointLight(0xffaa66, 0.4);
+    backLight.position.set(0, 3, -8);
+    scene.add(backLight);
+
+    // Grid helper
+    const gridHelper = new THREE.GridHelper(10, 20, 0x88aaff, 0x334466);
+    scene.add(gridHelper);
+
+    // Optional axes (commented out - can be uncommented for debugging)
+    // const axesHelper = new THREE.AxesHelper(5);
+    // scene.add(axesHelper);
+
+    // --- State for loaded model ---
+    let currentModel = null;
+
+    // --- Function to dispose of current model ---
+    function disposeModel() {
+      if (currentModel) {
+        scene.remove(currentModel);
+        currentModel.traverse((child) => {
+          if (child.isMesh) {
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach(m => m.dispose());
+              } else {
+                child.material.dispose();
+              }
+            }
+          }
+        });
+        currentModel = null;
+      }
+    }
+
+    // --- Default code snippet (a rotating cube with nice material) ---
+    const defaultCode = `// Three.js Model Viewer
+// This code runs in the left panel.
+// Try editing and pressing RUN.
+
+// Clear previous model
+if (currentModel) {
+  scene.remove(currentModel);
+  currentModel = null;
+}
+
+// Create a group to hold the model
+const group = new THREE.Group();
+
+// --- Create a colorful cube ---
+const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+const material = new THREE.MeshStandardMaterial({ 
+  color: 0x3a6ea5,
+  roughness: 0.3,
+  metalness: 0.1,
+  emissive: new THREE.Color(0x112233)
+});
+const cube = new THREE.Mesh(geometry, material);
+cube.castShadow = true;
+cube.receiveShadow = true;
+group.add(cube);
+
+// Add a wireframe sphere inside for extra flair
+const sphereGeo = new THREE.SphereGeometry(0.9, 16, 16);
+const sphereMat = new THREE.MeshStandardMaterial({ 
+  color: 0xffaa44,
+  wireframe: true,
+  emissive: new THREE.Color(0x442200)
+});
+const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+sphere.castShadow = true;
+sphere.receiveShadow = true;
+group.add(sphere);
+
+// Some floating particles around
+const particlesGeo = new THREE.BufferGeometry();
+const particlesCount = 200;
+const posArray = new Float32Array(particlesCount * 3);
+for (let i = 0; i < particlesCount * 3; i += 3) {
+  const radius = 2.5 + Math.random() * 1.5;
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos((Math.random() * 2) - 1);
+  posArray[i] = Math.sin(phi) * Math.cos(theta) * radius;
+  posArray[i+1] = Math.sin(phi) * Math.sin(theta) * radius;
+  posArray[i+2] = Math.cos(phi) * radius;
+}
+particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+const particlesMat = new THREE.PointsMaterial({
+  size: 0.08,
+  color: 0x88aaff,
+  transparent: true,
+  blending: THREE.AdditiveBlending
+});
+const particles = new THREE.Points(particlesGeo, particlesMat);
+group.add(particles);
+
+// Position group slightly above grid
+group.position.y = 0.5;
+
+// Add to scene and save reference
+currentModel = group;
+scene.add(currentModel);
+
+// Optional: add a simple animation to the model? 
+// We'll use the animation loop below to rotate it.
+// But we need to make sure it's accessible.
+window.modelGroup = group; // expose for animation
+
+// Update status
+document.getElementById('status').textContent = '✅ Model loaded: Cube with particles';
+`;
+
+    // --- Setup editor ---
+    const editor = document.getElementById('code-editor');
+    editor.value = defaultCode;
+
+    // Helper to update status
+    function setStatus(msg) {
+      document.getElementById('status').textContent = msg;
+    }
+
+    // --- Function to execute the editor code ---
+    function runCode() {
+      const code = editor.value;
+      try {
+        // We need to expose required variables to the global scope for eval
+        // Use a function closure with access to needed Three.js objects
+        // We'll use new Function to avoid strict eval issues, but still not perfect
+        // For simplicity, we pass the dependencies as parameters
+        const run = new Function('THREE', 'scene', 'camera', 'renderer', 'controls', 
+          'currentModel', 'GLTFLoader', 'OBJLoader', 'STLLoader', 'setStatus', 'disposeModel', code);
+        
+        // But we need to update currentModel variable after code runs
+        // We'll use a wrapper that returns the new model from code if it sets a variable
+        // Let's modify approach: execute code in a context where we can capture currentModel changes.
+        // We'll use a small trick: define a mutable ref object and use it.
+        // But for simplicity, we'll just use the global window.modelGroup and currentModel variable from outer scope.
+        
+        // Since `currentModel` is in module scope, we can't easily modify it from eval'd code.
+        // Let's re-think: We'll make `currentModel` a property of a state object.
+        // But to keep it simple, we'll just use the global window for the model reference and update outer currentModel.
+        
+        // Better approach: Use a wrapper that sets a global variable and we read it.
+        // We'll expose a function to set the model.
+        window.setModel = (model) => {
+          // Remove previous model from scene
+          if (currentModel) {
+            scene.remove(currentModel);
+          }
+          currentModel = model;
+          if (model) {
+            scene.add(model);
+          }
+        };
+        
+        // Also provide access to scene, camera, etc. via globals
+        window.scene = scene;
+        window.camera = camera;
+        window.renderer = renderer;
+        window.controls = controls;
+        window.THREE = THREE;
+        window.GLTFLoader = GLTFLoader;
+        window.OBJLoader = OBJLoader;
+        window.STLLoader = STLLoader;
+        window.setStatus = setStatus;
+        
+        // Clear previous animation group reference
+        window.modelGroup = null;
+        
+        // Execute the code
+        eval(code);
+        
+        // If the code set a global modelGroup, we might use it for animation
+        // But we already handle rotation in the render loop based on a flag? 
+        // Let's just let the user control animation if they want. 
+        // We'll check if modelGroup exists and rotate it in the animation loop.
+        
+        setStatus('✅ Code executed successfully');
+      } catch (e) {
+        console.error(e);
+        setStatus('❌ Error: ' + e.message);
+      }
+    }
+
+    // --- Button handlers ---
+    document.getElementById('run-btn').addEventListener('click', runCode);
+    
+    document.getElementById('download-btn').addEventListener('click', () => {
+      const code = editor.value;
+      const blob = new Blob([code], { type: 'text/javascript' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'model-script.js';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setStatus('📥 Code downloaded as model-script.js');
+    });
+
+    document.getElementById('copy-btn').addEventListener('click', () => {
+      const code = editor.value;
+      navigator.clipboard.writeText(code).then(() => {
+        setStatus('📋 Code copied to clipboard');
+      }).catch(() => {
+        setStatus('❌ Copy failed');
+      });
+    });
+
+    document.getElementById('clear-btn').addEventListener('click', () => {
+      editor.value = '';
+      setStatus('🗑 Editor cleared');
+    });
+
+    // --- Handle window resize ---
+    window.addEventListener('resize', onWindowResize, false);
+    function onWindowResize() {
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      renderer.setSize(width, height);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+    }
+
+    // --- Animation loop ---
+    let clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      const delta = clock.getDelta();
+      const elapsedTime = performance.now() * 0.001; // seconds
+
+      // Auto-rotate the model if it exists and is a group (or any object)
+      if (currentModel) {
+        // Gentle rotation
+        currentModel.rotation.y += 0.005;
+        // Slight bob
+        currentModel.position.y = 0.5 + Math.sin(elapsedTime * 2) * 0.1;
+      }
+
+      // Update controls
+      controls.update();
+
+      // Render
+      renderer.render(scene, camera);
+    }
+
+    // Start animation
+    animate();
+
+    // Initialize with default code execution after a short delay
+    setTimeout(() => {
+      runCode();
+    }, 100);
+
+    // Expose some globals for the editor to use (already done inside runCode, but just in case)
+    window.currentModel = currentModel;
+
+    // Also, for the default code to work, we need to ensure it can access these
+    // We'll redefine runCode to be more robust
+    // Actually, we need to redefine runCode to use a better pattern:
+    // We'll override the earlier runCode with a more robust version.
+    // But we already defined runCode above. Let's replace it.
+    
+    // Remove the old listener and add new one
+    // To keep it clean, we'll just redefine the runCode function and update the button.
+    // However, the event listener is already attached. Let's remove it and re-add.
+    // This is a bit hacky but works for this demo.
+    
+    // Actually, we can just keep the current implementation as it works for the default code.
+    // But we need to ensure that `currentModel` is updated when the code sets `window.modelGroup`.
+    // Hmm, the default code sets `window.modelGroup = group;` and we already handle rotation based on `currentModel`.
+    // But `currentModel` is set to `group` in the default code, so that works.
+    
+    // For user code, they might do: `scene.add(myModel); currentModel = myModel;` but `currentModel` is not in scope.
+    // Instead, we provide `setModel` function. Let's modify the default code to use `setModel` for consistency.
+    // But the default code above uses `currentModel = group;` which won't work because `currentModel` is module-scoped.
+    // So we need to change the default code to use `setModel(group)`.
+    
+    // Let's update the default code string to use `setModel`.
+    // We'll regenerate the default code with the proper pattern.
+    
+    // Redefine defaultCode with setModel
+    const newDefaultCode = `// Three.js Model Viewer
+// This code runs in the left panel.
+// Try editing and pressing RUN.
+
+// Remove previous model from scene
+if (currentModel) {
+  scene.remove(currentModel);
+  currentModel = null;
+}
+
+// Create a group to hold the model
+const group = new THREE.Group();
+
+// --- Create a colorful cube ---
+const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+const material = new THREE.MeshStandardMaterial({ 
+  color: 0x3a6ea5,
+  roughness: 0.3,
+  metalness: 0.1,
+  emissive: new THREE.Color(0x112233)
+});
+const cube = new THREE.Mesh(geometry, material);
+cube.castShadow = true;
+cube.receiveShadow = true;
+group.add(cube);
+
+// Add a wireframe sphere inside for extra flair
+const sphereGeo = new THREE.SphereGeometry(0.9, 16, 16);
+const sphereMat = new THREE.MeshStandardMaterial({ 
+  color: 0xffaa44,
+  wireframe: true,
+  emissive: new THREE.Color(0x442200)
+});
+const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+sphere.castShadow = true;
+sphere.receiveShadow = true;
+group.add(sphere);
+
+// Some floating particles around
+const particlesGeo = new THREE.BufferGeometry();
+const particlesCount = 200;
+const posArray = new Float32Array(particlesCount * 3);
+for (let i = 0; i < particlesCount * 3; i += 3) {
+  const radius = 2.5 + Math.random() * 1.5;
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos((Math.random() * 2) - 1);
+  posArray[i] = Math.sin(phi) * Math.cos(theta) * radius;
+  posArray[i+1] = Math.sin(phi) * Math.sin(theta) * radius;
+  posArray[i+2] = Math.cos(phi) * radius;
+}
+particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+const particlesMat = new THREE.PointsMaterial({
+  size: 0.08,
+  color: 0x88aaff,
+  transparent: true,
+  blending: THREE.AdditiveBlending
+});
+const particles = new THREE.Points(particlesGeo, particlesMat);
+group.add(particles);
+
+// Position group slightly above grid
+group.position.y = 0.5;
+
+// Add to scene using setModel (so the viewer knows about it)
+setModel(group);
+
+// Update status
+setStatus('✅ Model loaded: Cube with particles');
+`;
+
+    editor.value = newDefaultCode;
+
+    // Now, redefine runCode to properly handle setModel
+    // We'll override the earlier runCode function and update the button listener
+    // This is a bit messy but works for this single-file demo.
+    // We'll replace the runCode function and the event listener.
+    
+    // Remove old listener by cloning the button (hacky but effective)
+    const oldRunBtn = document.getElementById('run-btn');
+    const newRunBtn = oldRunBtn.cloneNode(true);
+    oldRunBtn.parentNode.replaceChild(newRunBtn, oldRunBtn);
+    
+    // New runCode implementation
+    window.runCode = function() {
+      const code = editor.value;
+      
+      // Clear previous model from scene before running
+      if (currentModel) {
+        scene.remove(currentModel);
+        currentModel = null;
+      }
+      
+      try {
+        // Expose necessary globals for the code to use
+        window.scene = scene;
+        window.camera = camera;
+        window.renderer = renderer;
+        window.controls = controls;
+        window.THREE = THREE;
+        window.GLTFLoader = GLTFLoader;
+        window.OBJLoader = OBJLoader;
+        window.STLLoader = STLLoader;
+        window.setStatus = setStatus;
+        
+        // The key: setModel function that updates the module-scoped currentModel
+        window.setModel = (model) => {
+          if (currentModel) {
+            scene.remove(currentModel);
+          }
+          currentModel = model;
+          if (model) {
+            scene.add(model);
+          }
+        };
+        
+        // Also keep a reference to window.modelGroup for backward compatibility?
+        // Not needed.
+        
+        // Execute the user code
+        eval(code);
+        
+        setStatus('✅ Code executed successfully');
+      } catch (e) {
+        console.error(e);
+        setStatus('❌ Error: ' + e.message);
+      }
+    };
+    
+    // Attach listener to new button
+    newRunBtn.addEventListener('click', window.runCode);
+    
+    // Also re-attach other buttons? They are fine because they reference by id and were not cloned.
+    // But the run button was cloned and replaced, so we need to update the reference for any other code.
+    // The download, copy, clear buttons remain the same.
+    
+    // Update the global currentModel after a short delay to sync with the default code execution?
+    // The default code execution will call setModel which updates the module-scoped currentModel.
+    // But we need to make sure the initial run uses the new runCode.
+    // The initial setTimeout calls runCode() which is now the new version.
+    // So we need to update the setTimeout to use the new function.
+    
+    // Clear the old timeout? It's already scheduled, but we can just re-schedule.
+    // Let's just re-run after a short delay.
+    setTimeout(() => {
+      window.runCode();
+    }, 200);
+    
+    // Also ensure the status updates
+    setStatus('Ready');
+    
+    // Final note: The animation loop uses `currentModel` which is module-scoped and updated by setModel.
+    // This should work.
+    
+  </script>
+</body>
+</html>
