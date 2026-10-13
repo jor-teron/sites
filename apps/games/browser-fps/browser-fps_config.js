@@ -180,7 +180,9 @@ window.BROWSER_FPS_CONFIG = {
     sprint: ['ShiftLeft', 'ShiftRight'],// sprint
     reload: ['KeyR'],                   // reload
     grenade: ['KeyG'],                  // hold to aim a grenade (arc preview), release to throw; right-click cancels
-    mute: ['KeyM'],                     // toggle sound
+    mute: ['KeyN'],                     // toggle sound (M is now Explore/Fight)
+    mode: ['KeyM'],                     // toggle Explore / Fight (where the map allows both)
+    fpsCounter: ['F3'],                 // show / hide the FPS counter
     unlock: ['Escape', 'KeyP', 'Backquote'], // free the mouse
   },
   pickups: {
@@ -299,6 +301,12 @@ window.BROWSER_FPS_CONFIG = {
     },
   },
   maps: { default: 'camp', storageKey: 'browser-fps-map' },   // 'camp' | 'island' | 'snow'
+  // Game modes per map: explore = no enemies/pickups/score, fight = full game. ?mode=explore|fight overrides.
+  modes: {
+    storageKey: 'browser-fps-mode',
+    perMap: { island: { allowed: ['explore', 'fight'], default: 'explore' }, snow: { allowed: ['explore', 'fight'], default: 'explore' }, camp: { allowed: ['fight'], default: 'fight' } },
+  },
+  fpsCounter: { storageKey: 'browser-fps-show-fps', every: 0.5 },
   mapNames: { camp: 'Training Camp', island: 'Island', snow: 'Snow' },
   // Doors between maps: each entry is one gate on `map` leading to `to`. The return spot on arrival is the gate on the
   // destination map whose `to` is the map you came from. pos [x, z] (m); face = direction the gate opens toward (player
@@ -369,7 +377,7 @@ window.BROWSER_FPS_CONFIG = {
     },
   },
 
-  // Sound (Web Audio, procedural). M toggles mute (saved in localStorage).
+  // Sound (Web Audio, procedural). N toggles mute (saved in localStorage).
   audio: {
     masterVolume: 0.7,
     storageKey: 'browser-fps-muted',

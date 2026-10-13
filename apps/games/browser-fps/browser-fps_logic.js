@@ -44,6 +44,14 @@ const MAP = (() => {
   return MAPS.includes(m) ? m : 'camp';
 })();
 const SNOW = MAP === 'snow';
+// Mode: 'explore' (no enemies, pickups, grenades or score) | 'fight'. URL ?mode= > saved choice > map default.
+const MODE_CFG = CFG.modes.perMap[MAP];
+let MODE = (() => {
+  const q = new URLSearchParams(location.search).get('mode') || localStorage.getItem(CFG.modes.storageKey);
+  return MODE_CFG.allowed.includes(q) ? q : MODE_CFG.default;
+})();
+const isFight = () => MODE === 'fight';
+document.body.classList.toggle('explore', !isFight());
 const IS = SNOW ? CFG.snow : CFG.island;   // terrain-map config (island or snow)
 const ISLAND = MAP === 'island' || SNOW;   // terrain map (heightfield, props, no camp walls)
 // Island: a square world box around the circle (grid / bounds), no walls or cover boxes
@@ -348,13 +356,41 @@ for (const ev of ['pointerdown', 'keydown']) document.addEventListener(ev, () =>
 function setMap(m) {
   if (!MAPS.includes(m)) return;
   localStorage.setItem(CFG.maps.storageKey, m);
-  const u = new URL(location.href); u.searchParams.delete('map');
+  const u = new URL(location.href); u.searchParams.delete('map'); u.searchParams.delete('mode'); u.searchParams.delete('from');
   if (m !== MAP || u.href !== location.href) location.href = u.href;
 }
 document.querySelectorAll('.map-btn').forEach((b) => {
   b.classList.toggle('active', b.dataset.map === MAP);
   b.addEventListener('click', (e) => { e.stopPropagation(); setMap(b.dataset.map); });
 });
+// Mode selector (start screen) + M key in play
+const modeNote = document.getElementById('mode-note'), modeNotice = document.getElementById('mode-notice');
+let noticeT = 0;
+function syncModeUi() {
+  document.body.classList.toggle('explore', !isFight());
+  document.querySelectorAll('.mode-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.mode === MODE);
+    b.disabled = !MODE_CFG.allowed.includes(b.dataset.mode);
+  });
+  modeNote.textContent = MODE_CFG.allowed.length < 2 ? `${CFG.mapNames[MAP]} is Fight only` : '';
+  const u = new URL(location.href);
+  if (u.searchParams.get('mode') !== MODE) { u.searchParams.set('mode', MODE); history.replaceState(null, '', u.href); }
+}
+function setMode(m, notice = true) {
+  if (!MODE_CFG.allowed.includes(m)) return false;
+  if (m === MODE) { syncModeUi(); return true; }
+  MODE = m;
+  localStorage.setItem(CFG.modes.storageKey, m);
+  if (isFight()) { resetEnemies(); spawnTimer = SP.interval; }
+  else {
+    for (const en of enemies) { en.alive = false; en.dying = false; en.rising = 0; en.group.visible = false; en.collider.disabled = true; }
+    pickups.reset(); nadePickups.reset(); cancelGrenade();
+  }
+  syncModeUi();
+  if (notice) { modeNotice.textContent = isFight() ? 'FIGHT MODE' : 'EXPLORE MODE'; modeNotice.classList.remove('hidden'); clearTimeout(noticeT); noticeT = setTimeout(() => modeNotice.classList.add('hidden'), 1600); }
+  return true;
+}
+document.querySelectorAll('.mode-btn').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); setMode(b.dataset.mode, false); }));
 overlay.addEventListener('click', () => {
   audio.unlock();
   renderer.domElement.requestPointerLock();
@@ -392,11 +428,17 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (KEYS.mute.includes(e.code) && !e.repeat) { audio.toggleMute(); return; }
+  if (KEYS.fpsCounter.includes(e.code) && !e.repeat) { e.preventDefault(); toggleFpsCounter(); return; }
+  if (KEYS.mode.includes(e.code) && !e.repeat && !isDead()) {
+    if (MODE_CFG.allowed.length > 1) setMode(isFight() ? 'explore' : 'fight');
+    else { modeNotice.textContent = `${CFG.mapNames[MAP]}: Fight only`; modeNotice.classList.remove('hidden'); clearTimeout(noticeT); noticeT = setTimeout(() => modeNotice.classList.add('hidden'), 1600); }
+    return;
+  }
   if (!pointerLocked) return;
   keys[e.code] = true;
   if (e.code === CFG.doors.key && !e.repeat && nearDoor && !isDead()) useDoor(nearDoor);
   if (KEYS.reload.includes(e.code) && !player.reloading && !nadeAim.holding && player.ammo < MAG_SIZE) startReload();
-  if (KEYS.grenade.includes(e.code) && !e.repeat && !isDead()) holdGrenade();
+  if (KEYS.grenade.includes(e.code) && !e.repeat && !isDead() && isFight()) holdGrenade();
 });
 document.addEventListener('keyup', (e) => { keys[e.code] = false; if (KEYS.grenade.includes(e.code)) releaseGrenade(); });
 
@@ -602,7 +644,7 @@ function restartGame() {
   yaw = 0; pitch = 0;
   hpVal.textContent = String(player.health);
   ammoVal.textContent = String(player.ammo);
-  resetEnemies();
+  if (isFight()) resetEnemies();
   spawnTimer = SP.interval;
   cancelGrenade();
   aimHeld = false; aimT = 0;
@@ -1271,10 +1313,12 @@ function gameStep(dt) {
   }
   updateWeapon(dt);
   updateDoors(dt);
-  updateSpawning(dt);
-  updateEnemyAI(dt);
-  pickups.update(dt, player.pos, player.pos.y - PLAYER_HEIGHT);
-  nadePickups.update(dt, player.pos, player.pos.y - PLAYER_HEIGHT);
+  if (isFight()) {
+    updateSpawning(dt);
+    updateEnemyAI(dt);
+    pickups.update(dt, player.pos, player.pos.y - PLAYER_HEIGHT);
+    nadePickups.update(dt, player.pos, player.pos.y - PLAYER_HEIGHT);
+  }
   if (player.nadeCd > 0) player.nadeCd -= dt;
   grenades.update(dt);
   updateGrenadePreview();
@@ -1295,12 +1339,24 @@ function gameStep(dt) {
 
 // Frame-rate cap (CFG.scene.fpsCap, both maps): skip rAF callbacks until a frame interval has passed
 let lastFrameMs = -1e9;
+// FPS counter (F3 toggles, saved in localStorage; visible by default)
+const fpsEl = document.getElementById('fps-counter');
+let fpsFrames = 0, fpsT0 = performance.now(), fpsNow = 0;
+let fpsShown = localStorage.getItem(CFG.fpsCounter.storageKey) !== '0';
+fpsEl.classList.toggle('off', !fpsShown);
+function toggleFpsCounter() { fpsShown = !fpsShown; localStorage.setItem(CFG.fpsCounter.storageKey, fpsShown ? '1' : '0'); fpsEl.classList.toggle('off', !fpsShown); }
 let frames = 0;
 function tick(now = performance.now()) {
   requestAnimationFrame(tick);
   if (SC.fpsCap > 0 && now - lastFrameMs < 1000 / SC.fpsCap - 2) return;
   lastFrameMs = now;
   frames++;
+  fpsFrames++;
+  if (now - fpsT0 >= CFG.fpsCounter.every * 1000) {
+    fpsNow = Math.round(fpsFrames * 1000 / (now - fpsT0)); fpsFrames = 0; fpsT0 = now;
+    fpsEl.textContent = `FPS: ${fpsNow}`;
+    fpsEl.classList.toggle('bad', fpsNow < 20); fpsEl.classList.toggle('warn', fpsNow >= 20 && fpsNow < 25);
+  }
   const dt = Math.min(clock.getDelta(), 0.05);
   if (ISLAND) {
     island.update(clock.elapsedTime, camera.position);
@@ -1356,7 +1412,7 @@ if (ARRIVAL) {
 let nearDoor = null;
 function useDoor(d) {
   if (doors.going) return;
-  doors.go(d, { health: player.health, ammo: player.ammo, grenades: player.grenades, kills: player.kills || 0 });
+  doors.go(d, { health: player.health, ammo: player.ammo, grenades: player.grenades, kills: player.kills || 0, mode: MODE }, { mode: MODE });
 }
 function updateDoors() {
   nearDoor = doors.update(0, player.pos, clock.elapsedTime);
@@ -1368,7 +1424,8 @@ function updateDoors() {
 syncCamera();
 buildBlocked();
 buildReachable();
-placeInitialEnemies();
+if (isFight()) placeInitialEnemies();
+syncModeUi();
 tick();
 
 // Expose a tiny debug hook in console
@@ -1379,6 +1436,7 @@ window.__fps = {
   step: (dt, n = 1) => { for (let i = 0; i < n; i++) { if (isDead()) break; updateScope(dt); gameStep(dt); for (const en of enemies) en.update(dt); } },
   spawnRandomTarget, hasLineOfSight, restartGame,
   get spawnTimer() { return spawnTimer; },
+  get mode() { return MODE; }, setMode, get fps() { return fpsNow; }, get fpsShown() { return fpsShown; }, toggleFpsCounter,
   damageAt, hitsCover, pickups, validPickupSpot,
   grenades, nadePickups, throwGrenade, holdGrenade, releaseGrenade, cancelGrenade, nadeAim, previewDots, previewRing, previewPos, bulletDamage, audio,
   assets: Object.fromEntries(Object.entries(ASSETS).map(([k, a]) => [k, k === 'textures'

@@ -101,3 +101,15 @@
 #door-fade-text { color: #fff; font: 600 28px system-ui, sans-serif; letter-spacing: 0.08em; }
 #door-prompt { position: fixed; left: 50%; top: 60%; transform: translateX(-50%); color: #fff; font: 600 18px system-ui, sans-serif; background: rgba(0,0,0,0.5); padding: 6px 14px; border-radius: 6px; z-index: 20; pointer-events: none; }
 #door-prompt.hidden { display: none; }
+
+/* Explore / Fight mode, FPS counter */
+#mode-select { display: flex; gap: 10px; margin: 0 0 4px; }
+.mode-btn { font: inherit; font-size: 0.95rem; padding: 7px 14px; border-radius: 8px; cursor: pointer;
+  background: rgba(255,255,255,0.08); color: #eee; border: 1px solid rgba(255,255,255,0.3); }
+.mode-btn.active { background: #2f6f9f; border-color: #8fc8f0; }
+.mode-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+#fps-counter { position: fixed; top: 8px; left: 10px; z-index: 40; pointer-events: none; color: #7f7; font: 600 14px ui-monospace, monospace; background: rgba(0,0,0,0.45); padding: 2px 8px; border-radius: 4px; }
+#fps-counter.warn { color: #ffd84a; } #fps-counter.bad { color: #ff5a5a; } #fps-counter.off { display: none; }
+#mode-notice { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); z-index: 40; pointer-events: none; color: #fff; font: 700 22px system-ui, sans-serif; background: rgba(0,0,0,0.55); padding: 8px 18px; border-radius: 8px; letter-spacing: 0.06em; }
+#mode-notice.hidden { display: none; }
+body.explore #health, body.explore #weapon .nades, body.explore #hitmarker { display: none; }
