@@ -1,0 +1,49 @@
+<!--
+  File: browser-bench.html
+  Project: browser-bench
+  Role: Page shell. Benchmarks this browser for our web games (Browser FPS, AoE RTS, AR game).
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Browser Bench</title>
+  <link rel="stylesheet" href="browser-bench.css">
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>Browser Bench</h1>
+    <p class="sub">How well will this browser run our games?</p>
+    <div class="row">
+      <button id="run-all" class="big">▶ Run all</button>
+      <button id="dl-json" disabled>⬇ Download JSON</button>
+      <button id="dl-txt" disabled>⬇ Download TXT</button>
+    </div>
+    <div class="bar"><div id="all-bar"></div></div>
+    <p id="status" class="muted">Ready. Keep this tab visible while tests run.</p>
+  </header>
+
+  <section class="card" id="result-card">
+    <h2>Result</h2>
+    <div id="score" class="score">–</div>
+    <ul id="verdicts" class="verdicts"><li class="muted">Run all tests to get verdicts.</li></ul>
+  </section>
+
+  <section class="card"><h2>Device</h2><dl id="device" class="kv"></dl></section>
+  <section class="card"><h2>Features</h2><ul id="features" class="feat"></ul></section>
+
+  <section class="card">
+    <h2>Tests</h2>
+    <div id="tests"></div>
+    <div id="stage" class="stage"></div>
+    <div class="row"><button id="tap-sound">🔊 Tap-to-sound test</button><span id="tap-out" class="muted"></span></div>
+  </section>
+</main>
+<script type="module" src="browser-bench.js"></script>
+</body>
+</html>
