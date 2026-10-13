@@ -433,38 +433,19 @@
     }
   }
 
+  const A = window.CAR_RUN_ASSETS;
+
   function drawEntity(e) {
     const x = laneX(e.lane);
     const y = e.type === 'coin' ? S.coinHeight : 0;
     const p = project(x, y, e.z);
     if (!p) return;
     if (e.type === 'coin') {
-      const r = Math.max(S.coinMinRadius, p.k * S.coinRadius);
-      ctx.fillStyle = C.coin;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y - r, r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = C.coinInner;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y - r, r * 0.55, 0, Math.PI * 2);
-      ctx.fill();
+      A.coin.draw(ctx, p, { C, S });
     } else if (e.type === 'barrier') {
-      const w = p.k * S.barrierW;
-      const h = p.k * S.barrierH;
-      ctx.fillStyle = C.barrier;
-      ctx.fillRect(p.x - w / 2, p.y - h, w, h);
-      ctx.fillStyle = C.barrierStripe;
-      ctx.fillRect(p.x - w / 2, p.y - h * 0.55, w, h * 0.18);
+      A.barrier.draw(ctx, p, { C, S, w: p.k * S.barrierW, h: p.k * S.barrierH });
     } else {
-      const w = p.k * S.carW;
-      const h = p.k * S.carH;
-      ctx.fillStyle = C.car;
-      ctx.fillRect(p.x - w / 2, p.y - h, w, h * 0.7);
-      ctx.fillStyle = C.carGlass;
-      ctx.fillRect(p.x - w * 0.35, p.y - h * 0.85, w * 0.7, h * 0.25);
-      ctx.fillStyle = C.carWheel;
-      ctx.fillRect(p.x - w * 0.4, p.y - h * 0.15, w * 0.25, h * 0.15);
-      ctx.fillRect(p.x + w * 0.15, p.y - h * 0.15, w * 0.25, h * 0.15);
+      A.trafficCar.draw(ctx, p, { C, S, w: p.k * S.carW, h: p.k * S.carH });
     }
   }
 
@@ -474,41 +455,11 @@
     if (!p) return;
     const w = p.k * S.playerW;
     const h = p.k * S.playerH;
-    ctx.fillStyle = C.playerShadow;
-    const sh = project(player.x, 0, pz);
-    if (sh) {
-      ctx.beginPath();
-      ctx.ellipse(sh.x, sh.y, w * 0.45, Math.max(3, h * 0.12), 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    const body = nitroOn && nitro > 0 ? C.playerNitro : C.player;
-    ctx.fillStyle = body;
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y - h);
-    ctx.lineTo(p.x + w / 2, p.y - h * 0.35);
-    ctx.lineTo(p.x + w * 0.42, p.y);
-    ctx.lineTo(p.x - w * 0.42, p.y);
-    ctx.lineTo(p.x - w / 2, p.y - h * 0.35);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = C.playerOutline;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.fillStyle = C.playerGlass;
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y - h * 0.88);
-    ctx.lineTo(p.x + w * 0.28, p.y - h * 0.5);
-    ctx.lineTo(p.x - w * 0.28, p.y - h * 0.5);
-    ctx.closePath();
-    ctx.fill();
-    if (nitroOn && nitro > 0) {
-      ctx.fillStyle = C.nitroFlame;
-      ctx.beginPath();
-      ctx.moveTo(p.x - w * 0.15, p.y);
-      ctx.lineTo(p.x, p.y + h * (0.45 + Math.random() * S.nitroFlame));
-      ctx.lineTo(p.x + w * 0.15, p.y);
-      ctx.fill();
-    }
+    A.car.draw(ctx, p, {
+      C, S, w, h,
+      shadow: project(player.x, 0, pz),
+      nitro: nitroOn && nitro > 0,
+    });
   }
 
   function draw() {
