@@ -53,6 +53,11 @@ function resize() {
   renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize); resize();
+new ResizeObserver(resize).observe(view);
+document.getElementById('btn-code').onclick = (e) => {
+  const hidden = document.getElementById('app').classList.toggle('code-hidden');
+  e.target.textContent = hidden ? 'Show code' : 'Hide code';
+};
 renderer.setAnimationLoop(() => {
   if ($('opt-spin').checked) content.rotation.y += 0.005;
   controls.update(); renderer.render(scene, camera);

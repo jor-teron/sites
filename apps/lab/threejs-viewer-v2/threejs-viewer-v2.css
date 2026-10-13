@@ -22,3 +22,14 @@ button.run { background: #2f6fd8; font-weight: 700; }
 #errors { margin: 0; max-height: 34vh; overflow: auto; background: #3a0d14; color: #ffd5d5; padding: 10px;
   font: 13px/1.4 Consolas, monospace; white-space: pre-wrap; border-top: 3px solid #f44; }
 #hint { padding: 6px 10px 10px; color: #889; font-size: 11px; }
+#btn-code { display: none; }
+@media (max-width: 700px) {
+  #app { flex-direction: column; height: 100dvh; }
+  #view { flex: 0 0 55%; min-height: 0; }
+  #side { width: auto; flex: 1; min-height: 0; border-left: 0; border-top: 1px solid #262a40; }
+  .bar { flex-wrap: wrap; }
+  #hud { right: 8px; }
+  #btn-code { display: inline-block; }
+  #app.code-hidden #view { flex: 1; }
+  #app.code-hidden #side { display: none; }
+}
