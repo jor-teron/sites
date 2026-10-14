@@ -113,3 +113,43 @@
 #mode-notice { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); z-index: 40; pointer-events: none; color: #fff; font: 700 22px system-ui, sans-serif; background: rgba(0,0,0,0.55); padding: 8px 18px; border-radius: 8px; letter-spacing: 0.06em; }
 #mode-notice.hidden { display: none; }
 body.explore #health, body.explore #weapon .nades, body.explore #hitmarker { display: none; }
+
+/* Touch controls (browser-fps_touch.js) */
+body.touch-on, body.touch-on canvas { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; overscroll-behavior: none; }
+#touch-layer { position: fixed; inset: 0; z-index: 8; display: none; touch-action: none; user-select: none; -webkit-user-select: none; --tc-size: 1; --tc-op: 0.6; }
+#touch-layer.on { display: block; }
+.tc-btn { position: absolute; width: calc(58px * var(--tc-size)); height: calc(58px * var(--tc-size)); border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.7); background: rgba(20,20,20,0.35); color: #fff; font: 700 calc(13px * var(--tc-size)) system-ui, sans-serif;
+  opacity: var(--tc-op); touch-action: none; padding: 0; -webkit-tap-highlight-color: transparent; }
+.tc-btn.big { width: calc(84px * var(--tc-size)); height: calc(84px * var(--tc-size)); background: rgba(200,40,40,0.4); }
+.tc-btn.small { width: calc(42px * var(--tc-size)); height: calc(42px * var(--tc-size)); }
+.tc-btn.down { background: rgba(255,255,255,0.45); }
+.tc-btn.lock { background: rgba(60,160,255,0.55); }
+.tc-btn.hide { display: none; }
+#tc-fire   { right: calc(28px * var(--tc-size)); bottom: calc(70px * var(--tc-size)); }
+#tc-aim    { right: calc(130px * var(--tc-size)); bottom: calc(40px * var(--tc-size)); }
+#tc-jump   { right: calc(22px * var(--tc-size)); bottom: calc(170px * var(--tc-size)); }
+#tc-reload { right: calc(120px * var(--tc-size)); bottom: calc(120px * var(--tc-size)); }
+#tc-nade   { right: calc(205px * var(--tc-size)); bottom: calc(40px * var(--tc-size)); }
+#tc-use    { right: calc(110px * var(--tc-size)); bottom: calc(200px * var(--tc-size)); background: rgba(40,180,90,0.45); }
+#tc-fire2  { left: calc(24px * var(--tc-size)); top: calc(40%); }
+#tc-sprint { left: calc(150px * var(--tc-size)); bottom: calc(165px * var(--tc-size)); }
+#tc-mode   { right: calc(70px * var(--tc-size)); top: 10px; }
+#tc-pause  { right: 14px; top: 10px; }
+#tc-stick { position: absolute; left: calc(110px * var(--tc-size)); top: 72%; width: calc(110px * var(--tc-size)); height: calc(110px * var(--tc-size));
+  margin: calc(-55px * var(--tc-size)) 0 0 calc(-55px * var(--tc-size)); border-radius: 50%; border: 2px solid rgba(255,255,255,0.55);
+  background: rgba(0,0,0,0.2); opacity: calc(var(--tc-op) * 0.8); pointer-events: none; }
+#tc-stick.on { opacity: var(--tc-op); }
+#tc-knob { position: absolute; left: 50%; top: 50%; width: 46%; height: 46%; margin: -23% 0 0 -23%; border-radius: 50%; background: rgba(255,255,255,0.6); }
+#tc-cancel { position: absolute; right: calc(200px * var(--tc-size)); bottom: calc(130px * var(--tc-size)); display: none; padding: 10px 16px; border-radius: 10px;
+  border: 2px dashed #ff8080; color: #fff; font: 600 14px system-ui, sans-serif; background: rgba(120,0,0,0.35); pointer-events: none; }
+#tc-cancel.on { display: block; } #tc-cancel.hot { background: rgba(255,40,40,0.7); }
+#tc-rotate { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center; background: #000; color: #fff; font: 600 22px system-ui, sans-serif; text-align: center; padding: 20px; }
+#tc-rotate.on { display: flex; }
+#touch-settings { margin: 4px 0 8px; font-size: 0.85rem; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; }
+#touch-settings button { font: inherit; padding: 6px 12px; border-radius: 8px; cursor: pointer; background: rgba(255,255,255,0.1); color: #eee; border: 1px solid rgba(255,255,255,0.35); }
+#touch-settings input { width: 70px; vertical-align: middle; }
+body.touch-on.explore #tc-fire2 { display: none; }
+/* keep HP / ammo clear of the touch buttons */
+body.touch-on #weapon { bottom: auto; top: 8px; right: 130px; }
+body.touch-on #health { bottom: auto; top: 34px; left: 10px; }
