@@ -13,6 +13,7 @@ import { buildSnow } from './browser-fps_snow.js';
 import { createDoors } from './browser-fps_doors.js';
 import { setupIslandLook } from './browser-fps_look.js';
 import { createFx } from './browser-fps_fx.js';
+import { createTouch } from './browser-fps_touch.js';
 
 // ─── Tunables (from browser-fps_config.js) ──────────────────────────────────
 const CFG = window.BROWSER_FPS_CONFIG;
@@ -313,6 +314,9 @@ const player = {
 
 const keys = Object.create(null);
 let pointerLocked = false;
+let touchPlaying = false;   // playing via on-screen touch controls (no pointer lock)
+const touchMove = { x: 0, y: 0, sprint: false };   // analog joystick (browser-fps_touch.js)
+const active = () => pointerLocked || touchPlaying;
 let shooting = false;
 let aimHeld = false;   // right mouse button held
 let aimT = 0;          // 0 = hip, 1 = fully scoped (smoothed)
@@ -332,16 +336,17 @@ function unlockPointer() {
   if (document.pointerLockElement) {
     document.exitPointerLock();
   }
-  pointerLocked = false;
+  pointerLocked = false; touchPlaying = false;
   overlay.classList.toggle('hidden', isDead());
   hud.classList.remove('visible');
 }
 
 function syncPointerLockUi() {
   pointerLocked = document.pointerLockElement === renderer.domElement;
-  overlay.classList.toggle('hidden', pointerLocked || isDead());
-  hud.classList.toggle('visible', pointerLocked);
-  if (!pointerLocked) clearInput();
+  if (pointerLocked) touchPlaying = false;
+  overlay.classList.toggle('hidden', active() || isDead());
+  hud.classList.toggle('visible', active());
+  if (!active()) clearInput();
 }
 
 // ─── Input ──────────────────────────────────────────────────────────────────
@@ -391,12 +396,17 @@ function setMode(m, notice = true) {
   return true;
 }
 document.querySelectorAll('.mode-btn').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); setMode(b.dataset.mode, false); }));
+let lastOverlayPtr = 'mouse';
+overlay.addEventListener('pointerdown', (e) => { lastOverlayPtr = e.pointerType; });
 overlay.addEventListener('click', () => {
   audio.unlock();
+  if (touch && touch.enabled && lastOverlayPtr !== 'mouse') return;   // touch start handled in browser-fps_touch.js
   renderer.domElement.requestPointerLock();
 });
+retryBtn.addEventListener('pointerdown', (e) => { lastOverlayPtr = e.pointerType; });
 retryBtn.addEventListener('click', () => {
   restartGame();
+  if (touch && touch.enabled && lastOverlayPtr !== 'mouse') { startTouchPlay(); return; }
   renderer.domElement.requestPointerLock();
 });
 
@@ -411,12 +421,15 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) unlockPointer();
 });
 
-document.addEventListener('mousemove', (e) => {
-  if (!pointerLocked) return;
-  yaw -= e.movementX * sensNow();
-  pitch -= e.movementY * sensNow();
+function lookBy(dx, dy) {
+  yaw -= dx * sensNow();
+  pitch -= dy * sensNow();
   const lim = Math.PI / 2 - CFG.player.pitchLimitPad;
   pitch = Math.max(-lim, Math.min(lim, pitch));
+}
+document.addEventListener('mousemove', (e) => {
+  if (!pointerLocked) return;
+  lookBy(e.movementX, e.movementY);
 });
 
 document.addEventListener('keydown', (e) => {
@@ -434,7 +447,7 @@ document.addEventListener('keydown', (e) => {
     else { modeNotice.textContent = `${CFG.mapNames[MAP]}: Fight only`; modeNotice.classList.remove('hidden'); clearTimeout(noticeT); noticeT = setTimeout(() => modeNotice.classList.add('hidden'), 1600); }
     return;
   }
-  if (!pointerLocked) return;
+  if (!active()) return;
   keys[e.code] = true;
   if (e.code === CFG.doors.key && !e.repeat && nearDoor && !isDead()) useDoor(nearDoor);
   if (KEYS.reload.includes(e.code) && !player.reloading && !nadeAim.holding && player.ammo < MAG_SIZE) startReload();
@@ -589,8 +602,9 @@ function updateMovement(dt) {
   if (held(KEYS.right)) wish.add(right);
   if (held(KEYS.left)) wish.sub(right);
   if (wish.lengthSq() > 0) wish.normalize();
+  if (touchMove.x || touchMove.y) { wish.addScaledVector(forward, touchMove.y).addScaledVector(right, touchMove.x); if (wish.lengthSq() > 1) wish.normalize(); }
 
-  const sprint = held(KEYS.sprint) && aimT === 0;          // no sprint while scoped
+  const sprint = (held(KEYS.sprint) || touchMove.sprint) && aimT === 0;          // no sprint while scoped
   const speed = MOVE_SPEED * (sprint ? SPRINT_MULT : 1) * (1 + (SCOPE.moveMult - 1) * aimT);
   const wade = ISLAND && groundAt(player.pos.x, player.pos.z) < IS.waterLevel - 0.15 ? IS.waterSlow : 1;
   player.vel.x = wish.x * speed * wade;
@@ -1105,7 +1119,7 @@ function updateWeapon(dt) {
     }
   }
 
-  if (shooting && pointerLocked) fire();
+  if (shooting && active()) fire();
 
   if (flashT > 0) {
     flashT -= dt;
@@ -1366,9 +1380,10 @@ function tick(now = performance.now()) {
     if (islandLook) islandLook.update(clock.elapsedTime, player.pos);
   }
 
-  if (pointerLocked && !isDead()) {
+  if (touch) touch.update();
+  if (active() && !isDead()) {
     gameStep(dt);
-  } else if (pointerLocked) {
+  } else if (active()) {
     // Dead: still allow look, no move
     camera.rotation.x = pitch;
     camera.rotation.y = yaw;
@@ -1377,8 +1392,8 @@ function tick(now = performance.now()) {
   updateScope(dt);   // always (also eases out of scope when paused / dead)
   for (const en of enemies) en.update(dt);
   vm.update(dt, {
-    moving: pointerLocked && !isDead() && (held(KEYS.forward) || held(KEYS.back) || held(KEYS.left) || held(KEYS.right)),
-    sprint: held(KEYS.sprint) && aimT === 0,
+    moving: active() && !isDead() && (held(KEYS.forward) || held(KEYS.back) || held(KEYS.left) || held(KEYS.right) || !!(touchMove.x || touchMove.y)),
+    sprint: (held(KEYS.sprint) || touchMove.sprint) && aimT === 0,
     onGround: player.onGround,
     yaw, pitch,
   });
@@ -1421,6 +1436,33 @@ function updateDoors() {
   doorPrompt.classList.toggle('hidden', !show);
   if (show) doorPrompt.textContent = `E — go to ${CFG.mapNames[nearDoor.to] || nearDoor.to}`;
 }
+// On-screen touch controls (keyboard + mouse always keep working)
+function startTouchPlay() {
+  if (isDead()) return;
+  touchPlaying = true;
+  overlay.classList.add('hidden'); hud.classList.add('visible');
+}
+const touch = createTouch({
+  overlay,
+  start: startTouchPlay,
+  pause: () => unlockPointer(),
+  playing: () => active() && !isDead(),
+  look: (dx, dy) => lookBy(dx * 1.6, dy * 1.6),
+  setMove: (x, y, sp) => { touchMove.x = x; touchMove.y = y; touchMove.sprint = sp; },
+  setFire: (b) => { shooting = b && !nadeAim.holding; },
+  toggleAim: () => { aimHeld = !aimHeld; },
+  aiming: () => aimHeld,
+  jump: () => { keys.Space = true; setTimeout(() => { keys.Space = false; }, 150); },
+  reload: () => { if (!player.reloading && !nadeAim.holding && player.ammo < MAG_SIZE) startReload(); },
+  nadeHold: () => isFight() && holdGrenade(),
+  nadeRelease: () => releaseGrenade(),
+  nadeCancel: () => cancelGrenade(),
+  nearDoor: () => (doors.going ? null : nearDoor),
+  useDoor: (d) => useDoor(d),
+  canToggleMode: () => MODE_CFG.allowed.length > 1,
+  toggleMode: () => setMode(isFight() ? 'explore' : 'fight'),
+  fight: () => isFight(),
+});
 syncCamera();
 buildBlocked();
 buildReachable();
@@ -1446,5 +1488,5 @@ window.__fps = {
   get aimT() { return aimT; },
   get sens() { return sensNow(); },
   get moveSpeedNow() { return Math.hypot(player.vel.x, player.vel.z); },
-  keys,
+  keys, touch, touchMove, get touchPlaying() { return touchPlaying; }, get shooting() { return shooting; }, get pitch() { return pitch; },
 };
