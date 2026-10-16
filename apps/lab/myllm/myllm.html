@@ -1,48 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Header Comment: Main HTML file for myllm WebApp Demo -->
-    <!-- Dark theme. Manual inputs for both model size (KB) and parameter count. -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>myllm - Manual Size & Params</title>
-    <link rel="stylesheet" href="myllm.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>myllm – train a tiny language model in your browser</title>
+  <link rel="stylesheet" href="myllm.css">
 </head>
 <body>
-    <div class="container">
-        <h1>myllm Demo</h1>
-        <p class="subtitle">Tiny pure-JS character model. Enter size and parameters, edit training data, then train.</p>
+<main class="container">
+  <header>
+    <h1>myllm</h1>
+    <p class="subtitle">A tiny character-level language model, trained from scratch in your browser. Pure JavaScript, no libraries.</p>
+  </header>
 
-        <div class="section">
-            <h2>Model Settings</h2>
-            <div class="controls">
-                <label for="sizeInput">Model Size (KB):</label>
-                <input type="number" id="sizeInput" value="5" min="1" max="100" step="1">
-                <br><br>
-                <label for="paramInput">Parameters:</label>
-                <input type="number" id="paramInput" value="10000" min="1000" max="200000" step="1000">
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Training Data (editable)</h2>
-            <textarea id="trainingText" rows="10" placeholder="Paste or type your own training text here..."></textarea>
-            <button id="trainBtn">Train Model</button>
-            <div id="trainStatus">Ready. Set size and parameters, edit text, then train.</div>
-        </div>
-
-        <div class="section">
-            <h2>Generate Text</h2>
-            <input type="text" id="promptInput" placeholder="Start with a few letters or words" value="The">
-            <button id="generateBtn">Generate</button>
-            <div id="output"></div>
-        </div>
-
-        <div class="info">
-            <p>Dark theme. Manual size (KB) and parameter inputs. English only.</p>
-            <p>Educational toy. Larger values train slower. Output remains basic.</p>
-        </div>
+  <section class="card">
+    <h2>1 · Model settings</h2>
+    <div class="grid">
+      <label>Parameters (target)<input type="number" id="paramInput" value="10000" min="1000" max="300000" step="1000"></label>
+      <label>Context (chars)<input type="number" id="contextInput" value="6" min="2" max="12"></label>
+      <label>Training steps<input type="number" id="stepsInput" value="3000" min="100" max="50000" step="500"></label>
+      <label>Model size<input type="text" id="sizeInput" readonly></label>
     </div>
-    <script src="myllm.js"></script>
+    <p class="hint" id="statShape"></p>
+    <details><summary>What do these mean?</summary>
+      <p><b>Tokens:</b> each character is one token with its own ID number. <b>Context:</b> how many previous characters the model looks at to guess the next one.</p>
+      <p><b>Embeddings:</b> each token gets a small list of numbers (a vector) that the model learns. The context vectors are joined in order, so “the” ≠ “eht”.</p>
+      <p><b>Parameters:</b> all the learnable numbers (embeddings + weights + biases). Size = parameters × 4 bytes.</p>
+    </details>
+  </section>
+
+  <section class="card">
+    <h2>2 · Training data</h2>
+    <textarea id="trainingText" rows="8" placeholder="Paste your training text here..."></textarea>
+    <div class="row">
+      <button id="trainBtn">Train</button>
+      <button id="stopBtn" class="secondary" disabled>Stop</button>
+    </div>
+    <div class="progress"><div id="progressBar"></div></div>
+    <div class="stats">
+      <div><span>Params</span><b id="statParams">–</b></div>
+      <div><span>Steps</span><b id="statSteps">0</b></div>
+      <div><span>Loss</span><b id="statLoss">–</b></div>
+    </div>
+    <canvas id="lossChart"></canvas>
+    <p id="trainStatus" class="hint">Ready. Edit the text if you like, then press Train.</p>
+    <details><summary>How does training work?</summary>
+      <p><b>Forward pass:</b> embeddings → hidden layer (tanh) → a score for every possible next character → softmax turns scores into probabilities.</p>
+      <p><b>Loss:</b> cross-entropy = −log(probability of the correct next char). Random guessing gives about ln(vocab) ≈ 3.9; lower is better.</p>
+      <p><b>Backprop:</b> works out how much each parameter caused the error. <b>Optimizer (Adam):</b> nudges every parameter a little to lower the loss, 32 examples at a time. The learning rate slowly decays.</p>
+      <p>Note: with a small text the model can memorize it (very low loss). Give it more text to make it generalize.</p>
+    </details>
+  </section>
+
+  <section class="card">
+    <h2>3 · Generate</h2>
+    <input type="text" id="promptInput" value="The" placeholder="Start text">
+    <div class="grid">
+      <label>Temperature <span id="tempVal">0.80</span><input type="range" id="tempInput" min="0.1" max="2" step="0.05" value="0.8"></label>
+      <label>Length<input type="number" id="lenInput" value="300" min="10" max="2000"></label>
+    </div>
+    <button id="generateBtn">Generate</button>
+    <pre id="output"></pre>
+    <p class="hint">Low temperature = safe & repetitive. High = creative & messy.</p>
+  </section>
+</main>
+<script src="myllm.js"></script>
 </body>
 </html>
