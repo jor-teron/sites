@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<!--
+File: wiki-extractor.html
+Project: wiki-extractor
+Description: Main HTML page for the Wikipedia Main Body Text Extractor web app.
+Purpose: Provides UI to input starting Wikipedia page link, set depth (default 2), page limit (default 250),
+choose output mode (children tree or flat list), extract only main body plain text from English Wikipedia pages,
+display results, and download as .txt.
+Author: Built for Jor Teron
+Date: 2026-10-16
+Notes: Pure client-side HTML + CSS + JS. No backend. Uses Wikipedia MediaWiki API with CORS.
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wiki Main Body Extractor</title>
+    <link rel="stylesheet" href="wiki-extractor.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Wikipedia Main Body Text Extractor</h1>
+        <p class="subtitle">Extract main body plain text from English Wikipedia pages, up to chosen depth.</p>
+
+        <div class="controls">
+            <label for="startUrl">Starting Wikipedia Page Link:</label>
+            <input type="text" id="startUrl" placeholder="https://en.wikipedia.org/wiki/Artificial_intelligence" value="https://en.wikipedia.org/wiki/Artificial_intelligence">
+
+            <label for="depth">Depth (levels):</label>
+            <input type="number" id="depth" min="1" max="5" value="2">
+
+            <label for="pageLimit">Page Limit:</label>
+            <input type="number" id="pageLimit" min="1" max="500" value="250">
+
+            <label for="outputMode">Output Mode:</label>
+            <select id="outputMode">
+                <option value="children">Children (Tree)</option>
+                <option value="flat">Flat List</option>
+            </select>
+
+            <button id="extractBtn">Extract</button>
+            <button id="stopBtn" disabled>Stop</button>
+            <button id="downloadBtn" disabled>Download .txt</button>
+        </div>
+
+        <div id="status" class="status">Ready. Enter a link and click Extract.</div>
+        <div id="progress" class="progress"></div>
+        <pre id="output" class="output"></pre>
+    </div>
+
+    <script src="wiki-extractor.js"></script>
+</body>
+</html>
