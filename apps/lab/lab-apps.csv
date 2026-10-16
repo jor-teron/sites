@@ -1,16 +1,21 @@
 # Lab apps — one per line: name, path, icon (optional; empty = <folder>/<folder>_icon.png or a letter tile)
 # Paths are relative to this folder. Lines starting with # are comments.
 name, path, icon
-Notebook, notebook/,
-Paper Keyboard, paper-keyboard/,
-Device Benchmark, devbench/,
-Island Game Demo, island-demo/,
-Phone, ../media/phone/,
 Sling Birds, sling-birds/,
 AoE RTS, aoe-rts/,
-Browser Bench, browser-bench/,
-Three.js Viewer v2, threejs-viewer-v2/,
 Pacman, pacman/,
+
+MyLLM, myllm/,
+Wiki Extractor, wiki-extractor/,
+
+Notebook, notebook/,
+Paper Keyboard, paper-keyboard/,
+
+Three.js Viewer v2, threejs-viewer-v2/,
+Device Benchmark, devbench/,
+Browser Bench, browser-bench/,
+AI benchmark, ai-bench.html, 
+Island Game Demo, island-demo/,
 WebRTC Chat, ../connectivity/webrtc-chat/,
 P2P Chat, ../connectivity/p2pchat.html,
-Wiki Extractor, wiki-extractor/,
+Phone, ../media/phone/,
