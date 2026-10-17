@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<!--
+  File: story.html
+  Project: story
+  Description: Main HTML for the Story webapp - chat interface with model toggles and About card
+  Features: Streaming chat, model switching (Lite/Mini/Pro), local persistence
+  Author: Grok
+  Date: 2026-10-17
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Story</title>
+  <link rel="stylesheet" href="story.css">
+  <!-- Transformers.js CDN for model loading -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0"></script>
+</head>
+<body>
+  <!-- App header -->
+  <header>
+    <h1>Story</h1>
+    <p>Local storytelling models</p>
+  </header>
+
+  <!-- Model toggle buttons -->
+  <div class="model-toggles" id="model-toggles">
+    <button class="toggle-btn active" data-model="lite" id="btn-lite">Lite</button>
+    <button class="toggle-btn" data-model="mini" id="btn-mini" disabled>Mini</button>
+    <button class="toggle-btn" data-model="pro" id="btn-pro" disabled>Pro</button>
+  </div>
+
+  <!-- Status indicator -->
+  <div class="status-bar" id="status">Loading Lite...</div>
+
+  <!-- Chat messages container -->
+  <div class="chat-container" id="chat"></div>
+
+  <!-- User input area -->
+  <div class="input-area">
+    <input type="text" id="user-input" placeholder="Tell me a story..." autocomplete="off">
+    <button id="send-btn">Send</button>
+  </div>
+
+  <!-- About card at bottom -->
+  <div class="about-card">
+    <h3>About Story</h3>
+    <p>
+      This webapp runs small language models entirely in your browser for generating short stories.
+      Models are downloaded once and cached locally. Chat history is saved for 30 days.
+      Models are refreshed every 3 months.
+    </p>
+    <p>
+      <strong>Lite</strong>: Tiny LilyStory (~0.5 MB) — instant start.<br>
+      <strong>Mini</strong>: ~10 MB TinyStories model — better coherence.<br>
+      <strong>Pro</strong>: ~49 MB IllaryiaStories — best quality among the three.
+    </p>
+    <p>All processing is local. No data leaves your device after the initial download.</p>
+  </div>
+
+  <!-- Main application script -->
+  <script type="module" src="story.js"></script>
+</body>
+</html>

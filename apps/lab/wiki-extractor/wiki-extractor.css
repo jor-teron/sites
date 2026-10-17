@@ -41,12 +41,41 @@ h1 {
     color: #ffffff;
 }
 
-/* Subtitle */
-.subtitle {
-    color: #aaaaaa;
-    margin-bottom: 20px;
-    font-size: 0.95rem;
+/* Subtitle removed; About card replaces it */
+
+/* Output header with copy button */
+.output-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #cccccc;
 }
+
+/* About card */
+.about-card {
+    margin-top: 24px;
+    padding: 16px;
+    background: #252525;
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: #bbbbbb;
+    font-size: 0.9rem;
+}
+
+/* About card heading */
+.about-card h2 {
+    font-size: 1.1rem;
+    color: #ffffff;
+    margin-bottom: 8px;
+}
+
+/* About card paragraphs */
+.about-card p {
+    margin-bottom: 6px;
+}
+
 
 /* Controls section */
 .controls {

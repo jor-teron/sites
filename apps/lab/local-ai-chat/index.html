@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!--
+================================================================================
+File: index.html
+Project: local-ai-chat
+Description: Entry point that redirects to the main application file.
+Purpose: Satisfies the project structure rule requiring index.html to redirect
+         to the primary HTML file named after the project.
+Author: Grok
+Date: 2026-10-17
+================================================================================
+-->
+<html lang="en">
+<head>
+    <!-- Meta tags for character set and viewport -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting to Local AI Chat</title>
+    <!-- Immediate redirect to the main project file -->
+    <meta http-equiv="refresh" content="0; url=local-ai-chat.html">
+</head>
+<body>
+    <!-- Fallback message if redirect is blocked -->
+    <p>Redirecting to <a href="local-ai-chat.html">Local AI Chat</a>...</p>
+    <!-- JavaScript fallback redirect -->
+    <script>
+        // Immediate client-side redirect as backup
+        window.location.href = "local-ai-chat.html";
+    </script>
+</body>
+</html>

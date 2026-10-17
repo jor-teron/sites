@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<!--
+================================================================================
+File: local-ai-chat.html
+Project: local-ai-chat
+Description: Main HTML file for the Local AI Chat + Prompt Helper WebApp.
+Purpose: Provides the chat interface, model selector, theme toggle, and prompt helpers.
+         Loads the corresponding CSS and JS files.
+Author: Grok
+Date: 2026-10-17
+================================================================================
+-->
+<html lang="en">
+<head>
+    <!-- Character encoding and responsive viewport -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local AI Chat</title>
+    <!-- Link to project stylesheet -->
+    <link rel="stylesheet" href="local-ai-chat.css">
+</head>
+<body>
+    <!-- Application header with title and controls -->
+    <header>
+        <h1>Local AI Chat</h1>
+        <div class="controls">
+            <!-- Model selection dropdown -->
+            <label for="model-select">Model:</label>
+            <select id="model-select">
+                <option value="HuggingFaceTB/SmolLM2-135M-Instruct" selected>SmolLM2-135M (Default)</option>
+                <option value="onnx-community/Qwen2.5-0.5B-Instruct">Qwen2.5-0.5B</option>
+            </select>
+            <!-- Theme toggle button -->
+            <button id="theme-toggle">Toggle Theme</button>
+            <!-- Clear chat button -->
+            <button id="clear-chat">Clear Chat</button>
+        </div>
+    </header>
+
+    <!-- Main content area -->
+    <main>
+        <!-- Chat history display -->
+        <div id="chat-history"></div>
+        <!-- Status message area -->
+        <div id="status">Initializing...</div>
+    </main>
+
+    <!-- User input area -->
+    <div id="input-area">
+        <!-- Prompt helper quick actions -->
+        <div class="prompt-helpers">
+            <button id="improve-prompt">Improve Prompt</button>
+            <button id="icon-style">Make Icon-Style</button>
+            <button id="shorten">Shorten</button>
+        </div>
+        <!-- Text input and send button -->
+        <div class="input-row">
+            <input type="text" id="user-input" placeholder="Type a message or prompt..." autocomplete="off">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
+    <!-- Load the application logic -->
+    <script type="module" src="local-ai-chat.js"></script>
+</body>
+</html>

@@ -61,6 +61,35 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Function: Strips trailing sections from plain text extract (always applied)
+// Removes See also, References, Notes, Citations, External links, Further reading, Bibliography, and similar
+function stripTrailingSections(text) {
+    // List of section headings to cut at (case-insensitive, whole line)
+    const sectionPatterns = [
+        /^\s*See also\s*$/im,
+        /^\s*References\s*$/im,
+        /^\s*Notes\s*$/im,
+        /^\s*Citations\s*$/im,
+        /^\s*External links\s*$/im,
+        /^\s*Further reading\s*$/im,
+        /^\s*Bibliography\s*$/im,
+        /^\s*Sources\s*$/im,
+        /^\s*Notes and references\s*$/im
+    ];
+
+    // Find the earliest cut position
+    let cutIndex = text.length;
+    for (const pattern of sectionPatterns) {
+        const match = text.match(pattern);
+        if (match && match.index !== undefined && match.index < cutIndex) {
+            cutIndex = match.index;
+        }
+    }
+
+    // Return text up to the cut (trimmed)
+    return text.substring(0, cutIndex).trim();
+}
+
 // Function: Fetches main body extract and links for a single page title
 async function fetchPageData(title) {
     // Build query parameters
@@ -93,8 +122,9 @@ async function fetchPageData(title) {
         return { title: title, text: '', links: [], error: 'Page not found' };
     }
 
-    // Get plain text extract (main body)
-    const text = page.extract || '';
+    // Get plain text extract (main body) and strip trailing sections
+    const rawText = page.extract || '';
+    const text = stripTrailingSections(rawText);
 
     // Collect internal article links (namespace 0)
     const links = [];
@@ -333,6 +363,10 @@ async function startExtraction() {
         stopBtn.disabled = false;
     }
     downloadBtn.disabled = true;
+    const copyBtn = document.getElementById('copyBtn');
+    if (copyBtn) {
+        copyBtn.disabled = true;
+    }
     outputEl.textContent = '';
     updateStatus(`Starting extraction from: ${startTitle} | Depth: ${maxDepth} | Limit: ${maxPages}`);
 
@@ -353,6 +387,10 @@ async function startExtraction() {
         updateStatus(`Done. Collected ${pages.length} page(s).`);
         updateProgress('');
         downloadBtn.disabled = false;
+        const copyBtn = document.getElementById('copyBtn');
+        if (copyBtn) {
+            copyBtn.disabled = false;
+        }
 
         // Store mode for download
         downloadBtn.dataset.mode = mode;
@@ -368,7 +406,26 @@ async function startExtraction() {
     }
 }
 
-// Function: Stop button handler - sets abort flag
+// Function: Copy output text to clipboard
+async function handleCopy() {
+    const outputEl = document.getElementById('output');
+    const copyBtn = document.getElementById('copyBtn');
+    if (!outputEl || !outputEl.textContent) {
+        updateStatus('Nothing to copy.');
+        return;
+    }
+    try {
+        await navigator.clipboard.writeText(outputEl.textContent);
+        updateStatus('Output copied to clipboard.');
+        if (copyBtn) {
+            const original = copyBtn.textContent;
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => { copyBtn.textContent = original; }, 1500);
+        }
+    } catch (err) {
+        updateStatus('Copy failed. Select the text manually.');
+    }
+}
 function handleStop() {
     abortExtraction = true;
     updateStatus('Stopping... will finish current request then halt.');
@@ -411,5 +468,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const stopBtn = document.getElementById('stopBtn');
     if (stopBtn) {
         stopBtn.addEventListener('click', handleStop);
+    }
+
+    // Copy button click
+    const copyBtn = document.getElementById('copyBtn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', handleCopy);
     }
 });

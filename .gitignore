@@ -4,3 +4,4 @@ test.txt
 
 # local playwright harness
 _test/
+raw/
