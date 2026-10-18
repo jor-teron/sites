@@ -1,0 +1,109 @@
+/*
+ * Hub menu category rows + desktop flyout (hub/hub_flyout.css) — logic in hub_flyout.js.
+ * Category rows: icon + name, big tap targets. Flyout: second column beside the menu,
+ * jelly slide-in, soft shadow, highlighted hovered row. Hover styles only for real mice.
+ */
+.menu .menu-cat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--text);
+  transition: background 0.12s ease;
+}
+.menu .menu-cat .cat-icon {
+  width: 30px; height: 30px; flex: 0 0 30px;
+  border-radius: 8px;
+  object-fit: contain;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+.menu .menu-cat .cat-icon.missing { visibility: hidden; }
+.menu .menu-cat .cat-name { flex: 1; }
+.menu .menu-cat.fly-on {
+  background: rgba(110, 168, 254, 0.20);
+  color: #fff;
+}
+
+.menu-fly {
+  position: absolute;
+  z-index: 101;
+  min-width: 230px;
+  max-width: 300px;
+  max-height: min(calc(100dvh - var(--header-h) - 10px), 640px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  background: var(--menu);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.5), 0 4px 14px rgba(0,0,0,0.3);
+  transform-origin: left top;
+}
+.menu-fly[hidden] { display: none; }
+.menu-fly.pop { animation: fly-jelly 0.42s cubic-bezier(.2,.9,.3,1.25); }
+@keyframes fly-jelly {
+  0%   { opacity: 0; transform: translateX(-14px) scale(0.92, 0.96); }
+  55%  { opacity: 1; transform: translateX(3px) scale(1.03, 0.98); }
+  78%  { transform: translateX(-1px) scale(0.99, 1.01); }
+  100% { transform: none; }
+}
+.menu-fly .fly-head {
+  padding: 6px 10px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.menu-fly .fly-msg { padding: 10px; color: var(--muted); font-size: 13px; }
+.menu-fly .fly-app {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+.menu-fly .fly-app:hover {
+  background: rgba(110, 168, 254, 0.20);
+  color: #fff;
+  transform: translateX(2px);
+}
+.menu-fly .fly-app:active { transform: scale(0.97); }
+.menu-fly .icon {
+  width: 26px; height: 26px; flex: 0 0 26px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+.menu-fly .icon.letter {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #6ea8fe, #b06efe);
+  color: #fff; font-weight: 700; font-size: 14px;
+}
+
+/* Real mouse only: › arrow on rows that have a flyout */
+@media (hover: hover) and (pointer: fine) {
+  .menu .menu-cat.has-fly::after {
+    content: '\203A';
+    font-size: 18px;
+    opacity: 0.5;
+    margin-left: 8px;
+  }
+  .menu .menu-cat.has-fly.fly-on::after { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-fly.pop { animation: none; }
+  .menu-fly .fly-app { transition: none; }
+}

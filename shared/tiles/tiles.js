@@ -2,6 +2,8 @@
  * Shared category tiles page (shared/tiles/tiles.js). Reads the CSV named in <body data-csv> (name, path, icon, newtab; # comments; header row optional)
  * and draws one square tile per app. Empty icon = <folder>/<folder>_icon.png (file x/name.ext →
  * x/name_icon.png); if that image is missing the tile shows the first letter instead.
+ * Also loaded by hub.html (no #grid there): it then only shares the CSV parser as
+ * window.TilesCsv = { parse, defaultIcon } for the Hub menu flyout (hub/hub_flyout.js).
  */
 (function () {
   'use strict';
@@ -17,6 +19,8 @@
     if (path.endsWith('/')) { const f = path.slice(0, -1).split('/').pop(); return path + f + '_icon.png'; }
     return path.replace(/\.[^./]+$/, '') + '_icon.png';
   }
+  window.TilesCsv = { parse: parse, defaultIcon: defaultIcon };
+  if (!grid) return;   // Hub page: parser only, no tiles grid
   function letter(name) {
     const d = document.createElement('span'); d.className = 'letter'; d.textContent = name[0].toUpperCase(); return d;
   }

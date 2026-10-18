@@ -24,9 +24,12 @@
  * Focus: the app iframe gets keyboard focus after it loads, after an app is picked and when the
  * menu closes, so real keys reach the game without clicking into it first (never while the
  * menu or the controller popover is open).
+ * Menu label: window.HUB_MENU_LABEL from hub_config.js (one place to rename 'Home').
+ * Category rows show the category icon (<folder>/<folder>_icon.png of its CAT_PAGES entry);
+ * on a real mouse hub_flyout.js adds the GNOME 2 style app flyout (window.__hubFly hooks below).
  */
 (function () {
-  const HEADER_DEFAULT = 'Home';
+  const HEADER_DEFAULT = window.HUB_MENU_LABEL || 'Home';   // hub_config.js
   const catBtn = document.getElementById('cat-btn');
   const catLabel = document.getElementById('cat-label');
   const menu = document.getElementById('menu');
@@ -44,6 +47,8 @@
   };
 
   const emptyText = document.getElementById('empty-text');
+  catLabel.textContent = HEADER_DEFAULT;
+  if (emptyText) emptyText.textContent = "Open '" + HEADER_DEFAULT + "' and pick an App";
   const tilesEl = document.getElementById('tiles');
 
   const TXT_VIEWER = 'shared/script/txt-view.html';
@@ -484,7 +489,15 @@
         head.removeAttribute('aria-expanded');
         head.removeAttribute('aria-controls');
         head.dataset.page = '1';
-        head.textContent = cat;
+        const cimg = document.createElement('img');
+        cimg.className = 'cat-icon';
+        cimg.alt = '';
+        cimg.src = iconPathFor(CAT_PAGES[cat]);
+        cimg.addEventListener('error', () => cimg.classList.add('missing'));
+        const cname = document.createElement('span');
+        cname.className = 'cat-name';
+        cname.textContent = cat;
+        head.append(cimg, cname);
         head.addEventListener('click', () => loadApp(pageApp));
         menu.appendChild(head);
         return;
@@ -666,6 +679,7 @@
   document.addEventListener('pointerdown', (e) => {
     if (!menu.classList.contains('open')) return;
     if (menu.contains(e.target) || catBtn.contains(e.target)) return;
+    if (e.target.closest && e.target.closest('#menu-fly')) return;   // desktop flyout (hub_flyout.js)
     closeMenu();
   }, true);
   menu.addEventListener('click', (e) => e.stopPropagation());
@@ -853,6 +867,21 @@
     const a = (window.HUB_APPS || []).find((x) => String(x.entryUrl || '').indexOf(match) >= 0);
     if (a) loadApp(a);
     return !!a;
+  };
+  /** hub_flyout.js: open an app picked in a category's flyout, as if from that category page. */
+  window.__hubFly = {
+    catPages: CAT_PAGES,
+    openFromCat(cat, entryUrl, name, newTab) {
+      entryUrl = normalizeEntryUrl(entryUrl);
+      if (!entryUrl) return;
+      let app = apps.find((a) => a.entryUrl === entryUrl);
+      if (!app) {
+        app = { category: '', name: name || entryUrl, entryUrl, newTab: !!newTab, hidden: true };
+        registerApp(app);
+      }
+      loadApp(app);
+      if (currentEntry === entryUrl) { setFromCat(cat); updateLabBtn(); }   // opened in the frame
+    }
   };
   primeFrame();
   loadApps();
