@@ -1,73 +1,60 @@
 /*
   File: story_model.js
   Project: AI Story
-  Description: Lazy model loading + streamed generation via transformers.js
-               3.0.0 (CDN). Only the selected model is loaded (one at a time,
-               to spare phone RAM). Uses q8 weights on WASM for broad support.
+  Description: Page-side client for story_worker.js. Model catalogue,
+               lazy load (one model at a time), streamed generation, stop.
 */
-const TF_URL = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0";
-
-/** Model catalogue: all real ONNX text-generation repos with tokenizer.json. */
 export const MODELS = {
-  lite: { id: "onnx-community/TinyStories-656K-ONNX", label: "Lite" },
-  mini: { id: "onnx-community/TinyStories-3M-ONNX", label: "Mini" },
-  pro:  { id: "onnx-community/IllaryiaStories-1M-ONNX", label: "Pro" },
+  lite: { id: "onnx-community/TinyStories-656K-ONNX", label: "Lite" }, // ~1 MB q8
+  mini: { id: "onnx-community/TinyStories-3M-ONNX", label: "Mini" },   // ~20 MB q8
+  pro:  { id: "Xenova/llama2.c-stories42M", label: "Pro" },            // ~44 MB q8
 };
 
-let tf = null;
-const cache = {};      // key -> pipeline (only the current one is kept)
-let loading = null;    // { key, promise }
+let worker = null;
+let loadWait = null;   // { key, resolve, reject, onProgress }
+let gen = null;        // { onToken, resolve, reject }
 
-/** Load (or reuse) a model. onProgress(pct) during download. */
-export async function loadModel(key, onProgress) {
-  if (cache[key]) return cache[key];
-  if (loading && loading.key === key) return loading.promise;
-  const promise = (async () => {
-    tf = tf || await import(TF_URL);
-    const files = {};
-    const pipe = await tf.pipeline("text-generation", MODELS[key].id, {
-      dtype: "q8",
-      device: "wasm",
-      progress_callback: (p) => {
-        if (p.status === "progress" && p.total) {
-          files[p.file] = [p.loaded, p.total];
-          let l = 0, t = 0;
-          Object.values(files).forEach(([a, b]) => { l += a; t += b; });
-          onProgress && onProgress(Math.round((l / t) * 100));
-        }
-      },
-    });
-    // free the previous model before keeping this one
-    for (const k of Object.keys(cache)) { try { await cache[k].dispose(); } catch {} delete cache[k]; }
-    cache[key] = pipe;
-    return pipe;
-  })();
-  loading = { key, promise };
-  try { return await promise; } finally { if (loading && loading.promise === promise) loading = null; }
+function onMsg(e) {
+  const m = e.data;
+  if (m.type === "progress" && loadWait && loadWait.key === m.key) loadWait.onProgress && loadWait.onProgress(m.pct);
+  else if (m.type === "ready" && loadWait && loadWait.key === m.key) { loadWait.resolve(); loadWait = null; }
+  else if (m.type === "token" && gen) gen.onToken(m.text);
+  else if (m.type === "done" && gen) { gen.resolve(m); gen = null; }
+  else if (m.type === "error") {
+    if (gen) { gen.reject(new Error(m.msg)); gen = null; }
+    else if (loadWait) { loadWait.reject(new Error(m.msg)); loadWait = null; }
+  }
+}
+function spawn() {
+  worker = new Worker(new URL("./story_worker.js", import.meta.url), { type: "module" });
+  worker.onmessage = onMsg;
+}
+spawn();
+
+/** Load model key in the worker. Resolves when ready. */
+export function loadModel(key, onProgress) {
+  if (loadWait) loadWait.reject(new Error("superseded"));
+  return new Promise((resolve, reject) => {
+    loadWait = { key, resolve, reject, onProgress };
+    worker.postMessage({ type: "load", key, id: MODELS[key].id });
+  });
 }
 
-/** Stream a continuation of prompt. onText(fullTextSoFar, tokPerSec). Returns final text. */
-export async function generate(pipe, prompt, { maxTokens, temperature }, onText) {
-  const start = performance.now();
-  let text = "", count = 0;
-  const streamer = new tf.TextStreamer(pipe.tokenizer, {
-    skip_prompt: true,
-    skip_special_tokens: true,
-    callback_function: (chunk) => {
-      text += chunk; count++;
-      const sec = (performance.now() - start) / 1000;
-      onText(text, sec > 0.3 ? count / sec : 0);
-    },
+/** Stream a continuation; onToken(chunk) per piece. Resolves {text,tps}. */
+export function generate(prompt, opts, onToken) {
+  return new Promise((resolve, reject) => {
+    gen = { onToken, resolve, reject };
+    worker.postMessage({ type: "generate", prompt, opts: { maxTokens: opts.maxTokens, temperature: opts.temperature } });
   });
-  const out = await pipe(prompt, {
-    max_new_tokens: maxTokens,
-    do_sample: true,
-    temperature,
-    top_k: 40,
-    repetition_penalty: 1.15,
-    return_full_text: false,
-    streamer,
-  });
-  const final = (out && out[0] && out[0].generated_text) || text;
-  return String(final).trim() || text.trim();
+}
+
+/**
+ * Stop now. WASM inference doesn't yield between tokens, so a "stop" message
+ * would only arrive at the end; instead kill the worker and start a fresh one.
+ * The model must be loaded again (from browser cache, no re-download).
+ */
+export function stop() {
+  worker.terminate(); spawn();
+  if (gen) { gen.resolve({ stopped: true, tps: 0 }); gen = null; }
+  if (loadWait) { loadWait.reject(new Error("superseded")); loadWait = null; }
 }

@@ -5,7 +5,7 @@
   Description: Minimal local story writer. One prompt box, one story feed,
                everything else (model, length, creativity, history, about)
                lives in the ⚙ settings panel.
-  Scripts: story.js (entry) -> story_db.js, story_model.js, story_ui.js
+  Scripts: story.js (entry) -> story_db.js, story_model.js (-> story_worker.js), story_ui.js
 -->
 <html lang="en">
 <head>
@@ -37,13 +37,13 @@
 
       <label class="lbl">Model</label>
       <div class="seg" id="model-seg">
-        <button type="button" data-model="lite">Lite<small>~1 MB</small></button>
-        <button type="button" data-model="mini">Mini<small>~20 MB</small></button>
-        <button type="button" data-model="pro">Pro<small>~20 MB</small></button>
+        <button type="button" data-model="lite">Lite<small>~1 MB download</small></button>
+        <button type="button" data-model="mini">Mini<small>~20 MB download</small></button>
+        <button type="button" data-model="pro">Pro<small>~50 MB download</small></button>
       </div>
 
       <label class="lbl" for="len">Length <span id="len-val"></span></label>
-      <input type="range" id="len" min="40" max="300" step="20">
+      <input type="range" id="len" min="240" max="600" step="20">
 
       <label class="lbl" for="temp">Creativity <span id="temp-val"></span></label>
       <input type="range" id="temp" min="0.3" max="1.2" step="0.1">

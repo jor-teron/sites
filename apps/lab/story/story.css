@@ -42,8 +42,9 @@ button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-c
 .composer input:focus { border-color: var(--acc); }
 .send { min-width: 52px; min-height: 52px; border: 0; border-radius: 50%; background: var(--acc); color: var(--bg); font-size: 1.2rem; }
 .send:disabled { opacity: .4; }
-.composer.busy .send { animation: pulse 1s infinite; }
-@keyframes pulse { 50% { transform: scale(.9); } }
+.composer.busy .send { background: var(--fg); }
+.cursor { display: inline-block; width: .5em; height: 1.1em; margin-left: 2px; vertical-align: text-bottom; background: var(--acc); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
 
 /* Settings sheet */
 .sheet { position: fixed; inset: 0; background: #0006; display: flex; align-items: flex-end; justify-content: center; z-index: 10; }

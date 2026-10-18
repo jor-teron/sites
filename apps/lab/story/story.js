@@ -6,50 +6,55 @@
                chosen model lazily (Lite by default, ~1 MB).
 */
 import { openDB, saveMessage, loadHistory, clearHistory } from "./story_db.js";
-import { MODELS, loadModel, generate } from "./story_model.js";
+import { MODELS, loadModel, generate, stop } from "./story_model.js";
 import * as ui from "./story_ui.js";
 
 const prefs = ui.loadPrefs();
-let pipe = null;        // pipeline for prefs.model, null until loaded
+let readyKey = null;    // model key loaded in the worker
 let busy = false;
 
-/** Load the current model, updating status. */
+/** Load the current model, updating status. Returns true when ready. */
 async function ensureModel() {
   const key = prefs.model, label = MODELS[key].label;
-  if (pipe && pipe.__key === key) return pipe;
+  if (readyKey === key) return true;
   ui.setStatus(`${label} · loading…`);
   try {
-    const p = await loadModel(key, (pct) => { if (prefs.model === key) ui.setStatus(`${label} · ${pct}%`); });
-    if (prefs.model !== key) return null;   // user switched meanwhile
-    p.__key = key; pipe = p;
+    await loadModel(key, (pct) => ui.setStatus(`${label} · ${pct}%`));
+    readyKey = key;
     ui.setStatus(`${label} · ready`);
-    return p;
+    return true;
   } catch (e) {
-    console.error(e);
-    if (prefs.model === key) ui.setStatus(`${label} · failed (offline?)`);
-    return null;
+    if (e.message !== "superseded") { console.error(e); ui.setStatus(`${label} · failed (offline?)`); }
+    return false;
   }
 }
 
 async function onSend(e) {
   e.preventDefault();
+  if (busy) { stop(); readyKey = null; return; }              // send button doubles as Stop
   const prompt = ui.el.input.value.trim();
-  if (!prompt || busy) return;
+  if (!prompt) return;
   busy = true; ui.setBusy(true);
   ui.el.input.value = "";
   ui.addMessage("user", prompt); saveMessage("user", prompt);
-  const card = ui.addMessage("bot", "…");
+  const card = ui.addMessage("bot", "");
+  const body = document.createTextNode(prompt);
+  const cursor = document.createElement("span"); cursor.className = "cursor";
+  card.append(body, cursor);
   try {
-    const p = await ensureModel();
-    if (!p) throw new Error("model not loaded");
+    if (!(await ensureModel())) throw new Error("model not loaded");
     const label = MODELS[prefs.model].label;
-    const story = await generate(p, prompt, prefs, (text, tps) => {
-      card.textContent = prompt + " " + text;
+    const t0 = performance.now(); let n = 0;
+    const res = await generate(prompt, prefs, (chunk) => {
+      body.appendData(chunk); n++;
       ui.scrollDown();
-      if (tps) ui.setStatus(`${label} · ${tps.toFixed(1)} tok/s`);
+      const sec = (performance.now() - t0) / 1000;
+      if (sec > 0.3) ui.setStatus(`${label} · ${(n / sec).toFixed(1)} tok/s`);
     });
-    const full = prompt + " " + story;
-    card.textContent = full; saveMessage("bot", full);
+    cursor.remove();
+    saveMessage("bot", body.data);
+    ui.setStatus(res.stopped ? `${label} · stopped` : `${label} · ${res.tps.toFixed(1)} tok/s`);
+    if (res.stopped) ensureModel();
   } catch (err) {
     console.error(err);
     card.textContent = "Couldn't write a story. Check your connection for the first download, or try Lite.";
@@ -61,7 +66,6 @@ async function onSend(e) {
 function pickModel(key) {
   if (!MODELS[key] || key === prefs.model) return;
   prefs.model = key; ui.savePrefs(prefs); ui.markModel(key);
-  pipe = null;
   if (!busy) ensureModel();
 }
 

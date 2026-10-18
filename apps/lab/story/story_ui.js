@@ -17,7 +17,7 @@ const PREF_KEY = "story-prefs";
 export function loadPrefs() {
   let p = {};
   try { p = JSON.parse(localStorage.getItem(PREF_KEY)) || {}; } catch {}
-  return { model: p.model || "lite", maxTokens: p.maxTokens || 120, temperature: p.temperature || 0.8 };
+  return { model: p.model || "lite", maxTokens: Math.max(240, p.maxTokens || 320), temperature: p.temperature || 0.8 };
 }
 export function savePrefs(p) { try { localStorage.setItem(PREF_KEY, JSON.stringify(p)); } catch {} }
 
@@ -36,7 +36,11 @@ export function addMessage(role, text) {
 export function scrollDown() { el.chat.scrollTop = el.chat.scrollHeight; }
 export function clearFeed() { el.chat.querySelectorAll(".msg").forEach((m) => m.remove()); el.empty.hidden = false; }
 
-export function setBusy(b) { el.send.disabled = b; el.form.classList.toggle("busy", b); }
+export function setBusy(b) {
+  el.form.classList.toggle("busy", b);
+  el.send.textContent = b ? "■" : "➤";
+  el.send.setAttribute("aria-label", b ? "Stop" : "Write");
+}
 
 export function markModel(key) {
   el.seg.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.model === key));
