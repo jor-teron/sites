@@ -1,8 +1,8 @@
 <!--
   File: devbench.html
   Project: devbench (Device Benchmark)
-  Role: Page shell: score card, one Run all button, tabs Device / Speed / Games / AI,
-  and a Settings sheet (extra tests, history, export). Playful layer: fun.css / fun.js. Cards are built by devbench.js from tests.js.
+  Role: Page shell: score card, one Run all button, tabs Device / Speed / Games / AI / History,
+  History tab (graphs of past runs) and a Settings sheet (extra tests, history data, export). Playful layer: fun.css / fun.js. Cards are built by devbench.js from tests.js.
   Light tests only: each takes a few seconds, no libraries, no downloads.
 -->
 <!DOCTYPE html>
@@ -13,6 +13,7 @@
   <title>Device Benchmark</title>
   <link rel="stylesheet" href="devbench.css">
   <link rel="stylesheet" href="fun.css">
+  <link rel="stylesheet" href="history.css">
 </head>
 <body>
   <main class="wrap">
@@ -43,6 +44,7 @@
       <button type="button" role="tab" data-tab="speed">Speed</button>
       <button type="button" role="tab" data-tab="games">Games</button>
       <button type="button" role="tab" data-tab="ai">AI</button>
+      <button type="button" role="tab" data-tab="history">History</button>
     </nav>
 
     <section class="panel" data-panel="device">
@@ -69,6 +71,31 @@
       <p class="note">Light checks of AI-style maths. No models are downloaded; real model speed lives in Local AI Chat.</p>
     </section>
 
+    <!-- History: graph of past Run all results in this browser (history_tab.js). -->
+    <section class="panel" data-panel="history">
+      <section class="card">
+        <div class="seg" role="group" aria-label="Group by">
+          <button type="button" data-hmode="day">Day</button>
+          <button type="button" data-hmode="week">Week</button>
+          <button type="button" data-hmode="month">Month</button>
+        </div>
+        <canvas id="hist-canvas" class="hist-canvas"></canvas>
+        <div class="chips">
+          <button type="button" data-hline="cpu" style="--c:#3dd6ff">CPU</button>
+          <button type="button" data-hline="gpu" style="--c:#ffb347">GPU</button>
+          <button type="button" data-hline="mem" style="--c:#38c172">Memory</button>
+          <button type="button" data-hline="ai" style="--c:#c38bff">AI</button>
+        </div>
+        <div id="hist-detail" class="hist-detail"></div>
+        <button type="button" id="hist-png" class="share-btn">📷 Save graph (PNG)</button>
+      </section>
+      <section class="card">
+        <h2>Recent runs</h2>
+        <ul class="hist" id="history"></ul>
+        <p class="muted" id="hist-count"></p>
+      </section>
+    </section>
+
     <!-- Hidden draw target for the GPU fill-rate test. -->
     <canvas id="gpu-canvas" width="512" height="512" hidden></canvas>
   </main>
@@ -78,9 +105,15 @@
     <h2>Settings</h2>
     <h3>Extra tests</h3>
     <div id="extra-tests"></div>
-    <h3>History (this device)</h3>
-    <ul class="hist" id="history"></ul>
-    <div class="row"><button type="button" id="hist-clear">Clear history</button></div>
+    <h3>History data (this browser only, no syncing)</h3>
+    <div class="row">
+      <button type="button" id="hist-csv">⬇ CSV</button>
+      <button type="button" id="hist-json">⬇ JSON</button>
+      <button type="button" id="hist-import">⬆ Import JSON</button>
+      <button type="button" id="hist-clear">Clear</button>
+    </div>
+    <input type="file" id="hist-file" accept="application/json,.json" hidden>
+    <p class="muted" id="hist-io-out"></p>
     <h3>Export</h3>
     <div class="row">
       <button type="button" id="dl-json">⬇ JSON</button>
@@ -108,6 +141,9 @@
   <script src="chart.js"></script>
   <script src="fun.js"></script>
   <script src="history.js"></script>
+  <script src="history_chart.js"></script>
+  <script src="history_io.js"></script>
+  <script src="history_tab.js"></script>
   <script src="share.js"></script>
   <script src="devbench.js"></script>
 </body>

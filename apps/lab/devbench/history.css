@@ -1,0 +1,26 @@
+/*
+  File: history.css
+  Project: devbench
+  Role: History tab styles: Day/Week/Month switch, graph canvas, line toggle chips,
+  tapped-point details. Tap targets >= 44 px. Loaded after fun.css.
+*/
+
+/* Day / Week / Month segmented switch. */
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #121418; border-radius: 14px; padding: 4px; }
+.seg button { background: transparent; min-height: 44px; }
+.seg button.on { background: linear-gradient(135deg, #ff5fa2, #7c5cff); font-weight: 700; animation: jelly 0.5s; }
+
+/* Graph. */
+.hist-canvas { display: block; width: 100%; height: 240px; margin-top: 12px; border-radius: 12px; touch-action: manipulation; }
+
+/* Line toggles: outlined chips that fill with their color when on. */
+.chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+.chips button { background: transparent; border: 2px solid var(--c); color: var(--c); min-height: 44px; padding: 0 4px; font-weight: 600; }
+.chips button.on { background: var(--c); color: #121418; animation: jelly 0.45s; }
+
+/* Tapped point details. */
+.hist-detail { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; margin-top: 12px; min-height: 56px; font-size: 0.9rem; }
+.hist-detail > .muted { grid-column: 1 / -1; }
+.hd-score { font-size: 2.4rem; font-weight: 900; line-height: 1; animation: pop 0.5s cubic-bezier(.34, 1.56, .64, 1); }
+.hd-cats { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-val { border: 1px solid var(--c); color: var(--c); border-radius: 99px; padding: 3px 10px; font-size: 0.82rem; }

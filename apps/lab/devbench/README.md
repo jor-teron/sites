@@ -6,12 +6,13 @@ URLs `apps/lab/browser-bench/` and `apps/lab/ai-bench.html` are redirect stubs t
 
 ## Page
 - **Score card**: one overall score (0–100) and one **Run all** button (runs every main test, switching tabs as it goes).
-- **Tabs** (`#device`, `#speed`, `#games`, `#ai` in the URL open that tab):
+- **Tabs** (`#device`, `#speed`, `#games`, `#ai`, `#history` in the URL open that tab):
   - **Device**: device info (cores, RAM, GPU, screen, refresh rate, browser) + feature checklist.
   - **Speed**: CPU, GPU fill rate, Memory, JavaScript, Disk, JPEG, Ping.
   - **Games**: 2D sprites, 3D triangles, verdicts for Browser FPS / AoE RTS / AR game.
   - **AI**: matrix maths in a worker, WebAssembly, WebGPU matmul.
-- **⚙ Settings**: extra tests (Sustained 15 s with throttling chart, Video, Download speed ~12 MB), run history, export (JSON / TXT). Nothing is uploaded.
+  - **History**: graph of past Run all results in this browser. Day (each run, last 60) / Week / Month (averages); overall line plus tap-to-toggle CPU / GPU / Memory / AI lines; jelly draw-in (off with reduced motion); ⭐ best marker; tap a point for details; recent runs; 📷 Save graph (PNG).
+- **⚙ Settings**: extra tests (Sustained 15 s with throttling chart, Video, Download speed ~12 MB), history data (CSV, JSON, Import JSON from another device: merge + dedupe by run id, Clear), export of the current result (JSON / TXT). Nothing is uploaded or synced.
 - **Playful layer**: jelly score dial that fills, counts up and wobbles in; cards pop in as each test finishes and glow while running; squishy buttons; "+N vs last run" note; 📤 Share score card (1080×1350 PNG via the phone share sheet, else download). Respects reduced motion.
 
 ## Files
@@ -19,7 +20,8 @@ URLs `apps/lab/browser-bench/` and `apps/lab/ai-bench.html` are redirect stubs t
 `tests.js` (test registry), `score.js` (score + verdicts), `export.js` (JSON/TXT), `info.js`, `features.js`,
 engines: `cpu.js`, `gpu.js`, `memory.js`, `jsspeed.js`, `disk.js`, `media.js`, `network.js`, `sprites.js`, `tris.js`,
 `ai.js` + `ai_worker.js` (worker), `ai_gpu.js` (WebGPU).
-Playful/R4: `fun.css`, `fun.js` (dial, pop-in), `chart.js` (throttling chart), `history.js` (localStorage), `share.js` (share card).
+Playful/R4: `fun.css`, `fun.js` (dial, pop-in), `chart.js` (throttling chart), `history.js` (store), `share.js` (share card).
+History/R5: `history_chart.js` (canvas graph), `history_tab.js` (tab UI), `history_io.js` (CSV/JSON/PNG/import), `history.css`.
 
 ## How each test works
 - **CPU**: one worker per core, maths loop 2 s, ops/s.
@@ -39,7 +41,10 @@ Playful/R4: `fun.css`, `fun.js` (dial, pop-in), `chart.js` (throttling chart), `
 - **Download** (extra): `apps/office/ocr/vendor/tesseract-core-lstm.wasm.js` ×3.
 
 ## Saved data
-`localStorage["devbench-history"]`: last 20 Run all results (date, score, parts), newest first; Settings → Clear history.
+`localStorage["devbench-history"]`: up to 500 Run all results, newest first, this browser only:
+`{ id, date, score, parts, cats: { cpu, gpu, mem, ai }, device: { browser, model, platform, ua } }`.
+Categories average score parts: CPU = cpu + js, GPU = gpu + tris + sprites, Memory = mem + disk, AI = aimat + wasm + webgpu.
+Older entries (date / score / parts) are migrated on load. Settings → Clear deletes them.
 
 ## Score
 Each part 0–100 against a fast gaming PC on a log scale (`score.js`, `DEVBENCH_SCORE_PARTS`), weighted mean of the parts that ran. Reference values are rough; calibrate on real devices.

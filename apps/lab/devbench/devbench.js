@@ -24,6 +24,7 @@ function devbenchShowTab(name) {
   });
   document.querySelectorAll(".panel").forEach(function (p) { p.hidden = p.dataset.panel !== name; });
   if (location.hash !== "#" + name) { history.replaceState(null, "", "#" + name); }
+  document.dispatchEvent(new CustomEvent("devbench:tab", { detail: name }));
 }
 
 /* One test card: title, Run button, description, stage, progress bar, result line. */
@@ -117,9 +118,8 @@ function devbenchInit() {
   devbench$("dl-json").addEventListener("click", function () { window.DevbenchExport.json(devbenchState); });
   devbench$("dl-txt").addEventListener("click", function () { window.DevbenchExport.txt(devbenchState); });
   devbench$("share-btn").addEventListener("click", function () { window.DevbenchShare.make(devbenchState); });
-  devbench$("hist-clear").addEventListener("click", function () { window.DevbenchHistory.clear(); });
   var start = location.hash.slice(1);
-  devbenchShowTab(["device", "speed", "games", "ai"].indexOf(start) >= 0 ? start : "device");
+  devbenchShowTab(["device", "speed", "games", "ai", "history"].indexOf(start) >= 0 ? start : "device");
   window.DevbenchInfo.load();
   window.DevbenchFeatures.detect().then(function (f) { devbenchState.features = f; devbenchRenderFeatures(f); devbenchFinish(); });
 }

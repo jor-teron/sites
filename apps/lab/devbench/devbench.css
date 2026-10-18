@@ -70,8 +70,8 @@ button.big { display: block; width: 100%; min-height: 54px; margin: 12px 0 8px; 
 .bar > span { display: block; height: 100%; width: 0; background: #3d7eff; transition: width 0.2s; }
 
 /* Tabs: four big pills. */
-.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 4px 0 12px; }
-.tabs button { background: #1c1f26; border: 1px solid #2c313a; min-height: 48px; padding: 0 4px; }
+.tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 4px 0 12px; }
+.tabs button { background: #1c1f26; border: 1px solid #2c313a; min-height: 48px; padding: 0 2px; font-size: 0.85rem; }
 .tabs button.on { background: #3d7eff; border-color: #3d7eff; font-weight: 600; }
 
 /* Test card head: title left, Run button right. */
