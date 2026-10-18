@@ -203,8 +203,25 @@ body.wm-desktop .sl-openin { bottom: calc(var(--wm-task-h) + 12px); }
 .hub-set-mode.on { border-color: var(--accent); background: rgba(110,168,254,0.16); }
 .hub-set-mode:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .hub-set-note { margin-top: 12px; color: var(--muted); font-size: 13px; }
+.hub-set-note + .hub-set-title { margin-top: 16px; }
+/* on / off switch row (big target) */
+.hub-set-switch {
+  width: 100%; min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 14px; text-align: left; border: 2px solid var(--line); border-radius: 12px;
+  background: rgba(255,255,255,0.03); color: var(--text); font: inherit; cursor: pointer;
+}
+.hub-set-switch:hover { background: rgba(255,255,255,0.07); }
+.hub-set-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hub-set-sw-text { display: flex; flex-direction: column; gap: 2px; }
+.hub-set-sw-text b { font-size: 15px; }
+.hub-set-sw-text small { color: var(--muted); font-size: 12.5px; }
+.hub-set-sw { flex: 0 0 46px; height: 26px; border-radius: 13px; background: #3a4150; position: relative; transition: background 0.15s ease; }
+.hub-set-sw i { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff;
+  transition: transform 0.25s cubic-bezier(.3,1.6,.5,1); }
+.hub-set-switch.on .hub-set-sw { background: var(--accent); }
+.hub-set-switch.on .hub-set-sw i { transform: translateX(20px); }
 
 @media (prefers-reduced-motion: reduce) {
   .wm-win.wm-pop, .hub-set { animation: none; }
-  #wm-start, .wm-task, .wm-btn, .hub-set-mode { transition: none; }
+  #wm-start, .wm-task, .wm-btn, .hub-set-mode, .hub-set-sw, .hub-set-sw i { transition: none; }
 }

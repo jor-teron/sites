@@ -21,6 +21,10 @@
  *   window.__hubAppFrame()  → the focused window's iframe in Desktop mode (null when none),
  *                             else the Hub frame #app-frame.
  *   window.__hubAppFrames() → every app iframe (Hub frame + all windows).
+ * Session: the open windows (key, url, x, y, w, h, maximised, minimised, z-order, focused) are
+ * saved in localStorage 'sites-hub.wmSession' after every change (debounced, Desktop mode
+ * only, so a trip through Phone mode keeps it). hub.js calls HubWM.restoreSession(resolve)
+ * on start-up / when Desktop mode comes back; windows are clamped into the current screen.
  */
 (function () {
   'use strict';
@@ -38,7 +42,20 @@
   let zTop = 10;
   let seq = 0;
 
-  const changed = () => window.dispatchEvent(new CustomEvent('hub-wm-change'));
+  const SKEY = 'sites-hub.wmSession';
+  let restoring = false, saveT = 0;
+  const isDesk = () => !!(window.HubMode && window.HubMode.isDesktop());
+  function saveNow() {
+    if (!isDesk() || restoring) return;
+    const list = wins.map((w) => ({
+      key: w.key, url: w.url, name: w.name,
+      x: Math.round(w.rect.x), y: Math.round(w.rect.y), w: Math.round(w.rect.w), h: Math.round(w.rect.h),
+      max: !!w.max, min: !!w.min, z: +w.el.style.zIndex || 0
+    }));
+    try { localStorage.setItem(SKEY, JSON.stringify({ v: 1, wins: list, focused: active ? active.key : '' })); } catch (_) { /* full / blocked */ }
+  }
+  const saveSoon = () => { clearTimeout(saveT); saveT = setTimeout(saveNow, 250); };
+  const changed = () => { window.dispatchEvent(new CustomEvent('hub-wm-change')); saveSoon(); };
   const deskRect = () => desk.getBoundingClientRect();
 
   function setActive(w) {
@@ -145,13 +162,20 @@
     });
   }
 
-  function setRect(w, x, y, wd, ht) {
+  /** fit: keep the whole window on screen (restored sessions), else just a grab-able part. */
+  function setRect(w, x, y, wd, ht, fit) {
     const d = deskRect();
     wd = Math.max(MIN_W, Math.min(wd, d.width));
     ht = Math.max(MIN_H, Math.min(ht, d.height));
-    x = Math.max(80 - wd, Math.min(x, d.width - 80));   // keep a grab-able part on screen
-    y = Math.max(0, Math.min(y, d.height - 36));
+    if (fit) {
+      x = Math.max(0, Math.min(x, d.width - wd));
+      y = Math.max(0, Math.min(y, d.height - ht));
+    } else {
+      x = Math.max(80 - wd, Math.min(x, d.width - 80));   // keep a grab-able part on screen
+      y = Math.max(0, Math.min(y, d.height - 36));
+    }
     Object.assign(w.rect, { x, y, w: wd, h: ht });
+    saveSoon();
     const s = w.el.style;
     s.left = x + 'px'; s.top = y + 'px'; s.width = wd + 'px'; s.height = ht + 'px';
   }
@@ -240,11 +264,19 @@
     // Cascade new windows from the top-left
     const wd = Math.min(960, Math.round(d.width * 0.7)), ht = Math.min(640, Math.round(d.height * 0.8));
     const n = wins.length % 8;
-    setRect(w, 40 + n * 32, 16 + n * 28, wd, ht);
+    const r = o.rect;   // restored session rect (clamped by setRect)
+    if (r) setRect(w, r.x, r.y, r.w, r.h, true);
+    else setRect(w, 40 + n * 32, 16 + n * 28, wd, ht);
+    if (o.restore) el.classList.remove('wm-pop');   // no jelly for a restored session
+    if (o.max) { w.max = true; el.classList.add('wm-max'); maxB.title = 'Restore'; maxB.setAttribute('aria-label', 'Restore'); }
     desk.appendChild(el);
     wins.push(w);
     frame.src = o.url;
-    focus(w);
+    if (o.restore) {
+      el.style.zIndex = String(++zTop);
+      if (o.min) { w.min = true; el.classList.add('wm-min'); }
+      changed();
+    } else focus(w);
     return w;
   }
 
@@ -255,10 +287,28 @@
     focusActive() { if (active) focusFrameOf(active); },
     list() { return wins.slice(); },
     get active() { return active; },
-    onActive: null
+    onActive: null,
+    /** Re-open the saved windows. resolve(entry) → {name, icon, url, app} or null (app gone). */
+    restoreSession(resolve) {
+      let data = null;
+      try { data = JSON.parse(localStorage.getItem(SKEY) || 'null'); } catch (_) { data = null; }
+      if (!data || !Array.isArray(data.wins) || !data.wins.length) return false;
+      restoring = true;
+      try {
+        data.wins.slice().sort((a, b) => (a.z || 0) - (b.z || 0)).forEach((e) => {
+          if (!e || !e.key || wins.find((x) => x.key === e.key)) return;
+          const o = resolve(e);
+          if (!o) return;
+          open(Object.assign({}, o, { key: e.key, restore: true, rect: { x: +e.x || 0, y: +e.y || 0, w: +e.w || 640, h: +e.h || 480 }, max: !!e.max, min: !!e.min }));
+        });
+      } finally { restoring = false; }
+      const f = wins.find((x) => x.key === data.focused && !x.min);
+      if (f) focus(f); else setActive(null);
+      saveNow();
+      return wins.length > 0;
+    }
   };
 
-  const isDesk = () => !!(window.HubMode && window.HubMode.isDesktop());
   window.__hubAppFrame = () => (isDesk() ? (active ? active.frame : null) : appFrame);
   window.__hubAppFrames = () => [appFrame].concat(wins.map((w) => w.frame)).filter(Boolean);
 

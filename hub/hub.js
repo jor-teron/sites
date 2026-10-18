@@ -463,8 +463,10 @@
   /** Hash (or, at start-up only, the saved app) → open it; unknown / empty → home. */
   function applyHash(fromStart) {
     const id = hashId();
+    const restored = fromStart && wmOn() && restoreWm();   // Desktop mode: saved windows first
     let app = id ? appForId(id) : null;
     if (!id && fromStart) {
+      if (restored) return;   // the session already focused its window
       const saved = storageGet();
       app = saved ? appForId(saved) : null;
       if (app) { loadApp(app, { forceFrame: true, replaceHash: true }); return; }
@@ -920,9 +922,39 @@
       menu.querySelectorAll('button.app').forEach((b) => b.classList.toggle('active', !!w && b.dataset.entryUrl === w.key));
     };
   }
+  /** Desktop session (wm_windows.js) → windows again. Apps no longer listed are skipped;
+   *  pages known only by path (category CSV apps) are checked with a HEAD request. */
+  function restoreWm() {
+    if (!window.HubWM) return false;
+    const check = [];
+    const ok = window.HubWM.restoreSession((e) => {
+      const key = normalizeEntryUrl(e.key);
+      if (!key || !safeRel(key)) return null;
+      const app = findApp(key) || idToApp.get(entryToId.get(key) || '');
+      if (app) {
+        if (app.newTab) return null;
+        return { name: app.name, icon: iconFor(app), url: frameUrlFor(app.entryUrl), app };
+      }
+      check.push(key);
+      const name = String(e.name || '').slice(0, 80) || key.replace(/\/+$/, '').split('/').pop();
+      const extra = { category: '', name, entryUrl: key, newTab: false, hidden: true };
+      registerApp(extra);   // so its hash id resolves again
+      return { name, icon: iconPathFor(key), url: frameUrlFor(key), app: extra };
+    });
+    check.forEach((key) => {
+      if (IS_FILE) return;
+      fetch(frameUrlFor(key), { method: 'HEAD', cache: 'no-cache' }).then((r) => {
+        if (r.ok) return;
+        const w = window.HubWM.list().find((x) => x.key === key);
+        if (w) window.HubWM.close(w);
+      }).catch(() => { /* offline: keep it */ });
+    });
+    return ok;
+  }
   window.addEventListener('hub-wm-mode', (e) => {
     if (!window.HubWM) return;
     if (e.detail.mode === 'desktop') {
+      restoreWm();
       // The app in the frame moves into a window
       const app = currentEntry ? appForId(appIdFor(currentEntry)) || findApp(currentEntry) : null;
       if (currentEntry) navigateFrame('about:blank');

@@ -17,6 +17,8 @@
  * Rules: no backtick (`) and no "${" anywhere in the text (they would end / break the
  * JS string), no commas inside a cell, one app per line. A broken file shows
  * "hub_apps.js failed to load or has an error" in the hub instead of the menu.
+ * Desktop (vDesktop) is HIDDEN since the Hub has its own Desktop mode (windows + taskbar);
+ * its files stay in apps/tools/vDesktop/ and #vDesktop still opens it.
  */
 window.HUB_APPS_CSV = `
 CATEGORY, NAME,                  ENTRY_URL,                                  ICON_URL, NEW_TAB, HIDDEN, ORDER
@@ -79,7 +81,7 @@ Tools,    Weather Hourly,        apps/tools/weather-hourly/,                 ,  
 Tools,    Caption for NEI,       apps/tools/caption-for-nei/,                ,         0,       0,      440
 
 Tools,    Learning HTML (Basic), apps/tools/learning-html/,                  ,         0,       0,      910
-Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,         0,       0,      900
+Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,         0,       1,      900
 
 Lab,      Lab Page,              apps/lab/,                                  ,         0,       0,      1000
 Lab,      Device Benchmark,      apps/lab/devbench/,                         ,         0,       0,      1050

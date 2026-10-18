@@ -2,6 +2,10 @@
  * Hub taskbar (hub/wm_taskbar.js) — Desktop mode only (wm_mode.js), bottom of the screen.
  * - Start button (Hub icon + HUB_MENU_LABEL from hub_config.js): opens the CURRENT Hub menu
  *   (same menu as the top-left button, with flyout + sections) just above the taskbar.
+ *   Hover-to-open (mouse only; Hub settings switch, localStorage 'sites-hub.startHover',
+ *   default on): opens ~150 ms after pointing at Start, stays open while the pointer is over
+ *   Start / menu / flyout, closes ~300 ms after leaving them. A click still toggles; a click
+ *   right after a hover-open keeps it open (pinned, closes like a clicked menu).
  * - One button per open window (HubWM.list()): click = focus / restore, or minimise when it is
  *   already the active window. Active window highlighted, minimised ones dimmed.
  * - Tray on the right: the old top bar's right side (.header-right: Pooh Chat, the
@@ -54,9 +58,56 @@
   window.addEventListener('hub-wm-mode', placeTray);
 
   // Start = the Hub menu button (hub.js toggles the menu; the outside-click check skips #wm-start)
-  start.addEventListener('click', (e) => { e.stopPropagation(); catBtn.click(); });
+  const HOVER_KEY = 'sites-hub.startHover';
+  const OPEN_MS = 150, CLOSE_MS = 300, PIN_MS = 600;
+  const hoverOn = () => { try { return localStorage.getItem(HOVER_KEY) !== '0'; } catch (_) { return true; } };
+  const isOpen = () => menu.classList.contains('open');
+  let openT = 0, closeT = 0, hoverOpened = false, hoverAt = 0;
+
+  start.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearTimeout(openT); clearTimeout(closeT);
+    if (isOpen() && hoverOpened) {
+      hoverOpened = false;                              // pin it
+      if (Date.now() - hoverAt < PIN_MS) return;        // the click that "opens" a hover-opened menu
+    }
+    catBtn.click();
+  });
+
+  /** Pointer inside Start, the menu or its flyout? */
+  const inside = (t) => !!(t && t.closest && (t.closest('#wm-start') || t.closest('#menu') || t.closest('#menu-fly')));
+  document.addEventListener('pointerover', (e) => {
+    if (e.pointerType !== 'mouse' || !window.HubMode || !window.HubMode.isDesktop() || !hoverOn()) return;
+    const t = e.target;
+    if (inside(t)) {
+      clearTimeout(closeT);
+      if (!isOpen() && t.closest('#wm-start')) {
+        clearTimeout(openT);
+        openT = setTimeout(() => {
+          if (isOpen()) return;
+          catBtn.click();
+          hoverOpened = isOpen();
+          hoverAt = Date.now();
+        }, OPEN_MS);
+      }
+      return;
+    }
+    clearTimeout(openT);
+    if (isOpen() && hoverOpened) {
+      clearTimeout(closeT);
+      closeT = setTimeout(() => { if (isOpen() && hoverOpened) catBtn.click(); }, CLOSE_MS);
+    }
+  }, true);
+  // Pointer left the window entirely
+  document.documentElement.addEventListener('pointerleave', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    clearTimeout(openT);
+    if (isOpen() && hoverOpened) { clearTimeout(closeT); closeT = setTimeout(() => { if (isOpen() && hoverOpened) catBtn.click(); }, CLOSE_MS); }
+  });
   new MutationObserver(() => {
-    start.setAttribute('aria-expanded', menu.classList.contains('open') ? 'true' : 'false');
+    const open = menu.classList.contains('open');
+    start.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (!open) { hoverOpened = false; clearTimeout(closeT); }
   }).observe(menu, { attributes: true, attributeFilter: ['class'] });
 
   function draw() {
