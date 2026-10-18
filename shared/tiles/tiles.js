@@ -14,6 +14,9 @@
  *
  * Also loaded by hub.html (no #grid there): it then only shares the reader as
  * window.TilesCsv = { parse, groups, defaultIcon } for the Hub menu flyout (hub/hub_flyout.js).
+ *
+ * In a Desktop-mode Hub window a tile click posts {type:'hub-open-app', url, name, newInstance}
+ * to the Hub (hub.js) so the app gets its own window; Phone mode keeps the plain link.
  */
 (function () {
   'use strict';
@@ -53,6 +56,13 @@
   window.TilesCsv = { parse: parse, groups: groups, defaultIcon: defaultIcon };
   if (!grid) return;   // Hub page: reader only, no tiles grid
 
+  /** This page runs in a Hub window in Desktop mode (same-origin parent with HubWM). */
+  function hubDesktop() {
+    try {
+      const p = window.parent;
+      return p !== window && !!p.HubWM && !!p.HubMode && p.HubMode.isDesktop();
+    } catch (_) { return false; }
+  }
   function letter(name) {
     const d = document.createElement('span'); d.className = 'letter'; d.textContent = name[0].toUpperCase(); return d;
   }
@@ -61,6 +71,19 @@
     let remote = false;
     try { remote = !!(window.parent !== window && window.parent.__hubRemote); } catch (_) { /* cross-origin */ }
     if (app.newTab && !remote) { a.target = '_blank'; a.rel = 'noopener'; }
+    else {
+      // Inside a Desktop-mode Hub window: the Hub opens the app in its own window (Shift+click /
+      // middle-click = another instance); this page stays on its list. Phone mode: plain link.
+      const ask = (e, newInstance) => {
+        if (!hubDesktop()) return;
+        e.preventDefault();
+        window.parent.postMessage({ type: 'hub-open-app', url: a.href, name: app.name, newInstance: newInstance },
+          location.origin === 'null' ? '*' : location.origin);
+      };
+      a.addEventListener('click', (e) => ask(e, !!e.shiftKey));
+      a.addEventListener('mousedown', (e) => { if (e.button === 1 && hubDesktop()) e.preventDefault(); });
+      a.addEventListener('auxclick', (e) => { if (e.button === 1) ask(e, true); });
+    }
     const img = document.createElement('img'); img.alt = ''; img.src = app.icon || defaultIcon(app.path);
     img.onerror = () => img.replaceWith(letter(app.name));
     const n = document.createElement('span'); n.className = 'name'; n.textContent = app.name;

@@ -1,7 +1,8 @@
 /*
  * Settings store (apps/settings/settings_store.js) — read / write the Hub's localStorage keys
- * ('sites-hub.<key>') and tell the Hub to re-apply at once (postMessage {type:'hub-prefs'}
- * to the parent Hub; other open Hub tabs get the normal 'storage' event).
+ * ('sites-hub.<key>') and tell the Hub to re-apply at once: parent.HubPrefs.apply() directly,
+ * plus postMessage {type:'hub-prefs'} to the parent Hub; other open Hub tabs get the normal
+ * 'storage' event.
  * Keys: wallpaper, taskH, titleH, accent, theme, motion, wmMode, startHover (see hub/hub_prefs.js).
  * Also paints this app's own accent / theme so Settings matches the Hub.
  */
@@ -18,6 +19,8 @@ window.SettingsStore = (function () {
       else localStorage.setItem(P + k, String(v));
     } catch (_) { /* blocked */ }
     paintSelf();
+    // Live apply in the Hub: call it directly (same origin), plus the message / storage event as backup
+    try { const h = window.parent !== window && window.parent; if (h && h.HubPrefs) h.HubPrefs.apply(); } catch (_) { /* cross-origin */ }
     try { if (window.parent !== window) window.parent.postMessage({ type: 'hub-prefs', key: k }, location.origin === 'null' ? '*' : location.origin); } catch (_) { /* ignore */ }
     listeners.forEach((fn) => fn(k));
   }

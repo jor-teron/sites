@@ -6,14 +6,16 @@
  * (re)stored, so ordinary app files are not cached. Cross-origin (PeerJS, CDNs) is not touched.
  * App pages and apps/* files skip the browser HTTP cache (cache:'no-cache' revalidates via ETag),
  * so a phone never gets a stale copy after a push.
- * Bump CACHE when the shell list changes; old caches are deleted on activate.
+ * Bump CACHE when the shell list changes; old caches are deleted on activate. A new worker
+ * skips waiting and claims open pages; hub_update.js then reloads them once (no stale shell).
+ * Release: bump CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const CACHE = 'hub-shell-v27';  // 2026-10-19c: Settings app, wallpapers, sizes, theme, About moved
+const CACHE = 'hub-shell-v28';  // 2026-10-19d: instances, Show Desktop, tiles open own windows, hub_update.js
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',
   'hub/hub_main.css', 'hub/hub_controller.css', 'hub/hub_notification.css', 'shared/style/no-scrollbar.css',
-  'hub/hub_config.js', 'hub/hub_apps.js', 'hub/hub_tiles.js', 'hub/hub.js', 'hub/hub_flyout.js', 'hub/hub_flyout.css', 'hub/wm_mode.js', 'hub/wm_windows.js', 'hub/wm_taskbar.js', 'hub/hub_settings.js', 'hub/wm.css', 'hub/hub_wallpapers.js', 'hub/hub_prefs.js', 'shared/tiles/tiles.js', 'hub/hub_controller_config.js',
+  'hub/hub_config.js', 'hub/hub_apps.js', 'hub/hub_tiles.js', 'hub/hub.js', 'hub/hub_flyout.js', 'hub/hub_flyout.css', 'hub/wm_mode.js', 'hub/wm_windows.js', 'hub/wm_taskbar.js', 'hub/hub_settings.js', 'hub/wm.css', 'hub/hub_wallpapers.js', 'hub/hub_prefs.js', 'hub/hub_update.js', 'shared/tiles/tiles.js', 'hub/hub_controller_config.js',
   'hub/hub_notify.js', 'hub/hub_viewer.js', 'hub/hub_viewer_pdf.js', 'hub/hub_pointer.js', 'hub/hub_receive.js',
   'hub/hub_role.js', 'hub/hub_remote.js', 'shared/link/link_scan.js',
   'hub/hub-controller.js', 'hub/hub_link.js', 'hub/hub_linkstate.js', 'hub/hub_chat.js', 'hub/hub_chat.css', 'shared/link/link_chat.js', 'hub/hub-gamebar.js',
@@ -37,6 +39,8 @@ self.addEventListener('activate', (e) => {
     .then((keys) => Promise.all(keys.filter((k) => k.startsWith('hub-shell-') && k !== CACHE).map((k) => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
+
+self.addEventListener('message', (e) => { if (e.data && e.data.type === 'skip-waiting') self.skipWaiting(); });
 
 self.addEventListener('fetch', (e) => {
   const req = e.request;

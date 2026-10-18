@@ -1,6 +1,6 @@
 /*
- * Settings → Sizes (apps/settings/sec_sizes.js). Taskbar height Small 32 / Normal 40 /
- * Large 48 px (key 'taskH') and window title bar Slim 24 / Normal 28 / Large 34 px
+ * Settings → Sizes (apps/settings/sec_sizes.js). Taskbar position Bottom / Top (key 'taskPos',
+ * default bottom), taskbar height Small 32 / Normal 40 / Large 48 px (key 'taskH') and window title bar Slim 24 / Normal 28 / Large 34 px
  * (key 'titleH'). Applied live to the Hub (hub_prefs.js → --wm-task-h / --wm-title-h).
  */
 (function () {
@@ -19,7 +19,11 @@
         { value: 28, label: 'Normal', hint: '28 px' },
         { value: 34, label: 'Large', hint: '34 px' }
       ], +S.get('titleH', 28), (v) => S.set('titleH', v === 28 ? '' : v));
-      pane.append(ui.title('Taskbar'), task, ui.title('Window title bar'), title,
+      const pos = ui.choice([
+        { value: 'bottom', label: 'Bottom', hint: 'Like Windows' },
+        { value: 'top', label: 'Top', hint: 'Like GNOME / macOS' }
+      ], S.get('taskPos', 'bottom'), (v) => S.set('taskPos', v === 'bottom' ? '' : v));
+      pane.append(ui.title('Taskbar position'), pos, ui.title('Taskbar size'), task, ui.title('Window title bar'), title,
         ui.note('Desktop mode only. Changes show at once.'));
     }
   });

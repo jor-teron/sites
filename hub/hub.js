@@ -18,8 +18,8 @@
  * App links + last-app memory: an app opened in the hub frame puts a short id in the hash
  *   (hub.html#snake, #tv, #webcam, #caption-for-nei; id = folder name or file name without
  *   extension, see appIdFor) and in localStorage ('sites-hub.lastApp'). On load the hash wins,
- *   else the saved app opens; an unknown hash shows home. Back / Forward switch apps. The
- *   "Home screen" menu item clears both. NEW_TAB apps are never remembered.
+ *   else the saved app opens; an unknown hash shows home. Back / Forward switch apps (Back to
+ *   an empty hash = home, clears both). NEW_TAB apps are never remembered.
  *   The frame is navigated with location.replace so only the hub adds history entries.
  * Focus: the app iframe gets keyboard focus after it loads, after an app is picked and when the
  * menu closes, so real keys reach the game without clicking into it first (never while the
@@ -28,8 +28,10 @@
  * Category rows show the category icon (<folder>/<folder>_icon.png of its CAT_PAGES entry);
  * on a real mouse hub_flyout.js adds the GNOME 2 style app flyout (window.__hubFly hooks below).
  * Desktop mode (wm_mode.js, body.wm-desktop): apps open in windows (wm_windows.js, HubWM)
- *   instead of the frame; the hash / last-app memory follow the focused window; "Home screen"
- *   minimises all windows. Switching mode moves the open app between frame and window.
+ *   instead of the frame; the hash / last-app memory follow the focused window; goHome / Show
+ *   Desktop (taskbar) minimise all windows. Switching mode moves the open app between frame
+ *   and window. Shift+click / middle-click a menu row = new instance (HubWM newInstance);
+ *   category-page tiles in a window open their app in its own window ('hub-open-app' message).
  */
 (function () {
   const HEADER_DEFAULT = window.HUB_MENU_LABEL || 'Home';   // hub_config.js
@@ -328,9 +330,9 @@
       return;
     }
     const id = appIdFor(app.entryUrl);
-    if (wmOn()) {   // Desktop mode: own window (focuses the existing one); hash via HubWM.onActive
+    if (wmOn()) {   // Desktop mode: own window (focuses the existing one; opts.newInstance = another); hash via HubWM.onActive
       setOpen(false);
-      window.HubWM.open({ key: app.entryUrl, name: app.name, icon: iconFor(app), url: frameUrlFor(app.entryUrl), app });
+      window.HubWM.open({ key: app.entryUrl, name: app.name, icon: iconFor(app), url: frameUrlFor(app.entryUrl), app, newInstance: !!opts.newInstance });
       return;
     }
     if (!opts.forceFrame) setFromCat('');
@@ -479,21 +481,19 @@
     else goHome({ fromHistory: true });
   }
 
-  /* ---------- menu: Home screen + collapsible categories (accordion, one open) ---------- */
+  /* ---------- menu: collapsible categories (accordion, one open) ---------- */
+  // (No "Home screen" row any more: Desktop mode has Show Desktop on the taskbar; Phone
+  //  mode goes home with Back / an empty hash.)
 
+  /** Shift+click or middle-click on a menu / tile row = a new window (Desktop mode). */
+  function onOpenClick(btn, open) {
+    btn.addEventListener('click', (e) => open({ newInstance: !!e.shiftKey }));
+    btn.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });   // no autoscroll
+    btn.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); open({ newInstance: true }); } });
+  }
 
   function renderMenu(apps) {
     menu.innerHTML = '';
-    const homeBtn = document.createElement('button');
-    homeBtn.type = 'button';
-    homeBtn.className = 'app home-item';
-    homeBtn.setAttribute('role', 'menuitem');
-    homeBtn.innerHTML = '<span class="icon home-icon" aria-hidden="true">\u2302</span>';
-    const homeLabel = document.createElement('span');
-    homeLabel.textContent = 'Home screen';
-    homeBtn.appendChild(homeLabel);
-    homeBtn.addEventListener('click', () => goHome());
-    menu.appendChild(homeBtn);
     const { order, map } = groupByCategory(visibleSorted(apps));
     order.forEach((cat, i) => {
       const list = map.get(cat);
@@ -519,7 +519,7 @@
         cname.className = 'cat-name';
         cname.textContent = cat;
         head.append(cimg, cname);
-        head.addEventListener('click', () => loadApp(pageApp));
+        onOpenClick(head, (o) => loadApp(pageApp, o));
         menu.appendChild(head);
         return;
       }
@@ -555,7 +555,7 @@
 
         btn.append(img, span);
         if (app.newTab) btn.title = 'Opens in a new tab';
-        btn.addEventListener('click', () => loadApp(app));
+        onOpenClick(btn, (o) => loadApp(app, o));
         inner.appendChild(btn);
       }
       sub.appendChild(inner);
@@ -602,7 +602,7 @@
     const head = active ? headOf(active) : null;
     expandCat(head, true);
     menu.scrollTop = 0;
-    const target = active || menu.querySelector('.home-item');
+    const target = active || menu.querySelector('.menu-cat, button.app');
     if (target) {
       if (active) active.scrollIntoView({ block: 'nearest' });
       try { target.focus({ preventScroll: !!active }); } catch (_) { target.focus(); }
@@ -892,15 +892,15 @@
     if (app) loadApp(app, { forceFrame: true });
   };
   // hub_chat.js (release 4): open a Hub app by part of its entry url ('pooh-chat').
-  window.__hubOpenApp = (match) => {
+  window.__hubOpenApp = (match, opts) => {
     const a = (window.HUB_APPS || []).find((x) => String(x.entryUrl || '').indexOf(match) >= 0);
-    if (a) loadApp(a);
+    if (a) loadApp(a, opts);
     return !!a;
   };
   /** hub_flyout.js: open an app picked in a category's flyout, as if from that category page. */
   window.__hubFly = {
     catPages: CAT_PAGES,
-    openFromCat(cat, entryUrl, name, newTab) {
+    openFromCat(cat, entryUrl, name, newTab, opts) {
       entryUrl = normalizeEntryUrl(entryUrl);
       if (!entryUrl) return;
       let app = apps.find((a) => a.entryUrl === entryUrl);
@@ -908,10 +908,29 @@
         app = { category: '', name: name || entryUrl, entryUrl, newTab: !!newTab, hidden: true };
         registerApp(app);
       }
-      loadApp(app);
+      loadApp(app, opts);
       if (currentEntry === entryUrl) { setFromCat(cat); updateLabBtn(); }   // opened in the frame
     }
   };
+  // Category page in a Desktop-mode window (shared/tiles/tiles.js): a tile asks the Hub to open
+  // its app in its OWN window {type:'hub-open-app', url, name, newInstance}; the category window
+  // stays on its list. Only accepted from a Hub window of this origin, for a page of this site.
+  window.addEventListener('message', (e) => {
+    const d = e.data;
+    if (!d || d.type !== 'hub-open-app' || !wmOn()) return;
+    if (!IS_FILE && e.origin !== location.origin) return;
+    const from = window.HubWM.list().find((w) => { try { return w.frame.contentWindow === e.source; } catch (_) { return false; } });
+    if (!from) return;
+    let u;
+    try { u = new URL(String(d.url || ''), location.href); } catch (_) { return; }
+    if (u.protocol !== location.protocol || (!IS_FILE && u.origin !== location.origin)) return;
+    const base = location.pathname.replace(/[^/]*$/, '');
+    if (u.pathname.indexOf(base) !== 0) return;
+    let rel;
+    try { rel = decodeURI(u.pathname.slice(base.length)).replace(/index\.html$/i, ''); } catch (_) { return; }
+    if (!safeRel(rel)) return;
+    window.__hubFly.openFromCat(catOf(from.key), rel, String(d.name || '').slice(0, 80), false, { newInstance: !!d.newInstance });
+  });
   /* ---------- Desktop mode: windows (wm_windows.js) ---------- */
   if (window.HubWM) {
     // Focused window → hash, last-app memory, title and the menu's active row (no history entry).
@@ -947,8 +966,7 @@
       if (IS_FILE) return;
       fetch(frameUrlFor(key), { method: 'HEAD', cache: 'no-cache' }).then((r) => {
         if (r.ok) return;
-        const w = window.HubWM.list().find((x) => x.key === key);
-        if (w) window.HubWM.close(w);
+        window.HubWM.list().filter((x) => x.key === key).forEach((w) => window.HubWM.close(w));
       }).catch(() => { /* offline: keep it */ });
     });
     return ok;

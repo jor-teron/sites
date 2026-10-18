@@ -10,7 +10,7 @@
  *                 A category not listed here (Desktop, About) gets no flyout.
  *                 Deliberately separate from hub_apps.js (feature, don't merge).
  */
-window.HUB_VERSION = '0.13';
+window.HUB_VERSION = '0.14';
 window.HUB_MENU_LABEL = 'Home';
 
 window.HUB_CAT_CSV = {

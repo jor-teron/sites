@@ -11,6 +11,7 @@
  * - Diagonal grace zone: while the mouse travels from the row towards the column (inside the
  *   triangle "last point → column's left edge") other rows don't steal the flyout.
  * - Clicking an app opens it like a category-page tile (window.__hubFly.openFromCat in hub.js).
+ *   Shift+click / middle-click = a new window of it (Desktop mode instances).
  * - Clicking the category row itself still opens its category page (hub.js, unchanged).
  * - Touch / pen / phones: nothing here runs — only when (hover:hover) and (pointer:fine) match
  *   AND the event's pointerType is 'mouse'. A tap stays a tap.
@@ -90,11 +91,13 @@
     n.textContent = a.name;
     b.append(img, n);
     if (a.newTab) b.title = 'Opens in a new tab';
-    b.addEventListener('click', (e) => {
-      e.stopPropagation();
+    const go = (newInstance) => {
       hide();
-      if (window.__hubFly) window.__hubFly.openFromCat(cat, a.entryUrl, a.name, a.newTab);
-    });
+      if (window.__hubFly) window.__hubFly.openFromCat(cat, a.entryUrl, a.name, a.newTab, { newInstance });
+    };
+    b.addEventListener('click', (e) => { e.stopPropagation(); go(!!e.shiftKey); });
+    b.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });
+    b.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); e.stopPropagation(); go(true); } });
     return b;
   }
 
@@ -102,10 +105,12 @@
   function place(row) {
     const h = host.getBoundingClientRect(), m = menu.getBoundingClientRect(), r = row.getBoundingClientRect();
     fly.style.left = (m.right - h.left + 4) + 'px';
-    const tb = document.getElementById('wm-taskbar');   // Desktop mode taskbar (wm_taskbar.js)
-    const bottom = window.innerHeight - (tb && tb.offsetHeight ? tb.offsetHeight : 0);
+    const tb = document.getElementById('wm-taskbar');   // Desktop mode taskbar (wm_taskbar.js), bottom or top
+    const tr = tb && tb.offsetHeight ? tb.getBoundingClientRect() : null;
+    const tbTop = !!tr && tr.top < window.innerHeight / 2;
+    const bottom = tr && !tbTop ? tr.top : window.innerHeight;
     const hdr = document.getElementById('header');
-    const topMin = (hdr ? hdr.getBoundingClientRect().bottom : h.bottom) + 2;   // below the Hub bar
+    const topMin = Math.max(hdr ? hdr.getBoundingClientRect().bottom : h.bottom, tbTop ? tr.bottom : 0) + 2;   // below the Hub bar / top taskbar
     fly.style.maxHeight = Math.max(120, bottom - topMin - 6) + 'px';
     const maxTop = bottom - fly.offsetHeight - 6;
     fly.style.top = (Math.max(topMin, Math.min(r.top - 7, maxTop)) - h.top) + 'px';
@@ -220,7 +225,10 @@
   fly.addEventListener('click', (e) => e.stopPropagation());
 
   // Keys drive hub.js's menu; the mouse flyout just gets out of the way.
-  document.addEventListener('keydown', () => { if (!fly.hidden || openTimer) hide(); }, true);
+  document.addEventListener('keydown', (e) => {   // any key hides it, except a held modifier (Shift+click = new window)
+    if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') return;
+    if (!fly.hidden || openTimer) hide();
+  }, true);
   // Menu closed (any way) → flyout closes too.
   new MutationObserver(() => { if (!menu.classList.contains('open') && (curRow || openTimer)) hide(); })
     .observe(menu, { attributes: true, attributeFilter: ['class', 'hidden'] });

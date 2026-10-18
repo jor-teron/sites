@@ -6,6 +6,7 @@
  *   sites-hub.wallpaper  wallpaper id or '#rrggbb' (hub_wallpapers.js)        → #empty background
  *   sites-hub.taskH      taskbar height 32 | 40 | 48 px (default 40)          → --wm-task-h
  *   sites-hub.titleH     window title bar 24 | 28 | 34 px (default 28)        → --wm-title-h
+ *   sites-hub.taskPos    taskbar 'bottom' (default) | 'top'                    → html.hub-task-top
  *   sites-hub.accent     accent colour '#rrggbb' (default #6ea8fe)            → --accent
  *   sites-hub.theme      'dark' (default) | 'light'                           → html.hub-light
  *   sites-hub.motion     'on' (default) | 'reduced' (no jelly) | 'off'        → html.hub-motion-*
@@ -23,7 +24,14 @@
   const num = (v, ok, d) => (ok.indexOf(+v) >= 0 ? +v : d);
   const hex = (v) => (/^#[0-9a-f]{6}$/i.test(v) ? v : '');
 
+  let lastBar = '';
   function apply() {
+    // sizes + taskbar position (a change re-clamps the windows: wm_windows.js listens to resize)
+    const top = get('taskPos') === 'top';
+    root.classList.toggle('hub-task-top', top);
+    const bar = (top ? 't' : 'b') + get('taskH');
+    if (lastBar && bar !== lastBar) setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
+    lastBar = bar;
     // sizes + accent
     root.style.setProperty('--wm-task-h', num(get('taskH'), [32, 40, 48], 40) + 'px');
     root.style.setProperty('--wm-title-h', num(get('titleH'), [24, 28, 34], 28) + 'px');

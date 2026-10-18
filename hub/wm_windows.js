@@ -5,12 +5,15 @@
  * Window = title bar (app icon + name, – ▢ × buttons) + its own iframe of the app.
  * - Drag the title bar to move; drag an edge / corner to resize; double-click the bar to
  *   maximise / restore; pointer down anywhere (also inside a same-origin app) brings it to front.
- * - One window per app (key = ENTRY_URL): opening it again restores + focuses it.
+ * - Instances: key = ENTRY_URL. Opening an app again focuses its window; open({newInstance:true})
+ *   (Shift+click / middle-click in the menu, flyout, category tiles, or the taskbar's
+ *   "New window") adds another window numbered in its title / taskbar ("Notely 2"; w.inst,
+ *   lowest free number). Each instance is saved in the session on its own.
  * - Minimised windows keep running (iframe stays loaded, only hidden); the taskbar
  *   (wm_taskbar.js) lists every window.
  * - Jelly open animation (none with prefers-reduced-motion). Look in wm.css.
  *
- * API window.HubWM: open({key, name, icon, url, app}), focus(w), minimise(w), restore(w),
+ * API window.HubWM: open({key, name, icon, url, app, newInstance}), focus(w), minimise(w), restore(w),
  *   toggleMax(w), close(w), closeAll(), minimiseAll(), focusActive(), list(), active,
  *   onActive (set by hub.js: called with the focused window or null).
  * Fires 'hub-wm-change' on window after every change (taskbar redraws) and 'hub-wm-focus'
@@ -48,11 +51,11 @@
   function saveNow() {
     if (!isDesk() || restoring) return;
     const list = wins.map((w) => ({
-      key: w.key, url: w.url, name: w.name,
+      key: w.key, inst: w.inst, url: w.url, name: w.baseName,
       x: Math.round(w.rect.x), y: Math.round(w.rect.y), w: Math.round(w.rect.w), h: Math.round(w.rect.h),
       max: !!w.max, min: !!w.min, z: +w.el.style.zIndex || 0
     }));
-    try { localStorage.setItem(SKEY, JSON.stringify({ v: 1, wins: list, focused: active ? active.key : '' })); } catch (_) { /* full / blocked */ }
+    try { localStorage.setItem(SKEY, JSON.stringify({ v: 1, wins: list, focused: active ? active.key : '', focusedInst: active ? active.inst : 0 })); } catch (_) { /* full / blocked */ }
   }
   const saveSoon = () => { clearTimeout(saveT); saveT = setTimeout(saveNow, 250); };
   const changed = () => { window.dispatchEvent(new CustomEvent('hub-wm-change')); saveSoon(); };
@@ -181,22 +184,33 @@
   }
 
   function open(o) {
-    const found = wins.find((x) => x.key === o.key);
-    if (found) { focus(found); return found; }
+    const same = wins.filter((x) => x.key === o.key);
+    if (o.restore) {
+      const dup = same.find((x) => x.inst === (o.inst || 1));
+      if (dup) return dup;
+    } else if (same.length && !o.newInstance) {
+      // focus the app's window: the active one, else the topmost
+      const found = same.indexOf(active) >= 0 ? active : same.slice().sort((a, b) => +b.el.style.zIndex - +a.el.style.zIndex)[0];
+      focus(found);
+      return found;
+    }
+    let inst = o.restore ? (o.inst || 1) : 1;
+    if (!o.restore) while (same.some((x) => x.inst === inst)) inst++;
     const d = deskRect();
-    const w = { key: o.key, name: o.name, icon: o.icon, url: o.url, app: o.app, min: false, max: false, rect: {}, id: ++seq };
+    const nm = inst > 1 ? o.name + ' ' + inst : o.name;
+    const w = { key: o.key, inst, baseName: o.name, name: nm, icon: o.icon, url: o.url, app: o.app, min: false, max: false, rect: {}, id: ++seq };
 
     const el = document.createElement('section');
     el.className = 'wm-win wm-pop';
     el.setAttribute('role', 'dialog');
-    el.setAttribute('aria-label', o.name);
+    el.setAttribute('aria-label', nm);
     const bar = document.createElement('div');
     bar.className = 'wm-bar';
     const img = document.createElement('img');
     img.className = 'wm-icon'; img.alt = ''; img.src = o.icon || '';
     img.addEventListener('error', () => img.classList.add('missing'));
     const title = document.createElement('span');
-    title.className = 'wm-title'; title.textContent = o.name;
+    title.className = 'wm-title'; title.textContent = nm;
     const btns = document.createElement('div');
     btns.className = 'wm-btns';
     const minB = btn('wm-min-btn', 'Minimise', '\u2013');
@@ -210,7 +224,7 @@
     const body = document.createElement('div');
     body.className = 'wm-body';
     const frame = document.createElement('iframe');
-    frame.title = o.name;
+    frame.title = nm;
     frame.setAttribute('allow', (appFrame && appFrame.getAttribute('allow')) || 'fullscreen');
     frame.setAttribute('allowfullscreen', '');
     body.appendChild(frame);
@@ -296,13 +310,14 @@
       restoring = true;
       try {
         data.wins.slice().sort((a, b) => (a.z || 0) - (b.z || 0)).forEach((e) => {
-          if (!e || !e.key || wins.find((x) => x.key === e.key)) return;
+          const inst = Math.max(1, Math.min(99, +(e && e.inst) || 1));
+          if (!e || !e.key || wins.find((x) => x.key === e.key && x.inst === inst)) return;
           const o = resolve(e);
           if (!o) return;
-          open(Object.assign({}, o, { key: e.key, restore: true, rect: { x: +e.x || 0, y: +e.y || 0, w: +e.w || 640, h: +e.h || 480 }, max: !!e.max, min: !!e.min }));
+          open(Object.assign({}, o, { key: e.key, inst, restore: true, rect: { x: +e.x || 0, y: +e.y || 0, w: +e.w || 640, h: +e.h || 480 }, max: !!e.max, min: !!e.min }));
         });
       } finally { restoring = false; }
-      const f = wins.find((x) => x.key === data.focused && !x.min);
+      const f = wins.find((x) => x.key === data.focused && x.inst === (+data.focusedInst || 1) && !x.min);
       if (f) focus(f); else setActive(null);
       saveNow();
       return wins.length > 0;

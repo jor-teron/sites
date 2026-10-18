@@ -11,9 +11,9 @@ full screen on phone). Deep links: `apps/settings/#wallpaper`, `#desktop`, `#siz
 | settings.js | `Settings` shell: section registry, hash routing, UI helpers |
 | sec_wallpaper.js | Wallpapers (from `hub/hub_wallpapers.js`) + custom colour |
 | sec_desktop.js | Auto / Desktop / Phone mode, Start-on-hover |
-| sec_sizes.js | Taskbar 32/40/48, title bar 24/28/34 |
+| sec_sizes.js | Taskbar position bottom/top, size 32/40/48, title bar 24/28/34 |
 | sec_look.js | Accent, Dark/Light, animations On/Reduced/Off |
 | sec_about.js | Version, Check for update, About / Contact / Feedback (moved from apps/about) |
 
-The Hub applies the keys live in `hub/hub_prefs.js`. Keys: `wallpaper`, `taskH`, `titleH`,
+The Hub applies the keys live in `hub/hub_prefs.js`. Keys: `wallpaper`, `taskPos`, `taskH`, `titleH`,
 `accent`, `theme`, `motion`, `wmMode`, `startHover` (empty = default).

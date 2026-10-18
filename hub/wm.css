@@ -5,7 +5,8 @@
  * app stats show in each window's title bar, popovers open upward from the taskbar.
  * Sizes / accent / theme / motion come from the Settings app via hub_prefs.js:
  *   --wm-task-h (32 | 40 | 48), --wm-title-h (24 | 28 | 34), --accent, html.hub-light,
- *   html.hub-motion-reduced / -off. Wallpaper: hub_prefs.js paints #empty.
+ *   html.hub-motion-reduced / -off, html.hub-task-top (taskbar at the top, popovers open down).
+ *   Wallpaper: hub_prefs.js paints #empty. Show Desktop button + task menu (.wm-ctx) too.
  */
 :root {
   --wm-task-h: 40px;
@@ -174,6 +175,31 @@ body.wm-desktop #wm-taskbar {
 #wm-start:focus-visible, .wm-task:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .wm-clock { color: var(--muted); font-size: calc(var(--wm-task-h) * 0.33); font-variant-numeric: tabular-nums; padding: 0 6px 0 4px; white-space: nowrap; }
 
+/* Show Desktop (right after Start): minimise all ↔ restore; .on while the desktop is shown */
+#wm-showdesk {
+  width: var(--tb-btn); height: var(--tb-btn); flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 9px; background: transparent; color: var(--text); cursor: pointer; padding: 0;
+  transition: background 0.12s ease, transform 0.15s cubic-bezier(.3,1.6,.5,1);
+}
+#wm-showdesk svg { width: var(--tb-ico); height: var(--tb-ico); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+#wm-showdesk:hover { background: var(--wm-hover); }
+#wm-showdesk.on { background: var(--wm-hi); color: var(--accent); }
+#wm-showdesk:active { transform: scale(0.88, 0.82); }
+#wm-showdesk:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* Task button menu (right-click): New window / Minimise / Close — opens upward */
+.wm-ctx {
+  position: fixed; z-index: 120; min-width: 160px; padding: 4px; border-radius: 10px;
+  background: var(--menu, #1b1f27); border: 1px solid var(--line); box-shadow: 0 10px 28px rgba(0,0,0,0.4);
+  display: flex; flex-direction: column; animation: wm-ctx-pop 0.22s cubic-bezier(.3,1.6,.5,1);
+}
+.wm-ctx[hidden] { display: none; }
+.wm-ctx button { min-height: 36px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent;
+  color: var(--text); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.wm-ctx button:hover, .wm-ctx button:focus-visible { background: var(--wm-hi); outline: none; }
+@keyframes wm-ctx-pop { from { transform: scale(0.9, 0.8); opacity: 0; transform-origin: bottom left; } to { transform: none; opacity: 1; } }
+html.hub-motion-reduced .wm-ctx { animation: none; }
+
 /* ---------- Tray (old top bar right side, moved here by wm_taskbar.js) ---------- */
 .wm-tray { display: flex; align-items: center; height: 100%; flex: 0 0 auto; }
 .wm-tray .header-right { height: 100%; gap: 2px 8px; font-size: 12px; }
@@ -210,11 +236,26 @@ html.hub-light .menu .menu-cat.fly-on, html.hub-light .menu-fly .fly-app:hover {
 html.hub-light .menu-fly .fly-app { color: var(--text); }
 html.hub-light .wm-win { box-shadow: 0 16px 44px rgba(0,0,0,0.22), 0 3px 10px rgba(0,0,0,0.12); }
 
+/* ---------- Taskbar at the top (Settings → Sizes, html.hub-task-top): desk below it, menu /
+   flyout / tray popovers open downward ---------- */
+html.hub-task-top body.wm-desktop #frame-wrap { top: var(--wm-task-h); bottom: 0; }
+html.hub-task-top body.wm-desktop #wm-taskbar { top: 0; bottom: auto; border-top: 0; border-bottom: 1px solid var(--line); }
+html.hub-task-top body.wm-desktop .menu { top: calc(var(--wm-task-h) + 6px); bottom: auto; }
+html.hub-task-top body.wm-desktop #ctrl-popover { top: calc(var(--wm-task-h) + 6px); bottom: auto; }
+html.hub-task-top body.wm-desktop #chat-panel { top: calc(var(--wm-task-h) + 6px); bottom: auto; }
+html.hub-task-top body.wm-desktop #chat-toast { bottom: 10px; }
+html.hub-task-top body.wm-desktop #hub-notify.hn-bottom-right { bottom: 10px; }
+html.hub-task-top body.wm-desktop #hub-notify.hn-top-right,
+html.hub-task-top body.wm-desktop #hub-notify.hn-top-center { top: calc(var(--wm-task-h) + 12px); }
+html.hub-task-top body.wm-desktop .sl-openin { bottom: 12px; }
+html.hub-task-top .wm-ctx { transform-origin: top left; }
+
 /* ---------- Motion (Settings → Look): reduced = no jelly; off = no animation at all ---------- */
 html.hub-motion-reduced .wm-win.wm-pop, html.hub-motion-reduced .menu-fly.pop { animation: none; }
 html.hub-motion-off *, html.hub-motion-off *::before, html.hub-motion-off *::after { animation: none !important; transition: none !important; }
 
 @media (prefers-reduced-motion: reduce) {
   .wm-win.wm-pop { animation: none; }
-  #wm-start, .wm-task, .wm-btn { transition: none; }
+  #wm-start, #wm-showdesk, .wm-task, .wm-btn { transition: none; }
+  .wm-ctx { animation: none; }
 }

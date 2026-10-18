@@ -1,13 +1,19 @@
 /*
- * Hub taskbar (hub/wm_taskbar.js) — Desktop mode only (wm_mode.js), bottom of the screen.
+ * Hub taskbar (hub/wm_taskbar.js) — Desktop mode only (wm_mode.js), bottom of the screen
+ * (or the top: Settings → Sizes, html.hub-task-top in wm.css; menus then open downward).
  * - Start button (Hub icon + HUB_MENU_LABEL from hub_config.js): opens the CURRENT Hub menu
  *   (same menu as the top-left button, with flyout + sections) just above the taskbar.
  *   Hover-to-open (mouse only; Hub settings switch, localStorage 'sites-hub.startHover',
  *   default on): opens ~150 ms after pointing at Start, stays open while the pointer is over
  *   Start / menu / flyout, closes ~300 ms after leaving them. A click still toggles; a click
  *   right after a hover-open keeps it open (pinned, closes like a clicked menu).
+ * - Show Desktop button right after Start: click = minimise every window (remembers which were
+ *   open), click again = bring exactly those back (focus as before). Opening / restoring any
+ *   window in between forgets the list (like any OS).
  * - One button per open window (HubWM.list()): click = focus / restore, or minimise when it is
  *   already the active window. Active window highlighted, minimised ones dimmed.
+ *   Right-click = small menu: New window (another instance), Minimise / Restore, Close.
+ *   Middle-click = New window.
  * - Tray on the right: the old top bar's right side (.header-right: Pooh Chat, the
  *   Devices / SharedLink button with its device count, version) is MOVED here in Desktop
  *   mode and moved back to the top bar in Phone mode (same elements, so their own scripts
@@ -42,7 +48,14 @@
   tray.className = 'wm-tray';
   const clock = document.createElement('time');
   clock.className = 'wm-clock';
-  bar.append(start, tasks, tray, clock);
+  const showDesk = document.createElement('button');
+  showDesk.type = 'button';
+  showDesk.id = 'wm-showdesk';
+  showDesk.title = 'Show desktop';
+  showDesk.setAttribute('aria-label', 'Show desktop');
+  showDesk.setAttribute('aria-pressed', 'false');
+  showDesk.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>';
+  bar.append(start, showDesk, tasks, tray, clock);
   document.body.appendChild(bar);
 
   // Old top bar items ↔ tray
@@ -110,6 +123,61 @@
     if (!open) { hoverOpened = false; clearTimeout(closeT); }
   }).observe(menu, { attributes: true, attributeFilter: ['class'] });
 
+  // Show Desktop: minimise all ↔ restore those windows
+  let shown = null;   // { wins: [windows that were visible, by z], active } while the desktop is shown
+  function setShown(v) { shown = v; showDesk.classList.toggle('on', !!v); showDesk.setAttribute('aria-pressed', v ? 'true' : 'false'); }
+  showDesk.addEventListener('click', () => {
+    closeCtx();
+    if (menu.classList.contains('open')) catBtn.click();
+    const all = HubWM.list();
+    if (shown) {
+      const back = shown.wins.filter((w) => all.indexOf(w) >= 0), act = shown.active;
+      setShown(null);
+      back.forEach((w) => HubWM.focus(w, true));
+      if (act && back.indexOf(act) >= 0) HubWM.focus(act); else if (back.length) HubWM.focus(back[back.length - 1]);
+      return;
+    }
+    const vis = all.filter((w) => !w.min).sort((a, b) => +a.el.style.zIndex - +b.el.style.zIndex);
+    if (!vis.length) return;
+    const act = HubWM.active;
+    HubWM.minimiseAll();
+    setShown({ wins: vis, active: act });
+  });
+  window.addEventListener('hub-wm-change', () => { if (shown && HubWM.list().some((w) => !w.min)) setShown(null); });
+
+  // Task button menu (right-click): New window / Minimise-Restore / Close
+  const ctx = document.createElement('div');
+  ctx.className = 'wm-ctx';
+  ctx.setAttribute('role', 'menu');
+  ctx.hidden = true;
+  document.body.appendChild(ctx);
+  function closeCtx() { ctx.hidden = true; ctx.replaceChildren(); }
+  function newWindow(w) {
+    HubWM.open({ key: w.key, name: w.baseName || w.name, icon: w.icon, url: w.url, app: w.app, newInstance: true });
+  }
+  function openCtx(w, b) {
+    const item = (text, fn) => {
+      const i = document.createElement('button');
+      i.type = 'button'; i.setAttribute('role', 'menuitem'); i.textContent = text;
+      i.addEventListener('click', (e) => { e.stopPropagation(); closeCtx(); fn(); });
+      return i;
+    };
+    ctx.replaceChildren(
+      item('New window', () => newWindow(w)),
+      item(w.min ? 'Restore' : 'Minimise', () => (w.min ? HubWM.focus(w) : HubWM.minimise(w))),
+      item('Close', () => HubWM.close(w)));
+    ctx.hidden = false;
+    const r = b.getBoundingClientRect(), cw = ctx.offsetWidth;
+    ctx.style.left = Math.max(4, Math.min(r.left, innerWidth - cw - 4)) + 'px';
+    if (r.top < innerHeight / 2) { ctx.style.top = (r.bottom + 6) + 'px'; ctx.style.bottom = 'auto'; }   // taskbar at the top: open down
+    else { ctx.style.bottom = (innerHeight - r.top + 6) + 'px'; ctx.style.top = 'auto'; }
+    const first = ctx.querySelector('button');
+    if (first) first.focus();
+  }
+  document.addEventListener('pointerdown', (e) => { if (!ctx.hidden && !ctx.contains(e.target)) closeCtx(); }, true);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !ctx.hidden) closeCtx(); });
+  window.addEventListener('blur', closeCtx);
+
   function draw() {
     const act = HubWM.active;
     tasks.replaceChildren(...HubWM.list().map((w) => {
@@ -128,6 +196,9 @@
         if (w === HubWM.active && !w.min) HubWM.minimise(w);
         else HubWM.focus(w);
       });
+      b.addEventListener('contextmenu', (e) => { e.preventDefault(); openCtx(w, b); });
+      b.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });
+      b.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); newWindow(w); } });
       return b;
     }));
   }

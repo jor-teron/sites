@@ -1,6 +1,7 @@
 /*
  * Settings → About (apps/settings/sec_about.js). Hub version + build and a real
- * "Check for update": fetch hub.html / hub_config.js fresh (no-store) to read the latest
+ * "Check for update". Inside the Hub it uses the Hub's own HubUpdate.check (hub/hub_update.js);
+ * opened on its own it does the same here: fetch hub.html / hub_config.js fresh (no-store) to read the latest
  * build tag (?v=…) and HUB_VERSION, ask the service worker to update, and if the build is
  * newer than the running Hub, clear the 'hub-shell-*' caches and reload the Hub.
  * Below: the About / Contact / Feedback cards (moved from apps/about/about.html, which now
@@ -35,6 +36,17 @@
     btn.disabled = true;
     out.className = 'upd-out';
     out.textContent = 'Checking\u2026';
+    const hub = S.hub();
+    if (hub && hub.HubUpdate) {   // the Hub's own updater (hub/hub_update.js): clears caches + reloads the Hub
+      const r = await hub.HubUpdate.check({ manual: true });
+      if (r.state === 'error') { out.className = 'upd-out bad'; out.textContent = 'Could not check (offline?)'; btn.disabled = false; return; }
+      out.className = 'upd-out ok';
+      out.textContent = r.state === 'updated'
+        ? 'Updated to v' + (r.version || '?') + ' (build ' + r.build + ') \u2014 reloading\u2026'
+        : 'Up to date \u2014 v' + (r.version || '?') + ' (build ' + r.build + ')';
+      if (r.state !== 'updated') btn.disabled = false;
+      return;
+    }
     try {
       const cur = runningBuild();
       const nw = await latest();
