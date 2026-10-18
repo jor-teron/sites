@@ -27,6 +27,9 @@
  * Menu label: window.HUB_MENU_LABEL from hub_config.js (one place to rename 'Home').
  * Category rows show the category icon (<folder>/<folder>_icon.png of its CAT_PAGES entry);
  * on a real mouse hub_flyout.js adds the GNOME 2 style app flyout (window.__hubFly hooks below).
+ * Desktop mode (wm_mode.js, body.wm-desktop): apps open in windows (wm_windows.js, HubWM)
+ *   instead of the frame; the hash / last-app memory follow the focused window; "Home screen"
+ *   minimises all windows. Switching mode moves the open app between frame and window.
  */
 (function () {
   const HEADER_DEFAULT = window.HUB_MENU_LABEL || 'Home';   // hub_config.js
@@ -195,8 +198,12 @@
     if (open && !was) prepareMenu();
   }
 
+  /** Desktop mode with the window manager loaded (wm_mode.js + wm_windows.js). */
+  const wmOn = () => !!(window.HubMode && window.HubMode.isDesktop() && window.HubWM);
+
   /** Give the app iframe keyboard focus, unless the user is busy with the hub UI. */
   function focusFrame() {
+    if (wmOn()) { if (!menu.classList.contains('open')) window.HubWM.focusActive(); return; }
     if (!currentEntry) return;
     if (menu.classList.contains('open')) return;
     const pop = document.getElementById('ctrl-popover');
@@ -319,6 +326,11 @@
       return;
     }
     const id = appIdFor(app.entryUrl);
+    if (wmOn()) {   // Desktop mode: own window (focuses the existing one); hash via HubWM.onActive
+      setOpen(false);
+      window.HubWM.open({ key: app.entryUrl, name: app.name, icon: iconFor(app), url: frameUrlFor(app.entryUrl), app });
+      return;
+    }
     if (!opts.forceFrame) setFromCat('');
     if (!opts.fromHistory) setHash(id, !opts.replaceHash);
     storageSet(id);
@@ -430,6 +442,11 @@
   /** Back to the home screen: clears the hash, the saved app and the frame. */
   function goHome(opts) {
     opts = opts || {};
+    if (wmOn()) {   // Desktop mode: show the home screen = minimise every window
+      setOpen(false);
+      window.HubWM.minimiseAll();
+      return;
+    }
     if (!opts.fromHistory) setHash('', true);
     storageSet('');
     setFromCat('');
@@ -679,6 +696,7 @@
   document.addEventListener('pointerdown', (e) => {
     if (!menu.classList.contains('open')) return;
     if (menu.contains(e.target) || catBtn.contains(e.target)) return;
+    if (e.target.closest && e.target.closest('#wm-start')) return;   // taskbar Start (wm_taskbar.js)
     if (e.target.closest && e.target.closest('#menu-fly')) return;   // desktop flyout (hub_flyout.js)
     closeMenu();
   }, true);
@@ -883,6 +901,39 @@
       if (currentEntry === entryUrl) { setFromCat(cat); updateLabBtn(); }   // opened in the frame
     }
   };
+  /* ---------- Desktop mode: windows (wm_windows.js) ---------- */
+  if (window.HubWM) {
+    // Focused window → hash, last-app memory, title and the menu's active row (no history entry).
+    window.HubWM.onActive = (w) => {
+      if (!wmOn()) return;
+      const id = w ? appIdFor(w.key) : '';
+      setHash(id, false);
+      storageSet(id);
+      document.title = w ? 'Hub - ' + w.name : 'Hub';
+      menu.querySelectorAll('button.app').forEach((b) => b.classList.toggle('active', !!w && b.dataset.entryUrl === w.key));
+    };
+  }
+  window.addEventListener('hub-wm-mode', (e) => {
+    if (!window.HubWM) return;
+    if (e.detail.mode === 'desktop') {
+      // The app in the frame moves into a window
+      const app = currentEntry ? appForId(appIdFor(currentEntry)) || findApp(currentEntry) : null;
+      if (currentEntry) navigateFrame('about:blank');
+      currentEntry = '';
+      setFromCat('');
+      empty.classList.remove('hidden');
+      updateLabBtn();
+      if (app) loadApp(app, { forceFrame: true });
+    } else {
+      // The focused window's app moves into the frame; the other windows close
+      // (onActive is a no-op now: the mode is already Phone)
+      const w = window.HubWM.active;
+      window.HubWM.closeAll();
+      if (w) loadApp(w.app || { name: w.name, entryUrl: w.key, newTab: false }, { forceFrame: true, replaceHash: true });
+      else { setHash('', false); goHome({ fromHistory: true }); }
+    }
+  });
+
   primeFrame();
   loadApps();
   renderTiles();

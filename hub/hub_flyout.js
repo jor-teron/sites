@@ -102,9 +102,13 @@
   function place(row) {
     const h = host.getBoundingClientRect(), m = menu.getBoundingClientRect(), r = row.getBoundingClientRect();
     fly.style.left = (m.right - h.left + 4) + 'px';
-    fly.style.maxHeight = Math.max(120, window.innerHeight - h.bottom - 8) + 'px';
-    const maxTop = window.innerHeight - fly.offsetHeight - 6;
-    fly.style.top = (Math.max(h.bottom + 2, Math.min(r.top - 7, maxTop)) - h.top) + 'px';
+    const tb = document.getElementById('wm-taskbar');   // Desktop mode taskbar (wm_taskbar.js)
+    const bottom = window.innerHeight - (tb && tb.offsetHeight ? tb.offsetHeight : 0);
+    const hdr = document.getElementById('header');
+    const topMin = (hdr ? hdr.getBoundingClientRect().bottom : h.bottom) + 2;   // below the Hub bar
+    fly.style.maxHeight = Math.max(120, bottom - topMin - 6) + 'px';
+    const maxTop = bottom - fly.offsetHeight - 6;
+    fly.style.top = (Math.max(topMin, Math.min(r.top - 7, maxTop)) - h.top) + 'px';
   }
 
   function show(row) {

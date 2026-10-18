@@ -8,12 +8,12 @@
  * so a phone never gets a stale copy after a push.
  * Bump CACHE when the shell list changes; old caches are deleted on activate.
  */
-const CACHE = 'hub-shell-v23';  // 2026-10-18d: flyout sections, 100 ms, full-height column
+const CACHE = 'hub-shell-v24';  // 2026-10-18e: Desktop mode windows + taskbar, Hub settings
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',
   'hub/hub_main.css', 'hub/hub_controller.css', 'hub/hub_notification.css', 'shared/style/no-scrollbar.css',
-  'hub/hub_config.js', 'hub/hub_apps.js', 'hub/hub_tiles.js', 'hub/hub.js', 'hub/hub_flyout.js', 'hub/hub_flyout.css', 'shared/tiles/tiles.js', 'hub/hub_controller_config.js',
+  'hub/hub_config.js', 'hub/hub_apps.js', 'hub/hub_tiles.js', 'hub/hub.js', 'hub/hub_flyout.js', 'hub/hub_flyout.css', 'hub/wm_mode.js', 'hub/wm_windows.js', 'hub/wm_taskbar.js', 'hub/hub_settings.js', 'hub/wm.css', 'shared/tiles/tiles.js', 'hub/hub_controller_config.js',
   'hub/hub_notify.js', 'hub/hub_viewer.js', 'hub/hub_viewer_pdf.js', 'hub/hub_pointer.js', 'hub/hub_receive.js',
   'hub/hub_role.js', 'hub/hub_remote.js', 'shared/link/link_scan.js',
   'hub/hub-controller.js', 'hub/hub_link.js', 'hub/hub_linkstate.js', 'hub/hub_chat.js', 'hub/hub_chat.css', 'shared/link/link_chat.js', 'hub/hub-gamebar.js',
