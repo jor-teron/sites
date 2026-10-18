@@ -1,64 +1,60 @@
 <!DOCTYPE html>
 <!--
   File: story.html
-  Project: story
-  Description: Main HTML for the Story webapp - chat interface with model toggles and About card
-  Features: Streaming chat, model switching (Lite/Mini/Pro), local persistence
-  Author: Grok
-  Date: 2026-10-17
+  Project: AI Story (apps/lab/story)
+  Description: Minimal local story writer. One prompt box, one story feed,
+               everything else (model, length, creativity, history, about)
+               lives in the ⚙ settings panel.
+  Scripts: story.js (entry) -> story_db.js, story_model.js, story_ui.js
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Story</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>AI Story</title>
   <link rel="stylesheet" href="story.css">
-  <!-- Transformers.js CDN for model loading -->
-  <script type="module" src="https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0"></script>
 </head>
 <body>
-  <!-- App header -->
-  <header>
+  <header class="bar">
     <h1>Story</h1>
-    <p>Local storytelling models</p>
+    <span class="status" id="status">Starting…</span>
+    <button class="icon-btn" id="settings-btn" aria-label="Settings">⚙</button>
   </header>
 
-  <!-- Model toggle buttons -->
-  <div class="model-toggles" id="model-toggles">
-    <button class="toggle-btn active" data-model="lite" id="btn-lite">Lite</button>
-    <button class="toggle-btn" data-model="mini" id="btn-mini" disabled>Mini</button>
-    <button class="toggle-btn" data-model="pro" id="btn-pro" disabled>Pro</button>
+  <main class="feed" id="chat" aria-live="polite">
+    <p class="empty" id="empty">Type a beginning, get a tiny story.</p>
+  </main>
+
+  <form class="composer" id="composer">
+    <input type="text" id="user-input" placeholder="Once upon a time…" autocomplete="off" enterkeyhint="send">
+    <button type="submit" class="send" id="send-btn" aria-label="Write">➤</button>
+  </form>
+
+  <!-- Settings panel (secondary controls) -->
+  <div class="sheet" id="sheet" hidden>
+    <div class="sheet-card">
+      <div class="sheet-head"><h2>Settings</h2><button class="icon-btn" id="close-btn" aria-label="Close">✕</button></div>
+
+      <label class="lbl">Model</label>
+      <div class="seg" id="model-seg">
+        <button type="button" data-model="lite">Lite<small>~1 MB</small></button>
+        <button type="button" data-model="mini">Mini<small>~20 MB</small></button>
+        <button type="button" data-model="pro">Pro<small>~20 MB</small></button>
+      </div>
+
+      <label class="lbl" for="len">Length <span id="len-val"></span></label>
+      <input type="range" id="len" min="40" max="300" step="20">
+
+      <label class="lbl" for="temp">Creativity <span id="temp-val"></span></label>
+      <input type="range" id="temp" min="0.3" max="1.2" step="0.1">
+
+      <button type="button" class="wide" id="clear-btn">Clear history</button>
+
+      <p class="about">Runs small TinyStories models fully in your browser (transformers.js).
+        Each model downloads once when you pick it, then works offline. History is kept 30 days on this device.</p>
+    </div>
   </div>
 
-  <!-- Status indicator -->
-  <div class="status-bar" id="status">Loading Lite...</div>
-
-  <!-- Chat messages container -->
-  <div class="chat-container" id="chat"></div>
-
-  <!-- User input area -->
-  <div class="input-area">
-    <input type="text" id="user-input" placeholder="Tell me a story..." autocomplete="off">
-    <button id="send-btn">Send</button>
-  </div>
-
-  <!-- About card at bottom -->
-  <div class="about-card">
-    <h3>About Story</h3>
-    <p>
-      This webapp runs small language models entirely in your browser for generating short stories.
-      Models are downloaded once and cached locally. Chat history is saved for 30 days.
-      Models are refreshed every 3 months.
-    </p>
-    <p>
-      <strong>Lite</strong>: Tiny LilyStory (~0.5 MB) — instant start.<br>
-      <strong>Mini</strong>: ~10 MB TinyStories model — better coherence.<br>
-      <strong>Pro</strong>: ~49 MB IllaryiaStories — best quality among the three.
-    </p>
-    <p>All processing is local. No data leaves your device after the initial download.</p>
-  </div>
-
-  <!-- Main application script -->
   <script type="module" src="story.js"></script>
 </body>
 </html>
