@@ -8,15 +8,19 @@ Purpose: Main logic for the closed-sphere free-flight simulator.
 - Keyboard + optional touch controls
 - Loads GLB models if present, falls back to simple geometries
 Date: 2026-10-17
+R1 (2026-10-18): planet centred, valid plane basis (nose +Z), plane scaled to
+PLANE_LENGTH, spawn 30 m, sRGB output, auto camera zoom (plane ~50% of width).
 */
 
 // Constants for planet and flight parameters
 const PLANET_RADIUS = 1000; // 1 km radius in meters
 const MIN_ALTITUDE = 5;     // hard floor in meters
 const MAX_ALTITUDE = 100;   // soft ceiling in meters
-const CRUISE_ALTITUDE = 5; // default spawn altitude (5 m above surface)
+const CRUISE_ALTITUDE = 30; // default spawn altitude (30 m above surface)
 const PLANE_LENGTH = 5;     // approximate plane length in meters
-const PLANE_WIDTH = 4;      // approximate plane width in meters
+const PLANE_WIDTH = 4;      // approximate plane width in meters (fallback box only)
+const CAM_SCREEN_FRACTION = 0.5; // default zoom: wingspan fills ~50% of screen width
+const CAM_MAX_SCREEN_Y = 0.9;     // ...but keep nose/tail inside 90% of the screen height
 
 // Global state
 let scene, camera, renderer, plane, planet;
@@ -25,7 +29,10 @@ let speed = 20;             // forward speed in m/s
 let keys = {};              // keyboard state
 let touchActive = false;    // whether touch controls are visible
 let paused = false;         // pause flag
-let camDistance = 25;       // camera follow distance (for zoom)
+let camDistance = 25;       // camera follow distance, recomputed by updateAutoCamDistance()
+let camZoom = 1;            // mouse-wheel zoom multiplier on top of the auto distance
+let planeLocalBox = null;   // plane bounds in its own (scaled) frame, for auto zoom
+let planeSamplePoints = []; // sampled plane vertices in its own frame, for auto zoom
 let camOrbitYaw = 0;        // camera orbit offset yaw
 let camOrbitPitch = 0.4;    // camera orbit offset pitch
 let mouseDownLeft = false;
@@ -53,6 +60,7 @@ function init() {
     // Create WebGL renderer
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputEncoding = THREE.sRGBEncoding; // glTF textures are sRGB
     document.getElementById('canvas-container').appendChild(renderer.domElement);
 
     // Add basic lighting
@@ -70,6 +78,7 @@ function init() {
 
     // Set up event listeners
     setupControls();
+    updateHud();
 
     // Handle window resize
     window.addEventListener('resize', onWindowResize);
@@ -93,6 +102,11 @@ function createPlanet() {
                 const scale = (PLANET_RADIUS * 2) / maxDim;
                 planet.scale.setScalar(scale);
             }
+            // Centre the planet on the origin: the GLB's mesh is offset +1000 Y,
+            // but the flight code assumes the planet centre is (0,0,0).
+            planet.updateMatrixWorld(true);
+            const center = new THREE.Box3().setFromObject(planet).getCenter(new THREE.Vector3());
+            planet.position.sub(center);
             scene.add(planet);
         },
         undefined,
@@ -114,8 +128,12 @@ function createPlane() {
         'models/plane.glb',
         (gltf) => {
             plane = gltf.scene;
-            // Optional scale to approximate 5m length
-            plane.scale.set(1, 1, 1);
+            // Scale so the nose-to-tail length (model Z axis, nose = +Z) is PLANE_LENGTH
+            const size = new THREE.Box3().setFromObject(plane).getSize(new THREE.Vector3());
+            const scale = size.z > 0 ? PLANE_LENGTH / size.z : 1;
+            plane.scale.setScalar(scale);
+            planeLocalBox = new THREE.Box3().setFromObject(plane);
+            planeSamplePoints = samplePlanePoints(plane);
             scene.add(plane);
 
             // Play animations if the model has them (propellers, etc.)
@@ -126,18 +144,22 @@ function createPlane() {
                 });
             }
 
-            // Place plane at starting position
+            // Place plane at starting position, then fit the camera to it
             updatePlanePosition();
+            updateAutoCamDistance();
         },
         undefined,
         (error) => {
             // Fallback: simple box representing the plane
             console.warn('Plane GLB not found, using fallback box', error);
-            const geometry = new THREE.BoxGeometry(PLANE_LENGTH, 1, PLANE_WIDTH);
+            const geometry = new THREE.BoxGeometry(PLANE_WIDTH, 1, PLANE_LENGTH); // length along Z (nose +Z)
             const material = new THREE.MeshLambertMaterial({ color: 0xff0000 }); // red
             plane = new THREE.Mesh(geometry, material);
+            planeLocalBox = new THREE.Box3().setFromObject(plane);
+            planeSamplePoints = samplePlanePoints(plane);
             scene.add(plane);
             updatePlanePosition();
+            updateAutoCamDistance();
         }
     );
 }
@@ -148,13 +170,15 @@ function updatePlanePosition() {
     const radius = PLANET_RADIUS + altitude;
     plane.position.copy(radial).multiplyScalar(radius);
 
-    // Build orientation: up = radial, forward = tangent forward
+    // Build orientation: up = radial, forward = tangent forward.
+    // Right-handed basis (right x up = forward) so the matrix is a pure rotation;
+    // the plane model's nose points along its local +Z.
     const up = radial.clone();
     const right = new THREE.Vector3().crossVectors(up, forward).normalize();
     // Re-orthonormalize forward
     forward.crossVectors(right, up).normalize();
 
-    const m = new THREE.Matrix4().makeBasis(right, up, forward.clone().negate());
+    const m = new THREE.Matrix4().makeBasis(right, up, forward);
     plane.quaternion.setFromRotationMatrix(m);
 }
 
@@ -196,7 +220,8 @@ function setupControls() {
     });
     canvas.addEventListener('wheel', (e) => {
         // Zoom
-        camDistance = Math.max(5, Math.min(60, camDistance + e.deltaY * 0.02));
+        camZoom = Math.max(0.6, Math.min(8, camZoom * (1 + e.deltaY * 0.001)));
+        updateAutoCamDistance();
         e.preventDefault();
     });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault()); // prevent right-click menu
@@ -277,28 +302,91 @@ function updatePlane(delta) {
     // Apply position and orientation
     updatePlanePosition();
 
-    // Update HUD
+    updateHud();
+}
+
+// Write current altitude and speed to the HUD
+function updateHud() {
     document.getElementById('alt-display').textContent = Math.round(altitude);
     document.getElementById('speed-display').textContent = Math.round(speed);
+}
+
+// Collect up to ~600 vertices of the plane in its own local frame, so the auto zoom measures the real
+// silhouette instead of the much wider bounding-box corners.
+function samplePlanePoints(root) {
+    root.updateMatrixWorld(true);
+    let total = 0;
+    root.traverse((o) => { if (o.isMesh) total += o.geometry.attributes.position.count; });
+    const step = Math.max(1, Math.floor(total / 600));
+    const toRoot = root.matrixWorld.clone().invert(); // points in root's local frame
+    const pts = [];
+    root.traverse((o) => {
+        if (!o.isMesh) return;
+        const pos = o.geometry.attributes.position;
+        for (let i = 0; i < pos.count; i += step) {
+            pts.push(new THREE.Vector3().fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld).applyMatrix4(toRoot));
+        }
+    });
+    return pts;
+}
+
+// Default zoom: find the camera distance at which the plane covers
+// CAM_SCREEN_FRACTION of the screen width, measured by projecting the plane's
+// vertices through the real follow camera (so perspective, fov,
+// aspect and camera pitch are all accounted for, on phone and desktop alike).
+function planeTooClose(dist) {
+    placeCamera(dist);
+    camera.updateMatrixWorld();
+    plane.updateMatrixWorld(true);
+    let minX = Infinity, maxX = -Infinity, maxY = 0;
+    const v = new THREE.Vector3();
+    for (const p of planeSamplePoints) {
+        v.copy(p).applyMatrix4(plane.matrixWorld).project(camera);
+        minX = Math.min(minX, v.x);
+        maxX = Math.max(maxX, v.x);
+        maxY = Math.max(maxY, Math.abs(v.y));
+    }
+    // NDC spans 2 units across the screen
+    return (maxX - minX) / 2 > CAM_SCREEN_FRACTION || maxY > CAM_MAX_SCREEN_Y;
+}
+
+function updateAutoCamDistance() {
+    if (!camera || !plane || !planeLocalBox) return;
+    // Never put the camera inside the plane's bounding sphere
+    let lo = planeLocalBox.getBoundingSphere(new THREE.Sphere()).radius * 1.1;
+    let hi = 500;
+    if (planeTooClose(lo)) {
+        for (let i = 0; i < 30; i++) { // width shrinks as distance grows
+            const mid = (lo + hi) / 2;
+            if (planeTooClose(mid)) lo = mid; else hi = mid;
+        }
+    }
+    camDistance = lo * camZoom;
+    placeCamera(camDistance);
 }
 
 // Third-person camera that follows the plane and keeps the planet "below"
 function updateCamera() {
     if (!plane) return;
+    placeCamera(camDistance);
+}
 
+// Put the follow camera at distance dist behind/above the plane
+function placeCamera(dist) {
     const upDir = radial.clone();
     const fwd = forward.clone();
 
     // Base offset behind and a bit above
-    const backDist = camDistance;
-    const upDist = camDistance * 0.35;
+    const backDist = dist;
+    const upDist = dist * 0.35;
 
     // Apply mouse orbit offsets
     const orbit = new THREE.Quaternion()
         .setFromAxisAngle(upDir, camOrbitYaw)
         .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), camOrbitPitch));
 
-    const offset = new THREE.Vector3(0, upDist, -backDist).applyQuaternion(orbit);
+    // Normalise so the camera sits exactly camDistance from the plane
+    const offset = new THREE.Vector3(0, upDist, -backDist).applyQuaternion(orbit).setLength(dist);
 
     // Transform offset into world using plane basis
     const right = new THREE.Vector3().crossVectors(upDir, fwd).normalize();
@@ -308,8 +396,8 @@ function updateCamera() {
         .addScaledVector(fwd, offset.z);
 
     camera.position.copy(plane.position).add(worldOffset);
+    camera.up.copy(upDir); // set before lookAt so it applies this frame
     camera.lookAt(plane.position);
-    camera.up.copy(upDir);
 }
 
 // Animation loop
@@ -332,6 +420,7 @@ function animate(time = 0) {
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
+    updateAutoCamDistance();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
