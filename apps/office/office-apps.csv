@@ -2,11 +2,11 @@
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop)
 name, path, icon, newtab
 Draftly, draftly/, , 
-Spreadsheet, spreadsheet/, , 
-OCR, ocr/, , 
-MS Word Diff, ../tools/msword_diff/, , 
-Notepad, notepad/, , 
 Notely, notely/, , 
-Print, print/, , 
+Spreadsheet, spreadsheet/, , 
+Notepad, notepad/, , 
 Mail, mail/, , 
+OCR, ocr/, , 
 Paper Scan, paper-scan/, , 
+MS Word Diff, ../tools/msword_diff/, , 
+Print, print/, , 
