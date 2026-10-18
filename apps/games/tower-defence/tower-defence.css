@@ -19,39 +19,12 @@ html, body {
   user-select: none;
 }
 
-/* Column: HUD, stage, toolbar. Safe-area insets for notched phones. */
+/* Column: stage (board + stats strip), toolbar. Safe-area insets for notched phones. */
 #app {
   position: fixed; inset: 0;
   display: flex; flex-direction: column;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
-
-/* Top stat bar. */
-#hud {
-  flex: 0 0 auto;
-  display: flex; justify-content: space-between;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  color: #FFD700;
-  flex-wrap: wrap;
-}
-
-/* One HUD chip (HP, gold, wave, score). */
-#hud .stat {
-  background: #1919A6;
-  padding: 4px 10px;
-  border-radius: 4px;
-  display: flex; align-items: center; gap: 6px;
-  line-height: 1;
-  font-size: 12px;
-}
-
-/* Small label inside a HUD chip. */
-#hud .stat .label { opacity: 0.65; font-size: 10px; letter-spacing: 1px; }
-
-/* Numeric value inside a HUD chip. */
-#hud .stat .value { font-weight: bold; font-size: 14px; }
 
 /* Canvas host. Flexes to leftover space. */
 #stage {
@@ -167,5 +140,40 @@ canvas { display: block; background: #0a0a12; touch-action: none; }
   z-index: 5;
 }
 
-/* Visible hint. */
+/* Visible hint. main.js moves it just under the stats strip. */
 #hint.show { opacity: 1; }
+
+/*
+  Stats strip drawn over board row 0. main.js sets left/top/width/height
+  and font-size from the canvas position and tile size on every resize.
+*/
+#hud {
+  position: absolute;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.6em;
+  padding: 0 0.5em;
+  background: linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.30));
+  color: #fff;
+  font-weight: bold;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;
+  text-shadow: 0 1px 2px #000, 0 0 3px #000;
+  z-index: 4;
+}
+
+/* Left group of stats. */
+#hud .stats { display: flex; gap: 0.9em; }
+
+/* One stat: icon then value. */
+#hud .stat { display: flex; align-items: center; gap: 0.25em; }
+#hud .stat b { font-weight: bold; }
+#hud .hp { color: #FF7B7B; }
+#hud .gold { color: #FFD700; }
+#hud .wave { color: #9FD0FF; }
+#hud .score { color: #C8FFC8; }
+
+/* Right side: next-wave countdown or enemies left. */
+#hud-timer { color: #FFD700; }
+#hud-timer.active { color: #FF8C8C; }

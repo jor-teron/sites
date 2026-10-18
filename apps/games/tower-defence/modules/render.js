@@ -5,7 +5,7 @@
 */
 
 import { COLS, ROWS } from './config.js';
-import { TILE, pathSegments, totalPathLength, posAtDistance } from './path.js';
+import { TILE, pathSegments, totalPathLength, posAtDistance, posAtTiles } from './path.js';
 import * as state from './state.js';
 import { towerCenter } from './towers.js';
 
@@ -144,8 +144,8 @@ export function drawTowers(ctx) {
 */
 export function drawEnemies(ctx) {
   for (const e of state.enemies) {
-    const p = posAtDistance(e.dist);
-    const r = e.radius;
+    const p = posAtTiles(e.dist);
+    const r = e.radius * TILE;
 
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath();
@@ -194,16 +194,18 @@ export function drawEnemies(ctx) {
   }
 }
 
-/* Shot glows. */
+/* Shot glows. Shot positions are stored in tiles. */
 export function drawProjectiles(ctx) {
   for (const p of state.projectiles) {
+    const x = p.x * TILE;
+    const y = p.y * TILE;
     ctx.fillStyle = p.color + '55';
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+    ctx.arc(x, y, 7, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = p.color;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
     ctx.fill();
   }
 }
@@ -243,30 +245,6 @@ export function drawFloatingTexts(ctx) {
 }
 
 /*
-  Next-wave countdown, or live wave counts while a wave is active.
-*/
-export function drawWaveInfo(ctx) {
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-
-  if (!state.waveActive && state.wave >= 0 && state.nextWaveIn > 0 && state.gameState === 'playing') {
-    ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';
-    ctx.font = `bold ${Math.max(11, TILE * 0.3)}px Courier New`;
-    ctx.fillText(`NEXT WAVE IN ${state.nextWaveIn.toFixed(1)}s`, 10, 10);
-  }
-
-  if (state.waveActive) {
-    ctx.fillStyle = 'rgba(255, 100, 100, 0.9)';
-    ctx.font = `bold ${Math.max(11, TILE * 0.3)}px Courier New`;
-    const remaining = state.spawnQueue.length + state.enemies.length;
-    ctx.fillText(`WAVE ${state.wave} — ${remaining} LEFT`, 10, 10);
-    ctx.fillStyle = 'rgba(120, 255, 120, 0.8)';
-    ctx.font = `${Math.max(10, TILE * 0.22)}px Courier New`;
-    ctx.fillText(`queue:${state.spawnQueue.length}  alive:${state.enemies.length}  t:${state.waveTimer.toFixed(1)}s`, 10, 12 + TILE * 0.38);
-  }
-}
-
-/*
   Full frame. CW/CH are the logical canvas size in CSS pixels.
 */
 export function render(ctx, CW, CH) {
@@ -279,5 +257,4 @@ export function render(ctx, CW, CH) {
   drawProjectiles(ctx);
   drawParticles(ctx);
   drawFloatingTexts(ctx);
-  drawWaveInfo(ctx);
 }

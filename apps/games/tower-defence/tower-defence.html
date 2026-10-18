@@ -9,23 +9,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Tower Defense</title>
+  <title>Tower Defence</title>
   <link rel="stylesheet" href="tower-defence.css" />
 </head>
 <body>
   <div id="app">
-    <div id="hud">
-      <div class="stat"><span class="label">HP</span><span class="value" id="hud-lives">20</span></div>
-      <div class="stat"><span class="label">GOLD</span><span class="value" id="hud-gold">150</span></div>
-      <div class="stat"><span class="label">WAVE</span><span class="value" id="hud-wave">0</span></div>
-      <div class="stat"><span class="label">SCORE</span><span class="value" id="hud-score">0</span></div>
-    </div>
-
     <div id="stage">
       <canvas id="game"></canvas>
+      <!-- See-through stats strip over board row 0. Taps pass through. -->
+      <div id="hud">
+        <div class="stats">
+          <span class="stat hp">♥<b id="hud-lives">20</b></span>
+          <span class="stat gold">$<b id="hud-gold">150</b></span>
+          <span class="stat wave">W<b id="hud-wave">0</b></span>
+          <span class="stat score">★<b id="hud-score">0</b></span>
+        </div>
+        <span id="hud-timer"></span>
+      </div>
       <div id="hint"></div>
       <div id="overlay">
-        <h2 id="overlay-title">TOWER DEFENSE</h2>
+        <h2 id="overlay-title">TOWER DEFENCE</h2>
         <p id="overlay-msg">Build towers • Stop the waves • Survive</p>
         <p id="overlay-msg2" style="font-size:11px;opacity:0.7;">Tap a tower button, then tap a grass tile</p>
         <button id="overlay-btn">START</button>

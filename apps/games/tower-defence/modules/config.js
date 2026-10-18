@@ -74,6 +74,9 @@ export const ENEMY_TYPES = {
   boss:   { name: 'BOSS',   hp: 1000, speed: 0.75, gold: 30, radius: 0.48, color: '#FF00FF' }
 };
 
+/* Highest tower level. UPGRADE shows MAX once reached. */
+export const MAX_TOWER_LEVEL = 5;
+
 /* Starting gold for a new run. */
 export const START_GOLD = 150;
 

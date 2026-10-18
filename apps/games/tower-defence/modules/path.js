@@ -77,6 +77,19 @@ export function isPathTile(c, r) {
   return false;
 }
 
+/* Total walk length in tiles. Independent of the current tile size. */
+export function pathLengthTiles() {
+  return TILE > 0 ? totalPathLength / TILE : 0;
+}
+
+/*
+  Canvas pixel position at a distance along the path given in tiles.
+  Enemy progress is stored in tiles so a resize does not move them.
+*/
+export function posAtTiles(distTiles) {
+  return posAtDistance(distTiles * TILE);
+}
+
 /*
   World position at a distance along the path.
   dist is clamped to [0, totalPathLength].

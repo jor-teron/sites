@@ -24,7 +24,9 @@ const ctx = canvas.getContext('2d');
 /* Stage element used to measure available space. */
 const stage = document.getElementById('stage');
 
-/* HUD value nodes. */
+/* Stats strip and its value nodes. */
+const hudEl = document.getElementById('hud');
+const timerEl = document.getElementById('hud-timer');
 const livesEl = document.getElementById('hud-lives');
 const goldEl = document.getElementById('hud-gold');
 const waveEl = document.getElementById('hud-wave');
@@ -77,16 +79,57 @@ function resize() {
   canvas.style.height = CH + 'px';
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   buildPath();
+  placeHud(tile);
 }
 
 /*
-  Push gold, lives, wave, and score into the HUD and refresh buttons.
+  Lay the stats strip over board row 0 and the hint just below it.
+  Font scales with the tile but never drops below 11px.
+*/
+function placeHud(tile) {
+  const cr = canvas.getBoundingClientRect();
+  const sr = stage.getBoundingClientRect();
+  const left = cr.left - sr.left;
+  const top = cr.top - sr.top;
+  hudEl.style.left = left + 'px';
+  hudEl.style.top = top + 'px';
+  hudEl.style.width = CW + 'px';
+  hudEl.style.height = Math.max(tile, 18) + 'px';
+  hudEl.style.fontSize = Math.max(11, Math.min(18, Math.round(tile * 0.5))) + 'px';
+  hintEl.style.top = (top + Math.max(tile, 18) + 4) + 'px';
+}
+
+/* Last text written to each HUD node, so the DOM is only touched on change. */
+const hudCache = new Map();
+
+/* Write text into a node only if it differs from the last write. */
+function setText(el, text) {
+  if (hudCache.get(el) === text) return;
+  hudCache.set(el, text);
+  el.textContent = text;
+}
+
+/* Right side of the strip: countdown between waves, enemies left during one. */
+function timerText() {
+  if (state.gameState !== 'playing' && state.gameState !== 'paused') return '';
+  if (state.waveActive) {
+    return `${state.spawnQueue.length + state.enemies.length} LEFT`;
+  }
+  if (state.nextWaveIn > 0) return `NEXT WAVE ${state.nextWaveIn.toFixed(1)}s`;
+  return '';
+}
+
+/*
+  Push gold, lives, wave, score, and the wave timer into the strip and
+  refresh buttons. Only nodes whose value changed are written.
 */
 function updateHud() {
-  livesEl.textContent = Math.max(0, state.lives);
-  goldEl.textContent = Math.floor(state.gold);
-  waveEl.textContent = state.wave;
-  scoreEl.textContent = state.score;
+  setText(livesEl, String(Math.max(0, state.lives)));
+  setText(goldEl, String(Math.floor(state.gold)));
+  setText(waveEl, String(state.wave));
+  setText(scoreEl, String(state.score));
+  setText(timerEl, timerText());
+  timerEl.classList.toggle('active', state.waveActive);
   refreshTowerButtons(ui);
 }
 

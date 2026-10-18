@@ -8,17 +8,14 @@
 import { COLS, ROWS, TOWER_TYPES } from './config.js';
 import { TILE, isPathTile } from './path.js';
 import * as state from './state.js';
-import { makeTower, upgradeTower, sellTower, getUpgradeCost, getSellValue } from './towers.js';
-
-/* Hint hide timer. */
-let hintTimer = 0;
+import { makeTower, upgradeTower, sellTower, getUpgradeCost, getSellValue, isMaxLevel } from './towers.js';
 
 /*
   Bind DOM controls. callbacks: { canvas, CW, CH, showHint, updateHud, togglePause, cycleSpeed, startGame }
   CW and CH are getters so resize stays correct: callbacks.getSize().
 */
 export function bindInput(ui, callbacks) {
-  const { canvas, toolbarBtns, upgradeBtn, sellBtn, speedBtn, pauseBtn, overlayBtn, hintEl } = ui;
+  const { canvas, toolbarBtns, upgradeBtn, sellBtn, speedBtn, pauseBtn, overlayBtn } = ui;
 
   /* Map a pointer event to logical canvas pixels. */
   function canvasCoords(clientX, clientY) {
@@ -92,9 +89,9 @@ export function bindInput(ui, callbacks) {
     } else if (e.key === ' ') {
       e.preventDefault();
       callbacks.togglePause();
-    } else if (e.key.toLowerCase() === 'u' && state.selectedTower) {
+    } else if (e.key.toLowerCase() === 'u' && state.selectedTower && state.gameState === 'playing') {
       if (upgradeTower(state.selectedTower)) callbacks.updateHud();
-    } else if (e.key.toLowerCase() === 's' && state.selectedTower) {
+    } else if (e.key.toLowerCase() === 's' && state.selectedTower && state.gameState === 'playing') {
       sellTower(state.selectedTower);
       callbacks.updateHud();
     } else if (e.key.toLowerCase() === 'f') {
@@ -120,27 +117,44 @@ export function bindInput(ui, callbacks) {
     if (state.gameState === 'paused') callbacks.togglePause();
     else callbacks.startGame();
   });
-
-  /* Keep hintEl referenced so the binder owns the node. */
-  hintTimer = hintEl ? 0 : 0;
 }
 
+/* Last button state key, so the DOM is only touched on change. */
+let lastButtonsKey = '';
+
 /*
-  Enable or disable toolbar buttons from current gold and selection.
+  Enable or disable toolbar buttons from current gold, game state, and
+  selection. Build buttons stay disabled until START. Skips all DOM
+  writes when nothing relevant changed.
 */
 export function refreshTowerButtons(ui) {
+  const playing = state.gameState === 'playing';
+  const sel = state.selectedTower;
+  const uc = sel && !isMaxLevel(sel) ? getUpgradeCost(sel) : 0;
+  const key = [
+    Math.floor(state.gold), state.gameState, state.selectedBuildType,
+    sel ? state.towers.indexOf(sel) : -1, sel ? sel.level : 0, uc,
+    sel ? getSellValue(sel) : 0
+  ].join('|');
+  if (key === lastButtonsKey) return;
+  lastButtonsKey = key;
+
   for (const btn of ui.toolbarBtns) {
     const type = btn.dataset.tower;
     const cost = TOWER_TYPES[type].cost;
-    btn.disabled = state.gold < cost || state.gameState === 'gameover' || state.gameState === 'paused';
+    btn.disabled = state.gold < cost || !playing;
     btn.classList.toggle('active', state.selectedBuildType === type);
   }
-  if (state.selectedTower) {
-    const uc = getUpgradeCost(state.selectedTower);
-    ui.upgradeBtn.textContent = `UP $${uc}`;
-    ui.upgradeBtn.disabled = state.gold < uc;
-    ui.sellBtn.textContent = `SELL $${getSellValue(state.selectedTower)}`;
-    ui.sellBtn.disabled = false;
+  if (sel) {
+    if (isMaxLevel(sel)) {
+      ui.upgradeBtn.textContent = 'MAX';
+      ui.upgradeBtn.disabled = true;
+    } else {
+      ui.upgradeBtn.textContent = `UP $${uc}`;
+      ui.upgradeBtn.disabled = state.gold < uc || !playing;
+    }
+    ui.sellBtn.textContent = `SELL $${getSellValue(sel)}`;
+    ui.sellBtn.disabled = !playing;
   } else {
     ui.upgradeBtn.textContent = 'UPGRADE';
     ui.upgradeBtn.disabled = true;

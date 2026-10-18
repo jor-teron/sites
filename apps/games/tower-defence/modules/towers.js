@@ -4,8 +4,8 @@
   Purpose: Place, upgrade, sell, and fire towers.
 */
 
-import { TOWER_TYPES } from './config.js';
-import { TILE, posAtDistance } from './path.js';
+import { TOWER_TYPES, MAX_TOWER_LEVEL } from './config.js';
+import { TILE, posAtTiles } from './path.js';
 import * as state from './state.js';
 import { fireProjectile } from './projectiles.js';
 
@@ -43,9 +43,11 @@ export function getSellValue(t) {
 }
 
 /*
-  Spend gold and scale stats. Returns false if the player cannot pay.
+  Spend gold and scale stats. Returns false at max level or if the
+  player cannot pay.
 */
 export function upgradeTower(t) {
+  if (t.level >= MAX_TOWER_LEVEL) return false;
   const cost = getUpgradeCost(t);
   if (state.gold < cost) return false;
   state.addGold(-cost);
@@ -72,26 +74,32 @@ export function sellTower(t) {
   state.setSelectedTower(null);
 }
 
+/* True once the tower cannot be upgraded further. */
+export function isMaxLevel(t) {
+  return t.level >= MAX_TOWER_LEVEL;
+}
+
 /*
-  Each tower shoots the enemy furthest along the path inside range.
+  Each tower aims at the enemy furthest along the path inside range
+  every step, and fires when its cooldown is ready.
 */
 export function updateTowers(dt) {
   for (const t of state.towers) {
-    t.cooldown -= dt;
-    if (t.cooldown > 0) continue;
+    if (t.cooldown > 0) t.cooldown -= dt;
     const tc = towerCenter(t);
     const rangePx = t.range * TILE;
     let best = null;
+    let bestPos = null;
     let bestScore = -Infinity;
     for (const e of state.enemies) {
-      const ep = posAtDistance(e.dist);
+      const ep = posAtTiles(e.dist);
       const d = Math.hypot(ep.x - tc.x, ep.y - tc.y);
       if (d > rangePx) continue;
-      if (e.dist > bestScore) { bestScore = e.dist; best = e; }
+      if (e.dist > bestScore) { bestScore = e.dist; best = e; bestPos = ep; }
     }
-    if (best) {
-      const bp = posAtDistance(best.dist);
-      t.angle = Math.atan2(bp.y - tc.y, bp.x - tc.x);
+    if (!best) continue;
+    t.angle = Math.atan2(bestPos.y - tc.y, bestPos.x - tc.x);
+    if (t.cooldown <= 0) {
       fireProjectile(t, best, tc);
       t.cooldown = t.fireRate;
     }

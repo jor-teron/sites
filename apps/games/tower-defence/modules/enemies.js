@@ -5,12 +5,13 @@
 */
 
 import { ENEMY_TYPES } from './config.js';
-import { TILE, totalPathLength, posAtDistance } from './path.js';
+import { pathLengthTiles, posAtTiles } from './path.js';
 import * as state from './state.js';
 
 /*
   Spawn one enemy of the given catalog key.
-  HP scales with the current wave. Speed and radius use the live tile size.
+  HP scales with the current wave. dist, speed, and radius are in tiles
+  (tiles, tiles/s, tiles) so a resize mid-wave does not move enemies.
 */
 export function spawnEnemy(type) {
   const def = ENEMY_TYPES[type];
@@ -19,10 +20,10 @@ export function spawnEnemy(type) {
   state.enemies.push({
     type, def, hp, maxHp: hp,
     dist: 0,
-    baseSpeed: def.speed * TILE,
+    baseSpeed: def.speed,
     speedMul: 1,
     slowTimer: 0,
-    radius: def.radius * TILE,
+    radius: def.radius,
     color: def.color,
     goldReward: def.gold
   });
@@ -45,7 +46,7 @@ export function killEnemy(e) {
   state.enemies.splice(idx, 1);
   state.addGold(e.goldReward);
   state.addScore(e.goldReward * 2);
-  const pos = posAtDistance(e.dist);
+  const pos = posAtTiles(e.dist);
   state.addFloatingText(pos.x, pos.y, `+$${e.goldReward}`, '#FFD700');
   state.burst(pos.x, pos.y, e.color, 8, 50, 130, 0.5, 3);
 }
@@ -70,7 +71,7 @@ export function updateEnemies(dt) {
       if (e.slowTimer <= 0) e.speedMul = 1;
     }
     e.dist += e.baseSpeed * e.speedMul * dt;
-    if (e.dist >= totalPathLength) {
+    if (e.dist >= pathLengthTiles()) {
       const left = state.loseLives(e.type === 'boss' ? 5 : 1);
       state.enemies.splice(i, 1);
       if (left <= 0) {
