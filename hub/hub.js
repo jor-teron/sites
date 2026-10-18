@@ -46,11 +46,13 @@
     Favorite: 'apps/favorite/', Games: 'apps/games/', Media: 'apps/media/', Office: 'apps/office/',
     Connectivity: 'apps/connectivity/', Tools: 'apps/tools/', Lab: 'apps/lab/',
     Desktop: 'apps/tools/vDesktop/',  // Desktop opens vDesktop directly (in the hub frame)
-    About: 'apps/about/'              // one About page: About / Contact / Feedback cards
+    About: 'apps/settings/#about'      // About moved into Settings → About (rows hidden)
   };
 
   const emptyText = document.getElementById('empty-text');
   catLabel.textContent = HEADER_DEFAULT;
+  const verEl = document.getElementById('hub-ver');
+  if (verEl && window.HUB_VERSION) verEl.textContent = 'v' + window.HUB_VERSION;
   if (emptyText) emptyText.textContent = "Open '" + HEADER_DEFAULT + "' and pick an App";
   const tilesEl = document.getElementById('tiles');
 

@@ -19,6 +19,9 @@
  * "hub_apps.js failed to load or has an error" in the hub instead of the menu.
  * Desktop (vDesktop) is HIDDEN since the Hub has its own Desktop mode (windows + taskbar);
  * its files stay in apps/tools/vDesktop/ and #vDesktop still opens it.
+ * About is HIDDEN too: its cards moved into the Settings app (About section); apps/about/
+ * redirects to apps/settings/#about. Settings itself is opened by the "⚙ Settings" row
+ * at the bottom of the menu (hub_settings.js), so its row is HIDDEN here.
  */
 window.HUB_APPS_CSV = `
 CATEGORY, NAME,                  ENTRY_URL,                                  ICON_URL, NEW_TAB, HIDDEN, ORDER
@@ -95,7 +98,9 @@ Lab,      Pacman,                apps/lab/pacman/,                           ,  
 Lab,      WebRTC Chat,           apps/connectivity/webrtc-chat/,             ,         0,       0,      1095
 Lab,      P2P Chat,              apps/connectivity/p2pchat.html,             ,         0,       0,      1096
 
-About,    About,                 apps/about/,                                ,         0,       0,      2000
+About,    About,                 apps/about/,                                ,         0,       1,      2000
 About,    Contact,               apps/about/contact.html,                    ,         0,       1,      2020
 About,    Feedback,              apps/about/feedback.html,                   ,         0,       1,      2030
+
+Settings, Settings,              apps/settings/,                             ,         0,       1,      2100
 `;

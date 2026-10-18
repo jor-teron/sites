@@ -1,0 +1,61 @@
+/*
+ * Hub preferences (hub/hub_prefs.js) — applies the Settings app's choices (apps/settings) to
+ * the Hub, live. Loaded right after hub_config.js / hub_wallpapers.js.
+ *
+ * localStorage keys (all optional; empty = default):
+ *   sites-hub.wallpaper  wallpaper id or '#rrggbb' (hub_wallpapers.js)        → #empty background
+ *   sites-hub.taskH      taskbar height 32 | 40 | 48 px (default 40)          → --wm-task-h
+ *   sites-hub.titleH     window title bar 24 | 28 | 34 px (default 28)        → --wm-title-h
+ *   sites-hub.accent     accent colour '#rrggbb' (default #6ea8fe)            → --accent
+ *   sites-hub.theme      'dark' (default) | 'light'                           → html.hub-light
+ *   sites-hub.motion     'on' (default) | 'reduced' (no jelly) | 'off'        → html.hub-motion-*
+ *   sites-hub.wmMode / sites-hub.startHover: read by wm_mode.js / wm_taskbar.js; a change made
+ *   in Settings is passed to HubMode here.
+ * Live: the 'storage' event (Settings runs in another document) and a
+ * {type:'hub-prefs'} postMessage from a same-origin frame both re-apply everything.
+ * API: window.HubPrefs.get(key), .apply()
+ */
+(function () {
+  'use strict';
+  const P = 'sites-hub.';
+  const root = document.documentElement;
+  const get = (k) => { try { return localStorage.getItem(P + k) || ''; } catch (_) { return ''; } };
+  const num = (v, ok, d) => (ok.indexOf(+v) >= 0 ? +v : d);
+  const hex = (v) => (/^#[0-9a-f]{6}$/i.test(v) ? v : '');
+
+  function apply() {
+    // sizes + accent
+    root.style.setProperty('--wm-task-h', num(get('taskH'), [32, 40, 48], 40) + 'px');
+    root.style.setProperty('--wm-title-h', num(get('titleH'), [24, 28, 34], 28) + 'px');
+    const acc = hex(get('accent'));
+    if (acc) root.style.setProperty('--accent', acc); else root.style.removeProperty('--accent');
+    // theme + motion
+    root.classList.toggle('hub-light', get('theme') === 'light');
+    const mo = get('motion');
+    root.classList.toggle('hub-motion-reduced', mo === 'reduced');
+    root.classList.toggle('hub-motion-off', mo === 'off');
+    // wallpaper
+    const empty = document.getElementById('empty');
+    if (empty && window.hubWallpaper) {
+      const w = window.hubWallpaper(get('wallpaper'));
+      const s = empty.style;
+      s.backgroundColor = w.color || '#000';
+      s.backgroundImage = w.image || 'none';
+      s.backgroundSize = w.slide ? '100% 300%' : (w.image ? 'cover' : '');
+      s.backgroundPosition = w.slide ? '' : 'center';
+      s.animationName = w.slide ? '' : 'none';
+      empty.classList.toggle('wp-light', !!w.light);
+    }
+    // screen mode chosen in Settings
+    const m = get('wmMode') || 'auto';
+    if (window.HubMode && window.HubMode.pref !== m) window.HubMode.setPref(m);
+  }
+
+  window.HubPrefs = { get, apply };
+  apply();
+  window.addEventListener('storage', (e) => { if (!e.key || e.key.indexOf(P) === 0) apply(); });
+  window.addEventListener('message', (e) => {
+    if (e.origin !== location.origin || !e.data || e.data.type !== 'hub-prefs') return;
+    apply();
+  });
+})();

@@ -153,7 +153,7 @@ html, body {
 }
 .menu button.app:hover,
 .menu button.app.active {
-  background: rgba(110, 168, 254, 0.16);
+  background: var(--wm-hi, rgba(110, 168, 254, 0.16));
   color: #fff;
 }
 .menu button.app .icon {

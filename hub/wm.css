@@ -1,11 +1,25 @@
 /*
- * Hub Desktop mode (hub/wm.css) — windows (wm_windows.js), taskbar (wm_taskbar.js) and the
- * Hub settings sheet (hub_settings.js). Everything window-related is scoped to body.wm-desktop,
- * so Phone mode looks exactly like before.
+ * Hub Desktop mode (hub/wm.css) — windows (wm_windows.js) and taskbar (wm_taskbar.js).
+ * Everything window-related is scoped to body.wm-desktop, so Phone mode looks like before.
  * Desktop mode has no top bar: its right side lives in the taskbar tray (wm_taskbar.js),
  * app stats show in each window's title bar, popovers open upward from the taskbar.
+ * Sizes / accent / theme / motion come from the Settings app via hub_prefs.js:
+ *   --wm-task-h (32 | 40 | 48), --wm-title-h (24 | 28 | 34), --accent, html.hub-light,
+ *   html.hub-motion-reduced / -off. Wallpaper: hub_prefs.js paints #empty.
  */
-:root { --wm-task-h: 40px; }
+:root {
+  --wm-task-h: 40px;
+  --wm-title-h: 28px;
+  --wm-hi: color-mix(in srgb, var(--accent) 24%, transparent);    /* accent highlight */
+  --wm-win-bg: #0f1218;
+  --wm-win-line: #343b48;
+  --wm-bar-bg: linear-gradient(#262c38, #1f242e);
+  --wm-bar-bg-on: linear-gradient(#34405a, #2a3348);
+  --wm-bar-fg: #c8ccd4;
+  --wm-bar-fg-on: #fff;
+  --wm-task-bg: rgba(20, 24, 32, 0.96);
+  --wm-hover: rgba(255,255,255,0.08);
+}
 
 /* ---------- Phone mode: none of this shows ---------- */
 #wm-desk, #wm-taskbar { display: none; }
@@ -35,14 +49,17 @@ body.wm-desktop #wm-desk { display: block; position: absolute; inset: 0; overflo
   flex-direction: column;
   min-width: 320px;
   min-height: 200px;
-  background: #0f1218;
-  border: 1px solid #343b48;
-  border-radius: 12px;
+  background: var(--wm-win-bg);
+  border: 1px solid var(--wm-win-line);
+  border-radius: 10px;
   box-shadow: 0 16px 44px rgba(0,0,0,0.5), 0 3px 10px rgba(0,0,0,0.35);
   pointer-events: auto;
   overflow: hidden;
 }
-.wm-win.wm-active { border-color: #5b7fc7; box-shadow: 0 22px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(110,168,254,0.35); }
+.wm-win.wm-active {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--wm-win-line));
+  box-shadow: 0 22px 60px rgba(0,0,0,0.6), 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
 .wm-win.wm-min { visibility: hidden; pointer-events: none; }   /* still loaded and running */
 .wm-win.wm-max { left: 0 !important; top: 0 !important; width: 100% !important; height: 100% !important; border-radius: 0; }
 .wm-win.wm-pop { animation: wm-jelly 0.45s cubic-bezier(.2,.9,.3,1.3); }
@@ -54,38 +71,38 @@ body.wm-desktop #wm-desk { display: block; position: absolute; inset: 0; overflo
 }
 .wm-bar {
   flex: 0 0 auto;
-  height: 38px;
+  height: var(--wm-title-h);
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 4px 0 10px;
-  background: linear-gradient(#262c38, #1f242e);
-  color: #c8ccd4;
-  font-size: 14px;
+  gap: 7px;
+  padding: 0 2px 0 8px;
+  background: var(--wm-bar-bg);
+  color: var(--wm-bar-fg);
+  font-size: calc(var(--wm-title-h) * 0.46);
   cursor: default;
   user-select: none;
   touch-action: none;
 }
-.wm-win.wm-active .wm-bar { background: linear-gradient(#34405a, #2a3348); color: #fff; }
-.wm-icon { width: 22px; height: 22px; border-radius: 5px; object-fit: contain; flex: 0 0 22px; }
+.wm-win.wm-active .wm-bar { background: var(--wm-bar-bg-on); color: var(--wm-bar-fg-on); }
+.wm-icon { width: calc(var(--wm-title-h) - 10px); height: calc(var(--wm-title-h) - 10px); border-radius: 4px; object-fit: contain; flex: 0 0 auto; }
 .wm-icon.missing { visibility: hidden; }
 .wm-title { flex: 1 1 auto; min-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-.wm-btns { display: flex; gap: 2px; flex: 0 0 auto; }
+.wm-btns { display: flex; gap: 1px; flex: 0 0 auto; }
 /* app bar (hub-gamebar.js) inside the title bar: version, stats, buttons (name = the title) */
-.wm-gb { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden; font-size: 12.5px; }
+.wm-gb { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden; font-size: 12px; }
 .wm-gb[hidden] { display: none; }
 .wm-gb .gb-name { display: none; }
 .wm-gb .gb-title { flex: 0 0 auto; }
-.wm-gb .gb-stat, .wm-gb .gb-btn { flex: 0 0 auto; }
+.wm-gb .gb-stat, .wm-gb .gb-btn { flex: 0 0 auto; padding-top: 0; padding-bottom: 0; }
 .wm-btn {
-  width: 42px; height: 32px;
-  border: 0; border-radius: 8px;
+  width: calc(var(--wm-title-h) * 1.45); height: calc(var(--wm-title-h) - 4px);
+  border: 0; border-radius: 6px;
   background: transparent; color: inherit;
-  font: inherit; font-size: 17px; line-height: 1;
+  font: inherit; font-size: calc(var(--wm-title-h) * 0.55); line-height: 1;
   cursor: pointer;
   transition: background 0.12s ease, transform 0.12s ease;
 }
-.wm-btn:hover { background: rgba(255,255,255,0.12); }
+.wm-btn:hover { background: var(--wm-hover); }
 .wm-btn:active { transform: scale(0.9); }
 .wm-close-btn:hover { background: #e5484d; color: #fff; }
 .wm-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
@@ -95,7 +112,7 @@ body.wm-desktop #wm-desk { display: block; position: absolute; inset: 0; overflo
 body.wm-dragging .wm-body iframe, body.hub-menu-open .wm-body iframe { pointer-events: none; }
 body.wm-dragging { cursor: grabbing; user-select: none; }
 
-/* resize handles (8 px edges, 14 px corners) */
+/* resize handles (8 px edges, 16 px corners) */
 .wm-rz { position: absolute; z-index: 2; touch-action: none; }
 .wm-win.wm-max .wm-rz { display: none; }
 .wm-rz-n, .wm-rz-s { left: 14px; right: 14px; height: 8px; cursor: ns-resize; }
@@ -108,7 +125,7 @@ body.wm-dragging { cursor: grabbing; user-select: none; }
 .wm-rz-nw { top: -3px; left: -3px; cursor: nwse-resize; }
 .wm-rz-se { bottom: -3px; right: -3px; cursor: nwse-resize; }
 
-/* ---------- Taskbar ---------- */
+/* ---------- Taskbar (height follows --wm-task-h) ---------- */
 body.wm-desktop #wm-taskbar {
   display: flex;
   position: fixed;
@@ -118,50 +135,52 @@ body.wm-desktop #wm-taskbar {
   align-items: center;
   gap: 4px;
   padding: 0 6px 0 4px;
-  background: rgba(20, 24, 32, 0.96);
+  background: var(--wm-task-bg);
   border-top: 1px solid var(--line);
   user-select: none;
+  --tb-btn: calc(var(--wm-task-h) - 8px);
+  --tb-ico: calc(var(--wm-task-h) * 0.46);
 }
 #wm-start, .wm-task {
-  height: 32px;
+  height: var(--tb-btn);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 9px;
   background: transparent;
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: calc(var(--wm-task-h) * 0.33);
   cursor: pointer;
   transition: background 0.12s ease, transform 0.15s cubic-bezier(.3,1.6,.5,1);
 }
-#wm-start { padding: 0 12px 0 6px; font-weight: 700; font-size: 14px; gap: 7px; }
-#wm-start:hover, #wm-start[aria-expanded="true"] { background: rgba(110,168,254,0.22); }
+#wm-start { padding: 0 12px 0 6px; font-weight: 700; font-size: calc(var(--wm-task-h) * 0.35); }
+#wm-start:hover, #wm-start[aria-expanded="true"] { background: var(--wm-hi); }
 #wm-start:active, .wm-task:active { transform: scale(0.94); }
-.wm-start-logo { width: 22px; height: 22px; border-radius: 6px; }
+.wm-start-logo { width: calc(var(--tb-ico) + 4px); height: calc(var(--tb-ico) + 4px); border-radius: 6px; }
 .wm-tasks { flex: 1; min-width: 0; display: flex; gap: 4px; overflow: hidden; }
-.wm-task { padding: 0 10px 0 7px; gap: 7px; max-width: 200px; min-width: 0; position: relative; }
-.wm-task img { width: 18px; height: 18px; border-radius: 4px; object-fit: contain; flex: 0 0 18px; }
+.wm-task { padding: 0 10px 0 7px; max-width: 200px; min-width: 0; position: relative; }
+.wm-task img { width: var(--tb-ico); height: var(--tb-ico); border-radius: 4px; object-fit: contain; flex: 0 0 auto; }
 .wm-task img.missing { visibility: hidden; }
 .wm-task span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wm-task:hover { background: rgba(255,255,255,0.08); }
-.wm-task.active { background: rgba(110,168,254,0.24); }
+.wm-task:hover { background: var(--wm-hover); }
+.wm-task.active { background: var(--wm-hi); }
 .wm-task.active::after {
   content: ''; position: absolute; left: 30%; right: 30%; bottom: 1px; height: 2px;
   border-radius: 2px; background: var(--accent);
 }
 .wm-task.min { opacity: 0.6; }
 #wm-start:focus-visible, .wm-task:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.wm-clock { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; padding: 0 6px 0 4px; white-space: nowrap; }
+.wm-clock { color: var(--muted); font-size: calc(var(--wm-task-h) * 0.33); font-variant-numeric: tabular-nums; padding: 0 6px 0 4px; white-space: nowrap; }
 
 /* ---------- Tray (old top bar right side, moved here by wm_taskbar.js) ---------- */
 .wm-tray { display: flex; align-items: center; height: 100%; flex: 0 0 auto; }
 .wm-tray .header-right { height: 100%; gap: 2px 8px; font-size: 12px; }
 .wm-tray .header-right .sep { display: none; }
-.wm-tray .ctrl-btn { height: 34px; padding: 0 3px; }
-.wm-tray .ctrl-btn svg { width: 26px; height: 26px; }
-.wm-tray .chat-btn { min-width: 34px; font-size: 18px; }
+.wm-tray .ctrl-btn { height: var(--tb-btn); padding: 0 3px; }
+.wm-tray .ctrl-btn svg { width: calc(var(--wm-task-h) * 0.65); height: calc(var(--wm-task-h) * 0.65); }
+.wm-tray .chat-btn { min-width: var(--tb-btn); font-size: calc(var(--wm-task-h) * 0.45); }
 .wm-tray .chat-badge { top: 0; right: -3px; }
 
 /* popovers / toasts open upward from the taskbar */
@@ -172,56 +191,30 @@ body.wm-desktop #hub-notify.hn-bottom-right { bottom: calc(var(--wm-task-h) + 10
 body.wm-desktop #hub-notify.hn-top-right, body.wm-desktop #hub-notify.hn-top-center { top: 12px; }
 body.wm-desktop .sl-openin { bottom: calc(var(--wm-task-h) + 12px); }
 
-/* ---------- Hub settings sheet ---------- */
+/* ---------- Settings row at the bottom of the Hub menu (hub_settings.js) ---------- */
 .menu .hub-set-item { border-bottom: 0; border-top: 1px solid var(--line); margin-top: 4px; }
-.hub-set-back { position: fixed; inset: 0; z-index: 9500; background: rgba(0,0,0,0.45); display: grid; place-items: center; }
-.hub-set-back[hidden] { display: none; }
-.hub-set {
-  width: min(420px, calc(100vw - 24px));
-  background: var(--menu); color: var(--text);
-  border: 1px solid var(--line); border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
-  padding: 14px 16px 16px;
-  animation: wm-jelly 0.4s cubic-bezier(.2,.9,.3,1.3);
+
+/* ---------- Wallpaper on a light background: dark home text ---------- */
+#empty.wp-light #empty-text { color: rgba(0,0,0,0.7); text-shadow: none; }
+
+/* ---------- Light theme (Settings → Look) ---------- */
+html.hub-light {
+  --bg: #e9ecf1; --bar: #f4f5f8; --text: #1d2330; --muted: #5d6675; --line: #d3d8e0; --menu: #ffffff;
+  --wm-win-bg: #f4f5f8; --wm-win-line: #c9cfd9;
+  --wm-bar-bg: linear-gradient(#eef0f4, #e3e7ee); --wm-bar-bg-on: linear-gradient(#dfe7f7, #cfdbf3);
+  --wm-bar-fg: #4a5160; --wm-bar-fg-on: #111827;
+  --wm-task-bg: rgba(246, 247, 250, 0.96); --wm-hover: rgba(0,0,0,0.06);
 }
-.hub-set-head { display: flex; align-items: center; justify-content: space-between; font-size: 17px; margin-bottom: 10px; }
-.hub-set-x { width: 44px; height: 44px; border: 0; border-radius: 10px; background: transparent; color: inherit; font-size: 24px; cursor: pointer; }
-.hub-set-x:hover { background: rgba(255,255,255,0.08); }
-.hub-set-title { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 4px 0 8px; }
-.hub-set-modes { display: grid; gap: 8px; }
-.hub-set-mode {
-  min-height: 54px; text-align: left; padding: 8px 14px;
-  display: flex; flex-direction: column; justify-content: center; gap: 2px;
-  border: 2px solid var(--line); border-radius: 12px;
-  background: rgba(255,255,255,0.03); color: var(--text); font: inherit; cursor: pointer;
-  transition: border-color 0.12s ease, background 0.12s ease, transform 0.15s cubic-bezier(.3,1.6,.5,1);
-}
-.hub-set-mode b { font-size: 15px; }
-.hub-set-mode small { color: var(--muted); font-size: 12.5px; }
-.hub-set-mode:hover { background: rgba(255,255,255,0.07); }
-.hub-set-mode:active { transform: scale(0.97); }
-.hub-set-mode.on { border-color: var(--accent); background: rgba(110,168,254,0.16); }
-.hub-set-mode:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.hub-set-note { margin-top: 12px; color: var(--muted); font-size: 13px; }
-.hub-set-note + .hub-set-title { margin-top: 16px; }
-/* on / off switch row (big target) */
-.hub-set-switch {
-  width: 100%; min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 8px 14px; text-align: left; border: 2px solid var(--line); border-radius: 12px;
-  background: rgba(255,255,255,0.03); color: var(--text); font: inherit; cursor: pointer;
-}
-.hub-set-switch:hover { background: rgba(255,255,255,0.07); }
-.hub-set-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.hub-set-sw-text { display: flex; flex-direction: column; gap: 2px; }
-.hub-set-sw-text b { font-size: 15px; }
-.hub-set-sw-text small { color: var(--muted); font-size: 12.5px; }
-.hub-set-sw { flex: 0 0 46px; height: 26px; border-radius: 13px; background: #3a4150; position: relative; transition: background 0.15s ease; }
-.hub-set-sw i { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff;
-  transition: transform 0.25s cubic-bezier(.3,1.6,.5,1); }
-.hub-set-switch.on .hub-set-sw { background: var(--accent); }
-.hub-set-switch.on .hub-set-sw i { transform: translateX(20px); }
+html.hub-light .menu .menu-cat:hover, html.hub-light .menu button.app:hover { background: rgba(0,0,0,0.05); color: var(--text); }
+html.hub-light .menu .menu-cat.fly-on, html.hub-light .menu-fly .fly-app:hover { background: var(--wm-hi); color: var(--text); }
+html.hub-light .menu-fly .fly-app { color: var(--text); }
+html.hub-light .wm-win { box-shadow: 0 16px 44px rgba(0,0,0,0.22), 0 3px 10px rgba(0,0,0,0.12); }
+
+/* ---------- Motion (Settings → Look): reduced = no jelly; off = no animation at all ---------- */
+html.hub-motion-reduced .wm-win.wm-pop, html.hub-motion-reduced .menu-fly.pop { animation: none; }
+html.hub-motion-off *, html.hub-motion-off *::before, html.hub-motion-off *::after { animation: none !important; transition: none !important; }
 
 @media (prefers-reduced-motion: reduce) {
-  .wm-win.wm-pop, .hub-set { animation: none; }
-  #wm-start, .wm-task, .wm-btn, .hub-set-mode, .hub-set-sw, .hub-set-sw i { transition: none; }
+  .wm-win.wm-pop { animation: none; }
+  #wm-start, .wm-task, .wm-btn { transition: none; }
 }

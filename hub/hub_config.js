@@ -2,6 +2,7 @@
  * Hub config (hub/hub_config.js) — small settings shared by hub.js and hub_flyout.js.
  * Loaded by hub.html before hub.js.
  *
+ * HUB_VERSION     Hub version shown in the bar / taskbar tray and in Settings → About.
  * HUB_MENU_LABEL  text on the top-left menu button (and in the home-screen hint).
  *                 Rename the menu here only, e.g. 'Start' — a one-line change.
  * HUB_CAT_CSV     category → its own apps CSV (apps/<cat>/<cat>-apps.csv). The desktop
@@ -9,6 +10,7 @@
  *                 A category not listed here (Desktop, About) gets no flyout.
  *                 Deliberately separate from hub_apps.js (feature, don't merge).
  */
+window.HUB_VERSION = '0.13';
 window.HUB_MENU_LABEL = 'Home';
 
 window.HUB_CAT_CSV = {

@@ -23,7 +23,7 @@
 .menu .menu-cat .cat-icon.missing { visibility: hidden; }
 .menu .menu-cat .cat-name { flex: 1; }
 .menu .menu-cat.fly-on {
-  background: rgba(110, 168, 254, 0.20);
+  background: var(--wm-hi, rgba(110, 168, 254, 0.20));
   color: #fff;
 }
 
@@ -96,7 +96,7 @@
   transition: background 0.12s ease, transform 0.12s ease;
 }
 .menu-fly .fly-app:hover {
-  background: rgba(110, 168, 254, 0.20);
+  background: var(--wm-hi, rgba(110, 168, 254, 0.20));
   color: #fff;
   transform: translateX(2px);
 }
