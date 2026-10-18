@@ -10,10 +10,12 @@ Purpose: Main logic for the closed-sphere free-flight simulator.
 Date: 2026-10-17
 R1 (2026-10-18): planet centred, valid plane basis (nose +Z), plane scaled to
 PLANE_LENGTH, spawn 30 m, sRGB output, auto camera zoom (plane ~50% of width).
+R2 (2026-10-18): left-drag steers, right-drag orbits camera (eases back on release),
+planet radius 250 m, ice-white North / reddish South pole caps, speed 50 m/s default, 1000 m/s max.
 */
 
 // Constants for planet and flight parameters
-const PLANET_RADIUS = 1000; // 1 km radius in meters
+const PLANET_RADIUS = 250;  // planet radius in meters
 const MIN_ALTITUDE = 5;     // hard floor in meters
 const MAX_ALTITUDE = 100;   // soft ceiling in meters
 const CRUISE_ALTITUDE = 30; // default spawn altitude (30 m above surface)
@@ -21,11 +23,18 @@ const PLANE_LENGTH = 5;     // approximate plane length in meters
 const PLANE_WIDTH = 4;      // approximate plane width in meters (fallback box only)
 const CAM_SCREEN_FRACTION = 0.5; // default zoom: wingspan fills ~50% of screen width
 const CAM_MAX_SCREEN_Y = 0.9;     // ...but keep nose/tail inside 90% of the screen height
+const DEFAULT_SPEED = 50;   // m/s at start
+const MAX_SPEED = 1000;     // m/s at full throttle
+const POLE_CAP_DEG = 12;    // solid pole cap: within this many degrees of the pole
+const POLE_FADE_DEG = 8;    // cap fades to normal ground over this many more degrees
+const CAM_DEFAULT_PITCH = 0.4;
+const MOUSE_STEER_YAW = 0.004;  // rad per pixel of left-drag (horizontal)
+const MOUSE_STEER_ALT = 0.08;   // metres per pixel of left-drag (vertical, drag up = climb)
 
 // Global state
 let scene, camera, renderer, plane, planet;
 let altitude = CRUISE_ALTITUDE;
-let speed = 20;             // forward speed in m/s
+let speed = DEFAULT_SPEED;            // forward speed in m/s
 let keys = {};              // keyboard state
 let touchActive = false;    // whether touch controls are visible
 let paused = false;         // pause flag
@@ -34,7 +43,7 @@ let camZoom = 1;            // mouse-wheel zoom multiplier on top of the auto di
 let planeLocalBox = null;   // plane bounds in its own (scaled) frame, for auto zoom
 let planeSamplePoints = []; // sampled plane vertices in its own frame, for auto zoom
 let camOrbitYaw = 0;        // camera orbit offset yaw
-let camOrbitPitch = 0.4;    // camera orbit offset pitch
+let camOrbitPitch = CAM_DEFAULT_PITCH;    // camera orbit offset pitch
 let mouseDownLeft = false;
 let mouseDownRight = false;
 let lastMouseX = 0;
@@ -108,6 +117,7 @@ function createPlanet() {
             const center = new THREE.Box3().setFromObject(planet).getCenter(new THREE.Vector3());
             planet.position.sub(center);
             scene.add(planet);
+            createPoleCaps();
         },
         undefined,
         (error) => {
@@ -117,8 +127,34 @@ function createPlanet() {
             const material = new THREE.MeshLambertMaterial({ color: 0x228b22 }); // green
             planet = new THREE.Mesh(geometry, material);
             scene.add(planet);
+            createPoleCaps();
         }
     );
+}
+
+// Pole caps: thin transparent shells just above the surface, vertex alpha fades the edge.
+function createPoleCaps() {
+    const capR = PLANET_RADIUS + 0.15;
+    const total = (POLE_CAP_DEG + POLE_FADE_DEG) * Math.PI / 180;
+    const make = (hex, south) => {
+        const g = new THREE.SphereGeometry(capR, 96, 24, 0, Math.PI * 2, south ? Math.PI - total : 0, total);
+        const pos = g.attributes.position, col = new Float32Array(pos.count * 4), c = new THREE.Color(hex);
+        for (let i = 0; i < pos.count; i++) {
+            const y = pos.getY(i) / capR;
+            const fromPole = Math.acos(Math.min(1, Math.abs(y))) * 180 / Math.PI;
+            const a = fromPole <= POLE_CAP_DEG ? 1 : Math.max(0, 1 - (fromPole - POLE_CAP_DEG) / POLE_FADE_DEG);
+            col.set([c.r, c.g, c.b, a * a * (3 - 2 * a)], i * 4);
+        }
+        g.setAttribute('color', new THREE.BufferAttribute(col, 4));
+        const m = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, depthWrite: false,
+            polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+        m.vertexAlphas = true;
+        const mesh = new THREE.Mesh(g, m);
+        mesh.renderOrder = 1;
+        scene.add(mesh);
+    };
+    make(0xf4f9ff, false); // North: ice white
+    make(0xb5462e, true);  // South: reddish
 }
 
 // Create plane mesh - load GLB by default, fallback to box
@@ -202,22 +238,21 @@ function setupControls() {
         if (e.button === 2) mouseDownRight = false;
     });
     canvas.addEventListener('mousemove', (e) => {
+        const dx = e.clientX - lastMouseX;
+        const dy = e.clientY - lastMouseY;
         if (mouseDownRight) {
-            // Right mouse hold + drag: pan / orbit camera
-            const dx = e.clientX - lastMouseX;
-            const dy = e.clientY - lastMouseY;
+            // Right drag: orbit camera around the plane (course unchanged)
             camOrbitYaw -= dx * 0.005;
             camOrbitPitch = Math.max(-0.8, Math.min(1.4, camOrbitPitch - dy * 0.005));
-        } else if (mouseDownLeft) {
-            // Left mouse hold + drag: also orbit (optional secondary)
-            const dx = e.clientX - lastMouseX;
-            const dy = e.clientY - lastMouseY;
-            camOrbitYaw -= dx * 0.005;
-            camOrbitPitch = Math.max(-0.8, Math.min(1.4, camOrbitPitch - dy * 0.005));
+        } else if (mouseDownLeft && !paused) {
+            // Left drag: steer the plane (horizontal = turn, vertical = climb/dive)
+            forward.applyAxisAngle(radial, -dx * MOUSE_STEER_YAW).normalize();
+            altitude = Math.max(MIN_ALTITUDE, Math.min(MAX_ALTITUDE, altitude - dy * MOUSE_STEER_ALT));
         }
         lastMouseX = e.clientX;
         lastMouseY = e.clientY;
     });
+    window.addEventListener('blur', () => { mouseDownLeft = mouseDownRight = false; });
     canvas.addEventListener('wheel', (e) => {
         // Zoom
         camZoom = Math.max(0.6, Math.min(8, camZoom * (1 + e.deltaY * 0.001)));
@@ -226,9 +261,6 @@ function setupControls() {
     });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault()); // prevent right-click menu
 
-    // Right mouse button action: slow down while held
-    // Left mouse button action: speed up while held (in addition to orbit)
-    // These are checked in updatePlane
 
     // Touch toggle button
     const toggleBtn = document.getElementById('touch-toggle');
@@ -285,8 +317,10 @@ function updatePlane(delta) {
     forward.normalize();
 
     // Throttle (keyboard + optional mouse buttons — right is now reserved for pan)
-    if (keys['shift']) speed = Math.min(80, speed + 20 * delta);
-    if (keys['control']) speed = Math.max(0, speed - 20 * delta);
+    // Rate grows with speed so 50 -> 1000 m/s takes ~4 s, while low speeds stay fine-grained
+    const accel = 20 + speed * 0.75;
+    if (keys['shift']) speed = Math.min(MAX_SPEED, speed + accel * delta);
+    if (keys['control']) speed = Math.max(0, speed - accel * delta);
 
     // Move along the sphere: rotate radial around the axis perpendicular to forward
     if (speed > 0.1) {
@@ -309,6 +343,11 @@ function updatePlane(delta) {
 function updateHud() {
     document.getElementById('alt-display').textContent = Math.round(altitude);
     document.getElementById('speed-display').textContent = Math.round(speed);
+    // Latitude from planet Y axis: +90 = North Pole
+    const lat = Math.asin(Math.max(-1, Math.min(1, radial.y))) * 180 / Math.PI;
+    const fromPole = 90 - Math.abs(lat);
+    const el = document.getElementById('pole-display');
+    if (el) el.textContent = fromPole <= POLE_CAP_DEG + POLE_FADE_DEG / 2 ? (lat > 0 ? 'N Pole' : 'S Pole') : '';
 }
 
 // Collect up to ~600 vertices of the plane in its own local frame, so the auto zoom measures the real
@@ -368,6 +407,11 @@ function updateAutoCamDistance() {
 // Third-person camera that follows the plane and keeps the planet "below"
 function updateCamera() {
     if (!plane) return;
+    if (!mouseDownRight) { // ease camera back behind the plane after a right-drag orbit
+        const k = 1 - Math.exp(-3 * camEaseDelta);
+        camOrbitYaw = Math.atan2(Math.sin(camOrbitYaw), Math.cos(camOrbitYaw)) * (1 - k);
+        camOrbitPitch += (CAM_DEFAULT_PITCH - camOrbitPitch) * k;
+    }
     placeCamera(camDistance);
 }
 
@@ -402,6 +446,7 @@ function placeCamera(dist) {
 
 // Animation loop
 let lastTime = 0;
+let camEaseDelta = 0;
 function animate(time = 0) {
     requestAnimationFrame(animate);
     const delta = Math.min((time - lastTime) / 1000, 0.1); // cap delta
@@ -412,6 +457,7 @@ function animate(time = 0) {
         // Update GLB animations (propellers etc.)
         if (mixer) mixer.update(delta);
     }
+    camEaseDelta = delta;
     updateCamera();
     renderer.render(scene, camera);
 }
