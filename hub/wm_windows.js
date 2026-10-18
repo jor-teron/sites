@@ -13,7 +13,14 @@
  * API window.HubWM: open({key, name, icon, url, app}), focus(w), minimise(w), restore(w),
  *   toggleMax(w), close(w), closeAll(), minimiseAll(), focusActive(), list(), active,
  *   onActive (set by hub.js: called with the focused window or null).
- * Fires 'hub-wm-change' on window after every change (taskbar redraws).
+ * Fires 'hub-wm-change' on window after every change (taskbar redraws) and 'hub-wm-focus'
+ * when the focused window changes.
+ * App bar: the title/stats/buttons an app sends (hub-gamebar.js protocol) show in its own
+ * title bar (__hubGamebarAttach).
+ * Target frame for the rest of the Hub (phone gamepad keys, SharedLink, …):
+ *   window.__hubAppFrame()  → the focused window's iframe in Desktop mode (null when none),
+ *                             else the Hub frame #app-frame.
+ *   window.__hubAppFrames() → every app iframe (Hub frame + all windows).
  */
 (function () {
   'use strict';
@@ -39,6 +46,7 @@
     active = w;
     wins.forEach((x) => x.el.classList.toggle('wm-active', x === w));
     if (typeof HubWM.onActive === 'function') HubWM.onActive(w);
+    window.dispatchEvent(new CustomEvent('hub-wm-focus', { detail: { win: w } }));
     changed();
   }
 
@@ -85,6 +93,7 @@
     const i = wins.indexOf(w);
     if (i < 0) return;
     wins.splice(i, 1);
+    if (w.gb) w.gb.destroy();
     try { w.frame.src = 'about:blank'; } catch (_) { /* ignore */ }
     w.el.remove();
     if (active === w) setActive(topVisible()); else changed();
@@ -117,7 +126,7 @@
   /** Drag helper: pointer capture on el; onMove(dx, dy) from the start point. */
   function dragOn(el, onStart, onMove) {
     el.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0 || e.target.closest('.wm-btn')) return;
+      if (e.button !== 0 || e.target.closest('.wm-btn, .gb-btn')) return;
       e.preventDefault();
       const sx = e.clientX, sy = e.clientY;
       if (onStart(e) === false) return;
@@ -170,7 +179,10 @@
     const maxB = btn('wm-max-btn', 'Maximise', '\u25A2');
     const closeB = btn('wm-close-btn', 'Close', '\u00D7');
     btns.append(minB, maxB, closeB);
-    bar.append(img, title, btns);
+    const gbSlot = document.createElement('div');   // app bar (stats / buttons) from hub-gamebar.js
+    gbSlot.className = 'wm-gb';
+    gbSlot.hidden = true;
+    bar.append(img, title, gbSlot, btns);
     const body = document.createElement('div');
     body.className = 'wm-body';
     const frame = document.createElement('iframe');
@@ -190,7 +202,11 @@
     minB.addEventListener('click', () => minimise(w));
     maxB.addEventListener('click', () => toggleMax(w));
     closeB.addEventListener('click', () => close(w));
-    bar.addEventListener('dblclick', (e) => { if (!e.target.closest('.wm-btn')) toggleMax(w); });
+    bar.addEventListener('dblclick', (e) => { if (!e.target.closest('.wm-btn, .gb-btn')) toggleMax(w); });
+    // (hub-gamebar.js loads after hub.js; a window restored at start-up attaches once the page is parsed)
+    const attachGb = () => { if (!w.gb && window.__hubGamebarAttach && wins.includes(w)) w.gb = window.__hubGamebarAttach(frame, gbSlot); };
+    if (window.__hubGamebarAttach) setTimeout(attachGb, 0);
+    else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attachGb, { once: true });
     el.addEventListener('pointerdown', () => { if (active !== w) focus(w); }, true);
     el.addEventListener('animationend', () => el.classList.remove('wm-pop'));
     frame.addEventListener('load', () => hookFrame(w));
@@ -241,6 +257,10 @@
     get active() { return active; },
     onActive: null
   };
+
+  const isDesk = () => !!(window.HubMode && window.HubMode.isDesktop());
+  window.__hubAppFrame = () => (isDesk() ? (active ? active.frame : null) : appFrame);
+  window.__hubAppFrames = () => [appFrame].concat(wins.map((w) => w.frame)).filter(Boolean);
 
   // Click on the empty desk (home wallpaper) = no window focused
   desk.addEventListener('pointerdown', (e) => { if (e.target === desk) setActive(null); });

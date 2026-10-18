@@ -13,16 +13,25 @@
  * - Every received file is kept in IndexedDB 'hub-received' (last 30); no Received UI in the
  *   Gamepad popover (icon shows name + devices only). Auto-download stays on by default.
  * - Popover extras: this device's name (edit) and the connected devices list.
+ * - Desktop mode (wm_windows.js): every window may register as a receiver; files and
+ *   "Open in…" go to the FOCUSED window (window.__hubAppFrame()); "Open in…" opens / focuses
+ *   the receiver app's window (hub.js __hubOpenUrl). Device / message updates reach all
+ *   registered apps.
  */
 (function () {
   'use strict';
   if (!window.SharedLink) return;
 
-  const frame = document.getElementById('app-frame');
+  const hubFrame = document.getElementById('app-frame');
+  /** Target iframe: focused window (Desktop mode) or the Hub frame. */
+  const curFrame = () => (window.__hubAppFrame ? window.__hubAppFrame() : hubFrame);
+  const allFrames = () => (window.__hubAppFrames ? window.__hubAppFrames() : [hubFrame].filter(Boolean));
+  const frameOf = (src) => allFrames().find((f) => f.contentWindow === src) || null;
+  /** Receiver registered by the target frame ({ app, types } on the iframe element). */
+  const activeReg = () => { const f = curFrame(); return (f && f.__slReg) || null; };
   const AUTO_KEY = 'hub-auto-download';
   const RECV_KEY = 'hub-link-receivers';   // { app: { url, types[] } } apps seen as receivers
   const MAX_KEEP = 30;
-  let active = null;                       // { app, types } registered by the open iframe
 
   const autoDownload = () => { try { return localStorage.getItem(AUTO_KEY) !== '0'; } catch (_) { return true; } };
   const receivers = () => { try { return JSON.parse(localStorage.getItem(RECV_KEY) || '{}') || {}; } catch (_) { return {}; } };
@@ -67,7 +76,9 @@
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
-  function post(m) { try { if (frame && frame.contentWindow) frame.contentWindow.postMessage(m, '*'); } catch (_) { /* gone */ } }
+  function postTo(f, m) { try { if (f && f.contentWindow) f.contentWindow.postMessage(m, '*'); } catch (_) { /* gone */ } }
+  function post(m) { postTo(curFrame(), m); }
+  function postAll(m) { allFrames().forEach((f) => { if (f.__slReg) postTo(f, m); }); }
 
   function appOf(f) { return String(f.app || '').replace(/^.*\/([^/]+)\/?$/, '$1').toLowerCase(); }
 
@@ -75,6 +86,7 @@
   const N = () => window.HubNotify;
 
   SharedLink.on('progress', (p) => {
+    const active = activeReg();
     if (p.out || (active && appOf(p) && appOf(p) === active.app)) return;   // the app shows its own bar
     if (N()) { N().start('sl-' + p.id, { name: p.name, size: p.size }); N().progress('sl-' + p.id, p.done); }
   });
@@ -82,6 +94,7 @@
   SharedLink.on('file', (f) => {
     keep(f);
     const app = appOf(f);
+    const active = activeReg();
     if (active && app && active.app === app && typeOk(active.types, f.type)) {
       post({ sharedLink: 'file', name: f.name, type: f.type, blob: f.blob, from: f.from });
       if (autoDownload()) download(f.blob, f.name);   // release 3: also for files that go into an app
@@ -109,7 +122,15 @@
         box.remove();
         pending = { app: k, file: f };
         if (typeof window.__hubOpenUrl === 'function') window.__hubOpenUrl(receivers()[k].url);
-        else if (frame) frame.src = receivers()[k].url;
+        else if (hubFrame) hubFrame.src = receivers()[k].url;
+        // Desktop mode: that app's window may already be open (and registered): deliver now
+        setTimeout(() => {
+          const a = activeReg();
+          if (pending && a && a.app === pending.app) {
+            const pf = pending.file; pending = null;
+            post({ sharedLink: 'file', name: pf.name, type: pf.type, blob: pf.blob, from: pf.from });
+          }
+        }, 300);
       });
       box.appendChild(b);
     });
@@ -124,15 +145,17 @@
 
   /* ---------- iframe contract ---------- */
   window.addEventListener('message', (e) => {
-    if (!frame || e.source !== frame.contentWindow) return;
+    const frame = frameOf(e.source);
+    if (!frame) return;
     const d = e.data;
     if (!d || typeof d !== 'object' || !d.sharedLink) return;
+    const post = (m) => postTo(frame, m);   // answers go back to the app that asked
     if (d.sharedLink === 'ready') {
       const app = String(d.app || '').toLowerCase();
-      active = { app: app, types: Array.isArray(d.types) ? d.types : [] };
+      const active = frame.__slReg = { app: app, types: Array.isArray(d.types) ? d.types : [] };
       const r = receivers();
       let url = '';
-      try { url = new URL(frame.src, location.href).pathname.replace(location.pathname.replace(/[^/]*$/, ''), ''); } catch (_) { /* ignore */ }
+      try { url = new URL(frame === hubFrame ? frame.src : frame.contentWindow.location.href, location.href).pathname.replace(location.pathname.replace(/[^/]*$/, ''), ''); } catch (_) { /* ignore */ }
       r[app] = { url: url || r[app] && r[app].url || '', types: active.types };
       try { localStorage.setItem(RECV_KEY, JSON.stringify(r)); } catch (_) { /* full */ }
       post({ sharedLink: 'hello', code: SharedLink.code, prefix: 'jtsites-', devices: SharedLink.devices });
@@ -149,9 +172,9 @@
     }
   });
   // Another app picked: forget the receiver until the new page says ready.
-  if (frame) new MutationObserver(() => { active = null; }).observe(frame, { attributes: true, attributeFilter: ['src', 'data-app'] });
-  SharedLink.on('devices', (list) => post({ sharedLink: 'devices', devices: list }));
-  SharedLink.on('message', (m, from) => post({ sharedLink: 'message', msg: m, from: from }));
+  if (hubFrame) new MutationObserver(() => { hubFrame.__slReg = null; }).observe(hubFrame, { attributes: true, attributeFilter: ['src', 'data-app'] });
+  SharedLink.on('devices', (list) => postAll({ sharedLink: 'devices', devices: list }));
+  SharedLink.on('message', (m, from) => postAll({ sharedLink: 'message', msg: m, from: from }));
 
   /* ---------- popover extras (name + devices only) ---------- */
   const pop = document.getElementById('ctrl-popover');
@@ -165,5 +188,5 @@
     pop.appendChild(wrap);
   }
 
-  window.__hubLink = { get active() { return active; }, autoDownload: autoDownload };
+  window.__hubLink = { get active() { return activeReg(); }, autoDownload: autoDownload };
 })();

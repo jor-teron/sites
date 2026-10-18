@@ -879,7 +879,14 @@
 
   window.__hubFocusFrame = focusFrame;
   window.__hubGoHome = goHome;
-  window.__hubOpenUrl = navigateFrame;   // hub_link.js: "Open in…" a receiver app
+  // hub_link.js: "Open in…" a receiver app — the frame in Phone mode; in Desktop mode that
+  // app's window (opened or focused), which then is the focused window the file goes to.
+  window.__hubOpenUrl = (url) => {
+    if (!wmOn()) { navigateFrame(url); return; }
+    const rel = String(url || '').replace(/index\.html$/i, '');
+    const app = findApp(normalizeEntryUrl(rel)) || (safeRel(rel) ? appForId('~' + rel) : null);
+    if (app) loadApp(app, { forceFrame: true });
+  };
   // hub_chat.js (release 4): open a Hub app by part of its entry url ('pooh-chat').
   window.__hubOpenApp = (match) => {
     const a = (window.HUB_APPS || []).find((x) => String(x.entryUrl || '').indexOf(match) >= 0);

@@ -4,7 +4,11 @@
  *   (same menu as the top-left button, with flyout + sections) just above the taskbar.
  * - One button per open window (HubWM.list()): click = focus / restore, or minimise when it is
  *   already the active window. Active window highlighted, minimised ones dimmed.
- * - Clock on the right (HH:MM, date in the tooltip).
+ * - Tray on the right: the old top bar's right side (.header-right: Pooh Chat, the
+ *   Devices / SharedLink button with its device count, version) is MOVED here in Desktop
+ *   mode and moved back to the top bar in Phone mode (same elements, so their own scripts
+ *   keep working; their popovers open upward, see wm.css).
+ * - Clock: 12-hour with AM/PM (11:56 PM), date in the tooltip.
  * Redraws on 'hub-wm-change' (wm_windows.js). Look in wm.css.
  */
 (function () {
@@ -30,10 +34,24 @@
 
   const tasks = document.createElement('div');
   tasks.className = 'wm-tasks';
+  const tray = document.createElement('div');
+  tray.className = 'wm-tray';
   const clock = document.createElement('time');
   clock.className = 'wm-clock';
-  bar.append(start, tasks, clock);
+  bar.append(start, tasks, tray, clock);
   document.body.appendChild(bar);
+
+  // Old top bar items ↔ tray
+  const header = document.getElementById('header');
+  const right = header && header.querySelector('.header-right');
+  function placeTray() {
+    if (!right) return;
+    const desk = !!(window.HubMode && window.HubMode.isDesktop());
+    if (desk && right.parentNode !== tray) tray.appendChild(right);
+    else if (!desk && right.parentNode !== header) header.appendChild(right);
+  }
+  placeTray();
+  window.addEventListener('hub-wm-mode', placeTray);
 
   // Start = the Hub menu button (hub.js toggles the menu; the outside-click check skips #wm-start)
   start.addEventListener('click', (e) => { e.stopPropagation(); catBtn.click(); });
@@ -66,7 +84,7 @@
 
   function tick() {
     const d = new Date();
-    clock.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    clock.textContent = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     clock.title = d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     clock.dateTime = d.toISOString();
   }

@@ -57,7 +57,9 @@
     home:   { key: null },
   };
 
-  const frame = document.getElementById('app-frame');
+  const hubFrame = document.getElementById('app-frame');
+  // Target app frame: the focused window in Desktop mode (wm_windows.js), else the Hub frame.
+  const curFrame = () => (window.__hubAppFrame ? window.__hubAppFrame() : hubFrame);
   const ctrlBtn = document.getElementById('ctrl-btn');
   const popover = document.getElementById('ctrl-popover');
   const popoverBackdrop = document.getElementById('ctrl-backdrop');
@@ -301,7 +303,7 @@
     const m = { t: 'key', key: key, code: code, s: down ? 1 : 0, shift: msg.shift ? 1 : 0, ctrl: msg.ctrl ? 1 : 0, alt: msg.alt ? 1 : 0, repeat: msg.repeat ? 1 : 0 };
     if (down) heldKeys.set(id, m); else heldKeys.delete(id);
     try {
-      const w = frame && frame.contentWindow;
+      const frame = curFrame(); const w = frame && frame.contentWindow;
       const doc = w && w.document;   // throws for a cross-origin app: postMessage only
       if (doc) {
         const target = deepActive(doc) || doc;
@@ -325,6 +327,7 @@
       if (!(err && err.name === 'SecurityError')) console.warn('forward key', err);
     }
     try {
+      const frame = curFrame();
       if (frame && frame.contentWindow) frame.contentWindow.postMessage(Object.assign({ type: 'hub-key' }, m), '*');
     } catch (_) { /* ignore */ }
   }
@@ -335,7 +338,7 @@
     held[b] = !!s;
     const type = s ? 'keydown' : 'keyup';
     try {
-      const w = frame && frame.contentWindow;
+      const frame = curFrame(); const w = frame && frame.contentWindow;
       if (map.key && w && w.document) {
         const target = w.document.activeElement || w.document.body || w.document;
         const ev = new w.KeyboardEvent(type, {
@@ -352,6 +355,7 @@
       console.warn('forward key', err);
     }
     try {
+      const frame = curFrame();
       if (frame && frame.contentWindow) {
         frame.contentWindow.postMessage({ type: 'hub-dpad', b: b, s: s ? 1 : 0 }, '*');
       }
@@ -372,6 +376,7 @@
       const x = Number(msg.x), y = Number(msg.y);
       if (!isFinite(x) || !isFinite(y)) return;
       try {
+        const frame = curFrame();
         if (frame && frame.contentWindow) {
           frame.contentWindow.postMessage({ type: 'hub-stick', x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) }, '*');
         }
@@ -441,6 +446,7 @@
   }
 
   window.addEventListener('message', (e) => {
+    const frame = curFrame();
     if (!frame || !e.source || e.source !== frame.contentWindow) return;
     const d = e.data;
     if (d && typeof d === 'object' && d.type === 'hub-rumble') relayRumble(d);
@@ -585,7 +591,9 @@
 
   // Another app picked (iframe src / data-app changes, see hub.js navigateFrame): release held phone buttons so the old
   // page gets its keyup and nothing stays "pressed" for the next one.
-  if (frame) new MutationObserver(releaseHeld).observe(frame, { attributes: true, attributeFilter: ['src', 'data-app'] });
+  if (hubFrame) new MutationObserver(releaseHeld).observe(hubFrame, { attributes: true, attributeFilter: ['src', 'data-app'] });
+  // Desktop mode: another window focused → release held buttons in the old one first
+  window.addEventListener('hub-wm-focus', releaseHeld);
 
   // Leaving / reloading the page: free the peer id on the broker right away so the
   // reloaded hub can register the same code again.

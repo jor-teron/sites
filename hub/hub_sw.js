@@ -8,7 +8,7 @@
  * so a phone never gets a stale copy after a push.
  * Bump CACHE when the shell list changes; old caches are deleted on activate.
  */
-const CACHE = 'hub-shell-v24';  // 2026-10-18e: Desktop mode windows + taskbar, Hub settings
+const CACHE = 'hub-shell-v25';  // 2026-10-19a: Desktop mode taskbar tray (top bar merged), app stats in title bars
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',

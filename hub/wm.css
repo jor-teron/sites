@@ -2,14 +2,20 @@
  * Hub Desktop mode (hub/wm.css) — windows (wm_windows.js), taskbar (wm_taskbar.js) and the
  * Hub settings sheet (hub_settings.js). Everything window-related is scoped to body.wm-desktop,
  * so Phone mode looks exactly like before.
+ * Desktop mode has no top bar: its right side lives in the taskbar tray (wm_taskbar.js),
+ * app stats show in each window's title bar, popovers open upward from the taskbar.
  */
-:root { --wm-task-h: 46px; }
+:root { --wm-task-h: 40px; }
 
 /* ---------- Phone mode: none of this shows ---------- */
 #wm-desk, #wm-taskbar { display: none; }
 
 /* ---------- Desktop mode layout ---------- */
-body.wm-desktop #frame-wrap { bottom: var(--wm-task-h); height: auto; }
+/* No top bar: zero height (it still holds the Hub menu, which is fixed above the taskbar) */
+body.wm-desktop { --header-h: 0px; }
+body.wm-desktop #header { height: 0; padding: 0; border: 0; background: transparent; }
+body.wm-desktop #gamebar, body.wm-desktop #lab-label { display: none !important; }
+body.wm-desktop #frame-wrap { top: 0; bottom: var(--wm-task-h); height: auto; }
 body.wm-desktop #app-frame { display: none; }
 body.wm-desktop #empty.hidden { display: grid; }          /* home wallpaper stays behind the windows */
 body.wm-desktop #cat-btn { display: none; }               /* the taskbar Start button opens the menu */
@@ -48,7 +54,7 @@ body.wm-desktop #wm-desk { display: block; position: absolute; inset: 0; overflo
 }
 .wm-bar {
   flex: 0 0 auto;
-  height: 40px;
+  height: 38px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -63,8 +69,14 @@ body.wm-desktop #wm-desk { display: block; position: absolute; inset: 0; overflo
 .wm-win.wm-active .wm-bar { background: linear-gradient(#34405a, #2a3348); color: #fff; }
 .wm-icon { width: 22px; height: 22px; border-radius: 5px; object-fit: contain; flex: 0 0 22px; }
 .wm-icon.missing { visibility: hidden; }
-.wm-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-.wm-btns { display: flex; gap: 2px; }
+.wm-title { flex: 1 1 auto; min-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.wm-btns { display: flex; gap: 2px; flex: 0 0 auto; }
+/* app bar (hub-gamebar.js) inside the title bar: version, stats, buttons (name = the title) */
+.wm-gb { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden; font-size: 12.5px; }
+.wm-gb[hidden] { display: none; }
+.wm-gb .gb-name { display: none; }
+.wm-gb .gb-title { flex: 0 0 auto; }
+.wm-gb .gb-stat, .wm-gb .gb-btn { flex: 0 0 auto; }
 .wm-btn {
   width: 42px; height: 32px;
   border: 0; border-radius: 8px;
@@ -104,14 +116,14 @@ body.wm-desktop #wm-taskbar {
   height: var(--wm-task-h);
   z-index: 90;
   align-items: center;
-  gap: 6px;
-  padding: 0 8px 0 5px;
+  gap: 4px;
+  padding: 0 6px 0 4px;
   background: rgba(20, 24, 32, 0.96);
   border-top: 1px solid var(--line);
   user-select: none;
 }
 #wm-start, .wm-task {
-  height: 38px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -120,28 +132,45 @@ body.wm-desktop #wm-taskbar {
   background: transparent;
   color: var(--text);
   font: inherit;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   transition: background 0.12s ease, transform 0.15s cubic-bezier(.3,1.6,.5,1);
 }
-#wm-start { padding: 0 14px 0 8px; font-weight: 700; font-size: 15px; }
+#wm-start { padding: 0 12px 0 6px; font-weight: 700; font-size: 14px; gap: 7px; }
 #wm-start:hover, #wm-start[aria-expanded="true"] { background: rgba(110,168,254,0.22); }
 #wm-start:active, .wm-task:active { transform: scale(0.94); }
-.wm-start-logo { width: 26px; height: 26px; border-radius: 7px; }
+.wm-start-logo { width: 22px; height: 22px; border-radius: 6px; }
 .wm-tasks { flex: 1; min-width: 0; display: flex; gap: 4px; overflow: hidden; }
-.wm-task { padding: 0 12px 0 8px; max-width: 210px; min-width: 0; position: relative; }
-.wm-task img { width: 22px; height: 22px; border-radius: 5px; object-fit: contain; flex: 0 0 22px; }
+.wm-task { padding: 0 10px 0 7px; gap: 7px; max-width: 200px; min-width: 0; position: relative; }
+.wm-task img { width: 18px; height: 18px; border-radius: 4px; object-fit: contain; flex: 0 0 18px; }
 .wm-task img.missing { visibility: hidden; }
 .wm-task span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wm-task:hover { background: rgba(255,255,255,0.08); }
 .wm-task.active { background: rgba(110,168,254,0.24); }
 .wm-task.active::after {
-  content: ''; position: absolute; left: 30%; right: 30%; bottom: 2px; height: 3px;
+  content: ''; position: absolute; left: 30%; right: 30%; bottom: 1px; height: 2px;
   border-radius: 2px; background: var(--accent);
 }
 .wm-task.min { opacity: 0.6; }
 #wm-start:focus-visible, .wm-task:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.wm-clock { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; padding: 0 6px; }
+.wm-clock { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; padding: 0 6px 0 4px; white-space: nowrap; }
+
+/* ---------- Tray (old top bar right side, moved here by wm_taskbar.js) ---------- */
+.wm-tray { display: flex; align-items: center; height: 100%; flex: 0 0 auto; }
+.wm-tray .header-right { height: 100%; gap: 2px 8px; font-size: 12px; }
+.wm-tray .header-right .sep { display: none; }
+.wm-tray .ctrl-btn { height: 34px; padding: 0 3px; }
+.wm-tray .ctrl-btn svg { width: 26px; height: 26px; }
+.wm-tray .chat-btn { min-width: 34px; font-size: 18px; }
+.wm-tray .chat-badge { top: 0; right: -3px; }
+
+/* popovers / toasts open upward from the taskbar */
+body.wm-desktop #ctrl-popover { top: auto; bottom: calc(var(--wm-task-h) + 6px); right: 8px; max-height: calc(100dvh - var(--wm-task-h) - 16px); overflow: auto; }
+body.wm-desktop #chat-panel { top: auto; bottom: calc(var(--wm-task-h) + 6px); }
+body.wm-desktop #chat-toast { bottom: calc(var(--wm-task-h) + 10px); }
+body.wm-desktop #hub-notify.hn-bottom-right { bottom: calc(var(--wm-task-h) + 10px); }
+body.wm-desktop #hub-notify.hn-top-right, body.wm-desktop #hub-notify.hn-top-center { top: 12px; }
+body.wm-desktop .sl-openin { bottom: calc(var(--wm-task-h) + 12px); }
 
 /* ---------- Hub settings sheet ---------- */
 .menu .hub-set-item { border-bottom: 0; border-top: 1px solid var(--line); margin-top: 4px; }
