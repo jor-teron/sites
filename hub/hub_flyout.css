@@ -1,7 +1,8 @@
 /*
  * Hub menu category rows + desktop flyout (hub/hub_flyout.css) — logic in hub_flyout.js.
  * Category rows: icon + name, big tap targets. Flyout: second column beside the menu,
- * jelly slide-in, soft shadow, highlighted hovered row. Hover styles only for real mice.
+ * jelly slide-in, soft shadow, highlighted hovered row, grey section headings with thin
+ * dividers, hidden scrollbar + bottom fade when more apps below. Hover styles only for real mice.
  */
 .menu .menu-cat {
   display: flex;
@@ -31,10 +32,11 @@
   z-index: 101;
   min-width: 230px;
   max-width: 300px;
-  max-height: min(calc(100dvh - var(--header-h) - 10px), 640px);
+  max-height: calc(100dvh - var(--header-h) - 10px);   /* hub_flyout.js sets the exact room left */
   overflow: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
+  scrollbar-width: none;            /* hidden scrollbar; wheel / trackpad still scroll */
+  -ms-overflow-style: none;
   background: var(--menu);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -42,7 +44,24 @@
   box-shadow: 0 18px 50px rgba(0,0,0,0.5), 0 4px 14px rgba(0,0,0,0.3);
   transform-origin: left top;
 }
+.menu-fly::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .menu-fly[hidden] { display: none; }
+.menu-fly.more {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 46px), transparent);
+          mask-image: linear-gradient(to bottom, #000 calc(100% - 46px), transparent);
+}
+/* section heading: small grey title, thin divider line above (not above the first group) */
+.menu-fly .fly-sec {
+  margin: 6px 6px 2px;
+  padding: 8px 4px 3px;
+  border-top: 1px solid var(--line);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.menu-fly .fly-head + .fly-sec { border-top: 0; margin-top: 0; padding-top: 2px; }
 .menu-fly.pop { animation: fly-jelly 0.42s cubic-bezier(.2,.9,.3,1.25); }
 @keyframes fly-jelly {
   0%   { opacity: 0; transform: translateX(-14px) scale(0.92, 0.96); }

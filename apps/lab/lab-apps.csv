@@ -1,29 +1,28 @@
-# Lab apps — one per line: name, path, icon (optional; empty = <folder>/<folder>_icon.png or a letter tile)
-# Paths are relative to this folder. Lines starting with # are comments.
-name, path, icon
-Media Explorer, media-explorer/, 
-Bookmark Manager, bookmark-manager/,
-IPTV player, iptv-player/,
+# Lab apps — one per line. Paths are relative to this folder. Lines starting with # are comments.
+# icon optional (empty = <folder>/<folder>_icon.png or a letter tile); newtab 1 = own tab on desktop;
+# section = optional group heading for Lab only (first appearance sets the order; empty = "Other", shown last).
+name, path, icon, newtab, section
+MyLLM,              myllm/,                       , , AI
+Local AI Chat,      local-ai-chat/,               , , AI
+AI Story,           story/,                       , , AI
 
-Sling Birds, sling-birds/,
-AoE RTS, aoe-rts/,
-Pacman, pacman/,
-Aeroplane, aeroplane/,
-Island Game Demo, island-demo/,
+Device Benchmark,   devbench/,                    , , Tools
+Notebook,           notebook/,                    , , Tools
+Paper Keyboard,     paper-keyboard/,              , , Tools
+Bookmark Manager,   bookmark-manager/,            , , Tools
+Wiki Extractor,     wiki-extractor/,              , , Tools
 
-MyLLM, myllm/,
-Wiki Extractor, wiki-extractor/,
+Media Explorer,     media-explorer/,              , , Media
+IPTV player,        iptv-player/,                 , , Media
+Channel Cleaner,    m3u-cleaner/,                 , , Media
+Three.js Viewer v2, threejs-viewer-v2/,           , , Media
 
-Notebook, notebook/,
-Paper Keyboard, paper-keyboard/,
+Sling Birds,        sling-birds/,                 , , Games
+AoE RTS,            aoe-rts/,                     , , Games
+Pacman,             pacman/,                      , , Games
+Aeroplane,          aeroplane/,                   , , Games
+Island Game Demo,   island-demo/,                 , , Games
 
-Three.js Viewer v2, threejs-viewer-v2/,
-Channel Cleaner, m3u-cleaner,
-
-
-Device Benchmark, devbench/,
-WebRTC Chat, ../connectivity/webrtc-chat/,
-P2P Chat, ../connectivity/p2pchat.html,
-Phone, ../media/phone/,
-Local AI Chat, local-ai-chat/,
-AI Story, story/,
+WebRTC Chat,        ../connectivity/webrtc-chat/, , , Connect
+P2P Chat,           ../connectivity/p2pchat.html, , , Connect
+Phone,              ../media/phone/,              , , Connect

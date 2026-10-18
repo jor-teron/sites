@@ -1,4 +1,4 @@
-/* Shared category tiles page (shared/tiles/tiles.css, same look as the Lab page) — 4-column grid of square tiles (icon + name). Big tap targets. */
+/* Shared category tiles page (shared/tiles/tiles.css) for every category page — 4-column grid of square tiles (icon + name) with section headings. Big tap targets. */
 * { box-sizing: border-box; }
 body { margin: 0; padding: 16px; font: 16px/1.3 system-ui, sans-serif; background: #111827; color: #f3f4f6; }
 h1 { margin: 0 0 14px; font-size: 22px; }
@@ -12,3 +12,8 @@ h1 { margin: 0 0 14px; font-size: 22px; }
   font-size: clamp(18px, 6vw, 40px); font-weight: 700; }
 .tile .name { font-size: clamp(11px, 2.6vw, 15px); overflow-wrap: anywhere; }
 .msg { color: #fca5a5; }
+/* Section heading (tiles.js): small grey title with a thin divider line, spans the grid row. */
+.sec { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin: 10px 0 0;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; }
+.sec:first-child { margin-top: 0; }
+.sec::after { content: ''; flex: 1; height: 1px; background: #374151; }

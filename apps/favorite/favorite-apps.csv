@@ -1,5 +1,6 @@
-# Favorite — generated from hub/hub_apps.js (Favorite rows, hidden ones left out). Keep in step with it.
-# name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop)
-name, path, icon, newtab
-TV, ../../tv/, , 
-Caption for NEI, ../tools/caption-for-nei/, , 
+# Favorite — tiles page + Hub menu flyout. Keep in step with hub/hub_apps.js (Favorite rows).
+# name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
+# section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
+name, path, icon, newtab, section
+TV,              ../../tv/,                 , , Watch
+Caption for NEI, ../tools/caption-for-nei/, , , Language

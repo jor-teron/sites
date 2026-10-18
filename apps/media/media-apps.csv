@@ -1,10 +1,11 @@
-# Media — generated from hub/hub_apps.js (Media rows, hidden ones left out). Keep in step with it.
-# name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop)
-name, path, icon, newtab
-TV, ../../tv/, , 
-Webcam, webcam/, , 
-Draw, draw/, , 
-Paint, paint/, , 
-3D Viewer, 3d-viewer/, , 
-Photo Editor, photo-editor/, , 
-Photo Editor v2, photo-editor-v2/, , 
+# Media — tiles page + Hub menu flyout. Keep in step with hub/hub_apps.js (Media rows).
+# name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
+# section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
+name, path, icon, newtab, section
+TV,              ../../tv/,        , , Watch
+Webcam,          webcam/,          , , Watch
+Draw,            draw/,            , , Draw & Paint
+Paint,           paint/,           , , Draw & Paint
+Photo Editor,    photo-editor/,    , , Photo
+Photo Editor v2, photo-editor-v2/, , , Photo
+3D Viewer,       3d-viewer/,       , , 3D

@@ -1,9 +1,13 @@
 /*
  * Hub menu flyout (hub/hub_flyout.js) — GNOME 2 style cascading menu, DESKTOP MOUSE ONLY.
  *
- * Hovering a category row in the open Hub menu (~150 ms) opens a second column beside the
+ * Hovering a category row in the open Hub menu (~100 ms) opens a second column beside the
  * menu with that category's apps, read from its own CSV (window.HUB_CAT_CSV in hub_config.js,
  * parsed by window.TilesCsv from shared/tiles/tiles.js — the same parser the category pages use).
+ * - Apps are grouped by the CSV's optional section column (TilesCsv.groups): small grey
+ *   headings with a thin divider between groups; no sections in the CSV = plain list.
+ * - The column grows up to the viewport height; scrollbar hidden (wheel still scrolls) and a
+ *   soft fade at the bottom edge while more apps are below.
  * - Diagonal grace zone: while the mouse travels from the row towards the column (inside the
  *   triangle "last point → column's left edge") other rows don't steal the flyout.
  * - Clicking an app opens it like a category-page tile (window.__hubFly.openFromCat in hub.js).
@@ -20,9 +24,9 @@
   const MQ = window.matchMedia ? window.matchMedia('(hover: hover) and (pointer: fine)') : null;
   if (!menu || !host || !MQ || !window.fetch) return;
 
-  const OPEN_DELAY = 150;    // ms hover before a row opens its flyout
+  const OPEN_DELAY = 100;    // ms hover before a row opens its flyout
   const CLOSE_DELAY = 350;   // ms after the mouse leaves menu + flyout
-  const GRACE_MAX = 4;       // max re-checks while heading for the flyout (4 × 150 ms)
+  const GRACE_MAX = 5;       // max re-checks while heading for the flyout (5 × 100 ms)
 
   const fly = document.createElement('div');
   fly.id = 'menu-fly';
@@ -61,7 +65,7 @@
       .then((t) => window.TilesCsv.parse(t).map((a) => {
         const entryUrl = joinPath(dir, a.path);
         return {
-          name: a.name, entryUrl, newTab: !!a.newTab,
+          name: a.name, entryUrl, newTab: !!a.newTab, section: a.section,
           icon: a.icon ? joinPath(dir, a.icon).replace(/\/$/, '') : window.TilesCsv.defaultIcon(entryUrl)
         };
       }))
@@ -94,10 +98,11 @@
     return b;
   }
 
-  /** Put the flyout beside the menu, top aligned with the row, kept on screen. */
+  /** Put the flyout beside the menu, top aligned with the row, kept on screen (up to full height). */
   function place(row) {
     const h = host.getBoundingClientRect(), m = menu.getBoundingClientRect(), r = row.getBoundingClientRect();
     fly.style.left = (m.right - h.left + 4) + 'px';
+    fly.style.maxHeight = Math.max(120, window.innerHeight - h.bottom - 8) + 'px';
     const maxTop = window.innerHeight - fly.offsetHeight - 6;
     fly.style.top = (Math.max(h.bottom + 2, Math.min(r.top - 7, maxTop)) - h.top) + 'px';
   }
@@ -120,14 +125,31 @@
         msg.className = 'fly-msg';
         msg.textContent = list ? 'No apps yet' : 'Could not load the app list';
         fly.appendChild(msg);
-      } else list.forEach((a) => fly.appendChild(item(cat, a)));
+      } else {
+        window.TilesCsv.groups(list).forEach((g) => {
+          if (g.section) {
+            const sec = document.createElement('div');
+            sec.className = 'fly-sec';
+            sec.textContent = g.section;
+            fly.appendChild(sec);
+          }
+          g.apps.forEach((a) => fly.appendChild(item(cat, a)));
+        });
+      }
       const again = !fly.hidden;
       fly.hidden = false;
       fly.scrollTop = 0;
       place(row);
+      fade();
       if (!again) { fly.classList.remove('pop'); void fly.offsetWidth; fly.classList.add('pop'); }
     });
   }
+
+  /** Soft fade at the bottom edge while more apps are below. */
+  function fade() {
+    fly.classList.toggle('more', fly.scrollTop + fly.clientHeight < fly.scrollHeight - 2);
+  }
+  fly.addEventListener('scroll', fade, { passive: true });
 
   function hide() {
     cancel(); clearTimeout(closeTimer);
