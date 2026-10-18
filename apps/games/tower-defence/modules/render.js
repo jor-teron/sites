@@ -10,6 +10,7 @@ import { TILE, pathSegments, totalPathLength, posAtDistance, posAtTiles } from '
 import * as state from './state.js';
 import { towerCenter } from './towers.js';
 import { drawTower, drawEnemy } from './models.js';
+import { drawScorches, drawProjectiles, drawParticles } from './effects.js';
 
 /* Cached grass, grid, road, and IN / OUT markers. Rebuilt on resize. */
 let staticLayer = null;
@@ -141,43 +142,7 @@ function drawEnemies(ctx, now) {
   }
 }
 
-/* Shot glows. Shot positions are stored in tiles. */
-function drawProjectiles(ctx) {
-  for (const p of state.projectiles) {
-    const x = p.x * TILE;
-    const y = p.y * TILE;
-    ctx.fillStyle = p.color + '55';
-    ctx.beginPath();
-    ctx.arc(x, y, 7, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = p.color;
-    ctx.beginPath();
-    ctx.arc(x, y, 3, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
-/* Sparks and splash rings. */
-function drawParticles(ctx) {
-  for (const p of state.particles) {
-    const t = p.life / p.maxLife;
-    if (p.splash) {
-      ctx.fillStyle = `rgba(255, 150, 80, ${t * 0.5})`;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * (1.2 - t * 0.6), 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      ctx.globalAlpha = t;
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-  }
-}
-
-/* Rising labels. */
+/* Rising labels. Positions are in tiles. */
 function drawFloatingTexts(ctx) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -186,7 +151,7 @@ function drawFloatingTexts(ctx) {
     ctx.globalAlpha = t;
     ctx.fillStyle = f.color;
     ctx.font = `bold ${Math.max(12, TILE * 0.32)}px Courier New`;
-    ctx.fillText(f.text, f.x, f.y);
+    ctx.fillText(f.text, f.x * TILE, f.y * TILE);
     ctx.globalAlpha = 1;
   }
 }
@@ -197,9 +162,10 @@ function drawFloatingTexts(ctx) {
 export function render(ctx, CW, CH) {
   const now = performance.now() / 1000;
   drawStatic(ctx, CW, CH);
+  drawScorches(ctx);
   drawTowers(ctx, now);
   drawEnemies(ctx, now);
-  drawProjectiles(ctx);
+  drawProjectiles(ctx, state.projectiles);
   drawParticles(ctx);
   drawFloatingTexts(ctx);
 }

@@ -5,8 +5,9 @@
 */
 
 import { ENEMY_TYPES } from './config.js';
-import { pathLengthTiles, posAtTiles, headingAtTiles } from './path.js';
+import { TILE, pathLengthTiles, posAtTiles, headingAtTiles } from './path.js';
 import * as state from './state.js';
+import { blast, smallDeath } from './effects.js';
 
 /*
   Spawn one enemy of the given catalog key.
@@ -39,7 +40,7 @@ export function applySlow(e, mul, duration) {
 }
 
 /*
-  Remove an enemy, pay gold, and spawn a death burst.
+  Remove an enemy, pay gold, and spawn a death effect (blast for tanks).
 */
 export function killEnemy(e) {
   const idx = state.enemies.indexOf(e);
@@ -48,8 +49,12 @@ export function killEnemy(e) {
   state.addGold(e.goldReward);
   state.addScore(e.goldReward * 2);
   const pos = posAtTiles(e.dist);
-  state.addFloatingText(pos.x, pos.y, `+$${e.goldReward}`, '#FFD700');
-  state.burst(pos.x, pos.y, e.color, 8, 50, 130, 0.5, 3);
+  const x = pos.x / TILE;
+  const y = pos.y / TILE;
+  state.addFloatingText(x, y, `+$${e.goldReward}`, '#FFD700');
+  if (e.type === 'tank') blast(x, y, 0.9);
+  else if (e.type === 'boss') blast(x, y, 1.2, true);
+  else smallDeath(x, y);
 }
 
 /*

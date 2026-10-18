@@ -203,22 +203,42 @@ function cycleSpeed() {
   speedBtn.textContent = state.speedMul + '×';
 }
 
-/* Previous frame timestamp. */
-let lastTime = performance.now();
+/* Frame cap: at most 30 rendered frames per second. */
+const FRAME_MS = 1000 / 30;
+
+/* Small early-fire tolerance so a 60 Hz screen lands on every 2nd vsync. */
+const FRAME_SLACK_MS = 1.5;
+
+/* Last rAF timestamp seen, and the time of the last frame actually run. */
+let lastTick = performance.now();
+let lastStep = lastTick;
+
+/* Time owed toward the next frame. Drift-safe: leftover carries over. */
+let frameAcc = 0;
 
 /*
-  Frame loop. Speed multiplies update steps, not the delta itself,
-  matching the original game.
+  Frame loop, capped at 30 fps. rAF ticks that come too early are skipped.
+  Movement uses real elapsed time (dt), so game speed does not depend on
+  the cap or the screen refresh rate. Speed multiplies update steps, not
+  the delta itself, matching the original game.
 */
 function loop(now) {
   requestAnimationFrame(loop);
-  let dt = (now - lastTime) / 1000;
-  lastTime = now;
+  frameAcc += now - lastTick;
+  lastTick = now;
+  if (frameAcc < FRAME_MS - FRAME_SLACK_MS) return;
+  frameAcc -= FRAME_MS;
+  /* After a stall (tab hidden, slow frame) do not try to catch up. */
+  if (frameAcc > FRAME_MS || frameAcc < -FRAME_MS) frameAcc = 0;
+
+  let dt = (now - lastStep) / 1000;
+  lastStep = now;
   if (dt > 0.1) dt = 0.1;
+  if (dt < 0) dt = 0;
 
   if (state.gameState === 'playing') {
     for (let i = 0; i < state.speedMul; i++) {
-      updateWaves(dt, CW, CH);
+      updateWaves(dt);
       const ended = updateEnemies(dt);
       if (ended) break;
       updateTowers(dt);

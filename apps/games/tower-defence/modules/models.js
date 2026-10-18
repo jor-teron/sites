@@ -38,7 +38,7 @@ function checkCache() {
   Get or build a square sprite. sizeTiles is the side in tiles. draw(g, T)
   paints with the origin at the sprite center; T is the tile size in px.
 */
-function sprite(key, sizeTiles, draw) {
+export function sprite(key, sizeTiles, draw) {
   const dpr = checkCache();
   let s = cache.get(key);
   if (s) return s;
@@ -56,7 +56,7 @@ function sprite(key, sizeTiles, draw) {
 }
 
 /* Draw a sprite centered at x, y, rotated by angle, scaled by scale. */
-function blit(ctx, s, x, y, angle = 0, scale = 1) {
+export function blit(ctx, s, x, y, angle = 0, scale = 1) {
   const h = s.half * scale;
   const w = s.size * scale;
   if (angle) {
@@ -559,6 +559,22 @@ function tankHull(type, color, rT, frame, heavy) {
       g.fillRect(-hl / 2 + r * 0.1 + i * r * 0.1, -hw * 0.3, r * 0.05, hw * 0.6);
     }
     if (heavy) {
+      /* Red markings: hull stripes and a star on the rear deck. */
+      g.fillStyle = '#B3201A';
+      g.fillRect(hl * 0.12, -hw / 2 + r * 0.04, r * 0.1, hw - r * 0.08);
+      g.fillRect(hl * 0.12 + r * 0.16, -hw / 2 + r * 0.04, r * 0.05, hw - r * 0.08);
+      g.save();
+      g.translate(-hl * 0.3, 0);
+      g.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const a = -Math.PI / 2 + (i / 10) * Math.PI * 2;
+        const rr = i % 2 ? r * 0.07 : r * 0.17;
+        if (i === 0) g.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+        else g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      }
+      g.closePath();
+      g.fill();
+      g.restore();
       /* Side armor skirts with rivets. */
       for (const side of [-1, 1]) {
         g.fillStyle = shade(color, -0.35);
@@ -592,10 +608,11 @@ function tankTurret(type, color, rT, heavy) {
       g.beginPath();
       g.arc(-r * 0.15, 0, r * 0.2, 0, Math.PI * 2);
       g.fill();
-      g.fillStyle = '#FF3030';
-      g.beginPath();
-      g.arc(r * 0.25, 0, r * 0.08, 0, Math.PI * 2);
-      g.fill();
+      /* Red turret band and red barrel tips. */
+      g.fillStyle = '#B3201A';
+      g.fillRect(r * 0.12, -r * 0.45, r * 0.1, r * 0.9);
+      g.fillRect(r * 1.08, -r * 0.27, r * 0.17, r * 0.18);
+      g.fillRect(r * 1.08, r * 0.09, r * 0.17, r * 0.18);
     } else {
       barrel(g, 0, 0, r * 1.15, r * 0.17, '#555a63');
       g.fillStyle = ballGrad(g, r * 0.45, shade(color, 0.4), shade(color, -0.5));

@@ -5,7 +5,7 @@
            First wave is not special-cased: nextWaveIn is set in resetRun.
 */
 
-import { BETWEEN_WAVE_DELAY } from './config.js';
+import { BETWEEN_WAVE_DELAY, COLS, ROWS } from './config.js';
 import * as state from './state.js';
 import { spawnEnemy } from './enemies.js';
 
@@ -50,9 +50,9 @@ export function startWave() {
 /*
   Between waves, count down and start the next wave.
   During a wave, spawn due enemies and clear when the field is empty.
-  canvasW/canvasH center the wave-clear label.
+  The wave-clear label is centered on the board (tile units).
 */
-export function updateWaves(dt, canvasW, canvasH) {
+export function updateWaves(dt) {
   if (!state.waveActive) {
     /* Do not gate on wave > 0. The first wave uses nextWaveIn from resetRun. */
     state.addNextWaveIn(-dt);
@@ -71,7 +71,7 @@ export function updateWaves(dt, canvasW, canvasH) {
     const bonus = 20 + state.wave * 5;
     state.addGold(bonus);
     state.addScore(bonus);
-    state.addFloatingText(canvasW / 2, canvasH / 2, `WAVE CLEAR +$${bonus}`, '#FFD700');
+    state.addFloatingText(COLS / 2, ROWS / 2, `WAVE CLEAR +$${bonus}`, '#FFD700');
     state.setNextWaveIn(BETWEEN_WAVE_DELAY);
   }
 }

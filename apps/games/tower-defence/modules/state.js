@@ -6,6 +6,7 @@
 */
 
 import { START_GOLD, START_LIVES, FIRST_WAVE_DELAY } from './config.js';
+import { clearEffects, updateEffects } from './effects.js';
 
 /* Player gold. */
 export let gold = START_GOLD;
@@ -52,10 +53,7 @@ export const enemies = [];
 /* In-flight shots. */
 export const projectiles = [];
 
-/* Short-lived hit and death sparks. */
-export const particles = [];
-
-/* Rising gold and wave-clear labels. */
+/* Rising gold and wave-clear labels. Positions in tiles. */
 export const floatingTexts = [];
 
 /* Optional hook set by main.js. Called when lives hit 0. */
@@ -125,26 +123,10 @@ export function addWaveTimer(dt) { waveTimer += dt; }
 export function addNextWaveIn(dt) { nextWaveIn += dt; }
 
 /*
-  Rising label. x/y are canvas pixels.
+  Rising label. x/y are in tiles so a resize keeps it in place.
 */
 export function addFloatingText(x, y, text, color) {
-  floatingTexts.push({ x, y, text, color, life: 1.0, maxLife: 1.0, vy: -30 });
-}
-
-/*
-  Burst of sparks at a point.
-*/
-export function burst(x, y, color, count, speedMin, speedMax, life, size) {
-  for (let i = 0; i < count; i++) {
-    const a = Math.random() * Math.PI * 2;
-    const sp = speedMin + Math.random() * (speedMax - speedMin);
-    particles.push({
-      x, y,
-      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-      life, maxLife: life,
-      color, size
-    });
-  }
+  floatingTexts.push({ x, y, text, color, life: 1.0, maxLife: 1.0, vy: -0.6 });
 }
 
 /*
@@ -155,7 +137,7 @@ export function resetRun() {
   towers.length = 0;
   enemies.length = 0;
   projectiles.length = 0;
-  particles.length = 0;
+  clearEffects();
   floatingTexts.length = 0;
   gold = START_GOLD;
   lives = START_LIVES;
@@ -172,20 +154,10 @@ export function resetRun() {
 }
 
 /*
-  Age particles and floating text. Called from the main loop.
+  Age effects (effects.js) and floating text. Called from the main loop.
 */
 export function updateFx(dt) {
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.life -= dt;
-    if (p.life <= 0) { particles.splice(i, 1); continue; }
-    if (!p.splash) {
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vx *= 0.94;
-      p.vy *= 0.94;
-    }
-  }
+  updateEffects(dt);
   for (let i = floatingTexts.length - 1; i >= 0; i--) {
     const f = floatingTexts[i];
     f.life -= dt;

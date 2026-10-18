@@ -69,7 +69,7 @@ export function sellTower(t) {
   const refund = getSellValue(t);
   state.addGold(refund);
   const p = towerCenter(t);
-  state.addFloatingText(p.x, p.y, `+$${refund}`, '#FFD700');
+  state.addFloatingText(p.x / TILE, p.y / TILE, `+$${refund}`, '#FFD700');
   const idx = state.towers.indexOf(t);
   if (idx >= 0) state.towers.splice(idx, 1);
   state.setSelectedTower(null);

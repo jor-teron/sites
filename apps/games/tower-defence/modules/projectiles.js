@@ -7,6 +7,7 @@
 import { TILE, posAtTiles } from './path.js';
 import * as state from './state.js';
 import { damageEnemy, applySlow } from './enemies.js';
+import { blast, hitSparks, frostBurst, shellSmoke } from './effects.js';
 
 /*
   Launch a shot from a tower toward an enemy.
@@ -24,13 +25,17 @@ export function fireProjectile(tower, target, from) {
     slow: tower.slow,
     slowDuration: tower.slowDuration,
     color: tower.bulletColor,
+    kind: tower.type,
+    ang: tower.angle,
+    trail: 0,
     lastX: x, lastY: y
   });
 }
 
 /*
-  Resolve a hit at x, y (tiles). Splash damages every enemy in radius.
-  Direct shots only hurt the original target if it is still alive.
+  Resolve a hit at x, y (tiles). Splash damages every enemy in radius
+  and leaves a blast. Direct shots only hurt the original target if it
+  is still alive; they always show sparks or a frost burst.
 */
 export function handleProjectileHit(p, x, y) {
   const px = x * TILE;
@@ -46,15 +51,14 @@ export function handleProjectileHit(p, x, y) {
         if (p.slow > 0) applySlow(e, p.slow, p.slowDuration);
       }
     }
-    state.particles.push({
-      x: px, y: py, vx: 0, vy: 0,
-      life: 0.25, maxLife: 0.25,
-      color: p.color, size: radius, splash: true
-    });
-  } else if (state.enemies.includes(p.target)) {
-    damageEnemy(p.target, p.damage);
-    if (p.slow > 0) applySlow(p.target, p.slow, p.slowDuration);
-    state.burst(px, py, p.color, 4, 30, 90, 0.3, 2);
+    blast(x, y, p.splash);
+  } else {
+    if (state.enemies.includes(p.target)) {
+      damageEnemy(p.target, p.damage);
+      if (p.slow > 0) applySlow(p.target, p.slow, p.slowDuration);
+    }
+    if (p.kind === 'frost') frostBurst(x, y);
+    else hitSparks(x, y, p.ang);
   }
 }
 
@@ -86,6 +90,14 @@ export function updateProjectiles(dt) {
     } else {
       p.x += (dx / d) * move;
       p.y += (dy / d) * move;
+      p.ang = Math.atan2(dy, dx);
+      if (p.kind === 'cannon') {
+        p.trail -= dt;
+        if (p.trail <= 0) {
+          shellSmoke(p.x, p.y);
+          p.trail = 0.05;
+        }
+      }
     }
   }
 }

@@ -71,7 +71,7 @@ export const ENEMY_TYPES = {
   grunt:  { name: 'GRUNT',  hp: 50,  speed: 1.4, gold: 3,  radius: 0.28, color: '#FF5B5B' },
   runner: { name: 'RUNNER', hp: 25,  speed: 2.6, gold: 4,  radius: 0.24, color: '#FFB852' },
   tank:   { name: 'TANK',   hp: 200, speed: 0.9, gold: 7, radius: 0.36, color: '#A050FF' },
-  boss:   { name: 'BOSS',   hp: 1000, speed: 0.75, gold: 30, radius: 0.48, color: '#FF00FF' }
+  boss:   { name: 'BOSS',   hp: 1000, speed: 0.75, gold: 30, radius: 0.48, color: '#4A5A32' }
 };
 
 /* Highest tower level. UPGRADE shows MAX once reached. */
