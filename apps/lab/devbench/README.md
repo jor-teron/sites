@@ -16,7 +16,7 @@ Browser-side benchmark for phones, TVs and PCs. Works in the Hub and responds to
 ## How each test works
 - **Device info:** cores, RAM, platform, model, GPU strings, storage quota; screen in CSS px and physical px (× devicePixelRatio), pixel density; refresh rate = requestAnimationFrame frames over 2 s rounded to 30/50/60/75/90/120/144/165/240 Hz; browser + version + OS from `userAgentData.getHighEntropyValues` (fullVersionList, platformVersion), user-agent text fallback.
 - **CPU:** one worker per core, math loop 10 s, ops/s.
-- **GPU:** WebGL full-canvas draws 10 s, Mpix/s.
+- **GPU:** WebGL fill rate, 10 s. Each batch draws many blended full-canvas triangles on a 512² canvas, then `gl.readPixels` one pixel so the GPU must finish; only batch time counts and the batch doubles until it takes ~20 ms, so the score is not capped by vsync. Mpix/s plus full-canvas layers per 60 Hz frame.
 - **Memory:** 64 MB Float64Array copy (`set`, counted as read+write) and sequential sum, best of 5, GB/s.
 - **JavaScript:** round = sort 100k numbers, JSON stringify/parse ~1 MB, string/regex work, create+remove 2000 elements in a detached fragment; rounds for 3 s → rounds/s and ms/round.
 - **Disk:** OPFS 64 MB write then read, MB/s.

@@ -5,7 +5,7 @@ body{margin:0;background:#11151c;color:#e6e9ef;font:15px/1.4 system-ui,sans-seri
 h1{margin:.2em 0 0}h2{margin:0 0 .5em;font-size:1.1em}
 .sub,.muted{color:#8b95a7}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
-button{min-height:44px;padding:0 16px;border:0;border-radius:10px;background:#2b3545;color:#fff;font-size:15px;cursor:pointer}
+button{min-height:44px;min-width:44px;padding:0 16px;border:0;border-radius:10px;background:#2b3545;color:#fff;font-size:15px;cursor:pointer}
 button:disabled{opacity:.45;cursor:default}
 button.big{background:#2f7cf6;font-weight:600}
 .card{background:#1a202b;border-radius:14px;padding:14px;margin:12px 0}

@@ -61,7 +61,9 @@ button {
   color: #fff;
   border: 0;
   border-radius: 8px;
-  padding: 8px 14px;
+  padding: 8px 18px;
+  min-height: 44px;
+  min-width: 44px;
   font-size: 0.95rem;
 }
 

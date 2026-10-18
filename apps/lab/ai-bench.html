@@ -1,9 +1,16 @@
+<!--
+  File: ai-bench.html
+  Project: AI Bench (apps/lab)
+  Role: Single-file browser compute benchmark: FP32 / integer-array matmul GOPS, sustained run,
+  and a matmul "story proxy" tokens/s. Plain JS on the main thread (no model, no libraries).
+  Icon: ai-bench_icon.png (tiles/hub rule file x.html -> x_icon.png). Docs: ai-bench_README.md.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI System Benchmark - TOPS & GFLOPS</title>
+    <title>AI Bench - browser compute (GFLOPS / GOPS)</title>
     <style>
         /* Global reset and base styles for clean modern look */
         * {
@@ -63,7 +70,9 @@
             color: white;
             border: none;
             padding: 0.75rem 1.25rem;
-            border-radius: 8px;
+            min-height: 48px;
+            min-width: 48px;
+            border-radius: 12px;
             font-size: 0.95rem;
             font-weight: 500;
             cursor: pointer;
@@ -181,12 +190,34 @@
             border-top: 1px solid #333;
         }
 
+        /* Story proxy output box */
+        .story {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+            min-height: 80px;
+            font-size: 0.95rem;
+            color: #ddd;
+            white-space: pre-wrap;
+        }
+
+        /* Small grey note under the page */
+        footer {
+            text-align: center;
+            color: #777;
+            font-size: 0.8rem;
+            margin: 1.5rem 0 0.5rem;
+            line-height: 1.6;
+        }
+
         /* Responsive adjustments for small phones */
         @media (max-width: 600px) {
             header h1 {
                 font-size: 1.5rem;
             }
-            .value {
+            .card .value {
                 font-size: 1.5rem;
             }
         }
@@ -195,23 +226,23 @@
 <body>
     <div class="container">
         <header>
-            <h1>AI System Benchmark</h1>
-            <p>WebApp measure of effective AI compute speed (TOPS & GFLOPS) on Android phones and consumer PCs/laptops. Pure browser, no install.</p>
+            <h1>AI Bench</h1>
+            <p>How fast this browser does AI-style maths (matrix multiplies) on phones and PCs. Pure JavaScript, no install, no downloads.</p>
         </header>
 
         <div class="controls">
             <button id="btnQuick">Quick Test</button>
             <button id="btnPeak">Peak Performance</button>
-            <button id="btnSustained">Sustained (15s)</button>
+            <button id="btnSustained">Sustained (25s)</button>
             <button id="btnAll">Run Full Suite</button>
         </div>
 
         <div class="controls" style="margin-top: 0.5rem;">
-            <button id="btnTinyLLM">Tiny Lily (~15M) t/s</button>
-            <button id="btnMedLLM">Medium (~50M) t/s</button>
+            <button id="btnTinyLLM">Story proxy S (n=96)</button>
+            <button id="btnMedLLM">Story proxy M (n=160)</button>
         </div>
 
-        <div id="storyOutput" style="background:#1a1a1a; border:1px solid #333; border-radius:12px; padding:1rem; margin:1rem 0; min-height:80px; font-size:0.95rem; color:#ddd; white-space:pre-wrap;"></div>
+        <div id="storyOutput" class="story">Story proxy: matmul load + random words. Not a real model.</div>
 
         <div class="status" id="status">Ready. Choose a test.</div>
         <div class="progress-container">
@@ -224,66 +255,56 @@
 
         <div class="info">
             <h3>What these numbers mean</h3>
-            <p><strong>GFLOPS</strong> — Giga Floating-Point Operations Per Second. Measures how many billion floating-point calculations (mainly FP32) the system can do per second. Common for general compute and GPU performance.</p>
-            <p><strong>TOPS</strong> — Tera Operations Per Second. One trillion operations per second. Usually refers to integer (INT8/INT4) AI accelerator performance. Vendors advertise NPU ratings in TOPS.</p>
-            <p><strong>GOPS</strong> — Giga Operations Per Second (1,000 GOPS = 1 TOPS). Used here for the integer path because pure browser numbers are typically in the GOPS range, not full TOPS.</p>
+            <p><strong>GFLOPS</strong> — Giga Floating-Point Operations Per Second: billions of FP32 multiply/add operations per second.</p>
+            <p><strong>GOPS (integer arrays)</strong> — the same matrix multiply with Int8Array inputs and Int32Array results. JavaScript still does the maths as normal numbers, so this is <em>not</em> real INT8 / NPU speed and is usually close to the FP32 figure. 1,000 GOPS = 1 TOPS.</p>
             <ul>
-                <li><strong>Latency</strong> — Time for one matrix multiply. Lower is better for responsive AI.</li>
-                <li><strong>Sustained</strong> — Average speed over 10–15 seconds. Shows real-world performance after heating/throttling.</li>
+                <li><strong>Latency</strong> — Time for one matrix multiply. Lower is better.</li>
+                <li><strong>Sustained</strong> — Average speed over 10–15 seconds. Shows the drop after heating/throttling.</li>
                 <li><strong>Memory-bound</strong> — Larger matrices stress memory bandwidth more than pure compute.</li>
-                <li><strong>tokens/sec (t/s)</strong> — How many tokens a tiny story model can generate per second. Higher is better for chat-style AI. These are lightweight proxies (not full real model weights) so the test stays single-file and pure JS.</li>
+                <li><strong>Story proxy t/s</strong> — one n×n matmul per "token", then a random word from a tiny list. It shows how many such steps per second the device manages. It is <em>not</em> a language model and not a real tokens/sec figure.</li>
             </ul>
             <div class="disclaimer">
-                <strong>Disclaimer:</strong> These are effective throughput numbers measured inside a web browser using pure JavaScript. Matrix tests use real matmuls. The Lily story tests use lightweight proxies (compute load similar to tiny models + simple word sampling) so everything stays in one pure HTML file with no external downloads. They are <em>not</em> official datasheet numbers or full-weight model inference. Useful for comparing devices under the same conditions.
+                <strong>Disclaimer:</strong> Effective throughput of plain single-threaded JavaScript on the main thread (no WebGPU, no WASM, no workers yet). Matrix tests use real matmuls; the story tests are proxies, not model inference. Not datasheet TOPS. Useful for comparing devices under the same conditions.
             </div>
         </div>
 
         <footer>
             Results are effective browser throughput (not official datasheet TOPS).<br>
-            Memory-bound and compute-bound workloads included. No separate RAM test.
+            The page may freeze briefly during each matrix multiply.
         </footer>
     </div>
 
     <script>
         /*
-         * AI System Benchmark - Single File WebApp
-         * Purpose: Measure how fast a system is for AI workloads on Android phones and consumer PCs/laptops.
-         * Metrics: Effective GFLOPS (FP32), TOPS (INT8-style integer), latency, throughput, sustained performance, and tokens/sec from tiny story LLM proxies.
-         * Workloads: Matrix multiplies of varying sizes (compute-bound small, memory-bound larger).
-         * Implementation: Pure HTML/CSS/JS, uses Web Workers for non-blocking UI, typed arrays for speed.
-         * Note: Browser numbers are lower than native NPU/GPU peak due to sandbox and overhead. Useful for relative comparison.
-         * Author: Built for practical AI device ranking.
-         * Date: 2026-10-16
+         * AI Bench - single-file web app (apps/lab/ai-bench.html)
+         * Purpose: compare how fast phones and PCs do AI-style maths inside the browser.
+         * Metrics: FP32 GFLOPS, integer-array GOPS, latency, sustained average, story-proxy steps/s.
+         * Workloads: square matrix multiplies (compute-bound small, memory-bound larger).
+         * Implementation: plain JS + typed arrays on the main thread (a Web Worker version is planned).
+         * Each step awaits one paint first so the status and progress bar really update.
          */
 
-        // Global state variables for test control
-        // isRunning tracks if a benchmark is currently active to prevent overlapping runs
+        // isRunning blocks overlapping runs (buttons are also disabled).
         let isRunning = false;
-        // resultsData stores the latest measured values for display
-        let resultsData = {};
 
         // DOM element references for UI updates
-        // statusEl shows current test status message
         const statusEl = document.getElementById('status');
-        // progressEl is the visual progress bar
         const progressEl = document.getElementById('progress');
-        // resultsEl is the container for result cards
         const resultsEl = document.getElementById('results');
 
-        /**
-         * Updates the status text displayed to the user.
-         * @param {string} msg - The message to show
-         */
+        /** Updates the status text displayed to the user. */
         function setStatus(msg) {
             statusEl.textContent = msg;
         }
 
-        /**
-         * Updates the progress bar width.
-         * @param {number} percent - Value from 0 to 100
-         */
+        /** Updates the progress bar width (0..100). */
         function setProgress(percent) {
             progressEl.style.width = Math.min(100, Math.max(0, percent)) + '%';
+        }
+
+        /** Resolves after the browser has painted, so status/progress changes show before heavy work. */
+        function paint() {
+            return new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
         }
 
         /**
@@ -291,7 +312,7 @@
          * @param {string} id - Unique key for the metric
          * @param {string} title - Display title
          * @param {string|number} value - Main number to show
-         * @param {string} unit - Unit label (GFLOPS, TOPS, ms, etc.)
+         * @param {string} unit - Unit label
          * @param {string} detail - Extra explanation text
          */
         function updateCard(id, title, value, unit, detail) {
@@ -310,44 +331,23 @@
             `;
         }
 
-        /**
-         * Generates a random Float32Array matrix of size n x n filled with values between -1 and 1.
-         * Used as input for floating-point benchmarks.
-         * @param {number} n - Matrix dimension
-         * @returns {Float32Array} The generated matrix
-         */
+        /** n x n Float32Array with values in -1..1 (FP32 inputs). */
         function createFloatMatrix(n) {
-            const size = n * n;
-            const mat = new Float32Array(size);
-            for (let i = 0; i < size; i++) {
-                mat[i] = (Math.random() * 2 - 1);
-            }
+            const mat = new Float32Array(n * n);
+            for (let i = 0; i < mat.length; i++) mat[i] = Math.random() * 2 - 1;
             return mat;
         }
 
-        /**
-         * Generates a random Int8Array matrix of size n x n filled with small integers.
-         * Used for integer / INT8-style TOPS approximation.
-         * @param {number} n - Matrix dimension
-         * @returns {Int8Array} The generated matrix
-         */
+        /** n x n Int8Array with values in -10..10 (integer-array inputs). */
         function createIntMatrix(n) {
-            const size = n * n;
-            const mat = new Int8Array(size);
-            for (let i = 0; i < size; i++) {
-                mat[i] = Math.floor(Math.random() * 21) - 10; // -10 to 10
-            }
+            const mat = new Int8Array(n * n);
+            for (let i = 0; i < mat.length; i++) mat[i] = Math.floor(Math.random() * 21) - 10;
             return mat;
         }
 
         /**
-         * Performs a standard matrix multiplication C = A * B for square matrices.
-         * Uses ikj loop order for better cache behavior in JavaScript.
-         * Counts as 2 * n^3 floating-point operations (multiply + add).
-         * @param {Float32Array} a - Left matrix
-         * @param {Float32Array} b - Right matrix
-         * @param {number} n - Dimension
-         * @returns {Float32Array} Result matrix
+         * C = A * B for square FP32 matrices, ikj loop order (cache friendly).
+         * Counts as 2 * n^3 operations (multiply + add).
          */
         function matmulFloat(a, b, n) {
             const c = new Float32Array(n * n);
@@ -363,13 +363,8 @@
         }
 
         /**
-         * Performs integer matrix multiplication for INT8-style measurement.
-         * Uses the same loop structure but with integer arithmetic.
-         * Approximates TOPS by treating each mul-add as an integer operation.
-         * @param {Int8Array} a - Left matrix
-         * @param {Int8Array} b - Right matrix
-         * @param {number} n - Dimension
-         * @returns {Int32Array} Result matrix (accumulated as int)
+         * Same loop for Int8Array inputs into an Int32Array. Kept as its own function so the
+         * JIT sees one array type per loop (a shared function would slow both paths).
          */
         function matmulInt(a, b, n) {
             const c = new Int32Array(n * n);
@@ -384,204 +379,138 @@
             return c;
         }
 
-        /**
-         * Measures the time to perform one matrix multiplication and returns latency and effective rate.
-         * @param {boolean} useInt - If true, use integer path for TOPS; else float for GFLOPS
-         * @param {number} n - Matrix size
-         * @returns {Promise<Object>} Object with latencyMs, gflops or tops, opsPerSec
-         */
-        function measureOnce(useInt, n) {
-            return new Promise((resolve) => {
-                const a = useInt ? createIntMatrix(n) : createFloatMatrix(n);
-                const b = useInt ? createIntMatrix(n) : createFloatMatrix(n);
-                const ops = 2 * n * n * n; // mul + add per element
-
-                const start = performance.now();
-                if (useInt) {
-                    matmulInt(a, b, n);
-                } else {
-                    matmulFloat(a, b, n);
-                }
-                const end = performance.now();
-                const ms = end - start;
-                const seconds = ms / 1000;
-                const rate = ops / seconds;
-
-                const result = {
-                    latencyMs: ms,
-                    ops: ops,
-                    rate: rate
-                };
-                if (useInt) {
-                    result.tops = rate / 1e12;
-                } else {
-                    result.gflops = rate / 1e9;
-                }
-                resolve(result);
-            });
+        /** Builds inputs and one matmul function for the float or integer-array path. */
+        function makeWork(useInt, n) {
+            const a = useInt ? createIntMatrix(n) : createFloatMatrix(n);
+            const b = useInt ? createIntMatrix(n) : createFloatMatrix(n);
+            return useInt ? () => matmulInt(a, b, n) : () => matmulFloat(a, b, n);
         }
 
         /**
-         * Runs a sustained test by repeating matrix multiplies for a target duration.
-         * Reports average rate over the full period (captures throttling).
-         * @param {boolean} useInt - Integer or float path
-         * @param {number} n - Matrix size
-         * @param {number} durationSec - How long to run
-         * @returns {Promise<Object>} Average rate and total operations
+         * Times one matrix multiply after a single warm-up run.
+         * @returns {Promise<{latencyMs:number, rate:number, gops:number}>}
          */
-        function measureSustained(useInt, n, durationSec) {
+        async function measureOnce(useInt, n) {
+            await paint();
+            const work = makeWork(useInt, n);
+            work(); // warm-up so the JIT has compiled the loop
+            const start = performance.now();
+            work();
+            const ms = performance.now() - start;
+            const rate = (2 * n * n * n) / (ms / 1000);
+            return { latencyMs: ms, rate: rate, gops: rate / 1e9 };
+        }
+
+        /**
+         * Repeats matrix multiplies for durationSec and reports the average rate.
+         * onFrac(0..1) is called as time passes, so the progress bar moves smoothly.
+         */
+        function measureSustained(useInt, n, durationSec, onFrac) {
             return new Promise((resolve) => {
-                const a = useInt ? createIntMatrix(n) : createFloatMatrix(n);
-                const b = useInt ? createIntMatrix(n) : createFloatMatrix(n);
+                const work = makeWork(useInt, n);
                 const opsPerRun = 2 * n * n * n;
-                let totalOps = 0;
+                const targetMs = durationSec * 1000;
                 let runs = 0;
                 const start = performance.now();
-                const targetMs = durationSec * 1000;
 
                 function step() {
-                    if (useInt) {
-                        matmulInt(a, b, n);
-                    } else {
-                        matmulFloat(a, b, n);
-                    }
-                    totalOps += opsPerRun;
+                    work();
                     runs++;
                     const elapsed = performance.now() - start;
+                    if (onFrac) onFrac(Math.min(1, elapsed / targetMs));
                     if (elapsed < targetMs) {
-                        // Continue asynchronously to keep UI alive
-                        setTimeout(step, 0);
-                    } else {
-                        const seconds = elapsed / 1000;
-                        const avgRate = totalOps / seconds;
-                        const result = {
-                            avgRate: avgRate,
-                            runs: runs,
-                            seconds: seconds
-                        };
-                        if (useInt) {
-                            result.tops = avgRate / 1e12;
-                        } else {
-                            result.gflops = avgRate / 1e9;
-                        }
-                        resolve(result);
+                        setTimeout(step, 0); // keep the UI alive between runs
+                        return;
                     }
+                    const avgRate = (runs * opsPerRun) / (elapsed / 1000);
+                    resolve({ avgRate: avgRate, gops: avgRate / 1e9, runs: runs, seconds: elapsed / 1000 });
                 }
                 step();
             });
         }
 
-        /**
-         * Disables or enables all control buttons.
-         * @param {boolean} disabled - True to disable
-         */
+        /** Disables or enables all control buttons. */
         function setButtonsDisabled(disabled) {
-            document.querySelectorAll('button').forEach(btn => {
-                btn.disabled = disabled;
-            });
+            document.querySelectorAll('button').forEach((btn) => { btn.disabled = disabled; });
         }
 
-        /**
-         * Runs the quick test suite (small matrices for fast feedback).
+        /** Detail line for an integer-array result. */
+        function intDetail(extra) {
+            return `Int8Array data, maths done as JS numbers (not real INT8) · ${extra}`;
+        }
+
+        /*
+         * Test steps. Each takes prog(p) with p in 0..1 for its own share of the bar
+         * and does NOT touch the buttons; runExclusive() handles locking.
          */
-        async function runQuick() {
-            if (isRunning) return;
-            isRunning = true;
-            setButtonsDisabled(true);
-            setProgress(0);
+        async function doQuick(prog) {
             setStatus('Running quick test (n=128)...');
-
-            // FP32 small
-            setProgress(20);
+            prog(0);
             const fp = await measureOnce(false, 128);
-            updateCard('quick-fp', 'Quick FP32', fp.gflops, 'GFLOPS', `Latency ${fp.latencyMs.toFixed(1)} ms`);
-
-            // INT8-style small — show in GOPS for readable numbers
-            setProgress(50);
+            updateCard('quick-fp', 'Quick FP32', fp.gops, 'GFLOPS', `Latency ${fp.latencyMs.toFixed(1)} ms`);
+            prog(0.5);
             const ip = await measureOnce(true, 128);
-            const gopsQuick = (ip.rate / 1e9).toFixed(2);
-            updateCard('quick-int', 'Quick INT8-style', gopsQuick, 'GOPS', `≈ ${(ip.tops).toFixed(4)} TOPS · Latency ${ip.latencyMs.toFixed(1)} ms`);
-
-            setProgress(100);
-            setStatus('Quick test complete.');
-            isRunning = false;
-            setButtonsDisabled(false);
+            updateCard('quick-int', 'Quick integer arrays', ip.gops, 'GOPS', intDetail(`latency ${ip.latencyMs.toFixed(1)} ms`));
+            prog(1);
         }
 
-        /**
-         * Runs peak performance tests with larger matrices.
-         */
-        async function runPeak() {
-            if (isRunning) return;
-            isRunning = true;
-            setButtonsDisabled(true);
-            setProgress(0);
+        async function doPeak(prog) {
             setStatus('Measuring peak FP32 (n=256)...');
-
-            setProgress(25);
+            prog(0);
             const fp256 = await measureOnce(false, 256);
-            updateCard('peak-fp256', 'Peak FP32 (256)', fp256.gflops, 'GFLOPS', `Latency ${fp256.latencyMs.toFixed(1)} ms`);
-
-            setStatus('Measuring peak INT8-style (n=256)...');
-            setProgress(55);
+            updateCard('peak-fp256', 'Peak FP32 (256)', fp256.gops, 'GFLOPS', `Latency ${fp256.latencyMs.toFixed(1)} ms`);
+            setStatus('Measuring peak integer arrays (n=256)...');
+            prog(0.35);
             const ip256 = await measureOnce(true, 256);
-            const gopsPeak = (ip256.rate / 1e9).toFixed(2);
-            updateCard('peak-int256', 'Peak INT8-style (256)', gopsPeak, 'GOPS', `≈ ${ip256.tops.toFixed(4)} TOPS · Latency ${ip256.latencyMs.toFixed(1)} ms`);
-
+            updateCard('peak-int256', 'Peak integer arrays (256)', ip256.gops, 'GOPS', intDetail(`latency ${ip256.latencyMs.toFixed(1)} ms`));
             setStatus('Measuring larger FP32 (n=384) for memory-bound feel...');
-            setProgress(80);
+            prog(0.65);
             const fp384 = await measureOnce(false, 384);
-            updateCard('peak-fp384', 'FP32 Memory-bound (384)', fp384.gflops, 'GFLOPS', `Latency ${fp384.latencyMs.toFixed(1)} ms`);
+            updateCard('peak-fp384', 'FP32 Memory-bound (384)', fp384.gops, 'GFLOPS', `Latency ${fp384.latencyMs.toFixed(1)} ms`);
+            prog(1);
+        }
 
-            setProgress(100);
-            setStatus('Peak tests complete.');
-            isRunning = false;
-            setButtonsDisabled(false);
+        async function doSustained(prog) {
+            setStatus('Sustained FP32 test running (~15 seconds)...');
+            await paint();
+            const fp = await measureSustained(false, 256, 15, (f) => prog(f * 0.6));
+            updateCard('sustained-fp', 'Sustained FP32', fp.gops, 'GFLOPS avg', `${fp.runs} runs over ${fp.seconds.toFixed(1)}s`);
+            setStatus('Sustained integer-array test running (~10 seconds)...');
+            await paint();
+            const ip = await measureSustained(true, 256, 10, (f) => prog(0.6 + f * 0.4));
+            updateCard('sustained-int', 'Sustained integer arrays', ip.gops, 'GOPS avg', intDetail(`${ip.runs} runs over ${ip.seconds.toFixed(1)}s`));
         }
 
         /**
-         * Runs sustained performance test for approximately 15 seconds.
+         * Runs fn(prog) with buttons locked, then shows doneMsg.
+         * prog maps 0..1 onto the whole progress bar.
          */
-        async function runSustained() {
+        async function runExclusive(fn, doneMsg) {
             if (isRunning) return;
             isRunning = true;
             setButtonsDisabled(true);
             setProgress(0);
-            setStatus('Sustained FP32 test running (~15 seconds)...');
-
-            setProgress(10);
-            const sustained = await measureSustained(false, 256, 15);
-            updateCard('sustained-fp', 'Sustained FP32', sustained.gflops, 'GFLOPS avg', `${sustained.runs} runs over ${sustained.seconds.toFixed(1)}s`);
-
-            setStatus('Sustained INT8-style test running...');
-            setProgress(50);
-            const sustainedInt = await measureSustained(true, 256, 10);
-            const gopsSust = (sustainedInt.avgRate / 1e9).toFixed(2);
-            updateCard('sustained-int', 'Sustained INT8-style', gopsSust, 'GOPS avg', `≈ ${sustainedInt.tops.toFixed(4)} TOPS · ${sustainedInt.runs} runs over ${sustainedInt.seconds.toFixed(1)}s`);
-
-            setProgress(100);
-            setStatus('Sustained tests complete. Check for throttling drop.');
-            isRunning = false;
-            setButtonsDisabled(false);
+            try {
+                await fn((p) => setProgress(p * 100));
+                setProgress(100);
+                setStatus(doneMsg);
+            } catch (err) {
+                setStatus('Error: ' + (err && err.message ? err.message : err));
+            } finally {
+                isRunning = false;
+                setButtonsDisabled(false);
+            }
         }
 
-        /**
-         * Runs the full suite of tests sequentially.
-         */
-        async function runAll() {
-            if (isRunning) return;
-            await runQuick();
-            await new Promise(r => setTimeout(r, 300));
-            await runPeak();
-            await new Promise(r => setTimeout(r, 300));
-            await runSustained();
-            setStatus('Full suite complete.');
+        /** Full suite: quick, peak, sustained in one locked run (buttons stay off until the end). */
+        function doAll(prog) {
+            const part = (from, to) => (p) => prog(from + (to - from) * p);
+            return doQuick(part(0, 0.1))
+                .then(() => doPeak(part(0.1, 0.35)))
+                .then(() => doSustained(part(0.35, 1)));
         }
 
-        /**
-         * Tiny story vocabulary for Lily-style generation (kids stories).
-         * Used by the lightweight LLM proxy to produce readable output.
-         */
+        /** Story vocabulary for the proxy's random words (kids-story style). */
         const STORY_WORDS = [
             "Once", "upon", "a", "time", "there", "was", "a", "little", "girl", "named", "Lily",
             "She", "loved", "to", "play", "outside", "in", "the", "park", "One", "day", "she",
@@ -594,94 +523,54 @@
         ];
 
         /**
-         * Generates a short story while performing compute load proportional to a small LLM.
-         * Each token does a matmul of size proportional to model scale, then samples next word.
-         * Measures real tokens per second.
-         * @param {number} modelScale - Approximate parameter scale proxy (15 or 50)
-         * @param {number} maxTokens - How many tokens to generate
-         * @returns {Promise<Object>} tokens/sec, generated text, time
+         * Story proxy: per "token" one n x n FP32 matmul, then a random word.
+         * Not a language model; the words carry no meaning. Measures proxy steps per second.
          */
-        function runStoryLLM(modelScale, maxTokens) {
+        function runStoryProxy(n, maxTokens, prog) {
             return new Promise((resolve) => {
                 const storyEl = document.getElementById('storyOutput');
-                storyEl.textContent = "Generating...";
-                let text = "Once upon a time, there was a little girl named Lily. ";
+                storyEl.textContent = 'Generating (proxy, random words)...';
+                let text = 'Once upon a time, there was a little girl named Lily. ';
                 let tokens = 0;
-                const n = modelScale === 15 ? 96 : 160; // matrix size proxy for compute load
-                const a = createFloatMatrix(n);
-                const b = createFloatMatrix(n);
+                const work = makeWork(false, n);
                 const start = performance.now();
 
                 function generateStep() {
                     if (tokens >= maxTokens) {
                         const elapsed = (performance.now() - start) / 1000;
-                        const tps = tokens / elapsed;
                         storyEl.textContent = text.trim();
-                        resolve({ tps, tokens, elapsed, text: text.trim() });
+                        resolve({ tps: tokens / elapsed, tokens: tokens, elapsed: elapsed });
                         return;
                     }
-                    // Simulate one forward pass compute (matmul)
-                    matmulFloat(a, b, n);
-                    // Simple next-word sampling
-                    const word = STORY_WORDS[Math.floor(Math.random() * STORY_WORDS.length)];
-                    text += word + " ";
+                    work();
+                    text += STORY_WORDS[Math.floor(Math.random() * STORY_WORDS.length)] + ' ';
                     tokens++;
-                    if (tokens % 5 === 0) {
-                        storyEl.textContent = text.trim() + "...";
-                    }
+                    prog(tokens / maxTokens);
+                    if (tokens % 5 === 0) storyEl.textContent = text.trim() + '...';
                     setTimeout(generateStep, 0);
                 }
                 generateStep();
             });
         }
 
-        /**
-         * Runs the Tiny Lily (~15M proxy) story generation benchmark.
-         */
-        async function runTinyLLM() {
-            if (isRunning) return;
-            isRunning = true;
-            setButtonsDisabled(true);
-            setStatus('Running Tiny Lily story model (~15M proxy)...');
-            setProgress(10);
-            const result = await runStoryLLM(15, 60);
-            updateCard('tiny-llm', 'Tiny Lily (~15M)', result.tps.toFixed(1), 'tokens/sec', `${result.tokens} tokens in ${result.elapsed.toFixed(1)}s`);
-            setProgress(100);
-            setStatus('Tiny Lily test complete.');
-            isRunning = false;
-            setButtonsDisabled(false);
+        /** Builds a story-proxy test step for size label/key, matrix n and token count. */
+        function storyStep(key, label, n, maxTokens) {
+            return async (prog) => {
+                setStatus(`Running ${label} (matmul n=${n} per step, not a real model)...`);
+                await paint();
+                const r = await runStoryProxy(n, maxTokens, prog);
+                updateCard(key, `${label} (not a real model)`, r.tps.toFixed(1), 'proxy steps/sec',
+                    `${r.tokens} steps in ${r.elapsed.toFixed(1)}s · one ${n}×${n} matmul + random word each`);
+            };
         }
 
-        /**
-         * Runs the Medium (~50M proxy) story generation benchmark.
-         */
-        async function runMedLLM() {
-            if (isRunning) return;
-            isRunning = true;
-            setButtonsDisabled(true);
-            setStatus('Running Medium story model (~50M proxy)...');
-            setProgress(10);
-            const result = await runStoryLLM(50, 40);
-            updateCard('med-llm', 'Medium (~50M)', result.tps.toFixed(1), 'tokens/sec', `${result.tokens} tokens in ${result.elapsed.toFixed(1)}s`);
-            setProgress(100);
-            setStatus('Medium model test complete.');
-            isRunning = false;
-            setButtonsDisabled(false);
-        }
-
-        // Event listeners for buttons
-        // Quick test button triggers small fast measurements
-        document.getElementById('btnQuick').addEventListener('click', runQuick);
-        // Peak button runs larger single-shot measurements
-        document.getElementById('btnPeak').addEventListener('click', runPeak);
-        // Sustained button runs timed continuous workload
-        document.getElementById('btnSustained').addEventListener('click', runSustained);
-        // Full suite button runs everything in sequence
-        document.getElementById('btnAll').addEventListener('click', runAll);
-        // Tiny Lily LLM proxy button
-        document.getElementById('btnTinyLLM').addEventListener('click', runTinyLLM);
-        // Medium LLM proxy button
-        document.getElementById('btnMedLLM').addEventListener('click', runMedLLM);
+        // Button wiring
+        document.getElementById('btnQuick').addEventListener('click', () => runExclusive(doQuick, 'Quick test complete.'));
+        document.getElementById('btnPeak').addEventListener('click', () => runExclusive(doPeak, 'Peak tests complete.'));
+        document.getElementById('btnSustained').addEventListener('click', () => runExclusive(doSustained, 'Sustained tests complete. Compare with Peak for throttling.'));
+        document.getElementById('btnAll').addEventListener('click', () => runExclusive(doAll, 'Full suite complete.'));
+        document.getElementById('btnTinyLLM').addEventListener('click', () => runExclusive(storyStep('tiny-llm', 'Story proxy S', 96, 60), 'Story proxy S complete.'));
+        document.getElementById('btnMedLLM').addEventListener('click', () => runExclusive(storyStep('med-llm', 'Story proxy M', 160, 40), 'Story proxy M complete.'));
 
         // Initial UI setup
         setStatus('Ready. Choose a test above.');

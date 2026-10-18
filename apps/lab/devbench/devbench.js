@@ -67,7 +67,8 @@ function devbenchInit() {
   devbenchBind("gpu-run", "gpu-bar", "gpu-out", async function (onProgress) {
     var canvas = document.getElementById("gpu-canvas");
     var score = await window.DevbenchGpu.run(canvas, onProgress);
-    return devbenchFmt(score.mpixPerSec, 0) + " Mpix/s · " + score.draws + " draws";
+    return devbenchFmt(score.mpixPerSec, 0) + " Mpix/s · " + devbenchFmt(score.fillsPer60HzFrame, 0) +
+      " full-canvas layers per 60 Hz frame · " + devbenchFmt(score.draws, 0) + " draws";
   });
   devbenchBind("disk-run", "disk-bar", "disk-out", async function (onProgress) {
     var score = await window.DevbenchDisk.run(onProgress);

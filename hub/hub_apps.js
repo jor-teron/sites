@@ -83,6 +83,8 @@ Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,  
 
 Lab,      Lab Page,              apps/lab/,                                  ,         0,       0,      1000
 Lab,      Device Benchmark,      apps/lab/devbench/,                         ,         0,       0,      1050
+Lab,      Browser Bench,         apps/lab/browser-bench/,                    ,         0,       0,      1051
+Lab,      AI Bench,              apps/lab/ai-bench.html,                     ,         0,       0,      1052
 Lab,      Island Game Demo,      apps/lab/island-demo/,                      ,         0,       0,      1080
 Lab,      Phone,                 apps/media/phone/,                          ,         0,       0,      1070
 Lab,      Paper Keyboard,        apps/lab/paper-keyboard/,                   ,         0,       0,      1040
