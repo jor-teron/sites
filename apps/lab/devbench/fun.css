@@ -1,0 +1,49 @@
+/*
+  File: fun.css
+  Project: devbench
+  Role: Playful layer (R4): jelly score dial, pop-in result cards, squishy buttons,
+  running-card glow, throttling chart, history list. Pure CSS, loaded after devbench.css.
+*/
+
+body { background: radial-gradient(circle at 20% 0%, #2a1850 0%, #121418 55%) fixed; }
+
+/* Squishy, jelly buttons. */
+button { transition: transform 0.18s cubic-bezier(.34, 1.56, .64, 1), filter 0.2s; }
+button:active:not(:disabled) { transform: scale(0.9, 0.82); }
+button.big { background: linear-gradient(135deg, #ff5fa2, #7c5cff); box-shadow: 0 6px 18px rgba(124, 92, 255, 0.35); }
+.tabs button.on { background: linear-gradient(135deg, #ff5fa2, #7c5cff); border-color: transparent; animation: jelly 0.5s; }
+
+/* Score dial. */
+.dial { position: relative; width: 190px; height: 190px; margin: 4px auto 0; }
+.dial svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+.dial circle { fill: none; stroke-width: 12; stroke-linecap: round; }
+.dial .track { stroke: #2c313a; }
+.dial .fill { stroke: url(#dial-grad); stroke-dasharray: 314.16; stroke-dashoffset: 314.16; transition: stroke-dashoffset 1.2s cubic-bezier(.34, 1.56, .64, 1); filter: drop-shadow(0 0 8px rgba(255, 95, 162, 0.6)); }
+.dial .dial-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+.dial .dial-num span { font-size: 3.2rem; font-weight: 900; line-height: 1; }
+.dial .dial-num small { font-size: 0.9rem; opacity: 0.6; }
+.dial.wobble { animation: wobble 0.9s cubic-bezier(.34, 1.56, .64, 1); }
+.vs { font-weight: 700; }
+.vs.up { color: #38c172; } .vs.down { color: #ff6b6b; }
+
+/* Result cards pop in when a test completes; running cards glow. */
+.test.pop { animation: pop 0.55s cubic-bezier(.34, 1.56, .64, 1); }
+.test.running { border-color: #7c5cff; box-shadow: 0 0 0 2px rgba(124, 92, 255, 0.35), 0 0 22px rgba(255, 95, 162, 0.25); animation: breathe 1.2s ease-in-out infinite; }
+.bar > span { background: linear-gradient(90deg, #ff5fa2, #7c5cff, #3dd6ff); }
+.test .out:not(.muted) { font-weight: 600; }
+
+/* Throttling chart and history. */
+.chart { width: 100%; height: 120px; margin-top: 10px; display: block; }
+.hist { list-style: none; padding: 0; margin: 0; }
+.hist li { display: grid; grid-template-columns: 1fr 44px; gap: 4px 10px; align-items: center; padding: 6px 0; border-top: 1px solid #2c313a; font-size: 0.85rem; }
+.hist .hbar { grid-column: 1 / -1; height: 6px; border-radius: 99px; background: linear-gradient(90deg, #ff5fa2, #7c5cff); }
+.hist b { text-align: right; }
+.share-btn { background: #2c313a; width: 100%; margin-top: 8px; }
+.share-btn[hidden] { display: none; }
+
+@keyframes pop { 0% { transform: scale(0.9); } 45% { transform: scale(1.04, 0.97); } 70% { transform: scale(0.98, 1.02); } 100% { transform: none; } }
+@keyframes wobble { 0% { transform: scale(0.6); } 35% { transform: scale(1.15, 0.9); } 55% { transform: scale(0.93, 1.08); } 75% { transform: scale(1.04, 0.97); } 100% { transform: none; } }
+@keyframes jelly { 0% { transform: scale(1); } 30% { transform: scale(1.12, 0.88); } 60% { transform: scale(0.95, 1.05); } 100% { transform: scale(1); } }
+@keyframes breathe { 50% { box-shadow: 0 0 0 2px rgba(124, 92, 255, 0.6), 0 0 34px rgba(255, 95, 162, 0.45); } }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

@@ -11,13 +11,15 @@ URLs `apps/lab/browser-bench/` and `apps/lab/ai-bench.html` are redirect stubs t
   - **Speed**: CPU, GPU fill rate, Memory, JavaScript, Disk, JPEG, Ping.
   - **Games**: 2D sprites, 3D triangles, verdicts for Browser FPS / AoE RTS / AR game.
   - **AI**: matrix maths in a worker, WebAssembly, WebGPU matmul.
-- **⚙ Settings**: extra tests (Video, Download speed ~12 MB) and export (JSON / TXT). Nothing is uploaded.
+- **⚙ Settings**: extra tests (Sustained 15 s with throttling chart, Video, Download speed ~12 MB), run history, export (JSON / TXT). Nothing is uploaded.
+- **Playful layer**: jelly score dial that fills, counts up and wobbles in; cards pop in as each test finishes and glow while running; squishy buttons; "+N vs last run" note; 📤 Share score card (1080×1350 PNG via the phone share sheet, else download). Respects reduced motion.
 
 ## Files
 `index.html` (redirect), `devbench.html` (shell), `devbench.css`, `devbench.js` (cards, tabs, Run all, Settings),
 `tests.js` (test registry), `score.js` (score + verdicts), `export.js` (JSON/TXT), `info.js`, `features.js`,
 engines: `cpu.js`, `gpu.js`, `memory.js`, `jsspeed.js`, `disk.js`, `media.js`, `network.js`, `sprites.js`, `tris.js`,
 `ai.js` + `ai_worker.js` (worker), `ai_gpu.js` (WebGPU).
+Playful/R4: `fun.css`, `fun.js` (dial, pop-in), `chart.js` (throttling chart), `history.js` (localStorage), `share.js` (share card).
 
 ## How each test works
 - **CPU**: one worker per core, maths loop 2 s, ops/s.
@@ -32,8 +34,12 @@ engines: `cpu.js`, `gpu.js`, `memory.js`, `jsspeed.js`, `disk.js`, `media.js`, `
 - **Matrix maths (JS)**: `ai_worker.js`, 256×256 FP32 and Int8-array matmul, warm-up + best of 3. Integer arrays are still JS numbers (not real INT8).
 - **WebAssembly**: a 74-byte hand-written WASM loop (`x = x*a + 1`, 5 M iterations) vs the same JS loop, best of 3.
 - **WebGPU matmul**: 512×512 naive WGSL matmul, best of 3 batches of 4, two cells checked against the CPU; "Not supported" without WebGPU.
+- **Sustained** (extra): worker FP32 128² matmuls for 15 s, one GFLOPS point per second, drawn live; reports average and first→last drop.
 - **Video** (extra): WebCodecs encode + decode 60 frames at 720p.
 - **Download** (extra): `apps/office/ocr/vendor/tesseract-core-lstm.wasm.js` ×3.
+
+## Saved data
+`localStorage["devbench-history"]`: last 20 Run all results (date, score, parts), newest first; Settings → Clear history.
 
 ## Score
 Each part 0–100 against a fast gaming PC on a log scale (`score.js`, `DEVBENCH_SCORE_PARTS`), weighted mean of the parts that ran. Reference values are rough; calibrate on real devices.

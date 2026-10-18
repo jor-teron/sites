@@ -3,7 +3,7 @@
   Project: devbench
   Role: Page controller. Builds a card per test from tests.js into its tab, runs one test
   at a time (all buttons lock), Run all (skips extra tests), score + verdicts, tabs (#hash),
-  Settings sheet and export. No test maths here.
+  Settings sheet, export, share and history buttons. No test maths here.
 */
 
 var devbenchState = { tests: {}, features: null, score: null, verdicts: null };
@@ -116,6 +116,8 @@ function devbenchInit() {
   devbench$("settings-close").addEventListener("click", function () { devbench$("settings").close(); });
   devbench$("dl-json").addEventListener("click", function () { window.DevbenchExport.json(devbenchState); });
   devbench$("dl-txt").addEventListener("click", function () { window.DevbenchExport.txt(devbenchState); });
+  devbench$("share-btn").addEventListener("click", function () { window.DevbenchShare.make(devbenchState); });
+  devbench$("hist-clear").addEventListener("click", function () { window.DevbenchHistory.clear(); });
   var start = location.hash.slice(1);
   devbenchShowTab(["device", "speed", "games", "ai"].indexOf(start) >= 0 ? start : "device");
   window.DevbenchInfo.load();

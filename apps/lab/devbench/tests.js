@@ -75,6 +75,14 @@ window.DEVBENCH_TESTS = [
       r.text = r.supported ? devbenchFmt(r.gflops, 1) + " GFLOPS · " + (r.ok ? "result correct ✓" : "result mismatch ✗") : "Not supported (" + r.why + ")";
       return r;
     } },
+  { id: "sustained", tab: "ai", extra: true, name: "Sustained (15 s)", desc: "FP32 matmul in the worker for 15 s; chart shows throttling.",
+    run: async function (c) {
+      var cv = document.createElement("canvas"); cv.className = "chart"; c.stage.replaceChildren(cv);
+      var pts = [];
+      var r = await window.DevbenchAi.sustained(15, c.progress, function (v) { pts.push(v); window.DevbenchChart.draw(cv, pts); });
+      window.DevbenchChart.draw(cv, r.samples);
+      r.text = "avg " + devbenchFmt(r.avg, 2) + " GFLOPS · drop " + devbenchFmt(Math.max(0, r.dropPct), 0) + "% first → last second"; return r;
+    } },
   { id: "video", tab: "speed", extra: true, name: "Video", desc: "WebCodecs encode + decode, 60 frames at 720p.",
     run: async function (c) {
       var r = await window.DevbenchMedia.video(c.progress);
