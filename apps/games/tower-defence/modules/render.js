@@ -1,18 +1,24 @@
 /*
   File: modules/render.js
   Project: tower-defence
-  Purpose: Draw the board. No gameplay mutations.
+  Purpose: Draw the board. No gameplay mutations. Static board is cached;
+           unit art comes from models.js sprites.
 */
 
 import { COLS, ROWS } from './config.js';
 import { TILE, pathSegments, totalPathLength, posAtDistance, posAtTiles } from './path.js';
 import * as state from './state.js';
 import { towerCenter } from './towers.js';
+import { drawTower, drawEnemy } from './models.js';
+
+/* Cached grass, grid, road, and IN / OUT markers. Rebuilt on resize. */
+let staticLayer = null;
+let staticKey = '';
 
 /*
   Grass fill and a faint grid.
 */
-export function drawBackground(ctx, CW, CH) {
+function drawBackground(ctx, CW, CH) {
   ctx.fillStyle = '#0f1a12';
   ctx.fillRect(0, 0, CW, CH);
   ctx.strokeStyle = 'rgba(60, 100, 70, 0.25)';
@@ -34,7 +40,7 @@ export function drawBackground(ctx, CW, CH) {
 /*
   Road, center dashes, and IN / OUT markers.
 */
-export function drawPath(ctx) {
+function drawPath(ctx) {
   ctx.strokeStyle = '#3a2a1a';
   ctx.lineWidth = TILE * 0.85;
   ctx.lineCap = 'round';
@@ -89,41 +95,32 @@ export function drawPath(ctx) {
 }
 
 /*
-  Towers, level pips, barrels, and the selected range ring.
+  Static board (grass, grid, road, markers) drawn once per size into an
+  offscreen canvas, then copied each frame.
 */
-export function drawTowers(ctx) {
+function drawStatic(ctx, CW, CH) {
+  const dpr = window.devicePixelRatio || 1;
+  const key = `${TILE}|${CW}|${CH}|${dpr}|${pathSegments.length}`;
+  if (!staticLayer || key !== staticKey) {
+    staticKey = key;
+    staticLayer = document.createElement('canvas');
+    staticLayer.width = Math.floor(CW * dpr);
+    staticLayer.height = Math.floor(CH * dpr);
+    const g = staticLayer.getContext('2d');
+    g.scale(dpr, dpr);
+    drawBackground(g, CW, CH);
+    drawPath(g);
+  }
+  ctx.drawImage(staticLayer, 0, 0, CW, CH);
+}
+
+/*
+  Towers (models.js) and the selected range ring.
+*/
+function drawTowers(ctx, now) {
   for (const t of state.towers) {
     const p = towerCenter(t);
-    const r = TILE * 0.4;
-
-    ctx.fillStyle = '#222';
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, r + 2, 0, Math.PI * 2);
-    ctx.fill();
-
-    for (let i = 0; i < t.level; i++) {
-      const a = -Math.PI / 2 + (i - (t.level - 1) / 2) * 0.4;
-      ctx.fillStyle = '#FFD700';
-      ctx.beginPath();
-      ctx.arc(p.x + Math.cos(a) * (r + 6), p.y + Math.sin(a) * (r + 6), 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.fillStyle = t.color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.save();
-    ctx.translate(p.x, p.y);
-    ctx.rotate(t.angle);
-    ctx.fillStyle = '#111';
-    const barrelLen = r * 1.6;
-    ctx.fillRect(0, -3, barrelLen, 6);
-    ctx.fillStyle = t.color;
-    ctx.fillRect(barrelLen - 4, -3, 4, 6);
-    ctx.restore();
-
+    drawTower(ctx, t, p, now);
     if (state.selectedTower === t) {
       ctx.strokeStyle = '#FFD700';
       ctx.lineWidth = 2;
@@ -132,70 +129,20 @@ export function drawTowers(ctx) {
       ctx.arc(p.x, p.y, t.range * TILE, 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, r + 4, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.strokeRect(p.x - TILE * 0.47, p.y - TILE * 0.47, TILE * 0.94, TILE * 0.94);
     }
   }
 }
 
-/*
-  Enemies, slow tint, eyes, and HP bars when damaged.
-*/
-export function drawEnemies(ctx) {
+/* Enemies (models.js), with slow tint and HP bars. */
+function drawEnemies(ctx, now) {
   for (const e of state.enemies) {
-    const p = posAtTiles(e.dist);
-    const r = e.radius * TILE;
-
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.beginPath();
-    ctx.ellipse(p.x, p.y + r * 0.5, r * 0.9, r * 0.4, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = e.color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-    ctx.fill();
-
-    if (e.slowTimer > 0) {
-      ctx.fillStyle = 'rgba(100, 220, 255, 0.35)';
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    const exOff = r * 0.3;
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(p.x - exOff, p.y - r * 0.15, r * 0.22, 0, Math.PI * 2);
-    ctx.arc(p.x + exOff, p.y - r * 0.15, r * 0.22, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.arc(p.x - exOff, p.y - r * 0.15, r * 0.1, 0, Math.PI * 2);
-    ctx.arc(p.x + exOff, p.y - r * 0.15, r * 0.1, 0, Math.PI * 2);
-    ctx.fill();
-
-    if (e.hp < e.maxHp) {
-      const barW = r * 2.2;
-      const barH = 4;
-      const bx = p.x - barW / 2;
-      const by = p.y - r - 8;
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillRect(bx, by, barW, barH);
-      const frac = Math.max(0, e.hp / e.maxHp);
-      ctx.fillStyle = frac > 0.5 ? '#6BFF6B' : frac > 0.25 ? '#FFD700' : '#FF5B5B';
-      ctx.fillRect(bx, by, barW * frac, barH);
-    }
+    drawEnemy(ctx, e, posAtTiles(e.dist), now);
   }
 }
 
 /* Shot glows. Shot positions are stored in tiles. */
-export function drawProjectiles(ctx) {
+function drawProjectiles(ctx) {
   for (const p of state.projectiles) {
     const x = p.x * TILE;
     const y = p.y * TILE;
@@ -211,7 +158,7 @@ export function drawProjectiles(ctx) {
 }
 
 /* Sparks and splash rings. */
-export function drawParticles(ctx) {
+function drawParticles(ctx) {
   for (const p of state.particles) {
     const t = p.life / p.maxLife;
     if (p.splash) {
@@ -231,7 +178,7 @@ export function drawParticles(ctx) {
 }
 
 /* Rising labels. */
-export function drawFloatingTexts(ctx) {
+function drawFloatingTexts(ctx) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   for (const f of state.floatingTexts) {
@@ -248,12 +195,10 @@ export function drawFloatingTexts(ctx) {
   Full frame. CW/CH are the logical canvas size in CSS pixels.
 */
 export function render(ctx, CW, CH) {
-  ctx.fillStyle = '#0a0a12';
-  ctx.fillRect(0, 0, CW, CH);
-  drawBackground(ctx, CW, CH);
-  drawPath(ctx);
-  drawTowers(ctx);
-  drawEnemies(ctx);
+  const now = performance.now() / 1000;
+  drawStatic(ctx, CW, CH);
+  drawTowers(ctx, now);
+  drawEnemies(ctx, now);
   drawProjectiles(ctx);
   drawParticles(ctx);
   drawFloatingTexts(ctx);

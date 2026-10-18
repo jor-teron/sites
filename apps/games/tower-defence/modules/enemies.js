@@ -5,7 +5,7 @@
 */
 
 import { ENEMY_TYPES } from './config.js';
-import { pathLengthTiles, posAtTiles } from './path.js';
+import { pathLengthTiles, posAtTiles, headingAtTiles } from './path.js';
 import * as state from './state.js';
 
 /*
@@ -20,6 +20,7 @@ export function spawnEnemy(type) {
   state.enemies.push({
     type, def, hp, maxHp: hp,
     dist: 0,
+    heading: headingAtTiles(0),
     baseSpeed: def.speed,
     speedMul: 1,
     slowTimer: 0,
@@ -71,6 +72,10 @@ export function updateEnemies(dt) {
       if (e.slowTimer <= 0) e.speedMul = 1;
     }
     e.dist += e.baseSpeed * e.speedMul * dt;
+    /* Turn smoothly toward the current segment direction. */
+    let turn = headingAtTiles(e.dist) - e.heading;
+    turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+    e.heading += turn * Math.min(1, dt * 10);
     if (e.dist >= pathLengthTiles()) {
       const left = state.loseLives(e.type === 'boss' ? 5 : 1);
       state.enemies.splice(i, 1);

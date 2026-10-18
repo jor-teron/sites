@@ -17,6 +17,7 @@ export function makeTower(c, r, type) {
   const def = TOWER_TYPES[type];
   return {
     c, r, type, level: 1, cooldown: 0, angle: -Math.PI / 2,
+    recoil: 0, flash: 0, shots: 0,
     range: def.range, damage: def.damage, fireRate: def.fireRate,
     projectileSpeed: def.projectileSpeed,
     splash: def.splash || 0, slow: def.slow || 0,
@@ -86,6 +87,9 @@ export function isMaxLevel(t) {
 export function updateTowers(dt) {
   for (const t of state.towers) {
     if (t.cooldown > 0) t.cooldown -= dt;
+    /* Visual only: turret kick and muzzle flash decay. */
+    if (t.recoil > 0) t.recoil = Math.max(0, t.recoil - dt * 7);
+    if (t.flash > 0) t.flash -= dt;
     const tc = towerCenter(t);
     const rangePx = t.range * TILE;
     let best = null;
@@ -102,6 +106,9 @@ export function updateTowers(dt) {
     if (t.cooldown <= 0) {
       fireProjectile(t, best, tc);
       t.cooldown = t.fireRate;
+      t.recoil = 1;
+      t.flash = t.type === 'cannon' ? 0.09 : 0.06;
+      t.shots++;
     }
   }
 }

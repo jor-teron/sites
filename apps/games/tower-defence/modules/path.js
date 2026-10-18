@@ -91,6 +91,19 @@ export function posAtTiles(distTiles) {
 }
 
 /*
+  Direction (radians) of the path segment at a distance in tiles.
+  Used so enemies face the way they walk.
+*/
+export function headingAtTiles(distTiles) {
+  const dist = distTiles * TILE;
+  for (const seg of pathSegments) {
+    if (dist <= seg.startDist + seg.len) return Math.atan2(seg.dy, seg.dx);
+  }
+  const last = pathSegments[pathSegments.length - 1];
+  return last ? Math.atan2(last.dy, last.dx) : 0;
+}
+
+/*
   World position at a distance along the path.
   dist is clamped to [0, totalPathLength].
 */
