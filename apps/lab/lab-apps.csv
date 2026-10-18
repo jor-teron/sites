@@ -22,8 +22,6 @@ Channel Cleaner, m3u-cleaner,
 
 
 Device Benchmark, devbench/,
-Browser Bench, browser-bench/,
-AI benchmark, ai-bench.html, 
 WebRTC Chat, ../connectivity/webrtc-chat/,
 P2P Chat, ../connectivity/p2pchat.html,
 Phone, ../media/phone/,

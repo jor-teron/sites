@@ -1,131 +1,97 @@
 <!--
   File: devbench.html
-  Project: devbench
-  Role: Page shell for device info plus performance, storage, media and network tests.
-  Scripts stay in separate files. This file only marks up the panels.
+  Project: devbench (Device Benchmark)
+  Role: Page shell: score card, one Run all button, tabs Device / Speed / Games / AI,
+  and a Settings sheet (extra tests, export). Cards are built by devbench.js from tests.js.
+  Light tests only: each takes a few seconds, no libraries, no downloads.
 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>devbench</title>
-  <!-- Visual styles for cards, buttons, and progress. -->
+  <title>Device Benchmark</title>
   <link rel="stylesheet" href="devbench.css">
 </head>
 <body>
   <main class="wrap">
-    <h1>devbench</h1>
-    <button type="button" id="run-all" class="big">Run all (skips download)</button>
-    <p class="note">Browser scores only. Disk is private storage, not the raw drive. GPU needs WebGL.</p>
+    <header class="top">
+      <h1>Device Benchmark</h1>
+      <button type="button" id="settings-btn" class="icon-btn" aria-label="Settings">⚙</button>
+    </header>
 
-    <!-- System facts, filled on load by info.js. No run button. -->
-    <section class="card" id="sys-card">
-      <h2>Device info</h2>
-      <p>What this browser will expose. Missing lines mean the API is blocked.</p>
-      <dl class="facts" id="sys-out">
-        <div><dt>Status</dt><dd>Loading…</dd></div>
-      </dl>
+    <!-- Overall score + the one Run all button. -->
+    <section class="card score-card">
+      <div class="score"><span id="score-num">–</span><small>/ 100</small></div>
+      <p id="score-note" class="muted">Quick, light tests (a few seconds each). Tap Run all.</p>
+      <button type="button" id="run-all" class="big">▶ Run all</button>
+      <div class="bar"><span id="all-bar"></span></div>
     </section>
 
-    <h2 class="group">Performance</h2>
-    <!-- CPU stress panel. 10 second worker run. -->
-    <section class="card" id="cpu-card">
-      <h2>CPU</h2>
-      <p>Multi-worker math loop for 10 seconds. Score is operations per second.</p>
-      <button type="button" id="cpu-run">Run CPU</button>
-      <div class="bar"><span id="cpu-bar"></span></div>
-      <div class="out" id="cpu-out">Idle</div>
+    <nav class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="device">Device</button>
+      <button type="button" role="tab" data-tab="speed">Speed</button>
+      <button type="button" role="tab" data-tab="games">Games</button>
+      <button type="button" role="tab" data-tab="ai">AI</button>
+    </nav>
+
+    <section class="panel" data-panel="device">
+      <section class="card">
+        <h2>Device info</h2>
+        <dl class="facts" id="sys-out"><div><dt>Status</dt><dd>Loading…</dd></div></dl>
+      </section>
+      <section class="card">
+        <h2>Features</h2>
+        <ul class="feat" id="features"><li>Checking…</li></ul>
+      </section>
     </section>
 
-    <!-- GPU fill-rate panel. 10 second draw run. -->
-    <section class="card" id="gpu-card">
-      <h2>GPU</h2>
-      <p>WebGL blended full-canvas layers for 10 seconds, many per frame, GPU timed to finish (not capped by screen refresh). Score is megapixels per second.</p>
-      <button type="button" id="gpu-run">Run GPU</button>
-      <div class="bar"><span id="gpu-bar"></span></div>
-      <div class="out" id="gpu-out">Idle</div>
-      <!-- Hidden draw target used only during the GPU test. -->
-      <canvas id="gpu-canvas" width="512" height="512" hidden></canvas>
+    <section class="panel" data-panel="speed"></section>
+
+    <section class="panel" data-panel="games">
+      <section class="card">
+        <h2>Our games on this device</h2>
+        <ul class="verdicts" id="verdicts"><li class="muted">Run the 2D and 3D tests (or Run all) for verdicts.</li></ul>
+      </section>
     </section>
 
-    <!-- Memory speed panel. 64 MB copy and read. -->
-    <section class="card" id="mem-card">
-      <h2>Memory</h2>
-      <p>64 MB buffer copy and sequential read, best of 5. Score is GB/s.</p>
-      <button type="button" id="mem-run">Run memory</button>
-      <div class="bar"><span id="mem-bar"></span></div>
-      <div class="out" id="mem-out">Idle</div>
+    <section class="panel" data-panel="ai">
+      <p class="note">Light checks of AI-style maths. No models are downloaded; real model speed lives in Local AI Chat.</p>
     </section>
 
-    <!-- JavaScript speed panel. Mixed rounds for 3 seconds. -->
-    <section class="card" id="js-card">
-      <h2>JavaScript</h2>
-      <p>Sort, JSON, regex and DOM work for 3 seconds. Score is rounds per second.</p>
-      <button type="button" id="js-run">Run JavaScript</button>
-      <div class="bar"><span id="js-bar"></span></div>
-      <div class="out" id="js-out">Idle</div>
-    </section>
-
-    <h2 class="group">Storage</h2>
-    <!-- Disk OPFS panel. 64 MB write then read. -->
-    <section class="card" id="disk-card">
-      <h2>Disk</h2>
-      <p>OPFS write then read of 64 MB. Score is MB/s in browser private storage.</p>
-      <button type="button" id="disk-run">Run disk</button>
-      <div class="bar"><span id="disk-bar"></span></div>
-      <div class="out" id="disk-out">Idle</div>
-    </section>
-    <h2 class="group">Media</h2>
-    <!-- JPEG panel. 12 MP encode and decode. -->
-    <section class="card" id="jpeg-card">
-      <h2>JPEG</h2>
-      <p>12 MP canvas encode (quality 0.9) and decode, average of 5.</p>
-      <button type="button" id="jpeg-run">Run JPEG</button>
-      <div class="bar"><span id="jpeg-bar"></span></div>
-      <div class="out" id="jpeg-out">Idle</div>
-    </section>
-
-    <!-- Video panel. WebCodecs encode then decode 120 frames at 1080p. -->
-    <section class="card" id="video-card">
-      <h2>Video</h2>
-      <p>WebCodecs: encode 120 frames at 1920×1080, then decode them. Score is fps.</p>
-      <button type="button" id="video-run">Run video</button>
-      <div class="bar"><span id="video-bar"></span></div>
-      <div class="out" id="video-out">Idle</div>
-    </section>
-
-    <h2 class="group">Network</h2>
-    <!-- Ping panel. Own site and PeerJS server, 5 each. -->
-    <section class="card" id="ping-card">
-      <h2>Ping</h2>
-      <p>5 small no-cache requests to this site and the PeerJS server.</p>
-      <button type="button" id="ping-run">Run ping</button>
-      <div class="bar"><span id="ping-bar"></span></div>
-      <div class="out" id="ping-out">Idle</div>
-    </section>
-
-    <!-- Download speed panel. Own button only, not in Run all. -->
-    <section class="card" id="dl-card">
-      <h2>Download speed</h2>
-      <p class="warn" id="dl-warn">Uses ~12 MB data. Not part of Run all.</p>
-      <button type="button" id="dl-run">Run download</button>
-      <div class="bar"><span id="dl-bar"></span></div>
-      <div class="out" id="dl-out">Idle</div>
-    </section>
-
-    <button type="button" id="save-run" class="big">Download result (.txt)</button>
+    <!-- Hidden draw target for the GPU fill-rate test. -->
+    <canvas id="gpu-canvas" width="512" height="512" hidden></canvas>
   </main>
 
-  <!-- Info and test engines load before the page controller. -->
+  <!-- Settings sheet: secondary tests and export, off the main page. -->
+  <dialog id="settings">
+    <h2>Settings</h2>
+    <h3>Extra tests</h3>
+    <div id="extra-tests"></div>
+    <h3>Export</h3>
+    <div class="row">
+      <button type="button" id="dl-json">⬇ JSON</button>
+      <button type="button" id="dl-txt">⬇ TXT</button>
+    </div>
+    <button type="button" id="settings-close" class="big">Close</button>
+  </dialog>
+
   <script src="info.js"></script>
+  <script src="features.js"></script>
   <script src="cpu.js"></script>
   <script src="gpu.js"></script>
-  <script src="disk.js"></script>
   <script src="memory.js"></script>
   <script src="jsspeed.js"></script>
+  <script src="disk.js"></script>
   <script src="media.js"></script>
   <script src="network.js"></script>
+  <script src="sprites.js"></script>
+  <script src="tris.js"></script>
+  <script src="ai.js"></script>
+  <script src="ai_gpu.js"></script>
+  <script src="tests.js"></script>
+  <script src="score.js"></script>
+  <script src="export.js"></script>
   <script src="devbench.js"></script>
 </body>
 </html>

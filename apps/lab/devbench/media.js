@@ -1,18 +1,18 @@
 /*
   File: media.js
   Project: devbench
-  Role: Media tests. JPEG encode/decode on a 12 MP canvas, and WebCodecs
-  video encode then decode of 120 frames at 1920x1080.
+  Role: Media tests (light). JPEG encode/decode on a 3 MP canvas, and WebCodecs
+  video encode then decode of 60 frames at 1280x720 (video is an extra test in Settings).
   Exposes window.DevbenchMedia.jpeg(onProgress) and .video(onProgress).
 */
 
-/* 12 MP test image, 4000 x 3000. */
-const DEVBENCH_JPEG_W = 4000;
-const DEVBENCH_JPEG_H = 3000;
-const DEVBENCH_JPEG_RUNS = 5;
-const DEVBENCH_VID_W = 1920;
-const DEVBENCH_VID_H = 1080;
-const DEVBENCH_VID_FRAMES = 120;
+/* 3 MP test image, 2000 x 1500, average of 3. Video 720p, 60 frames. */
+const DEVBENCH_JPEG_W = 2000;
+const DEVBENCH_JPEG_H = 1500;
+const DEVBENCH_JPEG_RUNS = 3;
+const DEVBENCH_VID_W = 1280;
+const DEVBENCH_VID_H = 720;
+const DEVBENCH_VID_FRAMES = 60;
 
 /* Draw a busy synthetic pattern so JPEG has real detail to compress. */
 function devbenchMediaPattern(ctx, w, h, t) {
@@ -56,7 +56,7 @@ var DEVBENCH_VID_CODECS = ["avc1.42E028", "vp8", "vp09.00.10.08"];
 
 /* Encoder config for one codec string. */
 function devbenchEncCfg(codec) {
-  var cfg = { codec: codec, width: DEVBENCH_VID_W, height: DEVBENCH_VID_H, bitrate: 8e6, framerate: 30, hardwareAcceleration: "no-preference" };
+  var cfg = { codec: codec, width: DEVBENCH_VID_W, height: DEVBENCH_VID_H, bitrate: 4e6, framerate: 30, hardwareAcceleration: "no-preference" };
   if (codec.indexOf("avc1") === 0) { cfg.avc = { format: "annexb" }; }
   return cfg;
 }

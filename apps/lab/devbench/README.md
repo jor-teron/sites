@@ -1,43 +1,47 @@
 # Device Benchmark (devbench)
 
-Browser-side benchmark for phones, TVs and PCs. Works in the Hub and responds to the hub's D-pad.
+The single benchmark app in Lab: phones, TVs and PCs. Light and quick: each test takes a few
+seconds, no libraries, no model downloads. Merged from Browser Bench and AI Bench (their old
+URLs `apps/lab/browser-bench/` and `apps/lab/ai-bench.html` are redirect stubs to `#games` / `#ai`).
 
-## Behaviour
-- Device info fills instantly on open; refresh rate appears after ~2 s.
-- Each test has its own big Run button; one test runs at a time (buttons lock).
-- "Run all" runs CPU, GPU, Memory, JavaScript, Disk, JPEG, Video, Ping in order. It never runs Download speed.
-- Download speed only runs from its own button (uses ~12 MB data).
-- "Download result (.txt)" saves every card as `label: value` lines.
+## Page
+- **Score card**: one overall score (0–100) and one **Run all** button (runs every main test, switching tabs as it goes).
+- **Tabs** (`#device`, `#speed`, `#games`, `#ai` in the URL open that tab):
+  - **Device**: device info (cores, RAM, GPU, screen, refresh rate, browser) + feature checklist.
+  - **Speed**: CPU, GPU fill rate, Memory, JavaScript, Disk, JPEG, Ping.
+  - **Games**: 2D sprites, 3D triangles, verdicts for Browser FPS / AoE RTS / AR game.
+  - **AI**: matrix maths in a worker, WebAssembly, WebGPU matmul.
+- **⚙ Settings**: extra tests (Video, Download speed ~12 MB) and export (JSON / TXT). Nothing is uploaded.
 
 ## Files
-`index.html` (redirect), `devbench.html` (cards), `devbench.css`, `devbench.js` (wiring, Run all, export),
-`info.js`, `cpu.js`, `gpu.js`, `disk.js`, `memory.js`, `jsspeed.js`, `media.js`, `network.js`.
+`index.html` (redirect), `devbench.html` (shell), `devbench.css`, `devbench.js` (cards, tabs, Run all, Settings),
+`tests.js` (test registry), `score.js` (score + verdicts), `export.js` (JSON/TXT), `info.js`, `features.js`,
+engines: `cpu.js`, `gpu.js`, `memory.js`, `jsspeed.js`, `disk.js`, `media.js`, `network.js`, `sprites.js`, `tris.js`,
+`ai.js` + `ai_worker.js` (worker), `ai_gpu.js` (WebGPU).
 
 ## How each test works
-- **Device info:** cores, RAM, platform, model, GPU strings, storage quota; screen in CSS px and physical px (× devicePixelRatio), pixel density; refresh rate = requestAnimationFrame frames over 2 s rounded to 30/50/60/75/90/120/144/165/240 Hz; browser + version + OS from `userAgentData.getHighEntropyValues` (fullVersionList, platformVersion), user-agent text fallback.
-- **CPU:** one worker per core, math loop 10 s, ops/s.
-- **GPU:** WebGL fill rate, 10 s. Each batch draws many blended full-canvas triangles on a 512² canvas, then `gl.readPixels` one pixel so the GPU must finish; only batch time counts and the batch doubles until it takes ~20 ms, so the score is not capped by vsync. Mpix/s plus full-canvas layers per 60 Hz frame.
-- **Memory:** 64 MB Float64Array copy (`set`, counted as read+write) and sequential sum, best of 5, GB/s.
-- **JavaScript:** round = sort 100k numbers, JSON stringify/parse ~1 MB, string/regex work, create+remove 2000 elements in a detached fragment; rounds for 3 s → rounds/s and ms/round.
-- **Disk:** OPFS 64 MB write then read, MB/s.
-- **JPEG:** 12 MP synthetic canvas, `toBlob('image/jpeg', 0.9)` and `createImageBitmap`, average of 5, ms and MP/s.
-- **Video:** WebCodecs VideoEncoder, 120 frames 1920×1080 from canvas; codec avc1.42E028, else vp8, else vp09 (`isConfigSupported`); then VideoDecoder decodes those chunks. fps for each. No WebCodecs → "Not supported".
-- **Ping:** 5 no-cache requests each to this site (HEAD) and `https://0.peerjs.com/` (no-cors, timing only); min/avg ms.
-- **Download speed:** fetches `apps/office/ocr/vendor/tesseract-core-lstm.wasm.js` (~3.9 MB) 3 times with cache-busting; Mbps and MB used.
+- **CPU**: one worker per core, maths loop 2 s, ops/s.
+- **GPU fill rate**: 2 s of batches of blended full-canvas triangles (512²); each batch ends with a 1-pixel `readPixels` so the GPU must finish; only batch time counts and the batch doubles until ~20 ms, so it is not capped by vsync.
+- **Memory**: 32 MB `Float64Array` copy (read+write) and sum, best of 3, GB/s.
+- **JavaScript**: sort / JSON / regex / DOM rounds for 2 s.
+- **Disk**: OPFS 16 MB write then read, MB/s.
+- **JPEG**: 3 MP canvas `toBlob` + `createImageBitmap`, average of 3.
+- **Ping**: 5 no-cache requests each to this site and `0.peerjs.com`, min ms.
+- **2D sprites**: add moving sprites until under 30 fps, max ~4 s.
+- **3D triangles**: raw WebGL, 60k-triangle mesh drawn in growing batches for 2 s (readPixels each batch). Verdicts use a quarter of the raw rate (lit Three.js meshes cost more).
+- **Matrix maths (JS)**: `ai_worker.js`, 256×256 FP32 and Int8-array matmul, warm-up + best of 3. Integer arrays are still JS numbers (not real INT8).
+- **WebAssembly**: a 74-byte hand-written WASM loop (`x = x*a + 1`, 5 M iterations) vs the same JS loop, best of 3.
+- **WebGPU matmul**: 512×512 naive WGSL matmul, best of 3 batches of 4, two cells checked against the CPU; "Not supported" without WebGPU.
+- **Video** (extra): WebCodecs encode + decode 60 frames at 720p.
+- **Download** (extra): `apps/office/ocr/vendor/tesseract-core-lstm.wasm.js` ×3.
 
-## Saved / exported data
-Nothing is stored. Disk test writes a temp OPFS file. Export file: `devbench-<browser>-YYYYMMDD-HHMM.txt`.
+## Score
+Each part 0–100 against a fast gaming PC on a log scale (`score.js`, `DEVBENCH_SCORE_PARTS`), weighted mean of the parts that ran. Reference values are rough; calibrate on real devices.
 
 ## Manual browser test
-1. Open devbench in the Hub; check Device info, refresh rate after ~2 s.
-2. Scroll the page (touch, wheel, D-pad).
-3. Tap Run all; every card except Download gets a result.
-4. Tap Run download; see Mbps and MB used.
-5. Tap Download result; open the .txt.
+Open from the Hub (Lab → Device Benchmark), tap Run all; every card gets a result, the score appears, Games shows verdicts. ⚙ → Export TXT.
 
 ## Known limits
-- Scores are browser scores, not native; first ping includes DNS/TLS (see min).
-- Refresh rate reads low if the page is throttled or in background.
-- Video hardware use is a preference; browsers don't report what was actually used.
-- Device model only shows on Chromium with client hints; iOS hides most details.
+- Browser scores, not native. Workers (CPU, AI) need http(s), not `file://`.
+- Refresh rate reads low if the tab is in the background. Device model needs Chromium client hints.
 - Download test depends on the OCR vendor file staying in the repo.

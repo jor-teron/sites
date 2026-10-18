@@ -1,12 +1,12 @@
 /*
   File: jsspeed.js
   Project: devbench
-  Role: JavaScript speed. Fixed mixed round (sort, JSON, regex, DOM) for ~3 s.
+  Role: JavaScript speed. Fixed mixed round (sort, JSON, regex, DOM) for ~2 s.
   Exposes window.DevbenchJs.run(onProgress) -> { roundsPerSec, msPerRound }.
 */
 
 /* Test length in milliseconds. */
-const DEVBENCH_JS_MS = 3000;
+const DEVBENCH_JS_MS = 2000;
 
 /* Fixed seeded data so every device does the same work. */
 function devbenchJsData() {

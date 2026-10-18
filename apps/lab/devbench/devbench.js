@@ -1,145 +1,125 @@
 /*
   File: devbench.js
   Project: devbench
-  Role: Loads the info card, wires every Run button, Run all and Download result.
-  Updates progress bars and result text. Does not contain the test math.
+  Role: Page controller. Builds a card per test from tests.js into its tab, runs one test
+  at a time (all buttons lock), Run all (skips extra tests), score + verdicts, tabs (#hash),
+  Settings sheet and export. No test maths here.
 */
 
-/* Every button locked while a test runs. */
-const DEVBENCH_BUTTONS = ["cpu-run", "gpu-run", "disk-run", "mem-run", "js-run", "jpeg-run", "video-run", "ping-run", "dl-run", "run-all", "save-run"];
+var devbenchState = { tests: {}, features: null, score: null, verdicts: null };
+var devbenchBusy = false;
 
-/* Run buttons used by Run all, in page order. Download is skipped on purpose. */
-const DEVBENCH_RUN_ALL = ["cpu-run", "gpu-run", "mem-run", "js-run", "disk-run", "jpeg-run", "video-run", "ping-run"];
+function devbench$(id) { return document.getElementById(id); }
 
-/* Click handlers by button id, so Run all can await each in turn. */
-const devbenchRunners = {};
+/* Lock or unlock every button that starts work. */
+function devbenchLock(on) {
+  document.querySelectorAll("button[data-run], #run-all").forEach(function (b) { b.disabled = on; });
+}
 
-/* Format a number with grouped digits and fixed decimals. */
-function devbenchFmt(value, digits) {
-  return value.toLocaleString(undefined, {
-    maximumFractionDigits: digits,
-    minimumFractionDigits: digits
+/* Show one tab panel and remember it in the URL hash. */
+function devbenchShowTab(name) {
+  document.querySelectorAll(".tabs [data-tab]").forEach(function (b) {
+    var on = b.dataset.tab === name;
+    b.classList.toggle("on", on); b.setAttribute("aria-selected", on);
   });
+  document.querySelectorAll(".panel").forEach(function (p) { p.hidden = p.dataset.panel !== name; });
+  if (location.hash !== "#" + name) { history.replaceState(null, "", "#" + name); }
 }
 
-/* Set a bar fill to a 0..1 fraction. */
-function devbenchBar(id, fraction) {
-  document.getElementById(id).style.width = Math.round(fraction * 100) + "%";
+/* One test card: title, Run button, description, stage, progress bar, result line. */
+function devbenchCard(t) {
+  var el = document.createElement("section");
+  el.className = "card test"; el.id = "card-" + t.id;
+  el.innerHTML = '<div class="head"><h2></h2><button type="button" data-run="' + t.id + '">Run</button></div>' +
+    '<p class="desc"></p><div class="stage"></div><div class="bar"><span></span></div><div class="out muted">Not run</div>';
+  el.querySelector("h2").textContent = t.name;
+  el.querySelector(".desc").textContent = t.desc;
+  return el;
 }
 
-/* Lock all run buttons while one test is active. */
-function devbenchLock(locked) {
-  DEVBENCH_BUTTONS.forEach(function (id) {
-    document.getElementById(id).disabled = locked;
-  });
-}
-
-/* Bind one button to an async runner and write its result. */
-function devbenchBind(buttonId, barId, outId, runner) {
-  async function go(noLock) {
-    if (!noLock) { devbenchLock(true); }
-    devbenchBar(barId, 0);
-    document.getElementById(outId).textContent = "Running…";
-    try {
-      var result = await runner(function (fraction) {
-        devbenchBar(barId, fraction);
-      });
-      devbenchBar(barId, 1);
-      document.getElementById(outId).textContent = result;
-    } catch (err) {
-      document.getElementById(outId).textContent = err && err.message ? err.message : "Failed";
-    }
-    if (!noLock) { devbenchLock(false); }
+/* Run one test by id and write its result. */
+async function devbenchRun(id) {
+  var t = window.DEVBENCH_TESTS.find(function (x) { return x.id === id; });
+  var card = devbench$("card-" + id), bar = card.querySelector(".bar > span"), out = card.querySelector(".out");
+  card.classList.add("running"); bar.style.width = "0"; out.className = "out muted"; out.textContent = "Running…";
+  var ctx = { stage: card.querySelector(".stage"), progress: function (p) { bar.style.width = Math.round(p * 100) + "%"; } };
+  try {
+    var r = await t.run(ctx);
+    devbenchState.tests[id] = r; out.className = "out"; out.textContent = r.text;
+  } catch (err) {
+    var msg = String(err && err.message || err || "Failed");
+    devbenchState.tests[id] = { error: msg, text: "Error: " + msg }; out.className = "out bad"; out.textContent = "Error: " + msg;
   }
-  devbenchRunners[buttonId] = go;
-  document.getElementById(buttonId).addEventListener("click", function () { go(false); });
+  bar.style.width = "100%"; card.classList.remove("running");
+  document.dispatchEvent(new CustomEvent("devbench:test", { detail: { id: id, card: card } }));
 }
 
-/* Attach the system card and the three tests after the page nodes exist. */
+/* Recompute score + verdicts and paint them. */
+function devbenchFinish() {
+  var s = devbenchState;
+  s.score = window.DevbenchScore.compute(s.tests);
+  s.verdicts = window.DevbenchScore.verdicts(s.tests, s.features);
+  devbench$("score-num").textContent = s.score ? s.score.overall : "–";
+  var LV = { ok: "Good", warn: "OK", no: "Poor" };
+  devbench$("verdicts").innerHTML = s.verdicts.map(function (v) {
+    return '<li><b>' + v.game + ':</b> <span class="' + v.level + '">' + LV[v.level] + '</span> — ' + v.note + '</li>';
+  }).join("");
+  document.dispatchEvent(new CustomEvent("devbench:finish", { detail: s }));
+}
+
+/* Run one test with locking (card buttons). */
+async function devbenchRunSingle(id) {
+  if (devbenchBusy) { return; }
+  devbenchBusy = true; devbenchLock(true);
+  await devbenchRun(id);
+  devbenchBusy = false; devbenchLock(false); devbenchFinish();
+}
+
+/* Run all main tests in order, switching to each test's tab. */
+async function devbenchRunAll() {
+  if (devbenchBusy) { return; }
+  devbenchBusy = true; devbenchLock(true);
+  var list = window.DEVBENCH_TESTS.filter(function (t) { return !t.extra; });
+  devbench$("score-note").textContent = "Running…";
+  for (var i = 0; i < list.length; i++) {
+    devbench$("all-bar").style.width = Math.round(i / list.length * 100) + "%";
+    devbenchShowTab(list[i].tab);
+    await devbenchRun(list[i].id);
+  }
+  devbench$("all-bar").style.width = "100%";
+  devbench$("score-note").textContent = "Done. Tap a test's Run to repeat it.";
+  devbenchBusy = false; devbenchLock(false); devbenchFinish();
+  document.dispatchEvent(new CustomEvent("devbench:runall", { detail: devbenchState }));
+}
+
+/* Paint the feature checklist. */
+function devbenchRenderFeatures(f) {
+  var L = window.DevbenchFeatures.labels;
+  devbench$("features").innerHTML = Object.keys(f).map(function (k) {
+    return '<li><span class="' + (f[k] ? "ok" : "no") + '">' + (f[k] ? "✔" : "✘") + "</span> " + (L[k] || k) + "</li>";
+  }).join("");
+}
+
 function devbenchInit() {
-  if (window.DevbenchInfo) {
-    window.DevbenchInfo.load();
-  }
-  devbenchBind("cpu-run", "cpu-bar", "cpu-out", async function (onProgress) {
-    var score = await window.DevbenchCpu.run(onProgress);
-    return score.cores + " cores · " + devbenchFmt(score.opsPerSec, 0) + " ops/s";
+  window.DEVBENCH_TESTS.forEach(function (t) {
+    var host = t.extra ? devbench$("extra-tests") : document.querySelector('[data-panel="' + t.tab + '"]');
+    host.appendChild(devbenchCard(t));
   });
-  devbenchBind("gpu-run", "gpu-bar", "gpu-out", async function (onProgress) {
-    var canvas = document.getElementById("gpu-canvas");
-    var score = await window.DevbenchGpu.run(canvas, onProgress);
-    return devbenchFmt(score.mpixPerSec, 0) + " Mpix/s · " + devbenchFmt(score.fillsPer60HzFrame, 0) +
-      " full-canvas layers per 60 Hz frame · " + devbenchFmt(score.draws, 0) + " draws";
+  document.addEventListener("click", function (e) {
+    var id = e.target.dataset && e.target.dataset.run;
+    if (id) { devbenchRunSingle(id); }
+    var tab = e.target.dataset && e.target.dataset.tab;
+    if (tab) { devbenchShowTab(tab); }
   });
-  devbenchBind("disk-run", "disk-bar", "disk-out", async function (onProgress) {
-    var score = await window.DevbenchDisk.run(onProgress);
-    return "write " + devbenchFmt(score.writeMBps, 1) + " MB/s · read " + devbenchFmt(score.readMBps, 1) + " MB/s";
-  });
-  devbenchBind("mem-run", "mem-bar", "mem-out", async function (p) {
-    var r = await window.DevbenchMemory.run(p);
-    return "copy " + devbenchFmt(r.copyGBps, 1) + " GB/s · read " + devbenchFmt(r.readGBps, 1) + " GB/s";
-  });
-  devbenchBind("js-run", "js-bar", "js-out", async function (p) {
-    var r = await window.DevbenchJs.run(p);
-    return devbenchFmt(r.roundsPerSec, 2) + " rounds/s · " + devbenchFmt(r.msPerRound, 0) + " ms/round";
-  });
-  devbenchBind("jpeg-run", "jpeg-bar", "jpeg-out", async function (p) {
-    var r = await window.DevbenchMedia.jpeg(p);
-    return "encode " + devbenchFmt(r.encMs, 0) + " ms (" + devbenchFmt(r.encMPs, 1) + " MP/s) · decode " +
-      devbenchFmt(r.decMs, 0) + " ms (" + devbenchFmt(r.decMPs, 1) + " MP/s)";
-  });
-  devbenchBind("video-run", "video-bar", "video-out", async function (p) {
-    var r = await window.DevbenchMedia.video(p);
-    if (!r.supported) { return "Not supported (no WebCodecs encoder)"; }
-    var dec = r.decFps == null ? "decode not supported" : "decode " + devbenchFmt(r.decFps, 0) + " fps";
-    return r.codec + " · encode " + devbenchFmt(r.encFps, 0) + " fps · " + dec + " · hw: " + r.hw;
-  });
-  devbenchBind("ping-run", "ping-bar", "ping-out", async function (p) {
-    var r = await window.DevbenchNet.ping(p);
-    function f(x) { return x ? "min " + devbenchFmt(x.min, 0) + " / avg " + devbenchFmt(x.avg, 0) + " ms" : "unreachable"; }
-    return "site " + f(r.own) + " · PeerJS " + f(r.peer);
-  });
-  devbenchBind("dl-run", "dl-bar", "dl-out", async function (p) {
-    var r = await window.DevbenchNet.download(p);
-    return devbenchFmt(r.mbps, 1) + " Mbps · " + devbenchFmt(r.mb, 1) + " MB used";
-  });
-  document.getElementById("dl-warn").textContent = "Uses ~" + window.DevbenchNet.approxMB + " MB data. Not part of Run all.";
-  document.getElementById("run-all").addEventListener("click", async function () {
-    devbenchLock(true);
-    for (var i = 0; i < DEVBENCH_RUN_ALL.length; i++) {
-      await devbenchRunners[DEVBENCH_RUN_ALL[i]](true);
-    }
-    devbenchLock(false);
-  });
-  document.getElementById("save-run").addEventListener("click", devbenchSave);
-}
-
-/* Two-digit pad for file names. */
-function devbenchPad(n) { return String(n).padStart(2, "0"); }
-
-/* Save every card as readable "label: value" lines in a .txt file. */
-function devbenchSave() {
-  var lines = ["Device Benchmark result", "Date: " + new Date().toString(), "", "[Device info]"];
-  var browser = "browser";
-  document.querySelectorAll("#sys-out > div").forEach(function (row) {
-    lines.push(row.firstChild.textContent + ": " + row.lastChild.textContent);
-    if (row.firstChild.textContent === "Browser") { browser = row.lastChild.textContent; }
-  });
-  var group = "";
-  document.querySelectorAll("main > h2.group, main > section.card:not(#sys-card)").forEach(function (el) {
-    if (el.tagName === "H2") { group = el.textContent; lines.push("", "[" + group + "]"); return; }
-    lines.push(el.querySelector("h2").textContent + ": " + el.querySelector(".out").textContent);
-  });
-  var d = new Date();
-  var stamp = d.getFullYear() + devbenchPad(d.getMonth() + 1) + devbenchPad(d.getDate()) + "-" + devbenchPad(d.getHours()) + devbenchPad(d.getMinutes());
-  var slug = browser.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "device";
-  var blob = new Blob([lines.join("\n") + "\n"], { type: "text/plain" });
-  var a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "devbench-" + slug + "-" + stamp + ".txt";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  devbench$("run-all").addEventListener("click", devbenchRunAll);
+  devbench$("settings-btn").addEventListener("click", function () { devbench$("settings").showModal(); });
+  devbench$("settings-close").addEventListener("click", function () { devbench$("settings").close(); });
+  devbench$("dl-json").addEventListener("click", function () { window.DevbenchExport.json(devbenchState); });
+  devbench$("dl-txt").addEventListener("click", function () { window.DevbenchExport.txt(devbenchState); });
+  var start = location.hash.slice(1);
+  devbenchShowTab(["device", "speed", "games", "ai"].indexOf(start) >= 0 ? start : "device");
+  window.DevbenchInfo.load();
+  window.DevbenchFeatures.detect().then(function (f) { devbenchState.features = f; devbenchRenderFeatures(f); devbenchFinish(); });
 }
 
 devbenchInit();

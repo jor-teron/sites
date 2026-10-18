@@ -1,15 +1,15 @@
 /*
   File: cpu.js
   Project: devbench
-  Role: CPU stress test using one Web Worker per logical core.
+  Role: Quick CPU test using one Web Worker per logical core (2 s, light).
   Exposes window.DevbenchCpu.run(onProgress) which resolves to a score object.
 */
 
 /* Logical core count reported by the browser. Minimum 1. */
 const DEVBENCH_CPU_CORES = Math.max(1, navigator.hardwareConcurrency || 1);
 
-/* How long each worker runs the inner loop, in milliseconds. 10 seconds. */
-const DEVBENCH_CPU_MS = 10000;
+/* How long each worker runs the inner loop, in milliseconds. 2 seconds (light). */
+const DEVBENCH_CPU_MS = 2000;
 
 /*
   Worker source as a string so no extra worker file is required.

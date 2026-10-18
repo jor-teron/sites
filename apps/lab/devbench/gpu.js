@@ -10,8 +10,8 @@
   (Mali/Adreno/PowerVR) from skipping hidden layers.
 */
 
-/* Total wall time of the fill-rate loop, in milliseconds. 10 seconds. */
-const DEVBENCH_GPU_MS = 10000;
+/* Total wall time of the fill-rate loop, in milliseconds. 2 seconds (light). */
+const DEVBENCH_GPU_MS = 2000;
 
 /* Target GPU time for one batch of draws, in milliseconds. */
 const DEVBENCH_GPU_BATCH_MS = 20;

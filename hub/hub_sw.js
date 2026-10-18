@@ -8,7 +8,7 @@
  * so a phone never gets a stale copy after a push.
  * Bump CACHE when the shell list changes; old caches are deleted on activate.
  */
-const CACHE = 'hub-shell-v20';  // 2026-10-18a: Browser Bench + AI Bench in Lab menu
+const CACHE = 'hub-shell-v21';  // 2026-10-18b: benches merged into Device Benchmark (Lab menu)
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',

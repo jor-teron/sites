@@ -6,8 +6,8 @@
   Exposes window.DevbenchDisk.run(onProgress).
 */
 
-/* Total bytes written and read. 64 MiB. */
-const DEVBENCH_DISK_BYTES = 64 * 1024 * 1024;
+/* Total bytes written and read. 16 MiB (light). */
+const DEVBENCH_DISK_BYTES = 16 * 1024 * 1024;
 
 /* Chunk size for each write and read call. */
 const DEVBENCH_DISK_CHUNK = 1024 * 1024;

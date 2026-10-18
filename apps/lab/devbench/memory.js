@@ -1,15 +1,15 @@
 /*
   File: memory.js
   Project: devbench
-  Role: Memory speed test. 64 MB buffer copy and sequential read.
+  Role: Memory speed test. 32 MB buffer copy and sequential read, best of 3 (light).
   Exposes window.DevbenchMemory.run(onProgress) -> { copyGBps, readGBps }.
 */
 
-/* Buffer size in bytes. 64 MB. */
-const DEVBENCH_MEM_BYTES = 64 * 1024 * 1024;
+/* Buffer size in bytes. 32 MB. */
+const DEVBENCH_MEM_BYTES = 32 * 1024 * 1024;
 
 /* Repeat count. Best pass is reported. */
-const DEVBENCH_MEM_PASSES = 5;
+const DEVBENCH_MEM_PASSES = 3;
 
 /* Copy a buffer and sum it, timing each pass. */
 async function devbenchMemRun(onProgress) {

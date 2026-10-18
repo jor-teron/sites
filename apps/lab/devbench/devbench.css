@@ -1,9 +1,11 @@
 /*
   File: devbench.css
   Project: devbench
-  Role: Layout and visual styles for the device bench page.
-  No test logic lives here. Colors assume a dark UI.
+  Role: Layout and base styles: score card, tabs, test cards, Settings sheet.
+  No test logic here. Dark UI, tap targets >= 44 px.
 */
+
+* { box-sizing: border-box; }
 
 /* Page background and default text. */
 body {
@@ -13,127 +15,98 @@ body {
   color: #e8eaed;
 }
 
-/* Centers the app column. */
+/* Centered app column. */
 .wrap {
   max-width: 720px;
   margin: 0 auto;
-  padding: 24px 16px 48px;
+  padding: 16px 14px 48px;
 }
 
-/* App title. */
-h1 {
-  font-size: 1.4rem;
-  margin: 0 0 8px;
+/* Title row with the Settings gear on the right. */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
+h1 { font-size: 1.4rem; margin: 0; }
 
-/* Short limit note under the title. */
-.note {
-  color: #9aa0a6;
-  font-size: 0.9rem;
-  margin: 0 0 20px;
-}
+/* Muted helper text. */
+.muted, .note { color: #9aa0a6; font-size: 0.9rem; }
+.note { margin: 4px 2px 12px; }
 
-/* One card per test. */
+/* Card container. */
 .card {
   background: #1c1f26;
   border: 1px solid #2c313a;
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 14px;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
 }
+.card h2 { margin: 0 0 6px; font-size: 1.05rem; }
 
-/* Card heading. */
-.card h2 {
-  margin: 0 0 6px;
-  font-size: 1.05rem;
-}
-
-/* What the test actually measures. */
-.card p {
-  margin: 0 0 12px;
-  color: #b8bec7;
-  font-size: 0.88rem;
-}
-
-/* Run button. */
+/* Buttons: every tap target at least 44 px. */
 button {
   background: #3d7eff;
   color: #fff;
   border: 0;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 8px 18px;
   min-height: 44px;
   min-width: 44px;
   font-size: 0.95rem;
+  cursor: pointer;
 }
+button:disabled { opacity: 0.5; cursor: default; }
+button.big { display: block; width: 100%; min-height: 54px; margin: 12px 0 8px; font-size: 1.1rem; font-weight: 600; }
+.icon-btn { background: #2c313a; font-size: 1.4rem; width: 48px; height: 48px; padding: 0; }
 
-/* Disabled while a test is running. */
-button:disabled {
-  opacity: 0.5;
-}
+/* Overall score. */
+.score-card { margin-top: 12px; text-align: center; }
+.score { font-size: 3rem; font-weight: 800; line-height: 1.1; }
+.score small { font-size: 1rem; opacity: 0.6; margin-left: 4px; }
 
-/* Progress track. */
-.bar {
-  height: 8px;
-  background: #2c313a;
-  border-radius: 99px;
-  margin-top: 12px;
-  overflow: hidden;
-}
+/* Progress bars. */
+.bar { height: 8px; background: #2c313a; border-radius: 99px; margin-top: 10px; overflow: hidden; }
+.bar > span { display: block; height: 100%; width: 0; background: #3d7eff; transition: width 0.2s; }
 
-/* Filled portion of the progress track. */
-.bar > span {
-  display: block;
-  height: 100%;
-  width: 0%;
-  background: #3d7eff;
-}
+/* Tabs: four big pills. */
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 4px 0 12px; }
+.tabs button { background: #1c1f26; border: 1px solid #2c313a; min-height: 48px; padding: 0 4px; }
+.tabs button.on { background: #3d7eff; border-color: #3d7eff; font-weight: 600; }
 
-/* Label and value rows inside the system card. */
-.facts {
-  margin: 0;
-}
+/* Test card head: title left, Run button right. */
+.test .head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.test .head h2 { margin: 0; }
+.test .desc { margin: 4px 0 0; color: #b8bec7; font-size: 0.88rem; }
+.test .out { margin-top: 8px; font-size: 0.95rem; }
+.stage { display: flex; justify-content: center; }
+.stage canvas { max-width: 100%; margin-top: 10px; border-radius: 10px; }
 
-/* One fact row. */
-.facts div {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 6px 0;
-  border-top: 1px solid #2c313a;
-  font-size: 0.88rem;
-}
+/* Device facts rows. */
+.facts { margin: 0; }
+.facts div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #2c313a; font-size: 0.88rem; }
+.facts dt { color: #9aa0a6; }
+.facts dd { margin: 0; text-align: right; word-break: break-word; }
 
-/* Fact label. */
-.facts dt {
-  color: #9aa0a6;
-}
+/* Feature checklist grid. */
+.feat { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; }
+.feat li { background: #232833; border-radius: 8px; padding: 6px 10px; font-size: 0.88rem; }
 
-/* Fact value. */
-.facts dd {
-  margin: 0;
-  text-align: right;
-}
+/* Good / OK / Poor colors. */
+.ok { color: #38c172; } .warn { color: #f6c344; } .no, .bad { color: #ff6b6b; }
+.verdicts { padding-left: 18px; margin: 6px 0 0; line-height: 1.6; }
 
-/* Section headings between card groups. */
-.group {
-  margin: 24px 0 8px;
-  font-size: 1rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.7;
+/* Settings sheet. */
+dialog {
+  width: min(560px, 94vw);
+  max-height: 90vh;
+  background: #171a20;
+  color: #e8eaed;
+  border: 1px solid #2c313a;
+  border-radius: 18px;
+  padding: 16px;
 }
-
-/* Full-width big buttons: Run all and Download result. */
-button.big {
-  display: block;
-  width: 100%;
-  min-height: 52px;
-  margin: 12px 0;
-  font-size: 1.05rem;
-}
-
-/* Data-use warning on the download card. */
-.warn {
-  color: #ffb74d;
-}
+dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+dialog h2 { margin: 0 0 8px; }
+dialog h3 { margin: 16px 0 8px; font-size: 0.95rem; opacity: 0.8; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
