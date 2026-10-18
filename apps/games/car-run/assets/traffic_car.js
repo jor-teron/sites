@@ -1,14 +1,17 @@
-/** Car Run — traffic car (obstacle). Same draw(ctx, p, o) contract as assets/car.js. */
+/**
+ * Car Run — traffic car (obstacle). Same draw(ctx, p, o) contract as assets/car.js.
+ * o.color: body colour picked at spawn from CFG.colors.trafficPalette.
+ * Traffic always shows its tail lights lit a little (o.braking false = dim lights).
+ */
 window.CAR_RUN_ASSETS = window.CAR_RUN_ASSETS || {};
 window.CAR_RUN_ASSETS.trafficCar = {
   draw(ctx, p, o) {
-    const { C, w, h } = o;
-    ctx.fillStyle = C.car;
-    ctx.fillRect(p.x - w / 2, p.y - h, w, h * 0.7);
-    ctx.fillStyle = C.carGlass;
-    ctx.fillRect(p.x - w * 0.35, p.y - h * 0.85, w * 0.7, h * 0.25);
-    ctx.fillStyle = C.carWheel;
-    ctx.fillRect(p.x - w * 0.4, p.y - h * 0.15, w * 0.25, h * 0.15);
-    ctx.fillRect(p.x + w * 0.15, p.y - h * 0.15, w * 0.25, h * 0.15);
+    const { C, S } = o;
+    window.CAR_RUN_ASSETS.model.drawCar(ctx, o.scene, {
+      x: o.world.x, y: 0, z: o.world.z,
+      w: S.carW, h: S.carH, len: S.carLen,
+      color: o.color || C.car,
+      yaw: 0, roll: 0, braking: !!o.braking, nitro: false,
+    });
   },
 };

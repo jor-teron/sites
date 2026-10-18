@@ -35,6 +35,9 @@
   const NITRO_REFILL = CFG.nitro.refill;
 
   let dpr = 1, W = 0, H = 0, U = 0; // U = uniform projection scale = min(W, H * aspect)
+  // Live camera height and vanishing-point Y fraction, derived in resize() from
+  // T.roadScreenFrac / T.playerScreenFrac so every screen shape gets the same layout.
+  let CAMY = 1.65, HF = 0.4;
   let state = 'title';
   let keys = Object.create(null);
   let last = 0;
@@ -64,6 +67,22 @@
     canvas.style.height = H + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     U = Math.min(W, H * T.aspect);
+    fitCamera();
+  }
+
+  /*
+    Road takes T.roadScreenFrac of the screen: the visible horizon (farthest road
+    segment) lands at (1 - roadScreenFrac) from the top. Camera height is picked so
+    the player car's ground point sits near T.playerScreenFrac, within min/max.
+  */
+  function fitCamera() {
+    const top = 1 - T.roadScreenFrac;
+    const vy = U * T.projScaleY;               // px per (world unit / depth)
+    const rearZ = T.playerAhead - S.playerLen / 2;   // rear bumper depth
+    const need = (T.playerScreenFrac - top) * H / vy * rearZ;
+    CAMY = Math.max(T.cameraHeightMin, Math.min(T.cameraHeightMax, need));
+    // horizonY() projects z = DRAW_DIST + 1 ahead; offset the vanishing point so that lands at `top`.
+    HF = top - (CAMY / (DRAW_DIST + 1)) * vy / H;
   }
 
   function showOverlay(title, msg, sub) {
@@ -75,12 +94,12 @@
   function hideOverlay() { overlay.hidden = true; }
 
   function project(x, y, z) {
-    const camY = T.cameraHeight;
+    const camY = CAMY;
     const relZ = z - cameraZ;
     if (relZ <= T.nearClip) return null;
     const scale = 1 / relZ;
     const px = W / 2 + x * scale * U * T.projScaleX;
-    const py = H * T.horizonFrac - (y - camY) * scale * U * T.projScaleY;
+    const py = H * HF - (y - camY) * scale * U * T.projScaleY;
     // k: pixels per world unit at this depth (same for both axes -> no stretching)
     return { x: px, y: py, s: scale, k: scale * U * T.projScaleX };
   }
@@ -102,11 +121,13 @@
       const roll = Math.random();
       let rowLen = 0;
       if (roll < SP.obstacleChance) {
+        const pal = C.trafficPalette || [C.car];
         entities.push({
           type: Math.random() < SP.carVsBarrier ? 'barrier' : 'car',
           lane: Math.floor(Math.random() * LANES),
           z: spawnZ,
           taken: false,
+          color: pal[Math.floor(Math.random() * pal.length)],
         });
       } else if (roll < SP.coinChance) {
         const n = SP.coinRowMin + Math.floor(Math.random() * SP.coinRowExtra);
@@ -358,7 +379,7 @@
   /** Screen Y of the farthest road segment (where sky meets the road). */
   function horizonY() {
     const p = project(0, 0, cameraZ + DRAW_DIST + 1);
-    return p ? Math.ceil(p.y) : H * T.horizonFrac;
+    return p ? Math.ceil(p.y) : H * HF;
   }
 
   function drawSky(hy) {
@@ -435,30 +456,41 @@
 
   const A = window.CAR_RUN_ASSETS;
 
-  function drawEntity(e) {
+  /** Scene info for the box models in assets/car_model.js. */
+  function scene() {
+    return { project, cam: { x: 0, y: CAMY, z: cameraZ }, nearZ: cameraZ + T.nearClip + 0.001 };
+  }
+
+  function drawEntity(e, sc) {
     const x = laneX(e.lane);
     const y = e.type === 'coin' ? S.coinHeight : 0;
     const p = project(x, y, e.z);
     if (!p) return;
+    const world = { x, y: 0, z: e.z };
     if (e.type === 'coin') {
       A.coin.draw(ctx, p, { C, S });
     } else if (e.type === 'barrier') {
-      A.barrier.draw(ctx, p, { C, S, w: p.k * S.barrierW, h: p.k * S.barrierH });
+      A.barrier.draw(ctx, p, { C, S, w: p.k * S.barrierW, h: p.k * S.barrierH, scene: sc, world });
     } else {
-      A.trafficCar.draw(ctx, p, { C, S, w: p.k * S.carW, h: p.k * S.carH });
+      A.trafficCar.draw(ctx, p, { C, S, w: p.k * S.carW, h: p.k * S.carH, scene: sc, world, color: e.color });
     }
   }
 
-  function drawPlayer() {
+  function drawPlayer(sc) {
     const pz = cameraZ + T.playerAhead;
     const p = project(player.x, player.y, pz);
     if (!p) return;
     const w = p.k * S.playerW;
     const h = p.k * S.playerH;
+    // Lane change: nose turns toward the target lane, body leans the other way.
+    const yaw = Math.max(-0.3, Math.min(0.3, (player.lane - laneAnim) * 0.35));
     A.car.draw(ctx, p, {
       C, S, w, h,
-      shadow: project(player.x, 0, pz),
+      scene: sc,
+      world: { x: player.x, y: player.y, z: pz },
+      yaw, roll: -yaw * 0.15,
       nitro: nitroOn && nitro > 0,
+      braking: state === 'play' && (held(K.brake) || touch.brake),
     });
   }
 
@@ -466,9 +498,17 @@
     const hy = horizonY();
     drawSky(hy);
     drawRoad(hy);
+    const sc = scene();
     const sorted = entities.slice().sort((a, b) => b.z - a.z);
-    for (const e of sorted) drawEntity(e);
-    if (player) drawPlayer();
+    // Far to near; the player car is drawn in depth order so cars it has
+    // already passed (nearer the camera) cover it correctly.
+    const pz = cameraZ + T.playerAhead;
+    let playerDrawn = !player;
+    for (const e of sorted) {
+      if (!playerDrawn && e.z < pz) { drawPlayer(sc); playerDrawn = true; }
+      drawEntity(e, sc);
+    }
+    if (!playerDrawn) drawPlayer(sc);
   }
 
   function loop(ts) {

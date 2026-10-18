@@ -12,8 +12,16 @@ const CAR_RUN_CONFIG = {
     laneSpacing: 0.72,         // world units between lane centers
     drawDist: 80,              // how many road segments to draw ahead
     roadHalfWidth: 1.0,        // half road width in world units
-    cameraHeight: 1.15,        // camera Y in world units
-    horizonFrac: 0.55,         // vanishing point Y as fraction of screen height
+    // How much of the screen height the road (ground) takes, from the bottom.
+    // 0.60 = horizon 40% from the top. Change this to move the horizon (e.g. 0.5 or 0.7).
+    roadScreenFrac: 0.60,
+    // Camera height is worked out per screen so the player car's rear bumper (on the
+    // ground) sits near playerScreenFrac (fraction of screen height from the top), kept
+    // between the min and max below. Higher camera = more roof visible.
+    // Tall portrait screens hit the max, so there the car sits higher.
+    playerScreenFrac: 0.94,
+    cameraHeightMin: 1.1,      // world units
+    cameraHeightMax: 2.6,      // world units (above this the cars look too stretched)
     projScaleX: 0.55,          // horizontal projection scale (x U, U = min(W, H * aspect))
     projScaleY: 0.44,          // vertical projection scale (x U); 0.44 * 1.6 = old 0.7 x H on a 16:10 screen
     aspect: 1.6,               // U = min(W, H * aspect): one scale for both axes, so portrait doesn't stretch
@@ -99,7 +107,6 @@ const CAR_RUN_CONFIG = {
     playerW: 0.62,             // player car width (~15% of screen width at playerAhead 2.2)
     playerH: 0.42,             // player car height
     playerLen: 1.0,            // player car length (z)
-    nitroFlame: 0.3,           // nitro flame length (x player height)
     laneMarkWidth: 0.012,      // lane mark width
     laneMarkLength: 1.2,       // lane mark length (world units)
     laneMarkEvery: 3,          // draw lane marks every N segments
@@ -114,7 +121,7 @@ const CAR_RUN_CONFIG = {
     sunGlow: 'rgba(251,191,36,0.35)', // sun glow center
     sunGlowOuter: 'rgba(251,191,36,0)', // sun glow edge
     sunX: 0.7,                 // sun x as fraction of width
-    sunY: 0.22,                // sun y as fraction of height
+    sunY: 0.16,                // sun y as fraction of height (keep inside the sky: < 1 - roadScreenFrac)
     sunRadius: 120,            // sun glow radius
     ground: '#14532d',         // ground fill below the horizon
     grassA: '#14532d',         // grass stripe A
@@ -126,15 +133,10 @@ const CAR_RUN_CONFIG = {
     coinInner: '#f59e0b',      // coin inner
     barrier: '#ef4444',        // barrier
     barrierStripe: '#fef3c7',  // barrier stripe
-    car: '#3b82f6',            // traffic car body
-    carGlass: '#93c5fd',       // traffic car glass
-    carWheel: '#0f172a',       // traffic car wheels
-    playerShadow: 'rgba(0,0,0,0.35)', // player shadow
+    car: '#3b82f6',            // traffic car body (fallback)
+    trafficPalette: ['#3b82f6', '#e5e7eb', '#22c55e', '#facc15', '#a855f7', '#475569'], // random traffic colours
     player: '#ef4444',         // player body
     playerNitro: '#f97316',    // player body while nitro is on
-    playerGlass: 'rgba(147,197,253,0.85)', // player windshield
-    playerOutline: 'rgba(255,255,255,0.75)', // player outline (visibility)
-    nitroFlame: 'rgba(96,165,250,0.8)', // nitro flame
   },
 
   // Input
