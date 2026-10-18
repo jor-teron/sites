@@ -189,8 +189,34 @@ select {
     color: var(--text-color);
 }
 
-/* Responsive adjustments */
-@media (max-width: 600px) {
+/* Icon generator section */
+#icon-section {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--border-color);
+}
+
+.icon-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+
+#icon-preview-container {
+    display: flex;
+    justify-content: center;
+    min-height: 80px;
+}
+
+#icon-preview {
+    max-width: 128px;
+    max-height: 128px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 50% / 16px 16px;
+}
     .message {
         max-width: 95%;
     }

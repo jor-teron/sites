@@ -1,0 +1,120 @@
+/*
+================================================================================
+File: bookmark-manager.css
+Project: bookmark-manager
+Description: Stylesheet for the Bookmark Manager WebApp.
+Purpose: Dark theme by default, folder groups, bookmark list, and controls.
+Author: Grok
+Date: 2026-10-18
+================================================================================
+*/
+
+/* CSS Variables - dark by default */
+:root {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --panel-bg: #1e1e1e;
+    --border-color: #333;
+    --accent-color: #4dabf7;
+    --folder-bg: #2a2a2a;
+}
+
+/* Base body */
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 1rem;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+h1 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+/* Controls */
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    align-items: center;
+}
+
+input, select, button {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--panel-bg);
+    color: var(--text-color);
+}
+
+button {
+    background: var(--accent-color);
+    color: #000;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+/* Folder section */
+.folder {
+    background: var(--folder-bg);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+}
+
+.folder-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+/* Bookmark item */
+.bookmark {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.9rem;
+}
+
+.bookmark:last-child {
+    border-bottom: none;
+}
+
+.bookmark a {
+    color: var(--accent-color);
+    text-decoration: none;
+    flex: 1;
+}
+
+.bookmark a:hover {
+    text-decoration: underline;
+}
+
+/* Status */
+#status {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}

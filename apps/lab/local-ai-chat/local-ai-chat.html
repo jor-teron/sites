@@ -3,9 +3,9 @@
 ================================================================================
 File: local-ai-chat.html
 Project: local-ai-chat
-Description: Main HTML file for the Local AI Chat + Prompt Helper WebApp.
-Purpose: Provides the chat interface, model selector, theme toggle, and prompt helpers.
-         Loads the corresponding CSS and JS files.
+Description: Main HTML file for the Local AI Chat + Icon Generator WebApp.
+Purpose: Provides the chat interface, model selector, theme toggle, prompt helpers,
+         and integrated Pollinations.ai icon generation with resolution choice.
 Author: Grok
 Date: 2026-10-17
 ================================================================================
@@ -57,6 +57,25 @@ Date: 2026-10-17
         <div class="input-row">
             <input type="text" id="user-input" placeholder="Type a message or prompt..." autocomplete="off">
             <button id="send-btn">Send</button>
+        </div>
+
+        <!-- Icon generator section -->
+        <div id="icon-section">
+            <div class="icon-controls">
+                <label for="resolution-select">Resolution:</label>
+                <select id="resolution-select">
+                    <option value="32">32×32</option>
+                    <option value="64" selected>64×64</option>
+                    <option value="128">128×128</option>
+                    <option value="256">256×256</option>
+                    <option value="512">512×512</option>
+                </select>
+                <button id="generate-icon-btn">Generate Icon</button>
+                <button id="download-icon-btn" disabled>Download PNG</button>
+            </div>
+            <div id="icon-preview-container">
+                <img id="icon-preview" alt="Icon preview" style="display:none; image-rendering: pixelated;">
+            </div>
         </div>
     </div>
 

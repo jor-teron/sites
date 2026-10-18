@@ -2,9 +2,10 @@
 ================================================================================
 File: local-ai-chat.js
 Project: local-ai-chat
-Description: Main application logic for the Local AI Chat WebApp.
+Description: Main application logic for the Local AI Chat + Icon Generator WebApp.
 Purpose: Loads small language models via transformers.js, manages chat,
-         caches models for 100 days, supports prompt helpers, and handles UI.
+         caches models for 100 days, supports prompt helpers, and generates icons
+         via Pollinations.ai with selectable resolution.
 Author: Grok
 Date: 2026-10-17
 ================================================================================
@@ -62,6 +63,13 @@ const clearChatBtn = document.getElementById('clear-chat');
 const improvePromptBtn = document.getElementById('improve-prompt');
 const iconStyleBtn = document.getElementById('icon-style');
 const shortenBtn = document.getElementById('shorten');
+const resolutionSelect = document.getElementById('resolution-select');
+const generateIconBtn = document.getElementById('generate-icon-btn');
+const downloadIconBtn = document.getElementById('download-icon-btn');
+const iconPreview = document.getElementById('icon-preview');
+
+// Current generated icon URL (for download)
+let currentIconUrl = null;
 
 // ============================================================================
 // Utility functions
@@ -367,8 +375,63 @@ async function applyPromptHelper(instruction) {
 }
 
 // ============================================================================
-// Event listeners
+// Icon generation (Pollinations.ai)
 // ============================================================================
+
+/**
+ * Generates an icon using the Pollinations.ai free endpoint.
+ * Uses the current input text (or last user message) as the prompt.
+ * Respects the selected resolution.
+ */
+async function generateIcon() {
+    const prompt = userInputEl.value.trim() || (chatHistory.length ? chatHistory[chatHistory.length - 1].content : '');
+    if (!prompt) {
+        setStatus('Enter a prompt first (or chat something), then generate icon.');
+        return;
+    }
+
+    const size = parseInt(resolutionSelect.value, 10) || 64;
+    const encoded = encodeURIComponent(prompt);
+    const url = `https://image.pollinations.ai/prompt/${encoded}?width=${size}&height=${size}&nologo=true&safe=true&model=flux`;
+
+    setStatus(`Generating ${size}×${size} icon...`);
+    generateIconBtn.disabled = true;
+
+    try {
+        // Load into the preview image
+        iconPreview.onload = () => {
+            iconPreview.style.display = 'block';
+            currentIconUrl = url;
+            downloadIconBtn.disabled = false;
+            setStatus(`Icon ready (${size}×${size}).`);
+            generateIconBtn.disabled = false;
+        };
+        iconPreview.onerror = () => {
+            setStatus('Icon generation failed. Try a different prompt or resolution.');
+            generateIconBtn.disabled = false;
+        };
+        iconPreview.src = url + '&t=' + Date.now(); // cache-bust
+    } catch (err) {
+        console.error(err);
+        setStatus('Error generating icon.');
+        generateIconBtn.disabled = false;
+    }
+}
+
+/**
+ * Downloads the currently displayed icon as a PNG.
+ */
+function downloadIcon() {
+    if (!currentIconUrl || !iconPreview.src) return;
+
+    const a = document.createElement('a');
+    a.href = iconPreview.src;
+    a.download = `icon-${resolutionSelect.value}x${resolutionSelect.value}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setStatus('Download started.');
+}
 
 sendBtn.addEventListener('click', sendMessage);
 
@@ -407,6 +470,9 @@ iconStyleBtn.addEventListener('click', () => {
 shortenBtn.addEventListener('click', () => {
     applyPromptHelper('Shorten the following text while keeping the core meaning. Make it as brief as possible.');
 });
+
+generateIconBtn.addEventListener('click', generateIcon);
+downloadIconBtn.addEventListener('click', downloadIcon);
 
 // ============================================================================
 // Initialization

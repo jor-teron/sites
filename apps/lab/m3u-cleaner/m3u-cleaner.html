@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<!--
+================================================================================
+File: m3u-cleaner.html
+Project: m3u-cleaner
+Description: Main HTML file for the M3U Playlist Cleaner WebApp.
+Purpose: Provides UI to load M3U (local or URL), test channels in parallel queues,
+         auto-select failed (not playing) channels, and export cleaned playlist.
+Author: Grok
+Date: 2026-10-18
+================================================================================
+-->
+<html lang="en">
+<head>
+    <!-- Character encoding and responsive viewport -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M3U Cleaner</title>
+    <!-- Link to project stylesheet -->
+    <link rel="stylesheet" href="m3u-cleaner.css">
+</head>
+<body>
+    <!-- Application header with load controls in the same row -->
+    <header>
+        <h1>M3U Cleaner</h1>
+        <div class="header-load">
+            <input type="file" id="file-input" accept=".m3u,.m3u8,text/plain">
+            <input type="text" id="url-input" placeholder="Or paste M3U URL...">
+            <button id="load-btn">Load</button>
+        </div>
+        <button id="theme-toggle">Toggle Theme</button>
+    </header>
+
+    <!-- Test controls -->
+    <div class="controls">
+        <label for="queue-select">Parallel queues:</label>
+        <select id="queue-select">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100" selected>100</option>
+            <option value="250">250</option>
+            <option value="500">500</option>
+            <option value="1000">1000</option>
+        </select>
+        <button id="test-btn" disabled>Test All</button>
+        <button id="select-failed-btn" disabled>Select Failed</button>
+        <button id="remove-selected-btn" disabled>Remove Selected</button>
+        <button id="export-btn" disabled>Export Clean M3U</button>
+        <button id="stop-btn" disabled>Stop</button>
+    </div>
+
+    <!-- Status -->
+    <div id="status">Load an M3U file or URL to begin.</div>
+
+    <!-- Channel table -->
+    <table id="channel-table">
+        <thead>
+            <tr>
+                <th><input type="checkbox" id="select-all"></th>
+                <th>Name</th>
+                <th>Group</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="channel-body"></tbody>
+    </table>
+
+    <!-- Load the application logic -->
+    <script type="module" src="m3u-cleaner.js"></script>
+</body>
+</html>

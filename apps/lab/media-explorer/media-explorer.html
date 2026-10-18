@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!--
+================================================================================
+File: media-explorer.html
+Project: media-explorer
+Description: Main HTML file for the Media Explorer WebApp.
+Purpose: Folder-based media browser with tiles, video/audio/image playback,
+         IPTV/M3U support, and stop returning to explorer.
+Author: Grok
+Date: 2026-10-18
+================================================================================
+-->
+<html lang="en">
+<head>
+    <!-- Character encoding and responsive viewport -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Explorer</title>
+    <!-- Link to project stylesheet -->
+    <link rel="stylesheet" href="media-explorer.css">
+</head>
+<body>
+    <!-- Application header -->
+    <header>
+        <h1>Media Explorer</h1>
+        <div class="controls">
+            <button id="open-folder-btn">Open Folder</button>
+            <input type="text" id="url-input" placeholder="Paste video/audio/image URL or M3U...">
+            <button id="load-url-btn">Load URL</button>
+            <button id="up-btn" disabled>Up</button>
+        </div>
+    </header>
+
+    <!-- Current path display -->
+    <div id="path">No folder open</div>
+
+    <!-- Main explorer with tiles -->
+    <div id="explorer">
+        <div id="tiles"></div>
+    </div>
+
+    <!-- Player overlay (hidden by default) -->
+    <div id="player-overlay">
+        <div id="player-content"></div>
+        <div id="player-controls">
+            <button id="stop-btn">Stop</button>
+            <button id="prev-btn">Prev</button>
+            <button id="next-btn">Next</button>
+        </div>
+    </div>
+
+    <!-- Optional channel list for IPTV -->
+    <div id="channel-list"></div>
+
+    <!-- Load the application logic -->
+    <script type="module" src="media-explorer.js"></script>
+</body>
+</html>

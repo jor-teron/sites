@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!--
+================================================================================
+File: index.html
+Project: media-explorer
+Description: Entry point that redirects to the main application file.
+Purpose: Satisfies the project structure rule requiring index.html to redirect
+         to the primary HTML file named after the project.
+Author: Grok
+Date: 2026-10-18
+================================================================================
+-->
+<html lang="en">
+<head>
+    <!-- Meta tags for character set and viewport -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting to Media Explorer</title>
+    <!-- Immediate redirect to the main project file -->
+    <meta http-equiv="refresh" content="0; url=media-explorer.html">
+</head>
+<body>
+    <!-- Fallback message if redirect is blocked -->
+    <p>Redirecting to <a href="media-explorer.html">Media Explorer</a>...</p>
+    <!-- JavaScript fallback redirect -->
+    <script>
+        // Immediate client-side redirect as backup
+        window.location.href = "media-explorer.html";
+    </script>
+</body>
+</html>

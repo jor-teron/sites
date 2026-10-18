@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<!--
+File: aeroplane.html
+Project: aeroplane
+Purpose: Main entry for the mini-planet flight simulator webapp.
+Loads Three.js, styles, and the main script.
+Date: 2026-10-17
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>aeroplane</title>
+    <!-- External stylesheet -->
+    <link rel="stylesheet" href="aeroplane.css">
+</head>
+<body>
+    <!-- Canvas container for Three.js renderer -->
+    <div id="canvas-container"></div>
+
+    <!-- HUD display for altitude and speed -->
+    <div id="hud">
+        Alt: <span id="alt-display">50</span> m<br>
+        Speed: <span id="speed-display">0</span> m/s
+    </div>
+
+    <!-- Button to toggle touch controls (hidden by default for PC users) -->
+    <button id="touch-toggle">Show Controls</button>
+
+    <!-- Pause button -->
+    <button id="pause-btn">Pause</button>
+
+    <!-- Touch control overlay (hidden by default) -->
+    <div id="touch-controls">
+        <!-- Left side: altitude and yaw -->
+        <div>
+            <div class="touch-btn" id="btn-up">↑</div>
+            <div class="touch-btn" id="btn-down">↓</div>
+            <div class="touch-btn" id="btn-left">←</div>
+            <div class="touch-btn" id="btn-right">→</div>
+        </div>
+        <!-- Right side: throttle -->
+        <div>
+            <div class="touch-btn" id="btn-speed-up">+</div>
+            <div class="touch-btn" id="btn-speed-down">−</div>
+        </div>
+    </div>
+
+    <!-- Three.js core from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- GLTFLoader for loading plane and planet GLB models -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <!-- Main application script -->
+    <script src="aeroplane.js"></script>
+</body>
+</html>
