@@ -1,45 +1,70 @@
 /*
  * File: llm-calc.css
- * Project: llm-calc (Lab) — R2 2026-10-19 (R2: real-model list, official check)
+ * Project: llm-calc (Lab) — R4 2026-10-19
  * Purpose: Minimalist styles, big tap targets, jelly press, light/dark.
+ *          R2: real-model list in the ⓘ dialog.
+ *          R4: two panes (inputs left, sticky results right) from 800px;
+ *          compact sticky results bar on phone that expands on tap.
+ *          Removed Load whole model + official-check styles.
  */
-:root { --bg:#f6f7fb; --card:#fff; --fg:#1d2230; --mute:#6b7280; --acc:#6c5ce7; --bad:#e5484d; --line:#e5e7eb; }
+:root { --bg:#f6f7fb; --card:#fff; --fg:#1d2230; --mute:#6b7280; --acc:#6c5ce7; --bad:#e5484d; --line:#e5e7eb; --jelly:cubic-bezier(.3,1.8,.5,1); }
 @media (prefers-color-scheme: dark) { :root { --bg:#0f1117; --card:#1a1d27; --fg:#e8eaf0; --mute:#9aa3b2; --acc:#a29bfe; --bad:#ff6b6b; --line:#2a2f3c; } }
 * { box-sizing: border-box; }
 body { margin:0; font:16px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--fg); }
 header { padding:14px 16px 4px; } h1 { margin:0; font-size:1.3rem; } .sub { margin:0; color:var(--mute); font-size:.9rem; }
-main { max-width:720px; margin:0 auto; padding:8px 12px 40px; }
 .card { background:var(--card); border-radius:18px; padding:12px 14px; margin:10px 0; box-shadow:0 1px 3px rgba(0,0,0,.08); }
-h2 { font-size:1rem; margin:4px 0 6px; color:var(--acc); } h3 { font-size:.9rem; margin:12px 0 4px; color:var(--mute); }
-.results { position:sticky; top:0; z-index:5; }
-.big { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; text-align:center; }
-.big small { display:block; color:var(--mute); font-size:.75rem; } .big b { font-size:1.15rem; }
+h2 { font-size:1rem; margin:4px 0 6px; color:var(--acc); } h3 { font-size:.9rem; margin:14px 0 4px; color:var(--mute); }
+.hrow { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0; }
 .bad { color:var(--bad); }
-.warns { margin:6px 0 0; padding-left:18px; color:var(--bad); font-size:.85rem; } .warns:empty { display:none; }
-details summary { min-height:44px; display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--acc); }
-.results details { max-height:55vh; overflow:auto; }
-table { width:100%; border-collapse:collapse; font-size:.9rem; } td { padding:4px 0; border-bottom:1px solid var(--line); } td:last-child { text-align:right; font-variant-numeric:tabular-nums; }
+.warns { margin:8px 0 0; padding-left:18px; color:var(--bad); font-size:.85rem; } .warns:empty { display:none; }
+table { width:100%; border-collapse:collapse; font-size:.9rem; } td { padding:5px 0; border-bottom:1px solid var(--line); } td:last-child { text-align:right; font-variant-numeric:tabular-nums; padding-left:8px; }
 .field { display:flex; align-items:center; gap:8px; min-height:52px; border-bottom:1px solid var(--line); }
-.field:last-child { border-bottom:0; } .field label { flex:1; }
+.field:last-of-type { border-bottom:0; } .field label { flex:1; }
 input[type=number], select { width:9.5em; min-height:44px; font-size:1rem; padding:6px 10px; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--fg); }
 input:disabled { opacity:.45; }
 .sw { width:28px; height:28px; accent-color:var(--acc); margin:0 auto 0 0; }
-.info, .btn { min-width:44px; min-height:44px; border:0; border-radius:14px; background:transparent; color:var(--acc); font-size:1.3rem; cursor:pointer; transition:transform .25s cubic-bezier(.3,1.8,.5,1); }
+.info, .btn { min-width:44px; min-height:44px; border:0; border-radius:14px; background:transparent; color:var(--acc); font-size:1.3rem; cursor:pointer; transition:transform .25s var(--jelly); }
 .btn { background:var(--acc); color:#fff; font-size:1rem; padding:0 18px; margin-top:8px; }
+.btn.ghost { background:transparent; color:var(--bad); border:1px solid var(--line); }
 .info:active, .btn:active { transform:scale(.85,1.12); }
 .note { color:var(--mute); font-size:.85rem; margin:6px 0; }
+.resetrow { text-align:center; padding:4px 0 24px; }
 dt { font-weight:600; margin-top:8px; } dd { margin:0 0 4px; color:var(--mute); }
-dialog { border:0; border-radius:20px; background:var(--card); color:var(--fg); max-width:min(92vw,460px); padding:18px; }
+
+/* Results */
+.big { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; text-align:center; }
+.big > div { background:var(--bg); border-radius:14px; padding:8px 4px; }
+.big .wide { grid-column:1 / -1; }
+.big small { display:block; color:var(--mute); font-size:.75rem; } .big b { font-size:1.2rem; font-variant-numeric:tabular-nums; }
+
+/* Phone: compact sticky bar on top, full results open on tap, inputs below */
+.panes { padding:0 12px 20px; max-width:720px; margin:0 auto; }
+.out { position:sticky; top:0; z-index:5; padding-top:6px; background:var(--bg); }
+.rbar { position:relative; display:grid; grid-template-columns:repeat(4,1fr) 22px; align-items:center; gap:4px; width:100%; min-height:56px; padding:6px 10px; border:0; border-radius:16px; background:var(--card); color:var(--fg); font:inherit; text-align:center; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.12); transition:transform .25s var(--jelly); }
+.rbar:active { transform:scale(.97,1.03); }
+.rbar small { display:block; color:var(--mute); font-size:.7rem; } .rbar b { font-size:.92rem; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.rbar .chev { font-style:normal; color:var(--acc); transition:transform .25s var(--jelly); }
+.rbar[aria-expanded=true] .chev { transform:rotate(180deg); }
+.dot { position:absolute; top:6px; right:8px; width:10px; height:10px; border-radius:50%; background:var(--bad); }
+.rfull { display:none; max-height:70vh; overflow:auto; overscroll-behavior:contain; margin:8px 0 4px; }
+.out.open .rfull { display:block; animation:pop .3s var(--jelly); }
+
+/* Desktop / laptop: two panes, inputs left, results right (sticky, own scroll) */
+@media (min-width: 800px) {
+  .panes { display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,420px); gap:18px; max-width:1180px; align-items:start; }
+  .in { grid-column:1; grid-row:1; }
+  .out { grid-column:2; grid-row:1; top:0; padding-top:10px; background:transparent; max-height:100vh; overflow:auto; overscroll-behavior:contain; }
+  .rbar { display:none; }
+  .rfull, .out.open .rfull { display:block; max-height:none; overflow:visible; margin:0 0 10px; animation:none; }
+}
+
+/* Help dialog + Real models list */
+dialog { border:0; border-radius:20px; background:var(--card); color:var(--fg); max-width:min(92vw,460px); max-height:86vh; overflow:auto; padding:18px; }
 dialog::backdrop { background:rgba(0,0,0,.45); }
 dialog[open] { animation:pop .35s cubic-bezier(.3,1.6,.5,1); }
 @keyframes pop { from { transform:scale(.85); opacity:0; } }
-/* R2: Real models list in the ⓘ dialog, Load whole model, official check */
-.load select { width:12em; }
-.official { margin:6px 0 0; font-size:.85rem; text-align:center; color:var(--mute); }
-.official b { color:var(--fg); } .official .ok { color:#2f9e44; }
-dialog { max-height:86vh; overflow:auto; }
 .rm h4 { margin:10px 0 4px; font-size:.85rem; color:var(--mute); font-weight:600; }
-.rm button { display:flex; justify-content:space-between; align-items:center; gap:12px; width:100%; min-height:44px; padding:0 12px; margin:0; border:0; border-bottom:1px solid var(--line); background:transparent; color:var(--fg); font:inherit; font-size:.95rem; text-align:left; cursor:pointer; border-radius:10px; transition:transform .25s cubic-bezier(.3,1.8,.5,1), background .15s; }
+.rm button { display:flex; justify-content:space-between; align-items:center; gap:12px; width:100%; min-height:44px; padding:0 12px; margin:0; border:0; border-bottom:1px solid var(--line); background:transparent; color:var(--fg); font:inherit; font-size:.95rem; text-align:left; cursor:pointer; border-radius:10px; transition:transform .25s var(--jelly), background .15s; }
 .rm button span:last-child { font-variant-numeric:tabular-nums; font-weight:600; color:var(--acc); }
 .rm button.cur { background:color-mix(in srgb, var(--acc) 14%, transparent); }
 .rm button:active { transform:scale(.96,1.04); }

@@ -1,10 +1,12 @@
 /*
  * File: llm-calc-ui.js
- * Project: llm-calc (Lab) — R2 2026-10-19
+ * Project: llm-calc (Lab) — R4 2026-10-19
  * Purpose: Reads inputs, recomputes on every change, renders results,
  *          handles ⓘ help popups, GPU presets and calibration.
- *          R2: "Real models" tap-to-copy list in each model setting's ⓘ,
- *          "Load whole model" picker, official vs calculated params.
+ *          R2: "Real models" tap-to-copy list in each model setting's ⓘ.
+ *          R4: every input saved to localStorage ('llm-calc.v1') on change and
+ *          restored on load (+ Reset to defaults); compact results bar on
+ *          phone; removed "Load whole model" and the official-vs-ours line.
  *          Depends on llm-calc-math.js, llm-calc-help.js, llm-calc-examples.js.
  */
 (function () {
@@ -12,40 +14,48 @@
   const M = window.LLMCalcMath, H = window.LLMCalcHelp, X = window.LLMCalcExamples;
   const MODEL_KEYS = ['vocab', 'hidden', 'layers', 'ffn', 'heads', 'kvHeads', 'headDim', 'seq', 'tied', 'qkvBias'];
   const BOOL_KEYS = { tied: 1, qkvBias: 1 };
+  const STORE_KEY = 'llm-calc.v1';
   const $ = id => document.getElementById(id);
   const num = id => parseFloat($(id).value) || 0;
   const fmt = n => Math.round(n).toLocaleString('en-US');
   const fmtM = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : (n / 1e6).toFixed(2) + 'M';
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const fmtMB = mb => mb >= 1000 ? (mb / 1000).toFixed(2) + ' GB' : mb.toFixed(1) + ' MB';
+  const fmtTime = s => { const m = s / 60; return m < 60 ? m.toFixed(1) + ' min' : Math.floor(m / 60) + ' h ' + Math.round(m % 60) + ' min'; };
+  const rows = list => list.map(([k, v]) => '<tr><td>' + k + '</td><td>' + v + '</td></tr>').join('');
+
+  // ---- Persistence: every input/select inside the inputs pane ----
+  const fields = () => Array.from($('in').querySelectorAll('input, select'));
+  let defaults = {};
+  function snapshot() {
+    const o = {};
+    fields().forEach(el => { o[el.id] = el.type === 'checkbox' ? el.checked : el.value; });
+    return o;
+  }
+  function apply(o) {
+    fields().forEach(el => {
+      if (!o || !Object.prototype.hasOwnProperty.call(o, el.id)) return;
+      const v = o[el.id];
+      if (el.type === 'checkbox') { if (typeof v === 'boolean') el.checked = v; }
+      else if (el.tagName === 'SELECT') { if (Array.from(el.options).some(op => op.value === v)) el.value = v; }
+      else if (typeof v === 'string' && (v === '' || isFinite(Number(v)))) el.value = v;
+    });
+  }
+  function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(snapshot())); } catch (e) { /* storage off / full */ } }
+  function load() {
+    try { const o = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (o && typeof o === 'object') apply(o); } catch (e) { /* bad JSON: ignore */ }
+  }
+  function reset() {
+    if (!confirm('Reset every setting to the defaults?')) return;
+    try { localStorage.removeItem(STORE_KEY); } catch (e) { /* ignore */ }
+    apply(defaults); $('cOut').textContent = ''; recompute();
+  }
 
   function readModel() {
     return { vocab: num('vocab'), hidden: num('hidden'), layers: num('layers'), ffn: num('ffn'),
       heads: num('heads'), kvHeads: num('kvHeads'), headDim: num('headDim'),
       tied: $('tied').checked, qkvBias: $('qkvBias').checked };
   }
-  // Same architecture (context ignored: it does not change the parameter count)?
-  function sameArch(m, e) {
-    const hd = x => (x.headDim > 0 ? x.headDim : x.hidden / x.heads);
-    return ['vocab', 'hidden', 'layers', 'ffn', 'heads', 'kvHeads'].every(k => m[k] === e[k]) &&
-      hd(m) === hd(e) && m.tied === e.tied && m.qkvBias === e.qkvBias;
-  }
-  function showOfficial(m, total) {
-    const e = X.MODELS.find(x => sameArch(m, x));
-    const mine = !e && sameArch(m, X.MY_MODEL);
-    const sel = $('loadModel');
-    sel.value = e ? e.id : mine ? 'my' : 'custom';
-    $('modelNote').hidden = !e; $('modelNote').textContent = e ? e.note : '';
-    const o = $('rOfficial');
-    if (!e) { o.hidden = true; return; }
-    const d = (total - e.official) / e.official * 100;
-    const ok = Math.abs(d) < 0.05;
-    o.hidden = false;
-    o.innerHTML = esc(e.name) + ' official: <b>' + fmtM(e.official) + '</b> · ours: <b>' + fmtM(total) + '</b> ' +
-      (ok ? '<span class="ok">✓ ' + (d === 0 ? 'exact' : (d > 0 ? '+' : '') + d.toFixed(3) + '%') + '</span>'
-          : '<span class="bad">' + (d > 0 ? '+' : '') + d.toFixed(1) + '%</span>');
-  }
-  const fmtMB = mb => mb >= 1000 ? (mb / 1000).toFixed(2) + ' GB' : mb.toFixed(1) + ' MB';
-  const fmtTime = s => { const m = s / 60; return m < 60 ? m.toFixed(1) + ' min' : Math.floor(m / 60) + ' h ' + Math.round(m % 60) + ' min'; };
 
   function recompute() {
     const m = readModel();
@@ -60,43 +70,50 @@
     if (m.kvHeads && m.heads % m.kvHeads) warns.push('Heads should divide evenly by KV heads.');
     if (m.headDim > 0 && m.headDim * m.heads !== m.hidden) warns.push('Head size × heads (' + fmt(m.headDim * m.heads) + ') is not hidden size — fine if a real model does it (Gemma 3), otherwise leave Head size empty.');
     const p = M.params(m);
-    $('rParams').textContent = fmtM(p.total);
-    showOfficial(m, p.total);
-    $('rBreak').innerHTML = [
-      ['Embeddings' + (m.tied ? ' (tied)' : ' (untied ×2)'), p.embed],
-      ['Attention / layer' + (m.qkvBias ? ' (incl. ' + fmt(p.bias) + ' bias)' : ''), p.attn], ['MLP / layer', p.mlp], ['Norms / layer', p.norms],
-      ['All ' + m.layers + ' layers', p.layersTotal], ['Final norm', p.finalNorm]
-    ].map(([k, v]) => '<tr><td>' + k + '</td><td>' + fmt(v) + '</td></tr>').join('');
-    $('rSizes').innerHTML = M.fileSizes(p.total).map(f => '<tr><td>' + f.name + '</td><td>~' + fmtMB(f.mb) + '</td></tr>').join('');
+    const params = fmtM(p.total);
+    $('rParams').textContent = $('bParams').textContent = params;
+    $('rBreak').innerHTML = rows([
+      ['Embeddings' + (m.tied ? ' (tied)' : ' (untied ×2)'), fmt(p.embed)],
+      ['Attention / layer' + (m.qkvBias ? ' (incl. ' + fmt(p.bias) + ' bias)' : ''), fmt(p.attn)], ['MLP / layer', fmt(p.mlp)], ['Norms / layer', fmt(p.norms)],
+      ['All ' + fmt(m.layers) + ' layers', fmt(p.layersTotal)], ['Final norm', fmt(p.finalNorm)], ['<b>Total</b>', '<b>' + fmt(p.total) + '</b>']
+    ]);
+    $('rSizes').innerHTML = rows(M.fileSizes(p.total).map(f => [f.name, '~' + fmtMB(f.mb)]));
 
     const tr = M.training(t, seq);
     $('rTokens').textContent = fmt(tr.tokens);
     $('rBlocks').textContent = fmt(tr.blocks);
     $('rTps').textContent = fmt(tr.tokensPerStep);
-    $('rSpe').textContent = fmt(tr.stepsPerEpoch);
-    $('rSteps').textContent = fmt(tr.totalSteps);
+    $('rSpe').textContent = $('rSpeBig').textContent = fmt(tr.stepsPerEpoch);
+    $('rSteps').textContent = $('rStepsBig').textContent = $('bSteps').textContent = fmt(tr.totalSteps);
 
     const sec = M.timeSec(tr.tokensTrained, num('tps'), t.gpus);
-    $('rTime').textContent = isFinite(sec) ? fmtTime(sec) : '—';
+    $('rTime').textContent = $('bTime').textContent = isFinite(sec) ? fmtTime(sec) : '—';
     if (sec > 12 * 3600) warns.push('Longer than a Kaggle session (~12 h). Save checkpoints and resume.');
     if (sec > 30 * 3600) warns.push('More than the weekly Kaggle GPU quota (~30 h, approximate).');
 
     const mem = M.memory(p.total, t.batch, seq, m.hidden, m.layers);
     const gb = mem.total / M.GB, limit = M.GPU_PRESETS[$('preset').value].mem;
     $('rMem').textContent = gb.toFixed(2) + ' GB / GPU';
-    $('rMemBreak').textContent = 'weights+optimizer ' + (mem.states / M.GB).toFixed(2) + ' GB + activations ~' + (mem.acts / M.GB).toFixed(2) + ' GB (rough)';
-    $('rMem').classList.toggle('bad', gb > limit);
-    if (gb > limit) warns.push('Memory over ' + limit + ' GB per GPU — lower batch, context or model size.');
+    $('bMem').textContent = gb.toFixed(1) + ' GB';
+    $('rMemBreak').innerHTML = rows([
+      ['Weights + grads + AdamW (~16 B/param)', (mem.states / M.GB).toFixed(2) + ' GB'],
+      ['Activations (rough)', '~' + (mem.acts / M.GB).toFixed(2) + ' GB'],
+      ['Total per GPU', (gb).toFixed(2) + ' GB of ' + limit + ' GB']
+    ]);
+    const over = gb > limit;
+    $('rMem').classList.toggle('bad', over); $('bMem').classList.toggle('bad', over);
+    if (over) warns.push('Memory over ' + limit + ' GB per GPU — lower batch, context or model size.');
     $('warns').innerHTML = warns.map(w => '<li>' + w + '</li>').join('');
+    $('bDot').hidden = !warns.length;
   }
 
   function applyPreset() {
     const pr = M.GPU_PRESETS[$('preset').value];
-    $('gpus').value = pr.gpus; $('tps').value = pr.tps; recompute();
+    $('gpus').value = pr.gpus; $('tps').value = pr.tps;
   }
   function doCalibrate() {
     const v = M.calibrate(num('cSteps'), num('cMin'), num('cBatch'), num('cSeq'), num('gpus'));
-    if (isFinite(v) && v > 0) { $('tps').value = Math.round(v); $('cOut').textContent = '→ ' + fmt(v) + ' tokens/sec per GPU'; recompute(); }
+    if (isFinite(v) && v > 0) { $('tps').value = Math.round(v); $('cOut').textContent = '→ ' + fmt(v) + ' tokens/sec per GPU'; recompute(); save(); flash(['tps']); }
     else $('cOut').textContent = 'Fill in all four boxes.';
   }
 
@@ -107,7 +124,7 @@
     const v = fmt(exVal(e, key));
     if (key === 'seq' && e.id === 'mistral7b') return v + ' (window 4,096)';
     if (key === 'seq' && e.id === 'phi3') return v + ' (window 2,047)';
-    if (key === 'seq' && e.id === 'gemma270') return v + ' (window 512*)';
+    if (key === 'seq' && e.id === 'gemma270') return v + ' (window 512)';
     if (key === 'headDim' && e.headDimAuto) return v + ' (auto)';
     return v;
   };
@@ -123,38 +140,36 @@
     box.hidden = false;
     box.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
       const e = X.MODELS.find(x => x.id === b.dataset.ex);
-      setField(key, exVal(e, key));
-      $('help').close(); recompute(); flash([key]);
+      if (BOOL_KEYS[key]) $(key).checked = !!exVal(e, key); else $(key).value = exVal(e, key);
+      $('help').close(); recompute(); save(); flash([key]);
     }));
-  }
-  function setField(key, v) {
-    if (BOOL_KEYS[key]) $(key).checked = !!v; else $(key).value = v;
   }
   function flash(keys) {
     keys.forEach(k => { const f = $(k).closest('.field'); f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash'); });
-  }
-  function loadModel() {
-    const id = $('loadModel').value;
-    const e = id === 'my' ? X.MY_MODEL : X.MODELS.find(x => x.id === id);
-    if (!e) return;
-    MODEL_KEYS.forEach(k => setField(k, k === 'headDim' ? (e.headDimAuto ? '' : e.headDim) : e[k]));
-    recompute(); flash(MODEL_KEYS);
   }
   function showHelp(key, title) {
     $('helpTitle').textContent = title; $('helpText').textContent = H[key] || '';
     realModelsList(key);
     $('help').showModal();
   }
+  function toggleBar() {
+    const open = $('out').classList.toggle('open');
+    $('rBar').setAttribute('aria-expanded', String(open));
+  }
   function init() {
+    defaults = snapshot();
+    load();
     document.querySelectorAll('[data-help]').forEach(b => b.addEventListener('click', () =>
-      showHelp(b.dataset.help, b.closest('.field, summary, .row')?.querySelector('label, span')?.textContent || 'Info')));
+      showHelp(b.dataset.help, b.closest('.field, h2')?.querySelector('label, span')?.textContent || 'Info')));
     $('helpClose').addEventListener('click', () => $('help').close());
     $('help').addEventListener('click', e => { if (e.target === $('help')) $('help').close(); });
-    document.querySelectorAll('input, select').forEach(el => { if (el.id !== 'loadModel') el.addEventListener('input', recompute); });
-    $('preset').addEventListener('change', applyPreset);
-    $('loadModel').insertAdjacentHTML('beforeend', X.MODELS.map(e => '<option value="' + e.id + '">' + esc(e.name) + '</option>').join(''));
-    $('loadModel').addEventListener('change', loadModel);
+    fields().forEach(el => {
+      el.addEventListener('input', () => { recompute(); save(); });
+      el.addEventListener('change', () => { if (el.id === 'preset') applyPreset(); recompute(); save(); });
+    });
     $('cBtn').addEventListener('click', doCalibrate);
+    $('resetBtn').addEventListener('click', reset);
+    $('rBar').addEventListener('click', toggleBar);
     $('glossary').innerHTML = window.LLMCalcGlossary.map(([k, v]) => '<dt>' + k + '</dt><dd>' + v + '</dd>').join('');
     recompute();
   }

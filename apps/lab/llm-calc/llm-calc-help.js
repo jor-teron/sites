@@ -1,6 +1,6 @@
 /*
  * File: llm-calc-help.js
- * Project: llm-calc (Lab) — R2 2026-10-19 (R2: head size, QKV bias, load model)
+ * Project: llm-calc (Lab) — R4 2026-10-19 (R2: head size, QKV bias; R4: removed Load whole model text)
  * Purpose: Plain-English help text for every setting (shown by the ⓘ buttons)
  *          and the glossary. Text only, no logic.
  */
@@ -15,7 +15,6 @@ window.LLMCalcHelp = {
   tied: 'Tied embeddings reuse the input word table as the output table. On: saves vocab × hidden parameters. Off: a separate output table, bigger file, sometimes slightly better.',
   headDim: 'Head size: how many numbers each attention head works with. Leave it empty ("auto") and it is hidden ÷ heads, which is what most models use. A few models (Gemma 3) pick a bigger head. Higher: bigger attention part, more parameters. Lower: the opposite.',
   qkvBias: 'Adds a small extra "bias" number to every query, key and value output. Qwen models use it; Llama, SmolLM and Mistral do not. It adds only a few thousand parameters, so it barely changes size.',
-  loadModel: 'Fills every model setting with a real model\'s values from its Hugging Face config.json. The results card then shows our calculated count next to the official one, so you can see the math is right. Pick "My model (default)" to get your own settings back. Note: it also sets Context to that model\'s maximum, which can make the training memory huge — lower it to your training length.',
   stories: 'How many training stories (examples) you have. More data: better model, longer training per epoch. Less: faster but the model may memorize.',
   tokensPerStory: 'Average length of one story in tokens. Multiplied by the number of stories it gives total tokens.',
   useTotal: 'Turn on to type the total token count directly instead of stories × tokens per story.',
