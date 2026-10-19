@@ -5,7 +5,7 @@
 #   datasets and tokenizers.)
 
 # ╔══════════════════════════════════════════════════════════════════════════╗
-# ║  TINY LLM TRAINER  v3.3                                                  ║
+# ║  TINY LLM TRAINER  v3.5                                                  ║
 # ║  Trains a small Llama-style language model from scratch on YOUR text     ║
 # ║  (an uploaded .txt file or folder, or a Hugging Face dataset),           ║
 # ║  then exports it as: Hugging Face folder, GGUF (+ Ollama Modelfile),     ║
@@ -30,7 +30,7 @@ CELL_VALUES = {k: v for k, v in dict(globals()).items() if k.isupper()}
 # ════════════════════════════════════════════════════════════════════════════
 
 # ---------- Name and folders ----------
-MODEL_NAME   = "tiny"          # Name for this run. Used for the output folder,
+MODEL_NAME   = "tiny-v3.5"          # Name for this run. Used for the output folder,
                                     # the GGUF file, the Ollama model and the zip.
                                     # Change it for every new run so old results
                                     # aren't overwritten (e.g. "tiny-v3.3").
@@ -137,6 +137,18 @@ BATCH_PER_GPU = 32                  # Text blocks each GPU handles per step. Tot
                                     # fewer steps, more GPU memory. If you get an
                                     # "out of memory" error, lower this (e.g. 16).
 USE_ALL_GPUS = True                 # True = use every GPU (both on T4 x2) in parallel.
+GRAD_ACCUM_STEPS = 1                # Gradient accumulation: run this many smaller batches,
+                                    # add up what they learned, then update ONCE. Same
+                                    # result as a batch this many times bigger, but needs
+                                    # only the memory of one small batch. 1 = off.
+                                    # Effective batch = BATCH_PER_GPU x GPUs x GRAD_ACCUM_STEPS.
+AUTO_BATCH   = True                 # True = before training, try one step. If the GPU runs
+                                    # out of memory, halve BATCH_PER_GPU and double
+                                    # GRAD_ACCUM_STEPS (same effective batch) and retry.
+GRADIENT_CHECKPOINTING = False      # True = save lots of GPU memory (the model re-computes
+                                    # in-between results instead of storing them) at the
+                                    # cost of ~30% slower training. Try it if you get
+                                    # "out of memory" even with a small batch.
                                     # False = use only one GPU.
 LR           = 6e-4                 # Learning rate (0.0006): how big each learning
                                     # step is. Too high = training goes unstable (loss
@@ -217,8 +229,20 @@ for _k, _v in CELL_VALUES.items():
 import os, sys, json, math, time, random, shutil, subprocess, zipfile, warnings
 import importlib, importlib.util
 
+# Memory tip for PyTorch: "expandable segments" lets it reuse GPU memory in a
+# smarter way (less waste from fragmentation). Must be set BEFORE torch is imported.
+if "PYTORCH_CUDA_ALLOC_CONF" not in os.environ:
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 import numpy as np
 import torch
+import gc
+
+# The "out of memory" error type (older torch versions keep it under torch.cuda).
+OOM_ERROR = getattr(torch, "OutOfMemoryError", torch.cuda.OutOfMemoryError)
+# Hidden TEST switch (not for normal use): pretend the GPU runs out of memory when
+# the batch per GPU is bigger than this number. Lets us test AUTO_BATCH on a CPU.
+_SIM_OOM = int(os.environ.get("_SIMULATE_OOM_ABOVE_BATCH", "0") or 0)
 
 # Print each line immediately instead of in bursts.
 try:
@@ -269,6 +293,7 @@ CONFIG_KEYS = {
     "USE_ALL_GPUS": "bool", "LR": "float", "WARMUP": "int",
     "WEIGHT_DECAY": "float", "GRAD_CLIP": "float", "SEED": "int",
     "MAX_SAMPLES": "int_or_none", "VAL_FRACTION": "float",
+    "GRAD_ACCUM_STEPS": "int", "AUTO_BATCH": "bool", "GRADIENT_CHECKPOINTING": "bool",
 }
 FROM_CONFIG = set()      # names of settings that the file changed
 CALC_ESTIMATES = {}      # the calculator's own predictions (_estimates), for comparing
@@ -354,6 +379,14 @@ if CONFIG_FILE:
             FROM_CONFIG.add(k)
         else:
             print(f"WARNING: unknown setting {k!r} in config — ignored.")
+    print(f"\nSettings loaded from CONFIG_FILE: {CONFIG_FILE}")
+    print(f"  {len(FROM_CONFIG)} setting(s) taken from the file"
+          + (f": {', '.join(sorted(FROM_CONFIG))}" if FROM_CONFIG else ""))
+    _kept = sorted(k for k in cfg if k in FROM_CELL)
+    if _kept:
+        print(f"  {len(_kept)} setting(s) in the file were overridden by the Kaggle cell: {', '.join(_kept)}")
+else:
+    print("\nNo CONFIG_FILE set: using this script's defaults + the Kaggle cell's settings.")
 
 # Check the shape settings fit together, whether they came from the file or not.
 if HIDDEN % HEADS != 0:
@@ -375,6 +408,7 @@ os.makedirs(OUT_DIR, exist_ok=True)
 # Each line shows where the value came from: default (this script), config (the
 # JSON file) or cell (set in the Kaggle cell before exec).
 section("SETTINGS IN USE  (source: default / config / cell)")
+print("Priority: default < config < cell (the cell always wins).")
 for k in list(CONFIG_KEYS) + ["DATA_PATH", "STORY_SEPARATOR", "MIN_CHARS",
                               "EXPORT_GGUF", "EXPORT_ONNX", "MAKE_ZIP"]:
     src = "cell" if k in FROM_CELL else "config" if k in FROM_CONFIG else "default"
@@ -384,19 +418,111 @@ if CALC_ESTIMATES:
     for k, v in CALC_ESTIMATES.items():
         print(f"    {k:<20} {v}")
 
-# Rough memory check per GPU. Training needs ~16 bytes per parameter (fp32 weights,
-# gradients and the two AdamW memories), plus "activations" (in-between results
-# kept for learning), roughly BATCH x SEQ x HIDDEN x LAYERS x 34 bytes in fp16.
+# ════════════════════════════════════════════════════════════════════════════
+#  1c. HARDWARE + MEMORY ESTIMATE
+# ════════════════════════════════════════════════════════════════════════════
+# Pick the hardware. "cuda" means an NVIDIA GPU; otherwise we fall back to the
+# CPU (works, but far too slow for real training — only good for testing).
+device = "cuda" if torch.cuda.is_available() else "cpu"
+n_gpu = torch.cuda.device_count() if device == "cuda" else 0
+gpus_used = (n_gpu if USE_ALL_GPUS else 1) if device == "cuda" else 0
+use_amp = device == "cuda"   # fp16 "mixed precision": ~2x faster on T4 GPUs, GPU only
+GB = 1024 ** 3               # we show memory in GiB, the same unit PyTorch's errors use
+
+
+def gpu_info():
+    """Print each GPU's name and total / free memory."""
+    if device != "cuda":
+        print("Memory: CPU, n/a (no GPU found)")
+        return
+    for i in range(n_gpu):
+        free, total = torch.cuda.mem_get_info(i)
+        print(f"GPU{i}: {torch.cuda.get_device_name(i)} | total {total / GB:.1f} GB | "
+              f"free {free / GB:.1f} GB")
+
+
+def mem_str():
+    """Short memory report for the log: used/total and the peak so far, per GPU."""
+    if device != "cuda":
+        return "mem CPU, n/a"
+    parts = []
+    for i in range(gpus_used):
+        total = torch.cuda.mem_get_info(i)[1]
+        parts.append(f"GPU{i} {torch.cuda.memory_allocated(i) / GB:.1f}/{total / GB:.1f} GB "
+                     f"(peak {torch.cuda.max_memory_allocated(i) / GB:.1f})")
+    return "mem " + " | ".join(parts)
+
+
+section("SETUP")
+print(f"Python {sys.version.split()[0]} | torch {torch.__version__} | "
+      f"transformers {transformers.__version__}")
+print(f"Device: {device} | GPUs available: {n_gpu} | GPUs used: {gpus_used}")
+gpu_info()
+print(f"Output folder: {OUT_DIR}")
+
+# How many parameters (weights) the model will have.
 _p_est = (VOCAB * HIDDEN * (1 if TIE_EMBEDDINGS else 2)
           + LAYERS * (2 * HIDDEN * HIDDEN + 2 * HIDDEN * (HIDDEN // HEADS) * KV_HEADS
                       + 3 * HIDDEN * FFN + 2 * HIDDEN) + HIDDEN)
-_mem_gb = (_p_est * 16 + BATCH_PER_GPU * SEQ * HIDDEN * LAYERS * 34) / 1e9
-print(f"\nEstimated training memory per GPU: ~{_mem_gb:.1f} GB "
-      f"(weights+optimizer {_p_est * 16 / 1e9:.1f} GB, activations "
-      f"{BATCH_PER_GPU * SEQ * HIDDEN * LAYERS * 34 / 1e9:.1f} GB)")
-if _mem_gb > 14:
-    print(f"WARNING: that is more than a T4's ~14 GB usable. Expect 'CUDA out of memory'. "
-          f"Try BATCH_PER_GPU = {max(1, BATCH_PER_GPU // 2)} (or lower SEQ / model size).")
+
+
+def estimate_mem(bpg, n_gpus):
+    """Rough training memory (bytes) on GPU 0, the busiest GPU, for `bpg` blocks per GPU.
+    Pieces:
+      * weights + gradients + AdamW's two memories: 16 bytes per parameter.
+        With DataParallel, GPU 0 keeps this "master" copy; the other GPUs only get
+        a temporary copy of the weights (+ their gradients).
+      * logits = the model's score for EVERY vocabulary word at EVERY position:
+        blocks x SEQ x VOCAB numbers, stored as fp16 (2 B) + an fp32 copy for the
+        loss (4 B) + its gradient (4 B). With a big VOCAB this is the largest piece!
+        DataParallel also collects every GPU's logits on GPU 0 (2 B each).
+      * per-layer "activations": in-between results kept for learning
+        (~34 bytes per HIDDEN number + ~10 bytes per FFN number, per token).
+        Gradient checkpointing keeps only each layer's input (2 B per number).
+      * attention scores: SEQ x SEQ per head. 'sdpa' attention does not store
+        them, the older 'eager' attention does (~10 B each).
+      * ~0.5 GB for the CUDA system itself."""
+    tokens = bpg * SEQ
+    weights = _p_est * 16
+    logits = tokens * VOCAB * (2 + 4 + 4) + (n_gpus * tokens * VOCAB * 2 if n_gpus > 1 else 0)
+    if GRADIENT_CHECKPOINTING:
+        layers = tokens * HIDDEN * 2 * LAYERS + tokens * (HIDDEN * 34 + FFN * 10)
+    else:
+        layers = tokens * (HIDDEN * 34 + FFN * 10) * LAYERS
+    attn = 0 if ATTN_IMPL == "sdpa" else bpg * HEADS * SEQ * SEQ * 10 * (1 if GRADIENT_CHECKPOINTING else LAYERS)
+    return {"weights+optimizer": weights, "logits": logits, "layers": layers,
+            "attention": attn, "cuda system": 0.5 * GB}
+
+
+ATTN_IMPL = "sdpa"     # what we ask for; build_model falls back to "eager" if needed
+_n_est = max(1, gpus_used) if device == "cuda" else 2      # no GPU here: assume Kaggle T4 x2
+if device == "cuda":
+    _free = min(torch.cuda.mem_get_info(i)[0] for i in range(max(1, gpus_used)))
+else:
+    _free = 14.56 * GB                                      # a T4's memory, for the estimate
+section("MEMORY ESTIMATE  (GPU 0, the busiest one)")
+if device != "cuda":
+    print("No GPU here, so this assumes Kaggle T4 x2 (14.6 GB each).")
+_e = estimate_mem(BATCH_PER_GPU, _n_est)
+_total = sum(_e.values())
+print(f"Batch per GPU {BATCH_PER_GPU}: ~{_total / GB:.1f} GB  ("
+      + ", ".join(f"{k} {v / GB:.1f}" for k, v in _e.items()) + ")")
+print("Other batch sizes: " + " | ".join(
+    f"{b}: {sum(estimate_mem(b, _n_est).values()) / GB:.1f} GB" for b in (32, 16, 8, 4, 2, 1)))
+_fit = next((b for b in (512, 256, 128, 64, 32, 16, 8, 4, 2, 1)
+             if b <= max(BATCH_PER_GPU, 1) and sum(estimate_mem(b, _n_est).values()) <= 0.9 * _free), None)
+if _total > 0.9 * _free:
+    print(f"WARNING: that is more than 90% of the free memory ({_free / GB:.1f} GB). "
+          f"Expect 'out of memory'.")
+    if _fit:
+        print(f"  Suggestion: BATCH_PER_GPU = {_fit} (with GRAD_ACCUM_STEPS = "
+              f"{max(1, BATCH_PER_GPU * GRAD_ACCUM_STEPS // _fit)} to keep the same effective batch).")
+    else:
+        print("  Even batch 1 may not fit: try GRADIENT_CHECKPOINTING = True, a smaller SEQ, "
+              "VOCAB or model.")
+    if AUTO_BATCH:
+        print("  AUTO_BATCH is on, so the script will find a batch that fits by itself.")
+print("(This is a rough guess; the real numbers are printed after the first step.)")
 
 
 def build_model(bos_id, eos_id):
@@ -408,7 +534,19 @@ def build_model(bos_id, eos_id):
         bos_token_id=bos_id, eos_token_id=eos_id, pad_token_id=eos_id,
         tie_word_embeddings=TIE_EMBEDDINGS,   # True = input/output word tables shared
     )
-    return config, LlamaForCausalLM(config)
+    global ATTN_IMPL
+    # 'sdpa' = PyTorch's memory-saving attention. Older versions may not support it,
+    # so we fall back to the classic 'eager' attention.
+    try:
+        config._attn_implementation = "sdpa"
+        model = LlamaForCausalLM(config)
+        ATTN_IMPL = "sdpa"
+    except Exception as e:
+        print(f"Note: 'sdpa' attention not available ({e}); using 'eager'.")
+        config._attn_implementation = "eager"
+        model = LlamaForCausalLM(config)
+        ATTN_IMPL = "eager"
+    return config, model
 
 
 def compare_params(n):
@@ -434,20 +572,7 @@ random.seed(SEED)
 np.random.seed(SEED)
 torch.manual_seed(SEED)
 
-# Pick the hardware. "cuda" means an NVIDIA GPU; otherwise we fall back to the
-# CPU (works, but far too slow for real training — only good for testing).
-device = "cuda" if torch.cuda.is_available() else "cpu"
-n_gpu = torch.cuda.device_count() if device == "cuda" else 0
-gpus_used = (n_gpu if USE_ALL_GPUS else 1) if device == "cuda" else 0
-BATCH = BATCH_PER_GPU * max(1, gpus_used)       # total text blocks per step
-use_amp = device == "cuda"   # fp16 "mixed precision": ~2x faster on T4 GPUs, GPU only
-
-section("SETUP")
-print(f"Python {sys.version.split()[0]} | torch {torch.__version__} | "
-      f"transformers {transformers.__version__}")
-print(f"Device: {device} | GPUs available: {n_gpu} | GPUs used: {gpus_used} | "
-      f"total batch: {BATCH}")
-print(f"Output folder: {OUT_DIR}")
+BATCH = BATCH_PER_GPU * max(1, gpus_used)       # text blocks per small batch (all GPUs)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -711,11 +836,24 @@ val_data = make_blocks(val_texts, is_val=True)
 del train_texts, val_texts                # free RAM; we only need the numbers now
 
 N_BLOCKS = len(train_data)
-STEPS_PER_EPOCH = math.ceil(N_BLOCKS / BATCH)   # the last batch of an epoch may be smaller
-TOTAL_STEPS = STEPS_PER_EPOCH * EPOCHS
 print(f"Training blocks: {N_BLOCKS:,} ({N_BLOCKS * SEQ / 1e6:.1f}M tokens) | "
       f"validation blocks: {len(val_data):,}")
-print(f"Steps per epoch: {STEPS_PER_EPOCH:,} | epochs: {EPOCHS} | total steps: {TOTAL_STEPS:,}")
+
+
+def steps_math():
+    """One 'step' = one weight update = GRAD_ACCUM_STEPS small batches.
+    The effective batch (blocks per update) decides the number of steps."""
+    global BATCH, EFFECTIVE_BATCH, STEPS_PER_EPOCH, TOTAL_STEPS
+    BATCH = BATCH_PER_GPU * max(1, gpus_used)
+    EFFECTIVE_BATCH = BATCH * GRAD_ACCUM_STEPS
+    STEPS_PER_EPOCH = math.ceil(N_BLOCKS / EFFECTIVE_BATCH)   # last step may be smaller
+    TOTAL_STEPS = STEPS_PER_EPOCH * EPOCHS
+
+
+steps_math()
+print(f"Steps per epoch: {STEPS_PER_EPOCH:,} | epochs: {EPOCHS} | total steps: {TOTAL_STEPS:,} "
+      f"(effective batch {EFFECTIVE_BATCH} = {BATCH_PER_GPU} per GPU x {max(1, gpus_used)} GPU(s) "
+      f"x {GRAD_ACCUM_STEPS} accumulation)")
 if CALC_ESTIMATES.get("total_steps"):
     print(f"Calculator estimated {CALC_ESTIMATES.get('steps_per_epoch')} steps/epoch, "
           f"{CALC_ESTIMATES['total_steps']} total | actual {STEPS_PER_EPOCH:,} / {TOTAL_STEPS:,} "
@@ -732,6 +870,11 @@ base_model = base_model.to(device)   # the real model
 # Tell generate() which tokens mean "end" and "padding" (avoids warnings later).
 base_model.generation_config.pad_token_id = EOS_ID
 base_model.generation_config.eos_token_id = EOS_ID
+print(f"Attention: {ATTN_IMPL}")
+if GRADIENT_CHECKPOINTING:
+    base_model.config.use_cache = False          # the cache doesn't mix with checkpointing
+    base_model.gradient_checkpointing_enable()
+    print("Gradient checkpointing: ON (less memory, ~30% slower)")
 
 n_params = sum(p.numel() for p in base_model.parameters())
 print(f"Parameters: {n_params / 1e6:.2f}M | fp32 size ≈ {n_params * 4 / 1e6:.0f} MB")
@@ -760,7 +903,6 @@ def lr_factor(step):
     return MIN_LR_RATIO + (1 - MIN_LR_RATIO) * 0.5 * (1 + math.cos(math.pi * min(1.0, progress)))
 
 
-scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_factor)
 # GradScaler keeps fp16 numbers from getting too small to represent. GPU only.
 scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
 
@@ -770,6 +912,8 @@ def compute_loss(batch, net):
     The model predicts every next token; `labels=batch` lets it check itself
     (it shifts by one token internally). `.mean()` merges the losses from
     each GPU when running in parallel."""
+    if _SIM_OOM and len(batch) / max(1, gpus_used) > _SIM_OOM and net.training:
+        raise OOM_ERROR(f"(simulated for testing) batch {len(batch)} > {_SIM_OOM}")
     with torch.autocast(device_type=device, dtype=torch.float16, enabled=use_amp):
         out = net(input_ids=batch, labels=batch)
     return out.loss.float().mean()
@@ -790,6 +934,80 @@ def evaluate():
     model.train()
     loss = sum(losses) / len(losses)
     return loss, math.exp(min(loss, 20))   # cap avoids overflow on a wild early loss
+
+
+def free_memory():
+    """Give back as much GPU memory as possible after an 'out of memory' error."""
+    optimizer.zero_grad(set_to_none=True)
+    for p in base_model.parameters():
+        p.grad = None
+    gc.collect()
+    if device == "cuda":
+        torch.cuda.empty_cache()
+
+
+def trial_step():
+    """One full practice step (forward, backward, optimizer) on the biggest batch,
+    with learning rate 0 so the weights do NOT change. It makes the GPU allocate
+    everything training needs, so an 'out of memory' shows up now, not mid-run."""
+    batch = train_data[:BATCH].long().to(device)
+    net = model if len(batch) >= max(1, gpus_used) else base_model
+    loss = compute_loss(batch, net)
+    loss.backward()
+    lrs = [g["lr"] for g in optimizer.param_groups]
+    for g in optimizer.param_groups:
+        g["lr"] = 0.0
+        g["weight_decay_saved"], g["weight_decay"] = g["weight_decay"], 0.0
+    optimizer.step()                       # creates AdamW's memories (uses GPU memory)
+    for g, lr in zip(optimizer.param_groups, lrs):
+        g["lr"] = lr
+        g["weight_decay"] = g.pop("weight_decay_saved")
+    for st in optimizer.state.values():    # reset AdamW's memories to "fresh"
+        for k, v in st.items():
+            if torch.is_tensor(v):
+                v.zero_()
+    optimizer.zero_grad(set_to_none=True)
+    del loss, batch
+
+
+def find_batch_that_fits():
+    """Run trial_step(); on 'out of memory', halve the batch and double accumulation."""
+    global BATCH_PER_GPU, GRAD_ACCUM_STEPS, BATCH
+    while True:
+        BATCH = BATCH_PER_GPU * max(1, gpus_used)
+        try:
+            trial_step()
+            print(f"Trial step OK with batch {BATCH_PER_GPU} per GPU "
+                  f"(grad accumulation {GRAD_ACCUM_STEPS}) | {mem_str()}")
+            return
+        except OOM_ERROR as e:
+            free_memory()
+            if not AUTO_BATCH:
+                raise SystemExit(f"ERROR: out of memory with batch {BATCH_PER_GPU} per GPU.\n"
+                                 "  Set AUTO_BATCH = True, or lower BATCH_PER_GPU, or set "
+                                 "GRADIENT_CHECKPOINTING = True.") from e
+            if BATCH_PER_GPU <= 1:
+                raise SystemExit(
+                    "ERROR: out of memory even with batch 1 per GPU. The model is too big for\n"
+                    "  this GPU. Try GRADIENT_CHECKPOINTING = True, a smaller SEQ, a smaller VOCAB,\n"
+                    "  or fewer LAYERS / smaller HIDDEN.") from e
+            new = max(1, BATCH_PER_GPU // 2)
+            GRAD_ACCUM_STEPS *= BATCH_PER_GPU // new
+            print(f"Out of memory with batch {BATCH_PER_GPU} -> trying {new} "
+                  f"(grad accumulation {GRAD_ACCUM_STEPS}, same effective batch)", flush=True)
+            BATCH_PER_GPU = new
+
+
+section("TRIAL STEP  (checks the batch fits in memory)")
+find_batch_that_fits()
+steps_math()                                    # steps stay the same: effective batch unchanged
+print(f"Training with batch {BATCH_PER_GPU} per GPU x {max(1, gpus_used)} GPU(s) x "
+      f"{GRAD_ACCUM_STEPS} accumulation = effective batch {EFFECTIVE_BATCH} | "
+      f"{STEPS_PER_EPOCH:,} steps/epoch, {TOTAL_STEPS:,} total")
+if device == "cuda":
+    for i in range(max(1, gpus_used)):
+        torch.cuda.reset_peak_memory_stats(i)  # so 'peak' counts real training only
+scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_factor)
 
 
 def save_model(folder):
@@ -815,14 +1033,27 @@ loss_sum, loss_count = 0.0, 0                       # running average for the lo
 for epoch in range(1, EPOCHS + 1):
     order = torch.randperm(N_BLOCKS, generator=shuffle_gen)   # new random order
     for b in range(STEPS_PER_EPOCH):
-        idx = order[b * BATCH:(b + 1) * BATCH]
-        batch = train_data[idx].long().to(device, non_blocking=True)
-        # A tiny last batch with fewer blocks than GPUs can't be split; run it on one.
-        net = model if len(batch) >= max(1, gpus_used) else base_model
-
-        loss = compute_loss(batch, net)
+        idx_all = order[b * EFFECTIVE_BATCH:(b + 1) * EFFECTIVE_BATCH]
         optimizer.zero_grad(set_to_none=True)
-        scaler.scale(loss).backward()            # work out how to change each weight
+        step_loss = 0.0
+        # Gradient accumulation: split this step's blocks into small batches of
+        # BATCH, learn from each, and add the results up before ONE weight update.
+        for m in range(0, len(idx_all), BATCH):
+            idx = idx_all[m:m + BATCH]
+            batch = train_data[idx].long().to(device, non_blocking=True)
+            # A tiny last batch with fewer blocks than GPUs can't be split; run it on one.
+            net = model if len(batch) >= max(1, gpus_used) else base_model
+            try:
+                loss = compute_loss(batch, net)
+                share = len(idx) / len(idx_all)      # this small batch's share of the step
+                scaler.scale(loss * share).backward()  # work out how to change each weight
+            except OOM_ERROR:
+                print(f"\nOut of memory during training at step {step + 1} | {mem_str()}\n"
+                      f"Try BATCH_PER_GPU = {max(1, BATCH_PER_GPU // 2)} with GRAD_ACCUM_STEPS = "
+                      f"{GRAD_ACCUM_STEPS * 2}, or GRADIENT_CHECKPOINTING = True.")
+                raise
+            step_loss += loss.item() * share
+        loss = torch.tensor(step_loss)
         scaler.unscale_(optimizer)
         torch.nn.utils.clip_grad_norm_(base_model.parameters(), GRAD_CLIP)
         scaler.step(optimizer)                   # actually change the weights
@@ -831,6 +1062,16 @@ for epoch in range(1, EPOCHS + 1):
         step += 1
         loss_sum += loss.item()
         loss_count += 1
+        if step == 1:                            # one-time real memory report
+            print("Memory after first step:")
+            if device == "cuda":
+                for i in range(max(1, gpus_used)):
+                    total = torch.cuda.mem_get_info(i)[1]
+                    print(f"   GPU{i}: in use {torch.cuda.memory_allocated(i) / GB:.1f} GB, "
+                          f"peak {torch.cuda.max_memory_allocated(i) / GB:.1f} GB of "
+                          f"{total / GB:.1f} GB")
+            else:
+                print("   CPU, n/a")
 
         # --- progress line ---
         if step % LOG_EVERY == 0 or step == TOTAL_STEPS:
@@ -838,7 +1079,7 @@ for epoch in range(1, EPOCHS + 1):
             eta = elapsed / step * (TOTAL_STEPS - step)
             print(f"epoch {epoch}/{EPOCHS} | step {step:,}/{TOTAL_STEPS:,} | "
                   f"loss {loss_sum / loss_count:.3f} | lr {scheduler.get_last_lr()[0]:.2e} | "
-                  f"elapsed {fmt_time(elapsed)} | ETA {fmt_time(eta)}", flush=True)
+                  f"elapsed {fmt_time(elapsed)} | ETA {fmt_time(eta)} | {mem_str()}", flush=True)
             loss_sum, loss_count = 0.0, 0
 
         # --- validation test (also at the end of every epoch) ---
@@ -854,6 +1095,10 @@ for epoch in range(1, EPOCHS + 1):
             print(f"   >> checkpoint saved at step {step:,} -> {CKPT_DIR}", flush=True)
 
 train_time = time.time() - t_start
+if device == "cuda":                             # remember the peaks before exports
+    PEAKS = [torch.cuda.max_memory_allocated(i) / GB for i in range(max(1, gpus_used))]
+else:
+    PEAKS = []
 print(f"\nTraining finished in {fmt_time(train_time)}")
 
 # --- Save the finished model FIRST, so a failing export can never lose it ---
@@ -1176,6 +1421,11 @@ if MAKE_ZIP:
 section("SUMMARY")
 print(f"Model: {MODEL_NAME} | {n_params / 1e6:.2f}M parameters | {EPOCHS} epochs | "
       f"{TOTAL_STEPS:,} steps | training time {fmt_time(train_time)}")
+print(f"Batch: {BATCH_PER_GPU} per GPU x {max(1, gpus_used)} GPU(s) x {GRAD_ACCUM_STEPS} "
+      f"accumulation = effective {EFFECTIVE_BATCH} | attention {ATTN_IMPL} | "
+      f"checkpointing {'on' if GRADIENT_CHECKPOINTING else 'off'}")
+print("Peak GPU memory: " + (" | ".join(f"GPU{i} {p:.1f} GB" for i, p in enumerate(PEAKS))
+                             if PEAKS else "CPU, n/a"))
 if history:
     print(f"Final validation loss {history[-1][1]:.3f} | perplexity {math.exp(min(history[-1][1], 20)):.2f}")
 print()

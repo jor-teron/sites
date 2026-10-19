@@ -12,7 +12,7 @@
   "KV_HEADS": 8,
   "TIE_EMBEDDINGS": false,
   "EPOCHS": 2,
-  "BATCH_PER_GPU": 32,
+  "BATCH_PER_GPU": 8,
   "USE_ALL_GPUS": true,
   "LR": 0.0003,
   "WARMUP": 100,
