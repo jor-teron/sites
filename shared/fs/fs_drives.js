@@ -10,6 +10,11 @@
  *           on a computer). The handle is remembered in IndexedDB ('sites-fs' / 'drives'); after a
  *           reload the browser wants a click on "Allow access" (requestPermission) again.
  *           Removing a folder only forgets it here; no files are touched.
+ *   gdrive  "Google Drive" (R9a): only when shared/google/gdrive_fs.js + google_auth.js are loaded.
+ *           handle('gdrive') = GDriveFs.root() (a directory-handle look-alike); access() is
+ *           'granted' when signed in, else 'prompt'; allow() can't sign in by itself (the QR
+ *           panel, shared/google/gdrive_connect.js, does that). gdriveState() → 'setup' (no client
+ *           id in google_config.js) | 'connect' | 'ok'. Sign-in changes redraw like drive changes.
  * Changes are announced on BroadcastChannel 'sites-fs' ({type:'drives'}) so every open page redraws.
  *
  * API window.FsDrives:
@@ -69,12 +74,14 @@
 
   async function list() {
     const out = hasLocal ? [{ id: 'local', name: 'Local', kind: 'local' }] : [];
+    if (hasG()) out.push({ id: 'gdrive', name: 'Google Drive', kind: 'gdrive' });
     (await folders()).sort((a, b) => (a.added || 0) - (b.added || 0))
       .forEach((f) => out.push({ id: f.id, name: f.name, kind: 'folder' }));
     return out;
   }
   async function rec(id) { return (await folders()).find((f) => f.id === id) || null; }
   async function handle(id) {
+    if (id === 'gdrive') return hasG() ? window.GDriveFs.root() : null;
     if (id === 'local') {
       if (!hasLocal) return null;
       persistOnce();
@@ -84,12 +91,14 @@
     return r ? r.handle : null;
   }
   async function access(id) {
+    if (id === 'gdrive') return gdriveState() === 'ok' ? 'granted' : 'prompt';
     if (id === 'local') return hasLocal ? 'granted' : 'denied';
     const h = await handle(id);
     if (!h) return 'denied';
     try { return h.queryPermission ? await h.queryPermission({ mode: 'readwrite' }) : 'granted'; } catch (_) { return 'prompt'; }
   }
   async function allow(id) {
+    if (id === 'gdrive') return gdriveState() === 'ok';
     const h = await handle(id);
     if (!h) return false;
     try { return (h.requestPermission ? await h.requestPermission({ mode: 'readwrite' }) : 'granted') === 'granted'; } catch (_) { return false; }
@@ -108,9 +117,16 @@
     return { id: item.id, name: item.name };
   }
   async function remove(id) {
-    if (id === 'local') return;
+    if (id === 'local' || id === 'gdrive') return;
     await tx('readwrite', (s) => s.delete(id));
     changed();
   }
-  window.FsDrives = { hasLocal, canAddFolder, list, handle, access, allow, addFolder, remove, onChange: (f) => fns.push(f) };
+  function hasG() { return !!(window.GDriveFs && window.GoogleAuth); }
+  function gdriveState() {
+    if (!hasG()) return '';
+    if (!window.GoogleAuth.configured()) return 'setup';
+    return window.GoogleAuth.signedIn() ? 'ok' : 'connect';
+  }
+  if (hasG()) window.GoogleAuth.onChange(() => fns.slice().forEach((f) => { try { f(); } catch (_) { /* ignore */ } }));
+  window.FsDrives = { hasLocal, canAddFolder, list, handle, access, allow, addFolder, remove, gdriveState, onChange: (f) => fns.push(f) };
 })();

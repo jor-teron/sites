@@ -103,6 +103,7 @@
     { t: 'Drives & Files', h: `
       <p>On a computer the desktop shows <b>Drives</b> on the left and the QR / link tiles on the right.</p>
       <ul>
+        <li><b>Google Drive</b>: sign in with a QR code (see the Google Drive card).</li>
         <li><b>Local</b> is storage inside this browser, just for this site. It is always there; clearing the
           browser's site data erases it.</li>
         <li><b>Add folder</b> (Chrome or Edge on a computer) lets the Hub use a real folder you pick. After a
@@ -110,6 +111,25 @@
         <li>Click a drive to open it in <b>Files</b> (also in Tools). A Files window comes back on the same
           drive and folder after a reload.</li>
       </ul>` },
+    { t: 'Google Drive', h: `
+      <p><b>Google Drive</b> shows up as a drive (Drives pane and Files). You sign in with your phone:
+        click <b>Connect</b>, scan the QR, type the code if asked and approve. Right-click it →
+        <b>Sign out</b> to disconnect.</p>
+      <p>The Hub only sees files and folders <b>it created or uploaded</b> (Google allows just the
+        <code>drive.file</code> permission for QR sign-in), not the rest of your Drive. Delete moves items to
+        Drive's Trash.</p>
+      <p><b>One-time setup (Jor)</b>, until then the tile says “Set up Google Drive”:</p>
+      <ol>
+        <li>Google Cloud Console, the <b>same project as Mail</b>.</li>
+        <li><b>APIs &amp; Services → Library</b> → <b>Google Drive API</b> → <b>Enable</b>.</li>
+        <li><b>OAuth consent screen</b>: leave it in <b>Testing</b>, with only your account as a <b>test user</b>.</li>
+        <li><b>Credentials → Create credentials → OAuth client ID</b> → type
+          <b>TVs and Limited Input devices</b> → Create (not Mail's web client).</li>
+        <li>Copy the <b>client ID</b> and <b>client secret</b> into <code>shared/google/google_config.js</code>
+          (<code>tvClientId</code>, <code>tvClientSecret</code>) and push.</li>
+        <li>Try it in <b>Lab → Google Drive Test</b> (it logs every step).</li>
+      </ol>
+      <p>The sign-in is kept in this browser; sign out on a shared computer.</p>` },
     { t: 'Using Files', h: `
       <ul>
         <li><b>Select</b>: click; <b>Ctrl</b>/<b>\u2318</b>-click adds more; <b>Shift</b>-click picks a range;

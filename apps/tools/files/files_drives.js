@@ -4,6 +4,9 @@
  * the clickable path (breadcrumb) and the hash: #drive=<id>&path=<a/b> (kept up to date with
  * replaceState so a Hub window session reopens the same drive + folder).
  * Drives and path crumbs are drop targets (drag items onto them = move, Ctrl = copy).
+ * Google Drive (kind 'gdrive'): ☁ row with "Connect" (or "Set up") until signed in; opening it
+ * then shows the QR sign-in panel (#gd-panel, shared/google/gdrive_connect.js) instead of files;
+ * signed in → a normal drive (Drive adapter, shared/google/gdrive_fs.js) with a ⏏ Sign out button.
  * API FX.drives: draw(), open(id, fromClick, path), go(depth), up(), fromHash().
  */
 (function () {
@@ -18,8 +21,16 @@
       const r = el('div', 'drive' + (d.id === st.driveId ? ' on' : ''));
       r.setAttribute('role', 'listitem');
       const open = btn('drive-open', '', 'Open ' + d.name, () => openDrive(d.id, true));
-      open.append(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : '\uD83D\uDCC2'), el('span', 'drive-name', d.name));
+      open.append(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : '\uD83D\uDCC2'), el('span', 'drive-name', d.name));
       r.appendChild(open);
+      if (d.kind === 'gdrive') {
+        const gs = D.gdriveState();
+        if (gs !== 'ok') r.appendChild(btn('drive-allow', gs === 'setup' ? 'Set up' : 'Connect', 'Google Drive: ' + (gs === 'setup' ? 'how to set it up' : 'sign in with a QR code'), () => openDrive('gdrive', true)));
+        else r.appendChild(btn('drive-x', '\u23CF', 'Sign out of Google Drive', async () => {
+          if (!(await Dlg.confirm('Sign out of Google Drive?', 'Files forgets your Google sign-in and tells Google to cancel it. Your files stay in Google Drive.', 'Sign out', true))) return;
+          await window.GoogleAuth.signOut();
+        }));
+      }
       FX.view.dropTarget(open, () => D.handle(d.id), d.id);
       if (d.kind === 'folder') {
         if ((await D.access(d.id)) !== 'granted') {
@@ -54,8 +65,29 @@
     return { id: q.get('drive') || '', path: q.get('path') || '' };
   }
 
+  /** Google Drive not signed in yet: the QR panel instead of the file list. */
+  let gdMount = null;
+  function gdPanel(on) {
+    const p = $('gd-panel');
+    if (!p) return;
+    $('list').hidden = !!on;
+    if (!on) { if (gdMount) gdMount.destroy(); gdMount = null; p.hidden = true; p.replaceChildren(); return; }
+    p.hidden = false;
+    if (!gdMount || p.dataset.state !== D.gdriveState()) {
+      if (gdMount) gdMount.destroy();
+      p.dataset.state = D.gdriveState();
+      gdMount = window.GDriveConnect.mount(p, { onHowto: () => say('Setup steps: Hub \u2192 Settings \u2192 How-to \u2192 Google Drive (or apps/lab/gdrive-test/README.md).') });
+    }
+  }
   async function openDrive(id, fromClick, path) {
     say('');
+    if (id === 'gdrive' && D.gdriveState() !== 'ok') {
+      st.driveId = id; st.driveName = 'Google Drive'; st.stack = [];
+      draw(); crumbs(); setHash(); FX.view.load();
+      gdPanel(true);
+      return;
+    }
+    gdPanel(false);
     const h = await D.handle(id);
     if (!h) { fail(new Error('Drive not found')); return; }
     if ((await D.access(id)) !== 'granted' && (!fromClick || !(await D.allow(id)))) {
@@ -99,6 +131,13 @@
   /** Into a sub-folder of the open one. */
   function into(entry) { st.stack.push({ name: entry.name, handle: entry.handle }); go(st.stack.length - 1); }
 
-  D.onChange(draw);
+  D.onChange(() => {
+    draw();
+    // signed in / out while Google Drive is the open drive → show its files / the QR again
+    if (st.driveId === 'gdrive' && D.gdriveState) {
+      const ok = D.gdriveState() === 'ok';
+      if (ok === !st.stack.length) openDrive('gdrive', false);
+    }
+  });
   FX.drives = { draw, open: openDrive, go, up, into, fromHash, crumbs };
 })();

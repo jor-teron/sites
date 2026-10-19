@@ -5,6 +5,7 @@
   on a computer). Grid / list, sort, search, multi-select, cut / copy / paste and drag & drop
   (also between drives), upload by drop, right-click / long-press menu, keyboard, viewers.
   Shared: shared/fs/fs_drives.js (drives), shared/fs/fs_ops.js (file operations),
+  shared/google/* (Google Drive drive: QR sign-in + Drive adapter; shared/vendor/qrcode.js),
   shared/dialog/ (ask / confirm / choose), shared/ctxmenu/ (menu).
   App: files_core.js (state + helpers), files_view.js (grid / list, selection, drag & drop),
   files_drives.js (drives, path, hash), files_actions.js (operations), files_viewer.js (text /
@@ -16,9 +17,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Files</title>
-  <link rel="stylesheet" href="../../../shared/dialog/dialog.css?v=20261019j" />
-  <link rel="stylesheet" href="../../../shared/ctxmenu/ctxmenu.css?v=20261019j" />
-  <link rel="stylesheet" href="files.css?v=20261019j" />
+  <link rel="stylesheet" href="../../../shared/dialog/dialog.css?v=20261019l" />
+  <link rel="stylesheet" href="../../../shared/ctxmenu/ctxmenu.css?v=20261019l" />
+  <link rel="stylesheet" href="../../../shared/google/google.css?v=20261019l" />
+  <link rel="stylesheet" href="files.css?v=20261019l" />
 </head>
 <body>
   <div class="app">
@@ -50,20 +52,26 @@
         <span id="selinfo" class="selinfo" aria-live="polite"></span>
       </div>
       <div id="msg" class="msg" hidden role="status"></div>
+      <div id="gd-panel" class="gd-panel" hidden></div>
       <div id="list" class="list v-grid" role="listbox" aria-multiselectable="true" aria-label="Files"></div>
       <div id="prog" class="prog" hidden><span></span><b><i></i></b><button type="button" class="tb">Stop</button></div>
     </main>
   </div>
-  <script src="../../../shared/fs/fs_drives.js?v=20261019j"></script>
-  <script src="../../../shared/fs/fs_ops.js?v=20261019j"></script>
-  <script src="../../../shared/dialog/dialog.js?v=20261019j"></script>
-  <script src="../../../shared/ctxmenu/ctxmenu.js?v=20261019j"></script>
-  <script src="files_core.js?v=20261019j"></script>
-  <script src="files_view.js?v=20261019j"></script>
-  <script src="files_drives.js?v=20261019j"></script>
-  <script src="files_actions.js?v=20261019j"></script>
-  <script src="files_viewer.js?v=20261019j"></script>
-  <script src="files_menu.js?v=20261019j"></script>
-  <script src="files.js?v=20261019j"></script>
+  <script src="../../../shared/vendor/qrcode.js?v=20261019l"></script>
+  <script src="../../../shared/google/google_config.js?v=20261019l"></script>
+  <script src="../../../shared/google/google_auth.js?v=20261019l"></script>
+  <script src="../../../shared/google/gdrive_fs.js?v=20261019l"></script>
+  <script src="../../../shared/google/gdrive_connect.js?v=20261019l"></script>
+  <script src="../../../shared/fs/fs_drives.js?v=20261019l"></script>
+  <script src="../../../shared/fs/fs_ops.js?v=20261019l"></script>
+  <script src="../../../shared/dialog/dialog.js?v=20261019l"></script>
+  <script src="../../../shared/ctxmenu/ctxmenu.js?v=20261019l"></script>
+  <script src="files_core.js?v=20261019l"></script>
+  <script src="files_view.js?v=20261019l"></script>
+  <script src="files_drives.js?v=20261019l"></script>
+  <script src="files_actions.js?v=20261019l"></script>
+  <script src="files_viewer.js?v=20261019l"></script>
+  <script src="files_menu.js?v=20261019l"></script>
+  <script src="files.js?v=20261019l"></script>
 </body>
 </html>

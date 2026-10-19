@@ -1,6 +1,8 @@
 /*
  * File operations (shared/fs/fs_ops.js) on a FileSystemDirectoryHandle — work the same for
  * the Local drive (OPFS) and a picked folder (fs_drives.js), and across them. Used by Files.
+ * Google Drive (shared/google/gdrive_fs.js) looks like a directory handle too; its file handles
+ * carry .meta {size, modified, type}, used instead of getFile() (no download just to list).
  *
  * API window.FsOps:
  *   list(dir)                       → [{ name, kind:'directory'|'file', size, modified, type, handle }]
@@ -25,7 +27,8 @@
     const out = [];
     for await (const [name, h] of dir.entries()) {
       const e = { name, kind: h.kind, size: 0, modified: 0, type: '', handle: h };
-      if (h.kind === 'file') { try { const f = await h.getFile(); e.size = f.size; e.modified = f.lastModified; e.type = f.type; } catch (_) { /* unreadable */ } }
+      if (h.kind === 'file' && h.meta) Object.assign(e, { size: h.meta.size, modified: h.meta.modified, type: h.meta.type });   // Google Drive: no download
+      else if (h.kind === 'file') { try { const f = await h.getFile(); e.size = f.size; e.modified = f.lastModified; e.type = f.type; } catch (_) { /* unreadable */ } }
       out.push(e);
     }
     return out;
@@ -74,6 +77,7 @@
   }
   async function readFile(dir, name) { return (await dir.getFileHandle(name)).getFile(); }
   async function stats(h) {
+    if (h.kind === 'file' && h.meta) return { files: 1, folders: 0, bytes: h.meta.size || 0 };
     if (h.kind === 'file') { let s = 0; try { s = (await h.getFile()).size; } catch (_) { /* ignore */ } return { files: 1, folders: 0, bytes: s }; }
     const t = { files: 0, folders: 0, bytes: 0 };
     for await (const [, c] of h.entries()) {

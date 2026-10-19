@@ -1,0 +1,27 @@
+/* Google Drive test page look (apps/lab/gdrive-test/gdt.css) — big buttons, dark, readable log. */
+:root { color-scheme: dark; --accent: #6ea8fe; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #0f1218; color: #e6e9ef; font: 15px/1.45 system-ui, sans-serif; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 14px; display: grid; gap: 12px; }
+h1 { margin: 4px 0; font-size: 22px; } h1 small { font-size: 13px; opacity: .6; font-weight: 500; }
+h2 { margin: 0 0 8px; font-size: 15px; display: flex; gap: 8px; align-items: center; }
+.card { background: #1a1f2a; border: 1px solid #2c3442; border-radius: 14px; padding: 12px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+button { min-height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid #39435a; background: #232a38; color: inherit; font: inherit; font-weight: 600; cursor: pointer; transition: transform .2s cubic-bezier(.34,1.56,.64,1); }
+button:active { transform: scale(.92, .86); }
+button:disabled { opacity: .45; cursor: default; }
+button.big { background: var(--accent); color: #0b0d12; border: 0; min-width: 120px; }
+button.danger { color: #ff9b9b; }
+button.small { min-height: 30px; padding: 0 10px; font-size: 12px; }
+.cfg { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 14px; }
+.ok { color: #7ee2a8; } .bad { color: #ff9b9b; } .muted { opacity: .65; }
+.qr { display: grid; justify-items: center; gap: 8px; margin-top: 12px; text-align: center; }
+.qr .box { width: min(360px, 90vw); background: #fff; border-radius: 10px; line-height: 0; }
+.qr .box svg { width: 100%; height: auto; }
+.qr .code { font: 700 38px/1.1 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .1em; background: #000; padding: 6px 14px; border-radius: 10px; user-select: all; }
+.qr a { color: var(--accent); font-size: 17px; }
+.state { margin: 10px 0 0; font-weight: 600; }
+.files { margin: 0; padding-left: 22px; } .files li { padding: 2px 0; }
+.log { margin: 0; max-height: 360px; overflow: auto; white-space: pre-wrap; word-break: break-word; font: 12.5px/1.45 ui-monospace, Menlo, Consolas, monospace; background: #0b0e13; border-radius: 10px; padding: 10px; }
+.log .e { color: #ff9b9b; } .log .c { color: #ffd479; font-weight: 700; } .log .s { color: #7ee2a8; }
+.setup { margin: 8px 0 0; padding: 10px; border-radius: 10px; background: #3a2a12; color: #ffe2a8; }

@@ -12,6 +12,11 @@
  * (also from the Files app, BroadcastChannel).
  * Right-click / long-press on a drive (hub_ctx.js): Open, Open in new window, Allow access (when
  * needed), Remove (added folders only).
+ * Google Drive (R9a, kind 'gdrive', shared/google/*): not connected → the tile itself holds the
+ * QR sign-in panel (gdrive_connect.js: Connect → big QR + code, minimal padding); no client id yet
+ * → "Set up Google Drive (see How-to)" (opens Settings → How-to); connected → a normal tile
+ * (your Google address underneath) that opens Files, right-click → Sign out (revokes).
+ * The panel element is kept across redraws so a code on screen isn't lost.
  */
 (function () {
   'use strict';
@@ -50,6 +55,23 @@
     if (await D.allow(d.id)) { draw(); openFiles(d.id); }
   }
 
+  // Google Drive tile: the connect panel lives in one kept element (a redraw must not drop the QR)
+  let gdBox = null, gdMount = null;
+  const howto = () => (window.HubCtx ? window.HubCtx.openApp(window.HubCtx.SETTINGS, { hash: 'howto' }) : null);
+  function gdPanel() {
+    if (!gdBox) {
+      gdBox = el('div', 'drv drv-gd');
+      gdBox.dataset.drive = 'gdrive';
+      gdMount = window.GDriveConnect.mount(gdBox, { compact: true, onHowto: howto });
+    }
+    return gdBox;
+  }
+  function gdDrop() { if (gdMount) gdMount.destroy(); gdBox = null; gdMount = null; }
+  async function gdSignOut() {
+    const ok = window.UiDialog ? await window.UiDialog.confirm('Sign out of Google Drive?', 'The Hub forgets your Google sign-in and tells Google to cancel it. Your files stay in Google Drive.', 'Sign out', true) : true;
+    if (ok && window.GoogleAuth) await window.GoogleAuth.signOut();
+  }
+
   // Right-click / long-press menu on a drive tile
   const known = new Map();   // drive id → { d, ok } from the last draw (menus are built synchronously)
   if (window.HubCtx) {
@@ -58,6 +80,19 @@
       if (!k) return null;
       const { d, ok } = k;
       const desk = window.HubMode && window.HubMode.isDesktop();
+      if (d.kind === 'gdrive') {
+        const st = D.gdriveState();
+        if (st === 'ok') {
+          return [
+            { label: 'Open', icon: '\u2197', action: () => openFiles('gdrive') },
+            desk && { label: 'Open in new window', icon: '\u29C9', action: () => openFiles('gdrive', true) },
+            { sep: true },
+            { label: 'Sign out', icon: '\u23CF', danger: true, action: gdSignOut }
+          ];
+        }
+        if (st === 'setup') return [{ label: 'How to set up Google Drive', icon: '\u2139', action: howto }];
+        return [{ label: 'Connect', icon: '\uD83D\uDD17', action: () => { const b = t.querySelector('.gdc-go'); if (b) b.click(); } }];
+      }
       return [
         { label: 'Open', icon: '\u2197', action: () => t.click() },
         desk && { label: 'Open in new window', icon: '\u29C9', action: async () => {
@@ -86,6 +121,22 @@
     known.clear();
     const grid = el('div', 'drv-grid');
     for (const d of list) {
+      if (d.kind === 'gdrive') {
+        if (D.gdriveState() === 'ok') {
+          gdDrop();
+          const u = window.GoogleAuth.user();
+          const gt = tile('drv-gdrive', '\u2601\uFE0F', 'Google Drive', u.email || 'Connected', (e) => openFiles('gdrive', e.shiftKey));
+          gt.dataset.drive = 'gdrive';
+          gt.title = 'Google Drive' + (u.email ? ' \u2014 ' + u.email : '') + ' (only files the Hub made)';
+          grid.appendChild(gt);
+        } else {
+          if (gdBox && gdBox.dataset.state !== D.gdriveState()) gdDrop();   // set up ↔ connect: fresh panel
+          grid.appendChild(gdPanel());
+          gdBox.dataset.state = D.gdriveState();
+        }
+        known.set('gdrive', { d, ok: D.gdriveState() === 'ok' });
+        continue;
+      }
       if (d.kind === 'local') {
         const lt = tile('drv-local', '\uD83D\uDCBE', 'Local', 'In this browser', (e) => openFiles('local', e.shiftKey));
         lt.dataset.drive = 'local';
