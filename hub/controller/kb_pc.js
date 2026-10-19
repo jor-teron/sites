@@ -1,6 +1,6 @@
 /*
  * Gamepad Controller — PC keyboard mode (landscape, compact).
- * Layout ported from apps/lab/keyboard.html: Esc / digits / ⌫, Tab / qwerty, Caps / Enter,
+ * Layout as in the Lab keyboard (apps/lab/keyboard/): Esc / digits / ⌫, Tab / qwerty, Caps / Enter,
  * Shift / Del, Ctrl / Alt / Space / arrows. Shift, Ctrl, Alt: hold = held, tap = one-shot.
  * Caps toggles. Letter labels are always capitals (A-Z); typing sends lowercase unless
  * Shift / Caps. Gaming keys (CONTROLLER_CONFIG.keyboard.highlightKeys) get an accent border.

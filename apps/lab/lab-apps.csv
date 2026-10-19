@@ -9,6 +9,7 @@ AI Story,           story/,                       , , AI
 Device Benchmark,   devbench/,                    , , Tools
 Notebook,           notebook/,                    , , Tools
 Paper Keyboard,     paper-keyboard/,              , , Tools
+Keyboard,           keyboard/,                    , , Tools
 Bookmark Manager,   bookmark-manager/,            , , Tools
 Wiki Extractor,     wiki-extractor/,              , , Tools
 Google Drive Test,  gdrive-test/,                 , , Tools

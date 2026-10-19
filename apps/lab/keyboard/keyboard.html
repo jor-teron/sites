@@ -1,113 +1,36 @@
 <!DOCTYPE html>
+<!--
+  Project: keyboard (Lab)
+  File: keyboard.html
+  Role: On-screen keyboard (OSK) demo page. Types into the text box on this page and, when the
+  page runs inside a frame (Hub window), posts every key to the parent as the Hub controller
+  message {t:'key', key, code, s:1|0, shift, ctrl, alt, repeat}.
+  Board + pointer handling: hub/controller/kb_common.js (CTRL_KB, shared with the phone Gamepad).
+  Scripts: kb_common.js → keyboard_layout.js → keyboard_type.js → keyboard.js (start-up).
+-->
 <html lang="en">
 <head>
-  <!--
-    Landscape phone keyboard demo (HTML + CSS + JS).
-    Scope:
-      - Letters, digits, common punctuation
-      - Esc, Tab, Enter, Backspace, Delete
-      - Shift, Caps Lock, Ctrl, Alt (sticky modifiers)
-      - Space and arrow keys
-      - No F-keys, no Fn layer, no numpad
-    Portrait: hide the board and ask to rotate.
-    Output: last key + modifier state. Hook sendKey() to your gamepad channel later.
-  -->
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Web Keyboard</title>
-<link rel="stylesheet" href="keyboard.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Keyboard</title>
+  <link rel="stylesheet" href="keyboard.css?v=20261019a">
 </head>
-
 <body>
-  <!-- Shown only in portrait -->
-  <div id="rotateHint">Rotate the phone to landscape</div>
-
-  <div id="wrap">
-    <!-- Live modifier + last-key readout -->
-    <div id="status">ready</div>
-
-    <!-- Number + punctuation row -->
-    <div class="row">
-      <button class="key esc" data-key="Escape">Esc</button>
-      <button class="key" data-key="1" data-shift="!">1</button>
-      <button class="key" data-key="2" data-shift="@">2</button>
-      <button class="key" data-key="3" data-shift="#">3</button>
-      <button class="key" data-key="4" data-shift="$">4</button>
-      <button class="key" data-key="5" data-shift="%">5</button>
-      <button class="key" data-key="6" data-shift="^">6</button>
-      <button class="key" data-key="7" data-shift="&amp;">7</button>
-      <button class="key" data-key="8" data-shift="*">8</button>
-      <button class="key" data-key="9" data-shift="(">9</button>
-      <button class="key" data-key="0" data-shift=")">0</button>
-      <button class="key" data-key="-" data-shift="_">-</button>
-      <button class="key" data-key="=" data-shift="+">=</button>
-      <button class="key back w15" data-key="Backspace">⌫</button>
-    </div>
-
-    <!-- QWERTY top -->
-    <div class="row">
-      <button class="key w15" data-key="Tab">Tab</button>
-      <button class="key letter" data-key="q">Q</button>
-      <button class="key letter" data-key="w">W</button>
-      <button class="key letter" data-key="e">E</button>
-      <button class="key letter" data-key="r">R</button>
-      <button class="key letter" data-key="t">T</button>
-      <button class="key letter" data-key="y">Y</button>
-      <button class="key letter" data-key="u">U</button>
-      <button class="key letter" data-key="i">I</button>
-      <button class="key letter" data-key="o">O</button>
-      <button class="key letter" data-key="p">P</button>
-      <button class="key" data-key="[" data-shift="{">[</button>
-      <button class="key" data-key="]" data-shift="}">]</button>
-      <button class="key" data-key="\\" data-shift="|">\</button>
-    </div>
-
-    <!-- Home row -->
-    <div class="row">
-      <button class="key mod w15" data-mod="caps">Caps</button>
-      <button class="key letter" data-key="a">A</button>
-      <button class="key letter" data-key="s">S</button>
-      <button class="key letter" data-key="d">D</button>
-      <button class="key letter" data-key="f">F</button>
-      <button class="key letter" data-key="g">G</button>
-      <button class="key letter" data-key="h">H</button>
-      <button class="key letter" data-key="j">J</button>
-      <button class="key letter" data-key="k">K</button>
-      <button class="key letter" data-key="l">L</button>
-      <button class="key" data-key=";" data-shift=":">;</button>
-      <button class="key" data-key="'" data-shift="&quot;">'</button>
-      <button class="key enter w15" data-key="Enter">Enter</button>
-    </div>
-
-    <!-- Bottom letter row + arrows -->
-    <div class="row">
-      <button class="key mod w15" data-mod="shift">Shift</button>
-      <button class="key letter" data-key="z">Z</button>
-      <button class="key letter" data-key="x">X</button>
-      <button class="key letter" data-key="c">C</button>
-      <button class="key letter" data-key="v">V</button>
-      <button class="key letter" data-key="b">B</button>
-      <button class="key letter" data-key="n">N</button>
-      <button class="key letter" data-key="m">M</button>
-      <button class="key" data-key="," data-shift="&lt;">,</button>
-      <button class="key" data-key="." data-shift="&gt;">.</button>
-      <button class="key" data-key="/" data-shift="?">/</button>
-      <button class="key del" data-key="Delete">Del</button>
-    </div>
-
-    <!-- Modifiers + space + arrows -->
-    <div class="row">
-      <button class="key mod" data-mod="ctrl">Ctrl</button>
-      <button class="key mod" data-mod="alt">Alt</button>
-      <button class="key space" data-key=" ">Space</button>
-      <button class="key" data-key="ArrowLeft">←</button>
-      <button class="key" data-key="ArrowUp">↑</button>
-      <button class="key" data-key="ArrowDown">↓</button>
-      <button class="key" data-key="ArrowRight">→</button>
-    </div>
+  <div id="bar">
+    <div id="status" role="status" aria-live="polite">ready</div>
+    <button type="button" class="tool" id="vibBtn" tabindex="-1" aria-pressed="true">Vibrate</button>
+    <button type="button" class="tool" id="clearBtn" tabindex="-1">Clear</button>
   </div>
 
-<script src="keyboard.js"> </script>
+  <!-- Demo text box: inputmode none keeps the phone's own keyboard away -->
+  <textarea id="pad" inputmode="none" spellcheck="false" autocomplete="off" aria-label="Typed text" placeholder="Tap here, then type on the keys below"></textarea>
 
+  <!-- Keys are drawn here by keyboard.js -->
+  <div id="board" aria-label="On-screen keyboard"></div>
+
+  <script src="../../../hub/controller/kb_common.js?v=20261012a"></script>
+  <script src="keyboard_layout.js?v=20261019a"></script>
+  <script src="keyboard_type.js?v=20261019a"></script>
+  <script src="keyboard.js?v=20261019a"></script>
 </body>
 </html>

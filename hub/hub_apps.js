@@ -93,6 +93,7 @@ Lab,      Device Benchmark,      apps/lab/devbench/,                         ,  
 Lab,      Island Game Demo,      apps/lab/island-demo/,                      ,         0,       0,      1080
 Lab,      Phone,                 apps/media/phone/,                          ,         0,       0,      1070
 Lab,      Paper Keyboard,        apps/lab/paper-keyboard/,                   ,         0,       0,      1040
+Lab,      Keyboard,              apps/lab/keyboard/,                         ,         0,       0,      1042
 Lab,      Notebook,              apps/lab/notebook/,                         ,         0,       0,      1045
 Lab,      Sling Birds,           apps/lab/sling-birds/,                      ,         0,       0,      1085
 Lab,      AoE RTS,               apps/lab/aoe-rts/,                          ,         0,       0,      1086
