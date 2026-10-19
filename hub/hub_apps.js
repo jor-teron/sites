@@ -76,6 +76,7 @@ Connectivity, QR Scanner,        apps/connectivity/qr-scanner/,              ,  
 Connectivity, Pooh Chat,         apps/connectivity/pooh-chat/,               ,         0,       0,      450
 
 Tools,    Tools Page,            apps/tools/,                                ,         0,       0,      409
+Tools,    Files,                 apps/tools/files/,                          ,         0,       0,      405
 Tools,    Calculator,            apps/tools/calculator/,                     ,         0,       0,      410
 Tools,    Calculator (Beta),     apps/tools/calculator-beta/,                ,         0,       0,      411
 Tools,    NE-India Dictionary,   apps/tools/nei-dict/,                       ,         0,       0,      430

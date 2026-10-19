@@ -1,0 +1,42 @@
+<!doctype html>
+<!--
+  Files (apps/tools/files/index.html) — a simple file explorer for the Hub's drives:
+  "Local" (the browser's private storage for this site) and folders added with "Add folder"
+  (Chrome / Edge on a computer). Drives: shared/fs/fs_drives.js; file operations:
+  shared/fs/fs_ops.js; this app: files.js (drives + list + actions), files_dialog.js
+  (ask / confirm), files_preview.js (text / image view), files.css.
+  Deep link: index.html#drive=local (the Hub desktop's drive tiles open it like that).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Files</title>
+  <link rel="stylesheet" href="files.css?v=20261019f" />
+</head>
+<body>
+  <div class="app">
+    <aside class="side">
+      <h1 class="side-title"><img src="files_icon.png" alt="" /> Files</h1>
+      <div id="drives" class="drives" role="list" aria-label="Drives"></div>
+    </aside>
+    <main class="main">
+      <div class="bar">
+        <button type="button" id="up" class="tb" title="Up one folder" aria-label="Up one folder">&#8679;</button>
+        <nav id="crumbs" class="crumbs" aria-label="Path"></nav>
+        <button type="button" id="mkdir" class="tb" title="New folder">&#xFF0B; Folder</button>
+        <button type="button" id="upload" class="tb" title="Upload files">&#8682; Upload</button>
+        <button type="button" id="refresh" class="tb" title="Refresh" aria-label="Refresh">&#8635;</button>
+        <input type="file" id="file-in" multiple hidden />
+      </div>
+      <div id="msg" class="msg" hidden></div>
+      <div id="list" class="list" role="list"></div>
+    </main>
+  </div>
+  <script src="../../../shared/fs/fs_drives.js?v=20261019f"></script>
+  <script src="../../../shared/fs/fs_ops.js?v=20261019f"></script>
+  <script src="files_dialog.js?v=20261019f"></script>
+  <script src="files_preview.js?v=20261019f"></script>
+  <script src="files.js?v=20261019f"></script>
+</body>
+</html>

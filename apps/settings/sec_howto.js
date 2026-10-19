@@ -1,7 +1,7 @@
 /*
  * Settings → How-to (apps/settings/sec_howto.js). Plain-language help, shown just above
  * About: what the Hub is, the desktop (Start menu, windows, taskbar, Show Desktop, copies,
- * saved session, taskbar position, screen modes, phone mode), the Settings sections, updates,
+ * saved session, taskbar position, screen modes, phone mode), Drives & Files, the Settings sections, updates,
  * and the technical / privacy notes that used to be on the About page.
  * One collapsible card (<details>) per topic, first one open. Written from the real code
  * (hub/wm_*.js, hub/hub.js, hub/hub_flyout.js, hub/hub_update.js) — keep it in step.
@@ -66,6 +66,16 @@
         <li>Each app has its own link (for example <code>hub.html#2048</code>) and the last app you used opens
           again next time.</li>
         <li>A phone can also be a game controller (D-pad) for a tablet through the <b>Controller</b>.</li>
+      </ul>` },
+    { t: 'Drives & Files', h: `
+      <p>On a computer the desktop shows <b>Drives</b> on the left and the QR / link tiles on the right.</p>
+      <ul>
+        <li><b>Local</b> is storage inside this browser, just for this site. It is always there; clearing the
+          browser's site data erases it.</li>
+        <li><b>Add folder</b> (Chrome or Edge on a computer) lets the Hub use a real folder you pick. After a
+          reload, click <b>Allow access</b> once. <b>×</b> only removes it from the list — no files are deleted.</li>
+        <li>Click a drive to open it in <b>Files</b> (also in Tools): go into folders, ⇧ up, make a new folder,
+          upload files, download, rename, delete (it asks first), and view text files and pictures.</li>
       </ul>` },
     { t: 'Settings sections', h: `
       <ul>
