@@ -4,7 +4,7 @@
  * opts.visual (optional THREE.Object3D, e.g. a loaded .glb scene): replaces the built body meshes;
  * hit zones, collider, knockback/death/walk-bob transforms and the gun muzzle flash are kept.
  *
- * createTarget(spec, opts) returns an object used by browser-fps_logic.js:
+ * createTarget(spec, opts) returns an object used by the logic modules (logic/browser-fps_enemies.js, _combat.js, _items.js):
  *   group      THREE.Group, origin at the FEET (stands on y = spec.pos[1] - 1, i.e. the floor)
  *   collider   world AABB { min, max, target: true, disabled } pushed into the player colliders
  *   raycast(origin, dir) -> { t, zone: 'head' | 'body' } | null   (exact per-zone test)

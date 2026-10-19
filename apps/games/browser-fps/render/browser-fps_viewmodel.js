@@ -4,7 +4,7 @@
  * Rendered in its own scene/camera AFTER the world, with the depth buffer cleared,
  * so it never clips into walls. Cheap: shared Lambert materials, ~400 triangles.
  *
- * API (used by browser-fps_logic.js):
+ * API (used by the logic/ modules):
  *   const vm = createViewmodel(gunAsset, armsAsset);   // defaults: rifle_hq + arms_hq
  *   vm.scene, vm.camera            render these after the world (renderer.clearDepth() first)
  *   vm.setAspect(aspect)           on resize
