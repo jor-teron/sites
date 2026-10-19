@@ -13,7 +13,8 @@
  * Right-click / long-press on a drive (hub_ctx.js): Open, Open in new window, Allow access (when
  * needed), Remove (added folders only).
  * Google Drive (R9a, kind 'gdrive', shared/google/*): not connected → the tile itself holds the
- * QR sign-in panel (gdrive_connect.js: Connect → big QR + code, minimal padding); no client id yet
+ * sign-in panel (gdrive_connect.js: QR code / Phone as a key / Sign in on this computer; the QR
+ * fills the tile, minimal padding; "Renew from phone" when a phone sign-in ran out); no client id yet
  * → "Set up Google Drive (see How-to)" (opens Settings → How-to); connected → a normal tile
  * (your Google address underneath) that opens Files, right-click → Sign out (revokes).
  * The panel element is kept across redraws so a code on screen isn't lost.
@@ -125,9 +126,10 @@
         if (D.gdriveState() === 'ok') {
           gdDrop();
           const u = window.GoogleAuth.user();
-          const gt = tile('drv-gdrive', '\u2601\uFE0F', 'Google Drive', u.email || 'Connected', (e) => openFiles('gdrive', e.shiftKey));
+          const full = u.method === 'phone' || u.method === 'popup';
+          const gt = tile('drv-gdrive', '\u2601\uFE0F', 'Google Drive', (u.email || 'Connected') + (full ? ' \u00B7 full' : ''), (e) => openFiles('gdrive', e.shiftKey));
           gt.dataset.drive = 'gdrive';
-          gt.title = 'Google Drive' + (u.email ? ' \u2014 ' + u.email : '') + ' (only files the Hub made)';
+          gt.title = 'Google Drive \u203A hub' + (u.email ? ' \u2014 ' + u.email : '') + (full ? ' (full Drive, about an hour per sign-in)' : ' (only files the Hub made)');
           grid.appendChild(gt);
         } else {
           if (gdBox && gdBox.dataset.state !== D.gdriveState()) gdDrop();   // set up ↔ connect: fresh panel

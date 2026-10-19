@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<!--
+  Phone as a key (apps/tools/phonekey/index.html) — the PHONE side of the Hub's full-Drive
+  Google sign-in. Opened by scanning the QR on the computer (?hub=<Hub link code>&k=<room>).
+  One big "Sign in with Google" button (Google Identity Services, Mail's web client, scope drive +
+  openid email) → the token goes to the Hub over SharedLink (never in a URL) → "Sent ✓".
+  "Send again" renews quickly while this page stays open.
+  Files: phonekey.js, phonekey.css; shared/link (link_devices, link_core), shared/google
+  (google_config, google_gis).
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="no-referrer" />
+  <title>Phone as a key</title>
+  <link rel="stylesheet" href="phonekey.css" />
+</head>
+<body>
+  <main class="pk">
+    <div class="pk-ico" aria-hidden="true">&#128273;</div>
+    <h1>Phone as a key</h1>
+    <p class="pk-sub">Sign in to Google Drive on your computer's Hub.</p>
+    <p id="link" class="pk-link" role="status">Connecting to the Hub&hellip;</p>
+    <button type="button" id="go" class="pk-btn">Sign in with Google</button>
+    <button type="button" id="again" class="pk-btn pk-again" hidden>Send again</button>
+    <p id="msg" class="pk-msg" role="status"></p>
+    <p class="pk-note">The Hub gets full access to your Google Drive for about an hour. Nothing is stored on this phone.</p>
+  </main>
+  <script src="../../../shared/link/link_devices.js"></script>
+  <script src="../../../shared/link/link_core.js"></script>
+  <script src="../../../shared/google/google_config.js"></script>
+  <script src="../../../shared/google/google_gis.js"></script>
+  <script src="phonekey.js"></script>
+</body>
+</html>

@@ -28,6 +28,15 @@ The same code powers the **Google Drive** drive in the Hub's Drives pane and in 
 6. Push, open **Lab → Google Drive test**, press **Start**, scan the QR with your phone, type the
    code if asked, approve. The page lists your first 10 Drive files.
 
+## Phone as a key (full Drive, R9b)
+
+The Hub's Google Drive tile also offers **Phone as a key (full Drive)** and **Sign in on this
+computer**. Those use **Mail's web client** (`webClientId` in `shared/google/google_config.js`,
+project number **783291801077**) with the `…/auth/drive` scope — no refresh token, about an hour per
+sign-in. In that project: enable **Google Drive API**; the web client's **Authorized JavaScript
+origins** must contain `https://jor-teron.github.io`; consent screen in Testing with you as test user.
+Files opens Google Drive at the **hub** folder of My Drive (made if missing).
+
 ## What to tell us after a try
 
 The log shows every request. A yellow **CORS / NETWORK ERROR** line means the browser blocked a
