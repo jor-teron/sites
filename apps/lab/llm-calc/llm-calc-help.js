@@ -1,6 +1,6 @@
 /*
  * File: llm-calc-help.js
- * Project: llm-calc (Lab) — R5 2026-10-19 (R2: head size, QKV bias; R4: removed Load whole model text; R5: help for export + training-config fields; R7 2026-10-20: outputs, grad accum, auto batch, checkpointing)
+ * Project: llm-calc (Lab) — R5 2026-10-19 (R2: head size, QKV bias; R4: removed Load whole model text; R5: help for export + training-config fields; R6 2026-10-20: speed, data mode, words, min LR; R7 2026-10-20: outputs, grad accum, auto batch, checkpointing)
  * Purpose: Plain-English help text for every setting (shown by the ⓘ buttons)
  *          and the glossary. Text only, no logic.
  */
@@ -17,21 +17,23 @@ window.LLMCalcHelp = {
   qkvBias: 'Adds a small extra "bias" number to every query, key and value output. Qwen models use it; Llama, SmolLM and Mistral do not. It adds only a few thousand parameters, so it barely changes size.',
   stories: 'How many training stories (examples) you have. More data: better model, longer training per epoch. Less: faster but the model may memorize.',
   tokensPerStory: 'Average length of one story in tokens. Multiplied by the number of stories it gives total tokens.',
-  useTotal: 'Turn on to type the total token count directly instead of stories × tokens per story.',
-  totalTokens: 'Total tokens in your dataset (one pass). Used only when the override switch is on.',
+  dataMode: 'How you tell it your dataset size. Stories × tokens: number of stories times their average length. Words: a word count (tokens ≈ words × 1.3). Measured tokens: the exact count the training script printed. Steps depend on the real data, so the measured count is the most accurate.',
+  words: 'Total words in your dataset (one pass). Converted as tokens ≈ words × 1.3. Used when "Dataset size as" is Words.',
+  minLr: 'Min LR ratio (config: MIN_LR_RATIO, does not change the numbers here). At the end of training the learning rate slides down to this fraction of the start value. 0.1 = ends at 10%. Lower: calmer finish, can stall. Higher: keeps learning faster to the end, a bit noisier.',
+  totalTokens: 'Total tokens in your dataset (one pass). Used when "Dataset size as" is Measured tokens.',
   epochs: 'How many times training reads the whole dataset. Higher: learns more, but too many causes memorizing (overfitting) and takes longer. Lower: faster, may under-learn.',
   batch: 'How many blocks one GPU processes per step. Higher: fewer steps and smoother learning, but more memory. Lower: less memory, more steps.',
   gpus: 'Number of GPUs. 2 (Kaggle T4 x2) doubles the batch per step; speed is about 1.8× not 2× because GPUs must sync.',
   lr: 'Learning rate (info only — does not change the numbers here). How big each learning step is. Too high: training explodes (loss jumps). Too low: learns very slowly. 3e-4 is a common start for tiny models.',
   warmup: 'Warmup steps (info only). The learning rate starts near zero and ramps up over these steps, which keeps the start stable. Typically 1–5% of total steps.',
   preset: 'Pick your GPU. It sets the number of GPUs and a typical speed. P100 speed is a rough guess.',
-  tps: 'Tokens per second ONE GPU trains. The T4 value (28,000) is calibrated from your real run. Use Calibrate below to set it from a run of your own.',
+  tps: 'Speed of ONE GPU for a 26M-parameter model, in tokens per second (T4 ≈ 25,000). The calculator scales it for your model: twice the parameters ≈ half the speed. 2 GPUs ≈ ×1.8, checkpointing ≈ 25% slower. Calibrate below sets it from a real run.',
   weightDecay: 'Weight decay (saved in the config only — does not change the numbers here). Gently pulls the model\'s numbers toward zero so it does not memorize. Higher: stronger brake on memorizing, can under-learn. Lower: freer learning, more risk of memorizing. 0.1 is the usual value.',
   gradClip: 'Grad clip (config only). Caps how big one learning step can get, so a single weird batch cannot wreck training. Lower: safer but can slow learning. Higher or 0: fewer limits, more risk of loss spikes. 1.0 is standard.',
   seed: 'Seed (config only). A starting number for the randomness (shuffling, starting weights). Same seed = the same run again, so results can be compared. Any number works; changing it just gives a slightly different run.',
   valFraction: 'Validation fraction (config only). Share of the stories kept aside to check the model on text it never trained on. 0.05 = 5%. Higher: a more reliable check but less training data. Lower: more training data, a noisier check.',
   maxSamples: 'Max samples (config only). Use only the first N stories — handy for a quick test run. Leave empty to use all of them. Lower: much faster, but the model learns less.',
-  modelName: 'Model name written into the config (MODEL_NAME). The training script uses it to name its output. Pick something short like tiny-v1; change it for every new experiment so runs do not overwrite each other.',
+  modelName: 'Model name written into the config (MODEL_NAME). The training script uses it to name its output. Only letters, numbers, dot, dash and underscore (other characters are removed). Pick something short like tiny-v1; change it for every new experiment so runs do not overwrite each other.',
   fileName: 'You choose this. Download saves <name>.llmcfg.json (for the training script) and opens a print page where you tap "Save as PDF" to get <name>.pdf (for people). Characters like / \\ : * ? are removed.',
   gradAccum: 'Gradient accumulation steps. The GPU runs this many batches, adds up what it learned, then makes ONE update. Effective batch = batch per GPU × GPUs × this. Higher: acts like a bigger batch without more memory, but fewer steps (each one slower). 1 = off.',
   autoBatch: 'Auto batch (config only). If the GPU runs out of memory, the script may lower the batch by itself and keep going. On: safer runs. Off: it just stops with an error. The estimates here always use your batch.',

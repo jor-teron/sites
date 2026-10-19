@@ -1,6 +1,6 @@
 /*
  * File: llm-calc-ui.js
- * Project: llm-calc (Lab) — R7 2026-10-20
+ * Project: llm-calc (Lab) — R6+R7 2026-10-20
  * Purpose: Reads inputs, recomputes on every change, renders results,
  *          handles ⓘ help popups, GPU presets and calibration.
  *          R2: "Real models" tap-to-copy list in each model setting's ⓘ.
@@ -11,6 +11,8 @@
  *          llm-calc-export.js.
  *          R7: Outputs switches (dependent ones greyed), sizes for selected
  *          outputs, grad accumulation, gradient checkpointing.
+ *          R6: speed scaled by size, data mode (stories/words/tokens), overfit
+ *          warning, fuller memory with GPU 0 (DataParallel), safe model name.
  *          Depends on llm-calc-math.js, llm-calc-help.js, llm-calc-examples.js.
  */
 (function () {
@@ -47,7 +49,7 @@
   }
   function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(snapshot())); } catch (e) { /* storage off / full */ } }
   function load() {
-    try { const o = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (o && typeof o === 'object') apply(o); } catch (e) { /* bad JSON: ignore */ }
+    try { const o = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); if (o && typeof o === 'object') { if (o.useTotal === true && !o.dataMode) o.dataMode = 'tokens'; apply(o); } } catch (e) { /* bad JSON: ignore */ }
   }
   function reset() {
     if (!confirm('Reset every setting to the defaults?')) return;
@@ -64,12 +66,13 @@
   function recompute() {
     const m = readModel();
     const seq = num('seq');
-    const t = { useTotal: $('useTotal').checked, totalTokens: num('totalTokens'), stories: num('stories'),
+    const t = { dataMode: $('dataMode').value, words: num('words'), totalTokens: num('totalTokens'), stories: num('stories'),
       tokensPerStory: num('tokensPerStory'), epochs: num('epochs'), batch: num('batch'), gpus: num('gpus'), accum: num('gradAccum') };
     const ckpt = $('gradCkpt').checked;
     const o = readOutputs();
-    $('totalTokens').disabled = !t.useTotal;
-    $('stories').disabled = $('tokensPerStory').disabled = t.useTotal;
+    $('totalTokens').disabled = t.dataMode !== 'tokens'; $('words').disabled = t.dataMode !== 'words';
+    $('stories').disabled = $('tokensPerStory').disabled = t.dataMode !== 'stories';
+    ['totalTokens', 'words', 'stories', 'tokensPerStory'].forEach(k => $(k).closest('.field').classList.toggle('off', $(k).disabled));
 
     const warns = [];
     if (m.heads && m.hidden % m.heads) warns.push('Hidden size should divide evenly by heads.');
@@ -96,23 +99,33 @@
     $('rSpe').textContent = $('rSpeBig').textContent = fmt(tr.stepsPerEpoch);
     $('rSteps').textContent = $('rStepsBig').textContent = $('bSteps').textContent = fmt(tr.totalSteps);
 
-    const sec = M.timeSec(tr.tokensTrained, num('tps'), t.gpus, ckpt);
+    $('rTpp').textContent = p.total ? (tr.tokens / p.total).toFixed(2) : '—';
+    const of = M.overfit(tr.tokens, p.total);
+    if (of.level === 'bad') warns.push('Overfit risk: only ' + of.ratio.toFixed(2) + ' tokens per parameter per epoch — the model will memorise the data. Use more data or a smaller model.');
+    else if (of.level === 'note') warns.push('Note: ' + of.ratio.toFixed(1) + ' tokens per parameter (guideline ~20). Fine for experiments; more data helps.');
+    const tps = M.scaledTps(num('tps'), p.total);
+    $('rSpeed').innerHTML = rows([['Speed at 26M (your box)', fmt(num('tps')) + ' tok/s'], ['Scaled for ' + fmtM(p.total) + ' (×' + M.speedFactor(p.total).toFixed(2) + ')', fmt(tps) + ' tok/s per GPU'],
+      ['All GPUs' + (t.gpus > 1 ? ' (×1.8)' : '') + (ckpt ? ', checkpointing ÷1.25' : ''), fmt(tps * (t.gpus > 1 ? M.TWO_GPU_SCALE * t.gpus / 2 : 1) / (ckpt ? M.CKPT_TIME : 1)) + ' tok/s']]);
+    const sec = M.timeSec(tr.tokensTrained, tps, t.gpus, ckpt);
     $('rTime').textContent = $('bTime').textContent = isFinite(sec) ? fmtTime(sec) : '—';
     if (sec > 12 * 3600) warns.push('Longer than a Kaggle session (~12 h). Save checkpoints and resume.');
     if (sec > 30 * 3600) warns.push('More than the weekly Kaggle GPU quota (~30 h, approximate).');
 
-    const mem = M.memory(p.total, t.batch, seq, m.hidden, m.layers, ckpt);
-    const gb = mem.total / M.GB, limit = M.GPU_PRESETS[$('preset').value].mem;
-    $('rMem').textContent = gb.toFixed(2) + ' GB / GPU';
+    const mem = M.memoryFull({ p: p.total, batch: t.batch, seq, h: m.hidden, layers: m.layers, heads: m.heads, vocab: m.vocab, gpus: t.gpus, ckpt });
+    const gb = mem.gpu0 / M.GB, limit = M.GPU_PRESETS[$('preset').value].mem;
+    $('rMem').textContent = gb.toFixed(2) + ' GB' + (t.gpus > 1 ? ' on GPU 0' : ' / GPU');
     $('bMem').textContent = gb.toFixed(1) + ' GB';
     $('rMemBreak').innerHTML = rows([
       ['Weights + grads + AdamW (~16 B/param)', (mem.states / M.GB).toFixed(2) + ' GB'],
       [ckpt ? 'Activations (rough, checkpointing ×0.25)' : 'Activations (rough)', '~' + (mem.acts / M.GB).toFixed(2) + ' GB'],
-      ['Total per GPU', (gb).toFixed(2) + ' GB of ' + limit + ' GB']
-    ]);
+      ['Attention scores' + (ckpt ? ' (×0.25)' : ''), '~' + (mem.attn / M.GB).toFixed(2) + ' GB'],
+      ['Logits + grads (batch × context × vocab)', '~' + (mem.logits / M.GB).toFixed(2) + ' GB'],
+      ['Each GPU', (mem.total / M.GB).toFixed(2) + ' GB'],
+    ].concat(t.gpus > 1 ? [['GPU 0 extra (DataParallel gathers logits)', '~' + (mem.gather / M.GB).toFixed(2) + ' GB']] : []).concat([
+      ['<b>' + (t.gpus > 1 ? 'GPU 0 total' : 'Total per GPU') + '</b>', '<b>' + gb.toFixed(2) + ' GB of ' + limit + ' GB</b>']]));
     const over = gb > limit;
     $('rMem').classList.toggle('bad', over); $('bMem').classList.toggle('bad', over);
-    if (over) warns.push('Memory over ' + limit + ' GB per GPU — lower batch, context or model size.');
+    if (over) warns.push('Likely out of memory: ' + gb.toFixed(1) + ' GB' + (t.gpus > 1 ? ' on GPU 0' : '') + ' > ' + limit + ' GB usable on a T4. Lower batch (use grad accumulation), context or vocab, or turn on checkpointing.');
     $('warns').innerHTML = warns.map(w => '<li>' + w + '</li>').join('');
     $('bDot').hidden = !warns.length;
   }
@@ -134,7 +147,9 @@
   }
   function doCalibrate() {
     const v = M.calibrate(num('cSteps'), num('cMin'), num('cBatch'), num('cSeq'), num('gpus'));
-    if (isFinite(v) && v > 0) { $('tps').value = Math.round(v); $('cOut').textContent = '→ ' + fmt(v) + ' tokens/sec per GPU'; recompute(); save(); flash(['tps']); }
+    // Run measured on the CURRENT model size -> convert back to the 26M reference speed.
+    const ref = v / M.speedFactor(M.params(readModel()).total);
+    if (isFinite(v) && v > 0) { $('tps').value = Math.round(ref); $('cOut').textContent = '→ ' + fmt(v) + ' tokens/sec per GPU for this model (' + fmt(ref) + ' at 26M)'; recompute(); save(); flash(['tps']); }
     else $('cOut').textContent = 'Fill in all four boxes.';
   }
 
@@ -185,7 +200,9 @@
     $('helpClose').addEventListener('click', () => $('help').close());
     $('help').addEventListener('click', e => { if (e.target === $('help')) $('help').close(); });
     fields().forEach(el => {
-      el.addEventListener('input', () => { recompute(); save(); });
+      el.addEventListener('input', () => {
+        if (el.id === 'modelName') { const c = el.value.replace(/[^A-Za-z0-9._-]/g, ''); if (c !== el.value) el.value = c; }
+        recompute(); save(); });
       el.addEventListener('change', () => { if (el.id === 'preset') applyPreset(); recompute(); save(); });
     });
     $('cBtn').addEventListener('click', doCalibrate);

@@ -1,7 +1,9 @@
 /*
  * File: llm-calc-math.js
  * Project: llm-calc (Lab) — R7 2026-10-20 (R2: optional head size + QKV bias;
- *          R7: grad accumulation, gradient checkpointing, sizes for selected outputs)
+ *          R7: grad accumulation, gradient checkpointing, sizes for selected outputs;
+ *          R6 2026-10-20: speed scales ~1/params, words/tokens data modes,
+ *          fuller memory (attention, logits, DataParallel GPU 0), overfit check)
  * Purpose: Pure formulas for the Tiny LLM Training Calculator (no DOM).
  *          Params of a Llama-style model, file sizes, steps, time, memory.
  *          Works in the browser (window.LLMCalcMath) and in Node (module.exports).
@@ -15,11 +17,17 @@
     ['ONNX fp32', 4], ['ONNX int8', 1]
   ];
   const GPU_PRESETS = {
-    T4:   { gpus: 1, tps: 28000, mem: 16, label: 'Kaggle T4 (1 GPU)' },
-    T4x2: { gpus: 2, tps: 28000, mem: 16, label: 'Kaggle T4 x2' },
-    P100: { gpus: 1, tps: 36400, mem: 16, label: 'Kaggle P100 (estimate ~1.3x T4)' }
+    // tps = tokens/sec per GPU for a 26M-param model (R6: scaled ~1/params). mem = usable GB.
+    T4:   { gpus: 1, tps: 25000, mem: 15, label: 'Kaggle T4 (1 GPU)' },
+    T4x2: { gpus: 2, tps: 25000, mem: 15, label: 'Kaggle T4 x2' },
+    P100: { gpus: 1, tps: 32500, mem: 15, label: 'Kaggle P100 (estimate ~1.3x T4)' }
   };
   const TWO_GPU_SCALE = 1.8;
+  const REF_PARAMS = 26e6; // speed box is "speed at 26M params"
+  // R6: real speed ≈ reference × 26M / params, clamped (tiny models hit overheads; huge ones never 0).
+  const speedFactor = p => Math.min(4, Math.max(0.01, REF_PARAMS / (p || REF_PARAMS)));
+  const scaledTps = (refTps, p) => refTps * speedFactor(p);
+  const WORD_TOKENS = 1.3;
   const scale = g => (g >= 2 ? TWO_GPU_SCALE * g / 2 : 1);
 
   function params(m) {
@@ -56,7 +64,8 @@
   function fileSizes(p) { return FORMATS.map(([name, b]) => ({ name, bytesPerParam: b, mb: p * b / MB })); }
 
   function training(t, seq) {
-    const tokens = t.useTotal ? t.totalTokens : t.stories * t.tokensPerStory;
+    const mode = t.dataMode || (t.useTotal ? 'tokens' : 'stories');
+    const tokens = mode === 'tokens' ? t.totalTokens : mode === 'words' ? Math.round(t.words * WORD_TOKENS) : t.stories * t.tokensPerStory;
     const blocks = Math.floor(tokens / seq);
     const accum = Math.max(1, Math.round(t.accum || 1));
     const perStep = t.batch * t.gpus * accum; // effective batch (R7)
@@ -71,11 +80,29 @@
     return steps * batchTotal * seq / (minutes * 60) / scale(gpus);
   }
   // Per GPU; grad accumulation does not change it (same micro-batch).
+  // R6 fuller estimate, per GPU (o: p, batch, seq, h, layers, heads, vocab, gpus, ckpt).
+  // Tuned on Jor's tiny110m (119.5M, vocab 24000, seq 512, batch 32, 2×T4 DataParallel): ~20 GB on
+  // GPU 0 (real run OOMed at 14.56 GiB); batch 8 ≈ 6.6 GB. Rough!
+  function memoryFull(o) {
+    const ck = o.ckpt ? CKPT_ACT : 1;
+    const states = o.p * 16;                                         // fp16 w+g, fp32 master, 2 Adam
+    const acts = o.batch * o.seq * o.h * o.layers * 34 * ck;         // rough
+    const attn = o.batch * o.heads * o.seq * o.seq * o.layers * 2 * ck; // attention scores, fp16
+    const logits = o.batch * o.seq * o.vocab * 4 * 2;                // fp32 logits + their grads
+    // DataParallel gathers every GPU's logits on GPU 0 for the loss (+ a softmax copy).
+    const gather = o.gpus > 1 ? o.gpus * o.batch * o.seq * o.vocab * 4 * 2.5 : 0; // 2.5 tuned to the OOM
+    const total = states + acts + attn + logits;
+    return { states, acts, attn, logits, gather, total, gpu0: total + gather };
+  }
+  function overfit(tokensPerEpoch, p) {
+    const r = tokensPerEpoch / p;
+    return { ratio: r, level: r < 1 ? 'bad' : r < 20 ? 'note' : '' };
+  }
   function memory(p, batch, seq, h, layers, ckpt) {
     const states = p * 16; // fp16 weights+grads, fp32 master, 2 Adam states
     const acts = batch * seq * h * layers * 34 * (ckpt ? CKPT_ACT : 1); // rough
     return { states, acts, total: states + acts };
   }
-  const api = { MB, GB, FORMATS, GGUF_BPP, CKPT_ACT, CKPT_TIME, outputSizes, GPU_PRESETS, TWO_GPU_SCALE, params, fileSizes, training, timeSec, calibrate, memory };
+  const api = { REF_PARAMS, WORD_TOKENS, speedFactor, scaledTps, memoryFull, overfit, MB, GB, FORMATS, GGUF_BPP, CKPT_ACT, CKPT_TIME, outputSizes, GPU_PRESETS, TWO_GPU_SCALE, params, fileSizes, training, timeSec, calibrate, memory };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LLMCalcMath = api;
 })(this);

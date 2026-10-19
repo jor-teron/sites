@@ -1,6 +1,7 @@
 /*
  * File: llm-calc-export.js
- * Project: llm-calc (Lab) — R7 2026-10-20 (R7: output switches, grad accum, auto batch, checkpointing)
+ * Project: llm-calc (Lab) — R7 2026-10-20 (R7: output switches, grad accum, auto batch, checkpointing;
+ *          R6: scaled speed, data mode, MIN_LR_RATIO, name charset [A-Za-z0-9._-], memory_gb = GPU 0)
  * Purpose: Export for the training script + people. One Download button:
  *          (a) saves <name>.llmcfg.json (Kaggle Tutor "llmcalc-config" v1 spec:
  *              UPPER_CASE script settings + "_estimates" for comparison only);
@@ -16,7 +17,7 @@
 
   // Strip path/illegal chars, trim, spaces -> '-', drop a typed extension. Case and dots kept.
   function sanitizeName(s) {
-    let n = String(s || '').replace(/[\/\\:*?"<>|]/g, '').trim().replace(/\s+/g, '-');
+    let n = String(s || '').trim().replace(/\s+/g, '-').replace(/[^A-Za-z0-9._-]/g, '');
     n = n.replace(/\.llmcfg\.json$/i, '').replace(/\.(json|pdf)$/i, '').replace(/\.llmcfg$/i, '');
     return n.replace(/^[.-]+|[.-]+$/g, '');
   }
@@ -33,11 +34,12 @@
   function estimates(s) {
     const p = M.params(s);
     const tr = M.training(Object.assign({}, s, { accum: s.gradAccum }), s.seq);
-    const sec = M.timeSec(tr.tokensTrained, s.tps, s.gpus, s.gradCkpt);
-    const mem = M.memory(p.total, s.batch, s.seq, s.hidden, s.layers, s.gradCkpt);
+    const tps = M.scaledTps(s.tps, p.total);
+    const sec = M.timeSec(tr.tokensTrained, tps, s.gpus, s.gradCkpt);
+    const mem = M.memoryFull({ p: p.total, batch: s.batch, seq: s.seq, h: s.hidden, layers: s.layers, heads: s.heads, vocab: s.vocab, gpus: s.gpus, ckpt: s.gradCkpt });
     const o = outputs(s), os = M.outputSizes(p.total, o);
     const sizes = {}; os.list.forEach(f => { sizes[f.key] = r1(f.mb); }); sizes.total = r1(os.total);
-    return { p, tr, sec, mem, o, os, sizes, fp32: r1(p.total * 4 / M.MB) };
+    return { p, tr, sec, mem, tps, o, os, sizes, fp32: r1(p.total * 4 / M.MB) };
   }
   // Effective output values (Modelfile needs GGUF, ONNX int8 needs ONNX). Missing keys = script defaults.
   function outputs(s) {
@@ -51,20 +53,20 @@
     const e = estimates(s);
     return {
       _format: 'llmcalc-config', _version: 1, _created: (now || new Date()).toISOString(),
-      MODEL_NAME: String(s.modelName || ''),
+      MODEL_NAME: sanitizeName(s.modelName),
       VOCAB: int(s.vocab), SEQ: int(s.seq), HIDDEN: int(s.hidden), LAYERS: int(s.layers), FFN: int(s.ffn),
       HEADS: int(s.heads), KV_HEADS: int(s.kvHeads), TIE_EMBEDDINGS: !!s.tied,
       EPOCHS: Number(s.epochs), BATCH_PER_GPU: int(s.batch), USE_ALL_GPUS: s.gpus > 1,
       LR: Number(s.lr), WARMUP: int(s.warmup), WEIGHT_DECAY: Number(s.weightDecay), GRAD_CLIP: Number(s.gradClip),
-      SEED: int(s.seed), MAX_SAMPLES: s.maxSamples > 0 ? int(s.maxSamples) : null, VAL_FRACTION: Number(s.valFraction),
+      SEED: int(s.seed), MAX_SAMPLES: s.maxSamples > 0 ? int(s.maxSamples) : null, VAL_FRACTION: Number(s.valFraction), MIN_LR_RATIO: s.minLr === undefined ? 0.1 : Number(s.minLr),
       EXPORT_HF: e.o.hf, EXPORT_GGUF: e.o.gguf, GGUF_TYPE: e.o.ggufType, EXPORT_MODELFILE: e.o.modelfile,
       EXPORT_ONNX: e.o.onnx, EXPORT_ONNX_INT8: e.o.onnxInt8, EXPORT_ZIP: e.o.zip,
       GRAD_ACCUM_STEPS: Math.max(1, int(s.gradAccum || 1)), AUTO_BATCH: s.autoBatch === undefined ? true : !!s.autoBatch,
       GRADIENT_CHECKPOINTING: !!s.gradCkpt,
       _estimates: {
         params: e.p.total, effective_batch: e.tr.effectiveBatch, steps_per_epoch: e.tr.stepsPerEpoch, total_steps: e.tr.totalSteps,
-        est_minutes: isFinite(e.sec) ? Math.round(e.sec / 60) : null, sizes_mb: e.sizes, memory_gb: Math.round(e.mem.total / M.GB * 100) / 100,
-        assumed_total_tokens: e.tr.tokens, gpu_preset: s.preset, tokens_per_sec: Number(s.tps), gpus: int(s.gpus)
+        est_minutes: isFinite(e.sec) ? Math.round(e.sec / 60) : null, sizes_mb: e.sizes, memory_gb: Math.round(e.mem.gpu0 / M.GB * 100) / 100,
+        assumed_total_tokens: e.tr.tokens, gpu_preset: s.preset, tokens_per_sec: Math.round(e.tps), tokens_per_sec_at_26m: Number(s.tps), gpus: int(s.gpus)
       }
     };
   }
@@ -85,9 +87,9 @@
   function readState() {
     const s = {};
     ['vocab', 'hidden', 'layers', 'ffn', 'heads', 'kvHeads', 'headDim', 'seq', 'stories', 'tokensPerStory', 'totalTokens',
-     'epochs', 'batch', 'lr', 'warmup', 'weightDecay', 'gradClip', 'seed', 'valFraction', 'maxSamples', 'gpus', 'tps', 'gradAccum'].forEach(k => { s[k] = num(k); });
-    ['tied', 'qkvBias', 'useTotal', 'autoBatch', 'gradCkpt', 'exportHf', 'exportGguf', 'exportModelfile', 'exportOnnx', 'exportOnnxInt8', 'exportZip'].forEach(k => { s[k] = $(k).checked; });
-    s.preset = $('preset').value; s.ggufType = $('ggufType').value; s.modelName = $('modelName').value.trim();
+     'epochs', 'batch', 'lr', 'warmup', 'weightDecay', 'gradClip', 'seed', 'valFraction', 'maxSamples', 'gpus', 'tps', 'gradAccum', 'words', 'minLr'].forEach(k => { s[k] = num(k); });
+    ['tied', 'qkvBias', 'autoBatch', 'gradCkpt', 'exportHf', 'exportGguf', 'exportModelfile', 'exportOnnx', 'exportOnnxInt8', 'exportZip'].forEach(k => { s[k] = $(k).checked; });
+    s.preset = $('preset').value; s.dataMode = $('dataMode').value; s.ggufType = $('ggufType').value; s.modelName = $('modelName').value.trim();
     return s;
   }
   function refresh() {
@@ -99,7 +101,7 @@
   function buildSummary(s, cfg, name) {
     const e = estimates(s), gpuTxt = (s.gpus > 1 ? s.gpus + '× ' : '') + (s.preset === 'P100' ? 'P100' : 'T4');
     const when = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }) + ' IST';
-    const memGB = e.mem.total / M.GB, limit = M.GPU_PRESETS[s.preset].mem;
+    const memGB = e.mem.gpu0 / M.GB, limit = M.GPU_PRESETS[s.preset].mem;
     const warns = Array.from(document.querySelectorAll('#warns li')).map(li => li.textContent);
     const mins = isFinite(e.sec) ? Math.round(e.sec / 60) : NaN;
     const timeTxt = isFinite(e.sec) ? (mins < 60 ? '~' + mins + ' min' : '~' + fmtTime(e.sec)) : '—';
@@ -110,16 +112,16 @@
       tbl('Model settings', [['Vocab size', fmt(s.vocab)], ['Hidden size', fmt(s.hidden)], ['Layers', fmt(s.layers)], ['FFN / MLP width', fmt(s.ffn)],
         ['Attention heads', fmt(s.heads)], ['KV heads', fmt(s.kvHeads)], ['Context length', fmt(s.seq)], ['Tied embeddings', s.tied ? 'yes' : 'no']]) +
       tbl('Training settings', [['Epochs', String(s.epochs)], ['Batch per GPU', fmt(s.batch)], ['GPUs', s.gpus + ' (' + s.preset + ')'], ['Learning rate', String(s.lr)],
-        ['Warmup steps', fmt(s.warmup)], ['Weight decay', String(s.weightDecay)], ['Grad clip', String(s.gradClip)], ['Seed', fmt(s.seed)],
+        ['Warmup steps', fmt(s.warmup)], ['Min LR ratio', String(cfg.MIN_LR_RATIO)], ['Weight decay', String(s.weightDecay)], ['Grad clip', String(s.gradClip)], ['Seed', fmt(s.seed)],
         ['Validation fraction', String(s.valFraction)], ['Max samples', cfg.MAX_SAMPLES === null ? 'all' : fmt(cfg.MAX_SAMPLES)],
         ['Grad accumulation', fmt(cfg.GRAD_ACCUM_STEPS)], ['Auto batch', cfg.AUTO_BATCH ? 'on' : 'off'], ['Gradient checkpointing', cfg.GRADIENT_CHECKPOINTING ? 'on' : 'off']]) +
       '</div>' +
       tbl('Results', [['Parameters', fmt(e.p.total) + ' (' + fmtM(e.p.total) + ')'],
         ['Outputs', e.os.list.length ? e.os.list.map(f => f.name + ' ~' + fmtMB(f.mb)).join(', ') + (e.o.modelfile ? ', Ollama Modelfile' : '') : 'none'],
         ['Total disk (rough)', '~' + fmtMB(e.os.total)], ['Effective batch', fmt(e.tr.effectiveBatch)],
-        ['Dataset tokens', fmt(e.tr.tokens)], ['Blocks (tokens ÷ context)', fmt(e.tr.blocks)], ['Steps per epoch', fmt(e.tr.stepsPerEpoch)],
-        ['Total steps', fmt(e.tr.totalSteps)], ['Estimated training time', isFinite(e.sec) ? fmtTime(e.sec) + ' at ' + fmt(s.tps) + ' tokens/sec per GPU' : '—'],
-        ['Memory per GPU (rough)', memGB.toFixed(2) + ' GB of ' + limit + ' GB']]) +
+        ['Dataset tokens' + (s.dataMode === 'words' ? ' (' + fmt(s.words) + ' words × 1.3)' : s.dataMode === 'tokens' ? ' (measured)' : ''), fmt(e.tr.tokens)], ['Tokens per parameter', (e.tr.tokens / e.p.total).toFixed(2)], ['Blocks (tokens ÷ context)', fmt(e.tr.blocks)], ['Steps per epoch', fmt(e.tr.stepsPerEpoch)],
+        ['Total steps', fmt(e.tr.totalSteps)], ['Estimated training time', isFinite(e.sec) ? fmtTime(e.sec) + ' at ' + fmt(e.tps) + ' tokens/sec per GPU (scaled for size)' : '—'],
+        [s.gpus > 1 ? 'Memory on GPU 0 (rough)' : 'Memory per GPU (rough)', memGB.toFixed(2) + ' GB of ' + limit + ' GB']]) +
       (warns.length ? '<h3>Warnings</h3><ul>' + warns.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul>' : '') +
       '<p class="ps-foot">All numbers are approximate estimates. The file ' + esc(name) + '.llmcfg.json holds the same settings for the training script.</p>';
   }
