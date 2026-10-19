@@ -10,9 +10,12 @@
  * - Show Desktop button right after Start: click = minimise every window (remembers which were
  *   open), click again = bring exactly those back (focus as before). Opening / restoring any
  *   window in between forgets the list (like any OS).
- * - One button per open window (HubWM.list()): click = focus / restore, or minimise when it is
+ * - Workspace switcher "1" "2" right after Show Desktop: wm_workspaces.js. Show Desktop and
+ *   the window buttons cover the current workspace only.
+ * - One button per open window of the current workspace (HubWM.list() + HubWM.onWs): click = focus / restore, or minimise when it is
  *   already the active window. Active window highlighted, minimised ones dimmed.
- *   Right-click / long-press = menu: New window (another instance), Minimise / Restore, Close.
+ *   Right-click / long-press = menu: New window (another instance), Move to workspace 1 / 2,
+ *   Minimise / Restore, Close.
  *   Middle-click = New window.
  * - Right-click menus (shared look, hub_ctx.js; they open above the bar, or below it when the
  *   taskbar is at the top): Start → Settings, Files, About; empty bar → Show desktop,
@@ -140,13 +143,14 @@
       if (act && back.indexOf(act) >= 0) HubWM.focus(act); else if (back.length) HubWM.focus(back[back.length - 1]);
       return;
     }
-    const vis = all.filter((w) => !w.min).sort((a, b) => +a.el.style.zIndex - +b.el.style.zIndex);
+    const vis = all.filter((w) => !w.min && HubWM.onWs(w)).sort((a, b) => +a.el.style.zIndex - +b.el.style.zIndex);
     if (!vis.length) return;
     const act = HubWM.active;
     HubWM.minimiseAll();
     setShown({ wins: vis, active: act });
   });
-  window.addEventListener('hub-wm-change', () => { if (shown && HubWM.list().some((w) => !w.min)) setShown(null); });
+  window.addEventListener('hub-wm-change', () => { if (shown && HubWM.list().some((w) => !w.min && HubWM.onWs(w))) setShown(null); });
+  window.addEventListener('hub-wm-ws', () => { if (shown) setShown(null); });
 
   // Right-click menus (hub_ctx.js + shared/ctxmenu): anchored to the bar, above it (bottom) / below it (top)
   const taskOf = new WeakMap();   // task button → window
@@ -166,6 +170,7 @@
       if (!w) return null;
       return at([
         { label: 'New window', icon: '\u29C9', action: () => newWindow(w) },
+        ...HubWM.wsItems(w),
         { label: w.min ? 'Restore' : 'Minimise', icon: w.min ? '\u2750' : '\u2013', action: () => (w.min ? HubWM.focus(w) : HubWM.minimise(w)) },
         { sep: true },
         { label: 'Close', icon: '\u00D7', danger: true, action: () => HubWM.close(w) }
@@ -182,7 +187,7 @@
       const top = document.documentElement.classList.contains('hub-task-top');
       const shown = showDesk.getAttribute('aria-pressed') === 'true';
       const list = [
-        { label: shown ? 'Restore windows' : 'Show desktop', icon: '\uD83D\uDDA5', disabled: !HubWM.list().length, action: () => showDesk.click() },
+        { label: shown ? 'Restore windows' : 'Show desktop', icon: '\uD83D\uDDA5', disabled: !HubWM.list().some(HubWM.onWs), action: () => showDesk.click() },
         { label: top ? 'Taskbar at the bottom' : 'Taskbar at the top', icon: top ? '\u2193' : '\u2191', action: () => {
           try { if (top) localStorage.removeItem('sites-hub.taskPos'); else localStorage.setItem('sites-hub.taskPos', 'top'); } catch (_) { return; }
           if (window.HubPrefs) HubPrefs.apply();
@@ -198,7 +203,7 @@
 
   function draw() {
     const act = HubWM.active;
-    tasks.replaceChildren(...HubWM.list().map((w) => {
+    tasks.replaceChildren(...HubWM.list().filter(HubWM.onWs).map((w) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'wm-task' + (w === act ? ' active' : '') + (w.min ? ' min' : '');

@@ -1,7 +1,8 @@
 /*
  * Tasks tab (apps/tools/sysmon/sm_tasks.js) — the Hub's open windows (Desktop mode), read from
  * the window manager's small API window.__hubTasks (hub/wm_windows.js; same origin only).
- * Each row: icon, name (+ "this window"), state (active / minimised / maximised), page nodes
+ * Each row: icon, name (+ "this window"), workspace (when there are 2), state (active /
+ * minimised / maximised / snapped), page nodes
  * (a rough size hint for same-origin apps), and Focus / Minimise / End task (= close the window;
  * ending a window with unsaved work asks first). Live: redraws on every window change + each second.
  * Phone mode / outside the Hub: explains that there is just one app at a time.
@@ -20,7 +21,8 @@
     img.addEventListener('error', () => { img.style.visibility = 'hidden'; });
     const name = el('div', 'task-name');
     name.append(el('b', '', t.name), el('span', 'task-sub',
-      [t.active ? 'Active' : t.min ? 'Minimised' : 'Open', t.max ? 'maximised' : '', t.id === me ? 'this window' : '']
+      [t.wsCount > 1 ? 'Workspace ' + (t.ws || 1) : '', t.active ? 'Active' : t.min ? 'Minimised' : 'Open',
+        t.max ? 'maximised' : t.snap ? 'snapped ' + (t.snap === 'l' ? 'left' : 'right') : '', t.id === me ? 'this window' : '']
         .filter(Boolean).join(' \u00B7 ')));
     const nodes = el('div', 'task-nodes', t.nodes == null ? 'other site' : t.nodes.toLocaleString() + ' nodes');
     nodes.title = 'Elements on the app\u2019s page (a rough size hint; real memory per app is not visible to web pages)';

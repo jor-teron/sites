@@ -3,7 +3,9 @@
  * the Hub, live. Loaded right after hub_config.js / hub_wallpapers.js.
  *
  * localStorage keys (all optional; empty = default):
- *   sites-hub.wallpaper  wallpaper id or '#rrggbb' (hub_wallpapers.js)        → #empty background
+ *   sites-hub.wallpaper  wallpaper id, 'pic:<file>' (picture, image URL used directly),
+ *                        'mine…' (Your picture, Local drive) or '#rrggbb' (hub_wallpapers.js)
+ *                                                                              → #empty background
  *   sites-hub.taskH      taskbar height 32 | 40 | 48 px (default 40)          → --wm-task-h
  *   sites-hub.titleH     window title bar 24 | 28 | 34 px (default 28)        → --wm-title-h
  *   sites-hub.taskPos    taskbar 'bottom' (default) | 'top'                    → html.hub-task-top
@@ -11,6 +13,7 @@
  *   sites-hub.theme      'dark' (default) | 'light'                           → html.hub-light
  *   sites-hub.motion     'on' (default) | 'reduced' (no jelly) | 'off'        → html.hub-motion-*
  *   sites-hub.hoverFocus '1' = Focus window on hover (default off)       → html.hub-hover-focus
+ *   sites-hub.workspaces '1' = one workspace (default 2): read by wm_workspaces.js
  *                        (wm_windows.js reads the class; Settings → Windows)
  *   sites-hub.wmMode / sites-hub.startHover: read by wm_mode.js / wm_taskbar.js; a change made
  *   in Settings is passed to HubMode here.
@@ -26,7 +29,7 @@
   const num = (v, ok, d) => (ok.indexOf(+v) >= 0 ? +v : d);
   const hex = (v) => (/^#[0-9a-f]{6}$/i.test(v) ? v : '');
 
-  let lastBar = '';
+  let lastBar = '', lastMine = '';
   function apply() {
     // sizes + taskbar position (a change re-clamps the windows: wm_windows.js listens to resize)
     const top = get('taskPos') === 'top';
@@ -48,10 +51,16 @@
     // wallpaper
     const empty = document.getElementById('empty');
     if (empty && window.hubWallpaper) {
-      const w = window.hubWallpaper(get('wallpaper'));
+      const v = get('wallpaper'), w = window.hubWallpaper(v);
       const s = empty.style;
       s.backgroundColor = w.color || '#000';
       s.backgroundImage = w.image || 'none';
+      if (w.mine && window.hubWallpaperMine) {   // Your picture: Local drive file → object URL
+        window.hubWallpaperMine(v !== lastMine).then((u) => {
+          if (get('wallpaper') === v && u) { s.backgroundImage = 'url("' + u + '")'; s.backgroundSize = 'cover'; }
+        });
+      }
+      lastMine = w.mine ? v : '';
       s.backgroundSize = w.slide ? '100% 300%' : (w.image ? 'cover' : '');
       s.backgroundPosition = w.slide ? '' : 'center';
       s.animationName = w.slide ? '' : 'none';

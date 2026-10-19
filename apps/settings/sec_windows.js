@@ -3,6 +3,8 @@
  *   'hoverFocus'   Focus window on hover: '1' = on (default off). Pointing at a window for a
  *                  moment brings it to the front (hub/wm_windows.js; never while dragging,
  *                  resizing or with a menu open).
+ *   'workspaces'   '1' = one workspace (taskbar switcher hidden, all windows on 1); empty = 2
+ *                  (default; hub/wm_workspaces.js).
  *   'titleH'       window title bar Slim 24 / Normal 28 / Large 34 px (moved here from Sizes,
  *                  same key, so saved choices stay).
  *   'filesClick'   Files app: open items with a 'single' click or a double click (default).
@@ -16,6 +18,10 @@
     render(pane) {
       const hover = ui.switch('Focus window on hover', 'Point at a window for a moment to bring it to the front',
         S.get('hoverFocus') === '1', (on) => S.set('hoverFocus', on ? '1' : ''));
+      const ws = ui.choice([
+        { value: 1, label: '1', hint: 'One desktop' },
+        { value: 2, label: '2', hint: 'Switch with 1 2 on the taskbar' }
+      ], S.get('workspaces') === '1' ? 1 : 2, (v) => S.set('workspaces', v === 2 ? '' : '1'));
       const title = ui.choice([
         { value: 24, label: 'Slim', hint: '24 px' },
         { value: 28, label: 'Normal', hint: '28 px' },
@@ -26,9 +32,9 @@
         { value: 'single', label: 'Single click', hint: 'Click opens; Ctrl / Shift / the round check select' }
       ], S.get('filesClick', 'double'), (v) => S.set('filesClick', v === 'double' ? '' : v));
       files.classList.add('seg-col');
-      pane.append(ui.title('Focus'), hover, ui.title('Title bar'), title,
+      pane.append(ui.title('Focus'), hover, ui.title('Workspaces'), ws, ui.title('Title bar'), title,
         ui.title('Files: open items with'), files,
-        ui.note('Window options work in Desktop mode. Changes show at once.'));
+        ui.note('Window options work in Desktop mode. Changes show at once. Snap a window by dragging it to a screen edge, or Ctrl+Alt+arrows.'));
     }
   });
 })();

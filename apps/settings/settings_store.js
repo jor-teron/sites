@@ -4,7 +4,7 @@
  * plus postMessage {type:'hub-prefs'} to the parent Hub; other open Hub tabs get the normal
  * 'storage' event.
  * Keys: wallpaper, taskH, titleH, accent, theme, motion, wmMode, startHover (see hub/hub_prefs.js), trayMeter (hub_traymeter.js),
- *   hoverFocus (wm_windows.js), filesClick (Files app).
+ *   hoverFocus (wm_windows.js), workspaces (wm_workspaces.js), filesClick (Files app).
  * Also paints this app's own accent / theme so Settings matches the Hub.
  */
 window.SettingsStore = (function () {

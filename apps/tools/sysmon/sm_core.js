@@ -52,7 +52,7 @@ window.SM = (function () {
   function paused() {
     if (document.hidden) return true;
     const me = myTask();
-    return !!(me && me.min);
+    return !!(me && (me.min || me.hidden));   // minimised, or on the other workspace
   }
   function tickAll() {
     if (paused()) { tabs.forEach((t) => { if (t.pause) t.pause(); }); return; }

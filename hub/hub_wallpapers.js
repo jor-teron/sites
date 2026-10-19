@@ -5,6 +5,11 @@
  * colour '#rrggbb'. Empty = 'night' (the original Hub wallpaper).
  * slide: true = tall gradient that slowly slides up and down (like the original).
  * light: true = light background, so the home text turns dark.
+ * Pictures (R10): every image listed in shared/wallpaper/wallpapers.js (load it first) becomes
+ * an entry id 'pic:<file>' with picture: absolute image URL (used directly, cover) and thumb.
+ * 'mine' (any value starting with 'mine') = Your picture: a file in the Local drive (OPFS)
+ * folder Wallpapers/, shown through an object URL — window.hubWallpaperMine() → Promise<url|''>,
+ * window.hubWallpaperSaveMine(file) → Promise (Settings → Wallpaper).
  */
 window.HUB_WALLPAPERS = [
   { id: 'night', name: 'Night', slide: true,
@@ -24,11 +29,64 @@ window.HUB_WALLPAPERS = [
   { id: 'paper', name: 'Off-white', color: '#CCCCCC', light: true }
 ];
 
+// Picture wallpapers: URLs are made absolute from this script's own address, so the Hub (site
+// root) and the Settings app (apps/settings/) point at the same files.
+(function () {
+  const me = document.currentScript && document.currentScript.src;
+  const dir = me ? new URL('../shared/wallpaper/', me).href : 'shared/wallpaper/';
+  (window.HUB_PICTURES || []).forEach((p) => {
+    if (!Array.isArray(p) || !/^[\w.-]+\.(jpe?g|png|webp)$/i.test(p[0] || '')) return;
+    window.HUB_WALLPAPERS.push({
+      id: 'pic:' + p[0], name: p[1] || p[0], picture: dir + p[0], thumb: dir + (p[2] || p[0]),
+      image: 'url("' + dir + p[0] + '")', color: '#1b2230', light: !!p[3]
+    });
+  });
+})();
+
+// Your picture (Local drive → Wallpapers/wallpaper.<ext>), shown with an object URL
+(function () {
+  const DIR = 'Wallpapers', BASE = 'wallpaper';
+  let cache = null;   // Promise<url>
+  async function folder(create) {
+    if (!navigator.storage || !navigator.storage.getDirectory) return null;
+    const root = await navigator.storage.getDirectory();
+    try { return await root.getDirectoryHandle(DIR, { create }); } catch (_) { return null; }
+  }
+  async function find(dir) {
+    for await (const [name, h] of dir.entries()) if (h.kind === 'file' && name.indexOf(BASE + '.') === 0) return { name, h };
+    return null;
+  }
+  window.hubWallpaperMine = function (fresh) {
+    if (cache && !fresh) return cache;
+    cache = (async () => {
+      try {
+        const dir = await folder(false);
+        const hit = dir && await find(dir);
+        return hit ? URL.createObjectURL(await hit.h.getFile()) : '';
+      } catch (_) { return ''; }
+    })();
+    return cache;
+  };
+  window.hubWallpaperSaveMine = async function (file) {
+    const dir = await folder(true);
+    if (!dir) throw new Error('No Local drive in this browser');
+    const ext = ((file.name || '').match(/\.(jpe?g|png|webp|gif|avif)$/i) || ['.jpg'])[0].toLowerCase();
+    let old;
+    while ((old = await find(dir))) await dir.removeEntry(old.name);
+    const fh = await dir.getFileHandle(BASE + ext, { create: true });
+    const w = await fh.createWritable();
+    await w.write(file);
+    await w.close();
+    cache = null;
+  };
+})();
+
 /** id or '#rrggbb' → wallpaper object (custom colours get light from their brightness). */
 window.hubWallpaper = function (v) {
   const list = window.HUB_WALLPAPERS;
   const hit = list.find((w) => w.id === v);
   if (hit) return hit;
+  if (/^mine/.test(String(v || ''))) return { id: 'mine', name: 'Your picture', mine: true, color: '#1b2230' };
   if (/^#[0-9a-f]{6}$/i.test(String(v || ''))) {
     const n = parseInt(v.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
     return { id: v, name: 'Custom', color: v, light: (0.299 * r + 0.587 * g + 0.114 * b) > 150 };

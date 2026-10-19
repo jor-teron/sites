@@ -15,8 +15,19 @@
  * - Focus on hover (optional, Settings → Windows → html.hub-hover-focus via hub_prefs.js): resting
  *   the mouse ~350 ms on a window brings it to the front; not while dragging / resizing or with a
  *   menu / dialog open. Focus itself is instant (no animation, no timer) on click.
- * - Right-click / long-press on the title bar: New window, Minimise, Maximise / Restore, Close
- *   (shared menu via hub_ctx.js); every same-origin app gets the in-app menu injected on load.
+ * - Right-click / long-press on the title bar: New window, Move to workspace 1/2, Minimise,
+ *   Maximise / Restore, Close (shared menu via hub_ctx.js); every same-origin app gets the
+ *   in-app menu injected on load.
+ * - Snapping (R10): w.snap = 'l' | 'r' (left / right half, class wm-snap-l / -r in wm.css; w.rect
+ *   keeps the size from before, like maximise). Edge detection, preview and the keys live in
+ *   wm_snap.js through HubWM.dragHook {move(w, ev), end(w, ev)} and HubWM.setSnap / setMax.
+ *   Dragging a snapped / maximised window away restores its old size under the pointer.
+ * - Workspaces (R10): w.ws = 1 | 2; only the current workspace's windows show (others get
+ *   wm-off, still loaded and running). HubWM.ws, setWs(n), moveToWs(w, n), wsCount(), onWs(w).
+ *   Switcher, keys and the setting: wm_workspaces.js. Focusing a window of the other workspace
+ *   switches to it. Fires 'hub-wm-ws' when the workspace changes.
+ * - Keys pressed inside a same-origin app are passed to window.__hubWmKey(e) (wm_snap.js /
+ *   wm_workspaces.js) so the window shortcuts work while an app has focus.
  *
  * API window.HubWM: open({key, name, icon, url, app, newInstance}), focus(w), minimise(w), restore(w),
  *   toggleMax(w), close(w), closeAll(), minimiseAll(), focusActive(), list(), active,
@@ -32,7 +43,8 @@
  *                             else the Hub frame #app-frame.
  *   window.__hubAppFrames() → every app iframe (Hub frame + all windows).
  * Session: the open windows (key, url, x, y, w, h, maximised, minimised, z-order, focused) are
- * saved in localStorage 'sites-hub.wmSession' after every change (debounced, Desktop mode
+ * saved (plus snap side + workspace of each window and the current workspace)
+ * in localStorage 'sites-hub.wmSession' after every change (debounced, Desktop mode
  * only, so a trip through Phone mode keeps it). A window's url keeps the app's current #hash
  * (same page only, e.g. Files' #drive=…&path=…); apps can ask for a save with a same-origin
  * postMessage {type:'hub-wm-save'}; the Hub also saves when the page is hidden / closed. hub.js calls HubWM.restoreSession(resolve)
@@ -53,6 +65,10 @@
   let active = null;
   let zTop = 10;
   let seq = 0;
+  let curWs = 1;            // current workspace (1 | 2)
+  const WS_KEY = 'sites-hub.workspaces';
+  const wsCount = () => { try { return localStorage.getItem(WS_KEY) === '1' ? 1 : 2; } catch (_) { return 2; } };
+  const onWs = (w) => w.ws === curWs;
 
   // Focus on hover: off by default; never while dragging / resizing, a menu or dialog is open
   const HOVER_MS = 350;
@@ -82,9 +98,9 @@
     const list = wins.map((w) => ({
       key: w.key, inst: w.inst, url: curUrl(w), name: w.baseName,
       x: Math.round(w.rect.x), y: Math.round(w.rect.y), w: Math.round(w.rect.w), h: Math.round(w.rect.h),
-      max: !!w.max, min: !!w.min, z: +w.el.style.zIndex || 0
+      max: !!w.max, min: !!w.min, snap: w.snap || '', ws: w.ws, z: +w.el.style.zIndex || 0
     }));
-    try { localStorage.setItem(SKEY, JSON.stringify({ v: 1, wins: list, focused: active ? active.key : '', focusedInst: active ? active.inst : 0 })); } catch (_) { /* full / blocked */ }
+    try { localStorage.setItem(SKEY, JSON.stringify({ v: 1, wins: list, ws: curWs, focused: active ? active.key : '', focusedInst: active ? active.inst : 0 })); } catch (_) { /* full / blocked */ }
   }
   const saveSoon = () => { clearTimeout(saveT); saveT = setTimeout(saveNow, 250); };
   const changed = () => { window.dispatchEvent(new CustomEvent('hub-wm-change')); saveSoon(); };
@@ -105,6 +121,7 @@
 
   function focus(w, noFrameFocus) {
     if (!w) return;
+    if (!onWs(w)) setWs(w.ws, true);
     if (w.min) { w.min = false; w.el.classList.remove('wm-min'); }
     if (w.el.style.zIndex !== String(zTop)) w.el.style.zIndex = String(++zTop);
     setActive(w);
@@ -115,7 +132,7 @@
   function topVisible(except) {
     let best = null;
     wins.forEach((x) => {
-      if (x === except || x.min) return;
+      if (x === except || x.min || !onWs(x)) return;
       if (!best || +x.el.style.zIndex > +best.el.style.zIndex) best = x;
     });
     return best;
@@ -130,12 +147,61 @@
 
   function restore(w) { focus(w); }
 
-  function toggleMax(w) {
-    w.max = !w.max;
-    w.el.classList.toggle('wm-max', w.max);
-    w.maxBtn.title = w.max ? 'Restore' : 'Maximise';
+  function setMaxBtn(w) {
+    w.maxBtn.title = w.max || w.snap ? 'Restore' : 'Maximise';
     w.maxBtn.setAttribute('aria-label', w.maxBtn.title);
+  }
+  /** Maximise on / off (clears a snap: restoring goes back to the size from before). */
+  function setMax(w, on) {
+    w.max = !!on;
+    w.snap = '';
+    w.el.classList.toggle('wm-max', w.max);
+    w.el.classList.remove('wm-snap-l', 'wm-snap-r');
+    setMaxBtn(w);
     focus(w);
+  }
+  /** Snap to the left / right half ('l' | 'r'), or '' = back to the normal size. */
+  function setSnap(w, side) {
+    side = side === 'l' || side === 'r' ? side : '';
+    w.snap = side;
+    w.max = false;
+    w.el.classList.remove('wm-max');
+    w.el.classList.toggle('wm-snap-l', side === 'l');
+    w.el.classList.toggle('wm-snap-r', side === 'r');
+    setMaxBtn(w);
+    focus(w);
+  }
+  /** The button / double-click: a maximised or snapped window goes back to normal. */
+  function toggleMax(w) {
+    if (w.snap) setSnap(w, ''); else setMax(w, !w.max);
+  }
+
+  // ---- workspaces ----
+  function showWs(w) { w.el.classList.toggle('wm-off', !onWs(w)); }
+  function setWs(n, keepFocus) {
+    n = Math.max(1, Math.min(wsCount(), +n || 1));
+    if (n === curWs) return;
+    curWs = n;
+    wins.forEach(showWs);
+    window.dispatchEvent(new CustomEvent('hub-wm-ws', { detail: { ws: n } }));
+    if (keepFocus) { changed(); return; }
+    // focus the topmost window of the workspace (the last focused one there)
+    const t = topVisible();
+    setActive(t);
+    if (t) focusFrameOf(t);
+  }
+  function moveToWs(w, n) {
+    n = Math.max(1, Math.min(2, +n || 1));
+    if (w.ws === n) return;
+    w.ws = n;
+    showWs(w);
+    if (active === w && !onWs(w)) setActive(topVisible(w)); else changed();
+  }
+  /** Right-click menu items for a window: "Move to workspace N" (none with 1 workspace). */
+  function wsItems(w) {
+    if (wsCount() < 2) return [];
+    const to = w.ws === 1 ? 2 : 1;
+    return [{ label: 'Move to workspace ' + to, icon: to === 1 ? '\u2460' : '\u2461', action: () => moveToWs(w, to) }];
   }
 
   function close(w) {
@@ -164,6 +230,7 @@
     try { doc = w.frame.contentDocument; } catch (_) { return; }
     if (!doc || !doc.documentElement) return;
     doc.addEventListener('pointerdown', () => { if (active !== w) focus(w, true); }, true);
+    doc.addEventListener('keydown', (e) => { if (window.__hubWmKey) window.__hubWmKey(e); }, true);
     if (doc.head && !doc.getElementById('hub-noscrollbar')) {
       const st = doc.createElement('style');
       st.id = 'hub-noscrollbar';
@@ -172,8 +239,8 @@
     }
   }
 
-  /** Drag helper: pointer capture on el; onMove(dx, dy) from the start point. */
-  function dragOn(el, onStart, onMove) {
+  /** Drag helper: pointer capture on el; onMove(dx, dy, ev) from the start point; onEnd(ev). */
+  function dragOn(el, onStart, onMove, onEnd) {
     el.addEventListener('pointerdown', (e) => {
       if (e.button !== 0 || e.target.closest('.wm-btn, .gb-btn')) return;
       e.preventDefault();
@@ -182,8 +249,9 @@
       el.setPointerCapture(e.pointerId);
       document.body.classList.add('wm-dragging');
       const move = (ev) => onMove(ev.clientX - sx, ev.clientY - sy, ev);
-      const up = () => {
+      const up = (ev) => {
         document.body.classList.remove('wm-dragging');
+        if (onEnd) onEnd(ev);
         el.removeEventListener('pointermove', move);
         el.removeEventListener('pointerup', up);
         el.removeEventListener('pointercancel', up);
@@ -227,7 +295,8 @@
     if (!o.restore) while (same.some((x) => x.inst === inst)) inst++;
     const d = deskRect();
     const nm = inst > 1 ? o.name + ' ' + inst : o.name;
-    const w = { key: o.key, inst, baseName: o.name, name: nm, icon: o.icon, url: o.url, app: o.app, min: false, max: false, rect: {}, id: ++seq };
+    const ws = o.restore ? Math.max(1, Math.min(wsCount(), +o.ws || 1)) : curWs;
+    const w = { key: o.key, inst, baseName: o.name, name: nm, icon: o.icon, url: o.url, app: o.app, min: false, max: false, snap: '', ws, rect: {}, id: ++seq };
 
     const el = document.createElement('section');
     el.className = 'wm-win wm-pop';
@@ -288,23 +357,43 @@
     el.addEventListener('animationend', () => el.classList.remove('wm-pop'));
     frame.addEventListener('load', () => { hookFrame(w); if (window.__hubInjectCtx) window.__hubInjectCtx(frame); });
 
-    // Move by the title bar (a maximised window un-maximises under the pointer first)
-    let start = null;
-    dragOn(bar, (e) => {
-      if (w.max) {
-        const dr = deskRect(), ratio = (e.clientX - dr.left) / dr.width;
-        w.max = false; el.classList.remove('wm-max');
-        maxB.title = 'Maximise'; maxB.setAttribute('aria-label', 'Maximise');
-        setRect(w, e.clientX - dr.left - w.rect.w * ratio, 0, w.rect.w, w.rect.h);
-      }
+    // Move by the title bar. A maximised / snapped window gets its old size back under the
+    // pointer once it really moves (a plain click on the bar keeps it as it is).
+    let start = null, freed = true;
+    const hook = (k, ev) => { const h = HubWM.dragHook; if (h && typeof h[k] === 'function') h[k](w, ev); };
+    dragOn(bar, () => {
+      freed = !(w.max || w.snap);
       start = Object.assign({}, w.rect);
-    }, (dx, dy) => setRect(w, start.x + dx, start.y + dy, start.w, start.h));
+    }, (dx, dy, ev) => {
+      if (!freed) {
+        if (Math.abs(dx) + Math.abs(dy) < 6) return;
+        freed = true;
+        const dr = deskRect(), br = el.getBoundingClientRect(), ratio = (ev.clientX - br.left) / Math.max(1, br.width);
+        w.max = false; w.snap = '';
+        el.classList.remove('wm-max', 'wm-snap-l', 'wm-snap-r');
+        setMaxBtn(w);
+        // keep the grabbed point under the pointer: start so that start + d = pointer - ratio * w
+        start = { x: ev.clientX - dr.left - w.rect.w * ratio - dx, y: ev.clientY - dr.top - 14 - dy, w: w.rect.w, h: w.rect.h };
+        changed();
+      }
+      setRect(w, start.x + dx, start.y + dy, start.w, start.h);
+      hook('move', ev);
+    }, (ev) => { if (freed) hook('end', ev); });
 
     // Resize by edges / corners
     el.querySelectorAll('.wm-rz').forEach((h) => {
       const dir = h.dataset.dir;
       let r0 = null;
-      dragOn(h, () => { if (w.max) return false; r0 = Object.assign({}, w.rect); }, (dx, dy) => {
+      dragOn(h, () => {
+        if (w.max) return false;
+        if (w.snap) {   // resizing a snapped window: it keeps its snapped place as its new size
+          const dr = deskRect(), br = el.getBoundingClientRect();
+          w.snap = ''; el.classList.remove('wm-snap-l', 'wm-snap-r'); setMaxBtn(w);
+          setRect(w, br.left - dr.left, br.top - dr.top, br.width, br.height);
+          changed();
+        }
+        r0 = Object.assign({}, w.rect);
+      }, (dx, dy) => {
         let { x, y, w: wd, h: ht } = r0;
         if (dir.includes('e')) wd = r0.w + dx;
         if (dir.includes('s')) ht = r0.h + dy;
@@ -321,7 +410,10 @@
     if (r) setRect(w, r.x, r.y, r.w, r.h, true);
     else setRect(w, 40 + n * 32, 16 + n * 28, wd, ht);
     if (o.restore) el.classList.remove('wm-pop');   // no jelly for a restored session
-    if (o.max) { w.max = true; el.classList.add('wm-max'); maxB.title = 'Restore'; maxB.setAttribute('aria-label', 'Restore'); }
+    if (o.max) { w.max = true; el.classList.add('wm-max'); }
+    else if (o.snap === 'l' || o.snap === 'r') { w.snap = o.snap; el.classList.add('wm-snap-' + o.snap); }
+    setMaxBtn(w);
+    showWs(w);
     desk.appendChild(el);
     wins.push(w);
     frame.src = o.url;
@@ -334,9 +426,14 @@
   }
 
   const HubWM = window.HubWM = {
-    open, focus, minimise, restore, toggleMax, close,
+    open, focus, minimise, restore, toggleMax, close, setMax, setSnap,
+    setWs, moveToWs, wsItems, onWs, wsCount,
+    get ws() { return curWs; },
+    dragHook: null,   // set by wm_snap.js
+    deskRect,
     closeAll() { wins.slice().forEach(close); },
-    minimiseAll() { wins.forEach((w) => { if (!w.min) { w.min = true; w.el.classList.add('wm-min'); } }); setActive(null); },
+    /** Show Desktop: minimise the current workspace's windows. */
+    minimiseAll() { wins.forEach((w) => { if (!w.min && onWs(w)) { w.min = true; w.el.classList.add('wm-min'); } }); setActive(null); },
     focusActive() { if (active) focusFrameOf(active); },
     list() { return wins.slice(); },
     get active() { return active; },
@@ -347,16 +444,18 @@
       try { data = JSON.parse(localStorage.getItem(SKEY) || 'null'); } catch (_) { data = null; }
       if (!data || !Array.isArray(data.wins) || !data.wins.length) return false;
       restoring = true;
+      curWs = Math.max(1, Math.min(wsCount(), +data.ws || 1));
+      window.dispatchEvent(new CustomEvent('hub-wm-ws', { detail: { ws: curWs } }));
       try {
         data.wins.slice().sort((a, b) => (a.z || 0) - (b.z || 0)).forEach((e) => {
           const inst = Math.max(1, Math.min(99, +(e && e.inst) || 1));
           if (!e || !e.key || wins.find((x) => x.key === e.key && x.inst === inst)) return;
           const o = resolve(e);   // may return o.key: the app's current key (an old saved key renamed)
           if (!o || wins.find((x) => x.key === (o.key || e.key) && x.inst === inst)) return;
-          open(Object.assign({}, o, { key: o.key || e.key, inst, restore: true, rect: { x: +e.x || 0, y: +e.y || 0, w: +e.w || 640, h: +e.h || 480 }, max: !!e.max, min: !!e.min }));
+          open(Object.assign({}, o, { key: o.key || e.key, inst, restore: true, rect: { x: +e.x || 0, y: +e.y || 0, w: +e.w || 640, h: +e.h || 480 }, max: !!e.max, min: !!e.min, snap: e.snap, ws: e.ws }));
         });
       } finally { restoring = false; }
-      const f = wins.find((x) => x.key === data.focused && x.inst === (+data.focusedInst || 1) && !x.min);
+      const f = wins.find((x) => x.key === data.focused && x.inst === (+data.focusedInst || 1) && !x.min && onWs(x));
       if (f) focus(f); else setActive(null);
       saveNow();
       return wins.length > 0;
@@ -370,9 +469,10 @@
       if (!w) return null;
       return [
         { label: 'New window', icon: '\u29C9', action: () => open({ key: w.key, name: w.baseName || w.name, icon: w.icon, url: w.url, app: w.app, newInstance: true }) },
+        ...wsItems(w),
         { sep: true },
         { label: 'Minimise', icon: '\u2013', action: () => minimise(w) },
-        { label: w.max ? 'Restore' : 'Maximise', icon: w.max ? '\u2750' : '\u25A2', action: () => toggleMax(w) },
+        { label: w.max || w.snap ? 'Restore' : 'Maximise', icon: w.max || w.snap ? '\u2750' : '\u25A2', action: () => toggleMax(w) },
         { sep: true },
         { label: 'Close', icon: '\u00D7', danger: true, action: () => close(w) }
       ];
@@ -380,7 +480,8 @@
   }
 
   // Task list for apps (apps/tools/sysmon): plain data + actions by window id, same origin only.
-  //   list() → [{ id, key, inst, name, icon, url, min, max, active, z, sameOrigin, nodes, title }]
+  //   list() → [{ id, key, inst, name, icon, url, min, max, snap, ws, wsCount, hidden (other
+  //   workspace), active, z, sameOrigin, nodes, title }]
   //   focus(id), minimise(id), close(id), idOf(win) → the id of the window showing that window object
   //   (an app finds its own window), onChange(fn) → off()   (fires on every 'hub-wm-change')
   window.__hubTasks = {
@@ -390,7 +491,7 @@
         try { doc = w.frame.contentDocument; } catch (_) { doc = null; }
         return {
           id: w.id, key: w.key, inst: w.inst, name: w.name, icon: w.icon ? new URL(w.icon, location.href).href : '',
-          url: curUrl(w), min: !!w.min, max: !!w.max, active: w === active, z: +w.el.style.zIndex || 0,
+          url: curUrl(w), min: !!w.min, max: !!w.max, snap: w.snap || '', ws: w.ws, wsCount: wsCount(), hidden: !onWs(w), active: w === active, z: +w.el.style.zIndex || 0,
           sameOrigin: !!doc, nodes: doc ? doc.getElementsByTagName('*').length : null, title: doc ? doc.title : ''
         };
       });

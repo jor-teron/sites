@@ -1,7 +1,7 @@
 /*
  * Settings → How-to (apps/settings/sec_howto.js). Plain-language help, shown just above
  * About: what the Hub is, the desktop (Start menu, windows, taskbar, Show Desktop, copies,
- * saved session, taskbar position, screen modes, phone mode), Drives & Files, the Settings sections, updates,
+ * saved session, taskbar position, screen modes, phone mode), Drives & Files, the Settings sections, wallpaper, updates,
  * and the technical / privacy notes that used to be on the About page.
  * One collapsible card (<details>) per topic, first one open. Written from the real code
  * (hub/wm_*.js, hub/hub.js, hub/hub_flyout.js, hub/hub_update.js) — keep it in step.
@@ -33,6 +33,26 @@
           <b>\u00D7</b> close.</li>
         <li>Click anywhere in a window to bring it to the front.</li>
       </ul>` },
+    { t: 'Snapping windows', h: `
+      <ul>
+        <li>Drag a window by its title bar to the <b>left</b> or <b>right</b> edge of the screen: it fills that
+          half. Drag it to the <b>top</b> edge: it fills the screen. A see-through box shows where it will land.</li>
+        <li>Drag a snapped or full-screen window away and it gets its old size back.</li>
+        <li>Keys: <b>Ctrl+Alt+←</b> / <b>→</b> left / right half, <b>Ctrl+Alt+↑</b> full screen,
+          <b>Ctrl+Alt+↓</b> back to normal. The ⊞ Windows / ⌘ key + arrows does the same where your
+          computer lets the browser have it.</li>
+        <li>Snapped windows are remembered after a reload. The edges follow the taskbar, top or bottom.</li>
+      </ul>` },
+    { t: 'Workspaces', h: `
+      <ul>
+        <li>There are two desktops, <b>1</b> and <b>2</b>, each with its own windows. Switch with the small
+          <b>1</b> <b>2</b> buttons next to Show Desktop.</li>
+        <li>Keys: <b>Ctrl+Alt+PageUp</b> / <b>PageDown</b> (or ⊞/⌘+Ctrl+← / → where the computer allows it).</li>
+        <li>Right-click a title bar or a taskbar button and pick <b>Move to workspace 1 / 2</b>.</li>
+        <li>The taskbar and Show Desktop only cover the workspace you are on. Windows on the other one keep
+          running. System Monitor shows each window's workspace.</li>
+        <li>Want just one? <b>Settings → Windows → Workspaces: 1</b> hides the buttons.</li>
+      </ul>` },
     { t: 'The taskbar', h: `
       <ul>
         <li>Each open window has a button. Click it to bring the window forward; click the front
@@ -46,8 +66,8 @@
       <ul>
         <li><b>Desktop</b>: Show desktop, Open Files, Wallpaper, Refresh, Close all windows, About.</li>
         <li><b>Taskbar</b>: Show desktop, taskbar at the top or bottom, Settings. On an app button: New window,
-          Minimise, Close. On Start: Settings, Files, About.</li>
-        <li><b>Title bar</b>: New window, Minimise, Maximise / Restore, Close.</li>
+          Move to workspace, Minimise, Close. On Start: Settings, Files, About.</li>
+        <li><b>Title bar</b>: New window, Move to workspace, Minimise, Maximise / Restore, Close.</li>
         <li><b>Menu rows, tiles and drives</b>: Open, Open in new window, Open in new tab (tiles also Copy link;
           drives Allow access / Remove).</li>
         <li><b>Inside an app</b>: Back, Reload app, Copy, Select all; in a text box Cut, Copy, Paste, Select all.
@@ -62,8 +82,8 @@
       </ul>
       <p>Copies are numbered, like \u201c2048 2\u201d.</p>` },
     { t: 'Your windows are remembered', h: `
-      <p>On a computer the Hub remembers which windows were open, where they were, their size, and
-        which were maximised or minimised. Reload the page or come back later and they open again.
+      <p>On a computer the Hub remembers which windows were open, where they were, their size,
+        which were maximised, snapped or minimised, and on which workspace. Reload the page or come back later and they open again.
         Each copy of an app is remembered on its own.</p>` },
     { t: 'Desktop, Phone or Auto', h: `
       <ul>
@@ -123,14 +143,21 @@
       </ul>` },
     { t: 'Settings sections', h: `
       <ul>
-        <li><b>Wallpaper</b>: gradients, plain colours or your own colour.</li>
+        <li><b>Wallpaper</b>: gradients, plain colours, your own colour, pictures, or <b>Your picture</b>.</li>
         <li><b>Desktop</b>: Auto / Desktop / Phone, whether the menu opens on hover, the taskbar busy meter.</li>
         <li><b>Windows</b>: <b>Focus window on hover</b> (point at a window for a moment to bring it forward;
-          off at first), title bar size, and single or double click to open items in Files.</li>
+          off at first), Workspaces 1 or 2, title bar size, and single or double click to open items in Files.</li>
         <li><b>Sizes</b>: taskbar position and size.</li>
         <li><b>Look</b>: accent colour, dark or light, and how bouncy the animations are.</li>
       </ul>
       <p>Changes show on the Hub straight away.</p>` },
+    { t: 'Wallpaper', h: `
+      <ul>
+        <li><b>Settings → Wallpaper</b>: colours and gradients, a custom colour, or one of the <b>pictures</b>.
+          It changes on the Hub at once and stays after a reload.</li>
+        <li><b>Your picture</b>: pick an image from your device. It is kept in this browser
+          (<b>Files → Local → Wallpapers</b>); a new pick replaces it. Click its tile again to pick another.</li>
+      </ul>` },
     { t: 'Updates', h: `
       <p>The Hub updates itself. While it is open it looks for a new version once a day at
         <b>11 PM</b> (your local time). If it was closed then and the last check is more than a day old,
