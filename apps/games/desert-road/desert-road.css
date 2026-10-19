@@ -9,8 +9,9 @@ html, body {
 }
 #game {
   display: block;
-  width: 100vw;
+  width: 100%;
   height: 100vh;
+  height: 100dvh;
   background: #e8b96a;
 }
 #hud {
@@ -78,3 +79,39 @@ html, body {
   font-family: monospace;
   font-size: 0.9em;
 }
+#overlay .best:empty { display: none; }
+#overlay .best { font-size: 0.95rem; color: #ffd166; }
+#pauseBtn {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.35);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+}
+#pauseBtn.hidden { display: none; }
+/* Touch hints: the halves of the canvas steer; these only show which side is held. */
+.pad {
+  display: none;
+  position: fixed;
+  bottom: 14px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.25);
+  color: rgba(255,255,255,0.85);
+  font-size: 28px;
+  line-height: 64px;
+  text-align: center;
+  pointer-events: none;
+}
+#padLeft  { left: 14px; }
+#padRight { right: 14px; }
+.pad.on { background: rgba(255,209,102,0.55); color: #1a0f0a; }
+@media (pointer: coarse) { .pad { display: block; } }

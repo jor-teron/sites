@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Desert Drive</title>
+<title>Desert Road</title>
   <link rel="stylesheet" href="desert-road.css" />
 </head>
 <body>
@@ -14,15 +14,20 @@
   <div>Score: <span id="score">0</span></div>
   <div>Time: <span id="time">0.0</span>s</div>
 </div>
+<button id="pauseBtn" class="hidden" aria-label="Pause">⏸</button>
+<div id="padLeft" class="pad" aria-hidden="true">◀</div>
+<div id="padRight" class="pad" aria-hidden="true">▶</div>
 
 <div id="overlay">
-  <h1>🏜️ Desert Drive</h1>
+  <h1>🏜️ Desert Road</h1>
   <p>
-    Dodge the cacti 🐫 animals and rocks.<br>
+    Dodge the cacti, animals and rocks on the road.<br>
     Reach <strong>100 points</strong> as fast as you can.<br><br>
-    Use <span class="keys">◀ ▶</span> or <span class="keys">A / D</span> to steer<br>
-    <span class="keys">Enter</span> / <span class="keys">Space</span> start · <span class="keys">Enter</span> pause
+    Steer with <span class="keys">◀ ▶</span> or <span class="keys">A / D</span>,
+    or hold the left / right side of the screen<br>
+    <span class="keys">Enter</span> / <span class="keys">Space</span> start · <span class="keys">Enter</span> / <span class="keys">⏸</span> pause
   </p>
+  <p class="best" id="best"></p>
   <button id="startBtn">Start Driving</button>
 </div>
 

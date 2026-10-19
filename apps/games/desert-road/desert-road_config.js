@@ -1,5 +1,5 @@
 /*
- * Desert Drive (desert-road) — configuration.
+ * Desert Road (desert-road) — configuration.
  * Speeds, difficulty ramp, car, obstacles, colors, ranks, keys and text.
  * desert-road_logic.js reads everything from DESERT_ROAD_CONFIG.
  */
@@ -10,17 +10,16 @@ const DESERT_ROAD_CONFIG = {
   // Starting values
   start: {
     score: 0,                    // initial score
-    speed: 4,                    // initial scroll speed (px per frame at 60fps)
-    spawnInterval: 50,           // frames between spawns when a run starts
-    idleSpawnInterval: 45,       // spawn interval value before the first run
+    speed: 4,                    // initial scroll speed (px per 1/60 s tick; scaled by real time)
+    spawnInterval: 0.83,         // seconds between spawn rolls when a run starts
   },
 
-  // Difficulty ramp (applied every frame from elapsed seconds)
+  // Difficulty ramp (from elapsed game seconds; paused / hidden time does not count)
   difficulty: {
     speedPerSecond: 0.08,        // scroll speed gained per second
     maxExtraSpeed: 3,            // cap on extra speed
-    spawnDecayPerSecond: 0.4,    // spawn interval shrinks this much per second
-    minSpawnInterval: 28,        // fastest spawn interval (frames)
+    spawnDecayPerSecond: 0.0067, // spawn interval shrinks this many seconds per second
+    minSpawnInterval: 0.47,      // fastest spawn interval (seconds)
     spawnChance: 0.85,           // chance an obstacle actually spawns on each interval
   },
 
@@ -28,10 +27,11 @@ const DESERT_ROAD_CONFIG = {
   car: {
     width: 46,                   // car width in px
     height: 70,                  // car height in px
-    bottomOffset: 130,           // car center distance from bottom of screen
-    moveSpeed: 7,                // target x change per frame while steering
-    follow: 0.25,                // smoothing factor toward target x (0..1)
-    edgeMargin: 8,               // keep car this far from screen edges
+    yFraction: 0.85,             // car center height as a fraction of screen height
+    minBottomGap: 10,            // keep the car's rear at least this far above the bottom
+    moveSpeed: 7,                // target x change per 1/60 s tick while steering
+    follow: 0.25,                // smoothing toward target x per 1/60 s tick (0..1)
+    edgeMargin: 8,               // keep car this far inside the road edges
     cornerRadius: 8,             // body corner radius
     windshieldInset: 8,          // windshield side inset
     windshieldTop: 10,           // windshield distance from car top
@@ -40,7 +40,7 @@ const DESERT_ROAD_CONFIG = {
 
   // Obstacles
   obstacles: {
-    spawnMargin: 30,             // keep spawns this far from screen sides
+    spawnMargin: 6,              // keep spawns this far inside the road edges
     spawnAbove: 10,              // extra px above the top edge when spawning
     hitPad: 6,                   // collision forgiveness in px (both boxes)
     // Types — family friendly, desert themed
@@ -58,7 +58,7 @@ const DESERT_ROAD_CONFIG = {
     widthFraction: 0.9,          // road width as fraction of screen width
     maxWidth: 520,               // road width cap in px
     stripePeriod: 60,            // center stripe scroll period (px)
-    idleScroll: 2,               // stripe scroll speed on the idle screen
+    idleScroll: 2,               // stripe scroll speed on the idle screen (px per 1/60 s tick)
     edgeDash: [12, 10],          // road edge dash pattern
     edgeWidth: 3,                // road edge line width
     stripeDash: [26, 34],        // center stripe dash pattern
@@ -85,6 +85,10 @@ const DESERT_ROAD_CONFIG = {
     { maxSeconds: Infinity, rank: '🏁 Finished', message: 'You made it!' },
   ],
 
+  // Frame cap and saved best
+  maxFps: 30,                    // render / update at most this many frames per second
+  storageKey: 'desert-road.best', // localStorage key for the best finish time / rank
+
   // Key bindings — matched against KeyboardEvent.code OR .key.
   // Hub / phone controller: D-pad = arrows, A = Space, Start = Enter, Select = Escape
   keys: {
@@ -95,7 +99,6 @@ const DESERT_ROAD_CONFIG = {
     restart: ['Escape', 'KeyR', 'r', 'R'],    // restart the run (Select / R)
   },
 
-
   // On-screen text (HTML allowed)
   text: {
     winTitle: 'You made it! 🎉',      // overlay heading on win
@@ -103,6 +106,8 @@ const DESERT_ROAD_CONFIG = {
     crashTitle: '💥 Crash!',          // overlay heading on crash
     crashBody: 'You scored <strong>{score}</strong> points.<br>Try again!', // {score} replaced
     crashButton: 'Try Again',         // button on crash
-    paused: 'PAUSED — Enter to resume', // canvas label while paused
+    paused: 'PAUSED — Enter or tap to resume', // canvas label while paused
+    best: 'Best: <strong>{time}s</strong> · {rank}', // best line; {time} {rank} replaced
+    newBest: '🏆 New best time!',    // shown on a win that beats the saved best
   },
 };
