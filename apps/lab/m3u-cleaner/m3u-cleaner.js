@@ -2,13 +2,18 @@
 ================================================================================
 File: m3u-cleaner.js
 Project: m3u-cleaner
-Description: Main logic for the M3U Playlist Cleaner WebApp.
-Purpose: Parse M3U, test channels in selectable parallel queues with retries,
-         mark failed (not playing) channels, auto-select them, and export cleaned list.
+Description: Main logic for the M3U Playlist Cleaner (Channel Cleaner) WebApp.
+Purpose: Load M3U (file or URL), test channels in parallel queues (honest
+         ok / fail / unsure), tap a row to preview and mark Works/Dead,
+         select/remove channels, export keeping every original attribute.
 Author: Grok
-Date: 2026-10-18
+Date: 2026-10-19 (R1)
 ================================================================================
 */
+
+import { parseM3U, exportM3U } from './m3u-cleaner-parse.js';
+import { testChannel } from './m3u-cleaner-test.js';
+import { initPreview, openPreview, closePreview, previewChannel } from './m3u-cleaner-preview.js';
 
 // ============================================================================
 // Constants
@@ -20,18 +25,22 @@ const LS_QUEUE = 'm3uCleanerQueue';
 // LocalStorage key for theme
 const LS_THEME = 'm3uCleanerTheme';
 
-// Number of retries per channel (at least 2 total attempts)
-const MAX_RETRIES = 2;
+// Allowed parallel queue counts and the default
+const QUEUE_OPTIONS = ['5', '10', '25', '50'];
+const QUEUE_DEFAULT = '10';
 
-// Timeout per attempt in milliseconds
-const TIMEOUT_MS = 8000;
+// Status labels shown in the table
+const STATUS_TEXT = { ok: 'ok', fail: 'fail', unsure: 'unsure', '': 'Untested' };
 
 // ============================================================================
 // Global state
 // ============================================================================
 
-// Array of channel objects: { name, group, url, status, selected, element }
+// Channel objects: { name, group, url, lines, status, selected, element }
 let channels = [];
+
+// #EXTM3U header line of the loaded source (kept on export)
+let header = '#EXTM3U';
 
 // Flag to stop testing
 let stopRequested = false;
@@ -55,7 +64,7 @@ const selectAll = document.getElementById('select-all');
 const themeToggle = document.getElementById('theme-toggle');
 
 // ============================================================================
-// Utility functions
+// Rendering
 // ============================================================================
 
 /**
@@ -67,50 +76,55 @@ function setStatus(msg) {
 }
 
 /**
- * Parses raw M3U text into channel objects.
- * @param {string} text - Raw M3U content
- * @returns {Array} Array of {name, group, url}
+ * Creates a table cell with plain text (never HTML).
+ * @param {string} text
+ * @param {string} [cls]
  */
-function parseM3U(text) {
-    const lines = text.split(/\r?\n/);
-    const result = [];
-    let current = null;
-
-    for (let line of lines) {
-        line = line.trim();
-        if (line.startsWith('#EXTINF')) {
-            const nameMatch = line.match(/,(.+)$/);
-            const groupMatch = line.match(/group-title="([^"]*)"/i);
-            current = {
-                name: nameMatch ? nameMatch[1].trim() : 'Unknown',
-                group: groupMatch ? groupMatch[1] : '',
-                url: ''
-            };
-        } else if (line && !line.startsWith('#') && current) {
-            current.url = line;
-            result.push(current);
-            current = null;
-        }
-    }
-    return result;
+function cell(text, cls) {
+    const td = document.createElement('td');
+    td.textContent = text;
+    if (cls) td.className = cls;
+    return td;
 }
 
 /**
- * Renders the channel table.
+ * Refreshes one row's status cell and checkbox from its channel.
+ * @param {object} ch
+ */
+function updateRow(ch) {
+    if (!ch.element) return;
+    const statusTd = ch.element.lastChild;
+    statusTd.textContent = STATUS_TEXT[ch.status || ''];
+    statusTd.className = `status-${ch.status || 'pending'}`;
+    ch.element.querySelector('.ch-check').checked = ch.selected;
+}
+
+/**
+ * Renders the channel table (textContent only, so names cannot inject HTML).
  */
 function renderTable() {
-    channelBody.innerHTML = '';
+    channelBody.textContent = '';
+    const frag = document.createDocumentFragment();
+    const playing = previewChannel();
     channels.forEach((ch, idx) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><input type="checkbox" class="ch-check" data-idx="${idx}" ${ch.selected ? 'checked' : ''}></td>
-            <td>${ch.name}</td>
-            <td>${ch.group}</td>
-            <td class="status-${ch.status || 'pending'}">${ch.status || 'Untested'}</td>
-        `;
-        channelBody.appendChild(tr);
+        tr.dataset.idx = idx;
+        if (ch === playing) tr.classList.add('previewing');
+        const checkTd = document.createElement('td');
+        checkTd.className = 'check-cell';
+        const check = document.createElement('input');
+        check.type = 'checkbox';
+        check.className = 'ch-check';
+        check.checked = ch.selected;
+        check.setAttribute('aria-label', `Select ${ch.name}`);
+        checkTd.appendChild(check);
+        tr.append(checkTd, cell(ch.name, 'name-cell'), cell(ch.group), cell('', ''));
         ch.element = tr;
+        frag.appendChild(tr);
+        updateRow(ch);
     });
+    channelBody.appendChild(frag);
+    selectAll.checked = channels.length > 0 && channels.every(c => c.selected);
     updateButtons();
 }
 
@@ -125,39 +139,18 @@ function updateButtons() {
     exportBtn.disabled = !hasChannels;
 }
 
-/**
- * Tests a single channel URL with retries.
- * Uses fetch with timeout. CORS may limit accuracy.
- * @param {string} url - Stream URL
- * @returns {Promise<boolean>} True if appears playable
- */
-async function testChannel(url) {
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-        if (stopRequested) return false;
-        try {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
-            const res = await fetch(url, {
-                method: 'GET',
-                mode: 'no-cors',
-                signal: controller.signal
-            });
-            clearTimeout(timeout);
-            // no-cors opaque response often means it reached the server
-            return true;
-        } catch (e) {
-            // Continue to retry
-        }
-    }
-    return false;
-}
+// ============================================================================
+// Testing
+// ============================================================================
 
 /**
- * Runs the parallel queue testing.
+ * Runs the parallel queue testing. Resets earlier results and ticks first.
  * @param {number} queueCount - Number of parallel queues
  */
 async function runTests(queueCount) {
     stopRequested = false;
+    channels.forEach(ch => { ch.status = ''; ch.selected = false; });
+    renderTable();
     testBtn.disabled = true;
     stopBtn.disabled = false;
     setStatus(`Testing with ${queueCount} parallel queues...`);
@@ -166,66 +159,104 @@ async function runTests(queueCount) {
     let completed = 0;
     const total = channels.length;
 
-    /**
-     * Worker that processes channels from the shared pending list.
-     */
+    /** Worker that processes channels from the shared pending list. */
     async function worker() {
         while (pending.length > 0 && !stopRequested) {
             const ch = pending.shift();
-            if (!ch) break;
-            const ok = await testChannel(ch.url);
-            ch.status = ok ? 'ok' : 'fail';
-            if (!ok) ch.selected = true;
+            const result = await testChannel(ch.url, () => stopRequested);
+            if (stopRequested) break;
+            ch.status = result;
+            ch.selected = result === 'fail'; // failed auto-ticked, unsure not
             completed++;
-            // Update row
-            if (ch.element) {
-                const statusTd = ch.element.querySelector('td:last-child');
-                if (statusTd) {
-                    statusTd.textContent = ch.status;
-                    statusTd.className = `status-${ch.status}`;
-                }
-                const check = ch.element.querySelector('.ch-check');
-                if (check) check.checked = ch.selected;
-            }
+            updateRow(ch);
             setStatus(`Testing... ${completed}/${total}`);
         }
     }
 
-    // Start workers
     const workers = [];
-    for (let i = 0; i < queueCount; i++) {
-        workers.push(worker());
-    }
+    for (let i = 0; i < queueCount; i++) workers.push(worker());
     await Promise.all(workers);
 
     stopBtn.disabled = true;
     testBtn.disabled = false;
-    setStatus(stopRequested ? 'Stopped.' : `Done. ${channels.filter(c => c.status === 'fail').length} failed.`);
+    const failed = channels.filter(c => c.status === 'fail').length;
+    const unsure = channels.filter(c => c.status === 'unsure').length;
+    setStatus(stopRequested
+        ? 'Stopped.'
+        : `Done. ${failed} failed, ${unsure} unsure (tap a row to check it by eye).`);
 }
+
+// ============================================================================
+// Preview callbacks
+// ============================================================================
+
+/** Highlights the row being previewed. */
+function markPreviewRow(ch) {
+    channelBody.querySelectorAll('tr.previewing').forEach(tr => tr.classList.remove('previewing'));
+    if (ch && ch.element) {
+        ch.element.classList.add('previewing');
+        ch.element.scrollIntoView({ block: 'nearest' });
+    }
+}
+
+initPreview({
+    // Works -> ok + unticked, Dead -> fail + ticked
+    onMark(ch, status) {
+        ch.status = status;
+        ch.selected = status === 'fail';
+        updateRow(ch);
+        setStatus(`${ch.name}: marked ${status === 'ok' ? 'Works' : 'Dead'}.`);
+    },
+    onStep(ch, delta) {
+        const idx = channels.indexOf(ch);
+        const next = channels[idx + delta];
+        if (next) {
+            openPreview(next);
+            markPreviewRow(next);
+        }
+    },
+    onClose() {
+        markPreviewRow(null);
+    }
+});
 
 // ============================================================================
 // Event handlers
 // ============================================================================
 
+// Picking a file clears the URL; typing a URL clears the file
+fileInput.addEventListener('change', () => {
+    if (fileInput.files.length > 0) urlInput.value = '';
+});
+urlInput.addEventListener('input', () => {
+    if (urlInput.value.trim()) fileInput.value = '';
+});
+
 loadBtn.addEventListener('click', async () => {
     let text = '';
-    if (fileInput.files.length > 0) {
-        text = await fileInput.files[0].text();
-    } else if (urlInput.value.trim()) {
+    const url = urlInput.value.trim();
+    if (url) {
         try {
-            const res = await fetch(urlInput.value.trim());
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
             text = await res.text();
         } catch (e) {
-            setStatus('Failed to load URL.');
+            setStatus(`Could not load the URL (${e.message || 'network error'}). The server may block ` +
+                'cross-site loading (CORS). Download the file and open it with the file picker instead.');
             return;
         }
+    } else if (fileInput.files.length > 0) {
+        text = await fileInput.files[0].text();
     } else {
         setStatus('Select a file or enter a URL.');
         return;
     }
-    channels = parseM3U(text).map(c => ({ ...c, status: '', selected: false }));
+    closePreview();
+    const parsed = parseM3U(text);
+    header = parsed.header;
+    channels = parsed.channels.map(c => ({ ...c, status: '', selected: false }));
     renderTable();
-    setStatus(`Loaded ${channels.length} channels.`);
+    setStatus(`Loaded ${channels.length} channels. Tap a row to preview it.`);
 });
 
 testBtn.addEventListener('click', () => {
@@ -248,28 +279,47 @@ selectFailedBtn.addEventListener('click', () => {
 });
 
 removeSelectedBtn.addEventListener('click', () => {
+    const playing = previewChannel();
+    if (playing && playing.selected) closePreview();
     channels = channels.filter(ch => !ch.selected);
     renderTable();
     setStatus(`Removed selected. ${channels.length} remaining.`);
 });
 
 exportBtn.addEventListener('click', () => {
-    let m3u = '#EXTM3U\n';
-    channels.forEach(ch => {
-        m3u += `#EXTINF:-1 group-title="${ch.group}",${ch.name}\n${ch.url}\n`;
-    });
-    const blob = new Blob([m3u], { type: 'text/plain' });
+    const blob = new Blob([exportM3U(header, channels)], { type: 'text/plain' });
+    const href = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    a.href = href;
     a.download = 'cleaned.m3u';
     a.click();
+    setTimeout(() => URL.revokeObjectURL(href), 1000);
     setStatus('Exported cleaned M3U.');
+});
+
+// Row checkboxes (event delegation)
+channelBody.addEventListener('change', (e) => {
+    if (!e.target.classList.contains('ch-check')) return;
+    const ch = channels[Number(e.target.closest('tr').dataset.idx)];
+    if (ch) ch.selected = e.target.checked;
+    selectAll.checked = channels.every(c => c.selected);
+});
+
+// Tapping a row (not its checkbox cell) opens the preview
+channelBody.addEventListener('click', (e) => {
+    if (e.target.closest('.check-cell')) return;
+    const tr = e.target.closest('tr');
+    if (!tr) return;
+    const ch = channels[Number(tr.dataset.idx)];
+    if (!ch) return;
+    openPreview(ch);
+    markPreviewRow(ch);
 });
 
 selectAll.addEventListener('change', () => {
     const checked = selectAll.checked;
-    channels.forEach(ch => ch.selected = checked);
-    document.querySelectorAll('.ch-check').forEach(cb => cb.checked = checked);
+    channels.forEach(ch => { ch.selected = checked; });
+    channelBody.querySelectorAll('.ch-check').forEach(cb => { cb.checked = checked; });
 });
 
 themeToggle.addEventListener('click', () => {
@@ -296,9 +346,13 @@ function init() {
     const theme = localStorage.getItem(LS_THEME) || 'dark';
     document.documentElement.setAttribute('data-theme', theme);
 
-    // Restore last queue count (100 is default)
-    const savedQ = localStorage.getItem(LS_QUEUE);
-    if (savedQ) queueSelect.value = savedQ;
+    // Restore last queue count; old values (100..1000) migrate to the default
+    let savedQ = localStorage.getItem(LS_QUEUE);
+    if (!QUEUE_OPTIONS.includes(savedQ)) {
+        savedQ = QUEUE_DEFAULT;
+        localStorage.setItem(LS_QUEUE, savedQ);
+    }
+    queueSelect.value = savedQ;
 }
 
 init();

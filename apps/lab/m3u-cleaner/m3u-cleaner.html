@@ -4,10 +4,11 @@
 File: m3u-cleaner.html
 Project: m3u-cleaner
 Description: Main HTML file for the M3U Playlist Cleaner WebApp.
-Purpose: Provides UI to load M3U (local or URL), test channels in parallel queues,
-         auto-select failed (not playing) channels, and export cleaned playlist.
+Purpose: Provides UI to load M3U (local or URL), test channels in parallel queues
+         (ok / fail / unsure), tap a row to preview and mark Works/Dead,
+         auto-select failed channels, and export the cleaned playlist.
 Author: Grok
-Date: 2026-10-18
+Date: 2026-10-19 (R1)
 ================================================================================
 -->
 <html lang="en">
@@ -35,13 +36,10 @@ Date: 2026-10-18
     <div class="controls">
         <label for="queue-select">Parallel queues:</label>
         <select id="queue-select">
-            <option value="10">10</option>
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
             <option value="25">25</option>
             <option value="50">50</option>
-            <option value="100" selected>100</option>
-            <option value="250">250</option>
-            <option value="500">500</option>
-            <option value="1000">1000</option>
         </select>
         <button id="test-btn" disabled>Test All</button>
         <button id="select-failed-btn" disabled>Select Failed</button>
@@ -66,6 +64,24 @@ Date: 2026-10-18
         <tbody id="channel-body"></tbody>
     </table>
 
+    <!-- Preview panel: bottom sheet on phones, corner on desktop -->
+    <div id="preview" class="preview" role="dialog" aria-label="Channel preview" hidden>
+        <div class="pv-head">
+            <span id="pv-name" class="pv-name"></span>
+            <button id="pv-close" class="pv-icon" aria-label="Close preview">✕</button>
+        </div>
+        <video id="pv-video" playsinline controls></video>
+        <div id="pv-msg" class="pv-msg"></div>
+        <div class="pv-actions">
+            <button id="pv-prev" class="pv-icon" aria-label="Previous channel">‹</button>
+            <button id="pv-works" class="pv-works">Works</button>
+            <button id="pv-dead" class="pv-dead">Dead</button>
+            <button id="pv-next" class="pv-icon" aria-label="Next channel">›</button>
+        </div>
+    </div>
+
+    <!-- hls.js (local copy, no CDN) for HLS where the browser has no native HLS -->
+    <script src="vendor/hls/hls.min.js"></script>
     <!-- Load the application logic -->
     <script type="module" src="m3u-cleaner.js"></script>
 </body>

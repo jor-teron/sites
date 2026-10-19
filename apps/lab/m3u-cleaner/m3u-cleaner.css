@@ -3,9 +3,10 @@
 File: m3u-cleaner.css
 Project: m3u-cleaner
 Description: Stylesheet for the M3U Playlist Cleaner WebApp.
-Purpose: Minimalist UI with light/dark theme, table layout, and controls.
+Purpose: Minimalist UI with light/dark theme, table layout, controls, and the
+         tap-to-preview panel (big tap targets, small jelly bounce).
 Author: Grok
-Date: 2026-10-18
+Date: 2026-10-19 (R1)
 ================================================================================
 */
 
@@ -18,6 +19,7 @@ Date: 2026-10-18
     --accent-color: #007bff;
     --fail-color: #ff6b6b;
     --ok-color: #51cf66;
+    --unsure-color: #f59f00;
 }
 
 /* Dark theme variables */
@@ -88,6 +90,30 @@ button {
     color: white;
     border: none;
     cursor: pointer;
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+}
+
+/* Small jelly bounce on press */
+button:active:not(:disabled) {
+    animation: jelly 0.35s ease;
+}
+
+@keyframes jelly {
+    0% { transform: scale(1, 1); }
+    35% { transform: scale(0.9, 1.08); }
+    65% { transform: scale(1.05, 0.95); }
+    100% { transform: scale(1, 1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    button:active:not(:disabled) { animation: none; }
+}
+
+input, select {
+    min-height: 44px;
+    box-sizing: border-box;
 }
 
 button:disabled {
@@ -133,7 +159,49 @@ button:hover:not(:disabled) {
 /* Status colors */
 .status-ok { color: var(--ok-color); }
 .status-fail { color: var(--fail-color); }
+.status-unsure { color: var(--unsure-color); }
 .status-pending { color: #888; }
+
+/* Rows are tappable to preview; checkbox cell has its own big target */
+#channel-body tr { cursor: pointer; }
+#channel-body tr:hover { background: rgba(127, 127, 127, 0.08); }
+#channel-body tr.previewing { background: rgba(77, 171, 247, 0.18); }
+#channel-table .check-cell { width: 44px; padding: 0; text-align: center; }
+#channel-table input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; margin: 11px; cursor: pointer; }
+#channel-table .name-cell { word-break: break-word; }
+
+/* Preview panel: corner card on desktop */
+.preview {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    width: 360px;
+    max-width: calc(100vw - 2rem);
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    padding: 0.5rem;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.preview[hidden] { display: none; }
+
+.pv-head { display: flex; align-items: center; gap: 0.5rem; }
+.pv-name { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv-icon { background: transparent; color: var(--text-color); border: 1px solid var(--border-color); font-size: 1.2rem; padding: 0 0.6rem; }
+
+#pv-video { width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; }
+.pv-msg { font-size: 0.8rem; color: var(--unsure-color); min-height: 1em; }
+.pv-msg:empty { display: none; }
+
+.pv-actions { display: flex; gap: 0.4rem; }
+.pv-works, .pv-dead { flex: 1; font-size: 1rem; font-weight: 600; min-height: 48px; }
+.pv-works { background: #2f9e44; }
+.pv-dead { background: #e03131; }
 
 /* Responsive */
 @media (max-width: 700px) {
@@ -144,4 +212,17 @@ button:hover:not(:disabled) {
     #channel-table {
         font-size: 0.8rem;
     }
+    /* Preview becomes a bottom sheet */
+    .preview {
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: auto;
+        max-width: none;
+        border-radius: 14px 14px 0 0;
+        padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+    }
+    #pv-video { max-height: 40vh; }
+    /* Keep the last rows reachable above the sheet */
+    body:has(.preview:not([hidden])) { padding-bottom: 60vh; }
 }
