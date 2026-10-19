@@ -137,7 +137,7 @@ BATCH_PER_GPU = 32                  # Text blocks each GPU handles per step. Tot
                                     # fewer steps, more GPU memory. If you get an
                                     # "out of memory" error, lower this (e.g. 16).
 USE_ALL_GPUS = True                 # True = use every GPU (both on T4 x2) in parallel.
-GRAD_ACCUM_STEPS = 1                # Gradient accumulation: run this many smaller batches,
+GRAD_ACCUM_STEPS = 4                # Gradient accumulation: run this many smaller batches,
                                     # add up what they learned, then update ONCE. Same
                                     # result as a batch this many times bigger, but needs
                                     # only the memory of one small batch. 1 = off.
