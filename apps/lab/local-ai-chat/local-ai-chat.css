@@ -7,7 +7,8 @@ Purpose: Minimalist UI: thin header, single rounded input bubble, popovers,
          inline status notes, in-chat image bubbles, light/dark themes,
          jelly press effect and phone layout.
 Author: Grok
-Date: 2026-10-19 (R1: rewrite; restored phone @media rules, 100dvh, 44px taps)
+Date: 2026-10-19 (R2: Models sheet. R1: rewrite; restored phone @media rules,
+                  100dvh, 44px taps)
 ================================================================================
 */
 
@@ -239,10 +240,65 @@ button:active:not(:disabled) { animation: jelly 0.35s ease; }
 .pop-row .chip { flex: 1; }
 .pop-row select { min-height: var(--tap); }
 
+/* Models sheet (R2): dimmed backdrop, bottom panel */
+.sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.sheet[hidden] { display: none; }
+
+.sheet-panel {
+    width: 100%;
+    max-width: 32rem;
+    max-height: 80dvh;
+    overflow-y: auto;
+    padding: 0.5rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom));
+    background: var(--panel-bg);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.2);
+}
+
+.sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.model-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0;
+    border-top: 1px solid var(--border-color);
+}
+
+.model-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.model-info small { color: var(--muted-color); }
+.model-info .model-size { color: var(--text-color); }
+
+.model-btns { display: flex; gap: 0.3rem; flex-shrink: 0; }
+.model-btns .chip { text-align: center; }
+
 /* Phone layout (restored @media wrapper) */
 @media (max-width: 600px) {
     .message { max-width: 90%; }
     header h1 { font-size: 0.95rem; }
     select { max-width: 7.5rem; }
     #chat-history { padding: 0.5rem; }
+    .model-row { flex-wrap: wrap; }
+    .model-btns { width: 100%; }
+    .model-btns button { flex: 1; }
 }
