@@ -1,6 +1,6 @@
 /*
  * File: llm-calc.css
- * Project: llm-calc (Lab) — R1 2026-10-19
+ * Project: llm-calc (Lab) — R2 2026-10-19 (R2: real-model list, official check)
  * Purpose: Minimalist styles, big tap targets, jelly press, light/dark.
  */
 :root { --bg:#f6f7fb; --card:#fff; --fg:#1d2230; --mute:#6b7280; --acc:#6c5ce7; --bad:#e5484d; --line:#e5e7eb; }
@@ -33,4 +33,16 @@ dialog { border:0; border-radius:20px; background:var(--card); color:var(--fg); 
 dialog::backdrop { background:rgba(0,0,0,.45); }
 dialog[open] { animation:pop .35s cubic-bezier(.3,1.6,.5,1); }
 @keyframes pop { from { transform:scale(.85); opacity:0; } }
+/* R2: Real models list in the ⓘ dialog, Load whole model, official check */
+.load select { width:12em; }
+.official { margin:6px 0 0; font-size:.85rem; text-align:center; color:var(--mute); }
+.official b { color:var(--fg); } .official .ok { color:#2f9e44; }
+dialog { max-height:86vh; overflow:auto; }
+.rm h4 { margin:10px 0 4px; font-size:.85rem; color:var(--mute); font-weight:600; }
+.rm button { display:flex; justify-content:space-between; align-items:center; gap:12px; width:100%; min-height:44px; padding:0 12px; margin:0; border:0; border-bottom:1px solid var(--line); background:transparent; color:var(--fg); font:inherit; font-size:.95rem; text-align:left; cursor:pointer; border-radius:10px; transition:transform .25s cubic-bezier(.3,1.8,.5,1), background .15s; }
+.rm button span:last-child { font-variant-numeric:tabular-nums; font-weight:600; color:var(--acc); }
+.rm button.cur { background:color-mix(in srgb, var(--acc) 14%, transparent); }
+.rm button:active { transform:scale(.96,1.04); }
+.field.flash input, .field.flash select { animation:flash .6s ease; }
+@keyframes flash { 30% { box-shadow:0 0 0 3px var(--acc); } }
 @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
