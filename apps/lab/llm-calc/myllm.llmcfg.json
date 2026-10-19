@@ -1,0 +1,40 @@
+{
+  "_format": "llmcalc-config",
+  "_version": 1,
+  "_created": "2026-10-19T17:29:01.774Z",
+  "MODEL_NAME": "tiny110m",
+  "VOCAB": 24000,
+  "SEQ": 512,
+  "HIDDEN": 512,
+  "LAYERS": 30,
+  "FFN": 1376,
+  "HEADS": 8,
+  "KV_HEADS": 8,
+  "TIE_EMBEDDINGS": false,
+  "EPOCHS": 2,
+  "BATCH_PER_GPU": 32,
+  "USE_ALL_GPUS": true,
+  "LR": 0.0003,
+  "WARMUP": 100,
+  "WEIGHT_DECAY": 0.1,
+  "GRAD_CLIP": 1,
+  "SEED": 42,
+  "MAX_SAMPLES": null,
+  "VAL_FRACTION": 0.05,
+  "_estimates": {
+    "params": 119470592,
+    "steps_per_epoch": 611,
+    "total_steps": 1222,
+    "est_minutes": 15,
+    "sizes_mb": {
+      "fp32": 477.9,
+      "fp16": 238.9,
+      "q8_0": 126.9,
+      "q4_k_m": 66.9
+    },
+    "assumed_total_tokens": 20000000,
+    "gpu_preset": "T4x2",
+    "tokens_per_sec": 25021,
+    "gpus": 2
+  }
+}
