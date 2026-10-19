@@ -12,6 +12,7 @@
  *   {sharedLink:'sendFile', blob, name, type, app, to} (file to a device).
  * - Every received file is kept in IndexedDB 'hub-received' (last 30); no Received UI in the
  *   Gamepad popover (icon shows name + devices only). Auto-download stays on by default.
+ * - 'phonekey…' messages (Google sign-in from a phone, hub_phonekey.js) are never forwarded.
  * - Popover extras: this device's name (edit) and the connected devices list.
  * - Desktop mode (wm_windows.js): every window may register as a receiver; files and
  *   "Open in…" go to the FOCUSED window (window.__hubAppFrame()); "Open in…" opens / focuses
@@ -174,7 +175,8 @@
   // Another app picked: forget the receiver until the new page says ready.
   if (hubFrame) new MutationObserver(() => { hubFrame.__slReg = null; }).observe(hubFrame, { attributes: true, attributeFilter: ['src', 'data-app'] });
   SharedLink.on('devices', (list) => postAll({ sharedLink: 'devices', devices: list }));
-  SharedLink.on('message', (m, from) => postAll({ sharedLink: 'message', msg: m, from: from }));
+  // (phone-as-a-key sign-in messages carry a Google token: hub_phonekey.js only, never to app frames)
+  SharedLink.on('message', (m, from) => { if (m && /^phonekey/.test(m.type || '')) return; postAll({ sharedLink: 'message', msg: m, from: from }); });
 
   /* ---------- popover extras (name + devices only) ---------- */
   const pop = document.getElementById('ctrl-popover');

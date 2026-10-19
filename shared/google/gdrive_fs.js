@@ -14,7 +14,13 @@
  *   = resumable upload), move(newName | destDir, name), isSameEntry, meta = { size, modified, type }
  *   (fs_ops.js uses it so listing a folder doesn't download every file).
  * Duplicate names in one Drive folder: the first one wins (Files works by name).
- * API window.GDriveFs: root() → GDir of "My Drive", api(path, opts) → JSON.
+ * Root folder "hub" (R9b): hubRoot() finds the folder named "hub" in My Drive
+ *   (name='hub', folder, 'root' in parents, not trashed) and creates it when missing; Files opens
+ *   Google Drive there ("Google Drive › hub"). With full Drive access (phone / popup) that is your
+ *   own "hub" folder; with the QR method (drive.file) Google hides folders the Hub didn't make, so
+ *   the Hub makes and uses its own "hub" folder (a separate one if you already have one).
+ *   Cached per signed-in account + method until sign-out.
+ * API window.GDriveFs: hubRoot() → Promise<GDir>, root() → GDir of "My Drive", api(path, opts) → JSON.
  */
 (function () {
   'use strict';
@@ -177,9 +183,23 @@
     async requestPermission() { return 'granted'; }
   }
 
-  let rootDir = null;
+  let rootDir = null, hub = null, hubFor = '';
+  async function findHub() {
+    const p = new URLSearchParams({ q: "name = 'hub' and mimeType = '" + FOLDER + "' and 'root' in parents and trashed = false", fields: 'files(' + FIELDS + ')', pageSize: '10' });
+    const j = await api('files?' + p);
+    const f = (j.files || [])[0] || await api('files?fields=' + FIELDS, json({ body: { name: 'hub', mimeType: FOLDER, parents: ['root'] } }));
+    const d = new GDir(f.id, 'hub', null);
+    d.crumb = 'Google Drive \u203A hub';
+    return d;
+  }
   window.GDriveFs = {
     root() { if (!rootDir) rootDir = new GDir('root', 'Google Drive', null); return rootDir; },
+    hubRoot() {
+      const u = window.GoogleAuth.user(), who = u.email + '|' + u.method;
+      if (!hub || hubFor !== who) { hubFor = who; hub = findHub().catch((e) => { hub = null; throw e; }); }
+      return hub;
+    },
     api, GDir, GFile
   };
+  if (window.GoogleAuth) window.GoogleAuth.onChange(() => { if (!window.GoogleAuth.signedIn()) { hub = null; hubFor = ''; } });
 })();

@@ -14,7 +14,8 @@
  *           handle('gdrive') = GDriveFs.root() (a directory-handle look-alike); access() is
  *           'granted' when signed in, else 'prompt'; allow() can't sign in by itself (the QR
  *           panel, shared/google/gdrive_connect.js, does that). gdriveState() → 'setup' (no client
- *           id in google_config.js) | 'connect' | 'ok'. Sign-in changes redraw like drive changes.
+ *           id in google_config.js) | 'connect' | 'renew' (phone / popup sign-in ran out) | 'ok'.
+ *           R9b: the handle is the "hub" folder in My Drive (GDriveFs.hubRoot()). Sign-in changes redraw like drive changes.
  * Changes are announced on BroadcastChannel 'sites-fs' ({type:'drives'}) so every open page redraws.
  *
  * API window.FsDrives:
@@ -81,7 +82,7 @@
   }
   async function rec(id) { return (await folders()).find((f) => f.id === id) || null; }
   async function handle(id) {
-    if (id === 'gdrive') return hasG() ? window.GDriveFs.root() : null;
+    if (id === 'gdrive') return hasG() && gdriveState() === 'ok' ? window.GDriveFs.hubRoot() : null;   // the "hub" folder
     if (id === 'local') {
       if (!hasLocal) return null;
       persistOnce();
@@ -124,8 +125,11 @@
   function hasG() { return !!(window.GDriveFs && window.GoogleAuth); }
   function gdriveState() {
     if (!hasG()) return '';
-    if (!window.GoogleAuth.configured()) return 'setup';
-    return window.GoogleAuth.signedIn() ? 'ok' : 'connect';
+    const A = window.GoogleAuth;
+    if (A.signedIn()) return 'ok';
+    if (A.expired()) return 'renew';   // phone / popup sign-in ran out (no refresh token)
+    if (!A.configured() && !(A.webConfigured && A.webConfigured())) return 'setup';
+    return 'connect';
   }
   if (hasG()) window.GoogleAuth.onChange(() => fns.slice().forEach((f) => { try { f(); } catch (_) { /* ignore */ } }));
   window.FsDrives = { hasLocal, canAddFolder, list, handle, access, allow, addFolder, remove, gdriveState, onChange: (f) => fns.push(f) };

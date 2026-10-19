@@ -1,0 +1,21 @@
+/* Phone as a key page (apps/tools/phonekey/phonekey.css) — one big jelly button, dark. */
+:root { color-scheme: dark; --accent: #6ea8fe; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100dvh; display: grid; place-items: center; background: radial-gradient(circle at 50% 0%, #26307a, #0b1033 70%); color: #eef1f7; font: 16px/1.45 system-ui, sans-serif; }
+.pk { width: min(420px, 100%); padding: 24px 20px; display: grid; gap: 14px; justify-items: center; text-align: center; }
+.pk-ico { font-size: 64px; line-height: 1; }
+h1 { margin: 0; font-size: 26px; }
+.pk-sub { margin: 0; opacity: .8; }
+.pk-link { margin: 0; font-size: 14px; padding: 4px 12px; border-radius: 999px; background: rgba(255,255,255,0.1); }
+.pk-link.ok { background: rgba(80, 200, 120, 0.25); }
+.pk-btn {
+  width: 100%; min-height: 64px; border: 0; border-radius: 18px; background: var(--accent); color: #0b0d12;
+  font: inherit; font-size: 20px; font-weight: 800; cursor: pointer;
+  transition: transform .22s cubic-bezier(.34,1.56,.64,1);
+}
+.pk-btn:active { transform: scale(.93, .86); }
+.pk-btn:disabled { opacity: .5; }
+.pk-again { background: #7ee2a8; }
+.pk-msg { margin: 0; min-height: 1.4em; font-weight: 700; }
+.pk-msg.ok { color: #7ee2a8; font-size: 20px; } .pk-msg.bad { color: #ff9b9b; }
+.pk-note { margin: 0; font-size: 12.5px; opacity: .6; }

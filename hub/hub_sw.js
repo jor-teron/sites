@@ -15,12 +15,12 @@
  * skips waiting and claims open pages; hub_update.js then reloads them once (no stale shell).
  * Release: bump CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const CACHE = 'hub-shell-v36';  // 2026-10-19l: R9a Google Drive drive (QR sign-in)
+const CACHE = 'hub-shell-v37';  // 2026-10-19m: R9b phone as a key / popup Google sign-in, Drive hub folder
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',
   'hub/hub_main.css', 'hub/hub_controller.css', 'hub/hub_notification.css', 'shared/style/no-scrollbar.css',
-  'hub/hub_config.js', 'hub/hub_apps.js', 'hub/hub_tiles.js', 'hub/hub.js', 'hub/hub_flyout.js', 'hub/hub_flyout.css', 'hub/wm_mode.js', 'hub/wm_windows.js', 'hub/wm_taskbar.js', 'hub/wm_snap.js', 'hub/wm_workspaces.js', 'shared/wallpaper/wallpapers.js', 'hub/hub_settings.js', 'hub/wm.css', 'hub/hub_wallpapers.js', 'hub/hub_prefs.js', 'hub/hub_update.js', 'hub/version.txt', 'hub/hub_drives.js', 'hub/hub_drives.css', 'shared/fs/fs_drives.js', 'shared/google/google_config.js', 'shared/google/google_auth.js', 'shared/google/gdrive_fs.js', 'shared/google/gdrive_connect.js', 'shared/google/google.css', 'shared/dialog/dialog.js', 'shared/dialog/dialog.css',
+  'hub/hub_config.js', 'hub/hub_apps.js', 'hub/hub_tiles.js', 'hub/hub.js', 'hub/hub_flyout.js', 'hub/hub_flyout.css', 'hub/wm_mode.js', 'hub/wm_windows.js', 'hub/wm_taskbar.js', 'hub/wm_snap.js', 'hub/wm_workspaces.js', 'shared/wallpaper/wallpapers.js', 'hub/hub_settings.js', 'hub/wm.css', 'hub/hub_wallpapers.js', 'hub/hub_prefs.js', 'hub/hub_update.js', 'hub/version.txt', 'hub/hub_drives.js', 'hub/hub_drives.css', 'shared/fs/fs_drives.js', 'shared/google/google_config.js', 'shared/google/google_auth.js', 'shared/google/gdrive_fs.js', 'shared/google/gdrive_connect.js', 'shared/google/google_gis.js', 'shared/google/phonekey.js', 'hub/hub_phonekey.js', 'shared/google/google.css', 'shared/dialog/dialog.js', 'shared/dialog/dialog.css',
   'shared/ctxmenu/ctxmenu.js', 'shared/ctxmenu/ctxmenu.css', 'shared/ctxmenu/ctx_in_app.js', 'hub/hub_ctx.js', 'hub/hub_ctx_menus.js', 'shared/perf/busy_meter.js', 'hub/hub_traymeter.js', 'shared/tiles/tiles.js', 'shared/tiles/tiles.css', 'hub/hub_controller_config.js',
   'hub/hub_notify.js', 'hub/hub_viewer.js', 'hub/hub_viewer_pdf.js', 'hub/hub_pointer.js', 'hub/hub_receive.js',
   'hub/hub_role.js', 'hub/hub_remote.js', 'shared/link/link_scan.js',

@@ -6,7 +6,8 @@
  * Drives and path crumbs are drop targets (drag items onto them = move, Ctrl = copy).
  * Google Drive (kind 'gdrive'): ☁ row with "Connect" (or "Set up") until signed in; opening it
  * then shows the QR sign-in panel (#gd-panel, shared/google/gdrive_connect.js) instead of files;
- * signed in → a normal drive (Drive adapter, shared/google/gdrive_fs.js) with a ⏏ Sign out button.
+ * signed in → a normal drive (Drive adapter, shared/google/gdrive_fs.js) with a ⏏ Sign out button,
+ * opened at the "hub" folder of My Drive (crumb "Google Drive › hub"); "Renew" when a phone sign-in ran out.
  * API FX.drives: draw(), open(id, fromClick, path), go(depth), up(), fromHash().
  */
 (function () {
@@ -25,7 +26,7 @@
       r.appendChild(open);
       if (d.kind === 'gdrive') {
         const gs = D.gdriveState();
-        if (gs !== 'ok') r.appendChild(btn('drive-allow', gs === 'setup' ? 'Set up' : 'Connect', 'Google Drive: ' + (gs === 'setup' ? 'how to set it up' : 'sign in with a QR code'), () => openDrive('gdrive', true)));
+        if (gs !== 'ok') r.appendChild(btn('drive-allow', gs === 'setup' ? 'Set up' : gs === 'renew' ? 'Renew' : 'Connect', 'Google Drive: ' + (gs === 'setup' ? 'how to set it up' : gs === 'renew' ? 'the sign-in ran out \u2014 renew it from your phone' : 'sign in'), () => openDrive('gdrive', true)));
         else r.appendChild(btn('drive-x', '\u23CF', 'Sign out of Google Drive', async () => {
           if (!(await Dlg.confirm('Sign out of Google Drive?', 'Files forgets your Google sign-in and tells Google to cancel it. Your files stay in Google Drive.', 'Sign out', true))) return;
           await window.GoogleAuth.signOut();
@@ -88,7 +89,8 @@
       return;
     }
     gdPanel(false);
-    const h = await D.handle(id);
+    let h;
+    try { h = await D.handle(id); } catch (e) { st.driveId = id; st.stack = []; draw(); FX.view.load(); fail(e); return; }
     if (!h) { fail(new Error('Drive not found')); return; }
     if ((await D.access(id)) !== 'granted' && (!fromClick || !(await D.allow(id)))) {
       st.driveId = id; st.stack = []; draw(); FX.view.load();
@@ -97,7 +99,7 @@
     }
     const d = (await D.list()).find((x) => x.id === id);
     st.driveId = id; st.driveName = d ? d.name : h.name;
-    st.stack = [{ name: st.driveName, handle: h }];
+    st.stack = [{ name: h.crumb || st.driveName, handle: h }];   // Google Drive: "Google Drive › hub"
     // walk into the saved path as far as it still exists
     for (const part of String(path || '').split('/').filter(Boolean)) {
       try { st.stack.push({ name: part, handle: await st.stack[st.stack.length - 1].handle.getDirectoryHandle(part) }); } catch (_) { break; }

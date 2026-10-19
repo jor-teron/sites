@@ -15,14 +15,20 @@
  *               retries once after a 401.
  *   5. signOut() POST https://oauth2.googleapis.com/revoke?token=… then forgets everything.
  *
- * Storage: localStorage 'sites-hub.google' = { refresh, access, exp, email, name, scope }.
+ * R9b: setToken(resp, method) stores an access token got another way — 'phone' (phone as a
+ *   key, via SharedLink + hub/hub_phonekey.js) or 'popup' (Google Identity Services on this
+ *   computer). Those have NO refresh token: after ~1 h signedIn() turns false and expired() true
+ *   (the record + email stay, so the tile can offer "Renew from phone"); a timer fires onChange
+ *   right when it runs out. method() → 'qr' | 'phone' | 'popup' | ''.
+ * Storage: localStorage 'sites-hub.google' = { refresh, access, exp, email, name, scope, method }.
  *   RISK: any script running on this site (every app in this repo, same origin) could read the
  *   refresh token and use the Drive access (drive.file only). Fine for a personal site with no
  *   third-party scripts; sign out (revokes) on a shared computer.
  * All Hub windows / apps share the state: BroadcastChannel 'sites-google' + the storage event.
  * Network / CORS failures throw an Error with .code = 'network' and a clear message.
  *
- * API window.GoogleAuth: configured(), signedIn(), user() → {email, name}, start(), poll(dev, o),
+ * API window.GoogleAuth: configured() (TV client), webConfigured() (web client), signedIn(),
+ *   expired(), method(), user() → {email, name, method}, setToken(resp, method), start(), poll(dev, o),
  *   connect({onCode, onStatus}) → { done: Promise, cancel() }, token(), fetchApi(url, opts),
  *   signOut(), onChange(fn) → off(), onLog(fn) (every step as text, for the Lab test page).
  */
@@ -39,12 +45,23 @@
 
   function load() { try { return JSON.parse(localStorage.getItem(KEY) || 'null') || {}; } catch (_) { return {}; } }
   function save(v, quiet) {
-    try { if (v && v.refresh) localStorage.setItem(KEY, JSON.stringify(v)); else localStorage.removeItem(KEY); } catch (_) { /* blocked */ }
+    try { if (v && (v.refresh || v.access)) localStorage.setItem(KEY, JSON.stringify(v)); else localStorage.removeItem(KEY); } catch (_) { /* blocked */ }
+    arm();
     if (!quiet) { local(); try { bc && bc.postMessage({ type: 'google' }); } catch (_) { /* ignore */ } }
   }
-  const local = () => fns.slice().forEach((f) => { try { f(); } catch (_) { /* ignore */ } });
+  const local = () => { arm(); fns.slice().forEach((f) => { try { f(); } catch (_) { /* ignore */ } }); };
+  // a token without refresh runs out → tell everyone (tiles show "Renew")
+  let armT = 0;
+  function arm() {
+    clearTimeout(armT);
+    const s = load();
+    if (s.refresh || !s.access) return;
+    const left = s.exp - Date.now();
+    if (left > 0 && left < 864e5) armT = setTimeout(() => fns.slice().forEach((f) => { try { f(); } catch (_) { /* ignore */ } }), left + 500);
+  }
   let bc = null;
   try { bc = new BroadcastChannel(CH); bc.onmessage = () => local(); } catch (_) { bc = null; }
+  setTimeout(arm, 0);
   window.addEventListener('storage', (e) => { if (e.key === KEY || e.key === null) local(); });
 
   function err(code, msg, status) { const e = new Error(msg || code); e.code = code; e.status = status; return e; }
@@ -97,7 +114,7 @@
       if (j.access_token) {
         log('\u2190 ' + status + ' signed in (scope: ' + (j.scope || '') + ')');
         const u = who(j.id_token || '');
-        save({ refresh: j.refresh_token || '', access: j.access_token, exp: Date.now() + (+j.expires_in || 3600) * 1000, email: u.email, name: u.name, scope: j.scope || '' });
+        save({ refresh: j.refresh_token || '', access: j.access_token, exp: Date.now() + (+j.expires_in || 3600) * 1000, email: u.email, name: u.name, scope: j.scope || '', method: 'qr' });
         if (!j.refresh_token) log('Note: no refresh_token in the answer; you will need to sign in again in an hour.');
         return u;
       }
@@ -126,7 +143,10 @@
     const s = load();
     if (!s.refresh && !s.access) throw err('signed_out', 'Not signed in to Google');
     if (s.access && s.exp > Date.now() + 60000) return s.access;
-    if (!s.refresh) { save(null); throw err('signed_out', 'Sign-in ran out. Connect again.'); }
+    if (!s.refresh) {   // phone / popup token: no refresh — keep the record so "Renew" can be offered
+      if (s.access && s.exp > Date.now() + 5000) return s.access;
+      throw err('expired', 'The Google sign-in ran out (about an hour). Renew it from your phone.');
+    }
     if (!refreshing) {
       refreshing = (async () => {
         const c = cfg();
@@ -153,7 +173,8 @@
       let r;
       try { r = await fetch(url, Object.assign({}, opts, { headers: h })); }
       catch (e) { throw err('network', 'Network or CORS error calling ' + url.split('?')[0] + ' (' + (e && e.message || e) + ')'); }
-      if (r.status === 401 && tries === 0) { const s = load(); s.exp = 0; save(s, true); continue; }
+      if (r.status === 401 && tries === 0 && load().refresh) { const s = load(); s.exp = 0; save(s, true); continue; }
+      if (r.status === 401 && !load().refresh) { const s = load(); if (s.access) { s.exp = Date.now() - 1; save(s); } }
       return r;
     }
   }
@@ -169,11 +190,22 @@
     } catch (e) { log('revoke failed: ' + (e && e.message || e)); }
   }
 
+  /** R9b: an access token from the phone / the popup (Google Identity Services), no refresh token. */
+  function setToken(r, method) {
+    if (!r || !r.access_token) throw err('bad_token', 'No access token');
+    save({ refresh: '', access: String(r.access_token), exp: Date.now() + Math.max(60, Math.min(+r.expires_in || 3600, 86400)) * 1000,
+      email: String(r.email || '').slice(0, 200), name: '', scope: String(r.scope || ''), method: method || 'popup' });
+    log('Signed in by ' + (method || 'popup') + (r.email ? ' as ' + r.email : ''));
+  }
+  const valid = (s) => !!(s.refresh || (s.access && s.exp > Date.now()));
   window.GoogleAuth = {
     configured: () => !!cfg().tvClientId,
-    signedIn: () => !!(load().refresh || (load().access && load().exp > Date.now())),
-    user: () => { const s = load(); return { email: s.email || '', name: s.name || '' }; },
-    start, poll, connect, token, fetchApi, signOut,
+    webConfigured: () => !!cfg().webClientId,
+    signedIn: () => valid(load()),
+    expired: () => { const s = load(); return !!(s.access && !s.refresh && !valid(s)); },
+    method: () => load().method || (load().refresh ? 'qr' : ''),
+    user: () => { const s = load(); return { email: s.email || '', name: s.name || '', method: s.method || '' }; },
+    start, poll, connect, token, fetchApi, signOut, setToken,
     onChange(f) { fns.push(f); return () => { const i = fns.indexOf(f); if (i >= 0) fns.splice(i, 1); }; },
     onLog(f) { logs.push(f); }
   };

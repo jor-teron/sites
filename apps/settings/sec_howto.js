@@ -103,7 +103,7 @@
     { t: 'Drives & Files', h: `
       <p>On a computer the desktop shows <b>Drives</b> on the left and the QR / link tiles on the right.</p>
       <ul>
-        <li><b>Google Drive</b>: sign in with a QR code (see the Google Drive card).</li>
+        <li><b>Google Drive</b>: sign in by QR code or with your phone as a key (see the Google Drive card).</li>
         <li><b>Local</b> is storage inside this browser, just for this site. It is always there; clearing the
           browser's site data erases it.</li>
         <li><b>Add folder</b> (Chrome or Edge on a computer) lets the Hub use a real folder you pick. After a
@@ -112,22 +112,30 @@
           drive and folder after a reload.</li>
       </ul>` },
     { t: 'Google Drive', h: `
-      <p><b>Google Drive</b> shows up as a drive (Drives pane and Files). You sign in with your phone:
-        click <b>Connect</b>, scan the QR, type the code if asked and approve. Right-click it →
-        <b>Sign out</b> to disconnect.</p>
-      <p>The Hub only sees files and folders <b>it created or uploaded</b> (Google allows just the
-        <code>drive.file</code> permission for QR sign-in), not the rest of your Drive. Delete moves items to
-        Drive's Trash.</p>
-      <p><b>One-time setup (Jor)</b>, until then the tile says “Set up Google Drive”:</p>
+      <p><b>Google Drive</b> shows up as a drive (Drives pane and Files) and opens at a folder named
+        <b>hub</b> in your Drive (\u201cGoogle Drive \u203A hub\u201d; made if it isn't there). Pick how to sign in:</p>
+      <ul>
+        <li><b>QR code (Hub files only)</b> \u2014 scan, type the code, approve. Stays signed in. Google allows only
+          the <code>drive.file</code> permission here, so the Hub sees <b>only files it made</b>: it uses its own
+          \u201chub\u201d folder, separate from a \u201chub\u201d folder you made yourself.</li>
+        <li><b>Phone as a key (full Drive)</b> \u2014 scan the QR with your phone, tap <b>Sign in with Google</b>
+          there; the phone hands the sign-in to the Hub over the Hub's phone link (the same one as the Gamepad).
+          Full Drive, your own \u201chub\u201d folder. Lasts about <b>an hour</b>, then the tile says
+          <b>Renew from phone</b> (or tap <b>Send again</b> if the phone page is still open).</li>
+        <li><b>Sign in on this computer</b> \u2014 Google's sign-in window here; same as the phone way.</li>
+      </ul>
+      <p>Right-click the Google Drive tile \u2192 <b>Sign out</b>. Delete moves items to Drive's Trash.</p>
+      <p><b>Setup (Jor)</b>:</p>
       <ol>
-        <li>Google Cloud Console, the <b>same project as Mail</b>.</li>
-        <li><b>APIs &amp; Services → Library</b> → <b>Google Drive API</b> → <b>Enable</b>.</li>
-        <li><b>OAuth consent screen</b>: leave it in <b>Testing</b>, with only your account as a <b>test user</b>.</li>
-        <li><b>Credentials → Create credentials → OAuth client ID</b> → type
-          <b>TVs and Limited Input devices</b> → Create (not Mail's web client).</li>
-        <li>Copy the <b>client ID</b> and <b>client secret</b> into <code>shared/google/google_config.js</code>
-          (<code>tvClientId</code>, <code>tvClientSecret</code>) and push.</li>
-        <li>Try it in <b>Lab → Google Drive Test</b> (it logs every step).</li>
+        <li><b>QR code</b>: a \u201cTVs and Limited Input devices\u201d client (id + secret in
+          <code>shared/google/google_config.js</code>, <code>tvClientId</code> / <code>tvClientSecret</code>) with the
+          Google Drive API enabled in its project.</li>
+        <li><b>Phone as a key / this computer</b> use <b>Mail's web client</b> (project number <b>783291801077</b>):
+          in that project enable the <b>Google Drive API</b>; the web client's <b>Authorized JavaScript origins</b>
+          must include <code>https://jor-teron.github.io</code> (Mail needs it already); consent screen in
+          <b>Testing</b> with your account as test user (add the <code>\u2026/auth/drive</code> scope under Data access
+          if Google asks).</li>
+        <li>Try it in <b>Lab \u2192 Google Drive Test</b> (QR method, logs every step).</li>
       </ol>
       <p>The sign-in is kept in this browser; sign out on a shared computer.</p>` },
     { t: 'Using Files', h: `
