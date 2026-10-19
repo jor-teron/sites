@@ -1,7 +1,8 @@
 /*
  * Settings → Desktop (apps/settings/sec_desktop.js). Screen mode Auto / Desktop / Phone
  * (key 'wmMode', the Hub's HubMode applies it) and "Open menu on hover" for the Desktop
- * mode Start button (key 'startHover', default on, '0' = off).
+ * mode Start button (key 'startHover', default on, '0' = off), and the optional taskbar busy
+ * meter (key 'trayMeter', '1' = on, default off; hub/hub_traymeter.js).
  */
 (function () {
   'use strict';
@@ -29,7 +30,9 @@
       mode.classList.add('seg-col');
       const hover = ui.switch('Open menu on hover', 'Point at Start to open the menu (Desktop mode)',
         S.get('startHover') !== '0', (on) => S.set('startHover', on ? '' : '0'));
-      pane.append(ui.title('Screen mode'), mode, note, ui.title('Start menu'), hover);
+      const meter = ui.switch('Busy meter in the taskbar', 'A small graph by the clock: how busy the Hub is (an estimate). Click it for System Monitor',
+        S.get('trayMeter') === '1', (on) => S.set('trayMeter', on ? '1' : ''));
+      pane.append(ui.title('Screen mode'), mode, note, ui.title('Start menu'), hover, ui.title('Taskbar'), meter);
       showNow();
     }
   });

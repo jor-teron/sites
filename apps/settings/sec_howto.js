@@ -106,6 +106,20 @@
           sort are remembered.</li>
         <li>Keys: <b>Delete</b>, <b>F2</b> rename, <b>Enter</b> open, <b>Backspace</b> or <b>Alt+\u2191</b> up, arrows to move.</li>
       </ul>` },
+    { t: 'System Monitor', h: `
+      <p><b>System Monitor</b> (Tools) shows what the browser lets a web page see. It is <b>not</b> your
+        device's real task manager: other programs, real CPU use and total RAM stay hidden from web pages.</p>
+      <ul>
+        <li><b>Tasks</b>: the Hub's open windows, with Focus, Minimise and End task (Desktop mode).</li>
+        <li><b>Storage</b>: how much this site uses of what the browser allows, and the size of each drive
+          (added folders only on <b>Calculate</b>).</li>
+        <li><b>Memory</b> (Chrome / Edge): the Hub's script memory, live. <b>CPU</b>: core count and an
+          estimate of how busy the Hub is.</li>
+        <li><b>Network</b> and <b>Battery</b>: online / offline, connection estimates and battery level, where
+          the browser shares them.</li>
+        <li>Graphs show the last minute and pause while the window is minimised or hidden.</li>
+        <li>Settings \u2192 Desktop \u2192 <b>Busy meter in the taskbar</b> adds a small live graph by the clock.</li>
+      </ul>` },
     { t: 'Settings sections', h: `
       <ul>
         <li><b>Wallpaper</b>: gradients, plain colours or your own colour.</li>

@@ -22,6 +22,8 @@
  * when the focused window changes.
  * App bar: the title/stats/buttons an app sends (hub-gamebar.js protocol) show in its own
  * title bar (__hubGamebarAttach).
+ * Task list for apps (System Monitor): window.__hubTasks (list / focus / minimise / close / idOf /
+ *   onChange), see below.
  * Target frame for the rest of the Hub (phone gamepad keys, SharedLink, …):
  *   window.__hubAppFrame()  → the focused window's iframe in Desktop mode (null when none),
  *                             else the Hub frame #app-frame.
@@ -352,6 +354,33 @@
       ];
     }, { touch: true });
   }
+
+  // Task list for apps (apps/tools/sysmon): plain data + actions by window id, same origin only.
+  //   list() → [{ id, key, inst, name, icon, url, min, max, active, z, sameOrigin, nodes, title }]
+  //   focus(id), minimise(id), close(id), idOf(win) → the id of the window showing that window object
+  //   (an app finds its own window), onChange(fn) → off()   (fires on every 'hub-wm-change')
+  window.__hubTasks = {
+    list() {
+      return wins.map((w) => {
+        let doc = null;
+        try { doc = w.frame.contentDocument; } catch (_) { doc = null; }
+        return {
+          id: w.id, key: w.key, inst: w.inst, name: w.name, icon: w.icon ? new URL(w.icon, location.href).href : '',
+          url: curUrl(w), min: !!w.min, max: !!w.max, active: w === active, z: +w.el.style.zIndex || 0,
+          sameOrigin: !!doc, nodes: doc ? doc.getElementsByTagName('*').length : null, title: doc ? doc.title : ''
+        };
+      });
+    },
+    focus(id) { const w = wins.find((x) => x.id === id); if (w) focus(w); return !!w; },
+    minimise(id) { const w = wins.find((x) => x.id === id); if (w) minimise(w); return !!w; },
+    close(id) { const w = wins.find((x) => x.id === id); if (w) close(w); return !!w; },
+    idOf(win) { const w = wins.find((x) => { try { return x.frame.contentWindow === win; } catch (_) { return false; } }); return w ? w.id : 0; },
+    onChange(fn) {
+      const h = () => { try { fn(); } catch (_) { window.removeEventListener('hub-wm-change', h); } };
+      window.addEventListener('hub-wm-change', h);
+      return () => window.removeEventListener('hub-wm-change', h);
+    }
+  };
 
   window.__hubAppFrame = () => (isDesk() ? (active ? active.frame : null) : appFrame);
   window.__hubAppFrames = () => [appFrame].concat(wins.map((w) => w.frame)).filter(Boolean);
