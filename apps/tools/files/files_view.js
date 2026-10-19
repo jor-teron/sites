@@ -55,7 +55,9 @@
     it.setAttribute('aria-selected', st.sel.has(e.name) ? 'true' : 'false');
     it.draggable = true;
     const chk = el('span', 'chk'); chk.setAttribute('aria-hidden', 'true');
-    it.append(chk, el('span', 'item-ico', icon(e)), el('span', 'item-name', e.name));
+    const ico = el('span', 'item-ico', icon(e));
+    it.append(chk, ico, el('span', 'item-name', e.name));
+    if (FX.thumbs) FX.thumbs.attach(ico, e);   // R12b: preview instead of the icon (lazy)
     if (st.view === 'list') {
       it.append(el('span', 'item-date', e.kind === 'file' ? dateText(e.modified) : ''),
         el('span', 'item-size', e.kind === 'file' ? size(e.size) : ''));
@@ -73,6 +75,7 @@
     $('view').textContent = st.view === 'grid' ? '\u2630 List' : '\u25A6 Grid';
     $('sort').value = st.sort + (st.dir === 1 ? '-asc' : '-desc');
     const keep = list.scrollTop;
+    if (FX.thumbs) FX.thumbs.reset();
     if (!cur()) list.replaceChildren(el('p', 'empty', 'Pick a drive on the left.'));
     else if (!st.items.length) list.replaceChildren(el('p', 'empty', 'This folder is empty. Drop files here, or use \uFF0B Folder / \u21EA Upload.'));
     else if (!st.shown.length) list.replaceChildren(el('p', 'empty', 'Nothing matches \u201c' + st.q + '\u201d.'));

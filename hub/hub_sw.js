@@ -15,7 +15,7 @@
  * skips waiting and claims open pages; hub_update.js then reloads them once (no stale shell).
  * Release: bump CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const CACHE = 'hub-shell-v41';  // 2026-10-19q: R12a media Viewer app, Open with (filetypes), menu sub rows
+const CACHE = 'hub-shell-v42';  // 2026-10-19r: R12b Files thumbnails (gdrive_fs thumbnailLink)
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',

@@ -45,6 +45,8 @@
       { label: 'Refresh', icon: '\u21BB', action: () => FX.view.load() },
       { label: FX.singleClick() ? 'Open with double click' : 'Open with single click', icon: '\uD83D\uDDB1',
         action: () => { FX.setSingleClick(!FX.singleClick()); FX.say(FX.singleClick() ? 'A single click now opens items.' : 'A double click now opens items.'); } },
+      { label: FX.thumbs.on() ? 'Hide thumbnails' : 'Show thumbnails', icon: '\uD83D\uDDBC', action: () => FX.thumbs.set(!FX.thumbs.on()) },
+      { label: 'Clear thumbnail cache', icon: '\uD83E\uDDF9', action: () => FX.thumbs.clearCache() },
       { sep: true },
       { label: 'Properties', icon: '\u2139', action: () => A().props([]) }
     ]);

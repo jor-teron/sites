@@ -2,7 +2,7 @@
  * Files app start-up (apps/tools/files/files.js) — wires the toolbar (⇧ Up, ＋ Folder,
  * ⇪ Upload, ↻ Refresh, Select, view, sort, search) and opens the drive from the hash
  * (#drive=<id>&path=<a/b>, set by the Hub's drive tiles and kept by a window session), else Local.
- * Modules (load order): files_core, files_view, files_drives, files_actions, files_viewer, files_menu.
+ * Modules (load order): files_core, files_view, files_drives, files_actions, files_viewer, files_thumbs, files_menu.
  */
 (function () {
   'use strict';

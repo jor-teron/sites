@@ -11,7 +11,8 @@
  *   queryPermission / requestPermission → 'granted'.
  * GFile (kind 'file'): getFile() (download; Google Docs / Sheets / Slides are exported as PDF),
  *   createWritable() → { write(data), close() = upload, abort() } (multipart up to 5 MB, larger
- *   = resumable upload), move(newName | destDir, name), isSameEntry, meta = { size, modified, type }
+ *   = resumable upload), move(newName | destDir, name), isSameEntry, meta = { size, modified, type, thumb (Drive's
+ *   thumbnailLink, '' = none), dur (video seconds) }
  *   (fs_ops.js uses it so listing a folder doesn't download every file).
  * Duplicate names in one Drive folder: the first one wins (Files works by name).
  * Root folder "hub" (R9b): hubRoot() finds the folder named "hub" in My Drive
@@ -27,7 +28,7 @@
   const API = 'https://www.googleapis.com/drive/v3/';
   const UP = 'https://www.googleapis.com/upload/drive/v3/files';
   const FOLDER = 'application/vnd.google-apps.folder';
-  const FIELDS = 'id,name,mimeType,size,modifiedTime';
+  const FIELDS = 'id,name,mimeType,size,modifiedTime,thumbnailLink,videoMediaMetadata(durationMillis)';   // R12b: Files thumbnails
   const SMALL = 5 * 1024 * 1024;
 
   const dom = (name, msg) => { try { return new DOMException(msg, name); } catch (_) { const e = new Error(msg); e.name = name; return e; } };
@@ -130,7 +131,8 @@
   class GFile {
     constructor(f, parent) {
       this.kind = 'file'; this.id = f.id; this.name = f.name; this.parent = parent || null; this.mime = f.mimeType || '';
-      this.meta = { size: +f.size || 0, modified: f.modifiedTime ? Date.parse(f.modifiedTime) : 0, type: isNative(f.mimeType) ? 'application/pdf' : (f.mimeType || '') };
+      this.meta = { size: +f.size || 0, modified: f.modifiedTime ? Date.parse(f.modifiedTime) : 0, type: isNative(f.mimeType) ? 'application/pdf' : (f.mimeType || ''),
+        thumb: f.thumbnailLink || '', dur: f.videoMediaMetadata && f.videoMediaMetadata.durationMillis ? f.videoMediaMetadata.durationMillis / 1000 : 0 };
     }
     async getFile() {
       if (!this.id) return new File([], this.name);

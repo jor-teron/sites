@@ -11,6 +11,8 @@
  *   'titleH'       window title bar Slim 24 / Normal 28 / Large 34 px (moved here from Sizes,
  *                  same key, so saved choices stay).
  *   'filesClick'   Files app: open items with a 'single' click or a double click (default).
+ *   'filesThumbs'  Files app: '0' = icons only (default: picture / video thumbnails, R12b).
+ *                  "Clear thumbnail cache" empties shared/fs/thumbs_store.js (IndexedDB).
  * All keys 'sites-hub.<key>' (settings_store.js); the Hub and Files apply them at once.
  */
 (function () {
@@ -37,8 +39,18 @@
         { value: 'single', label: 'Single click', hint: 'Click opens; Ctrl / Shift / the round check select' }
       ], S.get('filesClick', 'double'), (v) => S.set('filesClick', v === 'double' ? '' : v));
       files.classList.add('seg-col');
+      const thumbs = ui.switch('Show thumbnails', 'Pictures and videos show a small preview instead of an icon',
+        S.get('filesThumbs') !== '0', (on) => S.set('filesThumbs', on ? '' : '0'));
+      const clr = ui.el('button', 'big-btn', 'Clear thumbnail cache');
+      clr.type = 'button';
+      const clrOut = ui.el('p', 'opt-note', '');
+      clrOut.setAttribute('aria-live', 'polite');
+      const sizeText = (b) => (b < 1048576 ? Math.round(b / 1024) + ' KB' : (b / 1048576).toFixed(1) + ' MB');
+      const showSize = (pre) => { if (window.ThumbStore) ThumbStore.stats().then((x) => { clrOut.textContent = (pre || '') + x.count + ' saved, ' + sizeText(x.bytes) + ' (up to ' + sizeText(ThumbStore.CAP) + ')'; }); };
+      clr.addEventListener('click', () => { if (window.ThumbStore) ThumbStore.clear().then(() => showSize('Cleared. '), () => { clrOut.textContent = 'Could not clear it'; }); });
+      showSize();
       pane.append(ui.title('Focus'), hover, ui.title('Snapping'), snap, ui.title('Workspaces'), ws, ui.title('Title bar'), title,
-        ui.title('Files: open items with'), files,
+        ui.title('Files: open items with'), files, ui.title('Files: thumbnails'), thumbs, clr, clrOut,
         ui.note('Window options work in Desktop mode. Changes show at once. Snap a window by dragging it to a screen edge, or Ctrl+Alt+arrows.'));
     }
   });
