@@ -3,80 +3,69 @@
 ================================================================================
 File: local-ai-chat.html
 Project: local-ai-chat
-Description: Main HTML file for the Local AI Chat + Icon Generator WebApp.
-Purpose: Provides the chat interface, model selector, theme toggle, prompt helpers,
-         and integrated Pollinations.ai icon generation with resolution choice.
+Description: Main HTML file for the Local AI Chat WebApp.
+Purpose: Minimalist chat: one thin header row (title, model, ☾/☀, ⋯ menu) and a
+         single input bubble with a ✨ popover for prompt helpers and in-chat
+         Pollinations.ai image generation.
 Author: Grok
-Date: 2026-10-17
+Date: 2026-10-19 (R1: minimalist layout, old icon section removed)
 ================================================================================
 -->
 <html lang="en">
 <head>
     <!-- Character encoding and responsive viewport -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Local AI Chat</title>
     <!-- Link to project stylesheet -->
     <link rel="stylesheet" href="local-ai-chat.css">
 </head>
 <body>
-    <!-- Application header with title and controls -->
+    <!-- One thin header row -->
     <header>
         <h1>Local AI Chat</h1>
-        <div class="controls">
-            <!-- Model selection dropdown -->
-            <label for="model-select">Model:</label>
-            <select id="model-select">
-                <option value="HuggingFaceTB/SmolLM2-135M-Instruct" selected>SmolLM2-135M (Default)</option>
-                <option value="onnx-community/Qwen2.5-0.5B-Instruct">Qwen2.5-0.5B</option>
-            </select>
-            <!-- Theme toggle button -->
-            <button id="theme-toggle">Toggle Theme</button>
-            <!-- Clear chat button -->
-            <button id="clear-chat">Clear Chat</button>
+        <!-- Compact model selector -->
+        <select id="model-select" aria-label="Model">
+            <option value="HuggingFaceTB/SmolLM2-135M-Instruct" selected>SmolLM2 135M</option>
+            <option value="onnx-community/Qwen2.5-0.5B-Instruct">Qwen2.5 0.5B</option>
+        </select>
+        <!-- Theme icon button (☾ / ☀ set by JS) -->
+        <button id="theme-toggle" class="icon-btn" aria-label="Toggle theme">☾</button>
+        <!-- ⋯ menu -->
+        <div class="pop-wrap">
+            <button id="menu-btn" class="icon-btn" aria-label="Menu" aria-haspopup="true" aria-expanded="false">⋯</button>
+            <div id="menu" class="pop pop-right" hidden>
+                <button id="clear-chat" class="chip">Clear chat</button>
+            </div>
         </div>
     </header>
 
-    <!-- Main content area -->
-    <main>
-        <!-- Chat history display -->
-        <div id="chat-history"></div>
-        <!-- Status message area -->
-        <div id="status">Initializing...</div>
-    </main>
+    <!-- Chat history (status notes appear inline here) -->
+    <main id="chat-history" aria-live="polite"></main>
 
-    <!-- User input area -->
+    <!-- Single input bubble -->
     <div id="input-area">
-        <!-- Prompt helper quick actions -->
-        <div class="prompt-helpers">
-            <button id="improve-prompt">Improve Prompt</button>
-            <button id="icon-style">Make Icon-Style</button>
-            <button id="shorten">Shorten</button>
-        </div>
-        <!-- Text input and send button -->
-        <div class="input-row">
-            <input type="text" id="user-input" placeholder="Type a message or prompt..." autocomplete="off">
-            <button id="send-btn">Send</button>
-        </div>
-
-        <!-- Icon generator section -->
-        <div id="icon-section">
-            <div class="icon-controls">
-                <label for="resolution-select">Resolution:</label>
-                <select id="resolution-select">
-                    <option value="32">32×32</option>
-                    <option value="64" selected>64×64</option>
-                    <option value="128">128×128</option>
-                    <option value="256">256×256</option>
-                    <option value="512">512×512</option>
-                </select>
-                <button id="generate-icon-btn">Generate Icon</button>
-                <button id="download-icon-btn" disabled>Download PNG</button>
-            </div>
-            <div id="icon-preview-container">
-                <img id="icon-preview" alt="Icon preview" style="display:none; image-rendering: pixelated;">
+        <div class="pop-wrap">
+            <button id="spark-btn" class="icon-btn" aria-label="Helpers" aria-haspopup="true" aria-expanded="false">✨</button>
+            <!-- ✨ helpers popover -->
+            <div id="spark-pop" class="pop pop-up" hidden>
+                <button id="improve-prompt" class="chip">Improve</button>
+                <button id="icon-style" class="chip">Icon-style</button>
+                <button id="shorten" class="chip">Shorten</button>
+                <div class="pop-row">
+                    <button id="make-image" class="chip">Make image</button>
+                    <select id="resolution-select" aria-label="Image size">
+                        <option value="32">32</option>
+                        <option value="64" selected>64</option>
+                        <option value="128">128</option>
+                        <option value="256">256</option>
+                        <option value="512">512</option>
+                    </select>
+                </div>
             </div>
         </div>
+        <input type="text" id="user-input" placeholder="Message…" autocomplete="off" enterkeyhint="send">
+        <button id="send-btn" class="send" aria-label="Send">➤</button>
     </div>
 
     <!-- Load the application logic -->
