@@ -300,14 +300,58 @@ window.BROWSER_FPS_CONFIG = {
       grass: { enabled: false },
     },
   },
-  maps: { default: 'camp', storageKey: 'browser-fps-map' },   // 'camp' | 'island' | 'snow'
+  // Forest map (?map=forest): procedural 1 × 1 km summer forest (browser-fps_forest.js). Change `seed` for a new layout.
+  forest: {
+    seed: 4242,
+    half: 500,           // half size of the 1 km square (m)
+    apron: 90,           // terrain continues this far past the square (boundary hills, fog hides the end)
+    fence: 482, fenceStep: 4, walkLimit: 478,   // post-and-rail fence line; the player is clamped just inside it
+    radius: 500, wade: 0, beachFrac: 0.9,       // shared-code fields (world box)
+    waterLevel: 0, waterSlow: 0.55,             // walking speed multiplier in the stream
+    hills: { height: 10, scale: 230, octaves: 4 },   // gentle value-noise hills
+    boundary: { start: 445, height: 38 },            // hills rise past this distance from the centre
+    // stream: centre x = x + amp1·sin(z·2π/len1) + amp2·sin(z·2π/len2); half width width ± widthVar
+    river: { x: 0, amp1: 70, len1: 520, amp2: 18, len2: 140, width: 3.2, widthVar: 1.3, depth: 0.75, bank: 3, valley: 55,
+             floor: 0.55, edgeY: -0.04, waterY: 0 },
+    water: { color: 0x3f8a92, opacity: 0.7, roughness: 0.18, reflect: 0.45, flow: 0.18, skyTop: 0x5f97d0, skyHorizon: 0xc6dcea },
+    tracks: [{ z: -150, amp: 38, len: 420, w: 1.8 }, { z: 220, amp: 50, len: 560, w: 1.7 }],   // dirt tracks (east-west), half width w
+    bridge: { width: 3.2, lift: 0.22, overhang: 1.5 },
+    startBack: 38,       // start on the first track this far west of its bridge, facing it
+    startClear: 10,
+    clearings: [[-160, 40, 26], [180, -60, 30], [60, 330, 22], [-260, -300, 28], [300, 260, 24]],   // [x, z, r]
+    trees: { pines: 380, broadleaf: 260, bushes: 520, rocks: 190, boundaryPines: 260,
+             clusterScale: 120, clusterAt: 0.52, loneChance: 0.03 },   // groves where cluster noise > clusterAt
+    // Terrain chunks + LOD: cell size (m) by distance from the camera (m). Chunks past viewDist are hidden.
+    chunk: 64,
+    lod: [{ dist: 40, cell: 1 }, { dist: 110, cell: 2 }, { dist: 220, cell: 4 }, { dist: 1e9, cell: 8 }],
+    viewDist: 250, buildPerFrame: 1, buildMs: 3, freeFactor: 1.6, skirt: 1.5,   // build >= 1 chunk per frame, more while under buildMs
+    propTile: 160, propViewDist: 215,    // props are instanced per tile; tiles past propViewDist are skipped
+    aiWindow: 96, aiGridCell: 1, aiRecentre: 18,   // enemy flow-field window (m) + cell size around the player (Fight mode)
+    spawnRing: [22, 42], despawnDist: 110,           // enemies appear 22–42 m away; ones left 110 m behind are recycled
+    wind: { strength: 0.18, bushStrength: 0.05, speed: 1.2, gust: 0.35 },
+    propShadows: true,
+    colors: { grass: 0x6f9e45, grassDry: 0x9aa456, forestFloor: 0x4a6a2e, sand: 0xd9c690, bed: 0x8a7a55, dirt: 0x8a6c48, rock: 0x7f7a70,
+              bush: 0x3d7a33, wood: 0x6b4a2e, deck: 0x8a6440 },
+    look: {
+      softShadows: true, shadowRadius: 3, shadowBias: -0.0004, shadowNormalBias: 0.04, shadowSnap: true,
+      sky: { enabled: true, top: 0x4a8ad0, horizon: 0xc2d8e6, sunGlow: 0xfff0c8, glowSize: 0.14, glowStrength: 0.5 },
+      flare: { enabled: true, size: 220, color: 0xfff4d8, ghosts: 3, ghostAlpha: 0.16, maxAlpha: 0.75 },
+      grass: { enabled: false },   // island grass clumps are off here (cost scales with collider count)
+    },
+    scene: {
+      background: 0xc2d8e6, fogNear: 55, fogFar: 240, far: 320,
+      sunColor: 0xffe7c0, sunIntensity: 2.9, sunPos: [24, 30, -18], hemiSky: 0xcfe6ff, hemiGround: 0x5f6a3a, hemiIntensity: 0.9,
+      ambientIntensity: 0.35, toneMappingExposure: 1.0, shadowMapSize: 1024, shadowExtent: 30, shadowFar: 90,
+    },
+  },
+  maps: { default: 'camp', storageKey: 'browser-fps-map' },   // 'camp' | 'island' | 'snow' | 'forest'
   // Game modes per map: explore = no enemies/pickups/score, fight = full game. ?mode=explore|fight overrides.
   modes: {
     storageKey: 'browser-fps-mode',
-    perMap: { island: { allowed: ['explore', 'fight'], default: 'explore' }, snow: { allowed: ['explore', 'fight'], default: 'explore' }, camp: { allowed: ['fight'], default: 'fight' } },
+    perMap: { island: { allowed: ['explore', 'fight'], default: 'explore' }, snow: { allowed: ['explore', 'fight'], default: 'explore' }, forest: { allowed: ['explore', 'fight'], default: 'explore' }, camp: { allowed: ['fight'], default: 'fight' } },
   },
   fpsCounter: { storageKey: 'browser-fps-show-fps', every: 0.5 },
-  mapNames: { camp: 'Training Camp', island: 'Island', snow: 'Snow' },
+  mapNames: { camp: 'Training Camp', island: 'Island', snow: 'Snow', forest: 'Forest' },
   // Doors between maps: each entry is one gate on `map` leading to `to`. The return spot on arrival is the gate on the
   // destination map whose `to` is the map you came from. pos [x, z] (m); face = direction the gate opens toward (player
   // spawns there, looking that way). Add rows here to link new maps.

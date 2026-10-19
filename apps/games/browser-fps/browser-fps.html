@@ -13,6 +13,7 @@
       <button class="map-btn" data-map="camp" type="button">Training Camp</button>
       <button class="map-btn" data-map="island" type="button">Island</button>
       <button class="map-btn" data-map="snow" type="button">Snow</button>
+      <button class="map-btn" data-map="forest" type="button">Forest</button>
     </div>
     <div id="mode-select">
       <button class="mode-btn" data-mode="explore" type="button">Explore</button>
@@ -21,7 +22,7 @@
     <p id="mode-note" class="hint"></p>
     <p>Click to play</p>
     <p>WASD move · Mouse look · Space jump · Left-click shoot · Right-click scope · G grenade</p>
-    <p>Esc · P · or ` unlocks the mouse</p>
+    <p>Esc · P · or ` unlocks the mouse · ✕ Exit (top left) or Esc again leaves fullscreen</p>
     <p>M Explore/Fight · N sound · F3 FPS counter</p>
     <button class="mute-btn" type="button">🔊</button>
     <p class="hint">If the mouse sticks, press P or ` — or switch away from the window</p>
@@ -29,6 +30,7 @@
   <div id="door-fade"><div id="door-fade-text">Loading…</div></div>
   <div id="door-prompt" class="hidden"></div>
   <div id="fps-counter">FPS: --</div>
+  <button id="exit-btn" class="hidden" type="button">✕ Exit</button>
   <div id="mode-notice" class="hidden"></div>
   <div id="death" class="hidden">
     <h1>YOU DIED</h1>

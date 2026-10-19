@@ -108,7 +108,7 @@
   background: rgba(255,255,255,0.08); color: #eee; border: 1px solid rgba(255,255,255,0.3); }
 .mode-btn.active { background: #2f6f9f; border-color: #8fc8f0; }
 .mode-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-#fps-counter { position: fixed; top: 8px; left: 10px; z-index: 40; pointer-events: none; color: #7f7; font: 600 14px ui-monospace, monospace; background: rgba(0,0,0,0.45); padding: 2px 8px; border-radius: 4px; }
+#fps-counter { position: fixed; top: 8px; left: 118px; z-index: 40; pointer-events: none; color: #7f7; font: 600 14px ui-monospace, monospace; background: rgba(0,0,0,0.45); padding: 2px 8px; border-radius: 4px; }
 #fps-counter.warn { color: #ffd84a; } #fps-counter.bad { color: #ff5a5a; } #fps-counter.off { display: none; }
 #mode-notice { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); z-index: 40; pointer-events: none; color: #fff; font: 700 22px system-ui, sans-serif; background: rgba(0,0,0,0.55); padding: 8px 18px; border-radius: 8px; letter-spacing: 0.06em; }
 #mode-notice.hidden { display: none; }
@@ -152,4 +152,10 @@ body.touch-on, body.touch-on canvas { touch-action: none; -webkit-user-select: n
 body.touch-on.explore #tc-fire2 { display: none; }
 /* keep HP / ammo clear of the touch buttons */
 body.touch-on #weapon { bottom: auto; top: 8px; right: 130px; }
-body.touch-on #health { bottom: auto; top: 34px; left: 10px; }
+body.touch-on #health { bottom: auto; top: 50px; left: 10px; }
+/* Exit button (top-left): back to the menu + leave fullscreen; on the menu it only shows while fullscreen */
+#exit-btn { position: fixed; top: 6px; left: 8px; z-index: 45; font: 600 14px system-ui, sans-serif; padding: 7px 12px; min-width: 96px;
+  color: #fff; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.45); border-radius: 8px; cursor: pointer;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+#exit-btn:hover { background: rgba(160,30,30,0.6); }
+#exit-btn.hidden { display: none; }

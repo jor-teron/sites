@@ -10,6 +10,7 @@ import { createGrenades } from './browser-fps_grenades.js';
 import { createAudio } from './browser-fps_audio.js';
 import { buildIsland } from './browser-fps_island.js';
 import { buildSnow } from './browser-fps_snow.js';
+import { buildForest } from './browser-fps_forest.js';
 import { createDoors } from './browser-fps_doors.js';
 import { setupIslandLook } from './browser-fps_look.js';
 import { createFx } from './browser-fps_fx.js';
@@ -38,13 +39,14 @@ const RELOAD_TIME = CFG.weapon.reloadTime;
 const HIT_DAMAGE = CFG.weapon.hitDamage;
 const MAX_HEALTH = CFG.player.maxHealth;
 // Map: 'camp' (Training Camp, walled box) or 'island'. ?map=island in the URL overrides the saved choice.
-const MAPS = ['camp', 'island', 'snow'];
+const MAPS = ['camp', 'island', 'snow', 'forest'];
 const MAP = (() => {
   const q = new URLSearchParams(location.search).get('map');
   const m = q || localStorage.getItem(CFG.maps.storageKey) || CFG.maps.default;
   return MAPS.includes(m) ? m : 'camp';
 })();
 const SNOW = MAP === 'snow';
+const FOREST = MAP === 'forest';   // 1 km procedural forest (chunked LOD terrain, local AI grid)
 // Mode: 'explore' (no enemies, pickups, grenades or score) | 'fight'. URL ?mode= > saved choice > map default.
 const MODE_CFG = CFG.modes.perMap[MAP];
 let MODE = (() => {
@@ -53,8 +55,8 @@ let MODE = (() => {
 })();
 const isFight = () => MODE === 'fight';
 document.body.classList.toggle('explore', !isFight());
-const IS = SNOW ? CFG.snow : CFG.island;   // terrain-map config (island or snow)
-const ISLAND = MAP === 'island' || SNOW;   // terrain map (heightfield, props, no camp walls)
+const IS = SNOW ? CFG.snow : FOREST ? CFG.forest : CFG.island;   // terrain-map config (island, snow or forest)
+const ISLAND = MAP === 'island' || SNOW || FOREST;   // terrain map (heightfield, props, no camp walls)
 // Island: a square world box around the circle (grid / bounds), no walls or cover boxes
 const ARENA = ISLAND ? { ...CFG.arena, w: 2 * (IS.radius + IS.wade + 2), d: 2 * (IS.radius + IS.wade + 2), covers: [] } : CFG.arena;
 // Effects quality ('high' | 'low'); ?quality=low in the URL overrides the config
@@ -81,6 +83,7 @@ const scopeOverlay = document.getElementById('scope-overlay');
 const crosshairEl = document.getElementById('crosshair');
 const deathMsg = document.getElementById('death-msg');
 const retryBtn = document.getElementById('retry-btn');
+const exitBtn = document.getElementById('exit-btn');
 
 // ─── Renderer / Scene / Camera ──────────────────────────────────────────────
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -201,7 +204,7 @@ function buildArena() {
 let island = null, islandLook = null;
 if (ISLAND) {
   const keepClear = CFG.doors.list.filter((d) => d.map === MAP).map((d) => [d.pos[0], d.pos[1], CFG.doors.clear]);
-  island = (SNOW ? buildSnow : buildIsland)(scene, { ...IS, keepClear, look: FX.look ? IS.look : null }, ASSETS, renderer, { water: FX.water, waterFx: FX.water === 'reflect' ? CFG.fx.water : null });
+  island = (SNOW ? buildSnow : FOREST ? buildForest : buildIsland)(scene, { ...IS, keepClear, look: FX.look ? IS.look : null }, ASSETS, renderer, { water: FX.water, waterFx: FX.water === 'reflect' ? CFG.fx.water : null });
   for (const c of island.colliders) colliders.push(c);
   scene.add(sun.target);
   if (FX.look && IS.look) islandLook = setupIslandLook({ scene, renderer, camera, sun, island, cfg: IS.look, sc: SC, colliders: island.colliders });
@@ -290,6 +293,13 @@ function placeInitialEnemies() {
 }
 
 function updateSpawning(dt) {
+  if (FOREST) {   // big map: enemies left far behind are quietly recycled so new ones can appear near the player
+    for (const en of enemies) {
+      if (!en.alive || en.dying) continue;
+      const p = en.group.position;
+      if (Math.hypot(p.x - player.pos.x, p.z - player.pos.z) > IS.despawnDist) { en.alive = false; en.rising = 0; en.group.visible = false; en.collider.disabled = true; }
+    }
+  }
   spawnTimer -= dt;
   if (spawnTimer <= 0) {
     spawnTimer += SP.interval;
@@ -312,6 +322,9 @@ const player = {
   nadeCd: 0,
 };
 
+if (ISLAND && island.setFollow) island.setFollow(player.pos);   // forest: enemy spawn ring follows the player
+const START_YAW = !ARRIVAL && ISLAND && island.startYaw != null ? island.startYaw : 0;
+yaw = START_YAW;
 const keys = Object.create(null);
 let pointerLocked = false;
 let touchPlaying = false;   // playing via on-screen touch controls (no pointer lock)
@@ -340,6 +353,38 @@ function unlockPointer() {
   overlay.classList.toggle('hidden', isDead());
   hud.classList.remove('visible');
 }
+
+// ─── Exit button (top-left): leave pointer lock + fullscreen and show the menu; on the menu it only leaves fullscreen ──
+const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+/** Leave fullscreen in this page, or in the Hub page around it (same origin) if that is what is fullscreen. */
+function leaveFullscreen() {
+  const quit = (d) => { try { const f = d.exitFullscreen || d.webkitExitFullscreen; const r = f && f.call(d); if (r && r.catch) r.catch(() => {}); } catch (_) { /* ignore */ } };
+  if (fsElement()) quit(document);
+  try { const pd = window.parent !== window ? window.parent.document : null; if (pd && (pd.fullscreenElement || pd.webkitFullscreenElement)) quit(pd); } catch (_) { /* cross-origin parent */ }
+}
+function exitToMenu() {
+  if (touch) touch.releaseAll();
+  unlockPointer();
+  leaveFullscreen();
+  syncExitUi();
+}
+let exitUi = '';
+function syncExitUi() {
+  if (!exitBtn) return;
+  const playing = active() && !isDead();
+  const st = playing ? (pointerLocked ? 'lock' : 'play') : (fsElement() ? 'fs' : 'none');
+  if (st === exitUi) return;
+  exitUi = st;
+  exitBtn.classList.toggle('hidden', st === 'none');
+  exitBtn.textContent = st === 'lock' ? '✕ Esc' : st === 'play' ? '✕ Exit' : '⤢ Exit fullscreen';
+  exitBtn.title = st === 'fs' ? 'Leave fullscreen' : 'Back to the menu (Esc / P / `) and leave fullscreen';
+}
+if (exitBtn) {
+  for (const ev of ['pointerdown', 'pointerup', 'touchstart', 'mousedown']) exitBtn.addEventListener(ev, (e) => e.stopPropagation());
+  exitBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); exitToMenu(); });
+}
+document.addEventListener('fullscreenchange', syncExitUi);
+document.addEventListener('webkitfullscreenchange', syncExitUi);
 
 function syncPointerLockUi() {
   pointerLocked = document.pointerLockElement === renderer.domElement;
@@ -437,7 +482,9 @@ document.addEventListener('keydown', (e) => {
   if (KEYS.unlock.includes(e.code)) {
     e.preventDefault();
     e.stopPropagation();
+    const wasActive = active();
     unlockPointer();
+    if (!wasActive && !e.repeat) leaveFullscreen();   // already on the menu: a second Esc / P / ` also leaves fullscreen
     return;
   }
   if (KEYS.mute.includes(e.code) && !e.repeat) { audio.toggleMute(); return; }
@@ -606,7 +653,8 @@ function updateMovement(dt) {
 
   const sprint = (held(KEYS.sprint) || touchMove.sprint) && aimT === 0;          // no sprint while scoped
   const speed = MOVE_SPEED * (sprint ? SPRINT_MULT : 1) * (1 + (SCOPE.moveMult - 1) * aimT);
-  const wade = ISLAND && groundAt(player.pos.x, player.pos.z) < IS.waterLevel - 0.15 ? IS.waterSlow : 1;
+  const inWater = ISLAND && (island.inWater ? island.inWater(player.pos.x, player.pos.z) : groundAt(player.pos.x, player.pos.z) < IS.waterLevel - 0.15);
+  const wade = inWater ? IS.waterSlow : 1;
   player.vel.x = wish.x * speed * wade;
   player.vel.z = wish.z * speed * wade;
 
@@ -655,7 +703,7 @@ function restartGame() {
   player.reloading = false;
   player.fireCooldown = 0;
   player.kills = 0;
-  yaw = 0; pitch = 0;
+  yaw = START_YAW; pitch = 0;
   hpVal.textContent = String(player.health);
   ammoVal.textContent = String(player.ammo);
   if (isFight()) resetEnemies();
@@ -708,19 +756,23 @@ function bushBlocks(from, dir, dist) {
   }
   return false;
 }
-function wallHit(origin, dir) {
+function wallHit(origin, dir, maxT = Infinity) {
   let best = Infinity;
   for (const c of colliders) {
     if (c.target || c.disabled) continue;
-    // walls / cover never move: cache centre + half extents
+    // walls / cover never move: cache centre + half extents (+ bounding radius for the distance skip)
     if (!c._half) {
       c._half = new THREE.Vector3().subVectors(c.max, c.min).multiplyScalar(0.5);
       c._center = new THREE.Vector3().addVectors(c.min, c.max).multiplyScalar(0.5);
     }
+    if (maxT < Infinity) {   // boxes farther than maxT cannot block (big maps: hundreds of trunks)
+      const dx = c._center.x - origin.x, dy = c._center.y - origin.y, dz = c._center.z - origin.z, r = c._r ??= c._half.length();
+      if (dx * dx + dy * dy + dz * dz > (maxT + r) * (maxT + r)) continue;
+    }
     const t = rayAABB(origin, dir, c._center, c._half);
     if (t !== null && t > 0.05 && t < best) best = t;
   }
-  return Math.min(best, terrainHit(origin, dir, Math.min(best, 100)));
+  return Math.min(best, terrainHit(origin, dir, Math.min(best, maxT, 100)));
 }
 
 /** Line of sight from an enemy's eyes to the player's head. */
@@ -730,7 +782,7 @@ function hasLineOfSight(en) {
   aiDir.subVectors(player.pos, aiFrom);
   const dist = aiDir.length();
   aiDir.normalize();
-  return wallHit(aiFrom, aiDir) > dist && !bushBlocks(aiFrom, aiDir, dist);
+  return wallHit(aiFrom, aiDir, dist) > dist && !bushBlocks(aiFrom, aiDir, dist);
 }
 
 /** Distance falloff: damageNear at <= falloffNear, linearly down to damageFar at >= falloffFar. */
@@ -747,7 +799,7 @@ function enemyFire(en, spreadMult = 1) {
   const sp = AI.spread * spreadMult;
   const e = new THREE.Euler((Math.random() * 2 - 1) * sp, (Math.random() * 2 - 1) * sp, 0, 'YXZ');
   aiDir.applyEuler(e).normalize();
-  const tWall = wallHit(from, aiDir);
+  const tWall = wallHit(from, aiDir, W.tracerMaxDist);
   playerCenter.y = player.pos.y - PLAYER_HEIGHT / 2;
   const tPlayer = rayAABB(from, aiDir, playerCenter, playerHalf);
   const hit = tPlayer !== null && tPlayer > 0 && tPlayer < tWall;
@@ -764,15 +816,24 @@ function enemyFire(en, spreadMult = 1) {
 // ─── Enemy movement: flow field toward the player + sliding collision ───────
 // Grid over the arena; cells blocked by cover/walls (inflated by the enemy radius).
 // BFS from the player's cell gives each free cell a step count; enemies walk downhill.
-const GRID = AI.gridCell;
-const GW = Math.ceil(ARENA.w / GRID), GD = Math.ceil(ARENA.d / GRID);
+// Grid area GA: the whole arena, or on the forest a window (IS.aiWindow) re-centred on the player as they walk.
+const GRID = FOREST && IS.aiGridCell ? IS.aiGridCell : AI.gridCell;
+const GA = FOREST ? { w: IS.aiWindow, d: IS.aiWindow, ox: Math.round(START[0] / GRID) * GRID, oz: Math.round(START[1] / GRID) * GRID } : { w: ARENA.w, d: ARENA.d, ox: 0, oz: 0 };
+const GW = Math.ceil(GA.w / GRID), GD = Math.ceil(GA.d / GRID);
 const blocked = new Uint8Array(GW * GD);
 const field = new Int32Array(GW * GD);
 let fieldT = 0;
-const cellX = (x) => Math.max(0, Math.min(GW - 1, Math.floor((x + ARENA.w / 2) / GRID)));
-const cellZ = (z) => Math.max(0, Math.min(GD - 1, Math.floor((z + ARENA.d / 2) / GRID)));
-const cellCx = (i) => -ARENA.w / 2 + (i + 0.5) * GRID;
-const cellCz = (j) => -ARENA.d / 2 + (j + 0.5) * GRID;
+const cellX = (x) => Math.max(0, Math.min(GW - 1, Math.floor((x - GA.ox + GA.w / 2) / GRID)));
+const cellZ = (z) => Math.max(0, Math.min(GD - 1, Math.floor((z - GA.oz + GA.d / 2) / GRID)));
+const cellCx = (i) => GA.ox - GA.w / 2 + (i + 0.5) * GRID;
+const cellCz = (j) => GA.oz - GA.d / 2 + (j + 0.5) * GRID;
+/** Forest: move the grid window to the player once they are aiRecentre m from its centre. */
+function recentreGrid() {
+  if (!FOREST || Math.max(Math.abs(player.pos.x - GA.ox), Math.abs(player.pos.z - GA.oz)) < IS.aiRecentre) return false;
+  GA.ox = Math.round(player.pos.x / GRID) * GRID; GA.oz = Math.round(player.pos.z / GRID) * GRID;
+  buildBlocked(); buildReachable(player.pos.x, player.pos.z);
+  return true;
+}
 
 /** Static cover/wall boxes (not the floor, not targets). */
 let solidCache = null;
@@ -782,10 +843,26 @@ function solidBoxes() {
   return solidCache;
 }
 
+/** Static boxes bucketed on a coarse xz grid (built once) so lookups stay cheap with hundreds of trunks. */
+const HB = 4;
+let coverHash = null;
+const hkey = (i, j) => (i + 32768) * 65536 + (j + 32768);
+function coverBuckets() {
+  if (coverHash) return coverHash;
+  coverHash = new Map();
+  for (const c of solidBoxes()) {
+    for (let j = Math.floor(c.min.z / HB); j <= Math.floor(c.max.z / HB); j++) for (let i = Math.floor(c.min.x / HB); i <= Math.floor(c.max.x / HB); i++) {
+      const k = hkey(i, j); let l = coverHash.get(k); if (!l) coverHash.set(k, (l = [])); l.push(c);
+    }
+  }
+  return coverHash;
+}
 /** Does a body of radius r at (x, z) overlap any cover/wall box? */
 function hitsCover(x, z, r) {
-  for (const c of solidBoxes()) {
-    if (x + r > c.min.x && x - r < c.max.x && z + r > c.min.z && z - r < c.max.z) return true;
+  const hb = coverBuckets();
+  for (let j = Math.floor((z - r) / HB); j <= Math.floor((z + r) / HB); j++) for (let i = Math.floor((x - r) / HB); i <= Math.floor((x + r) / HB); i++) {
+    const l = hb.get(hkey(i, j)); if (!l) continue;
+    for (const c of l) if (x + r > c.min.x && x - r < c.max.x && z + r > c.min.z && z - r < c.max.z) return true;
   }
   return false;
 }
@@ -874,6 +951,7 @@ function updateEnemyAI(dt) {
   fieldT -= dt;
   if (fieldT <= 0) {
     fieldT = AI.fieldRefresh;
+    recentreGrid();
     buildField();
   }
   for (const en of enemies) {
@@ -996,7 +1074,7 @@ function surfaceOf(c, p) {
     const r = Math.hypot(p.x, p.z);
     return r > IS.radius * IS.beachFrac - 1 ? 'sand' : r < IS.radius * 0.45 ? 'dirt' : 'grass';
   }
-  if (c.prop === 'palm_tree' || c.prop === 'pine_tree' || c.prop === 'cabin') return 'wood';
+  if (c.prop === 'palm_tree' || c.prop === 'pine_tree' || c.prop === 'broadleaf_tree' || c.prop === 'cabin' || c.prop === 'bridge') return 'wood';
   if (c.prop === 'rock_boulder') return 'rock';
   if (c.prop) return 'rock';
   if (c.max.y <= 0.05) return 'concrete';                                     // camp floor
@@ -1090,17 +1168,14 @@ function fire() {
 
 /** Ray vs AABB (center + half-extents). Returns distance or null. */
 function rayAABB(origin, dir, center, half) {
-  const inv = new THREE.Vector3(
-    dir.x !== 0 ? 1 / dir.x : 1e12,
-    dir.y !== 0 ? 1 / dir.y : 1e12,
-    dir.z !== 0 ? 1 / dir.z : 1e12
-  );
-  const t1 = (center.x - half.x - origin.x) * inv.x;
-  const t2 = (center.x + half.x - origin.x) * inv.x;
-  const t3 = (center.y - half.y - origin.y) * inv.y;
-  const t4 = (center.y + half.y - origin.y) * inv.y;
-  const t5 = (center.z - half.z - origin.z) * inv.z;
-  const t6 = (center.z + half.z - origin.z) * inv.z;
+  // no per-call allocation (called for every collider on every shot / sight check)
+  const ix = dir.x !== 0 ? 1 / dir.x : 1e12, iy = dir.y !== 0 ? 1 / dir.y : 1e12, iz = dir.z !== 0 ? 1 / dir.z : 1e12;
+  const t1 = (center.x - half.x - origin.x) * ix;
+  const t2 = (center.x + half.x - origin.x) * ix;
+  const t3 = (center.y - half.y - origin.y) * iy;
+  const t4 = (center.y + half.y - origin.y) * iy;
+  const t5 = (center.z - half.z - origin.z) * iz;
+  const t6 = (center.z + half.z - origin.z) * iz;
   const tmin = Math.max(Math.min(t1, t2), Math.min(t3, t4), Math.min(t5, t6));
   const tmax = Math.min(Math.max(t1, t2), Math.max(t3, t4), Math.max(t5, t6));
   if (tmax < 0 || tmin > tmax) return null;
@@ -1143,9 +1218,9 @@ function updateWeapon(dt) {
 const PK = CFG.pickups;
 const reachable = new Uint8Array(GW * GD);
 /** Static reachability from the player start over the cover grid (cover never moves). */
-function buildReachable() {
+function buildReachable(fx = START[0], fz = START[1]) {
   reachable.fill(0);
-  const s0 = cellZ(START[1]) * GW + cellX(START[0]);
+  const s0 = cellZ(fz) * GW + cellX(fx);
   const q = new Int32Array(GW * GD); let h = 0, t = 0;
   if (!blocked[s0]) { reachable[s0] = 1; q[t++] = s0; }
   while (h < t) {
@@ -1159,7 +1234,7 @@ function buildReachable() {
 function validPickupSpot(x, z) {
   const k = cellZ(z) * GW + cellX(x);
   if (!reachable[k] || hitsCover(x, z, PK.clearance)) return false;
-  if (Math.abs(x) > ARENA.w / 2 - 1 || Math.abs(z) > ARENA.d / 2 - 1 || !onLand(x, z, 1.5)) return false;
+  if (Math.abs(x - GA.ox) > GA.w / 2 - 1 || Math.abs(z - GA.oz) > GA.d / 2 - 1 || !onLand(x, z, 1.5)) return false;
   if (Math.hypot(player.pos.x - x, player.pos.z - z) < PK.minPlayerDist) return false;
   for (const it of pickups.items) if (Math.hypot(it.x - x, it.z - z) < 3) return false;
   return true;
@@ -1169,7 +1244,7 @@ const pickups = createPickups(scene, PK, {
   groundAt,
   randomSpot() {
     for (let n = 0; n < 60; n++) {
-      const x = (Math.random() - 0.5) * ARENA.w, z = (Math.random() - 0.5) * ARENA.d;
+      const x = GA.ox + (Math.random() - 0.5) * GA.w, z = GA.oz + (Math.random() - 0.5) * GA.d;
       if (validPickupSpot(x, z)) return [x, z];
     }
     return null;
@@ -1200,7 +1275,7 @@ function blastBlocked(from, to) {
   nadeDir.subVectors(to, from); const d = nadeDir.length(); if (d < 0.05) return false;
   nadeDir.divideScalar(d);
   nadeFrom.copy(from).addScaledVector(nadeDir, 0.02);
-  return wallHit(nadeFrom, nadeDir) < d - 0.05;
+  return wallHit(nadeFrom, nadeDir, d) < d - 0.05;
 }
 const grenades = createGrenades(scene, GR, ASSETS.grenade, {
   solids: () => refreshNadeSolids(),
@@ -1241,7 +1316,16 @@ const previewRing = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color:
 previewRing.visible = false; previewRing.renderOrder = 5;
 scene.add(previewDots, previewRing);
 const nadeSolids = [];
-function refreshNadeSolids() { nadeSolids.length = 0; for (const c of colliders) if (!c.target && !c.disabled) nadeSolids.push(c); return nadeSolids; }
+function refreshNadeSolids() {
+  nadeSolids.length = 0;
+  const near = FOREST ? 60 : Infinity, px = player.pos.x, pz = player.pos.z;   // forest: only boxes a throw can reach
+  for (const c of colliders) {
+    if (c.target || c.disabled) continue;
+    if (near < Infinity && Math.max(Math.abs((c.min.x + c.max.x) / 2 - px), Math.abs((c.min.z + c.max.z) / 2 - pz)) > near) continue;
+    nadeSolids.push(c);
+  }
+  return nadeSolids;
+}
 vm.setNadeModel(ASSETS.grenade.build());
 
 /** Throw origin + direction from the camera (shared by the preview and the real throw). */
@@ -1294,7 +1378,7 @@ const nadePickups = createPickups(scene, CFG.grenadePickups, {
   groundAt,
   randomSpot() {
     for (let n = 0; n < 60; n++) {
-      const x = (Math.random() - 0.5) * ARENA.w, z = (Math.random() - 0.5) * ARENA.d;
+      const x = GA.ox + (Math.random() - 0.5) * GA.w, z = GA.oz + (Math.random() - 0.5) * GA.d;
       if (validPickupSpot(x, z) && !nadePickups.items.some((it) => Math.hypot(it.x - x, it.z - z) < 3)) return [x, z];
     }
     return null;
@@ -1381,6 +1465,7 @@ function tick(now = performance.now()) {
   }
 
   if (touch) touch.update();
+  syncExitUi();
   if (active() && !isDead()) {
     gameStep(dt);
   } else if (active()) {
@@ -1478,7 +1563,7 @@ window.__fps = {
   step: (dt, n = 1) => { for (let i = 0; i < n; i++) { if (isDead()) break; updateScope(dt); gameStep(dt); for (const en of enemies) en.update(dt); } },
   spawnRandomTarget, hasLineOfSight, restartGame,
   get spawnTimer() { return spawnTimer; },
-  get mode() { return MODE; }, setMode, get fps() { return fpsNow; }, get fpsShown() { return fpsShown; }, toggleFpsCounter,
+  get mode() { return MODE; }, setMode, exitToMenu, leaveFullscreen, get gridArea() { return { ...GA }; }, recentreGrid, get fps() { return fpsNow; }, get fpsShown() { return fpsShown; }, toggleFpsCounter,
   damageAt, hitsCover, pickups, validPickupSpot,
   grenades, nadePickups, throwGrenade, holdGrenade, releaseGrenade, cancelGrenade, nadeAim, previewDots, previewRing, previewPos, bulletDamage, audio,
   assets: Object.fromEntries(Object.entries(ASSETS).map(([k, a]) => [k, k === 'textures'
