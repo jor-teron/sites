@@ -1,6 +1,6 @@
 /*
  * File: llm-calc-export.js
- * Project: llm-calc (Lab) — R5 2026-10-19
+ * Project: llm-calc (Lab) — R7 2026-10-20 (R7: output switches, grad accum, auto batch, checkpointing)
  * Purpose: Export for the training script + people. One Download button:
  *          (a) saves <name>.llmcfg.json (Kaggle Tutor "llmcalc-config" v1 spec:
  *              UPPER_CASE script settings + "_estimates" for comparison only);
@@ -32,12 +32,19 @@
   const r1 = v => Math.round(v * 10) / 10;
   function estimates(s) {
     const p = M.params(s);
-    const tr = M.training(s, s.seq);
-    const sec = M.timeSec(tr.tokensTrained, s.tps, s.gpus);
-    const mem = M.memory(p.total, s.batch, s.seq, s.hidden, s.layers);
-    const sz = M.fileSizes(p.total).map(f => f.mb);
-    return { p, tr, sec, mem, sizes: { fp32: r1(sz[0]), fp16: r1(sz[1]), q8_0: r1(sz[2]), q4_k_m: r1(sz[3]) },
-      onnx: { fp32: r1(sz[4]), int8: r1(sz[5]) } };
+    const tr = M.training(Object.assign({}, s, { accum: s.gradAccum }), s.seq);
+    const sec = M.timeSec(tr.tokensTrained, s.tps, s.gpus, s.gradCkpt);
+    const mem = M.memory(p.total, s.batch, s.seq, s.hidden, s.layers, s.gradCkpt);
+    const o = outputs(s), os = M.outputSizes(p.total, o);
+    const sizes = {}; os.list.forEach(f => { sizes[f.key] = r1(f.mb); }); sizes.total = r1(os.total);
+    return { p, tr, sec, mem, o, os, sizes, fp32: r1(p.total * 4 / M.MB) };
+  }
+  // Effective output values (Modelfile needs GGUF, ONNX int8 needs ONNX). Missing keys = script defaults.
+  function outputs(s) {
+    const d = (v, def) => v === undefined ? def : !!v;
+    const gguf = d(s.exportGguf, true), onnx = d(s.exportOnnx, true);
+    return { hf: d(s.exportHf, true), gguf, ggufType: ['f32', 'f16', 'bf16', 'q8_0'].indexOf(s.ggufType) >= 0 ? s.ggufType : 'q8_0',
+      modelfile: gguf && d(s.exportModelfile, true), onnx, onnxInt8: onnx && d(s.exportOnnxInt8, true), zip: d(s.exportZip, true) };
   }
   // s: plain state object (see readState). Returns the JSON object in spec key order.
   function buildConfig(s, now) {
@@ -50,14 +57,18 @@
       EPOCHS: Number(s.epochs), BATCH_PER_GPU: int(s.batch), USE_ALL_GPUS: s.gpus > 1,
       LR: Number(s.lr), WARMUP: int(s.warmup), WEIGHT_DECAY: Number(s.weightDecay), GRAD_CLIP: Number(s.gradClip),
       SEED: int(s.seed), MAX_SAMPLES: s.maxSamples > 0 ? int(s.maxSamples) : null, VAL_FRACTION: Number(s.valFraction),
+      EXPORT_HF: e.o.hf, EXPORT_GGUF: e.o.gguf, GGUF_TYPE: e.o.ggufType, EXPORT_MODELFILE: e.o.modelfile,
+      EXPORT_ONNX: e.o.onnx, EXPORT_ONNX_INT8: e.o.onnxInt8, EXPORT_ZIP: e.o.zip,
+      GRAD_ACCUM_STEPS: Math.max(1, int(s.gradAccum || 1)), AUTO_BATCH: s.autoBatch === undefined ? true : !!s.autoBatch,
+      GRADIENT_CHECKPOINTING: !!s.gradCkpt,
       _estimates: {
-        params: e.p.total, steps_per_epoch: e.tr.stepsPerEpoch, total_steps: e.tr.totalSteps,
-        est_minutes: isFinite(e.sec) ? Math.round(e.sec / 60) : null, sizes_mb: e.sizes,
+        params: e.p.total, effective_batch: e.tr.effectiveBatch, steps_per_epoch: e.tr.stepsPerEpoch, total_steps: e.tr.totalSteps,
+        est_minutes: isFinite(e.sec) ? Math.round(e.sec / 60) : null, sizes_mb: e.sizes, memory_gb: Math.round(e.mem.total / M.GB * 100) / 100,
         assumed_total_tokens: e.tr.tokens, gpu_preset: s.preset, tokens_per_sec: Number(s.tps), gpus: int(s.gpus)
       }
     };
   }
-  const api = { sanitizeName, validate, buildConfig, estimates };
+  const api = { sanitizeName, validate, buildConfig, estimates, outputs };
   if (typeof module !== 'undefined' && module.exports) { module.exports = api; return; }
   root.LLMCalcExport = api;
 
@@ -74,9 +85,9 @@
   function readState() {
     const s = {};
     ['vocab', 'hidden', 'layers', 'ffn', 'heads', 'kvHeads', 'headDim', 'seq', 'stories', 'tokensPerStory', 'totalTokens',
-     'epochs', 'batch', 'lr', 'warmup', 'weightDecay', 'gradClip', 'seed', 'valFraction', 'maxSamples', 'gpus', 'tps'].forEach(k => { s[k] = num(k); });
-    ['tied', 'qkvBias', 'useTotal'].forEach(k => { s[k] = $(k).checked; });
-    s.preset = $('preset').value; s.modelName = $('modelName').value.trim();
+     'epochs', 'batch', 'lr', 'warmup', 'weightDecay', 'gradClip', 'seed', 'valFraction', 'maxSamples', 'gpus', 'tps', 'gradAccum'].forEach(k => { s[k] = num(k); });
+    ['tied', 'qkvBias', 'useTotal', 'autoBatch', 'gradCkpt', 'exportHf', 'exportGguf', 'exportModelfile', 'exportOnnx', 'exportOnnxInt8', 'exportZip'].forEach(k => { s[k] = $(k).checked; });
+    s.preset = $('preset').value; s.ggufType = $('ggufType').value; s.modelName = $('modelName').value.trim();
     return s;
   }
   function refresh() {
@@ -92,7 +103,7 @@
     const warns = Array.from(document.querySelectorAll('#warns li')).map(li => li.textContent);
     const mins = isFinite(e.sec) ? Math.round(e.sec / 60) : NaN;
     const timeTxt = isFinite(e.sec) ? (mins < 60 ? '~' + mins + ' min' : '~' + fmtTime(e.sec)) : '—';
-    const what = '~' + fmtM(e.p.total) + ' parameters, ~' + Math.round(e.sizes.fp32) + ' MB file in fp32, ' + timeTxt + ' training on ' + gpuTxt + '.';
+    const what = '~' + fmtM(e.p.total) + ' parameters, ~' + Math.round(e.fp32) + ' MB in fp32 (all outputs ~' + fmtMB(e.os.total) + '), ' + timeTxt + ' training on ' + gpuTxt + '.';
     return '<h1>' + esc(s.modelName || name) + '</h1><p class="ps-date">LLM Calculator summary · ' + esc(when) + '</p>' +
       '<p class="ps-what"><b>What this means:</b> ' + esc(what) + '</p>' +
       '<div class="ps-cols">' +
@@ -100,11 +111,12 @@
         ['Attention heads', fmt(s.heads)], ['KV heads', fmt(s.kvHeads)], ['Context length', fmt(s.seq)], ['Tied embeddings', s.tied ? 'yes' : 'no']]) +
       tbl('Training settings', [['Epochs', String(s.epochs)], ['Batch per GPU', fmt(s.batch)], ['GPUs', s.gpus + ' (' + s.preset + ')'], ['Learning rate', String(s.lr)],
         ['Warmup steps', fmt(s.warmup)], ['Weight decay', String(s.weightDecay)], ['Grad clip', String(s.gradClip)], ['Seed', fmt(s.seed)],
-        ['Validation fraction', String(s.valFraction)], ['Max samples', cfg.MAX_SAMPLES === null ? 'all' : fmt(cfg.MAX_SAMPLES)]]) +
+        ['Validation fraction', String(s.valFraction)], ['Max samples', cfg.MAX_SAMPLES === null ? 'all' : fmt(cfg.MAX_SAMPLES)],
+        ['Grad accumulation', fmt(cfg.GRAD_ACCUM_STEPS)], ['Auto batch', cfg.AUTO_BATCH ? 'on' : 'off'], ['Gradient checkpointing', cfg.GRADIENT_CHECKPOINTING ? 'on' : 'off']]) +
       '</div>' +
       tbl('Results', [['Parameters', fmt(e.p.total) + ' (' + fmtM(e.p.total) + ')'],
-        ['File size fp32 / fp16', fmtMB(e.sizes.fp32) + ' / ' + fmtMB(e.sizes.fp16)], ['File size Q8_0 / Q4_K_M', fmtMB(e.sizes.q8_0) + ' / ' + fmtMB(e.sizes.q4_k_m)],
-        ['ONNX fp32 / int8', fmtMB(e.onnx.fp32) + ' / ' + fmtMB(e.onnx.int8)],
+        ['Outputs', e.os.list.length ? e.os.list.map(f => f.name + ' ~' + fmtMB(f.mb)).join(', ') + (e.o.modelfile ? ', Ollama Modelfile' : '') : 'none'],
+        ['Total disk (rough)', '~' + fmtMB(e.os.total)], ['Effective batch', fmt(e.tr.effectiveBatch)],
         ['Dataset tokens', fmt(e.tr.tokens)], ['Blocks (tokens ÷ context)', fmt(e.tr.blocks)], ['Steps per epoch', fmt(e.tr.stepsPerEpoch)],
         ['Total steps', fmt(e.tr.totalSteps)], ['Estimated training time', isFinite(e.sec) ? fmtTime(e.sec) + ' at ' + fmt(s.tps) + ' tokens/sec per GPU' : '—'],
         ['Memory per GPU (rough)', memGB.toFixed(2) + ' GB of ' + limit + ' GB']]) +

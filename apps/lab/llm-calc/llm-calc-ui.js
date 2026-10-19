@@ -1,6 +1,6 @@
 /*
  * File: llm-calc-ui.js
- * Project: llm-calc (Lab) — R5 2026-10-19
+ * Project: llm-calc (Lab) — R7 2026-10-20
  * Purpose: Reads inputs, recomputes on every change, renders results,
  *          handles ⓘ help popups, GPU presets and calibration.
  *          R2: "Real models" tap-to-copy list in each model setting's ⓘ.
@@ -9,6 +9,8 @@
  *          phone; removed "Load whole model" and the official-vs-ours line.
  *          R5: text inputs (model/file name) saved too; Export lives in
  *          llm-calc-export.js.
+ *          R7: Outputs switches (dependent ones greyed), sizes for selected
+ *          outputs, grad accumulation, gradient checkpointing.
  *          Depends on llm-calc-math.js, llm-calc-help.js, llm-calc-examples.js.
  */
 (function () {
@@ -63,7 +65,9 @@
     const m = readModel();
     const seq = num('seq');
     const t = { useTotal: $('useTotal').checked, totalTokens: num('totalTokens'), stories: num('stories'),
-      tokensPerStory: num('tokensPerStory'), epochs: num('epochs'), batch: num('batch'), gpus: num('gpus') };
+      tokensPerStory: num('tokensPerStory'), epochs: num('epochs'), batch: num('batch'), gpus: num('gpus'), accum: num('gradAccum') };
+    const ckpt = $('gradCkpt').checked;
+    const o = readOutputs();
     $('totalTokens').disabled = !t.useTotal;
     $('stories').disabled = $('tokensPerStory').disabled = t.useTotal;
 
@@ -79,27 +83,31 @@
       ['Attention / layer' + (m.qkvBias ? ' (incl. ' + fmt(p.bias) + ' bias)' : ''), fmt(p.attn)], ['MLP / layer', fmt(p.mlp)], ['Norms / layer', fmt(p.norms)],
       ['All ' + fmt(m.layers) + ' layers', fmt(p.layersTotal)], ['Final norm', fmt(p.finalNorm)], ['<b>Total</b>', '<b>' + fmt(p.total) + '</b>']
     ]);
-    $('rSizes').innerHTML = rows(M.fileSizes(p.total).map(f => [f.name, '~' + fmtMB(f.mb)]));
+    const os = M.outputSizes(p.total, o);
+    $('rSizes').innerHTML = os.list.length ? rows(os.list.map(f => [f.name, '~' + fmtMB(f.mb)]).concat([['<b>Total disk</b>', '<b>~' + fmtMB(os.total) + '</b>']])) : rows([['No outputs selected', '—']]);
+    const ref = M.fileSizes(p.total);
+    $('rSizesRef').textContent = 'Other formats (reference): fp16 ~' + fmtMB(ref[1].mb) + ' · Q4_K_M ~' + fmtMB(ref[3].mb);
 
     const tr = M.training(t, seq);
     $('rTokens').textContent = fmt(tr.tokens);
     $('rBlocks').textContent = fmt(tr.blocks);
+    $('rEff').textContent = fmt(tr.effectiveBatch);
     $('rTps').textContent = fmt(tr.tokensPerStep);
     $('rSpe').textContent = $('rSpeBig').textContent = fmt(tr.stepsPerEpoch);
     $('rSteps').textContent = $('rStepsBig').textContent = $('bSteps').textContent = fmt(tr.totalSteps);
 
-    const sec = M.timeSec(tr.tokensTrained, num('tps'), t.gpus);
+    const sec = M.timeSec(tr.tokensTrained, num('tps'), t.gpus, ckpt);
     $('rTime').textContent = $('bTime').textContent = isFinite(sec) ? fmtTime(sec) : '—';
     if (sec > 12 * 3600) warns.push('Longer than a Kaggle session (~12 h). Save checkpoints and resume.');
     if (sec > 30 * 3600) warns.push('More than the weekly Kaggle GPU quota (~30 h, approximate).');
 
-    const mem = M.memory(p.total, t.batch, seq, m.hidden, m.layers);
+    const mem = M.memory(p.total, t.batch, seq, m.hidden, m.layers, ckpt);
     const gb = mem.total / M.GB, limit = M.GPU_PRESETS[$('preset').value].mem;
     $('rMem').textContent = gb.toFixed(2) + ' GB / GPU';
     $('bMem').textContent = gb.toFixed(1) + ' GB';
     $('rMemBreak').innerHTML = rows([
       ['Weights + grads + AdamW (~16 B/param)', (mem.states / M.GB).toFixed(2) + ' GB'],
-      ['Activations (rough)', '~' + (mem.acts / M.GB).toFixed(2) + ' GB'],
+      [ckpt ? 'Activations (rough, checkpointing ×0.25)' : 'Activations (rough)', '~' + (mem.acts / M.GB).toFixed(2) + ' GB'],
       ['Total per GPU', (gb).toFixed(2) + ' GB of ' + limit + ' GB']
     ]);
     const over = gb > limit;
@@ -109,6 +117,17 @@
     $('bDot').hidden = !warns.length;
   }
 
+  // Effective output choices; dependent switches greyed when their parent is off.
+  function readOutputs() {
+    const gguf = $('exportGguf').checked, onnx = $('exportOnnx').checked;
+    $('ggufType').disabled = $('exportModelfile').disabled = !gguf;
+    $('exportOnnxInt8').disabled = !onnx;
+    ['ggufType', 'exportModelfile', 'exportOnnxInt8'].forEach(k => $(k).closest('.field').classList.toggle('off', $(k).disabled));
+    const n = []; if (!gguf) n.push('Modelfile only with GGUF.'); if (!onnx) n.push('ONNX int8 only with ONNX.');
+    $('outNote').textContent = n.join(' ');
+    return { hf: $('exportHf').checked, gguf, ggufType: $('ggufType').value, modelfile: gguf && $('exportModelfile').checked,
+      onnx, onnxInt8: onnx && $('exportOnnxInt8').checked, zip: $('exportZip').checked };
+  }
   function applyPreset() {
     const pr = M.GPU_PRESETS[$('preset').value];
     $('gpus').value = pr.gpus; $('tps').value = pr.tps;

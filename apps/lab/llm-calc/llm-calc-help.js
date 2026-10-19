@@ -1,6 +1,6 @@
 /*
  * File: llm-calc-help.js
- * Project: llm-calc (Lab) — R5 2026-10-19 (R2: head size, QKV bias; R4: removed Load whole model text; R5: help for export + training-config fields)
+ * Project: llm-calc (Lab) — R5 2026-10-19 (R2: head size, QKV bias; R4: removed Load whole model text; R5: help for export + training-config fields; R7 2026-10-20: outputs, grad accum, auto batch, checkpointing)
  * Purpose: Plain-English help text for every setting (shown by the ⓘ buttons)
  *          and the glossary. Text only, no logic.
  */
@@ -33,6 +33,16 @@ window.LLMCalcHelp = {
   maxSamples: 'Max samples (config only). Use only the first N stories — handy for a quick test run. Leave empty to use all of them. Lower: much faster, but the model learns less.',
   modelName: 'Model name written into the config (MODEL_NAME). The training script uses it to name its output. Pick something short like tiny-v1; change it for every new experiment so runs do not overwrite each other.',
   fileName: 'You choose this. Download saves <name>.llmcfg.json (for the training script) and opens a print page where you tap "Save as PDF" to get <name>.pdf (for people). Characters like / \\ : * ? are removed.',
+  gradAccum: 'Gradient accumulation steps. The GPU runs this many batches, adds up what it learned, then makes ONE update. Effective batch = batch per GPU × GPUs × this. Higher: acts like a bigger batch without more memory, but fewer steps (each one slower). 1 = off.',
+  autoBatch: 'Auto batch (config only). If the GPU runs out of memory, the script may lower the batch by itself and keep going. On: safer runs. Off: it just stops with an error. The estimates here always use your batch.',
+  gradCkpt: 'Gradient checkpointing. Saves memory by forgetting most in-between results and recomputing them when needed. On: activation memory drops a lot (~4× here), training ~25% slower. Off: faster, more memory. Turn on if you run out of memory.',
+  exportHf: 'Saves a Hugging Face folder (safetensors, fp32). Used to load the model again in Python / Transformers, or keep training later. Size ≈ 4 bytes per parameter.',
+  exportGguf: 'Saves a GGUF file for llama.cpp / Ollama / LM Studio — the easy way to chat with your model on a laptop.',
+  ggufType: 'Number format inside the GGUF file. f32: full size, exact. f16 / bf16: half size, almost exact. q8_0: about a quarter of f32, tiny quality loss — a good default. Lower = smaller file.',
+  exportModelfile: 'Saves an Ollama "Modelfile" next to the GGUF so you can run "ollama create". Only works when GGUF is on. Tiny text file.',
+  exportOnnx: 'Saves an ONNX model (fp32) — used to run in the browser (Transformers.js) or other apps. Size ≈ 4 bytes per parameter.',
+  exportOnnxInt8: 'Also saves a smaller int8 version of the ONNX model (~1 byte per parameter), faster in the browser with a small quality loss. Needs ONNX on.',
+  exportZip: 'Packs all chosen outputs into one ZIP to download from Kaggle in one go. Model weights hardly compress, so it is about as big as everything together (and needs that much extra disk).',
   calibrate: 'Enter a real finished run: steps, minutes, total batch (all GPUs) and context. It works out the true per-GPU speed and puts it in the speed box.'
 };
 window.LLMCalcGlossary = [
@@ -47,5 +57,7 @@ window.LLMCalcGlossary = [
   ['GGUF', 'A file format used by llama.cpp; supports Q8_0, Q4_K_M and other quantized types.'],
   ['ONNX', 'A portable model format; used for running models in the browser (Transformers.js).'],
   ['AdamW', 'The usual optimizer. It keeps 2 extra numbers per parameter, which is why training needs ~16 bytes per parameter.'],
+  ['Effective batch', 'Batch per GPU × GPUs × accumulation steps: how many blocks go into one update.'],
+  ['Checkpointing', 'Recomputing in-between results instead of storing them: less memory, slower.'],
   ['Warmup', 'Slowly raising the learning rate at the start so training does not blow up.']
 ];

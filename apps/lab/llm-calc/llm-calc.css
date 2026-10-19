@@ -1,6 +1,6 @@
 /*
  * File: llm-calc.css
- * Project: llm-calc (Lab) — R5 2026-10-19
+ * Project: llm-calc (Lab) — R7 2026-10-20 (R7: big toggle switches, greyed dependent outputs)
  * Purpose: Minimalist styles, big tap targets, jelly press, light/dark.
  *          R2: real-model list in the ⓘ dialog.
  *          R4: two panes (inputs left, sticky results right) from 800px;
@@ -93,3 +93,9 @@ input[type=text] { width:9.5em; min-height:44px; font-size:1rem; padding:6px 10p
   .ps-foot { margin-top:10pt; font-size:9pt; color:#333; }
   * { animation:none !important; }
 }
+/* R7 2026-10-20: big toggle switches (44px tap target), greyed dependent outputs */
+.sw { appearance:none; -webkit-appearance:none; width:52px; height:32px; border-radius:16px; background:var(--line); position:relative; cursor:pointer; transition:background .2s; outline-offset:6px; margin:6px auto 6px 0; }
+.sw::after { content:''; position:absolute; top:3px; left:3px; width:26px; height:26px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:transform .25s cubic-bezier(.3,1.6,.5,1); }
+.sw:checked { background:var(--acc); } .sw:checked::after { transform:translateX(20px); }
+.sw:active::after { width:30px; }
+.field.off { opacity:.45; } .field.off .sw, .field.off select { cursor:not-allowed; }

@@ -1,6 +1,7 @@
 /*
  * File: llm-calc-math.js
- * Project: llm-calc (Lab) — R2 2026-10-19 (R2: optional head size + QKV bias)
+ * Project: llm-calc (Lab) — R7 2026-10-20 (R2: optional head size + QKV bias;
+ *          R7: grad accumulation, gradient checkpointing, sizes for selected outputs)
  * Purpose: Pure formulas for the Tiny LLM Training Calculator (no DOM).
  *          Params of a Llama-style model, file sizes, steps, time, memory.
  *          Works in the browser (window.LLMCalcMath) and in Node (module.exports).
@@ -36,26 +37,45 @@
     return { headDim, bias, attn, mlp, norms, perLayer, layersTotal: perLayer * m.layers,
              embed, finalNorm, total: perLayer * m.layers + embed + finalNorm };
   }
+  // R7: bytes/param per GGUF type, and the outputs the training script can save.
+  const GGUF_BPP = { f32: 4, f16: 2, bf16: 2, q8_0: 1.0625 };
+  const CKPT_ACT = 0.25;  // rough: checkpointing keeps ~1 activation per layer, recomputes the rest
+  const CKPT_TIME = 1.25; // ~25% slower (recompute during backward)
+  // o: { hf, gguf, ggufType, onnx, onnxInt8, zip } (effective values). Returns rows + total MB.
+  function outputSizes(p, o) {
+    const list = [];
+    if (o.hf) list.push({ key: 'hf', name: 'HF (safetensors, fp32)', mb: p * 4 / MB });
+    if (o.gguf) list.push({ key: 'gguf', name: 'GGUF ' + o.ggufType, mb: p * (GGUF_BPP[o.ggufType] || 1.0625) / MB });
+    if (o.onnx) list.push({ key: 'onnx', name: 'ONNX fp32', mb: p * 4 / MB });
+    if (o.onnx && o.onnxInt8) list.push({ key: 'onnx_int8', name: 'ONNX int8', mb: p * 1 / MB });
+    const sum = list.reduce((a, f) => a + f.mb, 0);
+    // ZIP of the above: weights barely compress, so roughly the same size (rough).
+    if (o.zip && list.length) list.push({ key: 'zip', name: 'ZIP of outputs (rough)', mb: sum });
+    return { list, total: list.reduce((a, f) => a + f.mb, 0) };
+  }
   function fileSizes(p) { return FORMATS.map(([name, b]) => ({ name, bytesPerParam: b, mb: p * b / MB })); }
 
   function training(t, seq) {
     const tokens = t.useTotal ? t.totalTokens : t.stories * t.tokensPerStory;
     const blocks = Math.floor(tokens / seq);
-    const perStep = t.batch * t.gpus;
+    const accum = Math.max(1, Math.round(t.accum || 1));
+    const perStep = t.batch * t.gpus * accum; // effective batch (R7)
     const stepsPerEpoch = Math.ceil(blocks / perStep);
-    return { tokens, blocks, stepsPerEpoch, totalSteps: Math.ceil(stepsPerEpoch * t.epochs),
+    return { tokens, blocks, stepsPerEpoch, effectiveBatch: perStep, totalSteps: Math.ceil(stepsPerEpoch * t.epochs),
              tokensPerStep: perStep * seq, tokensTrained: tokens * t.epochs };
   }
-  function timeSec(tokensTrained, tpsPerGpu, gpus) { return tokensTrained / (tpsPerGpu * scale(gpus)); }
+  // Grad accumulation does not change time per token; checkpointing makes it ~25% slower.
+  function timeSec(tokensTrained, tpsPerGpu, gpus, ckpt) { return tokensTrained / (tpsPerGpu * scale(gpus)) * (ckpt ? CKPT_TIME : 1); }
   // Calibrate: real run -> per-GPU tokens/sec.
   function calibrate(steps, minutes, batchTotal, seq, gpus) {
     return steps * batchTotal * seq / (minutes * 60) / scale(gpus);
   }
-  function memory(p, batch, seq, h, layers) {
+  // Per GPU; grad accumulation does not change it (same micro-batch).
+  function memory(p, batch, seq, h, layers, ckpt) {
     const states = p * 16; // fp16 weights+grads, fp32 master, 2 Adam states
-    const acts = batch * seq * h * layers * 34; // rough
+    const acts = batch * seq * h * layers * 34 * (ckpt ? CKPT_ACT : 1); // rough
     return { states, acts, total: states + acts };
   }
-  const api = { MB, GB, FORMATS, GPU_PRESETS, TWO_GPU_SCALE, params, fileSizes, training, timeSec, calibrate, memory };
+  const api = { MB, GB, FORMATS, GGUF_BPP, CKPT_ACT, CKPT_TIME, outputSizes, GPU_PRESETS, TWO_GPU_SCALE, params, fileSizes, training, timeSec, calibrate, memory };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LLMCalcMath = api;
 })(this);
