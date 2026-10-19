@@ -1,0 +1,36 @@
+/*
+ * File: llm-calc.css
+ * Project: llm-calc (Lab) — R1 2026-10-19
+ * Purpose: Minimalist styles, big tap targets, jelly press, light/dark.
+ */
+:root { --bg:#f6f7fb; --card:#fff; --fg:#1d2230; --mute:#6b7280; --acc:#6c5ce7; --bad:#e5484d; --line:#e5e7eb; }
+@media (prefers-color-scheme: dark) { :root { --bg:#0f1117; --card:#1a1d27; --fg:#e8eaf0; --mute:#9aa3b2; --acc:#a29bfe; --bad:#ff6b6b; --line:#2a2f3c; } }
+* { box-sizing: border-box; }
+body { margin:0; font:16px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--fg); }
+header { padding:14px 16px 4px; } h1 { margin:0; font-size:1.3rem; } .sub { margin:0; color:var(--mute); font-size:.9rem; }
+main { max-width:720px; margin:0 auto; padding:8px 12px 40px; }
+.card { background:var(--card); border-radius:18px; padding:12px 14px; margin:10px 0; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+h2 { font-size:1rem; margin:4px 0 6px; color:var(--acc); } h3 { font-size:.9rem; margin:12px 0 4px; color:var(--mute); }
+.results { position:sticky; top:0; z-index:5; }
+.big { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; text-align:center; }
+.big small { display:block; color:var(--mute); font-size:.75rem; } .big b { font-size:1.15rem; }
+.bad { color:var(--bad); }
+.warns { margin:6px 0 0; padding-left:18px; color:var(--bad); font-size:.85rem; } .warns:empty { display:none; }
+details summary { min-height:44px; display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--acc); }
+.results details { max-height:55vh; overflow:auto; }
+table { width:100%; border-collapse:collapse; font-size:.9rem; } td { padding:4px 0; border-bottom:1px solid var(--line); } td:last-child { text-align:right; font-variant-numeric:tabular-nums; }
+.field { display:flex; align-items:center; gap:8px; min-height:52px; border-bottom:1px solid var(--line); }
+.field:last-child { border-bottom:0; } .field label { flex:1; }
+input[type=number], select { width:9.5em; min-height:44px; font-size:1rem; padding:6px 10px; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--fg); }
+input:disabled { opacity:.45; }
+.sw { width:28px; height:28px; accent-color:var(--acc); margin:0 auto 0 0; }
+.info, .btn { min-width:44px; min-height:44px; border:0; border-radius:14px; background:transparent; color:var(--acc); font-size:1.3rem; cursor:pointer; transition:transform .25s cubic-bezier(.3,1.8,.5,1); }
+.btn { background:var(--acc); color:#fff; font-size:1rem; padding:0 18px; margin-top:8px; }
+.info:active, .btn:active { transform:scale(.85,1.12); }
+.note { color:var(--mute); font-size:.85rem; margin:6px 0; }
+dt { font-weight:600; margin-top:8px; } dd { margin:0 0 4px; color:var(--mute); }
+dialog { border:0; border-radius:20px; background:var(--card); color:var(--fg); max-width:min(92vw,460px); padding:18px; }
+dialog::backdrop { background:rgba(0,0,0,.45); }
+dialog[open] { animation:pop .35s cubic-bezier(.3,1.6,.5,1); }
+@keyframes pop { from { transform:scale(.85); opacity:0; } }
+@media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }

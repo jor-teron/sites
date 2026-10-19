@@ -5,6 +5,7 @@ name, path, icon, newtab, section
 MyLLM,              myllm/,                       , , AI
 Local AI Chat,      local-ai-chat/,               , , AI
 AI Story,           story/,                       , , AI
+LLM Calculator,     llm-calc/,                    , , AI
 
 Device Benchmark,   devbench/,                    , , Tools
 Notebook,           notebook/,                    , , Tools

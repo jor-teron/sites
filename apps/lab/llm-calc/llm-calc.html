@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<!--
+  File: llm-calc.html
+  Project: llm-calc (Lab) — Tiny LLM Training Calculator
+  Purpose: Live calculator for a Llama-style tiny model: params, file sizes,
+           steps, training time, memory. Client-side only.
+  Date: 2026-10-19 (R1)
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>LLM Calculator</title>
+<link rel="stylesheet" href="llm-calc.css">
+</head>
+<body>
+<header><h1>LLM Calculator</h1><p class="sub">Tiny model training, sized live</p></header>
+<main>
+<section class="card results" aria-live="polite">
+  <div class="big"><div><small>Parameters</small><b id="rParams">—</b></div><div><small>Training time</small><b id="rTime">—</b></div><div><small>Memory</small><b id="rMem">—</b></div></div>
+  <ul id="warns" class="warns"></ul>
+  <details><summary>Details</summary>
+    <h3>File size (approx., 1 MB = 10⁶ bytes)</h3><table id="rSizes"></table>
+    <h3>Parameter breakdown</h3><table id="rBreak"></table>
+    <h3>Steps</h3><table>
+      <tr><td>Dataset tokens</td><td id="rTokens"></td></tr><tr><td>Blocks (tokens ÷ context)</td><td id="rBlocks"></td></tr>
+      <tr><td>Tokens per step</td><td id="rTps"></td></tr><tr><td>Steps per epoch</td><td id="rSpe"></td></tr><tr><td>Total steps</td><td id="rSteps"></td></tr></table>
+    <h3>Memory (rough)</h3><p id="rMemBreak" class="note"></p>
+  </details>
+</section>
+<section class="card"><h2>Model</h2><div class="field"><label for="vocab">Vocab size</label><input id="vocab" type="number" inputmode="decimal" value="8192" step="1" min="1"><button type="button" class="info" data-help="vocab" aria-label="About Vocab size">ⓘ</button></div><div class="field"><label for="hidden">Hidden size</label><input id="hidden" type="number" inputmode="decimal" value="512" step="1" min="1"><button type="button" class="info" data-help="hidden" aria-label="About Hidden size">ⓘ</button></div><div class="field"><label for="layers">Layers</label><input id="layers" type="number" inputmode="decimal" value="7" step="1" min="1"><button type="button" class="info" data-help="layers" aria-label="About Layers">ⓘ</button></div><div class="field"><label for="ffn">FFN / MLP width</label><input id="ffn" type="number" inputmode="decimal" value="1376" step="1" min="1"><button type="button" class="info" data-help="ffn" aria-label="About FFN / MLP width">ⓘ</button></div><div class="field"><label for="heads">Attention heads</label><input id="heads" type="number" inputmode="decimal" value="8" step="1" min="1"><button type="button" class="info" data-help="heads" aria-label="About Attention heads">ⓘ</button></div><div class="field"><label for="kvHeads">KV heads</label><input id="kvHeads" type="number" inputmode="decimal" value="8" step="1" min="1"><button type="button" class="info" data-help="kvHeads" aria-label="About KV heads">ⓘ</button></div><div class="field"><label for="seq">Context length</label><input id="seq" type="number" inputmode="decimal" value="256" step="1" min="1"><button type="button" class="info" data-help="seq" aria-label="About Context length">ⓘ</button></div><div class="field"><label for="tied">Tied embeddings</label><input id="tied" type="checkbox" class="sw" checked><button type="button" class="info" data-help="tied" aria-label="About Tied embeddings">ⓘ</button></div></section>
+<section class="card"><h2>Training</h2><div class="field"><label for="stories">Stories</label><input id="stories" type="number" inputmode="decimal" value="300000" step="1" min="1"><button type="button" class="info" data-help="stories" aria-label="About Stories">ⓘ</button></div><div class="field"><label for="tokensPerStory">Avg tokens / story</label><input id="tokensPerStory" type="number" inputmode="decimal" value="200" step="1" min="1"><button type="button" class="info" data-help="tokensPerStory" aria-label="About Avg tokens / story">ⓘ</button></div><div class="field"><label for="useTotal">Enter total tokens</label><input id="useTotal" type="checkbox" class="sw"><button type="button" class="info" data-help="useTotal" aria-label="About Enter total tokens">ⓘ</button></div><div class="field"><label for="totalTokens">Total tokens</label><input id="totalTokens" type="number" inputmode="decimal" value="60000000" step="1" min="1"><button type="button" class="info" data-help="totalTokens" aria-label="About Total tokens">ⓘ</button></div><div class="field"><label for="epochs">Epochs</label><input id="epochs" type="number" inputmode="decimal" value="2" step="0.1" min="0.1"><button type="button" class="info" data-help="epochs" aria-label="About Epochs">ⓘ</button></div><div class="field"><label for="batch">Batch per GPU</label><input id="batch" type="number" inputmode="decimal" value="32" step="1" min="1"><button type="button" class="info" data-help="batch" aria-label="About Batch per GPU">ⓘ</button></div><div class="field"><label for="gpus">GPUs</label><select id="gpus"><option>1</option><option>2</option></select><button type="button" class="info" data-help="gpus" aria-label="About GPUs">ⓘ</button></div><div class="field"><label for="lr">Learning rate (info)</label><input id="lr" type="number" inputmode="decimal" value="0.0003" step="0.0001" min="0"><button type="button" class="info" data-help="lr" aria-label="About Learning rate (info)">ⓘ</button></div><div class="field"><label for="warmup">Warmup steps (info)</label><input id="warmup" type="number" inputmode="decimal" value="100" step="1" min="0"><button type="button" class="info" data-help="warmup" aria-label="About Warmup steps (info)">ⓘ</button></div></section>
+<section class="card"><h2>Hardware</h2><div class="field"><label for="preset">GPU</label><select id="preset"><option value="T4">T4</option><option value="T4x2">T4 x2</option><option value="P100">P100 (estimate)</option></select><button type="button" class="info" data-help="preset" aria-label="About GPU">ⓘ</button></div><div class="field"><label for="tps">Tokens/sec per GPU</label><input id="tps" type="number" inputmode="decimal" value="28000" step="100" min="1"><button type="button" class="info" data-help="tps" aria-label="About Tokens/sec per GPU">ⓘ</button></div><details class="calib"><summary><span>Calibrate from a real run</span> <button type="button" class="info" data-help="calibrate" aria-label="About calibrate">ⓘ</button></summary><div class="field"><label for="cSteps">Steps</label><input id="cSteps" type="number" value="5000"></div><div class="field"><label for="cMin">Minutes</label><input id="cMin" type="number" value="27"></div><div class="field"><label for="cBatch">Batch total</label><input id="cBatch" type="number" value="64"></div><div class="field"><label for="cSeq">Context</label><input id="cSeq" type="number" value="256"></div><button type="button" id="cBtn" class="btn">Use this speed</button><p id="cOut" class="note"></p></details></section>
+<section class="card"><h2>Glossary</h2><dl id="glossary"></dl></section>
+</main>
+<dialog id="help"><h3 id="helpTitle"></h3><p id="helpText"></p><button type="button" id="helpClose" class="btn">Got it</button></dialog>
+<script src="llm-calc-math.js"></script>
+<script src="llm-calc-help.js"></script>
+<script src="llm-calc-ui.js"></script>
+</body>
+</html>
