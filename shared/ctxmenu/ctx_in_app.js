@@ -8,7 +8,8 @@
  *   text field / textarea / contenteditable → Cut, Copy, Paste, Select all
  *     (Cut / Copy only with a selection, Cut / Paste only when editable; Paste only when the
  *      Clipboard API can read and the permission is not denied)
- *   link → Open, Open in new window (category tiles in a Desktop Hub), Open in new tab, Copy link
+ *   link → Open, Open in new window (category tiles in a Desktop Hub), Open in new tab, Copy link;
+ *     an app tile (shared/tiles) also gets Add to / Remove from Favorites (the Hub's HubFavorites)
  *   elsewhere → Back, Reload app, Copy (with a selection), Select all
  * Left alone (the browser / the app keeps it):
  *   - Shift held while right-clicking = the browser's own menu (escape hatch)
@@ -114,13 +115,33 @@
   function hubDesktop() {
     try { const p = window.parent; return p !== window && !!p.HubWM && !!p.HubMode && p.HubMode.isDesktop(); } catch (_) { return false; }
   }
+  /** The Hub's favorites store (shared/favorites/favorites.js), when this page runs in the Hub. */
+  function favs() {
+    if (window.HubFavorites) return window.HubFavorites;
+    try { return window.parent !== window && window.parent.HubFavorites ? window.parent.HubFavorites : null; } catch (_) { return null; }
+  }
+  /** "Add to Favorites" / "Remove from Favorites" for an app tile (category pages, shared/tiles). */
+  function favItem(a) {
+    const F = favs();
+    if (!F || !a.classList.contains('tile')) return null;
+    const href = a.href;
+    if (!F.toPath(href)) return null;
+    const name = (a.querySelector('.name') || a).textContent.trim();
+    const img = a.querySelector('img');
+    return F.has(href)
+      ? { label: 'Remove from Favorites', icon: '\u2606', action: () => F.remove(href) }
+      : { label: 'Add to Favorites', icon: '\u2605', action: () => F.add({ name: name, href: href, icon: img ? img.src : '', newTab: a.target === '_blank' }) };
+  }
   function linkItems(a) {
     const href = a.href;
     const tile = a.classList.contains('tile') && a.target !== '_blank' && hubDesktop();
+    const fav = favItem(a);
     return [
       { label: 'Open', icon: '\u2197', action: () => a.click() },
       tile && { label: 'Open in new window', icon: '\u29C9', action: () => a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, shiftKey: true })) },
       { label: 'Open in new tab', icon: '\u2934', action: () => window.open(href, '_blank', 'noopener') },
+      fav && { sep: true },
+      fav,
       { sep: true },
       { label: 'Copy link', icon: '\uD83D\uDD17', action: () => copyText(href) }
     ];

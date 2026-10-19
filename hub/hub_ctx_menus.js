@@ -6,7 +6,8 @@
  *                       Refresh, Close all windows (asks first, shared/dialog), About
  *   QR tile             Open (its link, new tab), Copy link
  *   App tile            Open, Open in new window, Open in new tab, Copy link
- *   Menu / flyout rows  Open, Open in new window, Open in new tab   (and the category pages)
+ *   Menu / flyout rows  Open, Open in new window, Open in new tab, Add to / Remove from Favorites
+ *                       (category page rows: no Favorites)
  * "Open in new window" = Desktop mode only, not for apps that always open in their own tab.
  */
 (function () {
@@ -61,17 +62,29 @@
   }, { touch: true });
 
   /* ---------- Hub menu rows, category pages, flyout apps ---------- */
-  function rowItems(el, entry, ownTab) {
+  /** Add to / Remove from Favorites for an app row (shared/favorites/favorites.js). */
+  function favItem(el, entry, ownTab) {
+    const F = window.HubFavorites;
+    if (!F || !entry) return null;
+    if (F.has(entry)) return { label: 'Remove from Favorites', icon: '\u2606', action: () => F.remove(entry) };
+    const img = el.querySelector('img');
+    const name = (el.querySelector('span:not(.icon)') || el).textContent.trim();
+    return { label: 'Add to Favorites', icon: '\u2605', action: () => F.add({ name: name, path: entry, icon: img ? img.src : '', newTab: ownTab }) };
+  }
+  function rowItems(el, entry, ownTab, noFav) {
+    const fav = noFav ? null : favItem(el, entry, ownTab);
     return [
       { label: 'Open', icon: '\u2197', action: () => el.click() },
       !ownTab && C.isDesk() && { label: 'Open in new window', icon: '\u29C9', action: () => C.shiftClick(el) },
-      entry && { label: 'Open in new tab', icon: '\u2934', action: () => C.newTab(entry) }
+      entry && { label: 'Open in new tab', icon: '\u2934', action: () => C.newTab(entry) },
+      fav && { sep: true },
+      fav
     ];
   }
   C.add('#menu button.app', (el) => rowItems(el, el.dataset.entryUrl, !!el.title), { touch: true });
   C.add('#menu .menu-cat[data-page]', (el) => {
     const pages = (window.__hubFly && window.__hubFly.catPages) || {};
-    return rowItems(el, pages[el.dataset.cat] || '', false);
+    return rowItems(el, pages[el.dataset.cat] || '', false, true);
   }, { touch: true });
   C.add('.fly-app', (el) => rowItems(el, el.dataset.entryUrl || '', el.dataset.newTab === '1'), { touch: true });
 })();

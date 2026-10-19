@@ -15,7 +15,7 @@
  * skips waiting and claims open pages; hub_update.js then reloads them once (no stale shell).
  * Release: bump CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const CACHE = 'hub-shell-v39';  // 2026-10-19o: Hub on-screen keyboard (hub/osk/)
+const CACHE = 'hub-shell-v40';  // 2026-10-19p: R11 OSK drag / undock, edge-snap setting, favorites
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',
@@ -25,7 +25,7 @@ const SHELL = [
   'hub/hub_notify.js', 'hub/hub_viewer.js', 'hub/hub_viewer_pdf.js', 'hub/hub_pointer.js', 'hub/hub_receive.js',
   'hub/hub_role.js', 'hub/hub_remote.js', 'shared/link/link_scan.js',
   'hub/hub-controller.js', 'hub/hub_link.js', 'hub/hub_linkstate.js', 'hub/hub_chat.js', 'hub/hub_chat.css', 'shared/link/link_chat.js', 'hub/hub-gamebar.js',
-  'hub/controller/kb_common.js', 'hub/osk/osk_layout.js', 'hub/osk/osk_board.js', 'hub/osk/osk.js', 'hub/osk/osk.css',
+  'hub/controller/kb_common.js', 'hub/osk/osk_layout.js', 'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js', 'hub/osk/osk.css', 'shared/favorites/favorites.js',
   'shared/link/link_core.js', 'shared/link/link_devices.js', 'shared/link/link_files.js', 'shared/link/link_ui.js', 'shared/link/link.css',
   'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', 'shared/vendor/qrcode.js',
   'shared/image/hub_icon_192.png', 'shared/image/hub_icon_512.png',

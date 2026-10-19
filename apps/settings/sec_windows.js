@@ -3,6 +3,9 @@
  *   'hoverFocus'   Focus window on hover: '1' = on (default off). Pointing at a window for a
  *                  moment brings it to the front (hub/wm_windows.js; never while dragging,
  *                  resizing or with a menu open).
+ *   'snapEdges'    Snap windows to screen edges: '0' = off (default on). Dragging a window by its
+ *                  title bar to the left / right / top edge snaps it (hub/wm_snap.js); the floating
+ *                  on-screen keyboard snaps the same way (hub/osk/osk_drag.js). Ctrl+Alt+arrows always work.
  *   'workspaces'   '1' = one workspace (taskbar switcher hidden, all windows on 1); empty = 2
  *                  (default; hub/wm_workspaces.js).
  *   'titleH'       window title bar Slim 24 / Normal 28 / Large 34 px (moved here from Sizes,
@@ -18,6 +21,8 @@
     render(pane) {
       const hover = ui.switch('Focus window on hover', 'Point at a window for a moment to bring it to the front',
         S.get('hoverFocus') === '1', (on) => S.set('hoverFocus', on ? '1' : ''));
+      const snap = ui.switch('Snap windows to screen edges', 'Drag a window to the left / right edge for half the screen, to the top to maximise',
+        S.get('snapEdges') !== '0', (on) => S.set('snapEdges', on ? '' : '0'));
       const ws = ui.choice([
         { value: 1, label: '1', hint: 'One desktop' },
         { value: 2, label: '2', hint: 'Switch with 1 2 on the taskbar' }
@@ -32,7 +37,7 @@
         { value: 'single', label: 'Single click', hint: 'Click opens; Ctrl / Shift / the round check select' }
       ], S.get('filesClick', 'double'), (v) => S.set('filesClick', v === 'double' ? '' : v));
       files.classList.add('seg-col');
-      pane.append(ui.title('Focus'), hover, ui.title('Workspaces'), ws, ui.title('Title bar'), title,
+      pane.append(ui.title('Focus'), hover, ui.title('Snapping'), snap, ui.title('Workspaces'), ws, ui.title('Title bar'), title,
         ui.title('Files: open items with'), files,
         ui.note('Window options work in Desktop mode. Changes show at once. Snap a window by dragging it to a screen edge, or Ctrl+Alt+arrows.'));
     }

@@ -13,6 +13,7 @@
  * - Clicking an app opens it like a category-page tile (window.__hubFly.openFromCat in hub.js).
  *   Shift+click / middle-click = a new window of it (Desktop mode instances).
  * - Clicking the category row itself still opens its category page (hub.js, unchanged).
+ * - Favorite: your own favorites (shared/favorites/favorites.js) are added under "My favorites".
  * - Touch / pen / phones: nothing here runs — only when (hover:hover) and (pointer:fine) match
  *   AND the event's pointerType is 'mouse'. A tap stays a tap.
  * - Keyboard / D-pad: untouched (hub.js menuKey); any key press just hides the flyout.
@@ -74,6 +75,21 @@
     return csvCache[cat];
   }
 
+  /** Favorite category: the CSV apps + your own (shared/favorites/favorites.js) under "My favorites". */
+  const FAV_CAT = 'Favorite';
+  function withFavorites(cat, list) {
+    const F = window.HubFavorites;
+    if (cat !== FAV_CAT || !F) return list;
+    const base = list || [];
+    const mine = F.list().filter((f) => !base.some((a) => a.entryUrl === f.path)).map((f) => ({
+      name: f.name, entryUrl: f.path, newTab: !!f.newTab, section: 'My favorites',
+      icon: f.icon || window.TilesCsv.defaultIcon(f.path)
+    }));
+    return mine.length ? base.concat(mine) : list;
+  }
+  // a change while the Favorite flyout is open: draw it again
+  window.addEventListener('hub-favorites', () => { if (curRow && catOf(curRow) === FAV_CAT && !fly.hidden) show(curRow); });
+
   function item(cat, a) {
     const b = document.createElement('button');
     b.type = 'button';
@@ -124,8 +140,9 @@
     curRow = row;
     row.classList.add('fly-on');
     anchor = null; graceTries = 0;
-    loadCat(cat).then((list) => {
+    loadCat(cat).then((csvList) => {
       if (curRow !== row || !menu.classList.contains('open')) return;
+      const list = withFavorites(cat, csvList);
       fly.replaceChildren();
       const head = document.createElement('div');
       head.className = 'fly-head';

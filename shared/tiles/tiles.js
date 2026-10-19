@@ -15,6 +15,9 @@
  * Also loaded by hub.html (no #grid there): it then only shares the reader as
  * window.TilesCsv = { parse, groups, defaultIcon } for the Hub menu flyout (hub/hub_flyout.js).
  *
+ * Favorite page (data-csv favorite-apps.csv): also your own favorites from localStorage
+ * 'sites-hub.favorites' (shared/favorites/favorites.js) under "My favorites", redrawn on change.
+ *
  * In a Desktop-mode Hub window a tile click posts {type:'hub-open-app', url, name, newInstance}
  * to the Hub (hub.js) so the app gets its own window; Phone mode keeps the plain link.
  */
@@ -55,6 +58,24 @@
   }
   window.TilesCsv = { parse: parse, groups: groups, defaultIcon: defaultIcon };
   if (!grid) return;   // Hub page: reader only, no tiles grid
+
+  // Favorite page: your own favorites ("Add to Favorites", shared/favorites/favorites.js) are
+  // added under "My favorites"; paths there are from the site root (two folders up from here).
+  const me = document.currentScript;
+  const ROOT = new URL('../../', (me && me.src) || location.href).href;
+  const FAV_KEY = 'sites-hub.favorites';
+  const isFavPage = /(^|\/)favorite-apps\.csv$/.test(document.body.dataset.csv || '');
+  function myFavorites(csvList) {
+    if (!isFavPage) return [];
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch (_) { list = []; }
+    if (!Array.isArray(list)) return [];
+    const have = new Set(csvList.map((a) => new URL(a.path, location.href).href));
+    return list.filter((f) => f && f.name && f.path).map((f) => ({
+      name: String(f.name), path: new URL(f.path, ROOT).href, icon: f.icon ? new URL(f.icon, ROOT).href : '',
+      newTab: !!f.newTab, section: 'My favorites'
+    })).filter((a) => !have.has(a.path));
+  }
 
   /** This page runs in a Hub window in Desktop mode (same-origin parent with HubWM). */
   function hubDesktop() {
@@ -102,8 +123,11 @@
     grid.replaceChildren(...out);
   }
   const CSV = document.body.dataset.csv || 'apps.csv';
+  let csvApps = [];
+  const draw = () => render(csvApps.concat(myFavorites(csvApps)));
+  if (isFavPage) window.addEventListener('storage', (e) => { if (e.key === FAV_KEY) draw(); });
   fetch(CSV, { cache: 'no-cache' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
-    .then((t) => render(parse(t)))
+    .then((t) => { csvApps = parse(t); draw(); })
     .catch(() => { msg.hidden = false; msg.textContent = 'Could not load ' + CSV + ' (open this page over http, not file://).'; });
 })();

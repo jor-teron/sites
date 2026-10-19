@@ -4,6 +4,9 @@
  *   to the top edge → maximised. A translucent preview (#wm-snap-pv, wm.css) shows where
  *   it will land while dragging; letting go elsewhere just moves it.
  * - Dragging a snapped / maximised window away gives back its size from before (wm_windows.js).
+ * - Settings → Windows "Snap windows to screen edges" (sites-hub.snapEdges '0' = off,
+ *   html.hub-snap-off via hub_prefs.js) turns the edge snapping off; the keys below still work.
+ * - The desk ends above the docked on-screen keyboard (hub/osk/), so its edge is the keyboard's top.
  * - Keys (also while a same-origin app has focus, via window.__hubWmKey):
  *     Ctrl+Alt+← / →  or  Super(Meta)+← / →   snap the focused window left / right
  *     Ctrl+Alt+↑      or  Super+↑             maximise
@@ -28,6 +31,7 @@
 
   /** Where would the window land with the pointer at ev? 'l' | 'r' | 'max' | '' */
   function zoneAt(ev) {
+    if (document.documentElement.classList.contains('hub-snap-off')) return '';   // Settings → Windows
     const d = desk.getBoundingClientRect();
     if (ev.clientY <= d.top + EDGE) return 'max';
     if (ev.clientX <= d.left + EDGE) return 'l';
