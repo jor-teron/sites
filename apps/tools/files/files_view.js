@@ -125,6 +125,7 @@
     if (it && !e.target.closest('.chk') && lastPointer === 'mouse') FX.act.open(entryOf(it));
   });
   list.addEventListener('contextmenu', (e) => {
+    if (e.shiftKey) return;   // Shift + right-click = the browser's own menu
     e.preventDefault();
     const it = e.target.closest('.item');
     if (it) { if (!st.sel.has(it.dataset.name)) pick(it.dataset.name, 'one'); FX.menu.forItems(e.clientX, e.clientY); }

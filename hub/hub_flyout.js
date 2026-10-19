@@ -78,6 +78,8 @@
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'fly-app';
+    b.dataset.entryUrl = a.entryUrl;                 // right-click menu (hub_ctx_menus.js)
+    if (a.newTab) b.dataset.newTab = '1';
     b.setAttribute('role', 'menuitem');
     b.tabIndex = -1;   // keyboard stays in the main menu (hub.js)
     const img = document.createElement('img');

@@ -12,6 +12,8 @@
  * - Minimised windows keep running (iframe stays loaded, only hidden); the taskbar
  *   (wm_taskbar.js) lists every window.
  * - Jelly open animation (none with prefers-reduced-motion). Look in wm.css.
+ * - Right-click / long-press on the title bar: New window, Minimise, Maximise / Restore, Close
+ *   (shared menu via hub_ctx.js); every same-origin app gets the in-app menu injected on load.
  *
  * API window.HubWM: open({key, name, icon, url, app, newInstance}), focus(w), minimise(w), restore(w),
  *   toggleMax(w), close(w), closeAll(), minimiseAll(), focusActive(), list(), active,
@@ -251,13 +253,14 @@
     maxB.addEventListener('click', () => toggleMax(w));
     closeB.addEventListener('click', () => close(w));
     bar.addEventListener('dblclick', (e) => { if (!e.target.closest('.wm-btn, .gb-btn')) toggleMax(w); });
+    w.bar = bar;
     // (hub-gamebar.js loads after hub.js; a window restored at start-up attaches once the page is parsed)
     const attachGb = () => { if (!w.gb && window.__hubGamebarAttach && wins.includes(w)) w.gb = window.__hubGamebarAttach(frame, gbSlot); };
     if (window.__hubGamebarAttach) setTimeout(attachGb, 0);
     else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attachGb, { once: true });
     el.addEventListener('pointerdown', () => { if (active !== w) focus(w); }, true);
     el.addEventListener('animationend', () => el.classList.remove('wm-pop'));
-    frame.addEventListener('load', () => hookFrame(w));
+    frame.addEventListener('load', () => { hookFrame(w); if (window.__hubInjectCtx) window.__hubInjectCtx(frame); });
 
     // Move by the title bar (a maximised window un-maximises under the pointer first)
     let start = null;
@@ -333,6 +336,22 @@
       return wins.length > 0;
     }
   };
+
+  // Right-click / long-press on a title bar (hub_ctx.js): New window, Minimise, Maximise / Restore, Close
+  if (window.HubCtx) {
+    window.HubCtx.add('.wm-bar', (bar) => {
+      const w = wins.find((x) => x.bar === bar);
+      if (!w) return null;
+      return [
+        { label: 'New window', icon: '\u29C9', action: () => open({ key: w.key, name: w.baseName || w.name, icon: w.icon, url: w.url, app: w.app, newInstance: true }) },
+        { sep: true },
+        { label: 'Minimise', icon: '\u2013', action: () => minimise(w) },
+        { label: w.max ? 'Restore' : 'Maximise', icon: w.max ? '\u2750' : '\u25A2', action: () => toggleMax(w) },
+        { sep: true },
+        { label: 'Close', icon: '\u00D7', danger: true, action: () => close(w) }
+      ];
+    }, { touch: true });
+  }
 
   window.__hubAppFrame = () => (isDesk() ? (active ? active.frame : null) : appFrame);
   window.__hubAppFrames = () => [appFrame].concat(wins.map((w) => w.frame)).filter(Boolean);

@@ -1,10 +1,11 @@
 /*
  * Context menu look (shared/ctxmenu/ctxmenu.css) for shared/ctxmenu/ctxmenu.js.
  * Own colours (--ctx-*), the page's --accent for the focused row. Big rows, jelly pop.
+ * Top-most z-index: it opens over Hub windows and over any app it is injected into.
  */
 .ctx {
   --ctx-bg: #1b1f28; --ctx-line: rgba(255,255,255,.1); --ctx-text: #e8eaed; --ctx-muted: #9aa0a6; --ctx-bad: #f87171;
-  position: fixed; z-index: 1900; min-width: 210px; max-width: min(320px, calc(100vw - 8px)); max-height: calc(100vh - 8px);
+  position: fixed; z-index: 2147483000; min-width: 210px; max-width: min(320px, calc(100vw - 8px)); max-height: calc(100vh - 8px);
   overflow-y: auto; padding: 5px; border-radius: 14px; background: var(--ctx-bg); color: var(--ctx-text);
   border: 1px solid var(--ctx-line); box-shadow: 0 14px 36px rgba(0,0,0,.45);
   font: 14px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -15,6 +16,7 @@
 .ctx-item:hover, .ctx-item:focus-visible, .ctx-item:focus { background: color-mix(in srgb, var(--accent, #6ea8fe) 24%, transparent); outline: none; }
 .ctx-item:disabled { opacity: .4; cursor: default; background: transparent; }
 .ctx-item.danger { color: var(--ctx-bad); }
+.ctx-item, .ctx { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .ctx-ico { width: 20px; text-align: center; flex: none; }
 .ctx-label { flex: 1; }
 .ctx-hint { color: var(--ctx-muted); font-size: 12px; }

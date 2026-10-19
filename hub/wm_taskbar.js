@@ -12,8 +12,11 @@
  *   window in between forgets the list (like any OS).
  * - One button per open window (HubWM.list()): click = focus / restore, or minimise when it is
  *   already the active window. Active window highlighted, minimised ones dimmed.
- *   Right-click = small menu: New window (another instance), Minimise / Restore, Close.
+ *   Right-click / long-press = menu: New window (another instance), Minimise / Restore, Close.
  *   Middle-click = New window.
+ * - Right-click menus (shared look, hub_ctx.js; they open above the bar, or below it when the
+ *   taskbar is at the top): Start → Settings, Files, About; empty bar → Show desktop,
+ *   Taskbar at top / bottom, Settings; app button → the menu above.
  * - Tray on the right: the old top bar's right side (.header-right: Pooh Chat, the
  *   Devices / SharedLink button with its device count, version) is MOVED here in Desktop
  *   mode and moved back to the top bar in Phone mode (same elements, so their own scripts
@@ -127,7 +130,7 @@
   let shown = null;   // { wins: [windows that were visible, by z], active } while the desktop is shown
   function setShown(v) { shown = v; showDesk.classList.toggle('on', !!v); showDesk.setAttribute('aria-pressed', v ? 'true' : 'false'); }
   showDesk.addEventListener('click', () => {
-    closeCtx();
+    if (window.CtxMenu) CtxMenu.close();
     if (menu.classList.contains('open')) catBtn.click();
     const all = HubWM.list();
     if (shown) {
@@ -145,38 +148,53 @@
   });
   window.addEventListener('hub-wm-change', () => { if (shown && HubWM.list().some((w) => !w.min)) setShown(null); });
 
-  // Task button menu (right-click): New window / Minimise-Restore / Close
-  const ctx = document.createElement('div');
-  ctx.className = 'wm-ctx';
-  ctx.setAttribute('role', 'menu');
-  ctx.hidden = true;
-  document.body.appendChild(ctx);
-  function closeCtx() { ctx.hidden = true; ctx.replaceChildren(); }
+  // Right-click menus (hub_ctx.js + shared/ctxmenu): anchored to the bar, above it (bottom) / below it (top)
+  const taskOf = new WeakMap();   // task button → window
   function newWindow(w) {
     HubWM.open({ key: w.key, name: w.baseName || w.name, icon: w.icon, url: w.url, app: w.app, newInstance: true });
   }
-  function openCtx(w, b) {
-    const item = (text, fn) => {
-      const i = document.createElement('button');
-      i.type = 'button'; i.setAttribute('role', 'menuitem'); i.textContent = text;
-      i.addEventListener('click', (e) => { e.stopPropagation(); closeCtx(); fn(); });
-      return i;
-    };
-    ctx.replaceChildren(
-      item('New window', () => newWindow(w)),
-      item(w.min ? 'Restore' : 'Minimise', () => (w.min ? HubWM.focus(w) : HubWM.minimise(w))),
-      item('Close', () => HubWM.close(w)));
-    ctx.hidden = false;
-    const r = b.getBoundingClientRect(), cw = ctx.offsetWidth;
-    ctx.style.left = Math.max(4, Math.min(r.left, innerWidth - cw - 4)) + 'px';
-    if (r.top < innerHeight / 2) { ctx.style.top = (r.bottom + 6) + 'px'; ctx.style.bottom = 'auto'; }   // taskbar at the top: open down
-    else { ctx.style.bottom = (innerHeight - r.top + 6) + 'px'; ctx.style.top = 'auto'; }
-    const first = ctx.querySelector('button');
-    if (first) first.focus();
+  /** Anchor a menu to el's column, just outside the bar (above it, or below it at the top). */
+  const at = (list, el) => {
+    const r = el.getBoundingClientRect(), br = bar.getBoundingClientRect();
+    list.opts = { anchor: { left: r.left, right: r.right, top: br.top, bottom: br.bottom } };
+    return list;
+  };
+  const C = window.HubCtx;
+  if (C) {
+    C.add('.wm-task', (b) => {
+      const w = taskOf.get(b);
+      if (!w) return null;
+      return at([
+        { label: 'New window', icon: '\u29C9', action: () => newWindow(w) },
+        { label: w.min ? 'Restore' : 'Minimise', icon: w.min ? '\u2750' : '\u2013', action: () => (w.min ? HubWM.focus(w) : HubWM.minimise(w)) },
+        { sep: true },
+        { label: 'Close', icon: '\u00D7', danger: true, action: () => HubWM.close(w) }
+      ], b);
+    }, { touch: true });
+    C.add('#wm-start', (b) => at([
+      { label: 'Settings', icon: '\u2699', action: () => C.openApp(C.SETTINGS) },
+      { label: 'Files', icon: '\uD83D\uDCC2', action: () => C.openApp(C.FILES) },
+      { sep: true },
+      { label: 'About', icon: '\u2139', action: () => C.openApp(C.SETTINGS, { hash: 'about' }) }
+    ], b), { touch: true });
+    C.add('#wm-taskbar', (b, e) => {
+      if (e.target.closest && e.target.closest('.header-right button, .header-right a, .wm-tray input')) return null;
+      const top = document.documentElement.classList.contains('hub-task-top');
+      const shown = showDesk.getAttribute('aria-pressed') === 'true';
+      const list = [
+        { label: shown ? 'Restore windows' : 'Show desktop', icon: '\uD83D\uDDA5', disabled: !HubWM.list().length, action: () => showDesk.click() },
+        { label: top ? 'Taskbar at the bottom' : 'Taskbar at the top', icon: top ? '\u2193' : '\u2191', action: () => {
+          try { if (top) localStorage.removeItem('sites-hub.taskPos'); else localStorage.setItem('sites-hub.taskPos', 'top'); } catch (_) { return; }
+          if (window.HubPrefs) HubPrefs.apply();
+        } },
+        { sep: true },
+        { label: 'Settings', icon: '\u2699', action: () => C.openApp(C.SETTINGS) }
+      ];
+      const br = bar.getBoundingClientRect();
+      list.opts = { anchor: { left: e.clientX, right: e.clientX, top: br.top, bottom: br.bottom } };
+      return list;
+    }, { touch: true });
   }
-  document.addEventListener('pointerdown', (e) => { if (!ctx.hidden && !ctx.contains(e.target)) closeCtx(); }, true);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !ctx.hidden) closeCtx(); });
-  window.addEventListener('blur', closeCtx);
 
   function draw() {
     const act = HubWM.active;
@@ -196,7 +214,7 @@
         if (w === HubWM.active && !w.min) HubWM.minimise(w);
         else HubWM.focus(w);
       });
-      b.addEventListener('contextmenu', (e) => { e.preventDefault(); openCtx(w, b); });
+      taskOf.set(b, w);
       b.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });
       b.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); newWindow(w); } });
       return b;

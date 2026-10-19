@@ -1,11 +1,17 @@
 /*
- * Context menu (shared/ctxmenu/ctxmenu.js + ctxmenu.css) — a small reusable right-click /
- * long-press menu (Files app now, the rest of the Hub later). Big rows, jelly pop, kept on
- * screen, keyboard: ↑ ↓ Home End to move, Enter / Space to run, Esc / Tab / click outside closes.
+ * Context menu (shared/ctxmenu/ctxmenu.js + ctxmenu.css) — the one reusable right-click /
+ * long-press menu of the site (Files app, the Hub chrome via hub/hub_ctx.js, and every
+ * same-origin app inside the Hub via ctx_in_app.js). Big rows, jelly pop, keyboard: ↑ ↓ Home End
+ * to move, Enter / Space to run, Esc / Tab / click outside / window blur closes.
+ * Placement: opens right / below the point and FLIPS to the left / above near an edge, kept
+ * inside CtxMenu.bounds() (default: the viewport; the Hub leaves out its taskbar).
  *
  * API window.CtxMenu:
- *   open(x, y, items)   items: [{ label, icon?, hint?, disabled?, danger?, action() } | { sep: true }]
+ *   open(x, y, items, opts?)  items: [{ label, icon?, hint?, disabled?, danger?, action() } | { sep: true }]
+ *                             (null / false items are skipped); opts.anchor = a DOMRect to open
+ *                             below (or above, when there is no room) instead of at x, y
  *   close(), isOpen()
+ *   bounds                    function → {left, top, right, bottom}; replace to keep menus off chrome
  *   longPress(el, fn(e, x, y), ms = 500)   touch / pen hold on el → fn (a moved finger cancels);
  *                                           the click that follows a long press is swallowed
  */
@@ -43,7 +49,7 @@ window.CtxMenu = (function () {
     e.preventDefault(); e.stopPropagation();
   }
 
-  function open(x, y, items) {
+  function open(x, y, items, opts) {
     close();
     restore = document.activeElement;
     menu = document.createElement('div');
@@ -69,10 +75,33 @@ window.CtxMenu = (function () {
       if (c.className === 'ctx-sep' && (i === 0 || i === a.length - 1 || (a[i - 1] && a[i - 1].className === 'ctx-sep'))) c.remove();
     });
     document.body.appendChild(menu);
-    const w = menu.offsetWidth, h = menu.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
-    menu.style.left = Math.max(4, Math.min(x, vw - w - 4)) + 'px';
-    menu.style.top = Math.max(4, y + h > vh - 4 ? Math.max(4, y - h) : y) + 'px';
-    menu.style.transformOrigin = (x + w > vw ? 'right' : 'left') + ' ' + (y + h > vh ? 'bottom' : 'top');
+    const w = menu.offsetWidth, h = menu.offsetHeight;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    let b = null;
+    try { b = api.bounds && api.bounds(); } catch (_) { b = null; }
+    if (!b) b = { left: 0, top: 0, right: vw, bottom: vh };
+    const a = opts && opts.anchor;
+    let left, top, flipX = false, flipY = false;
+    if (a) {
+      // beside an element (e.g. a taskbar button): below it, else above it; the whole viewport
+      left = a.left;
+      if (left + w > vw - 4) { left = a.right - w; flipX = true; }
+      if (a.bottom + 4 + h <= vh - 4) top = a.bottom + 4;
+      else { top = a.top - 4 - h; flipY = true; }
+      left = Math.max(4, Math.min(left, vw - w - 4));
+      top = Math.max(4, Math.min(top, vh - h - 4));
+    } else {
+      const L = b.left + 4, T = b.top + 4, R = b.right - 4, B = b.bottom - 4;
+      left = x; top = y;
+      if (left + w > R) { left = x - w; flipX = true; }      // flip near the right edge
+      if (top + h > B) { top = y - h; flipY = true; }        // flip near the bottom (or the taskbar)
+      left = Math.max(L, Math.min(left, R - w));
+      top = Math.max(T, Math.min(top, B - h));
+      if (top < 4) top = 4;
+    }
+    menu.style.left = Math.round(left) + 'px';
+    menu.style.top = Math.round(top) + 'px';
+    menu.style.transformOrigin = (flipX ? 'right' : 'left') + ' ' + (flipY ? 'bottom' : 'top');
     document.addEventListener('pointerdown', outside, true);
     document.addEventListener('keydown', key, true);
     window.addEventListener('blur', close);
@@ -97,5 +126,6 @@ window.CtxMenu = (function () {
     el.addEventListener('contextmenu', (e) => { if (fired || t) e.preventDefault(); });
   }
 
-  return { open, close, isOpen: () => !!menu, longPress };
+  const api = { open, close, isOpen: () => !!menu, longPress, bounds: null };
+  return api;
 })();

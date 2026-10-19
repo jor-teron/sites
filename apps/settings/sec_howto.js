@@ -41,6 +41,19 @@
           to get the same windows back.</li>
         <li>On the right: Pooh Chat, the devices button, the Hub version and the clock.</li>
       </ul>` },
+    { t: 'Right-click menu', h: `
+      <p>Right-click (or press and hold on a phone) for the Hub's own menu:</p>
+      <ul>
+        <li><b>Desktop</b>: Show desktop, Open Files, Wallpaper, Refresh, Close all windows, About.</li>
+        <li><b>Taskbar</b>: Show desktop, taskbar at the top or bottom, Settings. On an app button: New window,
+          Minimise, Close. On Start: Settings, Files, About.</li>
+        <li><b>Title bar</b>: New window, Minimise, Maximise / Restore, Close.</li>
+        <li><b>Menu rows, tiles and drives</b>: Open, Open in new window, Open in new tab (tiles also Copy link;
+          drives Allow access / Remove).</li>
+        <li><b>Inside an app</b>: Back, Reload app, Copy, Select all; in a text box Cut, Copy, Paste, Select all.
+          Files has its own menu.</li>
+        <li>Hold <b>Shift</b> while right-clicking to get the browser's own menu.</li>
+      </ul>` },
     { t: 'More than one copy of an app', h: `
       <p>Clicking an app that is already open just brings its window forward. To open another copy:</p>
       <ul>

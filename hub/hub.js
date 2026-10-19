@@ -328,15 +328,22 @@
       return;
     }
     const id = appIdFor(app.entryUrl);
+    // opts.hash: open the app on that #hash (e.g. Settings #about; hub_ctx_menus.js); an app that
+    // is already open just moves to it
+    const hash = opts.hash ? '#' + String(opts.hash).replace(/^#/, '') : '';
+    const toHash = (f) => { try { if (hash && f.contentWindow.location.hash !== hash) f.contentWindow.location.hash = hash; } catch (_) { /* cross-origin */ } };
     if (wmOn()) {   // Desktop mode: own window (focuses the existing one; opts.newInstance = another); hash via HubWM.onActive
       setOpen(false);
-      window.HubWM.open({ key: app.entryUrl, name: app.name, icon: iconFor(app), url: frameUrlFor(app.entryUrl), app, newInstance: !!opts.newInstance });
+      const had = !opts.newInstance && window.HubWM.list().some((x) => x.key === app.entryUrl);
+      const w = window.HubWM.open({ key: app.entryUrl, name: app.name, icon: iconFor(app), url: frameUrlFor(app.entryUrl) + hash, app, newInstance: !!opts.newInstance });
+      if (had && w) toHash(w.frame);
       return;
     }
     if (!opts.forceFrame) setFromCat('');
     if (!opts.fromHistory) setHash(id, !opts.replaceHash);
     storageSet(id);
-    if (currentEntry !== app.entryUrl || opts.reload) navigateFrame(frameUrlFor(app.entryUrl));
+    if (currentEntry !== app.entryUrl || opts.reload) navigateFrame(frameUrlFor(app.entryUrl) + hash);
+    else toHash(frame);
     currentEntry = app.entryUrl;
     empty.classList.add('hidden');
     setOpen(false);
@@ -718,6 +725,7 @@
   frame.addEventListener('load', () => {
     hookFrameKeys();
     trackFrame();
+    if (window.__hubInjectCtx) window.__hubInjectCtx(frame);   // our right-click menu inside the app (hub_ctx.js)
     try {
       const doc = frame.contentDocument;
       // Hide scrollbars only (scrolling by touch / wheel / D-pad still works); once per doc.
@@ -791,16 +799,17 @@
    *  the hub's pairing code (hub-controller.js), so it matches the gamepad icon's QR. */
   function qrTile(t) {
     const tile = document.createElement('div');
-    tile.className = 'tile tile-qr';
+    tile.className = 'tile tile-qr';   // data-link = the QR's link (right-click menu: hub_ctx_menus.js)
     const box = document.createElement('div');
     box.className = 'tile-qr-box';
     if (parseFlag(t.pair)) {
       // Connect QR: hub.html?join=CODE (phone remote Hub: the code it is joined to, hub_remote.js)
       drawQr(box, window.HubCtrlLink ? window.HubCtrlLink.connectUrl : '');
+      tile.dataset.link = (window.HubCtrlLink && window.HubCtrlLink.connectUrl) || '';
       let last = '';
       window.addEventListener('hub-ctrl-link', (e) => {
         const url = (e.detail && e.detail.connectUrl) || '';
-        if (url && url !== last) { last = url; drawQr(box, url); }
+        if (url && url !== last) { last = url; drawQr(box, url); tile.dataset.link = url; }
       });
       // Connected devices (SharedLink) under the Gamepad QR: name + green online dot
       setTimeout(() => {   // link_ui.js loads after hub.js
@@ -812,6 +821,7 @@
       }, 0);
     } else {
       drawQr(box, hubUrl());
+      tile.dataset.link = hubUrl();
     }
     const label = document.createElement('span');
     label.className = 'tile-label';
@@ -842,6 +852,8 @@
     btn.type = 'button';
     btn.className = 'tile tile-app';
     btn.dataset.entryUrl = entryUrl;
+    if (app.newTab) btn.dataset.newTab = '1';
+    if (parseFlag(t.pair)) btn.dataset.pair = '1';
     if (!known) registerApp(app);    // tile-only app: still gets a hash id
     const img = document.createElement('img');
     img.className = 'tile-icon';
@@ -880,6 +892,8 @@
   }
 
   window.__hubFocusFrame = focusFrame;
+  // hub_ctx_menus.js: an app's page url (Open in new tab / Copy link)
+  window.__hubFrameUrl = (entry) => frameUrlFor(normalizeEntryUrl(entry) || entry);
   window.__hubGoHome = goHome;
   // hub_link.js: "Open in…" a receiver app — the frame in Phone mode; in Desktop mode that
   // app's window (opened or focused), which then is the focused window the file goes to.
