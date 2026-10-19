@@ -32,6 +32,13 @@ html, body {
   background: #FFD700;
   clip-path: polygon(100% 25%, 50% 50%, 100% 75%, 50% 100%, 0 100%, 0 0, 50% 0);
 }
+#hud .pause-btn {
+  padding: 0 8px; min-width: 28px;
+  background: transparent; color: #FFD700;
+  border: 1px solid #FFD700; border-radius: 4px;
+  font-family: inherit; font-size: 12px; cursor: pointer;
+}
+#hud .pause-btn.hidden { visibility: hidden; }     /* keeps the HUD layout steady on START / GAME OVER */
 #stage {
   flex: 1 1 auto;
   position: relative;
@@ -66,4 +73,5 @@ canvas {
   font-weight: bold; cursor: pointer;
   letter-spacing: 2px;
 }
+#overlay p.hint { font-size: 11px; color: #888; }
 #overlay button:active { transform: scale(0.96); }
