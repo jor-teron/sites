@@ -6,6 +6,9 @@
  *   'snapEdges'    Snap windows to screen edges: '0' = off (default on). Dragging a window by its
  *                  title bar to the left / right / top edge snaps it (hub/wm_snap.js); the floating
  *                  on-screen keyboard snaps the same way (hub/osk/osk_drag.js). Ctrl+Alt+arrows always work.
+ *   'snapMagnet'   Magnetic edges: '0' = off (default on). A dragged / resized window sticks flush to
+ *                  the screen edges and to other windows' edges within 14 px (hub/wm_snap.js; also the
+ *                  floating keyboard). Hold Alt or Shift while dragging to skip it once.
  *   'workspaces'   '1' = one workspace (taskbar switcher hidden, all windows on 1); empty = 2
  *                  (default; hub/wm_workspaces.js).
  *   'titleH'       window title bar Slim 24 / Normal 28 / Large 34 px (moved here from Sizes,
@@ -25,6 +28,8 @@
         S.get('hoverFocus') === '1', (on) => S.set('hoverFocus', on ? '1' : ''));
       const snap = ui.switch('Snap windows to screen edges', 'Drag a window to the left / right edge for half the screen, to the top to maximise',
         S.get('snapEdges') !== '0', (on) => S.set('snapEdges', on ? '' : '0'));
+      const magnet = ui.switch('Magnetic edges', 'Windows stick to screen edges and to each other when close; hold Alt or Shift to skip',
+        S.get('snapMagnet') !== '0', (on) => S.set('snapMagnet', on ? '' : '0'));
       const ws = ui.choice([
         { value: 1, label: '1', hint: 'One desktop' },
         { value: 2, label: '2', hint: 'Switch with 1 2 on the taskbar' }
@@ -49,7 +54,7 @@
       const showSize = (pre) => { if (window.ThumbStore) ThumbStore.stats().then((x) => { clrOut.textContent = (pre || '') + x.count + ' saved, ' + sizeText(x.bytes) + ' (up to ' + sizeText(ThumbStore.CAP) + ')'; }); };
       clr.addEventListener('click', () => { if (window.ThumbStore) ThumbStore.clear().then(() => showSize('Cleared. '), () => { clrOut.textContent = 'Could not clear it'; }); });
       showSize();
-      pane.append(ui.title('Focus'), hover, ui.title('Snapping'), snap, ui.title('Workspaces'), ws, ui.title('Title bar'), title,
+      pane.append(ui.title('Focus'), hover, ui.title('Snapping'), snap, magnet, ui.title('Workspaces'), ws, ui.title('Title bar'), title,
         ui.title('Files: open items with'), files, ui.title('Files: thumbnails'), thumbs, clr, clrOut,
         ui.note('Window options work in Desktop mode. Changes show at once. Snap a window by dragging it to a screen edge, or Ctrl+Alt+arrows.'));
     }

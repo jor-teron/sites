@@ -15,7 +15,7 @@
  * skips waiting and claims open pages; hub_update.js then reloads them once (no stale shell).
  * Release: bump CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const CACHE = 'hub-shell-v42';  // 2026-10-19r: R12b Files thumbnails (gdrive_fs thumbnailLink)
+const CACHE = 'hub-shell-v43';  // 2026-10-19s: R13 magnetic window snap, edge-zone fix
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',

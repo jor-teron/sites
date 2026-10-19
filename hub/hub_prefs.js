@@ -15,6 +15,8 @@
  *   sites-hub.hoverFocus '1' = Focus window on hover (default off)       → html.hub-hover-focus
  *   sites-hub.snapEdges  '0' = no snapping to screen edges (default on)  → html.hub-snap-off
  *                        (window drag to edge: wm_snap.js; floating keyboard: hub/osk/osk_drag.js)
+ *   sites-hub.snapMagnet '0' = no magnetic edges (default on)           → html.hub-magnet-off
+ *                        (wm_snap.js HubMagnet: windows + the floating keyboard; R13)
  *   sites-hub.workspaces '1' = one workspace (default 2): read by wm_workspaces.js
  *                        (wm_windows.js reads the class; Settings → Windows)
  *   sites-hub.wmMode / sites-hub.startHover: read by wm_mode.js / wm_taskbar.js; a change made
@@ -48,6 +50,7 @@
     root.classList.toggle('hub-light', get('theme') === 'light');
     root.classList.toggle('hub-hover-focus', get('hoverFocus') === '1');
     root.classList.toggle('hub-snap-off', get('snapEdges') === '0');
+    root.classList.toggle('hub-magnet-off', get('snapMagnet') === '0');
     const mo = get('motion');
     root.classList.toggle('hub-motion-reduced', mo === 'reduced');
     root.classList.toggle('hub-motion-off', mo === 'off');

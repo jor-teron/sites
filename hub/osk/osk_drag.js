@@ -6,6 +6,8 @@
  *   docks again, near the left / right screen edge it snaps to that edge; a translucent preview
  *   (#osk-snap-pv, same look as window snapping) shows where it lands, applied on release.
  *   Edge snapping follows Settings → Windows "Snap windows to screen edges" (html.hub-snap-off).
+ *   Floating, it also sticks flush to the screen edges within 14 px (window.HubMagnet from
+ *   hub/wm_snap.js; "Magnetic edges", html.hub-magnet-off; Alt / Shift held = off).
  * - Dock button → back to the bottom.
  * - Nothing is saved: reset() puts it docked at bottom centre (osk.js calls it on every open).
  * - Dragging never takes focus from the app: pointerdown / mousedown are cancelled, pointer capture.
@@ -93,8 +95,13 @@
       const move = (ev) => {
         x = clampX(ev.clientX - ox);
         if (!docked) y = clampY(ev.clientY - oy);
+        const z = zoneAt(ev), M = window.HubMagnet;
+        if (!docked && !z && M && M.on(ev)) {   // magnetic screen edges (R13, wm_snap.js), same setting as windows
+          const r = M.stick({ x, y, w: W(), h: H() }, M.lines([], { w: window.innerWidth, h: bottomLimit() }));
+          x = clampX(r.x); y = clampY(r.y);
+        }
         paint();
-        showPv(zoneAt(ev));
+        showPv(z);
       };
       const up = (ev) => {
         grip.removeEventListener('pointermove', move);

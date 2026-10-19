@@ -20,7 +20,8 @@
  *   in-app menu injected on load.
  * - Snapping (R10): w.snap = 'l' | 'r' (left / right half, class wm-snap-l / -r in wm.css; w.rect
  *   keeps the size from before, like maximise). Edge detection, preview and the keys live in
- *   wm_snap.js through HubWM.dragHook {move(w, ev), end(w, ev)} and HubWM.setSnap / setMax.
+ *   wm_snap.js through HubWM.dragHook {adjust(w, rect, ev, dir) (magnet, R13), move(w, ev),
+ *   end(w, ev), done(w)} and HubWM.setSnap / setMax.
  *   Dragging a snapped / maximised window away restores its old size under the pointer.
  * - Workspaces (R10): w.ws = 1 | 2; only the current workspace's windows show (others get
  *   wm-off, still loaded and running). HubWM.ws, setWs(n), moveToWs(w, n), wsCount(), onWs(w).
@@ -376,7 +377,10 @@
         start = { x: ev.clientX - dr.left - w.rect.w * ratio - dx, y: ev.clientY - dr.top - 14 - dy, w: w.rect.w, h: w.rect.h };
         changed();
       }
-      setRect(w, start.x + dx, start.y + dy, start.w, start.h);
+      let r = { x: start.x + dx, y: start.y + dy, w: start.w, h: start.h };
+      const dh = HubWM.dragHook;
+      if (dh && dh.adjust) r = dh.adjust(w, r, ev, '') || r;   // magnetic edges (wm_snap.js)
+      setRect(w, r.x, r.y, r.w, r.h);
       hook('move', ev);
     }, (ev) => { if (freed) hook('end', ev); });
 
@@ -393,14 +397,19 @@
           changed();
         }
         r0 = Object.assign({}, w.rect);
-      }, (dx, dy) => {
+      }, (dx, dy, ev) => {
         let { x, y, w: wd, h: ht } = r0;
         if (dir.includes('e')) wd = r0.w + dx;
         if (dir.includes('s')) ht = r0.h + dy;
         if (dir.includes('w')) { wd = Math.max(MIN_W, r0.w - dx); x = r0.x + r0.w - wd; }
         if (dir.includes('n')) { ht = Math.max(MIN_H, r0.h - dy); y = Math.max(0, r0.y + r0.h - ht); ht = r0.y + r0.h - y; }
+        const dh = HubWM.dragHook;
+        if (dh && dh.adjust) {   // magnetic edges: only the dragged side(s) stick
+          const r = dh.adjust(w, { x, y, w: wd, h: ht }, ev, dir);
+          if (r && r.w >= MIN_W && r.h >= MIN_H) ({ x, y, w: wd, h: ht } = r);
+        }
         setRect(w, x, y, wd, ht);
-      });
+      }, () => { const dh = HubWM.dragHook; if (dh && dh.done) dh.done(w); });
     });
 
     // Cascade new windows from the top-left
