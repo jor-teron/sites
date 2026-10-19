@@ -9,7 +9,11 @@
            R4: two panes (inputs left, live results right; compact results bar
            on phone), inputs saved across reloads + Reset, removed the
            "Load whole model" picker and the "official vs ours" line.
-  Date: 2026-10-19 (R4)
+           R5: Export section (model name, user-set file name) + one Download
+           button: <name>.llmcfg.json for the training script and a one-page
+           print/PDF summary; weight decay, grad clip, seed, val fraction,
+           max samples inputs.
+  Date: 2026-10-19 (R5)
 -->
 <html lang="en">
 <head>
@@ -77,6 +81,11 @@
   <div class="field"><label for="batch">Batch per GPU</label><input id="batch" type="number" inputmode="decimal" value="32" step="1" min="1"><button type="button" class="info" data-help="batch" aria-label="About Batch per GPU">ⓘ</button></div>
   <div class="field"><label for="lr">Learning rate (info)</label><input id="lr" type="number" inputmode="decimal" value="0.0003" step="0.0001" min="0"><button type="button" class="info" data-help="lr" aria-label="About Learning rate (info)">ⓘ</button></div>
   <div class="field"><label for="warmup">Warmup steps (info)</label><input id="warmup" type="number" inputmode="decimal" value="100" step="1" min="0"><button type="button" class="info" data-help="warmup" aria-label="About Warmup steps (info)">ⓘ</button></div>
+  <div class="field"><label for="weightDecay">Weight decay</label><input id="weightDecay" type="number" inputmode="decimal" value="0.1" step="0.01" min="0"><button type="button" class="info" data-help="weightDecay" aria-label="About Weight decay">ⓘ</button></div>
+  <div class="field"><label for="gradClip">Grad clip</label><input id="gradClip" type="number" inputmode="decimal" value="1.0" step="0.1" min="0"><button type="button" class="info" data-help="gradClip" aria-label="About Grad clip">ⓘ</button></div>
+  <div class="field"><label for="seed">Seed</label><input id="seed" type="number" inputmode="decimal" value="42" step="1" min="0"><button type="button" class="info" data-help="seed" aria-label="About Seed">ⓘ</button></div>
+  <div class="field"><label for="valFraction">Validation fraction</label><input id="valFraction" type="number" inputmode="decimal" value="0.05" step="0.01" min="0"><button type="button" class="info" data-help="valFraction" aria-label="About Validation fraction">ⓘ</button></div>
+  <div class="field"><label for="maxSamples">Max samples</label><input id="maxSamples" type="number" inputmode="decimal" placeholder="all" step="1" min="1"><button type="button" class="info" data-help="maxSamples" aria-label="About Max samples">ⓘ</button></div>
 </section>
 <section class="card"><h2>Hardware</h2>
   <div class="field"><label for="preset">GPU</label><select id="preset"><option value="T4">T4</option><option value="T4x2">T4 x2</option><option value="P100">P100 (estimate)</option></select><button type="button" class="info" data-help="preset" aria-label="About GPU">ⓘ</button></div>
@@ -90,14 +99,25 @@
   <div class="field"><label for="cSeq">Context</label><input id="cSeq" type="number" inputmode="decimal" value="256" min="0"></div>
   <button type="button" id="cBtn" class="btn">Use this speed</button><p id="cOut" class="note"></p>
 </section>
+<section class="card" id="exportCard"><h2>Export</h2>
+  <div class="field"><label for="modelName">Model name</label><input id="modelName" type="text" value="tiny-v1" autocomplete="off" spellcheck="false"><button type="button" class="info" data-help="modelName" aria-label="About Model name">ⓘ</button></div>
+  <div class="field"><label for="fileName">File name</label><input id="fileName" type="text" value="" placeholder="e.g. tiny-v1" autocomplete="off" spellcheck="false"><button type="button" class="info" data-help="fileName" aria-label="About File name">ⓘ</button></div>
+  <p id="expFiles" class="note"></p>
+  <p id="expNote" class="note"></p>
+  <p id="expErr" class="note bad" role="alert"></p>
+  <button type="button" id="dlBtn" class="btn">Download</button>
+</section>
 <section class="card"><h2>Glossary</h2><dl id="glossary"></dl></section>
 <div class="resetrow"><button type="button" id="resetBtn" class="btn ghost">Reset to defaults</button><p class="note">Your settings are saved in this browser.</p></div>
 </div>
 </main>
+<!-- Print-only one-page summary (filled by llm-calc-export.js) -->
+<section id="printSum" class="printsum" aria-hidden="true"></section>
 <dialog id="help"><h3 id="helpTitle"></h3><p id="helpText"></p><div id="helpList" class="rm" hidden></div><button type="button" id="helpClose" class="btn">Got it</button></dialog>
 <script src="llm-calc-math.js"></script>
 <script src="llm-calc-help.js"></script>
 <script src="llm-calc-examples.js"></script>
 <script src="llm-calc-ui.js"></script>
+<script src="llm-calc-export.js"></script>
 </body>
 </html>

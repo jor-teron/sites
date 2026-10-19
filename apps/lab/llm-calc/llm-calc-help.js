@@ -1,6 +1,6 @@
 /*
  * File: llm-calc-help.js
- * Project: llm-calc (Lab) — R4 2026-10-19 (R2: head size, QKV bias; R4: removed Load whole model text)
+ * Project: llm-calc (Lab) — R5 2026-10-19 (R2: head size, QKV bias; R4: removed Load whole model text; R5: help for export + training-config fields)
  * Purpose: Plain-English help text for every setting (shown by the ⓘ buttons)
  *          and the glossary. Text only, no logic.
  */
@@ -26,6 +26,13 @@ window.LLMCalcHelp = {
   warmup: 'Warmup steps (info only). The learning rate starts near zero and ramps up over these steps, which keeps the start stable. Typically 1–5% of total steps.',
   preset: 'Pick your GPU. It sets the number of GPUs and a typical speed. P100 speed is a rough guess.',
   tps: 'Tokens per second ONE GPU trains. The T4 value (28,000) is calibrated from your real run. Use Calibrate below to set it from a run of your own.',
+  weightDecay: 'Weight decay (saved in the config only — does not change the numbers here). Gently pulls the model\'s numbers toward zero so it does not memorize. Higher: stronger brake on memorizing, can under-learn. Lower: freer learning, more risk of memorizing. 0.1 is the usual value.',
+  gradClip: 'Grad clip (config only). Caps how big one learning step can get, so a single weird batch cannot wreck training. Lower: safer but can slow learning. Higher or 0: fewer limits, more risk of loss spikes. 1.0 is standard.',
+  seed: 'Seed (config only). A starting number for the randomness (shuffling, starting weights). Same seed = the same run again, so results can be compared. Any number works; changing it just gives a slightly different run.',
+  valFraction: 'Validation fraction (config only). Share of the stories kept aside to check the model on text it never trained on. 0.05 = 5%. Higher: a more reliable check but less training data. Lower: more training data, a noisier check.',
+  maxSamples: 'Max samples (config only). Use only the first N stories — handy for a quick test run. Leave empty to use all of them. Lower: much faster, but the model learns less.',
+  modelName: 'Model name written into the config (MODEL_NAME). The training script uses it to name its output. Pick something short like tiny-v1; change it for every new experiment so runs do not overwrite each other.',
+  fileName: 'You choose this. Download saves <name>.llmcfg.json (for the training script) and opens a print page where you tap "Save as PDF" to get <name>.pdf (for people). Characters like / \\ : * ? are removed.',
   calibrate: 'Enter a real finished run: steps, minutes, total batch (all GPUs) and context. It works out the true per-GPU speed and puts it in the speed box.'
 };
 window.LLMCalcGlossary = [

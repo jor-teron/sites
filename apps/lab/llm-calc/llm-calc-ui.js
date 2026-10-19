@@ -1,12 +1,14 @@
 /*
  * File: llm-calc-ui.js
- * Project: llm-calc (Lab) — R4 2026-10-19
+ * Project: llm-calc (Lab) — R5 2026-10-19
  * Purpose: Reads inputs, recomputes on every change, renders results,
  *          handles ⓘ help popups, GPU presets and calibration.
  *          R2: "Real models" tap-to-copy list in each model setting's ⓘ.
  *          R4: every input saved to localStorage ('llm-calc.v1') on change and
  *          restored on load (+ Reset to defaults); compact results bar on
  *          phone; removed "Load whole model" and the official-vs-ours line.
+ *          R5: text inputs (model/file name) saved too; Export lives in
+ *          llm-calc-export.js.
  *          Depends on llm-calc-math.js, llm-calc-help.js, llm-calc-examples.js.
  */
 (function () {
@@ -38,7 +40,7 @@
       const v = o[el.id];
       if (el.type === 'checkbox') { if (typeof v === 'boolean') el.checked = v; }
       else if (el.tagName === 'SELECT') { if (Array.from(el.options).some(op => op.value === v)) el.value = v; }
-      else if (typeof v === 'string' && (v === '' || isFinite(Number(v)))) el.value = v;
+      else if (typeof v === 'string' && (el.type === 'text' || v === '' || isFinite(Number(v)))) el.value = v;
     });
   }
   function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(snapshot())); } catch (e) { /* storage off / full */ } }

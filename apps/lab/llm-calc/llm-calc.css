@@ -1,11 +1,12 @@
 /*
  * File: llm-calc.css
- * Project: llm-calc (Lab) — R4 2026-10-19
+ * Project: llm-calc (Lab) — R5 2026-10-19
  * Purpose: Minimalist styles, big tap targets, jelly press, light/dark.
  *          R2: real-model list in the ⓘ dialog.
  *          R4: two panes (inputs left, sticky results right) from 800px;
  *          compact sticky results bar on phone that expands on tap.
  *          Removed Load whole model + official-check styles.
+ *          R5: Export section, text inputs, @media print one-page A4 summary.
  */
 :root { --bg:#f6f7fb; --card:#fff; --fg:#1d2230; --mute:#6b7280; --acc:#6c5ce7; --bad:#e5484d; --line:#e5e7eb; --jelly:cubic-bezier(.3,1.8,.5,1); }
 @media (prefers-color-scheme: dark) { :root { --bg:#0f1117; --card:#1a1d27; --fg:#e8eaf0; --mute:#9aa3b2; --acc:#a29bfe; --bad:#ff6b6b; --line:#2a2f3c; } }
@@ -71,3 +72,24 @@ dialog[open] { animation:pop .35s cubic-bezier(.3,1.6,.5,1); }
 .field.flash input, .field.flash select { animation:flash .6s ease; }
 @keyframes flash { 30% { box-shadow:0 0 0 3px var(--acc); } }
 @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
+
+/* R5: Export section + print-only summary */
+input[type=text] { width:9.5em; min-height:44px; font-size:1rem; padding:6px 10px; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--fg); }
+#exportCard .btn { width:100%; min-height:52px; font-size:1.05rem; }
+.note:empty { display:none; }
+.printsum { display:none; }
+@media print {
+  @page { size:A4; margin:14mm; }
+  :root { color-scheme:light; }
+  body { background:#fff !important; color:#000 !important; font-size:10.5pt; }
+  body > header, .panes, dialog { display:none !important; }
+  .printsum { display:block; color:#000; }
+  .printsum h1 { font-size:18pt; margin:0 0 2pt; }
+  .printsum h3 { color:#000; font-size:11pt; margin:10pt 0 3pt; }
+  .ps-date { margin:0 0 6pt; color:#333; } .ps-what { margin:0 0 4pt; }
+  .ps-cols { display:grid; grid-template-columns:1fr 1fr; gap:14pt; }
+  .printsum table { font-size:10pt; } .printsum td { border-bottom:1px solid #bbb; padding:2.5pt 0; }
+  .printsum ul { margin:0; padding-left:16pt; }
+  .ps-foot { margin-top:10pt; font-size:9pt; color:#333; }
+  * { animation:none !important; }
+}
