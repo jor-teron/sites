@@ -1,16 +1,37 @@
 /*
- * Settings → About (apps/settings/sec_about.js). Hub version + build and a real
- * "Check for update". Inside the Hub it uses the Hub's own HubUpdate.check (hub/hub_update.js);
- * opened on its own it does the same here: fetch hub.html / hub_config.js fresh (no-store) to read the latest
- * build tag (?v=…) and HUB_VERSION, ask the service worker to update, and if the build is
- * newer than the running Hub, clear the 'hub-shell-*' caches and reload the Hub.
- * Below: the About / Contact / Feedback cards (moved from apps/about/about.html, which now
- * redirects here). Contact / feedback details are still name-only (../about/*.txt).
+ * Settings → About (apps/settings/sec_about.js). A plain About page: what the Hub is,
+ * Credit, Version and Current release (both from hub/version.txt: line 1 'v0.299', line 2
+ * 'YYYY-MM-DD'; '—' when it can't be read), the first Release date, and a real
+ * "Check for update". Inside the Hub that uses the Hub's own updater (HubUpdate.check in
+ * hub/hub_update.js: clears the hub-shell caches and reloads the Hub when a newer build is
+ * live); opened on its own it reads the live hub.html / version.txt and updates the service
+ * worker itself. Contact / Feedback link to the public GitHub repo (no other contact details).
+ * The technical notes that used to be here live in How-to (sec_howto.js).
  */
 (function () {
   'use strict';
   const S = window.SettingsStore, ui = window.Settings.ui;
   const ROOT = '../../';
+  const FIRST_RELEASE = '23 Sep 2026';
+  const REPO = 'https://github.com/jor-teron/sites';
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  /** 'v0.299\n2026-10-19' → { version: 'v0.299', date: '2026-10-19' } (blank when unreadable). */
+  function parseVersion(text) {
+    const l = String(text || '').split(/\r?\n/).map((x) => x.trim());
+    const v = /^v?\d[\w.-]*$/.test(l[0] || '') ? (l[0][0] === 'v' ? l[0] : 'v' + l[0]) : '';
+    return { version: v, date: /^\d{4}-\d{2}-\d{2}$/.test(l[1] || '') ? l[1] : '' };
+  }
+  function readVersion(mode) {
+    return fetch(ROOT + 'hub/version.txt', { cache: mode || 'no-cache' })
+      .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(parseVersion).catch(() => ({ version: '', date: '' }));
+  }
+  /** '2026-10-19' → '19 Oct 2026' ('—' when blank). */
+  function niceDate(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    return m ? +m[3] + ' ' + MONTHS[+m[2] - 1] + ' ' + m[1] : '\u2014';
+  }
 
   /** Build tag (?v=…) of the running Hub page, or '' when Settings is opened on its own. */
   function runningBuild() {
@@ -19,17 +40,15 @@
     const m = s && s.getAttribute('src').match(/\?v=([\w.-]+)/);
     return m ? m[1] : '';
   }
-  function runningVersion() { const h = S.hub(); return (h && h.HUB_VERSION) || ''; }
 
-  async function latest() {
+  async function standaloneCheck() {
     const html = await fetch(ROOT + 'hub.html', { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); });
     const build = (html.match(/hub\/hub\.js\?v=([\w.-]+)/) || [])[1] || '';
-    let version = '';
-    try {
-      const cfg = await fetch(ROOT + 'hub/hub_config.js?v=' + build + '&t=' + Date.now(), { cache: 'no-store' }).then((r) => r.text());
-      version = (cfg.match(/HUB_VERSION\s*=\s*['"]([^'"]+)['"]/) || [])[1] || '';
-    } catch (_) { /* version stays blank */ }
-    return { build, version };
+    const v = await readVersion('no-store');
+    let reg = null;
+    try { reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(ROOT); } catch (_) { /* none */ }
+    if (reg) { try { await reg.update(); } catch (_) { /* offline */ } }
+    return { state: 'current', version: v.version, build };
   }
 
   async function checkUpdate(btn, out) {
@@ -37,106 +56,76 @@
     out.className = 'upd-out';
     out.textContent = 'Checking\u2026';
     const hub = S.hub();
-    if (hub && hub.HubUpdate) {   // the Hub's own updater (hub/hub_update.js): clears caches + reloads the Hub
-      const r = await hub.HubUpdate.check({ manual: true });
-      if (r.state === 'error') { out.className = 'upd-out bad'; out.textContent = 'Could not check (offline?)'; btn.disabled = false; return; }
-      out.className = 'upd-out ok';
-      out.textContent = r.state === 'updated'
-        ? 'Updated to v' + (r.version || '?') + ' (build ' + r.build + ') \u2014 reloading\u2026'
-        : 'Up to date \u2014 v' + (r.version || '?') + ' (build ' + r.build + ')';
-      if (r.state !== 'updated') btn.disabled = false;
-      return;
-    }
-    try {
-      const cur = runningBuild();
-      const nw = await latest();
-      let reg = null;
-      try { reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(ROOT); } catch (_) { /* none */ }
-      if (reg) { try { await reg.update(); } catch (_) { /* offline */ } }
-      if (nw.build && cur && nw.build !== cur) {
-        if (window.caches) {
-          const keys = await caches.keys();
-          await Promise.all(keys.filter((k) => k.indexOf('hub-shell-') === 0).map((k) => caches.delete(k)));
-        }
-        out.className = 'upd-out ok';
-        out.textContent = 'Updated to v' + (nw.version || '?') + ' (build ' + nw.build + ') \u2014 reloading\u2026';
-        setTimeout(() => { try { (S.hub() || window).location.reload(); } catch (_) { location.reload(); } }, 1200);
-        return;
-      }
-      out.className = 'upd-out ok';
-      out.textContent = 'Up to date \u2014 v' + (nw.version || runningVersion() || '?') + ' (build ' + (nw.build || cur || '?') + ')';
-    } catch (e) {
+    let r;
+    try { r = hub && hub.HubUpdate ? await hub.HubUpdate.check({ manual: true }) : await standaloneCheck(); }
+    catch (_) { r = { state: 'error' }; }
+    if (r.state === 'error') {
       out.className = 'upd-out bad';
       out.textContent = 'Could not check (offline?)';
+      btn.disabled = false;
+      return;
     }
-    btn.disabled = false;
+    out.className = 'upd-out ok';
+    out.textContent = r.state === 'updated'
+      ? 'Updated to ' + (r.version || '\u2014') + ' \u2014 reloading\u2026'
+      : 'Up to date \u2014 ' + (r.version || '\u2014') + (r.build ? ' (build ' + r.build + ')' : '');
+    if (r.state !== 'updated') btn.disabled = false;
   }
 
-  const CARDS = `
-  <section class="card" id="about-card">
-    <h3>About</h3>
-    <p>This is a lightweight, browser-based collection of games, tools, and media apps \u2014 all built
-      with plain HTML, CSS, and JavaScript. No installs, no accounts, no trackers.</p>
-    <p>It runs entirely in your browser, works offline once loaded, and is designed to be simple
-      enough for kids and fast enough for everyone.</p>
-    <h4>What's inside</h4>
-    <ul>
-      <li><span class="badge">Games</span> Playable in the browser</li>
-      <li><span class="badge">Tools</span> Calculator, Notepad, Weather</li>
-      <li><span class="badge">Media</span> Gallery, Paint, Photo Editor, Webcam</li>
-      <li><span class="badge">TV</span> Channels &amp; kids' playlists</li>
-    </ul>
-    <h4>For kids &amp; parents</h4>
-    <p>The kids section is designed for ages 5\u201315. No ads, no tracking, no external accounts.
-      Progress and scores are stored locally on your device using <code>localStorage</code>.</p>
-    <p>A phone can be used as a D-pad controller for tablet-based games through the
-      <strong>Controller</strong> module.</p>
-    <h4>Privacy</h4>
-    <p>Nothing is uploaded. Nothing is shared. Everything stays on your device unless you explicitly
-      export or share it.</p>
-    <h4>Tech</h4>
-    <ul>
-      <li>Vanilla HTML, CSS, JavaScript</li>
-      <li>No build step, no framework</li>
-      <li>Works offline (static files)</li>
-      <li>Optional: WebSocket relay for phone-as-remote</li>
-    </ul>
-    <h4>Links</h4>
-    <a class="tap" href="../../misc/T&amp;C.html">Terms &amp; Conditions</a>
-    <a class="tap" href="../../misc/privatedns.html">Private DNS</a>
-  </section>
-  <section class="card" id="contact">
-    <h3>Contact</h3>
-    <a class="tap" href="../about/contact.txt">Jor Teron<small>Name</small></a>
-  </section>
-  <section class="card" id="feedback">
-    <h3>Feedback</h3>
-    <p>Send feedback to the contact below.</p>
-    <a class="tap" href="../about/feedback.txt">Jor Teron<small>Name</small></a>
-  </section>
-  <p class="opt-note center">Made with plain JavaScript. No frameworks harmed.</p>`;
+  function row(label, value) {
+    const r = ui.el('div', 'about-row');
+    r.append(ui.el('span', 'about-k', label), ui.el('b', 'about-v', value));
+    return r;
+  }
+  function link(href, text, sub) {
+    const a = ui.el('a', 'tap');
+    a.href = href; a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = text;
+    a.appendChild(ui.el('small', '', sub));
+    return a;
+  }
 
   Settings.add({
     id: 'about', title: 'About', icon: '\u2139\uFE0F',
     render(pane) {
-      const ver = ui.el('section', 'card ver-card');
+      const card = ui.el('section', 'card ver-card');
       const head = ui.el('div', 'ver-head');
       const img = document.createElement('img'); img.src = 'settings_icon.png'; img.alt = '';
       const txt = ui.el('div');
-      const vline = ui.el('b', 'ver-num', 'Sites Hub' + (runningVersion() ? ' v' + runningVersion() : ''));
-      const bline = ui.el('small', '', runningBuild() ? 'Build ' + runningBuild() : 'Open from the Hub to see the running build');
-      txt.append(vline, bline);
+      const vline = ui.el('b', 'ver-num', 'Sites Hub');
+      txt.append(vline, ui.el('small', '', 'A web desktop for Jor\u2019s apps'));
       head.append(img, txt);
+      card.append(head, ui.el('p', 'about-blurb',
+        'Sites Hub is a small desktop that runs in your browser. It opens Jor\u2019s games, tools and ' +
+        'lab experiments from one place, on GitHub Pages \u2014 nothing to install.'));
+      const verRow = row('Version', '\u2026');
+      const curRow = row('Current release', '\u2026');
+      card.append(row('Credit', 'Jor Teron'), verRow, row('Release date', FIRST_RELEASE), curRow);
       const btn = ui.el('button', 'big-btn', 'Check for update');
       btn.type = 'button';
       const out = ui.el('p', 'upd-out', '');
       out.setAttribute('aria-live', 'polite');
       btn.addEventListener('click', () => checkUpdate(btn, out));
-      ver.append(head, btn, out);
-      if (!runningVersion()) latest().then((n) => { if (n.version) vline.textContent = 'Sites Hub v' + n.version; }).catch(() => {});
-      const cards = ui.el('div');
-      cards.innerHTML = CARDS;
-      pane.append(ver, cards);
+      card.append(btn, out);
+      const build = runningBuild();
+      if (build) card.appendChild(ui.el('p', 'opt-note', 'Running build ' + build));
+
+      const hub = S.hub();
+      const vp = hub && hub.HubUpdate && hub.HubUpdate.version ? hub.HubUpdate.version() : readVersion();
+      Promise.resolve(vp).then((v) => {
+        verRow.lastChild.textContent = v.version || '\u2014';
+        curRow.lastChild.textContent = niceDate(v.date);
+        if (v.version) vline.textContent = 'Sites Hub ' + v.version;
+      }).catch(() => { verRow.lastChild.textContent = '\u2014'; curRow.lastChild.textContent = '\u2014'; });
+
+      const contact = ui.el('section', 'card');
+      contact.id = 'contact';
+      contact.append(ui.el('h3', '', 'Contact'), link(REPO, 'GitHub: jor-teron/sites', 'The project on GitHub'));
+      const fb = ui.el('section', 'card');
+      fb.id = 'feedback';
+      fb.append(ui.el('h3', '', 'Feedback'), ui.el('p', '', 'Found a bug or have an idea? Open an issue on GitHub.'),
+        link(REPO + '/issues', 'GitHub Issues', 'Report a problem or suggest something'));
+      pane.append(card, contact, fb);
     }
   });
 })();

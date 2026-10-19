@@ -53,8 +53,6 @@
 
   const emptyText = document.getElementById('empty-text');
   catLabel.textContent = HEADER_DEFAULT;
-  const verEl = document.getElementById('hub-ver');
-  if (verEl && window.HUB_VERSION) verEl.textContent = 'v' + window.HUB_VERSION;
   if (emptyText) emptyText.textContent = "Open '" + HEADER_DEFAULT + "' and pick an App";
   const tilesEl = document.getElementById('tiles');
 

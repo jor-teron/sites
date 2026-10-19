@@ -1,7 +1,7 @@
 # Settings (apps/settings/)
 
 Hub settings app. Opens from the Hub menu's **Settings** row (a window in Desktop mode,
-full screen on phone). Deep links: `apps/settings/#wallpaper`, `#desktop`, `#sizes`, `#look`, `#about`.
+full screen on phone). Deep links: `apps/settings/#wallpaper`, `#desktop`, `#sizes`, `#look`, `#howto`, `#about`.
 
 | File | What |
 |---|---|
@@ -13,7 +13,22 @@ full screen on phone). Deep links: `apps/settings/#wallpaper`, `#desktop`, `#siz
 | sec_desktop.js | Auto / Desktop / Phone mode, Start-on-hover |
 | sec_sizes.js | Taskbar position bottom/top, size 32/40/48, title bar 24/28/34 |
 | sec_look.js | Accent, Dark/Light, animations On/Reduced/Off |
-| sec_about.js | Version, Check for update, About / Contact / Feedback (moved from apps/about) |
+| sec_howto.js | How-to: plain help on the Hub, desktop, windows, taskbar, copies, modes, phone, updates, privacy / tech |
+| sec_about.js | About: Credit, Version + Current release (hub/version.txt), Release date, Check for update, GitHub contact / issues |
 
 The Hub applies the keys live in `hub/hub_prefs.js`. Keys: `wallpaper`, `taskPos`, `taskH`, `titleH`,
 `accent`, `theme`, `motion`, `wmMode`, `startHover` (empty = default).
+
+## Hub version: `hub/version.txt`
+
+The single source of the Hub version. Plain text, exactly 2 lines, nothing else:
+
+```
+v0.299
+2026-10-19
+```
+
+Line 1 = version (shown in the Hub bar / taskbar tray and Settings → About), line 2 = date of
+the current release (`YYYY-MM-DD`, shown as "Current release"). Read with `cache: 'no-cache'`
+by `hub/hub_update.js` and `sec_about.js`; "—" shows when it can't be read. Bump it with
+each release (together with the `?v=` tags and `hub-shell-vN` in `hub/hub_sw.js`).

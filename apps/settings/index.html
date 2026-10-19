@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Settings app (apps/settings/index.html) — Hub settings: Wallpaper, Desktop, Sizes, Look, About.
+  Settings app (apps/settings/index.html) — Hub settings: Wallpaper, Desktop, Sizes, Look, How-to, About.
   Sections list left, options right (phone: list first, tap into a section, ‹ Back).
   Choices are saved in localStorage (settings_store.js) and the Hub applies them live
   (hub/hub_prefs.js, storage event + postMessage). Deep link: index.html#about etc.
@@ -11,7 +11,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Settings</title>
-  <link rel="stylesheet" href="settings.css?v=20261019d" />
+  <link rel="stylesheet" href="settings.css?v=20261019e" />
 </head>
 <body>
   <div class="app">
@@ -27,14 +27,15 @@
       <div id="pane" class="pane-body"></div>
     </main>
   </div>
-  <script src="../../hub/hub_wallpapers.js?v=20261019d"></script>
-  <script src="settings_store.js?v=20261019d"></script>
-  <script src="settings.js?v=20261019d"></script>
-  <script src="sec_wallpaper.js?v=20261019d"></script>
-  <script src="sec_desktop.js?v=20261019d"></script>
-  <script src="sec_sizes.js?v=20261019d"></script>
-  <script src="sec_look.js?v=20261019d"></script>
-  <script src="sec_about.js?v=20261019d"></script>
+  <script src="../../hub/hub_wallpapers.js?v=20261019e"></script>
+  <script src="settings_store.js?v=20261019e"></script>
+  <script src="settings.js?v=20261019e"></script>
+  <script src="sec_wallpaper.js?v=20261019e"></script>
+  <script src="sec_desktop.js?v=20261019e"></script>
+  <script src="sec_sizes.js?v=20261019e"></script>
+  <script src="sec_look.js?v=20261019e"></script>
+  <script src="sec_howto.js?v=20261019e"></script>
+  <script src="sec_about.js?v=20261019e"></script>
   <script>Settings.start();</script>
 </body>
 </html>

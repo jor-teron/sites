@@ -138,3 +138,21 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
   .pane-head { padding: 12px 14px 4px; }
   .pane-body { padding: 4px 14px 28px; }
 }
+
+/* How-to (sec_howto.js): collapsible cards with a big tap row */
+.howto { padding: 0; }
+.howto summary { list-style: none; cursor: pointer; min-height: 56px; padding: 14px 20px; display: flex; align-items: center;
+  justify-content: space-between; font-weight: 700; font-size: 1.05rem; border-radius: 16px; }
+.howto summary::-webkit-details-marker { display: none; }
+.howto summary::after { content: '\203A'; font-size: 1.5rem; color: var(--muted); transition: transform .25s cubic-bezier(.34,1.56,.64,1); }
+.howto[open] summary::after { transform: rotate(90deg); }
+.howto summary:hover { background: var(--line); }
+.howto-body { padding: 0 20px 16px; }
+.howto-body ul { margin: 0; }
+.howto-body li { margin-bottom: 6px; }
+.howto[open] .howto-body { animation: pane-in .25s ease-out; }
+
+/* About rows (sec_about.js) */
+.about-blurb { margin: 14px 0 6px; }
+.about-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.about-k { color: var(--muted); }
