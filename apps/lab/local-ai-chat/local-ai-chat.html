@@ -6,9 +6,10 @@ Project: local-ai-chat
 Description: Main HTML file for the Local AI Chat WebApp.
 Purpose: Minimalist chat: one thin header row (title, model, ☾/☀, ⋯ menu) and a
          single input bubble with a ✨ popover for prompt helpers and in-chat
-         Pollinations.ai image generation.
+         Pollinations.ai image generation. ⋯ › Models… opens the model sheet.
 Author: Grok
-Date: 2026-10-19 (R1: minimalist layout, old icon section removed)
+Date: 2026-10-19 (R2: model options filled by JS with RAM cues, Models… sheet.
+                  R1: minimalist layout, old icon section removed)
 ================================================================================
 -->
 <html lang="en">
@@ -24,10 +25,9 @@ Date: 2026-10-19 (R1: minimalist layout, old icon section removed)
     <!-- One thin header row -->
     <header>
         <h1>Local AI Chat</h1>
-        <!-- Compact model selector -->
+        <!-- Compact model selector (options built from local-ai-chat-models.js) -->
         <select id="model-select" aria-label="Model">
             <option value="HuggingFaceTB/SmolLM2-135M-Instruct" selected>SmolLM2 135M</option>
-            <option value="onnx-community/Qwen2.5-0.5B-Instruct">Qwen2.5 0.5B</option>
         </select>
         <!-- Theme icon button (☾ / ☀ set by JS) -->
         <button id="theme-toggle" class="icon-btn" aria-label="Toggle theme">☾</button>
@@ -35,6 +35,7 @@ Date: 2026-10-19 (R1: minimalist layout, old icon section removed)
         <div class="pop-wrap">
             <button id="menu-btn" class="icon-btn" aria-label="Menu" aria-haspopup="true" aria-expanded="false">⋯</button>
             <div id="menu" class="pop pop-right" hidden>
+                <button id="models-btn" class="chip">Models…</button>
                 <button id="clear-chat" class="chip">Clear chat</button>
             </div>
         </div>
@@ -66,6 +67,17 @@ Date: 2026-10-19 (R1: minimalist layout, old icon section removed)
         </div>
         <input type="text" id="user-input" placeholder="Message…" autocomplete="off" enterkeyhint="send">
         <button id="send-btn" class="send" aria-label="Send">➤</button>
+    </div>
+
+    <!-- Models sheet: cached size + Delete / Re-download per model -->
+    <div id="models-sheet" class="sheet" hidden>
+        <div class="sheet-panel" role="dialog" aria-label="Models">
+            <div class="sheet-head">
+                <strong>Models</strong>
+                <button id="models-close" class="icon-btn" aria-label="Close">✕</button>
+            </div>
+            <div id="models-list"></div>
+        </div>
     </div>
 
     <!-- Load the application logic -->
