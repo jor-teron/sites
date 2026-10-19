@@ -5,7 +5,8 @@
  * Drives come from shared/fs/fs_drives.js:
  *   Local       the browser's private storage for this site (OPFS), always there
  *   folders     added with "Add folder" (Chrome / Edge on a computer); after a reload they show
- *               "Allow access" (one click); ✕ only removes the folder from the list
+ *               "Allow access" (one click); ✕ only removes the folder from the list (asks with
+ *               the shared dialog, shared/dialog/dialog.js)
  * Clicking a drive opens the Files app (apps/tools/files/#drive=<id>) in a window, or points the
  * open Files window at it; Shift+click = a new Files window. Redraws when drives change
  * (also from the Files app, BroadcastChannel).
@@ -68,7 +69,10 @@
       x.setAttribute('aria-label', x.title);
       x.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (window.confirm('Remove "' + d.name + '" from Drives?\nNo files are deleted.')) await D.remove(d.id);
+        const ok = window.UiDialog
+          ? await window.UiDialog.confirm('Remove \u201c' + d.name + '\u201d from Drives?', 'Only the shortcut goes away. No files are deleted.', 'Remove')
+          : false;
+        if (ok) await D.remove(d.id);
       });
       wrap.append(t, x);
       if (!ok) {

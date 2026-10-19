@@ -26,7 +26,9 @@
  *   window.__hubAppFrames() → every app iframe (Hub frame + all windows).
  * Session: the open windows (key, url, x, y, w, h, maximised, minimised, z-order, focused) are
  * saved in localStorage 'sites-hub.wmSession' after every change (debounced, Desktop mode
- * only, so a trip through Phone mode keeps it). hub.js calls HubWM.restoreSession(resolve)
+ * only, so a trip through Phone mode keeps it). A window's url keeps the app's current #hash
+ * (same page only, e.g. Files' #drive=…&path=…); apps can ask for a save with a same-origin
+ * postMessage {type:'hub-wm-save'}; the Hub also saves when the page is hidden / closed. hub.js calls HubWM.restoreSession(resolve)
  * on start-up / when Desktop mode comes back; windows are clamped into the current screen.
  */
 (function () {
@@ -48,10 +50,18 @@
   const SKEY = 'sites-hub.wmSession';
   let restoring = false, saveT = 0;
   const isDesk = () => !!(window.HubMode && window.HubMode.isDesktop());
+  /** The window's url + the app's current #hash when it is still on the page it opened. */
+  function curUrl(w) {
+    try {
+      const l = w.frame.contentWindow.location, base = new URL(w.url, location.href);
+      if (l.origin === base.origin && l.pathname === base.pathname) return w.url.split('#')[0] + (l.hash || '');
+    } catch (_) { /* cross-origin / not loaded */ }
+    return w.url;
+  }
   function saveNow() {
     if (!isDesk() || restoring) return;
     const list = wins.map((w) => ({
-      key: w.key, inst: w.inst, url: w.url, name: w.baseName,
+      key: w.key, inst: w.inst, url: curUrl(w), name: w.baseName,
       x: Math.round(w.rect.x), y: Math.round(w.rect.y), w: Math.round(w.rect.w), h: Math.round(w.rect.h),
       max: !!w.max, min: !!w.min, z: +w.el.style.zIndex || 0
     }));
@@ -335,6 +345,12 @@
     const w = ae && ae.tagName === 'IFRAME' && wins.find((x) => x.frame === ae);
     if (w && active !== w) focus(w, true);
   }, 0));
+  // Apps ask for a session save (e.g. Files after changing folder); and save on leaving
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'hub-wm-save' && (e.origin === location.origin || location.protocol === 'file:')) saveSoon();
+  });
+  window.addEventListener('pagehide', () => { clearTimeout(saveT); saveNow(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(saveT); saveNow(); } });
   // Keep windows reachable after the screen shrinks
   window.addEventListener('resize', () => wins.forEach((w) => setRect(w, w.rect.x, w.rect.y, w.rect.w, w.rect.h)));
 })();

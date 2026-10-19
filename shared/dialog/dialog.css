@@ -1,0 +1,33 @@
+/*
+ * Dialog look (shared/dialog/dialog.css) for shared/dialog/dialog.js. Own colour variables
+ * (--uid-*) so it fits any page; uses the page's --accent when it has one.
+ */
+.uid-back { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,.5); display: grid; place-items: center; padding: 16px; }
+.uid {
+  --uid-bg: #1a1e27; --uid-line: rgba(255,255,255,.1); --uid-text: #e8eaed; --uid-muted: #9aa0a6; --uid-bad: #f87171;
+  width: min(440px, 100%); max-height: calc(100% - 20px); overflow: auto; background: var(--uid-bg); color: var(--uid-text);
+  border: 1px solid var(--uid-line); border-radius: 18px; padding: 18px; box-shadow: 0 20px 50px rgba(0,0,0,.5);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  animation: uid-pop .35s cubic-bezier(.34,1.56,.64,1);
+}
+.uid-title { margin: 0 0 10px; font-size: 1.15rem; word-break: break-word; }
+.uid-text { margin: 0 0 8px; color: var(--uid-muted); word-break: break-word; }
+.uid-in { width: 100%; min-height: 46px; padding: 0 12px; border-radius: 12px; border: 2px solid var(--uid-line);
+  background: rgba(0,0,0,.25); color: var(--uid-text); font: inherit; box-sizing: border-box; }
+.uid-in:focus { outline: none; border-color: var(--accent, #6ea8fe); }
+.uid-all { display: flex; align-items: center; gap: 10px; min-height: 40px; cursor: pointer; }
+.uid-all input { width: 20px; height: 20px; accent-color: var(--accent, #6ea8fe); }
+.uid-btns { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.uid-btn { min-height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: var(--uid-line); color: var(--uid-text);
+  font: inherit; font-weight: 700; cursor: pointer; transition: transform .18s cubic-bezier(.34,1.56,.64,1); }
+.uid-btn:active { transform: scale(.93, .9); }
+.uid-btn.primary { background: var(--accent, #6ea8fe); color: #0b0d12; }
+.uid-btn.danger { background: var(--uid-bad); color: #1a0505; }
+.uid-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.uid-rows { display: flex; flex-direction: column; }
+.uid-row { display: flex; justify-content: space-between; gap: 14px; padding: 8px 0; border-top: 1px solid var(--uid-line); }
+.uid-k { color: var(--uid-muted); flex: none; }
+.uid-v { text-align: right; word-break: break-word; }
+@keyframes uid-pop { 0% { transform: scale(.85, .8); opacity: 0; } 60% { transform: scale(1.03, .98); opacity: 1; } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .uid { animation: none; } .uid-btn { transition: none; } }
+html.hub-motion-off .uid, html.hub-motion-reduced .uid { animation: none; }

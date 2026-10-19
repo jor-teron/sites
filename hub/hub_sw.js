@@ -10,12 +10,12 @@
  * skips waiting and claims open pages; hub_update.js then reloads them once (no stale shell).
  * Release: bump CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const CACHE = 'hub-shell-v30';  // 2026-10-19f: R3a desktop Drives pane + Files app
+const CACHE = 'hub-shell-v31';  // 2026-10-19g: R3b Files explorer, shared dialog / ctxmenu, window hash sessions
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',
   'hub/hub_main.css', 'hub/hub_controller.css', 'hub/hub_notification.css', 'shared/style/no-scrollbar.css',
-  'hub/hub_config.js', 'hub/hub_apps.js', 'hub/hub_tiles.js', 'hub/hub.js', 'hub/hub_flyout.js', 'hub/hub_flyout.css', 'hub/wm_mode.js', 'hub/wm_windows.js', 'hub/wm_taskbar.js', 'hub/hub_settings.js', 'hub/wm.css', 'hub/hub_wallpapers.js', 'hub/hub_prefs.js', 'hub/hub_update.js', 'hub/version.txt', 'hub/hub_drives.js', 'hub/hub_drives.css', 'shared/fs/fs_drives.js', 'shared/tiles/tiles.js', 'hub/hub_controller_config.js',
+  'hub/hub_config.js', 'hub/hub_apps.js', 'hub/hub_tiles.js', 'hub/hub.js', 'hub/hub_flyout.js', 'hub/hub_flyout.css', 'hub/wm_mode.js', 'hub/wm_windows.js', 'hub/wm_taskbar.js', 'hub/hub_settings.js', 'hub/wm.css', 'hub/hub_wallpapers.js', 'hub/hub_prefs.js', 'hub/hub_update.js', 'hub/version.txt', 'hub/hub_drives.js', 'hub/hub_drives.css', 'shared/fs/fs_drives.js', 'shared/dialog/dialog.js', 'shared/dialog/dialog.css', 'shared/tiles/tiles.js', 'hub/hub_controller_config.js',
   'hub/hub_notify.js', 'hub/hub_viewer.js', 'hub/hub_viewer_pdf.js', 'hub/hub_pointer.js', 'hub/hub_receive.js',
   'hub/hub_role.js', 'hub/hub_remote.js', 'shared/link/link_scan.js',
   'hub/hub-controller.js', 'hub/hub_link.js', 'hub/hub_linkstate.js', 'hub/hub_chat.js', 'hub/hub_chat.css', 'shared/link/link_chat.js', 'hub/hub-gamebar.js',

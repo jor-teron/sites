@@ -950,15 +950,17 @@
       const key = normalizeEntryUrl(e.key);
       if (!key || !safeRel(key)) return null;
       const app = findApp(key) || idToApp.get(entryToId.get(key) || '');
+      // the saved url may carry the app's #hash (same page only), e.g. Files' drive + folder
+      const withHash = (base) => (typeof e.url === 'string' && e.url.indexOf(base.split('#')[0] + '#') === 0 ? e.url : base);
       if (app) {
         if (app.newTab) return null;
-        return { name: app.name, icon: iconFor(app), url: frameUrlFor(app.entryUrl), app };
+        return { name: app.name, icon: iconFor(app), url: withHash(frameUrlFor(app.entryUrl)), app };
       }
       check.push(key);
       const name = String(e.name || '').slice(0, 80) || key.replace(/\/+$/, '').split('/').pop();
       const extra = { category: '', name, entryUrl: key, newTab: false, hidden: true };
       registerApp(extra);   // so its hash id resolves again
-      return { name, icon: iconPathFor(key), url: frameUrlFor(key), app: extra };
+      return { name, icon: iconPathFor(key), url: withHash(frameUrlFor(key)), app: extra };
     });
     check.forEach((key) => {
       if (IS_FILE) return;

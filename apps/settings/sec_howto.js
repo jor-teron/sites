@@ -73,9 +73,25 @@
         <li><b>Local</b> is storage inside this browser, just for this site. It is always there; clearing the
           browser's site data erases it.</li>
         <li><b>Add folder</b> (Chrome or Edge on a computer) lets the Hub use a real folder you pick. After a
-          reload, click <b>Allow access</b> once. <b>×</b> only removes it from the list — no files are deleted.</li>
-        <li>Click a drive to open it in <b>Files</b> (also in Tools): go into folders, ⇧ up, make a new folder,
-          upload files, download, rename, delete (it asks first), and view text files and pictures.</li>
+          reload, click <b>Allow access</b> once. <b>\u00D7</b> only removes it from the list \u2014 no files are deleted.</li>
+        <li>Click a drive to open it in <b>Files</b> (also in Tools). A Files window comes back on the same
+          drive and folder after a reload.</li>
+      </ul>` },
+    { t: 'Using Files', h: `
+      <ul>
+        <li><b>Select</b>: click; <b>Ctrl</b>/<b>\u2318</b>-click adds more; <b>Shift</b>-click picks a range;
+          <b>Ctrl+A</b> all. On a phone tap the round check, or press and hold.</li>
+        <li><b>Open</b>: double-click (a single tap on a phone) or Enter. Pictures open in a viewer with
+          \u2039 \u203A for the next one; text opens in a text view. <b>Open with\u2026</b> can send text to <b>Notely</b>.</li>
+        <li><b>Right-click</b> (or press and hold) for the menu: Open, Open with\u2026, Cut, Copy, Paste, Rename,
+          Download, Delete, New folder, Properties. The \u22EF button opens it too.</li>
+        <li><b>Cut / Copy / Paste</b> (Ctrl+X / C / V) works between folders and between drives.</li>
+        <li><b>Drag</b> items onto a folder, a part of the path or a drive to move them (hold <b>Ctrl</b> to copy).
+          Drop files from your computer to upload them.</li>
+        <li>If a name is already taken you choose <b>Replace</b>, <b>Keep both</b> or <b>Skip</b>.</li>
+        <li><b>Grid / List</b>, <b>sort</b> (name, size, date) and <b>search</b> are above the files; the view and
+          sort are remembered.</li>
+        <li>Keys: <b>Delete</b>, <b>F2</b> rename, <b>Enter</b> open, <b>Backspace</b> or <b>Alt+\u2191</b> up, arrows to move.</li>
       </ul>` },
     { t: 'Settings sections', h: `
       <ul>

@@ -12,6 +12,7 @@ One page of plain-text notes that saves itself as you type. Open and download `.
 - `nl_files.js`: Open (picker or drag-and-drop) and Download
 - `nl_clear.js`: Clear with a 5-second Undo
 - `nl_keys.js`: keyboard shortcuts
+- `nl_handoff.js`: "Open with Notely" from the Files app (sessionStorage `notely-handoff`, asks before replacing notes)
 - `nl_main.js`: start-up and buttons
 - `notely_icon.png`: hub icon
 - `index.html`: opens `notely.html`

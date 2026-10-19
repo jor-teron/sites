@@ -14,6 +14,7 @@ NL.main = (function () {
     NL.files.init();
     NL.clear.init();
     NL.keys.init();
+    NL.handoff.init();
     const on = (id, fn) => document.getElementById(id).addEventListener('click', fn);
     on('btn-open', () => NL.files.open());
     on('btn-download', () => NL.files.download());

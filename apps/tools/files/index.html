@@ -1,18 +1,24 @@
 <!doctype html>
 <!--
-  Files (apps/tools/files/index.html) — a simple file explorer for the Hub's drives:
-  "Local" (the browser's private storage for this site) and folders added with "Add folder"
-  (Chrome / Edge on a computer). Drives: shared/fs/fs_drives.js; file operations:
-  shared/fs/fs_ops.js; this app: files.js (drives + list + actions), files_dialog.js
-  (ask / confirm), files_preview.js (text / image view), files.css.
-  Deep link: index.html#drive=local (the Hub desktop's drive tiles open it like that).
+  Files (apps/tools/files/index.html) — file explorer for the Hub's drives: "Local" (the
+  browser's private storage for this site) and folders added with "Add folder" (Chrome / Edge
+  on a computer). Grid / list, sort, search, multi-select, cut / copy / paste and drag & drop
+  (also between drives), upload by drop, right-click / long-press menu, keyboard, viewers.
+  Shared: shared/fs/fs_drives.js (drives), shared/fs/fs_ops.js (file operations),
+  shared/dialog/ (ask / confirm / choose), shared/ctxmenu/ (menu).
+  App: files_core.js (state + helpers), files_view.js (grid / list, selection, drag & drop),
+  files_drives.js (drives, path, hash), files_actions.js (operations), files_viewer.js (text /
+  image), files_menu.js (menu + keys), files.js (start-up), files.css.
+  Deep link: index.html#drive=local&path=Docs/Sub (the Hub uses it; a window session keeps it).
 -->
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Files</title>
-  <link rel="stylesheet" href="files.css?v=20261019f" />
+  <link rel="stylesheet" href="../../../shared/dialog/dialog.css?v=20261019g" />
+  <link rel="stylesheet" href="../../../shared/ctxmenu/ctxmenu.css?v=20261019g" />
+  <link rel="stylesheet" href="files.css?v=20261019g" />
 </head>
 <body>
   <div class="app">
@@ -22,21 +28,42 @@
     </aside>
     <main class="main">
       <div class="bar">
-        <button type="button" id="up" class="tb" title="Up one folder" aria-label="Up one folder">&#8679;</button>
+        <button type="button" id="up" class="tb" title="Up one folder (Backspace)" aria-label="Up one folder">&#8679;</button>
         <nav id="crumbs" class="crumbs" aria-label="Path"></nav>
         <button type="button" id="mkdir" class="tb" title="New folder">&#xFF0B; Folder</button>
-        <button type="button" id="upload" class="tb" title="Upload files">&#8682; Upload</button>
+        <button type="button" id="upload" class="tb" title="Upload files (or drop them here)">&#8682; Upload</button>
         <button type="button" id="refresh" class="tb" title="Refresh" aria-label="Refresh">&#8635;</button>
+        <button type="button" id="more" class="tb" title="More actions" aria-label="More actions">&#8943;</button>
         <input type="file" id="file-in" multiple hidden />
       </div>
-      <div id="msg" class="msg" hidden></div>
-      <div id="list" class="list" role="list"></div>
+      <div class="bar bar2">
+        <input type="search" id="search" class="search" placeholder="Search this folder" aria-label="Search this folder" />
+        <select id="sort" class="tb sort" aria-label="Sort">
+          <option value="name-asc">Name A&#8594;Z</option>
+          <option value="name-desc">Name Z&#8594;A</option>
+          <option value="size-asc">Size small&#8594;big</option>
+          <option value="size-desc">Size big&#8594;small</option>
+          <option value="modified-desc">Newest first</option>
+          <option value="modified-asc">Oldest first</option>
+        </select>
+        <button type="button" id="view" class="tb" title="Grid or list view">&#9776; List</button>
+        <span id="selinfo" class="selinfo" aria-live="polite"></span>
+      </div>
+      <div id="msg" class="msg" hidden role="status"></div>
+      <div id="list" class="list v-grid" role="listbox" aria-multiselectable="true" aria-label="Files"></div>
+      <div id="prog" class="prog" hidden><span></span><b><i></i></b><button type="button" class="tb">Stop</button></div>
     </main>
   </div>
-  <script src="../../../shared/fs/fs_drives.js?v=20261019f"></script>
-  <script src="../../../shared/fs/fs_ops.js?v=20261019f"></script>
-  <script src="files_dialog.js?v=20261019f"></script>
-  <script src="files_preview.js?v=20261019f"></script>
-  <script src="files.js?v=20261019f"></script>
+  <script src="../../../shared/fs/fs_drives.js?v=20261019g"></script>
+  <script src="../../../shared/fs/fs_ops.js?v=20261019g"></script>
+  <script src="../../../shared/dialog/dialog.js?v=20261019g"></script>
+  <script src="../../../shared/ctxmenu/ctxmenu.js?v=20261019g"></script>
+  <script src="files_core.js?v=20261019g"></script>
+  <script src="files_view.js?v=20261019g"></script>
+  <script src="files_drives.js?v=20261019g"></script>
+  <script src="files_actions.js?v=20261019g"></script>
+  <script src="files_viewer.js?v=20261019g"></script>
+  <script src="files_menu.js?v=20261019g"></script>
+  <script src="files.js?v=20261019g"></script>
 </body>
 </html>
