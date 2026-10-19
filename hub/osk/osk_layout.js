@@ -1,12 +1,12 @@
 /*
- * Project: keyboard (Lab)
- * File: keyboard_layout.js
- * Role: The key rows (US layout) and the spoken names of symbol keys. Data only.
+ * On-screen keyboard — layout (hub/osk/osk_layout.js). Data only.
+ * Shared by the Hub OSK panel (hub/osk/osk.js) and the Lab keyboard page (apps/lab/keyboard/).
+ * The key rows (US layout) and the spoken names of symbol keys.
  * Row entry: [label, key, shiftKey, flex, extra]
  *   key        KeyboardEvent.key value sent ('a', 'Enter', 'ArrowLeft', ' ')
  *   shiftKey   value with Shift (symbols only; letters use upper case)
  *   flex       relative width (default 1)
- *   extra      { mod:'shift|ctrl|alt' } or { action:'caps' } for special keys, { say:'...' } aria name
+ *   extra      { mod:'shift|ctrl|alt' } or { action:'caps' | other } for special keys, { say:'...' } aria name
  */
 (function () {
   'use strict';
@@ -36,7 +36,5 @@
     '"': 'Quote', ',': 'Comma', '<': 'Less than', '.': 'Period', '>': 'Greater than', '/': 'Slash', '?': 'Question mark',
   };
 
-  window.LabKeyboard = window.LabKeyboard || {};
-  window.LabKeyboard.ROWS = ROWS;
-  window.LabKeyboard.SAY = SAY;
+  window.OSK_LAYOUT = { ROWS: ROWS, SAY: SAY };
 })();

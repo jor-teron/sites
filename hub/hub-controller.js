@@ -4,7 +4,8 @@
  * Keyboard modes of the controller send {t:'key', key, code, s:1|0, shift, ctrl, alt, repeat}:
  * dispatched as keydown / keypress / keyup into the (same-origin) app frame's focused element,
  * and typed into a focused input / textarea / contenteditable (synthetic events do not type),
- * incl. Backspace / Delete / Enter / ←→. Also posted as {type:'hub-key', ...}.
+ * incl. Backspace / Delete / Enter / ←→ / Home / End and Ctrl+A. Also posted as {type:'hub-key', ...}.
+ * The Hub on-screen keyboard (hub/osk/osk.js) sends the same messages via __hubController.key(msg).
  * Rumble: an app in the iframe may post {type:'hub-rumble', ms:N} or
  * {type:'hub-rumble', pattern:[on, off, on, ...]}; it is relayed to the paired phone as
  * {t:'rumble', ms} / {t:'rumble', pattern} (the phone calls navigator.vibrate).
@@ -287,11 +288,27 @@
       return true;
     }
     if ((key === 'Home' || key === 'End') && hasSel) {
-      const p = key === 'Home' ? 0 : v.length;
+      // textarea: start / end of the current line; input: start / end of the text
+      const multi = el.tagName === 'TEXTAREA';
+      const p = key === 'Home' ? (multi ? v.lastIndexOf('\n', start - 1) + 1 : 0)
+        : (multi ? (v.indexOf('\n', end) < 0 ? v.length : v.indexOf('\n', end)) : v.length);
       el.setSelectionRange(p, p);
       return true;
     }
     return false;
+  }
+
+  /** Ctrl+A in a text field / contenteditable (synthetic keys do not select). */
+  function selectAllIn(el) {
+    try {
+      if (!el.isContentEditable) { el.select(); return; }
+      const doc = el.ownerDocument;
+      const r = doc.createRange();
+      r.selectNodeContents(el);
+      const sel = doc.defaultView.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+    } catch (_) { /* email / number inputs: no selection */ }
   }
 
   function forwardKey(msg) {
@@ -321,6 +338,7 @@
           if (printable && !m.ctrl && !m.alt) pressOk = target.dispatchEvent(init('keypress', key === 'Enter' ? 13 : key.charCodeAt(0)));
           const ed = editableOf(target);
           if (ed && pressOk && !m.ctrl && !m.alt) typeInto(ed, m);
+          else if (ed && m.ctrl && !m.alt && !m.shift && (key === 'a' || key === 'A')) selectAllIn(ed);
         }
       }
     } catch (err) {
@@ -525,6 +543,7 @@
     window.__hubController = {
       openPopover: openPopoverRemote,
       closePopover: closePopoverRemote,
+      key: forwardKey,   // Hub OSK (hub/osk/osk.js): {t:'key', key, code, s:1|0, shift, ctrl, alt, repeat}
       get connected() { return window.SharedLink ? SharedLink.connected : false; },
     };
     return;
@@ -620,6 +639,7 @@
   // Expose tiny API for debugging / tests
   window.__hubController = {
     openPopover, closePopover, disconnect, startPairing, newCode,
+    key: forwardKey,   // Hub OSK (hub/osk/osk.js): same message as a phone keyboard key
     get code() { return code; },
     get status() { return statusEl ? statusEl.textContent : ''; },
     get connected() { return !!(conn && conn.open); },

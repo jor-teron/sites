@@ -1,7 +1,7 @@
 # Keyboard (Lab)
 
 On-screen keyboard (OSK) demo. It will become the Hub's system-wide keyboard (`hub/osk/`, a
-Hub component opened from the taskbar tray); this page is the stand-alone test bed.
+Hub component opened from the taskbar tray ⌨, see `hub/osk/osk_readme.md`); this page is the stand-alone app and test bed.
 
 Open: `apps/lab/keyboard/` (Lab → Tools → Keyboard).
 
@@ -23,10 +23,11 @@ Open: `apps/lab/keyboard/` (Lab → Tools → Keyboard).
 | `index.html` | Redirect to `keyboard.html` |
 | `keyboard.html` | Page: status bar, text box, board |
 | `keyboard.css` | Layout + key look (size container, `clamp()` text, safe areas) |
-| `keyboard_layout.js` | Key rows + screen-reader names (data only) |
 | `keyboard_type.js` | Typing into the demo text box (undo-friendly `execCommand`) |
 | `keyboard.js` | Start-up: draws the board, wires `CTRL_KB.kit.api`, vibrate, status |
 
-Shared code: `hub/controller/kb_common.js` (`CTRL_KB`: pointer handling, modifiers, repeat,
+Shared code: `hub/osk/osk_layout.js` (key rows + screen-reader names) and `hub/osk/osk_board.js`
+(draws the board, Caps, live labels, no-focus guard), both also used by the Hub OSK panel, on
+`hub/controller/kb_common.js` (`CTRL_KB`: pointer handling, modifiers, repeat,
 `KeyboardEvent.code` values). It is the same file the phone Gamepad's keyboard mode uses, so a fix
 there helps both. It works without `CONTROLLER_CONFIG` (defaults: repeat on, 450 / 60 ms).

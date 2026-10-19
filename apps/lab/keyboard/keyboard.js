@@ -1,8 +1,8 @@
 /*
  * Project: keyboard (Lab)
  * File: keyboard.js
- * Role: Start-up. Draws the rows from keyboard_layout.js with CTRL_KB.kit (hub/controller/
- * kb_common.js, the same board code as the phone Gamepad's keyboard) and connects its kit.api:
+ * Role: Start-up. Draws the shared board (hub/osk/osk_board.js + osk_layout.js, also used by the
+ * Hub OSK panel; built on hub/controller/kb_common.js like the phone Gamepad) and connects its api:
  *   - press → keydown, release / slide-off / cancel → keyup, hold → auto-repeat (kb_common)
  *   - Shift / Ctrl / Alt: hold = held, tap = one-shot for the next key, tap again = off
  *   - Caps toggles; letter and symbol labels follow Shift / Caps live
@@ -25,11 +25,10 @@
   const VIB_KEY = 'jtsites-lab-keyboard.vibrate';
   const VIB_MS = 15;
 
-  if (!KB || !LK || !LK.ROWS) {
-    statusEl.textContent = 'Keyboard failed to load (hub/controller/kb_common.js missing)';
+  if (!KB || !LK || !window.OSK_BOARD || !window.OSK_LAYOUT) {
+    statusEl.textContent = 'Keyboard failed to load (hub/controller/kb_common.js or hub/osk/ missing)';
     return;
   }
-  const kit = KB.kit;
 
   // ---- settings ----
   let vibrate = true;
@@ -39,69 +38,8 @@
     vibBtn.textContent = vibrate ? 'Vibrate: on' : 'Vibrate: off';
   }
 
-  // ---- draw the keys ----
-  const root = kit.el('div', 'kb');
-  for (const row of LK.ROWS) {
-    const r = kit.el('div', 'kb-row');
-    for (const def of row) {
-      const label = def[0];
-      const key = def[1] == null ? label : def[1];
-      const extra = def[4] || {};
-      const letter = key.length === 1 && /[a-z]/.test(key);
-      const k = kit.el('button', 'kk' + (letter ? ' letter' : '') + (label.length > 1 ? ' fn' : ''), {
-        key: key || null, shift: def[2] || null, mod: extra.mod || null, action: extra.action || null, label: label,
-      }, label);
-      k.tabIndex = -1;
-      if (extra.mod || extra.action) k.setAttribute('aria-pressed', 'false');
-      if (extra.say) k.setAttribute('aria-label', extra.say);
-      if (key === ' ') k.classList.add('space');
-      if (def[3]) k.style.flexGrow = def[3];
-      r.appendChild(k);
-    }
-    root.appendChild(r);
-  }
-  boardEl.appendChild(root);
-
-  // ---- board state (caps here; shift / ctrl / alt live in kb_common) ----
-  let caps = false;
-  let ctl = null;
-  const modOn = (n) => !!(ctl && ctl.mods[n]);
-
-  const board = {
-    resolve(k) {
-      const key = k.dataset.key;
-      const sh = modOn('shift');
-      if (k.classList.contains('letter')) {
-        // Ctrl / Alt + letter with Caps only: send the plain letter (Ctrl+C, not Ctrl+Shift+C)
-        if ((modOn('ctrl') || modOn('alt')) && !sh) return key;
-        return sh !== caps ? key.toUpperCase() : key;
-      }
-      if (sh && k.dataset.shift) return k.dataset.shift;
-      return key;
-    },
-    action(name, k) {
-      if (name !== 'caps') return;
-      caps = !caps;
-      k.classList.toggle('on', caps);
-      board.repaint();
-      setStatus('Caps ' + (caps ? 'on' : 'off'));
-    },
-    repaint() {
-      const sh = modOn('shift');
-      root.querySelectorAll('.kk').forEach((k) => {
-        if (k.classList.contains('letter')) {
-          k.textContent = sh !== caps ? k.dataset.key.toUpperCase() : k.dataset.key;
-        } else if (k.dataset.shift) {
-          const lab = sh ? k.dataset.shift : k.dataset.label;
-          k.textContent = lab;
-          k.setAttribute('aria-label', LK.SAY[lab] || lab);
-        }
-        if (k.hasAttribute('aria-pressed')) k.setAttribute('aria-pressed', String(k.classList.contains('on')));
-      });
-    },
-  };
-
   // ---- output ----
+  let kb = null;             // the board (OSK_BOARD.create below)
   const held = new Map();   // kb_common id → { key, code, flags } (for the keyup)
   const inFrame = window.parent && window.parent !== window;
   const target = location.origin && location.origin !== 'null' ? location.origin : '*';
@@ -117,10 +55,10 @@
 
   function setStatus(text) {
     const bits = [];
-    if (modOn('ctrl')) bits.push('Ctrl');
-    if (modOn('alt')) bits.push('Alt');
-    if (modOn('shift')) bits.push('Shift');
-    if (caps) bits.push('Caps');
+    if (kb && kb.modOn('ctrl')) bits.push('Ctrl');
+    if (kb && kb.modOn('alt')) bits.push('Alt');
+    if (kb && kb.modOn('shift')) bits.push('Shift');
+    if (kb && kb.caps) bits.push('Caps');
     statusEl.textContent = (bits.length ? '[' + bits.join('+') + '] ' : '') + text;
   }
 
@@ -133,7 +71,7 @@
     return m.length ? m.join('+') + '+' + name : name;
   }
 
-  Object.assign(kit.api, {
+  const api = {
     keyDown(id, key, code, flags, repeat) {
       held.set(id, { key: key, code: code, flags: flags });
       post(key, code, flags, true, repeat);
@@ -151,18 +89,15 @@
       if (vibrate && navigator.vibrate) { try { navigator.vibrate(VIB_MS); } catch (_) { /* ignore */ } }
     },
     firstTouch() {},
-  });
+  };
 
-  ctl = kit.bind(root, board);
-  board.repaint();
+  kb = window.OSK_BOARD.create(boardEl, {
+    api: api,
+    onCaps: (on) => setStatus('Caps ' + (on ? 'on' : 'off')),
+  });
 
   // ---- never take focus / no long-press menu / no gestures on the keys ----
-  const stop = (e) => e.preventDefault();
-  [boardEl, document.getElementById('bar')].forEach((el) => {
-    el.addEventListener('mousedown', stop);
-    el.addEventListener('touchstart', stop, { passive: false });
-    el.addEventListener('contextmenu', stop);
-  });
+  window.OSK_BOARD.guard(document.getElementById('bar'));
   boardEl.addEventListener('focusin', () => pad.focus({ preventScroll: true }));
 
   // ---- top bar buttons (pointerup: touchstart is cancelled, so no click on touch) ----
@@ -185,8 +120,8 @@
 
   // ---- release held keys when the page loses focus or hides (no stuck keys) ----
   function releaseAll() {
-    for (const id of Array.from(held.keys())) kit.api.keyUp(id);
-    ctl.release();
+    for (const id of Array.from(held.keys())) api.keyUp(id);
+    kb.release();
   }
   window.addEventListener('blur', releaseAll);
   document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAll(); });

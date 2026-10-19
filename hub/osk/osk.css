@@ -1,0 +1,87 @@
+/*
+ * Hub on-screen keyboard (hub/osk/osk.css) — the panel (osk.js) and its keys (osk_board.js).
+ * Desktop mode only. --osk-h = panel height; while shown (body.hub-osk-on) the desk (#frame-wrap)
+ * ends --osk-h higher, so windows (normal, maximised, snapped) stay above the panel.
+ * z-index 95: above windows and the taskbar (90), below the Hub menu (100), flyout (101),
+ * popovers (200+), dialogs (2000) and right-click menus.
+ */
+:root { --osk-h: clamp(170px, 34vh, 300px); }
+
+#hub-osk { display: none; }
+body.wm-desktop #hub-osk:not([hidden]) {
+  display: block;
+  position: fixed;
+  left: 0; right: 0;
+  bottom: var(--wm-task-h);
+  height: var(--osk-h);
+  z-index: 95;
+  padding: 4px max(6px, env(safe-area-inset-right)) 4px max(6px, env(safe-area-inset-left));
+  background: var(--wm-task-bg, rgba(20, 24, 32, 0.96));
+  border-top: 1px solid var(--line, #343b48);
+  container-type: size;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+html.hub-task-top body.wm-desktop #hub-osk:not([hidden]) { bottom: 0; padding-bottom: max(4px, env(safe-area-inset-bottom)); }
+
+/* the desk ends above the panel (wm.css: #frame-wrap bottom = taskbar) */
+body.wm-desktop.hub-osk-on #frame-wrap { bottom: calc(var(--wm-task-h) + var(--osk-h)); }
+html.hub-task-top body.wm-desktop.hub-osk-on #frame-wrap { bottom: var(--osk-h); }
+
+/* board: wide screens keep a keyboard-like width, centred */
+#hub-osk .osk-kb { height: 100%; max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; }
+#hub-osk .kb-row { flex: 1 1 0; min-height: 0; display: flex; }
+#hub-osk .kk {
+  flex: 1 1 0;
+  min-width: 0;
+  font: inherit;
+  font-size: 14px;
+  font-size: clamp(10px, min(7.5cqh, 2.2cqw), 22px);
+  font-weight: 650;
+  color: var(--text, #f2f2f2);
+  background: #2b2f39;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: none;
+}
+#hub-osk .kk.fn { font-size: 12px; font-size: clamp(9px, min(6cqh, 1.7cqw), 17px); }
+#hub-osk .kk[data-mod], #hub-osk .kk[data-action] { background-color: #3a3f4c; }
+#hub-osk .kk.on { background-color: color-mix(in srgb, var(--accent, #3d6ea5) 70%, #222); color: #fff; }
+#hub-osk .kk.held { box-shadow: inset 0 0 0 2px var(--accent, #8ab4ff); }
+#hub-osk .kk[data-key="Escape"] { background-color: #5a3a3a; }
+#hub-osk .kk[data-key="Enter"] { background-color: #2a4a62; }
+#hub-osk .kk[data-key="Backspace"] { background-color: #5a3232; }
+#hub-osk .kk[data-key="Delete"] { background-color: #4a3038; }
+#hub-osk .kk.space { background-color: #333844; }
+#hub-osk .kk:hover { filter: brightness(1.15); }
+#hub-osk .kk.active { background-color: #4a7c59; transform: scale(0.96, 0.92); }
+#hub-osk .kk { transition: transform 0.12s cubic-bezier(.3,1.6,.5,1); }
+
+/* light theme */
+html.hub-light #hub-osk .kk { background-color: #ffffff; color: #1d2330; }
+html.hub-light #hub-osk .kk[data-mod], html.hub-light #hub-osk .kk[data-action], html.hub-light #hub-osk .kk.space { background-color: #e3e7ee; }
+html.hub-light #hub-osk .kk[data-key="Escape"], html.hub-light #hub-osk .kk[data-key="Backspace"], html.hub-light #hub-osk .kk[data-key="Delete"] { background-color: #f3d9d9; }
+html.hub-light #hub-osk .kk[data-key="Enter"] { background-color: #d6e4f3; }
+html.hub-light #hub-osk .kk.on { background-color: var(--accent, #3d6ea5); color: #fff; }
+html.hub-light #hub-osk .kk.active { background-color: #b9dfc4; }
+
+html.hub-motion-off #hub-osk .kk, html.hub-motion-reduced #hub-osk .kk { transition: none; }
+html.hub-motion-off #hub-osk .kk.active, html.hub-motion-reduced #hub-osk .kk.active { transform: none; }
+
+/* tray button */
+.wm-osk-btn {
+  min-width: var(--tb-btn, 32px); height: var(--tb-btn, 32px); padding: 0 4px; margin-right: 4px;
+  border: 0; border-radius: 9px; background: transparent; color: var(--text); cursor: pointer;
+  font: inherit; font-size: calc(var(--wm-task-h) * 0.5); line-height: 1;
+  transition: background 0.12s ease, transform 0.15s cubic-bezier(.3,1.6,.5,1);
+}
+.wm-osk-btn:hover { background: var(--wm-hover); }
+.wm-osk-btn.on { background: var(--wm-hi); color: var(--accent); }
+.wm-osk-btn:active { transform: scale(0.88, 0.82); }

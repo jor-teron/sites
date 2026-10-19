@@ -5,15 +5,16 @@
   Role: On-screen keyboard (OSK) demo page. Types into the text box on this page and, when the
   page runs inside a frame (Hub window), posts every key to the parent as the Hub controller
   message {t:'key', key, code, s:1|0, shift, ctrl, alt, repeat}.
-  Board + pointer handling: hub/controller/kb_common.js (CTRL_KB, shared with the phone Gamepad).
-  Scripts: kb_common.js → keyboard_layout.js → keyboard_type.js → keyboard.js (start-up).
+  Board: hub/osk/osk_layout.js + osk_board.js (shared with the Hub OSK panel) on
+  hub/controller/kb_common.js (CTRL_KB, shared with the phone Gamepad).
+  Scripts: kb_common.js → osk_layout.js → osk_board.js → keyboard_type.js → keyboard.js (start-up).
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Keyboard</title>
-  <link rel="stylesheet" href="keyboard.css?v=20261019a">
+  <link rel="stylesheet" href="keyboard.css?v=20261019b">
 </head>
 <body>
   <div id="bar">
@@ -29,8 +30,9 @@
   <div id="board" aria-label="On-screen keyboard"></div>
 
   <script src="../../../hub/controller/kb_common.js?v=20261012a"></script>
-  <script src="keyboard_layout.js?v=20261019a"></script>
-  <script src="keyboard_type.js?v=20261019a"></script>
-  <script src="keyboard.js?v=20261019a"></script>
+  <script src="../../../hub/osk/osk_layout.js?v=20261019b"></script>
+  <script src="../../../hub/osk/osk_board.js?v=20261019b"></script>
+  <script src="keyboard_type.js?v=20261019b"></script>
+  <script src="keyboard.js?v=20261019b"></script>
 </body>
 </html>
