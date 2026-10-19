@@ -30,7 +30,7 @@ CELL_VALUES = {k: v for k, v in dict(globals()).items() if k.isupper()}
 # ════════════════════════════════════════════════════════════════════════════
 
 # ---------- Name and folders ----------
-MODEL_NAME   = "tiny-v3.4"          # Name for this run. Used for the output folder,
+MODEL_NAME   = "tiny"          # Name for this run. Used for the output folder,
                                     # the GGUF file, the Ollama model and the zip.
                                     # Change it for every new run so old results
                                     # aren't overwritten (e.g. "tiny-v3.3").
