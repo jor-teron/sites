@@ -1,0 +1,80 @@
+    /* Page reset — stop bounce/zoom on phone */
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: #0e0e10;
+      color: #eee;
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    /* Portrait-only message */
+    #rotateHint {
+      display: none;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      font-size: 1.15rem;
+    }
+    @media (orientation: portrait) {
+      #rotateHint { display: flex; }
+      #wrap { display: none !important; }
+    }
+
+    /* Landscape shell */
+    #wrap {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 6px;
+      gap: 6px;
+    }
+
+    /* Status line: modifiers + last key */
+    #status {
+      height: 22px;
+      font-size: 12px;
+      color: #8ab4ff;
+      padding: 0 4px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    /* Keyboard row */
+    .row {
+      display: flex;
+      flex: 1;
+      gap: 4px;
+    }
+
+    /* Base key */
+    button.key {
+      flex: 1;
+      border: 0;
+      border-radius: 6px;
+      background: #2b2b30;
+      color: #f2f2f2;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    button.key:active { background: #4a7c59; }
+
+    /* Wider action keys */
+    button.w15 { flex: 1.5; }
+    button.w2 { flex: 2; }
+    button.space { flex: 6; background: #33353c; }
+
+    /* Modifier looks "latched" when .on */
+    button.mod { background: #3a3d48; }
+    button.mod.on { background: #3d6ea5; }
+
+    /* Special colors */
+    button.esc { background: #5a3a3a; }
+    button.enter { background: #2a4a62; }
+    button.back { background: #5a3232; }
+    button.del { background: #4a3038; }
