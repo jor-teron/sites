@@ -1,21 +1,20 @@
 /*
  * Google Drive test page logic (apps/lab/gdrive-test/gdt.js).
- * - Config card: is a TV client id / secret in shared/google/google_config.js, the scopes, this
- *   page's origin, signed in or not (+ the Google address).
- * - Start: GoogleAuth.start() (device code) → big QR (verification_url_complete if Google sends it,
- *   else verification_url, with the code shown big) → GoogleAuth.poll() at Google's interval
- *   (authorization_pending / slow_down / access_denied / expired_token handled there) → then
- *   lists the first 10 Drive files (files.list).
- * - Test CORS: a request with a dummy client id. A readable "invalid_client" answer means the
- *   browser may call Google directly from this origin; a TypeError means CORS / network blocked it.
+ * - Config card: the Hub web client id (GOOGLE_CONFIG.hubWebClientId, project "monorepo"), the
+ *   scopes, this page's origin, signed in or not (+ the Google address, the method).
+ * - Sign in: GoogleGis.token() (Google's sign-in window, full Drive) → GoogleAuth.setToken(…, 'popup')
+ *   → lists the first 10 Drive files. The same client is used by "Phone as a key" on the phone page.
+ * - Find "hub" folder: GDriveFs.hubRoot() (finds or creates My Drive/hub) and lists it.
+ * - Test CORS: a request to the Drive API without a token. A readable 401 answer means the browser
+ *   may call Drive directly from this origin; a TypeError means CORS / network blocked it.
  * - Every request and answer goes to the log (tokens hidden); CORS / network errors in yellow.
+ * (The old QR / device-flow test is gone: that method is off, see shared/google/google_config.js.)
  */
 (function () {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const A = window.GoogleAuth, C = window.GOOGLE_CONFIG || {};
+  const A = window.GoogleAuth, G = window.GoogleGis, C = window.GOOGLE_CONFIG || {};
   const logEl = $('log');
-  let flow = null;
 
   function log(t, cls) {
     const line = document.createElement('span');
@@ -25,19 +24,20 @@
     logEl.scrollTop = logEl.scrollHeight;
   }
   function logErr(e) {
-    if (e && e.code === 'network') log('CORS / NETWORK ERROR: ' + e.message, 'c');
+    if (e && (e.code === 'network' || e instanceof TypeError)) log('CORS / NETWORK ERROR: ' + e.message, 'c');
     else log('ERROR ' + (e && e.code ? '[' + e.code + '] ' : '') + (e && e.message || e), 'e');
   }
   A.onLog((t) => log(t));
   const setState = (t, cls) => { $('state').textContent = t; $('state').className = 'state ' + (cls || ''); };
 
   function cfgCard() {
+    const id = C.hubWebClientId || '';
+    const u = A.user();
     const rows = [
-      ['TV client id', C.tvClientId ? '\u2713 set (' + C.tvClientId.slice(0, 12) + '\u2026)' : '\u2717 empty', !!C.tvClientId],
-      ['TV client secret', C.tvClientSecret ? '\u2713 set' : '\u2717 empty', !!C.tvClientSecret],
-      ['Scopes', C.deviceScopes || '(none)', true],
+      ['Hub web client', id ? '\u2713 ' + id.split('-')[0] + '-\u2026 (project monorepo)' : '\u2717 empty', !!id],
+      ['Scopes', C.fullScopes || '(none)', !!C.fullScopes],
       ['This page', location.origin, true],
-      ['Signed in', A.signedIn() ? '\u2713 ' + (A.user().email || 'yes') : 'no', A.signedIn()]
+      ['Signed in', A.signedIn() ? '\u2713 ' + (u.email || 'yes') + ' \u00B7 ' + (u.method || '?') : (A.expired() ? 'ran out (sign in again)' : 'no'), A.signedIn()]
     ];
     const g = document.createElement('div');
     g.className = 'cfg';
@@ -47,75 +47,66 @@
       g.append(a, b);
     });
     const kids = [g];
-    if (!A.configured()) {
+    if (!id) {
       const p = document.createElement('p');
       p.className = 'setup';
-      p.textContent = 'Set up first: create a "TVs and Limited Input devices" OAuth client and paste its id + secret into shared/google/google_config.js. Steps: README.md in this folder, or Hub \u2192 Settings \u2192 How-to \u2192 Google Drive. "Test CORS" works already.';
+      p.textContent = 'Set up first: put the Web application client id (project "monorepo") into hubWebClientId in shared/google/google_config.js. Steps: README.md in this folder.';
       kids.push(p);
     }
     $('cfg').replaceChildren(...kids);
-    $('start').disabled = !A.configured();
-    $('list').disabled = $('refresh').disabled = $('signout').disabled = !A.signedIn();
-  }
-
-  function showCode(dev) {
-    const url = dev.verification_url_complete || dev.verification_url;
-    const box = document.createElement('div');
-    box.className = 'box';
-    try { const q = qrcode(0, 'M'); q.addData(url); q.make(); box.innerHTML = q.createSvgTag(5, 15); } catch (e) { box.textContent = 'QR failed: ' + e.message; }
-    const code = document.createElement('div'); code.className = 'code'; code.textContent = dev.user_code;
-    const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = url;
-    const hint = document.createElement('p'); hint.className = 'muted';
-    hint.textContent = (dev.verification_url_complete ? 'verification_url_complete sent: the QR includes the code. ' : 'No verification_url_complete: scan / open the address, then type the code. ') +
-      'Code valid ' + Math.round((+dev.expires_in || 1800) / 60) + ' min, polling every ' + dev.interval + ' s.';
-    $('qr').replaceChildren(box, code, a, hint);
-    $('qr').hidden = false;
+    $('start').disabled = !id;
+    $('list').disabled = $('hub').disabled = $('signout').disabled = !A.signedIn();
   }
 
   async function start() {
-    if (flow) flow.cancel();
-    $('cancel').hidden = false; $('start').disabled = true;
-    setState('Asking Google for a code\u2026');
-    log('Start: device flow from ' + location.origin, 's');
-    flow = A.connect({ onCode: (dev) => { showCode(dev); setState('Waiting for you to approve on your phone\u2026'); }, onStatus: (t) => setState(t) });
+    $('start').disabled = true;
+    setState('Google\u2019s sign-in window is open\u2026');
+    log('Sign in: Google Identity Services token client from ' + location.origin, 's');
     try {
-      const u = await flow.done;
-      log('Signed in as ' + (u.email || '(no email)'), 's');
-      setState('Signed in \u2713 ' + (u.email || ''), 'ok');
-      $('qr').hidden = true;
+      const r = await G.token();
+      log('\u2190 token for ' + (r.email || '(no email)') + ', expires in ' + r.expires_in + ' s' + (r.partial ? ' \u2014 Drive NOT granted (tick the Drive box)' : ''), r.partial ? 'e' : 's');
+      A.setToken(r, 'popup');
+      setState('Signed in \u2713 ' + (r.email || ''), 'ok');
       await listFiles();
-    } catch (e) {
-      if (e && e.code === 'cancelled') { log('Cancelled'); setState(''); } else { logErr(e); setState(e.message, 'bad'); }
-    } finally {
-      flow = null; $('cancel').hidden = true; cfgCard();
-    }
+    } catch (e) { logErr(e); setState(e && e.message || String(e), 'bad'); }
+    finally { cfgCard(); }
   }
 
+  function showFiles(files, empty) {
+    $('files').replaceChildren(...(files.length ? files.map((f) => {
+      const li = document.createElement('li');
+      li.textContent = (f.mimeType === 'application/vnd.google-apps.folder' ? '\uD83D\uDCC1 ' : '\uD83D\uDCC4 ') + f.name +
+        (f.size ? '  (' + Math.round(f.size / 1024) + ' KB)' : '') + (f.modifiedTime ? '  \u00B7 ' + new Date(f.modifiedTime).toLocaleString() : '');
+      return li;
+    }) : [Object.assign(document.createElement('li'), { className: 'muted', textContent: empty })]));
+  }
   async function listFiles() {
     const p = new URLSearchParams({ pageSize: '10', orderBy: 'modifiedTime desc', fields: 'files(id,name,mimeType,size,modifiedTime)', q: 'trashed = false' });
     log('GET https://www.googleapis.com/drive/v3/files?' + p);
     try {
       const j = await GDriveFs.api('files?' + p);
-      const files = j.files || [];
-      log('\u2190 200 ' + files.length + ' file(s)', 's');
-      const ol = $('files');
-      ol.replaceChildren(...(files.length ? files.map((f) => {
-        const li = document.createElement('li');
-        li.textContent = (f.mimeType === 'application/vnd.google-apps.folder' ? '\uD83D\uDCC1 ' : '\uD83D\uDCC4 ') + f.name +
-          (f.size ? '  (' + Math.round(f.size / 1024) + ' KB)' : '') + '  \u00B7 ' + new Date(f.modifiedTime).toLocaleString();
-        return li;
-      }) : [Object.assign(document.createElement('li'), { className: 'muted', textContent: 'No files visible. With drive.file the Hub only sees files it created (try Files \u2192 Google Drive \u2192 Upload).' })]));
+      log('\u2190 200 ' + (j.files || []).length + ' file(s)', 's');
+      showFiles(j.files || [], 'No files in this Drive.');
+    } catch (e) { logErr(e); }
+  }
+  async function hubFolder() {
+    log('Find or create My Drive/hub');
+    try {
+      const d = await GDriveFs.hubRoot();
+      log('\u2190 ' + (d.crumb || 'hub') + ' (id ' + String(d.id).slice(0, 8) + '\u2026)', 's');
+      const out = [];
+      for await (const [name, h] of d.entries()) out.push({ name, mimeType: h.kind === 'directory' ? 'application/vnd.google-apps.folder' : '' });
+      showFiles(out, 'The hub folder is empty.');
     } catch (e) { logErr(e); }
   }
 
   async function corsTest() {
-    const url = 'https://oauth2.googleapis.com/device/code';
-    log('CORS test: POST ' + url + ' with a dummy client id from ' + location.origin);
+    const url = 'https://www.googleapis.com/drive/v3/about?fields=user';
+    log('CORS test: GET ' + url + ' without a token from ' + location.origin);
     try {
-      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'client_id=cors-test.apps.googleusercontent.com&scope=openid' });
-      const t = await r.text();
-      log('\u2190 ' + r.status + ' ' + t.replace(/\s+/g, ' ').slice(0, 160));
-      log('CORS OK: the browser could read Google\u2019s answer (an error about the dummy client is expected).', 's');
+      const r = await fetch(url);
+      log('\u2190 ' + r.status + ' ' + (await r.text()).replace(/\s+/g, ' ').slice(0, 120));
+      log('CORS OK: the browser could read Google\u2019s answer (401 without a token is expected).', 's');
       setState('CORS OK from ' + location.origin, 'ok');
     } catch (e) {
       log('CORS / NETWORK ERROR: ' + (e && e.message || e) + ' \u2014 the browser blocked the call (or you are offline).', 'c');
@@ -124,17 +115,13 @@
   }
 
   $('start').addEventListener('click', start);
-  $('cancel').addEventListener('click', () => { if (flow) flow.cancel(); $('qr').hidden = true; });
   $('list').addEventListener('click', listFiles);
-  $('refresh').addEventListener('click', async () => {
-    try { const s = JSON.parse(localStorage.getItem('sites-hub.google') || '{}'); s.exp = 0; localStorage.setItem('sites-hub.google', JSON.stringify(s)); await A.token(); log('Token refreshed', 's'); } catch (e) { logErr(e); }
-    cfgCard();
-  });
+  $('hub').addEventListener('click', hubFolder);
   $('cors').addEventListener('click', corsTest);
   $('signout').addEventListener('click', async () => { await A.signOut(); log('Signed out (token revoked, storage cleared)', 's'); setState(''); cfgCard(); });
   $('clear').addEventListener('click', () => logEl.replaceChildren());
   $('copy').addEventListener('click', () => { try { navigator.clipboard.writeText(logEl.textContent); } catch (_) { /* ignore */ } });
   A.onChange(cfgCard);
   cfgCard();
-  log('Page ready. Config: ' + (A.configured() ? 'TV client id set' : 'no TV client id yet (setup needed)') + '; ' + (A.signedIn() ? 'signed in' : 'signed out') + '.');
+  log('Page ready. Hub web client ' + (C.hubWebClientId ? 'set' : 'missing (setup needed)') + '; ' + (A.signedIn() ? 'signed in' : 'signed out') + '.');
 })();

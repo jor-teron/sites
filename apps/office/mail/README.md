@@ -10,7 +10,7 @@ Setup steps (Google Cloud, client id) are in `mail.txt`.
 | --- | --- |
 | `index.html` | Redirect to `mail.html`. |
 | `mail.html` | Page, page CSP, script order. |
-| `mail-config.js` | Theme, app name, scopes; the OAuth web client id comes from `shared/google/google_config.js` (`webClientId`, shared with the Hub). No secrets. |
+| `mail-config.js` | Theme, app name, OAuth client id, scopes. No secrets. |
 | `mail-sanitize.js` | Untrusted mail HTML → safe srcdoc page (+ frame CSP). |
 | `mail-view.js` | Reader body: sandboxed iframe or plain text, "Show images". |
 | `mail-auth.js` | GIS token client, token storage, expiry, sign out (revoke). |

@@ -6,7 +6,8 @@ Description: Model list and RAM hints for Local AI Chat.
 Purpose: One place for the selectable models (id, label, kind, q4 files and
          approx q4 download size) plus a device-RAM cue for each model.
 Author: Grok
-Date: 2026-10-19 (R2: new file; 5 models, all dtype q4)
+Date: 2026-10-19 (R3: Gemma-3-270M removed, LEGACY_MODELS for its leftover
+                  cache. R2: new file; 5 models, all dtype q4)
 ================================================================================
 */
 
@@ -35,15 +36,6 @@ export const MODELS = [
         hint: 'Default. Light and quick'
     },
     {
-        id: 'onnx-community/gemma-3-270m-it-ONNX',
-        label: 'Gemma 3 270M',
-        kind: 'chat',
-        mb: 323, // model_q4.onnx (0.2) + model_q4.onnx_data (323)
-        files: ['onnx/model_q4.onnx', 'onnx/model_q4.onnx_data'],
-        externalData: true,
-        hint: "Google's tiny chat model, good for its size"
-    },
-    {
         id: 'HuggingFaceTB/SmolLM2-360M-Instruct',
         label: 'SmolLM2 360M',
         kind: 'chat',
@@ -59,6 +51,14 @@ export const MODELS = [
         files: ['onnx/model_q4.onnx'],
         hint: 'Smartest, heaviest'
     }
+];
+
+/**
+ * Models removed from the list whose files may still sit in the cache.
+ * The Models sheet shows them only while cached, with a Delete button.
+ */
+export const LEGACY_MODELS = [
+    { id: 'onnx-community/gemma-3-270m-it-ONNX', label: 'Gemma 3 270M (removed)' }
 ];
 
 export const DEFAULT_MODEL = 'HuggingFaceTB/SmolLM2-135M-Instruct';

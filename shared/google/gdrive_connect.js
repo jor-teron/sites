@@ -1,14 +1,14 @@
 /*
- * Google Drive connect panel (shared/google/gdrive_connect.js + google.css) — the QR sign-in UI
+ * Google Drive connect panel (shared/google/gdrive_connect.js + google.css) — the Google sign-in UI
  * used by the Hub's "Google Drive" drive tile (hub/hub_drives.js) and the Files app.
  * States:
- *   setup    no TV client id AND no web client id in google_config.js → "Set up Google Drive (see How-to)"
- *   idle     ☁ Google Drive + the sign-in methods (R9b), the default one (GOOGLE_CONFIG.defaultMethod,
- *            'qr' for now) first and big:
- *              "QR code (Hub files only)"       device flow below (drive.file)
+ *   setup    no hubWebClientId (and QR off) in google_config.js → "Set up Google Drive (see How-to)"
+ *   idle     ☁ Google Drive + Phone as a key (primary), QR only if GOOGLE_CONFIG.qrEnabled (hidden now; GitHub blocks
+ *            pushing its client secret), the default one (GOOGLE_CONFIG.defaultMethod 'phone') first and big:
  *              "Phone as a key (full Drive)"    QR to apps/tools/phonekey/ on the phone; the phone signs
  *                                               in (Google Identity Services) and sends the token over
  *                                               the Hub's SharedLink (phonekey.js, hub/hub_phonekey.js)
+ *              "QR code (Hub files only)"       device flow below (drive.file) — hidden
  *              "Sign in on this computer"       small link: Google's popup here (google_gis.js)
  *            (a code / room is only made on click: they expire and Google limits requests)
  *   renew    phone / popup sign-in ran out (~1 h, no refresh token): big "Renew from phone"
@@ -78,14 +78,16 @@
           button('gdc-go gdc-renew', 'Renew from phone', phone), popupLink() || el('span'));
         return;
       }
-      const qr = button('gdc-go gdc-m-qr', 'QR code (Hub files only)', go);
-      qr.title = 'Sign in by QR code (device flow). The Hub sees only the files it makes.';
       const ph = button('gdc-go gdc-m-phone', 'Phone as a key (full Drive)', phone);
       ph.title = 'Sign in on your phone; the Hub gets your whole Google Drive for about an hour.';
-      qr.disabled = !hasQr(); ph.disabled = !hasWeb() || !window.PhoneKey;
-      const phoneFirst = C.defaultMethod === 'phone' ? !ph.disabled : qr.disabled;
-      (phoneFirst ? qr : ph).classList.add('gdc-alt');
-      show(head('Choose how to sign in'), ...(phoneFirst ? [ph, qr] : [qr, ph]), popupLink() || el('span'));
+      ph.disabled = !hasWeb() || !window.PhoneKey;
+      const list = [ph];
+      if (hasQr()) {   // QR / device flow: hidden while GOOGLE_CONFIG.qrEnabled is false (see google_config.js)
+        const qr = button('gdc-go gdc-m-qr gdc-alt', 'QR code (Hub files only)', go);
+        qr.title = 'Sign in by QR code (device flow). The Hub sees only the files it makes.';
+        if (C.defaultMethod === 'qr') { ph.classList.add('gdc-alt'); qr.classList.remove('gdc-alt'); list.unshift(qr); } else list.push(qr);
+      }
+      show(head('Choose how to sign in'), ...list, popupLink() || el('span'));
     }
     // Phone as a key: QR to the phone page; the Hub page (hub_phonekey.js) stores the token
     let roomT = 0;

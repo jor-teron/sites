@@ -17,14 +17,18 @@
  *   broadest Drive scope allowed: the Hub sees the files and folders IT created (or that were opened
  *   with it) — not the rest of your Drive.
  *
- * R9b — "Phone as a key" (full Drive) and "Sign in on this computer" (popup) use Google Identity
- * Services with Mail's existing WEB client (webClientId below, project 783291801077; Mail reads
- * it from here too). Scope fullScopes = https://www.googleapis.com/auth/drive (all of Drive) +
- * openid email. Needs: Google Drive API enabled in THAT project and the web client's Authorized
- * JavaScript origins containing https://jor-teron.github.io (Mail already needs that).
- * No refresh token with these methods: the sign-in lasts about an hour, then "Renew from phone".
- * defaultMethod: 'qr' (device flow, Hub files only) or 'phone' (phone as a key, full Drive) —
- * which method the Google Drive tile offers first.
+ * QR / device flow is DISABLED (qrEnabled: false, Oct 2026): it needs the client secret in this
+ * public file and GitHub push protection blocks pushing it. The code stays (google_auth.connect)
+ * but the UI hides the method. Keep tvClientId / tvClientSecret EMPTY — never commit a secret.
+ *
+ * hubWebClientId — "Phone as a key" (full Drive) and "Sign in on this computer" (popup) use Google
+ * Identity Services with a WEB application client in Google Cloud project "monorepo"
+ * (Authorized JavaScript origin https://jor-teron.github.io, Google Drive API enabled, consent
+ * screen in Testing with Jor as test user). No secret needed. Scope fullScopes =
+ * https://www.googleapis.com/auth/drive (all of Drive) + openid email. No refresh token: the
+ * sign-in lasts about an hour, then "Renew from phone".
+ * Mail (apps/office/mail/mail-config.js) keeps its OWN web client (project 783291801077).
+ * defaultMethod: 'phone' — which method the Google Drive tile offers first.
  */
 window.GOOGLE_CONFIG = {
   tvClientId: '783291801077-86he9so99le9rbauqo8cl3i20uuc5c5k.apps.googleusercontent.com',
@@ -32,9 +36,10 @@ window.GOOGLE_CONFIG = {
   deviceScopes: 'https://www.googleapis.com/auth/drive.file openid email profile'
 };
 
-// R9b additions (kept in their own block so the TV client values above stay untouched)
+// Hub web client + method switches (own block so the TV lines above stay untouched)
 Object.assign(window.GOOGLE_CONFIG, {
-  webClientId: '783291801077-33g5j2khvo9b42cs8g9jdlna792jppcf.apps.googleusercontent.com',
+  hubWebClientId: '1093334194754-ol4ge41bcq9ehqlg7dk2oasmg00vqu2f.apps.googleusercontent.com',
   fullScopes: 'https://www.googleapis.com/auth/drive openid email',
-  defaultMethod: 'qr'
+  qrEnabled: false,
+  defaultMethod: 'phone'
 });

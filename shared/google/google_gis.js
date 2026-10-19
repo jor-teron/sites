@@ -2,7 +2,7 @@
  * Google Identity Services token client (shared/google/google_gis.js) — used by the phone page
  * ("Phone as a key", apps/tools/phonekey/) and by "Sign in on this computer" (popup) on the PC.
  * Loads https://accounts.google.com/gsi/client on first use, then asks for an access token with
- * GOOGLE_CONFIG.webClientId (Mail's web client) and the given scope (default fullScopes =
+ * GOOGLE_CONFIG.hubWebClientId (the Hub's web client, project "monorepo") and the given scope (default fullScopes =
  * drive + openid email). No refresh token (GIS token model): about an hour.
  * Must be called from a click (Google opens a popup).
  * API window.GoogleGis: load() → Promise, token({ scope, prompt }) → Promise<{access_token,
@@ -34,11 +34,11 @@
   async function token(o) {
     o = o || {};
     const c = window.GOOGLE_CONFIG || {};
-    if (!c.webClientId) throw new Error('No webClientId in shared/google/google_config.js');
+    if (!c.hubWebClientId) throw new Error('No hubWebClientId in shared/google/google_config.js');
     await load();
     const resp = await new Promise((res, rej) => {
       const tc = google.accounts.oauth2.initTokenClient({
-        client_id: c.webClientId,
+        client_id: c.hubWebClientId,
         scope: o.scope || c.fullScopes || 'https://www.googleapis.com/auth/drive openid email',
         callback: (r) => (r && r.access_token ? res(r) : rej(new Error('Google sign-in: ' + ((r && (r.error_description || r.error)) || 'no token')))),
         error_callback: (e) => rej(new Error('Google sign-in: ' + ((e && (e.message || e.type)) || 'closed')))

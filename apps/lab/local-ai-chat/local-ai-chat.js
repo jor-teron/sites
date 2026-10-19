@@ -3,21 +3,22 @@
 File: local-ai-chat.js
 Project: local-ai-chat
 Description: Main application logic for the Local AI Chat WebApp.
-Purpose: Loads small language models (q4) via transformers.js, manages chat,
-         unloads the old model on switch, keeps models in the browser cache
-         (100-day refresh, Models… sheet to delete/re-download), and drives
-         the ✨ helpers popover (prompt helpers + in-chat image generation).
+Purpose: UI, chat history and helpers. The model itself (transformers.js, q4)
+         runs in local-ai-chat-worker.js, so replies stream live; switching
+         models terminates the worker (frees all RAM) and starts a fresh one.
+         Models stay in the browser cache (100-day refresh, Models… sheet to
+         delete/re-download). ✨ popover: prompt helpers + in-chat images.
 Author: Grok
-Date: 2026-10-19 (R2: 5-model list with RAM hints, unload on switch, cache fix,
-                  Models sheet, T5 support, short context. R1: minimalist UI)
+Date: 2026-10-19 (R3: model in a Web Worker, live streaming + t/s, ■ stop,
+                  per-answer tokens · t/s line, Gemma-3 removed.
+                  R2: model list with RAM hints, cache fix, Models sheet, T5,
+                  short context. R1: minimalist UI)
 ================================================================================
 */
 
-// Import transformers.js from CDN
-import { pipeline, env, TextStreamer } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.0';
 // In-chat image generation (Pollinations.ai)
 import { generateImageBubble } from './local-ai-chat-image.js';
-// Model list + RAM hints, cache helpers, Models… sheet (R2)
+// Model list + RAM hints, cache helpers, Models… sheet
 import { MODELS, DEFAULT_MODEL, getModel, ramCue, optionLabel } from './local-ai-chat-models.js';
 import { isCached, expireIfOld, markDownloaded } from './local-ai-chat-cache.js';
 import { openModelsSheet } from './local-ai-chat-sheet.js';
@@ -38,13 +39,14 @@ const LS_MODEL = 'localAiChatModel';
 // Global state variables
 // ============================================================================
 
-// Current text generation pipeline instance
-let generator = null;
+// Model worker (R3) and whether it has a model ready
+let worker = null;
+let modelReady = false;
 
 // Current model ID being used
 let currentModel = DEFAULT_MODEL;
 
-// Chat history array of {role, content} objects
+// Chat history array of {role, content, meta?} objects (meta = {tokens, tps})
 let chatHistory = [];
 
 // Flag indicating if a generation is in progress
@@ -52,6 +54,9 @@ let isGenerating = false;
 
 // Flag indicating if a model is loading
 let isLoading = false;
+
+// Handlers for the running worker job (set by loadModel / generateReply)
+let job = null;
 
 // ============================================================================
 // DOM element references
@@ -102,7 +107,7 @@ function setStatus(message) {
     noteEl.textContent = message;
     chatHistoryEl.appendChild(noteEl); // keep it last
     chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
-    if (/^(Ready|Done|Chat cleared|Prompt updated|Download|Image ready|Deleted)/.test(message)) {
+    if (/^(Ready|Done|Stopped|Chat cleared|Prompt updated|Download|Image ready|Deleted)/.test(message)) {
         noteTimer = setTimeout(() => setStatus(''), 2500);
     }
 }
@@ -111,13 +116,29 @@ function setStatus(message) {
  * Appends a message bubble to the chat history UI.
  * @param {string} role - 'user' or 'assistant'
  * @param {string} content - Message text
+ * @param {{tokens:number, tps:number}} [meta] - Optional tokens/t/s line
+ * @returns {HTMLElement} The bubble
  */
-function appendMessage(role, content) {
+function appendMessage(role, content, meta) {
     const div = document.createElement('div');
     div.className = `message ${role}`;
     div.textContent = content;
+    if (meta) addMetaLine(div, meta);
     addBubble(div);
-    chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+    return div;
+}
+
+/**
+ * Adds the small muted '<tokens> tokens · <tps> t/s' line inside a bubble.
+ * @param {HTMLElement} bubble - Assistant bubble
+ * @param {{tokens:number, tps:number}} meta
+ */
+function addMetaLine(bubble, meta) {
+    if (!meta || !meta.tokens) return;
+    const small = document.createElement('small');
+    small.className = 'msg-meta';
+    small.textContent = `${meta.tokens} tokens · ${Number(meta.tps).toFixed(1)} t/s`;
+    bubble.appendChild(small);
 }
 
 /**
@@ -131,6 +152,14 @@ function addBubble(el) {
 }
 
 /**
+ * Lets the browser paint before heavy work starts (rAF + setTimeout 0).
+ * @returns {Promise<void>}
+ */
+function nextPaint() {
+    return new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
+}
+
+/**
  * Saves chat history to localStorage.
  */
 function saveHistory() {
@@ -138,14 +167,15 @@ function saveHistory() {
 }
 
 /**
- * Loads chat history from localStorage and renders it.
+ * Loads chat history from localStorage and renders it (entries without
+ * meta, i.e. from R1/R2, render without the tokens/t/s line).
  */
 function loadHistory() {
     const raw = localStorage.getItem(LS_HISTORY);
     if (raw) {
         try {
             chatHistory = JSON.parse(raw);
-            chatHistory.forEach(msg => appendMessage(msg.role, msg.content));
+            chatHistory.forEach(msg => appendMessage(msg.role, msg.content, msg.meta));
         } catch (e) {
             console.warn('Failed to load history', e);
         }
@@ -164,61 +194,51 @@ function clearHistory() {
 }
 
 /**
- * Detects whether WebGPU is available.
- * @returns {Promise<boolean>}
+ * Send button shows ■ (stop) while generating, ➤ otherwise.
  */
-async function hasWebGPU() {
-    if (!navigator.gpu) return false;
-    try {
-        const adapter = await navigator.gpu.requestAdapter();
-        return !!adapter;
-    } catch {
-        return false;
-    }
+function updateSendBtn() {
+    sendBtn.textContent = isGenerating ? '■' : '➤';
+    sendBtn.setAttribute('aria-label', isGenerating ? 'Stop' : 'Send');
+    sendBtn.disabled = isLoading;
 }
 
 // ============================================================================
-// Model loading
+// Model worker (R3)
 // ============================================================================
 
 /**
- * Unloads the current model so two models never sit in RAM together.
+ * Terminates the old worker (frees all its WASM/WebGPU memory) and starts
+ * a fresh one. R2's dispose() never shrank the WASM heap.
  */
-async function unloadModel() {
-    const old = generator;
-    generator = null;
-    if (old && typeof old.dispose === 'function') {
-        try { await old.dispose(); } catch (e) { console.warn('dispose failed', e); }
-    }
+function restartWorker() {
+    if (worker) worker.terminate();
+    modelReady = false;
+    const w = new Worker(new URL('./local-ai-chat-worker.js', import.meta.url), { type: 'module' });
+    worker = w;
+    // Ignore anything still queued from an old (terminated) worker
+    w.addEventListener('message', (e) => { if (w === worker) job?.onMessage(e.data || {}); });
+    w.addEventListener('error', (e) => {
+        e.preventDefault();
+        if (w === worker) job?.onMessage({ type: 'error', stage: isLoading ? 'load' : 'generate', message: e.message || 'Worker failed to start (offline?)' });
+    });
 }
 
 /**
- * Loads the specified model using transformers.js (dtype q4).
- * Unloads the previous model first, applies the 100-day policy (only that
- * model, only when its timestamp is really older than 100 days), and says
- * "Loading from cache" vs "Downloading" based on what is actually in
- * Cache Storage 'transformers-cache'.
+ * Loads the specified model in a fresh worker (dtype q4).
+ * Applies the 100-day policy (only that model, only when its timestamp is
+ * really older than 100 days), and says "Loading from cache" vs
+ * "Downloading" based on what is actually in Cache Storage.
  * @param {string} modelId - Hugging Face model ID
  */
 async function loadModel(modelId) {
     const model = getModel(modelId);
     isLoading = true;
-    sendBtn.disabled = true;
+    updateSendBtn();
     modelSelect.disabled = true;
     modelSelect.value = model.id;
 
-    // Free RAM before loading the next model
-    await unloadModel();
-
-    // Configure transformers.js environment: remote Hub + browser cache on
-    env.allowLocalModels = false;
-    env.allowRemoteModels = true;
-    env.useBrowserCache = true;
-
-    // Determine device; dtype stays q4 (user's choice)
-    const useWebGPU = await hasWebGPU();
-    const device = useWebGPU ? 'webgpu' : 'wasm';
-    const dtype = 'q4';
+    // Fresh worker = old model's memory is gone before the next one loads
+    restartWorker();
 
     try {
         const expired = await expireIfOld(model.id);
@@ -226,26 +246,27 @@ async function loadModel(modelId) {
         const verb = fromCache ? 'Loading from cache' : (expired ? 'Cache over 100 days old. Downloading' : 'Downloading');
         setStatus(`${verb}: ${model.label} (~${model.mb} MB)…`);
 
-        const task = model.kind === 't5' ? 'text2text-generation' : 'text-generation';
-        const options = {
-            dtype,
-            device,
-            progress_callback: (p) => {
-                // transformers.js also fires 'progress' while reading from
-                // cache, so the wording follows the real cache check above.
-                if (p.status === 'progress' && p.total && /\.onnx/.test(p.file || '')) {
-                    const pct = Math.round((p.loaded / p.total) * 100);
-                    setStatus(`${verb}: ${model.label} ${pct}%`);
-                } else if (p.status === 'done' && /\.onnx/.test(p.file || '')) {
-                    setStatus(`Starting ${model.label} (can take 30–90 s)…`);
+        const device = await new Promise((resolve, reject) => {
+            job = {
+                onMessage: (m) => {
+                    if (m.type === 'progress') {
+                        setStatus(`${verb}: ${model.label} ${Math.round((m.loaded / m.total) * 100)}%`);
+                    } else if (m.type === 'starting') {
+                        setStatus(`Starting ${model.label} (can take 30–90 s)…`);
+                    } else if (m.type === 'loaded') {
+                        resolve(m.device);
+                    } else if (m.type === 'error') {
+                        reject(new Error(m.message));
+                    }
                 }
-            }
-        };
-        if (model.externalData) options.use_external_data_format = true;
+            };
+            worker.postMessage({
+                type: 'load',
+                model: { id: model.id, kind: model.kind, externalData: !!model.externalData }
+            });
+        });
 
-        generator = await pipeline(task, model.id, options);
-
-        console.log('Pipeline loaded successfully for', model.id);
+        modelReady = true;
         markDownloaded(model.id);
         currentModel = model.id;
         localStorage.setItem(LS_MODEL, model.id);
@@ -254,10 +275,11 @@ async function loadModel(modelId) {
         console.error(err);
         setStatus(`Error loading ${model.label}: ${err.message}. Try another model or refresh.`);
     }
+    job = null;
     isLoading = false;
-    sendBtn.disabled = false;
+    updateSendBtn();
     modelSelect.disabled = false;
-    modelSelect.value = generator ? currentModel : model.id;
+    modelSelect.value = modelReady ? currentModel : model.id;
 }
 
 // ============================================================================
@@ -268,6 +290,7 @@ async function loadModel(modelId) {
  * Builds the model input. Chat models get the system prompt plus the last
  * CONTEXT_MESSAGES messages; T5 gets one plain prompt from the latest
  * message (optionally with a short slice of the last assistant reply).
+ * Only role/content are sent (meta stays local).
  * @param {string} userMessage - Latest user text
  * @param {Array} context - Prior {role, content} messages to include
  * @returns {Array|string} Input for the pipeline
@@ -280,101 +303,111 @@ function buildInput(userMessage, context) {
     }
     return [
         { role: 'system', content: 'You are a helpful, concise assistant. Prefer short, clear answers.' },
-        ...context.slice(-CONTEXT_MESSAGES),
+        ...context.slice(-CONTEXT_MESSAGES).map(m => ({ role: m.role, content: m.content })),
         { role: 'user', content: userMessage }
     ];
 }
 
 /**
- * Generates a response from the current model given a user message.
- * Supports streaming (token-by-token) and reports tokens per second.
- * Includes robust fallback if streaming produces no text.
+ * Generates a reply in the worker. Text streams into liveBubble (painted at
+ * most once per animation frame); the note shows live t/s.
  * @param {string} userMessage - The user's input text
- * @param {HTMLElement|null} liveBubble - Optional DOM element to update live during streaming
+ * @param {HTMLElement|null} liveBubble - Optional bubble to update live
  * @param {Array} context - Prior messages to send (default none)
- * @returns {Promise<string>} The assistant's full reply
+ * @returns {Promise<{text:string, meta:{tokens:number, tps:number}|null}>}
  */
 async function generateReply(userMessage, liveBubble = null, context = []) {
-    if (!generator || isGenerating || isLoading) {
-        if (!generator) setStatus('Model not loaded yet.');
-        return '';
+    if (!modelReady || isGenerating || isLoading) {
+        if (!modelReady) setStatus('Model not loaded yet.');
+        return { text: '', meta: null };
     }
 
     isGenerating = true;
-    sendBtn.disabled = true;
-    setStatus('Generating...');
+    updateSendBtn();
+    setStatus('Generating…');
 
-    const isT5 = getModel(currentModel).kind === 't5';
+    const kind = getModel(currentModel).kind;
     const input = buildInput(userMessage, context);
 
-    let fullReply = '';
-    let tokenCount = 0;
-    const startTime = performance.now();
-
-    try {
-        const streamer = new TextStreamer(generator.tokenizer, {
-            skip_prompt: true,
-            skip_special_tokens: true,
-            callback_function: (token) => {
-                if (!token) return;
-                fullReply += token;
-                tokenCount++;
-                if (liveBubble) {
-                    liveBubble.textContent = fullReply;
-                    chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
-                }
-                if (tokenCount % 4 === 0) {
-                    const elapsed = (performance.now() - startTime) / 1000;
-                    const tps = elapsed > 0 ? (tokenCount / elapsed).toFixed(1) : '0';
-                    setStatus(`Generating... ${tps} t/s`);
-                }
-            }
-        });
-
-        // T5 is best greedy; chat models sample lightly
-        const genOpts = isT5
-            ? { max_new_tokens: 150, do_sample: false, repetition_penalty: 1.2, streamer }
-            : { max_new_tokens: 150, temperature: 0.6, top_p: 0.9, do_sample: true, streamer };
-        const output = await generator(input, genOpts);
-
-        // Strong fallback: extract assistant content from the final result
-        if (!fullReply || fullReply.trim().length < 2) {
-            const generated = output?.[0]?.generated_text;
-            if (Array.isArray(generated)) {
-                const last = generated[generated.length - 1];
-                fullReply = last && last.role === 'assistant' ? (last.content || '') : '';
-            } else if (typeof generated === 'string') {
-                fullReply = generated;
-            }
-            fullReply = (fullReply || '').trim();
-            if (liveBubble && fullReply) {
-                liveBubble.textContent = fullReply;
-            }
+    let shown = '';
+    let frame = 0;
+    let last = { tokens: 0, seconds: 0 };
+    const paint = () => {
+        frame = 0;
+        if (liveBubble) {
+            liveBubble.textContent = shown;
+            chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
         }
+    };
 
-        const elapsed = (performance.now() - startTime) / 1000;
-        const finalTps = elapsed > 0 && tokenCount > 0 ? (tokenCount / elapsed).toFixed(1) : 'n/a';
-        setStatus(`Done. ${tokenCount || '—'} tokens @ ${finalTps} t/s`);
+    const result = await new Promise((resolve) => {
+        job = {
+            onMessage: (m) => {
+                if (m.type === 'token') {
+                    shown += m.text;
+                    last = m;
+                    if (!frame) frame = requestAnimationFrame(paint);
+                    if (m.seconds > 0.3) setStatus(`Generating… ${(m.tokens / m.seconds).toFixed(1)} t/s`);
+                } else if (m.type === 'done') {
+                    resolve(m);
+                } else if (m.type === 'error') {
+                    resolve({ error: m.message });
+                }
+            },
+            // ■ fallback: on WASM the worker can't read 'stop' mid-reply,
+            // so the page ends the job itself (worker gets terminated)
+            forceStop: () => resolve({
+                text: shown.trim(), tokens: last.tokens, seconds: last.seconds,
+                tps: last.seconds > 0 ? last.tokens / last.seconds : 0, stopped: true, killed: true
+            })
+        };
+        worker.postMessage({ type: 'generate', input, kind });
+    });
+    if (frame) cancelAnimationFrame(frame);
+    job = null;
 
-        if (!fullReply) {
-            fullReply = '(No response generated. Try a shorter message or switch model.)';
-            if (liveBubble) liveBubble.textContent = fullReply;
-        }
-
-    } catch (err) {
-        console.error('Generation error:', err);
-        fullReply = `Error: ${err.message}`;
-        if (liveBubble) liveBubble.textContent = fullReply;
+    let text;
+    let meta = null;
+    if (result.error) {
+        console.error('Generation error:', result.error);
+        text = `Error: ${result.error}`;
         setStatus('Generation failed. See console for details.');
+    } else {
+        text = result.text || '(No response generated. Try a shorter message or switch model.)';
+        if (result.tokens) meta = { tokens: result.tokens, tps: Math.round(result.tps * 10) / 10 };
+        const tps = meta ? meta.tps.toFixed(1) : 'n/a';
+        setStatus(`${result.stopped ? 'Stopped' : 'Done'}. ${result.tokens || '—'} tokens @ ${tps} t/s`);
     }
+    if (liveBubble) liveBubble.textContent = text;
 
     isGenerating = false;
-    sendBtn.disabled = false;
-    return fullReply.trim();
+    updateSendBtn();
+    // Worker was terminated by ■: bring the model back (from cache)
+    if (result.killed) loadModel(currentModel);
+    return { text: text.trim(), meta };
 }
 
 /**
- * Handles sending a user message: adds to history, generates reply with streaming, updates UI.
+ * ■: ends the current reply early (keeps what was written). Asks the worker
+ * first (works on WebGPU); if it is still busy after 400 ms (WASM keeps the
+ * worker's thread busy, so it never sees the message), terminates the worker
+ * and reloads the model from cache.
+ */
+function stopGenerating() {
+    if (!isGenerating || !worker) return;
+    const current = job;
+    worker.postMessage({ type: 'stop' });
+    setTimeout(() => {
+        if (!isGenerating || job !== current || !current?.forceStop) return;
+        worker.terminate();
+        worker = null;
+        modelReady = false;
+        current.forceStop();
+    }, 400);
+}
+
+/**
+ * Handles sending a user message: shows it at once, then streams the reply.
  */
 async function sendMessage() {
     const text = userInputEl.value.trim();
@@ -394,11 +427,15 @@ async function sendMessage() {
     liveBubble.textContent = '…';
     addBubble(liveBubble);
 
-    const reply = await generateReply(text, liveBubble, context);
+    // Paint the user's bubble before the job starts
+    await nextPaint();
+
+    const { text: reply, meta } = await generateReply(text, liveBubble, context);
 
     // Finalize the bubble and history
     liveBubble.textContent = reply;
-    chatHistory.push({ role: 'assistant', content: reply });
+    addMetaLine(liveBubble, meta);
+    chatHistory.push(meta ? { role: 'assistant', content: reply, meta } : { role: 'assistant', content: reply });
     saveHistory();
 }
 
@@ -417,14 +454,14 @@ async function applyPromptHelper(instruction) {
         return;
     }
     const prompt = `${instruction}\n\nOriginal: ${current}\n\nImproved:`;
-    if (!generator || isGenerating || isLoading) {
+    if (!modelReady || isGenerating || isLoading) {
         setStatus('Wait for the model to be ready.');
         return;
     }
     userInputEl.value = '';
     setStatus('Improving prompt...');
     // Works for chat and T5 models: one plain prompt, no chat context
-    const improved = await generateReply(prompt);
+    const { text: improved } = await generateReply(prompt);
     userInputEl.value = improved || current;
     setStatus('Prompt updated. Edit if needed, then send.');
 }
@@ -470,7 +507,8 @@ function makeImage() {
     generateImageBubble(prompt, size, addBubble, setStatus);
 }
 
-sendBtn.addEventListener('click', sendMessage);
+// While generating, the send button is ■ and stops the reply
+sendBtn.addEventListener('click', () => (isGenerating ? stopGenerating() : sendMessage()));
 
 userInputEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -481,7 +519,7 @@ userInputEl.addEventListener('keydown', (e) => {
 
 modelSelect.addEventListener('change', async () => {
     const newModel = modelSelect.value;
-    if (newModel === currentModel && generator) return;
+    if (newModel === currentModel && modelReady) return;
     if (isGenerating || isLoading) {
         modelSelect.value = currentModel;
         setStatus('Busy. Try switching again in a moment.');
@@ -573,9 +611,11 @@ async function init() {
     const savedTheme = localStorage.getItem(LS_THEME) || 'light';
     applyTheme(savedTheme);
 
-    // Build the model list, restore last model choice (unknown ids -> default)
+    // Build the model list, restore last model choice (unknown or removed
+    // ids, e.g. Gemma-3 from R2, fall back to the default and are re-saved)
     fillModelSelect();
     const savedModel = getModel(localStorage.getItem(LS_MODEL) || DEFAULT_MODEL).id;
+    localStorage.setItem(LS_MODEL, savedModel);
     modelSelect.value = savedModel;
 
     // Load history
