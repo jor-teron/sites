@@ -32,7 +32,7 @@
  */
 window.GOOGLE_CONFIG = {
   tvClientId: '783291801077-86he9so99le9rbauqo8cl3i20uuc5c5k.apps.googleusercontent.com',
-  tvClientSecret: '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',
+  tvClientSecret: '',
   deviceScopes: 'https://www.googleapis.com/auth/drive.file openid email profile'
 };
 
