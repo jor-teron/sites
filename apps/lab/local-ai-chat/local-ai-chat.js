@@ -2,17 +2,19 @@
 ================================================================================
 File: local-ai-chat.js
 Project: local-ai-chat
-Description: Main application logic for the Local AI Chat + Icon Generator WebApp.
+Description: Main application logic for the Local AI Chat WebApp.
 Purpose: Loads small language models via transformers.js, manages chat,
-         caches models for 100 days, supports prompt helpers, and generates icons
-         via Pollinations.ai with selectable resolution.
+         caches models for 100 days, and drives the ✨ helpers popover
+         (prompt helpers + in-chat image generation via local-ai-chat-image.js).
 Author: Grok
-Date: 2026-10-17
+Date: 2026-10-19 (R1: inline status notes, ✨ popover, ⋯ menu, ☾/☀ theme icon)
 ================================================================================
 */
 
 // Import transformers.js from CDN
 import { pipeline, env, TextStreamer } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.0';
+// In-chat image generation (Pollinations.ai)
+import { generateImageBubble } from './local-ai-chat-image.js';
 
 // ============================================================================
 // Constants
@@ -54,33 +56,52 @@ let isGenerating = false;
 // ============================================================================
 
 const chatHistoryEl = document.getElementById('chat-history');
-const statusEl = document.getElementById('status');
 const userInputEl = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 const modelSelect = document.getElementById('model-select');
 const themeToggle = document.getElementById('theme-toggle');
+const menuBtn = document.getElementById('menu-btn');
+const menuEl = document.getElementById('menu');
 const clearChatBtn = document.getElementById('clear-chat');
+const sparkBtn = document.getElementById('spark-btn');
+const sparkPop = document.getElementById('spark-pop');
 const improvePromptBtn = document.getElementById('improve-prompt');
 const iconStyleBtn = document.getElementById('icon-style');
 const shortenBtn = document.getElementById('shorten');
 const resolutionSelect = document.getElementById('resolution-select');
-const generateIconBtn = document.getElementById('generate-icon-btn');
-const downloadIconBtn = document.getElementById('download-icon-btn');
-const iconPreview = document.getElementById('icon-preview');
+const makeImageBtn = document.getElementById('make-image');
 
-// Current generated icon URL (for download)
-let currentIconUrl = null;
+// Inline status note element (exists only while a status is shown)
+let noteEl = null;
+let noteTimer = null;
 
 // ============================================================================
 // Utility functions
 // ============================================================================
 
 /**
- * Updates the status bar text.
- * @param {string} message - Status message to display
+ * Shows a faint inline system note at the bottom of the chat (R1: replaces
+ * the old status bar). Messages starting with Ready/Done/Chat cleared/Prompt
+ * updated/Download fade out automatically; an empty message removes the note.
+ * @param {string} message - Status message to display ('' to hide)
  */
 function setStatus(message) {
-    statusEl.textContent = message;
+    clearTimeout(noteTimer);
+    if (!message) {
+        if (noteEl) noteEl.remove();
+        noteEl = null;
+        return;
+    }
+    if (!noteEl) {
+        noteEl = document.createElement('div');
+        noteEl.className = 'note';
+    }
+    noteEl.textContent = message;
+    chatHistoryEl.appendChild(noteEl); // keep it last
+    chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+    if (/^(Ready|Done|Chat cleared|Prompt updated|Download|Image ready)/.test(message)) {
+        noteTimer = setTimeout(() => setStatus(''), 2500);
+    }
 }
 
 /**
@@ -92,7 +113,17 @@ function appendMessage(role, content) {
     const div = document.createElement('div');
     div.className = `message ${role}`;
     div.textContent = content;
-    chatHistoryEl.appendChild(div);
+    addBubble(div);
+    chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+}
+
+/**
+ * Inserts a bubble element into the chat, keeping any status note last.
+ * @param {HTMLElement} el - Bubble element
+ */
+function addBubble(el) {
+    if (noteEl && noteEl.parentNode === chatHistoryEl) chatHistoryEl.insertBefore(el, noteEl);
+    else chatHistoryEl.appendChild(el);
     chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
 }
 
@@ -124,6 +155,7 @@ function loadHistory() {
 function clearHistory() {
     chatHistory = [];
     chatHistoryEl.innerHTML = '';
+    noteEl = null;
     localStorage.removeItem(LS_HISTORY);
     setStatus('Chat cleared.');
 }
@@ -340,9 +372,8 @@ async function sendMessage() {
     // Create an empty assistant bubble for live streaming
     const liveBubble = document.createElement('div');
     liveBubble.className = 'message assistant';
-    liveBubble.textContent = '';
-    chatHistoryEl.appendChild(liveBubble);
-    chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+    liveBubble.textContent = '…';
+    addBubble(liveBubble);
 
     const reply = await generateReply(text, liveBubble);
 
@@ -375,62 +406,44 @@ async function applyPromptHelper(instruction) {
 }
 
 // ============================================================================
-// Icon generation (Pollinations.ai)
+// Popovers (✨ helpers and ⋯ menu)
 // ============================================================================
 
 /**
- * Generates an icon using the Pollinations.ai free endpoint.
- * Uses the current input text (or last user message) as the prompt.
- * Respects the selected resolution.
+ * Closes both popovers.
  */
-async function generateIcon() {
-    const prompt = userInputEl.value.trim() || (chatHistory.length ? chatHistory[chatHistory.length - 1].content : '');
-    if (!prompt) {
-        setStatus('Enter a prompt first (or chat something), then generate icon.');
-        return;
-    }
-
-    const size = parseInt(resolutionSelect.value, 10) || 64;
-    const encoded = encodeURIComponent(prompt);
-    const url = `https://image.pollinations.ai/prompt/${encoded}?width=${size}&height=${size}&nologo=true&safe=true&model=flux`;
-
-    setStatus(`Generating ${size}×${size} icon...`);
-    generateIconBtn.disabled = true;
-
-    try {
-        // Load into the preview image
-        iconPreview.onload = () => {
-            iconPreview.style.display = 'block';
-            currentIconUrl = url;
-            downloadIconBtn.disabled = false;
-            setStatus(`Icon ready (${size}×${size}).`);
-            generateIconBtn.disabled = false;
-        };
-        iconPreview.onerror = () => {
-            setStatus('Icon generation failed. Try a different prompt or resolution.');
-            generateIconBtn.disabled = false;
-        };
-        iconPreview.src = url + '&t=' + Date.now(); // cache-bust
-    } catch (err) {
-        console.error(err);
-        setStatus('Error generating icon.');
-        generateIconBtn.disabled = false;
-    }
+function closePops() {
+    sparkPop.hidden = true;
+    menuEl.hidden = true;
+    sparkBtn.setAttribute('aria-expanded', 'false');
+    menuBtn.setAttribute('aria-expanded', 'false');
 }
 
 /**
- * Downloads the currently displayed icon as a PNG.
+ * Toggles one popover, closing the other.
+ * @param {HTMLElement} pop - Popover element
+ * @param {HTMLElement} btn - Its trigger button
  */
-function downloadIcon() {
-    if (!currentIconUrl || !iconPreview.src) return;
+function togglePop(pop, btn) {
+    const open = pop.hidden;
+    closePops();
+    pop.hidden = !open;
+    btn.setAttribute('aria-expanded', String(open));
+}
 
-    const a = document.createElement('a');
-    a.href = iconPreview.src;
-    a.download = `icon-${resolutionSelect.value}x${resolutionSelect.value}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setStatus('Download started.');
+/**
+ * Generates an image into the chat from the input (or last message).
+ */
+function makeImage() {
+    const prompt = userInputEl.value.trim() || (chatHistory.length ? chatHistory[chatHistory.length - 1].content : '');
+    if (!prompt) {
+        setStatus('Type a prompt first, then Make image.');
+        return;
+    }
+    const size = parseInt(resolutionSelect.value, 10) || 64;
+    appendMessage('user', `🖼 ${prompt} (${size}×${size})`);
+    userInputEl.value = '';
+    generateImageBubble(prompt, size, addBubble, setStatus);
 }
 
 sendBtn.addEventListener('click', sendMessage);
@@ -450,29 +463,47 @@ modelSelect.addEventListener('change', async () => {
     }
 });
 
+/**
+ * Applies a theme and updates the ☾/☀ icon.
+ * @param {string} theme - 'light' or 'dark'
+ */
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    themeToggle.textContent = theme === 'dark' ? '☀' : '☾';
+}
+
 themeToggle.addEventListener('click', () => {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const newTheme = isDark ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', newTheme);
+    applyTheme(newTheme);
     localStorage.setItem(LS_THEME, newTheme);
 });
 
-clearChatBtn.addEventListener('click', clearHistory);
+menuBtn.addEventListener('click', (e) => { e.stopPropagation(); togglePop(menuEl, menuBtn); });
+sparkBtn.addEventListener('click', (e) => { e.stopPropagation(); togglePop(sparkPop, sparkBtn); });
+// Clicks inside popovers don't close them (so the resolution select works)
+[menuEl, sparkPop].forEach(el => el.addEventListener('click', e => e.stopPropagation()));
+document.addEventListener('click', closePops);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePops(); });
+
+clearChatBtn.addEventListener('click', () => { closePops(); clearHistory(); });
 
 improvePromptBtn.addEventListener('click', () => {
+    closePops();
     applyPromptHelper('Improve the following prompt to be clearer and more effective for AI image generation. Keep it concise.');
 });
 
 iconStyleBtn.addEventListener('click', () => {
+    closePops();
     applyPromptHelper('Rewrite the following as a concise prompt for a 64x64 app icon. Focus on simple shapes, flat colors, and clear subject. Avoid complex scenes.');
 });
 
 shortenBtn.addEventListener('click', () => {
+    closePops();
     applyPromptHelper('Shorten the following text while keeping the core meaning. Make it as brief as possible.');
 });
 
-generateIconBtn.addEventListener('click', generateIcon);
-downloadIconBtn.addEventListener('click', downloadIcon);
+makeImageBtn.addEventListener('click', () => { closePops(); makeImage(); });
 
 // ============================================================================
 // Initialization
@@ -484,7 +515,7 @@ downloadIconBtn.addEventListener('click', downloadIcon);
 async function init() {
     // Restore theme
     const savedTheme = localStorage.getItem(LS_THEME) || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+    applyTheme(savedTheme);
 
     // Restore last model choice
     const savedModel = localStorage.getItem(LS_MODEL) || DEFAULT_MODEL;
