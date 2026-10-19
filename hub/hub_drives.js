@@ -13,7 +13,7 @@
  * Right-click / long-press on a drive (hub_ctx.js): Open, Open in new window, Allow access (when
  * needed), Remove (added folders only).
  * Google Drive (R9a, kind 'gdrive', shared/google/*): not connected → the tile itself holds the
- * sign-in panel (gdrive_connect.js: QR code / Phone as a key / Sign in on this computer; the QR
+ * sign-in panel (gdrive_connect.js: Phone as a key / Sign in on this computer (QR method hidden); the QR
  * fills the tile, minimal padding; "Renew from phone" when a phone sign-in ran out); no client id yet
  * → "Set up Google Drive (see How-to)" (opens Settings → How-to); connected → a normal tile
  * (your Google address underneath) that opens Files, right-click → Sign out (revokes).

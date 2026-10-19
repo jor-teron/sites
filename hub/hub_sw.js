@@ -15,7 +15,7 @@
  * skips waiting and claims open pages; hub_update.js then reloads them once (no stale shell).
  * Release: bump CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const CACHE = 'hub-shell-v37';  // 2026-10-19m: R9b phone as a key / popup Google sign-in, Drive hub folder
+const CACHE = 'hub-shell-v38';  // 2026-10-19n: Hub web client (project monorepo), phone as a key default, QR hidden
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',

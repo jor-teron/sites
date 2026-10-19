@@ -27,7 +27,7 @@
  * All Hub windows / apps share the state: BroadcastChannel 'sites-google' + the storage event.
  * Network / CORS failures throw an Error with .code = 'network' and a clear message.
  *
- * API window.GoogleAuth: configured() (TV client), webConfigured() (web client), signedIn(),
+ * API window.GoogleAuth: configured() (TV client and qrEnabled), webConfigured() (hubWebClientId), signedIn(),
  *   expired(), method(), user() → {email, name, method}, setToken(resp, method), start(), poll(dev, o),
  *   connect({onCode, onStatus}) → { done: Promise, cancel() }, token(), fetchApi(url, opts),
  *   signOut(), onChange(fn) → off(), onLog(fn) (every step as text, for the Lab test page).
@@ -199,8 +199,8 @@
   }
   const valid = (s) => !!(s.refresh || (s.access && s.exp > Date.now()));
   window.GoogleAuth = {
-    configured: () => !!cfg().tvClientId,
-    webConfigured: () => !!cfg().webClientId,
+    configured: () => !!cfg().tvClientId && cfg().qrEnabled !== false,
+    webConfigured: () => !!cfg().hubWebClientId,
     signedIn: () => valid(load()),
     expired: () => { const s = load(); return !!(s.access && !s.refresh && !valid(s)); },
     method: () => load().method || (load().refresh ? 'qr' : ''),
