@@ -60,6 +60,17 @@
     slots: { blinky: { x: 9.5, y: 9.5 }, pinky: { x: 9.5, y: 9.5 }, inky: { x: 8.5, y: 9.5 }, clyde: { x: 10.5, y: 9.5 } },
   };
 
+  // Side tunnel: row 9 outside the side walls (columns 0-3 and 15-18, plus the off-screen wrap tiles).
+  // Ghosts move at their (slower) tunnel speed here; Pac-Man does not slow down.
+  const isTunnel = (c, r) => r === 9 && (c <= 3 || c >= COLS - 4);
+
+  // "No turning up" tiles (arcade rule, adapted): in the arcade four junctions — the two just above the ghost
+  // house and the two just above Pac-Man's start — never let a scattering / chasing ghost choose UP (frightened
+  // ghosts and eyes may). Here the matching junctions are the up-openings of the exit corridor above the door,
+  // (8, 7) and (10, 7), and the up-openings beside Pac-Man's start, (8, 15) and (10, 15).
+  const NO_UP = new Set(['8,7', '10,7', '8,15', '10,15']);
+  const isNoUp = (c, r) => NO_UP.has(c + ',' + r);
+
   let tiles = [];
 
   /** Fresh copy of the maze; returns the number of pellets (dots + power pellets). */
@@ -150,7 +161,7 @@
   }
 
   PAC.maze = {
-    TEMPLATE, COLS, ROWS, DIR, HOUSE,
+    TEMPLATE, COLS, ROWS, DIR, HOUSE, isTunnel, isNoUp,
     load, cell, isWall, takePellet, playerStart, move, centreOf,
     get tiles() { return tiles; },
   };

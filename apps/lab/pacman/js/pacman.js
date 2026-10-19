@@ -11,7 +11,7 @@
 (function (PAC) {
   'use strict';
   const M = PAC.maze;
-  const SPEED = 0.11;      // tiles per tick (60 ticks/s) — unchanged
+  const SPEED = 0.11;      // tiles per tick (60 ticks/s); game.js sets the per-level speed from levels.js
   const PRETURN = 0.3;     // how far (tiles) from a tile centre a buffered 90° turn may still be taken
 
   const pac = {

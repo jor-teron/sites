@@ -1,6 +1,7 @@
 /* Pac-Man — render.js
- * Canvas sizing (fits the stage, sharp on high-DPI screens) and drawing: maze, pellets, Pac-Man,
- * ghosts (normal, frightened blue / flashing, eyes only), READY text and the death shrink.
+ * Canvas sizing (fits the stage, sharp on high-DPI screens) and drawing: maze (flashing on level clear),
+ * pellets, bonus fruit, Pac-Man, ghosts (normal, frightened blue / flashing, eyes only), floating points,
+ * READY text and the death shrink.
  */
 (function (PAC) {
   'use strict';
@@ -28,16 +29,18 @@
   window.addEventListener('resize', resize);
   window.addEventListener('orientationchange', () => setTimeout(resize, 50));
 
-  function drawMaze() {
+  /** flash: null = normal walls; true / false = level-clear flash phase (white / blue). */
+  function drawMaze(flash) {
     const tiles = M.tiles;
+    const fill = flash ? '#FFFFFF' : '#1919A6', edge = flash ? '#DDDDDD' : '#3B3BFF';
     for (let r = 0; r < M.ROWS; r++) {
       for (let c = 0; c < M.COLS; c++) {
         const ch = tiles[r][c];
         const x = c * TILE, y = r * TILE;
         if (ch === '#') {
-          ctx.fillStyle = '#1919A6';
+          ctx.fillStyle = fill;
           ctx.fillRect(x, y, TILE, TILE);
-          ctx.strokeStyle = '#3B3BFF';
+          ctx.strokeStyle = edge;
           ctx.lineWidth = Math.max(1, TILE * 0.08);
           ctx.strokeRect(x + 1, y + 1, TILE - 2, TILE - 2);
         } else if (ch === '.') {
@@ -77,14 +80,14 @@
     ctx.fill();
   }
 
-  /** frightTicks: ticks of fright left (blue; flashes white during the last 2 s). */
-  function drawGhost(g, frightTicks) {
+  /** frightTicks: ticks of fright left; flashTicks: the last stretch in which it flashes white (per level). */
+  function drawGhost(g, frightTicks, flashTicks) {
     const radius = TILE * 0.42;
     const x = g.x * TILE, y = g.y * TILE;
     let color = g.color;
     if (g.state === 'eyes' || g.state === 'entering') color = null;            // eaten: eyes only
     else if (g.frightened) {
-      const flashing = frightTicks < 120 && Math.floor(frightTicks / 12) % 2 === 0;
+      const flashing = frightTicks < flashTicks && Math.floor(frightTicks / 12) % 2 === 0;
       color = flashing ? '#FFFFFF' : '#2121DE';
     }
     if (color) {
@@ -123,11 +126,28 @@
     ctx.fillText('READY!', M.COLS * TILE / 2, M.ROWS * TILE / 2);
   }
 
-  /** v = { state, ST, timer, pac, ghosts, frightTicks } from game.js */
+  function drawFruit(f) {
+    if (!f.active || !f.kind) return;
+    ctx.font = `${Math.floor(TILE * 0.9)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(f.kind.icon, f.x * TILE, f.y * TILE);
+  }
+
+  function drawPopups(list) {
+    ctx.fillStyle = '#00FFFF';
+    ctx.font = `bold ${Math.floor(TILE * 0.55)}px Courier New`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const p of list) ctx.fillText(p.text, p.x * TILE, p.y * TILE);
+  }
+
+  /** v = view from game.js: { ST, state, timer, pac, ghosts, fruit, popups, frightTicks, flashTicks, mazeFlash } */
   function draw(v) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, M.COLS * TILE, M.ROWS * TILE);
-    drawMaze();
+    const flash = v.mazeFlash;
+    drawMaze(flash);
     if (v.state === v.ST.DYING) {               // shrinking Pac-Man, ghosts hidden
       const t = 1 - v.timer / 90;
       ctx.fillStyle = '#FFD700';
@@ -136,9 +156,11 @@
       ctx.fill();
       return;
     }
-    const blinkHidden = v.state === v.ST.READY && v.timer > 60 && Math.floor(v.timer / 10) % 2 === 0;
-    if (!blinkHidden) for (const g of v.ghosts) drawGhost(g, v.frightTicks);
+    drawFruit(v.fruit);
+    const blinkHidden = (v.state === v.ST.READY && v.timer > 60 && Math.floor(v.timer / 10) % 2 === 0) || flash !== null;
+    if (!blinkHidden) for (const g of v.ghosts) drawGhost(g, v.frightTicks, v.flashTicks);
     drawPac(v.pac);
+    drawPopups(v.popups);
     if (v.state === v.ST.READY) drawReadyText();
   }
 

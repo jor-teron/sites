@@ -10,20 +10,24 @@
  *
  * Movement in the maze is grid-locked (maze.move): a ghost picks its next direction once per tile, on the
  * tile centre, never reversing by choice. Ghosts only reverse when forced: on every scatter <-> chase switch
- * and when a power pellet frightens them.
+ * and when a power pellet is eaten. Speeds come from the level table (levels.js): normal, tunnel (slower),
+ * frightened, and Blinky's "Cruise Elroy" boost near the end of a level.
  */
 (function (PAC) {
   'use strict';
   const M = PAC.maze, D = M.DIR, H = M.HOUSE;
 
-  // ─── Speeds (tiles per tick at 60 ticks/s) — maze speeds unchanged from the original ──
-  const SPEED = 0.075;
-  const FRIGHT_MULT = 0.55;
-  const EYES_MULT = 2.0;
-  const HOUSE_SPEED = 0.05;     // drifting inside the house and through the door
+  // ─── Speeds ─────────────────────────────────────────────────────────────────
+  // Maze speeds (normal / tunnel / frightened / Elroy) come per level from levels.js via update(ctx.params).
+  const EYES_MULT = 2.0;        // eaten eyes: twice the level's normal ghost speed
+  const HOUSE_SPEED = 0.05;     // drifting inside the house and through the door (tiles per tick)
 
-  // Direction preference on ties (original order kept; the arcade uses up, left, down, right).
-  const ORDER = [D.up, D.down, D.left, D.right];
+  // Direction preference when two choices are equally close to the target (arcade order).
+  const ORDER = [D.up, D.left, D.down, D.right];
+
+  // Arcade "up" overflow bug: when Pac-Man faces up, the point Pinky (4 ahead) and Inky (2 ahead) use is also
+  // that many tiles to the LEFT. Kept for the classic feel; set false for the "intended" behaviour.
+  const ARCADE_UP_QUIRK = true;
 
   // ─── Scatter / chase schedule (arcade table, seconds) ───────────────────────
   // Phases alternate scatter, chase, scatter, ... starting with scatter; the last chase lasts forever.
@@ -80,6 +84,7 @@
       else { g.x = g.slot.x; g.y = g.slot.y; g.dir = g.name === 'pinky' ? D.down : D.up; g.state = 'house'; }
     }
     phase = 0; phaseTime = 0; idle = 0;
+    elroyStage = 0; elroySuspended = !!afterDeath;
     if (afterDeath) { shared = true; sharedDots = 0; }
     else { shared = false; personal = { pinky: 0, inky: 0, clyde: 0 }; }
   }
@@ -127,19 +132,26 @@
   }
 
   // ─── Targeting (chase mode) ─────────────────────────────────────────────────
-  // Blinky: Pac-Man's tile.
+  // Blinky: Pac-Man's tile (in Cruise Elroy he keeps chasing even in scatter mode).
   // Pinky:  4 tiles ahead of Pac-Man (where he faces).
-  // Inky:   Pac-Man's tile plus the vector from Blinky to Pac-Man (doubled vector from Blinky).
+  // Inky:   take the point 2 tiles ahead of Pac-Man, then double the vector from Blinky to that point:
+  //         target = P2 + (P2 - Blinky).
   // Clyde:  Pac-Man's tile while more than 8 tiles away, his scatter corner when closer.
   // Scatter mode: each ghost's own corner (g.scatter). Eyes: the exit tile above the door.
+  /** Tile n steps ahead of Pac-Man (with the arcade up-quirk: n left as well when facing up). */
+  function ahead(pac, n) {
+    const t = { x: Math.floor(pac.x) + pac.face.x * n, y: Math.floor(pac.y) + pac.face.y * n };
+    if (ARCADE_UP_QUIRK && pac.face.y < 0) t.x -= n;
+    return t;
+  }
   function chaseTarget(g, pac) {
     const pc = Math.floor(pac.x), pr = Math.floor(pac.y);
     switch (g.name) {
       case 'blinky': return { x: pc, y: pr };
-      case 'pinky':  return { x: pc + pac.face.x * 4, y: pr + pac.face.y * 4 };
+      case 'pinky':  return ahead(pac, 4);
       case 'inky': {
-        const b = byName.blinky, bc = Math.floor(b.x), br = Math.floor(b.y);
-        return { x: pc + (pc - bc), y: pr + (pr - br) };
+        const p2 = ahead(pac, 2), b = byName.blinky;
+        return { x: 2 * p2.x - Math.floor(b.x), y: 2 * p2.y - Math.floor(b.y) };
       }
       default: {
         const far = Math.hypot(pc - Math.floor(g.x), pr - Math.floor(g.y)) > 8;
@@ -156,11 +168,12 @@
       return;
     }
     const back = reverse(g.dir);
-    const options = ORDER.filter((d) => !(d.x === back.x && d.y === back.y) && !M.isWall(c + d.x, r + d.y));
+    let options = ORDER.filter((d) => !(d.x === back.x && d.y === back.y) && !M.isWall(c + d.x, r + d.y));
     if (!options.length) { g.dir = back; return; }                    // dead end
     if (g.frightened) { g.dir = options[Math.floor(Math.random() * options.length)]; return; }
+    if (g.state === 'active' && M.isNoUp(c, r) && options.length > 1) options = options.filter((d) => d !== D.up);
     const t = g.state === 'eyes' ? { x: Math.floor(H.exit.x), y: Math.floor(H.exit.y) }
-      : mode() === 'scatter' ? g.scatter : chaseTarget(g, pac);
+      : mode() === 'scatter' && !(g.name === 'blinky' && elroyStage) ? g.scatter : chaseTarget(g, pac);
     let best = options[0], bestD = Infinity;
     for (const d of options) {
       const dd = Math.hypot(t.x - (c + d.x), t.y - (r + d.y));
@@ -200,28 +213,50 @@
       else if (stepToward(g, H.exit.x, H.exit.y, HOUSE_SPEED, false)) { g.state = 'active'; g.dir = D.left; }   // out: head left, as in the arcade
     } else if (g.state === 'entering') {
       // eyes: leg 0 down through the door to the house centre; leg 1 across to the slot, then revive and leave
-      const sp = SPEED * EYES_MULT;
+      const sp = eyesSpeed;
       if (g.leg === 0) { if (stepToward(g, H.inside.x, H.inside.y, sp, true)) g.leg = 1; }
       else if (stepToward(g, g.slot.x, g.slot.y, sp, false)) { g.frightened = false; release(g); }
     }
   }
 
-  /** One tick for every ghost. ctx = { pac, dt, frightActive }. */
+  // ─── Cruise Elroy ───────────────────────────────────────────────────────────
+  // Blinky speeds up when few pellets are left (stage 1 / 2 thresholds per level) and then chases even in
+  // scatter mode. After Pac-Man loses a life Elroy is suspended until Clyde has left the house (arcade).
+  let elroyStage = 0, elroySuspended = false;
+  function updateElroy(p, pelletsLeft) {
+    if (elroySuspended && byName.clyde.state !== 'house') elroySuspended = false;
+    elroyStage = elroySuspended ? 0 : pelletsLeft <= p.elroy2Dots ? 2 : pelletsLeft <= p.elroy1Dots ? 1 : 0;
+  }
+
+  /** Maze speed for ghost g this tick: eyes > frightened > tunnel > Elroy > normal. */
+  function speedOf(g, p) {
+    if (g.state === 'eyes') return p.ghost * EYES_MULT;
+    if (g.frightened) return p.ghostFright;
+    if (M.isTunnel(Math.floor(g.x), Math.floor(g.y))) return p.ghostTunnel;
+    if (g.name === 'blinky' && elroyStage) return elroyStage === 2 ? p.elroy2 : p.elroy1;
+    return p.ghost;
+  }
+
+  let eyesSpeed = 0.15;
+  /** One tick for every ghost. ctx = { pac, dt, frightActive, params (levels.get), pelletsLeft }. */
   function update(ctx) {
+    const p = ctx.params || PAC.levels.get(level);
+    eyesSpeed = p.ghost * EYES_MULT;
+    updateElroy(p, ctx.pelletsLeft ?? Infinity);
     updateRelease(ctx.dt);
     updateMode(ctx.dt, ctx.frightActive);
     for (const g of list) {
       if (g.state === 'house' || g.state === 'leaving' || g.state === 'entering') { updateHouse(g); continue; }
-      const sp = SPEED * (g.state === 'eyes' ? EYES_MULT : g.frightened ? FRIGHT_MULT : 1);
-      M.move(g, sp, (e) => decide(e, ctx.pac));
+      M.move(g, speedOf(g, p), (e) => decide(e, ctx.pac));
     }
   }
 
-  /** Power pellet: every ghost not already eyes turns blue; those in the maze turn round. */
-  function frighten() {
+  /** Power pellet: ghosts in the maze turn round; with blue = true (fright time > 0) every ghost that is not
+   *  eyes also turns blue. On late levels the fright time is 0 and they only reverse. */
+  function frighten(blue = true) {
     for (const g of list) {
       if (g.state === 'eyes' || g.state === 'entering') continue;
-      g.frightened = true;
+      if (blue) g.frightened = true;
       if (g.state === 'active') g.dir = reverse(g.dir);
     }
   }
@@ -232,7 +267,7 @@
 
   PAC.ghosts = {
     list, byName, reset, update, onDotEaten, frighten, unfrighten, eat,
-    get mode() { return mode(); }, get phase() { return phase; }, get phaseTime() { return phaseTime; },
+    get mode() { return mode(); }, get elroy() { return elroyStage; }, speedOf, chaseTarget, ARCADE_UP_QUIRK, get phase() { return phase; }, get phaseTime() { return phaseTime; },
     get release() { return { shared, sharedDots, personal: { ...personal }, idle }; },
     MODE_TABLE, DOT_LIMITS, SHARED_LIMITS,
   };

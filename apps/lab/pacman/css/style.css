@@ -25,6 +25,7 @@ html, body {
   color: #FFD700;
 }
 #hud .lives { display: flex; gap: 4px; align-items: center; }
+#hud .fruits { font-size: 13px; letter-spacing: 0; min-width: 1em; }
 #hud .life {
   width: 12px; height: 12px;
   border-radius: 50%;
