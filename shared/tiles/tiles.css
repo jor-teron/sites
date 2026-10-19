@@ -1,19 +1,28 @@
-/* Shared category tiles page (shared/tiles/tiles.css) for every category page — 4-column grid of square tiles (icon + name) with section headings. Big tap targets. */
+/*
+ * Shared category tiles page (shared/tiles/tiles.css) for every category page (apps/<cat>/<cat>.html).
+ * Tight grid like the Hub desktop's QR tiles: the grid fills the whole width (auto-fill columns,
+ * ~104 px minimum, 132 px on big screens), tiny gaps and padding, the icon fills most of the tile,
+ * a compact one- or two-line label. Still big tap targets (≥ 96 px square). Section headings.
+ */
 * { box-sizing: border-box; }
-body { margin: 0; padding: 16px; font: 16px/1.3 system-ui, sans-serif; background: #111827; color: #f3f4f6; }
-h1 { margin: 0 0 14px; font-size: 22px; }
-.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-width: 900px; }
-.tile { aspect-ratio: 1 / 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 8px; padding: 8px; border-radius: 14px; background: #1f2937; color: inherit; text-decoration: none;
-  text-align: center; outline: none; }
+body { margin: 0; padding: 8px; font: 15px/1.25 system-ui, sans-serif; background: #111827; color: #f3f4f6; }
+h1 { margin: 0 0 8px; font-size: 20px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
+@media (min-width: 900px) { .grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); } }
+.tile { aspect-ratio: 1 / 1.06; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; padding: 5px 4px 4px; border-radius: 12px; background: #1f2937; color: inherit; text-decoration: none;
+  text-align: center; outline: none; transition: transform .16s cubic-bezier(.34,1.56,.64,1), background .12s; }
 .tile:hover, .tile:focus-visible { background: #374151; box-shadow: 0 0 0 3px #60a5fa; }
-.tile img, .tile .letter { width: 48%; aspect-ratio: 1 / 1; border-radius: 12px; object-fit: contain; }
+.tile:active { transform: scale(.94, .9); }
+.tile img, .tile .letter { width: 82%; flex: 0 1 auto; min-height: 0; aspect-ratio: 1 / 1; border-radius: 12px; object-fit: contain; }
 .tile .letter { display: flex; align-items: center; justify-content: center; background: #2563eb;
-  font-size: clamp(18px, 6vw, 40px); font-weight: 700; }
-.tile .name { font-size: clamp(11px, 2.6vw, 15px); overflow-wrap: anywhere; }
+  font-size: clamp(22px, 7vw, 46px); font-weight: 700; }
+.tile .name { font-size: 12.5px; line-height: 1.15; max-width: 100%; overflow: hidden; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 .msg { color: #fca5a5; }
 /* Section heading (tiles.js): small grey title with a thin divider line, spans the grid row. */
-.sec { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin: 10px 0 0;
-  font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; }
+.sec { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin: 8px 0 0;
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; }
 .sec:first-child { margin-top: 0; }
 .sec::after { content: ''; flex: 1; height: 1px; background: #374151; }
+@media (prefers-reduced-motion: reduce) { .tile { transition: none; } }

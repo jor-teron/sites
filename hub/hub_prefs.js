@@ -10,6 +10,8 @@
  *   sites-hub.accent     accent colour '#rrggbb' (default #6ea8fe)            → --accent
  *   sites-hub.theme      'dark' (default) | 'light'                           → html.hub-light
  *   sites-hub.motion     'on' (default) | 'reduced' (no jelly) | 'off'        → html.hub-motion-*
+ *   sites-hub.hoverFocus '1' = Focus window on hover (default off)       → html.hub-hover-focus
+ *                        (wm_windows.js reads the class; Settings → Windows)
  *   sites-hub.wmMode / sites-hub.startHover: read by wm_mode.js / wm_taskbar.js; a change made
  *   in Settings is passed to HubMode here.
  * Live: the 'storage' event (Settings runs in another document) and a
@@ -39,6 +41,7 @@
     if (acc) root.style.setProperty('--accent', acc); else root.style.removeProperty('--accent');
     // theme + motion
     root.classList.toggle('hub-light', get('theme') === 'light');
+    root.classList.toggle('hub-hover-focus', get('hoverFocus') === '1');
     const mo = get('motion');
     root.classList.toggle('hub-motion-reduced', mo === 'reduced');
     root.classList.toggle('hub-motion-off', mo === 'off');

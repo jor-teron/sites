@@ -25,12 +25,12 @@
  */
 window.HUB_APPS_CSV = `
 CATEGORY, NAME,                  ENTRY_URL,                                  ICON_URL, NEW_TAB, HIDDEN, ORDER
-Favorite, Favorite Page,         apps/favorite/,                             ,         0,       0,      9
+Favorite, Favorite Page,         apps/favorite/favorite.html,                ,         0,       0,      9
 Favorite, TV,                    tv/,                                        ,         0,       0,      10
 Favorite, Transcribe,            apps/tools/transcribe/,                     ,         0,       1,      20
 Favorite, Caption for NEI,       apps/tools/caption-for-nei/,                ,         0,       0,      70
 
-Games,    Games Page,            apps/games/,                                ,         0,       0,      100
+Games,    Games Page,            apps/games/games.html,                      ,         0,       0,      100
 Games,    D-Pad Controller,      hub/controller/,                            ,         1,       0,      199
 Games,    2048,                  apps/games/2048/,                           ,         0,       0,      101
 Games,    Swell Foop,            apps/games/swell-foop/,                     ,         0,       0,      102
@@ -50,7 +50,7 @@ Games,    Island (Alpha),        apps/games/island-alpha/,                   ,  
 Games,    Tower Defence,         apps/games/tower-defence/,                  ,         0,       0,      111
 Games,    Demolisher,            apps/games/demolisher/,                     ,         0,       0,      195
 
-Media,    Media Page,            apps/media/,                                ,         0,       0,      209
+Media,    Media Page,            apps/media/media.html,                      ,         0,       0,      209
 Media,    TV,                    tv/,                                        ,         0,       0,      210
 Media,    Webcam,                apps/media/webcam/,                         ,         0,       0,      220
 Media,    3D Viewer,             apps/media/3d-viewer/,                      ,         0,       0,      240
@@ -59,7 +59,7 @@ Media,    Draw,                  apps/media/draw/,                           ,  
 Media,    Photo Editor,          apps/media/photo-editor/,                   ,         0,       0,      260
 Media,    Photo Editor v2,       apps/media/photo-editor-v2/,                ,         0,       0,      265
 
-Office,   Office Page,           apps/office/,                               ,         0,       0,      309
+Office,   Office Page,           apps/office/office.html,                    ,         0,       0,      309
 Office,   Spreadsheet,           apps/office/spreadsheet/,                   ,         0,       0,      320
 Office,   Draftly,               apps/office/draftly/,                       ,         0,       0,      310
 Office,   OCR,                   apps/office/ocr/,                           ,         0,       0,      360
@@ -70,12 +70,12 @@ Office,   Print,                 apps/office/print/,                         ,  
 Office,   Mail,                  apps/office/mail/,                          ,         0,       0,      470
 Office,   Paper Scan,            apps/office/paper-scan/,                    ,         0,       0,      480
 
-Connectivity,Connectivity Page,     apps/connectivity/,                         ,         0,       0,      404
+Connectivity,Connectivity Page,     apps/connectivity/connectivity.html,        ,         0,       0,      404
 Connectivity, File Drop,         apps/connectivity/filedrop/,                ,         0,       0,      405
 Connectivity, QR Scanner,        apps/connectivity/qr-scanner/,              ,         0,       0,      406
 Connectivity, Pooh Chat,         apps/connectivity/pooh-chat/,               ,         0,       0,      450
 
-Tools,    Tools Page,            apps/tools/,                                ,         0,       0,      409
+Tools,    Tools Page,            apps/tools/tools.html,                      ,         0,       0,      409
 Tools,    Files,                 apps/tools/files/,                          ,         0,       0,      405
 Tools,    System Monitor,        apps/tools/sysmon/,                         ,         0,       0,      406
 Tools,    Calculator,            apps/tools/calculator/,                     ,         0,       0,      410
@@ -88,7 +88,7 @@ Tools,    Caption for NEI,       apps/tools/caption-for-nei/,                ,  
 Tools,    Learning HTML (Basic), apps/tools/learning-html/,                  ,         0,       0,      910
 Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,         0,       1,      900
 
-Lab,      Lab Page,              apps/lab/,                                  ,         0,       0,      1000
+Lab,      Lab Page,              apps/lab/lab.html,                          ,         0,       0,      1000
 Lab,      Device Benchmark,      apps/lab/devbench/,                         ,         0,       0,      1050
 Lab,      Island Game Demo,      apps/lab/island-demo/,                      ,         0,       0,      1080
 Lab,      Phone,                 apps/media/phone/,                          ,         0,       0,      1070

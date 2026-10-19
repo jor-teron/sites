@@ -2,7 +2,8 @@
  * Files view (apps/tools/files/files_view.js) — draws the open folder as big-icon grid or
  * list (toggle remembered), sorted by name / size / date modified (asc / desc, folders first,
  * remembered) and filtered by the search box. Selection: click = select, double-click / Enter
- * = open, Ctrl/Cmd-click = add / remove, Shift-click = range, click empty space = none;
+ * = open (single-click mode, FX.singleClick(): click = open; Ctrl / Shift / the round check still
+ * select), Ctrl/Cmd-click = add / remove, Shift-click = range, click empty space = none;
  * touch: tap opens, the round checkbox (or a long-press) selects, and while something is
  * selected a tap adds / removes. Right-click / long-press = FX.menu.
  * Drag & drop: drag items onto a folder, a path crumb or a drive = move (Ctrl = copy);
@@ -118,11 +119,11 @@
     }
     if (e.ctrlKey || e.metaKey) pick(name, 'toggle');
     else if (e.shiftKey) pick(name, 'range');
-    else pick(name, 'one');
+    else { pick(name, 'one'); if (FX.singleClick()) FX.act.open(entryOf(it)); }   // single-click mode opens
   });
   list.addEventListener('dblclick', (e) => {
     const it = e.target.closest('.item');
-    if (it && !e.target.closest('.chk') && lastPointer === 'mouse') FX.act.open(entryOf(it));
+    if (it && !e.target.closest('.chk') && lastPointer === 'mouse' && !FX.singleClick()) FX.act.open(entryOf(it));
   });
   list.addEventListener('contextmenu', (e) => {
     if (e.shiftKey) return;   // Shift + right-click = the browser's own menu

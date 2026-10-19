@@ -1,0 +1,20 @@
+<!doctype html>
+<!--
+  Connectivity page (apps/connectivity/connectivity.html) — the Hub Connectivity menu category opens this tiles page.
+  Tiles from connectivity-apps.csv; shared logic and look in shared/tiles/ (tiles.js, tiles.css).
+  Opened as apps/connectivity/connectivity.html (index.html only redirects here). Plain links, no ?v= tags:
+  the Hub service worker revalidates same-origin files (hub/hub_sw.js).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Connectivity</title>
+  <link rel="stylesheet" href="../../shared/tiles/tiles.css" />
+</head>
+<body data-csv="connectivity-apps.csv">
+  <main id="grid" class="grid" aria-label="Connectivity"></main>
+  <p id="msg" class="msg" hidden></p>
+  <script src="../../shared/tiles/tiles.js"></script>
+</body>
+</html>

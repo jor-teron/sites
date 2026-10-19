@@ -1,18 +1,12 @@
 <!doctype html>
-<!--
-  Lab page (apps/lab/index.html) — the Hub Lab menu category opens this tiles page.
-  Tiles (grouped by section) from lab-apps.csv; shared logic and look in shared/tiles/ (tiles.js, tiles.css).
--->
+<!-- apps/lab/index.html — redirect only: the Lab tiles page is lab.html (keeps ?query and #hash). -->
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Lab</title>
-  <link rel="stylesheet" href="../../shared/tiles/tiles.css?v=20261019d" />
+  <script>location.replace('lab.html' + location.search + location.hash);</script>
+  <noscript><meta http-equiv="refresh" content="0; url=lab.html" /></noscript>
 </head>
-<body data-csv="lab-apps.csv">
-  <main id="grid" class="grid" aria-label="Lab apps"></main>
-  <p id="msg" class="msg" hidden></p>
-  <script src="../../shared/tiles/tiles.js?v=20261019d"></script>
-</body>
+<body><p><a href="lab.html">Lab</a></p></body>
 </html>

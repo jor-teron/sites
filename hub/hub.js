@@ -45,8 +45,10 @@
   const gamebarEl = document.getElementById('gamebar');
   /** Categories whose menu header opens a tiles page instead of expanding (CATEGORY → ENTRY_URL). */
   const CAT_PAGES = {
-    Favorite: 'apps/favorite/', Games: 'apps/games/', Media: 'apps/media/', Office: 'apps/office/',
-    Connectivity: 'apps/connectivity/', Tools: 'apps/tools/', Lab: 'apps/lab/',
+    // tiles pages live in apps/<cat>/<cat>.html (their index.html only redirects there)
+    Favorite: 'apps/favorite/favorite.html', Games: 'apps/games/games.html', Media: 'apps/media/media.html',
+    Office: 'apps/office/office.html', Connectivity: 'apps/connectivity/connectivity.html',
+    Tools: 'apps/tools/tools.html', Lab: 'apps/lab/lab.html',
     Desktop: 'apps/tools/vDesktop/',  // Desktop opens vDesktop directly (in the hub frame)
     About: 'apps/settings/#about'      // About moved into Settings → About (rows hidden)
   };
@@ -961,14 +963,17 @@
     if (!window.HubWM) return false;
     const check = [];
     const ok = window.HubWM.restoreSession((e) => {
-      const key = normalizeEntryUrl(e.key);
+      let key = normalizeEntryUrl(e.key);
       if (!key || !safeRel(key)) return null;
+      // sessions saved before R8: a category page was its folder (apps/office/) → apps/office/office.html
+      const m = /^apps\/([a-z]+)\/$/.exec(key);
+      if (m && findApp(key + m[1] + '.html')) key = key + m[1] + '.html';
       const app = findApp(key) || idToApp.get(entryToId.get(key) || '');
       // the saved url may carry the app's #hash (same page only), e.g. Files' drive + folder
       const withHash = (base) => (typeof e.url === 'string' && e.url.indexOf(base.split('#')[0] + '#') === 0 ? e.url : base);
       if (app) {
         if (app.newTab) return null;
-        return { name: app.name, icon: iconFor(app), url: withHash(frameUrlFor(app.entryUrl)), app };
+        return { key, name: app.name, icon: iconFor(app), url: withHash(frameUrlFor(app.entryUrl)), app };
       }
       check.push(key);
       const name = String(e.name || '').slice(0, 80) || key.replace(/\/+$/, '').split('/').pop();

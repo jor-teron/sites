@@ -1,18 +1,12 @@
 <!doctype html>
-<!--
-  Tools page (apps/tools/index.html) — the Hub Tools menu category opens this tiles page.
-  Tiles from tools-apps.csv; shared logic and look in shared/tiles/ (tiles.js, tiles.css).
--->
+<!-- apps/tools/index.html — redirect only: the Tools tiles page is tools.html (keeps ?query and #hash). -->
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Tools</title>
-  <link rel="stylesheet" href="../../shared/tiles/tiles.css?v=20261019d" />
+  <script>location.replace('tools.html' + location.search + location.hash);</script>
+  <noscript><meta http-equiv="refresh" content="0; url=tools.html" /></noscript>
 </head>
-<body data-csv="tools-apps.csv">
-  <main id="grid" class="grid" aria-label="Tools"></main>
-  <p id="msg" class="msg" hidden></p>
-  <script src="../../shared/tiles/tiles.js?v=20261019d"></script>
-</body>
+<body><p><a href="tools.html">Tools</a></p></body>
 </html>

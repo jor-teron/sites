@@ -94,7 +94,8 @@
       <ul>
         <li><b>Select</b>: click; <b>Ctrl</b>/<b>\u2318</b>-click adds more; <b>Shift</b>-click picks a range;
           <b>Ctrl+A</b> all. On a phone tap the round check, or press and hold.</li>
-        <li><b>Open</b>: double-click (a single tap on a phone) or Enter. Pictures open in a viewer with
+        <li><b>Open</b>: double-click (a single tap on a phone) or Enter \u2014 or a single click if you pick that
+          in <b>Settings \u2192 Windows</b> or the \u22EF menu. Pictures open in a viewer with
           \u2039 \u203A for the next one; text opens in a text view. <b>Open with\u2026</b> can send text to <b>Notely</b>.</li>
         <li><b>Right-click</b> (or press and hold) for the menu: Open, Open with\u2026, Cut, Copy, Paste, Rename,
           Download, Delete, New folder, Properties. The \u22EF button opens it too.</li>
@@ -123,14 +124,17 @@
     { t: 'Settings sections', h: `
       <ul>
         <li><b>Wallpaper</b>: gradients, plain colours or your own colour.</li>
-        <li><b>Desktop</b>: Auto / Desktop / Phone, and whether the menu opens on hover.</li>
-        <li><b>Sizes</b>: taskbar position and size, window title bar size.</li>
+        <li><b>Desktop</b>: Auto / Desktop / Phone, whether the menu opens on hover, the taskbar busy meter.</li>
+        <li><b>Windows</b>: <b>Focus window on hover</b> (point at a window for a moment to bring it forward;
+          off at first), title bar size, and single or double click to open items in Files.</li>
+        <li><b>Sizes</b>: taskbar position and size.</li>
         <li><b>Look</b>: accent colour, dark or light, and how bouncy the animations are.</li>
       </ul>
       <p>Changes show on the Hub straight away.</p>` },
     { t: 'Updates', h: `
-      <p>The Hub updates itself. It looks for a new version when it starts, every 30 minutes and when
-        you come back to the tab, then reloads once (your windows come back).</p>
+      <p>The Hub updates itself. While it is open it looks for a new version once a day at
+        <b>11 PM</b> (your local time). If it was closed then and the last check is more than a day old,
+        it checks when you open it. When there is a new version it reloads once (your windows come back).</p>
       <p>To check right now: <b>About \u2192 Check for update</b>.</p>` },
     { t: 'Privacy & kids', h: `
       <p>No ads, no trackers, no accounts. Nothing is uploaded or shared unless you export or share it

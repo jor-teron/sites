@@ -1,22 +1,27 @@
 /*
  * Hub service worker (loaded by the root /sw.js stub, so its scope is the whole site).
- * Install: precache a tiny shell. Fetch: same-origin GET only, always network-first (so a
- * push shows at once); the cache is only a fallback when offline. Navigations fall back to
- * the cached page, then hub/hub_offline.html. Only navigations and the shell files are
- * (re)stored, so ordinary app files are not cached. Cross-origin (PeerJS, CDNs) is not touched.
- * App pages and apps/* files skip the browser HTTP cache (cache:'no-cache' revalidates via ETag),
- * so a phone never gets a stale copy after a push.
+ * Install (a new build = a new CACHE name): precache a tiny shell, every file fetched with
+ * cache:'reload' so the browser's HTTP cache can't hand back an old copy.
+ * Fetch: same-origin GET only, always network-first (so a push shows at once); the cache is only
+ * a fallback when offline. Navigations fall back to the cached page, then hub/hub_offline.html.
+ * Only navigations and the shell files are (re)stored, so ordinary app files are not cached.
+ * Cross-origin (PeerJS, CDNs) is not touched.
+ * Freshness without ?v=: pages, everything under apps/, and every same-origin html / css / js /
+ * csv / json / txt / md WITHOUT a ?v= tag skip the browser HTTP cache (cache:'no-cache'
+ * revalidates via ETag, a cheap 304 when unchanged) — so plain links (the category pages,
+ * shared/tiles/*) never stay stuck on GitHub Pages' 10-minute cache. Files WITH ?v= are
+ * versioned by their url and fetched normally.
  * Bump CACHE when the shell list changes; old caches are deleted on activate. A new worker
  * skips waiting and claims open pages; hub_update.js then reloads them once (no stale shell).
  * Release: bump CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const CACHE = 'hub-shell-v33';  // 2026-10-19i: R7 System Monitor + optional taskbar busy meter
+const CACHE = 'hub-shell-v34';  // 2026-10-19j: R8 category pages <cat>.html, plain-url freshness, daily 23:00 update check
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',
   'hub/hub_main.css', 'hub/hub_controller.css', 'hub/hub_notification.css', 'shared/style/no-scrollbar.css',
   'hub/hub_config.js', 'hub/hub_apps.js', 'hub/hub_tiles.js', 'hub/hub.js', 'hub/hub_flyout.js', 'hub/hub_flyout.css', 'hub/wm_mode.js', 'hub/wm_windows.js', 'hub/wm_taskbar.js', 'hub/hub_settings.js', 'hub/wm.css', 'hub/hub_wallpapers.js', 'hub/hub_prefs.js', 'hub/hub_update.js', 'hub/version.txt', 'hub/hub_drives.js', 'hub/hub_drives.css', 'shared/fs/fs_drives.js', 'shared/dialog/dialog.js', 'shared/dialog/dialog.css',
-  'shared/ctxmenu/ctxmenu.js', 'shared/ctxmenu/ctxmenu.css', 'shared/ctxmenu/ctx_in_app.js', 'hub/hub_ctx.js', 'hub/hub_ctx_menus.js', 'shared/perf/busy_meter.js', 'hub/hub_traymeter.js', 'shared/tiles/tiles.js', 'hub/hub_controller_config.js',
+  'shared/ctxmenu/ctxmenu.js', 'shared/ctxmenu/ctxmenu.css', 'shared/ctxmenu/ctx_in_app.js', 'hub/hub_ctx.js', 'hub/hub_ctx_menus.js', 'shared/perf/busy_meter.js', 'hub/hub_traymeter.js', 'shared/tiles/tiles.js', 'shared/tiles/tiles.css', 'hub/hub_controller_config.js',
   'hub/hub_notify.js', 'hub/hub_viewer.js', 'hub/hub_viewer_pdf.js', 'hub/hub_pointer.js', 'hub/hub_receive.js',
   'hub/hub_role.js', 'hub/hub_remote.js', 'shared/link/link_scan.js',
   'hub/hub-controller.js', 'hub/hub_link.js', 'hub/hub_linkstate.js', 'hub/hub_chat.js', 'hub/hub_chat.css', 'shared/link/link_chat.js', 'hub/hub-gamebar.js',
@@ -31,7 +36,8 @@ const SHELL_SET = new Set(SHELL.map(abs));
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE)
-    .then((c) => Promise.all(SHELL.map((p) => c.add(abs(p)).catch(() => {}))))   // one missing file must not break install
+    .then((c) => Promise.all(SHELL.map((p) => fetch(new Request(abs(p), { cache: 'reload' }))   // bypass the HTTP cache
+      .then((res) => (res.ok ? c.put(abs(p), res) : null)).catch(() => {}))))   // one missing file must not break install
     .then(() => self.skipWaiting()));
 });
 
@@ -49,7 +55,8 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   const bare = url.origin + url.pathname;                 // shell files are kept without ?v=
   const keep = req.mode === 'navigate' || SHELL_SET.has(bare);   // don't fill the cache with every app file
-  const fresh = req.mode === 'navigate' || url.pathname.includes('/apps/');   // revalidate, never a stale HTTP-cache copy
+  const plain = !url.searchParams.has('v') && /\.(html?|css|m?js|csv|json|txt|md|webmanifest)$/i.test(url.pathname);
+  const fresh = req.mode === 'navigate' || url.pathname.includes('/apps/') || plain || url.pathname.endsWith('/');   // revalidate, never a stale HTTP-cache copy
   e.respondWith((fresh ? fetch(req, { cache: 'no-cache' }) : fetch(req)).then((res) => {
     if (keep && res && res.status === 200 && res.type === 'basic') {
       const copy = res.clone();

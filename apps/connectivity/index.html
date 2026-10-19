@@ -1,18 +1,12 @@
 <!doctype html>
-<!--
-  Connectivity page (apps/connectivity/index.html) — the Hub Connectivity menu category opens this tiles page.
-  Tiles from connectivity-apps.csv; shared logic and look in shared/tiles/ (tiles.js, tiles.css).
--->
+<!-- apps/connectivity/index.html — redirect only: the Connectivity tiles page is connectivity.html (keeps ?query and #hash). -->
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Connectivity</title>
-  <link rel="stylesheet" href="../../shared/tiles/tiles.css?v=20261019d" />
+  <script>location.replace('connectivity.html' + location.search + location.hash);</script>
+  <noscript><meta http-equiv="refresh" content="0; url=connectivity.html" /></noscript>
 </head>
-<body data-csv="connectivity-apps.csv">
-  <main id="grid" class="grid" aria-label="Connectivity"></main>
-  <p id="msg" class="msg" hidden></p>
-  <script src="../../shared/tiles/tiles.js?v=20261019d"></script>
-</body>
+<body><p><a href="connectivity.html">Connectivity</a></p></body>
 </html>

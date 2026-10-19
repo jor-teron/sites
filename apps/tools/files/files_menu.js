@@ -43,6 +43,8 @@
       { label: 'Select all', icon: '\u2611', hint: MOD + 'A', disabled: !st.shown.length, action: () => FX.view.selectAll() },
       { label: st.view === 'grid' ? 'List view' : 'Grid view', icon: st.view === 'grid' ? '\u2630' : '\u25A6', action: () => $('view').click() },
       { label: 'Refresh', icon: '\u21BB', action: () => FX.view.load() },
+      { label: FX.singleClick() ? 'Open with double click' : 'Open with single click', icon: '\uD83D\uDDB1',
+        action: () => { FX.setSingleClick(!FX.singleClick()); FX.say(FX.singleClick() ? 'A single click now opens items.' : 'A double click now opens items.'); } },
       { sep: true },
       { label: 'Properties', icon: '\u2139', action: () => A().props([]) }
     ]);

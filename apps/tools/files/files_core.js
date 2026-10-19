@@ -88,5 +88,11 @@ window.FX = (function () {
   /** Tell a Hub around us to save its window session (the path is in our hash). */
   function hubSave() { try { if (window.parent !== window) window.parent.postMessage({ type: 'hub-wm-save' }, location.origin); } catch (_) { /* ignore */ } }
 
-  return { $, el, btn, say, fail, size, kind, icon, st, cur, pathText, selected, setPref, progress, hubSave };
+  /** Open with a single click? Hub setting 'sites-hub.filesClick' = 'single' (Settings → Windows or
+   *  this app's ⋯ / right-click menu); default double-click. Read on every click (live). */
+  const CLICK_KEY = 'sites-hub.filesClick';
+  function singleClick() { try { return localStorage.getItem(CLICK_KEY) === 'single'; } catch (_) { return false; } }
+  function setSingleClick(on) { try { if (on) localStorage.setItem(CLICK_KEY, 'single'); else localStorage.removeItem(CLICK_KEY); } catch (_) { /* blocked */ } }
+
+  return { $, el, btn, say, fail, size, kind, icon, st, cur, pathText, selected, setPref, progress, hubSave, singleClick, setSingleClick };
 })();

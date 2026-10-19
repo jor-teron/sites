@@ -12,6 +12,9 @@
  * - Minimised windows keep running (iframe stays loaded, only hidden); the taskbar
  *   (wm_taskbar.js) lists every window.
  * - Jelly open animation (none with prefers-reduced-motion). Look in wm.css.
+ * - Focus on hover (optional, Settings → Windows → html.hub-hover-focus via hub_prefs.js): resting
+ *   the mouse ~350 ms on a window brings it to the front; not while dragging / resizing or with a
+ *   menu / dialog open. Focus itself is instant (no animation, no timer) on click.
  * - Right-click / long-press on the title bar: New window, Minimise, Maximise / Restore, Close
  *   (shared menu via hub_ctx.js); every same-origin app gets the in-app menu injected on load.
  *
@@ -50,6 +53,18 @@
   let active = null;
   let zTop = 10;
   let seq = 0;
+
+  // Focus on hover: off by default; never while dragging / resizing, a menu or dialog is open
+  const HOVER_MS = 350;
+  let hoverT = 0;
+  const hoverFocusOn = () => document.documentElement.classList.contains('hub-hover-focus');
+  function hoverBusy() {
+    if (document.body.classList.contains('wm-dragging')) return true;
+    if (window.CtxMenu && window.CtxMenu.isOpen()) return true;
+    const m = document.getElementById('menu');
+    if (m && m.classList.contains('open')) return true;
+    return !!document.querySelector('.uid-back, #ctrl-popover:not([hidden])');
+  }
 
   const SKEY = 'sites-hub.wmSession';
   let restoring = false, saveT = 0;
@@ -261,6 +276,15 @@
     if (window.__hubGamebarAttach) setTimeout(attachGb, 0);
     else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attachGb, { once: true });
     el.addEventListener('pointerdown', () => { if (active !== w) focus(w); }, true);
+    // Focus on hover (Settings → Windows, html.hub-hover-focus): a short rest over the window
+    el.addEventListener('pointerenter', (e) => {
+      if (e.pointerType !== 'mouse' || !hoverFocusOn()) return;
+      clearTimeout(hoverT);
+      hoverT = setTimeout(() => {
+        if (active !== w && !w.min && wins.includes(w) && el.matches(':hover') && !hoverBusy()) focus(w);
+      }, HOVER_MS);
+    });
+    el.addEventListener('pointerleave', () => clearTimeout(hoverT));
     el.addEventListener('animationend', () => el.classList.remove('wm-pop'));
     frame.addEventListener('load', () => { hookFrame(w); if (window.__hubInjectCtx) window.__hubInjectCtx(frame); });
 
@@ -327,9 +351,9 @@
         data.wins.slice().sort((a, b) => (a.z || 0) - (b.z || 0)).forEach((e) => {
           const inst = Math.max(1, Math.min(99, +(e && e.inst) || 1));
           if (!e || !e.key || wins.find((x) => x.key === e.key && x.inst === inst)) return;
-          const o = resolve(e);
-          if (!o) return;
-          open(Object.assign({}, o, { key: e.key, inst, restore: true, rect: { x: +e.x || 0, y: +e.y || 0, w: +e.w || 640, h: +e.h || 480 }, max: !!e.max, min: !!e.min }));
+          const o = resolve(e);   // may return o.key: the app's current key (an old saved key renamed)
+          if (!o || wins.find((x) => x.key === (o.key || e.key) && x.inst === inst)) return;
+          open(Object.assign({}, o, { key: o.key || e.key, inst, restore: true, rect: { x: +e.x || 0, y: +e.y || 0, w: +e.w || 640, h: +e.h || 480 }, max: !!e.max, min: !!e.min }));
         });
       } finally { restoring = false; }
       const f = wins.find((x) => x.key === data.focused && x.inst === (+data.focusedInst || 1) && !x.min);
