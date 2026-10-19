@@ -7,7 +7,7 @@ Purpose: Minimalist UI: thin header, single rounded input bubble, popovers,
          inline status notes, in-chat image bubbles, light/dark themes,
          jelly press effect and phone layout.
 Author: Grok
-Date: 2026-10-19 (R2: Models sheet. R1: rewrite; restored phone @media rules,
+Date: 2026-10-19 (R3: per-answer tokens · t/s line. R2: Models sheet. R1: rewrite; restored phone @media rules,
                   100dvh, 44px taps)
 ================================================================================
 */
@@ -112,6 +112,15 @@ select {
     align-self: flex-start;
     background: var(--assistant-bg);
     border-bottom-left-radius: 6px;
+}
+
+/* R3: per-answer '<tokens> tokens · <tps> t/s' line */
+.msg-meta {
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 0.7rem;
+    color: var(--muted-color);
+    white-space: nowrap;
 }
 
 /* Faint inline status note */
