@@ -3,14 +3,14 @@
  * Three.js r170 via import map. No build step.
  */
 import * as THREE from 'three';
-import { loadAssets, loadLog } from './assets/registry.js';
-import { createViewmodel } from './browser-fps_viewmodel.js';
+import { loadAssets, loadLog } from '../assets/registry.js';
+import { createViewmodel } from '../render/browser-fps_viewmodel.js';
 import { createPickups } from './browser-fps_pickups.js';
 import { createGrenades } from './browser-fps_grenades.js';
-import { createAudio } from './browser-fps_audio.js';
-import { buildIsland } from './browser-fps_island.js';
-import { buildSnow } from './browser-fps_snow.js';
-import { buildForest } from './browser-fps_forest.js';
+import { createAudio } from '../audio/browser-fps_audio.js';
+import { buildIsland } from '../maps/browser-fps_island.js';
+import { buildSnow } from '../maps/browser-fps_snow.js';
+import { buildForest } from '../maps/browser-fps_forest.js';
 import { createDoors } from './browser-fps_doors.js';
 import { setupIslandLook } from './browser-fps_look.js';
 import { createFx } from './browser-fps_fx.js';

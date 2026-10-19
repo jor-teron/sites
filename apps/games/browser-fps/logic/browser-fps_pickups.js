@@ -9,7 +9,7 @@
  * model = medkit asset module ({ build() -> { root, kit, glow } }), default assets/pickups/medkit_basic.js.
  * Gentle bob + spin, glow pulse, blinks before it despawns. Meshes are pooled.
  */
-import medkitBasic from './assets/pickups/medkit_basic.js';
+import medkitBasic from '../assets/pickups/medkit_basic.js';
 
 export function createPickups(scene, cfg, hooks, model = medkitBasic) {
   const pool = [];

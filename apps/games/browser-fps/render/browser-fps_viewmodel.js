@@ -16,8 +16,8 @@
  *   vm.update(dt, { moving, sprint, onGround, yaw, pitch })
  */
 import * as THREE from 'three';
-import rifleHq from './assets/guns/rifle_hq.js';
-import armsHq from './assets/characters/arms_hq.js';
+import rifleHq from '../assets/guns/rifle_hq.js';
+import armsHq from '../assets/characters/arms_hq.js';
 
 const FOV = 60;                       // viewmodel camera FOV (independent of the world FOV)
 const GUN_POS = new THREE.Vector3(0.115, -0.07, -0.34);  // rest position (camera space, lower right)
