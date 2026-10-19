@@ -3,6 +3,7 @@
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
 name, path, icon, newtab, section
 Files,                 files/,           , , Files
+Viewer,                viewer/,          , , Files
 System Monitor,        sysmon/,          , , System
 Calculator,            calculator/,      , , Calculators
 Calculator (Beta),     calculator-beta/, , , Calculators

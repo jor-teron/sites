@@ -1,47 +1,71 @@
 /*
  * Files actions (apps/tools/files/files_actions.js) — everything that changes or opens files:
- * open, Open with… (Notely / text view / image viewer / download), cut / copy / paste and
+ * open, Open with (shared/fs/filetypes.js: pictures + videos → the Viewer app in its own window
+ * via shared/fs/fs_ref.js, text → Notely, others → Download / text view), cut / copy / paste and
  * drag-moves (also between drives: Local ↔ added folder), upload, new folder, rename, delete,
  * download, properties. Name clashes ask Replace / Keep both / Skip ("Do this for all");
  * copying into the same folder keeps both ("name (2).txt"). Long jobs show the progress bar
  * (with Stop) from FX.progress.
  * Open with Notely: hand-off through sessionStorage 'notely-handoff' ({ name, text, t }), read by
  * apps/office/notely/nl_handoff.js (text files up to 2 MB).
- * API FX.act: open, openWith, clip(mode), paste(dir?), transfer(entries, srcDir, destDir, mode),
+ * API FX.act: open, openWith (dialog), withItems(entry) (menu rows), choices, launch(appId, entry), clip(mode), paste(dir?), transfer(entries, srcDir, destDir, mode),
  *   upload(files, dir?), newFolder, rename(entry), remove(entries), download(entries), props(entries).
  */
 (function () {
   'use strict';
-  const { st, cur, say, fail, size, kind, pathText } = FX;
+  const { st, cur, say, fail, size, pathText } = FX;
   const Dlg = window.UiDialog, O = window.FsOps;
   const NOTELY = 'apps/office/notely/', NOTELY_MAX = 2 * 1024 * 1024;
   const done = () => FX.view.load();
   const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
 
   /* ---------- open ---------- */
+  const T = window.FileTypes;
+  const hubWin = () => { try { return window.parent !== window && window.parent.__hubOpenApp ? window.parent : null; } catch (_) { return null; } };
+  /** This file as a drive reference (shared/fs/fs_ref.js) for an app in another window. */
+  const refOf = (e) => ({ drive: st.driveId, path: st.stack.slice(1).map((s) => s.name).join('/'), name: e.name });
+  /** The apps that can open e (shared/fs/filetypes.js), default first, then Download. */
+  function choices(e) {
+    if (!e || e.kind !== 'file') return [];
+    const list = T.apps(e.name, e.type);
+    if (!list.length) {   // other files: as before — Download (default), text view, Notely when small
+      list.push({ id: 'download', name: 'Download', icon: '\u2B07' }, T.app('textview'));
+      if (e.size <= NOTELY_MAX) list.push(T.app('notely'));
+    } else list.push({ id: 'download', name: 'Download', icon: '\u2B07' });
+    return list;
+  }
+  /** Open e with app id ('viewer' | 'notely' | 'textview' | 'download' | an "open app only" id). */
+  function launch(id, e) {
+    const a = T.app(id);
+    if (id === 'download') download([e]);
+    else if (id === 'textview') FX.viewer.text(e);
+    else if (id === 'notely') toNotely(e);
+    else if (id === 'viewer') { window.FsRef.openIn(a.url, refOf(e)); say('Opened in Viewer'); }
+    else if (a) {   // the app can't take a file: just open it
+      const hub = hubWin();
+      if (!(hub && hub.__hubOpenApp(a.url))) window.open('../../../' + a.url, '_blank');
+      say(a.name + ' is open \u2014 open \u201c' + e.name + '\u201d from inside it');
+    }
+  }
   function open(e) {
     if (!e) return;
     if (e.kind === 'directory') { FX.drives.into(e); return; }
-    const k = kind(e.name, e.type);
-    if (k === 'image') FX.viewer.image(e);
-    else if (k === 'text') FX.viewer.text(e);
-    else download([e]);
+    const c = choices(e);
+    launch(c.length ? c[0].id : 'download', e);
+  }
+  /** Menu rows for "Open with ▸" (files_menu.js). */
+  function withItems(e) {
+    return choices(e).map((a, i) => ({
+      label: a.name + (a.file === false ? ' (open app)' : ''), icon: a.icon, hint: i === 0 ? 'default' : '',
+      action: () => launch(a.id, e)
+    }));
   }
   async function openWith(e) {
-    if (!e || e.kind !== 'file') return;
-    const k = kind(e.name, e.type);
-    const btns = [{ value: 'download', label: '\u2B07 Download' }];
-    if (k === 'image') btns.push({ value: 'image', label: '\uD83D\uDDBC Image viewer', kind: 'primary' });
-    else {
-      btns.push({ value: 'text', label: '\uD83D\uDCC4 Text view' });
-      if (k === 'text' || e.size <= NOTELY_MAX) btns.push({ value: 'notely', label: '\uD83D\uDCDD Notely', kind: 'primary' });
-    }
+    const c = choices(e);
+    if (!c.length) return;
+    const btns = c.map((a, i) => ({ value: a.id, label: a.icon + ' ' + a.name + (a.file === false ? ' (open app)' : ''), kind: i === 0 ? 'primary' : undefined }));
     const r = await Dlg.choose('Open \u201c' + e.name + '\u201d with\u2026', '', btns);
-    if (!r) return;
-    if (r.value === 'download') download([e]);
-    else if (r.value === 'image') FX.viewer.image(e);
-    else if (r.value === 'text') FX.viewer.text(e);
-    else if (r.value === 'notely') toNotely(e);
+    if (r) launch(r.value, e);
   }
   /** Hand a text file to Notely (it asks before replacing its notes). */
   async function toNotely(e) {
@@ -229,5 +253,5 @@
       ['Modified', e.modified ? new Date(e.modified).toLocaleString() : '\u2014']]);
   }
 
-  FX.act = { open, openWith, toNotely, clip, paste, transfer, upload, newFolder, rename, remove, download, saveBlob, props };
+  FX.act = { open, openWith, withItems, choices, launch, toNotely, clip, paste, transfer, upload, newFolder, rename, remove, download, saveBlob, props };
 })();

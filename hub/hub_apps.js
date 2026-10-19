@@ -77,6 +77,7 @@ Connectivity, Pooh Chat,         apps/connectivity/pooh-chat/,               ,  
 
 Tools,    Tools Page,            apps/tools/tools.html,                      ,         0,       0,      409
 Tools,    Files,                 apps/tools/files/,                          ,         0,       0,      405
+Tools,    Viewer,                apps/tools/viewer/,                         ,         0,       0,      407
 Tools,    System Monitor,        apps/tools/sysmon/,                         ,         0,       0,      406
 Tools,    Calculator,            apps/tools/calculator/,                     ,         0,       0,      410
 Tools,    Calculator (Beta),     apps/tools/calculator-beta/,                ,         0,       0,      411

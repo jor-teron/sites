@@ -98,12 +98,7 @@ button:disabled { opacity: .4; cursor: default; }
 .pv { position: fixed; inset: 0; z-index: 40; background: var(--bg); display: flex; flex-direction: column; animation: jelly-in .3s cubic-bezier(.34,1.56,.64,1); }
 .pv-bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
 .pv-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pv-count { color: var(--muted); font-variant-numeric: tabular-nums; }
-.pv-nav { font-size: 1.6rem; padding: 0 14px; }
 .pv-body { flex: 1; overflow: auto; display: flex; min-height: 0; }
-.pv-body.pv-img { background: #000; touch-action: pan-y; }
-.pv-body img { max-width: 100%; max-height: 100%; margin: auto; object-fit: contain; }
-.pv-body img.pop { animation: jelly-in .3s cubic-bezier(.34,1.56,.64,1); }
 .pv-body pre { margin: 0; padding: 14px; white-space: pre-wrap; word-break: break-word; font: 13px/1.5 ui-monospace, Consolas, monospace; width: 100%; }
 @keyframes jelly-in { 0% { transform: scale(.85, .8); opacity: 0; } 60% { transform: scale(1.03, .98); opacity: 1; } 100% { transform: none; } }
 

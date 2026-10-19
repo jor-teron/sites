@@ -18,7 +18,7 @@
     const file = one && one.kind === 'file';
     CtxMenu.open(x, y, [
       { label: one && one.kind === 'directory' ? 'Open folder' : 'Open', icon: '\u2197', hint: 'Enter', disabled: !one, action: () => A().open(one) },
-      { label: 'Open with\u2026', icon: '\u2726', disabled: !file, action: () => A().openWith(one) },
+      file ? { label: 'Open with', icon: '\u2726', sub: A().withItems(one) } : { label: 'Open with', icon: '\u2726', disabled: true },
       { sep: true },
       { label: 'Cut', icon: '\u2702', hint: MOD + 'X', action: () => A().clip('cut') },
       { label: 'Copy', icon: '\u2398', hint: MOD + 'C', action: () => A().clip('copy') },

@@ -7,7 +7,10 @@
  * inside CtxMenu.bounds() (default: the viewport; the Hub leaves out its taskbar).
  *
  * API window.CtxMenu:
- *   open(x, y, items, opts?)  items: [{ label, icon?, hint?, disabled?, danger?, action() } | { sep: true }]
+ *   open(x, y, items, opts?)  items: [{ label, icon?, hint?, disabled?, danger?, action() } | { sep: true }
+ *                             | { label, icon?, sub: [items] }] — a sub row ("▸") swaps the menu
+ *                             for its items in the same place, with "◂ Back" on top (also ← /
+ *                             Backspace; → opens a focused sub row): works the same for touch
  *                             (null / false items are skipped); opts.anchor = a DOMRect to open
  *                             below (or above, when there is no room) instead of at x, y
  *   close(), isOpen()
@@ -17,7 +20,7 @@
  */
 window.CtxMenu = (function () {
   'use strict';
-  let menu = null, restore = null;
+  let menu = null, restore = null, back = null;
 
   function close() {
     if (!menu) return;
@@ -28,7 +31,7 @@ window.CtxMenu = (function () {
     window.removeEventListener('blur', close);
     window.removeEventListener('resize', close);
     if (restore && restore.focus) { try { restore.focus({ preventScroll: true }); } catch (_) { /* gone */ } }
-    restore = null;
+    restore = null; back = null;
   }
   function outside(e) { if (menu && !menu.contains(e.target)) close(); }
   const rows = () => (menu ? Array.from(menu.querySelectorAll('.ctx-item:not([disabled])')) : []);
@@ -42,6 +45,9 @@ window.CtxMenu = (function () {
     if (!menu) return;
     const k = e.key;
     if (k === 'Escape' || k === 'Tab') { e.preventDefault(); e.stopPropagation(); close(); return; }
+    const a = document.activeElement;
+    if ((k === 'ArrowLeft' || k === 'Backspace') && back) { e.preventDefault(); e.stopPropagation(); back(); return; }
+    if (k === 'ArrowRight' && a && a.dataset && a.dataset.sub && menu.contains(a)) { e.preventDefault(); e.stopPropagation(); a.click(); return; }
     if (k === 'ArrowDown') move(1); else if (k === 'ArrowUp') move(-1);
     else if (k === 'Home') move('home'); else if (k === 'End') move('end');
     else if (k === 'Enter' || k === ' ') { if (document.activeElement && menu.contains(document.activeElement)) document.activeElement.click(); }
@@ -50,11 +56,15 @@ window.CtxMenu = (function () {
   }
 
   function open(x, y, items, opts) {
+    const keep = opts && opts._restore;
     close();
-    restore = document.activeElement;
+    restore = keep || document.activeElement;
+    back = opts && opts._back ? opts._back : null;
+    if (back) items = [{ label: 'Back', icon: '\u25C2', action: back }, { sep: true }].concat(items);
     menu = document.createElement('div');
     menu.className = 'ctx';
     menu.setAttribute('role', 'menu');
+    const items0 = opts && opts._back ? items.slice(2) : items;
     items.forEach((it) => {
       if (!it) return;
       if (it.sep) { const s = document.createElement('div'); s.className = 'ctx-sep'; s.setAttribute('role', 'separator'); menu.appendChild(s); return; }
@@ -66,8 +76,18 @@ window.CtxMenu = (function () {
       const ic = document.createElement('span'); ic.className = 'ctx-ico'; ic.textContent = it.icon || '';
       const l = document.createElement('span'); l.className = 'ctx-label'; l.textContent = it.label;
       b.append(ic, l);
-      if (it.hint) { const h = document.createElement('span'); h.className = 'ctx-hint'; h.textContent = it.hint; b.appendChild(h); }
-      b.addEventListener('click', (e) => { e.stopPropagation(); close(); if (it.action) it.action(); });
+      const hint = it.sub ? '\u25B8' : it.hint;
+      if (hint) { const h = document.createElement('span'); h.className = 'ctx-hint'; h.textContent = hint; b.appendChild(h); }
+      if (it.sub) {
+        b.dataset.sub = '1';
+        b.setAttribute('aria-haspopup', 'menu');
+        const r0 = restore;
+        b.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const reopen = () => open(x, y, items0, Object.assign({}, opts, { _restore: r0 }));
+          open(x, y, it.sub, Object.assign({}, opts, { _back: reopen, _restore: r0 }));
+        });
+      } else b.addEventListener('click', (e) => { e.stopPropagation(); close(); if (it.action) it.action(); });
       menu.appendChild(b);
     });
     // trim leading / trailing / double separators

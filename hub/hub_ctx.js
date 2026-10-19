@@ -20,7 +20,7 @@
 (function () {
   'use strict';
   if (!window.CtxMenu || !window.CtxInApp) return;
-  const V = '20261019p';
+  const V = '20261019q';
   const reg = [];
   const isDesk = () => !!(window.HubMode && window.HubMode.isDesktop());
 
