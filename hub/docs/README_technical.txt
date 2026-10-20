@@ -2,8 +2,9 @@ SITES HUB - TECHNICAL GUIDE: HUB AND VIRTUAL DESKTOP
 ====================================================
 
 For a developer picking up the Hub (hub.html) and its virtual desktop.
-Written from the code as of R17, build bumped in R31 (2026-10-20, build ?v=20261020j,
-cache hub-shell-v53). Plain HTML / CSS / JS, no build step, no framework.
+Written from the code as of R17 (updated through R32, 2026-10-20).
+Current build tag and shell cache: see hub/build.txt (one place).
+Plain HTML / CSS / JS, no build step, no framework.
 Every file starts with a header comment: read it first, it is the spec.
 Short user notes live in hub/docs/hub_readme.md; this file is the deep dive.
 
@@ -107,6 +108,8 @@ Hub and desktop (Monorepo Bot):
     docs/               README_technical.txt (this file), hub_readme.md
     version.txt         line 1 'v0.299', line 2 release date (Jor decides);
                         stays at hub/version.txt (read by Settings too)
+    build.txt           current build tag + shell cache name (R32; docs
+                        only, nothing reads it; updated on every bump)
   shared/fs/          fs_drives.js, fs_ops.js, fs_ref.js, filetypes.js,
                       thumbs_store.js
   shared/google/      google_config.js, google_auth.js, gdrive_fs.js,
@@ -450,21 +453,27 @@ Updates (hub/update/hub_update.js, window.HubUpdate):
     a missed 09:00 (sites-hub.lastRefresh, ms). It runs reg.update() and
     asks the worker {type:'refresh'}: every SHELL file is fetched again
     and only changed ones are replaced (the cache is never wiped). If
-    anything changed: no window / app open -> quiet reload, else the
+    anything changed: no window / app open -> quiet reload (R23: a
+    worker still installing is awaited, then skip-waiting), else the
     note. Timer checks at most every hour (sleeping computers catch up).
   - Settings > About "Check for update": compares the live hub.html
-    build tag, clears hub-shell-* and reloads (manual, so allowed).
+    build tag; R24: a waiting new worker takes over (skip-waiting ->
+    reload, caches kept), else clears hub-shell-* and reloads.
   - clearCache(): deletes hub-shell-*, hub-rt-* caches, the cached Start
     list and lastRefresh, unregisters the worker, reloads.
-Bump steps for every Hub release (pick the next build tag, e.g.
-20261020f, and cache number):
+Bump steps for every Hub release (pick the next build tag after the one
+in hub/build.txt, and cache number +1):
   1. hub.html: every ?v= (sed the old tag to the new one).
   2. sw.js: importScripts('hub/update/hub_sw.js?v=<new>').
   3. hub/update/hub_sw.js: V = '<new>' and CACHE = 'hub-shell-v<NN+1>'; add
      any new shell file to SHELL.
   4. hub/menu/hub_ctx.js: const V = '<new>'.
   5. hub/core/hub_loader.js: const V = '<new>'.
-  6. hub/version.txt only when Jor says so.
+  6. hub/build.txt: line 1 build tag, line 2 cache name, line 3 release,
+     line 4 date (IST).
+  7. hub/version.txt only when Jor says so.
+The readmes (this file, hub_readme.md) carry no current numbers; only
+change-log entries keep the numbers of their own release (history).
 
 
 14. STORAGE: LOCALSTORAGE KEYS, INDEXEDDB, OPFS, CACHES
@@ -559,6 +568,13 @@ files change.
     listed via apps/lab/lab-apps.csv (Lab page + Start flyout). They
     are not rows in hub_apps.js, which is legacy (R30, section 5): fine
     as is; only their #hash link works after they were opened once.
+  - R21 (parked, low priority): Auto mode flips Desktop / Phone right at
+    1024 px (wm_mode.js); add some slack (e.g. leave Desktop below 960).
+  - R22 (parked, low priority): window sizes shrink for good after a
+    small viewport (resize clamp overwrites w.rect, wm_windows.js); keep
+    the chosen size apart from the drawn one.
+  - R33 (planned): swap hub_apps.js for the category CSVs (menu category
+    rows, hash ids and app defaults from apps/<cat>/<cat>-apps.csv).
   - The "Google Drive" label is squeezed in the Files sidebar.
   - Wallpaper thumbnails in Settings load the full images.
   - An open Settings window does not refresh when values change

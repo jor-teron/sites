@@ -5,11 +5,13 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 
 ## 2. Files
 - Technical guide: [Hub and virtual desktop internals](README_technical.txt) (`hub/docs/README_technical.txt`)
+- Current build tag and shell cache name: see `hub/build.txt` (this readme carries no current numbers).
+- Folders (R31): `core/` (hub.js, role, config, apps list, prefs, loader, main css), `wm/` (window manager, taskbar, snap, workspaces), `menu/` (flyout, tiles, settings row, right-click menus), `link/` (phone link, chat, gamebar, pointer, receive, phonekey), `controller/` (Gamepad page + Hub side), `osk/`, `viewer/` (viewer, PDF, file cards), `drives/` (Drives pane, wallpapers, tray meter), `update/` (worker, update note, offline page), `docs/`. `version.txt` stays in `hub/`. The names below are the files in those folders.
 - `../hub.html`: page shell (header, menu, controller popover, frame, home screen); loads the core with `?v=`
-- `hub_loader.js` (R16a): loads the rest after the page `load` event + idle, in batches: drives (Google sign-in, Drive, `hub_drives.js`, `hub_phonekey.js`) at first idle; then after ~1.5 s snap (`wm_snap.js`), keyboard (`osk/`), Viewer overlay. Early use (⌨ tray stub, Ctrl+Alt+K, Ctrl+Alt+arrows, `HubViewer.open`, OSK left open) loads that batch at once. Keep its `V` in step with `?v=`.
+- `hub_loader.js` (R16a): loads the rest after the page `load` event + idle, in batches: drives (Google sign-in, Drive, `hub_drives.js`, `hub_phonekey.js`) at first idle; then after ~1.5 s snap (`wm_snap.js`), keyboard (`osk/`), Viewer overlay. Early use (⌨ tray stub, Ctrl+Alt+K, Ctrl+Alt+arrows, `HubViewer.open`, OSK left open) loads that batch at once; files that fail are retried on the next use and a small "Couldn't load …" note shows (R28). Keep its `V` in step with `?v=`.
 - `hub_main.css`: page shell, wallpaper, top bar, tiles, collapsible menu
 - `hub_controller.css`: pairing / QR popover, game bar, trackpad pointer
-- `hub_apps.js`: the app list (`window.HUB_APPS_CSV`, CSV text)
+- `hub_apps.js`: the LEGACY app list (`window.HUB_APPS_CSV`, CSV text; R30): still gives the menu's category rows, hash ids and app defaults; new apps go in `apps/<category>/<category>-apps.csv`
 - `hub_tiles.js`: home screen tiles (`window.HUB_TILES`)
 - `hub.js`: menu, opening apps, hash links, last app, focus, menu keys
 - `hub-gamebar.js`: app bar in the header centre (name / stats / buttons sent by the app)
@@ -22,8 +24,8 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - `hub_viewer_pdf.js`: pdf.js glue (all pages stacked and scrollable)
 - `../shared/vendor/pdfjs/`: Mozilla pdf.js 3.11 (local copy)
 - `hub_notification.css`: received-file cards + receive overlay
-- `hub_sw.js`: service worker (R16b): precached shell + shared modules + Start icons + app CSVs; shell served cache-first and refreshed in the background (new copy on the next load); CSVs / `version.txt` network-first; app pages kept the first time they open (`hub-rt-1`); Google, OAuth, Drive and PeerJS are never cached. Loaded by the root `../sw.js` stub. Release: bump `V` + `CACHE` there and `?v=` in `sw.js`.
-- `hub_update.js` + `hub_update.css` (R16c): daily refresh at 09:00 browser time (or the next open after a missed 09:00; `sites-hub.lastRefresh`): the worker re-fetches the shell and replaces changed files, cache kept; changed → quiet reload when no window is open, else the note. Settings → About: "Last refreshed" + "Clear cache now". A new worker waits; "Update ready · Reload" note (no forced reload); Settings → About "Check for update" still reloads at once.
+- `hub_sw.js`: service worker (R16b): precached shell + shared modules + Start icons + app CSVs; shell served cache-first and refreshed in the background (new copy on the next load); CSVs / `version.txt` network-first; app pages kept the first time they open (`hub-rt-1`); images shown from cache and refreshed in the background (R25); Google, OAuth, Drive and PeerJS are never cached. Loaded by the root `../sw.js` stub. Release: bump `V` + `CACHE` there and `?v=` in `sw.js`.
+- `hub_update.js` + `hub_update.css` (R16c): daily refresh at 09:00 browser time (or the next open after a missed 09:00; `sites-hub.lastRefresh`): the worker re-fetches the shell and replaces changed files, cache kept; changed → quiet reload when no window is open, else the note. Settings → About: "Last refreshed" + "Clear cache now". A new worker waits; "Update ready · Reload" note (no forced reload); Settings → About "Check for update": a waiting new worker takes over (skip-waiting → reload, caches kept; R24), else the shell caches are cleared and the Hub reloads.
 - `hub_offline.html`: "You're offline" page shown by the service worker
 - `../manifest.webmanifest`, `../shared/image/hub_icon_192.png`, `hub_icon_512.png`: PWA manifest and icons
 - Shared: `../vendor/qrcode.js`, `../style/no-scrollbar.css`, `../script/txt-view.html` (viewer for `.txt` entries)
@@ -45,8 +47,8 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - **Phone → hub files:** the controller's Files tab opens a second link; each finished file downloads at once under its own name (up to 2 GB, no resume) and shows a card with a preview; ✕ dismisses early; cards stay for 10 seconds by default (`notify.durationMs`). Cards sit bottom-right (above the receive overlay); `notify.position` can be `bottom-right`, `top-right` or `top-center`.
 - **Receive overlay:** a finished image or PDF auto-opens over a near-clear white backdrop (`rgba(255,255,255,0.1)`, content ~95% of the screen) with the filename and ✕ at the top (files are already auto-saved). Cards stay visible on top. Esc, the controller's B button (`x`) or a backdrop click closes it. With 2+ received images/PDFs, ← → mid-viewport (and the hub D-pad) move the queue; ↑ ↓ / wheel / touch scroll a multi-page PDF (pdf.js). Other file types do not auto-open; tapping their card still opens a new tab.
 
-- **Install as an app (PWA):** Chrome on Android offers "Install app" / "Add to Home screen" (name "Jor Teron Hub", short name "Hub", night-blue icon, standalone window, opens `hub.html`). The manifest uses relative paths, so it works under `/sites/` on GitHub Pages. `hub.html` registers `sw.js` (only over http/https, not file://). The service worker is always network-first, so new pushes show at once; the cache (hub shell + visited pages) is only used offline, and a page that was never visited shows `hub/update/hub_offline.html`. Cross-origin requests (PeerJS, CDNs) are not touched.
-- **Why `sw.js` is at the root:** a service worker only controls pages in its own folder and below. `sw.js` must sit next to `hub.html` (one line: `importScripts('hub/update/hub_sw.js')`); the real code stays in `hub/`. Change the shell list or bump `CACHE` (`hub-shell-v1`) in `hub_sw.js`; old caches are deleted on activate.
+- **Install as an app (PWA):** Chrome on Android offers "Install app" / "Add to Home screen" (name "Jor Teron Hub", short name "Hub", night-blue icon, standalone window, opens `hub.html`). The manifest uses relative paths, so it works under `/sites/` on GitHub Pages. `hub.html` registers `sw.js` (only over http/https, not file://). The service worker serves the Hub shell from its cache and refreshes it in the background (a push shows on the next load); app pages are network-first and kept for offline use; a page that was never visited offline shows `hub/update/hub_offline.html`. Cross-origin requests (PeerJS, CDNs) are not touched.
+- **Why `sw.js` is at the root:** a service worker only controls pages in its own folder and below. `sw.js` must sit next to `hub.html` (one line: `importScripts('hub/update/hub_sw.js')`); the real code stays in `hub/`. Change the shell list or bump `CACHE` in `hub_sw.js` (current name: see `hub/build.txt`); old caches are deleted on activate.
 
 ## 4. Keyboard
 - Menu open: ↑ ↓ move, → / Enter / Space open a category or app, ← / Esc close
@@ -69,10 +71,10 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - Apps fill the whole area under the header.
 
 ## 8. Safe settings
-- `hub_apps.js`: add / move / hide apps, ORDER numbers
+- `apps/<category>/<category>-apps.csv`: add / move apps (source of truth); `hub_apps.js` is legacy (category rows, ORDER, HIDDEN)
 - `hub_tiles.js`: tile list (`qr` / `app`)
 - `hub_controller_config.js`: `pointer` (speed, acceleration, size, hideAfterMs, scrollSpeed, colours), `receive` (autoSave, maxBytes, ackEveryBytes), `notify` (position, durationMs, maxStack, previewSize, showPreviews, revokeAfterMs)
-- **Cache-buster:** after changing any hub file, bump every `?v=` in `../hub.html` (currently `20261005e`), or browsers keep the old copy.
+- **Cache-buster:** after changing any hub file, bump every `?v=` in `../hub.html` (current tag: see `hub/build.txt`) and the other places in README_technical section 13, or browsers keep the old copy.
 - Don't change `PEER_PREFIX` / the button map in `hub-controller.js` without updating the controller too.
 
 ## 9. Browser checklist
@@ -88,7 +90,7 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - Synthetic keys can't trigger browser actions (file pickers, fullscreen, typing into fields without the hub's help).
 - The controller needs internet (public PeerJS server).
 - Cross-origin apps get no keys, pointer or app bar.
-- Many apps have no menu icon yet (404s are expected).
+- Some apps have no menu icon yet (a letter tile shows).
 - Root `hub-apps.csv` and `tree.txt` are old copies, not used by the hub.
 - Old hidden row "FileDrop" → `apps/lab/file-drop/` points at a folder that no longer exists.
 
@@ -112,6 +114,14 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - 2026-10-20 IST: R16a minimal start: `hub_loader.js` defers Drive/Google, snap, keyboard and Viewer (cache v46, ?v=20261020c).
 - 2026-10-20 IST: R16b cache-first shell (stale-while-revalidate), offline first visit, "Update ready" note (cache v47, ?v=20261020d).
 - 2026-10-20 IST: R16c daily 09:00 refresh (replaces 23:00 check), cached Start list (`sites-hub.startList`, rebuilt when a CSV / hub_apps.js changes), Clear cache now (cache v48, ?v=20261020e).
+- 2026-10-20 IST: R18 Lab app icons: 12 new icons (MyLLM, Local AI Chat, AI Story, LLM Calculator, Bookmark Manager, Wiki Extractor, Media Explorer, IPTV player, Channel Cleaner, Three.js Viewer v2, AoE RTS, Aeroplane).
+- 2026-10-20 IST: R23+R24 update apply fixes: the 09:00 quiet reload waits for an installing worker (never reloads onto the old one); "Check for update" lets a waiting worker take over and keeps the caches (cache v49, ?v=20261020f).
+- 2026-10-20 IST: R25+R26 images refreshed in the background by the worker (edited icons / wallpapers show); "New code" asks with the Hub dialog (UiDialog) (cache v50, ?v=20261020g).
+- 2026-10-20 IST: R27+R28+R29 loader: the ⌨ stub stays until the keyboard is really in; failed files are retried and show a small "Couldn't load …" note; each key is handled once (Ctrl+Alt+K, workspace keys) (cache v51, ?v=20261020h).
+- 2026-10-20 IST: R30 `hub_apps.js` marked LEGACY; the category CSVs are the source of truth (cache v52, ?v=20261020i).
+- 2026-10-20 IST: R31 `hub/` restructured into feature folders: `core/`, `wm/`, `menu/`, `link/`, `controller/`, `osk/`, `viewer/`, `drives/`, `update/`, `docs/` (cache v53, ?v=20261020j).
+- 2026-10-20 IST: R32 `hub/build.txt` (current build + cache, one place); readme cleanup (no current numbers in the body) and this change log.
+- Parked / planned: R21 Auto mode flips Desktop / Phone at the 1024 px edge (needs some slack) and R22 window sizes shrink for good after a small viewport — parked, low priority. R33 planned: swap `hub_apps.js` for the category CSVs.
 
 ## 12. Related apps
 - Controller (phone side): `../controller/controller_readme.md`
