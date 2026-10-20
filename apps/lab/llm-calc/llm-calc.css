@@ -114,3 +114,10 @@ input[type=text] { width:9.5em; min-height:44px; font-size:1rem; padding:6px 10p
 .field.rev.manual input { outline:2px dashed #e0a020; outline-offset:-2px; }
 #revCard { padding-top:6px; padding-bottom:6px; } #revOut:empty { display:none; }
 input.ro { background:transparent; border-style:dashed; color:var(--mute, inherit); }
+/* R12: top Copy JSON button + download ticks */
+header.top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.btn.copy { margin-top:0; min-height:44px; }
+.dlrow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+#exportCard .dlrow .btn { width:auto; flex:1 1 140px; }
+.tick { display:inline-flex; align-items:center; gap:8px; min-height:44px; min-width:44px; font-size:1rem; cursor:pointer; }
+.tick input { width:24px; height:24px; margin:0; }

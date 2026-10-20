@@ -25,7 +25,9 @@
            time -> top 3 shapes with Use this.
            R10: reverse target at top with auto-fill, dropdowns for hidden/heads/
            KV heads/FFN/context, head size auto, CPU-only preset + system RAM.
-  Date: 2026-10-20 (R10)
+           R12: Copy JSON button at top, PDF/JSON download ticks, files named
+           after the model name (File name field removed).
+  Date: 2026-10-20 (R12)
 -->
 <html lang="en">
 <head>
@@ -36,7 +38,7 @@
 <link rel="stylesheet" href="llm-calc.css">
 </head>
 <body>
-<header><h1>LLM Calculator</h1><p class="sub">Tiny model training, sized live</p></header>
+<header class="top"><div><h1>LLM Calculator</h1><p class="sub">Tiny model training, sized live</p></div><button type="button" id="copyBtn" class="btn copy" aria-label="Copy config JSON">Copy JSON</button></header>
 <main class="panes">
 
 <!-- Right pane (desktop) / sticky top bar (phone): everything that updates by itself -->
@@ -138,11 +140,12 @@
 </section>
 <section class="card" id="exportCard"><h2>Export</h2>
   <div class="field"><label for="modelName">Model name</label><input id="modelName" type="text" value="tiny-v1" pattern="[A-Za-z0-9._-]+" maxlength="64" autocomplete="off" spellcheck="false"><button type="button" class="info" data-help="modelName" aria-label="About Model name">ⓘ</button></div>
-  <div class="field"><label for="fileName">File name</label><input id="fileName" type="text" value="" placeholder="e.g. tiny-v1" autocomplete="off" spellcheck="false"><button type="button" class="info" data-help="fileName" aria-label="About File name">ⓘ</button></div>
   <p id="expFiles" class="note"></p>
   <p id="expNote" class="note"></p>
   <p id="expErr" class="note bad" role="alert"></p>
-  <button type="button" id="dlBtn" class="btn">Download</button>
+  <div class="dlrow"><button type="button" id="dlBtn" class="btn">Download</button>
+    <label class="tick"><input id="dlPdf" type="checkbox" checked> PDF</label>
+    <label class="tick"><input id="dlJson" type="checkbox"> JSON</label></div>
 </section>
 <section class="card"><h2>Glossary</h2><dl id="glossary"></dl></section>
 <div class="resetrow"><button type="button" id="resetBtn" class="btn ghost">Reset to defaults</button><p class="note">Your settings are saved in this browser.</p></div>

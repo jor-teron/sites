@@ -3,6 +3,7 @@
  * Project: llm-calc (Lab) — R7 2026-10-20 (R7: output switches, grad accum, auto batch, checkpointing;
  *          R6: scaled speed, data mode, MIN_LR_RATIO, name charset [A-Za-z0-9._-], memory_gb = GPU 0;
  *          R8: GGUF q4_k_m, train.py v3.7 output defaults; R9: SHOW_DOWNLOAD_LINKS, PDF lists inline alerts; R10: CPU preset name)
+ *          R12: Copy JSON button, PDF/JSON ticks, files named after MODEL_NAME (fallback 'model')
  * Purpose: Export for the training script + people. One Download button:
  *          (a) saves <name>.llmcfg.json (Kaggle Tutor "llmcalc-config" v1 spec:
  *              UPPER_CASE script settings + "_estimates" for comparison only);
@@ -94,10 +95,11 @@
     return s;
   }
   function refresh() {
-    const s = readState(), v = validate(s), name = sanitizeName($('fileName').value);
+    const s = readState(), v = validate(s), name = fileBase();
     $('expNote').textContent = v.notes.join(' ');
-    $('expFiles').textContent = name ? 'Saves ' + name + '.llmcfg.json + ' + name + '.pdf' : '';
-    if ($('expErr').dataset.kind !== 'name' || name) { $('expErr').textContent = v.errs.join(' '); $('expErr').dataset.kind = ''; }
+    const f = [$('dlPdf').checked && name + '.pdf', $('dlJson').checked && name + '.json'].filter(Boolean);
+    $('expFiles').textContent = f.length ? 'Saves ' + f.join(' + ') : 'Tick PDF or JSON to download';
+    $('expErr').textContent = v.errs.join(' ');
   }
   function buildSummary(s, cfg, name) {
     const e = estimates(s), gpuTxt = (s.gpus > 1 ? s.gpus + '× ' : '') + (s.preset === 'P100' ? 'P100' : s.preset === 'CPU' ? 'CPU only' : s.preset === 'BOT' ? 'Bot CPU' : 'T4');
@@ -124,19 +126,24 @@
         ['Total steps', fmt(e.tr.totalSteps)], ['Estimated training time', isFinite(e.sec) ? fmtTime(e.sec) + ' at ' + fmt(e.tps) + ' tokens/sec per GPU (scaled for size)' : '—'],
         [s.gpus > 1 ? 'Memory on GPU 0 (rough)' : 'Memory per GPU (rough)', memGB.toFixed(2) + ' GB of ' + limit + ' GB']]) +
       (warns.length ? '<h3>Warnings</h3><ul>' + warns.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul>' : '') +
-      '<p class="ps-foot">All numbers are approximate estimates. The file ' + esc(name) + '.llmcfg.json holds the same settings for the training script.</p>';
+      '<p class="ps-foot">All numbers are approximate estimates. The file ' + esc(name) + '.json holds the same settings for the training script.</p>';
   }
+  function fileBase() { return sanitizeName($('modelName').value) || 'model'; }
+  const cfgText = s => JSON.stringify(buildConfig(s), null, 2) + '\n';
   function download() {
-    const name = sanitizeName($('fileName').value), err = $('expErr');
-    if (!name) { err.textContent = 'Enter a file name first'; err.dataset.kind = 'name'; $('fileName').focus(); return; }
+    const name = fileBase(), err = $('expErr'), pdf = $('dlPdf').checked, json = $('dlJson').checked;
+    if (!pdf && !json) { err.textContent = 'Tick PDF or JSON first.'; return; }
     const s = readState(), v = validate(s);
     if (v.errs.length) { err.textContent = v.errs.join(' ') + ' Fix this before downloading.'; return; }
     err.textContent = '';
     const cfg = buildConfig(s);
-    const url = URL.createObjectURL(new Blob([JSON.stringify(cfg, null, 2) + '\n'], { type: 'application/json' }));
-    const a = document.createElement('a'); a.href = url; a.download = name + '.llmcfg.json';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    if (json) {
+      const url = URL.createObjectURL(new Blob([JSON.stringify(cfg, null, 2) + '\n'], { type: 'application/json' }));
+      const a = document.createElement('a'); a.href = url; a.download = name + '.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    }
+    if (!pdf) return;
     $('printSum').innerHTML = buildSummary(s, cfg, name);
     setTimeout(() => {
       const old = document.title;
@@ -145,10 +152,24 @@
       document.title = name;
       window.print();
       setTimeout(() => { if (!window.matchMedia('print').matches) restore(); }, 1000);
-    }, 300);
+    }, json ? 300 : 0);
+  }
+  // Copy the same JSON the download saves; textarea fallback for old/insecure contexts.
+  function copyJson() {
+    const btn = $('copyBtn'), s = readState(), v = validate(s), err = $('expErr');
+    if (v.errs.length) { err.textContent = v.errs.join(' ') + ' Fix this before copying.'; btn.textContent = 'Fix errors'; setTimeout(() => { btn.textContent = 'Copy JSON'; }, 1500); return; }
+    const text = cfgText(s);
+    const done = ok => { btn.textContent = ok ? 'Copied ✓' : 'Copy failed'; setTimeout(() => { btn.textContent = 'Copy JSON'; }, 1500); };
+    const fallback = () => {
+      const t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
+      document.body.appendChild(t); t.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} t.remove(); done(ok);
+    };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(() => done(true), fallback); else fallback();
   }
   document.addEventListener('DOMContentLoaded', () => {
     $('dlBtn').addEventListener('click', download);
+    $('copyBtn').addEventListener('click', copyJson);
+    ['dlPdf', 'dlJson'].forEach(id => $(id).addEventListener('change', refresh));
     $('in').addEventListener('input', refresh); $('in').addEventListener('change', refresh);
     $('resetBtn').addEventListener('click', () => setTimeout(refresh, 0));
     refresh();
