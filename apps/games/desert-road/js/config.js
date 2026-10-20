@@ -1,7 +1,7 @@
 /*
  * Desert Road (desert-road) — configuration.
  * Speeds, difficulty ramp, car, obstacles, colors, ranks, keys and text.
- * desert-road_logic.js reads everything from DESERT_ROAD_CONFIG.
+ * The js/ modules read everything from DESERT_ROAD_CONFIG.
  */
 const DESERT_ROAD_CONFIG = {
   // Goal
@@ -32,10 +32,8 @@ const DESERT_ROAD_CONFIG = {
     moveSpeed: 7,                // target x change per 1/60 s tick while steering
     follow: 0.25,                // smoothing toward target x per 1/60 s tick (0..1)
     edgeMargin: 8,               // keep car this far inside the road edges
-    cornerRadius: 8,             // body corner radius
-    windshieldInset: 8,          // windshield side inset
-    windshieldTop: 10,           // windshield distance from car top
-    windshieldHeight: 20,        // windshield height
+    maxTilt: 0.09,               // max body yaw (radians) while steering (visual only)
+    tiltPerPx: 0.012,            // yaw per px of (targetX - x) lag (visual only)
   },
 
   // Obstacles
@@ -45,11 +43,12 @@ const DESERT_ROAD_CONFIG = {
     hitPad: 6,                   // collision forgiveness in px (both boxes)
     // Types — family friendly, desert themed
     types: [
-      { emoji: '🌵', w: 34, h: 48, points: 1 },
-      { emoji: '🐫', w: 48, h: 46, points: 2 },
-      { emoji: '🐍', w: 36, h: 26, points: 2 },
-      { emoji: '🪨', w: 40, h: 34, points: 1 },
-      { emoji: '🦂', w: 34, h: 26, points: 3 },
+      // kind picks the drawing in js/sprites.js; emoji kept as a fallback label
+      { kind: 'cactus',   emoji: '🌵', w: 34, h: 48, points: 1 },
+      { kind: 'camel',    emoji: '🐫', w: 48, h: 46, points: 2 },
+      { kind: 'snake',    emoji: '🐍', w: 36, h: 26, points: 2 },
+      { kind: 'rock',     emoji: '🪨', w: 40, h: 34, points: 1 },
+      { kind: 'scorpion', emoji: '🦂', w: 34, h: 26, points: 3 },
     ],
   },
 
@@ -72,10 +71,16 @@ const DESERT_ROAD_CONFIG = {
     road: '#c98a45',             // road surface
     roadEdge: '#8a5a2b',         // dashed road edges
     stripe: '#f4e0b0',           // center stripe
-    carShadow: 'rgba(0,0,0,0.25)', // car shadow
-    carBody: '#d63c3c',          // car body
-    windshield: '#8fd0ff',       // car windshield
+    carShadow: 'rgba(0,0,0,0.28)', // car shadow
   },
+
+  // Player car paint choices (menu); first is the default. base / light / dark shade the body.
+  carColors: [
+    { id: 'red',    label: 'Red',    base: '#d63c3c', light: '#ff7a6b', dark: '#7a1414' },
+    { id: 'blue',   label: 'Blue',   base: '#2f6fd6', light: '#7fb2ff', dark: '#13306e' },
+    { id: 'silver', label: 'Silver', base: '#b9c0c8', light: '#f4f7fa', dark: '#5d646d' },
+  ],
+  colorKey: 'desert-road.color', // localStorage key for the chosen car colour
 
   // Ranks by finish time (first match wins)
   ranks: [
