@@ -5,7 +5,8 @@
  *          R6 2026-10-20: speed scales ~1/params, words/tokens data modes,
  *          fuller memory (attention, logits, DataParallel GPU 0), overfit check;
  *          R8 2026-10-20: GGUF q4_k_m (train.py v3.7 default) + 256-multiple fallback;
- *          R9 2026-10-20: fix suggestions for inline alerts)
+ *          R9 2026-10-20: fix suggestions for inline alerts;
+ *          R10 2026-10-20: shape option lists, nearest-option migration, CPU preset, host RAM)
  * Purpose: Pure formulas for the Tiny LLM Training Calculator (no DOM).
  *          Params of a Llama-style model, file sizes, steps, time, memory.
  *          Works in the browser (window.LLMCalcMath) and in Node (module.exports).
@@ -22,8 +23,14 @@
     // tps = tokens/sec per GPU for a 26M-param model (R6: scaled ~1/params). mem = usable GB.
     T4:   { gpus: 1, tps: 25000, mem: 15, label: 'Kaggle T4 (1 GPU)' },
     T4x2: { gpus: 2, tps: 25000, mem: 15, label: 'Kaggle T4 x2' },
-    P100: { gpus: 1, tps: 32500, mem: 15, label: 'Kaggle P100 (estimate ~1.3x T4)' }
+    P100: { gpus: 1, tps: 32500, mem: 15, label: 'Kaggle P100 (estimate ~1.3x T4)' },
+    // R10: CPU-only session. Very rough speed (~1/30 of a T4). Training memory lives in system RAM.
+    CPU:  { gpus: 1, tps: 800, mem: 30, cpu: true, label: 'Kaggle CPU only (4 cores, very rough speed)' }
   };
+  // Kaggle docs (kaggle.com/docs/notebooks, 2026-10): CPU session 4 cores / 30 GB RAM;
+  // P100 and T4 x2 sessions 4 cores / 29 GB RAM.
+  Object.assign(GPU_PRESETS.T4, { ram: 29 }); Object.assign(GPU_PRESETS.T4x2, { ram: 29 });
+  Object.assign(GPU_PRESETS.P100, { ram: 29 }); Object.assign(GPU_PRESETS.CPU, { ram: 30 });
   const TWO_GPU_SCALE = 1.8;
   const REF_PARAMS = 26e6; // speed box is "speed at 26M params"
   // R6: real speed ≈ reference × 26M / params, clamped (tiny models hit overheads; huge ones never 0).
@@ -132,6 +139,16 @@
     for (let b = Math.floor(o.batch) - 1; b >= 1; b--) if (memoryFull(Object.assign({}, o, { batch: b })).gpu0 / GB <= limitGB) return b;
     return 0;
   }
-  const api = { nearMultiples, nearDivisors, fitBatch, REF_PARAMS, WORD_TOKENS, speedFactor, scaledTps, memoryFull, overfit, MB, GB, FORMATS, GGUF_BPP, q4Fallback, CKPT_ACT, CKPT_TIME, outputSizes, GPU_PRESETS, TWO_GPU_SCALE, params, fileSizes, training, timeSec, calibrate, memory };
+  // R10: option lists for the shape dropdowns.
+  const range = (a, b, s) => { const r = []; for (let v = a; v <= b; v += s) r.push(v); return r; };
+  const HIDDEN_OPTS = range(64, 4096, 64), FFN_OPTS = range(256, 8192, 256), SEQ_OPTS = [128, 256, 512, 1024, 2048, 4096];
+  const divisors = n => range(1, Math.max(1, n), 1).filter(i => n % i === 0);
+  // Heads giving head size 32..256 (fallback: all divisors).
+  function headsOpts(hidden) { const d = divisors(hidden).filter(x => hidden / x >= 32 && hidden / x <= 256); return d.length ? d : divisors(hidden); }
+  // Nearest option; tie -> lower.
+  function nearest(opts, v) { return opts.reduce((b, x) => Math.abs(x - v) < Math.abs(b - v) ? x : b, opts[0]); }
+  // Host (system) RAM: dataset tokens as int32 + ~3 fp32 copies of the model while exporting.
+  function hostRam(tokens, p) { return { data: tokens * 4, exports: p * 4 * 3, total: tokens * 4 + p * 4 * 3 }; }
+  const api = { HIDDEN_OPTS, FFN_OPTS, SEQ_OPTS, divisors, headsOpts, nearest, hostRam, nearMultiples, nearDivisors, fitBatch, REF_PARAMS, WORD_TOKENS, speedFactor, scaledTps, memoryFull, overfit, MB, GB, FORMATS, GGUF_BPP, q4Fallback, CKPT_ACT, CKPT_TIME, outputSizes, GPU_PRESETS, TWO_GPU_SCALE, params, fileSizes, training, timeSec, calibrate, memory };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LLMCalcMath = api;
 })(this);

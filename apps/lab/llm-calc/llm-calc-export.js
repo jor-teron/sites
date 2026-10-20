@@ -2,7 +2,7 @@
  * File: llm-calc-export.js
  * Project: llm-calc (Lab) — R7 2026-10-20 (R7: output switches, grad accum, auto batch, checkpointing;
  *          R6: scaled speed, data mode, MIN_LR_RATIO, name charset [A-Za-z0-9._-], memory_gb = GPU 0;
- *          R8: GGUF q4_k_m, train.py v3.7 output defaults; R9: SHOW_DOWNLOAD_LINKS, PDF lists inline alerts)
+ *          R8: GGUF q4_k_m, train.py v3.7 output defaults; R9: SHOW_DOWNLOAD_LINKS, PDF lists inline alerts; R10: CPU preset name)
  * Purpose: Export for the training script + people. One Download button:
  *          (a) saves <name>.llmcfg.json (Kaggle Tutor "llmcalc-config" v1 spec:
  *              UPPER_CASE script settings + "_estimates" for comparison only);
@@ -100,7 +100,7 @@
     if ($('expErr').dataset.kind !== 'name' || name) { $('expErr').textContent = v.errs.join(' '); $('expErr').dataset.kind = ''; }
   }
   function buildSummary(s, cfg, name) {
-    const e = estimates(s), gpuTxt = (s.gpus > 1 ? s.gpus + '× ' : '') + (s.preset === 'P100' ? 'P100' : 'T4');
+    const e = estimates(s), gpuTxt = (s.gpus > 1 ? s.gpus + '× ' : '') + (s.preset === 'P100' ? 'P100' : s.preset === 'CPU' ? 'CPU only' : 'T4');
     const when = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }) + ' IST';
     const memGB = e.mem.gpu0 / M.GB, limit = M.GPU_PRESETS[s.preset].mem;
     const warns = Array.from(document.querySelectorAll('#in .alert .atext, #warns li:not(.cnt)')).map(li => li.textContent);

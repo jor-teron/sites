@@ -1,6 +1,7 @@
 /*
  * File: llm-calc-reverse.js
- * Project: llm-calc (Lab) — R3 2026-10-20 (released after R9)
+ * Project: llm-calc (Lab) — R10 2026-10-20 (R3 released after R9; R10: one Target row
+ *          at the top, auto-fills the best match as you type, 'manual' after hand edits)
  * Purpose: Reverse calculation. Pick ONE target (params, GGUF file size MB at the
  *          current GGUF type, or training-time budget in minutes); keeps current
  *          vocab, context, tied, data, epochs, batch, hardware. Enumerates sensible
@@ -45,47 +46,47 @@
     }
     return out.sort((a, b) => a.score - b.score).slice(0, 3);
   }
-  const api = { search, metrics };
+  const api = { search, metrics, markManual: () => {} };
   if (typeof module !== 'undefined' && module.exports) { module.exports = api; return; }
   root.LLMCalcReverse = api;
 
   // ---------------- Browser only ----------------
   const $ = id => document.getElementById(id);
   const num = id => parseFloat($(id).value) || 0;
-  const fmt = n => Math.round(n).toLocaleString('en-US');
   const fmtM = n => (n / 1e6).toFixed(1) + 'M';
+  let manual = false, timer = 0;
   function readBase() {
-    const mode = $('dataMode').value;
+    const pr = M.GPU_PRESETS[$('preset').value];
     return { vocab: num('vocab'), seq: num('seq'), tied: $('tied').checked,
       kvRatio: num('kvHeads') > 0 ? Math.max(1, Math.round(num('heads') / num('kvHeads'))) : 1,
-      data: { dataMode: mode, words: num('words'), totalTokens: num('totalTokens'), stories: num('stories'), tokensPerStory: num('tokensPerStory'),
+      data: { dataMode: $('dataMode').value, words: num('words'), totalTokens: num('totalTokens'), stories: num('stories'), tokensPerStory: num('tokensPerStory'),
         epochs: num('epochs'), batch: num('batch'), gpus: num('gpus'), accum: num('gradAccum') },
       tps: num('tps'), gpus: num('gpus'), ckpt: $('gradCkpt').checked,
-      limitGB: M.GPU_PRESETS[$('preset').value].mem, ggufType: $('ggufType').value };
+      limitGB: pr.cpu ? num('ram') : pr.mem, ggufType: $('ggufType').value };
   }
-  function render() {
-    const mode = $('revMode').value, unit = { params: 'M params', size: 'MB GGUF ' + $('ggufType').value, time: 'minutes' }[mode];
-    $('revUnit').textContent = unit;
+  function status() {
+    const mode = $('revMode').value;
+    $('revTarget').disabled = mode === 'off';
+    $('revTarget').closest('.field').classList.toggle('manual', manual && mode !== 'off');
+    if (mode === 'off') $('revOut').textContent = '';
+    else if (manual) $('revOut').textContent = 'manual — you changed the shape yourself. Type a new target to auto-fill again.';
+  }
+  function fill() {
+    const mode = $('revMode').value;
+    if (mode === 'off') return status();
+    manual = false;
     const target = num('revTarget') * (mode === 'params' ? 1e6 : 1);
-    const list = search(readBase(), mode, target), box = $('revOut');
-    box.innerHTML = '';
-    if (!list.length) { box.innerHTML = '<p class="note">No shape fits (memory or budget). Try a bigger target, smaller batch or checkpointing.</p>'; return; }
-    list.forEach(s => {
-      const d = document.createElement('div'); d.className = 'revrow';
-      d.innerHTML = '<p><b>' + fmtM(s.params) + '</b> · hidden ' + s.hidden + ' · layers ' + s.layers + ' · heads ' + s.heads + (s.kvHeads !== s.heads ? '/' + s.kvHeads : '') + ' · FFN ' + s.ffn +
-        '<br><small>GGUF ~' + s.mb.toFixed(1) + ' MB · ~' + fmt(s.minutes) + ' min · ' + s.memGB.toFixed(1) + ' GB</small></p>';
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn fix'; b.textContent = 'Use this';
-      b.addEventListener('click', () => {
-        [['hidden', s.hidden], ['layers', s.layers], ['heads', s.heads], ['kvHeads', s.kvHeads], ['ffn', s.ffn], ['headDim', '']].forEach(([k, v]) => { $(k).value = v; });
-        $('qkvBias').checked = false;
-        $('hidden').dispatchEvent(new Event('input', { bubbles: true })); // existing recompute + save
-      });
-      d.appendChild(b); box.appendChild(d);
-    });
+    const best = search(readBase(), mode, target)[0];
+    if (!best) { $('revOut').textContent = 'No shape fits (memory or budget). Try another target, a smaller batch or checkpointing.'; return status(); }
+    window.LLMCalcSetShape(best);
+    $('revOut').textContent = 'Auto: ' + fmtM(best.params) + ' · hidden ' + best.hidden + ' · ' + best.layers + ' layers · ' + best.heads + ' heads · FFN ' + best.ffn;
+    status();
   }
+  api.markManual = () => { if ($('revMode').value !== 'off') { manual = true; status(); } };
   document.addEventListener('DOMContentLoaded', () => {
-    $('in').addEventListener('input', render); $('in').addEventListener('change', render);
-    $('resetBtn').addEventListener('click', () => setTimeout(render, 0));
-    render();
+    const later = () => { clearTimeout(timer); timer = setTimeout(fill, 350); };
+    $('revTarget').addEventListener('input', later); $('revMode').addEventListener('change', later);
+    $('resetBtn').addEventListener('click', () => setTimeout(() => { manual = false; status(); }, 0));
+    status();
   });
 })(this);

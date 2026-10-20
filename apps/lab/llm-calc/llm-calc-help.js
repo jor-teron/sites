@@ -1,6 +1,6 @@
 /*
  * File: llm-calc-help.js
- * Project: llm-calc (Lab) — R5 2026-10-19 (R2: head size, QKV bias; R4: removed Load whole model text; R5: help for export + training-config fields; R6 2026-10-20: speed, data mode, words, min LR; R3 (after R9) 2026-10-20: reverse; R9 2026-10-20: show download links; R8 2026-10-20: q4_k_m; R7 2026-10-20: outputs, grad accum, auto batch, checkpointing)
+ * Project: llm-calc (Lab) — R5 2026-10-19 (R2: head size, QKV bias; R4: removed Load whole model text; R5: help for export + training-config fields; R6 2026-10-20: speed, data mode, words, min LR; R10 2026-10-20: target auto-fill, dropdowns, CPU/RAM; R3 (after R9) 2026-10-20: reverse; R9 2026-10-20: show download links; R8 2026-10-20: q4_k_m; R7 2026-10-20: outputs, grad accum, auto batch, checkpointing)
  * Purpose: Plain-English help text for every setting (shown by the ⓘ buttons)
  *          and the glossary. Text only, no logic.
  */
@@ -13,7 +13,7 @@ window.LLMCalcHelp = {
   kvHeads: 'Key/value heads. Equal to heads = normal attention. Fewer (e.g. 2 or 4) = "grouped-query attention": a bit smaller and faster to run, with a small quality cost. Must divide heads evenly.',
   seq: 'Context length: how many tokens the model sees at once. Higher: remembers longer text, but uses much more training memory. Lower: less memory, shorter memory of the story.',
   tied: 'Tied embeddings reuse the input word table as the output table. On: saves vocab × hidden parameters. Off: a separate output table, bigger file, sometimes slightly better.',
-  headDim: 'Head size: how many numbers each attention head works with. Leave it empty ("auto") and it is hidden ÷ heads, which is what most models use. A few models (Gemma 3) pick a bigger head. Higher: bigger attention part, more parameters. Lower: the opposite.',
+  headDim: 'Shown automatically (hidden ÷ heads); pick heads to change it. ' + 'Head size: how many numbers each attention head works with. Leave it empty ("auto") and it is hidden ÷ heads, which is what most models use. A few models (Gemma 3) pick a bigger head. Higher: bigger attention part, more parameters. Lower: the opposite.',
   qkvBias: 'Adds a small extra "bias" number to every query, key and value output. Qwen models use it; Llama, SmolLM and Mistral do not. It adds only a few thousand parameters, so it barely changes size.',
   stories: 'How many training stories (examples) you have. More data: better model, longer training per epoch. Less: faster but the model may memorize.',
   tokensPerStory: 'Average length of one story in tokens. Multiplied by the number of stories it gives total tokens.',
@@ -26,7 +26,7 @@ window.LLMCalcHelp = {
   gpus: 'Number of GPUs. 2 (Kaggle T4 x2) doubles the batch per step; speed is about 1.8× not 2× because GPUs must sync.',
   lr: 'Learning rate (info only — does not change the numbers here). How big each learning step is. Too high: training explodes (loss jumps). Too low: learns very slowly. 3e-4 is a common start for tiny models.',
   warmup: 'Warmup steps (info only). The learning rate starts near zero and ramps up over these steps, which keeps the start stable. Typically 1–5% of total steps.',
-  preset: 'Pick your GPU. It sets the number of GPUs and a typical speed. P100 speed is a rough guess.',
+  preset: 'Pick your device. It sets the number of GPUs, a typical speed and the system RAM. P100 speed is a rough guess. CPU only (Kaggle, 4 cores) has no GPU: training is very slow (speed ~1/30 of a T4, very rough) and uses system RAM instead of GPU memory.',
   tps: 'Speed of ONE GPU for a 26M-parameter model, in tokens per second (T4 ≈ 25,000). The calculator scales it for your model: twice the parameters ≈ half the speed. 2 GPUs ≈ ×1.8, checkpointing ≈ 25% slower. Calibrate below sets it from a real run.',
   weightDecay: 'Weight decay (saved in the config only — does not change the numbers here). Gently pulls the model\'s numbers toward zero so it does not memorize. Higher: stronger brake on memorizing, can under-learn. Lower: freer learning, more risk of memorizing. 0.1 is the usual value.',
   gradClip: 'Grad clip (config only). Caps how big one learning step can get, so a single weird batch cannot wreck training. Lower: safer but can slow learning. Higher or 0: fewer limits, more risk of loss spikes. 1.0 is standard.',
@@ -46,7 +46,8 @@ window.LLMCalcHelp = {
   exportOnnxInt8: 'Also saves a smaller int8 version of the ONNX model (~1 byte per parameter), faster in the browser with a small quality loss. Needs ONNX on.',
   exportZip: 'Packs all chosen outputs into one ZIP to download from Kaggle in one go. Model weights hardly compress, so it is about as big as everything together (and needs that much extra disk).',
   showLinks: 'Show download links (config: SHOW_DOWNLOAD_LINKS). At the end of training the script prints clickable links to the files it saved, so you can download them from Kaggle in one tap. Off: no links, just the file list.',
-  reverse: 'Tell it what you want: a parameter count (in millions), a GGUF file size (MB, at your GGUF type) or a training-time budget (minutes). It suggests 3 model shapes (hidden, layers, heads, FFN), keeping your vocab, context, data, epochs, batch and GPU, and only shows shapes that fit in GPU memory without warnings. Tap Use this to fill them in. Not part of the exported config.',
+  reverse: 'Pick a target — parameters (millions), GGUF file size (MB, at your GGUF type) or a time budget (minutes) — and type a number. Hidden, layers, heads, KV heads and FFN fill in by themselves with the best match that fits in memory. Vocab, context, data, epochs, batch and device are never changed. If you then change one of those 5 yourself, the target shows "manual" and stops filling until you type a new target. Off = no auto-fill. Not part of the exported config.',
+  ram: 'System RAM of the machine (not GPU memory). Kaggle gives ~29 GB with a GPU and ~30 GB on CPU only. It holds your dataset (~4 bytes per token) and copies of the model while exporting; on CPU it also holds all of training. If the estimate is over, use fewer stories (Max samples) or fewer outputs.',
   calibrate: 'Enter a real finished run: steps, minutes, total batch (all GPUs) and context. It works out the true per-GPU speed and puts it in the speed box.'
 };
 window.LLMCalcGlossary = [

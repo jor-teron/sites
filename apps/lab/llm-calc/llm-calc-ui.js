@@ -1,6 +1,7 @@
 /*
  * File: llm-calc-ui.js
- * Project: llm-calc (Lab) — R9 2026-10-20 (R8: q4_k_m 256-multiple warning;
+ * Project: llm-calc (Lab) — R10 2026-10-20 (R10: shape dropdowns + nearest-option
+ *          migration, head size auto, CPU preset + system RAM check; R8: q4_k_m 256-multiple warning;
  *          R9: alerts shown inline on the row they concern, with one-tap 'Use X' fixes)
  * Purpose: Reads inputs, recomputes on every change, renders results,
  *          handles ⓘ help popups, GPU presets and calibration.
@@ -39,14 +40,43 @@
     fields().forEach(el => { o[el.id] = el.type === 'checkbox' ? el.checked : el.value; });
     return o;
   }
+  // ---- R10: shape dropdowns ----
+  const SHAPE = { hidden: 1, heads: 1, kvHeads: 1, ffn: 1, seq: 1 };
+  const fillSel = (el, opts) => { el.innerHTML = opts.map(v => '<option value="' + v + '">' + fmt(v) + '</option>').join(''); };
+  // Set a numeric select to the nearest option (tie -> lower); old saved values migrate this way.
+  function setVal(el, v) {
+    if (el.tagName === 'SELECT' && SHAPE[el.id]) {
+      const opts = Array.from(el.options).map(o => Number(o.value));
+      if (opts.length && isFinite(Number(v)) && v !== '') el.value = String(M.nearest(opts, Number(v)));
+      if (el.id === 'hidden' || el.id === 'heads') refreshHeads();
+    } else el.value = v;
+  }
+  function refreshHeads() {
+    const h = Number($('hidden').value), hs = $('heads'), kv = $('kvHeads');
+    const curH = Number(hs.value || hs.dataset.def), curK = Number(kv.value || kv.dataset.def);
+    fillSel(hs, M.headsOpts(h)); hs.value = String(M.nearest(M.headsOpts(h), curH));
+    const d = M.divisors(Number(hs.value)); fillSel(kv, d); kv.value = String(M.nearest(d, curK));
+    $('headDim').value = h / Number(hs.value);
+  }
+  window.LLMCalcSetShape = function (vals) { // used by llm-calc-reverse.js auto-fill
+    ['hidden', 'heads', 'kvHeads', 'ffn', 'layers'].forEach(k => { if (vals[k] !== undefined) setVal($(k), vals[k]); });
+    $('qkvBias').checked = false; recompute(); save();
+  };
+  function buildSelects() {
+    fillSel($('hidden'), M.HIDDEN_OPTS); fillSel($('ffn'), M.FFN_OPTS); fillSel($('seq'), M.SEQ_OPTS);
+    ['hidden', 'ffn', 'seq'].forEach(k => { $(k).value = $(k).dataset.def; });
+    refreshHeads();
+  }
   function apply(o) {
     fields().forEach(el => {
-      if (!o || !Object.prototype.hasOwnProperty.call(o, el.id)) return;
+      if (!o || !Object.prototype.hasOwnProperty.call(o, el.id) || el.id === 'headDim') return;
       const v = o[el.id];
       if (el.type === 'checkbox') { if (typeof v === 'boolean') el.checked = v; }
+      else if (SHAPE[el.id]) setVal(el, v);
       else if (el.tagName === 'SELECT') { if (Array.from(el.options).some(op => op.value === v)) el.value = v; }
       else if (typeof v === 'string' && (el.type === 'text' || v === '' || isFinite(Number(v)))) el.value = v;
     });
+    refreshHeads();
   }
   function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(snapshot())); } catch (e) { /* storage off / full */ } }
   function load() {
@@ -83,6 +113,7 @@
     });
     if (m.heads > 0 && m.hidden % m.heads) A('hidden', 'bad', 'Hidden ' + fmt(m.hidden) + ' must divide evenly by heads (' + fmt(m.heads) + ').', M.nearMultiples(m.hidden, m.heads));
     if (m.kvHeads > 0 && m.heads % m.kvHeads) A('kvHeads', 'bad', 'Heads (' + fmt(m.heads) + ') must divide evenly by KV heads.', M.nearDivisors(m.heads, m.kvHeads));
+    if (m.vocab > 0 && m.vocab % 64) A('vocab', 'amber', 'Vocab ' + fmt(m.vocab) + ' is not a multiple of 64 — GPUs run a bit faster with multiples of 64.', M.nearMultiples(m.vocab, 64));
     if (m.headDim > 0 && m.headDim * m.heads !== m.hidden) A('headDim', 'amber', 'Head size × heads (' + fmt(m.headDim * m.heads) + ') is not hidden size — fine if a real model does it (Gemma 3), otherwise leave Head size empty.');
     const p = M.params(m);
     const params = fmtM(p.total);
@@ -120,8 +151,9 @@
     if (sec > 30 * 3600) warns.push('More than the weekly Kaggle GPU quota (~30 h, approximate).');
 
     const mem = M.memoryFull({ p: p.total, batch: t.batch, seq, h: m.hidden, layers: m.layers, heads: m.heads, vocab: m.vocab, gpus: t.gpus, ckpt });
-    const gb = mem.gpu0 / M.GB, limit = M.GPU_PRESETS[$('preset').value].mem;
-    $('rMem').textContent = gb.toFixed(2) + ' GB' + (t.gpus > 1 ? ' on GPU 0' : ' / GPU');
+    const pr = M.GPU_PRESETS[$('preset').value], cpu = !!pr.cpu;
+    const gb = mem.gpu0 / M.GB, limit = cpu ? Infinity : pr.mem;
+    $('rMem').textContent = gb.toFixed(2) + ' GB' + (cpu ? ' (RAM)' : t.gpus > 1 ? ' on GPU 0' : ' / GPU');
     $('bMem').textContent = gb.toFixed(1) + ' GB';
     $('rMemBreak').innerHTML = rows([
       ['Weights + grads + AdamW (~16 B/param)', (mem.states / M.GB).toFixed(2) + ' GB'],
@@ -130,7 +162,7 @@
       ['Logits + grads (batch × context × vocab)', '~' + (mem.logits / M.GB).toFixed(2) + ' GB'],
       ['Each GPU', (mem.total / M.GB).toFixed(2) + ' GB'],
     ].concat(t.gpus > 1 ? [['GPU 0 extra (DataParallel gathers logits)', '~' + (mem.gather / M.GB).toFixed(2) + ' GB']] : []).concat([
-      ['<b>' + (t.gpus > 1 ? 'GPU 0 total' : 'Total per GPU') + '</b>', '<b>' + gb.toFixed(2) + ' GB of ' + limit + ' GB</b>']]));
+      ['<b>' + (t.gpus > 1 ? 'GPU 0 total' : 'Total per GPU') + '</b>', '<b>' + gb.toFixed(2) + (cpu ? ' GB (in system RAM)' : ' GB of ' + limit + ' GB') + '</b>']]));
     const over = gb > limit;
     $('rMem').classList.toggle('bad', over); $('bMem').classList.toggle('bad', over);
     if (over) {
@@ -138,6 +170,11 @@
       A('batch', 'bad', 'Likely out of memory: ' + gb.toFixed(1) + ' GB' + (t.gpus > 1 ? ' on GPU 0' : '') + ' > ' + limit + ' GB usable. ' +
         (fb ? 'Largest batch that fits: ' + fb + ' (raise Grad accumulation to keep the effective batch).' : 'Even batch 1 does not fit — lower context or vocab, or turn on checkpointing.'), fb ? [fb] : []);
     }
+    // R10: system RAM (dataset + export copies; on CPU also all of training).
+    const hr = M.hostRam(tr.tokens, p.total), ramGB = (hr.total + (cpu ? mem.total : 0)) / M.GB, ramLim = num('ram');
+    $('rRam').innerHTML = rows([['Dataset (~4 B/token)', (hr.data / M.GB).toFixed(2) + ' GB'], ['Model copies while exporting (~3× fp32)', (hr.exports / M.GB).toFixed(2) + ' GB']]
+      .concat(cpu ? [['Training (CPU)', (mem.total / M.GB).toFixed(2) + ' GB']] : []).concat([['<b>Total</b>', '<b>' + ramGB.toFixed(2) + ' GB of ' + fmt(ramLim) + ' GB</b>']]));
+    if (ramLim > 0 && ramGB > ramLim) A('ram', 'bad', 'Needs ~' + ramGB.toFixed(1) + ' GB of system RAM, more than ' + fmt(ramLim) + ' GB. Use Max samples, a smaller model or fewer outputs.');
     renderAlerts(al);
     const nRows = new Set(al.map(x => x.row)).size;
     $('warns').innerHTML = (nRows ? '<li class="cnt">' + nRows + (nRows === 1 ? ' setting needs' : ' settings need') + ' attention (see the marked rows)</li>' : '') +
@@ -162,7 +199,7 @@
           const r = document.createElement('div'); r.className = 'fixes';
           x.fixes.forEach(v => {
             const b = document.createElement('button'); b.type = 'button'; b.className = 'btn fix'; b.textContent = 'Use ' + fmt(v);
-            b.addEventListener('click', () => { $(row).value = v; recompute(); save(); flash([row]); $(row).dispatchEvent(new Event('change', { bubbles: true })); });
+            b.addEventListener('click', () => { setVal($(row), v); recompute(); save(); flash([row]); $(row).dispatchEvent(new Event('change', { bubbles: true })); });
             r.appendChild(b);
           });
           box.appendChild(r);
@@ -185,7 +222,7 @@
   }
   function applyPreset() {
     const pr = M.GPU_PRESETS[$('preset').value];
-    $('gpus').value = pr.gpus; $('tps').value = pr.tps;
+    $('gpus').value = pr.gpus; $('tps').value = pr.tps; $('ram').value = pr.ram;
   }
   function doCalibrate() {
     const v = M.calibrate(num('cSteps'), num('cMin'), num('cBatch'), num('cSeq'), num('gpus'));
@@ -218,7 +255,8 @@
     box.hidden = false;
     box.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
       const e = X.MODELS.find(x => x.id === b.dataset.ex);
-      if (BOOL_KEYS[key]) $(key).checked = !!exVal(e, key); else $(key).value = exVal(e, key);
+      if (BOOL_KEYS[key]) $(key).checked = !!exVal(e, key); else if (key !== 'headDim') setVal($(key), exVal(e, key));
+      if (SHAPE[key] && window.LLMCalcReverse) window.LLMCalcReverse.markManual();
       $('help').close(); recompute(); save(); flash([key]);
     }));
   }
@@ -235,6 +273,7 @@
     $('rBar').setAttribute('aria-expanded', String(open));
   }
   function init() {
+    buildSelects();
     defaults = snapshot();
     load();
     document.querySelectorAll('[data-help]').forEach(b => b.addEventListener('click', () =>
@@ -242,10 +281,15 @@
     $('helpClose').addEventListener('click', () => $('help').close());
     $('help').addEventListener('click', e => { if (e.target === $('help')) $('help').close(); });
     fields().forEach(el => {
-      el.addEventListener('input', () => {
+      el.addEventListener('input', e => {
         if (el.id === 'modelName') { const c = el.value.replace(/[^A-Za-z0-9._-]/g, ''); if (c !== el.value) el.value = c; }
+        if (e.isTrusted && el.id === 'layers' && window.LLMCalcReverse) window.LLMCalcReverse.markManual();
         recompute(); save(); });
-      el.addEventListener('change', () => { if (el.id === 'preset') applyPreset(); recompute(); save(); });
+      el.addEventListener('change', e => {
+        if (el.id === 'preset') applyPreset();
+        if (el.id === 'hidden' || el.id === 'heads') refreshHeads();
+        if (e.isTrusted && (SHAPE[el.id] || el.id === 'layers') && el.id !== 'seq' && window.LLMCalcReverse) window.LLMCalcReverse.markManual();
+        recompute(); save(); });
     });
     $('cBtn').addEventListener('click', doCalibrate);
     $('resetBtn').addEventListener('click', reset);

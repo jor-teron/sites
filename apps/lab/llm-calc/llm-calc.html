@@ -23,7 +23,9 @@
            R9: alerts inline on their rows with one-tap fixes; Show download links.
            R3 (released after R9): Reverse card — target params, GGUF size or
            time -> top 3 shapes with Use this.
-  Date: 2026-10-20 (R3 after R9)
+           R10: reverse target at top with auto-fill, dropdowns for hidden/heads/
+           KV heads/FFN/context, head size auto, CPU-only preset + system RAM.
+  Date: 2026-10-20 (R10)
 -->
 <html lang="en">
 <head>
@@ -68,20 +70,25 @@
     <h3>Output files (approx., 1 MB = 10⁶ bytes)</h3><table id="rSizes"></table><p id="rSizesRef" class="note"></p>
     <h3>Parameter breakdown</h3><table id="rBreak"></table>
     <h3>Memory (rough)</h3><table id="rMemBreak"></table>
+    <h3>System RAM (rough)</h3><table id="rRam"></table>
   </div>
 </aside>
 
 <!-- Left pane: everything the user can adjust (saved in this browser) -->
 <div class="in" id="in">
+<section class="card" id="revCard">
+  <div class="field rev"><label for="revMode">Target</label><select id="revMode"><option value="off">Off</option><option value="params">Params (M)</option><option value="size">GGUF size (MB)</option><option value="time">Time (min)</option></select><input id="revTarget" type="number" inputmode="decimal" value="26" step="any" min="0" aria-label="Target value"><button type="button" class="info" data-help="reverse" aria-label="About Target">ⓘ</button></div>
+  <p id="revOut" class="note"></p>
+</section>
 <section class="card"><h2>Model</h2>
   <div class="field"><label for="vocab">Vocab size</label><input id="vocab" type="number" inputmode="decimal" value="8192" step="1" min="1"><button type="button" class="info" data-help="vocab" aria-label="About Vocab size">ⓘ</button></div>
-  <div class="field"><label for="hidden">Hidden size</label><input id="hidden" type="number" inputmode="decimal" value="512" step="1" min="1"><button type="button" class="info" data-help="hidden" aria-label="About Hidden size">ⓘ</button></div>
+  <div class="field"><label for="hidden">Hidden size</label><select id="hidden" data-opts="hidden" data-def="512"></select><button type="button" class="info" data-help="hidden" aria-label="About Hidden size">ⓘ</button></div>
   <div class="field"><label for="layers">Layers</label><input id="layers" type="number" inputmode="decimal" value="7" step="1" min="1"><button type="button" class="info" data-help="layers" aria-label="About Layers">ⓘ</button></div>
-  <div class="field"><label for="ffn">FFN / MLP width</label><input id="ffn" type="number" inputmode="decimal" value="1376" step="1" min="1"><button type="button" class="info" data-help="ffn" aria-label="About FFN / MLP width">ⓘ</button></div>
-  <div class="field"><label for="heads">Attention heads</label><input id="heads" type="number" inputmode="decimal" value="8" step="1" min="1"><button type="button" class="info" data-help="heads" aria-label="About Attention heads">ⓘ</button></div>
-  <div class="field"><label for="kvHeads">KV heads</label><input id="kvHeads" type="number" inputmode="decimal" value="8" step="1" min="1"><button type="button" class="info" data-help="kvHeads" aria-label="About KV heads">ⓘ</button></div>
-  <div class="field"><label for="headDim">Head size</label><input id="headDim" type="number" inputmode="decimal" placeholder="auto" step="1" min="0"><button type="button" class="info" data-help="headDim" aria-label="About Head size">ⓘ</button></div>
-  <div class="field"><label for="seq">Context length</label><input id="seq" type="number" inputmode="decimal" value="256" step="1" min="1"><button type="button" class="info" data-help="seq" aria-label="About Context length">ⓘ</button></div>
+  <div class="field"><label for="ffn">FFN / MLP width</label><select id="ffn" data-opts="ffn" data-def="1280"></select><button type="button" class="info" data-help="ffn" aria-label="About FFN / MLP width">ⓘ</button></div>
+  <div class="field"><label for="heads">Attention heads</label><select id="heads" data-def="8"></select><button type="button" class="info" data-help="heads" aria-label="About Attention heads">ⓘ</button></div>
+  <div class="field"><label for="kvHeads">KV heads</label><select id="kvHeads" data-def="8"></select><button type="button" class="info" data-help="kvHeads" aria-label="About KV heads">ⓘ</button></div>
+  <div class="field"><label for="headDim">Head size</label><input id="headDim" type="number" readonly tabindex="-1" class="ro" placeholder="auto"><button type="button" class="info" data-help="headDim" aria-label="About Head size">ⓘ</button></div>
+  <div class="field"><label for="seq">Context length</label><select id="seq" data-opts="seq" data-def="256"></select><button type="button" class="info" data-help="seq" aria-label="About Context length">ⓘ</button></div>
   <div class="field"><label for="tied">Tied embeddings</label><input id="tied" type="checkbox" class="sw" checked><button type="button" class="info" data-help="tied" aria-label="About Tied embeddings">ⓘ</button></div>
   <div class="field"><label for="qkvBias">QKV bias</label><input id="qkvBias" type="checkbox" class="sw"><button type="button" class="info" data-help="qkvBias" aria-label="About QKV bias">ⓘ</button></div>
 </section>
@@ -117,9 +124,10 @@
   <p id="outNote" class="note"></p>
 </section>
 <section class="card"><h2>Hardware</h2>
-  <div class="field"><label for="preset">GPU</label><select id="preset"><option value="T4">T4</option><option value="T4x2">T4 x2</option><option value="P100">P100 (estimate)</option></select><button type="button" class="info" data-help="preset" aria-label="About GPU">ⓘ</button></div>
+  <div class="field"><label for="preset">Device</label><select id="preset"><option value="T4">T4</option><option value="T4x2">T4 x2</option><option value="P100">P100 (estimate)</option><option value="CPU">CPU only (Kaggle)</option></select><button type="button" class="info" data-help="preset" aria-label="About GPU">ⓘ</button></div>
   <div class="field"><label for="gpus">GPUs</label><select id="gpus"><option>1</option><option>2</option></select><button type="button" class="info" data-help="gpus" aria-label="About GPUs">ⓘ</button></div>
   <div class="field"><label for="tps">Speed at 26M (tok/s per GPU)</label><input id="tps" type="number" inputmode="decimal" value="25000" step="100" min="1"><button type="button" class="info" data-help="tps" aria-label="About Tokens/sec per GPU">ⓘ</button></div>
+  <div class="field"><label for="ram">System RAM (GB)</label><input id="ram" type="number" inputmode="decimal" value="29" step="1" min="1"><button type="button" class="info" data-help="ram" aria-label="About System RAM">ⓘ</button></div>
 </section>
 <section class="card"><h2 class="hrow"><span>Calibrate from a real run</span><button type="button" class="info" data-help="calibrate" aria-label="About calibrate">ⓘ</button></h2>
   <div class="field"><label for="cSteps">Steps</label><input id="cSteps" type="number" inputmode="decimal" value="5000" min="0"></div>
@@ -127,11 +135,6 @@
   <div class="field"><label for="cBatch">Batch total</label><input id="cBatch" type="number" inputmode="decimal" value="64" min="0"></div>
   <div class="field"><label for="cSeq">Context</label><input id="cSeq" type="number" inputmode="decimal" value="256" min="0"></div>
   <button type="button" id="cBtn" class="btn">Use this speed</button><p id="cOut" class="note"></p>
-</section>
-<section class="card" id="revCard"><h2 class="hrow"><span>Reverse: find a model</span><button type="button" class="info" data-help="reverse" aria-label="About Reverse">ⓘ</button></h2>
-  <div class="field"><label for="revMode">Target</label><select id="revMode"><option value="params">Parameters</option><option value="size">GGUF file size</option><option value="time">Time budget</option></select></div>
-  <div class="field"><label for="revTarget" id="revUnit">M params</label><input id="revTarget" type="number" inputmode="decimal" value="26" step="any" min="0"></div>
-  <div id="revOut"></div>
 </section>
 <section class="card" id="exportCard"><h2>Export</h2>
   <div class="field"><label for="modelName">Model name</label><input id="modelName" type="text" value="tiny-v1" pattern="[A-Za-z0-9._-]+" maxlength="64" autocomplete="off" spellcheck="false"><button type="button" class="info" data-help="modelName" aria-label="About Model name">ⓘ</button></div>
