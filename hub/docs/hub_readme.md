@@ -125,6 +125,7 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - 2026-10-20 IST: R33a `hub_apps.js` keeps only the categories ("<Category> Page" rows) + hidden system rows (Desktop, Settings, About, Contact, Feedback, Transcribe); the 60 app rows moved to a commented archive block in the same file. Apps come from the category CSVs (`hub_flyout.js` `window.HubStartList`, registered by `hub.js` for hash links, last app, session restore, `__hubOpenApp`); every CSV app now has its #hash link (e.g. #myllm) (cache v54, ?v=20261020k).
 - 2026-10-20 IST: R33b faster first-visit app lookup: the CSV lists start loading the moment `hub_flyout.js` is in and the hash / last app / saved windows open as soon as the CSVs that hold them are registered (in order), not after all 7; 4 s cap kept (cache v55, ?v=20261020l).
 - 2026-10-21 IST: R21+R22 steady resize: Auto mode enters Desktop at 1024 px and leaves it only below 960 px (no flipping near the edge); windows keep their chosen size and grow back after the browser was made smaller (cache v56, ?v=20261020m).
+- 2026-10-21 IST: R35 edge snapping works again: opening a window or pressing its title bar loads the deferred snap batch at once, so an early drag gets the half / max preview, the snap and the magnet (cache v57, ?v=20261020n).
 
 ## 12. Related apps
 - Controller (phone side): `../controller/controller_readme.md`

@@ -18,6 +18,7 @@
  * - Right-click / long-press on the title bar: New window, Move to workspace 1/2, Minimise,
  *   Maximise / Restore, Close (shared menu via hub_ctx.js); every same-origin app gets the
  *   in-app menu injected on load.
+ * - R35: opening a window or pressing its title bar loads the deferred snap batch at once.
  * - Snapping (R10): w.snap = 'l' | 'r' (left / right half, class wm-snap-l / -r in wm.css; w.rect
  *   keeps the size from before, like maximise). Edge detection, preview and the keys live in
  *   wm_snap.js through HubWM.dragHook {adjust(w, rect, ev, dir) (magnet, R13), move(w, ev),
@@ -368,7 +369,14 @@
     // pointer once it really moves (a plain click on the bar keeps it as it is).
     let start = null, freed = true;
     const hook = (k, ev) => { const h = HubWM.dragHook; if (h && typeof h[k] === 'function') h[k](w, ev); };
+    // R35: snapping (wm_snap.js) is a deferred batch (hub_loader.js, ~1.5 s idle, later on a slow
+    // connection). Before it was in, HubWM.dragHook was null, so an early drag never snapped, showed
+    // no preview and had no magnet. Ask for the batch as soon as it can be wanted: on the first
+    // window open (below) and on a title-bar press. hook() reads HubWM.dragHook live, so a drag
+    // that is already under way snaps once the file arrives mid-drag.
+    const wantSnap = () => { if (!HubWM.dragHook && window.HubLoader) window.HubLoader.load('snap'); };
     dragOn(bar, () => {
+      wantSnap();   // R35
       freed = !(w.max || w.snap);
       start = Object.assign({}, w.rect);
     }, (dx, dy, ev) => {
@@ -432,6 +440,7 @@
     desk.appendChild(el);
     wins.push(w);
     frame.src = o.url;
+    if (!o.restore || !o.min) wantSnap();   // R35: a visible window → bring snapping in now
     if (o.restore) {
       el.style.zIndex = String(++zTop);
       if (o.min) { w.min = true; el.classList.add('wm-min'); }

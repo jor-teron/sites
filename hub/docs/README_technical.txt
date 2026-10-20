@@ -2,7 +2,7 @@ SITES HUB - TECHNICAL GUIDE: HUB AND VIRTUAL DESKTOP
 ====================================================
 
 For a developer picking up the Hub (hub.html) and its virtual desktop.
-Written from the code as of R17 (updated through R21+R22, 2026-10-21).
+Written from the code as of R17 (updated through R35, 2026-10-21).
 Current build tag and shell cache: see hub/build.txt (one place).
 Plain HTML / CSS / JS, no build step, no framework.
 Every file starts with a header comment: read it first, it is the spec.
@@ -203,7 +203,9 @@ hub/wm/wm_snap.js (deferred batch "snap"):
     (SIDE px, whole height) = half; top strip between them = maximise.
     Preview #wm-snap-pv. Switch: Settings > Windows "Snap windows to
     screen edges" (sites-hub.snapEdges '0' = off, html.hub-snap-off).
-    THIS IS CURRENTLY BROKEN AND SWITCHED OFF (see section 17).
+    R35: works again. wm_windows.js asks HubLoader for this batch on the
+    first window open and on a title-bar press, so a drag before the
+    ~1.5 s idle load still snaps (it used to find HubWM.dragHook null).
   - Magnet (R13/R14): window edges within the magnet distance stick to
     desk edges and other visible windows' edges. Distance = Settings >
     Windows "Magnet strength" sites-hub.snapMagnetPx 10-100, default 20.
@@ -568,8 +570,13 @@ files change.
 
 17. KNOWN ISSUES AND PARKED ITEMS
 ---------------------------------
-  - Edge snapping (half / max zones) is broken and switched off in
-    Settings; the magnet and the snap keys work. Parked.
+  - R35 (done): edge snapping (half / max zones, preview, magnet) works
+    again. Cause: wm_snap.js is the deferred "snap" batch, so a drag before
+    it loaded had no HubWM.dragHook (no preview, snap or magnet). Now the
+    first window open / a title-bar press loads it at once. Only a file that
+    has not arrived yet (very slow link) still misses that one drag. If it
+    looks off, check Settings > Windows "Snap windows to screen edges" is on
+    (it was switched off while broken; sites-hub.snapEdges '0').
   - The 12 Lab apps once missing from hub_apps.js (MyLLM ... Aeroplane)
     are fine since R33a: every CSV app gets its #hash link at start.
   - R21 (done): Auto mode enters Desktop at >= 1024 px but leaves it only

@@ -20,8 +20,8 @@
  *   changed ones in place (the cache is never wiped); replies {type:'sw-refreshed', changed:[paths]}.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261020m';
-const CACHE = 'hub-shell-v56';  // 2026-10-20m: R21+R22 steady mode switch and window sizes on resize
+const V = '20261020n';
+const CACHE = 'hub-shell-v57';  // 2026-10-20n: R35 edge snapping works again (snap batch loads on first window)
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const SHELL = [
   'hub.html',
