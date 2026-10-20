@@ -8,7 +8,8 @@ displays results, and generates downloadable .txt file.
 Author: Built for Jor Teron
 Date: 2026-10-16
 Notes: Pure browser JS. Uses fetch() with origin=* for CORS. Includes polite delays between requests.
-Only English Wikipedia. Extracts only main body (explaintext). Skips non-article links.
+Only English Wikipedia (en.wikipedia.org, en.m.wikipedia.org, or a page title). Follows redirects.
+Extracts only main body (explaintext). Skips non-article links. The tree lists fetched pages only.
 */
 
 // Constant: Base URL for English Wikipedia MediaWiki API
@@ -29,31 +30,101 @@ let treeRoot = null;
 // Variable: Abort flag to stop long-running extraction if needed
 let abortExtraction = false;
 
-// Function: Extracts the page title from a full Wikipedia URL or returns the raw input as title
-function extractTitleFromInput(input) {
-    // Trim whitespace
-    const trimmed = input.trim();
-    // If it looks like a URL, parse the title
-    if (trimmed.startsWith('http')) {
+// Function: Decodes a URL path segment without throwing on a stray or truncated %
+function safeDecodeURIComponent(value) {
+    try {
+        return decodeURIComponent(value);
+    } catch (e) {
+        // Encode bare "%" so one bad escape does not reject the whole title
+        const repaired = value.replace(/%(?![0-9A-Fa-f]{2})/g, '%25');
         try {
-            const url = new URL(trimmed);
-            // Match /wiki/Title pattern
-            const match = url.pathname.match(/\/wiki\/(.+)/);
-            if (match) {
-                // Decode and replace underscores with spaces for display, but API accepts both
-                return decodeURIComponent(match[1]).replace(/_/g, ' ');
-            }
-        } catch (e) {
-            // Invalid URL, fall through
+            return decodeURIComponent(repaired);
+        } catch (e2) {
+            return value;
         }
     }
-    // Otherwise treat as plain title
-    return trimmed;
+}
+
+// Function: Turns a /wiki/Title path or ?title= value into an API title
+function titleFromRawSegment(raw) {
+    if (!raw) {
+        return '';
+    }
+    return raw.replace(/_/g, ' ').trim();
+}
+
+// Function: Extracts a page title from a plain title or an English Wikipedia URL.
+// Returns { title, error }. Non-English and other hosts set error and an empty title.
+function extractTitleFromInput(input) {
+    const trimmed = input.trim();
+    if (!trimmed) {
+        return { title: '', error: 'Please enter a starting Wikipedia page link or title.' };
+    }
+
+    // Plain titles are not URLs; the API is already English Wikipedia
+    if (!/^https?:\/\//i.test(trimmed)) {
+        return { title: trimmed, error: null };
+    }
+
+    let url;
+    try {
+        url = new URL(trimmed);
+    } catch (e) {
+        return {
+            title: '',
+            error: 'That link is not a valid URL. Enter an en.wikipedia.org or en.m.wikipedia.org link, or a page title.'
+        };
+    }
+
+    const host = url.hostname.toLowerCase().replace(/\.$/, '');
+    if (host !== 'en.wikipedia.org' && host !== 'en.m.wikipedia.org') {
+        return {
+            title: '',
+            error: 'Only English Wikipedia links are supported. Use en.wikipedia.org or en.m.wikipedia.org, or enter a page title.'
+        };
+    }
+
+    let rawTitle = '';
+    const pathMatch = url.pathname.match(/\/wiki\/(.+)/);
+    if (pathMatch) {
+        rawTitle = safeDecodeURIComponent(pathMatch[1]);
+    } else {
+        // /w/index.php?title=Article and similar links
+        try {
+            rawTitle = url.searchParams.get('title') || '';
+        } catch (e) {
+            rawTitle = '';
+        }
+    }
+
+    const title = titleFromRawSegment(rawTitle);
+    if (!title) {
+        return {
+            title: '',
+            error: 'Could not find a page title in that Wikipedia link. Use a /wiki/Title or ?title=Title link.'
+        };
+    }
+    return { title: title, error: null };
 }
 
 // Function: Normalizes a title for API use (spaces to underscores, basic cleanup)
 function normalizeTitle(title) {
     return title.trim().replace(/ /g, '_');
+}
+
+// Function: Parses an integer and clamps it. Blank or non-numeric values use fallback.
+function clampInteger(value, fallback, min, max) {
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed)) {
+        return fallback;
+    }
+    if (parsed < min) {
+        return min;
+    }
+    if (parsed > max) {
+        return max;
+    }
+    return parsed;
 }
 
 // Function: Sleep helper for rate limiting
@@ -90,13 +161,35 @@ function stripTrailingSections(text) {
     return text.substring(0, cutIndex).trim();
 }
 
+// Function: Collects redirect source and target titles from a query response
+function collectRedirectTitles(data) {
+    const titles = [];
+    const redirects = data && data.query && data.query.redirects;
+    if (!Array.isArray(redirects)) {
+        return titles;
+    }
+    for (const redirect of redirects) {
+        if (!redirect) {
+            continue;
+        }
+        if (redirect.from) {
+            titles.push(redirect.from);
+        }
+        if (redirect.to) {
+            titles.push(redirect.to);
+        }
+    }
+    return titles;
+}
+
 // Function: Fetches main body extract and links for a single page title
 async function fetchPageData(title) {
-    // Build query parameters
+    // Build query parameters. redirects=1 resolves titles such as "AI".
     const params = new URLSearchParams({
         action: 'query',
         format: 'json',
         origin: '*',
+        redirects: '1',
         titles: title,
         prop: 'extracts|links',
         explaintext: '1',
@@ -112,14 +205,34 @@ async function fetchPageData(title) {
     }
     const data = await response.json();
 
+    // MediaWiki reports parameter and query failures as HTTP 200 plus data.error
+    if (!data || typeof data !== 'object') {
+        throw new Error('Wikipedia API returned an unexpected response.');
+    }
+    if (data.error) {
+        throw new Error(data.error.info || 'Wikipedia API error');
+    }
+    if (!data.query || !data.query.pages) {
+        throw new Error('Wikipedia API returned no page data.');
+    }
+
     // Extract the page object
     const pages = data.query.pages;
-    const pageId = Object.keys(pages)[0];
+    const pageIds = Object.keys(pages);
+    if (pageIds.length === 0) {
+        throw new Error('Wikipedia API returned no page data.');
+    }
+    const pageId = pageIds[0];
     const page = pages[pageId];
+    if (!page) {
+        throw new Error('Wikipedia API returned no page data.');
+    }
+
+    const redirectTitles = collectRedirectTitles(data);
 
     // Handle missing or invalid pages
     if (page.missing || pageId === '-1') {
-        return { title: title, text: '', links: [], error: 'Page not found' };
+        return { title: page.title || title, text: '', links: [], error: 'Page not found', redirectTitles: redirectTitles };
     }
 
     // Get plain text extract (main body) and strip trailing sections
@@ -143,7 +256,8 @@ async function fetchPageData(title) {
         title: page.title || title,
         text: text,
         links: links,
-        error: null
+        error: null,
+        redirectTitles: redirectTitles
     };
 }
 
@@ -152,33 +266,44 @@ async function crawlWikipedia(startTitle, maxDepth, maxPages, onProgress) {
     // Reset abort flag
     abortExtraction = false;
 
-    // Visited set to avoid cycles and duplicates
+    // Visited set to avoid queueing the same title twice
     const visited = new Set();
 
+    // Canonical titles already stored. Redirect targets are added here so they are not fetched again.
+    const fetched = new Set();
+
     // Queue for BFS: each item is { title, depth, parentNode }
+    // parentNode is the already-fetched parent. Children are not attached until they are fetched.
     const queue = [];
 
     // Results array for flat list
     const results = [];
 
-    // Create root node for tree
-    const root = {
-        title: startTitle,
-        text: '',
-        depth: 0,
-        children: [],
-        error: null
-    };
-    treeRoot = root;
+    treeRoot = null;
 
     // Enqueue starting page
-    queue.push({ title: startTitle, depth: 0, parentNode: root });
+    queue.push({ title: startTitle, depth: 0, parentNode: null });
     visited.add(normalizeTitle(startTitle));
+
+    // Remember a resolved article and its redirect aliases so neither is requested again
+    function markFetched(title) {
+        if (!title) {
+            return;
+        }
+        const norm = normalizeTitle(title);
+        visited.add(norm);
+        fetched.add(norm);
+    }
 
     // Process queue
     while (queue.length > 0 && results.length < maxPages && !abortExtraction) {
         const current = queue.shift();
         const { title, depth, parentNode } = current;
+
+        // A redirect from an earlier page already stored this article
+        if (fetched.has(normalizeTitle(title))) {
+            continue;
+        }
 
         // Update progress
         if (onProgress) {
@@ -190,40 +315,55 @@ async function crawlWikipedia(startTitle, maxDepth, maxPages, onProgress) {
         try {
             pageData = await fetchPageData(title);
         } catch (err) {
-            pageData = { title: title, text: '', links: [], error: err.message };
+            pageData = { title: title, text: '', links: [], error: err.message, redirectTitles: [] };
         }
 
-        // Store text and error on the node
-        parentNode.title = pageData.title;
-        parentNode.text = pageData.text;
-        parentNode.error = pageData.error;
-        parentNode.depth = depth;
+        const canonicalTitle = pageData.title || title;
+        if (fetched.has(normalizeTitle(canonicalTitle))) {
+            // This request followed a redirect onto an article we already have
+            markFetched(canonicalTitle);
+            for (const alias of pageData.redirectTitles || []) {
+                markFetched(alias);
+            }
+            await sleep(REQUEST_DELAY_MS);
+            continue;
+        }
+
+        markFetched(canonicalTitle);
+        for (const alias of pageData.redirectTitles || []) {
+            markFetched(alias);
+        }
+
+        // Only fetched pages are added to the tree. Queued links past the page limit are left out.
+        const pageNode = {
+            title: canonicalTitle,
+            text: pageData.text,
+            depth: depth,
+            children: [],
+            error: pageData.error
+        };
+        if (depth === 0) {
+            treeRoot = pageNode;
+        } else if (parentNode) {
+            parentNode.children.push(pageNode);
+        }
 
         // Add to flat results if we have content or at least the title
         results.push({
-            title: pageData.title,
+            title: canonicalTitle,
             text: pageData.text,
             depth: depth,
             error: pageData.error
         });
 
-        // If we can go deeper and have links, enqueue children
+        // If we can go deeper and have links, enqueue children (do not attach them yet)
         if (depth < maxDepth && pageData.links && pageData.links.length > 0) {
             for (const linkTitle of pageData.links) {
                 const norm = normalizeTitle(linkTitle);
                 if (!visited.has(norm) && results.length + queue.length < maxPages * 2) {
                     // Soft limit on queue size to prevent explosion before hard limit
                     visited.add(norm);
-                    // Create child node
-                    const childNode = {
-                        title: linkTitle,
-                        text: '',
-                        depth: depth + 1,
-                        children: [],
-                        error: null
-                    };
-                    parentNode.children.push(childNode);
-                    queue.push({ title: linkTitle, depth: depth + 1, parentNode: childNode });
+                    queue.push({ title: linkTitle, depth: depth + 1, parentNode: pageNode });
                 }
             }
         }
@@ -337,11 +477,13 @@ async function startExtraction() {
     const downloadBtn = document.getElementById('downloadBtn');
     const outputEl = document.getElementById('output');
 
-    // Read values
+    // Read values. Depth defaults to 1 (range 1-5); page limit defaults to 50 (range 1-500).
     const startInput = startUrlEl.value.trim();
-    const maxDepth = parseInt(depthEl.value, 10) || 2;
-    const maxPages = parseInt(pageLimitEl.value, 10) || 250;
+    const maxDepth = clampInteger(depthEl.value, 1, 1, 5);
+    const maxPages = clampInteger(pageLimitEl.value, 50, 1, 500);
     const mode = outputModeEl.value;
+    depthEl.value = String(maxDepth);
+    pageLimitEl.value = String(maxPages);
 
     // Validate input
     if (!startInput) {
@@ -349,12 +491,13 @@ async function startExtraction() {
         return;
     }
 
-    // Extract title
-    const startTitle = extractTitleFromInput(startInput);
-    if (!startTitle) {
-        updateStatus('Could not determine page title from input.');
+    // Extract title. Unsupported hosts and unreadable links stop here.
+    const parsedInput = extractTitleFromInput(startInput);
+    if (parsedInput.error) {
+        updateStatus(parsedInput.error);
         return;
     }
+    const startTitle = parsedInput.title;
 
     // Disable button during run
     extractBtn.disabled = true;
