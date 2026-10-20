@@ -4,7 +4,8 @@
 The start page of the site (`hub.html`). A header menu lists every app by category; apps open inside the hub in a full-size frame (or in a new tab). The home screen shows quick-access tiles on an animated wallpaper. A phone can be paired as a controller (gamepad, keyboard, trackpad) and can send files to the hub.
 
 ## 2. Files
-- `../hub.html`: page shell (header, menu, controller popover, frame, home screen); loads everything with `?v=`
+- `../hub.html`: page shell (header, menu, controller popover, frame, home screen); loads the core with `?v=`
+- `hub_loader.js` (R16a): loads the rest after the page `load` event + idle, in batches: drives (Google sign-in, Drive, `hub_drives.js`, `hub_phonekey.js`) at first idle; then after ~1.5 s snap (`wm_snap.js`), keyboard (`osk/`), Viewer overlay. Early use (⌨ tray stub, Ctrl+Alt+K, Ctrl+Alt+arrows, `HubViewer.open`, OSK left open) loads that batch at once. Keep its `V` in step with `?v=`.
 - `hub_main.css`: page shell, wallpaper, top bar, tiles, collapsible menu
 - `hub_controller.css`: pairing / QR popover, game bar, trackpad pointer
 - `hub_apps.js`: the app list (`window.HUB_APPS_CSV`, CSV text)
@@ -105,6 +106,8 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - 2026-10-05 18:00 IST: receive overlay polish (no Download, mid-side arrows, 95% content, 10 s toast).
 
 - 2026-10-05 18:29 IST: hub CSS split into main / controller / notification; overlay backdrop 10% white.
+
+- 2026-10-20 IST: R16a minimal start: `hub_loader.js` defers Drive/Google, snap, keyboard and Viewer (cache v46, ?v=20261020c).
 
 ## 12. Related apps
 - Controller (phone side): `../controller/controller_readme.md`
