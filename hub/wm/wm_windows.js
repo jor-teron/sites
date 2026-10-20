@@ -98,7 +98,8 @@
     if (!isDesk() || restoring) return;
     const list = wins.map((w) => ({
       key: w.key, inst: w.inst, url: curUrl(w), name: w.baseName,
-      x: Math.round(w.rect.x), y: Math.round(w.rect.y), w: Math.round(w.rect.w), h: Math.round(w.rect.h),
+      // R22: save the chosen size (w.pref), not the one squeezed to a small screen
+      x: Math.round((w.pref || w.rect).x), y: Math.round((w.pref || w.rect).y), w: Math.round((w.pref || w.rect).w), h: Math.round((w.pref || w.rect).h),
       max: !!w.max, min: !!w.min, snap: w.snap || '', ws: w.ws, z: +w.el.style.zIndex || 0
     }));
     try { localStorage.setItem(SKEY, JSON.stringify({ v: 1, wins: list, ws: curWs, focused: active ? active.key : '', focusedInst: active ? active.inst : 0 })); } catch (_) { /* full / blocked */ }
@@ -264,8 +265,12 @@
   }
 
   /** fit: keep the whole window on screen (restored sessions), else just a grab-able part. */
-  function setRect(w, x, y, wd, ht, fit) {
+  // R22: w.pref = the size / place the user (or the saved session) chose. Screen-resize clamps
+  // only change w.rect (what is shown, keep=true), so windows grow back when room returns
+  // instead of shrinking a little more on every browser resize. The session saves w.pref.
+  function setRect(w, x, y, wd, ht, fit, keep) {
     const d = deskRect();
+    const raw = { x, y, w: wd, h: ht };   // R22: a restored session keeps its full saved size
     wd = Math.max(MIN_W, Math.min(wd, d.width));
     ht = Math.max(MIN_H, Math.min(ht, d.height));
     if (fit) {
@@ -276,6 +281,7 @@
       y = Math.max(0, Math.min(y, d.height - 36));
     }
     Object.assign(w.rect, { x, y, w: wd, h: ht });
+    if (!keep) w.pref = fit ? raw : { x, y, w: wd, h: ht };   // R22
     saveSoon();
     const s = w.el.style;
     s.left = x + 'px'; s.top = y + 'px'; s.width = wd + 'px'; s.height = ht + 'px';
@@ -533,6 +539,7 @@
   });
   window.addEventListener('pagehide', () => { clearTimeout(saveT); saveNow(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(saveT); saveNow(); } });
-  // Keep windows reachable after the screen shrinks
-  window.addEventListener('resize', () => wins.forEach((w) => setRect(w, w.rect.x, w.rect.y, w.rect.w, w.rect.h)));
+  // Keep windows reachable after the screen shrinks; R22: re-fit from w.pref (keep=true) so
+  // they grow back to the chosen size when the screen grows again
+  window.addEventListener('resize', () => wins.forEach((w) => { const p = w.pref || w.rect; setRect(w, p.x, p.y, p.w, p.h, false, true); }));
 })();

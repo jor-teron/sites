@@ -2,7 +2,7 @@ SITES HUB - TECHNICAL GUIDE: HUB AND VIRTUAL DESKTOP
 ====================================================
 
 For a developer picking up the Hub (hub.html) and its virtual desktop.
-Written from the code as of R17 (updated through R33b, 2026-10-20).
+Written from the code as of R17 (updated through R21+R22, 2026-10-21).
 Current build tag and shell cache: see hub/build.txt (one place).
 Plain HTML / CSS / JS, no build step, no framework.
 Every file starts with a header comment: read it first, it is the spec.
@@ -37,7 +37,8 @@ hub.html is one page that hosts every app of the site in iframes.
 It runs in one of two modes, decided by hub/wm/wm_mode.js (window.HubMode):
 
   Desktop  a real mouse ((hover: hover) and (pointer: fine)) AND a viewport
-           at least 1024 px wide. <body> gets class "wm-desktop". Apps open
+           at least 1024 px wide (R21: once in Desktop it stays down to
+           960 px). <body> gets class "wm-desktop". Apps open
            in movable windows on #wm-desk, a taskbar sits at the bottom
            (or top), the home screen shows Drives (left 60%) and the QR /
            link tiles (right 40%).
@@ -571,11 +572,11 @@ files change.
     Settings; the magnet and the snap keys work. Parked.
   - The 12 Lab apps once missing from hub_apps.js (MyLLM ... Aeroplane)
     are fine since R33a: every CSV app gets its #hash link at start.
-  - R21 (parked, low priority): Auto mode flips Desktop / Phone right at
-    1024 px (wm_mode.js); add some slack (e.g. leave Desktop below 960).
-  - R22 (parked, low priority): window sizes shrink for good after a
-    small viewport (resize clamp overwrites w.rect, wm_windows.js); keep
-    the chosen size apart from the drawn one.
+  - R21 (done): Auto mode enters Desktop at >= 1024 px but leaves it only
+    below 960 px (wm_mode.js HYST = 64), so no flipping near 1024.
+  - R22 (done): each window keeps its chosen size / place in w.pref;
+    a screen resize clamps only the drawn w.rect, so windows grow back
+    when room returns; the session saves w.pref (wm_windows.js).
   - R33a + R33b (done): apps come from the category CSVs; hub_apps.js
     keeps the categories + hidden system rows (section 5). On a first
     visit a hash link waits only for the CSVs up to its own category
