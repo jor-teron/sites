@@ -1,6 +1,6 @@
 /*
  * File: llm-calc-help.js
- * Project: llm-calc (Lab) — R5 2026-10-19 (R2: head size, QKV bias; R4: removed Load whole model text; R5: help for export + training-config fields; R6 2026-10-20: speed, data mode, words, min LR; R8 2026-10-20: q4_k_m; R7 2026-10-20: outputs, grad accum, auto batch, checkpointing)
+ * Project: llm-calc (Lab) — R5 2026-10-19 (R2: head size, QKV bias; R4: removed Load whole model text; R5: help for export + training-config fields; R6 2026-10-20: speed, data mode, words, min LR; R9 2026-10-20: show download links; R8 2026-10-20: q4_k_m; R7 2026-10-20: outputs, grad accum, auto batch, checkpointing)
  * Purpose: Plain-English help text for every setting (shown by the ⓘ buttons)
  *          and the glossary. Text only, no logic.
  */
@@ -45,6 +45,7 @@ window.LLMCalcHelp = {
   exportOnnx: 'Saves an ONNX model (fp32) — used to run in the browser (Transformers.js) or other apps. Size ≈ 4 bytes per parameter.',
   exportOnnxInt8: 'Also saves a smaller int8 version of the ONNX model (~1 byte per parameter), faster in the browser with a small quality loss. Needs ONNX on.',
   exportZip: 'Packs all chosen outputs into one ZIP to download from Kaggle in one go. Model weights hardly compress, so it is about as big as everything together (and needs that much extra disk).',
+  showLinks: 'Show download links (config: SHOW_DOWNLOAD_LINKS). At the end of training the script prints clickable links to the files it saved, so you can download them from Kaggle in one tap. Off: no links, just the file list.',
   calibrate: 'Enter a real finished run: steps, minutes, total batch (all GPUs) and context. It works out the true per-GPU speed and puts it in the speed box.'
 };
 window.LLMCalcGlossary = [

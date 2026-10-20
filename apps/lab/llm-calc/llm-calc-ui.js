@@ -1,6 +1,7 @@
 /*
  * File: llm-calc-ui.js
- * Project: llm-calc (Lab) — R8 2026-10-20 (R8: q4_k_m 256-multiple warning)
+ * Project: llm-calc (Lab) — R9 2026-10-20 (R8: q4_k_m 256-multiple warning;
+ *          R9: alerts shown inline on the row they concern, with one-tap 'Use X' fixes)
  * Purpose: Reads inputs, recomputes on every change, renders results,
  *          handles ⓘ help popups, GPU presets and calibration.
  *          R2: "Real models" tap-to-copy list in each model setting's ⓘ.
@@ -74,10 +75,15 @@
     $('stories').disabled = $('tokensPerStory').disabled = t.dataMode !== 'stories';
     ['totalTokens', 'words', 'stories', 'tokensPerStory'].forEach(k => $(k).closest('.field').classList.toggle('off', $(k).disabled));
 
-    const warns = [];
-    if (m.heads && m.hidden % m.heads) warns.push('Hidden size should divide evenly by heads.');
-    if (m.kvHeads && m.heads % m.kvHeads) warns.push('Heads should divide evenly by KV heads.');
-    if (m.headDim > 0 && m.headDim * m.heads !== m.hidden) warns.push('Head size × heads (' + fmt(m.headDim * m.heads) + ') is not hidden size — fine if a real model does it (Gemma 3), otherwise leave Head size empty.');
+    const warns = [], al = [];
+    // al: inline alerts { row, lvl: 'bad'|'amber', text, fixes: [values] }
+    const A = (row, lvl, text, fixes) => al.push({ row, lvl, text, fixes: fixes || [] });
+    ['vocab', 'hidden', 'layers', 'ffn', 'heads', 'kvHeads', 'seq', 'epochs', 'batch', 'tps', 'gradAccum'].forEach(k => {
+      if (!(num(k) > 0)) A(k, 'bad', 'Must be a number above 0.', k === 'gradAccum' ? [1] : []);
+    });
+    if (m.heads > 0 && m.hidden % m.heads) A('hidden', 'bad', 'Hidden ' + fmt(m.hidden) + ' must divide evenly by heads (' + fmt(m.heads) + ').', M.nearMultiples(m.hidden, m.heads));
+    if (m.kvHeads > 0 && m.heads % m.kvHeads) A('kvHeads', 'bad', 'Heads (' + fmt(m.heads) + ') must divide evenly by KV heads.', M.nearDivisors(m.heads, m.kvHeads));
+    if (m.headDim > 0 && m.headDim * m.heads !== m.hidden) A('headDim', 'amber', 'Head size × heads (' + fmt(m.headDim * m.heads) + ') is not hidden size — fine if a real model does it (Gemma 3), otherwise leave Head size empty.');
     const p = M.params(m);
     const params = fmtM(p.total);
     $('rParams').textContent = $('bParams').textContent = params;
@@ -87,7 +93,7 @@
       ['All ' + fmt(m.layers) + ' layers', fmt(p.layersTotal)], ['Final norm', fmt(p.finalNorm)], ['<b>Total</b>', '<b>' + fmt(p.total) + '</b>']
     ]);
     const os = M.outputSizes(p.total, o, { hidden: m.hidden, ffn: m.ffn, total: p.total, mlpTotal: p.mlp * m.layers });
-    if (o.gguf && o.ggufType === 'q4_k_m') ['hidden', 'ffn'].forEach(k => { if (m[k] % 256) warns.push((k === 'ffn' ? 'FFN ' : 'Hidden ') + fmt(m[k]) + " isn't a multiple of 256, so Q4_K_M stores those tensors in a bigger format (file a bit larger; size is rough)."); });
+    if (o.gguf && o.ggufType === 'q4_k_m') ['hidden', 'ffn'].forEach(k => { if (m[k] > 0 && m[k] % 256) A(k, 'amber', (k === 'ffn' ? 'FFN ' : 'Hidden ') + fmt(m[k]) + " isn't a multiple of 256, so Q4_K_M stores those tensors in a bigger format (file a bit larger).", M.nearMultiples(m[k], 256)); });
     $('rSizes').innerHTML = os.list.length ? rows(os.list.map(f => [f.name, '~' + fmtMB(f.mb)]).concat([['<b>Total disk</b>', '<b>~' + fmtMB(os.total) + '</b>']])) : rows([['No outputs selected', '—']]);
     const ref = M.fileSizes(p.total);
     $('rSizesRef').textContent = 'Other formats (reference): fp16 ~' + fmtMB(ref[1].mb) + '';
@@ -102,8 +108,9 @@
 
     $('rTpp').textContent = p.total ? (tr.tokens / p.total).toFixed(2) : '—';
     const of = M.overfit(tr.tokens, p.total);
-    if (of.level === 'bad') warns.push('Overfit risk: only ' + of.ratio.toFixed(2) + ' tokens per parameter per epoch — the model will memorise the data. Use more data or a smaller model.');
-    else if (of.level === 'note') warns.push('Note: ' + of.ratio.toFixed(1) + ' tokens per parameter (guideline ~20). Fine for experiments; more data helps.');
+    const dataRow = t.dataMode === 'words' ? 'words' : t.dataMode === 'tokens' ? 'totalTokens' : 'stories';
+    if (of.level === 'bad') A(dataRow, 'bad', 'Overfit risk: only ' + of.ratio.toFixed(2) + ' tokens per parameter per epoch — the model will memorise the data. Use more data or a smaller model.');
+    else if (of.level === 'note') A(dataRow, 'amber', 'Note: ' + of.ratio.toFixed(1) + ' tokens per parameter (guideline ~20). Fine for experiments; more data helps.');
     const tps = M.scaledTps(num('tps'), p.total);
     $('rSpeed').innerHTML = rows([['Speed at 26M (your box)', fmt(num('tps')) + ' tok/s'], ['Scaled for ' + fmtM(p.total) + ' (×' + M.speedFactor(p.total).toFixed(2) + ')', fmt(tps) + ' tok/s per GPU'],
       ['All GPUs' + (t.gpus > 1 ? ' (×1.8)' : '') + (ckpt ? ', checkpointing ÷1.25' : ''), fmt(tps * (t.gpus > 1 ? M.TWO_GPU_SCALE * t.gpus / 2 : 1) / (ckpt ? M.CKPT_TIME : 1)) + ' tok/s']]);
@@ -126,9 +133,43 @@
       ['<b>' + (t.gpus > 1 ? 'GPU 0 total' : 'Total per GPU') + '</b>', '<b>' + gb.toFixed(2) + ' GB of ' + limit + ' GB</b>']]));
     const over = gb > limit;
     $('rMem').classList.toggle('bad', over); $('bMem').classList.toggle('bad', over);
-    if (over) warns.push('Likely out of memory: ' + gb.toFixed(1) + ' GB' + (t.gpus > 1 ? ' on GPU 0' : '') + ' > ' + limit + ' GB usable on a T4. Lower batch (use grad accumulation), context or vocab, or turn on checkpointing.');
-    $('warns').innerHTML = warns.map(w => '<li>' + w + '</li>').join('');
-    $('bDot').hidden = !warns.length;
+    if (over) {
+      const fb = M.fitBatch({ p: p.total, batch: t.batch, seq, h: m.hidden, layers: m.layers, heads: m.heads, vocab: m.vocab, gpus: t.gpus, ckpt }, limit);
+      A('batch', 'bad', 'Likely out of memory: ' + gb.toFixed(1) + ' GB' + (t.gpus > 1 ? ' on GPU 0' : '') + ' > ' + limit + ' GB usable. ' +
+        (fb ? 'Largest batch that fits: ' + fb + ' (raise Grad accumulation to keep the effective batch).' : 'Even batch 1 does not fit — lower context or vocab, or turn on checkpointing.'), fb ? [fb] : []);
+    }
+    renderAlerts(al);
+    const nRows = new Set(al.map(x => x.row)).size;
+    $('warns').innerHTML = (nRows ? '<li class="cnt">' + nRows + (nRows === 1 ? ' setting needs' : ' settings need') + ' attention (see the marked rows)</li>' : '') +
+      warns.map(w => '<li>' + w + '</li>').join('');
+    $('bDot').hidden = !(warns.length || nRows);
+  }
+
+  // R9: draw alerts under their rows; red = real problem, amber = gentle hint.
+  function renderAlerts(al) {
+    document.querySelectorAll('#in .alert').forEach(e => e.remove());
+    document.querySelectorAll('#in .field.al-bad, #in .field.al-amber').forEach(f => f.classList.remove('al-bad', 'al-amber'));
+    const by = {};
+    al.forEach(x => { (by[x.row] = by[x.row] || []).push(x); });
+    Object.keys(by).forEach(row => {
+      const f = $(row).closest('.field'), list = by[row], bad = list.some(x => x.lvl === 'bad');
+      f.classList.add(bad ? 'al-bad' : 'al-amber');
+      const box = document.createElement('div');
+      box.className = 'alert ' + (bad ? 'bad' : 'amber'); box.setAttribute('role', 'alert');
+      list.forEach(x => {
+        const p = document.createElement('p'); p.className = 'atext ' + x.lvl; p.textContent = x.text; box.appendChild(p);
+        if (x.fixes.length) {
+          const r = document.createElement('div'); r.className = 'fixes';
+          x.fixes.forEach(v => {
+            const b = document.createElement('button'); b.type = 'button'; b.className = 'btn fix'; b.textContent = 'Use ' + fmt(v);
+            b.addEventListener('click', () => { $(row).value = v; recompute(); save(); flash([row]); $(row).dispatchEvent(new Event('change', { bubbles: true })); });
+            r.appendChild(b);
+          });
+          box.appendChild(r);
+        }
+      });
+      f.after(box);
+    });
   }
 
   // Effective output choices; dependent switches greyed when their parent is off.

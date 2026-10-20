@@ -2,7 +2,7 @@
  * File: llm-calc-export.js
  * Project: llm-calc (Lab) — R7 2026-10-20 (R7: output switches, grad accum, auto batch, checkpointing;
  *          R6: scaled speed, data mode, MIN_LR_RATIO, name charset [A-Za-z0-9._-], memory_gb = GPU 0;
- *          R8: GGUF q4_k_m, train.py v3.7 output defaults)
+ *          R8: GGUF q4_k_m, train.py v3.7 output defaults; R9: SHOW_DOWNLOAD_LINKS, PDF lists inline alerts)
  * Purpose: Export for the training script + people. One Download button:
  *          (a) saves <name>.llmcfg.json (Kaggle Tutor "llmcalc-config" v1 spec:
  *              UPPER_CASE script settings + "_estimates" for comparison only);
@@ -47,7 +47,7 @@
     const d = (v, def) => v === undefined ? def : !!v;
     const gguf = d(s.exportGguf, true), onnx = d(s.exportOnnx, false); // train.py v3.7 defaults
     return { hf: d(s.exportHf, false), gguf, ggufType: ['q4_k_m', 'q8_0', 'f16', 'bf16', 'f32'].indexOf(s.ggufType) >= 0 ? s.ggufType : 'q4_k_m',
-      modelfile: gguf && d(s.exportModelfile, true), onnx, onnxInt8: onnx && d(s.exportOnnxInt8, false), zip: d(s.exportZip, false) };
+      modelfile: gguf && d(s.exportModelfile, true), onnx, onnxInt8: onnx && d(s.exportOnnxInt8, false), zip: d(s.exportZip, false), links: d(s.showLinks, true) };
   }
   // s: plain state object (see readState). Returns the JSON object in spec key order.
   function buildConfig(s, now) {
@@ -61,7 +61,7 @@
       LR: Number(s.lr), WARMUP: int(s.warmup), WEIGHT_DECAY: Number(s.weightDecay), GRAD_CLIP: Number(s.gradClip),
       SEED: int(s.seed), MAX_SAMPLES: s.maxSamples > 0 ? int(s.maxSamples) : null, VAL_FRACTION: Number(s.valFraction), MIN_LR_RATIO: s.minLr === undefined ? 0.1 : Number(s.minLr),
       EXPORT_HF: e.o.hf, EXPORT_GGUF: e.o.gguf, GGUF_TYPE: e.o.ggufType, EXPORT_MODELFILE: e.o.modelfile,
-      EXPORT_ONNX: e.o.onnx, EXPORT_ONNX_INT8: e.o.onnxInt8, EXPORT_ZIP: e.o.zip,
+      EXPORT_ONNX: e.o.onnx, EXPORT_ONNX_INT8: e.o.onnxInt8, EXPORT_ZIP: e.o.zip, SHOW_DOWNLOAD_LINKS: e.o.links,
       GRAD_ACCUM_STEPS: Math.max(1, int(s.gradAccum || 1)), AUTO_BATCH: s.autoBatch === undefined ? true : !!s.autoBatch,
       GRADIENT_CHECKPOINTING: !!s.gradCkpt,
       _estimates: {
@@ -89,7 +89,7 @@
     const s = {};
     ['vocab', 'hidden', 'layers', 'ffn', 'heads', 'kvHeads', 'headDim', 'seq', 'stories', 'tokensPerStory', 'totalTokens',
      'epochs', 'batch', 'lr', 'warmup', 'weightDecay', 'gradClip', 'seed', 'valFraction', 'maxSamples', 'gpus', 'tps', 'gradAccum', 'words', 'minLr'].forEach(k => { s[k] = num(k); });
-    ['tied', 'qkvBias', 'autoBatch', 'gradCkpt', 'exportHf', 'exportGguf', 'exportModelfile', 'exportOnnx', 'exportOnnxInt8', 'exportZip'].forEach(k => { s[k] = $(k).checked; });
+    ['tied', 'qkvBias', 'autoBatch', 'gradCkpt', 'exportHf', 'exportGguf', 'exportModelfile', 'exportOnnx', 'exportOnnxInt8', 'exportZip', 'showLinks'].forEach(k => { s[k] = $(k).checked; });
     s.preset = $('preset').value; s.dataMode = $('dataMode').value; s.ggufType = $('ggufType').value; s.modelName = $('modelName').value.trim();
     return s;
   }
@@ -103,7 +103,7 @@
     const e = estimates(s), gpuTxt = (s.gpus > 1 ? s.gpus + '× ' : '') + (s.preset === 'P100' ? 'P100' : 'T4');
     const when = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }) + ' IST';
     const memGB = e.mem.gpu0 / M.GB, limit = M.GPU_PRESETS[s.preset].mem;
-    const warns = Array.from(document.querySelectorAll('#warns li')).map(li => li.textContent);
+    const warns = Array.from(document.querySelectorAll('#in .alert .atext, #warns li:not(.cnt)')).map(li => li.textContent);
     const mins = isFinite(e.sec) ? Math.round(e.sec / 60) : NaN;
     const timeTxt = isFinite(e.sec) ? (mins < 60 ? '~' + mins + ' min' : '~' + fmtTime(e.sec)) : '—';
     const what = '~' + fmtM(e.p.total) + ' parameters, ~' + Math.round(e.fp32) + ' MB in fp32 (all outputs ~' + fmtMB(e.os.total) + '), ' + timeTxt + ' training on ' + gpuTxt + '.';
@@ -118,7 +118,7 @@
         ['Grad accumulation', fmt(cfg.GRAD_ACCUM_STEPS)], ['Auto batch', cfg.AUTO_BATCH ? 'on' : 'off'], ['Gradient checkpointing', cfg.GRADIENT_CHECKPOINTING ? 'on' : 'off']]) +
       '</div>' +
       tbl('Results', [['Parameters', fmt(e.p.total) + ' (' + fmtM(e.p.total) + ')'],
-        ['Outputs', e.os.list.length ? e.os.list.map(f => f.name + ' ~' + fmtMB(f.mb)).join(', ') + (e.o.modelfile ? ', Ollama Modelfile' : '') : 'none'],
+        ['Outputs', e.os.list.length ? e.os.list.map(f => f.name + ' ~' + fmtMB(f.mb)).join(', ') + (e.o.modelfile ? ', Ollama Modelfile' : '') : 'none'], ['Show download links', e.o.links ? 'on' : 'off'],
         ['Total disk (rough)', '~' + fmtMB(e.os.total)], ['Effective batch', fmt(e.tr.effectiveBatch)],
         ['Dataset tokens' + (s.dataMode === 'words' ? ' (' + fmt(s.words) + ' words × 1.3)' : s.dataMode === 'tokens' ? ' (measured)' : ''), fmt(e.tr.tokens)], ['Tokens per parameter', (e.tr.tokens / e.p.total).toFixed(2)], ['Blocks (tokens ÷ context)', fmt(e.tr.blocks)], ['Steps per epoch', fmt(e.tr.stepsPerEpoch)],
         ['Total steps', fmt(e.tr.totalSteps)], ['Estimated training time', isFinite(e.sec) ? fmtTime(e.sec) + ' at ' + fmt(e.tps) + ' tokens/sec per GPU (scaled for size)' : '—'],

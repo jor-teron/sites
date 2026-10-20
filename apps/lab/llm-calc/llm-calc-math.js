@@ -4,7 +4,8 @@
  *          R7: grad accumulation, gradient checkpointing, sizes for selected outputs;
  *          R6 2026-10-20: speed scales ~1/params, words/tokens data modes,
  *          fuller memory (attention, logits, DataParallel GPU 0), overfit check;
- *          R8 2026-10-20: GGUF q4_k_m (train.py v3.7 default) + 256-multiple fallback)
+ *          R8 2026-10-20: GGUF q4_k_m (train.py v3.7 default) + 256-multiple fallback;
+ *          R9 2026-10-20: fix suggestions for inline alerts)
  * Purpose: Pure formulas for the Tiny LLM Training Calculator (no DOM).
  *          Params of a Llama-style model, file sizes, steps, time, memory.
  *          Works in the browser (window.LLMCalcMath) and in Node (module.exports).
@@ -115,6 +116,22 @@
     const acts = batch * seq * h * layers * 34 * (ckpt ? CKPT_ACT : 1); // rough
     return { states, acts, total: states + acts };
   }
-  const api = { REF_PARAMS, WORD_TOKENS, speedFactor, scaledTps, memoryFull, overfit, MB, GB, FORMATS, GGUF_BPP, q4Fallback, CKPT_ACT, CKPT_TIME, outputSizes, GPU_PRESETS, TWO_GPU_SCALE, params, fileSizes, training, timeSec, calibrate, memory };
+  // R9: one-tap fix suggestions. Nearest multiples of k around v (distinct, > 0).
+  function nearMultiples(v, k) {
+    const lo = Math.floor(v / k) * k, hi = Math.ceil(v / k) * k;
+    return (lo === hi ? [lo] : [lo, hi]).filter(x => x > 0);
+  }
+  // Divisors of heads nearest to kv (one below, one above).
+  function nearDivisors(heads, kv) {
+    const d = []; for (let i = 1; i <= heads; i++) if (heads % i === 0) d.push(i);
+    const lo = d.filter(x => x < kv).pop(), hi = d.find(x => x > kv);
+    return [lo, hi].filter(x => x);
+  }
+  // Largest batch (< o.batch) whose GPU-0 memory fits limitGB, or 0 if even 1 does not fit.
+  function fitBatch(o, limitGB) {
+    for (let b = Math.floor(o.batch) - 1; b >= 1; b--) if (memoryFull(Object.assign({}, o, { batch: b })).gpu0 / GB <= limitGB) return b;
+    return 0;
+  }
+  const api = { nearMultiples, nearDivisors, fitBatch, REF_PARAMS, WORD_TOKENS, speedFactor, scaledTps, memoryFull, overfit, MB, GB, FORMATS, GGUF_BPP, q4Fallback, CKPT_ACT, CKPT_TIME, outputSizes, GPU_PRESETS, TWO_GPU_SCALE, params, fileSizes, training, timeSec, calibrate, memory };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LLMCalcMath = api;
 })(this);
