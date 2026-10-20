@@ -163,3 +163,15 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
 .wp-mine { position: relative; cursor: pointer; }
 .wp-mine-sw { display: grid; place-items: center; font-size: 1.8rem; color: var(--muted); border-style: dashed; }
 .wp-mine input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* slider row (sec_windows.js Magnet strength, R14): big thumb for touch */
+.slider-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-height: 60px; padding: 10px 14px; }
+.slider-row[hidden] { display: none; }
+.slider-row .switch-text { min-width: 160px; }
+.slider { flex: 1 1 180px; min-width: 140px; height: 44px; margin: 0; background: transparent; cursor: pointer; -webkit-appearance: none; appearance: none; }
+.slider::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: var(--line); }
+.slider::-moz-range-track { height: 8px; border-radius: 4px; background: var(--line); }
+.slider::-webkit-slider-thumb { -webkit-appearance: none; width: 32px; height: 32px; margin-top: -12px; border-radius: 50%; background: var(--accent, #6ea8fe); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
+.slider::-moz-range-thumb { width: 28px; height: 28px; border-radius: 50%; background: var(--accent, #6ea8fe); border: 3px solid #fff; }
+.slider:focus-visible { outline: 2px solid var(--accent, #6ea8fe); outline-offset: 4px; border-radius: 8px; }
+.slider-val { min-width: 56px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }

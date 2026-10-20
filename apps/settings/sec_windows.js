@@ -9,6 +9,8 @@
  *   'snapMagnet'   Magnetic edges: '0' = off (default on). A dragged / resized window sticks flush to
  *                  the screen edges and to other windows' edges within 14 px (hub/wm_snap.js; also the
  *                  floating keyboard). Hold Alt or Shift while dragging to skip it once.
+ *   'snapMagnetPx' Magnet strength (R14): the distance in px, 10–100 (step 5), default 20; slider
+ *                  shown only while Magnetic edges is on. Read by hub/wm_snap.js on every drag (live).
  *   'workspaces'   '1' = one workspace (taskbar switcher hidden, all windows on 1); empty = 2
  *                  (default; hub/wm_workspaces.js).
  *   'titleH'       window title bar Slim 24 / Normal 28 / Large 34 px (moved here from Sizes,
@@ -28,8 +30,22 @@
         S.get('hoverFocus') === '1', (on) => S.set('hoverFocus', on ? '1' : ''));
       const snap = ui.switch('Snap windows to screen edges', 'Drag a window to the left / right edge for half the screen, to the top to maximise',
         S.get('snapEdges') !== '0', (on) => S.set('snapEdges', on ? '' : '0'));
+      const magPx = () => { const v = parseFloat(S.get('snapMagnetPx', 20)); return isFinite(v) ? Math.max(10, Math.min(100, Math.round(v / 5) * 5)) : 20; };
+      const strength = ui.el('label', 'slider-row');
+      const sTxt = ui.el('span', 'switch-text');
+      const sVal = ui.el('output', 'slider-val', magPx() + ' px');
+      sTxt.append(ui.el('b', '', 'Magnet strength'), ui.el('small', '', 'How close an edge must come before it sticks'));
+      const range = ui.el('input', 'slider');
+      Object.assign(range, { type: 'range', min: 10, max: 100, step: 5, value: magPx() });
+      range.setAttribute('aria-label', 'Magnet strength in pixels');
+      range.addEventListener('input', () => {
+        sVal.textContent = range.value + ' px';
+        S.set('snapMagnetPx', +range.value === 20 ? '' : range.value);
+      });
+      strength.append(sTxt, range, sVal);
+      strength.hidden = S.get('snapMagnet') === '0';
       const magnet = ui.switch('Magnetic edges', 'Windows stick to screen edges and to each other when close; hold Alt or Shift to skip',
-        S.get('snapMagnet') !== '0', (on) => S.set('snapMagnet', on ? '' : '0'));
+        S.get('snapMagnet') !== '0', (on) => { S.set('snapMagnet', on ? '' : '0'); strength.hidden = !on; });
       const ws = ui.choice([
         { value: 1, label: '1', hint: 'One desktop' },
         { value: 2, label: '2', hint: 'Switch with 1 2 on the taskbar' }
@@ -54,7 +70,7 @@
       const showSize = (pre) => { if (window.ThumbStore) ThumbStore.stats().then((x) => { clrOut.textContent = (pre || '') + x.count + ' saved, ' + sizeText(x.bytes) + ' (up to ' + sizeText(ThumbStore.CAP) + ')'; }); };
       clr.addEventListener('click', () => { if (window.ThumbStore) ThumbStore.clear().then(() => showSize('Cleared. '), () => { clrOut.textContent = 'Could not clear it'; }); });
       showSize();
-      pane.append(ui.title('Focus'), hover, ui.title('Snapping'), snap, magnet, ui.title('Workspaces'), ws, ui.title('Title bar'), title,
+      pane.append(ui.title('Focus'), hover, ui.title('Snapping'), snap, magnet, strength, ui.title('Workspaces'), ws, ui.title('Title bar'), title,
         ui.title('Files: open items with'), files, ui.title('Files: thumbnails'), thumbs, clr, clrOut,
         ui.note('Window options work in Desktop mode. Changes show at once. Snap a window by dragging it to a screen edge, or Ctrl+Alt+arrows.'));
     }

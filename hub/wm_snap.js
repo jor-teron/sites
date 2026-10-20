@@ -5,7 +5,8 @@
  *   top strip (TOP px) between the side zones → maximised. A translucent preview
  *   (#wm-snap-pv, wm.css) shows where it will land; letting go elsewhere just moves it.
  *   Touch / pen get slightly bigger zones. (R13: the top no longer wins in the corners.)
- * - Magnetic edges (R13): while moving (and resizing), a window edge within MAG px of a desk
+ * - Magnetic edges (R13): while moving (and resizing), a window edge within the magnet distance (R14: Settings → Windows
+ *   "Magnet strength", sites-hub.snapMagnetPx 10–100 px, default 20, read on every drag) of a desk
  *   edge (the desk is the area left by the taskbar and the docked keyboard) or of another
  *   visible window's edge on this workspace (touching outer edges, or lined-up edges like
  *   top-to-top; only when the two overlap on the other axis) sticks flush; the size stays.
@@ -13,7 +14,7 @@
  *   half / max zone wins on release. Candidate edges are read once per drag.
  *   Settings → Windows "Magnetic edges" (sites-hub.snapMagnet '0' = off → html.hub-magnet-off,
  *   hub_prefs.js); "Snap windows to screen edges" only switches the half / max zones.
- *   window.HubMagnet { on(ev), lines(others, bounds), stick(r, lines, edges?) } is shared with the
+ *   window.HubMagnet { on(ev), lines(others, bounds), stick(r, lines, edges?), px() } is shared with the
  *   floating on-screen keyboard (hub/osk/osk_drag.js).
  * - Dragging a snapped / maximised window away gives back its size from before (wm_windows.js).
  * - Settings → Windows "Snap windows to screen edges" (sites-hub.snapEdges '0' = off,
@@ -34,7 +35,13 @@
   const desk = document.getElementById('wm-desk');
   if (!WM || !desk) return;
   const SIDE = 28, TOP = 9;   // zones: px from the desk's side edges (full height) / top edge
-  const MAG = 14;            // magnet distance in px
+  const MAG_KEY = 'sites-hub.snapMagnetPx', MAG_DEF = 20, MAG_MIN = 10, MAG_MAX = 100;
+  /** Magnet distance in px (live from the setting; bad values → default, clamped 10–100). */
+  function magPx() {
+    let v = NaN;
+    try { v = parseFloat(localStorage.getItem(MAG_KEY)); } catch (_) { /* blocked */ }
+    return isFinite(v) ? Math.max(MAG_MIN, Math.min(MAG_MAX, Math.round(v))) : MAG_DEF;
+  }
   const isDesk = () => !!(window.HubMode && window.HubMode.isDesktop());
 
   const pv = document.createElement('div');
@@ -72,6 +79,7 @@
     stick(r, L, edges) {
       edges = edges || 'lrtb';
       const move = edges === 'lrtb';
+      const MAG = magPx();
       const near = (a0, a1, c) => c.lo == null || (a1 > c.lo - MAG && a0 < c.hi + MAG);
       function best(vals, lines, a0, a1) {
         let bd = 0, bi = -1, ba = MAG + 1;
@@ -94,7 +102,7 @@
       o.sx = !!bx; o.sy = !!by;
       return o;
     },
-    MAG
+    px: magPx
   };
   window.HubMagnet = HubMagnet;
 

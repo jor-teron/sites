@@ -6,7 +6,7 @@
  *   docks again, near the left / right screen edge it snaps to that edge; a translucent preview
  *   (#osk-snap-pv, same look as window snapping) shows where it lands, applied on release.
  *   Edge snapping follows Settings → Windows "Snap windows to screen edges" (html.hub-snap-off).
- *   Floating, it also sticks flush to the screen edges within 14 px (window.HubMagnet from
+ *   Floating, it also sticks flush to the screen edges within the magnet distance (Magnet strength) (window.HubMagnet from
  *   hub/wm_snap.js; "Magnetic edges", html.hub-magnet-off; Alt / Shift held = off).
  * - Dock button → back to the bottom.
  * - Nothing is saved: reset() puts it docked at bottom centre (osk.js calls it on every open).
