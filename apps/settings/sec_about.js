@@ -1,7 +1,7 @@
 /*
  * Settings → About (apps/settings/sec_about.js). A plain About page: what the Hub is,
- * Credit, Version and Current release (both from hub/version.txt: line 1 'v0.299', line 2
- * 'YYYY-MM-DD'; '—' when it can't be read), the first Release date, and a real
+ * Credit, Current release (line 2 'YYYY-MM-DD' of hub/version.txt; '—' when it can't be read),
+ * the first Release date, and a real
  * "Check for update". Inside the Hub that uses the Hub's own updater (HubUpdate.check in
  * hub/update/hub_update.js: clears the hub-shell caches and reloads the Hub when a newer build is
  * live); opened on its own it reads the live hub.html / version.txt and updates the service
@@ -9,6 +9,7 @@
  * R16c: "Last refreshed" (localStorage 'sites-hub.lastRefresh', the Hub's daily 09:00 refresh) and
  * "Clear cache now" (confirm → HubUpdate.clearCache(): Hub caches + cached Start list, reload).
  * The technical notes that used to be here live in How-to (sec_howto.js).
+ * R41: the Hub version label is not shown anywhere (Jor's request); only the release date is.
  */
 (function () {
   'use strict';
@@ -18,7 +19,7 @@
   const REPO = 'https://github.com/jor-teron/sites';
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  /** 'v0.299\n2026-10-19' → { version: 'v0.299', date: '2026-10-19' } (blank when unreadable). */
+  /** version.txt text → { version, date: 'YYYY-MM-DD' } (blank when unreadable). Version is not displayed. */
   function parseVersion(text) {
     const l = String(text || '').split(/\r?\n/).map((x) => x.trim());
     const v = /^v?\d[\w.-]*$/.test(l[0] || '') ? (l[0][0] === 'v' ? l[0] : 'v' + l[0]) : '';
@@ -69,8 +70,8 @@
     }
     out.className = 'upd-out ok';
     out.textContent = r.state === 'updated'
-      ? 'Updated to ' + (r.version || '\u2014') + ' \u2014 reloading\u2026'
-      : 'Up to date \u2014 ' + (r.version || '\u2014') + (r.build ? ' (build ' + r.build + ')' : '');
+      ? 'Updated \u2014 reloading\u2026'
+      : 'Up to date' + (r.build ? ' (build ' + r.build + ')' : '');
     if (r.state !== 'updated') btn.disabled = false;
   }
 
@@ -119,15 +120,13 @@
       const head = ui.el('div', 'ver-head');
       const img = document.createElement('img'); img.src = 'settings_icon.png'; img.alt = '';
       const txt = ui.el('div');
-      const vline = ui.el('b', 'ver-num', 'Sites Hub');
-      txt.append(vline, ui.el('small', '', 'A web desktop for Jor\u2019s apps'));
+      txt.append(ui.el('b', 'ver-num', 'Sites Hub'), ui.el('small', '', 'A web desktop for Jor\u2019s apps'));
       head.append(img, txt);
       card.append(head, ui.el('p', 'about-blurb',
         'Sites Hub is a small desktop that runs in your browser. It opens Jor\u2019s games, tools and ' +
         'lab experiments from one place, on GitHub Pages \u2014 nothing to install.'));
-      const verRow = row('Version', '\u2026');
       const curRow = row('Current release', '\u2026');
-      card.append(row('Credit', 'Jor Teron'), verRow, row('Release date', FIRST_RELEASE), curRow);
+      card.append(row('Credit', 'Jor Teron'), row('Release date', FIRST_RELEASE), curRow);
       const btn = ui.el('button', 'big-btn', 'Check for update');
       btn.type = 'button';
       const out = ui.el('p', 'upd-out', '');
@@ -148,10 +147,8 @@
       const hub = S.hub();
       const vp = hub && hub.HubUpdate && hub.HubUpdate.version ? hub.HubUpdate.version() : readVersion();
       Promise.resolve(vp).then((v) => {
-        verRow.lastChild.textContent = v.version || '\u2014';
         curRow.lastChild.textContent = niceDate(v.date);
-        if (v.version) vline.textContent = 'Sites Hub ' + v.version;
-      }).catch(() => { verRow.lastChild.textContent = '\u2014'; curRow.lastChild.textContent = '\u2014'; });
+      }).catch(() => { curRow.lastChild.textContent = '\u2014'; });
 
       const contact = ui.el('section', 'card');
       contact.id = 'contact';
