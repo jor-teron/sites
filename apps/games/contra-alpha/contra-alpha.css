@@ -2,6 +2,10 @@
   Neon Raid Alpha — layout and HUD
   Dark industrial + cyan/magenta glow.
   Theme tokens live here so a later skin can swap colors.
+
+  The 16:9 frame fits the space under the HUD (and above the touch bar).
+  Menu and end-screen overlays sit on that frame (inset 0), so they stay
+  aligned with the canvas when the HUD wraps.
 */
 
 :root {
@@ -19,29 +23,53 @@
   padding: 0;
 }
 
+html,
 body {
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  height: 100dvh;
   background: radial-gradient(1200px 600px at 50% 0%, #12182a 0%, var(--bg) 55%);
   color: var(--text);
   font-family: "Segoe UI", system-ui, sans-serif;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
+  touch-action: manipulation;
+}
+
+/* No pan, pinch-zoom, or text selection while a match is running or paused. */
+body.playing,
+body.playing #wrap {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 #wrap {
-  position: relative;
-  width: 960px;
-  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  width: min(960px, 100%);
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 #hud {
+  flex: 0 0 auto;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 4px 10px;
-  font-size: 13px;
-  letter-spacing: 0.08em;
+  gap: 4px 12px;
+  padding: 6px 8px;
+  font-size: clamp(11px, 2.8vw, 13px);
+  letter-spacing: 0.06em;
 }
 
 #title {
@@ -51,19 +79,46 @@ body {
 
 #title span {
   color: var(--mag);
-  font-size: 11px;
+  font-size: 0.85em;
   margin-left: 8px;
 }
 
+#stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px 12px;
+}
+
 #stats span {
-  margin-left: 16px;
   color: var(--dim);
+}
+
+/* Remaining viewport. Size containment so the frame can fit both axes. */
+#stage {
+  container-type: size;
+  container-name: stage;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+#frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: min(100cqw, calc(100cqh * 16 / 9));
+  max-width: 100%;
+  max-height: 100%;
 }
 
 #game {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   background: #05060a;
   border: 1px solid #1c2436;
   box-shadow: 0 0 24px rgba(60, 240, 255, 0.12);
@@ -72,27 +127,32 @@ body {
 #menu,
 #overlay {
   position: absolute;
-  inset: 42px 0 0 0;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   background: rgba(5, 6, 10, 0.82);
   text-align: center;
-  gap: 12px;
+  gap: clamp(6px, 2cqh, 12px);
+  padding: clamp(8px, 2cqh, 16px);
+  overflow: auto;
 }
 
 #menu h1,
 #overlay h2 {
   color: var(--cyan);
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
+  font-size: clamp(20px, 5vw, 40px);
+  line-height: 1.15;
 }
 
 #menu p,
 #overlay p,
 #menu label {
   color: var(--dim);
-  font-size: 14px;
+  font-size: clamp(12px, 2.8vw, 14px);
+  line-height: 1.35;
 }
 
 select,
@@ -100,8 +160,9 @@ button {
   background: var(--panel);
   color: var(--text);
   border: 1px solid var(--cyan);
-  padding: 8px 16px;
+  padding: 8px 14px;
   font: inherit;
+  font-size: clamp(13px, 3vw, 16px);
   cursor: pointer;
 }
 
@@ -110,10 +171,84 @@ button:hover {
 }
 
 .keys {
-  font-size: 12px !important;
-  margin-top: 8px;
+  font-size: clamp(12px, 2.6vw, 13px) !important;
+  margin-top: 2px;
+  max-width: 34em;
+  padding: 0 8px;
 }
 
 .hidden {
   display: none !important;
+}
+
+/* On-screen pad. Hidden until a touch device (CSS or body.touch-device). */
+#touch {
+  display: none;
+  flex: 0 0 auto;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+@media (pointer: coarse) {
+  #touch {
+    display: flex;
+  }
+}
+
+body.touch-device #touch {
+  display: flex;
+}
+
+.touch-cluster {
+  display: flex;
+  flex: 1 1 0;
+  gap: 6px;
+  min-width: 0;
+  justify-content: center;
+}
+
+#touch button {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 92px;
+  min-height: 48px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  font-size: clamp(11px, 3.1vw, 14px);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  background: rgba(14, 18, 28, 0.92);
+  touch-action: none;
+}
+
+#touch button.held,
+#touch button:active {
+  background: rgba(60, 240, 255, 0.28);
+  color: var(--text);
+}
+
+@media (max-height: 420px) {
+  #touch {
+    padding-top: 4px;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom));
+  }
+
+  #touch button {
+    min-height: 40px;
+    padding: 6px 2px;
+  }
+
+  #menu,
+  #overlay {
+    gap: 4px;
+    padding: 6px;
+  }
 }
