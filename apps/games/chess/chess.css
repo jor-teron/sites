@@ -1,0 +1,90 @@
+/* Chess layout. Portrait stacks the board over the panel. Landscape and wide
+   windows put the panel beside the board. The board itself never scrolls. */
+:root { color-scheme: dark; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; }
+body {
+  height: 100vh; height: 100dvh; overflow: hidden; overscroll-behavior: none;
+  background: #1a1612; color: #f4efe6;
+  font-family: "Segoe UI", system-ui, sans-serif; user-select: none;
+  touch-action: manipulation;
+}
+#app {
+  position: relative;
+  height: 100%; height: 100dvh; display: flex; flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+header {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 8px 14px 4px;
+}
+header h1 { font-family: Georgia, "Palatino Linotype", Palatino, serif; font-size: 1.35rem; margin: 0; letter-spacing: 0.02em; }
+#status { margin: 0; color: #e7d7c0; }
+#status.check { color: #ffb0a4; font-weight: 700; }
+#status.thinking { color: #f0d48a; }
+#stage { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#board-wrap { position: relative; flex: 1 1 auto; min-height: 0; min-width: 0; touch-action: none; }
+#board { width: 100%; height: 100%; display: block; touch-action: none; }
+#promo { position: absolute; z-index: 3; display: flex; filter: drop-shadow(0 10px 18px rgba(0,0,0,.45)); }
+#promo button {
+  padding: 0; border: 1px solid #4a3b2c; background: #f4efe4; line-height: 0; border-radius: 0;
+}
+#promo button:first-child { border-radius: 8px 8px 0 0; }
+#promo button:last-child { border-radius: 0 0 8px 8px; }
+#promo canvas { width: 100%; height: 100%; display: block; pointer-events: none; }
+#panel {
+  flex: 0 1 auto; max-height: 38%; display: flex; flex-direction: column; gap: 6px;
+  padding: 8px 12px 10px; background: #241e18; border-top: 1px solid #3d332a; min-height: 0;
+}
+#caps p { margin: 0; display: flex; gap: 8px; align-items: center; min-height: 1.4em; }
+#caps b { flex: 0 0 5.2em; color: #cbbba6; font-weight: 600; }
+.glyphs {
+  font-family: "DejaVu Sans", "Noto Sans Symbols2", "Noto Sans Symbols", serif;
+  font-size: 1.15rem; letter-spacing: 1px; color: #f7f1e6;
+}
+#moves { flex: 1 1 auto; overflow: auto; min-height: 36px; touch-action: pan-y; padding-right: 4px; }
+.ply { display: grid; grid-template-columns: 2.4em 1fr 1fr; gap: 4px; padding: 1px 0; }
+.ply i { color: #9a8b78; font-style: normal; }
+.ply b { font-weight: 550; }
+.ply b.now { color: #f0d48a; }
+.empty { margin: 0; color: #9a8b78; }
+#keys { margin: 0; color: #9a8b78; font-size: 0.78rem; }
+#actions { display: flex; gap: 8px; }
+button {
+  font: inherit; min-height: 44px; border-radius: 10px; border: 1px solid #6a5846;
+  background: #3a3128; color: #f6f1e7; padding: 8px 10px; cursor: pointer;
+}
+button:disabled { opacity: 0.45; cursor: default; }
+button.on { background: #e0a045; color: #24180c; border-color: #e0a045; }
+button:focus-visible { outline: 2px solid #f0d48a; outline-offset: 2px; }
+#btn-start, #btn-undo-over { background: #2f6f4e; border-color: #2f6f4e; color: #f4efe6; }
+#overlay {
+  position: absolute; inset: 0; z-index: 5; display: grid; place-items: center;
+  background: rgba(16, 12, 8, 0.62); padding: 12px;
+}
+.card {
+  width: min(440px, 100%); max-height: calc(100% - 8px); overflow: auto;
+  background: #f7f1e6; color: #24180c; border-radius: 16px; padding: 18px 18px 16px;
+  box-shadow: 0 18px 50px rgba(0,0,0,.35);
+}
+.card h1 { font-family: Georgia, Palatino, serif; margin: 0 0 6px; font-size: 1.7rem; }
+.card p { margin: 0 0 12px; line-height: 1.4; }
+.choices { display: flex; gap: 8px; margin-bottom: 10px; }
+.choices button { flex: 1; }
+#ov-help { color: #5c4d3e; font-size: 0.92rem; }
+@media (orientation: landscape), (min-width: 840px) {
+  #stage { flex-direction: row; }
+  #panel {
+    flex: 0 0 min(300px, 38vw); max-height: none; width: min(300px, 38vw);
+    border-top: 0; border-left: 1px solid #3d332a;
+  }
+}
+@media (max-height: 430px) {
+  header { padding: 4px 10px; }
+  header h1 { font-size: 1.05rem; }
+  #keys { display: none; }
+  .card { padding: 12px; }
+  .card h1 { font-size: 1.3rem; }
+  .card p { margin-bottom: 8px; }
+}
