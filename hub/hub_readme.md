@@ -4,6 +4,7 @@
 The start page of the site (`hub.html`). A header menu lists every app by category; apps open inside the hub in a full-size frame (or in a new tab). The home screen shows quick-access tiles on an animated wallpaper. A phone can be paired as a controller (gamepad, keyboard, trackpad) and can send files to the hub.
 
 ## 2. Files
+- Technical guide: [Hub and virtual desktop internals](README_technical.txt) (`hub/README_technical.txt`)
 - `../hub.html`: page shell (header, menu, controller popover, frame, home screen); loads the core with `?v=`
 - `hub_loader.js` (R16a): loads the rest after the page `load` event + idle, in batches: drives (Google sign-in, Drive, `hub_drives.js`, `hub_phonekey.js`) at first idle; then after ~1.5 s snap (`wm_snap.js`), keyboard (`osk/`), Viewer overlay. Early use (⌨ tray stub, Ctrl+Alt+K, Ctrl+Alt+arrows, `HubViewer.open`, OSK left open) loads that batch at once. Keep its `V` in step with `?v=`.
 - `hub_main.css`: page shell, wallpaper, top bar, tiles, collapsible menu
