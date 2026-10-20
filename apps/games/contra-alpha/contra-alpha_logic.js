@@ -446,6 +446,8 @@ function step(dt) {
     for (var j = state.bullets.length - 1; j >= 0; j--) {
       if (hits(state.bullets[j], e)) {
         state.bullets.splice(j, 1);
+        /* Two bullets can overlap one enemy in the same frame. Count the kill once. */
+        if (!e.alive) continue;
         e.hp -= 1;
         if (e.hp <= 0) {
           e.alive = false;
@@ -625,7 +627,8 @@ function init() {
   ctx = canvas.getContext("2d");
   bindInput();
   document.getElementById("startBtn").addEventListener("click", startGame);
-  document.getElementById("retryBtn").addEventListener("click", showMenu);
+  document.getElementById("retryBtn").addEventListener("click", startGame);
+  document.getElementById("menuBtn").addEventListener("click", showMenu);
   requestAnimationFrame(loop);
 }
 
