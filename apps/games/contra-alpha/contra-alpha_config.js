@@ -128,6 +128,15 @@ var CONTRA_ALPHA_CONFIG = {
     preventDefault: ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "Enter"] /* keys that must not scroll / click */
   },
 
+  /* Gamepad API (standard mapping), polled each frame onto the same codes.
+     D-pad and left stick move; stick / d-pad up jumps (same as ArrowUp).
+     A jump, B (KeyX) / X (KeyZ) fire, Start pause, Select menu.
+     The hub phone controller still arrives as keyboard events and as
+     {type:'hub-dpad'|'hub-stick'|'hub-key'} postMessage. */
+  gamepad: {
+    deadzone: 0.4
+  },
+
 
   /* On-screen text */
   text: {
