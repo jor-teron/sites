@@ -42,11 +42,11 @@
       <div><span>Steps</span><b id="statSteps">0</b></div>
       <div><span>Loss</span><b id="statLoss">–</b></div>
     </div>
-    <canvas id="lossChart"></canvas>
-    <p id="trainStatus" class="hint">Ready. Edit the text if you like, then press Train.</p>
+    <canvas id="lossChart" role="img" aria-live="polite" aria-label="Training loss chart, no curve yet"></canvas>
+    <p id="trainStatus" class="hint" aria-live="polite">Loading twitter_chat.txt…</p>
     <details><summary>How does training work?</summary>
       <p><b>Forward pass:</b> embeddings → hidden layer (tanh) → a score for every possible next character → softmax turns scores into probabilities.</p>
-      <p><b>Loss:</b> cross-entropy = −log(probability of the correct next char). Random guessing gives about ln(vocab) ≈ 3.9; lower is better.</p>
+      <p><b>Loss:</b> cross-entropy = −log(probability of the correct next char). Random guessing scores about ln(vocab size); lower is better. After training, the status line prints that number for the current text.</p>
       <p><b>Backprop:</b> works out how much each parameter caused the error. <b>Optimizer (Adam):</b> nudges every parameter a little to lower the loss, 32 examples at a time. The learning rate slowly decays.</p>
       <p>Note: with a small text the model can memorize it (very low loss). Give it more text to make it generalize.</p>
     </details>
@@ -54,13 +54,16 @@
 
   <section class="card">
     <h2>3 · Generate</h2>
-    <input type="text" id="promptInput" value="The" placeholder="Start text">
+    <label for="promptInput">Prompt
+      <input type="text" id="promptInput" value="The" placeholder="Start text" aria-label="Prompt">
+    </label>
     <div class="grid">
       <label>Temperature <span id="tempVal">0.80</span><input type="range" id="tempInput" min="0.1" max="2" step="0.05" value="0.8"></label>
       <label>Length<input type="number" id="lenInput" value="300" min="10" max="2000"></label>
     </div>
     <button id="generateBtn">Generate</button>
-    <pre id="output"></pre>
+    <p id="genHint" class="hint" aria-live="polite"></p>
+    <pre id="output" aria-live="polite"></pre>
     <p class="hint">Low temperature = safe & repetitive. High = creative & messy.</p>
   </section>
 </main>
