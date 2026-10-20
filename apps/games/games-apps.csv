@@ -13,6 +13,8 @@ Space Invaders,    space-invader/, , , Arcade
 Contra (alpha),    contra-alpha/,  , , Arcade
 Demolisher,        demolisher/,    , , Arcade
 Tennis Ball Blitz, tennis-throw/,  , , Arcade
+Sling Birds,       ../lab/sling-birds/, , , Arcade
+Pacman,            ../lab/pacman/, , , Arcade
 Dino Run,          dino-run/,      , , Runners
 Car Run,           car-run/,       , , Runners
 Desert Road,       desert-road/,   , , Runners

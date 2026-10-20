@@ -7,7 +7,6 @@ Local AI Chat,      local-ai-chat/,               , , AI
 AI Story,           story/,                       , , AI
 LLM Calculator,     llm-calc/,                    , , AI
 
-Device Benchmark,   devbench/,                    , , Tools
 Notebook,           notebook/,                    , , Tools
 Paper Keyboard,     paper-keyboard/,              , , Tools
 Bookmark Manager,   bookmark-manager/,            , , Tools
@@ -19,9 +18,7 @@ IPTV player,        iptv-player/,                 , , Media
 Channel Cleaner,    m3u-cleaner/,                 , , Media
 Three.js Viewer v2, threejs-viewer-v2/,           , , Media
 
-Sling Birds,        sling-birds/,                 , , Games
 AoE RTS,            aoe-rts/,                     , , Games
-Pacman,             pacman/,                      , , Games
 Aeroplane,          aeroplane/,                   , , Games
 Island Game Demo,   island-demo/,                 , , Games
 

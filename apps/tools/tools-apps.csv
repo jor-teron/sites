@@ -5,6 +5,7 @@ name, path, icon, newtab, section
 Files,                 files/,           , , Files
 Viewer,                viewer/,          , , Files
 System Monitor,        sysmon/,          , , System
+Device Benchmark,      ../lab/devbench/, , , System
 Calculator,            calculator/,      , , Calculators
 Weather,               weather-chart/,   , , Weather
 Weather Hourly,        weather-hourly/,  , , Weather
