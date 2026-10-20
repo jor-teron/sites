@@ -60,7 +60,7 @@
     return { vocab: num('vocab'), seq: num('seq'), tied: $('tied').checked,
       kvRatio: num('kvHeads') > 0 ? Math.max(1, Math.round(num('heads') / num('kvHeads'))) : 1,
       data: { dataMode: $('dataMode').value, words: num('words'), totalTokens: num('totalTokens'), stories: num('stories'), tokensPerStory: num('tokensPerStory'),
-        epochs: num('epochs'), batch: num('batch'), gpus: num('gpus'), accum: num('gradAccum') },
+        epochs: num('epochs'), batch: num('batch'), gpus: num('gpus'), accum: num('gradAccum'), minSteps: num('minSteps') },
       tps: num('tps'), gpus: num('gpus'), ckpt: $('gradCkpt').checked,
       limitGB: pr.cpu ? num('ram') : pr.mem, ggufType: $('ggufType').value };
   }

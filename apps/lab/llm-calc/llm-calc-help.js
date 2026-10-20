@@ -21,6 +21,7 @@ window.LLMCalcHelp = {
   words: 'Total words in your dataset (one pass). Converted as tokens ≈ words × 1.3. Used when "Dataset size as" is Words.',
   minLr: 'Min LR ratio (config: MIN_LR_RATIO, does not change the numbers here). At the end of training the learning rate slides down to this fraction of the start value. 0.1 = ends at 10%. Lower: calmer finish, can stall. Higher: keeps learning faster to the end, a bit noisier.',
   totalTokens: 'Total tokens in your dataset (one pass). Used when "Dataset size as" is Measured tokens.',
+  minSteps: 'Minimum total training steps. 0 = off. E.g. 3000: if the data runs out first, training loops over it again until this many steps. Repeating small data too often leads to memorizing.',
   epochs: 'How many times training reads the whole dataset. Higher: learns more, but too many causes memorizing (overfitting) and takes longer. Lower: faster, may under-learn.',
   batch: 'How many blocks one GPU processes per step. Higher: fewer steps and smoother learning, but more memory. Lower: less memory, more steps.',
   gpus: 'Number of GPUs. 2 (Kaggle T4 x2) doubles the batch per step; speed is about 1.8× not 2× because GPUs must sync.',

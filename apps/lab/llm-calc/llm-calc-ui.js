@@ -98,7 +98,7 @@
     const m = readModel();
     const seq = num('seq');
     const t = { dataMode: $('dataMode').value, words: num('words'), totalTokens: num('totalTokens'), stories: num('stories'),
-      tokensPerStory: num('tokensPerStory'), epochs: num('epochs'), batch: num('batch'), gpus: num('gpus'), accum: num('gradAccum') };
+      tokensPerStory: num('tokensPerStory'), epochs: num('epochs'), batch: num('batch'), gpus: num('gpus'), accum: num('gradAccum'), minSteps: num('minSteps') };
     const ckpt = $('gradCkpt').checked;
     const o = readOutputs();
     $('totalTokens').disabled = t.dataMode !== 'tokens'; $('words').disabled = t.dataMode !== 'words';
@@ -137,6 +137,7 @@
     $('rSpe').textContent = $('rSpeBig').textContent = $('rSpeHint').textContent = fmt(tr.stepsPerEpoch);
     if (M.MEASURED_RUNS) $('rMeasured').textContent = M.MEASURED_RUNS;
     $('rSteps').textContent = $('rStepsBig').textContent = $('bSteps').textContent = fmt(tr.totalSteps);
+    $('rMinNote').textContent = tr.raised ? 'Min steps ' + fmt(tr.minSteps) + ' raises the total: data repeats ~' + tr.repeats.toFixed(1) + ' times.' : '';
 
     $('rTpp').textContent = p.total ? (tr.tokens / p.total).toFixed(2) : '—';
     const of = M.overfit(tr.tokens, p.total);

@@ -1,6 +1,7 @@
 /*
  * File: llm-calc-math.js
  * Project: llm-calc (Lab) — R7 2026-10-20 (R2: optional head size + QKV bias;
+ * R14 2026-10-20: MIN_STEPS — total steps = max(epochs × steps/epoch, MIN_STEPS).
  *          R7: grad accumulation, gradient checkpointing, sizes for selected outputs;
  *          R6 2026-10-20: speed scales ~1/params, words/tokens data modes,
  *          fuller memory (attention, logits, DataParallel GPU 0), overfit check;
@@ -98,8 +99,13 @@
     const accum = Math.max(1, Math.round(t.accum || 1));
     const perStep = t.batch * t.gpus * accum; // effective batch (R7)
     const stepsPerEpoch = Math.ceil(blocks / perStep);
-    return { tokens, blocks, stepsPerEpoch, effectiveBatch: perStep, totalSteps: Math.ceil(stepsPerEpoch * t.epochs),
-             tokensPerStep: perStep * seq, tokensTrained: tokens * t.epochs };
+    const epochSteps = Math.ceil(stepsPerEpoch * t.epochs);
+    const minSteps = Math.max(0, Math.round(t.minSteps || 0)); // R14: 0 = off
+    const totalSteps = Math.max(epochSteps, minSteps);
+    const raised = totalSteps > epochSteps && stepsPerEpoch > 0;
+    return { tokens, blocks, stepsPerEpoch, effectiveBatch: perStep, totalSteps, minSteps, raised,
+             repeats: stepsPerEpoch > 0 ? totalSteps / stepsPerEpoch : 0,
+             tokensPerStep: perStep * seq, tokensTrained: raised ? totalSteps * perStep * seq : tokens * t.epochs };
   }
   // Grad accumulation does not change time per token; checkpointing makes it ~25% slower.
   function timeSec(tokensTrained, tpsPerGpu, gpus, ckpt) { return tokensTrained / (tpsPerGpu * scale(gpus)) * (ckpt ? CKPT_TIME : 1); }

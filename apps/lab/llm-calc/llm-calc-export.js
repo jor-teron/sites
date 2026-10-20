@@ -58,7 +58,7 @@
       MODEL_NAME: sanitizeName(s.modelName),
       VOCAB: int(s.vocab), SEQ: int(s.seq), HIDDEN: int(s.hidden), LAYERS: int(s.layers), FFN: int(s.ffn),
       HEADS: int(s.heads), KV_HEADS: int(s.kvHeads), TIE_EMBEDDINGS: !!s.tied,
-      EPOCHS: Number(s.epochs), BATCH_PER_GPU: int(s.batch), USE_ALL_GPUS: s.gpus > 1,
+      EPOCHS: Number(s.epochs), MIN_STEPS: Math.max(0, int(s.minSteps || 0)), BATCH_PER_GPU: int(s.batch), USE_ALL_GPUS: s.gpus > 1,
       LR: Number(s.lr), WARMUP: int(s.warmup), WEIGHT_DECAY: Number(s.weightDecay), GRAD_CLIP: Number(s.gradClip),
       SEED: int(s.seed), MAX_SAMPLES: s.maxSamples > 0 ? int(s.maxSamples) : null, VAL_FRACTION: Number(s.valFraction), MIN_LR_RATIO: s.minLr === undefined ? 0.1 : Number(s.minLr),
       EXPORT_HF: e.o.hf, EXPORT_GGUF: e.o.gguf, GGUF_TYPE: e.o.ggufType, EXPORT_MODELFILE: e.o.modelfile,
@@ -89,7 +89,7 @@
   function readState() {
     const s = {};
     ['vocab', 'hidden', 'layers', 'ffn', 'heads', 'kvHeads', 'headDim', 'seq', 'stories', 'tokensPerStory', 'totalTokens',
-     'epochs', 'batch', 'lr', 'warmup', 'weightDecay', 'gradClip', 'seed', 'valFraction', 'maxSamples', 'gpus', 'tps', 'gradAccum', 'words', 'minLr'].forEach(k => { s[k] = num(k); });
+     'epochs', 'batch', 'lr', 'warmup', 'weightDecay', 'gradClip', 'seed', 'valFraction', 'maxSamples', 'gpus', 'tps', 'gradAccum', 'words', 'minLr', 'minSteps'].forEach(k => { s[k] = num(k); });
     ['tied', 'qkvBias', 'autoBatch', 'gradCkpt', 'exportHf', 'exportGguf', 'exportModelfile', 'exportOnnx', 'exportOnnxInt8', 'exportZip', 'showLinks'].forEach(k => { s[k] = $(k).checked; });
     s.preset = $('preset').value; s.dataMode = $('dataMode').value; s.ggufType = $('ggufType').value; s.modelName = $('modelName').value.trim();
     return s;
@@ -114,7 +114,7 @@
       '<div class="ps-cols">' +
       tbl('Model settings', [['Vocab size', fmt(s.vocab)], ['Hidden size', fmt(s.hidden)], ['Layers', fmt(s.layers)], ['FFN / MLP width', fmt(s.ffn)],
         ['Attention heads', fmt(s.heads)], ['KV heads', fmt(s.kvHeads)], ['Context length', fmt(s.seq)], ['Tied embeddings', s.tied ? 'yes' : 'no']]) +
-      tbl('Training settings', [['Epochs', String(s.epochs)], ['Batch per GPU', fmt(s.batch)], ['GPUs', s.gpus + ' (' + s.preset + ')'], ['Learning rate', String(s.lr)],
+      tbl('Training settings', [['Epochs', String(s.epochs)], ['Minimum steps', cfg.MIN_STEPS ? fmt(cfg.MIN_STEPS) + (e.tr.raised ? ' (data repeats ~' + e.tr.repeats.toFixed(1) + '×)' : '') : 'off'], ['Batch per GPU', fmt(s.batch)], ['GPUs', s.gpus + ' (' + s.preset + ')'], ['Learning rate', String(s.lr)],
         ['Warmup steps', fmt(s.warmup)], ['Min LR ratio', String(cfg.MIN_LR_RATIO)], ['Weight decay', String(s.weightDecay)], ['Grad clip', String(s.gradClip)], ['Seed', fmt(s.seed)],
         ['Validation fraction', String(s.valFraction)], ['Max samples', cfg.MAX_SAMPLES === null ? 'all' : fmt(cfg.MAX_SAMPLES)],
         ['Grad accumulation', fmt(cfg.GRAD_ACCUM_STEPS)], ['Auto batch', cfg.AUTO_BATCH ? 'on' : 'off'], ['Gradient checkpointing', cfg.GRADIENT_CHECKPOINTING ? 'on' : 'off']]) +
