@@ -9,12 +9,18 @@
  *   4. viewer   hub_viewer.js + hub_viewer_pdf.js                         — next idle
  * On demand (loaded at once, then the action runs): ⌨ tray button and Ctrl+Alt+K (osk),
  * Ctrl+Alt+arrows (snap), HubViewer.open / pushAndShow (viewer), OSK saved as shown (osk).
- * API: window.HubLoader.load(name) → Promise; .loaded(name).
+ * API: window.HubLoader.load(name) → Promise; .loaded(name); .failed(name) → files that did not load.
+ * R27: the ⌨ stub leaves only once the osk batch is in AND window.HubOSK exists (else it stays: retry).
+ * R28: a file that fails is recorded per batch; an on-demand action (⌨ / Ctrl+Alt+K, snap keys,
+ *   HubViewer.open) on a batch with failures shows a small note "Couldn't load <feature>…".
+ *   A batch with failures is not cached as done: the next on-demand use tries the missing files again.
+ * R29: each key event is handled once — the loader replays a caught key once (WeakSet), and
+ *   wm_snap's page listener no longer runs the __hubWmKey chain (each module has its own).
  * Keep V in step with the ?v= tags in hub.html on every release.
  */
 (function () {
   'use strict';
-  const V = '20261020g';
+  const V = '20261020h';
   const DELAY = 1500;
   const BATCHES = {
     drives: ['shared/google/google.css', 'hub/hub_drives.css',
@@ -26,30 +32,59 @@
       'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js'],
     viewer: ['hub/hub_viewer_pdf.js', 'hub/hub_viewer.js'],
   };
-  const done = {}, busy = {};
+  const done = {}, busy = {}, fails = {};
+  const LABEL = { drives: 'Drives', snap: 'window snapping', osk: 'the on-screen keyboard', viewer: 'the viewer' };
 
   /** One file; scripts run in order because each waits for the one before. */
-  function one(src) {
+  function one(src, name) {
     return new Promise((ok) => {
       const url = src + '?v=' + V;
       const css = /\.css$/.test(src);
       const el = document.createElement(css ? 'link' : 'script');
       if (css) { el.rel = 'stylesheet'; el.href = url; } else { el.src = url; el.async = false; }
-      el.onload = el.onerror = () => ok();   // a missing file must not stop the rest
+      el.onload = () => ok();
+      el.onerror = () => { (fails[name] = fails[name] || []).push(src); el.remove(); ok(); };   // a missing file must not stop the rest
       (css ? document.head : document.body).appendChild(el);
     });
   }
   function load(name) {
     if (busy[name]) return busy[name];
-    if (name === 'osk') { const p = document.querySelector('.wm-osk-btn[data-stub]'); if (p) p.remove(); }
-    busy[name] = BATCHES[name].reduce((p, f) => p.then(() => one(f)), Promise.resolve())
-      .then(() => { done[name] = true; });
+    const files = fails[name] ? fails[name].splice(0) : BATCHES[name];   // retry: only the files that failed
+    busy[name] = files.reduce((p, f) => p.then(() => one(f, name)), Promise.resolve())
+      .then(() => {
+        if (fails[name] && fails[name].length) { busy[name] = null; return; }   // R28: next use retries
+        done[name] = true;
+        if (name === 'osk' && window.HubOSK) { const p = document.querySelector('.wm-osk-btn[data-stub]'); if (p) p.remove(); }   // R27
+      });
     return busy[name];
   }
-  window.HubLoader = { load, loaded: (n) => !!done[n] };
+  /** R28: on-demand load; a note when files of the batch did not load. Resolves true when all is in. */
+  function need(name) {
+    return load(name).then(() => {
+      const bad = !done[name] || (name === 'osk' && !window.HubOSK);
+      if (bad) note('Couldn\u2019t load ' + LABEL[name] + '. Check your connection and reload.');
+      return !bad;
+    });
+  }
+  let noteEl = null, noteT = 0;
+  function note(text) {   // small non-blocking pill (styled with the update note, hub_update.css)
+    if (!noteEl) {
+      noteEl = document.createElement('div');
+      noteEl.id = 'hub-load-note';
+      noteEl.setAttribute('role', 'status');
+      document.body.appendChild(noteEl);
+    }
+    noteEl.textContent = text;
+    noteEl.hidden = false;
+    clearTimeout(noteT);
+    noteT = setTimeout(() => { noteEl.hidden = true; }, 6000);
+  }
+  window.HubLoader = { load, need, loaded: (n) => !!done[n], failed: (n) => (fails[n] || []).slice() };
 
   // ---- on demand: keys pressed before the module is in (Hub page + same-origin apps) ----
+  const seen = new WeakSet();   // R29: one replay per key event
   function early(e) {
+    if (typeof e === 'object' && seen.has(e)) return true;
     if (!(e.ctrlKey && e.altKey && !e.shiftKey && !e.metaKey) || e.repeat) return false;
     let name = '';
     if (!done.osk && (e.key === 'k' || e.key === 'K' || e.code === 'KeyK')) name = 'osk';
@@ -57,9 +92,10 @@
     if (!name) return false;
     e.preventDefault();
     e.stopPropagation();
+    seen.add(e);
     const copy = { key: e.key, code: e.code, ctrlKey: true, altKey: true, shiftKey: false, metaKey: false,
       repeat: false, preventDefault() {}, stopPropagation() {} };
-    load(name).then(() => { if (window.__hubWmKey) window.__hubWmKey(copy); });
+    need(name).then((ok) => { if (ok && window.__hubWmKey) window.__hubWmKey(copy); });
     return true;
   }
   const prev = window.__hubWmKey;
@@ -78,7 +114,7 @@
     b.title = 'On-screen keyboard (Ctrl+Alt+K)';
     b.setAttribute('aria-label', 'On-screen keyboard');
     b.addEventListener('mousedown', (e) => e.preventDefault());
-    b.addEventListener('click', () => load('osk').then(() => { if (window.HubOSK) HubOSK.show(); }));
+    b.addEventListener('click', () => need('osk').then((ok) => { if (ok) HubOSK.show(); }));
     tray.prepend(b);
   }
 
@@ -86,7 +122,7 @@
   if (!window.HubViewer) {
     const later = (fn) => function () {
       const a = arguments;
-      return load('viewer').then(() => window.HubViewer && window.HubViewer[fn] && window.HubViewer[fn].apply(null, a));
+      return need('viewer').then(() => window.HubViewer && !window.HubViewer.stub && window.HubViewer[fn] && window.HubViewer[fn].apply(null, a));
     };
     window.HubViewer = { stub: true, open: later('open'), pushAndShow: later('pushAndShow') };
   }

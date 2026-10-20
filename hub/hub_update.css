@@ -1,11 +1,12 @@
 /* Hub "Update ready" note (hub/hub_update.js, R16b): small pill, bottom centre, above the taskbar. */
-#hub-upd-note {
+#hub-upd-note, #hub-load-note {
   position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%); z-index: 2147483000;
   display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 16px;
   background: rgba(20, 24, 32, 0.94); color: #fff; border-radius: 999px;
   font: 14px/1.2 system-ui, sans-serif; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
 }
-#hub-upd-note[hidden] { display: none; }
+#hub-load-note { bottom: 112px; padding: 10px 16px; }   /* hub_loader.js R28: "Couldn't load …" */
+#hub-upd-note[hidden], #hub-load-note[hidden] { display: none; }
 #hub-upd-note button {
   min-height: 36px; padding: 0 16px; border: 0; border-radius: 999px; cursor: pointer;
   background: #3b82f6; color: #fff; font: inherit; font-weight: 600;

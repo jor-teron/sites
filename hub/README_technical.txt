@@ -2,8 +2,8 @@ SITES HUB - TECHNICAL GUIDE: HUB AND VIRTUAL DESKTOP
 ====================================================
 
 For a developer picking up the Hub (hub.html) and its virtual desktop.
-Written from the code as of R17, build bumped in R25+R26 (2026-10-20, build ?v=20261020g,
-cache hub-shell-v50). Plain HTML / CSS / JS, no build step, no framework.
+Written from the code as of R17, build bumped in R27-R29 (2026-10-20, build ?v=20261020h,
+cache hub-shell-v51). Plain HTML / CSS / JS, no build step, no framework.
 Every file starts with a header comment: read it first, it is the spec.
 Short user notes live in hub/hub_readme.md; this file is the deep dive.
 
@@ -150,13 +150,20 @@ the rest):
 Idle = requestIdleCallback (setTimeout fallback).
 On demand (the batch loads at once, then the action runs):
   - the tray "keyboard" button: a stub button (data-stub) is placed in
-    the tray; clicking it loads osk, removes the stub, shows the OSK
+    the tray; clicking it loads osk and shows the OSK; the stub is
+    removed only once osk is in and window.HubOSK exists (R27)
   - Ctrl+Alt+K (osk) and Ctrl+Alt+arrows (snap): caught by the loader
     (document keydown + the __hubWmKey chain), replayed after loading
   - HubViewer.open / pushAndShow: a stub HubViewer loads the viewer
     batch, then calls the real one (hub_viewer.js replaces the stub)
   - OSK left open last time (sites-hub.osk = '1'): osk loads at once
-API: HubLoader.load(name) -> Promise, HubLoader.loaded(name).
+API: HubLoader.load(name) -> Promise, HubLoader.loaded(name),
+HubLoader.need(name) (on demand, shows the note), HubLoader.failed(name).
+R28: files that fail are recorded per batch; the batch is not marked
+done and the next on-demand use retries them. An on-demand action on a
+batch with failures shows a small note (#hub-load-note, hub_update.css):
+"Couldn't load <feature>. Check your connection and reload." Drives has
+no on-demand entry, so its failures only show in HubLoader.failed.
 Keep the loader's V constant equal to the ?v= in hub.html.
 
 
@@ -179,6 +186,9 @@ hub/wm_windows.js (window.HubWM), Desktop mode only.
     __hubAppFrames() = all; __hubTasks for System Monitor.
   - Keys inside same-origin apps reach window.__hubWmKey(e). Each module
     (wm_snap, wm_workspaces, osk, hub_loader) wraps the previous handler.
+    On the Hub page each module has its own document keydown listener
+    for its own keys only; the chain is just for keys from apps, so a key
+    is handled once (R29; the loader also replays a key at most once).
 
 hub/wm_snap.js (deferred batch "snap"):
   - Half / max zones: drag with the pointer in the left / right edge zone

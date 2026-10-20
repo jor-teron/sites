@@ -173,6 +173,6 @@
   // window.__hubWmKey: one entry point for window keys (same-origin apps forward theirs here)
   const prev = window.__hubWmKey;
   window.__hubWmKey = (e) => { if (!key(e) && prev) prev(e); };
-  document.addEventListener('keydown', (e) => { if (!key(e) && prev) prev(e); }, true);
+  document.addEventListener('keydown', key, true);   // R29: own keys only (the other modules have their own listeners)
   window.addEventListener('hub-wm-mode', () => showPv(null, ''));
 })();

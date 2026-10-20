@@ -20,8 +20,8 @@
  *   changed ones in place (the cache is never wiped); replies {type:'sw-refreshed', changed:[paths]}.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261020g';
-const CACHE = 'hub-shell-v50';  // 2026-10-20g: R25+R26 image refresh, UiDialog for new code
+const V = '20261020h';
+const CACHE = 'hub-shell-v51';  // 2026-10-20h: R27-R29 loader stub, load errors, single key handling
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const SHELL = [
   'hub.html',
