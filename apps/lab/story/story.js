@@ -6,12 +6,17 @@
                chosen model lazily (Lite by default, ~1 MB).
 */
 import { openDB, saveMessage, loadHistory, clearHistory } from "./story_db.js";
-import { MODELS, loadModel, generate, stop } from "./story_model.js";
+import { MODELS, loadModel, generate, stop, onCrash } from "./story_model.js";
 import * as ui from "./story_ui.js";
 
 const prefs = ui.loadPrefs();
+if (!MODELS[prefs.model]) prefs.model = "lite";   // stale or corrupted saved model key
 let readyKey = null;    // model key loaded in the worker
 let busy = false;
+
+// Worker crashed: it was respawned empty, so the model must load again.
+// Pending promises were rejected, so onSend's catch resets busy itself.
+onCrash(() => { readyKey = null; if (!busy) ui.setStatus(`${MODELS[prefs.model].label} · failed (offline?)`); });
 
 /** Load the current model, updating status. Returns true when ready. */
 async function ensureModel() {

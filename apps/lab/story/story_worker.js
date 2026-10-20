@@ -10,10 +10,12 @@
 import { pipeline, TextStreamer, InterruptableStoppingCriteria } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.0";
 
 let pipe = null, pipeKey = null, loadingKey = null;
+let generating = false, staleDispose = [];   // pipes replaced mid-generate, disposed after it
 const stopper = new InterruptableStoppingCriteria();
 
 async function load(key, id) {
-  if (pipeKey === key && pipe) return self.postMessage({ type: "ready", key });
+  if (pipeKey === key && pipe) { loadingKey = null; return self.postMessage({ type: "ready", key }); }
+  if (loadingKey === key) return;   // same model already loading; its "ready" will answer
   loadingKey = key;
   const files = {};
   try {
@@ -29,10 +31,12 @@ async function load(key, id) {
       },
     });
     if (loadingKey !== key) { try { await p.dispose(); } catch {} return; }  // superseded
-    if (pipe) { try { await pipe.dispose(); } catch {} }
+    loadingKey = null;
+    if (pipe) { if (generating) staleDispose.push(pipe); else { try { await pipe.dispose(); } catch {} } }
     pipe = p; pipeKey = key;
     self.postMessage({ type: "ready", key });
   } catch (err) {
+    if (loadingKey === key) loadingKey = null;
     self.postMessage({ type: "error", key, msg: String(err && err.message || err) });
   }
 }
@@ -40,8 +44,9 @@ async function load(key, id) {
 async function generate(prompt, opts) {
   if (!pipe) return self.postMessage({ type: "error", msg: "model not loaded" });
   stopper.reset();
+  const cur = pipe; generating = true;
   let text = "", count = 0, t0 = 0;
-  const streamer = new TextStreamer(pipe.tokenizer, {
+  const streamer = new TextStreamer(cur.tokenizer, {
     skip_prompt: true,
     skip_special_tokens: true,
     callback_function: (chunk) => {
@@ -56,7 +61,7 @@ async function generate(prompt, opts) {
   });
   const start = performance.now();
   try {
-    await pipe(prompt, {
+    await cur(prompt, {
       max_new_tokens: opts.maxTokens, min_new_tokens: Math.min(230, opts.maxTokens),  // ~150+ words
       do_sample: true, temperature: opts.temperature,
       top_k: 40, repetition_penalty: 1.1, no_repeat_ngram_size: 3, streamer, stopping_criteria: stopper,
@@ -65,6 +70,10 @@ async function generate(prompt, opts) {
     self.postMessage({ type: "done", text, tps: sec > 0 ? count / sec : 0 });
   } catch (err) {
     self.postMessage({ type: "error", msg: String(err && err.message || err) });
+  } finally {
+    generating = false;
+    const old = staleDispose; staleDispose = [];
+    for (const q of old) { try { await q.dispose(); } catch {} }
   }
 }
 

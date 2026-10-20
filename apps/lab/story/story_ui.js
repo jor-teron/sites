@@ -17,7 +17,12 @@ const PREF_KEY = "story-prefs";
 export function loadPrefs() {
   let p = {};
   try { p = JSON.parse(localStorage.getItem(PREF_KEY)) || {}; } catch {}
-  return { model: p.model || "lite", maxTokens: Math.max(240, p.maxTokens || 320), temperature: p.temperature || 0.8 };
+  const num = (v, d, lo, hi) => { v = Number(v); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
+  return {
+    model: typeof p.model === "string" ? p.model : "lite",   // validated against MODELS in story.js
+    maxTokens: Math.round(num(p.maxTokens, 320, 240, 600)),
+    temperature: num(p.temperature, 0.8, 0.3, 1.2),
+  };
 }
 export function savePrefs(p) { try { localStorage.setItem(PREF_KEY, JSON.stringify(p)); } catch {} }
 
