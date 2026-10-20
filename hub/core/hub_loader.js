@@ -20,7 +20,7 @@
  */
 (function () {
   'use strict';
-  const V = '20261020n';
+  const V = '20261020o';
   const DELAY = 1500;
   const BATCHES = {
     drives: ['shared/google/google.css', 'hub/drives/hub_drives.css',
@@ -102,7 +102,7 @@
   window.__hubWmKey = (e) => { if (!early(e) && prev) prev(e); };
   document.addEventListener('keydown', early, true);
 
-  // ---- on demand: ⌨ tray stub (osk.js adds the real button) ----
+  // ---- on demand: ⌨ taskbar stub, R41: beside workspaces (osk.js adds the real button) ----
   const tray = document.querySelector('#wm-taskbar .wm-tray');
   if (tray) {
     const b = document.createElement('button');
@@ -115,7 +115,8 @@
     b.setAttribute('aria-label', 'On-screen keyboard');
     b.addEventListener('mousedown', (e) => e.preventDefault());
     b.addEventListener('click', () => need('osk').then((ok) => { if (ok) HubOSK.show(); }));
-    tray.prepend(b);
+    // R41: sits right after Show desktop / workspace switcher (was tray.prepend)
+    (document.querySelector('#wm-taskbar .wm-ws') || document.getElementById('wm-showdesk') || tray).after(b);
   }
 
   // ---- on demand: Viewer stub (hub_viewer.js replaces window.HubViewer) ----

@@ -2,7 +2,7 @@ SITES HUB - TECHNICAL GUIDE: HUB AND VIRTUAL DESKTOP
 ====================================================
 
 For a developer picking up the Hub (hub.html) and its virtual desktop.
-Written from the code as of R17 (updated through R35, 2026-10-21).
+Written from the code as of R17 (updated through R41, 2026-10-21).
 Current build tag and shell cache: see hub/build.txt (one place).
 Plain HTML / CSS / JS, no build step, no framework.
 Every file starts with a header comment: read it first, it is the spec.
@@ -157,8 +157,8 @@ the rest):
   viewer   hub_viewer_pdf, hub_viewer           next idle
 Idle = requestIdleCallback (setTimeout fallback).
 On demand (the batch loads at once, then the action runs):
-  - the tray "keyboard" button: a stub button (data-stub) is placed in
-    the tray; clicking it loads osk and shows the OSK; the stub is
+  - the taskbar "keyboard" button: a stub button (data-stub) is placed
+    right after Show Desktop / the workspace switcher (R41; was the tray); clicking it loads osk and shows the OSK; the stub is
     removed only once osk is in and window.HubOSK exists (R27)
   - Ctrl+Alt+K (osk) and Ctrl+Alt+arrows (snap): caught by the loader
     (document keydown + the __hubWmKey chain), replayed after loading
@@ -279,12 +279,15 @@ New apps: add them to the category CSV only.
 hub/wm/wm_taskbar.js (#wm-taskbar):
   - Start (opens the menu above the bar; hover-to-open, switch
     sites-hub.startHover), Show Desktop (minimise all / bring back),
-    workspace switcher, one button per window of this workspace
+    workspace switcher (R41: monitor-shaped ~16:10 buttons), the OSK
+    button (R41: right after the switcher), one button per window of this workspace
     (click = focus / minimise; right-click = New window, Move to
     workspace, Minimise, Close; middle-click = new window).
   - Tray (.wm-tray): the top bar's right side (chat bubble, Devices
-    button, version) is MOVED here in Desktop mode and back in Phone
-    mode. OSK button, optional busy meter, clock (12 h).
+    button) is MOVED here in Desktop mode and back in Phone mode.
+    Optional busy meter, clock (12 h). R41: the version label (#hub-ver)
+    is no longer shown anywhere in the Hub (hub.html comment); version.txt
+    and HubUpdate.version() still work.
   - Taskbar at top or bottom: sites-hub.taskPos; height sites-hub.taskH.
 
 OSK (hub/osk/), a panel on the Hub page, not a window:
@@ -570,6 +573,11 @@ files change.
 
 17. KNOWN ISSUES AND PARKED ITEMS
 ---------------------------------
+  - R41 (done): workspace buttons are monitor-shaped (~16:10), the OSK
+    button sits right after them (Show Desktop | 1 | 2 | keyboard), and the
+    placebo version label is gone from the Desktop tray and Phone top bar.
+    Settings > About (apps/settings/sec_about.js) still shows it: another
+    bot's folder, not changed.
   - R35 (done): edge snapping (half / max zones, preview, magnet) works
     again. Cause: wm_snap.js is the deferred "snap" batch, so a drag before
     it loaded had no HubWM.dragHook (no preview, snap or magnet). Now the

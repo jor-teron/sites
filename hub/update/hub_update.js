@@ -111,6 +111,7 @@
   const running = readVersion('no-cache');
   running.then((v) => {
     if (v.version) window.HUB_VERSION = v.version.slice(1);
+    // R41: #hub-ver was removed from hub.html (no version on screen); kept null-safe in case Jor puts it back.
     const el = document.getElementById('hub-ver');
     if (el) el.textContent = v.version || '\u2014';
   });

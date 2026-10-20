@@ -152,7 +152,8 @@
     btn.setAttribute('aria-pressed', 'false');
     btn.addEventListener('mousedown', (e) => e.preventDefault());   // keep focus in the app
     btn.addEventListener('click', () => setShown(panel.hidden));
-    tray.prepend(btn);
+    // R41: beside the workspace switcher (stub's spot); was tray.prepend
+    (document.querySelector('#wm-taskbar .wm-osk-btn[data-stub]') || document.querySelector('#wm-taskbar .wm-ws') || document.getElementById('wm-showdesk') || tray).after(btn);
   }
 
   // ---- show / hide ----
