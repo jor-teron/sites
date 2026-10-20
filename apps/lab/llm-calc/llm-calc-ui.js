@@ -134,7 +134,8 @@
     $('rBlocks').textContent = fmt(tr.blocks);
     $('rEff').textContent = fmt(tr.effectiveBatch);
     $('rTps').textContent = fmt(tr.tokensPerStep);
-    $('rSpe').textContent = $('rSpeBig').textContent = fmt(tr.stepsPerEpoch);
+    $('rSpe').textContent = $('rSpeBig').textContent = $('rSpeHint').textContent = fmt(tr.stepsPerEpoch);
+    if (M.MEASURED_RUNS) $('rMeasured').textContent = M.MEASURED_RUNS;
     $('rSteps').textContent = $('rStepsBig').textContent = $('bSteps').textContent = fmt(tr.totalSteps);
 
     $('rTpp').textContent = p.total ? (tr.tokens / p.total).toFixed(2) : '—';

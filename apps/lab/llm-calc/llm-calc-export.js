@@ -100,7 +100,7 @@
     if ($('expErr').dataset.kind !== 'name' || name) { $('expErr').textContent = v.errs.join(' '); $('expErr').dataset.kind = ''; }
   }
   function buildSummary(s, cfg, name) {
-    const e = estimates(s), gpuTxt = (s.gpus > 1 ? s.gpus + '× ' : '') + (s.preset === 'P100' ? 'P100' : s.preset === 'CPU' ? 'CPU only' : 'T4');
+    const e = estimates(s), gpuTxt = (s.gpus > 1 ? s.gpus + '× ' : '') + (s.preset === 'P100' ? 'P100' : s.preset === 'CPU' ? 'CPU only' : s.preset === 'BOT' ? 'Bot CPU' : 'T4');
     const when = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }) + ' IST';
     const memGB = e.mem.gpu0 / M.GB, limit = M.GPU_PRESETS[s.preset].mem;
     const warns = Array.from(document.querySelectorAll('#in .alert .atext, #warns li:not(.cnt)')).map(li => li.textContent);

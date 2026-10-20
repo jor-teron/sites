@@ -66,7 +66,7 @@
       <tr><td>Tokens per step</td><td id="rTps"></td></tr>
       <tr><td>Steps per epoch</td><td id="rSpe"></td></tr>
       <tr><td>Total steps</td><td id="rSteps"></td></tr></table>
-    <h3>Speed</h3><table id="rSpeed"></table><p class="note">Steps come from your real data — the training script counts them itself.</p>
+    <h3>Speed</h3><table id="rSpeed"></table><p class="note">Steps come from your real data — the training script counts them itself. Notebook trial step should report about <b id="rSpeHint">—</b> steps/epoch; far fewer means not all dataset files loaded.</p><p class="note" id="rMeasured"></p>
     <h3>Output files (approx., 1 MB = 10⁶ bytes)</h3><table id="rSizes"></table><p id="rSizesRef" class="note"></p>
     <h3>Parameter breakdown</h3><table id="rBreak"></table>
     <h3>Memory (rough)</h3><table id="rMemBreak"></table>
@@ -124,7 +124,7 @@
   <p id="outNote" class="note"></p>
 </section>
 <section class="card"><h2>Hardware</h2>
-  <div class="field"><label for="preset">Device</label><select id="preset"><option value="T4">T4</option><option value="T4x2">T4 x2</option><option value="P100">P100 (estimate)</option><option value="CPU">CPU only (Kaggle)</option></select><button type="button" class="info" data-help="preset" aria-label="About GPU">ⓘ</button></div>
+  <div class="field"><label for="preset">Device</label><select id="preset"><option value="T4">T4</option><option value="T4x2">T4 x2</option><option value="P100">P100 (estimate)</option><option value="CPU">CPU only (Kaggle)</option><option value="BOT">Bot computer (8-core Xeon, 15GB RAM, CPU only)</option></select><button type="button" class="info" data-help="preset" aria-label="About GPU">ⓘ</button></div>
   <div class="field"><label for="gpus">GPUs</label><select id="gpus"><option>1</option><option>2</option></select><button type="button" class="info" data-help="gpus" aria-label="About GPUs">ⓘ</button></div>
   <div class="field"><label for="tps">Speed at 26M (tok/s per GPU)</label><input id="tps" type="number" inputmode="decimal" value="25000" step="100" min="1"><button type="button" class="info" data-help="tps" aria-label="About Tokens/sec per GPU">ⓘ</button></div>
   <div class="field"><label for="ram">System RAM (GB)</label><input id="ram" type="number" inputmode="decimal" value="29" step="1" min="1"><button type="button" class="info" data-help="ram" aria-label="About System RAM">ⓘ</button></div>
