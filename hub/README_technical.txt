@@ -2,8 +2,8 @@ SITES HUB - TECHNICAL GUIDE: HUB AND VIRTUAL DESKTOP
 ====================================================
 
 For a developer picking up the Hub (hub.html) and its virtual desktop.
-Written from the code as of R17, build bumped in R27-R29 (2026-10-20, build ?v=20261020h,
-cache hub-shell-v51). Plain HTML / CSS / JS, no build step, no framework.
+Written from the code as of R17, build bumped in R30 (2026-10-20, build ?v=20261020i,
+cache hub-shell-v52). Plain HTML / CSS / JS, no build step, no framework.
 Every file starts with a header comment: read it first, it is the spec.
 Short user notes live in hub/hub_readme.md; this file is the deep dive.
 
@@ -244,7 +244,17 @@ again in the background (once per page load) and the list is rebuilt
 (and an open flyout redrawn, event 'hub-startlist') only when the hash
 changed. A changed hub_apps.js drops the whole cache. All categories are
 warmed ~2 s after load when idle.
-Keep hub_apps.js and the category CSVs in step by hand.
+hub_apps.js is LEGACY (R30): the category CSVs are the source of truth
+for which apps a category shows (pages + flyouts). Every visible
+category in hub_apps.js has a "<Category> Page" row, so the menu / Start
+itself lists only the categories (from hub_apps.js); a click opens the
+category page. hub_apps.js is still read for: the category rows and
+their order, hash ids / last-app memory, names / icons / NEW_TAB of
+known apps, session restore, __hubOpenApp, home-tile icon fallback
+(hub_tiles.js) and the Start cache hash (hub_flyout.js). Keep its rows;
+add new apps to the category CSV only. An app only in a CSV opens fine
+from its page / flyout (as a hidden extra; it gets no saved hash id
+until it is opened).
 
 
 6. TASKBAR, TRAY AND ON-SCREEN KEYBOARD (OSK)
@@ -539,10 +549,12 @@ files change.
 ---------------------------------
   - Edge snapping (half / max zones) is broken and switched off in
     Settings; the magnet and the snap keys work. Parked.
-  - 12 Lab apps are in the CSV but missing from hub_apps.js, so not in
-    the Start menu: MyLLM, Local AI Chat, AI Story, LLM Calculator,
+  - 12 Lab apps (MyLLM, Local AI Chat, AI Story, LLM Calculator,
     Bookmark Manager, Wiki Extractor, Google Drive Test, Media Explorer,
-    IPTV player, Channel Cleaner, Three.js Viewer v2, Aeroplane.
+    IPTV player, Channel Cleaner, Three.js Viewer v2, Aeroplane) are
+    listed via apps/lab/lab-apps.csv (Lab page + Start flyout). They
+    are not rows in hub_apps.js, which is legacy (R30, section 5): fine
+    as is; only their #hash link works after they were opened once.
   - The "Google Drive" label is squeezed in the Files sidebar.
   - Wallpaper thumbnails in Settings load the full images.
   - An open Settings window does not refresh when values change

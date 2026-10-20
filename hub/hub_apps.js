@@ -1,4 +1,22 @@
 /*
+ * ===== LEGACY APP LIST (R30) — do not add new apps here; add them to the category CSV =====
+ * Source of truth for which apps a category shows: apps/<category>/<category>-apps.csv
+ * (mapped in hub_config.js HUB_CAT_CSV, parsed by TilesCsv in shared/tiles/tiles.js). Those
+ * CSVs draw the category pages (apps/<cat>/<cat>.html) and the Desktop Start flyouts
+ * (hub_flyout.js). Every visible category here has a "<Category> Page" row, so the Hub menu /
+ * Start lists only the category rows from this file; a click opens that category's page.
+ * Still read from this file (window.HUB_APPS_CSV), so the rows are KEPT ON PURPOSE:
+ *   - hub/hub.js: the menu's category rows and their order, the hash ids / last-app memory
+ *     (#snake …), names / icons / NEW_TAB of known apps, window session restore (an app not
+ *     listed here is re-checked with a HEAD request), __hubOpenApp (hub_chat.js) and the
+ *     load-error message when this file is broken;
+ *   - hub/hub_tiles.js (home tiles): icon and NEW_TAB fallback of the same app;
+ *   - hub/hub_flyout.js: a hash of this text — a change drops the cached Start list;
+ *   - hub/hub_sw.js SHELL and hub.html <script> (precached, loaded before hub.js).
+ * An app that is only in a category CSV still opens (from its page / flyout) as a hidden extra.
+ * Do not remove, reorder or "clean up" rows without checking the readers above.
+ * ==========================================================================================
+ *
  * sites hub — app list (hub_apps.js). Loaded by hub.html before hub.js
  * (replaces hub-apps.csv; a script works over http AND file:// with no fetch).
  *
@@ -26,6 +44,7 @@
  * redirects to apps/settings/#about. Settings itself is opened by the "⚙ Settings" row
  * at the bottom of the menu (hub_settings.js), so its row is HIDDEN here.
  */
+// LEGACY list (see the header): new apps go in apps/<category>/<category>-apps.csv.
 window.HUB_APPS_CSV = `
 CATEGORY, NAME,                  ENTRY_URL,                                  ICON_URL, NEW_TAB, HIDDEN, ORDER
 Favorite, Favorite Page,         apps/favorite/favorite.html,                ,         0,       0,      9
