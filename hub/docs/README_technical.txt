@@ -2,7 +2,7 @@ SITES HUB - TECHNICAL GUIDE: HUB AND VIRTUAL DESKTOP
 ====================================================
 
 For a developer picking up the Hub (hub.html) and its virtual desktop.
-Written from the code as of R17 (updated through R33a, 2026-10-20).
+Written from the code as of R17 (updated through R33b, 2026-10-20).
 Current build tag and shell cache: see hub/build.txt (one place).
 Plain HTML / CSS / JS, no build step, no framework.
 Every file starts with a header comment: read it first, it is the spec.
@@ -262,8 +262,11 @@ exposes window.HubStartList {cached(cat), load(cat)} (the cached Start
 lists) and hub.js registers those apps in HUB_CAT_CSV order (so hash ids
 like #snake stay the same) for hash links, last app, session restore,
 __hubOpenApp and app names / icons / NEW_TAB. hub.js starts (hash / last
-app / session) on DOMContentLoaded: at once when every list is cached,
-else after the CSVs are read (max 4 s). __hubOpenApp('<path>/') before
+app / session) as soon as hub_flyout.js is in (event hub-startlist-ready,
+DOMContentLoaded fallback): at once when every list is cached, else
+(R33b) all 7 CSVs load in parallel, are registered in order as each one
+(and those before it) arrives, and start runs as soon as the hash / last
+app / saved windows are known; 4 s cap. __hubOpenApp('<path>/') before
 that waits for the lists; a part-of-path match needs them loaded.
 New apps: add them to the category CSV only.
 
@@ -573,10 +576,10 @@ files change.
   - R22 (parked, low priority): window sizes shrink for good after a
     small viewport (resize clamp overwrites w.rect, wm_windows.js); keep
     the chosen size apart from the drawn one.
-  - R33a (done): apps come from the category CSVs; hub_apps.js keeps the
-    categories + hidden system rows (section 5). R33b (planned): hash
-    links work on the very first visit without waiting for the CSVs
-    (e.g. the category rows / system rows from hub_config.js).
+  - R33a + R33b (done): apps come from the category CSVs; hub_apps.js
+    keeps the categories + hidden system rows (section 5). On a first
+    visit a hash link waits only for the CSVs up to its own category
+    (one round trip; a slow later CSV no longer holds it up).
   - The "Google Drive" label is squeezed in the Files sidebar.
   - Wallpaper thumbnails in Settings load the full images.
   - An open Settings window does not refresh when values change

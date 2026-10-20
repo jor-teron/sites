@@ -113,6 +113,7 @@
   // R33a: the same lists for hub.js (apps come from the category CSVs; hub_apps.js keeps only the
   // categories). cached(cat) → list | null at once (sites-hub.startList); load(cat) → Promise<list | null>.
   window.HubStartList = { cached: (cat) => (store.cats[cat] ? store.cats[cat].list : null), load: loadCat };
+  window.dispatchEvent(new Event('hub-startlist-ready'));   // R33b: hub.js starts its lookups now
 
   // warm every category once the Hub is idle, so the first Start → hover is instant
   const warm = () => Object.keys(window.HUB_CAT_CSV || {}).forEach((c) => loadCat(c));

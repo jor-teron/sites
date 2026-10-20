@@ -123,6 +123,7 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - 2026-10-20 IST: R32 `hub/build.txt` (current build + cache, one place); readme cleanup (no current numbers in the body) and this change log.
 - Parked / planned: R21 Auto mode flips Desktop / Phone at the 1024 px edge (needs some slack) and R22 window sizes shrink for good after a small viewport — parked, low priority. R33 planned: swap `hub_apps.js` for the category CSVs.
 - 2026-10-20 IST: R33a `hub_apps.js` keeps only the categories ("<Category> Page" rows) + hidden system rows (Desktop, Settings, About, Contact, Feedback, Transcribe); the 60 app rows moved to a commented archive block in the same file. Apps come from the category CSVs (`hub_flyout.js` `window.HubStartList`, registered by `hub.js` for hash links, last app, session restore, `__hubOpenApp`); every CSV app now has its #hash link (e.g. #myllm) (cache v54, ?v=20261020k).
+- 2026-10-20 IST: R33b faster first-visit app lookup: the CSV lists start loading the moment `hub_flyout.js` is in and the hash / last app / saved windows open as soon as the CSVs that hold them are registered (in order), not after all 7; 4 s cap kept (cache v55, ?v=20261020l).
 
 ## 12. Related apps
 - Controller (phone side): `../controller/controller_readme.md`

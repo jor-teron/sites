@@ -3,8 +3,10 @@
  * R33a: hub_apps.js keeps only the categories ("<Category> Page" rows) + hidden system rows.
  *   Every app is read from its category CSV via hub_flyout.js (window.HubStartList) and
  *   registered in HUB_CAT_CSV order (hash ids, last app, session restore, __hubOpenApp). Start
- *   (hash / last app / session) runs on DOMContentLoaded: at once when every list is cached
- *   (sites-hub.startList), else after the CSVs are read (max 4 s). __hubOpenApp(path) before
+ *   (hash / last app / session) runs as soon as hub_flyout.js is in ('hub-startlist-ready';
+ *   DOMContentLoaded fallback): at once when every list is cached (sites-hub.startList), else
+ *   (R33b) all CSVs load in parallel and start runs as soon as the lists that hold the hash /
+ *   last app / saved windows are registered (in order); 4 s cap. __hubOpenApp(path) before
  *   that waits for them; a non-path match ('pooh-chat') needs the lists in.
  *
  * hub_apps.js (loaded by hub.html before this file; no fetch, so file:// works too):
@@ -1038,15 +1040,34 @@
       registerApp(app);
     });
   }
-  /** Every category CSV (loaded / refreshed) → registered. Resolves when done (never rejects). */
-  function loadCsvApps() {
+  /** Every category CSV (loaded / refreshed) → registered. All loads start at once; the lists
+   *  are registered strictly in HUB_CAT_CSV order (hash ids stay the same) as soon as each one
+   *  and all before it are in; step() runs after each. Resolves when done (never rejects). */
+  function loadCsvApps(step) {
     const S = window.HubStartList, cats = catNames();
     if (!S) return Promise.resolve();
-    return Promise.all(cats.map((c) => S.load(c).catch(() => null)))
-      .then((lists) => lists.forEach((l, i) => addCsvApps(cats[i], l)));
+    const loads = cats.map((c) => S.load(c).catch(() => null));
+    return cats.reduce((p, c, i) => p.then(() => loads[i]).then((l) => { addCsvApps(c, l); if (step) step(); }),
+      Promise.resolve());
   }
-  let csvReady = Promise.resolve();
+  /** R33b: what start-up needs: the hash id (else the last app id) and, in Desktop mode, the
+   *  saved windows' entry paths. Ready = all of them are known (or need no list). */
+  function startNeeds() {
+    const ids = [], keys = [];
+    const id = hashId() || storageGet();
+    if (id && id[0] !== '~') ids.push(id);
+    if (wmOn()) {
+      try {
+        const s = JSON.parse(localStorage.getItem('sites-hub.wmSession') || 'null');
+        (s && Array.isArray(s.wins) ? s.wins : []).forEach((w) => { if (w && w.key) keys.push(normalizeEntryUrl(w.key)); });
+      } catch (_) { /* none */ }
+    }
+    return () => ids.every((i) => idToApp.has(i)) && keys.every((k) => findApp(k) || entryToId.has(k));
+  }
+  let csvReady = Promise.resolve(), started = false;
   function start() {
+    if (started) return;
+    started = true;
     const S = window.HubStartList, cats = catNames();
     const cached = S ? cats.map((c) => S.cached(c)) : [];
     if (S && cached.every(Boolean)) {   // all lists cached: hash / last app / session at once
@@ -1055,9 +1076,14 @@
       applyHash(true);
       return;
     }
-    // first visit (or a changed list): wait for the CSVs (max 4 s), then open the hash / last app
-    csvReady = loadCsvApps();
-    Promise.race([csvReady, new Promise((r) => setTimeout(r, 4000))]).then(() => applyHash(true));
+    // first visit (or a changed list): open the hash / last app / session as soon as the lists
+    // that hold them are in (R33b), at the latest when all are read or after 4 s
+    const ready = startNeeds();
+    let ran = false;
+    const run = () => { if (!ran) { ran = true; applyHash(true); } };
+    if (ready()) run();
+    csvReady = loadCsvApps(() => { if (!ran && ready()) run(); });
+    Promise.race([csvReady, new Promise((r) => setTimeout(r, 4000))]).then(run);
   }
   window.addEventListener('hub-startlist', (e) => {   // a CSV changed: register its new apps
     const S = window.HubStartList, cat = e.detail && e.detail.cat;
@@ -1067,9 +1093,14 @@
   primeFrame();
   loadApps();
   renderTiles();
-  // hub_flyout.js (the CSV lists) loads after this file: start once every core script is in
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
-  else start();
+  // hub_flyout.js (the CSV lists) loads after this file: start the moment it is in (R33b,
+  // 'hub-startlist-ready'), DOMContentLoaded as the fallback (no flyout, e.g. no matchMedia)
+  if (window.HubStartList) start();
+  else {
+    window.addEventListener('hub-startlist-ready', start, { once: true });
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
+    else start();
+  }
   // Back / Forward (and hand-edited hashes): switch apps without adding entries.
   window.addEventListener('popstate', () => applyHash(false));
   window.addEventListener('hashchange', () => applyHash(false));
