@@ -21,7 +21,8 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - `hub_viewer_pdf.js`: pdf.js glue (all pages stacked and scrollable)
 - `../shared/vendor/pdfjs/`: Mozilla pdf.js 3.11 (local copy)
 - `hub_notification.css`: received-file cards + receive overlay
-- `hub_sw.js`: service worker (shell precache, network-first, offline page); loaded by the root `../sw.js` stub
+- `hub_sw.js`: service worker (R16b): precached shell + shared modules + Start icons + app CSVs; shell served cache-first and refreshed in the background (new copy on the next load); CSVs / `version.txt` network-first; app pages kept the first time they open (`hub-rt-1`); Google, OAuth, Drive and PeerJS are never cached. Loaded by the root `../sw.js` stub. Release: bump `V` + `CACHE` there and `?v=` in `sw.js`.
+- `hub_update.js` + `hub_update.css`: a new worker waits; "Update ready · Reload" note (no forced reload); Settings → About "Check for update" still reloads at once.
 - `hub_offline.html`: "You're offline" page shown by the service worker
 - `../manifest.webmanifest`, `../shared/image/hub_icon_192.png`, `hub_icon_512.png`: PWA manifest and icons
 - Shared: `../vendor/qrcode.js`, `../style/no-scrollbar.css`, `../script/txt-view.html` (viewer for `.txt` entries)
@@ -108,6 +109,7 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - 2026-10-05 18:29 IST: hub CSS split into main / controller / notification; overlay backdrop 10% white.
 
 - 2026-10-20 IST: R16a minimal start: `hub_loader.js` defers Drive/Google, snap, keyboard and Viewer (cache v46, ?v=20261020c).
+- 2026-10-20 IST: R16b cache-first shell (stale-while-revalidate), offline first visit, "Update ready" note (cache v47, ?v=20261020d).
 
 ## 12. Related apps
 - Controller (phone side): `../controller/controller_readme.md`

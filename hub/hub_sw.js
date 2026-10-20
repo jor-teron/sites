@@ -1,34 +1,48 @@
 /*
  * Hub service worker (loaded by the root /sw.js stub, so its scope is the whole site).
- * Install (a new build = a new CACHE name): precache a tiny shell, every file fetched with
- * cache:'reload' so the browser's HTTP cache can't hand back an old copy.
- * Fetch: same-origin GET only, always network-first (so a push shows at once); the cache is only
- * a fallback when offline. Navigations fall back to the cached page, then hub/hub_offline.html.
- * Only navigations and the shell files are (re)stored, so ordinary app files are not cached.
- * Cross-origin (PeerJS, CDNs) is not touched.
- * Freshness without ?v=: pages, everything under apps/, and every same-origin html / css / js /
- * csv / json / txt / md WITHOUT a ?v= tag skip the browser HTTP cache (cache:'no-cache'
- * revalidates via ETag, a cheap 304 when unchanged) — so plain links (the category pages,
- * shared/tiles/*) never stay stuck on GitHub Pages' 10-minute cache. Files WITH ?v= are
- * versioned by their url and fetched normally.
- * Bump CACHE when the shell list changes; old caches are deleted on activate. A new worker
- * skips waiting and claims open pages; hub_update.js then reloads them once (no stale shell).
- * Release: bump CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
+ * R16b: cache-first shell + "Update ready" notice.
+ * Install (a new build = a new CACHE name): precache the shell (SHELL), every file fetched with
+ * cache:'reload' so the browser's HTTP cache can't hand back an old copy. A new worker WAITS
+ * (only the very first install activates at once); hub_update.js shows "Update ready · Reload"
+ * and posts {type:'skip-waiting'} when Jor clicks Reload. Activate deletes old hub-shell-* caches.
+ * Fetch (same-origin GET only; cross-origin — Google APIs / OAuth / Drive, PeerJS signalling,
+ * CDNs — is never touched; no-store / reload requests and Range requests pass straight through):
+ *   · shell files (SHELL, no ?v= or ?v= this build V): cache first, refreshed in the background
+ *     (stale-while-revalidate), so a push shows on the next load.
+ *   · shell files with a NEWER ?v= than V (a release arrived before its worker): network first.
+ *   · *.csv and hub/version.txt: network first, cached copy when offline.
+ *   · pages and files under apps/ (and other same-origin html/css/js): network first, stored in
+ *     RUNTIME the first time they're opened, so they also open offline.
+ *   · same-origin images / fonts: cache first (RUNTIME).
+ *   · navigations not in a cache when offline: hub/hub_offline.html.
+ * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const CACHE = 'hub-shell-v46';  // 2026-10-20c: R16a minimal start + deferred loader (hub_loader.js)
+const V = '20261020d';
+const CACHE = 'hub-shell-v47';  // 2026-10-20d: R16b cache-first shell + Update ready notice
+const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',
-  'hub/hub_main.css', 'hub/hub_controller.css', 'hub/hub_notification.css', 'shared/style/no-scrollbar.css',
-  'hub/hub_config.js', 'hub/hub_apps.js', 'hub/hub_tiles.js', 'hub/hub.js', 'hub/hub_flyout.js', 'hub/hub_flyout.css', 'hub/wm_mode.js', 'hub/wm_windows.js', 'hub/wm_taskbar.js', 'hub/wm_snap.js', 'hub/wm_workspaces.js', 'shared/wallpaper/wallpapers.js', 'hub/hub_settings.js', 'hub/wm.css', 'hub/hub_wallpapers.js', 'hub/hub_prefs.js', 'hub/hub_update.js', 'hub/hub_loader.js', 'hub/version.txt', 'hub/hub_drives.js', 'hub/hub_drives.css', 'shared/fs/fs_drives.js', 'shared/google/google_config.js', 'shared/google/google_auth.js', 'shared/google/gdrive_fs.js', 'shared/google/gdrive_connect.js', 'shared/google/google_gis.js', 'shared/google/phonekey.js', 'hub/hub_phonekey.js', 'shared/google/google.css', 'shared/dialog/dialog.js', 'shared/dialog/dialog.css',
-  'shared/ctxmenu/ctxmenu.js', 'shared/ctxmenu/ctxmenu.css', 'shared/ctxmenu/ctx_in_app.js', 'hub/hub_ctx.js', 'hub/hub_ctx_menus.js', 'shared/perf/busy_meter.js', 'hub/hub_traymeter.js', 'shared/tiles/tiles.js', 'shared/tiles/tiles.css', 'hub/hub_controller_config.js',
-  'hub/hub_notify.js', 'hub/hub_viewer.js', 'hub/hub_viewer_pdf.js', 'hub/hub_pointer.js', 'hub/hub_receive.js',
-  'hub/hub_role.js', 'hub/hub_remote.js', 'shared/link/link_scan.js',
-  'hub/hub-controller.js', 'hub/hub_textedit.js', 'hub/hub_link.js', 'hub/hub_linkstate.js', 'hub/hub_chat.js', 'hub/hub_chat.css', 'shared/link/link_chat.js', 'hub/hub-gamebar.js',
-  'hub/controller/kb_common.js', 'hub/osk/osk_layout.js', 'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js', 'hub/osk/osk.css', 'shared/favorites/favorites.js',
-  'shared/link/link_core.js', 'shared/link/link_devices.js', 'shared/link/link_files.js', 'shared/link/link_ui.js', 'shared/link/link.css',
-  'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', 'shared/vendor/qrcode.js',
+  'hub/hub_main.css', 'hub/hub_controller.css', 'hub/hub_notification.css', 'hub/hub_flyout.css', 'hub/wm.css', 'hub/hub_chat.css', 'hub/hub_drives.css', 'hub/hub_update.css',
+  'hub/hub_role.js', 'hub/hub_config.js', 'hub/hub_apps.js', 'hub/hub_tiles.js', 'hub/hub.js', 'hub/hub_flyout.js', 'hub/hub_prefs.js', 'hub/hub_wallpapers.js', 'hub/hub_settings.js',
+  'hub/wm_mode.js', 'hub/wm_windows.js', 'hub/wm_taskbar.js', 'hub/wm_snap.js', 'hub/wm_workspaces.js',
+  'hub/hub_ctx.js', 'hub/hub_ctx_menus.js', 'hub/hub_traymeter.js', 'hub/hub_controller_config.js', 'hub/hub_notify.js', 'hub/hub_viewer.js', 'hub/hub_viewer_pdf.js',
+  'hub/hub_pointer.js', 'hub/hub_receive.js', 'hub/hub_remote.js', 'hub/hub-controller.js', 'hub/hub_textedit.js', 'hub/hub_link.js', 'hub/hub_linkstate.js',
+  'hub/hub_chat.js', 'hub/hub-gamebar.js', 'hub/hub_drives.js', 'hub/hub_phonekey.js', 'hub/hub_update.js', 'hub/hub_loader.js',
+  'hub/controller/kb_common.js', 'hub/osk/osk_layout.js', 'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js', 'hub/osk/osk.css',
+  'shared/style/no-scrollbar.css', 'shared/wallpaper/wallpapers.js', 'shared/perf/busy_meter.js', 'shared/vendor/qrcode.js',
+  'shared/fs/fs_drives.js', 'shared/fs/fs_ops.js', 'shared/fs/fs_ref.js', 'shared/fs/filetypes.js', 'shared/fs/thumbs_store.js',
+  'shared/google/google_config.js', 'shared/google/google_auth.js', 'shared/google/gdrive_fs.js', 'shared/google/gdrive_connect.js', 'shared/google/google_gis.js', 'shared/google/phonekey.js', 'shared/google/google.css',
+  'shared/ctxmenu/ctxmenu.js', 'shared/ctxmenu/ctxmenu.css', 'shared/ctxmenu/ctx_in_app.js', 'shared/dialog/dialog.js', 'shared/dialog/dialog.css',
+  'shared/tiles/tiles.js', 'shared/tiles/tiles.css', 'shared/favorites/favorites.js',
+  'shared/link/link_core.js', 'shared/link/link_devices.js', 'shared/link/link_files.js', 'shared/link/link_ui.js', 'shared/link/link_chat.js', 'shared/link/link_scan.js', 'shared/link/link.css',
   'shared/image/hub_icon_192.png', 'shared/image/hub_icon_512.png',
+  // Start menu / taskbar / home icons and the app lists, so a first visit also works offline
+  'apps/favorite/favorite_icon.png', 'apps/games/games_icon.png', 'apps/media/media_icon.png', 'apps/office/office_icon.png',
+  'apps/connectivity/connectivity_icon.png', 'apps/tools/tools_icon.png', 'apps/lab/lab_icon.png', 'apps/settings/settings_icon.png',
+  'apps/tools/files/files_icon.png', 'apps/connectivity/qr-scanner/qr-scanner_icon.png', 'hub/controller/controller_icon.png', 'hub/controller/controller_qr_icon.png',
+  'apps/favorite/favorite-apps.csv', 'apps/games/games-apps.csv', 'apps/media/media-apps.csv', 'apps/office/office-apps.csv',
+  'apps/connectivity/connectivity-apps.csv', 'apps/tools/tools-apps.csv', 'apps/lab/lab-apps.csv', 'hub/version.txt',
   'hub/hub_offline.html',
 ];
 const OFFLINE = 'hub/hub_offline.html';
@@ -39,34 +53,59 @@ self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE)
     .then((c) => Promise.all(SHELL.map((p) => fetch(new Request(abs(p), { cache: 'reload' }))   // bypass the HTTP cache
       .then((res) => (res.ok ? c.put(abs(p), res) : null)).catch(() => {}))))   // one missing file must not break install
-    .then(() => self.skipWaiting()));
+    .then(() => { if (!self.registration.active) return self.skipWaiting(); }));   // first install only; updates wait for "Reload"
 });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys()
-    .then((keys) => Promise.all(keys.filter((k) => k.startsWith('hub-shell-') && k !== CACHE).map((k) => caches.delete(k))))
+    .then((keys) => Promise.all(keys.filter((k) => (k.startsWith('hub-shell-') && k !== CACHE) || (k.startsWith('hub-rt-') && k !== RUNTIME)).map((k) => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 
-self.addEventListener('message', (e) => { if (e.data && e.data.type === 'skip-waiting') self.skipWaiting(); });
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'skip-waiting') self.skipWaiting();
+  if (e.data && e.data.type === 'version') e.source && e.source.postMessage({ type: 'sw-version', v: V, cache: CACHE });
+});
+
+const ok = (res) => res && res.status === 200 && res.type === 'basic';
+function put(name, key, res) { const copy = res.clone(); caches.open(name).then((c) => c.put(key, copy)).catch(() => {}); }
+
+/** Network first; store in `name` under `key`; offline → cached copy (→ offline page for navigations). */
+function networkFirst(req, name, key, nav) {
+  return fetch(req, { cache: 'no-cache' }).then((res) => { if (ok(res)) put(name, key, res); return res; })
+    .catch(() => caches.match(key, { ignoreSearch: true }).then((hit) => hit || (nav ? caches.match(abs(OFFLINE)) : Response.error())));
+}
+/** Cache first, refresh in the background (the next load gets the new copy). */
+function staleWhileRevalidate(e, req, key) {
+  const net = fetch(req, { cache: 'no-cache' }).then((res) => { if (ok(res)) put(CACHE, key, res); return res; });
+  e.waitUntil(net.catch(() => {}));
+  return caches.open(CACHE).then((c) => c.match(key)).then((hit) => hit || net)
+    .catch(() => net);
+}
 
 self.addEventListener('fetch', (e) => {
   const req = e.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  const bare = url.origin + url.pathname;                 // shell files are kept without ?v=
-  const keep = req.mode === 'navigate' || SHELL_SET.has(bare);   // don't fill the cache with every app file
-  const plain = !url.searchParams.has('v') && /\.(html?|css|m?js|csv|json|txt|md|webmanifest)$/i.test(url.pathname);
-  const fresh = req.mode === 'navigate' || url.pathname.includes('/apps/') || plain || url.pathname.endsWith('/');   // revalidate, never a stale HTTP-cache copy
-  e.respondWith((fresh ? fetch(req, { cache: 'no-cache' }) : fetch(req)).then((res) => {
-    if (keep && res && res.status === 200 && res.type === 'basic') {
-      const copy = res.clone();
-      caches.open(CACHE).then((c) => c.put(req.mode === 'navigate' ? req : bare, copy)).catch(() => {});
-    }
-    return res;
-  }).catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => {
-    if (hit) return hit;
-    if (req.mode === 'navigate') return caches.match(abs(OFFLINE));
-    return Response.error();
-  })));
+  if (url.origin !== self.location.origin) return;                    // Google / OAuth / Drive / PeerJS / CDNs: never cached
+  if (req.cache === 'no-store' || req.cache === 'reload' || req.headers.has('range')) return;   // update checks, media ranges
+  const bare = url.origin + url.pathname;
+  const nav = req.mode === 'navigate';
+  const v = url.searchParams.get('v');
+  const path = url.pathname;
+
+  if (/\.csv$/i.test(path) || path.endsWith('/hub/version.txt')) {
+    e.respondWith(networkFirst(req, RUNTIME, bare, false)); return;
+  }
+  // hub.html (also opened as / or /hub.html?join=…): the shell copy, keyed without the query
+  const shellKey = nav && /\/hub\.html$/.test(path) ? bare : (SHELL_SET.has(bare) ? bare : '');
+  if (shellKey && (!v || v === V)) { e.respondWith(staleWhileRevalidate(e, req, shellKey)); return; }
+  if (shellKey) { e.respondWith(networkFirst(req, CACHE, shellKey, nav)); return; }   // newer ?v= than this worker
+  if (/\.(png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf)$/i.test(path)) {
+    e.respondWith(caches.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req).then((res) => { if (ok(res)) put(RUNTIME, bare, res); return res; })));
+    return;
+  }
+  if (nav || path.includes('/apps/') || /\.(html?|css|m?js|json|txt|md|webmanifest)$/i.test(path) || path.endsWith('/')) {
+    e.respondWith(networkFirst(req, RUNTIME, nav ? bare : req.url, nav)); return;
+  }
 });

@@ -1,0 +1,13 @@
+/* Hub "Update ready" note (hub/hub_update.js, R16b): small pill, bottom centre, above the taskbar. */
+#hub-upd-note {
+  position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%); z-index: 2147483000;
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 16px;
+  background: rgba(20, 24, 32, 0.94); color: #fff; border-radius: 999px;
+  font: 14px/1.2 system-ui, sans-serif; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+#hub-upd-note[hidden] { display: none; }
+#hub-upd-note button {
+  min-height: 36px; padding: 0 16px; border: 0; border-radius: 999px; cursor: pointer;
+  background: #3b82f6; color: #fff; font: inherit; font-weight: 600;
+}
+#hub-upd-note .hub-upd-x { padding: 0 12px; background: transparent; font-size: 18px; }

@@ -3,11 +3,13 @@
  * hub.html (replaces the old inline service worker registration).
  * - Registers the root sw.js with updateViaCache:'none' (the browser never uses its HTTP cache
  *   for sw.js / hub/hub_sw.js; it also looks for a new worker on its own when the Hub loads).
- *   hub_sw.js skips waiting + claims clients, and when a NEW worker takes control of a page
- *   that already had one, the Hub reloads once (the desktop session restores).
+ *   R16b: a new hub_sw.js WAITS; a small "Update ready · Reload" note (bottom centre, hub_update.css)
+ *   appears; Reload posts skip-waiting and the page reloads once the new worker takes over
+ *   (the desktop session restores). × hides the note; the update then applies on the next start.
  * - Automatic update check (check() below: reads the live hub.html (no-store), compares its build
- *   tag (?v= of hub/hub.js) with the running one; when newer it clears the 'hub-shell-*' caches,
- *   updates the worker and reloads — once per build, sessionStorage guard against loops):
+ *   tag (?v= of hub/hub.js) with the running one; when newer it updates the worker and (R16b)
+ *   shows the "Update ready · Reload" note — no forced reload; Settings → About "Check for
+ *   update" (manual) still clears the 'hub-shell-*' caches and reloads; once per build guard):
  *     · once a day at 23:00 local time while the Hub is open (timer to the next 23:00, checked in
  *       steps of at most 1 h so a sleeping computer catches up when it wakes; then the next day);
  *     · on start ONLY when the last automatic check is more than 24 h ago (catch-up), ~4 s in.
@@ -32,15 +34,56 @@
   const GUARD = 'sites-hub.updTried';
   let regP = Promise.resolve(null);
 
+  // R16b: a new worker waits; "Update ready · Reload" lets Jor choose when (no forced reload)
+  let wanted = false;   // true once Reload (or a manual Check for update) asked for the new worker
+  let note = null;
+  function showNote(reg) {
+    if (note || !reg || !reg.waiting) return;
+    note = document.createElement('div');
+    note.id = 'hub-upd-note';
+    note.setAttribute('role', 'status');
+    const t = document.createElement('span');
+    t.textContent = 'Update ready';
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = 'Reload';
+    b.addEventListener('click', () => apply(reg));
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'hub-upd-x';
+    x.textContent = '\u00d7';
+    x.title = 'Later';
+    x.setAttribute('aria-label', 'Later');
+    x.addEventListener('click', () => { note.hidden = true; });
+    note.append(t, b, x);
+    document.body.appendChild(note);
+  }
+  function apply(reg) {
+    wanted = true;
+    if (reg && reg.waiting) reg.waiting.postMessage({ type: 'skip-waiting' });
+    else location.reload();
+  }
+  function watch(reg) {
+    if (!reg) return reg;
+    if (reg.waiting && navigator.serviceWorker.controller) showNote(reg);
+    reg.addEventListener('updatefound', () => {
+      const w = reg.installing;
+      if (!w) return;
+      w.addEventListener('statechange', () => {
+        if (w.state === 'installed' && navigator.serviceWorker.controller) { if (wanted) apply(reg); else showNote(reg); }
+      });
+    });
+    return reg;
+  }
   if (SW_OK) {
     const hadController = !!navigator.serviceWorker.controller;
     let reloading = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!hadController || reloading) return;   // first install: nothing stale to replace
+      if (!hadController || !wanted || reloading) return;   // first install / not asked: no reload
       reloading = true;
       location.reload();
     });
-    regP = navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => null);
+    regP = navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(watch).catch(() => null);
   }
 
   /** hub/version.txt → { version: 'v0.299', date: '2026-10-19' } (blank fields if unreadable). */
@@ -77,6 +120,10 @@
         try { tried = sessionStorage.getItem(GUARD) || ''; } catch (_) { /* blocked */ }
         if (!opts.manual && tried === nw.build) return { state: 'current', version: nw.version, build: BUILD };
         try { sessionStorage.setItem(GUARD, nw.build); } catch (_) { /* blocked */ }
+        if (!opts.manual) {   // automatic check: the new worker installs, the note asks (no reload)
+          const r = await regP;
+          if (r) { if (r.waiting) showNote(r); return { state: 'ready', version: nw.version, build: nw.build }; }
+        }
         if (window.caches) {
           const keys = await caches.keys();
           await Promise.all(keys.filter((k) => k.indexOf('hub-shell-') === 0).map((k) => caches.delete(k)));
