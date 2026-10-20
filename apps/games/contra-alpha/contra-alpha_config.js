@@ -121,7 +121,7 @@ var CONTRA_ALPHA_CONFIG = {
     left: ["ArrowLeft", "KeyA"],
     right: ["ArrowRight", "KeyD"],
     jump: ["ArrowUp", "KeyW", "Space"],
-    fire: ["KeyZ", "KeyX", "ControlLeft", "ControlRight"],
+    fire: ["KeyZ", "KeyX"],
     start: ["Enter", "Space"],              /* menu: start · end screen: retry (Start / A) */
     pause: ["Enter", "KeyP"],               /* pause / resume while playing (Start / P) */
     menu: ["Escape"],                       /* back to the menu (Select) */
