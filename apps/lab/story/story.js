@@ -18,7 +18,7 @@ let busy = false;
 // Pending promises were rejected, so onSend's catch resets busy itself.
 onCrash(() => { readyKey = null; if (!busy) ui.setStatus(`${MODELS[prefs.model].label} · failed (offline?)`); });
 
-/** Load the current model, updating status. Returns true when ready. */
+/** Load the current model, updating status. Returns true when ready, "stopped" if superseded/stopped. */
 async function ensureModel() {
   const key = prefs.model, label = MODELS[key].label;
   if (readyKey === key) return true;
@@ -29,7 +29,8 @@ async function ensureModel() {
     ui.setStatus(`${label} · ready`);
     return true;
   } catch (e) {
-    if (e.message !== "superseded") { console.error(e); ui.setStatus(`${label} · failed (offline?)`); }
+    if (e.message === "superseded") return "stopped";
+    console.error(e); ui.setStatus(`${label} · failed (offline?)`);
     return false;
   }
 }
@@ -39,33 +40,46 @@ async function onSend(e) {
   if (busy) { stop(); readyKey = null; return; }              // send button doubles as Stop
   const prompt = ui.el.input.value.trim();
   if (!prompt) return;
-  busy = true; ui.setBusy(true);
+  busy = true; ui.setBusy(true); ui.setModelLock(true);
   ui.el.input.value = "";
   ui.addMessage("user", prompt); saveMessage("user", prompt);
   const card = ui.addMessage("bot", "");
-  const body = document.createTextNode(prompt);
+  card.setAttribute("aria-busy", "true");
+  const head = document.createTextNode(prompt), body = document.createTextNode("");
   const cursor = document.createElement("span"); cursor.className = "cursor";
-  card.append(body, cursor);
+  card.append(head, body, cursor);
   try {
-    if (!(await ensureModel())) throw new Error("model not loaded");
+    const ok = await ensureModel();
+    if (ok === "stopped") {          // Stop pressed while the model was loading: not an error
+      card.remove();
+      ui.setStatus(`${MODELS[prefs.model].label} · stopped`);
+      ensureModel();
+      return;
+    }
+    if (!ok) throw new Error("model not loaded");
     const label = MODELS[prefs.model].label;
     const t0 = performance.now(); let n = 0;
-    const res = await generate(prompt, prefs, (chunk) => {
-      body.appendData(chunk); n++;
+    const res = await generate(prompt, prefs, (chunk, count) => {
+      body.appendData(chunk); n = count || n + 1;
       ui.scrollDown();
       const sec = (performance.now() - t0) / 1000;
       if (sec > 0.3) ui.setStatus(`${label} · ${(n / sec).toFixed(1)} tok/s`);
     });
     cursor.remove();
-    saveMessage("bot", body.data);
+    card.removeAttribute("aria-busy");
+    saveMessage("bot", body.data);   // continuation only; the prompt is already saved as the user message
+    ui.announce(prompt + body.data);
     ui.setStatus(res.stopped ? `${label} · stopped` : `${label} · ${res.tps.toFixed(1)} tok/s`);
     if (res.stopped) ensureModel();
   } catch (err) {
     console.error(err);
     card.textContent = "Couldn't write a story. Check your connection for the first download, or try Lite.";
     card.classList.add("err");
+    card.removeAttribute("aria-busy");
+    ui.announce(card.textContent);
+  } finally {
+    busy = false; ui.setBusy(false); ui.setModelLock(false);
   }
-  busy = false; ui.setBusy(false);
 }
 
 function pickModel(key) {
@@ -83,7 +97,10 @@ async function init() {
   ui.el.seg.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b && !busy) pickModel(b.dataset.model); });
   ui.el.len.addEventListener("input", () => { prefs.maxTokens = +ui.el.len.value; ui.showPrefs(prefs); ui.savePrefs(prefs); });
   ui.el.temp.addEventListener("input", () => { prefs.temperature = +ui.el.temp.value; ui.showPrefs(prefs); ui.savePrefs(prefs); });
-  ui.el.clear.addEventListener("click", () => { clearHistory(); ui.clearFeed(); });
+  ui.el.clear.addEventListener("click", async () => {
+    if (!confirm("Delete all saved stories on this device?")) return;
+    await clearHistory(); ui.clearFeed();
+  });
 
   await openDB();
   (await loadHistory()).forEach((m) => ui.addMessage(m.role, m.content));

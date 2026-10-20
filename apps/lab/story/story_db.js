@@ -20,8 +20,12 @@ export function openDB() {
           req.result.createObjectStore(STORE, { keyPath: "id", autoIncrement: true });
         }
       };
-      req.onsuccess = () => { db = req.result; resolve(db); };
-      req.onerror = req.onblocked = () => resolve(null);
+      let gaveUp = false;
+      req.onsuccess = () => {
+        if (gaveUp) { try { req.result.close(); } catch {} return; }   // late success after blocked
+        db = req.result; resolve(db);
+      };
+      req.onerror = req.onblocked = () => { gaveUp = true; resolve(null); };
     } catch { resolve(null); }
   });
 }
@@ -52,6 +56,13 @@ export function loadHistory() {
 
 /** Delete all history. */
 export function clearHistory() {
-  if (!db) return;
-  try { db.transaction(STORE, "readwrite").objectStore(STORE).clear(); } catch {}
+  return new Promise((resolve) => {
+    if (!db) return resolve(false);
+    try {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).clear();
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = tx.onabort = () => resolve(false);
+    } catch { resolve(false); }
+  });
 }

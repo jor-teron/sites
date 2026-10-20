@@ -67,3 +67,10 @@ button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-c
 input[type=range] { width: 100%; height: 44px; accent-color: var(--acc); }
 .wide { width: 100%; min-height: 48px; margin-top: 1rem; border: 1px solid var(--line); background: none; border-radius: 14px; }
 .about { font-size: .8rem; color: var(--mute); margin: 1rem 0 0; }
+
+/* Accessibility helpers */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.seg-set { border: 0; margin: 0; padding: 0; min-width: 0; }
+.seg button:disabled { opacity: .5; cursor: not-allowed; }
+.hint { font-size: .8rem; color: var(--mute); margin: 0 0 .4rem; }
+.sheet-card:focus { outline: none; }
