@@ -1,6 +1,6 @@
 /*
  * File: llm-calc.css
- * Project: llm-calc (Lab) — R9 2026-10-20 (R7: big toggle switches, greyed dependent outputs; R9: inline row alerts)
+ * Project: llm-calc (Lab) — R9 2026-10-20 (R7: big toggle switches, greyed dependent outputs; R9: inline row alerts; R3 after R9: reverse rows)
  * Purpose: Minimalist styles, big tap targets, jelly press, light/dark.
  *          R2: real-model list in the ⓘ dialog.
  *          R4: two panes (inputs left, sticky results right) from 800px;
@@ -109,3 +109,4 @@ input[type=text] { width:9.5em; min-height:44px; font-size:1rem; padding:6px 10p
 .btn.fix { min-height:44px; min-width:44px; padding:0 16px; transition:transform .15s cubic-bezier(.3,1.6,.5,1); }
 .btn.fix:active { transform:scale(.92); }
 .warns li.cnt { color:var(--bad); font-weight:600; list-style:none; margin-left:-18px; }
+.revrow { display:flex; align-items:center; gap:10px; border-top:1px solid var(--line); padding:8px 0; } .revrow p { flex:1; margin:0; font-size:.9rem; }

@@ -21,7 +21,9 @@
            R8: train.py v3.7 defaults (GGUF q4_k_m + Modelfile on, other outputs
            off), Q4_K_M 256-multiple warning.
            R9: alerts inline on their rows with one-tap fixes; Show download links.
-  Date: 2026-10-20 (R9)
+           R3 (released after R9): Reverse card — target params, GGUF size or
+           time -> top 3 shapes with Use this.
+  Date: 2026-10-20 (R3 after R9)
 -->
 <html lang="en">
 <head>
@@ -126,6 +128,11 @@
   <div class="field"><label for="cSeq">Context</label><input id="cSeq" type="number" inputmode="decimal" value="256" min="0"></div>
   <button type="button" id="cBtn" class="btn">Use this speed</button><p id="cOut" class="note"></p>
 </section>
+<section class="card" id="revCard"><h2 class="hrow"><span>Reverse: find a model</span><button type="button" class="info" data-help="reverse" aria-label="About Reverse">ⓘ</button></h2>
+  <div class="field"><label for="revMode">Target</label><select id="revMode"><option value="params">Parameters</option><option value="size">GGUF file size</option><option value="time">Time budget</option></select></div>
+  <div class="field"><label for="revTarget" id="revUnit">M params</label><input id="revTarget" type="number" inputmode="decimal" value="26" step="any" min="0"></div>
+  <div id="revOut"></div>
+</section>
 <section class="card" id="exportCard"><h2>Export</h2>
   <div class="field"><label for="modelName">Model name</label><input id="modelName" type="text" value="tiny-v1" pattern="[A-Za-z0-9._-]+" maxlength="64" autocomplete="off" spellcheck="false"><button type="button" class="info" data-help="modelName" aria-label="About Model name">ⓘ</button></div>
   <div class="field"><label for="fileName">File name</label><input id="fileName" type="text" value="" placeholder="e.g. tiny-v1" autocomplete="off" spellcheck="false"><button type="button" class="info" data-help="fileName" aria-label="About File name">ⓘ</button></div>
@@ -146,5 +153,6 @@
 <script src="llm-calc-examples.js"></script>
 <script src="llm-calc-ui.js"></script>
 <script src="llm-calc-export.js"></script>
+<script src="llm-calc-reverse.js"></script>
 </body>
 </html>
