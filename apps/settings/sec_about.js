@@ -6,6 +6,8 @@
  * hub/hub_update.js: clears the hub-shell caches and reloads the Hub when a newer build is
  * live); opened on its own it reads the live hub.html / version.txt and updates the service
  * worker itself. Contact / Feedback link to the public GitHub repo (no other contact details).
+ * R16c: "Last refreshed" (localStorage 'sites-hub.lastRefresh', the Hub's daily 09:00 refresh) and
+ * "Clear cache now" (confirm → HubUpdate.clearCache(): Hub caches + cached Start list, reload).
  * The technical notes that used to be here live in How-to (sec_howto.js).
  */
 (function () {
@@ -72,6 +74,31 @@
     if (r.state !== 'updated') btn.disabled = false;
   }
 
+  /** ms → '20 Oct 2026, 09:00' (browser local time) or 'Never'. */
+  function niceTime(ms) {
+    if (!ms) return 'Never';
+    const d = new Date(ms), p = (n) => String(n).padStart(2, '0');
+    return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear() + ', ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  async function clearCache(btn) {
+    const D = window.UiDialog;
+    const ok = D ? await D.confirm('Clear cache?', 'Deletes the Hub\u2019s saved files and the saved Start list, then reloads the Hub. Your settings and files stay.', 'Clear cache', true)
+      : window.confirm('Clear the Hub cache and reload?');
+    if (!ok) return;
+    btn.disabled = true;
+    const hub = S.hub();
+    if (hub && hub.HubUpdate && hub.HubUpdate.clearCache) { hub.HubUpdate.clearCache(); return; }
+    try {
+      if (window.caches) {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter((k) => /^hub-(shell|rt)-/.test(k)).map((k) => caches.delete(k)));
+      }
+      localStorage.removeItem('sites-hub.startList');
+      localStorage.removeItem('sites-hub.lastRefresh');
+    } catch (_) { /* blocked */ }
+    location.reload();
+  }
+
   function row(label, value) {
     const r = ui.el('div', 'about-row');
     r.append(ui.el('span', 'about-k', label), ui.el('b', 'about-v', value));
@@ -107,6 +134,14 @@
       out.setAttribute('aria-live', 'polite');
       btn.addEventListener('click', () => checkUpdate(btn, out));
       card.append(btn, out);
+      let last = 0;
+      try { last = +localStorage.getItem('sites-hub.lastRefresh') || 0; } catch (_) { /* blocked */ }
+      card.appendChild(row('Last refreshed', niceTime(last)));
+      const clr = ui.el('button', 'big-btn', 'Clear cache now');
+      clr.type = 'button';
+      clr.id = 'clear-cache';
+      clr.addEventListener('click', () => clearCache(clr));
+      card.appendChild(clr);
       const build = runningBuild();
       if (build) card.appendChild(ui.el('p', 'opt-note', 'Running build ' + build));
 

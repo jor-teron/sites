@@ -15,10 +15,12 @@
  *     RUNTIME the first time they're opened, so they also open offline.
  *   · same-origin images / fonts: cache first (RUNTIME).
  *   · navigations not in a cache when offline: hub/hub_offline.html.
+ * R16c: message {type:'refresh'} re-fetches every SHELL file (cache:'reload') and replaces the
+ *   changed ones in place (the cache is never wiped); replies {type:'sw-refreshed', changed:[paths]}.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261020d';
-const CACHE = 'hub-shell-v47';  // 2026-10-20d: R16b cache-first shell + Update ready notice
+const V = '20261020e';
+const CACHE = 'hub-shell-v48';  // 2026-10-20e: R16c daily 9am refresh, cached Start list, clear cache
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const SHELL = [
   'hub.html',
@@ -58,12 +60,58 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys()
-    .then((keys) => Promise.all(keys.filter((k) => (k.startsWith('hub-shell-') && k !== CACHE) || (k.startsWith('hub-rt-') && k !== RUNTIME)).map((k) => caches.delete(k))))
+    .then((keys) => Promise.all(keys.filter((k) => (k.startsWith('hub-shell-') && k !== CACHE) || (k.startsWith('hub-rt-') && k !== RUNTIME) || k === META).map((k) => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 
+// R16c: shell files that changed since the page that loaded them (the background refresh above
+// already stored the new copy) — kept in a tiny 'hub-meta' cache so the 09:00 refresh can report them.
+const META = 'hub-meta', DIRTY = abs('__hub_dirty__');
+const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
+async function dirty(add) {
+  const m = await caches.open(META);
+  const hit = await m.match(DIRTY);
+  const list = hit ? await hit.json() : [];
+  if (add === null) { await m.delete(DIRTY); return list; }
+  if (add && list.indexOf(add) < 0) { list.push(add); await m.put(DIRTY, new Response(JSON.stringify(list))); }
+  return list;
+}
+async function putIfChanged(key, res) {
+  try {
+    const c = await caches.open(CACHE);
+    const old = await c.match(key);
+    const a = new Uint8Array(await res.clone().arrayBuffer());
+    if (old && same(a, new Uint8Array(await old.arrayBuffer()))) return;
+    await c.put(key, res);
+    if (old) await dirty(key);
+  } catch (_) { /* ignore */ }
+}
+
+/** R16c daily refresh: re-fetch every shell file, replace the ones that changed (cache kept, never wiped). */
+async function refreshShell() {
+  const c = await caches.open(CACHE);
+  const changed = [];
+  await Promise.all(SHELL.map(async (p) => {
+    try {
+      const res = await fetch(new Request(abs(p), { cache: 'reload' }));
+      if (!ok(res)) return;
+      const old = await c.match(abs(p));
+      const a = new Uint8Array(await res.clone().arrayBuffer());
+      const b = old ? new Uint8Array(await old.arrayBuffer()) : null;
+      if (b && same(a, b)) return;
+      await c.put(abs(p), res);
+      changed.push(p);
+    } catch (_) { /* offline: keep the cached copy */ }
+  }));
+  const seen = await dirty(null);   // changed earlier by a background refresh
+  return changed.concat(seen.filter((k) => changed.indexOf(k) < 0));
+}
+
 self.addEventListener('message', (e) => {
   if (e.data && e.data.type === 'skip-waiting') self.skipWaiting();
+  if (e.data && e.data.type === 'refresh') {
+    e.waitUntil(refreshShell().then((changed) => { if (e.source) e.source.postMessage({ type: 'sw-refreshed', changed }); }));
+  }
   if (e.data && e.data.type === 'version') e.source && e.source.postMessage({ type: 'sw-version', v: V, cache: CACHE });
 });
 
@@ -77,7 +125,7 @@ function networkFirst(req, name, key, nav) {
 }
 /** Cache first, refresh in the background (the next load gets the new copy). */
 function staleWhileRevalidate(e, req, key) {
-  const net = fetch(req, { cache: 'no-cache' }).then((res) => { if (ok(res)) put(CACHE, key, res); return res; });
+  const net = fetch(req, { cache: 'no-cache' }).then((res) => { if (ok(res)) putIfChanged(key, res.clone()); return res; });
   e.waitUntil(net.catch(() => {}));
   return caches.open(CACHE).then((c) => c.match(key)).then((hit) => hit || net)
     .catch(() => net);

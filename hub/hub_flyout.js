@@ -17,6 +17,7 @@
  * - Touch / pen / phones: nothing here runs — only when (hover:hover) and (pointer:fine) match
  *   AND the event's pointerType is 'mouse'. A tap stays a tap.
  * - Keyboard / D-pad: untouched (hub.js menuKey); any key press just hides the flyout.
+ * - R16c: built lists are cached in localStorage 'sites-hub.startList' (see loadCat below).
  * Look in hub_main.css (.menu-fly).
  */
 (function () {
@@ -58,22 +59,60 @@
     return u;
   }
 
+  // ---- R16c: cached Start list (localStorage 'sites-hub.startList') ----
+  // {apps: hash of HUB_APPS_CSV, cats: {cat: {h: hash of its CSV text, list}}}. A cached list
+  // shows at once; the CSV is still read in the background and the list is rebuilt (and the
+  // open flyout redrawn) only when its hash changed. hub_apps.js changed → whole cache dropped.
+  const LS = 'sites-hub.startList';
+  const hash = (t) => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + '.' + t.length; };
+  const appsHash = hash(String(window.HUB_APPS_CSV || ''));
+  let store = null;
+  try { store = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (_) { store = null; }
+  if (!store || store.apps !== appsHash || !store.cats) store = { apps: appsHash, cats: {} };
+  const save = () => { try { localStorage.setItem(LS, JSON.stringify(store)); } catch (_) { /* full / blocked */ } };
+  const fresh = {};          // cat → background CSV check done this page load
+
+  function build(cat, text) {
+    const dir = window.HUB_CAT_CSV[cat].replace(/[^/]*$/, '');
+    return window.TilesCsv.parse(text).map((a) => {
+      const entryUrl = joinPath(dir, a.path);
+      return {
+        name: a.name, entryUrl, newTab: !!a.newTab, section: a.section,
+        icon: a.icon ? joinPath(dir, a.icon).replace(/\/$/, '') : window.TilesCsv.defaultIcon(entryUrl)
+      };
+    });
+  }
+  /** Read the CSV; rebuild + save only when it changed. → Promise<list | null> */
+  function check(cat) {
+    if (fresh[cat]) return fresh[cat];
+    fresh[cat] = fetch(window.HUB_CAT_CSV[cat], { cache: 'no-cache' })
+      .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then((t) => {
+        const h = hash(t), had = store.cats[cat];
+        if (had && had.h === h) return had.list;
+        const list = build(cat, t);
+        store.cats[cat] = { h, list };
+        save();
+        csvCache[cat] = Promise.resolve(list);
+        window.dispatchEvent(new CustomEvent('hub-startlist', { detail: { cat, rebuilt: true } }));
+        if (had && curRow && catOf(curRow) === cat && !fly.hidden) show(curRow);   // redraw the open flyout
+        return list;
+      })
+      .catch(() => { delete fresh[cat]; return null; });
+    return fresh[cat];
+  }
   function loadCat(cat) {
     if (csvCache[cat]) return csvCache[cat];
-    const csv = window.HUB_CAT_CSV[cat];
-    const dir = csv.replace(/[^/]*$/, '');
-    csvCache[cat] = fetch(csv, { cache: 'no-cache' })
-      .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
-      .then((t) => window.TilesCsv.parse(t).map((a) => {
-        const entryUrl = joinPath(dir, a.path);
-        return {
-          name: a.name, entryUrl, newTab: !!a.newTab, section: a.section,
-          icon: a.icon ? joinPath(dir, a.icon).replace(/\/$/, '') : window.TilesCsv.defaultIcon(entryUrl)
-        };
-      }))
-      .catch(() => { delete csvCache[cat]; return null; });
+    const had = store.cats[cat];
+    if (had) { csvCache[cat] = Promise.resolve(had.list); check(cat); return csvCache[cat]; }
+    csvCache[cat] = check(cat).then((l) => { if (!l) delete csvCache[cat]; return l; });
     return csvCache[cat];
   }
+  // warm every category once the Hub is idle, so the first Start → hover is instant
+  const warm = () => Object.keys(window.HUB_CAT_CSV || {}).forEach((c) => loadCat(c));
+  const idle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 4000 }) : setTimeout(fn, 2000));
+  if (document.readyState === 'complete') setTimeout(() => idle(warm), 2000);
+  else window.addEventListener('load', () => setTimeout(() => idle(warm), 2000), { once: true });
 
   /** Favorite category: the CSV apps + your own (shared/favorites/favorites.js) under "My favorites". */
   const FAV_CAT = 'Favorite';

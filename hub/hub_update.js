@@ -6,23 +6,21 @@
  *   R16b: a new hub_sw.js WAITS; a small "Update ready · Reload" note (bottom centre, hub_update.css)
  *   appears; Reload posts skip-waiting and the page reloads once the new worker takes over
  *   (the desktop session restores). × hides the note; the update then applies on the next start.
- * - Automatic update check (check() below: reads the live hub.html (no-store), compares its build
- *   tag (?v= of hub/hub.js) with the running one; when newer it updates the worker and (R16b)
- *   shows the "Update ready · Reload" note — no forced reload; Settings → About "Check for
- *   update" (manual) still clears the 'hub-shell-*' caches and reloads; once per build guard):
- *     · once a day at 23:00 local time while the Hub is open (timer to the next 23:00, checked in
- *       steps of at most 1 h so a sleeping computer catches up when it wakes; then the next day);
- *     · on start ONLY when the last automatic check is more than 24 h ago (catch-up), ~4 s in.
- *   The last automatic check time is in localStorage 'sites-hub.updLastAuto' (ms). No more
- *   30-minute or tab-return checks. Settings → About "Check for update" still checks at once.
+ * - Daily refresh (R16c) at 09:00 browser local time, or on the next open after a missed 09:00:
+ *   reg.update() + the worker re-fetches the shell and replaces changed files (cache kept).
+ *   Changed → quiet reload when no app / window is open, else the "Update ready" note.
+ *   Last run in localStorage 'sites-hub.lastRefresh' (ms). (The old 23:00 check is gone.)
+ * - check({manual}) — Settings → About "Check for update": compares the live hub.html build tag
+ *   with the running one; when newer it clears the 'hub-shell-*' caches and reloads.
+ * - clearCache() — Settings → About "Clear cache now": deletes hub-shell-* / hub-rt-* caches and
+ *   the cached Start list (sites-hub.startList), unregisters the worker, reloads.
  * Version: hub/version.txt is the single source (line 1 'v0.299', line 2 release date
  *   'YYYY-MM-DD'). Read with cache:'no-cache' at start; fills #hub-ver (bar / taskbar tray),
  *   sets window.HUB_VERSION ('0.299'); '—' when it can't be read.
  * API window.HubUpdate: build (running ?v= tag), version() → Promise<{version:'v0.299' | '',
  *   date:'2026-10-19' | ''}> (running copy), check({manual}) → Promise<{state:'updated' |
  *   'current' | 'error', version, build}> (Settings → About "Check for update" uses it; the
- *   reload then follows after ~1.2 s), next23(now) → Date of the next 23:00, nextAuto (Date of
- *   the scheduled check), lastAuto() → ms of the last automatic check (0 = never).
+ *   reload then follows after ~1.2 s), refresh(), clearCache(), lastRefresh() → ms (0 = never), last9 / next9(now), nextRefresh.
  */
 (function () {
   'use strict';
@@ -38,7 +36,7 @@
   let wanted = false;   // true once Reload (or a manual Check for update) asked for the new worker
   let note = null;
   function showNote(reg) {
-    if (note || !reg || !reg.waiting) return;
+    if (note) { note.hidden = false; return; }
     note = document.createElement('div');
     note.id = 'hub-upd-note';
     note.setAttribute('role', 'status');
@@ -60,17 +58,20 @@
   }
   function apply(reg) {
     wanted = true;
+    reg = reg || lastReg;
     if (reg && reg.waiting) reg.waiting.postMessage({ type: 'skip-waiting' });
     else location.reload();
   }
+  let lastReg = null;
   function watch(reg) {
     if (!reg) return reg;
+    lastReg = reg;
     if (reg.waiting && navigator.serviceWorker.controller) showNote(reg);
     reg.addEventListener('updatefound', () => {
       const w = reg.installing;
       if (!w) return;
       w.addEventListener('statechange', () => {
-        if (w.state === 'installed' && navigator.serviceWorker.controller) { if (wanted) apply(reg); else showNote(reg); }
+        if (w.state === 'installed' && navigator.serviceWorker.controller) { if (wanted || (refreshing && idleNow())) apply(reg); else showNote(reg); }
       });
     });
     return reg;
@@ -137,35 +138,81 @@
     }
   }
 
-  /* ---------- schedule: daily at 23:00 + catch-up on start when > 24 h ---------- */
-  const LAST = 'sites-hub.updLastAuto', DAY = 24 * 3600 * 1000, STEP = 3600 * 1000, AT_HOUR = 23;
-  const lastAuto = () => { try { return +localStorage.getItem(LAST) || 0; } catch (_) { return 0; } };
-  function next23(now) {
+  /* ---------- R16c: daily refresh at 09:00 (browser local time) ---------- */
+  // The shell files are re-fetched in the background and replaced in the cache (never wiped).
+  // Missed 09:00 (Hub closed)? → done on the next open after it. Last run: localStorage
+  // 'sites-hub.lastRefresh' (ms). Something changed (new worker or files) → no windows open:
+  // quiet reload; windows open: the "Update ready" note.
+  const LAST = 'sites-hub.lastRefresh', STEP = 3600 * 1000, AT_HOUR = 9;
+  const lastRefresh = () => { try { return +localStorage.getItem(LAST) || 0; } catch (_) { return 0; } };
+  /** The latest 09:00 at or before `now`. */
+  function last9(now) {
     const d = new Date(now || Date.now());
     const t = new Date(d.getFullYear(), d.getMonth(), d.getDate(), AT_HOUR, 0, 0, 0);
-    if (t <= d) t.setDate(t.getDate() + 1);
+    if (t > d) t.setDate(t.getDate() - 1);
     return t;
   }
-  function auto() {
+  const next9 = (now) => { const t = last9(now); t.setDate(t.getDate() + 1); return t; };
+  const due = (now) => lastRefresh() < last9(now).getTime();
+  /** No app open: Desktop → no windows; Phone → no app in the frame. */
+  function idleNow() {
+    if (window.HubWM && window.HubMode && HubMode.isDesktop()) return HubWM.list().length === 0;
+    const f = document.getElementById('app-frame');
+    const src = f ? f.getAttribute('src') || '' : '';
+    return !src || src === 'about:blank';
+  }
+  let refreshing = false;
+  function askWorker() {
+    return new Promise((res) => {
+      const c = SW_OK && navigator.serviceWorker.controller;
+      if (!c) { res([]); return; }
+      const done = (e) => { if (e.data && e.data.type === 'sw-refreshed') { navigator.serviceWorker.removeEventListener('message', done); res(e.data.changed || []); } };
+      navigator.serviceWorker.addEventListener('message', done);
+      c.postMessage({ type: 'refresh' });
+      setTimeout(() => { navigator.serviceWorker.removeEventListener('message', done); res([]); }, 60000);
+    });
+  }
+  async function refresh() {
+    if (refreshing) return { changed: [] };
+    refreshing = true;
     try { localStorage.setItem(LAST, String(Date.now())); } catch (_) { /* blocked */ }
-    return check({});
+    let reg = null;
+    try { reg = await regP; if (reg) await reg.update(); } catch (_) { /* offline */ }
+    const changed = await askWorker();
+    const newWorker = !!(reg && (reg.waiting || reg.installing));
+    if (changed.length || newWorker) {
+      if (idleNow()) apply(reg); else showNote(reg);
+    }
+    refreshing = false;
+    return { changed, newWorker };
   }
   let timer = 0;
   function schedule() {
     clearTimeout(timer);
-    const target = next23();
-    api.nextAuto = target;
+    const target = next9();
+    api.nextRefresh = target;
     const wait = () => {
-      const left = target - Date.now();
-      if (left <= 0) { auto(); schedule(); return; }
-      timer = setTimeout(wait, Math.min(left, STEP));
+      if (Date.now() >= target.getTime()) { refresh(); schedule(); return; }
+      timer = setTimeout(wait, Math.min(target - Date.now(), STEP));   // ≤ 1 h steps: a sleeping computer catches up
     };
     timer = setTimeout(wait, Math.min(target - Date.now(), STEP));
   }
 
-  const api = window.HubUpdate = { build: BUILD, check, version: () => running, next23, nextAuto: null, lastAuto };
+  /** Settings → About "Clear cache now": Hub caches + cached Start list, then reload. */
+  async function clearCache() {
+    if (window.caches) {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => /^hub-(shell|rt)-/.test(k)).map((k) => caches.delete(k)));
+    }
+    try { localStorage.removeItem('sites-hub.startList'); localStorage.removeItem(LAST); } catch (_) { /* blocked */ }
+    try { const r = await regP; if (r) await r.unregister(); } catch (_) { /* none */ }
+    location.reload();
+  }
+
+  const api = window.HubUpdate = { build: BUILD, check, version: () => running, refresh, clearCache,
+    lastRefresh, last9, next9, nextRefresh: null, showNote: () => showNote(lastReg) };
   if (location.protocol.startsWith('http')) {
-    if (Date.now() - lastAuto() > DAY) setTimeout(auto, 4000);   // catch-up: missed for more than a day
+    if (due()) setTimeout(() => { if (due()) refresh(); }, 5000);   // missed 09:00 → on this open
     schedule();
   }
 })();
