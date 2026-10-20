@@ -5,7 +5,7 @@
 #   datasets and tokenizers.)
 
 # ╔══════════════════════════════════════════════════════════════════════════╗
-# ║  TINY LLM TRAINER  v3.5                                                  ║
+# ║  TINY LLM TRAINER  v4.0                                                  ║
 # ║  Trains a small Llama-style language model from scratch on YOUR text     ║
 # ║  (an uploaded .txt file or folder, or a Hugging Face dataset),           ║
 # ║  then exports it as: Hugging Face folder, GGUF (+ Ollama Modelfile),     ║
@@ -23,25 +23,38 @@
 # script (with exec). The defaults below would otherwise overwrite them, so right
 # after the SETTINGS block we put the cell's values back. Order of priority:
 #   script defaults  <  CONFIG_FILE JSON  <  values set in the Kaggle cell.
-CELL_VALUES = {k: v for k, v in dict(globals()).items() if k.isupper()}
+# If this cell already ran once, the names that run left behind are NOT the
+# cell's settings, so we skip them (unless the cell or the form set them).
+_PREV_LEFT = globals().pop("_TRAIN_LEFT", {})      # values a previous run left behind
+_PREV_CELL = globals().pop("_TRAIN_CELL", set())   # names the cell/form really set then
+_SKIP_FORM = globals().pop("_FORM_DONE", False)    # True = started by the form's button
+_FORM_EDITS = globals().pop("_FORM_SET", set())    # names changed on the form (not kept for next time)
+CELL_VALUES = {k: v for k, v in dict(globals()).items()
+               if k.isupper() and v is not None   # None in the cell = "not set"
+               and (k in _PREV_CELL or k not in _PREV_LEFT or _PREV_LEFT[k] is not v)}
 
 # ════════════════════════════════════════════════════════════════════════════
 #  SETTINGS  (everything you might want to change lives here)
 # ════════════════════════════════════════════════════════════════════════════
 
 # ---------- Name and folders ----------
-MODEL_NAME   = "tiny-v3.5"          # Name for this run. Used for the output folder,
-                                    # the GGUF file, the Ollama model and the zip.
-                                    # Change it for every new run so old results
-                                    # aren't overwritten (e.g. "tiny-v3.3").
-OUTPUT_ROOT  = "/kaggle/working"    # Where results go. On Kaggle, only files under
-                                    # /kaggle/working can be downloaded afterwards.
-LLAMA_CPP_DIR = "/kaggle/working/llama.cpp"  # Where llama.cpp (the GGUF converter)
-                                    # lives. If it isn't there, the script downloads it.
-                                    # It is NOT included in the final zip.
+# These are normally set in the Kaggle cell (or come from the config file), so
+# this script holds no personal values. None = "not set here".
+MODEL_NAME   = None                 # Name for this run: output folder, GGUF file name,
+                                    # Ollama model and zip. None = use the name in the
+                                    # config file (its "MODEL_NAME" or "name"). Set it in
+                                    # the cell for a new name, so old results stay.
+OUTPUT_ROOT  = None                 # Where results go. None = automatic:
+                                    #   on Kaggle -> /kaggle/working (downloadable)
+                                    #   elsewhere -> an "outputs" folder next to the script
+LLAMA_CPP_DIR = None                # Where llama.cpp (the GGUF converter) lives; it is
+                                    # downloaded if missing. None = automatic:
+                                    #   Kaggle -> /kaggle/working/llama.cpp
+                                    #   elsewhere -> <OUTPUT_ROOT>/llama.cpp
+                                    # It is NOT included in the zip.
 
 # ---------- Data ----------
-DATA_PATH    = "/kaggle/input/my-dataset/TinyStories-valid.txt"
+DATA_PATH    = None                 # Set this in the Kaggle cell (required).
                                     # WHERE your training text is. Options:
                                     #  1. A web link (URL) starting with http(s)://.
                                     #     It is downloaded once and cached, so re-runs
@@ -49,7 +62,7 @@ DATA_PATH    = "/kaggle/input/my-dataset/TinyStories-valid.txt"
                                     #     .tar.gz all work (archives are unpacked and
                                     #     every .txt inside is read). Examples:
                                     #     GitHub Pages:
-                                    #      "https://jor-teron.github.io/sites/datasets/data.txt"
+                                    #      "https://USER.github.io/REPO/datasets/data.txt"
                                     #     Hugging Face (use /resolve/, not /blob/):
                                     #      "https://huggingface.co/datasets/roneneldan/TinyStories/resolve/main/TinyStories-valid.txt"
                                     #     Raw GitHub:
@@ -59,15 +72,30 @@ DATA_PATH    = "/kaggle/input/my-dataset/TinyStories-valid.txt"
                                     #     NOTE: GitHub Pages / GitHub refuse files over
                                     #     ~100 MB. For big files, use Hugging Face.
                                     #  2. One local .txt file, e.g.
-                                    #     "/kaggle/input/my-dataset/stories.txt"
+                                    #     "/kaggle/input/DATASET-NAME/stories.txt"
                                     #  3. A local folder: every .txt file inside it (and
                                     #     in its sub-folders) is read, in A-Z order.
                                     #  4. A Hugging Face dataset: write "hf:" + its name,
                                     #     e.g. "hf:roneneldan/TinyStories". Uses its
                                     #     "text" column and "train" split (needs Internet).
-                                    #  5. A LIST of any of the above, e.g.
+                                    #  5. A FOLDER link online. Every file inside it
+                                    #     (and its sub-folders) whose type is in
+                                    #     FILE_TYPES is downloaded and read, in A-Z order.
+                                    #     Hugging Face (dataset, model, or repo root):
+                                    #      "https://huggingface.co/datasets/USER/REPO/tree/main/datasets"
+                                    #      "https://huggingface.co/datasets/USER/REPO"   (whole repo)
+                                    #     GitHub:
+                                    #      "https://github.com/USER/REPO/tree/main/datasets"
+                                    #  6. A LIST of any of the above (mixed is fine), e.g.
                                     #     ["https://.../a.txt", "https://.../b.zip"].
                                     #     They are read in order and combined.
+FILE_TYPES   = [".txt"]             # For FOLDERS (local or online): which file types
+                                    # to read. E.g. [".txt", ".md"]. Other files
+                                    # (README, images, .json ...) are skipped.
+HF_TOKEN     = None                 # Only for PRIVATE Hugging Face repos. Leave None:
+                                    # the script then looks for an HF_TOKEN environment
+                                    # variable or Kaggle secret (Add-ons -> Secrets).
+                                    # Public repos need no token at all.
 STORY_SEPARATOR = "<|endoftext|>"   # How one long file is cut into samples (pieces of
                                     # text the model learns from, e.g. stories):
                                     #  "<|endoftext|>" = split wherever this marker
@@ -78,6 +106,8 @@ STORY_SEPARATOR = "<|endoftext|>"   # How one long file is cut into samples (pie
                                     #  "line" = every single line is its own sample
                                     #       (good for lists of sentences or Q&A pairs).
                                     # Ignored for "hf:" datasets (each row = one sample).
+                                    # Every file is split on its own: the end of a file
+                                    # always ends a sample.
 MAX_SAMPLES  = None                 # Use at most this many samples (taken from the
                                     # start of the data). None = use everything.
                                     # Handy for a quick test: 2_000 runs in a minute or
@@ -137,7 +167,7 @@ BATCH_PER_GPU = 32                  # Text blocks each GPU handles per step. Tot
                                     # fewer steps, more GPU memory. If you get an
                                     # "out of memory" error, lower this (e.g. 16).
 USE_ALL_GPUS = True                 # True = use every GPU (both on T4 x2) in parallel.
-GRAD_ACCUM_STEPS = 4                # Gradient accumulation: run this many smaller batches,
+GRAD_ACCUM_STEPS = 1                # Gradient accumulation: run this many smaller batches,
                                     # add up what they learned, then update ONCE. Same
                                     # result as a batch this many times bigger, but needs
                                     # only the memory of one small batch. 1 = off.
@@ -183,32 +213,49 @@ TOP_K          = 40                 # At each word, only pick from the 40 most l
                                     # tokens. Lower = safer; higher = more variety.
 MAX_NEW_TOKENS = 120                # How many tokens to write per sample.
 
-# ---------- Exports ----------
+# ---------- Exports (pick which output files you want) ----------
+EXPORT_HF        = False            # Keep the Hugging Face folder (safetensors + tokenizer).
+                                    # If False it is still made in a temp folder (GGUF and
+                                    # ONNX are converted from it), then deleted at the end.
 EXPORT_GGUF      = True             # Make a .gguf file for llama.cpp / Ollama / LM Studio.
-GGUF_TYPE        = "q8_0"           # GGUF precision: "q8_0" (about 1 byte per weight,
-                                    # near-perfect quality), "f16" (2 bytes) or "f32"
-                                    # (4 bytes, exact). Q4 types need llama.cpp's
-                                    # separate quantize tool and aren't made here.
-EXPORT_ONNX      = True             # Make an ONNX file (for web apps, Android, etc.).
-EXPORT_ONNX_INT8 = True             # Also make a smaller int8 copy of the ONNX file
+GGUF_TYPE        = "q4_k_m"         # GGUF precision (size per weight, roughly):
+                                    #   "q4_k_m" ~0.6 byte, smallest, good quality (DEFAULT)
+                                    #   "q5_k_m" ~0.7 byte, a bit bigger, a bit better
+                                    #   "q8_0"   ~1 byte, near-perfect quality
+                                    #   "f16"/"bf16" 2 bytes, "f32" 4 bytes (exact)
+                                    # q4_k_m/q5_k_m need llama.cpp's "llama-quantize" tool,
+                                    # which is compiled once per session (~2-4 min). If that
+                                    # fails, the script falls back to q8_0 automatically.
+LLAMA_BUILD_DIR  = None             # Where llama-quantize gets compiled. None = automatic
+                                    # (/tmp/_llama_build). Kept in /tmp
+                                    # so it isn't in your outputs; a rerun in the same
+                                    # session reuses it and skips the build.
+EXPORT_MODELFILE = True             # Also write an Ollama "Modelfile" next to the GGUF.
+EXPORT_ONNX      = False            # Make an ONNX file (for web apps, Android, etc.).
+EXPORT_ONNX_INT8 = False            # Also make a smaller int8 copy of the ONNX file
                                     # (~4x smaller, slightly lower quality).
-MAKE_ZIP         = True             # Zip the whole output folder into one download.
+EXPORT_ZIP       = False            # Zip the whole output folder into one download.
+SHOW_DOWNLOAD_LINKS = True          # At the end, show a clickable download link for each
+                                    # file in the notebook (works in an interactive session).
+MAKE_ZIP         = None             # Old name for EXPORT_ZIP (still works if you set it).
 
 # ════════════════════════════════════════════════════════════════════════════
 #  CONFIG FILE (optional) — load settings from the LLM Calculator
 # ════════════════════════════════════════════════════════════════════════════
-CONFIG_FILE = None                  # None = use the settings written above.
-                                    # Or a path to the calculator's "Download config"
-                                    # JSON, e.g. "/kaggle/input/my-configs/tiny.json",
-                                    # or a web link, e.g.
-                                    # "https://jor-teron.github.io/sites/configs/tiny.json"
-                                    # (needs Internet ON in Kaggle). Values in the file
-                                    # REPLACE the matching settings above. DATA_PATH,
-                                    # STORY_SEPARATOR, MIN_CHARS and the export switches
-                                    # always come from this script, not the file.
+CONFIG_FILE = None                  # Set this in the Kaggle cell: a link or path to the
+                                    # calculator's "Download config" JSON (or None =
+                                    # just use the settings written above). Values in
+                                    # the file REPLACE the matching settings above
+                                    # (export switches too). DATA_PATH, STORY_SEPARATOR
+                                    # and MIN_CHARS always come from the cell / script.
 DRY_RUN     = False                 # True = load settings, build the model on the CPU,
                                     # print its size and memory estimate, then stop
                                     # (no data, no training). Handy for checking a config.
+USE_FORM    = True                  # True = in an interactive Kaggle/Jupyter session, show
+                                    # a form (prefilled with the settings + config) and
+                                    # wait for "Start training". It is skipped by itself in
+                                    # "Save & Run All" or if ipywidgets is missing.
+                                    # False = never show it, start straight away.
 
 # ════════════════════════════════════════════════════════════════════════════
 #  END OF SETTINGS — you don't need to change anything below this line.
@@ -260,12 +307,28 @@ from tokenizers import Tokenizer, models, trainers, pre_tokenizers, decoders
 import transformers
 from transformers import LlamaConfig, LlamaForCausalLM, PreTrainedTokenizerFast
 
-# All output paths, built from the settings.
-OUT_DIR   = os.path.join(OUTPUT_ROOT, MODEL_NAME)   # everything for this run
-FINAL_DIR = os.path.join(OUT_DIR, "hf_model")       # final Hugging Face model folder
-CKPT_DIR  = os.path.join(OUT_DIR, "checkpoint")     # latest backup during training
-ONNX_DIR  = os.path.join(OUT_DIR, "onnx")           # ONNX files
-os.makedirs(OUT_DIR, exist_ok=True)
+
+
+class StopRun(SystemExit):
+    """A friendly stop: just the message, no long error traceback in Jupyter."""
+    def _render_traceback_(self):
+        return [str(self)]
+
+
+# Folders left as None are picked automatically (shown as "auto" in the table).
+FROM_AUTO = set()
+ON_KAGGLE = os.path.isdir("/kaggle/working")
+if OUTPUT_ROOT is None:
+    _here = os.path.dirname(os.path.abspath(globals().get("__file__") or "train.py"))
+    OUTPUT_ROOT = "/kaggle/working" if ON_KAGGLE else os.path.join(_here, "outputs")
+    FROM_AUTO.add("OUTPUT_ROOT")
+if LLAMA_CPP_DIR is None:
+    LLAMA_CPP_DIR = os.path.join(OUTPUT_ROOT, "llama.cpp")
+    FROM_AUTO.add("LLAMA_CPP_DIR")
+if LLAMA_BUILD_DIR is None:
+    LLAMA_BUILD_DIR = "/tmp/_llama_build"   # /tmp: not part of your downloads
+    FROM_AUTO.add("LLAMA_BUILD_DIR")
+os.makedirs(OUTPUT_ROOT, exist_ok=True)
 
 
 def fmt_time(seconds):
@@ -294,8 +357,13 @@ CONFIG_KEYS = {
     "WEIGHT_DECAY": "float", "GRAD_CLIP": "float", "SEED": "int",
     "MAX_SAMPLES": "int_or_none", "VAL_FRACTION": "float",
     "GRAD_ACCUM_STEPS": "int", "AUTO_BATCH": "bool", "GRADIENT_CHECKPOINTING": "bool",
+    # Export switches (which output files to make)
+    "EXPORT_HF": "bool", "EXPORT_GGUF": "bool", "GGUF_TYPE": "str",
+    "EXPORT_MODELFILE": "bool", "EXPORT_ONNX": "bool", "EXPORT_ONNX_INT8": "bool",
+    "EXPORT_ZIP": "bool", "SHOW_DOWNLOAD_LINKS": "bool",
 }
 FROM_CONFIG = set()      # names of settings that the file changed
+CFG_NAME = None          # the config's "name" field, used if MODEL_NAME isn't set
 CALC_ESTIMATES = {}      # the calculator's own predictions (_estimates), for comparing
 
 
@@ -372,6 +440,8 @@ if CONFIG_FILE:
                 CALC_ESTIMATES = v
             else:
                 print(f"  {k}: {v}")
+        elif k == "name":                  # the calculator's model name
+            CFG_NAME = v
         elif k in FROM_CELL:               # the Kaggle cell set this one: the cell wins
             print(f"  {k}: config says {v!r}, but the Kaggle cell set {globals()[k]!r} — keeping the cell's value")
         elif k in CONFIG_KEYS:
@@ -379,6 +449,9 @@ if CONFIG_FILE:
             FROM_CONFIG.add(k)
         else:
             print(f"WARNING: unknown setting {k!r} in config — ignored.")
+    if MODEL_NAME is None and CFG_NAME and "MODEL_NAME" not in FROM_CELL:
+        MODEL_NAME = str(CFG_NAME)
+        FROM_CONFIG.add("MODEL_NAME")
     print(f"\nSettings loaded from CONFIG_FILE: {CONFIG_FILE}")
     print(f"  {len(FROM_CONFIG)} setting(s) taken from the file"
           + (f": {', '.join(sorted(FROM_CONFIG))}" if FROM_CONFIG else ""))
@@ -397,9 +470,145 @@ if KV_HEADS < 1 or HEADS % KV_HEADS != 0:
     raise SystemExit(f"ERROR: HEADS ({HEADS}) must divide evenly by KV_HEADS ({KV_HEADS}). "
                      f"Use KV_HEADS = {HEADS} (classic) or a divisor like {max(1, HEADS // 2)}.")
 
-# Rebuild the output paths, in case MODEL_NAME came from the config.
+# Check the export switches.
+if MAKE_ZIP is not None and "EXPORT_ZIP" not in FROM_CELL | FROM_CONFIG:
+    EXPORT_ZIP = bool(MAKE_ZIP)          # old setting name from v3.5 and earlier
+GGUF_TYPE = str(GGUF_TYPE).lower()
+GGUF_DIRECT = ("f32", "f16", "bf16", "q8_0")   # types the converter writes by itself
+GGUF_KQUANT = ("q4_k_m", "q5_k_m")             # types that need llama-quantize
+if EXPORT_GGUF and GGUF_TYPE not in GGUF_DIRECT + GGUF_KQUANT:
+    raise SystemExit(f"ERROR: GGUF_TYPE {GGUF_TYPE!r} is not supported. "
+                     f"Use one of: {', '.join(GGUF_KQUANT + GGUF_DIRECT)}.")
+if EXPORT_ONNX_INT8 and not EXPORT_ONNX:
+    print("WARNING: EXPORT_ONNX_INT8 needs EXPORT_ONNX = True (int8 is made from the ONNX file). Skipping int8.")
+    EXPORT_ONNX_INT8 = False
+if EXPORT_MODELFILE and not EXPORT_GGUF:
+    print("NOTE: EXPORT_MODELFILE needs a GGUF file, so no Modelfile will be written (EXPORT_GGUF is off).")
+    EXPORT_MODELFILE = False
+
+# ════════════════════════════════════════════════════════════════════════════
+#  1c. THE FORM (interactive sessions only)
+# ════════════════════════════════════════════════════════════════════════════
+def _remember_run():
+    """Note which values this run left in the notebook, so a re-run of the cell
+    can tell them apart from values you typed in the cell (see the top)."""
+    globals()["_TRAIN_LEFT"] = {k: v for k, v in globals().items() if k.isupper()}
+    globals()["_TRAIN_CELL"] = set(FROM_CELL) - _FORM_EDITS   # form changes are for one run only
+
+
+class _FormShown(Exception):
+    """Used to stop this first pass quietly after the form is shown. Jupyter
+    prints the short message below instead of a scary error."""
+    def _render_traceback_(self):
+        return ["Form shown above. Change anything you like, then press 'Start training'."]
+
+
+def _form_possible():
+    """True only in a live notebook session that has ipywidgets."""
+    if os.environ.get("KAGGLE_KERNEL_RUN_TYPE") == "Batch":   # "Save & Run All"
+        return False
+    try:
+        import ipywidgets  # noqa: F401
+        from IPython import get_ipython
+        return get_ipython() is not None and hasattr(get_ipython(), "kernel")
+    except ImportError:
+        return False
+
+
+# The fields on the form: name -> kind of box.
+FORM_FIELDS = {"MODEL_NAME": "text", "CONFIG_FILE": "text", "DATA_PATH": "text",
+               "STORY_SEPARATOR": "text", "EPOCHS": "int", "BATCH_PER_GPU": "int",
+               "GRAD_ACCUM_STEPS": "int", "GGUF_TYPE": "gguf", "GRADIENT_CHECKPOINTING": "bool",
+               "DRY_RUN": "bool", "EXPORT_GGUF": "bool", "EXPORT_MODELFILE": "bool",
+               "EXPORT_HF": "bool", "EXPORT_ONNX": "bool", "EXPORT_ONNX_INT8": "bool",
+               "EXPORT_ZIP": "bool"}
+
+
+def _show_form():
+    """Build the form, prefilled with the settings in effect right now
+    (script defaults + config file + cell). Returns the button's function."""
+    import ipywidgets as W
+    from IPython.display import display
+    g = globals()
+    style = {"description_width": "170px"}
+    boxes = {}
+    for k, kind in FORM_FIELDS.items():
+        v = g[k]
+        if kind == "text":
+            boxes[k] = W.Text(value="" if v is None else str(v), description=k,
+                              placeholder="file link, folder link (HF/GitHub), local path, or [list]"
+                              if k == "DATA_PATH" else "", style=style, layout=W.Layout(width="95%"))
+        elif kind == "int":
+            boxes[k] = W.IntText(value=int(v), description=k, style=style)
+        elif kind == "gguf":
+            boxes[k] = W.Dropdown(options=list(GGUF_KQUANT + GGUF_DIRECT), value=v,
+                                  description=k, style=style)
+        else:
+            boxes[k] = W.Checkbox(value=bool(v), description=k)
+    start, out = W.Button(description="Start training", button_style="success"), W.Output()
+    shown = {k: b.value for k, b in boxes.items()}       # what the form showed at first
+
+    def on_start(_=None):
+        start.disabled = True                             # one click = one training run
+        changed = set()
+        with out:
+            # Only boxes you CHANGED count as your settings; the rest stay
+            # "not set", so the config file / defaults still decide them.
+            for k, b in boxes.items():
+                if b.value != shown[k]:
+                    val = b.value
+                    if FORM_FIELDS[k] == "text" and str(val).strip() in ("", "None"):
+                        val = None                        # blank box = None
+                    elif FORM_FIELDS[k] == "text" and str(val).strip().startswith("["):
+                        import ast                        # a typed list, e.g. ["a.txt", "b/"]
+                        val = ast.literal_eval(val.strip())
+                    g[k] = val
+                    g["_TRAIN_CELL"].add(k)
+                    changed.add(k)
+            g["_FORM_DONE"] = True                        # don't show the form again
+            g["_FORM_SET"] = changed
+            src = g.get("__file__") or os.path.abspath("train.py")
+            try:
+                exec(compile(open(src, encoding="utf-8").read(), src, "exec"), g)
+            except SystemExit as e:                       # our own clear error messages
+                print(e)
+            except _FormShown:
+                pass
+            except Exception:
+                import traceback
+                traceback.print_exc()
+    start.on_click(on_start)
+    items = list(boxes.values())
+    texts = items[:4]
+    rest = items[4:]
+    display(W.VBox([*texts, W.HBox(rest[:3]), rest[3],
+                    W.HBox(rest[4:8]), W.HBox(rest[8:]), start, out]))
+    return on_start
+
+
+_remember_run()
+if USE_FORM and not _SKIP_FORM and _form_possible():
+    _FORM_START = _show_form()      # (kept so tests can press the button)
+    raise _FormShown()              # stop here; the button runs the training
+
+
+# Two settings have no default: stop with a plain message if they're missing.
+if not DATA_PATH and not DRY_RUN:   # a dry run needs no data
+    raise StopRun("STOPPED: no training data. Set DATA_PATH in the cell, e.g.\n"
+                  '  DATA_PATH = "https://.../my_data.txt"   (a file link, folder link, path or list)')
+if not MODEL_NAME:
+    raise StopRun("STOPPED: no model name. Set MODEL_NAME in the cell (e.g. MODEL_NAME = \"my-llm\"),\n"
+                  "  or use a CONFIG_FILE that has a MODEL_NAME / name in it.")
+import re as _re
+_safe = _re.sub(r"[^A-Za-z0-9._-]+", "-", str(MODEL_NAME)).strip("-.") or "model"
+if _safe != MODEL_NAME:
+    print(f"NOTE: MODEL_NAME {MODEL_NAME!r} -> {_safe!r} (safe for file names)")
+    MODEL_NAME = _safe
+
+# The output paths, now that MODEL_NAME is known.
 OUT_DIR   = os.path.join(OUTPUT_ROOT, MODEL_NAME)
-FINAL_DIR = os.path.join(OUT_DIR, "hf_model")
+# If you don't want the HF folder, it goes to a temp folder that is deleted at the end.
+FINAL_DIR = os.path.join(OUT_DIR, "hf_model" if EXPORT_HF else "_hf_temp")
 CKPT_DIR  = os.path.join(OUT_DIR, "checkpoint")
 ONNX_DIR  = os.path.join(OUT_DIR, "onnx")
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -407,12 +616,19 @@ os.makedirs(OUT_DIR, exist_ok=True)
 # Print every setting, with a * on the ones the config file changed.
 # Each line shows where the value came from: default (this script), config (the
 # JSON file) or cell (set in the Kaggle cell before exec).
-section("SETTINGS IN USE  (source: default / config / cell)")
-print("Priority: default < config < cell (the cell always wins).")
-for k in list(CONFIG_KEYS) + ["DATA_PATH", "STORY_SEPARATOR", "MIN_CHARS",
-                              "EXPORT_GGUF", "EXPORT_ONNX", "MAKE_ZIP"]:
-    src = "cell" if k in FROM_CELL else "config" if k in FROM_CONFIG else "default"
-    print(f"  {src:<7} {k:<16} = {globals()[k]!r}")
+section("SETTINGS IN USE  (where each value came from)")
+print("Priority: default < config < cell < form. auto = picked by the script.")
+_shown = ["MODEL_NAME", "DATA_PATH", "STORY_SEPARATOR", "CONFIG_FILE", "OUTPUT_ROOT",
+          "LLAMA_CPP_DIR", "LLAMA_BUILD_DIR", "FILE_TYPES", "MIN_CHARS", "USE_FORM", "DRY_RUN"]
+_shown += [k for k in CONFIG_KEYS if k not in _shown]
+if MAKE_ZIP is not None:
+    _shown.append("MAKE_ZIP")
+print(f"  {'source':<7} {'setting':<24} value")
+for k in _shown:
+    src = ("form" if k in _FORM_EDITS else "cell" if k in FROM_CELL else "config" if k in FROM_CONFIG
+           else "auto" if k in FROM_AUTO else "default")
+    val = repr(globals()[k])
+    print(f"  {src:<7} {k:<24} {val if len(val) <= 90 else val[:87] + '...'}")
 if CALC_ESTIMATES:
     print("\nCalculator's estimates (info only):")
     for k, v in CALC_ESTIMATES.items():
@@ -701,6 +917,114 @@ def download_data(url):
     return path
 
 
+def get_hf_token():
+    """HF token for private repos: the setting, else env var, else Kaggle secret."""
+    if HF_TOKEN:
+        return HF_TOKEN
+    if os.environ.get("HF_TOKEN"):
+        return os.environ["HF_TOKEN"]
+    try:
+        from kaggle_secrets import UserSecretsClient   # only exists on Kaggle
+        return UserSecretsClient().get_secret("HF_TOKEN")
+    except Exception:
+        return None                                    # fine for public repos
+
+
+def http_get(url, headers=None, timeout=60):
+    """Open a web link (with optional headers). Clear errors instead of tracebacks."""
+    import urllib.request, urllib.error
+    req = urllib.request.Request(url, headers={"User-Agent": "tiny-llm-train", **(headers or {})})
+    try:
+        return urllib.request.urlopen(req, timeout=timeout)
+    except urllib.error.HTTPError as e:
+        hint = {404: "Not found: check the spelling, branch name and folder path.",
+                401: "Needs a login: the repo is private (set an HF_TOKEN secret, or make it public).",
+                403: "Access refused (private repo, or GitHub's hourly API limit; wait and retry)."
+                }.get(e.code, "")
+        raise SystemExit(f"ERROR: {e.code} {e.reason} for {url}\n{hint}")
+    except urllib.error.URLError as e:
+        raise SystemExit(f"ERROR: could not reach {url} ({e.reason}). Is Internet ON?")
+
+
+def folder_link_files(url):
+    """If url is a Hugging Face or GitHub FOLDER link, return
+    (list of (relative path, download link), headers for the downloads).
+    For any other link return None (then it's treated as a single file)."""
+    import re, urllib.parse
+    url = url.split("?")[0].split("#")[0].rstrip("/")
+    want = tuple(t.lower() for t in FILE_TYPES)
+    # --- Hugging Face: huggingface.co/[datasets/|spaces/]USER/REPO[/tree/REV[/PATH]] ---
+    m = re.match(r"^https?://(?:www\.)?huggingface\.co/(datasets/|spaces/)?([^/]+)/([^/]+)"
+                 r"(?:/tree/([^/]+)(?:/(.*))?)?$", url)
+    if m and m.group(2) not in ("api", "docs", "blog"):
+        kind = {"datasets/": "datasets", "spaces/": "spaces"}.get(m.group(1), "models")
+        repo, rev = f"{m.group(2)}/{m.group(3)}", m.group(4) or "main"
+        sub = urllib.parse.unquote(m.group(5) or "")
+        token = get_hf_token()
+        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        api = (f"https://huggingface.co/api/{kind}/{repo}/tree/{rev}"
+               + (f"/{urllib.parse.quote(sub)}" if sub else "") + "?recursive=true")
+        items = []
+        while api:                                     # the list comes in pages
+            resp = http_get(api, headers)
+            items += json.loads(resp.read())
+            nxt = re.search(r'<([^>]+)>;\s*rel="next"', resp.headers.get("Link", "") or "")
+            api = nxt.group(1) if nxt else None
+        prefix = "" if kind == "models" else kind + "/"
+        files = [(it["path"][len(sub):].lstrip("/") if sub else it["path"],
+                  f"https://huggingface.co/{prefix}{repo}/resolve/{rev}/{urllib.parse.quote(it['path'])}")
+                 for it in items if it.get("type") == "file" and it["path"].lower().endswith(want)]
+        print(f"Hugging Face folder {repo}/{sub or '(root)'} @ {rev}: "
+              f"{len(files)} matching file(s) of {sum(it.get('type') == 'file' for it in items)}")
+        return sorted(files), headers
+    # --- GitHub: github.com/USER/REPO[/tree/BRANCH[/PATH]] ---
+    m = re.match(r"^https?://(?:www\.)?github\.com/([^/]+)/([^/]+?)(?:\.git)?"
+                 r"(?:/tree/([^/]+)(?:/(.*))?)?$", url)
+    if m:
+        user, repo, branch = m.group(1), m.group(2), m.group(3)
+        sub = urllib.parse.unquote(m.group(4) or "")
+        if not branch:                                 # repo root: ask for the main branch
+            branch = json.loads(http_get(f"https://api.github.com/repos/{user}/{repo}").read())["default_branch"]
+        tree = json.loads(http_get(f"https://api.github.com/repos/{user}/{repo}/git/trees/"
+                                   f"{branch}?recursive=1").read())
+        files = [(t["path"][len(sub):].lstrip("/") if sub else t["path"],
+                  f"https://raw.githubusercontent.com/{user}/{repo}/{branch}/{urllib.parse.quote(t['path'])}")
+                 for t in tree.get("tree", []) if t.get("type") == "blob"
+                 and (not sub or t["path"].startswith(sub.rstrip("/") + "/"))
+                 and t["path"].lower().endswith(want)]
+        print(f"GitHub folder {user}/{repo}/{sub or '(root)'} @ {branch}: {len(files)} matching file(s)"
+              + ("  (list was cut short by GitHub)" if tree.get("truncated") else ""))
+        return sorted(files), {}
+    return None
+
+
+def download_folder(url):
+    """Download every matching file of an online folder into the cache, keeping
+    sub-folders. Files already in the cache are reused. Returns the local folder,
+    or None if url is not a folder link."""
+    found = folder_link_files(url)
+    if found is None:
+        return None
+    files, headers = found
+    if not files:
+        raise SystemExit(f"ERROR: no {FILE_TYPES} files in {url}. Check the link / FILE_TYPES.")
+    import hashlib, re
+    folder = os.path.join(OUTPUT_ROOT, "_data_cache",
+                          hashlib.md5(url.encode()).hexdigest()[:8] + "_folder")
+    for rel, link in files:
+        rel = "/".join(re.sub(r"[^A-Za-z0-9._ -]", "_", part) for part in rel.split("/") if part not in ("", ".", ".."))
+        path = os.path.join(folder, rel)
+        if os.path.exists(path):
+            continue                                   # cached from an earlier run
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with http_get(link, headers, timeout=120) as r, open(path + ".part", "wb") as f:
+            shutil.copyfileobj(r, f, 1024 * 1024)
+        os.replace(path + ".part", path)               # half-done downloads never count
+        print(f"  downloaded {rel} ({os.path.getsize(path) / 1e6:.2f} MB)")
+    print(f"Folder cached in {folder} (delete it to download again)")
+    return folder
+
+
 def load_one_source(src):
     """Read samples from ONE source: URL, local file/folder or "hf:" dataset."""
     # --- A Hugging Face dataset ---
@@ -719,25 +1043,36 @@ def load_one_source(src):
         return texts, 0
     # --- A web link: download (or reuse the cache), then read like a local path ---
     if src.lower().startswith(("http://", "https://")):
-        src = download_data(src)
+        src = download_folder(src) or download_data(src)   # folder link, else one file
     # --- A local file or a folder of .txt files ---
     if os.path.isfile(src):
         files = [src]
     elif os.path.isdir(src):
         files = sorted(os.path.join(root, n) for root, _, names in os.walk(src)
-                       for n in names if n.lower().endswith(".txt"))
+                       for n in names if n.lower().endswith(tuple(t.lower() for t in FILE_TYPES)))
         if not files:
-            raise SystemExit(f"ERROR: no .txt files inside the folder {src}")
+            raise SystemExit(f"ERROR: no {FILE_TYPES} files inside the folder {src}")
     else:
         if src != DATA_PATH:
             print(f"\nERROR: this DATA_PATH entry was not found: {src}")
         show_input_hint()
-        raise SystemExit("Fix DATA_PATH in the SETTINGS block and run again.")
-    texts = []
+        raise StopRun("Fix DATA_PATH in the cell and run again.")
+    # Each file is split on its own, so a sample never runs across two files.
+    texts, rows = [], []
+    base = src if os.path.isdir(src) else os.path.dirname(src)
     for path in files:
         with open(path, encoding="utf-8", errors="ignore") as f:
-            texts += split_samples(f.read())
-        print(f"Read {path} ({os.path.getsize(path) / 1e6:.2f} MB)")
+            parts = [t.strip() for t in split_samples(f.read())]
+        parts = [t for t in parts if len(t) >= max(1, MIN_CHARS)]
+        texts += parts
+        rows.append((os.path.relpath(path, base), os.path.getsize(path), parts))
+    # A small table so you can check every file was read and split as you expect.
+    print(f"\n  {'File':<50}{'Size':>10}{'Samples':>10}")
+    for rel, size, parts in rows:
+        print(f"  {rel[-50:]:<50}{size / 1e6:>8.2f}MB{len(parts):>10,}")
+    for rel, size, parts in rows:
+        ex = (parts[0][:200].replace("\n", " / ") + ("..." if len(parts[0]) > 200 else "")) if parts else "(none)"
+        print(f"  example from {rel}: {ex}")
     return texts, len(files)
 
 
@@ -1208,14 +1543,41 @@ def export_gguf():
             tcfg.pop("backend", None)
             json.dump(tcfg, open(cfg_path, "w"), indent=2)
 
-    gguf_path = os.path.join(OUT_DIR, f"{MODEL_NAME}-{GGUF_TYPE}.gguf")
     env = dict(os.environ, LLAMA_PRE_FALLBACK="gpt-2")
-    proc = subprocess.run([sys.executable, os.path.join(LLAMA_CPP_DIR, "convert_hf_to_gguf.py"),
-                           work, "--outtype", GGUF_TYPE, "--outfile", gguf_path],
-                          env=env, capture_output=True, text=True)
-    if proc.returncode != 0:
-        print(proc.stdout[-3000:], proc.stderr[-3000:])
-        raise RuntimeError("convert_hf_to_gguf.py failed (log above)")
+
+    def convert(outtype):
+        """Run the converter on the patched copy and return the new .gguf path."""
+        path = os.path.join(OUT_DIR, f"{MODEL_NAME}-{outtype}.gguf")
+        proc = subprocess.run([sys.executable, os.path.join(LLAMA_CPP_DIR, "convert_hf_to_gguf.py"),
+                               work, "--outtype", outtype, "--outfile", path],
+                              env=env, capture_output=True, text=True)
+        if proc.returncode != 0:
+            print(proc.stdout[-3000:], proc.stderr[-3000:])
+            raise RuntimeError("convert_hf_to_gguf.py failed (log above)")
+        return path
+
+    if GGUF_TYPE in GGUF_DIRECT:
+        gguf_path = convert(GGUF_TYPE)
+    else:
+        warn_not_256()
+        f16_path = convert("f16")              # step 1: full-size intermediate file
+        try:
+            tool = build_llama_quantize()      # step 2: compile the quantize tool (cached)
+            gguf_path = os.path.join(OUT_DIR, f"{MODEL_NAME}-{GGUF_TYPE}.gguf")
+            print(f"   quantizing f16 -> {GGUF_TYPE.upper()} ...", flush=True)
+            proc = subprocess.run([tool, f16_path, gguf_path, GGUF_TYPE.upper()],
+                                  capture_output=True, text=True)
+            if proc.returncode != 0:
+                print(proc.stdout[-2000:], proc.stderr[-2000:])
+                raise RuntimeError("llama-quantize failed (log above)")
+        except Exception as e:
+            print(f"   !! {GGUF_TYPE} not possible ({e}).")
+            print("   !! FALLING BACK to q8_0 (bigger file, same or better quality).")
+            gguf_path = convert("q8_0")
+            results["GGUF note"] = f"fell back to q8_0 because {GGUF_TYPE} failed"
+        finally:
+            if os.path.exists(f16_path):
+                os.remove(f16_path)            # step 3: delete the big f16 intermediate
     shutil.rmtree(work, ignore_errors=True)
 
     # Quick check: open the file and count its tensors.
@@ -1225,6 +1587,45 @@ def export_gguf():
     print(f"   GGUF ok: {len(reader.tensors)} tensors, "
           f"{os.path.getsize(gguf_path) / 1e6:.1f} MB -> {gguf_path}")
     return gguf_path
+
+
+def warn_not_256():
+    """K-quants (q4_k_m, q5_k_m) pack numbers in blocks of 256. A weight whose row
+    length isn't a multiple of 256 can't use them, so llama.cpp stores that weight
+    in a bigger fallback type instead. Fine, just makes the file a bit larger."""
+    odd = sorted({n for n in (HIDDEN, FFN) if n % 256})
+    if odd:
+        print(f"   NOTE: size(s) {odd} are not multiples of 256 -> those weights get a bigger "
+              f"fallback type, so the file is larger than a pure {GGUF_TYPE}. "
+              f"(Tip: use HIDDEN/FFN like 256, 512, 768, 1280, 1536.)")
+
+
+def build_llama_quantize():
+    """Compile llama.cpp's llama-quantize tool (CPU only, just that one program).
+    Reuses an existing build in LLAMA_BUILD_DIR, so reruns skip this."""
+    tool = os.path.join(LLAMA_BUILD_DIR, "bin", "llama-quantize")
+    if os.path.exists(tool):
+        print(f"   llama-quantize already built: {tool}")
+        return tool
+    if not shutil.which("cmake"):
+        pip_install("cmake")                   # Kaggle normally has it already
+    print(f"   building llama-quantize (one-time, ~2-4 min) in {LLAMA_BUILD_DIR} ...", flush=True)
+    t0 = time.time()
+    flags = ["-DCMAKE_BUILD_TYPE=Release", "-DBUILD_SHARED_LIBS=OFF",   # one self-contained program
+             "-DGGML_CUDA=OFF", "-DLLAMA_CURL=OFF", "-DLLAMA_BUILD_TESTS=OFF",
+             "-DLLAMA_BUILD_EXAMPLES=OFF", "-DLLAMA_BUILD_SERVER=OFF"]
+    steps = [["cmake", "-S", LLAMA_CPP_DIR, "-B", LLAMA_BUILD_DIR, *flags],
+             ["cmake", "--build", LLAMA_BUILD_DIR, "--target", "llama-quantize",
+              "-j", str(os.cpu_count() or 2)]]
+    for cmd in steps:
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0:
+            print(proc.stdout[-2000:], proc.stderr[-2000:])
+            raise RuntimeError("building llama-quantize failed (log above)")
+    if not os.path.exists(tool):
+        raise RuntimeError(f"build finished but {tool} is missing")
+    print(f"   built in {fmt_time(time.time() - t0)}")
+    return tool
 
 
 def write_modelfile(gguf_path):
@@ -1248,7 +1649,7 @@ PARAMETER stop "</s>"
 
 
 gguf_path = None
-if EXPORT_GGUF:
+if EXPORT_GGUF:          # off = no llama.cpp download and no gguf installs at all
     print("\n[GGUF]")
     try:
         gguf_path = export_gguf()
@@ -1256,7 +1657,7 @@ if EXPORT_GGUF:
     except Exception as e:
         results["GGUF"] = f"FAILED: {e}"
         print("   GGUF export failed:", e)
-    if gguf_path:
+    if gguf_path and EXPORT_MODELFILE:
         try:
             write_modelfile(gguf_path)
             results["Modelfile"] = "ok"
@@ -1406,7 +1807,15 @@ if EXPORT_ONNX and EXPORT_ONNX_INT8:
 #  8. ZIP AND SUMMARY
 # ════════════════════════════════════════════════════════════════════════════
 zip_path = os.path.join(OUTPUT_ROOT, f"{MODEL_NAME}.zip")
-if MAKE_ZIP:
+# Clean up temporary folders before zipping, so only what you asked for remains.
+shutil.rmtree(os.path.join(OUT_DIR, "_gguf_work"), ignore_errors=True)
+if not EXPORT_HF:
+    shutil.rmtree(FINAL_DIR, ignore_errors=True)
+    print(f"EXPORT_HF = False: deleted the temporary HF folder {FINAL_DIR}")
+else:
+    results = {"HF folder": "ok", **results}
+
+if EXPORT_ZIP:
     try:
         # ZIP_STORED = no compression: model weights barely compress, and this is much faster.
         with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_STORED, allowZip64=True) as z:
@@ -1428,7 +1837,7 @@ print("Peak GPU memory: " + (" | ".join(f"GPU{i} {p:.1f} GB" for i, p in enumera
                              if PEAKS else "CPU, n/a"))
 if history:
     print(f"Final validation loss {history[-1][1]:.3f} | perplexity {math.exp(min(history[-1][1], 20)):.2f}")
-print()
+print("\nOutputs you selected:" if results else "\nNo outputs were selected (all EXPORT_* are False).")
 for name, status in results.items():
     print(f"  {name:<10} {status}")
 print(f"\n  {'File':<52}{'Size':>12}")
@@ -1437,8 +1846,53 @@ for root, _, files in sorted(os.walk(OUT_DIR)):
     for f in sorted(files):
         full = os.path.join(root, f)
         print(f"  {os.path.relpath(full, OUT_DIR):<52}{os.path.getsize(full) / 1e6:>9.2f} MB")
-if MAKE_ZIP and os.path.exists(zip_path):
+if EXPORT_ZIP and os.path.exists(zip_path):
     print("  " + "-" * 64)
     print(f"  {os.path.basename(zip_path) + '  (download this)':<52}"
           f"{os.path.getsize(zip_path) / 1e6:>9.2f} MB")
 print(f"\nAll files are in {OUT_DIR}")
+
+
+# ---------- Download links (click to save each file to your computer) ----------
+def show_download_links():
+    """Show a clickable link per output file. Links only work in a live notebook
+    session and only for files inside the notebook's folder (/kaggle/working).
+    Outside Jupyter this quietly prints the paths only."""
+    files = []
+    for root, _, names in sorted(os.walk(OUT_DIR)):
+        files += [os.path.join(root, n) for n in sorted(names)]
+    if EXPORT_ZIP and os.path.exists(zip_path):
+        files.append(zip_path)
+    print("\nYour files:")
+    for f in files:
+        print(f"  {f}  ({os.path.getsize(f) / 1e6:.2f} MB)")
+    try:
+        from IPython import get_ipython
+        from IPython.display import display, HTML
+        if get_ipython() is None or not hasattr(get_ipython(), "kernel"):
+            return                               # plain Python: paths above are enough
+    except ImportError:
+        return
+    import html
+    rows = []
+    for f in files:
+        rel = os.path.relpath(f, os.getcwd())    # links must be relative to the notebook folder
+        if rel.startswith(".."):
+            continue                             # outside /kaggle/working: can't be linked
+        name = html.escape(os.path.basename(f))
+        rows.append(f'<li><a href="{html.escape(rel)}" download="{name}" target="_blank">'
+                    f'{name}</a> &nbsp;({os.path.getsize(f) / 1e6:.2f} MB)</li>')
+    if rows:
+        display(HTML("<b>Download your files</b> (click; big files can take a while):<ul>"
+                     + "".join(rows) + "</ul>"))
+    else:
+        print("(No download links: files are outside the notebook folder.)")
+
+
+if SHOW_DOWNLOAD_LINKS:
+    try:
+        show_download_links()
+    except Exception as e:                       # links are a bonus; never crash here
+        print("Couldn't show download links:", e)
+
+_remember_run()   # so a re-run of the cell starts clean
