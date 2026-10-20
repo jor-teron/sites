@@ -1,6 +1,6 @@
 # Device Benchmark (devbench)
 
-The single benchmark app in Lab: phones, TVs and PCs. Light and quick: each test takes a few
+The single benchmark app (Tools → System; moved out of Lab in Hub R15): phones, TVs and PCs. Light and quick: each test takes a few
 seconds, no libraries, no model downloads. Merged from Browser Bench and AI Bench (their old
 URLs `apps/lab/browser-bench/` and `apps/lab/ai-bench.html` are redirect stubs to `#games` / `#ai`).
 
@@ -50,7 +50,7 @@ Older entries (date / score / parts) are migrated on load. Settings → Clear de
 Each part 0–100 against a fast gaming PC on a log scale (`score.js`, `DEVBENCH_SCORE_PARTS`), weighted mean of the parts that ran. Reference values are rough; calibrate on real devices.
 
 ## Manual browser test
-Open from the Hub (Lab → Device Benchmark), tap Run all; every card gets a result, the score appears, Games shows verdicts. ⚙ → Export TXT.
+Open from the Hub (Tools → Device Benchmark), tap Run all; every card gets a result, the score appears, Games shows verdicts. ⚙ → Export TXT.
 
 ## Known limits
 - Browser scores, not native. Workers (CPU, AI) need http(s), not `file://`.

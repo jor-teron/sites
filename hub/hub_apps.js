@@ -19,6 +19,9 @@
  * "hub_apps.js failed to load or has an error" in the hub instead of the menu.
  * Desktop (vDesktop) is HIDDEN since the Hub has its own Desktop mode (windows + taskbar);
  * its files stay in apps/tools/vDesktop/ and #vDesktop still opens it.
+ * Lab "Legacy" (R15, lab-apps.csv section): Paint, Photo Editor, Notepad, Calculator (Legacy),
+ * Webcam, Keyboard — orders 1900+ so they come last in Lab. Sling Birds / Pacman are in Games
+ * (Arcade), Device Benchmark in Tools (System), as in the CSVs.
  * About is HIDDEN too: its cards moved into the Settings app (About section); apps/about/
  * redirects to apps/settings/#about. Settings itself is opened by the "⚙ Settings" row
  * at the bottom of the menu (hub_settings.js), so its row is HIDDEN here.
@@ -41,6 +44,8 @@ Games,    Snake,                 apps/games/snake/,                          ,  
 Games,    Dino Run,              apps/games/dino-run/,                       ,         0,       0,      130
 Games,    Car Run,               apps/games/car-run/,                        ,         0,       0,      140
 Games,    Tennis Ball Blitz,     apps/games/tennis-throw/,                   ,         0,       0,      150
+Games,    Sling Birds,           apps/games/sling-birds/,                    ,         0,       0,      151
+Games,    Pacman,                apps/games/pacman/,                         ,         0,       0,      152
 Games,    Desert Road,           apps/games/desert-road/,                    ,         0,       0,      160
 Games,    Contra (alpha),        apps/games/contra-alpha/,                   ,         0,       0,      170
 Games,    Space Invaders,        apps/games/space-invader/,                  ,         0,       0,      175
@@ -52,11 +57,8 @@ Games,    Demolisher,            apps/games/demolisher/,                     ,  
 
 Media,    Media Page,            apps/media/media.html,                      ,         0,       0,      209
 Media,    TV,                    tv/,                                        ,         0,       0,      210
-Media,    Webcam,                apps/media/webcam/,                         ,         0,       0,      220
 Media,    3D Viewer,             apps/media/3d-viewer/,                      ,         0,       0,      240
-Media,    Paint,                 apps/media/paint/,                          ,         0,       0,      230
 Media,    Draw,                  apps/media/draw/,                           ,         0,       0,      225
-Media,    Photo Editor,          apps/media/photo-editor/,                   ,         0,       0,      260
 Media,    Photo Editor v2,       apps/media/photo-editor-v2/,                ,         0,       0,      265
 
 Office,   Office Page,           apps/office/office.html,                    ,         0,       0,      309
@@ -64,7 +66,6 @@ Office,   Spreadsheet,           apps/office/spreadsheet/,                   ,  
 Office,   Draftly,               apps/office/draftly/,                       ,         0,       0,      310
 Office,   OCR,                   apps/office/ocr/,                           ,         0,       0,      360
 Office,   MS Word Diff,          apps/tools/msword_diff/,                    ,         0,       0,      440
-Office,   Notepad,               apps/office/notepad/,                       ,         0,       0,      450
 Office,   Notely,                apps/office/notely/,                        ,         0,       0,      450
 Office,   Print,                 apps/office/print/,                         ,         0,       0,      460
 Office,   Mail,                  apps/office/mail/,                          ,         0,       0,      470
@@ -79,8 +80,8 @@ Tools,    Tools Page,            apps/tools/tools.html,                      ,  
 Tools,    Files,                 apps/tools/files/,                          ,         0,       0,      405
 Tools,    Viewer,                apps/tools/viewer/,                         ,         0,       0,      407
 Tools,    System Monitor,        apps/tools/sysmon/,                         ,         0,       0,      406
+Tools,    Device Benchmark,      apps/tools/devbench/,                       ,         0,       0,      408
 Tools,    Calculator,            apps/tools/calculator/,                     ,         0,       0,      410
-Tools,    Calculator (Beta),     apps/tools/calculator-beta/,                ,         0,       0,      411
 Tools,    NE-India Dictionary,   apps/tools/nei-dict/,                       ,         0,       0,      430
 Tools,    Weather,               apps/tools/weather-chart/,                  ,         0,       0,      420
 Tools,    Weather Hourly,        apps/tools/weather-hourly/,                 ,         0,       0,      465
@@ -90,17 +91,19 @@ Tools,    Learning HTML (Basic), apps/tools/learning-html/,                  ,  
 Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,         0,       1,      900
 
 Lab,      Lab Page,              apps/lab/lab.html,                          ,         0,       0,      1000
-Lab,      Device Benchmark,      apps/lab/devbench/,                         ,         0,       0,      1050
 Lab,      Island Game Demo,      apps/lab/island-demo/,                      ,         0,       0,      1080
 Lab,      Phone,                 apps/media/phone/,                          ,         0,       0,      1070
 Lab,      Paper Keyboard,        apps/lab/paper-keyboard/,                   ,         0,       0,      1040
-Lab,      Keyboard,              apps/lab/keyboard/,                         ,         0,       0,      1042
 Lab,      Notebook,              apps/lab/notebook/,                         ,         0,       0,      1045
-Lab,      Sling Birds,           apps/lab/sling-birds/,                      ,         0,       0,      1085
 Lab,      AoE RTS,               apps/lab/aoe-rts/,                          ,         0,       0,      1086
-Lab,      Pacman,                apps/lab/pacman/,                           ,         0,       0,      1090
 Lab,      WebRTC Chat,           apps/connectivity/webrtc-chat/,             ,         0,       0,      1095
 Lab,      P2P Chat,              apps/connectivity/p2pchat.html,             ,         0,       0,      1096
+Lab,      Paint,                 apps/media/paint/,                          ,         0,       0,      1900
+Lab,      Photo Editor,          apps/media/photo-editor/,                   ,         0,       0,      1901
+Lab,      Notepad,               apps/office/notepad/,                       ,         0,       0,      1902
+Lab,      Calculator (Legacy),   apps/tools/calculator-beta/,                ,         0,       0,      1903
+Lab,      Webcam,                apps/media/webcam/,                         ,         0,       0,      1904
+Lab,      Keyboard,              apps/lab/keyboard/,                         ,         0,       0,      1905
 
 About,    About,                 apps/about/,                                ,         0,       1,      2000
 About,    Contact,               apps/about/contact.html,                    ,         0,       1,      2020

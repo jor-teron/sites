@@ -4,7 +4,9 @@
  * Keyboard modes of the controller send {t:'key', key, code, s:1|0, shift, ctrl, alt, repeat}:
  * dispatched as keydown / keypress / keyup into the (same-origin) app frame's focused element,
  * and typed into a focused input / textarea / contenteditable (synthetic events do not type),
- * incl. Backspace / Delete / Enter / ←→ / Home / End and Ctrl+A. Also posted as {type:'hub-key', ...}.
+ * incl. Backspace / Delete / Enter and Ctrl+A. Caret, selection, Tab, undo / redo and clipboard
+ * keys (arrows, Shift / Ctrl, Home / End, Ctrl+Z / Y / C / X / V) are hub/hub_textedit.js (R15).
+ * Nothing is typed or moved when the app cancels the keydown. Also posted as {type:'hub-key', ...}.
  * The Hub on-screen keyboard (hub/osk/osk.js) sends the same messages via __hubController.key(msg).
  * Rumble: an app in the iframe may post {type:'hub-rumble', ms:N} or
  * {type:'hub-rumble', pattern:[on, off, on, ...]}; it is relayed to the paired phone as
@@ -264,12 +266,15 @@
     const text = key === 'Enter' ? '\n' : (key.length === 1 ? key : null);
     if (text != null) {
       if (el.maxLength > 0 && v.length - (hasSel ? end - start : 0) + text.length > el.maxLength) return true;
+      // execCommand keeps the browser's undo stack (Ctrl+Z, hub_textedit.js); fallback below
+      if (doc.activeElement === el && doc.execCommand('insertText', false, text)) return true;
       if (hasSel) el.setRangeText(text, start, end, 'end');
       else el.value = v + text;
       fire(key === 'Enter' ? 'insertLineBreak' : 'insertText', text);
       return true;
     }
     if (key === 'Backspace' || key === 'Delete') {
+      if (hasSel && doc.activeElement === el && doc.execCommand(key === 'Backspace' ? 'delete' : 'forwardDelete', false)) return true;
       if (!hasSel) { el.value = key === 'Backspace' ? Array.from(v).slice(0, -1).join('') : v; fire('deleteContentBackward'); return true; }
       if (start !== end) el.setRangeText('', start, end, 'end');
       else if (key === 'Backspace' && start > 0) {
@@ -337,8 +342,11 @@
           let pressOk = true;
           if (printable && !m.ctrl && !m.alt) pressOk = target.dispatchEvent(init('keypress', key === 'Enter' ? 13 : key.charCodeAt(0)));
           const ed = editableOf(target);
-          if (ed && pressOk && !m.ctrl && !m.alt) typeInto(ed, m);
-          else if (ed && m.ctrl && !m.alt && !m.shift && (key === 'a' || key === 'A')) selectAllIn(ed);
+          const TE = window.HubTextEdit;   // R15: caret / selection / Tab / undo / clipboard keys
+          if (!ed) { /* not a text field */ }
+          else if (m.ctrl && !m.alt && !m.shift && (key === 'a' || key === 'A')) selectAllIn(ed);
+          else if (TE && TE.key(ed, m)) { /* handled */ }
+          else if (pressOk && !m.ctrl && !m.alt) typeInto(ed, m);
         }
       }
     } catch (err) {

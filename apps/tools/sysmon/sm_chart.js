@@ -1,6 +1,6 @@
 /*
  * Line graph (apps/tools/sysmon/sm_chart.js) — tiny canvas chart in the Device Benchmark style
- * (apps/lab/devbench/chart.js: gradient line, soft fill) for the last ~60 one-second samples.
+ * (apps/tools/devbench/chart.js: gradient line, soft fill) for the last ~60 one-second samples.
  * SMChart.draw(canvas, samples, { max, label(v), color }) — max: fixed top (e.g. 1 for 100%),
  * else 115% of the largest sample. Draws right-aligned so the newest sample is at the right edge.
  */
