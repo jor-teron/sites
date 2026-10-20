@@ -1,6 +1,6 @@
 /*
   File: story_ui.js
-  Project: AI Story
+  Project: Story
   Description: DOM helpers: story feed cards, status line, settings sheet,
                saved preferences (localStorage).
 */

@@ -1,6 +1,6 @@
 /*
   File: story_db.js
-  Project: AI Story
+  Project: Story
   Description: IndexedDB chat history (30-day retention). Every call fails
                soft: if IndexedDB is blocked/unavailable the app still works,
                just without history.

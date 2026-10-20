@@ -1,6 +1,6 @@
 /*
   File: story_model.js
-  Project: AI Story
+  Project: Story
   Description: Page-side client for story_worker.js. Model catalogue,
                lazy load (one model at a time), streamed generation, stop.
 */

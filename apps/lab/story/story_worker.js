@@ -1,6 +1,6 @@
 /*
   File: story_worker.js
-  Project: AI Story
+  Project: Story
   Description: Web Worker that owns transformers.js 3.7.0. Loads one model at
                a time and streams tokens back with postMessage so the page
                keeps painting. Messages in: load{key,id} | generate{prompt,opts} | stop (page may also terminate the worker).

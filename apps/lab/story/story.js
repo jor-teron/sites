@@ -1,6 +1,6 @@
 /*
   File: story.js
-  Project: AI Story
+  Project: Story
   Description: App entry. Wires UI, history and model together.
                Flow: open DB -> show history -> enable input -> load the
                chosen model lazily (Lite by default, ~1 MB).
