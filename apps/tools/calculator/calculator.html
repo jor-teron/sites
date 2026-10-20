@@ -11,12 +11,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#121418">
   <title>Calculator</title>
-  <link rel="stylesheet" href="calculator.css?v=20261004a">
+  <link rel="stylesheet" href="calculator.css?v=20261020a">
 </head>
-<body>
+<body><!-- always opens in Basic; fx toggles body.adv (2026-10-20) -->
 <div id="app">
   <header id="display">
     <button type="button" id="hist-btn" class="dbtn" title="History" aria-label="History">🕘</button>
+    <button type="button" id="fx-btn" class="dbtn" title="Advanced keys (F)" aria-label="Advanced keys" aria-pressed="false">fx</button>
     <span id="angle-ind">DEG</span>
     <div id="expr" aria-label="Expression"></div>
     <div id="result" aria-live="polite" title="Tap to copy"></div>
@@ -77,11 +78,11 @@
 
   <div id="toast" hidden role="status"></div>
 </div>
-<script src="calc_config.js?v=20261004a"></script>
-<script src="calc_parse.js?v=20261004a"></script>
-<script src="calc_format.js?v=20261004a"></script>
-<script src="calc_state.js?v=20261004a"></script>
-<script src="calc_ui.js?v=20261004a"></script>
-<script src="calc_keys.js?v=20261004a"></script>
+<script src="calc_config.js?v=20261020a"></script>
+<script src="calc_parse.js?v=20261020a"></script>
+<script src="calc_format.js?v=20261020a"></script>
+<script src="calc_state.js?v=20261020a"></script>
+<script src="calc_ui.js?v=20261020a"></script>
+<script src="calc_keys.js?v=20261020a"></script>
 </body>
 </html>

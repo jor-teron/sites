@@ -2,7 +2,7 @@
  * Calculator — calc_keys.js
  * Keyboard: digits, . or , (decimal), + - * / x, ( ) % ^ !, Enter or =, Backspace,
  * Esc / Delete clear (Esc first closes the history), Ctrl+C copies the answer.
- * The matching on-screen key flashes.
+ * F toggles Basic/Advanced (2026-10-20). The matching on-screen key flashes.
  */
 (function (CALC) {
   'use strict';
@@ -24,6 +24,7 @@
           return;
         }
         if (e.key === 'Escape' && CALC.ui.historyOpen()) { e.preventDefault(); CALC.ui.closeHistory(); return; }
+        if (e.key === 'f' || e.key === 'F') { e.preventDefault(); CALC.ui.toggleAdv(); return; }
         const k = /^[0-9]$/.test(e.key) ? e.key : MAP[e.key];
         if (!k) return;
         e.preventDefault();

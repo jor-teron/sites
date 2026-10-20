@@ -1,7 +1,8 @@
 /*
  * Calculator — styles (plain CSS, nothing from outside this folder).
  * Fills the dynamic viewport (100dvh, vh fallback) and never scrolls. Portrait: display +
- * 4×6 keypad. Landscape / wide: scientific keys on the left (7×5 grid). Keys stretch to fill.
+ * 4×6 keypad in any orientation (Basic, default). body.adv (fx key) = scientific keys on the left
+ * (7×5 grid). Rotating never switches mode. Keys stretch to fill. Updated 2026-10-20.
  */
 :root {
   --bg: #121418; --panel: #161920; --key: #1f242d; --key-fn: #2a2f3a; --key-sci: #181c23;
@@ -84,28 +85,39 @@ html, body {
 .key.down { filter: brightness(1.35); transform: scale(0.97); }
 @media (hover: hover) { .key:hover { filter: brightness(1.15); } }
 
-/* ---------- landscape / wide: scientific keys ---------- */
-@media (orientation: landscape) {
-  #display { min-height: 0; padding: 8px 14px 6px 60px; }
-  #angle-ind { display: block; top: 56px; }
-  #keys {
-    grid-template-columns: repeat(3, 0.8fr) repeat(4, 1fr);
-    grid-template-rows: repeat(5, 1fr);
-    grid-template-areas:
-      "lp  rp  ang  c  bs pct div"
-      "sin cos tan  d7 d8 d9  mul"
-      "ln  log sqrt d4 d5 d6  sub"
-      "sq  pow fact d1 d2 d3  add"
-      "pi  e   ans  neg d0 dot eq";
-  }
-  .key.sci { display: block; }
-  .key.port { display: none; }
-  #expr { padding-left: 0; }
+/* ---------- fx key (top-right of the display) ---------- */
+#fx-btn { left: auto; right: 8px; font-size: 17px; font-style: italic; font-weight: 600; color: var(--accent);
+  transition: transform 0.18s cubic-bezier(.34,1.56,.64,1); }
+#fx-btn:active { transform: scale(0.88); }
+@media (prefers-reduced-motion: reduce) { #fx-btn, .key { transition: none; } #fx-btn:active { transform: none; } }
+
+/* ---------- Basic in short landscape: same 4×6 pad, smaller display ---------- */
+@media (orientation: landscape) and (max-height: 500px) {
+  body:not(.adv) #display { min-height: 0; }
 }
+
+/* ---------- Advanced (body.adv, toggled by fx): scientific keys ---------- */
+body.adv #display { min-height: 0; padding: 8px 60px 6px 60px; }
+body.adv #angle-ind { display: block; top: 56px; }
+body.adv #keys {
+  grid-template-columns: repeat(3, 0.8fr) repeat(4, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  grid-template-areas:
+    "lp  rp  ang  c  bs pct div"
+    "sin cos tan  d7 d8 d9  mul"
+    "ln  log sqrt d4 d5 d6  sub"
+    "sq  pow fact d1 d2 d3  add"
+    "pi  e   ans  neg d0 dot eq";
+}
+body.adv .key.sci { display: block; }
+body.adv .key.port { display: none; }
+body.adv #expr { padding-left: 0; }
 /* short landscape (phones sideways, hub play area) */
 @media (orientation: landscape) and (max-height: 500px) {
-  #display { padding: 4px 12px 4px 56px; gap: 0; }
-  .dbtn { width: 40px; height: 40px; top: 6px; left: 6px; font-size: 18px; }
+  /* both modes; side padding keeps text clear of 🕘 and fx */
+  #display { padding: 4px 56px 4px 56px; gap: 0; }
+  .dbtn { width: 44px; height: 44px; top: 4px; left: 6px; font-size: 18px; }
+  #fx-btn { right: 6px; font-size: 16px; }
   #angle-ind { top: 50px; left: 12px; font-size: 11px; }
   #expr { --fmax: 30; --fmin: 16; font-size: 30px; }
   #expr.wrap { max-height: 2.5em; }

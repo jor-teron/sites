@@ -2,7 +2,8 @@
  * Calculator — calc_ui.js
  * Display (expression on top that shrinks then wraps, live grey result under it; after "="
  * the answer is big), keypad buttons (never take focus, so Space can't re-press them),
- * tap the answer to copy (toast), history drawer, DEG/RAD label.
+ * tap the answer to copy (toast), history drawer, DEG/RAD label, fx key (Basic ⇄ Advanced;
+ * not saved, every open starts Basic — 2026-10-20).
  */
 (function (CALC) {
   'use strict';
@@ -127,6 +128,14 @@
     setTimeout(() => b.classList.remove('down'), 110);
   };
 
+  // fx: toggle Advanced (scientific) keys. Not persisted on purpose.
+  U.toggleAdv = () => {
+    const on = document.body.classList.toggle('adv');
+    $('fx-btn').classList.toggle('on', on);
+    $('fx-btn').setAttribute('aria-pressed', String(on));
+    requestAnimationFrame(fit);
+  };
+
   U.init = () => {
     for (const b of document.querySelectorAll('button')) noFocus(b);
     for (const b of document.querySelectorAll('.key')) {
@@ -144,6 +153,7 @@
 
     $('result').addEventListener('click', copyValue);
     $('hist-btn').addEventListener('click', () => (U.historyOpen() ? U.closeHistory() : U.openHistory()));
+    $('fx-btn').addEventListener('click', U.toggleAdv);
     $('hist-close').addEventListener('click', U.closeHistory);
     $('hist-clear').addEventListener('click', () => { CALC.history.clear(); renderHistory(); U.toast(cfg().text.historyCleared); });
     $('hist-list').addEventListener('click', (e) => {

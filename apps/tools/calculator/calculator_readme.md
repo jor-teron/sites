@@ -51,8 +51,8 @@ localStorage keys `calc_history` and `calc_angle`. To reset, delete them or clea
 - Unfinished sum: "Incomplete expression"
 
 ## 7. Screen sizes
-- **Phone portrait:** 4-column basic keypad.
-- **Landscape and desktop:** scientific keys are added (7 columns).
+- **Always opens in Basic:** 4-column keypad in portrait and landscape; rotating never switches.
+- **fx key** (top-right of the display, or F on a keyboard): toggles Advanced, which adds the scientific keys (7 columns). Not remembered — every open starts Basic. (2026-10-20)
 - Width is capped at 1000 px.
 
 ## 8. Safe settings (`calc_config.js`)
