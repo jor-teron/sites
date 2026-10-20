@@ -2,7 +2,7 @@ SITES HUB - TECHNICAL GUIDE: HUB AND VIRTUAL DESKTOP
 ====================================================
 
 For a developer picking up the Hub (hub.html) and its virtual desktop.
-Written from the code as of R17 (updated through R32, 2026-10-20).
+Written from the code as of R17 (updated through R33a, 2026-10-20).
 Current build tag and shell cache: see hub/build.txt (one place).
 Plain HTML / CSS / JS, no build step, no framework.
 Every file starts with a header comment: read it first, it is the spec.
@@ -251,17 +251,21 @@ again in the background (once per page load) and the list is rebuilt
 (and an open flyout redrawn, event 'hub-startlist') only when the hash
 changed. A changed hub_apps.js drops the whole cache. All categories are
 warmed ~2 s after load when idle.
-hub_apps.js is LEGACY (R30): the category CSVs are the source of truth
-for which apps a category shows (pages + flyouts). Every visible
-category in hub_apps.js has a "<Category> Page" row, so the menu / Start
-itself lists only the categories (from hub_apps.js); a click opens the
-category page. hub_apps.js is still read for: the category rows and
-their order, hash ids / last-app memory, names / icons / NEW_TAB of
-known apps, session restore, __hubOpenApp, home-tile icon fallback
-(hub_tiles.js) and the Start cache hash (hub_flyout.js). Keep its rows;
-add new apps to the category CSV only. An app only in a CSV opens fine
-from its page / flyout (as a hidden extra; it gets no saved hash id
-until it is opened).
+hub_apps.js is LEGACY (R30) and, since R33a, keeps ONLY the category
+list + order (the "<Category> Page" rows; every visible category has
+one, so the menu / Start lists only the categories and a click opens the
+category page) and the hidden system rows that are in no category CSV
+(Desktop/vDesktop, Settings, About, Contact, Feedback, Transcribe). The
+old app rows sit in a commented archive block at the end of the file
+(not parsed). Every app comes from its category CSV: hub_flyout.js
+exposes window.HubStartList {cached(cat), load(cat)} (the cached Start
+lists) and hub.js registers those apps in HUB_CAT_CSV order (so hash ids
+like #snake stay the same) for hash links, last app, session restore,
+__hubOpenApp and app names / icons / NEW_TAB. hub.js starts (hash / last
+app / session) on DOMContentLoaded: at once when every list is cached,
+else after the CSVs are read (max 4 s). __hubOpenApp('<path>/') before
+that waits for the lists; a part-of-path match needs them loaded.
+New apps: add them to the category CSV only.
 
 
 6. TASKBAR, TRAY AND ON-SCREEN KEYBOARD (OSK)
@@ -562,19 +566,17 @@ files change.
 ---------------------------------
   - Edge snapping (half / max zones) is broken and switched off in
     Settings; the magnet and the snap keys work. Parked.
-  - 12 Lab apps (MyLLM, Local AI Chat, AI Story, LLM Calculator,
-    Bookmark Manager, Wiki Extractor, Google Drive Test, Media Explorer,
-    IPTV player, Channel Cleaner, Three.js Viewer v2, Aeroplane) are
-    listed via apps/lab/lab-apps.csv (Lab page + Start flyout). They
-    are not rows in hub_apps.js, which is legacy (R30, section 5): fine
-    as is; only their #hash link works after they were opened once.
+  - The 12 Lab apps once missing from hub_apps.js (MyLLM ... Aeroplane)
+    are fine since R33a: every CSV app gets its #hash link at start.
   - R21 (parked, low priority): Auto mode flips Desktop / Phone right at
     1024 px (wm_mode.js); add some slack (e.g. leave Desktop below 960).
   - R22 (parked, low priority): window sizes shrink for good after a
     small viewport (resize clamp overwrites w.rect, wm_windows.js); keep
     the chosen size apart from the drawn one.
-  - R33 (planned): swap hub_apps.js for the category CSVs (menu category
-    rows, hash ids and app defaults from apps/<cat>/<cat>-apps.csv).
+  - R33a (done): apps come from the category CSVs; hub_apps.js keeps the
+    categories + hidden system rows (section 5). R33b (planned): hash
+    links work on the very first visit without waiting for the CSVs
+    (e.g. the category rows / system rows from hub_config.js).
   - The "Google Drive" label is squeezed in the Files sidebar.
   - Wallpaper thumbnails in Settings load the full images.
   - An open Settings window does not refresh when values change

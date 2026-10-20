@@ -18,6 +18,8 @@
  *   AND the event's pointerType is 'mouse'. A tap stays a tap.
  * - Keyboard / D-pad: untouched (hub.js menuKey); any key press just hides the flyout.
  * - R16c: built lists are cached in localStorage 'sites-hub.startList' (see loadCat below).
+ * - R33a: window.HubStartList {cached(cat), load(cat)} hands the same lists to hub.js, which
+ *   registers every CSV app (hash ids, last app, session restore, __hubOpenApp).
  * Look in hub_main.css (.menu-fly).
  */
 (function () {
@@ -108,6 +110,10 @@
     csvCache[cat] = check(cat).then((l) => { if (!l) delete csvCache[cat]; return l; });
     return csvCache[cat];
   }
+  // R33a: the same lists for hub.js (apps come from the category CSVs; hub_apps.js keeps only the
+  // categories). cached(cat) → list | null at once (sites-hub.startList); load(cat) → Promise<list | null>.
+  window.HubStartList = { cached: (cat) => (store.cats[cat] ? store.cats[cat].list : null), load: loadCat };
+
   // warm every category once the Hub is idle, so the first Start → hover is instant
   const warm = () => Object.keys(window.HUB_CAT_CSV || {}).forEach((c) => loadCat(c));
   const idle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 4000 }) : setTimeout(fn, 2000));

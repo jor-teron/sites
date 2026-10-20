@@ -11,7 +11,7 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - `hub_loader.js` (R16a): loads the rest after the page `load` event + idle, in batches: drives (Google sign-in, Drive, `hub_drives.js`, `hub_phonekey.js`) at first idle; then after ~1.5 s snap (`wm_snap.js`), keyboard (`osk/`), Viewer overlay. Early use (⌨ tray stub, Ctrl+Alt+K, Ctrl+Alt+arrows, `HubViewer.open`, OSK left open) loads that batch at once; files that fail are retried on the next use and a small "Couldn't load …" note shows (R28). Keep its `V` in step with `?v=`.
 - `hub_main.css`: page shell, wallpaper, top bar, tiles, collapsible menu
 - `hub_controller.css`: pairing / QR popover, game bar, trackpad pointer
-- `hub_apps.js`: the LEGACY app list (`window.HUB_APPS_CSV`, CSV text; R30): still gives the menu's category rows, hash ids and app defaults; new apps go in `apps/<category>/<category>-apps.csv`
+- `hub_apps.js`: the LEGACY list (`window.HUB_APPS_CSV`, CSV text; R30): since R33a only the menu's categories + hidden system rows (old app rows archived in a comment); apps come from `apps/<category>/<category>-apps.csv`
 - `hub_tiles.js`: home screen tiles (`window.HUB_TILES`)
 - `hub.js`: menu, opening apps, hash links, last app, focus, menu keys
 - `hub-gamebar.js`: app bar in the header centre (name / stats / buttons sent by the app)
@@ -71,7 +71,7 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - Apps fill the whole area under the header.
 
 ## 8. Safe settings
-- `apps/<category>/<category>-apps.csv`: add / move apps (source of truth); `hub_apps.js` is legacy (category rows, ORDER, HIDDEN)
+- `apps/<category>/<category>-apps.csv`: add / move apps (source of truth); `hub_apps.js` only holds the categories and hidden system rows
 - `hub_tiles.js`: tile list (`qr` / `app`)
 - `hub_controller_config.js`: `pointer` (speed, acceleration, size, hideAfterMs, scrollSpeed, colours), `receive` (autoSave, maxBytes, ackEveryBytes), `notify` (position, durationMs, maxStack, previewSize, showPreviews, revokeAfterMs)
 - **Cache-buster:** after changing any hub file, bump every `?v=` in `../hub.html` (current tag: see `hub/build.txt`) and the other places in README_technical section 13, or browsers keep the old copy.
@@ -91,7 +91,7 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - The controller needs internet (public PeerJS server).
 - Cross-origin apps get no keys, pointer or app bar.
 - Some apps have no menu icon yet (a letter tile shows).
-- Root `hub-apps.csv` and `tree.txt` are old copies, not used by the hub.
+- Root `tree.txt` is an old file listing, not used by the hub (the old root `hub-apps.csv` is gone).
 - Old hidden row "FileDrop" → `apps/lab/file-drop/` points at a folder that no longer exists.
 
 ## 11. Change log
@@ -122,6 +122,7 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - 2026-10-20 IST: R31 `hub/` restructured into feature folders: `core/`, `wm/`, `menu/`, `link/`, `controller/`, `osk/`, `viewer/`, `drives/`, `update/`, `docs/` (cache v53, ?v=20261020j).
 - 2026-10-20 IST: R32 `hub/build.txt` (current build + cache, one place); readme cleanup (no current numbers in the body) and this change log.
 - Parked / planned: R21 Auto mode flips Desktop / Phone at the 1024 px edge (needs some slack) and R22 window sizes shrink for good after a small viewport — parked, low priority. R33 planned: swap `hub_apps.js` for the category CSVs.
+- 2026-10-20 IST: R33a `hub_apps.js` keeps only the categories ("<Category> Page" rows) + hidden system rows (Desktop, Settings, About, Contact, Feedback, Transcribe); the 60 app rows moved to a commented archive block in the same file. Apps come from the category CSVs (`hub_flyout.js` `window.HubStartList`, registered by `hub.js` for hash links, last app, session restore, `__hubOpenApp`); every CSV app now has its #hash link (e.g. #myllm) (cache v54, ?v=20261020k).
 
 ## 12. Related apps
 - Controller (phone side): `../controller/controller_readme.md`

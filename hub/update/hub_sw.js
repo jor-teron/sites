@@ -20,8 +20,8 @@
  *   changed ones in place (the cache is never wiped); replies {type:'sw-refreshed', changed:[paths]}.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261020j';
-const CACHE = 'hub-shell-v53';  // 2026-10-20j: R31 hub/ in feature folders
+const V = '20261020k';
+const CACHE = 'hub-shell-v54';  // 2026-10-20k: R33a apps from category CSVs
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const SHELL = [
   'hub.html',

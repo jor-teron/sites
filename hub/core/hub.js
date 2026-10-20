@@ -1,5 +1,11 @@
 /**
  * sites hub — menu from hub_apps.js (window.HUB_APPS_CSV), apps open in the iframe.
+ * R33a: hub_apps.js keeps only the categories ("<Category> Page" rows) + hidden system rows.
+ *   Every app is read from its category CSV via hub_flyout.js (window.HubStartList) and
+ *   registered in HUB_CAT_CSV order (hash ids, last app, session restore, __hubOpenApp). Start
+ *   (hash / last app / session) runs on DOMContentLoaded: at once when every list is cached
+ *   (sites-hub.startList), else after the CSVs are read (max 4 s). __hubOpenApp(path) before
+ *   that waits for them; a non-path match ('pooh-chat') needs the lists in.
  *
  * hub_apps.js (loaded by hub.html before this file; no fetch, so file:// works too):
  *   CSV text, columns read BY HEADER NAME:
@@ -907,9 +913,15 @@
   };
   // hub_chat.js (release 4): open a Hub app by part of its entry url ('pooh-chat').
   window.__hubOpenApp = (match, opts) => {
-    const a = (window.HUB_APPS || []).find((x) => String(x.entryUrl || '').indexOf(match) >= 0);
+    const find = () => (window.HUB_APPS || []).find((x) => String(x.entryUrl || '').indexOf(match) >= 0);
+    const a = find();
     if (a) loadApp(a, opts);
-    return !!a;
+    if (a) return true;
+    // R33a: a path asked for before the CSV lists are in → wait for them (else open it by path)
+    const rel = normalizeEntryUrl(match);
+    if (String(match).indexOf('/') < 0 || !safeRel(rel)) return false;
+    csvReady.then(() => { const b = find() || appForId('~' + rel); if (b) loadApp(b, opts); });
+    return true;
   };
   /** hub_flyout.js: open an app picked in a category's flyout, as if from that category page. */
   window.__hubFly = {
@@ -1012,10 +1024,52 @@
     }
   });
 
+  /* ---------- R33a: apps from the category CSVs ---------- */
+  // hub_apps.js keeps only the categories + hidden system rows; every app comes from
+  // apps/<cat>/<cat>-apps.csv, read by hub_flyout.js (window.HubStartList, cached in
+  // sites-hub.startList). Registered in HUB_CAT_CSV order, so hash ids stay the same.
+  const catNames = () => Object.keys(window.HUB_CAT_CSV || {});
+  function addCsvApps(cat, list) {
+    (list || []).forEach((a) => {
+      const entryUrl = normalizeEntryUrl(a && a.entryUrl);
+      if (!entryUrl || !a.name || findApp(entryUrl)) return;
+      const app = { category: cat, name: a.name, entryUrl, iconUrl: a.icon || '', newTab: !!a.newTab, order: 0, hidden: false, csv: true };
+      apps.push(app);
+      registerApp(app);
+    });
+  }
+  /** Every category CSV (loaded / refreshed) → registered. Resolves when done (never rejects). */
+  function loadCsvApps() {
+    const S = window.HubStartList, cats = catNames();
+    if (!S) return Promise.resolve();
+    return Promise.all(cats.map((c) => S.load(c).catch(() => null)))
+      .then((lists) => lists.forEach((l, i) => addCsvApps(cats[i], l)));
+  }
+  let csvReady = Promise.resolve();
+  function start() {
+    const S = window.HubStartList, cats = catNames();
+    const cached = S ? cats.map((c) => S.cached(c)) : [];
+    if (S && cached.every(Boolean)) {   // all lists cached: hash / last app / session at once
+      cached.forEach((l, i) => addCsvApps(cats[i], l));
+      csvReady = loadCsvApps();
+      applyHash(true);
+      return;
+    }
+    // first visit (or a changed list): wait for the CSVs (max 4 s), then open the hash / last app
+    csvReady = loadCsvApps();
+    Promise.race([csvReady, new Promise((r) => setTimeout(r, 4000))]).then(() => applyHash(true));
+  }
+  window.addEventListener('hub-startlist', (e) => {   // a CSV changed: register its new apps
+    const S = window.HubStartList, cat = e.detail && e.detail.cat;
+    if (S && cat) S.load(cat).then((l) => addCsvApps(cat, l));
+  });
+
   primeFrame();
   loadApps();
   renderTiles();
-  applyHash(true);
+  // hub_flyout.js (the CSV lists) loads after this file: start once every core script is in
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
+  else start();
   // Back / Forward (and hand-edited hashes): switch apps without adding entries.
   window.addEventListener('popstate', () => applyHash(false));
   window.addEventListener('hashchange', () => applyHash(false));

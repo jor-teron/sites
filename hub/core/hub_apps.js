@@ -1,5 +1,9 @@
 /*
  * ===== LEGACY APP LIST (R30) — do not add new apps here; add them to the category CSV =====
+ * R33a: this file now keeps ONLY the category list + order (the "<Category> Page" rows) and the
+ * hidden system rows (Desktop/vDesktop, Settings, About, Contact, Feedback, Transcribe — not in
+ * any category CSV). Every app row moved to the archive block at the end (not parsed); hub.js
+ * registers the apps from the category CSVs (hub_flyout.js window.HubStartList).
  * Source of truth for which apps a category shows: apps/<category>/<category>-apps.csv
  * (mapped in hub_config.js HUB_CAT_CSV, parsed by TilesCsv in shared/tiles/tiles.js). Those
  * CSVs draw the category pages (apps/<cat>/<cat>.html) and the Desktop Start flyouts
@@ -44,15 +48,40 @@
  * redirects to apps/settings/#about. Settings itself is opened by the "⚙ Settings" row
  * at the bottom of the menu (hub_settings.js), so its row is HIDDEN here.
  */
-// LEGACY list (see the header): new apps go in apps/<category>/<category>-apps.csv.
+// R33a: categories ("<Category> Page" rows) + hidden system rows only. Apps: apps/<category>/<category>-apps.csv.
 window.HUB_APPS_CSV = `
 CATEGORY, NAME,                  ENTRY_URL,                                  ICON_URL, NEW_TAB, HIDDEN, ORDER
 Favorite, Favorite Page,         apps/favorite/favorite.html,                ,         0,       0,      9
-Favorite, TV,                    tv/,                                        ,         0,       0,      10
 Favorite, Transcribe,            apps/tools/transcribe/,                     ,         0,       1,      20
-Favorite, Caption for NEI,       apps/tools/caption-for-nei/,                ,         0,       0,      70
 
 Games,    Games Page,            apps/games/games.html,                      ,         0,       0,      100
+
+Media,    Media Page,            apps/media/media.html,                      ,         0,       0,      209
+
+Office,   Office Page,           apps/office/office.html,                    ,         0,       0,      309
+
+Connectivity,Connectivity Page,     apps/connectivity/connectivity.html,        ,         0,       0,      404
+
+Tools,    Tools Page,            apps/tools/tools.html,                      ,         0,       0,      409
+
+Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,         0,       1,      900
+
+Lab,      Lab Page,              apps/lab/lab.html,                          ,         0,       0,      1000
+
+About,    About,                 apps/about/,                                ,         0,       1,      2000
+About,    Contact,               apps/about/contact.html,                    ,         0,       1,      2020
+About,    Feedback,              apps/about/feedback.html,                   ,         0,       1,      2030
+
+Settings, Settings,              apps/settings/,                             ,         0,       1,      2100
+`;
+
+/* ===== R33a ARCHIVE (not parsed): the app rows that lived here until R33a =====
+ * R33a: kept for reference; source is the category CSVs (apps/<category>/<category>-apps.csv).
+ * Every row below exists in a category CSV with the same entry path, name, icon and new-tab
+ * flag (checked at R33a). Do not copy rows back; edit the category CSV instead.
+CATEGORY, NAME,                  ENTRY_URL,                                  ICON_URL, NEW_TAB, HIDDEN, ORDER
+Favorite, TV,                    tv/,                                        ,         0,       0,      10
+Favorite, Caption for NEI,       apps/tools/caption-for-nei/,                ,         0,       0,      70
 Games,    D-Pad Controller,      hub/controller/,                            ,         1,       0,      199
 Games,    2048,                  apps/games/2048/,                           ,         0,       0,      101
 Games,    Swell Foop,            apps/games/swell-foop/,                     ,         0,       0,      102
@@ -73,14 +102,10 @@ Games,    Browser FPS,           apps/games/browser-fps/,                    ,  
 Games,    Island (Alpha),        apps/games/island-alpha/,                   ,         0,       0,      192
 Games,    Tower Defence,         apps/games/tower-defence/,                  ,         0,       0,      111
 Games,    Demolisher,            apps/games/demolisher/,                     ,         0,       0,      195
-
-Media,    Media Page,            apps/media/media.html,                      ,         0,       0,      209
 Media,    TV,                    tv/,                                        ,         0,       0,      210
 Media,    3D Viewer,             apps/media/3d-viewer/,                      ,         0,       0,      240
 Media,    Draw,                  apps/media/draw/,                           ,         0,       0,      225
 Media,    Photo Editor v2,       apps/media/photo-editor-v2/,                ,         0,       0,      265
-
-Office,   Office Page,           apps/office/office.html,                    ,         0,       0,      309
 Office,   Spreadsheet,           apps/office/spreadsheet/,                   ,         0,       0,      320
 Office,   Draftly,               apps/office/draftly/,                       ,         0,       0,      310
 Office,   OCR,                   apps/office/ocr/,                           ,         0,       0,      360
@@ -89,13 +114,9 @@ Office,   Notely,                apps/office/notely/,                        ,  
 Office,   Print,                 apps/office/print/,                         ,         0,       0,      460
 Office,   Mail,                  apps/office/mail/,                          ,         0,       0,      470
 Office,   Paper Scan,            apps/office/paper-scan/,                    ,         0,       0,      480
-
-Connectivity,Connectivity Page,     apps/connectivity/connectivity.html,        ,         0,       0,      404
 Connectivity, File Drop,         apps/connectivity/filedrop/,                ,         0,       0,      405
 Connectivity, QR Scanner,        apps/connectivity/qr-scanner/,              ,         0,       0,      406
 Connectivity, Pooh Chat,         apps/connectivity/pooh-chat/,               ,         0,       0,      450
-
-Tools,    Tools Page,            apps/tools/tools.html,                      ,         0,       0,      409
 Tools,    Files,                 apps/tools/files/,                          ,         0,       0,      405
 Tools,    Viewer,                apps/tools/viewer/,                         ,         0,       0,      407
 Tools,    System Monitor,        apps/tools/sysmon/,                         ,         0,       0,      406
@@ -105,11 +126,7 @@ Tools,    NE-India Dictionary,   apps/tools/nei-dict/,                       ,  
 Tools,    Weather,               apps/tools/weather-chart/,                  ,         0,       0,      420
 Tools,    Weather Hourly,        apps/tools/weather-hourly/,                 ,         0,       0,      465
 Tools,    Caption for NEI,       apps/tools/caption-for-nei/,                ,         0,       0,      440
-
 Tools,    Learning HTML (Basic), apps/tools/learning-html/,                  ,         0,       0,      910
-Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,         0,       1,      900
-
-Lab,      Lab Page,              apps/lab/lab.html,                          ,         0,       0,      1000
 Lab,      Island Game Demo,      apps/lab/island-demo/,                      ,         0,       0,      1080
 Lab,      Phone,                 apps/media/phone/,                          ,         0,       0,      1070
 Lab,      Paper Keyboard,        apps/lab/paper-keyboard/,                   ,         0,       0,      1040
@@ -123,10 +140,5 @@ Lab,      Notepad,               apps/office/notepad/,                       ,  
 Lab,      Calculator (Legacy),   apps/tools/calculator-beta/,                ,         0,       0,      1903
 Lab,      Webcam,                apps/media/webcam/,                         ,         0,       0,      1904
 Lab,      Keyboard,              apps/lab/keyboard/,                         ,         0,       0,      1905
+ * ===== end of R33a archive ===== */
 
-About,    About,                 apps/about/,                                ,         0,       1,      2000
-About,    Contact,               apps/about/contact.html,                    ,         0,       1,      2020
-About,    Feedback,              apps/about/feedback.html,                   ,         0,       1,      2030
-
-Settings, Settings,              apps/settings/,                             ,         0,       1,      2100
-`;
