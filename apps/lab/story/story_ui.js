@@ -10,7 +10,7 @@ export const el = {
   form: $("composer"), status: $("status"), sheet: $("sheet"),
   settingsBtn: $("settings-btn"), closeBtn: $("close-btn"), seg: $("model-seg"),
   len: $("len"), lenVal: $("len-val"), temp: $("temp"), tempVal: $("temp-val"),
-  clear: $("clear-btn"),
+  clear: $("clear-btn"), announce: $("announce"), card: document.querySelector(".sheet-card"), modelBusy: $("model-busy"),
 };
 
 const PREF_KEY = "story-prefs";
@@ -48,9 +48,41 @@ export function setBusy(b) {
 }
 
 export function markModel(key) {
-  el.seg.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.model === key));
+  el.seg.querySelectorAll("button").forEach((b) => {
+    const on = b.dataset.model === key;
+    b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on));
+  });
 }
-export function showSettings(show) { el.sheet.hidden = !show; }
+/** Disable model buttons while a story is being written. */
+export function setModelLock(locked) {
+  el.seg.querySelectorAll("button").forEach((b) => { b.disabled = locked; });
+  el.modelBusy.hidden = !locked;
+}
+/** Announce text once via the hidden live region. */
+export function announce(t) { el.announce.textContent = ""; setTimeout(() => { el.announce.textContent = t; }, 50); }
+
+// Settings sheet as a modal dialog: focus in on open, trapped, Escape closes, focus back on close.
+const FOCUSABLE = "button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex='-1'])";
+function onSheetKey(e) {
+  if (e.key === "Escape") { e.preventDefault(); showSettings(false); return; }
+  if (e.key !== "Tab") return;
+  const f = [...el.card.querySelectorAll(FOCUSABLE)];
+  if (!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && (document.activeElement === first || document.activeElement === el.card)) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
+export function showSettings(show) {
+  if (show === !el.sheet.hidden) return;
+  el.sheet.hidden = !show;
+  if (show) {
+    document.addEventListener("keydown", onSheetKey);
+    el.closeBtn.focus();
+  } else {
+    document.removeEventListener("keydown", onSheetKey);
+    el.settingsBtn.focus();
+  }
+}
 export function showPrefs(p) {
   el.len.value = p.maxTokens; el.lenVal.textContent = `· ${p.maxTokens} tokens`;
   el.temp.value = p.temperature; el.tempVal.textContent = `· ${Number(p.temperature).toFixed(1)}`;

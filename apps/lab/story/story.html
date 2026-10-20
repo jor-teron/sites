@@ -17,30 +17,34 @@
 <body>
   <header class="bar">
     <h1>Story</h1>
-    <span class="status" id="status">Starting…</span>
-    <button class="icon-btn" id="settings-btn" aria-label="Settings">⚙</button>
+    <span class="status" id="status" role="status">Starting…</span>
+    <button class="icon-btn" id="settings-btn" aria-label="Settings" aria-haspopup="dialog" aria-controls="sheet">⚙</button>
   </header>
 
-  <main class="feed" id="chat" aria-live="polite">
+  <main class="feed" id="chat">
     <p class="empty" id="empty">Type a beginning, get a tiny story.</p>
   </main>
+  <div class="sr-only" id="announce" aria-live="polite" aria-atomic="true"></div>
 
   <form class="composer" id="composer">
-    <input type="text" id="user-input" placeholder="Once upon a time…" autocomplete="off" enterkeyhint="send">
+    <input type="text" id="user-input" placeholder="Once upon a time…" aria-label="Story beginning" autocomplete="off" enterkeyhint="send">
     <button type="submit" class="send" id="send-btn" aria-label="Write">➤</button>
   </form>
 
   <!-- Settings panel (secondary controls) -->
   <div class="sheet" id="sheet" hidden>
-    <div class="sheet-card">
-      <div class="sheet-head"><h2>Settings</h2><button class="icon-btn" id="close-btn" aria-label="Close">✕</button></div>
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sheet-title" tabindex="-1">
+      <div class="sheet-head"><h2 id="sheet-title">Settings</h2><button class="icon-btn" id="close-btn" aria-label="Close">✕</button></div>
 
-      <label class="lbl">Model</label>
+      <fieldset class="seg-set">
+      <legend class="lbl">Model</legend>
+      <p class="hint" id="model-busy" hidden>Finish or stop the story first.</p>
       <div class="seg" id="model-seg">
-        <button type="button" data-model="lite">Lite<small>~1 MB download</small></button>
-        <button type="button" data-model="mini">Mini<small>~20 MB download</small></button>
-        <button type="button" data-model="pro">Pro<small>~50 MB download</small></button>
+        <button type="button" data-model="lite" aria-pressed="false">Lite<small>~1 MB download</small></button>
+        <button type="button" data-model="mini" aria-pressed="false">Mini<small>~20 MB download</small></button>
+        <button type="button" data-model="pro" aria-pressed="false">Pro<small>~50 MB download</small></button>
       </div>
+      </fieldset>
 
       <label class="lbl" for="len">Length <span id="len-val"></span></label>
       <input type="range" id="len" min="240" max="600" step="20">

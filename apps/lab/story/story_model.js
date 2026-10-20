@@ -38,7 +38,7 @@ function onMsg(e) {
     loadWait.listeners.forEach((f) => f && f(m.pct));
   }
   else if (m.type === "ready" && loadWait && loadWait.key === m.key) settleLoad();
-  else if (m.type === "token" && gen) gen.onToken(m.text);
+  else if (m.type === "token" && gen) gen.onToken(m.text, m.count);
   else if (m.type === "done" && gen) { gen.resolve(m); gen = null; }
   else if (m.type === "error") {
     if (m.key !== undefined) { if (loadWait && loadWait.key === m.key) settleLoad(new Error(m.msg)); }
@@ -77,7 +77,7 @@ export function loadModel(key, onProgress) {
   return promise;
 }
 
-/** Stream a continuation; onToken(chunk) per piece. Resolves {text,tps}. */
+/** Stream a continuation; onToken(chunk, tokenCount) per piece. Resolves {text,tps}. */
 export function generate(prompt, opts, onToken) {
   return new Promise((resolve, reject) => {
     gen = { onToken, resolve, reject };
