@@ -100,6 +100,8 @@
   <div class="field"><label for="tokensPerStory">Avg tokens / story</label><input id="tokensPerStory" type="number" inputmode="decimal" value="200" step="1" min="1"><button type="button" class="info" data-help="tokensPerStory" aria-label="About Avg tokens / story">ⓘ</button></div>
   <div class="field"><label for="dataMode">Dataset size as</label><select id="dataMode"><option value="stories">Stories × tokens</option><option value="words">Words</option><option value="tokens">Measured tokens</option></select><button type="button" class="info" data-help="dataMode" aria-label="About Dataset size as">ⓘ</button></div>
   <div class="field"><label for="words">Words</label><input id="words" type="number" inputmode="decimal" value="100000" step="1" min="1"><button type="button" class="info" data-help="words" aria-label="About Words">ⓘ</button></div>
+  <div class="field wc"><button type="button" id="wcPick" class="wcb">Choose file</button><input id="wcFile" type="file" multiple accept=".txt,text/*" hidden><input id="wcUrl" type="url" inputmode="url" placeholder="or URL / URL list / folder" aria-label="Dataset URL"><button type="button" id="wcGo" class="wcb" aria-label="Count words at URL">Count</button></div>
+  <p class="note" id="wcOut" aria-live="polite"></p>
   <div class="field"><label for="totalTokens">Total tokens</label><input id="totalTokens" type="number" inputmode="decimal" value="60000000" step="1" min="1"><button type="button" class="info" data-help="totalTokens" aria-label="About Total tokens">ⓘ</button></div>
   <div class="field"><label for="epochs">Epochs</label><input id="epochs" type="number" inputmode="decimal" value="2" step="0.1" min="0.1"><button type="button" class="info" data-help="epochs" aria-label="About Epochs">ⓘ</button></div>
   <div class="field"><label for="minSteps">Min steps</label><input id="minSteps" type="number" inputmode="numeric" value="0" step="100" min="0" placeholder="e.g. 3000"><button type="button" class="info" data-help="minSteps" aria-label="About Min steps">ⓘ</button></div>
@@ -162,5 +164,6 @@
 <script src="llm-calc-ui.js"></script>
 <script src="llm-calc-export.js"></script>
 <script src="llm-calc-reverse.js"></script>
+<script src="llm-calc-wordcount.js"></script>
 </body>
 </html>

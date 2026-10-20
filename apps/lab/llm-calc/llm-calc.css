@@ -121,3 +121,8 @@ header.top { display:flex; align-items:center; justify-content:space-between; ga
 #exportCard .dlrow .btn { width:auto; flex:1 1 140px; }
 .tick { display:inline-flex; align-items:center; gap:8px; min-height:44px; min-width:44px; font-size:1rem; cursor:pointer; }
 .tick input { width:24px; height:24px; margin:0; }
+/* R15 word counter */
+.field.wc #wcUrl { flex:1; min-width:0; min-height:44px; }
+.wcb { min-height:44px; padding:0 14px; border-radius:10px; border:1px solid var(--line); background:transparent; color:var(--fg); font:inherit; cursor:pointer; transition:transform .25s var(--jelly); }
+.wcb:active { transform:scale(.94,1.06); }
+@media (prefers-reduced-motion: reduce) { .wcb { transition:none; } .wcb:active { transform:none; } }
