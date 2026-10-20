@@ -1,7 +1,8 @@
 /*
  * File: llm-calc-export.js
  * Project: llm-calc (Lab) — R7 2026-10-20 (R7: output switches, grad accum, auto batch, checkpointing;
- *          R6: scaled speed, data mode, MIN_LR_RATIO, name charset [A-Za-z0-9._-], memory_gb = GPU 0)
+ *          R6: scaled speed, data mode, MIN_LR_RATIO, name charset [A-Za-z0-9._-], memory_gb = GPU 0;
+ *          R8: GGUF q4_k_m, train.py v3.7 output defaults)
  * Purpose: Export for the training script + people. One Download button:
  *          (a) saves <name>.llmcfg.json (Kaggle Tutor "llmcalc-config" v1 spec:
  *              UPPER_CASE script settings + "_estimates" for comparison only);
@@ -37,16 +38,16 @@
     const tps = M.scaledTps(s.tps, p.total);
     const sec = M.timeSec(tr.tokensTrained, tps, s.gpus, s.gradCkpt);
     const mem = M.memoryFull({ p: p.total, batch: s.batch, seq: s.seq, h: s.hidden, layers: s.layers, heads: s.heads, vocab: s.vocab, gpus: s.gpus, ckpt: s.gradCkpt });
-    const o = outputs(s), os = M.outputSizes(p.total, o);
+    const o = outputs(s), os = M.outputSizes(p.total, o, { hidden: s.hidden, ffn: s.ffn, total: p.total, mlpTotal: p.mlp * s.layers });
     const sizes = {}; os.list.forEach(f => { sizes[f.key] = r1(f.mb); }); sizes.total = r1(os.total);
     return { p, tr, sec, mem, tps, o, os, sizes, fp32: r1(p.total * 4 / M.MB) };
   }
   // Effective output values (Modelfile needs GGUF, ONNX int8 needs ONNX). Missing keys = script defaults.
   function outputs(s) {
     const d = (v, def) => v === undefined ? def : !!v;
-    const gguf = d(s.exportGguf, true), onnx = d(s.exportOnnx, true);
-    return { hf: d(s.exportHf, true), gguf, ggufType: ['f32', 'f16', 'bf16', 'q8_0'].indexOf(s.ggufType) >= 0 ? s.ggufType : 'q8_0',
-      modelfile: gguf && d(s.exportModelfile, true), onnx, onnxInt8: onnx && d(s.exportOnnxInt8, true), zip: d(s.exportZip, true) };
+    const gguf = d(s.exportGguf, true), onnx = d(s.exportOnnx, false); // train.py v3.7 defaults
+    return { hf: d(s.exportHf, false), gguf, ggufType: ['q4_k_m', 'q8_0', 'f16', 'bf16', 'f32'].indexOf(s.ggufType) >= 0 ? s.ggufType : 'q4_k_m',
+      modelfile: gguf && d(s.exportModelfile, true), onnx, onnxInt8: onnx && d(s.exportOnnxInt8, false), zip: d(s.exportZip, false) };
   }
   // s: plain state object (see readState). Returns the JSON object in spec key order.
   function buildConfig(s, now) {

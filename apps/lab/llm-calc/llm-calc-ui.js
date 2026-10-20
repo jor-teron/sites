@@ -1,6 +1,6 @@
 /*
  * File: llm-calc-ui.js
- * Project: llm-calc (Lab) — R6+R7 2026-10-20
+ * Project: llm-calc (Lab) — R8 2026-10-20 (R8: q4_k_m 256-multiple warning)
  * Purpose: Reads inputs, recomputes on every change, renders results,
  *          handles ⓘ help popups, GPU presets and calibration.
  *          R2: "Real models" tap-to-copy list in each model setting's ⓘ.
@@ -86,10 +86,11 @@
       ['Attention / layer' + (m.qkvBias ? ' (incl. ' + fmt(p.bias) + ' bias)' : ''), fmt(p.attn)], ['MLP / layer', fmt(p.mlp)], ['Norms / layer', fmt(p.norms)],
       ['All ' + fmt(m.layers) + ' layers', fmt(p.layersTotal)], ['Final norm', fmt(p.finalNorm)], ['<b>Total</b>', '<b>' + fmt(p.total) + '</b>']
     ]);
-    const os = M.outputSizes(p.total, o);
+    const os = M.outputSizes(p.total, o, { hidden: m.hidden, ffn: m.ffn, total: p.total, mlpTotal: p.mlp * m.layers });
+    if (o.gguf && o.ggufType === 'q4_k_m') ['hidden', 'ffn'].forEach(k => { if (m[k] % 256) warns.push((k === 'ffn' ? 'FFN ' : 'Hidden ') + fmt(m[k]) + " isn't a multiple of 256, so Q4_K_M stores those tensors in a bigger format (file a bit larger; size is rough)."); });
     $('rSizes').innerHTML = os.list.length ? rows(os.list.map(f => [f.name, '~' + fmtMB(f.mb)]).concat([['<b>Total disk</b>', '<b>~' + fmtMB(os.total) + '</b>']])) : rows([['No outputs selected', '—']]);
     const ref = M.fileSizes(p.total);
-    $('rSizesRef').textContent = 'Other formats (reference): fp16 ~' + fmtMB(ref[1].mb) + ' · Q4_K_M ~' + fmtMB(ref[3].mb);
+    $('rSizesRef').textContent = 'Other formats (reference): fp16 ~' + fmtMB(ref[1].mb) + '';
 
     const tr = M.training(t, seq);
     $('rTokens').textContent = fmt(tr.tokens);

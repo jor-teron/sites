@@ -3,7 +3,8 @@
  * Project: llm-calc (Lab) — R7 2026-10-20 (R2: optional head size + QKV bias;
  *          R7: grad accumulation, gradient checkpointing, sizes for selected outputs;
  *          R6 2026-10-20: speed scales ~1/params, words/tokens data modes,
- *          fuller memory (attention, logits, DataParallel GPU 0), overfit check)
+ *          fuller memory (attention, logits, DataParallel GPU 0), overfit check;
+ *          R8 2026-10-20: GGUF q4_k_m (train.py v3.7 default) + 256-multiple fallback)
  * Purpose: Pure formulas for the Tiny LLM Training Calculator (no DOM).
  *          Params of a Llama-style model, file sizes, steps, time, memory.
  *          Works in the browser (window.LLMCalcMath) and in Node (module.exports).
@@ -46,14 +47,25 @@
              embed, finalNorm, total: perLayer * m.layers + embed + finalNorm };
   }
   // R7: bytes/param per GGUF type, and the outputs the training script can save.
-  const GGUF_BPP = { f32: 4, f16: 2, bf16: 2, q8_0: 1.0625 };
+  const GGUF_BPP = { q4_k_m: 0.56, q8_0: 1.0625, f16: 2, bf16: 2, f32: 4 };
+  // Q4_K_M packs rows in blocks of 256; tensors whose row width is not a multiple of 256 fall back
+  // to a bigger type (rough: counted as q8_0). Returns params stored that way.
+  function q4Fallback(sh) {
+    if (!sh) return 0;
+    if (sh.hidden % 256) return sh.total; // nearly every tensor has hidden as its row width
+    return sh.ffn % 256 ? sh.mlpTotal / 3 : 0; // down_proj rows are FFN wide
+  }
   const CKPT_ACT = 0.25;  // rough: checkpointing keeps ~1 activation per layer, recomputes the rest
   const CKPT_TIME = 1.25; // ~25% slower (recompute during backward)
   // o: { hf, gguf, ggufType, onnx, onnxInt8, zip } (effective values). Returns rows + total MB.
-  function outputSizes(p, o) {
+  function outputSizes(p, o, sh) {
     const list = [];
     if (o.hf) list.push({ key: 'hf', name: 'HF (safetensors, fp32)', mb: p * 4 / MB });
-    if (o.gguf) list.push({ key: 'gguf', name: 'GGUF ' + o.ggufType, mb: p * (GGUF_BPP[o.ggufType] || 1.0625) / MB });
+    if (o.gguf) {
+      const fb = o.ggufType === 'q4_k_m' ? Math.min(p, q4Fallback(sh)) : 0;
+      list.push({ key: 'gguf', name: 'GGUF ' + o.ggufType + (fb ? ' (rough, some tensors bigger)' : ''),
+        mb: ((p - fb) * (GGUF_BPP[o.ggufType] || 0.56) + fb * GGUF_BPP.q8_0) / MB });
+    }
     if (o.onnx) list.push({ key: 'onnx', name: 'ONNX fp32', mb: p * 4 / MB });
     if (o.onnx && o.onnxInt8) list.push({ key: 'onnx_int8', name: 'ONNX int8', mb: p * 1 / MB });
     const sum = list.reduce((a, f) => a + f.mb, 0);
@@ -103,6 +115,6 @@
     const acts = batch * seq * h * layers * 34 * (ckpt ? CKPT_ACT : 1); // rough
     return { states, acts, total: states + acts };
   }
-  const api = { REF_PARAMS, WORD_TOKENS, speedFactor, scaledTps, memoryFull, overfit, MB, GB, FORMATS, GGUF_BPP, CKPT_ACT, CKPT_TIME, outputSizes, GPU_PRESETS, TWO_GPU_SCALE, params, fileSizes, training, timeSec, calibrate, memory };
+  const api = { REF_PARAMS, WORD_TOKENS, speedFactor, scaledTps, memoryFull, overfit, MB, GB, FORMATS, GGUF_BPP, q4Fallback, CKPT_ACT, CKPT_TIME, outputSizes, GPU_PRESETS, TWO_GPU_SCALE, params, fileSizes, training, timeSec, calibrate, memory };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LLMCalcMath = api;
 })(this);

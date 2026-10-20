@@ -18,7 +18,9 @@
            auto batch, gradient checkpointing.
            R6: speed by model size, data as stories/words/tokens, overfit
            warning, min LR ratio, safe model-name charset, fuller memory (GPU 0).
-  Date: 2026-10-20 (R6)
+           R8: train.py v3.7 defaults (GGUF q4_k_m + Modelfile on, other outputs
+           off), Q4_K_M 256-multiple warning.
+  Date: 2026-10-20 (R8)
 -->
 <html lang="en">
 <head>
@@ -101,13 +103,13 @@
   <div class="field"><label for="maxSamples">Max samples</label><input id="maxSamples" type="number" inputmode="decimal" placeholder="all" step="1" min="1"><button type="button" class="info" data-help="maxSamples" aria-label="About Max samples">ⓘ</button></div>
 </section>
 <section class="card"><h2>Outputs</h2>
-  <div class="field"><label for="exportHf">HF safetensors</label><input id="exportHf" type="checkbox" class="sw" checked><button type="button" class="info" data-help="exportHf" aria-label="About HF safetensors">ⓘ</button></div>
+  <div class="field"><label for="exportHf">HF safetensors</label><input id="exportHf" type="checkbox" class="sw"><button type="button" class="info" data-help="exportHf" aria-label="About HF safetensors">ⓘ</button></div>
   <div class="field"><label for="exportGguf">GGUF</label><input id="exportGguf" type="checkbox" class="sw" checked><button type="button" class="info" data-help="exportGguf" aria-label="About GGUF">ⓘ</button></div>
-  <div class="field"><label for="ggufType">GGUF type</label><select id="ggufType"><option value="f32">f32</option><option value="f16">f16</option><option value="bf16">bf16</option><option value="q8_0" selected>q8_0</option></select><button type="button" class="info" data-help="ggufType" aria-label="About GGUF type">ⓘ</button></div>
+  <div class="field"><label for="ggufType">GGUF type</label><select id="ggufType"><option value="q4_k_m" selected>q4_k_m</option><option value="q8_0">q8_0</option><option value="f16">f16</option><option value="bf16">bf16</option><option value="f32">f32</option></select><button type="button" class="info" data-help="ggufType" aria-label="About GGUF type">ⓘ</button></div>
   <div class="field"><label for="exportModelfile">Ollama Modelfile</label><input id="exportModelfile" type="checkbox" class="sw" checked><button type="button" class="info" data-help="exportModelfile" aria-label="About Ollama Modelfile">ⓘ</button></div>
-  <div class="field"><label for="exportOnnx">ONNX</label><input id="exportOnnx" type="checkbox" class="sw" checked><button type="button" class="info" data-help="exportOnnx" aria-label="About ONNX">ⓘ</button></div>
-  <div class="field"><label for="exportOnnxInt8">ONNX int8</label><input id="exportOnnxInt8" type="checkbox" class="sw" checked><button type="button" class="info" data-help="exportOnnxInt8" aria-label="About ONNX int8">ⓘ</button></div>
-  <div class="field"><label for="exportZip">ZIP everything</label><input id="exportZip" type="checkbox" class="sw" checked><button type="button" class="info" data-help="exportZip" aria-label="About ZIP everything">ⓘ</button></div>
+  <div class="field"><label for="exportOnnx">ONNX</label><input id="exportOnnx" type="checkbox" class="sw"><button type="button" class="info" data-help="exportOnnx" aria-label="About ONNX">ⓘ</button></div>
+  <div class="field"><label for="exportOnnxInt8">ONNX int8</label><input id="exportOnnxInt8" type="checkbox" class="sw"><button type="button" class="info" data-help="exportOnnxInt8" aria-label="About ONNX int8">ⓘ</button></div>
+  <div class="field"><label for="exportZip">ZIP everything</label><input id="exportZip" type="checkbox" class="sw"><button type="button" class="info" data-help="exportZip" aria-label="About ZIP everything">ⓘ</button></div>
   <p id="outNote" class="note"></p>
 </section>
 <section class="card"><h2>Hardware</h2>

@@ -1,6 +1,6 @@
 /*
  * File: llm-calc-help.js
- * Project: llm-calc (Lab) — R5 2026-10-19 (R2: head size, QKV bias; R4: removed Load whole model text; R5: help for export + training-config fields; R6 2026-10-20: speed, data mode, words, min LR; R7 2026-10-20: outputs, grad accum, auto batch, checkpointing)
+ * Project: llm-calc (Lab) — R5 2026-10-19 (R2: head size, QKV bias; R4: removed Load whole model text; R5: help for export + training-config fields; R6 2026-10-20: speed, data mode, words, min LR; R8 2026-10-20: q4_k_m; R7 2026-10-20: outputs, grad accum, auto batch, checkpointing)
  * Purpose: Plain-English help text for every setting (shown by the ⓘ buttons)
  *          and the glossary. Text only, no logic.
  */
@@ -40,7 +40,7 @@ window.LLMCalcHelp = {
   gradCkpt: 'Gradient checkpointing. Saves memory by forgetting most in-between results and recomputing them when needed. On: activation memory drops a lot (~4× here), training ~25% slower. Off: faster, more memory. Turn on if you run out of memory.',
   exportHf: 'Saves a Hugging Face folder (safetensors, fp32). Used to load the model again in Python / Transformers, or keep training later. Size ≈ 4 bytes per parameter.',
   exportGguf: 'Saves a GGUF file for llama.cpp / Ollama / LM Studio — the easy way to chat with your model on a laptop.',
-  ggufType: 'Number format inside the GGUF file. f32: full size, exact. f16 / bf16: half size, almost exact. q8_0: about a quarter of f32, tiny quality loss — a good default. Lower = smaller file.',
+  ggufType: 'Number format inside the GGUF file. q4_k_m (default): smallest, ~1/7 of f32, small quality loss — needs Hidden and FFN to be multiples of 256, otherwise those parts are stored bigger and the file grows a bit. q8_0: about a quarter of f32, tiny loss. f16 / bf16: half size, almost exact. f32: full size, exact.',
   exportModelfile: 'Saves an Ollama "Modelfile" next to the GGUF so you can run "ollama create". Only works when GGUF is on. Tiny text file.',
   exportOnnx: 'Saves an ONNX model (fp32) — used to run in the browser (Transformers.js) or other apps. Size ≈ 4 bytes per parameter.',
   exportOnnxInt8: 'Also saves a smaller int8 version of the ONNX model (~1 byte per parameter), faster in the browser with a small quality loss. Needs ONNX on.',
