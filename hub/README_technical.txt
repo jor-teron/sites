@@ -2,8 +2,8 @@ SITES HUB - TECHNICAL GUIDE: HUB AND VIRTUAL DESKTOP
 ====================================================
 
 For a developer picking up the Hub (hub.html) and its virtual desktop.
-Written from the code as of R17, build bumped in R23+R24 (2026-10-20, build ?v=20261020f,
-cache hub-shell-v49). Plain HTML / CSS / JS, no build step, no framework.
+Written from the code as of R17, build bumped in R25+R26 (2026-10-20, build ?v=20261020g,
+cache hub-shell-v50). Plain HTML / CSS / JS, no build step, no framework.
 Every file starts with a header comment: read it first, it is the spec.
 Short user notes live in hub/hub_readme.md; this file is the deep dive.
 
@@ -414,7 +414,8 @@ Fetch rules (same-origin GET only):
   - shell files with a newer ?v: network first
   - *.csv and hub/version.txt: network first, cache when offline
   - apps/ and other html / css / js: network first, kept in hub-rt-1
-  - images / fonts: cache first
+  - images: cached copy at once, refreshed in the background (R25)
+  - fonts: cache first
   - offline navigation not cached: hub/hub_offline.html
 Updates (hub/hub_update.js, window.HubUpdate):
   - A new worker WAITS (only the first install activates at once). A

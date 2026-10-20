@@ -13,14 +13,15 @@
  *   · *.csv and hub/version.txt: network first, cached copy when offline.
  *   · pages and files under apps/ (and other same-origin html/css/js): network first, stored in
  *     RUNTIME the first time they're opened, so they also open offline.
- *   · same-origin images / fonts: cache first (RUNTIME).
+ *   · same-origin images: cached copy at once, refreshed in the background (R25, RUNTIME), so an
+ *     edited icon / wallpaper shows on the next load; fonts: cache first (RUNTIME).
  *   · navigations not in a cache when offline: hub/hub_offline.html.
  * R16c: message {type:'refresh'} re-fetches every SHELL file (cache:'reload') and replaces the
  *   changed ones in place (the cache is never wiped); replies {type:'sw-refreshed', changed:[paths]}.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261020f';
-const CACHE = 'hub-shell-v49';  // 2026-10-20f: R23+R24 update apply fixes
+const V = '20261020g';
+const CACHE = 'hub-shell-v50';  // 2026-10-20g: R25+R26 image refresh, UiDialog for new code
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const SHELL = [
   'hub.html',
@@ -149,7 +150,13 @@ self.addEventListener('fetch', (e) => {
   const shellKey = nav && /\/hub\.html$/.test(path) ? bare : (SHELL_SET.has(bare) ? bare : '');
   if (shellKey && (!v || v === V)) { e.respondWith(staleWhileRevalidate(e, req, shellKey)); return; }
   if (shellKey) { e.respondWith(networkFirst(req, CACHE, shellKey, nav)); return; }   // newer ?v= than this worker
-  if (/\.(png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf)$/i.test(path)) {
+  if (/\.(png|jpe?g|gif|webp|svg|ico)$/i.test(path)) {   // R25: stale-while-revalidate in RUNTIME
+    const net = fetch(req).then((res) => { if (ok(res)) put(RUNTIME, bare, res); return res; });
+    e.waitUntil(net.catch(() => {}));
+    e.respondWith(caches.match(req, { ignoreSearch: true }).then((hit) => hit || net));
+    return;
+  }
+  if (/\.(woff2?|ttf|otf)$/i.test(path)) {
     e.respondWith(caches.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req).then((res) => { if (ok(res)) put(RUNTIME, bare, res); return res; })));
     return;
   }

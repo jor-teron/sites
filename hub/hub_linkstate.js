@@ -40,11 +40,16 @@
 
   /* host */
   act.textContent = '↻ New code';
-  act.addEventListener('click', (e) => {
+  act.addEventListener('click', async (e) => {
     e.stopPropagation();
     const hc = window.__hubController;
     if (!hc || !hc.newCode) return;
-    if (SharedLink.devices.some((d) => d.online) && !confirm('New code: connected devices must pair again. Continue?')) return;
+    if (SharedLink.devices.some((d) => d.online)) {   // R26: the Hub's own dialog (browser confirm only as a fallback)
+      const ok = window.UiDialog
+        ? await window.UiDialog.confirm('New code?', 'Connected devices must pair again.', 'New code', true)
+        : confirm('New code: connected devices must pair again. Continue?');
+      if (!ok) return;
+    }
     if (SharedLink.role === 'host') SharedLink.stop(true);   // say bye to joined devices
     hc.newCode();
     paint();

@@ -14,7 +14,7 @@
  */
 (function () {
   'use strict';
-  const V = '20261020f';
+  const V = '20261020g';
   const DELAY = 1500;
   const BATCHES = {
     drives: ['shared/google/google.css', 'hub/hub_drives.css',
