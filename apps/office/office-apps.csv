@@ -4,7 +4,6 @@
 name, path, icon, newtab, section
 Draftly,      draftly/,             , , Write
 Notely,       notely/,              , , Write
-Notepad,      notepad/,             , , Write
 MS Word Diff, ../tools/msword_diff/, , , Write
 Spreadsheet,  spreadsheet/,         , , Sheets
 OCR,          ocr/,                 , , Scan & Print

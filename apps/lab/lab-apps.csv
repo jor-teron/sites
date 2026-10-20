@@ -10,7 +10,6 @@ LLM Calculator,     llm-calc/,                    , , AI
 Device Benchmark,   devbench/,                    , , Tools
 Notebook,           notebook/,                    , , Tools
 Paper Keyboard,     paper-keyboard/,              , , Tools
-Keyboard,           keyboard/,                    , , Tools
 Bookmark Manager,   bookmark-manager/,            , , Tools
 Wiki Extractor,     wiki-extractor/,              , , Tools
 Google Drive Test,  gdrive-test/,                 , , Tools
@@ -29,3 +28,10 @@ Island Game Demo,   island-demo/,                 , , Games
 WebRTC Chat,        ../connectivity/webrtc-chat/, , , Connect
 P2P Chat,           ../connectivity/p2pchat.html, , , Connect
 Phone,              ../media/phone/,              , , Connect
+
+Paint,              ../media/paint/,              , , Legacy
+Photo Editor,       ../media/photo-editor/,       , , Legacy
+Notepad,            ../office/notepad/,           , , Legacy
+Calculator (Legacy), ../tools/calculator-beta/,   , , Legacy
+Webcam,             ../media/webcam/,             , , Legacy
+Keyboard,           keyboard/,                    , , Legacy

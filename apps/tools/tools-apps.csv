@@ -6,7 +6,6 @@ Files,                 files/,           , , Files
 Viewer,                viewer/,          , , Files
 System Monitor,        sysmon/,          , , System
 Calculator,            calculator/,      , , Calculators
-Calculator (Beta),     calculator-beta/, , , Calculators
 Weather,               weather-chart/,   , , Weather
 Weather Hourly,        weather-hourly/,  , , Weather
 NE-India Dictionary,   nei-dict/,        , , Language

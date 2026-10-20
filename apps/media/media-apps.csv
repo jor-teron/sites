@@ -3,9 +3,6 @@
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
 name, path, icon, newtab, section
 TV,              ../../tv/,        , , Watch
-Webcam,          webcam/,          , , Watch
 Draw,            draw/,            , , Draw & Paint
-Paint,           paint/,           , , Draw & Paint
-Photo Editor,    photo-editor/,    , , Photo
 Photo Editor v2, photo-editor-v2/, , , Photo
 3D Viewer,       3d-viewer/,       , , 3D
