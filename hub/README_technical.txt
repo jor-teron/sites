@@ -2,8 +2,8 @@ SITES HUB - TECHNICAL GUIDE: HUB AND VIRTUAL DESKTOP
 ====================================================
 
 For a developer picking up the Hub (hub.html) and its virtual desktop.
-Written from the code as of R17 (2026-10-20, build ?v=20261020e,
-cache hub-shell-v48). Plain HTML / CSS / JS, no build step, no framework.
+Written from the code as of R17, build bumped in R23+R24 (2026-10-20, build ?v=20261020f,
+cache hub-shell-v49). Plain HTML / CSS / JS, no build step, no framework.
 Every file starts with a header comment: read it first, it is the spec.
 Short user notes live in hub/hub_readme.md; this file is the deep dive.
 

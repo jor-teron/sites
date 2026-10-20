@@ -9,9 +9,11 @@
  * - Daily refresh (R16c) at 09:00 browser local time, or on the next open after a missed 09:00:
  *   reg.update() + the worker re-fetches the shell and replaces changed files (cache kept).
  *   Changed → quiet reload when no app / window is open, else the "Update ready" note.
+ *   R23: a new worker still installing is awaited first, then skip-waiting → reload on takeover.
  *   Last run in localStorage 'sites-hub.lastRefresh' (ms). (The old 23:00 check is gone.)
  * - check({manual}) — Settings → About "Check for update": compares the live hub.html build tag
- *   with the running one; when newer it clears the 'hub-shell-*' caches and reloads.
+ *   with the running one; when newer: R24 a waiting new worker takes over (skip-waiting →
+ *   reload, caches kept); with no new worker it clears the 'hub-shell-*' caches and reloads.
  * - clearCache() — Settings → About "Clear cache now": deletes hub-shell-* / hub-rt-* caches and
  *   the cached Start list (sites-hub.startList), unregisters the worker, reloads.
  * Version: hub/version.txt is the single source (line 1 'v0.299', line 2 release date
@@ -63,6 +65,15 @@
     else location.reload();
   }
   let lastReg = null;
+  /** R23: a worker still installing → wait until it is installed (or failed); resolves reg. */
+  function settle(reg) {
+    const w = reg && reg.installing;
+    if (!w) return Promise.resolve(reg);
+    return new Promise((res) => {
+      const t = setTimeout(() => res(reg), 30000);
+      w.addEventListener('statechange', () => { if (w.state !== 'installing') { clearTimeout(t); res(reg); } });
+    });
+  }
   function watch(reg) {
     if (!reg) return reg;
     lastReg = reg;
@@ -125,6 +136,8 @@
           const r = await regP;
           if (r) { if (r.waiting) showNote(r); return { state: 'ready', version: nw.version, build: nw.build }; }
         }
+        const r = await regP;   // R24: a new worker is in → let it take over (shell caches kept)
+        if (r && (await settle(r)).waiting) { setTimeout(() => apply(r), 1200); return { state: 'updated', version: nw.version, build: nw.build }; }
         if (window.caches) {
           const keys = await caches.keys();
           await Promise.all(keys.filter((k) => k.indexOf('hub-shell-') === 0).map((k) => caches.delete(k)));
@@ -181,7 +194,8 @@
     const changed = await askWorker();
     const newWorker = !!(reg && (reg.waiting || reg.installing));
     if (changed.length || newWorker) {
-      if (idleNow()) apply(reg); else showNote(reg);
+      if (!idleNow()) showNote(reg);
+      else { await settle(reg); if (idleNow()) apply(reg); else showNote(reg); }   // R23: never reload onto the old worker
     }
     refreshing = false;
     return { changed, newWorker };
