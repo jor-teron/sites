@@ -15,23 +15,23 @@
  *     RUNTIME the first time they're opened, so they also open offline.
  *   · same-origin images: cached copy at once, refreshed in the background (R25, RUNTIME), so an
  *     edited icon / wallpaper shows on the next load; fonts: cache first (RUNTIME).
- *   · navigations not in a cache when offline: hub/hub_offline.html.
+ *   · navigations not in a cache when offline: hub/update/hub_offline.html.
  * R16c: message {type:'refresh'} re-fetches every SHELL file (cache:'reload') and replaces the
  *   changed ones in place (the cache is never wiped); replies {type:'sw-refreshed', changed:[paths]}.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261020i';
-const CACHE = 'hub-shell-v52';  // 2026-10-20i: R30 hub_apps.js marked legacy
+const V = '20261020j';
+const CACHE = 'hub-shell-v53';  // 2026-10-20j: R31 hub/ in feature folders
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',
-  'hub/hub_main.css', 'hub/hub_controller.css', 'hub/hub_notification.css', 'hub/hub_flyout.css', 'hub/wm.css', 'hub/hub_chat.css', 'hub/hub_drives.css', 'hub/hub_update.css',
-  'hub/hub_role.js', 'hub/hub_config.js', 'hub/hub_apps.js', 'hub/hub_tiles.js', 'hub/hub.js', 'hub/hub_flyout.js', 'hub/hub_prefs.js', 'hub/hub_wallpapers.js', 'hub/hub_settings.js',
-  'hub/wm_mode.js', 'hub/wm_windows.js', 'hub/wm_taskbar.js', 'hub/wm_snap.js', 'hub/wm_workspaces.js',
-  'hub/hub_ctx.js', 'hub/hub_ctx_menus.js', 'hub/hub_traymeter.js', 'hub/hub_controller_config.js', 'hub/hub_notify.js', 'hub/hub_viewer.js', 'hub/hub_viewer_pdf.js',
-  'hub/hub_pointer.js', 'hub/hub_receive.js', 'hub/hub_remote.js', 'hub/hub-controller.js', 'hub/hub_textedit.js', 'hub/hub_link.js', 'hub/hub_linkstate.js',
-  'hub/hub_chat.js', 'hub/hub-gamebar.js', 'hub/hub_drives.js', 'hub/hub_phonekey.js', 'hub/hub_update.js', 'hub/hub_loader.js',
+  'hub/core/hub_main.css', 'hub/controller/hub_controller.css', 'hub/viewer/hub_notification.css', 'hub/menu/hub_flyout.css', 'hub/wm/wm.css', 'hub/link/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css',
+  'hub/core/hub_role.js', 'hub/core/hub_config.js', 'hub/core/hub_apps.js', 'hub/menu/hub_tiles.js', 'hub/core/hub.js', 'hub/menu/hub_flyout.js', 'hub/core/hub_prefs.js', 'hub/drives/hub_wallpapers.js', 'hub/menu/hub_settings.js',
+  'hub/wm/wm_mode.js', 'hub/wm/wm_windows.js', 'hub/wm/wm_taskbar.js', 'hub/wm/wm_snap.js', 'hub/wm/wm_workspaces.js',
+  'hub/menu/hub_ctx.js', 'hub/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'hub/controller/hub_controller_config.js', 'hub/viewer/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',
+  'hub/link/hub_pointer.js', 'hub/link/hub_receive.js', 'hub/link/hub_remote.js', 'hub/controller/hub-controller.js', 'hub/controller/hub_textedit.js', 'hub/link/hub_link.js', 'hub/link/hub_linkstate.js',
+  'hub/link/hub_chat.js', 'hub/link/hub-gamebar.js', 'hub/drives/hub_drives.js', 'hub/link/hub_phonekey.js', 'hub/update/hub_update.js', 'hub/core/hub_loader.js',
   'hub/controller/kb_common.js', 'hub/osk/osk_layout.js', 'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js', 'hub/osk/osk.css',
   'shared/style/no-scrollbar.css', 'shared/wallpaper/wallpapers.js', 'shared/perf/busy_meter.js', 'shared/vendor/qrcode.js',
   'shared/fs/fs_drives.js', 'shared/fs/fs_ops.js', 'shared/fs/fs_ref.js', 'shared/fs/filetypes.js', 'shared/fs/thumbs_store.js',
@@ -46,9 +46,9 @@ const SHELL = [
   'apps/tools/files/files_icon.png', 'apps/connectivity/qr-scanner/qr-scanner_icon.png', 'hub/controller/controller_icon.png', 'hub/controller/controller_qr_icon.png',
   'apps/favorite/favorite-apps.csv', 'apps/games/games-apps.csv', 'apps/media/media-apps.csv', 'apps/office/office-apps.csv',
   'apps/connectivity/connectivity-apps.csv', 'apps/tools/tools-apps.csv', 'apps/lab/lab-apps.csv', 'hub/version.txt',
-  'hub/hub_offline.html',
+  'hub/update/hub_offline.html',
 ];
-const OFFLINE = 'hub/hub_offline.html';
+const OFFLINE = 'hub/update/hub_offline.html';
 const abs = (p) => new URL(p, self.registration.scope).href;
 const SHELL_SET = new Set(SHELL.map(abs));
 

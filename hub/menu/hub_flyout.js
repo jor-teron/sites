@@ -1,5 +1,5 @@
 /*
- * Hub menu flyout (hub/hub_flyout.js) — GNOME 2 style cascading menu, DESKTOP MOUSE ONLY.
+ * Hub menu flyout (hub/menu/hub_flyout.js) — GNOME 2 style cascading menu, DESKTOP MOUSE ONLY.
  *
  * Hovering a category row in the open Hub menu (~100 ms) opens a second column beside the
  * menu with that category's apps, read from its own CSV (window.HUB_CAT_CSV in hub_config.js,

@@ -5,7 +5,7 @@
  * dispatched as keydown / keypress / keyup into the (same-origin) app frame's focused element,
  * and typed into a focused input / textarea / contenteditable (synthetic events do not type),
  * incl. Backspace / Delete / Enter and Ctrl+A. Caret, selection, Tab, undo / redo and clipboard
- * keys (arrows, Shift / Ctrl, Home / End, Ctrl+Z / Y / C / X / V) are hub/hub_textedit.js (R15).
+ * keys (arrows, Shift / Ctrl, Home / End, Ctrl+Z / Y / C / X / V) are hub/controller/hub_textedit.js (R15).
  * Nothing is typed or moved when the app cancels the keydown. Also posted as {type:'hub-key', ...}.
  * The Hub on-screen keyboard (hub/osk/osk.js) sends the same messages via __hubController.key(msg).
  * Rumble: an app in the iframe may post {type:'hub-rumble', ms:N} or

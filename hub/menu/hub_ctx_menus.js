@@ -1,6 +1,6 @@
 /*
- * Hub chrome menus (hub/hub_ctx_menus.js) — the right-click / long-press menus of the desktop
- * background, the home tiles and the Hub menu, registered with HubCtx (hub/hub_ctx.js).
+ * Hub chrome menus (hub/menu/hub_ctx_menus.js) — the right-click / long-press menus of the desktop
+ * background, the home tiles and the Hub menu, registered with HubCtx (hub/menu/hub_ctx.js).
  * (The taskbar, window title bars and drive tiles register theirs in their own modules.)
  *   Desktop background  Show desktop / Restore windows, Open Files, Settings (Wallpaper),
  *                       Refresh, Close all windows (asks first, shared/dialog), About

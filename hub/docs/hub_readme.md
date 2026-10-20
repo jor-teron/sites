@@ -4,7 +4,7 @@
 The start page of the site (`hub.html`). A header menu lists every app by category; apps open inside the hub in a full-size frame (or in a new tab). The home screen shows quick-access tiles on an animated wallpaper. A phone can be paired as a controller (gamepad, keyboard, trackpad) and can send files to the hub.
 
 ## 2. Files
-- Technical guide: [Hub and virtual desktop internals](README_technical.txt) (`hub/README_technical.txt`)
+- Technical guide: [Hub and virtual desktop internals](README_technical.txt) (`hub/docs/README_technical.txt`)
 - `../hub.html`: page shell (header, menu, controller popover, frame, home screen); loads the core with `?v=`
 - `hub_loader.js` (R16a): loads the rest after the page `load` event + idle, in batches: drives (Google sign-in, Drive, `hub_drives.js`, `hub_phonekey.js`) at first idle; then after ~1.5 s snap (`wm_snap.js`), keyboard (`osk/`), Viewer overlay. Early use (⌨ tray stub, Ctrl+Alt+K, Ctrl+Alt+arrows, `HubViewer.open`, OSK left open) loads that batch at once. Keep its `V` in step with `?v=`.
 - `hub_main.css`: page shell, wallpaper, top bar, tiles, collapsible menu
@@ -45,8 +45,8 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - **Phone → hub files:** the controller's Files tab opens a second link; each finished file downloads at once under its own name (up to 2 GB, no resume) and shows a card with a preview; ✕ dismisses early; cards stay for 10 seconds by default (`notify.durationMs`). Cards sit bottom-right (above the receive overlay); `notify.position` can be `bottom-right`, `top-right` or `top-center`.
 - **Receive overlay:** a finished image or PDF auto-opens over a near-clear white backdrop (`rgba(255,255,255,0.1)`, content ~95% of the screen) with the filename and ✕ at the top (files are already auto-saved). Cards stay visible on top. Esc, the controller's B button (`x`) or a backdrop click closes it. With 2+ received images/PDFs, ← → mid-viewport (and the hub D-pad) move the queue; ↑ ↓ / wheel / touch scroll a multi-page PDF (pdf.js). Other file types do not auto-open; tapping their card still opens a new tab.
 
-- **Install as an app (PWA):** Chrome on Android offers "Install app" / "Add to Home screen" (name "Jor Teron Hub", short name "Hub", night-blue icon, standalone window, opens `hub.html`). The manifest uses relative paths, so it works under `/sites/` on GitHub Pages. `hub.html` registers `sw.js` (only over http/https, not file://). The service worker is always network-first, so new pushes show at once; the cache (hub shell + visited pages) is only used offline, and a page that was never visited shows `hub/hub_offline.html`. Cross-origin requests (PeerJS, CDNs) are not touched.
-- **Why `sw.js` is at the root:** a service worker only controls pages in its own folder and below. `sw.js` must sit next to `hub.html` (one line: `importScripts('hub/hub_sw.js')`); the real code stays in `hub/`. Change the shell list or bump `CACHE` (`hub-shell-v1`) in `hub_sw.js`; old caches are deleted on activate.
+- **Install as an app (PWA):** Chrome on Android offers "Install app" / "Add to Home screen" (name "Jor Teron Hub", short name "Hub", night-blue icon, standalone window, opens `hub.html`). The manifest uses relative paths, so it works under `/sites/` on GitHub Pages. `hub.html` registers `sw.js` (only over http/https, not file://). The service worker is always network-first, so new pushes show at once; the cache (hub shell + visited pages) is only used offline, and a page that was never visited shows `hub/update/hub_offline.html`. Cross-origin requests (PeerJS, CDNs) are not touched.
+- **Why `sw.js` is at the root:** a service worker only controls pages in its own folder and below. `sw.js` must sit next to `hub.html` (one line: `importScripts('hub/update/hub_sw.js')`); the real code stays in `hub/`. Change the shell list or bump `CACHE` (`hub-shell-v1`) in `hub_sw.js`; old caches are deleted on activate.
 
 ## 4. Keyboard
 - Menu open: ↑ ↓ move, → / Enter / Space open a category or app, ← / Esc close
@@ -101,7 +101,7 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 - 2026-10-04 23:16 IST: controller tabs (Gamepad / Keyboard & Mouse / Send Files), trackpad pointer, phone → hub files with cards (commit 5809f29).
 - 2026-10-04 23:24 IST: Notepad and Notely moved to Office (commit 3a32f4e).
 - 2026-10-05 00:55 IST: file cards moved to bottom-right (position option); image viewer for received images.
-- 2026-10-05 07:16 IST: installable PWA: manifest, icons, root `sw.js` → `hub/hub_sw.js`, offline page.
+- 2026-10-05 07:16 IST: installable PWA: manifest, icons, root `sw.js` → `hub/update/hub_sw.js`, offline page.
 
 - 2026-10-05 17:34 IST: receive overlay (images + PDF scroll), queue arrows, 10 min toast.
 
@@ -131,7 +131,7 @@ The start page of the site (`hub.html`). A header menu lists every app by catego
 
 - The home tile **Connect QR** (was "Gamepad QR") encodes `hub.html?join=CODE` — the same 4-digit Hub code.
 - A phone opening `hub.html?join=CODE` (or any touch device with a saved `shared-link-join-code`) runs the Hub as a
-  **joiner** (`hub/hub_role.js` → `hub/hub_remote.js`): no own code or QR, bar shows a green dot + `Hub 1234`
+  **joiner** (`hub/core/hub_role.js` → `hub/link/hub_remote.js`): no own code or QR, bar shows a green dot + `Hub 1234`
   (tap to scan another code). Desktop without `?join` stays the host.
 - On the phone, the 🎮 button / Gamepad tile opens the controller **inside the app frame** (same tab); it borrows the
   Hub's link (`shared/link/link_core.js`), so it never disconnects. While it is open the bar adds ⛶ Full screen and

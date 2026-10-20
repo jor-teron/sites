@@ -1,5 +1,5 @@
 /*
- * Taskbar busy meter (hub/hub_traymeter.js) — OPTIONAL, off by default: Settings → Desktop →
+ * Taskbar busy meter (hub/drives/hub_traymeter.js) — OPTIONAL, off by default: Settings → Desktop →
  * "Busy meter in the taskbar" (localStorage 'sites-hub.trayMeter' = '1'). Desktop mode only.
  * A small button left of the clock: a 30 s sparkline + "12%" = the Hub main thread's busy
  * ESTIMATE (shared/perf/busy_meter.js, same as System Monitor → CPU). Click = System Monitor on

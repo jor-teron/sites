@@ -1,18 +1,18 @@
 /*
  * Settings → Windows (apps/settings/sec_windows.js) — Desktop-mode window options:
  *   'hoverFocus'   Focus window on hover: '1' = on (default off). Pointing at a window for a
- *                  moment brings it to the front (hub/wm_windows.js; never while dragging,
+ *                  moment brings it to the front (hub/wm/wm_windows.js; never while dragging,
  *                  resizing or with a menu open).
  *   'snapEdges'    Snap windows to screen edges: '0' = off (default on). Dragging a window by its
- *                  title bar to the left / right / top edge snaps it (hub/wm_snap.js); the floating
+ *                  title bar to the left / right / top edge snaps it (hub/wm/wm_snap.js); the floating
  *                  on-screen keyboard snaps the same way (hub/osk/osk_drag.js). Ctrl+Alt+arrows always work.
  *   'snapMagnet'   Magnetic edges: '0' = off (default on). A dragged / resized window sticks flush to
- *                  the screen edges and to other windows' edges within 14 px (hub/wm_snap.js; also the
+ *                  the screen edges and to other windows' edges within 14 px (hub/wm/wm_snap.js; also the
  *                  floating keyboard). Hold Alt or Shift while dragging to skip it once.
  *   'snapMagnetPx' Magnet strength (R14): the distance in px, 10–100 (step 5), default 20; slider
- *                  shown only while Magnetic edges is on. Read by hub/wm_snap.js on every drag (live).
+ *                  shown only while Magnetic edges is on. Read by hub/wm/wm_snap.js on every drag (live).
  *   'workspaces'   '1' = one workspace (taskbar switcher hidden, all windows on 1); empty = 2
- *                  (default; hub/wm_workspaces.js).
+ *                  (default; hub/wm/wm_workspaces.js).
  *   'titleH'       window title bar Slim 24 / Normal 28 / Large 34 px (moved here from Sizes,
  *                  same key, so saved choices stay).
  *   'filesClick'   Files app: open items with a 'single' click or a double click (default).

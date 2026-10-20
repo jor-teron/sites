@@ -4,7 +4,7 @@
  * saved session, taskbar position, screen modes, phone mode), Drives & Files, the Settings sections, wallpaper, updates,
  * and the technical / privacy notes that used to be on the About page.
  * One collapsible card (<details>) per topic, first one open. Written from the real code
- * (hub/wm_*.js, hub/hub.js, hub/hub_flyout.js, hub/hub_update.js) — keep it in step.
+ * (hub/wm/wm_*.js, hub/core/hub.js, hub/menu/hub_flyout.js, hub/update/hub_update.js) — keep it in step.
  */
 (function () {
   'use strict';

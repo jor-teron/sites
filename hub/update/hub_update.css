@@ -1,4 +1,4 @@
-/* Hub "Update ready" note (hub/hub_update.js, R16b): small pill, bottom centre, above the taskbar. */
+/* Hub "Update ready" note (hub/update/hub_update.js, R16b): small pill, bottom centre, above the taskbar. */
 #hub-upd-note, #hub-load-note {
   position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%); z-index: 2147483000;
   display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 16px;

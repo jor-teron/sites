@@ -1,6 +1,6 @@
 /*
  * Basic right-click menu for pages (shared/ctxmenu/ctx_in_app.js). The Hub injects it into every
- * same-origin app it shows (Phone-mode frame and Desktop windows: hub/hub_ctx.js), and loads it
+ * same-origin app it shows (Phone-mode frame and Desktop windows: hub/menu/hub_ctx.js), and loads it
  * itself for its own text fields. It loads shared/ctxmenu/ctxmenu.js + ctxmenu.css from its own
  * folder when the page does not have them yet.
  *

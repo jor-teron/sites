@@ -16,7 +16,7 @@
  *   5. signOut() POST https://oauth2.googleapis.com/revoke?token=… then forgets everything.
  *
  * R9b: setToken(resp, method) stores an access token got another way — 'phone' (phone as a
- *   key, via SharedLink + hub/hub_phonekey.js) or 'popup' (Google Identity Services on this
+ *   key, via SharedLink + hub/link/hub_phonekey.js) or 'popup' (Google Identity Services on this
  *   computer). Those have NO refresh token: after ~1 h signedIn() turns false and expired() true
  *   (the record + email stay, so the tile can offer "Renew from phone"); a timer fires onChange
  *   right when it runs out. method() → 'qr' | 'phone' | 'popup' | ''.

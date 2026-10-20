@@ -1,5 +1,5 @@
 /*
- * Window snapping (hub/wm_snap.js) — Desktop mode only. Uses HubWM (wm_windows.js).
+ * Window snapping (hub/wm/wm_snap.js) — Desktop mode only. Uses HubWM (wm_windows.js).
  * - Drag a window by its title bar with the pointer in the left / right edge zone (SIDE px
  *   wide, the whole height — so the corners give a half too) → it fills that half; in the
  *   top strip (TOP px) between the side zones → maximised. A translucent preview

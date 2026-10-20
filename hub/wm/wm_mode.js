@@ -1,5 +1,5 @@
 /*
- * Hub screen mode (hub/wm_mode.js) — decides Desktop (windows + taskbar) or Phone (today's
+ * Hub screen mode (hub/wm/wm_mode.js) — decides Desktop (windows + taskbar) or Phone (today's
  * single-frame Hub). Loaded before the other wm_* files and hub.js.
  *
  * Auto: Desktop when the main pointer is a real mouse — (hover: hover) and (pointer: fine) —

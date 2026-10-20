@@ -1,5 +1,5 @@
 /*
- * Hub menu category rows + desktop flyout (hub/hub_flyout.css) — logic in hub_flyout.js.
+ * Hub menu category rows + desktop flyout (hub/menu/hub_flyout.css) — logic in hub_flyout.js.
  * Category rows: icon + name, big tap targets. Flyout: second column beside the menu,
  * jelly slide-in, soft shadow, highlighted hovered row, grey section headings with thin
  * dividers, hidden scrollbar + bottom fade when more apps below. Hover styles only for real mice.

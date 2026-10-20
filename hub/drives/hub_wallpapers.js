@@ -1,5 +1,5 @@
 /*
- * Hub wallpapers (hub/hub_wallpapers.js) — the list shared by the Hub (hub_prefs.js paints
+ * Hub wallpapers (hub/drives/hub_wallpapers.js) — the list shared by the Hub (hub_prefs.js paints
  * #empty, the home / desktop background) and the Settings app (apps/settings, thumbnails).
  * Stored choice: localStorage 'sites-hub.wallpaper' = one of the ids below, or a custom
  * colour '#rrggbb'. Empty = 'night' (the original Hub wallpaper).
@@ -33,7 +33,7 @@ window.HUB_WALLPAPERS = [
 // root) and the Settings app (apps/settings/) point at the same files.
 (function () {
   const me = document.currentScript && document.currentScript.src;
-  const dir = me ? new URL('../shared/wallpaper/', me).href : 'shared/wallpaper/';
+  const dir = me ? new URL('../../shared/wallpaper/', me).href : 'shared/wallpaper/';
   (window.HUB_PICTURES || []).forEach((p) => {
     if (!Array.isArray(p) || !/^[\w.-]+\.(jpe?g|png|webp)$/i.test(p[0] || '')) return;
     window.HUB_WALLPAPERS.push({

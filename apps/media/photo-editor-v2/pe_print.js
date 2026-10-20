@@ -5,7 +5,7 @@
  */
 (function (PE) {
   'use strict';
-  // Hand one image/PDF blob alone to the browser's own print dialog (same approach as hub/hub_viewer.js):
+  // Hand one image/PDF blob alone to the browser's own print dialog (same approach as hub/viewer/hub_viewer.js):
   // PDF → hidden iframe with the blob URL; image → srcdoc iframe fitting the image to the page.
   // Fallback: open the blob in a new tab (the browser's own viewer prints it).
   let frame = null;

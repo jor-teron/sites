@@ -1,5 +1,5 @@
 /*
- * Workspaces (hub/wm_workspaces.js) — Desktop mode only. Two virtual desks; the windows and
+ * Workspaces (hub/wm/wm_workspaces.js) — Desktop mode only. Two virtual desks; the windows and
  * their state live in wm_windows.js (w.ws, HubWM.ws / setWs / moveToWs / wsCount).
  * - Taskbar switcher right after Show Desktop: two small buttons "1" "2", the current one
  *   highlighted (a workspace with windows shows brighter). Click = switch.

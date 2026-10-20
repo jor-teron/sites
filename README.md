@@ -6,4 +6,4 @@ Visit: [jor-teron.github.io/sites](https://jor-teron.github.io/sites/)
 
 ## Hub
 
-Technical guide: [Hub and virtual desktop internals](hub/README_technical.txt)
+Technical guide: [Hub and virtual desktop internals](hub/docs/README_technical.txt)

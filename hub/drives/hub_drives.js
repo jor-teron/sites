@@ -1,5 +1,5 @@
 /*
- * Desktop drives pane (hub/hub_drives.js) — Desktop mode only. The desktop (home, seen when
+ * Desktop drives pane (hub/drives/hub_drives.js) — Desktop mode only. The desktop (home, seen when
  * no window covers it) is split in two: left 60% = Drives, right 40% = the QR / link tiles
  * (hub_tiles.js, see hub_drives.css). Phone mode hides this pane (Files is in Tools).
  * Drives come from shared/fs/fs_drives.js:

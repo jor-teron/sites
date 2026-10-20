@@ -1,7 +1,7 @@
 /*
  * Gamepad Controller — Trackpad board (Keyboard & Mouse → Trackpad).
  * Registered like the keyboards: CTRL_KB.register('trackpad', build). Sends over the normal
- * hub link (kit.api.send); the hub draws the pointer and clicks (hub/hub_pointer.js):
+ * hub link (kit.api.send); the hub draws the pointer and clicks (hub/link/hub_pointer.js):
  *   one finger drag      {t:'ptr', dx, dy}    batched once per animation frame (~60 Hz)
  *   tap                  {t:'tap', b:0}       left click
  *   two-finger tap       {t:'tap', b:2}       right click (contextmenu)

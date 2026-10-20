@@ -3,7 +3,7 @@
  * Credit, Version and Current release (both from hub/version.txt: line 1 'v0.299', line 2
  * 'YYYY-MM-DD'; '—' when it can't be read), the first Release date, and a real
  * "Check for update". Inside the Hub that uses the Hub's own updater (HubUpdate.check in
- * hub/hub_update.js: clears the hub-shell caches and reloads the Hub when a newer build is
+ * hub/update/hub_update.js: clears the hub-shell caches and reloads the Hub when a newer build is
  * live); opened on its own it reads the live hub.html / version.txt and updates the service
  * worker itself. Contact / Feedback link to the public GitHub repo (no other contact details).
  * R16c: "Last refreshed" (localStorage 'sites-hub.lastRefresh', the Hub's daily 09:00 refresh) and
@@ -38,14 +38,14 @@
   /** Build tag (?v=…) of the running Hub page, or '' when Settings is opened on its own. */
   function runningBuild() {
     const h = S.hub();
-    const s = h && h.document.querySelector('script[src*="hub/hub.js?v="]');
+    const s = h && h.document.querySelector('script[src*="hub/core/hub.js?v="]');
     const m = s && s.getAttribute('src').match(/\?v=([\w.-]+)/);
     return m ? m[1] : '';
   }
 
   async function standaloneCheck() {
     const html = await fetch(ROOT + 'hub.html', { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); });
-    const build = (html.match(/hub\/hub\.js\?v=([\w.-]+)/) || [])[1] || '';
+    const build = (html.match(/hub\/core\/hub\.js\?v=([\w.-]+)/) || [])[1] || '';
     const v = await readVersion('no-store');
     let reg = null;
     try { reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(ROOT); } catch (_) { /* none */ }

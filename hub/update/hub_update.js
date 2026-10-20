@@ -1,8 +1,8 @@
 /*
- * Hub updates (hub/hub_update.js) — keeps a stale cached Hub from lingering. Loaded last by
+ * Hub updates (hub/update/hub_update.js) — keeps a stale cached Hub from lingering. Loaded last by
  * hub.html (replaces the old inline service worker registration).
  * - Registers the root sw.js with updateViaCache:'none' (the browser never uses its HTTP cache
- *   for sw.js / hub/hub_sw.js; it also looks for a new worker on its own when the Hub loads).
+ *   for sw.js / hub/update/hub_sw.js; it also looks for a new worker on its own when the Hub loads).
  *   R16b: a new hub_sw.js WAITS; a small "Update ready · Reload" note (bottom centre, hub_update.css)
  *   appears; Reload posts skip-waiting and the page reloads once the new worker takes over
  *   (the desktop session restores). × hides the note; the update then applies on the next start.
@@ -28,7 +28,7 @@
   'use strict';
   const me = document.currentScript;
   const tag = (src) => ((String(src || '').match(/\?v=([\w.-]+)/) || [])[1] || '');
-  const hubJs = document.querySelector('script[src*="hub/hub.js?v="]');
+  const hubJs = document.querySelector('script[src*="hub/core/hub.js?v="]');
   const BUILD = tag(hubJs && hubJs.getAttribute('src')) || tag(me && me.src);
   const SW_OK = 'serviceWorker' in navigator && location.protocol.startsWith('http');
   const GUARD = 'sites-hub.updTried';
@@ -117,7 +117,7 @@
 
   async function latest() {
     const html = await fetch('hub.html', { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); });
-    const build = (html.match(/hub\/hub\.js\?v=([\w.-]+)/) || [])[1] || '';
+    const build = (html.match(/hub\/core\/hub\.js\?v=([\w.-]+)/) || [])[1] || '';
     const v = await readVersion('no-store');
     return { build, version: v.version, date: v.date };
   }

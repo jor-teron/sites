@@ -1,6 +1,6 @@
 /*
  * Settings → Wallpaper (apps/settings/sec_wallpaper.js). Big live preview, then two grids:
- *   Colours & gradients — hub/hub_wallpapers.js (6 gradients incl. the original Night, solid
+ *   Colours & gradients — hub/drives/hub_wallpapers.js (6 gradients incl. the original Night, solid
  *     black / grey / off-white) + a custom colour picker.
  *   Pictures — every image in shared/wallpaper/ listed in shared/wallpaper/wallpapers.js
  *     (thumbnails are the images themselves, loading="lazy"; the Hub uses the image URL

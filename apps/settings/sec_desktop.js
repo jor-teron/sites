@@ -2,7 +2,7 @@
  * Settings → Desktop (apps/settings/sec_desktop.js). Screen mode Auto / Desktop / Phone
  * (key 'wmMode', the Hub's HubMode applies it) and "Open menu on hover" for the Desktop
  * mode Start button (key 'startHover', default on, '0' = off), and the optional taskbar busy
- * meter (key 'trayMeter', '1' = on, default off; hub/hub_traymeter.js).
+ * meter (key 'trayMeter', '1' = on, default off; hub/drives/hub_traymeter.js).
  */
 (function () {
   'use strict';

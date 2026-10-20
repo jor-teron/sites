@@ -13,7 +13,7 @@
  *     first appearance; apps without one go last under "Other". No sections at all = no headings.
  *
  * Also loaded by hub.html (no #grid there): it then only shares the reader as
- * window.TilesCsv = { parse, groups, defaultIcon } for the Hub menu flyout (hub/hub_flyout.js).
+ * window.TilesCsv = { parse, groups, defaultIcon } for the Hub menu flyout (hub/menu/hub_flyout.js).
  *
  * Favorite page (data-csv favorite-apps.csv): also your own favorites from localStorage
  * 'sites-hub.favorites' (shared/favorites/favorites.js) under "My favorites", redrawn on change.

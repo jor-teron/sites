@@ -3,7 +3,7 @@
   Settings app (apps/settings/index.html) — Hub settings: Wallpaper, Desktop, Windows, Sizes, Look, How-to, About.
   Sections list left, options right (phone: list first, tap into a section, ‹ Back).
   Choices are saved in localStorage (settings_store.js) and the Hub applies them live
-  (hub/hub_prefs.js, storage event + postMessage). Deep link: index.html#about etc.
+  (hub/core/hub_prefs.js, storage event + postMessage). Deep link: index.html#about etc.
   Files: settings.css, settings_store.js, settings.js (shell), sec_*.js (one per section).
 -->
 <html lang="en">
@@ -29,7 +29,7 @@
     </main>
   </div>
   <script src="../../shared/wallpaper/wallpapers.js?v=20261020a"></script>
-  <script src="../../hub/hub_wallpapers.js?v=20261020a"></script>
+  <script src="../../hub/drives/hub_wallpapers.js?v=20261020a"></script>
   <script src="../../shared/fs/thumbs_store.js?v=20261020a"></script>
   <script src="../../shared/dialog/dialog.js?v=20261020e"></script>
   <script src="settings_store.js?v=20261020a"></script>

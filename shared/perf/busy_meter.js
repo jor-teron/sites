@@ -1,7 +1,7 @@
 /*
  * Busy meter (shared/perf/busy_meter.js) — an ESTIMATE of how busy this page's main thread is
  * (the Hub and its same-origin apps share one), for apps/tools/sysmon and the Hub's optional
- * taskbar meter (hub/hub_traymeter.js). Browsers do not expose real CPU usage, so it combines:
+ * taskbar meter (hub/drives/hub_traymeter.js). Browsers do not expose real CPU usage, so it combines:
  *   - timer lag: a 50 ms timer that fires late means the thread was busy;
  *   - long tasks (PerformanceObserver 'longtask', Chrome / Edge) in the same window.
  * API window.BusyMeter.create() → { start(), stop(), take() → 0..1 busy since the last take,

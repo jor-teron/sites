@@ -1,6 +1,6 @@
 /*
  * Phone as a key — pairing rooms (shared/google/phonekey.js). Any Hub window (the Google Drive
- * tile, Files) makes a room; the Hub page (hub/hub_phonekey.js) checks it when the phone sends.
+ * tile, Files) makes a room; the Hub page (hub/link/hub_phonekey.js) checks it when the phone sends.
  * Transport = the Hub's existing SharedLink (PeerJS, shared/link/link_core.js): the Hub is the
  * host with its 4-digit code (localStorage 'jtsites-hub-ctrl-code'), the phone page
  * (apps/tools/phonekey/?hub=<code>&k=<room>) joins it and sends {type:'phonekey', k, access_token,

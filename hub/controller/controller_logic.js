@@ -7,7 +7,7 @@
  *   { t:'stick', x:-1..1,  y:-1..1 }   analog stick (y -1 = up), sent at stick.sendHz while held
  *   { t:'key', key, code, s:1|0, shift, ctrl, alt, repeat }   keyboard modes: keydown / keyup
  *     (the hub dispatches KeyboardEvents into the app frame and types into focused text fields)
- *   { t:'ptr'|'tap'|'mb'|'wheel', … }   trackpad (ctrl_trackpad.js → hub/hub_pointer.js)
+ *   { t:'ptr'|'tap'|'mb'|'wheel', … }   trackpad (ctrl_trackpad.js → hub/link/hub_pointer.js)
  * Release 3: joins the Hub through SharedLink (shared/link, metadata {kind:'link', pad:1}); the
  * messages above travel over that link. Files are sent from File Drop (📤 link in the header).
  * Hub → phone:

@@ -2,7 +2,7 @@
  * Photo Editor v2 — send (pe_send.js, release 3). "Send 📤" in the Save menu renders the CURRENT
  * edits (PE.io.save('jpeg')) and sends that image over the one Hub link (shared/link):
  * - Inside the Hub: the Hub's link. Pick a connected device by name; the Hub sends it
- *   ({sharedLink:'sendFile'} postMessage contract, hub/hub_link.js).
+ *   ({sharedLink:'sendFile'} postMessage contract, hub/link/hub_link.js).
  * - Standalone (e.g. phone): joins the Hub with the shared saved code
  *   ('shared-link-join-code', same as Gamepad / File Drop) or asks for it, then sends to the
  *   Hub as app:''. Release 4: no saved code → SharedLinkScan dialog (code + Scan QR, vendor/jsQR.js).

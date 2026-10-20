@@ -23,7 +23,7 @@ Turns a phone into a controller for the hub. Pair once with the hub's QR or code
 - **Stays paired:** the last code that worked is remembered and connects by itself on page load. A dropped link retries with backoff (1–10 s; gives up after 5 minutes); the LED goes amber, and you can tap the light to retry now.
 - **Pages (round mode button, top centre):** tap cycles 🎮 Gamepad → ⌨️ Keyboard & Mouse → Gamepad; the button's icon shows the NEXT page. Swipe left / right = previous / next, hold = menu. Keyboard & Mouse has its own switch (PC Keys / Trackpad / Phone Keys). The last page and the last Keys+Mouse pick are remembered. The small ⋯ button next to it opens the menu: all modes, fullscreen, Light / Dark, Diag.
 - **Gamepad (landscape):** D-pad / stick on the left, A B X Y on the right, L / R shoulders, Select / Start / Home. The left side can be Both (floating stick + D-pad), Stick or D-pad. The stick also presses the arrows (8 directions), so arrow-key games work. Portrait shows "Rotate your phone to landscape".
-- **What the hub does with buttons:** D-pad = arrows, A = Space, B = `x`, X = `z`, Y = `c`, L = `q`, R = `e`, Start = Enter, Select = Esc, Home = message only (see `../hub/hub_readme.md`).
+- **What the hub does with buttons:** D-pad = arrows, A = Space, B = `x`, X = `z`, Y = `c`, L = `q`, R = `e`, Start = Enter, Select = Esc, Home = message only (see `../hub/docs/hub_readme.md`).
 - **Keyboards:** PC Keys (Esc, digits, qwerty, Tab, Caps, Enter, Shift, Del, Ctrl, Alt, Space, arrows) and Phone Keys (letters, 123 layer, Space / Enter, arrows, Del). Shift / Ctrl / Alt: hold = held, tap = for the next key only. Holding a key repeats it. Gaming keys (WASD, arrows, Space, Enter, Esc, Shift) have an accent border. The hub types into the focused field.
 - **Trackpad:** one finger moves the hub's pointer, tap = left click, two-finger tap = right click, two-finger drag = scroll; Left / Middle / Right buttons and a hold-drag toggle.
 - **Files:** pick files; they go one at a time over a second link (the gamepad keeps working), up to 2 GB each. The hub downloads each file by itself. A failed file can be tapped to send again.
@@ -92,7 +92,7 @@ Turns a phone into a controller for the hub. Pair once with the hub's QR or code
 - 2026-10-04 23:54 IST: tab bar removed; the compact round mode button cycles Gamepad → Keys+Mouse → Files and shows the next page; taller Choose files tile.
 
 ## 12. Related apps
-- Hub (receiving side): `../hub/hub_readme.md`
+- Hub (receiving side): `../hub/docs/hub_readme.md`
 - File Drop: two-way file transfer between any devices
 - QR Scanner: general QR reader
 

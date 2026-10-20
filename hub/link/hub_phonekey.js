@@ -1,5 +1,5 @@
 /*
- * Phone as a key — the Hub side (hub/hub_phonekey.js). Loaded after hub-controller.js (the Hub
+ * Phone as a key — the Hub side (hub/link/hub_phonekey.js). Loaded after hub-controller.js (the Hub
  * hosts SharedLink with its 4-digit code) and the shared/google scripts.
  * A phone that opened apps/tools/phonekey/?hub=<code>&k=<room> (QR from the Google Drive tile or
  * Files, shared/google/phonekey.js) joins the Hub's SharedLink and sends

@@ -1,7 +1,7 @@
 /*
  * Paper Scan — ps_send.js  ("📤 Send", one Hub link via shared/link)
  * - Inside the Hub: the Hub's link ({sharedLink:'ready'} then {sharedLink:'sendFile'} postMessage,
- *   hub/hub_link.js). The PDF is already on the Hub screen, so Send goes to a connected device by name.
+ *   hub/link/hub_link.js). The PDF is already on the Hub screen, so Send goes to a connected device by name.
  * - Standalone (phone): joins the Hub with the saved code ('shared-link-join-code') or asks with
  *   SharedLinkScan (code + Scan QR, vendor/jsQR.js), then sends the PDF as app:'' → Hub viewer + toast,
  *   or to another device by name.

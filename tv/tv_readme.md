@@ -113,5 +113,5 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 - 2026-10-05 00:35 IST: tile icons switched to `shared/image/placeholder.png` after `image/` was removed (7d7ac04).
 
 ## 12. Related apps
-- Hub: `../hub/hub_readme.md` (TV is in Favorite and Media, and a home tile that opens it in a new tab)
+- Hub: `../hub/docs/hub_readme.md` (TV is in Favorite and Media, and a home tile that opens it in a new tab)
 - Controller: `../hub/controller/` (phone D-pad / keyboard for the TV)

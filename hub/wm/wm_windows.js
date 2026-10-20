@@ -1,5 +1,5 @@
 /*
- * Hub window manager (hub/wm_windows.js) — Desktop mode only (wm_mode.js). Apps open in
+ * Hub window manager (hub/wm/wm_windows.js) — Desktop mode only (wm_mode.js). Apps open in
  * windows on #wm-desk instead of the single Hub frame (hub.js calls HubWM.open).
  *
  * Window = title bar (app icon + name, – ▢ × buttons) + its own iframe of the app.

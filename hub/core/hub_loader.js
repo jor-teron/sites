@@ -1,5 +1,5 @@
 /*
- * Hub deferred loader (hub/hub_loader.js) — R16a "minimal start".
+ * Hub deferred loader (hub/core/hub_loader.js) — R16a "minimal start".
  * hub.html loads only the core (desktop, taskbar, Start menu, window manager, settings,
  * phone link). Everything else is loaded here, after the page is idle, in small batches:
  *   1. drives   Google sign-in + Drive (shared/google/*), fs_drives, hub_drives, hub_phonekey
@@ -20,17 +20,17 @@
  */
 (function () {
   'use strict';
-  const V = '20261020i';
+  const V = '20261020j';
   const DELAY = 1500;
   const BATCHES = {
-    drives: ['shared/google/google.css', 'hub/hub_drives.css',
+    drives: ['shared/google/google.css', 'hub/drives/hub_drives.css',
       'shared/google/google_config.js', 'shared/google/google_auth.js', 'shared/google/gdrive_fs.js',
       'shared/google/google_gis.js', 'shared/google/phonekey.js', 'shared/google/gdrive_connect.js',
-      'shared/fs/fs_drives.js', 'hub/hub_drives.js', 'hub/hub_phonekey.js'],
-    snap: ['hub/wm_snap.js'],
+      'shared/fs/fs_drives.js', 'hub/drives/hub_drives.js', 'hub/link/hub_phonekey.js'],
+    snap: ['hub/wm/wm_snap.js'],
     osk: ['hub/osk/osk.css', 'hub/controller/kb_common.js', 'hub/osk/osk_layout.js',
       'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js'],
-    viewer: ['hub/hub_viewer_pdf.js', 'hub/hub_viewer.js'],
+    viewer: ['hub/viewer/hub_viewer_pdf.js', 'hub/viewer/hub_viewer.js'],
   };
   const done = {}, busy = {}, fails = {};
   const LABEL = { drives: 'Drives', snap: 'window snapping', osk: 'the on-screen keyboard', viewer: 'the viewer' };

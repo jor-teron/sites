@@ -29,7 +29,7 @@ It is part of the Hub page, not an app: there's no tile; open it from the taskba
   mousedown / touchstart / contextmenu cancelled; kb_common cancels pointerdown). On a key press, if the
   Hub page has focus, focus goes back to the active window (`__hubFocusFrame`) and to the app's last
   text field (Chrome drops it when you click the Hub page).
-- Keys go through `window.__hubController.key(msg)`, which is `forwardKey` in `hub/hub-controller.js`
+- Keys go through `window.__hubController.key(msg)`, which is `forwardKey` in `hub/controller/hub-controller.js`
   (the same path as the phone Gamepad's keyboard):
   `{t:'key', key, code, s:1|0, shift, ctrl, alt, repeat}`, down and up. That fires keydown / keypress /
   keyup on the focused element (games) and types into inputs, textareas and contenteditable
@@ -47,7 +47,7 @@ It is part of the Hub page, not an app: there's no tile; open it from the taskba
 | `osk_layout.js` | Shared key rows + screen-reader names (data only) |
 
 Also loaded: `hub/controller/kb_common.js` (`CTRL_KB`: pointer handling, modifiers, repeat, `code` values).
-All of them are in the service worker shell (`hub/hub_sw.js`).
+All of them are in the service worker shell (`hub/update/hub_sw.js`).
 
 ## Limits (R1)
 - Desktop mode only (Phone mode has no tray).

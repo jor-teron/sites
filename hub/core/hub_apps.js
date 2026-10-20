@@ -6,13 +6,13 @@
  * (hub_flyout.js). Every visible category here has a "<Category> Page" row, so the Hub menu /
  * Start lists only the category rows from this file; a click opens that category's page.
  * Still read from this file (window.HUB_APPS_CSV), so the rows are KEPT ON PURPOSE:
- *   - hub/hub.js: the menu's category rows and their order, the hash ids / last-app memory
+ *   - hub/core/hub.js: the menu's category rows and their order, the hash ids / last-app memory
  *     (#snake …), names / icons / NEW_TAB of known apps, window session restore (an app not
  *     listed here is re-checked with a HEAD request), __hubOpenApp (hub_chat.js) and the
  *     load-error message when this file is broken;
- *   - hub/hub_tiles.js (home tiles): icon and NEW_TAB fallback of the same app;
- *   - hub/hub_flyout.js: a hash of this text — a change drops the cached Start list;
- *   - hub/hub_sw.js SHELL and hub.html <script> (precached, loaded before hub.js).
+ *   - hub/menu/hub_tiles.js (home tiles): icon and NEW_TAB fallback of the same app;
+ *   - hub/menu/hub_flyout.js: a hash of this text — a change drops the cached Start list;
+ *   - hub/update/hub_sw.js SHELL and hub.html <script> (precached, loaded before hub.js).
  * An app that is only in a category CSV still opens (from its page / flyout) as a hidden extra.
  * Do not remove, reorder or "clean up" rows without checking the readers above.
  * ==========================================================================================

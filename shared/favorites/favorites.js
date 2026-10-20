@@ -2,7 +2,7 @@
  * Favorites store (shared/favorites/favorites.js) — the apps you add yourself with
  * "Add to Favorites" (right-click an app tile on a category page, a Start menu row or a flyout app).
  * Loaded by hub.html; category pages reach it through the Hub (window.parent.HubFavorites).
- * They show in the Start menu Favorite flyout (hub/hub_flyout.js) and on the Favorite tiles
+ * They show in the Start menu Favorite flyout (hub/menu/hub_flyout.js) and on the Favorite tiles
  * page (shared/tiles/tiles.js reads the same key), under "My favorites", after the fixed
  * apps of apps/favorite/favorite-apps.csv.
  * localStorage 'sites-hub.favorites' = JSON [{ name, path, icon, newTab }]

@@ -1,5 +1,5 @@
 /*
- * Hub settings entry (hub/hub_settings.js) — the "⚙ Settings" row at the bottom of the Hub
+ * Hub settings entry (hub/menu/hub_settings.js) — the "⚙ Settings" row at the bottom of the Hub
  * menu. It opens the Settings app (apps/settings/, a window in Desktop mode, the frame in
  * Phone mode) the normal Hub way (window.__hubOpenApp). All options live in that app;
  * hub_prefs.js applies them to the Hub live.

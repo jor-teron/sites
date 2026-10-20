@@ -46,7 +46,7 @@ Saved keys (localStorage):
 | `jtpkb-host-code` | Desktop | Its 4-digit code |
 | `jtpkb-last-code` | Phone | Last code it connected to |
 
-Fresh pages: the hub service worker (`hub/hub_sw.js`) is network-first and
+Fresh pages: the hub service worker (`hub/update/hub_sw.js`) is network-first and
 fetches app pages and `apps/*` files with `cache: 'no-cache'`, so a phone
 always gets the latest push (cache is only an offline fallback).
 

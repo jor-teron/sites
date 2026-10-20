@@ -1,5 +1,5 @@
 /*
- * Hub right-click menus (hub/hub_ctx.js) — replaces the browser's menu everywhere in the Hub
+ * Hub right-click menus (hub/menu/hub_ctx.js) — replaces the browser's menu everywhere in the Hub
  * with the shared one (shared/ctxmenu/ctxmenu.js). Loaded before wm_windows.js so the other
  * Hub modules can register their own menus:
  *   HubCtx.add(selector, fn(el, e) → items | null, { touch })
@@ -20,7 +20,7 @@
 (function () {
   'use strict';
   if (!window.CtxMenu || !window.CtxInApp) return;
-  const V = '20261020i';
+  const V = '20261020j';
   const reg = [];
   const isDesk = () => !!(window.HubMode && window.HubMode.isDesktop());
 

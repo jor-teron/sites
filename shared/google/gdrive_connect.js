@@ -1,13 +1,13 @@
 /*
  * Google Drive connect panel (shared/google/gdrive_connect.js + google.css) — the Google sign-in UI
- * used by the Hub's "Google Drive" drive tile (hub/hub_drives.js) and the Files app.
+ * used by the Hub's "Google Drive" drive tile (hub/drives/hub_drives.js) and the Files app.
  * States:
  *   setup    no hubWebClientId (and QR off) in google_config.js → "Set up Google Drive (see How-to)"
  *   idle     ☁ Google Drive + Phone as a key (primary), QR only if GOOGLE_CONFIG.qrEnabled (hidden now; GitHub blocks
  *            pushing its client secret), the default one (GOOGLE_CONFIG.defaultMethod 'phone') first and big:
  *              "Phone as a key (full Drive)"    QR to apps/tools/phonekey/ on the phone; the phone signs
  *                                               in (Google Identity Services) and sends the token over
- *                                               the Hub's SharedLink (phonekey.js, hub/hub_phonekey.js)
+ *                                               the Hub's SharedLink (phonekey.js, hub/link/hub_phonekey.js)
  *              "QR code (Hub files only)"       device flow below (drive.file) — hidden
  *              "Sign in on this computer"       small link: Google's popup here (google_gis.js)
  *            (a code / room is only made on click: they expire and Google limits requests)

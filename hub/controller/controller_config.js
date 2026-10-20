@@ -91,7 +91,7 @@ const CONTROLLER_CONFIG = {
   defaultKmMode: 'pc',             // first time the Keyboard & Mouse tab opens
 
   // Trackpad (ctrl_trackpad.js). Pointer speed / acceleration / scroll speed are hub settings
-  // (hub/hub_controller_config.js); the phone sends raw finger movement.
+  // (hub/controller/hub_controller_config.js); the phone sends raw finger movement.
   trackpad: {
     tapMs: 250,                    // touch shorter than this …
     tapSlopPx: 10,                 // … that moved less than this = a tap (click)

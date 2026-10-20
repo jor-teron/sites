@@ -1,5 +1,5 @@
 /*
- * Hub taskbar (hub/wm_taskbar.js) — Desktop mode only (wm_mode.js), bottom of the screen
+ * Hub taskbar (hub/wm/wm_taskbar.js) — Desktop mode only (wm_mode.js), bottom of the screen
  * (or the top: Settings → Sizes, html.hub-task-top in wm.css; menus then open downward).
  * - Start button (Hub icon + HUB_MENU_LABEL from hub_config.js): opens the CURRENT Hub menu
  *   (same menu as the top-left button, with flyout + sections) just above the taskbar.

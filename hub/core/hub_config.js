@@ -1,5 +1,5 @@
 /*
- * Hub config (hub/hub_config.js) — small settings shared by hub.js and hub_flyout.js.
+ * Hub config (hub/core/hub_config.js) — small settings shared by hub.js and hub_flyout.js.
  * Loaded by hub.html before hub.js.
  *
  * (The Hub version is NOT here any more: hub/version.txt is its single source, read by

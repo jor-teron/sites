@@ -1,6 +1,6 @@
 /*
  * Picture wallpapers (shared/wallpaper/wallpapers.js) — the manifest of the images in this
- * folder, read by hub/hub_wallpapers.js (Hub desktop + Settings → Wallpaper).
+ * folder, read by hub/drives/hub_wallpapers.js (Hub desktop + Settings → Wallpaper).
  * To add a picture: drop the .jpg here and add one line below:
  *   [file, label, thumb (optional smaller copy, '' = the same file), light (1 = bright picture:
  *    the home text turns dark)]

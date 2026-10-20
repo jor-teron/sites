@@ -1,5 +1,5 @@
 /*
- * Hub Desktop mode (hub/wm.css) — windows (wm_windows.js) and taskbar (wm_taskbar.js).
+ * Hub Desktop mode (hub/wm/wm.css) — windows (wm_windows.js) and taskbar (wm_taskbar.js).
  * Everything window-related is scoped to body.wm-desktop, so Phone mode looks like before.
  * Desktop mode has no top bar: its right side lives in the taskbar tray (wm_taskbar.js),
  * app stats show in each window's title bar, popovers open upward from the taskbar.

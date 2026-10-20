@@ -1,6 +1,6 @@
 /*
- * Text editing keys for synthetic keyboards (hub/hub_textedit.js, R15) — used by
- * hub/hub-controller.js forwardKey after the key events were dispatched and NOT cancelled by the
+ * Text editing keys for synthetic keyboards (hub/controller/hub_textedit.js, R15) — used by
+ * hub/controller/hub-controller.js forwardKey after the key events were dispatched and NOT cancelled by the
  * app (an app's preventDefault skips all of this). Shared by the Hub on-screen keyboard
  * (hub/osk/) and the phone Gamepad keyboard (same forwardKey path).
  * Synthetic key events never move the caret, so this does what a real key would do:

@@ -2,10 +2,10 @@ SITES HUB - TECHNICAL GUIDE: HUB AND VIRTUAL DESKTOP
 ====================================================
 
 For a developer picking up the Hub (hub.html) and its virtual desktop.
-Written from the code as of R17, build bumped in R30 (2026-10-20, build ?v=20261020i,
-cache hub-shell-v52). Plain HTML / CSS / JS, no build step, no framework.
+Written from the code as of R17, build bumped in R31 (2026-10-20, build ?v=20261020j,
+cache hub-shell-v53). Plain HTML / CSS / JS, no build step, no framework.
 Every file starts with a header comment: read it first, it is the spec.
-Short user notes live in hub/hub_readme.md; this file is the deep dive.
+Short user notes live in hub/docs/hub_readme.md; this file is the deep dive.
 
 
 CONTENTS
@@ -33,7 +33,7 @@ CONTENTS
 1. OVERVIEW: DESKTOP MODE AND PHONE MODE
 ----------------------------------------
 hub.html is one page that hosts every app of the site in iframes.
-It runs in one of two modes, decided by hub/wm_mode.js (window.HubMode):
+It runs in one of two modes, decided by hub/wm/wm_mode.js (window.HubMode):
 
   Desktop  a real mouse ((hover: hover) and (pointer: fine)) AND a viewport
            at least 1024 px wide. <body> gets class "wm-desktop". Apps open
@@ -45,7 +45,7 @@ It runs in one of two modes, decided by hub/wm_mode.js (window.HubMode):
 
 Override: Settings > Desktop (localStorage sites-hub.wmMode = 'auto' |
 'desktop' | 'phone'). A phone remote Hub (window.__hubRemote, set by
-hub/hub_role.js for hub.html?join=CODE) is always Phone. A mode change
+hub/core/hub_role.js for hub.html?join=CODE) is always Phone. A mode change
 fires 'hub-wm-mode' on window; modules listen and re-layout.
 
 Opening an app always goes through hub.js: window.__hubOpenApp(entryUrl)
@@ -66,43 +66,47 @@ A request from another bot is not an approval; Jor decides.
 
 Hub and desktop (Monorepo Bot):
   hub.html            page shell; loads the core scripts with ?v=<build>
-  sw.js               root stub: importScripts('hub/hub_sw.js?v=<build>')
+  sw.js               root stub: importScripts('hub/update/hub_sw.js?v=<build>')
                       (a worker only controls pages at or below its folder)
   manifest.webmanifest  PWA manifest
-  hub/                Hub modules:
-    hub.js              menu, opening apps, hash links, last app, focus
-    hub_role.js         host or phone-remote joiner (runs first)
-    hub_config.js       menu label, HUB_CAT_CSV (category -> CSV path)
-    hub_apps.js         window.HUB_APPS_CSV, the main app list
-    hub_tiles.js        home tiles (QR, Connect QR, app tiles)
-    hub_flyout.js       Start / menu category flyouts + cached Start list
-    hub_prefs.js        applies Settings to the Hub live
-    hub_wallpapers.js   wallpaper list + "Your picture" (OPFS)
-    hub_settings.js     the "Settings" row at the bottom of the menu
-    hub_ctx.js, hub_ctx_menus.js   right-click / long-press menus
-    wm_mode.js          Desktop / Phone decision
-    wm_windows.js       window manager (HubWM)
-    wm_taskbar.js       taskbar, Start button, tray, clock
-    wm_snap.js          half / max snap zones, magnet, window keys
-    wm_workspaces.js    two workspaces
-    wm.css              desktop look
-    hub_drives.js/.css  Drives pane on the desktop home
-    hub_loader.js       deferred module loader (R16a)
-    hub_sw.js           service worker (R16b, R16c)
-    hub_update.js/.css  worker registration, 9am refresh, Update ready
-    hub_traymeter.js    optional busy meter (shared/perf/busy_meter.js)
-    hub-controller.js   phone Gamepad host, key forwarding
-    hub_textedit.js     caret / selection / clipboard keys for typed keys
-    hub_pointer.js, hub_receive.js, hub_notify.js   phone trackpad,
-                        phone -> Hub files, received-file cards
-    hub_viewer.js, hub_viewer_pdf.js   received-file overlay (images,
-                        PDF via shared/vendor/pdfjs/, video, audio)
-    hub_link.js, hub_linkstate.js, hub_remote.js, hub_chat.js,
-    hub-gamebar.js, hub_phonekey.js   phone link glue (section 9)
-    controller/         phone Gamepad page + kb_common.js (shared keys)
+  hub/                Hub modules, by feature folder (R31):
+    core/               hub.js (menu, opening apps, hash links, last app,
+                        focus), hub_role.js (host or phone-remote joiner,
+                        runs first), hub_config.js (menu label, HUB_CAT_CSV),
+                        hub_apps.js (window.HUB_APPS_CSV, LEGACY list, see
+                        section 5), hub_prefs.js (applies Settings live),
+                        hub_loader.js (deferred loader, R16a), hub_main.css
+    wm/                 wm_mode.js (Desktop / Phone), wm_windows.js (HubWM),
+                        wm_taskbar.js (taskbar, Start, tray, clock),
+                        wm_snap.js (snap zones, magnet, window keys),
+                        wm_workspaces.js (two workspaces), wm.css
+    menu/               hub_flyout.js/.css (Start flyouts + cached Start
+                        list), hub_tiles.js (home tiles), hub_settings.js
+                        (the "Settings" menu row), hub_ctx.js +
+                        hub_ctx_menus.js (right-click / long-press menus)
+    link/               hub_link.js, hub_linkstate.js, hub_remote.js,
+                        hub_chat.js/.css, hub-gamebar.js, hub_phonekey.js
+                        (phone link glue, section 9), hub_pointer.js
+                        (phone trackpad), hub_receive.js (phone -> Hub files)
+    controller/         phone Gamepad page + kb_common.js (shared keys),
+                        and the Hub side: hub-controller.js (Gamepad host,
+                        key forwarding), hub_controller_config.js,
+                        hub_controller.css, hub_textedit.js (caret /
+                        selection / clipboard keys for typed keys)
     osk/                on-screen keyboard (section 6)
-    version.txt         line 1 'v0.299', line 2 release date (Jor decides)
-    hub_offline.html    shown by the worker when offline and not cached
+    viewer/             hub_viewer.js, hub_viewer_pdf.js (received-file
+                        overlay: images, PDF via shared/vendor/pdfjs/,
+                        video, audio), hub_notify.js + hub_notification.css
+                        (received-file cards)
+    drives/             hub_drives.js/.css (Drives pane on the desktop home),
+                        hub_wallpapers.js (wallpaper list + "Your picture"),
+                        hub_traymeter.js (optional busy meter)
+    update/             hub_sw.js (service worker, R16b, R16c),
+                        hub_update.js/.css (registration, 9am refresh,
+                        Update ready), hub_offline.html (offline page)
+    docs/               README_technical.txt (this file), hub_readme.md
+    version.txt         line 1 'v0.299', line 2 release date (Jor decides);
+                        stays at hub/version.txt (read by Settings too)
   shared/fs/          fs_drives.js, fs_ops.js, fs_ref.js, filetypes.js,
                       thumbs_store.js
   shared/google/      google_config.js, google_auth.js, gdrive_fs.js,
@@ -137,7 +141,7 @@ hub_update, and last hub_loader.js.
 Workspaces, favorites and the link stay core because they are visible
 at once (switcher, "My favorites", the home QR tile).
 
-hub/hub_loader.js (window.HubLoader) loads the rest AFTER the page
+hub/core/hub_loader.js (window.HubLoader) loads the rest AFTER the page
 'load' event, in batches (scripts in order, a missing file never stops
 the rest):
   drives   google.css, hub_drives.css, google_config, google_auth,
@@ -169,7 +173,7 @@ Keep the loader's V constant equal to the ?v= in hub.html.
 
 4. WINDOW MANAGER, SNAP, MAGNET AND WORKSPACES
 ----------------------------------------------
-hub/wm_windows.js (window.HubWM), Desktop mode only.
+hub/wm/wm_windows.js (window.HubWM), Desktop mode only.
   - Window = title bar (icon, name, minimise / maximise / close) + its
     own iframe. Drag the bar to move, edges / corners to resize,
     double-click to maximise. Minimised windows keep running.
@@ -190,7 +194,7 @@ hub/wm_windows.js (window.HubWM), Desktop mode only.
     for its own keys only; the chain is just for keys from apps, so a key
     is handled once (R29; the loader also replays a key at most once).
 
-hub/wm_snap.js (deferred batch "snap"):
+hub/wm/wm_snap.js (deferred batch "snap"):
   - Half / max zones: drag with the pointer in the left / right edge zone
     (SIDE px, whole height) = half; top strip between them = maximise.
     Preview #wm-snap-pv. Switch: Settings > Windows "Snap windows to
@@ -206,7 +210,7 @@ hub/wm_snap.js (deferred batch "snap"):
     Ctrl+Alt+Up = maximise, Ctrl+Alt+Down = restore.
   - The desk ends above the taskbar and the docked OSK.
 
-hub/wm_workspaces.js: two workspaces. Switcher "1" "2" after Show
+hub/wm/wm_workspaces.js: two workspaces. Switcher "1" "2" after Show
 Desktop; Ctrl+Alt+PageUp / PageDown (also Super+Ctrl+Left/Right);
 "Move to workspace 1 / 2" in window menus. sites-hub.workspaces = '1'
 means one workspace (switcher hidden, all windows on 1).
@@ -215,14 +219,14 @@ means one workspace (switcher hidden, all windows on 1).
 5. START MENU, CATEGORY CSVS, HUB_APPS.JS, CACHED START LIST
 ------------------------------------------------------------
 Main menu (top-left button in Phone mode, Start in Desktop mode) is
-built by hub.js from window.HUB_APPS_CSV in hub/hub_apps.js. It is a JS
+built by hub.js from window.HUB_APPS_CSV in hub/core/hub_apps.js. It is a JS
 file (not a .csv) so it also works over file://. Columns by header name:
 CATEGORY, NAME, ENTRY_URL, ICON_URL, NEW_TAB, HIDDEN, ORDER. Rules: no
 backtick and no "${" in the text, no commas in a cell, one app per line.
 Missing icon = <folder>/<folder>_icon.png.
 
 Category pages + flyouts: each category has its own CSV, mapped in
-hub/hub_config.js (HUB_CAT_CSV):
+hub/core/hub_config.js (HUB_CAT_CSV):
   Favorite      apps/favorite/favorite-apps.csv
   Games         apps/games/games-apps.csv
   Media         apps/media/media-apps.csv
@@ -235,7 +239,7 @@ section (optional group heading). Lines starting with # are comments.
 Parsed by window.TilesCsv (shared/tiles/tiles.js), which also draws the
 tiles pages (apps/<cat>/index.html).
 
-Flyout (hub/hub_flyout.js, mouse only): hovering a category row ~100 ms
+Flyout (hub/menu/hub_flyout.js, mouse only): hovering a category row ~100 ms
 opens a column with that category's apps; Favorite adds "My favorites".
 Cached Start list (R16c): built lists are kept in localStorage
 sites-hub.startList = {apps: hash of HUB_APPS_CSV, cats: {cat: {h: hash
@@ -259,7 +263,7 @@ until it is opened).
 
 6. TASKBAR, TRAY AND ON-SCREEN KEYBOARD (OSK)
 ---------------------------------------------
-hub/wm_taskbar.js (#wm-taskbar):
+hub/wm/wm_taskbar.js (#wm-taskbar):
   - Start (opens the menu above the bar; hover-to-open, switch
     sites-hub.startHover), Show Desktop (minimise all / bring back),
     workspace switcher, one button per window of this workspace
@@ -284,9 +288,9 @@ OSK (hub/osk/), a panel on the Hub page, not a window:
                  toggle, shown}. Shown state: sites-hub.osk.
 Typing path: each key becomes {t:'key', key, code, s:1|0, shift, ctrl,
 alt, repeat} and goes to window.__hubController.key(msg) (forwardKey in
-hub/hub-controller.js), the same path as a phone keyboard: key events
+hub/controller/hub-controller.js), the same path as a phone keyboard: key events
 into the focused app frame, text typed into inputs; caret, selection,
-Tab, undo and clipboard keys are done by hub/hub_textedit.js. Focus goes
+Tab, undo and clipboard keys are done by hub/controller/hub_textedit.js. Focus goes
 back to the active window (window.__hubFocusFrame). While docked the
 work area shrinks so windows stay above it.
 
@@ -294,7 +298,7 @@ work area shrinks so windows stay above it.
 7. FILES, DRIVES, FILE TYPES, OPEN WITH AND THE VIEWER
 ------------------------------------------------------
 shared/fs/fs_drives.js (window.FsDrives), used by the desktop Drives
-pane (hub/hub_drives.js) and Files. Drive kinds, all a
+pane (hub/drives/hub_drives.js) and Files. Drive kinds, all a
 FileSystemDirectoryHandle (or a look-alike) so shared/fs/fs_ops.js works
 on all of them:
   local   "Local": OPFS (navigator.storage.getDirectory()); asks the
@@ -332,7 +336,7 @@ Hand-off to other apps:
 Viewer app (apps/tools/viewer/): viewer_core, viewer_image,
 viewer_video, viewer.js. Steps through the folder's images / videos;
 keys: arrows, Home/End, J/K/L, +/-, 0, 1, R, F.
-Not to confuse with hub/hub_viewer.js: the overlay for files received
+Not to confuse with hub/viewer/hub_viewer.js: the overlay for files received
 from a phone.
 
 
@@ -357,7 +361,7 @@ Phone as a key (default method):
   2. The phone page joins the Hub's SharedLink, signs in with Google
      Identity Services (google_gis.js) and sends {type:'phonekey', k,
      access_token, expires_in, email, scope}. The token is never in a URL.
-  3. hub/hub_phonekey.js checks the room, calls GoogleAuth.setToken and
+  3. hub/link/hub_phonekey.js checks the room, calls GoogleAuth.setToken and
      answers phonekey-ok with a "next" room (3 h) for "Send again".
 "Sign in on this computer": Google's popup here (google_gis.js).
 UI: shared/google/gdrive_connect.js (GDriveConnect.mount). Drive access:
@@ -370,14 +374,14 @@ Config and setup steps: google_config.js and Settings > How-to.
 shared/link/link_core.js (window.SharedLink): one PeerJS layer (PeerJS
 pinned from a CDN in PEERJS_URL). The desktop Hub hosts with a 4-digit
 code kept in localStorage 'jtsites-hub-ctrl-code'; phones join it.
-  - hub/hub-controller.js: Gamepad host, QR pairing popover, forwards
+  - hub/controller/hub-controller.js: Gamepad host, QR pairing popover, forwards
     D-pad / keys into the app frame, rumble back to the phone.
-  - hub/hub_link.js: routes received files (to a registered app, else
+  - hub/link/hub_link.js: routes received files (to a registered app, else
     the overlay + toast), keeps the last 30 in IndexedDB 'hub-received';
     'hub-auto-download' (default on).
-  - Connect QR tile = hub.html?join=CODE. hub/hub_role.js makes such a
+  - Connect QR tile = hub.html?join=CODE. hub/core/hub_role.js makes such a
     Hub a joiner (window.__hubRemote, code saved as
-    'shared-link-join-code'); hub/hub_remote.js joins.
+    'shared-link-join-code'); hub/link/hub_remote.js joins.
   - hub_chat.js (chat bubble), hub_linkstate.js, hub-gamebar.js (app
     bar from the app in the frame), hub_pointer.js (trackpad),
     hub_receive.js (phone -> Hub files).
@@ -396,11 +400,11 @@ Favorite tiles page, after apps/favorite/favorite-apps.csv. Event
 
 11. WALLPAPER
 -------------
-hub/hub_wallpapers.js: list of ids (gradients, 'night' default, slide /
+hub/drives/hub_wallpapers.js: list of ids (gradients, 'night' default, slide /
 light flags), every picture in shared/wallpaper/wallpapers.js as
 'pic:<file>', a custom colour '#rrggbb', and 'mine' = "Your picture",
 a file in the Local drive (OPFS) folder Wallpapers/. Choice in
-sites-hub.wallpaper; hub/hub_prefs.js paints #empty.
+sites-hub.wallpaper; hub/core/hub_prefs.js paints #empty.
 
 
 12. SETTINGS
@@ -409,18 +413,18 @@ apps/settings/: settings.js (section list + pane, open section in the
 hash, e.g. #about), settings_store.js (reads / writes 'sites-hub.<key>'
 and calls parent.HubPrefs.apply() + posts {type:'hub-prefs'}), and one
 file per section: sec_wallpaper, sec_desktop, sec_windows, sec_sizes,
-sec_look, sec_howto, sec_about. hub/hub_prefs.js re-applies on the
+sec_look, sec_howto, sec_about. hub/core/hub_prefs.js re-applies on the
 'storage' event and on that message, so changes are live.
 About: version (hub/version.txt), "Check for update"
 (HubUpdate.check({manual:true})), "Last refreshed" and "Clear cache now"
 (confirm with UiDialog, then HubUpdate.clearCache()).
 Opened from the "Settings" row at the bottom of the menu
-(hub/hub_settings.js) or Start right-click.
+(hub/menu/hub_settings.js) or Start right-click.
 
 
 13. SERVICE WORKER, CACHING, 9AM REFRESH, UPDATE READY, CLEAR CACHE
 -------------------------------------------------------------------
-sw.js (root) -> hub/hub_sw.js. Caches:
+sw.js (root) -> hub/update/hub_sw.js. Caches:
   hub-shell-vNN  precached shell (SHELL list: Hub files, shared modules,
                  OSK, Start icons, category CSVs, version.txt, icons,
                  offline page). New name per release.
@@ -436,8 +440,8 @@ Fetch rules (same-origin GET only):
   - apps/ and other html / css / js: network first, kept in hub-rt-1
   - images: cached copy at once, refreshed in the background (R25)
   - fonts: cache first
-  - offline navigation not cached: hub/hub_offline.html
-Updates (hub/hub_update.js, window.HubUpdate):
+  - offline navigation not cached: hub/update/hub_offline.html
+Updates (hub/update/hub_update.js, window.HubUpdate):
   - A new worker WAITS (only the first install activates at once). A
     small "Update ready - Reload - x" note appears (#hub-upd-note,
     hub_update.css). Reload posts {type:'skip-waiting'}; the page
@@ -455,11 +459,11 @@ Updates (hub/hub_update.js, window.HubUpdate):
 Bump steps for every Hub release (pick the next build tag, e.g.
 20261020f, and cache number):
   1. hub.html: every ?v= (sed the old tag to the new one).
-  2. sw.js: importScripts('hub/hub_sw.js?v=<new>').
-  3. hub/hub_sw.js: V = '<new>' and CACHE = 'hub-shell-v<NN+1>'; add
+  2. sw.js: importScripts('hub/update/hub_sw.js?v=<new>').
+  3. hub/update/hub_sw.js: V = '<new>' and CACHE = 'hub-shell-v<NN+1>'; add
      any new shell file to SHELL.
-  4. hub/hub_ctx.js: const V = '<new>'.
-  5. hub/hub_loader.js: const V = '<new>'.
+  4. hub/menu/hub_ctx.js: const V = '<new>'.
+  5. hub/core/hub_loader.js: const V = '<new>'.
   6. hub/version.txt only when Jor says so.
 
 
@@ -514,7 +518,7 @@ frame, and can use the Hub's helpers when same-origin (window.parent:
 __hubOpenApp, HubFavorites, SharedLink, hub-gamebar messages).
 To add an app: (1) make the folder with index.html and an icon;
 (2) add a row to apps/<category>/<category>-apps.csv (name, path, icon,
-newtab, section); (3) add the matching row to hub/hub_apps.js
+newtab, section); (3) add the matching row to hub/core/hub_apps.js
 (CATEGORY, NAME, ENTRY_URL, ...). No cache bump is needed for app files
 (apps/ is network first). Changing hub_apps.js resets the cached Start
 list automatically. Category CSVs are checked on every load.

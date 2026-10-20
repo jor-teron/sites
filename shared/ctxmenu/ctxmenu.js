@@ -1,6 +1,6 @@
 /*
  * Context menu (shared/ctxmenu/ctxmenu.js + ctxmenu.css) — the one reusable right-click /
- * long-press menu of the site (Files app, the Hub chrome via hub/hub_ctx.js, and every
+ * long-press menu of the site (Files app, the Hub chrome via hub/menu/hub_ctx.js, and every
  * same-origin app inside the Hub via ctx_in_app.js). Big rows, jelly pop, keyboard: ↑ ↓ Home End
  * to move, Enter / Space to run, Esc / Tab / click outside / window blur closes.
  * Placement: opens right / below the point and FLIPS to the left / above near an edge, kept

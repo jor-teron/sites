@@ -1,7 +1,7 @@
 # Games — one per line. Paths are relative to this folder. Lines starting with # are comments.
 # icon empty = <folder>/<folder>_icon.png or a letter tile; newtab 1 = own tab on desktop;
 # section = optional group heading for Games only (first appearance sets the order; empty = "Other", shown last).
-# Keep in step with hub/hub_apps.js (Games).
+# This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 name, path, icon, newtab, section
 2048,              2048/,          , , Puzzle
 Swell Foop,        swell-foop/,    , , Puzzle
