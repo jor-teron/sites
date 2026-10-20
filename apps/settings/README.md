@@ -14,7 +14,7 @@ full screen on phone). Deep links: `apps/settings/#wallpaper`, `#desktop`, `#siz
 | sec_sizes.js | Taskbar position bottom/top, size 32/40/48, title bar 24/28/34 |
 | sec_look.js | Accent, Dark/Light, animations On/Reduced/Off |
 | sec_howto.js | How-to: plain help on the Hub, desktop, windows, taskbar, copies, modes, phone, updates, privacy / tech |
-| sec_about.js | About: Credit, Version + Current release (hub/version.txt), Release date, Check for update, GitHub contact / issues |
+| sec_about.js | About: Credit, Current release (date from hub/version.txt), Release date, Check for update, GitHub contact / issues |
 
 The Hub applies the keys live in `hub/core/hub_prefs.js`. Keys: `wallpaper`, `taskPos`, `taskH`, `titleH`,
 `accent`, `theme`, `motion`, `wmMode`, `startHover` (empty = default).
@@ -28,7 +28,7 @@ v0.299
 2026-10-19
 ```
 
-Line 1 = version (shown in the Hub bar / taskbar tray and Settings → About), line 2 = date of
+Line 1 = version (internal only, not displayed anywhere since R41), line 2 = date of
 the current release (`YYYY-MM-DD`, shown as "Current release"). Read with `cache: 'no-cache'`
 by `hub/update/hub_update.js` and `sec_about.js`; "—" shows when it can't be read. Bump it with
 each release (together with the `?v=` tags and `hub-shell-vN` in `hub/update/hub_sw.js`).

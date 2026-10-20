@@ -59,7 +59,7 @@
           window's button again to minimise it.</li>
         <li><b>Show Desktop</b> (the screen icon right after Home) minimises everything. Click it again
           to get the same windows back.</li>
-        <li>On the right: Pooh Chat, the devices button, the Hub version and the clock.</li>
+        <li>Left to right: Show desktop, desktops 1 and 2, the keyboard (⌨) button, then your windows; on the right: Pooh Chat, the devices button and the clock.</li>
       </ul>` },
     { t: 'Right-click menu', h: `
       <p>Right-click (or press and hold on a phone) for the Hub's own menu:</p>
