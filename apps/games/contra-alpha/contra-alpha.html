@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <!--
   Contra-style Alpha — HTML entry
-  Futuristic run-and-gun. Keyboard only (Gamepad next).
+  Futuristic run-and-gun. Keyboard, on-screen touch, and gamepad.
   Timer selectable: 250 / 200 / 150 / 100 seconds.
   Audio hooks exist; assets added later.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>NEON RAID — Alpha</title>
   <link rel="stylesheet" href="contra-alpha.css" />
 </head>
@@ -24,27 +24,48 @@
       </div>
     </header>
 
-    <canvas id="game" width="960" height="540"></canvas>
+    <div id="stage">
+      <div id="frame">
+        <canvas id="game" width="960" height="540"></canvas>
 
-    <section id="menu">
-      <h1>NEON RAID</h1>
-      <p>Futuristic Contra-style · Alpha</p>
-      <label for="duration">Mission length</label>
-      <select id="duration">
-        <option value="250" selected>250 seconds</option>
-        <option value="200">200 seconds</option>
-        <option value="150">150 seconds</option>
-        <option value="100">100 seconds</option>
-      </select>
-      <button id="startBtn" type="button">START</button>
-      <p class="keys">← → / A D move · ↑ / W / SPACE jump · Z / X / CTRL fire · ENTER start / pause · ESC menu</p>
-    </section>
+        <section id="menu">
+          <h1>NEON RAID</h1>
+          <p>Futuristic Contra-style · Alpha</p>
+          <label for="duration">Mission length</label>
+          <select id="duration">
+            <option value="250" selected>250 seconds</option>
+            <option value="200">200 seconds</option>
+            <option value="150">150 seconds</option>
+            <option value="100">100 seconds</option>
+          </select>
+          <button id="startBtn" type="button">START</button>
+          <p class="keys">← → / A D move · ↑ / W / SPACE jump · Z / X fire · ENTER start / pause · ESC menu</p>
+          <p class="keys">Gamepad: stick / d-pad move, A jump, B / X fire, Start pause</p>
+        </section>
 
-    <section id="overlay" class="hidden">
-      <h2 id="overlayTitle">MISSION FAILED</h2>
-      <p id="overlayMsg"></p>
-      <button id="retryBtn" type="button">RETRY</button>
-    </section>
+        <section id="overlay" class="hidden">
+          <h2 id="overlayTitle">MISSION FAILED</h2>
+          <p id="overlayMsg"></p>
+          <button id="retryBtn" type="button">RETRY</button>
+          <button id="menuBtn" type="button">MENU</button>
+        </section>
+      </div>
+    </div>
+
+    <div id="touch">
+      <div class="touch-cluster">
+        <button type="button" id="tLeft" data-code="ArrowLeft" aria-label="Move left">◀</button>
+        <button type="button" id="tRight" data-code="ArrowRight" aria-label="Move right">▶</button>
+      </div>
+      <div class="touch-cluster">
+        <button type="button" id="tPause" data-action="pause" aria-label="Pause">II</button>
+        <button type="button" id="tMenu" data-action="menu" aria-label="Menu">MENU</button>
+      </div>
+      <div class="touch-cluster">
+        <button type="button" id="tJump" data-code="Space" aria-label="Jump">JUMP</button>
+        <button type="button" id="tFire" data-code="KeyZ" aria-label="Fire">FIRE</button>
+      </div>
+    </div>
   </div>
   <script src="contra-alpha_config.js"></script>
   <script src="contra-alpha_logic.js"></script>

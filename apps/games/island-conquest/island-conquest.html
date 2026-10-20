@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<!--
+  File: island-conquest.html
+  Project: island-conquest
+  Purpose: Shell only. Config, rules, AI, rendering, and input are separate scripts
+           on the IslandConquest namespace. No build step and no remote assets.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Island Conquest</title>
+  <link rel="icon" href="island-conquest_icon.png" />
+  <link rel="stylesheet" href="island-conquest.css" />
+</head>
+<body>
+  <canvas id="sea" width="960" height="600"></canvas>
+  <header id="hud" hidden>
+    <p class="stat you">You <b id="stat-you">0 · 0</b></p>
+    <div id="ratios" role="group" aria-label="Fleet size"></div>
+    <p class="stat ai">AI <b id="stat-ai">0 · 0</b></p>
+    <button type="button" id="btn-pause">Pause</button>
+  </header>
+  <p id="hint" hidden></p>
+  <div id="overlay">
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="ov-title">
+      <h1 id="ov-title">Island Conquest</h1>
+      <p id="ov-msg"></p>
+      <div id="menu-opts">
+        <div id="diff-row" class="row" role="group" aria-label="Difficulty"></div>
+        <div id="map-row" class="row" role="group" aria-label="Map"></div>
+      </div>
+      <p id="ov-help"></p>
+      <div class="row actions">
+        <button type="button" id="btn-primary">Start</button>
+        <button type="button" id="btn-secondary" hidden>Menu</button>
+      </div>
+    </div>
+  </div>
+  <script src="island-conquest_config.js"></script>
+  <script src="island-conquest_state.js"></script>
+  <script src="island-conquest_ai.js"></script>
+  <script src="island-conquest_render.js"></script>
+  <script src="island-conquest_input.js"></script>
+  <script src="island-conquest_logic.js"></script>
+</body>
+</html>

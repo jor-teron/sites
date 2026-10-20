@@ -121,11 +121,20 @@ var CONTRA_ALPHA_CONFIG = {
     left: ["ArrowLeft", "KeyA"],
     right: ["ArrowRight", "KeyD"],
     jump: ["ArrowUp", "KeyW", "Space"],
-    fire: ["KeyZ", "KeyX", "ControlLeft", "ControlRight"],
+    fire: ["KeyZ", "KeyX"],
     start: ["Enter", "Space"],              /* menu: start · end screen: retry (Start / A) */
     pause: ["Enter", "KeyP"],               /* pause / resume while playing (Start / P) */
     menu: ["Escape"],                       /* back to the menu (Select) */
     preventDefault: ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "Enter"] /* keys that must not scroll / click */
+  },
+
+  /* Gamepad API (standard mapping), polled each frame onto the same codes.
+     D-pad and left stick move; stick / d-pad up jumps (same as ArrowUp).
+     A jump, B (KeyX) / X (KeyZ) fire, Start pause, Select menu.
+     The hub phone controller still arrives as keyboard events and as
+     {type:'hub-dpad'|'hub-stick'|'hub-key'} postMessage. */
+  gamepad: {
+    deadzone: 0.4
   },
 
 

@@ -19,7 +19,8 @@ Dino Run,          dino-run/,      , , Runners
 Car Run,           car-run/,       , , Runners
 Desert Road,       desert-road/,   , , Runners
 Tower Defence,     tower-defence/, , , Strategy
-Chess,             chess/, , , Strategy
+Island Conquest,   island-conquest/, , , Strategy
+Chess,             chess/,         , , Strategy
 AR Game,           ar-game/,       , , 3D
 Browser FPS,       browser-fps/,   , , 3D
 Island (Alpha),    island-alpha/,  , , 3D
