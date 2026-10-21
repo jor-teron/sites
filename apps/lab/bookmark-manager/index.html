@@ -1,31 +1,15 @@
 <!DOCTYPE html>
-<!--
-================================================================================
-File: index.html
-Project: bookmark-manager
-Description: Entry point that redirects to the main application file.
-Purpose: Satisfies the project structure rule requiring index.html to redirect
-         to the primary HTML file named after the project.
-Author: Grok
-Date: 2026-10-18
-================================================================================
--->
+<!-- Bookmark Manager was replaced by MyBookmark (apps/lab/mybookmark/). Old links land there.
+     Its saved data (localStorage 'bookmarkManagerData') is copied into MyBookmark on first open. -->
 <html lang="en">
 <head>
-    <!-- Meta tags for character set and viewport -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirecting to Bookmark Manager</title>
-    <!-- Immediate redirect to the main project file -->
-    <meta http-equiv="refresh" content="0; url=bookmark-manager.html">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyBookmark</title>
+  <meta http-equiv="refresh" content="0; url=../mybookmark/">
 </head>
 <body>
-    <!-- Fallback message if redirect is blocked -->
-    <p>Redirecting to <a href="bookmark-manager.html">Bookmark Manager</a>...</p>
-    <!-- JavaScript fallback redirect -->
-    <script>
-        // Immediate client-side redirect as backup
-        window.location.href = "bookmark-manager.html";
-    </script>
+  <p>Bookmark Manager is now <a href="../mybookmark/">MyBookmark</a>…</p>
+  <script>location.replace('../mybookmark/');</script>
 </body>
 </html>

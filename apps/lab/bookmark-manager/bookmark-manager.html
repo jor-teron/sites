@@ -1,58 +1,15 @@
 <!DOCTYPE html>
-<!--
-================================================================================
-File: bookmark-manager.html
-Project: bookmark-manager
-Description: Main HTML file for the Bookmark Manager WebApp.
-Purpose: Organize bookmarks into folders, import/export Chrome HTML,
-         batch delete, and manage categories.
-Author: Grok
-Date: 2026-10-18
-================================================================================
--->
+<!-- Bookmark Manager was replaced by MyBookmark (apps/lab/mybookmark/). Old links land there.
+     Its saved data (localStorage 'bookmarkManagerData') is copied into MyBookmark on first open. -->
 <html lang="en">
 <head>
-    <!-- Character encoding and responsive viewport -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bookmark Manager</title>
-    <!-- Link to project stylesheet -->
-    <link rel="stylesheet" href="bookmark-manager.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyBookmark</title>
+  <meta http-equiv="refresh" content="0; url=../mybookmark/">
 </head>
 <body>
-    <!-- Application header -->
-    <header>
-        <h1>Bookmark Manager</h1>
-        <div class="controls">
-            <button id="export-btn">Export HTML</button>
-            <input type="file" id="import-input" accept=".html" style="display:none;">
-            <button id="import-btn">Import HTML</button>
-        </div>
-    </header>
-
-    <!-- Add controls -->
-    <div class="controls">
-        <input type="text" id="name-input" placeholder="Bookmark name">
-        <input type="text" id="url-input" placeholder="URL">
-        <select id="folder-select"></select>
-        <button id="add-btn">Add Bookmark</button>
-        <input type="text" id="new-folder-input" placeholder="New folder name">
-        <button id="add-folder-btn">Add Folder</button>
-    </div>
-
-    <!-- Search -->
-    <div class="controls">
-        <input type="text" id="search-input" placeholder="Search bookmarks...">
-        <button id="delete-selected-btn">Delete Selected</button>
-    </div>
-
-    <!-- Folders container -->
-    <div id="folders"></div>
-
-    <!-- Status -->
-    <div id="status"></div>
-
-    <!-- Load the application logic -->
-    <script type="module" src="bookmark-manager.js"></script>
+  <p>Bookmark Manager is now <a href="../mybookmark/">MyBookmark</a>…</p>
+  <script>location.replace('../mybookmark/');</script>
 </body>
 </html>
