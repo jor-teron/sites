@@ -141,5 +141,7 @@ Lab,      Notepad,               apps/office/notepad/,                       ,  
 Lab,      Calculator (Legacy),   apps/tools/calculator-beta/,                ,         0,       0,      1903
 Lab,      Webcam,                apps/media/webcam/,                         ,         0,       0,      1904
 Lab,      Keyboard,              apps/lab/keyboard/,                         ,         0,       0,      1905
+Lab,      MyBookmark,            apps/lab/mybookmark/,                       ,         0,       0,      1906   (R46: replaces Bookmark Manager)
+(R46: replaced by MyBookmark) Lab,      Bookmark Manager,      apps/lab/bookmark-manager/,                ,         0,       0,      1906
  * ===== end of R33a archive ===== */
 
