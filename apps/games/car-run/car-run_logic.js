@@ -49,6 +49,7 @@
   let jumpT = 0, jumpCd = 0, nitroOn = false;
   let spawnZ = CFG.start.spawnZ;
   let laneAnim = 0;
+  let smoke = [], smokeT = 0; // crash smoke (only after a crash, cleared on reset)
 
   best = Number(localStorage.getItem(BEST_KEY) || 0) || 0;
   bestEl.textContent = 'BEST ' + Math.floor(best);
@@ -85,8 +86,9 @@
     HF = top - (CAMY / (DRAW_DIST + 1)) * vy / H;
   }
 
-  function showOverlay(title, msg, sub) {
+  function showOverlay(title, msg, sub, cls) {
     overlay.hidden = false;
+    overlay.classList.toggle('crash', cls === 'crash');
     titleEl.textContent = title;
     msgEl.textContent = msg;
     subEl.textContent = sub || '';
@@ -171,6 +173,8 @@
     jumpCd = 0;
     nitroOn = false;
     spawnZ = st.spawnZ;
+    smoke = [];
+    smokeT = 0;
     spawnAhead();
     updateHud();
   }
@@ -178,13 +182,15 @@
   function die() {
     state = 'over';
     gestureEnd();
+    A.smoke.spawn(smoke, CFG.smoke);
+    smokeT = 0;
     const sc = currentScore();
     if (sc > best) {
       best = sc;
       localStorage.setItem(BEST_KEY, String(best));
       bestEl.textContent = 'BEST ' + Math.floor(best);
     }
-    showOverlay(TX.crash, 'Score ' + sc, 'Best ' + Math.floor(best) + ' — Start / Enter');
+    showOverlay(TX.crash, 'Score ' + sc, 'Best ' + Math.floor(best) + ' — Start / Enter', 'crash');
   }
 
   function startPlay() {
@@ -509,6 +515,16 @@
       drawEntity(e, sc);
     }
     if (!playerDrawn) drawPlayer(sc);
+    if (smoke.length && player) {
+      A.smoke.draw(ctx, smoke, { M: CFG.smoke, project, origin: { x: player.x, y: player.y, z: pz } });
+    }
+  }
+
+  /** Crash screen: the wrecked car keeps smoking (capped by CFG.smoke.maxPuffs). */
+  function updateSmoke(dt) {
+    smokeT -= dt;
+    if (smokeT <= 0) { smokeT += CFG.smoke.trailInterval; A.smoke.trail(smoke, CFG.smoke); }
+    smoke = A.smoke.update(smoke, dt);
   }
 
   function loop(ts) {
@@ -516,6 +532,7 @@
     const dt = Math.min(0.05, (ts - last) / 1000);
     last = ts;
     if (state === 'play') update(dt);
+    else if (state === 'over') updateSmoke(dt);
     draw();
     requestAnimationFrame(loop);
   }
