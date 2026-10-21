@@ -42,8 +42,7 @@ const WORLD_H = MAP_SIZE * TILE_HEIGHT + WORLD_MARGIN * 2 + 280;
 const ORIGIN_X = WORLD_W / 2;     // world x of tile (0,0) top corner
 const ORIGIN_Y = WORLD_MARGIN + 280; // world y of tile (0,0) top corner (room for tall sprites)
 const ZOOM_DEFAULT = 1.1, ZOOM_MAX = 2, ZOOM_MIN_ABS = 0.15;
-const PAN_SPEED = 900;            // screen px / s for keys + edge scroll
-const EDGE_PX = 14;               // screen edge scroll band
+const PAN_SPEED = 900;            // screen px / s for keys
 const CHUNK = 8;                  // grass chunk size in tiles
 const MINIMAP_W = 180;
 const VILLAGER_SPEED = 140;       // px / s

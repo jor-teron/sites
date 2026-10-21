@@ -7,11 +7,7 @@ function updateCameraKeys(dt) {
     if (pickerOpen()) return;
     if (ctrlHeld) { /* Ctrl+A etc: no pan */ } else if (keys.A.isDown || keys.LEFT.isDown) vx--; if (keys.D.isDown || keys.RIGHT.isDown) vx++;
     if (!ctrlHeld) { if (keys.W.isDown || keys.UP.isDown) vy--; if (keys.S.isDown || keys.DOWN.isDown) vy++; }
-    const p = scene.input.activePointer;
-    if (pointerInside && !panDrag && !dragSel && p.x >= 0) {
-        if (p.x < EDGE_PX) vx--; else if (p.x > cam.width - EDGE_PX) vx++;
-        if (p.y < EDGE_PX) vy--; else if (p.y > cam.height - EDGE_PX) vy++;
-    }
+    // R4b: no edge scrolling (it panned the map while reaching for buttons); pan with drag, keys or minimap
     if (vx || vy) { cam.scrollX += vx * PAN_SPEED * dt / cam.zoom; cam.scrollY += vy * PAN_SPEED * dt / cam.zoom; }
 }
 function onWheel(pointer, objs, dx, dy) {
