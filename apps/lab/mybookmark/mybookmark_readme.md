@@ -38,6 +38,13 @@ A bookmark viewer first and a manager second. It replaces Bookmark Manager (`app
 - **Moving**: **Move to…** or drag onto a folder in the tree or a folder card. A folder can't be moved into itself.
 - **Delete** asks for confirmation (red button, Cancel focused). Deleting a folder also deletes everything inside it.
 
+### Duplicates
+- **Select duplicates (N)** in the toolbar. The badge shows how many copies would be removed, and the button is disabled when that number is 0. The select next to it sets the scope: **All folders** (the default) or **This folder** (the current folder and its subfolders).
+- Two bookmarks count as duplicates when their normalized URLs match. Normalizing lowercases the scheme and host, strips the trailing `/` and the `#fragment`, and keeps the query.
+- One bookmark per URL is kept: the oldest by ADD_DATE, with ties going to the first in tree order. It is marked **Keep**. All the other copies are auto-selected and shown grouped by URL, so you can untick any before deleting.
+- **Delete selected** asks for confirmation ("Delete N duplicates?"). **Remove all duplicates** selects every copy except the kept one and then asks the same question.
+- The "duplicate" badges are recomputed live. Folders that end up empty are kept.
+
 ## 5. Theme
 - `localStorage['sites-hub.theme']` (`dark` / `light`) is the setting the Hub uses. If it isn't set, the system setting is used.
 - Changes apply live through the `storage` event.

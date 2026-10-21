@@ -7,6 +7,8 @@
      .move(ids, parent) → moved count, .remove(ids)
      .importTree(tree, {into:'new'|'merge', dups:'skip'|'flag', name}) → {added, folders, skipped, flagged, folderId}
      .exportTree(id) → nested items for MBNetscape.build
+     .dupGroups(scopeId?) → [{key, keep, others:[node]}]  same normalized URL; keep = oldest (ADD_DATE, then tree order)
+     .isDup(node) → its URL appears more than once (anywhere)
      .migrateLegacy() → number of bookmarks copied from the old Bookmark Manager (once)
    ============================================================ */
 const MBData = (() => {
@@ -44,7 +46,8 @@ const MBData = (() => {
     let c = 0; for (const k of kids(id)) c += k.type === 'bm' ? 1 : count(k.id);
     countCache.set(id, c); return c;
   }
-  const changed = () => { kidsIdx = null; countCache.clear(); };
+  let dupCache = null;
+  const changed = () => { kidsIdx = null; countCache.clear(); dupCache = null; };
   const nextOrder = (parent) => { const k = kids(parent); return k.length ? (k[k.length - 1].order || 0) + 1 : 0; };
   function isInside(id, folder) { let n = nodes.get(folder); while (n) { if (n.id === id) return true; n = nodes.get(n.parent); } return false; }
 
@@ -132,6 +135,28 @@ const MBData = (() => {
   }
 
   /* Old app data: {folders:[{name, bookmarks:[{name, url, id}]}]}. Empty folders are skipped. */
+  /* Bookmarks in tree order (depth-first, folder order), optionally only under one folder. */
+  function treeOrder(scope) {
+    const out = [];
+    (function walk(id) { for (const k of kids(id)) { if (k.type === 'bm') out.push(k); else walk(k.id); } })(scope || ROOT);
+    return out;
+  }
+  function dupGroups(scope) {
+    const by = new Map();
+    treeOrder(scope).forEach((n, i) => { const k = normUrl(n.url); if (!by.has(k)) by.set(k, []); by.get(k).push({ n, i }); });
+    const groups = [];
+    for (const [key, list] of by) {
+      if (list.length < 2) continue;
+      list.sort((a, b) => (a.n.added || Infinity) - (b.n.added || Infinity) || a.i - b.i);   // oldest first, then tree order
+      groups.push({ key, keep: list[0].n, others: list.slice(1).map((x) => x.n) });
+    }
+    return groups;
+  }
+  function isDup(n) {
+    if (!dupCache) { dupCache = new Map(); for (const x of nodes.values()) if (x.type === 'bm') { const k = normUrl(x.url); dupCache.set(k, (dupCache.get(k) || 0) + 1); } }
+    return n.type === 'bm' && (dupCache.get(normUrl(n.url)) || 0) > 1;
+  }
+
   async function migrateLegacy() {
     if (await MBStore.getMeta(C.migratedFlag)) return 0;
     let n = 0;
@@ -148,5 +173,5 @@ const MBData = (() => {
     return n;
   }
 
-  return { load, node, kids, path, count, all: () => [...nodes.values()], addFolder, addBookmark, update, move, remove, importTree, exportTree, migrateLegacy, normUrl, domain, isInside, ROOT };
+  return { load, node, kids, path, count, all: () => [...nodes.values()], addFolder, addBookmark, update, move, remove, importTree, exportTree, migrateLegacy, dupGroups, isDup, normUrl, domain, isInside, ROOT };
 })();

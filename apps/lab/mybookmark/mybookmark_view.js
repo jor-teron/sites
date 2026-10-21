@@ -27,6 +27,11 @@ const MBView = (() => {
     return out;
   }
   function items(S) {
+    if (S.dupes) {   // duplicates review: each group = the kept (oldest) one, then the others
+      const g = D.dupGroups(S.dupes.scope === 'here' ? S.folder : null);
+      S.groups = g; S.domains = []; S.total = g.reduce((a, x) => a + 1 + x.others.length, 0);
+      return g.flatMap((x) => [x.keep].concat(x.others));
+    }
     let list = S.query ? matches(S) : D.kids(S.folder).slice();
     const bms = list.filter((n) => n.type === 'bm');
     S.domains = countDomains(bms);
@@ -80,6 +85,7 @@ const MBView = (() => {
   /* ---------- breadcrumb ---------- */
   function crumbs(S) {
     const box = $('crumbs'); box.textContent = '';
+    if (S.dupes) { box.appendChild(el('span', 'here', 'Duplicates' + (S.dupes.scope === 'here' ? ' in “' + D.node(S.folder).title + '”' : ' in all folders'))); return; }
     if (S.query) { box.appendChild(el('span', 'here', 'Search: “' + S.query + '”')); return; }
     const p = D.path(S.folder);
     p.forEach((n, i) => {
@@ -126,13 +132,19 @@ const MBView = (() => {
   /* ---------- cards / list ---------- */
   function list(S, nodes) {
     const box = $('items'); box.textContent = '';
-    box.className = 'items ' + (S.view === 'list' ? 'list' : 'cards');
+    box.className = 'items ' + (S.view === 'list' || S.dupes ? 'list' : 'cards');
     if (!nodes.length) {
-      box.appendChild(el('div', 'empty', S.query ? 'Nothing matches “' + S.query + '”.' : D.count(D.ROOT) ? 'This folder is empty.' : 'No bookmarks yet. Import a bookmarks .html file (Import, or drop it here) or press Edit → + Bookmark.'));
+      box.appendChild(el('div', 'empty', S.dupes ? 'No duplicates left.' : S.query ? 'Nothing matches “' + S.query + '”.' : D.count(D.ROOT) ? 'This folder is empty.' : 'No bookmarks yet. Import a bookmarks .html file (Import, or drop it here) or press Edit → + Bookmark.'));
       return;
     }
     const frag = document.createDocumentFragment();
+    const keepIds = S.dupes ? new Set(S.groups.map((g) => g.keep.id)) : null;
     nodes.forEach((n, i) => {
+      if (keepIds && keepIds.has(n.id)) {   // group header before each kept bookmark
+        const g = S.groups.find((x) => x.keep.id === n.id);
+        const h = el('div', 'group-head', g.key.replace(/^https?:\/\/(www\.)?/, '') + ' · ' + (g.others.length + 1) + ' copies');
+        frag.appendChild(h);
+      }
       const isF = n.type === 'folder';
       const a = el(isF || S.edit ? 'div' : 'a', 'item' + (S.sel.has(n.id) ? ' sel' : ''));
       a.dataset.id = n.id; a.dataset.i = i; a.tabIndex = 0;
@@ -146,12 +158,14 @@ const MBView = (() => {
       const txt = el('span', 'txt');
       const t = hl(n.title, S.query); t.className = 'title'; txt.appendChild(t);
       let subText;
+      const showPath = S.query || S.dupes;
       if (isF) subText = D.count(n.id) + ' bookmarks' + (S.query ? ' · ' + D.path(n.parent).map((p) => p.title).join(' › ') : '');
-      else subText = (S.query ? n.url.replace(/^https?:\/\/(www\.)?/, '') : (D.domain(n.url) || n.url)) + (S.query ? ' · ' + D.path(n.parent).map((p) => p.title).join(' › ') : '');
+      else subText = (showPath ? n.url.replace(/^https?:\/\/(www\.)?/, '') : (D.domain(n.url) || n.url)) + (showPath ? ' · ' + (n.added ? new Date(n.added).toISOString().slice(0, 10) + ' · ' : '') + D.path(n.parent).map((p) => p.title).join(' › ') : '');
       const sub = hl(subText, S.query); sub.className = 'sub'; txt.appendChild(sub);
       a.title = isF ? n.title : n.title + '\n' + n.url;
       a.appendChild(txt);
-      if (n.dup) a.appendChild(el('span', 'badge', 'duplicate'));
+      if (keepIds && keepIds.has(n.id)) { a.appendChild(el('span', 'badge keep', 'Keep')); a.classList.add('kept'); }
+      else if (!isF && D.isDup(n)) a.appendChild(el('span', 'badge', 'duplicate'));
       if (S.edit) { const e = el('button', 'edit-btn', isF ? 'Rename' : 'Edit'); e.type = 'button'; e.dataset.edit = n.id; a.appendChild(e); }
       frag.appendChild(a);
     });

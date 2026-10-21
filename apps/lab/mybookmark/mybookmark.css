@@ -90,3 +90,12 @@ button, input, select { font: inherit; color: inherit; }
   .items.cards { grid-template-columns: 1fr; }
   .items { padding: 6px 8px 30px; } .bar, .crumbs { padding-left: 8px; padding-right: 8px; }
 }
+/* duplicates review */
+.dup-group { display: inline-flex; gap: 4px; align-items: center; }
+.count-badge { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 99px; background: var(--accent); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+.btn:disabled .count-badge { background: var(--muted); }
+.dup-bar { background: var(--panel); border-bottom: 1px dashed var(--line); }
+.dup-bar[hidden] { display: none; }
+.group-head { grid-column: 1 / -1; margin: 10px 0 2px; font-size: 12px; font-weight: 600; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.badge.keep { background: #16a34a; color: #fff; }
+.item.kept { border-color: #16a34a; }
