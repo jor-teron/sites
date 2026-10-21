@@ -1,5 +1,7 @@
 /**
  * AOE RTS - Tiny Slice Isometric Game (Phaser 3)
+ * R2a: speed 1x-5x (sub-stepped sim), female villagers (training alternates), auto-start on the last map,
+ *     seeded ponds/lakes (water blocks walking + building) and 8-dir grid A* for all villager movement.
  * R1b: high-res art (tile 128x64, villager ~110px, trees ~150-185px, TC ~280px) pre-rendered once into
  *     texture atlases by aoe-rts_art.js and shown as pooled images; everything else scaled 2x.
  * R1a: 48x48 map (MAP_SIZE), full-window canvas, zoomable/pannable camera (wheel, right/middle drag,
@@ -18,13 +20,13 @@
 // ============================================================================
 const TILE_WIDTH = 128;
 const TILE_HEIGHT = 64;
-// Procedural maps 00-99: number from ?map=NN, else last saved, else 07. Size rounds up to multiples of 16.
+// Procedural maps 00-99: number from ?map=NN, else last saved, else 00. Size rounds up to multiples of 16.
 const URL_MAP = (() => { const v = new URLSearchParams(location.search).get('map'); return v !== null && /^\d{1,2}$/.test(v.trim()) ? parseInt(v, 10) : null; })();
 function storedMap() { try { const v = localStorage.getItem('aoe-rts.map'); return v !== null && /^\d{1,2}$/.test(v) ? parseInt(v, 10) : null; } catch (e) { return null; } }
-const MAP_NUM = URL_MAP !== null ? URL_MAP : (storedMap() !== null ? storedMap() : 7);
+const MAP_NUM = URL_MAP !== null ? URL_MAP : (storedMap() !== null ? storedMap() : 0);
 /** Map number -> tiles per side: 00=16, 01-20=32, 21-40=48, 41-60=64, 61-80=80, 81-99=96 */
 function mapSizeFor(n) { return n <= 0 ? 16 : 16 * (1 + Math.ceil(n / 20)); }
-function mapLabel(n) { const s = mapSizeFor(n); return String(n).padStart(2, '0') + ' (' + s + 'x' + s + ')'; }
+function mapLabel(n) { return String(n).padStart(2, '0'); }
 let MAP_SIZE = mapSizeFor(MAP_NUM);   // tiles per side (only the test hook swaps it)
 const WORLD_MARGIN = 192;          // px of empty border around the map diamond
 const WORLD_W = MAP_SIZE * TILE_WIDTH + WORLD_MARGIN * 2;
@@ -49,6 +51,9 @@ const HOUSE_COST = { wood: 25 };
 const HOUSE_BUILD_TIME = 8;       // seconds for one villager
 const POP_BASE = 5;               // Town Center supports 5
 const POP_PER_HOUSE = 5;
+const SPEEDS = [1, 2, 3, 4, 5];
+const SIM_STEP = 1 / 30;          // max simulated seconds per sub-step (5x at 30fps = 5 sub-steps)
+const PATH_BUDGET = 12;           // A* searches allowed per frame (others wait a frame)
 
 /** Resource node definitions */
 const RES_TYPES = {
@@ -96,6 +101,9 @@ let panDrag = null;      // { x, y, sx, sy, moved } right/middle drag
 let hoverTile = null;
 let keys = null, pointerInside = false, ctrlHeld = false;
 let pool = [], poolN = 0, gUnder = null;
+let speed = 1;           // game speed multiplier (not saved)
+let water = new Uint8Array(MAP_SIZE * MAP_SIZE);   // 1 = water tile (blocks walking + building)
+let trainedCount = 0;    // villagers made so far: even = male, odd = female
 window.addEventListener('keydown', e => { if (e.key === 'Control' || e.key === 'Meta') ctrlHeld = true; });
 window.addEventListener('keyup', e => { if (e.key === 'Control' || e.key === 'Meta') ctrlHeld = false; });
 window.addEventListener('blur', () => { ctrlHeld = false; });
@@ -195,6 +203,53 @@ function initMap(num) {
         }
     }
 }
+function isWater(x, y) { return inMap(x, y) && water[y * MAP_SIZE + x] === 1; }
+function isLand(x, y) { return inMap(x, y) && water[y * MAP_SIZE + x] === 0; }
+/** Seeded ponds / lakes (own RNG so land layouts stay as in R1). Keeps the TC area dry, then floods
+ *  any land not connected to the TC so every tile and resource stays reachable. */
+function initWater(num) {
+    const S = MAP_SIZE; water = new Uint8Array(S * S);
+    let rnd = (mapSeed(num) ^ 0x5bd1e995) % 2147483646 + 1; const R = () => (rnd = (rnd * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 5; i++) R();
+    const cx0 = townCenter.x + 0.5, cy0 = townCenter.y + 0.5, keep = S <= 16 ? 4.6 : 11.5;
+    const lake = (lx, ly, rad) => {
+        const ph = [R() * 6.283, R() * 6.283, R() * 6.283], am = [0.25 + R() * 0.2, 0.12 + R() * 0.12, 0.08];
+        for (let y = Math.floor(ly - rad * 1.6); y <= ly + rad * 1.6; y++) for (let x = Math.floor(lx - rad * 1.6); x <= lx + rad * 1.6; x++) {
+            if (!inMap(x, y) || Math.hypot(x - cx0, y - cy0) < keep) continue;
+            const a = Math.atan2(y - ly, x - lx), k = 1 + am[0] * Math.sin(a * 2 + ph[0]) + am[1] * Math.sin(a * 3 + ph[1]) + am[2] * Math.sin(a * 5 + ph[2]);
+            if (Math.hypot(x - lx, y - ly) <= rad * k) water[y * S + x] = 1;
+        }
+    };
+    const spot = (minD) => { for (let t = 0; t < 40; t++) { const x = 1 + R() * (S - 2), y = 1 + R() * (S - 2); if (Math.hypot(x - cx0, y - cy0) >= minD) return [x, y]; } return null; };
+    if (S <= 16) { if (R() < 0.5) { const p = spot(5.5); if (p) lake(p[0], p[1], 0.9); } }
+    else if (S <= 32) { const n = 1 + Math.floor(R() * 2); for (let i = 0; i < n; i++) { const p = spot(keep + 2); if (p) lake(p[0], p[1], 0.8 + R() * 0.7); } }
+    else {
+        const target = S * S * (0.05 + 0.10 * Math.min(1, (S - 48) / 48)) * (0.6 + R() * 0.4);
+        let tries = 0, cnt = () => water.reduce((a, b) => a + b, 0);
+        while (cnt() < target && tries++ < 12) { const p = spot(keep + 3); if (p) lake(p[0], p[1], 2 + R() * Math.min(9, S / 9)); }
+        const ponds = Math.floor(R() * 3); for (let i = 0; i < ponds; i++) { const p = spot(keep + 2); if (p) lake(p[0], p[1], 0.8 + R() * 0.6); }
+    }
+    // Flood land cut off from the TC (enclosed pockets / map-edge corners), so all land is one walkable area
+    const seen = new Uint8Array(S * S), st = [townCenter.y * S + townCenter.x]; seen[st[0]] = 1;
+    while (st.length) { const i = st.pop(), x = i % S, y = (i - x) / S;
+        for (let d = 0; d < 4; d++) { const nx = x + [1, -1, 0, 0][d], ny = y + [0, 0, 1, -1][d], j = ny * S + nx;
+            if (inMap(nx, ny) && !seen[j] && !water[j]) { seen[j] = 1; st.push(j); } } }
+    for (let i = 0; i < S * S; i++) if (!seen[i]) water[i] = 1;
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (water[y * S + x] && mapData[y][x] && mapData[y][x].kind !== 'tc') mapData[y][x] = null;
+}
+/** Test hook: BFS from the TC over land (8-dir, no corner cutting, same rules as A*) */
+function reachReport() {
+    const S = MAP_SIZE, seen = new Uint8Array(S * S), st = [townCenter.y * S + townCenter.x]; seen[st[0]] = 1;
+    while (st.length) { const i = st.pop(), x = i % S, y = (i - x) / S;
+        for (let k = 0; k < 8; k++) { const dx = DIRS[k][0], dy = DIRS[k][1], nx = x + dx, ny = y + dy, j = ny * S + nx;
+            if (!isLand(nx, ny) || seen[j] || (dx && dy && (!isLand(x + dx, y) || !isLand(x, y + dy)))) continue; seen[j] = 1; st.push(j); } }
+    let res = 0, unreach = 0, onWater = 0, land = 0, landUnreach = 0, w = 0;
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const i = y * S + x, c = mapData[y][x];
+        if (water[i]) w++; else { land++; if (!seen[i]) landUnreach++; }
+        if (c && c.kind !== 'tc') { res++; if (water[i]) onWater++; if (!seen[i]) unreach++; }
+        if (c && c.kind === 'tc' && (!seen[i] || water[i])) unreach++; }
+    return { res, unreach, onWater, landUnreach, waterTiles: w, waterPct: Math.round(w / (S * S) * 1000) / 10 };
+}
 /** Test hook: counts of resources within 10 tiles of the TC */
 function fairStartCounts() {
     const c = { tree: 0, berry: 0, gold: 0, stone: 0, berryClusters: 0 }, cx0 = townCenter.x + 0.5, cy0 = townCenter.y + 0.5, seen = {};
@@ -214,20 +269,22 @@ function fairStartCounts() {
     c.ringClear = tcRing; return c;
 }
 function mapHash() { let h = 2166136261; for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) { const k = mapData[y][x];
-    const s = k ? k.kind[0] + k.max : '.'; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0; } return h.toString(16); }
+    const s = (k ? k.kind[0] + k.max : '.') + (water[y * MAP_SIZE + x] ? 'w' : ''); for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0; } return h.toString(16); }
 /** Test hook: generate any map number (only valid for numbers with this page's size) without touching the scene */
 window.aoeTest = {
     MAP_NUM, MAP_SIZE, mapSizeFor, mapHash, fairStartCounts,
-    gen(n) { const sv = [mapData, townCenter, MAP_SIZE]; MAP_SIZE = mapSizeFor(n); initMap(n); const r = { hash: mapHash(), fair: fairStartCounts(), tc: Object.assign({}, townCenter) }; r.size = MAP_SIZE; mapData = sv[0]; townCenter = sv[1]; MAP_SIZE = sv[2]; return r; },
-    get villagers() { return villagers; }, get resources() { return resources; }, orderGather: (v, x, y) => orderGather(v, x, y), findNearest
+    gen(n) { const sv = [mapData, townCenter, MAP_SIZE, water]; MAP_SIZE = mapSizeFor(n); initMap(n); initWater(n); const r = { hash: mapHash(), fair: fairStartCounts(), tc: Object.assign({}, townCenter), reach: reachReport() }; r.size = MAP_SIZE; mapData = sv[0]; townCenter = sv[1]; MAP_SIZE = sv[2]; water = sv[3]; return r; },
+    get villagers() { return villagers; }, get resources() { return resources; }, orderGather: (v, x, y) => orderGather(v, x, y), findNearest,
+    get speed() { return speed; }, setSpeed: n => setSpeed(n), get water() { return water; }, get townCenter() { return townCenter; }, get mapData() { return mapData; },
+    reachReport, isLand, tileCenter, findPath: (a, b, c, d) => findPath(a, b, c, d), orderMove: (v, x, y) => orderMove(v, x, y), pathStats: null, spawnVillager: (x, y) => spawnVillager(x, y)
 };
 
 // ============================================================================
 // VILLAGERS
 // ============================================================================
 function spawnVillager(tx, ty) {
-    const p = tileCenter(tx, ty);
-    const v = { x: p.x, y: p.y, state: 'idle', target: null, node: null, carry: 0, carryType: null, timer: 0, selected: false, face: 1, walking: false, seed: Math.random() };
+    const p = tileCenter(tx, ty), fem = trainedCount++ % 2 === 1;   // male, female, male, ...
+    const v = { fem, x: p.x, y: p.y, state: 'idle', target: null, node: null, carry: 0, carryType: null, timer: 0, selected: false, face: 1, walking: false, seed: Math.random() };
     villagers.push(v);
     return v;
 }
@@ -262,7 +319,8 @@ function spreadIdle(dt) {
         if (d < 36) {
             if (d < 0.01) { dx = Math.cos(i + j); dy = Math.sin(i + j); d = 1; }
             const push = Math.min(36 - d, 80 * dt) / 2, ux = dx / d, uy = dy / d / 2;
-            a.x -= ux * push; a.y -= uy * push; b.x += ux * push; b.y += uy * push;
+            const nudge = (u, sx) => { const nx = u.x + ux * push * sx, ny = u.y + uy * push * sx, t = screenToTile(nx, ny); if (isLand(t.x, t.y)) { u.x = nx; u.y = ny; } };
+            nudge(a, -1); nudge(b, 1);
         }
     }
 }
@@ -278,14 +336,102 @@ function findNearest(kind, from) {
     }
     return best;
 }
-/** Move toward target, returns true when arrived */
+// ---------------------------------------------------------------------------
+// PATHFINDING: 8-dir grid A* over land tiles (no corner cutting), LOS-smoothed, cached, budgeted per frame
+// ---------------------------------------------------------------------------
+const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+const pathStats = { calls: 0, cached: 0, totalMs: 0, maxMs: 0, waits: 0 };
+let pathBudget = PATH_BUDGET, pathCache = new Map();
+let asG = null, asFrom = null, asOpen = null, asClosed = null, asGen = 0, heapI = [], heapF = [];
+/** World px -> fractional tile coords (tile centres are integers) */
+function tileF(px, py) { const lx = (px - ORIGIN_X) / (TILE_WIDTH / 2), ly = (py - ORIGIN_Y - TILE_HEIGHT / 2) / (TILE_HEIGHT / 2); return { x: (lx + ly) / 2, y: (ly - lx) / 2 }; }
+/** Straight walk a->b (world px) stays on land with a little clearance */
+function losClear(ax, ay, bx, by) {
+    const a = tileF(ax, ay), b = tileF(bx, by), n = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) * 4) + 1;
+    for (let i = 0; i <= n; i++) { const fx = a.x + (b.x - a.x) * i / n, fy = a.y + (b.y - a.y) * i / n;
+        for (let k = 0; k < 4; k++) if (!isLand(Math.round(fx + (k & 1 ? 0.28 : -0.28)), Math.round(fy + (k & 2 ? 0.28 : -0.28)))) return false; }
+    return true;
+}
+/** Nearest land tile to (x,y) (itself when dry) */
+function nearestLand(x, y) {
+    x = Math.max(0, Math.min(MAP_SIZE - 1, x)); y = Math.max(0, Math.min(MAP_SIZE - 1, y));
+    if (isLand(x, y)) return { x, y };
+    for (let r = 1; r < MAP_SIZE; r++) { let best = null, bd = Infinity;
+        for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { if (Math.max(Math.abs(dx), Math.abs(dy)) !== r || !isLand(x + dx, y + dy)) continue;
+            const d = dx * dx + dy * dy; if (d < bd) { bd = d; best = { x: x + dx, y: y + dy }; } }
+        if (best) return best; }
+    return { x, y };
+}
+function heapPush(i, f) { let k = heapI.length; heapI.push(i); heapF.push(f);
+    while (k > 0) { const p = (k - 1) >> 1; if (heapF[p] <= f) break; heapI[k] = heapI[p]; heapF[k] = heapF[p]; k = p; } heapI[k] = i; heapF[k] = f; }
+function heapPop() { const top = heapI[0], li = heapI.pop(), lf = heapF.pop(), n = heapI.length;
+    if (n) { let k = 0; for (;;) { let c = 2 * k + 1; if (c >= n) break; if (c + 1 < n && heapF[c + 1] < heapF[c]) c++; if (heapF[c] >= lf) break; heapI[k] = heapI[c]; heapF[k] = heapF[c]; k = c; } heapI[k] = li; heapF[k] = lf; }
+    return top; }
+/** A* from tile (sx,sy) to (gx,gy), both land. Returns tile list [[x,y]...] incl. both ends, or null */
+function findPath(sx, sy, gx, gy) {
+    const S = MAP_SIZE, N = S * S, key = (sy * S + sx) * N + gy * S + gx;
+    if (pathCache.has(key)) { pathStats.cached++; return pathCache.get(key); }
+    const t0 = performance.now();
+    if (!asG || asG.length !== N) { asG = new Float32Array(N); asFrom = new Int32Array(N); asOpen = new Uint32Array(N); asClosed = new Uint32Array(N); asGen = 0; }
+    asGen++; heapI.length = 0; heapF.length = 0;
+    const s0 = sy * S + sx, g0 = gy * S + gx, h = (x, y) => { const dx = Math.abs(x - gx), dy = Math.abs(y - gy); return Math.max(dx, dy) + 0.4142 * Math.min(dx, dy); };
+    asG[s0] = 0; asFrom[s0] = -1; asOpen[s0] = asGen; heapPush(s0, h(sx, sy));
+    let found = false;
+    while (heapI.length) {
+        const i = heapPop(); if (asClosed[i] === asGen) continue; asClosed[i] = asGen;
+        if (i === g0) { found = true; break; }
+        const x = i % S, y = (i - x) / S;
+        for (let k = 0; k < 8; k++) { const dx = DIRS[k][0], dy = DIRS[k][1], nx = x + dx, ny = y + dy;
+            if (!isLand(nx, ny)) continue;
+            if (dx && dy && (!isLand(x + dx, y) || !isLand(x, y + dy))) continue;   // no corner cutting
+            const j = ny * S + nx; if (asClosed[j] === asGen) continue;
+            const g = asG[i] + (dx && dy ? 1.4142 : 1);
+            if (asOpen[j] !== asGen || g < asG[j]) { asOpen[j] = asGen; asG[j] = g; asFrom[j] = i; heapPush(j, g + h(nx, ny)); } }
+    }
+    let path = null;
+    if (found) { path = []; for (let i = g0; i !== -1; i = asFrom[i]) path.push([i % S, (i - i % S) / S]); path.reverse(); }
+    const ms = performance.now() - t0; pathStats.calls++; pathStats.totalMs += ms; pathStats.maxMs = Math.max(pathStats.maxMs, ms);
+    if (pathCache.size > 300) pathCache.clear();
+    pathCache.set(key, path);
+    return path;
+}
+/** Plan a route for v to world point t: list of world waypoints ending at the (land) goal */
+function planRoute(v, t) {
+    const gt = screenToTile(t.x, t.y), gl = nearestLand(gt.x, gt.y), goalDry = gl.x === gt.x && gl.y === gt.y;
+    const end = goalDry ? { x: t.x, y: t.y } : tileCenter(gl.x, gl.y);
+    if (losClear(v.x, v.y, end.x, end.y)) return [end];
+    if (pathBudget <= 0) { pathStats.waits++; return null; }
+    pathBudget--;
+    const st = screenToTile(v.x, v.y), sl = nearestLand(st.x, st.y);
+    const tiles = findPath(sl.x, sl.y, gl.x, gl.y);
+    if (!tiles) return [end];
+    // LOS smoothing: from each anchor, run forward while the straight line stays dry
+    const pts = tiles.map(p => tileCenter(p[0], p[1])); pts[pts.length - 1] = end;
+    const out = []; let ax = v.x, ay = v.y, i = 0;
+    while (i < pts.length - 1) { let j = i + 1; while (j + 1 < pts.length && losClear(ax, ay, pts[j + 1].x, pts[j + 1].y)) j++;
+        if (j === i + 1 && !losClear(ax, ay, pts[j].x, pts[j].y)) j = i;   // can't see next: go via current tile centre
+        if (j === i) { out.push(pts[i]); ax = pts[i].x; ay = pts[i].y; i++; continue; }
+        out.push(pts[j]); ax = pts[j].x; ay = pts[j].y; i = j; }
+    if (!out.length || out[out.length - 1] !== end) out.push(end);
+    return out;
+}
+/** Move toward target along a planned path, returns true when arrived (or as close as land allows) */
 function stepTo(v, t, dt, stopDist) {
-    const dx = t.x - v.x, dy = t.y - v.y, d = Math.hypot(dx, dy);
-    if (d <= stopDist) return true;
-    v.walking = true; if (Math.abs(dx) > 0.5) v.face = dx > 0 ? 1 : -1;
-    const s = Math.min(d, VILLAGER_SPEED * dt);
-    v.x += dx / d * s; v.y += dy / d * s;
-    return false;
+    let dx = t.x - v.x, dy = t.y - v.y, d = Math.hypot(dx, dy);
+    if (d <= stopDist) { v.route = null; return true; }
+    const gt = screenToTile(t.x, t.y), gkey = gt.y * 4096 + gt.x;
+    if (!v.route || v.routeKey !== gkey) { const r = planRoute(v, t); if (!r) return false; v.route = r; v.routeKey = gkey; }
+    else { const last = v.route[v.route.length - 1]; if (isLand(gt.x, gt.y)) { last.x = t.x; last.y = t.y; } }   // goal drifts inside its tile (drop point)
+    let s = VILLAGER_SPEED * dt;
+    while (s > 0 && v.route.length) {
+        const w = v.route[0], wx = w.x - v.x, wy = w.y - v.y, wd = Math.hypot(wx, wy), final = v.route.length === 1;
+        if (final && Math.hypot(t.x - v.x, t.y - v.y) <= stopDist) break;
+        v.walking = true; if (Math.abs(wx) > 0.5) v.face = wx > 0 ? 1 : -1;
+        if (wd <= s) { v.x = w.x; v.y = w.y; s -= wd; v.route.shift(); }
+        else { v.x += wx / wd * s; v.y += wy / wd * s; s = 0; }
+    }
+    if (!v.route.length) { v.route = null; return true; }   // reached the end (goal itself, or nearest dry tile)
+    return Math.hypot(t.x - v.x, t.y - v.y) <= stopDist;
 }
 function updateVillager(v, dt) {
     switch (v.state) {
@@ -371,6 +517,7 @@ function retarget(v) {
 function create() {
     scene = this; cam = this.cameras.main;
     initMap(MAP_NUM);
+    initWater(MAP_NUM);
     bakeGround(this);
     Art.build(this);
     gUnder = this.add.graphics().setDepth(-5);
@@ -402,21 +549,28 @@ function minZoom() { return Math.max(ZOOM_MIN_ABS, Math.min(cam.width / WORLD_W,
 function update(time, delta) {
     const dt = Math.min(delta, 100) / 1000;
     updateCameraKeys(dt);
+    pathBudget = PATH_BUDGET;
     if (!paused) {
-        animT += dt * 1000;
-        villagers.forEach(v => { v.walking = false; updateVillager(v, dt); });
-        spreadIdle(dt);
-        regrowBerries(dt);
-        if (trainQueue > 0 && popCount() < popCap()) {
-            trainTimer += dt;
-            if (trainTimer >= TRAIN_TIME) { trainTimer = 0; trainQueue--; spawnFromTC(); }
-        }
+        // speed multiplies simulated time; split into small steps so 5x stays stable (no overshoot)
+        const sim = dt * speed, n = Math.max(1, Math.ceil(sim / SIM_STEP - 1e-6)), h = sim / n;
+        for (let k = 0; k < n; k++) simStep(h);
     }
     const hud = `Wood ${resources.wood} · Food ${resources.food} · Gold ${resources.gold} · Stone ${resources.stone} · Pop ${popCount()}/${popCap()}`;
     if (hudText.textContent !== hud) hudText.textContent = hud;
     updateBar();
     render();
     updateMinimap(time);
+}
+
+function simStep(dt) {
+    animT += dt * 1000;
+    villagers.forEach(v => { v.walking = false; updateVillager(v, dt); });
+    spreadIdle(dt);
+    regrowBerries(dt);
+    if (trainQueue > 0 && popCount() < popCap()) {
+        trainTimer += dt;
+        if (trainTimer >= TRAIN_TIME) { trainTimer = 0; trainQueue--; spawnFromTC(); }
+    }
 }
 
 // ============================================================================
@@ -462,6 +616,9 @@ function initMinimap() {
     const a = tileCenter(0, 0), r = tileCenter(MAP_SIZE - 1, 0), d = tileCenter(MAP_SIZE - 1, MAP_SIZE - 1), l = tileCenter(0, MAP_SIZE - 1);
     b.fillStyle = '#4a7d3a'; b.beginPath();
     b.moveTo(a.x * s, (a.y - 16) * s); b.lineTo((r.x + 32) * s, r.y * s); b.lineTo(d.x * s, (d.y + 16) * s); b.lineTo((l.x - 32) * s, l.y * s); b.closePath(); b.fill();
+    b.fillStyle = '#3a78c8';   // water tiles
+    for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) if (water[y * MAP_SIZE + x]) { const p = tileCenter(x, y), hw = TILE_WIDTH / 2 * s + 0.4, hh = TILE_HEIGHT / 2 * s + 0.4;
+        b.beginPath(); b.moveTo(p.x * s, p.y * s - hh); b.lineTo(p.x * s + hw, p.y * s); b.lineTo(p.x * s, p.y * s + hh); b.lineTo(p.x * s - hw, p.y * s); b.closePath(); b.fill(); }
     const move = e => { const rc = mm.getBoundingClientRect(); cam.centerOn((e.clientX - rc.left) / rc.width * WORLD_W, (e.clientY - rc.top) / rc.height * WORLD_H); };
     mm.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); if (e.button !== 0) return; mmDrag = true; mm.setPointerCapture(e.pointerId); move(e); });
     mm.addEventListener('pointermove', e => { if (mmDrag) move(e); });
@@ -539,6 +696,7 @@ function bakeChunk(ch) {
             c.strokeStyle = 'rgba(0,0,0,0.08)'; c.beginPath();
             c.moveTo(p.x, p.y - hh); c.lineTo(p.x + hw, p.y); c.lineTo(p.x, p.y + hh); c.lineTo(p.x - hw, p.y); c.closePath(); c.stroke();
         }
+        drawWaterTiles(c, cx0, cy0, x1, y1);
         if (Math.abs(tc.x - (left + right) / 2) < W / 2 + 220 && Math.abs(tc.y - (top + bottom) / 2) < H / 2 + 120) {  // dirt around TC
             const grd = c.createRadialGradient(tc.x, tc.y, 20, tc.x, tc.y, 180);
             grd.addColorStop(0, 'rgba(150,120,80,0.9)'); grd.addColorStop(0.6, 'rgba(140,110,70,0.5)'); grd.addColorStop(1, 'rgba(140,110,70,0)');
@@ -546,6 +704,28 @@ function bakeChunk(ch) {
         }
         scene.textures.addCanvas(ch.key, cv);
         ch.img = scene.add.image(left, top, ch.key).setOrigin(0, 0).setDepth(-10);
+}
+/** Water: deep-blue diamonds with ripples, then a sandy shoreline + foam band on edges that touch land */
+function drawWaterTiles(c, cx0, cy0, x1, y1) {
+    const hw = TILE_WIDTH / 2, hh = TILE_HEIGHT / 2;
+    for (let y = cy0; y < y1; y++) for (let x = cx0; x < x1; x++) {
+        if (!isWater(x, y)) continue;
+        const p = tileCenter(x, y), T = [p.x, p.y - hh], Rr = [p.x + hw, p.y], B = [p.x, p.y + hh], L = [p.x - hw, p.y];
+        c.save(); c.beginPath(); c.moveTo(T[0], T[1] - 0.6); c.lineTo(Rr[0] + 0.6, Rr[1]); c.lineTo(B[0], B[1] + 0.6); c.lineTo(L[0] - 0.6, L[1]); c.closePath();
+        const g = c.createLinearGradient(p.x - hw, p.y - hh, p.x + hw, p.y + hh); g.addColorStop(0, '#3f86cf'); g.addColorStop(1, hash(x, y, 7) > 0.5 ? '#2a68b0' : '#2c6db6');
+        c.fillStyle = g; c.fill(); c.clip();
+        c.strokeStyle = 'rgba(200,230,255,0.28)'; c.lineWidth = 1.4;
+        for (let i = 0; i < 3; i++) { const rx = p.x + (hash(x, y, i + 30) - 0.5) * 80, ry = p.y + (hash(x, y, i + 33) - 0.5) * 36; c.beginPath(); c.moveTo(rx - 12, ry); c.quadraticCurveTo(rx - 4, ry - 3, rx + 4, ry); c.quadraticCurveTo(rx + 10, ry + 2, rx + 14, ry); c.stroke(); }
+        // edges: x+1 = lower-right (R-B), x-1 = upper-left (L-T), y+1 = lower-left (B-L), y-1 = upper-right (T-R)
+        [[1, 0, Rr, B], [-1, 0, L, T], [0, 1, B, L], [0, -1, T, Rr]].forEach(e => {
+            if (isWater(x + e[0], y + e[1]) || !inMap(x + e[0], y + e[1])) return;
+            c.beginPath(); c.moveTo(e[2][0], e[2][1]); c.lineTo(e[3][0], e[3][1]);
+            c.strokeStyle = 'rgba(235,248,255,0.55)'; c.lineWidth = 20; c.stroke();     // foam
+            c.strokeStyle = '#c9b27a'; c.lineWidth = 10; c.stroke();                    // wet sand
+            c.strokeStyle = '#a8905a'; c.lineWidth = 3; c.stroke();
+        });
+        c.restore();
+    }
 }
 function updateGround(vr) {
     let baked = 0, frame = game.loop.frame;
@@ -577,8 +757,8 @@ function render() {
     const ty0 = Math.max(0, Math.min(...cs.map(c => c.y)) - 1), ty1 = Math.min(MAP_SIZE - 1, Math.max(...cs.map(c => c.y)) + 3);
     const vis = (x, y) => { const p = tileCenter(x, y); return p.x > vr.x0 && p.x < vr.x1 && p.y > vr.y0 && p.y < vr.y1 + 120; };
     if (placing === 'house') {              // show free tiles + hover preview while placing
-        for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) if (!mapData[y][x] && vis(x, y)) diamond(gu, x, y, 0xffffff, 0.06);
-        if (hoverTile && inMap(hoverTile.x, hoverTile.y)) diamond(gu, hoverTile.x, hoverTile.y, mapData[hoverTile.y][hoverTile.x] ? 0xff3333 : 0x33ff33, 0.45);
+        for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) if (!mapData[y][x] && isLand(x, y) && vis(x, y)) diamond(gu, x, y, 0xffffff, 0.06);
+        if (hoverTile && inMap(hoverTile.x, hoverTile.y)) diamond(gu, hoverTile.x, hoverTile.y, mapData[hoverTile.y][hoverTile.x] || !isLand(hoverTile.x, hoverTile.y) ? 0xff3333 : 0x33ff33, 0.45);
     }
     for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) {
         const c = mapData[y][x];
@@ -638,7 +818,7 @@ function drawHouse(g, x, y, h) {
 function spawnFromTC() {
     const t = townCenter, ring = [];
     for (let y = t.y - 1; y <= t.y + t.h; y++) for (let x = t.x - 1; x <= t.x + t.w; x++)
-        if (inMap(x, y) && !mapData[y][x]) ring.push({ x, y });
+        if (isLand(x, y) && !mapData[y][x]) ring.push({ x, y });
     const spot = ring[Math.floor(Math.random() * ring.length)] || { x: t.x + 2, y: t.y + 2 };
     spawnVillager(spot.x, spot.y);
     Sfx.play('train');
@@ -648,10 +828,10 @@ function drawVillager(g, gu, v) {
     const kind = v.state === 'building' ? 'hammer' : (v.node && mapData[v.node.y] && mapData[v.node.y][v.node.x] ? mapData[v.node.y][v.node.x].kind : (v.lastKind || null));
     const tool = kind === 'hammer' ? 'hammer' : kind === 'tree' ? 'axe' : (kind === 'gold' || kind === 'stone') ? 'pick' : kind === 'berry' ? 'basket' : 'none';
     const t = animT / 1000 + (v.seed || 0) * 3;
-    let name;
-    if (working && tool !== 'none') name = `v_${tool}_work${Math.floor(t * 9) % 6}`;
-    else if (v.walking) name = `v_${tool}_walk${Math.floor(t * 12) % 8}`;
-    else name = `v_${tool}_idle`;
+    let name; const pre = v.fem ? 'v_f_' : 'v_';
+    if (working && tool !== 'none') name = `${pre}${tool}_work${Math.floor(t * 9) % 6}`;
+    else if (v.walking) name = `${pre}${tool}_walk${Math.floor(t * 12) % 8}`;
+    else name = `${pre}${tool}_idle`;
     if (v.selected) { gu.lineStyle(3, 0xffff66, 1); gu.strokeEllipse(v.x, v.y + 2, 54, 22); }
     sprite(name, v.x, v.y, v.y + 0.2, face < 0);
     if (v.carry > 0) {
@@ -739,7 +919,7 @@ function rightClick(px, py) {
 }
 function placeHouse(t0) {
     const builders = villagers.filter(u => u.selected);
-    if (!inMap(t0.x, t0.y) || mapData[t0.y][t0.x] || !builders.length || !canAfford(HOUSE_COST)) { flash('Can\'t build there'); Sfx.play('error'); return; }
+    if (!isLand(t0.x, t0.y) || mapData[t0.y][t0.x] || !builders.length || !canAfford(HOUSE_COST)) { flash('Can\'t build there'); Sfx.play('error'); return; }
     placing = null;
     pay(HOUSE_COST);
     const h = { x: t0.x, y: t0.y, progress: 0, done: false };
@@ -757,9 +937,15 @@ function setPaused(p) {
 }
 pauseBtn.addEventListener('pointerdown', e => { e.stopPropagation(); setPaused(!paused); });
 document.getElementById('resume-btn').addEventListener('pointerdown', e => { e.stopPropagation(); setPaused(false); });
+const speedBtn = document.getElementById('speed-btn');
+function setSpeed(n) { speed = Math.max(1, Math.min(5, n)); speedBtn.textContent = speed + 'x'; document.getElementById('pause-speed').textContent = 'Speed ' + speed + 'x'; }
+speedBtn.addEventListener('pointerdown', e => { e.stopPropagation(); setSpeed(speed >= 5 ? 1 : speed + 1); });
+setSpeed(1);
 document.addEventListener('visibilitychange', () => { if (document.hidden) setPaused(true); });
 window.addEventListener('keydown', e => {
     if (e.key === 'p' || e.key === 'P') setPaused(!paused);
+    else if (e.key === '+' || e.key === '=') setSpeed(speed + 1);
+    else if (e.key === '-' || e.key === '_') setSpeed(speed - 1);
     else if (e.key === 'Escape') { if (placing) { placing = null; flash('Placement cancelled'); } else deselectAll(); }
     else if (e.key === ' ') { e.preventDefault(); if (cam) centerOnTC(); }
     else if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); townCenter.selected = false; villagers.forEach(u => u.selected = true); }
@@ -769,7 +955,7 @@ window.addEventListener('keydown', e => {
 // COMMAND BAR (DOM, big touch buttons)
 // ============================================================================
 const bar = document.getElementById('command-bar');
-const DEFAULT_INFO = 'Left-click/drag to select · right-click to gather, move or build · wheel zoom · right-drag pan · Space = Town Center · P pause';
+const DEFAULT_INFO = 'Left-click/drag to select · right-click to gather, move or build · wheel zoom · right-drag pan · Space = Town Center · P pause · +/- speed';
 let flashTimer = 0;
 function flash(msg) {
     infoText.setText(msg); clearTimeout(flashTimer);
@@ -833,12 +1019,13 @@ syncMute();
     let pick = MAP_NUM;
     const show = () => { note.textContent = 'Map ' + mapLabel(pick) + (pick === 0 ? ' · demo' : ''); };
     sel.addEventListener('change', () => {
-        if (sel.value === 'r') { pick = Math.floor(Math.random() * 100); note.textContent = ''; show(); note.textContent = 'Random → ' + note.textContent; }
+        if (sel.value === 'r') { pick = Math.floor(Math.random() * 100); note.textContent = 'Map ' + mapLabel(pick); }
         else { pick = parseInt(sel.value, 10); show(); }
     });
     show();
     const save = n => { try { localStorage.setItem('aoe-rts.map', String(n)); } catch (e) {} };
     document.getElementById('pause-map').textContent = 'Map ' + mapLabel(MAP_NUM);
+    document.getElementById('picker-cancel').addEventListener('click', () => { ov.style.display = 'none'; setPaused(false); });
     const open = () => { setPaused(true); pauseOv.style.display = 'none'; ov.style.display = 'flex'; sel.value = String(MAP_NUM); pick = MAP_NUM; show(); };
     document.getElementById('start-btn').addEventListener('click', () => {
         save(pick);
@@ -846,6 +1033,6 @@ syncMute();
         location.search = '?map=' + String(pick).padStart(2, '0');   // new map = new game
     });
     document.getElementById('newmap-btn').addEventListener('pointerdown', e => { e.stopPropagation(); open(); });
-    if (URL_MAP !== null) { save(MAP_NUM); ov.dataset.played = '1'; }
-    else { ov.style.display = 'flex'; paused = true; }
+    // Auto start: always straight into the map (last played, ?map=NN, or 00); picker only via New map
+    save(MAP_NUM); ov.dataset.played = '1';
 })();

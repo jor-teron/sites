@@ -18,9 +18,10 @@
     <div id="info"></div>
     <div id="minimap-wrap"><canvas id="minimap"></canvas></div>
     <button id="pause-btn" aria-label="Pause">⏸</button>
-    <div id="pause-overlay"><div><h2>Paused</h2><div id="pause-map"></div><button id="resume-btn">▶ Resume</button> <button id="newmap-btn">New map</button><p>P to toggle · camera still moves</p></div></div>
+    <button id="speed-btn" aria-label="Game speed" title="Game speed (+ / -)">1x</button>
+    <div id="pause-overlay"><div><h2>Paused</h2><div id="pause-map"></div><div id="pause-speed">Speed 1x</div><button id="resume-btn">▶ Resume</button> <button id="newmap-btn">New map</button><p>P to toggle · camera still moves</p></div></div>
     <div id="title-overlay"><div><h1>AOE RTS</h1><label for="map-select">Map</label>
-        <select id="map-select"></select><div id="map-note"></div><button id="start-btn">▶ Start</button>
+        <select id="map-select"></select><div id="map-note"></div><button id="start-btn">▶ Start</button> <button id="picker-cancel">Back</button>
         <p>Same number = same map · 00 is a small demo</p></div></div>
     <!-- Mute toggle -->
     <button id="mute-btn" aria-label="Mute">🔊</button>

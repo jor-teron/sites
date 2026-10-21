@@ -51,7 +51,10 @@ const Art = (() => {
             const m = Math.max(2, Math.round(Math.hypot(q[0] - p[0], q[1] - p[1]) / 7)); for (let i = 0; i < m; i++) { const r = lerp(p, q, (i + (k % 2) * 0.5) / m), r2 = lerp(lerp(A, apex, f - 1 / n), lerp(B, apex, f - 1 / n), (i + (k % 2) * 0.5) / m); line(c, r[0], r[1], r[0] * 0.7 + r2[0] * 0.3, r[1] * 0.7 + r2[1] * 0.3, 0.6, s); } }
     }
     // ---------- villager ----------
-    const SKIN = '#efc49a', SKIN_D = '#c9966a', SKIN_L = '#f8dcbc', HAIR = '#6b4423', HAIR_D = '#3e2612', HAIR_L = '#9a6a3a';
+    const SKIN = '#efc49a', SKIN_D = '#c9966a', SKIN_L = '#f8dcbc';
+    let HAIR = '#6b4423', HAIR_D = '#3e2612', HAIR_L = '#9a6a3a';
+    let FEM = false;   // R2a: female villager variant (slimmer, long braid, dress-length tunic, softer face)
+    function setFem(f) { FEM = f; if (f) { HAIR = '#8a3c1c'; HAIR_D = '#4e1e0c'; HAIR_L = '#c0683a'; } else { HAIR = '#6b4423'; HAIR_D = '#3e2612'; HAIR_L = '#9a6a3a'; } }
     const PANT = ['#3c2e1e', '#4f3e2a'], BOOT = '#2a1c10', BOOT_L = '#5a4030';
     /** tapered limb segment drawn as a quad with rounded joints */
     function seg(c, x1, y1, x2, y2, w1, w2, fill, stroke) {
@@ -125,6 +128,12 @@ const Art = (() => {
         c.beginPath(); c.moveTo(-23, -47); c.quadraticCurveTo(-15, -60, -7, -47); c.lineWidth = 1.4; c.strokeStyle = '#6a4a22'; c.stroke();
     }
     function head(c, hx, hy, work) {
+        if (FEM) {   // long hair falling behind the shoulders + a braid
+            c.beginPath(); c.moveTo(hx - 12, hy - 6); c.quadraticCurveTo(hx - 16, hy + 10, hx - 12, hy + 24); c.quadraticCurveTo(hx - 6, hy + 27, hx - 1, hy + 20);
+            c.lineTo(hx - 1, hy + 4); c.closePath(); c.fillStyle = lin(c, hx - 16, hy, hx, hy + 24, [HAIR_L, HAIR, HAIR_D]); c.fill(); c.strokeStyle = '#2e1208'; c.lineWidth = 0.8; c.stroke();
+            for (let i = 0; i < 5; i++) { const by = hy + 22 + i * 4.2, bx = hx - 10 + Math.sin(i * 0.9) * 0.8; ell(c, bx, by, 3 - i * 0.25, 2.6, i % 2 ? HAIR : HAIR_L); c.beginPath(); c.ellipse(bx, by, 3 - i * 0.25, 2.6, 0, 0, 2 * PI); c.strokeStyle = HAIR_D; c.lineWidth = 0.6; c.stroke(); }
+            ell(c, hx - 10, hy + 43, 2.6, 1.6, '#d9b24a');   // braid tie
+        }
         // neck with shadow
         poly(c, [[hx - 5, hy + 9], [hx + 3, hy + 9], [hx + 3, hy + 15], [hx - 5, hy + 15]], SKIN_D);
         // skull + jaw
@@ -138,15 +147,18 @@ const Art = (() => {
         // eye: white, iris, pupil, glint, lid
         ell(c, hx + 6.8, hy - 1, 2.4, 1.9, '#fbf6ee'); ell(c, hx + 7.6, hy - 0.9, 1.4, 1.6, '#4a6a3a'); ell(c, hx + 7.9, hy - 0.9, 0.7, 0.8, '#120a06'); ell(c, hx + 7.3, hy - 1.6, 0.4, 0.4, '#fff');
         line(c, hx + 4.4, hy - 2.6, hx + 9.2, hy - 2.8, 0.9, '#7a4a2a');
-        line(c, hx + 4, hy - (work ? 4.6 : 5.2), hx + 9.4, hy - (work ? 4.8 : 5.8), 1.5, HAIR_D);   // brow (furrowed at work)
+        if (FEM) { line(c, hx + 4.6, hy - (work ? 4.8 : 5.4), hx + 9.2, hy - (work ? 5.2 : 6.2), 0.9, HAIR_D);   // thin arched brow
+            [[5, -2.4, 4, -3.8], [6.8, -2.9, 6.6, -4.4], [8.6, -2.8, 9.4, -4.1]].forEach(l => line(c, hx + l[0], hy + l[1], hx + l[2], hy + l[3], 0.6, '#1a0e06')); }  // lashes
+        else line(c, hx + 4, hy - (work ? 4.6 : 5.2), hx + 9.4, hy - (work ? 4.8 : 5.8), 1.5, HAIR_D);   // brow (furrowed at work)
         // nose with nostril
         c.beginPath(); c.moveTo(hx + 10, hy - 3); c.lineTo(hx + 13.5, hy + 2.8); c.lineTo(hx + 11, hy + 3.4); c.strokeStyle = '#b07a52'; c.lineWidth = 1; c.stroke();
         ell(c, hx + 11.2, hy + 2.6, 0.7, 0.5, '#8a5a3a');
         // mouth + lip
-        c.beginPath(); c.moveTo(hx + 6.5, hy + 6.6); c.quadraticCurveTo(hx + 8.6, hy + (work ? 6.4 : 7.4), hx + 10.6, hy + 6.2); c.strokeStyle = '#8a3e30'; c.lineWidth = 1.1; c.stroke();
+        c.beginPath(); c.moveTo(hx + 6.5, hy + 6.6); c.quadraticCurveTo(hx + 8.6, hy + (work ? 6.4 : 7.4), hx + 10.6, hy + 6.2); c.strokeStyle = FEM ? '#c04a5a' : '#8a3e30'; c.lineWidth = FEM ? 1.4 : 1.1; c.stroke();
         line(c, hx + 7.4, hy + 8.2, hx + 9.6, hy + 8, 0.7, 'rgba(160,90,70,0.6)');
         ell(c, hx + 8, hy + 3.2, 2.4, 1.4, 'rgba(230,120,110,0.32)');           // cheek
-        line(c, hx + 2, hy + 7, hx + 4, hy + 9.6, 0.7, 'rgba(120,70,40,0.35)'); // jawline
+        if (!FEM) line(c, hx + 2, hy + 7, hx + 4, hy + 9.6, 0.7, 'rgba(120,70,40,0.35)'); // jawline
+        else ell(c, hx + 8, hy + 3.4, 2.6, 1.5, 'rgba(240,120,130,0.3)');      // softer blush
         // hair as its own shape: crown, fringe, back, sideburn, strands
         c.beginPath(); c.moveTo(hx - 11, hy + 5); c.quadraticCurveTo(hx - 14, hy - 8, hx - 4, hy - 14.5); c.quadraticCurveTo(hx + 6, hy - 17, hx + 12, hy - 9);
         c.quadraticCurveTo(hx + 13, hy - 5.5, hx + 10.5, hy - 5.5); c.quadraticCurveTo(hx + 8, hy - 8.5, hx + 5, hy - 6.5); c.quadraticCurveTo(hx + 3, hy - 9, hx, hy - 6);
@@ -170,24 +182,26 @@ const Art = (() => {
             bob = kind !== 'basket' ? 1.6 - sw * 1.6 : 0.6;
         }
         shadow(c, 20, 7);
+        if (FEM) { c.save(); c.scale(0.88, 1); }
         leg(c, -4, -lg * 9, liftB, true);
         leg(c, 5, lg * 9, liftF, false);
         c.save(); c.translate(0, -bob);
         c.save(); c.translate(lean * 0.4, 0); c.rotate(lean * 0.012);
-        arm(c, -3, -58, backTh, '#1a3f80', 22, bend);
+        arm(c, -3, -58, backTh, FEM ? '#40206e' : '#1a3f80', 22, bend);
         if (kind === 'basket') basket(c);
         // tunic body with sleeves seams, hem and folds
-        c.beginPath(); c.moveTo(-12, -63); c.quadraticCurveTo(0, -67, 12, -63); c.quadraticCurveTo(14, -52, 13, -40); c.quadraticCurveTo(16, -32, 16.5, -26);
-        c.quadraticCurveTo(8, -23, 0, -24.5); c.quadraticCurveTo(-8, -23, -16.5, -26); c.quadraticCurveTo(-15, -33, -12.5, -40); c.quadraticCurveTo(-14, -52, -12, -63); c.closePath();
-        c.fillStyle = lin(c, -14, 0, 16, 0, ['#5a8ae0', '#2f60bc', '#1a3e80']); c.fill(); c.strokeStyle = '#142c5c'; c.lineWidth = 1; c.stroke();
+        const HEM = FEM ? -13 : -26, HW = FEM ? 19 : 16.5;   // dress-length, flared tunic for women
+        c.beginPath(); c.moveTo(-12, -63); c.quadraticCurveTo(0, -67, 12, -63); c.quadraticCurveTo(14, -52, 13, -40); c.quadraticCurveTo(HW - 0.5, -32, HW, HEM);
+        c.quadraticCurveTo(8, HEM + 3, 0, HEM + 1.5); c.quadraticCurveTo(-8, HEM + 3, -HW, HEM); c.quadraticCurveTo(-15, -33, -12.5, -40); c.quadraticCurveTo(-14, -52, -12, -63); c.closePath();
+        c.fillStyle = FEM ? lin(c, -14, 0, 16, 0, ['#9a6ad0', '#6a3aa8', '#40206e']) : lin(c, -14, 0, 16, 0, ['#5a8ae0', '#2f60bc', '#1a3e80']); c.fill(); c.strokeStyle = FEM ? '#2c1450' : '#142c5c'; c.lineWidth = 1; c.stroke();
         c.save(); c.clip();
         poly(c, [[6, -66], [16, -66], [18, -20], [9, -20]], 'rgba(5,20,50,0.28)');                  // side shade
-        poly(c, [[-16, -30], [16, -30], [17, -22], [-17, -22]], 'rgba(5,20,50,0.25)');              // hem shade
+        poly(c, [[-HW, HEM - 4], [HW, HEM - 4], [HW + 1, HEM + 4], [-HW - 1, HEM + 4]], 'rgba(5,20,50,0.25)');              // hem shade
         c.restore();
         [[-7, -36, -9, -26], [-1, -36, -2, -25], [5, -36, 6, -25], [10, -37, 12.5, -27], [-4, -61, -6, -49], [8, -60, 9, -48]].forEach(l => {
             c.beginPath(); c.moveTo(l[0], l[1]); c.quadraticCurveTo((l[0] + l[2]) / 2 + 1, (l[1] + l[3]) / 2, l[2], l[3]); c.lineWidth = 0.9; c.strokeStyle = 'rgba(10,30,70,0.6)'; c.stroke();
             line(c, l[0] + 1.2, l[1], l[2] + 1.2, l[3], 0.6, 'rgba(255,255,255,0.13)'); });
-        line(c, -16, -26.5, 16.5, -26.5, 0.9, '#d9b24a');                                            // hem stitch
+        line(c, -HW + 0.5, HEM - 0.5, HW, HEM - 0.5, 0.9, '#d9b24a');                                            // hem stitch
         // collar: V neck with lacing
         poly(c, [[-5, -64.5], [0, -56], [6, -64.5]], '#d8b090', '#142c5c', 0.8);
         line(c, -2, -61, 3, -61, 0.6, '#5a3a1a'); line(c, -1, -58.5, 2, -58.5, 0.6, '#5a3a1a');
@@ -197,9 +211,10 @@ const Art = (() => {
         poly(c, [[-11, -37], [-4, -37], [-4.5, -30], [-10.5, -30]], '#6a4622', '#2e1c0a', 0.7); line(c, -11, -35, -4, -35, 0.7, '#3a2410');
         head(c, 2, -77, work);
         c.restore();
-        const h = arm(c, 7 + lean * 0.4, -58, frontTh, '#2a56a8', 22, bend);
+        const h = arm(c, 7 + lean * 0.4, -58, frontTh, FEM ? '#6a3aa8' : '#2a56a8', 22, bend);
         tool(c, kind, h[0], h[1], frontTh);
         c.restore();
+        if (FEM) c.restore();
     }
     function carry(c, type) {
         if (type === 'wood') { for (let i = 0; i < 3; i++) { const y = -i * 5.5; poly(c, [[-12, y - 2.5], [12, y - 2.5], [12, y + 2.5], [-12, y + 2.5]], '#8b5a2b', '#4a2e12', 0.8); ell(c, 12, y, 2.6, 2.8, '#d0a26a'); ell(c, 12, y, 1.2, 1.3, '#8b5a2b'); } line(c, -4, 3, -4, -14, 1.2, '#3a2a16'); }
@@ -348,11 +363,11 @@ const Art = (() => {
     function build(scene) {
         const T0 = performance.now();
         const kinds = ['none', 'axe', 'pick', 'hammer', 'basket'];
-        kinds.forEach(k => {
-            add(`v_${k}_idle`, 100, 130, 50, 118, c => villager(c, k, 'idle', 0));
-            for (let f = 0; f < 8; f++) add(`v_${k}_walk${f}`, 100, 130, 50, 118, c => villager(c, k, 'walk', f));
-            if (k !== 'none') for (let f = 0; f < 6; f++) add(`v_${k}_work${f}`, 100, 130, 50, 118, c => villager(c, k, 'work', f));
-        });
+        ['v_', 'v_f_'].forEach(pre => { const fem = pre === 'v_f_'; kinds.forEach(k => {
+            add(`${pre}${k}_idle`, 100, 130, 50, 118, c => { setFem(fem); villager(c, k, 'idle', 0); setFem(false); });
+            for (let f = 0; f < 8; f++) add(`${pre}${k}_walk${f}`, 100, 130, 50, 118, c => { setFem(fem); villager(c, k, 'walk', f); setFem(false); });
+            if (k !== 'none') for (let f = 0; f < 6; f++) add(`${pre}${k}_work${f}`, 100, 130, 50, 118, c => { setFem(fem); villager(c, k, 'work', f); setFem(false); });
+        }); });
         ['wood', 'food', 'gold', 'stone'].forEach(t => add('carry_' + t, 36, 34, 18, 20, c => carry(c, t)));
         for (let v = 0; v < 3; v++) {
             seed = 101 + v; add(`pine${v}`, 120, 200, 60, 185, c => pine(c, v, 1)); seed = 101 + v; add(`pine${v}_cut`, 120, 200, 60, 185, c => pine(c, v, 0.82));
