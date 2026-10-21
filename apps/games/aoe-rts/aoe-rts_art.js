@@ -51,77 +51,154 @@ const Art = (() => {
             const m = Math.max(2, Math.round(Math.hypot(q[0] - p[0], q[1] - p[1]) / 7)); for (let i = 0; i < m; i++) { const r = lerp(p, q, (i + (k % 2) * 0.5) / m), r2 = lerp(lerp(A, apex, f - 1 / n), lerp(B, apex, f - 1 / n), (i + (k % 2) * 0.5) / m); line(c, r[0], r[1], r[0] * 0.7 + r2[0] * 0.3, r[1] * 0.7 + r2[1] * 0.3, 0.6, s); } }
     }
     // ---------- villager ----------
-    const SKIN = '#efc49a', SKIN_D = '#c9966a';
-    function leg(c, hipX, footDX, shade) {
-        const hy = -34, fx = hipX + footDX, fy = -4;
-        line(c, hipX, hy, (hipX + fx) / 2 + 1, -19, 8.5, shade);
-        line(c, (hipX + fx) / 2 + 1, -19, fx, fy, 7.5, shade);
-        ell(c, fx + 3, -2, 7, 3.6, '#2a1c10'); ell(c, fx + 4, -3.2, 4, 1.6, '#4a3424');
+    const SKIN = '#efc49a', SKIN_D = '#c9966a', SKIN_L = '#f8dcbc', HAIR = '#6b4423', HAIR_D = '#3e2612', HAIR_L = '#9a6a3a';
+    const PANT = ['#3c2e1e', '#4f3e2a'], BOOT = '#2a1c10', BOOT_L = '#5a4030';
+    /** tapered limb segment drawn as a quad with rounded joints */
+    function seg(c, x1, y1, x2, y2, w1, w2, fill, stroke) {
+        const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+        poly(c, [[x1 + nx * w1 / 2, y1 + ny * w1 / 2], [x2 + nx * w2 / 2, y2 + ny * w2 / 2], [x2 - nx * w2 / 2, y2 - ny * w2 / 2], [x1 - nx * w1 / 2, y1 - ny * w1 / 2]], fill, stroke, 0.7);
+        ell(c, x1, y1, w1 / 2, w1 / 2, fill); ell(c, x2, y2, w2 / 2, w2 / 2, fill);
     }
-    function arm(c, sx, sy, th, sleeve, len) {
-        const ex = sx + Math.sin(th) * len, ey = sy + Math.cos(th) * len;
-        line(c, sx, sy, sx + Math.sin(th) * len * 0.55, sy + Math.cos(th) * len * 0.55, 7, sleeve);
-        line(c, sx + Math.sin(th) * len * 0.5, sy + Math.cos(th) * len * 0.5, ex, ey, 5.5, SKIN);
-        ell(c, ex, ey, 3.6, 3.6, SKIN); ell(c, ex + 0.8, ey + 0.8, 2, 2, SKIN_D);
-        return [ex, ey];
+    function leg(c, hipX, footDX, lift, back) {
+        const hy = -34, fx = hipX + footDX, fy = -4 - lift, kx = (hipX + fx) / 2 + 2, ky = -19 - lift * 0.6;
+        const sh = PANT[back ? 0 : 1];
+        seg(c, hipX, hy, kx, ky, 9.5, 7.5, sh, 'rgba(0,0,0,0.35)');          // thigh
+        seg(c, kx, ky, fx, fy - 3, 7.5, 6.5, sh, 'rgba(0,0,0,0.35)');        // shin
+        line(c, hipX + 2, hy + 2, kx + 1.5, ky, 1, 'rgba(255,255,255,0.12)');  // trouser crease
+        // boot: shaft + foot + sole + lace band
+        poly(c, [[fx - 4, fy - 9], [fx + 3.5, fy - 9], [fx + 4, fy - 2], [fx + 10, fy - 1], [fx + 10.5, fy + 1.6], [fx - 4.5, fy + 1.6]], BOOT, '#120a04', 0.8);
+        line(c, fx - 4.5, fy + 1.2, fx + 10.5, fy + 1.2, 1.4, '#0e0804');
+        line(c, fx - 3.6, fy - 6.5, fx + 3, fy - 6.5, 1.2, BOOT_L);
+        ell(c, fx + 6, fy - 1.6, 3, 1, BOOT_L);
+    }
+    function hand(c, x, y, th) {
+        const dx = Math.sin(th), dy = Math.cos(th);
+        ell(c, x, y, 4, 3.6, SKIN); ell(c, x - 0.8, y - 0.8, 2, 1.6, SKIN_L);
+        for (let i = -1; i <= 1; i++) line(c, x + dx * 2.6 - dy * i * 1.5, y + dy * 2.6 + dx * i * 1.5, x + dx * 3.4 - dy * i * 1.5, y + dy * 3.4 + dx * i * 1.5, 0.6, SKIN_D);   // knuckle creases
+        ell(c, x - dy * 3, y + dx * 3, 1.6, 1.4, SKIN_D);   // thumb
+    }
+    function arm(c, sx, sy, th, sleeve, len, bend) {
+        const ua = th - (bend || 0), ex = sx + Math.sin(ua) * len * 0.5, ey = sy + Math.cos(ua) * len * 0.5;
+        const hx = ex + Math.sin(th) * len * 0.5, hy = ey + Math.cos(th) * len * 0.5;
+        seg(c, sx, sy, ex, ey, 8, 7, sleeve, 'rgba(0,0,0,0.35)');               // sleeve
+        line(c, sx - 1, sy + 1, ex - 1, ey, 1, 'rgba(255,255,255,0.18)');
+        seg(c, ex, ey, hx, hy, 5.6, 4.6, SKIN, 'rgba(120,70,40,0.35)');          // forearm
+        poly(c, [[ex - 3.8, ey - 1.5], [ex + 3.8, ey - 1.5], [ex + 3.6, ey + 2], [ex - 3.6, ey + 2]], col(0x2a56a8, 0.8));  // cuff
+        hand(c, hx, hy, th);
+        return [hx, hy];
     }
     function tool(c, kind, hx, hy, th) {
         if (!kind || kind === 'none' || kind === 'basket') return;
-        const dx = Math.sin(th), dy = Math.cos(th), L = kind === 'hammer' ? 20 : 30;
+        const dx = Math.sin(th), dy = Math.cos(th), L = kind === 'hammer' ? 21 : 31;
         const bx = hx - dx * 6, by = hy - dy * 6, tx = hx + dx * L, ty = hy + dy * L;
-        line(c, bx, by, tx, ty, 3.4, '#6b4423'); line(c, bx, by, tx, ty, 1.2, '#9a6a3a');
         const px = -dy, py = dx;                 // perpendicular (forward side = +)
+        // handle with grain
+        line(c, bx, by, tx, ty, 3.8, '#5a3818'); line(c, bx, by, tx, ty, 2.4, '#7a4e26');
+        line(c, bx + px * 0.6, by + py * 0.6, tx + px * 0.6, ty + py * 0.6, 0.7, '#a8784a');
+        for (let k = 0.2; k < 0.9; k += 0.23) { const gx = bx + (tx - bx) * k, gy = by + (ty - by) * k; line(c, gx - px * 0.8, gy - py * 0.8, gx + dx * 2.5, gy + dy * 2.5, 0.5, '#4a2c10'); }
+        hand(c, hx, hy, th);                     // fingers wrap over the handle
+        const P = (a, b) => [tx + px * a + dx * b, ty + py * a + dy * b];
         if (kind === 'axe') {
-            poly(c, [[tx - dx * 2, ty - dy * 2], [tx + px * 13 - dx * 6, ty + py * 13 - dy * 6], [tx + px * 14 + dx * 6, ty + py * 14 + dy * 6], [tx + dx * 4, ty + dy * 4]], '#b9c0c6', '#5a6066', 1);
-            line(c, tx + px * 13 - dx * 6, ty + py * 13 - dy * 6, tx + px * 14 + dx * 6, ty + py * 14 + dy * 6, 1.4, '#eef3f6');
+            poly(c, [P(-3, -3), P(-3, 5), P(3, 5), P(3, -3)], '#4a4f55');                      // eye/socket
+            const blade = [P(2, -2), P(10, -8), P(15, -7), P(15.5, 7), P(10, 8), P(2, 4)];
+            poly(c, blade, lin(c, P(2, 0)[0], P(2, 0)[1], P(15, 0)[0], P(15, 0)[1], ['#7a8288', '#b9c0c6', '#dfe5ea']), '#3e4448', 1);
+            line(c, P(14.6, -6.5)[0], P(14.6, -6.5)[1], P(15, 6.5)[0], P(15, 6.5)[1], 1.4, '#ffffff');   // honed edge
+            line(c, P(5, -2)[0], P(5, -2)[1], P(11, -5)[0], P(11, -5)[1], 0.8, 'rgba(255,255,255,0.5)');
         } else if (kind === 'pick') {
-            c.beginPath(); c.moveTo(tx - px * 14 - dx * 4, ty - py * 14 - dy * 4); c.quadraticCurveTo(tx + dx * 4, ty + dy * 4, tx + px * 14 - dx * 4, ty + py * 14 - dy * 4);
-            c.lineWidth = 3.6; c.strokeStyle = '#8a9096'; c.stroke(); c.lineWidth = 1; c.strokeStyle = '#d6dadd'; c.stroke();
+            c.beginPath(); c.moveTo(...P(-15, -5)); c.quadraticCurveTo(...P(0, 4), ...P(15, -5));
+            c.lineWidth = 4.4; c.strokeStyle = '#4e5458'; c.stroke(); c.lineWidth = 2.6; c.strokeStyle = '#8a9096'; c.stroke();
+            c.lineWidth = 0.9; c.strokeStyle = '#e4e8ea'; c.beginPath(); c.moveTo(...P(-12, -3.6)); c.quadraticCurveTo(...P(0, 2.4), ...P(12, -3.6)); c.stroke();
+            poly(c, [P(-2.6, -2), P(2.6, -2), P(2.6, 4), P(-2.6, 4)], '#5a6064', '#2e3236', 0.7);
         } else if (kind === 'hammer') {
-            poly(c, [[tx - px * 7 - dx * 3, ty - py * 7 - dy * 3], [tx + px * 7 - dx * 3, ty + py * 7 - dy * 3], [tx + px * 7 + dx * 4, ty + py * 7 + dy * 4], [tx - px * 7 + dx * 4, ty - py * 7 + dy * 4]], '#7a7a7a', '#3e3e3e', 1);
+            const head = [P(-8, -4), P(8, -4), P(8, 5), P(-8, 5)];
+            poly(c, head, lin(c, P(0, -4)[0], P(0, -4)[1], P(0, 5)[0], P(0, 5)[1], ['#a4a4a4', '#7a7a7a', '#4e4e4e']), '#2e2e2e', 1);
+            line(c, P(-7, -3)[0], P(-7, -3)[1], P(7, -3)[0], P(7, -3)[1], 0.9, '#e0e0e0');
+            poly(c, [P(7.5, -4.6), P(9.6, -4.6), P(9.6, 5.6), P(7.5, 5.6)], '#5a5a5a');                  // striking face
         }
     }
+    function basket(c) {
+        poly(c, [[-24, -47], [-6, -47], [-8, -33], [-22, -33]], lin(c, -24, 0, -6, 0, ['#9a7440', '#7a5a30', '#5a3e1e']), '#3e2a10', 0.9);
+        for (let i = 0; i < 4; i++) line(c, -23.5 + i * 0.5, -44 + i * 3, -6.5 - i * 0.5, -44 + i * 3, 0.7, '#4a3418');
+        for (let i = 0; i < 6; i++) line(c, -22 + i * 3, -47, -21 + i * 2.5, -33, 0.5, 'rgba(60,40,20,0.6)');
+        ell(c, -15, -47, 9.5, 2.6, '#5a3e1e'); ell(c, -15, -47.4, 8, 1.8, '#3a2610');
+        for (let i = 0; i < 4; i++) { ell(c, -19 + i * 2.6, -48.5 + (i % 2), 1.9, 1.9, '#b82058'); ell(c, -19.5 + i * 2.6, -49 + (i % 2), 0.6, 0.6, '#ffb0d0'); }
+        c.beginPath(); c.moveTo(-23, -47); c.quadraticCurveTo(-15, -60, -7, -47); c.lineWidth = 1.4; c.strokeStyle = '#6a4a22'; c.stroke();
+    }
+    function head(c, hx, hy, work) {
+        // neck with shadow
+        poly(c, [[hx - 5, hy + 9], [hx + 3, hy + 9], [hx + 3, hy + 15], [hx - 5, hy + 15]], SKIN_D);
+        // skull + jaw
+        c.beginPath(); c.moveTo(hx - 10, hy - 4); c.quadraticCurveTo(hx - 11, hy - 13, hx, hy - 13); c.quadraticCurveTo(hx + 11, hy - 13, hx + 12, hy - 2);
+        c.lineTo(hx + 12.5, hy + 1); c.lineTo(hx + 13.5, hy + 3.5); c.lineTo(hx + 11.5, hy + 4); c.quadraticCurveTo(hx + 11.5, hy + 9, hx + 6, hy + 11);
+        c.quadraticCurveTo(hx - 2, hy + 12, hx - 7, hy + 7); c.quadraticCurveTo(hx - 11, hy + 3, hx - 10, hy - 4); c.closePath();
+        c.fillStyle = lin(c, hx - 11, hy - 10, hx + 12, hy + 10, [SKIN_L, SKIN, '#d9a77a']); c.fill(); c.strokeStyle = 'rgba(120,70,40,0.6)'; c.lineWidth = 0.8; c.stroke();
+        ell(c, hx - 3, hy + 6, 6, 3, 'rgba(160,100,60,0.25)');                  // jaw shade
+        // ear
+        ell(c, hx - 3, hy + 0.5, 2.8, 3.8, SKIN); c.beginPath(); c.ellipse(hx - 3, hy + 0.5, 1.5, 2.4, 0, 0, 2 * PI); c.strokeStyle = SKIN_D; c.lineWidth = 0.8; c.stroke();
+        // eye: white, iris, pupil, glint, lid
+        ell(c, hx + 6.8, hy - 1, 2.4, 1.9, '#fbf6ee'); ell(c, hx + 7.6, hy - 0.9, 1.4, 1.6, '#4a6a3a'); ell(c, hx + 7.9, hy - 0.9, 0.7, 0.8, '#120a06'); ell(c, hx + 7.3, hy - 1.6, 0.4, 0.4, '#fff');
+        line(c, hx + 4.4, hy - 2.6, hx + 9.2, hy - 2.8, 0.9, '#7a4a2a');
+        line(c, hx + 4, hy - (work ? 4.6 : 5.2), hx + 9.4, hy - (work ? 4.8 : 5.8), 1.5, HAIR_D);   // brow (furrowed at work)
+        // nose with nostril
+        c.beginPath(); c.moveTo(hx + 10, hy - 3); c.lineTo(hx + 13.5, hy + 2.8); c.lineTo(hx + 11, hy + 3.4); c.strokeStyle = '#b07a52'; c.lineWidth = 1; c.stroke();
+        ell(c, hx + 11.2, hy + 2.6, 0.7, 0.5, '#8a5a3a');
+        // mouth + lip
+        c.beginPath(); c.moveTo(hx + 6.5, hy + 6.6); c.quadraticCurveTo(hx + 8.6, hy + (work ? 6.4 : 7.4), hx + 10.6, hy + 6.2); c.strokeStyle = '#8a3e30'; c.lineWidth = 1.1; c.stroke();
+        line(c, hx + 7.4, hy + 8.2, hx + 9.6, hy + 8, 0.7, 'rgba(160,90,70,0.6)');
+        ell(c, hx + 8, hy + 3.2, 2.4, 1.4, 'rgba(230,120,110,0.32)');           // cheek
+        line(c, hx + 2, hy + 7, hx + 4, hy + 9.6, 0.7, 'rgba(120,70,40,0.35)'); // jawline
+        // hair as its own shape: crown, fringe, back, sideburn, strands
+        c.beginPath(); c.moveTo(hx - 11, hy + 5); c.quadraticCurveTo(hx - 14, hy - 8, hx - 4, hy - 14.5); c.quadraticCurveTo(hx + 6, hy - 17, hx + 12, hy - 9);
+        c.quadraticCurveTo(hx + 13, hy - 5.5, hx + 10.5, hy - 5.5); c.quadraticCurveTo(hx + 8, hy - 8.5, hx + 5, hy - 6.5); c.quadraticCurveTo(hx + 3, hy - 9, hx, hy - 6);
+        c.quadraticCurveTo(hx - 3, hy - 6, hx - 4, hy - 3); c.lineTo(hx - 1, hy - 3); c.lineTo(hx - 1, hy + 3); c.quadraticCurveTo(hx - 5, hy + 3, hx - 6, hy + 8); c.closePath();
+        c.fillStyle = lin(c, hx - 12, hy - 14, hx + 10, hy, [HAIR_L, HAIR, HAIR_D]); c.fill(); c.strokeStyle = '#2e1a0a'; c.lineWidth = 0.8; c.stroke();
+        [[-8, -10, -4, -13], [-3, -12, 3, -14], [3, -12, 9, -10], [-10, -4, -9, 3], [-6, -8, -2, -11]].forEach(l => line(c, hx + l[0], hy + l[1], hx + l[2], hy + l[3], 0.7, HAIR_D));
+        line(c, hx - 4, hy - 13, hx + 4, hy - 14.5, 1.1, 'rgba(255,220,170,0.35)');                       // sheen
+    }
     function villager(c, kind, pose, f) {
-        let ph = 0, bob = 0, lg = 0, backTh = 0.15, frontTh = 0.25;
-        if (pose === 'walk') { ph = f / 8 * 2 * PI; bob = Math.abs(Math.sin(ph)) * 3; lg = Math.sin(ph); backTh = -Math.sin(ph) * 0.55; frontTh = Math.sin(ph) * 0.55; }
+        let ph = 0, bob = 0, lg = 0, liftB = 0, liftF = 0, backTh = 0.15, frontTh = 0.25, bend = 0.15, lean = 0, work = false;
+        if (pose === 'walk') {
+            ph = f / 8 * 2 * PI; const s = Math.sin(ph);
+            bob = Math.abs(Math.cos(ph)) * 2.6; lg = s; liftB = Math.max(0, -Math.cos(ph)) * 3 * (s < 0 ? 1 : 0.4); liftF = Math.max(0, Math.cos(ph)) * 3 * (s > 0 ? 1 : 0.4);
+            backTh = -s * 0.6; frontTh = s * 0.6; bend = 0.25; lean = 1.2;
+        }
         if (pose === 'work') {
-            const sw = [0, 0.2, 0.55, 0.9, 1, 0.5][f];
-            if (kind === 'basket') { frontTh = 0.7 + Math.sin(f / 6 * 2 * PI) * 0.35; backTh = 0.5 + Math.cos(f / 6 * 2 * PI) * 0.3; }
-            else { frontTh = 2.8 - sw * 2.1; backTh = frontTh - 0.25; }
-            bob = pose === 'work' && kind !== 'basket' ? -sw * 1.5 + 1.5 : 0;
+            work = true;
+            const e = [0, 0.18, 0.5, 0.86, 1, 0.55][f], sw = e * e * (3 - 2 * e);    // eased swing
+            if (kind === 'basket') { frontTh = 0.75 + Math.sin(f / 6 * 2 * PI) * 0.4; backTh = 0.45 + Math.cos(f / 6 * 2 * PI) * 0.3; bend = 0.35; lean = 2 + Math.sin(f / 6 * 2 * PI); }
+            else { frontTh = 2.85 - sw * 2.15; backTh = frontTh - 0.3; bend = 0.1 + sw * 0.3; lean = sw * 3; }
+            bob = kind !== 'basket' ? 1.6 - sw * 1.6 : 0.6;
         }
         shadow(c, 20, 7);
-        leg(c, -4, -lg * 9, '#3c2e1e');
-        leg(c, 5, lg * 9, '#4f3e2a');
+        leg(c, -4, -lg * 9, liftB, true);
+        leg(c, 5, lg * 9, liftF, false);
         c.save(); c.translate(0, -bob);
-        // back arm
-        arm(c, -3, -58, backTh, '#1a3f80', 22);
-        if (kind === 'basket') { ell(c, -15, -40, 9, 7, '#7a5a30'); for (let i = 0; i < 3; i++) line(c, -23, -42 + i * 3, -7, -42 + i * 3, 0.7, '#4a3418'); ell(c, -15, -46, 8, 2.4, '#5a3e1e'); }
-        // tunic
-        c.beginPath(); c.moveTo(-12, -63); c.quadraticCurveTo(0, -67, 12, -63); c.lineTo(13, -40); c.quadraticCurveTo(16, -32, 16, -27);
-        c.quadraticCurveTo(0, -23, -16, -27); c.quadraticCurveTo(-15, -33, -12, -40); c.closePath();
-        c.fillStyle = lin(c, -14, 0, 16, 0, ['#4a7ad4', '#2f60bc', '#1d4488']); c.fill(); c.strokeStyle = '#163266'; c.lineWidth = 1; c.stroke();
-        // folds
-        [[-6, -36, -8, -27], [2, -36, 3, -25], [8, -37, 11, -27], [-3, -60, -5, -48]].forEach(l => line(c, l[0], l[1], l[2], l[3], 0.9, 'rgba(10,30,70,0.55)'));
-        line(c, 4, -60, 6, -46, 0.8, 'rgba(255,255,255,0.18)');
-        // belt
-        poly(c, [[-13, -41], [13, -41], [13.5, -37], [-13.5, -37]], '#5a3a1a', '#3a2410', 0.8); poly(c, [[3, -41.5], [8, -41.5], [8, -36.5], [3, -36.5]], '#d9b24a', '#7a5a1a', 0.7);
-        // neck + head
-        poly(c, [[-3, -66], [5, -66], [5, -62], [-3, -62]], SKIN_D);
-        const hx = 2, hy = -77;
-        c.beginPath(); c.arc(hx, hy, 12, 0, 2 * PI); c.fillStyle = lin(c, hx - 12, hy - 12, hx + 12, hy + 12, ['#f6d2ac', SKIN, '#d9a77a']); c.fill();
-        // hair (cap + back)
-        c.beginPath(); c.arc(hx - 1, hy - 2, 12.5, PI * 0.95, PI * 2.05); c.quadraticCurveTo(hx + 6, hy - 9, hx - 2, hy - 7); c.quadraticCurveTo(hx - 9, hy - 3, hx - 11, hy + 6); c.closePath();
-        c.fillStyle = '#6b4423'; c.fill(); [[-6, -86, -2, -80], [0, -88, 4, -82], [-9, -82, -8, -74]].forEach(l => line(c, l[0], l[1], l[2], l[3], 0.8, '#3e2612'));
-        ell(c, hx - 3, hy + 1, 2.6, 3.4, SKIN_D);                               // ear
-        ell(c, hx + 6.5, hy - 1, 2.2, 2.4, '#fff'); ell(c, hx + 7.3, hy - 0.8, 1.2, 1.4, '#2a1a10');  // eye
-        line(c, hx + 4, hy - 5, hx + 9, hy - 5.5, 1.3, '#4a2e16');               // brow
-        line(c, hx + 11.5, hy - 1, hx + 13, hy + 3, 1.4, '#c98e62');              // nose
-        line(c, hx + 6, hy + 6.5, hx + 10, hy + 6, 1.1, '#9a4a3a');               // mouth
-        ell(c, hx + 8, hy + 3, 2.4, 1.4, 'rgba(230,120,110,0.35)');              // cheek
-        // front arm + tool
-        const hand = arm(c, 7, -58, frontTh, '#2a56a8', 22);
-        tool(c, kind, hand[0], hand[1], frontTh);
+        c.save(); c.translate(lean * 0.4, 0); c.rotate(lean * 0.012);
+        arm(c, -3, -58, backTh, '#1a3f80', 22, bend);
+        if (kind === 'basket') basket(c);
+        // tunic body with sleeves seams, hem and folds
+        c.beginPath(); c.moveTo(-12, -63); c.quadraticCurveTo(0, -67, 12, -63); c.quadraticCurveTo(14, -52, 13, -40); c.quadraticCurveTo(16, -32, 16.5, -26);
+        c.quadraticCurveTo(8, -23, 0, -24.5); c.quadraticCurveTo(-8, -23, -16.5, -26); c.quadraticCurveTo(-15, -33, -12.5, -40); c.quadraticCurveTo(-14, -52, -12, -63); c.closePath();
+        c.fillStyle = lin(c, -14, 0, 16, 0, ['#5a8ae0', '#2f60bc', '#1a3e80']); c.fill(); c.strokeStyle = '#142c5c'; c.lineWidth = 1; c.stroke();
+        c.save(); c.clip();
+        poly(c, [[6, -66], [16, -66], [18, -20], [9, -20]], 'rgba(5,20,50,0.28)');                  // side shade
+        poly(c, [[-16, -30], [16, -30], [17, -22], [-17, -22]], 'rgba(5,20,50,0.25)');              // hem shade
+        c.restore();
+        [[-7, -36, -9, -26], [-1, -36, -2, -25], [5, -36, 6, -25], [10, -37, 12.5, -27], [-4, -61, -6, -49], [8, -60, 9, -48]].forEach(l => {
+            c.beginPath(); c.moveTo(l[0], l[1]); c.quadraticCurveTo((l[0] + l[2]) / 2 + 1, (l[1] + l[3]) / 2, l[2], l[3]); c.lineWidth = 0.9; c.strokeStyle = 'rgba(10,30,70,0.6)'; c.stroke();
+            line(c, l[0] + 1.2, l[1], l[2] + 1.2, l[3], 0.6, 'rgba(255,255,255,0.13)'); });
+        line(c, -16, -26.5, 16.5, -26.5, 0.9, '#d9b24a');                                            // hem stitch
+        // collar: V neck with lacing
+        poly(c, [[-5, -64.5], [0, -56], [6, -64.5]], '#d8b090', '#142c5c', 0.8);
+        line(c, -2, -61, 3, -61, 0.6, '#5a3a1a'); line(c, -1, -58.5, 2, -58.5, 0.6, '#5a3a1a');
+        // belt with buckle and pouch
+        poly(c, [[-13, -41.5], [13, -41.5], [13.6, -36.6], [-13.6, -36.6]], lin(c, 0, -41.5, 0, -36.6, ['#7a5028', '#5a3a1a', '#3a2410']), '#2a180a', 0.8);
+        poly(c, [[2.5, -42], [8.5, -42], [8.5, -36], [2.5, -36]], null, '#d9b24a', 1.3); line(c, 4, -39, 7.5, -39, 0.8, '#f0d070');
+        poly(c, [[-11, -37], [-4, -37], [-4.5, -30], [-10.5, -30]], '#6a4622', '#2e1c0a', 0.7); line(c, -11, -35, -4, -35, 0.7, '#3a2410');
+        head(c, 2, -77, work);
+        c.restore();
+        const h = arm(c, 7 + lean * 0.4, -58, frontTh, '#2a56a8', 22, bend);
+        tool(c, kind, h[0], h[1], frontTh);
         c.restore();
     }
     function carry(c, type) {
