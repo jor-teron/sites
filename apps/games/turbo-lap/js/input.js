@@ -1,11 +1,12 @@
 /* Turbo Lap — input. Several sources (keyboard, gamepad, later touch) each publish a control state;
    the game reads the merged result through TL.input.read(). One-shot actions go through TL.input.on().
-   To add touch later: TL.input.setSource('touch', {steer, gas, brake, nitro}) and TL.input.fire('start'). */
+   Touch (js/touch.js) publishes the 'touch' source the same way. */
 window.TL = window.TL || {};
 (() => {
   const sources = {}, handlers = {};
   const I = TL.input = {
-    autopilot: null,                       // test hook: function() -> control state
+    autopilot: null,
+    autoGas: false,                        // auto-accelerate: gas on unless brake is held (set by touch.js)                       // test hook: function() -> control state
     setSource(name, s) { sources[name] = s; },
     on(action, fn) { (handlers[action] = handlers[action] || []).push(fn); },
     fire(action) { (handlers[action] || []).forEach(fn => fn()); },
@@ -17,6 +18,7 @@ window.TL = window.TL || {};
         out.steer += s.steer || 0; out.gas = out.gas || !!s.gas; out.brake = out.brake || !!s.brake; out.nitro = out.nitro || !!s.nitro;
       }
       out.steer = Math.max(-1, Math.min(1, out.steer));
+      if (I.autoGas && !out.brake) out.gas = true;
       return out;
     }
   };

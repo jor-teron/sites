@@ -42,14 +42,17 @@ window.TL = window.TL || {};
   TL.hud = {
     draw(ctx, W, H, G) {
       const s = U.clamp(Math.min(W / 1000, H / 560), 0.5, 1.8);
-      const m = 14 * s;
+      const ins = (TL.touch && TL.touch.insets) || { t: 0, r: 0, b: 0, l: 0 };
+      const m = 14 * s, mL = m + ins.l, mR = m + ins.r, mT = m + ins.t;
+      const touchOn = !!(TL.touch && TL.touch.active);
       // FPS counter, always on
-      text(ctx, TL.view.shownFps + ' FPS', W - m, m + 14 * s, 14 * s, '#d8ffd8', 'right');
+      text(ctx, TL.view.shownFps + ' FPS', W - mR, mT + 14 * s, 14 * s, '#d8ffd8', 'right');
       if (G.state === 'title') return;
       const pl = G.player;
 
       // left panel: position / lap / times
       const pw = 210 * s, ph = 150 * s;
+      ctx.save(); ctx.translate(ins.l, ins.t);
       panel(ctx, m, m, pw, ph, s);
       text(ctx, 'POS', m + 12 * s, m + 24 * s, 14 * s, '#9fb4ff');
       text(ctx, String(pl.finished ? pl.finalPos : pl.pos), m + 12 * s, m + 70 * s, 50 * s, '#fff');
@@ -66,15 +69,19 @@ window.TL = window.TL || {};
         text(ctx, k, m + 12 * s, m + (96 + i * 19) * s, 13 * s, '#9fb4ff');
         text(ctx, v, m + pw - 12 * s, m + (96 + i * 19) * s, 15 * s, '#fff', 'right');
       });
+      ctx.restore();
 
       // minimap (top-right, under FPS)
       const ms = 150 * s;
-      panel(ctx, W - m - ms, m + 24 * s, ms, ms, s);
-      minimap(ctx, W - m - ms, m + 24 * s, ms, G);
+      panel(ctx, W - mR - ms, mT + 24 * s, ms, ms, s);
+      minimap(ctx, W - mR - ms, mT + 24 * s, ms, G);
 
       // speed + nitro (bottom-right)
       const kmh = Math.round(pl.speed / CFG.maxSpeed * CFG.kmhAtMax);
-      const bw = 200 * s, bh = 92 * s, bx = W - m - bw, by = H - m - bh;
+      const bw = 200 * s, bh = 92 * s;
+      // on touch screens the pedals own the bottom corners, so the speed panel sits at the top centre (below the pause button)
+      const top = touchOn && CFG.touch.hudTopCentreSpeed;
+      const bx = top ? (W - bw) / 2 : W - mR - bw, by = top ? mT + 40 * Math.max(s, 0.8) : H - m - ins.b - bh;
       panel(ctx, bx, by, bw, bh, s);
       text(ctx, String(kmh), bx + bw - 64 * s, by + 50 * s, 44 * s, pl.nitroOn ? '#7fd8ff' : '#fff', 'right');
       text(ctx, 'KM/H', bx + bw - 12 * s, by + 50 * s, 15 * s, '#9fb4ff', 'right');

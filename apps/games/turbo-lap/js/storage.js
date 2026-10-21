@@ -9,6 +9,8 @@ window.TL = window.TL || {};
     set(key, val) { try { localStorage.setItem(P + key, JSON.stringify(val)); } catch (e) { /* private mode */ } },
     fps() { const f = S.get('fps', TL.CFG.fpsDefault); return TL.CFG.fpsOptions.includes(f) ? f : TL.CFG.fpsDefault; },
     setFps(f) { S.set('fps', f); },
+    autoGas(def) { const v = S.get('autogas', null); return typeof v === 'boolean' ? v : def; },
+    setAutoGas(v) { S.set('autogas', !!v); },
     // per track: { bestTotal, bestLap, bestPos }
     records(trackId) { return S.get('best.' + trackId, {}); },
     saveResult(trackId, total, bestLap, pos) {
