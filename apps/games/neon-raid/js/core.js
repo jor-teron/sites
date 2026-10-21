@@ -1,7 +1,7 @@
-/* Neon Raid (contra-alpha) — core: config aliases, audio stub, geometry, level and match state, HUD. */
+/* Neon Raid — core: config aliases, audio stub, geometry, level and match state, HUD. */
 
 /* ---------- config aliases (values live in js/config.js) ---------- */
-var CFG = CONTRA_ALPHA_CONFIG;
+var CFG = NEON_RAID_CONFIG;
 var DEFAULT_DURATION = CFG.defaultDuration;
 var MAX_HP = CFG.maxHp;
 var MAX_LIVES = CFG.maxLives;
