@@ -6,7 +6,7 @@
    ============================================================ */
 (() => {
   const C = MB_CONFIG, D = MBData, V = MBView, $ = (id) => document.getElementById(id);
-  const S = { folder: D.ROOT, query: '', domain: '', sort: 'name', view: 'cards', edit: false, sel: new Set(), open: new Set(), shown: [] };
+  const S = { folder: D.ROOT, query: '', domain: '', sort: 'name', view: 'cards', edit: false, sel: new Set(), open: new Set(), shown: [], dupes: null };
 
   /* ---------- theme: hub pref (sites-hub.theme) else the system ---------- */
   const mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
@@ -45,12 +45,22 @@
     $('editBtn').setAttribute('aria-pressed', String(S.edit)); $('editBar').hidden = !S.edit;
     $('moveSel').disabled = $('delSel').disabled = !S.sel.size;
     $('selInfo').textContent = S.sel.size ? S.sel.size + ' selected' : '';
+    const nd = dupCount($('dupScope').value);
+    $('dupCount').textContent = nd; $('dupBtn').disabled = !nd;
+    $('dupBar').hidden = !S.dupes; $('editBar').hidden = !S.edit || !!S.dupes;
+    if (S.dupes) {
+      const n = S.groups.reduce((a, g) => a + g.others.length, 0);
+      $('dupInfo').textContent = S.groups.length + ' groups · ' + n + ' duplicates · ' + S.sel.size + ' selected to delete (the oldest of each group is kept)';
+      $('dupDelSel').disabled = !S.sel.size; $('dupRemoveAll').disabled = !n;
+    }
     const atRoot = S.folder === D.ROOT || !!S.query;
     $('renameFolder').hidden = $('delFolder').hidden = atRoot;
     if (fi != null) { const x = $('items').querySelector('[data-i="' + fi + '"]'); if (x) x.focus(); }
     savePrefs();
   }
+  function dupCount(scope) { return D.dupGroups(scope === 'here' && S.folder !== D.ROOT ? S.folder : null).reduce((a, g) => a + g.others.length, 0); }
   function openFolder(id) {
+    S.dupes = null;
     S.folder = id; S.query = ''; $('search').value = ''; S.domain = ''; S.sel.clear();
     D.path(id).forEach((n) => S.open.add(n.id));
     drawer(false); render(); $('items').scrollTop = 0;
@@ -92,7 +102,7 @@
 
   /* ---------- keys: / search, arrows move, Enter opens, Backspace up ---------- */
   function cols() {
-    const items = $('items').querySelectorAll('.item'); if (items.length < 2 || S.view === 'list') return 1;
+    const items = $('items').querySelectorAll('.item'); if (items.length < 2 || S.view === 'list' || S.dupes) return 1;
     const top = items[0].offsetTop; let c = 0; for (const x of items) { if (x.offsetTop !== top) break; c++; } return c;
   }
   document.addEventListener('keydown', (e) => {
@@ -124,7 +134,7 @@
 
   /* ---------- search, filter, sort, view ---------- */
   let st = 0;
-  $('search').addEventListener('input', () => { clearTimeout(st); st = setTimeout(() => { S.query = $('search').value.trim(); S.domain = ''; S.sel.clear(); render(); }, 120); });
+  $('search').addEventListener('input', () => { clearTimeout(st); st = setTimeout(() => { S.dupes = null; S.query = $('search').value.trim(); S.domain = ''; S.sel.clear(); render(); }, 120); });
   $('domainFilter').onchange = () => { S.domain = $('domainFilter').value; render(); };
   $('sort').onchange = () => { S.sort = $('sort').value; render(); };
   document.querySelectorAll('[data-view]').forEach((b) => b.onclick = () => { S.view = b.dataset.view; render(); });
@@ -174,7 +184,20 @@
   });
 
   /* ---------- manager ---------- */
-  $('editBtn').onclick = () => { S.edit = !S.edit; S.sel.clear(); render(); };
+  $('editBtn').onclick = () => { S.edit = !S.edit; S.dupes = null; S.sel.clear(); render(); };
+
+  /* ---------- duplicates: keep the oldest copy of each address, select the rest ---------- */
+  function showDupes() {
+    S.dupes = { wasEdit: S.dupes ? S.dupes.wasEdit : S.edit, scope: $('dupScope').value === 'here' && S.folder !== D.ROOT ? 'here' : 'all' };
+    S.query = ''; $('search').value = ''; S.domain = ''; S.edit = true;
+    S.sel = new Set(D.dupGroups(S.dupes.scope === 'here' ? S.folder : null).flatMap((g) => g.others.map((n) => n.id)));
+    render(); $('items').scrollTop = 0;
+  }
+  $('dupBtn').onclick = showDupes;
+  $('dupScope').onchange = () => { if (S.dupes) showDupes(); else render(); };
+  $('dupDone').onclick = () => { S.edit = S.dupes.wasEdit; S.dupes = null; S.sel.clear(); render(); };
+  $('dupDelSel').onclick = () => delSelected();
+  $('dupRemoveAll').onclick = () => { S.sel = new Set(S.groups.flatMap((g) => g.others.map((n) => n.id))); render(); delSelected(); };
   const urlCheck = (v) => { try { const u = new URL(v); return /^(https?|ftp|file|chrome|edge|about|mailto):$/.test(u.protocol) ? null : 'Use a full address such as https://example.com'; } catch (_) { return 'Use a full address such as https://example.com'; } };
   const fixUrl = (v) => (/^[a-z][a-z0-9+.-]*:/i.test(v) ? v : 'https://' + v);
   function folderOptions(exclude) {
@@ -234,10 +257,11 @@
     await guard(async () => {
       const ids = [...S.sel]; if (!ids.length) return;
       const nf = ids.filter((id) => D.node(id).type === 'folder'), inside = nf.reduce((a, id) => a + D.count(id), 0);
-      const ok = await MBDialog.confirm({ title: 'Delete ' + ids.length + (ids.length === 1 ? ' item' : ' items') + '?', danger: true, okLabel: 'Delete',
+      const what = S.dupes ? (ids.length === 1 ? ' duplicate' : ' duplicates') : (ids.length === 1 ? ' item' : ' items');
+      const ok = await MBDialog.confirm({ title: 'Delete ' + ids.length + what + '?', danger: true, okLabel: 'Delete',
         message: (nf.length ? nf.length + ' folder(s) with ' + inside + ' bookmarks inside will be deleted too.\n' : '') + 'This cannot be undone.' });
       if (!ok) return;
-      const n = await D.remove(ids); S.sel.clear(); render(); toast('Deleted ' + n + (n === 1 ? ' item' : ' items'));
+      const n = await D.remove(ids); S.sel.clear(); render(); toast('Deleted ' + n + (S.dupes ? (n === 1 ? ' duplicate' : ' duplicates') + ' (empty folders are kept)' : n === 1 ? ' item' : ' items'));
     });
   }
   $('delSel').onclick = delSelected;
