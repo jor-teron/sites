@@ -21,10 +21,11 @@ Draftly.config = {
   paperHeightCm: 29.7,
   /* Orientation when nothing is stored yet. */
   defaultOrientation: 'portrait',
-  /* Paper sizes (portrait cm; docx in twips). */
+  /* Paper sizes (portrait cm; docx in twips). Only A4 and Legal;
+     an old saved 'Letter' falls back to A4 and the pref is rewritten. */
   paperSizes: {
     A4: { label: 'A4', widthCm: 21, heightCm: 29.7, pdf: 'a4', docxW: 11906, docxH: 16838 },
-    Letter: { label: 'Letter', widthCm: 21.59, heightCm: 27.94, pdf: 'letter', docxW: 12240, docxH: 15840 }
+    Legal: { label: 'Legal', widthCm: 21.59, heightCm: 35.56, pdf: 'legal', docxW: 12240, docxH: 20160 }
   },
   /* Margin presets: same value on every side, in cm. */
   marginPresets: {

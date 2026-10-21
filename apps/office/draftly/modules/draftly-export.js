@@ -46,7 +46,7 @@ Draftly.export.setupPrintStyles = function setupPrintStyles() {
   printStyle.id = cfg.printStyleId;
   var w = (isLandscape ? cfg.paperHeightCm : cfg.paperWidthCm) + 'cm';
   var h = (isLandscape ? cfg.paperWidthCm : cfg.paperHeightCm) + 'cm';
-  /* Each paper card is printed as one fixed A4 sheet, exactly as on screen. */
+  /* Each paper card is printed as one sheet of the chosen size, exactly as on screen. */
   printStyle.textContent =
     '@page { size: ' + cfg.pageSizeName + ' ' + (isLandscape ? 'landscape' : 'portrait') + '; margin: 0; }' +
     '@media print {' +

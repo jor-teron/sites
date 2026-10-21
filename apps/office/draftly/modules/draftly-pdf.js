@@ -1,7 +1,7 @@
 /* ============================================================
    FILE: modules/draftly-pdf.js
    PROJECT: Draftly
-   ROLE: Download a real .pdf (true A4, current orientation and
+   ROLE: Download a real .pdf (true A4 or Legal, current orientation and
          margins), one PDF page per paper card.
    HOW: Each paper is rendered by html2canvas (vendor/) in a
         print-like state (light colours, no marks, no shadow)
