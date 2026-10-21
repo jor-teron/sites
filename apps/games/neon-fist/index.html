@@ -45,8 +45,33 @@
     <button id="vsBtn">Versus <kbd>V</kbd></button>
     <button id="holdBtn">Hold pose <kbd>H</kbd></button>
     <button id="fpsBtn">FPS: 60</button>
+    <button id="rosterBtn">Roster</button>
   </div>
 </nav>
+
+<section id="roster" aria-label="Fighter select">
+  <header class="rTop">
+    <div class="logo">NEON <span>FIST</span> <small>fighter select</small></div>
+    <div class="row gen">
+      <button id="rPrev" aria-label="Previous fighter">◀</button>
+      <label>Fighter <input id="rNum" type="text" inputmode="numeric" maxlength="2" placeholder="00" aria-label="Fighter number 00 to 99" autocomplete="off"></label>
+      <button id="rNext" aria-label="Next fighter">▶</button>
+      <button id="rRand">Random <kbd>R</kbd></button>
+      <button id="rViewer">Viewer</button>
+    </div>
+  </header>
+  <div class="rBody">
+    <div class="rList">
+      <div id="rGrid" class="rGrid"></div>
+    </div>
+    <aside class="rSide">
+      <canvas id="rCanvas"></canvas>
+      <h1 id="rName"></h1><h2 id="rTitle"></h2><p id="rDesc"></p><div id="rStats" class="stats"></div>
+      <div class="rPicks"><span class="p1t">P1 <b id="rP1">—</b></span><span class="p2t">P2 <b id="rP2">—</b></span></div>
+      <div class="row"><button id="rClear">Clear</button><button id="rFight" class="fight" disabled>FIGHT!</button></div>
+    </aside>
+  </div>
+</section>
 
 <script src="core/config.js"></script>
 <script src="assets/models/skeleton.js"></script>
@@ -59,6 +84,7 @@
 <script src="assets/stages/stage.js"></script>
 <script src="core/hud.js"></script>
 <script src="core/viewer.js"></script>
+<script src="core/roster.js"></script>
 <script src="core/main.js"></script>
 </body>
 </html>
