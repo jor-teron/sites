@@ -1,4 +1,4 @@
-/* Chess board painter. Squares, highlights, and pieces are drawn on one canvas. */
+/* Chess board model. Squares, highlights, and pieces are drawn on one canvas. */
 (function (root) {
   const Chess = root.Chess = root.Chess || {};
   let canvas, ctx, geom = { ox: 0, oy: 0, sq: 0, flip: false, w: 0, h: 0 };
@@ -33,23 +33,7 @@
     ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
   }
-  const GLYPH = { 1: '♙', 2: '♘', 3: '♗', 4: '♖', 5: '♕', 6: '♔', '-1': '♟', '-2': '♞', '-3': '♝', '-4': '♜', '-5': '♛', '-6': '♚' };
-  function drawPiece(g, piece, cx, cy, sq) {
-    const white = piece > 0;
-    const ch = GLYPH[piece];
-    if (!ch) return;
-    g.save();
-    g.font = Math.floor(sq * 0.82) + 'px "DejaVu Sans", "Noto Sans Symbols2", "Noto Sans Symbols", serif';
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    g.lineWidth = Math.max(1, sq * 0.045);
-    g.lineJoin = 'round';
-    g.strokeStyle = white ? '#2a241c' : '#f4efe8';
-    g.strokeText(ch, cx, cy);
-    g.fillStyle = white ? '#fbf7ef' : '#1a1612';
-    g.fillText(ch, cx, cy);
-    g.restore();
-  }
+  function drawPiece(g, piece, cx, cy, sq) { Chess.pieces.draw(g, piece, cx, cy, sq); }
   function arrow(x1, y1, x2, y2) {
     const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
     const ux = dx / len, uy = dy / len;
