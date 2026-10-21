@@ -197,16 +197,35 @@ const CAR_RUN_CONFIG = {
     // Continuous smoke from the crashed car while the crash screen is up.
     trailInterval: 0.12,       // seconds between trail puffs
     trailScale: 0.6,           // trail puffs are this fraction of burst puff size
-    trailZ: 0.9,               // trail puffs start at the hood (ahead of car centre)
+    trailZ: 0.9,               // CRASH screen trail puffs start at the hood (ahead of car centre)
     hitPuffs: 4,               // small burst at each non-fatal hit
     // Smoke by HP: the first tier whose `below` is above the current HP is used.
     // HP above 90 = no smoke. The last tier is also used on the CRASH! screen.
     tiers: [
-      { below: 20, interval: 0.05, scale: 1.2, alpha: 0.75, color: '20,20,22', sparks: 0.15 },   // black + sparks
-      { below: 45, interval: 0.07, scale: 1.0, alpha: 0.65, color: '55,55,60' },                 // thick dark
-      { below: 70, interval: 0.12, scale: 0.75, alpha: 0.5, color: '120,120,128' },             // steady grey
-      { below: 90, interval: 0.3, scale: 0.5, alpha: 0.35, color: '185,185,192' },              // light wisp
+      { below: 20, interval: 0.07, scale: 0.7, alpha: 0.45, color: '30,30,34', sparks: 0.2 },    // black + sparks
+      { below: 45, interval: 0.09, scale: 0.6, alpha: 0.4, color: '60,60,66' },                  // thick dark
+      { below: 70, interval: 0.14, scale: 0.5, alpha: 0.33, color: '120,120,128' },             // steady grey
+      { below: 90, interval: 0.3, scale: 0.4, alpha: 0.25, color: '185,185,192' },              // light wisp
     ],
+    // CRASH screen only: the heaviest tier is drawn bigger/denser (view no longer matters).
+    crashScale: 1.2,           // puff scale on the CRASH screen
+    crashAlpha: 0.75,          // puff opacity on the CRASH screen
+    // During play smoke comes out of the boot/exhaust and drifts back toward the
+    // camera (down the screen), so it never covers the road ahead.
+    play: {
+      rearZ: -0.55,            // emit point: just behind the rear bumper (car centre = 0)
+      rearX: 0.15,             // exhaust offset to one side (world units)
+      startY: 0.12,            // emit height (exhaust level)
+      backSpeed: 1.2,          // drift toward the camera (units / s)
+      sinkSpeed: -0.05,        // slight downward drift (units / s)
+      driftX: 0.12,            // random sideways drift (units / s)
+      life: 0.6,               // seconds a play puff lives
+      growth: 0.12,            // radius gained per second (smaller than crash smoke)
+      maxRadiusFrac: 0.14,     // max puff radius as a fraction of the car's on-screen width
+      roofFrac: 0.6,           // puffs never reach above this fraction of the car's height on screen
+      sparkSpeed: 0.8,         // spark burst speed (units / s), from the rear
+      sparkRadius: 1.2,        // spark size (px)
+    },
     sparkColor: '255,190,60',  // spark RGB
     sparkLife: 0.35,           // seconds a spark lives
     sparkSpeed: 1.6,           // spark burst speed (units / s)
