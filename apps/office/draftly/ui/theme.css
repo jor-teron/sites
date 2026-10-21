@@ -33,6 +33,8 @@
   --accent-grad: linear-gradient(135deg, #5b5bf0 0%, #8b4ff0 55%, #c04de6 100%);
   --toolbar-h: 52px;
   --ctl-h: 34px;
+  --topbar-h: 36px;       /* top row (brand, File, tabs, name, theme); the ribbon keeps --toolbar-h */
+  --topbar-ctl-h: 28px;
   --radius: 10px;
 
   /* ----- Theme: light (default) ----- */
