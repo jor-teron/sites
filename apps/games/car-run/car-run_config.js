@@ -101,7 +101,7 @@ const CAR_RUN_CONFIG = {
     obstacleChance: 0.45,      // roll below this -> obstacle
     coinChance: 0.85,          // roll below this (and above obstacle) -> coin row
     // Relative weights for which obstacle spawns (they don't need to add up to 1)
-    obstacleWeights: { car: 0.36, barrier: 0.30, cones: 0.20, pothole: 0.14 },
+    obstacleWeights: { car: 0.25, barrier: 0.10, cones: 0.35, pothole: 0.30 },
     coinRowMin: 3,             // minimum coins in a row
     coinRowExtra: 3,           // up to this many extra coins (random)
     coinSpacing: 1.4,          // z gap between coins
