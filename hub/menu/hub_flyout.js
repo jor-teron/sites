@@ -87,8 +87,15 @@
   /** Read the CSV; rebuild + save only when it changed. → Promise<list | null> */
   function check(cat) {
     if (fresh[cat]) return fresh[cat];
-    fresh[cat] = fetch(window.HUB_CAT_CSV[cat], { cache: 'no-cache' })
-      .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
+    // R47: hub_catalog.js (window.SITES_CSV, generated from the CSVs) is the no-server copy. file:// →
+    // use it at once (fetch of local files is blocked); http(s) → fetch the CSV as before and use the
+    // catalog only if the fetch fails, so online behaviour is unchanged and CSV edits show at once.
+    const built = window.SITES_CSV && typeof window.SITES_CSV[cat] === 'string' ? window.SITES_CSV[cat] : null;
+    const read = (location.protocol === 'file:' && built != null) ? Promise.resolve(built)
+      : fetch(window.HUB_CAT_CSV[cat], { cache: 'no-cache' })
+        .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .catch((e) => { if (built != null) return built; throw e; });
+    fresh[cat] = read
       .then((t) => {
         const h = hash(t), had = store.cats[cat];
         if (had && had.h === h) return had.list;
