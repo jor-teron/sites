@@ -360,6 +360,20 @@ Draftly.find.replaceAll = function replaceAll() {
   if (Draftly.ui && Draftly.ui.showToast) Draftly.ui.showToast('Replaced ' + list.length + (list.length === 1 ? ' match' : ' matches'));
 };
 
+/* ---------- status bar on / off ---------- */
+
+Draftly.find.STATUS_KEY = 'draftly_status_bar';
+
+Draftly.find.setStatusBar = function setStatusBar(on, save) {
+  var bar = document.getElementById('statusBar');
+  var btn = document.getElementById('statusBarToggle');
+  if (bar) bar.hidden = !on;
+  if (btn) { btn.setAttribute('aria-pressed', String(on)); btn.classList.toggle('active', on); }
+  if (save) { try { localStorage.setItem(Draftly.find.STATUS_KEY, on ? '1' : '0'); } catch (e) {} }
+  if (!on) Draftly.find.togglePop(false);
+  else Draftly.find.updateCount();
+};
+
 /* ---------- wiring ---------- */
 
 Draftly.find.init = function init() {
@@ -428,7 +442,12 @@ Draftly.find.init = function init() {
       return out;
     };
   });
-  F.updateCount();
+  noSteal('statusBarToggle', function () {
+    F.setStatusBar(F.el('statusBarToggle').getAttribute('aria-pressed') !== 'true', true);
+  });
+  var stored = null;
+  try { stored = localStorage.getItem(F.STATUS_KEY); } catch (e) {}
+  F.setStatusBar(stored !== '0', false);
 };
 
 Draftly.find.init();

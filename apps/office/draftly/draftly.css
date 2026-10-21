@@ -771,3 +771,4 @@ body.pn-on.pn-right .paper .page-number { text-align: right; }
 .wc-title { font-weight: 600; margin-bottom: 6px; }
 .wc-row { display: flex; justify-content: space-between; gap: 16px; padding: 3px 0; }
 @media print { .find-bar, .status-bar, .wc-pop { display: none !important; } }
+.status-bar[hidden] { display: none; }
