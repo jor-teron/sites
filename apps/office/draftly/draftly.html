@@ -131,8 +131,19 @@
     <div class="ribbon-panel" role="tabpanel" id="panelInsert" aria-labelledby="tabInsert" hidden>
       <div class="tool-group">
         <button class="tool-btn labeled" id="pageBreakBtn" title="Page break (Ctrl/⌘+Enter)" aria-label="Insert page break"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v6h12V3"/><path d="M6 21v-6h12v6"/><path d="M3 12h3M9 12h2M13 12h2M18 12h3"/></svg><span>Page break</span></button>
+        <button class="tool-btn labeled" id="tableBtn" title="Insert table" aria-label="Insert table" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 4.5v15M14.5 4.5v15"/></svg><span>Table</span></button>
       </div>
-      <span class="ribbon-note">Image and Table coming later</span>
+      <div class="tool-group table-tools" id="tableTools" hidden>
+        <button class="tool-btn labeled" data-tbl="rowAbove" title="Insert row above"><span>Row above</span></button>
+        <button class="tool-btn labeled" data-tbl="rowBelow" title="Insert row below"><span>Row below</span></button>
+        <button class="tool-btn labeled" data-tbl="colLeft" title="Insert column left"><span>Col left</span></button>
+        <button class="tool-btn labeled" data-tbl="colRight" title="Insert column right"><span>Col right</span></button>
+        <button class="tool-btn labeled" data-tbl="delRow" title="Delete row"><span>Del row</span></button>
+        <button class="tool-btn labeled" data-tbl="delCol" title="Delete column"><span>Del col</span></button>
+        <button class="tool-btn labeled" data-tbl="delTable" title="Delete table"><span>Del table</span></button>
+      </div>
+      <span class="ribbon-note">Image coming later</span>
+      <div class="table-picker" id="tablePicker" hidden role="dialog" aria-label="Table size"><div class="tp-grid" id="tpGrid"></div><div class="tp-label" id="tpLabel">1 x 1</div></div>
     </div>
     <div class="ribbon-panel page-row" role="tabpanel" id="pagePanel" aria-labelledby="tabPage" hidden>
       <div class="seg" role="group" aria-label="Orientation">
@@ -234,6 +245,7 @@
   <script src="modules/draftly-breaks.js"></script>
   <script src="modules/draftly-colour.js"></script>
   <script src="modules/draftly-find.js"></script>
+  <script src="modules/draftly-table.js"></script>
   <script src="modules/draftly-ribbon.js?v=3"></script>
   <script src="modules/draftly-app.js?v=4"></script>
 </body>
