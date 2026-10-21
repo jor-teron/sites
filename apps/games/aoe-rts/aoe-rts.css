@@ -97,9 +97,13 @@ html, body {
 #title-overlay > div { text-align: center; background: rgba(20,16,10,0.94); border: 2px solid #c8a46a; border-radius: 12px; padding: 20px 30px; max-width: 86vw; }
 #title-overlay h1 { margin: 0 0 14px; color: #f0d9a0; font-size: 28px; letter-spacing: 2px; }
 #title-overlay label { color: #f0d9a0; font-weight: bold; margin-right: 8px; }
-#title-overlay select { font-size: 16px; padding: 6px 8px; background: #5a4426; color: #fff; border: 2px solid #c8a46a; border-radius: 6px; }
+#map-input { width: 2.6em; font-size: 22px; padding: 4px 6px; text-align: center; letter-spacing: 2px; background: #5a4426; color: #fff; border: 2px solid #c8a46a; border-radius: 6px; font-family: monospace; }
+#map-input:focus { outline: 2px solid #f0d9a0; }
+.picker-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
+#title-overlay .picker-row button { padding: 8px 14px; }
+#title-overlay button:disabled { opacity: 0.45; cursor: default; }
 #map-note { margin: 10px 0 14px; color: #ddd; font-size: 14px; min-height: 18px; }
-#title-overlay button { font-size: 18px; padding: 8px 24px; background: #5a4426; color: #fff; border: 2px solid #c8a46a; border-radius: 8px; cursor: pointer; }
+#title-overlay button { touch-action: manipulation; font-size: 18px; padding: 8px 24px; background: #5a4426; color: #fff; border: 2px solid #c8a46a; border-radius: 8px; cursor: pointer; }
 #title-overlay p { font-size: 12px; color: #bbb; margin: 10px 0 0; }
 #pause-map { color: #ddd; font-size: 14px; margin: 0 0 10px; }
 

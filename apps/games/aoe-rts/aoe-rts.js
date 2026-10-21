@@ -1,5 +1,7 @@
 /**
  * AOE RTS - Tiny Slice Isometric Game (Phaser 3)
+ * R2d: per-map saves (localStorage aoe-rts.save.NN: autosave 60s + pause / map switch / page hide),
+ *     2-digit map box with Resume / Restart / Random.
  * R2c: animals - seeded deer herds (wander on land, flee briefly, hunted with a spear -> carcass ~100 food,
  *     fast gather, finite) and fish spots on lakes/ponds (~150 food, gathered from the shore with a net).
  * R2a: speed 1x-5x (sub-stepped sim), female villagers (training alternates), auto-start on the last map,
@@ -61,6 +63,7 @@ const DEER_FLEE_R = 130;          // iso-corrected px: a villager this close mak
 const DEER_FLEE_T = 1.1, DEER_FLEE_CD = 2.6;    // seconds of fleeing, then calm-down before it can bolt again
 const HUNT_R = 200;               // iso-corrected px: hunters throw from here (outside the flee radius)
 const HUNT_AIM = 0.8;             // seconds to aim + throw
+const AUTOSAVE_MS = 60000;        // R2d: autosave every 60 s of real time
 
 /** Resource node definitions */
 const RES_TYPES = {
@@ -669,6 +672,7 @@ function create() {
     cam.setBounds(0, 0, WORLD_W, WORLD_H);
     cam.setZoom(ZOOM_DEFAULT);
     centerOnTC();
+    resumeSave();
     this.scale.on('resize', () => { cam.setZoom(Phaser.Math.Clamp(cam.zoom, minZoom(), ZOOM_MAX)); });
 
     this.input.mouse.disableContextMenu();
@@ -717,6 +721,7 @@ function simStep(dt) {
 // ============================================================================
 function updateCameraKeys(dt) {
     let vx = 0, vy = 0;
+    if (pickerOpen()) return;
     if (ctrlHeld) { /* Ctrl+A etc: no pan */ } else if (keys.A.isDown || keys.LEFT.isDown) vx--; if (keys.D.isDown || keys.RIGHT.isDown) vx++;
     if (!ctrlHeld) { if (keys.W.isDown || keys.UP.isDown) vy--; if (keys.S.isDown || keys.DOWN.isDown) vy++; }
     const p = scene.input.activePointer;
@@ -1089,6 +1094,7 @@ function placeHouse(t0) {
 const pauseBtn = document.getElementById('pause-btn'), pauseOv = document.getElementById('pause-overlay');
 function setPaused(p) {
     if (!p && document.getElementById('title-overlay').style.display === 'flex') return;
+    if (p && !paused) writeSave();
     paused = p; pauseBtn.textContent = p ? '▶' : '⏸'; pauseOv.style.display = p ? 'flex' : 'none';
 }
 pauseBtn.addEventListener('pointerdown', e => { e.stopPropagation(); setPaused(!paused); });
@@ -1097,8 +1103,13 @@ const speedBtn = document.getElementById('speed-btn');
 function setSpeed(n) { speed = Math.max(1, Math.min(5, n)); speedBtn.textContent = speed + 'x'; document.getElementById('pause-speed').textContent = 'Speed ' + speed + 'x'; }
 speedBtn.addEventListener('pointerdown', e => { e.stopPropagation(); setSpeed(speed >= 5 ? 1 : speed + 1); });
 setSpeed(1);
-document.addEventListener('visibilitychange', () => { if (document.hidden) setPaused(true); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { setPaused(true); writeSave(); } });
+window.addEventListener('pagehide', () => writeSave());
+setInterval(() => writeSave(), AUTOSAVE_MS);   // autosave every 60 s of real time
+/** Map picker open or a text box focused: game keys are ignored */
+function pickerOpen() { const a = document.activeElement; return document.getElementById('title-overlay').style.display === 'flex' || !!(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')); }
 window.addEventListener('keydown', e => {
+    if (pickerOpen()) return;
     if (e.key === 'p' || e.key === 'P') setPaused(!paused);
     else if (e.key === '+' || e.key === '=') setSpeed(speed + 1);
     else if (e.key === '-' || e.key === '_') setSpeed(speed - 1);
@@ -1160,35 +1171,133 @@ window.addEventListener('pointerdown', () => Sfx.init(), { capture: true });
 const muteBtn = document.getElementById('mute-btn');
 function syncMute() { muteBtn.textContent = Sfx.isMuted() ? '🔇' : '🔊'; }
 muteBtn.addEventListener('pointerdown', e => { e.stopPropagation(); Sfx.init(); Sfx.toggle(); syncMute(); });
-window.addEventListener('keydown', e => { if (e.key === 'm' || e.key === 'M') { Sfx.toggle(); syncMute(); } });
+window.addEventListener('keydown', e => { if (pickerOpen()) return; if (e.key === 'm' || e.key === 'M') { Sfx.toggle(); syncMute(); } });
 syncMute();
 
 // ============================================================================
-// MAP PICKER (title overlay) + map number on the pause overlay
+// SAVES (R2d): one save per map number in localStorage ('aoe-rts.save.NN'), browser-local
+// ============================================================================
+const SAVE_VER = 1;
+const SAVE_KINDS = ['tree', 'berry', 'gold', 'stone', 'carcass', 'fish'];
+const V_STATES = ['idle', 'moving', 'toNode', 'gathering', 'toHunt', 'hunting', 'toBuild', 'building', 'returning'];
+const DEER_KEYS = ['x', 'y', 'hx', 'hy', 'state', 'timer', 'gx', 'gy', 'face', 'seed', 'cd', 'fx', 'fy'];
+let saveReady = false, saveBlocked = false;
+function saveKey(n) { return 'aoe-rts.save.' + mapLabel(n); }
+function hasSave(n) { try { return localStorage.getItem(saveKey(n)) !== null; } catch (e) { return false; } }
+function dropSave(n) { try { localStorage.removeItem(saveKey(n)); } catch (e) {} }
+const r1 = n => Math.round(n * 10) / 10, r4 = n => Math.round(n * 1e4) / 1e4;
+/** Snapshot of everything that is not rebuilt from the map seed (water is seeded, so it is not stored) */
+function buildSave() {
+    const cells = [];
+    for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) { const c = mapData[y][x]; if (c && RES_TYPES[c.kind]) cells.push([x, y, c.kind, c.amount, c.max]); }
+    return {
+        v: SAVE_VER, map: MAP_NUM, size: MAP_SIZE, saved: Date.now(), res: Object.assign({}, resources),
+        cells, houses: houses.map(h => [h.x, h.y, r4(h.progress), h.done ? 1 : 0]),
+        villagers: villagers.map(v => ({ fem: v.fem ? 1 : 0, x: r1(v.x), y: r1(v.y), state: v.state, target: v.target ? { x: r1(v.target.x), y: r1(v.target.y) } : null,
+            node: v.node ? { x: v.node.x, y: v.node.y } : null, carry: v.carry, carryType: v.carryType, timer: r4(v.timer), face: v.face, seed: r4(v.seed || 0),
+            lastKind: v.lastKind || null, house: v.house ? houses.indexOf(v.house) : -1, prey: v.prey ? deer.indexOf(v.prey) : -1 })),
+        deer: deer.map(d => { const o = { ant: d.ant ? 1 : 0 }; DEER_KEYS.forEach(k => { if (typeof d[k] === 'number') o[k] = r4(d[k]); else if (d[k] != null) o[k] = d[k]; }); return o; }),
+        train: { queue: trainQueue, timer: r4(trainTimer), count: trainedCount }, berryT: r4(berryT), animT: Math.round(animT),
+        cam: cam ? { x: Math.round(cam.scrollX), y: Math.round(cam.scrollY), z: r4(cam.zoom) } : null
+    };
+}
+function writeSave() {
+    if (!saveReady || saveBlocked) return false;
+    try { localStorage.setItem(saveKey(MAP_NUM), JSON.stringify(buildSave())); return true; } catch (e) { return false; }
+}
+/** Validate a parsed save into fresh structures; throws on anything wrong, so a bad save never half-applies */
+function decodeSave(s) {
+    const num = v => { if (typeof v !== 'number' || !isFinite(v)) throw new Error('bad number'); return v; };
+    if (!s || s.v !== SAVE_VER || s.map !== MAP_NUM || s.size !== MAP_SIZE) throw new Error('version / map mismatch');
+    if (!Array.isArray(s.cells) || !Array.isArray(s.houses) || !Array.isArray(s.villagers) || !Array.isArray(s.deer) || !s.res) throw new Error('missing parts');
+    const res = {}; Object.keys(START_RES).forEach(k => res[k] = Math.max(0, Math.round(num(s.res[k]))));
+    const cells = s.cells.map(c => { if (!Array.isArray(c) || !inMap(c[0], c[1]) || SAVE_KINDS.indexOf(c[2]) < 0) throw new Error('bad cell');
+        return { x: c[0], y: c[1], cell: { kind: c[2], amount: Math.max(0, num(c[3])), max: Math.max(1, num(c[4])) } }; });
+    const hs = s.houses.map(h => { if (!Array.isArray(h) || !inMap(h[0], h[1]) || !isLand(h[0], h[1])) throw new Error('bad house');
+        return { x: h[0], y: h[1], progress: Math.min(1, Math.max(0, num(h[2]))), done: !!h[3] }; });
+    const ds = s.deer.map(o => { const d = { ant: !!o.ant, state: ['graze', 'walk', 'flee'].indexOf(o.state) >= 0 ? o.state : 'graze', moving: false };
+        ['x', 'y', 'hx', 'hy', 'timer', 'gx', 'gy', 'face', 'seed', 'cd'].forEach(k => d[k] = num(o[k]));
+        if (d.state === 'flee') { d.fx = num(o.fx); d.fy = num(o.fy); } return d; });
+    const vs = s.villagers.map(o => {
+        const v = { fem: !!o.fem, x: num(o.x), y: num(o.y), state: V_STATES.indexOf(o.state) >= 0 ? o.state : 'idle', target: o.target ? { x: num(o.target.x), y: num(o.target.y) } : null,
+            node: o.node && inMap(o.node.x, o.node.y) ? { x: o.node.x, y: o.node.y } : null, carry: Math.max(0, Math.min(CARRY_MAX, num(o.carry))),
+            carryType: o.carryType in START_RES ? o.carryType : null, timer: num(o.timer), selected: false, face: o.face < 0 ? -1 : 1, walking: false,
+            seed: num(o.seed), lastKind: o.lastKind || null, house: hs[o.house] || null, prey: ds[o.prey] || null };
+        if (!v.carryType) v.carry = 0;
+        // anything whose target is gone falls back to a safe state (re-planned next frame)
+        if ((v.state === 'toHunt' || v.state === 'hunting') && !v.prey) v.state = 'idle';
+        if ((v.state === 'toBuild' || v.state === 'building') && !v.house) v.state = 'idle';
+        if ((v.state === 'toNode' || v.state === 'gathering') && !v.node) v.state = 'idle';
+        if ((v.state === 'moving' || v.state === 'toNode' || v.state === 'toBuild') && !v.target) v.state = 'idle';
+        return v; });
+    const tr = s.train || {};
+    return { res, cells, hs, ds, vs, queue: Math.max(0, Math.min(QUEUE_MAX, Math.round(num(tr.queue || 0)))), ttimer: num(tr.timer || 0), count: Math.round(num(tr.count || 0)),
+        berryT: num(s.berryT || 0), animT: num(s.animT || 0), cam: s.cam && isFinite(s.cam.x) && isFinite(s.cam.y) && isFinite(s.cam.z) ? s.cam : null };
+}
+/** On scene create: restore this map's save if there is one; a corrupt save is dropped and the map starts fresh */
+function resumeSave() {
+    let raw = null; try { raw = localStorage.getItem(saveKey(MAP_NUM)); } catch (e) {}
+    let msg = null;
+    if (raw !== null) {
+        try {
+            const d = decodeSave(JSON.parse(raw));
+            for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) if (mapData[y][x] && mapData[y][x].kind !== 'tc') mapData[y][x] = null;
+            d.cells.forEach(c => { if (!mapData[c.y][c.x]) mapData[c.y][c.x] = c.cell; });
+            houses = d.hs.filter(h => !mapData[h.y][h.x]); houses.forEach(h => { mapData[h.y][h.x] = { kind: 'house', house: h }; });
+            Object.assign(resources, d.res); villagers = d.vs; deer = d.ds;
+            villagers.forEach(v => { if (v.house && houses.indexOf(v.house) < 0) { v.house = null; v.state = 'idle'; } });
+            trainQueue = d.queue; trainTimer = d.ttimer; trainedCount = d.count; berryT = d.berryT; animT = d.animT;
+            if (d.cam) { cam.setZoom(Phaser.Math.Clamp(d.cam.z, minZoom(), ZOOM_MAX)); cam.scrollX = d.cam.x; cam.scrollY = d.cam.y; }
+            msg = 'Map ' + mapLabel(MAP_NUM) + ' resumed';
+        } catch (e) {
+            dropSave(MAP_NUM); msg = 'Map ' + mapLabel(MAP_NUM) + ' save was unreadable · started fresh';
+            console.warn('aoe-rts: dropped bad save', e && e.message);
+        }
+    }
+    saveReady = true;
+    if (msg) flash(msg);
+}
+
+// ============================================================================
+// MAP PICKER (title overlay): 2-digit box + Resume / Restart / Random; map number on the pause overlay
 // ============================================================================
 (function mapPicker() {
-    const ov = document.getElementById('title-overlay'), sel = document.getElementById('map-select'), note = document.getElementById('map-note');
-    const opt = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
-    opt('r', 'Random');
-    for (let n = 0; n < 100; n++) opt(String(n), mapLabel(n));
-    sel.value = String(MAP_NUM);
-    let pick = MAP_NUM;
-    const show = () => { note.textContent = 'Map ' + mapLabel(pick) + (pick === 0 ? ' · demo' : ''); };
-    sel.addEventListener('change', () => {
-        if (sel.value === 'r') { pick = Math.floor(Math.random() * 100); note.textContent = 'Map ' + mapLabel(pick); }
-        else { pick = parseInt(sel.value, 10); show(); }
+    const ov = document.getElementById('title-overlay'), inp = document.getElementById('map-input'), note = document.getElementById('map-note');
+    const bResume = document.getElementById('map-resume-btn'), bRestart = document.getElementById('map-restart-btn'), bRandom = document.getElementById('map-random-btn');
+    const remember = n => { try { localStorage.setItem('aoe-rts.map', String(n)); } catch (e) {} };
+    /** Box text -> map number (one digit = same map: 7 -> 07), or null */
+    const pick = () => /^\d{1,2}$/.test(inp.value) ? parseInt(inp.value, 10) : null;
+    const show = () => {
+        const n = pick();
+        bResume.disabled = bRestart.disabled = n === null;
+        if (n === null) { note.textContent = 'Type a map number 00-99'; return; }
+        note.textContent = 'Map ' + mapLabel(n) + ' · ' + (hasSave(n) ? 'saved' : 'new') + (n === 0 ? ' · demo' : '') + (n === MAP_NUM ? ' · current' : '');
+    };
+    inp.addEventListener('input', () => { const t = inp.value.replace(/\D/g, '').slice(0, 2); if (t !== inp.value) inp.value = t; show(); });
+    inp.addEventListener('keydown', e => e.stopPropagation());
+    // keep taps inside the dialog away from the game (nothing steals focus or closes the picker)
+    ['pointerdown', 'mousedown', 'touchstart', 'wheel'].forEach(t => ov.addEventListener(t, e => e.stopPropagation(), { passive: true }));
+    const go = n => { remember(n); location.search = '?map=' + mapLabel(n); };   // other map = page reload into it
+    const close = () => { ov.style.display = 'none'; inp.blur(); setPaused(false); };
+    bResume.addEventListener('click', () => {
+        const n = pick(); if (n === null) return;
+        remember(n);
+        if (n === MAP_NUM) { close(); return; }       // same map: just carry on
+        writeSave(); go(n);
     });
-    show();
-    const save = n => { try { localStorage.setItem('aoe-rts.map', String(n)); } catch (e) {} };
+    bRestart.addEventListener('click', () => {
+        const n = pick(); if (n === null) return;
+        if (!window.confirm('Restart map ' + mapLabel(n) + '? Its saved progress will be deleted.')) return;
+        if (n === MAP_NUM) saveBlocked = true; else writeSave();
+        dropSave(n); go(n);
+    });
+    bRandom.addEventListener('click', () => { inp.value = mapLabel(Math.floor(Math.random() * 100)); show(); });
+    document.getElementById('picker-cancel').addEventListener('click', close);
     document.getElementById('pause-map').textContent = 'Map ' + mapLabel(MAP_NUM);
-    document.getElementById('picker-cancel').addEventListener('click', () => { ov.style.display = 'none'; setPaused(false); });
-    const open = () => { setPaused(true); pauseOv.style.display = 'none'; ov.style.display = 'flex'; sel.value = String(MAP_NUM); pick = MAP_NUM; show(); };
-    document.getElementById('start-btn').addEventListener('click', () => {
-        save(pick);
-        if (pick === MAP_NUM && !ov.dataset.played) { ov.style.display = 'none'; ov.dataset.played = '1'; setPaused(false); return; }
-        location.search = '?map=' + String(pick).padStart(2, '0');   // new map = new game
-    });
-    document.getElementById('newmap-btn').addEventListener('pointerdown', e => { e.stopPropagation(); open(); });
-    // Auto start: always straight into the map (last played, ?map=NN, or 00); picker only via New map
-    save(MAP_NUM); ov.dataset.played = '1';
+    const open = () => { setPaused(true); pauseOv.style.display = 'none'; ov.style.display = 'flex'; inp.value = mapLabel(MAP_NUM); show(); };
+    document.getElementById('newmap-btn').addEventListener('click', e => { e.stopPropagation(); open(); });
+    document.getElementById('newmap-btn').addEventListener('pointerdown', e => e.stopPropagation());
+    // Auto start: straight into the map (?map=NN, last played, or 00) and resume its save (see resumeSave)
+    remember(MAP_NUM); inp.value = mapLabel(MAP_NUM);
+    window.aoeTest.save = { buildSave, writeSave, hasSave, saveKey, open, get houses() { return houses; } };
 })();
