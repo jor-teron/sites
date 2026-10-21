@@ -16,6 +16,17 @@
 /* R44 Phone mode: ribbon tabs in the header take the space, app name hidden */
 .header-center.gb-has-tabs { justify-content: flex-start; gap: 6px; }
 .header-center.gb-has-tabs .gb-title { display: none; }
+/* R44b: the bar takes its own space in the header flow, so the tabs never sit under #cat-btn
+   (the left side no longer shrinks under its button); a tab strip too wide for a small
+   phone scrolls sideways instead of overlapping. */
+#header > .header-left, #header > .header-right { flex: 0 0 auto; }
+.header-center.gb-has-tabs .gb-tabs { flex: 0 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.header-center.gb-has-tabs .gb-tabs::-webkit-scrollbar { display: none; }
+.header-center.gb-has-tabs .gb-file { flex: 1 1 0; min-width: 0; }
+@media (max-width: 440px) {
+  /* tabs present: a tighter category button leaves the room to the tabs */
+  #header:has(#gamebar.gb-has-tabs:not([hidden])) .cat-btn { padding: 8px 6px; gap: 4px; font-size: 16px; }
+}
 .gb-title {
   display: inline-flex;
   align-items: baseline;

@@ -20,8 +20,8 @@
  *   changed ones in place (the cache is never wiped); replies {type:'sw-refreshed', changed:[paths]}.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261021c';
-const CACHE = 'hub-shell-v61';  // 2026-10-21c: R44 ribbon tabs (Draftly) in the window title bar / Phone header
+const V = '20261021d';
+const CACHE = 'hub-shell-v62';  // 2026-10-21d: R44b Phone-mode tabs no longer under #cat-btn
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const SHELL = [
   'hub.html',
