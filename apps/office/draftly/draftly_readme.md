@@ -9,7 +9,8 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
   `fonts.css` (Tinos faces), `theme.css` (variables, light/dark), `base.css`, `toolbar.css`,
   `popups.css` (File / Recent / Page), `workspace.css`, `ribbon.css`, `page.css` (paper, page numbers, breaks),
   `editor.css`, `marks.css`, `toast.css`, `print.css`, `colour.css`, `find.css`,
-  `statusbar.css` (status bar, word count, zoom), `table.css`, `format.css` (selection, sup/sub)
+  `statusbar.css` (status bar, word count, zoom), `table.css`, `format.css` (selection, sup/sub),
+  `headerfooter.css`, `margins.css` (Custom margins dialog)
 - `modules/draftly-config.js`: all sizes, keys, timings and default text
 - `modules/draftly-storage.js`: IndexedDB documents, theme / marks / orientation flags
 - `modules/draftly-ui.js`: toast, theme, orientation, toolbar active state, click helper, theme / marks buttons
@@ -30,6 +31,8 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `modules/draftly-table.js`: tables
 - `modules/draftly-spacing.js`: line spacing and indents
 - `modules/draftly-zoom.js`: document zoom
+- `modules/draftly-headerfooter.js`: Header & Footer (left / centre / right slots, fields {page} {pages} {date}, saved with each document; the Page-tab page-number buttons write {page} into the footer)
+- `modules/draftly-margins.js`: Custom margins dialog (0.5–5 cm per side, "Same for all"; a global pref like Normal / Narrow)
 - `modules/draftly-docs.js`: load / open / new / delete / save, Recent list, autosave, Ctrl+S
 - `modules/draftly-format.js`: Home-tab formatting buttons, selects, shortcuts, toolbar sync
 - `modules/draftly-ribbon.js`: ribbon tabs and File menu
@@ -61,6 +64,12 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - **Fit to screen:** on screens narrower than a page, the pages are scaled down to fit the width. They are never enlarged.
 - **Page popup (page button):** Portrait / Landscape, plus size, margins and page count. Orientation is remembered.
 - **Theme:** moon / sun button switches dark and light; remembered. The paper, print and PDF always stay white.
+
+### Header & Footer
+- Insert > Header & Footer, or double-click a page's top or bottom margin. Esc, Close, or a click in the body ends editing.
+- Three plain-text slots per row, the same on every page. Field buttons: Page #, of Pages, Date.
+- Drawn inside the margins, so page breaks never move. Shown on screen, in Print and PDF; DOCX gets real Word header / footer parts (PAGE / NUMPAGES fields; the date is written as text).
+- Older documents with page numbers turned on start with {page} in the footer.
 
 ## 4. Keyboard
 - Ctrl/Cmd+S saves (works anywhere on the page)

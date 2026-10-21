@@ -1,0 +1,42 @@
+/* ============================================================
+   FILE: ui/headerfooter.css
+   PROJECT: Draftly
+   ROLE: Header & Footer boxes inside the top / bottom margins.
+         Absolute, so they never change the body layout.
+   ORDER: linked from draftly.html; cascade order matters.
+   ============================================================ */
+
+.paper .hf-box {
+  position: absolute;
+  left: calc(var(--margin-left-cm) * 1cm);
+  right: calc(var(--margin-right-cm) * 1cm);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  font-family: var(--font-family);
+  font-size: 10pt;
+  line-height: 1.2;
+  color: #000;
+  white-space: pre;
+  z-index: 1;
+}
+.paper .hf-head { top: calc(var(--margin-top-cm) * 0.4cm); }
+.paper .hf-foot { bottom: calc(var(--margin-bottom-cm) * 0.4cm); }
+.paper .hf-box.hf-empty { visibility: hidden; }
+.hf-slot { min-height: 1.2em; overflow: hidden; text-overflow: clip; outline: none; }
+.hf-slot-left { text-align: left; }
+.hf-slot-center { text-align: center; }
+.hf-slot-right { text-align: right; }
+
+/* Edit mode: dashed boxes, body dimmed a little (like Word). */
+body.hf-editing .paper .hf-box { visibility: visible; }
+body.hf-editing .paper .hf-slot { outline: 1px dashed #8a8fd6; outline-offset: 2px; cursor: text; caret-color: #000; }
+body.hf-editing .paper .hf-slot:focus { outline: 1px solid #5b5bf0; background: rgba(91, 91, 240, 0.06); }
+body.hf-editing .paper .editor { opacity: 0.55; }
+.hf-tools[hidden] { display: none; }
+
+@media print {
+  .paper .hf-box { color: #000 !important; }
+  .paper .hf-slot { outline: none !important; background: none !important; }
+  .paper .editor { opacity: 1 !important; }
+}

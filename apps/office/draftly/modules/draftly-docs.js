@@ -18,7 +18,7 @@ Draftly.docs.load = function load() {
   if (!editor) return Promise.resolve();
   Draftly.ui.setNonPrinting(Draftly.storage.loadNonPrinting());
   var page = Draftly.storage.loadPage();
-  Draftly.ui.setPage(page.size, page.margins);
+  Draftly.ui.setPage(page.size, page.margins, page.custom);
   Draftly.ui.setOrientation(Draftly.storage.loadOrientation());
   var last = '';
   try { last = localStorage.getItem(cfg.storageKeyLastName) || ''; } catch (e) {}
@@ -32,13 +32,15 @@ Draftly.docs.load = function load() {
     /* A backup newer than the stored copy wins (save did not finish). */
     var backup = Draftly.storage.readBackup();
     if (backup && backup.name && (!doc || (doc.name === backup.name && backup.time > (doc.updated || 0)))) {
-      doc = { name: backup.name, html: backup.html, updated: backup.time };
+      doc = { name: backup.name, html: backup.html, hf: backup.hf, updated: backup.time };
     }
     editor = Draftly.pages.firstEditor();
     if (doc && editor) {
       editor.innerHTML = doc.html || cfg.defaultHtml;
       Draftly.storage.setCurrentName(doc.name, true);
+      if (Draftly.hf) Draftly.hf.set(doc.hf);
     } else if (editor) {
+      if (Draftly.hf) Draftly.hf.set(null);
       editor.innerHTML = cfg.defaultHtml;
       Draftly.storage.fillNameIfEmpty();
     }
@@ -109,6 +111,7 @@ Draftly.docs.openDoc = function openDoc(name) {
     editor.innerHTML = doc.html || Draftly.config.defaultHtml;
     Draftly.editor.stripMarks(editor);
     Draftly.storage.setCurrentName(doc.name, true);
+    if (Draftly.hf) Draftly.hf.set(doc.hf);
     Draftly.pages.layoutAll();
     Draftly.history.reset();
     Draftly.ui.showToast('Opened ' + doc.name);
@@ -129,6 +132,7 @@ Draftly.docs.showBlank = function showBlank(rows) {
   if (editor) editor.innerHTML = '<p><br></p>';
   Draftly.storage.loadedName = '';
   Draftly.storage.setCurrentName(name, false);
+  if (Draftly.hf) Draftly.hf.set(null);
   Draftly.pages.layoutAll();
   if (editor) { editor.focus(); Draftly.editor.activeEditor = editor; }
   Draftly.history.reset();
@@ -164,6 +168,7 @@ Draftly.docs.deleteDoc = function deleteDoc(name) {
         editor.innerHTML = rows[0].html || Draftly.config.defaultHtml;
         Draftly.editor.stripMarks(editor);
         Draftly.storage.setCurrentName(rows[0].name, true);
+        if (Draftly.hf) Draftly.hf.set(rows[0].hf);
         Draftly.pages.layoutAll();
         Draftly.history.reset();
         return null;

@@ -38,6 +38,11 @@ Draftly.config = {
   /* Active choices (set by setPage). */
   paperSize: 'A4',
   marginPreset: 'normal',
+  /* Custom margins (cm, per side) used when marginPreset is 'custom'. */
+  marginCustom: { top: 2.54, bottom: 2.54, left: 2.54, right: 2.54 },
+  marginCustomMin: 0.5,
+  marginCustomMax: 5,
+  storageKeyMarginCustom: 'draftly_margin_custom',
   /* App version (not shown in the UI). */
   version: '0.8',
 
@@ -182,18 +187,44 @@ Draftly.config = {
 };
 
 /* Pick paper size and margin preset; updates every derived value. */
-Draftly.config.setPage = function setPage(size, preset) {
+Draftly.config.setPage = function setPage(size, preset, custom) {
   var cfg = Draftly.config;
   var p = cfg.paperSizes[size] || cfg.paperSizes[cfg.defaultPaperSize];
+  var isCustom = preset === 'custom';
   var m = cfg.marginPresets[preset] || cfg.marginPresets[cfg.defaultMarginPreset];
+  if (isCustom && custom) cfg.marginCustom = cfg.clampMargins(custom);
   cfg.paperSize = cfg.paperSizes[size] ? size : cfg.defaultPaperSize;
-  cfg.marginPreset = cfg.marginPresets[preset] ? preset : cfg.defaultMarginPreset;
+  cfg.marginPreset = isCustom ? 'custom' : (cfg.marginPresets[preset] ? preset : cfg.defaultMarginPreset);
   cfg.paperWidthCm = p.widthCm;
   cfg.paperHeightCm = p.heightCm;
   cfg.pageSizeName = p.label;
-  cfg.marginTopCm = cfg.marginBottomCm = cfg.marginLeftCm = cfg.marginRightCm = m.cm;
-  cfg.docxMarginTop = cfg.docxMarginBottom = cfg.docxMarginLeft = cfg.docxMarginRight = Math.round(m.cm * 567);
+  var mc = isCustom ? cfg.marginCustom : { top: m.cm, bottom: m.cm, left: m.cm, right: m.cm };
+  cfg.marginTopCm = mc.top;
+  cfg.marginBottomCm = mc.bottom;
+  cfg.marginLeftCm = mc.left;
+  cfg.marginRightCm = mc.right;
+  cfg.docxMarginTop = Math.round(mc.top * 567);
+  cfg.docxMarginBottom = Math.round(mc.bottom * 567);
+  cfg.docxMarginLeft = Math.round(mc.left * 567);
+  cfg.docxMarginRight = Math.round(mc.right * 567);
   cfg.applyToDocument();
+};
+
+/* Custom margins kept in range, rounded to 0.1 cm. */
+Draftly.config.clampMargins = function clampMargins(m) {
+  var cfg = Draftly.config;
+  var one = function (v) {
+    v = parseFloat(v);
+    if (!isFinite(v)) v = cfg.marginPresets[cfg.defaultMarginPreset].cm;
+    return Math.round(Math.min(cfg.marginCustomMax, Math.max(cfg.marginCustomMin, v)) * 10) / 10;
+  };
+  return { top: one(m.top), bottom: one(m.bottom), left: one(m.left), right: one(m.right) };
+};
+
+/* Label of the active margins, e.g. 'Normal' or 'Custom'. */
+Draftly.config.marginLabel = function marginLabel() {
+  var cfg = Draftly.config;
+  return cfg.marginPreset === 'custom' ? 'Custom' : cfg.marginPresets[cfg.marginPreset].label;
 };
 
 /* Apply paper, type, and gap values onto :root so CSS stays in sync. */

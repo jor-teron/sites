@@ -40,6 +40,8 @@ Draftly.app.init = function init() {
     Draftly.export.bind();
     Draftly.format.bind();
     Draftly.ui.bind();
+    if (Draftly.hf) Draftly.hf.bind();
+    if (Draftly.margins) Draftly.margins.bind();
     if (Draftly.colour) Draftly.colour.init();
     if (Draftly.view) Draftly.view.init();
     Draftly.docs.load().then(function () {

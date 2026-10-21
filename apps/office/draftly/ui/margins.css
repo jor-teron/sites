@@ -1,0 +1,23 @@
+/* ============================================================
+   FILE: ui/margins.css
+   PROJECT: Draftly
+   ROLE: Custom margins dialog (Page tab > Custom…).
+   ORDER: linked from draftly.html; cascade order matters.
+   ============================================================ */
+
+.margin-dialog { min-width: 0; width: 230px; padding: 10px 12px; font-size: 13px; }
+.margin-dialog[hidden] { display: none; }
+.md-title { font-weight: 600; margin-bottom: 8px; }
+.md-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+.md-grid label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--text-secondary); }
+.md-grid input {
+  height: 28px; padding: 0 6px; font: inherit; font-size: 13px; width: 100%;
+  color: var(--text-primary); background: var(--bg-group);
+  border: 1px solid var(--border-light); border-radius: 6px; outline: none;
+}
+.md-grid input:focus { border-color: var(--accent); }
+.md-grid input:disabled { opacity: 0.55; }
+.md-same { display: flex; align-items: center; gap: 6px; margin: 8px 0; font-size: 12px; }
+.md-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.md-apply { background: var(--accent); color: #fff; border-color: transparent; }
+#customMarginsBtn.active span::before { content: '\2713\00a0'; }
