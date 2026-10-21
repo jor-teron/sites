@@ -269,10 +269,6 @@ Draftly.app.bindUi = function bindUi() {
   Draftly.app.onClick('printBtn', function () { Draftly.export.printDocument(); });
   Draftly.app.onClick('exportDocxBtn', function () { Draftly.export.exportDocx(); });
   Draftly.app.onClick('exportPdfBtn', function () { Draftly.pdf.download(); });
-  Draftly.app.onClick('pageBtn', function () {
-    Draftly.view.syncPagePanel();
-    Draftly.view.togglePop('pagePanel', 'pageBtn');
-  });
 
 
   var fontFamilySelect = document.getElementById('fontFamilySelect');
