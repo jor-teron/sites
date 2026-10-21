@@ -18,6 +18,7 @@ Pacman,            pacman/, , , Arcade
 Dino Run,          dino-run/,      , , Runners
 Car Run,           car-run/,       , , Runners
 Desert Road,       desert-road/,   , , Runners
+Turbo Lap,         turbo-lap/,     , , Runners
 Tower Defence,     tower-defence/, , , Strategy
 Island Conquest,   island-conquest/, , , Strategy
 Chess,             chess/,         , , Strategy

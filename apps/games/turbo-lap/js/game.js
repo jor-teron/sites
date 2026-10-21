@@ -1,0 +1,204 @@
+/* Turbo Lap — game state machine: title -> countdown -> race -> finished (+ pause overlay). */
+window.TL = window.TL || {};
+(() => {
+  const CFG = TL.CFG, U = TL.util, road = TL.road, input = TL.input;
+  const $ = id => document.getElementById(id);
+
+  const G = TL.game = {
+    state: 'title', paused: false, t: 0, raceTime: 0, countdown: 0,
+    player: null, ais: [], racers: [], finishOrder: [], result: null, finishT: 0, goT: 0
+  };
+
+  function track() { return road.track; }
+
+  G.init = function () {
+    road.build(TL.TRACKS[0]);
+    G.setupGrid();
+    input.on('start', onStart);
+    input.on('padA', onStart);
+    input.on('pause', onPause);
+    input.on('title', () => { if (G.paused || G.state === 'finished') G.toTitle(); });
+    input.on('padB', () => { if (G.paused || (G.state === 'finished' && G.finishT > CFG.finishOverlayDelay)) G.toTitle(); });
+    input.on('fps', toggleFps);
+    input.on('blur', () => { if (G.state === 'race' || G.state === 'countdown') setPaused(true); });
+    bindButtons();
+    if (window.TURBO_LAP_TEST) installTestHook();
+    G.toTitle();
+  };
+
+  // Grid: two cars per row, player alone at the back.
+  G.setupGrid = function () {
+    const segL = CFG.segmentLength, gap = CFG.gridSpacing * segL;
+    G.ais = TL.opponents ? TL.opponents.create(CFG.opponents.map((o, i) => ({
+      ...o, p: -(1 + Math.floor(i / 2)) * gap - (i % 2) * segL, x: i % 2 ? 0.45 : -0.45
+    }))) : [];
+    const rows = Math.ceil(G.ais.length / 2);
+    G.player = TL.cars.createPlayer(-(1 + rows) * gap);
+    G.racers = [G.player, ...G.ais];
+    G.racers.forEach(r => { r.finished = false; r.finishTime = null; r.lapTimes = []; r.lapStart = 0; r.lap = 0; });
+    G.finishOrder = []; G.raceTime = 0; G.result = null; G.finishT = 0;
+    updatePositions();
+  };
+
+  G.toTitle = function () {
+    G.state = 'title'; setPaused(false);
+    G.setupGrid();
+    showPanel('title');
+    refreshTitle();
+  };
+
+  G.startRace = function () {
+    G.setupGrid();
+    G.state = 'countdown';
+    G.countdown = 3 * CFG.countdownStep;
+    G.goT = 0;
+    setPaused(false);
+    showPanel(null);
+  };
+
+  function onStart() {
+    if (G.paused) return setPaused(false);
+    if (G.state === 'title') G.startRace();
+    else if (G.state === 'finished' && G.finishT > CFG.finishOverlayDelay) G.startRace();
+  }
+  function onPause() {
+    if (G.state === 'race' || G.state === 'countdown') setPaused(!G.paused);
+  }
+  function setPaused(p) {
+    G.paused = p;
+    if (p) showPanel('pause'); else if (G.state === 'race' || G.state === 'countdown') showPanel(null);
+  }
+  function toggleFps() {
+    const o = CFG.fpsOptions, f = o[(o.indexOf(TL.view.fps) + 1) % o.length];
+    TL.setFps(f); refreshTitle();
+  }
+
+  // Lap bookkeeping shared by every racer.
+  function checkLaps(r) {
+    const L = road.trackLength;
+    const lap = r.p < 0 ? 0 : Math.floor(r.p / L) + 1;          // 1-based lap the car is on
+    if (lap > r.lap) {
+      if (r.lap >= 1) { r.lapTimes.push(G.raceTime - r.lapStart); }
+      r.lapStart = G.raceTime;
+      r.lap = lap;
+      if (lap > CFG.laps && !r.finished) {
+        r.finished = true; r.finishTime = G.raceTime;
+        G.finishOrder.push(r);
+        r.finalPos = G.finishOrder.length;
+      }
+    }
+  }
+
+  function updatePositions() {
+    const order = G.racers.slice().sort((a, b) => {
+      if (a.finished && b.finished) return a.finalPos - b.finalPos;
+      if (a.finished !== b.finished) return a.finished ? -1 : 1;
+      return b.p - a.p;
+    });
+    order.forEach((r, i) => { r.pos = i + 1; });
+    G.order = order;
+  }
+
+  function finishRace() {
+    const pl = G.player;
+    G.state = 'finished'; G.finishT = 0;
+    const best = pl.lapTimes.length ? Math.min(...pl.lapTimes) : null;
+    const saved = TL.storage.saveResult(track().id, pl.finishTime, best, pl.finalPos);
+    G.result = { pos: pl.finalPos, total: pl.finishTime, bestLap: best, laps: pl.lapTimes.slice(), ...saved };
+  }
+
+  G.update = function (dt) {
+    G.t += dt;
+    if (G.paused) return;
+    const pl = G.player, before = pl.p;
+    if (G.state === 'title') {
+      // attract mode: background drifts slowly
+      TL.render.scroll(0.5, dt * 600);
+      return;
+    }
+    if (G.state === 'countdown') {
+      G.countdown -= dt;
+      if (G.countdown <= 0) { G.state = 'race'; G.goT = 0.9; G.raceTime = 0; }
+      return;
+    }
+    // race or finished: everything keeps moving
+    G.goT = Math.max(0, G.goT - dt);
+    G.raceTime += dt;
+    const ctl = input.read();
+    TL.cars.updatePlayer(pl, ctl, dt, !pl.finished);
+    if (TL.opponents) TL.opponents.update(G.ais, G.racers, pl, dt);
+    TL.cars.collide(G.racers, dt);
+    G.racers.forEach(checkLaps);
+    updatePositions();
+    TL.render.scroll(road.findSegment(pl.p).curve, pl.p - before);
+    if (G.state === 'race' && pl.finished) finishRace();
+    if (G.state === 'finished') {
+      const was = G.finishT;
+      G.finishT += dt;
+      if (was <= CFG.finishOverlayDelay && G.finishT > CFG.finishOverlayDelay) { showPanel('finish'); fillFinish(); }
+    }
+  };
+
+  G.draw = function (ctx, W, H) {
+    TL.render.frame(ctx, W, H, { player: G.player, racers: G.racers, t: G.t });
+    if (TL.hud) TL.hud.draw(ctx, W, H, G);
+  };
+
+  // ---------- DOM overlay ----------
+  function showPanel(name) {
+    const ov = $('overlay');
+    if (!ov) return;
+    ov.classList.toggle('hidden', !name);
+    ['title', 'pause', 'finish'].forEach(n => { const el = $('panel-' + n); if (el) el.classList.toggle('hidden', n !== name); });
+    G.panel = name;
+  }
+  function refreshTitle() {
+    const b = $('fpsBtn'); if (b) b.textContent = 'FPS: ' + TL.view.fps;
+    const r = TL.storage.records(track().id), el = $('titleBest');
+    if (el) el.textContent = r.bestTotal != null
+      ? 'Best race ' + U.fmtTime(r.bestTotal) + ' · Best lap ' + U.fmtTime(r.bestLap) + ' · Best finish P' + r.bestPos
+      : 'No records yet — set one!';
+  }
+  function fillFinish() {
+    const r = G.result; if (!r || !$('finPos')) return;
+    const suf = ['', 'st', 'nd', 'rd', 'th', 'th'][r.pos] || 'th';
+    $('finPos').textContent = r.pos + suf;
+    $('finPos').className = 'pos p' + r.pos;
+    $('finTotal').textContent = U.fmtTime(r.total) + (r.isNewTotal ? '  ★ NEW BEST' : '');
+    $('finLap').textContent = U.fmtTime(r.bestLap) + (r.isNewLap ? '  ★ NEW BEST' : '');
+    $('finLaps').textContent = r.laps.map((t, i) => 'Lap ' + (i + 1) + ' ' + U.fmtTime(t)).join(' · ');
+    $('finRecord').textContent = 'Records: race ' + U.fmtTime(r.records.bestTotal) + ' · lap ' + U.fmtTime(r.records.bestLap);
+  }
+  function bindButtons() {
+    const on = (id, fn) => { const el = $(id); if (el) el.addEventListener('click', e => { e.currentTarget.blur(); fn(); }); };
+    on('startBtn', () => G.startRace());
+    on('fpsBtn', toggleFps);
+    on('resumeBtn', () => setPaused(false));
+    on('restartBtn', () => G.startRace());
+    on('pauseRestartBtn', () => G.startRace());
+    on('titleBtn', () => G.toTitle());
+    on('pauseTitleBtn', () => G.toTitle());
+  }
+
+  // ---------- test hook (only when window.TURBO_LAP_TEST is set before load) ----------
+  function installTestHook() {
+    const opt = window.TURBO_LAP_TEST;
+    if (opt.autopilot === false) return;
+    input.autopilot = function () {
+      const pl = G.player, segL = CFG.segmentLength;
+      const pct = pl.speed / CFG.maxSpeed;
+      const ahead = road.findSegment(pl.p + segL * 8);
+      const here = road.findSegment(pl.p);
+      const curve = Math.max(Math.abs(here.curve), Math.abs(ahead.curve)) * Math.sign(here.curve || ahead.curve);
+      let target = -Math.sign(curve) * 0.3;                          // hug the inside a little
+      for (const c of G.ais) {                                       // dodge a car just ahead
+        const gap = U.mod(c.p - pl.p, road.trackLength);
+        if (gap < segL * 10 && Math.abs(c.x - pl.x) < 0.45) { target = c.x > 0 ? c.x - 0.6 : c.x + 0.6; break; }
+      }
+      const need = pct * here.curve * CFG.centrifugal;               // steer needed to hold the line
+      const steer = U.clamp(need + (target - pl.x) * 3, -1, 1);
+      const tooFast = Math.abs(need) > 0.95 || Math.abs(pl.x) > 0.95;
+      return { steer, gas: !tooFast || pct < 0.6, brake: false, nitro: !!opt.nitro && Math.abs(curve) < 1 && pl.nitro > 0.5 };
+    };
+  }
+})();
