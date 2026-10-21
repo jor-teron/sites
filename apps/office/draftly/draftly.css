@@ -283,6 +283,7 @@ select:disabled { opacity: 0.4; cursor: default; }
 .font-select { width: 150px; font-family: var(--font-family); font-size: 14px; }
 .size-select { width: 56px; }
 .list-select { width: 82px; }
+.spacing-select { width: 78px; }
 .suffix-select { width: 46px; }
 .file-name { width: 190px; padding: 0 10px; }
 
