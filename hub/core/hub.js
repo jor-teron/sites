@@ -74,6 +74,9 @@
   let currentEntry = '';     // entryUrl of the app in the iframe (for the active highlight)
   let apps = [];             // parsed HUB_APPS_CSV (hidden rows included)
   const LAST_KEY = 'sites-hub.lastApp';
+  // R33c (see earlyFromIndex): the app index, and apps taken from it before registration
+  const IDX = window.HUB_APP_INDEX || {};
+  const early = new Map(), earlyId = new Map();   // id / entryUrl → app; entryUrl → index id
   const idToApp = new Map(); // hash id → app (first row wins)
   const entryToId = new Map(); // entryUrl → hash id
 
@@ -246,8 +249,10 @@
    * without extension (about/contact.txt → contact). If that id is taken by another entry,
    * the whole path is used (tools/caption-for-nei/ → tools-caption-for-nei).
    */
-  function appIdFor(entryUrl) {
+  function appIdFor(entryUrl, reg) {
     if (entryToId.has(entryUrl)) return entryToId.get(entryUrl);
+    const ei = !reg && earlyId.get(entryUrl);   // R33c: opened from the index, not registered yet
+    if (ei && !idToApp.has(ei)) return ei;
     const path = entryUrl.split(/[?#]/)[0].replace(/\/+$/, '');
     const last = path.split('/').pop() || '';
     let id = slug(isFileUrl(path) ? last.replace(/\.[a-z0-9]+$/i, '') : last);
@@ -260,7 +265,7 @@
 
   function registerApp(app) {
     if (!app || !app.entryUrl || entryToId.has(app.entryUrl)) return;
-    const id = appIdFor(app.entryUrl);
+    const id = appIdFor(app.entryUrl, true);   // reg: never the R33c index id
     entryToId.set(app.entryUrl, id);
     idToApp.set(id, app);
   }
@@ -324,6 +329,7 @@
 
   /** Open an app: NEW_TAB → new browser tab, else the hub iframe (+ hash + memory). */
   function loadApp(app, opts) {
+    if (app && window.HubSettingsFresh) window.HubSettingsFresh(app.entryUrl);   // R38: stale open Settings → reload it
     opts = opts || {};
     // Phone remote Hub (hub_role.js): the Gamepad (menu row, tile, chat link) always opens IN the
     // frame so it borrows the Hub's SharedLink — never a new tab with its own connection.
@@ -412,7 +418,7 @@
 
   /** Id → app. "~path" ids are pages reached inside the frame that are not in hub_apps.js. */
   function appForId(id) {
-    const known = idToApp.get(id);
+    const known = idToApp.get(id) || early.get(id);   // R33c: early = from the index, not registered yet
     if (known) return known;
     if (id[0] !== '~' || !safeRel(id.slice(1))) return null;
     const entryUrl = id.slice(1);
@@ -982,7 +988,7 @@
       // sessions saved before R8: a category page was its folder (apps/office/) → apps/office/office.html
       const m = /^apps\/([a-z]+)\/$/.exec(key);
       if (m && findApp(key + m[1] + '.html')) key = key + m[1] + '.html';
-      const app = findApp(key) || idToApp.get(entryToId.get(key) || '');
+      const app = findApp(key) || idToApp.get(entryToId.get(key) || '') || early.get(key);   // R33c
       // the saved url may carry the app's #hash (same page only), e.g. Files' drive + folder
       const withHash = (base) => (typeof e.url === 'string' && e.url.indexOf(base.split('#')[0] + '#') === 0 ? e.url : base);
       if (app) {
@@ -1062,7 +1068,38 @@
         (s && Array.isArray(s.wins) ? s.wins : []).forEach((w) => { if (w && w.key) keys.push(normalizeEntryUrl(w.key)); });
       } catch (_) { /* none */ }
     }
-    return () => ids.every((i) => idToApp.has(i)) && keys.every((k) => findApp(k) || entryToId.has(k));
+    const ready = () => ids.every((i) => idToApp.has(i) || early.has(i)) &&
+      keys.every((k) => findApp(k) || entryToId.has(k) || early.has(k));
+    return Object.assign(ready, { ids, keys });
+  }
+
+  /* ---------- R33c: app index (hub/core/hub_appindex.js) for a first visit ---------- */
+  // HUB_APP_INDEX = { id: [category, entryUrl, name, icon, newTab] } for every CSV app, made from
+  // the real ids (hub/core/hub_appindex_gen.py). On a first visit the hash / last app / saved
+  // windows found there open at once, without waiting for any CSV. Those apps are NOT registered
+  // (registration stays in HUB_CAT_CSV order, so ids never change). Stale index: an id / entry not
+  // in it = the R33b wait as before; an id that now means another app is re-opened right once
+  // the CSVs are in (checkIndex).
+  function earlyFromIndex(ready) {
+    const byEntry = {};
+    Object.keys(IDX).forEach((i) => { byEntry[IDX[i][1]] = i; });
+    const mk = (i) => { const r = IDX[i]; return { category: r[0], name: r[2], entryUrl: r[1], iconUrl: r[3] || '', newTab: !!r[4], order: 0, hidden: false, csv: true }; };
+    ready.ids.forEach((i) => { if (IDX[i]) { early.set(i, mk(i)); earlyId.set(IDX[i][1], i); } });
+    ready.keys.forEach((k) => { if (byEntry[k] != null) early.set(k, mk(byEntry[k])); });
+  }
+  /** The index the registered CSV apps really give (hub_appindex_gen.py writes it to the file). */
+  window.__hubAppIndex = () => {
+    const o = {};
+    apps.forEach((a) => { if (a.csv && entryToId.has(a.entryUrl)) o[entryToId.get(a.entryUrl)] = [a.category, a.entryUrl, a.name, a.iconUrl || '', a.newTab ? 1 : 0]; });
+    return o;
+  };
+  function checkIndex() {   // after all CSVs: a stale index only costs the R33b wait; say so
+    const id = hashId(), e = early.get(id), now = idToApp.get(id);
+    early.clear(); earlyId.clear();
+    if (e && (!now || now.entryUrl !== e.entryUrl)) applyHash(false);   // the id means another app now
+    if (!window.HUB_APP_INDEX) return;
+    const real = window.__hubAppIndex(), ks = Object.keys(real);
+    if (ks.length !== Object.keys(IDX).length || ks.some((k) => String(IDX[k]) !== String(real[k]))) console.info('Hub: hub/core/hub_appindex.js is out of date (run hub/core/hub_appindex_gen.py)');
   }
   let csvReady = Promise.resolve(), started = false;
   function start() {
@@ -1079,10 +1116,12 @@
     // first visit (or a changed list): open the hash / last app / session as soon as the lists
     // that hold them are in (R33b), at the latest when all are read or after 4 s
     const ready = startNeeds();
+    earlyFromIndex(ready);   // R33c
     let ran = false;
     const run = () => { if (!ran) { ran = true; applyHash(true); } };
     if (ready()) run();
     csvReady = loadCsvApps(() => { if (!ran && ready()) run(); });
+    csvReady.then(checkIndex);
     Promise.race([csvReady, new Promise((r) => setTimeout(r, 4000))]).then(run);
   }
   window.addEventListener('hub-startlist', (e) => {   // a CSV changed: register its new apps

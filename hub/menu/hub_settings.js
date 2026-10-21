@@ -19,6 +19,25 @@
   const t = document.createElement('span');
   t.textContent = 'Settings';
   row.append(img, t);
+  /* R38: an open Settings window (or Phone frame) draws each section from the prefs at load time
+   * and does not redraw when the Hub changes one (taskbar menu → top, Desktop/Phone switch, …).
+   * So: remember the prefs when Settings loads or reports its own change ({type:'hub-prefs'});
+   * when Settings is opened again or clicked into and the prefs differ, reload it (same #section). */
+  const SET = '/apps/settings/';
+  const PREFS = ['wallpaper', 'taskH', 'titleH', 'taskPos', 'accent', 'theme', 'motion', 'wmMode', 'startHover', 'trayMeter',
+    'hoverFocus', 'snapEdges', 'snapMagnet', 'snapMagnetPx', 'workspaces', 'filesClick', 'filesThumbs'];
+  const snap = () => PREFS.map((k) => { try { return localStorage.getItem('sites-hub.' + k) || ''; } catch (_) { return ''; } }).join('|');
+  let seen = snap();
+  const frames = () => [...document.querySelectorAll('iframe')].filter((f) => { try { return f.contentWindow.location.pathname.indexOf(SET) >= 0; } catch (_) { return false; } });
+  function fresh() {
+    if (snap() === seen) return;
+    seen = snap();
+    frames().forEach((f) => { try { f.contentWindow.location.reload(); } catch (_) { /* gone */ } });
+  }
+  window.HubSettingsFresh = (entryUrl) => { if (String(entryUrl || '').indexOf('apps/settings/') === 0) fresh(); };
+  window.addEventListener('message', (e) => { if (e.data && e.data.type === 'hub-prefs') seen = snap(); });
+  document.addEventListener('load', (e) => { if (e.target.tagName === 'IFRAME' && frames().indexOf(e.target) >= 0) seen = snap(); }, true);
+  window.addEventListener('blur', () => setTimeout(() => { if (frames().indexOf(document.activeElement) >= 0) fresh(); }, 0));
   row.addEventListener('click', () => { if (window.__hubOpenApp) window.__hubOpenApp('apps/settings/'); });
   menu.appendChild(row);
 })();

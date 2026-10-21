@@ -2,7 +2,7 @@ SITES HUB - TECHNICAL GUIDE: HUB AND VIRTUAL DESKTOP
 ====================================================
 
 For a developer picking up the Hub (hub.html) and its virtual desktop.
-Written from the code as of R17 (updated through R41, 2026-10-21).
+Written from the code as of R17 (updated through R33c+R38, 2026-10-21).
 Current build tag and shell cache: see hub/build.txt (one place).
 Plain HTML / CSS / JS, no build step, no framework.
 Every file starts with a header comment: read it first, it is the spec.
@@ -272,6 +272,16 @@ DOMContentLoaded fallback): at once when every list is cached, else
 app / saved windows are known; 4 s cap. __hubOpenApp('<path>/') before
 that waits for the lists; a part-of-path match needs them loaded.
 New apps: add them to the category CSV only.
+R33c app index: hub/core/hub_appindex.js (loaded right after hub_config.js,
+precached) = window.HUB_APP_INDEX { id: [category, entry, name, icon,
+newTab] }. On a first visit the hash / last app / saved windows found there
+open at once (no CSV wait); those apps are not registered early, so ids
+stay as in HUB_CAT_CSV order. Keeping it in sync: it is GENERATED from the
+real ids by `python3 hub/core/hub_appindex_gen.py` (Playwright); run it
+after any category-CSV change (the bot that edits a CSV, or the Hub bot at
+its next release). Stale is safe: an id / entry not in the index = the
+R33b wait; an id that now means another app is re-opened right once the
+CSVs are in; the console then logs "hub_appindex.js is out of date".
 
 
 6. TASKBAR, TRAY AND ON-SCREEN KEYBOARD (OSK)
@@ -596,10 +606,17 @@ files change.
     keeps the categories + hidden system rows (section 5). On a first
     visit a hash link waits only for the CSVs up to its own category
     (one round trip; a slow later CSV no longer holds it up).
+  - R33c (done): hub_appindex.js lets a first-visit hash / last app /
+    session open without any CSV wait (section 5).
+  - R38 (done): an open Settings shows the prefs from when it loaded.
+    hub_settings.js remembers the prefs (on Settings load and on its own
+    {type:'hub-prefs'} messages); when Settings is opened again
+    (loadApp) or clicked into and they differ (changed by the Hub, e.g.
+    taskbar Top, Desktop/Phone), its frame is reloaded on the same
+    #section. Live redraw while Settings stays focused needs the
+    Settings app (apps/settings, Apps bot).
   - The "Google Drive" label is squeezed in the Files sidebar.
   - Wallpaper thumbnails in Settings load the full images.
-  - An open Settings window does not refresh when values change
-    elsewhere.
   - Mail shares the Hub's Google sign-in record.
   - OSK: resize, vibrate, a Phone mode and pop-up on text fields.
   - Favorites: reorder, put on the desktop.
