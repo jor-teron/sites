@@ -9,7 +9,7 @@ full screen on phone). Deep links: `apps/settings/#wallpaper`, `#desktop`, `#siz
 | settings.css | Layout (list left / options right, phone: list → section with ‹ Back), jelly presses |
 | settings_store.js | `SettingsStore` get/set of `sites-hub.*` keys + postMessage `{type:'hub-prefs'}` to the Hub |
 | settings.js | `Settings` shell: section registry, hash routing, UI helpers |
-| sec_wallpaper.js | Wallpapers (from `hub/drives/hub_wallpapers.js`) + custom colour |
+| sec_wallpaper.js | Wallpapers (from `hub/drives/hub_wallpapers.js`) + custom colour. R36: the picture grid shows the 320 px WebP thumbs (`shared/wallpaper/thumbs/`, made by `hub/core/hub_wallthumbs_gen.py`), lazy, full image as fallback; only the chosen wallpaper loads at full size |
 | sec_desktop.js | Auto / Desktop / Phone mode, Start-on-hover, busy meter, Screen saver minutes 0–240, 0 = Off, unset 5 (`saverIdle`, R49b) + Second hand Smooth / Quartz / Off (`saverSec`, R49c, Preview when the Hub's `HubSaver` is reachable) |
 | sec_sizes.js | Taskbar position bottom/top, size 32/40/48, title bar 24/28/34 |
 | sec_look.js | Accent, Dark/Light, animations On/Reduced/Off |
