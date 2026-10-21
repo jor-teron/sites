@@ -20,8 +20,8 @@
  *   changed ones in place (the cache is never wiped); replies {type:'sw-refreshed', changed:[paths]}.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261021h';
-const CACHE = 'hub-shell-v66';  // 2026-10-21h: R47 hub_catalog.js (app lists without a web server)
+const V = '20261021i';
+const CACHE = 'hub-shell-v67';  // 2026-10-21i: R49 clock screen saver
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const SHELL = [
   'hub.html',
@@ -31,7 +31,7 @@ const SHELL = [
   'hub/wm/wm_mode.js', 'hub/wm/wm_windows.js', 'hub/wm/wm_taskbar.js', 'hub/wm/wm_snap.js', 'hub/wm/wm_workspaces.js',
   'hub/menu/hub_ctx.js', 'hub/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'hub/controller/hub_controller_config.js', 'hub/viewer/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',
   'hub/link/hub_pointer.js', 'hub/link/hub_receive.js', 'hub/link/hub_remote.js', 'hub/controller/hub-controller.js', 'hub/controller/hub_textedit.js', 'hub/link/hub_link.js', 'hub/link/hub_linkstate.js',
-  'hub/link/hub_chat.js', 'hub/link/hub-gamebar.js', 'hub/drives/hub_drives.js', 'hub/link/hub_phonekey.js', 'hub/update/hub_update.js', 'hub/core/hub_loader.js',
+  'hub/link/hub_chat.js', 'hub/link/hub-gamebar.js', 'hub/drives/hub_drives.js', 'hub/link/hub_phonekey.js', 'hub/update/hub_update.js', 'hub/core/hub_loader.js', 'hub/core/hub_saver.js',
   'hub/controller/kb_common.js', 'hub/osk/osk_layout.js', 'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js', 'hub/osk/osk.css',
   'shared/style/no-scrollbar.css', 'shared/wallpaper/wallpapers.js', 'shared/perf/busy_meter.js', 'shared/vendor/qrcode.js',
   'shared/fs/fs_drives.js', 'shared/fs/fs_ops.js', 'shared/fs/fs_ref.js', 'shared/fs/filetypes.js', 'shared/fs/thumbs_store.js',
