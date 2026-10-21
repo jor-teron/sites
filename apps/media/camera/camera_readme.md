@@ -17,7 +17,7 @@ A simple camera for photos and videos from the device camera. Files download str
 - **Video:** Video mode turns the shutter red. Start / stop with the shutter or Space; Pause / Resume button (P) and a timer while recording. Sound is recorded when the microphone is allowed. MP4 when the browser can record it, otherwise WebM.
 - **Camera:** picker in Settings (all cameras found), plus the flip button for front / back (next camera in the list).
 - **Mirror:** on by default for the front camera, off for the back camera. When on, the preview, the saved photo and the saved video are all mirrored the same way. Changing camera resets it to automatic.
-- **Resolution:** 720p, 1080p or Max (asked of the camera; it may give less). The real size is shown in Settings.
+- **Resolution:** 480p (SD), 720p, 1080p or Max (asked of the camera; it may give less). The real size is shown in Settings.
 - **Self-timer:** Off, 3 s or 10 s countdown. Pressing the shutter again cancels it.
 - **Grid:** rule-of-thirds lines over the picture.
 - **Names:** `photo-YYYYMMDD-HHMMSS.jpg|png`, `video-YYYYMMDD-HHMMSS.mp4|webm` (local time).

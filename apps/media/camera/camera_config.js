@@ -7,11 +7,12 @@ const CAMERA_CONFIG = {
 
   // Resolution choices (ideal size asked from the camera; it may give less)
   resolutions: {
+    '480p':  { label: '480p', width: 640, height: 480 },
     '720p':  { label: '720p',  width: 1280, height: 720 },
     '1080p': { label: '1080p', width: 1920, height: 1080 },
     'max':   { label: 'Max',   width: 4096, height: 2160 },
   },
-  resolutionOrder: ['720p', '1080p', 'max'],
+  resolutionOrder: ['480p', '720p', '1080p', 'max'],
 
   // Self-timer choices in seconds (0 = off)
   timers: [0, 3, 10],
