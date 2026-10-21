@@ -48,7 +48,7 @@
   const css = '#hub-saver{position:fixed;inset:0;z-index:2147483600;background:#0a0b0d;color:#fff;cursor:none;touch-action:none}' +
     'html.hub-light #hub-saver{background:var(--bg,#e9ecf1);color:var(--text,#1d2330)}' +
     '#hub-saver svg{position:absolute;left:50%;top:25vh;width:min(40vh,70vw);height:min(40vh,70vw);transform:translate(-50%,-50%);transition:margin 2s ease;overflow:visible}' +
-    '#hub-saver *{stroke:currentColor;fill:none;stroke-linecap:round}#hub-saver .hs-s{stroke:#e53935}#hub-saver .hs-s[hidden]{display:none}';
+    '#hub-saver *{stroke:currentColor;fill:none;stroke-linecap:round}#hub-saver .hs-s{stroke:#e53935}';
 
   function build() {
     const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
@@ -74,7 +74,8 @@
     const a = angles(d);
     el.h.setAttribute('transform', 'rotate(' + a.h + ')');
     el.m.setAttribute('transform', 'rotate(' + a.m + ')');
-    el.s.hidden = secMode === 'off';
+    // R49d: SVG elements have no .hidden property; use the SVG display attribute
+    if (secMode === 'off') el.s.setAttribute('display', 'none'); else el.s.removeAttribute('display');
     if (secMode !== 'off') el.s.setAttribute('transform', 'rotate(' + a.s + ')');
     draws++;
   }
