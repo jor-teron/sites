@@ -515,10 +515,19 @@ Fetch rules (same-origin GET only):
   - fonts: cache first
   - offline navigation not cached: hub/update/hub_offline.html
 Updates (hub/update/hub_update.js, window.HubUpdate):
-  - A new worker WAITS (only the first install activates at once). A
-    small "Update ready - Reload - x" note appears (#hub-upd-note,
-    hub_update.css). Reload posts {type:'skip-waiting'}; the page
-    reloads when the new worker takes control. Never a forced reload.
+  - A new worker WAITS (only the first install activates at once).
+    R50: the old bottom-centre "Update ready - Reload - x" toast
+    (#hub-upd-note, kept commented out in hub_update.js) is replaced by
+    #upd-btn (hub.html, in .header-right): a small download icon with a
+    blue dot, title / aria-label "Update ready", hidden until a new build
+    waits (HubUpdate.showNote() shows it; same callers as the toast).
+    Desktop mode: in the taskbar tray just before the clock (icon sized
+    from --wm-task-h). Phone mode: a 24 px icon at the right of the top
+    bar. Click / tap opens Settings on About (__hubOpenApp('apps/settings/',
+    {hash:'about'}); Settings follows #about), where the existing Update
+    button applies it (skip-waiting -> reload on takeover). No toast, no
+    overlay, never a forced reload; after the reload the new build is
+    active (nothing waiting), so the icon stays hidden.
   - Daily refresh at 09:00 browser local time, or on the next open after
     a missed 09:00 (sites-hub.lastRefresh, ms). It runs reg.update() and
     asks the worker {type:'refresh'}: every SHELL file is fetched again

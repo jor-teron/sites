@@ -12,3 +12,16 @@
   background: #3b82f6; color: #fff; font: inherit; font-weight: 600;
 }
 #hub-upd-note .hub-upd-x { padding: 0 12px; background: transparent; font-size: 18px; }
+
+/* R50: "Update ready" indicator (#upd-btn in .header-right). Taskbar tray in Desktop mode
+   (sized by wm.css .wm-tray .ctrl-btn svg from --wm-task-h), tiny in the Phone top bar. */
+.upd-btn { color: var(--text); }
+.upd-btn[hidden] { display: none !important; }
+.upd-btn svg { width: 22px; height: 22px; }
+.upd-btn .upd-dot {
+  position: absolute; top: 18%; right: 8%; width: 7px; height: 7px; border-radius: 50%;
+  background: #3b82f6; box-shadow: 0 0 0 2px var(--bar, #1a1e26); pointer-events: none;
+}
+body.wm-desktop .wm-tray .upd-btn svg { width: calc(var(--wm-task-h) * 0.5); height: calc(var(--wm-task-h) * 0.5); }
+body:not(.wm-desktop) .upd-btn { width: 24px; justify-content: center; }
+body:not(.wm-desktop) .upd-btn svg { width: 18px; height: 18px; }
