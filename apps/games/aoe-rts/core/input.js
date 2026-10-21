@@ -108,7 +108,7 @@ function rightClick(px, py) {
 }
 
 /** Map picker open or a text box focused: game keys are ignored */
-function pickerOpen() { const a = document.activeElement; return document.getElementById('title-overlay').style.display === 'flex' || !!(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')); }
+function pickerOpen() { const a = document.activeElement; return document.getElementById('title-overlay').style.display === 'flex' || document.getElementById('confirm-overlay').style.display === 'flex' || !!(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')); }
 window.addEventListener('keydown', e => {
     if (pickerOpen()) return;
     if (e.key === 'p' || e.key === 'P') setPaused(!paused);

@@ -120,6 +120,18 @@ syncMute();
 // ============================================================================
 // MAP PICKER (title overlay): 2-digit box + Resume / Restart / Random; map number on the pause overlay
 // ============================================================================
+/** In-game confirm box (Restart / Cancel): game input is blocked while it is open (see pickerOpen) */
+const askConfirm = (() => {
+    const ov = document.getElementById('confirm-overlay'), msg = document.getElementById('confirm-msg');
+    const ok = document.getElementById('confirm-ok'), cancel = document.getElementById('confirm-cancel');
+    let onYes = null, back = null;
+    ['pointerdown', 'mousedown', 'touchstart', 'wheel', 'pointerup', 'click'].forEach(t => ov.addEventListener(t, e => e.stopPropagation(), { passive: true }));
+    const hide = () => { ov.style.display = 'none'; onYes = null; if (back && back.focus) back.focus(); back = null; };
+    ok.addEventListener('click', () => { const f = onYes; hide(); if (f) f(); });
+    cancel.addEventListener('click', hide);
+    ov.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') { e.preventDefault(); hide(); } });
+    return (text, yes) => { msg.textContent = text; onYes = yes; back = document.activeElement; ov.style.display = 'flex'; cancel.focus(); };
+})();
 (function mapPicker() {
     const ov = document.getElementById('title-overlay'), inp = document.getElementById('map-input'), note = document.getElementById('map-note');
     const bResume = document.getElementById('map-resume-btn'), bRestart = document.getElementById('map-restart-btn'), bRandom = document.getElementById('map-random-btn');
@@ -146,9 +158,10 @@ syncMute();
     });
     bRestart.addEventListener('click', () => {
         const n = pick(); if (n === null) return;
-        if (!window.confirm('Restart map ' + mapLabel(n) + '? Its saved progress will be deleted.')) return;
-        if (n === MAP_NUM) saveBlocked = true; else writeSave();
-        dropSave(n); go(n);
+        askConfirm('Restart map ' + mapLabel(n) + '? Its saved progress will be deleted.', () => {
+            if (n === MAP_NUM) saveBlocked = true; else writeSave();
+            dropSave(n); go(n);
+        });
     });
     bRandom.addEventListener('click', () => { inp.value = mapLabel(Math.floor(Math.random() * 100)); show(); });
     document.getElementById('picker-cancel').addEventListener('click', close);

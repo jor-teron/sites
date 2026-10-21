@@ -1,6 +1,6 @@
 /**
  * AOE RTS - Tiny Slice Isometric Game (Phaser 3)
- * R2d: per-map saves (localStorage aoe-rts.save.NN: autosave 60s + pause / map switch / page hide),
+ * R2d: per-map saves (localStorage aoe-rts.save.NN: autosave 30s + pause / map switch / page hide),
  *     2-digit map box with Resume / Restart / Random.
  * R2c: animals - seeded deer herds (wander on land, flee briefly, hunted with a spear -> carcass ~100 food,
  *     fast gather, finite) and fish spots on lakes/ponds (~150 food, gathered from the shore with a net).
@@ -67,7 +67,7 @@ const DEER_FLEE_R = 130;          // iso-corrected px: a villager this close mak
 const DEER_FLEE_T = 1.1, DEER_FLEE_CD = 2.6;    // seconds of fleeing, then calm-down before it can bolt again
 const HUNT_R = 200;               // iso-corrected px: hunters throw from here (outside the flee radius)
 const HUNT_AIM = 0.8;             // seconds to aim + throw
-const AUTOSAVE_MS = 60000;        // R2d: autosave every 60 s of real time
+const AUTOSAVE_MS = 30000;        // R2d: autosave every 30 s of real time
 
 /** Resource node definitions */
 const RES_TYPES = {

@@ -86,4 +86,4 @@ function resumeSave() {
 // autosave + save on hide / exit
 document.addEventListener('visibilitychange', () => { if (document.hidden) { setPaused(true); writeSave(); } });
 window.addEventListener('pagehide', () => writeSave());
-setInterval(() => writeSave(), AUTOSAVE_MS);   // autosave every 60 s of real time
+setInterval(() => writeSave(), AUTOSAVE_MS);   // autosave every 30 s of real time
