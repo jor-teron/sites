@@ -2,7 +2,8 @@
  * Settings → Desktop (apps/settings/sec_desktop.js). Screen mode Auto / Desktop / Phone
  * (key 'wmMode', the Hub's HubMode applies it) and "Open menu on hover" for the Desktop
  * mode Start button (key 'startHover', default on, '0' = off), and the optional taskbar busy
- * meter (key 'trayMeter', '1' = on, default off; hub/drives/hub_traymeter.js).
+ * meter (key 'trayMeter', '1' = on, default off; hub/drives/hub_traymeter.js), and the
+ * clock screen saver idle time (key 'saverIdle', '0' Off | '10' | '15' | '30' min; Hub R49 HubSaver).
  */
 (function () {
   'use strict';
@@ -32,7 +33,29 @@
         S.get('startHover') !== '0', (on) => S.set('startHover', on ? '' : '0'));
       const meter = ui.switch('Busy meter in the taskbar', 'A small graph by the clock: how busy the Hub is (an estimate). Click it for System Monitor',
         S.get('trayMeter') === '1', (on) => S.set('trayMeter', on ? '1' : ''));
-      pane.append(ui.title('Screen mode'), mode, note, ui.title('Start menu'), hover, ui.title('Taskbar'), meter);
+      // Screen saver: the Hub (HubSaver) listens for the storage event; also tell it directly if reachable
+      const saverHub = () => {
+        for (const w of [window.parent, window.top]) {
+          try { if (w && w !== window && w.HubSaver) return w.HubSaver; } catch (_) { /* cross-origin */ }
+        }
+        return null;
+      };
+      const saver = ui.choice([
+        { value: '0', label: 'Off' }, { value: '10', label: '10 min' },
+        { value: '15', label: '15 min' }, { value: '30', label: '30 min' }
+      ], S.get('saverIdle', '0'), (v) => {
+        S.set('saverIdle', v);
+        try { const h = saverHub(); if (h && h.set) h.set(Number(v)); } catch (_) { /* ignore */ }
+      });
+      saver.classList.add('saver-pick');
+      const prev = ui.el('button', 'seg-btn saver-preview', 'Preview');
+      prev.type = 'button';
+      prev.title = 'Show the clock screen saver now';
+      const hs = saverHub();
+      if (!hs || !hs.start) prev.hidden = true;
+      prev.addEventListener('click', () => { try { const h = saverHub(); if (h && h.start) h.start(); } catch (_) { /* ignore */ } });
+      pane.append(ui.title('Screen mode'), mode, note, ui.title('Start menu'), hover, ui.title('Taskbar'), meter,
+        ui.title('Screen saver'), saver, prev);
       showNow();
     }
   });
