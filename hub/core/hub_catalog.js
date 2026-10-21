@@ -31,6 +31,7 @@ Tennis Ball Blitz, tennis-throw/,  , , Arcade
 Sling Birds,       sling-birds/, , , Arcade
 Pacman,            pacman/, , , Arcade
 Neon Fist,         neon-fist/,     , , Arcade
+Neon Fist 3D,      neon-fist-3d/,  , , Arcade
 Dino Run,          dino-run/,      , , Runners
 Car Run,           car-run/,       , , Runners
 Desert Road,       desert-road/,   , , Runners
