@@ -3,7 +3,7 @@
  * (key 'wmMode', the Hub's HubMode applies it) and "Open menu on hover" for the Desktop
  * mode Start button (key 'startHover', default on, '0' = off), and the optional taskbar busy
  * meter (key 'trayMeter', '1' = on, default off; hub/drives/hub_traymeter.js), and the
- * clock screen saver idle time (key 'saverIdle', '0' Off | '10' | '15' | '30' min; Hub R49 HubSaver).
+ * clock screen saver idle time (key 'saverIdle', whole minutes 0..240, 0 = Off, unset = 5; Hub R49b HubSaver).
  */
 (function () {
   'use strict';
@@ -40,14 +40,28 @@
         }
         return null;
       };
-      const saver = ui.choice([
-        { value: '0', label: 'Off' }, { value: '10', label: '10 min' },
-        { value: '15', label: '15 min' }, { value: '30', label: '30 min' }
-      ], S.get('saverIdle', '0'), (v) => {
-        S.set('saverIdle', v);
-        try { const h = saverHub(); if (h && h.set) h.set(Number(v)); } catch (_) { /* ignore */ }
-      });
-      saver.classList.add('saver-pick');
+      // R49b: minutes as a number (0 = Off, 1..240, unset / invalid = 5), same rules as hub_saver.js
+      const SAVER_DEF = 5, SAVER_MAX = 240;
+      const saverNorm = (v) => {
+        const s = String(v == null ? '' : v).trim();
+        if (!/^-?\d+$/.test(s)) return SAVER_DEF;
+        const n = parseInt(s, 10);
+        return n < 0 ? SAVER_DEF : Math.min(n, SAVER_MAX);
+      };
+      const saver = ui.el('label', 'saver-pick saver-min');
+      const saverIn = ui.el('input');
+      Object.assign(saverIn, { type: 'number', min: 0, max: SAVER_MAX, step: 1, inputMode: 'numeric' });
+      saverIn.setAttribute('aria-label', 'Screen saver after (minutes)');
+      saverIn.value = saverNorm(S.get('saverIdle', ''));
+      saver.append(saverIn, ui.el('span', '', 'minutes'), ui.el('small', 'opt-note', '0 = Off (1\u2013240)'));
+      const saveSaver = () => {
+        const n = saverNorm(saverIn.value);
+        saverIn.value = n;
+        S.set('saverIdle', String(n));
+        try { const h = saverHub(); if (h && h.set) h.set(n); } catch (_) { /* ignore */ }
+      };
+      saverIn.addEventListener('change', saveSaver);
+      saverIn.addEventListener('blur', saveSaver);
       const prev = ui.el('button', 'seg-btn saver-preview', 'Preview');
       prev.type = 'button';
       prev.title = 'Show the clock screen saver now';

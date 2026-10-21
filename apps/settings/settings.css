@@ -176,3 +176,7 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
 .slider:focus-visible { outline: 2px solid var(--accent, #6ea8fe); outline-offset: 4px; border-radius: 8px; }
 .slider-val { min-width: 56px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 .saver-preview{margin-top:8px}
+/* R49b: screen saver minutes (number input) */
+.saver-min{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.saver-min input{width:5.5em;padding:6px 8px;border-radius:8px;border:1px solid var(--line,#444);background:transparent;color:inherit;font:inherit}
+.saver-min small{margin:0;flex-basis:100%}

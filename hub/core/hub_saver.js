@@ -4,27 +4,35 @@
  * hour / minute / thin sweeping second hand, one stroke style, no numbers. Clock centre at 25% of
  * the viewport height, size min(40vh, 70vw); drifts a few px every minute (anti burn-in).
  * Theme: html.hub-light (hub_prefs.js, 'sites-hub.theme') → light bg + dark clock, else dark bg + white clock.
- * Idle: localStorage 'sites-hub.saverIdle' = 0 (off, default) | 10 | 15 | 30 minutes; live via 'storage'.
+ * Idle: localStorage 'sites-hub.saverIdle' = whole minutes, 0 = off, else clamped to 1..240 (R49b);
+ *   missing / invalid = 5 (on). Live via 'storage'.
  * Activity (resets the timer): mousemove / mousedown / keydown / touchstart / wheel on the Hub and on
  *   same-origin app documents, window blur (focus into an app iframe), any hub-* bridge message.
  * Not started while the page is hidden, an element is fullscreen or a video is playing (checked again later).
  * Dismiss: any mouse move, touch, click, wheel or key; the event is swallowed (capture + stop), so it never
  *   reaches the app / desktop below (the click that follows a press is swallowed too).
- * API: window.HubSaver = { start(), stop(), set(min), active() }.
+ * API: window.HubSaver = { start(), stop(), set(min), active(), minutes() }.
  */
 (function () {
   'use strict';
   if (window.HubSaver) return;
   const KEY = 'sites-hub.saverIdle';
-  const OK = [0, 10, 15, 30];
+  const DEF = 5, MAX = 240;   // R49b (R49 allowed only 0 / 10 / 15 / 30, default off)
+  /** R49b: whole minutes; 0 = off; 1..240 (clamped); missing / invalid → 5. */
+  function norm(v) {
+    const s = String(v == null ? '' : v).trim();
+    if (!/^-?\d+$/.test(s)) return DEF;
+    const n = parseInt(s, 10);
+    return n <= 0 ? (n === 0 ? 0 : DEF) : Math.min(n, MAX);
+  }
   const NS = 'http://www.w3.org/2000/svg';
   let idleMin = 0, last = Date.now(), el = null, raf = 0, driftT = 0, shownAt = 0, swallowUntil = 0;
   const hooked = new WeakSet();
 
   function readPref() {
-    let v = 0;
-    try { v = parseInt(localStorage.getItem(KEY), 10); } catch (_) { /* blocked */ }
-    idleMin = OK.indexOf(v) >= 0 ? v : 0;
+    let v = null;
+    try { v = localStorage.getItem(KEY); } catch (_) { /* blocked */ }
+    idleMin = norm(v);
   }
   const poke = () => { last = Date.now(); };
 
@@ -120,10 +128,11 @@
   window.HubSaver = {
     start, stop, active,
     set(min) {
-      const v = OK.indexOf(+min) >= 0 ? +min : 0;
+      const v = norm(min);
       try { localStorage.setItem(KEY, String(v)); } catch (_) { /* blocked */ }
       idleMin = v; poke();
     },
+    minutes: () => idleMin,   // R49b
     _angles: angles
   };
 })();
