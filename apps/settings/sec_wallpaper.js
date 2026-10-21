@@ -3,8 +3,9 @@
  *   Colours & gradients — hub/drives/hub_wallpapers.js (6 gradients incl. the original Night, solid
  *     black / grey / off-white) + a custom colour picker.
  *   Pictures — every image in shared/wallpaper/ listed in shared/wallpaper/wallpapers.js
- *     (thumbnails are the images themselves, loading="lazy"; the Hub uses the image URL
- *     directly, nothing is copied) + "Your picture": pick an image, it is saved in the Local
+ *     (R36: previews are the 320 px WebP thumbs in shared/wallpaper/thumbs/ (hub_wallthumbs_gen.py),
+ *     loading="lazy", falling back to the full image when a thumb is missing; only the chosen
+ *     wallpaper (big preview + the Hub) loads at full size; the Hub uses the image URL directly, nothing is copied) + "Your picture": pick an image, it is saved in the Local
  *     drive (Wallpapers/wallpaper.<ext>, replaces the previous one) and shown from there.
  * Picking one applies to the Hub at once (key 'wallpaper' = id, 'pic:<file>', 'mine:<time>'
  * or '#rrggbb').
@@ -47,7 +48,9 @@
         if (w.thumb) {
           sw = ui.el('span', 'wp-swatch wp-pic');
           const img = document.createElement('img');
-          img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; img.src = w.thumb;
+          img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; img.width = 320; img.height = 200;
+          if (w.small) img.onerror = () => { img.onerror = null; img.src = w.thumb; };   // R36: thumb missing → full image
+          img.src = w.small || w.thumb;
           sw.appendChild(img);
         } else { sw = ui.el('span', 'wp-swatch'); paint(sw, w); }
         t.append(sw, ui.el('span', 'wp-name', w.name));

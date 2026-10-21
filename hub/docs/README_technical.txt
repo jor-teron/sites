@@ -468,6 +468,16 @@ light flags), every picture in shared/wallpaper/wallpapers.js as
 'pic:<file>', a custom colour '#rrggbb', and 'mine' = "Your picture",
 a file in the Local drive (OPFS) folder Wallpapers/. Choice in
 sites-hub.wallpaper; hub/core/hub_prefs.js paints #empty.
+R36 thumbnails: shared/wallpaper/thumbs/<base>.webp (320 px wide, WebP
+q70), one per picture in wallpapers.js, written by
+hub/core/hub_wallthumbs_gen.py (Python + Pillow; rerunnable, skips a
+thumb newer than its picture, --force redoes all, reports thumbs of
+pictures no longer listed). Rerun it after adding / changing a picture
+and commit the thumbs. hub_wallpapers.js gives each picture entry
+small = that thumb URL (thumb = the old full / _small copy, picture =
+the full image). Previews (Settings > Wallpaper grid) use small, lazy,
+with the full image as onerror fallback; applying a wallpaper (the Hub
+background and the Settings big preview) always uses the full picture.
 
 
 12. SETTINGS

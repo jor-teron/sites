@@ -7,6 +7,8 @@
  * light: true = light background, so the home text turns dark.
  * Pictures (R10): every image listed in shared/wallpaper/wallpapers.js (load it first) becomes
  * an entry id 'pic:<file>' with picture: absolute image URL (used directly, cover) and thumb.
+ * R36: small = shared/wallpaper/thumbs/<base>.webp (320 px, hub/core/hub_wallthumbs_gen.py) for
+ * previews only; thumb (the old full / _small copy) stays as the fallback when a small one is missing.
  * 'mine' (any value starting with 'mine') = Your picture: a file in the Local drive (OPFS)
  * folder Wallpapers/, shown through an object URL — window.hubWallpaperMine() → Promise<url|''>,
  * window.hubWallpaperSaveMine(file) → Promise (Settings → Wallpaper).
@@ -38,6 +40,7 @@ window.HUB_WALLPAPERS = [
     if (!Array.isArray(p) || !/^[\w.-]+\.(jpe?g|png|webp)$/i.test(p[0] || '')) return;
     window.HUB_WALLPAPERS.push({
       id: 'pic:' + p[0], name: p[1] || p[0], picture: dir + p[0], thumb: dir + (p[2] || p[0]),
+      small: dir + 'thumbs/' + p[0].replace(/\.\w+$/, '') + '.webp',   // R36
       image: 'url("' + dir + p[0] + '")', color: '#1b2230', light: !!p[3]
     });
   });
