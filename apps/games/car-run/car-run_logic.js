@@ -587,7 +587,8 @@
     }
     if (!playerDrawn) drawPlayer(sc);
     if (smoke.length && player) {
-      A.smoke.draw(ctx, smoke, { M: CFG.smoke, project, origin: { x: player.x, y: player.y, z: pz } });
+      A.smoke.draw(ctx, smoke, { M: CFG.smoke, project, origin: { x: player.x, y: player.y, z: pz },
+        carW: S.playerW, carH: S.playerH, carLen: S.playerLen });
     }
   }
 
@@ -600,10 +601,10 @@
     const tier = crashed ? M.tiers[0] : A.smoke.tierFor(M, hp);
     if (tier) {
       smokeT -= dt;
-      if (smokeT <= 0) { smokeT = Math.max(0, smokeT + tier.interval); A.smoke.trail(smoke, M, tier); }
+      if (smokeT <= 0) { smokeT = Math.max(0, smokeT + tier.interval); A.smoke.trail(smoke, M, tier, crashed); }
       if (tier.sparks) {
         sparkT -= dt;
-        if (sparkT <= 0) { sparkT += tier.sparks * (0.5 + Math.random()); A.smoke.spark(smoke, M); }
+        if (sparkT <= 0) { sparkT += tier.sparks * (0.5 + Math.random()); A.smoke.spark(smoke, M, crashed); }
       }
     } else {
       smokeT = 0;
