@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Neon Fist — Character Viewer</title>
+<link rel="stylesheet" href="css/neon-fist.css" />
+</head>
+<body>
+<canvas id="game" aria-label="Neon Fist character viewer"></canvas>
+
+<header class="ui top">
+  <div class="logo">NEON <span>FIST</span> <small>character viewer · preview build</small></div>
+  <div class="row">
+    <button id="prevBtn" aria-label="Previous character">◀</button>
+    <button data-char="0">Kai <kbd>1</kbd></button>
+    <button data-char="1">Nova <kbd>2</kbd></button>
+    <button id="nextBtn" aria-label="Next character">▶</button>
+  </div>
+</header>
+
+<aside class="ui info" aria-live="polite">
+  <h1 id="cName">KAI</h1>
+  <h2 id="cTitle"></h2>
+  <p id="cDesc"></p>
+  <div id="cStats" class="stats"></div>
+</aside>
+
+<nav class="ui bottom">
+  <div class="row">
+    <button data-pose="idle">Idle <kbd>I</kbd></button>
+    <button data-pose="punch">Punch <kbd>P</kbd></button>
+    <button data-pose="kick">Kick <kbd>K</kbd></button>
+    <button data-pose="block">Block <kbd>B</kbd></button>
+    <button data-pose="special">Special <kbd>S</kbd></button>
+  </div>
+  <div class="row small">
+    <button id="flipBtn">Flip <kbd>F</kbd></button>
+    <button id="vsBtn">Versus <kbd>V</kbd></button>
+    <button id="holdBtn">Hold pose <kbd>H</kbd></button>
+    <button id="fpsBtn">FPS: 60</button>
+  </div>
+</nav>
+
+<script src="js/config.js"></script>
+<script src="js/skeleton.js"></script>
+<script src="js/poses.js"></script>
+<script src="js/characters.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/fighter.js"></script>
+<script src="js/stage.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/viewer.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; background: #07061a; overflow: hidden; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #eef; user-select: none; }
+#game { display: block; position: fixed; inset: 0; }
+.ui { position: fixed; background: rgba(12, 8, 30, 0.62); border: 1px solid rgba(255, 63, 208, 0.35); border-radius: 12px;
+      padding: 8px 12px; backdrop-filter: blur(3px); }
+.top { top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.logo { font-weight: 900; font-style: italic; font-size: clamp(18px, 2.6vw, 26px); letter-spacing: 1px; text-shadow: 2px 2px 0 #d01c8b; }
+.logo span { color: #7fe8ff; }
+.logo small { font: 600 12px system-ui, sans-serif; color: #b9b2e0; text-shadow: none; margin-left: 8px; letter-spacing: 0; }
+.info { left: 10px; top: 50%; transform: translateY(-50%); width: min(260px, 24vw); }
+.info h1 { font-size: clamp(22px, 3vw, 34px); font-weight: 900; font-style: italic; }
+.info h2 { font-size: 13px; color: #c9c2f0; font-weight: 600; margin-bottom: 6px; }
+.info p { font-size: 13px; line-height: 1.4; color: #dcd8f5; margin-bottom: 8px; }
+.stats div { display: flex; align-items: center; gap: 8px; font-size: 12px; margin: 3px 0; }
+.stats span { width: 58px; color: #aaa3d8; }
+.stats i { flex: 1; height: 7px; border-radius: 4px; background: linear-gradient(90deg, var(--c) calc(var(--v) * 100%), rgba(255,255,255,0.12) 0); }
+.bottom { bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+button { font: 700 14px system-ui, sans-serif; padding: 7px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15);
+         background: rgba(40, 34, 90, 0.75); color: #fff; cursor: pointer; }
+button:hover { background: rgba(70, 60, 140, 0.85); }
+button:focus-visible { outline: 2px solid #7fe8ff; outline-offset: 2px; }
+button.on { background: rgba(208, 28, 139, 0.85); border-color: #ff7fe0; }
+.small button { font-size: 12px; padding: 5px 10px; }
+kbd { font: 700 10px system-ui, sans-serif; background: rgba(0,0,0,0.35); border-radius: 4px; padding: 1px 4px; margin-left: 3px; color: #cfd; }
+body.versus .info, body.versus .top { display: none; }
+body.noui .ui { display: none; }
+@media (max-width: 700px) { .info { display: none; } .logo small { display: none; } }
