@@ -139,6 +139,29 @@ const CAR_RUN_CONFIG = {
     playerNitro: '#f97316',    // player body while nitro is on
   },
 
+  // Crash smoke: on crash the car bursts smoke, then keeps smoking while the
+  // CRASH! screen shows. A new run starts clean. Offsets are relative to the car.
+  smoke: {
+    puffs: 7,                  // puffs per crash
+    life: 1.0,                 // seconds each puff lives
+    lifeRandom: 0.25,          // + up to this many extra seconds
+    spreadX: 0.35,             // random horizontal start offset (world units)
+    startY: 0.35,              // start height above the road
+    offsetZ: 0.4,              // start ahead of the car centre (toward the hit)
+    riseSpeed: 0.9,            // upward drift (units / s)
+    driftX: 0.35,              // random sideways drift (units / s)
+    radius: 0.14,              // start radius (world units)
+    growth: 0.35,              // radius gained per second
+    minRadius: 1.5,            // px floor so far puffs stay visible
+    alpha: 0.55,               // start opacity, fades to 0
+    color: '120,120,128',      // puff RGB
+    maxPuffs: 40,              // cap on live puffs
+    // Continuous smoke from the crashed car while the crash screen is up.
+    trailInterval: 0.12,       // seconds between trail puffs
+    trailScale: 0.6,           // trail puffs are this fraction of burst puff size
+    trailZ: 0.9,               // trail puffs start at the hood (ahead of car centre)
+  },
+
   // Input
   input: {
     // Touch / mouse gestures (pointer events, no on-screen buttons)
