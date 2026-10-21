@@ -33,12 +33,13 @@
 
   class Fighter {
     constructor(ch) {
-      this.ch = ch; this.poses = NF.poses[ch.id]; this.t = Math.random() * 5;
+      this.ch = ch; this.poses = NF.poses[ch.poseSet || ch.id]; this.t = Math.random() * 5;
       this.action = 'idle'; this.actT = 0; this.hold = false; this.blink = 0; this.nextBlink = 1.5; this.acc = 0;
-      this.chains = ch.id === 'kai'
-        ? { band1: new Chain(7, 21, { x: -2600, y: -900 }, 0.4), band2: new Chain(6, 21, { x: -2200, y: -500 }, 0.5),
-            belt1: new Chain(5, 18, { x: 300, y: 0 }), belt2: new Chain(5, 17, { x: 120, y: 0 }) }
-        : { tail: new Chain(10, 25, { x: -2600, y: -4200 }) };
+      // headband tails go with spiky hair, belt tails with the gi, a ponytail with tied-back hair
+      this.chains = {};
+      if (ch.hairStyle === 'spiky') { this.chains.band1 = new Chain(7, 21, { x: -2600, y: -900 }, 0.4); this.chains.band2 = new Chain(6, 21, { x: -2200, y: -500 }, 0.5); }
+      if (ch.outfit === 'gi') { this.chains.belt1 = new Chain(5, 18, { x: 300, y: 0 }); this.chains.belt2 = new Chain(5, 17, { x: 120, y: 0 }); }
+      if (ch.hairStyle === 'tail') this.chains.tail = new Chain(10, 25, { x: -2600, y: -4200 });
       this.pose = this.computePose(); this.J = S.solve(this.pose, ch.bones);
       this.idleH = -(S.solve(this.poses.idle, ch.bones).head.y) + 66 * ch.headScale;
     }
@@ -81,10 +82,9 @@
     beltPt() { const T = Dr.torsoMap(this.J, this.ch.bones); return T(0.03, 50); }
     stepChains(dt, wind) {
       const c = this.chains;
-      if (this.ch.id === 'kai') {
-        const k = this.headPt(-54, -28); c.band1.step(k, dt, wind); c.band2.step({ x: k.x, y: k.y + 3 }, dt, wind * 0.8);
-        const b = this.beltPt(); c.belt1.step(b, dt, wind * 0.3); c.belt2.step({ x: b.x - 3, y: b.y }, dt, wind * 0.25);
-      } else c.tail.step(this.headPt(-38, -64), dt, wind * 1.2);
+      if (c.band1) { const k = this.headPt(-54, -28); c.band1.step(k, dt, wind); c.band2.step({ x: k.x, y: k.y + 3 }, dt, wind * 0.8); }
+      if (c.belt1) { const b = this.beltPt(); c.belt1.step(b, dt, wind * 0.3); c.belt2.step({ x: b.x - 3, y: b.y }, dt, wind * 0.25); }
+      if (c.tail) c.tail.step(this.headPt(-38, -64), dt, wind * 1.2);
     }
 
     // ---------------- drawing ----------------
@@ -92,13 +92,12 @@
       ctx.save(); ctx.translate(x, gy); ctx.scale(scale * facing, scale);
       const J = this.J, ch = this.ch;
       this.shadow(ctx);
-      if (ch.id === 'kai') {
+      if (this.chains.band1) {
         const c = this.chains, pk = ch.band;
         Dr.ribbon(ctx, c.band2.p, 11, 7, Dr.shade(pk, 0.62), Dr.shade(pk, 0.5));
         Dr.ribbon(ctx, c.band1.p, 12, 8, Dr.shade(pk, 0.95), Dr.shade(pk, 0.7));
-      } else {
-        Dr.ponytail(ctx, this.chains.tail.p, ch, this.t);
       }
+      if (this.chains.tail) Dr.ponytail(ctx, this.chains.tail.p, ch, this.t);
       this.arm(ctx, 'B', true); this.leg(ctx, 'B', true);
       this.torso(ctx);
       this.leg(ctx, 'F', false);
@@ -120,7 +119,7 @@
       const J = this.J, ch = this.ch, B = ch.bones, A = J.ang, o = { far, rim: ch.rim }, H = J['hip' + s];
       const shin = Dr.limb(J['knee' + s], A['sh' + s], B.shin, ch.shin, { u0: -0.04 });
       const thigh = Dr.limb(H, A['th' + s], B.thigh, ch.thigh, { u0: -0.05, u1: 1.06, capS: false });
-      if (ch.id === 'kai') {
+      if (ch.outfit === 'gi') {
         Dr.paint(ctx, shin, ch.skin, Object.assign({ spec: 0.12, lines: [[0.3, 0.7, -0.55, 0.15, 2, 0.25]] }, o));
         Dr.foot(ctx, J['ankle' + s], A['ft' + s], ch, { far });
         const ps = Dr.limb(J['knee' + s], A['sh' + s], B.shin, ch.pantsShin, { u0: -0.06, u1: 0.86, capE: false });
@@ -146,7 +145,7 @@
       const J = this.J, ch = this.ch, B = ch.bones, A = J.ang, o = { far, rim: ch.rim }, S0 = J['shoulder' + s];
       const fa = Dr.limb(J['elbow' + s], A['fa' + s], B.farm, ch.farm, { u0: -0.06 }), ua = Dr.limb(S0, A['ua' + s], B.uarm, ch.uarm, { u0: -0.08 });
       const hType = this.pose['hand' + s] || 'fist';
-      if (ch.id === 'kai') {
+      if (ch.outfit === 'gi') {
         // forearm: brachioradialis / extensor split, wrist taper
         Dr.paint(ctx, fa, ch.skin, Object.assign({ spec: 0.12, lines: [[0.05, 0.6, 0.15, 0.25, 2, 0.3], [0.1, 0.45, 0.6, 0.1, 1.6, 0.25, 1]] }, o));
         Dr.paint(ctx, Dr.limb(J['elbow' + s], A['fa' + s], B.farm, ch.farm, { u0: 0.7, u1: 1, inf: 1.5, capS: false, capE: false }), ch.wrap, { far, folds: [[0.2, 2, 1.2, 0.9], [0.5, 2, 1.2, 0.9], [0.8, 2, 1.2, 0.9]], foldA: 0.25 });
@@ -179,7 +178,7 @@
       const fv = u => Dr.profAt(fr.map(r => [r[0], r[1], r[1]]), u)[0];
       const tw = this.pose.twist || 0;
       const line = (pts, col, lw) => { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round'; Dr.smoothPath(ctx, pts, false); ctx.stroke(); };
-      if (ch.id === 'kai') {
+      if (ch.outfit === 'gi') {
         const body = Dr.torsoShape(T, fr, bk, { inf: 3 });
         Dr.paint(ctx, body, ch.gi, { rim: ch.rim, folds: [[0.3, -14, 3, 0.7], [0.55, -10, 2.5, 0.6]], foldA: 0.45, light: 1.7 });
         ctx.save(); Dr.smoothPath(ctx, Dr.outline(body), true); ctx.clip();
@@ -242,7 +241,7 @@
     }
     waist(ctx) {
       const J = this.J, ch = this.ch, T = Dr.torsoMap(J, ch.bones), { fr, bk } = this.torsoProfiles();
-      if (ch.id === 'kai') {
+      if (ch.outfit === 'gi') {
         // gi skirt: two panels hanging from the belt that follow each thigh, split at the side
         const fv = u => Dr.profAt(fr.map(r => [r[0], r[1], r[1]]), u)[0], bv = u => Dr.profAt(bk.map(r => [r[0], r[1], r[1]]), u)[0];
         const panel = (s, side) => {
@@ -275,7 +274,7 @@
       const J = this.J, ch = this.ch, a = -J.ang.neck, len = Math.hypot(J.head.x - J.neckBase.x, J.head.y - J.neckBase.y) + 14;
       const nk = Dr.limb(J.head, a, len, ch.neck);
       Dr.paint(ctx, nk, ch.skin, { rim: ch.rim, light: 1.05, folds: [[0.15, 6, 8, 0.9]], foldA: 0.25 });
-      if (ch.id === 'nova') Dr.paint(ctx, Dr.limb(J.head, a, len, ch.neck, { u0: 0.6, u1: 1, inf: 3 }), ch.armour, { spec: 0.2 });
+      if (ch.outfit === 'suit') Dr.paint(ctx, Dr.limb(J.head, a, len, ch.neck, { u0: 0.6, u1: 1, inf: 3 }), ch.armour, { spec: 0.2 });
     }
     fx(ctx) {
       const J = this.J, ch = this.ch, p = this.pose;

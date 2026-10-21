@@ -24,10 +24,12 @@
   addEventListener('resize', resize); resize();
   NF.viewer.init();
   document.getElementById('fpsBtn').addEventListener('click', () => NF.main.toggleFps());
-  // ?char=nova&pose=kick&hold=1&vs=1&flip=1&ui=0
-  const q = new URLSearchParams(location.search);
+  // ?char=nova&pose=kick&hold=1&vs=1&flip=1&ui=0   ·   generated: ?f=42  ·  ?f=42&vs=07 (versus fighter 07)  ·  ?f=42&vs=kai
+  const q = new URLSearchParams(location.search), num = v => /^\d{1,2}$/.test(v || '') ? +v : null;
   if (q.get('char')) NF.viewer.select(Math.max(0, NF.characters.list.findIndex(c => c.id === q.get('char'))));
-  if (q.get('vs') === '1') NF.viewer.toggleVersus();
+  const vsQ = q.get('vs'), vsNum = num(vsQ), vsHand = NF.characters[vsQ];
+  if (num(q.get('f')) !== null) NF.viewer.showGen(num(q.get('f')), vsHand && vsHand.id ? vsHand : vsNum !== null && vsQ !== '1' ? vsNum : undefined);
+  if (vsQ && vsQ !== '0') NF.viewer.toggleVersus();
   if (q.get('flip') === '1') NF.viewer.flip();
   if (q.get('hold') === '1') NF.viewer.toggleHold();
   if (q.get('pose')) NF.viewer.pose(q.get('pose'));

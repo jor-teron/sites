@@ -26,3 +26,8 @@ kbd { font: 700 10px system-ui, sans-serif; background: rgba(0,0,0,0.35); border
 body.versus .info, body.versus .top { display: none; }
 body.noui .ui { display: none; }
 @media (max-width: 700px) { .info { display: none; } .logo small { display: none; } }
+.gen label { font: 700 13px system-ui, sans-serif; display: flex; align-items: center; gap: 6px; color: #c9c2f0; }
+.gen input { width: 3.2em; font: 800 16px ui-monospace, monospace; text-align: center; padding: 5px 4px; border-radius: 8px;
+             border: 1px solid rgba(127,232,255,0.5); background: rgba(10,8,30,0.8); color: #7fe8ff; }
+.gen input:focus { outline: 2px solid #7fe8ff; }
+.gen.on input { background: rgba(208, 28, 139, 0.5); color: #fff; }

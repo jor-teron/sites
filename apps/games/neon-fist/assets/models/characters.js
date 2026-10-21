@@ -2,7 +2,7 @@
 // Units: 100 = head height. Profiles are [u, frontHalfWidth, backHalfWidth] along a bone.
 (function () {
   const kai = {
-    id: 'kai', name: 'KAI', title: 'Street Martial Artist',
+    id: 'kai', name: 'KAI', outfit: 'gi', hairStyle: 'spiky', handScale: 1.04, title: 'Street Martial Artist',
     desc: 'Disciplined and fast. Kai mixes tight boxing hands with long, snapping kicks. Special: Rising Flame Kick.',
     stats: { Speed: 4, Power: 4, Reach: 3, Defense: 3 },
     accent: '#ff3346', rim: '#ff4fd8',
@@ -17,11 +17,11 @@
     thigh: [[0, 44, 42], [0.15, 47, 44], [0.4, 45, 40], [0.65, 38, 34], [0.85, 31, 29], [1, 28, 27]],   // gi pants
     shin: [[0, 25, 24], [0.1, 24, 27], [0.3, 24, 34], [0.48, 21, 30], [0.72, 17, 19], [1, 15, 15]],                   // bare skin
     pantsShin: [[0, 29, 28], [0.12, 28, 31], [0.35, 30, 37], [0.62, 29, 32], [0.86, 29, 29]],
-    face: { nose: 1, jaw: 1, lips: 0.9, lashes: false },
+    face: { nose: 1, jaw: 1, lips: 0.9, lashes: false, masc: 1 },
     gi: '#1b1820', giTrim: '#c3182a', pants: '#b5182a', belt: '#0b0a0d', band: '#f1efe8', wrap: '#e9e3d4'
   };
   const nova = {
-    id: 'nova', name: 'NOVA', title: 'Electric Striker',
+    id: 'nova', name: 'NOVA', outfit: 'suit', hairStyle: 'tail', handScale: 0.84, title: 'Electric Striker',
     desc: 'Agile and precise. Nova keeps opponents at range with charged palm strikes and quick footwork. Special: Storm Orb.',
     stats: { Speed: 5, Power: 3, Reach: 4, Defense: 2 },
     accent: '#2ee6ff', rim: '#9a6bff',
@@ -36,7 +36,7 @@
     thigh: [[0, 36, 43], [0.12, 38.5, 42], [0.35, 37, 35], [0.6, 31, 28], [0.85, 23.5, 22.5], [1, 21, 20.5]],   // quads (front), glutes/hamstrings (back)
     shin: [[0, 21, 21], [0.3, 20, 27], [0.7, 15, 17], [1, 12, 12]],
     boot: [[0.04, 26, 26], [0.3, 25, 31], [0.7, 20, 22], [1, 17, 17]],
-    face: { nose: 0.82, jaw: 0.86, lips: 1.1, lashes: true },
+    face: { nose: 0.82, jaw: 0.86, lips: 1.1, lashes: true, masc: 0 },
     suit: '#13a5b5', armour: '#1d2233', armourHi: '#3a4466', glow: '#58e8ff', bootCol: '#1a1c2a', hairTip: '#efe8ff'
   };
   NF.characters = { kai, nova, list: [kai, nova] };

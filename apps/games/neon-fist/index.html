@@ -17,6 +17,12 @@
     <button data-char="1">Nova <kbd>2</kbd></button>
     <button id="nextBtn" aria-label="Next character">▶</button>
   </div>
+  <div class="row gen">
+    <button id="genPrev" aria-label="Previous fighter">◀</button>
+    <label>Fighter <input id="genNum" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" placeholder="00" aria-label="Fighter number 00 to 99" autocomplete="off"></label>
+    <button id="genNext" aria-label="Next fighter">▶</button>
+    <button id="genRand">Random <kbd>R</kbd></button>
+  </div>
 </header>
 
 <aside class="ui info" aria-live="polite">
@@ -47,6 +53,7 @@
 <script src="assets/models/poses.js"></script>
 <script src="assets/models/characters.js"></script>
 <script src="assets/models/draw.js"></script>
+<script src="assets/models/generator.js"></script>
 <script src="core/fighter.js"></script>
 <script src="assets/stages/stage.js"></script>
 <script src="core/hud.js"></script>
