@@ -50,7 +50,8 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - Ctrl/Cmd+B / I / U: bold, italic, underline (in the text)
 - Enter: new paragraph; Shift+Enter: line break
 - Esc closes the Recent or Page popup
-- Other editing keys (undo, copy, paste, arrows) are the browser's own.
+- Ctrl/Cmd+Z undo, Ctrl+Y or Ctrl/Cmd+Shift+Z redo (also the Undo / Redo toolbar buttons). Draftly keeps its own history of up to 100 steps (a typed word, a format change, a line break), so undo works across page breaks. Opening, New or Delete clears it.
+- Other editing keys (copy, paste, arrows) are the browser's own.
 
 Works inside the hub and responds to its phone D-pad, but the hub's key presses are synthetic: only shortcuts the app handles itself work (e.g. Ctrl+S / B / I / U, Enter, Esc). Browser actions such as typing letters, moving the caret or undo don't happen.
 
