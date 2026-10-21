@@ -39,25 +39,26 @@ html, body {
 }
 
 /* Leave room for the command bar */
-#game-container { height: calc(100% - 72px); }
+#game-container { height: calc(100% - 48px); }
 
 /* Bottom command bar with big touch buttons */
 #command-bar {
-    position: fixed; left: 0; right: 0; bottom: 0; height: 72px;
-    display: flex; align-items: center; gap: 10px; padding: 0 12px;
+    position: fixed; left: 0; right: 0; bottom: 0; height: 48px;
+    display: flex; align-items: center; gap: 8px; padding: 0 8px;
     background: rgba(20, 16, 10, 0.92); border-top: 2px solid #8a6a3a;
     box-sizing: border-box; overflow-x: auto; z-index: 20;
     touch-action: manipulation; user-select: none; -webkit-user-select: none;
 }
-#command-bar .sel { font-weight: bold; color: #f0d9a0; min-width: 110px; }
+#command-bar .sel { font-weight: bold; color: #f0d9a0; min-width: 90px; font-size: 14px; }
 #command-bar .queue { color: #ddd; font-size: 14px; }
 #command-bar button.cmd {
-    min-width: 120px; min-height: 56px; padding: 6px 12px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    flex: 0 0 auto; height: 38px; padding: 0 12px; white-space: nowrap;
+    display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
     background: #5a4426; color: #fff; border: 2px solid #c8a46a; border-radius: 8px;
-    font-size: 15px; touch-action: manipulation;
+    font-size: 14px; touch-action: manipulation;
 }
-#command-bar button.cmd small { font-size: 12px; color: #f0d9a0; margin-top: 2px; }
+#command-bar button.cmd small { font-size: 11px; color: #f0d9a0; opacity: 0.75; }
+#command-bar .sel, #command-bar .queue { flex: 0 0 auto; white-space: nowrap; }
 #command-bar button.cmd:active { background: #7a5c36; }
 #command-bar button.cmd:disabled { opacity: 0.45; }
 
@@ -70,19 +71,23 @@ html, body {
 
 /* R1a: full-window game, top bar, minimap, pause */
 #game-container { display: block; }
-#topbar { position: fixed; top: 0; left: 0; right: 0; height: 40px; z-index: 25; pointer-events: none;
-    background: rgba(20,16,10,0.85); border-bottom: 2px solid #8a6a3a; display: flex; align-items: center; padding: 0 12px; box-sizing: border-box; }
-#hud { font-size: 16px; font-weight: bold; color: #f0d9a0; }
-#info { position: fixed; top: 46px; left: 10px; z-index: 25; pointer-events: none; font-size: 13px; color: #ddd;
+#topbar { position: fixed; top: 8px; left: 8px; z-index: 25; pointer-events: none;
+    background: rgba(20,16,10,0.55); border-radius: 8px; padding: 4px 10px; max-width: calc(100% - 110px); box-sizing: border-box; }
+#hud { position: static; background: none; padding: 0; font-size: 14px; font-weight: bold; color: #f0d9a0; }
+#info { position: fixed; top: 42px; left: 8px; max-width: calc(100% - 16px); z-index: 25; pointer-events: none; font-size: 13px; color: #ddd;
     background: rgba(0,0,0,0.45); padding: 3px 8px; border-radius: 4px; }
-#minimap-wrap { position: fixed; left: 8px; bottom: 80px; z-index: 25; line-height: 0; }
+#minimap-wrap { position: fixed; left: 8px; bottom: 56px; z-index: 25; line-height: 0; }
 #minimap { display: block; border: 2px solid #c8a46a; background: #111; cursor: pointer; }
-#mute-btn { top: 2px; width: 36px; height: 36px; font-size: 18px; }
-#pause-btn { position: fixed; top: 2px; right: 52px; z-index: 30; width: 36px; height: 36px; font-size: 16px; border-radius: 50%;
+#mute-btn { top: 8px; width: 36px; height: 36px; font-size: 18px; }
+#pause-btn { position: fixed; top: 8px; right: 52px; z-index: 30; width: 36px; height: 36px; font-size: 16px; border-radius: 50%;
     border: 2px solid #c8a46a; background: rgba(20,16,10,0.8); color: #fff; cursor: pointer; }
-#pause-overlay { position: fixed; inset: 40px 0 72px 0; z-index: 24; display: none; align-items: center; justify-content: center;
+#pause-overlay { position: fixed; inset: 0 0 48px 0; z-index: 24; display: none; align-items: center; justify-content: center;
     background: rgba(0,0,0,0.35); pointer-events: none; }
 #pause-overlay > div { pointer-events: auto; text-align: center; background: rgba(20,16,10,0.9); border: 2px solid #c8a46a; border-radius: 10px; padding: 16px 28px; }
 #pause-overlay h2 { margin: 0 0 10px; color: #f0d9a0; }
 #pause-overlay button { font-size: 18px; padding: 8px 20px; background: #5a4426; color: #fff; border: 2px solid #c8a46a; border-radius: 8px; cursor: pointer; }
 #pause-overlay p { font-size: 12px; color: #ccc; margin: 8px 0 0; }
+@media (max-width: 600px) {
+    #hud { font-size: 12px; }
+    #info { top: 50px; font-size: 11px; }
+}
