@@ -155,6 +155,7 @@ the rest):
   osk      osk.css, controller/kb_common, osk_layout, osk_board,
            osk_drag, osk.js                     next idle
   viewer   hub_viewer_pdf, hub_viewer           next idle
+  saver    hub/core/hub_saver.js (R49)          next idle
 Idle = requestIdleCallback (setTimeout fallback).
 On demand (the batch loads at once, then the action runs):
   - the taskbar "keyboard" button: a stub button (data-stub) is placed
@@ -173,6 +174,28 @@ batch with failures shows a small note (#hub-load-note, hub_update.css):
 "Couldn't load <feature>. Check your connection and reload." Drives has
 no on-demand entry, so its failures only show in HubLoader.failed.
 Keep the loader's V constant equal to the ?v= in hub.html.
+
+R49 clock screen saver (hub/core/hub_saver.js, saver batch above, CSS
+inline in the file). Full-screen #hub-saver overlay (z-index 2147483600,
+above windows, taskbar and the Phone top bar) with one SVG analog clock:
+circle, 12 ticks, hour / minute / thin smooth-sweeping second hand, no
+numbers. Centre at 25% of the viewport height, size min(40vh, 70vw);
+drifts up to 6 px every minute (burn-in). Theme: html.hub-light (theme
+= light) -> --bg background + --text clock, else near-black + white.
+  Idle time: localStorage sites-hub.saverIdle = 0 (off, default, also
+  when missing / invalid) | 10 | 15 | 30 minutes; the 'storage' event
+  applies a change live (Settings > Desktop writes it).
+  Activity that resets the timer: mousemove / mousedown / keydown /
+  touchstart / wheel on the Hub and on same-origin app documents,
+  window blur (focus into an app iframe), any hub-* bridge message.
+  Not started (timer delayed) while document.hidden, a fullscreen
+  element exists, or a <video> plays in the Hub or a same-origin app.
+  Checked every 5 s.
+  Dismiss: any mouse move, press, touch, wheel or key; the event is
+  captured on window and stopped, and the click / mouseup that follows
+  within 600 ms is swallowed too, so nothing reaches the app or desktop.
+  API window.HubSaver: start(), stop(), set(min) (0/10/15/30, writes the
+  key), active() -> bool. (_angles(date) is a test helper.)
 
 
 4. WINDOW MANAGER, SNAP, MAGNET AND WORKSPACES
@@ -508,6 +531,8 @@ localStorage, prefix sites-hub.:
   Key                 Written by / used by        Value
   wmMode              Settings > Desktop          auto | desktop | phone
   wmSession           wm_windows.js               JSON window session
+  saverIdle           Settings > Desktop, R49     0 (off) | 10 | 15 | 30 min
+                      hub_saver.js (screen saver)
   lastApp             hub.js                      last app (Phone mode)
   fromCat             hub.js                      category of open app
   fromLab             hub.js (old, removed)       -

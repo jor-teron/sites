@@ -7,6 +7,7 @@
  *   2. snap     wm_snap.js (edge snap, magnet, Ctrl+Alt+arrows)          — ~1.5 s idle
  *   3. osk      hub/osk/* + kb_common (on-screen keyboard)                — next idle
  *   4. viewer   hub_viewer.js + hub_viewer_pdf.js                         — next idle
+ *   5. saver    hub_saver.js (R49 clock screen saver, idle timer)         — next idle
  * On demand (loaded at once, then the action runs): ⌨ tray button and Ctrl+Alt+K (osk),
  * Ctrl+Alt+arrows (snap), HubViewer.open / pushAndShow (viewer), OSK saved as shown (osk).
  * API: window.HubLoader.load(name) → Promise; .loaded(name); .failed(name) → files that did not load.
@@ -20,7 +21,7 @@
  */
 (function () {
   'use strict';
-  const V = '20261021h';
+  const V = '20261021i';
   const DELAY = 1500;
   const BATCHES = {
     drives: ['shared/google/google.css', 'hub/drives/hub_drives.css',
@@ -31,9 +32,10 @@
     osk: ['hub/osk/osk.css', 'hub/controller/kb_common.js', 'hub/osk/osk_layout.js',
       'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js'],
     viewer: ['hub/viewer/hub_viewer_pdf.js', 'hub/viewer/hub_viewer.js'],
+    saver: ['hub/core/hub_saver.js'],   // R49
   };
   const done = {}, busy = {}, fails = {};
-  const LABEL = { drives: 'Drives', snap: 'window snapping', osk: 'the on-screen keyboard', viewer: 'the viewer' };
+  const LABEL = { saver: 'the screen saver', drives: 'Drives', snap: 'window snapping', osk: 'the on-screen keyboard', viewer: 'the viewer' };
 
   /** One file; scripts run in order because each waits for the one before. */
   function one(src, name) {
@@ -138,7 +140,8 @@
     idle(() => load('drives'), 500);
     setTimeout(() => idle(() => load('snap')
       .then(() => new Promise((r) => idle(r))).then(() => load('osk'))
-      .then(() => new Promise((r) => idle(r))).then(() => load('viewer'))), DELAY);
+      .then(() => new Promise((r) => idle(r))).then(() => load('viewer'))
+      .then(() => new Promise((r) => idle(r))).then(() => load('saver'))), DELAY);   // R49
   }
   if (document.readyState === 'complete') start();
   else window.addEventListener('load', start, { once: true });
