@@ -1,9 +1,9 @@
 /**
- * Neon Raid (contra-alpha) — configuration.
+ * Neon Raid — configuration.
  * Player physics, combat, enemies, level layout, colors, keys and text.
- * js/*.js reads everything from CONTRA_ALPHA_CONFIG.
+ * js/*.js reads everything from NEON_RAID_CONFIG.
  */
-var CONTRA_ALPHA_CONFIG = {
+var NEON_RAID_CONFIG = {
   /* Canvas logical size (must match the <canvas> width/height) */
   width: 960,
   height: 540,
