@@ -10,14 +10,14 @@ full screen on phone). Deep links: `apps/settings/#wallpaper`, `#desktop`, `#siz
 | settings_store.js | `SettingsStore` get/set of `sites-hub.*` keys + postMessage `{type:'hub-prefs'}` to the Hub |
 | settings.js | `Settings` shell: section registry, hash routing, UI helpers |
 | sec_wallpaper.js | Wallpapers (from `hub/drives/hub_wallpapers.js`) + custom colour. R36: the picture grid shows the 320 px WebP thumbs (`shared/wallpaper/thumbs/`, made by `hub/core/hub_wallthumbs_gen.py`), lazy, full image as fallback; only the chosen wallpaper loads at full size |
-| sec_desktop.js | Auto / Desktop / Phone mode, Start-on-hover, busy meter, Screen saver minutes 0–240, 0 = Off, unset 5 (`saverIdle`, R49b) + Second hand Smooth / Quartz / Off (`saverSec`, R49c, Preview when the Hub's `HubSaver` is reachable) |
+| sec_desktop.js | Auto / Desktop / Phone mode, Open windows maximised (`openMax`, R51, default on), Start-on-hover, busy meter, Screen saver minutes 0–240, 0 = Off, unset 5 (`saverIdle`, R49b) + Second hand Smooth / Quartz / Off (`saverSec`, R49c, Preview when the Hub's `HubSaver` is reachable) |
 | sec_sizes.js | Taskbar position bottom/top, size 32/40/48, title bar 24/28/34 |
 | sec_look.js | Accent, Dark/Light, animations On/Reduced/Off |
 | sec_howto.js | How-to: plain help on the Hub, desktop, windows, taskbar, copies, modes, phone, updates, privacy / tech |
 | sec_about.js | About: Credit, Current release (date from hub/version.txt), Release date, Check for update, GitHub contact / issues |
 
 The Hub applies the keys live in `hub/core/hub_prefs.js`. Keys: `wallpaper`, `taskPos`, `taskH`, `titleH`,
-`accent`, `theme`, `motion`, `wmMode`, `startHover`, `saverIdle` (Hub R49b screen saver: minutes 0..240, 0 = Off, empty = 5), `saverSec` (R49c: smooth (default) | quartz | off).
+`accent`, `theme`, `motion`, `wmMode`, `openMax` (R51: '1' / empty = new windows maximised, '0' = normal size), `startHover`, `saverIdle` (Hub R49b screen saver: minutes 0..240, 0 = Off, empty = 5), `saverSec` (R49c: smooth (default) | quartz | off).
 
 ## Hub version: `hub/version.txt`
 

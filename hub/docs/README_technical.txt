@@ -254,6 +254,14 @@ hub/wm/wm_workspaces.js: two workspaces. Switcher "1" "2" after Show
 Desktop; Ctrl+Alt+PageUp / PageDown (also Super+Ctrl+Left/Right);
 "Move to workspace 1 / 2" in window menus. sites-hub.workspaces = '1'
 means one workspace (switcher hidden, all windows on 1).
+R51 open maximised: every NEW window (any app, Settings too) opens
+maximised unless sites-hub.openMax = '0' ('1' / missing = on). The
+key is read on every open, so a change (Settings > Desktop "Open
+windows maximised", or the storage event from another tab) applies to
+the next window. The normal cascade rect is still set first, so
+Restore / double-click / un-snap goes back to w.pref (R22) or that
+default size and place. Session-restored windows keep their saved
+state (max / snap / min / rect). Snap, workspaces, Phone mode unchanged.
 
 
 5. START MENU, CATEGORY CSVS, HUB_APPS.JS, CACHED START LIST
@@ -561,6 +569,8 @@ localStorage, prefix sites-hub.:
   Key                 Written by / used by        Value
   wmMode              Settings > Desktop          auto | desktop | phone
   wmSession           wm_windows.js               JSON window session
+  openMax             Settings > Desktop, R51     '1' / missing = on, '0' = off
+                      wm_windows.js (new windows maximised)
   saverIdle           Settings > Desktop, R49b    0 (off) | 1..240 min, unset 5
                       hub_saver.js (screen saver)
   saverSec            Settings > Desktop, R49c    smooth (default) | quartz | off

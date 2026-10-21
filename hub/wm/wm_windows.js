@@ -36,6 +36,7 @@
  *   onActive (set by hub.js: called with the focused window or null).
  * Fires 'hub-wm-change' on window after every change (taskbar redraws) and 'hub-wm-focus'
  * when the focused window changes.
+ * R51: new windows open maximised (localStorage 'sites-hub.openMax', '1' / missing = on, '0' = off).
  * App bar: the title/stats/buttons an app sends (hub-gamebar.js protocol) show in its own
  * title bar (__hubGamebarAttach).
  * Task list for apps (System Monitor): window.__hubTasks (list / focus / minimise / close / idOf /
@@ -433,7 +434,11 @@
     if (r) setRect(w, r.x, r.y, r.w, r.h, true);
     else setRect(w, 40 + n * 32, 16 + n * 28, wd, ht);
     if (o.restore) el.classList.remove('wm-pop');   // no jelly for a restored session
-    if (o.max) { w.max = true; el.classList.add('wm-max'); }
+    // R51: a NEW window opens maximised unless 'sites-hub.openMax' = '0' (read on every open, so a
+    // Settings change applies to the next window at once); its normal rect / w.pref above is what
+    // Restore goes back to. Restored session windows keep their saved state.
+    const openMax = !o.restore && (() => { try { return localStorage.getItem('sites-hub.openMax') !== '0'; } catch (_) { return true; } })();
+    if (o.max || openMax) { w.max = true; el.classList.add('wm-max'); }
     else if (o.snap === 'l' || o.snap === 'r') { w.snap = o.snap; el.classList.add('wm-snap-' + o.snap); }
     setMaxBtn(w);
     showWs(w);
