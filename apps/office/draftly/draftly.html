@@ -18,7 +18,7 @@
   <title>Draftly</title>
   <meta name="theme-color" content="#5b5bf0">
   <link rel="icon" href="draftly_icon.png">
-  <link rel="stylesheet" href="draftly.css?v=3">
+  <link rel="stylesheet" href="draftly.css?v=4">
 </head>
 <body>
 
@@ -59,6 +59,10 @@
       <div class="recent-menu recent-inline" id="recentMenu" hidden></div>
   </div>
 
+  <!-- FT3 colour palettes -->
+  <div class="pop-menu colour-menu" id="textColourMenu" role="menu" aria-label="Font colour" hidden></div>
+  <div class="pop-menu colour-menu" id="hiliteColourMenu" role="menu" aria-label="Highlight colour" hidden></div>
+
   <!-- Ribbon: one tabpanel visible at a time -->
   <nav class="toolbar ribbon" aria-label="Ribbon commands">
     <div class="ribbon-panel" role="tabpanel" id="panelHome" aria-labelledby="tabHome">
@@ -85,6 +89,16 @@
         <button class="tool-btn" id="boldBtn" title="Bold (Ctrl/⌘+B)" aria-label="Bold"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5h6a3.5 3.5 0 0 1 0 7H7z"/><path d="M7 11.5h7a3.75 3.75 0 0 1 0 7.5H7z"/></svg></button>
         <button class="tool-btn" id="italicBtn" title="Italic (Ctrl/⌘+I)" aria-label="Italic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5h8M6 19.5h8M14.5 4.5l-5 15"/></svg></button>
         <button class="tool-btn" id="underlineBtn" title="Underline (Ctrl/⌘+U)" aria-label="Underline"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v7a5 5 0 0 0 10 0V4"/><path d="M5 20.5h14"/></svg></button>
+      </div>
+      <div class="tool-group">
+        <div class="split-btn" role="group" aria-label="Font colour">
+          <button class="tool-btn split-main" id="textColourBtn" title="Font colour" aria-label="Apply font colour"><span class="colour-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 16 12 4l5 12M8.7 12h6.6"/></svg><span class="colour-bar" id="textColourBar"></span></span></button>
+          <button class="tool-btn split-arrow" id="textColourArrow" title="Font colour options" aria-label="Font colour options" aria-haspopup="menu" aria-expanded="false" aria-controls="textColourMenu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></button>
+        </div>
+        <div class="split-btn" role="group" aria-label="Highlight colour">
+          <button class="tool-btn split-main" id="hiliteColourBtn" title="Highlight" aria-label="Apply highlight"><span class="colour-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 4 4 4-7 7h-4v-4z"/><path d="M7.5 15 5 17.5h4"/></svg><span class="colour-bar" id="hiliteColourBar"></span></span></button>
+          <button class="tool-btn split-arrow" id="hiliteColourArrow" title="Highlight options" aria-label="Highlight options" aria-haspopup="menu" aria-expanded="false" aria-controls="hiliteColourMenu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></button>
+        </div>
       </div>
       <div class="tool-group">
         <button class="tool-btn" id="alignLeftBtn" title="Align left" aria-label="Align left"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg></button>
@@ -187,7 +201,8 @@
   <script src="modules/draftly-view.js"></script>
   <script src="modules/draftly-history.js"></script>
   <script src="modules/draftly-breaks.js"></script>
+  <script src="modules/draftly-colour.js"></script>
   <script src="modules/draftly-ribbon.js?v=3"></script>
-  <script src="modules/draftly-app.js?v=3"></script>
+  <script src="modules/draftly-app.js?v=4"></script>
 </body>
 </html>

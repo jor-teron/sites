@@ -377,6 +377,7 @@ Draftly.app.init = function init() {
     try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) {}
     Draftly.app.bindKeys();
     Draftly.app.bindUi();
+    if (Draftly.colour) Draftly.colour.init();
     if (Draftly.view) Draftly.view.init();
     Draftly.app.loadDocument().then(function () {
       var editor = Draftly.pages.firstEditor();
