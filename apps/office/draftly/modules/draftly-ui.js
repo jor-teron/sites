@@ -73,6 +73,8 @@ Draftly.ui.setTheme = function setTheme(dark) {
     body.classList.remove(Draftly.config.darkClass);
     if (btn) btn.title = 'Dark theme';
   }
+  var lab = document.getElementById('themeMenuLabel');   /* File menu item shows the theme it switches to */
+  if (lab) lab.textContent = dark ? 'Light mode' : 'Dark mode';
   if (Draftly.storage) Draftly.storage.saveTheme(dark);
 };
 
@@ -181,6 +183,7 @@ Draftly.ui.onClick = function onClick(id, fn) {
 /* Theme and format-marks buttons; redraw marks on resize. */
 Draftly.ui.bind = function bind() {
   Draftly.ui.onClick('themeToggleBtn', function () { Draftly.ui.toggleTheme(); });
+  Draftly.ui.onClick('themeMenuBtn', function () { Draftly.ui.toggleTheme(); });
   Draftly.ui.onClick('nonPrintingBtn', function () { Draftly.ui.toggleNonPrinting(); });
   var resizeTimer = null;
   window.addEventListener('resize', function () {

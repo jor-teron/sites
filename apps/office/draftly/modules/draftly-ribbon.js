@@ -61,6 +61,19 @@ Draftly.ribbon.setFile = function setFile(show, focusFirst) {
   }
 };
 
+/* Ask for a new name and put it in the name box (hub-title follows via draftly-hub.js). */
+Draftly.ribbon.rename = function rename() {
+  var cur = Draftly.storage.currentName();
+  return Draftly.dialog.prompt({ title: 'Rename document', label: 'Name', value: cur, okLabel: 'Rename' }).then(function (v) {
+    if (v === null || v === cur) return false;
+    Draftly.storage.setCurrentName(v, false);
+    var input = document.getElementById('fileNameInput');
+    if (input) { input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true })); }
+    if (Draftly.ui && Draftly.ui.showToast) Draftly.ui.showToast('Renamed to ' + v);
+    return true;
+  });
+};
+
 Draftly.ribbon.init = function init() {
   var tabs = document.querySelectorAll('.ribbon-tab');
   for (var i = 0; i < tabs.length; i++) {
@@ -132,11 +145,8 @@ Draftly.ribbon.init = function init() {
       try { fn(); } catch (err) { console.warn('draftly: ' + id, err); }
     });
   }
-  bind('renameBtn', function () {
-    var input = document.getElementById('fileNameInput');
-    if (!input) return;
-    setTimeout(function () { input.focus(); input.select(); }, 0);
-  });
+  /* File > Rename: a dialog (standalone and in the hub). The name box itself still edits in place. */
+  bind('renameBtn', function () { Draftly.ribbon.rename(); });
   bind('deleteCurrentBtn', function () {
     var name = Draftly.storage.loadedName || Draftly.storage.currentName();
     if (name) Draftly.docs.deleteDoc(name);

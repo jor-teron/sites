@@ -35,7 +35,8 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `modules/draftly-margins.js`: Custom margins dialog (0.5–5 cm per side, "Same for all"; a global pref like Normal / Narrow)
 - `modules/draftly-docs.js`: load / open / new / delete / save, Recent list, autosave, Ctrl+S
 - `modules/draftly-format.js`: Home-tab formatting buttons, selects, shortcuts, toolbar sync
-- `modules/draftly-ribbon.js`: ribbon tabs and File menu
+- `modules/draftly-ribbon.js`: ribbon tabs and File menu (File > Rename asks with a dialog; File > Dark mode / Light mode toggles the theme, same `draftly_theme` pref as the top-row button)
+- `modules/draftly-dialog.js` + `ui/dialog.css`: modal `Draftly.dialog.prompt({title, label, value, okLabel})` → name or null, and `Draftly.dialog.confirm({title, message, okLabel, danger})` → true/false. Enter = OK (unless Cancel has focus), Esc or a backdrop click = cancel, focus stays inside. A prompt refuses empty text. A danger confirm has a red OK and starts on Cancel. Draftly uses no window.prompt / confirm / alert.
 - `modules/draftly-hub.js`: sites hub bridge (v:1). Only active in a frame. After `hub-hello` it adds `body.in-hub`, which hides the top row. It sends `hub-app` {app, tabs, activeTab, title}, `hub-tab` {id} and `hub-title` {value}. It handles `hub-action` {id:'tab:<id>'}: `tab:file` opens the File menu at the top-left of the frame. The message shapes are kept in `Draftly.hub.shape`.
 - `modules/draftly-app.js`: thin start-up (checks modules, calls each `bind()`, loads the document)
 - `vendor/` (local, MIT; see `vendor/README.txt`):
@@ -140,6 +141,7 @@ Messages show briefly at the bottom (2.2 s):
 - Old version after an update: hard-refresh.
 
 ## 11. Change log
+- 2026-10-21 IST: Draftly dialogs (rename and delete) replace browser prompts; Dark/Light mode item in the File menu.
 - 2026-10-21 IST: slimmer top row (36 px, 28 px controls, smaller brand); hub bridge `draftly-hub.js` (tabs and title in the hub title bar).
 - 2026-10-04 21:14 IST: fit to screen, slim toolbar, Page popup, cleanup (margins box, status bar and version removed), Cmd keys, icon; hub name "Draftly" (commit 386541e).
 - 2026-10-04 19:01 IST: fixed A4 pages, line-by-line flow, Enter / Shift+Enter, ¶ / ↵ marks, PDF download, offline libraries, Tinos fonts (commit c17c51d).

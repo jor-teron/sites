@@ -155,7 +155,12 @@ Draftly.docs.newDoc = function newDoc() {
 
 /* Delete one stored doc after confirm. If it is open, move to another. */
 Draftly.docs.deleteDoc = function deleteDoc(name) {
-  if (!window.confirm('Delete "' + name + '"? This cannot be undone.')) return Promise.resolve(false);
+  return Draftly.dialog.confirm({ title: 'Delete document?', message: '"' + name + '" will be deleted. This cannot be undone.', okLabel: 'Delete', danger: true })
+    .then(function (yes) { return yes ? Draftly.docs.deleteNow(name) : false; });
+};
+
+/* Delete without asking (after the confirm above). */
+Draftly.docs.deleteNow = function deleteNow(name) {
   var isOpen = name === Draftly.storage.loadedName || name === Draftly.storage.currentName();
   if (isOpen) clearTimeout(Draftly.app.inputTimer);
   return Draftly.storage.deleteDoc(name).then(function () {
