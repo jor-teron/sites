@@ -13,6 +13,9 @@
   color: var(--text);
 }
 .header-center[hidden] { display: none; }
+/* R44 Phone mode: ribbon tabs in the header take the space, app name hidden */
+.header-center.gb-has-tabs { justify-content: flex-start; gap: 6px; }
+.header-center.gb-has-tabs .gb-title { display: none; }
 .gb-title {
   display: inline-flex;
   align-items: baseline;

@@ -101,6 +101,29 @@ body.wm-desktop #wm-desk { display: block; position: absolute; inset: 0; overflo
 .wm-gb .gb-name { display: none; }
 .wm-gb .gb-title { flex: 0 0 auto; }
 .wm-gb .gb-stat, .wm-gb .gb-btn { flex: 0 0 auto; padding-top: 0; padding-bottom: 0; }
+/* R44 ribbon tabs (Draftly …) + file name, all sized from --wm-title-h (24 / 28 / 34) */
+.wm-gb.gb-has-tabs { flex: 1 1 auto; gap: calc(var(--wm-title-h) * 0.2); }
+.wm-gb.gb-has-tabs .gb-title { display: none; }
+.wm-win:has(.wm-gb.gb-has-tabs) .wm-title { flex: 0 1 auto; min-width: 0; max-width: 30%; }
+.gb-tabs { display: flex; align-items: stretch; flex: 0 0 auto; gap: 1px; height: calc(var(--wm-title-h) - 4px); }
+.gb-tab {
+  flex: 0 0 auto;
+  height: 100%;
+  padding: 0 calc(var(--wm-title-h) * 0.38);
+  border: 0; border-radius: calc(var(--wm-title-h) * 0.2);
+  background: transparent; color: inherit; opacity: 0.8;
+  font: inherit; font-size: calc(var(--wm-title-h) * 0.46); line-height: 1; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+}
+.gb-tab:hover { background: var(--wm-hover, rgba(255,255,255,0.1)); opacity: 1; }
+.gb-tab.gb-tab-on { opacity: 1; font-weight: 700; background: rgba(127,127,127,0.18); box-shadow: inset 0 -2px 0 var(--accent, #4c8dff); }
+.gb-tab:focus-visible { outline: 2px solid var(--accent, #4c8dff); outline-offset: -2px; }
+.gb-file {
+  flex: 1 1 auto; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: calc(var(--wm-title-h) * 0.43); opacity: 0.75;
+}
+.gb-file[hidden] { display: none; }
 .wm-btn {
   width: calc(var(--wm-title-h) * 1.45); height: calc(var(--wm-title-h) - 4px);
   border: 0; border-radius: 6px;

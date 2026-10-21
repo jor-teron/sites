@@ -274,20 +274,73 @@
 │   │   ├── draftly
 │   │   │   ├── assets
 │   │   │   │   └── fonts
-│   │   │   │       └── tinos
-│   │   │   │           └── OFL.txt
-│   │   │   ├── draftly.css
+│   │   │   │       └── tinos
+│   │   │   │           ├── LICENSE-Apache-2.0.txt
+│   │   │   │           ├── OFL.txt
+│   │   │   │           ├── README.txt
+│   │   │   │           ├── Tinos-Bold.ttf
+│   │   │   │           ├── Tinos-BoldItalic.ttf
+│   │   │   │           ├── Tinos-Italic.ttf
+│   │   │   │           └── Tinos-Regular.ttf
 │   │   │   ├── draftly.html
+│   │   │   ├── draftly_icon.png
+│   │   │   ├── draftly_readme.md
 │   │   │   ├── index.html
-│   │   │   └── modules
-│   │   │       ├── draftly-app.js
-│   │   │       ├── draftly-config.js
-│   │   │       ├── draftly-editor.js
-│   │   │       ├── draftly-export.js
-│   │   │       ├── draftly-lists.js
-│   │   │       ├── draftly-pages.js
-│   │   │       ├── draftly-storage.js
-│   │   │       └── draftly-ui.js
+│   │   │   ├── modules
+│   │   │   │   ├── draftly-app.js
+│   │   │   │   ├── draftly-breaks.js
+│   │   │   │   ├── draftly-colour.js
+│   │   │   │   ├── draftly-config.js
+│   │   │   │   ├── draftly-docs.js
+│   │   │   │   ├── draftly-editor.js
+│   │   │   │   ├── draftly-export.js
+│   │   │   │   ├── draftly-find.js
+│   │   │   │   ├── draftly-flow-blocks.js
+│   │   │   │   ├── draftly-flow.js
+│   │   │   │   ├── draftly-format.js
+│   │   │   │   ├── draftly-headerfooter.js
+│   │   │   │   ├── draftly-history.js
+│   │   │   │   ├── draftly-lists.js
+│   │   │   │   ├── draftly-margins.js
+│   │   │   │   ├── draftly-marks.js
+│   │   │   │   ├── draftly-pages.js
+│   │   │   │   ├── draftly-pdf.js
+│   │   │   │   ├── draftly-ribbon.js
+│   │   │   │   ├── draftly-spacing.js
+│   │   │   │   ├── draftly-storage.js
+│   │   │   │   ├── draftly-table.js
+│   │   │   │   ├── draftly-ui.js
+│   │   │   │   ├── draftly-view.js
+│   │   │   │   ├── draftly-wordcount.js
+│   │   │   │   └── draftly-zoom.js
+│   │   │   ├── ui
+│   │   │   │   ├── base.css
+│   │   │   │   ├── colour.css
+│   │   │   │   ├── editor.css
+│   │   │   │   ├── find.css
+│   │   │   │   ├── fonts.css
+│   │   │   │   ├── format.css
+│   │   │   │   ├── headerfooter.css
+│   │   │   │   ├── margins.css
+│   │   │   │   ├── marks.css
+│   │   │   │   ├── page.css
+│   │   │   │   ├── popups.css
+│   │   │   │   ├── print.css
+│   │   │   │   ├── ribbon.css
+│   │   │   │   ├── statusbar.css
+│   │   │   │   ├── table.css
+│   │   │   │   ├── theme.css
+│   │   │   │   ├── toast.css
+│   │   │   │   ├── toolbar.css
+│   │   │   │   └── workspace.css
+│   │   │   └── vendor
+│   │   │       ├── LICENSE-html-docx-js.txt
+│   │   │       ├── LICENSE-html2canvas.txt
+│   │   │       ├── LICENSE-jspdf.txt
+│   │   │       ├── README.txt
+│   │   │       ├── html-docx.js
+│   │   │       ├── html2canvas.min.js
+│   │   │       └── jspdf.umd.min.js
 │   │   ├── ocr
 │   │   │   ├── index.html
 │   │   │   └── ocr.html
@@ -512,4 +565,4 @@
     ├── xp.jpg
     └── xp_small.jpg
 
-93 directories, 420 files
+95 directories, 471 files

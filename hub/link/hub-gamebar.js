@@ -11,6 +11,14 @@
  *               stats:[{id, label, value}], buttons:[{id, label}]}
  *   app → hub  {type:'hub-stat', v:1, id, value}
  *   hub → app  {type:'hub-action', v:1, id}  when a bar button is clicked
+ * R44 ribbon tabs (e.g. Draftly), same v:1, all optional:
+ *   app → hub  {type:'hub-app', v:1, app (string or {name, version}),
+ *               tabs:[{id, label, menu?}], activeTab, title}   title = file name
+ *   app → hub  {type:'hub-tab', v:1, id}       active tab changed inside the app
+ *   app → hub  {type:'hub-title', v:1, value}  file name changed
+ *   hub → app  {type:'hub-action', v:1, id:'tab:<id>'}  on a tab click (a menu:true tab
+ *               such as File sends 'tab:file' too; the app draws its own menu)
+ * Tabs are sized by the Hub from --wm-title-h (24 / 28 / 34); the app sends no sizes.
  * Each bar only uses messages whose source is its own iframe's contentWindow.
  * A bar is cleared when its iframe loads a new document (and, for the Hub frame, when
  * another app is opened). Apps that never answer are not affected.
@@ -20,6 +28,7 @@
   const HELLO_RETRY_MS = [0, 150, 400, 900, 1800];
   const MAX_STATS = 4;
   const MAX_BUTTONS = 3;
+  const MAX_TABS = 8;
   const bars = new Set();   // live bar instances
 
   function str(v, max) { return String(v == null ? '' : v).slice(0, max); }
@@ -35,6 +44,8 @@
     let linked = false;
     let retryTimers = [];
     const statEls = new Map();
+    const tabEls = new Map();   // R44: tab id → button
+    let fileEl = null;          // R44: file name span
 
     function post(msg) {
       const w = frame.contentWindow;
@@ -47,6 +58,9 @@
       linked = false;
       clearRetries();
       statEls.clear();
+      tabEls.clear();
+      fileEl = null;
+      bar.classList.remove('gb-has-tabs');
       bar.textContent = '';
       bar.hidden = true;
     }
@@ -57,15 +71,18 @@
       });
     }
     function render(d) {
-      const app = d.app && typeof d.app === 'object' ? d.app : {};
+      const app = d.app && typeof d.app === 'object' ? d.app : (typeof d.app === 'string' ? { name: d.app } : {});
       bar.textContent = '';
       statEls.clear();
+      tabEls.clear();
+      fileEl = null;
       const title = el('span', 'gb-title');
       const name = el('span', 'gb-name', str(app.name, 60));
       name.title = str(app.name, 60);
       title.appendChild(name);
       if (app.version != null && app.version !== '') title.appendChild(el('span', 'gb-ver', 'v' + str(app.version, 16)));
       bar.appendChild(title);
+      renderTabs(d);
       (Array.isArray(d.stats) ? d.stats : []).slice(0, MAX_STATS).forEach((st) => {
         if (!st || st.id == null) return;
         const chip = el('span', 'gb-stat');
@@ -89,6 +106,50 @@
       });
       bar.hidden = false;
     }
+    function setActiveTab(id) {
+      tabEls.forEach((b, k) => {
+        const on = k === String(id);
+        b.classList.toggle('gb-tab-on', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+    }
+    function setFile(v) {
+      if (!fileEl) return;
+      const s = str(v, 120);
+      fileEl.textContent = s;
+      fileEl.title = s;
+      fileEl.hidden = !s;
+    }
+    // R44: ribbon tabs + file name (only when the app sends tabs)
+    function renderTabs(d) {
+      const tabs = (Array.isArray(d.tabs) ? d.tabs : []).filter((t) => t && t.id != null).slice(0, MAX_TABS);
+      bar.classList.toggle('gb-has-tabs', tabs.length > 0);
+      if (!tabs.length) return;
+      const strip = el('div', 'gb-tabs');
+      strip.setAttribute('role', 'tablist');
+      tabs.forEach((t) => {
+        const id = String(t.id);
+        const b = el('button', 'gb-tab' + (t.menu ? ' gb-tab-menu' : ''), str(t.label != null ? t.label : id, 20));
+        b.type = 'button';
+        b.setAttribute('role', 'tab');
+        b.dataset.tab = id;
+        b.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (!t.menu) setActiveTab(id);   // a menu tab (File) does not change the selection
+          post({ type: 'hub-action', id: 'tab:' + id });
+          b.blur();
+          try { frame.focus(); } catch (_) { /* ignore */ }
+        });
+        b.addEventListener('dblclick', (e) => e.stopPropagation());   // no maximise from a tab
+        tabEls.set(id, b);
+        strip.appendChild(b);
+      });
+      bar.appendChild(strip);
+      fileEl = el('span', 'gb-file');
+      bar.appendChild(fileEl);
+      setFile(d.title);
+      setActiveTab(d.activeTab != null ? d.activeTab : '');
+    }
     function onMessage(e) {
       if (!e.source || e.source !== frame.contentWindow) return;
       const d = e.data;
@@ -102,6 +163,10 @@
       } else if (d.type === 'hub-stat' && linked) {
         const val = statEls.get(String(d.id));
         if (val) val.textContent = str(d.value, 20);
+      } else if (d.type === 'hub-tab' && linked) {
+        setActiveTab(d.id);
+      } else if (d.type === 'hub-title' && linked) {
+        setFile(d.value);
       }
     }
     // New document in the iframe (app switch, redirect, reload): start over.

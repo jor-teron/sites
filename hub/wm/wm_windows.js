@@ -245,7 +245,7 @@
   /** Drag helper: pointer capture on el; onMove(dx, dy, ev) from the start point; onEnd(ev). */
   function dragOn(el, onStart, onMove, onEnd) {
     el.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0 || e.target.closest('.wm-btn, .gb-btn')) return;
+      if (e.button !== 0 || e.target.closest('.wm-btn, .gb-btn, .gb-tab')) return;
       e.preventDefault();
       const sx = e.clientX, sy = e.clientY;
       if (onStart(e) === false) return;
@@ -346,7 +346,7 @@
     minB.addEventListener('click', () => minimise(w));
     maxB.addEventListener('click', () => toggleMax(w));
     closeB.addEventListener('click', () => close(w));
-    bar.addEventListener('dblclick', (e) => { if (!e.target.closest('.wm-btn, .gb-btn')) toggleMax(w); });
+    bar.addEventListener('dblclick', (e) => { if (!e.target.closest('.wm-btn, .gb-btn, .gb-tab')) toggleMax(w); });
     w.bar = bar;
     // (hub-gamebar.js loads after hub.js; a window restored at start-up attaches once the page is parsed)
     const attachGb = () => { if (!w.gb && window.__hubGamebarAttach && wins.includes(w)) w.gb = window.__hubGamebarAttach(frame, gbSlot); };
