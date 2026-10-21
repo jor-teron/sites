@@ -1,5 +1,6 @@
 /*
- * Settings → Desktop (apps/settings/sec_desktop.js). Screen mode Auto / Desktop / Phone
+ * Settings → Desktop (apps/settings/sec_desktop.js). Screen mode Auto / Desktop / Phone,
+ * R51 'Open windows maximised' (key 'openMax', default on, '0' = off; Hub wm_windows.js reads it on every open),
  * (key 'wmMode', the Hub's HubMode applies it) and "Open menu on hover" for the Desktop
  * mode Start button (key 'startHover', default on, '0' = off), and the optional taskbar busy
  * meter (key 'trayMeter', '1' = on, default off; hub/drives/hub_traymeter.js), and the
@@ -30,6 +31,9 @@
         setTimeout(showNow, 50);
       });
       mode.classList.add('seg-col');
+      // R51: new Desktop-mode windows open maximised (default on)
+      const openMax = ui.switch('Open windows maximised', 'New windows fill the screen; Restore gives the normal size',
+        S.get('openMax') !== '0', (on) => S.set('openMax', on ? '1' : '0'));
       const hover = ui.switch('Open menu on hover', 'Point at Start to open the menu (Desktop mode)',
         S.get('startHover') !== '0', (on) => S.set('startHover', on ? '' : '0'));
       const meter = ui.switch('Busy meter in the taskbar', 'A small graph by the clock: how busy the Hub is (an estimate). Click it for System Monitor',
@@ -79,7 +83,7 @@
       const hs = saverHub();
       if (!hs || !hs.start) prev.hidden = true;
       prev.addEventListener('click', () => { try { const h = saverHub(); if (h && h.start) h.start(); } catch (_) { /* ignore */ } });
-      pane.append(ui.title('Screen mode'), mode, note, ui.title('Start menu'), hover, ui.title('Taskbar'), meter,
+      pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Start menu'), hover, ui.title('Taskbar'), meter,
         ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev);
       showNow();
     }
