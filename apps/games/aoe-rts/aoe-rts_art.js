@@ -3,6 +3,7 @@
  * pages, then shown as plain Phaser images (crisp when zoomed, cheap per frame).
  * Sizes are in world px at zoom 1 (tile = 128x64): villager ~110 tall, trees ~150-185, piles/bush ~100+,
  * house ~160, Town Center ~280 (+ flag).
+ * R2c: spear + fishing-net tool poses, deer (walk / graze / idle, antlered variant), carcass stages, fish ripples.
  */
 const Art = (() => {
     const RES = 2, PAGE = 4096, PI = Math.PI;
@@ -92,7 +93,7 @@ const Art = (() => {
     }
     function tool(c, kind, hx, hy, th) {
         if (!kind || kind === 'none' || kind === 'basket') return;
-        const dx = Math.sin(th), dy = Math.cos(th), L = kind === 'hammer' ? 21 : 31;
+        const dx = Math.sin(th), dy = Math.cos(th), L = kind === 'hammer' ? 21 : kind === 'spear' ? 46 : kind === 'net' ? 36 : 31;
         const bx = hx - dx * 6, by = hy - dy * 6, tx = hx + dx * L, ty = hy + dy * L;
         const px = -dy, py = dx;                 // perpendicular (forward side = +)
         // handle with grain
@@ -112,6 +113,21 @@ const Art = (() => {
             c.lineWidth = 4.4; c.strokeStyle = '#4e5458'; c.stroke(); c.lineWidth = 2.6; c.strokeStyle = '#8a9096'; c.stroke();
             c.lineWidth = 0.9; c.strokeStyle = '#e4e8ea'; c.beginPath(); c.moveTo(...P(-12, -3.6)); c.quadraticCurveTo(...P(0, 2.4), ...P(12, -3.6)); c.stroke();
             poly(c, [P(-2.6, -2), P(2.6, -2), P(2.6, 4), P(-2.6, 4)], '#5a6064', '#2e3236', 0.7);
+        } else if (kind === 'spear') {   // leaf-shaped flint head with a lashing
+            poly(c, [P(-1.6, -1), P(1.6, -1), P(1.6, 3), P(-1.6, 3)], '#6a4a26');
+            line(c, P(-2, 0)[0], P(-2, 0)[1], P(2, 2)[0], P(2, 2)[1], 1, '#c8b080'); line(c, P(-2, 2)[0], P(-2, 2)[1], P(2, 0)[0], P(2, 0)[1], 1, '#c8b080');
+            const head = [P(0, 1), P(3.4, 5), P(0, 15), P(-3.4, 5)];
+            poly(c, head, lin(c, P(-3, 6)[0], P(-3, 6)[1], P(3, 6)[0], P(3, 6)[1], ['#8a8e90', '#c4c8ca', '#5e6264']), '#33373a', 0.8);
+            line(c, P(0, 2)[0], P(0, 2)[1], P(0, 13)[0], P(0, 13)[1], 0.6, 'rgba(255,255,255,0.6)');
+        } else if (kind === 'net') {     // hoop + mesh bag on the pole
+            const C = P(0, 8);
+            c.save(); c.translate(C[0], C[1]); c.rotate(Math.atan2(dy, dx));
+            c.beginPath(); c.moveTo(-2, -7); c.quadraticCurveTo(12, -9, 15, 0); c.quadraticCurveTo(12, 9, -2, 7); c.closePath(); c.fillStyle = 'rgba(220,210,180,0.18)'; c.fill();
+            c.strokeStyle = 'rgba(230,220,190,0.75)'; c.lineWidth = 0.55;
+            for (let i = 1; i < 5; i++) { c.beginPath(); c.moveTo(-2 + i * 3.2, -7.5 + i * 0.3); c.lineTo(-2 + i * 3.2, 7.5 - i * 0.3); c.stroke(); }
+            for (let j = -2; j <= 2; j++) { c.beginPath(); c.moveTo(-2, j * 3); c.quadraticCurveTo(8, j * 3.3, 14, j * 1.5); c.stroke(); }
+            c.beginPath(); c.ellipse(-2, 0, 2.4, 8, 0, 0, 2 * PI); c.lineWidth = 1.6; c.strokeStyle = '#7a5428'; c.stroke();
+            c.restore();
         } else if (kind === 'hammer') {
             const head = [P(-8, -4), P(8, -4), P(8, 5), P(-8, 5)];
             poly(c, head, lin(c, P(0, -4)[0], P(0, -4)[1], P(0, 5)[0], P(0, 5)[1], ['#a4a4a4', '#7a7a7a', '#4e4e4e']), '#2e2e2e', 1);
@@ -221,6 +237,71 @@ const Art = (() => {
         else if (type === 'food') { ell(c, 0, 0, 11, 8, '#8a6a3a'); for (let i = 0; i < 3; i++) line(c, -10, -2 + i * 3, 10, -2 + i * 3, 0.7, '#5a4020'); for (let i = 0; i < 6; i++) { ell(c, -6 + i * 2.4, -7 + (i % 2) * 2, 2.4, 2.4, '#b82058'); ell(c, -6.7 + i * 2.4, -7.7 + (i % 2) * 2, 0.9, 0.9, '#ff9ac4'); } }
         else { c.beginPath(); c.moveTo(-9, 6); c.quadraticCurveTo(-12, -6, -4, -10); c.lineTo(4, -10); c.quadraticCurveTo(12, -6, 9, 6); c.closePath(); c.fillStyle = '#7a5a34'; c.fill(); c.strokeStyle = '#3e2a14'; c.lineWidth = 0.8; c.stroke();
             line(c, -4, -9, 4, -9, 1.6, '#3e2a14'); const g = type === 'gold'; for (let i = 0; i < 3; i++) ell(c, -3 + i * 3, -12 + (i % 2), 2.6, 2.2, g ? '#f0c83a' : '#a8a8a2'); ell(c, -3.6, -12.8, 0.9, 0.7, g ? '#fff4b0' : '#e4e4e0'); }
+    }
+    // ---------- deer (R2c) ----------
+    const FUR = '#a8703a', FUR_D = '#7a4c22', FUR_L = '#d0a06a', BELLY = '#ecdcbc';
+    /** deer facing +x, feet at y=0; pose 'walk' (f 0-3), 'graze' (f 0-1, head down), 'idle' (head up) */
+    function deer(c, pose, f, ant) {
+        shadow(c, 26, 7);
+        const ph = pose === 'walk' ? f / 4 * 2 * PI : 0, bob = pose === 'walk' ? Math.abs(Math.sin(ph)) * 1.4 : 0;
+        const legs = [[-15, 0, true], [-11, PI, false], [13, PI, true], [17, 0, false]];   // [hipX, phase, far side]
+        const drawLeg = (L, far) => { if (L[2] !== far) return; const sw = pose === 'walk' ? Math.sin(ph + L[1]) : 0, hy = -30 - bob, fx = L[0] + sw * 6, lift = Math.max(0, Math.cos(ph + L[1])) * (pose === 'walk' ? 3 : 0);
+            const kx = L[0] + sw * 2 + (L[0] < 0 ? -2 : 1), ky = -15 - lift * 0.5, colr = far ? FUR_D : FUR;
+            seg(c, L[0], hy, kx, ky, L[0] < 0 ? 6 : 4.6, 3, colr, 'rgba(40,20,5,0.45)'); seg(c, kx, ky, fx, -2 - lift, 2.8, 2.2, colr, 'rgba(40,20,5,0.45)');
+            poly(c, [[fx - 1.8, -3 - lift], [fx + 2.2, -3 - lift], [fx + 2.6, 0 - lift], [fx - 1.8, 0 - lift]], '#2a1a0c'); };
+        legs.forEach(L => drawLeg(L, true));
+        c.save(); c.translate(0, -bob);
+        // tail + body
+        poly(c, [[-22, -40], [-27, -44], [-25, -36]], FUR_D); ell(c, -24.5, -40.5, 2.2, 3, '#f4ece0');
+        c.beginPath(); c.ellipse(0, -36, 23, 10.5, -0.04, 0, 2 * PI); c.fillStyle = lin(c, 0, -47, 0, -26, [FUR_L, FUR, FUR_D]); c.fill(); c.strokeStyle = 'rgba(50,25,8,0.6)'; c.lineWidth = 0.8; c.stroke();
+        ell(c, 1, -29.5, 15, 3.6, BELLY); ell(c, -20, -38, 4, 6, '#f4ece0');          // belly + white rump
+        for (let i = 0; i < 5; i++) ell(c, -10 + i * 5, -40 + (i % 2) * 2, 1.2, 0.9, 'rgba(255,240,210,0.55)');   // faint spots
+        ell(c, -12, -34, 7, 6, 'rgba(90,50,20,0.25)');                                // haunch shade
+        // neck + head
+        const down = pose === 'graze', chew = down && f === 1 ? 1 : 0;
+        const nb = [14, -40], ht = down ? [26, -10 + chew] : [24, -60], ang = down ? 1.15 : -0.35;
+        seg(c, nb[0], nb[1], ht[0] - (down ? 2 : 3), ht[1] + (down ? -3 : 4), 10, 6.5, FUR, 'rgba(50,25,8,0.5)');
+        line(c, nb[0] + 3, nb[1] + 4, ht[0] - 1, ht[1] + (down ? -2 : 6), 2, 'rgba(240,225,195,0.7)');   // throat
+        c.save(); c.translate(ht[0], ht[1]); c.rotate(ang);
+        c.beginPath(); c.moveTo(-5, -4); c.quadraticCurveTo(2, -6, 10, -2.5); c.lineTo(12, 0.5); c.quadraticCurveTo(6, 4.5, -5, 3.5); c.closePath();
+        c.fillStyle = lin(c, -5, -5, 10, 3, [FUR_L, FUR, FUR_D]); c.fill(); c.strokeStyle = 'rgba(50,25,8,0.6)'; c.lineWidth = 0.7; c.stroke();
+        ell(c, 11.4, -0.4, 1.8, 1.4, '#1e120a'); ell(c, 4, 2.6, 4, 1.2, 'rgba(250,240,220,0.7)');       // nose, muzzle
+        ell(c, 1.5, -1.8, 1.4, 1.2, '#140a04'); ell(c, 1.1, -2.2, 0.4, 0.4, '#fff');                   // eye
+        [[-3, -4, -0.9], [-5.5, -3, -0.5]].forEach(e => { c.save(); c.translate(e[0], e[1]); c.rotate(e[2]); ell(c, 0, -4, 2, 4.6, FUR_D); ell(c, 0, -4, 1, 3, '#e8b8a0'); c.restore(); });
+        if (ant) { c.strokeStyle = '#d8c8a0'; c.lineWidth = 1.5; [[-1, 0], [-3.5, -1]].forEach(o => { c.beginPath(); c.moveTo(o[0], -4.5); c.quadraticCurveTo(o[0] - 3, -12, o[0] - 9, -17);
+            c.moveTo(o[0] - 2, -10); c.lineTo(o[0] + 2.5, -14); c.moveTo(o[0] - 5, -14); c.lineTo(o[0] - 3.5, -19.5); c.moveTo(o[0] - 7, -16); c.lineTo(o[0] - 12.5, -17.5); c.stroke(); }); }
+        c.restore();
+        c.restore();
+        legs.forEach(L => drawLeg(L, false));
+    }
+    /** hunted deer lying on its side; stage 3 full, 2 half butchered, 1 mostly bones */
+    function carcass(c, n) {
+        shadow(c, 30, 9);
+        if (n >= 2) { seg(c, 14, -6, 24, -2, 3.2, 2.4, FUR_D); seg(c, 10, -8, 20, -11, 3, 2.2, FUR_D); seg(c, -14, -6, -24, -1, 3.6, 2.4, FUR_D); seg(c, -10, -8, -22, -9, 3.4, 2.2, FUR_D); }
+        const rx = n === 3 ? 22 : n === 2 ? 17 : 0;
+        if (rx) { c.beginPath(); c.ellipse(0, -10, rx, 8.5, 0.05, 0, 2 * PI); c.fillStyle = lin(c, 0, -18, 0, -2, [FUR_L, FUR, FUR_D]); c.fill(); c.strokeStyle = 'rgba(50,25,8,0.6)'; c.lineWidth = 0.8; c.stroke();
+            ell(c, 0, -5, rx * 0.7, 2.6, BELLY); }
+        if (n <= 2) { ell(c, 4, -9, n === 2 ? 8 : 10, n === 2 ? 4 : 5, '#9a3a2a'); for (let i = 0; i < 5; i++) { const x = -6 + i * 4; c.beginPath(); c.moveTo(x, -4); c.quadraticCurveTo(x + 1, -14, x + 3, -16); c.strokeStyle = '#efe6d2'; c.lineWidth = 1.6; c.stroke(); } }
+        if (n === 1) { line(c, -16, -6, 16, -6, 2.2, '#efe6d2'); ell(c, 18, -7, 2.4, 2.4, '#efe6d2'); }
+        // head on the ground
+        c.save(); c.translate(-25, -8); c.rotate(0.35);
+        if (n >= 2) { c.beginPath(); c.moveTo(5, -3.5); c.quadraticCurveTo(-2, -5, -10, -2); c.lineTo(-11.5, 1); c.quadraticCurveTo(-5, 4, 5, 3.5); c.closePath(); c.fillStyle = FUR; c.fill(); c.strokeStyle = 'rgba(50,25,8,0.6)'; c.lineWidth = 0.7; c.stroke();
+            ell(c, -11, 0, 1.6, 1.3, '#1e120a'); line(c, -2, -1.5, 0, -1.2, 0.8, '#140a04'); ell(c, 3, -5, 1.8, 4, FUR_D); }
+        else { ell(c, -3, 0, 7, 3.4, '#e6dcc4'); ell(c, -4, -0.5, 1.4, 1.2, '#6a5a44'); }
+        c.restore();
+    }
+    /** fish spot on water: expanding rings, glints, a fish fin/jump on some frames (f 0-3) */
+    function fishSpot(c, f) {
+        for (let k = 0; k < 3; k++) { const t = ((f / 4) + k / 3) % 1, rx = 8 + t * 30, a = 0.55 * (1 - t);
+            c.beginPath(); c.ellipse(0, 0, rx, rx * 0.45, 0, 0, 2 * PI); c.strokeStyle = `rgba(225,245,255,${a.toFixed(3)})`; c.lineWidth = 1.6; c.stroke(); }
+        [[-14, -4], [12, 3], [3, -8], [-6, 7]].forEach((g, i) => { if ((i + f) % 2) ell(c, g[0], g[1], 2.2, 0.8, 'rgba(255,255,255,0.8)'); });
+        ell(c, 0, 0, 9, 3.2, 'rgba(20,60,110,0.35)');                                   // shoal shadow
+        if (f === 1 || f === 2) { const y = f === 1 ? -9 : -13, a = f === 1 ? -0.4 : 0.3;
+            c.save(); c.translate(f === 1 ? -4 : 3, y); c.rotate(a);
+            c.beginPath(); c.moveTo(-7, 0); c.quadraticCurveTo(0, -4.5, 7, 0); c.quadraticCurveTo(0, 4, -7, 0); c.fillStyle = lin(c, 0, -4, 0, 4, ['#d8e4ec', '#8aa4b8', '#5a7488']); c.fill();
+            poly(c, [[-6, 0], [-11, -3.5], [-10, 0], [-11, 3.5]], '#7a94a8'); ell(c, 4.5, -0.8, 0.8, 0.8, '#102030'); c.restore();
+            for (let i = 0; i < 4; i++) ell(c, -8 + i * 5, -2 - (i % 2) * 3, 1, 1, 'rgba(235,250,255,0.9)'); }   // splash drops
+        else { poly(c, [[-2, -1], [2, -6], [4, -1]], 'rgba(60,80,100,0.85)'); }            // dorsal fin
     }
     // ---------- trees ----------
     function trunk(c, w, h, base) {
@@ -362,7 +443,7 @@ const Art = (() => {
     // ---------- build all ----------
     function build(scene) {
         const T0 = performance.now();
-        const kinds = ['none', 'axe', 'pick', 'hammer', 'basket'];
+        const kinds = ['none', 'axe', 'pick', 'hammer', 'basket', 'spear', 'net'];
         ['v_', 'v_f_'].forEach(pre => { const fem = pre === 'v_f_'; kinds.forEach(k => {
             add(`${pre}${k}_idle`, 100, 130, 50, 118, c => { setFem(fem); villager(c, k, 'idle', 0); setFem(false); });
             for (let f = 0; f < 8; f++) add(`${pre}${k}_walk${f}`, 100, 130, 50, 118, c => { setFem(fem); villager(c, k, 'walk', f); setFem(false); });
@@ -378,6 +459,12 @@ const Art = (() => {
         ['gold', 'stone'].forEach(k => { for (let n = 1; n <= 6; n++) { seed = k === 'gold' ? 501 : 601; add(`${k}${n}`, 140, 112, 70, 94, c => pile(c, k, n)); } });
         [[1, 0.33], [1, 0.66], [1, 1], [2, 0.33], [2, 0.66], [2, 1], [3, 0.33], [3, 0.66], [3, 1], [4, 1]].forEach((s, i) => { seed = 701; add('house' + i, 150, 200, 75, 168, c => house(c, s[0], s[1])); });
         seed = 801; add('tc', 300, 320, 150, 240, townCenter);
+        ['deer_', 'deer_a_'].forEach(pre => { const a = pre === 'deer_a_';
+            add(pre + 'idle', 80, 90, 36, 82, c => deer(c, 'idle', 0, a));
+            for (let f = 0; f < 4; f++) add(pre + 'walk' + f, 80, 90, 36, 82, c => deer(c, 'walk', f, a));
+            for (let f = 0; f < 2; f++) add(pre + 'graze' + f, 80, 90, 36, 82, c => deer(c, 'graze', f, a)); });
+        for (let n = 1; n <= 3; n++) add('carcass' + n, 84, 44, 42, 30, c => carcass(c, n));
+        for (let f = 0; f < 4; f++) add('fish' + f, 84, 50, 42, 26, c => fishSpot(c, f));
         for (let f = 0; f < 4; f++) add('flag' + f, 40, 60, 4, 56, c => flag(c, f));
         pages.forEach((p, i) => {
             const h = p.y + p.rowH, cv = document.createElement('canvas'); cv.width = PAGE; cv.height = Math.max(2, h);
