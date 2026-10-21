@@ -1,5 +1,7 @@
 /**
  * AOE RTS - Tiny Slice Isometric Game (Phaser 3)
+ * R2c: animals - seeded deer herds (wander on land, flee briefly, hunted with a spear -> carcass ~100 food,
+ *     fast gather, finite) and fish spots on lakes/ponds (~150 food, gathered from the shore with a net).
  * R2a: speed 1x-5x (sub-stepped sim), female villagers (training alternates), auto-start on the last map,
  *     seeded ponds/lakes (water blocks walking + building) and 8-dir grid A* for all villager movement.
  * R1b: high-res art (tile 128x64, villager ~110px, trees ~150-185px, TC ~280px) pre-rendered once into
@@ -54,13 +56,20 @@ const POP_PER_HOUSE = 5;
 const SPEEDS = [1, 2, 3, 4, 5];
 const SIM_STEP = 1 / 30;          // max simulated seconds per sub-step (5x at 30fps = 5 sub-steps)
 const PATH_BUDGET = 12;           // A* searches allowed per frame (others wait a frame)
+const DEER_SPEED = 42, DEER_FLEE_SPEED = 175;   // px / s
+const DEER_FLEE_R = 130;          // iso-corrected px: a villager this close makes a deer bolt
+const DEER_FLEE_T = 1.1, DEER_FLEE_CD = 2.6;    // seconds of fleeing, then calm-down before it can bolt again
+const HUNT_R = 200;               // iso-corrected px: hunters throw from here (outside the flee radius)
+const HUNT_AIM = 0.8;             // seconds to aim + throw
 
 /** Resource node definitions */
 const RES_TYPES = {
     tree:  { res: 'wood',  amount: 100, color: 0x1f4d1f, label: 'Wood'  },
     berry: { res: 'food',  amount: 125, color: 0xc0306a, label: 'Food'  },
     gold:  { res: 'gold',  amount: 400, color: 0xe8c33a, label: 'Gold'  },
-    stone: { res: 'stone', amount: 350, color: 0x9a9a9a, label: 'Stone' }
+    stone: { res: 'stone', amount: 350, color: 0x9a9a9a, label: 'Stone' },
+    carcass: { res: 'food', amount: 100, color: 0x8a5a2a, label: 'Food', rate: 0.3 },   // hunted deer (finite)
+    fish:  { res: 'food',  amount: 150, color: 0x9ad8ff, label: 'Food', rate: 0.45 }   // on water, gathered from shore
 };
 const CARRY_COLORS = { wood: 0x8b5a2b, food: 0xc0306a, gold: 0xe8c33a, stone: 0xbbbbbb };
 
@@ -103,6 +112,7 @@ let keys = null, pointerInside = false, ctrlHeld = false;
 let pool = [], poolN = 0, gUnder = null;
 let speed = 1;           // game speed multiplier (not saved)
 let water = new Uint8Array(MAP_SIZE * MAP_SIZE);   // 1 = water tile (blocks walking + building)
+let deer = [];           // R2c: { x, y, hx, hy, ant, state, timer, gx, gy, face, seed, cd }
 let trainedCount = 0;    // villagers made so far: even = male, odd = female
 window.addEventListener('keydown', e => { if (e.key === 'Control' || e.key === 'Meta') ctrlHeld = true; });
 window.addEventListener('keyup', e => { if (e.key === 'Control' || e.key === 'Meta') ctrlHeld = false; });
@@ -237,6 +247,65 @@ function initWater(num) {
     for (let i = 0; i < S * S; i++) if (!seen[i]) water[i] = 1;
     for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (water[y * S + x] && mapData[y][x] && mapData[y][x].kind !== 'tc') mapData[y][x] = null;
 }
+// ---------------------------------------------------------------------------
+// ANIMALS (R2c): seeded deer herds + fish spots. Own RNG so land/water layouts stay as in R2a.
+// ---------------------------------------------------------------------------
+function animalKeep() { return MAP_SIZE <= 16 ? 4.6 : 11.5; }   // fair-start ring (same as the dry ring around the TC)
+function deerFree(x, y) { const c = isLand(x, y) && mapData[y][x]; return isLand(x, y) && !(c && (c.kind === 'tc' || c.kind === 'house')); }
+function initAnimals(num) {
+    const S = MAP_SIZE; deer = [];
+    let rnd = (mapSeed(num) ^ 0x2c1b3c6d) % 2147483646 + 1; const R = () => (rnd = (rnd * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 5; i++) R();
+    const cx0 = townCenter.x + 0.5, cy0 = townCenter.y + 0.5, keep = animalKeep();
+    const okTile = (x, y) => deerFree(x, y) && !mapData[y][x] && Math.hypot(x - cx0, y - cy0) >= keep + 0.5;
+    // DEER: herds of 2-5 (map 00: one small herd or a single deer), count scales with map area
+    const herds = S <= 16 ? 1 : Math.max(1, Math.round(3 * S * S / (48 * 48)));
+    for (let h = 0; h < herds; h++) {
+        let home = null;
+        for (let t = 0; t < 60 && !home; t++) { const x = Math.floor(1 + R() * (S - 2)), y = Math.floor(1 + R() * (S - 2));
+            if (okTile(x, y) && !deer.some(d => Math.hypot(d.hx - x, d.hy - y) < 6)) home = { x, y }; }
+        if (!home) continue;
+        const n = S <= 16 ? 1 + Math.floor(R() * 2) : 2 + Math.floor(R() * 4);
+        for (let i = 0, k = 0; i < n && k < 30; k++) {
+            const x = home.x + Math.round((R() - 0.5) * 4), y = home.y + Math.round((R() - 0.5) * 4);
+            if (!inMap(x, y) || !okTile(x, y)) continue;
+            const p = tileCenter(x, y), jx = (R() - 0.5) * 40, jy = (R() - 0.5) * 16, t = screenToTile(p.x + jx, p.y + jy);
+            const ok = t.x === x && t.y === y;
+            deer.push({ x: p.x + (ok ? jx : 0), y: p.y + (ok ? jy : 0), hx: home.x, hy: home.y, ant: R() < 0.4, state: 'graze', timer: 1 + R() * 4, gx: 0, gy: 0, face: R() < 0.5 ? 1 : -1, seed: R(), cd: 0 });
+            i++;
+        }
+    }
+    // FISH: a few spots on shore-adjacent water tiles of lakes/ponds with >= 5 tiles
+    const seen = new Uint8Array(S * S);
+    for (let i0 = 0; i0 < S * S; i0++) {
+        if (!water[i0] || seen[i0]) continue;
+        const comp = [], st = [i0]; seen[i0] = 1;
+        while (st.length) { const i = st.pop(), x = i % S, y = (i - x) / S; comp.push(i);
+            for (let d = 0; d < 4; d++) { const nx = x + [1, -1, 0, 0][d], ny = y + [0, 0, 1, -1][d], j = ny * S + nx;
+                if (inMap(nx, ny) && water[j] && !seen[j]) { seen[j] = 1; st.push(j); } } }
+        if (comp.length < 5) continue;
+        const shore = comp.filter(i => { const x = i % S, y = (i - x) / S; return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(o => isLand(x + o[0], y + o[1])); });
+        const want = Math.min(4, 1 + Math.floor(comp.length / 30)), got = [];
+        for (let t = 0; t < 40 && got.length < want && shore.length; t++) {
+            const i = shore[Math.floor(R() * shore.length)], x = i % S, y = (i - x) / S;
+            if (mapData[y][x] || got.some(g => Math.hypot(g[0] - x, g[1] - y) < 3.5)) continue;
+            mapData[y][x] = { kind: 'fish', amount: RES_TYPES.fish.amount, max: RES_TYPES.fish.amount }; got.push([x, y]);
+        }
+    }
+}
+/** Test hook: animal placement checks */
+function animalReport() {
+    const S = MAP_SIZE, cx0 = townCenter.x + 0.5, cy0 = townCenter.y + 0.5, keep = animalKeep();
+    let deerOnWater = 0, deerInRing = 0, fish = 0, fishBad = 0, fishInRing = 0, carcass = 0, h = 2166136261;
+    deer.forEach(d => { const t = screenToTile(d.x, d.y); if (!isLand(t.x, t.y)) deerOnWater++; if (Math.hypot(t.x - cx0, t.y - cy0) < keep) deerInRing++;
+        const s = t.x + ',' + t.y + (d.ant ? 'a' : ''); for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0; });
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const c = mapData[y][x]; if (!c) continue;
+        if (c.kind === 'carcass') carcass++;
+        if (c.kind !== 'fish') continue; fish++; h = Math.imul(h ^ (y * S + x), 16777619) >>> 0;
+        if (!isWater(x, y) || ![[1, 0], [-1, 0], [0, 1], [0, -1]].some(o => isLand(x + o[0], y + o[1]))) fishBad++;
+        if (Math.hypot(x - cx0, y - cy0) < keep) fishInRing++; }
+    return { deer: deer.length, herds: new Set(deer.map(d => d.hx + ',' + d.hy)).size, deerOnWater, deerInRing, fish, fishBad, fishInRing, carcass, hash: h.toString(16) };
+}
 /** Test hook: BFS from the TC over land (8-dir, no corner cutting, same rules as A*) */
 function reachReport() {
     const S = MAP_SIZE, seen = new Uint8Array(S * S), st = [townCenter.y * S + townCenter.x]; seen[st[0]] = 1;
@@ -246,14 +315,14 @@ function reachReport() {
     let res = 0, unreach = 0, onWater = 0, land = 0, landUnreach = 0, w = 0;
     for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const i = y * S + x, c = mapData[y][x];
         if (water[i]) w++; else { land++; if (!seen[i]) landUnreach++; }
-        if (c && c.kind !== 'tc') { res++; if (water[i]) onWater++; if (!seen[i]) unreach++; }
+        if (c && c.kind !== 'tc' && c.kind !== 'fish') { res++; if (water[i]) onWater++; if (!seen[i]) unreach++; }
         if (c && c.kind === 'tc' && (!seen[i] || water[i])) unreach++; }
     return { res, unreach, onWater, landUnreach, waterTiles: w, waterPct: Math.round(w / (S * S) * 1000) / 10 };
 }
 /** Test hook: counts of resources within 10 tiles of the TC */
 function fairStartCounts() {
     const c = { tree: 0, berry: 0, gold: 0, stone: 0, berryClusters: 0 }, cx0 = townCenter.x + 0.5, cy0 = townCenter.y + 0.5, seen = {};
-    for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) { const k = mapData[y][x]; if (!k || k.kind === 'tc') continue;
+    for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) { const k = mapData[y][x]; if (!k || !(k.kind in c)) continue;
         if (Math.hypot(x - cx0, y - cy0) <= 10.5) c[k.kind]++; }
     // berry clusters = connected groups (8-neighbour) with any bush within 10 tiles
     for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) { const k = mapData[y][x];
@@ -265,18 +334,19 @@ function fairStartCounts() {
         if (near) c.berryClusters++; }
     let tcRing = true;
     for (let y = townCenter.y - 1; y <= townCenter.y + 2; y++) for (let x = townCenter.x - 1; x <= townCenter.x + 2; x++) {
-        const k = inMap(x, y) && mapData[y][x]; if (k && k.kind !== 'tc') tcRing = false; }
+        const k = inMap(x, y) && mapData[y][x]; if (k && k.kind !== 'tc' && k.kind !== 'fish') tcRing = false; }
     c.ringClear = tcRing; return c;
 }
-function mapHash() { let h = 2166136261; for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) { const k = mapData[y][x];
+function mapHash() { let h = 2166136261; for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) { const k = mapData[y][x] && mapData[y][x].kind !== 'fish' ? mapData[y][x] : null;   // R2a layout hash (animals excluded)
     const s = (k ? k.kind[0] + k.max : '.') + (water[y * MAP_SIZE + x] ? 'w' : ''); for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0; } return h.toString(16); }
 /** Test hook: generate any map number (only valid for numbers with this page's size) without touching the scene */
 window.aoeTest = {
     MAP_NUM, MAP_SIZE, mapSizeFor, mapHash, fairStartCounts,
-    gen(n) { const sv = [mapData, townCenter, MAP_SIZE, water]; MAP_SIZE = mapSizeFor(n); initMap(n); initWater(n); const r = { hash: mapHash(), fair: fairStartCounts(), tc: Object.assign({}, townCenter), reach: reachReport() }; r.size = MAP_SIZE; mapData = sv[0]; townCenter = sv[1]; MAP_SIZE = sv[2]; water = sv[3]; return r; },
+    gen(n) { const sv = [mapData, townCenter, MAP_SIZE, water, deer]; MAP_SIZE = mapSizeFor(n); initMap(n); initWater(n); initAnimals(n); const r = { hash: mapHash(), fair: fairStartCounts(), tc: Object.assign({}, townCenter), reach: reachReport(), animals: animalReport() }; r.size = MAP_SIZE; mapData = sv[0]; townCenter = sv[1]; MAP_SIZE = sv[2]; water = sv[3]; deer = sv[4]; return r; },
     get villagers() { return villagers; }, get resources() { return resources; }, orderGather: (v, x, y) => orderGather(v, x, y), findNearest,
     get speed() { return speed; }, setSpeed: n => setSpeed(n), get water() { return water; }, get townCenter() { return townCenter; }, get mapData() { return mapData; },
-    reachReport, isLand, tileCenter, findPath: (a, b, c, d) => findPath(a, b, c, d), orderMove: (v, x, y) => orderMove(v, x, y), pathStats: null, spawnVillager: (x, y) => spawnVillager(x, y)
+    reachReport, isLand, tileCenter, findPath: (a, b, c, d) => findPath(a, b, c, d), orderMove: (v, x, y) => orderMove(v, x, y), pathStats: null, spawnVillager: (x, y) => spawnVillager(x, y),
+    get deer() { return deer; }, animalReport, orderHunt: (v, d) => orderHunt(v, d)
 };
 
 // ============================================================================
@@ -297,17 +367,60 @@ function dropPoint(v) {
 function orderGather(v, tx, ty) {
     const cell = mapData[ty][tx];
     if (v.carry > 0 && v.carryType !== RES_TYPES[cell.kind].res) { v.carry = 0; } // drop other type
-    v.house = null;
+    v.house = null; v.prey = null;
     v.node = { x: tx, y: ty };
     v.state = 'toNode';
     v.target = tileCenter(tx, ty);
 }
+/** R2c: walk within throwing range of a deer, then spear it (it becomes a carcass) */
+function orderHunt(v, d) {
+    if (v.carry > 0 && v.carryType !== 'food') v.carry = 0;
+    v.house = null; v.node = null; v.prey = d; v.state = 'toHunt'; v.route = null; v.lastKind = 'carcass';
+}
+/** Iso-corrected distance (screen dy doubled, so it reads like ground distance) */
+function isoDist(ax, ay, bx, by) { return Math.hypot(bx - ax, (by - ay) * 2); }
+function nearestDeer(from) { let best = null, bd = Infinity; deer.forEach(d => { const k = isoDist(from.x, from.y, d.x, d.y); if (k < bd) { bd = k; best = d; } }); return best; }
+/** Carcass goes on the deer's tile, or the nearest free land tile */
+function placeCarcass(px, py) {
+    const t = screenToTile(px, py);
+    for (let r = 0; r < 5; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue; const x = t.x + dx, y = t.y + dy;
+        if (isLand(x, y) && !mapData[y][x]) { mapData[y][x] = { kind: 'carcass', amount: RES_TYPES.carcass.amount, max: RES_TYPES.carcass.amount }; return { x, y }; } }
+    return null;
+}
+function updateDeer(d, dt) {
+    let near = null, nd = Infinity;
+    villagers.forEach(v => { const k = isoDist(d.x, d.y, v.x, v.y); if (k < nd) { nd = k; near = v; } });
+    d.cd = Math.max(0, d.cd - dt); d.moving = false;
+    if (near && nd < DEER_FLEE_R && d.cd <= 0 && d.state !== 'flee') { d.state = 'flee'; d.timer = DEER_FLEE_T; d.cd = DEER_FLEE_T + DEER_FLEE_CD;
+        const dx = d.x - near.x, dy = (d.y - near.y) * 2, k = Math.hypot(dx, dy) || 1; d.fx = dx / k; d.fy = dy / k / 2; }
+    const tryMove = (ux, uy, dist) => { const nx = d.x + ux * dist, ny = d.y + uy * dist, t = screenToTile(nx, ny);
+        if (!deerFree(t.x, t.y)) return false; d.x = nx; d.y = ny; d.moving = true; if (Math.abs(ux) > 0.05) d.face = ux > 0 ? 1 : -1; return true; };
+    if (d.state === 'flee') {
+        d.timer -= dt;
+        const base = Math.atan2(d.fy * 2, d.fx);
+        let ok = false;
+        for (const o of [0, 0.6, -0.6, 1.2, -1.2, 1.9, -1.9]) { const a = base + o, ux = Math.cos(a), uy = Math.sin(a) / 2; if (tryMove(ux, uy, DEER_FLEE_SPEED * dt)) { if (o) { d.fx = ux; d.fy = uy; } ok = true; break; } }
+        if (!ok || d.timer <= 0) { d.state = 'graze'; d.timer = 1 + Math.random() * 2; }
+    } else if (d.state === 'walk') {
+        const dx = d.gx - d.x, dy = d.gy - d.y, k = Math.hypot(dx, dy), s = DEER_SPEED * dt;
+        if (k <= s || !tryMove(dx / k, dy / k, s)) { d.state = 'graze'; d.timer = 2 + Math.random() * 4; }
+    } else {   // graze: stand, head down, then wander a little around the herd home
+        d.timer -= dt;
+        if (d.timer <= 0) {
+            d.timer = 1 + Math.random() * 2;
+            for (let t = 0; t < 6; t++) { const a = Math.random() * 6.283, r = 0.5 + Math.random() * 3, x = Math.round(d.hx + Math.cos(a) * r), y = Math.round(d.hy + Math.sin(a) * r);
+                if (!deerFree(x, y)) continue; const p = tileCenter(x, y), gx = p.x + (Math.random() - 0.5) * 50, gy = p.y + (Math.random() - 0.5) * 20;
+                if (losClear(d.x, d.y, gx, gy)) { d.gx = gx; d.gy = gy; d.state = 'walk'; break; } }
+        }
+    }
+}
 function orderBuild(v, h) {
-    v.node = null; v.house = h; v.state = 'toBuild';
+    v.prey = null; v.node = null; v.house = h; v.state = 'toBuild';
     const p = tileCenter(h.x, h.y); v.target = { x: p.x + (Math.random() - 0.5) * 60, y: p.y + 34 };
 }
 function orderMove(v, tx, ty, idx) {
-    v.house = null;
+    v.house = null; v.prey = null;
     v.node = null; v.state = 'moving'; v.target = tileCenter(tx, ty);
     if (idx) { const a = idx * 2.4, r = 18 * Math.sqrt(idx); v.target.x += Math.cos(a) * r * 1.6; v.target.y += Math.sin(a) * r * 0.8; }
 }
@@ -453,14 +566,35 @@ function updateVillager(v, dt) {
                 break;
             }
             v.timer += dt;
-            while (v.timer >= GATHER_INTERVAL && v.carry < CARRY_MAX && cell.amount > 0) {
-                v.timer -= GATHER_INTERVAL;
+            const iv = RES_TYPES[cell.kind].rate || GATHER_INTERVAL;   // carcass / fish gather faster than berries
+            while (v.timer >= iv && v.carry < CARRY_MAX && cell.amount > 0) {
+                v.timer -= iv;
                 cell.amount--; v.carry++; v.carryType = RES_TYPES[cell.kind].res;
-                Sfx.play(cell.kind === 'tree' ? 'chop' : cell.kind === 'berry' ? 'gather' : 'mine', 0.3);
+                Sfx.play(cell.kind === 'tree' ? 'chop' : (cell.kind === 'gold' || cell.kind === 'stone') ? 'mine' : 'gather', 0.3);
                 { const np = tileCenter(v.node.x, v.node.y); if (Math.abs(np.x - v.x) > 1) v.face = np.x > v.x ? 1 : -1; }
                 if (cell.amount <= 0) { v.lastKind = cell.kind; if (cell.kind !== 'berry') mapData[v.node.y][v.node.x] = null; }
             }
             if (v.carry >= CARRY_MAX) goDrop(v);
+            break;
+        }
+        case 'toHunt': {
+            const d = v.prey;
+            if (!d || d.dead) { v.prey = null; retarget(v); break; }
+            if (isoDist(v.x, v.y, d.x, d.y) <= HUNT_R && losClear(v.x, v.y, d.x, d.y)) { v.state = 'hunting'; v.timer = 0; v.route = null; break; }
+            stepTo(v, { x: d.x, y: d.y }, dt, 20);
+            break;
+        }
+        case 'hunting': {
+            const d = v.prey;
+            if (!d || d.dead) { v.prey = null; retarget(v); break; }
+            if (Math.abs(d.x - v.x) > 1) v.face = d.x > v.x ? 1 : -1;
+            if (isoDist(v.x, v.y, d.x, d.y) > HUNT_R + 80) { v.state = 'toHunt'; break; }
+            v.timer += dt;
+            if (v.timer >= HUNT_AIM) {
+                d.dead = true; deer = deer.filter(o => o !== d); Sfx.play('hunt');
+                const c = placeCarcass(d.x, d.y); v.prey = null; v.lastKind = 'carcass';
+                if (c) orderGather(v, c.x, c.y); else retarget(v);
+            }
             break;
         }
         case 'toBuild': {
@@ -505,7 +639,10 @@ function regrowBerries(dt) {
 /** Node is gone: move on to the nearest node of the same kind, or go idle */
 function retarget(v) {
     const kind = v.lastKind || (v.node && mapData[v.node.y][v.node.x] && mapData[v.node.y][v.node.x].kind);
-    const next = kind && findNearest(kind, v);
+    let next = kind && findNearest(kind, v);
+    // R2c food fall-backs: carcass -> nearest deer -> berries; fish -> berries
+    if (!next && kind === 'carcass') { const d = nearestDeer(v); if (d) { orderHunt(v, d); return; } }
+    if (!next && (kind === 'carcass' || kind === 'fish')) next = findNearest('berry', v);
     if (next) orderGather(v, next.x, next.y);
     else if (v.carry > 0) v.state = 'returning';
     else { v.state = 'idle'; v.node = null; }
@@ -518,6 +655,7 @@ function create() {
     scene = this; cam = this.cameras.main;
     initMap(MAP_NUM);
     initWater(MAP_NUM);
+    initAnimals(MAP_NUM);
     bakeGround(this);
     Art.build(this);
     gUnder = this.add.graphics().setDepth(-5);
@@ -567,6 +705,7 @@ function simStep(dt) {
     villagers.forEach(v => { v.walking = false; updateVillager(v, dt); });
     spreadIdle(dt);
     regrowBerries(dt);
+    for (let i = 0; i < deer.length; i++) updateDeer(deer[i], dt);
     if (trainQueue > 0 && popCount() < popCap()) {
         trainTimer += dt;
         if (trainTimer >= TRAIN_TIME) { trainTimer = 0; trainQueue--; spawnFromTC(); }
@@ -625,7 +764,7 @@ function initMinimap() {
     mm.addEventListener('pointerup', () => { mmDrag = false; });
     mm.addEventListener('contextmenu', e => e.preventDefault());
 }
-const MM_COL = { tree: '#1d4a1a', berry: '#d04a8a', gold: '#f0d040', stone: '#b0b0b0', house: '#3a6ad0', tc: '#3a6ad0' };
+const MM_COL = { fish: '#9ad8ff', carcass: '#6a3a1a', tree: '#1d4a1a', berry: '#d04a8a', gold: '#f0d040', stone: '#b0b0b0', house: '#3a6ad0', tc: '#3a6ad0' };
 let mmDots = null;
 function updateMinimap(time) {
     const c = mmCtx, s = mmScale;
@@ -640,6 +779,7 @@ function updateMinimap(time) {
         }
     }
     c.drawImage(mmDots, 0, 0);
+    c.fillStyle = '#8a4a1a'; deer.forEach(d => c.fillRect(d.x * s - 1.5, d.y * s - 1.5, 3, 3));   // deer: small brown dots
     c.fillStyle = '#ffffff';
     villagers.forEach(v => { c.fillStyle = v.selected ? '#ffff66' : '#ffffff'; c.fillRect(v.x * s - 1.5, v.y * s - 1.5, 3, 3); });
     const r = viewRect(0);
@@ -766,6 +906,7 @@ function render() {
         if (c.kind === 'house') drawHouse(g, x, y, c.house); else drawNode(g, x, y, c);
     }
     drawTC(g, gu);
+    deer.forEach(d => { if (d.x > vr.x0 && d.x < vr.x1 && d.y > vr.y0 && d.y < vr.y1 + 120) drawDeer(d); });
     villagers.forEach(v => { if (v.x > vr.x0 && v.x < vr.x1 && v.y > vr.y0 && v.y < vr.y1 + 120) drawVillager(g, gu, v); });
     for (let i = poolN; i < pool.length; i++) if (pool[i].visible) pool[i].setVisible(false);
     if (dragSel && dragSel.active) {        // selection rectangle
@@ -787,6 +928,10 @@ function drawNode(g, x, y, c) {
         const px = p.x + (hash(x, y, 1) - 0.5) * 20, py = p.y + (hash(x, y, 2) - 0.5) * 8, v = Math.floor(hash(x, y, 3) * 3);
         const name = frac < 0.25 ? 'stump' : (s > 0.45 ? 'pine' : 'leafy') + v + (frac < 0.6 ? '_cut' : '');
         sprite(name, px, py, py, hash(x, y, 4) > 0.5);
+    } else if (c.kind === 'fish') {
+        sprite('fish' + (Math.floor(animT / 260 + s * 4) % 4), p.x, p.y, p.y - 40, s > 0.5);
+    } else if (c.kind === 'carcass') {
+        sprite('carcass' + Math.max(1, Math.ceil(frac * 3)), p.x, p.y + 4, p.y, s > 0.5);
     } else if (c.kind === 'berry') {
         sprite('berry' + Math.min(4, Math.ceil(frac * 4)), p.x, p.y + 6, p.y, hash(x, y, 4) > 0.5);
     } else {
@@ -823,10 +968,18 @@ function spawnFromTC() {
     spawnVillager(spot.x, spot.y);
     Sfx.play('train');
 }
+function drawDeer(d) {
+    const t = animT / 1000 + d.seed * 7, pre = d.ant ? 'deer_a_' : 'deer_';
+    let name;
+    if (d.moving) name = pre + 'walk' + (Math.floor(t * (d.state === 'flee' ? 16 : 7)) % 4);
+    else if (d.state === 'graze' && Math.sin(t * 0.6) < 0.5) name = pre + 'graze' + (Math.floor(t * 2.2) % 2);
+    else name = pre + 'idle';
+    sprite(name, d.x, d.y, d.y + 0.15, d.face < 0);
+}
 function drawVillager(g, gu, v) {
-    const face = v.face || 1, working = v.state === 'gathering' || v.state === 'building';
-    const kind = v.state === 'building' ? 'hammer' : (v.node && mapData[v.node.y] && mapData[v.node.y][v.node.x] ? mapData[v.node.y][v.node.x].kind : (v.lastKind || null));
-    const tool = kind === 'hammer' ? 'hammer' : kind === 'tree' ? 'axe' : (kind === 'gold' || kind === 'stone') ? 'pick' : kind === 'berry' ? 'basket' : 'none';
+    const face = v.face || 1, working = v.state === 'gathering' || v.state === 'building' || v.state === 'hunting';
+    const kind = (v.state === 'toHunt' || v.state === 'hunting') ? 'carcass' : v.state === 'building' ? 'hammer' : (v.node && mapData[v.node.y] && mapData[v.node.y][v.node.x] ? mapData[v.node.y][v.node.x].kind : (v.lastKind || null));
+    const tool = kind === 'hammer' ? 'hammer' : kind === 'tree' ? 'axe' : (kind === 'gold' || kind === 'stone') ? 'pick' : kind === 'berry' ? 'basket' : kind === 'carcass' ? 'spear' : kind === 'fish' ? 'net' : 'none';
     const t = animT / 1000 + (v.seed || 0) * 3;
     let name; const pre = v.fem ? 'v_f_' : 'v_';
     if (working && tool !== 'none') name = `${pre}${tool}_work${Math.floor(t * 9) % 6}`;
@@ -850,6 +1003,7 @@ function villagerAt(px, py) {
     villagers.forEach(v => { if (Math.abs(px - v.x) > 22 || py > v.y + 6 || py < v.y - 104) return; const d = Math.abs(px - v.x) + Math.abs(py - (v.y - 50)) * 0.3 - v.y * 0.01; if (d < bd) { bd = d; best = v; } });
     return best;
 }
+function deerAt(px, py) { let best = null, bd = Infinity; deer.forEach(d => { if (Math.abs(px - d.x) > 40 || py > d.y + 12 || py < d.y - 70) return; const k = Math.abs(px - d.x) + Math.abs(py - d.y + 30); if (k < bd) { bd = k; best = d; } }); return best; }
 function deselectAll() { villagers.forEach(u => u.selected = false); townCenter.selected = false; }
 function onPointerDown(pointer) {
     const px = pointer.worldX, py = pointer.worldY;
@@ -912,6 +1066,8 @@ function rightClick(px, py) {
     if (!inMap(t.x, t.y)) return;
     const cell = mapData[t.y][t.x];
     Sfx.play('tap', 0.05);
+    const dr = deerAt(px, py);
+    if (dr) { sel.forEach(u => orderHunt(u, dr)); return; }
     if (cell && RES_TYPES[cell.kind]) sel.forEach(u => orderGather(u, t.x, t.y));
     else if (cell && cell.kind === 'tc') sel.forEach((u, i) => { if (u.carry > 0) u.state = 'returning'; else orderMove(u, t.x, t.y + 2, i); });
     else if (cell && cell.kind === 'house') { if (!cell.house.done) sel.forEach(u => orderBuild(u, cell.house)); }

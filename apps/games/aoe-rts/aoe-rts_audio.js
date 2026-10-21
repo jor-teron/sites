@@ -31,6 +31,7 @@ const Sfx = (() => {
         train()  { [523, 659, 784].forEach((f, i) => tone('triangle', f, null, 0.22, 0.18, i * 0.1)); },
         hammer() { burst(1400, 3, 0.05, 0.5); tone('square', 320, 200, 0.05, 0.1); },
         built()  { [392, 523].forEach((f, i) => tone('triangle', f, null, 0.25, 0.18, i * 0.12)); },
+        hunt()   { burst(1800, 0.7, 0.16, 0.35, 'highpass'); tone('triangle', 260, 120, 0.12, 0.22, 0.12); burst(300, 1, 0.1, 0.4, 'lowpass', 0.14); },   // whoosh + thud
         tap()    { tone('sine', 880, 660, 0.05, 0.12); },
         error()  { tone('square', 200, 150, 0.15, 0.08); }
     };
