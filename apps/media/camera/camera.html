@@ -27,6 +27,7 @@
       <p id="message-text"></p>
       <button type="button" id="retry-btn" class="pill">Retry</button>
     </div>
+    <div id="processing" hidden></div>
     <div id="toast" role="status"></div>
   </main>
 
@@ -54,6 +55,7 @@
     <div class="row"><span>Resolution</span><div class="seg" id="res-seg"></div></div>
     <div class="row"><span>Photo format</span><div class="seg" id="format-seg"></div></div>
     <div class="row"><span>Self-timer</span><div class="seg" id="timer-seg"></div></div>
+    <label class="row" id="slowmo-row"><span>Slow motion</span><input type="checkbox" id="slowmo-check" class="switch"></label>
     <label class="row"><span>Grid</span><input type="checkbox" id="grid-check" class="switch"></label>
     <label class="row"><span>Mirror</span><input type="checkbox" id="mirror-check" class="switch"></label>
     <p class="info" id="info"></p>
@@ -62,6 +64,7 @@
 
 <script src="camera_config.js?v=20261021a"></script>
 <script src="camera_save.js?v=20261021a"></script>
+<script src="camera_slowmo.js?v=20261021b"></script>
 <script src="camera_logic.js?v=20261021a"></script>
 </body>
 </html>

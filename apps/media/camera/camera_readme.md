@@ -7,6 +7,7 @@ A simple camera for photos and videos from the device camera. Files download str
 - `camera.html` / `camera.css`: preview, controls, settings panel, layout, light / dark
 - `camera_config.js`: resolutions, timers, photo formats, video types, defaults, text
 - `camera_save.js`: `CameraSave.save(blob, filename)`, the one place every file goes through (browser download today; swap for Hub Drive later), and the timestamped file name
+- `camera_slowmo.js`: slow motion (R3): fps check, high-fps capture, slow-down re-encode
 - `camera_logic.js`: camera start / stop, photo, video recording, timer, grid, mirror, keys, settings
 - `camera_icon.png`: hub icon
 - `index.html`: opens `camera.html`
@@ -19,6 +20,7 @@ A simple camera for photos and videos from the device camera. Files download str
 - **Mirror:** on by default for the front camera, off for the back camera. When on, the preview, the saved photo and the saved video are all mirrored the same way. Changing camera resets it to automatic.
 - **Resolution:** 480p (SD), 720p, 1080p or Max (asked of the camera; it may give less). The real size is shown in Settings.
 - **Self-timer:** Off, 3 s or 10 s countdown. Pressing the shutter again cancels it.
+- **Slow motion (R3):** Settings switch, shown only when the camera reports 60 fps or more (checked again on every camera start / switch). When on in Video mode the camera is asked for 120 fps (at least 60). The clip is recorded without sound for at most 10 s (badge shows the factor and seconds left), then *Processing…* plays it back at 1/factor speed onto a 30 fps canvas and records that: 120 fps → 4×, 60 fps → 2×. Saved as `slowmo-YYYYMMDD-HHMMSS.mp4|webm`. No pause. Off restores the normal frame rate.
 - **Grid:** rule-of-thirds lines over the picture.
 - **Names:** `photo-YYYYMMDD-HHMMSS.jpg|png`, `video-YYYYMMDD-HHMMSS.mp4|webm` (local time).
 - **Settings** are remembered (localStorage `camera-settings-v1`).
@@ -32,4 +34,5 @@ A simple camera for photos and videos from the device camera. Files download str
 ## 5. Known limits
 - Mirrored video is drawn through a canvas, so the frame rate can drop on slow devices.
 - Pausing is not supported by every browser's recorder; Safari records MP4.
+- Slow motion needs a camera that really gives 60+ fps (many phone back cameras in Chrome on Android; most laptop webcams do not, so the switch stays hidden). Processing takes about factor × clip length.
 - Camera access needs https (or localhost).

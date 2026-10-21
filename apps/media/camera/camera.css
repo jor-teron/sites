@@ -160,3 +160,8 @@ body.recording #shutter .inner { width: 28px; height: 28px; border-radius: 6px; 
   .panel { left: auto; transform: none; bottom: auto; top: 10px; right: calc(104px + env(safe-area-inset-right)); max-height: calc(100% - 20px); }
   #toast { bottom: 12px; }
 }
+
+/* Slow motion (R3) */
+#slowmo-row[hidden] { display: none; }
+#processing { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.55); color: #fff; font-size: 16px; z-index: 5; }
+body.slowmo-on #rec-badge::after { content: ' SLOW'; font-size: 11px; margin-left: 4px; }
