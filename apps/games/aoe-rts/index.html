@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AOE RTS - Tiny Slice</title>
     <!-- Project CSS -->
+    <link rel="icon" href="aoe-rts_icon.png">
     <link rel="stylesheet" href="aoe-rts.css">
 </head>
 <body>
@@ -17,7 +18,10 @@
     <div id="info"></div>
     <div id="minimap-wrap"><canvas id="minimap"></canvas></div>
     <button id="pause-btn" aria-label="Pause">⏸</button>
-    <div id="pause-overlay"><div><h2>Paused</h2><button id="resume-btn">▶ Resume</button><p>P to toggle · camera still moves</p></div></div>
+    <div id="pause-overlay"><div><h2>Paused</h2><div id="pause-map"></div><button id="resume-btn">▶ Resume</button> <button id="newmap-btn">New map</button><p>P to toggle · camera still moves</p></div></div>
+    <div id="title-overlay"><div><h1>AOE RTS</h1><label for="map-select">Map</label>
+        <select id="map-select"></select><div id="map-note"></div><button id="start-btn">▶ Start</button>
+        <p>Same number = same map · 00 is a small demo</p></div></div>
     <!-- Mute toggle -->
     <button id="mute-btn" aria-label="Mute">🔊</button>
     <!-- Phaser library from local vendor folder -->

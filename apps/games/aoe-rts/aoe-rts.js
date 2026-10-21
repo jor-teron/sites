@@ -18,7 +18,14 @@
 // ============================================================================
 const TILE_WIDTH = 128;
 const TILE_HEIGHT = 64;
-const MAP_SIZE = 48;              // tiles per side (config)
+// Procedural maps 00-99: number from ?map=NN, else last saved, else 07. Size rounds up to multiples of 16.
+const URL_MAP = (() => { const v = new URLSearchParams(location.search).get('map'); return v !== null && /^\d{1,2}$/.test(v.trim()) ? parseInt(v, 10) : null; })();
+function storedMap() { try { const v = localStorage.getItem('aoe-rts.map'); return v !== null && /^\d{1,2}$/.test(v) ? parseInt(v, 10) : null; } catch (e) { return null; } }
+const MAP_NUM = URL_MAP !== null ? URL_MAP : (storedMap() !== null ? storedMap() : 7);
+/** Map number -> tiles per side: 00=16, 01-20=32, 21-40=48, 41-60=64, 61-80=80, 81-99=96 */
+function mapSizeFor(n) { return n <= 0 ? 16 : 16 * (1 + Math.ceil(n / 20)); }
+function mapLabel(n) { const s = mapSizeFor(n); return String(n).padStart(2, '0') + ' (' + s + 'x' + s + ')'; }
+let MAP_SIZE = mapSizeFor(MAP_NUM);   // tiles per side (only the test hook swaps it)
 const WORLD_MARGIN = 192;          // px of empty border around the map diamond
 const WORLD_W = MAP_SIZE * TILE_WIDTH + WORLD_MARGIN * 2;
 const WORLD_H = MAP_SIZE * TILE_HEIGHT + WORLD_MARGIN * 2 + 280;
@@ -121,35 +128,99 @@ function inMap(x, y) { return x >= 0 && y >= 0 && x < MAP_SIZE && y < MAP_SIZE; 
 // ============================================================================
 // MAP
 // ============================================================================
-function initMap() {
-    mapData = [];
-    for (let y = 0; y < MAP_SIZE; y++) { mapData[y] = []; for (let x = 0; x < MAP_SIZE; x++) mapData[y][x] = null; }
-    // Town Center 2x2 in the middle
-    const m = Math.floor(MAP_SIZE / 2) - 1;
-    townCenter = { x: m, y: m, w: 2, h: 2 };
-    for (let y = m; y < m + 2; y++) for (let x = m; x < m + 2; x++) mapData[y][x] = { kind: 'tc' };
-    const cx0 = m + 0.5, cy0 = m + 0.5;
-    let rnd = 1234567; const R = () => (rnd = (rnd * 16807) % 2147483647) / 2147483647;  // seeded
-    const place = (kind, cx, cy) => {
-        cx = Math.round(cx); cy = Math.round(cy);
-        if (!inMap(cx, cy) || mapData[cy][cx]) return;
-        if (Math.abs(cx - cx0) < 4 && Math.abs(cy - cy0) < 4) return; // keep TC area clear
-        const a = RES_TYPES[kind].amount;
-        mapData[cy][cx] = { kind, amount: a, max: a };
-    };
-    const blob = (kind, cx, cy, r, n) => { for (let i = 0; i < n; i++) { const a = R() * 6.283, d = Math.sqrt(R()) * r; place(kind, cx + Math.cos(a) * d, cy + Math.sin(a) * d); } };
-    // Forest belts near the map edges + scattered woods
-    const S = MAP_SIZE;
-    for (let i = 0; i < S * 5; i++) { const e = Math.floor(R() * 4), t = R() * S, d = R() * R() * 5;
-        place('tree', e === 0 ? t : e === 1 ? d : e === 2 ? t : S - 1 - d, e === 0 ? d : e === 1 ? t : e === 2 ? S - 1 - d : t); }
-    for (let i = 0; i < 9; i++) { const a = R() * 6.283, d = 9 + R() * (S / 2 - 12); blob('tree', cx0 + Math.cos(a) * d, cy0 + Math.sin(a) * d, 2 + R() * 2.5, 18 + R() * 20); }
-    blob('tree', cx0 - 5, cy0 - 5, 2, 22);               // a wood line close to home
-    // Berries, gold, stone near the TC, more further out
-    blob('berry', cx0 - 6, cy0 + 4, 1.4, 6);
-    blob('gold', cx0 + 7, cy0 + 3, 1.2, 5); blob('stone', cx0 + 3, cy0 + 7, 1.2, 4);
-    for (let i = 0; i < 3; i++) { const a = R() * 6.283, d = 13 + R() * 6;
-        blob(['gold', 'stone', 'berry'][i], cx0 + Math.cos(a) * d, cy0 + Math.sin(a) * d, 1.3, 5); }
+/** Hash the map number into an RNG seed so neighbouring numbers give very different maps */
+function mapSeed(n) {
+    let h = Math.imul(n + 1, 0x9E3779B1) >>> 0;
+    h ^= h >>> 16; h = Math.imul(h, 0x85EBCA6B) >>> 0; h ^= h >>> 13; h = Math.imul(h, 0xC2B2AE35) >>> 0; h ^= h >>> 16;
+    return ((h >>> 0) % 2147483646) + 1;
 }
+function initMap(num) {
+    const S = MAP_SIZE;
+    mapData = [];
+    for (let y = 0; y < S; y++) { mapData[y] = []; for (let x = 0; x < S; x++) mapData[y][x] = null; }
+    let rnd = mapSeed(num); const R = () => (rnd = (rnd * 16807) % 2147483647) / 2147483647;  // seeded
+    for (let i = 0; i < 5; i++) R();
+    // Town Center 2x2 near the middle (seeded jitter on bigger maps)
+    const jit = Math.floor(S / 10);
+    const m0 = Math.floor(S / 2) - 1;
+    const mx = m0 + Math.round((R() - 0.5) * 2 * jit), my = m0 + Math.round((R() - 0.5) * 2 * jit);
+    townCenter = { x: mx, y: my, w: 2, h: 2 };
+    for (let y = my; y < my + 2; y++) for (let x = mx; x < mx + 2; x++) mapData[y][x] = { kind: 'tc' };
+    const cx0 = mx + 0.5, cy0 = my + 0.5;
+    const clear = S <= 16 ? 2.6 : 4;     // TC footprint + walk ring stays empty
+    const far = (x, y) => Math.hypot(x - cx0, y - cy0);
+    const place = (kind, cx, cy, amt) => {
+        cx = Math.round(cx); cy = Math.round(cy);
+        if (!inMap(cx, cy) || mapData[cy][cx]) return false;
+        if (Math.abs(cx - cx0) < clear && Math.abs(cy - cy0) < clear) return false;
+        const a = amt || RES_TYPES[kind].amount;
+        mapData[cy][cx] = { kind, amount: a, max: a };
+        return true;
+    };
+    const blob = (kind, cx, cy, r, n, amt) => { let k = 0; for (let i = 0; i < n; i++) { const a = R() * 6.283, d = Math.sqrt(R()) * r; if (place(kind, cx + Math.cos(a) * d, cy + Math.sin(a) * d, amt)) k++; } return k; };
+    /** Random-walk wood line: a ribbon of trees, 1-2 tiles thick */
+    const walkLine = (cx, cy, len) => { let a = R() * 6.283; for (let i = 0; i < len; i++) {
+        place('tree', cx, cy); if (R() < 0.6) place('tree', cx + (R() < 0.5 ? 1 : 0), cy + (R() < 0.5 ? 1 : 0));
+        a += (R() - 0.5) * 0.9; cx += Math.cos(a); cy += Math.sin(a); } };
+    const ring = (dMin, dMax) => { const a = R() * 6.283, d = dMin + R() * (dMax - dMin); return [cx0 + Math.cos(a) * d, cy0 + Math.sin(a) * d]; };
+    const area = (S * S) / (48 * 48);
+    if (S <= 16) {
+        // Demo map: a minimal fair set around the TC
+        blob('gold', cx0 + 5, cy0 + 1, 0.8, 3); blob('stone', cx0 - 5, cy0 + 1, 0.8, 3);
+        blob('berry', cx0 - 4, cy0 + 4, 1, 4); blob('berry', cx0 + 4, cy0 + 5, 1, 4);
+        walkLine(cx0 - 5, cy0 - 6, 9); blob('tree', cx0 + 5, cy0 - 5, 1.6, 10);
+    } else {
+        // Home: a wood line, two berry clusters, a gold and a stone pile (6-10 tiles out)
+        const home = R() * 6.283, at = (k, d) => [cx0 + Math.cos(home + k * 1.257) * d, cy0 + Math.sin(home + k * 1.257) * d];
+        { const p = at(0, 7 + R() * 2); blob('tree', p[0], p[1], 2.2, 26); walkLine(p[0], p[1], 8); }
+        { const p = at(1, 6 + R() * 2); blob('berry', p[0], p[1], 1.3, 6); }
+        { const p = at(2, 7 + R() * 2); blob('gold', p[0], p[1], 1.1, 5); }
+        { const p = at(3, 6 + R() * 2); blob('berry', p[0], p[1], 1.3, 6); }
+        { const p = at(4, 7 + R() * 2); blob('stone', p[0], p[1], 1.1, 4); }
+        // Groves: clustered forests (blob + ragged walks), count scales with area
+        const groves = Math.round(9 * area);
+        for (let i = 0; i < groves; i++) { const p = ring(10, S * 0.75); blob('tree', p[0], p[1], 2 + R() * 3, 16 + R() * 28);
+            if (R() < 0.6) walkLine(p[0], p[1], 6 + R() * 10); }
+        const lines = Math.round(5 * area);
+        for (let i = 0; i < lines; i++) { const p = ring(11, S * 0.75); walkLine(p[0], p[1], 10 + R() * 16); }
+        // Ragged forest edges along the map border
+        for (let i = 0; i < S * 4; i++) { const e = Math.floor(R() * 4), t = R() * S, d = R() * R() * 4;
+            place('tree', e === 0 ? t : e === 1 ? d : e === 2 ? t : S - 1 - d, e === 0 ? d : e === 1 ? t : e === 2 ? S - 1 - d : t); }
+        // Outer fields: richer the farther out they are
+        const fields = Math.max(3, Math.round(4 * area));
+        for (let i = 0; i < fields; i++) {
+            ['gold', 'stone', 'berry'].forEach((kind, j) => { if (kind === 'berry' && R() < 0.4) return;
+                const p = ring(12, S * 0.7), rich = 1 + Math.min(1, Math.max(0, (far(p[0], p[1]) - 12) / (S * 0.5)));
+                blob(kind, p[0], p[1], 1.3 + rich * 0.4, Math.round(4 + rich * 2), kind === 'berry' ? 0 : Math.round(RES_TYPES[kind].amount * rich)); });
+        }
+    }
+}
+/** Test hook: counts of resources within 10 tiles of the TC */
+function fairStartCounts() {
+    const c = { tree: 0, berry: 0, gold: 0, stone: 0, berryClusters: 0 }, cx0 = townCenter.x + 0.5, cy0 = townCenter.y + 0.5, seen = {};
+    for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) { const k = mapData[y][x]; if (!k || k.kind === 'tc') continue;
+        if (Math.hypot(x - cx0, y - cy0) <= 10.5) c[k.kind]++; }
+    // berry clusters = connected groups (8-neighbour) with any bush within 10 tiles
+    for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) { const k = mapData[y][x];
+        if (!k || k.kind !== 'berry' || seen[y * MAP_SIZE + x]) continue;
+        const st = [[x, y]]; seen[y * MAP_SIZE + x] = 1; let near = false;
+        while (st.length) { const [px, py] = st.pop(); if (Math.hypot(px - cx0, py - cy0) <= 10.5) near = true;
+            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const qx = px + dx, qy = py + dy;
+                if (inMap(qx, qy) && !seen[qy * MAP_SIZE + qx] && mapData[qy][qx] && mapData[qy][qx].kind === 'berry') { seen[qy * MAP_SIZE + qx] = 1; st.push([qx, qy]); } } }
+        if (near) c.berryClusters++; }
+    let tcRing = true;
+    for (let y = townCenter.y - 1; y <= townCenter.y + 2; y++) for (let x = townCenter.x - 1; x <= townCenter.x + 2; x++) {
+        const k = inMap(x, y) && mapData[y][x]; if (k && k.kind !== 'tc') tcRing = false; }
+    c.ringClear = tcRing; return c;
+}
+function mapHash() { let h = 2166136261; for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) { const k = mapData[y][x];
+    const s = k ? k.kind[0] + k.max : '.'; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0; } return h.toString(16); }
+/** Test hook: generate any map number (only valid for numbers with this page's size) without touching the scene */
+window.aoeTest = {
+    MAP_NUM, MAP_SIZE, mapSizeFor, mapHash, fairStartCounts,
+    gen(n) { const sv = [mapData, townCenter, MAP_SIZE]; MAP_SIZE = mapSizeFor(n); initMap(n); const r = { hash: mapHash(), fair: fairStartCounts(), tc: Object.assign({}, townCenter) }; r.size = MAP_SIZE; mapData = sv[0]; townCenter = sv[1]; MAP_SIZE = sv[2]; return r; },
+    get villagers() { return villagers; }, get resources() { return resources; }, orderGather: (v, x, y) => orderGather(v, x, y), findNearest
+};
 
 // ============================================================================
 // VILLAGERS
@@ -299,7 +370,7 @@ function retarget(v) {
 // ============================================================================
 function create() {
     scene = this; cam = this.cameras.main;
-    initMap();
+    initMap(MAP_NUM);
     bakeGround(this);
     Art.build(this);
     gUnder = this.add.graphics().setDepth(-5);
@@ -681,6 +752,7 @@ function placeHouse(t0) {
 // ============================================================================
 const pauseBtn = document.getElementById('pause-btn'), pauseOv = document.getElementById('pause-overlay');
 function setPaused(p) {
+    if (!p && document.getElementById('title-overlay').style.display === 'flex') return;
     paused = p; pauseBtn.textContent = p ? '▶' : '⏸'; pauseOv.style.display = p ? 'flex' : 'none';
 }
 pauseBtn.addEventListener('pointerdown', e => { e.stopPropagation(); setPaused(!paused); });
@@ -748,3 +820,32 @@ function syncMute() { muteBtn.textContent = Sfx.isMuted() ? '🔇' : '🔊'; }
 muteBtn.addEventListener('pointerdown', e => { e.stopPropagation(); Sfx.init(); Sfx.toggle(); syncMute(); });
 window.addEventListener('keydown', e => { if (e.key === 'm' || e.key === 'M') { Sfx.toggle(); syncMute(); } });
 syncMute();
+
+// ============================================================================
+// MAP PICKER (title overlay) + map number on the pause overlay
+// ============================================================================
+(function mapPicker() {
+    const ov = document.getElementById('title-overlay'), sel = document.getElementById('map-select'), note = document.getElementById('map-note');
+    const opt = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
+    opt('r', 'Random');
+    for (let n = 0; n < 100; n++) opt(String(n), mapLabel(n));
+    sel.value = String(MAP_NUM);
+    let pick = MAP_NUM;
+    const show = () => { note.textContent = 'Map ' + mapLabel(pick) + (pick === 0 ? ' · demo' : ''); };
+    sel.addEventListener('change', () => {
+        if (sel.value === 'r') { pick = Math.floor(Math.random() * 100); note.textContent = ''; show(); note.textContent = 'Random → ' + note.textContent; }
+        else { pick = parseInt(sel.value, 10); show(); }
+    });
+    show();
+    const save = n => { try { localStorage.setItem('aoe-rts.map', String(n)); } catch (e) {} };
+    document.getElementById('pause-map').textContent = 'Map ' + mapLabel(MAP_NUM);
+    const open = () => { setPaused(true); pauseOv.style.display = 'none'; ov.style.display = 'flex'; sel.value = String(MAP_NUM); pick = MAP_NUM; show(); };
+    document.getElementById('start-btn').addEventListener('click', () => {
+        save(pick);
+        if (pick === MAP_NUM && !ov.dataset.played) { ov.style.display = 'none'; ov.dataset.played = '1'; setPaused(false); return; }
+        location.search = '?map=' + String(pick).padStart(2, '0');   // new map = new game
+    });
+    document.getElementById('newmap-btn').addEventListener('pointerdown', e => { e.stopPropagation(); open(); });
+    if (URL_MAP !== null) { save(MAP_NUM); ov.dataset.played = '1'; }
+    else { ov.style.display = 'flex'; paused = true; }
+})();
