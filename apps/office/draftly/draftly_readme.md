@@ -26,7 +26,7 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `index.html`: opens `draftly.html`
 
 ## 3. Behaviour rules
-- **Pages:** fixed A4 (21 × 29.7 cm), portrait or landscape. Margins: top 0.5, bottom 0.5, left 2, right 2 cm. Pages never stretch.
+- **Pages:** fixed A4 (21 × 29.7 cm) or Legal (8.5 × 14 in, 21.59 × 35.56 cm), portrait or landscape. An old saved Letter choice loads as A4. Margins: top 0.5, bottom 0.5, left 2, right 2 cm. Pages never stretch.
 - **Flow:** when a page is full, the overflowing lines move to the next page; a paragraph that crosses the bottom is split at the last line that fits. Deleting pulls content back. Split paragraphs are joined again when saving or exporting.
 - **Enter / Shift+Enter:** Enter starts a new paragraph (6 pt space after it). Shift+Enter is a line break inside the paragraph.
 - **¶ button (format marks):** shows ¶ at each paragraph end and ↵ at each line break. They are drawn on an overlay only, so they are never saved, printed or exported and don't change line wrapping. The on/off setting is remembered.

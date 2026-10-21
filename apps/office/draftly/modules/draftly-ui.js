@@ -132,6 +132,7 @@ Draftly.ui.updateToolbarState = function updateToolbarState() {
   } catch (e) {}
   Draftly.ui.syncFontSelects();
   if (Draftly.lists) Draftly.lists.syncSuffix();
+  if (Draftly.spacing) Draftly.spacing.sync();
 };
 
 /* Show the font and nearest pt size at the cursor in the selects. */
