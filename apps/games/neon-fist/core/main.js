@@ -11,6 +11,7 @@
     const step = 1 / C.fpsOptions[fpsIdx];
     if (acc >= step - 0.002) {
       const d = Math.min(0.1, acc); acc = 0;
+      if (NF.roster && NF.roster.open) { requestAnimationFrame(frame); return; }   // roster covers the stage
       NF.viewer.update(d);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       NF.viewer.render(ctx, W, H);
@@ -30,6 +31,8 @@
   const vsQ = q.get('vs'), vsNum = num(vsQ), vsHand = NF.characters[vsQ];
   if (num(q.get('f')) !== null) NF.viewer.showGen(num(q.get('f')), vsHand && vsHand.id ? vsHand : vsNum !== null && vsQ !== '1' ? vsNum : undefined);
   if (vsQ && vsQ !== '0') NF.viewer.toggleVersus();
+  NF.roster.init();
+  if (!location.search || q.get('roster') === '1') NF.roster.show();   // roster is the landing screen; old URLs open the viewer
   if (q.get('flip') === '1') NF.viewer.flip();
   if (q.get('hold') === '1') NF.viewer.toggleHold();
   if (q.get('pose')) NF.viewer.pose(q.get('pose'));
