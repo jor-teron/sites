@@ -24,6 +24,10 @@ html, body {
 #score { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
 #coins { font-size: 14px; color: var(--coin); font-weight: 700; }
 #speed { font-size: 14px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+#fps { font-size: 11px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; opacity: 0.85; }
+.hp-wrap { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hp-bar { width: 90px; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.12); overflow: hidden; }
+#hp { height: 100%; width: 100%; background: #22c55e; transform-origin: left; transform: scaleX(1); transition: background-color 0.2s; }
 #best { font-size: 12px; color: var(--muted); text-align: right; }
 .nitro-wrap {
   width: 80px; height: 6px; border-radius: 999px;
@@ -54,3 +58,11 @@ html, body {
 
 /* Crash screen: lighter dim and card near the top so the smoking car stays visible */
 .overlay.crash { background: rgba(0,0,0,0.25); align-items: start; padding-top: 8vh; }
+
+/* Title-screen options (FPS cap) */
+.card .opt {
+  margin-top: 14px; padding: 6px 14px; font: inherit; font-size: 13px; font-weight: 700;
+  color: var(--text); background: #262c38; border: 1px solid #3a4250; border-radius: 8px; cursor: pointer;
+}
+.card .opt:hover { border-color: var(--accent); }
+.card .opt[hidden] { display: none; }

@@ -23,6 +23,11 @@
   const titleEl = document.getElementById('title');
   const msgEl = document.getElementById('msg');
   const subEl = document.getElementById('sub');
+  const hpBar = document.getElementById('hp');
+  const hpNum = document.getElementById('hpNum');
+  const fpsEl = document.getElementById('fps');
+  const fpsBtn = document.getElementById('fpsBtn');
+  const HP = CFG.hp;
   document.getElementById('help').textContent = TX.help;
 
   const BEST_KEY = CFG.bestKey;
@@ -49,7 +54,13 @@
   let jumpT = 0, jumpCd = 0, nitroOn = false;
   let spawnZ = CFG.start.spawnZ;
   let laneAnim = 0;
-  let smoke = [], smokeT = 0; // crash smoke (only after a crash, cleared on reset)
+  let smoke = [], smokeT = 0, sparkT = 0; // car smoke by HP (cleared on reset)
+  let hp = HP.max, invT = 0, joltT = 0;   // car HP, invulnerability and pothole jolt timers
+
+  // Frame cap (accumulator in the rAF loop); the simulation itself runs on real dt.
+  let fpsCap = Number(localStorage.getItem(CFG.fps.storageKey)) || CFG.fps.default;
+  if (CFG.fps.options.indexOf(fpsCap) === -1) fpsCap = CFG.fps.default;
+  let frameAcc = 0, rafLast = 0, fpsFrames = 0, fpsTime = 0, fpsShown = 0;
 
   best = Number(localStorage.getItem(BEST_KEY) || 0) || 0;
   bestEl.textContent = 'BEST ' + Math.floor(best);
@@ -92,7 +103,18 @@
     titleEl.textContent = title;
     msgEl.textContent = msg;
     subEl.textContent = sub || '';
+    fpsBtn.hidden = title !== TX.title;
+    updateFpsBtn();
   }
+  function updateFpsBtn() { fpsBtn.textContent = TX.fpsButton + fpsCap + ' ' + TX.fpsHint; }
+  function toggleFps() {
+    const o = CFG.fps.options;
+    fpsCap = o[(o.indexOf(fpsCap) + 1) % o.length];
+    localStorage.setItem(CFG.fps.storageKey, String(fpsCap));
+    updateFpsBtn();
+  }
+  fpsBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+  fpsBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleFps(); });
   function hideOverlay() { overlay.hidden = true; }
 
   function project(x, y, z) {
@@ -110,11 +132,21 @@
   function entityDims(e) {
     if (e.type === 'coin') return { w: S.coinRadius * 2, len: S.coinLen };
     if (e.type === 'barrier') return { w: S.barrierW, len: S.barrierLen };
+    if (e.type === 'cones') return { w: S.conesW, len: S.conesLen };
+    if (e.type === 'pothole') return { w: S.potholeW, len: S.potholeLen };
     return { w: S.carW, len: S.carLen };
   }
 
   function laneX(lane) {
     return (lane - (LANES - 1) / 2) * T.laneSpacing;
+  }
+
+  /** Weighted random obstacle type from CFG.spawn.obstacleWeights. */
+  function pickObstacle(wts) {
+    const types = Object.keys(wts);
+    let r = Math.random() * types.reduce((a, t) => a + wts[t], 0);
+    for (const t of types) { r -= wts[t]; if (r < 0) return t; }
+    return types[types.length - 1];
   }
 
   function spawnAhead() {
@@ -125,7 +157,7 @@
       if (roll < SP.obstacleChance) {
         const pal = C.trafficPalette || [C.car];
         entities.push({
-          type: Math.random() < SP.carVsBarrier ? 'barrier' : 'car',
+          type: pickObstacle(SP.obstacleWeights),
           lane: Math.floor(Math.random() * LANES),
           z: spawnZ,
           taken: false,
@@ -155,6 +187,9 @@
     coinsEl.textContent = '● ' + coins;
     speedEl.textContent = Math.floor(speed * CFG.speed.kmhFactor) + ' km/h';
     nitroBar.style.transform = 'scaleX(' + Math.max(0, Math.min(1, nitro)) + ')';
+    hpBar.style.transform = 'scaleX(' + Math.max(0, hp / HP.max) + ')';
+    hpBar.style.backgroundColor = HP.barColors[hp < HP.barRedBelow ? 2 : hp < HP.barYellowBelow ? 1 : 0];
+    hpNum.textContent = String(Math.max(0, Math.ceil(hp)));
   }
 
   function reset() {
@@ -175,6 +210,10 @@
     spawnZ = st.spawnZ;
     smoke = [];
     smokeT = 0;
+    sparkT = 0;
+    hp = HP.max;
+    invT = 0;
+    joltT = 0;
     spawnAhead();
     updateHud();
   }
@@ -182,6 +221,9 @@
   function die() {
     state = 'over';
     gestureEnd();
+    hp = 0;
+    invT = 0;
+    updateHud();
     A.smoke.spawn(smoke, CFG.smoke);
     smokeT = 0;
     const sc = currentScore();
@@ -244,6 +286,9 @@
         e.preventDefault();
       } else if (isKey(K.jump, e)) {
         tryJump();
+        e.preventDefault();
+      } else if (isKey(K.fps, e) && state === 'title') {
+        if (!e.repeat) toggleFps();
         e.preventDefault();
       } else if (isKey(K.start, e)) {
         if (!e.repeat) onStartKey();
@@ -355,6 +400,8 @@
       player.y = 0;
     }
     if (jumpCd > 0) jumpCd -= dt;
+    if (invT > 0) invT = Math.max(0, invT - dt);
+    if (joltT > 0) joltT = Math.max(0, joltT - dt);
 
     spawnAhead();
 
@@ -364,7 +411,7 @@
     const prevPz = pz - speed * dt;
     const halfP = S.playerLen / 2;
     for (const e of entities) {
-      if (e.taken) continue;
+      if (e.taken || e.hit) continue;
       const dim = entityDims(e);
       const zHit = e.z - dim.len / 2 <= pz + halfP && e.z + dim.len / 2 >= prevPz - halfP;
       // x overlap against the car's VISUAL position (mid lane change counts)
@@ -373,13 +420,27 @@
         if (e.type === 'coin') {
           e.taken = true;
           coins++;
-        } else if (player.y < CFG.jump.clearHeight) {
-          return die();
+        } else if (player.y < CFG.jump.clearHeight && invT <= 0) {
+          if (hitObstacle(e)) return die();
         }
       }
     }
+    for (const e of entities) if (e.hitT !== undefined) e.hitT += dt;
     entities = entities.filter((e) => e.z > cameraZ - 2 && !e.taken);
+    updateSmoke(dt, false);
     updateHud();
+  }
+
+  /** Apply one obstacle hit. Returns true when HP reaches 0 (run over). */
+  function hitObstacle(e) {
+    e.hit = true;
+    hp = Math.max(0, hp - (HP.damage[e.type] || 0));
+    if (hp <= 0) return true;
+    invT = HP.invulnTime;
+    if (e.type === 'cones') { e.hitT = 0; e.scatter = A.cones.scatter(); }
+    if (e.type === 'pothole') joltT = HP.potholeJoltTime;
+    A.smoke.spawn(smoke, CFG.smoke, CFG.smoke.hitPuffs);
+    return false;
   }
 
   /** Screen Y of the farthest road segment (where sky meets the road). */
@@ -475,6 +536,10 @@
     const world = { x, y: 0, z: e.z };
     if (e.type === 'coin') {
       A.coin.draw(ctx, p, { C, S });
+    } else if (e.type === 'cones') {
+      A.cones.draw(ctx, p, { C, S, scene: sc, world, hitT: e.hitT, scatter: e.scatter });
+    } else if (e.type === 'pothole') {
+      A.pothole.draw(ctx, p, { C, S, scene: sc, world });
     } else if (e.type === 'barrier') {
       A.barrier.draw(ctx, p, { C, S, w: p.k * S.barrierW, h: p.k * S.barrierH, scene: sc, world });
     } else {
@@ -484,7 +549,11 @@
 
   function drawPlayer(sc) {
     const pz = cameraZ + T.playerAhead;
-    const p = project(player.x, player.y, pz);
+    // Invulnerable after a hit: blink (skip every other blink step)
+    if (invT > 0 && Math.floor(invT * HP.blinkRate) % 2 === 1) return;
+    const jolt = joltT > 0 ? Math.abs(Math.sin(joltT * 60)) * HP.potholeJoltAmp * (joltT / HP.potholeJoltTime) : 0;
+    const py = player.y + jolt;
+    const p = project(player.x, py, pz);
     if (!p) return;
     const w = p.k * S.playerW;
     const h = p.k * S.playerH;
@@ -493,7 +562,7 @@
     A.car.draw(ctx, p, {
       C, S, w, h,
       scene: sc,
-      world: { x: player.x, y: player.y, z: pz },
+      world: { x: player.x, y: py, z: pz },
       yaw, roll: -yaw * 0.15,
       nitro: nitroOn && nitro > 0,
       braking: state === 'play' && (held(K.brake) || touch.brake),
@@ -505,7 +574,9 @@
     drawSky(hy);
     drawRoad(hy);
     const sc = scene();
-    const sorted = entities.slice().sort((a, b) => b.z - a.z);
+    // Potholes lie flat on the road: draw them first so cars and cones pass over them.
+    for (const e of entities) if (e.type === 'pothole') drawEntity(e, sc);
+    const sorted = entities.filter((e) => e.type !== 'pothole').sort((a, b) => b.z - a.z);
     // Far to near; the player car is drawn in depth order so cars it has
     // already passed (nearer the camera) cover it correctly.
     const pz = cameraZ + T.playerAhead;
@@ -520,21 +591,70 @@
     }
   }
 
-  /** Crash screen: the wrecked car keeps smoking (capped by CFG.smoke.maxPuffs). */
-  function updateSmoke(dt) {
-    smokeT -= dt;
-    if (smokeT <= 0) { smokeT += CFG.smoke.trailInterval; A.smoke.trail(smoke, CFG.smoke); }
+  /**
+   * Car smoke by HP tier (CFG.smoke.tiers). On the crash screen (crashed = true)
+   * the heaviest tier is used. Puffs are capped by CFG.smoke.maxPuffs.
+   */
+  function updateSmoke(dt, crashed) {
+    const M = CFG.smoke;
+    const tier = crashed ? M.tiers[0] : A.smoke.tierFor(M, hp);
+    if (tier) {
+      smokeT -= dt;
+      if (smokeT <= 0) { smokeT = Math.max(0, smokeT + tier.interval); A.smoke.trail(smoke, M, tier); }
+      if (tier.sparks) {
+        sparkT -= dt;
+        if (sparkT <= 0) { sparkT += tier.sparks * (0.5 + Math.random()); A.smoke.spark(smoke, M); }
+      }
+    } else {
+      smokeT = 0;
+    }
     smoke = A.smoke.update(smoke, dt);
   }
 
+  // rAF loop with a frame cap: only step + draw when a full frame interval has built up.
   function loop(ts) {
+    requestAnimationFrame(loop);
+    if (!rafLast) rafLast = ts;
+    frameAcc += ts - rafLast;
+    rafLast = ts;
+    const interval = 1000 / fpsCap;
+    // 1 ms slack so a 60 Hz display isn't rounded down to 30 at a 60 cap
+    if (frameAcc < interval - 1) return;
+    frameAcc = Math.min(frameAcc - interval, interval); // keep the remainder, never bank > 1 frame
+    if (frameAcc < 0) frameAcc = 0;
     if (!last) last = ts;
     const dt = Math.min(0.05, (ts - last) / 1000);
     last = ts;
     if (state === 'play') update(dt);
-    else if (state === 'over') updateSmoke(dt);
+    else if (state === 'over') updateSmoke(dt, true);
     draw();
-    requestAnimationFrame(loop);
+    fpsFrames++;
+    fpsTime += dt;
+    if (fpsTime >= CFG.fps.counterInterval) {
+      fpsShown = Math.round(fpsFrames / fpsTime);
+      fpsEl.textContent = fpsShown + ' FPS';
+      fpsFrames = 0; fpsTime = 0;
+    }
+  }
+
+  // Test hook: only when a test page sets window.CAR_RUN_TEST before loading.
+  if (window.CAR_RUN_TEST) {
+    window.CAR_RUN_DEBUG = {
+      get: () => ({ state, hp, invT, distance, speed, smoke: smoke.length, sparks: smoke.filter((s) => s.spark).length,
+        tier: A.smoke.tierFor(CFG.smoke, hp), fps: fpsShown, fpsCap, playerY: player.y, entities: entities.length }),
+      start: () => startPlay(),
+      setHp: (v) => { hp = v; updateHud(); },
+      setFps: (v) => { fpsCap = v; },
+      // Put an obstacle of `type` right ahead of the car in its lane (and clear the rest).
+      place: (type, ahead) => {
+        entities = [{ type, lane: player.lane, z: cameraZ + T.playerAhead + (ahead || 1.5), taken: false, color: C.car }];
+        spawnZ = cameraZ + DRAW_DIST + 200;
+      },
+      clear: () => { entities = []; spawnZ = cameraZ + DRAW_DIST + 1e9; },
+      jump: () => tryJump(),
+      freezeSpeed: (v) => { CFG.speed.cruiseAccel = 0; CFG.speed.distanceBonusRate = 0; baseSpeed = v; },
+      pause: (on) => { state = on ? 'pause' : 'play'; },
+    };
   }
 
   window.addEventListener('resize', resize);

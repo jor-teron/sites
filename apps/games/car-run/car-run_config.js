@@ -6,6 +6,32 @@
 const CAR_RUN_CONFIG = {
   bestKey: 'car-run-best',     // localStorage key for the best score
 
+  // Car HP (one life): each hit costs HP by obstacle type, the run ends at 0 HP.
+  hp: {
+    max: 100,                  // HP at the start of a run
+    damage: {                  // HP lost per hit
+      car: 35,                 // traffic car (hardest hit)
+      barrier: 25,             // road barrier
+      cones: 10,               // traffic cones (light hit, they scatter)
+      pothole: 15,             // pothole (jump over it to avoid)
+    },
+    invulnTime: 1.0,           // seconds the car blinks and can't be hit after a hit
+    blinkRate: 12,             // blink toggles per second while invulnerable
+    potholeJoltTime: 0.35,     // seconds the car shakes after a pothole
+    potholeJoltAmp: 0.06,      // shake height (world units)
+    barYellowBelow: 60,        // HP bar turns yellow below this HP
+    barRedBelow: 30,           // HP bar turns red below this HP
+    barColors: ['#22c55e', '#facc15', '#ef4444'], // green, yellow, red
+  },
+
+  // Frame rate cap. The game runs on real time (dt), so speed is the same at 30 and 60.
+  fps: {
+    storageKey: 'car-run.fps', // localStorage key for the chosen cap
+    default: 30,               // cap used until the player picks one
+    options: [30, 60],         // values the title-screen button cycles through
+    counterInterval: 0.5,      // seconds between FPS counter updates
+  },
+
   // Track / camera
   track: {
     lanes: 3,                  // number of lanes
@@ -74,7 +100,8 @@ const CAR_RUN_CONFIG = {
     lookAhead: 20,             // spawn this far past the draw distance
     obstacleChance: 0.45,      // roll below this -> obstacle
     coinChance: 0.85,          // roll below this (and above obstacle) -> coin row
-    carVsBarrier: 0.5,         // chance an obstacle is a car (else barrier)
+    // Relative weights for which obstacle spawns (they don't need to add up to 1)
+    obstacleWeights: { car: 0.36, barrier: 0.30, cones: 0.20, pothole: 0.14 },
     coinRowMin: 3,             // minimum coins in a row
     coinRowExtra: 3,           // up to this many extra coins (random)
     coinSpacing: 1.4,          // z gap between coins
@@ -101,6 +128,12 @@ const CAR_RUN_CONFIG = {
     barrierW: 0.65,            // barrier width
     barrierH: 0.35,            // barrier height
     barrierLen: 0.4,           // barrier length (z)
+    conesW: 0.55,              // cone cluster width
+    conesLen: 0.35,            // cone cluster length (z)
+    coneH: 0.24,               // one cone's height
+    coneBase: 0.13,            // one cone's base width
+    potholeW: 0.5,             // pothole width
+    potholeLen: 0.6,           // pothole length (z)
     carW: 0.6,                 // traffic car width
     carH: 0.4,                 // traffic car height
     carLen: 1.0,               // traffic car length (z)
@@ -133,6 +166,11 @@ const CAR_RUN_CONFIG = {
     coinInner: '#f59e0b',      // coin inner
     barrier: '#ef4444',        // barrier
     barrierStripe: '#fef3c7',  // barrier stripe
+    cone: '#f97316',           // traffic cone body
+    coneStripe: '#f8fafc',     // traffic cone reflective band
+    coneBase: '#1f2937',       // traffic cone base
+    pothole: '#030712',        // pothole inside
+    potholeRim: '#4b5563',     // pothole broken-asphalt rim
     car: '#3b82f6',            // traffic car body (fallback)
     trafficPalette: ['#3b82f6', '#e5e7eb', '#22c55e', '#facc15', '#a855f7', '#475569'], // random traffic colours
     player: '#ef4444',         // player body
@@ -160,6 +198,19 @@ const CAR_RUN_CONFIG = {
     trailInterval: 0.12,       // seconds between trail puffs
     trailScale: 0.6,           // trail puffs are this fraction of burst puff size
     trailZ: 0.9,               // trail puffs start at the hood (ahead of car centre)
+    hitPuffs: 4,               // small burst at each non-fatal hit
+    // Smoke by HP: the first tier whose `below` is above the current HP is used.
+    // HP above 90 = no smoke. The last tier is also used on the CRASH! screen.
+    tiers: [
+      { below: 20, interval: 0.05, scale: 1.2, alpha: 0.75, color: '20,20,22', sparks: 0.15 },   // black + sparks
+      { below: 45, interval: 0.07, scale: 1.0, alpha: 0.65, color: '55,55,60' },                 // thick dark
+      { below: 70, interval: 0.12, scale: 0.75, alpha: 0.5, color: '120,120,128' },             // steady grey
+      { below: 90, interval: 0.3, scale: 0.5, alpha: 0.35, color: '185,185,192' },              // light wisp
+    ],
+    sparkColor: '255,190,60',  // spark RGB
+    sparkLife: 0.35,           // seconds a spark lives
+    sparkSpeed: 1.6,           // spark burst speed (units / s)
+    sparkRadius: 1.6,          // spark size (px)
   },
 
   // Input
@@ -183,6 +234,7 @@ const CAR_RUN_CONFIG = {
     jump: ['KeyX'],                  // jump
     start: ['Enter', 'KeyP'],        // start / pause / resume (Start / P)
     restart: ['Escape', 'KeyR'],     // back to title (Select / R)
+    fps: ['KeyF'],                   // title screen: switch 30 / 60 FPS
   },
 
   // On-screen text
@@ -192,6 +244,9 @@ const CAR_RUN_CONFIG = {
     titleSub: 'or tap / click',                         // title sub line
     paused: 'PAUSED',                                   // pause heading
     crash: 'CRASH!',                                    // game over heading
+    fpsButton: 'FPS: ',                                 // title FPS button label (+ value)
+    fpsHint: '(F)',                                     // key hint after the FPS button
+    hp: 'HP',                                           // HP bar label
     help: '←→ lane · ↑ accel · ↓ brake · A nitro · B jump · Start pause · Select restart · Touch: swipe ←→ lane · swipe ↑ jump · swipe ↓ brake · hold nitro', // help line
   },
 };
