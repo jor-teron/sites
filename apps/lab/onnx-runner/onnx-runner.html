@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<!--
+  ONNX Runner — run any single .onnx file in the browser (ONNX Runtime Web, raw mode).
+  Files: onnx-runner.css, onnx-runner_config.js, onnx-runner_tensor.js,
+         onnx-runner_logic.js, onnx-runner_worker.js (inference runs in the worker).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ONNX Runner</title>
+  <link rel="icon" href="onnx-runner_icon.png">
+  <link rel="stylesheet" href="onnx-runner.css">
+</head>
+<body>
+  <header><h1>ONNX Runner</h1><span id="backendBadge" class="badge" hidden></span></header>
+  <main>
+    <section id="modelPanel" class="panel">
+      <h2>Model</h2>
+      <label id="drop" class="drop" tabindex="0">
+        <input id="file" type="file" accept=".onnx" hidden>
+        <span>Drop a <b>.onnx</b> file here or click to pick one</span>
+      </label>
+      <label class="row">Backend
+        <select id="backend"></select>
+      </label>
+      <div id="modelInfo" class="muted">No model loaded.</div>
+      <div id="metaIn"></div>
+      <div id="metaOut"></div>
+    </section>
+    <section class="panel right">
+      <h2>Inputs</h2>
+      <div id="inputs" class="muted">Load a model to see its inputs.</div>
+      <div class="row">
+        <button id="run" disabled>Run</button><span class="muted small">Ctrl+Enter</span>
+        <span id="runTime" class="muted"></span>
+      </div>
+      <div id="error" class="error" hidden></div>
+      <h2>Outputs</h2>
+      <label class="row small"><input id="softmax" type="checkbox"> Softmax for top-k</label>
+      <div id="outputs" class="muted">Run the model to see outputs.</div>
+    </section>
+  </main>
+  <script src="onnx-runner_config.js"></script>
+  <script src="onnx-runner_tensor.js"></script>
+  <script src="onnx-runner_logic.js"></script>
+</body>
+</html>
