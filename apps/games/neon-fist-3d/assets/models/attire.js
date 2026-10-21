@@ -1,7 +1,7 @@
 // Neon Fist 3D — clothing built in code, fitted to the body frame.
 import * as THREE from 'three';
-import { V, mat, lathe, taper, ball, box, lerpV, radiusAt, HEAD_Y } from './parts.js';
-import { bust } from './female.js';
+import { V, mat, lathe, limb, taper, ball, box, lerpV, radiusAt, HEAD_Y } from './parts.js';
+import { bust, glutes } from './female.js';
 
 export const ATTIRE = {
   footwear: ['barefoot', 'sneakers', 'boots', 'sandals'],
@@ -49,16 +49,28 @@ function bottom(g, J, kind) {
   const m = mat(kind === 'joggers' ? C.jog : kind === 'skirt' ? C.skirt : C.bottom, { roughness: 0.85 });
   g.add(lathe(m, J.torso, J.depth, { y0: 0.86, y1: kind === 'skirt' ? 1.06 : 1.03, pad: 0.016, capBottom: true }));
   g.add(lathe(glow(C.neonA, 0.4), J.torso, J.depth, { y0: 1.0, y1: 1.02, pad: 0.02 })); // waistband
-  if (kind === 'skirt') {
-    const rTop = radiusAt(J.torso, 0.95) + 0.02, sk = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rTop + 0.13, 0.36, 28, 1, true), m);
-    sk.position.y = 0.8; sk.scale.z = Math.max(0.75, J.depth + 0.1); sk.castShadow = true; g.add(sk); return;
+  if (J.fem) { const G = glutes(J); for (const s of [-1, 1]) g.add(ball(m, V(s * G.x, G.y, G.z), G.r + 0.008, 1, 0.95, 0.82)); }
+  if (kind === 'skirt') { // flared A-line with soft pleats
+    const rTop = radiusAt(J.torso, 0.95) + 0.03, pts = [];
+    for (let i = 0; i <= 16; i++) { const t = i / 16; pts.push(new THREE.Vector2(rTop + 0.15 * t ** 1.6 + 0.02 * Math.sin(t * Math.PI) , 1.0 - 0.42 * t)); }
+    const geo = new THREE.LatheGeometry(pts.reverse(), 48), p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), t = (1.0 - p.getY(i)) / 0.42, k = 1 + 0.05 * t * Math.sin(Math.atan2(z, x) * 14); p.setX(i, x * k); p.setZ(i, z * k); }
+    geo.computeVertexNormals();
+    const sk = new THREE.Mesh(geo, mat(C.skirt, { roughness: 0.85, side: THREE.DoubleSide })); sk.scale.z = Math.max(0.8, J.depth + 0.16); sk.castShadow = true; g.add(sk);
+    g.add(new THREE.Mesh(new THREE.TorusGeometry(1, 0.012, 6, 48), glow(C.neonB, 0.6)).rotateX(Math.PI / 2).translateZ(0.0)); g.children.at(-1).scale.set(rTop + 0.15 * 1 + 0.003, rTop + 0.15 + 0.003, 1); g.children.at(-1).position.y = 0.58; g.children.at(-1).scale.y *= sk.scale.z;
+    return;
   }
   for (const { hp, kn, an } of J.legs) {
     const p = 0.012;
-    if (kind === 'shorts') { const e = lerpV(hp, kn, 0.6); g.add(taper(m, hp, e, th[0] + p, th[0] + (th[1] - th[0]) * 0.6 + p + 0.008)); continue; }
-    g.add(taper(m, hp, kn, th[0] + p, th[1] + p), ball(m, kn, th[1] + p));
+    if (kind === 'shorts') { const e = lerpV(hp, kn, 0.6), r1 = th[0] + (th[1] - th[0]) * 0.6 + p + 0.008; g.add(J.fem ? limb(m, hp, e, th[0] + p, r1, 0.01, 0.4, 20) : taper(m, hp, e, th[0] + p, r1)); continue; }
     const loose = kind === 'pants' ? 0.012 : 0;
-    g.add(taper(m, kn, an.clone().add(V(0, 0.03, 0)), th[1] + p, ca[1] + p + loose));
+    if (J.fem) { // follow the R3 female thigh and calf curves
+      g.add(limb(m, hp, kn, th[0] + p, th[1] + p, 0.01, 0.25, 20));
+      g.add(limb(m, kn, an.clone().add(V(0, 0.03, 0)), th[1] * 0.9 + p, ca[1] + p + loose, 0.016, 0.3, 18));
+    } else {
+      g.add(taper(m, hp, kn, th[0] + p, th[1] + p), ball(m, kn, th[1] + p));
+      g.add(taper(m, kn, an.clone().add(V(0, 0.03, 0)), th[1] + p, ca[1] + p + loose));
+    }
     if (kind === 'joggers') g.add(taper(glow(C.neonB, 0.3), an.clone().add(V(0, 0.03, 0)), an.clone().add(V(0, 0.07, 0)), ca[1] + p + 0.004, ca[1] + p + 0.004));
   }
 }
@@ -67,7 +79,7 @@ function footwear(g, J, kind) {
   if (kind === 'barefoot') return;
   const k = J.fem ? 0.92 : 1.05;
   for (const { an, toe } of J.legs) {
-    const f = new THREE.Group(); f.position.set(an.x, 0, 0.045); f.rotation.y = toe; g.add(f);
+    const f = new THREE.Group(); f.position.set(an.x, 0, an.z + 0.045); f.rotation.y = toe; g.add(f);
     const sole = mat(kind === 'sandals' ? '#5a3a20' : '#eee'); 
     if (kind === 'sandals') {
       f.add(box(sole, V(0, 0.008, 0), 0.085 * k, 0.016, 0.24 * k));

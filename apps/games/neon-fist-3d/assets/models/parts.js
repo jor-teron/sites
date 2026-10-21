@@ -17,7 +17,7 @@ export const BUILD = {
 // torso profiles [y, radius], crotch -> base of neck
 const PROFILE = {
   male:   [[0.86,0.02],[0.88,0.12],[0.95,0.15],[1.05,0.14],[1.15,0.15],[1.27,0.18],[1.36,0.2],[1.42,0.19],[1.46,0.14],[1.49,0.05]],
-  female: [[0.86,0.02],[0.88,0.13],[0.95,0.172],[1.02,0.158],[1.1,0.118],[1.2,0.13],[1.3,0.148],[1.4,0.152],[1.46,0.12],[1.49,0.05]],
+  female: [[0.86,0.02],[0.872,0.1],[0.9,0.148],[0.95,0.172],[1.0,0.166],[1.05,0.146],[1.1,0.122],[1.15,0.123],[1.2,0.132],[1.26,0.143],[1.32,0.148],[1.38,0.15],[1.42,0.146],[1.455,0.122],[1.475,0.08],[1.49,0.045]],
 };
 
 // Joint layout for a gender + build (metres, before height scaling). Relaxed stance.
@@ -40,12 +40,22 @@ export function frame(gender, build) {
     const hp = V(sd * hipW, 0.9, 0), kn = V(sd * (hipW + 0.015), 0.5, 0.025), an = V(sd * (hipW + 0.03), 0.08, 0);
     J.legs.push({ sd, hp, kn, an, toe: sd * 0.18 });
   }
+  if (fem) J.r = { ua: [0.046 * L, 0.034 * L], fa: [0.035 * L, 0.024 * L], th: [0.09 * L, 0.056 * L], ca: [0.054 * L, 0.03 * L] };
+  if (fem) { // relaxed contrapposto: weight on right leg (sd=-1), left knee eases forward and in
+    const [R, Lg] = J.legs, [aR, aL] = J.arms;
+    R.hp.y += 0.012; Lg.hp.y -= 0.012; R.an.x += 0.025;
+    Lg.kn.set(Lg.kn.x - 0.02, 0.5, 0.06); Lg.an.set(Lg.an.x - 0.005, 0.09, 0.05); Lg.toe = 0.4;
+    aR.sh.y -= 0.008; aL.sh.y += 0.008; aR.el.x -= 0.015 * -1; aR.wr.set(aR.wr.x - 0.03, 0.92, 0.07);
+    aL.el.z = -0.05; aL.wr.set(aL.wr.x + 0.01, 0.9, 0.02);
+  }
   return J;
 }
 
-export function radiusAt(prof, y) {
+export function radiusAt(prof, y) { // Catmull-Rom through the profile points (smooth, no kinks)
   for (let i = 1; i < prof.length; i++) if (y <= prof[i][0]) {
-    const [y0, r0] = prof[i - 1], [y1, r1] = prof[i]; return r0 + (r1 - r0) * (y - y0) / (y1 - y0);
+    const [y0, r0] = prof[i - 1], [y1, r1] = prof[i], t = Math.max(0, (y - y0) / (y1 - y0));
+    const rm = (prof[i - 2] || prof[i - 1])[1], rp = (prof[i + 1] || prof[i])[1];
+    return 0.5 * (2 * r0 + (r1 - rm) * t + (2 * rm - 5 * r0 + 4 * r1 - rp) * t * t + (3 * r0 - rm - 3 * r1 + rp) * t * t * t);
   }
   return prof[prof.length - 1][1];
 }
@@ -54,11 +64,11 @@ export function radiusAt(prof, y) {
 export function lathe(material, prof, depth, { y0 = -1, y1 = 9, pad = 0, capBottom = false, capTop = false } = {}) {
   const pts = [];
   const lo = Math.max(y0, prof[0][0]), hi = Math.min(y1, prof[prof.length - 1][0]);
-  const N = 22;
+  const N = 40;
   for (let i = 0; i <= N; i++) { const y = lo + (hi - lo) * i / N; pts.push(new THREE.Vector2(radiusAt(prof, y) + pad, y)); }
   if (capBottom) pts.unshift(new THREE.Vector2(0.001, lo));
   if (capTop) pts.push(new THREE.Vector2(0.001, hi));
-  const m = shadow(new THREE.Mesh(new THREE.LatheGeometry(pts, 28), material));
+  const m = shadow(new THREE.Mesh(new THREE.LatheGeometry(pts, 36), material));
   m.scale.z = depth; return m;
 }
 
@@ -75,6 +85,15 @@ export function ball(material, p, r, sx = 1, sy = 1, sz = 1) {
 }
 export function box(material, p, w, h, d) {
   const m = shadow(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material)); m.position.copy(p); return m;
+}
+// Smooth limb: one lathe from a to b with rounded ends (radius ra/rb) and a muscle bulge at t=at.
+export function limb(material, a, b, ra, rb, bulge = 0, at = 0.35, seg = 18) {
+  const len = a.distanceTo(b), pts = [];
+  for (let i = 0; i <= 6; i++) { const q = -Math.PI / 2 + i / 6 * Math.PI / 2; pts.push(new THREE.Vector2(Math.max(0.0005, ra * Math.cos(q)), ra * Math.sin(q))); }
+  for (let i = 1; i < 14; i++) { const t = i / 14; pts.push(new THREE.Vector2(ra + (rb - ra) * t + bulge * Math.exp(-(((t - at) / 0.28) ** 2)), t * len)); }
+  for (let i = 0; i <= 6; i++) { const q = i / 6 * Math.PI / 2; pts.push(new THREE.Vector2(Math.max(0.0005, rb * Math.cos(q)), len + rb * Math.sin(q))); }
+  const m = shadow(new THREE.Mesh(new THREE.LatheGeometry(pts, seg), material));
+  m.position.copy(a); m.quaternion.setFromUnitVectors(UP, b.clone().sub(a).normalize()); return m;
 }
 export const lerpV = (a, b, t) => a.clone().lerp(b, t);
 

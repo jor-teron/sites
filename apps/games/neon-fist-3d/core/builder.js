@@ -1,4 +1,4 @@
-// Neon Fist 3D — Hero Builder R2: scene, camera, UI, save.
+// Neon Fist 3D — Hero Builder R3: scene, camera, UI, save.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { SKINS, ATTIRE, DEFAULT_HERO, buildHero, randomHero, sanitizeHero } from './hero.js';
