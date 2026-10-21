@@ -93,6 +93,27 @@ Draftly.storage.save = function save() {
   });
 };
 
+/* Quick synchronous backup for page close; IndexedDB may not finish. */
+Draftly.storage.writeBackup = function writeBackup() {
+  if (!Draftly.pages) return;
+  var holder = document.createElement('div');
+  holder.innerHTML = Draftly.pages.combinedHtml();
+  if (Draftly.editor) Draftly.editor.stripMarks(holder);
+  try {
+    localStorage.setItem(Draftly.config.storageKeyBackup, JSON.stringify({
+      name: Draftly.storage.fillNameIfEmpty(), html: holder.innerHTML, time: Date.now()
+    }));
+  } catch (e) {}
+};
+
+/* Read the backup, or null. */
+Draftly.storage.readBackup = function readBackup() {
+  try {
+    var raw = localStorage.getItem(Draftly.config.storageKeyBackup);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+};
+
 /* Read one document by name. Resolves null if missing. */
 Draftly.storage.getDoc = function getDoc(name) {
   var cfg = Draftly.config;
