@@ -32,6 +32,9 @@ const CAMERA_CONFIG = {
   ],
   recorderSliceMs: 1000,
 
+  // Slow motion (R3): shown only when the camera can give minFps or more
+  slowmo: { minFps: 60, idealFps: 120, outFps: 30, maxSeconds: 10, bitrate: 8000000 },
+
   // Defaults (also used when nothing is saved yet)
   defaults: {
     mode: 'photo',        // 'photo' | 'video'
@@ -42,10 +45,11 @@ const CAMERA_CONFIG = {
     mirror: null,         // null = automatic (mirrored for the front camera)
     deviceId: '',
     facing: 'user',       // 'user' (front) | 'environment' (back)
+    slowmo: false,        // slow-motion video (only where supported)
   },
 
   storageKey: 'camera-settings-v1',
-  filePrefix: { photo: 'photo', video: 'video' },
+  filePrefix: { photo: 'photo', video: 'video', slowmo: 'slowmo' },
   toastMs: 1800,
 
   text: {
@@ -57,6 +61,7 @@ const CAMERA_CONFIG = {
     failed: 'Could not start the camera.',
     saved: 'Saved ',
     noRecorder: 'Video recording is not supported in this browser.',
+    processing: 'Processing slow motion… ',
     noAudio: 'Recording without sound (no microphone access).',
   },
 };

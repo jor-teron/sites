@@ -16,6 +16,7 @@
     flip: $('flip-btn'), thumb: $('thumb'), thumbImg: $('thumb-img'), settingsBtn: $('settings-btn'),
     settings: $('settings'), device: $('device-select'), resSeg: $('res-seg'), formatSeg: $('format-seg'),
     timerSeg: $('timer-seg'), gridCheck: $('grid-check'), mirrorCheck: $('mirror-check'), info: $('info'),
+    slowRow: $('slowmo-row'), slowCheck: $('slowmo-check'), processing: $('processing'),
   };
 
   // ---------------------------------------------------------------- settings
@@ -38,6 +39,8 @@
   let countdownTimer = 0;
   let lastUrl = '';
   let toastTimer = 0;
+  let slowOk = false, slowRec = null, slowLimit = 0;
+  const slowActive = () => S.mode === 'video' && !!S.slowmo && slowOk;
 
   const mirrored = () => (S.mirror == null ? facingNow === 'user' : !!S.mirror);
 
@@ -62,11 +65,12 @@
     el.video.srcObject = null;
   }
 
-  function constraints(withAudio) {
+  function constraints(withAudio, plain) {
     const r = C.resolutions[S.resolution];
     const video = { width: { ideal: r.width }, height: { ideal: r.height } };
     if (S.deviceId) video.deviceId = { exact: S.deviceId };
     else video.facingMode = { ideal: S.facing };
+    if (!plain && S.mode === 'video' && S.slowmo) video.frameRate = CameraSlowmo.constraint();
     return { video, audio: withAudio };
   }
 
@@ -82,7 +86,10 @@
         try {
           stream = await navigator.mediaDevices.getUserMedia(constraints(wantAudio));
         } catch (err) {
-          if (S.deviceId && (err.name === 'OverconstrainedError' || err.name === 'NotFoundError')) {
+          if (S.mode === 'video' && S.slowmo && err.name === 'OverconstrainedError') {
+            // this camera cannot do 60 fps: open it normally
+            stream = await navigator.mediaDevices.getUserMedia(constraints(wantAudio, true));
+          } else if (S.deviceId && (err.name === 'OverconstrainedError' || err.name === 'NotFoundError')) {
             S.deviceId = ''; persist();
             stream = await navigator.mediaDevices.getUserMedia(constraints(wantAudio));
           } else if (wantAudio && err.name !== 'NotAllowedError') {
@@ -106,6 +113,8 @@
       const st = track && track.getSettings ? track.getSettings() : {};
       if (st.facingMode) facingNow = st.facingMode === 'environment' ? 'environment' : 'user';
       else facingNow = S.facing;
+      slowOk = CameraSlowmo.supported(track);
+      updateSlowRow();
       el.video.srcObject = stream;
       try { await el.video.play(); } catch (_) { /* autoplay muted: fine */ }
       hideMessage();
@@ -174,7 +183,7 @@
 
   function buildSettings() {
     seg(el.resSeg, C.resolutionOrder.map((k) => ({ value: k, label: C.resolutions[k].label })), S.resolution, (v) => {
-      S.resolution = v; persist(); if (!recorder) start();
+      S.resolution = v; persist(); if (!recorder && !slowRec) start();
     });
     seg(el.formatSeg, Object.keys(C.photoFormats).map((k) => ({ value: k, label: C.photoFormats[k].label })), S.format, (v) => {
       S.format = v; persist();
@@ -184,8 +193,15 @@
     });
   }
 
+  /* Slow motion row: hidden when the camera cannot give 60 fps (re-checked on every start). */
+  function updateSlowRow() {
+    el.slowRow.hidden = !slowOk;
+    el.slowCheck.checked = !!S.slowmo;
+    document.body.classList.toggle('slowmo-on', slowActive());
+  }
+
   function setMode(mode) {
-    if (recorder) return;
+    if (recorder || slowRec) return;
     S.mode = mode; persist();
     document.body.classList.toggle('mode-video', mode === 'video');
     el.shutter.title = mode === 'video' ? 'Start / stop recording (Space)' : 'Take photo (Space)';
@@ -193,7 +209,8 @@
     el.mode.setAttribute('aria-label', mode === 'video' ? 'Switch to photo' : 'Switch to video');
     // the microphone is only opened in video mode
     const hasAudio = stream && stream.getAudioTracks().length > 0;
-    if (stream && (mode === 'video') !== hasAudio) start();
+    if (stream && ((mode === 'video') !== hasAudio || S.slowmo)) start();
+    else updateSlowRow();
   }
 
   function setThumb(blob, isVideo) {
@@ -278,7 +295,56 @@
     return s;
   }
 
+  /* ---- slow motion: record at high fps (picture only), then slow it down */
+  function startSlowmo() {
+    recType = recordType();
+    if (!recType || !stream) { toast(C.text.noRecorder); return; }
+    try { slowRec = CameraSlowmo.capture(stream, recType.mime); } catch (_) { slowRec = null; toast(C.text.noRecorder); return; }
+    slowRec.k = CameraSlowmo.factor(stream.getVideoTracks()[0]);
+    slowRec.mirror = mirrored();
+    recStart = performance.now(); recPausedTotal = 0; recPausedAt = 0;
+    document.body.classList.add('recording');
+    el.recBadge.hidden = false; el.recBadge.classList.remove('paused');
+    el.mode.disabled = el.flip.disabled = true;
+    el.shutter.setAttribute('aria-label', 'Stop recording');
+    const max = C.slowmo.maxSeconds;
+    const t = () => { const left = Math.max(0, max - Math.floor(elapsedMs() / 1000)); el.recTime.textContent = slowRec.k + '× · ' + left + 's'; };
+    t();
+    recTimer = setInterval(t, 250);
+    slowLimit = setTimeout(stopSlowmo, max * 1000);
+  }
+
+  async function stopSlowmo() {
+    if (!slowRec || slowRec.busy) return;
+    const job = slowRec; job.busy = true;
+    clearTimeout(slowLimit); clearInterval(recTimer);
+    job.stop();
+    document.body.classList.remove('recording');
+    el.recBadge.hidden = true;
+    el.shutter.disabled = true;
+    el.processing.textContent = C.text.processing; el.processing.hidden = false;
+    try {
+      const raw = await job.done;
+      if (!raw.size) return;
+      const out = await CameraSlowmo.slowDown(raw, job.k, job.mirror, recType.mime,
+        (p) => { el.processing.textContent = C.text.processing + Math.round(p * 100) + '%'; });
+      if (!out.size) return;
+      setThumb(out, true);
+      const n = await CameraSave.save(out, CameraSave.fileName(C.filePrefix.slowmo, recType.ext));
+      toast(C.text.saved + n);
+    } catch (_) { toast(C.text.failed); }
+    finally {
+      slowRec = null;
+      el.processing.hidden = true;
+      el.shutter.disabled = !el.message.hidden;
+      el.mode.disabled = false;
+      fillDevices(el.device.value);
+      el.shutter.setAttribute('aria-label', 'Start recording');
+    }
+  }
+
   function startRecording() {
+    if (slowActive()) { startSlowmo(); return; }
     recType = recordType();
     if (!recType || !stream) { toast(C.text.noRecorder); return; }
     recChunks = [];
@@ -311,7 +377,7 @@
   }
 
   function togglePause() {
-    if (!recorder) return;
+    if (!recorder) return;   // (slow motion has no pause)
     if (recorder.state === 'recording') {
       recorder.pause(); recPausedAt = performance.now();
       document.body.classList.add('paused'); el.recBadge.classList.add('paused');
@@ -348,12 +414,13 @@
   function shutter() {
     if (el.shutter.disabled) return;
     if (S.mode === 'photo') { withTimer(takePhoto); return; }
+    if (slowRec) { stopSlowmo(); return; }
     if (recorder) { stopRecording(); return; }
     withTimer(startRecording);
   }
 
   function flip() {
-    if (recorder) return;
+    if (recorder || slowRec) return;
     S.facing = facingNow === 'user' ? 'environment' : 'user';
     // with a named camera picked, flip moves to the next one in the list
     const opts = Array.from(el.device.options).map((o) => o.value);
@@ -381,7 +448,8 @@
   el.retry.addEventListener('click', start);
   el.settingsBtn.addEventListener('click', () => toggleSettings());
   el.thumb.addEventListener('click', () => { if (el.thumb.dataset.url) window.open(el.thumb.dataset.url, '_blank'); });
-  el.device.addEventListener('change', () => { S.deviceId = el.device.value; S.mirror = null; persist(); if (!recorder) start(); });
+  el.device.addEventListener('change', () => { S.deviceId = el.device.value; S.mirror = null; persist(); if (!recorder && !slowRec) start(); });
+  el.slowCheck.addEventListener('change', () => { S.slowmo = el.slowCheck.checked; persist(); if (!recorder && !slowRec) start(); });
   el.gridCheck.addEventListener('change', () => { S.grid = el.gridCheck.checked; persist(); layoutGrid(); });
   el.mirrorCheck.addEventListener('change', () => { S.mirror = el.mirrorCheck.checked; persist(); applyMirror(); });
   el.video.addEventListener('loadedmetadata', updateInfo);
@@ -407,6 +475,7 @@
   function sleep() {
     cancelCountdown();
     if (recorder) stopRecording();
+    if (slowRec) stopSlowmo();
     stopStream();
   }
   document.addEventListener('visibilitychange', () => {
