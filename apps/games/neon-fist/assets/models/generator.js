@@ -36,6 +36,8 @@
   const BUILD_ADJ = { heavy: ['Iron', 'Stone', 'Thunder'], average: ['Street', 'Steel', 'Wild'], lean: ['Swift', 'Silent', 'Shadow'] };
   const STYLE = { heavy: 'crushing grapples and heavy hooks', average: 'tight boxing and snapping kicks', lean: 'fast footwork and quick counters' };
 
+  const OUTFIT_WORD = { gi: 'a gi', suit: 'a combat suit', tee: 'a T-shirt', tank: 'a tank top', crop: 'a crop top' };
+  const LEG_WORD = { long: 'long pants', capri: 'capris', knee: 'knee-length pants', shorts: 'shorts', tights: 'armoured tights' };
   const nameDeck = { m: shuffle(MALE, rngFor(4242)), f: shuffle(FEMALE, rngFor(2424)) };
   const wildSet = new Set(shuffle([...Array(99).keys()], rngFor(777)).slice(0, 9).concat([99]));
 
@@ -92,6 +94,20 @@
     ch.belt = pick(['#0b0a0d', '#f1efe8', '#8a5a20', '#c3182a']); ch.band = pick(['#f1efe8', '#16161a', tone(gl[0], 1.1)]); ch.wrap = pick(['#e9e3d4', '#2a2a30', tone(gl[0], 1.4)]);
     ch.suit = tone(gl[0], rr(0.45, 0.7)); ch.armour = pick(['#1d2233', '#2a2a30', '#3a2a22', '#22302a', '#e0e0e8']); ch.armourHi = tone(ch.armour, 1.35);
     ch.bootCol = tone(ch.armour, 0.85);
+    // R2c2 clothing slots: own seeded stream so the R2a rolls above stay exactly the same
+    const ro = rngFor(n * 104729 + 57), op = a => a[Math.floor(ro() * a.length)];
+    ch.slots = NF.outfits.roll(ro, male, wild, ch.outfit === 'suit');
+    ch.skinThigh = from.legs === K ? 0.84 : 1;           // Kai's thigh profile is drawn with gi pants on
+    ch.trim = ch.glow;
+    const cl1 = op(CLOTH), cl2 = op(CLOTH.filter(c => c !== cl1)), acc = tone(gl[0], op([0.5, 0.65, 0.8]));
+    const scheme = op([[cl1, cl2], [cl1, acc], [acc, cl1], [cl2, tone(cl1, 0.7)]]);   // [top, legwear]
+    ch.top = scheme[0]; ch.topTrim = op([tone(gl[0], 0.85), tone(scheme[0], scheme[0] > '#8' ? 0.6 : 1.6), '#f1efe8']); ch.topStripe = ro() < 0.35;
+    if (ch.slots.legs !== 'tights' && ch.slots.top !== 'gi') ch.pants = scheme[1];
+    ch.pantsTrim = op([tone(gl[0], 1.1), tone(ch.pants, ch.pants > '#8' ? 0.6 : 1.7)]);
+    ch.padCol = op(['#1a1a20', '#e8e4dc', ch.armour, tone(gl[0], 0.6), '#3a2a22']); ch.padHi = tone(ch.padCol, ch.padCol > '#8' ? 0.6 : 1.6);
+    ch.gloveCol = op(['#16161a', '#c3182a', '#1d2a4a', ch.armour, tone(gl[0], 0.7), '#e8e4dc']); ch.gloveHi = tone(ch.gloveCol, 1.35);
+    ch.sash = op(['#c3182a', '#f1efe8', tone(gl[0], 0.85), '#d8a020', '#1d2a4a']);
+    ch.beltTails = [tone(ch.belt, 0.75), tone(ch.belt, 0.55), tone(ch.belt, 0.95), tone(ch.belt, 0.65)]; ch.beltKnot = tone(ch.belt, 0.85);
     // identity, stats, title
     ch.id = 'f' + String(n).padStart(2, '0'); ch.num = n; ch.male = male; ch.wild = wild; ch.build = build; ch.poseSet = male ? 'kai' : 'nova';
     ch.name = male ? nameDeck.m[(n - 1) / 2] : nameDeck.f[n / 2];
@@ -100,7 +116,7 @@
       Reach: cl(3 + (reach - 1) * 22 + rr(-0.3, 0.3)), Defense: cl(3 + (m - 1) * 7 + (h - 1) * 6 + rr(-0.5, 0.5)) };
     let role = pick(ROLE[build]); if (build !== 'heavy' && ch.stats.Reach >= 5) role = 'Lancer';
     ch.title = (wild ? 'Wildcard ' : '') + (r() < 0.55 ? gl[2] : pick(BUILD_ADJ[build])) + ' ' + role;
-    ch.desc = `Fighter ${String(n).padStart(2, '0')}. ${build === 'average' ? 'An' : 'A'} ${build} ${male ? 'man' : 'woman'} in a ${ch.outfit === 'gi' ? 'gi' : 'combat suit'} who fights with ${STYLE[build]}.` +
+    ch.desc = `Fighter ${String(n).padStart(2, '0')}. ${build === 'average' ? 'An' : 'A'} ${build} ${male ? 'man' : 'woman'} in ${OUTFIT_WORD[ch.slots.top]} and ${LEG_WORD[ch.slots.legs]} who fights with ${STYLE[build]}.` +
       (wild ? ' Built from a wild mix of body parts, so expect surprises.' : '');
     return ch;
   }

@@ -147,7 +147,8 @@
   function hand(ctx, W, ang, type, ch, o = {}) {
     const d = dirDown(ang), n = nrmDown(ang), far = o.far ? C.farLimb : 1, s = ch.handScale || 1;
     const L = (x, y) => P(W, d, n, x * s, y * s);
-    const glove = ch.outfit === 'suit', skin = ch.skin;
+    const hw = NF.outfits.slots(ch).arms, glove = hw === 'gloves', mitt = hw === 'fingerless', skin = ch.skin;
+    const gc = ch.gloveCol || ch.armour, gh = ch.gloveHi || ch.armourHi;
     const crease = (a = 0.45) => 'rgba(60,22,12,' + a * far + ')';
     const fill = (pts, col, lit = 1.2, lw = 2) => {
       smoothPath(ctx, pts, true);
@@ -156,7 +157,7 @@
       ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = lw; ctx.strokeStyle = C.outline; ctx.stroke();
     };
     const line = (pts, col, lw) => { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round'; smoothPath(ctx, pts.map(p => L(p[0], p[1])), false); ctx.stroke(); };
-    const finCol = glove ? ch.armourHi : skin;
+    const finCol = glove ? gh : skin;
     // a finger as a tapered, jointed shape through a polyline of [x, y] joints with half-width w
     const finger = (jts, w, col) => {
       const P2 = jts.map(p => L(p[0], p[1])), Lp = [], Rp = [];
@@ -193,11 +194,14 @@
       // thumb folded across the front of the fingers
       finger([[6, 13], [20, 16], [33, 11.5]], 5.2, finCol);
       if (glove) {
-        fill([L(-4, -16), L(20, -17.5), L(27, -8), L(27, 8), L(20, 17.5), L(-4, 15.5)], ch.armour, 1.45);
-        line([[0, -16], [26, -12]], alpha(ch.armourHi, 0.9 * far), 1.4); line([[0, 15], [24, 13]], 'rgba(0,0,0,' + 0.4 * far + ')', 1.2);  // seams
+        fill([L(-4, -16), L(20, -17.5), L(27, -8), L(27, 8), L(20, 17.5), L(-4, 15.5)], gc, 1.45);
+        line([[0, -16], [26, -12]], alpha(gh, 0.9 * far), 1.4); line([[0, 15], [24, 13]], 'rgba(0,0,0,' + 0.4 * far + ')', 1.2);  // seams
         ctx.strokeStyle = alpha(ch.glow, 0.9 * far); ctx.lineWidth = 2.2; smoothPath(ctx, [L(37, -14), L(39, 0), L(37, 14)], false); ctx.stroke();
         glowDot(ctx, L(38, 0), 13, ch.glow, far);
-      } else {
+      } else if (mitt) {   // fingerless glove: padded back, bare fingers
+        fill([L(-6, -16.5), L(18, -17.5), L(31, -15.5), L(33, 0), L(31, 15.5), L(18, 17), L(-6, 15.5)], gc, 1.4);
+        ctx.strokeStyle = alpha(ch.trim || ch.glow, 0.8 * far); ctx.lineWidth = 2; smoothPath(ctx, [L(30, -14), L(32, 0), L(30, 14)], false); ctx.stroke();
+      } else if (hw === 'wraps') {
         fill([L(-6, -16.5), L(18, -17.5), L(29, -15), L(30, 0), L(29, 15), L(18, 17), L(-6, 15.5)], ch.wrap, 1.05, 1.8);
         wrapLines(ctx, L, far, 26);
       }
@@ -216,10 +220,11 @@
       // thumb, splayed away from the palm
       finger(palm ? [[6, 12], [17, 21], [27, 25]] : [[6, 12], [16, 20], [27, 21]], 5, finCol);
       if (glove) {
-        fill([L(-4, -16), L(20, -17), L(27, -6), L(27, 8), L(20, 17), L(-4, 15)], ch.armour, 1.45);
-        line([[0, -16], [25, -12]], alpha(ch.armourHi, 0.9 * far), 1.4);
+        fill([L(-4, -16), L(20, -17), L(27, -6), L(27, 8), L(20, 17), L(-4, 15)], gc, 1.45);
+        line([[0, -16], [25, -12]], alpha(gh, 0.9 * far), 1.4);
         glowDot(ctx, L(24, 0), palm ? 26 : 15, ch.glow, far);
-      } else { fill([L(-6, -16.5), L(20, -17), L(26, 0), L(20, 16.5), L(-6, 15.5)], ch.wrap, 1.05, 1.8); wrapLines(ctx, L, far, 22); }
+      } else if (mitt) fill([L(-6, -16.5), L(20, -17), L(28, 0), L(20, 16.5), L(-6, 15.5)], gc, 1.4);
+      else if (hw === 'wraps') { fill([L(-6, -16.5), L(20, -17), L(26, 0), L(20, 16.5), L(-6, 15.5)], ch.wrap, 1.05, 1.8); wrapLines(ctx, L, far, 22); }
     }
   }
   function wrapLines(ctx, L, far, x1) {
