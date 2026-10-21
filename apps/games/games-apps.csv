@@ -23,6 +23,7 @@ Turbo Lap,         turbo-lap/,     , , Runners
 Tower Defence,     tower-defence/, , , Strategy
 Island Conquest,   island-conquest/, , , Strategy
 Chess,             chess/,         , , Strategy
+AoE RTS,           aoe-rts/,       , , Strategy
 AR Game,           ar-game/,       , , 3D
 Browser FPS,       browser-fps/,   , , 3D
 Island (Alpha),    island-alpha/,  , , 3D

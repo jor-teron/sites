@@ -32,6 +32,7 @@ const MINIMAP_W = 180;
 const VILLAGER_SPEED = 140;       // px / s
 const CARRY_MAX = 10;
 const GATHER_INTERVAL = 0.6;      // seconds per 1 unit gathered
+const BERRY_REGROW = 0.4;         // seconds per 1 food regrown on every berry bush (full 125 in ~50s)
 const START_RES = { wood: 200, food: 200, gold: 100, stone: 200 };
 const START_VILLAGERS = 3;
 const VILLAGER_COST = { food: 50 };
@@ -222,20 +223,25 @@ function updateVillager(v, dt) {
             break;
         case 'toNode': {
             const cell = v.node && mapData[v.node.y][v.node.x];
-            if (!cell || cell.amount <= 0) { retarget(v); break; }
+            if (!cell || cell.amount <= 0) { if (!(cell && cell.kind === 'berry' && !otherBerry(v))) { retarget(v); break; } }
             if (stepTo(v, v.target, dt, 30)) { v.state = 'gathering'; v.timer = 0; }
             break;
         }
         case 'gathering': {
             const cell = mapData[v.node.y][v.node.x];
-            if (!cell || cell.amount <= 0) { if (v.carry > 0) goDrop(v); else retarget(v); break; }
+            if (!cell || cell.amount <= 0) {
+                if (v.carry > 0) goDrop(v);
+                else if (cell && cell.kind === 'berry' && !otherBerry(v)) v.timer = 0;   // wait for regrowth
+                else retarget(v);
+                break;
+            }
             v.timer += dt;
             while (v.timer >= GATHER_INTERVAL && v.carry < CARRY_MAX && cell.amount > 0) {
                 v.timer -= GATHER_INTERVAL;
                 cell.amount--; v.carry++; v.carryType = RES_TYPES[cell.kind].res;
                 Sfx.play(cell.kind === 'tree' ? 'chop' : cell.kind === 'berry' ? 'gather' : 'mine', 0.3);
                 { const np = tileCenter(v.node.x, v.node.y); if (Math.abs(np.x - v.x) > 1) v.face = np.x > v.x ? 1 : -1; }
-                if (cell.amount <= 0) { v.lastKind = cell.kind; mapData[v.node.y][v.node.x] = null; }
+                if (cell.amount <= 0) { v.lastKind = cell.kind; if (cell.kind !== 'berry') mapData[v.node.y][v.node.x] = null; }
             }
             if (v.carry >= CARRY_MAX) goDrop(v);
             break;
@@ -259,7 +265,7 @@ function updateVillager(v, dt) {
                 resources[v.carryType] += v.carry; Sfx.play('drop', 0.15);
                 v.carry = 0;
                 const cell = v.node && mapData[v.node.y][v.node.x];
-                if (cell && cell.amount > 0) { v.state = 'toNode'; v.target = tileCenter(v.node.x, v.node.y); }
+                if (cell && (cell.amount > 0 || (cell.kind === 'berry' && !otherBerry(v)))) { v.state = 'toNode'; v.target = tileCenter(v.node.x, v.node.y); }
                 else retarget(v);
             }
             break;
@@ -269,6 +275,15 @@ function goDrop(v) {
     const cell = v.node && mapData[v.node.y][v.node.x];
     if (cell) v.lastKind = cell.kind;
     v.state = 'returning';
+}
+/** Another berry bush with food (not the villager's current one)? */
+function otherBerry(v) { const n = findNearest('berry', v); return n && !(v.node && n.x === v.node.x && n.y === v.node.y) ? n : null; }
+/** Berry bushes are never removed; every bush slowly regrows to its max (frame-rate independent) */
+let berryT = 0;
+function regrowBerries(dt) {
+    berryT += dt; if (berryT < BERRY_REGROW) return;
+    const n = Math.floor(berryT / BERRY_REGROW); berryT -= n * BERRY_REGROW;
+    for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) { const c = mapData[y][x]; if (c && c.kind === 'berry' && c.amount < c.max) c.amount = Math.min(c.max, c.amount + n); }
 }
 /** Node is gone: move on to the nearest node of the same kind, or go idle */
 function retarget(v) {
@@ -320,6 +335,7 @@ function update(time, delta) {
         animT += dt * 1000;
         villagers.forEach(v => { v.walking = false; updateVillager(v, dt); });
         spreadIdle(dt);
+        regrowBerries(dt);
         if (trainQueue > 0 && popCount() < popCap()) {
             trainTimer += dt;
             if (trainTimer >= TRAIN_TIME) { trainTimer = 0; trainQueue--; spawnFromTC(); }
