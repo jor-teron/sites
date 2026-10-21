@@ -3,7 +3,8 @@
  * (key 'wmMode', the Hub's HubMode applies it) and "Open menu on hover" for the Desktop
  * mode Start button (key 'startHover', default on, '0' = off), and the optional taskbar busy
  * meter (key 'trayMeter', '1' = on, default off; hub/drives/hub_traymeter.js), and the
- * clock screen saver idle time (key 'saverIdle', whole minutes 0..240, 0 = Off, unset = 5; Hub R49b HubSaver).
+ * clock screen saver idle time (key 'saverIdle', whole minutes 0..240, 0 = Off, unset = 5; Hub R49b HubSaver)
+ * and its second hand (key 'saverSec', smooth (default) | quartz | off; Hub R49c HubSaver.secMode).
  */
 (function () {
   'use strict';
@@ -62,6 +63,16 @@
       };
       saverIn.addEventListener('change', saveSaver);
       saverIn.addEventListener('blur', saveSaver);
+      // R49c: second hand Smooth / Quartz / Off
+      const SEC = ['smooth', 'quartz', 'off'];
+      const secNow = S.get('saverSec', 'smooth');
+      const secPick = ui.choice([
+        { value: 'smooth', label: 'Smooth' }, { value: 'quartz', label: 'Quartz' }, { value: 'off', label: 'Off' }
+      ], SEC.indexOf(secNow) >= 0 ? secNow : 'smooth', (v) => {
+        S.set('saverSec', v);
+        try { const h = saverHub(); if (h && h.secMode) h.secMode(v); } catch (_) { /* ignore */ }
+      });
+      secPick.classList.add('saver-sec');
       const prev = ui.el('button', 'seg-btn saver-preview', 'Preview');
       prev.type = 'button';
       prev.title = 'Show the clock screen saver now';
@@ -69,7 +80,7 @@
       if (!hs || !hs.start) prev.hidden = true;
       prev.addEventListener('click', () => { try { const h = saverHub(); if (h && h.start) h.start(); } catch (_) { /* ignore */ } });
       pane.append(ui.title('Screen mode'), mode, note, ui.title('Start menu'), hover, ui.title('Taskbar'), meter,
-        ui.title('Screen saver'), saver, prev);
+        ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev);
       showNow();
     }
   });

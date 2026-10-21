@@ -20,8 +20,8 @@
  *   changed ones in place (the cache is never wiped); replies {type:'sw-refreshed', changed:[paths]}.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261021j';
-const CACHE = 'hub-shell-v68';  // 2026-10-21j: R49b screen saver minutes 0..240, default 5
+const V = '20261021k';
+const CACHE = 'hub-shell-v69';  // 2026-10-21k: R49c minimalist clock + second hand modes
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const SHELL = [
   'hub.html',

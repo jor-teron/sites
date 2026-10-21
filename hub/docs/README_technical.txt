@@ -177,9 +177,10 @@ Keep the loader's V constant equal to the ?v= in hub.html.
 
 R49 clock screen saver (hub/core/hub_saver.js, saver batch above, CSS
 inline in the file). Full-screen #hub-saver overlay (z-index 2147483600,
-above windows, taskbar and the Phone top bar) with one SVG analog clock:
-circle, 12 ticks, hour / minute / thin smooth-sweeping second hand, no
-numbers. Centre at 25% of the viewport height, size min(40vh, 70vw);
+above windows, taskbar and the Phone top bar) with one SVG analog clock.
+R49c minimalist face: the circle only (stroke 7, no ticks, no numbers),
+hour hand 8, minute hand 3.5 (theme colour), second hand 1.5 in red
+#e53935 (both themes), round caps. Centre at 25% of the viewport height, size min(40vh, 70vw);
 drifts up to 6 px every minute (burn-in). Theme: html.hub-light (theme
 = light) -> --bg background + --text clock, else near-black + white.
   Idle time: localStorage sites-hub.saverIdle = whole minutes; 0 = off,
@@ -197,7 +198,15 @@ drifts up to 6 px every minute (burn-in). Theme: html.hub-light (theme
   within 600 ms is swallowed too, so nothing reaches the app or desktop.
   API window.HubSaver: start(), stop(), set(min) (same rules as the key,
   writes the normalised value), active() -> bool, minutes() -> current
-  idle minutes (0 = off). (_angles(date) is a test helper.)
+  idle minutes (0 = off), secMode(m?) -> get / set the second hand.
+  (_angles, _draws, _busy are test helpers.)
+  Second hand (R49c): localStorage sites-hub.saverSec = smooth (default,
+  also when missing / invalid) | quartz | off, live via 'storage'.
+    smooth  requestAnimationFrame sweep
+    quartz  jumps once a second, setTimeout aligned to the second; no rAF
+    off     no second hand; hour / minute redrawn every 10 s (aligned)
+  One scheduler: a mode change cancels the previous rAF / timer; nothing
+  runs while the saver is hidden or document.hidden.
 
 
 4. WINDOW MANAGER, SNAP, MAGNET AND WORKSPACES
@@ -535,6 +544,7 @@ localStorage, prefix sites-hub.:
   wmSession           wm_windows.js               JSON window session
   saverIdle           Settings > Desktop, R49b    0 (off) | 1..240 min, unset 5
                       hub_saver.js (screen saver)
+  saverSec            Settings > Desktop, R49c    smooth (default) | quartz | off
   lastApp             hub.js                      last app (Phone mode)
   fromCat             hub.js                      category of open app
   fromLab             hub.js (old, removed)       -
