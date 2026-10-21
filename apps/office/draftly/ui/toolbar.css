@@ -1,0 +1,155 @@
+/* ============================================================
+   FILE: ui/toolbar.css
+   PROJECT: Draftly
+   ROLE: Toolbar buttons, groups and selects.
+   ORDER: linked from draftly.html; cascade order matters.
+   ============================================================ */
+
+/* ============================================================
+   TOOLBAR — one slim row, sideways scroll when narrow
+   ============================================================ */
+.toolbar {
+  position: relative;
+  z-index: 10;
+  height: var(--toolbar-h);
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bg-toolbar);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  backdrop-filter: saturate(160%) blur(14px);
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 4px 18px rgba(40, 40, 100, 0.06);
+  user-select: none;
+}
+.toolbar::-webkit-scrollbar { display: none; }
+/* center the row on wide screens, keep it scrollable on narrow ones */
+.toolbar > :first-child { margin-left: auto; }
+.toolbar > :last-child { margin-right: auto; }
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-right: 4px;
+}
+.brand-mark {
+  width: 30px; height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--accent-grad);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(110, 80, 240, 0.35);
+}
+.brand-mark svg { width: 18px; height: 18px; stroke-width: 1.9; }
+.brand-name {
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  background: var(--accent-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 3px;
+  border-radius: calc(var(--radius) + 2px);
+  background: var(--bg-group);
+  border: 1px solid var(--border-light);
+}
+
+.tool-btn {
+  height: var(--ctl-h);
+  min-width: var(--ctl-h);
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-primary);
+  font: 600 12.5px var(--ui-font);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.tool-btn svg {
+  width: 18px; height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.tool-btn .glyph { font: 600 17px/1 Georgia, 'Times New Roman', serif; }
+.tool-btn:hover { background: var(--btn-hover); }
+.tool-btn:disabled { opacity: 0.38; cursor: default; background: transparent; transform: none; }
+.tool-btn:active { transform: scale(0.94); }
+.tool-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tool-btn.active {
+  background: var(--btn-active);
+  color: var(--btn-active-text);
+}
+.tool-btn.accent {
+  background: var(--accent-grad);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(110, 80, 240, 0.35);
+}
+.tool-btn.accent:hover { filter: brightness(1.07); box-shadow: 0 4px 14px rgba(110, 80, 240, 0.45); }
+
+/* theme button shows moon in light mode, sun in dark mode */
+.tool-btn .icon-sun { display: none; }
+body.dark .tool-btn .icon-sun { display: inline-flex; }
+body.dark .tool-btn .icon-moon { display: none; }
+.icon-sun, .icon-moon { display: inline-flex; }
+
+select, .file-name {
+  height: var(--ctl-h);
+  border: 0;
+  border-radius: var(--radius);
+  background-color: transparent;
+  color: var(--text-primary);
+  font: 500 13px var(--ui-font);
+  outline: none;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  padding: 0 24px 0 10px;
+  /* chevron drawn with two gradients (no image) */
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%), linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
+  background-position: calc(100% - 13px) 52%, calc(100% - 9px) 52%;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+}
+select option { background: var(--select-bg); color: var(--text-primary); }
+select:hover, .file-name:hover { background-color: var(--btn-hover); }
+select:focus-visible, .file-name:focus { box-shadow: 0 0 0 2px var(--accent) inset; background-color: var(--select-bg); }
+select:disabled { opacity: 0.4; cursor: default; }
+.font-select { width: 150px; font-family: var(--font-family); font-size: 14px; }
+.size-select { width: 56px; }
+.list-select { width: 82px; }
+.spacing-select { width: 78px; }
+.suffix-select { width: 46px; }
+.file-name { width: 190px; padding: 0 10px; }

@@ -1,0 +1,39 @@
+/* ============================================================
+   FILE: ui/fonts.css
+   PROJECT: Draftly
+   ROLE: Embedded Tinos font faces (assets/fonts/tinos/). Times New Roman is not embedded.
+   ORDER: linked from draftly.html; cascade order matters.
+   ============================================================ */
+
+/* ============================================================
+   EMBEDDED FONT — Tinos (OFL). Not a substitute name for
+   Times New Roman. Used only when Times is missing.
+   ============================================================ */
+@font-face {
+  font-family: 'Tinos';
+  src: url('../assets/fonts/tinos/Tinos-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Tinos';
+  src: url('../assets/fonts/tinos/Tinos-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Tinos';
+  src: url('../assets/fonts/tinos/Tinos-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Tinos';
+  src: url('../assets/fonts/tinos/Tinos-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}

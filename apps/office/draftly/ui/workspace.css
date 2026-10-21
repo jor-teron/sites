@@ -1,0 +1,31 @@
+/* ============================================================
+   FILE: ui/workspace.css
+   PROJECT: Draftly
+   ROLE: Workspace canvas and the pages scaler.
+   ORDER: linked from draftly.html; cascade order matters.
+   ============================================================ */
+
+/* ============================================================
+   WORKSPACE — scrollable canvas; pages scaled to fit width
+   ============================================================ */
+.workspace {
+  flex: 1;
+  overflow-x: auto;              /* only scrolls when zoomed past the width */
+  overflow-y: auto;
+  padding: 32px 24px 64px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+.workspace::-webkit-scrollbar { width: 10px; }
+.workspace::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+
+/* holds the scaled size (set by draftly-view.js) */
+.pages-scaler { margin: 0 auto; position: relative; }
+/* laid out at true A4 size, scaled with transform */
+.pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--page-gap);
+  transform-origin: 0 0;
+}

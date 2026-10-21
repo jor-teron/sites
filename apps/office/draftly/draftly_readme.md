@@ -4,19 +4,36 @@
 An offline document editor laid out as fixed A4 pages, like a word processor. Text flows from page to page line by line. Documents autosave in the browser and download as PDF or DOCX. Plain JavaScript, no internet needed, works from `file://`.
 
 ## 2. Files
-- `draftly.html` / `draftly.css`: toolbar, popups, paper look, print
+- `draftly.html`: page shell; links the stylesheets and scripts in order (order matters)
+- `ui/` stylesheets, linked in this cascade order:
+  `fonts.css` (Tinos faces), `theme.css` (variables, light/dark), `base.css`, `toolbar.css`,
+  `popups.css` (File / Recent / Page), `workspace.css`, `ribbon.css`, `page.css` (paper, page numbers, breaks),
+  `editor.css`, `marks.css`, `toast.css`, `print.css`, `colour.css`, `find.css`,
+  `statusbar.css` (status bar, word count, zoom), `table.css`, `format.css` (selection, sup/sub)
 - `modules/draftly-config.js`: all sizes, keys, timings and default text
 - `modules/draftly-storage.js`: IndexedDB documents, theme / marks / orientation flags
-- `modules/draftly-ui.js`: toast, theme, orientation, toolbar active state
-- `modules/draftly-editor.js`: selection, formatting commands, font, plain-text paste, Shift+Enter line break
+- `modules/draftly-ui.js`: toast, theme, orientation, toolbar active state, click helper, theme / marks buttons
+- `modules/draftly-editor.js`: selection, formatting commands, font, plain-text paste, Enter / Shift+Enter
 - `modules/draftly-pages.js`: page cards and pagination entry points
-- `modules/draftly-flow.js`: line-by-line flow across pages
+- `modules/draftly-flow.js`: flow across pages (push / pull, caret, reflow, joined HTML)
+- `modules/draftly-flow-blocks.js`: block helpers for flow (measure, join, text map, split a block)
 - `modules/draftly-marks.js`: ¶ / ↵ format marks overlay
-- `modules/draftly-export.js`: DOCX download and Print
+- `modules/draftly-export.js`: DOCX download, Print, File-menu export buttons, Ctrl+P
 - `modules/draftly-pdf.js`: PDF download
 - `modules/draftly-lists.js`: bullet and numbered lists
 - `modules/draftly-view.js`: fit-to-screen scaling, Recent and Page popups
-- `modules/draftly-app.js`: start-up, buttons, keys, autosave
+- `modules/draftly-history.js`: undo / redo
+- `modules/draftly-breaks.js`: page breaks and page numbers
+- `modules/draftly-colour.js`: font colour and highlight
+- `modules/draftly-wordcount.js`: word count, status bar on / off
+- `modules/draftly-find.js`: text model, Find & Replace, wiring for find and word count
+- `modules/draftly-table.js`: tables
+- `modules/draftly-spacing.js`: line spacing and indents
+- `modules/draftly-zoom.js`: document zoom
+- `modules/draftly-docs.js`: load / open / new / delete / save, Recent list, autosave, Ctrl+S
+- `modules/draftly-format.js`: Home-tab formatting buttons, selects, shortcuts, toolbar sync
+- `modules/draftly-ribbon.js`: ribbon tabs and File menu
+- `modules/draftly-app.js`: thin start-up (checks modules, calls each `bind()`, loads the document)
 - `vendor/` (local, MIT; see `vendor/README.txt`):
   - `html-docx.js`: html-docx-js 0.3.1, DOCX export
   - `jspdf.umd.min.js`: jsPDF 2.5.1, PDF file

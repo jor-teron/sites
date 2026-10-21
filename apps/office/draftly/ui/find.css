@@ -1,0 +1,41 @@
+/* ============================================================
+   FILE: ui/find.css
+   PROJECT: Draftly
+   ROLE: FT4 find and replace bar.
+   ORDER: linked from draftly.html; cascade order matters.
+   ============================================================ */
+
+/* ===== FT4: find bar, status bar, word count ===== */
+.find-bar {
+  position: fixed; right: 16px; top: 112px; z-index: 25;
+  display: flex; flex-direction: column; gap: 4px; padding: 6px;
+  width: min(380px, calc(100vw - 16px));
+  background: var(--select-bg); color: var(--text-primary);
+  border: 1px solid var(--border-light); border-radius: 10px;
+  box-shadow: 0 10px 28px var(--shadow);
+}
+.find-bar[hidden], .find-row[hidden] { display: none; }
+.find-row { display: flex; align-items: center; gap: 4px; }
+.replace-row { padding-left: 30px; }
+.find-input {
+  flex: 1; min-width: 0; height: 28px; padding: 0 8px; font: inherit; font-size: 13px;
+  color: var(--text-primary); background: var(--bg-group);
+  border: 1px solid var(--border-light); border-radius: 6px; outline: none;
+}
+.find-input:focus { border-color: var(--accent); }
+.find-bar.no-results #findInput { border-color: #d9455f; }
+.find-btn, .find-text-btn {
+  height: 28px; min-width: 26px; padding: 0 4px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--text-primary); cursor: pointer; font: inherit; font-size: 12px;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.find-text-btn { padding: 0 8px; background: var(--bg-group); border: 1px solid var(--border-light); }
+.find-btn:hover, .find-text-btn:hover { background: var(--bg-group); }
+.find-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#findExpandBtn svg { transition: transform .15s; }
+#findExpandBtn[aria-expanded="true"] svg { transform: rotate(90deg); }
+.find-case { font-weight: 600; }
+.find-case[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.find-count { min-width: 62px; font-size: 12px; color: var(--text-secondary); text-align: center; white-space: nowrap; }
+::highlight(dr-find) { background-color: rgba(255, 200, 0, 0.45); }
+::highlight(dr-find-cur) { background-color: rgba(255, 140, 0, 0.85); color: #000; }

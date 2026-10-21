@@ -53,7 +53,7 @@ Draftly.ribbon.setFile = function setFile(show, focusFirst) {
     menu.style.top = Math.round(r.bottom + 8) + 'px';
     menu.style.left = Math.round(Math.max(8, Math.min(r.left, vw - menu.offsetWidth - 8))) + 'px';
     var recent = document.getElementById('recentMenu');
-    if (recent && recent.hidden && Draftly.app && Draftly.app.toggleRecent) Draftly.app.toggleRecent();
+    if (recent && recent.hidden && Draftly.docs && Draftly.docs.toggleRecent) Draftly.docs.toggleRecent();
     if (focusFirst) { var first = menu.querySelector('.file-item'); if (first) first.focus(); }
   } else {
     var rm = document.getElementById('recentMenu');
@@ -139,7 +139,7 @@ Draftly.ribbon.init = function init() {
   });
   bind('deleteCurrentBtn', function () {
     var name = Draftly.storage.loadedName || Draftly.storage.currentName();
-    if (name) Draftly.app.deleteDoc(name);
+    if (name) Draftly.docs.deleteDoc(name);
   });
 };
 

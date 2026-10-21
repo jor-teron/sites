@@ -1,0 +1,36 @@
+/* ============================================================
+   FILE: ui/print.css
+   PROJECT: Draftly
+   ROLE: Print styles (static part; draftly-export.js adds the @page sheet).
+   ORDER: linked from draftly.html; cascade order matters.
+   ============================================================ */
+
+/* ============================================================
+   PRINT STYLES
+   ============================================================ */
+@media print {
+  body { background: #fff !important; overflow: visible !important; height: auto !important; }
+  .toolbar, .file-menu, .toast, .np-layer, .pop-menu { display: none !important; }
+  .pages-scaler { width: auto !important; height: auto !important; }
+  .pages { transform: none !important; gap: 0 !important; }
+  .workspace {
+    overflow: visible !important;
+    padding: 0 !important;
+    background: #fff !important;
+    display: block !important;
+    gap: 0 !important;
+  }
+  .paper {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    page-break-after: always;
+    page-break-inside: avoid;
+  }
+  .paper:last-child { page-break-after: auto; }
+  body:not(.pn-on) .paper .page-number { display: none !important; }
+  body.pn-on .paper .page-number { color: #000 !important; }
+  .editor .dr-pagebreak { visibility: hidden !important; break-before: page; }
+  .editor { color: #000 !important; }
+  .np-mark { display: none !important; }
+}

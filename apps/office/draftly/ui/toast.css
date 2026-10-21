@@ -1,0 +1,31 @@
+/* ============================================================
+   FILE: ui/toast.css
+   PROJECT: Draftly
+   ROLE: Toast message.
+   ORDER: linked from draftly.html; cascade order matters.
+   ============================================================ */
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(22, 22, 40, 0.88);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 999px;
+  font: 500 13.5px var(--ui-font);
+  box-shadow: 0 10px 30px rgba(20, 10, 60, 0.35);
+  max-width: calc(100vw - 32px);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 999;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }

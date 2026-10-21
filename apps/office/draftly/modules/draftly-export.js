@@ -145,3 +145,16 @@ Draftly.export.exportDocx = function exportDocx() {
   }
   if (Draftly.editor) Draftly.editor.restoreSelection();
 };
+
+/* File menu: Print / Export DOCX / Export PDF, and Ctrl+P. */
+Draftly.export.bind = function bind() {
+  Draftly.ui.onClick('printBtn', function () { Draftly.export.printDocument(); });
+  Draftly.ui.onClick('exportDocxBtn', function () { Draftly.export.exportDocx(); });
+  Draftly.ui.onClick('exportPdfBtn', function () { Draftly.pdf.download(); });
+  document.addEventListener('keydown', function (e) {
+    if (!((e.ctrlKey || e.metaKey) && !e.altKey)) return;   /* Ctrl or Cmd */
+    if (e.key.toLowerCase() !== 'p' || e.shiftKey) return;
+    e.preventDefault();
+    Draftly.export.printDocument();
+  });
+};
