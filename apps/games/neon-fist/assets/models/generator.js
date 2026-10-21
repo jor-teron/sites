@@ -32,9 +32,10 @@
     ['#b46bff', '#ff4fd8', 'Phantom'], ['#ffe14a', '#ffb02e', 'Golden'], ['#ff4fb0', '#7f6bff', 'Neon'], ['#8fd8ff', '#c8f0ff', 'Frost'],
     ['#c6ff3a', '#4dff7a', 'Venom'], ['#ff2a2a', '#ff8a2a', 'Crimson']];
   const CLOTH = ['#1b1820', '#f1efe8', '#1d2a4a', '#3a1d1d', '#2a3320', '#4a4a52', '#5a1a40', '#20383a', '#c9b48a', '#101418'];
-  const ROLE = { heavy: ['Brawler', 'Crusher', 'Bruiser', 'Titan'], average: ['Fighter', 'Kickboxer', 'Duelist', 'Brawler'], lean: ['Striker', 'Dancer', 'Blade', 'Viper'] };
-  const BUILD_ADJ = { heavy: ['Iron', 'Stone', 'Thunder'], average: ['Street', 'Steel', 'Wild'], lean: ['Swift', 'Silent', 'Shadow'] };
-  const STYLE = { heavy: 'crushing grapples and heavy hooks', average: 'tight boxing and snapping kicks', lean: 'fast footwork and quick counters' };
+  const ROLE = { fat: ['Sumo', 'Crusher', 'Bruiser', 'Wall'], muscular: ['Brawler', 'Titan', 'Breaker', 'Hammer'], average: ['Fighter', 'Kickboxer', 'Duelist', 'Brawler'], lean: ['Striker', 'Dancer', 'Blade', 'Viper'] };
+  const BUILD_ADJ = { fat: ['Iron', 'Stone', 'Mountain'], muscular: ['Thunder', 'Steel', 'Granite'], average: ['Street', 'Steel', 'Wild'], lean: ['Swift', 'Silent', 'Shadow'] };
+  const STYLE = { fat: 'crushing grapples and a body that soaks up hits', muscular: 'heavy hooks and bone-rattling kicks', average: 'tight boxing and snapping kicks', lean: 'fast footwork and quick counters' };
+  const HWORD = { short: 'short, stocky ', medium: '', tall: 'tall, rangy ' };
 
   const OUTFIT_WORD = { gi: 'a gi', suit: 'a combat suit', tee: 'a T-shirt', tank: 'a tank top', crop: 'a crop top' };
   const LEG_WORD = { long: 'long pants', capri: 'capris', knee: 'knee-length pants', shorts: 'shorts', tights: 'armoured tights' };
@@ -56,36 +57,43 @@
     ch.uarm = clone(from.arms.uarm); ch.farm = clone(from.arms.farm);
     ch.thigh = clone(from.legs.thigh); ch.shin = clone(from.legs.shin);
     ch.pantsShin = clone(K.pantsShin); ch.boot = clone(N.boot);
-    // build
-    const mRoll = r(), build = mRoll < 0.3 ? 'lean' : mRoll < 0.72 ? 'average' : 'heavy';
-    const m = { lean: rr(0.86, 0.93), average: rr(0.96, 1.04), heavy: rr(1.08, 1.17) }[build];
-    const h = rr(0.95, 1.05), legL = rr(0.96, 1.05), armL = rr(0.95, 1.06);
-    let sh = rr(0.9, 1.1) * (build === 'heavy' ? 1.05 : 1), hip = rr(0.92, 1.08);
+    // body (R2c1): type and height come from their own stream; the old R2a body rolls are still drawn from `r`
+    // (and discarded) so every later roll on `r` - colours, outfit, cloth - stays exactly as before
+    for (let i = 0; i < 10; i++) r();
+    const rb = rngFor(n * 15485863 + 9157), Bd = NF.bodies.roll(rb), build = Bd.type, h = Bd.h, legL = Bd.legL, armL = Bd.armL;
+    let sh = Bd.sh, hip = Bd.hip; const m = Bd.m;
     if (wild && !male && from.torso === other) sh *= 1.08;           // huge shoulders on a wild woman
     if (wild && male && from.torso === other) hip *= 1.06;
-    const B = ch.bones;
+    const B = ch.bones, Bx = Object.assign({}, Bd, { sh, hip });
     for (const k of ['low', 'up', 'neck']) B[k] = +(B[k] * h).toFixed(1);
     for (const k of ['thigh', 'shin']) B[k] = +(B[k] * h * legL).toFixed(1);
     for (const k of ['uarm', 'farm']) B[k] = +(B[k] * h * armL).toFixed(1);
     B.shSpread = +(B.shSpread * sh).toFixed(1); B.hipSpread = +(B.hipSpread * hip).toFixed(1);
-    ch.headScale = +(base.headScale * rr(0.97, 1.03)).toFixed(3);
-    ch.torsoFront = scaleTorso(ch.torsoFront, sh, hip, m); ch.torsoBack = scaleTorso(ch.torsoBack, sh, hip, m);
-    const lm = m * (build === 'heavy' ? 1.04 : 1);
-    ch.uarm = scaleProf(ch.uarm, lm); ch.farm = scaleProf(ch.farm, lm); ch.neck = scaleProf(ch.neck, 0.5 + m / 2);
-    ch.thigh = scaleProf(ch.thigh, m); ch.shin = scaleProf(ch.shin, m); ch.pantsShin = scaleProf(ch.pantsShin, m); ch.boot = scaleProf(ch.boot, m);
-    ch.handScale = +((male ? 1.0 : 0.86) * (0.95 + m * 0.05)).toFixed(3);
+    ch.headScale = +(base.headScale * Bd.head * (build === 'fat' ? 1.02 : 1)).toFixed(3);
+    ch.torsoFront = NF.bodies.torso(ch.torsoFront, Bx, true, from.torso === N); ch.torsoBack = NF.bodies.torso(ch.torsoBack, Bx, false, from.torso === N);
+    const am = m * Bd.arm, lm = m * Bd.leg;
+    ch.uarm = scaleProf(ch.uarm, am * (build === 'muscular' ? 1.06 : 1), am); ch.farm = scaleProf(ch.farm, am * (build === 'muscular' ? 0.94 : 1));
+    ch.neck = scaleProf(ch.neck, (0.5 + m / 2) * (build === 'muscular' ? 1.2 : build === 'fat' ? 1.15 : 1));
+    ch.thigh = scaleProf(ch.thigh, lm); ch.shin = scaleProf(ch.shin, lm * (build === 'fat' ? 0.95 : 1)); ch.pantsShin = scaleProf(ch.pantsShin, lm); ch.boot = scaleProf(ch.boot, lm);
+    ch.handScale = +((male ? 1.0 : 0.86) * (0.95 + m * 0.05) * (build === 'muscular' ? 1.05 : 1)).toFixed(3);
     // face
     const f = from.face.face;
-    ch.face = { nose: +(f.nose * rr(0.88, 1.12)).toFixed(2), jaw: +(f.jaw * rr(0.9, 1.1)).toFixed(2), lips: +(f.lips * rr(0.85, 1.15)).toFixed(2), lashes: f.lashes, masc: male ? 1 : 0 };
+    const lk = NF.bodies.looks(rb, male), lf = lk.face;
+    ch.face = { nose: +(f.nose * rr(0.88, 1.12)).toFixed(2), jaw: +(f.jaw * rr(0.9, 1.1) * lf.jaw * (build === 'fat' ? 1.1 : build === 'muscular' ? 1.05 : 1)).toFixed(2),
+      lips: +(f.lips * rr(0.85, 1.15) * lf.lips).toFixed(2), lashes: f.lashes, masc: male ? 1 : 0,
+      full: build === 'fat' ? 1 : build === 'lean' ? -0.4 : 0, noseW: lf.noseW, bridge: lf.bridge, eyeH: lf.eyeH, lid: lf.lid, browArc: lf.browArc, browT: lf.browT };
     if (wild && !male && from.face === other) ch.face.jaw = +(ch.face.jaw * 1.12).toFixed(2);        // heavy jaw
     if (wild && male && from.face === other) ch.face.lips = +(ch.face.lips * 1.2).toFixed(2);          // full lips + lashes
     // colours
-    const sk = pick(SKIN), hr = male && r() < 0.6 ? HAIR[Math.floor(r() * 4)] : pick(HAIR);
+    const sk0 = pick(SKIN), hr0 = male && r() < 0.6 ? HAIR[Math.floor(r() * 4)] : pick(HAIR); r();   // R2a rolls, kept for the stream
+    const sk = lk.skin, hr = lk.natural < 0.22 ? hr0 : lk.col;                              // ~1 in 5 keeps a bold dyed colour
     ch.skin = sk[0]; ch.skinDeep = sk[1]; ch.lips = from.face === N ? mix(sk[2], '#c8505a', 0.35) : sk[2];
-    ch.iris = pick(IRIS); ch.hair = hr[0]; ch.hairTip = hr[1]; ch.brow = tone(hr[0], hr[0] > '#9' ? 0.55 : 0.8);
+    ch.iris = lk.look[0] === 'w' || rb() < 0.15 ? IRIS[Math.floor(rb() * IRIS.length)] : ['#3a2416', '#2a1a10', '#4a2c18', '#5a3a1a'][Math.floor(rb() * 4)];
+    ch.hair = hr[0]; ch.hairTip = hr[1]; ch.brow = tone(hr[0], hr[0] > '#9' ? 0.55 : 0.8);
     ch.hairBack = tone(hr[0], 0.55); ch.hairFront = tone(hr[0], 1.12); ch.hairHi = tone(hr[0], 1.22); ch.hairDeep = tone(hr[0], 0.3);
     ch.sideburn = tone(hr[0], 0.75);
-    ch.hairStyle = male ? (r() < 0.82 ? 'spiky' : 'tail') : (r() < 0.85 ? 'tail' : 'spiky');
+    r(); ch.hairStyle = ch.hairTex = lk.tex; ch.beard = lk.beard; ch.look = lk.look; ch.skinIdx = NF.bodies.SKIN.indexOf(sk);
+    ch.hBand = h < 0.95 ? 'short' : h > 1.05 ? 'tall' : 'medium';
     const gl = pick(GLOW);
     ch.accent = gl[0]; ch.rim = gl[1]; ch.glow = tone(gl[0], 1.25);
     ch.outfit = r() < (male ? 0.62 : 0.38) ? 'gi' : 'suit';
@@ -97,7 +105,7 @@
     // R2c2 clothing slots: own seeded stream so the R2a rolls above stay exactly the same
     const ro = rngFor(n * 104729 + 57), op = a => a[Math.floor(ro() * a.length)];
     ch.slots = NF.outfits.roll(ro, male, wild, ch.outfit === 'suit');
-    ch.skinThigh = from.legs === K ? 0.84 : 1;           // Kai's thigh profile is drawn with gi pants on
+    ch.skinThigh = from.legs === K ? 0.975 : 1;          // Kai's thigh profile is drawn with gi pants on (0.84 read ~16% too thin)
     ch.trim = ch.glow;
     const cl1 = op(CLOTH), cl2 = op(CLOTH.filter(c => c !== cl1)), acc = tone(gl[0], op([0.5, 0.65, 0.8]));
     const scheme = op([[cl1, cl2], [cl1, acc], [acc, cl1], [cl2, tone(cl1, 0.7)]]);   // [top, legwear]
@@ -111,12 +119,13 @@
     // identity, stats, title
     ch.id = 'f' + String(n).padStart(2, '0'); ch.num = n; ch.male = male; ch.wild = wild; ch.build = build; ch.poseSet = male ? 'kai' : 'nova';
     ch.name = male ? nameDeck.m[(n - 1) / 2] : nameDeck.f[n / 2];
-    const reach = h * (legL + armL) / 2, cl = v => Math.max(1, Math.min(5, Math.round(v)));
-    ch.stats = { Speed: cl(3.6 - (m - 1) * 9 - (h - 1) * 6 + rr(-0.4, 0.4)), Power: cl(3 + (m - 1) * 9 + (sh - 1) * 4 + rr(-0.4, 0.4)),
-      Reach: cl(3 + (reach - 1) * 22 + rr(-0.3, 0.3)), Defense: cl(3 + (m - 1) * 7 + (h - 1) * 6 + rr(-0.5, 0.5)) };
-    let role = pick(ROLE[build]); if (build !== 'heavy' && ch.stats.Reach >= 5) role = 'Lancer';
+    const T = { fat: [-1.4, 0.8, 0, 1.6], muscular: [-0.3, 1.5, 0, 0.6], lean: [1.1, -0.9, 0.2, -0.9], average: [0.3, 0, 0, 0] }[build];
+    const cl = v => Math.max(1, Math.min(5, Math.round(v))), j = Bd.jit.map(v => (v - 0.5) * 1.1);
+    ch.stats = { Speed: cl(3 + T[0] - (h - 1) * 9 + j[0]), Power: cl(3 + T[1] + (h - 1) * 3 + j[1]),
+      Reach: cl(3 + T[2] + (h - 1) * 13 + (armL - 1) * 12 + j[2]), Defense: cl(3 + T[3] + (h - 1) * 2 + j[3]) };
+    let role = pick(ROLE[build]); if (build !== 'fat' && ch.stats.Reach >= 5) role = 'Lancer';
     ch.title = (wild ? 'Wildcard ' : '') + (r() < 0.55 ? gl[2] : pick(BUILD_ADJ[build])) + ' ' + role;
-    ch.desc = `Fighter ${String(n).padStart(2, '0')}. ${build === 'average' ? 'An' : 'A'} ${build} ${male ? 'man' : 'woman'} in ${OUTFIT_WORD[ch.slots.top]} and ${LEG_WORD[ch.slots.legs]} who fights with ${STYLE[build]}.` +
+    ch.desc = `Fighter ${String(n).padStart(2, '0')}. ${/^[aeiou]/.test(HWORD[ch.hBand] + build) ? 'An' : 'A'} ${HWORD[ch.hBand]}${build} ${male ? 'man' : 'woman'} in ${OUTFIT_WORD[ch.slots.top]} and ${LEG_WORD[ch.slots.legs]} who fights with ${STYLE[build]}.` +
       (wild ? ' Built from a wild mix of body parts, so expect surprises.' : '');
     return ch;
   }

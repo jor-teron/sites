@@ -50,8 +50,9 @@
       const k = this.key2(cv.parentNode), f = new NF.Fighter(this.ch(k)), S = 96, dpr = Math.min(2, devicePixelRatio || 1);
       for (let i = 0; i < 40; i++) f.update(1 / 60);           // settle hair/cloth physics
       cv.width = cv.height = S * dpr; const x = cv.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const s = S / (f.idleH * 0.36), top = -f.topY() * s;     // ~36% of the body fills the tile
-      f.draw(x, S * 0.5, top + 4, s, 1);
+      // crop framed on the head, not the body height, so short and tall fighters frame alike (R2c1)
+      const hs = f.ch.headScale, s = S / (300 * hs), top = -f.topY() * s, hx = f.J.head.x * s;
+      f.draw(x, S * 0.5 - hx * 0.75, top + 5, s, 1);
       this.drawn++;
     },
     preview(k, scroll) {

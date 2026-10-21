@@ -54,6 +54,15 @@
     ctx.strokeStyle = Dr.shade(col, 1.1); ctx.lineWidth = 8; ctx.stroke();
   }
 
+  // R2c1: a soft bust shape for tank / crop tops on women, so the fabric doesn't read flat
+  const bustProf = (fr, ch) => ch.male === false ? fr.map(r => [r[0], r[1] + 6 * Math.exp(-Math.pow((r[0] - 0.73) / 0.07, 2))]) : fr;
+  function bustShade(ctx, T, fv, ch) {
+    if (ch.male !== false) return;
+    const ln = (pts, col, lw) => { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round'; Dr.smoothPath(ctx, pts, false); ctx.stroke(); };
+    ln([T(0.63, fv(0.63) + 2), T(0.65, fv(0.65) - 10), T(0.7, fv(0.7) - 22)], 'rgba(0,0,0,0.38)', 3);         // under-bust fold
+    ln([T(0.72, fv(0.72) - 3), T(0.79, fv(0.79) - 8), T(0.84, fv(0.84) - 16)], 'rgba(255,255,255,0.22)', 4);  // fabric highlight over the curve
+  }
+
   // ---------- tops (torso) ----------
   const TOP = {
     gi(f, ctx, T, fr, bk, fv, tw, line) {
@@ -132,16 +141,19 @@
     },
     tank(f, ctx, T, fr, bk, fv, tw, line) {
       const ch = f.ch; skinTorso(ctx, T, fr, bk, ch, fv);
-      const body = Dr.torsoShape(T, fr, bk, { inf: 3, u1: 0.86 });
+      const body = Dr.torsoShape(T, bustProf(fr, ch), bk, { inf: 3, u1: 0.86 });
       Dr.paint(ctx, body, ch.top, { rim: ch.rim, folds: [[0.35, -10, 2.5, 0.6]], foldA: 0.3, light: 1.5 });
+      ctx.save(); Dr.smoothPath(ctx, Dr.outline(body), true); ctx.clip(); bustShade(ctx, T, fv, ch); ctx.restore();
       hem(ctx, [T(0.86, fv(0.86) + 2), T(0.88, fv(0.88) - 20), T(0.86, -10)], trimCol(ch), false, 3);
       strap(ctx, T, fv, ch.top, ch);
     },
     crop(f, ctx, T, fr, bk, fv, tw, line) {
       const ch = f.ch; skinTorso(ctx, T, fr, bk, ch, fv);
-      const body = Dr.torsoShape(T, fr, bk, { inf: 3, u0: 0.56, u1: 0.9 });
+      const body = Dr.torsoShape(T, bustProf(fr, ch), bk, { inf: 3, u0: 0.56, u1: 0.9 });
       Dr.paint(ctx, body, ch.top, { rim: ch.rim, light: 1.5, spec: 0.12 });
-      hem(ctx, [T(0.56, fv(0.56) + 2), T(0.55, 0), T(0.56, -50)], trimCol(ch), false, 3.5);
+      ctx.save(); Dr.smoothPath(ctx, Dr.outline(body), true); ctx.clip(); bustShade(ctx, T, fv, ch); ctx.restore();
+      const bw = Dr.profAt(bk.map(r => [r[0], r[1], r[1]]), 0.56)[0];   // hem ends at the back edge (R2c1)
+      hem(ctx, [T(0.56, fv(0.56) + 2), T(0.55, 0), T(0.56, -bw - 2)], trimCol(ch), false, 3.5);
       strap(ctx, T, fv, ch.top, ch);
     }
   };
@@ -286,8 +298,8 @@
       ctx.beginPath(); ctx.ellipse(k.x, k.y, 10, 9, 0, 0, 7); ctx.fill(); ctx.stroke();
     } else if (sl.waist === 'sash') {
       Dr.paint(ctx, Dr.torsoShape(T, fr, bk, { u0: -0.05, u1: 0.15, inf: 7 }), ch.sash, { light: 1.8, folds: [[0.3, -4, 2, 0.8], [0.6, -3, 2, 0.8]], foldA: 0.3, rim: ch.rim });
-      Dr.ribbon(ctx, c.belt2.p, 14, 6, Dr.shade(ch.sash, 0.7), Dr.shade(ch.sash, 0.5));
-      Dr.ribbon(ctx, c.belt1.p, 15, 7, Dr.shade(ch.sash, 1.05), Dr.shade(ch.sash, 0.75));
+      Dr.ribbon(ctx, c.belt2.p, 15, 11, Dr.shade(ch.sash, 0.7), Dr.shade(ch.sash, 0.5));
+      Dr.ribbon(ctx, c.belt1.p, 16, 12, Dr.shade(ch.sash, 1.05), Dr.shade(ch.sash, 0.75));
       const k = f.beltPt(); ctx.fillStyle = Dr.shade(ch.sash, 0.85); ctx.strokeStyle = C.outline; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.ellipse(k.x, k.y, 13, 11, 0.4, 0, 7); ctx.fill(); ctx.stroke();
     } else if (sl.waist === 'armour') {
