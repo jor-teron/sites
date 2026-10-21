@@ -93,7 +93,15 @@ Draftly.view.closePops = function closePops() {
 Draftly.view.syncPagePanel = function syncPagePanel() {
   var cfg = Draftly.config;
   var landscape = document.body.classList.contains(cfg.landscapeClass);
-  var btns = document.querySelectorAll('#pagePanel .seg-btn');
+  var btns = document.querySelectorAll('#pagePanel .seg-btn[data-orient]');
+  var opts = document.querySelectorAll('#pagePanel .seg-btn[data-size], #pagePanel .seg-btn[data-margins]');
+  for (var j = 0; j < opts.length; j++) {
+    var hit = opts[j].getAttribute('data-size') === cfg.paperSize || opts[j].getAttribute('data-margins') === cfg.marginPreset;
+    opts[j].classList.toggle('active', hit);
+    opts[j].setAttribute('aria-pressed', hit ? 'true' : 'false');
+  }
+  var sl = document.getElementById('paperSizeLabel');
+  if (sl) sl.textContent = cfg.pageSizeName;
   for (var i = 0; i < btns.length; i++) {
     var on = (btns[i].getAttribute('data-orient') === 'landscape') === landscape;
     btns[i].classList.toggle('active', on);
@@ -131,7 +139,16 @@ Draftly.view.init = function init() {
     var o = Draftly.view.openPop;
     if (o) Draftly.view.place(o.menu, o.anchor);
   }, { passive: true });
-  var btns = document.querySelectorAll('#pagePanel .seg-btn');
+  var opts = document.querySelectorAll('#pagePanel .seg-btn[data-size], #pagePanel .seg-btn[data-margins]');
+  for (var k = 0; k < opts.length; k++) {
+    opts[k].addEventListener('click', function (e) {
+      var cfg = Draftly.config;
+      var b = e.currentTarget;
+      Draftly.ui.setPage(b.getAttribute('data-size') || cfg.paperSize, b.getAttribute('data-margins') || cfg.marginPreset);
+      Draftly.ui.showToast('Page: ' + cfg.pageSizeName + ', ' + cfg.marginPresets[cfg.marginPreset].label + ' margins');
+    });
+  }
+  var btns = document.querySelectorAll('#pagePanel .seg-btn[data-orient]');
   for (var i = 0; i < btns.length; i++) {
     btns[i].addEventListener('click', function (e) {
       var mode = e.currentTarget.getAttribute('data-orient');

@@ -13082,6 +13082,12 @@ module.exports = {
             orient: 'portrait'
           };
       }
+    })(), (function() {
+      /* Draftly patch: optional pageSize {width, height} in portrait twips. */
+      var ps = documentOptions.pageSize;
+      if (!ps) return {};
+      var land = documentOptions.orientation === 'landscape';
+      return { width: land ? ps.height : ps.width, height: land ? ps.width : ps.height };
     })(), {
       margins: documentOptions.margins
     });

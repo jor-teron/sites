@@ -36,7 +36,7 @@ Draftly.pdf.download = function download() {
   var landscape = document.body.classList.contains(cfg.landscapeClass);
   var w = landscape ? cfg.paperHeightCm * 10 : cfg.paperWidthCm * 10;   // mm
   var h = landscape ? cfg.paperWidthCm * 10 : cfg.paperHeightCm * 10;
-  var doc = new window.jspdf.jsPDF({ orientation: landscape ? 'landscape' : 'portrait', unit: 'mm', format: 'a4', compress: true });
+  var doc = new window.jspdf.jsPDF({ orientation: landscape ? 'landscape' : 'portrait', unit: 'mm', format: [Math.min(w, h), Math.max(w, h)], compress: true });
   var papers = Array.prototype.slice.call(document.querySelectorAll('.paper'));
   var i = 0;
 
@@ -68,7 +68,7 @@ Draftly.pdf.download = function download() {
       logging: false,
       onclone: onclone
     }).then(function (canvas) {
-      if (i > 0) doc.addPage('a4', landscape ? 'landscape' : 'portrait');
+      if (i > 0) doc.addPage([Math.min(w, h), Math.max(w, h)], landscape ? 'landscape' : 'portrait');
       doc.addImage(canvas.toDataURL('image/jpeg', cfg.pdfJpegQuality), 'JPEG', 0, 0, w, h, undefined, 'FAST');
       i++;
       next();

@@ -55,6 +55,7 @@ Draftly.storage.setCurrentName = function setCurrentName(name, persist) {
   var input = document.getElementById('fileNameInput');
   if (input) input.value = name;
   if (persist) {
+    Draftly.storage.loadedName = name;
     try { localStorage.setItem(Draftly.config.storageKeyLastName, name); } catch (e) {}
   }
 };
@@ -67,7 +68,27 @@ Draftly.storage.fillNameIfEmpty = function fillNameIfEmpty() {
   return Draftly.storage.currentName();
 };
 
-/* Write the open document under its name. Overwrites that name. */
+/* Name the open document was loaded or last saved under ('' = never saved). */
+Draftly.storage.loadedName = '';
+
+/* Delete one document by name. */
+Draftly.storage.deleteDoc = function deleteDoc(name) {
+  var cfg = Draftly.config;
+  var backup = Draftly.storage.readBackup();
+  if (backup && backup.name === name) {
+    try { localStorage.removeItem(cfg.storageKeyBackup); } catch (e) {}
+  }
+  return Draftly.storage.open().then(function (db) {
+    return new Promise(function (resolve, reject) {
+      var tx = db.transaction(cfg.storeName, 'readwrite');
+      tx.objectStore(cfg.storeName).delete(name);
+      tx.oncomplete = function () { resolve(name); };
+      tx.onerror = function () { reject(tx.error); };
+    });
+  });
+};
+
+/* Write the open document under its name. If the name box changed, the record moves (rename). */
 Draftly.storage.save = function save() {
   var cfg = Draftly.config;
   if (!cfg || !Draftly.pages) return Promise.resolve();
@@ -86,8 +107,18 @@ Draftly.storage.save = function save() {
   return Draftly.storage.open().then(function (db) {
     return new Promise(function (resolve, reject) {
       var tx = db.transaction(cfg.storeName, 'readwrite');
-      tx.objectStore(cfg.storeName).put({ name: name, html: html, updated: Date.now() });
-      tx.oncomplete = function () { resolve(name); };
+      var store = tx.objectStore(cfg.storeName);
+      var old = Draftly.storage.loadedName;
+      store.put({ name: name, html: html, updated: Date.now() });
+      if (old && old !== name) store.delete(old);
+      tx.oncomplete = function () {
+        if (old && old !== name) {
+          var b = Draftly.storage.readBackup();
+          if (b && b.name === old) { try { localStorage.removeItem(cfg.storageKeyBackup); } catch (e) {} }
+        }
+        Draftly.storage.loadedName = name;
+        resolve(name);
+      };
       tx.onerror = function () { reject(tx.error); };
     });
   });
@@ -169,6 +200,28 @@ Draftly.storage.saveOrientation = function saveOrientation(mode) {
   var cfg = Draftly.config;
   try {
     localStorage.setItem(cfg.storageKeyOrientation, mode);
+  } catch (e) {}
+};
+
+/* Read paper size and margin preset. */
+Draftly.storage.loadPage = function loadPage() {
+  var cfg = Draftly.config;
+  var out = { size: cfg.defaultPaperSize, margins: cfg.defaultMarginPreset };
+  try {
+    var s = localStorage.getItem(cfg.storageKeyPaperSize);
+    var m = localStorage.getItem(cfg.storageKeyMarginPreset);
+    if (cfg.paperSizes[s]) out.size = s;
+    if (cfg.marginPresets[m]) out.margins = m;
+  } catch (e) {}
+  return out;
+};
+
+/* Persist paper size and margin preset. */
+Draftly.storage.savePage = function savePage(size, margins) {
+  var cfg = Draftly.config;
+  try {
+    localStorage.setItem(cfg.storageKeyPaperSize, size);
+    localStorage.setItem(cfg.storageKeyMarginPreset, margins);
   } catch (e) {}
 };
 

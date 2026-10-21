@@ -51,6 +51,8 @@ Draftly.app.loadDocument = function loadDocument() {
   var editor = Draftly.pages.firstEditor();
   if (!editor) return Promise.resolve();
   Draftly.ui.setNonPrinting(Draftly.storage.loadNonPrinting());
+  var page = Draftly.storage.loadPage();
+  Draftly.ui.setPage(page.size, page.margins);
   Draftly.ui.setOrientation(Draftly.storage.loadOrientation());
   var last = '';
   try { last = localStorage.getItem(cfg.storageKeyLastName) || ''; } catch (e) {}
@@ -97,6 +99,18 @@ Draftly.app.toggleRecent = function toggleRecent() {
       menu.innerHTML = '<div class="recent-empty">No saved documents</div>';
     }
     rows.forEach(function (row) {
+      var line = document.createElement('div');
+      line.className = 'recent-row';
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'recent-del';
+      del.title = 'Delete ' + row.name;
+      del.setAttribute('aria-label', 'Delete ' + row.name);
+      del.textContent = '×';
+      del.addEventListener('click', function () {
+        Draftly.view.togglePop('recentMenu', 'recentBtn', false);
+        Draftly.app.deleteDoc(row.name);
+      });
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'recent-item';
@@ -105,7 +119,9 @@ Draftly.app.toggleRecent = function toggleRecent() {
         Draftly.app.openDoc(row.name);
         Draftly.view.togglePop('recentMenu', 'recentBtn', false);
       });
-      menu.appendChild(btn);
+      line.appendChild(btn);
+      line.appendChild(del);
+      menu.appendChild(line);
     });
     Draftly.view.togglePop('recentMenu', 'recentBtn', true);
   }).catch(function () {
@@ -131,6 +147,66 @@ Draftly.app.openDoc = function openDoc(name) {
     Draftly.ui.showToast('Opened ' + doc.name);
   }).catch(function () {
     Draftly.ui.showToast('Could not open document');
+  });
+};
+
+/* Show a blank document under a fresh, unused Doc_ name. */
+Draftly.app.showBlank = function showBlank(rows) {
+  var base = Draftly.storage.makeName();
+  var name = base;
+  var n = 2;
+  var taken = function (x) { return rows.some(function (r) { return r.name === x; }); };
+  while (taken(name)) name = base + '_' + (n++);
+  Draftly.pages.rebuildSinglePage();
+  var editor = Draftly.pages.firstEditor();
+  if (editor) editor.innerHTML = '<p><br></p>';
+  Draftly.storage.loadedName = '';
+  Draftly.storage.setCurrentName(name, false);
+  Draftly.pages.layoutAll();
+  if (editor) { editor.focus(); Draftly.editor.activeEditor = editor; }
+  return Draftly.storage.save();
+};
+
+/* New: save the current doc, then open a blank one. */
+Draftly.app.newDoc = function newDoc() {
+  clearTimeout(Draftly.app.inputTimer);
+  return Draftly.storage.save().catch(function () {}).then(function () {
+    return Draftly.storage.listDocs();
+  }).then(function (rows) {
+    return Draftly.app.showBlank(rows);
+  }).then(function (name) {
+    Draftly.ui.showToast('New document ' + name);
+  }).catch(function () {
+    Draftly.ui.showToast('Could not create document');
+  });
+};
+
+/* Delete one stored doc after confirm. If it is open, move to another. */
+Draftly.app.deleteDoc = function deleteDoc(name) {
+  if (!window.confirm('Delete "' + name + '"? This cannot be undone.')) return Promise.resolve(false);
+  var isOpen = name === Draftly.storage.loadedName || name === Draftly.storage.currentName();
+  if (isOpen) clearTimeout(Draftly.app.inputTimer);
+  return Draftly.storage.deleteDoc(name).then(function () {
+    if (!isOpen) return null;
+    return Draftly.storage.listDocs().then(function (rows) {
+      Draftly.storage.loadedName = '';
+      if (rows.length) {
+        Draftly.pages.rebuildSinglePage();
+        var editor = Draftly.pages.firstEditor();
+        editor.innerHTML = rows[0].html || Draftly.config.defaultHtml;
+        Draftly.editor.stripMarks(editor);
+        Draftly.storage.setCurrentName(rows[0].name, true);
+        Draftly.pages.layoutAll();
+        return null;
+      }
+      return Draftly.app.showBlank(rows);
+    });
+  }).then(function () {
+    Draftly.ui.showToast('Deleted ' + name);
+    return true;
+  }).catch(function () {
+    Draftly.ui.showToast('Could not delete document');
+    return false;
   });
 };
 
@@ -185,6 +261,7 @@ Draftly.app.bindUi = function bindUi() {
   Draftly.app.onClick('themeToggleBtn', function () { Draftly.ui.toggleTheme(); });
   Draftly.app.onClick('nonPrintingBtn', function () { Draftly.ui.toggleNonPrinting(); });
   Draftly.app.onClick('recentBtn', function () { Draftly.app.toggleRecent(); });
+  Draftly.app.onClick('newBtn', function () { Draftly.app.newDoc(); });
   Draftly.app.onClick('saveBtn', function () { Draftly.app.saveDocument(); });
   Draftly.app.onClick('printBtn', function () { Draftly.export.printDocument(); });
   Draftly.app.onClick('exportDocxBtn', function () { Draftly.export.exportDocx(); });
@@ -225,12 +302,8 @@ Draftly.app.bindUi = function bindUi() {
     });
   }
 
-  /* Margins come from draftly-config.js only. Drop margins stored by older versions. */
+  /* Margins come from the Page panel preset (see loadDocument). Drop the old free-form key. */
   try { localStorage.removeItem(cfg.storageKeyMargins); } catch (e) {}
-  cfg.docxMarginTop = Math.round(cfg.marginTopCm * 567);
-  cfg.docxMarginBottom = Math.round(cfg.marginBottomCm * 567);
-  cfg.docxMarginLeft = Math.round(cfg.marginLeftCm * 567);
-  cfg.docxMarginRight = Math.round(cfg.marginRightCm * 567);
 
   document.addEventListener('selectionchange', function () {
     var active = document.activeElement;
