@@ -169,9 +169,9 @@ Draftly.config = {
   /* Placeholder shown in an empty editor. */
   placeholder: 'Start typing here…',
   /* First-run body when nothing is stored. */
-  defaultHtml: '<p>Welcome to Draftly. Use the toolbar to format text.</p>',
+  defaultHtml: '<p><br></p>',
   /* Fallback body if storage throws. */
-  fallbackHtml: '<p>Welcome to Draftly.</p>',
+  fallbackHtml: '<p><br></p>',
 
   /* ----- DOM hooks ----- */
   /* Class used on every page editor. Ids are not duplicated. */
