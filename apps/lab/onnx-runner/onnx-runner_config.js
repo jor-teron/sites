@@ -21,3 +21,7 @@ const ONNX_CONFIG = {
 
   imageDefaults: { h: 224, w: 224, layout: 'NCHW', norm: 'unit', mean: '0.485,0.456,0.406', std: '0.229,0.224,0.225' },
 };
+
+/* Text generation (Generate tab). */
+ONNX_CONFIG.transformersUrl = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.0';
+ONNX_CONFIG.genDefaults = { maxNew: 100, ctx: 512, greedy: false, temperature: 0.8, topK: 40, topP: 0.95, repPenalty: 1.0, stop: '', addBos: true };

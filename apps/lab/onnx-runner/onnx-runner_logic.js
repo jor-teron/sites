@@ -14,7 +14,9 @@
       st.worker = new Worker('onnx-runner_worker.js');
       st.worker.onmessage = (e) => {
         const m = e.data, w = st.wait[m.id]; delete st.wait[m.id];
-        if (w) (m.type === 'error' ? w.no(new Error(m.message)) : w.ok(m));
+        if (m.type === 'token' || m.type === 'done') { if (st.onGen) st.onGen(m); return; }
+      if (m.type === 'error' && st.genId === m.id && st.onGen) { st.onGen(m); return; }
+      if (w) (m.type === 'error' ? w.no(new Error(m.message)) : w.ok(m));
       };
       st.worker.onerror = (e) => { Object.values(st.wait).forEach((w) => w.no(new Error(e.message || 'Worker failed'))); st.wait = {}; };
     }
@@ -43,10 +45,40 @@
   }
 
   /* ---------- model ---------- */
+  /* Several files at once: one .onnx (a picker appears if there are more) + tokenizer / config files. */
+  async function loadFiles(list) {
+    const files = [...(list || [])];
+    if (!files.length) return;
+    showError('');
+    const onnx = files.filter((f) => /\.onnx$/i.test(f.name));
+    const other = files.filter((f) => OnnxText.isTokenizerFile(f.name));
+    const bad = files.filter((f) => !onnx.includes(f) && !other.includes(f));
+    if (!onnx.length && !other.length) { showError('No .onnx or tokenizer files in: ' + bad.map((f) => f.name).join(', ')); return; }
+    if (other.length) await loadTokenizer(other);
+    const pick = $('onnxPick');
+    if (onnx.length > 1) {
+      st.onnxFiles = onnx; pick.hidden = false;
+      pick.innerHTML = onnx.map((f, i) => '<option value="' + i + '">' + esc(f.webkitRelativePath || f.name) + '</option>').join('');
+      const def = Math.max(0, onnx.findIndex((f) => /^model\.onnx$/i.test(f.name)));
+      pick.value = String(def);
+      await loadFile(onnx[def]);
+    } else if (onnx.length) { pick.hidden = true; await loadFile(onnx[0]); }
+  }
+  async function loadTokenizer(files) {
+    try {
+      $('tokInfo').textContent = 'Reading tokenizer…';
+      const t = await OnnxText.load(files);
+      if (!t) { $('tokInfo').textContent = 'No tokenizer found in: ' + files.map((f) => f.name).join(', '); return; }
+      st.tok = t;
+      $('tokInfo').innerHTML = '<b>Tokenizer:</b> ' + esc(t.label) + ' · vocab ' + t.size.toLocaleString() +
+        (t.eosIds.length ? ' · EOS ' + t.eosIds.join('/') : ' · no EOS') + (t.bosId !== undefined ? ' · BOS ' + t.bosId : '') +
+        (t.ctx ? ' · context ' + t.ctx : '') + (t.hasConfig ? ' · config.json' : '');
+    } catch (e) { st.tok = null; $('tokInfo').textContent = 'No tokenizer loaded.'; showError('Tokenizer: ' + e.message); }
+    document.dispatchEvent(new Event('onnx:changed'));
+  }
   async function loadFile(file) {
     if (!file) return;
     showError('');
-    if (!/\.onnx$/i.test(file.name)) { showError('"' + file.name + '" is not a .onnx file'); return; }
     $('modelInfo').textContent = 'Loading ' + file.name + ' (' + (file.size / 1e6).toFixed(2) + ' MB)…';
     $('run').disabled = true;
     try {
@@ -59,6 +91,7 @@
       $('softmax').checked = !!saved().softmax;
       buildInputs(); $('outputs').innerHTML = '<span class="muted">Run the model to see outputs.</span>'; $('runTime').textContent = '';
       $('run').disabled = false;
+      document.dispatchEvent(new Event('onnx:changed'));
     } catch (e) {
       $('modelInfo').textContent = 'No model loaded.'; st.model = null;
       showError('Could not open the model: ' + e.message);
@@ -213,13 +246,30 @@
   $('backend').innerHTML = C.backends.map((b) => '<option value="' + b + '"' + (b === 'webgpu' && !hasGpu ? ' disabled' : '') + '>' +
     (b === 'auto' ? 'Auto (' + (hasGpu ? 'WebGPU, else WASM' : 'WASM') + ')' : b === 'webgpu' ? 'WebGPU' + (hasGpu ? '' : ' (not available)') : 'WASM') + '</option>').join('');
   const drop = $('drop');
-  $('file').onchange = (e) => loadFile(e.target.files[0]);
+  $('file').onchange = (e) => loadFiles(e.target.files);
+  $('folder').onchange = (e) => loadFiles(e.target.files);
+  $('pickFolder').onclick = () => $('folder').click();
+  $('onnxPick').onchange = () => loadFile(st.onnxFiles[+$('onnxPick').value]);
   drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') $('file').click(); });
   ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
   ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
-  drop.addEventListener('drop', (e) => loadFile(e.dataTransfer.files[0]));
+  /* Dropped folders are walked (webkitGetAsEntry); plain files are used as they are. */
+  async function walk(entry, out) {
+    if (entry.isFile) out.push(await new Promise((ok, no) => entry.file(ok, no)));
+    else if (entry.isDirectory) {
+      const rd = entry.createReader();
+      for (;;) { const batch = await new Promise((ok, no) => rd.readEntries(ok, no)); if (!batch.length) break; for (const x of batch) await walk(x, out); }
+    }
+  }
+  drop.addEventListener('drop', async (e) => {
+    const items = [...(e.dataTransfer.items || [])].map((i) => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+    if (items.some((x) => x.isDirectory)) { const out = []; for (const x of items) await walk(x, out); loadFiles(out); }
+    else loadFiles(e.dataTransfer.files);
+  });
   $('run').onclick = run;
   $('softmax').onchange = () => { renderOutputs(); save(); };
-  document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); } });
-  window.OnnxRunner = { state: st, run, loadFile };
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !$('tab-raw').hidden) { e.preventDefault(); run(); }
+  });
+  window.OnnxRunner = { state: st, run, loadFile, loadFiles, call, showError, esc };
 })();
