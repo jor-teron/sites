@@ -51,8 +51,9 @@
     layout(W, H) {
       const gy = H * C.groundRatio, f = this.cur, s = (C.heightRatio * H) / f.idleH;
       if (!this.versus) return [{ f, x: W / 2, gy, s, facing: this.facing }];
-      const o = this.vsOther, so = (C.heightRatio * H) / o.idleH;
-      return [{ f, x: W * (0.5 - C.versusGap), gy, s, facing: 1 }, { f: o, x: W * (0.5 + C.versusGap), gy, s: so, facing: -1 }];
+      // Versus: one shared scale set by the taller fighter (Kai at 70%), so Nova stands naturally shorter.
+      const o = this.vsOther, tall = Math.max(f.idleH, o.idleH), sv = (C.heightRatio * H) / tall;
+      return [{ f, x: W * (0.5 - C.versusGap), gy, s: sv, facing: 1 }, { f: o, x: W * (0.5 + C.versusGap), gy, s: sv, facing: -1 }];
     },
     render(ctx, W, H) {
       NF.stage.draw(ctx, W, H, H * C.groundRatio, this.t);

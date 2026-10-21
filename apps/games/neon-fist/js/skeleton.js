@@ -6,7 +6,8 @@
   const D = Math.PI / 180;
   const FIELDS = ['hx', 'air', 'torso', 'spine', 'neck', 'head',
     'shF', 'elF', 'wrF', 'shB', 'elB', 'wrB',
-    'hpF', 'knF', 'ftF', 'hpB', 'knB', 'ftB', 'orb', 'streak'];
+    'hpF', 'knF', 'ftF', 'hpB', 'knB', 'ftB', 'orb', 'streak',
+    'twist', 'angry', 'pain'];   // twist: chest/hip turn (+ = toward the opponent); angry/pain: face
 
   const down = (p, a, L) => ({ x: p.x + Math.sin(a * D) * L, y: p.y + Math.cos(a * D) * L });
   const up = (p, a, L) => ({ x: p.x + Math.sin(a * D) * L, y: p.y - Math.cos(a * D) * L });
@@ -50,14 +51,23 @@
     const ua = A.up * D;
     J.shoulder = { x: J.chest.x - Math.sin(ua) * B.shDrop - Math.cos(ua) * B.shBack,
                    y: J.chest.y + Math.cos(ua) * B.shDrop - Math.sin(ua) * B.shBack };
+    // 3/4 turn: the near (F) shoulder sits behind the chest line, the far (B) one ahead of it and
+    // slightly higher (foreshortened). Twist rotates the near shoulder forward on punches.
+    const tw = pose.twist || 0, fwd = { x: Math.cos(ua), y: Math.sin(ua) }, sp = B.shSpread || 0;
+    const shOff = { F: -sp * 0.8 + tw * sp * 1.5, B: sp * 0.55 - tw * sp * 0.8 }, shUp = { F: 0, B: -4 - Math.abs(tw) * 2 };
+    const hipOff = { F: -(B.hipSpread || 0) + tw * 5, B: (B.hipSpread || 0) * 0.6 - tw * 4 };
+    for (const s of ['F', 'B']) {
+      J['shoulder' + s] = { x: J.shoulder.x + fwd.x * shOff[s] + Math.sin(ua) * shUp[s], y: J.shoulder.y + fwd.y * shOff[s] - Math.cos(ua) * shUp[s] };
+      J['hip' + s] = { x: hip.x + hipOff[s], y: hip.y };
+    }
     for (const s of ['F', 'B']) {
       const a1 = pose['sh' + s] || 0, a2 = a1 + (pose['el' + s] || 0), a3 = a2 + (pose['wr' + s] || 0);
       A['ua' + s] = a1; A['fa' + s] = a2; A['hd' + s] = a3;
-      J['elbow' + s] = down(J.shoulder, a1, B.uarm);
+      J['elbow' + s] = down(J['shoulder' + s], a1, B.uarm);
       J['wrist' + s] = down(J['elbow' + s], a2, B.farm);
       const t1 = pose['hp' + s] || 0, t2 = t1 + (pose['kn' + s] || 0), t3 = t2 + 90 + (pose['ft' + s] || 0);
       A['th' + s] = t1; A['sh' + s] = t2; A['ft' + s] = t3;
-      J['knee' + s] = down(hip, t1, B.thigh);
+      J['knee' + s] = down(J['hip' + s], t1, B.thigh);
       J['ankle' + s] = down(J['knee' + s], t2, B.shin);
     }
     // ground the lowest sole point, then lift by pose.air
