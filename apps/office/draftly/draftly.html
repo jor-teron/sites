@@ -36,6 +36,11 @@
     </div>
 
     <div class="tool-group">
+      <button class="tool-btn" id="undoBtn" title="Undo (Ctrl/⌘+Z)" aria-label="Undo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4.5 11.5 9 16"/><path d="M5 11.5h9.5a5 5 0 0 1 0 10H11"/></svg></button>
+      <button class="tool-btn" id="redoBtn" title="Redo (Ctrl+Y / ⌘+Shift+Z)" aria-label="Redo" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 7l4.5 4.5L15 16"/><path d="M19 11.5H9.5a5 5 0 0 0 0 10H13"/></svg></button>
+    </div>
+
+    <div class="tool-group">
       <select id="fontFamilySelect" class="font-select" title="Font family">
         <option value="Times New Roman" selected>Times New Roman</option>
         <option value="Tinos">Tinos</option>
@@ -166,6 +171,7 @@
   <script src="modules/draftly-pdf.js"></script>
   <script src="modules/draftly-lists.js"></script>
   <script src="modules/draftly-view.js"></script>
+  <script src="modules/draftly-history.js"></script>
   <script src="modules/draftly-app.js"></script>
 </body>
 </html>

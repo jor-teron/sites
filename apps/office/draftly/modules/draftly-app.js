@@ -16,7 +16,7 @@ window.Draftly = Draftly;
 Draftly.app = {};
 
 /* Names required for a full editor. */
-Draftly.app.required = ['config', 'storage', 'ui', 'editor', 'pages', 'export', 'lists'];
+Draftly.app.required = ['config', 'storage', 'ui', 'editor', 'pages', 'export', 'lists', 'history'];
 
 /* True after the last file has been applied. Blocks early autosave. */
 Draftly.app.ready = false;
@@ -144,6 +144,7 @@ Draftly.app.openDoc = function openDoc(name) {
     Draftly.editor.stripMarks(editor);
     Draftly.storage.setCurrentName(doc.name, true);
     Draftly.pages.layoutAll();
+    Draftly.history.reset();
     Draftly.ui.showToast('Opened ' + doc.name);
   }).catch(function () {
     Draftly.ui.showToast('Could not open document');
@@ -164,6 +165,7 @@ Draftly.app.showBlank = function showBlank(rows) {
   Draftly.storage.setCurrentName(name, false);
   Draftly.pages.layoutAll();
   if (editor) { editor.focus(); Draftly.editor.activeEditor = editor; }
+  Draftly.history.reset();
   return Draftly.storage.save();
 };
 
@@ -197,6 +199,7 @@ Draftly.app.deleteDoc = function deleteDoc(name) {
         Draftly.editor.stripMarks(editor);
         Draftly.storage.setCurrentName(rows[0].name, true);
         Draftly.pages.layoutAll();
+        Draftly.history.reset();
         return null;
       }
       return Draftly.app.showBlank(rows);
@@ -386,6 +389,7 @@ Draftly.app.init = function init() {
         Draftly.editor.activeEditor = editor;
       }
       Draftly.pages.layoutAll();
+      Draftly.history.reset();
     });
   } catch (err) {
     console.warn('draftly: init failed', err);
