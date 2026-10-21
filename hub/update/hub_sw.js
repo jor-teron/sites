@@ -20,8 +20,8 @@
  *   changed ones in place (the cache is never wiped); replies {type:'sw-refreshed', changed:[paths]}.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261021f';
-const CACHE = 'hub-shell-v64';  // 2026-10-21f: R46 MyBookmark replaces Bookmark Manager
+const V = '20261021g';
+const CACHE = 'hub-shell-v65';  // 2026-10-21g: R42 Phone mode Home button + tidy top bar
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const SHELL = [
   'hub.html',
