@@ -20,9 +20,12 @@
     <button id="pause-btn" aria-label="Pause">⏸</button>
     <button id="speed-btn" aria-label="Game speed" title="Game speed (+ / -)">1x</button>
     <div id="pause-overlay"><div><h2>Paused</h2><div id="pause-map"></div><div id="pause-speed">Speed 1x</div><button id="resume-btn">▶ Resume</button> <button id="newmap-btn">New map</button><p>P to toggle · camera still moves</p></div></div>
-    <div id="title-overlay"><div><h1>AOE RTS</h1><label for="map-select">Map</label>
-        <select id="map-select"></select><div id="map-note"></div><button id="start-btn">▶ Start</button> <button id="picker-cancel">Back</button>
-        <p>Same number = same map · 00 is a small demo</p></div></div>
+    <div id="title-overlay"><div><h1>AOE RTS</h1><label for="map-input">Map</label>
+        <input id="map-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" spellcheck="false" placeholder="00" aria-label="Map number 00-99">
+        <div id="map-note"></div>
+        <div class="picker-row"><button id="map-resume-btn">▶ Resume</button><button id="map-restart-btn">↺ Restart</button><button id="map-random-btn">🎲 Random</button></div>
+        <button id="picker-cancel">Back</button>
+        <p>Type 00-99 · same number = same map · 00 is a small demo · each map keeps its own save (this browser)</p></div></div>
     <!-- Mute toggle -->
     <button id="mute-btn" aria-label="Mute">🔊</button>
     <!-- Phaser library from local vendor folder -->
