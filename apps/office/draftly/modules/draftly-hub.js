@@ -88,19 +88,7 @@ Draftly.hub = {
   var input = document.getElementById('fileNameInput');
   if (input) { input.addEventListener('input', sendTitle); input.addEventListener('change', sendTitle); }
 
-  /* Rename normally focuses the (now hidden) name box: ask with a prompt instead. */
-  var rename = document.getElementById('renameBtn');
-  if (rename) rename.addEventListener('click', function (e) {
-    if (!H.linked) return;
-    e.stopImmediatePropagation(); e.preventDefault();
-    setTimeout(function () {
-      var v = window.prompt('Document name', title());
-      if (v === null || !v.trim()) return;
-      input.value = v.trim();
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-    }, 0);
-  }, true);
+  /* File > Rename uses Draftly.dialog (draftly-ribbon.js); setCurrentName above sends hub-title. */
 
   window.addEventListener('message', function (e) {
     if (e.source !== window.parent || !originOk(e.origin)) return;

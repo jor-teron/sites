@@ -109,3 +109,8 @@ body.in-hub .topbar { display: none; }
   .topbar .file-name { width: auto; flex: 1 1 60px; min-width: 60px; }
   :root { --page-gap: 16px; }
 }
+/* File > Dark mode / Light mode: show the icon of the theme it switches to */
+.file-item > .icon-moon, .file-item > .icon-sun { flex: 0 0 auto; }
+.file-item .icon-sun { display: none; }
+body.dark .file-item .icon-sun { display: inline-flex; }
+body.dark .file-item .icon-moon { display: none; }
