@@ -9,6 +9,7 @@
       hint: { depth: 2, budget: 450, band: 0 },
       minThink: 110,
     },
+    anim: { squaresPerSecond: 8 },
     colors: {
       light: '#f0d9b5', dark: '#b58863', frame: '#6b4630',
       last: 'rgba(214, 196, 78, 0.55)', select: 'rgba(246, 214, 92, 0.9)',

@@ -92,12 +92,24 @@
         ctx.fillText('12345678'[rank], x + 3, y + 2);
       }
     }
+    const anim = view.anim, hide = anim ? anim.hide : null;
+    if (anim) anim.fades.forEach(function (f) {
+      const s = screenOf(f.sq);
+      ctx.save(); ctx.globalAlpha = 1 - anim.t;
+      drawPiece(ctx, f.piece, geom.ox + (s.col + 0.5) * sq, geom.oy + (s.row + 0.52) * sq, sq);
+      ctx.restore();
+    });
     for (let sqi = 0; sqi < 64; sqi++) {
       const p = board[sqi];
-      if (!p || (view.drag && sqi === view.selected)) continue;
+      if (!p || (view.drag && sqi === view.selected) || (hide && hide.indexOf(sqi) >= 0)) continue;
       const s = screenOf(sqi);
       drawPiece(ctx, p, geom.ox + (s.col + 0.5) * sq, geom.oy + (s.row + 0.52) * sq, sq);
     }
+    if (anim) anim.moves.forEach(function (mv) {
+      const a = screenOf(mv.f), b = screenOf(mv.t), k = anim.t;
+      const col = a.col + (b.col - a.col) * k, row = a.row + (b.row - a.row) * k;
+      drawPiece(ctx, mv.piece, geom.ox + (col + 0.5) * sq, geom.oy + (row + 0.52) * sq, sq);
+    });
     targets.forEach(function (t) {
       const s = screenOf(t), cx = geom.ox + (s.col + 0.5) * sq, cy = geom.oy + (s.row + 0.5) * sq;
       ctx.beginPath();

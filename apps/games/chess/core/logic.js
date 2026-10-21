@@ -6,14 +6,14 @@
   let st, hist, sans, humanWhite, level, draftWhite, draftLevel;
   let playing = false, ended = null, busy = false, token = 0, hintToken = 0;
   let selected = -1, hint = null, drag = null, pending = null;
-  let cursor = 12, showCursor = false, lastError = null;
+  let cursor = 12, showCursor = false, lastError = null, animOn = true, skipAnim = false;
 
   function $(id) { return document.getElementById(id); }
   function prefs() {
     try { return JSON.parse(localStorage.getItem('chess-prefs') || 'null'); } catch (e) { return null; }
   }
   function savePrefs() {
-    try { localStorage.setItem('chess-prefs', JSON.stringify({ human: humanWhite ? 'white' : 'black', level: level })); }
+    try { localStorage.setItem('chess-prefs', JSON.stringify({ human: humanWhite ? 'white' : 'black', level: level, anim: animOn })); }
     catch (e) { /* private mode */ }
   }
   function humanTurn() { return st.wtm === humanWhite; }
@@ -34,6 +34,7 @@
       selected: selected, targets: targets,
       checkSq: chk ? R().kingSq(st, st.wtm) : -1,
       hint: hint, drag: drag, cursor: showCursor ? cursor : -1,
+      anim: Chess.anim.frame(),
     };
   }
   function draw() { Chess.render.draw(view()); }
@@ -142,6 +143,8 @@
     const text = R().san(st, m, R().legalMoves(st));
     R().make(st, m);
     hist.push(m); sans.push(text);
+    if (animOn && !skipAnim) Chess.anim.start(m); else Chess.anim.finish();
+    skipAnim = false;
     selected = -1; hint = null; drag = null; closePromo();
     ended = R().result(st);
     refresh();
@@ -156,11 +159,24 @@
     try { m = await Chess.ai.think(st, level, function () { return token !== my; }); }
     catch (e) { lastError = e; m = null; }
     if (token !== my) return;
+    if (m && Chess.anim.active()) { await Chess.anim.done(); if (token !== my) return; }
     busy = false;
     if (!m) { refresh(); return; }
     apply(m);
   }
+  function syncAnim() {
+    const b = $('btn-anim');
+    b.textContent = 'Animation: ' + (animOn ? 'On' : 'Off');
+    b.classList.toggle('on', animOn);
+    b.setAttribute('aria-pressed', animOn ? 'true' : 'false');
+  }
+  function toggleAnim() {
+    animOn = !animOn;
+    if (!animOn) Chess.anim.finish();
+    syncAnim(); savePrefs();
+  }
   function begin(fen) {
+    Chess.anim.finish();
     token++; hintToken++; busy = false;
     st = R().parseFen(fen || R().START);
     hist = []; sans = []; selected = -1; hint = null; drag = null; closePromo();
@@ -185,6 +201,7 @@
     apply(moves[0]); return true;
   }
   function tap(sq) {
+    Chess.anim.finish(); skipAnim = false;
     if (pending) { closePromo(); refresh(); return; }
     if (!playing || busy || ended || !humanTurn()) return;
     showCursor = false;
@@ -197,6 +214,7 @@
     hint = null; refresh();
   }
   function dragStart(sq) {
+    Chess.anim.finish();
     if (pending || !playing || busy || ended || !humanTurn() || !own(sq)) return;
     selected = sq; hint = null; showCursor = false;
     drag = { piece: st.b[sq], x: 0, y: 0 };
@@ -212,10 +230,13 @@
     const from = selected;
     drag = null;
     if (pending) { closePromo(); refresh(); return; }
+    skipAnim = true;
     if (from >= 0 && sq >= 0 && sq !== from && tryMove(from, sq, 0)) return;
+    skipAnim = false;
     refresh();
   }
   function undo() {
+    Chess.anim.finish();
     token++; hintToken++; busy = false; closePromo(); drag = null;
     if (!hasHumanMove()) { refresh(); return; }
     while (hist.length) {
@@ -228,6 +249,7 @@
     hideOverlay(); refresh();
   }
   function onKey(e) {
+    Chess.anim.finish();
     const k = e.key;
     if ((k === 'z' || k === 'Z') && (e.metaKey || e.ctrlKey)) { undo(); return; }
     if (k === 'Escape') {
@@ -274,13 +296,17 @@
     const saved = prefs();
     humanWhite = !saved || saved.human !== 'black';
     level = saved && saved.level === 'medium' ? 'medium' : 'beginner';
+    animOn = !saved || saved.anim !== false;
     draftWhite = humanWhite; draftLevel = level;
     st = R().parseFen(R().START); hist = []; sans = [];
     Chess.render.bind($('board'));
+    Chess.anim.onFrame(draw);
+    syncAnim();
     Chess.input.attach({
       tap: tap, dragStart: dragStart, drag: dragMove, drop: drop, key: onKey,
-      undo: undo, hint: doHint, promo: onPromo,
+      undo: undo, hint: doHint, promo: onPromo, toggleAnim: toggleAnim,
       menu: function () {
+        Chess.anim.finish();
         token++; hintToken++; busy = false; closePromo(); drag = null;
         showSetup(playing && !ended ? 'mid' : (ended ? 'over' : 'fresh'));
         refresh();
@@ -325,6 +351,8 @@
     state: function () { return st; },
     humanTurn: humanTurn,
     tap: tap,
+    animating: function () { return Chess.anim.active(); },
+    animOn: function () { return animOn; },
     lastError: function () { return lastError; },
   };
   if (typeof document !== 'undefined') {
