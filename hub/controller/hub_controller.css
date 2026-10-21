@@ -284,3 +284,35 @@ width: auto;
 .ls-btn.ls-disc { background: #444b57; }
 #ctrl-btn { position: relative; }
 .ls-count { position: absolute; top: -2px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #2ecc71; color: #000; font: 700 12px/18px system-ui, sans-serif; text-align: center; pointer-events: none; }
+
+/* ===== R42: Phone mode top bar — Home button + tidy spacing (Desktop mode untouched) ===== */
+.home-btn { width: 32px; flex: 0 0 auto; justify-content: center; color: var(--text); }
+.home-btn[hidden] { display: none; }
+body.wm-desktop .home-btn { display: none !important; }   /* no Show desktop / Home in Desktop mode */
+body:not(.wm-desktop) #header { gap: 6px; padding: 0 4px; }
+body:not(.wm-desktop) .header-left { gap: 2px; }
+body:not(.wm-desktop) .header-right { gap: 2px 6px; }
+body:not(.wm-desktop) .header-center { gap: 6px; }
+body:not(.wm-desktop) .header-center .gb-title { flex: 0 1 auto; min-width: 0; }
+body:not(.wm-desktop) .header-center .gb-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body:not(.wm-desktop) .header-center .gb-stat,
+body:not(.wm-desktop) .header-center .gb-btn { flex: 0 0 auto; }
+/* tab strip: edge fades show there are more tabs to scroll to */
+.header-center .gb-tabs.gb-more-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent); }
+.header-center .gb-tabs.gb-more-l { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 18px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 18px), transparent); }
+.header-center .gb-tabs.gb-more-l.gb-more-r { -webkit-mask-image: linear-gradient(to right, transparent, #000 18px, #000 calc(100% - 18px), transparent); mask-image: linear-gradient(to right, transparent, #000 18px, #000 calc(100% - 18px), transparent); }
+@media (max-width: 440px) {
+  body:not(.wm-desktop) #header { gap: 4px; padding: 0 2px; }
+  body:not(.wm-desktop) .cat-btn { padding: 8px 6px; gap: 4px; font-size: 16px; }
+  body:not(.wm-desktop) .header-center .gb-tab { padding: 0 calc(var(--wm-title-h) * 0.24); }
+  body:not(.wm-desktop) .header-right .chat-btn { min-width: 32px; font-size: 19px; }
+  body:not(.wm-desktop) .header-right .ctrl-btn svg { width: 28px; height: 28px; }
+  body:not(.wm-desktop) .home-btn { width: 30px; }
+}
+@media (max-width: 380px) {
+  /* R42: 360 px phones: tighter tabs so File…Page fit next to Home ▾ / Home / the right icons */
+  body:not(.wm-desktop) .header-center .gb-tab { padding: 0 calc(var(--wm-title-h) * 0.15); font-size: calc(var(--wm-title-h) * 0.43); }
+  body:not(.wm-desktop) .header-center.gb-has-tabs { gap: 3px; }
+  body:not(.wm-desktop) .header-center .gb-tabs { gap: 0; }
+  body:not(.wm-desktop) .cat-btn { padding: 8px 4px; font-size: 15px; }
+}

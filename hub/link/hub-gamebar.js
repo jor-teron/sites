@@ -145,6 +145,15 @@
         strip.appendChild(b);
       });
       bar.appendChild(strip);
+      // R42: fade hint at an edge with more tabs behind it (small phones scroll the strip)
+      const fade = () => {
+        const more = strip.scrollWidth - strip.clientWidth;
+        strip.classList.toggle('gb-more-r', more > 1 && strip.scrollLeft < more - 1);
+        strip.classList.toggle('gb-more-l', strip.scrollLeft > 1);
+      };
+      strip.addEventListener('scroll', fade, { passive: true });
+      if (window.ResizeObserver) new ResizeObserver(fade).observe(strip);
+      requestAnimationFrame(fade);
       fileEl = el('span', 'gb-file');
       bar.appendChild(fileEl);
       setFile(d.title);
@@ -188,6 +197,28 @@
     b.kick();   // the window's page may already be loading / loaded
     return b;
   };
+
+  /* R42: Phone mode Home button (#home-btn in .header-left): back to the home tiles
+     (#empty > .home) via hub.js goHome. Shown only while an app is open in Phone mode;
+     never in Desktop mode (CSS hides it; the taskbar has Show desktop there). */
+  (function homeBtn() {
+    const btn = document.getElementById('home-btn');
+    const empty = document.getElementById('empty');
+    if (!btn || !empty) return;
+    const sync = () => {
+      const desk = document.body.classList.contains('wm-desktop');
+      btn.hidden = desk || empty.classList.contains('hidden') === false;
+    };
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (window.__hubGoHome) window.__hubGoHome();
+      sync();
+      btn.blur();
+    });
+    new MutationObserver(sync).observe(empty, { attributes: true, attributeFilter: ['class'] });
+    new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    sync();
+  })();
 
   const frame = document.getElementById('app-frame');
   const bar = document.getElementById('gamebar');
