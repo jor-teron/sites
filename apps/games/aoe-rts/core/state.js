@@ -24,6 +24,10 @@ let keys = null, pointerInside = false, ctrlHeld = false;
 let pool = [], poolN = 0, gUnder = null;
 let speed = 1;           // game speed multiplier (not saved)
 let water = new Uint8Array(MAP_SIZE * MAP_SIZE);   // 1 = water tile (blocks walking + building)
+let rock = new Uint8Array(MAP_SIZE * MAP_SIZE);    // R2b: 1 = rock outcrop (blocks walking + building, not a resource)
+let hill = new Uint8Array(MAP_SIZE * MAP_SIZE);    // R2b: 1 = hill (walkable, A* prefers to go round)
+let ford = new Uint8Array(MAP_SIZE * MAP_SIZE);    // R2b: 1 = shallow river ford (walkable land drawn as shallow water)
+let ground = new Uint8Array(MAP_SIZE * MAP_SIZE);  // R2b: ground look 0 grass, 1 lush, 2 dry, 3 dirt, 4 sand (visual only)
 let deer = [];           // R2c: { x, y, hx, hy, ant, state, timer, gx, gy, face, seed, cd }
 let trainedCount = 0;    // villagers made so far: even = male, odd = female
 window.addEventListener('keydown', e => { if (e.key === 'Control' || e.key === 'Meta') ctrlHeld = true; });

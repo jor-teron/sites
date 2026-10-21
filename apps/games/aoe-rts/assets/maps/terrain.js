@@ -1,0 +1,67 @@
+/** AOE RTS - R2b seeded terrain: hills, rock outcrops, ground variety (classic script: shares top-level names with the other core/ and assets/ scripts; see index.html for load order)
+ *  Everything here is rebuilt from the map number (never saved). Own RNG, so resources / water stay as before. */
+/** Smooth seeded value noise 0..1 (bilinear over a lattice of `cell` tiles) */
+function valueNoise(x, y, cell, k) {
+    const h = (i, j) => { const s = Math.sin(i * 127.1 + j * 311.7 + k * 74.7) * 43758.5453; return s - Math.floor(s); };
+    const fx = x / cell, fy = y / cell, ix = Math.floor(fx), iy = Math.floor(fy), tx = fx - ix, ty = fy - iy;
+    const sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+    const a = h(ix, iy) + (h(ix + 1, iy) - h(ix, iy)) * sx, b = h(ix, iy + 1) + (h(ix + 1, iy + 1) - h(ix, iy + 1)) * sx;
+    return a + (b - a) * sy;
+}
+/** Land tiles reachable from the TC (4-dir over walkable tiles) */
+function reachCount() {
+    const S = MAP_SIZE, seen = new Uint8Array(S * S), st = [townCenter.y * S + townCenter.x]; seen[st[0]] = 1; let n = 1;
+    while (st.length) { const i = st.pop(), x = i % S, y = (i - x) / S;
+        for (let d = 0; d < 4; d++) { const nx = x + [1, -1, 0, 0][d], ny = y + [0, 0, 1, -1][d], j = ny * S + nx;
+            if (isLand(nx, ny) && !seen[j]) { seen[j] = 1; n++; st.push(j); } } }
+    return n;
+}
+function initTerrain(num) {
+    const S = MAP_SIZE, cx0 = townCenter.x + 0.5, cy0 = townCenter.y + 0.5, keep = S <= 16 ? 4.6 : 11.5, area = (S * S) / (48 * 48);
+    let rnd = (mapSeed(num) ^ 0x1b873593) % 2147483646 + 1; const R = () => (rnd = (rnd * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 5; i++) R();
+    const k0 = Math.floor(R() * 1000);   // noise offset per map
+    const far = (x, y, d) => Math.hypot(x - cx0, y - cy0) >= d;
+    const spot = minD => { for (let t = 0; t < 40; t++) { const x = Math.floor(1 + R() * (S - 2)), y = Math.floor(1 + R() * (S - 2)); if (far(x, y, minD)) return [x, y]; } return null; };
+    // HILLS: noisy blobs on land, outside the fair-start ring
+    const hills = S <= 16 ? 0 : Math.round((2 + R() * 3) * area);
+    for (let h = 0; h < hills; h++) { const p = spot(keep + 3); if (!p) continue;
+        const rad = 2 + R() * Math.min(4, S / 14), ph = R() * 6.283, am = 0.2 + R() * 0.25;
+        for (let y = Math.floor(p[1] - rad * 1.5); y <= p[1] + rad * 1.5; y++) for (let x = Math.floor(p[0] - rad * 1.5); x <= p[0] + rad * 1.5; x++) {
+            if (!inMap(x, y) || !far(x, y, keep + 1) || water[y * S + x] || ford[y * S + x]) continue;
+            const a = Math.atan2(y - p[1], x - p[0]), k = 1 + am * Math.sin(a * 3 + ph) + 0.15 * Math.sin(a * 5 + ph * 2);
+            if (Math.hypot(x - p[0], (y - p[1]) * 1.1) <= rad * k) hill[y * S + x] = 1; } }
+    // ROCK OUTCROPS: 1-5 impassable tiles on empty land, never in the fair start, never next to a ford,
+    // and never allowed to cut any land off from the TC (checked with a flood after each one)
+    const outcrops = S <= 16 ? 0 : Math.round((3 + R() * 4) * area);
+    let reach = reachCount();
+    const okRock = (x, y) => inMap(x, y) && x > 0 && y > 0 && x < S - 1 && y < S - 1 && isLand(x, y) && !mapData[y][x] && far(x, y, keep + 2)
+        && ![[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]].some(o => inMap(x + o[0], y + o[1]) && ford[(y + o[1]) * S + x + o[0]]);
+    for (let o = 0; o < outcrops; o++) { const p = spot(keep + 3); if (!p) continue;
+        const want = 1 + Math.floor(R() * 5), put = []; let x = p[0], y = p[1];
+        for (let t = 0; t < want * 3 && put.length < want; t++) {
+            if (okRock(x, y)) { rock[y * S + x] = 1; put.push(y * S + x); }
+            const d = Math.floor(R() * 4); x += [1, -1, 0, 0][d]; y += [0, 0, 1, -1][d]; }
+        if (!put.length) continue;
+        const now = reachCount();
+        if (now !== reach - put.length) put.forEach(i => { rock[i] = 0; }); else reach = now; }
+    // GROUND: grass shades from low-frequency noise, dirt patches, sand next to water (visual only)
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const i = y * S + x;
+        if (water[i]) { ground[i] = 0; continue; }
+        let wet = false; for (let dy = -1; dy <= 1 && !wet; dy++) for (let dx = -1; dx <= 1; dx++) if (isWater(x + dx, y + dy)) { wet = true; break; }
+        if (wet || ford[i]) { ground[i] = 4; continue; }
+        const n1 = valueNoise(x, y, 7, k0) * 0.7 + valueNoise(x, y, 3, k0 + 1) * 0.3, n2 = valueNoise(x, y, 4, k0 + 2);
+        ground[i] = n2 > 0.78 && far(x, y, 3) ? 3 : n1 < 0.36 ? 1 : n1 > 0.64 ? 2 : 0;
+    }
+}
+/** Test hook: terrain counts + checks */
+function terrainReport() {
+    const S = MAP_SIZE, cx0 = townCenter.x + 0.5, cy0 = townCenter.y + 0.5, keep = S <= 16 ? 4.6 : 11.5;
+    const r = { rock: 0, hill: 0, ford: 0, sand: 0, dirt: 0, lush: 0, dry: 0, rockInRing: 0, rockOnRes: 0, fordOnWater: 0, rivers: 0 };
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const i = y * S + x;
+        if (rock[i]) { r.rock++; if (Math.hypot(x - cx0, y - cy0) < keep + 2) r.rockInRing++; if (mapData[y][x]) r.rockOnRes++; }
+        if (hill[i]) r.hill++; if (ford[i]) { r.ford++; if (water[i]) r.fordOnWater++; }
+        if (!water[i]) { const g = ground[i]; if (g === 4) r.sand++; else if (g === 3) r.dirt++; else if (g === 1) r.lush++; else if (g === 2) r.dry++; } }
+    return r;
+}
+function terrainHash() { let h = 2166136261; for (let i = 0; i < MAP_SIZE * MAP_SIZE; i++) h = Math.imul(h ^ (rock[i] | hill[i] << 1 | ford[i] << 2 | ground[i] << 3 | water[i] << 6), 16777619) >>> 0; return h.toString(16); }
