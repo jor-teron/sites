@@ -113,6 +113,7 @@ function runScreenAction(code, key) {
   var acted = false;
   if (isShown("menu")) {
     if (codeIn(CFG.keys.start, code, key)) { startGame(); acted = true; }
+    else if (codeIn(CFG.size.toggleKeys, code, key)) { setSizeMode(); acted = true; }
   } else if (isShown("overlay")) {
     if (codeIn(CFG.keys.start, code, key)) { startGame(); acted = true; }
     else if (codeIn(CFG.keys.menu, code, key)) { showMenu(); acted = true; }

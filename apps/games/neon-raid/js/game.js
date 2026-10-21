@@ -181,14 +181,16 @@ function step(dt) {
   collidePlatforms(p, state.level.platforms);
 
   /* camera */
-  state.camX = Math.max(0, Math.min(p.x - PC.cameraLead, state.level.width - W));
+  var ct = cameraTarget(state);
+  state.camX = ct.x;
+  state.camY += (ct.y - state.camY) * Math.min(1, CFG.size.camYSmooth * dt);
 
   /* bullets */
   var i;
   for (i = state.bullets.length - 1; i >= 0; i--) {
     var b = state.bullets[i];
     b.x += b.vx * dt;
-    if (b.x < state.camX - BC.despawnMargin || b.x > state.camX + W + BC.despawnMargin) {
+    if (b.x < state.camX - BC.despawnMargin || b.x > state.camX + viewW() + BC.despawnMargin) {
       state.bullets.splice(i, 1);
     }
   }
@@ -235,7 +237,7 @@ function step(dt) {
   for (i = state.eBullets.length - 1; i >= 0; i--) {
     var eb = state.eBullets[i];
     eb.x += eb.vx * dt;
-    if (eb.x < state.camX - BC.despawnMargin || eb.x > state.camX + W + BC.despawnMargin) {
+    if (eb.x < state.camX - BC.despawnMargin || eb.x > state.camX + viewW() + BC.despawnMargin) {
       state.eBullets.splice(i, 1);
       continue;
     }
@@ -260,6 +262,7 @@ function startGame() {
   var sel = document.getElementById("duration");
   var dur = parseInt(sel.value, 10) || DEFAULT_DURATION;
   state = newState(dur);
+  snapCamera(state);
   document.getElementById("menu").classList.add("hidden");
   document.getElementById("overlay").classList.add("hidden");
   updateHud();

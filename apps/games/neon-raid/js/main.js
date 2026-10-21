@@ -15,6 +15,8 @@ function loop(ts) {
   pollGamepad();
   if (state && state.running) step(dt);
   draw();
+  document.getElementById("sizeBtn").addEventListener("click", function () { setSizeMode(); });
+  syncSizeUi();
   requestAnimationFrame(loop);
 }
 
@@ -29,6 +31,7 @@ function startGame() {
   var sel = document.getElementById("duration");
   var dur = parseInt(sel.value, 10) || DEFAULT_DURATION;
   state = newState(dur);
+  snapCamera(state);
   document.getElementById("menu").classList.add("hidden");
   document.getElementById("overlay").classList.add("hidden");
   updateHud();
