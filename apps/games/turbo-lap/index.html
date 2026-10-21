@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Turbo Lap</title>
 <link rel="icon" href="turbo-lap_icon.png">
 <link rel="stylesheet" href="css/turbo-lap.css" />
@@ -10,10 +11,21 @@
 <body>
 <canvas id="game"></canvas>
 
+<div id="touch" class="hidden" aria-hidden="true">
+  <div class="tbtn" id="tLeft" data-k="left">◀</div>
+  <div class="tbtn" id="tRight" data-k="right">▶</div>
+  <div class="tbtn" id="tBrake" data-k="brake">BRAKE</div>
+  <div class="tbtn" id="tGas" data-k="gas">GAS</div>
+  <div class="tbtn" id="tNitro" data-k="nitro">NITRO</div>
+  <div class="tbtn" id="tPause" data-k="pause">❚❚</div>
+</div>
+<div id="rotate" class="hidden"><div><div class="phone">📱</div>Rotate your phone<small>Turbo Lap plays in landscape</small></div></div>
+
 <div id="overlay">
   <div id="panel-title" class="card">
     <h1>TURBO <span>LAP</span></h1>
     <p class="tag">2 laps · 5 cars · you start last. Finish first!</p>
+    <p class="touchhelp">👆 ◀ ▶ steer · GAS / BRAKE / NITRO on the right · ❚❚ pause</p>
     <table class="keys">
       <tr><td><kbd>↑</kbd> <kbd>W</kbd></td><td>Accelerate</td><td><kbd>←</kbd><kbd>→</kbd> <kbd>A</kbd><kbd>D</kbd></td><td>Steer</td></tr>
       <tr><td><kbd>↓</kbd> <kbd>S</kbd></td><td>Brake</td><td><kbd>Space</kbd> <kbd>Shift</kbd></td><td>Nitro</td></tr>
@@ -25,6 +37,7 @@
     <div class="row">
       <button id="startBtn" class="primary">Start Race <small>Enter</small></button>
       <button id="fpsBtn">FPS: 30</button>
+      <button id="autoGasBtn">AUTO GAS: OFF</button>
     </div>
   </div>
   <div id="panel-pause" class="card hidden">
@@ -61,6 +74,7 @@
 <script src="js/hud.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/input.js"></script>
+<script src="js/touch.js"></script>
 <script src="js/game.js"></script>
 <script src="js/main.js"></script>
 </body>

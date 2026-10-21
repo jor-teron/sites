@@ -65,6 +65,14 @@ TL.CFG = {
     steerRate: 1.2         // offset change per second
   },
 
+  // Touch / phone controls
+  touch: {
+    autoGasDefaultTouch: true,   // auto-accelerate default on touch devices
+    autoGasDefaultDesktop: false,
+    pauseOnPortrait: true,
+    hudTopCentreSpeed: true      // move the speed/nitro panel to the top centre so it clears the pedals
+  },
+
   // Display / timing
   fpsDefault: 30,
   fpsOptions: [30, 60],
