@@ -17,6 +17,51 @@ var EC = CFG.enemy;
 var BC = CFG.bullet;
 var COL = CFG.colors;
 
+/* ---------- character size / camera zoom ---------- */
+
+/** Current size mode: "large" or "small" (persisted). */
+var sizeMode = (function () {
+  var m = null;
+  try { m = localStorage.getItem(CFG.size.storageKey); } catch (e) {}
+  return CFG.size.zoom[m] ? m : CFG.size.defaultMode;
+})();
+
+/** Gameplay-layer zoom for the current mode. */
+function getZoom() { return CFG.size.zoom[sizeMode] || 1; }
+/** Visible world width / height at the current zoom. */
+function viewW() { return W / getZoom(); }
+function viewH() { return H / getZoom(); }
+
+/** Switch Large <-> Small (or set one), persist, refresh the menu label. */
+function setSizeMode(mode) {
+  sizeMode = CFG.size.zoom[mode] ? mode : (sizeMode === "large" ? "small" : "large");
+  try { localStorage.setItem(CFG.size.storageKey, sizeMode); } catch (e) {}
+  if (state) snapCamera(state);
+  syncSizeUi();
+}
+
+function syncSizeUi() {
+  var b = document.getElementById("sizeBtn");
+  if (b) {
+    b.textContent = "SIZE: " + CFG.size.labels[sizeMode];
+    b.setAttribute("aria-pressed", sizeMode === "large" ? "true" : "false");
+  }
+}
+
+/** Camera target for the player (world coords, clamped to the level). */
+function cameraTarget(s) {
+  var p = s.player, z = getZoom(), vw = W / z, vh = H / z;
+  var x = Math.max(0, Math.min(p.x - PC.cameraLead / z, s.level.width - vw));
+  var y = z === 1 ? 0 : Math.max(0, Math.min(p.y + p.h - vh * CFG.size.heroScreenY, H - vh));
+  return { x: x, y: y };
+}
+
+/** Jump the camera straight to its target (new match, size switch). */
+function snapCamera(s) {
+  var t = cameraTarget(s);
+  s.camX = t.x; s.camY = t.y;
+}
+
 /* ---------- audio stub (fill later) ---------- */
 
 /**
@@ -93,6 +138,7 @@ function newState(durationSec) {
     invuln: 0,
     fireCd: 0,
     camX: 0,
+    camY: 0,
     player: {
       x: PC.start.x,
       y: PC.start.y,

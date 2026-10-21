@@ -210,12 +210,17 @@ function draw() {
   drawBackdrop(cam);
   if (!state) return;
 
+  /* gameplay layer: zoomed camera (background above and HUD stay unscaled) */
+  var z = getZoom();
+  ctx.save();
+  ctx.setTransform(z, 0, 0, z, 0, -(state.camY || 0) * z);
   drawPlatforms(cam);
   drawGate(cam);
   drawEnemies(cam);
   drawBullets(cam);
   drawPlayer(cam);
   drawFx(cam);
+  ctx.restore();
 
   if (state.paused) {
     ctx.fillStyle = "rgba(0, 0, 0, 0.5)";

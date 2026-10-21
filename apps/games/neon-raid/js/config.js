@@ -8,6 +8,21 @@ var NEON_RAID_CONFIG = {
   width: 960,
   height: 540,
 
+  /* Character size (camera zoom on the gameplay layer only).
+     Large: hero (36 px) is drawn ~20% of the canvas height (36 * 3 / 540 = 0.20).
+     The whole gameplay layer (hero, enemies, bullets, effects, platforms, gate)
+     scales together, so hit boxes match the drawings and balance is unchanged;
+     you just see less of the level. Background and HUD are never scaled. */
+  size: {
+    zoom: { large: 3, small: 1 },
+    labels: { large: "LARGE", small: "SMALL" },
+    defaultMode: "large",
+    storageKey: "neon-raid.size",
+    heroScreenY: 0.7,     /* Large: hero feet sit at this fraction of the screen height */
+    camYSmooth: 8,        /* vertical camera follow rate (1/s) */
+    toggleKeys: ["KeyZ"]  /* menu only: switch size (Z / pad X) */
+  },
+
   /* Match */
   defaultDuration: 250,   /* mission length in seconds if the menu value is invalid */
   maxLives: 3,            /* starting lives */
