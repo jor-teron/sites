@@ -6,6 +6,7 @@ MyLLM,              myllm/,                       , , AI
 Local AI Chat,      local-ai-chat/,               , , AI
 Story,              story/,                       , , AI
 LLM Calculator,     llm-calc/,                    , , AI
+ONNX Runner,        onnx-runner/,                 , , AI
 
 Notebook,           notebook/,                    , , Tools
 Paper Keyboard,     paper-keyboard/,              , , Tools
