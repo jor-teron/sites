@@ -121,4 +121,34 @@ Draftly.ui.updateToolbarState = function updateToolbarState() {
     if (alignCenterBtn) alignCenterBtn.classList.toggle('active', document.queryCommandState('justifyCenter'));
     if (alignRightBtn) alignRightBtn.classList.toggle('active', document.queryCommandState('justifyRight'));
   } catch (e) {}
+  Draftly.ui.syncFontSelects();
+  if (Draftly.lists) Draftly.lists.syncSuffix();
+};
+
+/* Show the font and nearest pt size at the cursor in the selects. */
+Draftly.ui.syncFontSelects = function syncFontSelects() {
+  var sel = window.getSelection();
+  if (!sel || !sel.anchorNode) return;
+  var el = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
+  if (!el || !Draftly.editor.isInEditor(el)) return;
+  var style = window.getComputedStyle(el);
+  var familySelect = document.getElementById('fontFamilySelect');
+  var sizeSelect = document.getElementById('fontSizeSelect');
+  if (familySelect) {
+    var first = (style.fontFamily.split(',')[0] || '').replace(/["']/g, '').trim();
+    var k;
+    for (k = 0; k < familySelect.options.length; k++) {
+      if (familySelect.options[k].value.toLowerCase() === first.toLowerCase()) familySelect.value = familySelect.options[k].value;
+    }
+  }
+  if (sizeSelect) {
+    var pt = parseFloat(style.fontSize) * 0.75;
+    var best = null;
+    var i;
+    for (i = 0; i < sizeSelect.options.length; i++) {
+      var v = parseFloat(sizeSelect.options[i].value);
+      if (best === null || Math.abs(v - pt) < Math.abs(parseFloat(best) - pt)) best = sizeSelect.options[i].value;
+    }
+    if (best !== null) sizeSelect.value = best;
+  }
 };

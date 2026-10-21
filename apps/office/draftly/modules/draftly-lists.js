@@ -13,32 +13,63 @@ window.Draftly = Draftly;
 /* List commands. */
 Draftly.lists = {};
 
-/* Apply the toolbar list kind to the current block. */
+/* The list at the cursor, or null. */
+Draftly.lists.current = function current() {
+  var sel = window.getSelection();
+  if (!sel || !sel.anchorNode) return null;
+  var el = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
+  var list = el && el.closest ? el.closest('ul, ol') : null;
+  return list && Draftly.editor.isInEditor(list) ? list : null;
+};
+
+/* Apply the toolbar list kind. Same kind again or None removes the list. */
 Draftly.lists.apply = function apply() {
   var kindNode = document.getElementById('listKindSelect');
   var suffixNode = document.getElementById('listSuffixSelect');
   if (!kindNode) return;
-  var kind = kindNode.value || Draftly.config.defaultListKind;
+  var kind = kindNode.value;
   var suffix = suffixNode ? suffixNode.value : Draftly.config.defaultListSuffix;
+  /* Reset so picking the same kind again fires 'change'. */
+  kindNode.value = '';
+  if (!kind) return;
   Draftly.editor.focusEditor();
-  if (kind === 'bullet') {
+  var list = Draftly.lists.current();
+  var tag = list ? list.tagName : '';
+  if (kind === 'none') {
+    if (tag === 'UL') document.execCommand('insertUnorderedList', false, null);
+    if (tag === 'OL') document.execCommand('insertOrderedList', false, null);
+  } else if (kind === 'bullet') {
     document.execCommand('insertUnorderedList', false, null);
-    return;
+  } else if (tag === 'OL' && (list.getAttribute('data-style') || '1') === kind) {
+    document.execCommand('insertOrderedList', false, null);
+  } else {
+    if (tag !== 'OL') document.execCommand('insertOrderedList', false, null);
+    var ol = Draftly.lists.current();
+    if (ol && ol.tagName === 'OL') {
+      ol.setAttribute('data-style', kind);
+      ol.setAttribute('data-suffix', suffix);
+    }
   }
-  document.execCommand('insertOrderedList', false, null);
-  var sel = window.getSelection();
-  if (!sel || !sel.anchorNode) return;
-  var el = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
-  var ol = el && el.closest ? el.closest('ol') : null;
-  if (!ol) return;
-  ol.setAttribute('data-style', kind);
-  ol.setAttribute('data-suffix', suffix);
+  Draftly.lists.syncSuffix();
+  var host = Draftly.editor.activeEditor;
+  if (host) host.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'formatList' }));
 };
 
-/* Enable the suffix control only for numbered lists. */
-Draftly.lists.syncSuffix = function syncSuffix() {
-  var kindNode = document.getElementById('listKindSelect');
+/* Set the suffix on the numbered list at the cursor. */
+Draftly.lists.applySuffix = function applySuffix() {
   var suffixNode = document.getElementById('listSuffixSelect');
-  if (!kindNode || !suffixNode) return;
-  suffixNode.disabled = kindNode.value === 'bullet';
+  var list = Draftly.lists.current();
+  if (!suffixNode || !list || list.tagName !== 'OL') return;
+  list.setAttribute('data-suffix', suffixNode.value);
+  var host = Draftly.editor.activeEditor;
+  if (host) host.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'formatList' }));
+};
+
+/* Enable the suffix control only inside a numbered list. */
+Draftly.lists.syncSuffix = function syncSuffix() {
+  var suffixNode = document.getElementById('listSuffixSelect');
+  if (!suffixNode) return;
+  var list = Draftly.lists.current();
+  suffixNode.disabled = !list || list.tagName !== 'OL';
+  if (!suffixNode.disabled) suffixNode.value = list.getAttribute('data-suffix') || Draftly.config.defaultListSuffix;
 };

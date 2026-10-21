@@ -133,12 +133,40 @@ Draftly.editor.setTimesNewRoman = function setTimesNewRoman() {
   Draftly.editor.setFontFamily(Draftly.config.fontCommandName);
 };
 
-/* Apply an execCommand font-size token (1–7). */
-Draftly.editor.applyFontSize = function applyFontSize(size) {
+/* Apply a real point size (8–36) to the selection.
+   execCommand only knows sizes 1–7, so mark with 7 and swap in a pt span. */
+Draftly.editor.applyFontSize = function applyFontSize(pt) {
+  var size = parseInt(pt, 10);
+  if (!size) return;
   Draftly.editor.focusEditor();
-  document.execCommand('fontSize', false, size);
+  try { document.execCommand('styleWithCSS', false, false); } catch (e) {}
+  document.execCommand('fontSize', false, '7');
+  var marks = document.querySelectorAll('.' + Draftly.config.editorClass + ' font[size="7"]');
+  var i;
+  for (i = 0; i < marks.length; i++) {
+    var span = document.createElement('span');
+    span.style.fontSize = size + 'pt';
+    if (marks[i].face) span.style.fontFamily = marks[i].face;
+    while (marks[i].firstChild) span.appendChild(marks[i].firstChild);
+    var inner = span.querySelectorAll('[style*="font-size"]');
+    var j;
+    for (j = 0; j < inner.length; j++) inner[j].style.fontSize = '';
+    var sel = window.getSelection();
+    var range = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+    var wasStart = range && marks[i].contains(range.startContainer);
+    var wasEnd = range && marks[i].contains(range.endContainer);
+    marks[i].parentNode.replaceChild(span, marks[i]);
+    if (wasStart || wasEnd) {
+      var r = document.createRange();
+      r.selectNodeContents(span);
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+  }
   if (Draftly.ui) Draftly.ui.updateToolbarState();
   Draftly.editor.saveSelection();
+  var host = Draftly.editor.activeEditor;
+  if (host) host.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'formatFontSize' }));
 };
 
 /* Paste plain text only, then restyle and reflow. */

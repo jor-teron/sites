@@ -69,6 +69,7 @@ Draftly.config = {
   namePrefix: 'Doc_',
   /* Key for the last opened document name. */
   storageKeyLastName: 'draftly_last_name',
+  storageKeyBackup: 'draftly-backup',
   /* Key for light/dark theme. */
   storageKeyTheme: 'draftly_theme',
   /* Key for non-printing character toggle. */

@@ -61,6 +61,11 @@ Draftly.app.loadDocument = function loadDocument() {
       for (i = 0; i < rows.length; i++) if (rows[i].name === last) doc = rows[i];
     }
     if (!doc && rows.length) doc = rows[0];
+    /* A backup newer than the stored copy wins (save did not finish). */
+    var backup = Draftly.storage.readBackup();
+    if (backup && backup.name && (!doc || (doc.name === backup.name && backup.time > (doc.updated || 0)))) {
+      doc = { name: backup.name, html: backup.html, updated: backup.time };
+    }
     editor = Draftly.pages.firstEditor();
     if (doc && editor) {
       editor.innerHTML = doc.html || cfg.defaultHtml;
@@ -208,14 +213,15 @@ Draftly.app.bindUi = function bindUi() {
   var listKindSelect = document.getElementById('listKindSelect');
   if (listKindSelect) {
     listKindSelect.addEventListener('change', function () {
-      if (Draftly.lists) Draftly.lists.syncSuffix();
+      Draftly.editor.restoreSelection();
       if (Draftly.lists) Draftly.lists.apply();
     });
   }
   var listSuffixSelect = document.getElementById('listSuffixSelect');
   if (listSuffixSelect) {
     listSuffixSelect.addEventListener('change', function () {
-      if (Draftly.lists) Draftly.lists.apply();
+      Draftly.editor.restoreSelection();
+      if (Draftly.lists) Draftly.lists.applySuffix();
     });
   }
 
@@ -275,9 +281,18 @@ Draftly.app.bindUi = function bindUi() {
     }, cfg.resizeDebounceMs);
   });
 
-  window.addEventListener('beforeunload', function () {
-    if (Draftly.app.ready) Draftly.storage.save();
+  /* Leaving: write a sync backup first, then the normal async save. */
+  function saveOnLeave() {
+    if (!Draftly.app.ready) return;
+    clearTimeout(Draftly.app.inputTimer);
+    Draftly.storage.writeBackup();
+    Draftly.storage.save().catch(function () {});
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') saveOnLeave();
   });
+  window.addEventListener('pagehide', saveOnLeave);
+  window.addEventListener('beforeunload', saveOnLeave);
 
 };
 
