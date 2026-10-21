@@ -48,7 +48,7 @@ function findPath(sx, sy, gx, gy) {
             if (!isLand(nx, ny)) continue;
             if (dx && dy && (!isLand(x + dx, y) || !isLand(x, y + dy))) continue;   // no corner cutting
             const j = ny * S + nx; if (asClosed[j] === asGen) continue;
-            const g = asG[i] + (dx && dy ? 1.4142 : 1);
+            const g = asG[i] + (dx && dy ? 1.4142 : 1) * (hill[j] ? HILL_COST : 1);   // R2b: hills cost a bit more
             if (asOpen[j] !== asGen || g < asG[j]) { asOpen[j] = asGen; asG[j] = g; asFrom[j] = i; heapPush(j, g + h(nx, ny)); } }
     }
     let path = null;

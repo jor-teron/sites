@@ -38,8 +38,8 @@ function decodeSave(s) {
     const res = {}; Object.keys(START_RES).forEach(k => res[k] = Math.max(0, Math.round(num(s.res[k]))));
     const cells = s.cells.map(c => { if (!Array.isArray(c) || !inMap(c[0], c[1]) || SAVE_KINDS.indexOf(c[2]) < 0) throw new Error('bad cell');
         return { x: c[0], y: c[1], cell: { kind: c[2], amount: Math.max(0, num(c[3])), max: Math.max(1, num(c[4])) } }; });
-    const hs = s.houses.map(h => { if (!Array.isArray(h) || !inMap(h[0], h[1]) || !isLand(h[0], h[1])) throw new Error('bad house');
-        return { x: h[0], y: h[1], progress: Math.min(1, Math.max(0, num(h[2]))), done: !!h[3] }; });
+    const hs = s.houses.map(h => { if (!Array.isArray(h) || !inMap(h[0], h[1])) throw new Error('bad house');
+        return { x: h[0], y: h[1], progress: Math.min(1, Math.max(0, num(h[2]))), done: !!h[3] }; });   // houses on now-blocked tiles are dropped in resumeSave (R2b)
     const ds = s.deer.map(o => { const d = { ant: !!o.ant, state: ['graze', 'walk', 'flee'].indexOf(o.state) >= 0 ? o.state : 'graze', moving: false };
         ['x', 'y', 'hx', 'hy', 'timer', 'gx', 'gy', 'face', 'seed', 'cd'].forEach(k => d[k] = num(o[k]));
         if (d.state === 'flee') { d.fx = num(o.fx); d.fy = num(o.fy); } return d; });
@@ -67,9 +67,14 @@ function resumeSave() {
         try {
             const d = decodeSave(JSON.parse(raw));
             for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) if (mapData[y][x] && mapData[y][x].kind !== 'tc') mapData[y][x] = null;
-            d.cells.forEach(c => { if (!mapData[c.y][c.x]) mapData[c.y][c.x] = c.cell; });
-            houses = d.hs.filter(h => !mapData[h.y][h.x]); houses.forEach(h => { mapData[h.y][h.x] = { kind: 'house', house: h }; });
+            // R2b: terrain is rebuilt from the seed, so an older save may put things on new water / rock: drop those
+            const fits = (x, y, kind) => kind === 'fish' ? isWater(x, y) : isLand(x, y);
+            d.cells.forEach(c => { if (!mapData[c.y][c.x] && fits(c.x, c.y, c.cell.kind)) mapData[c.y][c.x] = c.cell; });
+            houses = d.hs.filter(h => !mapData[h.y][h.x] && isLand(h.x, h.y)); houses.forEach(h => { mapData[h.y][h.x] = { kind: 'house', house: h }; });
             Object.assign(resources, d.res); villagers = d.vs; deer = d.ds;
+            [...villagers, ...deer].forEach(u => { const t = screenToTile(u.x, u.y); if (isLand(t.x, t.y)) return;   // R2b: nudge off water / rock
+                const n = nearestLand(t.x, t.y), p = tileCenter(n.x, n.y); u.x = p.x; u.y = p.y; u.route = null; });
+            deer.forEach(d => { if (!isLand(d.hx, d.hy)) { const n = nearestLand(Math.round(d.hx), Math.round(d.hy)); d.hx = n.x; d.hy = n.y; } });
             villagers.forEach(v => { if (v.house && houses.indexOf(v.house) < 0) { v.house = null; v.state = 'idle'; } });
             trainQueue = d.queue; trainTimer = d.ttimer; trainedCount = d.count; berryT = d.berryT; animT = d.animT;
             if (d.cam) { cam.setZoom(Phaser.Math.Clamp(d.cam.z, minZoom(), ZOOM_MAX)); cam.scrollX = d.cam.x; cam.scrollY = d.cam.y; }

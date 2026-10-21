@@ -22,14 +22,13 @@ const GROUND_CACHE = 16;   // baked chunks kept in memory (each ~1100x560 px)
 /** Bake one grass chunk on demand (only chunks near the view exist as textures) */
 function bakeChunk(ch) {
     const hw = TILE_WIDTH / 2, hh = TILE_HEIGHT / 2;
-    const greens = ['#4a7d3a', '#44753a', '#4f8540', '#3f6e35', '#538a43'];
-    const t = townCenter, tc = tileCenter(t.x + 0.5, t.y + 0.5);
+        const t = townCenter, tc = tileCenter(t.x + 0.5, t.y + 0.5);
     const cx0 = ch.cx0, cy0 = ch.cy0, x1 = ch.cx1, y1 = ch.cy1, left = ch.x0, right = ch.x1, top = ch.y0, bottom = ch.y1;
         const W = Math.ceil(right - left), H = Math.ceil(bottom - top);
         const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
         const c = cv.getContext('2d'); c.translate(-left, -top);
         for (let y = cy0; y < y1; y++) for (let x = cx0; x < x1; x++) {
-            const p = tileCenter(x, y);
+            const p = tileCenter(x, y), gt = ground[y * MAP_SIZE + x], greens = TerrainArt.palette(gt);
             c.save(); c.beginPath();
             c.moveTo(p.x, p.y - hh - 0.5); c.lineTo(p.x + hw + 0.5, p.y); c.lineTo(p.x, p.y + hh + 0.5); c.lineTo(p.x - hw - 0.5, p.y); c.closePath();
             c.fillStyle = greens[Math.floor(hash(x, y) * greens.length)]; c.fill(); c.clip();
@@ -38,18 +37,22 @@ function bakeChunk(ch) {
                 c.beginPath(); c.ellipse(p.x + (hash(x, y, i) - 0.5) * 100, p.y + (hash(x, y, i + 3) - 0.5) * 48, 20 + hash(x, y, i + 6) * 24, 10 + hash(x, y, i + 7) * 10, 0, 0, 7); c.fill();
             }
             c.lineWidth = 1.2;
-            for (let i = 0; i < 40; i++) {
+            TerrainArt.speckle(c, p, gt, hash, x, y);
+            for (let i = 0, nb = TerrainArt.BLADES[gt]; i < nb; i++) {
                 const bx = p.x + (hash(x, y, i + 20) - 0.5) * 112, by = p.y + (hash(x, y, i + 40) - 0.5) * 56;
                 c.strokeStyle = i % 3 ? 'rgba(120,170,80,0.55)' : 'rgba(30,70,25,0.45)';
                 c.beginPath(); c.moveTo(bx, by); c.quadraticCurveTo(bx + (hash(x, y, i + 60) - 0.5) * 4, by - 4, bx + (hash(x, y, i + 60) - 0.5) * 7, by - 5 - hash(x, y, i + 80) * 6); c.stroke();
             }
-            if (hash(x, y, 99) > 0.8) { c.fillStyle = hash(x, y, 98) > 0.5 ? '#f2e46a' : '#f4f4f4'; for (let i = 0; i < 4; i++) { const fx = p.x + (hash(x, y, i + 90) - 0.5) * 72, fy = p.y + (hash(x, y, i + 95) - 0.5) * 28; c.beginPath(); c.arc(fx, fy, 2.4, 0, 7); c.fill(); } }
+            if (gt < 3 && hash(x, y, 99) > 0.8) { c.fillStyle = hash(x, y, 98) > 0.5 ? '#f2e46a' : '#f4f4f4'; for (let i = 0; i < 4; i++) { const fx = p.x + (hash(x, y, i + 90) - 0.5) * 72, fy = p.y + (hash(x, y, i + 95) - 0.5) * 28; c.beginPath(); c.arc(fx, fy, 2.4, 0, 7); c.fill(); } }
             if (hash(x, y, 97) > 0.88) { c.fillStyle = '#8c8c7c'; c.beginPath(); c.ellipse(p.x + 20, p.y + 8, 6, 4, 0, 0, 7); c.fill(); c.fillStyle = '#a8a898'; c.beginPath(); c.ellipse(p.x + 19, p.y + 7, 3, 1.6, 0, 0, 7); c.fill(); }
             c.restore();
             c.strokeStyle = 'rgba(0,0,0,0.08)'; c.beginPath();
             c.moveTo(p.x, p.y - hh); c.lineTo(p.x + hw, p.y); c.lineTo(p.x, p.y + hh); c.lineTo(p.x - hw, p.y); c.closePath(); c.stroke();
         }
         drawWaterTiles(c, cx0, cy0, x1, y1);
+        const isHill = (hx, hy) => inMap(hx, hy) && hill[hy * MAP_SIZE + hx] === 1;   // R2b: hills + fords
+        for (let y = cy0; y < y1; y++) for (let x = cx0; x < x1; x++) { const i = y * MAP_SIZE + x;
+            if (ford[i]) TerrainArt.ford(c, tileCenter(x, y), x, y, hash); else if (hill[i]) TerrainArt.hill(c, tileCenter(x, y), x, y, isHill, hash); }
         if (Math.abs(tc.x - (left + right) / 2) < W / 2 + 220 && Math.abs(tc.y - (top + bottom) / 2) < H / 2 + 120) {  // dirt around TC
             const grd = c.createRadialGradient(tc.x, tc.y, 20, tc.x, tc.y, 180);
             grd.addColorStop(0, 'rgba(150,120,80,0.9)'); grd.addColorStop(0.6, 'rgba(140,110,70,0.5)'); grd.addColorStop(1, 'rgba(140,110,70,0)');
@@ -118,6 +121,8 @@ function render() {
         if (!c || c.kind === 'tc' || !vis(x, y)) continue;
         if (c.kind === 'house') drawHouse(g, x, y, c.house); else drawNode(g, x, y, c);
     }
+    for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) if (rock[y * MAP_SIZE + x] && vis(x, y)) {   // R2b rock outcrops
+        const p = tileCenter(x, y); sprite('rock' + Math.floor(hash(x, y, 11) * 4), p.x + (hash(x, y, 12) - 0.5) * 10, p.y + 10, p.y + 8, hash(x, y, 13) > 0.5); }
     drawTC(g, gu);
     deer.forEach(d => { if (d.x > vr.x0 && d.x < vr.x1 && d.y > vr.y0 && d.y < vr.y1 + 120) drawDeer(d); });
     villagers.forEach(v => { if (v.x > vr.x0 && v.x < vr.x1 && v.y > vr.y0 && v.y < vr.y1 + 120) drawVillager(g, gu, v); });

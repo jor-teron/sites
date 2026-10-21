@@ -78,6 +78,7 @@ const Art = AOE.art = (() => {
             for (let f = 0; f < 2; f++) add(pre + 'graze' + f, 80, 90, 36, 82, c => deer(c, 'graze', f, a)); });
         for (let n = 1; n <= 3; n++) add('carcass' + n, 84, 44, 42, 30, c => carcass(c, n));
         for (let f = 0; f < 4; f++) add('fish' + f, 84, 50, 42, 26, c => fishSpot(c, f));
+        for (let v = 0; v < 4; v++) { setSeed(901 + v); add('rock' + v, 140, 110, 70, 80, c => AOE.models.rockOutcrop(c, v)); }   // R2b
         for (let f = 0; f < 4; f++) add('flag' + f, 40, 60, 4, 56, c => flag(c, f));
         pages.forEach((p, i) => {
             const h = p.y + p.rowH, cv = document.createElement('canvas'); cv.width = PAGE; cv.height = Math.max(2, h);

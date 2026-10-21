@@ -6,6 +6,7 @@ function create() {
     scene = this; cam = this.cameras.main;
     initMap(MAP_NUM);
     initWater(MAP_NUM);
+    initTerrain(MAP_NUM);
     initAnimals(MAP_NUM);
     bakeGround(this);
     Art.build(this);

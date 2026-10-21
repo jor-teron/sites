@@ -44,8 +44,8 @@ function reachReport() {
             if (!isLand(nx, ny) || seen[j] || (dx && dy && (!isLand(x + dx, y) || !isLand(x, y + dy)))) continue; seen[j] = 1; st.push(j); } }
     let res = 0, unreach = 0, onWater = 0, land = 0, landUnreach = 0, w = 0;
     for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const i = y * S + x, c = mapData[y][x];
-        if (water[i]) w++; else { land++; if (!seen[i]) landUnreach++; }
-        if (c && c.kind !== 'tc' && c.kind !== 'fish') { res++; if (water[i]) onWater++; if (!seen[i]) unreach++; }
+        if (water[i]) w++; else if (!rock[i]) { land++; if (!seen[i]) landUnreach++; }
+        if (c && c.kind !== 'tc' && c.kind !== 'fish') { res++; if (water[i] || rock[i]) onWater++; if (!seen[i]) unreach++; }
         if (c && c.kind === 'tc' && (!seen[i] || water[i])) unreach++; }
     return { res, unreach, onWater, landUnreach, waterTiles: w, waterPct: Math.round(w / (S * S) * 1000) / 10 };
 }

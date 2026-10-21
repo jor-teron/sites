@@ -4,9 +4,9 @@ function mapHash() { let h = 2166136261; for (let y = 0; y < MAP_SIZE; y++) for 
 /** Test hook: generate any map number (only valid for numbers with this page's size) without touching the scene */
 window.aoeTest = {
     MAP_NUM, MAP_SIZE, mapSizeFor, mapHash, fairStartCounts,
-    gen(n) { const sv = [mapData, townCenter, MAP_SIZE, water, deer]; MAP_SIZE = mapSizeFor(n); initMap(n); initWater(n); initAnimals(n); const r = { hash: mapHash(), fair: fairStartCounts(), tc: Object.assign({}, townCenter), reach: reachReport(), animals: animalReport() }; r.size = MAP_SIZE; mapData = sv[0]; townCenter = sv[1]; MAP_SIZE = sv[2]; water = sv[3]; deer = sv[4]; return r; },
+    gen(n) { const sv = [mapData, townCenter, MAP_SIZE, water, deer, rock, hill, ford, ground]; MAP_SIZE = mapSizeFor(n); initMap(n); initWater(n); initTerrain(n); initAnimals(n); const r = { hash: mapHash(), thash: terrainHash(), terrain: terrainReport(), fair: fairStartCounts(), tc: Object.assign({}, townCenter), reach: reachReport(), animals: animalReport() }; r.size = MAP_SIZE; [mapData, townCenter, MAP_SIZE, water, deer, rock, hill, ford, ground] = sv; return r; },
     get villagers() { return villagers; }, get resources() { return resources; }, orderGather: (v, x, y) => orderGather(v, x, y), findNearest,
     get speed() { return speed; }, setSpeed: n => setSpeed(n), get water() { return water; }, get townCenter() { return townCenter; }, get mapData() { return mapData; },
     reachReport, isLand, tileCenter, findPath: (a, b, c, d) => findPath(a, b, c, d), orderMove: (v, x, y) => orderMove(v, x, y), pathStats: null, spawnVillager: (x, y) => spawnVillager(x, y),
-    get deer() { return deer; }, animalReport, orderHunt: (v, d) => orderHunt(v, d)
+    get deer() { return deer; }, terrainReport, terrainHash, get rock() { return rock; }, get ford() { return ford; }, get hill() { return hill; }, animalReport, orderHunt: (v, d) => orderHunt(v, d)
 };
