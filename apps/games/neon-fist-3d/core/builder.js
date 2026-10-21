@@ -1,7 +1,7 @@
-// Neon Fist 3D — Hero Builder R1: scene, camera, UI, save.
+// Neon Fist 3D — Hero Builder R2: scene, camera, UI, save.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { SKINS, DEFAULT_HERO, buildHero, randomHero, sanitizeHero } from '../assets/models/body.js';
+import { SKINS, ATTIRE, DEFAULT_HERO, buildHero, randomHero, sanitizeHero } from './hero.js';
 
 const LS_KEY = 'nf3d.lastHero';
 const view = document.getElementById('view');
@@ -31,6 +31,8 @@ const grid = new THREE.GridHelper(6, 24, '#ff2bd6', '#2a1f55'); grid.position.y 
 let hero = loadLast(), model = null;
 function loadLast() { try { return sanitizeHero(JSON.parse(localStorage.getItem(LS_KEY))); } catch { return { ...DEFAULT_HERO }; } }
 function disposeModel(m) { m.traverse(o => { o.geometry?.dispose(); o.material?.dispose?.(); }); }
+const LABEL = { barefoot: 'Barefoot', tshirt: 'T-shirt', none: 'None' };
+for (const [k, opts] of Object.entries(ATTIRE)) document.querySelector(`.seg[data-key="${k}"]`).innerHTML = opts.map(v => `<button data-v="${v}">${LABEL[v] || v[0].toUpperCase() + v.slice(1)}</button>`).join('');
 
 function apply() {
   hero = sanitizeHero(hero);
@@ -40,8 +42,11 @@ function apply() {
   document.querySelectorAll('.seg').forEach(seg => seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === hero[seg.dataset.key])));
   document.querySelectorAll('#skins button').forEach(b => b.classList.toggle('on', b.dataset.v === hero.skin));
   heightIn.value = hero.height; document.getElementById('hVal').textContent = hero.height + ' cm';
-  window.__nf3d = { hero: { ...hero }, meshes: model.children.length, scale: model.scale.x };
+  window.__nf3d = { hero: { ...hero }, meshes: countMeshes(model), sig: sig(model), scale: model.scale.x };
 }
+
+function countMeshes(m) { let n = 0; m.traverse(o => { if (o.isMesh) n++; }); return n; }
+function sig(m) { let a = 0; m.traverse(o => { if (o.isMesh) a += o.geometry.attributes.position.count * (1 + Math.abs(o.position.x) + o.position.y); }); return Math.round(a); }
 
 // UI
 document.querySelectorAll('.seg').forEach(seg => seg.addEventListener('click', e => {
