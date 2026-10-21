@@ -126,6 +126,10 @@ Draftly.ui.updateToolbarState = function updateToolbarState() {
     if (boldBtn) boldBtn.classList.toggle('active', document.queryCommandState('bold'));
     if (italicBtn) italicBtn.classList.toggle('active', document.queryCommandState('italic'));
     if (underlineBtn) underlineBtn.classList.toggle('active', document.queryCommandState('underline'));
+    [['strikeBtn', 'strikeThrough'], ['superBtn', 'superscript'], ['subBtn', 'subscript']].forEach(function (b) {
+      var n = document.getElementById(b[0]);
+      if (n) n.classList.toggle('active', document.queryCommandState(b[1]));
+    });
     if (alignLeftBtn) alignLeftBtn.classList.toggle('active', document.queryCommandState('justifyLeft'));
     if (alignCenterBtn) alignCenterBtn.classList.toggle('active', document.queryCommandState('justifyCenter'));
     if (alignRightBtn) alignRightBtn.classList.toggle('active', document.queryCommandState('justifyRight'));

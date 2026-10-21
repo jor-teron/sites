@@ -216,7 +216,7 @@ Draftly.history.wrap = function wrap(obj, name) {
 Draftly.history.init = function init() {
   var h = Draftly.history;
   var e;
-  var list = ['execCmd', 'setFontFamily', 'applyFontSize', 'onPaste', 'insertLineBreak'];
+  var list = ['execCmd', 'setFontFamily', 'applyFontSize', 'onPaste', 'insertLineBreak', 'setScript'];
   for (e = 0; e < list.length; e++) h.wrap(Draftly.editor, list[e]);
   h.wrap(Draftly.lists, 'apply');
   h.wrap(Draftly.lists, 'applySuffix');

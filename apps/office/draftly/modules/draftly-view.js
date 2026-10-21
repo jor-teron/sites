@@ -14,7 +14,8 @@ var Draftly = window.Draftly || {};
 window.Draftly = Draftly;
 
 Draftly.view = {};
-Draftly.view.zoom = 1;
+Draftly.view.zoom = 1;       /* effective scale = fit-to-width x user zoom */
+Draftly.view.userZoom = 1;   /* status-bar zoom (draftly-zoom.js) */
 Draftly.view.CM_PX = 96 / 2.54;
 
 /* Recompute the scale from the workspace width. */
@@ -29,7 +30,7 @@ Draftly.view.fit = function fit() {
   var landscape = document.body.classList.contains(cfg.landscapeClass);
   var paperW = (landscape ? cfg.paperHeightCm : cfg.paperWidthCm) * Draftly.view.CM_PX;
   var z = avail > 0 ? Math.min(1, avail / paperW) : 1;
-  z = Math.floor(z * 1000) / 1000;
+  z = Math.floor(z * (Draftly.view.userZoom || 1) * 1000) / 1000;
   var changed = z !== Draftly.view.zoom;
   Draftly.view.zoom = z;
   pages.style.transform = z === 1 ? '' : 'scale(' + z + ')';
