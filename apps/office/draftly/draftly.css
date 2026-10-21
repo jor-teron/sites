@@ -321,6 +321,13 @@ select:disabled { opacity: 0.4; cursor: default; }
   cursor: pointer;
 }
 .recent-item:hover { background: var(--btn-hover); }
+.recent-row { display: flex; align-items: center; gap: 2px; }
+.recent-row .recent-item { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-del {
+  flex: none; width: 28px; height: 28px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 16px;
+}
+.recent-del:hover { background: var(--btn-hover); color: var(--text-primary); }
 .recent-empty { padding: 10px 12px; font-size: 13px; color: var(--text-secondary); }
 
 .page-panel { width: 270px; padding: 14px; }

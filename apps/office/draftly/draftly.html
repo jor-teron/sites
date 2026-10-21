@@ -90,6 +90,7 @@
     </div>
 
     <div class="tool-group file-group">
+      <button class="tool-btn" id="newBtn" title="New document" aria-label="New document"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M12 10v7M8.5 13.5h7"/></svg></button>
       <input id="fileNameInput" class="file-name" type="text" spellcheck="false" title="Document name" aria-label="Document name">
       <button class="tool-btn" id="saveBtn" title="Save (Ctrl/⌘+S)" aria-label="Save"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg></button>
     </div>
@@ -111,12 +112,20 @@
       <button type="button" class="seg-btn" data-orient="portrait"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3.5" width="10" height="17" rx="1.5"/></svg><span>Portrait</span></button>
       <button type="button" class="seg-btn" data-orient="landscape"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7" width="17" height="10" rx="1.5"/></svg><span>Landscape</span></button>
     </div>
+    <div class="seg" role="group" aria-label="Paper size">
+      <button type="button" class="seg-btn" data-size="A4"><span>A4</span></button>
+      <button type="button" class="seg-btn" data-size="Letter"><span>Letter</span></button>
+    </div>
+    <div class="seg" role="group" aria-label="Margins">
+      <button type="button" class="seg-btn" data-margins="normal"><span>Normal</span></button>
+      <button type="button" class="seg-btn" data-margins="narrow"><span>Narrow</span></button>
+    </div>
     <select id="orientationSelect" class="visually-hidden" tabindex="-1" aria-hidden="true">
       <option value="portrait" selected>Portrait</option>
       <option value="landscape">Landscape</option>
     </select>
     <dl class="panel-info">
-      <dt>Size</dt><dd>A4 · <span id="orientationLabel">Portrait</span></dd>
+      <dt>Size</dt><dd><span id="paperSizeLabel">A4</span> · <span id="orientationLabel">Portrait</span></dd>
       <dt>Margins</dt><dd id="marginInfo">—</dd>
       <dt>Pages</dt><dd id="pageCountLabel">1 page</dd>
     </dl>

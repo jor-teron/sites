@@ -105,6 +105,15 @@ Draftly.ui.setOrientation = function setOrientation(mode) {
   if (Draftly.pages) Draftly.pages.layoutAll();
 };
 
+/* Set paper size and margin preset, store, reflow. */
+Draftly.ui.setPage = function setPage(size, margins) {
+  var cfg = Draftly.config;
+  cfg.setPage(size, margins);
+  if (Draftly.storage) Draftly.storage.savePage(cfg.paperSize, cfg.marginPreset);
+  if (Draftly.view) { Draftly.view.fit(); Draftly.view.syncPagePanel(); }
+  if (Draftly.pages && Draftly.app && Draftly.app.ready) Draftly.pages.layoutAll();
+};
+
 /* Sync bold, italic, underline, and align buttons with the selection. */
 Draftly.ui.updateToolbarState = function updateToolbarState() {
   var boldBtn = document.getElementById('boldBtn');

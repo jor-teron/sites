@@ -94,6 +94,10 @@ Draftly.export.exportDocx = function exportDocx() {
     if (typeof htmlDocx === 'undefined') throw new Error('html-docx-js missing');
     var blob = htmlDocx.asBlob(fullHtml, {
       orientation: isLandscape ? 'landscape' : 'portrait',
+      pageSize: {
+        width: (cfg.paperSizes[cfg.paperSize] || cfg.paperSizes.A4).docxW,
+        height: (cfg.paperSizes[cfg.paperSize] || cfg.paperSizes.A4).docxH
+      },
       margins: {
         top: cfg.docxMarginTop,
         right: cfg.docxMarginRight,

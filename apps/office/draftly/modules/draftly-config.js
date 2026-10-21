@@ -21,18 +21,34 @@ Draftly.config = {
   paperHeightCm: 29.7,
   /* Orientation when nothing is stored yet. */
   defaultOrientation: 'portrait',
+  /* Paper sizes (portrait cm; docx in twips). */
+  paperSizes: {
+    A4: { label: 'A4', widthCm: 21, heightCm: 29.7, pdf: 'a4', docxW: 11906, docxH: 16838 },
+    Letter: { label: 'Letter', widthCm: 21.59, heightCm: 27.94, pdf: 'letter', docxW: 12240, docxH: 15840 }
+  },
+  /* Margin presets: same value on every side, in cm. */
+  marginPresets: {
+    normal: { label: 'Normal', cm: 2.54 },
+    narrow: { label: 'Narrow', cm: 1.27 }
+  },
+  /* Defaults when nothing is stored yet. */
+  defaultPaperSize: 'A4',
+  defaultMarginPreset: 'normal',
+  /* Active choices (set by setPage). */
+  paperSize: 'A4',
+  marginPreset: 'normal',
   /* App version (not shown in the UI). */
   version: '0.8',
 
   /* ----- Margins (cm) ----- */
   /* Top page margin. */
-  marginTopCm: 0.5,
+  marginTopCm: 2.54,
   /* Bottom page margin. */
-  marginBottomCm: 0.5,
+  marginBottomCm: 2.54,
   /* Left page margin. */
-  marginLeftCm: 2,
+  marginLeftCm: 2.54,
   /* Right page margin. */
-  marginRightCm: 2,
+  marginRightCm: 2.54,
 
   /* ----- Type ----- */
   /* Default face. Not embedded. Uses the machine font. */
@@ -76,6 +92,10 @@ Draftly.config = {
   storageKeyNonPrint: 'draftly_nonprinting',
   /* Legacy key for saved margins: removed at startup, margins come from this file. */
   storageKeyMargins: 'draftly_margins',
+  /* Keys for page prefs. */
+  storageKeyOrientation: 'draftly_orientation',
+  storageKeyPaperSize: 'draftly_paper_size',
+  storageKeyMarginPreset: 'draftly_margin_preset',
   /* Default list kind: bullet | 1 | a | A. */
   defaultListKind: 'bullet',
   /* Default numbered suffix: . | , | ) | none. */
@@ -156,6 +176,21 @@ Draftly.config = {
   darkClass: 'dark',
   /* Id of the injected print stylesheet. */
   printStyleId: 'dynamic-print-style'
+};
+
+/* Pick paper size and margin preset; updates every derived value. */
+Draftly.config.setPage = function setPage(size, preset) {
+  var cfg = Draftly.config;
+  var p = cfg.paperSizes[size] || cfg.paperSizes[cfg.defaultPaperSize];
+  var m = cfg.marginPresets[preset] || cfg.marginPresets[cfg.defaultMarginPreset];
+  cfg.paperSize = cfg.paperSizes[size] ? size : cfg.defaultPaperSize;
+  cfg.marginPreset = cfg.marginPresets[preset] ? preset : cfg.defaultMarginPreset;
+  cfg.paperWidthCm = p.widthCm;
+  cfg.paperHeightCm = p.heightCm;
+  cfg.pageSizeName = p.label;
+  cfg.marginTopCm = cfg.marginBottomCm = cfg.marginLeftCm = cfg.marginRightCm = m.cm;
+  cfg.docxMarginTop = cfg.docxMarginBottom = cfg.docxMarginLeft = cfg.docxMarginRight = Math.round(m.cm * 567);
+  cfg.applyToDocument();
 };
 
 /* Apply paper, type, and gap values onto :root so CSS stays in sync. */
