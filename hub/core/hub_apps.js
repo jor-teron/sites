@@ -102,6 +102,7 @@ Games,    Browser FPS,           apps/games/browser-fps/,                    ,  
 Games,    Island (Alpha),        apps/games/island-alpha/,                   ,         0,       0,      192
 Games,    Tower Defence,         apps/games/tower-defence/,                  ,         0,       0,      111
 Games,    Demolisher,            apps/games/demolisher/,                     ,         0,       0,      195
+Games,    AoE RTS,               apps/games/aoe-rts/,                        ,         0,       0,      196   (R45: was Lab apps/lab/aoe-rts/, moved by PR #56)
 Media,    TV,                    tv/,                                        ,         0,       0,      210
 Media,    3D Viewer,             apps/media/3d-viewer/,                      ,         0,       0,      240
 Media,    Draw,                  apps/media/draw/,                           ,         0,       0,      225
@@ -131,7 +132,7 @@ Lab,      Island Game Demo,      apps/lab/island-demo/,                      ,  
 Lab,      Phone,                 apps/media/phone/,                          ,         0,       0,      1070
 Lab,      Paper Keyboard,        apps/lab/paper-keyboard/,                   ,         0,       0,      1040
 Lab,      Notebook,              apps/lab/notebook/,                         ,         0,       0,      1045
-Lab,      AoE RTS,               apps/lab/aoe-rts/,                          ,         0,       0,      1086
+(R45: moved to Games, see above) Lab,      AoE RTS,               apps/lab/aoe-rts/,                          ,         0,       0,      1086
 Lab,      WebRTC Chat,           apps/connectivity/webrtc-chat/,             ,         0,       0,      1095
 Lab,      P2P Chat,              apps/connectivity/p2pchat.html,             ,         0,       0,      1096
 Lab,      Paint,                 apps/media/paint/,                          ,         0,       0,      1900
