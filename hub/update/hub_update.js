@@ -3,6 +3,7 @@
  * hub.html (replaces the old inline service worker registration).
  * - Registers the root sw.js with updateViaCache:'none' (the browser never uses its HTTP cache
  *   for sw.js / hub/update/hub_sw.js; it also looks for a new worker on its own when the Hub loads).
+ *   R50: the note below is replaced by the #upd-btn indicator (tray / top bar) that opens Settings > About.
  *   R16b: a new hub_sw.js WAITS; a small "Update ready · Reload" note (bottom centre, hub_update.css)
  *   appears; Reload posts skip-waiting and the page reloads once the new worker takes over
  *   (the desktop session restores). × hides the note; the update then applies on the next start.
@@ -36,28 +37,43 @@
 
   // R16b: a new worker waits; "Update ready · Reload" lets Jor choose when (no forced reload)
   let wanted = false;   // true once Reload (or a manual Check for update) asked for the new worker
-  let note = null;
-  function showNote(reg) {
-    if (note) { note.hidden = false; return; }
-    note = document.createElement('div');
-    note.id = 'hub-upd-note';
-    note.setAttribute('role', 'status');
-    const t = document.createElement('span');
-    t.textContent = 'Update ready';
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = 'Reload';
-    b.addEventListener('click', () => apply(reg));
-    const x = document.createElement('button');
-    x.type = 'button';
-    x.className = 'hub-upd-x';
-    x.textContent = '\u00d7';
-    x.title = 'Later';
-    x.setAttribute('aria-label', 'Later');
-    x.addEventListener('click', () => { note.hidden = true; });
-    note.append(t, b, x);
-    document.body.appendChild(note);
+  /* R50: the bottom-centre "Update ready · Reload" toast is retired (kept below, commented out).
+     Now a small indicator #upd-btn (hub.html, in .header-right: the taskbar tray in Desktop mode,
+     the top bar in Phone mode) shows while a new build waits. Click / tap → Settings > About, where
+     the existing Update button applies it. Never reloads by itself, never covers anything. */
+  const updBtn = document.getElementById('upd-btn');
+  if (updBtn) updBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (window.__hubOpenApp) window.__hubOpenApp('apps/settings/', { hash: 'about' });
+  });
+  function showNote(reg) {   // R50: name kept (callers + HubUpdate.showNote); shows the indicator
+    if (reg) lastReg = reg;
+    if (updBtn) updBtn.hidden = false;
   }
+  /* R50 legacy (R16b toast), not used any more:
+  // let note = null;
+  // function showNote(reg) {
+  //   if (note) { note.hidden = false; return; }
+  //   note = document.createElement('div');
+  //   note.id = 'hub-upd-note';
+  //   note.setAttribute('role', 'status');
+  //   const t = document.createElement('span');
+  //   t.textContent = 'Update ready';
+  //   const b = document.createElement('button');
+  //   b.type = 'button';
+  //   b.textContent = 'Reload';
+  //   b.addEventListener('click', () => apply(reg));
+  //   const x = document.createElement('button');
+  //   x.type = 'button';
+  //   x.className = 'hub-upd-x';
+  //   x.textContent = '\u00d7';
+  //   x.title = 'Later';
+  //   x.setAttribute('aria-label', 'Later');
+  //   x.addEventListener('click', () => { note.hidden = true; });
+  //   note.append(t, b, x);
+  //   document.body.appendChild(note);
+  // }
+  */
   function apply(reg) {
     wanted = true;
     reg = reg || lastReg;
