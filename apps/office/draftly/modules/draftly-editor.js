@@ -120,6 +120,15 @@ Draftly.editor.execCmd = function execCmd(command, value) {
   }
 };
 
+/* Superscript / subscript: one at a time. Turning one on clears the other. */
+Draftly.editor.setScript = function setScript(kind) {
+  var other = kind === 'superscript' ? 'subscript' : 'superscript';
+  Draftly.editor.focusEditor();
+  var st = function (c) { try { return document.queryCommandState(c); } catch (e) { return false; } };
+  if (!st(kind) && st(other)) document.execCommand(other, false, null);
+  Draftly.editor.execCmd(kind);
+};
+
 /* Apply a font family name to the current selection. */
 Draftly.editor.setFontFamily = function setFontFamily(name) {
   Draftly.editor.focusEditor();

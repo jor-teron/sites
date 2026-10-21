@@ -266,7 +266,8 @@ Draftly.flow.saveCaret = function saveCaret() {
   var r = sel.getRangeAt(0);
   var el = r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentElement;
   if (!el || !el.closest('.' + Draftly.config.editorClass)) return;
-  Draftly.flow.caret = { node: r.startContainer, offset: r.startOffset, collapsed: r.collapsed };
+  Draftly.flow.caret = { node: r.startContainer, offset: r.startOffset, collapsed: r.collapsed,
+    endNode: r.endContainer, endOffset: r.endOffset };
 };
 Draftly.flow.restoreCaret = function restoreCaret() {
   var c = Draftly.flow.caret;
@@ -280,6 +281,11 @@ Draftly.flow.restoreCaret = function restoreCaret() {
     if (document.activeElement !== ed) ed.focus({ preventScroll: true });
     var sel = window.getSelection();
     sel.collapse(c.node, Math.min(c.offset, max));
+    /* keep a selection (e.g. after a toolbar format) instead of collapsing it */
+    if (!c.collapsed && c.endNode && c.endNode.isConnected && ed.contains(c.endNode)) {
+      var emax = c.endNode.nodeType === 3 ? c.endNode.nodeValue.length : c.endNode.childNodes.length;
+      sel.extend(c.endNode, Math.min(c.endOffset, emax));
+    }
   } catch (e) { return; }
   if (Draftly.editor) { Draftly.editor.activeEditor = ed; Draftly.editor.saveSelection(); }
   /* keep the caret on screen when it moved to another page */
