@@ -1,4 +1,4 @@
-/* Chess board painter. Squares, highlights, and pieces are drawn on one canvas. */
+/* Chess board model. Squares, highlights, and pieces are drawn on one canvas. */
 (function (root) {
   const Chess = root.Chess = root.Chess || {};
   let canvas, ctx, geom = { ox: 0, oy: 0, sq: 0, flip: false, w: 0, h: 0 };
@@ -33,23 +33,7 @@
     ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
   }
-  const GLYPH = { 1: '♙', 2: '♘', 3: '♗', 4: '♖', 5: '♕', 6: '♔', '-1': '♟', '-2': '♞', '-3': '♝', '-4': '♜', '-5': '♛', '-6': '♚' };
-  function drawPiece(g, piece, cx, cy, sq) {
-    const white = piece > 0;
-    const ch = GLYPH[piece];
-    if (!ch) return;
-    g.save();
-    g.font = Math.floor(sq * 0.82) + 'px "DejaVu Sans", "Noto Sans Symbols2", "Noto Sans Symbols", serif';
-    g.textAlign = 'center';
-    g.textBaseline = 'middle';
-    g.lineWidth = Math.max(1, sq * 0.045);
-    g.lineJoin = 'round';
-    g.strokeStyle = white ? '#2a241c' : '#f4efe8';
-    g.strokeText(ch, cx, cy);
-    g.fillStyle = white ? '#fbf7ef' : '#1a1612';
-    g.fillText(ch, cx, cy);
-    g.restore();
-  }
+  function drawPiece(g, piece, cx, cy, sq) { Chess.pieces.draw(g, piece, cx, cy, sq); }
   function arrow(x1, y1, x2, y2) {
     const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
     const ux = dx / len, uy = dy / len;
@@ -108,12 +92,24 @@
         ctx.fillText('12345678'[rank], x + 3, y + 2);
       }
     }
+    const anim = view.anim, hide = anim ? anim.hide : null;
+    if (anim) anim.fades.forEach(function (f) {
+      const s = screenOf(f.sq);
+      ctx.save(); ctx.globalAlpha = 1 - anim.t;
+      drawPiece(ctx, f.piece, geom.ox + (s.col + 0.5) * sq, geom.oy + (s.row + 0.52) * sq, sq);
+      ctx.restore();
+    });
     for (let sqi = 0; sqi < 64; sqi++) {
       const p = board[sqi];
-      if (!p || (view.drag && sqi === view.selected)) continue;
+      if (!p || (view.drag && sqi === view.selected) || (hide && hide.indexOf(sqi) >= 0)) continue;
       const s = screenOf(sqi);
       drawPiece(ctx, p, geom.ox + (s.col + 0.5) * sq, geom.oy + (s.row + 0.52) * sq, sq);
     }
+    if (anim) anim.moves.forEach(function (mv) {
+      const a = screenOf(mv.f), b = screenOf(mv.t), k = anim.t;
+      const col = a.col + (b.col - a.col) * k, row = a.row + (b.row - a.row) * k;
+      drawPiece(ctx, mv.piece, geom.ox + (col + 0.5) * sq, geom.oy + (row + 0.52) * sq, sq);
+    });
     targets.forEach(function (t) {
       const s = screenOf(t), cx = geom.ox + (s.col + 0.5) * sq, cy = geom.oy + (s.row + 0.5) * sq;
       ctx.beginPath();

@@ -55,6 +55,7 @@
       document.querySelectorAll('#level-choices button').forEach(function (b) {
         b.addEventListener('click', function () { h.draft({ level: b.dataset.level }); });
       });
+      document.getElementById('btn-anim').addEventListener('click', h.toggleAnim);
       document.querySelectorAll('#promo button').forEach(function (b) {
         b.addEventListener('click', function () { h.promo(+b.dataset.promo); });
       });
