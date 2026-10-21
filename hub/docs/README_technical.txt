@@ -182,9 +182,10 @@ circle, 12 ticks, hour / minute / thin smooth-sweeping second hand, no
 numbers. Centre at 25% of the viewport height, size min(40vh, 70vw);
 drifts up to 6 px every minute (burn-in). Theme: html.hub-light (theme
 = light) -> --bg background + --text clock, else near-black + white.
-  Idle time: localStorage sites-hub.saverIdle = 0 (off, default, also
-  when missing / invalid) | 10 | 15 | 30 minutes; the 'storage' event
-  applies a change live (Settings > Desktop writes it).
+  Idle time: localStorage sites-hub.saverIdle = whole minutes; 0 = off,
+  else clamped to 1..240; missing / invalid = 5 (on) (R49b; R49 had only
+  0/10/15/30, default off). The 'storage' event applies a change live;
+  Settings > Desktop writes it from a number input (0..240, '0 = Off').
   Activity that resets the timer: mousemove / mousedown / keydown /
   touchstart / wheel on the Hub and on same-origin app documents,
   window blur (focus into an app iframe), any hub-* bridge message.
@@ -194,8 +195,9 @@ drifts up to 6 px every minute (burn-in). Theme: html.hub-light (theme
   Dismiss: any mouse move, press, touch, wheel or key; the event is
   captured on window and stopped, and the click / mouseup that follows
   within 600 ms is swallowed too, so nothing reaches the app or desktop.
-  API window.HubSaver: start(), stop(), set(min) (0/10/15/30, writes the
-  key), active() -> bool. (_angles(date) is a test helper.)
+  API window.HubSaver: start(), stop(), set(min) (same rules as the key,
+  writes the normalised value), active() -> bool, minutes() -> current
+  idle minutes (0 = off). (_angles(date) is a test helper.)
 
 
 4. WINDOW MANAGER, SNAP, MAGNET AND WORKSPACES
@@ -531,7 +533,7 @@ localStorage, prefix sites-hub.:
   Key                 Written by / used by        Value
   wmMode              Settings > Desktop          auto | desktop | phone
   wmSession           wm_windows.js               JSON window session
-  saverIdle           Settings > Desktop, R49     0 (off) | 10 | 15 | 30 min
+  saverIdle           Settings > Desktop, R49b    0 (off) | 1..240 min, unset 5
                       hub_saver.js (screen saver)
   lastApp             hub.js                      last app (Phone mode)
   fromCat             hub.js                      category of open app
