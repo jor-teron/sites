@@ -3,7 +3,7 @@
 (function () {
   const kai = {
     id: 'kai', name: 'KAI', outfit: 'gi',
-    slots: { top: 'gi', legs: 'long', pads: 'none', arms: 'wraps', waist: 'belt' }, hairStyle: 'spiky', handScale: 1.04, title: 'Street Martial Artist',
+    slots: { top: 'gi', legs: 'long', pads: 'none', arms: 'wraps', waist: 'belt' }, gear: { feet: 'barefoot', head: 'none', eyes: 'none' }, hairStyle: 'spiky', handScale: 1.04, title: 'Street Martial Artist',
     desc: 'Disciplined and fast. Kai mixes tight boxing hands with long, snapping kicks. Special: Rising Flame Kick.',
     stats: { Speed: 4, Power: 4, Reach: 3, Defense: 3 },
     accent: '#ff3346', rim: '#ff4fd8',
@@ -23,7 +23,7 @@
   };
   const nova = {
     id: 'nova', name: 'NOVA', outfit: 'suit',
-    slots: { top: 'suit', legs: 'tights', pads: 'armour', arms: 'gloves', waist: 'armour' }, hairStyle: 'tail', handScale: 0.84, title: 'Electric Striker',
+    slots: { top: 'suit', legs: 'tights', pads: 'armour', arms: 'gloves', waist: 'armour' }, gear: { feet: 'boots', head: 'none', eyes: 'none' }, hairStyle: 'tail', handScale: 0.84, title: 'Electric Striker',
     desc: 'Agile and precise. Nova keeps opponents at range with charged palm strikes and quick footwork. Special: Storm Orb.',
     stats: { Speed: 5, Power: 3, Reach: 4, Defense: 2 },
     accent: '#2ee6ff', rim: '#9a6bff',

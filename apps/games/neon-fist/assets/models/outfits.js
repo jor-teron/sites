@@ -254,13 +254,14 @@
   function leg(f, ctx, s, far) {
     const J = f.J, ch = f.ch, B = ch.bones, A = J.ang, o = { far, rim: ch.rim }, H = J['hip' + s], sl = slots(ch);
     const thigh = Dr.limb(H, A['th' + s], B.thigh, ch.thigh, { u0: -0.05, u1: 1.06, capS: false });
-    if (ch.outfit === 'suit') {   // boots (feet are unchanged in R2c2)
+    if (NF.gear.gear(ch).feet === 'boots') {   // boots (Nova's, and R2c3 generated boots)
       Dr.paint(ctx, Dr.limb(J['knee' + s], A['sh' + s], B.shin, ch.boot), ch.bootCol, Object.assign({ spec: 0.22 }, o));
-      Dr.foot(ctx, J['ankle' + s], A['ft' + s], ch, { far });
+      Dr.foot(ctx, J['ankle' + s], A['ft' + s], ch, { far, type: 'boot' });
       Dr.paint(ctx, Dr.limb(J['knee' + s], A['sh' + s], B.shin, ch.boot, { u0: 0.08, u1: 0.16, inf: 2 }), ch.armourHi, { far, outline: true });
-    } else {
-      Dr.paint(ctx, Dr.limb(J['knee' + s], A['sh' + s], B.shin, ch.shin, { u0: -0.04 }), ch.skin, Object.assign({ spec: 0.12, lines: [[0.3, 0.7, -0.55, 0.15, 2, 0.25]] }, o));
-      Dr.foot(ctx, J['ankle' + s], A['ft' + s], ch, { far });
+    } else {   // bare shin (suit colour under tights), then the R2c3 foot slot
+      const tights = sl.legs === 'tights';
+      Dr.paint(ctx, Dr.limb(J['knee' + s], A['sh' + s], B.shin, ch.shin, { u0: -0.04 }), tights ? ch.suit : ch.skin, Object.assign(tights ? { spec: 0.18 } : { spec: 0.12, lines: [[0.3, 0.7, -0.55, 0.15, 2, 0.25]] }, o));
+      NF.gear.foot(ctx, J['ankle' + s], A['ft' + s], ch, { far });
     }
     LEGS[sl.legs](f, ctx, s, thigh, o);
     PADS[sl.pads](f, ctx, s, far);

@@ -249,7 +249,7 @@
     const L = (x, y) => ({ x: A.x + (t.x * x + n.x * y) * f, y: A.y + (t.y * x + n.y * y) * f });
     const grad = (col) => { const a = L(20, -12), b = L(20, 34), g = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
       g.addColorStop(0, shade(col, 1.2 * far)); g.addColorStop(1, shade(col, 0.55 * far)); return g; };
-    if (ch.outfit === 'suit') {
+    if (o.type ? o.type === 'boot' : ch.outfit === 'suit') {
       const pts = [L(-16, -22), L(-25, 0), L(-28, 22), L(-24, 33), L(10, 35), L(52, 34), L(84, 31), L(95, 24), L(89, 13), L(60, 6), L(30, -4), L(15, -22)];
       smoothPath(ctx, pts, true); ctx.fillStyle = grad(ch.bootCol); ctx.fill(); ctx.lineWidth = 2.4; ctx.strokeStyle = C.outline; ctx.stroke();
       ctx.save(); smoothPath(ctx, pts, true); ctx.clip();
@@ -284,7 +284,8 @@
     const newHair = NF.hair && NF.hair.STYLES.includes(ch.hairStyle);
     ctx.save(); ctx.translate(H.x, H.y); ctx.rotate(J.ang.head * D); ctx.scale(s, s);
     const pts = faceProfile(ch.face).map(p => ({ x: p[0], y: p[1] }));
-    if (newHair) NF.hair.back(ctx, ch); else if (!spiky) hairBackNova(ctx, ch);
+    const G = NF.gear, hood = G && G.gear(ch).head === 'hood', helm = G && G.hidesHair(ch);   // R2c3: hood hides all hair, helmet hides the top
+    if (hood) {} else if (newHair) NF.hair.back(ctx, ch); else if (!spiky) hairBackNova(ctx, ch);
     const stroke = (col, lw, f) => { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.beginPath(); f(); ctx.stroke(); };
     // skull + face
     smoothPath(ctx, pts, true);
@@ -362,7 +363,8 @@
     ctx.moveTo(42, bi + 0.8); ctx.quadraticCurveTo(33, bi - 5.5 - ba + ang * 1.5, 22, bo + 1.5);
     ctx.quadraticCurveTo(32, bi - 5.5 - ba - bt * 2 + ang * 1.2, 41.5, bi - bt); ctx.closePath(); ctx.fill();
     if (ang > 0.1) stroke('rgba(80,30,20,' + 0.4 * ang + ')', 1.2, () => { ctx.moveTo(41.5, -27); ctx.quadraticCurveTo(39.5, -30, 40.5, -33); });  // furrow
-    if (spiky) hairKai(ctx, ch, st); else if (newHair) NF.hair.front(ctx, ch); else hairFrontNova(ctx, ch);
+    if (helm) {} else if (spiky) hairKai(ctx, ch, st); else if (newHair) NF.hair.front(ctx, ch); else hairFrontNova(ctx, ch);
+    if (G) { G.headwear(ctx, ch); G.eyewear(ctx, ch); }
     ctx.restore();
   }
   function hairKai(ctx, ch, st) {

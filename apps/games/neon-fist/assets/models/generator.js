@@ -116,6 +116,12 @@
     ch.gloveCol = op(['#16161a', '#c3182a', '#1d2a4a', ch.armour, tone(gl[0], 0.7), '#e8e4dc']); ch.gloveHi = tone(ch.gloveCol, 1.35);
     ch.sash = op(['#c3182a', '#f1efe8', tone(gl[0], 0.85), '#d8a020', '#1d2a4a']);
     ch.beltTails = [tone(ch.belt, 0.75), tone(ch.belt, 0.55), tone(ch.belt, 0.95), tone(ch.belt, 0.65)]; ch.beltKnot = tone(ch.belt, 0.85);
+    // R2c3 gear slots (feet, headwear, eyewear): own seeded stream, so every earlier roll stays the same
+    const rg = rngFor(n * 1299709 + 331), gp = a => a[Math.floor(rg() * a.length)];
+    ch.gear = NF.gear.roll(rg, male, wild, ch.slots.legs, ch.hairStyle);
+    ch.shoeCol = gp(['#16161a', '#f1efe8', '#c3182a', '#1d2a4a', tone(gl[0], 0.8), '#3a8a4a', '#e85aa0', '#d8a020', ch.armour]); ch.shoeHi = tone(ch.shoeCol, ch.shoeCol > '#8' ? 0.6 : 1.7);
+    ch.headCol = gp(['#16161a', '#e8e4dc', '#c3182a', '#1d2a4a', tone(gl[0], 0.75), ch.armour, '#3a5a2a', '#5a1a40', ch.top]); ch.headHi = tone(ch.headCol, ch.headCol > '#8' ? 0.6 : 1.8);
+    ch.eyeCol = gp(['#16161a', '#8a5a20', '#c0c4cc', '#c3182a', tone(gl[0], 0.9), '#d8a020']);
     // identity, stats, title
     ch.id = 'f' + String(n).padStart(2, '0'); ch.num = n; ch.male = male; ch.wild = wild; ch.build = build; ch.poseSet = male ? 'kai' : 'nova';
     ch.name = male ? nameDeck.m[(n - 1) / 2] : nameDeck.f[n / 2];

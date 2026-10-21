@@ -37,12 +37,12 @@
       this.action = 'idle'; this.actT = 0; this.hold = false; this.blink = 0; this.nextBlink = 1.5; this.acc = 0;
       // headband tails go with spiky hair, belt tails with the gi, a ponytail with tied-back hair
       this.chains = {};
-      if (ch.hairStyle === 'spiky') { this.chains.band1 = new Chain(7, 21, { x: -2600, y: -900 }, 0.4); this.chains.band2 = new Chain(6, 21, { x: -2200, y: -500 }, 0.5); }
+      if (ch.hairStyle === 'spiky' && !NF.gear.hidesHair(ch)) { this.chains.band1 = new Chain(7, 21, { x: -2600, y: -900 }, 0.4); this.chains.band2 = new Chain(6, 21, { x: -2200, y: -500 }, 0.5); }
       if (NF.outfits.hasTails(ch)) {
         const sash = NF.outfits.slots(ch).waist === 'sash';   // sash tails hang longer than belt tails (R2c1)
         this.chains.belt1 = new Chain(sash ? 8 : 5, sash ? 20 : 18, { x: 300, y: 0 }); this.chains.belt2 = new Chain(sash ? 7 : 5, sash ? 19 : 17, { x: 120, y: 0 });
       }
-      if (ch.hairStyle === 'tail') this.chains.tail = new Chain(10, 25, { x: -2600, y: -4200 });
+      if (ch.hairStyle === 'tail' && NF.gear.gear(ch).head !== 'hood') this.chains.tail = new Chain(10, 25, { x: -2600, y: -4200 });
       this.pose = this.computePose(); this.J = S.solve(this.pose, ch.bones);
       this.idleH = -(S.solve(this.poses.idle, ch.bones).head.y) + 66 * ch.headScale;
     }
@@ -95,6 +95,7 @@
       ctx.save(); ctx.translate(x, gy); ctx.scale(scale * facing, scale);
       const J = this.J, ch = this.ch;
       this.shadow(ctx);
+      const lift = NF.gear.lift(ch); if (lift) ctx.translate(0, -lift);   // R2c3: heels raise the stance
       if (this.chains.band1) {
         const c = this.chains, pk = ch.band;
         Dr.ribbon(ctx, c.band2.p, 11, 7, Dr.shade(pk, 0.62), Dr.shade(pk, 0.5));
