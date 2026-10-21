@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<!--
+  Camera — photos and videos from the device camera. Page shell only.
+  Styles: camera.css. Settings: camera_config.js. Saving: camera_save.js
+  (one save(blob, filename) for every file). Logic: camera_logic.js.
+  Layout: preview fills the screen; controls are a bottom bar in portrait and a
+  column on the RIGHT in landscape (right-handed). No libraries, no CDN.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Camera</title>
+  <link rel="icon" href="camera_icon.png">
+  <link rel="stylesheet" href="camera.css?v=20261021a">
+</head>
+<body>
+<div id="app">
+  <main id="stage">
+    <video id="preview" autoplay playsinline muted></video>
+    <div id="grid" hidden><span></span><span></span><span></span><span></span></div>
+    <div id="countdown" hidden></div>
+    <div id="flash"></div>
+    <div id="rec-badge" hidden><span class="rec-dot"></span><span id="rec-time">00:00</span></div>
+    <div id="message" hidden>
+      <p id="message-text"></p>
+      <button type="button" id="retry-btn" class="pill">Retry</button>
+    </div>
+    <div id="toast" role="status"></div>
+  </main>
+
+  <nav id="controls" aria-label="Camera controls">
+    <button type="button" class="cb" id="settings-btn" title="Settings" aria-label="Settings" aria-expanded="false" aria-controls="settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+    <button type="button" class="cb" id="mode-btn" title="Switch photo / video (V)" aria-label="Switch to video">
+      <svg viewBox="0 0 24 24" class="ic-video"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5 21 7v10l-5-3.5"/></svg>
+      <svg viewBox="0 0 24 24" class="ic-photo"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+    </button>
+    <button type="button" id="shutter" title="Take photo (Space)" aria-label="Take photo"><span class="inner"></span></button>
+    <button type="button" class="cb" id="pause-btn" title="Pause / resume (P)" aria-label="Pause recording" hidden>
+      <svg viewBox="0 0 24 24" class="ic-pause"><path d="M9 6v12M15 6v12"/></svg>
+      <svg viewBox="0 0 24 24" class="ic-resume filled"><path d="M8 5.5v13l10-6.5z"/></svg>
+    </button>
+    <button type="button" class="cb" id="flip-btn" title="Front / back camera (F)" aria-label="Switch camera">
+      <svg viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><path d="M9 12.5a3 3 0 0 1 5.3-1.8M15 13.5a3 3 0 0 1-5.3 1.8"/><path d="M14.5 9v2h-2M9.5 17v-2h2"/></svg>
+    </button>
+    <button type="button" id="thumb" title="Last shot (opens it)" aria-label="Last shot" disabled><img id="thumb-img" alt=""></button>
+  </nav>
+
+  <section id="settings" class="panel" aria-label="Settings" hidden>
+    <label class="row"><span>Camera</span><select id="device-select"></select></label>
+    <div class="row"><span>Resolution</span><div class="seg" id="res-seg"></div></div>
+    <div class="row"><span>Photo format</span><div class="seg" id="format-seg"></div></div>
+    <div class="row"><span>Self-timer</span><div class="seg" id="timer-seg"></div></div>
+    <label class="row"><span>Grid</span><input type="checkbox" id="grid-check" class="switch"></label>
+    <label class="row"><span>Mirror</span><input type="checkbox" id="mirror-check" class="switch"></label>
+    <p class="info" id="info"></p>
+  </section>
+</div>
+
+<script src="camera_config.js?v=20261021a"></script>
+<script src="camera_save.js?v=20261021a"></script>
+<script src="camera_logic.js?v=20261021a"></script>
+</body>
+</html>
