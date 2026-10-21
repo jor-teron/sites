@@ -50,7 +50,9 @@ Draftly.pages.updatePageNumbers = function updatePageNumbers(total) {
       pn.className = 'page-number';
       papers[i].appendChild(pn);
     }
-    pn.textContent = 'Page ' + (i + 1);
+    pn.textContent = String(i + 1);
+    pn.setAttribute('aria-hidden', 'true');
+    pn.contentEditable = 'false';
     papers[i].setAttribute(
       'data-orientation',
       document.body.classList.contains(Draftly.config.landscapeClass) ? 'landscape' : 'portrait'
@@ -77,7 +79,9 @@ Draftly.pages.createNewPage = function createNewPage(index) {
 
   var pn = document.createElement('div');
   pn.className = 'page-number';
-  pn.textContent = 'Page ' + index;
+  pn.textContent = String(index);
+  pn.setAttribute('aria-hidden', 'true');
+  pn.contentEditable = 'false';
 
   paper.appendChild(ed);
   paper.appendChild(pn);

@@ -96,6 +96,8 @@ Draftly.config = {
   storageKeyOrientation: 'draftly_orientation',
   storageKeyPaperSize: 'draftly_paper_size',
   storageKeyMarginPreset: 'draftly_margin_preset',
+  storageKeyPageNumbers: 'draftly_page_numbers',
+  storageKeyPageNumberPos: 'draftly_page_number_pos',
   /* Default list kind: bullet | 1 | a | A. */
   defaultListKind: 'bullet',
   /* Default numbered suffix: . | , | ) | none. */

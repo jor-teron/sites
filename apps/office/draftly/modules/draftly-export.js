@@ -21,6 +21,20 @@ Draftly.export.combinedHtml = function combinedHtml() {
   return Draftly.flow.joinedHtml();
 };
 
+/* Word-HTML for DOCX: page-break markers become Word's page-break <br>. */
+Draftly.export.docxHtml = function docxHtml() {
+  var holder = document.createElement('div');
+  holder.innerHTML = Draftly.export.combinedHtml();
+  var pbs = holder.querySelectorAll('.dr-pagebreak');
+  for (var i = 0; i < pbs.length; i++) {
+    var br = document.createElement('br');
+    br.setAttribute('clear', 'all');
+    br.setAttribute('style', 'page-break-before:always');
+    pbs[i].parentNode.replaceChild(br, pbs[i]);
+  }
+  return holder.innerHTML;
+};
+
 /* Inject a print stylesheet that matches the current orientation. */
 Draftly.export.setupPrintStyles = function setupPrintStyles() {
   var cfg = Draftly.config;
@@ -47,7 +61,9 @@ Draftly.export.setupPrintStyles = function setupPrintStyles() {
     ' padding: ' + cfg.marginTopCm + 'cm ' + cfg.marginRightCm + 'cm ' + cfg.marginBottomCm + 'cm ' + cfg.marginLeftCm + 'cm !important;' +
     ' overflow: hidden !important; background: #fff !important; page-break-after: always; break-after: page; }' +
     ' .paper:last-child { page-break-after: auto; break-after: auto; }' +
-    ' .paper .page-number { display: none !important; }' +
+    ' body:not(.pn-on) .paper .page-number { display: none !important; }' +
+    ' body.pn-on .paper .page-number { color: #000 !important; }' +
+    ' .editor .dr-pagebreak { visibility: hidden !important; }' +
     ' .editor { color: #000 !important; }' +
     '}';
   document.head.appendChild(printStyle);
@@ -88,7 +104,7 @@ Draftly.export.exportDocx = function exportDocx() {
     ' margin: ' + cfg.marginTopCm + 'cm ' + cfg.marginRightCm + 'cm; }' +
     'body { font-family: ' + cfg.fontFamily + '; font-size: ' + cfg.fontSizePt + 'pt; line-height: ' + cfg.lineHeight + '; }' +
     'p { margin: 0 0 ' + cfg.paragraphSpacingPt + 'pt 0; }' +
-    '</style></head><body>' + Draftly.export.combinedHtml() + '</body></html>';
+    '</style></head><body>' + Draftly.export.docxHtml() + '</body></html>';
 
   try {
     if (typeof htmlDocx === 'undefined') throw new Error('html-docx-js missing');

@@ -449,8 +449,46 @@ body.landscape .paper {
   content: none;
 }
 
-/* Page number badge — hidden for this release. */
+/* Page numbers (Page popup): decoration in the bottom margin, never content. */
 .paper .page-number { display: none; }
+body.pn-on .paper .page-number {
+  display: block;
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(var(--margin-bottom-cm) * 0.4cm);
+  padding: 0 calc(var(--margin-right-cm) * 1cm) 0 calc(var(--margin-left-cm) * 1cm);
+  text-align: center;
+  font-family: var(--font-family);
+  font-size: 10pt;
+  line-height: 1;
+  color: var(--text-muted, #666);
+  user-select: none;
+  pointer-events: none;
+}
+body.pn-on.pn-right .paper .page-number { text-align: right; }
+
+/* Manual page break: faint dashed line, labelled when format marks are on. */
+.editor .dr-pagebreak {
+  position: relative;
+  height: 1em;
+  margin: 0.3em 0;
+  border-top: 1px dashed var(--nonprint-color);
+  opacity: 0.45;
+  cursor: default;
+  user-select: none;
+}
+.editor.show-nonprinting .dr-pagebreak { opacity: 1; }
+.editor.show-nonprinting .dr-pagebreak::after {
+  content: attr(data-label);
+  position: absolute;
+  top: -0.65em;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 0.5em;
+  background: var(--bg-paper);
+  color: var(--nonprint-color);
+  font: 8pt/1.2 system-ui, sans-serif;
+}
 
 /* ============================================================
    EDITOR — contenteditable inside paper
@@ -576,7 +614,9 @@ body.landscape .paper {
     page-break-inside: avoid;
   }
   .paper:last-child { page-break-after: auto; }
-  .paper .page-number { display: none !important; }
+  body:not(.pn-on) .paper .page-number { display: none !important; }
+  body.pn-on .paper .page-number { color: #000 !important; }
+  .editor .dr-pagebreak { visibility: hidden !important; break-before: page; }
   .editor { color: #000 !important; }
   .np-mark { display: none !important; }
 }

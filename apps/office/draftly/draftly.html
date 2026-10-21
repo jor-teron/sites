@@ -86,6 +86,10 @@
     </div>
 
     <div class="tool-group">
+      <button class="tool-btn" id="pageBreakBtn" title="Page break (Ctrl/⌘+Enter)" aria-label="Insert page break"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v6h12V3"/><path d="M6 21v-6h12v6"/><path d="M3 12h3M9 12h2M13 12h2M18 12h3"/></svg></button>
+    </div>
+
+    <div class="tool-group">
       <button class="tool-btn" id="nonPrintingBtn" title="Show format marks (¶ ↵)" aria-label="Show format marks" aria-pressed="false"><span class="glyph">¶</span></button>
       <button class="tool-btn" id="themeToggleBtn" title="Dark theme" aria-label="Toggle theme">
         <span class="icon-moon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></span>
@@ -125,6 +129,11 @@
       <button type="button" class="seg-btn" data-margins="normal"><span>Normal</span></button>
       <button type="button" class="seg-btn" data-margins="narrow"><span>Narrow</span></button>
     </div>
+    <div class="seg" role="group" aria-label="Page numbers">
+      <button type="button" class="seg-btn" data-pn="off"><span>No numbers</span></button>
+      <button type="button" class="seg-btn" data-pn="center"><span>Centre</span></button>
+      <button type="button" class="seg-btn" data-pn="right"><span>Right</span></button>
+    </div>
     <select id="orientationSelect" class="visually-hidden" tabindex="-1" aria-hidden="true">
       <option value="portrait" selected>Portrait</option>
       <option value="landscape">Landscape</option>
@@ -134,7 +143,7 @@
       <dt>Margins</dt><dd id="marginInfo">—</dd>
       <dt>Pages</dt><dd id="pageCountLabel">1 page</dd>
     </dl>
-    <p class="panel-hint">Enter = new paragraph · Shift+Enter = line break</p>
+    <p class="panel-hint">Enter = new paragraph · Shift+Enter = line break · Ctrl+Enter = page break</p>
   </div>
 
   <!-- ============================================================
@@ -172,6 +181,7 @@
   <script src="modules/draftly-lists.js"></script>
   <script src="modules/draftly-view.js"></script>
   <script src="modules/draftly-history.js"></script>
+  <script src="modules/draftly-breaks.js"></script>
   <script src="modules/draftly-app.js"></script>
 </body>
 </html>
