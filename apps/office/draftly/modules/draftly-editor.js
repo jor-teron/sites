@@ -145,8 +145,11 @@ Draftly.editor.applyFontSize = function applyFontSize(size) {
 Draftly.editor.onPaste = function onPaste(e) {
   e.preventDefault();
   var text = (e.clipboardData || window.clipboardData).getData('text/plain');
+  var fontSelect = document.getElementById('fontFamilySelect');
+  var font = fontSelect ? fontSelect.value : Draftly.config.fontCommandName;
+  /* Set the typing font first so the inserted text takes it. */
+  Draftly.editor.setFontFamily(font);
   document.execCommand('insertText', false, text);
-  Draftly.editor.setTimesNewRoman();
   Draftly.editor.saveSelection();
   if (Draftly.pages) Draftly.pages.checkPagination();
 };

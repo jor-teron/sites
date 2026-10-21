@@ -110,7 +110,11 @@ Draftly.app.toggleRecent = function toggleRecent() {
 
 /* Load one stored document into the editor. */
 Draftly.app.openDoc = function openDoc(name) {
-  Draftly.storage.getDoc(name).then(function (doc) {
+  /* Save the current doc first so edits from the last debounce are kept. */
+  clearTimeout(Draftly.app.inputTimer);
+  Draftly.storage.save().catch(function () {}).then(function () {
+    return Draftly.storage.getDoc(name);
+  }).then(function (doc) {
     var editor = Draftly.pages.firstEditor();
     if (!editor || !doc) return;
     Draftly.pages.rebuildSinglePage();
@@ -250,7 +254,6 @@ Draftly.app.bindUi = function bindUi() {
   }
 
   /* Flow pages quickly after typing; save on a slower timer. */
-  var inputTimer = null;
   var flowTimer = null;
   document.addEventListener('input', function (e) {
     if (!Draftly.editor.isInEditor(e.target)) return;
@@ -258,8 +261,8 @@ Draftly.app.bindUi = function bindUi() {
     flowTimer = setTimeout(function () {
       if (Draftly.app.ready) Draftly.pages.checkPagination();
     }, cfg.flowDebounceMs);
-    clearTimeout(inputTimer);
-    inputTimer = setTimeout(function () {
+    clearTimeout(Draftly.app.inputTimer);
+    Draftly.app.inputTimer = setTimeout(function () {
       if (Draftly.app.ready) Draftly.storage.save();
     }, cfg.inputDebounceMs);
   });

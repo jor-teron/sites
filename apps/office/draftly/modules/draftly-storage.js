@@ -1,22 +1,6 @@
 /* ============================================================
    FILE: modules/draftly-storage.js
    PROJECT: Draftly
-   ROLE: Load and save editor HTML, theme flag, and marks flag.
-   DEPENDS: Draftly.config
-   ISOLATION: Failures are swallowed. A bad store does not
-              stop the editor from opening.
-   ============================================================ */
-
-/* Shared namespace. */
-var Draftly = window.Draftly || {};
-window.Draftly = Draftly;
-
-/* Storage helpers. Other modules call these; they do not touch keys. */
-Draftly.storage = {};
-
-/* ============================================================
-   FILE: modules/draftly-storage.js
-   PROJECT: Draftly
    ROLE: IndexedDB documents, plus theme and orientation flags.
    DEPENDS: Draftly.config
    ISOLATION: Failures are swallowed. A bad store does not
