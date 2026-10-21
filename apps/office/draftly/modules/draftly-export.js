@@ -51,7 +51,7 @@ Draftly.export.setupPrintStyles = function setupPrintStyles() {
     '@page { size: ' + cfg.pageSizeName + ' ' + (isLandscape ? 'landscape' : 'portrait') + '; margin: 0; }' +
     '@media print {' +
     ' body { background: #fff !important; overflow: visible !important; height: auto !important; }' +
-    ' .toolbar, .toast, .np-layer { display: none !important; }' +
+    ' .toolbar, .toast, .np-layer, .status-bar, .find-bar { display: none !important; }' +
     ' .workspace { overflow: visible !important; padding: 0 !important; background: #fff !important; display: block !important; }' +
     ' .pages-scaler { width: auto !important; height: auto !important; }' +
     ' .pages { transform: none !important; width: auto !important; gap: 0 !important; }' +
@@ -78,6 +78,15 @@ Draftly.export.cleanupPrintStyles = function cleanupPrintStyles() {
 };
 
 /* Open the print dialog (Print button only). */
+/* Browser menu print (not Ctrl+P / button) still gets the right sheet. */
+window.addEventListener('beforeprint', function () {
+  if (!document.getElementById(Draftly.config.printStyleId)) {
+    Draftly.export.setupPrintStyles();
+    var done = function () { Draftly.export.cleanupPrintStyles(); window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done);
+  }
+});
+
 Draftly.export.printDocument = function printDocument() {
   if (Draftly.editor) Draftly.editor.saveSelection();
   Draftly.export.setupPrintStyles();

@@ -240,6 +240,11 @@ Draftly.app.bindKeys = function bindKeys() {
       Draftly.app.saveDocument();
       return;
     }
+    if (key === 'p' && !e.shiftKey) {
+      e.preventDefault();
+      Draftly.export.printDocument();
+      return;
+    }
     if (!Draftly.editor.isInEditor(e.target) && document.activeElement &&
         !document.activeElement.classList.contains(Draftly.config.editorClass)) return;
     if (key === 'b' || key === 'i' || key === 'u') {
@@ -247,7 +252,12 @@ Draftly.app.bindKeys = function bindKeys() {
       if (key === 'b') Draftly.editor.execCmd('bold');
       if (key === 'i') Draftly.editor.execCmd('italic');
       if (key === 'u') Draftly.editor.execCmd('underline');
+      return;
     }
+    if (key === 'x' && e.shiftKey) { e.preventDefault(); Draftly.editor.execCmd('strikeThrough'); return; }
+    if (e.shiftKey) return;
+    if (e.key === '.' || e.code === 'Period') { e.preventDefault(); Draftly.editor.setScript('superscript'); }
+    else if (e.key === ',' || e.code === 'Comma') { e.preventDefault(); Draftly.editor.setScript('subscript'); }
   });
 };
 
@@ -258,6 +268,9 @@ Draftly.app.bindUi = function bindUi() {
   Draftly.app.onClick('boldBtn', function () { Draftly.editor.execCmd('bold'); });
   Draftly.app.onClick('italicBtn', function () { Draftly.editor.execCmd('italic'); });
   Draftly.app.onClick('underlineBtn', function () { Draftly.editor.execCmd('underline'); });
+  Draftly.app.onClick('strikeBtn', function () { Draftly.editor.execCmd('strikeThrough'); });
+  Draftly.app.onClick('superBtn', function () { Draftly.editor.setScript('superscript'); });
+  Draftly.app.onClick('subBtn', function () { Draftly.editor.setScript('subscript'); });
   Draftly.app.onClick('alignLeftBtn', function () { Draftly.editor.execCmd('justifyLeft'); });
   Draftly.app.onClick('alignCenterBtn', function () { Draftly.editor.execCmd('justifyCenter'); });
   Draftly.app.onClick('alignRightBtn', function () { Draftly.editor.execCmd('justifyRight'); });

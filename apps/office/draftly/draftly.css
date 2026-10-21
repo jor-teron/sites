@@ -392,7 +392,7 @@ select:disabled { opacity: 0.4; cursor: default; }
    ============================================================ */
 .workspace {
   flex: 1;
-  overflow-x: hidden;
+  overflow-x: auto;              /* only scrolls when zoomed past the width */
   overflow-y: auto;
   padding: 32px 24px 64px;
   scrollbar-width: thin;
@@ -512,6 +512,13 @@ select:disabled { opacity: 0.4; cursor: default; }
    PAPER (A4) — dynamically sized via CSS variables
    ============================================================ */
 .paper {
+  /* The sheet is always white paper with black ink, in both themes. */
+  --bg-paper: #ffffff;
+  --text-primary: #000000;
+  --placeholder: #a2a8c0;
+  --nonprint-color: #9a9a9a;
+  --text-muted: #666666;
+  color-scheme: light;
   width: calc(var(--paper-width-cm) * 1cm);
   height: calc(var(--paper-height-cm) * 1cm);   /* fixed A4: content never stretches it */
   overflow: hidden;
@@ -784,3 +791,14 @@ body.pn-on.pn-right .paper .page-number { text-align: right; }
 .tp-cell.on { background: #4a8cf7; border-color: #2a6cd7; }
 .tp-label { text-align: center; font-size: 12px; margin-top: 6px; }
 .table-tools .tool-btn span { font-size: 12px; }
+
+/* ----- Paper selection stays readable on white in both themes ----- */
+.paper ::selection { background: #b4d2ff; color: inherit; }
+
+/* ----- Strike / super / sub ----- */
+.editor sup, .editor sub { font-size: 0.75em; line-height: 0; }
+
+/* ----- Zoom control (status bar) ----- */
+.zoom-ctl { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; }
+.zoom-btn { min-width: 22px; font-size: 14px; line-height: 1; }
+.zoom-pct { min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; }

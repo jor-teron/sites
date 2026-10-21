@@ -18,7 +18,7 @@
   <title>Draftly</title>
   <meta name="theme-color" content="#5b5bf0">
   <link rel="icon" href="draftly_icon.png">
-  <link rel="stylesheet" href="draftly.css?v=5">
+  <link rel="stylesheet" href="draftly.css?v=6">
 </head>
 <body>
 
@@ -51,7 +51,7 @@
       <button type="button" class="file-item" role="menuitem" id="deleteCurrentBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13"/></svg><span>Delete document</span></button>
       <div class="file-sep" role="separator"></div>
       <button type="button" class="file-item" role="menuitem" id="saveBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg><span>Save <kbd>Ctrl+S</kbd></span></button>
-      <button type="button" class="file-item" role="menuitem" id="printBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="1.5"/><path d="M7 14h10v6H7z"/></svg><span>Print</span></button>
+      <button type="button" class="file-item" role="menuitem" id="printBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="1.5"/><path d="M7 14h10v6H7z"/></svg><span>Print <kbd>Ctrl+P</kbd></span></button>
       <button type="button" class="file-item" role="menuitem" id="exportDocxBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>Export DOCX</span></button>
       <button type="button" class="file-item" role="menuitem" id="exportPdfBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>Export PDF</span></button>
       <div class="file-sep" role="separator"></div>
@@ -89,6 +89,9 @@
         <button class="tool-btn" id="boldBtn" title="Bold (Ctrl/⌘+B)" aria-label="Bold"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5h6a3.5 3.5 0 0 1 0 7H7z"/><path d="M7 11.5h7a3.75 3.75 0 0 1 0 7.5H7z"/></svg></button>
         <button class="tool-btn" id="italicBtn" title="Italic (Ctrl/⌘+I)" aria-label="Italic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5h8M6 19.5h8M14.5 4.5l-5 15"/></svg></button>
         <button class="tool-btn" id="underlineBtn" title="Underline (Ctrl/⌘+U)" aria-label="Underline"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v7a5 5 0 0 0 10 0V4"/><path d="M5 20.5h14"/></svg></button>
+        <button class="tool-btn" id="strikeBtn" title="Strikethrough (Ctrl/⌘+Shift+X)" aria-label="Strikethrough"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 6.5C15.6 5.2 14 4.5 12 4.5c-2.8 0-4.5 1.5-4.5 3.5 0 1.6 1 2.6 3 3.2"/><path d="M4 12h16"/><path d="M15.8 14.5c.5.6.7 1.2.7 2 0 2.1-1.9 3.5-4.6 3.5-2.2 0-3.9-.8-4.8-2.2"/></svg></button>
+        <button class="tool-btn" id="superBtn" title="Superscript (Ctrl/⌘+.)" aria-label="Superscript"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8l8 11M12 8l-8 11"/><path d="M16 5.5a1.8 1.8 0 1 1 3.2 1.2L16 10h3.6"/></svg></button>
+        <button class="tool-btn" id="subBtn" title="Subscript (Ctrl/⌘+,)" aria-label="Subscript"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 11M12 5l-8 11"/><path d="M16 15.5a1.8 1.8 0 1 1 3.2 1.2L16 20h3.6"/></svg></button>
       </div>
       <div class="tool-group">
         <div class="split-btn" role="group" aria-label="Font colour">
@@ -229,6 +232,11 @@
   <footer class="status-bar" id="statusBar">
     <span class="status-item" id="statusPages">Page 1 of 1</span>
     <button type="button" class="status-item status-btn" id="wordCountBtn" title="Word count" aria-haspopup="dialog" aria-expanded="false" aria-controls="wordCountPop">0 words</button>
+    <div class="zoom-ctl" role="group" aria-label="Zoom">
+      <button type="button" class="status-btn zoom-btn" id="zoomOutBtn" title="Zoom out (Ctrl+−)" aria-label="Zoom out">−</button>
+      <button type="button" class="status-btn zoom-pct" id="zoomPctBtn" title="Reset zoom to 100% (Ctrl+0)" aria-label="Reset zoom">100%</button>
+      <button type="button" class="status-btn zoom-btn" id="zoomInBtn" title="Zoom in (Ctrl+=)" aria-label="Zoom in">+</button>
+    </div>
   </footer>
   <div class="pop-menu wc-pop" id="wordCountPop" role="dialog" aria-label="Word count" hidden></div>
 
@@ -258,7 +266,8 @@
   <script src="modules/draftly-find.js"></script>
   <script src="modules/draftly-table.js"></script>
   <script src="modules/draftly-spacing.js"></script>
+  <script src="modules/draftly-zoom.js"></script>
   <script src="modules/draftly-ribbon.js?v=3"></script>
-  <script src="modules/draftly-app.js?v=4"></script>
+  <script src="modules/draftly-app.js?v=5"></script>
 </body>
 </html>
