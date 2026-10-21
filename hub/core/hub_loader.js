@@ -20,7 +20,7 @@
  */
 (function () {
   'use strict';
-  const V = '20261021a';
+  const V = '20261021b';
   const DELAY = 1500;
   const BATCHES = {
     drives: ['shared/google/google.css', 'hub/drives/hub_drives.css',
@@ -115,8 +115,8 @@
     b.setAttribute('aria-label', 'On-screen keyboard');
     b.addEventListener('mousedown', (e) => e.preventDefault());
     b.addEventListener('click', () => need('osk').then((ok) => { if (ok) HubOSK.show(); }));
-    // R41: sits right after Show desktop / workspace switcher (was tray.prepend)
-    (document.querySelector('#wm-taskbar .wm-ws') || document.getElementById('wm-showdesk') || tray).after(b);
+    // R43: right side, after the workspace switcher = just before the tray (R41 put it after .wm-ws on the left)
+    tray.before(b);
   }
 
   // ---- on demand: Viewer stub (hub_viewer.js replaces window.HubViewer) ----

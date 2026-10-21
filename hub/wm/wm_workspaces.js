@@ -37,7 +37,9 @@
     box.appendChild(b);
     return b;
   });
-  showDesk.after(box);
+  // R43: right side of the taskbar, just before the tray (was showDesk.after)
+  const tray = document.querySelector('#wm-taskbar .wm-tray');
+  if (tray) tray.before(box); else showDesk.after(box);
 
   function draw() {
     const one = WM.wsCount() < 2;

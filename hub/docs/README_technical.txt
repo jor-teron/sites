@@ -2,7 +2,7 @@ SITES HUB - TECHNICAL GUIDE: HUB AND VIRTUAL DESKTOP
 ====================================================
 
 For a developer picking up the Hub (hub.html) and its virtual desktop.
-Written from the code as of R17 (updated through R33c+R38, 2026-10-21).
+Written from the code as of R17 (updated through R43, 2026-10-21).
 Current build tag and shell cache: see hub/build.txt (one place).
 Plain HTML / CSS / JS, no build step, no framework.
 Every file starts with a header comment: read it first, it is the spec.
@@ -158,7 +158,7 @@ the rest):
 Idle = requestIdleCallback (setTimeout fallback).
 On demand (the batch loads at once, then the action runs):
   - the taskbar "keyboard" button: a stub button (data-stub) is placed
-    right after Show Desktop / the workspace switcher (R41; was the tray); clicking it loads osk and shows the OSK; the stub is
+    just before the tray, after the workspace switcher (R43; R41 had it on the left); clicking it loads osk and shows the OSK; the stub is
     removed only once osk is in and window.HubOSK exists (R27)
   - Ctrl+Alt+K (osk) and Ctrl+Alt+arrows (snap): caught by the loader
     (document keydown + the __hubWmKey chain), replayed after loading
@@ -289,10 +289,13 @@ CSVs are in; the console then logs "hub_appindex.js is out of date".
 hub/wm/wm_taskbar.js (#wm-taskbar):
   - Start (opens the menu above the bar; hover-to-open, switch
     sites-hub.startHover), Show Desktop (minimise all / bring back),
-    workspace switcher (R41: monitor-shaped ~16:10 buttons), the OSK
-    button (R41: right after the switcher), one button per window of this workspace
+    one button per window of this workspace
     (click = focus / minimise; right-click = New window, Move to
-    workspace, Minimise, Close; middle-click = new window).
+    workspace, Minimise, Close; middle-click = new window), then on the
+    right (R43) the workspace switcher (R41: monitor-shaped ~16:10
+    buttons; hidden when workspaces = 1) and the OSK button, both just
+    before the tray. Order: Start | Show Desktop | windows ... | 1 | 2 |
+    keyboard | tray | clock.
   - Tray (.wm-tray): the top bar's right side (chat bubble, Devices
     button) is MOVED here in Desktop mode and back in Phone mode.
     Optional busy meter, clock (12 h). R41: the version label (#hub-ver)
@@ -583,6 +586,9 @@ files change.
 
 17. KNOWN ISSUES AND PARKED ITEMS
 ---------------------------------
+  - R43 (done): the workspace switcher and the OSK button moved to the
+    right of the taskbar, just before the tray (Start | Show Desktop |
+    windows ... | 1 | 2 | keyboard | tray | clock).
   - R41 (done): workspace buttons are monitor-shaped (~16:10), the OSK
     button sits right after them (Show Desktop | 1 | 2 | keyboard), and the
     placebo version label is gone from the Desktop tray and Phone top bar.

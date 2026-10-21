@@ -20,8 +20,8 @@
  *   changed ones in place (the cache is never wiped); replies {type:'sw-refreshed', changed:[paths]}.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261021a';
-const CACHE = 'hub-shell-v59';  // 2026-10-21a: R33c app index (hub_appindex.js), R38 Settings window refresh
+const V = '20261021b';
+const CACHE = 'hub-shell-v60';  // 2026-10-21b: R43 workspaces + keyboard on the right of the taskbar
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const SHELL = [
   'hub.html',
