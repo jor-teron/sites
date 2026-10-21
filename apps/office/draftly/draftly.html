@@ -106,6 +106,17 @@
         <button class="tool-btn" id="alignRightBtn" title="Align right" aria-label="Align right"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg></button>
       </div>
       <div class="tool-group">
+        <select id="lineSpacingSelect" class="spacing-select" title="Line spacing" aria-label="Line spacing">
+          <option value="" hidden>Spacing</option>
+          <option value="1">1.0</option>
+          <option value="1.15">1.15</option>
+          <option value="1.5">1.5</option>
+          <option value="2">2.0</option>
+        </select>
+        <button class="tool-btn" id="indentDecBtn" title="Decrease indent (Shift+Tab)" aria-label="Decrease indent"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M11 10h9M11 14h9M4 19h16M8 9l-4 3 4 3"/></svg></button>
+        <button class="tool-btn" id="indentIncBtn" title="Increase indent (Tab)" aria-label="Increase indent"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M11 10h9M11 14h9M4 19h16M4 9l4 3-4 3"/></svg></button>
+      </div>
+      <div class="tool-group">
         <select id="listKindSelect" class="list-select" title="List kind">
           <option value="" hidden>List</option>
           <option value="bullet">• List</option>
@@ -246,6 +257,7 @@
   <script src="modules/draftly-colour.js"></script>
   <script src="modules/draftly-find.js"></script>
   <script src="modules/draftly-table.js"></script>
+  <script src="modules/draftly-spacing.js"></script>
   <script src="modules/draftly-ribbon.js?v=3"></script>
   <script src="modules/draftly-app.js?v=4"></script>
 </body>
