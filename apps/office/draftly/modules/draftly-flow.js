@@ -29,6 +29,15 @@ Draftly.flow.editors = function editors() {
   return Array.prototype.slice.call(document.querySelectorAll('.' + Draftly.config.editorClass));
 };
 Draftly.flow.CONT = 'data-cont';
+Draftly.flow.BREAK = 'dr-pagebreak';
+Draftly.flow.isBreak = function isBreak(n) {
+  return !!(n && n.nodeType === 1 && n.classList.contains(Draftly.flow.BREAK));
+};
+/* First top-level page-break marker on a page, or null. */
+Draftly.flow.firstBreak = function firstBreak(ed) {
+  for (var c = ed.firstElementChild; c; c = c.nextElementSibling) if (Draftly.flow.isBreak(c)) return c;
+  return null;
+};
 
 /* Content box height of a page (fixed, from CSS). */
 Draftly.flow.boxHeight = function boxHeight(editor) {
@@ -184,6 +193,17 @@ Draftly.flow.cut = function cut(block, map, k) {
 Draftly.flow.push = function push(eds, i) {
   var ed = eds[i];
   ed.scrollTop = 0;                       // caret may have scrolled the clipped box
+  var pb = Draftly.flow.firstBreak(ed);
+  if (pb && pb.nextSibling) {             // manual page break: the rest goes to the next page
+    var after = [];
+    while (pb.nextSibling) { after.push(pb.nextSibling); pb.nextSibling.remove(); }
+    if (!eds[i + 1]) eds.push(Draftly.pages.createNewPage(i + 2).querySelector('.' + Draftly.config.editorClass));
+    for (var a = after.length - 1; a >= 0; a--) {
+      if (after[a].nodeType === 1) Draftly.flow.prepend(eds[i + 1], after[a]);
+      else eds[i + 1].insertBefore(after[a], eds[i + 1].firstChild);
+    }
+    return true;
+  }
   if (!Draftly.flow.overflows(ed)) return false;
   var er = ed.getBoundingClientRect();     // screen space (pages may be scaled to fit)
   var limit = er.top + er.height;
@@ -214,6 +234,7 @@ Draftly.flow.pull = function pull(eds, i) {
   if (!next || !next.firstElementChild) return false;
   var free = Draftly.flow.boxHeight(ed) - Draftly.flow.usedHeight(ed);
   if (free < Draftly.flow.lineHeightPx(ed)) return false;
+  if (Draftly.flow.firstBreak(ed)) return false;  // a page break ends this page
   var movedAny = false;
   var f;
   while (next.firstElementChild && !Draftly.flow.overflows(ed)) {
@@ -226,6 +247,7 @@ Draftly.flow.pull = function pull(eds, i) {
       ed.appendChild(f);
     }
     movedAny = true;
+    if (Draftly.flow.isBreak(f)) break;
   }
   return movedAny;
 };

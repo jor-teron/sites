@@ -49,6 +49,8 @@ Draftly.pdf.download = function download() {
       '#pages{transform:none!important}' +
       '.paper{box-shadow:none!important;border-radius:0!important;background:#fff!important;transition:none!important}' +
       '.editor{color:#000!important;caret-color:transparent!important}' +
+      '.editor .dr-pagebreak{visibility:hidden!important}' +
+      '.paper .page-number{color:#000!important}' +
       '.editor:empty:before{content:none!important}';
     cloneDoc.head.appendChild(st);
   }
