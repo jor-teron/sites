@@ -36,6 +36,7 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `modules/draftly-docs.js`: load / open / new / delete / save, Recent list, autosave, Ctrl+S
 - `modules/draftly-format.js`: Home-tab formatting buttons, selects, shortcuts, toolbar sync
 - `modules/draftly-ribbon.js`: ribbon tabs and File menu
+- `modules/draftly-hub.js`: sites hub bridge (v:1). Only active in a frame. After `hub-hello` it adds `body.in-hub`, which hides the top row. It sends `hub-app` {app, tabs, activeTab, title}, `hub-tab` {id} and `hub-title` {value}. It handles `hub-action` {id:'tab:<id>'}: `tab:file` opens the File menu at the top-left of the frame. The message shapes are kept in `Draftly.hub.shape`.
 - `modules/draftly-app.js`: thin start-up (checks modules, calls each `bind()`, loads the document)
 - `vendor/` (local, MIT; see `vendor/README.txt`):
   - `html-docx.js`: html-docx-js 0.3.1, DOCX export
@@ -101,7 +102,8 @@ Messages show briefly at the bottom (2.2 s):
 - A module that fails to load is logged in the console and skipped.
 
 ## 7. Screen sizes
-- Desktop: one slim toolbar row; pages at true size, centred.
+- Desktop: a slim 36 px top row (brand, File, tabs, name, theme; 28 px controls) above the ribbon row; pages at true size, centred.
+- Inside the sites hub: the top row is hidden, the hub's title bar shows the tabs and name, and the ribbon sits at the top.
 - Up to 820 px wide: smaller toolbar, the "Draftly" name is hidden, and the toolbar scrolls sideways. Pages are scaled to fit.
 - Popups stay inside the screen and follow their button when the toolbar scrolls.
 
@@ -138,6 +140,7 @@ Messages show briefly at the bottom (2.2 s):
 - Old version after an update: hard-refresh.
 
 ## 11. Change log
+- 2026-10-21 IST: slimmer top row (36 px, 28 px controls, smaller brand); hub bridge `draftly-hub.js` (tabs and title in the hub title bar).
 - 2026-10-04 21:14 IST: fit to screen, slim toolbar, Page popup, cleanup (margins box, status bar and version removed), Cmd keys, icon; hub name "Draftly" (commit 386541e).
 - 2026-10-04 19:01 IST: fixed A4 pages, line-by-line flow, Enter / Shift+Enter, ¶ / ↵ marks, PDF download, offline libraries, Tinos fonts (commit c17c51d).
 - 2026-10-02 19:01 IST: moved to `apps/office/draftly/` (commit 8cb4c69, folder rearrange).

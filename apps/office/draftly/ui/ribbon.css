@@ -8,7 +8,16 @@
 /* ============================================================
    RIBBON — top bar (File, name, tabs) + one row of controls
    ============================================================ */
-.topbar { z-index: 11; }
+.topbar { z-index: 11; height: var(--topbar-h); --ctl-h: var(--topbar-ctl-h); gap: 6px; }
+.topbar .brand { gap: 6px; }
+.topbar .brand-mark { width: 22px; height: 22px; border-radius: 7px; box-shadow: 0 2px 8px rgba(110, 80, 240, 0.3); }
+.topbar .brand-mark svg { width: 14px; height: 14px; }
+.topbar .brand-name { font-size: 13px; }
+.topbar .ribbon-tabs { padding: 2px; }
+.topbar .tool-btn svg { width: 16px; height: 16px; }
+.topbar .file-name { font-size: 12.5px; }
+/* Inside the sites hub the hub's title bar shows the tabs and name (draftly-hub.js). */
+body.in-hub .topbar { display: none; }
 .ribbon { z-index: 10; box-shadow: none; }
 /* Left-aligned bar: logo, File + tabs (equal widths), centred name, theme right */
 .topbar > :first-child, .ribbon > :first-child { margin-left: 0; }
