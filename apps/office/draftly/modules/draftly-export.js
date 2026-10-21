@@ -101,6 +101,37 @@ Draftly.export.printDocument = function printDocument() {
   }, Draftly.config.printCleanupMs);
 };
 
+/* Word header / footer part for one row of slots, or '' when empty.
+   Left / centre / right use a centre and a right tab stop; {page} and
+   {pages} become PAGE / NUMPAGES fields; {date} is today's date. */
+Draftly.export.hfXml = function hfXml(part, isLandscape) {
+  var cfg = Draftly.config;
+  if (!Draftly.hf) return '';
+  var slots = Draftly.hf.data[part];
+  if (!slots.join('').trim()) return '';
+  var ps = cfg.paperSizes[cfg.paperSize] || cfg.paperSizes.A4;
+  var pageW = isLandscape ? ps.docxH : ps.docxW;
+  var textW = pageW - cfg.docxMarginLeft - cfg.docxMarginRight;
+  var esc = function (t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+  var rpr = '<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="20"/></w:rPr>';
+  var run = function (t) { return '<w:r>' + rpr + '<w:t xml:space="preserve">' + esc(t) + '</w:t></w:r>'; };
+  var field = function (instr, shown) { return '<w:fldSimple w:instr="' + instr + '"><w:r>' + rpr + '<w:t>' + shown + '</w:t></w:r></w:fldSimple>'; };
+  var runs = slots.map(function (t, k) {
+    var out = k ? '<w:r>' + rpr + '<w:tab/></w:r>' : '';
+    String(t).replace(/\{date\}/g, Draftly.hf.today()).split(/(\{page\}|\{pages\})/).forEach(function (bit) {
+      if (bit === '{page}') out += field('PAGE', '1');
+      else if (bit === '{pages}') out += field('NUMPAGES', '1');
+      else if (bit) out += run(bit);
+    });
+    return out;
+  }).join('');
+  var tag = part === 'head' ? 'hdr' : 'ftr';
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:' + tag + ' xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    '<w:p><w:pPr><w:tabs><w:tab w:val="center" w:pos="' + Math.round(textW / 2) + '"/><w:tab w:val="right" w:pos="' + textW + '"/></w:tabs>' +
+    '<w:spacing w:before="0" w:after="0"/></w:pPr>' + runs + '</w:p></w:' + tag + '>';
+};
+
 /* Build a DOCX blob from the joined HTML and download it. */
 Draftly.export.exportDocx = function exportDocx() {
   var cfg = Draftly.config;
@@ -127,8 +158,12 @@ Draftly.export.exportDocx = function exportDocx() {
         top: cfg.docxMarginTop,
         right: cfg.docxMarginRight,
         bottom: cfg.docxMarginBottom,
-        left: cfg.docxMarginLeft
-      }
+        left: cfg.docxMarginLeft,
+        header: Math.round(cfg.marginTopCm * 0.4 * 567),
+        footer: Math.round(cfg.marginBottomCm * 0.4 * 567)
+      },
+      headerXml: Draftly.export.hfXml('head', isLandscape),
+      footerXml: Draftly.export.hfXml('foot', isLandscape)
     });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');

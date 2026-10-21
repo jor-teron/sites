@@ -106,9 +106,9 @@ Draftly.ui.setOrientation = function setOrientation(mode) {
 };
 
 /* Set paper size and margin preset, store, reflow. */
-Draftly.ui.setPage = function setPage(size, margins) {
+Draftly.ui.setPage = function setPage(size, margins, custom) {
   var cfg = Draftly.config;
-  cfg.setPage(size, margins);
+  cfg.setPage(size, margins, custom);
   if (Draftly.storage) Draftly.storage.savePage(cfg.paperSize, cfg.marginPreset);
   if (Draftly.view) { Draftly.view.fit(); Draftly.view.syncPagePanel(); }
   if (Draftly.pages && Draftly.app && Draftly.app.ready) Draftly.pages.layoutAll();

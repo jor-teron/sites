@@ -101,6 +101,11 @@ Draftly.view.syncPagePanel = function syncPagePanel() {
     opts[j].classList.toggle('active', hit);
     opts[j].setAttribute('aria-pressed', hit ? 'true' : 'false');
   }
+  var cm = document.getElementById('customMarginsBtn');
+  if (cm) {
+    cm.classList.toggle('active', cfg.marginPreset === 'custom');
+    cm.setAttribute('aria-pressed', cfg.marginPreset === 'custom' ? 'true' : 'false');
+  }
   var sl = document.getElementById('paperSizeLabel');
   if (sl) sl.textContent = cfg.pageSizeName;
   for (var i = 0; i < btns.length; i++) {
@@ -146,7 +151,7 @@ Draftly.view.init = function init() {
       var cfg = Draftly.config;
       var b = e.currentTarget;
       Draftly.ui.setPage(b.getAttribute('data-size') || cfg.paperSize, b.getAttribute('data-margins') || cfg.marginPreset);
-      Draftly.ui.showToast('Page: ' + cfg.pageSizeName + ', ' + cfg.marginPresets[cfg.marginPreset].label + ' margins');
+      Draftly.ui.showToast('Page: ' + cfg.pageSizeName + ', ' + cfg.marginLabel() + ' margins');
     });
   }
   var btns = document.querySelectorAll('#pagePanel .seg-btn[data-orient]');

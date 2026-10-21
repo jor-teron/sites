@@ -35,6 +35,8 @@
   <link rel="stylesheet" href="ui/statusbar.css?v=7">
   <link rel="stylesheet" href="ui/table.css?v=7">
   <link rel="stylesheet" href="ui/format.css?v=7">
+  <link rel="stylesheet" href="ui/headerfooter.css?v=1">
+  <link rel="stylesheet" href="ui/margins.css?v=1">
 </head>
 <body>
 
@@ -73,6 +75,22 @@
       <div class="file-sep" role="separator"></div>
       <button type="button" class="file-item file-recent-head" role="menuitem" id="recentBtn" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Recent</span></button>
       <div class="recent-menu recent-inline" id="recentMenu" hidden></div>
+  </div>
+
+  <!-- Custom margins dialog -->
+  <div class="pop-menu margin-dialog" id="marginDialog" role="dialog" aria-label="Custom margins" hidden>
+    <div class="md-title">Custom margins (cm)</div>
+    <div class="md-grid">
+      <label>Top <input type="number" id="mTop" min="0.5" max="5" step="0.1"></label>
+      <label>Bottom <input type="number" id="mBottom" min="0.5" max="5" step="0.1"></label>
+      <label>Left <input type="number" id="mLeft" min="0.5" max="5" step="0.1"></label>
+      <label>Right <input type="number" id="mRight" min="0.5" max="5" step="0.1"></label>
+    </div>
+    <label class="md-same"><input type="checkbox" id="mSame"> Same for all</label>
+    <div class="md-actions">
+      <button type="button" class="find-text-btn" id="mCancel">Cancel</button>
+      <button type="button" class="find-text-btn md-apply" id="mApply">Apply</button>
+    </div>
   </div>
 
   <!-- FT3 colour palettes -->
@@ -162,6 +180,13 @@
       <div class="tool-group">
         <button class="tool-btn labeled" id="pageBreakBtn" title="Page break (Ctrl/⌘+Enter)" aria-label="Insert page break"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v6h12V3"/><path d="M6 21v-6h12v6"/><path d="M3 12h3M9 12h2M13 12h2M18 12h3"/></svg><span>Page break</span></button>
         <button class="tool-btn labeled" id="tableBtn" title="Insert table" aria-label="Insert table" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 4.5v15M14.5 4.5v15"/></svg><span>Table</span></button>
+        <button class="tool-btn labeled" id="hfBtn" title="Header &amp; Footer (or double-click the top / bottom margin)" aria-label="Header and footer" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="1"/><path d="M8 7h8M8 17h8"/></svg><span>Header &amp; Footer</span></button>
+      </div>
+      <div class="tool-group hf-tools" id="hfTools" hidden>
+        <button class="tool-btn labeled" data-hf-field="{page}" title="Insert page number"><span>Page #</span></button>
+        <button class="tool-btn labeled" data-hf-field="of {pages}" title="Insert total pages"><span>of Pages</span></button>
+        <button class="tool-btn labeled" data-hf-field="{date}" title="Insert today&#39;s date"><span>Date</span></button>
+        <button class="tool-btn labeled" id="hfCloseBtn" title="Close header &amp; footer (Esc)"><span>Close</span></button>
       </div>
       <div class="tool-group table-tools" id="tableTools" hidden>
         <button class="tool-btn labeled" data-tbl="rowAbove" title="Insert row above"><span>Row above</span></button>
@@ -187,6 +212,7 @@
       <div class="seg" role="group" aria-label="Margins">
         <button type="button" class="seg-btn" data-margins="normal"><span>Normal</span></button>
         <button type="button" class="seg-btn" data-margins="narrow"><span>Narrow</span></button>
+        <button type="button" class="seg-btn" id="customMarginsBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="marginDialog" aria-pressed="false"><span>Custom…</span></button>
       </div>
       <div class="seg" role="group" aria-label="Page numbers">
         <button type="button" class="seg-btn" data-pn="off"><span>No numbers</span></button>
@@ -285,9 +311,11 @@
   <script src="modules/draftly-table.js"></script>
   <script src="modules/draftly-spacing.js"></script>
   <script src="modules/draftly-zoom.js"></script>
+  <script src="modules/draftly-headerfooter.js"></script>
+  <script src="modules/draftly-margins.js"></script>
   <script src="modules/draftly-docs.js"></script>
   <script src="modules/draftly-format.js"></script>
   <script src="modules/draftly-ribbon.js?v=4"></script>
-  <script src="modules/draftly-app.js?v=6"></script>
+  <script src="modules/draftly-app.js?v=7"></script>
 </body>
 </html>

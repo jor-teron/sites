@@ -109,7 +109,7 @@ Draftly.storage.save = function save() {
       var tx = db.transaction(cfg.storeName, 'readwrite');
       var store = tx.objectStore(cfg.storeName);
       var old = Draftly.storage.loadedName;
-      store.put({ name: name, html: html, updated: Date.now() });
+      store.put({ name: name, html: html, hf: Draftly.hf ? Draftly.hf.get() : undefined, updated: Date.now() });
       if (old && old !== name) store.delete(old);
       tx.oncomplete = function () {
         if (old && old !== name) {
@@ -132,7 +132,8 @@ Draftly.storage.writeBackup = function writeBackup() {
   if (Draftly.editor) Draftly.editor.stripMarks(holder);
   try {
     localStorage.setItem(Draftly.config.storageKeyBackup, JSON.stringify({
-      name: Draftly.storage.fillNameIfEmpty(), html: holder.innerHTML, time: Date.now()
+      name: Draftly.storage.fillNameIfEmpty(), html: holder.innerHTML,
+      hf: Draftly.hf ? Draftly.hf.get() : undefined, time: Date.now()
     }));
   } catch (e) {}
 };
@@ -211,8 +212,11 @@ Draftly.storage.loadPage = function loadPage() {
     var s = localStorage.getItem(cfg.storageKeyPaperSize);
     var m = localStorage.getItem(cfg.storageKeyMarginPreset);
     if (cfg.paperSizes[s]) out.size = s;
-    if (cfg.marginPresets[m]) out.margins = m;
+    if (cfg.marginPresets[m] || m === 'custom') out.margins = m;
+    var c = JSON.parse(localStorage.getItem(cfg.storageKeyMarginCustom) || 'null');
+    if (c) out.custom = cfg.clampMargins(c);
   } catch (e) {}
+  if (out.margins === 'custom' && !out.custom) out.margins = cfg.defaultMarginPreset;
   return out;
 };
 
@@ -222,6 +226,7 @@ Draftly.storage.savePage = function savePage(size, margins) {
   try {
     localStorage.setItem(cfg.storageKeyPaperSize, size);
     localStorage.setItem(cfg.storageKeyMarginPreset, margins);
+    if (margins === 'custom') localStorage.setItem(cfg.storageKeyMarginCustom, JSON.stringify(cfg.marginCustom));
   } catch (e) {}
 };
 
