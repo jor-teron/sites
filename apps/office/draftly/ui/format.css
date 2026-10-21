@@ -1,0 +1,12 @@
+/* ============================================================
+   FILE: ui/format.css
+   PROJECT: Draftly
+   ROLE: Selection on paper, strike / super / sub.
+   ORDER: linked from draftly.html; cascade order matters.
+   ============================================================ */
+
+/* ----- Paper selection stays readable on white in both themes ----- */
+.paper ::selection { background: #b4d2ff; color: inherit; }
+
+/* ----- Strike / super / sub ----- */
+.editor sup, .editor sub { font-size: 0.75em; line-height: 0; }

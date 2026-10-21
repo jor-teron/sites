@@ -190,3 +190,32 @@ Draftly.editor.onPaste = function onPaste(e) {
   Draftly.editor.saveSelection();
   if (Draftly.pages) Draftly.pages.checkPagination();
 };
+
+/* Enter / Shift+Enter, paste and focus from every page editor. */
+Draftly.editor.bind = function bind() {
+  var cfg = Draftly.config;
+  /* Enter = new <p>, Shift+Enter = <br> line break. */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+    if (!Draftly.editor.isInEditor(e.target)) return;
+    e.preventDefault();
+    if (e.shiftKey) Draftly.editor.insertLineBreak();
+    else Draftly.editor.execCmd('insertParagraph');
+  });
+  /* Toolbar buttons never steal the caret. */
+  document.querySelectorAll('.tool-btn').forEach(function (btn) {
+    btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+  });
+  var workspace = document.getElementById('workspace');
+  if (workspace) {
+    workspace.addEventListener('paste', function (e) {
+      if (!Draftly.editor.isInEditor(e.target)) return;
+      Draftly.editor.onPaste(e);
+    });
+    workspace.addEventListener('focusin', function (e) {
+      if (e.target && e.target.classList && e.target.classList.contains(cfg.editorClass)) {
+        Draftly.editor.activeEditor = e.target;
+      }
+    });
+  }
+};

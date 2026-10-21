@@ -1,0 +1,45 @@
+/* ============================================================
+   FILE: ui/marks.css
+   PROJECT: Draftly
+   ROLE: Non-printing marks overlay.
+   ORDER: linked from draftly.html; cascade order matters.
+   ============================================================ */
+
+/* ============================================================
+   NON-PRINTING CHARACTERS — shown at END of lines/paragraphs
+   ============================================================ */
+/* Marks are drawn on an overlay (.np-layer, draftly-marks.js). They are never
+   part of the document: not saved, printed or exported. */
+.np-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+.np-glyph {
+  position: absolute;
+  color: var(--nonprint-color);
+  font-family: var(--font-family);
+  font-size: calc(var(--font-size-pt) * 0.85pt);
+  white-space: pre;
+  user-select: none;
+}
+/* Legacy inline marks from old saves (stripped on load). */
+.np-mark { display: none; }
+
+/* Numbered lists. Suffix is painted, not typed. */
+.editor ol[data-style] { list-style: none; padding-left: 1.6em; }
+.editor ol[data-style] > li { counter-increment: item; }
+.editor ol[data-style="1"] { counter-reset: item; }
+.editor ol[data-style="a"] { counter-reset: item; }
+.editor ol[data-style="A"] { counter-reset: item; }
+.editor ol[data-style="1"][data-suffix="."] > li::before { content: counter(item) ". "; }
+.editor ol[data-style="1"][data-suffix=","] > li::before { content: counter(item) ", "; }
+.editor ol[data-style="1"][data-suffix=")"] > li::before { content: counter(item) ") "; }
+.editor ol[data-style="1"][data-suffix="none"] > li::before { content: counter(item) " "; }
+.editor ol[data-style="a"][data-suffix="."] > li::before { content: counter(item, lower-alpha) ". "; }
+.editor ol[data-style="a"][data-suffix=","] > li::before { content: counter(item, lower-alpha) ", "; }
+.editor ol[data-style="a"][data-suffix=")"] > li::before { content: counter(item, lower-alpha) ") "; }
+.editor ol[data-style="a"][data-suffix="none"] > li::before { content: counter(item, lower-alpha) " "; }
+.editor ol[data-style="A"][data-suffix="."] > li::before { content: counter(item, upper-alpha) ". "; }

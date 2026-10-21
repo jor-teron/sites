@@ -3,7 +3,7 @@
   ============================================================
   FILE: draftly.html
   PROJECT: Draftly
-  ROLE: Shell only. Styles live in draftly.css.
+  ROLE: Shell only. Styles live in ui/*.css.
         Behavior lives in modules/. This file does not
         contain magic numbers or editor logic.
   LOAD ORDER: vendor libs (html-docx, jspdf, html2canvas; all local, works
@@ -18,7 +18,23 @@
   <title>Draftly</title>
   <meta name="theme-color" content="#5b5bf0">
   <link rel="icon" href="draftly_icon.png">
-  <link rel="stylesheet" href="draftly.css?v=6">
+  <link rel="stylesheet" href="ui/fonts.css?v=7">
+  <link rel="stylesheet" href="ui/theme.css?v=7">
+  <link rel="stylesheet" href="ui/base.css?v=7">
+  <link rel="stylesheet" href="ui/toolbar.css?v=7">
+  <link rel="stylesheet" href="ui/popups.css?v=7">
+  <link rel="stylesheet" href="ui/workspace.css?v=7">
+  <link rel="stylesheet" href="ui/ribbon.css?v=7">
+  <link rel="stylesheet" href="ui/page.css?v=7">
+  <link rel="stylesheet" href="ui/editor.css?v=7">
+  <link rel="stylesheet" href="ui/marks.css?v=7">
+  <link rel="stylesheet" href="ui/toast.css?v=7">
+  <link rel="stylesheet" href="ui/print.css?v=7">
+  <link rel="stylesheet" href="ui/colour.css?v=7">
+  <link rel="stylesheet" href="ui/find.css?v=7">
+  <link rel="stylesheet" href="ui/statusbar.css?v=7">
+  <link rel="stylesheet" href="ui/table.css?v=7">
+  <link rel="stylesheet" href="ui/format.css?v=7">
 </head>
 <body>
 
@@ -255,6 +271,7 @@
   <script src="modules/draftly-editor.js"></script>
   <script src="modules/draftly-pages.js"></script>
   <script src="modules/draftly-flow.js"></script>
+  <script src="modules/draftly-flow-blocks.js"></script>
   <script src="modules/draftly-marks.js"></script>
   <script src="modules/draftly-export.js"></script>
   <script src="modules/draftly-pdf.js"></script>
@@ -263,11 +280,14 @@
   <script src="modules/draftly-history.js"></script>
   <script src="modules/draftly-breaks.js"></script>
   <script src="modules/draftly-colour.js"></script>
+  <script src="modules/draftly-wordcount.js"></script>
   <script src="modules/draftly-find.js"></script>
   <script src="modules/draftly-table.js"></script>
   <script src="modules/draftly-spacing.js"></script>
   <script src="modules/draftly-zoom.js"></script>
-  <script src="modules/draftly-ribbon.js?v=3"></script>
-  <script src="modules/draftly-app.js?v=5"></script>
+  <script src="modules/draftly-docs.js"></script>
+  <script src="modules/draftly-format.js"></script>
+  <script src="modules/draftly-ribbon.js?v=4"></script>
+  <script src="modules/draftly-app.js?v=6"></script>
 </body>
 </html>

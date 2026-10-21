@@ -1,0 +1,43 @@
+/* ============================================================
+   FILE: ui/editor.css
+   PROJECT: Draftly
+   ROLE: Contenteditable editor inside each paper.
+   ORDER: linked from draftly.html; cascade order matters.
+   ============================================================ */
+
+/* ============================================================
+   EDITOR — contenteditable inside paper
+   Class .editor is used so each page can have its own node
+   without duplicating an id.
+   ============================================================ */
+.editor {
+  width: 100%;
+  height: 100%;                 /* the page content box; draftly-flow.js moves overflow on */
+  overflow: hidden;
+  position: relative;           /* offsetTop of blocks is measured from here */
+  outline: none;
+  font-family: var(--font-family);
+  font-size: calc(var(--font-size-pt) * 1pt);
+  line-height: var(--line-height);
+  color: var(--text-primary);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  caret-color: var(--text-primary);
+}
+
+/* Keep the stack when the editor stamps Times New Roman on a run.
+   If that face is missing, Tinos (embedded) is used. */
+.editor font[face="Times New Roman"],
+.editor span[style*="Times New Roman"] {
+  font-family: var(--font-family);
+}
+
+/* Paragraph spacing: same value on screen, print, DOCX and PDF. */
+.editor p { margin: 0 0 var(--para-space); }
+
+.editor:empty:before {
+  content: attr(data-placeholder);
+  color: var(--placeholder);
+  font-style: italic;
+  pointer-events: none;
+}

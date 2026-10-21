@@ -1,0 +1,26 @@
+/* ============================================================
+   FILE: ui/statusbar.css
+   PROJECT: Draftly
+   ROLE: FT4 status bar, word count, zoom control.
+   ORDER: linked from draftly.html; cascade order matters.
+   ============================================================ */
+
+.status-bar {
+  display: flex; align-items: center; gap: 14px; flex-shrink: 0;
+  height: 26px; padding: 0 14px; font-size: 12px;
+  background: var(--bg-toolbar); color: var(--text-secondary);
+  border-top: 1px solid var(--border-light);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.status-btn { border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+.status-btn:hover { background: var(--bg-group); color: var(--text-primary); }
+.wc-pop { min-width: 230px; padding: 10px 12px; font-size: 13px; }
+.wc-title { font-weight: 600; margin-bottom: 6px; }
+.wc-row { display: flex; justify-content: space-between; gap: 16px; padding: 3px 0; }
+@media print { .find-bar, .status-bar, .wc-pop { display: none !important; } }
+.status-bar[hidden] { display: none; }
+
+/* ----- Zoom control (status bar) ----- */
+.zoom-ctl { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; }
+.zoom-btn { min-width: 22px; font-size: 14px; line-height: 1; }
+.zoom-pct { min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; }

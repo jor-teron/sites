@@ -1,0 +1,82 @@
+/* ============================================================
+   FILE: ui/page.css
+   PROJECT: Draftly
+   ROLE: Paper cards, page numbers and manual page breaks.
+   ORDER: linked from draftly.html; cascade order matters.
+   ============================================================ */
+
+/* ============================================================
+   PAPER (A4) — dynamically sized via CSS variables
+   ============================================================ */
+.paper {
+  /* The sheet is always white paper with black ink, in both themes. */
+  --bg-paper: #ffffff;
+  --text-primary: #000000;
+  --placeholder: #a2a8c0;
+  --nonprint-color: #9a9a9a;
+  --text-muted: #666666;
+  color-scheme: light;
+  width: calc(var(--paper-width-cm) * 1cm);
+  height: calc(var(--paper-height-cm) * 1cm);   /* fixed A4: content never stretches it */
+  overflow: hidden;
+  background: var(--bg-paper);
+  box-shadow: var(--paper-shadow);
+  border-radius: 3px;
+  padding-top: calc(var(--margin-top-cm) * 1cm);
+  padding-bottom: calc(var(--margin-bottom-cm) * 1cm);
+  padding-left: calc(var(--margin-left-cm) * 1cm);
+  padding-right: calc(var(--margin-right-cm) * 1cm);
+  transition: background 0.2s, box-shadow 0.2s;   /* no size transitions: flow measures at once */
+  position: relative;
+  flex-shrink: 0;
+}
+
+body.landscape .paper {
+  width: calc(var(--paper-height-cm) * 1cm);
+  height: calc(var(--paper-width-cm) * 1cm);
+}
+
+.paper::after {
+  content: none;
+}
+
+/* Page numbers (Page popup): decoration in the bottom margin, never content. */
+.paper .page-number { display: none; }
+body.pn-on .paper .page-number {
+  display: block;
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(var(--margin-bottom-cm) * 0.4cm);
+  padding: 0 calc(var(--margin-right-cm) * 1cm) 0 calc(var(--margin-left-cm) * 1cm);
+  text-align: center;
+  font-family: var(--font-family);
+  font-size: 10pt;
+  line-height: 1;
+  color: var(--text-muted, #666);
+  user-select: none;
+  pointer-events: none;
+}
+body.pn-on.pn-right .paper .page-number { text-align: right; }
+
+/* Manual page break: faint dashed line, labelled when format marks are on. */
+.editor .dr-pagebreak {
+  position: relative;
+  height: 1em;
+  margin: 0.3em 0;
+  border-top: 1px dashed var(--nonprint-color);
+  opacity: 0.45;
+  cursor: default;
+  user-select: none;
+}
+.editor.show-nonprinting .dr-pagebreak { opacity: 1; }
+.editor.show-nonprinting .dr-pagebreak::after {
+  content: attr(data-label);
+  position: absolute;
+  top: -0.65em;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 0.5em;
+  background: var(--bg-paper);
+  color: var(--nonprint-color);
+  font: 8pt/1.2 system-ui, sans-serif;
+}

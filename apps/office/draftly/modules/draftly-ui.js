@@ -166,3 +166,27 @@ Draftly.ui.syncFontSelects = function syncFontSelects() {
     if (best !== null) sizeSelect.value = best;
   }
 };
+
+/* Bind one click that does not steal the caret. */
+Draftly.ui.onClick = function onClick(id, fn) {
+  var node = document.getElementById(id);
+  if (!node) return;
+  node.addEventListener('mousedown', function (e) { e.preventDefault(); });
+  node.addEventListener('click', function (e) {
+    e.preventDefault();
+    try { fn(e); } catch (err) { console.warn('draftly: ' + id, err); }
+  });
+};
+
+/* Theme and format-marks buttons; redraw marks on resize. */
+Draftly.ui.bind = function bind() {
+  Draftly.ui.onClick('themeToggleBtn', function () { Draftly.ui.toggleTheme(); });
+  Draftly.ui.onClick('nonPrintingBtn', function () { Draftly.ui.toggleNonPrinting(); });
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      if (Draftly.marks) Draftly.marks.redraw();
+    }, Draftly.config.resizeDebounceMs);
+  });
+};
