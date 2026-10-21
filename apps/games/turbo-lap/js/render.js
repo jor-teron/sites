@@ -63,7 +63,7 @@ window.TL = window.TL || {};
     const a = seg.p1.screen, b = seg.p2.screen, c = seg.color;
     const x1 = a.x, y1 = a.y, w1 = a.w, x2 = b.x, y2 = b.y, w2 = b.w;
     const r1 = w1 / Math.max(6, 2 * CFG.lanes), r2 = w2 / Math.max(6, 2 * CFG.lanes);
-    ctx.fillStyle = c.grass; ctx.fillRect(0, y2, W, y1 - y2 + 1);
+    ctx.fillStyle = c.grass; ctx.fillRect(0, y2, W, y1 - y2);
     poly(ctx, x1 - w1 - r1, y1, x1 - w1, y1, x2 - w2, y2, x2 - w2 - r2, y2, c.rumble);
     poly(ctx, x1 + w1 + r1, y1, x1 + w1, y1, x2 + w2, y2, x2 + w2 + r2, y2, c.rumble);
     poly(ctx, x1 - w1, y1, x1 + w1, y1, x2 + w2, y2, x2 - w2, y2, c.road);

@@ -4,10 +4,53 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Turbo Lap</title>
+<link rel="icon" href="turbo-lap_icon.png">
 <link rel="stylesheet" href="css/turbo-lap.css" />
 </head>
 <body>
 <canvas id="game"></canvas>
+
+<div id="overlay">
+  <div id="panel-title" class="card">
+    <h1>TURBO <span>LAP</span></h1>
+    <p class="tag">2 laps · 5 cars · you start last. Finish first!</p>
+    <table class="keys">
+      <tr><td><kbd>↑</kbd> <kbd>W</kbd></td><td>Accelerate</td><td><kbd>←</kbd><kbd>→</kbd> <kbd>A</kbd><kbd>D</kbd></td><td>Steer</td></tr>
+      <tr><td><kbd>↓</kbd> <kbd>S</kbd></td><td>Brake</td><td><kbd>Space</kbd> <kbd>Shift</kbd></td><td>Nitro</td></tr>
+      <tr><td><kbd>P</kbd> <kbd>Esc</kbd></td><td>Pause</td><td><kbd>F</kbd></td><td>30/60 FPS</td></tr>
+    </table>
+    <p class="pad">🎮 Gamepad: stick/D-pad steer · A/RT gas · B/LT brake · X nitro · Start pause</p>
+    <p class="hint">Grass slows you down. Bumping other cars costs speed. Take hard bends off the gas.</p>
+    <p id="titleBest" class="best"></p>
+    <div class="row">
+      <button id="startBtn" class="primary">Start Race <small>Enter</small></button>
+      <button id="fpsBtn">FPS: 30</button>
+    </div>
+  </div>
+  <div id="panel-pause" class="card hidden">
+    <h2>Paused</h2>
+    <div class="row">
+      <button id="resumeBtn" class="primary">Resume <small>Enter / P</small></button>
+      <button id="pauseRestartBtn">Restart</button>
+      <button id="pauseTitleBtn">Title <small>T</small></button>
+    </div>
+  </div>
+  <div id="panel-finish" class="card hidden">
+    <h2>Race Finished</h2>
+    <div id="finPos" class="pos">1st</div>
+    <table class="results">
+      <tr><td>Total time</td><td id="finTotal"></td></tr>
+      <tr><td>Best lap</td><td id="finLap"></td></tr>
+    </table>
+    <p id="finLaps" class="small"></p>
+    <p id="finRecord" class="small"></p>
+    <div class="row">
+      <button id="restartBtn" class="primary">Race Again <small>Enter</small></button>
+      <button id="titleBtn">Title <small>T</small></button>
+    </div>
+  </div>
+</div>
+
 <script src="js/config.js"></script>
 <script src="js/track.js"></script>
 <script src="js/road.js"></script>
@@ -15,6 +58,7 @@
 <script src="js/opponents.js"></script>
 <script src="js/sprites.js"></script>
 <script src="js/render.js"></script>
+<script src="js/hud.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/input.js"></script>
 <script src="js/game.js"></script>
