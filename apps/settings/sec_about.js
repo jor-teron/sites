@@ -1,13 +1,14 @@
 /*
  * Settings → About (apps/settings/sec_about.js). A plain About page: what the Hub is,
- * Credit, Current release (line 2 'YYYY-MM-DD' of hub/version.txt; '—' when it can't be read),
+ * Credit, Current release ('Release R43 · 2026-10-21 IST' from lines 3-4 of hub/build.txt, read at
+ * runtime with no-cache; falls back to the hub/version.txt date, then '—'),
  * the first Release date, and a real
- * "Check for update". Inside the Hub that uses the Hub's own updater (HubUpdate.check in
+ * "Update" button. Inside the Hub that uses the Hub's own updater (HubUpdate.check in
  * hub/update/hub_update.js: clears the hub-shell caches and reloads the Hub when a newer build is
  * live); opened on its own it reads the live hub.html / version.txt and updates the service
  * worker itself. Contact / Feedback link to the public GitHub repo (no other contact details).
  * R16c: "Last refreshed" (localStorage 'sites-hub.lastRefresh', the Hub's daily 09:00 refresh) and
- * "Clear cache now" (confirm → HubUpdate.clearCache(): Hub caches + cached Start list, reload).
+ * "Clear Cache" (confirm → HubUpdate.clearCache(): Hub caches + cached Start list, reload).
  * The technical notes that used to be here live in How-to (sec_howto.js).
  * R41: the Hub version label is not shown anywhere (Jor's request); only the release date is.
  */
@@ -29,6 +30,18 @@
     return fetch(ROOT + 'hub/version.txt', { cache: mode || 'no-cache' })
       .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
       .then(parseVersion).catch(() => ({ version: '', date: '' }));
+  }
+  /** hub/build.txt → 'Release R43 · 2026-10-21 IST' (line 3 release, line 4 date), or '' when unreadable. */
+  function readBuild() {
+    return fetch(ROOT + 'hub/build.txt', { cache: 'no-cache' })
+      .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then((text) => {
+        const l = String(text).split(/\r?\n/).map((x) => x.trim());
+        const rel = /^R\w+$/.test(l[2] || '') ? l[2] : '';
+        const date = /^\d{4}-\d{2}-\d{2}/.test(l[3] || '') ? l[3] : '';
+        if (!rel && !date) return '';
+        return [rel ? 'Release ' + rel : '', date].filter(Boolean).join(' \u00b7 ');
+      }).catch(() => '');
   }
   /** '2026-10-19' → '19 Oct 2026' ('—' when blank). */
   function niceDate(iso) {
@@ -120,14 +133,14 @@
       const head = ui.el('div', 'ver-head');
       const img = document.createElement('img'); img.src = 'settings_icon.png'; img.alt = '';
       const txt = ui.el('div');
-      txt.append(ui.el('b', 'ver-num', 'Sites Hub'), ui.el('small', '', 'A web desktop for Jor\u2019s apps'));
+      txt.append(ui.el('b', 'ver-num', 'Hub'), ui.el('small', '', 'A web desktop for your apps'));
       head.append(img, txt);
       card.append(head, ui.el('p', 'about-blurb',
-        'Sites Hub is a small desktop that runs in your browser. It opens Jor\u2019s games, tools and ' +
+        'Hub is a small desktop that runs in your browser. It opens games, tools and ' +
         'lab experiments from one place, on GitHub Pages \u2014 nothing to install.'));
       const curRow = row('Current release', '\u2026');
       card.append(row('Credit', 'Jor Teron'), row('Release date', FIRST_RELEASE), curRow);
-      const btn = ui.el('button', 'big-btn', 'Check for update');
+      const btn = ui.el('button', 'big-btn', 'Update');
       btn.type = 'button';
       const out = ui.el('p', 'upd-out', '');
       out.setAttribute('aria-live', 'polite');
@@ -136,7 +149,7 @@
       let last = 0;
       try { last = +localStorage.getItem('sites-hub.lastRefresh') || 0; } catch (_) { /* blocked */ }
       card.appendChild(row('Last refreshed', niceTime(last)));
-      const clr = ui.el('button', 'big-btn', 'Clear cache now');
+      const clr = ui.el('button', 'big-btn', 'Clear Cache');
       clr.type = 'button';
       clr.id = 'clear-cache';
       clr.addEventListener('click', () => clearCache(clr));
@@ -146,8 +159,9 @@
 
       const hub = S.hub();
       const vp = hub && hub.HubUpdate && hub.HubUpdate.version ? hub.HubUpdate.version() : readVersion();
-      Promise.resolve(vp).then((v) => {
-        curRow.lastChild.textContent = niceDate(v.date);
+      readBuild().then((rel) => {
+        if (rel) { curRow.lastChild.textContent = rel; return; }
+        return Promise.resolve(vp).then((v) => { curRow.lastChild.textContent = niceDate(v.date); });
       }).catch(() => { curRow.lastChild.textContent = '\u2014'; });
 
       const contact = ui.el('section', 'card');
