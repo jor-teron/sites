@@ -112,3 +112,11 @@ html, body {
     border: 2px solid #c8a46a; background: rgba(20,16,10,0.8); color: #f0d9a0; cursor: pointer; touch-action: manipulation; }
 #pause-speed { color: #f0d9a0; font-size: 14px; margin: 0 0 10px; }
 #topbar { max-width: calc(100% - 150px); }
+
+/* In-game confirm box (replaces the browser confirm for Restart); sits above the map picker */
+#confirm-overlay { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(10,8,4,0.55); }
+#confirm-overlay > div { text-align: center; background: rgba(20,16,10,0.96); border: 2px solid #c8a46a; border-radius: 12px; padding: 18px 28px; max-width: 86vw; }
+#confirm-overlay h2 { margin: 0 0 8px; color: #f0d9a0; font-size: 22px; }
+#confirm-overlay p { color: #ddd; font-size: 15px; margin: 0 0 16px; }
+#confirm-overlay button { touch-action: manipulation; font-size: 18px; padding: 8px 20px; background: #5a4426; color: #fff; border: 2px solid #c8a46a; border-radius: 8px; cursor: pointer; }
+#confirm-overlay #confirm-ok { background: #7a2e1e; }

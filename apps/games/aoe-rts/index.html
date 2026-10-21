@@ -6,7 +6,7 @@
     <title>AOE RTS - Tiny Slice</title>
     <!-- Project CSS -->
     <link rel="icon" href="aoe-rts_icon.png">
-    <link rel="stylesheet" href="aoe-rts.css">
+    <link rel="stylesheet" href="css/aoe-rts.css">
 </head>
 <body>
     <!-- Main game container -->
@@ -26,13 +26,34 @@
         <div class="picker-row"><button id="map-resume-btn">▶ Resume</button><button id="map-restart-btn">↺ Restart</button><button id="map-random-btn">🎲 Random</button></div>
         <button id="picker-cancel">Back</button>
         <p>Type 00-99 · same number = same map · 00 is a small demo · each map keeps its own save (this browser)</p></div></div>
+    <!-- In-game confirm box (Restart) -->
+    <div id="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-msg"><div><h2>Are you sure?</h2><p id="confirm-msg"></p>
+        <div class="picker-row"><button id="confirm-ok">↺ Restart</button><button id="confirm-cancel">Cancel</button></div></div></div>
     <!-- Mute toggle -->
     <button id="mute-btn" aria-label="Mute">🔊</button>
     <!-- Phaser library from local vendor folder -->
     <script src="vendor/phaser.min.js"></script>
-    <!-- Main game script -->
-    <script src="aoe-rts_audio.js"></script>
-    <script src="aoe-rts_art.js"></script>
-    <script src="aoe-rts.js"></script>
+    <!-- Game scripts (plain script tags, order matters) -->
+    <script src="core/config.js"></script>
+    <script src="core/state.js"></script>
+    <script src="assets/maps/mapgen.js"></script>
+    <script src="assets/maps/water.js"></script>
+    <script src="assets/maps/resources.js"></script>
+    <script src="core/pathfind.js"></script>
+    <script src="core/units.js"></script>
+    <script src="core/gather.js"></script>
+    <script src="core/buildings.js"></script>
+    <script src="core/render.js"></script>
+    <script src="core/input.js"></script>
+    <script src="core/debug.js"></script>
+    <script src="core/audio.js"></script>
+    <script src="core/save.js"></script>
+    <script src="core/hud.js"></script>
+    <script src="assets/models/art.js"></script>
+    <script src="assets/models/villager.js"></script>
+    <script src="assets/models/animals.js"></script>
+    <script src="assets/models/nature.js"></script>
+    <script src="assets/models/buildings.js"></script>
+    <script src="core/main.js"></script>
 </body>
 </html>
