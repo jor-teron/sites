@@ -15,6 +15,7 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
   - `tv_ui.js` → `TV.ui`: channel grid, highlight, number display, grid show / auto-hide, `columns()` (columns actually rendered), `toast(msg)`
   - `tv_input.js` → `TV.input`: keys, grid-aware arrow math (`move`), number zap, click / tap shows the grid
   - `tv_pip.js` → `TV.pip`: auto picture-in-picture
+  - `tv_import.js` → `TV['import']` (TV7): Import panel (file / drop / URL), saves the imported playlist in IndexedDB, registers the `import` list with `TV.playlist.registerSource` and the `import` action in `TV.actions`, `#import` deep link
   - `tv_app.js` → `TV.app`: activate a tile, Hub link (`linkHref`), saved channel (+ old-key migration), start-up. Loaded last
 - `vendor/hls/`: hls.js 1.5.20 (+ LICENSE.md); `image/no_signal.svg`: the poster
 - `tv_icon.png`: hub icon
@@ -51,8 +52,10 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
 
 ## 3. Behaviour rules (v1, the main player)
 - **Start:** resumes the last channel (category + name / URL / position from localStorage); otherwise opens the Home playlist (`channels/home.m3u`) and plays its first channel.
-- **Grid:** channel tiles (number, logo, name, group) over the video, 3–4 columns. Home starts with tiles: **Hub** (link to `../`), **Kids**, **More**, then its channels. More starts with **India**, then **Home**, then its channels (TV6: India moved off Home). Kids and India start with a **Home** tile. On file:// the Hub tile opens `../index.html` (not a folder listing). Inside an iframe (the Hub) the Hub tile is hidden, because the hub bridge has no "go home" message and navigating the frame would open a hub inside the hub. The grid hides 5 s after the last action; any key or click shows it again.
+- **Grid:** channel tiles (number, logo, name, group) over the video, 3–4 columns. Home starts with tiles: **Hub** (link to `../`), **Kids**, **More**, then its channels. More starts with **India**, **Import**, then **Home**, then its channels (TV6: India moved off Home; TV7: Import). Kids and India start with a **Home** tile; the Import grid starts with **Home**, **More**, **Import…**. On file:// the Hub tile opens `../index.html` (not a folder listing). Inside an iframe (the Hub) the Hub tile is hidden, because the hub bridge has no "go home" message and navigating the frame would open a hub inside the hub. The grid hides 5 s after the last action; any key or click shows it again.
 - **Categories:** Home = `channels/home.m3u`, Kids = `channels/kids.m3u`, More = `channels/home-more.m3u`, India = iptv-org India list (online, opened from the More grid). Switching loads the list in place (no page change). Over http(s) the `.m3u` is fetched (falls back to the `.m3u.js` if the fetch fails); from file:// the `.m3u.js` is loaded with a script tag (once per list). India stays online-only.
+- **Import (TV7):** the **Import** tile (in More) opens a small panel: *Show channels* (when a list is saved), *Open file (.m3u / .m3u8)*, a URL box with *Load URL*, *Clear saved list*, *Close*. A `.m3u` / `.m3u8` file can also be dropped anywhere on the page. The playlist is parsed by the normal TV parser and shown as the **Import** grid (Home / More / Import… tiles + channels, group shown on each tile); the first channel plays. The raw text + name / URL is saved in IndexedDB, so a reload restores the list and the saved channel resumes. A new file or URL **replaces** the saved list; **Import…** reopens the panel to replace or clear. Clear deletes it (and an Import saved channel) and goes back to More. A URL that is itself one HLS stream (`#EXT-X-STREAM-INF` / `#EXT-X-TARGETDURATION`) becomes a single channel. URL import needs CORS on the other server (from file:// too); `http://` URLs are refused on https pages. Files over 20 MB and non-playlists are refused with a toast. If IndexedDB is blocked the list works for this visit only.
+- **Deep link:** `tv.html#import` opens the Import panel (over the saved Import grid if there is one, else over the normal start list); changing the hash to `#import` later opens it too.
 - **Playing:** hls.js when the browser supports it, else native HLS (Safari / iOS). Video is fitted (contain) and centred. When a stream fails, the "no signal" poster shows with a short toast (see Errors).
 - **http-only channels:** on an https page, `http://` streams are blocked by the browser (mixed content), so their tiles are dimmed with a small red **HTTP** badge, auto-play / resume skip them, and choosing one shows a toast instead of playing. On http:// and file:// pages they play normally.
 - **Number zap:** type a channel number; it shows big on screen and jumps after 1.5 s. Digits don't open the grid.
@@ -66,6 +69,7 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
 - Enter or Space: play the tile / open the category or link
 - 0–9: channel number (jumps after 1.5 s)
 - Any other key or a click: show the grid
+- Import panel (TV7): ↓ / ↑ (and → / ← outside the URL box) move between the panel controls, Enter / Space press the focused button, Enter in the URL box loads it, Escape / Back (Backspace outside the URL box) closes the panel. Keys don't reach the grid while it is open. Touch: tap the buttons; tapping outside the box closes it.
 
 **v2:** same keys. **v3:** arrows move, **Enter** plays (Space does nothing), 0–9 number zap.
 
@@ -73,6 +77,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 
 ## 5. Saved data (localStorage)
 - `tv-last-v1`: `{category, index, name, url}` of the last channel played in v1. Until TV3 the key was `tv-v1-last`; on start its value is copied to `tv-last-v1` (if that is empty) and the old key is removed
+- IndexedDB `tv-import-v1` (TV7), store `playlist`, key `current`: `{name, url, text, count, savedAt}` of the imported playlist (one list). A saved channel in it is stored in `tv-last-v1` with category `import`
 - `lastCat`: only written by the unused `tv-v3.js`
 - v2 / v3 pages save nothing
 
@@ -83,6 +88,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
   - stream error / CORS: "Channel unavailable" (the poster stays)
   - http:// channel chosen on https: "<name>: http:// stream, needs an http:// or file:// page"
   - no HLS support: "This browser cannot play these streams"
+  - Import (TV7): "<file> is not an .m3u playlist", "<file> is too large", "Could not read <file>", "No channels in <name>", "<name> is one video stream, not a channel list" (a stream file), "Enter a playlist URL", "Not a valid URL", "Enter an http:// or https:// URL", "http:// URLs are blocked on https pages", "Could not load URL (HTTP <code>)", "Could not load URL (blocked by CORS or offline)", "Imported for this visit only (could not save)", "Import cleared", and on start with a saved Import channel but no saved list "Nothing imported yet" (then Home). A failed import keeps the saved list
 - v2: "Failed to load local.m3u" overlay (wrong file name; it really loads `channels/home.m3u`).
 - v3 sub-pages: a failed playlist just gives a list with only the Home tile (error in the console).
 
@@ -91,7 +97,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 - v2 / v3: full-screen video with a channel list overlay; made for a 16:9 TV.
 
 ## 8. Safe settings
-- `core/tv_config.js`: `PLAYLISTS` (category → M3U path / URL), `DEFAULT_CATEGORY`, `CATEGORY_TILES` (Hub link + categories; name / href / logo; `screen` = the list that shows the tile, `'home'` if missing, e.g. India has `screen: 'more'`), `HOME_CATEGORY_LOGO`, `NUMBER_DELAY` (1500 ms), `HIDE_DELAY` (5000 ms), `AUTOPLAY_DELAY` (200 ms), `TOAST_DELAY` (3000 ms), `STORAGE_KEY` / `OLD_STORAGE_KEY`
+- `core/tv_config.js`: `PLAYLISTS` (category → M3U path / URL), `DEFAULT_CATEGORY`, `CATEGORY_TILES` (Hub link + categories; name / href / logo; `screen` = the list that shows the tile, `'home'` if missing, e.g. India has `screen: 'more'`), `HOME_CATEGORY_LOGO`, `NUMBER_DELAY` (1500 ms), `HIDE_DELAY` (5000 ms), `AUTOPLAY_DELAY` (200 ms), `TOAST_DELAY` (3000 ms), `STORAGE_KEY` / `OLD_STORAGE_KEY`, `IMPORT_DB` (`tv-import-v1`), `IMPORT_MAX_BYTES` (20 MB). Action tiles: `type: 'action'` + `action` (a key of `TV.actions`, e.g. `'import'`)
 - `channels/*.csv`: add / remove / reorder channels by `tvg-id`, then run `split-m3u.sh` (it also rewrites the `.m3u.js` files)
 - Hand-edited a `channels/*.m3u`? Run `python3 m3u-to-js.py` in `channels/` and commit the `.m3u.js` too, or file:// keeps the old list
 - `split-m3u.sh` top block: `MASTER_M3U_URLS`, `CSV_FILES`, `RES_TAGS`
@@ -108,6 +114,9 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 10. Up / Down move by a whole row at any window width.
 7. Switch tab / press Home on Android: the video goes picture-in-picture.
 8. In the hub with a paired phone: D-pad moves, A / Start plays.
+11. More → Import: the panel opens with focus on Open file; pick an `.m3u`: the Import grid (Home, More, Import…, channels) shows and plays. Reload: the list and channel come back.
+12. Drop an `.m3u` file on the page: it replaces the list. Import… → Clear saved list: "Import cleared", More shows.
+13. Open `tv.html#import`: the panel opens. Over http(s), paste a playlist URL (with CORS) and press Enter; a bad URL shows a toast.
 
 ## 10. Known limits
 - Needs the internet for streams: every stream is online (hls.js 1.5.20 is vendored in `vendor/hls/` since TV1). Free streams often go offline; refresh the playlists with `split-m3u.sh`.
@@ -122,6 +131,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 - v3 / v2 app tiles use Android intents (`intent://`, `vnd.youtube://`) and do nothing on PC / iPhone.
 - `js/config.js` and `js/config-more.js` look swapped: `tv-v3.html` gets a Home tile to itself and `tv-v3-more.html` a More… tile to itself (see Files).
 - `tv-v3.js` and `channels/local.m3u` are unused.
+- Import (TV7): one saved list only (a new one replaces it); URL import needs CORS on that server; relative stream paths inside a URL playlist are not resolved; no search / filter, no group headings; Chrome shares IndexedDB across all file:// pages, like localStorage.
 - `tv-old/` links are stale: `../style/no-scrollbar.css` and `../script/time.js` moved to `shared/`, and `upi.html` doesn't exist.
 
 ## 11. Change log
@@ -141,6 +151,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 - 2026-10-23 IST: TV3: `tv-v1.js` split into `core/tv_*.js` modules under one global `window.TV` (same behaviour); page renamed `tv.html` / `tv.css` (inline no-scrollbar style moved into `tv.css`); `tv-v1.html` is now a redirect stub; storage key `tv-v1-last` → `tv-last-v1` (migrated on start).
 - 2026-10-23 IST: TV5: grid-aware Up / Down (by rendered columns, wrap by column); on-screen error toast (playlist failure, empty playlist, stream error, http-only); Hub tile hidden when framed, `../index.html` on file://; http:// channels dimmed with an HTTP badge and skipped on https pages (`TOAST_DELAY`, `TV.env`).
 - 2026-10-23 IST: TV6: India tile moved off the Home grid; it is now the first tile in More (before the Home tile). Home = Hub, Kids, More + channels. `CATEGORY_TILES` entries take `screen`. India behaviour (online-only, toast, fallback) and saved-channel resume unchanged.
+- 2026-10-23 IST: TV7: **Import** tile in More (after India) opens an Import panel: open an `.m3u` / `.m3u8` file, drop one on the page, or load a URL (fetch; toasts on CORS / HTTP errors). Parsed by the TV parser, shown as the Import grid (Home / More / Import… + channels), saved in IndexedDB `tv-import-v1` (restored on reload, replace / clear), saved-channel resume works; `tv.html#import` opens the panel. New `core/tv_import.js`; `TV.playlist.registerSource`, action tiles (`TV.actions`). Not taken from `apps/lab/iptv-player`: bare URL lines without `#EXTINF`, native video controls, now-playing label, channel count, G / Escape grid focus, initial-letter icons (it has no search or groups either).
 
 ## 12. Related apps
 - Hub: `../hub/docs/hub_readme.md` (TV is in Favorite and Media, and a home tile that opens it in a new tab)

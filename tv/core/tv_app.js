@@ -30,7 +30,7 @@
       if (!raw) return null;
       var data = JSON.parse(raw);
       if (!data || typeof data !== 'object') return null;
-      if (!config.PLAYLISTS[data.category]) return null;
+      if (!TV.playlist.hasCategory(data.category)) return null;
       return data;
     } catch (e) {
       return null;
@@ -76,6 +76,13 @@
       return;
     }
 
+    if (item.type === 'action') {
+      // TV7: e.g. the Import panel (TV.actions from tv_import.js).
+      var fn = TV.actions && TV.actions[item.action];
+      if (fn) fn();
+      return;
+    }
+
     if (item.type === 'link') {
       // TV5: never navigate the frame (a hub inside the hub). The tile is
       // hidden when framed; this guards a stale list too.
@@ -98,9 +105,7 @@
   }
 
   // ---------- start ----------
-  function start() {
-    migrateStorage();
-    var last = readLast();
+  function resume(last) {
     if (last) {
       TV.playlist.load(last.category, {
         startIndex: typeof last.index === 'number' ? last.index : undefined,
@@ -110,6 +115,24 @@
     } else {
       TV.playlist.load(config.DEFAULT_CATEGORY);
     }
+  }
+
+  function start() {
+    migrateStorage();
+    var last = readLast();
+    // TV7: tv.html#import opens the Import panel over the saved import
+    // (or the usual start list when nothing is imported yet).
+    if (TV['import'] && TV['import'].isDeepLink()) {
+      TV['import'].openPanel();
+      if (!last || last.category !== 'import') {
+        TV['import'].hasSaved().then(function (yes) {
+          if (yes) TV.playlist.load('import');
+          else resume(last);
+        });
+        return;
+      }
+    }
+    resume(last);
   }
 
   TV.app = {

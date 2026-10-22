@@ -28,14 +28,26 @@
     AUTOPLAY_DELAY: 200, // ms after a playlist loads before its first channel plays
     TOAST_DELAY: 3000, // ms an error toast stays on screen (TV5)
 
+    // Import (TV7, tv_import.js): IndexedDB database for the imported list
+    // and the largest file accepted.
+    IMPORT_DB: 'tv-import-v1',
+    IMPORT_MAX_BYTES: 20 * 1024 * 1024,
+
     // Tiles shown before a list's channels. type 'link' opens href (same tab).
     // screen: which list shows the tile ('home' if missing). TV6: India
     // moved from Home into More (first tile there, before the Home tile).
+    // type 'action' runs TV.actions[action] (TV7: the Import panel). A list
+    // without its own 'home' tile gets one after its tiles.
     CATEGORY_TILES: [
       { type: 'link', name: 'Hub', href: '../', group: 'Link', logo: '../shared/image/placeholder.png' },
       { type: 'category', key: 'kids', name: 'Kids', group: 'Category', logo: '../shared/image/placeholder.png' },
       { type: 'category', key: 'more', name: 'More', group: 'Category', logo: '../shared/image/placeholder.png' },
-      { type: 'category', key: 'india', name: 'India', group: 'Category', logo: '../shared/image/placeholder.png', screen: 'more' }
+      { type: 'category', key: 'india', name: 'India', group: 'Category', logo: '../shared/image/placeholder.png', screen: 'more' },
+      { type: 'action', key: 'import', action: 'import', name: 'Import', group: 'Playlist', logo: '../shared/image/placeholder.png', screen: 'more' },
+      // the Import list (TV7): Home, More, and the panel again (replace / clear)
+      { type: 'category', key: 'home', name: 'Home', group: 'Category', logo: '../shared/image/placeholder.png', screen: 'import' },
+      { type: 'category', key: 'more', name: 'More', group: 'Category', logo: '../shared/image/placeholder.png', screen: 'import' },
+      { type: 'action', action: 'import', name: 'Import…', group: 'Replace / Clear', logo: '../shared/image/placeholder.png', screen: 'import' }
     ],
     // The "Home" tile shown in every other category (after its own tiles).
     HOME_CATEGORY_LOGO: '../shared/image/placeholder.png',
