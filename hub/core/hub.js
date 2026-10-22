@@ -418,6 +418,7 @@
 
   /** Id → app. "~path" ids are pages reached inside the frame that are not in hub_apps.js. */
   function appForId(id) {
+    id = String(id).replace(/^~apps\/lab\/(aeroplane|island-demo|aoe-rts)\//, '~apps/games/$1/');   // R56: moved to Games
     const known = idToApp.get(id) || early.get(id);   // R33c: early = from the index, not registered yet
     if (known) return known;
     if (id[0] !== '~' || !safeRel(id.slice(1))) return null;
@@ -911,6 +912,7 @@
   // hub_ctx_menus.js: an app's page url (Open in new tab / Copy link)
   window.__hubFrameUrl = (entry) => frameUrlFor(normalizeEntryUrl(entry) || entry);
   window.__hubGoHome = goHome;
+  window.__hubCurrentEntry = () => currentEntry;   // R56: Phone mode 'an app is open' signal (hub_update.js idleNow)
   // hub_link.js: "Open in…" a receiver app — the frame in Phone mode; in Desktop mode that
   // app's window (opened or focused), which then is the focused window the file goes to.
   window.__hubOpenUrl = (url) => {
@@ -990,6 +992,14 @@
       const moved = /^apps\/((?:tools\/)?)(settings|about|files|viewer|sysmon|devbench)\//.exec(key);
       if (moved && (moved[1] ? !/^(settings|about)$/.test(moved[2]) : /^(settings|about)$/.test(moved[2]))) {
         const from = 'apps/' + moved[1] + moved[2] + '/', to = 'apps/system/' + moved[2] + '/';
+        key = to + key.slice(from.length);
+        if (typeof e.url === 'string') e.url = e.url.replace(from, to);
+      }
+      // R56: Aeroplane / Island Game Demo (56d15a2) and AoE RTS (earlier) moved from apps/lab/ to
+      //  apps/games/; apps/lab/<id>/ keeps a legacy redirect page for old links
+      const lab = /^apps\/lab\/(aeroplane|island-demo|aoe-rts)\//.exec(key);
+      if (lab) {
+        const from = 'apps/lab/' + lab[1] + '/', to = 'apps/games/' + lab[1] + '/';
         key = to + key.slice(from.length);
         if (typeof e.url === 'string') e.url = e.url.replace(from, to);
       }

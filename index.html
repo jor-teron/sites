@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="0; url=hub.html" />
   <title>sites</title>
+  <!-- R56: keep ?query and #hash (e.g. ?join=CODE, #app) when sending the site root to the Hub -->
   <script>
-    window.location.replace('hub.html');
+    window.location.replace('hub.html' + window.location.search + window.location.hash);
   </script>
+  <noscript><meta http-equiv="refresh" content="0; url=hub.html" /></noscript>
 </head>
 <body>
   <p>Redirecting to <a href="hub.html">hub.html</a>…</p>

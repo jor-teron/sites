@@ -57,18 +57,26 @@
   }
 
   /* R54b: the pane is "Files": only CONNECTED drives (Local always; added folders with access;
-   * Google Drive when signed in). Managing drives (Add folder, Allow access, Remove, Google sign-in /
+   * Google Drive when signed in; R56: added folders that need access again show greyed, click = Allow access). Managing drives (Add folder, Allow access, Remove, Google sign-in /
    * sign-out) moved to the Disk app (apps/system/disk/): a "Manage drives" tile and the right-click
    * "Manage in Disk" open it. The R9a–R53 code (sign-in panel, ✕ / Allow access, menu) is kept below
    * as a LEGACY comment. */
   const DISK = 'apps/system/disk/';
   const openDisk = () => { if (window.__hubOpenApp) window.__hubOpenApp(DISK); };
   const known = new Map();   // drive id → d (menus are built synchronously)
+  const locked = new Set();  // R56: added folders that need "Allow access" again (after every reload)
   if (window.HubCtx) {
     window.HubCtx.add('.drv[data-drive]', (t) => {
       const d = known.get(t.dataset.drive);
       if (!d) return null;
       const desk = window.HubMode && window.HubMode.isDesktop();
+      if (locked.has(d.id)) {
+        return [
+          { label: 'Allow access', icon: '\uD83D\uDD13', action: () => allowDrive(d) },
+          { sep: true },
+          { label: 'Manage in Disk', icon: '\uD83D\uDDB4', action: openDisk }
+        ];
+      }
       return [
         { label: 'Open', icon: '\u2197', action: () => openFiles(d.id) },
         desk && { label: 'Open in new window', icon: '\u29C9', action: () => openFiles(d.id, true) },
@@ -88,6 +96,7 @@
   async function draw() {
     const list = await D.list();
     known.clear();
+    locked.clear();
     const grid = el('div', 'drv-grid');
     for (const d of list) {
       let sub = '';
@@ -96,9 +105,13 @@
         const u = window.GoogleAuth.user() || {};
         sub = u.email || 'Connected';
       } else if (d.kind === 'local') sub = 'In this browser';
-      else if ((await D.access(d.id)) !== 'granted') continue;
+      else if ((await D.access(d.id)) !== 'granted') { locked.add(d.id); sub = 'Click to allow access'; }   // R56: was hidden
       else sub = 'Folder';
-      const t = tile('drv-' + d.kind, d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : '\uD83D\uDCC2', d.name, sub, (e) => openFiles(d.id, e.shiftKey));
+      const lock = locked.has(d.id);
+      // R56: a folder that needs access again (the browser forgets it on reload) stays as a greyed tile;
+      //  the click is the user gesture requestPermission (FsDrives.allow) needs, then Files opens it.
+      const t = tile('drv-' + d.kind, d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : '\uD83D\uDCC2', d.name, sub, lock ? () => allowDrive(d) : (e) => openFiles(d.id, e.shiftKey));
+      if (lock) { t.classList.add('drv-locked'); t.title = 'Allow access to ' + d.name + ' (the browser asks again after a reload)'; }
       t.dataset.drive = d.id;
       known.set(d.id, d);
       grid.appendChild(t);
@@ -240,7 +253,7 @@
     pane.hidden = false;
   }
   ===== end LEGACY ===== */
-  // (legacy helpers removeDrive / allowDrive above are unused since R54b)
+  // (legacy helper removeDrive above is unused since R54b; allowDrive is used again since R56)
 
   D.onChange(draw);
   draw();

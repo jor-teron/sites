@@ -42,7 +42,8 @@ It runs in one of two modes, decided by hub/wm/wm_mode.js (window.HubMode):
            at least 1024 px wide (R21: once in Desktop it stays down to
            960 px). <body> gets class "wm-desktop". Apps open
            in movable windows on #wm-desk, a taskbar sits at the bottom
-           (or top), the home screen shows Files (left 60%, R54b; connected drives only) and the QR /
+           (or top), the home screen shows Files (left 60%, R54b; connected drives only, R56: plus greyed
+           folders that need "Allow access") and the QR /
            link tiles (right 40%).
   Phone    everything else. The original single-frame Hub: a top bar with
            the category menu, one #app-frame, home tiles.
@@ -384,6 +385,9 @@ on all of them:
   folder  a real folder from showDirectoryPicker (Chrome / Edge
           desktop). Handle kept in IndexedDB 'sites-fs' / 'drives';
           after a reload it needs one click on "Allow access".
+          R56: such a folder shows greyed (desktop Files pane tile
+          "Click to allow access", Files sidebar "Allow access" button),
+          not hidden.
           Removing only forgets it.
   gdrive  Google Drive, only when shared/google is loaded; the handle is
           the "hub" folder in My Drive (GDriveFs.hubRoot()). States:
@@ -550,6 +554,9 @@ Updates (hub/update/hub_update.js, window.HubUpdate):
     anything changed: no window / app open -> quiet reload (R23: a
     worker still installing is awaited, then skip-waiting), else the
     note. Timer checks at most every hour (sleeping computers catch up).
+    R56: "app open" in Phone mode = window.__hubCurrentEntry() (hub.js),
+    not the frame's src attribute (always empty: the frame is navigated
+    with location.replace).
   - Settings > About "Check for update": compares the live hub.html
     build tag; R24: a waiting new worker takes over (skip-waiting ->
     reload, caches kept), else clears hub-shell-* and reloads.

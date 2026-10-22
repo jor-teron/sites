@@ -44,7 +44,8 @@ body.wm-desktop .tile-devices { font-size: 11px; }
 .drv-sub { font-size: 12px; opacity: .75; }
 .drv-add { border-style: dashed; }
 .drv-add .drv-ico { font-size: 44px; }
-.drv-locked { opacity: .75; }
+.drv-locked { opacity: .75; border-style: dashed; }
+.drv-locked .drv-ico { filter: grayscale(1) drop-shadow(0 3px 5px rgba(0,0,0,0.35)); }   /* R56: folder needs Allow access */
 .drv-x {
   position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border-radius: 50%; border: 0;
   background: rgba(0,0,0,0.35); color: #fff; font-size: 18px; cursor: pointer;

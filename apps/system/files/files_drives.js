@@ -1,5 +1,6 @@
 /*
- * Files drives (apps/system/files/files_drives.js) — the drives list (R54b: connected drives only +
+ * Files drives (apps/system/files/files_drives.js) — the drives list (R54b: connected drives only; R56: plus added
+ * folders that need access again, greyed with "Allow access" +
  * "Manage drives" → Disk; until R54b also "Allow access", remove ✕, "Add folder"), opening a drive / a path,
  * the clickable path (breadcrumb) and the hash: #drive=<id>&path=<a/b> (kept up to date with
  * replaceState so a Hub window session reopens the same drive + folder).
@@ -29,13 +30,16 @@
     const rows = [];
     for (const d of list) {
       if (d.kind === 'gdrive' && D.gdriveState() !== 'ok') continue;
-      if (d.kind === 'folder' && (await D.access(d.id)) !== 'granted') continue;
-      const r = el('div', 'drive' + (d.id === st.driveId ? ' on' : ''));
+      // R56: an added folder that needs access again (after every reload) is listed greyed with
+      //  "Allow access" (a click = the user gesture requestPermission needs) instead of being hidden
+      const lock = d.kind === 'folder' && (await D.access(d.id)) !== 'granted';
+      const r = el('div', 'drive' + (d.id === st.driveId ? ' on' : '') + (lock ? ' locked' : ''));
       r.setAttribute('role', 'listitem');
-      const open = btn('drive-open', '', 'Open ' + d.name, () => openDrive(d.id, true));
+      const open = btn('drive-open', '', lock ? 'Allow access to ' + d.name : 'Open ' + d.name, () => (lock ? allowDrive(d) : openDrive(d.id, true)));
       open.append(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : '\uD83D\uDCC2'), el('span', 'drive-name', d.name));
       r.appendChild(open);
-      FX.view.dropTarget(open, () => D.handle(d.id), d.id);
+      if (lock) r.appendChild(btn('drive-allow', 'Allow access', 'Allow access to ' + d.name, () => allowDrive(d)));
+      else FX.view.dropTarget(open, () => D.handle(d.id), d.id);
       rows.push(r);
     }
     if (!list.length) rows.unshift(el('p', 'drive-none', 'This browser has no file storage for web pages.'));
@@ -44,12 +48,18 @@
     rows.push(m);
     $('drives').replaceChildren(...rows);
   }
-  /** R54b: a drive that is not connected → a short note + "Open Disk" instead of the QR panel / allow button. */
-  function notConnected(text) {
+  /** R56: "Allow access" click → ask the browser, then redraw and open the folder. */
+  async function allowDrive(d) {
+    if (await D.allow(d.id)) { await draw(); openDrive(d.id, true); }
+  }
+  /** R54b: a drive that is not connected → a short note + "Open Disk" instead of the QR panel / allow button.
+   *  R56: an added folder (d) also gets an "Allow access" button. */
+  function notConnected(text, d) {
     const p = $('gd-panel');
     $('list').hidden = true;
     const b = btn('tb drive-allow', 'Open Disk', 'Manage drives in Disk', openDisk);
-    p.replaceChildren(el('p', 'nc-text', text), b);
+    const a = d ? btn('tb drive-allow', 'Allow access', 'Allow access to ' + d.name, () => allowDrive(d)) : null;
+    p.replaceChildren(el('p', 'nc-text', text), ...(a ? [a, b] : [b]));
     p.hidden = false; p.classList.add('nc');
   }
 
@@ -143,7 +153,7 @@
     if (!h) { fail(new Error('Drive not found')); return; }
     if ((await D.access(id)) !== 'granted') {   // R54b: no allow here (was: allow on click, else 'Click Allow access')
       st.driveId = id; st.stack = []; draw(); FX.view.load();
-      notConnected('\u201c' + h.name + '\u201d needs access again. Allow it in Disk.');
+      notConnected('\u201c' + h.name + '\u201d needs access again.', { id, name: h.name });   // R56: + Allow access
       return;
     }
     const d = (await D.list()).find((x) => x.id === id);
