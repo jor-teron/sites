@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <!-- TV1: "No signal" poster for tv-v1.html (replaces the removed ../image/tv_no_signal.jpeg) -->
+  <rect width="1280" height="720" fill="#0b0e14"/>
+  <g fill="none" stroke="#3a4a66" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="530" y="230" width="220" height="150" rx="16"/>
+    <path d="M600 420h80M640 380v40"/>
+    <path d="M590 270l100 70M690 270l-100 70" stroke="#5a6c8c"/>
+  </g>
+  <text x="640" y="500" fill="#b7c9e2" font-family="Arial, Helvetica, sans-serif" font-size="56" font-weight="bold" text-anchor="middle">No signal</text>
+  <text x="640" y="550" fill="#6f82a0" font-family="Arial, Helvetica, sans-serif" font-size="28" text-anchor="middle">Pick another channel</text>
+</svg>

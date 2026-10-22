@@ -88,9 +88,9 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 8. In the hub with a paired phone: D-pad moves, A / Start plays.
 
 ## 10. Known limits
-- Needs the internet: hls.js comes from the jsDelivr CDN and every stream is online. Free streams often go offline; refresh the playlists with `split-m3u.sh`.
+- Needs the internet for streams: every stream is online (hls.js 1.5.20 is vendored in `vendor/hls/` since TV1). Free streams often go offline; refresh the playlists with `split-m3u.sh`.
 - v1 shows no error text; a dead channel just shows the poster.
-- **The v1 "no signal" poster is broken:** `tv-v1.html` still points at `../image/tv_no_signal.jpeg`, and `image/` was removed (only `shared/image/placeholder.png` exists).
+- The v1 "no signal" poster is the local `image/no_signal.svg` (TV1; the old `../image/tv_no_signal.jpeg` was removed).
 - v1's **Hub** tile goes to `../` (the hub). Inside the hub frame this opens a hub inside the hub.
 - `photo.html` / `video.html` link `tv.css`, which doesn't exist in `tv/` (it is in `tv-old/`); both say "Videos".
 - v2 / v3 list channel names with `innerHTML`, so a name in an online playlist could inject HTML (v1 uses safe text).
@@ -112,6 +112,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 - 2026-09-29 09:06 IST: repository restructure (6d7ba68).
 - 2026-10-05 00:35 IST: tile icons switched to `shared/image/placeholder.png` after `image/` was removed (7d7ac04).
 - 2026-10-23 IST: TV4: retired v2 / v3 pages, `js/`, `tv-old/`, `photo.html` / `video.html` moved to `legacy/` (paths not fixed).
+- 2026-10-23 IST: TV1: hls.js 1.5.20 vendored in `vendor/hls/` (with LICENSE.md, no CDN); local `image/no_signal.svg` poster; category switches only after its playlist loads (stale loads ignored, failure keeps the old list, falls back to Home if nothing loaded); empty playlists and auto-start never open link / category tiles; M3U name = text after the first comma outside quotes, else `tvg-name`.
 
 ## 12. Related apps
 - Hub: `../hub/docs/hub_readme.md` (TV is in Favorite and Media, and a home tile that opens it in a new tab)
