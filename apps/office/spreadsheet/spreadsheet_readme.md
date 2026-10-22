@@ -8,8 +8,17 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 ## 2. Files
 - `spreadsheet.html` / `spreadsheet.css`: layout, toolbar, look, print
 - `spreadsheet_config.js`: settings and on-screen text
-- `spreadsheet_formula.js`: formula engine (no `eval`), `$` refs, ref shifting and adjusting
-- `spreadsheet_logic.js`: grid, editing, selection, styles, save/load, CSV, autofill handle, start-up
+- `spreadsheet_formula.js`: formula parser / evaluator (no `eval`) and dependency-aware recalc
+- `spreadsheet_functions.js`: formula function library (everything in `FUNCTIONS.txt`)
+- `spreadsheet_refs.js`: cell refs and ranges, `$` refs, ref shifting and adjusting
+- `spreadsheet_state.js`: shared state (cells, selection, widths), blank grid, styles, status
+- `spreadsheet_storage.js`: save / load in the browser
+- `spreadsheet_files.js`: CSV import / export, print
+- `spreadsheet_grid.js`: builds the grid, header clicks, selection highlight, painting cells
+- `spreadsheet_edit.js`: cell editing, cell and arrow keys, commit, clear
+- `spreadsheet_fill.js`: autofill handle
+- `spreadsheet_toolbar.js`: toolbar wiring and style buttons
+- `spreadsheet_logic.js`: small orchestrator (after-change pipeline, start-up)
 - `spreadsheet_format.js`: number formats
 - `spreadsheet_undo.js`: undo / redo
 - `spreadsheet_select.js`: block selection (drag, Shift+click, Shift+arrows, select all)

@@ -1,7 +1,7 @@
 /*
  * Spreadsheet — configuration.
  * Grid size, storage keys, default cell style, colours, keys and on-screen text.
- * spreadsheet_logic.js (and, through its globals, spreadsheet_formula.js) reads from SPREADSHEET_CONFIG.
+ * spreadsheet_state.js (and, through its globals, the other modules) reads from SPREADSHEET_CONFIG.
  */
 const SPREADSHEET_CONFIG = {
   // Grid

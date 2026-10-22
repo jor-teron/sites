@@ -77,3 +77,6 @@ SHORTCUTS (Ctrl or Cmd)
 PRINT
   Use Print / PDF — browser dialog, choose Save as PDF
 
+
+SOURCE
+  Functions are implemented in spreadsheet_functions.js
