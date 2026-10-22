@@ -30,8 +30,6 @@ Demolisher,        demolisher/,    , , Arcade
 Tennis Ball Blitz, tennis-throw/,  , , Arcade
 Sling Birds,       sling-birds/, , , Arcade
 Pacman,            pacman/, , , Arcade
-Neon Fist,         neon-fist/,     , , Arcade
-Neon Fist 3D,      neon-fist-3d/,  , , Arcade
 Dino Run,          dino-run/,      , , Runners
 Car Run,           car-run/,       , , Runners
 Desert Road,       desert-road/,   , , Runners
@@ -43,6 +41,10 @@ AoE RTS,           aoe-rts/,       , , Strategy
 AR Game,           ar-game/,       , , 3D
 Browser FPS,       browser-fps/,   , , 3D
 Island (Alpha),    island-alpha/,  , , 3D
+Neon Fist,         neon-fist/,     , , Lab
+Neon Fist 3D,      neon-fist-3d/,  , , Lab
+Gravity Sandbox,   gravity-sandbox/, , , Lab
+Ant Farm,          ant-farm/,      , , Lab
 `,
   "Media": `# Media — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
@@ -66,6 +68,7 @@ Spreadsheet,  spreadsheet/,         , , Sheets
 OCR,          ocr/,                 , , Scan & Print
 Paper Scan,   paper-scan/,          , , Scan & Print
 Print,        print/,               , , Scan & Print
+PDF Tools,    pdf-tools/,           , , PDF
 Mail,         mail/,                , , Mail
 `,
   "Connectivity": `# Connectivity — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).

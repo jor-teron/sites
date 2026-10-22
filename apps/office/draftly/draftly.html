@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="ui/base.css?v=7">
   <link rel="stylesheet" href="ui/toolbar.css?v=7">
   <link rel="stylesheet" href="ui/popups.css?v=7">
-  <link rel="stylesheet" href="ui/dialog.css?v=1">
+  <link rel="stylesheet" href="../shared/office-dialog.css?v=1">
   <link rel="stylesheet" href="ui/workspace.css?v=7">
   <link rel="stylesheet" href="ui/ribbon.css?v=9">
   <link rel="stylesheet" href="ui/page.css?v=7">
@@ -293,10 +293,12 @@
   <script src="vendor/html2canvas.min.js"></script>
 
   <!-- Modules. Order matters. app.js boots last. -->
+  <script src="../shared/office-dialog.js?v=1"></script>
+  <script src="../shared/office-page.js?v=1"></script>
   <script src="modules/draftly-config.js"></script>
   <script src="modules/draftly-storage.js"></script>
   <script src="modules/draftly-ui.js"></script>
-  <script src="modules/draftly-dialog.js"></script>
+  <script src="modules/draftly-dialog.js?v=2"></script>
   <script src="modules/draftly-editor.js"></script>
   <script src="modules/draftly-pages.js"></script>
   <script src="modules/draftly-flow.js"></script>
