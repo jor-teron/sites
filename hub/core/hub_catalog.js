@@ -85,6 +85,7 @@ Viewer,                viewer/,          , , Files
 System Monitor,        sysmon/,          , , System
 Device Benchmark,      devbench/, , , System
 Calculator,            calculator/,      , , Calculators
+Stopwatch,             stopwatch/,       , , Time
 Weather,               weather-chart/,   , , Weather
 Weather Hourly,        weather-hourly/,  , , Weather
 NE-India Dictionary,   nei-dict/,        , , Language

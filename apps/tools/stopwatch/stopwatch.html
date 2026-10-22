@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<!--
+  Stopwatch — two modes: Stopwatch (default, minimal) and Lap.
+  Tap anywhere = Start/Pause. Swipe left/right (>=75 px) = switch mode.
+  Styles: stopwatch.css. Logic: stopwatch_logic.js. No libraries.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Stopwatch</title>
+  <link rel="icon" href="stopwatch_icon.png">
+  <link rel="stylesheet" href="stopwatch.css?v=20261022a">
+  <script>try{var t=localStorage.getItem('sites-hub.theme');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}</script>
+</head>
+<body>
+<div id="app">
+  <div id="dots" role="tablist" aria-label="Mode">
+    <button type="button" class="dot" data-mode="sw" role="tab" aria-label="Stopwatch mode"></button>
+    <button type="button" class="dot" data-mode="lap" role="tab" aria-label="Lap mode"></button>
+  </div>
+  <div id="viewport">
+    <div id="track">
+      <section class="pane" id="pane-sw">
+        <div class="time" id="time-sw">00:00.00</div>
+        <div class="hint" id="hint-sw">Tap to start</div>
+      </section>
+      <section class="pane" id="pane-lap">
+        <div class="lap-head">
+          <div class="time small" id="time-lap">00:00.00</div>
+          <button type="button" class="btn" id="lap-btn" title="Lap (L)">Lap</button>
+        </div>
+        <div class="lap-tools">
+          <span id="lap-count">No laps</span>
+          <button type="button" class="mini" id="copy-btn">Copy</button>
+          <button type="button" class="mini" id="csv-btn">CSV</button>
+        </div>
+        <ol id="laps"></ol>
+      </section>
+    </div>
+  </div>
+  <button type="button" id="reset-btn" title="Reset (R)">Reset</button>
+  <div id="dialog" hidden>
+    <div class="box" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+      <p id="dlg-t">Reset time and clear all laps?</p>
+      <div class="row">
+        <button type="button" class="mini" id="dlg-no">Cancel</button>
+        <button type="button" class="mini danger" id="dlg-yes">Reset</button>
+      </div>
+    </div>
+  </div>
+  <div id="toast" role="status"></div>
+</div>
+<script src="stopwatch_logic.js?v=20261022a"></script>
+</body>
+</html>
