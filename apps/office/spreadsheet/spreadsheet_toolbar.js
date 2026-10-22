@@ -82,5 +82,5 @@ function wireUi() {
   document.getElementById("text-color").addEventListener("input", function (ev) {
     styleSelection("text-color", function (st) { st.color = ev.target.value; });
   });
-
+  if (typeof initRibbon === "function") initRibbon();   // spreadsheet_ribbon.js: tabs + File menu
 }
