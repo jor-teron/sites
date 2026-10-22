@@ -1,8 +1,8 @@
 /*
  * ===== LEGACY APP LIST (R30) — do not add new apps here; add them to the category CSV =====
  * R33a: this file now keeps ONLY the category list + order (the "<Category> Page" rows) and the
- * hidden system rows (Desktop/vDesktop, Settings, About, Contact, Feedback, Transcribe — not in
- * any category CSV). Every app row moved to the archive block at the end (not parsed); hub.js
+ * hidden system rows (R58: only Settings is left; the Desktop/vDesktop, About, Contact, Feedback and
+ * Transcribe rows are gone — hub.js OLD_IDS maps their old deep links — not in any category CSV). Every app row moved to the archive block at the end (not parsed); hub.js
  * registers the apps from the category CSVs (hub_flyout.js window.HubStartList).
  * Source of truth for which apps a category shows: apps/<category>/<category>-apps.csv
  * (mapped in hub_config.js HUB_CAT_CSV, parsed by TilesCsv in shared/tiles/tiles.js). Those
@@ -40,13 +40,14 @@
  * JS string), no commas inside a cell, one app per line. A broken file shows
  * "hub_apps.js failed to load or has an error" in the hub instead of the menu.
  * Desktop (vDesktop) is HIDDEN since the Hub has its own Desktop mode (windows + taskbar);
- * its files stay in apps/tools/vDesktop/ and #vDesktop still opens it.
+ * its files stay in apps/tools/vDesktop/ (R58: nothing in the Hub links there any more; an old
+ * #vDesktop link shows home).
  * Lab "Legacy" (R15, lab-apps.csv section): Paint, Photo Editor, Notepad, Calculator (Legacy),
  * Webcam, Keyboard — orders 1900+ so they come last in Lab. Sling Birds / Pacman are in Games
  * (Arcade), Device Benchmark in Tools (System), as in the CSVs.
  * About is HIDDEN too: its cards moved into the Settings app (About section); apps/system/about/
- * redirects to apps/system/settings/#about (R53: both moved under apps/system/, the old
- * apps/settings/ and apps/about/ are legacy redirect pages). Settings itself is opened by the "⚙ Settings" row
+ * redirects to apps/system/settings/#about (R53: both moved under apps/system/; the old
+ * apps/settings/ and apps/about/ folders are now only redirect pages to them). Settings itself is opened by the "⚙ Settings" row
  * at the bottom of the menu (hub_settings.js), so its row is HIDDEN here.
  */
 // R33a: categories ("<Category> Page" rows) + hidden system rows only. Apps: apps/<category>/<category>-apps.csv.
@@ -106,7 +107,7 @@ Office,   Paper Scan,            apps/office/paper-scan/,                    ,  
 Connectivity, File Drop,         apps/connectivity/filedrop/,                ,         0,       0,      405
 Connectivity, QR Scanner,        apps/connectivity/qr-scanner/,              ,         0,       0,      406
 Connectivity, Pooh Chat,         apps/connectivity/pooh-chat/,               ,         0,       0,      450
-Tools,    Files,                 apps/tools/files/,                          ,         0,       0,      405
+System,   Files,                 apps/system/files/,                         ,         0,       0,      405   (R58: was Tools apps/tools/files/, moved by R53b; apps/tools/files/ only redirects)
 Tools,    Viewer,                apps/tools/viewer/,                         ,         0,       0,      407
 Tools,    System Monitor,        apps/tools/sysmon/,                         ,         0,       0,      406
 Tools,    Device Benchmark,      apps/tools/devbench/,                       ,         0,       0,      408

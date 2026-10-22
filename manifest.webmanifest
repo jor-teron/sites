@@ -9,6 +9,7 @@
   "background_color": "#0B1033",
   "icons": [
     { "src": "shared/image/hub_icon_192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "shared/image/hub_icon_512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "shared/image/hub_icon_512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "shared/image/hub_icon_512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

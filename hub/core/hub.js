@@ -56,10 +56,15 @@
     // tiles pages live in apps/<cat>/<cat>.html (their index.html only redirects there)
     Favorite: 'apps/favorite/favorite.html', Games: 'apps/games/games.html', Media: 'apps/media/media.html',
     Office: 'apps/office/office.html', Connectivity: 'apps/connectivity/connectivity.html',
-    Tools: 'apps/tools/tools.html', Lab: 'apps/lab/lab.html', System: 'apps/system/system.html',   // R53
-    Desktop: 'apps/tools/vDesktop/',  // Desktop opens vDesktop directly (in the hub frame)
-    About: 'apps/system/settings/#about'   // About moved into Settings → About (rows hidden); R53: under apps/system/
+    Tools: 'apps/tools/tools.html', Lab: 'apps/lab/lab.html', System: 'apps/system/system.html'   // R53
+    // R58: the dead Desktop (apps/tools/vDesktop/) and About entries are gone: no menu category uses them
   };
+  /** R58: old deep links / last-app values whose hidden rows left hub_apps.js (R33a). Contact and
+   *  Feedback open their apps/system/about/ pages (→ Settings → About); '' = gone, so the Hub
+   *  just shows home (Transcribe, vDesktop). A real app with the same id still wins. */
+  const OLD_IDS = { contact: '~apps/system/about/contact.html', feedback: '~apps/system/about/feedback.html',
+    transcribe: '', vdesktop: '' };
+  const oldId = (id) => (Object.prototype.hasOwnProperty.call(OLD_IDS, String(id).toLowerCase()) ? OLD_IDS[String(id).toLowerCase()] : null);
 
   const emptyText = document.getElementById('empty-text');
   catLabel.textContent = HEADER_DEFAULT;
@@ -421,6 +426,9 @@
     id = String(id).replace(/^~apps\/lab\/(aeroplane|island-demo|aoe-rts)\//, '~apps/games/$1/');   // R56: moved to Games
     const known = idToApp.get(id) || early.get(id);   // R33c: early = from the index, not registered yet
     if (known) return known;
+    const old = oldId(id);   // R58
+    if (old === '') return null;
+    if (old) id = old;
     if (id[0] !== '~' || !safeRel(id.slice(1))) return null;
     const entryUrl = id.slice(1);
     const name = entryUrl.replace(/\/+$/, '').split('/').pop().replace(/\.[a-z0-9]+$/i, '') || 'App';
@@ -500,7 +508,7 @@
     }
     if (app) loadApp(app, { forceFrame: true, fromHistory: true });
     else if (fromStart) { if (id) setHash('', false); }
-    else goHome({ fromHistory: true });
+    else { goHome({ fromHistory: true }); if (id) setHash('', false); }   // R58: an unknown / gone id leaves no stale hash
   }
 
   /* ---------- menu: collapsible categories (accordion, one open) ---------- */
@@ -1079,7 +1087,7 @@
   function startNeeds() {
     const ids = [], keys = [];
     const id = hashId() || storageGet();
-    if (id && id[0] !== '~') ids.push(id);
+    if (id && id[0] !== '~' && oldId(id) === null) ids.push(id);   // R58: old ids need no list
     if (wmOn()) {
       try {
         const s = JSON.parse(localStorage.getItem('sites-hub.wmSession') || 'null');

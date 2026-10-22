@@ -1,7 +1,7 @@
 /*
  * Shared category tiles page (shared/tiles/tiles.js). Reads the CSV named in <body data-csv>
  * and draws one square tile per app, grouped by section. Used by every category page
- * (Favorite, Games, Media, Office, Connectivity, Tools, Lab).
+ * (Favorite, Games, Media, Office, Connectivity, Tools, Lab, System).
  *
  * CSV: name, path, icon, newtab, section   (# comments; blank lines ignored)
  *   - A header row starting with "name, path" is optional; when present, columns are found by

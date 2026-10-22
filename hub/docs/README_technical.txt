@@ -527,7 +527,9 @@ sw.js (root) -> hub/update/hub_sw.js. Caches:
                  OSK, Start icons, category CSVs, version.txt, icons,
                  offline page). New name per release.
   hub-rt-1       runtime: app pages and images opened at least once.
-  hub-meta       which shell files changed since the page loaded them.
+  hub-meta       which shell files changed since the page loaded them, and
+                 (R58) which shell files the install could not fetch;
+                 kept across releases (activate never deletes it).
 Fetch rules (same-origin GET only):
   - cross-origin (Google APIs / OAuth / Drive, PeerJS, CDNs): untouched
   - cache:'no-store' / 'reload' requests and Range requests: untouched
@@ -536,7 +538,9 @@ Fetch rules (same-origin GET only):
   - shell files with a newer ?v: network first
   - *.csv and hub/version.txt: network first, cache when offline
   - apps/ and other html / css / js: network first, kept in hub-rt-1
-  - images: cached copy at once, refreshed in the background (R25)
+  - images: cached copy at once; a new image is fetched and stored on
+    its first request; R58: a cached one is re-checked in the background
+    at most once per worker lifetime, and only when over a day old
   - fonts: cache first
   - offline navigation not cached: hub/update/hub_offline.html
 Updates (hub/update/hub_update.js, window.HubUpdate):
@@ -639,10 +643,13 @@ frame, and can use the Hub's helpers when same-origin (window.parent:
 __hubOpenApp, HubFavorites, SharedLink, hub-gamebar messages).
 To add an app: (1) make the folder with index.html and an icon;
 (2) add a row to apps/<category>/<category>-apps.csv (name, path, icon,
-newtab, section); (3) add the matching row to hub/core/hub_apps.js
-(CATEGORY, NAME, ENTRY_URL, ...). No cache bump is needed for app files
-(apps/ is network first). Changing hub_apps.js resets the cached Start
-list automatically. Category CSVs are checked on every load.
+newtab, section) -- the category CSV is the only list (R58 doc fix: do
+NOT add a hub/core/hub_apps.js row; since R33a that file keeps only the
+category rows and the hidden Settings row); (3) regenerate the app index
+and catalog (hub/core/hub_appindex_gen.py -> hub_appindex.js and
+hub_catalog.js) so a first-visit #hash link opens at once. No cache bump
+is needed for app files (apps/ is network first). Category CSVs are
+checked on every load.
 
 
 16. RELEASE ROUTINE
@@ -717,3 +724,18 @@ files change.
   - Not yet tested: touch on a real phone (Lava), a real Google Drive
     sign-in end to end.
   - The leaked TV client secret must be deleted in Google Cloud (Jor).
+  - R56 (done): Phone-mode idle check uses __hubCurrentEntry (the 09:00
+    refresh no longer reloads over an open app); old apps/lab/ links of
+    Aeroplane / Island demo / AoE RTS open their apps/games/ copies.
+  - R57 (done): hub_link, hub_settings and hub_saver accept messages
+    from the Hub's own origin only; html-include errors use textContent.
+  - R58 (done): hub_sw.js install logs + records missed shell files in
+    'hub-meta' (retried by the 09:00 refresh and by Check for update);
+    activate keeps 'hub-meta'; a cached image is re-checked at most once
+    per worker and only when over a day old; no version.txt fetch on
+    file://; an automatic update check never clears caches or reloads;
+    hub_loader retries walk the whole batch in order; manifest icons have
+    separate "any" / "maskable" entries; hub-gamebar posts to
+    location.origin; dead CAT_PAGES Desktop / About rows removed; old
+    #contact / #feedback open Settings > About, #transcribe / #vdesktop
+    show home.

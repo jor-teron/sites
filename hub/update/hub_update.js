@@ -15,10 +15,13 @@
  * - check({manual}) — Settings → About "Check for update": compares the live hub.html build tag
  *   with the running one; when newer: R24 a waiting new worker takes over (skip-waiting →
  *   reload, caches kept); with no new worker it clears the 'hub-shell-*' caches and reloads.
+ *   R58: only a MANUAL check may clear caches / reload; an automatic one never does (with no worker
+ *   it just reports 'ready'). Every check also asks the worker to retry shell files its install
+ *   missed ({type:'retry-failed'}, hub_sw.js).
  * - clearCache() — Settings → About "Clear cache now": deletes hub-shell-* / hub-rt-* caches and
  *   the cached Start list (sites-hub.startList), unregisters the worker, reloads.
  * Version: hub/version.txt is the single source (line 1 'v0.299', line 2 release date
- *   'YYYY-MM-DD'). Read with cache:'no-cache' at start; fills #hub-ver (bar / taskbar tray),
+ *   'YYYY-MM-DD'). Read with cache:'no-cache' at start (R58: not on file://, where fetch fails); fills #hub-ver (bar / taskbar tray),
  *   sets window.HUB_VERSION ('0.299'); '—' when it can't be read.
  * API window.HubUpdate: build (running ?v= tag), version() → Promise<{version:'v0.299' | '',
  *   date:'2026-10-19' | ''}> (running copy), check({manual}) → Promise<{state:'updated' |
@@ -121,9 +124,9 @@
     const d = /^\d{4}-\d{2}-\d{2}$/.test(lines[1] || '') ? lines[1] : '';
     return { version: v, date: d };
   }
-  const readVersion = (mode) => fetch('hub/version.txt', { cache: mode })
+  const readVersion = (mode) => (location.protocol === 'file:' ? Promise.resolve({ version: '', date: '' }) : fetch('hub/version.txt', { cache: mode })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
-    .then(parseVersion).catch(() => ({ version: '', date: '' }));
+    .then(parseVersion).catch(() => ({ version: '', date: '' })));   // R58: file:// skips the fetch
   const running = readVersion('no-cache');
   running.then((v) => {
     if (v.version) window.HUB_VERSION = v.version.slice(1);
@@ -144,6 +147,7 @@
     try {
       const nw = await latest();
       try { const r = await regP; if (r) await r.update(); } catch (_) { /* offline */ }
+      try { const c = SW_OK && navigator.serviceWorker.controller; if (c) c.postMessage({ type: 'retry-failed' }); } catch (_) { /* none */ }   // R58
       if (nw.build && BUILD && nw.build !== BUILD) {
         let tried = '';
         try { tried = sessionStorage.getItem(GUARD) || ''; } catch (_) { /* blocked */ }
@@ -151,7 +155,8 @@
         try { sessionStorage.setItem(GUARD, nw.build); } catch (_) { /* blocked */ }
         if (!opts.manual) {   // automatic check: the new worker installs, the note asks (no reload)
           const r = await regP;
-          if (r) { if (r.waiting) showNote(r); return { state: 'ready', version: nw.version, build: nw.build }; }
+          if (r && r.waiting) showNote(r);
+          return { state: 'ready', version: nw.version, build: nw.build };   // R58: never clears caches / reloads
         }
         const r = await regP;   // R24: a new worker is in → let it take over (shell caches kept)
         if (r && (await settle(r)).waiting) { setTimeout(() => apply(r), 1200); return { state: 'updated', version: nw.version, build: nw.build }; }

@@ -20,6 +20,11 @@
  *               such as File sends 'tab:file' too; the app draws its own menu)
  * Tabs are sized by the Hub from --wm-title-h (24 / 28 / 34); the app sends no sizes.
  * Each bar only uses messages whose source is its own iframe's contentWindow.
+ * R58: hub → app messages go to location.origin only (same pattern as R57 hub_link), so a
+ *   cross-origin page in a window never gets them; on file:// (every page is origin 'null') '*',
+ *   which is still only the bar's own iframe.
+ *   On http a frame whose document is not readable / not the Hub's origin is skipped (no
+ *   'target origin does not match' console warning).
  * A bar is cleared when its iframe loads a new document (and, for the Hub frame, when
  * another app is opened). Apps that never answer are not affected.
  */
@@ -30,6 +35,13 @@
   const MAX_BUTTONS = 3;
   const MAX_TABS = 8;
   const bars = new Set();   // live bar instances
+  const IS_FILE = location.protocol === 'file:';
+  const TARGET = IS_FILE ? '*' : location.origin;   // R58
+  /** R58: the frame shows a page of the Hub's own origin (file://: can't tell, every page is 'null'). */
+  function ownDoc(w) {
+    if (IS_FILE) return true;
+    try { return w.location.origin === location.origin; } catch (_) { return false; }
+  }
 
   function str(v, max) { return String(v == null ? '' : v).slice(0, max); }
   function el(tag, cls, text) {
@@ -49,8 +61,8 @@
 
     function post(msg) {
       const w = frame.contentWindow;
-      if (!w) return;
-      try { w.postMessage(Object.assign({ v: V }, msg), '*'); } catch (_) { /* ignore */ }
+      if (!w || !ownDoc(w)) return;   // R58: another site in the frame gets nothing (and no console warning)
+      try { w.postMessage(Object.assign({ v: V }, msg), TARGET); } catch (_) { /* ignore */ }
     }
     function sendHello() { post({ type: 'hub-hello' }); }
     function clearRetries() { retryTimers.forEach(clearTimeout); retryTimers = []; }
