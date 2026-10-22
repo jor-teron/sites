@@ -31,3 +31,26 @@ body.touch #jump { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 70px); 
 body.touch #place { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 152px); }
 body.touch #break { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 210px); }
 body.touch #stick { top: calc(100% - max(10px, env(safe-area-inset-bottom)) - 140px); }
+/* L2b: map picker overlay (title screen and in-game map switch) and the small map button top left. */
+#mapbtn[hidden] { display: none; }
+#mapbtn { position: fixed; left: max(10px, env(safe-area-inset-left)); top: max(10px, env(safe-area-inset-top)); z-index: 3;
+  min-height: 32px; padding: 4px 10px; font: 600 12px system-ui, sans-serif; color: #eef2f8; background: rgba(20,24,32,.55);
+  border: 1px solid rgba(255,255,255,.35); border-radius: 8px; cursor: pointer; touch-action: manipulation; }
+body.touch #mapbtn { min-height: 40px; padding: 6px 12px; font-size: 14px; }
+#picker { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; background: rgba(10,14,22,.55); }
+#picker[hidden] { display: none; }
+#picker .card { width: min(320px, calc(100vw - 32px)); padding: 22px; background: rgba(24,30,40,.94); border-radius: 14px;
+  display: flex; flex-direction: column; gap: 10px; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,.4); }
+#picker h1 { margin: 0 0 4px; font-size: 28px; letter-spacing: 1px; }
+#picker label { font-size: 13px; opacity: .8; }
+#map-input { align-self: center; width: 110px; height: 64px; font: 700 40px ui-monospace, monospace; text-align: center;
+  color: #fff; background: #0f141c; border: 2px solid rgba(255,255,255,.35); border-radius: 10px; }
+#map-input:focus { outline: none; border-color: #ffb84d; }
+#map-note { margin: 0; min-height: 18px; font-size: 13px; opacity: .85; }
+#map-note.bad { color: #ff8a7a; opacity: 1; }
+#picker .row { display: flex; gap: 10px; }
+#picker .row button { flex: 1; }
+#picker button { min-height: 52px; font: 600 17px system-ui, sans-serif; color: #fff; background: #3a4658;
+  border: 0; border-radius: 10px; cursor: pointer; touch-action: manipulation; }
+#picker #map-play { background: #e08a1e; }
+#picker button:disabled { opacity: .45; cursor: default; }
