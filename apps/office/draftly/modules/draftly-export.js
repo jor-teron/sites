@@ -48,7 +48,7 @@ Draftly.export.setupPrintStyles = function setupPrintStyles() {
   var h = (isLandscape ? cfg.paperWidthCm : cfg.paperHeightCm) + 'cm';
   /* Each paper card is printed as one sheet of the chosen size, exactly as on screen. */
   printStyle.textContent =
-    '@page { size: ' + cfg.pageSizeName + ' ' + (isLandscape ? 'landscape' : 'portrait') + '; margin: 0; }' +
+    OfficePage.pageRule({ paper: cfg.paperSize, orientation: isLandscape ? 'landscape' : 'portrait', margins: '0' }) +
     '@media print {' +
     ' body { background: #fff !important; overflow: visible !important; height: auto !important; }' +
     ' .toolbar, .toast, .np-layer, .status-bar, .find-bar { display: none !important; }' +
@@ -140,8 +140,8 @@ Draftly.export.exportDocx = function exportDocx() {
   var isLandscape = document.body.classList.contains(cfg.landscapeClass);
   var fullHtml =
     '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
-    '@page { size: ' + cfg.pageSizeName + ' ' + (isLandscape ? 'landscape' : 'portrait') + ';' +
-    ' margin: ' + cfg.marginTopCm + 'cm ' + cfg.marginRightCm + 'cm; }' +
+    OfficePage.pageRule({ paper: cfg.paperSize, orientation: isLandscape ? 'landscape' : 'portrait',
+      margins: cfg.marginTopCm + 'cm ' + cfg.marginRightCm + 'cm' }) +
     'body { font-family: ' + cfg.fontFamily + '; font-size: ' + cfg.fontSizePt + 'pt; line-height: ' + cfg.lineHeight + '; }' +
     'p { margin: 0 0 ' + cfg.paragraphSpacingPt + 'pt 0; }' +
     '</style></head><body>' + Draftly.export.docxHtml() + '</body></html>';
