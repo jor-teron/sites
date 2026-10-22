@@ -87,6 +87,7 @@ Device Benchmark,      devbench/, , , System
 Calculator,            calculator/,      , , Calculators
 Unit Converter,        unit-converter/,                   , , Calculators
 Stopwatch,             stopwatch/,       , , Time
+Calendar,              calendar/,        , , Time
 Weather,               weather-chart/,   , , Weather
 Weather Hourly,        weather-hourly/,  , , Weather
 NE-India Dictionary,   nei-dict/,        , , Language
