@@ -28,14 +28,16 @@
     AUTOPLAY_DELAY: 200, // ms after a playlist loads before its first channel plays
     TOAST_DELAY: 3000, // ms an error toast stays on screen (TV5)
 
-    // Tiles shown before the Home channels. type 'link' opens href (same tab).
+    // Tiles shown before a list's channels. type 'link' opens href (same tab).
+    // screen: which list shows the tile ('home' if missing). TV6: India
+    // moved from Home into More (first tile there, before the Home tile).
     CATEGORY_TILES: [
       { type: 'link', name: 'Hub', href: '../', group: 'Link', logo: '../shared/image/placeholder.png' },
       { type: 'category', key: 'kids', name: 'Kids', group: 'Category', logo: '../shared/image/placeholder.png' },
       { type: 'category', key: 'more', name: 'More', group: 'Category', logo: '../shared/image/placeholder.png' },
-      { type: 'category', key: 'india', name: 'India', group: 'Category', logo: '../shared/image/placeholder.png' }
+      { type: 'category', key: 'india', name: 'India', group: 'Category', logo: '../shared/image/placeholder.png', screen: 'more' }
     ],
-    // The "Home" tile shown first in every other category.
+    // The "Home" tile shown in every other category (after its own tiles).
     HOME_CATEGORY_LOGO: '../shared/image/placeholder.png',
 
     PLACEHOLDER_LOGO:

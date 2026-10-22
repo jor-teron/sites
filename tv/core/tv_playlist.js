@@ -136,21 +136,23 @@
   }
 
   // ---------- tiles before the channels ----------
+  // Tiles before the channels of a list: the CATEGORY_TILES whose screen
+  // is this category (TV6), then, outside Home, the "Home" tile back.
   function categoryTilesFor(category) {
-    if (category === 'home') {
-      return config.CATEGORY_TILES.filter(function (t) {
-        // TV5: inside a frame (the Hub) the Hub link would open a hub inside the hub.
-        return !(t.type === 'link' && TV.env.framed);
-      }).map(function (t) {
-        if (t.type === 'link') {
-          return { name: t.name, logo: t.logo || '', group: t.group || 'Link', type: 'link', href: t.href };
-        }
-        return { name: t.name, logo: t.logo || '', group: t.group || 'Category', type: 'category', categoryKey: t.key };
-      });
+    var tiles = config.CATEGORY_TILES.filter(function (t) {
+      if ((t.screen || 'home') !== category) return false;
+      // TV5: inside a frame (the Hub) the Hub link would open a hub inside the hub.
+      return !(t.type === 'link' && TV.env.framed);
+    }).map(function (t) {
+      if (t.type === 'link') {
+        return { name: t.name, logo: t.logo || '', group: t.group || 'Link', type: 'link', href: t.href };
+      }
+      return { name: t.name, logo: t.logo || '', group: t.group || 'Category', type: 'category', categoryKey: t.key };
+    });
+    if (category !== 'home') {
+      tiles.push({ name: 'Home', logo: config.HOME_CATEGORY_LOGO, group: 'Category', type: 'category', categoryKey: 'home' });
     }
-    return [
-      { name: 'Home', logo: config.HOME_CATEGORY_LOGO, group: 'Category', type: 'category', categoryKey: 'home' }
-    ];
+    return tiles;
   }
 
   // ---------- load a category ----------

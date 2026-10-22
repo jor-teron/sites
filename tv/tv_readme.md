@@ -51,8 +51,8 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
 
 ## 3. Behaviour rules (v1, the main player)
 - **Start:** resumes the last channel (category + name / URL / position from localStorage); otherwise opens the Home playlist (`channels/home.m3u`) and plays its first channel.
-- **Grid:** channel tiles (number, logo, name, group) over the video, 3–5 columns. Home starts with tiles: **Hub** (link to `../`), **Kids**, **More**, **India**. Other categories start with a **Home** tile. On file:// the Hub tile opens `../index.html` (not a folder listing). Inside an iframe (the Hub) the Hub tile is hidden, because the hub bridge has no "go home" message and navigating the frame would open a hub inside the hub. The grid hides 5 s after the last action; any key or click shows it again.
-- **Categories:** Home = `channels/home.m3u`, Kids = `channels/kids.m3u`, More = `channels/home-more.m3u`, India = iptv-org India list (online). Switching loads the list in place (no page change). Over http(s) the `.m3u` is fetched (falls back to the `.m3u.js` if the fetch fails); from file:// the `.m3u.js` is loaded with a script tag (once per list). India stays online-only.
+- **Grid:** channel tiles (number, logo, name, group) over the video, 3–4 columns. Home starts with tiles: **Hub** (link to `../`), **Kids**, **More**, then its channels. More starts with **India**, then **Home**, then its channels (TV6: India moved off Home). Kids and India start with a **Home** tile. On file:// the Hub tile opens `../index.html` (not a folder listing). Inside an iframe (the Hub) the Hub tile is hidden, because the hub bridge has no "go home" message and navigating the frame would open a hub inside the hub. The grid hides 5 s after the last action; any key or click shows it again.
+- **Categories:** Home = `channels/home.m3u`, Kids = `channels/kids.m3u`, More = `channels/home-more.m3u`, India = iptv-org India list (online, opened from the More grid). Switching loads the list in place (no page change). Over http(s) the `.m3u` is fetched (falls back to the `.m3u.js` if the fetch fails); from file:// the `.m3u.js` is loaded with a script tag (once per list). India stays online-only.
 - **Playing:** hls.js when the browser supports it, else native HLS (Safari / iOS). Video is fitted (contain) and centred. When a stream fails, the "no signal" poster shows with a short toast (see Errors).
 - **http-only channels:** on an https page, `http://` streams are blocked by the browser (mixed content), so their tiles are dimmed with a small red **HTTP** badge, auto-play / resume skip them, and choosing one shows a toast instead of playing. On http:// and file:// pages they play normally.
 - **Number zap:** type a channel number; it shows big on screen and jumps after 1.5 s. Digits don't open the grid.
@@ -91,7 +91,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 - v2 / v3: full-screen video with a channel list overlay; made for a 16:9 TV.
 
 ## 8. Safe settings
-- `core/tv_config.js`: `PLAYLISTS` (category → M3U path / URL), `DEFAULT_CATEGORY`, `CATEGORY_TILES` (Hub link + categories; name / href / logo), `HOME_CATEGORY_LOGO`, `NUMBER_DELAY` (1500 ms), `HIDE_DELAY` (5000 ms), `AUTOPLAY_DELAY` (200 ms), `TOAST_DELAY` (3000 ms), `STORAGE_KEY` / `OLD_STORAGE_KEY`
+- `core/tv_config.js`: `PLAYLISTS` (category → M3U path / URL), `DEFAULT_CATEGORY`, `CATEGORY_TILES` (Hub link + categories; name / href / logo; `screen` = the list that shows the tile, `'home'` if missing, e.g. India has `screen: 'more'`), `HOME_CATEGORY_LOGO`, `NUMBER_DELAY` (1500 ms), `HIDE_DELAY` (5000 ms), `AUTOPLAY_DELAY` (200 ms), `TOAST_DELAY` (3000 ms), `STORAGE_KEY` / `OLD_STORAGE_KEY`
 - `channels/*.csv`: add / remove / reorder channels by `tvg-id`, then run `split-m3u.sh` (it also rewrites the `.m3u.js` files)
 - Hand-edited a `channels/*.m3u`? Run `python3 m3u-to-js.py` in `channels/` and commit the `.m3u.js` too, or file:// keeps the old list
 - `split-m3u.sh` top block: `MASTER_M3U_URLS`, `CSV_FILES`, `RES_TAGS`
@@ -101,10 +101,10 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 1. Open `tv/` (or an old `tv-v1.html` link): redirects to `tv.html`, the grid shows, the first Home channel plays.
 2. Arrow down a few tiles, press Enter: that channel plays; the grid hides after 5 s.
 3. Type `5`: a big "5" shows, channel 5 plays after 1.5 s, the grid stays closed.
-4. Open Kids, More, India: each list loads; the Home tile goes back.
+4. Home shows Hub, Kids, More (no India). Open Kids, More; in More open India (the first tile): each list loads; the Home tile goes back.
 5. Reload: the same channel resumes.
 6. Hub tile: opens the hub (file://: `../index.html`); inside the Hub frame there is no Hub tile.
-9. Open India offline: a "India needs internet" toast shows for ~3 s and the Home list stays.
+9. Open India (from More) offline: a "India needs internet" toast shows for ~3 s and the More list stays.
 10. Up / Down move by a whole row at any window width.
 7. Switch tab / press Home on Android: the video goes picture-in-picture.
 8. In the hub with a paired phone: D-pad moves, A / Start plays.
@@ -140,6 +140,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 - 2026-10-23 IST: TV2: works from file://: `channels/m3u-to-js.py` (run by `split-m3u.sh`) writes `home.m3u.js`, `kids.m3u.js`, `home-more.m3u.js`; `tv-v1.js` loads them with a script tag on file:// or when fetch fails; http(s) still uses fetch.
 - 2026-10-23 IST: TV3: `tv-v1.js` split into `core/tv_*.js` modules under one global `window.TV` (same behaviour); page renamed `tv.html` / `tv.css` (inline no-scrollbar style moved into `tv.css`); `tv-v1.html` is now a redirect stub; storage key `tv-v1-last` → `tv-last-v1` (migrated on start).
 - 2026-10-23 IST: TV5: grid-aware Up / Down (by rendered columns, wrap by column); on-screen error toast (playlist failure, empty playlist, stream error, http-only); Hub tile hidden when framed, `../index.html` on file://; http:// channels dimmed with an HTTP badge and skipped on https pages (`TOAST_DELAY`, `TV.env`).
+- 2026-10-23 IST: TV6: India tile moved off the Home grid; it is now the first tile in More (before the Home tile). Home = Hub, Kids, More + channels. `CATEGORY_TILES` entries take `screen`. India behaviour (online-only, toast, fallback) and saved-channel resume unchanged.
 
 ## 12. Related apps
 - Hub: `../hub/docs/hub_readme.md` (TV is in Favorite and Media, and a home tile that opens it in a new tab)
