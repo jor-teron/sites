@@ -25,9 +25,7 @@ Tic-Tac-Toe,       tic-tac-toe/,   , , Puzzle
 Ping Pong,         pong/,          , , Arcade
 Snake,             snake/,         , , Arcade
 Space Invaders,    space-invader/, , , Arcade
-Neon Raid,          neon-raid/,     , , Arcade
 Demolisher,        demolisher/,    , , Arcade
-Tennis Ball Blitz, tennis-throw/,  , , Arcade
 Sling Birds,       sling-birds/, , , Arcade
 Pacman,            pacman/, , , Arcade
 Dino Run,          dino-run/,      , , Runners
@@ -35,16 +33,24 @@ Car Run,           car-run/,       , , Runners
 Desert Road,       desert-road/,   , , Runners
 Turbo Lap,         turbo-lap/,     , , Runners
 Tower Defence,     tower-defence/, , , Strategy
-Island Conquest,   island-conquest/, , , Strategy
 Chess,             chess/,         , , Strategy
 AoE RTS,           aoe-rts/,       , , Strategy
-AR Game,           ar-game/,       , , 3D
+Gravity Sandbox,   gravity-sandbox/, , , Simulator
+Solar System,      solar-system/,  , , Simulator
 Browser FPS,       browser-fps/,   , , 3D
-Island (Alpha),    island-alpha/,  , , 3D
-Neon Fist,         neon-fist/,     , , Lab
-Neon Fist 3D,      neon-fist-3d/,  , , Lab
-Gravity Sandbox,   gravity-sandbox/, , , Lab
-Ant Farm,          ant-farm/,      , , Lab
+Island Conquest,   island-conquest/, , , Beta
+Tennis Ball Blitz, tennis-throw/,  , , Beta
+AR Game,           ar-game/,       , , Beta
+Island (Alpha),    island-alpha/,  , , Beta
+Neon Raid,          neon-raid/,     , , Beta
+Neon Fist,         neon-fist/,     , , Beta
+Neon Fist 3D,      neon-fist-3d/,  , , Beta
+Ant Farm,          ant-farm/,      , , Beta
+
+Aeroplane,          aeroplane/,                   , , Beta
+Island Game Demo,   island-demo/,                 , , Beta
+Aeroplane,          aeroplane/,                   , , Beta
+LandCraft,            landcraft/, , , Beta
 `,
   "Media": `# Media — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
@@ -116,9 +122,6 @@ IPTV player,        iptv-player/,                 , , Media
 Channel Cleaner,    m3u-cleaner/,                 , , Media
 Three.js Viewer v2, threejs-viewer-v2/,           , , Media
 
-Aeroplane,          aeroplane/,                   , , Games
-Island Game Demo,   island-demo/,                 , , Games
-
 WebRTC Chat,        ../connectivity/webrtc-chat/, , , Connect
 P2P Chat,           ../connectivity/p2pchat.html, , , Connect
 Phone,              ../media/phone/,              , , Connect
@@ -134,13 +137,13 @@ Keyboard,           keyboard/,                    , , Legacy
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
 name, path, icon, newtab, section
-Settings,              settings/,        , , System
 Files,                 files/,           , , Files
 Disk,                  disk/,            , , Files
 Viewer,                viewer/,          , , Files
+D-Pad Controller,      ../../hub/controller/, ../../hub/controller/controller_icon.png, 1, Hub tools
+Settings,              settings/,        , , System
 System Monitor,        sysmon/,          , , System
 Device Benchmark,      devbench/,        , , System
-D-Pad Controller,      ../../hub/controller/, ../../hub/controller/controller_icon.png, 1, Hub tools
 About,                 about/,           about/about_icon.png, , System
 `
 });

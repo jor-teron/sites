@@ -1,0 +1,13 @@
+/* Solar System Explorer R1a: full-screen canvas, small header. */
+html, body { margin: 0; height: 100%; background: #04060d; color: #cfd8ea; overflow: hidden;
+  font: 13px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif; }
+#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block;
+  touch-action: none; cursor: grab; }
+#c.drag { cursor: grabbing; }
+#bar { position: fixed; top: 8px; left: 8px; display: flex; align-items: center; gap: 8px;
+  padding: 5px 10px; background: rgba(10, 16, 30, .72); border: 1px solid #1d2a44;
+  border-radius: 8px; letter-spacing: .06em; user-select: none; }
+#bar a { color: #cfd8ea; text-decoration: none; font-size: 16px; }
+#ver { color: #ffb84d; font-size: 11px; }
+#hint { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); font-size: 11px;
+  color: #6f7c96; pointer-events: none; white-space: nowrap; }
