@@ -89,7 +89,7 @@ Works inside the hub and responds to its phone D-pad, but the hub's key presses 
   - `draftly_last_name`: last opened document
   - `draftly_theme`: `dark` / `light`
   - `draftly_nonprinting`: `1` / `0` (format marks)
-  - orientation: saved under the key `undefined` (see Known limits)
+  - `draftly_orientation`: `portrait` / `landscape`. Before 2026-10-21 it was saved under the literal key `undefined`; at start-up that value is copied to `draftly_orientation` (if empty) and the `undefined` key is removed, only when it holds `portrait` / `landscape` (other data under that key is left alone)
   - `draftly_margins`: old key, removed at start-up
 - To reset, clear site data for the page. There is no delete button for single documents.
 
@@ -127,20 +127,20 @@ Messages show briefly at the bottom (2.2 s):
 3. Wait a second and reload: the text is still there. Clock button: the document is listed.
 4. PDF: downloads `<name>.pdf` with one A4 page per page and no marks.
 5. DOCX: downloads `<name>.docx` that opens in Word.
-6. Page popup → Landscape, reload: still landscape.
+6. Page popup → Landscape, reload: still landscape (localStorage `draftly_orientation` = `landscape`, no `undefined` key).
 7. Narrow the window: pages shrink to fit.
 8. Dark theme, reload: still dark.
 
 ## 10. Known limits
 - PDF pages are images: text isn't selectable or searchable, and files are bigger.
 - DOCX is re-paginated by Word, so page breaks may differ from the screen.
-- Orientation is saved under the localStorage key `undefined` (the config has no `storageKeyOrientation` entry). It still works, but another page on the same site using that key could clash.
 - Paste is plain text only; no images or tables.
 - Times New Roman is used only if installed; otherwise Tinos (same widths).
 - No document delete or rename in the app (saving under a new name makes a copy).
 - Old version after an update: hard-refresh.
 
 ## 11. Change log
+- 2026-10-23 IST: orientation fix: saved only under `draftly_orientation` (config `storageKeyOrientation`); the old `undefined` key (written 2026-10-02 to 2026-10-21, when that config entry was missing) is migrated once at start-up and removed if it holds an orientation value. Invalid values are not saved.
 - 2026-10-21 IST: Draftly dialogs (rename and delete) replace browser prompts; Dark/Light mode item in the File menu.
 - 2026-10-21 IST: slimmer top row (36 px, 28 px controls, smaller brand); hub bridge `draftly-hub.js` (tabs and title in the hub title bar).
 - 2026-10-04 21:14 IST: fit to screen, slim toolbar, Page popup, cleanup (margins box, status bar and version removed), Cmd keys, icon; hub name "Draftly" (commit 386541e).
