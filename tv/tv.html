@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--
+    TV player (was tv-v1.html until TV3)
+    One-page IPTV player with in-place category playlists (Hub link + Kids / More / India).
+    Edit playlists, tiles and timings in core/tv_config.js. Modules: core/tv_*.js (see tv_readme.md).
+  -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TV</title>
+  <link rel="stylesheet" href="tv.css">
+  <script src="vendor/hls/hls.min.js"></script>
+</head>
+<body>
+
+  <div class="main">
+    <div class="player-area">
+      <video id="video" poster="image/no_signal.svg" autoplay playsinline></video>
+    </div>
+    <div class="channel-list hidden" id="channel-list"></div>
+  </div>
+
+  <script src="core/tv_config.js"></script>
+  <script src="core/tv_playlist.js"></script>
+  <script src="core/tv_player.js"></script>
+  <script src="core/tv_ui.js"></script>
+  <script src="core/tv_input.js"></script>
+  <script src="core/tv_pip.js"></script>
+  <script src="core/tv_app.js"></script>
+</body>
+</html>

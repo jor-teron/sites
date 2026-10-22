@@ -1,5 +1,5 @@
 /*
- * TV Player v1 styles
+ * TV player styles (tv/tv.css, was tv-v1.css until TV3)
  * Channel grid from tv-v2; video stage from tv-v3
  * (height 100%, object-fit contain, centered).
  */
@@ -146,5 +146,15 @@ body {
   padding: 15px 40px;
   border-radius: 12px;
   z-index: 100;
+  display: none;
+}
+
+/* Hide scrollbars (was an inline <style> in tv-v1.html until TV3) */
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+::-webkit-scrollbar {
   display: none;
 }

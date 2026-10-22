@@ -9,4 +9,4 @@ Retired TV players and orphaned files, kept for reference only. Not maintained.
 - `photo.html`, `video.html`: "Coming soon" placeholders
 - `tv-old/`: the original Android TV homepage launcher
 
-Moved here in TV4 (2026-10-23). Paths were not updated, so links, CSS, `channels/` playlists and icons may be broken. The current player is `../tv-v1.html`.
+Moved here in TV4 (2026-10-23). Paths were not updated, so links, CSS, `channels/` playlists and icons may be broken. The current player is `../tv.html` (was `../tv-v1.html` until TV3).

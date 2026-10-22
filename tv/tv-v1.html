@@ -1,35 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!--
-    TV Player v1
-    One-page IPTV player based on tv-v2, with in-place category playlists
-    (Hub link + Kids / More / India). Edit PLAYLISTS at the top of tv-v1.js.
-    Video layout follows tv-v3 (contain + centered). No Android app intents.
-  -->
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TV Player v1</title>
-  <script src="vendor/hls/hls.min.js"></script>
-  <link rel="stylesheet" href="tv-v1.css">
-<style type="text/css">
-	html {
-	scrollbar-width: none;
-	-ms-overflow-style: none;
-	}
-
-::-webkit-scrollbar {	display: none;	}
-</style>
+<meta charset="UTF-8">
+<title>TV</title>
+<script>location.replace('tv.html' + location.search + location.hash);</script>
+<noscript><meta http-equiv="refresh" content="0; url=tv.html"></noscript>
 </head>
 <body>
-
-  <div class="main">
-    <div class="player-area">
-      <video id="video" poster="image/no_signal.svg" autoplay playsinline></video>
-    </div>
-    <div class="channel-list hidden" id="channel-list"></div>
-  </div>
-
-  <script src="tv-v1.js"></script>
+<p>Moved to <a href="tv.html">tv.html</a>.</p>
 </body>
 </html>

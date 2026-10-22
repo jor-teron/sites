@@ -434,7 +434,7 @@ main() {
 
     log_msg "Done. Wrote ${#USED_TVG_ID[@]} channels. Outputs: home.m3u home-more.m3u kids.m3u"
 
-    # TV2: also write <name>.m3u.js copies so tv-v1.html works from file://.
+    # TV2: also write <name>.m3u.js copies so tv.html works from file://.
     python3 "$(dirname "$0")/m3u-to-js.py" home.m3u home-more.m3u kids.m3u
 
     echo
