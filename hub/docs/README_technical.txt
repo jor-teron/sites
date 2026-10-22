@@ -137,6 +137,10 @@ Hub and desktop (Monorepo Bot):
                       help, clear, echo, date, history, apps, open,
                       build, theme. History in localStorage
                       hub-terminal.history. See its README.md
+  apps/system/apphub/  App Hub (AH1): Favourites row (favorite-apps.csv
+                      order) + category tiles with counts; #cat=<name>
+                      category pages; opens apps in the Hub. Not an
+                      app store. See its README.md
   apps/tools/phonekey/  phone page for "Phone as a key"
   apps/system/viewer/  image / video Viewer app
 Shared but used by everyone: shared/link/ (SharedLink), shared/vendor/.
@@ -625,6 +629,9 @@ localStorage, prefix sites-hub.:
   fromCat             hub.js                      category of open app
   fromLab             hub.js (old, removed)       -
   startHover          Settings > Desktop          '0' = no hover-open
+  homeBtn             Settings > Desktop, AH1-F1  '' = Home screen (default) | apphub
+                      hub.js __hubHome (Phone Home button, Desktop
+                      Show desktop then App Hub)
   startList           hub_flyout.js (R16c)        cached Start lists
   favorites           favorites.js                JSON list
   wallpaper           Settings > Wallpaper        id / pic: / mine / #hex

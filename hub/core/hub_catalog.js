@@ -133,7 +133,7 @@ Calculator (Legacy), ../tools/calculator-beta/,   , , Legacy
 Webcam,             ../media/webcam/,             , , Legacy
 Keyboard,           keyboard/,                    , , Legacy
 `,
-  "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools; R53c: D-Pad Controller listed here from Games, folder stays in hub/controller/; R54: new Disk app; T1: Terminal). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
+  "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools; R53c: D-Pad Controller listed here from Games, folder stays in hub/controller/; R54: new Disk app; T1: Terminal; AH1: App Hub). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
 name, path, icon, newtab, section
@@ -145,6 +145,7 @@ Settings,              settings/,        , , System
 System Monitor,        sysmon/,          , , System
 Device Benchmark,      devbench/,        , , System
 Terminal,              terminal/,        , , System
+App Hub,               apphub/,          , , System
 About,                 about/,           about/about_icon.png, , System
 `
 });

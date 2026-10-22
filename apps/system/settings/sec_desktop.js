@@ -6,6 +6,8 @@
  * meter (key 'trayMeter', '1' = on, default off; hub/drives/hub_traymeter.js), and the
  * clock screen saver idle time (key 'saverIdle', whole minutes 0..240, 0 = Off, unset = 5; Hub R49b HubSaver)
  * and its second hand (key 'saverSec', smooth (default) | quartz | off; Hub R49c HubSaver.secMode).
+ * AH1-F1: Home button (key 'homeBtn', '' = Home screen (default) | 'apphub' = App Hub; Hub __hubHome:
+ * Phone mode Home button, Desktop mode Show desktop).
  */
 (function () {
   'use strict';
@@ -83,7 +85,14 @@
       const hs = saverHub();
       if (!hs || !hs.start) prev.hidden = true;
       prev.addEventListener('click', () => { try { const h = saverHub(); if (h && h.start) h.start(); } catch (_) { /* ignore */ } });
-      pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Start menu'), hover, ui.title('Taskbar'), meter,
+      // AH1-F1: what the Home button does
+      const home = ui.choice([
+        { value: 'home', label: 'Home (current)', hint: 'Back to the Home screen' },
+        { value: 'apphub', label: 'App Hub', hint: 'Opens App Hub' }
+      ], S.get('homeBtn') === 'apphub' ? 'apphub' : 'home', (v) => S.set('homeBtn', v === 'apphub' ? 'apphub' : ''));
+      home.classList.add('home-btn-pick');
+      pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home button'), home,
+        ui.note('Phone mode: the Home button. Desktop mode: Show desktop, then App Hub on top.'), ui.title('Start menu'), hover, ui.title('Taskbar'), meter,
         ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev);
       showNow();
     }

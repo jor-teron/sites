@@ -3,7 +3,7 @@
  * ('sites-hub.<key>') and tell the Hub to re-apply at once: parent.HubPrefs.apply() directly,
  * plus postMessage {type:'hub-prefs'} to the parent Hub; other open Hub tabs get the normal
  * 'storage' event.
- * Keys: wallpaper, taskH, titleH, accent, theme, motion, wmMode, startHover (see hub/core/hub_prefs.js), trayMeter (hub_traymeter.js),
+ * Keys: wallpaper, taskH, titleH, accent, theme, motion, wmMode, startHover, homeBtn (AH1-F1) (see hub/core/hub_prefs.js), trayMeter (hub_traymeter.js),
  *   hoverFocus (wm_windows.js), snapEdges + snapMagnet (wm_snap.js, hub/osk/osk_drag.js), workspaces (wm_workspaces.js), filesClick + filesThumbs (Files app).
  * Also paints this app's own accent / theme so Settings matches the Hub.
  */

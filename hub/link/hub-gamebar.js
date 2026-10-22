@@ -223,7 +223,8 @@
     };
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (window.__hubGoHome) window.__hubGoHome();
+      if (window.__hubHome) window.__hubHome();   // AH1-F1: Home screen or App Hub (Settings → Desktop)
+      else if (window.__hubGoHome) window.__hubGoHome();
       sync();
       btn.blur();
     });
