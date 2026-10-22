@@ -124,7 +124,11 @@
   ['mousemove', 'pointermove', 'mousedown', 'pointerdown', 'mouseup', 'pointerup', 'click', 'dblclick', 'contextmenu',
     'keydown', 'keyup', 'touchstart', 'touchend', 'wheel'].forEach((t) => window.addEventListener(t, guard, { capture: true, passive: false }));
   window.addEventListener('blur', poke);
-  window.addEventListener('message', (e) => { const d = e.data; if (d && typeof d.type === 'string' && d.type.indexOf('hub-') === 0) poke(); });
+  /* R57: same-origin senders only (the hub_prefs.js check). file://: every file page has the opaque
+   * origin 'null', so there the sender must also be this page or one of its own iframes. */
+  const trusted = (e) => (e.origin === location.origin || (location.protocol === 'file:' && e.origin === 'null')) &&
+    (location.protocol !== 'file:' || e.source === window || [...document.querySelectorAll('iframe')].some((f) => f.contentWindow === e.source));
+  window.addEventListener('message', (e) => { const d = e.data; if (trusted(e) && d && typeof d.type === 'string' && d.type.indexOf('hub-') === 0) poke(); });
   window.addEventListener('storage', (e) => {
     if (e.key === KEY || e.key === null) { readPref(); poke(); }
     if (e.key === SEC_KEY || e.key === null) { readSec(); if (active()) tick(); }   // R49c

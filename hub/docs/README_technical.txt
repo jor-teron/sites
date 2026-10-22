@@ -196,7 +196,9 @@ drifts up to 6 px every minute (burn-in). Theme: html.hub-light (theme
   Settings > Desktop writes it from a number input (0..240, '0 = Off').
   Activity that resets the timer: mousemove / mousedown / keydown /
   touchstart / wheel on the Hub and on same-origin app documents,
-  window blur (focus into an app iframe), any hub-* bridge message.
+  window blur (focus into an app iframe), any hub-* bridge message
+  from the Hub's own origin (R57; on file:// from the Hub page or one
+  of its own iframes, since every file page has the origin 'null').
   Not started (timer delayed) while document.hidden, a fullscreen
   element exists, or a <video> plays in the Hub or a same-origin app.
   Checked every 5 s.
@@ -460,7 +462,11 @@ code kept in localStorage 'jtsites-hub-ctrl-code'; phones join it.
     D-pad / keys into the app frame, rumble back to the phone.
   - hub/link/hub_link.js: routes received files (to a registered app, else
     the overlay + toast), keeps the last 30 in IndexedDB 'hub-received';
-    'hub-auto-download' (default on).
+    'hub-auto-download' (default on). R57: it answers only the Hub's own
+    frames (frameOf) whose message origin is the Hub's origin (file://:
+    'null'), and posts to location.origin ('*' only on file://, where
+    'null' cannot be a target), so a frame on another site never gets
+    'hello' (the link code) or received files.
   - Connect QR tile = hub.html?join=CODE. hub/core/hub_role.js makes such a
     Hub a joiner (window.__hubRemote, code saved as
     'shared-link-join-code'); hub/link/hub_remote.js joins.
@@ -696,7 +702,7 @@ files change.
     session open without any CSV wait (section 5).
   - R38 (done): an open Settings shows the prefs from when it loaded.
     hub_settings.js remembers the prefs (on Settings load and on its own
-    {type:'hub-prefs'} messages); when Settings is opened again
+    {type:'hub-prefs'} messages, same-origin only since R57); when Settings is opened again
     (loadApp) or clicked into and they differ (changed by the Hub, e.g.
     taskbar Top, Desktop/Phone), its frame is reloaded on the same
     #section. Live redraw while Settings stays focused needs the

@@ -35,7 +35,11 @@
     frames().forEach((f) => { try { f.contentWindow.location.reload(); } catch (_) { /* gone */ } });
   }
   window.HubSettingsFresh = (entryUrl) => { if (String(entryUrl || '').indexOf('apps/system/settings/') === 0) fresh(); };
-  window.addEventListener('message', (e) => { if (e.data && e.data.type === 'hub-prefs') seen = snap(); });
+  /* R57: same-origin senders only (the hub_prefs.js check). file://: every file page has the opaque
+   * origin 'null', so there the sender must also be this page or one of its own iframes. */
+  const trusted = (e) => (e.origin === location.origin || (location.protocol === 'file:' && e.origin === 'null')) &&
+    (location.protocol !== 'file:' || e.source === window || [...document.querySelectorAll('iframe')].some((f) => f.contentWindow === e.source));
+  window.addEventListener('message', (e) => { if (trusted(e) && e.data && e.data.type === 'hub-prefs') seen = snap(); });
   document.addEventListener('load', (e) => { if (e.target.tagName === 'IFRAME' && frames().indexOf(e.target) >= 0) seen = snap(); }, true);
   window.addEventListener('blur', () => setTimeout(() => { if (frames().indexOf(document.activeElement) >= 0) fresh(); }, 0));
   row.addEventListener('click', () => { if (window.__hubOpenApp) window.__hubOpenApp('apps/system/settings/'); });
