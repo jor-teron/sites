@@ -961,12 +961,16 @@
   // Category page in a Desktop-mode window (shared/tiles/tiles.js): a tile asks the Hub to open
   // its app in its OWN window {type:'hub-open-app', url, name, newInstance}; the category window
   // stays on its list. Only accepted from a Hub window of this origin, for a page of this site.
+  // T1: in Phone mode the app frame may ask too (Terminal's open on file://, where it cannot call
+  // __hubOpenApp); it opens like __hubOpenApp(path).
   window.addEventListener('message', (e) => {
     const d = e.data;
-    if (!d || d.type !== 'hub-open-app' || !wmOn()) return;
+    if (!d || d.type !== 'hub-open-app') return;
     if (!IS_FILE && e.origin !== location.origin) return;
-    const from = window.HubWM.list().find((w) => { try { return w.frame.contentWindow === e.source; } catch (_) { return false; } });
-    if (!from) return;
+    const phone = !wmOn();
+    if (phone && e.source !== frame.contentWindow) return;
+    const from = phone ? null : window.HubWM.list().find((w) => { try { return w.frame.contentWindow === e.source; } catch (_) { return false; } });
+    if (!phone && !from) return;
     let u;
     try { u = new URL(String(d.url || ''), location.href); } catch (_) { return; }
     if (u.protocol !== location.protocol || (!IS_FILE && u.origin !== location.origin)) return;
@@ -975,6 +979,7 @@
     let rel;
     try { rel = decodeURI(u.pathname.slice(base.length)).replace(/index\.html$/i, ''); } catch (_) { return; }
     if (!safeRel(rel)) return;
+    if (phone) { window.__hubOpenApp(rel); return; }
     window.__hubFly.openFromCat(catOf(from.key), rel, String(d.name || '').slice(0, 80), false, { newInstance: !!d.newInstance });
   });
   /* ---------- Desktop mode: windows (wm_windows.js) ---------- */

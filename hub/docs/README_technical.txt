@@ -133,6 +133,10 @@ Hub and desktop (Monorepo Bot):
                       browse connected drives; managing is in Disk
   apps/system/sysmon/  System Monitor (tasks, CPU, memory, network,
                       storage, battery)
+  apps/system/terminal/ Terminal (T1): green-on-black command line;
+                      help, clear, echo, date, history, apps, open,
+                      build, theme. History in localStorage
+                      hub-terminal.history. See its README.md
   apps/tools/phonekey/  phone page for "Phone as a key"
   apps/system/viewer/  image / video Viewer app
 Shared but used by everyone: shared/link/ (SharedLink), shared/vendor/.
@@ -643,7 +647,9 @@ localStorage, prefix sites-hub.:
 sessionStorage: sites-hub.updTried (update-check loop guard),
   notely-handoff (Files -> Notely).
 Other localStorage keys: jtsites-hub-ctrl-code (Hub link code),
-  shared-link-join-code (phone remote), hub-auto-download.
+  shared-link-join-code (phone remote), hub-auto-download,
+  hub-terminal.history (Terminal, T1: JSON list, last 200 commands; not a
+  sites-hub. key so typing never re-applies the Hub prefs).
 IndexedDB:
   sites-fs / drives       added folder handles (fs_drives.js)
   sites-thumbs / thumbs   Files thumbnails, 50 MB cap (thumbs_store.js)
