@@ -42,3 +42,6 @@ html, body { margin: 0; height: 100%; background: #04060d; color: #cfd8ea; overf
   #menu { width: 100%; box-sizing: border-box; }
   #info { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
 }
+/* R2b: moons listed in a smaller second group of the Planets menu. */
+#menu { max-height: 60vh; overflow: auto; }
+#menu button.moon { font-size: 11px; height: 30px; color: #9fb0cc; }

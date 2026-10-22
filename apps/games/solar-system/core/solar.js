@@ -1,4 +1,5 @@
 // Solar System Explorer R2a: bodies are drawn by core/art.js (procedural textures, terminator, rim glow, rings).
+// R2b: Pluto on an eccentric orbit, and the main moons (drawn and tappable only when zoomed in enough).
 // R1c: Sun + 8 planets on compressed circular orbits, pan and zoom,
 // tap a body (or pick it from the list) to fly to it, follow it and show its info panel (data in core/data.js).
 // R1c adds pause and speed steps; orbit time is accumulated so speed changes never make planets jump.
@@ -23,8 +24,31 @@
     return { name: p[0], orbit: 70 * Math.log(1 + 2.5 * p[1]), period: p[2], r: p[3], color: p[4], spin: p[5],
       phase: i * 2.399, x: 0, y: 0 }; // golden-angle start so planets don't line up
   });
+  function au(a) { return 70 * Math.log(1 + 2.5 * a); }
+  // Pluto: real eccentricity 0.25, so it dips just inside Neptune's orbit; drawn dashed because its orbit is tilted 17°.
+  var PLUTO = { name: 'Pluto', a: 39.48, e: 0.249, w: 3.9, period: 247.9, r: 1.6, color: '#d8c3a5', spin: -90, phase: 4.1, x: 0, y: 0 };
+  bodies.push(PLUTO);
+  // Moons: name, parent, distance from parent centre (world units), real period (days), radius, colour, retrograde.
+  // Distances and sizes are exaggerated for visibility; periods are compressed (sqrt) but keep their true order.
+  var MOONS = [['Moon', 'Earth', 9, 27.32, 1.0, '#bdbdbd'], ['Phobos', 'Mars', 4.4, 0.319, 0.3, '#7a6e62'], ['Deimos', 'Mars', 6, 1.263, 0.25, '#8a7c6c'],
+    ['Io', 'Jupiter', 16, 1.769, 0.9, '#e6d062'], ['Europa', 'Jupiter', 20, 3.551, 0.8, '#ddd3c0'], ['Ganymede', 'Jupiter', 25, 7.155, 1.2, '#988e80'],
+    ['Callisto', 'Jupiter', 31, 16.69, 1.1, '#5a5046'], ['Enceladus', 'Saturn', 24, 1.370, 0.4, '#f4f6f8'], ['Rhea', 'Saturn', 28, 4.518, 0.55, '#bdbab4'],
+    ['Titan', 'Saturn', 36, 15.95, 1.15, '#d69a48'], ['Miranda', 'Uranus', 10, 1.413, 0.35, '#aaaaaa'], ['Titania', 'Uranus', 14, 8.706, 0.6, '#a89d96'],
+    ['Oberon', 'Uranus', 17, 13.46, 0.58, '#8a7a72'], ['Triton', 'Neptune', 10, 5.877, 0.75, '#e6d2c6', 1], ['Charon', 'Pluto', 4.5, 6.387, 0.8, '#a09a92']];
+  var byName = {}; bodies.forEach(function (b) { byName[b.name] = b; });
+  var moons = MOONS.map(function (m, i) {
+    return { name: m[0], parent: byName[m[1]], orbit: m[2], days: m[3], r: m[4], color: m[5], dir: m[6] ? -1 : 1, spin: Infinity,
+      phase: i * 1.7, x: 0, y: 0, moon: true };
+  });
+  var plutoPath = [];
+  for (var q = 0; q <= 128; q++) { var E = q / 128 * Math.PI * 2; plutoPath.push(eccAt(PLUTO, E)); }
+  function eccAt(b, E) { // eccentric anomaly -> compressed position
+    var e = b.e, nu = 2 * Math.atan2(Math.sqrt(1 + e) * Math.sin(E / 2), Math.sqrt(1 - e) * Math.cos(E / 2));
+    var R = au(b.a * (1 - e * Math.cos(E))); return [Math.cos(nu + b.w) * R, Math.sin(nu + b.w) * R];
+  }
+  function moonVisible(m) { return m.r * cam.z >= 1.2 && m.orbit * cam.z >= m.parent.r * cam.z + 8; }
   var all = [SUN].concat(bodies);
-  var maxOrbit = bodies[bodies.length - 1].orbit + 20;
+  var maxOrbit = au(49.3) + 8; // Pluto's aphelion
 
   var $ = function (id) { return document.getElementById(id); };
   var cv = $('c'), ctx = cv.getContext('2d'), panel = $('info'), ctl = $('ctl'), menu = $('menu');
@@ -39,7 +63,7 @@
     stars.push([a, b, 0.3 + (seed / 2147483647) * 0.9]);
   }
 
-  function clampZ(z) { return Math.max(fitZ * 0.5, Math.min(fitZ * 25, z)); }
+  function clampZ(z) { return Math.max(fitZ * 0.5, Math.min(fitZ * 60, z)); }
   // Screen point the camera centre maps to: the area not covered by the info panel.
   function centre() {
     if (panel.hidden) return { x: W / 2, y: H / 2 };
@@ -60,11 +84,11 @@
   function el(tag, text) { var e = document.createElement(tag); e.textContent = text; return e; }
   function select(b) {
     var d = window.SS_INFO[b.name], st = $('i-stats'), fx = $('i-facts');
+    var rows = d.rows || [['Diameter', d.d], ['From Sun', d.dist], ['Orbit', d.period], ['Day', d.day], ['Moons', d.moons]];
     $('i-name').textContent = b.name;
     $('i-type').textContent = d.type;
     st.textContent = ''; fx.textContent = '';
-    [['Diameter', d.d], ['From Sun', d.dist], ['Orbit', d.period], ['Day', d.day], ['Moons', d.moons]]
-      .forEach(function (r) { st.appendChild(el('dt', r[0])); st.appendChild(el('dd', r[1])); });
+    rows.forEach(function (r) { if (r[1]) { st.appendChild(el('dt', r[0])); st.appendChild(el('dd', r[1])); } });
     d.facts.forEach(function (f) { fx.appendChild(el('li', f)); });
     panel.hidden = false; placeCtl();
     follow = b;
@@ -89,8 +113,8 @@
   $('faster').addEventListener('click', function () { speedI = Math.min(SPEEDS.length - 1, speedI + 1); showSpeed(); });
   function toggleMenu(open) { menu.hidden = !open; $('list').setAttribute('aria-expanded', String(open)); }
   $('list').addEventListener('click', function () { toggleMenu(menu.hidden); });
-  all.forEach(function (b) {
-    var btn = el('button', b.name); btn.type = 'button';
+  all.concat(moons).forEach(function (b) {
+    var btn = el('button', b.name); btn.type = 'button'; if (b.moon) btn.className = 'moon';
     btn.addEventListener('click', function () { toggleMenu(false); select(b); });
     menu.appendChild(btn);
   });
@@ -103,9 +127,9 @@
   window.addEventListener('keyup', function (e) { if (e.key === ' ') e.preventDefault(); }); // no double toggle via a focused button
   function tap(sx, sy) {
     var c = centre(), best = null, bestD = 1e9;
-    all.forEach(function (b) {
+    all.concat(moons.filter(moonVisible)).forEach(function (b) {
       var d = Math.hypot((b.x - cam.x) * cam.z + c.x - sx, (b.y - cam.y) * cam.z + c.y - sy);
-      if (d < Math.max(22, b.r * cam.z + 10) && d < bestD) { best = b; bestD = d; }
+      if (d < Math.max(b.moon ? 14 : 22, b.r * cam.z + 10) && d < bestD) { best = b; bestD = d; }
     });
     if (!menu.hidden) toggleMenu(false); else if (best) select(best); else release();
   }
@@ -165,7 +189,15 @@
     var years = simT / 1000 / EARTH_SECONDS;
     bodies.forEach(function (b) {
       var ang = b.phase + (years / b.period) * Math.PI * 2;
+      if (b.e) { // Kepler's equation, a few Newton-free iterations are plenty for e = 0.25
+        for (var E = ang, it = 0; it < 6; it++) E = ang + b.e * Math.sin(E);
+        var pp = eccAt(b, E); b.x = pp[0]; b.y = pp[1]; return;
+      }
       b.x = Math.cos(ang) * b.orbit; b.y = Math.sin(ang) * b.orbit;
+    });
+    moons.forEach(function (m) {
+      var ang = m.phase + m.dir * simT / 1000 / (1.2 * Math.sqrt(m.days)) * Math.PI * 2;
+      m.x = m.parent.x + Math.cos(ang) * m.orbit; m.y = m.parent.y + Math.sin(ang) * m.orbit;
     });
     if (follow) {
       var k = 1;
@@ -186,11 +218,17 @@
     ctx.translate(c.x, c.y); ctx.scale(cam.z, cam.z); ctx.translate(-cam.x, -cam.y);
     // Orbits
     ctx.lineWidth = 1 / cam.z; ctx.strokeStyle = 'rgba(120,150,210,.22)';
-    bodies.forEach(function (b) { ctx.beginPath(); ctx.arc(0, 0, b.orbit, 0, Math.PI * 2); ctx.stroke(); });
+    bodies.forEach(function (b) { if (!b.e) { ctx.beginPath(); ctx.arc(0, 0, b.orbit, 0, Math.PI * 2); ctx.stroke(); } });
+    ctx.setLineDash([4 / cam.z, 4 / cam.z]); ctx.beginPath();
+    plutoPath.forEach(function (p, i) { if (i) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); }); ctx.stroke(); ctx.setLineDash([]);
+    var vis = moons.filter(moonVisible);
+    ctx.strokeStyle = 'rgba(120,150,210,.12)';
+    vis.forEach(function (m) { ctx.beginPath(); ctx.arc(m.parent.x, m.parent.y, m.orbit, 0, Math.PI * 2); ctx.stroke(); });
     // Sun, then planets (textures are built lazily the first time a body is drawn large enough)
     var sec = simT / 1000;
     window.SS_ART.draw(ctx, SUN, cam.z, sec);
     bodies.forEach(function (b) { window.SS_ART.draw(ctx, b, cam.z, sec); });
+    vis.forEach(function (m) { window.SS_ART.draw(ctx, m, cam.z, sec); });
     if (follow) { // selection ring
       ctx.strokeStyle = 'rgba(255,184,77,.8)'; ctx.lineWidth = 1.5 / cam.z;
       ctx.beginPath(); ctx.arc(follow.x, follow.y, follow.r + 5 / cam.z, 0, Math.PI * 2); ctx.stroke();
@@ -198,14 +236,14 @@
     ctx.restore();
     // Labels in screen space; skip any that would overlap one already drawn (selected and Sun first)
     ctx.font = '11px system-ui, sans-serif'; ctx.textAlign = 'center';
-    var placed = [], order = all.slice().sort(function (p, q) { return (q === follow) - (p === follow); });
+    var placed = [], order = all.concat(vis.filter(function (m) { return m === follow || (m.r * cam.z >= 2.5 && m.orbit * cam.z >= 40); })).sort(function (p, q) { return (q === follow) - (p === follow); });
     order.forEach(function (b) {
       var sx = (b.x - cam.x) * cam.z + c.x, sy = (b.y - cam.y) * cam.z + c.y;
       var pad = b === follow ? 7 : 0; // clear the selection ring
       var ly = b === SUN ? sy + b.r * cam.z + 13 + pad : sy - b.r * cam.z - 5 - pad, hw = ctx.measureText(b.name).width / 2 + 2;
       var box = [sx - hw, ly - 10, sx + hw, ly + 3];
       if (placed.some(function (q) { return box[0] < q[2] && box[2] > q[0] && box[1] < q[3] && box[3] > q[1]; })) return;
-      placed.push(box); ctx.fillStyle = b === SUN ? '#ffd25a' : '#cfd8ea'; ctx.fillText(b.name, sx, ly);
+      placed.push(box); ctx.fillStyle = b === SUN ? '#ffd25a' : b.moon ? '#9fb0cc' : '#cfd8ea'; ctx.fillText(b.name, sx, ly);
     });
     requestAnimationFrame(draw);
   }
