@@ -1,71 +1,22 @@
 /*
  * spreadsheet_ribbon.css
- * Draftly-style ribbon: 36px top bar (File + tabs), one row of grouped controls per tab
- * (scrolls sideways when narrow), File dropdown menu, formula bar row. Overrides the
- * wrapping toolbar from spreadsheet.css. Page is a column so the grid takes the rest.
+ * Spreadsheet-only ribbon bits; the ribbon itself is ../shared/office-ribbon.css.
+ * Maps the sheet's colours onto the shared --of-* variables, makes the page a column so the
+ * grid takes the rest, and styles the formula-bar row.
  */
-:root { --sr-top-h: 36px; --sr-ctl-h: 28px; --sr-tab-w: 64px; --sr-accent: #4ea1ff; }
-
+:root {
+  --of-bg: var(--panel); --of-group: var(--btn); --of-border: var(--border); --of-text: var(--text);
+  --of-muted: var(--muted); --of-focus: var(--sel);
+}
 body { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 .sheet-wrap { flex: 1 1 auto; min-height: 0; height: auto; }
 
-/* Top bar */
-.sr-topbar {
-  flex: 0 0 var(--sr-top-h); height: var(--sr-top-h);
-  display: flex; align-items: center; gap: 6px; padding: 0 8px;
-  background: var(--panel); border-bottom: 1px solid var(--border);
-}
-.sr-file-btn, .sr-tab {
-  width: var(--sr-tab-w); height: var(--sr-ctl-h); padding: 0; flex-shrink: 0;
-  border: 0; border-radius: 6px; font: 600 12.5px Segoe UI, system-ui, sans-serif; cursor: pointer;
-}
-.sr-file-btn { background: linear-gradient(135deg, #3d7bd9, #6a5af0); color: #fff; }
-.sr-file-btn:hover, .sr-file-btn.active { filter: brightness(1.1); }
-.sr-tabs { display: flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--btn); border: 1px solid var(--border); }
-.sr-tab { height: calc(var(--sr-ctl-h) - 4px); background: transparent; color: var(--muted); }
-.sr-tab:hover { background: #3a3a3a; color: var(--text); }
-.sr-tab[aria-selected="true"] { background: #3d5a80; color: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
-.sr-tab:focus-visible, .sr-file-btn:focus-visible { outline: 2px solid var(--sr-accent); outline-offset: 1px; }
-
-/* Ribbon row: never wraps, scrolls sideways */
-.toolbar.sr-ribbon {
-  flex: 0 0 auto; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
-  padding: 4px 8px; gap: 8px; scrollbar-width: thin;
-}
-.sr-panel { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.sr-panel[hidden] { display: none; }
-.sr-group {
-  display: flex; align-items: center; gap: 2px; flex-shrink: 0;
-  padding: 2px; border-radius: 8px; background: var(--btn); border: 1px solid var(--border);
-}
-.toolbar .sr-group button, .toolbar .sr-group select {
-  height: var(--sr-ctl-h); min-width: var(--sr-ctl-h); padding: 0 8px; border: 0; background: transparent;
-  white-space: nowrap;
-}
-.toolbar .sr-group button:hover { background: #3a3a3a; }
-.toolbar .sr-group button.on { background: #3d5a80; }
-.toolbar .sr-group select { background: var(--bg); }
-.toolbar .sr-group input[type="color"] { height: 24px; }
-.sr-note { font-size: 12px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+/* The ribbon also carries .toolbar (sheet control styles); keep it one row */
+.toolbar.of-ribbon { flex-wrap: nowrap; padding: 4px 8px; gap: 8px; }
+.toolbar.of-ribbon .of-group select { background: var(--bg); border: 0; }
 
 /* Formula bar: own compact row */
-.toolbar.sr-formula-row { flex: 0 0 auto; flex-wrap: nowrap; padding: 4px 8px; }
-.sr-formula-row #formula-bar { padding: 4px 8px; }
+.toolbar.sheet-formula-row { flex: 0 0 auto; flex-wrap: nowrap; padding: 4px 8px; }
+.sheet-formula-row #formula-bar { padding: 4px 8px; }
 
-/* File menu */
-.toolbar.sr-file-menu {
-  position: fixed; z-index: 30; width: 220px; flex-direction: column; align-items: stretch; flex-wrap: nowrap;
-  gap: 2px; padding: 6px; border: 1px solid var(--border); border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-.toolbar.sr-file-menu[hidden] { display: none; }
-.toolbar .sr-file-item {
-  display: block; width: 100%; padding: 8px 12px; border: 0; border-radius: 7px;
-  background: transparent; text-align: left; font-size: 13px;
-}
-.toolbar .sr-file-item:hover { background: #3a3a3a; }
-
-@media (max-width: 820px) { :root { --sr-tab-w: 54px; } }
-@media (max-width: 480px) { :root { --sr-tab-w: 48px; --sr-ctl-h: 28px; } .sr-note { display: none; } }
-
-@media print { .sr-topbar, .sr-ribbon, .sr-formula-row, .sr-file-menu { display: none !important; } body { display: block; height: auto; overflow: visible; } }
+@media print { .sheet-formula-row { display: none !important; } body { display: block; height: auto; overflow: visible; } }
