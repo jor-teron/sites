@@ -184,12 +184,19 @@
   }
   const next9 = (now) => { const t = last9(now); t.setDate(t.getDate() + 1); return t; };
   const due = (now) => lastRefresh() < last9(now).getTime();
-  /** No app open: Desktop → no windows; Phone → no app in the frame. */
+  /** No app open: Desktop → no windows; Phone → no app in the frame.
+   *  R56: Phone mode asks hub.js (window.__hubCurrentEntry). The frame's src attribute is NOT a signal:
+   *  hub.js navigates it with contentWindow.location.replace, so src stayed empty and the 09:00 refresh
+   *  could reload the Hub over an open app / game. Fallbacks: the home screen (#empty) is hidden while
+   *  an app is open; frame.dataset.app is the last url hub.js navigated to ('about:blank#…' = home). */
   function idleNow() {
     if (window.HubWM && window.HubMode && HubMode.isDesktop()) return HubWM.list().length === 0;
+    if (typeof window.__hubCurrentEntry === 'function') return !window.__hubCurrentEntry();
+    const empty = document.getElementById('empty');
+    if (empty) return !empty.classList.contains('hidden');
     const f = document.getElementById('app-frame');
-    const src = f ? f.getAttribute('src') || '' : '';
-    return !src || src === 'about:blank';
+    const u = f ? f.dataset.app || f.getAttribute('src') || '' : '';
+    return !u || /^about:blank/.test(u);
   }
   let refreshing = false;
   function askWorker() {

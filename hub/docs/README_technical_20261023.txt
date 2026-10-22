@@ -204,7 +204,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - `hub/version.txt` fetch errors when opened from file:// (no fetch on file://). Fix: embed the version in a JS file, or catch and fall back quietly.
 - `apps/system/settings/index.html` (line 3 comment) and `apps/system/settings/README.md` (title, deep-link examples) still say `apps/settings/`. Doc/comment fix only.
 - Broken `apps/tools/vDesktop/wallpaper.csv` path — Apps bot's area **[unverified: no reference found by `git grep` on origin/main; may be a runtime/404 path or already gone]**.
-- Added PC folders that need access again are hidden in Files; they should show greyed out with "Allow access".
+- ~~Added PC folders that need access again are hidden in Files~~ fixed in R56 (greyed with "Allow access").
 - Disk's Add folder and Google sign-in not yet tested on a real PC (box Playwright only).
 - Leaked TV (device-flow) client secret: Jor must delete/rotate it in Google Cloud Console. Code keeps tvClientId/tvClientSecret empty.
 - Low priority: R21/R22-style mode/size edge cases on odd viewports **[unverified]**.
