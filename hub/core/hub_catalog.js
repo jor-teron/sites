@@ -67,6 +67,7 @@ Spreadsheet,  spreadsheet/,         , , Sheets
 OCR,          ocr/,                 , , Scan & Print
 Paper Scan,   paper-scan/,          , , Scan & Print
 Print,        print/,               , , Scan & Print
+PDF Tools,    pdf-tools/,           , , PDF
 Mail,         mail/,                , , Mail
 `,
   "Connectivity": `# Connectivity — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
