@@ -1,6 +1,6 @@
 /*
- * Files drives (apps/system/files/files_drives.js) — the drives list (Local + added folders,
- * "Allow access", remove ✕ with the app's own dialog, "Add folder"), opening a drive / a path,
+ * Files drives (apps/system/files/files_drives.js) — the drives list (R54b: connected drives only +
+ * "Manage drives" → Disk; until R54b also "Allow access", remove ✕, "Add folder"), opening a drive / a path,
  * the clickable path (breadcrumb) and the hash: #drive=<id>&path=<a/b> (kept up to date with
  * replaceState so a Hub window session reopens the same drive + folder).
  * Drives and path crumbs are drop targets (drag items onto them = move, Ctrl = copy).
@@ -15,6 +15,45 @@
   const { $, el, btn, st, say, fail } = FX;
   const D = window.FsDrives, Dlg = window.UiDialog;
 
+  /* R54b: Files only browses. The list shows CONNECTED drives (Local; added folders with access;
+   * Google Drive when signed in) plus a small "Manage drives" link to Disk (apps/system/disk/), which
+   * now does Add folder / Allow access / Remove / Google sign-in and sign-out. Old draw(): LEGACY below. */
+  const DISK = '../disk/';
+  function openDisk() {
+    let hub = null;
+    try { hub = window.parent !== window && window.parent.__hubOpenApp ? window.parent : null; } catch (_) { hub = null; }
+    if (!(hub && hub.__hubOpenApp('apps/system/disk/') !== false)) location.href = DISK;
+  }
+  async function draw() {
+    const list = await D.list();
+    const rows = [];
+    for (const d of list) {
+      if (d.kind === 'gdrive' && D.gdriveState() !== 'ok') continue;
+      if (d.kind === 'folder' && (await D.access(d.id)) !== 'granted') continue;
+      const r = el('div', 'drive' + (d.id === st.driveId ? ' on' : ''));
+      r.setAttribute('role', 'listitem');
+      const open = btn('drive-open', '', 'Open ' + d.name, () => openDrive(d.id, true));
+      open.append(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : '\uD83D\uDCC2'), el('span', 'drive-name', d.name));
+      r.appendChild(open);
+      FX.view.dropTarget(open, () => D.handle(d.id), d.id);
+      rows.push(r);
+    }
+    if (!list.length) rows.unshift(el('p', 'drive-none', 'This browser has no file storage for web pages.'));
+    const m = el('a', 'drive-manage', '\u2699 Manage drives'); m.href = DISK; m.id = 'manage-drives';
+    m.addEventListener('click', (e) => { e.preventDefault(); openDisk(); });
+    rows.push(m);
+    $('drives').replaceChildren(...rows);
+  }
+  /** R54b: a drive that is not connected → a short note + "Open Disk" instead of the QR panel / allow button. */
+  function notConnected(text) {
+    const p = $('gd-panel');
+    $('list').hidden = true;
+    const b = btn('tb drive-allow', 'Open Disk', 'Manage drives in Disk', openDisk);
+    p.replaceChildren(el('p', 'nc-text', text), b);
+    p.hidden = false; p.classList.add('nc');
+  }
+
+  /* ===== LEGACY (until R54b, not run): draw() with Allow access / ✕ / Add folder / Google buttons =====
   async function draw() {
     const list = await D.list();
     const rows = [];
@@ -56,6 +95,8 @@
     $('drives').replaceChildren(...rows);
   }
 
+  ===== end LEGACY ===== */
+
   function setHash() {
     const p = st.stack.slice(1).map((s) => s.name).join('/');
     const h = st.driveId ? '#drive=' + encodeURIComponent(st.driveId) + (p ? '&path=' + encodeURIComponent(p) : '') : '';
@@ -66,7 +107,14 @@
     return { id: q.get('drive') || '', path: q.get('path') || '' };
   }
 
-  /** Google Drive not signed in yet: the QR panel instead of the file list. */
+  /** R54b: hide the "not connected" note (the Google QR panel moved to Disk; old gdPanel is LEGACY below). */
+  function gdPanel(on) {
+    const p = $('gd-panel');
+    if (!p || on) return;
+    $('list').hidden = false; p.hidden = true; p.classList.remove('nc'); p.replaceChildren();
+  }
+  /* ===== LEGACY (until R54b, not run): the Google sign-in panel inside Files =====
+  // Google Drive not signed in yet: the QR panel instead of the file list.
   let gdMount = null;
   function gdPanel(on) {
     const p = $('gd-panel');
@@ -80,21 +128,22 @@
       gdMount = window.GDriveConnect.mount(p, { onHowto: () => say('Setup steps: Hub \u2192 Settings \u2192 How-to \u2192 Google Drive (or apps/lab/gdrive-test/README.md).') });
     }
   }
+  ===== end LEGACY ===== */
   async function openDrive(id, fromClick, path) {
     say('');
     if (id === 'gdrive' && D.gdriveState() !== 'ok') {
       st.driveId = id; st.driveName = 'Google Drive'; st.stack = [];
       draw(); crumbs(); setHash(); FX.view.load();
-      gdPanel(true);
+      notConnected(D.gdriveState() === 'setup' ? 'Google Drive is not set up yet.' : D.gdriveState() === 'renew' ? 'Your Google Drive sign-in ran out. Renew it in Disk.' : 'Google Drive is not connected. Connect it in Disk.');   // R54b (was gdPanel(true))
       return;
     }
     gdPanel(false);
     let h;
     try { h = await D.handle(id); } catch (e) { st.driveId = id; st.stack = []; draw(); FX.view.load(); fail(e); return; }
     if (!h) { fail(new Error('Drive not found')); return; }
-    if ((await D.access(id)) !== 'granted' && (!fromClick || !(await D.allow(id)))) {
+    if ((await D.access(id)) !== 'granted') {   // R54b: no allow here (was: allow on click, else 'Click Allow access')
       st.driveId = id; st.stack = []; draw(); FX.view.load();
-      say('Click \u201cAllow access\u201d to open this folder.');
+      notConnected('\u201c' + h.name + '\u201d needs access again. Allow it in Disk.');
       return;
     }
     const d = (await D.list()).find((x) => x.id === id);

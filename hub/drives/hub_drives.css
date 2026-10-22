@@ -1,6 +1,6 @@
 /*
  * Desktop two-pane home (hub/drives/hub_drives.css) — Desktop mode only (body.wm-desktop):
- * left 60% = Drives (#desk-drives, hub_drives.js), right 40% = the QR / link tiles
+ * left 60% = Files (R54b; was Drives) (#desk-drives, hub_drives.js), right 40% = the QR / link tiles
  * (#tiles, hub_tiles.js) with almost no padding so a QR fills its tile (easier to scan).
  * Phone mode: the drives pane is hidden and the home looks exactly like before.
  */
