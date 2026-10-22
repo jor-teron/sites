@@ -32,6 +32,8 @@ window.HUB_APP_INDEX = {
   "pacman": ["Games", "apps/games/pacman/", "Pacman", "apps/games/pacman/pacman_icon.png", 0],
   "neon-fist": ["Games", "apps/games/neon-fist/", "Neon Fist", "apps/games/neon-fist/neon-fist_icon.png", 0],
   "neon-fist-3d": ["Games", "apps/games/neon-fist-3d/", "Neon Fist 3D", "apps/games/neon-fist-3d/neon-fist-3d_icon.png", 0],
+  "gravity-sandbox": ["Games", "apps/games/gravity-sandbox/", "Gravity Sandbox", "apps/games/gravity-sandbox/gravity-sandbox_icon.png", 0],
+  "ant-farm": ["Games", "apps/games/ant-farm/", "Ant Farm", "apps/games/ant-farm/ant-farm_icon.png", 0],
   "dino-run": ["Games", "apps/games/dino-run/", "Dino Run", "apps/games/dino-run/dino-run_icon.png", 0],
   "car-run": ["Games", "apps/games/car-run/", "Car Run", "apps/games/car-run/car-run_icon.png", 0],
   "desert-road": ["Games", "apps/games/desert-road/", "Desert Road", "apps/games/desert-road/desert-road_icon.png", 0],
