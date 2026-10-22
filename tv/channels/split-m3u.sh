@@ -5,6 +5,7 @@
 # Same tvg-id may appear in more than one category file.
 # Only skipped if that tvg-id is already in the same output file.
 # Usage: ./split-m3u.sh
+# Also writes home.m3u.js, home-more.m3u.js, kids.m3u.js via m3u-to-js.py (file:// support, TV2).
 
 set -euo pipefail
 
@@ -432,6 +433,9 @@ main() {
     done
 
     log_msg "Done. Wrote ${#USED_TVG_ID[@]} channels. Outputs: home.m3u home-more.m3u kids.m3u"
+
+    # TV2: also write <name>.m3u.js copies so tv-v1.html works from file://.
+    python3 "$(dirname "$0")/m3u-to-js.py" home.m3u home-more.m3u kids.m3u
 
     echo
     echo "===== ERRORS / SKIPS (${#ERROR_LINES[@]}) ====="

@@ -29,8 +29,10 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
 **`channels/`**
 - `home.csv`, `home-more.csv`, `kids.csv`: the wanted channels, one `tvg-id` per row (+ optional group)
 - `home.m3u`, `home-more.m3u`, `kids.m3u`: playlists generated from the CSVs
+- `home.m3u.js`, `home-more.m3u.js`, `kids.m3u.js`: GENERATED copies of the `.m3u` files (`window.TV_M3U['<name>'] = "..."`) so v1 works from file://. Don't edit them by hand
+- `m3u-to-js.py`: writes the `.m3u.js` copies (`python3 m3u-to-js.py` inside `channels/`); `split-m3u.sh` runs it at the end
 - `local.m3u`: an extra local list (not used by any page)
-- `split-m3u.sh`: Bash script. Downloads the iptv-org master lists (India, kids, full index, in that order) and writes `<csv>.m3u` for each CSV in CSV row order (first match per `tvg-id` wins, quality tags like "(720p)" are stripped from names). Run `./split-m3u.sh` inside `channels/` when streams go stale.
+- `split-m3u.sh`: Bash script. Downloads the iptv-org master lists (India, kids, full index, in that order) and writes `<csv>.m3u` for each CSV in CSV row order (first match per `tvg-id` wins, quality tags like "(720p)" are stripped from names). Run `./split-m3u.sh` inside `channels/` when streams go stale; it also regenerates the `.m3u.js` files.
 
 **`legacy/tv-old/` (legacy)**
 - `index.html`, `more.html`, `more-tv.html` + CSS: the original "Android TV homepage" launcher (app icons / links, clock). Kept for reference only; not linked from the hub.
@@ -40,7 +42,7 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
 ## 3. Behaviour rules (v1, the main player)
 - **Start:** resumes the last channel (category + name / URL / position from localStorage); otherwise opens the Home playlist (`channels/home.m3u`) and plays its first channel.
 - **Grid:** channel tiles (number, logo, name, group) over the video, 3–5 columns. Home starts with tiles: **Hub** (link to `../`), **Kids**, **More**, **India**. Other categories start with a **Home** tile. The grid hides 5 s after the last action; any key or click shows it again.
-- **Categories:** Home = `channels/home.m3u`, Kids = `channels/kids.m3u`, More = `channels/home-more.m3u`, India = iptv-org India list (online). Switching loads the list in place (no page change).
+- **Categories:** Home = `channels/home.m3u`, Kids = `channels/kids.m3u`, More = `channels/home-more.m3u`, India = iptv-org India list (online). Switching loads the list in place (no page change). Over http(s) the `.m3u` is fetched (falls back to the `.m3u.js` if the fetch fails); from file:// the `.m3u.js` is loaded with a script tag (once per list). India stays online-only.
 - **Playing:** hls.js when the browser supports it, else native HLS (Safari / iOS). Video is fitted (contain) and centred. When a stream fails, only the "no signal" poster shows (errors go to the console).
 - **Number zap:** type a channel number; it shows big on screen and jumps after 1.5 s. Digits don't open the grid.
 - **Picture-in-picture:** when the page is hidden (Home button, other app, tab switch) the video goes PiP if the browser allows; it comes back when you return.
@@ -73,7 +75,8 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 
 ## 8. Safe settings
 - `tv-v1.js` top block: `PLAYLISTS` (category → M3U path / URL), `DEFAULT_CATEGORY`, `CATEGORY_TILES` (Hub link + categories; name / href / logo), `HOME_CATEGORY_LOGO`, `NUMBER_DELAY` (1500 ms), `HIDE_DELAY` (5000 ms), `STORAGE_KEY`
-- `channels/*.csv`: add / remove / reorder channels by `tvg-id`, then run `split-m3u.sh`
+- `channels/*.csv`: add / remove / reorder channels by `tvg-id`, then run `split-m3u.sh` (it also rewrites the `.m3u.js` files)
+- Hand-edited a `channels/*.m3u`? Run `python3 m3u-to-js.py` in `channels/` and commit the `.m3u.js` too, or file:// keeps the old list
 - `split-m3u.sh` top block: `MASTER_M3U_URLS`, `CSV_FILES`, `RES_TAGS`
 - v3: `js/config.js`, `js/config-more.js` (`SPECIAL_TILES`)
 
@@ -89,6 +92,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 
 ## 10. Known limits
 - Needs the internet for streams: every stream is online (hls.js 1.5.20 is vendored in `vendor/hls/` since TV1). Free streams often go offline; refresh the playlists with `split-m3u.sh`.
+- From file:// (TV2): Home / Kids / More work offline-capable via `.m3u.js`; India needs the internet. The **Hub** tile (`../`) opens a folder listing on file:// (no index.html auto-open). Streams without CORS headers (e.g. 9XM) fail on file:// and http(s) alike. Chrome keeps one localStorage for all file:// pages, so the saved channel is shared with other file:// apps.
 - v1 shows no error text; a dead channel just shows the poster.
 - The v1 "no signal" poster is the local `image/no_signal.svg` (TV1; the old `../image/tv_no_signal.jpeg` was removed).
 - v1's **Hub** tile goes to `../` (the hub). Inside the hub frame this opens a hub inside the hub.
@@ -113,6 +117,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 - 2026-10-05 00:35 IST: tile icons switched to `shared/image/placeholder.png` after `image/` was removed (7d7ac04).
 - 2026-10-23 IST: TV4: retired v2 / v3 pages, `js/`, `tv-old/`, `photo.html` / `video.html` moved to `legacy/` (paths not fixed).
 - 2026-10-23 IST: TV1: hls.js 1.5.20 vendored in `vendor/hls/` (with LICENSE.md, no CDN); local `image/no_signal.svg` poster; category switches only after its playlist loads (stale loads ignored, failure keeps the old list, falls back to Home if nothing loaded); empty playlists and auto-start never open link / category tiles; M3U name = text after the first comma outside quotes, else `tvg-name`.
+- 2026-10-23 IST: TV2: works from file://: `channels/m3u-to-js.py` (run by `split-m3u.sh`) writes `home.m3u.js`, `kids.m3u.js`, `home-more.m3u.js`; `tv-v1.js` loads them with a script tag on file:// or when fetch fails; http(s) still uses fetch.
 
 ## 12. Related apps
 - Hub: `../hub/docs/hub_readme.md` (TV is in Favorite and Media, and a home tile that opens it in a new tab)

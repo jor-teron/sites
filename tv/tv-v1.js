@@ -132,6 +132,63 @@ function parseM3U(text) {
   return result;
 }
 
+// ========== PLAYLIST TEXT (fetch, or .m3u.js on file://) ==========
+// TV2: browsers block fetch() on file://, so local playlists also exist as
+// generated channels/<name>.m3u.js (window.TV_M3U['<name>'] = "...").
+// Regenerate them with channels/m3u-to-js.py (split-m3u.sh runs it).
+const m3uScriptLoads = {}; // key -> Promise<string>, so each script is injected once
+
+function isLocalPlaylist(url) {
+  return !/^[a-z][a-z0-9+.-]*:/i.test(url); // relative path, no scheme
+}
+
+function m3uKey(url) {
+  return url.split('/').pop().replace(/\.m3u8?$/i, '');
+}
+
+function loadM3uScript(url) {
+  const key = m3uKey(url);
+  if (window.TV_M3U && typeof window.TV_M3U[key] === 'string') {
+    return Promise.resolve(window.TV_M3U[key]);
+  }
+  if (!m3uScriptLoads[key]) {
+    m3uScriptLoads[key] = new Promise(function (resolve, reject) {
+      const script = document.createElement('script');
+      script.src = url + '.js';
+      script.onload = function () {
+        const text = window.TV_M3U && window.TV_M3U[key];
+        if (typeof text === 'string') resolve(text);
+        else reject(new Error('No TV_M3U["' + key + '"] in ' + script.src));
+      };
+      script.onerror = function () {
+        reject(new Error('Could not load ' + script.src));
+      };
+      document.head.appendChild(script);
+    }).catch(function (err) {
+      delete m3uScriptLoads[key]; // allow a retry later
+      throw err;
+    });
+  }
+  return m3uScriptLoads[key];
+}
+
+function getPlaylistText(url) {
+  const local = isLocalPlaylist(url);
+  if (local && location.protocol === 'file:') {
+    return loadM3uScript(url); // skip fetch: it always fails (and logs) on file://
+  }
+  return fetch(url)
+    .then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    })
+    .catch(function (err) {
+      if (!local) throw err; // online lists (India) stay online-only
+      console.warn('fetch failed for ' + url + ', trying ' + url + '.js', err);
+      return loadM3uScript(url);
+    });
+}
+
 // ========== PLAYLIST LOAD ==========
 function categoryTilesFor(category) {
   if (category === 'home') {
@@ -177,11 +234,7 @@ function loadPlaylist(category, options) {
   // loadPlaylist call makes this one stale and its result is dropped.
   const token = ++loadToken;
 
-  fetch(url)
-    .then(function (res) {
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      return res.text();
-    })
+  getPlaylistText(url)
     .then(function (text) {
       if (token !== loadToken) return; // stale
       const channels = parseM3U(text);
