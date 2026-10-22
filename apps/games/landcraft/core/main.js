@@ -1,12 +1,14 @@
-// LandCraft L1a: renders a flat voxel test world with three.js r170 (vendored, no CDN).
+// LandCraft L1b: flat voxel test world (three.js r170, vendored) explored in first person.
 import * as THREE from 'three';
 import { makeAtlas } from './atlas.js';
 import { World, GROUND } from './world.js';
+import { Player, EYE } from './player.js';
+import { setupControls } from './controls.js';
 
 const SKY = 0x8ec9ff;
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-document.body.appendChild(renderer.domElement);
+document.body.prepend(renderer.domElement); // first, so the overlay UI stacks above it
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(SKY);
@@ -29,10 +31,16 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-// L1a preview camera: slow orbit around the test area.
+const player = new Player(world, 5.5, GROUND, 1.5); // spawn facing the stone wall (-Z)
+const controls = setupControls(renderer.domElement, player);
+window.landcraft = { player: player, world: world }; // read-only handle for debugging and tests
+
+let last = performance.now();
 renderer.setAnimationLoop(function (t) {
-  const a = t / 1000 * 0.08;
-  camera.position.set(Math.cos(a) * 26, GROUND + 14, Math.sin(a) * 26);
-  camera.lookAt(0, GROUND, 0);
+  const dt = Math.min(0.05, (t - last) / 1000); // cap so a background tab can't cause a huge step
+  last = t;
+  player.update(dt, controls.read());
+  camera.position.set(player.pos.x, player.pos.y + EYE, player.pos.z);
+  camera.rotation.set(player.pitch, player.yaw, 0, 'YXZ');
   renderer.render(scene, camera);
 });
