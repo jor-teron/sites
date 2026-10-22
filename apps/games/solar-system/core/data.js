@@ -1,4 +1,4 @@
-// Solar System Explorer R1c: info-panel facts. Values from the NASA planetary fact sheets
+// Solar System Explorer R1c: info-panel facts. R2b adds Pluto and the main moons (moons use their own rows). R2c adds Ceres and the two belts. Values from the NASA planetary fact sheets
 // (nssdc.gsfc.nasa.gov/planetary/factsheet). Moon counts per NASA, mid-2026; small moons keep being found.
 window.SS_INFO = {
   Sun: { type: 'Star (G2V yellow dwarf)', d: '1,391,400 km', dist: 'Centre of the solar system',
@@ -21,7 +21,7 @@ window.SS_INFO = {
     facts: ['Olympus Mons is the largest volcano in the solar system.', 'Its red colour comes from iron oxide (rust) in the dust.',
       'Air pressure is less than 1% of Earth’s.'] },
   Jupiter: { type: 'Gas giant', d: '142,984 km', dist: '5.20 AU · 778.5 million km', period: '11.86 years',
-    day: '9.9 hours', moons: '95 IAU-recognised (more reported)',
+    day: '9.9 hours', moons: 'Over 90 known',
     facts: ['More than twice the mass of all the other planets combined.', 'The Great Red Spot is a storm wider than Earth.',
       'Its moon Ganymede is the largest moon in the solar system.'] },
   Saturn: { type: 'Gas giant', d: '120,536 km', dist: '9.57 AU · 1,432 million km', period: '29.4 years',
@@ -34,5 +34,57 @@ window.SS_INFO = {
   Neptune: { type: 'Ice giant', d: '49,528 km', dist: '30.18 AU · 4,515 million km', period: '164.8 years',
     day: '16.1 hours', moons: '16',
     facts: ['Winds reach more than 2,000 km/h, the fastest in the solar system.', 'The first planet found by mathematical prediction (1846).',
-      'Its largest moon, Triton, orbits backwards.'] }
+      'Its largest moon, Triton, orbits backwards.'] },
+  Pluto: { type: 'Dwarf planet (Kuiper belt)', d: '2,377 km', dist: '39.5 AU average (29.7–49.3 AU) · 5.9 billion km', period: '248 years',
+    day: '6.4 Earth days (spins backwards)', moons: '5 (Charon, Nix, Hydra, Kerberos, Styx)',
+    facts: ['Reclassified as a dwarf planet by the IAU in 2006.', 'Its bright “heart”, Tombaugh Regio, includes a vast plain of nitrogen ice.',
+      'Its orbit is tilted 17° and so stretched that it is sometimes closer to the Sun than Neptune.', 'NASA’s New Horizons flew past in July 2015.'] }
 };
+function ssMoon(parent, d, dist, period, facts) {
+  return { type: 'Moon of ' + parent, facts: facts, rows: [['Diameter', d], ['Orbits', dist + ' from ' + parent], ['Orbit', period]] };
+}
+[['Moon', 'Earth', '3,475 km', '384,400 km', '27.3 days (always shows Earth the same face)',
+  ['The only other world people have walked on (Apollo, 1969–1972).', 'Its dark “seas” (maria) are ancient lava plains.', 'It drifts about 3.8 cm farther from Earth each year.']],
+ ['Phobos', 'Mars', 'About 22 km (27 × 22 × 18 km)', '9,376 km', '7.7 hours',
+  ['Orbits faster than Mars spins, so it rises in the west.', 'Slowly spiralling inward; it should break apart or crash in tens of millions of years.', 'Marked by the 9 km wide Stickney crater.']],
+ ['Deimos', 'Mars', 'About 12 km (15 × 12 × 11 km)', '23,460 km', '30.3 hours',
+  ['The smaller and outer of Mars’s two moons.', 'Its surface is smoothed by a thick layer of dust.', 'Named after the Greek god of dread; Phobos means fear.']],
+ ['Io', 'Jupiter', '3,643 km', '421,700 km', '1.77 days',
+  ['The most volcanically active world known, with hundreds of active volcanoes.', 'Tidal squeezing by Jupiter, Europa and Ganymede heats its interior.', 'Sulfur paints it yellow, orange and red.']],
+ ['Europa', 'Jupiter', '3,122 km', '671,100 km', '3.55 days',
+  ['An ice shell covers a salty ocean thought to hold about twice the water of Earth’s oceans.', 'Criss-crossed by long reddish cracks.', 'NASA’s Europa Clipper is due to arrive in 2030.']],
+ ['Ganymede', 'Jupiter', '5,268 km', '1,070,400 km', '7.15 days',
+  ['The largest moon in the solar system, bigger than Mercury.', 'The only moon known to have its own magnetic field.', 'Probably hides a deep ocean under its ice.']],
+ ['Callisto', 'Jupiter', '4,821 km', '1,882,700 km', '16.7 days',
+  ['One of the most heavily cratered surfaces in the solar system.', 'Valhalla, a multi-ring impact basin, is about 3,800 km across.', 'Orbits outside Jupiter’s fiercest radiation.']],
+ ['Enceladus', 'Saturn', '504 km', '238,000 km', '1.37 days',
+  ['Geysers at its south pole (the “tiger stripes”) spray ice into space and feed Saturn’s E ring.', 'Reflects almost all the sunlight that hits it.', 'Has a global ocean under its ice shell.']],
+ ['Rhea', 'Saturn', '1,527 km', '527,100 km', '4.52 days',
+  ['Saturn’s second-largest moon.', 'A cold, icy world covered in craters.', 'Mostly water ice with a little rock.']],
+ ['Titan', 'Saturn', '5,150 km', '1,221,900 km', '15.9 days',
+  ['The only moon with a thick atmosphere, mostly nitrogen, with a surface pressure 1.5 times Earth’s.', 'Has lakes and seas of liquid methane and ethane.', 'ESA’s Huygens probe landed there in 2005.']],
+ ['Miranda', 'Uranus', '472 km', '129,400 km', '1.41 days',
+  ['A patchwork surface of grooves, ridges and terraces.', 'Verona Rupes is a cliff roughly 20 km tall.', 'Seen up close only once, by Voyager 2 in 1986.']],
+ ['Titania', 'Uranus', '1,577 km', '435,900 km', '8.71 days',
+  ['The largest moon of Uranus.', 'Scarred by huge canyons and faults.', 'Named after the fairy queen in Shakespeare’s A Midsummer Night’s Dream.']],
+ ['Oberon', 'Uranus', '1,523 km', '583,500 km', '13.5 days',
+  ['The outermost of Uranus’s large moons.', 'Old, heavily cratered and partly darkened.', 'Named after the fairy king in A Midsummer Night’s Dream.']],
+ ['Triton', 'Neptune', '2,707 km', '354,800 km', '5.88 days, backwards (retrograde)',
+  ['The only large moon that orbits backwards, so it was probably captured from the Kuiper belt.', 'Voyager 2 saw nitrogen geysers there in 1989.', 'One of the coldest surfaces measured, about −235 °C.']],
+ ['Charon', 'Pluto', '1,212 km', '19,600 km', '6.39 days',
+  ['About half Pluto’s size, so the pair orbit a point between them.', 'Pluto and Charon always show each other the same face.', 'A reddish polar cap is nicknamed Mordor Macula.']]
+].forEach(function (m) { window.SS_INFO[m[0]] = ssMoon(m[1], m[2], m[3], m[4], m[5]); });
+window.SS_INFO.Ceres = { type: 'Dwarf planet (asteroid belt)', d: '939 km', dist: '2.77 AU · 414 million km', period: '4.6 years',
+  day: '9 hours', moons: '0',
+  facts: ['The largest object in the asteroid belt and the only dwarf planet in the inner solar system.',
+    'NASA’s Dawn spacecraft orbited it from 2015 to 2018.', 'The bright spots in Occator crater are salt deposits left by briny water.'] };
+window.SS_INFO['Asteroid belt'] = { type: 'Region of rocky bodies', facts: [
+    'Millions of rocky and metallic bodies, yet all together they hold only about 3% of the Moon’s mass.',
+    'Ceres alone is about a quarter of that mass; Vesta, Pallas and Hygiea come next.',
+    'Asteroids are so spread out that spacecraft cross the belt without any danger of a collision.'],
+  rows: [['Where', 'Between Mars and Jupiter, about 2.2–3.2 AU'], ['Orbit', '3–6 years'], ['Largest', 'Ceres (939 km)']] };
+window.SS_INFO['Kuiper belt'] = { type: 'Region of icy bodies', facts: [
+    'A huge ring of icy leftovers from the birth of the planets.',
+    'Home to dwarf planets Pluto, Haumea and Makemake, and the source of many short-period comets.',
+    'New Horizons flew past the Kuiper belt object Arrokoth on 1 January 2019.'],
+  rows: [['Where', 'Beyond Neptune, about 30–50 AU'], ['Orbit', '~250–350 years'], ['Largest', 'Pluto (2,377 km)']] };

@@ -1,6 +1,6 @@
 // Solar System Explorer R2a: realistic-looking bodies on a plain 2D canvas, no libraries, offline.
 // Each body gets a procedural texture (seeded, so identical every load) rendered once to an offscreen canvas,
-// then drawn clipped to its disc, shaded with a day/night terminator facing the Sun, plus rim glow and rings.
+// R2c adds Ceres. R2b adds Pluto and the moons with the same painter/crater approach. Textures are then drawn clipped to its disc, shaded with a day/night terminator facing the Sun, plus rim glow and rings.
 window.SS_ART = (function () {
   'use strict';
   function rng(str) { // mulberry32 seeded from the body name
@@ -37,6 +37,7 @@ window.SS_ART = (function () {
     .forEach(function (h) { C[h] = hex(h); });
   var JUP = ['#e9dcc0', '#c99c6e', '#e3c79c', '#a8754f', '#f0e3c8', '#b98a62', '#d8b48a'].map(function (h) { return C[h]; });
   var SAT = ['#e8d6a8', '#d4ba84', '#efe0b8', '#c9ad78'].map(function (h) { return C[h]; });
+  function rocky(a, b, f) { a = hex(a); b = hex(b); return function (u, v, n) { return mix(a, b, n(u, v, f) * 1.8 - 0.4); }; }
   var PAINT = { // (u, v, n) -> [r, g, b]; u around the planet, v pole to pole, n = noise
     Sun: function (u, v, n) { var g = n(u, v, 64, 2); return mix([255, 178, 60], [255, 240, 180], 0.4 + (g - 0.5) * 1.4); },
     Mercury: function (u, v, n) { var g = 0.45 + 0.35 * n(u, v, 6); return [g * 200, g * 192, g * 184]; },
@@ -61,21 +62,45 @@ window.SS_ART = (function () {
       var c = mix(C['#1d2f80'], C['#3f63d6'], 0.55 + 0.35 * Math.sin(v * 12 + n(u, v, 3) * 3)), s = spot(u, v, 0.62, 0.38, 0.05, 0.035);
       if (n(u * 1, v * 8, 4) > 0.68 && Math.abs(v - 0.3) < 0.05) c = mix(c, [235, 240, 255], 0.7); // bright cirrus streak
       return s > 0 ? mix(c, [14, 24, 70], Math.min(1, s * 3)) : c;
-    }
+    },
+    Pluto: function (u, v, n) {
+      var c = mix([190, 150, 112], [232, 210, 176], n(u, v, 5) * 1.6 - 0.3);
+      if (spot(u, v, 0.24, 0.6, 0.2, 0.08) + (n(u, v, 8) - 0.5) * 0.8 > 0) c = mix(c, [92, 56, 40], 0.85); // dark Cthulhu region
+      return Math.max(spot(u, v, 0.58, 0.52, 0.07, 0.1), spot(u, v, 0.66, 0.5, 0.06, 0.09)) > 0 ? [246, 238, 226] : c; // the heart
+    },
+    Moon: function (u, v, n) { var g = n(u, v, 3); return g > 0.55 ? mix([88, 88, 94], [120, 120, 126], n(u, v, 10)) : mix([165, 165, 168], [212, 210, 206], n(u, v, 12, 3)); },
+    Phobos: rocky('#4e4640', '#8a7d70', 8), Deimos: rocky('#665b50', '#a09080', 6),
+    Io: function (u, v, n) { var c = mix([226, 204, 84], [246, 236, 160], n(u, v, 6)); return mix(c, [196, 100, 44], (n(u, v, 12, 2) - 0.56) * 5); },
+    Europa: rocky('#c4b49a', '#f0eadc', 5), Ganymede: rocky('#5f564c', '#bcb4a6', 4), Callisto: rocky('#352f28', '#6a5e50', 8),
+    Enceladus: function (u, v, n) { return v > 0.82 && Math.sin(u * 50 + v * 20) > 0.85 ? [120, 168, 210] : mix([228, 234, 240], [255, 255, 255], n(u, v, 6)); },
+    Rhea: rocky('#8f8c87', '#d4d1cc', 8),
+    Titan: function (u, v, n) { return mix([196, 132, 54], [228, 172, 92], 0.5 + 0.3 * Math.sin(v * 7) + (n(u, v, 3) - 0.5) * 0.6); },
+    Miranda: rocky('#7e7e7e', '#cacaca', 4), Titania: rocky('#857a74', '#c0b5ac', 6), Oberon: rocky('#615650', '#a08e85', 6),
+    Triton: function (u, v, n) { return v > 0.6 ? mix([226, 176, 160], [240, 206, 192], n(u, v, 6)) : mix([200, 190, 182], [238, 230, 224], n(u, v, 10, 3)); },
+    Ceres: function (u, v, n) { return spot(u, v, 0.3, 0.42, 0.02, 0.03) > 0 ? [250, 250, 246] : mix([88, 86, 84], [150, 146, 140], n(u, v, 6) * 1.6 - 0.3); }, // Occator's salt spots
+    Charon: function (u, v, n) { return v < 0.13 + n(u, v, 6) * 0.06 ? [120, 72, 52] : mix([128, 124, 120], [190, 184, 176], n(u, v, 5) * 1.6 - 0.3); }
   };
+  var CRATERS = { Mercury: 90, Mars: 10, Moon: 50, Phobos: 14, Deimos: 8, Callisto: 90, Ganymede: 25, Rhea: 60, Miranda: 10, Titania: 30, Oberon: 45, Charon: 20, Io: 30, Ceres: 30 };
   var cache = {};
   function texture(b) {
     if (cache[b.name]) return cache[b.name];
-    var W = b.r >= 3.5 ? 512 : 256, H = W / 2, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    var W = b.r >= 3.5 ? 512 : b.r >= 1.5 ? 256 : 128, H = W / 2, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
     var x = cv.getContext('2d'), img = x.createImageData(W, H), d = img.data, rand = rng(b.name), n = noise(rand), p = PAINT[b.name];
     for (var j = 0, k = 0; j < H; j++) for (var i = 0; i < W; i++, k += 4) {
       var c = p(i / W, j / H, n); d[k] = c[0]; d[k + 1] = c[1]; d[k + 2] = c[2]; d[k + 3] = 255;
     }
     x.putImageData(img, 0, 0);
-    if (b.name === 'Mercury' || b.name === 'Mars') for (var q = 0; q < (b.name === 'Mercury' ? 90 : 10); q++) { // craters
-      var cx = rand() * W, cy = rand() * H, cr = 1 + Math.pow(rand(), 3) * (b.name === 'Mars' ? 5 : 12);
-      x.fillStyle = 'rgba(0,0,0,.22)'; x.beginPath(); x.arc(cx, cy, cr, 0, 7); x.fill();
+    var io = b.name === 'Io', k2 = W / 256;
+    for (var q = 0; q < (CRATERS[b.name] || 0); q++) { // craters (on Io: dark volcanic vents)
+      var cx = rand() * W, cy = rand() * H, cr = (1 + Math.pow(rand(), 3) * (b.name === 'Mars' ? 5 : 12)) * k2;
+      x.fillStyle = io ? 'rgba(60,30,10,.75)' : 'rgba(0,0,0,.22)'; x.beginPath(); x.arc(cx, cy, io ? cr * 0.5 : cr, 0, 7); x.fill();
+      if (io) continue;
       x.strokeStyle = 'rgba(255,255,255,.18)'; x.lineWidth = Math.max(0.6, cr * 0.25); x.beginPath(); x.arc(cx - cr * 0.15, cy - cr * 0.15, cr, 2.4, 5.6); x.stroke();
+    }
+    if (b.name === 'Europa') { // long reddish cracks (lineae)
+      x.strokeStyle = 'rgba(150,82,50,.55)'; x.lineWidth = 0.8;
+      for (q = 0; q < 26; q++) { x.beginPath(); var px = rand() * W, py = rand() * H; x.moveTo(px, py);
+        x.quadraticCurveTo(px + (rand() - 0.5) * W * 0.4, py + (rand() - 0.5) * H * 0.5, px + (rand() - 0.5) * W * 0.6, py + (rand() - 0.5) * H * 0.6); x.stroke(); }
     }
     return (cache[b.name] = cv);
   }
@@ -89,7 +114,7 @@ window.SS_ART = (function () {
     ctx.drawImage(tx, b.x - r - off, b.y - r, 4 * r, 2 * r); ctx.drawImage(tx, b.x + 3 * r - off, b.y - r, 4 * r, 2 * r);
     ctx.restore();
   }
-  var GLOW = { Earth: '110,170,255', Venus: '255,230,170', Jupiter: '240,210,170', Saturn: '240,220,170', Uranus: '170,235,245', Neptune: '110,140,255' };
+  var GLOW = { Earth: '110,170,255', Venus: '255,230,170', Jupiter: '240,210,170', Saturn: '240,220,170', Uranus: '170,235,245', Neptune: '110,140,255', Titan: '240,170,80', Pluto: '170,200,255' };
   var RINGS = [[1.24, 1.52, 0.22], [1.52, 1.72, 0.75], [1.72, 1.95, 0.9], [2.03, 2.2, 0.6], [2.22, 2.28, 0.45]]; // C, B (2), [Cassini gap], A, outer A
   function rings(ctx, b, half, px) {
     var u = b.name === 'Uranus', set = u ? [[1.6, 1.64, 0.18], [1.9, 1.95, 0.25]] : RINGS;
@@ -112,9 +137,9 @@ window.SS_ART = (function () {
   }
   // Draw one body in world units. z = camera zoom (px per unit), sec = simulated seconds (spin follows sim speed).
   function draw(ctx, b, z, sec) {
-    if (!b.orbit) return sun(ctx, b, z, sec);
+    if (b.name === 'Sun') return sun(ctx, b, z, sec);
     var r = b.r, px = r * z, ring = b.name === 'Saturn' || b.name === 'Uranus';
-    if (px < 3) { if (b.name === 'Saturn') rings(ctx, b, true, z); ctx.fillStyle = b.color; disc(ctx, b.x, b.y, r); ctx.fill(); return; }
+    if (px < (b.moon ? 1.5 : 3)) { if (b.name === 'Saturn') rings(ctx, b, true, z); ctx.fillStyle = b.color; disc(ctx, b.x, b.y, r); ctx.fill(); return; }
     if (GLOW[b.name]) { ctx.fillStyle = radial(ctx, b.x, b.y, r * 0.98, r * 1.1, [[0, 'rgba(' + GLOW[b.name] + ',.45)'], [1, 'rgba(' + GLOW[b.name] + ',0)']]); disc(ctx, b.x, b.y, r * 1.1); ctx.fill(); }
     if (ring) rings(ctx, b, true, z);
     textured(ctx, b, sec / (b.spin || 60));
