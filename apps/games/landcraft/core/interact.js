@@ -62,5 +62,5 @@ export function setupInteract(o) { // o: { scene, camera, world, player, canvas,
     outline.visible = !!target;
     if (target) outline.position.set(target.x + 0.5, target.y + 0.5, target.z + 0.5);
   }
-  return { update: update, slot: function () { return HOTBAR[slot]; }, target: function () { return target; } };
+  return { update: update, slot: function () { return HOTBAR[slot]; }, index: function () { return slot; }, select: select, target: function () { return target; } };
 }

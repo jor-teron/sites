@@ -54,3 +54,6 @@ body.touch #mapbtn { min-height: 40px; padding: 6px 12px; font-size: 14px; }
   border: 0; border-radius: 10px; cursor: pointer; touch-action: manipulation; }
 #picker #map-play { background: #e08a1e; }
 #picker button:disabled { opacity: .45; cursor: default; }
+/* L2c: small Reset map link under Continue (only for maps with a save). */
+#picker #map-reset { min-height: 36px; font-size: 13px; font-weight: 500; color: #ffb0a4; background: transparent; text-decoration: underline; }
+#picker #map-reset[hidden] { display: none; }

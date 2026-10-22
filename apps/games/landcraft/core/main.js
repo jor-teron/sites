@@ -1,5 +1,6 @@
-// LandCraft L2b: generated voxel maps 00-99 chosen in a title picker (or ?map=NN; 00 = flat test world),
-// three.js r170 vendored, first-person movement and block break/place. Switching maps rebuilds the world from the number.
+// LandCraft L2c: generated voxel maps 00-99 chosen in a title picker (or ?map=NN; 00 = flat test world),
+// three.js r170 vendored, first-person movement and block break/place. Each map keeps its own save (edits + player),
+// autosaved every 30 s and on map switch / picker / page hide; a map is rebuilt from its number plus the save's diff.
 import * as THREE from 'three';
 import { makeAtlas } from './atlas.js';
 import { generate, worldHash } from './mapgen.js';
@@ -7,6 +8,7 @@ import { Player, EYE } from './player.js';
 import { setupControls } from './controls.js';
 import { setupInteract } from './interact.js';
 import { setupPicker } from './picker.js';
+import { readSave, writeSave, hasSave, dropSave, saveKey } from './save.js';
 
 const SKY = 0x8ec9ff;
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -43,21 +45,42 @@ const ctx = { scene: scene, camera: camera, world: null, player: player, canvas:
 const interact = setupInteract(ctx); // reads ctx.world on every use, so a map switch only swaps ctx.world
 let mapNum = null, last = performance.now();
 
-// Drop the old map's meshes, generate map n from its number and put the player at its spawn.
-function loadMap(n) {
+let saveOk = true;
+function save() {
+  if (!ctx.world || mapNum === null) return false;
+  saveOk = writeSave(mapNum, ctx.world, player, interact.index());
+  return saveOk;
+}
+// Save the old map, drop its meshes, generate map n from its number, apply its saved edits and put the
+// player back where they were (or at spawn). keepOld = false skips saving the old map (used by Reset map).
+function loadMap(n, keepOld) {
+  if (keepOld !== false) save();
   if (ctx.world) for (const c of ctx.world.chunks.values()) if (c.mesh) { scene.remove(c.mesh); c.mesh.geometry.dispose(); c.mesh = null; }
-  const w = generate(n);
-  w.buildNear(scene, materials, w.spawn.x, w.spawn.z, LOAD, Infinity);
+  const w = generate(n), s = readSave(n, w);
   ctx.world = player.world = w; mapNum = n;
   player.spawn = Object.assign({}, w.spawn); Object.assign(player.pos, w.spawn); // map 00: facing the stone wall (-Z)
   player.vel.x = player.vel.y = player.vel.z = 0; player.yaw = player.pitch = 0;
+  if (s) { // edits go in before the first meshing, so every affected chunk is meshed with them
+    for (let i = 0; i < s.edits.length; i += 4) w.track(s.edits[i], s.edits[i + 1], s.edits[i + 2], s.edits[i + 3]);
+    Object.assign(player.pos, s.pos); player.yaw = s.view.yaw; player.pitch = s.view.pitch; interact.select(s.slot);
+    if (player.collides()) { Object.assign(player.pos, w.spawn); } // saved spot now inside a block: back to spawn
+  }
+  w.buildNear(scene, materials, player.pos.x, player.pos.z, LOAD, Infinity);
   if (/[?&]map=/.test(location.search)) history.replaceState(null, '', '?map=' + String(n).padStart(2, '0')); // reload keeps the map
   last = performance.now();
 }
+const AUTOSAVE_MS = 30000;
+function autosave() { if (!picker.isOpen() && document.visibilityState === 'visible') save(); }
 window.landcraft = { player: player, interact: interact, load: loadMap, // read-only handle for debugging and tests
-  get world() { return ctx.world; }, get map() { return mapNum; }, hash: function () { return worldHash(ctx.world); } };
-const picker = setupPicker({ canvas: renderer.domElement, current: function () { return mapNum; }, load: loadMap });
+  get world() { return ctx.world; }, get map() { return mapNum; }, hash: function () { return worldHash(ctx.world); },
+  saves: { save: save, autosave: autosave, key: saveKey, AUTOSAVE_MS: AUTOSAVE_MS } };
+const picker = setupPicker({ canvas: renderer.domElement, current: function () { return mapNum; }, load: loadMap,
+  onOpen: save, hasSave: hasSave, saveOk: function () { return saveOk; },
+  reset: function (n) { dropSave(n); if (n === mapNum) loadMap(n, false); } });
 window.landcraft.picker = picker;
+setInterval(autosave, AUTOSAVE_MS);
+window.addEventListener('pagehide', save);
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') save(); });
 
 renderer.setAnimationLoop(function (t) {
   // Clamp to 0..0.05 s: a background tab can't cause a huge step, and the first frame's timestamp can
