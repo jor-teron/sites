@@ -26,7 +26,6 @@ AoE RTS,           aoe-rts/,       , , Strategy
 AR Game,           ar-game/,       , , 3D
 Browser FPS,       browser-fps/,   , , 3D
 Island (Alpha),    island-alpha/,  , , 3D
-D-Pad Controller,  ../../hub/controller/, ../../hub/controller/controller_icon.png, 1, Controller
 Neon Fist,         neon-fist/,     , , Lab
 Neon Fist 3D,      neon-fist-3d/,  , , Lab
 Gravity Sandbox,   gravity-sandbox/, , , Lab

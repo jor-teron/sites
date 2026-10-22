@@ -41,7 +41,6 @@ AoE RTS,           aoe-rts/,       , , Strategy
 AR Game,           ar-game/,       , , 3D
 Browser FPS,       browser-fps/,   , , 3D
 Island (Alpha),    island-alpha/,  , , 3D
-D-Pad Controller,  ../../hub/controller/, ../../hub/controller/controller_icon.png, 1, Controller
 Neon Fist,         neon-fist/,     , , Lab
 Neon Fist 3D,      neon-fist-3d/,  , , Lab
 Gravity Sandbox,   gravity-sandbox/, , , Lab
@@ -131,7 +130,7 @@ Calculator (Legacy), ../tools/calculator-beta/,   , , Legacy
 Webcam,             ../media/webcam/,             , , Legacy
 Keyboard,           keyboard/,                    , , Legacy
 `,
-  "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
+  "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools; R53c: D-Pad Controller listed here from Games, folder stays in hub/controller/). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
 name, path, icon, newtab, section
@@ -140,6 +139,7 @@ Files,                 files/,           , , Files
 Viewer,                viewer/,          , , Files
 System Monitor,        sysmon/,          , , System
 Device Benchmark,      devbench/,        , , System
+D-Pad Controller,      ../../hub/controller/, ../../hub/controller/controller_icon.png, 1, Hub tools
 About,                 about/,           about/about_icon.png, , System
 `
 });
