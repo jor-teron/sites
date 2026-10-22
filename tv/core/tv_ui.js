@@ -18,7 +18,7 @@
     state.items.forEach(function (item, idx) {
       var div = document.createElement('div');
       div.className = 'channel' +
-        (item.type === 'category' || item.type === 'link' ? ' category' : '') +
+        (item.type === 'category' || item.type === 'link' || item.type === 'action' ? ' category' : '') +
         (item.httpOnly ? ' http-only' : '');
       div.dataset.index = String(idx);
 
@@ -44,7 +44,7 @@
       groupEl.className = 'channel-group';
       groupEl.textContent =
         item.type === 'category' ? 'Category' :
-        item.type === 'link' ? (item.group || 'Link') :
+        item.type === 'link' || item.type === 'action' ? (item.group || 'Link') :
         item.group || 'Live';
 
       info.appendChild(nameEl);

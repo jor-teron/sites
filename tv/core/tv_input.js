@@ -54,6 +54,11 @@
   }
 
   function onKeyDown(e) {
+    // TV7: the Import panel has its own keys (and a text box).
+    if (TV['import'] && TV['import'].isOpen()) {
+      TV['import'].onKey(e);
+      return;
+    }
     var items = state.items;
     // Digits: number zap only; never open the list, never force-close it.
     if (e.key >= '0' && e.key <= '9') {

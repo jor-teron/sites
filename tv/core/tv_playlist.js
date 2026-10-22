@@ -11,6 +11,7 @@
 
   var loadToken = 0; // bumps on every load(); stale responses are ignored (TV1)
   var m3uScriptLoads = {}; // key -> Promise<string>, so each .m3u.js is injected once (TV2)
+  var sources = {}; // category -> function () -> Promise<text>, for lists not in PLAYLISTS (TV7: import)
 
   // ---------- parse ----------
   // The name follows the first comma OUTSIDE quotes, so quoted attributes
@@ -88,6 +89,15 @@
     return t ? t.name : category;
   }
 
+  // TV7: a category whose text comes from code (tv_import.js), not a URL.
+  function registerSource(category, fn) {
+    sources[category] = fn;
+  }
+
+  function hasCategory(category) {
+    return !!(config.PLAYLISTS[category] || sources[category]);
+  }
+
   function m3uKey(url) {
     return url.split('/').pop().replace(/\.m3u8?$/i, '');
   }
@@ -147,9 +157,13 @@
       if (t.type === 'link') {
         return { name: t.name, logo: t.logo || '', group: t.group || 'Link', type: 'link', href: t.href };
       }
+      if (t.type === 'action') {
+        return { name: t.name, logo: t.logo || '', group: t.group || 'Action', type: 'action', action: t.action };
+      }
       return { name: t.name, logo: t.logo || '', group: t.group || 'Category', type: 'category', categoryKey: t.key };
     });
-    if (category !== 'home') {
+    var hasHome = tiles.some(function (t) { return t.categoryKey === 'home'; });
+    if (category !== 'home' && !hasHome) {
       tiles.push({ name: 'Home', logo: config.HOME_CATEGORY_LOGO, group: 'Category', type: 'category', categoryKey: 'home' });
     }
     return tiles;
@@ -162,14 +176,15 @@
   function load(category, options) {
     options = options || {};
     var url = config.PLAYLISTS[category];
-    if (!url) {
+    var source = sources[category];
+    if (!url && !source) {
       console.error('Unknown category: ' + category);
       return;
     }
 
     var token = ++loadToken;
 
-    getPlaylistText(url)
+    (source ? source() : getPlaylistText(url))
       .then(function (text) {
         if (token !== loadToken) return; // stale
         var channels = parseM3U(text);
@@ -222,7 +237,8 @@
         if (token !== loadToken) return; // stale
         console.error(err);
         console.error('Failed to load playlist: ' + category + ' (keeping ' + state.currentCategory + ')');
-        TV.ui.toast(isLocalPlaylist(url) ?
+        TV.ui.toast(err && err.toast ? err.toast :
+          !url || isLocalPlaylist(url) ?
           'Could not load ' + categoryName(category) :
           categoryName(category) + ' needs internet');
         // Nothing loaded yet (e.g. saved category is offline): fall back to the default list.
@@ -242,6 +258,8 @@
     m3uKey: m3uKey,
     getPlaylistText: getPlaylistText,
     categoryTilesFor: categoryTilesFor,
+    registerSource: registerSource,
+    hasCategory: hasCategory,
     load: load
   };
 })();
