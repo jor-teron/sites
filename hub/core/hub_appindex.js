@@ -30,6 +30,7 @@ window.HUB_APP_INDEX = {
   "neon-fist": ["Games", "apps/games/neon-fist/", "Neon Fist", "apps/games/neon-fist/neon-fist_icon.png", 0],
   "neon-fist-3d": ["Games", "apps/games/neon-fist-3d/", "Neon Fist 3D", "apps/games/neon-fist-3d/neon-fist-3d_icon.png", 0],
   "gravity-sandbox": ["Games", "apps/games/gravity-sandbox/", "Gravity Sandbox", "apps/games/gravity-sandbox/gravity-sandbox_icon.png", 0],
+  "solar-system": ["Games", "apps/games/solar-system/", "Solar System", "apps/games/solar-system/solar-system_icon.png", 0],
   "ant-farm": ["Games", "apps/games/ant-farm/", "Ant Farm", "apps/games/ant-farm/ant-farm_icon.png", 0],
   "tv": ["Favorite", "tv/", "TV", "tv/tv_icon.png", 0],
   "caption-for-nei": ["Favorite", "apps/tools/caption-for-nei/", "Caption for NEI", "apps/tools/caption-for-nei/caption-for-nei_icon.png", 0],
