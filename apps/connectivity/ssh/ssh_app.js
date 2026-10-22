@@ -5,10 +5,15 @@
  * S3 auto-reconnect: after an unexpected drop ('lost': network, relay, server, keepalive) it retries after
  * 1, 2, 5, 10, 30 s (5 tries) with the in-memory password. Never after Disconnect or when the remote shell ends.
  * Explicit Disconnect also clears the in-memory password: Reconnect then asks for it in the form.
+ * S4 key login: target.key = key fingerprint. The key is tried first; a remembered key is unlocked with its
+ * passphrase before connecting. If the server refuses the key (or the key is missing / stays locked) the password
+ * is used: the one typed in the form, else a prompt (not during auto-reconnect). Auto-reconnect works with an
+ * unlocked key alone. Disconnect forgets the password but an unlocked key stays in memory until Lock / reload.
  */
 (() => {
   const { $, P } = SSH;
-  const S = SSH.Store;
+  const S = SSH.Store, R = SSH.Ring;
+  let unlocking = false;
   let state = 'form', conn = null, pw = '', target = null, attempt = 0, ctl = null;
   /* auto-reconnect: n = tries made, timer/tick for the countdown, reason = why the link dropped */
   const auto = { on: false, n: 0, timer: null, tick: null, reason: '', last: '' };
@@ -27,8 +32,13 @@
     if (t.user) $('f-user').value = t.user;
     $('f-host').value = t.host; $('f-port').value = t.port;
     $('f-pass').value = '';
+    let key = t.key;
+    if (key === undefined) { const h = t.user ? S.hosts.find(t.user, t.host, t.port) : null; key = h && h.key ? h.key : ''; }
+    SSH.KeyUI.fillSelect($('f-key'), key || '');
     return true;
   }
+  const keyReady = () => !!(target && target.key && R.get(target.key) && R.get(target.key).jwk);
+  const passFocus = () => ($('f-key').value ? 'f-go' : 'f-pass');
 
   function setState(s, msg) {
     state = s;
@@ -88,9 +98,28 @@
       if (!relay) return formError('Enter the relay address, for example ws://192.168.1.10:8022', 'f-relay');
       if (!host) return formError('Enter the host to connect to.', 'f-host');
       if (!user) return formError('Enter your user name.', 'f-user');
-      if (!$('f-pass').value) return formError('Enter the password.', 'f-pass');
-      target = { relay, host, port, user }; pw = $('f-pass').value;
-      P.relay = relay; P.last = { user, host, port }; SSH.saveP();
+      const key = $('f-key').value;
+      if (!key && !$('f-pass').value) return formError('Enter the password.', 'f-pass');
+      target = { relay, host, port, user, key }; pw = $('f-pass').value;
+      P.relay = relay; P.last = { user, host, port, key }; SSH.saveP();
+    }
+    /* S4: the login key (unlock a remembered key first; never prompts during auto-reconnect) */
+    const keys = [];
+    let keyNote = '';
+    if (target.key) {
+      let k = R.get(target.key);
+      if (k && !k.jwk && mode !== 'auto') {
+        if (unlocking) return;
+        unlocking = true;
+        try { await SSH.KeyUI.ensureUnlocked(target.key); } finally { unlocking = false; }
+        if (state === 'busy' || state === 'live') return;
+        k = R.get(target.key);
+      }
+      if (k && k.jwk) {
+        try { keys.push({ kp: await R.libKey(k.fp), name: k.name }); } catch (e) { keyNote = 'The key "' + k.name + '" could not be loaded (' + (e.message || e) + ').'; }
+      } else keyNote = k ? 'The key "' + k.name + '" is locked.' : 'The chosen key is not on this device (Menu → SSH keys → Import).';
+      if (keyNote && !pw && mode === 'auto') { stopAuto(); setState('gone', keyNote); return; }
+      if (keyNote) SSH.toast(keyNote + ' Using the password.', 3500);
     }
     if (mode !== 'auto') stopAuto();
     formError('');
@@ -103,9 +132,10 @@
     let c;
     try {
       c = await SSH.Conn.open(Object.assign({}, target, {
-        password: pw, cols: size.cols, rows: size.rows, signal: ctl.signal,
+        password: pw, keys, cols: size.cols, rows: size.rows, signal: ctl.signal,
         keepAliveSec: P.keepAliveSec > 0 ? P.keepAliveSec : 30,
         onHostKey: (info) => onHostKey(info, my),
+        onPassword: mode === 'auto' ? null : () => askPassword(my, keys.length > 0),
         onData: (u8) => SSH.Term.write(u8),
         onClose: (msg, kind) => { if (conn === c) dropped(msg, kind); },
       }));
@@ -116,6 +146,7 @@
       SSH.busy(null);
       const m = err.message || String(err);
       if (err.code === 'auth') pw = '';
+      if (err.code === 'cancelled' && mode !== 'auto' && /^Login/.test(m)) { setState(mode === 'form' ? 'form' : 'gone', 'Login cancelled.'); if (mode === 'form') formError('Login cancelled.'); return; }
       if (mode === 'auto') {
         if (err.code === 'cancelled') return; /* cancelAuto() already showed the message */
         if (['auth', 'hostkey', 'bad-relay'].includes(err.code)) { stopAuto(); setState('gone', m); return; }
@@ -124,7 +155,7 @@
       if (mode === 'form') {
         setState('form');
         if (err.code === 'cancelled') return formError('');
-        const field = { auth: 'f-pass', 'bad-relay': 'f-relay', 'relay-down': 'f-relay', 'relay-target': 'f-host' }[err.code] || 'f-go';
+        const field = { auth: err.keyRefused && !err.pwRefused ? 'f-key' : 'f-pass', 'bad-relay': 'f-relay', 'relay-down': 'f-relay', 'relay-target': 'f-host' }[err.code] || 'f-go';
         if (err.code === 'auth') $('f-pass').value = '';
         formError(m, field);
       } else setState('gone', err.code === 'cancelled' ? 'Connection cancelled.' : m);
@@ -147,7 +178,7 @@
   function dropped(msg, kind) {
     if (state !== 'live') return;
     SSH.Term.detach(); conn = null;
-    if (kind === 'lost' && pw) { auto.on = true; auto.n = 0; auto.reason = msg || 'Connection lost.'; auto.last = ''; schedule(); return; }
+    if (kind === 'lost' && (pw || keyReady())) { auto.on = true; auto.n = 0; auto.reason = msg || 'Connection lost.'; auto.last = ''; schedule(); return; }
     setState('gone', msg || 'The connection was closed.');
   }
 
@@ -192,7 +223,7 @@
 
   function reconnect() {
     if (!target) return setState('form');
-    if (!pw) { /* password unknown (wrong last time, or cleared by Disconnect): ask again in the form */
+    if (!pw && !target.key) { /* password unknown (wrong last time, or cleared by Disconnect): ask again in the form */
       stopAuto(); setState('form'); fill(target); formError('Enter the password again.', 'f-pass'); return;
     }
     stopAuto();
@@ -208,7 +239,21 @@
     setState('gone', 'Disconnected.');
   }
 
-  function edit() { stopAuto(); pw = ''; setState('form'); fill(target); setTimeout(() => $('f-pass').focus(), 0); }
+  function edit() { stopAuto(); pw = ''; setState('form'); fill(target); setTimeout(() => $(passFocus()).focus(), 0); }
+
+  /* S4: password fallback when the key is refused (or no password was typed). Resolves to the password or null. */
+  async function askPassword(my, hadKey) {
+    if (my !== attempt) return null;
+    const busyText = $('busy-text').textContent;
+    SSH.busy(null);
+    const who = target.user + '@' + target.host;
+    const p = await SSH.ask({ title: 'Password', password: true, yes: 'Log in',
+      text: (hadKey ? 'The server did not accept the key for ' + who + '.\n' : '') + 'Password for ' + who + ':' });
+    if (my !== attempt) return null;
+    if (p) pw = p; /* kept in memory for Reconnect / auto-reconnect, like a typed password */
+    SSH.busy(busyText.replace(/^Connecting/, 'Logging in'));
+    return p || null;
+  }
 
   function fromHash() {
     const t = parseHash();
@@ -216,23 +261,28 @@
     if (state === 'live' || state === 'busy') return true;
     stopAuto();
     setState('form'); fill(t); formError('');
-    setTimeout(() => $(t.user ? 'f-pass' : 'f-user').focus(), 0);
+    setTimeout(() => $(t.user ? passFocus() : 'f-user').focus(), 0);
     return true;
   }
 
   /* Quick connect from a saved host: fill the form, focus the password. */
   function pick(h) {
     fill(h); formError('');
-    setTimeout(() => $('f-pass').focus(), 0);
+    setTimeout(() => $(passFocus()).focus(), 0);
   }
 
   function saveFromForm() {
     const user = $('f-user').value.trim(), host = $('f-host').value.trim(), port = String(parseInt($('f-port').value, 10) || 22);
     const ex = host && user ? S.hosts.find(user, host, port) : null;
-    SSH.Hosts.edit(ex || { user, host, port });
+    SSH.Hosts.edit(ex ? Object.assign({}, ex, { key: $('f-key').value }) : { user, host, port, key: $('f-key').value });
   }
 
   SSH.init();
+  SSH.KeyUI.init({ selects: [$('f-key'), $('h-key')] });
+  $('f-key').addEventListener('change', () => {
+    const k = $('f-key').value;
+    $('f-pass-label').textContent = k ? 'Password (optional: used if the key is refused)' : 'Password';
+  });
   SSH.Hosts.init({ pick });
   $('f-relay').value = P.relay || '';
   $('form').addEventListener('submit', (e) => { e.preventDefault(); connect('form'); });
@@ -255,9 +305,10 @@
   addEventListener('hashchange', fromHash);
   addEventListener('keydown', (e) => {
     if (SSH.dialogOpen && e.key === 'Escape') { $('dlg-no').hidden ? $('dlg-yes').click() : $('dlg-no').click(); return; }
+    if (e.key === 'Escape' && SSH.KeyUI.escape()) return;
     if (e.key === 'Escape' && SSH.Hosts.escape()) return;
     if (e.key === 'Escape') { SSH.menu(false); if (state === 'gone' && auto.on) cancelAuto(); }
-    if (state === 'gone' && e.key === 'Enter' && !SSH.dialogOpen && !SSH.Hosts.open) { e.preventDefault(); reconnect(); }
+    if (state === 'gone' && e.key === 'Enter' && !SSH.dialogOpen && !SSH.Hosts.open && !SSH.KeyUI.open) { e.preventDefault(); reconnect(); }
   });
   addEventListener('beforeunload', (e) => { if (state === 'live') { e.preventDefault(); e.returnValue = ''; } });
   if (matchMedia('(pointer: coarse)').matches) $('b-keys').setAttribute('aria-pressed', 'true');
@@ -265,6 +316,6 @@
   setState('form');
   if (!fromHash()) {
     if (P.last) fill(P.last); /* last used stays a prefill; it becomes a saved host only via Save host */
-    setTimeout(() => $(!P.relay ? 'f-relay' : P.last ? 'f-pass' : 'f-host').focus(), 0);
+    setTimeout(() => $(!P.relay ? 'f-relay' : P.last ? passFocus() : 'f-host').focus(), 0);
   }
 })();

@@ -2,12 +2,15 @@
 <!--
   SSH — S1: connect + terminal through a WebSocket-to-TCP relay (see relay/README.md).
   S3: saved hosts, saved known_hosts, keepalive, auto-reconnect.
+  S4: public-key login (ECDSA P-256/384, RSA), key import / generate / export, keys remembered encrypted (IndexedDB).
   Styles: ssh.css. Modules: ssh_ui.js (state, theme, menu, dialogs, toast), ssh_store.js (known_hosts and
   saved hosts in localStorage), ssh_conn.js (SSH session over the relay WebSocket, host key, keepalive, errors),
-  ssh_term.js (xterm.js, fit, copy/paste, phone key bar), ssh_hosts.js (saved hosts list + editor, known hosts
+  ssh_keys.js (key parsing, OpenSSH export, generate, seal/unseal), ssh_keyring.js (keys in memory + encrypted
+  IndexedDB), ssh_term.js (xterm.js, fit, copy/paste, phone key bar), ssh_keyui.js (SSH keys panel and dialogs), ssh_hosts.js (saved hosts list + editor, known hosts
   panel), ssh_app.js (connect form, #host= hash, reconnect + auto-reconnect, wiring).
   The SSH encryption runs here in the browser; the relay only sees encrypted bytes.
-  The password is kept in memory for Reconnect / auto-reconnect only and is never saved. Actions are a rail on the RIGHT.
+  The password is kept in memory for Reconnect / auto-reconnect only and is never saved. Private keys stay in memory
+  unless "Remember" is chosen; then only an encrypted copy is stored. Actions are a rail on the RIGHT.
 -->
 <html lang="en">
 <head>
@@ -18,7 +21,7 @@
   <link rel="icon" href="ssh_icon.png">
   <script>try{var m=(JSON.parse(localStorage.getItem('ssh-settings-v1')||'{}').theme)||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
   <link rel="stylesheet" href="vendor/xterm.css">
-  <link rel="stylesheet" href="ssh.css?v=20261022s3">
+  <link rel="stylesheet" href="ssh.css?v=20261022s4">
 </head>
 <body>
 <div id="app">
@@ -41,7 +44,8 @@
         <label class="port">Port <input id="f-port" name="port" type="number" min="1" max="65535" value="22"></label>
       </div>
       <label>User <input id="f-user" name="user" placeholder="pi" spellcheck="false" autocapitalize="off" autocomplete="username"></label>
-      <label>Password <input id="f-pass" name="password" type="password" autocomplete="current-password"></label>
+      <label>Login with <select id="f-key" title="Password or one of your SSH keys (Menu → SSH keys)"></select></label>
+      <label><span id="f-pass-label">Password</span> <input id="f-pass" name="password" type="password" autocomplete="current-password"></label>
       <p id="f-err" class="err" role="alert" hidden></p>
       <p class="hint">Needs the relay running on your PC: see <b>Menu → Relay help</b>. The password is never saved.</p>
       <div class="form-btns"><button type="button" id="f-save" class="pill ghost" title="Save user, host and port (not the password)">Save host</button><button type="submit" id="f-go" class="pill wide">Connect</button></div>
@@ -77,6 +81,7 @@
     <div class="mrow"><span>Text size</span>
       <div class="seg" id="font-seg"><button type="button" data-d="-1">A−</button><button type="button" data-d="1">A+</button></div>
     </div>
+    <button type="button" class="mi" id="m-keys">SSH keys</button>
     <button type="button" class="mi" id="m-known">Known hosts</button>
     <button type="button" class="mi" id="m-relay">Relay help</button>
     <button type="button" class="mi" id="m-about">About</button>
@@ -91,8 +96,9 @@
         <label class="port">Port <input id="h-port" type="number" min="1" max="65535" value="22"></label>
       </div>
       <label>User <input id="h-user" maxlength="64" placeholder="pi" spellcheck="false" autocapitalize="off"></label>
+      <label>Login with <select id="h-key"></select></label>
       <p id="h-err" class="err" role="alert" hidden></p>
-      <p class="hint">The password is never saved.</p>
+      <p class="hint">The password is never saved. With a key, the password is asked only if the server refuses the key.</p>
       <div class="dlg-btns"><button type="button" id="h-del" class="pill ghost red" hidden>Delete</button><span class="grow"></span><button type="button" id="h-no" class="pill ghost">Cancel</button><button type="submit" id="h-yes" class="pill">Save</button></div>
     </form>
   </div>
@@ -104,11 +110,47 @@
       <div class="dlg-btns"><button type="button" id="k-all" class="pill ghost red">Forget all</button><span class="grow"></span><button type="button" id="k-close" class="pill">Close</button></div>
     </div>
   </div>
+  <div id="ydlg" class="dlg-back" hidden>
+    <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="y-title">
+      <h2 id="y-title">SSH keys</h2>
+      <p id="y-empty" class="hint">No keys yet. Import your private key, or generate one here and add its public line to the server.</p>
+      <ul id="y-list" class="klist ylist"></ul>
+      <p id="y-note" class="hint ynote"></p>
+      <div class="dlg-btns"><button type="button" id="y-import" class="pill ghost">Import</button><button type="button" id="y-gen" class="pill ghost">Generate</button><span class="grow"></span><button type="button" id="y-close" class="pill">Close</button></div>
+    </div>
+  </div>
+  <div id="idlg" class="dlg-back" hidden>
+    <form id="i-form" class="dlg hform" role="dialog" aria-modal="true" aria-labelledby="i-title" autocomplete="off" novalidate>
+      <h2 id="i-title">Import private key</h2>
+      <label>Name <input id="i-name" maxlength="60" spellcheck="false" autocapitalize="off"></label>
+      <label id="i-text-row">Private key (paste) <textarea id="i-text" rows="4" spellcheck="false" autocapitalize="off" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea></label>
+      <div id="i-file-row" class="frow"><label class="filebtn pill ghost">Choose key file…<input id="i-file" type="file"></label><span id="i-file-note" class="hint"></span></div>
+      <label id="i-kpass-row">Key passphrase (if it has one) <input id="i-kpass" type="password" autocomplete="off"></label>
+      <label id="i-rem-row" class="check"><input id="i-rem" type="checkbox"> Remember on this device (encrypted)</label>
+      <div id="i-dpass-rows" class="col" hidden>
+        <label>Device passphrase (asked when you use the key) <input id="i-dpass" type="password" autocomplete="new-password"></label>
+        <label>Repeat device passphrase <input id="i-dpass2" type="password" autocomplete="new-password"></label>
+      </div>
+      <p id="i-err" class="err" role="alert" hidden></p>
+      <p class="hint">OpenSSH, PKCS#8, PKCS#1 (RSA) and EC PEM keys: ECDSA P-256/P-384 and RSA. Ed25519 is not supported yet. The key stays in this page.</p>
+      <div class="dlg-btns"><span class="grow"></span><button type="button" id="i-no" class="pill ghost">Cancel</button><button type="submit" id="i-yes" class="pill">Import</button></div>
+    </form>
+  </div>
+  <div id="pdlg" class="dlg-back" hidden>
+    <div class="dlg hform" role="dialog" aria-modal="true" aria-labelledby="p-title">
+      <h2 id="p-title">Key</h2>
+      <label>Public key (for authorized_keys) <textarea id="p-line" rows="4" readonly spellcheck="false"></textarea></label>
+      <p id="p-fp" class="hint"></p>
+      <label>Export passphrase (recommended) <input id="p-epass" type="password" autocomplete="new-password"></label>
+      <div class="dlg-btns"><button type="button" id="p-dl" class="pill ghost">Download private key</button><span class="grow"></span><button type="button" id="p-copy" class="pill ghost">Copy public key</button><button type="button" id="p-close" class="pill">Close</button></div>
+    </div>
+  </div>
   <div id="dlg" class="dlg-back" hidden>
     <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-title">
       <h2 id="dlg-title"></h2>
       <p id="dlg-text"></p>
       <textarea id="dlg-input" rows="4" hidden placeholder="Long-press here and choose Paste"></textarea>
+      <input id="dlg-pass" type="password" hidden autocomplete="off" aria-label="Passphrase">
       <div class="dlg-btns"><button type="button" id="dlg-no" class="pill ghost">Cancel</button><button type="button" id="dlg-yes" class="pill">OK</button></div>
     </div>
   </div>
@@ -118,11 +160,14 @@
 <script src="vendor/xterm.min.js"></script>
 <script src="vendor/xterm-addon-fit.min.js"></script>
 <script src="vendor/ssh-lib.min.js"></script>
-<script src="ssh_ui.js?v=20261022s3"></script>
-<script src="ssh_store.js?v=20261022s3"></script>
-<script src="ssh_conn.js?v=20261022s3"></script>
-<script src="ssh_term.js?v=20261022s3"></script>
-<script src="ssh_hosts.js?v=20261022s3"></script>
-<script src="ssh_app.js?v=20261022s3"></script>
+<script src="ssh_ui.js?v=20261022s4"></script>
+<script src="ssh_store.js?v=20261022s4"></script>
+<script src="ssh_keys.js?v=20261022s4"></script>
+<script src="ssh_keyring.js?v=20261022s4"></script>
+<script src="ssh_conn.js?v=20261022s4"></script>
+<script src="ssh_term.js?v=20261022s4"></script>
+<script src="ssh_keyui.js?v=20261022s4"></script>
+<script src="ssh_hosts.js?v=20261022s4"></script>
+<script src="ssh_app.js?v=20261022s4"></script>
 </body>
 </html>
