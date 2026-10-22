@@ -1,4 +1,4 @@
-/* Notely — nl_handoff.js: "Open with Notely" from the Files app (apps/tools/files).
+/* Notely — nl_handoff.js: "Open with Notely" from the Files app (apps/system/files).
  * Files puts { name, text, t } in sessionStorage 'notely-handoff' (same tab, same site) and opens
  * Notely. On start-up, and when the key changes while Notely is already open, Notely takes it
  * once (only if under 2 minutes old), asks before replacing notes that are not empty, and

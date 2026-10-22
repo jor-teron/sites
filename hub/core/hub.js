@@ -986,10 +986,12 @@
       let key = normalizeEntryUrl(e.key);
       if (!key || !safeRel(key)) return null;
       // R53: Settings / About moved under apps/system/ (old folders are legacy redirect pages)
-      const moved = /^apps\/(settings|about)\//.exec(key);
-      if (moved) {
-        key = 'apps/system/' + key.slice(5);
-        if (typeof e.url === 'string') e.url = e.url.replace('apps/' + moved[1] + '/', 'apps/system/' + moved[1] + '/');
+      // R53b: Files / Viewer / System Monitor / Device Benchmark moved from apps/tools/ too
+      const moved = /^apps\/((?:tools\/)?)(settings|about|files|viewer|sysmon|devbench)\//.exec(key);
+      if (moved && (moved[1] ? !/^(settings|about)$/.test(moved[2]) : /^(settings|about)$/.test(moved[2]))) {
+        const from = 'apps/' + moved[1] + moved[2] + '/', to = 'apps/system/' + moved[2] + '/';
+        key = to + key.slice(from.length);
+        if (typeof e.url === 'string') e.url = e.url.replace(from, to);
       }
       // sessions saved before R8: a category page was its folder (apps/office/) → apps/office/office.html
       const m = /^apps\/([a-z]+)\/$/.exec(key);

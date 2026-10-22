@@ -1,0 +1,42 @@
+<!doctype html>
+<!--
+  System Monitor (apps/system/sysmon/index.html) — what THIS BROWSER lets a web page see: the Hub's
+  windows, storage, memory, a main-thread busy estimate, network and battery. Not the real
+  operating-system task manager (a web page cannot read other programs, real CPU or RAM use).
+  Opens as a window in Desktop mode, full screen in Phone mode.
+  Files: sm_core.js (helpers, tabs, 1 s sampler that pauses when hidden / minimised),
+  sm_chart.js (tiny canvas line graph), sm_tasks.js, sm_storage.js, sm_memory.js, sm_cpu.js,
+  sm_net.js, sm_battery.js (one tab each), sm.js (start-up), sm.css.
+  Shared: shared/perf/busy_meter.js (busy estimate), shared/fs/ (drives, sizes), shared/dialog/.
+  Deep link: index.html#cpu (any tab id; a Hub window session keeps it).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>System Monitor</title>
+  <link rel="stylesheet" href="../../../shared/dialog/dialog.css?v=20261019k" />
+  <link rel="stylesheet" href="sm.css?v=20261019k" />
+</head>
+<body>
+  <header class="top">
+    <h1><img src="sysmon_icon.png" alt="" /> System Monitor</h1>
+    <p class="honest">Browser-visible numbers only — not your device's real task manager.</p>
+  </header>
+  <nav id="tabs" class="tabs" role="tablist" aria-label="Sections"></nav>
+  <main id="panel" class="panel" role="tabpanel"></main>
+  <script src="../../../shared/fs/fs_drives.js?v=20261019k"></script>
+  <script src="../../../shared/fs/fs_ops.js?v=20261019k"></script>
+  <script src="../../../shared/dialog/dialog.js?v=20261019k"></script>
+  <script src="../../../shared/perf/busy_meter.js?v=20261019k"></script>
+  <script src="sm_core.js?v=20261019k"></script>
+  <script src="sm_chart.js?v=20261019k"></script>
+  <script src="sm_tasks.js?v=20261019k"></script>
+  <script src="sm_storage.js?v=20261019k"></script>
+  <script src="sm_memory.js?v=20261019k"></script>
+  <script src="sm_cpu.js?v=20261019k"></script>
+  <script src="sm_net.js?v=20261019k"></script>
+  <script src="sm_battery.js?v=20261019k"></script>
+  <script src="sm.js?v=20261019k"></script>
+</body>
+</html>

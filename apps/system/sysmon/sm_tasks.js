@@ -1,5 +1,5 @@
 /*
- * Tasks tab (apps/tools/sysmon/sm_tasks.js) — the Hub's open windows (Desktop mode), read from
+ * Tasks tab (apps/system/sysmon/sm_tasks.js) — the Hub's open windows (Desktop mode), read from
  * the window manager's small API window.__hubTasks (hub/wm/wm_windows.js; same origin only).
  * Each row: icon, name (+ "this window"), workspace (when there are 2), state (active /
  * minimised / maximised / snapped), page nodes

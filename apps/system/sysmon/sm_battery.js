@@ -1,5 +1,5 @@
 /*
- * Battery tab (apps/tools/sysmon/sm_battery.js) — navigator.getBattery() (Chrome / Edge / Android):
+ * Battery tab (apps/system/sysmon/sm_battery.js) — navigator.getBattery() (Chrome / Edge / Android):
  * level with a bar, charging, time to full / empty; live on the battery's events.
  * Firefox / Safari: "Not available". A desktop without a battery reports 100% charging.
  */

@@ -1,5 +1,5 @@
 /*
- * CPU tab (apps/tools/sysmon/sm_cpu.js) — navigator.hardwareConcurrency (logical cores) and a live
+ * CPU tab (apps/system/sysmon/sm_cpu.js) — navigator.hardwareConcurrency (logical cores) and a live
  * "busy" graph: an ESTIMATE of how busy the Hub's main thread is (timer lag + long tasks,
  * shared/perf/busy_meter.js), one point per second, 60 s. Also the long tasks seen in the last minute.
  */

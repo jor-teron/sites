@@ -508,7 +508,7 @@
     }, { touch: true });
   }
 
-  // Task list for apps (apps/tools/sysmon): plain data + actions by window id, same origin only.
+  // Task list for apps (apps/system/sysmon): plain data + actions by window id, same origin only.
   //   list() → [{ id, key, inst, name, icon, url, min, max, snap, ws, wsCount, hidden (other
   //   workspace), active, z, sameOrigin, nodes, title }]
   //   focus(id), minimise(id), close(id), idOf(win) → the id of the window showing that window object

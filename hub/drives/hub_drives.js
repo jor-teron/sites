@@ -7,7 +7,7 @@
  *   folders     added with "Add folder" (Chrome / Edge on a computer); after a reload they show
  *               "Allow access" (one click); ✕ only removes the folder from the list (asks with
  *               the shared dialog, shared/dialog/dialog.js)
- * Clicking a drive opens the Files app (apps/tools/files/#drive=<id>) in a window, or points the
+ * Clicking a drive opens the Files app (apps/system/files/#drive=<id>) in a window, or points the
  * open Files window at it; Shift+click = a new Files window. Redraws when drives change
  * (also from the Files app, BroadcastChannel).
  * Right-click / long-press on a drive (hub_ctx.js): Open, Open in new window, Allow access (when
@@ -24,7 +24,7 @@
   const pane = document.getElementById('desk-drives');
   const D = window.FsDrives;
   if (!pane || !D) return;
-  const FILES = 'apps/tools/files/';
+  const FILES = 'apps/system/files/';
   const ICON = FILES + 'files_icon.png';
 
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }

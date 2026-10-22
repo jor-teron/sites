@@ -1,5 +1,5 @@
 /*
- * Files menu + keys (apps/tools/files/files_menu.js) — the right-click / long-press menu
+ * Files menu + keys (apps/system/files/files_menu.js) — the right-click / long-press menu
  * (shared/ctxmenu) for the selection or for the open folder, and the keyboard:
  *   Enter open · Delete delete · F2 rename · Ctrl/Cmd+C copy · +X cut · +V paste · +A select all
  *   Backspace or Alt+↑ up a folder · Esc clear selection · arrows move between items

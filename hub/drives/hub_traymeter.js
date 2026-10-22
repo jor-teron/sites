@@ -25,7 +25,7 @@
     cv = document.createElement('canvas'); cv.width = 72; cv.height = 32;
     txt = document.createElement('span'); txt.textContent = '\u2014';
     b.append(cv, txt);
-    b.addEventListener('click', () => { if (window.__hubOpenApp) window.__hubOpenApp('apps/tools/sysmon/', { hash: 'cpu' }); });
+    b.addEventListener('click', () => { if (window.__hubOpenApp) window.__hubOpenApp('apps/system/sysmon/', { hash: 'cpu' }); });
     const clock = bar.querySelector('.wm-clock');
     bar.insertBefore(b, clock || null);
   }

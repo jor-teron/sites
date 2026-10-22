@@ -1,5 +1,5 @@
 /*
- * Files actions (apps/tools/files/files_actions.js) — everything that changes or opens files:
+ * Files actions (apps/system/files/files_actions.js) — everything that changes or opens files:
  * open, Open with (shared/fs/filetypes.js: pictures + videos → the Viewer app in its own window
  * via shared/fs/fs_ref.js, text → Notely, others → Download / text view), cut / copy / paste and
  * drag-moves (also between drives: Local ↔ added folder), upload, new folder, rename, delete,

@@ -81,10 +81,6 @@ Pooh Chat,  pooh-chat/,  , , Chat
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
 name, path, icon, newtab, section
-Files,                 files/,           , , Files
-Viewer,                viewer/,          , , Files
-System Monitor,        sysmon/,          , , System
-Device Benchmark,      devbench/, , , System
 Calculator,            calculator/,      , , Calculators
 Unit Converter,        unit-converter/,                   , , Calculators
 Stopwatch,             stopwatch/,       , , Time
@@ -130,11 +126,15 @@ Calculator (Legacy), ../tools/calculator-beta/,   , , Legacy
 Webcam,             ../media/webcam/,             , , Legacy
 Keyboard,           keyboard/,                    , , Legacy
 `,
-  "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
+  "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
 name, path, icon, newtab, section
 Settings,              settings/,        , , System
+Files,                 files/,           , , Files
+Viewer,                viewer/,          , , Files
+System Monitor,        sysmon/,          , , System
+Device Benchmark,      devbench/,        , , System
 About,                 about/,           about/about_icon.png, , System
 `
 });

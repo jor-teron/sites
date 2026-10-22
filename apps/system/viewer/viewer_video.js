@@ -1,5 +1,5 @@
 /*
- * Viewer videos (apps/tools/viewer/viewer_video.js) — VW.video: the browser's own <video>
+ * Viewer videos (apps/system/viewer/viewer_video.js) — VW.video: the browser's own <video>
  * player (controls) plus play speed (remembered: 'sites-viewer.speed'), −10 / +10 s, and
  * resume: the place in each video is kept in localStorage 'sites-viewer.resume'
  * ({ key: { t, at } }, newest 60 only; key = drive|path|name|size) and taken up again on open

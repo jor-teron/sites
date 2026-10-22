@@ -1,5 +1,5 @@
 /*
- * Files core (apps/tools/files/files_core.js) — the shared namespace window.FX for the Files
+ * Files core (apps/system/files/files_core.js) — the shared namespace window.FX for the Files
  * app modules: state, small DOM helpers, status line, progress bar, remembered view prefs.
  *
  * FX.st: driveId, driveName, stack ([{ name, handle }], [0] = drive root), items (current

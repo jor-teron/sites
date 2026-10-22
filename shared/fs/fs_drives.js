@@ -1,6 +1,6 @@
 /*
  * Drives (shared/fs/fs_drives.js) — the list of "drives" shared by the Hub desktop
- * (hub/drives/hub_drives.js) and the Files app (apps/tools/files/). No libraries.
+ * (hub/drives/hub_drives.js) and the Files app (apps/system/files/). No libraries.
  *
  * Two kinds, both a FileSystemDirectoryHandle, so one set of file operations (fs_ops.js) works on both:
  *   local   "Local": the browser's private storage for this site (OPFS,
