@@ -739,3 +739,17 @@ files change.
     location.origin; dead CAT_PAGES Desktop / About rows removed; old
     #contact / #feedback open Settings > About, #transcribe / #vdesktop
     show home.
+  - R59 (done): file:// load is clean in the Hub. hub.html adds the
+    <link rel=manifest> from a tiny head script on http(s) only (no CORS
+    error on file://; PWA install unchanged); hub.js trackFrame reads the
+    frame's location fields inside its try (no SecurityError at every
+    frame load); HubUpdate.check returns {state:'file'} on file:// and
+    Settings > About says "Updates not available when opened as a file"
+    (no hub.html / version.txt / build.txt fetch there; Current release
+    shows a dash); settings_store posts hub-prefs with '*' on file://.
+  - Still on file:// (not Hub): Aeroplane's planet.glb / plane.glb
+    XHRs are blocked by CORS (the game falls back to simple shapes);
+    Chrome's "non-JS module files deprecated" warning (crbug/1173575).
+    file:// pages are all origin 'null', so the Hub cannot read an app's
+    page: after #contact the hash / title stay "contact" (the frame
+    itself shows Settings > About).

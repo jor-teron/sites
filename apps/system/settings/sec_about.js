@@ -11,11 +11,15 @@
  * "Clear Cache" (confirm → HubUpdate.clearCache(): Hub caches + cached Start list, reload).
  * The technical notes that used to be here live in How-to (sec_howto.js).
  * R41: the Hub version label is not shown anywhere (Jor's request); only the release date is.
+ * R59: opened as a file (file://) nothing is fetched (Chrome blocks it); Update says
+ *   'Updates not available when opened as a file' and Current release shows '\u2014'.
  */
 (function () {
   'use strict';
   const S = window.SettingsStore, ui = window.Settings.ui;
   const ROOT = '../../../';
+  const IS_FILE = location.protocol === 'file:';   // R59: no fetch on file:// (Chrome blocks it, console error)
+  const FILE_NOTE = 'Updates not available when opened as a file';
   const FIRST_RELEASE = '23 Sep 2026';
   const REPO = 'https://github.com/jor-teron/sites';
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -27,12 +31,14 @@
     return { version: v, date: /^\d{4}-\d{2}-\d{2}$/.test(l[1] || '') ? l[1] : '' };
   }
   function readVersion(mode) {
+    if (IS_FILE) return Promise.resolve({ version: '', date: '' });
     return fetch(ROOT + 'hub/version.txt', { cache: mode || 'no-cache' })
       .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
       .then(parseVersion).catch(() => ({ version: '', date: '' }));
   }
   /** hub/build.txt → 'Release R43 · 2026-10-21 IST' (line 3 release, line 4 date), or '' when unreadable. */
   function readBuild() {
+    if (IS_FILE) return Promise.resolve('');
     return fetch(ROOT + 'hub/build.txt', { cache: 'no-cache' })
       .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
       .then((text) => {
@@ -73,8 +79,20 @@
     out.textContent = 'Checking\u2026';
     const hub = S.hub();
     let r;
+    if (IS_FILE) {   // R59
+      out.className = 'upd-out';
+      out.textContent = FILE_NOTE;
+      btn.disabled = false;
+      return;
+    }
     try { r = hub && hub.HubUpdate ? await hub.HubUpdate.check({ manual: true }) : await standaloneCheck(); }
     catch (_) { r = { state: 'error' }; }
+    if (r.state === 'file') {   // R59: HubUpdate.check on file://
+      out.className = 'upd-out';
+      out.textContent = FILE_NOTE;
+      btn.disabled = false;
+      return;
+    }
     if (r.state === 'error') {
       out.className = 'upd-out bad';
       out.textContent = 'Could not check (offline?)';

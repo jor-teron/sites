@@ -442,7 +442,9 @@
   function trackFrame() {
     if (!currentEntry) return;
     let loc, doc;
-    try { loc = frame.contentWindow.location; doc = frame.contentDocument; } catch (_) { return; }
+    // R59: read the fields inside the try; on file:// every page is origin 'null' and reading a
+    // frame's location.protocol throws (an uncaught SecurityError at every frame load before).
+    try { const l = frame.contentWindow.location; loc = { protocol: l.protocol, pathname: l.pathname }; doc = frame.contentDocument; } catch (_) { return; }
     if (!loc || (loc.protocol !== 'http:' && loc.protocol !== 'https:' && loc.protocol !== 'file:')) return;
     const base = location.pathname.replace(/[^/]*$/, '');
     if (loc.pathname.indexOf(base) !== 0) return;
