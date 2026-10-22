@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""m3u-to-js.py (TV2): write <name>.m3u.js next to each <name>.m3u so tv-v1.html works from file://.
+"""m3u-to-js.py (TV2): write <name>.m3u.js next to each <name>.m3u so tv.html works from file://.
 
 Each output sets  window.TV_M3U['<name>'] = "<raw M3U text>";  (JSON string, so quotes,
 backslashes, backticks and ${ are all safe). Browsers block fetch() on file://, but a
-<script> tag still loads, so tv-v1.js falls back to these files there.
+<script> tag still loads, so core/tv_playlist.js falls back to these files there.
 
 Usage (inside tv/channels/):  python3 m3u-to-js.py            # home.m3u home-more.m3u kids.m3u
                               python3 m3u-to-js.py a.m3u b.m3u  # specific files

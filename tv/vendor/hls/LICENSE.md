@@ -2,7 +2,7 @@
 
 - Library: hls.js v1.5.20 (`hls.min.js`), https://github.com/video-dev/hls.js
 - Licence: Apache License 2.0
-- Copied byte-for-byte from `apps/lab/m3u-cleaner/vendor/hls/hls.min.js` (TV1, 2026-10-23); used by `../../tv-v1.html` instead of the jsDelivr CDN so TV works offline and from file://.
+- Copied byte-for-byte from `apps/lab/m3u-cleaner/vendor/hls/hls.min.js` (TV1, 2026-10-23); used by `../../tv.html` (`tv-v1.html` before TV3) instead of the jsDelivr CDN so TV works offline and from file://.
 
 ## Upstream LICENSE (hls.js v1.5.20)
 

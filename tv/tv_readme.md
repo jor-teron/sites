@@ -1,12 +1,22 @@
 # TV
 
 ## 1. What it is
-A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams from M3U playlists, shows a channel grid over the video, and is driven by a remote (arrows, Enter, number keys) or by touch / mouse. **Main entry:** `tv/` → `index.html` redirects to **`tv-v1.html`** (TV Player v1). The v2 / v3 players, the v3 sub-pages, `tv-old/` and other orphaned files are retired and live in **`legacy/`** (reference only, not maintained, links may be broken; see `legacy/README.md`).
+A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams from M3U playlists, shows a channel grid over the video, and is driven by a remote (arrows, Enter, number keys) or by touch / mouse. **Main entry:** `tv/` → `index.html` redirects to **`tv.html`** (the v1 player; named `tv-v1.html` until TV3, which is now a redirect stub). The v2 / v3 players, the v3 sub-pages, `tv-old/` and other orphaned files are retired and live in **`legacy/`** (reference only, not maintained, links may be broken; see `legacy/README.md`).
 
 ## 2. Files
 **Main player (v1)**
-- `index.html`: redirects to `tv-v1.html` (meta refresh + script)
-- `tv-v1.html` / `tv-v1.css` / `tv-v1.js`: the current player. Playlists, category tiles and timings are at the top of `tv-v1.js` ("EDIT THESE")
+- `index.html`: redirects to `tv.html` (script keeps `?query` / `#hash`; meta refresh without JS)
+- `tv-v1.html`: redirect stub to `tv.html` (keeps `?query` / `#hash`) for old bookmarks
+- `tv.html` / `tv.css`: the current player page and styles (no-scrollbar rules included)
+- `core/`: the player scripts, plain `<script>` files (no build, no ES modules, so file:// works) loaded in this order. Each is one IIFE that adds to the only global, `window.TV`:
+  - `tv_config.js` → `TV.config`, `TV.state`: playlists, category tiles, logos, timings, storage keys ("EDIT THESE"); shared state (`items`, `currentIndex`, `currentCategory`)
+  - `tv_playlist.js` → `TV.playlist`: M3U parser, fetch / `.m3u.js` loader, `load(category, options)` with the stale-load guard and Home fallback
+  - `tv_player.js` → `TV.player`: `play(channel)` with hls.js or native HLS; the `<video>` element
+  - `tv_ui.js` → `TV.ui`: channel grid, highlight, number display, grid show / auto-hide
+  - `tv_input.js` → `TV.input`: keys, number zap, click / tap shows the grid
+  - `tv_pip.js` → `TV.pip`: auto picture-in-picture
+  - `tv_app.js` → `TV.app`: activate a tile, saved channel (+ old-key migration), start-up. Loaded last
+- `vendor/hls/`: hls.js 1.5.20 (+ LICENSE.md); `image/no_signal.svg`: the poster
 - `tv_icon.png`: hub icon
 
 **Older players (moved to `legacy/` in TV4; paths below are relative to `legacy/`)**
@@ -60,7 +70,7 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
 Works in the Hub (also as a tile that opens in a new tab) and responds to the hub's D-pad: arrows move, A (Space) or Start (Enter) plays; number keys need the controller's keyboard.
 
 ## 5. Saved data (localStorage)
-- `tv-v1-last`: `{category, index, name, url}` of the last channel played in v1
+- `tv-last-v1`: `{category, index, name, url}` of the last channel played in v1. Until TV3 the key was `tv-v1-last`; on start its value is copied to `tv-last-v1` (if that is empty) and the old key is removed
 - `lastCat`: only written by the unused `tv-v3.js`
 - v2 / v3 pages save nothing
 
@@ -74,14 +84,14 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 - v2 / v3: full-screen video with a channel list overlay; made for a 16:9 TV.
 
 ## 8. Safe settings
-- `tv-v1.js` top block: `PLAYLISTS` (category → M3U path / URL), `DEFAULT_CATEGORY`, `CATEGORY_TILES` (Hub link + categories; name / href / logo), `HOME_CATEGORY_LOGO`, `NUMBER_DELAY` (1500 ms), `HIDE_DELAY` (5000 ms), `STORAGE_KEY`
+- `core/tv_config.js`: `PLAYLISTS` (category → M3U path / URL), `DEFAULT_CATEGORY`, `CATEGORY_TILES` (Hub link + categories; name / href / logo), `HOME_CATEGORY_LOGO`, `NUMBER_DELAY` (1500 ms), `HIDE_DELAY` (5000 ms), `AUTOPLAY_DELAY` (200 ms), `STORAGE_KEY` / `OLD_STORAGE_KEY`
 - `channels/*.csv`: add / remove / reorder channels by `tvg-id`, then run `split-m3u.sh` (it also rewrites the `.m3u.js` files)
 - Hand-edited a `channels/*.m3u`? Run `python3 m3u-to-js.py` in `channels/` and commit the `.m3u.js` too, or file:// keeps the old list
 - `split-m3u.sh` top block: `MASTER_M3U_URLS`, `CSV_FILES`, `RES_TAGS`
 - v3: `js/config.js`, `js/config-more.js` (`SPECIAL_TILES`)
 
 ## 9. Browser checklist
-1. Open `tv/`: redirects to `tv-v1.html`, the grid shows, the first Home channel plays.
+1. Open `tv/` (or an old `tv-v1.html` link): redirects to `tv.html`, the grid shows, the first Home channel plays.
 2. Arrow down a few tiles, press Enter: that channel plays; the grid hides after 5 s.
 3. Type `5`: a big "5" shows, channel 5 plays after 1.5 s, the grid stays closed.
 4. Open Kids, More, India: each list loads; the Home tile goes back.
@@ -118,6 +128,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 - 2026-10-23 IST: TV4: retired v2 / v3 pages, `js/`, `tv-old/`, `photo.html` / `video.html` moved to `legacy/` (paths not fixed).
 - 2026-10-23 IST: TV1: hls.js 1.5.20 vendored in `vendor/hls/` (with LICENSE.md, no CDN); local `image/no_signal.svg` poster; category switches only after its playlist loads (stale loads ignored, failure keeps the old list, falls back to Home if nothing loaded); empty playlists and auto-start never open link / category tiles; M3U name = text after the first comma outside quotes, else `tvg-name`.
 - 2026-10-23 IST: TV2: works from file://: `channels/m3u-to-js.py` (run by `split-m3u.sh`) writes `home.m3u.js`, `kids.m3u.js`, `home-more.m3u.js`; `tv-v1.js` loads them with a script tag on file:// or when fetch fails; http(s) still uses fetch.
+- 2026-10-23 IST: TV3: `tv-v1.js` split into `core/tv_*.js` modules under one global `window.TV` (same behaviour); page renamed `tv.html` / `tv.css` (inline no-scrollbar style moved into `tv.css`); `tv-v1.html` is now a redirect stub; storage key `tv-v1-last` → `tv-last-v1` (migrated on start).
 
 ## 12. Related apps
 - Hub: `../hub/docs/hub_readme.md` (TV is in Favorite and Media, and a home tile that opens it in a new tab)
