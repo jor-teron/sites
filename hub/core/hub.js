@@ -56,9 +56,9 @@
     // tiles pages live in apps/<cat>/<cat>.html (their index.html only redirects there)
     Favorite: 'apps/favorite/favorite.html', Games: 'apps/games/games.html', Media: 'apps/media/media.html',
     Office: 'apps/office/office.html', Connectivity: 'apps/connectivity/connectivity.html',
-    Tools: 'apps/tools/tools.html', Lab: 'apps/lab/lab.html',
+    Tools: 'apps/tools/tools.html', Lab: 'apps/lab/lab.html', System: 'apps/system/system.html',   // R53
     Desktop: 'apps/tools/vDesktop/',  // Desktop opens vDesktop directly (in the hub frame)
-    About: 'apps/settings/#about'      // About moved into Settings → About (rows hidden)
+    About: 'apps/system/settings/#about'   // About moved into Settings → About (rows hidden); R53: under apps/system/
   };
 
   const emptyText = document.getElementById('empty-text');
@@ -985,6 +985,12 @@
     const ok = window.HubWM.restoreSession((e) => {
       let key = normalizeEntryUrl(e.key);
       if (!key || !safeRel(key)) return null;
+      // R53: Settings / About moved under apps/system/ (old folders are legacy redirect pages)
+      const moved = /^apps\/(settings|about)\//.exec(key);
+      if (moved) {
+        key = 'apps/system/' + key.slice(5);
+        if (typeof e.url === 'string') e.url = e.url.replace('apps/' + moved[1] + '/', 'apps/system/' + moved[1] + '/');
+      }
       // sessions saved before R8: a category page was its folder (apps/office/) → apps/office/office.html
       const m = /^apps\/([a-z]+)\/$/.exec(key);
       if (m && findApp(key + m[1] + '.html')) key = key + m[1] + '.html';

@@ -121,7 +121,7 @@ Hub and desktop (Monorepo Bot):
   shared/tiles/       tiles.js/.css: category tiles pages + TilesCsv
   shared/wallpaper/   wallpapers.js + the wallpaper JPGs
   shared/favorites/   favorites.js (HubFavorites)
-  apps/settings/      Settings app (sections: Wallpaper, Desktop,
+  apps/system/settings/ Settings app (sections: Wallpaper, Desktop,
                       Windows, Sizes, Look, How-to, About)
   apps/tools/files/   Files app
   apps/tools/sysmon/  System Monitor (tasks, CPU, memory, network,
@@ -282,6 +282,7 @@ hub/core/hub_config.js (HUB_CAT_CSV):
   Connectivity  apps/connectivity/connectivity-apps.csv
   Tools         apps/tools/tools-apps.csv
   Lab           apps/lab/lab-apps.csv
+  System        apps/system/system-apps.csv   (R53: Settings, About)
 CSV columns: name, path (relative to that folder), icon, newtab,
 section (optional group heading). Lines starting with # are comments.
 Parsed by window.TilesCsv (shared/tiles/tiles.js), which also draws the
@@ -490,7 +491,7 @@ background and the Settings big preview) always uses the full picture.
 
 12. SETTINGS
 ------------
-apps/settings/: settings.js (section list + pane, open section in the
+apps/system/settings/: settings.js (section list + pane, open section in the
 hash, e.g. #about), settings_store.js (reads / writes 'sites-hub.<key>'
 and calls parent.HubPrefs.apply() + posts {type:'hub-prefs'}), and one
 file per section: sec_wallpaper, sec_desktop, sec_windows, sec_sizes,
@@ -531,7 +532,7 @@ Updates (hub/update/hub_update.js, window.HubUpdate):
     waits (HubUpdate.showNote() shows it; same callers as the toast).
     Desktop mode: in the taskbar tray just before the clock (icon sized
     from --wm-task-h). Phone mode: a 24 px icon at the right of the top
-    bar. Click / tap opens Settings on About (__hubOpenApp('apps/settings/',
+    bar. Click / tap opens Settings on About (__hubOpenApp('apps/system/settings/',
     {hash:'about'}); Settings follows #about), where the existing Update
     button applies it (skip-waiting -> reload on takeover). No toast, no
     overlay, never a forced reload; after the reload the new build is
@@ -658,7 +659,7 @@ files change.
   - R41 (done): workspace buttons are monitor-shaped (~16:10), the OSK
     button sits right after them (Show Desktop | 1 | 2 | keyboard), and the
     placebo version label is gone from the Desktop tray and Phone top bar.
-    Settings > About (apps/settings/sec_about.js) still shows it: another
+    Settings > About (apps/system/settings/sec_about.js) still shows it: another
     bot's folder, not changed.
   - R35 (done): edge snapping (half / max zones, preview, magnet) works
     again. Cause: wm_snap.js is the deferred "snap" batch, so a drag before
@@ -686,7 +687,7 @@ files change.
     (loadApp) or clicked into and they differ (changed by the Hub, e.g.
     taskbar Top, Desktop/Phone), its frame is reloaded on the same
     #section. Live redraw while Settings stays focused needs the
-    Settings app (apps/settings, Apps bot).
+    Settings app (apps/system/settings, R53 Hub bot; was Apps bot).
   - The "Google Drive" label is squeezed in the Files sidebar.
   - Wallpaper thumbnails in Settings load the full images.
   - Mail shares the Hub's Google sign-in record.

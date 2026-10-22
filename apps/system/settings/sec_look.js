@@ -1,5 +1,5 @@
 /*
- * Settings → Look (apps/settings/sec_look.js). Accent colour (presets + custom picker,
+ * Settings → Look (apps/system/settings/sec_look.js). Accent colour (presets + custom picker,
  * key 'accent'), Dark / Light theme (key 'theme') and animations On / Reduced (no jelly) /
  * Off (key 'motion'). Applied live to the Hub (hub_prefs.js) and to this app.
  */

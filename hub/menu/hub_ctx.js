@@ -20,7 +20,7 @@
 (function () {
   'use strict';
   if (!window.CtxMenu || !window.CtxInApp) return;
-  const V = '20261021o';
+  const V = '20261022a';
   const reg = [];
   const isDesk = () => !!(window.HubMode && window.HubMode.isDesktop());
 
@@ -91,7 +91,7 @@
   });
 
   /* ---------- helpers for the menus ---------- */
-  const SETTINGS = 'apps/settings/', FILES = 'apps/tools/files/';
+  const SETTINGS = 'apps/system/settings/', FILES = 'apps/tools/files/';
   function openApp(entry, o) {
     if (window.__hubOpenApp) window.__hubOpenApp(entry, o || {});
   }

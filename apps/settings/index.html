@@ -1,46 +1,7 @@
 <!doctype html>
-<!--
-  Settings app (apps/settings/index.html) — Hub settings: Wallpaper, Desktop, Windows, Sizes, Look, How-to, About.
-  Sections list left, options right (phone: list first, tap into a section, ‹ Back).
-  Choices are saved in localStorage (settings_store.js) and the Hub applies them live
-  (hub/core/hub_prefs.js, storage event + postMessage). Deep link: index.html#about etc.
-  Files: settings.css, settings_store.js, settings.js (shell), sec_*.js (one per section).
--->
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Settings</title>
-  <link rel="stylesheet" href="settings.css?v=20261020a" />
-  <link rel="stylesheet" href="../../shared/dialog/dialog.css?v=20261020e" />
-</head>
-<body>
-  <div class="app">
-    <nav class="side" aria-label="Settings sections">
-      <h1 class="side-title"><img src="settings_icon.png" alt="" /> Settings</h1>
-      <div id="nav" class="nav"></div>
-    </nav>
-    <main class="pane">
-      <header class="pane-head">
-        <button type="button" id="back" class="back" aria-label="Back to sections">&#8249; Back</button>
-        <h2 id="pane-title"></h2>
-      </header>
-      <div id="pane" class="pane-body"></div>
-    </main>
-  </div>
-  <script src="../../shared/wallpaper/wallpapers.js?v=20261020a"></script>
-  <script src="../../hub/drives/hub_wallpapers.js?v=20261020a"></script>
-  <script src="../../shared/fs/thumbs_store.js?v=20261020a"></script>
-  <script src="../../shared/dialog/dialog.js?v=20261020e"></script>
-  <script src="settings_store.js?v=20261020a"></script>
-  <script src="settings.js?v=20261020a"></script>
-  <script src="sec_wallpaper.js?v=20261020a"></script>
-  <script src="sec_desktop.js?v=20261021a"></script>
-  <script src="sec_windows.js?v=20261020a"></script>
-  <script src="sec_sizes.js?v=20261020a"></script>
-  <script src="sec_look.js?v=20261020a"></script>
-  <script src="sec_howto.js?v=20261020a"></script>
-  <script src="sec_about.js?v=20261020e"></script>
-  <script>Settings.start();</script>
-</body>
-</html>
+<!-- LEGACY (R53): Settings moved to apps/system/settings/. This page only redirects old links, saved windows and
+     cached Hubs there, keeping ?query and #hash (like hub/controller/dpad.html). Safe to delete once old links are gone. -->
+<html lang="en"><head><meta charset="utf-8" /><title>Settings</title>
+<script>location.replace('../system/settings/' + location.search + location.hash);</script>
+<noscript><meta http-equiv="refresh" content="0; url=../system/settings/" /></noscript>
+</head><body><p><a href="../system/settings/">Settings</a></p></body></html>

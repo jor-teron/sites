@@ -1,0 +1,20 @@
+<!doctype html>
+<!--
+  System page (apps/system/system.html), R53 — the Hub System menu category opens this tiles page.
+  Tiles from system-apps.csv; shared logic and look in shared/tiles/ (tiles.js, tiles.css).
+  Opened as apps/system/system.html (index.html only redirects here). Plain links, no ?v= tags:
+  the Hub service worker revalidates same-origin files (hub/update/hub_sw.js).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>System</title>
+  <link rel="stylesheet" href="../../shared/tiles/tiles.css" />
+</head>
+<body data-csv="system-apps.csv">
+  <main id="grid" class="grid" aria-label="System"></main>
+  <p id="msg" class="msg" hidden></p>
+  <script src="../../shared/tiles/tiles.js"></script>
+</body>
+</html>

@@ -44,7 +44,7 @@
   const updBtn = document.getElementById('upd-btn');
   if (updBtn) updBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (window.__hubOpenApp) window.__hubOpenApp('apps/settings/', { hash: 'about' });
+    if (window.__hubOpenApp) window.__hubOpenApp('apps/system/settings/', { hash: 'about' });
   });
   function showNote(reg) {   // R50: name kept (callers + HubUpdate.showNote); shows the indicator
     if (reg) lastReg = reg;

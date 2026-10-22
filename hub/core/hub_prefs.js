@@ -1,5 +1,5 @@
 /*
- * Hub preferences (hub/core/hub_prefs.js) — applies the Settings app's choices (apps/settings) to
+ * Hub preferences (hub/core/hub_prefs.js) — applies the Settings app's choices (apps/system/settings) to
  * the Hub, live. Loaded right after hub_config.js / hub_wallpapers.js.
  *
  * localStorage keys (all optional; empty = default):

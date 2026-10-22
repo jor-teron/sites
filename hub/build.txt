@@ -1,7 +1,7 @@
-20261021o
-hub-shell-v73
-R51
-2026-10-21 IST
+20261022a
+hub-shell-v74
+R53
+2026-10-22 IST
 
 # hub/build.txt: the current Hub build, one place.
 # Line 1 build tag (?v= in hub.html, sw.js, hub_sw.js V, hub_ctx.js V, hub_loader.js V),

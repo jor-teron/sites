@@ -1,5 +1,5 @@
 /*
- * Settings store (apps/settings/settings_store.js) — read / write the Hub's localStorage keys
+ * Settings store (apps/system/settings/settings_store.js) — read / write the Hub's localStorage keys
  * ('sites-hub.<key>') and tell the Hub to re-apply at once: parent.HubPrefs.apply() directly,
  * plus postMessage {type:'hub-prefs'} to the parent Hub; other open Hub tabs get the normal
  * 'storage' event.
