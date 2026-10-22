@@ -1,6 +1,8 @@
 SITES HUB - TECHNICAL GUIDE: HUB AND VIRTUAL DESKTOP
 ====================================================
 
+NEW 2026-10-22: full Hub + Apps + Games handover snapshot in hub/docs/README_technical_20261023.txt
+
 For a developer picking up the Hub (hub.html) and its virtual desktop.
 Written from the code as of R17 (updated through R43, 2026-10-21).
 Current build tag and shell cache: see hub/build.txt (one place).
