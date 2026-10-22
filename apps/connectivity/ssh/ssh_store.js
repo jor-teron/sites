@@ -1,7 +1,8 @@
 /*
  * SSH — S3 storage: known_hosts and saved hosts in localStorage. No DOM, so node can unit-test it.
  *   ssh-known-hosts-v1: { "host:port": { alg, fp: "SHA256:…", first, last } }  (times: ms since epoch)
- *   ssh-hosts-v1:       [ { id, name, user, host, port } ]  (never a password)
+ *   ssh-hosts-v1:       [ { id, name, user, host, port, key? } ]  (never a password; S4: key = fingerprint
+ *                       "SHA256:…" of the login key, absent = password login)
  * Store.make(storage, now) -> { known: { check, trust, seen, forget, forgetAll, list }, hosts: { list, save, remove, find } }
  * Store.backoff(n) -> seconds before auto-reconnect try n+1, or null after the last try.
  */
@@ -58,14 +59,17 @@
     };
 
     /* ---- saved hosts ---- */
-    /* clean(h) -> { name, user, host, port } or a string error. Only these fields are ever stored. */
+    /* clean(h) -> { name, user, host, port, key? } or a string error. Only these fields are ever stored. */
     function clean(h) {
       h = h || {};
       const user = str(h.user, 64), host = str(h.host, 255).replace(/^\[|\]$/g, ''), port = parseInt(h.port, 10) || 22;
       if (!host || /[\s/@]/.test(host)) return 'Enter a valid host (name or IP address).';
       if (!user || /[\s@:]/.test(user)) return 'Enter a valid user name.';
       if (port < 1 || port > 65535) return 'Port must be 1–65535.';
-      return { name: str(h.name, 60) || user + '@' + host, user, host, port: String(port) };
+      const out = { name: str(h.name, 60) || user + '@' + host, user, host, port: String(port) };
+      const key = str(h.key, 64);
+      if (key) { if (!/^SHA256:[A-Za-z0-9+/]{43}$/.test(key)) return 'Choose a valid key.'; out.key = key; }
+      return out;
     }
     function hlist() {
       const a = read(HS, []);

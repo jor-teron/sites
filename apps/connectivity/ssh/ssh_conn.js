@@ -2,14 +2,17 @@
  * SSH — one SSH session over the relay WebSocket, using vendor/ssh-lib.min.js (window.SSHLib).
  * SSH.Conn.open(o) -> Promise<{ write(str), resize(cols, rows), close() }>
  *   o = { relay, host, port, user, password, cols, rows, signal (AbortSignal, optional),
+ *         keys: [{ kp (library KeyPair), name }] (S4, tried first), onPassword() -> Promise<string|null>
+ *         (S4: asked only when the keys are refused and no password was given; the login timeout is paused),
  *         keepAliveSec (default 30), keepAliveMiss (default 2),
  *         onData(Uint8Array), onHostKey(info) -> Promise<bool>, onClose(msg, kind) }
  *   onClose kind: 'exit' (the remote shell ended) or 'lost' (network, relay, server or keepalive failure).
  *   Not called after close() or when open() rejects.
- * Rejects with Error whose .code is: bad-relay, relay-down, relay-target, auth, hostkey, timeout, ssh, cancelled.
+ * Rejects with Error whose .code is: bad-relay, relay-down, relay-target, auth, hostkey, timeout, ssh, cancelled,
+ * ed25519 (S4-F1: the server offers only Ed25519 host keys / curve25519 key exchange, which the library lacks).
  * The 30 s login timeout is paused while the host key prompt is open (S3-F2).
  * Keepalive (S3): the library sends keepalive@openssh.com every keepAliveSec; after keepAliveMiss intervals with
- * nothing received from the server the link is treated as dead ('lost').
+ * nothing received from the server the link is treated as dead ('lost'). S4-F2: it starts only after login.
  * The relay gets ?token=host:port and connects only to targets in its allowlist (see relay/README.md).
  */
 SSH.Conn = (() => {
@@ -37,6 +40,18 @@ SSH.Conn = (() => {
     const h = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
     let s = ''; h.forEach((b) => { s += String.fromCharCode(b); });
     return { alg: key.keyAlgorithmName, fp: 'SHA256:' + btoa(s).replace(/=+$/, '') };
+  }
+
+  /* S4-F1: the library has no Ed25519 / curve25519; turn its negotiation failure into a clear message. */
+  function explain(msg) {
+    const m = /Failed (PublicKey|KeyExchange) negotiation: Server \(([^)]*)\)/.exec(msg || '');
+    if (!m) return null;
+    if (m[1] === 'PublicKey') {
+      return fail('ed25519', 'This server offers only host key types this app cannot check (' + m[2] + ').\n'
+        + (/ed25519/i.test(m[2]) ? 'Ed25519 host keys are not supported yet. ' : '')
+        + 'Enable an ECDSA or RSA host key on the server, e.g. in /etc/ssh/sshd_config: HostKey /etc/ssh/ssh_host_ecdsa_key (then restart sshd).');
+    }
+    return fail('ed25519', 'No common key exchange with this server (it offers: ' + m[2] + ').\nThis app supports ecdh-sha2-nistp256/384 and diffie-hellman-group14/16; curve25519 only is not supported yet.');
   }
 
   const stats = { keepAliveOk: 0, keepAliveMiss: 0 }; /* diagnostics (all sessions this visit) */
@@ -89,7 +104,8 @@ SSH.Conn = (() => {
 
     const cfg = new L.SshSessionConfiguration();
     const kaSec = o.keepAliveSec == null ? 30 : o.keepAliveSec, kaMiss = o.keepAliveMiss || 2;
-    if (kaSec > 0) cfg.keepAliveTimeoutInSeconds = kaSec;
+    /* S4-F2: keepalive starts only after login (set below). Before that the user may be reading a host key or
+       password prompt, and servers may drop a connection that sends requests before authentication. */
     session = new L.SshClientSession(cfg);
     let hostKeyOk = false;
     session.onAuthenticating((e) => {
@@ -99,7 +115,7 @@ SSH.Conn = (() => {
         .then((ok) => { hostKeyOk = !!ok && !done; tStart(); return hostKeyOk ? {} : null; });
     });
     session.onClosed((e) => {
-      if (!live) { rejectStop(fail('ssh', 'The server closed the connection' + (e && e.message ? ': ' + e.message : '.'))); return; }
+      if (!live) { rejectStop(explain(e && e.message) || fail('ssh', 'The server closed the connection' + (e && e.message ? ': ' + e.message : '.'))); return; }
       const m = e && e.message && !/disposed/i.test(e.message) ? e.message : '';
       closeOnce('Connection lost: the server closed the session' + (m ? ' (' + m + ').' : '.'), 'lost');
     });
@@ -114,24 +130,53 @@ SSH.Conn = (() => {
       await guard(session.connect(new L.WebSocketStream(ws)));
     } catch (err) {
       failed(err);
-      if (err && (err.code === 'cancelled')) throw err;
+      if (err && (err.code === 'cancelled' || err.code === 'ed25519')) throw err;
+      const ex = explain(err && err.message);
+      if (ex) throw ex;
       if (!gotBytes || closed) throw targetErr();
       throw fail(err && err.code === 'timeout' ? 'timeout' : 'ssh', 'SSH handshake failed: ' + (err && err.message || err));
     }
+    /* S4: keys first (the library tries each, then password if the server still offers it). */
+    const keys = (o.keys || []).filter((k) => k && k.kp);
+    let pwCancelled = false, pwTried = false;
+    const cred = { username: o.user, publicKeys: keys.map((k) => k.kp) };
+    if (o.password) cred.passwordProvider = async () => { pwTried = true; return [o.user, o.password]; };
+    else if (o.onPassword) {
+      cred.passwordProvider = async () => {
+        tPause();
+        let p = null;
+        try { p = await o.onPassword(); } catch (_) { p = null; }
+        if (done) return null;
+        tStart();
+        if (!p) { pwCancelled = true; return null; }
+        pwTried = true;
+        return [o.user, p];
+      };
+    }
+    if (!keys.length && !cred.passwordProvider) { failed(null); throw fail('auth', 'Enter a password or choose a key.'); }
+    const who = o.user + '@' + o.host;
+    const keyNames = keys.map((k) => '"' + k.name + '"').join(', ');
     let ok;
     try {
-      ok = await guard(session.authenticate({ username: o.user, password: o.password }));
+      ok = await guard(session.authenticate(cred));
     } catch (err) {
       failed(err);
       if (err && (err.code === 'timeout' || err.code === 'cancelled')) throw err;
       if (!hostKeyOk) throw fail('hostkey', 'Connection cancelled: host key not trusted.');
+      if (pwCancelled) throw fail('cancelled', 'Login cancelled.');
       throw fail('ssh', 'Login failed: ' + (err && err.message || err));
     }
     if (!ok) {
       failed(null);
       if (!hostKeyOk) throw fail('hostkey', 'Connection cancelled: host key not trusted.');
-      throw fail('auth', 'Wrong user name or password for ' + o.user + '@' + o.host + '.');
+      if (pwCancelled) throw fail('cancelled', 'Login cancelled.');
+      let m;
+      if (keys.length && pwTried) m = 'The server refused the key ' + keyNames + ' and the password for ' + who + '.';
+      else if (keys.length) m = 'The server refused the key ' + keyNames + ' for ' + who + '.\nAdd its public line to ~/.ssh/authorized_keys on the server (SSH keys → Copy public key).';
+      else m = 'Wrong user name or password for ' + who + '.';
+      throw Object.assign(fail('auth', m), { keyRefused: keys.length > 0, pwRefused: pwTried });
     }
+    if (kaSec > 0) cfg.keepAliveTimeoutInSeconds = kaSec; /* S4-F2: the library restarts its timer on this change */
 
     try {
       channel = await guard(session.openChannel());

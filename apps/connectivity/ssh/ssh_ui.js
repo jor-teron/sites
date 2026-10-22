@@ -27,26 +27,29 @@ const SSH = (() => {
     tt = setTimeout(() => t.classList.remove('on'), ms || 2200);
   }
 
-  /* ask({ title, text, yes, no, danger, input }) -> Promise<boolean | string | null>.
-     no:false = alert. input:true shows a textarea and resolves to its text (null on cancel). */
+  /* ask({ title, text, yes, no, danger, input, password }) -> Promise<boolean | string | null>.
+     no:false = alert. input:true shows a textarea, password:true a password field (S4; Enter = OK);
+     both resolve to the text (null on cancel). The field is cleared when the dialog closes. */
   let pending = null;
   function ask(o) {
     if (pending) pending(false);
     $('dlg-title').textContent = o.title || '';
     $('dlg-text').textContent = o.text || '';
-    const yes = $('dlg-yes'), no = $('dlg-no'), inp = $('dlg-input');
+    const yes = $('dlg-yes'), no = $('dlg-no'), inp = o.password ? $('dlg-pass') : $('dlg-input');
     yes.textContent = o.yes || 'OK';
     yes.classList.toggle('danger', !!o.danger);
     no.hidden = o.no === false;
     no.textContent = o.no || 'Cancel';
-    inp.hidden = !o.input;
-    inp.value = '';
+    $('dlg-input').hidden = !o.input; $('dlg-pass').hidden = !o.password;
+    $('dlg-input').value = ''; $('dlg-pass').value = '';
     $('dlg').hidden = false;
-    setTimeout(() => (o.input ? inp : (o.focusNo ? no : yes)).focus(), 0);
+    const field = o.input || o.password;
+    setTimeout(() => (field ? inp : (o.focusNo ? no : yes)).focus(), 0);
     return new Promise((res) => {
       pending = (v) => {
         pending = null; $('dlg').hidden = true;
-        res(o.input ? (v ? inp.value : null) : v);
+        const val = inp.value; inp.value = '';
+        res(field ? (v ? val : null) : v);
       };
     });
   }
@@ -82,10 +85,11 @@ const SSH = (() => {
     $('dlg-yes').addEventListener('click', () => pending && pending(true));
     $('dlg-no').addEventListener('click', () => pending && pending(false));
     $('dlg').addEventListener('click', (e) => { if (e.target === $('dlg') && pending) pending(false); });
+    $('dlg-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter' && pending) { e.preventDefault(); pending(true); } });
     $('m-relay').addEventListener('click', () => { menu(false); ask({ title: 'Relay help', no: false, text: RELAY_HELP }); });
     $('m-about').addEventListener('click', () => {
       menu(false);
-      ask({ title: 'SSH 1.3', no: false, text: 'SSH terminal: password login, resize, copy/paste, reconnect (S1); saved hosts, saved host keys (known hosts), keepalive and auto-reconnect (S3).\nEncryption runs in this page; the relay only forwards encrypted bytes. The password is never saved.\nxterm.js 6.0.0 (MIT) and Microsoft dev-tunnels-ssh 3.12.42 (MIT).' });
+      ask({ title: 'SSH 1.4', no: false, text: 'SSH terminal: password login, resize, copy/paste, reconnect (S1); saved hosts, saved host keys (known hosts), keepalive and auto-reconnect (S3); public-key login with ECDSA and RSA keys, key generation, keys remembered encrypted on this device (S4).\nEncryption runs in this page; the relay only forwards encrypted bytes. The password is never saved; private keys are saved only if you choose to, encrypted with your passphrase.\nxterm.js 6.0.0 (MIT) and Microsoft dev-tunnels-ssh 3.12.42 (MIT).' });
     });
     addEventListener('storage', (e) => { if (e.key === 'sites-hub.theme') theme(); });
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);

@@ -1,7 +1,7 @@
 /*
  * SSH — S3 UI for saved hosts (list in the connect form + editor dialog) and the Known hosts panel (menu).
  * SSH.Hosts.init({ pick(h) }) ; SSH.Hosts.render() ; SSH.Hosts.edit(h) ; SSH.Hosts.known() ; SSH.Hosts.open
- * All text goes in with textContent. Saved hosts hold name, user, host, port only, never a password.
+ * All text goes in with textContent. Saved hosts hold name, user, host, port and (S4) the login key fingerprint, never a password.
  */
 SSH.Hosts = (() => {
   const { $ } = SSH;
@@ -18,7 +18,8 @@ SSH.Hosts = (() => {
       const li = el('li');
       const go = el('button', 'sh-go');
       go.type = 'button'; go.title = 'Fill in ' + label(h);
-      go.append(el('b', null, h.name), el('small', null, label(h)));
+      const k = h.key ? SSH.Ring.get(h.key) : null;
+      go.append(el('b', null, h.name), el('small', null, label(h) + (h.key ? ' · key ' + (k ? k.name : '(not on this device)') : '')));
       go.addEventListener('click', () => onPick(h));
       const ed = el('button', 'sh-ed', '✎');
       ed.type = 'button'; ed.title = 'Edit ' + h.name; ed.setAttribute('aria-label', 'Edit ' + h.name);
@@ -35,6 +36,7 @@ SSH.Hosts = (() => {
     editing = h.id || null;
     $('h-title').textContent = editing ? 'Edit saved host' : 'Save host';
     $('h-name').value = h.name || ''; $('h-user').value = h.user || ''; $('h-host').value = h.host || ''; $('h-port').value = h.port || '22';
+    SSH.KeyUI.fillSelect($('h-key'), h.key || '');
     $('h-name').placeholder = h.user && h.host ? h.user + '@' + h.host : 'Raspberry Pi';
     $('h-err').hidden = true;
     $('h-del').hidden = !editing;
@@ -44,7 +46,7 @@ SSH.Hosts = (() => {
   const closeEdit = () => { $('hdlg').hidden = true; editing = null; };
 
   function save() {
-    const r = S.hosts.save({ id: editing || undefined, name: $('h-name').value, user: $('h-user').value, host: $('h-host').value, port: $('h-port').value });
+    const r = S.hosts.save({ id: editing || undefined, name: $('h-name').value, user: $('h-user').value, host: $('h-host').value, port: $('h-port').value, key: $('h-key').value });
     if (typeof r === 'string') { $('h-err').textContent = r; $('h-err').hidden = false; return; }
     closeEdit(); render(); SSH.toast('Saved ' + r.name);
   }
@@ -89,6 +91,7 @@ SSH.Hosts = (() => {
       S.known.forgetAll(); renderKnown(); SSH.toast('Forgot all host keys');
     });
     addEventListener('storage', (e) => { if (e.key === S.KEYS.hosts) render(); if (e.key === S.KEYS.known && !$('kdlg').hidden) renderKnown(); });
+    SSH.Ring.onChange(render);
     render();
   }
 
