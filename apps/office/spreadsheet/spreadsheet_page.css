@@ -1,0 +1,16 @@
+/*
+ * spreadsheet_page.css
+ * Print options from the Page tab (spreadsheet_page.js sets the body classes;
+ * the @page rule is injected as <style id="sheet-page-style">).
+ */
+@media print {
+  /* Headings (row numbers / column letters): off unless print-headings */
+  body:not(.print-headings) th,
+  body:not(.print-headings) td.row-num,
+  body:not(.print-headings) col.row-head { display: none !important; }
+  body:not(.print-headings) col.row-head { visibility: collapse; }
+  /* Gridlines */
+  body.print-no-grid td.cell { border-color: #fff !important; }
+  body:not(.print-no-grid) td.cell { border-color: #999 !important; }
+  .sheet-wrap { padding: 0 !important; background: #fff !important; }
+}
