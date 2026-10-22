@@ -572,17 +572,36 @@ Updates (hub/update/hub_update.js, window.HubUpdate):
     reload, caches kept), else clears hub-shell-* and reloads.
   - clearCache(): deletes hub-shell-*, hub-rt-* caches, the cached Start
     list and lastRefresh, unregisters the worker, reloads.
-Bump steps for every Hub release (pick the next build tag after the one
-in hub/build.txt, and cache number +1):
-  1. hub.html: every ?v= (sed the old tag to the new one).
+Bump for every Hub release: one script, hub/tools/hub_bump.py (python3, no
+dependencies; H3). It edits the 7 places listed below and nothing else:
+  python3 hub/tools/hub_bump.py --check
+      all 7 places agree with hub/build.txt? Prints each value; exit 1 if not.
+  python3 hub/tools/hub_bump.py --release H4 --dry-run
+      shows every change (a diff per file), writes nothing.
+  python3 hub/tools/hub_bump.py --release H4
+      next tag and cache: same IST date as the current tag -> next letter
+      (20261023d -> 20261023e, z -> za); a new IST date -> YYYYMMDDa; cache
+      hub-shell-v<NN+1>; build.txt line 3 = the release, line 4 = today (IST).
+  --tag 20261024a / --cache hub-shell-v90   override the computed values.
+  --note 'text'    comment after the CACHE line (default: the release name).
+  --version v0.300 also writes hub/version.txt (version + today); only when
+                   Jor says so.
+  --force          bump even if the places disagree beforehand (by default
+                   the script refuses) or --tag is not newer than the current.
+After the bump it re-checks the 7 places. Still by hand: new shell files in
+SHELL (hub_sw.js), the hub_readme.md change-log entry, the commit.
+Release names are area-prefixed: H = Hub shell, SW = service worker, AH = App
+Hub, FS = file:// (R59 is FS1); fixes H3-F1, bugs H3-B1.
+The 7 places (what the script edits):
+  1. hub.html: every ?v=<tag> (also the one in the cache-busting comment).
   2. sw.js: importScripts('hub/update/hub_sw.js?v=<new>').
-  3. hub/update/hub_sw.js: V = '<new>' and CACHE = 'hub-shell-v<NN+1>'; add
-     any new shell file to SHELL.
+  3. hub/update/hub_sw.js: V = '<new>' and CACHE = 'hub-shell-v<NN+1>' (+ a
+     comment). A new shell file still goes into SHELL by hand.
   4. hub/menu/hub_ctx.js: const V = '<new>'.
   5. hub/core/hub_loader.js: const V = '<new>'.
   6. hub/build.txt: line 1 build tag, line 2 cache name, line 3 release,
      line 4 date (IST).
-  7. hub/version.txt only when Jor says so.
+  7. hub/version.txt only when Jor says so (--version).
 The readmes (this file, hub_readme.md) carry no current numbers; only
 change-log entries keep the numbers of their own release (history).
 
