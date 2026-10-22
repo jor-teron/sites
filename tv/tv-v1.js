@@ -41,6 +41,7 @@ let currentCategory = DEFAULT_CATEGORY;
 let hideTimeout = null;
 let numberBuffer = '';
 let numberTimeout = null;
+let loadToken = 0; // TV1: bumps on every loadPlaylist; stale responses are ignored
 
 // ========== STORAGE ==========
 function readLast() {
@@ -73,6 +74,24 @@ function saveLast(category, index, item) {
 }
 
 // ========== M3U ==========
+// TV1: the name follows the first comma OUTSIDE quotes, so quoted attributes
+// with commas (e.g. group-title="News, India") don't end up in the name.
+function extinfName(line) {
+  const body = line.slice('#EXTINF:'.length);
+  let quote = '';
+  for (let i = 0; i < body.length; i++) {
+    const c = body[i];
+    if (quote) {
+      if (c === quote) quote = '';
+    } else if (c === '"' || c === "'") {
+      quote = c;
+    } else if (c === ',') {
+      return body.slice(i + 1).trim();
+    }
+  }
+  return '';
+}
+
 function parseM3U(text) {
   const lines = text.split('\n').map(function (l) {
     return l.trim();
@@ -83,8 +102,13 @@ function parseM3U(text) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line.startsWith('#EXTINF:')) {
-      const nameMatch = line.match(/,(.+)$/);
-      const name = nameMatch ? nameMatch[1].trim() : 'Unknown';
+      const tvgNameMatch =
+        line.match(/tvg-name="([^"]*)"/i) ||
+        line.match(/tvg-name='([^']*)'/i);
+      const name =
+        extinfName(line) ||
+        (tvgNameMatch && tvgNameMatch[1].trim()) ||
+        'Unknown';
       const logoMatch =
         line.match(/tvg-logo="([^"]*)"/i) ||
         line.match(/tvg-logo='([^']*)'/i);
@@ -149,7 +173,9 @@ function loadPlaylist(category, options) {
     return;
   }
 
-  currentCategory = category;
+  // TV1: currentCategory changes only after this playlist loads; a newer
+  // loadPlaylist call makes this one stale and its result is dropped.
+  const token = ++loadToken;
 
   fetch(url)
     .then(function (res) {
@@ -157,14 +183,15 @@ function loadPlaylist(category, options) {
       return res.text();
     })
     .then(function (text) {
+      if (token !== loadToken) return; // stale
       const channels = parseM3U(text);
+      currentCategory = category;
       items = categoryTilesFor(category).concat(channels);
       buildList();
 
       let startIndex = items.findIndex(function (it) {
         return it.type === 'channel';
       });
-      if (startIndex < 0) startIndex = 0;
 
       if (options.preferName || options.preferUrl) {
         const found = items.findIndex(function (it) {
@@ -181,17 +208,27 @@ function loadPlaylist(category, options) {
         startIndex = options.startIndex;
       }
 
-      if (items.length) {
+      if (items[startIndex] && items[startIndex].type === 'channel') {
         setTimeout(function () {
+          if (token !== loadToken) return; // a newer load started
           activateItem(startIndex);
         }, 200);
       } else {
-        console.error('No channels in playlist');
+        // TV1: no stream channels: just highlight the first tile, never
+        // auto-open a link (Hub) or category tile.
+        currentIndex = 0;
+        highlightCurrent();
+        console.error('No channels in playlist: ' + category);
       }
     })
     .catch(function (err) {
+      if (token !== loadToken) return; // stale
       console.error(err);
-      console.error('Failed to load playlist');
+      console.error('Failed to load playlist: ' + category + ' (keeping ' + currentCategory + ')');
+      // TV1: nothing loaded yet (e.g. saved category is offline): fall back to the default list.
+      if (!items.length && category !== DEFAULT_CATEGORY) {
+        loadPlaylist(DEFAULT_CATEGORY);
+      }
     });
 }
 

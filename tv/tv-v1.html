@@ -10,7 +10,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TV Player v1</title>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7"></script>
+  <script src="vendor/hls/hls.min.js"></script>
   <link rel="stylesheet" href="tv-v1.css">
 <style type="text/css">
 	html {
@@ -25,7 +25,7 @@
 
   <div class="main">
     <div class="player-area">
-      <video id="video" poster="../image/tv_no_signal.jpeg" autoplay playsinline></video>
+      <video id="video" poster="image/no_signal.svg" autoplay playsinline></video>
     </div>
     <div class="channel-list hidden" id="channel-list"></div>
   </div>
