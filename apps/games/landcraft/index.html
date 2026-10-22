@@ -1,20 +1,17 @@
 <!DOCTYPE html>
-<!--
-  Landcraft Game - Index Redirect
-  Project: landcraft
-  Location: apps/games/landcraft/index.html
-  Purpose: Redirect to the main game HTML file as per project structure rules.
-  Author: Grok (updated for jor-teron)
-  Date: 2026-10-22
--->
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=landcraft.html">
-  <title>Landcraft - Redirect</title>
-  <!-- Immediate redirect to main game page -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>LandCraft L1a</title>
+  <link rel="stylesheet" href="css/landcraft.css?v=l1a" />
+  <script type="importmap">{ "imports": { "three": "./vendor/three/build/three.module.min.js" } }</script>
 </head>
 <body>
-  <p>Redirecting to <a href="landcraft.html">Landcraft</a>...</p>
+  <header id="bar">
+    <a id="back" href="../" title="Games">&#8592;</a>
+    <b>LANDCRAFT</b> <span id="ver">L1a</span>
+  </header>
+  <script type="module" src="core/main.js?v=l1a"></script>
 </body>
 </html>
