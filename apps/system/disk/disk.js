@@ -142,7 +142,7 @@
   // ---- clean-up ----
   async function thumbs() {
     if (!TS) { $('thumb-txt').textContent = 'Not available'; $('thumbs').disabled = true; return; }
-    try { const s = await TS.stats(); $('thumb-txt').textContent = s.count + ' pictures, ' + fmt(s.bytes); } catch (_) { $('thumb-txt').textContent = '—'; }
+    try { const s = await TS.stats(); $('thumb-txt').textContent = s.count + (s.count === 1 ? ' picture, ' : ' pictures, ') + fmt(s.bytes); /* R54b: '1 picture' */ } catch (_) { $('thumb-txt').textContent = '—'; }
   }
   $('thumbs').addEventListener('click', async () => {
     if (!(await Dlg.confirm('Clear the thumbnail cache?', 'Files makes the small previews again when you open a folder.', 'Clear'))) return;

@@ -21,7 +21,7 @@
  */
 (function () {
   'use strict';
-  const V = '20261022d';
+  const V = '20261022e';
   const DELAY = 1500;
   const BATCHES = {
     drives: ['shared/google/google.css', 'hub/drives/hub_drives.css',
@@ -35,7 +35,7 @@
     saver: ['hub/core/hub_saver.js'],   // R49
   };
   const done = {}, busy = {}, fails = {};
-  const LABEL = { saver: 'the screen saver', drives: 'Drives', snap: 'window snapping', osk: 'the on-screen keyboard', viewer: 'the viewer' };
+  const LABEL = { saver: 'the screen saver', drives: 'the Files pane', snap: 'window snapping', osk: 'the on-screen keyboard', viewer: 'the viewer' };
 
   /** One file; scripts run in order because each waits for the one before. */
   function one(src, name) {

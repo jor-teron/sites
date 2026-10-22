@@ -40,7 +40,7 @@ It runs in one of two modes, decided by hub/wm/wm_mode.js (window.HubMode):
            at least 1024 px wide (R21: once in Desktop it stays down to
            960 px). <body> gets class "wm-desktop". Apps open
            in movable windows on #wm-desk, a taskbar sits at the bottom
-           (or top), the home screen shows Drives (left 60%) and the QR /
+           (or top), the home screen shows Files (left 60%, R54b; connected drives only) and the QR /
            link tiles (right 40%).
   Phone    everything else. The original single-frame Hub: a top bar with
            the category menu, one #app-frame, home tiles.
@@ -100,7 +100,7 @@ Hub and desktop (Monorepo Bot):
                         overlay: images, PDF via shared/vendor/pdfjs/,
                         video, audio), hub_notify.js + hub_notification.css
                         (received-file cards)
-    drives/             hub_drives.js/.css (Drives pane on the desktop home),
+    drives/             hub_drives.js/.css (Files pane on the desktop home, R54b),
                         hub_wallpapers.js (wallpaper list + "Your picture"),
                         hub_traymeter.js (optional busy meter)
     update/             hub_sw.js (service worker, R16b, R16c),
@@ -126,6 +126,8 @@ Hub and desktop (Monorepo Bot):
   apps/system/files/   Files app
   apps/system/disk/    Disk app (R54: drives, space, sizes, clean-up;
                       browsing stays in Files)
+                      R54b: Files and the desktop Files pane only
+                      browse connected drives; managing is in Disk
   apps/system/sysmon/  System Monitor (tasks, CPU, memory, network,
                       storage, battery)
   apps/tools/phonekey/  phone page for "Phone as a key"

@@ -1,5 +1,5 @@
 /*
- * Desktop drives pane (hub/drives/hub_drives.js) — Desktop mode only. The desktop (home, seen when
+ * Desktop Files pane (hub/drives/hub_drives.js; "Drives" until R54b) — Desktop mode only. The desktop (home, seen when
  * no window covers it) is split in two: left 60% = Drives, right 40% = the QR / link tiles
  * (hub_tiles.js, see hub_drives.css). Phone mode hides this pane (Files is in Tools).
  * Drives come from shared/fs/fs_drives.js:
@@ -56,6 +56,62 @@
     if (await D.allow(d.id)) { draw(); openFiles(d.id); }
   }
 
+  /* R54b: the pane is "Files": only CONNECTED drives (Local always; added folders with access;
+   * Google Drive when signed in). Managing drives (Add folder, Allow access, Remove, Google sign-in /
+   * sign-out) moved to the Disk app (apps/system/disk/): a "Manage drives" tile and the right-click
+   * "Manage in Disk" open it. The R9a–R53 code (sign-in panel, ✕ / Allow access, menu) is kept below
+   * as a LEGACY comment. */
+  const DISK = 'apps/system/disk/';
+  const openDisk = () => { if (window.__hubOpenApp) window.__hubOpenApp(DISK); };
+  const known = new Map();   // drive id → d (menus are built synchronously)
+  if (window.HubCtx) {
+    window.HubCtx.add('.drv[data-drive]', (t) => {
+      const d = known.get(t.dataset.drive);
+      if (!d) return null;
+      const desk = window.HubMode && window.HubMode.isDesktop();
+      return [
+        { label: 'Open', icon: '\u2197', action: () => openFiles(d.id) },
+        desk && { label: 'Open in new window', icon: '\u29C9', action: () => openFiles(d.id, true) },
+        { sep: true },
+        { label: 'Manage in Disk', icon: '\uD83D\uDDB4', action: openDisk }
+      ];
+    }, { touch: true });
+  }
+  function tile(cls, ico, name, sub, onClick) {
+    const b = el('button', 'drv ' + cls);
+    b.type = 'button';
+    b.append(el('span', 'drv-ico', ico), el('span', 'drv-name', name));
+    if (sub) b.appendChild(el('span', 'drv-sub', sub));
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  async function draw() {
+    const list = await D.list();
+    known.clear();
+    const grid = el('div', 'drv-grid');
+    for (const d of list) {
+      let sub = '';
+      if (d.kind === 'gdrive') {
+        if (D.gdriveState() !== 'ok') continue;
+        const u = window.GoogleAuth.user() || {};
+        sub = u.email || 'Connected';
+      } else if (d.kind === 'local') sub = 'In this browser';
+      else if ((await D.access(d.id)) !== 'granted') continue;
+      else sub = 'Folder';
+      const t = tile('drv-' + d.kind, d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : '\uD83D\uDCC2', d.name, sub, (e) => openFiles(d.id, e.shiftKey));
+      t.dataset.drive = d.id;
+      known.set(d.id, d);
+      grid.appendChild(t);
+    }
+    const m = tile('drv-add drv-manage', '\u2699', 'Manage drives', 'Add, connect or remove in Disk', openDisk);
+    grid.appendChild(m);
+    const out = [el('h2', 'drv-title', 'Files'), grid];
+    if (!list.length) out.push(el('p', 'drv-note', 'This browser has no file storage for web pages.'));
+    pane.replaceChildren(...out);
+    pane.hidden = false;
+  }
+
+  /* ===== LEGACY (until R54b, not run): the Drives pane that also managed drives =====
   // Google Drive tile: the connect panel lives in one kept element (a redraw must not drop the QR)
   let gdBox = null, gdMount = null;
   const howto = () => (window.HubCtx ? window.HubCtx.openApp(window.HubCtx.SETTINGS, { hash: 'howto' }) : null);
@@ -183,6 +239,9 @@
     pane.replaceChildren(...out);
     pane.hidden = false;
   }
+  ===== end LEGACY ===== */
+  // (legacy helpers removeDrive / allowDrive above are unused since R54b)
+
   D.onChange(draw);
   draw();
 })();
