@@ -36,7 +36,7 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `modules/draftly-docs.js`: load / open / new / delete / save, Recent list, autosave, Ctrl+S
 - `modules/draftly-format.js`: Home-tab formatting buttons, selects, shortcuts, toolbar sync
 - `modules/draftly-ribbon.js`: ribbon tabs and File menu (File > Rename asks with a dialog; File > Dark mode / Light mode toggles the theme, same `draftly_theme` pref as the top-row button)
-- `modules/draftly-dialog.js` + `ui/dialog.css`: modal `Draftly.dialog.prompt({title, label, value, okLabel})` → name or null, and `Draftly.dialog.confirm({title, message, okLabel, danger})` → true/false. Enter = OK (unless Cancel has focus), Esc or a backdrop click = cancel, focus stays inside. A prompt refuses empty text. A danger confirm has a red OK and starts on Cancel. Draftly uses no window.prompt / confirm / alert.
+- `modules/draftly-dialog.js` (alias of the shared `../shared/office-dialog.js` + `office-dialog.css`): modal `Draftly.dialog.prompt({title, label, value, okLabel})` → name or null, and `Draftly.dialog.confirm({title, message, okLabel, danger})` → true/false. Enter = OK (unless Cancel has focus), Esc or a backdrop click = cancel, focus stays inside. A prompt refuses empty text. A danger confirm has a red OK and starts on Cancel. Draftly uses no window.prompt / confirm / alert.
 - `modules/draftly-hub.js`: sites hub bridge (v:1). Only active in a frame. After `hub-hello` it adds `body.in-hub`, which hides the top row. It sends `hub-app` {app, tabs, activeTab, title}, `hub-tab` {id} and `hub-title` {value}. It handles `hub-action` {id:'tab:<id>'}: `tab:file` opens the File menu at the top-left of the frame. The message shapes are kept in `Draftly.hub.shape`.
 - `modules/draftly-app.js`: thin start-up (checks modules, calls each `bind()`, loads the document)
 - `vendor/` (local, MIT; see `vendor/README.txt`):
@@ -151,3 +151,7 @@ Messages show briefly at the bottom (2.2 s):
 ## 12. Related apps
 - Notely: notes.
 - Notepad: plain text.
+
+## Shared Office files
+
+`apps/office/shared/` holds code shared with the Spreadsheet: `office-dialog.js/.css` (the dialogs above) and `office-page.js` (paper sizes, margin clamping and the `@page` rule used by print and DOCX export). Draftly's storage keys and margin prefs are unchanged.

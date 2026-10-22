@@ -1,0 +1,10 @@
+html,body{margin:0;height:100%;overflow:hidden;background:#02030a;color:#cde;font:13px system-ui,sans-serif;touch-action:none}
+canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
+#bar{position:fixed;top:0;left:0;right:0;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 8px;background:rgba(5,8,20,.75);z-index:2}
+#bar b{letter-spacing:2px;color:#9cf}#ver{color:#6a8;font-size:11px}
+#back{color:#9cf;text-decoration:none;font-size:18px;padding:0 4px}
+select,button,input{font:inherit}select,button{background:#11182c;color:#cde;border:1px solid #2a3a5a;border-radius:4px;padding:3px 6px}
+button:hover{background:#1b2744}
+#info{position:fixed;left:8px;bottom:8px;z-index:2;color:#8ab;pointer-events:none;white-space:pre}
+#note{position:fixed;right:8px;bottom:8px;z-index:2;color:#678;font-size:11px;text-align:right;max-width:50%}
+@media (max-width:600px){#bar{font-size:12px;gap:4px}#bar b{display:none}#note{display:none}}

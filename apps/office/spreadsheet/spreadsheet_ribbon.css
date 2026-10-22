@@ -1,0 +1,22 @@
+/*
+ * spreadsheet_ribbon.css
+ * Spreadsheet-only ribbon bits; the ribbon itself is ../shared/office-ribbon.css.
+ * Maps the sheet's colours onto the shared --of-* variables, makes the page a column so the
+ * grid takes the rest, and styles the formula-bar row.
+ */
+:root {
+  --of-bg: var(--panel); --of-group: var(--btn); --of-border: var(--border); --of-text: var(--text);
+  --of-muted: var(--muted); --of-focus: var(--sel);
+}
+body { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.sheet-wrap { flex: 1 1 auto; min-height: 0; height: auto; }
+
+/* The ribbon also carries .toolbar (sheet control styles); keep it one row */
+.toolbar.of-ribbon { flex-wrap: nowrap; padding: 4px 8px; gap: 8px; }
+.toolbar.of-ribbon .of-group select { background: var(--bg); border: 0; }
+
+/* Formula bar: own compact row */
+.toolbar.sheet-formula-row { flex: 0 0 auto; flex-wrap: nowrap; padding: 4px 8px; }
+.sheet-formula-row #formula-bar { padding: 4px 8px; }
+
+@media print { .sheet-formula-row { display: none !important; } body { display: block; height: auto; overflow: visible; } }

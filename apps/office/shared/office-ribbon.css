@@ -1,0 +1,73 @@
+/*
+ * apps/office/shared/office-ribbon.css
+ * Draftly-style ribbon shared by the Office apps: 36px top row (File button + tabs),
+ * one row of grouped controls per tab that scrolls sideways when narrow, File dropdown.
+ * Colours via --of-* variables (set them in the app's CSS); dark defaults below.
+ * Markup: header.of-topbar > button.of-file-btn + div.of-tabs (filled by office-ribbon.js);
+ *         div.of-file-menu > .of-file-item…; nav.of-ribbon > div.of-panel[data-tab] > div.of-group.
+ */
+:root {
+  --of-top-h: 36px; --of-ctl-h: 28px; --of-tab-w: 64px;
+  --of-bg: #1c1c1c; --of-group: #2b2b2b; --of-border: #3a3a3a; --of-text: #e8e8e8; --of-muted: #9a9a9a;
+  --of-hover: #3a3a3a; --of-active: #3d5a80; --of-focus: #4ea1ff;
+  --of-accent-grad: linear-gradient(135deg, #3d7bd9, #6a5af0);
+  --of-font: 600 12.5px Segoe UI, system-ui, sans-serif;
+}
+
+/* Top row */
+.of-topbar {
+  flex: 0 0 var(--of-top-h); height: var(--of-top-h);
+  display: flex; align-items: center; gap: 6px; padding: 0 8px;
+  background: var(--of-bg); border-bottom: 1px solid var(--of-border);
+}
+.of-file-btn, .of-tab {
+  width: var(--of-tab-w); height: var(--of-ctl-h); padding: 0; flex-shrink: 0;
+  border: 0; border-radius: 6px; font: var(--of-font); cursor: pointer;
+}
+.of-file-btn { background: var(--of-accent-grad); color: #fff; }
+.of-file-btn:hover, .of-file-btn.active { filter: brightness(1.1); }
+.of-tabs { display: flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--of-group); border: 1px solid var(--of-border); }
+.of-tab { height: calc(var(--of-ctl-h) - 4px); background: transparent; color: var(--of-muted); }
+.of-tab:hover { background: var(--of-hover); color: var(--of-text); }
+.of-tab[aria-selected="true"] { background: var(--of-active); color: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
+.of-tab:focus-visible, .of-file-btn:focus-visible { outline: 2px solid var(--of-focus); outline-offset: 1px; }
+
+/* Ribbon row: never wraps, scrolls sideways */
+.of-ribbon {
+  display: flex; align-items: center; flex: 0 0 auto; flex-wrap: nowrap;
+  overflow-x: auto; overflow-y: hidden; padding: 4px 8px; gap: 8px; scrollbar-width: thin;
+  background: var(--of-bg); border-bottom: 1px solid var(--of-border);
+}
+.of-panel { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.of-panel[hidden] { display: none; }
+.of-group {
+  display: flex; align-items: center; gap: 2px; flex-shrink: 0;
+  padding: 2px; border-radius: 8px; background: var(--of-group); border: 1px solid var(--of-border);
+}
+.of-ribbon .of-group button, .of-ribbon .of-group select {
+  height: var(--of-ctl-h); min-width: var(--of-ctl-h); padding: 0 8px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--of-text); white-space: nowrap;
+}
+.of-ribbon .of-group button:hover { background: var(--of-hover); }
+.of-ribbon .of-group button.on, .of-ribbon .of-group button[aria-pressed="true"] { background: var(--of-active); color: #fff; }
+.of-ribbon .of-group input[type="color"] { height: 24px; }
+.of-group-label { font-size: 11px; color: var(--of-muted); padding: 0 4px 0 6px; white-space: nowrap; }
+.of-note { font-size: 12px; color: var(--of-muted); white-space: nowrap; flex-shrink: 0; }
+
+/* File dropdown */
+.of-file-menu {
+  position: fixed; z-index: 30; width: 220px; display: flex; flex-direction: column; gap: 2px;
+  padding: 6px; background: var(--of-bg); color: var(--of-text);
+  border: 1px solid var(--of-border); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.of-file-menu[hidden] { display: none; }
+.of-file-menu .of-file-item {
+  display: block; width: 100%; padding: 8px 12px; border: 0; border-radius: 7px; cursor: pointer;
+  background: transparent; color: var(--of-text); text-align: left; text-decoration: none;
+  font: 500 13px Segoe UI, system-ui, sans-serif;
+}
+.of-file-menu .of-file-item:hover { background: var(--of-hover); }
+
+@media (max-width: 820px) { :root { --of-tab-w: 54px; } }
+@media (max-width: 480px) { :root { --of-tab-w: 48px; } .of-note { display: none; } }
+@media print { .of-topbar, .of-ribbon, .of-file-menu { display: none !important; } }
