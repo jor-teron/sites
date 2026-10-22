@@ -1,4 +1,5 @@
 // Solar System Explorer R2a: bodies are drawn by core/art.js (procedural textures, terminator, rim glow, rings).
+// R2e: the Oort cloud, a faint seeded haze 2,000-100,000 AU out, seen when zoomed far out, with a log distance scale.
 // R2c: asteroid and Kuiper belts as seeded particle fields (tap a belt or pick it from the list), plus Ceres.
 // R2b: Pluto on an eccentric orbit, and the main moons (drawn and tappable only when zoomed in enough).
 // R1c: Sun + 8 planets on compressed circular orbits, pan and zoom,
@@ -19,7 +20,7 @@
     ['Uranus', 19.2, 84.01, 6.5, '#9fd8e0', -70],
     ['Neptune', 30.1, 164.8, 6.2, '#4f6fe0', 66]
   ];
-  var SUN_R = 16, EARTH_SECONDS = 20, FLY_MS = 800, fitZ = 1; // zoom is clamped to fitZ x0.5 .. x25
+  var SUN_R = 16, EARTH_SECONDS = 20, FLY_MS = 800, fitZ = 1; // zoom is clamped to fitZ x0.3 .. x60
   var SUN = { name: 'Sun', orbit: 0, period: 1, r: SUN_R, color: '#ffd25a', phase: 0, x: 0, y: 0 };
   var bodies = PLANETS.map(function (p, i) {
     return { name: p[0], orbit: 70 * Math.log(1 + 2.5 * p[1]), period: p[2], r: p[3], color: p[4], spin: p[5],
@@ -40,6 +41,19 @@
     }
     return { name: d[0], region: [au(d[1]), au(d[2])], parts: p, rgb: d[4], x: 0, y: 0, r: au(d[2]) };
   });
+  // Oort cloud: a spherical shell seen from above, so each point is projected (R * sin of a random tilt).
+  // Too slow to move visibly (orbits take millions of years), so positions are fixed. Inner Hills cloud is denser.
+  var OORT = { name: 'Oort cloud', region: [au(2000), au(100000)], rgb: '170,190,235', x: 0, y: 0, r: au(100000), parts: new Float32Array(3200 * 3) };
+  (function () {
+    var p = OORT.parts, sd = 4242;
+    function rnd() { sd = (sd * 16807) % 2147483647; return sd / 2147483647; }
+    for (var i = 0; i < p.length / 3; i++) {
+      var a = rnd() < 0.6 ? 2000 * Math.pow(10, rnd()) : 20000 * Math.pow(5, rnd()), u = rnd() * 2 - 1, th = rnd() * Math.PI * 2;
+      var R0 = au(a) * Math.sqrt(1 - u * u);
+      p[i * 3] = Math.cos(th) * R0; p[i * 3 + 1] = Math.sin(th) * R0; p[i * 3 + 2] = 0.6 + rnd() * 0.8;
+    }
+  })();
+  function oortAlpha() { return Math.max(0, Math.min(1, (fitZ * 0.95 - cam.z) / (fitZ * 0.35))); } // fades in past the Fit view
   // Moons: name, parent, distance from parent centre (world units), real period (days), radius, colour, retrograde.
   // Distances and sizes are exaggerated for visibility; periods are compressed (sqrt) but keep their true order.
   var MOONS = [['Moon', 'Earth', 9, 27.32, 1.0, '#bdbdbd'], ['Phobos', 'Mars', 4.4, 0.319, 0.3, '#7a6e62'], ['Deimos', 'Mars', 6, 1.263, 0.25, '#8a7c6c'],
@@ -75,7 +89,7 @@
     stars.push([a, b, 0.3 + (seed / 2147483647) * 0.9]);
   }
 
-  function clampZ(z) { return Math.max(fitZ * 0.5, Math.min(fitZ * 60, z)); }
+  function clampZ(z) { return Math.max(fitZ * 0.3, Math.min(fitZ * 60, z)); }
   // Screen point the camera centre maps to: the area not covered by the info panel.
   function centre() {
     if (panel.hidden) return { x: W / 2, y: H / 2 };
@@ -126,7 +140,7 @@
   $('faster').addEventListener('click', function () { speedI = Math.min(SPEEDS.length - 1, speedI + 1); showSpeed(); });
   function toggleMenu(open) { menu.hidden = !open; $('list').setAttribute('aria-expanded', String(open)); }
   $('list').addEventListener('click', function () { toggleMenu(menu.hidden); });
-  all.concat(BELTS, moons).forEach(function (b) {
+  all.concat(BELTS, [OORT], moons).forEach(function (b) {
     var btn = el('button', b.name); btn.type = 'button'; if (b.moon) btn.className = 'moon';
     btn.addEventListener('click', function () { toggleMenu(false); select(b); });
     menu.appendChild(btn);
@@ -147,6 +161,7 @@
     if (!best && cam.z < fitZ * 4) { // no body hit: was it inside a belt?
       var w = toWorld(sx, sy), dw = Math.hypot(w.x, w.y);
       BELTS.forEach(function (bl) { if (dw > bl.region[0] - 4 && dw < bl.region[1] + 4) best = bl; });
+      if (!best && oortAlpha() > 0 && dw > OORT.region[0] - 10 && dw < OORT.region[1] + 30) best = OORT;
     }
     if (!menu.hidden) toggleMenu(false); else if (best) select(best); else release();
   }
@@ -261,6 +276,27 @@
         ctx.fill();
       }
     });
+    var oa = oortAlpha();
+    if (oa > 0) {
+      if (follow === OORT) {
+        ctx.fillStyle = 'rgba(255,184,77,.06)'; ctx.beginPath(); ctx.arc(0, 0, OORT.region[1], 0, Math.PI * 2);
+        ctx.arc(0, 0, OORT.region[0], 0, Math.PI * 2, true); ctx.fill();
+      }
+      var op = OORT.parts, on = op.length / 3;
+      for (var og = 0; og < 2; og++) { // two brightness groups, one fill each
+        ctx.fillStyle = 'rgba(' + OORT.rgb + ',' + oa * (0.35 + og * 0.3) + ')'; ctx.beginPath();
+        for (var oi = og; oi < on; oi += 2) {
+          var ox = op[oi * 3], oy = op[oi * 3 + 1];
+          if (Math.abs(ox - cam.x) > vw || Math.abs(oy - cam.y) > vh) continue;
+          var osz = op[oi * 3 + 2] * px1; ctx.rect(ox - osz / 2, oy - osz / 2, osz, osz);
+        }
+        ctx.fill();
+      }
+      // log distance scale: faint dashed rings 1,000 / 10,000 / 100,000 AU (each 10x farther)
+      ctx.strokeStyle = 'rgba(150,165,200,' + oa * 0.3 + ')'; ctx.setLineDash([3 / cam.z, 5 / cam.z]);
+      [1000, 10000, 100000].forEach(function (d) { ctx.beginPath(); ctx.arc(0, 0, au(d), 0, Math.PI * 2); ctx.stroke(); });
+      ctx.setLineDash([]);
+    }
     window.SS_ART.draw(ctx, SUN, cam.z, sec);
     bodies.forEach(function (b) { window.SS_ART.draw(ctx, b, cam.z, sec); });
     vis.forEach(function (m) { window.SS_ART.draw(ctx, m, cam.z, sec); });
@@ -273,6 +309,7 @@
     ctx.font = '11px system-ui, sans-serif'; ctx.textAlign = 'center';
     var placed = [], order = all.concat(vis.filter(function (m) { return m === follow || (m.r * cam.z >= 2.5 && m.orbit * cam.z >= 40); })).sort(function (p, q) { return (q === follow) - (p === follow); });
     if (cam.z < fitZ * 3) order = order.concat(BELTS);
+    if (oa > 0.3) order.push(OORT);
     order.forEach(function (b) {
       var sx = (b.x - cam.x) * cam.z + c.x, sy = (b.y - cam.y - (b.region ? (b.region[0] + b.region[1]) / 2 : 0)) * cam.z + c.y;
       var pad = b === follow ? 7 : 0; // clear the selection ring
@@ -281,6 +318,16 @@
       if (placed.some(function (q) { return box[0] < q[2] && box[2] > q[0] && box[1] < q[3] && box[3] > q[1]; })) return;
       placed.push(box); ctx.fillStyle = b === SUN ? '#ffd25a' : b.moon ? '#9fb0cc' : b.region ? 'rgba(' + b.rgb + ',.9)' : '#cfd8ea'; ctx.fillText(b.name, sx, ly);
     });
+    if (cam.z < fitZ * 1.5) { // scale hint: tick labels on the Sun's right, each 10x farther than the last
+      var sa = Math.min(1, (fitZ * 1.5 - cam.z) / (fitZ * 0.5)), sx0 = (0 - cam.x) * cam.z + c.x, sy0 = (0 - cam.y) * cam.z + c.y;
+      ctx.font = '9px system-ui, sans-serif'; ctx.fillStyle = 'rgba(150,165,200,' + 0.75 * sa + ')';
+      [[1, '1 AU'], [10, '10'], [100, '100'], [1000, '1,000'], [10000, '10,000'], [100000, '100,000 AU']].forEach(function (d) {
+        var tx = sx0 + au(d[0]) * cam.z, ty = sy0 + 14, hw = ctx.measureText(d[1]).width / 2 + 2, box = [tx - hw, ty - 8, tx + hw, ty + 3];
+        if (tx > W - hw || placed.some(function (q) { return box[0] < q[2] && box[2] > q[0] && box[1] < q[3] && box[3] > q[1]; })) return;
+        placed.push(box); ctx.fillRect(tx - 0.5, sy0 + 3, 1, 3); ctx.fillText(d[1], tx, ty);
+      });
+      ctx.textAlign = 'left'; ctx.fillText('Distances on a log scale: each tick is 10\u00d7 farther', 12, 18);
+    }
     requestAnimationFrame(draw);
   }
   requestAnimationFrame(draw);
