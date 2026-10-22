@@ -3,19 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>LandCraft L1b</title>
-  <link rel="stylesheet" href="css/landcraft.css?v=l1b" />
+  <title>LandCraft L1c</title>
+  <link rel="stylesheet" href="css/landcraft.css?v=l1c" />
   <script type="importmap">{ "imports": { "three": "./vendor/three/build/three.module.min.js" } }</script>
 </head>
 <body>
-  <header id="bar">
-    <a id="back" href="../" title="Games">&#8592;</a>
-    <b>LANDCRAFT</b> <span id="ver">L1b</span>
-  </header>
   <div id="cross">+</div>
-  <div id="hint">Click to look around &middot; WASD to move &middot; Space to jump &middot; Esc frees the mouse</div>
+  <div id="hint">Click to look &middot; WASD move &middot; Space jump &middot; left break &middot; right place &middot; 1-7 / wheel pick &middot; Esc frees mouse</div>
   <div id="stick"><div id="knob"></div></div>
+  <nav id="hotbar"></nav>
+  <button id="break" class="act" type="button">Break</button>
+  <button id="place" class="act" type="button">Place</button>
   <button id="jump" type="button" aria-label="Jump">&#8679;</button>
-  <script type="module" src="core/main.js?v=l1b"></script>
+  <script type="module" src="core/main.js?v=l1c"></script>
 </body>
 </html>

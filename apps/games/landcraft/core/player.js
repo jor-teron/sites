@@ -14,6 +14,11 @@ export class Player {
     this.vel = { x: 0, y: 0, z: 0 };
     this.yaw = 0; this.pitch = 0; this.onGround = false;
   }
+  // True if the block cell (x, y, z) would intersect the player's box.
+  overlaps(x, y, z) {
+    const p = this.pos;
+    return x < p.x + HALF && x + 1 > p.x - HALF && y < p.y + HEIGHT && y + 1 > p.y && z < p.z + HALF && z + 1 > p.z - HALF;
+  }
   collides() {
     const p = this.pos;
     for (let y = Math.floor(p.y); y <= Math.floor(p.y + HEIGHT - EPS); y++)

@@ -1,20 +1,13 @@
-/* Solar System Explorer R1a: full-screen canvas, small header. */
+/* Solar System Explorer: full-screen canvas, no header (release label lives in <title> only). */
 html, body { margin: 0; height: 100%; background: #04060d; color: #cfd8ea; overflow: hidden;
   font: 13px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif; }
 #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block;
   touch-action: none; cursor: grab; }
 #c.drag { cursor: grabbing; }
-#bar { position: fixed; top: 8px; left: 8px; display: flex; align-items: center; gap: 8px;
-  padding: 5px 10px; background: rgba(10, 16, 30, .72); border: 1px solid #1d2a44;
-  border-radius: 8px; letter-spacing: .06em; user-select: none; }
-#bar a { color: #cfd8ea; text-decoration: none; font-size: 16px; }
-#ver { color: #ffb84d; font-size: 11px; }
 #hint { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); font-size: 11px;
   color: #6f7c96; pointer-events: none; white-space: nowrap; }
-/* R1b: Fit button and info panel (side panel on desktop, bottom sheet on phones). */
-#fit { font: inherit; font-size: 11px; color: #cfd8ea; background: #15203a; border: 1px solid #2a3a5c;
-  border-radius: 6px; padding: 2px 8px; cursor: pointer; }
-#info { position: fixed; top: 56px; right: 10px; width: 290px; max-height: calc(100% - 76px); overflow: auto;
+/* R1b: info panel (side panel on desktop, bottom sheet on phones). */
+#info { position: fixed; top: max(10px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right)); width: 290px; max-height: calc(100% - 96px); overflow: auto;
   box-sizing: border-box; padding: 14px 16px; background: rgba(10, 16, 30, .9); border: 1px solid #1d2a44;
   border-radius: 10px; }
 #info[hidden] { display: none; }
@@ -30,8 +23,7 @@ html, body { margin: 0; height: 100%; background: #04060d; color: #cfd8ea; overf
     border-radius: 14px 14px 0 0; border-bottom: 0; }
   #info:not([hidden]) ~ #hint { display: none; }
 }
-/* R1c: speed controls + planet list. Bottom-left on desktop; full-width bar on phones, lifted above the sheet by JS. */
-#bar { top: max(10px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); }
+/* R1c: speed controls, Fit and planet list. Bottom-left on desktop; full-width bar on phones, lifted above the sheet by JS. */
 #ctl { position: fixed; left: max(10px, env(safe-area-inset-left)); bottom: max(10px, env(safe-area-inset-bottom));
   display: flex; align-items: center; gap: 6px; padding: 6px; background: rgba(10, 16, 30, .85);
   border: 1px solid #1d2a44; border-radius: 10px; }
@@ -47,7 +39,6 @@ html, body { margin: 0; height: 100%; background: #04060d; color: #cfd8ea; overf
 @media (max-width: 700px) {
   #ctl { right: max(10px, env(safe-area-inset-right)); justify-content: space-between; }
   #list { margin-left: auto; }
-  #fit { min-width: 44px; height: 40px; font-size: 13px; }
   #menu { width: 100%; box-sizing: border-box; }
   #info { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
 }

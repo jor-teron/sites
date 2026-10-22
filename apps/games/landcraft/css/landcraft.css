@@ -1,10 +1,5 @@
 html, body { margin: 0; height: 100%; overflow: hidden; background: #8ec9ff; font-family: system-ui, sans-serif; color: #eef2f8; }
 canvas { position: fixed; inset: 0; display: block; touch-action: none; }
-#bar { position: fixed; top: max(10px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); z-index: 2;
-  display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(20, 24, 32, .7);
-  border-radius: 8px; font-size: 13px; letter-spacing: .06em; }
-#back { color: #eef2f8; text-decoration: none; font-size: 18px; }
-#ver { color: #ffb84d; font-size: 11px; }
 /* L1b: crosshair, desktop hint, touch joystick and jump button (touch UI shown only on coarse pointers). */
 #cross { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 22px; color: rgba(255,255,255,.8);
   pointer-events: none; text-shadow: 0 0 2px #000; }
@@ -20,3 +15,19 @@ body.touch #stick.active { opacity: 1; }
 body.touch #jump { display: block; position: fixed; right: max(24px, env(safe-area-inset-right));
   bottom: max(28px, env(safe-area-inset-bottom)); width: 72px; height: 72px; border-radius: 50%; font-size: 30px;
   color: #fff; background: rgba(255,255,255,.18); border: 2px solid rgba(255,255,255,.45); touch-action: none; user-select: none; }
+/* L1c: hotbar at bottom centre; touch Break / Place buttons stacked above Jump; touch UI lifted above the hotbar. */
+#hotbar { position: fixed; left: 50%; bottom: max(10px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 2;
+  display: flex; gap: 4px; padding: 4px; background: rgba(20,24,32,.6); border-radius: 8px; }
+#hotbar button { width: 44px; height: 44px; padding: 4px; background: rgba(0,0,0,.3); border: 2px solid rgba(255,255,255,.25);
+  border-radius: 6px; cursor: pointer; touch-action: none; }
+#hotbar button.on { border-color: #ffb84d; background: rgba(255,184,77,.25); }
+#hotbar canvas { position: static; width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+#hint { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 62px); }
+.act { display: none; }
+body.touch .act { display: block; position: fixed; right: max(24px, env(safe-area-inset-right)); width: 72px; height: 48px;
+  font: 600 13px system-ui, sans-serif; color: #fff; background: rgba(20,24,32,.55); border: 2px solid rgba(255,255,255,.45);
+  border-radius: 10px; touch-action: none; user-select: none; }
+body.touch #jump { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 70px); }
+body.touch #place { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 152px); }
+body.touch #break { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 210px); }
+body.touch #stick { top: calc(100% - max(10px, env(safe-area-inset-bottom)) - 140px); }
