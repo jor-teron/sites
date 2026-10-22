@@ -186,12 +186,39 @@ Draftly.storage.loadNonPrinting = function loadNonPrinting() {
   }
 };
 
-/* Read orientation. Falls back to config default. */
+/* True for a stored orientation value ('portrait' / 'landscape'). */
+Draftly.storage.isOrientation = function isOrientation(v) {
+  return Draftly.config.orientations.indexOf(v) !== -1;
+};
+
+/* One-time move of the old orientation pref. Until 2026-10-21 it was saved under the
+   literal key 'undefined'. Copies it to storageKeyOrientation if that is empty, then
+   removes the old key, but only when it holds an orientation value (anything else
+   there belongs to some other page and is left alone). `ls` is for tests. */
+Draftly.storage.migrateOrientation = function migrateOrientation(ls) {
+  var cfg = Draftly.config;
+  var oldKey = cfg.storageKeyOrientationLegacy;
+  var newKey = cfg.storageKeyOrientation;
+  if (!oldKey || !newKey || oldKey === newKey) return false;
+  try {
+    ls = ls || localStorage;
+    var old = ls.getItem(oldKey);
+    if (!Draftly.storage.isOrientation(old)) return false;
+    if (ls.getItem(newKey) === null) ls.setItem(newKey, old);
+    ls.removeItem(oldKey);
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+/* Read orientation (after migrating the old key). Falls back to config default. */
 Draftly.storage.loadOrientation = function loadOrientation() {
   var cfg = Draftly.config;
+  Draftly.storage.migrateOrientation();
   try {
     var orient = localStorage.getItem(cfg.storageKeyOrientation);
-    if (orient === 'landscape' || orient === 'portrait') return orient;
+    if (Draftly.storage.isOrientation(orient)) return orient;
   } catch (e) {}
   return cfg.defaultOrientation;
 };
@@ -199,6 +226,7 @@ Draftly.storage.loadOrientation = function loadOrientation() {
 /* Persist orientation. */
 Draftly.storage.saveOrientation = function saveOrientation(mode) {
   var cfg = Draftly.config;
+  if (!Draftly.storage.isOrientation(mode)) return;
   try {
     localStorage.setItem(cfg.storageKeyOrientation, mode);
   } catch (e) {}

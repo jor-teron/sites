@@ -100,6 +100,11 @@ Draftly.config = {
   storageKeyMargins: 'draftly_margins',
   /* Keys for page prefs. */
   storageKeyOrientation: 'draftly_orientation',
+  /* Old key: before 2026-10-21 orientation was saved under the literal key 'undefined'
+     (storageKeyOrientation was missing). Migrated once at start-up, see storage.migrateOrientation. */
+  storageKeyOrientationLegacy: 'undefined',
+  /* Stored orientation values. */
+  orientations: ['portrait', 'landscape'],
   storageKeyPaperSize: 'draftly_paper_size',
   storageKeyMarginPreset: 'draftly_margin_preset',
   storageKeyPageNumbers: 'draftly_page_numbers',
