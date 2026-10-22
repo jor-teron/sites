@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Calendar — screens: Month (default), Year, Count (jump to date + day counter), Settings.
+  Calendar — screens: Month (default), Year, Holiday List, Settings.
   Swipe >=75 px in the month grid = change month; on the top bar = change screen.
   Styles: calendar.css. Logic: calendar_logic.js. No libraries.
 -->
@@ -11,7 +11,7 @@
   <meta name="color-scheme" content="light dark">
   <title>Calendar</title>
   <link rel="icon" href="calendar_icon.png">
-  <link rel="stylesheet" href="calendar.css?v=20261022a">
+  <link rel="stylesheet" href="calendar.css?v=20261022b">
   <script>try{var s=JSON.parse(localStorage.getItem('calendar-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
 </head>
 <body>
@@ -20,7 +20,7 @@
     <div id="dots" role="tablist" aria-label="Screen">
       <button type="button" class="dot" data-mode="month" role="tab" aria-label="Month"></button>
       <button type="button" class="dot" data-mode="year" role="tab" aria-label="Year"></button>
-      <button type="button" class="dot" data-mode="count" role="tab" aria-label="Count"></button>
+      <button type="button" class="dot" data-mode="hol" role="tab" aria-label="Holiday list"></button>
       <button type="button" class="dot" data-mode="set" role="tab" aria-label="Settings"></button>
     </div>
   </div>
@@ -29,6 +29,7 @@
       <section class="pane" id="pane-month">
         <div class="head">
           <h1 id="m-title"></h1>
+          <button type="button" class="mini" id="m-tools" aria-label="Jump to date and day counter" title="Jump / Count">&#128197;</button>
           <button type="button" class="nav" id="m-prev" aria-label="Previous month">&#8249;</button>
           <button type="button" class="mini" id="m-today">Today</button>
           <button type="button" class="nav" id="m-next" aria-label="Next month">&#8250;</button>
@@ -38,6 +39,7 @@
           <div class="grid" id="m-grid"></div>
         </div>
         <div id="info"></div>
+        <div id="hol-list"></div>
       </section>
       <section class="pane" id="pane-year">
         <div class="head">
@@ -48,35 +50,48 @@
         </div>
         <div id="year"></div>
       </section>
-      <section class="pane" id="pane-count">
-        <div class="set-wrap">
-          <h2>Jump to date</h2>
-          <div class="row"><input type="date" id="jump-date"><button type="button" class="btn" id="jump-go">Go</button></div>
-          <h2>Day counter</h2>
-          <label class="row"><span>From</span><input type="date" id="c-from"></label>
-          <label class="row"><span>To</span><input type="date" id="c-to"></label>
-          <label class="row chk"><span>Include end date</span><input type="checkbox" id="c-inc"></label>
-          <div id="c-out"></div>
+      <section class="pane" id="pane-hol">
+        <div class="head">
+          <h1 id="h-title"></h1>
+          <button type="button" class="nav" id="h-prev" aria-label="Previous year">&#8249;</button>
+          <button type="button" class="mini" id="h-today">Today</button>
+          <button type="button" class="nav" id="h-next" aria-label="Next year">&#8250;</button>
         </div>
+        <table id="hol-table"><thead><tr><th>Date</th><th>Day</th><th>Holiday</th></tr></thead><tbody></tbody></table>
+        <p class="note">Fixed-date holidays only (same date every year).</p>
       </section>
       <section class="pane" id="pane-set">
         <div class="set-wrap">
           <h2>Settings</h2>
           <div class="set-row"><span>Week starts</span>
             <div class="seg" data-key="week"><button type="button" data-v="sun">Sunday</button><button type="button" data-v="mon">Monday</button></div></div>
+          <div class="set-row"><span>Holidays</span>
+            <div class="seg" data-key="hol"><button type="button" data-v="on">On</button><button type="button" data-v="off">Off</button></div></div>
           <div class="set-row"><span>Theme</span>
             <div class="seg" data-key="theme"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>
           <h2>About</h2>
           <div class="about">
             <img src="calendar_icon.png" alt="" width="40" height="40">
             <div><b>Calendar</b> <span id="ver"></span>
-              <p>A basic calendar: month and year views, jump to any date and count the days between two dates. Swipe the grid to change month, swipe the top bar to change screens.</p></div>
+              <p>A basic calendar: month and year views, jump to any date and count the days between two dates. Marks fixed-date Indian holidays (New Year, Republic Day, Ambedkar Jayanti, May Day, Independence Day, Gandhi Jayanti, Christmas). Swipe the grid to change month, swipe the top bar to change screens.</p></div>
           </div>
         </div>
       </section>
     </div>
   </div>
+  <div id="sheet" hidden>
+    <div class="box" role="dialog" aria-modal="true" aria-label="Jump and count">
+      <div class="sheet-head"><b>Jump &amp; count</b><button type="button" class="nav" id="sheet-x" aria-label="Close">&times;</button></div>
+          <h2>Jump to date</h2>
+          <div class="row"><input type="date" id="jump-date"><button type="button" class="btn" id="jump-go">Go</button></div>
+          <h2>Day counter</h2>
+          <label class="row"><span>From</span><input type="date" id="c-from"></label>
+          <label class="row"><span>To</span><input type="date" id="c-to"></label>
+          <label class="row chk"><span>Include end date</span><input type="checkbox" id="c-inc"></label>
+          <div id="c-out">    </div>
+  </div>
 </div>
-<script src="calendar_logic.js?v=20261022a"></script>
+<script src="calendar_holidays.js?v=20261022b"></script>
+<script src="calendar_logic.js?v=20261022b"></script>
 </body>
 </html>
