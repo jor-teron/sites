@@ -1,4 +1,4 @@
-# Viewer (apps/tools/viewer/)
+# Viewer (apps/system/viewer/)
 
 One viewer for **pictures and videos** from any Hub drive: Local (this site's private storage),
 an added folder, or Google Drive. Files opens it (double click, or right-click **Open with ▸**

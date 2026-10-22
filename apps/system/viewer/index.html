@@ -1,0 +1,63 @@
+<!doctype html>
+<!--
+  Viewer (apps/system/viewer/index.html) — one viewer for pictures and videos from any Hub drive:
+  Local (this site's private storage), an added folder, Google Drive. Opened by Files (double
+  click / Open with ▸) in its own Hub window; ‹ › steps through the pictures and videos of the
+  same folder, sorted like Files. Pictures: zoom (wheel, pinch, + −), pan, Fit / 1:1, rotate.
+  Videos: the browser's player, speed, −10 / +10 s (J / L), resumes where you stopped.
+  File link: index.html#drive=local&path=Photos&file=cat.png (shared/fs/fs_ref.js).
+  Shared: shared/fs/fs_drives.js, fs_ops.js, fs_ref.js, filetypes.js, shared/google/* (Drive).
+  App: viewer_core.js (load, list, prev / next, keys), viewer_image.js, viewer_video.js, viewer.css.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Viewer</title>
+  <link rel="stylesheet" href="viewer.css?v=20261019r" />
+</head>
+<body>
+  <header class="bar">
+    <button type="button" id="prev" class="tb" title="Previous (&#8592;)" aria-label="Previous">&#8249;</button>
+    <span id="count" class="count" aria-live="polite"></span>
+    <button type="button" id="next" class="tb" title="Next (&#8594;)" aria-label="Next">&#8250;</button>
+    <b id="name" class="name"></b>
+    <span id="img-tools" class="tools" hidden>
+      <button type="button" id="zout" class="tb" title="Zoom out (&#8722;)" aria-label="Zoom out">&#8722;</button>
+      <span id="zoom" class="zoom">100%</span>
+      <button type="button" id="zin" class="tb" title="Zoom in (+)" aria-label="Zoom in">+</button>
+      <button type="button" id="fit" class="tb" title="Fit to window (0)">Fit</button>
+      <button type="button" id="actual" class="tb" title="Actual size (1)">1:1</button>
+      <button type="button" id="rot" class="tb" title="Rotate (R)" aria-label="Rotate">&#10227;</button>
+    </span>
+    <span id="vid-tools" class="tools" hidden>
+      <button type="button" id="back10" class="tb" title="Back 10 s (J)">&#8722;10s</button>
+      <select id="speed" class="tb" title="Play speed" aria-label="Play speed">
+        <option value="0.25">0.25&#215;</option><option value="0.5">0.5&#215;</option><option value="0.75">0.75&#215;</option>
+        <option value="1" selected>1&#215;</option><option value="1.25">1.25&#215;</option><option value="1.5">1.5&#215;</option>
+        <option value="1.75">1.75&#215;</option><option value="2">2&#215;</option>
+      </select>
+      <button type="button" id="fwd10" class="tb" title="Forward 10 s (L)">+10s</button>
+    </span>
+    <button type="button" id="full" class="tb" title="Full screen (F)" aria-label="Full screen">&#9974;</button>
+  </header>
+  <main id="stage" class="stage" tabindex="-1">
+    <img id="img" class="img" alt="" draggable="false" hidden />
+    <video id="vid" class="vid" controls playsinline preload="metadata" hidden></video>
+    <div id="msg" class="msg" hidden role="status"></div>
+    <div id="toast" class="toast" hidden></div>
+  </main>
+  <script src="../../../shared/google/google_config.js?v=20261019r"></script>
+  <script src="../../../shared/google/google_auth.js?v=20261019r"></script>
+  <script src="../../../shared/google/gdrive_fs.js?v=20261019r"></script>
+  <script src="../../../shared/google/google_gis.js?v=20261019r"></script>
+  <script src="../../../shared/fs/fs_drives.js?v=20261019r"></script>
+  <script src="../../../shared/fs/fs_ops.js?v=20261019r"></script>
+  <script src="../../../shared/fs/fs_ref.js?v=20261019r"></script>
+  <script src="../../../shared/fs/filetypes.js?v=20261019r"></script>
+  <script src="viewer_core.js?v=20261019r"></script>
+  <script src="viewer_image.js?v=20261019r"></script>
+  <script src="viewer_video.js?v=20261019r"></script>
+  <script src="viewer.js?v=20261019r"></script>
+</body>
+</html>

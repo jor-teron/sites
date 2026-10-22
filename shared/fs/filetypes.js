@@ -1,11 +1,11 @@
 /*
  * File types (shared/fs/filetypes.js) — which app opens which file ("Open with"). Used by the
- * Files app (apps/tools/files/: double click = default app, right-click "Open with ▸") and the
- * Viewer (apps/tools/viewer/: which files of a folder it steps through). No libraries.
+ * Files app (apps/system/files/: double click = default app, right-click "Open with ▸") and the
+ * Viewer (apps/system/viewer/: which files of a folder it steps through). No libraries.
  *
  * Kinds by extension (then by MIME type): image, video, text, '' (other).
  * Apps (id → { name, icon, url, file }):
- *   viewer   apps/tools/viewer/   images + videos; gets the file (FsRef hash, shared/fs/fs_ref.js)
+ *   viewer   apps/system/viewer/   images + videos; gets the file (FsRef hash, shared/fs/fs_ref.js)
  *   notely   apps/office/notely/  text; gets the file (sessionStorage 'notely-handoff', Files)
  *   textview Files' own text view (no url)
  *   photo-editor / photo-editor-v2 / paint   file: false = "open app" only — they have no way to
@@ -27,7 +27,7 @@
     mkv: 'video/x-matroska', avi: 'video/x-msvideo', '3gp': 'video/3gpp', wmv: 'video/x-ms-wmv', flv: 'video/x-flv' };
   const TEXT = /^(txt|md|markdown|json|csv|tsv|log|js|mjs|cjs|ts|css|html?|xml|yml|yaml|ini|cfg|conf|toml|py|sh|bat|c|h|cpp|java|rs|go|rb|php|sql|m3u|srt|vtt)$/;
   const APPS = {
-    viewer: { name: 'Viewer', icon: '\uD83D\uDDBC\uFE0F', url: 'apps/tools/viewer/', file: true },
+    viewer: { name: 'Viewer', icon: '\uD83D\uDDBC\uFE0F', url: 'apps/system/viewer/', file: true },
     notely: { name: 'Notely', icon: '\uD83D\uDCDD', url: 'apps/office/notely/', file: true },
     textview: { name: 'Text view', icon: '\uD83D\uDCC4', url: '', file: true },
     'photo-editor-v2': { name: 'Photo Editor v2', icon: '\uD83C\uDFA8', url: 'apps/media/photo-editor-v2/', file: false },

@@ -1,5 +1,5 @@
 /*
- * Viewer core (apps/tools/viewer/viewer_core.js) — the namespace window.VW: open the file named
+ * Viewer core (apps/system/viewer/viewer_core.js) — the namespace window.VW: open the file named
  * in the URL hash (shared/fs/fs_ref.js), list the pictures and videos of its folder (sorted like
  * Files: its remembered sort 'sites-files.sort' / 'sites-files.dir'), step ‹ › through them, show
  * each with VW.image (viewer_image.js) or VW.video (viewer_video.js). One object URL at a time:

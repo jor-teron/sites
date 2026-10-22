@@ -1,5 +1,5 @@
 /*
- * Viewer start-up (apps/tools/viewer/viewer.js) — buttons, keys and life cycle:
+ * Viewer start-up (apps/system/viewer/viewer.js) — buttons, keys and life cycle:
  *   ← → / PageUp PageDown / ‹ › previous / next (on a focused video ← → are −10 / +10 s),
  *   Home / End first / last, J / L −10 / +10 s, K or Space play / pause, + − zoom, 0 Fit, 1 1:1,
  *   R rotate, F full screen. Opens the hash on load and on every hashchange (Files picks another

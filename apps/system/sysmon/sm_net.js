@@ -1,5 +1,5 @@
 /*
- * Network tab (apps/tools/sysmon/sm_net.js) — online / offline (navigator.onLine + events) and,
+ * Network tab (apps/system/sysmon/sm_net.js) — online / offline (navigator.onLine + events) and,
  * where the browser has it (Chrome / Edge / Android), navigator.connection: type, effectiveType,
  * downlink (Mbit/s estimate), rtt (ms estimate), saveData. Live on change; a 60 s rtt graph.
  */

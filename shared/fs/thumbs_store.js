@@ -1,6 +1,6 @@
 /*
  * Thumbnail cache (shared/fs/thumbs_store.js) — small preview pictures for the Files app
- * (apps/tools/files/files_thumbs.js), kept in IndexedDB 'sites-thumbs' / 'thumbs' (never a
+ * (apps/system/files/files_thumbs.js), kept in IndexedDB 'sites-thumbs' / 'thumbs' (never a
  * folder, so no file listing can show it). Cleared from Files' menu or Settings → Windows.
  *
  * A record: { key, blob (webp / png, null = "no preview possible" — not tried again), dur

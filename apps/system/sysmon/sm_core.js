@@ -1,5 +1,5 @@
 /*
- * System Monitor core (apps/tools/sysmon/sm_core.js) — window.SM: DOM helpers, number formats,
+ * System Monitor core (apps/system/sysmon/sm_core.js) — window.SM: DOM helpers, number formats,
  * the Hub page (same origin) when we run inside it, the tab registry and a 1 s sampler.
  *   SM.tab({ id, title, icon, render(pane), sample?(), draw?(), show?(), hide?(), pause?() })
  *     pause() is called each second while sampling is paused (stop any own timers).

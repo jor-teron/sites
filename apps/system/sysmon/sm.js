@@ -1,5 +1,5 @@
 /*
- * System Monitor start-up (apps/tools/sysmon/sm.js) — tab bar, open the tab from #hash (default
+ * System Monitor start-up (apps/system/sysmon/sm.js) — tab bar, open the tab from #hash (default
  * Tasks), follow hash changes, start the 1 s sampler (it pauses itself when hidden / minimised).
  */
 (function () {

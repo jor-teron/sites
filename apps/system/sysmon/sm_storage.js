@@ -1,5 +1,5 @@
 /*
- * Storage tab (apps/tools/sysmon/sm_storage.js) — navigator.storage.estimate() (used / quota with
+ * Storage tab (apps/system/sysmon/sm_storage.js) — navigator.storage.estimate() (used / quota with
  * a bar; Chrome also splits it by kind), persisted() + a "Keep storage" button (persist()), and a
  * per-drive size: Local (OPFS) is walked once on open, added folders only when access is already
  * granted and only on "Calculate" (walking a big folder can take a while). Sizes: shared/fs.

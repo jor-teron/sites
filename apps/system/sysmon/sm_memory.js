@@ -1,5 +1,5 @@
 /*
- * Memory tab (apps/tools/sysmon/sm_memory.js) — the Hub page's JavaScript heap
+ * Memory tab (apps/system/sysmon/sm_memory.js) — the Hub page's JavaScript heap
  * (performance.memory: Chrome / Edge only; read from the Hub page when we run inside it, which
  * shares one heap with its same-origin apps) as a live 60 s graph, plus navigator.deviceMemory
  * (rounded RAM class, Chrome / Edge). Anything missing says "Not available".

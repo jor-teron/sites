@@ -1,7 +1,7 @@
 /*
- * Files text view (apps/tools/files/files_viewer.js) — the full-window text view inside the
+ * Files text view (apps/system/files/files_viewer.js) — the full-window text view inside the
  * Files app: plain text (first 2 MB), "Open in Notely" + Download. Esc or Close returns to the
- * folder. Pictures and videos open in the Viewer app (apps/tools/viewer/, R12a) instead.
+ * folder. Pictures and videos open in the Viewer app (apps/system/viewer/, R12a) instead.
  * API FX.viewer: text(entry), close(), isOpen().
  */
 (function () {

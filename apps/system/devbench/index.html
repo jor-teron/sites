@@ -1,0 +1,22 @@
+<!--
+  File: index.html
+  Project: devbench
+  Role: Entry redirect only. Opens the real app page devbench.html.
+  Does not run tests. Kept separate so the project name is the main HTML file.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Page title shown if redirect is slow. -->
+  <meta charset="UTF-8">
+  <!-- Tell the browser to jump to the main app file. -->
+  <meta http-equiv="refresh" content="0; url=devbench.html">
+  <title>devbench</title>
+  <!-- Fallback link if meta refresh is blocked. -->
+  <link rel="canonical" href="devbench.html">
+</head>
+<body>
+  <!-- Visible fallback when automatic redirect does not run. -->
+  <p><a href="devbench.html">Open devbench</a></p>
+</body>
+</html>

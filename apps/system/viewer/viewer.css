@@ -1,5 +1,5 @@
 /*
- * Viewer look (apps/tools/viewer/viewer.css) — dark, a tool bar on top, the picture / video
+ * Viewer look (apps/system/viewer/viewer.css) — dark, a tool bar on top, the picture / video
  * filling the rest. The picture is moved with a CSS transform (viewer_image.js).
  */
 * { box-sizing: border-box; }

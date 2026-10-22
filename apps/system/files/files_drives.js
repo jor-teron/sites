@@ -1,5 +1,5 @@
 /*
- * Files drives (apps/tools/files/files_drives.js) — the drives list (Local + added folders,
+ * Files drives (apps/system/files/files_drives.js) — the drives list (Local + added folders,
  * "Allow access", remove ✕ with the app's own dialog, "Add folder"), opening a drive / a path,
  * the clickable path (breadcrumb) and the hash: #drive=<id>&path=<a/b> (kept up to date with
  * replaceState so a Hub window session reopens the same drive + folder).

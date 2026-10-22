@@ -123,11 +123,11 @@ Hub and desktop (Monorepo Bot):
   shared/favorites/   favorites.js (HubFavorites)
   apps/system/settings/ Settings app (sections: Wallpaper, Desktop,
                       Windows, Sizes, Look, How-to, About)
-  apps/tools/files/   Files app
-  apps/tools/sysmon/  System Monitor (tasks, CPU, memory, network,
+  apps/system/files/   Files app
+  apps/system/sysmon/  System Monitor (tasks, CPU, memory, network,
                       storage, battery)
   apps/tools/phonekey/  phone page for "Phone as a key"
-  apps/tools/viewer/  image / video Viewer app
+  apps/system/viewer/  image / video Viewer app
 Shared but used by everyone: shared/link/ (SharedLink), shared/vendor/.
 
 
@@ -384,7 +384,7 @@ on all of them:
           setup | connect | renew | ok.
 Changes broadcast on BroadcastChannel 'sites-fs'.
 
-Files app (apps/tools/files/): files_core, files_view, files_drives,
+Files app (apps/system/files/): files_core, files_view, files_drives,
 files_actions, files_viewer, files_thumbs, files_menu, files.js. Opens
 on #drive=<id>&path=<A/B>. Thumbnails: shared/fs/thumbs_store.js,
 IndexedDB 'sites-thumbs' / 'thumbs', 50 MB cap (Settings > Windows
@@ -405,7 +405,7 @@ Hand-off to other apps:
     'notely-handoff' (max 2 MB) and opens apps/office/notely/; Notely
     takes it once if under 2 minutes old (nl_handoff.js). This file
     (README_technical.txt) opens this way.
-Viewer app (apps/tools/viewer/): viewer_core, viewer_image,
+Viewer app (apps/system/viewer/): viewer_core, viewer_image,
 viewer_video, viewer.js. Steps through the folder's images / videos;
 keys: arrows, Home/End, J/K/L, +/-, 0, 1, R, F.
 Not to confuse with hub/viewer/hub_viewer.js: the overlay for files received

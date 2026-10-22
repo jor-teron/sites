@@ -1,5 +1,5 @@
 /*
- * Files app look (apps/tools/files/files.css). Dark like the Hub; drives left, folder right
+ * Files app look (apps/system/files/files.css). Dark like the Hub; drives left, folder right
  * (grid of big icons or list, round checkboxes, drop highlights, progress bar, viewers);
  * under 640 px the drives become a row of chips on top. Big tap targets, jelly presses.
  * Dialogs + menu: shared/dialog/dialog.css, shared/ctxmenu/ctxmenu.css.

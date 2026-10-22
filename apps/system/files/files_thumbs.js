@@ -1,5 +1,5 @@
 /*
- * Files thumbnails (apps/tools/files/files_thumbs.js) — small previews instead of the 🖼 / 🎬
+ * Files thumbnails (apps/system/files/files_thumbs.js) — small previews instead of the 🖼 / 🎬
  * icons, in the grid (about 160 px) and the list (shown small).
  *   Pictures: decoded with createImageBitmap (imageOrientation 'from-image' = EXIF turned
  *     upright), else an <img>; drawn smaller on a canvas, saved as WebP. Over 60 MB: icon.

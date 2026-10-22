@@ -20,8 +20,8 @@
  *   changed ones in place (the cache is never wiped); replies {type:'sw-refreshed', changed:[paths]}.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261022a';
-const CACHE = 'hub-shell-v74';  // 2026-10-21o: R51 windows open maximised
+const V = '20261022b';
+const CACHE = 'hub-shell-v75';  // 2026-10-21o: R51 windows open maximised
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const SHELL = [
   'hub.html',
@@ -43,7 +43,7 @@ const SHELL = [
   // Start menu / taskbar / home icons and the app lists, so a first visit also works offline
   'apps/favorite/favorite_icon.png', 'apps/games/games_icon.png', 'apps/media/media_icon.png', 'apps/office/office_icon.png',
   'apps/connectivity/connectivity_icon.png', 'apps/tools/tools_icon.png', 'apps/lab/lab_icon.png', 'apps/system/system_icon.png', 'apps/system/settings/settings_icon.png',
-  'apps/tools/files/files_icon.png', 'apps/connectivity/qr-scanner/qr-scanner_icon.png', 'hub/controller/controller_icon.png', 'hub/controller/controller_qr_icon.png',
+  'apps/system/files/files_icon.png', 'apps/connectivity/qr-scanner/qr-scanner_icon.png', 'hub/controller/controller_icon.png', 'hub/controller/controller_qr_icon.png',
   'apps/favorite/favorite-apps.csv', 'apps/games/games-apps.csv', 'apps/media/media-apps.csv', 'apps/office/office-apps.csv',
   'apps/connectivity/connectivity-apps.csv', 'apps/tools/tools-apps.csv', 'apps/lab/lab-apps.csv', 'apps/system/system-apps.csv', 'hub/version.txt',
   'hub/update/hub_offline.html',

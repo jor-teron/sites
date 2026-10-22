@@ -44,7 +44,7 @@
     const d = (await D.list()).find((x) => x.id === r.drive);
     return { dir, file, driveName: d ? d.name : root.name };
   }
-  /** appUrl is root-relative ('apps/tools/viewer/'). */
+  /** appUrl is root-relative ('apps/system/viewer/'). */
   function openIn(appUrl, r) {
     const h = hash(r);
     let hub = null;

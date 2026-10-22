@@ -1,5 +1,5 @@
 /*
- * Files view (apps/tools/files/files_view.js) — draws the open folder as big-icon grid or
+ * Files view (apps/system/files/files_view.js) — draws the open folder as big-icon grid or
  * list (toggle remembered), sorted by name / size / date modified (asc / desc, folders first,
  * remembered) and filtered by the search box. Selection: click = select, double-click / Enter
  * = open (single-click mode, FX.singleClick(): click = open; Ctrl / Shift / the round check still

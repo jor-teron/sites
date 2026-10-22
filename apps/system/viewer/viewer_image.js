@@ -1,5 +1,5 @@
 /*
- * Viewer pictures (apps/tools/viewer/viewer_image.js) — VW.image: show a picture fitted to the
+ * Viewer pictures (apps/system/viewer/viewer_image.js) — VW.image: show a picture fitted to the
  * window (never blown up past 100 % on its own), zoom with the wheel (around the pointer),
  * pinch, + / − or the buttons, drag to pan, double click = Fit ↔ 1:1, rotate by 90°.
  * A quick sideways swipe while fitted goes to the previous / next file.
