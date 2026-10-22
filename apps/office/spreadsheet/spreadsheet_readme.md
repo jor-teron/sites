@@ -18,6 +18,8 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 - `spreadsheet_edit.js`: cell editing, cell and arrow keys, commit, clear
 - `spreadsheet_fill.js`: autofill handle
 - `spreadsheet_toolbar.js`: toolbar wiring and style buttons
+- `spreadsheet_ribbon.js`: ribbon tabs (Home / Insert / Data, defined as data) and the File menu
+- `spreadsheet_ribbon.css`: ribbon, File menu and formula-bar row styles
 - `spreadsheet_logic.js`: small orchestrator (after-change pipeline, start-up)
 - `spreadsheet_format.js`: number formats
 - `spreadsheet_undo.js`: undo / redo

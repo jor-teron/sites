@@ -5,68 +5,106 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Spreadsheet</title>
   <link rel="icon" href="spreadsheet_icon.png">
-  <link rel="stylesheet" href="spreadsheet.css">
+  <link rel="stylesheet" href="spreadsheet.css?v=3">
+  <link rel="stylesheet" href="spreadsheet_ribbon.css?v=3">
 </head>
 <body>
-  <div class="toolbar">
-    <button type="button" id="btn-undo" title="Undo (Ctrl/⌘+Z)">↶</button>
-    <button type="button" id="btn-redo" title="Redo (Ctrl/⌘+Y, Ctrl/⌘+Shift+Z)">↷</button>
-    <button type="button" id="btn-export">Export CSV</button>
-    <label>Import CSV
+  <!-- TOP BAR: File button + ribbon tabs (built from SHEET_RIBBON_TABS in spreadsheet_ribbon.js) -->
+  <header class="sr-topbar" id="sr-topbar">
+    <button type="button" class="sr-file-btn" id="sr-file-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="sr-file-menu">File</button>
+    <div class="sr-tabs" id="sr-tabs" role="tablist" aria-label="Ribbon"></div>
+  </header>
+
+  <!-- File menu -->
+  <div class="toolbar sr-file-menu" id="sr-file-menu" role="menu" aria-labelledby="sr-file-btn" hidden>
+    <button type="button" class="sr-file-item" role="menuitem" id="btn-clear">New / Clear</button>
+    <label class="sr-file-item" role="menuitem">Open / Import CSV
       <input id="file-import" type="file" accept=".csv,text/csv,text/plain" hidden>
     </label>
-    <button type="button" id="btn-clear">Clear</button>
-    <a href="FUNCTIONS.txt" target="_blank" rel="noopener">Functions</a>
-    <button type="button" id="btn-print">Print / PDF</button>
+    <button type="button" class="sr-file-item" role="menuitem" id="btn-export">Export CSV</button>
+    <button type="button" class="sr-file-item" role="menuitem" id="btn-print">Print / PDF</button>
+    <a class="sr-file-item" role="menuitem" href="FUNCTIONS.txt" target="_blank" rel="noopener">Functions</a>
+  </div>
+
+  <!-- RIBBON: one row per tab, scrolls sideways when narrow -->
+  <nav class="toolbar sr-ribbon" id="sr-ribbon" aria-label="Ribbon commands">
+    <div class="sr-panel" role="tabpanel" id="sr-panel-home" data-tab="home">
+      <div class="sr-group">
+        <button type="button" id="btn-undo" title="Undo (Ctrl/⌘+Z)">↶</button>
+        <button type="button" id="btn-redo" title="Redo (Ctrl/⌘+Y, Ctrl/⌘+Shift+Z)">↷</button>
+      </div>
+      <div class="sr-group">
+        <button type="button" id="btn-bold" title="Bold"><b>B</b></button>
+        <button type="button" id="btn-italic" title="Italic"><i>I</i></button>
+        <button type="button" id="btn-under" title="Underline"><u>U</u></button>
+      </div>
+      <div class="sr-group">
+        <select id="align-sel" title="Align">
+          <option value="left">Left</option>
+          <option value="center" selected>Center</option>
+          <option value="right">Right</option>
+        </select>
+        <select id="fmt-sel" title="Number format">
+          <option value="general">General</option>
+          <option value="int">0</option>
+          <option value="dec2">0.00</option>
+          <option value="thousands">1,000</option>
+          <option value="percent">%</option>
+          <option value="currency">₹ Currency</option>
+        </select>
+      </div>
+      <div class="sr-group">
+        <input id="fill-color" type="color" title="Cell colour" value="#1e1e1e">
+        <input id="text-color" type="color" title="Text colour" value="#e8e8e8">
+      </div>
+      <span class="sr-note">Copy / cut / paste: Ctrl/⌘+C, X, V</span>
+    </div>
+    <div class="sr-panel" role="tabpanel" id="sr-panel-insert" data-tab="insert" hidden>
+      <div class="sr-group">
+        <button type="button" id="btn-row-ins" title="Insert row above the selection">+ Row</button>
+        <button type="button" id="btn-row-del" title="Delete selected row(s)">− Row</button>
+      </div>
+      <div class="sr-group">
+        <button type="button" id="btn-col-ins" title="Insert column left of the selection">+ Col</button>
+        <button type="button" id="btn-col-del" title="Delete selected column(s)">− Col</button>
+      </div>
+      <span class="sr-note">Fill: drag the cell corner, or Ctrl/⌘+D down, Ctrl/⌘+R right</span>
+    </div>
+    <div class="sr-panel" role="tabpanel" id="sr-panel-data" data-tab="data" hidden>
+      <div class="sr-group">
+        <button type="button" id="btn-sort-asc" title="Sort A→Z by the active column">Sort A→Z</button>
+        <button type="button" id="btn-sort-desc" title="Sort Z→A by the active column">Sort Z→A</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Formula bar: its own row -->
+  <div class="toolbar sr-formula-row">
     <span class="eq-mark">=</span>
     <input id="formula-bar" type="text" placeholder="A1+B1" aria-label="Formula bar">
-    <select id="align-sel" title="Align">
-      <option value="left">Left</option>
-      <option value="center" selected>Center</option>
-      <option value="right">Right</option>
-    </select>
-    <button type="button" id="btn-bold" title="Bold"><b>B</b></button>
-    <button type="button" id="btn-italic" title="Italic"><i>I</i></button>
-    <button type="button" id="btn-under" title="Underline"><u>U</u></button>
-    <input id="fill-color" type="color" title="Cell colour" value="#1e1e1e">
-    <input id="text-color" type="color" title="Text colour" value="#e8e8e8">
-    <select id="fmt-sel" title="Number format">
-      <option value="general">General</option>
-      <option value="int">0</option>
-      <option value="dec2">0.00</option>
-      <option value="thousands">1,000</option>
-      <option value="percent">%</option>
-      <option value="currency">₹ Currency</option>
-    </select>
-    <span class="tool-sep"></span>
-    <button type="button" id="btn-row-ins" title="Insert row above the selection">+ Row</button>
-    <button type="button" id="btn-row-del" title="Delete selected row(s)">− Row</button>
-    <button type="button" id="btn-col-ins" title="Insert column left of the selection">+ Col</button>
-    <button type="button" id="btn-col-del" title="Delete selected column(s)">− Col</button>
-    <button type="button" id="btn-sort-asc" title="Sort A→Z by the active column">Sort A→Z</button>
-    <button type="button" id="btn-sort-desc" title="Sort Z→A by the active column">Sort Z→A</button>
   </div>
   <div id="status" class="status"></div>
   <div id="sheet-wrap" class="sheet-wrap"></div>
-  <script src="spreadsheet_config.js?v=2"></script>
-  <script src="spreadsheet_formula.js?v=2"></script>
-  <script src="spreadsheet_functions.js?v=2"></script>
-  <script src="spreadsheet_refs.js?v=2"></script>
-  <script src="spreadsheet_state.js?v=2"></script>
-  <script src="spreadsheet_storage.js?v=2"></script>
-  <script src="spreadsheet_files.js?v=2"></script>
-  <script src="spreadsheet_grid.js?v=2"></script>
-  <script src="spreadsheet_edit.js?v=2"></script>
-  <script src="spreadsheet_fill.js?v=2"></script>
-  <script src="spreadsheet_toolbar.js?v=2"></script>
-  <script src="spreadsheet_logic.js?v=2"></script>
-  <script src="spreadsheet_format.js?v=2"></script>
-  <script src="spreadsheet_undo.js?v=2"></script>
-  <script src="spreadsheet_select.js?v=2"></script>
-  <script src="spreadsheet_clipboard.js?v=2"></script>
-  <script src="spreadsheet_rows.js?v=2"></script>
-  <script src="spreadsheet_sort.js?v=2"></script>
-  <script src="spreadsheet_resize.js?v=2"></script>
-  <script src="spreadsheet_keys.js?v=2"></script>
+  <script src="spreadsheet_config.js?v=3"></script>
+  <script src="spreadsheet_formula.js?v=3"></script>
+  <script src="spreadsheet_functions.js?v=3"></script>
+  <script src="spreadsheet_refs.js?v=3"></script>
+  <script src="spreadsheet_state.js?v=3"></script>
+  <script src="spreadsheet_storage.js?v=3"></script>
+  <script src="spreadsheet_files.js?v=3"></script>
+  <script src="spreadsheet_grid.js?v=3"></script>
+  <script src="spreadsheet_edit.js?v=3"></script>
+  <script src="spreadsheet_fill.js?v=3"></script>
+  <script src="spreadsheet_toolbar.js?v=3"></script>
+  <script src="spreadsheet_ribbon.js?v=3"></script>
+  <script src="spreadsheet_logic.js?v=3"></script>
+  <script src="spreadsheet_format.js?v=3"></script>
+  <script src="spreadsheet_undo.js?v=3"></script>
+  <script src="spreadsheet_select.js?v=3"></script>
+  <script src="spreadsheet_clipboard.js?v=3"></script>
+  <script src="spreadsheet_rows.js?v=3"></script>
+  <script src="spreadsheet_sort.js?v=3"></script>
+  <script src="spreadsheet_resize.js?v=3"></script>
+  <script src="spreadsheet_keys.js?v=3"></script>
 </body>
 </html>
