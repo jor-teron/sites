@@ -45,6 +45,7 @@ D-Pad Controller,  ../../hub/controller/, ../../hub/controller/controller_icon.p
 Neon Fist,         neon-fist/,     , , Lab
 Neon Fist 3D,      neon-fist-3d/,  , , Lab
 Gravity Sandbox,   gravity-sandbox/, , , Lab
+Ant Farm,          ant-farm/,      , , Lab
 `,
   "Media": `# Media — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
