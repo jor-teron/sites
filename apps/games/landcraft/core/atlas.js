@@ -2,8 +2,8 @@
 import * as THREE from 'three';
 
 export const TILE = 16;
-export const TILES = { grassTop: 0, grassSide: 1, dirt: 2, stone: 3 };
-const COUNT = 4;
+export const TILES = { grassTop: 0, grassSide: 1, dirt: 2, stone: 3, logTop: 4, logSide: 5, leaves: 6, sand: 7, glass: 8 };
+const COUNT = 9;
 
 function rng(seed) { return function () { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }; }
 
@@ -30,6 +30,20 @@ export function makeAtlas() {
   for (let x = 0; x < TILE; x++) {
     const depth = 3 + Math.floor(r() * 3);
     for (let y = 0; y < depth; y++) px(TILES.grassSide, x, y, GRASS, 0.35);
+  }
+  // L1c tiles. Leaves have see-through holes (alpha-tested); glass is a translucent pane with a frame.
+  for (let y = 0; y < TILE; y++) {
+    for (let x = 0; x < TILE; x++) {
+      const ring = Math.max(Math.abs(x - 7.5), Math.abs(y - 7.5));
+      px(TILES.logTop, x, y, ring > 6.5 ? [96, 72, 42] : Math.floor(ring) % 2 ? [176, 140, 88] : [150, 114, 66], 0.12);
+      px(TILES.logSide, x, y, x % 4 === 0 ? [78, 58, 34] : [106, 80, 48], 0.25);
+      px(TILES.sand, x, y, [219, 206, 150], 0.14);
+      if (r() < 0.22) g.clearRect(TILES.leaves * TILE + x, y, 1, 1);
+      else px(TILES.leaves, x, y, [58, 122, 40], 0.45);
+      const edge = x === 0 || y === 0 || x === TILE - 1 || y === TILE - 1, streak = x - y === 3 || x - y === 5;
+      g.fillStyle = edge ? 'rgba(225,240,255,.9)' : streak && x > 3 && x < 12 ? 'rgba(255,255,255,.45)' : 'rgba(200,230,255,.12)';
+      g.fillRect(TILES.glass * TILE + x, y, 1, 1);
+    }
   }
   const tex = new THREE.CanvasTexture(c);
   tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;

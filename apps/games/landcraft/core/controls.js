@@ -4,7 +4,7 @@ export function setupControls(canvas, player) {
   const keys = {}, stick = { id: null, x: 0, y: 0, dx: 0, dy: 0 }, look = { id: null, x: 0, y: 0 };
   const base = document.getElementById('stick'), knob = document.getElementById('knob'), jumpBtn = document.getElementById('jump');
   const R = 50;
-  let touchJump = false;
+  let touchJump = false, lockFailed = false;
   if (matchMedia('(pointer: coarse)').matches) document.body.classList.add('touch');
 
   function turn(dx, dy, k) {
@@ -20,7 +20,7 @@ export function setupControls(canvas, player) {
   canvas.addEventListener('click', function () {
     if (document.body.classList.contains('touch') || !canvas.requestPointerLock) return;
     const p = canvas.requestPointerLock();
-    if (p && p.catch) p.catch(function () {}); // refused (e.g. headless): drag-to-look still works
+    if (p && p.catch) p.catch(function () { lockFailed = true; }); // refused (e.g. headless): drag-to-look and click-to-edit still work
   });
   document.addEventListener('mousemove', function (e) {
     if (document.pointerLockElement === canvas) turn(e.movementX, e.movementY, 0.0025);
@@ -28,7 +28,7 @@ export function setupControls(canvas, player) {
 
   function placeKnob() { knob.style.transform = 'translate(' + stick.dx + 'px,' + stick.dy + 'px)'; }
   canvas.addEventListener('pointerdown', function (e) {
-    canvas.setPointerCapture(e.pointerId);
+    if (document.pointerLockElement !== canvas) canvas.setPointerCapture(e.pointerId); // capture throws while locked
     if (e.pointerType === 'touch' && e.clientX < window.innerWidth / 2 && stick.id === null) {
       stick.id = e.pointerId; stick.x = e.clientX; stick.y = e.clientY;
       base.style.left = e.clientX + 'px'; base.style.top = e.clientY + 'px'; base.classList.add('active');
@@ -61,6 +61,7 @@ export function setupControls(canvas, player) {
 
   function k(a, b) { return keys[a] || keys[b] ? 1 : 0; }
   return {
+    lockFailed: function () { return lockFailed; },
     read: function () {
       return {
         fwd: k('KeyW', 'ArrowUp') - k('KeyS', 'ArrowDown') - stick.dy / R,

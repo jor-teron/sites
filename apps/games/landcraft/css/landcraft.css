@@ -20,3 +20,19 @@ body.touch #stick.active { opacity: 1; }
 body.touch #jump { display: block; position: fixed; right: max(24px, env(safe-area-inset-right));
   bottom: max(28px, env(safe-area-inset-bottom)); width: 72px; height: 72px; border-radius: 50%; font-size: 30px;
   color: #fff; background: rgba(255,255,255,.18); border: 2px solid rgba(255,255,255,.45); touch-action: none; user-select: none; }
+/* L1c: hotbar at bottom centre; touch Break / Place buttons stacked above Jump; touch UI lifted above the hotbar. */
+#hotbar { position: fixed; left: 50%; bottom: max(10px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 2;
+  display: flex; gap: 4px; padding: 4px; background: rgba(20,24,32,.6); border-radius: 8px; }
+#hotbar button { width: 44px; height: 44px; padding: 4px; background: rgba(0,0,0,.3); border: 2px solid rgba(255,255,255,.25);
+  border-radius: 6px; cursor: pointer; touch-action: none; }
+#hotbar button.on { border-color: #ffb84d; background: rgba(255,184,77,.25); }
+#hotbar canvas { position: static; width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+#hint { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 62px); }
+.act { display: none; }
+body.touch .act { display: block; position: fixed; right: max(24px, env(safe-area-inset-right)); width: 72px; height: 48px;
+  font: 600 13px system-ui, sans-serif; color: #fff; background: rgba(20,24,32,.55); border: 2px solid rgba(255,255,255,.45);
+  border-radius: 10px; touch-action: none; user-select: none; }
+body.touch #jump { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 70px); }
+body.touch #place { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 152px); }
+body.touch #break { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 210px); }
+body.touch #stick { top: calc(100% - max(10px, env(safe-area-inset-bottom)) - 140px); }

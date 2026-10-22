@@ -1,6 +1,6 @@
 // LandCraft world: a map of chunks plus block get/set in world coordinates.
 import { Chunk, CS, CH } from './chunk.js';
-import { AIR, GRASS, DIRT, STONE } from './blocks.js';
+import { AIR, GRASS, DIRT, STONE, LOG, LEAVES, SAND, GLASS } from './blocks.js';
 
 export const GROUND = 8; // y of the walkable grass surface in the flat test world
 
@@ -34,9 +34,31 @@ export class World {
     for (let i = 0; i < 4; i++) for (let h = 0; h <= i; h++) w.set(-3 - i, GROUND + h, 3, DIRT);   // staircase
     for (let h = 0; h < 5; h++) w.set(7, GROUND + h, 6, STONE);                                    // pillar
     for (let x = -8; x <= -6; x++) for (let z = -8; z <= -6; z++) w.set(x, GROUND, z, STONE);      // 1-high platform
+    for (let x = 2; x <= 4; x++) for (let z = 12; z <= 14; z++) w.set(x, GROUND - 1, z, SAND);    // sand patch
+    for (let x = -1; x <= 1; x++) for (let h = 0; h < 2; h++) w.set(x, GROUND + h, -6, GLASS);    // glass window
+    for (let x = -12; x <= -8; x++) for (let z = 8; z <= 12; z++) for (let h = 3; h <= 4; h++)     // tree canopy
+      if (Math.abs(x + 10) + Math.abs(z - 10) < 4) w.set(x, GROUND + h, z, LEAVES);
+    for (let h = 0; h < 5; h++) w.set(-10, GROUND + h, 10, LOG);                                    // tree trunk
+    w.set(-10, GROUND + 5, 10, LEAVES);
     return w;
   }
-  buildAll(scene, material) {
-    for (const c of this.chunks.values()) scene.add(c.build(this, material));
+  buildAll(scene, materials) {
+    this.scene = scene; this.materials = materials;
+    for (const c of this.chunks.values()) scene.add(c.build(this, materials));
+  }
+  // Change one block and remesh only its chunk, plus the neighbour chunk when it sits on a border.
+  edit(x, y, z, b) {
+    if (y < 0 || y >= CH) return false;
+    this.set(x, y, z, b);
+    const lx = x - Math.floor(x / CS) * CS, lz = z - Math.floor(z / CS) * CS, todo = [[x, z]];
+    if (lx === 0) todo.push([x - 1, z]); else if (lx === CS - 1) todo.push([x + 1, z]);
+    if (lz === 0) todo.push([x, z - 1]); else if (lz === CS - 1) todo.push([x, z + 1]);
+    for (const t of todo) {
+      const c = this.chunkAt(t[0], t[1], false);
+      if (!c) continue;
+      const fresh = !c.mesh, mesh = c.build(this, this.materials);
+      if (fresh) this.scene.add(mesh);
+    }
+    return true;
   }
 }
