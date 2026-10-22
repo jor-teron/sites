@@ -1,6 +1,6 @@
 // Solar System Explorer R2a: realistic-looking bodies on a plain 2D canvas, no libraries, offline.
 // Each body gets a procedural texture (seeded, so identical every load) rendered once to an offscreen canvas,
-// R2b adds Pluto and the moons with the same painter/crater approach. Textures are then drawn clipped to its disc, shaded with a day/night terminator facing the Sun, plus rim glow and rings.
+// R2c adds Ceres. R2b adds Pluto and the moons with the same painter/crater approach. Textures are then drawn clipped to its disc, shaded with a day/night terminator facing the Sun, plus rim glow and rings.
 window.SS_ART = (function () {
   'use strict';
   function rng(str) { // mulberry32 seeded from the body name
@@ -77,9 +77,10 @@ window.SS_ART = (function () {
     Titan: function (u, v, n) { return mix([196, 132, 54], [228, 172, 92], 0.5 + 0.3 * Math.sin(v * 7) + (n(u, v, 3) - 0.5) * 0.6); },
     Miranda: rocky('#7e7e7e', '#cacaca', 4), Titania: rocky('#857a74', '#c0b5ac', 6), Oberon: rocky('#615650', '#a08e85', 6),
     Triton: function (u, v, n) { return v > 0.6 ? mix([226, 176, 160], [240, 206, 192], n(u, v, 6)) : mix([200, 190, 182], [238, 230, 224], n(u, v, 10, 3)); },
+    Ceres: function (u, v, n) { return spot(u, v, 0.3, 0.42, 0.02, 0.03) > 0 ? [250, 250, 246] : mix([88, 86, 84], [150, 146, 140], n(u, v, 6) * 1.6 - 0.3); }, // Occator's salt spots
     Charon: function (u, v, n) { return v < 0.13 + n(u, v, 6) * 0.06 ? [120, 72, 52] : mix([128, 124, 120], [190, 184, 176], n(u, v, 5) * 1.6 - 0.3); }
   };
-  var CRATERS = { Mercury: 90, Mars: 10, Moon: 50, Phobos: 14, Deimos: 8, Callisto: 90, Ganymede: 25, Rhea: 60, Miranda: 10, Titania: 30, Oberon: 45, Charon: 20, Io: 30 };
+  var CRATERS = { Mercury: 90, Mars: 10, Moon: 50, Phobos: 14, Deimos: 8, Callisto: 90, Ganymede: 25, Rhea: 60, Miranda: 10, Titania: 30, Oberon: 45, Charon: 20, Io: 30, Ceres: 30 };
   var cache = {};
   function texture(b) {
     if (cache[b.name]) return cache[b.name];

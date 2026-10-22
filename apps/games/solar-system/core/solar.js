@@ -1,4 +1,5 @@
 // Solar System Explorer R2a: bodies are drawn by core/art.js (procedural textures, terminator, rim glow, rings).
+// R2c: asteroid and Kuiper belts as seeded particle fields (tap a belt or pick it from the list), plus Ceres.
 // R2b: Pluto on an eccentric orbit, and the main moons (drawn and tappable only when zoomed in enough).
 // R1c: Sun + 8 planets on compressed circular orbits, pan and zoom,
 // tap a body (or pick it from the list) to fly to it, follow it and show its info panel (data in core/data.js).
@@ -28,6 +29,17 @@
   // Pluto: real eccentricity 0.25, so it dips just inside Neptune's orbit; drawn dashed because its orbit is tilted 17°.
   var PLUTO = { name: 'Pluto', a: 39.48, e: 0.249, w: 3.9, period: 247.9, r: 1.6, color: '#d8c3a5', spin: -90, phase: 4.1, x: 0, y: 0 };
   bodies.push(PLUTO);
+  bodies.push({ name: 'Ceres', orbit: au(2.77), period: 4.6, r: 1.0, color: '#9a948c', spin: 50, phase: 0.8, x: 0, y: 0 });
+  // Belts: particles keep their own distance (AU) so inner ones lap outer ones (Kepler: period = a^1.5 years).
+  var BELTS = [['Asteroid belt', 2.1, 3.3, 900, '196,178,156', 0], ['Kuiper belt', 30.5, 50, 1400, '150,178,220', 0.6]].map(function (d, bi) {
+    var n = d[3], p = new Float32Array(n * 3), sd = 99 + bi;
+    function rnd() { sd = (sd * 16807) % 2147483647; return sd / 2147483647; }
+    for (var i = 0; i < n; i++) { // Kuiper: most objects sit in the classical belt at 42-48 AU
+      var a = rnd() < d[5] ? 42 + rnd() * 6 : d[1] + Math.pow(rnd(), 1.3) * (d[2] - d[1]);
+      p[i * 3] = a; p[i * 3 + 1] = rnd() * Math.PI * 2; p[i * 3 + 2] = 0.15 + rnd() * 0.45;
+    }
+    return { name: d[0], region: [au(d[1]), au(d[2])], parts: p, rgb: d[4], x: 0, y: 0, r: au(d[2]) };
+  });
   // Moons: name, parent, distance from parent centre (world units), real period (days), radius, colour, retrograde.
   // Distances and sizes are exaggerated for visibility; periods are compressed (sqrt) but keep their true order.
   var MOONS = [['Moon', 'Earth', 9, 27.32, 1.0, '#bdbdbd'], ['Phobos', 'Mars', 4.4, 0.319, 0.3, '#7a6e62'], ['Deimos', 'Mars', 6, 1.263, 0.25, '#8a7c6c'],
@@ -92,7 +104,8 @@
     d.facts.forEach(function (f) { fx.appendChild(el('li', f)); });
     panel.hidden = false; placeCtl();
     follow = b;
-    fly = { t0: performance.now(), x: cam.x, y: cam.y, z: cam.z, toZ: clampZ((b === SUN ? 70 : 34) / b.r) };
+    fly = { t0: performance.now(), x: cam.x, y: cam.y, z: cam.z,
+      toZ: clampZ(b.region ? Math.min(W, H) / (2 * b.region[1] + 30) : (b === SUN ? 70 : 34) / b.r) };
   }
   function release() { follow = null; fly = null; panel.hidden = true; placeCtl(); }
   // Phone: the control bar sits just above the bottom sheet so neither covers the other.
@@ -113,7 +126,7 @@
   $('faster').addEventListener('click', function () { speedI = Math.min(SPEEDS.length - 1, speedI + 1); showSpeed(); });
   function toggleMenu(open) { menu.hidden = !open; $('list').setAttribute('aria-expanded', String(open)); }
   $('list').addEventListener('click', function () { toggleMenu(menu.hidden); });
-  all.concat(moons).forEach(function (b) {
+  all.concat(BELTS, moons).forEach(function (b) {
     var btn = el('button', b.name); btn.type = 'button'; if (b.moon) btn.className = 'moon';
     btn.addEventListener('click', function () { toggleMenu(false); select(b); });
     menu.appendChild(btn);
@@ -131,6 +144,10 @@
       var d = Math.hypot((b.x - cam.x) * cam.z + c.x - sx, (b.y - cam.y) * cam.z + c.y - sy);
       if (d < Math.max(b.moon ? 14 : 22, b.r * cam.z + 10) && d < bestD) { best = b; bestD = d; }
     });
+    if (!best && cam.z < fitZ * 4) { // no body hit: was it inside a belt?
+      var w = toWorld(sx, sy), dw = Math.hypot(w.x, w.y);
+      BELTS.forEach(function (bl) { if (dw > bl.region[0] - 4 && dw < bl.region[1] + 4) best = bl; });
+    }
     if (!menu.hidden) toggleMenu(false); else if (best) select(best); else release();
   }
 
@@ -226,10 +243,28 @@
     vis.forEach(function (m) { ctx.beginPath(); ctx.arc(m.parent.x, m.parent.y, m.orbit, 0, Math.PI * 2); ctx.stroke(); });
     // Sun, then planets (textures are built lazily the first time a body is drawn large enough)
     var sec = simT / 1000;
+    var vw = W / 2 / cam.z + 4, vh = H / 2 / cam.z + 4, px1 = 1 / cam.z; // view half-size in world units, for culling
+    BELTS.forEach(function (bl) {
+      var p = bl.parts, n = p.length / 3, k = 0;
+      if (follow === bl) { // selected belt: faint amber band
+        ctx.fillStyle = 'rgba(255,184,77,.07)'; ctx.beginPath(); ctx.arc(0, 0, bl.region[1], 0, Math.PI * 2);
+        ctx.arc(0, 0, bl.region[0], 0, Math.PI * 2, true); ctx.fill();
+      }
+      for (var g = 0; g < 3; g++) { // three brightness groups, one fill each: cheap even with 2,300 dots
+        ctx.fillStyle = 'rgba(' + bl.rgb + ',' + (0.35 + g * 0.25) + ')'; ctx.beginPath();
+        for (k = g; k < n; k += 3) {
+          var a = p[k * 3], ang = p[k * 3 + 1] + years / Math.pow(a, 1.5) * Math.PI * 2, R0 = au(a);
+          var x = Math.cos(ang) * R0, y = Math.sin(ang) * R0;
+          if (Math.abs(x - cam.x) > vw || Math.abs(y - cam.y) > vh) continue;
+          var sz = Math.max(px1, Math.min(p[k * 3 + 2], 2.5 * px1)); ctx.rect(x - sz / 2, y - sz / 2, sz, sz);
+        }
+        ctx.fill();
+      }
+    });
     window.SS_ART.draw(ctx, SUN, cam.z, sec);
     bodies.forEach(function (b) { window.SS_ART.draw(ctx, b, cam.z, sec); });
     vis.forEach(function (m) { window.SS_ART.draw(ctx, m, cam.z, sec); });
-    if (follow) { // selection ring
+    if (follow && !follow.region) { // selection ring
       ctx.strokeStyle = 'rgba(255,184,77,.8)'; ctx.lineWidth = 1.5 / cam.z;
       ctx.beginPath(); ctx.arc(follow.x, follow.y, follow.r + 5 / cam.z, 0, Math.PI * 2); ctx.stroke();
     }
@@ -237,13 +272,14 @@
     // Labels in screen space; skip any that would overlap one already drawn (selected and Sun first)
     ctx.font = '11px system-ui, sans-serif'; ctx.textAlign = 'center';
     var placed = [], order = all.concat(vis.filter(function (m) { return m === follow || (m.r * cam.z >= 2.5 && m.orbit * cam.z >= 40); })).sort(function (p, q) { return (q === follow) - (p === follow); });
+    if (cam.z < fitZ * 3) order = order.concat(BELTS);
     order.forEach(function (b) {
-      var sx = (b.x - cam.x) * cam.z + c.x, sy = (b.y - cam.y) * cam.z + c.y;
+      var sx = (b.x - cam.x) * cam.z + c.x, sy = (b.y - cam.y - (b.region ? (b.region[0] + b.region[1]) / 2 : 0)) * cam.z + c.y;
       var pad = b === follow ? 7 : 0; // clear the selection ring
-      var ly = b === SUN ? sy + b.r * cam.z + 13 + pad : sy - b.r * cam.z - 5 - pad, hw = ctx.measureText(b.name).width / 2 + 2;
+      var ly = b.region ? sy + 4 : b === SUN ? sy + b.r * cam.z + 13 + pad : sy - b.r * cam.z - 5 - pad, hw = ctx.measureText(b.name).width / 2 + 2;
       var box = [sx - hw, ly - 10, sx + hw, ly + 3];
       if (placed.some(function (q) { return box[0] < q[2] && box[2] > q[0] && box[1] < q[3] && box[3] > q[1]; })) return;
-      placed.push(box); ctx.fillStyle = b === SUN ? '#ffd25a' : b.moon ? '#9fb0cc' : '#cfd8ea'; ctx.fillText(b.name, sx, ly);
+      placed.push(box); ctx.fillStyle = b === SUN ? '#ffd25a' : b.moon ? '#9fb0cc' : b.region ? 'rgba(' + b.rgb + ',.9)' : '#cfd8ea'; ctx.fillText(b.name, sx, ly);
     });
     requestAnimationFrame(draw);
   }

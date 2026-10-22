@@ -1,4 +1,4 @@
-// Solar System Explorer R1c: info-panel facts. R2b adds Pluto and the main moons (moons use their own rows). Values from the NASA planetary fact sheets
+// Solar System Explorer R1c: info-panel facts. R2b adds Pluto and the main moons (moons use their own rows). R2c adds Ceres and the two belts. Values from the NASA planetary fact sheets
 // (nssdc.gsfc.nasa.gov/planetary/factsheet). Moon counts per NASA, mid-2026; small moons keep being found.
 window.SS_INFO = {
   Sun: { type: 'Star (G2V yellow dwarf)', d: '1,391,400 km', dist: 'Centre of the solar system',
@@ -74,3 +74,17 @@ function ssMoon(parent, d, dist, period, facts) {
  ['Charon', 'Pluto', '1,212 km', '19,600 km', '6.39 days',
   ['About half Pluto’s size, so the pair orbit a point between them.', 'Pluto and Charon always show each other the same face.', 'A reddish polar cap is nicknamed Mordor Macula.']]
 ].forEach(function (m) { window.SS_INFO[m[0]] = ssMoon(m[1], m[2], m[3], m[4], m[5]); });
+window.SS_INFO.Ceres = { type: 'Dwarf planet (asteroid belt)', d: '939 km', dist: '2.77 AU · 414 million km', period: '4.6 years',
+  day: '9 hours', moons: '0',
+  facts: ['The largest object in the asteroid belt and the only dwarf planet in the inner solar system.',
+    'NASA’s Dawn spacecraft orbited it from 2015 to 2018.', 'The bright spots in Occator crater are salt deposits left by briny water.'] };
+window.SS_INFO['Asteroid belt'] = { type: 'Region of rocky bodies', facts: [
+    'Millions of rocky and metallic bodies, yet all together they hold only about 3% of the Moon’s mass.',
+    'Ceres alone is about a quarter of that mass; Vesta, Pallas and Hygiea come next.',
+    'Asteroids are so spread out that spacecraft cross the belt without any danger of a collision.'],
+  rows: [['Where', 'Between Mars and Jupiter, about 2.2–3.2 AU'], ['Orbit', '3–6 years'], ['Largest', 'Ceres (939 km)']] };
+window.SS_INFO['Kuiper belt'] = { type: 'Region of icy bodies', facts: [
+    'A huge ring of icy leftovers from the birth of the planets.',
+    'Home to dwarf planets Pluto, Haumea and Makemake, and the source of many short-period comets.',
+    'New Horizons flew past the Kuiper belt object Arrokoth on 1 January 2019.'],
+  rows: [['Where', 'Beyond Neptune, about 30–50 AU'], ['Orbit', '~250–350 years'], ['Largest', 'Pluto (2,377 km)']] };
