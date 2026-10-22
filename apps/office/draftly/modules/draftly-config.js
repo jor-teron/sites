@@ -213,12 +213,12 @@ Draftly.config.setPage = function setPage(size, preset, custom) {
 /* Custom margins kept in range, rounded to 0.1 cm. */
 Draftly.config.clampMargins = function clampMargins(m) {
   var cfg = Draftly.config;
-  var one = function (v) {
-    v = parseFloat(v);
-    if (!isFinite(v)) v = cfg.marginPresets[cfg.defaultMarginPreset].cm;
-    return Math.round(Math.min(cfg.marginCustomMax, Math.max(cfg.marginCustomMin, v)) * 10) / 10;
-  };
-  return { top: one(m.top), bottom: one(m.bottom), left: one(m.left), right: one(m.right) };
+  /* Shared with the Spreadsheet Page tab: apps/office/shared/office-page.js */
+  return OfficePage.clampMargins(m, {
+    min: cfg.marginCustomMin,
+    max: cfg.marginCustomMax,
+    fallback: cfg.marginPresets[cfg.defaultMarginPreset].cm
+  });
 };
 
 /* Label of the active margins, e.g. 'Normal' or 'Custom'. */
