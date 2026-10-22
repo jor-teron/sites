@@ -38,3 +38,34 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 #dialog .row{display:flex;justify-content:flex-end;gap:8px}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:6px 14px;border-radius:16px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:1}
+#track{width:300%}
+.pane{width:33.3334%}
+/* analog face */
+.face{display:none;width:min(78vw,52vh,440px);aspect-ratio:1}
+.face.small{width:min(34vw,24vh,180px)}
+.face svg{width:100%;height:100%;display:block}
+.analog .face{display:block}
+.analog #time-sw{font-size:clamp(22px,6vw,34px);margin-top:14px;color:var(--mut)}
+.analog #time-lap{font-size:clamp(20px,5.5vw,30px);color:var(--mut)}
+.analog .lap-head{justify-content:flex-start}
+.analog .lap-head .btn{margin-left:auto}
+.f-ring{fill:var(--card);stroke:var(--line);stroke-width:2}
+.f-tick{stroke:var(--mut);stroke-linecap:round}
+.f-tick.big{stroke:var(--fg)}
+.f-num{fill:var(--fg);font-size:9px;text-anchor:middle;dominant-baseline:central;font-family:system-ui,sans-serif}
+.f-sub{fill:none;stroke:var(--line);stroke-width:1.2}
+.f-subhand{stroke:var(--fg);stroke-width:2;stroke-linecap:round}
+.f-hand{stroke:#f97316;stroke-width:2;stroke-linecap:round}
+.f-hub{fill:#f97316}
+/* settings */
+.set-wrap{padding:8px 18px;overflow-y:auto;max-width:520px;width:100%;margin:0 auto}
+.set-wrap h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:14px 0 8px;font-weight:600}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--card);color:var(--fg);padding:8px 12px;font-size:14px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--acc);color:#fff}
+.about{display:flex;gap:12px;align-items:flex-start}
+.about img{border-radius:9px}
+.about p{margin:4px 0 0;color:var(--mut);font-size:14px;line-height:1.4}
+#ver{color:var(--mut);font-size:13px}
