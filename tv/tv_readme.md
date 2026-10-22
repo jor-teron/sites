@@ -1,7 +1,7 @@
 # TV
 
 ## 1. What it is
-A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams from M3U playlists, shows a channel grid over the video, and is driven by a remote (arrows, Enter, number keys) or by touch / mouse. **Main entry:** `tv/` → `index.html` redirects to **`tv-v1.html`** (TV Player v1). The v2 / v3 players, the v3 sub-pages and `tv-old/` are older versions kept for reference.
+A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams from M3U playlists, shows a channel grid over the video, and is driven by a remote (arrows, Enter, number keys) or by touch / mouse. **Main entry:** `tv/` → `index.html` redirects to **`tv-v1.html`** (TV Player v1). The v2 / v3 players, the v3 sub-pages, `tv-old/` and other orphaned files are retired and live in **`legacy/`** (reference only, not maintained, links may be broken; see `legacy/README.md`).
 
 ## 2. Files
 **Main player (v1)**
@@ -9,7 +9,7 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
 - `tv-v1.html` / `tv-v1.css` / `tv-v1.js`: the current player. Playlists, category tiles and timings are at the top of `tv-v1.js` ("EDIT THESE")
 - `tv_icon.png`: hub icon
 
-**Older players**
+**Older players (moved to `legacy/` in TV4; paths below are relative to `legacy/`)**
 - `tv-v2.html` / `tv-v2.css` / `tv-v2.js`: v2. Channel list + Android app tiles (YouTube, Play Store, Settings) and `channels/home.m3u`
 - `tv-v3.html` / `tv-v3.css`: v3. Built from the `js/` modules with `js/config.js` tiles and `channels/home.m3u`
 - `tv-v3-more.html`: v3 with `js/config-more.js` tiles and `channels/home-more.m3u`
@@ -17,7 +17,7 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
 - `photo.html`, `video.html`: "Coming soon..." placeholders
 - `tv-v3.js`: an older all-in-one v3 script (category nav tiles, `lastCat`); **not loaded by any page**
 
-**`js/` modules (used by the v3 pages only)**
+**`legacy/js/` modules (used by the v3 pages only)**
 - `config.js`: `SPECIAL_TILES` loaded by `tv-v3.html`: Home (→ `tv-v3.html`), Phone, Camera, Photos, YouTube, Kids (All), India, World, Play Store, Settings. Also loaded (unused) by the kids / India / World / kids-mini pages
 - `config-more.js`: `SPECIAL_TILES` loaded by `tv-v3-more.html`: YouTube, YouTube Kids, Kids (→ `kids-mini.html`), MX Player, More… (→ `tv-v3-more.html`, i.e. itself). The two configs look swapped: the main page has a "Home" tile to itself and the More page a "More…" tile to itself
 - `playlist.js`: M3U parser + `loadPlaylist(url)`; holds the global `channels`
@@ -32,7 +32,7 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
 - `local.m3u`: an extra local list (not used by any page)
 - `split-m3u.sh`: Bash script. Downloads the iptv-org master lists (India, kids, full index, in that order) and writes `<csv>.m3u` for each CSV in CSV row order (first match per `tvg-id` wins, quality tags like "(720p)" are stripped from names). Run `./split-m3u.sh` inside `channels/` when streams go stale.
 
-**`tv-old/` (legacy)**
+**`legacy/tv-old/` (legacy)**
 - `index.html`, `more.html`, `more-tv.html` + CSS: the original "Android TV homepage" launcher (app icons / links, clock). Kept for reference only; not linked from the hub.
 
 **Icons:** every category / app tile now uses `../shared/image/placeholder.png`, because the old `image/` folder was removed (commit 7d7ac04).
@@ -111,6 +111,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 - 2026-09-27 21:25 IST: remaining v1 text overlays removed; the poster covers idle states (4dc927a).
 - 2026-09-29 09:06 IST: repository restructure (6d7ba68).
 - 2026-10-05 00:35 IST: tile icons switched to `shared/image/placeholder.png` after `image/` was removed (7d7ac04).
+- 2026-10-23 IST: TV4: retired v2 / v3 pages, `js/`, `tv-old/`, `photo.html` / `video.html` moved to `legacy/` (paths not fixed).
 
 ## 12. Related apps
 - Hub: `../hub/docs/hub_readme.md` (TV is in Favorite and Media, and a home tile that opens it in a new tab)
