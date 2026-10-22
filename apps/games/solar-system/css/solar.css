@@ -30,3 +30,24 @@ html, body { margin: 0; height: 100%; background: #04060d; color: #cfd8ea; overf
     border-radius: 14px 14px 0 0; border-bottom: 0; }
   #info:not([hidden]) ~ #hint { display: none; }
 }
+/* R1c: speed controls + planet list. Bottom-left on desktop; full-width bar on phones, lifted above the sheet by JS. */
+#bar { top: max(10px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); }
+#ctl { position: fixed; left: max(10px, env(safe-area-inset-left)); bottom: max(10px, env(safe-area-inset-bottom));
+  display: flex; align-items: center; gap: 6px; padding: 6px; background: rgba(10, 16, 30, .85);
+  border: 1px solid #1d2a44; border-radius: 10px; }
+#ctl button { font: inherit; font-size: 15px; min-width: 40px; height: 40px; padding: 0 10px; color: #cfd8ea;
+  background: #15203a; border: 1px solid #2a3a5c; border-radius: 8px; cursor: pointer; }
+#ctl button.on { color: #ffb84d; border-color: #ffb84d; }
+#speed { min-width: 44px; text-align: center; font-size: 13px; color: #ffb84d; }
+#menu { position: absolute; left: 0; bottom: 100%; margin-bottom: 6px; display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px; padding: 6px; background: rgba(10, 16, 30, .95); border: 1px solid #1d2a44; border-radius: 10px; }
+#menu[hidden] { display: none; }
+#menu button { font-size: 13px; }
+#hint { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 64px); }
+@media (max-width: 700px) {
+  #ctl { right: max(10px, env(safe-area-inset-right)); justify-content: space-between; }
+  #list { margin-left: auto; }
+  #fit { min-width: 44px; height: 40px; font-size: 13px; }
+  #menu { width: 100%; box-sizing: border-box; }
+  #info { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+}

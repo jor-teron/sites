@@ -1,5 +1,6 @@
-// Solar System Explorer R1b: Sun + 8 planets on compressed circular orbits, pan and zoom,
-// tap a body to fly to it, follow it and show its info panel (data in core/data.js).
+// Solar System Explorer R1c: Sun + 8 planets on compressed circular orbits, pan and zoom,
+// tap a body (or pick it from the list) to fly to it, follow it and show its info panel (data in core/data.js).
+// R1c adds pause and speed steps; orbit time is accumulated so speed changes never make planets jump.
 // Distances: r = 70 * ln(1 + 2.5 * AU) world units (log-compressed so Neptune fits).
 // Sizes: exaggerated but in true relative order. Speeds: real period ratios, Earth = 20 s per orbit.
 (function () {
@@ -24,7 +25,9 @@
   var all = [SUN].concat(bodies);
   var maxOrbit = bodies[bodies.length - 1].orbit + 20;
 
-  var cv = document.getElementById('c'), ctx = cv.getContext('2d'), panel = document.getElementById('info');
+  var $ = function (id) { return document.getElementById(id); };
+  var cv = $('c'), ctx = cv.getContext('2d'), panel = $('info'), ctl = $('ctl'), menu = $('menu');
+  var SPEEDS = [0.25, 1, 4, 16, 64], speedI = 1, paused = false, simT = 0, lastT = null;
   var W = 0, H = 0, dpr = 1, cam = { x: 0, y: 0, z: 1 }, fitted = false;
   var follow = null, fly = null; // followed body; fly = {t0, x, y, z, toZ} while the camera travels
   var stars = [];
@@ -40,7 +43,7 @@
   function centre() {
     if (panel.hidden) return { x: W / 2, y: H / 2 };
     var r = panel.getBoundingClientRect();
-    return r.top > H * 0.3 ? { x: W / 2, y: r.top / 2 } : { x: r.left / 2, y: H / 2 };
+    return r.top > H * 0.3 ? { x: W / 2, y: ctl.getBoundingClientRect().top / 2 } : { x: r.left / 2, y: H / 2 };
   }
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 3);
@@ -49,34 +52,61 @@
     fitZ = Math.min(W, H) / (2 * maxOrbit);
     cam.z = fitted ? clampZ(cam.z) : fitZ; fitted = true;
   }
-  window.addEventListener('resize', resize);
+  window.addEventListener('resize', function () { resize(); placeCtl(); });
   resize();
 
   // ---- Select / follow / info panel ----
   function el(tag, text) { var e = document.createElement(tag); e.textContent = text; return e; }
   function select(b) {
-    var d = window.SS_INFO[b.name], st = document.getElementById('i-stats'), fx = document.getElementById('i-facts');
-    document.getElementById('i-name').textContent = b.name;
-    document.getElementById('i-type').textContent = d.type;
+    var d = window.SS_INFO[b.name], st = $('i-stats'), fx = $('i-facts');
+    $('i-name').textContent = b.name;
+    $('i-type').textContent = d.type;
     st.textContent = ''; fx.textContent = '';
     [['Diameter', d.d], ['From Sun', d.dist], ['Orbit', d.period], ['Day', d.day], ['Moons', d.moons]]
       .forEach(function (r) { st.appendChild(el('dt', r[0])); st.appendChild(el('dd', r[1])); });
     d.facts.forEach(function (f) { fx.appendChild(el('li', f)); });
-    panel.hidden = false;
+    panel.hidden = false; placeCtl();
     follow = b;
     fly = { t0: performance.now(), x: cam.x, y: cam.y, z: cam.z, toZ: clampZ((b === SUN ? 70 : 34) / b.r) };
   }
-  function release() { follow = null; fly = null; panel.hidden = true; }
-  document.getElementById('close').addEventListener('click', release);
-  document.getElementById('fit').addEventListener('click', function () { release(); cam = { x: 0, y: 0, z: fitZ }; });
-  window.addEventListener('keydown', function (e) { if (e.key === 'Escape') release(); });
+  function release() { follow = null; fly = null; panel.hidden = true; placeCtl(); }
+  // Phone: the control bar sits just above the bottom sheet so neither covers the other.
+  function placeCtl() {
+    var sheet = !panel.hidden && panel.getBoundingClientRect().top > H * 0.3;
+    ctl.style.bottom = sheet ? (H - panel.getBoundingClientRect().top + 8) + 'px' : '';
+  }
+
+  // ---- Speed controls and planet list ----
+  function showSpeed() {
+    $('speed').textContent = SPEEDS[speedI] + '\u00d7';
+    $('play').innerHTML = paused ? '&#9654;' : '&#10074;&#10074;';
+    $('play').classList.toggle('on', paused);
+  }
+  function togglePause() { paused = !paused; showSpeed(); }
+  $('play').addEventListener('click', togglePause);
+  $('slower').addEventListener('click', function () { speedI = Math.max(0, speedI - 1); showSpeed(); });
+  $('faster').addEventListener('click', function () { speedI = Math.min(SPEEDS.length - 1, speedI + 1); showSpeed(); });
+  function toggleMenu(open) { menu.hidden = !open; $('list').setAttribute('aria-expanded', String(open)); }
+  $('list').addEventListener('click', function () { toggleMenu(menu.hidden); });
+  all.forEach(function (b) {
+    var btn = el('button', b.name); btn.type = 'button';
+    btn.addEventListener('click', function () { toggleMenu(false); select(b); });
+    menu.appendChild(btn);
+  });
+  $('close').addEventListener('click', release);
+  $('fit').addEventListener('click', function () { toggleMenu(false); release(); cam = { x: 0, y: 0, z: fitZ }; });
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { if (!menu.hidden) toggleMenu(false); else release(); }
+    if (e.key === ' ') { e.preventDefault(); if (!e.repeat) togglePause(); }
+  });
+  window.addEventListener('keyup', function (e) { if (e.key === ' ') e.preventDefault(); }); // no double toggle via a focused button
   function tap(sx, sy) {
     var c = centre(), best = null, bestD = 1e9;
     all.forEach(function (b) {
       var d = Math.hypot((b.x - cam.x) * cam.z + c.x - sx, (b.y - cam.y) * cam.z + c.y - sy);
       if (d < Math.max(22, b.r * cam.z + 10) && d < bestD) { best = b; bestD = d; }
     });
-    if (best) select(best); else release();
+    if (!menu.hidden) toggleMenu(false); else if (best) select(best); else release();
   }
 
   // ---- Pan and zoom (pointer events cover mouse, pen and touch) ----
@@ -129,7 +159,9 @@
 
   // ---- Drawing ----
   function draw(t) {
-    var years = t / 1000 / EARTH_SECONDS;
+    if (lastT !== null && !paused) simT += Math.min(t - lastT, 100) * SPEEDS[speedI];
+    lastT = t;
+    var years = simT / 1000 / EARTH_SECONDS;
     bodies.forEach(function (b) {
       var ang = b.phase + (years / b.period) * Math.PI * 2;
       b.x = Math.cos(ang) * b.orbit; b.y = Math.sin(ang) * b.orbit;
@@ -177,7 +209,8 @@
     var placed = [], order = all.slice().sort(function (p, q) { return (q === follow) - (p === follow); });
     order.forEach(function (b) {
       var sx = (b.x - cam.x) * cam.z + c.x, sy = (b.y - cam.y) * cam.z + c.y;
-      var ly = b === SUN ? sy + b.r * cam.z + 13 : sy - b.r * cam.z - 5, hw = ctx.measureText(b.name).width / 2 + 2;
+      var pad = b === follow ? 7 : 0; // clear the selection ring
+      var ly = b === SUN ? sy + b.r * cam.z + 13 + pad : sy - b.r * cam.z - 5 - pad, hw = ctx.measureText(b.name).width / 2 + 2;
       var box = [sx - hw, ly - 10, sx + hw, ly + 3];
       if (placed.some(function (q) { return box[0] < q[2] && box[2] > q[0] && box[1] < q[3] && box[3] > q[1]; })) return;
       placed.push(box); ctx.fillStyle = b === SUN ? '#ffd25a' : '#cfd8ea'; ctx.fillText(b.name, sx, ly);

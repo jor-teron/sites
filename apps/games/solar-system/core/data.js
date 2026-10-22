@@ -1,4 +1,4 @@
-// Solar System Explorer R1b: info-panel facts. Values from the NASA planetary fact sheets
+// Solar System Explorer R1c: info-panel facts. Values from the NASA planetary fact sheets
 // (nssdc.gsfc.nasa.gov/planetary/factsheet). Moon counts per NASA, mid-2026; small moons keep being found.
 window.SS_INFO = {
   Sun: { type: 'Star (G2V yellow dwarf)', d: '1,391,400 km', dist: 'Centre of the solar system',
