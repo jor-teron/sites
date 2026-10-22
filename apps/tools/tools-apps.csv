@@ -7,6 +7,7 @@ Viewer,                viewer/,          , , Files
 System Monitor,        sysmon/,          , , System
 Device Benchmark,      devbench/, , , System
 Calculator,            calculator/,      , , Calculators
+Unit Converter,        unit-converter/,                   , , Calculators
 Stopwatch,             stopwatch/,       , , Time
 Weather,               weather-chart/,   , , Weather
 Weather Hourly,        weather-hourly/,  , , Weather
