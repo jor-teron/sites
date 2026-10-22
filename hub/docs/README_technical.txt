@@ -124,6 +124,8 @@ Hub and desktop (Monorepo Bot):
   apps/system/settings/ Settings app (sections: Wallpaper, Desktop,
                       Windows, Sizes, Look, How-to, About)
   apps/system/files/   Files app
+  apps/system/disk/    Disk app (R54: drives, space, sizes, clean-up;
+                      browsing stays in Files)
   apps/system/sysmon/  System Monitor (tasks, CPU, memory, network,
                       storage, battery)
   apps/tools/phonekey/  phone page for "Phone as a key"
