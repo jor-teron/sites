@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<!--
+  Sound Recorder — screens: Recorder (default), Recordings, Player, Settings.
+  Swipe >=75 px on the top bar = change screen (wraps). The waveform never swipes: drag = seek, pinch = zoom.
+  Styles: sound-recorder.css. Modules: _save (downloads), _store (IndexedDB), _audio (peaks, regions),
+  _wave (canvas drawing), _app (screens, settings, dialog), _recorder, _list, _player. No libraries.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Sound Recorder</title>
+  <link rel="icon" href="sound-recorder_icon.png">
+  <link rel="stylesheet" href="sound-recorder.css?v=20261022a">
+  <script>try{var s=JSON.parse(localStorage.getItem('sound-recorder-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div id="dots" role="tablist" aria-label="Screen">
+      <button type="button" class="dot" data-mode="rec" role="tab" aria-label="Recorder"></button>
+      <button type="button" class="dot" data-mode="list" role="tab" aria-label="Recordings"></button>
+      <button type="button" class="dot" data-mode="play" role="tab" aria-label="Player"></button>
+      <button type="button" class="dot" data-mode="set" role="tab" aria-label="Settings"></button>
+    </div>
+    <div id="scr-name"></div>
+  </div>
+  <div id="viewport">
+    <div id="track">
+      <section class="pane" id="pane-rec">
+        <div class="rec-top">
+          <div id="r-state">Ready</div>
+          <div id="r-time">0:00.0</div>
+        </div>
+        <canvas id="r-wave" class="wave"></canvas>
+        <div id="meter" aria-label="Input level"><i id="meter-bar"></i></div>
+        <div id="mic-row" hidden><label for="mic">Mic</label><select id="mic"></select></div>
+        <div class="ctl">
+          <button type="button" class="round" id="r-stop" title="Stop and save (S)" aria-label="Stop" disabled>&#9632;</button>
+          <button type="button" class="round" id="r-pause" title="Pause / resume (P)" aria-label="Pause" disabled>&#10074;&#10074;</button>
+          <button type="button" class="round big rec" id="r-rec" title="Record (R)" aria-label="Record"><span></span></button>
+        </div>
+      </section>
+      <section class="pane" id="pane-list">
+        <div class="head">
+          <h1>Recordings</h1><span id="l-count"></span>
+          <label class="mini" id="l-import" title="Import an audio file">Import<input type="file" id="l-file" accept="audio/*,.wav,.mp3,.m4a,.webm,.ogg" hidden></label>
+        </div>
+        <ul id="l-items"></ul>
+        <p id="l-empty" class="empty" hidden>No recordings yet. Record something or import a file.</p>
+      </section>
+      <section class="pane" id="pane-play">
+        <div class="head"><h1 id="p-name">Player</h1><span id="p-regs"></span></div>
+        <p id="p-none" class="empty">Choose a recording in Recordings.</p>
+        <div id="p-body" hidden>
+          <canvas id="p-over" class="over" aria-label="Overview, drag to move the zoomed window"></canvas>
+          <canvas id="p-wave" class="wave main" aria-label="Waveform, tap or drag to seek"></canvas>
+          <div class="p-info"><span id="p-time">0:00.0 / 0:00</span><span id="p-zoom"></span></div>
+          <div class="ctl ctl-a">
+            <button type="button" class="mini" id="p-zout" title="Zoom out (-)" aria-label="Zoom out">&minus;</button>
+            <button type="button" class="mini" id="p-zin" title="Zoom in (+)" aria-label="Zoom in">+</button>
+            <button type="button" class="mini" id="p-prev" title="Previous sound (P)">&#9664; Sound</button>
+            <button type="button" class="mini" id="p-next" title="Next sound (N)">Sound &#9654;</button>
+          </div>
+          <div class="ctl">
+            <button type="button" class="round" id="p-back" title="Back 10 s (Left)" aria-label="Back 10 seconds">&minus;10</button>
+            <button type="button" class="round" id="p-fwd" title="Forward 10 s (Right)" aria-label="Forward 10 seconds">+10</button>
+            <button type="button" class="round big" id="p-play" title="Play / pause (Space)" aria-label="Play">&#9654;</button>
+          </div>
+          <audio id="p-audio" preload="auto"></audio>
+        </div>
+      </section>
+      <section class="pane" id="pane-set">
+        <div class="set-wrap">
+          <h2>Settings</h2>
+          <div class="set-row"><span>Theme</span>
+            <div class="seg" data-key="theme"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>
+          <div class="set-row"><span>Silence below<small>Quieter than this counts as silence</small></span>
+            <div class="seg" data-key="thr"><button type="button" data-v="-50">&minus;50 dB</button><button type="button" data-v="-40">&minus;40 dB</button><button type="button" data-v="-30">&minus;30 dB</button></div></div>
+          <h2>About</h2>
+          <div class="about">
+            <img src="sound-recorder_icon.png" alt="" width="40" height="40">
+            <div><b>Sound Recorder</b> <span id="ver"></span>
+              <p>Record from the microphone and find your way around long recordings: the waveform shows where the sound is, silent stretches are shaded, and Sound &#9664; / &#9654; jump between the parts with sound. Recordings stay in this browser.</p></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div id="dialog" hidden>
+    <div class="box" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+      <p id="dlg-t"></p>
+      <input type="text" id="dlg-in" maxlength="80" hidden>
+      <div class="row">
+        <button type="button" class="mini" id="dlg-no">Cancel</button>
+        <button type="button" class="mini primary" id="dlg-yes">OK</button>
+      </div>
+    </div>
+  </div>
+  <div id="toast" role="status"></div>
+</div>
+<script src="sound-recorder_save.js?v=20261022a"></script>
+<script src="sound-recorder_store.js?v=20261022a"></script>
+<script src="sound-recorder_audio.js?v=20261022a"></script>
+<script src="sound-recorder_wave.js?v=20261022a"></script>
+<script src="sound-recorder_app.js?v=20261022a"></script>
+<script src="sound-recorder_recorder.js?v=20261022a"></script>
+<script src="sound-recorder_list.js?v=20261022a"></script>
+<script src="sound-recorder_player.js?v=20261022a"></script>
+<script>SR.init();</script>
+</body>
+</html>
