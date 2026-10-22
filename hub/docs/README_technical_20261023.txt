@@ -34,10 +34,11 @@
 ================================================================================
  NOTES (read first)
 ================================================================================
- - apps/lab/hero-builder (a Three.js viewer v1) was deliberately deleted by
-   Jor because it wasn't useful. Its files, including committed node_modules,
-   show as deleted in local clones but are still in git on main. Don't
-   restore them. Removing them from git is a separate decision for Jor.
+ - apps/lab/hero-builder (a Three.js viewer v1) was not deleted: it moved to
+   apps/games/hero-builder (node_modules still committed, 213 tracked files;
+   corrected in Hub R58). The "deleted" files seen in older local clones are
+   the old apps/lab/ paths. Removing node_modules from git is a separate
+   decision for Jor.
  - One apps/games/ar-game vendor file (three.module.min.js) is also missing
    on disk in local clones. Noted only, not fixed.
  - Check whether shared/script/api_keys.js holds a live secret.
@@ -201,8 +202,11 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Local `main` in /workspace/sites is 119 commits behind origin/main; pull before branching.
 
 ## 6. Known bugs and fixes still needed
-- `hub/version.txt` fetch errors when opened from file:// (no fetch on file://). Fix: embed the version in a JS file, or catch and fall back quietly.
-- `apps/system/settings/index.html` (line 3 comment) and `apps/system/settings/README.md` (title, deep-link examples) still say `apps/settings/`. Doc/comment fix only.
+- ~~`hub/version.txt` fetch errors when opened from file://~~ fixed in R58 (hub_update.js skips the fetch on file://; the version shows '—').
+- ~~`apps/system/settings/index.html` (line 3 comment) and `apps/system/settings/README.md` still say `apps/settings/`~~ fixed in R58.
+- Fixed in R56: phone-mode idle check (09:00 refresh could reload over an open app), Lab → Games deep links (aeroplane, island-demo, aoe-rts).
+- Fixed in R57: hub_link / hub_settings / hub_saver origin checks; html-include error box uses textContent.
+- Fixed in R58: SW install records missed shell files (retried), 'hub-meta' kept on activate, images no longer re-fetched on every request, automatic update check never clears caches / reloads, loader retry keeps batch order, manifest any / maskable icons split, gamebar hub-hello to location.origin, old #contact / #feedback / #transcribe / #vdesktop links, dead CAT_PAGES rows.
 - Broken `apps/tools/vDesktop/wallpaper.csv` path — Apps bot's area **[unverified: no reference found by `git grep` on origin/main; may be a runtime/404 path or already gone]**.
 - ~~Added PC folders that need access again are hidden in Files~~ fixed in R56 (greyed with "Allow access").
 - Disk's Add folder and Google sign-in not yet tested on a real PC (box Playwright only).
@@ -224,7 +228,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Wallpaper screen saver (alongside the clock saver).
 - Phone mode improvements (discussed, not numbered) **[unverified: list]**.
 - Status checks: R50 (#76), R51 (#77) and R36 (#75) are MERGED.
-- Follow-ups: grey out added folders needing access; fix version.txt on file://; fix apps/settings/ comments.
+- Follow-ups: ~~grey out added folders needing access~~ (R56); ~~fix version.txt on file://~~ (R58); ~~fix apps/settings/ comments~~ (R58).
 
 ## 9. Conventions with Jor
 - Release wording

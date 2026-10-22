@@ -1,7 +1,7 @@
-# Settings (apps/settings/)
+# Settings (apps/system/settings/)
 
 Hub settings app. Opens from the Hub menu's **Settings** row (a window in Desktop mode,
-full screen on phone). Deep links: `apps/settings/#wallpaper`, `#desktop`, `#sizes`, `#look`, `#howto`, `#about`.
+full screen on phone). Deep links: `apps/system/settings/#wallpaper`, `#desktop`, `#sizes`, `#look`, `#howto`, `#about`.
 
 | File | What |
 |---|---|

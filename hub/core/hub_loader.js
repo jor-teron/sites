@@ -15,13 +15,15 @@
  * R28: a file that fails is recorded per batch; an on-demand action (⌨ / Ctrl+Alt+K, snap keys,
  *   HubViewer.open) on a batch with failures shows a small note "Couldn't load <feature>…".
  *   A batch with failures is not cached as done: the next on-demand use tries the missing files again.
+ *   R58: a retry walks the WHOLE batch in its listed order and skips only the files that already
+ *   loaded fine, so a script that depends on an earlier one never runs ahead of it.
  * R29: each key event is handled once — the loader replays a caught key once (WeakSet), and
  *   wm_snap's page listener no longer runs the __hubWmKey chain (each module has its own).
  * Keep V in step with the ?v= tags in hub.html on every release.
  */
 (function () {
   'use strict';
-  const V = '20261023b';
+  const V = '20261023c';
   const DELAY = 1500;
   const BATCHES = {
     drives: ['shared/google/google.css', 'hub/drives/hub_drives.css',
@@ -34,7 +36,7 @@
     viewer: ['hub/viewer/hub_viewer_pdf.js', 'hub/viewer/hub_viewer.js'],
     saver: ['hub/core/hub_saver.js'],   // R49
   };
-  const done = {}, busy = {}, fails = {};
+  const done = {}, busy = {}, fails = {}, good = new Set();   // R58: good = files that loaded
   const LABEL = { saver: 'the screen saver', drives: 'the Files pane', snap: 'window snapping', osk: 'the on-screen keyboard', viewer: 'the viewer' };
 
   /** One file; scripts run in order because each waits for the one before. */
@@ -44,14 +46,15 @@
       const css = /\.css$/.test(src);
       const el = document.createElement(css ? 'link' : 'script');
       if (css) { el.rel = 'stylesheet'; el.href = url; } else { el.src = url; el.async = false; }
-      el.onload = () => ok();
+      el.onload = () => { good.add(src); ok(); };
       el.onerror = () => { (fails[name] = fails[name] || []).push(src); el.remove(); ok(); };   // a missing file must not stop the rest
       (css ? document.head : document.body).appendChild(el);
     });
   }
   function load(name) {
     if (busy[name]) return busy[name];
-    const files = fails[name] ? fails[name].splice(0) : BATCHES[name];   // retry: only the files that failed
+    fails[name] = [];
+    const files = BATCHES[name].filter((f) => !good.has(f));   // R58: retry keeps the batch order
     busy[name] = files.reduce((p, f) => p.then(() => one(f, name)), Promise.resolve())
       .then(() => {
         if (fails[name] && fails[name].length) { busy[name] = null; return; }   // R28: next use retries

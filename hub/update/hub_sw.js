@@ -13,16 +13,26 @@
  *   · *.csv and hub/version.txt: network first, cached copy when offline.
  *   · pages and files under apps/ (and other same-origin html/css/js): network first, stored in
  *     RUNTIME the first time they're opened, so they also open offline.
- *   · same-origin images: cached copy at once, refreshed in the background (R25, RUNTIME), so an
- *     edited icon / wallpaper shows on the next load; fonts: cache first (RUNTIME).
+ *   · same-origin images: cached copy at once (RUNTIME); a new image is fetched and stored on its first
+ *     request. R58: a cached image is re-fetched in the background at most once per worker lifetime,
+ *     and only when the cached copy is over a day old (its Date header), not on every request
+ *     (R25 did that), so an edited icon / wallpaper still shows within a day. Fonts: cache first (RUNTIME).
  *   · navigations not in a cache when offline: hub/update/hub_offline.html.
  * R16c: message {type:'refresh'} re-fetches every SHELL file (cache:'reload') and replaces the
  *   changed ones in place (the cache is never wiped); replies {type:'sw-refreshed', changed:[paths]}.
+ * R58: install logs every SHELL file it could not fetch (console.warn) and records it in 'hub-meta'
+ *   ('__hub_failed__'); the install itself still succeeds. The 09:00 refresh re-fetches all SHELL
+ *   files anyway, and {type:'retry-failed'} (sent by HubUpdate.check) re-fetches only the recorded
+ *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261023b';
-const CACHE = 'hub-shell-v80';  // 2026-10-23b: R57 origin checks (hub_link, hub_settings, hub_saver), safe html-include errors
+const V = '20261023c';
+const CACHE = 'hub-shell-v81';  // 2026-10-23c: R58 install misses recorded, hub-meta kept, image re-check rule
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
+// R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
+//   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
+//   '__hub_failed__' shell files the install could not fetch (retried, see below)
+const META = 'hub-meta';
 const SHELL = [
   'hub.html',
   'manifest.webmanifest',
@@ -52,22 +62,49 @@ const OFFLINE = 'hub/update/hub_offline.html';
 const abs = (p) => new URL(p, self.registration.scope).href;
 const SHELL_SET = new Set(SHELL.map(abs));
 
+const DIRTY = abs('__hub_dirty__'), FAILED = abs('__hub_failed__');
+async function metaList(key) {
+  try { const hit = await (await caches.open(META)).match(key); return hit ? await hit.json() : []; } catch (_) { return []; }
+}
+async function setMetaList(key, list) {
+  try { const m = await caches.open(META); if (list.length) await m.put(key, new Response(JSON.stringify(list))); else await m.delete(key); } catch (_) { /* ignore */ }
+}
+/** Fetch one shell file into the cache (bypassing the HTTP cache); true when stored. */
+function fetchShell(c, p) {
+  return fetch(new Request(abs(p), { cache: 'reload' }))
+    .then((res) => (res.ok ? c.put(abs(p), res).then(() => true) : false)).catch(() => false);
+}
+/** R58: re-fetch the shell files the install missed; returns the ones still missing. */
+async function retryFailed() {
+  const list = await metaList(FAILED);
+  if (!list.length) return list;
+  const c = await caches.open(CACHE);
+  const ok = await Promise.all(list.map((p) => fetchShell(c, p)));
+  const left = list.filter((p, i) => !ok[i]);
+  await setMetaList(FAILED, left);
+  if (left.length) console.warn('Hub SW: shell files still missing', left);
+  return left;
+}
+
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE)
-    .then((c) => Promise.all(SHELL.map((p) => fetch(new Request(abs(p), { cache: 'reload' }))   // bypass the HTTP cache
-      .then((res) => (res.ok ? c.put(abs(p), res) : null)).catch(() => {}))))   // one missing file must not break install
+    .then((c) => Promise.all(SHELL.map((p) => fetchShell(c, p))))   // one missing file must not break install
+    .then((ok) => {   // R58: log + record the misses so a later refresh / update check retries them
+      const failed = SHELL.filter((p, i) => !ok[i]);
+      if (failed.length) console.warn('Hub SW install: could not cache', failed);
+      return setMetaList(FAILED, failed);
+    })
     .then(() => { if (!self.registration.active) return self.skipWaiting(); }));   // first install only; updates wait for "Reload"
 });
 
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys()
-    .then((keys) => Promise.all(keys.filter((k) => (k.startsWith('hub-shell-') && k !== CACHE) || (k.startsWith('hub-rt-') && k !== RUNTIME) || k === META).map((k) => caches.delete(k))))
+  e.waitUntil(caches.keys()   // R58: 'hub-meta' is kept (R16c–R57 deleted it here)
+    .then((keys) => Promise.all(keys.filter((k) => (k.startsWith('hub-shell-') && k !== CACHE) || (k.startsWith('hub-rt-') && k !== RUNTIME)).map((k) => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 
 // R16c: shell files that changed since the page that loaded them (the background refresh above
-// already stored the new copy) — kept in a tiny 'hub-meta' cache so the 09:00 refresh can report them.
-const META = 'hub-meta', DIRTY = abs('__hub_dirty__');
+// already stored the new copy) — kept in the 'hub-meta' cache so the 09:00 refresh can report them.
 const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
 async function dirty(add) {
   const m = await caches.open(META);
@@ -104,6 +141,8 @@ async function refreshShell() {
       changed.push(p);
     } catch (_) { /* offline: keep the cached copy */ }
   }));
+  const failed = await metaList(FAILED);   // R58: every SHELL file was just re-fetched: keep only the misses
+  if (failed.length) await setMetaList(FAILED, failed.filter((p) => changed.indexOf(p) < 0));
   const seen = await dirty(null);   // changed earlier by a background refresh
   return changed.concat(seen.filter((k) => changed.indexOf(k) < 0));
 }
@@ -113,10 +152,12 @@ self.addEventListener('message', (e) => {
   if (e.data && e.data.type === 'refresh') {
     e.waitUntil(refreshShell().then((changed) => { if (e.source) e.source.postMessage({ type: 'sw-refreshed', changed }); }));
   }
+  if (e.data && e.data.type === 'retry-failed') e.waitUntil(retryFailed());   // R58 (HubUpdate.check)
   if (e.data && e.data.type === 'version') e.source && e.source.postMessage({ type: 'sw-version', v: V, cache: CACHE });
 });
 
 const ok = (res) => res && res.status === 200 && res.type === 'basic';
+const imgChecked = new Set(), DAY = 24 * 3600 * 1000;   // R58: images re-checked at most once per worker, if > 1 day old
 function put(name, key, res) { const copy = res.clone(); caches.open(name).then((c) => c.put(key, copy)).catch(() => {}); }
 
 /** Network first; store in `name` under `key`; offline → cached copy (→ offline page for navigations). */
@@ -150,10 +191,17 @@ self.addEventListener('fetch', (e) => {
   const shellKey = nav && /\/hub\.html$/.test(path) ? bare : (SHELL_SET.has(bare) ? bare : '');
   if (shellKey && (!v || v === V)) { e.respondWith(staleWhileRevalidate(e, req, shellKey)); return; }
   if (shellKey) { e.respondWith(networkFirst(req, CACHE, shellKey, nav)); return; }   // newer ?v= than this worker
-  if (/\.(png|jpe?g|gif|webp|svg|ico)$/i.test(path)) {   // R25: stale-while-revalidate in RUNTIME
-    const net = fetch(req).then((res) => { if (ok(res)) put(RUNTIME, bare, res); return res; });
-    e.waitUntil(net.catch(() => {}));
-    e.respondWith(caches.match(req, { ignoreSearch: true }).then((hit) => hit || net));
+  if (/\.(png|jpe?g|gif|webp|svg|ico)$/i.test(path)) {   // R25 / R58: see the header (images)
+    const get = () => fetch(req).then((res) => { if (ok(res)) put(RUNTIME, bare, res); return res; });
+    e.respondWith(caches.match(req, { ignoreSearch: true }).then((hit) => {
+      if (!hit) return get();   // first request: fetch and store
+      if (!imgChecked.has(bare)) {   // at most one background check per image per worker lifetime
+        imgChecked.add(bare);
+        const at = Date.parse(hit.headers.get('date') || '') || 0;
+        if (Date.now() - at > DAY) e.waitUntil(get().catch(() => {}));
+      }
+      return hit;
+    }));
     return;
   }
   if (/\.(woff2?|ttf|otf)$/i.test(path)) {
