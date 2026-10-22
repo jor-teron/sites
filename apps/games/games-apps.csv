@@ -10,9 +10,7 @@ Tic-Tac-Toe,       tic-tac-toe/,   , , Puzzle
 Ping Pong,         pong/,          , , Arcade
 Snake,             snake/,         , , Arcade
 Space Invaders,    space-invader/, , , Arcade
-Neon Raid,          neon-raid/,     , , Arcade
 Demolisher,        demolisher/,    , , Arcade
-Tennis Ball Blitz, tennis-throw/,  , , Arcade
 Sling Birds,       sling-birds/, , , Arcade
 Pacman,            pacman/, , , Arcade
 Dino Run,          dino-run/,      , , Runners
@@ -20,13 +18,20 @@ Car Run,           car-run/,       , , Runners
 Desert Road,       desert-road/,   , , Runners
 Turbo Lap,         turbo-lap/,     , , Runners
 Tower Defence,     tower-defence/, , , Strategy
-Island Conquest,   island-conquest/, , , Strategy
 Chess,             chess/,         , , Strategy
 AoE RTS,           aoe-rts/,       , , Strategy
-AR Game,           ar-game/,       , , 3D
+Gravity Sandbox,   gravity-sandbox/, , , Simulator
 Browser FPS,       browser-fps/,   , , 3D
-Island (Alpha),    island-alpha/,  , , 3D
-Neon Fist,         neon-fist/,     , , Lab
-Neon Fist 3D,      neon-fist-3d/,  , , Lab
-Gravity Sandbox,   gravity-sandbox/, , , Lab
-Ant Farm,          ant-farm/,      , , Lab
+Island Conquest,   island-conquest/, , , Beta
+Tennis Ball Blitz, tennis-throw/,  , , Beta
+AR Game,           ar-game/,       , , Beta
+Island (Alpha),    island-alpha/,  , , Beta
+Neon Raid,          neon-raid/,     , , Beta
+Neon Fist,         neon-fist/,     , , Beta
+Neon Fist 3D,      neon-fist-3d/,  , , Beta
+Ant Farm,          ant-farm/,      , , Beta
+
+Aeroplane,          aeroplane/,                   , , Beta
+Island Game Demo,   island-demo/,                 , , Beta
+Aeroplane,          aeroplane/,                   , , Beta
+LandCraft,            landcraft/, , , Beta

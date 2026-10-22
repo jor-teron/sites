@@ -51,31 +51,16 @@
  */
 // R33a: categories ("<Category> Page" rows) + hidden system rows only. Apps: apps/<category>/<category>-apps.csv.
 window.HUB_APPS_CSV = `
-CATEGORY, NAME,                  ENTRY_URL,                                  ICON_URL, NEW_TAB, HIDDEN, ORDER
-Favorite, Favorite Page,         apps/favorite/favorite.html,                ,         0,       0,      9
-Favorite, Transcribe,            apps/tools/transcribe/,                     ,         0,       1,      20
-
-Games,    Games Page,            apps/games/games.html,                      ,         0,       0,      100
-
-Media,    Media Page,            apps/media/media.html,                      ,         0,       0,      209
-
-Office,   Office Page,           apps/office/office.html,                    ,         0,       0,      309
-
-Connectivity,Connectivity Page,     apps/connectivity/connectivity.html,        ,         0,       0,      404
-
-Tools,    Tools Page,            apps/tools/tools.html,                      ,         0,       0,      409
-
-Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,         0,       1,      900
-
-Lab,      Lab Page,              apps/lab/lab.html,                          ,         0,       0,      1000
-
-System,   System Page,           apps/system/system.html,                    ,         0,       0,      1100
-
-About,    About,                 apps/system/about/,                         ,         0,       1,      2000
-About,    Contact,               apps/system/about/contact.html,             ,         0,       1,      2020
-About,    Feedback,              apps/system/about/feedback.html,            ,         0,       1,      2030
-
-Settings, Settings,              apps/system/settings/,                      ,         0,       1,      2100
+CATEGORY,     NAME,                  ENTRY_URL,                                  ICON_URL, NEW_TAB, HIDDEN, ORDER
+Favorite,     Favorite Page,         apps/favorite/favorite.html,                ,         0,       1,      9
+Games,        Games Page,            apps/games/games.html,                      ,         0,       0,      100
+Media,        Media Page,            apps/media/media.html,                      ,         0,       0,      209
+Office,       Office Page,           apps/office/office.html,                    ,         0,       0,      309
+Connectivity, Connectivity Page,     apps/connectivity/connectivity.html,        ,         0,       0,      404
+Tools,        Tools Page,            apps/tools/tools.html,                      ,         0,       0,      409
+Lab,          Lab Page,              apps/lab/lab.html,                          ,         0,       0,      1000
+System,       System Page,           apps/system/system.html,                    ,         0,       0,      1100
+Settings,     Settings,              apps/system/settings/,                      ,         0,       1,      2100
 `;
 
 /* ===== R33a ARCHIVE (not parsed): the app rows that lived here until R33a =====

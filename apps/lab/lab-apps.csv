@@ -20,9 +20,6 @@ IPTV player,        iptv-player/,                 , , Media
 Channel Cleaner,    m3u-cleaner/,                 , , Media
 Three.js Viewer v2, threejs-viewer-v2/,           , , Media
 
-Aeroplane,          aeroplane/,                   , , Games
-Island Game Demo,   island-demo/,                 , , Games
-
 WebRTC Chat,        ../connectivity/webrtc-chat/, , , Connect
 P2P Chat,           ../connectivity/p2pchat.html, , , Connect
 Phone,              ../media/phone/,              , , Connect

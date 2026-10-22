@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<!--
+  Landcraft Game - Main HTML
+  Project: landcraft
+  Location: apps/games/landcraft/landcraft.html
+  Purpose: Entry point for the browser-based voxel Minecraft-style game.
+  Features: Grey background, Three.js scene, first-person controls, block place/break.
+  Author: Grok (updated for jor-teron)
+  Date: 2026-10-22
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Landcraft</title>
+  <!-- Link to project CSS -->
+  <link rel="stylesheet" href="landcraft.css">
+  <!-- Three.js CDN for 3D rendering -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- PointerLockControls for first-person movement -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+</head>
+<body>
+  <!-- Main canvas container for the game -->
+  <div id="game-container"></div>
+  <!-- Instructions overlay -->
+  <div id="instructions">
+    Click to start<br>
+    WASD move | Space jump | Mouse look<br>
+    Left-click break | Right-click place<br>
+    1-4 select block type
+  </div>
+  <!-- Load main game script -->
+  <script src="landcraft.js"></script>
+</body>
+</html>
