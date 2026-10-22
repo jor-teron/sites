@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <!--
   SSH — S1: connect + terminal through a WebSocket-to-TCP relay (see relay/README.md).
-  Styles: ssh.css. Modules: ssh_ui.js (state, theme, menu, dialogs, toast), ssh_conn.js (SSH session over
-  the relay WebSocket, host key, errors), ssh_term.js (xterm.js, fit, copy/paste, phone key bar),
-  ssh_app.js (connect form, #host= hash, reconnect, wiring).
+  S3: saved hosts, saved known_hosts, keepalive, auto-reconnect.
+  Styles: ssh.css. Modules: ssh_ui.js (state, theme, menu, dialogs, toast), ssh_store.js (known_hosts and
+  saved hosts in localStorage), ssh_conn.js (SSH session over the relay WebSocket, host key, keepalive, errors),
+  ssh_term.js (xterm.js, fit, copy/paste, phone key bar), ssh_hosts.js (saved hosts list + editor, known hosts
+  panel), ssh_app.js (connect form, #host= hash, reconnect + auto-reconnect, wiring).
   The SSH encryption runs here in the browser; the relay only sees encrypted bytes.
-  The password is kept in memory for Reconnect only and is never saved. Actions are a rail on the RIGHT.
+  The password is kept in memory for Reconnect / auto-reconnect only and is never saved. Actions are a rail on the RIGHT.
 -->
 <html lang="en">
 <head>
@@ -16,7 +18,7 @@
   <link rel="icon" href="ssh_icon.png">
   <script>try{var m=(JSON.parse(localStorage.getItem('ssh-settings-v1')||'{}').theme)||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
   <link rel="stylesheet" href="vendor/xterm.css">
-  <link rel="stylesheet" href="ssh.css?v=20261022a">
+  <link rel="stylesheet" href="ssh.css?v=20261022s3">
 </head>
 <body>
 <div id="app">
@@ -29,6 +31,10 @@
   <main id="stage">
     <form id="form" class="form" autocomplete="off" novalidate>
       <h1>Connect</h1>
+      <section id="saved" class="saved" hidden aria-label="Saved hosts">
+        <div class="saved-head">Saved hosts</div>
+        <ul id="saved-list" class="saved-list"></ul>
+      </section>
       <label>Relay <input id="f-relay" name="relay" type="url" placeholder="ws://192.168.1.10:8022" spellcheck="false" autocapitalize="off"></label>
       <div class="row">
         <label class="grow2">Host <input id="f-host" name="host" placeholder="192.168.1.20" spellcheck="false" autocapitalize="off"></label>
@@ -38,7 +44,7 @@
       <label>Password <input id="f-pass" name="password" type="password" autocomplete="current-password"></label>
       <p id="f-err" class="err" role="alert" hidden></p>
       <p class="hint">Needs the relay running on your PC: see <b>Menu → Relay help</b>. The password is never saved.</p>
-      <button type="submit" id="f-go" class="pill wide">Connect</button>
+      <div class="form-btns"><button type="button" id="f-save" class="pill ghost" title="Save user, host and port (not the password)">Save host</button><button type="submit" id="f-go" class="pill wide">Connect</button></div>
     </form>
     <div id="term-wrap" class="term-wrap" hidden><div id="term" class="term"></div></div>
     <div id="keys" class="keys" hidden>
@@ -46,10 +52,10 @@
       <button type="button" data-k="left">←</button><button type="button" data-k="up">↑</button><button type="button" data-k="down">↓</button><button type="button" data-k="right">→</button>
       <button type="button" data-k="|">|</button><button type="button" data-k="~">~</button><button type="button" data-k="/">/</button>
     </div>
-    <div id="busy" class="busy" hidden><span class="spin"></span><span id="busy-text">Connecting…</span></div>
+    <div id="busy" class="busy" hidden><span class="spin"></span><span id="busy-text">Connecting…</span><button type="button" id="busy-cancel" class="pill ghost">Cancel</button></div>
     <div id="gone" class="gone" hidden>
       <p id="gone-text" class="big">Disconnected</p>
-      <div class="gone-btns"><button type="button" id="gone-edit" class="pill ghost">Edit</button><button type="button" id="gone-re" class="pill">Reconnect</button></div>
+      <div class="gone-btns"><button type="button" id="gone-edit" class="pill ghost">Edit</button><button type="button" id="gone-cancel" class="pill ghost" hidden>Cancel</button><button type="button" id="gone-re" class="pill">Reconnect</button></div>
     </div>
   </main>
 
@@ -71,10 +77,33 @@
     <div class="mrow"><span>Text size</span>
       <div class="seg" id="font-seg"><button type="button" data-d="-1">A−</button><button type="button" data-d="1">A+</button></div>
     </div>
+    <button type="button" class="mi" id="m-known">Known hosts</button>
     <button type="button" class="mi" id="m-relay">Relay help</button>
     <button type="button" class="mi" id="m-about">About</button>
   </div>
 
+  <div id="hdlg" class="dlg-back" hidden>
+    <form id="h-form" class="dlg hform" role="dialog" aria-modal="true" aria-labelledby="h-title" autocomplete="off" novalidate>
+      <h2 id="h-title">Save host</h2>
+      <label>Name <input id="h-name" maxlength="60" placeholder="Raspberry Pi" spellcheck="false"></label>
+      <div class="row">
+        <label class="grow2">Host <input id="h-host" maxlength="255" placeholder="192.168.1.20" spellcheck="false" autocapitalize="off"></label>
+        <label class="port">Port <input id="h-port" type="number" min="1" max="65535" value="22"></label>
+      </div>
+      <label>User <input id="h-user" maxlength="64" placeholder="pi" spellcheck="false" autocapitalize="off"></label>
+      <p id="h-err" class="err" role="alert" hidden></p>
+      <p class="hint">The password is never saved.</p>
+      <div class="dlg-btns"><button type="button" id="h-del" class="pill ghost red" hidden>Delete</button><span class="grow"></span><button type="button" id="h-no" class="pill ghost">Cancel</button><button type="submit" id="h-yes" class="pill">Save</button></div>
+    </form>
+  </div>
+  <div id="kdlg" class="dlg-back" hidden>
+    <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="k-title">
+      <h2 id="k-title">Known hosts</h2>
+      <p id="k-empty" class="hint">No saved host keys yet. A key is saved when you trust a host.</p>
+      <ul id="k-list" class="klist"></ul>
+      <div class="dlg-btns"><button type="button" id="k-all" class="pill ghost red">Forget all</button><span class="grow"></span><button type="button" id="k-close" class="pill">Close</button></div>
+    </div>
+  </div>
   <div id="dlg" class="dlg-back" hidden>
     <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-title">
       <h2 id="dlg-title"></h2>
@@ -89,9 +118,11 @@
 <script src="vendor/xterm.min.js"></script>
 <script src="vendor/xterm-addon-fit.min.js"></script>
 <script src="vendor/ssh-lib.min.js"></script>
-<script src="ssh_ui.js?v=20261022a"></script>
-<script src="ssh_conn.js?v=20261022a"></script>
-<script src="ssh_term.js?v=20261022a"></script>
-<script src="ssh_app.js?v=20261022a"></script>
+<script src="ssh_ui.js?v=20261022s3"></script>
+<script src="ssh_store.js?v=20261022s3"></script>
+<script src="ssh_conn.js?v=20261022s3"></script>
+<script src="ssh_term.js?v=20261022s3"></script>
+<script src="ssh_hosts.js?v=20261022s3"></script>
+<script src="ssh_app.js?v=20261022s3"></script>
 </body>
 </html>

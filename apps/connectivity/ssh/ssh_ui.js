@@ -1,6 +1,7 @@
 /*
  * SSH — core UI: settings + theme, small menu, own dialog (confirm / alert / text input), toast.
- * Settings (ssh-settings-v1): theme, relay URL, font size, last user/host/port. Never the password.
+ * Settings (ssh-settings-v1): theme, relay URL, font size, last user/host/port (last used, prefills the form),
+ * keepAliveSec (optional, default 30; no UI). Never the password.
  */
 const SSH = (() => {
   const $ = (id) => document.getElementById(id);
@@ -84,11 +85,14 @@ const SSH = (() => {
     $('m-relay').addEventListener('click', () => { menu(false); ask({ title: 'Relay help', no: false, text: RELAY_HELP }); });
     $('m-about').addEventListener('click', () => {
       menu(false);
-      ask({ title: 'SSH 1.0', no: false, text: 'SSH terminal (S1): password login, resize, copy/paste, reconnect.\nEncryption runs in this page; the relay only forwards encrypted bytes. The password is never saved.\nxterm.js 6.0.0 (MIT) and Microsoft dev-tunnels-ssh 3.12.42 (MIT).' });
+      ask({ title: 'SSH 1.3', no: false, text: 'SSH terminal: password login, resize, copy/paste, reconnect (S1); saved hosts, saved host keys (known hosts), keepalive and auto-reconnect (S3).\nEncryption runs in this page; the relay only forwards encrypted bytes. The password is never saved.\nxterm.js 6.0.0 (MIT) and Microsoft dev-tunnels-ssh 3.12.42 (MIT).' });
     });
     addEventListener('storage', (e) => { if (e.key === 'sites-hub.theme') theme(); });
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
   }
 
-  return { $, P, saveP, toast, ask, menu, busy, init, theme, get dialogOpen() { return !!pending; } };
+  /* cancelDialog(): close an open ask() as if Cancel was pressed (e.g. the connection failed under a prompt). */
+  const cancelDialog = () => { if (pending) pending(false); };
+
+  return { $, P, saveP, toast, ask, cancelDialog, menu, busy, init, theme, get dialogOpen() { return !!pending; } };
 })();
