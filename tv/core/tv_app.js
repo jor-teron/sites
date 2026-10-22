@@ -54,6 +54,12 @@
   }
 
   // ---------- activate a tile ----------
+  // file:// shows a folder listing for "../", so open its index.html (TV5).
+  function linkHref(href) {
+    if (location.protocol === 'file:' && /\/$/.test(href)) return href + 'index.html';
+    return href;
+  }
+
   function activate(index) {
     var items = state.items;
     if (index < 0 || index >= items.length) return;
@@ -71,9 +77,18 @@
     }
 
     if (item.type === 'link') {
-      if (item.href) {
-        window.location.href = item.href;
+      // TV5: never navigate the frame (a hub inside the hub). The tile is
+      // hidden when framed; this guards a stale list too.
+      if (item.href && !TV.env.framed) {
+        window.location.href = linkHref(item.href);
       }
+      return;
+    }
+
+    if (item.httpOnly) {
+      // TV5: https page, http:// stream: the browser would block it.
+      TV.ui.toast(item.name + ': http:// stream, needs an http:// or file:// page');
+      TV.ui.startHideTimer();
       return;
     }
 
@@ -99,6 +114,7 @@
 
   TV.app = {
     activate: activate,
+    linkHref: linkHref,
     readLast: readLast,
     saveLast: saveLast,
     migrateStorage: migrateStorage,

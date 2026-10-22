@@ -9,13 +9,13 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
 - `tv-v1.html`: redirect stub to `tv.html` (keeps `?query` / `#hash`) for old bookmarks
 - `tv.html` / `tv.css`: the current player page and styles (no-scrollbar rules included)
 - `core/`: the player scripts, plain `<script>` files (no build, no ES modules, so file:// works) loaded in this order. Each is one IIFE that adds to the only global, `window.TV`:
-  - `tv_config.js` → `TV.config`, `TV.state`: playlists, category tiles, logos, timings, storage keys ("EDIT THESE"); shared state (`items`, `currentIndex`, `currentCategory`)
-  - `tv_playlist.js` → `TV.playlist`: M3U parser, fetch / `.m3u.js` loader, `load(category, options)` with the stale-load guard and Home fallback
+  - `tv_config.js` → `TV.config`, `TV.env`, `TV.state`: playlists, category tiles, logos, timings, storage keys ("EDIT THESE"); environment (`framed` = inside an iframe, `secure` = https page); shared state (`items`, `currentIndex`, `currentCategory`)
+  - `tv_playlist.js` → `TV.playlist`: M3U parser, fetch / `.m3u.js` loader, `load(category, options)` with the stale-load guard and Home fallback; http-only marking (`isHttpOnly`, `isPlayable`)
   - `tv_player.js` → `TV.player`: `play(channel)` with hls.js or native HLS; the `<video>` element
-  - `tv_ui.js` → `TV.ui`: channel grid, highlight, number display, grid show / auto-hide
-  - `tv_input.js` → `TV.input`: keys, number zap, click / tap shows the grid
+  - `tv_ui.js` → `TV.ui`: channel grid, highlight, number display, grid show / auto-hide, `columns()` (columns actually rendered), `toast(msg)`
+  - `tv_input.js` → `TV.input`: keys, grid-aware arrow math (`move`), number zap, click / tap shows the grid
   - `tv_pip.js` → `TV.pip`: auto picture-in-picture
-  - `tv_app.js` → `TV.app`: activate a tile, saved channel (+ old-key migration), start-up. Loaded last
+  - `tv_app.js` → `TV.app`: activate a tile, Hub link (`linkHref`), saved channel (+ old-key migration), start-up. Loaded last
 - `vendor/hls/`: hls.js 1.5.20 (+ LICENSE.md); `image/no_signal.svg`: the poster
 - `tv_icon.png`: hub icon
 
@@ -51,16 +51,18 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
 
 ## 3. Behaviour rules (v1, the main player)
 - **Start:** resumes the last channel (category + name / URL / position from localStorage); otherwise opens the Home playlist (`channels/home.m3u`) and plays its first channel.
-- **Grid:** channel tiles (number, logo, name, group) over the video, 3–5 columns. Home starts with tiles: **Hub** (link to `../`), **Kids**, **More**, **India**. Other categories start with a **Home** tile. The grid hides 5 s after the last action; any key or click shows it again.
+- **Grid:** channel tiles (number, logo, name, group) over the video, 3–5 columns. Home starts with tiles: **Hub** (link to `../`), **Kids**, **More**, **India**. Other categories start with a **Home** tile. On file:// the Hub tile opens `../index.html` (not a folder listing). Inside an iframe (the Hub) the Hub tile is hidden, because the hub bridge has no "go home" message and navigating the frame would open a hub inside the hub. The grid hides 5 s after the last action; any key or click shows it again.
 - **Categories:** Home = `channels/home.m3u`, Kids = `channels/kids.m3u`, More = `channels/home-more.m3u`, India = iptv-org India list (online). Switching loads the list in place (no page change). Over http(s) the `.m3u` is fetched (falls back to the `.m3u.js` if the fetch fails); from file:// the `.m3u.js` is loaded with a script tag (once per list). India stays online-only.
-- **Playing:** hls.js when the browser supports it, else native HLS (Safari / iOS). Video is fitted (contain) and centred. When a stream fails, only the "no signal" poster shows (errors go to the console).
+- **Playing:** hls.js when the browser supports it, else native HLS (Safari / iOS). Video is fitted (contain) and centred. When a stream fails, the "no signal" poster shows with a short toast (see Errors).
+- **http-only channels:** on an https page, `http://` streams are blocked by the browser (mixed content), so their tiles are dimmed with a small red **HTTP** badge, auto-play / resume skip them, and choosing one shows a toast instead of playing. On http:// and file:// pages they play normally.
 - **Number zap:** type a channel number; it shows big on screen and jumps after 1.5 s. Digits don't open the grid.
 - **Picture-in-picture:** when the page is hidden (Home button, other app, tab switch) the video goes PiP if the browser allows; it comes back when you return.
 - **Older players (v2 / v3):** similar grid / overlay, but with Android app-intent tiles (YouTube, Play Store, Settings, Phone, Camera, MX Player…) that only work on Android, and no saved channel. v3 sub-pages each load one playlist and have a Home tile back to `tv-v3.html`.
 
 ## 4. Keyboard
 **v1**
-- ← ↑ / → ↓: previous / next tile (wraps)
+- ← / →: previous / next tile (wraps at the ends)
+- ↑ / ↓: one row up / down, using the number of columns actually on screen (3 or 4). Down from the row above a short last row goes to the last tile; Down on the last row wraps to the top of the same column; Up on the top row wraps to the same column in the last row (or the row above it if that column is empty)
 - Enter or Space: play the tile / open the category or link
 - 0–9: channel number (jumps after 1.5 s)
 - Any other key or a click: show the grid
@@ -75,16 +77,21 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 - v2 / v3 pages save nothing
 
 ## 6. Errors
-- v1 shows no messages: a failed stream leaves the poster; a failed playlist or "HLS not supported" only goes to the console.
+- v1 (TV5) shows a toast for about 3 s (bottom centre, text only, does not block keys), and logs to the console:
+  - playlist failed: "Could not load <Name>" (local lists) or "<Name> needs internet" (India); the old list stays
+  - empty playlist: "No channels in <Name>"; on https with only http:// streams: "<Name>: only http:// channels, they need an http:// or file:// page"
+  - stream error / CORS: "Channel unavailable" (the poster stays)
+  - http:// channel chosen on https: "<name>: http:// stream, needs an http:// or file:// page"
+  - no HLS support: "This browser cannot play these streams"
 - v2: "Failed to load local.m3u" overlay (wrong file name; it really loads `channels/home.m3u`).
 - v3 sub-pages: a failed playlist just gives a list with only the Home tile (error in the console).
 
 ## 7. Screen sizes
-- v1: full-screen video (contain, centred) with the grid on top; 3–5 columns (about 100 px tiles), scrolls vertically. Works on TV, phone (portrait / landscape) and PC.
+- v1: full-screen video (contain, centred) with the grid on top; 3–4 columns in practice (about 100 px tiles), scrolls vertically. Works on TV, phone (portrait / landscape) and PC.
 - v2 / v3: full-screen video with a channel list overlay; made for a 16:9 TV.
 
 ## 8. Safe settings
-- `core/tv_config.js`: `PLAYLISTS` (category → M3U path / URL), `DEFAULT_CATEGORY`, `CATEGORY_TILES` (Hub link + categories; name / href / logo), `HOME_CATEGORY_LOGO`, `NUMBER_DELAY` (1500 ms), `HIDE_DELAY` (5000 ms), `AUTOPLAY_DELAY` (200 ms), `STORAGE_KEY` / `OLD_STORAGE_KEY`
+- `core/tv_config.js`: `PLAYLISTS` (category → M3U path / URL), `DEFAULT_CATEGORY`, `CATEGORY_TILES` (Hub link + categories; name / href / logo), `HOME_CATEGORY_LOGO`, `NUMBER_DELAY` (1500 ms), `HIDE_DELAY` (5000 ms), `AUTOPLAY_DELAY` (200 ms), `TOAST_DELAY` (3000 ms), `STORAGE_KEY` / `OLD_STORAGE_KEY`
 - `channels/*.csv`: add / remove / reorder channels by `tvg-id`, then run `split-m3u.sh` (it also rewrites the `.m3u.js` files)
 - Hand-edited a `channels/*.m3u`? Run `python3 m3u-to-js.py` in `channels/` and commit the `.m3u.js` too, or file:// keeps the old list
 - `split-m3u.sh` top block: `MASTER_M3U_URLS`, `CSV_FILES`, `RES_TAGS`
@@ -96,16 +103,19 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 3. Type `5`: a big "5" shows, channel 5 plays after 1.5 s, the grid stays closed.
 4. Open Kids, More, India: each list loads; the Home tile goes back.
 5. Reload: the same channel resumes.
-6. Hub tile: opens the hub.
+6. Hub tile: opens the hub (file://: `../index.html`); inside the Hub frame there is no Hub tile.
+9. Open India offline: a "India needs internet" toast shows for ~3 s and the Home list stays.
+10. Up / Down move by a whole row at any window width.
 7. Switch tab / press Home on Android: the video goes picture-in-picture.
 8. In the hub with a paired phone: D-pad moves, A / Start plays.
 
 ## 10. Known limits
 - Needs the internet for streams: every stream is online (hls.js 1.5.20 is vendored in `vendor/hls/` since TV1). Free streams often go offline; refresh the playlists with `split-m3u.sh`.
-- From file:// (TV2): Home / Kids / More work offline-capable via `.m3u.js`; India needs the internet. The **Hub** tile (`../`) opens a folder listing on file:// (no index.html auto-open). Streams without CORS headers (e.g. 9XM) fail on file:// and http(s) alike. Chrome keeps one localStorage for all file:// pages, so the saved channel is shared with other file:// apps.
-- v1 shows no error text; a dead channel just shows the poster.
+- From file:// (TV2): Home / Kids / More work offline-capable via `.m3u.js`; India needs the internet. Streams without CORS headers (e.g. 9XM) fail on file:// and http(s) alike. Chrome keeps one localStorage for all file:// pages, so the saved channel is shared with other file:// apps.
 - The v1 "no signal" poster is the local `image/no_signal.svg` (TV1; the old `../image/tv_no_signal.jpeg` was removed).
-- v1's **Hub** tile goes to `../` (the hub). Inside the hub frame this opens a hub inside the hub.
+- Inside the Hub frame there is no way back to the Hub from TV (the tile is hidden; the hub bridge has no navigate message). Use the Hub's own controls.
+- On an https host most iptv-org streams that are `http://` cannot play (mixed content); they are marked, not fixed. Use an http:// or file:// page for them.
+- The grid CSS fits 3 or 4 columns, never 5 (the gaps don't let 5 × 20% fit). The arrow math handles any count.
 - `photo.html` / `video.html` link `tv.css`, which doesn't exist in `tv/` (it is in `tv-old/`); both say "Videos".
 - v2 / v3 list channel names with `innerHTML`, so a name in an online playlist could inject HTML (v1 uses safe text).
 - v3: the "first tap only shows the overlay" rule doesn't stop keys; the same key press also moves / plays.
@@ -129,6 +139,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 - 2026-10-23 IST: TV1: hls.js 1.5.20 vendored in `vendor/hls/` (with LICENSE.md, no CDN); local `image/no_signal.svg` poster; category switches only after its playlist loads (stale loads ignored, failure keeps the old list, falls back to Home if nothing loaded); empty playlists and auto-start never open link / category tiles; M3U name = text after the first comma outside quotes, else `tvg-name`.
 - 2026-10-23 IST: TV2: works from file://: `channels/m3u-to-js.py` (run by `split-m3u.sh`) writes `home.m3u.js`, `kids.m3u.js`, `home-more.m3u.js`; `tv-v1.js` loads them with a script tag on file:// or when fetch fails; http(s) still uses fetch.
 - 2026-10-23 IST: TV3: `tv-v1.js` split into `core/tv_*.js` modules under one global `window.TV` (same behaviour); page renamed `tv.html` / `tv.css` (inline no-scrollbar style moved into `tv.css`); `tv-v1.html` is now a redirect stub; storage key `tv-v1-last` → `tv-last-v1` (migrated on start).
+- 2026-10-23 IST: TV5: grid-aware Up / Down (by rendered columns, wrap by column); on-screen error toast (playlist failure, empty playlist, stream error, http-only); Hub tile hidden when framed, `../index.html` on file://; http:// channels dimmed with an HTTP badge and skipped on https pages (`TOAST_DELAY`, `TV.env`).
 
 ## 12. Related apps
 - Hub: `../hub/docs/hub_readme.md` (TV is in Favorite and Media, and a home tile that opens it in a new tab)

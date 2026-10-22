@@ -26,6 +26,7 @@
     NUMBER_DELAY: 1500, // ms after the last digit before a number zap
     HIDE_DELAY: 5000, // ms of no input before the grid hides
     AUTOPLAY_DELAY: 200, // ms after a playlist loads before its first channel plays
+    TOAST_DELAY: 3000, // ms an error toast stays on screen (TV5)
 
     // Tiles shown before the Home channels. type 'link' opens href (same tab).
     CATEGORY_TILES: [
@@ -39,6 +40,16 @@
 
     PLACEHOLDER_LOGO:
       'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70"><rect fill="%23333" width="70" height="70"/><text x="35" y="40" fill="%23999" text-anchor="middle" font-size="18">TV</text></svg>'
+  };
+
+  // Where the page runs (TV5). framed: inside an iframe (e.g. the Hub), so
+  // the Hub tile is hidden. secure: https page, so http:// streams are
+  // blocked by the browser (mixed content) and marked "HTTP".
+  TV.env = {
+    framed: (function () {
+      try { return window.top !== window; } catch (e) { return true; }
+    })(),
+    secure: location.protocol === 'https:'
   };
 
   // Shared runtime state (read / written by the other modules).

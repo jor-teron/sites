@@ -73,6 +73,21 @@
     return !/^[a-z][a-z0-9+.-]*:/i.test(url); // relative path, no scheme
   }
 
+  // TV5: on an https page the browser blocks http:// streams (mixed content).
+  function isHttpOnly(url) {
+    return !!TV.env.secure && /^http:\/\//i.test(url || '');
+  }
+
+  function isPlayable(item) {
+    return !!item && item.type === 'channel' && !item.httpOnly;
+  }
+
+  function categoryName(category) {
+    if (category === 'home') return 'Home';
+    var t = config.CATEGORY_TILES.filter(function (x) { return x.key === category; })[0];
+    return t ? t.name : category;
+  }
+
   function m3uKey(url) {
     return url.split('/').pop().replace(/\.m3u8?$/i, '');
   }
@@ -123,7 +138,10 @@
   // ---------- tiles before the channels ----------
   function categoryTilesFor(category) {
     if (category === 'home') {
-      return config.CATEGORY_TILES.map(function (t) {
+      return config.CATEGORY_TILES.filter(function (t) {
+        // TV5: inside a frame (the Hub) the Hub link would open a hub inside the hub.
+        return !(t.type === 'link' && TV.env.framed);
+      }).map(function (t) {
         if (t.type === 'link') {
           return { name: t.name, logo: t.logo || '', group: t.group || 'Link', type: 'link', href: t.href };
         }
@@ -153,18 +171,20 @@
       .then(function (text) {
         if (token !== loadToken) return; // stale
         var channels = parseM3U(text);
+        channels.forEach(function (ch) {
+          if (isHttpOnly(ch.url)) ch.httpOnly = true;
+        });
         state.currentCategory = category;
         state.items = categoryTilesFor(category).concat(channels);
         var items = state.items;
         TV.ui.buildList();
 
-        var startIndex = items.findIndex(function (it) {
-          return it.type === 'channel';
-        });
+        // Auto-play only channels this page can play (TV5: not http:// on https).
+        var startIndex = items.findIndex(isPlayable);
 
         if (options.preferName || options.preferUrl) {
           var found = items.findIndex(function (it) {
-            if (it.type !== 'channel') return false;
+            if (!isPlayable(it)) return false;
             if (options.preferUrl && it.url === options.preferUrl) return true;
             if (options.preferName && it.name === options.preferName) return true;
             return false;
@@ -173,11 +193,11 @@
         } else if (typeof options.startIndex === 'number' &&
                    options.startIndex >= 0 &&
                    options.startIndex < items.length &&
-                   items[options.startIndex].type === 'channel') {
+                   isPlayable(items[options.startIndex])) {
           startIndex = options.startIndex;
         }
 
-        if (items[startIndex] && items[startIndex].type === 'channel') {
+        if (isPlayable(items[startIndex])) {
           setTimeout(function () {
             if (token !== loadToken) return; // a newer load started
             TV.app.activate(startIndex);
@@ -187,13 +207,22 @@
           // auto-open a link (Hub) or category tile.
           state.currentIndex = 0;
           TV.ui.highlight();
-          console.error('No channels in playlist: ' + category);
+          if (channels.length) {
+            console.warn('Only http:// channels in playlist: ' + category);
+            TV.ui.toast(categoryName(category) + ': only http:// channels, they need an http:// or file:// page');
+          } else {
+            console.error('No channels in playlist: ' + category);
+            TV.ui.toast('No channels in ' + categoryName(category));
+          }
         }
       })
       .catch(function (err) {
         if (token !== loadToken) return; // stale
         console.error(err);
         console.error('Failed to load playlist: ' + category + ' (keeping ' + state.currentCategory + ')');
+        TV.ui.toast(isLocalPlaylist(url) ?
+          'Could not load ' + categoryName(category) :
+          categoryName(category) + ' needs internet');
         // Nothing loaded yet (e.g. saved category is offline): fall back to the default list.
         if (!state.items.length && category !== config.DEFAULT_CATEGORY) {
           load(config.DEFAULT_CATEGORY);
@@ -205,6 +234,9 @@
     parseM3U: parseM3U,
     extinfName: extinfName,
     isLocalPlaylist: isLocalPlaylist,
+    isHttpOnly: isHttpOnly,
+    isPlayable: isPlayable,
+    categoryName: categoryName,
     m3uKey: m3uKey,
     getPlaylistText: getPlaylistText,
     categoryTilesFor: categoryTilesFor,
