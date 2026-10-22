@@ -3,17 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Solar System Explorer R1a</title>
+  <title>Solar System Explorer R1b</title>
   <link rel="icon" href="solar-system_icon.png" />
-  <link rel="stylesheet" href="css/solar.css?v=r1a" />
+  <link rel="stylesheet" href="css/solar.css?v=r1b" />
 </head>
 <body>
   <canvas id="c"></canvas>
   <header id="bar">
     <a id="back" href="../" title="Games">&#8592;</a>
-    <b>SOLAR SYSTEM EXPLORER</b> <span id="ver">R1a</span>
+    <b>SOLAR SYSTEM EXPLORER</b> <span id="ver">R1b</span>
+    <button id="fit" type="button" title="Reset view">Fit</button>
   </header>
-  <div id="hint">Drag to pan &middot; wheel or pinch to zoom</div>
-  <script src="core/solar.js?v=r1a"></script>
+  <aside id="info" hidden>
+    <button id="close" type="button" title="Close (Esc)">&times;</button>
+    <h2 id="i-name"></h2>
+    <div id="i-type"></div>
+    <dl id="i-stats"></dl>
+    <ul id="i-facts"></ul>
+  </aside>
+  <div id="hint">Tap a planet &middot; drag to pan &middot; wheel or pinch to zoom</div>
+  <script src="core/data.js?v=r1b"></script>
+  <script src="core/solar.js?v=r1b"></script>
 </body>
 </html>
