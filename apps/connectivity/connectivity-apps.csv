@@ -5,3 +5,4 @@ name, path, icon, newtab, section
 File Drop,  filedrop/,   , , Share
 QR Scanner, qr-scanner/, , , Share
 Pooh Chat,  pooh-chat/,  , , Chat
+SSH,        ssh/,        , , Remote
