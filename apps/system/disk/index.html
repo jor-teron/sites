@@ -1,0 +1,60 @@
+<!doctype html>
+<!--
+  Disk (apps/system/disk/index.html), R54 — manages the Hub's storage: the drives (Local, added
+  folders, Google Drive) with status, Add folder / Allow access / Remove, Google sign-in, space used
+  vs the browser's quota, "Keep my data", per-drive size on demand and clean-up (thumbnail cache,
+  empty Local). Browsing stays in Files (apps/system/files/). Shared code: shared/fs/fs_drives.js,
+  shared/google/* (gdrive_connect.js panel), shared/fs/thumbs_store.js, shared/dialog/.
+  Scripts: disk.js (all of it). Look: disk.css (same theme as Files / Settings).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Disk</title>
+  <link rel="stylesheet" href="../../../shared/dialog/dialog.css?v=20261022d" />
+  <link rel="stylesheet" href="../../../shared/google/google.css?v=20261022d" />
+  <link rel="stylesheet" href="disk.css?v=20261022d" />
+</head>
+<body>
+  <main class="wrap">
+    <h1 class="title"><img src="disk_icon.png" alt="" /> Disk</h1>
+
+    <section class="card" aria-labelledby="h-space">
+      <h2 id="h-space">Space</h2>
+      <div class="bar" role="progressbar" aria-labelledby="h-space" id="space-bar"><i></i></div>
+      <p id="space-txt" class="muted">Checking…</p>
+      <div class="row"><span id="persist-txt" class="muted"></span>
+        <button type="button" id="persist" class="btn">Keep my data</button></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-drives">
+      <h2 id="h-drives">Drives</h2>
+      <div id="drives" class="drives" role="list"></div>
+      <button type="button" id="add" class="btn add">＋ Add folder</button>
+      <p id="add-note" class="muted small" hidden>Adding a folder needs Chrome or Edge on a computer.</p>
+      <div id="gd-panel" class="gd-panel" hidden></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-clean">
+      <h2 id="h-clean">Clean-up</h2>
+      <div class="row"><span><b>Thumbnail cache</b><br /><span id="thumb-txt" class="muted">…</span></span>
+        <button type="button" id="thumbs" class="btn">Clear</button></div>
+      <div class="row"><span><b>Empty Local storage</b><br /><span class="muted">Deletes every file and folder in Local.</span></span>
+        <button type="button" id="empty" class="btn danger">Empty…</button></div>
+    </section>
+    <p id="msg" class="msg" role="status" hidden></p>
+  </main>
+  <script src="../../../shared/vendor/qrcode.js?v=20261022d"></script>
+  <script src="../../../shared/google/google_config.js?v=20261022d"></script>
+  <script src="../../../shared/google/google_auth.js?v=20261022d"></script>
+  <script src="../../../shared/google/gdrive_fs.js?v=20261022d"></script>
+  <script src="../../../shared/google/google_gis.js?v=20261022d"></script>
+  <script src="../../../shared/google/phonekey.js?v=20261022d"></script>
+  <script src="../../../shared/google/gdrive_connect.js?v=20261022d"></script>
+  <script src="../../../shared/fs/fs_drives.js?v=20261022d"></script>
+  <script src="../../../shared/fs/thumbs_store.js?v=20261022d"></script>
+  <script src="../../../shared/dialog/dialog.js?v=20261022d"></script>
+  <script src="disk.js?v=20261022d"></script>
+</body>
+</html>

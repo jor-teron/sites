@@ -1,0 +1,37 @@
+/*
+ * Disk look (apps/system/disk/disk.css), R54. Same colours as Files / Settings; html.light and
+ * --accent follow the Hub (set by disk.js from localStorage sites-hub.theme / accent).
+ */
+:root { --accent: #6ea8fe; --bg: #12151c; --card: #1a1e27; --line: rgba(255,255,255,.08);
+  --text: #e8eaed; --muted: #9aa0a6; --hi: color-mix(in srgb, var(--accent) 22%, transparent); --bad: #f87171; color-scheme: dark; }
+html.light { --bg: #f4f5f8; --card: #ffffff; --line: rgba(0,0,0,.09); --text: #1c1f26; --muted: #5f6672; color-scheme: light; }
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:disabled { opacity: .4; cursor: default; }
+a { color: var(--accent); text-decoration: none; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 14px 14px 40px; }
+.title { display: flex; align-items: center; gap: 10px; font-size: 1.25rem; margin: 2px 4px 14px; }
+.title img { width: 34px; height: 34px; border-radius: 9px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; }
+.card h2 { font-size: 1rem; margin: 0 0 10px; }
+.muted { color: var(--muted); } .small { font-size: .85rem; }
+.bar { height: 14px; border-radius: 7px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; min-width: 3px; background: var(--accent); transition: width .3s; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--hi); font-weight: 600; }
+.btn:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 35%, transparent); }
+.btn.primary { background: var(--accent); color: #0b0d12; }
+.btn.danger { background: color-mix(in srgb, var(--bad) 22%, transparent); color: var(--bad); }
+.btn.add { width: 100%; margin-top: 8px; border: 2px dashed var(--line); background: transparent; color: var(--muted); }
+.drives { display: flex; flex-direction: column; gap: 8px; }
+.drive { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--bg); flex-wrap: wrap; }
+.drive-ico { font-size: 1.5rem; }
+.drive-main { flex: 1; min-width: 140px; }
+.drive-name { font-weight: 600; }
+.drive-st { font-size: .85rem; color: var(--muted); }
+.drive-st.ok { color: #4ade80; }
+.drive-acts { display: flex; gap: 6px; flex-wrap: wrap; }
+.drive-acts .btn { min-height: 36px; padding: 0 10px; font-size: .9rem; }
+.gd-panel { margin-top: 10px; }
+.msg { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); background: var(--card); border: 1px solid var(--line); padding: 8px 14px; border-radius: 10px; }
