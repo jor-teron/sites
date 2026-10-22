@@ -45,3 +45,16 @@ html, body { margin: 0; height: 100%; background: #04060d; color: #cfd8ea; overf
 /* R2b: moons listed in a smaller second group of the Planets menu. */
 #menu { max-height: 60vh; overflow: auto; }
 #menu button.moon { font-size: 11px; height: 30px; color: #9fb0cc; }
+/* R2f: long descriptions. The panel is a column: name and type stay put, the body scrolls on its own
+   (contained so it never drags the page or the canvas). Phone: a shorter bottom sheet so most of the canvas stays visible. */
+#info { display: flex; flex-direction: column; overflow: hidden; width: 330px; }
+#info[hidden] { display: none; }
+#i-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  touch-action: pan-y; margin-right: -8px; padding-right: 8px; scrollbar-width: thin; scrollbar-color: #2a3a5c transparent; }
+#i-about p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.5; color: #cfd8ea; }
+#i-fh { margin: 10px 0 4px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #7f8ca6; }
+@media (max-width: 700px) {
+  #info { width: auto; max-height: 40%; padding-top: 12px; }
+  #info h2 { font-size: 16px; } #i-type { margin-bottom: 6px; }
+  #i-about p { font-size: 13px; }
+}

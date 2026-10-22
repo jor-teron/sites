@@ -1,4 +1,5 @@
 // Solar System Explorer R2a: bodies are drawn by core/art.js (procedural textures, terminator, rim glow, rings).
+// R2f: long descriptions (core/about.js) in a scrolling panel.
 // R2e: the Oort cloud, a faint seeded haze 2,000-100,000 AU out, seen when zoomed far out, with a log distance scale.
 // R2c: asteroid and Kuiper belts as seeded particle fields (tap a belt or pick it from the list), plus Ceres.
 // R2b: Pluto on an eccentric orbit, and the main moons (drawn and tappable only when zoomed in enough).
@@ -116,13 +117,16 @@
   // ---- Select / follow / info panel ----
   function el(tag, text) { var e = document.createElement(tag); e.textContent = text; return e; }
   function select(b) {
-    var d = window.SS_INFO[b.name], st = $('i-stats'), fx = $('i-facts');
+    var d = window.SS_INFO[b.name], st = $('i-stats'), fx = $('i-facts'), ab = $('i-about');
+    var more = (window.SS_ABOUT || {})[b.name]; // R2f: long description and 6 key facts
     var rows = d.rows || [['Diameter', d.d], ['From Sun', d.dist], ['Orbit', d.period], ['Day', d.day], ['Moons', d.moons]];
     $('i-name').textContent = b.name;
     $('i-type').textContent = d.type;
     st.textContent = ''; fx.textContent = '';
     rows.forEach(function (r) { if (r[1]) { st.appendChild(el('dt', r[0])); st.appendChild(el('dd', r[1])); } });
-    d.facts.forEach(function (f) { fx.appendChild(el('li', f)); });
+    ab.textContent = ''; if (more) more[0].forEach(function (t) { ab.appendChild(el('p', t)); });
+    (more ? more[1] : d.facts).forEach(function (f) { fx.appendChild(el('li', f)); });
+    $('i-body').scrollTop = 0;
     panel.hidden = false; placeCtl();
     follow = b;
     fly = { t0: performance.now(), x: cam.x, y: cam.y, z: cam.z,
