@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!--
+  Unit Converter — two swipe screens: Converter (default) and Settings.
+  Styles: unitconv.css. Data: unitconv_units.js. Logic: unitconv_logic.js. No libraries.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Unit Converter</title>
+  <link rel="icon" href="unit-converter_icon.png">
+  <link rel="stylesheet" href="unitconv.css?v=20261022a">
+  <script>try{var s=JSON.parse(localStorage.getItem('unitconv-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
+</head>
+<body>
+<div id="app">
+  <div id="dots" role="tablist" aria-label="Screen">
+    <button type="button" class="dot" data-mode="conv" role="tab" aria-label="Converter"></button>
+    <button type="button" class="dot" data-mode="set" role="tab" aria-label="Settings"></button>
+  </div>
+  <div id="viewport">
+    <div id="track">
+      <section class="pane" id="pane-conv">
+        <div id="chips" role="tablist" aria-label="Category"></div>
+        <div class="conv">
+          <div class="field">
+            <input id="v-from" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="From value">
+            <select id="u-from" aria-label="From unit"></select>
+          </div>
+          <div class="swaprow"><span id="formula"></span><button type="button" id="swap" title="Swap (S)" aria-label="Swap">⇅</button></div>
+          <div class="field">
+            <input id="v-to" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="To value">
+            <select id="u-to" aria-label="To unit"></select>
+          </div>
+          <div class="note" id="note"></div>
+        </div>
+      </section>
+      <section class="pane" id="pane-set">
+        <div class="set-wrap">
+          <h2>Settings</h2>
+          <div class="set-row"><span>Precision</span>
+            <div class="seg" data-key="prec"><button type="button" data-v="2">2</button><button type="button" data-v="4">4</button><button type="button" data-v="6">6</button></div></div>
+          <div class="set-row"><span>Theme</span>
+            <div class="seg" data-key="theme"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>
+          <h2>About</h2>
+          <div class="about">
+            <img src="unit-converter_icon.png" alt="" width="40" height="40">
+            <div><b>Unit Converter</b> <span id="ver"></span>
+              <p>Convert length, weight, temperature, area, volume, speed, time, data size and Indian numbers and land units. Type in either box; swipe to change screens. Works offline.</p>
+              <p>Bigha and katha differ by state and even district; values here are common references, check local land records for legal use.</p></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+<script src="unitconv_units.js?v=20261022a"></script>
+<script src="unitconv_logic.js?v=20261022a"></script>
+</body>
+</html>
