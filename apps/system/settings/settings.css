@@ -1,5 +1,5 @@
 /*
- * Settings app styles (apps/settings/settings.css).
+ * Settings app styles (apps/system/settings/settings.css).
  * Layout: .side (sections list) left + .pane (options) right; under 700 px only one shows:
  * the list, or the open section (body.in-section) with ‹ Back. Theme follows the Hub:
  * html.light, --accent, html.motion-off (set by settings_store.js). Big tap targets, jelly presses.

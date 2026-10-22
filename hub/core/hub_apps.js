@@ -44,8 +44,9 @@
  * Lab "Legacy" (R15, lab-apps.csv section): Paint, Photo Editor, Notepad, Calculator (Legacy),
  * Webcam, Keyboard — orders 1900+ so they come last in Lab. Sling Birds / Pacman are in Games
  * (Arcade), Device Benchmark in Tools (System), as in the CSVs.
- * About is HIDDEN too: its cards moved into the Settings app (About section); apps/about/
- * redirects to apps/settings/#about. Settings itself is opened by the "⚙ Settings" row
+ * About is HIDDEN too: its cards moved into the Settings app (About section); apps/system/about/
+ * redirects to apps/system/settings/#about (R53: both moved under apps/system/, the old
+ * apps/settings/ and apps/about/ are legacy redirect pages). Settings itself is opened by the "⚙ Settings" row
  * at the bottom of the menu (hub_settings.js), so its row is HIDDEN here.
  */
 // R33a: categories ("<Category> Page" rows) + hidden system rows only. Apps: apps/<category>/<category>-apps.csv.
@@ -68,11 +69,13 @@ Desktop,  vDesktop,              apps/tools/vDesktop/,                       ,  
 
 Lab,      Lab Page,              apps/lab/lab.html,                          ,         0,       0,      1000
 
-About,    About,                 apps/about/,                                ,         0,       1,      2000
-About,    Contact,               apps/about/contact.html,                    ,         0,       1,      2020
-About,    Feedback,              apps/about/feedback.html,                   ,         0,       1,      2030
+System,   System Page,           apps/system/system.html,                    ,         0,       0,      1100
 
-Settings, Settings,              apps/settings/,                             ,         0,       1,      2100
+About,    About,                 apps/system/about/,                         ,         0,       1,      2000
+About,    Contact,               apps/system/about/contact.html,             ,         0,       1,      2020
+About,    Feedback,              apps/system/about/feedback.html,            ,         0,       1,      2030
+
+Settings, Settings,              apps/system/settings/,                      ,         0,       1,      2100
 `;
 
 /* ===== R33a ARCHIVE (not parsed): the app rows that lived here until R33a =====

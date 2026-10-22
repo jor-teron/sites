@@ -1,5 +1,5 @@
 /*
- * Settings → Windows (apps/settings/sec_windows.js) — Desktop-mode window options:
+ * Settings → Windows (apps/system/settings/sec_windows.js) — Desktop-mode window options:
  *   'hoverFocus'   Focus window on hover: '1' = on (default off). Pointing at a window for a
  *                  moment brings it to the front (hub/wm/wm_windows.js; never while dragging,
  *                  resizing or with a menu open).

@@ -1,5 +1,5 @@
 /*
- * Settings → Desktop (apps/settings/sec_desktop.js). Screen mode Auto / Desktop / Phone,
+ * Settings → Desktop (apps/system/settings/sec_desktop.js). Screen mode Auto / Desktop / Phone,
  * R51 'Open windows maximised' (key 'openMax', default on, '0' = off; Hub wm_windows.js reads it on every open),
  * (key 'wmMode', the Hub's HubMode applies it) and "Open menu on hover" for the Desktop
  * mode Start button (key 'startHover', default on, '0' = off), and the optional taskbar busy

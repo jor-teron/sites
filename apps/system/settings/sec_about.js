@@ -1,5 +1,5 @@
 /*
- * Settings → About (apps/settings/sec_about.js). A plain About page: what the Hub is,
+ * Settings → About (apps/system/settings/sec_about.js). A plain About page: what the Hub is,
  * Credit, Current release ('Release R43 · 2026-10-21 IST' from lines 3-4 of hub/build.txt, read at
  * runtime with no-cache; falls back to the hub/version.txt date, then '—'),
  * the first Release date, and a real
@@ -15,7 +15,7 @@
 (function () {
   'use strict';
   const S = window.SettingsStore, ui = window.Settings.ui;
-  const ROOT = '../../';
+  const ROOT = '../../../';
   const FIRST_RELEASE = '23 Sep 2026';
   const REPO = 'https://github.com/jor-teron/sites';
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

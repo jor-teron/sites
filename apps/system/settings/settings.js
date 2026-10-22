@@ -1,5 +1,5 @@
 /*
- * Settings shell (apps/settings/settings.js) — sections list + option pane.
+ * Settings shell (apps/system/settings/settings.js) — sections list + option pane.
  * Sections register with Settings.add({ id, title, icon, render(el) }) (sec_*.js) and are
  * shown in that order. Wide screens: list left, options right. Narrow (< 700 px, phone):
  * list first; tapping a section opens it with ‹ Back. The open section is in the hash

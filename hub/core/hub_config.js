@@ -20,5 +20,6 @@ window.HUB_CAT_CSV = {
   Office: 'apps/office/office-apps.csv',
   Connectivity: 'apps/connectivity/connectivity-apps.csv',
   Tools: 'apps/tools/tools-apps.csv',
-  Lab: 'apps/lab/lab-apps.csv'
+  Lab: 'apps/lab/lab-apps.csv',
+  System: 'apps/system/system-apps.csv'   // R53: the Hub's own apps (Settings, About)
 };

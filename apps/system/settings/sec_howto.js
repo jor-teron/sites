@@ -1,5 +1,5 @@
 /*
- * Settings → How-to (apps/settings/sec_howto.js). Plain-language help, shown just above
+ * Settings → How-to (apps/system/settings/sec_howto.js). Plain-language help, shown just above
  * About: what the Hub is, the desktop (Start menu, windows, taskbar, Show Desktop, copies,
  * saved session, taskbar position, screen modes, phone mode), Drives & Files, the Settings sections, wallpaper, updates,
  * and the technical / privacy notes that used to be on the About page.
@@ -192,8 +192,8 @@
         <li>Static files on GitHub Pages; works offline once loaded.</li>
         <li>Optional: a WebSocket relay for using a phone as a remote.</li>
       </ul>
-      <a class="tap" href="../../misc/T&amp;C.html">Terms &amp; Conditions</a>
-      <a class="tap" href="../../misc/privatedns.html">Private DNS</a>` }
+      <a class="tap" href="../about/misc/T&amp;C.html">Terms &amp; Conditions</a>
+      <a class="tap" href="../about/misc/privatedns.html">Private DNS</a>` }
   ];
   Settings.add({
     id: 'howto', title: 'How-to', icon: '\uD83D\uDCA1',

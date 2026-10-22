@@ -1,5 +1,5 @@
 /*
- * Settings → Sizes (apps/settings/sec_sizes.js). Taskbar position Bottom / Top (key 'taskPos',
+ * Settings → Sizes (apps/system/settings/sec_sizes.js). Taskbar position Bottom / Top (key 'taskPos',
  * default bottom) and taskbar height Small 32 / Normal 40 / Large 48 px (key 'taskH'). Applied live
  * to the Hub (hub_prefs.js → --wm-task-h). (The window title bar size moved to Windows, sec_windows.js.)
  */
