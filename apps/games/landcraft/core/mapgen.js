@@ -48,8 +48,9 @@ function fbm(rand, octaves) {
 export function mapRadius(n) { return 3 + Math.floor(n / 25); }
 
 export function generate(n) {
-  if (n === 0) { const w = World.flat(2); w.spawn = { x: 5.5, y: 8, z: 1.5 }; return w; }
+  if (n === 0) { const w = World.flat(2); w.spawn = { x: 5.5, y: 8, z: 1.5 }; w.bounds = 2 * CS; return w; }
   const seed = mapSeed(n), w = new World(), r = mapRadius(n) * CS;
+  w.bounds = r;
   const hR = parkMiller(seed ^ LAYER.height), wR = parkMiller(seed ^ LAYER.water);
   const sR = parkMiller(seed ^ LAYER.sand), tR = parkMiller(seed ^ LAYER.trees);
   const hills = fbm(hR, 4), lakes = fbm(wR, 3), beach = fbm(sR, 2), forest = fbm(tR, 2);

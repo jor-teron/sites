@@ -1,13 +1,14 @@
 // LandCraft L2b map picker, modelled on AoE RTS: a 2-digit box (one digit = same map, 7 -> 07),
 // Play / Random / Continue, the last map remembered in localStorage 'landcraft.map'.
 // In game: a small "Map NN" button (top left) or Esc opens it again to switch maps.
+// L2c: maps with a save show 'saved', and Reset map deletes that map's save (after a confirm).
 const KEY = 'landcraft.map';
 export const label = function (n) { return String(n).padStart(2, '0'); };
 
-export function setupPicker(o) { // o: { canvas, current() -> map number or null, load(n) }
+export function setupPicker(o) { // o: { canvas, current(), load(n), onOpen(), hasSave(n), saveOk(), reset(n) }
   const $ = function (id) { return document.getElementById(id); };
   const ov = $('picker'), inp = $('map-input'), note = $('map-note'), badge = $('mapbtn');
-  const bPlay = $('map-play'), bRandom = $('map-random'), bCont = $('map-continue');
+  const bPlay = $('map-play'), bRandom = $('map-random'), bCont = $('map-continue'), bReset = $('map-reset');
   const touch = function () { return document.body.classList.contains('touch'); };
   const last = function () {
     try { const v = localStorage.getItem(KEY); return /^\d{1,2}$/.test(v || '') ? +v : null; } catch (e) { return null; }
@@ -17,15 +18,19 @@ export function setupPicker(o) { // o: { canvas, current() -> map number or null
   function show() {
     const n = pick(), l = last(), cur = o.current();
     bPlay.disabled = n === null;
+    bReset.hidden = n === null || !o.hasSave(n);
+    if (n !== null) bReset.textContent = 'Reset map ' + label(n);
     bCont.disabled = l === null;
     bCont.textContent = l === null ? 'Continue' : 'Continue ' + label(l);
     note.classList.toggle('bad', n === null && inp.value !== '');
     note.textContent = n === null ? (inp.value === '' ? 'Type a map number 00-99' : 'Digits only: a map number 00-99')
-      : 'Map ' + label(n) + (n === 0 ? ' \u00b7 flat test world' : '') + (n === cur ? ' \u00b7 current' : '');
+      : 'Map ' + label(n) + (n === 0 ? ' \u00b7 flat test world' : '') + (n === cur ? ' \u00b7 current' : '') +
+        (o.hasSave(n) ? ' \u00b7 saved' : ' \u00b7 new') + (o.saveOk() ? '' : ' \u00b7 storage full, not saving');
   }
   function isOpen() { return !ov.hidden; }
   function open() {
     if (document.pointerLockElement) document.exitPointerLock();
+    o.onOpen(); // save before anything else can happen (the 'saved' note below reflects it)
     ov.hidden = false;
     const cur = o.current(), l = last();
     inp.value = label(cur !== null ? cur : l !== null ? l : 1);
@@ -47,6 +52,11 @@ export function setupPicker(o) { // o: { canvas, current() -> map number or null
   bPlay.addEventListener('click', function () { go(pick()); });
   bCont.addEventListener('click', function () { go(last()); });
   bRandom.addEventListener('click', function () { const n = Math.floor(Math.random() * 100); inp.value = label(n); go(n); });
+  bReset.addEventListener('click', function () {
+    const n = pick();
+    if (n === null || !confirm('Reset map ' + label(n) + '? Your changes to it will be deleted.')) return;
+    o.reset(n); show();
+  });
   badge.addEventListener('click', open);
   badge.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
   // Keys typed in the picker never reach the game (WASD, 1-7); Enter plays, Esc resumes the current map.

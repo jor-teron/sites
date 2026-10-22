@@ -5,7 +5,23 @@ import { AIR, GRASS, DIRT, STONE, LOG, LEAVES, SAND, GLASS } from './blocks.js';
 export const GROUND = 8; // y of the walkable grass surface in the flat test world
 
 export class World {
-  constructor() { this.chunks = new Map(); }
+  constructor() { this.chunks = new Map(); this.orig = new Map(); this.bounds = Infinity; }
+  // L2c: edits are tracked against the generated world (first original id per cell), and kept inside the map.
+  inBounds(x, y, z) { const b = this.bounds; return y >= 0 && y < CH && x >= -b && x < b && z >= -b && z < b; }
+  track(x, y, z, b) {
+    const k = x + ',' + y + ',' + z;
+    if (!this.orig.has(k)) this.orig.set(k, this.get(x, y, z));
+    this.set(x, y, z, b);
+  }
+  // Changed cells as a flat [x, y, z, id, ...] list (cells edited back to their generated block are left out).
+  diff() {
+    const out = [];
+    for (const [k, o] of this.orig) {
+      const p = k.split(',').map(Number), b = this.get(p[0], p[1], p[2]);
+      if (b !== o) out.push(p[0], p[1], p[2], b);
+    }
+    return out;
+  }
   key(cx, cz) { return cx + ',' + cz; }
   chunkAt(x, z, create) {
     const cx = Math.floor(x / CS), cz = Math.floor(z / CS), k = this.key(cx, cz);
@@ -60,8 +76,8 @@ export class World {
   }
   // Change one block and remesh only its chunk, plus the neighbour chunk when it sits on a border.
   edit(x, y, z, b) {
-    if (y < 0 || y >= CH) return false;
-    this.set(x, y, z, b);
+    if (!this.inBounds(x, y, z)) return false; // L2c: no building past the map edge
+    this.track(x, y, z, b);
     const lx = x - Math.floor(x / CS) * CS, lz = z - Math.floor(z / CS) * CS, todo = [[x, z]];
     if (lx === 0) todo.push([x - 1, z]); else if (lx === CS - 1) todo.push([x + 1, z]);
     if (lz === 0) todo.push([x, z - 1]); else if (lz === CS - 1) todo.push([x, z + 1]);
