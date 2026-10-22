@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<!--
+  Code Lab — Jupyter-style code cells that run on a remote Jupyter Server.
+  Screens: Cells (default) and Settings; swipe left/right (>=75 px, outside editors/outputs) or tap the dots.
+  Files: codelab.css, codelab_kernel.js (server/kernel via @jupyterlab/services), codelab_app.js (UI),
+  codelab_save.js (the one save module), vendor/codelab-lib.min.js.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Code Lab</title>
+  <link rel="icon" href="codelab_icon.png">
+  <link rel="stylesheet" href="codelab.css?v=20261022a">
+  <script>try{var s=JSON.parse(localStorage.getItem('codelab-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
+</head>
+<body>
+<div id="app">
+  <div id="dots" role="tablist" aria-label="Screen">
+    <button type="button" class="dot" data-mode="cells" role="tab" aria-label="Cells"></button>
+    <button type="button" class="dot" data-mode="set" role="tab" aria-label="Settings"></button>
+  </div>
+  <div id="viewport">
+    <div id="track">
+      <section class="pane" id="pane-cells">
+        <div id="conn">
+          <div class="row">
+            <span id="status" class="sdot" title="Not connected"></span>
+            <input id="url" type="url" placeholder="Server URL, e.g. https://grok-lab.example.ts.net" autocomplete="off" spellcheck="false">
+            <button type="button" class="mini acc" id="connect-btn">Connect</button>
+          </div>
+          <div class="row">
+            <input id="token" type="password" placeholder="Token" autocomplete="off">
+            <label class="chk"><input type="checkbox" id="remember"> Remember</label>
+          </div>
+          <div class="row">
+            <select id="kernel" aria-label="Kernel" disabled><option value="">Kernel…</option></select>
+            <span id="kstate" class="kstate">—</span>
+            <button type="button" class="mini" id="start-btn" disabled title="Start kernel">Start</button>
+            <button type="button" class="mini" id="restart-btn" disabled title="Restart kernel">↻</button>
+            <button type="button" class="mini" id="intr-btn" disabled title="Interrupt">■</button>
+          </div>
+        </div>
+        <div id="cells"></div>
+        <div id="bar">
+          <span id="msg"></span>
+          <button type="button" class="mini" id="add-btn">+ Cell</button>
+          <button type="button" class="mini acc" id="runall-btn">Run all</button>
+        </div>
+      </section>
+      <section class="pane" id="pane-set">
+        <div class="set-wrap">
+          <h2>Settings</h2>
+          <div class="set-row"><span>Theme</span>
+            <div class="seg" data-key="theme"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>
+          <div class="set-row"><span>Clear all outputs</span><button type="button" class="mini" id="clear-btn">Clear</button></div>
+          <h2>About</h2>
+          <div class="about">
+            <img src="codelab_icon.png" alt="" width="40" height="40">
+            <div><b>Code Lab</b> <span id="ver"></span>
+              <p>Run code cells on your own Jupyter Server, Kaggle/Jupyter style. Enter the server URL and token, connect, pick a kernel and start it. Shift+Enter runs a cell. Your cells are kept on this device; the token is only kept if you tick Remember.</p>
+              <p>Uses @jupyterlab/services (BSD-3-Clause) and CodeMirror (MIT).</p></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div id="toast" role="status"></div>
+</div>
+<script src="vendor/codelab-lib.min.js?v=20261022a"></script>
+<script src="codelab_save.js?v=20261022a"></script>
+<script src="codelab_kernel.js?v=20261022a"></script>
+<script src="codelab_app.js?v=20261022a"></script>
+</body>
+</html>

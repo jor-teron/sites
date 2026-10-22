@@ -110,6 +110,7 @@ LLM Calculator,     llm-calc/,                    , , AI
 ONNX Runner,        onnx-runner/,                 , , AI
 
 Notebook,           notebook/,                    , , Tools
+Code Lab,           code-lab/,                    , , Tools
 Paper Keyboard,     paper-keyboard/,              , , Tools
 MyBookmark,         mybookmark/,                  , , Tools
 Wiki Extractor,     wiki-extractor/,              , , Tools
