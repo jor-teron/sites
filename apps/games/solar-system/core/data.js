@@ -1,4 +1,4 @@
-// Solar System Explorer R1c: info-panel facts. R2b adds Pluto and the main moons (moons use their own rows). R2c adds Ceres and the two belts. Values from the NASA planetary fact sheets
+// Solar System Explorer R1c: info-panel facts. R2b adds Pluto and the main moons (moons use their own rows). R2c adds Ceres and the two belts. R2e adds the Oort cloud. Values from the NASA planetary fact sheets
 // (nssdc.gsfc.nasa.gov/planetary/factsheet). Moon counts per NASA, mid-2026; small moons keep being found.
 window.SS_INFO = {
   Sun: { type: 'Star (G2V yellow dwarf)', d: '1,391,400 km', dist: 'Centre of the solar system',
@@ -88,3 +88,9 @@ window.SS_INFO['Kuiper belt'] = { type: 'Region of icy bodies', facts: [
     'Home to dwarf planets Pluto, Haumea and Makemake, and the source of many short-period comets.',
     'New Horizons flew past the Kuiper belt object Arrokoth on 1 January 2019.'],
   rows: [['Where', 'Beyond Neptune, about 30–50 AU'], ['Orbit', '~250–350 years'], ['Largest', 'Pluto (2,377 km)']] };
+window.SS_INFO['Oort cloud'] = { type: 'Hypothesised shell of icy bodies', facts: [
+    'Never directly observed: its existence is inferred from long-period comets arriving from every direction, as Jan Oort proposed in 1950.',
+    'Passing stars and the pull of the Milky Way nudge its icy bodies, sending some inward as long-period comets.',
+    'Even Voyager 1 would need about 300 years to reach its inner edge, and perhaps 30,000 years to pass through it.'],
+  rows: [['Where', 'About 2,000–100,000 AU (up to ~1.6 light-years)'], ['Shape', 'A thick sphere around the Sun; the inner Hills cloud is denser'],
+    ['Status', 'Hypothesised, never directly observed'], ['Comets', 'Source of long-period comets']] };
