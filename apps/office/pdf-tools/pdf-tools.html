@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<!--
+  PDF Tools — P1 page organiser. Page shell only.
+  Styles: pdf-tools.css. Modules: pdf-tools_ui.js (state, theme, menu, dialog, toast),
+  pdf-tools_load.js (open + errors), pdf-tools_thumbs.js (lazy thumbnail grid),
+  pdf-tools_select.js (selection + drag reorder), pdf-tools_edit.js (rotate, delete, undo/redo),
+  pdf-tools_save.js (one save(blob, name) for every file), pdf-tools_app.js (wiring, keys).
+  pdf.js is read from the Hub's shared/vendor/pdfjs (read-only); pdf-lib is vendored in ./vendor.
+  Everything stays on the device. Actions are a rail on the RIGHT (right-handed).
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>PDF Tools</title>
+  <link rel="icon" href="pdf-tools_icon.png">
+  <script>try{var m=(JSON.parse(localStorage.getItem('pdf-tools-settings-v1')||'{}').theme)||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
+  <link rel="stylesheet" href="pdf-tools.css?v=20261022a">
+</head>
+<body>
+<div id="app">
+  <header id="bar">
+    <span id="fname" class="fname">PDF Tools</span>
+    <span id="count" class="count"></span>
+  </header>
+
+  <main id="stage">
+    <div id="empty" class="empty">
+      <p class="big">Open a PDF to reorder, rotate or delete pages.</p>
+      <p>Tap <b>Open</b> or drop a file here. Nothing is uploaded.</p>
+      <button type="button" id="empty-open" class="pill">Open PDF</button>
+    </div>
+    <div id="grid" class="grid" hidden role="listbox" aria-multiselectable="true" aria-label="Pages"></div>
+    <div id="busy" class="busy" hidden><span class="spin"></span><span id="busy-text">Opening…</span></div>
+    <div id="drop" class="drop" hidden>Drop PDF to open</div>
+  </main>
+
+  <nav id="rail" aria-label="Actions">
+    <button type="button" class="rb" id="b-menu" title="Menu" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg></button>
+    <button type="button" class="rb" id="b-open" title="Open PDF (Ctrl+O)" aria-label="Open PDF"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg></button>
+    <span class="sep"></span>
+    <button type="button" class="rb" id="b-all" title="Select all (Ctrl+A)" aria-label="Select all" data-need="doc"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m8 12 3 3 5-6"/></svg></button>
+    <button type="button" class="rb" id="b-rl" title="Rotate left (Shift+R)" aria-label="Rotate left" data-need="sel"><svg viewBox="0 0 24 24"><path d="M4 4v5h5"/><path d="M4.5 9A8 8 0 1 1 6 17"/></svg></button>
+    <button type="button" class="rb" id="b-rr" title="Rotate right (R)" aria-label="Rotate right" data-need="sel"><svg viewBox="0 0 24 24"><path d="M20 4v5h-5"/><path d="M19.5 9A8 8 0 1 0 18 17"/></svg></button>
+    <button type="button" class="rb danger" id="b-del" title="Delete (Del)" aria-label="Delete selected" data-need="sel"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>
+    <span class="sep"></span>
+    <button type="button" class="rb" id="b-undo" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
+    <button type="button" class="rb" id="b-redo" title="Redo (Ctrl+Y)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
+    <span class="grow"></span>
+    <button type="button" class="rb main" id="b-save" title="Save (Ctrl+S)" aria-label="Save PDF" data-need="doc"><svg viewBox="0 0 24 24"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg></button>
+  </nav>
+
+  <div id="menu" class="menu" hidden role="menu">
+    <div class="mrow"><span>Theme</span>
+      <div class="seg" id="theme-seg"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div>
+    </div>
+    <button type="button" class="mi" id="m-close" data-need="doc">Close file</button>
+    <button type="button" class="mi" id="m-about">About</button>
+  </div>
+
+  <div id="dlg" class="dlg-back" hidden>
+    <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-title">
+      <h2 id="dlg-title"></h2>
+      <p id="dlg-text"></p>
+      <div class="dlg-btns"><button type="button" id="dlg-no" class="pill ghost">Cancel</button><button type="button" id="dlg-yes" class="pill">OK</button></div>
+    </div>
+  </div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <input type="file" id="file" accept="application/pdf,.pdf" hidden>
+</div>
+
+<script src="../../../shared/vendor/pdfjs/pdf.min.js"></script>
+<script src="vendor/pdf-lib.min.js"></script>
+<script src="pdf-tools_ui.js?v=20261022a"></script>
+<script src="pdf-tools_save.js?v=20261022a"></script>
+<script src="pdf-tools_load.js?v=20261022a"></script>
+<script src="pdf-tools_thumbs.js?v=20261022a"></script>
+<script src="pdf-tools_edit.js?v=20261022a"></script>
+<script src="pdf-tools_select.js?v=20261022a"></script>
+<script src="pdf-tools_app.js?v=20261022a"></script>
+</body>
+</html>

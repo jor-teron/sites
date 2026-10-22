@@ -9,4 +9,5 @@ Spreadsheet,  spreadsheet/,         , , Sheets
 OCR,          ocr/,                 , , Scan & Print
 Paper Scan,   paper-scan/,          , , Scan & Print
 Print,        print/,               , , Scan & Print
+PDF Tools,    pdf-tools/,           , , PDF
 Mail,         mail/,                , , Mail
