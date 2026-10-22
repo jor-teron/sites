@@ -2,7 +2,7 @@
 // break / place it, and pick the block to place from a 7-slot hotbar.
 import * as THREE from 'three';
 import { raycast } from './raycast.js';
-import { AIR, HOTBAR, NAMES, FACE_TILES } from './blocks.js';
+import { AIR, HOTBAR, NAMES, FACE_TILES, solid } from './blocks.js';
 import { TILE } from './atlas.js';
 
 const REACH = 5;
@@ -37,7 +37,7 @@ export function setupInteract(o) { // o: { scene, camera, world, player, canvas,
   function placeBlock() {
     if (!target) return;
     const x = target.x + target.n[0], y = target.y + target.n[1], z = target.z + target.n[2];
-    if (o.world.get(x, y, z) !== AIR || o.player.overlaps(x, y, z)) return; // never inside the player
+    if (solid(o.world.get(x, y, z)) || o.player.overlaps(x, y, z)) return; // never inside the player
     o.world.edit(x, y, z, HOTBAR[slot]);
   }
   // Desktop: with the mouse locked, left = break, right = place. If pointer lock is unavailable,

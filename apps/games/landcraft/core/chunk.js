@@ -2,7 +2,7 @@
 // neighbour. Glass goes in a second index group drawn with the transparent material.
 import * as THREE from 'three';
 import { tileUV } from './atlas.js';
-import { FACE_TILES, GLASS, opaque } from './blocks.js';
+import { FACE_TILES, GLASS, WATER, opaque } from './blocks.js';
 
 export const CS = 16, CH = 32;
 
@@ -37,7 +37,7 @@ export class Chunk {
       if (!b) continue;
       for (const f of FACES) {
         const nb = world.get(ox + x + f.dir[0], y + f.dir[1], oz + z + f.dir[2]);
-        if (opaque(nb) || (nb === b && b === GLASS)) continue; // hidden face
+        if (opaque(nb) || (nb === b && (b === GLASS || b === WATER))) continue; // hidden face
         const t = FACE_TILES[b], tile = f.dir[1] > 0 ? t[0] : f.dir[1] < 0 ? t[1] : t[2];
         const r = tileUV(tile), n = pos.length / 3;
         for (let i = 0; i < 4; i++) {
@@ -47,7 +47,7 @@ export class Chunk {
           uvs.push(f.uv[i][0] ? r[2] : r[0], f.uv[i][1] ? r[3] : r[1]);
           col.push(f.shade, f.shade, f.shade);
         }
-        (b === GLASS ? glassInd : ind).push(n, n + 1, n + 2, n + 2, n + 1, n + 3);
+        (b === GLASS || b === WATER ? glassInd : ind).push(n, n + 1, n + 2, n + 2, n + 1, n + 3);
       }
     }
     const geo = new THREE.BufferGeometry();
