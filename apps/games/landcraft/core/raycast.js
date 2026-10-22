@@ -1,6 +1,6 @@
 // Voxel raycast (Amanatides & Woo DDA): step cell by cell along the ray and return the first
-// non-air block within reach, plus the normal of the face the ray entered through.
-import { AIR } from './blocks.js';
+// solid block within reach, plus the normal of the face the ray entered through.
+import { solid } from './blocks.js';
 
 export function raycast(world, o, d, reach) {
   let x = Math.floor(o.x), y = Math.floor(o.y), z = Math.floor(o.z);
@@ -12,7 +12,7 @@ export function raycast(world, o, d, reach) {
   let tz = sz ? (sz > 0 ? z + 1 - o.z : o.z - z) * dz : Infinity;
   let n = [0, 0, 0], t = 0;
   while (t <= reach) {
-    if (y >= 0 && world.get(x, y, z) !== AIR) return { x: x, y: y, z: z, n: n };
+    if (y >= 0 && solid(world.get(x, y, z))) return { x: x, y: y, z: z, n: n };
     if (tx < ty && tx < tz) { x += sx; t = tx; tx += dx; n = [-sx, 0, 0]; }
     else if (ty < tz) { y += sy; t = ty; ty += dy; n = [0, -sy, 0]; }
     else { z += sz; t = tz; tz += dz; n = [0, 0, -sz]; }

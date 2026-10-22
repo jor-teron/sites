@@ -1,7 +1,7 @@
 // LandCraft player: an axis-aligned box (0.6 x 1.8 x 0.6) with gravity, jumping and block collision.
 // Movement is split into small substeps and resolved one axis at a time, so the player never tunnels
 // through blocks, slides along walls, and stands stably on block edges.
-import { AIR } from './blocks.js';
+import { solid } from './blocks.js';
 
 export const EYE = 1.62;
 const HALF = 0.3, HEIGHT = 1.8, GRAVITY = 28, JUMP = 8.4, SPEED = 4.3, EPS = 1e-4;
@@ -24,7 +24,7 @@ export class Player {
     for (let y = Math.floor(p.y); y <= Math.floor(p.y + HEIGHT - EPS); y++)
       for (let x = Math.floor(p.x - HALF); x <= Math.floor(p.x + HALF - EPS); x++)
         for (let z = Math.floor(p.z - HALF); z <= Math.floor(p.z + HALF - EPS); z++)
-          if (this.world.get(x, y, z) !== AIR) return true;
+          if (solid(this.world.get(x, y, z))) return true;
     return false;
   }
   // Move along one axis; on contact, snap flush against the block face and stop on that axis.

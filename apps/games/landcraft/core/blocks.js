@@ -1,8 +1,8 @@
 // LandCraft block ids, names, and which atlas tile each face uses: [top, bottom, sides].
 import { TILES } from './atlas.js';
 
-export const AIR = 0, GRASS = 1, DIRT = 2, STONE = 3, LOG = 4, LEAVES = 5, SAND = 6, GLASS = 7;
-export const NAMES = { [GRASS]: 'Grass', [DIRT]: 'Dirt', [STONE]: 'Stone', [LOG]: 'Wood', [LEAVES]: 'Leaves', [SAND]: 'Sand', [GLASS]: 'Glass' };
+export const AIR = 0, GRASS = 1, DIRT = 2, STONE = 3, LOG = 4, LEAVES = 5, SAND = 6, GLASS = 7, WATER = 8;
+export const NAMES = { [GRASS]: 'Grass', [DIRT]: 'Dirt', [STONE]: 'Stone', [LOG]: 'Wood', [LEAVES]: 'Leaves', [SAND]: 'Sand', [GLASS]: 'Glass', [WATER]: 'Water' };
 export const HOTBAR = [GRASS, DIRT, STONE, LOG, LEAVES, SAND, GLASS];
 export const FACE_TILES = {
   [GRASS]: [TILES.grassTop, TILES.dirt, TILES.grassSide],
@@ -11,7 +11,10 @@ export const FACE_TILES = {
   [LOG]: [TILES.logTop, TILES.logTop, TILES.logSide],
   [LEAVES]: [TILES.leaves, TILES.leaves, TILES.leaves],
   [SAND]: [TILES.sand, TILES.sand, TILES.sand],
-  [GLASS]: [TILES.glass, TILES.glass, TILES.glass]
+  [GLASS]: [TILES.glass, TILES.glass, TILES.glass],
+  [WATER]: [TILES.water, TILES.water, TILES.water]
 };
 // Opaque blocks hide the faces of whatever touches them; leaves and glass do not.
-export function opaque(b) { return b !== AIR && b !== LEAVES && b !== GLASS; }
+export function opaque(b) { return b !== AIR && b !== LEAVES && b !== GLASS && b !== WATER; }
+// Solid blocks stop the player and the targeting ray; water is neither (not placeable yet either).
+export function solid(b) { return b !== AIR && b !== WATER; }

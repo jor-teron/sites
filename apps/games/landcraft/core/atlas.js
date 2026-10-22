@@ -2,8 +2,8 @@
 import * as THREE from 'three';
 
 export const TILE = 16;
-export const TILES = { grassTop: 0, grassSide: 1, dirt: 2, stone: 3, logTop: 4, logSide: 5, leaves: 6, sand: 7, glass: 8 };
-const COUNT = 9;
+export const TILES = { grassTop: 0, grassSide: 1, dirt: 2, stone: 3, logTop: 4, logSide: 5, leaves: 6, sand: 7, glass: 8, water: 9 };
+const COUNT = 10;
 
 function rng(seed) { return function () { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }; }
 
@@ -43,6 +43,8 @@ export function makeAtlas() {
       const edge = x === 0 || y === 0 || x === TILE - 1 || y === TILE - 1, streak = x - y === 3 || x - y === 5;
       g.fillStyle = edge ? 'rgba(225,240,255,.9)' : streak && x > 3 && x < 12 ? 'rgba(255,255,255,.45)' : 'rgba(200,230,255,.12)';
       g.fillRect(TILES.glass * TILE + x, y, 1, 1);
+      g.fillStyle = 'rgba(' + [40, 100 + Math.floor(r() * 30), 200].join(',') + ',.6)';             // L2a water
+      g.fillRect(TILES.water * TILE + x, y, 1, 1);
     }
   }
   const tex = new THREE.CanvasTexture(c);
