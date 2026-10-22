@@ -157,15 +157,16 @@
 
   /* connection bar */
   $('url').value = P.url || ''; $('remember').checked = !!P.rememberToken; if (P.rememberToken && P.token) $('token').value = P.token;
-  $('remember').onchange = () => { P.rememberToken = $('remember').checked; P.token = P.rememberToken ? $('token').value : ''; saveP(); };
-  $('token').oninput = () => { if (P.rememberToken) { P.token = $('token').value; saveP(); } };
+  $('remember').onchange = () => { P.rememberToken = $('remember').checked; P.token = P.rememberToken ? $('token').value.trim() : ''; saveP(); };
+  $('token').oninput = () => { if (P.rememberToken) { P.token = $('token').value.trim(); saveP(); } };
   async function doConnect() {
     const b = $('connect-btn');
     if (K.state().connected) { await K.disconnect(); toast('Disconnected'); return; }
     b.disabled = true; msg('Connecting…'); $('status').className = 'sdot busy';
     try {
+      $('url').value = $('url').value.trim().replace(/\/+$/, ''); $('token').value = $('token').value.trim();
       const data = await K.connect($('url').value, $('token').value);
-      P.url = $('url').value.trim(); if (P.rememberToken) P.token = $('token').value; saveP();
+      P.url = $('url').value; if (P.rememberToken) P.token = $('token').value; saveP();
       const sel = $('kernel'); sel.textContent = '';
       Object.keys(data.kernelspecs).sort().forEach((n) => {
         const o = document.createElement('option'); o.value = n; o.textContent = (data.kernelspecs[n].spec && data.kernelspecs[n].spec.display_name) || n; sel.appendChild(o);

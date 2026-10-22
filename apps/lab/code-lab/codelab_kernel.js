@@ -11,25 +11,36 @@
     url = String(url || '').trim();
     if (!url) throw new Error('Enter the server URL');
     if (!/^https?:\/\//i.test(url)) url = (/^(localhost|127\.|\[::1\])/.test(url) ? 'http://' : 'https://') + url;
-    return url.replace(/\/+$/, '') + '/';
+    return url.replace(/\/+$/, '') + '/'; /* trailing slashes stripped, one added for the library */
+  }
+
+  /* Every request (ping included) goes through makeRequest with the token-carrying settings, which adds
+     "Authorization: token <t>" itself (adding it here too would send it twice and get rejected); appendToken:true
+     adds ?token= to the kernel websockets. Jupyter answers a tokenless request from a non-allowed origin with 404,
+     so nothing here is ever sent without the token. */
+  async function req(s, token, path) {
+    try { return await L.ServerConnection.makeRequest(s.baseUrl + path, { cache: 'no-store' }, s); }
+    catch (e) { return null; } /* network / CORS failure */
   }
 
   async function connect(url, token) {
     await disconnect();
+    token = String(token || '').trim();
     const baseUrl = norm(url);
     const wsUrl = baseUrl.replace(/^http/i, 'ws');
-    const s = L.ServerConnection.makeSettings({ baseUrl, wsUrl, token: token || '', appendToken: true, init: { cache: 'no-store', credentials: 'omit' } });
-    let res;
-    try { res = await L.ServerConnection.makeRequest(baseUrl + 'api/kernelspecs', {}, s); }
-    catch (e) {
-      /* a rejected token often comes back without CORS headers, so fetch just fails; /api needs no token */
-      let up = false;
-      try { up = (await L.ServerConnection.makeRequest(baseUrl + 'api', {}, L.ServerConnection.makeSettings({ baseUrl, wsUrl, init: { cache: 'no-store', credentials: 'omit' } }))).ok; } catch (_) { /* */ }
-      throw new Error(up ? 'Wrong token (server rejected it)' : 'Cannot reach server (offline, wrong URL or CORS)');
-    }
-    if (res.status === 401 || res.status === 403) throw new Error('Wrong token (HTTP ' + res.status + ')');
+    const s = L.ServerConnection.makeSettings({ baseUrl, wsUrl, token, appendToken: true,
+      init: { cache: 'no-store', credentials: 'omit' } });
+    const ping = await req(s, token, 'api');
+    if (!ping) throw new Error('Cannot reach server (offline, wrong URL, or this site is not in allow_origin)');
+    if (ping.status === 401 || ping.status === 403) throw new Error('Wrong token (HTTP ' + ping.status + ')');
+    if (ping.status === 404) throw new Error('Not found (HTTP 404): check the URL / base path, or the token and allow_origin');
+    if (!ping.ok) throw new Error('Server error HTTP ' + ping.status);
+    const res = await req(s, token, 'api/kernelspecs');
+    /* server answered the ping, so a failed/CORS-less kernelspecs call means the token was rejected */
+    if (!res || res.status === 401 || res.status === 403) throw new Error('Wrong token' + (res ? ' (HTTP ' + res.status + ')' : ' (server rejected it)'));
+    if (res.status === 404) throw new Error('Not found (HTTP 404): check the URL / base path');
     if (!res.ok) throw new Error('Server error HTTP ' + res.status);
-    const data = await res.json();
+    let data = null; try { data = await res.json(); } catch (_) { /* */ }
     if (!data || !data.kernelspecs) throw new Error('Not a Jupyter Server');
     settings = s; specs = data;
     km = new L.KernelManager({ serverSettings: s });
