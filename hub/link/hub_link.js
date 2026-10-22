@@ -18,6 +18,11 @@
  *   "Open in…" go to the FOCUSED window (window.__hubAppFrame()); "Open in…" opens / focuses
  *   the receiver app's window (hub.js __hubOpenUrl). Device / message updates reach all
  *   registered apps.
+ * - R57: only same-origin app frames are served. A message counts only when it comes from one of
+ *   the Hub's own frames (frameOf) AND from the Hub's origin; replies are posted to location.origin,
+ *   so a frame that navigated to another site gets nothing (not even 'hello' with the link code).
+ *   file://: every file page has the opaque origin 'null' and postMessage cannot target 'null', so
+ *   there the frameOf check is what counts and replies use '*' (to our own frames only).
  */
 (function () {
   'use strict';
@@ -77,7 +82,11 @@
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
-  function postTo(f, m) { try { if (f && f.contentWindow) f.contentWindow.postMessage(m, '*'); } catch (_) { /* gone */ } }
+  const IS_FILE = location.protocol === 'file:';
+  /** R57: the sender is a page of the Hub's own origin ('null' for every file:// page). */
+  const sameOrigin = (e) => e.origin === location.origin || (IS_FILE && e.origin === 'null');
+  const TARGET = IS_FILE ? '*' : location.origin;   // R57: was '*' everywhere
+  function postTo(f, m) { try { if (f && f.contentWindow) f.contentWindow.postMessage(m, TARGET); } catch (_) { /* gone */ } }
   function post(m) { postTo(curFrame(), m); }
   function postAll(m) { allFrames().forEach((f) => { if (f.__slReg) postTo(f, m); }); }
 
@@ -147,7 +156,7 @@
   /* ---------- iframe contract ---------- */
   window.addEventListener('message', (e) => {
     const frame = frameOf(e.source);
-    if (!frame) return;
+    if (!frame || !sameOrigin(e)) return;   // R57: our own frame AND our origin
     const d = e.data;
     if (!d || typeof d !== 'object' || !d.sharedLink) return;
     const post = (m) => postTo(frame, m);   // answers go back to the app that asked

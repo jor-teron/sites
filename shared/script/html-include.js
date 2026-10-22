@@ -12,7 +12,11 @@ function includeHTML(file, selector) {
       el.innerHTML = html;
     })
     .catch(err => {
-      el.innerHTML = `<div style="color:red;">${err.message}</div>`;
+      // R57: the message carries the file name: show it as text, never as HTML
+      const box = document.createElement("div");
+      box.style.color = "red";
+      box.textContent = err && err.message ? err.message : String(err);
+      el.replaceChildren(box);
     });
 }
 
