@@ -1,4 +1,5 @@
-// Solar System Explorer R1c: Sun + 8 planets on compressed circular orbits, pan and zoom,
+// Solar System Explorer R2a: bodies are drawn by core/art.js (procedural textures, terminator, rim glow, rings).
+// R1c: Sun + 8 planets on compressed circular orbits, pan and zoom,
 // tap a body (or pick it from the list) to fly to it, follow it and show its info panel (data in core/data.js).
 // R1c adds pause and speed steps; orbit time is accumulated so speed changes never make planets jump.
 // Distances: r = 70 * ln(1 + 2.5 * AU) world units (log-compressed so Neptune fits).
@@ -6,20 +7,20 @@
 (function () {
   'use strict';
   var PLANETS = [
-    // name, AU, period (Earth years), radius (world units), colour
-    ['Mercury', 0.39, 0.241, 2.2, '#b5aca3'],
-    ['Venus', 0.72, 0.615, 3.6, '#e8c98a'],
-    ['Earth', 1.00, 1.000, 3.8, '#4f8fe8'],
-    ['Mars', 1.52, 1.881, 2.8, '#d0603a'],
-    ['Jupiter', 5.20, 11.86, 11, '#d9b38c'],
-    ['Saturn', 9.58, 29.46, 9.5, '#e6d2a0'],
-    ['Uranus', 19.2, 84.01, 6.5, '#9fd8e0'],
-    ['Neptune', 30.1, 164.8, 6.2, '#4f6fe0']
+    // name, AU, period (Earth years), radius (world units), colour (small-size disc), texture spin (sim s per turn)
+    ['Mercury', 0.39, 0.241, 2.2, '#b5aca3', 400],
+    ['Venus', 0.72, 0.615, 3.6, '#e8c98a', -500],
+    ['Earth', 1.00, 1.000, 3.8, '#4f8fe8', 60],
+    ['Mars', 1.52, 1.881, 2.8, '#d0603a', 62],
+    ['Jupiter', 5.20, 11.86, 11, '#d9b38c', 40],
+    ['Saturn', 9.58, 29.46, 9.5, '#e6d2a0', 44],
+    ['Uranus', 19.2, 84.01, 6.5, '#9fd8e0', -70],
+    ['Neptune', 30.1, 164.8, 6.2, '#4f6fe0', 66]
   ];
   var SUN_R = 16, EARTH_SECONDS = 20, FLY_MS = 800, fitZ = 1; // zoom is clamped to fitZ x0.5 .. x25
   var SUN = { name: 'Sun', orbit: 0, period: 1, r: SUN_R, color: '#ffd25a', phase: 0, x: 0, y: 0 };
   var bodies = PLANETS.map(function (p, i) {
-    return { name: p[0], orbit: 70 * Math.log(1 + 2.5 * p[1]), period: p[2], r: p[3], color: p[4],
+    return { name: p[0], orbit: 70 * Math.log(1 + 2.5 * p[1]), period: p[2], r: p[3], color: p[4], spin: p[5],
       phase: i * 2.399, x: 0, y: 0 }; // golden-angle start so planets don't line up
   });
   var all = [SUN].concat(bodies);
@@ -186,19 +187,10 @@
     // Orbits
     ctx.lineWidth = 1 / cam.z; ctx.strokeStyle = 'rgba(120,150,210,.22)';
     bodies.forEach(function (b) { ctx.beginPath(); ctx.arc(0, 0, b.orbit, 0, Math.PI * 2); ctx.stroke(); });
-    // Sun with glow
-    var g = ctx.createRadialGradient(0, 0, SUN_R * 0.3, 0, 0, SUN_R * 2);
-    g.addColorStop(0, 'rgba(255,210,90,.55)'); g.addColorStop(1, 'rgba(255,150,40,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, SUN_R * 2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#ffd25a'; ctx.beginPath(); ctx.arc(0, 0, SUN_R, 0, Math.PI * 2); ctx.fill();
-    // Planets
-    bodies.forEach(function (b) {
-      if (b.name === 'Saturn') {
-        ctx.strokeStyle = 'rgba(230,210,160,.7)'; ctx.lineWidth = b.r * 0.35;
-        ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r * 1.9, b.r * 0.7, -0.4, 0, Math.PI * 2); ctx.stroke();
-      }
-      ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
-    });
+    // Sun, then planets (textures are built lazily the first time a body is drawn large enough)
+    var sec = simT / 1000;
+    window.SS_ART.draw(ctx, SUN, cam.z, sec);
+    bodies.forEach(function (b) { window.SS_ART.draw(ctx, b, cam.z, sec); });
     if (follow) { // selection ring
       ctx.strokeStyle = 'rgba(255,184,77,.8)'; ctx.lineWidth = 1.5 / cam.z;
       ctx.beginPath(); ctx.arc(follow.x, follow.y, follow.r + 5 / cam.z, 0, Math.PI * 2); ctx.stroke();
