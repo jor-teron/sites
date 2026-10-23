@@ -134,6 +134,16 @@ Calculator (Legacy), ../tools/calculator-beta/,   , , Legacy
 Webcam,             ../media/webcam/,             , , Legacy
 Keyboard,           keyboard/,                    , , Legacy
 `,
+  "Learn": `# Learn — tiles page + Hub menu flyout. This CSV is the source of truth for the Learn category (see README.md).
+# name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
+# section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
+name, path, icon, newtab, section
+First Aid,               first-aid/,                 , , Health
+NE-India Dictionary,     ../tools/nei-dict/,         , , Language
+Caption for NEI,         ../tools/caption-for-nei/,  , , Language
+Learning HTML (Basic),   ../tools/learning-html/,    , , Coding
+Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_icon.png, , Coding
+`,
   "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools; R53c: D-Pad Controller listed here from Games, folder stays in hub/controller/; R54: new Disk app; T1: Terminal; AH1: App Hub). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)

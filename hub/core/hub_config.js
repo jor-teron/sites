@@ -21,5 +21,6 @@ window.HUB_CAT_CSV = {
   Connectivity: 'apps/connectivity/connectivity-apps.csv',
   Tools: 'apps/tools/tools-apps.csv',
   Lab: 'apps/lab/lab-apps.csv',
+  Learn: 'apps/learn/learn-apps.csv',   // H9
   System: 'apps/system/system-apps.csv'   // R53: the Hub's own apps (Settings, About)
 };

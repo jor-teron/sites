@@ -56,7 +56,7 @@
     // tiles pages live in apps/<cat>/<cat>.html (their index.html only redirects there)
     Favorite: 'apps/favorite/favorite.html', Games: 'apps/games/games.html', Media: 'apps/media/media.html',
     Office: 'apps/office/office.html', Connectivity: 'apps/connectivity/connectivity.html',
-    Tools: 'apps/tools/tools.html', Lab: 'apps/lab/lab.html', System: 'apps/system/system.html'   // R53
+    Tools: 'apps/tools/tools.html', Lab: 'apps/lab/lab.html', Learn: 'apps/learn/learn.html', System: 'apps/system/system.html'   // R53
     // R58: the dead Desktop (apps/tools/vDesktop/) and About entries are gone: no menu category uses them
   };
   /** R58: old deep links / last-app values whose hidden rows left hub_apps.js (R33a). Contact and
