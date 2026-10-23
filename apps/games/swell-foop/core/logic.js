@@ -1,5 +1,5 @@
 /*
- * Swell Foop — game logic. Tunables come from SWELL_FOOP_CONFIG (swell-foop_config.js).
+ * Swell Foop — game logic. Tunables come from SWELL_FOOP_CONFIG (core/config.js).
  * Self-contained (no network). The "Hub bridge" section at the bottom lets the
  * sites hub show name / Score / Moves / New Game in its header; standalone it
  * does nothing.
@@ -52,7 +52,7 @@ function initCanvas() {
     const verEl = document.getElementById('appVersion');
     if (nameEl && APP.name) nameEl.textContent = APP.name;
     if (verEl) verEl.textContent = APP.version ? (TEXT.versionPrefix || '') + APP.version : '';
-    if (APP.name) document.title = APP.name;
+    if (APP.name) document.title = APP.release ? APP.name + ' ' + APP.release : APP.name; // tab title only (no header change)
 
     // Canvas size: game units stay BOARD_W x BOARD_H; fitCanvas() scales the display
     fitCanvas();

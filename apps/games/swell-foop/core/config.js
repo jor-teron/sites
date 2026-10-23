@@ -1,13 +1,13 @@
 /*
  * Swell Foop — configuration.
  * Grid, colors, animation, scoring and on-screen text.
- * swell-foop_logic.js reads everything from SWELL_FOOP_CONFIG.
+ * core/logic.js reads everything from SWELL_FOOP_CONFIG.
  * (Mouse/touch game; it had no keyboard controls.)
  * APP = name / version / author / category (title bar + sites hub header).
  */
 const SWELL_FOOP_CONFIG = {
     // App info (own title bar, and the sites hub header via the hub bridge)
-    APP: { name: 'Swell Foop', version: '1.0', author: 'Jor Teron', category: 'Games' },
+    APP: { name: 'Swell Foop', version: '1.0', author: 'Jor Teron', category: 'Games', release: 'SFR1a' },
 
     // Grid
     grid: {
