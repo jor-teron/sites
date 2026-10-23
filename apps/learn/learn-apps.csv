@@ -1,0 +1,9 @@
+# Learn — tiles page + Hub menu flyout. This CSV is the source of truth for the Learn category (see README.md).
+# name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
+# section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
+name, path, icon, newtab, section
+First Aid,               first-aid/,                 , , Health
+NE-India Dictionary,     ../tools/nei-dict/,         , , Language
+Caption for NEI,         ../tools/caption-for-nei/,  , , Language
+Learning HTML (Basic),   ../tools/learning-html/,    , , Coding
+Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_icon.png, , Coding

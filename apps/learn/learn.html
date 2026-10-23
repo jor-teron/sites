@@ -1,0 +1,20 @@
+<!doctype html>
+<!--
+  Learn page (apps/learn/learn.html) — the Hub Learn menu category opens this tiles page.
+  Tiles from learn-apps.csv; shared logic and look in shared/tiles/ (tiles.js, tiles.css).
+  Opened as apps/learn/learn.html (index.html only redirects here). Plain links, no ?v= tags:
+  the Hub service worker revalidates same-origin files (hub/update/hub_sw.js).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Learn</title>
+  <link rel="stylesheet" href="../../shared/tiles/tiles.css" />
+</head>
+<body data-csv="learn-apps.csv">
+  <main id="grid" class="grid" aria-label="Learn"></main>
+  <p id="msg" class="msg" hidden></p>
+  <script src="../../shared/tiles/tiles.js"></script>
+</body>
+</html>
