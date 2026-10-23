@@ -144,7 +144,7 @@ canvas {
 }
 
 /*
- * Inside the sites hub (body.in-hub, set by the hub bridge in swell-foop_logic.js):
+ * Inside the sites hub (body.in-hub, set by the hub bridge in core/logic.js):
  * the hub header shows name / Score / Moves / New Game, so the game's own bar
  * is hidden and the board takes the whole frame (fitCanvas scales it).
  */
@@ -159,3 +159,65 @@ body.in-hub .game-container {
     justify-content: center;
     border-radius: 1rem;
 }
+
+/* Theme button + picker sheet */
+.sf-controls { flex-wrap: wrap; }
+.sf-controls .btn {
+    padding: 0.5rem 1.1rem;
+    border-radius: 0.75rem;
+    background: #3a4660;
+    font-weight: 600;
+}
+.sf-controls .btn:hover { background: #4a5878; }
+.sf-theme-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5, 8, 16, 0.72);
+}
+.sf-theme-panel.hidden { display: none; }
+.sf-theme-sheet {
+    width: min(94vw, 460px);
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    background: #2d3748;
+    border-radius: 1.25rem;
+    padding: 1rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+.sf-theme-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 800;
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+.sf-theme-x { font-size: 1.75rem; line-height: 1; padding: 0 0.5rem; color: #a0aec0; }
+.sf-theme-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+.sf-theme-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem;
+    border-radius: 0.9rem;
+    border: 2px solid transparent;
+    background: #1f2735;
+}
+.sf-theme-card:hover { border-color: #64748b; }
+.sf-theme-card.active { border-color: #38bdf8; background: #22344a; }
+.sf-theme-prev { border-radius: 0.6rem; }
+.sf-theme-name { font-weight: 700; font-size: 0.95rem; }
+@media (min-width: 440px) { .sf-theme-list { grid-template-columns: 1fr 1fr; } .sf-theme-sheet { width: min(94vw, 500px); } }
+body.in-hub .sf-theme-panel { display: none; }

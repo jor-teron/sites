@@ -1,5 +1,6 @@
 /*
- * Swell Foop — game logic. Tunables come from SWELL_FOOP_CONFIG (swell-foop_config.js).
+ * Swell Foop — game logic. Tunables come from SWELL_FOOP_CONFIG (core/config.js); block art comes from the
+ * active theme (core/themes.js registry + assets/themes/*.js). Grid cells hold a colour index or null.
  * Self-contained (no network). The "Hub bridge" section at the bottom lets the
  * sites hub show name / Score / Moves / New Game in its header; standalone it
  * does nothing.
@@ -8,7 +9,7 @@ const CFG = SWELL_FOOP_CONFIG;
 const GRID_COLS = CFG.grid.cols;
 const GRID_ROWS = CFG.grid.rows;
 const BALL_SIZE = CFG.grid.ballSize; // Size of each ball in pixels
-const COLORS = CFG.colors;
+const NUM_COLORS = CFG.numColors; // colour indices 0..NUM_COLORS-1; the theme draws them
 const MARGIN = CFG.grid.margin;
 const ANIM = CFG.animation;
 const APP = CFG.APP || { name: 'Swell Foop', version: '' };
@@ -22,6 +23,12 @@ let grid = []; // The main game grid, stores final positions
 let score = CFG.start.score;
 let moves = CFG.start.moves;
 let isGameOver = false;
+
+// Theme / rendering state
+let theme = SF_THEMES.get(SF_THEMES.DEFAULT_ID);
+let groupSize = [];   // size of the same-colour group each cell belongs to (emoji moods)
+let hoverCell = null; // {r,c} under the mouse pointer
+let framePending = false;
 
 // Animation variables
 let animationActive = false;
@@ -52,7 +59,7 @@ function initCanvas() {
     const verEl = document.getElementById('appVersion');
     if (nameEl && APP.name) nameEl.textContent = APP.name;
     if (verEl) verEl.textContent = APP.version ? (TEXT.versionPrefix || '') + APP.version : '';
-    if (APP.name) document.title = APP.name;
+    if (APP.name) document.title = APP.release ? APP.name + ' ' + APP.release : APP.name; // tab title only (no header change)
 
     // Canvas size: game units stay BOARD_W x BOARD_H; fitCanvas() scales the display
     fitCanvas();
@@ -61,9 +68,16 @@ function initCanvas() {
     // Add event listeners for mouse and touch
     canvas.addEventListener('mousedown', handleInput);
     canvas.addEventListener('touchstart', handleInput);
+    canvas.addEventListener('mousemove', onHover);
+    canvas.addEventListener('mouseleave', onHover);
 
     newGameBtn.addEventListener('click', startNewGame);
     messageButton.addEventListener('click', hideMessageBox);
+
+    // Theme: saved choice (localStorage) or Classic; the picker UI lives in ui/theme_picker.js
+    theme = SF_THEMES.get(loadSavedTheme());
+    canvas.style.background = theme.bg || '';
+    if (typeof SFPicker !== 'undefined') SFPicker.init();
 
     // Initial game start
     startNewGame();
@@ -120,6 +134,7 @@ function startNewGame() {
     currentAnimationMovements = []; // Clear any pending animation data
     updateScoreDisplay();
     generateGrid();
+    recomputeGroups();
     drawGrid(); // Initial draw without animation
     hideMessageBox(); // Ensure message box is hidden on new game
 }
@@ -132,7 +147,7 @@ function generateGrid() {
     for (let r = 0; r < GRID_ROWS; r++) {
         grid[r] = [];
         for (let c = 0; c < GRID_COLS; c++) {
-            grid[r][c] = COLORS[Math.floor(Math.random() * COLORS.length)];
+            grid[r][c] = Math.floor(Math.random() * NUM_COLORS);
         }
     }
 }
@@ -162,18 +177,38 @@ function drawRoundedRect(ctx, x, y, width, height, radius) {
 }
 
 /**
+ * Mood of the block at (r,c) for themes that react (Emoji Faces): excited under the pointer's group,
+ * sad when lonely, happy in a group, with a brief random blink.
+ */
+function moodAt(r, c, T) {
+    if (!theme.moods) return '';
+    if (hoverCell && grid[hoverCell.r] && grid[hoverCell.r][hoverCell.c] !== null && groupSize[hoverCell.r][hoverCell.c] >= CFG.minGroup) {
+        if (grid[r][c] === grid[hoverCell.r][hoverCell.c] && inHoverGroup(r, c)) return 'excited';
+    }
+    if (((T + (r * GRID_COLS + c) * 997) % 3600) < 140) return 'blink';
+    return groupSize[r][c] >= CFG.minGroup ? 'happy' : 'sad';
+}
+let hoverSet = null;
+function inHoverGroup(r, c) { return hoverSet !== null && hoverSet.has(r * GRID_COLS + c); }
+
+/**
  * Draws the current state of the grid on the canvas, with optional falling animation.
  * Balls that are part of `currentAnimationMovements` will be drawn at interpolated positions.
- * Other balls will be drawn at their final, static positions.
+ * Other balls will be drawn at their final, static positions. Blocks come from the active theme
+ * (cached sprites + optional animated overlay), so a frame is cheap.
  * @param {DOMHighResTimeStamp} [timestamp] - The current time provided by requestAnimationFrame.
  */
 function drawGrid(timestamp) {
     if (!grid.length) return;
     ctx.clearRect(0, 0, BOARD_W, BOARD_H); // Clear canvas (game units; context is scaled)
+    if (theme.board) theme.board(ctx, BOARD_W, BOARD_H);
+    const T = timestamp || performance.now();
+    const k = canvas.width / BOARD_W;     // device pixels per game unit (sprite cache scale)
+    const size = BALL_SIZE - MARGIN * 2;  // block size without the margin
 
     let progress = 1; // Default to 1 (no animation)
     if (animationActive && timestamp) { // Only calculate progress if animation is active and timestamp is provided
-        const elapsedTime = timestamp - animationStartTime;
+        const elapsedTime = Math.max(0, timestamp - animationStartTime);
         progress = Math.min(elapsedTime / animationDuration, 1);
     }
 
@@ -210,51 +245,111 @@ function drawGrid(timestamp) {
             }
             interpolatedY -= bounceOffset; // Subtract offset to move ball upwards for bounce
 
-            const size = BALL_SIZE - MARGIN * 2; // Subtract margin from overall size
-            const radius = CFG.grid.cornerRadius; // Radius for rounded corners
-
-            ctx.fillStyle = move.color;
-            // Draw a rounded rectangle for each ball
-            drawRoundedRect(ctx, interpolatedX, interpolatedY, size, size, radius);
-            ctx.fill();
-            ctx.strokeStyle = CFG.outline; // Light stroke for definition
-            ctx.lineWidth = CFG.outlineWidth;
-            ctx.stroke();
+            const seed = move.toR * GRID_COLS + move.toC;
+            SF_THEMES.block(ctx, theme, move.color, interpolatedX, interpolatedY, size, k, T,
+                { seed, mood: moodAt(move.toR, move.toC, T) });
         }
     }
 
     // Draw static balls (those not part of the current animation)
     for (let r = 0; r < GRID_ROWS; r++) {
         for (let c = 0; c < GRID_COLS; c++) {
-            const color = grid[r][c]; // This is the FINAL position and color in the main grid
+            const color = grid[r][c]; // This is the FINAL position and colour index in the main grid
 
             // Only draw if there's a ball AND it's not currently animating to this position
-            if (color && (!animationActive || !animatingToPositions.has(`${r},${c}`))) {
-                const x = c * BALL_SIZE + MARGIN; // Add a small margin for spacing
-                const y = r * BALL_SIZE + MARGIN;
-
-                const size = BALL_SIZE - MARGIN * 2;
-                const radius = CFG.grid.cornerRadius;
-
-                ctx.fillStyle = color;
-                drawRoundedRect(ctx, x, y, size, size, radius);
-                ctx.fill();
-                ctx.strokeStyle = CFG.outline;
-                ctx.lineWidth = CFG.outlineWidth;
-                ctx.stroke();
+            if (color !== null && (!animationActive || !animatingToPositions.has(`${r},${c}`))) {
+                SF_THEMES.block(ctx, theme, color, c * BALL_SIZE + MARGIN, r * BALL_SIZE + MARGIN, size, k, T,
+                    { seed: r * GRID_COLS + c, mood: moodAt(r, c, T) });
             }
         }
     }
 
     // Continue animation if still active and not finished
     if (animationActive && progress < 1) {
-        requestAnimationFrame(drawGrid);
+        scheduleFrame();
     } else if (animationActive && progress >= 1) {
         // Animation finished, reset flag and clear movements
         animationActive = false;
         currentAnimationMovements = [];
         checkGameOver();
+        if (theme.fx) scheduleFrame();
+    } else if (theme.fx) {
+        scheduleFrame(); // themes with an animated overlay (sparkle, glow, blink) keep a light loop going
     }
+}
+
+/** Schedules one drawGrid on the next animation frame (never more than one pending). */
+function scheduleFrame() {
+    if (framePending) return;
+    framePending = true;
+    requestAnimationFrame((ts) => { framePending = false; drawGrid(ts); });
+}
+
+/** Recomputes the same-colour group size of every cell (used for reactive themes). */
+function recomputeGroups() {
+    groupSize = [];
+    for (let r = 0; r < GRID_ROWS; r++) groupSize[r] = new Array(GRID_COLS).fill(0);
+    for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+            if (grid[r][c] === null || groupSize[r][c]) continue;
+            const g = findConnectedBalls(r, c, grid[r][c]);
+            g.forEach(([gr, gc]) => { groupSize[gr][gc] = g.length; });
+        }
+    }
+    updateHoverSet();
+}
+
+function updateHoverSet() {
+    hoverSet = null;
+    if (hoverCell && grid[hoverCell.r] && grid[hoverCell.r][hoverCell.c] !== null) {
+        hoverSet = new Set(findConnectedBalls(hoverCell.r, hoverCell.c, grid[hoverCell.r][hoverCell.c]).map(([r, c]) => r * GRID_COLS + c));
+    }
+}
+
+/** Pointer position (client px) to {r,c} on the board, or null outside. */
+function cellFromClient(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const x = (clientX - rect.left) * (BOARD_W / rect.width);
+    const y = (clientY - rect.top) * (BOARD_H / rect.height);
+    const col = Math.floor(x / BALL_SIZE), row = Math.floor(y / BALL_SIZE);
+    return row >= 0 && row < GRID_ROWS && col >= 0 && col < GRID_COLS ? { r: row, c: col } : null;
+}
+
+function onHover(event) {
+    if (!theme.moods) return;
+    const cell = cellFromClient(event.clientX, event.clientY);
+    const same = (!cell && !hoverCell) || (cell && hoverCell && cell.r === hoverCell.r && cell.c === hoverCell.c);
+    if (same) return;
+    hoverCell = cell;
+    updateHoverSet();
+    scheduleFrame();
+}
+
+/* ---- themes ---- */
+
+/** Applies a theme by id (unknown id falls back to Classic), saves the choice, and redraws. */
+function setTheme(id, save) {
+    theme = SF_THEMES.get(id);
+    canvas.style.background = theme.bg || '';
+    hoverCell = null;
+    updateHoverSet();
+    if (save !== false) {
+        try { localStorage.setItem(CFG.themeStorageKey, theme.id); } catch (e) { /* storage blocked: choice not saved */ }
+    }
+    SF_THEMES.clearCache();
+    if (!animationActive) drawGrid();
+    if (typeof SFPicker !== 'undefined') SFPicker.sync();
+}
+
+function loadSavedTheme() {
+    let id = SF_THEMES.DEFAULT_ID;
+    try { const v = localStorage.getItem(CFG.themeStorageKey); if (v && SF_THEMES.has(v)) id = v; } catch (e) { /* ignore */ }
+    return id;
+}
+
+function cycleTheme() {
+    const ids = SF_THEMES.list().map((t) => t.id);
+    setTheme(ids[(ids.indexOf(theme.id) + 1) % ids.length]);
 }
 
 /**
@@ -297,7 +392,7 @@ function handleInput(event) {
  */
 function handleClick(row, col) {
     const clickedColor = grid[row][col];
-    if (!clickedColor) return; // If clicked an empty space, do nothing
+    if (clickedColor === null) return; // If clicked an empty space, do nothing
 
     // Find all connected balls of the same color
     const connectedBalls = findConnectedBalls(row, col, clickedColor);
@@ -316,6 +411,7 @@ function handleClick(row, col) {
 
         // Update the actual game grid with the final state
         grid = finalGrid;
+        recomputeGroups();
 
         // Combine all movements for animation
         currentAnimationMovements = [...gravityMovements, ...columnMovements];
@@ -327,7 +423,7 @@ function handleClick(row, col) {
         // Start the falling animation
         animationActive = true;
         animationStartTime = performance.now();
-        requestAnimationFrame(drawGrid); // Start the animation loop
+        scheduleFrame(); // Start the animation loop
     }
 }
 
@@ -492,7 +588,7 @@ function checkGameOver() {
     for (let r = 0; r < GRID_ROWS; r++) {
         for (let c = 0; c < GRID_COLS; c++) {
             const color = grid[r][c];
-            if (color) {
+            if (color !== null) {
                 const connected = findConnectedBalls(r, c, color);
                 if (connected.length >= CFG.minGroup) {
                     possibleMovesExist = true;
@@ -585,10 +681,11 @@ function onHubMessage(event) {
             type: 'hub-app',
             app: { name: APP.name, version: APP.version },
             stats: stats,
-            buttons: [{ id: 'new', label: TEXT.newGame || 'New Game' }],
+            buttons: [{ id: 'new', label: TEXT.newGame || 'New Game' }, { id: 'theme', label: TEXT.theme || 'Theme' }],
         });
     } else if (d.type === 'hub-action' && hubLinked) {
         if (d.id === 'new' && canvas) startNewGame();
+        else if (d.id === 'theme' && canvas) cycleTheme();
     }
 }
 

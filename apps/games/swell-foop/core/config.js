@@ -1,13 +1,13 @@
 /*
  * Swell Foop — configuration.
- * Grid, colors, animation, scoring and on-screen text.
- * swell-foop_logic.js reads everything from SWELL_FOOP_CONFIG.
+ * Grid, colours count, animation, scoring and on-screen text (block drawing: assets/themes/).
+ * core/logic.js reads everything from SWELL_FOOP_CONFIG.
  * (Mouse/touch game; it had no keyboard controls.)
  * APP = name / version / author / category (title bar + sites hub header).
  */
 const SWELL_FOOP_CONFIG = {
     // App info (own title bar, and the sites hub header via the hub bridge)
-    APP: { name: 'Swell Foop', version: '1.0', author: 'Jor Teron', category: 'Games' },
+    APP: { name: 'Swell Foop', version: '1.0', author: 'Jor Teron', category: 'Games', release: 'SF1a' },
 
     // Grid
     grid: {
@@ -15,17 +15,12 @@ const SWELL_FOOP_CONFIG = {
         rows: 6,           // rows
         ballSize: 50,      // size of each cell in pixels
         margin: 2,         // gap around each ball in pixels
-        cornerRadius: 8,   // ball corner radius
     },
 
-    // Ball colors (one is picked at random per cell)
-    colors: [
-        '#3b82f6', // blue-500
-        '#22c55e', // green-500
-        '#f59e0b', // amber-500
-    ],
-    outline: '#cbd5e0',    // light stroke around each ball
-    outlineWidth: 1,       // stroke width
+    // Number of block colours (indices 0..n-1). How each index looks (colour AND shape) is decided by
+    // the active theme (assets/themes/*.js, registry in core/themes.js); every theme draws 5 variants.
+    numColors: 3,
+    themeStorageKey: 'swellfoop.theme', // localStorage key for the chosen theme (falls back to Classic)
 
     // Starting values
     start: {
@@ -59,5 +54,6 @@ const SWELL_FOOP_CONFIG = {
         statScore: 'Score',                     // hub header chip label
         statMoves: 'Moves',                     // hub header chip label
         newGame: 'New Game',                    // hub header button label
+        theme: 'Theme',                         // theme picker button label
     },
 };
