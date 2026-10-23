@@ -38,6 +38,7 @@ window.HUB_APP_INDEX = {
   "aoe-rts": ["Games", "apps/games/aoe-rts/", "AoE RTS", "apps/games/aoe-rts/aoe-rts_icon.png", 0],
   "gravity-sandbox": ["Games", "apps/games/gravity-sandbox/", "Gravity Sandbox", "apps/games/gravity-sandbox/gravity-sandbox_icon.png", 0],
   "solar-system": ["Games", "apps/games/solar-system/", "Solar System", "apps/games/solar-system/solar-system_icon.png", 0],
+  "aquarium": ["Games", "apps/games/aquarium/", "Aquarium", "apps/games/aquarium/aquarium_icon.png", 0],
   "browser-fps": ["Games", "apps/games/browser-fps/", "Browser FPS", "apps/games/browser-fps/browser-fps_icon.png", 0],
   "island-conquest": ["Games", "apps/games/island-conquest/", "Island Conquest", "apps/games/island-conquest/island-conquest_icon.png", 0],
   "tennis-throw": ["Games", "apps/games/tennis-throw/", "Tennis Ball Blitz", "apps/games/tennis-throw/tennis-throw_icon.png", 0],

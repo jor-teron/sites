@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Aquarium AQ1a</title>
+  <link rel="icon" href="aquarium_icon.png" />
+  <link rel="stylesheet" href="css/aquarium.css?v=aq1a" />
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <aside id="card" hidden role="dialog" aria-labelledby="c-name">
+    <button id="close" type="button" title="Close (Esc)">&times;</button>
+    <h2 id="c-name"></h2>
+    <div id="c-sci"></div>
+    <p id="c-desc"></p>
+    <ul id="c-facts"></ul>
+  </aside>
+  <div id="hint">Tap a fish to meet it</div>
+  <script src="core/fish.js?v=aq1a"></script>
+  <script src="core/tank.js?v=aq1a"></script>
+</body>
+</html>
