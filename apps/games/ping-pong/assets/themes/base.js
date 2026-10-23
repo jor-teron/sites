@@ -10,13 +10,13 @@
  *   ui           CSS custom properties for the page chrome (bg, text, hud, border, accent, btnBg, btnText,
  *                panel, panelBorder, scrim); missing keys keep the stylesheet defaults (the Classic look)
  *   colors       { message, shade }  win / pause text on the court and the dimming behind it
- *   paddle       { L: {...}, R: {...} } colours for the paddle model (see assets/models/paddle.js)
- *   ball         colours for the ball model (see assets/models/ball.js)
+ *   paddle       { L: {...}, R: {...} } colours for the paddle model (see core/registry.js, assets/models/paddles/)
+ *   ball         colours for the ball model (see assets/models/balls/)
  *   trail        { len, colors: [old … new], alpha, glow, shape }  ball trail (drawn under the ball); null = none
  *                (shape "flame": flickering tapered flame). A ball model can override trail / hit / shadow (core/registry.js)
  *   shadow       true: bounce shadow under the ball (Table Tennis)
  *   emit (ball models only)  { every, kind, colors, size, life, speed, glow, rise }  a particle every `every` frames
- *   hit          { kind: "spark" | "ring" | "flake", count, colors, speed, life, size, glow, ring }  null = none
+ *   hit          { kind: "spark" | "ring" | "flake" | "star", count, colors, speed, life, size, glow, ring }  null = none
  *   drawCourt(ctx, e)   court background + lines + net   (required)
  */
 (function () {
@@ -124,6 +124,13 @@
           ctx.lineTo(p.x + Math.cos(ang) * s, p.y + Math.sin(ang) * s);
         }
         ctx.stroke();
+      } else if (p.kind === "star") {                // a four-point glint
+        const s = p.size * (0.4 + 0.8 * a);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - s); ctx.lineTo(p.x + s * 0.22, p.y - s * 0.22); ctx.lineTo(p.x + s, p.y); ctx.lineTo(p.x + s * 0.22, p.y + s * 0.22);
+        ctx.lineTo(p.x, p.y + s); ctx.lineTo(p.x - s * 0.22, p.y + s * 0.22); ctx.lineTo(p.x - s, p.y); ctx.lineTo(p.x - s * 0.22, p.y - s * 0.22);
+        ctx.closePath(); ctx.fill();
       } else {
         ctx.fillStyle = p.color;
         ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (0.4 + 0.6 * a), 0, Math.PI * 2); ctx.fill();

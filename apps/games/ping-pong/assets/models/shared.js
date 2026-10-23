@@ -27,6 +27,13 @@
     ctx.stroke();
   };
 
+  /** Hit animation curve: 1 right after a hit, easing to 0 at `len` frames (0 when age >= len). */
+  PP.pulse = function (age, len) {
+    if (!(age < len)) return 0;
+    const k = 1 - age / len;
+    return k * k;
+  };
+
   /** Turn on a glow of `blur` court units in `color` (call inside ctx.save() / ctx.restore()). */
   PP.glow = function (ctx, color, blur) {
     ctx.shadowColor = color;

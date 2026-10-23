@@ -59,7 +59,7 @@
 }
 #theme-close:hover, #theme-close:focus-visible { outline: none; background: rgba(128, 128, 128, 0.25); }
 
-/* Body: the "Theme" and "Ball" sections, stacked (side by side on a wide screen); scrolls on a short screen */
+/* Body: the "Theme", "Ball" and "Paddle" sections, stacked (side by side on a wide screen); scrolls on a short screen */
 #theme-body {
   display: grid;
   grid-template-columns: 1fr;
@@ -71,10 +71,17 @@
 }
 #theme-body h3 { margin: 8px 4px 6px; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; opacity: 0.75; }
 .card-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; align-content: start; }
-@media (min-width: 820px) {
+@media (min-width: 820px) {                       /* Theme across the top (3 cards a row), Ball and Paddle side by side below */
   #theme-sheet { width: min(940px, 100%); }
-  #theme-body { grid-template-columns: 3fr 2fr; align-items: start; }
-  #theme-body .card-list { grid-template-columns: repeat(2, 1fr); }
+  #theme-body { grid-template-columns: 1fr 1fr; align-items: start; }
+  #theme-body section:first-child { grid-column: 1 / -1; }
+  #theme-body section:first-child .card-list { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1100px) {                      /* all three side by side */
+  #theme-sheet { width: min(1120px, 100%); }
+  #theme-body { grid-template-columns: 1.1fr 1fr 1fr; }
+  #theme-body section:first-child { grid-column: auto; }
+  #theme-body section:first-child .card-list { grid-template-columns: repeat(2, 1fr); }
 }
 .theme-card {
   display: flex; flex-direction: column; align-items: stretch; gap: 6px;

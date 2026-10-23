@@ -9,6 +9,7 @@
 
 PP.setTheme(PP.store.get(CFG.themes.key) || CFG.themes.default, false);   // saved pick (unknown id -> first theme)
 PP.setBall(PP.store.get(CFG.balls.key) || CFG.balls.default, false);      // saved ball (unknown id -> Classic)
+PP.setPaddle(PP.store.get(CFG.paddles.key) || CFG.paddles.default, false);   // saved paddle (unknown id -> Classic)
 fitCourt();
 serve(CFG.ball.firstServeDir);
 updateHud();
