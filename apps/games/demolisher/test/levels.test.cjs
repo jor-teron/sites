@@ -1,8 +1,8 @@
 // Demolisher DM1a: levels 01-100 (00 is the fixed Demo world, checked in the browser test) are deterministic and pass validation.
 // Run: node apps/games/demolisher/test/levels.test.cjs
 const crypto = require('crypto');
-const SEED = require('../demolisher_seed.js');
-const LV = require('../demolisher_levels.js');
+const SEED = require('../core/seed.js');
+const LV = require('../core/levels.js');
 const sig = (lv) => crypto.createHash('sha1').update(Buffer.from(lv.tiles)).update(JSON.stringify([lv.top, lv.spawn, lv.targets, lv.enemies, lv.ammo])).digest('hex');
 let fails = 0; const rows = [];
 const bad = (m) => { fails++; console.log('FAIL', m); };

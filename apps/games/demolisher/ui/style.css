@@ -1,11 +1,11 @@
 /*
-  File: demolisher.css
+  File: ui/style.css
   Project: Demolisher
   Purpose: Layout, HUD, toolbar, overlay, and touch controls for the destructible sandbox.
   No game logic lives here. Height: 100dvh (100% fallback). Short landscape screens
   (phones, the sites hub) get the weapons as a side column. body.in-hub hides the
   own top bar (the hub bar shows HP / Score / buttons). Touch sizes come from
-  demolisher_config.js as --stick / --knob / --fire / --jump.
+  core/config.js as --stick / --knob / --fire / --jump.
 */
 
 /* Reset box model and kill the mobile tap flash. */

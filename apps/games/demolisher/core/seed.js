@@ -1,5 +1,5 @@
 /*
-  File: demolisher_seed.js
+  File: core/seed.js
   Project: Demolisher (DM1a)
   Purpose: Level-number seeding in the style of the AoE RTS / LandCraft map generators and the
            Sling Birds seed.js. mapSeed(n) hashes the level number so neighbouring levels differ a
