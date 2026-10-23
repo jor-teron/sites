@@ -17,7 +17,13 @@
  * fills the tile, minimal padding; "Renew from phone" when a phone sign-in ran out); no client id yet
  * → "Set up Google Drive (see How-to)" (opens Settings → How-to); connected → a normal tile
  * (your Google address underneath) that opens Files, right-click → Sign out (revokes).
- * The panel element is kept across redraws so a code on screen isn't lost.
+ * H7 (lean desktop icons): the pane is just the drive icons + names on the wallpaper (no "Files" label row, no tile
+ * boxes, no "Manage drives" tile; drive management is in the Disk app: Start menu / App Hub / right-click
+ * "Manage in Disk"). They flow like desktop icons (CSS: top-left, down, then the next column). A folder that needs
+ * "Allow access" is greyed with a small lock, title / aria-label "Click to allow access"; the click asks as before.
+ * Settings → Desktop "Show Files on the desktop" (key sites-hub.showFiles, default on, '0' = off): when off the pane
+ * is empty and hidden and nothing is read (no FsDrives.list); hub_prefs.js calls HubDrives.sync() on every change (live).
+ * The Google Drive sign-in panel of R9a is no longer part of this pane (Disk app); the older code is in git history.
  */
 (function () {
   'use strict';
@@ -46,21 +52,14 @@
     if (window.__hubOpenApp) window.__hubOpenApp(FILES);
   }
 
-  async function removeDrive(d) {
-    const ok = window.UiDialog
-      ? await window.UiDialog.confirm('Remove \u201c' + d.name + '\u201d from Drives?', 'Only the shortcut goes away. No files are deleted.', 'Remove')
-      : false;
-    if (ok) await D.remove(d.id);
-  }
   async function allowDrive(d) {
     if (await D.allow(d.id)) { draw(); openFiles(d.id); }
   }
 
   /* R54b: the pane is "Files": only CONNECTED drives (Local always; added folders with access;
-   * Google Drive when signed in; R56: added folders that need access again show greyed, click = Allow access). Managing drives (Add folder, Allow access, Remove, Google sign-in /
-   * sign-out) moved to the Disk app (apps/system/disk/): a "Manage drives" tile and the right-click
-   * "Manage in Disk" open it. The R9a–R53 code (sign-in panel, ✕ / Allow access, menu) is kept below
-   * as a LEGACY comment. */
+   * Google Drive when signed in; R56: added folders that need access again show greyed, click = Allow access).
+   * Managing drives (Add folder, Allow access, Remove, Google sign-in / sign-out) is in the Disk app
+   * (apps/system/disk/); the right-click "Manage in Disk" opens it (H7: the "Manage drives" tile is gone). */
   const DISK = 'apps/system/disk/';
   const openDisk = () => { if (window.__hubOpenApp) window.__hubOpenApp(DISK); };
   const known = new Map();   // drive id → d (menus are built synchronously)
@@ -85,176 +84,57 @@
       ];
     }, { touch: true });
   }
-  function tile(cls, ico, name, sub, onClick) {
+  function tile(cls, ico, name, onClick) {
     const b = el('button', 'drv ' + cls);
     b.type = 'button';
     b.append(el('span', 'drv-ico', ico), el('span', 'drv-name', name));
-    if (sub) b.appendChild(el('span', 'drv-sub', sub));
     b.addEventListener('click', onClick);
     return b;
   }
+  /** H7: Settings → Desktop "Show Files on the desktop" (default on; '0' = off). */
+  const enabled = () => { try { return localStorage.getItem('sites-hub.showFiles') !== '0'; } catch (_) { return true; } };
+  let seq = 0;
   async function draw() {
+    if (!enabled()) { seq++; known.clear(); locked.clear(); pane.replaceChildren(); pane.hidden = true; return; }   // off: nothing rendered, nothing read
+    const my = ++seq;
     const list = await D.list();
+    const items = [];
+    for (const d of list) {
+      if (d.kind === 'gdrive' && D.gdriveState() !== 'ok') continue;
+      let tip = '', lock = false;
+      if (d.kind === 'gdrive') { const u = window.GoogleAuth.user() || {}; tip = u.email ? 'Google Drive \u2014 ' + u.email : 'Google Drive'; }
+      else if (d.kind === 'local') tip = d.name + ' \u2014 in this browser';
+      else if ((await D.access(d.id)) !== 'granted') { lock = true; tip = 'Click to allow access'; }   // R56: was hidden
+      else tip = d.name + ' \u2014 folder';
+      items.push({ d, lock, tip });
+    }
+    if (my !== seq || !enabled()) return;   // a newer draw (or Files switched off) overtook this one
     known.clear();
     locked.clear();
     const grid = el('div', 'drv-grid');
-    for (const d of list) {
-      let sub = '';
-      if (d.kind === 'gdrive') {
-        if (D.gdriveState() !== 'ok') continue;
-        const u = window.GoogleAuth.user() || {};
-        sub = u.email || 'Connected';
-      } else if (d.kind === 'local') sub = 'In this browser';
-      else if ((await D.access(d.id)) !== 'granted') { locked.add(d.id); sub = 'Click to allow access'; }   // R56: was hidden
-      else sub = 'Folder';
-      const lock = locked.has(d.id);
+    for (const { d, lock, tip } of items) {
+      if (lock) locked.add(d.id);
       // R56: a folder that needs access again (the browser forgets it on reload) stays as a greyed tile;
       //  the click is the user gesture requestPermission (FsDrives.allow) needs, then Files opens it.
-      const t = tile('drv-' + d.kind, d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : '\uD83D\uDCC2', d.name, sub, lock ? () => allowDrive(d) : (e) => openFiles(d.id, e.shiftKey));
-      if (lock) { t.classList.add('drv-locked'); t.title = 'Allow access to ' + d.name + ' (the browser asks again after a reload)'; }
+      const t = tile('drv-' + d.kind, d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : '\uD83D\uDCC2', d.name,
+        lock ? () => allowDrive(d) : (e) => openFiles(d.id, e.shiftKey));
+      t.title = lock ? 'Click to allow access (' + d.name + ')' : tip;
+      if (lock) {
+        t.classList.add('drv-locked');
+        t.setAttribute('aria-label', d.name + ', click to allow access');
+        t.querySelector('.drv-ico').appendChild(el('span', 'drv-lock', '\uD83D\uDD12'));
+      } else t.setAttribute('aria-label', d.name);
       t.dataset.drive = d.id;
       known.set(d.id, d);
       grid.appendChild(t);
     }
-    const m = tile('drv-add drv-manage', '\u2699', 'Manage drives', 'Add, connect or remove in Disk', openDisk);
-    grid.appendChild(m);
-    const out = [el('h2', 'drv-title', 'Files'), grid];
+    const out = [grid];
     if (!list.length) out.push(el('p', 'drv-note', 'This browser has no file storage for web pages.'));
     pane.replaceChildren(...out);
     pane.hidden = false;
   }
-
-  /* ===== LEGACY (until R54b, not run): the Drives pane that also managed drives =====
-  // Google Drive tile: the connect panel lives in one kept element (a redraw must not drop the QR)
-  let gdBox = null, gdMount = null;
-  const howto = () => (window.HubCtx ? window.HubCtx.openApp(window.HubCtx.SETTINGS, { hash: 'howto' }) : null);
-  function gdPanel() {
-    if (!gdBox) {
-      gdBox = el('div', 'drv drv-gd');
-      gdBox.dataset.drive = 'gdrive';
-      gdMount = window.GDriveConnect.mount(gdBox, { compact: true, onHowto: howto });
-    }
-    return gdBox;
-  }
-  function gdDrop() { if (gdMount) gdMount.destroy(); gdBox = null; gdMount = null; }
-  async function gdSignOut() {
-    const ok = window.UiDialog ? await window.UiDialog.confirm('Sign out of Google Drive?', 'The Hub forgets your Google sign-in and tells Google to cancel it. Your files stay in Google Drive.', 'Sign out', true) : true;
-    if (ok && window.GoogleAuth) await window.GoogleAuth.signOut();
-  }
-
-  // Right-click / long-press menu on a drive tile
-  const known = new Map();   // drive id → { d, ok } from the last draw (menus are built synchronously)
-  if (window.HubCtx) {
-    window.HubCtx.add('.drv[data-drive]', (t) => {
-      const k = known.get(t.dataset.drive);
-      if (!k) return null;
-      const { d, ok } = k;
-      const desk = window.HubMode && window.HubMode.isDesktop();
-      if (d.kind === 'gdrive') {
-        const st = D.gdriveState();
-        if (st === 'ok') {
-          return [
-            { label: 'Open', icon: '\u2197', action: () => openFiles('gdrive') },
-            desk && { label: 'Open in new window', icon: '\u29C9', action: () => openFiles('gdrive', true) },
-            { sep: true },
-            { label: 'Sign out', icon: '\u23CF', danger: true, action: gdSignOut }
-          ];
-        }
-        if (st === 'setup') return [{ label: 'How to set up Google Drive', icon: '\u2139', action: howto }];
-        return [{ label: 'Connect', icon: '\uD83D\uDD17', action: () => { const b = t.querySelector('.gdc-go'); if (b) b.click(); } }];
-      }
-      return [
-        { label: 'Open', icon: '\u2197', action: () => t.click() },
-        desk && { label: 'Open in new window', icon: '\u29C9', action: async () => {
-          if (!ok && !(await D.allow(d.id))) return;
-          if (!ok) draw();
-          openFiles(d.id, true);
-        } },
-        !ok && { label: 'Allow access', icon: '\uD83D\uDD13', action: () => allowDrive(d) },
-        d.kind !== 'local' && { sep: true },
-        d.kind !== 'local' && { label: 'Remove from Drives', icon: '\u2715', danger: true, action: () => removeDrive(d) }
-      ];
-    }, { touch: true });
-  }
-
-  function tile(cls, ico, name, sub, onClick) {
-    const b = el('button', 'drv ' + cls);
-    b.type = 'button';
-    b.append(el('span', 'drv-ico', ico), el('span', 'drv-name', name));
-    if (sub) b.appendChild(el('span', 'drv-sub', sub));
-    b.addEventListener('click', onClick);
-    return b;
-  }
-
-  async function draw() {
-    const list = await D.list();
-    known.clear();
-    const grid = el('div', 'drv-grid');
-    for (const d of list) {
-      if (d.kind === 'gdrive') {
-        if (D.gdriveState() === 'ok') {
-          gdDrop();
-          const u = window.GoogleAuth.user();
-          const full = u.method === 'phone' || u.method === 'popup';
-          const gt = tile('drv-gdrive', '\u2601\uFE0F', 'Google Drive', (u.email || 'Connected') + (full ? ' \u00B7 full' : ''), (e) => openFiles('gdrive', e.shiftKey));
-          gt.dataset.drive = 'gdrive';
-          gt.title = 'Google Drive \u203A hub' + (u.email ? ' \u2014 ' + u.email : '') + (full ? ' (full Drive, about an hour per sign-in)' : ' (only files the Hub made)');
-          grid.appendChild(gt);
-        } else {
-          if (gdBox && gdBox.dataset.state !== D.gdriveState()) gdDrop();   // set up ↔ connect: fresh panel
-          grid.appendChild(gdPanel());
-          gdBox.dataset.state = D.gdriveState();
-        }
-        known.set('gdrive', { d, ok: D.gdriveState() === 'ok' });
-        continue;
-      }
-      if (d.kind === 'local') {
-        const lt = tile('drv-local', '\uD83D\uDCBE', 'Local', 'In this browser', (e) => openFiles('local', e.shiftKey));
-        lt.dataset.drive = 'local';
-        known.set('local', { d, ok: true });
-        grid.appendChild(lt);
-        continue;
-      }
-      const ok = (await D.access(d.id)) === 'granted';
-      const wrap = el('div', 'drv-wrap');
-      const t = tile('drv-folder', '\uD83D\uDCC2', d.name, ok ? 'Folder' : 'Click to allow access', async (e) => {
-        if (!ok && !(await D.allow(d.id))) return;
-        if (!ok) draw();
-        openFiles(d.id, e.shiftKey);
-      });
-      if (!ok) t.classList.add('drv-locked');
-      t.dataset.drive = d.id;
-      known.set(d.id, { d, ok });
-      const x = el('button', 'drv-x', '\u00D7');
-      x.type = 'button';
-      x.title = 'Remove ' + d.name + ' from Drives (no files are deleted)';
-      x.setAttribute('aria-label', x.title);
-      x.addEventListener('click', (e) => { e.stopPropagation(); removeDrive(d); });
-      wrap.append(t, x);
-      if (!ok) {
-        const allow = el('button', 'drv-allow', 'Allow access');
-        allow.type = 'button';
-        allow.addEventListener('click', (e) => { e.stopPropagation(); allowDrive(d); });
-        wrap.appendChild(allow);
-      }
-      grid.appendChild(wrap);
-    }
-    if (D.canAddFolder) {
-      grid.appendChild(tile('drv-add', '\uFF0B', 'Add folder', 'From this computer', async () => {
-        const d = await D.addFolder();
-        if (d) openFiles(d.id);
-      }));
-    }
-    const head = el('h2', 'drv-title', 'Drives');
-    const out = [head, grid];
-    if (!list.length) out.push(el('p', 'drv-note', 'This browser has no file storage for web pages.'));
-    else if (!D.canAddFolder) out.push(el('p', 'drv-note', 'Adding a folder from this computer needs Chrome or Edge on a computer.'));
-    pane.replaceChildren(...out);
-    pane.hidden = false;
-  }
-  ===== end LEGACY ===== */
-  // (legacy helper removeDrive above is unused since R54b; allowDrive is used again since R56)
 
   D.onChange(draw);
+  window.HubDrives = { sync: draw };   // H7: hub_prefs.js calls it when the Settings switch changes
   draw();
 })();

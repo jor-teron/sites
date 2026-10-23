@@ -13,6 +13,7 @@
  *   sites-hub.theme      'dark' (default) | 'light'                           → html.hub-light
  *   sites-hub.homeBtn    '' = Home button goes to the Home screen (default) | 'apphub' = opens App Hub
  *                        (AH1-F1; hub.js __hubHome reads it per click)        → #home-btn title
+ *   sites-hub.showFiles  '0' = no Files icons on the Desktop home (H7; default on) → html.hub-files-off, HubDrives.sync()
  *   sites-hub.motion     'on' (default) | 'reduced' (no jelly) | 'off'        → html.hub-motion-*
  *   sites-hub.hoverFocus '1' = Focus window on hover (default off)       → html.hub-hover-focus
  *   sites-hub.snapEdges  '0' = no snapping to screen edges (default on)  → html.hub-snap-off
@@ -77,6 +78,11 @@
     // AH1-F1: Phone mode Home button target (hub.js __hubHome reads the key on every click; H6-B1: not the Desktop Show desktop button)
     const hb = document.getElementById('home-btn');
     if (hb) { const t = get('homeBtn') === 'apphub' ? 'App Hub' : 'Home'; hb.title = t; hb.setAttribute('aria-label', t); }
+    // H7: Files icons on the Desktop home (hub_drives.js redraws / empties its pane; it may not be loaded yet = it reads the key itself)
+    const filesOff = get('showFiles') === '0';
+    const wasOff = root.classList.contains('hub-files-off');
+    root.classList.toggle('hub-files-off', filesOff);
+    if (filesOff !== wasOff && window.HubDrives) window.HubDrives.sync();
     // screen mode chosen in Settings
     const m = get('wmMode') || 'auto';
     if (window.HubMode && window.HubMode.pref !== m) window.HubMode.setPref(m);
