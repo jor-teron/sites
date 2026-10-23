@@ -152,12 +152,12 @@
 
   async function restart() {
     if (!kernel) throw new Error('No kernel');
-    try { await kernel.restart(); } catch (e) { if (isNet(e)) markLost('Request failed: server not reachable'); throw e; }
+    await kernel.restart(); /* a failed request is only reported by the caller (toast); the health poll decides if the link is lost */
     emit();
   }
   async function interrupt() {
     if (!kernel) throw new Error('No kernel');
-    try { await kernel.interrupt(); } catch (e) { if (isNet(e)) markLost('Request failed: server not reachable'); throw e; }
+    await kernel.interrupt(); /* a failed request is only reported by the caller (toast); the health poll decides if the link is lost */
   }
 
   /* run code; onMsg(kind, payload) gets 'output' (nbformat-like output object), 'clear', 'count'. Resolves with reply status.

@@ -1,9 +1,9 @@
-# Code Lab (N1 · CL3)
+# Code Lab (N1 · CL3-F1)
 
 Jupyter/Kaggle-style code cells that run on a **remote Jupyter Server**. Separate from the Sketchbook app.
 
 - **Connection bar**: server URL (remembered), token (password field; only remembered if *Remember* is ticked), Connect, status dot (red = not connected, amber = busy, green = connected).
-- **Kernel**: kernelspecs are listed from the server; Start / Switch, Restart (↻), Interrupt (■).
+- **Kernel**: kernelspecs are listed from the server; ＋ Start / ⇆ Switch, ↻ Restart, ■ Interrupt: three icon buttons at the left of the kernel row.
 - **Connection loss**: if the server or the kernel websocket dies (checked by websocket events and an 8 s health check), the status dot goes amber (reconnecting) then red (lost), the bottom bar says "Connection lost" (aria-live, assertive), running cells get an error-style *ConnectionLost* note instead of a stuck `[*]`, queued cells are marked *skipped*, and the Connect button becomes **Reconnect**. When the server answers again the bar tells you. Reconnect reattaches to your kernel if it survived, otherwise starts a new one ("variables lost"). A cell that is running can always be deleted.
 - **Kernel reattach / shutdown**: the id of the kernel this app started is remembered with the server URL. After a reload, Connect reattaches to that kernel (variables survive); with *Remember* ticked and a kernel remembered, the page reconnects by itself. If the kernel is gone, a new one is started. *Disconnect* shuts the kernel down (default; no leaked kernels). Settings → *On Disconnect*: shut it down / keep it running / ask. Closing or reloading the tab never shuts it down. Kernels started by something else are never touched.
 - **Run timeout** (Settings: Off, 30 s, 1/5/15 min, 1 h; default Off): a cell running longer is interrupted, shows a *TimeoutError* note, and the rest of the queue is skipped. If the kernel ignores the interrupt for 6 s the app stops waiting and suggests Restart.

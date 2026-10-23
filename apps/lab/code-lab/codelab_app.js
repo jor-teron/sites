@@ -1,7 +1,7 @@
 /* Code Lab — UI. Cells, outputs, connection bar, settings, swipe screens. Persistence only via CodeLabSave. */
 (function () {
   'use strict';
-  const VERSION = 'N1 · CL3', SWIPE = 75, K = window.CodeLabKernel, SV = window.CodeLabSave, CM = window.CodeLabLib.cm;
+  const VERSION = 'N1 · CL3-F1', SWIPE = 75, K = window.CodeLabKernel, SV = window.CodeLabSave, CM = window.CodeLabLib.cm;
   const $ = (id) => document.getElementById(id);
   const P = Object.assign({ theme: 'dark', url: '', kernel: 'python3', rememberToken: false, token: '', timeout: 0, onDisc: 'shutdown', kid: '', kurl: '', kname: '' }, SV.loadSettings());
   if (['system', 'light', 'dark'].indexOf(P.theme) < 0) P.theme = 'dark';
@@ -336,7 +336,9 @@
     $('connect-btn').textContent = s.lost ? 'Reconnect' : s.connected ? 'Disconnect' : 'Connect';
     $('connect-btn').classList.toggle('acc', !s.connected || s.lost);
     $('kernel').disabled = !s.connected; $('start-btn').disabled = !s.connected;
-    $('start-btn').textContent = k ? 'Switch' : 'Start';
+    $('start-btn').textContent = k ? '⇆' : '＋'; /* glyph only: ＋ start a kernel, ⇆ switch to the selected kernel */
+    $('start-btn').title = k ? 'Switch kernel (shuts down the current one)' : 'Start kernel';
+    $('start-btn').setAttribute('aria-label', $('start-btn').title);
     $('restart-btn').disabled = $('intr-btn').disabled = !k || down;
     $('kstate').textContent = s.lost ? 'lost' : s.reconnecting ? '…' : k ? k.status : (s.connected ? 'no kernel' : '—');
     $('kstate').dataset.status = s.lost ? 'lost' : k ? k.status : '';

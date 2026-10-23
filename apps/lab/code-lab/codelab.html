@@ -12,7 +12,7 @@
   <meta name="color-scheme" content="light dark">
   <title>Code Lab</title>
   <link rel="icon" href="codelab_icon.png">
-  <link rel="stylesheet" href="codelab.css?v=20261023b">
+  <link rel="stylesheet" href="codelab.css?v=20261023c">
   <script>try{var s=JSON.parse(localStorage.getItem('codelab-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
 </head>
 <body>
@@ -35,11 +35,11 @@
             <label class="chk"><input type="checkbox" id="remember"> Remember</label>
           </div>
           <div class="row">
+            <button type="button" class="mini" id="start-btn" disabled title="Start kernel" aria-label="Start kernel">＋</button>
+            <button type="button" class="mini" id="restart-btn" disabled title="Restart kernel" aria-label="Restart kernel">↻</button>
+            <button type="button" class="mini" id="intr-btn" disabled title="Stop (interrupt) the running cell" aria-label="Stop (interrupt) the running cell">■</button>
             <select id="kernel" aria-label="Kernel" disabled><option value="">Kernel…</option></select>
             <span id="kstate" class="kstate">—</span>
-            <button type="button" class="mini" id="start-btn" disabled title="Start kernel">Start</button>
-            <button type="button" class="mini" id="restart-btn" disabled title="Restart kernel">↻</button>
-            <button type="button" class="mini" id="intr-btn" disabled title="Interrupt">■</button>
           </div>
         </div>
         <div id="cells"></div>
@@ -72,9 +72,9 @@
   </div>
   <div id="toast" role="status"></div>
 </div>
-<script src="vendor/codelab-lib.min.js?v=20261023b"></script>
-<script src="codelab_save.js?v=20261023b"></script>
-<script src="codelab_kernel.js?v=20261023b"></script>
-<script src="codelab_app.js?v=20261023b"></script>
+<script src="vendor/codelab-lib.min.js?v=20261023c"></script>
+<script src="codelab_save.js?v=20261023c"></script>
+<script src="codelab_kernel.js?v=20261023c"></script>
+<script src="codelab_app.js?v=20261023c"></script>
 </body>
 </html>
