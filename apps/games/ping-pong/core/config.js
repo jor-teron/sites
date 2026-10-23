@@ -1,7 +1,7 @@
 /*
  * Ping Pong — configuration.
  * All tunable numbers, colors, key bindings and on-screen text live here.
- * pong_logic.js reads everything from PONG_CONFIG.
+ * the scripts in core/, ui/ and assets/models/ read everything from PONG_CONFIG.
  * APP = name / version / author / category (page title + sites hub header).
  */
 const PONG_CONFIG = {
@@ -104,6 +104,27 @@ const PONG_CONFIG = {
   net: {
     lineWidth: 3,       // stroke width
     dash: [10, 12],     // dash pattern [on, off]
+  },
+
+  // Themes (cosmetic only: court, colours, effects; gameplay never changes). Themes live in assets/themes.
+  themes: {
+    key: "ping-pong.theme",   // localStorage key for the chosen theme
+    default: "classic",       // theme id used when nothing (valid) is saved
+    text: { button: "Themes", title: "Customize", section: "Theme", close: "Close" },
+  },
+
+  // Balls (cosmetic only: the collision radius stays ball.radius). Models live in assets/models/balls.
+  balls: {
+    key: "ping-pong.ball",    // localStorage key for the chosen ball
+    default: "classic",       // ball id used when nothing (valid) is saved
+    text: { section: "Ball" },
+  },
+
+  // Paddles (cosmetic only: the hit box stays paddle.width x paddle.height). Models live in assets/models/paddles.
+  paddles: {
+    key: "ping-pong.paddle",  // localStorage key for the chosen paddle
+    default: "classic",       // paddle id used when nothing (valid) is saved
+    text: { section: "Paddle" },
   },
 
   // Key bindings — matched against KeyboardEvent.code OR .key.

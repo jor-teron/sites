@@ -1,4 +1,4 @@
-/* Ping Pong — page layout: own bar on top, court fills the rest (sized in pong_logic.js) */
+/* Ping Pong — page layout: own bar on top, court fills the rest (sized in ui/dom.js, fitCourt) */
 * {
   box-sizing: border-box;
 }
@@ -14,8 +14,8 @@ html, body {
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
   overflow: hidden;
-  background: #0b0f14;
-  color: #e8eef5;
+  background: var(--pp-bg, #0b0f14);
+  color: var(--pp-text, #e8eef5);
   font-family: system-ui, sans-serif;
 }
 
@@ -51,6 +51,7 @@ h1 {
   font-variant-numeric: tabular-nums;
   font-size: 1rem;
   opacity: 0.9;
+  color: var(--pp-hud, inherit);
 }
 
 /* Canvas: the playfield (CSS width / height set by fitCourt) */
@@ -58,7 +59,7 @@ canvas {
   display: block;
   flex: none;
   background: #111820;
-  border: 2px solid #3a4a5c;
+  border: 2px solid var(--pp-border, #3a4a5c);
   border-radius: 4px;
   touch-action: none;
 }
@@ -76,19 +77,20 @@ canvas {
   width: 34px;
   height: 34px;
   padding: 0;
-  border: 1px solid #3a4a5c;
+  border: 1px solid var(--pp-border, #3a4a5c);
   border-radius: 50%;
-  background: rgba(17, 24, 32, 0.7);
-  color: #e8eef5;
+  background: var(--pp-btn-bg, rgba(17, 24, 32, 0.7));
+  color: var(--pp-btn-text, #e8eef5);
   font-size: 15px;
   line-height: 1;
   cursor: pointer;
   opacity: 0.75;
   touch-action: manipulation;
 }
-#pause-btn:hover, #pause-btn:focus-visible { opacity: 1; outline: none; border-color: #6ea8fe; }
+#pause-btn:hover, #pause-btn:focus-visible { opacity: 1; outline: none; border-color: var(--pp-accent, #6ea8fe); }
 
 /* Inside the sites hub (body.in-hub, set by the hub bridge): the hub header shows
    name / score / New Game, so the own bar hides and the court takes the frame. */
 body.in-hub #topbar { display: none; }
 body.in-hub { padding: 6px; }
+body.in-hub #theme-btn { display: none; }   /* the hub frame has no free corner; the saved theme still applies */
