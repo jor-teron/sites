@@ -1,4 +1,4 @@
-/* Ping Pong — page layout: own bar on top, court fills the rest (sized in ping-pong_logic.js) */
+/* Ping Pong — page layout: own bar on top, court fills the rest (sized in ui/dom.js, fitCourt) */
 * {
   box-sizing: border-box;
 }

@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Ping Pong PPR1a</title>
+  <title>Ping Pong PGR1a</title>
   <!--
     ========================================================================
-    Ping Pong — HTML + CSS + JS (split: ping-pong.css, ping-pong_config.js, ping-pong_logic.js)
+    Ping Pong — HTML + CSS + JS (split: ui/ = CSS, DOM, HUD, hub bridge; core/ = config + game logic;
+    assets/models/ = code-drawn net, paddle, ball; plain scripts, load order below)
     Author: Jor Teron
     Description:
       Classic two-paddle Pong on a canvas that fills the page. Left paddle is
@@ -16,10 +17,10 @@
       makes it a 2-player match (PONG_CONFIG.touch), tap = start / resume.
       Cache-busting: bump ?v= on the CSS / JS below when they change.
       In the sites hub the own title / score bar hides and the hub header
-      shows name, version, score and New Game (hub bridge in ping-pong_logic.js).
+      shows name, version, score and New Game (hub bridge in ui/hub.js).
     ========================================================================
   -->
-  <link rel="stylesheet" href="ping-pong.css?v=PPR1a" />
+  <link rel="stylesheet" href="ui/ping-pong.css?v=PGR1a" />
 </head>
 <body>
   <!-- Own bar: title + live score (hidden inside the hub) -->
@@ -28,13 +29,23 @@
     <div id="hud">0 — 0</div>
   </div>
 
-  <!-- Drawing surface (sized to the page by ping-pong_logic.js) + pause button in its corner -->
+  <!-- Drawing surface (sized to the page by ui/dom.js) + pause button in its corner -->
   <div id="court-wrap">
     <canvas id="court"></canvas>
     <button type="button" id="pause-btn" aria-label="Pause">⏸</button>
   </div>
 
-  <script src="ping-pong_config.js?v=PPR1a"></script>
-  <script src="ping-pong_logic.js?v=PPR1a"></script>
+  <!-- Plain scripts; the order matters (shared globals, top-level code runs as each loads) -->
+  <script src="core/config.js?v=PGR1a"></script>
+  <script src="core/state.js?v=PGR1a"></script>
+  <script src="ui/dom.js?v=PGR1a"></script>
+  <script src="assets/models/net.js?v=PGR1a"></script>
+  <script src="assets/models/paddle.js?v=PGR1a"></script>
+  <script src="assets/models/ball.js?v=PGR1a"></script>
+  <script src="core/ai.js?v=PGR1a"></script>
+  <script src="core/game.js?v=PGR1a"></script>
+  <script src="core/input.js?v=PGR1a"></script>
+  <script src="ui/hub.js?v=PGR1a"></script>
+  <script src="core/main.js?v=PGR1a"></script>
 </body>
 </html>
