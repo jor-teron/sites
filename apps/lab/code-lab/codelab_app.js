@@ -1,7 +1,7 @@
 /* Code Lab — UI. Cells, outputs, connection bar, settings, swipe screens. Persistence only via CodeLabSave. */
 (function () {
   'use strict';
-  const VERSION = 'N1', SWIPE = 75, K = window.CodeLabKernel, SV = window.CodeLabSave, CM = window.CodeLabLib.cm;
+  const VERSION = 'N1 · CL2', SWIPE = 75, K = window.CodeLabKernel, SV = window.CodeLabSave, CM = window.CodeLabLib.cm;
   const $ = (id) => document.getElementById(id);
   const P = Object.assign({ theme: 'dark', url: '', kernel: 'python3', rememberToken: false, token: '' }, SV.loadSettings());
   if (['system', 'light', 'dark'].indexOf(P.theme) < 0) P.theme = 'dark';
@@ -15,6 +15,7 @@
     const sys = v === 'dark' || (v !== 'light' && mq.matches);
     document.documentElement.classList.toggle('dark', P.theme === 'dark' || (P.theme === 'system' && sys));
     document.querySelectorAll('.seg[data-key=theme] button').forEach((b) => b.classList.toggle('on', b.dataset.v === P.theme));
+    document.querySelectorAll('iframe.html').forEach((f) => { f.srcdoc = htmlDoc(f._raw || ''); }); /* sandboxed HTML outputs follow the theme */
   }
   theme(); mq.addEventListener && mq.addEventListener('change', theme);
   addEventListener('storage', (e) => { if (e.key === 'sites-hub.theme') theme(); });
@@ -23,7 +24,9 @@
   }));
 
   let tt; function toast(s) { const t = $('toast'); t.textContent = s; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2200); }
-  const msg = (s) => { $('msg').textContent = s || ''; };
+  let saveWarn = '';
+  /* a storage warning (saveWarn) stays visible until a later save succeeds without losing anything */
+  const msg = (s) => { const m = $('msg'); m.dataset.last = s || ''; m.textContent = saveWarn || s || ''; m.classList.toggle('warn', !!saveWarn); m.title = m.textContent; };
 
   /* screens + swipe */
   const MODES = ['cells', 'set']; let mode = 'cells';
@@ -48,7 +51,20 @@
   /* cells */
   let cells = [], seq = 0, sel = null, saveT;
   const uid = () => 'c' + Date.now().toString(36) + (seq++);
-  const save = () => { clearTimeout(saveT); saveT = setTimeout(() => SV.saveCells(cells.map((c) => ({ id: c.id, source: c.view.state.doc.toString(), count: c.count, outputs: c.outputs }))), 300); };
+  let pending = false;
+  function saveNow() {
+    clearTimeout(saveT); pending = false;
+    const r = SV.saveCells(cells.map((c) => ({ id: c.id, source: c.view.state.doc.toString(), count: c.count, outputs: c.outputs })));
+    const w = !r.ok ? '⚠ Storage full: your changes are NOT saved. Free browser storage.'
+      : r.droppedOutputs ? '⚠ ' + r.droppedOutputs + ' cell output(s) not saved (' + (r.reason === 'quota' ? 'browser storage full' : 'over 2 MB') + '); code is saved.' : '';
+    if (w && w !== saveWarn) toast(w);
+    if (w !== saveWarn) { saveWarn = w; msg($('msg').dataset.last || ''); }
+  }
+  /* debounced save; flushed immediately when the page is hidden or closed so nothing typed is lost */
+  const save = () => { pending = true; clearTimeout(saveT); saveT = setTimeout(saveNow, 300); };
+  const flush = () => { if (pending) saveNow(); };
+  addEventListener('pagehide', flush); addEventListener('beforeunload', flush);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
 
   function makeCell(data, at) {
     const c = { id: data.id || uid(), count: data.count || null, outputs: data.outputs || [], running: false };
@@ -93,6 +109,7 @@
   }
   function del(c) {
     if (c.running) { toast('Cell is running'); return; }
+    if ((c.view.state.doc.length || c.outputs.length) && !confirm('Delete this cell' + (c.view.state.doc.length ? ' and its code' : '') + '? This cannot be undone.')) return;
     const i = cells.indexOf(c); cells.splice(i, 1); c.view.destroy(); c.el.remove();
     if (!cells.length) makeCell({});
     select(cells[Math.min(i, cells.length - 1)]); save();
@@ -105,6 +122,35 @@
   /* outputs */
   const ANSI = /\x1b\[[0-9;?]*[A-Za-z]/g;
   const txt = (s) => (Array.isArray(s) ? s.join('') : String(s == null ? '' : s)).replace(ANSI, '');
+  /* text/html output is untrusted: it is shown in an iframe with an EMPTY sandbox attribute (no scripts, no same-origin,
+     no forms, no top navigation), so onerror/javascript:/<style> can neither run nor touch this page or its localStorage.
+     A CSP meta inside the document and <base target=_blank> are extra layers. Without same-origin the page cannot read the
+     frame's content height, so the height is estimated from an inert DOMParser copy; the frame can be resized by dragging. */
+  function htmlDoc(h) {
+    const dark = document.documentElement.classList.contains('dark');
+    const fg = dark ? '#eef0f3' : '#15181d', bg = dark ? '#1c1f24' : '#ffffff', line = dark ? '#2b3037' : '#e3e6ea', link = dark ? '#60a5fa' : '#2563eb';
+    return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+      '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data: https:; style-src \'unsafe-inline\'; font-src data:">' +
+      '<base target="_blank"><meta name="color-scheme" content="' + (dark ? 'dark' : 'light') + '">' +
+      '<style>html,body{margin:0;background:' + bg + ';color:' + fg + ';font:13px/1.4 system-ui,sans-serif}body{padding:2px 4px}' +
+      'table{border-collapse:collapse}td,th{border:1px solid ' + line + ';padding:2px 6px}a{color:' + link + '}img{max-width:100%}</style></head><body>' + h + '</body></html>';
+  }
+  function estHeight(h) {
+    let n = 1;
+    try {
+      const d = new DOMParser().parseFromString(h, 'text/html'); /* inert: no scripts run, nothing is fetched */
+      d.querySelectorAll('script,style').forEach((e) => e.remove());
+      n = d.querySelectorAll('tr,li,p,br,div,pre,h1,h2,h3,h4,h5,h6').length + Math.ceil((d.body.textContent || '').trim().length / 60);
+      if (d.querySelector('img,svg')) n += 8;
+    } catch (_) { /* default */ }
+    return Math.min(480, Math.max(40, n * 19 + 10));
+  }
+  function htmlFrame(h) {
+    const f = document.createElement('iframe');
+    f.className = 'html'; f.setAttribute('sandbox', 'allow-popups'); f.setAttribute('referrerpolicy', 'no-referrer'); /* no scripts, no same-origin */
+    f.title = 'HTML output'; f.loading = 'eager'; f._raw = h; f.style.height = estHeight(h) + 'px'; f.srcdoc = htmlDoc(h);
+    return f;
+  }
   function outNode(o) {
     if (o.output_type === 'stream') { const p = document.createElement('pre'); p.className = o.name === 'stderr' ? 'stderr' : 'stdout'; p.textContent = txt(o.text); return p; }
     if (o.output_type === 'error') { const p = document.createElement('pre'); p.className = 'err'; p.textContent = o.traceback && o.traceback.length ? txt(o.traceback.join('\n')) : o.ename + ': ' + o.evalue; return p; }
@@ -112,7 +158,7 @@
     if (d['image/png']) { const i = document.createElement('img'); i.src = 'data:image/png;base64,' + txt(d['image/png']).replace(/\s/g, ''); i.alt = 'output'; return i; }
     if (d['image/jpeg']) { const i = document.createElement('img'); i.src = 'data:image/jpeg;base64,' + txt(d['image/jpeg']).replace(/\s/g, ''); i.alt = 'output'; return i; }
     if (d['image/svg+xml']) { const i = document.createElement('img'); i.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(txt(d['image/svg+xml'])); return i; }
-    if (d['text/html']) { const h = document.createElement('div'); h.className = 'html'; h.innerHTML = txt(d['text/html']); h.querySelectorAll('script').forEach((s) => s.remove()); return h; }
+    if (d['text/html']) return htmlFrame(txt(d['text/html']));
     if (d['text/plain'] != null) { const p = document.createElement('pre'); p.className = 'result'; p.textContent = txt(d['text/plain']); return p; }
     return null;
   }
@@ -186,7 +232,7 @@
   $('intr-btn').onclick = guard(() => K.interrupt(), 'Interrupt sent');
   $('add-btn').onclick = addCell;
   $('runall-btn').onclick = runAll;
-  $('clear-btn').onclick = () => { cells.forEach((c) => { c.outputs = []; c.count = null; renderOutputs(c); renderCount(c); }); save(); toast('Outputs cleared'); };
+  $('clear-btn').onclick = () => { if (cells.some((c) => c.outputs.length || c.count != null) && !confirm('Clear all outputs and run counts? This cannot be undone.')) return; cells.forEach((c) => { c.outputs = []; c.count = null; renderOutputs(c); renderCount(c); }); save(); toast('Outputs cleared'); };
 
   function ui() {
     const s = K.state(), k = s.kernel;
@@ -203,8 +249,14 @@
   K.onChange(ui); ui();
 
   /* load cells */
-  const saved = SV.loadCells();
-  (saved && saved.length ? saved : [{ source: 'print("Hello from Code Lab")' }]).forEach((d) => makeCell(d));
+  const L = SV.loadCells();
+  (L.cells && L.cells.length ? L.cells : []).forEach((d) => { try { makeCell(d); } catch (e) { L.dropped++; try { console.warn('Code Lab: skipped a bad cell', e); } catch (_) { /* */ } } });
+  if (!cells.length) makeCell({ source: L.bad || L.dropped ? '' : 'print("Hello from Code Lab")' }); /* never a blank app */
+  if (L.bad || L.dropped || L.repaired) {
+    const m = L.bad ? 'Saved cells were unreadable: started with an empty cell (original kept as backup).'
+      : [L.dropped ? L.dropped + ' damaged cell(s) removed.' : '', L.repaired ? L.repaired + ' cell(s) repaired.' : '', 'Original kept as backup.'].filter(Boolean).join(' ');
+    msg(m); toast(m);
+  }
   select(cells[0]);
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.activeElement) document.activeElement.blur(); });
 })();
