@@ -1,6 +1,6 @@
-# Notebook (Lab)
+# Sketchbook (Lab)
 
-A paper sketch notebook: 50 fixed pages, draw with finger, mouse or pen. Saved in the browser. No undo.
+A paper sketchbook: 50 fixed pages, draw with finger, mouse or pen. Saved in the browser. No undo.
 
 Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself needs touch, mouse or pen.
 
@@ -18,45 +18,45 @@ Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself 
 - Every finished stroke and every page change is saved at once.
 - Palm rejection: very large touches (width > 50) are ignored.
 - Page 49 settings: **Button: bottom / top** and **Swap gestures: off / on** (flips left↔right and up↔down: pull down = grid, pull up = nothing). Saved, applied at once and after reload; the How-to list on page 49 always shows the current mapping.
-- No Reset (removed). PNG of the current page: tap ☰ → quick menu or the page-49 link; whole notebook PDF: page-49 link.
+- No Reset (removed). PNG of the current page: tap ☰ → quick menu or the page-49 link; whole sketchbook PDF: page-49 link.
 
 ## Files
-- `index.html` — redirect to `notebook.html`
-- `notebook.html` — markup only, loads the scripts below in order
-- `notebook.css` — all styles
-- `nb_store.js` — shared state + LocalStorage load/save
-- `nb_canvas.js` — resize, ruled background, redraw, special-page overlay
-- `nb_pages.js` — go to page, crumple, page toast, pages grid
-- `nb_cover.js` — cloth covers (woven pattern, spine, band, name label, embossed logo) + index table
-- `nb_wrinkle.js` — crumple levels + SVG wrinkle overlay (feTurbulence + lighting, seeded per page) and its export image
-- `nb_draw.js` — pointer drawing
-- `nb_export.js` — PNG / PDF download (with wrinkles)
+- `index.html` — redirect to `sketchbook.html`
+- `sketchbook.html` — markup only, loads the scripts below in order
+- `sketchbook.css` — all styles
+- `sk_store.js` — shared state + LocalStorage load/save
+- `sk_canvas.js` — resize, ruled background, redraw, special-page overlay
+- `sk_pages.js` — go to page, crumple, page toast, pages grid
+- `sk_cover.js` — cloth covers (woven pattern, spine, band, name label, embossed logo) + index table
+- `sk_wrinkle.js` — crumple levels + SVG wrinkle overlay (feTurbulence + lighting, seeded per page) and its export image
+- `sk_draw.js` — pointer drawing
+- `sk_export.js` — PNG / PDF download (with wrinkles)
 - `vendor/jspdf.umd.min.js` — jsPDF 2.5.1, stored locally
-- `nb_settings.js` — settings panel open/close
-- `nb_float.js` — floating button gestures
-- `nb_curl.js` — page-curl animation (canvas copy + clip-path fold)
-- `nb_popup.js` — hold quick menu
-- `nb_jelly.js` — jelly look: SVG blob, goo filter tail, spring bounce, jiggle
-- `notebook.js` — event wiring + start-up (loaded last)
-- `notebook_icon.png` — Lab / Hub icon
+- `sk_settings.js` — settings panel open/close
+- `sk_float.js` — floating button gestures
+- `sk_curl.js` — page-curl animation (canvas copy + clip-path fold)
+- `sk_popup.js` — hold quick menu
+- `sk_jelly.js` — jelly look: SVG blob, goo filter tail, spring bounce, jiggle
+- `sketchbook.js` — event wiring + start-up (loaded last)
+- `sketchbook_icon.png` — Lab / Hub icon
 
 ## Keys
 - No keyboard shortcuts of its own. Use the floating button.
 
 ## Saved data
-- `localStorage['paperNotebook_btnPos']` — `bottom` (default) or `top`.
-- `localStorage['paperNotebook_swap']` — `1` = swapped gestures, `0` = normal.
-- `localStorage['paperNotebook_pen']` — pen colour: black / blue / red.
-- `localStorage['paperNotebook_crumple']` — array of 50 numbers, crumple level per page (0–5; older higher values clamp to 5).
-- `localStorage['paperNotebook_v2']` — array of 50 pages, each an array of strokes `{ color, width, points:[{x,y}] }`. Points are in canvas pixels of the screen size at drawing time.
+- `localStorage['sketchbook_btnPos']` — `bottom` (default) or `top`.
+- `localStorage['sketchbook_swap']` — `1` = swapped gestures, `0` = normal.
+- `localStorage['sketchbook_pen']` — pen colour: black / blue / red.
+- `localStorage['sketchbook_crumple']` — array of 50 numbers, crumple level per page (0–5; older higher values clamp to 5).
+- `localStorage['sketchbook_v2']` — array of 50 pages, each an array of strokes `{ color, width, points:[{x,y}] }`. Points are in canvas pixels of the screen size at drawing time.
 
 ## Errors
 - jsPDF missing → alert "PDF library loading... try again in a moment."
 - Storage full → alert "Could not save (storage limit). Try crumpling some pages."
-- Broken / wrong-size saved data → notebook starts empty (warning in the console).
+- Broken / wrong-size saved data → sketchbook starts empty (warning in the console).
 
 ## Manual browser testing (no Node)
-1. Open `apps/lab/notebook/` → lands on `notebook.html`, cover shows.
+1. Open `apps/lab/sketchbook/` → lands on `sketchbook.html`, cover shows.
 2. Swipe the ☰ right → page 2 (Index); keep going to page 4 → ruled lines.
 3. Draw a few strokes, reload → strokes still there.
 4. Drag ☰ left halfway → page curls, next page visible under it; let go short → springs back. Pull ☰ up past 1/3 → grid with thumbnails; tap one → opens.
@@ -74,4 +74,7 @@ Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself 
 - The storage-full message still says "Try crumpling some pages", but crumpling no longer frees space.
 - Strokes are not rescaled when the screen size or orientation changes.
 - One colour / pen only.
-- LocalStorage is ~5 MB; very dense notebooks can fill it.
+- LocalStorage is ~5 MB; very dense sketchbooks can fill it.
+
+## Rename note
+Formerly "Notebook" (`apps/lab/notebook/`, keys `paperNotebook_*`). `apps/lab/notebook/index.html` is a redirect stub to this folder. On first start `sk_store.js` copies any old `paperNotebook_*` localStorage values to `sketchbook_*` and removes the old keys.

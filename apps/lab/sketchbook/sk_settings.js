@@ -1,8 +1,8 @@
 /*
- * Project: notebook
- * File: nb_settings.js
+ * Project: sketchbook
+ * File: sk_settings.js
  * Role: Page 49 = settings / About / How to / Tips written on ruled paper. #settingsPanel is a
- *   text layer shown only on that page (class .onpage, toggled in nb_canvas.js); it does not take
+ *   text layer shown only on that page (class .onpage, toggled in sk_canvas.js); it does not take
  *   taps except its small PNG / PDF links, so drawing and the ☰ gestures still work there.
  *   Also: Button bottom/top and Swap gestures toggles (saved, applied live + on load).
  */

@@ -1,26 +1,26 @@
 /*
- * Project: notebook
- * File: nb_popup.js
- * Role: Small quick-menu popup under the ☰ button, opened by HOLD (nb_float.js).
+ * Project: sketchbook
+ * File: sk_popup.js
+ * Role: Small quick-menu popup under the ☰ button, opened by HOLD (sk_float.js).
  *   Pen colour dots (black / blue / red, saved), Download PNG (current page), go to the settings page (49).
  *   Closes on any tap outside it.
  */
-const nbPopup = document.getElementById('nbPopup');
+const skPopup = document.getElementById('skPopup');
 
 function paintPens() {
-  nbPopup.querySelectorAll('.pen').forEach((b) => b.classList.toggle('on', b.dataset.pen === penName));
+  skPopup.querySelectorAll('.pen').forEach((b) => b.classList.toggle('on', b.dataset.pen === penName));
 }
 
 function openPopup() {
   paintPens();
-  nbPopup.hidden = false;
+  skPopup.hidden = false;
 }
 
 function closePopup() {
-  nbPopup.hidden = true;
+  skPopup.hidden = true;
 }
 
-nbPopup.addEventListener('click', (e) => {
+skPopup.addEventListener('click', (e) => {
   const b = e.target.closest('button');
   if (!b) return;
   if (b.dataset.pen) { setPen(b.dataset.pen); paintPens(); setTimeout(closePopup, 180); return; }
@@ -32,5 +32,5 @@ nbPopup.addEventListener('click', (e) => {
 
 // Outside tap closes (capture, so it runs before the canvas / button handlers).
 document.addEventListener('pointerdown', (e) => {
-  if (!nbPopup.hidden && !nbPopup.contains(e.target)) closePopup();
+  if (!skPopup.hidden && !skPopup.contains(e.target)) closePopup();
 }, true);

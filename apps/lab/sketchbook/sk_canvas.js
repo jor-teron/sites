@@ -1,7 +1,7 @@
 /*
- * Project: notebook
- * File: nb_canvas.js
- * Role: Canvas resize, page backgrounds (cloth covers + index via nb_cover.js, ruled pages),
+ * Project: sketchbook
+ * File: sk_canvas.js
+ * Role: Canvas resize, page backgrounds (cloth covers + index via sk_cover.js, ruled pages),
  *   redraw of strokes, notes heading, settings text toggle on page 49.
  */
 // Resize canvas to fit container
@@ -17,13 +17,13 @@ function resizeCanvas() {
 const RULE_TOP = 56;
 const RULE_GAP = 28;
 
-// Draw notebook lines and margin (only on main drawing pages)
+// Draw sketchbook lines and margin (only on main drawing pages)
 // Top area is left blank (no lines) as a header margin
 function drawBackground() {
   const w = canvas.width;
   const h = canvas.height;
 
-  // Covers: woven cloth (nb_cover.js); no page number on them
+  // Covers: woven cloth (sk_cover.js); no page number on them
   if (currentPage === 0 || currentPage === TOTAL_PAGES - 1) {
     drawCover(currentPage === 0);
     return;

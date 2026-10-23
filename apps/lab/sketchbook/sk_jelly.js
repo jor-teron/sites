@@ -1,6 +1,6 @@
 /*
- * Project: notebook
- * File: nb_jelly.js
+ * Project: sketchbook
+ * File: sk_jelly.js
  * Role: The floating button's jelly look (pure SVG + vanilla JS, no libraries).
  *   #floatBtn stays the fixed, invisible hit target; #jelly (pointer-events:none) draws a soft,
  *   glossy blue blob over it. Drag: the blob stretches long/thin toward the finger while a small
@@ -9,7 +9,7 @@
  *   settles over several bounces. Crumple: whole-body jiggle.
  *   If anything fails, body never gets .jelly-on and the plain blue CSS button stays visible.
  *   No distance cap: the blob reaches the finger, joined home by a thinning goo bridge.
- *   API used by nb_float.js: floatFollow(dx, dy), floatRelease(), floatShake(), floatPress(), floatArm(on).
+ *   API used by sk_float.js: floatFollow(dx, dy), floatRelease(), floatShake(), floatPress(), floatArm(on).
  */
 const JELLY_HOME = 120;       // centre of the 240×240 SVG = button home
 // The blob follows the finger all the way (no cap); a goo bridge + home tail thin with distance.

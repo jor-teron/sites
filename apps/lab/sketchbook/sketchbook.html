@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Paper Notebook</title>
+<title>Sketchbook</title>
 <!--
-  Project: notebook
-  File: notebook.html
-  Role: Markup only. Paper Notebook: 50 pages, LocalStorage, no undo, crumble page, PNG/PDF export.
-  Scripts are plain (no build step) and share globals; order matters (store first, notebook.js last).
+  Project: sketchbook
+  File: sketchbook.html
+  Role: Markup only. Sketchbook: 50 pages, LocalStorage, no undo, crumble page, PNG/PDF export.
+  Scripts are plain (no build step) and share globals; order matters (store first, sketchbook.js last).
 -->
-<link rel="stylesheet" href="notebook.css?v=20261012p">
+<link rel="stylesheet" href="sketchbook.css?v=20261023a">
 </head>
 <body>
 <div id="main">
@@ -19,16 +19,16 @@
   <div id="curl" hidden><div id="curlUnder"></div><canvas id="curlPage"></canvas><div id="curlFlapWrap"><div id="curlFlap"></div></div></div>
   <div id="overlay"></div>
   <svg id="jelly" viewBox="0 0 240 240" aria-hidden="true"></svg>
-  <div id="floatBtn" aria-label="Notebook menu">☰</div>
+  <div id="floatBtn" aria-label="Sketchbook menu">☰</div>
   <div id="pageToast"></div>
   <div id="pagesGrid"><h3>Pages</h3><div id="gridContainer"></div></div>
   <!-- Page 49: settings + about written on the ruled paper (text layer, only the PNG link takes taps) -->
   <div id="settingsPanel">
     <h2>Settings</h2>
-    <p><button type="button" id="dlPng" class="inkBtn">⬇ page PNG</button> · <button type="button" id="dlPdf" class="inkBtn">⬇ notebook PDF</button></p>
+    <p><button type="button" id="dlPng" class="inkBtn">⬇ page PNG</button> · <button type="button" id="dlPdf" class="inkBtn">⬇ sketchbook PDF</button></p>
     <p class="note">50 pages · saved in this browser · no undo</p>
     <h3>About</h3>
-    <p><b>Paper Notebook</b> — a 50-page sketch pad for finger, mouse or pen. Pages can be crumpled, never erased.</p>
+    <p><b>Sketchbook</b> — a 50-page sketch pad for finger, mouse or pen. Pages can be crumpled, never erased.</p>
     <p>Button: <button type="button" id="togPos" class="inkBtn">bottom</button> · Swap gestures: <button type="button" id="togSwap" class="inkBtn">off</button></p>
     <h3>How to</h3>
     <ul id="howTo"></ul>
@@ -40,8 +40,8 @@
       <li>crumples are forever ✿</li>
     </ul>
   </div>
-  <!-- Quick menu: hold ☰ (nb_popup.js) -->
-  <div id="nbPopup" hidden>
+  <!-- Quick menu: hold ☰ (sk_popup.js) -->
+  <div id="skPopup" hidden>
     <div class="penDots">
       <button type="button" class="pen" data-pen="black" aria-label="Black pen" style="--c:#222"></button>
       <button type="button" class="pen" data-pen="blue" aria-label="Blue pen" style="--c:#1f4fbf"></button>
@@ -53,18 +53,18 @@
 </div>
 
 <script src="vendor/jspdf.umd.min.js"></script>
-<script src="nb_store.js?v=20261012p"></script>
-<script src="nb_wrinkle.js?v=20261012p"></script>
-<script src="nb_cover.js?v=20261012p"></script>
-<script src="nb_canvas.js?v=20261012p"></script>
-<script src="nb_pages.js?v=20261012p"></script>
-<script src="nb_draw.js?v=20261012p"></script>
-<script src="nb_export.js?v=20261012p"></script>
-<script src="nb_settings.js?v=20261012p"></script>
-<script src="nb_jelly.js?v=20261012p"></script>
-<script src="nb_popup.js?v=20261012p"></script>
-<script src="nb_curl.js?v=20261012p"></script>
-<script src="nb_float.js?v=20261012p"></script>
-<script src="notebook.js?v=20261012p"></script>
+<script src="sk_store.js?v=20261023a"></script>
+<script src="sk_wrinkle.js?v=20261023a"></script>
+<script src="sk_cover.js?v=20261023a"></script>
+<script src="sk_canvas.js?v=20261023a"></script>
+<script src="sk_pages.js?v=20261023a"></script>
+<script src="sk_draw.js?v=20261023a"></script>
+<script src="sk_export.js?v=20261023a"></script>
+<script src="sk_settings.js?v=20261023a"></script>
+<script src="sk_jelly.js?v=20261023a"></script>
+<script src="sk_popup.js?v=20261023a"></script>
+<script src="sk_curl.js?v=20261023a"></script>
+<script src="sk_float.js?v=20261023a"></script>
+<script src="sketchbook.js?v=20261023a"></script>
 </body>
 </html>

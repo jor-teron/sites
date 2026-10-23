@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<!--
+  Project: sketchbook
+  File: index.html
+  Role: Entry redirect. Always sends the browser to sketchbook.html.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sketchbook</title>
+  <!-- Immediate redirect so a folder open lands on the sketchbook. -->
+  <meta http-equiv="refresh" content="0; url=sketchbook.html">
+  <script>
+    /* Replace history so Back does not stick on this redirect stub. */
+    location.replace('sketchbook.html');
+  </script>
+</head>
+<body>
+  <p><a href="sketchbook.html">Open Sketchbook</a></p>
+</body>
+</html>

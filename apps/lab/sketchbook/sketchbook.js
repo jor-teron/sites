@@ -1,6 +1,6 @@
 /*
- * Project: notebook
- * File: notebook.js
+ * Project: sketchbook
+ * File: sketchbook.js
  * Role: Wiring and start-up: event listeners, then load + first draw. Loaded last.
  */
 // Attach floating button events

@@ -1,7 +1,7 @@
 /*
- * Project: notebook
- * File: nb_pages.js
- * Role: Page navigation, crumple (adds wrinkles, nb_wrinkle.js), page toast, pages grid.
+ * Project: sketchbook
+ * File: sk_pages.js
+ * Role: Page navigation, crumple (adds wrinkles, sk_wrinkle.js), page toast, pages grid.
  */
 // Update page info display (now only used for toast)
 function updatePageInfo() {
