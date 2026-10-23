@@ -1,7 +1,7 @@
 /*
  * Desert Road (desert-road) — configuration.
  * Speeds, difficulty ramp, car, obstacles, colors, ranks, keys and text.
- * The js/ modules read everything from DESERT_ROAD_CONFIG.
+ * The core/ modules read everything from DESERT_ROAD_CONFIG.
  */
 const DESERT_ROAD_CONFIG = {
   // Goal
@@ -43,7 +43,7 @@ const DESERT_ROAD_CONFIG = {
     hitPad: 6,                   // collision forgiveness in px (both boxes)
     // Types — family friendly, desert themed
     types: [
-      // kind picks the drawing in js/sprites.js; emoji kept as a fallback label
+      // kind picks the drawing in core/sprites.js; emoji kept as a fallback label
       { kind: 'cactus',   emoji: '🌵', w: 34, h: 48, points: 1 },
       { kind: 'camel',    emoji: '🐫', w: 48, h: 46, points: 2 },
       { kind: 'snake',    emoji: '🐍', w: 36, h: 26, points: 2 },
