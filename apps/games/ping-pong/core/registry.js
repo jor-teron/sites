@@ -9,14 +9,19 @@
  *                              paddleColors(side "L" | "R") -> colours for a paddle model
  *                              ballColors() -> colours for a ball model
  *           e = { W, H, t (frame clock), fx (PP.fx: ball trail + particles) }
- *   paddle  { id, name, draw(ctx, x, y, w, h, col) }   col = theme.paddleColors(side)   (assets/models/paddle.js)
+ *   paddle  { id, name, draw(ctx, x, y, w, h, col, st), hit?, emit? }   (assets/models/paddles/*.js)
+ *           col = theme.paddleColors(side); (x, y) = top-left of the paddle's collision rectangle (w x h) — the model draws
+ *           within it (glow / sparks / flames may go beyond: purely visual). st = { side "L"|"R", fx (PP.fx), age (frames
+ *           since this paddle last hit the ball, 999 = long ago), y (0..1 where along the paddle the ball hit), n (hit counter) }
+ *           for a short pulse / flex animation (PP.pulse). hit = the paddle's OWN hit particles (a PP.spawnHit spec, spawned
+ *           at the paddle face on top of the ball's / theme's); emit = a PP.spawnEmit spec, a particle per paddle every few frames.
  *   ball    { id, name, draw(ctx, x, y, r, col, fx), trail?, hit?, shadow?, emit? }   (assets/models/balls/*.js)
  *           col = theme.ballColors(); fx = PP.fx (fx.t frame clock, fx.spin = rolling angle). The model draws within the
  *           ball's collision radius r (glow / trail are purely visual). trail / hit / shadow / emit are the ball's OWN
  *           effects (same specs as a theme's, see assets/themes/base.js; emit = a particle every few frames while
  *           it moves); a key the model leaves out (undefined) falls back to the THEME's — null means "none".
- * Paddle and ball models are separate registries on purpose (paddle picker: later release). The ball is picked
- * separately from the theme: PP.setBall(id) -> PP.ballId, saved as "ping-pong.ball".
+ * Theme, ball and paddle are three separate picks: PP.setTheme -> "ping-pong.theme", PP.setBall(id) -> PP.ballId ("ping-pong.ball"),
+ * PP.setPaddle(id) -> PP.paddleId ("ping-pong.paddle"). None forces another.
  * ========================================================================
  */
 const PP = {
@@ -24,11 +29,12 @@ const PP = {
   paddles: [],
   balls: [],
   theme: null,            // active theme (set by PP.setTheme)
-  paddleId: "standard",   // active paddle model id
+  paddleId: "classic",    // active paddle model id
   ballId: "classic",      // active ball model id
   fx: null,               // set by ui/fx.js
   onTheme: null,          // set by ui/dom.js: called after the active theme changes
   onBall: null,           // set by ui/dom.js: called after the active ball changes
+  onPaddle: null,         // set by ui/dom.js: called after the active paddle changes
 
   registerTheme(t) { this.themes.push(t); },
   registerPaddle(m) { this.paddles.push(m); },
@@ -57,6 +63,13 @@ const PP = {
     if (this.onBall) this.onBall(this.getBall(this.ballId));
   },
 
+  /** Activate a paddle model by id (unknown id -> first registered = Classic Bar) and save it unless save === false. */
+  setPaddle(id, save) {
+    this.paddleId = this.getPaddle(id).id;
+    if (save !== false) this.store.set(CFG.paddles.key, this.paddleId);
+    if (this.onPaddle) this.onPaddle(this.getPaddle(this.paddleId));
+  },
+
   /** The effects in force for a theme + ball model: the model's own, else the theme's (model: default the active ball). */
   ballFx(th, model) {
     const m = model || this.getBall(this.ballId);
@@ -65,9 +78,10 @@ const PP = {
   },
 
   /** The hooks the game and the picker previews draw through (th: optional theme, default the active one). */
-  drawPaddle(ctx, x, y, w, h, side, th) {
+  drawPaddle(ctx, x, y, w, h, side, th, st, model) {
     th = th || this.theme;
-    this.getPaddle(this.paddleId).draw(ctx, x, y, w, h, th.paddleColors(side));
+    st = st || this.fx.paddleState(side);
+    (model || this.getPaddle(this.paddleId)).draw(ctx, x, y, w, h, th.paddleColors(side), st);
   },
   drawBall(ctx, x, y, r, th, fx, model) {
     th = th || this.theme;

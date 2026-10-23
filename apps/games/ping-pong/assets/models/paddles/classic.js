@@ -1,18 +1,17 @@
 /*
- * Ping Pong — assets/models/paddle.js: paddle models (code-drawn, no image).
- * A model is { id, name, draw(ctx, x, y, w, h, col) }; (x, y) = top-left corner, court units.
+ * Ping Pong — Classic Bar: today's plain bar (the default paddle), pixel-identical to the build before paddle models.
+ * A model is { id, name, draw(ctx, x, y, w, h, col, st), hit?, emit? } (core/registry.js); (x, y) = top-left corner, court units.
  * The theme supplies col (theme.paddleColors(side)):
  *   fill      body colour
  *   radius    corner radius (0 / missing = plain rectangle)
  *   glow      glow colour (missing = none), glowBlur = its size
  *   edge      outline colour, edgeW = its width
  *   shine     a light stripe on the body (rgba colour)
- * Draw through PP.drawPaddle(ctx, x, y, w, h, side) (core/registry.js). Later releases add models with
- * PP.registerPaddle({...}); this "standard" one is the default.
+ * This bar has no animation and no effects of its own (so the theme's hit effect is all there is) and ignores st.
  */
 PP.registerPaddle({
-  id: "standard",
-  name: "Standard",
+  id: "classic",
+  name: "Classic Bar",
   draw(ctx, x, y, w, h, col) {
     ctx.save();
     if (col.glow) PP.glow(ctx, col.glow, col.glowBlur || 12);

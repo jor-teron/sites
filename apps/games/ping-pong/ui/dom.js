@@ -16,7 +16,7 @@ const pauseBtn = document.getElementById("pause-btn");
 
 // Title from APP info
 document.querySelector("h1").textContent = APP.name;
-document.title = APP.name + " PGQ1c";
+document.title = APP.name + " PGQ1b";
 
 // --- Theme -> page chrome -------------------------------------------------
 
@@ -41,6 +41,12 @@ PP.onTheme = function (th) {
 
 /** Called by PP.setBall: new ball -> drop the old trail / particles and refresh the picker. */
 PP.onBall = function () {
+  PP.fx.reset();
+  if (typeof refreshPicker === "function") refreshPicker();
+};
+
+/** Called by PP.setPaddle: new paddle -> drop old effects and refresh the picker. */
+PP.onPaddle = function () {
   PP.fx.reset();
   if (typeof refreshPicker === "function") refreshPicker();
 };
@@ -115,7 +121,7 @@ function draw() {
   // Trail / bounce shadow, under the pieces (the theme)
   if (!winner) th.drawUnder(ctx, e, ball);
 
-  // Paddles (assets/models/paddle.js, coloured by the theme)
+  // Paddles (the active paddle model, assets/models/paddles/, coloured by the theme)
   PP.drawPaddle(ctx, PADDLE_MARGIN, leftY, PADDLE_W, PADDLE_H, "L");
   PP.drawPaddle(ctx, COURT_W - PADDLE_MARGIN - PADDLE_W, rightY, PADDLE_W, PADDLE_H, "R");
 

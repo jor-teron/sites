@@ -120,6 +120,13 @@ const PONG_CONFIG = {
     text: { section: "Ball" },
   },
 
+  // Paddles (cosmetic only: the hit box stays paddle.width x paddle.height). Models live in assets/models/paddles.
+  paddles: {
+    key: "ping-pong.paddle",  // localStorage key for the chosen paddle
+    default: "classic",       // paddle id used when nothing (valid) is saved
+    text: { section: "Paddle" },
+  },
+
   // Key bindings — matched against KeyboardEvent.code OR .key.
   // Hub / phone controller: D-pad = arrows, A = Space, Start = Enter, Select = Escape.
   keys: {
