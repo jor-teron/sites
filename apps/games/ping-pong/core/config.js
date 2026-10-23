@@ -22,6 +22,7 @@ const PONG_CONFIG = {
     statLeft: "You",                                       // hub header score labels / button
     statRight: "CPU",
     newGame: "New Game",
+    customize: "Customize",                                // hub header button: opens the theme / ball / paddle picker
     // Two players on one device (touch on the right half takes the right paddle)
     p1Wins: "P1 WINS",
     p2Wins: "P2 WINS",

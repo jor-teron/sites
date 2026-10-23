@@ -93,4 +93,4 @@ canvas {
    name / score / New Game, so the own bar hides and the court takes the frame. */
 body.in-hub #topbar { display: none; }
 body.in-hub { padding: 6px; }
-body.in-hub #theme-btn { display: none; }   /* the hub frame has no free corner; the saved theme still applies */
+body.in-hub #theme-btn { display: none; }   /* no free corner in the hub frame; the hub header "Customize" button opens the picker (PP.openPicker) */
