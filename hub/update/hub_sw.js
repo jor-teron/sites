@@ -26,8 +26,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261023k';
-const CACHE = 'hub-shell-v89';  // 2026-10-23k: H6
+const V = '20261023l';
+const CACHE = 'hub-shell-v90';  // 2026-10-23l: AH2
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -53,6 +53,7 @@ const SHELL = [
   // Start menu / taskbar / home icons and the app lists, so a first visit also works offline
   'apps/favorite/favorite_icon.png', 'apps/games/games_icon.png', 'apps/media/media_icon.png', 'apps/office/office_icon.png',
   'apps/connectivity/connectivity_icon.png', 'apps/tools/tools_icon.png', 'apps/lab/lab_icon.png', 'apps/system/system_icon.png', 'apps/system/settings/settings_icon.png',
+  'apps/system/apphub/', 'apps/system/apphub/index.html', 'apps/system/apphub/apphub.js', 'apps/system/apphub/apphub.css', 'apps/system/apphub/apphub_icon.png',   // AH2: the category pages live here now, so the first offline visit works
   'apps/system/files/files_icon.png', 'apps/system/disk/disk_icon.png', 'apps/connectivity/qr-scanner/qr-scanner_icon.png', 'hub/controller/controller_icon.png', 'hub/controller/controller_qr_icon.png',
   'apps/favorite/favorite-apps.csv', 'apps/games/games-apps.csv', 'apps/media/media-apps.csv', 'apps/office/office-apps.csv',
   'apps/connectivity/connectivity-apps.csv', 'apps/tools/tools-apps.csv', 'apps/lab/lab-apps.csv', 'apps/system/system-apps.csv', 'hub/version.txt',

@@ -658,6 +658,8 @@ localStorage, prefix sites-hub.:
   homeBtn             Settings > Desktop, AH1-F1  '' = Home screen (default) | apphub
                       hub.js __hubHome (Phone mode Home button only;
                       H6-B1: Desktop Show desktop no longer uses it)
+                      AH2: category rows in the Start / Home menu open apps/system/apphub/#cat=<Category> (hub.js openCat);
+                      CAT_PAGES (apps/<cat>/<cat>.html) stays for old deep links only.
                       H5-B2: Settings is fetched fresh, the shell may be the previous build: sec_desktop.js
                       notes it when parent.__hubHome is missing. H5-B1: .menu button.app active/hover text = var(--text).
   startList           hub_flyout.js (R16c)        cached Start lists

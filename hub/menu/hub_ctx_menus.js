@@ -7,7 +7,7 @@
  *   QR tile             Open (its link, new tab), Copy link
  *   App tile            Open, Open in new window, Open in new tab, Copy link
  *   Menu / flyout rows  Open, Open in new window, Open in new tab, Add to / Remove from Favorites
- *                       (category page rows: no Favorites)
+ *                       (category rows open the App Hub page of that category, AH2; no Favorites)
  * "Open in new window" = Desktop mode only, not for apps that always open in their own tab.
  */
 (function () {
@@ -82,9 +82,14 @@
     ];
   }
   C.add('#menu button.app', (el) => rowItems(el, el.dataset.entryUrl, !!el.title), { touch: true });
+  // AH2: a category row opens the App Hub's page for it (apps/system/apphub/#cat=<name>)
   C.add('#menu .menu-cat[data-page]', (el) => {
-    const pages = (window.__hubFly && window.__hubFly.catPages) || {};
-    return rowItems(el, pages[el.dataset.cat] || '', false, true);
+    const F = window.__hubFly, cat = el.dataset.cat;
+    return [
+      { label: 'Open', icon: '\u2197', action: () => el.click() },
+      C.isDesk() && { label: 'Open in new window', icon: '\u29C9', action: () => C.shiftClick(el) },
+      F && F.catUrl && { label: 'Open in new tab', icon: '\u2934', action: () => window.open(new URL(F.catUrl(cat), location.href).href, '_blank', 'noopener') }
+    ];
   }, { touch: true });
   C.add('.fly-app', (el) => rowItems(el, el.dataset.entryUrl || '', el.dataset.newTab === '1'), { touch: true });
 })();
