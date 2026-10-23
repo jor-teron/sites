@@ -1,8 +1,9 @@
 // LandCraft chunk: 16 x 16 columns, CH blocks tall. Meshing emits only faces not hidden by an opaque
 // neighbour. Glass goes in a second index group drawn with the transparent material.
 import * as THREE from 'three';
-import { tileUV } from './atlas.js';
-import { FACE_TILES, GLASS, WATER, opaque } from './blocks.js';
+import { tileUV } from '../assets/textures/atlas.js';
+import { FACE_TILES } from '../assets/models/block_models.js';
+import { GLASS, WATER, opaque } from './blocks.js';
 
 export const CS = 16, CH = 32;
 

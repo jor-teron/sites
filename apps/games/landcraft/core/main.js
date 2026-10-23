@@ -1,8 +1,8 @@
-// LandCraft L2c: generated voxel maps 00-99 chosen in a title picker (or ?map=NN; 00 = flat test world),
+// LandCraft LCR1a: generated voxel maps 00-99 chosen in a title picker (or ?map=NN; 00 = flat test world),
 // three.js r170 vendored, first-person movement and block break/place. Each map keeps its own save (edits + player),
 // autosaved every 30 s and on map switch / picker / page hide; a map is rebuilt from its number plus the save's diff.
 import * as THREE from 'three';
-import { makeAtlas } from './atlas.js';
+import { makeAtlas } from '../assets/textures/atlas.js';
 import { generate, worldHash } from './mapgen.js';
 import { Player, EYE } from './player.js';
 import { setupControls } from './controls.js';
