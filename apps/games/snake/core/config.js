@@ -1,7 +1,7 @@
 /**
  * Snake — configuration.
  * Grid, speeds, colors, keys, touch and on-screen text.
- * js/*.js read everything from SNAKE_CONFIG.
+ * core/*.js read everything from SNAKE_CONFIG.
  * APP = name / version / author / category (page title + sites hub header).
  */
 const SNAKE_CONFIG = {
