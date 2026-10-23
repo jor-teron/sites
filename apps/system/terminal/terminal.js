@@ -1,5 +1,9 @@
 /*
- * Terminal (apps/system/terminal/terminal.js), T1 + T2 — the Hub's command line. T2 adds the unix-style
+ * Terminal (apps/system/terminal/terminal.js), T1 + T2 + T3 — the Hub's command line. T3 adds the line side
+ * of the commands that change files (terminal_wr.js, terminal_edit.js): the redirects > and >> (an unquoted
+ * > only; the output of the built-in commands in REDIR_OK is collected in CAP and written by
+ * fs.redirect), the y/n question state (ask / answer: the next Enter answers, Ctrl+C = no) and the Tab
+ * completion of the new commands. T2 adds the unix-style
  * file tree (/drive/local, /drive/gdrive, /drive/<folder>) and the read commands (pwd cd ls cat head tail wc
  * tree stat drives allow, `open <file>`); that part lives in terminal_fs.js (window.TermFs), built on
  * shared/fs (FsDrives, FsOps). The prompt is jor@hub:<cwd>$, cwd kept in localStorage 'hub-terminal.cwd'.
@@ -29,7 +33,9 @@
   const elB = document.getElementById('before'), elC = document.getElementById('cur'), elA = document.getElementById('after');
 
   /* ---------- output (text only) ---------- */
+  let CAP = null;   // T3: while a redirect (> / >>) runs, plain output is collected here instead of shown
   function print(text, cls) {
+    if (CAP && !cls) { CAP.push(String(text == null ? '' : text)); return; }
     String(text == null ? '' : text).split('\n').forEach((t) => {
       const d = document.createElement('div');
       if (cls) d.className = cls;
@@ -43,6 +49,7 @@
   const dim = (t) => print(t, 'dim');
   /** One text block (many lines in one element): file contents, trees. */
   function block(text) {
+    if (CAP) { CAP.push(String(text == null ? '' : text)); return; }
     const d = document.createElement('div');
     d.textContent = String(text == null ? '' : text);
     out.appendChild(d);
@@ -73,6 +80,32 @@
     }
     if (has || cur) words.push(cur);
     return words;
+  }
+  /** tokenize + the redirect: an unquoted > or >> (T3). { words, redir: { op, target } | null, cut, error } */
+  function parseLine(str) {
+    const words = [], ops = [];
+    let cur = '', has = false, q = '';
+    const flush = () => { if (has || cur) { words.push({ t: cur, i: ops.length }); cur = ''; has = false; } };
+    for (let i = 0; i < str.length; i++) {
+      const c = str[i];
+      if (q) {
+        if (c === q) q = '';
+        else if (c === '\\' && q === '"' && i + 1 < str.length && /["\\]/.test(str[i + 1])) cur += str[++i];
+        else cur += c;
+      } else if (c === '"' || c === "'") { q = c; has = true; }
+      else if (c === '\\' && i + 1 < str.length) { cur += str[++i]; has = true; }
+      else if (c === '>') { flush(); const op = str[i + 1] === '>' ? '>>' : '>'; ops.push({ op, at: i }); i += op.length - 1; }
+      else if (/\s/.test(c)) flush();
+      else cur += c;
+    }
+    flush();
+    const plain = words.filter((w) => w.i === 0).map((w) => w.t);
+    if (!ops.length) return { words: plain, redir: null, cut: -1 };
+    if (ops.length > 1) return { words: plain, redir: null, cut: -1, error: "only one > or >> per command" };
+    const after = words.filter((w) => w.i === 1).map((w) => w.t);
+    if (!after.length) return { words: plain, redir: null, cut: -1, error: "syntax error: file name missing after '" + ops[0].op + "'" };
+    if (after.length > 1) return { words: plain, redir: null, cut: -1, error: "syntax error: the redirect goes last, with one file name (quote names with spaces)" };
+    return { words: plain, redir: { op: ops[0].op, target: after[0] }, cut: ops[0].at };
   }
   function toBottom() { term.scrollTop = term.scrollHeight; }
   function columns(list) {
@@ -194,7 +227,26 @@
     PS = 'jor@hub:' + (fs ? fs.prompt() : '~') + '$ ';
     if (elPs) elPs.textContent = PS.replace(/ $/, '\u00a0');
   }
-  const fs = window.TermFs ? window.TermFs.install({ print, err, dim, block, columns, button, hubOpen, onCwd: setPrompt }) : null;
+  /* T3: a y/n question (rm, cp, mv) answered with the next Enter; epoch counts Ctrl+C so long searches stop */
+  let asking = null, epoch = 0;
+  function ask(q) {
+    return new Promise((resolve) => {
+      asking = { resolve };
+      print(q, 'ask');
+      if (elPs) elPs.textContent = '(y/n)\u00a0';
+      toBottom();
+    });
+  }
+  function answer(text, cancelled) {
+    if (!asking) return;
+    const a = text.trim().toLowerCase();
+    if (!cancelled && a && !/^(y|yes|n|no)$/.test(a)) { print('(y/n)  ' + text); dim('Please answer y or n.'); return; }
+    const a0 = asking; asking = null;
+    print('(y/n)  ' + text + (cancelled ? '^C' : ''));
+    setPrompt();
+    a0.resolve(!cancelled && /^y(es)?$/.test(a));
+  }
+  const fs = window.TermFs ? window.TermFs.install({ print, err, dim, block, columns, button, hubOpen, onCwd: setPrompt, ask, epoch: () => epoch }) : null;
 
   /* ---------- commands ---------- */
   const HELP = [
@@ -221,13 +273,30 @@
     ['drives', 'the mounts under /drive and their access'],
     ['allow <mount>', 'ask the browser for access to a folder drive'],
   ];
+  const HELP_WR = [
+    ['mkdir [-p] <folder>...', 'make folders (-p: with the folders above them)'],
+    ['touch <file>...', 'make empty files (an existing file is left alone)'],
+    ['cp [-r] [-f] <src>... <dest>', 'copy files (-r folders); asks y/n before overwriting, -f skips'],
+    ['mv [-f] <src>... <dest>', 'move or rename, also between drives; asks y/n before overwriting'],
+    ['rm [-r] [-f] <path>...', 'delete (-r folders: asks y/n, -f does not ask)'],
+    ['rmdir <folder>...', 'delete empty folders'],
+    ['edit <file>', 'text editor (Ctrl+S save, Ctrl+X / Esc exit), text files under 1 MB'],
+    ['find [path] -name <pat>', 'find by name (* and ?; -iname ignores case; -type f|d)'],
+    ['grep [-i] [-n] [-r] <text> <path>', 'find text in files (-r folders; plain text, not a pattern)'],
+  ];
   const CMDS = {
     help() {
       print('Commands:');
       HELP.forEach((h) => print('  ' + h[0].padEnd(26) + h[1]));
       if (fs) {
-        print('Files (read only):');
+        print('Files (look around):');
         HELP_FS.forEach((h) => print('  ' + h[0].padEnd(26) + h[1]));
+        if (fs.cmds.mkdir) {
+          print('Files (change, need write access: allow <mount>):');
+          HELP_WR.forEach((h) => print('  ' + h[0].padEnd(26) + h[1]));
+          print('  ' + 'cmd > file, cmd >> file'.padEnd(26) + 'write / append the output (echo, cat, ls, grep, ...)');
+          dim('There is no trash: rm and overwriting delete for good, real host folders too. Wildcards are only for find -name.');
+        }
         dim('Tree: / > drive > local (~), gdrive, <your folders>. Quote names with spaces or escape them: cat "my file.txt".');
       }
       dim('Keys: Up/Down history, Tab complete (commands, paths), Ctrl+L clear, Ctrl+C cancel line');
@@ -309,16 +378,33 @@
     print(PS + line);
     const t = line.trim();
     if (!t) return;
-    const name = t.split(/\s+/)[0];
-    const rest = t.slice(name.length).trim();
-    const args = tokenize(rest);
+    const name = (t.match(/^[^\s>]+/) || [''])[0];
+    if (!name) { err("sh: syntax error near '>'"); return; }
+    const rest0 = t.slice(name.length).trim();
+    const P = parseLine(rest0);
     const fn = Object.prototype.hasOwnProperty.call(CMDS, name) ? CMDS[name] : null;
     if (!fn) { err(name + ': command not found'); return; }
+    if (P.error) { err('sh: ' + P.error); return; }
+    const args = P.words;
+    let rest = rest0;
+    if (P.redir) {   // echo hello > f writes the words (quotes removed); other commands get the text before the >
+      rest = name === 'echo' ? args.join(' ') : rest0.slice(0, P.cut).trim();
+      if (!REDIR_OK.has(name)) { err('sh: ' + name + ": output cannot be redirected with " + P.redir.op); return; }
+      if (!fs || !fs.redirect) { err('sh: redirects need the file tree'); return; }
+      await fs.S.ready;
+      const bad = await fs.redirectCheck(P.redir.target);
+      if (bad) { err('sh: ' + P.redir.target + ': ' + bad); return; }
+      CAP = [];
+    }
+    let got = null;
     try {
       await fn(args, rest);
     } catch (e) { err(name + ': ' + (e && e.message ? e.message : 'failed')); }
+    finally { got = CAP; CAP = null; }
+    if (P.redir) await fs.redirect(P.redir.target, got && got.length ? got.join('\n') + '\n' : '', P.redir.op === '>>');
     toBottom();
   }
+  const REDIR_OK = new Set(['help', 'echo', 'date', 'history', 'apps', 'build', 'theme', 'pwd', 'ls', 'cat', 'head', 'tail', 'wc', 'tree', 'stat', 'drives', 'find', 'grep']);
 
   /* ---------- Tab completion ---------- */
   function commonPrefix(list) {
@@ -342,7 +428,8 @@
     print(PS + v);
     print(columns(hits));
   }
-  const PATH_CMDS = ['cd', 'ls', 'cat', 'head', 'tail', 'wc', 'tree', 'stat'];
+  const PATH_CMDS = ['cd', 'ls', 'cat', 'head', 'tail', 'wc', 'tree', 'stat', 'mkdir', 'touch', 'cp', 'mv', 'rm', 'rmdir', 'edit', 'find', 'grep'];
+  const DIRS_ONLY = ['cd', 'tree', 'rmdir', 'mkdir'];
   function complete() {
     const v = input.value, pos = input.selectionStart == null ? v.length : input.selectionStart;
     const head = v.slice(0, pos), tail = v.slice(pos);
@@ -358,8 +445,13 @@
         if (q) { if (c === q) q = ''; } else if (c === '\\') i++; else if (c === '"' || c === "'") q = c; else if (/\s/.test(c)) start = i + 1;
       }
       const raw = head.slice(start);
-      if (fs && PATH_CMDS.indexOf(cmd) >= 0 && !(raw.charAt(0) === '-' && !q)) {
-        fs.completePath(raw, cmd === 'cd' || cmd === 'tree').then((r) => apply(v, pos, head.slice(0, start) + r.keep, r.hits.sort(), raw.slice(r.keep.length), tail));
+      const prev = tokenize(head.slice(0, start));   // the words before this one (cmd first)
+      const afterRedir = prev.length > 1 && /^>>?$/.test(prev[prev.length - 1]);
+      let skip = false;   // grep: the first plain word is the text; find: the word after -name / -iname / -type
+      if (cmd === 'grep') skip = prev.slice(1).filter((w) => w.charAt(0) !== '-').length === 0;
+      else if (cmd === 'find') skip = /^-(name|iname|type)$/.test(prev[prev.length - 1] || '');
+      if (fs && !skip && (PATH_CMDS.indexOf(cmd) >= 0 || afterRedir) && !(raw.charAt(0) === '-' && !q)) {
+        fs.completePath(raw, !afterRedir && DIRS_ONLY.indexOf(cmd) >= 0).then((r) => apply(v, pos, head.slice(0, start) + r.keep, r.hits.sort(), raw.slice(r.keep.length), tail));
         return;
       }
       if (fs && cmd === 'allow') {
@@ -385,12 +477,14 @@
   function submit() {
     const line = input.value;
     setLine('');
+    if (asking) { answer(line); toBottom(); return; }
     run(line);
     toBottom();
   }
   /** One key for the line; true = handled (the caller prevents the default). */
   function lineKey(k, ctrl, alt, meta) {
     if (k === 'Enter') { submit(); return true; }
+    if (asking && (k === 'ArrowUp' || k === 'ArrowDown' || k === 'Tab')) return true;   // a y/n question: no history / completion
     if (k === 'ArrowUp' && !alt) { histMove(-1); return true; }
     if (k === 'ArrowDown' && !alt) { histMove(1); return true; }
     if (k === 'Tab' && !alt && !ctrl && !meta) { complete(); return true; }
@@ -399,7 +493,9 @@
       const sel = String(window.getSelection ? window.getSelection() : '');
       const inSel = input.selectionStart !== input.selectionEnd;
       if (sel || inSel) return false;   // copy
+      if (asking) { const v = input.value; setLine(''); answer(v, true); return true; }
       print(PS + input.value + '^C');
+      epoch++;
       chain = Promise.resolve();   // later lines no longer wait for a slow command
       setLine(''); hPos = hist.length; draft = '';
       return true;
@@ -452,14 +548,14 @@
     if (tap && e.target !== input && !(e.target.closest && e.target.closest('button')) && !String(window.getSelection())) { e.preventDefault(); focusIn(); }
     tap = null;
   }, { passive: false });
-  window.addEventListener('focus', () => setTimeout(focusIn, 0));
+  window.addEventListener('focus', () => setTimeout(() => { if (!(window.TermEdit && window.TermEdit.isOpen())) focusIn(); }, 0));
   if (window.visualViewport) window.visualViewport.addEventListener('resize', toBottom);
   window.addEventListener('resize', toBottom);
 
   /* ---------- start ---------- */
-  print('Hub Terminal (T2)');
+  print('Hub Terminal (T3)');
   dim("Type 'help' for commands. Tab completes, Up/Down = history. ls / shows the tree, cd ~ goes home.");
   render();
   focusIn();
-  window.HubTerminal = { run: (l) => run(String(l)), commands: NAMES.slice(), fs };   // tests / console
+  window.HubTerminal = { run: (l) => run(String(l)), commands: NAMES.slice(), fs, asking: () => !!asking };   // tests / console
 })();
