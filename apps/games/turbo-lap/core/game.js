@@ -6,19 +6,23 @@ window.TL = window.TL || {};
 
   const G = TL.game = {
     state: 'title', paused: false, t: 0, raceTime: 0, countdown: 0,
-    player: null, ais: [], racers: [], finishOrder: [], result: null, finishT: 0, goT: 0
+    player: null, ais: [], racers: [], finishOrder: [], result: null, finishT: 0, goT: 0,
+    circuit: 0, laps: CFG.laps, demoActive: false, tookOver: false, pickerFrom: 'title'
   };
 
   function track() { return road.track; }
 
   G.init = function () {
-    road.build(TL.TRACKS[0]);
-    G.setupGrid();
+    G.setCircuit(TL.storage.circuit(), false);
     input.on('start', onStart);
     input.on('padA', onStart);
     input.on('pause', onPause);
-    input.on('title', () => { if (G.paused || G.state === 'finished') G.toTitle(); });
-    input.on('padB', () => { if (G.paused || (G.state === 'finished' && G.finishT > CFG.finishOverlayDelay)) G.toTitle(); });
+    input.on('title', () => { if (G.panel !== 'picker' && (G.paused || G.state === 'finished')) G.toTitle(); });
+    input.on('padB', () => { if (G.panel === 'picker') G.closePicker(); else if (G.paused || (G.state === 'finished' && G.finishT > CFG.finishOverlayDelay)) G.toTitle(); });
+    input.on('prevCircuit', () => { if (G.state === 'title' && G.panel === 'title') G.stepCircuit(-1); });
+    input.on('nextCircuit', () => { if (G.state === 'title' && G.panel === 'title') G.stepCircuit(1); });
+    input.on('circuits', () => { if (G.panel === 'picker') G.closePicker(); else if (G.panel === 'title' || G.panel === 'finish') G.openPicker(); });
+    input.on('control', takeOver);
     input.on('fps', toggleFps);
     input.on('blur', () => { if (G.state === 'race' || G.state === 'countdown') setPaused(true); });
     bindButtons();
@@ -26,10 +30,36 @@ window.TL = window.TL || {};
     G.toTitle();
   };
 
+  // Pick a circuit (0..99): builds its road and grid. save=false keeps the stored pick untouched (first load).
+  G.setCircuit = function (n, save) {
+    n = TL.circuits.clampN(n);
+    const t = TL.circuits.get(n);
+    G.circuit = n; G.laps = t.laps;
+    road.build(t);
+    if (save !== false) TL.storage.setCircuit(n);
+    G.setupGrid();
+    refreshTitle();
+  };
+  G.stepCircuit = function (d) {
+    const n = TL.circuits.clampN(G.circuit + d);
+    if (n !== G.circuit) G.setCircuit(n);
+  };
+  G.pickCircuit = function (n) { G.setCircuit(n); G.toTitle(); };
+  G.openPicker = function () {
+    if (G.panel !== 'title' && G.panel !== 'finish') return;
+    G.pickerFrom = G.panel; showPanel('picker');
+    if (TL.picker) TL.picker.open();
+  };
+  G.closePicker = function () {
+    if (G.panel !== 'picker') return;
+    showPanel(G.pickerFrom || 'title');
+    if (G.pickerFrom === 'finish') fillFinish();
+  };
+
   // Grid: two cars per row, player alone at the back.
   G.setupGrid = function () {
     const segL = CFG.segmentLength, gap = CFG.gridSpacing * segL;
-    G.ais = TL.opponents ? TL.opponents.create(CFG.opponents.map((o, i) => ({
+    G.ais = TL.opponents ? TL.opponents.create(track().opponents.map((o, i) => ({
       ...o, p: -(1 + Math.floor(i / 2)) * gap - (i % 2) * segL, x: i % 2 ? 0.45 : -0.45
     }))) : [];
     const rows = Math.ceil(G.ais.length / 2);
@@ -50,13 +80,21 @@ window.TL = window.TL || {};
   G.startRace = function () {
     G.setupGrid();
     G.state = 'countdown';
+    G.demoActive = !!track().demo; G.tookOver = false;      // circuit 00: the car drives itself until you take over
     G.countdown = 3 * CFG.countdownStep;
     G.goT = 0;
     setPaused(false);
     showPanel(null);
   };
 
+  // any control key, pad press or touch takes the wheel from the circuit 00 autopilot; the race is then yours
+  function takeOver() {
+    if (!G.demoActive || G.paused || (G.state !== 'countdown' && G.state !== 'race')) return;
+    G.demoActive = false; G.tookOver = true;
+  }
+
   function onStart() {
+    if (G.panel === 'picker') return;
     if (G.paused) return setPaused(false);
     if (G.state === 'title') G.startRace();
     else if (G.state === 'finished' && G.finishT > CFG.finishOverlayDelay) G.startRace();
@@ -81,7 +119,7 @@ window.TL = window.TL || {};
       if (r.lap >= 1) { r.lapTimes.push(G.raceTime - r.lapStart); }
       r.lapStart = G.raceTime;
       r.lap = lap;
-      if (lap > CFG.laps && !r.finished) {
+      if (lap > G.laps && !r.finished) {
         r.finished = true; r.finishTime = G.raceTime;
         G.finishOrder.push(r);
         r.finalPos = G.finishOrder.length;
@@ -103,8 +141,12 @@ window.TL = window.TL || {};
     const pl = G.player;
     G.state = 'finished'; G.finishT = 0;
     const best = pl.lapTimes.length ? Math.min(...pl.lapTimes) : null;
-    const saved = TL.storage.saveResult(track().id, pl.finishTime, best, pl.finalPos);
-    G.result = { pos: pl.finalPos, total: pl.finishTime, bestLap: best, laps: pl.lapTimes.slice(), ...saved };
+    const demo = G.demoActive;                                   // autopilot drove the whole race: not the player's result
+    const saved = demo ? { isNewTotal: false, isNewLap: false, records: TL.storage.records(track().id) }
+      : TL.storage.saveResult(track().id, pl.finishTime, best, pl.finalPos);
+    G.demoActive = false;
+    G.result = { pos: pl.finalPos, total: pl.finishTime, bestLap: best, laps: pl.lapTimes.slice(), demo,
+                 win: !demo && pl.finalPos <= CFG.circuits.podium, circuit: G.circuit, ...saved };
   }
 
   G.update = function (dt) {
@@ -124,7 +166,7 @@ window.TL = window.TL || {};
     // race or finished: everything keeps moving
     G.goT = Math.max(0, G.goT - dt);
     G.raceTime += dt;
-    const ctl = input.read();
+    const ctl = G.demoActive ? TL.driver.control(pl, { t: G.raceTime, cap: 0.93, vary: 0.1 }) : input.read();
     TL.cars.updatePlayer(pl, ctl, dt, !pl.finished);
     if (TL.opponents) TL.opponents.update(G.ais, G.racers, pl, dt);
     TL.cars.collide(G.racers, dt);
@@ -149,21 +191,40 @@ window.TL = window.TL || {};
     const ov = $('overlay');
     if (!ov) return;
     ov.classList.toggle('hidden', !name);
-    ['title', 'pause', 'finish'].forEach(n => { const el = $('panel-' + n); if (el) el.classList.toggle('hidden', n !== name); });
+    ['title', 'pause', 'finish', 'picker'].forEach(n => { const el = $('panel-' + n); if (el) el.classList.toggle('hidden', n !== name); });
     G.panel = name;
   }
   function refreshTitle() {
     const b = $('fpsBtn'); if (b) b.textContent = 'FPS: ' + TL.view.fps;
+    const tc = $('titleCircuit'); if (tc) tc.textContent = circuitTitle();
+    const tg = $('titleTag'); if (tg) tg.textContent = tagline();
+    const pv = $('prevBtn'), nx = $('nextBtn');
+    if (pv) pv.disabled = G.circuit <= 0; if (nx) nx.disabled = G.circuit >= CFG.circuits.count - 1;
+    const dm = $('titleDemo'); if (dm) dm.classList.toggle('hidden', !track().demo);
     const r = TL.storage.records(track().id), el = $('titleBest');
     if (el) el.textContent = r.bestTotal != null
       ? 'Best race ' + U.fmtTime(r.bestTotal) + ' · Best lap ' + U.fmtTime(r.bestLap) + ' · Best finish P' + r.bestPos
       : 'No records yet — set one!';
   }
+  const circuitTitle = () => TL.circuits.label(G.circuit) + ' · ' + track().name;
+  const lapsText = () => G.laps + (G.laps === 1 ? ' lap' : ' laps');
+  const tagline = () => lapsText() + ' · ' + G.racers.length + ' cars · you start last. Finish in the top ' + CFG.circuits.podium + ' to win!';
   function fillFinish() {
     const r = G.result; if (!r || !$('finPos')) return;
     const suf = ['', 'st', 'nd', 'rd', 'th', 'th'][r.pos] || 'th';
     $('finPos').textContent = r.pos + suf;
     $('finPos').className = 'pos p' + r.pos;
+    const hd = $('finHead'), note = $('finNote');
+    if (hd) {
+      hd.textContent = r.demo ? 'Autopilot finished' : r.win ? 'You win! Top ' + CFG.circuits.podium + ' finish' : 'Race Finished';
+      hd.className = r.demo ? '' : r.win ? 'win' : 'lose';
+    }
+    if (note) note.textContent = r.demo ? 'The autopilot drove this one, so it does not count. Take the wheel (any control key or touch) to set a time.'
+      : r.win ? (r.pos === 1 ? 'First place!' : 'On the podium — P' + r.pos + ' of ' + G.racers.length + '.')
+      : 'P' + r.pos + ' of ' + G.racers.length + ' — finish in the top ' + CFG.circuits.podium + ' to win.';
+    const fc = $('finCircuit'); if (fc) fc.textContent = circuitTitle() + ' · ' + lapsText();
+    const nb = $('nextCircuitBtn');
+    if (nb) { nb.disabled = G.circuit >= CFG.circuits.count - 1; nb.firstChild.nodeValue = 'Circuit ' + TL.circuits.pad2(Math.min(G.circuit + 1, CFG.circuits.count - 1)) + ' ▶ '; }
     $('finTotal').textContent = U.fmtTime(r.total) + (r.isNewTotal ? '  ★ NEW BEST' : '');
     $('finLap').textContent = U.fmtTime(r.bestLap) + (r.isNewLap ? '  ★ NEW BEST' : '');
     $('finLaps').textContent = r.laps.map((t, i) => 'Lap ' + (i + 1) + ' ' + U.fmtTime(t)).join(' · ');
@@ -177,6 +238,11 @@ window.TL = window.TL || {};
     on('restartBtn', () => G.startRace());
     on('pauseRestartBtn', () => G.startRace());
     on('titleBtn', () => G.toTitle());
+    on('prevBtn', () => G.stepCircuit(-1));
+    on('nextBtn', () => G.stepCircuit(1));
+    on('circuitsBtn', () => G.openPicker());
+    on('circuitsBtn2', () => G.openPicker());
+    on('nextCircuitBtn', () => { if (G.circuit < CFG.circuits.count - 1) { G.setCircuit(G.circuit + 1); G.startRace(); } });
     on('pauseTitleBtn', () => G.toTitle());
   }
 

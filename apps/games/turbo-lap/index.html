@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Turbo Lap TLR1a</title>
+<title>Turbo Lap TLQ1c</title>
 <link rel="icon" href="turbo-lap_icon.png">
-<link rel="stylesheet" href="ui/turbo-lap.css?v=TLR1a" />
+<link rel="stylesheet" href="ui/turbo-lap.css?v=TLQ1c" />
 </head>
 <body>
 <canvas id="game"></canvas>
@@ -24,18 +24,26 @@
 <div id="overlay">
   <div id="panel-title" class="card">
     <h1>TURBO <span>LAP</span></h1>
-    <p class="tag">2 laps · 5 cars · you start last. Finish first!</p>
+    <div class="circuitrow">
+      <button id="prevBtn" class="nav" aria-label="Previous circuit">◀</button>
+      <div id="titleCircuit" class="circuitname">Circuit 00</div>
+      <button id="nextBtn" class="nav" aria-label="Next circuit">▶</button>
+    </div>
+    <p id="titleTag" class="tag">1 lap · 5 cars · you start last. Finish in the top 3 to win!</p>
+    <p id="titleDemo" class="demo hidden">🤖 Circuit 00 is a demo: your car drives itself. Press any control key or touch the screen to take over.</p>
     <p class="touchhelp">👆 ◀ ▶ steer · GAS / BRAKE / NITRO on the right · ❚❚ pause</p>
     <table class="keys">
       <tr><td><kbd>↑</kbd> <kbd>W</kbd></td><td>Accelerate</td><td><kbd>←</kbd><kbd>→</kbd> <kbd>A</kbd><kbd>D</kbd></td><td>Steer</td></tr>
       <tr><td><kbd>↓</kbd> <kbd>S</kbd></td><td>Brake</td><td><kbd>Space</kbd> <kbd>Shift</kbd></td><td>Nitro</td></tr>
       <tr><td><kbd>P</kbd> <kbd>Esc</kbd></td><td>Pause</td><td><kbd>F</kbd></td><td>30/60 FPS</td></tr>
+      <tr><td><kbd>←</kbd><kbd>→</kbd></td><td>Circuit (title)</td><td><kbd>C</kbd></td><td>All circuits</td></tr>
     </table>
     <p class="pad">🎮 Gamepad: stick/D-pad steer · A/RT gas · B/LT brake · X nitro · Start pause</p>
     <p class="hint">Grass slows you down. Bumping other cars costs speed. Take hard bends off the gas.</p>
     <p id="titleBest" class="best"></p>
     <div class="row">
       <button id="startBtn" class="primary">Start Race <small>Enter</small></button>
+      <button id="circuitsBtn">Circuits <small>C</small></button>
       <button id="fpsBtn">FPS: 30</button>
       <button id="autoGasBtn">AUTO GAS: OFF</button>
     </div>
@@ -49,8 +57,10 @@
     </div>
   </div>
   <div id="panel-finish" class="card hidden">
-    <h2>Race Finished</h2>
+    <h2 id="finHead">Race Finished</h2>
+    <p id="finCircuit" class="small"></p>
     <div id="finPos" class="pos">1st</div>
+    <p id="finNote" class="fnote"></p>
     <table class="results">
       <tr><td>Total time</td><td id="finTotal"></td></tr>
       <tr><td>Best lap</td><td id="finLap"></td></tr>
@@ -59,23 +69,36 @@
     <p id="finRecord" class="small"></p>
     <div class="row">
       <button id="restartBtn" class="primary">Race Again <small>Enter</small></button>
+      <button id="nextCircuitBtn">Circuit 01 ▶ </button>
+      <button id="circuitsBtn2">Circuits <small>C</small></button>
       <button id="titleBtn">Title <small>T</small></button>
     </div>
   </div>
+  <div id="panel-picker" class="card picker hidden" role="dialog" aria-label="Choose a circuit">
+    <div class="pickhead">
+      <h2>Circuits</h2>
+      <button id="pickClose" class="nav" aria-label="Close">✕</button>
+    </div>
+    <p class="small">Finish in the top 3 to win. Laps: 00–09 · 1, 10–29 · 2, 30–54 · 3, 55–79 · 4, 80–99 · 5. Numbers get longer and harder. Best times shown.</p>
+    <div id="pickGrid" class="pickgrid" role="grid"></div>
+  </div>
 </div>
 
-<script src="core/config.js?v=TLR1a"></script>
-<script src="core/track.js?v=TLR1a"></script>
-<script src="core/road.js?v=TLR1a"></script>
-<script src="core/cars.js?v=TLR1a"></script>
-<script src="core/opponents.js?v=TLR1a"></script>
-<script src="core/sprites.js?v=TLR1a"></script>
-<script src="core/render.js?v=TLR1a"></script>
-<script src="core/hud.js?v=TLR1a"></script>
-<script src="core/storage.js?v=TLR1a"></script>
-<script src="core/input.js?v=TLR1a"></script>
-<script src="core/touch.js?v=TLR1a"></script>
-<script src="core/game.js?v=TLR1a"></script>
-<script src="core/main.js?v=TLR1a"></script>
+<script src="core/config.js?v=TLQ1c"></script>
+<script src="core/track.js?v=TLQ1c"></script>
+<script src="core/road.js?v=TLQ1c"></script>
+<script src="core/circuits.js?v=TLQ1c"></script>
+<script src="core/cars.js?v=TLQ1c"></script>
+<script src="core/opponents.js?v=TLQ1c"></script>
+<script src="core/sprites.js?v=TLQ1c"></script>
+<script src="core/render.js?v=TLQ1c"></script>
+<script src="core/hud.js?v=TLQ1c"></script>
+<script src="core/storage.js?v=TLQ1c"></script>
+<script src="core/driver.js?v=TLQ1c"></script>
+<script src="core/input.js?v=TLQ1c"></script>
+<script src="core/touch.js?v=TLQ1c"></script>
+<script src="core/game.js?v=TLQ1c"></script>
+<script src="ui/picker.js?v=TLQ1c"></script>
+<script src="core/main.js?v=TLQ1c"></script>
 </body>
 </html>

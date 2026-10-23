@@ -11,7 +11,11 @@ window.TL = window.TL || {};
     setFps(f) { S.set('fps', f); },
     autoGas(def) { const v = S.get('autogas', null); return typeof v === 'boolean' ? v : def; },
     setAutoGas(v) { S.set('autogas', !!v); },
-    // per track: { bestTotal, bestLap, bestPos }
+    // picked circuit (0..99)
+    circuit() { const n = S.get('circuit', null); return Number.isInteger(n) && n >= 0 && n < TL.CFG.circuits.count ? n : TL.CFG.circuits.defaultCircuit; },
+    setCircuit(n) { S.set('circuit', n); },
+    bestTotal(id) { const r = S.records(id); return r && r.bestTotal != null ? r.bestTotal : null; },
+    // per track (key best.<nn>, nn = two-digit circuit number): { bestTotal, bestLap, bestPos }
     records(trackId) { return S.get('best.' + trackId, {}); },
     saveResult(trackId, total, bestLap, pos) {
       const r = S.records(trackId), out = { isNewTotal: false, isNewLap: false };
