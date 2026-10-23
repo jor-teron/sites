@@ -42,6 +42,23 @@ html, body {
   font-family: inherit; font-size: 11px;
   letter-spacing: 1px; cursor: pointer;
 }
+#hud .picker { min-width: 128px; }
+#hud .pick-row { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+#hud .pick-row button {
+  width: 28px; height: 28px; padding: 0; line-height: 1;
+  font-size: 18px; font-weight: bold; color: #FFD700;
+  background: #0f0f6a; border-color: #3B3BFF;
+}
+#hud .pick-row button:disabled { opacity: 0.3; cursor: default; }
+#lvl-input {
+  width: 44px; height: 28px; padding: 0;
+  text-align: center; font-family: inherit; font-size: 16px; font-weight: bold;
+  color: #FFD700; background: #0a0a3c;
+  border: 1px solid #3B3BFF; border-radius: 4px; outline: none;
+  letter-spacing: 1px; user-select: text; -webkit-user-select: text;
+}
+#lvl-input:focus { border-color: #FFD700; }
+#hud .picker.bad #lvl-input { border-color: #ff5555; color: #ff8080; }
 #hud button:active { transform: scale(0.96); }
 
 #stage {
@@ -86,6 +103,7 @@ canvas {
 }
 #overlay.hidden { display: none; }
 #overlay h2 { margin: 0 0 8px; font-size: 28px; color: #FFD700; letter-spacing: 3px; }
+@media (max-width: 520px) { #overlay h2 { font-size: 20px; letter-spacing: 2px; } #overlay button { padding: 10px 16px; font-size: 13px; letter-spacing: 1px; } }
 #overlay p { margin: 4px 0; font-size: 13px; color: #ccc; letter-spacing: 1px; }
 #overlay .stars { font-size: 36px; margin: 8px 0; letter-spacing: 6px; color: #FFD700; }
 #overlay button {

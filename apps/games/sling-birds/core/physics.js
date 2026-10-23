@@ -1,8 +1,8 @@
 // Physics engine, collision handling (pig hits) and turn resolution.
-import { Engine, Composite, Events, Vector, WORLD_WIDTH, WORLD_HEIGHT, GRAVITY, SETTLE_SPEED, SETTLE_MAX_TIME, MAT, PIG_SCORE, DMG_MIN, DMG_K, DMG_MASS_MIN, DMG_MASS_MAX, SPAWN_GRACE_MS, HIT_FLASH } from './config.js';
-import { S } from './entities.js';
-import { updateHud, endGame, showHint } from './ui.js';
-import { loadNextBird } from './entities.js';
+import { Engine, Composite, Events, Vector, WORLD_WIDTH, WORLD_HEIGHT, GRAVITY, SETTLE_SPEED, SETTLE_MAX_TIME, MAT, PIG_SCORE, DMG_MIN, DMG_K, DMG_MASS_MIN, DMG_MASS_MAX, SPAWN_GRACE_MS, HIT_FLASH } from './config.js?v=sb1a';
+import { S } from './entities.js?v=sb1a';
+import { updateHud, endGame, showHint } from './ui.js?v=sb1a';
+import { loadNextBird } from './entities.js?v=sb1a';
 
 export const engine = Engine.create();
 engine.gravity.y = GRAVITY;
