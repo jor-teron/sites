@@ -751,13 +751,13 @@
 │   │   │   │   ├── pacman.js
 │   │   │   │   └── render.js
 │   │   │   └── pacman_icon.png
-│   │   ├── pong
+│   │   ├── ping-pong
 │   │   │   ├── index.html
-│   │   │   ├── pong_config.js
-│   │   │   ├── pong.css
-│   │   │   ├── pong.html
-│   │   │   ├── pong_icon.png
-│   │   │   └── pong_logic.js
+│   │   │   ├── ping-pong_config.js
+│   │   │   ├── ping-pong.css
+│   │   │   ├── ping-pong.html
+│   │   │   ├── ping-pong_icon.png
+│   │   │   └── ping-pong_logic.js
 │   │   ├── sling-birds
 │   │   │   ├── css
 │   │   │   │   └── style.css

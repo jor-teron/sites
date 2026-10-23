@@ -1,7 +1,7 @@
 /*
  * Ping Pong — configuration.
  * All tunable numbers, colors, key bindings and on-screen text live here.
- * pong_logic.js reads everything from PONG_CONFIG.
+ * ping-pong_logic.js reads everything from PONG_CONFIG.
  * APP = name / version / author / category (page title + sites hub header).
  */
 const PONG_CONFIG = {

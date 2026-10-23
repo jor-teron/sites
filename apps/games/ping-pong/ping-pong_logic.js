@@ -2,7 +2,7 @@
  * ========================================================================
  * Ping Pong — game logic
  * All state, drawing, input, physics, simple AI and the hub bridge live here.
- * Every tunable value comes from PONG_CONFIG (pong_config.js).
+ * Every tunable value comes from PONG_CONFIG (ping-pong_config.js).
  * The court is COURT_W x COURT_H game units; COURT_H follows the free space
  * (court.minAspect … maxAspect) and the canvas is scaled to fit (fitCourt).
  * First to WIN_SCORE wins; Start / Enter (or hub "New Game") plays again.
@@ -28,7 +28,7 @@ const TOUCH = CFG.touch || {};
 
 // Title from APP info
 document.querySelector("h1").textContent = APP.name;
-document.title = APP.name;
+document.title = APP.name + " PPR1a";
 
 // --- Court constants (from config) --------------------------------------
 
