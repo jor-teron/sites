@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Dino Run DRR1a</title>
-  <link rel="stylesheet" href="ui/style.css?v=DRR1a" />
+  <title>Dino Run DRQ1a</title>
+  <link rel="stylesheet" href="ui/style.css?v=DRQ1a" />
 </head>
 <body>
   <canvas id="c"></canvas>
@@ -12,6 +12,7 @@
     <span id="score">00000</span>
     <span id="best">HI 00000</span>
   </div>
+  <button id="styleBtn" class="dr-style-btn" type="button" data-dr-ui aria-haspopup="dialog" aria-controls="stylePanel" aria-expanded="false">Dino &amp; Theme</button>
   <div id="help">↑/A jump · ↓ duck · ←→ move · B shield · Start pause · Select restart</div>
   <div id="overlay" class="overlay">
     <div class="card">
@@ -20,7 +21,65 @@
       <p id="sub" class="sub"></p>
     </div>
   </div>
-  <script src="core/config.js?v=DRR1a"></script>
-  <script src="core/logic.js?v=DRR1a"></script>
+  <!-- Dino & theme picker (built by ui/picker.js) -->
+  <div id="stylePanel" class="dr-panel hidden" role="dialog" aria-modal="true" aria-labelledby="styleTitle" data-dr-ui>
+    <div class="dr-sheet">
+      <div class="dr-head"><span id="styleTitle">Dino &amp; Theme</span><button id="styleClose" type="button" class="dr-x" aria-label="Close">&times;</button></div>
+      <div class="dr-tabs" role="tablist" aria-label="Choose what to change">
+        <button id="styleTab-dino" class="dr-tab" type="button" role="tab" data-tab="dino" aria-controls="styleList" aria-selected="true">Dino</button>
+        <button id="styleTab-theme" class="dr-tab" type="button" role="tab" data-tab="theme" aria-controls="styleList" aria-selected="false" tabindex="-1">Theme</button>
+      </div>
+      <div id="styleList" class="dr-list" role="tabpanel"></div>
+    </div>
+  </div>
+  <script src="core/config.js?v=DRQ1a"></script>
+  <script src="core/registry.js?v=DRQ1a"></script>
+  <script src="assets/models/shared.js?v=DRQ1a"></script>
+  <script src="assets/models/background/ground.js?v=DRQ1a"></script>
+  <script src="assets/models/background/clouds.js?v=DRQ1a"></script>
+  <script src="assets/models/background/sun_moon.js?v=DRQ1a"></script>
+  <script src="assets/models/background/stars.js?v=DRQ1a"></script>
+  <script src="assets/models/background/scenery.js?v=DRQ1a"></script>
+  <script src="assets/models/background/particles.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/cactus.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/bird.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/saguaro.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/ice_spike.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/snowman.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/log.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/fern.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/rock.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/antenna.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/lava_rock.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/flame_spout.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/lollipop.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/coral.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/urchin.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/parrot.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/bat.js?v=DRQ1a"></script>
+  <script src="assets/models/obstacles/jellyfish.js?v=DRQ1a"></script>
+  <script src="assets/models/dinos/classic.js?v=DRQ1a"></script>
+  <script src="assets/models/dinos/feisty.js?v=DRQ1a"></script>
+  <script src="assets/models/dinos/fiery.js?v=DRQ1a"></script>
+  <script src="assets/models/dinos/smooth.js?v=DRQ1a"></script>
+  <script src="assets/models/dinos/lady.js?v=DRQ1a"></script>
+  <script src="assets/models/dinos/ninja.js?v=DRQ1a"></script>
+  <script src="assets/models/dinos/robo.js?v=DRQ1a"></script>
+  <script src="assets/models/dinos/baby.js?v=DRQ1a"></script>
+  <script src="assets/models/dinos/ghost.js?v=DRQ1a"></script>
+  <script src="assets/models/dinos/rex.js?v=DRQ1a"></script>
+  <script src="assets/themes/base.js?v=DRQ1a"></script>
+  <script src="assets/themes/classic.js?v=DRQ1a"></script>
+  <script src="assets/themes/night.js?v=DRQ1a"></script>
+  <script src="assets/themes/arctic.js?v=DRQ1a"></script>
+  <script src="assets/themes/neon.js?v=DRQ1a"></script>
+  <script src="assets/themes/jungle.js?v=DRQ1a"></script>
+  <script src="assets/themes/mars.js?v=DRQ1a"></script>
+  <script src="assets/themes/pixel.js?v=DRQ1a"></script>
+  <script src="assets/themes/volcano.js?v=DRQ1a"></script>
+  <script src="assets/themes/candy.js?v=DRQ1a"></script>
+  <script src="assets/themes/ocean.js?v=DRQ1a"></script>
+  <script src="ui/picker.js?v=DRQ1a"></script>
+  <script src="core/logic.js?v=DRQ1a"></script>
 </body>
 </html>
