@@ -3,56 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Swell Foop SF1a</title>
+    <title>Swell Foop SF2a</title>
     <!-- Self-contained: no CDN / network requests (works offline and from file://) -->
-    <link rel="stylesheet" href="ui/style.css?v=SF1a" />
+    <link rel="stylesheet" href="ui/style.css?v=SF2a" />
 </head>
 <body>
     <div class="game-container">
-        <!-- Own top bar (hidden with body.in-hub when the sites hub shows it in its header) -->
-        <h1 class="sf-title"><span id="appName">Swell Foop</span> <small id="appVersion" class="sf-version"></small></h1>
-        <div class="game-info">
-            <div class="sf-stat">Score: <span id="score">0</span></div>
-            <div class="sf-stat">Moves: <span id="moves">0</span></div>
+        <!-- Score / buttons: above the board on tall screens, in a side panel on wide ones (core/logic.js sets body.sf-tall / sf-wide).
+             Hidden with body.in-hub when the sites hub shows them in its header. -->
+        <div class="sf-hud">
+            <h1 class="sf-title"><span id="appName">Swell Foop</span> <small id="appVersion" class="sf-version"></small></h1>
+            <div class="game-info">
+                <div class="sf-stat">Score: <span id="score">0</span></div>
+                <div class="sf-stat">Moves: <span id="moves">0</span></div>
+            </div>
+            <div class="sf-controls">
+                <button id="newGameBtn" class="btn" type="button">New Game</button>
+                <button id="themeBtn" class="btn" type="button" aria-haspopup="dialog">Theme: <span id="themeLabel">Classic Blocks</span></button>
+            </div>
         </div>
-        <canvas id="gameCanvas"></canvas>
-        <div class="sf-controls">
-            <button id="newGameBtn" class="btn">New Game</button>
-            <button id="themeBtn" class="btn" type="button" aria-haspopup="dialog">Theme: <span id="themeLabel">Classic Balls</span></button>
-        </div>
+        <div class="sf-board"><canvas id="gameCanvas" aria-label="Swell Foop board: tap a group of two or more matching blocks"></canvas></div>
     </div>
 
     <!-- Theme picker sheet (built by ui/theme_picker.js) -->
-    <div id="themePanel" class="sf-theme-panel hidden" role="dialog" aria-label="Choose a block theme">
+    <div id="themePanel" class="sf-theme-panel hidden" role="dialog" aria-modal="true" aria-label="Choose a block theme">
         <div class="sf-theme-sheet">
             <div class="sf-theme-head"><span>Block theme</span><button id="themeClose" type="button" class="sf-theme-x" aria-label="Close">&times;</button></div>
             <div id="themeList" class="sf-theme-list"></div>
         </div>
     </div>
 
+    <!-- Shown when the screen shape changed mid-game and the board would need new dimensions -->
+    <div id="fitBar" class="sf-fitbar hidden" role="alertdialog" aria-label="Screen size changed">
+        <span id="fitText">Screen shape changed. Fit the board to it?</span>
+        <span class="sf-fitbtns"><button id="fitYes" type="button">New game</button><button id="fitNo" type="button">Keep</button></span>
+    </div>
+
     <!-- Message Box HTML -->
     <div id="messageBox" class="message-box hidden">
-        <div class="message-content">
+        <div class="message-content" role="dialog" aria-modal="true" aria-labelledby="messageTitle" aria-describedby="messageText">
             <h2 id="messageTitle"></h2>
             <p id="messageText"></p>
             <button id="messageButton">OK</button>
         </div>
     </div>
 
-  <script src="core/config.js?v=SF1a"></script>
-  <script src="core/themes.js?v=SF1a"></script>
-  <script src="assets/themes/shared.js?v=SF1a"></script>
-  <script src="assets/themes/classic.js?v=SF1a"></script>
-  <script src="assets/themes/gems.js?v=SF1a"></script>
-  <script src="assets/themes/candy.js?v=SF1a"></script>
-  <script src="assets/themes/fruit.js?v=SF1a"></script>
-  <script src="assets/themes/space.js?v=SF1a"></script>
-  <script src="assets/themes/neon.js?v=SF1a"></script>
-  <script src="assets/themes/pixel.js?v=SF1a"></script>
-  <script src="assets/themes/ocean.js?v=SF1a"></script>
-  <script src="assets/themes/marble.js?v=SF1a"></script>
-  <script src="assets/themes/emoji.js?v=SF1a"></script>
-  <script src="ui/theme_picker.js?v=SF1a"></script>
-  <script src="core/logic.js?v=SF1a"></script>
+  <script src="core/config.js?v=SF2a"></script>
+  <script src="core/themes.js?v=SF2a"></script>
+  <script src="assets/themes/shared.js?v=SF2a"></script>
+  <script src="assets/themes/classic.js?v=SF2a"></script>
+  <script src="assets/themes/gems.js?v=SF2a"></script>
+  <script src="assets/themes/candy.js?v=SF2a"></script>
+  <script src="assets/themes/fruit.js?v=SF2a"></script>
+  <script src="assets/themes/space.js?v=SF2a"></script>
+  <script src="assets/themes/neon.js?v=SF2a"></script>
+  <script src="assets/themes/pixel.js?v=SF2a"></script>
+  <script src="assets/themes/ocean.js?v=SF2a"></script>
+  <script src="assets/themes/marble.js?v=SF2a"></script>
+  <script src="assets/themes/emoji.js?v=SF2a"></script>
+  <script src="ui/theme_picker.js?v=SF2a"></script>
+  <script src="core/logic.js?v=SF2a"></script>
 </body>
 </html>

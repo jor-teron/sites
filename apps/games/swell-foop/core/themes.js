@@ -7,7 +7,7 @@
  *     draw(ctx, i, s, o)                  // static art for colour index i (0..4); o = { mood, seed }
  *     fx?(ctx, i, s, t, o)                // optional animated overlay (sparkle, pulse, blink); t = ms
  *     board?(ctx, w, h) }                 // optional board decoration drawn before the blocks
- * Static art is cached once per (theme, colour, mood, scale) in an offscreen sprite, so a frame is
+ * Static art is cached once per (theme, colour, mood, cell size) in an offscreen sprite, so a frame is
  * only drawImage calls plus the optional fx.  Colour index i has a distinct SHAPE in every theme.
  */
 const SF_PAD = 6;       // spill room around a block in the sprite cache (game units)
@@ -15,7 +15,6 @@ const SF_THEMES = (() => {
     const list = [];
     const byId = {};
     const cache = new Map();
-    let cacheK = 0;
     return {
         DEFAULT_ID: 'classic',
         register(t) { if (!byId[t.id]) list.push(t); byId[t.id] = t; },
@@ -34,9 +33,9 @@ const SF_THEMES = (() => {
         /** Draws the cached sprite of block i (k = device pixels per game unit), then its animated overlay. */
         block(ctx, t, i, x, y, s, k, time, o) {
             o = o || {};
-            if (k !== cacheK) { cache.clear(); cacheK = k; }
             const mood = t.moods ? (o.mood || t.moods[0]) : '';
-            const key = t.id + '|' + i + '|' + mood + '|' + s;
+            const key = t.id + '|' + i + '|' + mood + '|' + s + '|' + k; // sprite per theme, colour, mood and cell size
+            if (cache.size > 400) cache.clear();    // stale sizes after many resizes
             let sp = cache.get(key);
             if (!sp) {
                 const px = Math.ceil((s + 2 * SF_PAD) * k);

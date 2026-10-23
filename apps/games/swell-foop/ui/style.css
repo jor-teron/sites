@@ -1,7 +1,7 @@
 /*
  * Swell Foop — styles (plain CSS, no Tailwind / CDN; works offline and from file://).
- * Reproduces the look the page had with the Tailwind CDN (preflight reset +
- * utility classes), using semantic class names.
+ * Layout: .game-container fills the window. core/logic.js sets body.sf-tall (score + buttons above the board)
+ * or body.sf-wide (side panel), measures what is left, and sizes the canvas (columns x rows x cell).
  */
 
 /* Reset (what Tailwind's preflight did for the elements used here) */
@@ -26,44 +26,65 @@ html, body {
     height: 100%;
 }
 body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    min-height: 100dvh;
     background-color: #1a202c; /* Dark background */
     color: #e2e8f0; /* Light text */
     overflow: hidden; /* Prevent scroll bars */
 }
 canvas {
     background-color: #2d3748; /* Darker canvas background */
-    border-radius: 1rem; /* Rounded corners for canvas */
+    border-radius: 0.75rem; /* Rounded corners for canvas */
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Subtle shadow */
     touch-action: none; /* Disable default touch actions like scrolling/zooming */
 }
+
+/* The card fills the window (minus an 8px margin); tall = column, wide = row */
 .game-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.5rem; /* Space between elements */
-    padding: 1.5rem;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px;
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    height: calc(100dvh - 16px);
     background-color: #2d3748; /* Container background */
-    border-radius: 1.5rem; /* More rounded corners for container */
+    border-radius: 1.25rem;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
-    max-width: 90vw; /* Max width for responsiveness */
-    width: 100%; /* Full width within max-width */
 }
+body.sf-wide .game-container { flex-direction: row; }
+.sf-board { flex: none; display: flex; align-items: center; justify-content: center; }
 
-/* Title bar: name + small version */
+/* Score + buttons panel */
+.sf-hud {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+body.sf-wide .sf-hud {
+    width: clamp(130px, 18vw, 200px);
+    align-items: stretch;
+    gap: 10px;
+    text-align: center;
+}
 .sf-title {
-    font-size: 2.25rem;   /* 36px */
-    line-height: 2.5rem;  /* 40px */
+    font-size: 1.35rem;
+    line-height: 1.75rem;
     font-weight: 800;
     color: #fff;
-    margin-bottom: 1rem;
 }
+body.sf-wide .sf-title { font-size: 1.2rem; line-height: 1.5rem; }
 .sf-version {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     line-height: 1;
     font-weight: 500;
     color: #a0aec0;
@@ -74,68 +95,77 @@ canvas {
 /* Score / Moves row */
 .game-info {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-around;
     width: 100%;
-    padding: 0 1rem;
+    gap: 1rem;
 }
+body.sf-wide .game-info { flex-direction: column; gap: 0; }
 .sf-stat {
-    font-size: 1.25rem;   /* 20px */
-    line-height: 1.75rem; /* 28px */
+    font-size: 1.05rem;
+    line-height: 1.5rem;
     font-weight: 500;
 }
 
-/* Button row (column on narrow screens, row from 768px) */
+/* Buttons: a row above the board (tall), a column in the side panel (wide) */
 .sf-controls {
     display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-top: 1rem;
-    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.5rem;
     justify-content: center;
     align-items: center;
+    width: 100%;
 }
-@media (min-width: 768px) {
-    .sf-controls { flex-direction: row; }
-}
+body.sf-wide .sf-controls { flex-direction: column; align-items: stretch; }
 .btn {
     cursor: pointer;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, background 0.2s ease;
 }
 .btn:hover { color: #fff; }
+.sf-controls .btn {
+    min-height: 40px;
+    padding: 0.4rem 0.9rem;
+    border-radius: 0.75rem;
+    background: #3a4660;
+    font-weight: 600;
+    font-size: 0.9rem;
+    line-height: 1.2;
+}
+.sf-controls .btn:hover { background: #4a5878; }
 
-/* Game-over message box */
+/* Game-over message box: always inside the screen */
 .message-box {
     position: fixed;
-    top: 5px;
-    left: 100px;
-    width: 90%;
-    min-height: 150px;
-    background: rgba(0, 0, 0, 0);
-    border: 0 solid white;
-    color: black;
-    text-align: center;
+    inset: 0;
+    z-index: 60;
+    display: flex;
     align-items: center;
-    align-content: center;
+    justify-content: center;
+    pointer-events: none; /* the board stays visible; only the card takes clicks */
 }
 .message-box.hidden { display: none; }
 .message-content {
-    position: fixed;
-    top: calc(45vh - 130px);
-    left: calc(50vw - 250px);
-    width: 500px;
-    height: 260px;
-    background: rgba(250, 250, 250, 0.9);
+    pointer-events: auto;
+    width: min(500px, 90vw);
+    min-height: 200px;
+    max-height: 90dvh;
+    padding: 1.25rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: rgba(250, 250, 250, 0.94);
+    color: #111;
+    text-align: center;
     border-radius: 30px;
-    border: 0 solid orange;
-    font-size: 30px;
-    margin-top: 40px;
+    font-size: clamp(20px, 6vw, 30px);
     font-weight: 800;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
 .message-content button {
     width: 100px;
     height: 50px;
     color: white;
-    margin: 10px;
     background: rgba(0, 0, 0, 0.9);
     border-radius: 10px;
 }
@@ -143,32 +173,44 @@ canvas {
     background: rgba(0, 0, 0, 0.8);
 }
 
+/* "Screen shape changed" prompt */
+.sf-fitbar {
+    position: fixed;
+    left: 50%;
+    bottom: 12px;
+    transform: translateX(-50%);
+    z-index: 40;
+    width: min(94vw, 440px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.6rem 0.8rem;
+    background: #111827;
+    border: 1px solid #475569;
+    border-radius: 0.9rem;
+    font-size: 0.9rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.sf-fitbar.hidden { display: none; }
+.sf-fitbtns { display: flex; gap: 0.4rem; flex: none; }
+.sf-fitbtns button { min-height: 36px; padding: 0.3rem 0.8rem; border-radius: 0.6rem; background: #3a4660; font-weight: 600; }
+.sf-fitbtns button:first-child { background: #2563eb; }
+
 /*
  * Inside the sites hub (body.in-hub, set by the hub bridge in core/logic.js):
- * the hub header shows name / Score / Moves / New Game, so the game's own bar
- * is hidden and the board takes the whole frame (fitCanvas scales it).
+ * the hub header shows name / Score / Moves / New Game, so the game's own panel
+ * is hidden and the board takes the whole frame (layout in core/logic.js).
  */
-body.in-hub .sf-title,
-body.in-hub .game-info,
-body.in-hub .sf-controls { display: none; }
+body.in-hub .sf-hud { display: none; }
 body.in-hub .game-container {
-    max-width: none;
-    width: calc(100vw - 16px);
-    height: calc(100vh - 16px);
     padding: 12px;
-    justify-content: center;
     border-radius: 1rem;
 }
+body.in-hub .sf-theme-panel,
+body.in-hub .sf-fitbar { display: none; }
 
-/* Theme button + picker sheet */
-.sf-controls { flex-wrap: wrap; }
-.sf-controls .btn {
-    padding: 0.5rem 1.1rem;
-    border-radius: 0.75rem;
-    background: #3a4660;
-    font-weight: 600;
-}
-.sf-controls .btn:hover { background: #4a5878; }
+/* Theme picker sheet */
 .sf-theme-panel {
     position: fixed;
     inset: 0;
@@ -182,6 +224,7 @@ body.in-hub .game-container {
 .sf-theme-sheet {
     width: min(94vw, 460px);
     max-height: 88vh;
+    max-height: 88dvh;
     display: flex;
     flex-direction: column;
     background: #2d3748;
@@ -197,7 +240,7 @@ body.in-hub .game-container {
     font-size: 1.25rem;
     margin-bottom: 0.75rem;
 }
-.sf-theme-x { font-size: 1.75rem; line-height: 1; padding: 0 0.5rem; color: #a0aec0; }
+.sf-theme-x { font-size: 1.75rem; line-height: 1; min-width: 44px; min-height: 44px; color: #a0aec0; }
 .sf-theme-list {
     display: grid;
     grid-template-columns: 1fr;
@@ -214,10 +257,11 @@ body.in-hub .game-container {
     border-radius: 0.9rem;
     border: 2px solid transparent;
     background: #1f2735;
+    max-width: 100%;
 }
 .sf-theme-card:hover { border-color: #64748b; }
 .sf-theme-card.active { border-color: #38bdf8; background: #22344a; }
-.sf-theme-prev { border-radius: 0.6rem; }
+.sf-theme-prev { border-radius: 0.6rem; max-width: 100%; }
 .sf-theme-name { font-weight: 700; font-size: 0.95rem; }
 @media (min-width: 440px) { .sf-theme-list { grid-template-columns: 1fr 1fr; } .sf-theme-sheet { width: min(94vw, 500px); } }
-body.in-hub .sf-theme-panel { display: none; }
+@media (max-height: 500px) { .sf-theme-list { grid-template-columns: 1fr 1fr 1fr; } .sf-theme-sheet { width: min(94vw, 640px); } }
