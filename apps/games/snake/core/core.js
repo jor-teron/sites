@@ -1,6 +1,6 @@
 /**
  * Snake — shared core: config shortcuts, DOM refs, constants, game state, canvas sizing.
- * Every tunable value comes from SNAKE_CONFIG (js/config.js).
+ * Every tunable value comes from SNAKE_CONFIG (core/config.js).
  * All modules share the window.SN namespace; mutable game state lives in SN.G.
  */
 window.SN = window.SN || {};
@@ -31,7 +31,7 @@ window.SN = window.SN || {};
   SN.BEST_KEY = CFG.bestKey;
   SN.APP = CFG.APP || { name: 'Snake', version: '' };
   SN.WRAP_START = CFG.WRAP_WALLS !== undefined ? !!CFG.WRAP_WALLS : !!(CFG.start && CFG.start.wrap);
-  if (SN.APP.name) document.title = SN.APP.name;
+  if (SN.APP.name) document.title = SN.APP.name + ' SNR1a';   // release label (title only)
 
   SN.OPP = { up: 'down', down: 'up', left: 'right', right: 'left' };
   SN.DELTA = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
