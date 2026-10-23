@@ -261,6 +261,23 @@ canvas {
   justify-content: center;
 }
 
+/* DM1a level picker on the menu card: [<] [07] [>] [LEVEL] */
+.level-pick { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 10px; }
+.level-pick[hidden] { display: none; }
+#overlay .level-pick button { margin: 0; padding: 8px 12px; font-size: 18px; line-height: 1; background: #1919A6; color: #FFD700; border: 1px solid #3B3BFF; }
+#overlay .level-pick button:disabled { opacity: 0.3; cursor: default; }
+#overlay .level-pick #lvl-go { padding: 10px 18px; font-size: 15px; background: #FFD700; color: #000; border: none; margin-left: 4px; }
+#lvl-input {
+  width: 66px; height: 40px; padding: 0; text-align: center;
+  font-family: inherit; font-size: 20px; font-weight: bold; letter-spacing: 1px;
+  color: #FFD700; background: #0a0a3c; border: 1px solid #3B3BFF; border-radius: 6px; outline: none;
+  user-select: text; -webkit-user-select: text;
+}
+#lvl-input:focus { border-color: #FFD700; }
+.level-pick.bad #lvl-input { border-color: #ff5555; color: #ff8080; }
+#overlay .lvl-info { margin-top: 2px; font-size: 11px; letter-spacing: 2px; color: #aab; min-height: 14px; }
+#overlay .lvl-info[hidden] { display: none; }
+
 /* Short landscape (phones, the sites hub): weapons as a right-hand column. */
 @media (orientation: landscape) and (max-height: 560px) {
   #app {
@@ -281,6 +298,10 @@ canvas {
   #overlay { padding: 8px; gap: 2px; }
   #overlay h2 { font-size: 22px; margin-bottom: 2px; }
   #overlay button { margin-top: 6px; padding: 8px 18px; font-size: 13px; }
+  .level-pick { margin-top: 4px; }
+  #lvl-input { height: 32px; }
+  #overlay .level-pick button { padding: 5px 10px; margin: 0; }
+  #overlay .lvl-info { margin-top: 0; }
 }
 
 /* Inside the sites hub: the hub bar shows HP / Score / New Game, so hide the own bar. */

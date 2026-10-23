@@ -10,8 +10,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Demolisher</title>
-  <link rel="stylesheet" href="demolisher.css?v=20261004a" />
+  <title>Demolisher DM1a</title>
+  <link rel="stylesheet" href="demolisher.css?v=dm1a" />
 </head>
 <body>
 <div id="app">
@@ -49,6 +49,13 @@
         <button id="overlay-btn" type="button" tabindex="-1">SANDBOX</button>
         <button id="overlay-btn2" class="alt" type="button" tabindex="-1">MISSION</button>
       </div>
+      <div class="level-pick" id="level-pick">
+        <button id="lvl-prev" type="button" tabindex="-1" aria-label="Previous level">&#8249;</button>
+        <input id="lvl-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" spellcheck="false" value="00" aria-label="Level 00 to 100" />
+        <button id="lvl-next" type="button" tabindex="-1" aria-label="Next level">&#8250;</button>
+        <button id="lvl-go" type="button" tabindex="-1">LEVEL</button>
+      </div>
+      <p class="lvl-info" id="lvl-info"></p>
     </div>
   </div>
 
@@ -59,8 +66,10 @@
     <button class="weapon" data-w="laser" type="button" tabindex="-1">LASER <span class="ammo" id="ammo-laser">50</span></button>
   </div>
 </div>
-<script src="vendor/matter.min.js?v=0.19.0"></script>
-<script src="demolisher_config.js?v=20261004a"></script>
-<script src="demolisher_logic.js?v=20261004a"></script>
+<script src="vendor/matter.min.js?v=dm1a"></script>
+<script src="demolisher_seed.js?v=dm1a"></script>
+<script src="demolisher_levels.js?v=dm1a"></script>
+<script src="demolisher_config.js?v=dm1a"></script>
+<script src="demolisher_logic.js?v=dm1a"></script>
 </body>
 </html>
