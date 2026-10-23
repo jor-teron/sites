@@ -1,6 +1,6 @@
 /**
  * Dino Run — Chrome offline dino–style endless runner.
- * Game logic. Tunables come from DINO_RUN_CONFIG (dino-run_config.js).
+ * Game logic. Tunables come from DINO_RUN_CONFIG (core/config.js).
  */
 (function () {
   'use strict';
