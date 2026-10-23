@@ -23,8 +23,51 @@
     catch (e) { return null; } /* network / CORS failure */
   }
 
+  /* ---- connection health ----
+     link: 'ok' | 'reconnecting' (kernel websocket dropped, library is retrying) | 'lost' (gave up / server unreachable).
+     Running executes are rejected with err.abort = 'link' | 'lost' | 'kernel' | <caller reason> so the UI never waits forever. */
+  let creds = null, link = 'ok', reason = '', back = false, pollT = null, downT = null, pollFail = 0;
+  const pend = new Set();
+  const abortAll = (why) => { pend.forEach((f) => f(why)); };
+  const POLL_MS = 8000, DOWN_MS = 10000, REQ_TIMEOUT = 6000;
+
+  function isNet(e) { return !!e && (e.name === 'NetworkError' || e instanceof TypeError || /network|failed to fetch|load failed/i.test(String(e.message || ''))); }
+
+  function dropKernel() { if (kernel) { try { kernel.dispose(); } catch (_) { /* */ } } kernel = null; }
+
+  function markLost(why) {
+    if (link === 'lost') return;
+    link = 'lost'; reason = why || 'Connection lost'; back = false; clearTimeout(downT); downT = null;
+    abortAll('lost'); dropKernel(); emit(); startPoll();
+  }
+
+  /* every few seconds: is the server reachable, and is our kernel still there? (also catches a hung network that never closes the websocket) */
+  function startPoll() {
+    stopPoll();
+    pollT = setInterval(async () => {
+      if (!settings) return;
+      const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+      const to = ctl && setTimeout(() => ctl.abort(), REQ_TIMEOUT);
+      let r = null;
+      try { r = await L.ServerConnection.makeRequest(settings.baseUrl + 'api/kernels', { cache: 'no-store', signal: ctl && ctl.signal }, settings); } catch (_) { r = null; }
+      clearTimeout(to);
+      if (!settings) return;
+      const ok = !!r && r.ok;
+      if (link === 'lost') { if (ok && !back) { back = true; emit(); } return; }
+      if (!ok) { if (++pollFail >= 2) markLost(r ? 'Server error HTTP ' + r.status : 'Server not reachable'); return; }
+      pollFail = 0;
+      if (kernel) {
+        let list = null; try { list = await r.json(); } catch (_) { /* */ }
+        if (list && Array.isArray(list) && kernel && !list.some((m) => m.id === kernel.id)) {
+          abortAll('gone'); dropKernel(); gone = true; emit();
+        }
+      }
+    }, POLL_MS);
+  }
+  function stopPoll() { if (pollT) clearInterval(pollT); pollT = null; clearTimeout(downT); downT = null; pollFail = 0; }
+  let gone = false;
+
   async function connect(url, token) {
-    await disconnect();
     token = String(token || '').trim();
     const baseUrl = norm(url);
     const wsUrl = baseUrl.replace(/^http/i, 'ws');
@@ -42,36 +85,87 @@
     if (!res.ok) throw new Error('Server error HTTP ' + res.status);
     let data = null; try { data = await res.json(); } catch (_) { /* */ }
     if (!data || !data.kernelspecs) throw new Error('Not a Jupyter Server');
-    settings = s; specs = data;
+    await disconnect({ shutdown: false }); /* only now: a failed Reconnect leaves the 'lost' state intact */
+    settings = s; specs = data; creds = { url, token }; link = 'ok'; reason = ''; back = false; gone = false;
     km = new L.KernelManager({ serverSettings: s });
+    startPoll();
     emit();
     return data;
   }
 
-  async function disconnect() {
-    if (kernel) { try { kernel.dispose(); } catch (_) { /* */ } }
+  /* disconnect from the server. shutdown:true also shuts the kernel down on the server (the app started it);
+     false just closes our connection and leaves it running so a later Connect can reattach. */
+  async function disconnect(opt) {
+    const kill = !!(opt && opt.shutdown);
+    stopPoll(); abortAll('disconnect');
+    let err = null;
+    if (kernel) {
+      if (kill) { try { await kernel.shutdown(); } catch (e) { err = e; } }
+      try { kernel.dispose(); } catch (_) { /* */ }
+    }
     if (km) { try { km.dispose(); } catch (_) { /* */ } }
-    kernel = null; km = null; settings = null; specs = null; emit();
+    kernel = null; km = null; settings = null; specs = null; creds = null; link = 'ok'; reason = ''; back = false; gone = false; emit();
+    if (err) throw err;
   }
 
   function wire(k) {
-    k.statusChanged.connect(emit);
-    k.connectionStatusChanged.connect(emit);
+    k.statusChanged.connect(() => {
+      if (k !== kernel) return;
+      if (k.status === 'dead' || k.status === 'restarting' || k.status === 'autorestarting') abortAll(k.status === 'dead' ? 'dead' : 'restarted');
+      emit();
+    });
+    k.connectionStatusChanged.connect((_, st) => {
+      if (k !== kernel) return;
+      if (st === 'connected') { if (link === 'reconnecting') { link = 'ok'; clearTimeout(downT); downT = null; } emit(); return; }
+      if (link === 'ok') {
+        link = 'reconnecting'; abortAll('link'); emit();
+        downT = setTimeout(() => { if (link === 'reconnecting') markLost('Lost connection to the kernel'); }, DOWN_MS);
+      }
+      emit();
+    });
+  }
+
+  /* reconnect to a kernel this app started earlier (id remembered by the app). Resolves with the kernel, or null if it is gone. */
+  async function attach(id) {
+    if (!km || !settings || !id) return null;
+    let list = null;
+    try { const r = await req(settings, '', 'api/kernels'); if (r && r.ok) list = await r.json(); } catch (_) { /* */ }
+    const m = Array.isArray(list) && list.find((x) => x && x.id === id);
+    if (!m) return null;
+    let k = null;
+    try {
+      k = km.connectTo({ model: m }); kernel = k; wire(k);
+      await Promise.race([k.info, new Promise((_, rej) => setTimeout(() => rej(new Error('kernel did not answer')), 8000))]);
+    } catch (_) { if (kernel === k) kernel = null; try { k && k.dispose(); } catch (__) { /* */ } emit(); return null; }
+    gone = false; emit();
+    return k;
   }
 
   async function start(name) {
     if (!km) throw new Error('Not connected');
-    if (kernel) { const old = kernel; kernel = null; try { await old.shutdown(); } catch (_) { try { old.dispose(); } catch (__) { /* */ } } }
-    kernel = await km.startNew({ name });
-    wire(kernel); emit();
+    if (link === 'lost') throw new Error('Connection lost: press Reconnect');
+    if (kernel) { const old = kernel; kernel = null; try { await old.shutdown(); } catch (_) { /* gone already */ } try { old.dispose(); } catch (_) { /* */ } }
+    try { kernel = await km.startNew({ name }); } catch (e) { if (isNet(e)) markLost('Request failed: server not reachable'); throw e; }
+    gone = false; wire(kernel); emit();
     return kernel;
   }
 
-  async function restart() { if (!kernel) throw new Error('No kernel'); await kernel.restart(); emit(); }
-  async function interrupt() { if (!kernel) throw new Error('No kernel'); await kernel.interrupt(); }
+  async function restart() {
+    if (!kernel) throw new Error('No kernel');
+    try { await kernel.restart(); } catch (e) { if (isNet(e)) markLost('Request failed: server not reachable'); throw e; }
+    emit();
+  }
+  async function interrupt() {
+    if (!kernel) throw new Error('No kernel');
+    try { await kernel.interrupt(); } catch (e) { if (isNet(e)) markLost('Request failed: server not reachable'); throw e; }
+  }
 
-  /* run code; onMsg(kind, payload) gets 'output' (nbformat-like output object), 'clear', 'count'. Resolves with reply status. */
-  async function execute(code, onMsg) {
+  /* run code; onMsg(kind, payload) gets 'output' (nbformat-like output object), 'clear', 'count'. Resolves with reply status.
+     ctl (optional) receives ctl.abort(why) to stop waiting (used for the run timeout). Rejects with err.abort set when the
+     wait was cut short: 'lost' | 'link' | 'dead' | 'restarted' | 'gone' | 'disconnect' | <ctl.abort reason>. */
+  async function execute(code, onMsg, ctl) {
+    const fail = (why) => Object.assign(new Error(why === 'lost' || why === 'link' ? 'Connection to the server was lost' : 'Stopped: ' + why), { abort: why });
+    if (link !== 'ok') throw fail(link === 'lost' ? 'lost' : 'link');
     if (!kernel) throw new Error('Start a kernel first');
     const fut = kernel.requestExecute({ code, stop_on_error: true, allow_stdin: false });
     fut.onIOPub = (msg) => {
@@ -83,18 +177,29 @@
       else if (t === 'execute_input') onMsg('count', c.execution_count);
       else if (t === 'clear_output') onMsg('clear', c.wait);
     };
-    const reply = await fut.done;
-    const rc = reply && reply.content || {};
-    if (rc.execution_count != null) onMsg('count', rc.execution_count);
-    return rc.status || 'ok';
+    let rej; const aborted = new Promise((_, r) => { rej = (why) => r(fail(why)); });
+    pend.add(rej); if (ctl) ctl.abort = rej;
+    fut.done.catch(() => {}); /* a canceled future must not become an unhandled rejection */
+    try {
+      const reply = await Promise.race([fut.done, aborted]);
+      const rc = reply && reply.content || {};
+      if (rc.execution_count != null) onMsg('count', rc.execution_count);
+      return rc.status || 'ok';
+    } catch (e) {
+      if (e && e.abort) throw e;
+      /* the library cancels futures when the kernel restarts or the socket closes */
+      if (/Canceled future/i.test(String(e && e.message))) throw fail(link === 'ok' ? 'restarted' : 'link');
+      throw e;
+    } finally { pend.delete(rej); if (ctl) ctl.abort = null; }
   }
 
   const api = {
     connect, disconnect, start, restart, interrupt, execute,
-    onChange(f) { listeners.add(f); },
+    attach, onChange(f) { listeners.add(f); },
     state() {
       return {
-        connected: !!settings, specs,
+        connected: !!settings && link !== 'lost', specs, baseUrl: settings && settings.baseUrl || '',
+        link, lost: link === 'lost', reconnecting: link === 'reconnecting', reason, serverBack: back, kernelGone: gone,
         kernel: kernel ? { name: kernel.name, id: kernel.id, status: kernel.status, conn: kernel.connectionStatus } : null
       };
     }

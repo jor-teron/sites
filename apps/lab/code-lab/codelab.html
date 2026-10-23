@@ -12,7 +12,7 @@
   <meta name="color-scheme" content="light dark">
   <title>Code Lab</title>
   <link rel="icon" href="codelab_icon.png">
-  <link rel="stylesheet" href="codelab.css?v=20261023a">
+  <link rel="stylesheet" href="codelab.css?v=20261023b">
   <script>try{var s=JSON.parse(localStorage.getItem('codelab-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
 </head>
 <body>
@@ -44,7 +44,7 @@
         </div>
         <div id="cells"></div>
         <div id="bar">
-          <span id="msg"></span>
+          <span id="msg" aria-live="polite"></span>
           <button type="button" class="mini" id="add-btn">+ Cell</button>
           <button type="button" class="mini acc" id="runall-btn">Run all</button>
         </div>
@@ -54,12 +54,16 @@
           <h2>Settings</h2>
           <div class="set-row"><span>Theme</span>
             <div class="seg" data-key="theme"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>
+          <div class="set-row"><span>Run timeout<br><small>Interrupts a cell that runs too long</small></span>
+            <select id="timeout" aria-label="Run timeout"><option value="0">Off</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option><option value="900">15 minutes</option><option value="3600">1 hour</option></select></div>
+          <div class="set-row"><span>On Disconnect<br><small>What happens to the kernel this app started</small></span>
+            <select id="ondisc" aria-label="On Disconnect"><option value="shutdown">Shut it down</option><option value="keep">Keep it running</option><option value="ask">Ask me</option></select></div>
           <div class="set-row"><span>Clear all outputs</span><button type="button" class="mini" id="clear-btn">Clear</button></div>
           <h2>About</h2>
           <div class="about">
             <img src="codelab_icon.png" alt="" width="40" height="40">
             <div><b>Code Lab</b> <span id="ver"></span>
-              <p>Run code cells on your own Jupyter Server, Kaggle/Jupyter style. Enter the server URL and token, connect, pick a kernel and start it. Shift+Enter runs a cell. HTML output is shown in a safe sandbox (no scripts). Your cells are kept on this device; the token is only kept if you tick Remember.</p>
+              <p>Run code cells on your own Jupyter Server, Kaggle/Jupyter style. Enter the server URL and token, connect, pick a kernel and start it. Shift+Enter runs a cell. HTML output is shown in a safe sandbox (no scripts). If the connection drops, running cells are marked interrupted and you can press Reconnect. After a reload, Connect reattaches to the kernel this app started (variables are kept). Your cells are kept on this device; the token is only kept if you tick Remember.</p>
               <p>Uses @jupyterlab/services (BSD-3-Clause) and CodeMirror (MIT).</p></div>
           </div>
         </div>
@@ -68,9 +72,9 @@
   </div>
   <div id="toast" role="status"></div>
 </div>
-<script src="vendor/codelab-lib.min.js?v=20261023a"></script>
-<script src="codelab_save.js?v=20261023a"></script>
-<script src="codelab_kernel.js?v=20261023a"></script>
-<script src="codelab_app.js?v=20261023a"></script>
+<script src="vendor/codelab-lib.min.js?v=20261023b"></script>
+<script src="codelab_save.js?v=20261023b"></script>
+<script src="codelab_kernel.js?v=20261023b"></script>
+<script src="codelab_app.js?v=20261023b"></script>
 </body>
 </html>

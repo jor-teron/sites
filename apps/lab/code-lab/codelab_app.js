@@ -1,9 +1,9 @@
 /* Code Lab — UI. Cells, outputs, connection bar, settings, swipe screens. Persistence only via CodeLabSave. */
 (function () {
   'use strict';
-  const VERSION = 'N1 · CL2', SWIPE = 75, K = window.CodeLabKernel, SV = window.CodeLabSave, CM = window.CodeLabLib.cm;
+  const VERSION = 'N1 · CL3', SWIPE = 75, K = window.CodeLabKernel, SV = window.CodeLabSave, CM = window.CodeLabLib.cm;
   const $ = (id) => document.getElementById(id);
-  const P = Object.assign({ theme: 'dark', url: '', kernel: 'python3', rememberToken: false, token: '' }, SV.loadSettings());
+  const P = Object.assign({ theme: 'dark', url: '', kernel: 'python3', rememberToken: false, token: '', timeout: 0, onDisc: 'shutdown', kid: '', kurl: '', kname: '' }, SV.loadSettings());
   if (['system', 'light', 'dark'].indexOf(P.theme) < 0) P.theme = 'dark';
   const saveP = () => SV.saveSettings(P);
   $('ver').textContent = VERSION;
@@ -24,9 +24,13 @@
   }));
 
   let tt; function toast(s) { const t = $('toast'); t.textContent = s; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2200); }
-  let saveWarn = '';
-  /* a storage warning (saveWarn) stays visible until a later save succeeds without losing anything */
-  const msg = (s) => { const m = $('msg'); m.dataset.last = s || ''; m.textContent = saveWarn || s || ''; m.classList.toggle('warn', !!saveWarn); m.title = m.textContent; };
+  let saveWarn = '', connWarn = '';
+  /* a storage warning (saveWarn) or connection warning (connWarn) stays visible until it is resolved; #msg is an aria-live region
+     (assertive while the connection is down) so screen readers hear the change */
+  const msg = (s) => {
+    const m = $('msg'), w = connWarn || saveWarn; m.dataset.last = s || ''; m.textContent = w || s || ''; m.classList.toggle('warn', !!w); m.title = m.textContent;
+    m.setAttribute('aria-live', connWarn ? 'assertive' : 'polite');
+  };
 
   /* screens + swipe */
   const MODES = ['cells', 'set']; let mode = 'cells';
@@ -67,7 +71,7 @@
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
 
   function makeCell(data, at) {
-    const c = { id: data.id || uid(), count: data.count || null, outputs: data.outputs || [], running: false };
+    const c = { id: data.id || uid(), count: data.count || null, outputs: data.outputs || [], state: 'idle', note: '' };
     const el = document.createElement('div'); el.className = 'cell'; el.dataset.id = c.id;
     el.innerHTML = '<div class="main"><div class="cnt"></div><div class="ed"></div><div class="out"></div></div>' +
       '<div class="tools"><button type="button" class="mini run" title="Run (Shift+Enter)">▶</button>' +
@@ -90,7 +94,7 @@
         ]
       })
     });
-    el.querySelector('.run').onclick = () => runCell(c, false);
+    el.querySelector('.run').onclick = () => enqueue(c, true);
     el.querySelector('.up').onclick = () => move(c, -1);
     el.querySelector('.down').onclick = () => move(c, 1);
     el.querySelector('.del').onclick = () => del(c);
@@ -101,15 +105,26 @@
     return c;
   }
   function select(c) { if (sel) sel.el.classList.remove('sel'); sel = c; if (c) c.el.classList.add('sel'); }
-  function renderCount(c) { c.cntEl.textContent = c.running ? '[*] running…' : '[' + (c.count == null ? ' ' : c.count) + ']'; c.el.classList.toggle('running', c.running); }
+  /* c.state: 'idle' | 'queued' | 'running'. c.note is a short, unsaved reason shown next to the count (skipped / interrupted) */
+  function renderCount(c) {
+    const n = '[' + (c.count == null ? ' ' : c.count) + ']';
+    c.cntEl.textContent = c.state === 'running' ? '[*] running…' : c.state === 'queued' ? '[…] queued' : c.note ? n + ' ⚠ ' + c.note : n;
+    c.el.classList.toggle('running', c.state === 'running'); c.el.classList.toggle('queued', c.state === 'queued'); c.cntEl.classList.toggle('note', c.state === 'idle' && !!c.note);
+    const rb = c.el.querySelector('.run');
+    rb.textContent = c.state === 'queued' ? '…' : '▶';
+    rb.title = c.state === 'queued' ? 'Queued: click to remove from the queue' : c.state === 'running' ? 'Running (use ■ to interrupt)' : 'Run (Shift+Enter)';
+    rb.setAttribute('aria-label', rb.title);
+  }
   function move(c, d) {
     const i = cells.indexOf(c), j = i + d; if (j < 0 || j >= cells.length) return;
     cells.splice(i, 1); cells.splice(j, 0, c);
     const box = $('cells'); cells.forEach((x) => box.appendChild(x.el)); save(); c.el.scrollIntoView({ block: 'nearest' });
   }
   function del(c) {
-    if (c.running) { toast('Cell is running'); return; }
-    if ((c.view.state.doc.length || c.outputs.length) && !confirm('Delete this cell' + (c.view.state.doc.length ? ' and its code' : '') + '? This cannot be undone.')) return;
+    const busy = c.state !== 'idle';
+    if ((busy || c.view.state.doc.length || c.outputs.length) && !confirm((c.state === 'running' ? 'This cell is running. Interrupt it and delete it?' : 'Delete this cell' + (c.view.state.doc.length ? ' and its code' : '') + '?') + ' This cannot be undone.')) return;
+    if (c.state === 'queued') dequeue(c);
+    else if (c.state === 'running') { c.deleted = true; interruptRun(c, 'deleted'); } /* running cells can be deleted: the kernel is interrupted, or (connection lost) the cell is simply dropped */
     const i = cells.indexOf(c); cells.splice(i, 1); c.view.destroy(); c.el.remove();
     if (!cells.length) makeCell({});
     select(cells[Math.min(i, cells.length - 1)]); save();
@@ -170,83 +185,183 @@
     } else { c.outputs.push(o); const n = outNode(o); if (n) c.outEl.appendChild(n); }
   }
 
-  /* run queue — cells run one at a time, in order */
-  let queue = Promise.resolve(), stopAll = false;
+  /* run queue — cells run one at a time, in order. Explicit list (not a promise chain) so it can be cleared:
+     Restart / Interrupt / lost connection / Run-all failure empty it and mark each skipped cell. */
+  let queueList = [], active = null, pumping = false, stopAll = false;
+  const RUN_GRACE = 6000;
+  const kernelOk = () => { const s = K.state(); return !!s.kernel && !s.lost && !s.reconnecting; };
   function runCell(c, advance) {
     if (advance) { const i = cells.indexOf(c); const nx = cells[i + 1] || addCell(); select(nx); nx.view.focus(); }
-    return enqueue(c);
+    return enqueue(c, false);
   }
-  function enqueue(c) {
-    if (!K.state().kernel) { toast('Start a kernel first'); return Promise.resolve('error'); }
-    c.running = true; c.outputs = []; renderOutputs(c); c.cntEl.textContent = '[*]'; c.el.classList.add('running');
-    const p = queue.then(() => exec(c)); queue = p.catch(() => {}); return p;
+  /* viaButton: clicking ▶ on a queued cell removes it from the queue; on a running cell it does nothing (never queues twice) */
+  function enqueue(c, viaButton) {
+    if (c.state === 'running') { toast('Already running. ■ interrupts it.'); return c.p || Promise.resolve('busy'); }
+    if (c.state === 'queued') { if (viaButton) { dequeue(c); toast('Removed from queue'); return Promise.resolve('skipped'); } toast('Already queued'); return c.p; }
+    const s = K.state();
+    if (s.lost || s.reconnecting) { toast('Connection lost: press Reconnect'); return Promise.resolve('error'); }
+    if (!s.kernel) { toast('Start a kernel first'); return Promise.resolve('error'); }
+    c.note = ''; c.state = 'queued'; renderCount(c);
+    c.p = new Promise((res) => { c.res = res; }); queueList.push(c); pump(); return c.p;
+  }
+  function settle(c, st, note) { c.state = 'idle'; if (note != null) c.note = note; renderCount(c); const r = c.res; c.res = null; if (r) r(st); }
+  function dequeue(c) { const i = queueList.indexOf(c); if (i >= 0) queueList.splice(i, 1); settle(c, 'skipped', ''); }
+  function clearQueue(why) { const q = queueList; queueList = []; q.forEach((c) => settle(c, 'skipped', 'skipped: ' + why)); return q.length; }
+  async function pump() {
+    if (pumping) return; pumping = true;
+    while (queueList.length) {
+      const c = queueList.shift(); active = c;
+      let st = 'error'; try { st = await exec(c); } catch (e) { /* exec never throws */ }
+      active = null; settle(c, st); if (!c.deleted) save();
+    }
+    pumping = false;
+  }
+  const WHY = { lost: 'connection lost', link: 'connection dropped', dead: 'kernel died', restarted: 'kernel restarted', gone: 'kernel was shut down on the server', disconnect: 'disconnected', timeout: 'timed out', interrupt: 'interrupted', deleted: 'cell deleted' };
+  /* stop the running cell: interrupt the kernel (and, if it will not answer, stop waiting after a short grace period) */
+  function interruptRun(c, why) {
+    c.why = c.why || why;
+    const ctl = c.ctl, s = K.state();
+    if (!s.kernel || s.lost || s.reconnecting) { if (ctl && ctl.abort) ctl.abort(s.lost ? 'lost' : 'link'); return; }
+    K.interrupt().catch(() => {});
+    clearTimeout(c.graceT); c.graceT = setTimeout(() => { if (c.state === 'running' && ctl && ctl.abort) ctl.abort(why); }, RUN_GRACE);
   }
   async function exec(c) {
-    if (stopAll) { c.running = false; renderCount(c); return 'skipped'; }
-    renderCount(c); let st = 'error', clearWait = false;
+    if (c.deleted) return 'skipped';
+    if (!kernelOk()) { c.state = 'idle'; c.note = 'skipped: connection lost'; return 'skipped'; }
+    c.state = 'running'; c.why = null; c.outputs = []; renderOutputs(c); renderCount(c);
+    let st = 'error', clearWait = false; const ctl = c.ctl = {};
+    const limit = (+P.timeout || 0) * 1000;
+    clearTimeout(c.limitT); if (limit) c.limitT = setTimeout(() => { if (c.state === 'running') { interruptRun(c, 'timeout'); clearQueue('a cell timed out'); } }, limit);
     try {
       st = await K.execute(c.view.state.doc.toString(), (kind, v) => {
         if (kind === 'count') { c.count = v; }
         else if (kind === 'clear') { if (v) clearWait = true; else { c.outputs = []; renderOutputs(c); } }
         else { if (clearWait) { clearWait = false; c.outputs = []; renderOutputs(c); } addOutput(c, v); }
-      });
-    } catch (e) { addOutput(c, { output_type: 'error', ename: 'Error', evalue: e.message || String(e), traceback: [] }); }
-    c.running = false; renderCount(c); save();
+      }, ctl);
+    } catch (e) {
+      const why = c.why || e.abort;
+      if (why) { st = why === 'timeout' ? 'timeout' : 'interrupted'; }
+      if (why === 'timeout') note(c, 'TimeoutError', 'the cell ran longer than the ' + fmtT(P.timeout) + ' run timeout, so the kernel was interrupted.' + (e.abort === 'timeout' ? ' The kernel did not answer the interrupt: use Restart if it stays busy.' : ''));
+      else if (why === 'lost' || why === 'link') note(c, 'ConnectionLost', 'the connection to the server was lost. The cell may or may not have finished on the server.');
+      else if (why === 'deleted') { /* gone */ }
+      else if (why) note(c, 'Interrupted', (WHY[why] || why) + '.');
+      else addOutput(c, { output_type: 'error', ename: 'Error', evalue: e.message || String(e), traceback: [] });
+      return st;
+    } finally { clearTimeout(c.limitT); clearTimeout(c.graceT); c.ctl = null; }
+    if (c.why === 'timeout') { st = 'timeout'; note(c, 'TimeoutError', 'the cell ran longer than the ' + fmtT(P.timeout) + ' run timeout, so the kernel was interrupted.'); }
+    else if (c.why === 'interrupt') st = 'interrupted';
     return st;
   }
+  function note(c, ename, text) { addOutput(c, { output_type: 'error', ename, evalue: text, traceback: [] }); }
+  function fmtT(sec) { sec = +sec || 0; return sec >= 3600 ? sec / 3600 + ' h' : sec >= 60 ? sec / 60 + ' min' : sec + ' s'; }
   async function runAll() {
-    if (!K.state().kernel) { toast('Start a kernel first'); return; }
-    stopAll = false; const ps = cells.map((c) => enqueue(c));
-    for (const p of ps) { const st = await p; if (st !== 'ok' && st !== 'skipped') stopAll = true; }
-    stopAll = false; msg('Run all finished');
+    const s = K.state();
+    if (s.lost || s.reconnecting) { toast('Connection lost: press Reconnect'); return; }
+    if (!s.kernel) { toast('Start a kernel first'); return; }
+    stopAll = false; const mine = cells.filter((c) => c.state === 'idle'); const ps = mine.map((c) => enqueue(c, false)); let bad = null;
+    for (let i = 0; i < ps.length; i++) { const st = await ps[i]; if (st !== 'ok' && st !== 'skipped' && !bad) { bad = mine[i]; clearQueue('an earlier cell failed'); } }
+    msg(bad ? 'Run all stopped at cell ' + (cells.indexOf(bad) + 1) + ' (' + (bad.why === 'timeout' ? 'timed out' : 'failed or interrupted') + ')' : 'Run all finished');
   }
 
   /* connection bar */
   $('url').value = P.url || ''; $('remember').checked = !!P.rememberToken; if (P.rememberToken && P.token) $('token').value = P.token;
   $('remember').onchange = () => { P.rememberToken = $('remember').checked; P.token = P.rememberToken ? $('token').value.trim() : ''; saveP(); };
   $('token').oninput = () => { if (P.rememberToken) { P.token = $('token').value.trim(); saveP(); } };
-  async function doConnect() {
+  /* remember the kernel THIS app started (id + server), so a reload or Reconnect can reattach instead of leaking a new one */
+  function remember(k, url) { const u = url || K.state().baseUrl; P.kid = k ? k.id : ''; P.kurl = k ? u : ''; P.kname = k ? k.name : P.kname; saveP(); }
+  function fillKernels(data) {
+    const sel = $('kernel'); sel.textContent = '';
+    Object.keys(data.kernelspecs).sort().forEach((n) => {
+      const o = document.createElement('option'); o.value = n; o.textContent = (data.kernelspecs[n].spec && data.kernelspecs[n].spec.display_name) || n; sel.appendChild(o);
+    });
+    sel.value = data.kernelspecs[P.kernel] ? P.kernel : data.default || sel.options[0].value;
+  }
+  async function doConnect(auto) {
     const b = $('connect-btn');
-    if (K.state().connected) { await K.disconnect(); toast('Disconnected'); return; }
-    b.disabled = true; msg('Connecting…'); $('status').className = 'sdot busy';
+    if (K.state().connected) { await doDisconnect(); return; }
+    const wasLost = K.state().lost, hadKid = !!(P.kid && P.kurl);
+    b.disabled = true; msg(wasLost ? 'Reconnecting…' : 'Connecting…'); $('status').className = 'sdot busy';
     try {
       $('url').value = $('url').value.trim().replace(/\/+$/, ''); $('token').value = $('token').value.trim();
       const data = await K.connect($('url').value, $('token').value);
+      connWarn = ''; lostSeen = false;
       P.url = $('url').value; if (P.rememberToken) P.token = $('token').value; saveP();
-      const sel = $('kernel'); sel.textContent = '';
-      Object.keys(data.kernelspecs).sort().forEach((n) => {
-        const o = document.createElement('option'); o.value = n; o.textContent = (data.kernelspecs[n].spec && data.kernelspecs[n].spec.display_name) || n; sel.appendChild(o);
-      });
-      sel.value = data.kernelspecs[P.kernel] ? P.kernel : data.default || sel.options[0].value;
-      msg('Connected — ' + sel.options.length + ' kernel(s). Press Start.'); toast('Connected');
-    } catch (e) { msg(e.message || String(e)); toast(e.message || 'Connect failed'); }
+      fillKernels(data);
+      /* reattach to our own kernel (variables survive), else start a new one if we had one before, else wait for Start */
+      const same = P.kid && P.kurl === K.state().baseUrl;
+      let k = same ? await K.attach(P.kid) : null;
+      if (k) { remember(k); $('kernel').value = data.kernelspecs[k.name] ? k.name : $('kernel').value; msg('Reattached to your running kernel (variables kept).'); toast(wasLost ? 'Reconnected' : 'Reattached to kernel'); }
+      else if (hadKid && same) {
+        try { k = await K.start($('kernel').value); remember(k); msg('Previous kernel was gone: started a new one (variables lost).'); toast('Started a new kernel'); }
+        catch (e) { remember(null); msg('Previous kernel was gone and a new one could not start: ' + (e.message || e)); }
+      } else { if (P.kid) remember(null); msg('Connected — ' + $('kernel').options.length + ' kernel(s). Press Start.'); toast('Connected'); }
+    } catch (e) { msg(auto ? 'Auto-connect failed: ' + (e.message || e) : e.message || String(e)); if (!auto) toast(e.message || 'Connect failed'); if (wasLost) { connWarn = '⚠ Reconnect failed: ' + (e.message || e) + '. Press Reconnect to retry.'; } msg($('msg').dataset.last); }
     b.disabled = false; ui();
   }
-  $('connect-btn').onclick = doConnect;
-  $('url').addEventListener('keydown', (e) => { if (e.key === 'Enter') doConnect(); });
-  $('token').addEventListener('keydown', (e) => { if (e.key === 'Enter') doConnect(); });
+  /* Disconnect: by default also shuts down the kernel this app started (no leaked kernels). Settings: keep it running, or ask. */
+  async function doDisconnect() {
+    const k = K.state().kernel, bu = K.state().baseUrl; let kill = !!k;
+    if (k && P.onDisc === 'keep') kill = false;
+    else if (k && P.onDisc === 'ask') kill = confirm('Disconnect.\n\nOK = also shut down the kernel on the server (variables are lost).\nCancel = disconnect but keep the kernel running; the next Connect reattaches to it.');
+    try { await K.disconnect({ shutdown: kill }); remember(kill ? null : k, bu); toast(kill ? 'Disconnected, kernel shut down' : 'Disconnected, kernel left running'); }
+    catch (e) { toast('Disconnected; kernel shutdown failed: ' + (e.message || e)); }
+    connWarn = ''; lostSeen = false; msg(''); ui();
+  }
+  $('connect-btn').onclick = () => doConnect(false);
+  $('url').addEventListener('keydown', (e) => { if (e.key === 'Enter') doConnect(false); });
+  $('token').addEventListener('keydown', (e) => { if (e.key === 'Enter') doConnect(false); });
   $('kernel').onchange = () => { P.kernel = $('kernel').value; saveP(); };
   const guard = (fn, ok) => async () => { try { await fn(); if (ok) toast(ok); } catch (e) { toast(e.message || String(e)); } ui(); };
-  $('start-btn').onclick = guard(async () => { msg('Starting ' + $('kernel').value + '…'); P.kernel = $('kernel').value; saveP(); await K.start(P.kernel); msg('Kernel ' + P.kernel + ' started'); }, 'Kernel started');
-  $('restart-btn').onclick = guard(async () => { msg('Restarting…'); await K.restart(); cells.forEach((c) => { c.count = null; renderCount(c); }); msg('Kernel restarted'); }, 'Restarted');
-  $('intr-btn').onclick = guard(() => K.interrupt(), 'Interrupt sent');
+  $('start-btn').onclick = guard(async () => { msg('Starting ' + $('kernel').value + '…'); P.kernel = $('kernel').value; saveP(); const k = await K.start(P.kernel); remember(k); msg('Kernel ' + P.kernel + ' started'); }, 'Kernel started');
+  $('restart-btn').onclick = guard(async () => {
+    msg('Restarting…'); const n = clearQueue('kernel restarted'); if (active) active.why = 'restarted'; /* queued cells never carry on into the new kernel */
+    await K.restart(); cells.forEach((c) => { c.count = null; if (c.state === 'idle') renderCount(c); }); msg('Kernel restarted' + (n ? ' (' + n + ' queued cell(s) skipped)' : ''));
+  }, 'Restarted');
+  $('intr-btn').onclick = guard(async () => {
+    const n = clearQueue('interrupted'); if (active) active.why = 'interrupt'; /* interrupt stops the whole queue, not just the current cell */
+    await K.interrupt(); msg('Interrupt sent' + (n ? ' (' + n + ' queued cell(s) skipped)' : ''));
+  }, 'Interrupt sent');
   $('add-btn').onclick = addCell;
   $('runall-btn').onclick = runAll;
   $('clear-btn').onclick = () => { if (cells.some((c) => c.outputs.length || c.count != null) && !confirm('Clear all outputs and run counts? This cannot be undone.')) return; cells.forEach((c) => { c.outputs = []; c.count = null; renderOutputs(c); renderCount(c); }); save(); toast('Outputs cleared'); };
 
+  let lostSeen = false, linkSeen = 'ok', backSeen = false, goneSeen = false;
   function ui() {
     const s = K.state(), k = s.kernel;
     const st = $('status');
-    st.className = 'sdot' + (s.connected ? (k && k.status === 'busy' ? ' busy' : ' ok') : '');
-    st.title = s.connected ? 'Connected' : 'Not connected';
-    $('connect-btn').textContent = s.connected ? 'Disconnect' : 'Connect';
+    const down = s.lost || s.reconnecting;
+    st.className = 'sdot' + (s.lost ? '' : s.reconnecting ? ' busy' : s.connected ? (k && k.status === 'busy' ? ' busy' : ' ok') : '');
+    const stt = s.lost ? 'Connection lost' : s.reconnecting ? 'Reconnecting…' : s.connected ? 'Connected' : 'Not connected';
+    st.title = stt; st.setAttribute('role', 'img'); st.setAttribute('aria-label', stt);
+    $('connect-btn').textContent = s.lost ? 'Reconnect' : s.connected ? 'Disconnect' : 'Connect';
+    $('connect-btn').classList.toggle('acc', !s.connected || s.lost);
     $('kernel').disabled = !s.connected; $('start-btn').disabled = !s.connected;
     $('start-btn').textContent = k ? 'Switch' : 'Start';
-    $('restart-btn').disabled = $('intr-btn').disabled = !k;
-    $('kstate').textContent = k ? k.status : (s.connected ? 'no kernel' : '—');
-    $('kstate').dataset.status = k ? k.status : '';
+    $('restart-btn').disabled = $('intr-btn').disabled = !k || down;
+    $('kstate').textContent = s.lost ? 'lost' : s.reconnecting ? '…' : k ? k.status : (s.connected ? 'no kernel' : '—');
+    $('kstate').dataset.status = s.lost ? 'lost' : k ? k.status : '';
+    /* connection transitions (announced through #msg, which is aria-live) */
+    if (down && linkSeen === 'ok') {
+      const n = clearQueue('connection lost');
+      connWarn = s.lost ? '⚠ Connection lost: ' + (s.reason || 'server not reachable') + '. Press Reconnect.' : '⚠ Connection to the kernel dropped. Reconnecting…';
+      msg(''); toast(s.lost ? 'Connection lost' : 'Connection dropped');
+    }
+    if (s.lost && linkSeen !== 'lost') { connWarn = '⚠ Connection lost: ' + (s.reason || 'server not reachable') + '. Cells that were running are marked interrupted. Press Reconnect.'; clearQueue('connection lost'); msg(''); if (linkSeen !== 'ok') toast('Connection lost'); }
+    if (!down && linkSeen !== 'ok' && s.connected) { connWarn = ''; msg('Connection restored. Cells that were running were interrupted.'); }
+    if (s.lost && s.serverBack && !backSeen) { backSeen = true; connWarn = '⚠ Connection lost, but the server answers again. Press Reconnect.'; msg(''); toast('Server is back: press Reconnect'); }
+    if (!s.lost) backSeen = false;
+    if (s.kernelGone && !goneSeen) { goneSeen = true; remember(null); msg('The kernel was shut down on the server. Press Start for a new one.'); toast('Kernel is gone'); }
+    if (!s.kernelGone) goneSeen = false;
+    linkSeen = s.lost ? 'lost' : s.reconnecting ? 'reconnecting' : 'ok';
   }
   K.onChange(ui); ui();
+
+  /* settings: run timeout and what Disconnect does with the kernel */
+  const tsel = $('timeout'), dsel = $('ondisc');
+  if (![...tsel.options].some((o) => +o.value === +P.timeout)) { const o = document.createElement('option'); o.value = P.timeout; o.textContent = fmtT(P.timeout); tsel.appendChild(o); }
+  tsel.value = String(P.timeout); dsel.value = P.onDisc;
+  tsel.onchange = () => { P.timeout = +tsel.value || 0; saveP(); toast(P.timeout ? 'Run timeout: ' + fmtT(P.timeout) : 'Run timeout off'); };
+  dsel.onchange = () => { P.onDisc = dsel.value; saveP(); };
 
   /* load cells */
   const L = SV.loadCells();
@@ -258,5 +373,7 @@
     msg(m); toast(m);
   }
   select(cells[0]);
+  /* a remembered token + a kernel we started earlier: reconnect and reattach by ourselves after a reload */
+  if (P.rememberToken && P.token && P.url && P.kid) setTimeout(() => doConnect(true), 0);
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.activeElement) document.activeElement.blur(); });
 })();
