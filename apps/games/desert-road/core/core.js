@@ -1,6 +1,6 @@
 /*
  * Desert Road — core: namespace, canvas, shared state, layout helpers.
- * All modules hang off window.DR; config is DESERT_ROAD_CONFIG (js/config.js).
+ * All modules hang off window.DR; config is DESERT_ROAD_CONFIG (core/config.js).
  */
 window.DR = (() => {
   const CFG = DESERT_ROAD_CONFIG;
