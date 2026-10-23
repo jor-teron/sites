@@ -48,6 +48,7 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `index.html`: opens `draftly.html`
 
 - Mail merge (MM1): `ui/merge.css`; `modules/draftly-csv.js` (CSV reader), `draftly-merge.js` (engine and settings), `draftly-zip.js` (stored zip writer), `draftly-merge-ui.js` (Merge tab, chooser, preview, Export all); samples in `samples/`
+- Excel import (MM3): `modules/draftly-xlsx.js` (.xlsx reader: zip + XML, no library), `modules/draftly-numfmt.js` (Excel number / date format text); `samples/merge_sample.xlsx` and its generator `samples/make_merge_sample.py`. Only if the browser has no `DecompressionStream`, `shared/vendor/jszip.min.js` (JSZip, MIT) is loaded as a fallback
 
 ## 3. Behaviour rules
 - **Pages:** fixed A4 (21 × 29.7 cm) or Legal (8.5 × 14 in, 21.59 × 35.56 cm), portrait or landscape. An old saved Letter choice loads as A4. Margins: top 0.5, bottom 0.5, left 2, right 2 cm. Pages never stretch.
@@ -75,17 +76,21 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - Drawn inside the margins, so page breaks never move. Shown on screen, in Print and PDF; DOCX gets real Word header / footer parts (PAGE / NUMPAGES fields; the date is written as text).
 - Older documents with page numbers turned on start with {page} in the footer.
 
-### Mail merge (Merge tab, CSV only)
-- Write placeholders as `{{Column Name}}`. Matching ignores spaces around the name and upper/lower case. `{{#}}` is the row number (1, 2, 3 …) unless the CSV has a column called `#`.
-- **Data**: *Choose CSV* opens a chooser for the files of the Hub drives (Local, or a folder you mounted in the Hub drive; no file picker). *Browse this computer* is the fallback: it uses the browser's file picker. *Refresh* reads the file again. The delimiter is detected (`,` `;` or tab); the select can force one.
+### Mail merge (Merge tab: CSV and Excel .xlsx)
+- Write placeholders as `{{Column Name}}`. Matching ignores spaces around the name and upper/lower case. `{{#}}` is the row number (1, 2, 3 …) unless the data has a column called `#`.
+- **Data**: *Choose file* (CSV or Excel `.xlsx`) opens a chooser for the files of the Hub drives (Local, or a folder you mounted in the Hub drive; no file picker). *Browse this computer* is the fallback: it uses the browser's file picker. *Refresh* reads the file again. For CSV the delimiter is detected (`,` `;` or tab); the select can force one (hidden for Excel files). The file type is found from its content, not its name.
   - The first row must be the header. Duplicate header names get ` (2)`, ` (3)`; short rows are padded and long rows trimmed, with a warning; the file may be UTF-8 (with or without BOM) or UTF-16 with BOM; anything else is read as Windows-1252, with a note.
+  - **Excel (.xlsx, .xlsm; MM3)**: the first sheet is used; when the workbook has two or more visible sheets a *sheet* dropdown appears next to the file name (hidden sheets are not listed). The chosen sheet is remembered for that file (`sheet` in the saved settings); if it is gone after a change the first sheet is used, with a note. Choosing another file starts on its first sheet. The header is the first non-empty row; leading empty rows and empty columns are skipped, and a title row above the table becomes the header, so delete it in Excel.
+  - Cell values are read as the text Excel shows: numbers use the cell's number format (`#,##0.00`, `0%`, `€`, scientific, fractions, `[>n]` conditions, text in quotes), dates use the date format (e.g. `05-Mar-2024`; the short locale formats are shown as `yyyy-mm-dd`), `TRUE` / `FALSE` for booleans, error cells as their code (`#N/A`), formulas as their last saved result, shared and inline strings, `_x000D_` escapes decoded. Merged cells: the value is in the top-left cell only. The 1900 and 1904 date systems are handled. The display is an approximation of Excel (English month and day names, no colours, no regional settings).
+  - Formulas keep the result the program saved. A file written by a script (e.g. openpyxl) has no results: those cells are blank and a warning is shown; open and save it once in Excel or LibreOffice.
+  - Limits: at most 20000 data rows are read (a warning says so; Export all still allows 2000, see below), 1000 columns, 200 MB per part. Old `.xls` and `.ods` are not read (the message says to save as .xlsx). Password-protected files and Zip64 are not supported. Images, charts, comments and formatting are ignored.
   - A file from the browser's file picker with a handle (Chrome / Edge) can be re-read for live refresh. A file from the old `<input type=file>` can't (the browser gives a snapshot): choose it again after you change it.
 - **Fields**: *Insert field* puts `{{Name}}` at the caret. Known placeholders are shaded green in the text, unknown ones red; unknown ones are also listed under the *warning* button and stay as typed in the output.
-- **Preview**: shows the document with one row's values (Previous / Next). It is a copy: the document is not changed. Values are shown as text (HTML in a cell is not run); line breaks in a cell are kept. While preview is open, and while the CSV is chosen from a drive, the file is checked every 3 seconds; if it changed, the fields and the preview update and the row number is kept. When preview is closed a *File changed* mark shows instead; press *Refresh*.
-- **Export all**: one DOCX per row in a `.zip`, or one combined DOCX with a page break between rows (header / footer fields such as page number and date stay blank in the combined file). File names come from a pattern, default `<document name>-{{#}}`; characters `\ / : * ? " < > |` and control characters become `_`, names are cut at 80 characters, and duplicates get ` (2)`, ` (3)`. Limit 2000 rows (split larger files); over 200 rows shows a note; progress and Cancel are shown.
-- Saved in `draftly_merge_settings`: the CSV name (and drive path), delimiter, file name pattern, export type and row number. The file content is not saved.
-- Try it: open `samples/merge_sample.csv` (copy it to a Hub drive), type or paste `samples/merge_template.txt` into a new document, then Merge → Choose CSV.
-- Not in MM1: PDF output, xlsx / ods / Google Sheets, images or conditions in the template. A placeholder split by formatting (e.g. half bold) is merged but not shaded.
+- **Preview**: shows the document with one row's values (Previous / Next). It is a copy: the document is not changed. Values are shown as text (HTML in a cell is not run); line breaks in a cell are kept. While preview is open, and while the file is chosen from a drive, the file is checked every 3 seconds; if it changed, the fields and the preview update and the row number is kept. When preview is closed a *File changed* mark shows instead; press *Refresh*.
+- **Export all**: one DOCX per row in a `.zip`, or one combined DOCX with a page break between rows (header / footer fields such as page number and date stay blank in the combined file). File names come from a pattern, default `<document name>-{{#}}`; characters `\ / : * ? " < > |` and control characters become `_`, names are cut at 80 characters, and duplicates get ` (2)`, ` (3)`. Limit 2000 rows (split larger files; the same for Excel); over 200 rows shows a note; progress and Cancel are shown.
+- Saved in `draftly_merge_settings`: the file name (and drive path), delimiter, sheet (Excel), file name pattern, export type and row number. The file content is not saved.
+- Try it: open `samples/merge_sample.csv` (copy it to a Hub drive), type or paste `samples/merge_template.txt` into a new document, then Merge → Choose file. `samples/merge_sample.xlsx` has the same customers on a *Customers* sheet (dates, number formats, a formula, a yes/no column) plus an *Orders* sheet, so you can try the sheet dropdown; rebuild it with `python3 samples/make_merge_sample.py` (needs openpyxl and LibreOffice).
+- Not yet: PDF output, ods / xls / Google Sheets, images or conditions in the template. A placeholder split by formatting (e.g. half bold) is merged but not shaded.
 
 ## 4. Keyboard
 - Ctrl/Cmd+S saves (works anywhere on the page)
@@ -105,7 +110,7 @@ Works inside the hub and responds to its phone D-pad, but the hub's key presses 
   - `draftly_nonprinting`: `1` / `0` (format marks)
   - `draftly_orientation`: `portrait` / `landscape`. Before 2026-10-21 it was saved under the literal key `undefined`; at start-up that value is copied to `draftly_orientation` (if empty) and the `undefined` key is removed, only when it holds `portrait` / `landscape` (other data under that key is left alone)
   - `draftly_margins`: old key, removed at start-up
-  - `draftly_merge_settings`: Merge tab settings (JSON: `src`, `delim`, `pattern`, `fmt`, `row`)
+  - `draftly_merge_settings`: Merge tab settings (JSON: `src`, `delim`, `sheet`, `pattern`, `fmt`, `row`)
   - `draftly-ribbon-tab`: last ribbon tab (now may be `merge`)
 - To reset, clear site data for the page. There is no delete button for single documents.
 
@@ -156,6 +161,7 @@ Messages show briefly at the bottom (2.2 s):
 - Old version after an update: hard-refresh.
 
 ## 11. Change log
+- 2026-10-23 IST: MM3 Excel (.xlsx) import for Merge: own reader (no library), sheet dropdown (remembered), number and date formats as shown in Excel, live refresh like CSV; `samples/merge_sample.xlsx`.
 - 2026-10-23 IST: MM1 mail merge: Merge ribbon tab, CSV reader, live refresh, preview, Export all (zip / combined DOCX).
 - 2026-10-23 IST: orientation fix: saved only under `draftly_orientation` (config `storageKeyOrientation`); the old `undefined` key (written 2026-10-02 to 2026-10-21, when that config entry was missing) is migrated once at start-up and removed if it holds an orientation value. Invalid values are not saved.
 - 2026-10-21 IST: Draftly dialogs (rename and delete) replace browser prompts; Dark/Light mode item in the File menu.

@@ -38,7 +38,7 @@
   <link rel="stylesheet" href="ui/format.css?v=7">
   <link rel="stylesheet" href="ui/headerfooter.css?v=1">
   <link rel="stylesheet" href="ui/margins.css?v=1">
-  <link rel="stylesheet" href="ui/merge.css?v=1">
+  <link rel="stylesheet" href="ui/merge.css?v=2">
 </head>
 <body>
 
@@ -240,19 +240,20 @@
         <dt>Pages</dt><dd id="pageCountLabel">1 page</dd>
       </dl>
     </div>
-    <!-- MM1 Merge tab: CSV mail merge (draftly-merge-ui.js). Placeholders are written {{Column Name}}. -->
+    <!-- MM1 / MM3 Merge tab: mail merge from a CSV or an Excel .xlsx file (draftly-merge-ui.js). Placeholders are written {{Column Name}}. -->
     <div class="ribbon-panel mm-row" role="tabpanel" id="panelMerge" aria-labelledby="tabMerge" hidden>
       <div class="tool-group mm-group" role="group" aria-label="Data">
         <span class="mm-cap">Data</span>
-        <button class="tool-btn labeled" id="mmChooseBtn" title="Choose a CSV file from a Hub drive" aria-label="Choose CSV"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5a1.5 1.5 0 0 1 1.5-1.5H10l2 2.5h6.5A1.5 1.5 0 0 1 20 10v7.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/></svg><span>Choose CSV</span></button>
-        <button class="tool-btn labeled" id="mmRefreshBtn" title="Read the CSV file again" aria-label="Refresh CSV" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/></svg><span>Refresh</span></button>
+        <button class="tool-btn labeled" id="mmChooseBtn" title="Choose a CSV or Excel (.xlsx) file from a Hub drive" aria-label="Choose file"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5a1.5 1.5 0 0 1 1.5-1.5H10l2 2.5h6.5A1.5 1.5 0 0 1 20 10v7.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/></svg><span>Choose file</span></button>
+        <button class="tool-btn labeled" id="mmRefreshBtn" title="Read the data file again" aria-label="Refresh data file" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/></svg><span>Refresh</span></button>
         <select id="mmDelim" class="size-select mm-delim" title="Delimiter" aria-label="Delimiter">
           <option value="auto" selected>Auto</option>
           <option value=",">Comma ,</option>
           <option value=";">Semicolon ;</option>
           <option value="&#9;">Tab</option>
         </select>
-        <span class="mm-status" id="mmStatus" aria-live="polite">No CSV chosen</span>
+        <select id="mmSheetPick" class="size-select mm-sheetpick" title="Sheet of the Excel workbook" aria-label="Sheet" hidden></select>
+        <span class="mm-status" id="mmStatus" aria-live="polite">No file chosen</span>
         <span class="mm-changed" id="mmChanged" hidden title="The file on disk is different from what is loaded">&#9679; File changed</span>
       </div>
       <div class="tool-group mm-group" role="group" aria-label="Fields">
@@ -271,7 +272,7 @@
         <span class="mm-cap">Finish</span>
         <button class="tool-btn labeled accent" id="mmExportBtn" title="One DOCX per row (.zip) or one combined file" aria-label="Export all" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M5 19.5h14"/></svg><span>Export all</span></button>
       </div>
-      <input type="file" id="mmFile" accept=".csv,.tsv,.txt,text/csv,text/plain" hidden>
+      <input type="file" id="mmFile" accept=".csv,.tsv,.txt,.xlsx,.xlsm,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
     </div>
 
   </nav>
@@ -371,14 +372,16 @@
   <script src="modules/draftly-docs.js"></script>
   <script src="modules/draftly-format.js"></script>
   <script src="modules/draftly-ribbon.js?v=5"></script>
-  <!-- MM1 mail merge: Hub drive access (shared/fs, plain scripts as in the Viewer), CSV, ZIP, engine, screen -->
+  <!-- MM1 / MM3 mail merge: Hub drive access (shared/fs, plain scripts as in the Viewer), CSV, Excel reader, ZIP, engine, screen -->
   <script src="../../../shared/fs/fs_drives.js?v=20261019r"></script>
   <script src="../../../shared/fs/fs_ops.js?v=20261019r"></script>
   <script src="../../../shared/fs/fs_ref.js?v=20261019r"></script>
-  <script src="modules/draftly-csv.js?v=1"></script>
+  <script src="modules/draftly-csv.js?v=2"></script>
+  <script src="modules/draftly-numfmt.js?v=1"></script>
+  <script src="modules/draftly-xlsx.js?v=1"></script>
   <script src="modules/draftly-zip.js?v=1"></script>
-  <script src="modules/draftly-merge.js?v=1"></script>
-  <script src="modules/draftly-merge-ui.js?v=1"></script>
+  <script src="modules/draftly-merge.js?v=2"></script>
+  <script src="modules/draftly-merge-ui.js?v=2"></script>
   <script src="modules/draftly-hub.js?v=2"></script>
   <script src="modules/draftly-app.js?v=7"></script>
 </body>

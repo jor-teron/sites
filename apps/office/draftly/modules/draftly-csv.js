@@ -103,6 +103,31 @@ Draftly.csv.headerNames = function headerNames(raw) {
   return { names: names, warnings: warnings };
 };
 
+/* One column, comma chosen, but the header holds ; or a tab: probably the wrong delimiter. */
+function w1(res, delim, first) { return res.header.length === 1 && delim === ',' && /[;\t]/.test(first[0]); }
+
+/* Records (first = header) → { header, rows, warnings }. Shared by CSV and Excel (label: 'CSV' | 'sheet').
+   rows are padded / cut to the header width. */
+Draftly.csv.table = function table(recs, label) {
+  var out = { header: [], rows: [], warnings: [] };
+  var hn = Draftly.csv.headerNames(recs[0] || []);
+  out.header = hn.names;
+  out.warnings = hn.warnings;
+  var w = out.header.length, short = 0, long = 0, i, r, k;
+  for (i = 1; i < recs.length; i++) {
+    r = recs[i];
+    if (r.length < w) short++;
+    else if (r.length > w) long++;
+    var cells = new Array(w);
+    for (k = 0; k < w; k++) cells[k] = k < r.length ? r[k] : '';
+    out.rows.push(cells);
+  }
+  if (short) out.warnings.push(short + ' row' + (short === 1 ? ' has' : 's have') + ' fewer values than the header: filled with blanks');
+  if (long) out.warnings.push(long + ' row' + (long === 1 ? ' has' : 's have') + ' more values than the header: extra values ignored');
+  if (!out.rows.length) out.warnings.push('The ' + (label || 'CSV') + ' has a header but no data rows');
+  return out;
+};
+
 /* Parse CSV text. delim: ',' ';' '\t' or '' / 'auto'. */
 Draftly.csv.parse = function parse(text, delim) {
   var res = { ok: false, error: '', delimiter: ',', header: [], rows: [], warnings: [] };
@@ -114,22 +139,11 @@ Draftly.csv.parse = function parse(text, delim) {
   var rec = Draftly.csv.records(text, delim);
   if (!rec.rows.length) { res.error = 'The CSV file has no header row'; return res; }
   if (rec.unterminated) res.warnings.push('A quoted field is not closed: the rest of the file was read as one value');
-  var hn = Draftly.csv.headerNames(rec.rows[0]);
-  res.header = hn.names;
-  res.warnings = res.warnings.concat(hn.warnings);
-  var w = res.header.length, short = 0, long = 0, i, r, k;
-  for (i = 1; i < rec.rows.length; i++) {
-    r = rec.rows[i];
-    if (r.length < w) short++;
-    else if (r.length > w) long++;
-    var cells = new Array(w);
-    for (k = 0; k < w; k++) cells[k] = k < r.length ? r[k] : '';
-    res.rows.push(cells);
-  }
-  if (short) res.warnings.push(short + ' row' + (short === 1 ? ' has' : 's have') + ' fewer values than the header: filled with blanks');
-  if (long) res.warnings.push(long + ' row' + (long === 1 ? ' has' : 's have') + ' more values than the header: extra values ignored');
-  if (w === 1 && delim === ',' && /[;\t]/.test(rec.rows[0][0])) res.warnings.push('Only one column found: try another delimiter');
-  if (!res.rows.length) res.warnings.push('The CSV has a header but no data rows');
+  var t = Draftly.csv.table(rec.rows, 'CSV');
+  res.header = t.header;
+  res.rows = t.rows;
+  res.warnings = res.warnings.concat(t.warnings);
+  if (w1(res, delim, rec.rows[0])) res.warnings.push('Only one column found: try another delimiter');
   res.ok = true;
   return res;
 };
