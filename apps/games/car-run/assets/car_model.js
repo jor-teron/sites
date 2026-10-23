@@ -10,7 +10,7 @@
  * vanishing point by itself. No gradients or images per frame: face colours are
  * cached per base colour.
  *
- * o (scene info passed by car-run_logic.js):
+ * o (scene info passed by core/logic.js):
  *   project(x, y, z) -> {x, y, k} | null   the road projection
  *   cam: {x, y, z}                         camera position (world)
  *   nearZ                                  nearest drawable world z (corners are clamped to it)

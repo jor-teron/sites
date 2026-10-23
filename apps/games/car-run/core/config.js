@@ -1,7 +1,7 @@
 /**
  * Car Run — configuration.
  * Speeds, lanes, jump/nitro, spawn rates, sizes, colors, keys and text.
- * car-run_logic.js reads everything from CAR_RUN_CONFIG.
+ * core/logic.js reads everything from CAR_RUN_CONFIG.
  */
 const CAR_RUN_CONFIG = {
   bestKey: 'car-run-best',     // localStorage key for the best score

@@ -1,6 +1,6 @@
 /**
  * Car Run — pseudo-3D endless lane runner (Temple Run–like driving).
- * Game logic. Every tunable value comes from CAR_RUN_CONFIG (car-run_config.js).
+ * Game logic. Every tunable value comes from CAR_RUN_CONFIG (core/config.js).
  */
 (function () {
   'use strict';
