@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Turbo Lap TLQ1c</title>
+<title>Turbo Lap TLQ1b</title>
 <link rel="icon" href="turbo-lap_icon.png">
-<link rel="stylesheet" href="ui/turbo-lap.css?v=TLQ1c" />
+<link rel="stylesheet" href="ui/turbo-lap.css?v=TLQ1b" />
 </head>
 <body>
 <canvas id="game"></canvas>
@@ -20,6 +20,8 @@
   <div class="tbtn" id="tPause" data-k="pause">❚❚</div>
 </div>
 <div id="rotate" class="hidden"><div><div class="phone">📱</div>Rotate your phone<small>Turbo Lap plays in landscape</small></div></div>
+
+<button id="themeBtn" class="themefab hidden" type="button" aria-label="Themes (V)" title="Themes (V)">🎨</button>
 
 <div id="overlay">
   <div id="panel-title" class="card">
@@ -37,6 +39,7 @@
       <tr><td><kbd>↓</kbd> <kbd>S</kbd></td><td>Brake</td><td><kbd>Space</kbd> <kbd>Shift</kbd></td><td>Nitro</td></tr>
       <tr><td><kbd>P</kbd> <kbd>Esc</kbd></td><td>Pause</td><td><kbd>F</kbd></td><td>30/60 FPS</td></tr>
       <tr><td><kbd>←</kbd><kbd>→</kbd></td><td>Circuit (title)</td><td><kbd>C</kbd></td><td>All circuits</td></tr>
+      <tr><td><kbd>V</kbd></td><td>Themes</td><td></td><td></td></tr>
     </table>
     <p class="pad">🎮 Gamepad: stick/D-pad steer · A/RT gas · B/LT brake · X nitro · Start pause</p>
     <p class="hint">Grass slows you down. Bumping other cars costs speed. Take hard bends off the gas.</p>
@@ -44,6 +47,7 @@
     <div class="row">
       <button id="startBtn" class="primary">Start Race <small>Enter</small></button>
       <button id="circuitsBtn">Circuits <small>C</small></button>
+      <button id="themesBtn">Theme: Auto <small>V</small></button>
       <button id="fpsBtn">FPS: 30</button>
       <button id="autoGasBtn">AUTO GAS: OFF</button>
     </div>
@@ -53,6 +57,7 @@
     <div class="row">
       <button id="resumeBtn" class="primary">Resume <small>Enter / P</small></button>
       <button id="pauseRestartBtn">Restart</button>
+      <button id="themesBtn2">Theme: Auto <small>V</small></button>
       <button id="pauseTitleBtn">Title <small>T</small></button>
     </div>
   </div>
@@ -71,6 +76,7 @@
       <button id="restartBtn" class="primary">Race Again <small>Enter</small></button>
       <button id="nextCircuitBtn">Circuit 01 ▶ </button>
       <button id="circuitsBtn2">Circuits <small>C</small></button>
+      <button id="themesBtn3">Theme: Auto <small>V</small></button>
       <button id="titleBtn">Title <small>T</small></button>
     </div>
   </div>
@@ -82,23 +88,44 @@
     <p class="small">Finish in the top 3 to win. Laps: 00–09 · 1, 10–29 · 2, 30–54 · 3, 55–79 · 4, 80–99 · 5. Numbers get longer and harder. Best times shown.</p>
     <div id="pickGrid" class="pickgrid" role="grid"></div>
   </div>
+  <div id="panel-themes" class="card picker themes hidden" role="dialog" aria-label="Choose a theme">
+    <div class="pickhead">
+      <h2>Themes</h2>
+      <button id="themeClose" class="nav" aria-label="Close">✕</button>
+    </div>
+    <p class="small">Auto changes the look with the circuit (its last digit picks the theme). Pick one theme to use it on every circuit. Only the look changes, never the racing.</p>
+    <div id="themeGrid" class="pickgrid themegrid" role="listbox" aria-label="Themes"></div>
+  </div>
 </div>
 
-<script src="core/config.js?v=TLQ1c"></script>
-<script src="core/track.js?v=TLQ1c"></script>
-<script src="core/road.js?v=TLQ1c"></script>
-<script src="core/circuits.js?v=TLQ1c"></script>
-<script src="core/cars.js?v=TLQ1c"></script>
-<script src="core/opponents.js?v=TLQ1c"></script>
-<script src="core/sprites.js?v=TLQ1c"></script>
-<script src="core/render.js?v=TLQ1c"></script>
-<script src="core/hud.js?v=TLQ1c"></script>
-<script src="core/storage.js?v=TLQ1c"></script>
-<script src="core/driver.js?v=TLQ1c"></script>
-<script src="core/input.js?v=TLQ1c"></script>
-<script src="core/touch.js?v=TLQ1c"></script>
-<script src="core/game.js?v=TLQ1c"></script>
-<script src="ui/picker.js?v=TLQ1c"></script>
-<script src="core/main.js?v=TLQ1c"></script>
+<script src="core/config.js?v=TLQ1b"></script>
+<script src="core/registry.js?v=TLQ1b"></script>
+<script src="core/track.js?v=TLQ1b"></script>
+<script src="core/road.js?v=TLQ1b"></script>
+<script src="core/circuits.js?v=TLQ1b"></script>
+<script src="core/cars.js?v=TLQ1b"></script>
+<script src="core/opponents.js?v=TLQ1b"></script>
+<script src="core/sprites.js?v=TLQ1b"></script>
+<script src="assets/themes/base.js?v=TLQ1b"></script>
+<script src="assets/themes/coast.js?v=TLQ1b"></script>
+<script src="assets/themes/desert.js?v=TLQ1b"></script>
+<script src="assets/themes/snow.js?v=TLQ1b"></script>
+<script src="assets/themes/night.js?v=TLQ1b"></script>
+<script src="assets/themes/autumn.js?v=TLQ1b"></script>
+<script src="assets/themes/tropical.js?v=TLQ1b"></script>
+<script src="assets/themes/volcano.js?v=TLQ1b"></script>
+<script src="assets/themes/canyon.js?v=TLQ1b"></script>
+<script src="assets/themes/space.js?v=TLQ1b"></script>
+<script src="assets/themes/candy.js?v=TLQ1b"></script>
+<script src="core/render.js?v=TLQ1b"></script>
+<script src="core/hud.js?v=TLQ1b"></script>
+<script src="core/storage.js?v=TLQ1b"></script>
+<script src="core/driver.js?v=TLQ1b"></script>
+<script src="core/input.js?v=TLQ1b"></script>
+<script src="core/touch.js?v=TLQ1b"></script>
+<script src="core/game.js?v=TLQ1b"></script>
+<script src="ui/picker.js?v=TLQ1b"></script>
+<script src="ui/themes.js?v=TLQ1b"></script>
+<script src="core/main.js?v=TLQ1b"></script>
 </body>
 </html>

@@ -14,6 +14,9 @@ window.TL = window.TL || {};
     // picked circuit (0..99)
     circuit() { const n = S.get('circuit', null); return Number.isInteger(n) && n >= 0 && n < TL.CFG.circuits.count ? n : TL.CFG.circuits.defaultCircuit; },
     setCircuit(n) { S.set('circuit', n); },
+    // look: 'auto' (theme by circuit number, the default) or a fixed theme id; anything else falls back to 'auto'
+    theme() { const v = S.get('theme', 'auto'); return typeof v === 'string' && TL.themes ? TL.themes.valid(v) : 'auto'; },
+    setTheme(v) { S.set('theme', v); },
     bestTotal(id) { const r = S.records(id); return r && r.bestTotal != null ? r.bestTotal : null; },
     // per track (key best.<nn>, nn = two-digit circuit number): { bestTotal, bestLap, bestPos }
     records(trackId) { return S.get('best.' + trackId, {}); },

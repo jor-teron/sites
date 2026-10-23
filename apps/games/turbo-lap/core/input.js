@@ -41,6 +41,7 @@ window.TL = window.TL || {};
     if (e.code === 'ArrowLeft') I.fire('prevCircuit'); else if (e.code === 'ArrowRight') I.fire('nextCircuit');   // title screen only
     if (!e.repeat) {
       if (e.code === 'KeyC') I.fire('circuits');
+      if (e.code === 'KeyV') I.fire('themes');
       if (e.code === 'Enter' || e.code === 'NumpadEnter') I.fire('start');
       else if (e.code === 'KeyP' || e.code === 'Escape') I.fire('pause');
       else if (e.code === 'KeyF') I.fire('fps');
@@ -54,7 +55,7 @@ window.TL = window.TL || {};
   // touching the screen (outside the menus) also counts as taking control; the touch pads publish their own 'control' too
   window.addEventListener('pointerdown', e => {
     const t = e.target;
-    if (t && t.closest && (t.closest('#overlay') || (t.dataset && t.dataset.k === 'pause'))) return;
+    if (t && t.closest && (t.closest('#overlay') || t.closest('#themeBtn') || (t.dataset && t.dataset.k === 'pause'))) return;
     I.fire('control');
   });
 
