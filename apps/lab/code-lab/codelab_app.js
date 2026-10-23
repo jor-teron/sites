@@ -1,7 +1,7 @@
 /* Code Lab — UI. Cells, outputs, connection bar, settings, swipe screens. Persistence only via CodeLabSave. */
 (function () {
   'use strict';
-  const VERSION = 'N1 · CL4', SWIPE = 75, K = window.CodeLabKernel, SV = window.CodeLabSave, CM = window.CodeLabLib.cm;
+  const VERSION = 'N1 · CL5', SWIPE = 75, K = window.CodeLabKernel, SV = window.CodeLabSave, CM = window.CodeLabLib.cm;
   const $ = (id) => document.getElementById(id);
   const P = Object.assign({ theme: 'dark', url: '', kernel: 'python3', rememberToken: false, token: '', timeout: 0, onDisc: 'shutdown', kid: '', kurl: '', kname: '' }, SV.loadSettings());
   if (['system', 'light', 'dark'].indexOf(P.theme) < 0) P.theme = 'dark';
@@ -23,22 +23,30 @@
     const b = e.target.closest('button'); if (!b) return; P[g.dataset.key] = b.dataset.v; saveP(); theme();
   }));
 
-  let tt; function toast(s) { const t = $('toast'); t.textContent = s; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2200); }
+  let tt; function toast(s, ms) { const t = $('toast'); t.textContent = s; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), ms || 2200); }
   let saveWarn = '', connWarn = '';
   /* a storage warning (saveWarn) or connection warning (connWarn) stays visible until it is resolved; #msg is an aria-live region
      (assertive while the connection is down) so screen readers hear the change */
   const msg = (s) => {
     const m = $('msg'), w = connWarn || saveWarn; m.dataset.last = s || ''; m.textContent = w || s || ''; m.classList.toggle('warn', !!w); m.title = m.textContent;
-    m.setAttribute('aria-live', connWarn ? 'assertive' : 'polite');
+    m.setAttribute('aria-live', connWarn ? 'assertive' : 'polite'); /* #msg is aria-atomic: the whole message is read */
   };
 
   /* screens + swipe */
   const MODES = ['cells', 'set']; let mode = 'cells';
-  function setMode(m) {
-    mode = m; $('track').style.transform = 'translateX(' + (-MODES.indexOf(m) * 50) + '%)';
-    document.querySelectorAll('.dot').forEach((d) => { const on = d.dataset.mode === m; d.classList.toggle('on', on); d.setAttribute('aria-selected', on); });
+  /* Only the visible pane is reachable: the other one is inert + aria-hidden (no Tab stops, hidden from screen readers).
+     Opening a pane moves focus into it; closing it returns focus to the control that opened it (Esc closes Settings). */
+  let opener = null;
+  const paneOf = (m) => $(m === 'set' ? 'pane-set' : 'pane-cells');
+  function setMode(m, user) {
+    const was = mode; mode = m; $('track').style.transform = 'translateX(' + (-MODES.indexOf(m) * 50) + '%)';
+    document.querySelectorAll('.dot').forEach((d) => { const on = d.dataset.mode === m; d.classList.toggle('on', on); d.setAttribute('aria-selected', on); d.setAttribute('aria-controls', paneOf(d.dataset.mode).id); });
+    MODES.forEach((x) => { const p = paneOf(x), open = x === m; p.inert = !open; p.setAttribute('aria-hidden', open ? 'false' : 'true'); });
+    if (!user || was === m) return;
+    if (m === 'cells') { const o = opener; opener = null; (o && o.isConnected && !o.closest('.pane[inert]') ? o : paneOf('cells')).focus({ preventScroll: true }); }
+    else { opener = document.activeElement && document.activeElement !== document.body ? document.activeElement : null; paneOf(m).focus({ preventScroll: true }); }
   }
-  document.querySelectorAll('.dot').forEach((d) => { d.onclick = () => setMode(d.dataset.mode); });
+  document.querySelectorAll('.dot').forEach((d) => { d.onclick = () => setMode(d.dataset.mode, true); });
   setMode('cells');
   let sx = null, sy = 0;
   $('viewport').addEventListener('pointerdown', (e) => {
@@ -49,7 +57,7 @@
     if (sx == null) return; const dx = e.clientX - sx, dy = e.clientY - sy; sx = null;
     if (Math.abs(dx) < SWIPE || Math.abs(dy) > Math.abs(dx)) return;
     const i = MODES.indexOf(mode), n = MODES.length;
-    setMode(MODES[(i + (dx < 0 ? 1 : -1) + n) % n]); /* left = next, wraps */
+    setMode(MODES[(i + (dx < 0 ? 1 : -1) + n) % n], true); /* left = next, wraps */
   });
 
   /* cells */
@@ -70,13 +78,22 @@
   addEventListener('pagehide', flush); addEventListener('beforeunload', flush);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
 
+  /* keyboard: Tab leaves the editor; "Tab indents" is a mode (Ctrl+M on/off, Esc off). The hint is shown once, and is in About. */
+  let tabIndents = false;
+  function setTabIndents(on) {
+    tabIndents = on; document.documentElement.classList.toggle('tabind', on);
+    toast(on ? 'Tab now indents. Press Esc or Ctrl+M to make Tab move focus again.' : 'Tab moves focus to the next control. Ctrl+M makes it indent.', 3500);
+  }
+  function tabHint() { if (P.tabHint) return; P.tabHint = true; saveP(); toast('Keyboard: Tab moves to the next control. Ctrl+M makes Tab indent (Esc undoes). Details in Settings → About.', 6000); }
+
   function makeCell(data, at) {
     const c = { id: data.id || uid(), count: data.count || null, outputs: [], state: 'idle', note: '' };
     const el = document.createElement('div'); el.className = 'cell'; el.dataset.id = c.id;
     el.innerHTML = '<div class="main"><div class="cnt"></div><div class="ed"></div><div class="out"></div></div>' +
-      '<div class="tools"><button type="button" class="mini run" title="Run (Shift+Enter)">▶</button>' +
-      '<button type="button" class="mini up" title="Move up">↑</button><button type="button" class="mini down" title="Move down">↓</button>' +
-      '<button type="button" class="mini del danger" title="Delete">✕</button></div>';
+      '<div class="tools"><button type="button" class="mini run">▶</button>' +
+      '<button type="button" class="mini up">↑</button><button type="button" class="mini down">↓</button>' +
+      '<button type="button" class="mini del danger">✕</button></div>';
+    el.setAttribute('role', 'group');
     c.el = el; c.outEl = el.querySelector('.out'); c.cntEl = el.querySelector('.cnt');
     c.view = new CM.EditorView({
       parent: el.querySelector('.ed'),
@@ -86,22 +103,26 @@
           CM.keymap.of([
             { key: 'Shift-Enter', run: () => { runCell(c, true); return true; } },
             { key: 'Ctrl-Enter', run: () => { runCell(c, false); return true; } },
-            ...CM.closeBracketsKeymap, ...CM.defaultKeymap, ...CM.historyKeymap, CM.indentWithTab]),
+            /* Tab moves focus (no keyboard trap). Ctrl+M switches "Tab indents" on/off; Esc switches it off. */
+            { key: 'Ctrl-m', run: () => { setTabIndents(!tabIndents); return true; } },
+            { key: 'Escape', run: () => { if (!tabIndents) return false; setTabIndents(false); return true; } },
+            { key: 'Tab', run: (v) => (tabIndents ? CM.indentWithTab.run(v) : false), shift: (v) => (tabIndents ? CM.indentWithTab.shift(v) : false) },
+            ...CM.closeBracketsKeymap, ...CM.defaultKeymap, ...CM.historyKeymap]),
           CM.lineNumbers(), CM.history(), CM.drawSelection(), CM.indentOnInput(), CM.bracketMatching(), CM.closeBrackets(),
           CM.indentUnit.of('    '), CM.python(), CM.syntaxHighlighting(CM.defaultHighlightStyle, { fallback: true }),
           CM.EditorView.lineWrapping,
-          CM.EditorView.updateListener.of((u) => { if (u.docChanged) save(); if (u.focusChanged && u.view.hasFocus) select(c); })
+          CM.EditorView.updateListener.of((u) => { if (u.docChanged) save(); if (u.focusChanged && u.view.hasFocus) { select(c); tabHint(); } })
         ]
       })
     });
     el.querySelector('.run').onclick = () => enqueue(c, true);
     el.querySelector('.up').onclick = () => move(c, -1);
     el.querySelector('.down').onclick = () => move(c, 1);
-    el.querySelector('.del').onclick = () => del(c);
+    el.querySelector('.del').onclick = (e) => del(c, e.detail === 0);
     el.addEventListener('pointerdown', () => select(c));
     if (at == null || at >= cells.length) { cells.push(c); $('cells').appendChild(el); }
     else { cells.splice(at, 0, c); $('cells').insertBefore(el, cells[at + 1].el); }
-    renderCount(c); OUT.init(c, data.outputs || []);
+    OUT.init(c, data.outputs || []); relabel();
     return c;
   }
   function select(c) { if (sel) sel.el.classList.remove('sel'); sel = c; if (c) c.el.classList.add('sel'); }
@@ -110,24 +131,32 @@
     const n = '[' + (c.count == null ? ' ' : c.count) + ']';
     c.cntEl.textContent = c.state === 'running' ? '[*] running…' : c.state === 'queued' ? '[…] queued' : c.note ? n + ' ⚠ ' + c.note : n;
     c.el.classList.toggle('running', c.state === 'running'); c.el.classList.toggle('queued', c.state === 'queued'); c.cntEl.classList.toggle('note', c.state === 'idle' && !!c.note);
-    const rb = c.el.querySelector('.run');
+    const rb = c.el.querySelector('.run'), N = cells.indexOf(c) + 1;
     rb.textContent = c.state === 'queued' ? '…' : '▶';
-    rb.title = c.state === 'queued' ? 'Queued: click to remove from the queue' : c.state === 'running' ? 'Running (use ■ to interrupt)' : 'Run (Shift+Enter)';
-    rb.setAttribute('aria-label', rb.title);
+    const lab = (b, label, tip) => { b.setAttribute('aria-label', label); b.title = tip || label; };
+    lab(rb, c.state === 'queued' ? 'Remove cell ' + N + ' from the queue' : c.state === 'running' ? 'Cell ' + N + ' is running (use Stop to interrupt)' : 'Run cell ' + N,
+      c.state === 'queued' ? 'Queued: click to remove from the queue' : c.state === 'running' ? 'Running (use ■ to interrupt)' : 'Run (Shift+Enter)');
+    lab(c.el.querySelector('.up'), 'Move cell ' + N + ' up', 'Move up'); lab(c.el.querySelector('.down'), 'Move cell ' + N + ' down', 'Move down'); lab(c.el.querySelector('.del'), 'Delete cell ' + N, 'Delete');
+    c.el.setAttribute('aria-label', 'Cell ' + N + ' of ' + cells.length); c.outEl.setAttribute('role', 'group'); c.outEl.setAttribute('aria-label', 'Output of cell ' + N);
+    c.view.contentDOM.setAttribute('aria-label', 'Code of cell ' + N + '. Tab moves to the next control.');
   }
+  /* numbers in the names follow the order: call after add / delete / move */
+  function relabel() { cells.forEach(renderCount); }
   function move(c, d) {
     const i = cells.indexOf(c), j = i + d; if (j < 0 || j >= cells.length) return;
     cells.splice(i, 1); cells.splice(j, 0, c);
-    const box = $('cells'); cells.forEach((x) => box.appendChild(x.el)); save(); c.el.scrollIntoView({ block: 'nearest' });
+    const box = $('cells'), f = document.activeElement; cells.forEach((x) => box.appendChild(x.el)); relabel(); save(); c.el.scrollIntoView({ block: 'nearest' });
+    if (f && f !== document.body && c.el.contains(f)) f.focus({ preventScroll: true }); /* moving the node drops focus: put it back */
   }
-  function del(c) {
+  function del(c, byKey) {
     const busy = c.state !== 'idle';
     if ((busy || c.view.state.doc.length || c.outputs.length) && !confirm((c.state === 'running' ? 'This cell is running. Interrupt it and delete it?' : 'Delete this cell' + (c.view.state.doc.length ? ' and its code' : '') + '?') + ' This cannot be undone.')) return;
     if (c.state === 'queued') dequeue(c);
     else if (c.state === 'running') { c.deleted = true; interruptRun(c, 'deleted'); } /* running cells can be deleted: the kernel is interrupted, or (connection lost) the cell is simply dropped */
     const i = cells.indexOf(c); cells.splice(i, 1); c.view.destroy(); c.el.remove(); OUT.forget(c);
     if (!cells.length) makeCell({});
-    select(cells[Math.min(i, cells.length - 1)]); save();
+    relabel(); select(cells[Math.min(i, cells.length - 1)]); save();
+    if (byKey) sel.el.querySelector('.run').focus({ preventScroll: true }); /* the deleted button had focus: keyboard users land on the next cell */
   }
   function addCell() {
     const at = sel ? cells.indexOf(sel) + 1 : cells.length;
@@ -277,14 +306,16 @@
   $('runall-btn').onclick = runAll;
   $('clear-btn').onclick = () => { if (cells.some((c) => c.outputs.length || c.count != null) && !confirm('Clear all outputs and run counts? This cannot be undone.')) return; cells.forEach((c) => { OUT.reset(c); c.count = null; renderCount(c); }); save(); toast('Outputs cleared'); };
 
-  let lostSeen = false, linkSeen = 'ok', backSeen = false, goneSeen = false;
+  let sttSeen = '', lostSeen = false, linkSeen = 'ok', backSeen = false, goneSeen = false;
   function ui() {
     const s = K.state(), k = s.kernel;
     const st = $('status');
     const down = s.lost || s.reconnecting;
-    st.className = 'sdot' + (s.lost ? '' : s.reconnecting ? ' busy' : s.connected ? (k && k.status === 'busy' ? ' busy' : ' ok') : '');
+    st.className = 'sdot' + (s.lost ? ' lost' : s.reconnecting ? ' busy' : s.connected ? (k && k.status === 'busy' ? ' busy' : ' ok') : ' off'); /* shape differs too: circle ok, ring busy, square lost, dashed off */
     const stt = s.lost ? 'Connection lost' : s.reconnecting ? 'Reconnecting…' : s.connected ? 'Connected' : 'Not connected';
-    st.title = stt; st.setAttribute('role', 'img'); st.setAttribute('aria-label', stt);
+    const full = stt + (s.connected && k && !down ? ', kernel ' + k.status : '');
+    st.title = full; st.setAttribute('role', 'img'); st.setAttribute('aria-label', 'Connection: ' + full);
+    if (stt !== sttSeen) { sttSeen = stt; $('sr-status').textContent = 'Connection: ' + stt; } /* announced once per change */
     $('connect-btn').textContent = s.lost ? 'Reconnect' : s.connected ? 'Disconnect' : 'Connect';
     $('connect-btn').classList.toggle('acc', !s.connected || s.lost);
     $('kernel').disabled = !s.connected; $('start-btn').disabled = !s.connected;
@@ -330,5 +361,5 @@
   select(cells[0]);
   /* a remembered token + a kernel we started earlier: reconnect and reattach by ourselves after a reload */
   if (P.rememberToken && P.token && P.url && P.kid) setTimeout(() => doConnect(true), 0);
-  addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.activeElement) document.activeElement.blur(); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !e.defaultPrevented && mode === 'set') setMode('cells', true); }); /* Esc closes Settings and returns focus to its opener */
 })();

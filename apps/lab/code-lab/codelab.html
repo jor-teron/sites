@@ -12,7 +12,7 @@
   <meta name="color-scheme" content="light dark">
   <title>Code Lab</title>
   <link rel="icon" href="codelab_icon.png">
-  <link rel="stylesheet" href="codelab.css?v=20261024a">
+  <link rel="stylesheet" href="codelab.css?v=20261024b">
   <script>try{var s=JSON.parse(localStorage.getItem('codelab-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
 </head>
 <body>
@@ -23,10 +23,10 @@
   </div>
   <div id="viewport">
     <div id="track">
-      <section class="pane" id="pane-cells">
+      <section class="pane" id="pane-cells" role="region" aria-label="Cells" tabindex="-1">
         <div id="conn">
           <div class="row">
-            <span id="status" class="sdot" title="Not connected"></span>
+            <span id="status" class="sdot off" role="img" aria-label="Connection: Not connected" title="Not connected"></span>
             <input id="url" type="url" placeholder="Server URL, e.g. https://grok-lab.example.ts.net" autocomplete="off" spellcheck="false">
             <button type="button" class="mini acc" id="connect-btn">Connect</button>
           </div>
@@ -39,17 +39,17 @@
             <button type="button" class="mini" id="restart-btn" disabled title="Restart kernel" aria-label="Restart kernel">↻</button>
             <button type="button" class="mini" id="intr-btn" disabled title="Stop (interrupt) the running cell" aria-label="Stop (interrupt) the running cell">■</button>
             <select id="kernel" aria-label="Kernel" disabled><option value="">Kernel…</option></select>
-            <span id="kstate" class="kstate">—</span>
+            <span id="kstate" class="kstate" aria-label="Kernel state">—</span>
           </div>
         </div>
         <div id="cells"></div>
         <div id="bar">
-          <span id="msg" aria-live="polite"></span>
+          <span id="msg" aria-live="polite" aria-atomic="true"></span>
           <button type="button" class="mini" id="add-btn">+ Cell</button>
           <button type="button" class="mini acc" id="runall-btn">Run all</button>
         </div>
       </section>
-      <section class="pane" id="pane-set">
+      <section class="pane" id="pane-set" role="region" aria-label="Settings" tabindex="-1">
         <div class="set-wrap">
           <h2>Settings</h2>
           <div class="set-row"><span>Theme</span>
@@ -64,6 +64,7 @@
             <img src="codelab_icon.png" alt="" width="40" height="40">
             <div><b>Code Lab</b> <span id="ver"></span>
               <p>Run code cells on your own Jupyter Server, Kaggle/Jupyter style. Enter the server URL and token, connect, pick a kernel and start it. Shift+Enter runs a cell. HTML output is shown in a safe sandbox (no scripts). If the connection drops, running cells are marked interrupted and you can press Reconnect. After a reload, Connect reattaches to the kernel this app started (variables are kept). Your cells are kept on this device; the token is only kept if you tick Remember.</p>
+              <p><b>Keyboard:</b> Tab / Shift+Tab move between controls, including out of the code editors (they never trap focus). Ctrl+M inside an editor makes Tab indent (Shift+Tab un-indents); Esc or Ctrl+M switches that off again. Shift+Enter runs a cell and moves on, Ctrl+Enter runs it in place. Esc closes Settings.</p>
               <p>Uses @jupyterlab/services (BSD-3-Clause) and CodeMirror (MIT).</p></div>
           </div>
         </div>
@@ -71,11 +72,12 @@
     </div>
   </div>
   <div id="toast" role="status"></div>
+  <div id="sr-status" class="sr-only" role="status" aria-live="polite"></div>
 </div>
-<script src="vendor/codelab-lib.min.js?v=20261024a"></script>
-<script src="codelab_save.js?v=20261024a"></script>
-<script src="codelab_kernel.js?v=20261024a"></script>
-<script src="codelab_output.js?v=20261024a"></script>
-<script src="codelab_app.js?v=20261024a"></script>
+<script src="vendor/codelab-lib.min.js?v=20261024b"></script>
+<script src="codelab_save.js?v=20261024b"></script>
+<script src="codelab_kernel.js?v=20261024b"></script>
+<script src="codelab_output.js?v=20261024b"></script>
+<script src="codelab_app.js?v=20261024b"></script>
 </body>
 </html>
