@@ -12,6 +12,7 @@
  * Routing: '' = home, '#cat=<name>' = that category's page (hashchange: browser back + deep links).
  * AH3: a breadcrumb (App Hub › Category) replaces the Back button; the "App Hub" crumb goes up one level
  * (same as Escape / Backspace / Alt+Left).
+ * AH5: the top-row icon is always the App Hub icon (apphub_icon.png), also on category pages.
  * AH2: the Hub's category rows (Start menu / Phone Home menu, hub.js openCat) open this page at
  * #cat=<Category> instead of the old apps/<cat>/<cat>.html pages (those stay for old deep links).
  * Shift+click / middle-click on an app = another window in Desktop mode, like the old pages.
@@ -190,7 +191,7 @@
   }
   function setTop(cat) {
     crumbs(cat);
-    $('top-icon').src = cat ? ROOT + cat.icon : 'apphub_icon.png';
+    /* AH5: the top-row icon is always the App Hub icon (index.html), on home and category pages; category icons stay on the tiles. */
     document.title = cat ? cat.name + ' - App Hub' : 'App Hub';
   }
   async function home(focusCat) {

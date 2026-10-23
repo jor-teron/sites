@@ -15,3 +15,5 @@ Offline: the four files are in the service worker shell (`hub/update/hub_sw.js` 
 Files: `index.html`, `apphub.js`, `apphub.css`, `apphub_icon.png`.
 
 **AH4 – top row:** the `.top` bar is exactly **40px** high on the home page and on every category page, in Desktop and Phone (narrow) mode: 4px padding above and below the 32px icon (`.top-icon`), content vertically centred, the bottom line drawn with `box-shadow` so it adds no height. The `App Hub` crumb button is 40px tall (fills the row; no 44px minimum) and has the same 6px side padding as the home title, so the first crumb's text sits at the same x on both pages. The current crumb stays plain text with `aria-current="page"`; long names ellipsise and the breadcrumb scrolls sideways without changing the row height.
+
+**AH5 – top-row icon:** the 32px icon in the top row is always the App Hub icon (`apphub_icon.png`, set in `index.html`), on the home page and on every category page: `[App Hub icon] App Hub › Games`. It is no longer swapped for the category's own icon; category icons stay on the home-page tiles.
