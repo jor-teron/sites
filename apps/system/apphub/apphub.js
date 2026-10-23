@@ -10,6 +10,8 @@
  *               on file:// SITES_CSV is used directly. Paths are resolved like hub_flyout.js.
  *   favourites  apps/favorite/favorite-apps.csv, in that file's order.
  * Routing: '' = home, '#cat=<name>' = that category's page (hashchange: browser back + deep links).
+ * AH3: a breadcrumb (App Hub › Category) replaces the Back button; the "App Hub" crumb goes up one level
+ * (same as Escape / Backspace / Alt+Left).
  * AH2: the Hub's category rows (Start menu / Phone Home menu, hub.js openCat) open this page at
  * #cat=<Category> instead of the old apps/<cat>/<cat>.html pages (those stay for old deep links).
  * Shift+click / middle-click on an app = another window in Desktop mode, like the old pages.
@@ -169,9 +171,25 @@
   function add(g, card) { const li = el('div', 'li'); li.setAttribute('role', 'listitem'); li.appendChild(card); g.appendChild(li); }
 
   let token = 0, page = null;
+  /** AH3: File-Explorer-style breadcrumb: "App Hub" (the title on home) or "App Hub › <Category>".
+   *  Every part but the last is a button; the last is plain text (aria-current), the page's h1. */
+  function crumbs(cat) {
+    const ol = $('crumbs');
+    ol.textContent = '';
+    const li = (child, sep) => { const x = el('li'); if (sep) x.className = 'sep'; x.appendChild(child); ol.appendChild(x); };
+    const cur = (text) => { const h = el('h1', 'crumb cur', text); h.setAttribute('aria-current', 'page'); return h; };
+    if (!cat) { li(cur('App Hub')); return; }
+    const up = el('button', 'crumb up', 'App Hub');
+    up.type = 'button';
+    up.title = 'Go to the App Hub main page';
+    up.addEventListener('click', back);
+    li(up);
+    const s = el('span', null, '\u203A'); s.setAttribute('aria-hidden', 'true');
+    li(s, true);
+    li(cur(cat.name));
+  }
   function setTop(cat) {
-    $('back').hidden = !cat;
-    $('title').textContent = cat ? cat.name : 'App Hub';
+    crumbs(cat);
     $('top-icon').src = cat ? ROOT + cat.icon : 'apphub_icon.png';
     document.title = cat ? cat.name + ' - App Hub' : 'App Hub';
   }
@@ -239,7 +257,6 @@
     home(was);
   }
   window.addEventListener('hashchange', route);
-  $('back').addEventListener('click', back);
 
   // ---- keyboard: arrows move between cards, Escape / Backspace / Alt+Left go back ----
   document.addEventListener('keydown', (e) => {

@@ -17,12 +17,19 @@ a { color: var(--accent); }
 
 .top { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 10px 16px;
   background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
-.top h1 { margin: 0; font-size: 19px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .top-icon { width: 32px; height: 32px; border-radius: 8px; object-fit: contain; flex: none; }
-.back { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 10px;
-  border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); flex: none; }
-.back[hidden] { display: none; }
-.back:hover { background: var(--hi); }
+/* AH3: breadcrumb (App Hub › Category). Scrolls sideways when it cannot fit; the last crumb is plain text. */
+.crumbs { flex: 1 1 auto; min-width: 0; }
+.crumbs ol { display: flex; align-items: center; gap: 2px; margin: 0; padding: 0; list-style: none; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+.crumbs ol::-webkit-scrollbar { display: none; }
+.crumbs li { flex: none; display: flex; align-items: center; }
+.crumbs li:last-child { flex: 0 1 auto; min-width: 0; }
+.crumbs .sep { color: var(--muted); font-size: 20px; padding: 0 2px; user-select: none; }
+.crumb { margin: 0; font-size: 19px; line-height: 1.2; }
+.crumb.up { min-height: 44px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-weight: 500; }
+.crumb.up:hover { background: var(--hi); color: var(--text); }
+.crumb.up:active { background: var(--hi); }
+.crumb.cur { font-weight: 650; color: var(--text); padding: 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .msg { margin: 10px 16px 0; padding: 10px 14px; border-radius: 10px; background: var(--hi); border: 1px solid var(--line); }
 .msg[hidden] { display: none; }
@@ -59,7 +66,8 @@ main { padding: 6px 16px 24px; max-width: 1100px; margin: 0 auto; }
 
 /* Phone / narrow window */
 @media (max-width: 560px) {
-  .top { padding: 8px 12px; }
+  .top { padding: 4px 12px; }
+  .crumb { font-size: 17px; }
   main { padding: 4px 12px 20px; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
   .cats .grid { grid-template-columns: 1fr 1fr; gap: 10px; }

@@ -3,7 +3,7 @@
   App Hub (apps/system/apphub/index.html), AH1 — a home for the apps already in the Hub (not an app
   store: nothing to install). Home: a Favourites row (apps/favorite/favorite-apps.csv, in that file's
   order) and one tile per Start-menu category (icon, name, app count; Favorite is not a tile).
-  A category tile opens that category's page (#cat=<name>; Back, browser back and deep links work).
+  A category tile opens that category's page (#cat=<name>; AH3: a breadcrumb "App Hub › Games" instead of a Back button; Escape / Backspace / Alt+Left, browser back and deep links work).
   An app opens in the Hub (Desktop window or Phone mode) like the Start menu does.
   Data: the Hub's own lists, hub/core/hub_config.js (HUB_CAT_CSV), hub_apps.js (category order),
   hub_catalog.js (SITES_CSV, used on file:// and as the fallback) and shared/tiles/tiles.js (CSV
@@ -15,22 +15,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>App Hub</title>
   <link rel="icon" href="apphub_icon.png" />
-  <link rel="stylesheet" href="apphub.css?v=20261023l" />
+  <link rel="stylesheet" href="apphub.css?v=20261023m" />
 </head>
 <body>
   <header class="top">
-    <button type="button" id="back" class="back" hidden aria-label="Back to App Hub home">
-      <span aria-hidden="true">&#8592;</span> Back
-    </button>
     <img id="top-icon" class="top-icon" src="apphub_icon.png" alt="" width="32" height="32" />
-    <h1 id="title">App Hub</h1>
+    <nav class="crumbs" aria-label="Breadcrumb"><ol id="crumbs"></ol></nav>
   </header>
   <p id="msg" class="msg" role="status" aria-live="polite" hidden></p>
   <main id="view" aria-live="polite"></main>
-  <script src="../../../hub/core/hub_config.js?v=20261023l"></script>
-  <script src="../../../hub/core/hub_apps.js?v=20261023l"></script>
-  <script src="../../../hub/core/hub_catalog.js?v=20261023l"></script>
-  <script src="../../../shared/tiles/tiles.js?v=20261023l"></script>
-  <script src="apphub.js?v=20261023l"></script>
+  <script src="../../../hub/core/hub_config.js?v=20261023m"></script>
+  <script src="../../../hub/core/hub_apps.js?v=20261023m"></script>
+  <script src="../../../hub/core/hub_catalog.js?v=20261023m"></script>
+  <script src="../../../shared/tiles/tiles.js?v=20261023m"></script>
+  <script src="apphub.js?v=20261023m"></script>
 </body>
 </html>
