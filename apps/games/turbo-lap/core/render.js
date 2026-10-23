@@ -131,7 +131,7 @@ window.TL = window.TL || {};
           if (w < 1.5 || !(sc > 0)) continue;
           const shake = car.bumped ? (Math.random() - 0.5) * w * 0.04 : 0;
           clipped(ctx, W, seg.clip, cy, () => SP.car(ctx, cx + shake, cy, w, car.color,
-            { steer: car.steerVis || 0, braking: car.braking, detail: w > 60, plate: car.name, t: view.t }));
+            { steer: car.steerVis || 0, braking: car.braking, detail: w > 60, plate: car.name, t: view.t, model: car.model, accent: car.accent }));
         }
       }
       // player
@@ -143,9 +143,9 @@ window.TL = window.TL || {};
         const sp = pl.speed / CFG.maxSpeed;
         const bounce = (Math.abs(pl.x) > 1 ? 2.5 : 0.8) * sp * Math.sin(view.t * 40) * w * 0.01;
         const shake = (pl.bumped || pl.hitFlash) ? (Math.random() - 0.5) * w * 0.03 : 0;
-        SP.car(ctx, W / 2 + shake, by + bounce, w, CFG.playerColor,
+        SP.car(ctx, W / 2 + shake, by + bounce, w, TL.carSet.color(),
           { steer: pl.steer * Math.min(1, sp * 2), braking: pl.braking, nitro: pl.nitroOn, detail: true,
-            accent: CFG.playerAccent, plate: 'TURBO', t: view.t });
+            accent: TL.carSet.accent(), plate: 'TURBO', t: view.t });
         R.playerScreen = { x: W / 2, y: by, w };
       }
     }

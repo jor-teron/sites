@@ -262,7 +262,7 @@ window.TL = window.TL || {};
       if (type === 'lamp') th.lamp(ctx, x, y, w, v, -side); else if (type === 'sign') th.sign(ctx, x, y, w, v, side); else th[type](ctx, x, y, w, v);
     };
     put('tree', 5, -1, 3); put('lamp', 8, 1, 1); put('bush', 8, -1, 2); put('sign', 10, 1, 4); put('tree', 11, 1, 6); put('bush', 12, -1, 5);
-    SP.car(ctx, W / 2, H * 0.97, W * 0.2, CFG.playerColor, { detail: false, accent: CFG.playerAccent, t: 0 });
+    SP.car(ctx, W / 2, H * 0.97, W * 0.2, TL.carSet.color(), { detail: false, accent: TL.carSet.accent(), t: 0 });
     if (th.fx) th.fx(ctx, W, H, 3.7, R);
   };
 })();

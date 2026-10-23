@@ -42,6 +42,7 @@ window.TL = window.TL || {};
     if (!e.repeat) {
       if (e.code === 'KeyC') I.fire('circuits');
       if (e.code === 'KeyV') I.fire('themes');
+      if (e.code === 'KeyG') I.fire('cars');
       if (e.code === 'Enter' || e.code === 'NumpadEnter') I.fire('start');
       else if (e.code === 'KeyP' || e.code === 'Escape') I.fire('pause');
       else if (e.code === 'KeyF') I.fire('fps');

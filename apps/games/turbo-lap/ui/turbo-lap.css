@@ -125,3 +125,17 @@ h2.win { color: #ffd400; } h2.lose { color: #cfd8ff; }
   .tcard { padding: 3px; gap: 2px; } .tcard .tb { display: none; } .tcard.now .tb { display: none; }
   .themes .pickhead h2 { font-size: 22px; margin-bottom: 0; }
 }
+
+/* ---- cars (TLQ1a) ---- the garage reuses the theme cards (.tcard, .themegrid); no floating button (the left edge belongs to the theme fab) */
+.swatches { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 8px 0 0; }
+.swatch { width: 40px; height: 40px; min-width: 40px; padding: 0; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.35);
+  background: linear-gradient(135deg, var(--c) 0 62%, var(--a) 62% 100%); }
+.swatch.cur { border-color: #fff; box-shadow: 0 0 0 3px #d01c8b; }
+.swatch:hover { border-color: #fff; }
+.swatch:focus-visible { outline: 3px solid #7fd8ff; outline-offset: 2px; }
+.cargrid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+@media (max-height: 430px) {
+  .swatches { margin: 2px 0 0; gap: 6px; } .swatch { width: 34px; height: 34px; min-width: 34px; border-width: 2px; }
+  .cargrid { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); margin-top: 6px; }
+  .cars .pickhead h2 { font-size: 22px; margin-bottom: 0; }
+}

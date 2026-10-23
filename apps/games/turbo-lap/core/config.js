@@ -51,6 +51,26 @@ TL.CFG = {
     handMadeCircuit: 50, handMadeTheme: 'coast'
   },
 
+  // Cars (TLQ1a): ten code-drawn rear-view models (assets/cars/). Storage keys 'car' (a model id) and 'carcolor' (a swatch id).
+  // Every model is drawn inside the same SIZES.car box, so collision widths never change. Opponents get a model and a swatch
+  // from a seeded shuffle of (circuit number, slot); the player's choice is saved. Only the look changes.
+  cars: {
+    default: 'coupe',
+    order: ['coupe', 'muscle', 'formula', 'rally', 'pickup', 'van', 'wedge', 'beetle', 'buggy', 'proto'],
+    defaultSwatch: 'pearl',
+    // body paint + the accent (stripes, wing plates, glow) that suits it. 'pearl' is the original white car with magenta stripes.
+    swatches: [
+      { id: 'pearl',  name: 'Pearl',    color: '#f5f5f5', accent: '#d01c8b' },
+      { id: 'red',    name: 'Red',      color: '#e8322d', accent: '#f5f5f5' },
+      { id: 'blue',   name: 'Blue',     color: '#2f6fe0', accent: '#ffd400' },
+      { id: 'lime',   name: 'Lime',     color: '#3cbf3a', accent: '#151515' },
+      { id: 'sun',    name: 'Sun',      color: '#f2c12e', accent: '#1a1a1a' },
+      { id: 'orange', name: 'Orange',   color: '#f2822e', accent: '#f5f5f5' },
+      { id: 'violet', name: 'Violet',   color: '#8a4fd6', accent: '#7fe8ff' },
+      { id: 'steel',  name: 'Graphite', color: '#4a4f5c', accent: '#ff3d8b' }
+    ]
+  },
+
   // Circuits: 100 generated tracks (core/circuits.js). Circuit 50 is the hand-made Coastline Loop.
   circuits: {
     count: 100,

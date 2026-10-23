@@ -17,6 +17,11 @@ window.TL = window.TL || {};
     // look: 'auto' (theme by circuit number, the default) or a fixed theme id; anything else falls back to 'auto'
     theme() { const v = S.get('theme', 'auto'); return typeof v === 'string' && TL.themes ? TL.themes.valid(v) : 'auto'; },
     setTheme(v) { S.set('theme', v); },
+    // car (TLQ1a): a model id and a body-paint swatch id; anything else falls back to the defaults
+    car() { const v = S.get('car', null); return typeof v === 'string' && TL.carSet && TL.carSet.has(v) ? v : TL.CFG.cars.default; },
+    setCar(v) { S.set('car', v); },
+    carColor() { const v = S.get('carcolor', null); return typeof v === 'string' && TL.carSet && TL.carSet.hasSwatch(v) ? v : TL.CFG.cars.defaultSwatch; },
+    setCarColor(v) { S.set('carcolor', v); },
     bestTotal(id) { const r = S.records(id); return r && r.bestTotal != null ? r.bestTotal : null; },
     // per track (key best.<nn>, nn = two-digit circuit number): { bestTotal, bestLap, bestPos }
     records(trackId) { return S.get('best.' + trackId, {}); },
