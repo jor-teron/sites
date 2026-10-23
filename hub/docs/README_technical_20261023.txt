@@ -635,8 +635,9 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   - Saves: none found.
 
 ### Arcade
-- **pong/** (~875 lines)
-  - Files: `pong_logic.js`, `_config.js`.
+- **ping-pong/** (~2400 lines; renamed from `pong/` by the Games bot)
+  - Files: `ping-pong.html` (+ `index.html`), `core/{config,state,registry,ai,game,input,main}.js`, `ui/{dom,fx,hub,picker}.js`, `ui/ping-pong.css`, `ui/picker.css`, `assets/{models,themes}/`.
+  - Saves: localStorage `ping-pong.theme`, `ping-pong.ball`, `ping-pong.paddle`.
 - **snake/** (~780 lines)
   - Refactored in PR #81 into `css/snake.css` and `js/{config,core,game,render,input,touch,hub,main}.js`.
   - Saves: `snake-best` (number) and `snake-dpad` ('1' or '0', the touch D-pad toggle).
