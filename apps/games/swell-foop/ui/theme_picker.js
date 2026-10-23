@@ -4,7 +4,7 @@
  * (localStorage key from the config, default swellfoop.theme).
  */
 const SFPicker = (() => {
-    let panel, list, btn, label;
+    let panel, list, btn, label, lastFocus;
     const PREV = 34;                 // preview block size (px)
     const GAP = 6;
     let built = false;
@@ -18,7 +18,7 @@ const SFPicker = (() => {
 
     function drawPreview(cv, t) {
         const dpr = window.devicePixelRatio || 1;
-        const n = 5;
+        const n = CFG.numColors; // only the colours the game uses
         const w = n * PREV + (n + 1) * GAP, h = PREV + GAP * 2;
         cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
         cv.style.width = w + 'px'; cv.style.height = h + 'px';
@@ -59,10 +59,33 @@ const SFPicker = (() => {
     function sync() {
         if (!btn) return;
         label.textContent = SF_THEMES.get(theme.id).name;
-        if (list) list.querySelectorAll('.sf-theme-card').forEach((c) => c.classList.toggle('active', c.dataset.theme === theme.id));
+        if (list) list.querySelectorAll('.sf-theme-card').forEach((c) => {
+            const on = c.dataset.theme === theme.id;
+            c.classList.toggle('active', on);
+            c.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
     }
-    function open() { build(); panel.classList.remove('hidden'); sync(); }
-    function close() { panel.classList.add('hidden'); }
+    function open() {
+        build();
+        lastFocus = document.activeElement;
+        panel.classList.remove('hidden');
+        sync();
+        const on = list.querySelector('.sf-theme-card.active') || document.getElementById('themeClose');
+        on.focus();
+    }
+    function close() {
+        const wasOpen = !panel.classList.contains('hidden');
+        panel.classList.add('hidden');
+        if (wasOpen && lastFocus && lastFocus.focus) lastFocus.focus(); // give focus back to the Theme button
+    }
+    /** Keeps Tab inside the open dialog. */
+    function trap(e) {
+        if (e.key !== 'Tab' || panel.classList.contains('hidden')) return;
+        const f = panel.querySelectorAll('button');
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
 
     function init() {
         panel = document.getElementById('themePanel');
@@ -73,7 +96,7 @@ const SFPicker = (() => {
         btn.addEventListener('click', open);
         document.getElementById('themeClose').addEventListener('click', close);
         panel.addEventListener('click', (e) => { if (e.target === panel) close(); });
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); else trap(e); });
         sync();
     }
     return { init, sync, open, close };
