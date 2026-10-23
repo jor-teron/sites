@@ -15,18 +15,24 @@ button { font: inherit; color: inherit; cursor: pointer; }
 a { color: var(--accent); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.top { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 10px 16px;
-  background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+/* AH4: the top row is exactly 40px on every page (home and category, Desktop and Phone): 4px padding above and
+ * below the 32px icon; the bottom line is a box-shadow (not a border) so it adds nothing to the 40px. */
+.top { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px; height: 40px; padding: 4px 16px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); box-shadow: 0 1px 0 var(--line); }
 .top-icon { width: 32px; height: 32px; border-radius: 8px; object-fit: contain; flex: none; }
-/* AH3: breadcrumb (App Hub › Category). Scrolls sideways when it cannot fit; the last crumb is plain text. */
-.crumbs { flex: 1 1 auto; min-width: 0; }
-.crumbs ol { display: flex; align-items: center; gap: 2px; margin: 0; padding: 0; list-style: none; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+/* AH3: breadcrumb (App Hub › Category). Scrolls sideways when it cannot fit; the last crumb is plain text.
+ * AH4: the breadcrumb fills the whole 40px row (negative margin cancels the row padding) so the "App Hub"
+ * button is 40px tall; both first crumbs (home title, category button) have the same 6px side padding, so the
+ * text does not shift between pages. */
+.crumbs { flex: 1 1 auto; min-width: 0; height: 40px; margin: -4px 0; }
+.crumbs ol { display: flex; align-items: center; gap: 2px; height: 40px; margin: 0; padding: 0; list-style: none; overflow-x: auto; overflow-y: hidden; white-space: nowrap; scrollbar-width: none; }
 .crumbs ol::-webkit-scrollbar { display: none; }
-.crumbs li { flex: none; display: flex; align-items: center; }
+.crumbs li { flex: none; display: flex; align-items: center; height: 40px; }
 .crumbs li:last-child { flex: 0 1 auto; min-width: 0; }
 .crumbs .sep { color: var(--muted); font-size: 20px; padding: 0 2px; user-select: none; }
 .crumb { margin: 0; font-size: 19px; line-height: 1.2; }
-.crumb.up { min-height: 44px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-weight: 500; }
+.crumb.up { height: 40px; min-height: 0; padding: 0 6px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-weight: 500; }
+.crumb.up:focus-visible { outline-offset: -2px; }
 .crumb.up:hover { background: var(--hi); color: var(--text); }
 .crumb.up:active { background: var(--hi); }
 .crumb.cur { font-weight: 650; color: var(--text); padding: 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -66,7 +72,7 @@ main { padding: 6px 16px 24px; max-width: 1100px; margin: 0 auto; }
 
 /* Phone / narrow window */
 @media (max-width: 560px) {
-  .top { padding: 4px 12px; }
+  .top { height: 40px; padding: 4px 12px; }   /* AH4: still exactly 40px */
   .crumb { font-size: 17px; }
   main { padding: 4px 12px 20px; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
