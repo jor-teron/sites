@@ -923,8 +923,9 @@
   window.__hubFrameUrl = (entry) => frameUrlFor(normalizeEntryUrl(entry) || entry);
   window.__hubGoHome = goHome;
   // AH1-F1: what the Home button does (Settings → Desktop, key 'homeBtn': '' = Home screen,
-  // 'apphub' = App Hub). Phone mode #home-btn (hub-gamebar.js) and Desktop Show desktop
-  // (wm_taskbar.js) call __hubHome. Read at click time, so a change applies at once.
+  // 'apphub' = App Hub). Only the Phone mode #home-btn (hub-gamebar.js) calls __hubHome
+  // (H6-B1: the Desktop Show desktop button no longer does; it only minimises / restores).
+  // Read at click time, so a change applies at once.
   const APPHUB_URL = 'apps/system/apphub/';
   window.__hubHomeAppHub = () => { try { return localStorage.getItem('sites-hub.homeBtn') === 'apphub'; } catch (_) { return false; } };
   window.__hubHome = () => {

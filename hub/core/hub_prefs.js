@@ -74,7 +74,7 @@
       s.animationName = w.slide ? '' : 'none';
       empty.classList.toggle('wp-light', !!w.light);
     }
-    // AH1-F1: Home button target (hub.js __hubHome reads the key on every click)
+    // AH1-F1: Phone mode Home button target (hub.js __hubHome reads the key on every click; H6-B1: not the Desktop Show desktop button)
     const hb = document.getElementById('home-btn');
     if (hb) { const t = get('homeBtn') === 'apphub' ? 'App Hub' : 'Home'; hb.title = t; hb.setAttribute('aria-label', t); }
     // screen mode chosen in Settings
