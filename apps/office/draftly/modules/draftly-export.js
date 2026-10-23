@@ -21,10 +21,11 @@ Draftly.export.combinedHtml = function combinedHtml() {
   return Draftly.flow.joinedHtml();
 };
 
-/* Word-HTML for DOCX: page-break markers become Word's page-break <br>. */
-Draftly.export.docxHtml = function docxHtml() {
+/* Word-HTML for DOCX: page-break markers become Word's page-break <br>.
+   html: optional, other document HTML instead of the open document (mail merge). */
+Draftly.export.docxHtml = function docxHtml(html) {
   var holder = document.createElement('div');
-  holder.innerHTML = Draftly.export.combinedHtml();
+  holder.innerHTML = html != null ? html : Draftly.export.combinedHtml();
   var pbs = holder.querySelectorAll('.dr-pagebreak');
   for (var i = 0; i < pbs.length; i++) {
     var br = document.createElement('br');
@@ -104,10 +105,10 @@ Draftly.export.printDocument = function printDocument() {
 /* Word header / footer part for one row of slots, or '' when empty.
    Left / centre / right use a centre and a right tab stop; {page} and
    {pages} become PAGE / NUMPAGES fields; {date} is today's date. */
-Draftly.export.hfXml = function hfXml(part, isLandscape) {
+Draftly.export.hfXml = function hfXml(part, isLandscape, data) {
   var cfg = Draftly.config;
   if (!Draftly.hf) return '';
-  var slots = Draftly.hf.data[part];
+  var slots = (data || Draftly.hf.data)[part];   /* data: other header / footer text (mail merge) */
   if (!slots.join('').trim()) return '';
   var ps = cfg.paperSizes[cfg.paperSize] || cfg.paperSizes.A4;
   var pageW = isLandscape ? ps.docxH : ps.docxW;
@@ -132,11 +133,10 @@ Draftly.export.hfXml = function hfXml(part, isLandscape) {
     '<w:spacing w:before="0" w:after="0"/></w:pPr>' + runs + '</w:p></w:' + tag + '>';
 };
 
-/* Build a DOCX blob from the joined HTML and download it. */
-Draftly.export.exportDocx = function exportDocx() {
+/* DOCX Blob from body HTML (what docxHtml() returns). hfData: optional {head, foot} slots
+   instead of the open document's header / footer (mail merge). Throws if html-docx is missing. */
+Draftly.export.makeDocxBlob = function makeDocxBlob(bodyHtml, hfData) {
   var cfg = Draftly.config;
-  if (Draftly.editor) Draftly.editor.saveSelection();
-
   var isLandscape = document.body.classList.contains(cfg.landscapeClass);
   var fullHtml =
     '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
@@ -144,27 +144,34 @@ Draftly.export.exportDocx = function exportDocx() {
       margins: cfg.marginTopCm + 'cm ' + cfg.marginRightCm + 'cm' }) +
     'body { font-family: ' + cfg.fontFamily + '; font-size: ' + cfg.fontSizePt + 'pt; line-height: ' + cfg.lineHeight + '; }' +
     'p { margin: 0 0 ' + cfg.paragraphSpacingPt + 'pt 0; }' +
-    '</style></head><body>' + Draftly.export.docxHtml() + '</body></html>';
+    '</style></head><body>' + bodyHtml + '</body></html>';
+  if (typeof htmlDocx === 'undefined') throw new Error('html-docx-js missing');
+  return htmlDocx.asBlob(fullHtml, {
+    orientation: isLandscape ? 'landscape' : 'portrait',
+    pageSize: {
+      width: (cfg.paperSizes[cfg.paperSize] || cfg.paperSizes.A4).docxW,
+      height: (cfg.paperSizes[cfg.paperSize] || cfg.paperSizes.A4).docxH
+    },
+    margins: {
+      top: cfg.docxMarginTop,
+      right: cfg.docxMarginRight,
+      bottom: cfg.docxMarginBottom,
+      left: cfg.docxMarginLeft,
+      header: Math.round(cfg.marginTopCm * 0.4 * 567),
+      footer: Math.round(cfg.marginBottomCm * 0.4 * 567)
+    },
+    headerXml: Draftly.export.hfXml('head', isLandscape, hfData),
+    footerXml: Draftly.export.hfXml('foot', isLandscape, hfData)
+  });
+};
+
+/* Build a DOCX blob from the joined HTML and download it. */
+Draftly.export.exportDocx = function exportDocx() {
+  var cfg = Draftly.config;
+  if (Draftly.editor) Draftly.editor.saveSelection();
 
   try {
-    if (typeof htmlDocx === 'undefined') throw new Error('html-docx-js missing');
-    var blob = htmlDocx.asBlob(fullHtml, {
-      orientation: isLandscape ? 'landscape' : 'portrait',
-      pageSize: {
-        width: (cfg.paperSizes[cfg.paperSize] || cfg.paperSizes.A4).docxW,
-        height: (cfg.paperSizes[cfg.paperSize] || cfg.paperSizes.A4).docxH
-      },
-      margins: {
-        top: cfg.docxMarginTop,
-        right: cfg.docxMarginRight,
-        bottom: cfg.docxMarginBottom,
-        left: cfg.docxMarginLeft,
-        header: Math.round(cfg.marginTopCm * 0.4 * 567),
-        footer: Math.round(cfg.marginBottomCm * 0.4 * 567)
-      },
-      headerXml: Draftly.export.hfXml('head', isLandscape),
-      footerXml: Draftly.export.hfXml('foot', isLandscape)
-    });
+    var blob = Draftly.export.makeDocxBlob(Draftly.export.docxHtml());
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
