@@ -11,6 +11,8 @@
  *   sites-hub.taskPos    taskbar 'bottom' (default) | 'top'                    → html.hub-task-top
  *   sites-hub.accent     accent colour '#rrggbb' (default #6ea8fe)            → --accent
  *   sites-hub.theme      'dark' (default) | 'light'                           → html.hub-light
+ *   sites-hub.homeBtn    '' = Home button goes to the Home screen (default) | 'apphub' = opens App Hub
+ *                        (AH1-F1; hub.js __hubHome reads it per click)        → #home-btn title
  *   sites-hub.motion     'on' (default) | 'reduced' (no jelly) | 'off'        → html.hub-motion-*
  *   sites-hub.hoverFocus '1' = Focus window on hover (default off)       → html.hub-hover-focus
  *   sites-hub.snapEdges  '0' = no snapping to screen edges (default on)  → html.hub-snap-off
@@ -72,6 +74,9 @@
       s.animationName = w.slide ? '' : 'none';
       empty.classList.toggle('wp-light', !!w.light);
     }
+    // AH1-F1: Home button target (hub.js __hubHome reads the key on every click)
+    const hb = document.getElementById('home-btn');
+    if (hb) { const t = get('homeBtn') === 'apphub' ? 'App Hub' : 'Home'; hb.title = t; hb.setAttribute('aria-label', t); }
     // screen mode chosen in Settings
     const m = get('wmMode') || 'auto';
     if (window.HubMode && window.HubMode.pref !== m) window.HubMode.setPref(m);

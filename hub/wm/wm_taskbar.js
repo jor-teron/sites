@@ -144,10 +144,13 @@
       return;
     }
     const vis = all.filter((w) => !w.min && HubWM.onWs(w)).sort((a, b) => +a.el.style.zIndex - +b.el.style.zIndex);
-    if (!vis.length) return;
+    // AH1-F1: Home button = App Hub (Settings → Desktop): show the desktop, then App Hub on it
+    const appHub = !!(window.__hubHomeAppHub && window.__hubHomeAppHub() && window.__hubHome);
+    if (!vis.length) { if (appHub) window.__hubHome(); return; }
     const act = HubWM.active;
     HubWM.minimiseAll();
     setShown({ wins: vis, active: act });
+    if (appHub) window.__hubHome();
   });
   window.addEventListener('hub-wm-change', () => { if (shown && HubWM.list().some((w) => !w.min && HubWM.onWs(w))) setShown(null); });
   window.addEventListener('hub-wm-ws', () => { if (shown) setShown(null); });

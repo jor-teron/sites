@@ -922,6 +922,15 @@
   // hub_ctx_menus.js: an app's page url (Open in new tab / Copy link)
   window.__hubFrameUrl = (entry) => frameUrlFor(normalizeEntryUrl(entry) || entry);
   window.__hubGoHome = goHome;
+  // AH1-F1: what the Home button does (Settings → Desktop, key 'homeBtn': '' = Home screen,
+  // 'apphub' = App Hub). Phone mode #home-btn (hub-gamebar.js) and Desktop Show desktop
+  // (wm_taskbar.js) call __hubHome. Read at click time, so a change applies at once.
+  const APPHUB_URL = 'apps/system/apphub/';
+  window.__hubHomeAppHub = () => { try { return localStorage.getItem('sites-hub.homeBtn') === 'apphub'; } catch (_) { return false; } };
+  window.__hubHome = () => {
+    if (!window.__hubHomeAppHub() || (!wmOn() && currentEntry === APPHUB_URL)) { goHome(); return; }   // App Hub already showing → the real home
+    window.__hubOpenApp(APPHUB_URL);
+  };
   window.__hubCurrentEntry = () => currentEntry;   // R56: Phone mode 'an app is open' signal (hub_update.js idleNow)
   // hub_link.js: "Open in…" a receiver app — the frame in Phone mode; in Desktop mode that
   // app's window (opened or focused), which then is the focused window the file goes to.
