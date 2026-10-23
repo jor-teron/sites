@@ -6,7 +6,7 @@
  * completion of the new commands. T2 adds the unix-style
  * file tree (/drive/local, /drive/gdrive, /drive/<folder>) and the read commands (pwd cd ls cat head tail wc
  * tree stat drives allow, `open <file>`); that part lives in terminal_fs.js (window.TermFs), built on
- * shared/fs (FsDrives, FsOps). The prompt is jor@hub:<cwd>$, cwd kept in localStorage 'hub-terminal.cwd'.
+ * shared/fs (FsDrives, FsOps). The prompt is hub@hub:<cwd>$, cwd kept in localStorage 'hub-terminal.cwd'.
  * - One real <input> (#in) takes the keys: hardware keyboard, the phone's own keyboard and the
  *   Hub OSK (hub-controller.js forwardKey types into the focused input and fires keydown), paste.
  *   It is invisible; #before / #cur / #after draw the line with a blinking block cursor.
@@ -26,7 +26,7 @@
   const IS_FILE = location.protocol === 'file:';
   const ROOT = '../../../';
   const HIST_KEY = 'hub-terminal.history', HIST_MAX = 200;
-  let PS = 'jor@hub:~$ ';   // T2: follows the current folder (terminal_fs.js)
+  let PS = 'hub@hub:~$ ';   // T2: follows the current folder (terminal_fs.js)
   const THEMES = ['dark', 'light'];
   const term = document.getElementById('term'), out = document.getElementById('out');
   const form = document.getElementById('line'), input = document.getElementById('in');
@@ -224,7 +224,7 @@
   /* ---------- the file tree (terminal_fs.js, T2) ---------- */
   const elPs = document.getElementById('ps');
   function setPrompt() {
-    PS = 'jor@hub:' + (fs ? fs.prompt() : '~') + '$ ';
+    PS = 'hub@hub:' + (fs ? fs.prompt() : '~') + '$ ';
     if (elPs) elPs.textContent = PS.replace(/ $/, '\u00a0');
   }
   /* T3: a y/n question (rm, cp, mv) answered with the next Enter; epoch counts Ctrl+C so long searches stop */

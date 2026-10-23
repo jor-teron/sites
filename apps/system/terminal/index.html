@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   Terminal (apps/system/terminal/index.html), T1 + T2 + T3 — a small command line for the Hub: prompt
-  jor@hub:<folder>$, history (up / down, kept in localStorage 'hub-terminal.history'), Tab completion,
+  hub@hub:<folder>$, history (up / down, kept in localStorage 'hub-terminal.history'), Tab completion,
   Ctrl+L clear, Ctrl+C cancel line. Commands: help, clear, echo, date, history, apps, open, build, theme
   and (T2) pwd, cd, ls, cat, head, tail, wc, tree, stat, drives, allow on the unix-style tree
   /drive/local, /drive/gdrive, /drive/<folder>, and (T3, change files) mkdir, touch, cp, mv, rm, rmdir, edit
@@ -23,7 +23,7 @@
   <main id="term" class="term" aria-label="Terminal">
     <div id="out" class="out" role="log" aria-live="polite"></div>
     <form id="line" class="line" autocomplete="off"><!-- no whitespace between children: the line is pre-wrap
-      --><span id="ps" class="ps" aria-hidden="true">jor@hub:~$&nbsp;</span><span id="before"></span><span id="cur" class="cur"> </span><span id="after"></span><input
+      --><span id="ps" class="ps" aria-hidden="true">hub@hub:~$&nbsp;</span><span id="before"></span><span id="cur" class="cur"> </span><span id="after"></span><input
         id="in" class="in" type="text" aria-label="Command" autocomplete="off" autocapitalize="off"
         autocorrect="off" spellcheck="false" enterkeyhint="send" /></form>
   </main>

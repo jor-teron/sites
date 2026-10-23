@@ -14,7 +14,7 @@ System app (T1 + T2 + T3): a command line for the Hub that browses your drives l
 
 - **Mount names** come from the drive's name in `FsDrives.list()`, made unix-safe (anything but letters, digits, `.` `_` `-` becomes `_`) and unique (`My_Photos`, `My_Photos-2`). `local` and `gdrive` are reserved. The name <-> drive id mapping is kept in localStorage `hub-terminal.mounts`, so a folder keeps its name after a reload even if the order changes.
 - **Permission:** a real folder needs one permission click after every browser restart. Until then the mount shows `Permission needed: run \`allow <mount>\``. `allow <mount>` asks from the Enter keypress (the browser needs a user gesture). If the keys arrived some other way (Hub OSK, file:// message) a `[ Allow <mount> ]` button appears to click instead. Google Drive cannot be signed in from here: use the Files app.
-- **Where you are:** the prompt is `jor@hub:<cwd>$` with `~` for `/drive/local`. The folder is remembered across a reload (localStorage `hub-terminal.cwd`); if it is gone or its drive is missing, the Terminal starts in `~`.
+- **Where you are:** the prompt is `hub@hub:<cwd>$` with `~` for `/drive/local`. The folder is remembered across a reload (localStorage `hub-terminal.cwd`); if it is gone or its drive is missing, the Terminal starts in `~`.
 
 ## Commands
 
