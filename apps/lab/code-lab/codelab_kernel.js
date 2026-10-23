@@ -108,7 +108,17 @@
     if (err) throw err;
   }
 
+  /* update_display_data for a display made in an EARLIER cell is routed by the services library to that older (finished) request, so the running
+     request never sees it. The kernel-level iopubMessage signal does see it; both paths go through once() so each message is handled one time. */
+  const seenUpd = []; 
+  function once(msg) { const id = msg.header.msg_id; if (seenUpd.indexOf(id) >= 0) return false; seenUpd.push(id); if (seenUpd.length > 200) seenUpd.shift(); return true; }
+  function updOut(msg) { const c = msg.content; return { output_type: 'display_data', data: c.data || {}, display_id: c.transient && c.transient.display_id || undefined, update: true }; }
+
   function wire(k) {
+    k.iopubMessage.connect((_, msg) => {
+      if (k !== kernel || msg.header.msg_type !== 'update_display_data') return;
+      setTimeout(() => { if (once(msg) && api.onDisplayUpdate) api.onDisplayUpdate(updOut(msg)); }, 0); /* after the running request had its chance */
+    });
     k.statusChanged.connect(() => {
       if (k !== kernel) return;
       if (k.status === 'dead' || k.status === 'restarting' || k.status === 'autorestarting') abortAll(k.status === 'dead' ? 'dead' : 'restarted');
@@ -171,8 +181,10 @@
     fut.onIOPub = (msg) => {
       const t = msg.header.msg_type, c = msg.content;
       if (t === 'stream') onMsg('output', { output_type: 'stream', name: c.name, text: c.text });
-      else if (t === 'execute_result' || t === 'display_data' || t === 'update_display_data') {
-        onMsg('output', { output_type: t === 'update_display_data' ? 'display_data' : t, data: c.data || {}, execution_count: c.execution_count });
+      else if (t === 'update_display_data') { if (once(msg)) onMsg('output', updOut(msg)); } /* same display_id = update that display in place */
+      else if (t === 'execute_result' || t === 'display_data') {
+        const did = c.transient && c.transient.display_id;
+        onMsg('output', { output_type: t, data: c.data || {}, execution_count: c.execution_count, display_id: did || undefined });
       } else if (t === 'error') onMsg('output', { output_type: 'error', ename: c.ename, evalue: c.evalue, traceback: c.traceback || [] });
       else if (t === 'execute_input') onMsg('count', c.execution_count);
       else if (t === 'clear_output') onMsg('clear', c.wait);
@@ -194,6 +206,7 @@
   }
 
   const api = {
+    onDisplayUpdate: null, /* app sets: (output) => void, for updates to displays of earlier cells */
     connect, disconnect, start, restart, interrupt, execute,
     attach, onChange(f) { listeners.add(f); },
     state() {
