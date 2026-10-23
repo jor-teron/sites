@@ -12,7 +12,7 @@
 'use strict';
 
 /* Cache-bust tag, same as the ?v= on the scripts in demolisher.html. */
-const ART_VERSION = 'DMQ1a';
+const ART_VERSION = 'DMQ1b';
 const ART_DIR = 'assets/';
 
 /* Every sprite key = path under assets/ without ".svg". */
@@ -21,14 +21,16 @@ const ART_KEYS = [
   'hero/arm',
   'hero/body',
   'hero/head',
-  'hero/legs',
+  'hero/leg_back',
+  'hero/leg_front',
 
   // villain
   'villain/arm',
   'villain/body',
   'villain/cape',
   'villain/head',
-  'villain/legs',
+  'villain/leg_back',
+  'villain/leg_front',
   'villain/weapon',
 
   // enemies
@@ -36,17 +38,20 @@ const ART_KEYS = [
   'enemies/grunt_body',
   'enemies/grunt_gun',
   'enemies/grunt_head',
-  'enemies/grunt_legs',
+  'enemies/grunt_leg_back',
+  'enemies/grunt_leg_front',
   'enemies/scout_arm',
   'enemies/scout_body',
   'enemies/scout_gun',
   'enemies/scout_head',
-  'enemies/scout_legs',
+  'enemies/scout_leg_back',
+  'enemies/scout_leg_front',
   'enemies/trooper_arm',
   'enemies/trooper_body',
   'enemies/trooper_gun',
   'enemies/trooper_head',
-  'enemies/trooper_legs',
+  'enemies/trooper_leg_back',
+  'enemies/trooper_leg_front',
 
   // weapons
   'weapons/gun_grenade',
@@ -209,6 +214,26 @@ const Art = {
     g.fillRect(0, 0, c.width, c.height);
     g.globalCompositeOperation = 'destination-in';
     g.drawImage(s.c, 0, 0);
+    t = { c, w: s.w, h: s.h };
+    this.tints[id] = t;
+    return t;
+  },
+
+  /* Solid white copy of a sprite (same alpha shape), drawn over a part for the hit flash. */
+  silhouette(key) {
+    const id = key + '|sil';
+    let t = this.tints[id];
+    if (t) return t;
+    const s = this.sprites[key];
+    if (!s) return null;
+    const c = document.createElement('canvas');
+    c.width = s.c.width;
+    c.height = s.c.height;
+    const g = c.getContext('2d');
+    g.drawImage(s.c, 0, 0);
+    g.globalCompositeOperation = 'source-in';
+    g.fillStyle = '#ffffff';
+    g.fillRect(0, 0, c.width, c.height);
     t = { c, w: s.w, h: s.h };
     this.tints[id] = t;
     return t;

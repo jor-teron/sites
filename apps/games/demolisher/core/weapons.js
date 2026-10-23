@@ -107,6 +107,7 @@ function fire() {
     return;
   }
   player.fireCooldown = w.cooldown;
+  player.shots = (player.shots || 0) + 1;   // animation only: counts real shots
   if (ammoRemaining[currentWeapon] !== Infinity) {
     ammoRemaining[currentWeapon]--;
     updateAmmoUI();

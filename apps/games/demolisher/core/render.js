@@ -124,10 +124,10 @@ function drawTargets() {
 */
 function drawEnemies() {
   for (const e of enemies) {
-    if (!e.alive) continue;
     const sx = e.body.position.x - camX;
     const sy = e.body.position.y - camY;
     if (sx < -60 || sx > CW + 60 || sy < -60 || sy > CH + 60) continue;
+    if (!e.alive) { drawDeadEnemyArt(e, sx, sy); continue; }   // death fall + fade (sprites only)
     const art = drawEnemyArt(e, sx, sy);
     if (!art) {
       ctx.fillStyle = '#c0392b';
@@ -158,7 +158,7 @@ function drawPlayer() {
   const armX = sx + Math.cos(aimAngle) * 16;
   const armY = sy - 4 + Math.sin(aimAngle) * 16;
   if (drawPlayerArt(sx, sy)) {
-    drawAimTick(armX + Math.cos(aimAngle) * 12, armY + Math.sin(aimAngle) * 12);   // from the muzzle
+    if (player.hp > 0) drawAimTick(armX + Math.cos(aimAngle) * 12, armY + Math.sin(aimAngle) * 12);   // from the muzzle
     return;
   }
   ctx.fillStyle = '#2a5a9a';
@@ -340,6 +340,7 @@ function render() {
   drawExit();
   drawTargets();
   drawEnemies();
+  drawVillainDebug();
   drawProjectiles();
   drawPlayer();
   drawExplosions();
