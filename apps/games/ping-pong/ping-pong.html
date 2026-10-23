@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Ping Pong PGR1a</title>
+  <title>Ping Pong PGQ1a</title>
   <!--
     ========================================================================
     Ping Pong — HTML + CSS + JS (split: ui/ = CSS, DOM, HUD, hub bridge; core/ = config + game logic;
-    assets/models/ = code-drawn net, paddle, ball; plain scripts, load order below)
+    assets/ = code-drawn themes (court + effects), paddle / ball models, net; plain scripts, load order below)
     Author: Jor Teron
     Description:
       Classic two-paddle Pong on a canvas that fills the page. Left paddle is
@@ -16,11 +16,14 @@
       drag on the left half moves the left paddle, a touch on the right half
       makes it a 2-player match (PONG_CONFIG.touch), tap = start / resume.
       Cache-busting: bump ?v= on the CSS / JS below when they change.
+      Themes: 5 code-drawn themes (assets/themes/, registered in core/registry.js) chosen with the
+      Themes button (ui/picker.js); the pick is saved in localStorage "ping-pong.theme".
       In the sites hub the own title / score bar hides and the hub header
       shows name, version, score and New Game (hub bridge in ui/hub.js).
     ========================================================================
   -->
-  <link rel="stylesheet" href="ui/ping-pong.css?v=PGR1a" />
+  <link rel="stylesheet" href="ui/ping-pong.css?v=PGQ1a" />
+  <link rel="stylesheet" href="ui/picker.css?v=PGQ1a" />
 </head>
 <body>
   <!-- Own bar: title + live score (hidden inside the hub) -->
@@ -35,17 +38,36 @@
     <button type="button" id="pause-btn" aria-label="Pause">⏸</button>
   </div>
 
+  <!-- Theme picker: button (top-left, out of the flow) + panel; filled by ui/picker.js -->
+  <button type="button" id="theme-btn" data-pp-ui aria-haspopup="dialog" aria-expanded="false">Themes</button>
+  <div id="theme-panel" class="hidden" data-pp-ui>
+    <div id="theme-sheet" role="dialog" aria-modal="true" aria-labelledby="theme-title">
+      <div class="head"><h2 id="theme-title">Themes</h2><button type="button" id="theme-close">✕</button></div>
+      <div id="theme-list"></div>
+    </div>
+  </div>
+
   <!-- Plain scripts; the order matters (shared globals, top-level code runs as each loads) -->
-  <script src="core/config.js?v=PGR1a"></script>
-  <script src="core/state.js?v=PGR1a"></script>
-  <script src="ui/dom.js?v=PGR1a"></script>
-  <script src="assets/models/net.js?v=PGR1a"></script>
-  <script src="assets/models/paddle.js?v=PGR1a"></script>
-  <script src="assets/models/ball.js?v=PGR1a"></script>
-  <script src="core/ai.js?v=PGR1a"></script>
-  <script src="core/game.js?v=PGR1a"></script>
-  <script src="core/input.js?v=PGR1a"></script>
-  <script src="ui/hub.js?v=PGR1a"></script>
-  <script src="core/main.js?v=PGR1a"></script>
+  <script src="core/config.js?v=PGQ1a"></script>
+  <script src="core/registry.js?v=PGQ1a"></script>
+  <script src="core/state.js?v=PGQ1a"></script>
+  <script src="ui/dom.js?v=PGQ1a"></script>
+  <script src="assets/models/shared.js?v=PGQ1a"></script>
+  <script src="assets/models/net.js?v=PGQ1a"></script>
+  <script src="assets/models/paddle.js?v=PGQ1a"></script>
+  <script src="assets/models/ball.js?v=PGQ1a"></script>
+  <script src="assets/themes/base.js?v=PGQ1a"></script>
+  <script src="assets/themes/classic.js?v=PGQ1a"></script>
+  <script src="assets/themes/neon.js?v=PGQ1a"></script>
+  <script src="assets/themes/tabletennis.js?v=PGQ1a"></script>
+  <script src="assets/themes/space.js?v=PGQ1a"></script>
+  <script src="assets/themes/ice.js?v=PGQ1a"></script>
+  <script src="ui/fx.js?v=PGQ1a"></script>
+  <script src="core/ai.js?v=PGQ1a"></script>
+  <script src="core/game.js?v=PGQ1a"></script>
+  <script src="core/input.js?v=PGQ1a"></script>
+  <script src="ui/picker.js?v=PGQ1a"></script>
+  <script src="ui/hub.js?v=PGQ1a"></script>
+  <script src="core/main.js?v=PGQ1a"></script>
 </body>
 </html>

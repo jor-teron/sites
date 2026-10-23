@@ -1,7 +1,7 @@
 /*
  * ========================================================================
  * Ping Pong — ui/dom.js: DOM handles, page title, court fitting, HUD text and drawing.
- * Drawing of the net / paddles / ball is in assets/models/*.js (called from draw()).
+ * Drawing: the court + effects are the active theme (assets/themes/), paddles / ball are models (assets/models/); draw() calls both.
  * Loaded after core/state.js; the game loop (core/game.js) calls draw() and updateHud().
  * ========================================================================
  */
@@ -16,7 +16,28 @@ const pauseBtn = document.getElementById("pause-btn");
 
 // Title from APP info
 document.querySelector("h1").textContent = APP.name;
-document.title = APP.name + " PGR1a";
+document.title = APP.name + " PGQ1a";
+
+// --- Theme -> page chrome -------------------------------------------------
+
+/** Theme ui keys -> CSS custom properties (see :root fallbacks in ui/ping-pong.css). A theme without a key
+ *  (Classic has none) keeps the stylesheet default. */
+const THEME_VARS = {
+  bg: "--pp-bg", text: "--pp-text", hud: "--pp-hud", border: "--pp-border", accent: "--pp-accent",
+  btnBg: "--pp-btn-bg", btnText: "--pp-btn-text", panel: "--pp-panel", panelBorder: "--pp-panel-border", scrim: "--pp-scrim",
+};
+
+/** Called by PP.setTheme: paint the page chrome for the new theme, drop old effects, redraw. */
+PP.onTheme = function (th) {
+  const root = document.documentElement;
+  for (const k in THEME_VARS) {
+    if (th.ui[k]) root.style.setProperty(THEME_VARS[k], th.ui[k]);
+    else root.style.removeProperty(THEME_VARS[k]);
+  }
+  root.setAttribute("data-theme", th.id);
+  PP.fx.reset();
+  if (typeof refreshPicker === "function") refreshPicker();
+};
 
 /** Fit the court to the free space of the page / hub frame (DPR-sharp canvas). */
 function fitCourt() {
@@ -63,9 +84,9 @@ function updateHud() {
 
 /** Centered message on a dimmed court (pause / win). */
 function drawMessage(big, small) {
-  ctx.fillStyle = CFG.colors.shade;
+  ctx.fillStyle = PP.theme.colors.shade;
   ctx.fillRect(0, 0, COURT_W, COURT_H);
-  ctx.fillStyle = CFG.colors.message;
+  ctx.fillStyle = PP.theme.colors.message;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.font = "700 56px system-ui, sans-serif";
@@ -78,18 +99,25 @@ function drawMessage(big, small) {
 
 
 function draw() {
-  ctx.fillStyle = CFG.colors.court;
-  ctx.fillRect(0, 0, COURT_W, COURT_H);
+  const th = PP.theme;
+  const e = { W: COURT_W, H: COURT_H, t: PP.fx.t, fx: PP.fx };
+  const ball = { x: ballX, y: ballY, r: BALL_R };
 
-  // Dashed center net (assets/models/net.js)
-  drawNet(ctx);
+  // Court, lines and net (the theme: assets/themes/*.js)
+  th.drawCourt(ctx, e);
 
-  // Paddles (assets/models/paddle.js)
-  drawPaddle(ctx, PADDLE_MARGIN, leftY, PADDLE_W, PADDLE_H);
-  drawPaddle(ctx, COURT_W - PADDLE_MARGIN - PADDLE_W, rightY, PADDLE_W, PADDLE_H);
+  // Trail / bounce shadow, under the pieces (the theme)
+  if (!winner) th.drawUnder(ctx, e, ball);
 
-  // Ball (hidden once the match is over) (assets/models/ball.js)
-  if (!winner) drawBall(ctx, ballX, ballY, BALL_R);
+  // Paddles (assets/models/paddle.js, coloured by the theme)
+  PP.drawPaddle(ctx, PADDLE_MARGIN, leftY, PADDLE_W, PADDLE_H, "L");
+  PP.drawPaddle(ctx, COURT_W - PADDLE_MARGIN - PADDLE_W, rightY, PADDLE_W, PADDLE_H, "R");
+
+  // Ball (hidden once the match is over) (assets/models/ball.js, coloured by the theme)
+  if (!winner) PP.drawBall(ctx, ballX, ballY, BALL_R);
+
+  // Hit effects, over the pieces (the theme)
+  th.drawOver(ctx, e);
 
   if (winner) {
     const big = twoP ? (winner === "L" ? CFG.text.p1Wins : CFG.text.p2Wins)

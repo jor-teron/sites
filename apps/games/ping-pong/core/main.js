@@ -7,6 +7,7 @@
 
 // --- Boot ---------------------------------------------------------------
 
+PP.setTheme(PP.store.get(CFG.themes.key) || CFG.themes.default, false);   // saved pick (unknown id -> first theme)
 fitCourt();
 serve(CFG.ball.firstServeDir);
 updateHud();

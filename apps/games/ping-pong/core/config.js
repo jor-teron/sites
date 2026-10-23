@@ -106,6 +106,13 @@ const PONG_CONFIG = {
     dash: [10, 12],     // dash pattern [on, off]
   },
 
+  // Themes (cosmetic only: court, colours, effects; gameplay never changes). Themes live in assets/themes.
+  themes: {
+    key: "ping-pong.theme",   // localStorage key for the chosen theme
+    default: "classic",       // theme id used when nothing (valid) is saved
+    text: { button: "Themes", title: "Choose a theme", close: "Close" },
+  },
+
   // Key bindings — matched against KeyboardEvent.code OR .key.
   // Hub / phone controller: D-pad = arrows, A = Space, Start = Enter, Select = Escape.
   keys: {

@@ -30,6 +30,7 @@ function clearKeys() {
  * Pause (Space / A): pause / resume. Restart (Esc / R): full match reset.
  */
 function onKeyDown(e) {
+  if (e.target && e.target.closest && e.target.closest("[data-pp-ui]")) return;   // theme button / panel: not a game key
   if (e.code) keys[e.code] = true;
   if (e.key) keys[e.key] = true;
   if (keyIn(CFG.keys.up, e) || keyIn(CFG.keys.down, e)) {
