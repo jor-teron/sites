@@ -1,6 +1,6 @@
-20261023o
-hub-shell-v93
-AH4
+20261023p
+hub-shell-v94
+AH5
 2026-10-23 IST
 
 # hub/build.txt: the current Hub build, one place.
