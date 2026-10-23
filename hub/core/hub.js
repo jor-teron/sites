@@ -352,7 +352,12 @@
     // opts.hash: open the app on that #hash (e.g. Settings #about; hub_ctx_menus.js); an app that
     // is already open just moves to it
     const hash = opts.hash ? '#' + String(opts.hash).replace(/^#/, '') : '';
-    const toHash = (f) => { try { if (hash && f.contentWindow.location.hash !== hash) f.contentWindow.location.hash = hash; } catch (_) { /* cross-origin */ } };
+    const toHash = (f) => {
+      try { if (hash && f.contentWindow.location.hash !== hash) f.contentWindow.location.hash = hash; }
+      catch (_) {   // file:// (opaque origins): the hash cannot be read, but the frame can still be pointed at the same page + hash (hashchange only, no reload)
+        try { if (hash) f.contentWindow.location.replace(new URL(frameUrlFor(app.entryUrl) + hash, location.href).href); } catch (__) { /* ignore */ }
+      }
+    };
     if (wmOn()) {   // Desktop mode: own window (focuses the existing one; opts.newInstance = another); hash via HubWM.onActive
       setOpen(false);
       const had = !opts.newInstance && window.HubWM.list().some((x) => x.key === app.entryUrl);
@@ -524,6 +529,16 @@
     btn.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); open({ newInstance: true }); } });
   }
 
+  /** AH2: a category (menu header, ctx menu) opens the App Hub on that category's page
+   *  (apps/system/apphub/#cat=<Category>): a window in Desktop mode, the frame in Phone mode.
+   *  The legacy pages in CAT_PAGES still load for old deep links / saved sessions (hash id, last app). */
+  const APPHUB_ENTRY = 'apps/system/apphub/';
+  function openCat(cat, o) {
+    let app = apps.find((a) => a.entryUrl === APPHUB_ENTRY);
+    if (!app) { app = { category: 'System', name: 'App Hub', entryUrl: APPHUB_ENTRY, newTab: false, hidden: true }; registerApp(app); }
+    loadApp(app, Object.assign({}, o, { hash: 'cat=' + encodeURIComponent(cat) }));
+  }
+
   function renderMenu(apps) {
     menu.innerHTML = '';
     const { order, map } = groupByCategory(visibleSorted(apps));
@@ -551,7 +566,7 @@
         cname.className = 'cat-name';
         cname.textContent = cat;
         head.append(cimg, cname);
-        onOpenClick(head, (o) => loadApp(pageApp, o));
+        onOpenClick(head, (o) => openCat(cat, o));   // AH2: the App Hub's category page, not the legacy apps/<cat>/<cat>.html
         menu.appendChild(head);
         return;
       }
@@ -926,11 +941,10 @@
   // 'apphub' = App Hub). Only the Phone mode #home-btn (hub-gamebar.js) calls __hubHome
   // (H6-B1: the Desktop Show desktop button no longer does; it only minimises / restores).
   // Read at click time, so a change applies at once.
-  const APPHUB_URL = 'apps/system/apphub/';
   window.__hubHomeAppHub = () => { try { return localStorage.getItem('sites-hub.homeBtn') === 'apphub'; } catch (_) { return false; } };
   window.__hubHome = () => {
-    if (!window.__hubHomeAppHub() || (!wmOn() && currentEntry === APPHUB_URL)) { goHome(); return; }   // App Hub already showing → the real home
-    window.__hubOpenApp(APPHUB_URL);
+    if (!window.__hubHomeAppHub() || (!wmOn() && currentEntry === APPHUB_ENTRY)) { goHome(); return; }   // App Hub already showing → the real home
+    window.__hubOpenApp(APPHUB_ENTRY);
   };
   window.__hubCurrentEntry = () => currentEntry;   // R56: Phone mode 'an app is open' signal (hub_update.js idleNow)
   // hub_link.js: "Open in…" a receiver app — the frame in Phone mode; in Desktop mode that
@@ -956,6 +970,9 @@
   /** hub_flyout.js: open an app picked in a category's flyout, as if from that category page. */
   window.__hubFly = {
     catPages: CAT_PAGES,
+    openCat,
+    /** AH2: page url of a category in the App Hub (new tab / copy link); not for loadApp. */
+    catUrl: (cat) => frameUrlFor(APPHUB_ENTRY) + '#cat=' + encodeURIComponent(cat),
     openFromCat(cat, entryUrl, name, newTab, opts) {
       entryUrl = normalizeEntryUrl(entryUrl);
       if (!entryUrl) return;

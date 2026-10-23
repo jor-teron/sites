@@ -10,6 +10,9 @@
  *               on file:// SITES_CSV is used directly. Paths are resolved like hub_flyout.js.
  *   favourites  apps/favorite/favorite-apps.csv, in that file's order.
  * Routing: '' = home, '#cat=<name>' = that category's page (hashchange: browser back + deep links).
+ * AH2: the Hub's category rows (Start menu / Phone Home menu, hub.js openCat) open this page at
+ * #cat=<Category> instead of the old apps/<cat>/<cat>.html pages (those stay for old deep links).
+ * Shift+click / middle-click on an app = another window in Desktop mode, like the old pages.
  * Open: parent.__hubFly.openFromCat (same-origin Hub, as the Start flyout does); otherwise a
  * {type:'hub-open-app', url, name} message to the Hub (file://, as T1 / category pages do);
  * standalone (no Hub) a friendly message with a link to the Hub.
@@ -109,12 +112,12 @@
     }
     m.hidden = false; clearTimeout(msgT); msgT = setTimeout(() => { m.hidden = true; }, 6000);
   }
-  function openApp(app) {
+  function openApp(app, newInstance) {
     const hub = hubWin();
-    if (hub) { hub.__hubFly.openFromCat(app.cat, app.entryUrl, app.name, app.newTab); return; }
+    if (hub) { hub.__hubFly.openFromCat(app.cat, app.entryUrl, app.name, app.newTab, { newInstance: !!newInstance }); return; }
     if (inHub) {
       const url = new URL(ROOT + app.entryUrl, location.href).href;
-      try { window.parent.postMessage({ type: 'hub-open-app', url, name: app.name }, IS_FILE ? '*' : location.origin); return; } catch (_) { /* fall through */ }
+      try { window.parent.postMessage({ type: 'hub-open-app', url, name: app.name, newInstance: !!newInstance }, IS_FILE ? '*' : location.origin); return; } catch (_) { /* fall through */ }
     }
     say('App Hub opens apps inside the Hub. Open the Hub to launch \u201C' + app.name + '\u201D:', 'Open the Hub');
   }
@@ -137,7 +140,9 @@
     b.title = 'Open ' + app.name;
     b.appendChild(icon(app.icon, app.name));
     b.appendChild(el('span', 'nm', app.name));
-    b.addEventListener('click', () => openApp(app));
+    b.addEventListener('click', (e) => openApp(app, e.shiftKey));   // AH2: Shift+click / middle-click = another window (Desktop), as on the category pages
+    b.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });
+    b.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); openApp(app, true); } });
     return b;
   }
   function catCard(cat, count) {
