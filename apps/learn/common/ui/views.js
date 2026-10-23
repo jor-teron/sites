@@ -22,8 +22,13 @@ window.LRN = window.LRN || {};
         return h('button', { type: 'button', class: 'lrn-card', onclick: () => x.go('card', id) },
           h('span', { class: 'lrn-icon', 'aria-hidden': 'true' }, card.icon), h('b', null, card.title),
           card.summary ? h('span', { class: 'lrn-sub' }, card.summary) : null,
-          h('span', { class: 'lrn-tags' }, viewed[id] ? h('i', null, '\u2713 Viewed') : null, best ? h('i', null, 'Quiz ' + best.score + '/' + best.of) : null));
+          h('span', { class: 'lrn-tags' }, viewed[id] ? h('i', null, '\u2713 Viewed') : null, best ? h('i', null, 'Best ' + best.score + '/' + best.of) : null));
       });
+      if (x.allQuiz().length) {                                       // optional mixed check, always the last tile
+        const best = x.progress.best(x.MIXED);
+        cards.push(h('button', { type: 'button', class: 'lrn-card lrn-light', onclick: () => x.go('quiz') }, h('span', { class: 'lrn-icon', 'aria-hidden': 'true' }, '\uD83C\uDFAF'),
+          h('b', null, 'Quick check'), h('span', { class: 'lrn-sub' }, 'optional'), best ? h('span', { class: 'lrn-tags' }, h('i', null, 'best ' + best.score + '/' + best.of)) : null));
+      }
       return h('section', null, h('div', { class: 'lrn-grid' }, cards));
     },
 
@@ -38,32 +43,32 @@ window.LRN = window.LRN || {};
           h('p', { class: 'lrn-text' }, c.basics[i].text)));          // c.basics[i].drawing is parsed but not shown yet
         sec.append(h('div', { class: 'lrn-nav' },
           btn('\u25C0 Back', () => { st.step = i - 1; x.redraw(); }, '', i ? null : { disabled: true }),
-          last ? (c.quiz.length ? btn('Take the quiz \u25B6', () => x.go('quiz', c.id), 'primary') : btn('Done', () => x.go('home'), 'primary'))
+          last ? btn('Done', () => x.done(c.id), 'primary')
                : btn('Next \u25B6', () => { st.step = i + 1; x.redraw(); }, 'primary')));
       } else sec.append(h('p', { class: 'lrn-note' }, 'This card has no steps yet.'));
       if (x.mode() === 'expert') sec.append(h('div', { class: 'lrn-expert' }, h('h3', null, 'Expert detail'),
         c.expert.length ? h('ul', null, c.expert.map(s => h('li', null, s.text))) : h('p', { class: 'lrn-note' }, 'No extra detail for this card.')));
-      if (c.quiz.length && !last) sec.append(h('p', null, btn('Skip to the quiz', () => x.go('quiz', c.id), 'link')));
       return sec;
     },
 
+    // a quick check: this topic's questions (x.st.id set) or a mixed set (x.st.id null); starts straight under the header
     quiz(x) {
-      const c = x.card(), q = x.st.quiz, sec = h('section', null, title('Quiz: ' + c.title, c.icon));
+      const c = x.card(), id = c ? c.id : x.MIXED, q = x.st.quiz, sec = h('section');
       if (q.i >= q.qs.length) {                                       // result
-        const best = x.progress.best(c.id);
-        sec.append(h('p', { class: 'lrn-score', role: 'status' }, 'You scored ' + q.score + ' of ' + q.qs.length),
+        const best = x.progress.best(id), back = () => c ? x.go('card', c.id) : x.go('home');
+        sec.append(h('p', { class: 'lrn-score', role: 'status', tabindex: '-1', 'data-focus': '1' }, 'You scored ' + q.score + ' of ' + q.qs.length),
           h('p', { class: 'lrn-note' }, best ? 'Best: ' + best.score + ' of ' + best.of : ''),
-          h('div', { class: 'lrn-nav' }, btn('Try again', () => x.go('quiz', c.id)), btn('Review steps', () => x.go('card', c.id)), btn('All topics', () => x.go('home'), 'primary')));
+          h('div', { class: 'lrn-nav' }, btn('Done', back, 'primary')));
         return sec;
       }
       const cur = q.qs[q.i], done = q.picked != null;
-      sec.append(h('div', { class: 'lrn-count' }, 'Question ' + (q.i + 1) + ' of ' + q.qs.length), h('p', { class: 'lrn-text' }, cur.q),
+      sec.append(h('div', Object.assign({ class: 'lrn-count' }, done ? null : { tabindex: '-1', 'data-focus': '1' }), 'Question ' + (q.i + 1) + ' of ' + q.qs.length), h('p', { class: 'lrn-text' }, cur.q),
         h('div', { class: 'lrn-opts', role: 'group', 'aria-label': 'Answers' }, cur.options.map((o, k) => h('button', {
           type: 'button', class: 'lrn-opt' + (done && k === cur.answer ? ' right' : '') + (done && k === q.picked && k !== cur.answer ? ' wrong' : ''), disabled: done || null,
           onclick: () => { q.picked = k; if (k === cur.answer) q.score++; x.redraw(); } }, o))));
       if (done) {
         sec.append(h('p', { class: 'lrn-feedback', role: 'status' }, q.picked === cur.answer ? 'Correct!' : 'Not quite. The right answer is highlighted.'),
-          btn(q.i + 1 < q.qs.length ? 'Next question \u25B6' : 'See result', () => { q.i++; q.picked = null; if (q.i >= q.qs.length) x.progress.saveScore(c.id, q.score, q.qs.length); x.redraw(); }, 'primary', { 'data-focus': '1' }));
+          btn(q.i + 1 < q.qs.length ? 'Next question \u25B6' : 'See result', () => { q.i++; q.picked = null; if (q.i >= q.qs.length) x.progress.saveScore(id, q.score, q.qs.length); x.redraw(); }, 'primary', { 'data-focus': '1' }));
       }
       return sec;
     }
