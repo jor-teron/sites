@@ -1,9 +1,10 @@
 /*
  * ========================================================================
  * Ping Pong — ui/picker.js: the theme picker (button + panel), plain script.
- * A small "Themes" button opens a dialog with one card per registered theme; each card has a small canvas preview
- * drawn with the theme's real code (court, effects, and the paddle / ball models). Picking a card applies and saves
- * the theme (PP.setTheme -> localStorage "ping-pong.theme") and CLOSES the panel.
+ * A small "Themes" button opens a dialog with two sections: "Theme" (one card per registered theme) and "Ball" (one card
+ * per registered ball model). Each card has a small canvas preview drawn with the real code (theme: court + effects + the
+ * paddle / ball models; ball: the model + its own trail and particles on the active theme's court). Picking a card applies
+ * and saves it (PP.setTheme -> "ping-pong.theme", PP.setBall -> "ping-pong.ball"), independently, and CLOSES the panel.
  * Touch + mouse + keyboard: cards are buttons; Esc / the close button / a tap on the scrim close; Tab stays inside.
  * While the panel is open it keeps the keys from the game (keydown stops here); opening it pauses a running match.
  * Needs core/registry.js + the themes + ui/dom.js; loaded after core/input.js. The button is hidden in the hub
@@ -14,79 +15,137 @@
   const btn = document.getElementById("theme-btn");
   const panel = document.getElementById("theme-panel");
   const list = document.getElementById("theme-list");
+  const ballList = document.getElementById("ball-list");
   const closeBtn = document.getElementById("theme-close");
   const T = CFG.themes.text;
   if (!btn || !panel || !list) return;
 
   btn.textContent = T.button;
   document.getElementById("theme-title").textContent = T.title;
+  document.getElementById("theme-sec").textContent = T.section;
+  document.getElementById("ball-sec").textContent = CFG.balls.text.section;
   closeBtn.setAttribute("aria-label", T.close);
   closeBtn.title = T.close;
 
   const PW = 800, PH = 500;                 // preview court (court units); the canvas scales it down
-  let cards = [];
+  let cards = [], ballCards = [];
 
-  /** A frozen "fx" for a preview: a trail along a curve and a few particles, so the card shows the theme's effects. */
-  function previewFx(th) {
-    const fx = { t: 40, trail: [], parts: [] };
-    const n = th.trail ? th.trail.len : 0;
+  /** A frozen "fx" for a preview of theme th with ball model m: the trail along a curve, a hit burst and a few
+   *  emitted particles (all from the real effect code, seeded locally), and a fixed spin. */
+  function previewFx(th, m, cx, cy, span, hx, hy) {
+    const fx = { t: 40, trail: [], parts: [], spin: 0.6 };
+    const f = PP.ballFx(th, m);
+    const seed = { v: 7, rand() { this.v = (this.v * 16807) % 2147483647; return this.v / 2147483647; } };
+    fx.rand = function () { return seed.rand(); };
+    const n = f.trail ? f.trail.len : 0;
     for (let i = 0; i < n; i++) {
       const k = (i - n) / 14;
-      fx.trail.push({ x: 470 + k * 190, y: 250 - k * 70 + Math.sin(k * 3) * 14 });
+      fx.trail.push({ x: cx + k * span, y: cy + (18 - k * 70 + Math.sin(k * 3) * 14) * span / 190 });
     }
-    if (th.hit) {
-      const seed = { v: 7, rand() { this.v = (this.v * 16807) % 2147483647; return this.v / 2147483647; } };
-      fx.rand = function () { return seed.rand(); };
-      th.spawnHit(fx, 700 - 4, 330, "paddle", -1, 0);
-      fx.parts.forEach(function (p) { p.life = Math.round(p.max * 0.6); p.x += p.vx * 5; p.y += p.vy * 5; });
+    if (f.emit) {
+      for (let i = 0; i < 7; i++) {
+        const tp = fx.trail[Math.floor(i * (n - 1) / 6)] || { x: cx - 30 * i, y: cy };
+        PP.spawnEmit(f.emit, fx, tp.x, tp.y);
+      }
+      fx.parts.forEach(function (p) { p.life = Math.round(p.max * 0.7); });
+    }
+    if (f.hit) {
+      const from = fx.parts.length;
+      PP.spawnHit(f.hit, fx, hx, hy, "paddle", -1, 0);
+      fx.parts.slice(from).forEach(function (p) { p.life = Math.round(p.max * 0.6); p.x += p.vx * 5; p.y += p.vy * 5; });
     }
     return fx;
   }
 
-  /** Draw one theme preview into a canvas (DPR-aware). */
-  function drawPreview(cv, th) {
+  /** Size a preview canvas (DPR-aware) and return its context, scaled to the 800x500 preview court. */
+  function sizeCanvas(cv) {
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
     const cssW = cv.clientWidth || 160;
     cv.width = Math.round(cssW * dpr);
     cv.height = Math.round(cssW * dpr * PH / PW);
     const c = cv.getContext("2d");
     c.setTransform(cv.width / PW, 0, 0, cv.height / PH, 0, 0);
-    const fx = previewFx(th);
-    const e = { W: PW, H: PH, t: fx.t, fx: fx };
+    return c;
+  }
+
+  /** Theme preview: the court, paddles and the ACTIVE ball with its effects. */
+  function drawPreview(cv, th) {
+    const c = sizeCanvas(cv);
+    const m = PP.getBall(PP.ballId);
+    const fx = previewFx(th, m, 540, 232, 190, 696, 330);
+    const e = { W: PW, H: PH, t: fx.t, fx: fx, model: m };
     const ball = { x: 540, y: 232, r: BALL_R * 1.5 };
     th.drawCourt(c, e);
     th.drawUnder(c, e, ball);
     PP.drawPaddle(c, PADDLE_MARGIN, 150, PADDLE_W, 150, "L", th);
     PP.drawPaddle(c, PW - PADDLE_MARGIN - PADDLE_W, 290, PADDLE_W, 150, "R", th);
-    PP.drawBall(c, ball.x, ball.y, ball.r, th);
+    PP.drawBall(c, ball.x, ball.y, ball.r, th, fx, m);
     th.drawOver(c, e);
+  }
+
+  /** Ball preview: the model, magnified, with its own trail / particles, on the ACTIVE theme's court. */
+  function drawBallPreview(cv, m) {
+    const c = sizeCanvas(cv);
+    const th = PP.theme;
+    const Z = 2.5, bx = 450, by = 232;
+    const fx = previewFx(th, m, bx, by, 100, 530, 290);
+    const e = { W: PW, H: PH, t: fx.t, fx: fx, model: m };
+    const ball = { x: bx, y: by, r: BALL_R * 2.2 };
+    c.save();
+    c.beginPath();
+    c.rect(0, 0, PW, PH);
+    c.clip();
+    c.translate(PW / 2, PH / 2);                           // zoom around the court middle
+    c.scale(Z, Z);
+    c.translate(-PW / 2, -PH / 2);
+    th.drawCourt(c, e);
+    th.drawUnder(c, e, ball);
+    PP.drawBall(c, ball.x, ball.y, ball.r, th, fx, m);
+    th.drawOver(c, e);
+    c.restore();
+  }
+
+  function card(list, cls, attr, id, name, onPick) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "theme-card" + cls;
+    b.setAttribute(attr, id);
+    const cv = document.createElement("canvas");
+    const label = document.createElement("span");
+    label.textContent = name;
+    b.appendChild(cv);
+    b.appendChild(label);
+    b.addEventListener("click", onPick);
+    list.appendChild(b);
+    return { id: id, el: b, cv: cv };
   }
 
   function build() {
     list.textContent = "";
+    ballList.textContent = "";
     cards = PP.themes.map(function (th) {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "theme-card";
-      b.setAttribute("data-theme-id", th.id);
-      const cv = document.createElement("canvas");
-      const label = document.createElement("span");
-      label.textContent = th.name;
-      b.appendChild(cv);
-      b.appendChild(label);
-      b.addEventListener("click", function () { pick(th.id); });
-      list.appendChild(b);
-      return { id: th.id, el: b, cv: cv, th: th };
+      const c = card(list, "", "data-theme-id", th.id, th.name, function () { pickTheme(th.id); });
+      c.th = th;
+      return c;
+    });
+    ballCards = PP.balls.map(function (m) {
+      const c = card(ballList, " ball-card", "data-ball-id", m.id, m.name, function () { pickBall(m.id); });
+      c.m = m;
+      return c;
     });
     refreshPicker();
   }
 
-  /** Mark the active card (called from PP.onTheme too). */
+  /** Mark the active cards (called from PP.onTheme / PP.onBall too). */
   window.refreshPicker = function () {
     cards.forEach(function (c) { c.el.setAttribute("aria-pressed", String(PP.theme && PP.theme.id === c.id)); });
+    ballCards.forEach(function (c) { c.el.setAttribute("aria-pressed", String(PP.ballId === c.id)); });
   };
 
-  function paintPreviews() { cards.forEach(function (c) { drawPreview(c.cv, c.th); }); }
+  function paintPreviews() {
+    cards.forEach(function (c) { drawPreview(c.cv, c.th); });
+    ballCards.forEach(function (c) { drawBallPreview(c.cv, c.m); });
+  }
 
   function isOpen() { return !panel.classList.contains("hidden"); }
 
@@ -107,17 +166,15 @@
     if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
   }
 
-  function pick(id) {
-    PP.setTheme(id);
-    close();
-  }
+  function pickTheme(id) { PP.setTheme(id); close(); }
+  function pickBall(id) { PP.setBall(id); close(); }
 
   btn.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
   btn.addEventListener("click", function () { if (isOpen()) close(); else open(); });
   closeBtn.addEventListener("click", close);
   // a tap on the dimmed scrim (not on the sheet) closes
   panel.addEventListener("click", function (e) { if (e.target === panel) close(); });
-  // the document blocks touchmove for the game; let the card list scroll on a short screen
+  // the document blocks touchmove for the game; let the panel body scroll on a short screen
   panel.addEventListener("touchmove", function (e) { e.stopPropagation(); }, { passive: true });
 
   // While open: Esc closes, Tab stays inside the panel, and no key reaches the game.

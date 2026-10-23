@@ -17,6 +17,16 @@
     return t ? t.a : 1;
   };
 
+  /** Thin outline just inside radius r: at least ~1.3 device px wide, so a small ball stays readable on a small screen. */
+  PP.outline = function (ctx, x, y, r, color) {
+    const lw = Math.max(0.9, 1.3 / PP.unit(ctx));
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    ctx.beginPath();
+    ctx.arc(x, y, Math.max(0.1, r - lw / 2), 0, Math.PI * 2);
+    ctx.stroke();
+  };
+
   /** Turn on a glow of `blur` court units in `color` (call inside ctx.save() / ctx.restore()). */
   PP.glow = function (ctx, color, blur) {
     ctx.shadowColor = color;

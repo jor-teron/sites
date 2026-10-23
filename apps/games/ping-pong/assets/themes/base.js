@@ -12,8 +12,10 @@
  *   colors       { message, shade }  win / pause text on the court and the dimming behind it
  *   paddle       { L: {...}, R: {...} } colours for the paddle model (see assets/models/paddle.js)
  *   ball         colours for the ball model (see assets/models/ball.js)
- *   trail        { len, colors: [old … new], alpha, glow }  ball trail (drawn under the ball); null = none
+ *   trail        { len, colors: [old … new], alpha, glow, shape }  ball trail (drawn under the ball); null = none
+ *                (shape "flame": flickering tapered flame). A ball model can override trail / hit / shadow (core/registry.js)
  *   shadow       true: bounce shadow under the ball (Table Tennis)
+ *   emit (ball models only)  { every, kind, colors, size, life, speed, glow, rise }  a particle every `every` frames
  *   hit          { kind: "spark" | "ring" | "flake", count, colors, speed, life, size, glow, ring }  null = none
  *   drawCourt(ctx, e)   court background + lines + net   (required)
  */
@@ -24,11 +26,11 @@
     th.paddleColors = function (side) { return this.paddle[side === "R" ? "R" : "L"]; };
     th.ballColors = function () { return this.ball; };
     th.drawUnder = spec.drawUnder || function (ctx, e, b) {
-      if (this.trail) PP.drawTrail(ctx, e, b, this.trail);
-      if (this.shadow) PP.drawBounceShadow(ctx, e, b);
+      const f = PP.ballFx(this, e.model);           // the ball's own trail / shadow, else this theme's
+      if (f.trail) PP.drawTrail(ctx, e, b, f.trail);
+      if (f.shadow) PP.drawBounceShadow(ctx, e, b);
     };
     th.drawOver = spec.drawOver || function (ctx, e) { PP.drawParticles(ctx, e); };
-    th.spawnHit = spec.spawnHit || function (fx, x, y, kind, nx, ny) { PP.spawnHit(this.hit, fx, x, y, kind, nx, ny); };
     return th;
   };
 
@@ -42,8 +44,15 @@
       const a = (i + 1) / (n + 1);
       const col = tr.colors[Math.min(tr.colors.length - 1, Math.floor(a * tr.colors.length))];
       ctx.fillStyle = PP.alpha(col, (tr.alpha || 0.6) * a);
+      let x = pts[i].x, y = pts[i].y, rad = b.r * (0.3 + 0.7 * a);
+      if (tr.shape === "flame") {                   // flicker + sideways wobble that grows toward the tail
+        const q = pts[Math.min(n - 1, i + 1)], dx = q.x - x, dy = q.y - y, d = Math.hypot(dx, dy) || 1;
+        const w = Math.sin(e.fx.t * 0.45 + i * 1.9) * (1 - a) * b.r * 0.7;
+        x += -dy / d * w; y += dx / d * w;
+        rad *= 0.85 + 0.3 * Math.sin(e.fx.t * 0.6 + i * 2.3);
+      }
       ctx.beginPath();
-      ctx.arc(pts[i].x, pts[i].y, b.r * (0.3 + 0.7 * a), 0, Math.PI * 2);
+      ctx.arc(x, y, rad, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
@@ -78,6 +87,18 @@
         color: h.colors[i % h.colors.length], size: h.size * (0.6 + 0.6 * fx.rand()), glow: h.glow,
       });
     }
+    while (fx.parts.length > 90) fx.parts.shift();
+  };
+
+  /** One continuous-emission particle (a ball model's `emit` spec) at (x, y): frost, embers... */
+  PP.spawnEmit = function (em, fx, x, y) {
+    const ang = fx.rand() * Math.PI * 2, sp = em.speed * (0.3 + 0.7 * fx.rand());
+    const life = Math.round(em.life * (0.7 + 0.5 * fx.rand()));
+    fx.parts.push({
+      x: x + (fx.rand() - 0.5) * 6, y: y + (fx.rand() - 0.5) * 6, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - (em.rise || 0),
+      life: life, max: life, kind: em.kind, color: em.colors[Math.floor(fx.rand() * em.colors.length)],
+      size: em.size * (0.6 + 0.6 * fx.rand()), glow: em.glow,
+    });
     while (fx.parts.length > 90) fx.parts.shift();
   };
 

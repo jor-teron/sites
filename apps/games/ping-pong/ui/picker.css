@@ -59,15 +59,22 @@
 }
 #theme-close:hover, #theme-close:focus-visible { outline: none; background: rgba(128, 128, 128, 0.25); }
 
-/* Cards: 2 columns of theme previews (scrolls on a short screen) */
-#theme-list {
+/* Body: the "Theme" and "Ball" sections, stacked (side by side on a wide screen); scrolls on a short screen */
+#theme-body {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  padding: 6px 12px 14px;
+  grid-template-columns: 1fr;
+  gap: 4px 16px;
+  padding: 0 12px 14px;
   overflow-y: auto;
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
+}
+#theme-body h3 { margin: 8px 4px 6px; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; opacity: 0.75; }
+.card-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; align-content: start; }
+@media (min-width: 820px) {
+  #theme-sheet { width: min(940px, 100%); }
+  #theme-body { grid-template-columns: 3fr 2fr; align-items: start; }
+  #theme-body .card-list { grid-template-columns: repeat(2, 1fr); }
 }
 .theme-card {
   display: flex; flex-direction: column; align-items: stretch; gap: 6px;
@@ -82,4 +89,4 @@
 .theme-card canvas { width: 100%; height: auto; aspect-ratio: 8 / 5; border: 0; border-radius: 6px; pointer-events: none; }
 .theme-card:hover, .theme-card:focus-visible { outline: none; border-color: var(--pp-accent, #6ea8fe); }
 .theme-card[aria-pressed="true"] { border-color: var(--pp-accent, #6ea8fe); box-shadow: 0 0 0 2px var(--pp-accent, #6ea8fe) inset; }
-@media (max-height: 420px) { #theme-list { grid-template-columns: repeat(3, 1fr); } }
+@media (max-height: 420px) { .card-list { grid-template-columns: repeat(3, 1fr); } }
