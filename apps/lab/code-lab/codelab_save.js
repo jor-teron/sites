@@ -87,6 +87,9 @@
     if (isStr(v.kernel)) o.kernel = v.kernel;
     if (typeof v.rememberToken === 'boolean') o.rememberToken = v.rememberToken;
     if (isStr(v.token)) o.token = v.token;
+    if (typeof v.timeout === 'number' && isFinite(v.timeout) && v.timeout >= 0) o.timeout = v.timeout; /* run timeout, seconds, 0 = off */
+    if (v.onDisc === 'shutdown' || v.onDisc === 'keep' || v.onDisc === 'ask') o.onDisc = v.onDisc;
+    if (isStr(v.kid)) o.kid = v.kid; if (isStr(v.kurl)) o.kurl = v.kurl; if (isStr(v.kname)) o.kname = v.kname; /* the kernel this app started */
     return o;
   }
   function saveSettings(s) { const o = Object.assign({}, s); if (!o.rememberToken) delete o.token; return put(SKEY, JSON.stringify(o)); }

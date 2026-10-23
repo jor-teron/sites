@@ -68,3 +68,10 @@ input,select{font:inherit;font-size:14px;color:var(--fg);background:var(--card);
 #ver{color:var(--mut);font-size:13px}
 #toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:6px 14px;border-radius:16px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
 #toast.show{opacity:1}
+
+.set-row small{color:var(--mut);font-size:12px}
+.set-row select{max-width:50%}
+.cell.queued .cnt{font-style:italic}
+.cell .cnt.note{color:var(--warn)}
+.cell.queued .tools .run{background:var(--card);color:var(--fg);border-color:var(--line)}
+#kstate[data-status=lost]{color:var(--bad);font-weight:600}
