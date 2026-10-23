@@ -10,7 +10,7 @@ window.LRN = window.LRN || {};
     return e;
   };
   const btn = (label, onclick, cls, extra) => h('button', Object.assign({ type: 'button', class: 'lrn-btn ' + (cls || ''), onclick }, extra), label);
-  const title = (text, icon) => h('h2', { class: 'lrn-h', tabindex: '-1', 'data-focus': '1' }, icon ? h('span', { class: 'lrn-icon', 'aria-hidden': 'true' }, icon) : null, text);
+  const title = (text, icon, cls) => h('h2', { class: 'lrn-h ' + (cls || ''), tabindex: '-1', 'data-focus': '1' }, icon ? h('span', { class: 'lrn-icon', 'aria-hidden': 'true' }, icon) : null, text);
   L.h = h;
 
   L.views = {
@@ -24,12 +24,12 @@ window.LRN = window.LRN || {};
           card.summary ? h('span', { class: 'lrn-sub' }, card.summary) : null,
           h('span', { class: 'lrn-tags' }, viewed[id] ? h('i', null, '\u2713 Viewed') : null, best ? h('i', null, 'Quiz ' + best.score + '/' + best.of) : null));
       });
-      return h('section', null, title('Pick a topic'), h('div', { class: 'lrn-grid' }, cards));
+      return h('section', null, h('div', { class: 'lrn-grid' }, cards));
     },
 
     card(x) {
       const c = x.card(), st = x.st, n = c.basics.length, i = Math.min(st.step || 0, Math.max(n - 1, 0)), last = i >= n - 1;
-      const sec = h('section', null, title(c.title, c.icon));
+      const sec = h('section', null, title(c.title, c.icon, 'lrn-sr'));
       if (c.call) sec.append(h('div', { class: 'lrn-call', role: 'note' }, h('b', null, 'Call emergency services'), h('span', null, c.call)));
       if (n) {
         sec.append(h('div', { class: 'lrn-step' },
