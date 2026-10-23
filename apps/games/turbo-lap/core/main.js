@@ -34,5 +34,6 @@ window.TL = window.TL || {};
     TL.game.draw(ctx, view.W, view.H);
   }
   TL.game.init();
+  if (TL.picker) TL.picker.init();
   requestAnimationFrame(loop);
 })();

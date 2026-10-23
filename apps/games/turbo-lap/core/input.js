@@ -28,6 +28,7 @@ window.TL = window.TL || {};
   const kb = { steer: 0, gas: false, brake: false, nitro: false };
   I.setSource('keyboard', kb);
   const GAME_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space'];
+  const CONTROL_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ShiftLeft', 'ShiftRight'];
   function syncKb() {
     kb.steer = (down.has('ArrowRight') || down.has('KeyD') ? 1 : 0) - (down.has('ArrowLeft') || down.has('KeyA') ? 1 : 0);
     kb.gas = down.has('ArrowUp') || down.has('KeyW');
@@ -36,7 +37,10 @@ window.TL = window.TL || {};
   }
   window.addEventListener('keydown', e => {
     if (GAME_KEYS.includes(e.code)) e.preventDefault();
+    if (CONTROL_KEYS.includes(e.code)) I.fire('control');                     // takes over the circuit 00 autopilot
+    if (e.code === 'ArrowLeft') I.fire('prevCircuit'); else if (e.code === 'ArrowRight') I.fire('nextCircuit');   // title screen only
     if (!e.repeat) {
+      if (e.code === 'KeyC') I.fire('circuits');
       if (e.code === 'Enter' || e.code === 'NumpadEnter') I.fire('start');
       else if (e.code === 'KeyP' || e.code === 'Escape') I.fire('pause');
       else if (e.code === 'KeyF') I.fire('fps');
@@ -46,6 +50,13 @@ window.TL = window.TL || {};
   });
   window.addEventListener('keyup', e => { down.delete(e.code); syncKb(); });
   window.addEventListener('blur', () => { down.clear(); syncKb(); I.fire('blur'); });
+
+  // touching the screen (outside the menus) also counts as taking control; the touch pads publish their own 'control' too
+  window.addEventListener('pointerdown', e => {
+    const t = e.target;
+    if (t && t.closest && (t.closest('#overlay') || (t.dataset && t.dataset.k === 'pause'))) return;
+    I.fire('control');
+  });
 
   // ---- gamepad (standard mapping) ----
   const gp = { steer: 0, gas: false, brake: false, nitro: false };
@@ -67,6 +78,7 @@ window.TL = window.TL || {};
     if (start && !prevStart) I.fire('pause');
     if (a && !prevA) I.fire('padA');
     if (back && !prevB) I.fire('padB');
+    if (gp.steer || gp.gas || gp.brake || gp.nitro) I.fire('control');
     prevStart = start; prevA = a; prevB = back;
   };
 })();

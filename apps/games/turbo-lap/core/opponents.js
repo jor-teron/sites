@@ -9,7 +9,7 @@ window.TL = window.TL || {};
     create(list) {
       const rnd = U.rng(42);
       return list.map(o => ({
-        isPlayer: false, name: o.name, color: o.color, speedF: o.speed, skill: o.skill,
+        isPlayer: false, name: o.name, color: o.color, speedF: o.speed, skill: o.skill, rubber: o.rubber,
         p: o.p, x: o.x, speed: 0, targetX: o.x, steerVis: 0, braking: false,
         bias: (rnd() - 0.5) * 0.3, wobbleF: 0.3 + rnd() * 0.5, phase: rnd() * 6.28, launch: 0.85 + rnd() * 0.25,
         finished: false, lap: 0, lapTimes: [], lapStart: 0
@@ -30,7 +30,7 @@ window.TL = window.TL || {};
         let target = CFG.maxSpeed * c.speedF * (1 - A.curveSlow * Math.abs(curve) * (1 - c.skill * 0.6));
         if (!c.finished) {
           const gap = player.p - c.p;                                  // >0: player ahead
-          target *= 1 + U.clamp(gap / (L * 0.15), -1, 1) * A.rubberBand;
+          target *= 1 + U.clamp(gap / (L * 0.15), -1, 1) * (c.rubber != null ? c.rubber : A.rubberBand);
         } else target *= 0.75;
         if (Math.abs(c.x) > 1) target = Math.min(target, CFG.offRoadLimit * 1.5);
 

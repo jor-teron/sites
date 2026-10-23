@@ -43,8 +43,26 @@ TL.CFG = {
     sprite: 0.35           // speed multiplier on hitting a roadside object
   },
 
+  // Circuits: 100 generated tracks (core/circuits.js). Circuit 50 is the hand-made Coastline Loop.
+  circuits: {
+    count: 100,
+    defaultCircuit: 0,       // first visit: circuit 00 (attract mode)
+    handMade: 50,            // circuit number that uses TL.TRACKS[0] (Coastline Loop) as-is
+    lengthMin: 0.4,          // length at circuit 00, as a multiple of the Coastline Loop
+    lengthMax: 1.6,          // length at circuit 99
+    // [last circuit, laps]
+    laps: [[9, 1], [29, 2], [54, 3], [79, 4], [99, 5]],
+    podium: 3,               // finishing this high counts as a win
+    curveMax: [2, 6, 7],     // strongest bend at circuit 00 / 50 / 99
+    hillMax: [15, 40, 70],   // biggest hill (segments of height) at circuit 00 / 50 / 99
+    slopeMax: [0.16, 0.28, 0.42],   // steepest average grade allowed (height segments per segment)
+    // Opponents at circuit 50 are exactly CFG.opponents / CFG.ai; they move by these amounts across the range
+    speedPer: 0.0011, skillPer: 0.0045, speedCap: [0.78, 0.99], skillCap: [0.25, 0.98],
+    rubber: [0.02, 0.04, 0.08]
+  },
+
   // Race
-  laps: 2,
+  laps: 2,                 // fallback only; each circuit sets its own lap count
   countdownStep: 0.9,      // seconds per 3-2-1 step
   gridSpacing: 5,          // segments between grid rows
   finishOverlayDelay: 1.6,

@@ -60,7 +60,7 @@ window.TL = window.TL || {};
       const pwid = ctx.measureText(String(pl.finished ? pl.finalPos : pl.pos)).width;
       text(ctx, '/' + G.racers.length, m + 14 * s + pwid, m + 70 * s, 22 * s, '#cfd8ff');
       text(ctx, 'LAP', m + 120 * s, m + 24 * s, 14 * s, '#9fb4ff');
-      text(ctx, Math.max(1, Math.min(CFG.laps, pl.lap)) + '/' + CFG.laps, m + 120 * s, m + 62 * s, 34 * s, '#fff');
+      text(ctx, Math.max(1, Math.min(G.laps, pl.lap)) + '/' + G.laps, m + 120 * s, m + 62 * s, 34 * s, '#fff');
       const cur = G.state === 'countdown' ? 0 : (pl.finished ? pl.lapTimes[pl.lapTimes.length - 1] : G.raceTime - pl.lapStart);
       const best = pl.lapTimes.length ? Math.min(...pl.lapTimes) : null;
       const rows = [['TIME', U.fmtTime(G.state === 'countdown' ? 0 : (pl.finished ? pl.finishTime : G.raceTime))],
@@ -69,7 +69,15 @@ window.TL = window.TL || {};
         text(ctx, k, m + 12 * s, m + (96 + i * 19) * s, 13 * s, '#9fb4ff');
         text(ctx, v, m + pw - 12 * s, m + (96 + i * 19) * s, 15 * s, '#fff', 'right');
       });
+      text(ctx, 'CIRCUIT ' + TL.circuits.pad2(G.circuit), m + 4 * s, m + ph + 20 * s, 15 * s, '#fff');
       ctx.restore();
+      if (G.demoActive && (G.state === 'race' || G.state === 'countdown')) {          // circuit 00 attract mode
+        const blink = 0.7 + 0.3 * Math.sin(G.t * 5);
+        ctx.globalAlpha = blink;
+        text(ctx, TL.touch && TL.touch.active ? 'AUTOPILOT · touch the screen to drive' : 'AUTOPILOT · press any control key to drive',
+          W / 2, H - 24 * s - ins.b, 20 * s, '#ffd400', 'center', '900');
+        ctx.globalAlpha = 1;
+      }
 
       // minimap (top-right, under FPS)
       const ms = 150 * s;
@@ -99,7 +107,7 @@ window.TL = window.TL || {};
         text(ctx, String(n), W / 2, H * 0.38, (90 + 50 * f) * s, ['#fff', '#2ee86b', '#ffd400', '#ff4040'][n] || '#fff', 'center', '900');
       } else if (G.goT > 0) {
         text(ctx, 'GO!', W / 2, H * 0.38, 120 * s, '#2ee86b', 'center', '900');
-      } else if (G.state === 'race' && pl.lap === CFG.laps && G.raceTime - pl.lapStart < 2.2 && CFG.laps > 1) {
+      } else if (G.state === 'race' && pl.lap === G.laps && G.raceTime - pl.lapStart < 2.2 && G.laps > 1) {
         text(ctx, 'FINAL LAP', W / 2, H * 0.3, 60 * s, '#ffd400', 'center', '900');
       } else if (G.state === 'finished' && G.panel !== 'finish') {
         text(ctx, 'FINISH!', W / 2, H * 0.34, 90 * s, '#fff', 'center', '900');
