@@ -1,9 +1,9 @@
 /* ============================================================
    FILE: modules/draftly-merge.js
    PROJECT: Draftly
-   ROLE: Mail merge engine (MM1, CSV only). No ribbon / DOM wiring here
+   ROLE: Mail merge engine (CSV, and Excel .xlsx since MM3). No ribbon / DOM wiring here
          (that is draftly-merge-ui.js).
-         - state: the CSV (header, rows), current row, settings
+         - state: the table (header, rows) of the CSV or of one sheet, current row, settings
          - data sources: Hub drive (shared/fs, no picker), picked file handle, file input
          - placeholders {{Column Name}} (trimmed, case-insensitive), {{#}} = row number
          - merged HTML of a row (values are inserted as text, never as HTML)
@@ -21,10 +21,11 @@ Draftly.merge = {
   maxRowsExport: 2000,       /* hard cap for "Export all" */
   confirmRows: 200,          /* ask before exporting more rows than this */
   rowToken: '#',             /* {{#}} = 1-based row number */
-  data: null,                /* { name, header, rows, delimiter, warnings, note, hash, stamp } or null */
+  data: null,                /* { name, kind: 'csv'|'xlsx', header, rows, delimiter, sheet, warnings, note, hash, stamp } or null */
+  sheets: [],                /* sheet names of the open workbook (empty for CSV); the picker shows when there are 2+ */
   source: null,              /* { kind: 'drive' | 'handle' | 'file', name, getFile(), ... } */
   row: 0,                    /* current row index (0-based) */
-  settings: { src: null, delim: 'auto', pattern: '', fmt: 'zip', row: 0 },
+  settings: { src: null, delim: 'auto', pattern: '', fmt: 'zip', row: 0, sheet: '' },
   changed: false,            /* the file on disk differs from what was loaded */
   error: '',                 /* last problem to show in the status line */
   errorCode: '',             /* 'access' | 'drive' | 'missing' (FsRef) | 'stale' (file from <input>) | '' */
@@ -51,6 +52,7 @@ Draftly.merge = {
         if (typeof raw.pattern === 'string') s.pattern = raw.pattern.slice(0, 200);
         if (raw.fmt === 'zip' || raw.fmt === 'combined') s.fmt = raw.fmt;
         if (isFinite(raw.row) && raw.row >= 0) s.row = Math.floor(raw.row);
+        if (typeof raw.sheet === 'string') s.sheet = raw.sheet.slice(0, 100);
       }
     } catch (e) { /* ignore a bad value */ }
     return M.settings;
@@ -68,40 +70,80 @@ Draftly.merge = {
   }
   function stampOf(file) { return file.size + ':' + file.lastModified; }
 
+  /* Bytes (the .xlsx hash covers the file itself): djb2 over a Uint8Array. */
+  function hashBytes(buf) {
+    var b = new Uint8Array(buf), h = 5381, i;
+    for (i = 0; i < b.length; i++) h = ((h << 5) + h + b[i]) | 0;
+    return b.length + ':' + (h >>> 0);
+  }
+
+  /* Table of an .xlsx buffer for the wanted sheet (name or ''): resolves { p, sheets, sheet, note }. */
+  function readWorkbook(buf, want) {
+    return Draftly.xlsx.open(buf).then(function (wb) {
+      var idx = wb.sheets.indexOf(want), note = '';
+      if (idx < 0) {
+        if (want) note = 'Sheet "' + want + '" is not in the file: showing "' + wb.sheets[0] + '"';
+        idx = 0;
+      }
+      return wb.table(idx).then(function (p) { return { p: p, sheets: wb.sheets, sheet: wb.sheets[idx], note: note }; });
+    });
+  }
+
   /* Read the source file again. Resolves { changed, rows, error }. keepRow: keep M.row where possible. */
   M.readSource = function (opts) {
     opts = opts || {};
     var src = M.source;
-    if (!src) return Promise.resolve({ error: 'No CSV chosen' });
+    if (!src) return Promise.resolve({ error: 'No file chosen' });
     return Promise.resolve().then(function () { return src.getFile(); }).then(function (file) {
       return file.arrayBuffer().then(function (buf) { return { file: file, buf: buf }; });
     }).then(function (r) {
-      var dec = Draftly.csv.decode(r.buf);
-      var h = hash(dec.text) + ':' + M.settings.delim;
+      var isX = Draftly.xlsx && Draftly.xlsx.kind(r.buf) !== 'other';
+      var dec = null, h;
+      if (isX) h = hashBytes(r.buf) + ':x:' + (M.settings.sheet || '');
+      else { dec = Draftly.csv.decode(r.buf); h = hash(dec.text) + ':' + M.settings.delim; }
       var same = M.data && M.data.hash === h && M.data.name === src.name;
       if (same && !opts.force) {
         M.data.stamp = stampOf(r.file); M.changed = false; M.error = ''; M.errorCode = '';
         return { changed: false };
       }
-      var p = Draftly.csv.parse(dec.text, M.settings.delim);
-      if (!p.ok) { M.error = p.error; M.changed = false; M.emit('error'); return { changed: false, error: p.error }; }
-      var prev = M.data;
-      M.data = { name: src.name, header: p.header, rows: p.rows, delimiter: p.delimiter, warnings: p.warnings,
-        note: dec.note, hash: h, stamp: stampOf(r.file) };
-      M.error = ''; M.errorCode = '';
-      M.changed = false;
-      if (!opts.keepRow) M.row = Math.min(Math.max(0, M.settings.row || 0), Math.max(0, p.rows.length - 1));
-      else M.row = Math.min(M.row, Math.max(0, p.rows.length - 1));
-      M.emit('data');
-      return { changed: true, first: !prev, rows: p.rows.length };
+      var pr;
+      if (isX) pr = readWorkbook(r.buf, M.settings.sheet);
+      else pr = Promise.resolve({ p: Draftly.csv.parse(dec.text, M.settings.delim), sheets: [], sheet: '', note: '' });
+      return pr.then(function (w) {
+        var p = w.p;
+        if (isX) M.sheets = w.sheets; else M.sheets = [];
+        if (!p.ok) {
+          if (opts.dropData) M.data = null;
+          M.error = p.error; M.changed = false; M.emit(opts.dropData ? 'data' : 'error');
+          return { changed: false, error: p.error };
+        }
+        var prev = M.data;
+        M.data = { name: src.name, kind: isX ? 'xlsx' : 'csv', header: p.header, rows: p.rows, delimiter: isX ? '' : p.delimiter,
+          sheet: w.sheet, warnings: p.warnings, note: isX ? w.note : dec.note, hash: h, stamp: stampOf(r.file) };
+        M.error = ''; M.errorCode = '';
+        M.changed = false;
+        if (!opts.keepRow) M.row = Math.min(Math.max(0, M.settings.row || 0), Math.max(0, p.rows.length - 1));
+        else M.row = Math.min(M.row, Math.max(0, p.rows.length - 1));
+        M.emit('data');
+        return { changed: true, first: !prev, rows: p.rows.length };
+      });
     }).catch(function (e) {
       /* A file from <input> cannot be read again after it changed on disk (the browser refuses). */
       var msg = e && e.name === 'NotReadableError' ? 'The file changed on disk: choose it again'
-        : (e && e.message) || 'Could not read the CSV';
+        : (e && (e.userMessage || e.message)) || 'Could not read the file';
       M.error = msg; M.errorCode = (e && e.code) || (e && e.name === 'NotReadableError' ? 'stale' : '');
       M.emit('error');
       return { error: msg, code: M.errorCode, stale: !!(e && e.name === 'NotReadableError') };
     });
+  };
+
+  /* Pick another sheet of the open workbook (remembered in the settings). */
+  M.setSheet = function (name) {
+    if (!M.source || M.sheets.indexOf(name) < 0) return Promise.resolve({ error: 'No such sheet' });
+    M.settings.sheet = name;
+    M.settings.row = 0; M.row = 0;
+    M.saveSettings();
+    return M.readSource({ force: true, dropData: true });
   };
 
   /* Cheap check for a change on disk (size + lastModified; a File from <input> can only throw). */
@@ -121,8 +163,10 @@ Draftly.merge = {
 
   /* Use a new source. kind 'file': a File object; 'handle': FileSystemFileHandle; 'drive': {drive, path, name}. */
   M.setSource = function (src, persist) {
+    var sameFile = !!(M.settings.src && M.settings.src.name === src.name);
     M.source = src;
     M.data = null;
+    M.sheets = [];
     M.row = 0;
     M.changed = false;
     M.error = ''; M.errorCode = '';
@@ -130,8 +174,9 @@ Draftly.merge = {
       M.settings.src = src.kind === 'drive' ? { kind: 'drive', drive: src.drive, path: src.path, name: src.name }
         : { kind: 'local', name: src.name };
       M.settings.row = 0;
+      if (!sameFile) M.settings.sheet = '';   /* a new workbook starts on its first sheet */
       M.saveSettings();
-    }
+    } else if (!sameFile) M.settings.sheet = '';
     return M.readSource({ force: true });
   };
   M.sourceFromFile = function (file) {

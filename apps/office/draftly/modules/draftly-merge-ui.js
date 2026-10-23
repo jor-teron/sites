@@ -1,7 +1,7 @@
 /* ============================================================
    FILE: modules/draftly-merge-ui.js
    PROJECT: Draftly
-   ROLE: Mail merge, screen part (MM1): the "Merge" ribbon tab, the CSV chooser
+   ROLE: Mail merge, screen part (MM1, MM3): the "Merge" ribbon tab, the CSV / Excel chooser
          (Hub drives first, no OS picker), field list, placeholder highlight and
          warnings, preview, live refresh, "Export all".
    TAB:  panelMerge (draftly.html) is a normal ribbon panel: draftly-ribbon.js shows it.
@@ -36,6 +36,8 @@ Draftly.mergeUi = { previewOn: false };
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many || one + 's'); }
   function docName() { return (Draftly.storage && Draftly.storage.currentName && Draftly.storage.currentName()) || 'Document'; }
   function isCsvName(n) { return /\.(csv|tsv|txt)$/i.test(n); }
+  function isXlsxName(n) { return /\.(xlsx|xlsm)$/i.test(n); }
+  function isDataName(n) { return isCsvName(n) || isXlsxName(n); }
 
   /* ---------------------------------------------------------- modal (same look as OfficeDialog) */
   function modal(title, wide) {
@@ -88,9 +90,10 @@ Draftly.mergeUi = { previewOn: false };
     var st = $('mmStatus'), d = M.data, s = M.settings.src;
     var txt, err = false;
     if (M.error) { txt = M.error; err = true; }
+    else if (d && d.kind === 'xlsx') txt = d.name + ' \u00b7 ' + (M.sheets.length > 1 ? '' : 'sheet ' + d.sheet + ' \u00b7 ') + plural(d.rows.length, 'row');
     else if (d) txt = d.name + ' \u00b7 ' + plural(d.rows.length, 'row') + ' \u00b7 ' + (DELIMS[d.delimiter] || 'delimiter');
-    else if (s) txt = 'Last CSV: ' + s.name + ' \u2014 press Refresh' + (s.kind === 'drive' ? '' : ' or choose it again');
-    else txt = 'No CSV chosen';
+    else if (s) txt = 'Last file: ' + s.name + ' \u2014 press Refresh' + (s.kind === 'drive' ? '' : ' or choose it again');
+    else txt = 'No file chosen';
     st.textContent = txt;
     st.title = txt;
     st.classList.toggle('mm-err', err);
@@ -103,15 +106,30 @@ Draftly.mergeUi = { previewOn: false };
     $('mmPrevBtn').disabled = !has || !U.previewOn || M.row <= 0;
     $('mmNextBtn').disabled = !has || !U.previewOn || M.row >= n - 1;
     $('mmCounter').textContent = has ? 'Row ' + (M.row + 1) + ' of ' + n : 'Row \u2013';
-    var dl = $('mmDelim');
+    var dl = $('mmDelim'), xl = !!(d && d.kind === 'xlsx') || (!d && M.sheets.length > 0);
     if (dl.value !== M.settings.delim) dl.value = M.settings.delim;
+    dl.hidden = xl;   /* the delimiter only means something for CSV */
+    renderSheetPick();
+  }
+
+  /* Sheet picker: only for workbooks with more than one sheet */
+  function renderSheetPick() {
+    var sel = $('mmSheetPick'), names = M.sheets, cur = (M.data && M.data.sheet) || M.settings.sheet || names[0] || '';
+    var sig = names.join('\u0001');
+    sel.hidden = names.length < 2;
+    if (sel.getAttribute('data-sig') !== sig) {
+      sel.textContent = '';
+      names.forEach(function (n) { var o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
+      sel.setAttribute('data-sig', sig);
+    }
+    if (names.indexOf(cur) >= 0 && sel.value !== cur) sel.value = cur;
   }
 
   /* ---------------------------------------------------------- fields list */
   function renderFields() {
     var menu = $('mmFieldsMenu');
     menu.textContent = '';
-    if (!M.data) { menu.appendChild(h('div', 'mm-empty', 'Choose a CSV first.')); return; }
+    if (!M.data) { menu.appendChild(h('div', 'mm-empty', 'Choose a CSV or Excel file first.')); return; }
     M.fieldNames().forEach(function (name) {
       var b = h('button', 'recent-item mm-field', name);
       b.type = 'button'; b.setAttribute('role', 'menuitem');
@@ -176,7 +194,7 @@ Draftly.mergeUi = { previewOn: false };
   function warnings() {
     var out = [];
     (U.unknown || []).forEach(function (n) {
-      out.push({ unknown: true, text: '{{' + n + '}} is not a column of ' + (M.data ? M.data.name : 'the CSV') });
+      out.push({ unknown: true, text: '{{' + n + '}} is not a column of ' + (M.data ? M.data.name : 'the data file') });
     });
     if (M.data) {
       M.data.warnings.forEach(function (w) { out.push({ text: w }); });
@@ -205,7 +223,7 @@ Draftly.mergeUi = { previewOn: false };
     renderStatus();
   });
 
-  /* ---------------------------------------------------------- choose CSV */
+  /* ---------------------------------------------------------- choose file */
   function useSource(src) {
     return M.setSource(src).then(function (r) {
       if (r && r.error) toast(r.error);
@@ -216,7 +234,7 @@ Draftly.mergeUi = { previewOn: false };
   function pickFromComputer() {
     if (typeof window.showOpenFilePicker === 'function') {
       return window.showOpenFilePicker({ multiple: false,
-        types: [{ description: 'CSV', accept: { 'text/csv': ['.csv', '.tsv', '.txt'] } }] })
+        types: [{ description: 'CSV or Excel', accept: { 'text/csv': ['.csv', '.tsv', '.txt'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx', '.xlsm'] } }] })
         .then(function (hs) { return hs[0] ? useSource(M.sourceFromHandle(hs[0])) : null; })
         .catch(function (e) {
           if (e && e.name === 'AbortError') return null;
@@ -233,7 +251,7 @@ Draftly.mergeUi = { previewOn: false };
   }
 
   function openChooser() {
-    var m = modal('Choose a CSV file', true);
+    var m = modal('Choose a CSV or Excel file', true);
     var crumb = h('div', 'mm-crumb');
     var list = h('div', 'mm-files');
     var msg = h('div', 'dlg-message mm-pick-msg');
@@ -271,7 +289,7 @@ Draftly.mergeUi = { previewOn: false };
       if (!window.FsDrives) { note('Hub drives are not available in this window. Use \u201cBrowse this computer\u201d.'); return; }
       FsDrives.list().then(function (drives) {
         if (!drives.length) note('No drives yet. Mount a folder in the Hub drive (Files app), or use \u201cBrowse this computer\u201d.');
-        else note('Pick a drive, then the CSV file. A folder you mounted in the Hub appears here.');
+        else note('Pick a drive, then the CSV or Excel file. A folder you mounted in the Hub appears here.');
         drives.forEach(function (d) {
           row(d.name, 'drive', function () { enterDrive(d); }, d.kind === 'folder' ? 'folder' : d.kind === 'local' ? 'browser storage' : '');
         });
@@ -307,7 +325,7 @@ Draftly.mergeUi = { previewOn: false };
           if (it.kind === 'directory') {
             shown++;
             row(it.name, 'dir', function () { state.path.push(it.name); showDir(); });
-          } else if (isCsvName(it.name)) {
+          } else if (isDataName(it.name)) {
             shown++;
             row(it.name, 'file', function () {
               var ref = { drive: state.drive, path: state.path.join('/'), name: it.name };
@@ -316,7 +334,7 @@ Draftly.mergeUi = { previewOn: false };
             }, it.size ? Math.max(1, Math.round(it.size / 1024)) + ' KB' : '');
           }
         });
-        note(shown ? 'Pick a .csv file.' : 'No folders or CSV files here.');
+        note(shown ? 'Pick a .csv or .xlsx file.' : 'No folders, CSV or Excel files here.');
       }).catch(function (e) { note('Could not open this folder: ' + ((e && e.message) || e)); });
     }
 
@@ -324,7 +342,7 @@ Draftly.mergeUi = { previewOn: false };
       { label: 'Browse this computer\u2026', key: 'browse', fn: function () { m.close(); pickFromComputer(); } },
       { label: 'Cancel', key: 'cancel', fn: function () { m.close(); } }
     ]);
-    btns.browse.title = 'Fallback: pick a CSV with the system file dialog';
+    btns.browse.title = 'Fallback: pick a CSV or Excel file with the system file dialog';
     showDrives();
     return m;
   }
@@ -335,11 +353,11 @@ Draftly.mergeUi = { previewOn: false };
     if (!M.source && M.settings.src && M.settings.src.kind === 'drive') {
       M.source = M.sourceFromDrive(M.settings.src);
     }
-    if (!M.source) { if (!auto) toast('Choose a CSV first'); return Promise.resolve(); }
+    if (!M.source) { if (!auto) toast('Choose a CSV or Excel file first'); return Promise.resolve(); }
     var go = function () {
       return M.readSource({ keepRow: true }).then(function (r) {
-        if (r && r.changed && !r.first && M.data) setNotice('CSV updated: ' + plural(M.data.rows.length, 'row') + ', ' + plural(M.data.header.length, 'field'));
-        else if (!auto && r && !r.error && !r.changed) toast('CSV is up to date');
+        if (r && r.changed && !r.first && M.data) setNotice((M.data.kind === 'xlsx' ? 'Excel file' : 'CSV') + ' updated: ' + plural(M.data.rows.length, 'row') + ', ' + plural(M.data.header.length, 'field'));
+        else if (!auto && r && !r.error && !r.changed) toast((M.data && M.data.kind === 'xlsx' ? 'Excel file' : 'CSV') + ' is up to date');
         renderStatus();
         return r;
       });
@@ -389,7 +407,7 @@ Draftly.mergeUi = { previewOn: false };
     var head = $('mmHfHead'), foot = $('mmHfFoot');
     head.textContent = ''; foot.textContent = '';
     if (!has) {
-      doc.textContent = 'This CSV has no data rows yet.';
+      doc.textContent = 'This file has no data rows yet.';
     } else {
       doc.innerHTML = M.mergeHtml(pvBase, M.row, { mark: true });   /* values are text nodes: never markup */
       if (Draftly.hf && Draftly.hf.data) {
@@ -409,7 +427,7 @@ Draftly.mergeUi = { previewOn: false };
     var pv = $('mmPreview'), ws = $('workspace'), btn = $('mmPreviewBtn');
     if (on === U.previewOn) return;
     if (on) {
-      if (!M.data || !M.count()) { toast('Choose a CSV with data rows first'); return; }
+      if (!M.data || !M.count()) { toast('Choose a file with data rows first'); return; }
       if (Draftly.editor) Draftly.editor.saveSelection();
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
       pvBase = M.docHtml();
@@ -442,7 +460,7 @@ Draftly.mergeUi = { previewOn: false };
   }
 
   function exportDialog() {
-    if (!M.data || !M.count()) { toast('Choose a CSV with data rows first'); return; }
+    if (!M.data || !M.count()) { toast('Choose a file with data rows first'); return; }
     if (U.previewOn) setPreview(false);
     scan();
     var n = M.count(), tooMany = n > M.maxRowsExport;
@@ -471,7 +489,7 @@ Draftly.mergeUi = { previewOn: false };
     var ex = h('div', 'mm-example'); m.box.appendChild(ex);
     var unk = U.unknown || [];
     if (unk.length) m.box.appendChild(h('div', 'dlg-error mm-warn-line', 'Unknown fields stay as typed: ' + unk.map(function (u) { return '{{' + u + '}}'; }).join(', ')));
-    if (tooMany) m.box.appendChild(h('div', 'dlg-error', 'Too many rows (' + n + '). The limit is ' + M.maxRowsExport + ': split the CSV.'));
+    if (tooMany) m.box.appendChild(h('div', 'dlg-error', 'Too many rows (' + n + '). The limit is ' + M.maxRowsExport + ': split the data file.'));
     else if (n > M.confirmRows) m.box.appendChild(h('div', 'dlg-message mm-big', n + ' documents will take a while. You can cancel while it runs.'));
     function sync() {
       lab.hidden = fmt !== 'zip'; ex.hidden = fmt !== 'zip';
@@ -564,6 +582,14 @@ Draftly.mergeUi = { previewOn: false };
       M.settings.delim = this.value; M.saveSettings();
       if (M.source) M.readSource({ force: true, keepRow: true });
     });
+    $('mmSheetPick').addEventListener('change', function () {
+      var v = this.value;
+      M.setSheet(v).then(function (r) {
+        if (r && r.error) toast(r.error);
+        else if (M.data) setNotice('Sheet "' + M.data.sheet + '": ' + plural(M.data.rows.length, 'row') + ', ' + plural(M.data.header.length, 'field'));
+        renderStatus();
+      });
+    });
     $('mmFile').addEventListener('change', function () {
       var f = this.files && this.files[0];
       if (f) useSource(M.sourceFromFile(f));
@@ -607,11 +633,11 @@ Draftly.mergeUi = { previewOn: false };
     restore();
   }
 
-  /* Reconnect to the last CSV (Hub drive), or take one handed over as #drive=…&path=…&file=… */
+  /* Reconnect to the last file (Hub drive), or take one handed over as #drive=…&path=…&file=… */
   function restore() {
     var ref = window.FsRef && FsRef.parse(location.hash);
     var src = null;
-    if (ref && isCsvName(ref.name)) src = ref;
+    if (ref && isDataName(ref.name)) src = ref;
     else if (M.settings.src && M.settings.src.kind === 'drive' && window.FsRef) src = M.settings.src;
     if (!src) return;
     M.setSource(M.sourceFromDrive(src), ref === src).then(function () { renderStatus(); });
