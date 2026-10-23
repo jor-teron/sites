@@ -2,8 +2,9 @@
 // break / place it, and pick the block to place from a 7-slot hotbar.
 import * as THREE from 'three';
 import { raycast } from './raycast.js';
-import { AIR, HOTBAR, NAMES, FACE_TILES, solid } from './blocks.js';
-import { TILE } from './atlas.js';
+import { AIR, HOTBAR, NAMES, solid } from './blocks.js';
+import { FACE_TILES } from '../assets/models/block_models.js';
+import { TILE } from '../assets/textures/atlas.js';
 
 const REACH = 5;
 
