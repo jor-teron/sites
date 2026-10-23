@@ -1,0 +1,10 @@
+Invoice {{No}}
+
+Dear {{Name}},
+
+Thank you for your order, {{Company}} ({{City}}).
+The amount due is {{Amount}}.
+
+Note: {{Note}}
+
+(Row {{#}} of the CSV)

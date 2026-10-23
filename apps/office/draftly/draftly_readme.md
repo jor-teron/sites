@@ -47,6 +47,8 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `draftly_icon.png`: hub icon
 - `index.html`: opens `draftly.html`
 
+- Mail merge (MM1): `ui/merge.css`; `modules/draftly-csv.js` (CSV reader), `draftly-merge.js` (engine and settings), `draftly-zip.js` (stored zip writer), `draftly-merge-ui.js` (Merge tab, chooser, preview, Export all); samples in `samples/`
+
 ## 3. Behaviour rules
 - **Pages:** fixed A4 (21 × 29.7 cm) or Legal (8.5 × 14 in, 21.59 × 35.56 cm), portrait or landscape. An old saved Letter choice loads as A4. Margins: top 0.5, bottom 0.5, left 2, right 2 cm. Pages never stretch.
 - **Flow:** when a page is full, the overflowing lines move to the next page; a paragraph that crosses the bottom is split at the last line that fits. Deleting pulls content back. Split paragraphs are joined again when saving or exporting.
@@ -73,6 +75,18 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - Drawn inside the margins, so page breaks never move. Shown on screen, in Print and PDF; DOCX gets real Word header / footer parts (PAGE / NUMPAGES fields; the date is written as text).
 - Older documents with page numbers turned on start with {page} in the footer.
 
+### Mail merge (Merge tab, CSV only)
+- Write placeholders as `{{Column Name}}`. Matching ignores spaces around the name and upper/lower case. `{{#}}` is the row number (1, 2, 3 …) unless the CSV has a column called `#`.
+- **Data**: *Choose CSV* opens a chooser for the files of the Hub drives (Local, or a folder you mounted in the Hub drive; no file picker). *Browse this computer* is the fallback: it uses the browser's file picker. *Refresh* reads the file again. The delimiter is detected (`,` `;` or tab); the select can force one.
+  - The first row must be the header. Duplicate header names get ` (2)`, ` (3)`; short rows are padded and long rows trimmed, with a warning; the file may be UTF-8 (with or without BOM) or UTF-16 with BOM; anything else is read as Windows-1252, with a note.
+  - A file from the browser's file picker with a handle (Chrome / Edge) can be re-read for live refresh. A file from the old `<input type=file>` can't (the browser gives a snapshot): choose it again after you change it.
+- **Fields**: *Insert field* puts `{{Name}}` at the caret. Known placeholders are shaded green in the text, unknown ones red; unknown ones are also listed under the *warning* button and stay as typed in the output.
+- **Preview**: shows the document with one row's values (Previous / Next). It is a copy: the document is not changed. Values are shown as text (HTML in a cell is not run); line breaks in a cell are kept. While preview is open, and while the CSV is chosen from a drive, the file is checked every 3 seconds; if it changed, the fields and the preview update and the row number is kept. When preview is closed a *File changed* mark shows instead; press *Refresh*.
+- **Export all**: one DOCX per row in a `.zip`, or one combined DOCX with a page break between rows (header / footer fields such as page number and date stay blank in the combined file). File names come from a pattern, default `<document name>-{{#}}`; characters `\ / : * ? " < > |` and control characters become `_`, names are cut at 80 characters, and duplicates get ` (2)`, ` (3)`. Limit 2000 rows (split larger files); over 200 rows shows a note; progress and Cancel are shown.
+- Saved in `draftly_merge_settings`: the CSV name (and drive path), delimiter, file name pattern, export type and row number. The file content is not saved.
+- Try it: open `samples/merge_sample.csv` (copy it to a Hub drive), type or paste `samples/merge_template.txt` into a new document, then Merge → Choose CSV.
+- Not in MM1: PDF output, xlsx / ods / Google Sheets, images or conditions in the template. A placeholder split by formatting (e.g. half bold) is merged but not shaded.
+
 ## 4. Keyboard
 - Ctrl/Cmd+S saves (works anywhere on the page)
 - Ctrl/Cmd+B / I / U: bold, italic, underline (in the text)
@@ -91,6 +105,8 @@ Works inside the hub and responds to its phone D-pad, but the hub's key presses 
   - `draftly_nonprinting`: `1` / `0` (format marks)
   - `draftly_orientation`: `portrait` / `landscape`. Before 2026-10-21 it was saved under the literal key `undefined`; at start-up that value is copied to `draftly_orientation` (if empty) and the `undefined` key is removed, only when it holds `portrait` / `landscape` (other data under that key is left alone)
   - `draftly_margins`: old key, removed at start-up
+  - `draftly_merge_settings`: Merge tab settings (JSON: `src`, `delim`, `pattern`, `fmt`, `row`)
+  - `draftly-ribbon-tab`: last ribbon tab (now may be `merge`)
 - To reset, clear site data for the page. There is no delete button for single documents.
 
 ## 6. Errors
@@ -140,6 +156,7 @@ Messages show briefly at the bottom (2.2 s):
 - Old version after an update: hard-refresh.
 
 ## 11. Change log
+- 2026-10-23 IST: MM1 mail merge: Merge ribbon tab, CSV reader, live refresh, preview, Export all (zip / combined DOCX).
 - 2026-10-23 IST: orientation fix: saved only under `draftly_orientation` (config `storageKeyOrientation`); the old `undefined` key (written 2026-10-02 to 2026-10-21, when that config entry was missing) is migrated once at start-up and removed if it holds an orientation value. Invalid values are not saved.
 - 2026-10-21 IST: Draftly dialogs (rename and delete) replace browser prompts; Dark/Light mode item in the File menu.
 - 2026-10-21 IST: slimmer top row (36 px, 28 px controls, smaller brand); hub bridge `draftly-hub.js` (tabs and title in the hub title bar).

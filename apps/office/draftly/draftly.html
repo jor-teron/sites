@@ -38,6 +38,7 @@
   <link rel="stylesheet" href="ui/format.css?v=7">
   <link rel="stylesheet" href="ui/headerfooter.css?v=1">
   <link rel="stylesheet" href="ui/margins.css?v=1">
+  <link rel="stylesheet" href="ui/merge.css?v=1">
 </head>
 <body>
 
@@ -55,6 +56,7 @@
       <button type="button" class="ribbon-tab" role="tab" id="tabHome" aria-controls="panelHome" aria-selected="true" data-tab="home">Home</button>
       <button type="button" class="ribbon-tab" role="tab" id="tabInsert" aria-controls="panelInsert" aria-selected="false" tabindex="-1" data-tab="insert">Insert</button>
       <button type="button" class="ribbon-tab" role="tab" id="tabPage" aria-controls="pagePanel" aria-selected="false" tabindex="-1" data-tab="page">Page</button>
+      <button type="button" class="ribbon-tab" role="tab" id="tabMerge" aria-controls="panelMerge" aria-selected="false" tabindex="-1" data-tab="merge">Merge</button>
     </div>
     <input id="fileNameInput" class="file-name" type="text" spellcheck="false" title="Document name" aria-label="Document name">
     <button class="tool-btn" id="themeToggleBtn" title="Dark theme" aria-label="Toggle theme">
@@ -238,6 +240,40 @@
         <dt>Pages</dt><dd id="pageCountLabel">1 page</dd>
       </dl>
     </div>
+    <!-- MM1 Merge tab: CSV mail merge (draftly-merge-ui.js). Placeholders are written {{Column Name}}. -->
+    <div class="ribbon-panel mm-row" role="tabpanel" id="panelMerge" aria-labelledby="tabMerge" hidden>
+      <div class="tool-group mm-group" role="group" aria-label="Data">
+        <span class="mm-cap">Data</span>
+        <button class="tool-btn labeled" id="mmChooseBtn" title="Choose a CSV file from a Hub drive" aria-label="Choose CSV"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5a1.5 1.5 0 0 1 1.5-1.5H10l2 2.5h6.5A1.5 1.5 0 0 1 20 10v7.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/></svg><span>Choose CSV</span></button>
+        <button class="tool-btn labeled" id="mmRefreshBtn" title="Read the CSV file again" aria-label="Refresh CSV" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/></svg><span>Refresh</span></button>
+        <select id="mmDelim" class="size-select mm-delim" title="Delimiter" aria-label="Delimiter">
+          <option value="auto" selected>Auto</option>
+          <option value=",">Comma ,</option>
+          <option value=";">Semicolon ;</option>
+          <option value="&#9;">Tab</option>
+        </select>
+        <span class="mm-status" id="mmStatus" aria-live="polite">No CSV chosen</span>
+        <span class="mm-changed" id="mmChanged" hidden title="The file on disk is different from what is loaded">&#9679; File changed</span>
+      </div>
+      <div class="tool-group mm-group" role="group" aria-label="Fields">
+        <span class="mm-cap">Fields</span>
+        <button class="tool-btn labeled" id="mmFieldsBtn" title="Insert a field at the cursor: {{Column Name}}" aria-label="Insert field" aria-haspopup="menu" aria-expanded="false" aria-controls="mmFieldsMenu" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5H7.5A1.5 1.5 0 0 0 6 6.5v3A1.5 1.5 0 0 1 4.5 11 1.5 1.5 0 0 1 6 12.5v5A1.5 1.5 0 0 0 7.5 19H9"/><path d="M15 5h1.5A1.5 1.5 0 0 1 18 6.5v3a1.5 1.5 0 0 0 1.5 1.5 1.5 1.5 0 0 0-1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5H15"/></svg><span>Insert field</span></button>
+        <button class="tool-btn labeled mm-warn" id="mmWarnBtn" title="Warnings about the fields and the CSV" aria-label="Warnings" aria-haspopup="true" aria-expanded="false" aria-controls="mmWarnMenu" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 3.5 19h17z"/><path d="M12 10v4M12 16.5v.5"/></svg><span id="mmWarnLabel">Warnings</span></button>
+      </div>
+      <div class="tool-group mm-group" role="group" aria-label="Preview">
+        <span class="mm-cap">Preview</span>
+        <button class="tool-btn labeled" id="mmPreviewBtn" title="Show the document with the values of one row" aria-label="Preview" aria-pressed="false" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg><span>Preview</span></button>
+        <button class="tool-btn" id="mmPrevBtn" title="Previous row" aria-label="Previous row" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+        <span class="mm-counter" id="mmCounter" aria-live="polite">Row &ndash;</span>
+        <button class="tool-btn" id="mmNextBtn" title="Next row" aria-label="Next row" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+      </div>
+      <div class="tool-group mm-group" role="group" aria-label="Finish">
+        <span class="mm-cap">Finish</span>
+        <button class="tool-btn labeled accent" id="mmExportBtn" title="One DOCX per row (.zip) or one combined file" aria-label="Export all" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M5 19.5h14"/></svg><span>Export all</span></button>
+      </div>
+      <input type="file" id="mmFile" accept=".csv,.tsv,.txt,text/csv,text/plain" hidden>
+    </div>
+
   </nav>
 
   <!-- ============================================================
@@ -253,6 +289,20 @@
       </div>
     </div>
   </main>
+
+  <!-- MM1 merge preview: read-only overlay over the workspace, filled with a merged copy -->
+  <div class="mm-preview" id="mmPreview" role="region" aria-label="Merge preview" hidden>
+    <div class="mm-pv-note" id="mmPvNote" role="status" hidden></div>
+    <div class="mm-pv-scroll">
+      <div class="mm-sheet" id="mmSheet">
+        <div class="mm-hfbox mm-hf-head" id="mmHfHead"></div>
+        <div class="mm-doc" id="mmDoc"></div>
+        <div class="mm-hfbox mm-hf-foot" id="mmHfFoot"></div>
+      </div>
+    </div>
+  </div>
+  <div class="pop-menu mm-menu" id="mmFieldsMenu" role="menu" aria-label="Fields" hidden></div>
+  <div class="pop-menu mm-menu mm-warn-menu" id="mmWarnMenu" role="dialog" aria-label="Merge warnings" hidden></div>
 
   <!-- FT4 find bar (Ctrl/⌘+F, Ctrl+H) -->
   <div class="find-bar" id="findBar" role="search" aria-label="Find and replace" hidden>
@@ -304,7 +354,7 @@
   <script src="modules/draftly-flow.js"></script>
   <script src="modules/draftly-flow-blocks.js"></script>
   <script src="modules/draftly-marks.js"></script>
-  <script src="modules/draftly-export.js"></script>
+  <script src="modules/draftly-export.js?v=2"></script>
   <script src="modules/draftly-pdf.js"></script>
   <script src="modules/draftly-lists.js"></script>
   <script src="modules/draftly-view.js"></script>
@@ -321,7 +371,15 @@
   <script src="modules/draftly-docs.js"></script>
   <script src="modules/draftly-format.js"></script>
   <script src="modules/draftly-ribbon.js?v=5"></script>
-  <script src="modules/draftly-hub.js"></script>
+  <!-- MM1 mail merge: Hub drive access (shared/fs, plain scripts as in the Viewer), CSV, ZIP, engine, screen -->
+  <script src="../../../shared/fs/fs_drives.js?v=20261019r"></script>
+  <script src="../../../shared/fs/fs_ops.js?v=20261019r"></script>
+  <script src="../../../shared/fs/fs_ref.js?v=20261019r"></script>
+  <script src="modules/draftly-csv.js?v=1"></script>
+  <script src="modules/draftly-zip.js?v=1"></script>
+  <script src="modules/draftly-merge.js?v=1"></script>
+  <script src="modules/draftly-merge-ui.js?v=1"></script>
+  <script src="modules/draftly-hub.js?v=2"></script>
   <script src="modules/draftly-app.js?v=7"></script>
 </body>
 </html>

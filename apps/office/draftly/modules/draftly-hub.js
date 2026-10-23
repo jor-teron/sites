@@ -30,7 +30,8 @@ Draftly.hub = {
     { id: 'file', label: 'File', menu: true },
     { id: 'home', label: 'Home' },
     { id: 'insert', label: 'Insert' },
-    { id: 'page', label: 'Page' }
+    { id: 'page', label: 'Page' },
+    { id: 'merge', label: 'Merge' }
   ],
   menuInset: 8          /* px from the frame's top-left for the File menu */
 };
