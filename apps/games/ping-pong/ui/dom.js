@@ -16,7 +16,7 @@ const pauseBtn = document.getElementById("pause-btn");
 
 // Title from APP info
 document.querySelector("h1").textContent = APP.name;
-document.title = APP.name + " PGQ1a";
+document.title = APP.name + " PGQ1c";
 
 // --- Theme -> page chrome -------------------------------------------------
 
@@ -35,6 +35,12 @@ PP.onTheme = function (th) {
     else root.style.removeProperty(THEME_VARS[k]);
   }
   root.setAttribute("data-theme", th.id);
+  PP.fx.reset();
+  if (typeof refreshPicker === "function") refreshPicker();
+};
+
+/** Called by PP.setBall: new ball -> drop the old trail / particles and refresh the picker. */
+PP.onBall = function () {
   PP.fx.reset();
   if (typeof refreshPicker === "function") refreshPicker();
 };
@@ -113,7 +119,7 @@ function draw() {
   PP.drawPaddle(ctx, PADDLE_MARGIN, leftY, PADDLE_W, PADDLE_H, "L");
   PP.drawPaddle(ctx, COURT_W - PADDLE_MARGIN - PADDLE_W, rightY, PADDLE_W, PADDLE_H, "R");
 
-  // Ball (hidden once the match is over) (assets/models/ball.js, coloured by the theme)
+  // Ball (hidden once the match is over) (the active ball model, assets/models/balls/, coloured by the theme)
   if (!winner) PP.drawBall(ctx, ballX, ballY, BALL_R);
 
   // Hit effects, over the pieces (the theme)

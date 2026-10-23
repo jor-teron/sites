@@ -110,7 +110,14 @@ const PONG_CONFIG = {
   themes: {
     key: "ping-pong.theme",   // localStorage key for the chosen theme
     default: "classic",       // theme id used when nothing (valid) is saved
-    text: { button: "Themes", title: "Choose a theme", close: "Close" },
+    text: { button: "Themes", title: "Customize", section: "Theme", close: "Close" },
+  },
+
+  // Balls (cosmetic only: the collision radius stays ball.radius). Models live in assets/models/balls.
+  balls: {
+    key: "ping-pong.ball",    // localStorage key for the chosen ball
+    default: "classic",       // ball id used when nothing (valid) is saved
+    text: { section: "Ball" },
   },
 
   // Key bindings — matched against KeyboardEvent.code OR .key.
