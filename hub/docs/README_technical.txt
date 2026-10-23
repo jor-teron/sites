@@ -632,6 +632,8 @@ localStorage, prefix sites-hub.:
   homeBtn             Settings > Desktop, AH1-F1  '' = Home screen (default) | apphub
                       hub.js __hubHome (Phone Home button, Desktop
                       Show desktop then App Hub)
+                      H5-B2: Settings is fetched fresh, the shell may be the previous build: sec_desktop.js
+                      notes it when parent.__hubHome is missing. H5-B1: .menu button.app active/hover text = var(--text).
   startList           hub_flyout.js (R16c)        cached Start lists
   favorites           favorites.js                JSON list
   wallpaper           Settings > Wallpaper        id / pic: / mine / #hex

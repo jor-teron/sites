@@ -154,7 +154,7 @@ html, body {
 .menu button.app:hover,
 .menu button.app.active {
   background: var(--wm-hi, rgba(110, 168, 254, 0.16));
-  color: #fff;
+  color: var(--text);   /* H5-B1: was #fff, unreadable on the light highlight of the open app's row (Settings) */
 }
 .menu button.app .icon {
   width: 22px;
