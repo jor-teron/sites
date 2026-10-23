@@ -1,6 +1,6 @@
 /**
  * Dino Run — configuration.
- * Physics, speeds, spawn rates, sizes, colors, keys and on-screen text.
+ * Physics, speeds, spawn rates, sizes, keys and on-screen text (colors now live in assets/themes).
  * core/logic.js reads everything from DINO_RUN_CONFIG.
  */
 const DINO_RUN_CONFIG = {
@@ -70,24 +70,12 @@ const DINO_RUN_CONFIG = {
     clouds: 4,                 // number of clouds
   },
 
-  // Colors
-  colors: {
-    skyTop: '#1a1e26',         // background gradient top
-    skyBottom: '#0c1016',      // background gradient bottom
-    cloud: 'rgba(255,255,255,0.08)', // clouds
-    groundLine: '#5a6070',     // ground line
-    ground: '#161a22',         // ground fill
-    groundTick: 'rgba(255,255,255,0.08)', // ground ticks
-    dino: '#9aa0a6',           // dino body
-    eye: '#121418',            // dino eye
-    cactus: '#6b9b5a',         // cactus
-    bird: '#9aa0a6',           // bird body
-    birdWing: '#7a8088',       // bird wing
-    shieldRGB: '110,168,254',  // shield ring color (r,g,b)
-    barBg: 'rgba(255,255,255,0.1)', // shield bar background
-    barReady: '#6ea8fe',       // shield bar when ready
-    barCharging: '#3a4050',    // shield bar while charging
-  },
+  // Look & feel: dinos live in assets/models/dinos, themes (colors, background, obstacle looks) in assets/themes.
+  // Choices are cosmetic only — hitboxes and physics never change.
+  dinoKey: 'dino-run.dino',    // localStorage key for the chosen dino
+  themeKey: 'dino-run.theme',  // localStorage key for the chosen theme
+  defaultDino: 'classic',      // dino id used when nothing (valid) is saved
+  defaultTheme: 'classic',     // theme id used when nothing (valid) is saved
 
   // Input
   input: {

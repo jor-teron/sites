@@ -1,6 +1,7 @@
 /**
  * Dino Run — Chrome offline dino–style endless runner.
- * Game logic. Tunables come from DINO_RUN_CONFIG (core/config.js).
+ * Game logic only. Tunables come from DINO_RUN_CONFIG (core/config.js); everything visual (dinos, obstacles,
+ * background, themes) is drawn by the models in assets/ through DR.renderScene. Looks never touch gameplay.
  */
 (function () {
   'use strict';
@@ -17,7 +18,6 @@
   const CFG = DINO_RUN_CONFIG;
   const K = CFG.keys;
   const TX = CFG.text;
-  const CL = CFG.colors;
   const SP = CFG.spawn;
   const PH = CFG.physics;
   // Match a key event against a binding list by KeyboardEvent.code OR .key.
@@ -45,9 +45,15 @@
   let shieldT = 0, shieldCd = 0, jumpHeld = false;
   let last = 0, spawnAcc = 0;
   let clickStartAt = -Infinity; // time a tap/click started the game
-  let blink = 0;
+  let blink = 0, clock = 0, obstacleSerial = 0;
+  let dinoModel = null, theme = null;
+  const env = { W: 0, H: 0, groundY: 0, dist: 0, clock: 0, speed: 0, clouds: null };
 
-  best = Number(localStorage.getItem(BEST_KEY) || 0) || 0;
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage unavailable */ } },
+  };
+  best = Number(store.get(BEST_KEY) || 0) || 0;
   bestEl.textContent = 'HI ' + pad(best);
 
   function pad(n) {
@@ -84,6 +90,9 @@
       onGround: true,
       ducking: false,
       frame: 0,
+      animPhase: 0,
+      airT: 0,
+      deadT: 0,
     };
     obstacles = [];
     clouds = [];
@@ -114,7 +123,7 @@
       for (let i = 0; i < n; i++) {
         const h = SP.cactusMinH + Math.floor(Math.random() * SP.cactusRandH);
         const w = SP.cactusMinW + Math.floor(Math.random() * SP.cactusRandW);
-        obstacles.push({ type: 'cactus', x: x, y: groundY - h, w: w, h: h });
+        obstacles.push({ type: 'cactus', x: x, y: groundY - h, w: w, h: h, v: obstacleSerial++ });
         x += w + SP.cactusGap;
       }
     } else {
@@ -131,6 +140,7 @@
         w: SP.birdW,
         h: SP.birdH,
         flap: 0,
+        v: obstacleSerial++,
       });
     }
   }
@@ -154,7 +164,7 @@
     state = 'over';
     if (score > best) {
       best = Math.floor(score);
-      localStorage.setItem(BEST_KEY, String(best));
+      store.set(BEST_KEY, String(best));
       bestEl.textContent = 'HI ' + pad(best);
     }
     showOverlay(TX.gameOver, 'Score ' + pad(score), 'Best ' + pad(best) + ' — Start / Enter');
@@ -200,11 +210,23 @@
     if (dino.onGround) {
       dino.vy = JUMP_V;
       dino.onGround = false;
+      dino.airT = 0;
       jumpHeld = true;
     }
   }
 
+  /**
+   * True while the dino/theme picker is open (it owns the keyboard), or when Enter is pressed on one of its
+   * buttons (so keyboard users can open it). Space on the picker button is NOT taken: it keeps jumping.
+   */
+  function uiOwnsKey(e) {
+    if (DR.ui && DR.ui.isOpen && DR.ui.isOpen()) return true;
+    const t = e.target;
+    return !!(t && t.closest && t.closest('[data-dr-ui]') && (e.code === 'Enter' || e.key === 'Enter'));
+  }
+
   function onKey(e, down) {
+    if (uiOwnsKey(e)) return;
     if (e.code) keys[e.code] = down;
     if (e.key) keys[e.key] = down;
     if (down) {
@@ -221,7 +243,11 @@
       } else if (isKey(K.start, e)) { if (!e.repeat) onStartKey(); e.preventDefault(); }
       else if (isKey(K.restart, e)) { if (!e.repeat) toTitle(); e.preventDefault(); }
     } else {
-      if (isKey(K.jump, e)) jumpHeld = false;
+      if (isKey(K.jump, e)) {
+        jumpHeld = false;
+        // A focused picker button would otherwise be "clicked" by the Space keyup.
+        if (e.target && e.target.closest && e.target.closest('[data-dr-ui]')) e.preventDefault();
+      }
     }
   }
 
@@ -310,139 +336,81 @@
     blink += dt;
 
     dino.frame += dt * (dino.onGround && !dino.ducking ? speed * 0.02 : 0);
+    dino.animPhase += dt * (dino.onGround ? speed * 0.02 : 0);
+    if (!dino.onGround) dino.airT += dt;
 
     if (hitTest()) die();
   }
 
-  function roundRect(x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
-
-  function drawDino() {
-    const x = dino.x, y = dino.y, w = dino.w, h = dino.h;
-    ctx.fillStyle = CL.dino;
-    if (dino.ducking) {
-      roundRect(x, y + 4, w + 8, h - 4, 4);
-      ctx.fill();
-      // head
-      ctx.fillRect(x + w - 4, y, 18, 16);
-      ctx.fillStyle = CL.eye;
-      ctx.fillRect(x + w + 8, y + 4, 3, 3);
-    } else {
-      // body
-      ctx.fillRect(x + 8, y + 14, 22, 26);
-      // head
-      ctx.fillRect(x + 20, y, 22, 18);
-      // tail
-      ctx.fillRect(x, y + 20, 10, 8);
-      // eye
-      ctx.fillStyle = CL.eye;
-      ctx.fillRect(x + 34, y + 5, 4, 4);
-      // legs
-      ctx.fillStyle = CL.dino;
-      const leg = Math.floor(dino.frame) % 2;
-      if (dino.onGround) {
-        ctx.fillRect(x + 10, y + h - 2, 6, 10 + (leg ? 0 : -4));
-        ctx.fillRect(x + 22, y + h - 2, 6, 10 + (leg ? -4 : 0));
-      } else {
-        ctx.fillRect(x + 12, y + h - 2, 6, 8);
-        ctx.fillRect(x + 22, y + h - 2, 6, 8);
-      }
-      // arm
-      ctx.fillRect(x + 14, y + 22, 8, 4);
-    }
-    if (shieldT > 0) {
-      ctx.strokeStyle = 'rgba(' + CL.shieldRGB + ',' + (0.4 + 0.4 * Math.sin(blink * 20)) + ')';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(x + w / 2, y + h / 2, Math.max(w, h) * 0.7, 0, Math.PI * 2);
-      ctx.stroke();
-    }
+  /** The dino as the models see it: the (unchanged) hitbox plus animation state. Art only. */
+  function dinoView() {
+    const dead = state === 'over';
+    const v = {
+      x: dino.x, y: dino.y, w: dino.w, h: dino.h,
+      pose: dead ? 'dead' : dino.ducking ? 'duck' : dino.onGround ? 'run' : 'jump',
+      ducking: dino.ducking, phase: dino.animPhase, frame: dino.frame, t: clock, airT: dino.airT, deadT: dino.deadT,
+      vy: dino.vy, onGround: dino.onGround, shield: shieldT > 0,
+    };
+    // Only the classic dino keeps the ducking box on death; the others die standing (their art is drawn for a 48px box).
+    if (dead && dino.ducking && !dinoModel.rawDead) { v.ducking = false; v.h = DINO_H; v.y = groundY - DINO_H; }
+    return v;
   }
 
   function draw() {
-    // sky
-    const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, CL.skyTop);
-    g.addColorStop(1, CL.skyBottom);
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
-
-    // clouds
-    ctx.fillStyle = CL.cloud;
-    for (const c of clouds) {
-      ctx.beginPath();
-      ctx.ellipse(c.x, c.y, 28 * c.s, 10 * c.s, 0, 0, Math.PI * 2);
-      ctx.ellipse(c.x + 18 * c.s, c.y + 2, 20 * c.s, 8 * c.s, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // ground
-    ctx.strokeStyle = CL.groundLine;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, groundY + 0.5);
-    ctx.lineTo(W, groundY + 0.5);
-    ctx.stroke();
-    ctx.fillStyle = CL.ground;
-    ctx.fillRect(0, groundY, W, H - groundY);
-    // ground ticks
-    ctx.strokeStyle = CL.groundTick;
-    const off = (dist * 0.5) % 40;
-    for (let x = -off; x < W; x += 40) {
-      ctx.beginPath();
-      ctx.moveTo(x, groundY + 6);
-      ctx.lineTo(x + 12, groundY + 6);
-      ctx.stroke();
-    }
-
-    // obstacles
-    for (const o of obstacles) {
-      if (o.type === 'cactus') {
-        ctx.fillStyle = CL.cactus;
-        ctx.fillRect(o.x, o.y, o.w, o.h);
-        ctx.fillRect(o.x - 6, o.y + o.h * 0.35, 6, 8);
-        ctx.fillRect(o.x + o.w, o.y + o.h * 0.25, 6, 8);
-      } else {
-        ctx.fillStyle = CL.bird;
-        const flap = Math.sin(o.flap) > 0;
-        ctx.fillRect(o.x, o.y + 8, o.w, 12);
-        ctx.fillRect(o.x + 28, o.y + 4, 12, 10);
-        ctx.fillStyle = CL.birdWing;
-        if (flap) ctx.fillRect(o.x + 8, o.y, 16, 8);
-        else ctx.fillRect(o.x + 8, o.y + 14, 16, 8);
-      }
-    }
-
-    if (dino) drawDino();
-
-    // shield cooldown bar
-    if (state === 'play' || state === 'pause') {
-      const bw = 60, bh = 4;
-      const bx = 14, by = 14;
-      ctx.fillStyle = CL.barBg;
-      ctx.fillRect(bx, by, bw, bh);
-      const ready = shieldCd <= 0;
-      ctx.fillStyle = ready ? CL.barReady : CL.barCharging;
-      const frac = ready ? 1 : 1 - shieldCd / SHIELD_CD;
-      ctx.fillRect(bx, by, bw * frac, bh);
-    }
+    env.W = W; env.H = H; env.groundY = groundY; env.dist = dist; env.clock = clock; env.speed = speed; env.clouds = clouds;
+    const showBar = state === 'play' || state === 'pause';
+    DR.renderScene(ctx, theme, {
+      env: env, model: dinoModel, d: dinoView(), obstacles: obstacles, blink: blink,
+      bar: showBar ? { ready: shieldCd <= 0, frac: shieldCd <= 0 ? 1 : 1 - shieldCd / SHIELD_CD } : null,
+    });
   }
 
   function loop(ts) {
     if (!last) last = ts;
     const dt = Math.min(PH.maxDt, (ts - last) / 1000);
     last = ts;
+    clock = ts / 1000;
     if (state === 'play') update(dt);
+    else if (state === 'over' && dino) dino.deadT += dt;
     draw();
     requestAnimationFrame(loop);
   }
+
+  // ---- look & feel (cosmetic only): the active dino and theme, saved in localStorage -------------------------
+  const themeVarKeys = [];
+  const kebab = (k) => k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
+  function applyThemeUi() {
+    const root = document.documentElement.style;
+    while (themeVarKeys.length) root.removeProperty(themeVarKeys.pop());
+    for (const k in theme.ui) {
+      root.setProperty('--' + kebab(k), theme.ui[k]);
+      themeVarKeys.push('--' + kebab(k));
+    }
+  }
+  function setDino(id, save) {
+    dinoModel = DR.getDino(id);
+    if (save !== false) store.set(CFG.dinoKey, dinoModel.id);
+  }
+  function setTheme(id, save) {
+    theme = DR.getTheme(id);
+    applyThemeUi();
+    if (save !== false) store.set(CFG.themeKey, theme.id);
+  }
+  const savedId = (key, list, fallback) => {
+    const v = store.get(key);
+    return list.some((m) => m.id === v) ? v : fallback;
+  };
+  setDino(savedId(CFG.dinoKey, DR.dinos, CFG.defaultDino), false);
+  setTheme(savedId(CFG.themeKey, DR.themes, CFG.defaultTheme), false);
+
+  DR.game = {
+    getDino: () => dinoModel,
+    getTheme: () => theme,
+    setDino: (id) => { setDino(id); },
+    setTheme: (id) => { setTheme(id); },
+    /** Opening the picker mid-run pauses it (no overlay click needed to resume: Start / tap does that). */
+    pauseIfPlaying: () => { if (state === 'play') startPlay(); },
+  };
 
   window.addEventListener('resize', () => {
     const wasX = dino ? dino.x / (W || 1) : CFG.dino.startXFrac;
@@ -454,6 +422,7 @@
   });
   resize();
   reset();
+  if (DR.ui) DR.ui.init();
   showOverlay(TX.title, TX.pressStart, TX.titleSub);
   requestAnimationFrame(loop);
 })();
