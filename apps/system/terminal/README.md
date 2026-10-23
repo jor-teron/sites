@@ -1,12 +1,35 @@
 # Terminal (apps/system/terminal/)
 
-System app (T1): a small command line for the Hub. Near-black background, terminal-green monospace text and a blinking block cursor, fixed whatever the Hub theme is. Works in a Desktop window, in Phone mode and standalone.
+System app (T1 + T2): a command line for the Hub that browses your drives like a unix terminal. Near-black background, terminal-green monospace text and a blinking block cursor, fixed whatever the Hub theme is. Works in a Desktop window, in Phone mode and standalone.
 
-- **Prompt:** `hub:~$`. Enter runs the line; Up / Down walk the history (kept in localStorage `hub-terminal.history`, last 200); Tab completes commands, app ids (`open`), categories (`apps`) and themes (`theme`); Ctrl+L clears; Ctrl+C cancels the line (copies when text is selected).
-- **Commands:** `help`, `clear`, `echo <text>`, `date`, `history [-c]`, `apps [category]`, `open <app>` (id or name, e.g. `open 2048`), `build` (hub/build.txt + hub/version.txt; not on file://), `theme [dark|light]` (same key as Settings → Look). Anything else: `<name>: command not found`.
+## The file tree
+
+```
+/                      root (ls / shows: drive)
+/drive/                holds all drives (ls /drive lists the mounts)
+/drive/local/          the Local drive (browser private storage, OPFS)   ~ = /drive/local
+/drive/gdrive/         Google Drive (the "hub" folder of My Drive), shown only when the Hub offers it
+/drive/<folder>/       each real folder added with "Add folder" (Files / Drives)
+```
+
+- **Mount names** come from the drive's name in `FsDrives.list()`, made unix-safe (anything but letters, digits, `.` `_` `-` becomes `_`) and unique (`My_Photos`, `My_Photos-2`). `local` and `gdrive` are reserved. The name <-> drive id mapping is kept in localStorage `hub-terminal.mounts`, so a folder keeps its name after a reload even if the order changes.
+- **Permission:** a real folder needs one permission click after every browser restart. Until then the mount shows `Permission needed: run \`allow <mount>\``. `allow <mount>` asks from the Enter keypress (the browser needs a user gesture). If the keys arrived some other way (Hub OSK, file:// message) a `[ Allow <mount> ]` button appears to click instead. Google Drive cannot be signed in from here: use the Files app.
+- **Where you are:** the prompt is `jor@hub:<cwd>$` with `~` for `/drive/local`. The folder is remembered across a reload (localStorage `hub-terminal.cwd`); if it is gone or its drive is missing, the Terminal starts in `~`.
+
+## Commands
+
+- **Files (read only):** `pwd`; `cd [path]` (no argument = `~`, `cd -`, `..`, `.`, absolute, relative, `~/x`); `ls [-l] [-a] [-h] [path...]` (folders first, `/` after a folder; `-l` size in bytes and modified time, `-h` human sizes, `-a` dotfiles); `cat <file...>` (text only, refuses over 1 MB or binary); `head [-n N] <file...>`, `tail [-n N] <file...>` (also `-N`); `wc [-l|-w|-c] <file...>`; `tree [path] [-L depth] [-a]` (depth 2 by default, 1500 entries at most); `stat <path>`; `drives` (mounts, kind and access); `allow <mount>`.
+- **Hub:** `help`, `clear`, `echo <text>`, `date`, `history [-c]`, `apps [category]`, `open <app|path>` (an app id or name, e.g. `open 2048`, or a path: a folder opens the Files app there, an image or video opens the Viewer, a text file opens Notely), `build` (hub/build.txt + hub/version.txt; not on file://), `theme [dark|light]` (same key as Settings > Look). Anything else: `<name>: command not found`.
+- **Quotes:** `"My Docs"`, `'My Docs'` and `My\ Docs` keep a space in one word. Errors read like unix: `ls: cannot access 'x': No such file or directory`, `cd: x: Not a directory`.
+- **Tab** completes command names, app ids (`open`), categories (`apps`), themes, mount names (`allow`) and paths (case-insensitive; a folder ends with `/`, a file gets a space; dotfiles only when you type the `.`). Up / Down walk the history (localStorage `hub-terminal.history`, last 200); Ctrl+L clears; Ctrl+C cancels the line (copies when text is selected).
+
+## How it works
+
+- **Shared code, no copy:** the page loads `shared/fs/fs_drives.js` (list / handle / access / allow), `fs_ops.js` (list / read), `filetypes.js`, `fs_ref.js` and the three `shared/google` scripts the Viewer loads (so the Drive mount appears when it is set up). `terminal_fs.js` is the whole file layer (tree, paths, commands); `terminal.js` is the line editor and the Hub commands.
 - **Typing:** one invisible `<input>` takes the keys, so the native phone keyboard, the Hub OSK and paste all work; tap anywhere to focus it. On file:// the Hub cannot reach the frame, so the Hub OSK keys arrive as `{type:'hub-key'}` messages from the parent window (only then, only from the parent).
-- **Hub access:** `parent.__hubOpenApp` when the Hub is the same-origin parent; on file:// a `{type:'hub-open-app'}` message to the parent (hub.js only accepts it from its own frame). Standalone, `open` says it needs the Hub.
-- **Safety:** all output is plain text (`textContent`), never HTML.
+- **Hub access:** `parent.__hubOpenApp` when the Hub is the same-origin parent; on file:// a `{type:'hub-open-app'}` message to the parent (hub.js only accepts it from its own frame, and ignores a `#hash`: on file:// `open <folder>` and `open <text file>` open Files / Notely without the path; the Viewer opens in a new tab through FsRef).
+- **Safety:** all output is plain text (`textContent`), never HTML. Commands never write: T2 has no `rm`, `mv`, `cp`, `mkdir`, `touch` or redirects.
 - **Apps list:** `hub/core/hub_appindex.js` (generated by `hub/core/hub_appindex_gen.py`).
+- **Tests hook:** `window.HubTerminal.run(line)` returns a promise; `HubTerminal.fs` is the file layer.
 
-Files: `index.html`, `terminal.js`, `terminal.css`, `terminal_icon.png`, `README.md`.
+Files: `index.html`, `terminal.js`, `terminal_fs.js`, `terminal.css`, `terminal_icon.png`, `README.md`.

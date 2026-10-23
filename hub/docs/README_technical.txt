@@ -133,10 +133,12 @@ Hub and desktop (Monorepo Bot):
                       browse connected drives; managing is in Disk
   apps/system/sysmon/  System Monitor (tasks, CPU, memory, network,
                       storage, battery)
-  apps/system/terminal/ Terminal (T1): green-on-black command line;
+  apps/system/terminal/ Terminal (T1 + T2): green-on-black command line;
                       help, clear, echo, date, history, apps, open,
-                      build, theme. History in localStorage
-                      hub-terminal.history. See its README.md
+                      build, theme + read-only file commands on the
+                      /drive/... tree (pwd, cd, ls, cat, head, tail, wc,
+                      tree, stat, drives, allow). Keys hub-terminal.*
+                      in localStorage. See its README.md
   apps/system/apphub/  App Hub (AH1): Favourites row (favorite-apps.csv
                       order) + category tiles with counts; #cat=<name>
                       category pages; opens apps in the Hub. Not an
@@ -404,6 +406,24 @@ on all of them:
           setup | connect | renew | ok.
 Changes broadcast on BroadcastChannel 'sites-fs'.
 
+The drive tree (the intended structure, one unix-style view of all drives;
+the Terminal app, apps/system/terminal/, is the first thing to show it):
+  /                    root
+  /drive/              holds all drives
+  /drive/local/        the Local drive (OPFS); "~" (home) = /drive/local
+  /drive/gdrive/       Google Drive, only when FsDrives.list() returns it
+  /drive/<folder>/     each real folder added with "Add folder"
+Mount names come from the drive name in FsDrives.list(), made unix-safe
+(spaces and odd characters -> "_") and unique (-2, -3 on a clash); "local"
+and "gdrive" are reserved. The name <-> drive id mapping is kept in
+localStorage 'hub-terminal.mounts' so a folder keeps its name.
+The Terminal's view of it (T2, read only): pwd, cd, ls, cat, head, tail, wc,
+tree, stat, drives, allow, open <path>. It uses shared FsDrives + FsOps and
+changes nothing in shared/fs. A real folder after a browser restart shows
+"Permission needed: run `allow <mount>`"; allow asks from the Enter key.
+Other apps (Files, Drives pane) still address drives by id (#drive=<id>),
+not by this path.
+
 Files app (apps/system/files/): files_core, files_view, files_drives,
 files_actions, files_viewer, files_thumbs, files_menu, files.js. Opens
 on #drive=<id>&path=<A/B>. Thumbnails: shared/fs/thumbs_store.js,
@@ -658,7 +678,9 @@ sessionStorage: sites-hub.updTried (update-check loop guard),
 Other localStorage keys: jtsites-hub-ctrl-code (Hub link code),
   shared-link-join-code (phone remote), hub-auto-download,
   hub-terminal.history (Terminal, T1: JSON list, last 200 commands; not a
-  sites-hub. key so typing never re-applies the Hub prefs).
+  sites-hub. key so typing never re-applies the Hub prefs),
+  hub-terminal.cwd (Terminal, T2: last folder, e.g. /drive/local/A),
+  hub-terminal.mounts (Terminal, T2: JSON {drive id: mount name}).
 IndexedDB:
   sites-fs / drives       added folder handles (fs_drives.js)
   sites-thumbs / thumbs   Files thumbnails, 50 MB cap (thumbs_store.js)

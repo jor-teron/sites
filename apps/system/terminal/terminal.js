@@ -1,5 +1,8 @@
 /*
- * Terminal (apps/system/terminal/terminal.js), T1 — the Hub's command line.
+ * Terminal (apps/system/terminal/terminal.js), T1 + T2 — the Hub's command line. T2 adds the unix-style
+ * file tree (/drive/local, /drive/gdrive, /drive/<folder>) and the read commands (pwd cd ls cat head tail wc
+ * tree stat drives allow, `open <file>`); that part lives in terminal_fs.js (window.TermFs), built on
+ * shared/fs (FsDrives, FsOps). The prompt is jor@hub:<cwd>$, cwd kept in localStorage 'hub-terminal.cwd'.
  * - One real <input> (#in) takes the keys: hardware keyboard, the phone's own keyboard and the
  *   Hub OSK (hub-controller.js forwardKey types into the focused input and fires keydown), paste.
  *   It is invisible; #before / #cur / #after draw the line with a blinking block cursor.
@@ -19,7 +22,7 @@
   const IS_FILE = location.protocol === 'file:';
   const ROOT = '../../../';
   const HIST_KEY = 'hub-terminal.history', HIST_MAX = 200;
-  const PS = 'hub:~$ ';
+  let PS = 'jor@hub:~$ ';   // T2: follows the current folder (terminal_fs.js)
   const THEMES = ['dark', 'light'];
   const term = document.getElementById('term'), out = document.getElementById('out');
   const form = document.getElementById('line'), input = document.getElementById('in');
@@ -38,6 +41,39 @@
   }
   const err = (t) => print(t, 'err');
   const dim = (t) => print(t, 'dim');
+  /** One text block (many lines in one element): file contents, trees. */
+  function block(text) {
+    const d = document.createElement('div');
+    d.textContent = String(text == null ? '' : text);
+    out.appendChild(d);
+    toBottom();
+  }
+  /** A real button for the rare thing that needs a click (allow). Text only. */
+  function button(label, fn) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'tbtn'; b.textContent = '[ ' + label + ' ]';
+    b.addEventListener('click', () => { Promise.resolve(fn()).then((ok) => { if (ok) b.remove(); }); });
+    const d = document.createElement('div'); d.appendChild(b); out.appendChild(d);
+    toBottom();
+  }
+  /** Words of a command line: 'single', "double" quotes and \ escapes keep spaces in one word. */
+  function tokenize(str) {
+    const words = [];
+    let cur = '', has = false, q = '';
+    for (let i = 0; i < str.length; i++) {
+      const c = str[i];
+      if (q) {
+        if (c === q) q = '';
+        else if (c === '\\' && q === '"' && i + 1 < str.length && /["\\]/.test(str[i + 1])) cur += str[++i];
+        else cur += c;
+      } else if (c === '"' || c === "'") { q = c; has = true; }
+      else if (c === '\\' && i + 1 < str.length) { cur += str[++i]; has = true; }
+      else if (/\s/.test(c)) { if (has || cur) { words.push(cur); cur = ''; has = false; } }
+      else cur += c;
+    }
+    if (has || cur) words.push(cur);
+    return words;
+  }
   function toBottom() { term.scrollTop = term.scrollHeight; }
   function columns(list) {
     if (!list.length) return '';
@@ -137,6 +173,29 @@
     return true;
   }
 
+  /** Open a Hub app by its path (with an optional #hash for it); used by `open <file | folder>`. */
+  function hubOpen(entry, hash, name) {
+    const hub = hubWin();
+    if (hub) {
+      if (hub.__hubOpenApp(entry, hash ? { hash } : undefined) === false) { err('open: the Hub could not open ' + name); return; }
+      print('Opening ' + name + ' \u2026');
+      return;
+    }
+    if (!inFrame) { err('open: not running inside the Hub.'); return; }
+    try {   // file://: the Hub cannot be reached directly, hub.js takes the message (no #hash: the app opens on its own page)
+      window.parent.postMessage({ type: 'hub-open-app', url: new URL(ROOT + entry, location.href).href, name },
+        (IS_FILE || location.origin === 'null') ? '*' : location.origin);
+      print('Opening ' + name + ' \u2026');
+    } catch (_) { err('open: could not reach the Hub'); }
+  }
+  /* ---------- the file tree (terminal_fs.js, T2) ---------- */
+  const elPs = document.getElementById('ps');
+  function setPrompt() {
+    PS = 'jor@hub:' + (fs ? fs.prompt() : '~') + '$ ';
+    if (elPs) elPs.textContent = PS.replace(/ $/, '\u00a0');
+  }
+  const fs = window.TermFs ? window.TermFs.install({ print, err, dim, block, columns, button, hubOpen, onCwd: setPrompt }) : null;
+
   /* ---------- commands ---------- */
   const HELP = [
     ['help', 'this list'],
@@ -145,15 +204,33 @@
     ['date', 'date and time'],
     ['history [-c]', 'commands you typed (-c clears them)'],
     ['apps [category]', 'list the Hub apps (ids for open)'],
-    ['open <app>', 'open an app by id or name'],
+    ['open <app|path>', 'open an app (id or name), or a file / folder (Viewer, Notely, Files)'],
     ['build', 'the Hub build (hub/build.txt)'],
     ['theme [name]', 'show or set the Hub theme (' + THEMES.join(', ') + ')'],
+  ];
+  const HELP_FS = [
+    ['pwd', 'print the current folder'],
+    ['cd [path]', 'change folder (no path = ~, - = back, .. = up)'],
+    ['ls [-l] [-a] [-h] [path]', 'list a folder (-l size + date, -a hidden, -h readable sizes)'],
+    ['cat <file>...', 'show text files (up to 1 MB)'],
+    ['head [-n N] <file>', 'first N lines (10)'],
+    ['tail [-n N] <file>', 'last N lines (10)'],
+    ['wc [-lwc] <file>...', 'lines, words, bytes'],
+    ['tree [path] [-L n]', 'folder tree (2 levels; -a hidden)'],
+    ['stat <path>', 'type, size, date, drive'],
+    ['drives', 'the mounts under /drive and their access'],
+    ['allow <mount>', 'ask the browser for access to a folder drive'],
   ];
   const CMDS = {
     help() {
       print('Commands:');
-      HELP.forEach((h) => print('  ' + h[0].padEnd(17) + h[1]));
-      dim('Keys: Up/Down history, Tab complete, Ctrl+L clear, Ctrl+C cancel line');
+      HELP.forEach((h) => print('  ' + h[0].padEnd(26) + h[1]));
+      if (fs) {
+        print('Files (read only):');
+        HELP_FS.forEach((h) => print('  ' + h[0].padEnd(26) + h[1]));
+        dim('Tree: / > drive > local (~), gdrive, <your folders>. Quote names with spaces or escape them: cat "my file.txt".');
+      }
+      dim('Keys: Up/Down history, Tab complete (commands, paths), Ctrl+L clear, Ctrl+C cancel line');
     },
     clear() { out.textContent = ''; },
     echo(args, rest) { print(rest); },
@@ -187,8 +264,11 @@
       if (!rest) dim('apps <category> lists one; open <id> opens an app');
     },
     open(args, rest) {
-      if (!rest) { err('usage: open <app>'); dim('apps lists the ids'); return; }
+      if (!rest) { err('usage: open <app | file | folder>'); dim('apps lists the ids; open ~/pic.png opens a file'); return; }
+      const pathy = fs && /^(\.{1,2}(\/|$)|~|\/)/.test(args[0] || '');
+      if (pathy && args.length === 1) return fs.openPath(args[0]);
       const m = findApps(rest);
+      if (!m.length && fs && args.length === 1) return fs.openPath(args[0]);
       if (!m.length) { err('open: no app "' + rest + '"'); return; }
       if (m.length > 1) { err('open: "' + rest + '" matches ' + m.length + ' apps:'); print(columns(m.map((a) => a.id))); return; }
       openApp(m[0]);
@@ -214,24 +294,30 @@
       print('Theme set to ' + t);
     },
   };
+  if (fs) Object.assign(CMDS, fs.cmds);
   const NAMES = Object.keys(CMDS);
 
-  let busy = null;
+  /* Lines run one after the other (a file command is async), so output keeps the order of the prompts. */
+  let chain = Promise.resolve();
   function run(line) {
-    print(PS + line);
     remember(line);
     hPos = hist.length; draft = '';
+    chain = chain.then(() => exec(line)).catch(() => {});
+    return chain;
+  }
+  async function exec(line) {
+    print(PS + line);
     const t = line.trim();
     if (!t) return;
     const name = t.split(/\s+/)[0];
     const rest = t.slice(name.length).trim();
-    const args = rest ? rest.split(/\s+/) : [];
+    const args = tokenize(rest);
     const fn = Object.prototype.hasOwnProperty.call(CMDS, name) ? CMDS[name] : null;
     if (!fn) { err(name + ': command not found'); return; }
     try {
-      const p = fn(args, rest);
-      if (p && p.then) { busy = p; p.then(() => { if (busy === p) busy = null; toBottom(); }); }
+      await fn(args, rest);
     } catch (e) { err(name + ': ' + (e && e.message ? e.message : 'failed')); }
+    toBottom();
   }
 
   /* ---------- Tab completion ---------- */
@@ -240,25 +326,10 @@
     list.forEach((s) => { while (s.toLowerCase().indexOf(p.toLowerCase()) !== 0) p = p.slice(0, -1); });
     return p;
   }
-  function complete() {
-    const v = input.value, pos = input.selectionStart == null ? v.length : input.selectionStart;
-    const head = v.slice(0, pos), tail = v.slice(pos);
-    const m = head.match(/^(\s*)(\S*)$/);
-    let word, pool;
-    if (m) { word = m[2]; pool = NAMES; }
-    else {
-      const cmd = head.trim().split(/\s+/)[0];
-      word = head.match(/(\S*)$/)[1];
-      pool = cmd === 'open' ? appList().map((a) => a.id)
-        : cmd === 'apps' ? categories().map((c) => c.toLowerCase())
-          : cmd === 'theme' ? THEMES
-            : cmd === 'help' ? NAMES : [];
-    }
-    const hits = pool.filter((s) => s.toLowerCase().indexOf(word.toLowerCase()) === 0).sort();
-    if (!hits.length) return;
-    const base = head.slice(0, head.length - word.length);
+  function apply(v, pos, base, hits, word, tail, noSpaceAfter) {
+    if (input.value !== v) return;   // the line changed while the folder was being read
     if (hits.length === 1) {
-      const nv = base + hits[0] + (tail[0] === ' ' ? '' : ' ');
+      const nv = base + hits[0] + (noSpaceAfter || hits[0].slice(-1) === '/' || tail[0] === ' ' ? '' : ' ');
       input.value = nv + tail; input.setSelectionRange(nv.length, nv.length); render();
       return;
     }
@@ -270,6 +341,44 @@
     }
     print(PS + v);
     print(columns(hits));
+  }
+  const PATH_CMDS = ['cd', 'ls', 'cat', 'head', 'tail', 'wc', 'tree', 'stat'];
+  function complete() {
+    const v = input.value, pos = input.selectionStart == null ? v.length : input.selectionStart;
+    const head = v.slice(0, pos), tail = v.slice(pos);
+    const m = head.match(/^(\s*)(\S*)$/);
+    let word, pool;
+    if (m) { word = m[2]; pool = NAMES; }
+    else {
+      const cmd = head.trim().split(/\s+/)[0];
+      // the word being typed: the text after the last space that is not escaped or inside quotes
+      let start = 0, q = '';
+      for (let i = 0; i < head.length; i++) {
+        const c = head[i];
+        if (q) { if (c === q) q = ''; } else if (c === '\\') i++; else if (c === '"' || c === "'") q = c; else if (/\s/.test(c)) start = i + 1;
+      }
+      const raw = head.slice(start);
+      if (fs && PATH_CMDS.indexOf(cmd) >= 0 && !(raw.charAt(0) === '-' && !q)) {
+        fs.completePath(raw, cmd === 'cd' || cmd === 'tree').then((r) => apply(v, pos, head.slice(0, start) + r.keep, r.hits.sort(), raw.slice(r.keep.length), tail));
+        return;
+      }
+      if (fs && cmd === 'allow') {
+        fs.completeMount(raw).then((h) => { if (h.length) apply(v, pos, head.slice(0, start), h.sort(), raw, tail); });
+        return;
+      }
+      if (fs && cmd === 'open' && /^(\.{0,2}\/|~|\.)/.test(raw)) {
+        fs.completePath(raw, false).then((r) => apply(v, pos, head.slice(0, start) + r.keep, r.hits.sort(), raw.slice(r.keep.length), tail));
+        return;
+      }
+      word = head.match(/(\S*)$/)[1];
+      pool = cmd === 'open' ? appList().map((a) => a.id)
+        : cmd === 'apps' ? categories().map((c) => c.toLowerCase())
+          : cmd === 'theme' ? THEMES
+            : cmd === 'help' ? NAMES : [];
+    }
+    const hits = pool.filter((s) => s.toLowerCase().indexOf(word.toLowerCase()) === 0).sort();
+    if (!hits.length) return;
+    apply(v, pos, head.slice(0, head.length - word.length), hits, word, tail);
   }
 
   /* ---------- keys ---------- */
@@ -291,7 +400,7 @@
       const inSel = input.selectionStart !== input.selectionEnd;
       if (sel || inSel) return false;   // copy
       print(PS + input.value + '^C');
-      busy = null;
+      chain = Promise.resolve();   // later lines no longer wait for a slow command
       setLine(''); hPos = hist.length; draft = '';
       return true;
     }
@@ -340,7 +449,7 @@
   term.addEventListener('touchstart', (e) => { const t = e.touches[0]; tap = e.touches.length === 1 ? { x: t.clientX, y: t.clientY } : null; }, { passive: true });
   term.addEventListener('touchmove', (e) => { const t = e.touches[0]; if (tap && Math.hypot(t.clientX - tap.x, t.clientY - tap.y) > 10) tap = null; }, { passive: true });
   term.addEventListener('touchend', (e) => {
-    if (tap && e.target !== input && !String(window.getSelection())) { e.preventDefault(); focusIn(); }
+    if (tap && e.target !== input && !(e.target.closest && e.target.closest('button')) && !String(window.getSelection())) { e.preventDefault(); focusIn(); }
     tap = null;
   }, { passive: false });
   window.addEventListener('focus', () => setTimeout(focusIn, 0));
@@ -348,9 +457,9 @@
   window.addEventListener('resize', toBottom);
 
   /* ---------- start ---------- */
-  print('Hub Terminal (T1)');
-  dim("Type 'help' for commands. Tab completes, Up/Down = history.");
+  print('Hub Terminal (T2)');
+  dim("Type 'help' for commands. Tab completes, Up/Down = history. ls / shows the tree, cd ~ goes home.");
   render();
   focusIn();
-  window.HubTerminal = { run: (l) => run(String(l)), commands: NAMES.slice() };   // tests / console
+  window.HubTerminal = { run: (l) => run(String(l)), commands: NAMES.slice(), fs };   // tests / console
 })();
