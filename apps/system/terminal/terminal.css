@@ -1,0 +1,25 @@
+/* Terminal (apps/system/terminal/terminal.css), T1 — fixed colours: near-black background, terminal
+   green text, blinking block cursor. Deliberately ignores the Hub theme / accent (Jor: dark BG + green). */
+:root { --bg: #050a06; --fg: #33ff66; --dim: #1fa847; --err: #b6ff9e; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); }
+body { color: var(--fg); font: 15px/1.45 ui-monospace, 'Cascadia Mono', 'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', 'Liberation Mono', monospace; }
+.term { height: 100vh; height: 100dvh; overflow-y: auto; overscroll-behavior: contain; padding: 10px 12px 24px;
+  text-shadow: 0 0 4px rgba(51, 255, 102, 0.35); cursor: text; -webkit-tap-highlight-color: transparent; }
+.out { white-space: pre-wrap; word-break: break-word; }
+.out div { min-height: 1.45em; }
+.out .dim { color: var(--dim); }
+.out .err { color: var(--err); font-weight: bold; }
+.line { position: relative; margin: 0; white-space: pre-wrap; word-break: break-all; }
+.ps { color: var(--fg); font-weight: bold; }
+.cur { background: var(--fg); color: var(--bg); text-shadow: none; animation: blink 1.06s steps(1) infinite; }
+.term:not(.focus) .cur { background: transparent; outline: 1px solid var(--fg); outline-offset: -1px; color: var(--fg); animation: none; }
+@keyframes blink { 50% { background: transparent; color: var(--fg); } }
+/* The real input (native keyboard, Hub OSK, paste) sits on the line, invisible; the line above draws it. */
+.in { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; margin: 0;
+  font: inherit; font-size: 16px; color: transparent; background: transparent; caret-color: transparent; outline: none; }
+::selection { background: var(--fg); color: var(--bg); }
+.term::-webkit-scrollbar { width: 8px; }
+.term::-webkit-scrollbar-thumb { background: #134d22; border-radius: 4px; }
+@media (max-width: 500px) { body { font-size: 14px; } .term { padding: 8px 8px 40px; } }
+@media (prefers-reduced-motion: reduce) { .cur { animation: none; } }
