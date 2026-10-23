@@ -1,6 +1,6 @@
 /* Turbo Lap — input. Several sources (keyboard, gamepad, later touch) each publish a control state;
    the game reads the merged result through TL.input.read(). One-shot actions go through TL.input.on().
-   Touch (js/touch.js) publishes the 'touch' source the same way. */
+   Touch (core/touch.js) publishes the 'touch' source the same way. */
 window.TL = window.TL || {};
 (() => {
   const sources = {}, handlers = {};
