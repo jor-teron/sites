@@ -139,3 +139,14 @@ h2.win { color: #ffd400; } h2.lose { color: #cfd8ff; }
   .cargrid { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); margin-top: 6px; }
   .cars .pickhead h2 { font-size: 22px; margin-bottom: 0; }
 }
+
+/* ---- floating steering stick (TLQ1e) ---- the left half of the screen (below the pad buttons, which stay on top); the base appears under
+   the thumb and goes away on release. The old ◀ ▶ pads are replaced by it on touch screens. */
+.stickzone { position: absolute; left: 0; top: 0; bottom: 0; width: 50%; pointer-events: auto; touch-action: none; }
+.stickbase { position: fixed; left: 0; top: 0; width: clamp(96px, calc(var(--u) * 34), 150px); aspect-ratio: 1; border-radius: 50%; pointer-events: none;
+  background: rgba(20, 26, 60, 0.35); border: 2px solid rgba(255, 255, 255, 0.45); opacity: 0; transition: opacity 0.08s; }
+.stickbase.on { opacity: 1; }
+.stickknob { position: absolute; left: 50%; top: 50%; width: 46%; aspect-ratio: 1; border-radius: 50%; background: rgba(255, 255, 255, 0.6);
+  border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); transform: translate(-50%, -50%); }
+.stickbase.hot .stickknob { background: rgba(208, 28, 139, 0.75); }
+body.touch #tLeft, body.touch #tRight { display: none; }

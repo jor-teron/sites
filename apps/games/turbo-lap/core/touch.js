@@ -6,7 +6,7 @@ window.TL = window.TL || {};
   const CFG = TL.CFG.touch, input = TL.input, $ = id => document.getElementById(id);
   const src = { steer: 0, gas: false, brake: false, nitro: false };
   input.setSource('touch', src);
-  const T = TL.touch = { active: false, insets: { t: 0, r: 0, b: 0, l: 0 }, pointers: new Map(), portrait: false };
+  const T = TL.touch = { active: false, insets: { t: 0, r: 0, b: 0, l: 0 }, pointers: new Map(), portrait: false, stickX: 0, onRelease: null };   // stickX: analog steer from ui/joystick.js
   const coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
   let autoGas = TL.storage.autoGas(coarse ? CFG.autoGasDefaultTouch : CFG.autoGasDefaultDesktop);
 
@@ -39,11 +39,12 @@ window.TL = window.TL || {};
   // ---- pad state from active pointers ----
   function sync() {
     const held = new Set(T.pointers.values());
-    src.steer = (held.has('right') ? 1 : 0) - (held.has('left') ? 1 : 0);
+    src.steer = Math.max(-1, Math.min(1, (held.has('right') ? 1 : 0) - (held.has('left') ? 1 : 0) + T.stickX));
     src.gas = held.has('gas'); src.brake = held.has('brake'); src.nitro = held.has('nitro');
     document.querySelectorAll('#touch .tbtn').forEach(el => el.classList.toggle('on', held.has(el.dataset.k)));
   }
-  T.releaseAll = function () { T.pointers.clear(); sync(); };
+  T.sync = sync;
+  T.releaseAll = function () { T.pointers.clear(); if (T.onRelease) T.onRelease(); sync(); };   // also lets go of the floating stick
   T.hold = function (id, k) { if (k) T.pointers.set(id, k); else T.pointers.delete(id); sync(); };   // test hook / programmatic press
   const keyAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.dataset && el.closest('#touch') ? el.dataset.k : null; };
 
