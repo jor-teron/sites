@@ -60,6 +60,7 @@ Office,       Office Page,           apps/office/office.html,                   
 Connectivity, Connectivity Page,     apps/connectivity/connectivity.html,        ,         0,       0,      404
 Tools,        Tools Page,            apps/tools/tools.html,                      ,         0,       0,      409
 Lab,          Lab Page,              apps/lab/lab.html,                          ,         0,       0,      1000
+Learn,        Learn Page,            apps/learn/learn.html,                      ,         0,       0,      410
 System,       System Page,           apps/system/system.html,                    ,         0,       0,      1100
 Settings,     Settings,              apps/system/settings/,                      ,         0,       1,      2100
 `;
