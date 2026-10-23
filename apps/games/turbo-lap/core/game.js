@@ -13,15 +13,17 @@ window.TL = window.TL || {};
   function track() { return road.track; }
 
   G.init = function () {
+    TL.themes.mode = TL.storage.theme();
     G.setCircuit(TL.storage.circuit(), false);
     input.on('start', onStart);
     input.on('padA', onStart);
     input.on('pause', onPause);
-    input.on('title', () => { if (G.panel !== 'picker' && (G.paused || G.state === 'finished')) G.toTitle(); });
-    input.on('padB', () => { if (G.panel === 'picker') G.closePicker(); else if (G.paused || (G.state === 'finished' && G.finishT > CFG.finishOverlayDelay)) G.toTitle(); });
+    input.on('title', () => { if (G.panel !== 'picker' && G.panel !== 'themes' && (G.paused || G.state === 'finished')) G.toTitle(); });
+    input.on('padB', () => { if (G.panel === 'themes') G.closeThemes(); else if (G.panel === 'picker') G.closePicker(); else if (G.paused || (G.state === 'finished' && G.finishT > CFG.finishOverlayDelay)) G.toTitle(); });
     input.on('prevCircuit', () => { if (G.state === 'title' && G.panel === 'title') G.stepCircuit(-1); });
     input.on('nextCircuit', () => { if (G.state === 'title' && G.panel === 'title') G.stepCircuit(1); });
     input.on('circuits', () => { if (G.panel === 'picker') G.closePicker(); else if (G.panel === 'title' || G.panel === 'finish') G.openPicker(); });
+    input.on('themes', () => { if (G.panel === 'themes') G.closeThemes(); else G.openThemes(); });
     input.on('control', takeOver);
     input.on('fps', toggleFps);
     input.on('blur', () => { if (G.state === 'race' || G.state === 'countdown') setPaused(true); });
@@ -36,6 +38,7 @@ window.TL = window.TL || {};
     const t = TL.circuits.get(n);
     G.circuit = n; G.laps = t.laps;
     road.build(t);
+    TL.themes.apply(n);                                   // Auto: the theme for this circuit; a fixed pick stays
     if (save !== false) TL.storage.setCircuit(n);
     G.setupGrid();
     refreshTitle();
@@ -55,6 +58,23 @@ window.TL = window.TL || {};
     showPanel(G.pickerFrom || 'title');
     if (G.pickerFrom === 'finish') fillFinish();
   };
+
+  // Themes panel (ui/themes.js): from the title, pause or finish card, or on the road (pauses a running race while it is open).
+  G.openThemes = function () {
+    if (G.panel === 'themes' || G.panel === 'picker') return;
+    if (G.panel == null && (G.state === 'race' || G.state === 'countdown')) setPaused(true);      // the race waits (its pause card shows again on close)
+    G.themesFrom = G.panel;                                                                         // null: back to the road (finish delay)
+    showPanel('themes');
+    if (TL.themePicker) TL.themePicker.open();
+  };
+  G.closeThemes = function () {
+    if (G.panel !== 'themes') return;
+    showPanel(G.themesFrom);
+    if (G.themesFrom === 'finish') fillFinish();
+    const b = $('themeBtn'); if (b) b.blur();
+  };
+  // pick a look ('auto' or a theme id) for the whole game and close the panel
+  G.pickTheme = function (mode) { TL.themes.setMode(mode, G.circuit); refreshTitle(); G.closeThemes(); };
 
   // Grid: two cars per row, player alone at the back.
   G.setupGrid = function () {
@@ -94,12 +114,13 @@ window.TL = window.TL || {};
   }
 
   function onStart() {
-    if (G.panel === 'picker') return;
+    if (G.panel === 'picker' || G.panel === 'themes') return;
     if (G.paused) return setPaused(false);
     if (G.state === 'title') G.startRace();
     else if (G.state === 'finished' && G.finishT > CFG.finishOverlayDelay) G.startRace();
   }
   function onPause() {
+    if (G.panel === 'themes') return;
     if (G.state === 'race' || G.state === 'countdown') setPaused(!G.paused);
   }
   function setPaused(p) {
@@ -177,7 +198,7 @@ window.TL = window.TL || {};
     if (G.state === 'finished') {
       const was = G.finishT;
       G.finishT += dt;
-      if (was <= CFG.finishOverlayDelay && G.finishT > CFG.finishOverlayDelay) { showPanel('finish'); fillFinish(); }
+      if (was <= CFG.finishOverlayDelay && G.finishT > CFG.finishOverlayDelay) { if (G.panel === 'themes') G.themesFrom = 'finish'; else showPanel('finish'); fillFinish(); }
     }
   };
 
@@ -191,11 +212,14 @@ window.TL = window.TL || {};
     const ov = $('overlay');
     if (!ov) return;
     ov.classList.toggle('hidden', !name);
-    ['title', 'pause', 'finish', 'picker'].forEach(n => { const el = $('panel-' + n); if (el) el.classList.toggle('hidden', n !== name); });
+    ['title', 'pause', 'finish', 'picker', 'themes'].forEach(n => { const el = $('panel-' + n); if (el) el.classList.toggle('hidden', n !== name); });
     G.panel = name;
+    const fab = $('themeBtn'); if (fab) fab.classList.toggle('hidden', !!name);        // the floating button shows only on the road
   }
   function refreshTitle() {
     const b = $('fpsBtn'); if (b) b.textContent = 'FPS: ' + TL.view.fps;
+    const tn = TL.theme ? 'Theme: ' + (TL.themes.mode === 'auto' ? 'Auto' : TL.theme.name) : '';
+    ['themesBtn', 'themesBtn2', 'themesBtn3'].forEach(id => { const el = $(id); if (el) el.firstChild.nodeValue = tn + ' '; });
     const tc = $('titleCircuit'); if (tc) tc.textContent = circuitTitle();
     const tg = $('titleTag'); if (tg) tg.textContent = tagline();
     const pv = $('prevBtn'), nx = $('nextBtn');
@@ -242,6 +266,7 @@ window.TL = window.TL || {};
     on('nextBtn', () => G.stepCircuit(1));
     on('circuitsBtn', () => G.openPicker());
     on('circuitsBtn2', () => G.openPicker());
+    ['themesBtn', 'themesBtn2', 'themesBtn3', 'themeBtn'].forEach(id => on(id, () => G.openThemes()));
     on('nextCircuitBtn', () => { if (G.circuit < CFG.circuits.count - 1) { G.setCircuit(G.circuit + 1); G.startRace(); } });
     on('pauseTitleBtn', () => G.toTitle());
   }

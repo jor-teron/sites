@@ -12,55 +12,17 @@ window.TL = window.TL || {};
     R.treeOffset = (R.treeOffset + 0.002 * curve * k) % 1;
   };
 
-  function ridge(u, seed, rough) {           // smooth periodic height 0..1
-    return 0.5 + 0.25 * Math.sin((u * 3 + seed) * Math.PI * 2) + 0.15 * Math.sin((u * 7 + seed * 2) * Math.PI * 2)
-      + rough * 0.1 * Math.sin((u * 17 + seed * 3) * Math.PI * 2);
-  }
-
-  function layer(ctx, W, H, baseY, amp, offset, seed, rough, color, snow) {
-    ctx.fillStyle = color;
-    ctx.beginPath(); ctx.moveTo(0, H);
-    const step = Math.max(4, W / 160), pts = [];
-    for (let px = 0; px <= W + step; px += step) {
-      const y = baseY - amp * ridge(px / W / 2 + offset, seed, rough);
-      pts.push([px, y]); ctx.lineTo(px, y);
-    }
-    ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
-    if (snow) {
-      ctx.fillStyle = 'rgba(255,255,255,0.75)';
-      ctx.beginPath();
-      let inside = false;
-      for (const [px, y] of pts) {
-        const peak = baseY - amp * 0.78;
-        if (y < peak) { if (!inside) { ctx.moveTo(px, peak); inside = true; } ctx.lineTo(px, y); }
-        else if (inside) { ctx.lineTo(px, peak); ctx.closePath(); inside = false; }
-      }
-      ctx.fill();
-    }
-  }
-
-  function background(ctx, W, H, playerY) {
-    const g = ctx.createLinearGradient(0, 0, 0, H * 0.6);
-    g.addColorStop(0, CFG.colors.skyTop); g.addColorStop(1, CFG.colors.skyBottom);
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    // sun
-    ctx.fillStyle = 'rgba(255,250,220,0.9)';
-    const sx = U.mod(0.75 - R.skyOffset * 2, 2) / 2 * W * 2 - W * 0.25;
-    ctx.beginPath(); ctx.arc(sx, H * 0.14, Math.min(W, H) * 0.05, 0, Math.PI * 2); ctx.fill();
-    const lift = U.clamp(playerY / 8000, -1, 1.5) * H * 0.06;
-    const horizon = H * 0.5 + lift;
-    layer(ctx, W, H, horizon + 2, H * 0.22, R.skyOffset, 0.1, 1, CFG.colors.mountainsFar, true);
-    layer(ctx, W, H, horizon + 2, H * 0.12, R.hillOffset, 0.37, 0.5, CFG.colors.mountainsNear, false);
-    layer(ctx, W, H, horizon + 2, H * 0.05, R.treeOffset, 0.71, 2, CFG.colors.hills, false);
-  }
-
   function poly(ctx, x1, y1, x2, y2, x3, y3, x4, y4, color) {
     ctx.fillStyle = color;
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.lineTo(x4, y4); ctx.closePath(); ctx.fill();
   }
 
-  function segment(ctx, W, seg, fog) {
-    const a = seg.p1.screen, b = seg.p2.screen, c = seg.color;
+  // The road's band colours come from the active theme; road.js still tags segments with the CFG.colors objects, so the
+  // identity checks (start line) keep working and the map is three comparisons.
+  function palette(th, c) { return c === CFG.colors.light ? th.colors.light : c === CFG.colors.dark ? th.colors.dark : th.colors.start; }
+
+  function segment(ctx, W, seg, fog, th) {
+    const a = seg.p1.screen, b = seg.p2.screen, c = palette(th, seg.color);
     const x1 = a.x, y1 = a.y, w1 = a.w, x2 = b.x, y2 = b.y, w2 = b.w;
     const r1 = w1 / Math.max(6, 2 * CFG.lanes), r2 = w2 / Math.max(6, 2 * CFG.lanes);
     ctx.fillStyle = c.grass; ctx.fillRect(0, y2, W, y1 - y2);
@@ -84,7 +46,7 @@ window.TL = window.TL || {};
       }
     }
     if (fog < 1) {
-      ctx.globalAlpha = 1 - fog; ctx.fillStyle = CFG.colors.fog;
+      ctx.globalAlpha = 1 - fog; ctx.fillStyle = th.fog;
       ctx.fillRect(0, y2, W, y1 - y2 + 1); ctx.globalAlpha = 1;
     }
   }
@@ -106,7 +68,8 @@ window.TL = window.TL || {};
     const playerY = U.lerp(plSeg.p1.world.y, plSeg.p2.world.y, plPct);
     const camX = pl.x * CFG.roadWidth;
 
-    background(ctx, W, H, playerY);
+    const th = TL.theme;
+    th.drawBackground(ctx, W, H, playerY, R, false);
 
     // bucket AI cars by segment
     const buckets = {};
@@ -128,7 +91,7 @@ window.TL = window.TL || {};
       road.project(seg.p2, camX - x - dx, playerY + CFG.cameraHeight, cz, W, H);
       x += dx; dx += seg.curve;
       if (seg.p1.camera.z <= road.cameraDepth || seg.p2.screen.y >= seg.p1.screen.y || seg.p2.screen.y >= maxy) continue;
-      segment(ctx, W, seg, seg.fog);
+      segment(ctx, W, seg, seg.fog, th);
       maxy = seg.p1.screen.y;
     }
 
@@ -149,10 +112,11 @@ window.TL = window.TL || {};
         const sx = s1.x + s1.scale * sp.offset * CFG.roadWidth * scaleW;
         if (sx < -w || sx > W + w) continue;
         clipped(ctx, W, seg.clip, s1.y, () => {
-          if (sp.type === 'tree') SP.tree(ctx, sx, s1.y, w);
-          else if (sp.type === 'bush') SP.bush(ctx, sx, s1.y, w);
-          else if (sp.type === 'lamp') SP.lamp(ctx, sx, s1.y, w, -Math.sign(sp.offset));
-          else SP.sign(ctx, sx, s1.y, w, sp.type === 'signR' ? 1 : -1);
+          const v = (seg.index * 7 + (sp.offset > 0 ? 3 : 0)) | 0;            // stable variety number for themed objects
+          if (sp.type === 'tree') th.tree(ctx, sx, s1.y, w, v);
+          else if (sp.type === 'bush') th.bush(ctx, sx, s1.y, w, v);
+          else if (sp.type === 'lamp') th.lamp(ctx, sx, s1.y, w, v, -Math.sign(sp.offset));
+          else th.sign(ctx, sx, s1.y, w, v, sp.type === 'signR' ? 1 : -1);
         });
       }
       // AI cars
@@ -185,5 +149,6 @@ window.TL = window.TL || {};
         R.playerScreen = { x: W / 2, y: by, w };
       }
     }
+    if (th.fx) th.fx(ctx, W, H, view.t, R);
   };
 })();

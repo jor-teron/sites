@@ -35,5 +35,6 @@ window.TL = window.TL || {};
   }
   TL.game.init();
   if (TL.picker) TL.picker.init();
+  if (TL.themePicker) TL.themePicker.init();
   requestAnimationFrame(loop);
 })();

@@ -43,6 +43,14 @@ TL.CFG = {
     sprite: 0.35           // speed multiplier on hitting a roadside object
   },
 
+  // Themes (TLQ1b): ten code-drawn looks (assets/themes/). Storage key 'theme' = 'auto' or a theme id.
+  // Auto picks by circuit number: the theme at index (circuit mod 10) of `cycle`. Circuit 50 (Coastline Loop) = Coastline.
+  themes: {
+    auto: 'auto',
+    cycle: ['coast', 'desert', 'snow', 'night', 'autumn', 'tropical', 'volcano', 'canyon', 'space', 'candy'],
+    handMadeCircuit: 50, handMadeTheme: 'coast'
+  },
+
   // Circuits: 100 generated tracks (core/circuits.js). Circuit 50 is the hand-made Coastline Loop.
   circuits: {
     count: 100,

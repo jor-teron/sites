@@ -102,3 +102,26 @@ h2.win { color: #ffd400; } h2.lose { color: #cfd8ff; }
   .picker .small { display: none; } .pickgrid { max-height: 68vh; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); }
   .pcell { min-height: 42px; padding: 3px 2px; } .circuitrow { margin: 2px 0; } .demo { margin: 2px 0 4px; }
 }
+
+/* ---- themes (TLQ1b) ---- */
+/* floating button on the road: left edge, vertically centred: clear of the HUD (top-left panel, top-right fps / map, top-centre
+   speed + pause) and of the touch pads (bottom corners), also at 844x390 */
+.themefab { position: fixed; z-index: 11; left: max(8px, env(safe-area-inset-left)); top: 50%; transform: translateY(-50%);
+  width: 44px; height: 44px; padding: 0; border-radius: 50%; font-size: 22px; line-height: 1;
+  background: rgba(20, 26, 60, 0.55); border: 2px solid rgba(255, 255, 255, 0.45); }
+.themefab:hover { background: rgba(58, 67, 128, 0.8); }
+.themefab:focus-visible { outline: 3px solid #7fd8ff; outline-offset: 2px; }
+.themegrid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.tcard { display: flex; flex-direction: column; align-items: stretch; gap: 3px; padding: 5px; border-radius: 10px;
+  background: #2a3160; border: 2px solid transparent; font-size: clamp(12px, 2vmin, 15px); text-align: center; }
+.tcard canvas { display: block; width: 100%; aspect-ratio: 16 / 10; border-radius: 6px; background: #0d1020; }
+.tcard .tn { font-weight: 900; }
+.tcard .tb { font-size: 11px; font-weight: normal; color: #8f9ad0; }
+.tcard.cur { border-color: #d01c8b; background: #263a6a; }
+.tcard.now .tb { color: #ffd400; }
+.tcard:focus-visible { outline: 3px solid #7fd8ff; outline-offset: 1px; }
+@media (max-height: 430px) {
+  .themegrid { grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); max-height: 76vh; gap: 6px; }
+  .tcard { padding: 3px; gap: 2px; } .tcard .tb { display: none; } .tcard.now .tb { display: none; }
+  .themes .pickhead h2 { font-size: 22px; margin-bottom: 0; }
+}
