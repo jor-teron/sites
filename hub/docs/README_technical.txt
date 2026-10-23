@@ -142,8 +142,9 @@ Hub and desktop (Monorepo Bot):
                       hub-terminal.* in localStorage. See its README.md
   apps/system/apphub/  App Hub (AH1): Favourites row (favorite-apps.csv
                       order) + category tiles with counts; #cat=<name>
-                      category pages; opens apps in the Hub. Not an
-                      app store. See its README.md
+                      category pages (AH3: breadcrumb App Hub > Category
+                      instead of a Back button); opens apps in the Hub.
+                      Not an app store. See its README.md
   apps/tools/phonekey/  phone page for "Phone as a key"
   apps/system/viewer/  image / video Viewer app
 Shared but used by everyone: shared/link/ (SharedLink), shared/vendor/.
