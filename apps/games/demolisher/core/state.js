@@ -1,7 +1,7 @@
 /*
   File: core/state.js
   Project: Demolisher
-  Purpose: Shared constants and handles: Matter aliases, CONFIG aliases, material and weapon tables, DOM references, camera / view variables, the Matter engine.
+  Purpose: Shared constants and handles: Matter aliases, CONFIG aliases, material and weapon tables, canvas / touch-layer handles, camera / view variables, the Matter engine.
   Plain script (no modules): top-level const / let / function share one global scope with the
   other core/*.js files, loaded in the order listed in demolisher.html.
 */
@@ -18,10 +18,10 @@ const CFG = DEMOLISHER_CONFIG;
 const TX = CFG.text;
 const RUMBLE = CFG.rumble || {};
 const APP = CFG.APP || { name: 'Demolisher', version: '' };
-/* DM1a: numbered levels come from core/seed.js / core/levels.js (plain scripts, loaded first). */
+/* Numbered levels come from core/seed.js / core/levels.js (plain scripts, loaded first). */
 const SEED = DemolisherSeed;
 const LEVELS = DemolisherLevels;
-if (APP.name && !document.title.startsWith(APP.name)) document.title = APP.name;   // keeps the page title label (e.g. "Demolisher DMR1b")
+if (APP.name && !document.title.startsWith(APP.name)) document.title = APP.name;   // keeps the page title label (e.g. "Demolisher DMR1c")
 const fmt = (t, o) => String(t).replace(/\{(\w+)\}/g, (m, k) => (o && o[k] !== undefined ? o[k] : m));
 
 const WORLD_W = CFG.world.width;
@@ -65,44 +65,7 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 /* Stage box used to size the canvas. */
 const stage = document.getElementById('stage');
-/* HP number. */
-const hudHp = document.getElementById('hud-hp');
-/* Score number. */
-const hudScore = document.getElementById('hud-score');
-/* Remaining targets. */
-const hudTargets = document.getElementById('hud-targets');
-/* Living enemies. */
-const hudEnemies = document.getElementById('hud-enemies');
-/* HP chip. Gets class low under 30. */
-const statHealth = document.getElementById('stat-health');
-/* Ammo labels keyed by weapon id. */
-const ammoEls = {};
-for (const k of WEAPON_ORDER) ammoEls[k] = document.getElementById('ammo-' + k);
-/* Weapon bar buttons. */
-const weaponBtns = document.querySelectorAll('.weapon');
-/* Reset button. Reloads the current mode. */
-const resetBtn = document.getElementById('btn-reset');
-/* Toast element. */
-const hintEl = document.getElementById('hint');
-/* Full-stage card. */
-const overlay = document.getElementById('overlay');
-/* Card title. */
-const overlayTitle = document.getElementById('overlay-title');
-/* Card body line. */
-const overlayLine = document.getElementById('overlay-line');
-/* Controls line. */
-const overlayKeys = document.getElementById('overlay-keys');
-/* Primary card button. */
-const overlayBtn = document.getElementById('overlay-btn');
-/* Secondary card button. */
-const overlayBtn2 = document.getElementById('overlay-btn2');
 /* Touch control layer. */
-const levelPick = document.getElementById('level-pick');
-const levelInput = document.getElementById('lvl-input');
-const levelPrevBtn = document.getElementById('lvl-prev');
-const levelNextBtn = document.getElementById('lvl-next');
-const levelGoBtn = document.getElementById('lvl-go');
-const levelInfo = document.getElementById('lvl-info');
 const mobileCtrls = document.getElementById('mobile-controls');
 /* Move stick. */
 const joyMove = document.getElementById('joy-move');

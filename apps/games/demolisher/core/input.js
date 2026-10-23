@@ -4,7 +4,7 @@
   Purpose: Keyboard, mouse, touch sticks, buttons, resize; registers the DOM listeners.
   Plain script (no modules): top-level const / let / function share one global scope with the
   other core/*.js files, loaded in the order listed in demolisher.html.
-  Uses: state.js .. hud.js.
+  Uses: state.js .. ui.js.
 */
 
 'use strict';
@@ -217,55 +217,6 @@ holdButton(btnFire, () => { fireHeld = true; updateAim(0); fire(); }, () => { fi
 holdButton(btnJump, () => { jumpHeld = true; }, () => { jumpHeld = false; });
 
 if (IS_TOUCH) mobileCtrls.classList.add('show');
-
-for (const btn of weaponBtns) {
-  btn.addEventListener('click', () => selectWeapon(btn.dataset.w));
-}
-resetBtn.addEventListener('click', () => {
-  if (gameState !== 'menu') newGame();
-});
-if (btnPause) btnPause.addEventListener('click', togglePause);
-overlayBtn.addEventListener('click', () => {
-  if (gameState === 'menu') startMode('sandbox');
-  else primaryAction();
-});
-overlayBtn2.addEventListener('click', () => {
-  if (gameState === 'menu') startMode('mission');
-  else toMenu();
-});
-/* DM1a level picker: arrows, typed number (Enter / leaving the box), LEVEL starts it. */
-const stepLevel = (d) => { levelNo = Math.max(0, Math.min(SEED.MAX_LEVEL, levelNo + d)); saveLastLevel(levelNo); syncPicker(); };
-levelPrevBtn.addEventListener('click', () => stepLevel(-1));
-levelNextBtn.addEventListener('click', () => stepLevel(1));
-levelGoBtn.addEventListener('click', () => { commitLevelInput(); if (!levelPick.classList.contains('bad')) startMode('level'); });
-levelInput.addEventListener('focus', () => { levelInput.dataset.junk = ''; levelInput.select(); });
-levelInput.addEventListener('input', () => {
-  const raw = levelInput.value, digits = raw.replace(/\D/g, '');
-  if (digits !== raw) { levelInput.value = digits; levelInput.dataset.junk = '1'; flagBadLevel(TX.levelBadDigits); }
-});
-levelInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') { e.preventDefault(); commitLevelInput(); levelInput.blur(); if (!levelPick.classList.contains('bad')) startMode('level'); }
-  else if (e.key === 'Escape') { levelInput.dataset.junk = ''; levelInput.value = SEED.pad2(levelNo); levelPick.classList.remove('bad'); levelInput.blur(); }
-});
-levelInput.addEventListener('blur', () => {
-  if (gameState === 'menu' && (levelInput.dataset.junk === '1' || levelInput.value !== SEED.pad2(levelNo))) commitLevelInput();
-});
-/* Buttons never keep focus: Enter / Space must not click them again (RESET!). */
-document.addEventListener('click', (e) => {
-  const b = e.target.closest && e.target.closest('button');
-  if (b) b.blur();
-});
-/* Tap the card (not a button) = start / resume / play again. */
-let cardTap = null;
-overlay.addEventListener('pointerdown', (e) => {
-  if (e.target.closest('button, .level-pick')) return;
-  cardTap = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
-});
-overlay.addEventListener('pointerup', (e) => {
-  const t = cardTap; cardTap = null;
-  if (!t || t.id !== e.pointerId || e.target.closest('button, .level-pick')) return;
-  if (performance.now() - t.t <= TOUCH.tapMaxMs && Math.hypot(e.clientX - t.x, e.clientY - t.y) <= TOUCH.tapMaxMovePx) primaryAction();
-});
 
 /* Re-measure whenever the stage box changes (rotate, hub bar, side toolbar). */
 window.addEventListener('resize', resize);

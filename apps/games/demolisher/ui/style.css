@@ -1,12 +1,16 @@
 /*
   File: ui/style.css
   Project: Demolisher
-  Purpose: Layout, HUD, toolbar, overlay, and touch controls for the destructible sandbox.
+  Purpose: Layout, HUD, toolbar, overlay, level picker and touch controls.
   No game logic lives here. Height: 100dvh (100% fallback). Short landscape screens
   (phones, the sites hub) get the weapons as a side column. body.in-hub hides the
   own top bar (the hub bar shows HP / Score / buttons). Touch sizes come from
-  core/config.js as --stick / --knob / --fire / --jump.
+  core/config.js as --stick / --knob / --fire / --jump (set by core/main.js).
+  Sections: Base - HUD - Stage - Touch controls - Toolbar - Toast - Overlay card -
+            Level picker - Short landscape - Hub.
 */
+
+/* ===== Base ===== */
 
 /* Reset box model and kill the mobile tap flash. */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -21,6 +25,7 @@ html, body {
   -webkit-user-select: none; -webkit-touch-callout: none;
   overscroll-behavior: none;
 }
+
 :root { --stick: 80px; --knob: 34px; --fire: 64px; --jump: 54px; }
 
 /* Column: HUD, stage, weapon bar. Safe-area insets keep controls off notches. */
@@ -29,6 +34,8 @@ html, body {
   display: flex; flex-direction: column;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
+
+/* ===== HUD ===== */
 
 /* Top stat row. */
 #hud {
@@ -68,6 +75,8 @@ html, body {
 }
 #hud button:active { transform: scale(0.96); }
 
+/* ===== Stage ===== */
+
 /* Canvas host. Fills leftover height. */
 #stage {
   flex: 1 1 auto;
@@ -85,6 +94,8 @@ canvas {
   background: #0a0a12;
   cursor: crosshair;
 }
+
+/* ===== Touch controls ===== */
 
 /* Touch layer. Hidden until a touch device is detected. */
 #mobile-controls {
@@ -128,15 +139,10 @@ canvas {
 }
 .joy.active .label { display: none; }
 
-/* Hold-to-fire button (pointer events: touch and mouse). */
-#btn-fire {
+/* Round action buttons (pointer events: touch and mouse). */
+#btn-fire, #btn-jump {
   position: absolute;
-  right: 14px;
-  bottom: 18px;
-  width: var(--fire); height: var(--fire);
   border-radius: 50%;
-  background: rgba(255,80,80,0.45);
-  border: 2px solid rgba(255,80,80,0.8);
   color: #fff;
   font-family: inherit;
   font-size: 11px;
@@ -146,24 +152,24 @@ canvas {
   touch-action: none;
 }
 
+/* Hold-to-fire button, bottom-right. */
+#btn-fire {
+  right: 14px;
+  bottom: 18px;
+  width: var(--fire); height: var(--fire);
+  background: rgba(255,80,80,0.45);
+  border: 2px solid rgba(255,80,80,0.8);
+}
+#btn-fire.held { background: rgba(255,80,80,0.75); }
+
 /* Jump button, above FIRE. */
 #btn-jump {
-  position: absolute;
   right: calc(14px + (var(--fire) - var(--jump)) / 2);
   bottom: calc(28px + var(--fire));
   width: var(--jump); height: var(--jump);
-  border-radius: 50%;
   background: rgba(80,180,255,0.45);
   border: 2px solid rgba(80,180,255,0.8);
-  color: #fff;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: bold;
-  letter-spacing: 1px;
-  pointer-events: auto;
-  touch-action: none;
 }
-#btn-fire.held { background: rgba(255,80,80,0.75); }
 #btn-jump.held { background: rgba(80,180,255,0.75); }
 
 /* Pause button, top-right of the stage (minimap is top-left). */
@@ -176,6 +182,8 @@ canvas {
   z-index: 6; cursor: pointer; touch-action: none; padding: 0;
 }
 #btn-pause[hidden] { display: none; }
+
+/* ===== Toolbar ===== */
 
 /* Weapon bar under the stage. */
 #toolbar {
@@ -205,6 +213,8 @@ canvas {
 .weapon.active .ammo { color: #333; }
 .weapon.empty { opacity: 0.45; }
 
+/* ===== Toast ===== */
+
 /* Short toast near the top of the stage. */
 #hint {
   position: absolute;
@@ -224,6 +234,8 @@ canvas {
   white-space: nowrap;
 }
 #hint.show { opacity: 1; }
+
+/* ===== Overlay card ===== */
 
 /* Menu, death, and win card. Content is filled by script from game state. */
 #overlay {
@@ -261,7 +273,9 @@ canvas {
   justify-content: center;
 }
 
-/* DM1a level picker on the menu card: [<] [07] [>] [LEVEL] */
+/* ===== Level picker ===== */
+
+/* On the menu card: [<] [07] [>] [LEVEL] */
 .level-pick { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 10px; }
 .level-pick[hidden] { display: none; }
 #overlay .level-pick button { margin: 0; padding: 8px 12px; font-size: 18px; line-height: 1; background: #1919A6; color: #FFD700; border: 1px solid #3B3BFF; }
@@ -278,7 +292,9 @@ canvas {
 #overlay .lvl-info { margin-top: 2px; font-size: 11px; letter-spacing: 2px; color: #aab; min-height: 14px; }
 #overlay .lvl-info[hidden] { display: none; }
 
-/* Short landscape (phones, the sites hub): weapons as a right-hand column. */
+/* ===== Short landscape ===== */
+
+/* Phones, the sites hub: weapons as a right-hand column. */
 @media (orientation: landscape) and (max-height: 560px) {
   #app {
     display: grid;
@@ -303,6 +319,8 @@ canvas {
   #overlay .level-pick button { padding: 5px 10px; margin: 0; }
   #overlay .lvl-info { margin-top: 0; }
 }
+
+/* ===== Hub ===== */
 
 /* Inside the sites hub: the hub bar shows HP / Score / New Game, so hide the own bar. */
 body.in-hub #hud { display: none; }
