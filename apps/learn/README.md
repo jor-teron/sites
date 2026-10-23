@@ -16,7 +16,7 @@
 ## Current list
 
 - Health: First Aid
-- Language: NE-India Dictionary, Caption for NEI (still in Tools)
+- Language: NE-India Dictionary, Caption for NEI (still in Tools), English Basic
 - Coding: Learning HTML (Basic) (still in Tools), Code Lab (still in Lab)
 
 ## Not yet in the Hub menu
