@@ -76,3 +76,6 @@ input,select{font:inherit;font-size:14px;color:var(--fg);background:var(--card);
 .cell.queued .tools .run{background:var(--card);color:var(--fg);border-color:var(--line)}
 #kstate[data-status=lost]{color:var(--bad);font-weight:600}
 #start-btn,#restart-btn,#intr-btn{min-width:38px;padding:0;font-size:15px}
+.more{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:4px 2px 0;font-size:12px;color:var(--warn)}
+.more[hidden]{display:none}
+.more .mt{flex:1 1 12em}

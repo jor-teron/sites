@@ -1,7 +1,7 @@
 /* Code Lab — UI. Cells, outputs, connection bar, settings, swipe screens. Persistence only via CodeLabSave. */
 (function () {
   'use strict';
-  const VERSION = 'N1 · CL3-F1', SWIPE = 75, K = window.CodeLabKernel, SV = window.CodeLabSave, CM = window.CodeLabLib.cm;
+  const VERSION = 'N1 · CL4', SWIPE = 75, K = window.CodeLabKernel, SV = window.CodeLabSave, CM = window.CodeLabLib.cm;
   const $ = (id) => document.getElementById(id);
   const P = Object.assign({ theme: 'dark', url: '', kernel: 'python3', rememberToken: false, token: '', timeout: 0, onDisc: 'shutdown', kid: '', kurl: '', kname: '' }, SV.loadSettings());
   if (['system', 'light', 'dark'].indexOf(P.theme) < 0) P.theme = 'dark';
@@ -15,7 +15,7 @@
     const sys = v === 'dark' || (v !== 'light' && mq.matches);
     document.documentElement.classList.toggle('dark', P.theme === 'dark' || (P.theme === 'system' && sys));
     document.querySelectorAll('.seg[data-key=theme] button').forEach((b) => b.classList.toggle('on', b.dataset.v === P.theme));
-    document.querySelectorAll('iframe.html').forEach((f) => { f.srcdoc = htmlDoc(f._raw || ''); }); /* sandboxed HTML outputs follow the theme */
+    window.CodeLabOutput && window.CodeLabOutput.refreshFrames(); /* sandboxed HTML outputs follow the theme */
   }
   theme(); mq.addEventListener && mq.addEventListener('change', theme);
   addEventListener('storage', (e) => { if (e.key === 'sites-hub.theme') theme(); });
@@ -71,7 +71,7 @@
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
 
   function makeCell(data, at) {
-    const c = { id: data.id || uid(), count: data.count || null, outputs: data.outputs || [], state: 'idle', note: '' };
+    const c = { id: data.id || uid(), count: data.count || null, outputs: [], state: 'idle', note: '' };
     const el = document.createElement('div'); el.className = 'cell'; el.dataset.id = c.id;
     el.innerHTML = '<div class="main"><div class="cnt"></div><div class="ed"></div><div class="out"></div></div>' +
       '<div class="tools"><button type="button" class="mini run" title="Run (Shift+Enter)">▶</button>' +
@@ -101,7 +101,7 @@
     el.addEventListener('pointerdown', () => select(c));
     if (at == null || at >= cells.length) { cells.push(c); $('cells').appendChild(el); }
     else { cells.splice(at, 0, c); $('cells').insertBefore(el, cells[at + 1].el); }
-    renderCount(c); renderOutputs(c);
+    renderCount(c); OUT.init(c, data.outputs || []);
     return c;
   }
   function select(c) { if (sel) sel.el.classList.remove('sel'); sel = c; if (c) c.el.classList.add('sel'); }
@@ -125,7 +125,7 @@
     if ((busy || c.view.state.doc.length || c.outputs.length) && !confirm((c.state === 'running' ? 'This cell is running. Interrupt it and delete it?' : 'Delete this cell' + (c.view.state.doc.length ? ' and its code' : '') + '?') + ' This cannot be undone.')) return;
     if (c.state === 'queued') dequeue(c);
     else if (c.state === 'running') { c.deleted = true; interruptRun(c, 'deleted'); } /* running cells can be deleted: the kernel is interrupted, or (connection lost) the cell is simply dropped */
-    const i = cells.indexOf(c); cells.splice(i, 1); c.view.destroy(); c.el.remove();
+    const i = cells.indexOf(c); cells.splice(i, 1); c.view.destroy(); c.el.remove(); OUT.forget(c);
     if (!cells.length) makeCell({});
     select(cells[Math.min(i, cells.length - 1)]); save();
   }
@@ -134,56 +134,8 @@
     const c = makeCell({}, at); select(c); c.view.focus(); c.el.scrollIntoView({ block: 'nearest' }); save(); return c;
   }
 
-  /* outputs */
-  const ANSI = /\x1b\[[0-9;?]*[A-Za-z]/g;
-  const txt = (s) => (Array.isArray(s) ? s.join('') : String(s == null ? '' : s)).replace(ANSI, '');
-  /* text/html output is untrusted: it is shown in an iframe with an EMPTY sandbox attribute (no scripts, no same-origin,
-     no forms, no top navigation), so onerror/javascript:/<style> can neither run nor touch this page or its localStorage.
-     A CSP meta inside the document and <base target=_blank> are extra layers. Without same-origin the page cannot read the
-     frame's content height, so the height is estimated from an inert DOMParser copy; the frame can be resized by dragging. */
-  function htmlDoc(h) {
-    const dark = document.documentElement.classList.contains('dark');
-    const fg = dark ? '#eef0f3' : '#15181d', bg = dark ? '#1c1f24' : '#ffffff', line = dark ? '#2b3037' : '#e3e6ea', link = dark ? '#60a5fa' : '#2563eb';
-    return '<!DOCTYPE html><html><head><meta charset="utf-8">' +
-      '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data: https:; style-src \'unsafe-inline\'; font-src data:">' +
-      '<base target="_blank"><meta name="color-scheme" content="' + (dark ? 'dark' : 'light') + '">' +
-      '<style>html,body{margin:0;background:' + bg + ';color:' + fg + ';font:13px/1.4 system-ui,sans-serif}body{padding:2px 4px}' +
-      'table{border-collapse:collapse}td,th{border:1px solid ' + line + ';padding:2px 6px}a{color:' + link + '}img{max-width:100%}</style></head><body>' + h + '</body></html>';
-  }
-  function estHeight(h) {
-    let n = 1;
-    try {
-      const d = new DOMParser().parseFromString(h, 'text/html'); /* inert: no scripts run, nothing is fetched */
-      d.querySelectorAll('script,style').forEach((e) => e.remove());
-      n = d.querySelectorAll('tr,li,p,br,div,pre,h1,h2,h3,h4,h5,h6').length + Math.ceil((d.body.textContent || '').trim().length / 60);
-      if (d.querySelector('img,svg')) n += 8;
-    } catch (_) { /* default */ }
-    return Math.min(480, Math.max(40, n * 19 + 10));
-  }
-  function htmlFrame(h) {
-    const f = document.createElement('iframe');
-    f.className = 'html'; f.setAttribute('sandbox', 'allow-popups'); f.setAttribute('referrerpolicy', 'no-referrer'); /* no scripts, no same-origin */
-    f.title = 'HTML output'; f.loading = 'eager'; f._raw = h; f.style.height = estHeight(h) + 'px'; f.srcdoc = htmlDoc(h);
-    return f;
-  }
-  function outNode(o) {
-    if (o.output_type === 'stream') { const p = document.createElement('pre'); p.className = o.name === 'stderr' ? 'stderr' : 'stdout'; p.textContent = txt(o.text); return p; }
-    if (o.output_type === 'error') { const p = document.createElement('pre'); p.className = 'err'; p.textContent = o.traceback && o.traceback.length ? txt(o.traceback.join('\n')) : o.ename + ': ' + o.evalue; return p; }
-    const d = o.data || {};
-    if (d['image/png']) { const i = document.createElement('img'); i.src = 'data:image/png;base64,' + txt(d['image/png']).replace(/\s/g, ''); i.alt = 'output'; return i; }
-    if (d['image/jpeg']) { const i = document.createElement('img'); i.src = 'data:image/jpeg;base64,' + txt(d['image/jpeg']).replace(/\s/g, ''); i.alt = 'output'; return i; }
-    if (d['image/svg+xml']) { const i = document.createElement('img'); i.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(txt(d['image/svg+xml'])); return i; }
-    if (d['text/html']) return htmlFrame(txt(d['text/html']));
-    if (d['text/plain'] != null) { const p = document.createElement('pre'); p.className = 'result'; p.textContent = txt(d['text/plain']); return p; }
-    return null;
-  }
-  function renderOutputs(c) { c.outEl.textContent = ''; c.outputs.forEach((o) => { const n = outNode(o); if (n) c.outEl.appendChild(n); }); }
-  function addOutput(c, o) {
-    const last = c.outputs[c.outputs.length - 1];
-    if (o.output_type === 'stream' && last && last.output_type === 'stream' && last.name === o.name) {
-      last.text = txt(last.text) + o.text; const n = c.outEl.lastChild; if (n) n.textContent = txt(last.text);
-    } else { c.outputs.push(o); const n = outNode(o); if (n) c.outEl.appendChild(n); }
-  }
+  /* outputs: rendering lives in codelab_output.js (CodeLabOutput): terminal-like streams, in-place display updates, size cap */
+  const OUT = window.CodeLabOutput;
 
   /* run queue — cells run one at a time, in order. Explicit list (not a promise chain) so it can be cleared:
      Restart / Interrupt / lost connection / Run-all failure empty it and mark each skipped cell. */
@@ -228,15 +180,15 @@
   async function exec(c) {
     if (c.deleted) return 'skipped';
     if (!kernelOk()) { c.state = 'idle'; c.note = 'skipped: connection lost'; return 'skipped'; }
-    c.state = 'running'; c.why = null; c.outputs = []; renderOutputs(c); renderCount(c);
+    c.state = 'running'; c.why = null; OUT.reset(c); renderCount(c);
     let st = 'error', clearWait = false; const ctl = c.ctl = {};
     const limit = (+P.timeout || 0) * 1000;
     clearTimeout(c.limitT); if (limit) c.limitT = setTimeout(() => { if (c.state === 'running') { interruptRun(c, 'timeout'); clearQueue('a cell timed out'); } }, limit);
     try {
       st = await K.execute(c.view.state.doc.toString(), (kind, v) => {
         if (kind === 'count') { c.count = v; }
-        else if (kind === 'clear') { if (v) clearWait = true; else { c.outputs = []; renderOutputs(c); } }
-        else { if (clearWait) { clearWait = false; c.outputs = []; renderOutputs(c); } addOutput(c, v); }
+        else if (kind === 'clear') { if (v) clearWait = true; else OUT.reset(c); }
+        else { if (clearWait) { clearWait = false; OUT.reset(c); } OUT.add(c, v); }
       }, ctl);
     } catch (e) {
       const why = c.why || e.abort;
@@ -245,14 +197,14 @@
       else if (why === 'lost' || why === 'link') note(c, 'ConnectionLost', 'the connection to the server was lost. The cell may or may not have finished on the server.');
       else if (why === 'deleted') { /* gone */ }
       else if (why) note(c, 'Interrupted', (WHY[why] || why) + '.');
-      else addOutput(c, { output_type: 'error', ename: 'Error', evalue: e.message || String(e), traceback: [] });
+      else OUT.add(c, { output_type: 'error', ename: 'Error', evalue: e.message || String(e), traceback: [] });
       return st;
     } finally { clearTimeout(c.limitT); clearTimeout(c.graceT); c.ctl = null; }
     if (c.why === 'timeout') { st = 'timeout'; note(c, 'TimeoutError', 'the cell ran longer than the ' + fmtT(P.timeout) + ' run timeout, so the kernel was interrupted.'); }
     else if (c.why === 'interrupt') st = 'interrupted';
     return st;
   }
-  function note(c, ename, text) { addOutput(c, { output_type: 'error', ename, evalue: text, traceback: [] }); }
+  function note(c, ename, text) { OUT.add(c, { output_type: 'error', ename, evalue: text, traceback: [] }); }
   function fmtT(sec) { sec = +sec || 0; return sec >= 3600 ? sec / 3600 + ' h' : sec >= 60 ? sec / 60 + ' min' : sec + ' s'; }
   async function runAll() {
     const s = K.state();
@@ -323,7 +275,7 @@
   }, 'Interrupt sent');
   $('add-btn').onclick = addCell;
   $('runall-btn').onclick = runAll;
-  $('clear-btn').onclick = () => { if (cells.some((c) => c.outputs.length || c.count != null) && !confirm('Clear all outputs and run counts? This cannot be undone.')) return; cells.forEach((c) => { c.outputs = []; c.count = null; renderOutputs(c); renderCount(c); }); save(); toast('Outputs cleared'); };
+  $('clear-btn').onclick = () => { if (cells.some((c) => c.outputs.length || c.count != null) && !confirm('Clear all outputs and run counts? This cannot be undone.')) return; cells.forEach((c) => { OUT.reset(c); c.count = null; renderCount(c); }); save(); toast('Outputs cleared'); };
 
   let lostSeen = false, linkSeen = 'ok', backSeen = false, goneSeen = false;
   function ui() {
@@ -357,6 +309,7 @@
     linkSeen = s.lost ? 'lost' : s.reconnecting ? 'reconnecting' : 'ok';
   }
   K.onChange(ui); ui();
+  K.onDisplayUpdate = (o) => { if (OUT.update(o)) save(); }; /* update_display() from a later cell changes the earlier cell's output */
 
   /* settings: run timeout and what Disconnect does with the kernel */
   const tsel = $('timeout'), dsel = $('ondisc');
