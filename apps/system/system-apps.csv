@@ -5,7 +5,8 @@ name, path, icon, newtab, section
 Files,                 files/,           , , Files
 Disk,                  disk/,            , , Files
 Viewer,                viewer/,          , , Files
-D-Pad Controller,      ../../hub/controller/, ../../hub/controller/controller_icon.png, 1, Hub tools
+# H8: D-Pad Controller hidden until its ../../hub/controller/ link is fixed (opens a wrong folder from the App Hub); uncomment to restore
+# D-Pad Controller,      ../../hub/controller/, ../../hub/controller/controller_icon.png, 1, Hub tools
 Settings,              settings/,        , , System
 System Monitor,        sysmon/,          , , System
 Device Benchmark,      devbench/,        , , System

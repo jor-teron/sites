@@ -91,7 +91,6 @@ window.HUB_APP_INDEX = {
   "files": ["System", "apps/system/files/", "Files", "apps/system/files/files_icon.png", 0],
   "disk": ["System", "apps/system/disk/", "Disk", "apps/system/disk/disk_icon.png", 0],
   "viewer": ["System", "apps/system/viewer/", "Viewer", "apps/system/viewer/viewer_icon.png", 0],
-  "controller": ["System", "hub/controller/", "D-Pad Controller", "hub/controller/controller_icon.png", 1],
   "sysmon": ["System", "apps/system/sysmon/", "System Monitor", "apps/system/sysmon/sysmon_icon.png", 0],
   "devbench": ["System", "apps/system/devbench/", "Device Benchmark", "apps/system/devbench/devbench_icon.png", 0],
   "terminal": ["System", "apps/system/terminal/", "Terminal", "apps/system/terminal/terminal_icon.png", 0],
