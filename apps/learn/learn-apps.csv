@@ -5,5 +5,6 @@ name, path, icon, newtab, section
 First Aid,               first-aid/,                 , , Health
 NE-India Dictionary,     ../tools/nei-dict/,         , , Language
 Caption for NEI,         ../tools/caption-for-nei/,  , , Language
+English Basic,           english-basic/,             , , Language
 Learning HTML (Basic),   ../tools/learning-html/,    , , Coding
 Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_icon.png, , Coding
