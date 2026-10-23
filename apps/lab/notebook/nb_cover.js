@@ -100,7 +100,7 @@ function drawBackExtras(w, h) {
     ctx.beginPath(); ctx.moveTo(cx - 6, cy - 15); ctx.lineTo(cx - 6, cy + 15); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(cx + 15, cy + 12); ctx.lineTo(cx + 21, cy - 12); ctx.stroke();
     ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText('PAPER NOTEBOOK', cx, cy + 48);
+    ctx.fillText('SKETCHBOOK', cx, cy + 48);
     ctx.restore();
   };
   draw(-1, -1, 'rgba(0,0,0,0.28)');
