@@ -24,7 +24,7 @@
    * So: remember the prefs when Settings loads or reports its own change ({type:'hub-prefs'});
    * when Settings is opened again or clicked into and the prefs differ, reload it (same #section). */
   const SET = '/apps/system/settings/';   // R53 (was /apps/settings/, now a legacy redirect)
-  const PREFS = ['wallpaper', 'taskH', 'titleH', 'taskPos', 'accent', 'theme', 'motion', 'wmMode', 'startHover', 'trayMeter',
+  const PREFS = ['wallpaper', 'taskH', 'titleH', 'taskPos', 'accent', 'theme', 'motion', 'wmMode', 'startHover', 'trayMeter', 'showFiles', 'homeBtn',
     'hoverFocus', 'snapEdges', 'snapMagnet', 'snapMagnetPx', 'workspaces', 'filesClick', 'filesThumbs'];
   const snap = () => PREFS.map((k) => { try { return localStorage.getItem('sites-hub.' + k) || ''; } catch (_) { return ''; } }).join('|');
   let seen = snap();

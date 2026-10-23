@@ -2,6 +2,9 @@
  * Desktop two-pane home (hub/drives/hub_drives.css) — Desktop mode only (body.wm-desktop):
  * left 60% = Files (R54b; was Drives) (#desk-drives, hub_drives.js), right 40% = the QR / link tiles
  * (#tiles, hub_tiles.js) with almost no padding so a QR fills its tile (easier to scan).
+ * H7: the Files pane is a lean desktop-icon grid (no label row, no tile boxes, icon + name on the wallpaper,
+ * top-left, flowing down then to the next column) and Settings → Desktop "Show Files on the desktop"
+ * (key showFiles, '0' = off) can hide it: html.hub-files-off (hub_prefs.js) → the tiles use the full width.
  * Phone mode: the drives pane is hidden and the home looks exactly like before.
  */
 #desk-drives { display: none; }
@@ -24,39 +27,34 @@ body.wm-desktop .tile-qr .tile-label, body.wm-desktop .tile-app .tile-label { fo
 body.wm-desktop .tile-icon { width: 58%; height: auto; aspect-ratio: 1; max-width: 160px; }
 body.wm-desktop .tile-devices { font-size: 11px; }
 
-/* drive tiles */
-.drv-title { margin: 2px 4px 12px; font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.85); text-transform: uppercase; letter-spacing: .06em; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
-#empty.wp-light .drv-title { color: rgba(0,0,0,0.7); text-shadow: none; }
-.drv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
-.drv-wrap { position: relative; display: flex; flex-direction: column; gap: 6px; }
-.drv {
-  appearance: none; width: 100%; min-height: 150px; padding: 14px 10px; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 6px; text-align: center; cursor: pointer;
-  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 18px;
-  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-  color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6); font: inherit;
-  transition: transform .2s cubic-bezier(.34,1.56,.64,1), background .15s, border-color .15s;
-}
-.drv:hover, .drv:focus-visible { border-color: var(--accent); background: rgba(255,255,255,0.14); outline: none; }
-.drv:active { transform: scale(.93, .88); }
-.drv-ico { font-size: 56px; line-height: 1; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.35)); }
-.drv-name { font-weight: 700; font-size: 15px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.drv-sub { font-size: 12px; opacity: .75; }
-.drv-add { border-style: dashed; }
-.drv-add .drv-ico { font-size: 44px; }
-.drv-locked { opacity: .75; border-style: dashed; }
-.drv-locked .drv-ico { filter: grayscale(1) drop-shadow(0 3px 5px rgba(0,0,0,0.35)); }   /* R56: folder needs Allow access */
-.drv-x {
-  position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border-radius: 50%; border: 0;
-  background: rgba(0,0,0,0.35); color: #fff; font-size: 18px; cursor: pointer;
-}
-.drv-x:hover { background: #e5484d; }
-.drv-allow { min-height: 40px; border: 0; border-radius: 12px; background: var(--accent); color: #0b0d12; font: inherit; font-weight: 700; cursor: pointer; }
-.drv-note { margin: 12px 4px; font-size: 13px; color: rgba(255,255,255,0.7); }
-html.hub-motion-off .drv, html.hub-motion-reduced .drv { transition: none; }
+/* H7: Files switched off (Settings → Desktop): no left pane, the QR / link tiles sit at the right edge, rest is wallpaper */
+html.hub-files-off body.wm-desktop #desk-drives { display: none; }
+html.hub-files-off body.wm-desktop .home { grid-template-columns: minmax(0, 1fr); }
+html.hub-files-off body.wm-desktop #empty-text,
+html.hub-files-off body.wm-desktop .tiles { grid-column: 1; justify-self: end; width: min(100%, 520px); }
 
-/* Google Drive tile (hub_drives.js + shared/google/google.css): the QR sign-in panel fills it */
-.drv-gd { cursor: default; padding: 6px; justify-content: stretch; }
-.drv-gd:active { transform: none; }
-.drv-gd .gdc-code { font-size: 20px; }
-.drv-gd .gdc-btn { min-height: 40px; }
+/* H7: Files pane = desktop icons. Column-first grid (top-left, down, then the next column), no boxes. */
+body.wm-desktop #desk-drives { padding: 2px; }
+.drv-grid { display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start; align-items: flex-start; gap: 6px 8px; max-height: 100%; height: 100%; }
+.drv {
+  appearance: none; position: relative; width: 104px; height: 104px; padding: 8px 6px 6px; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-start; gap: 5px; text-align: center; cursor: pointer;
+  background: transparent; border: 1px solid transparent; border-radius: 8px;
+  color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.85), 0 0 6px rgba(0,0,0,0.55); font: inherit;
+  transition: background .12s, border-color .12s;
+}
+.drv:hover { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.22); }
+.drv:focus-visible { background: rgba(255,255,255,0.16); border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; }
+.drv:active { background: rgba(255,255,255,0.24); }
+.drv-ico { position: relative; font-size: 46px; line-height: 52px; height: 52px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); }
+.drv-name { font-weight: 600; font-size: 13px; line-height: 1.25; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
+/* a folder that needs "Allow access" again: quiet, greyed icon with a small lock; the click asks for access */
+.drv-locked .drv-ico { filter: grayscale(1) opacity(.6) drop-shadow(0 2px 3px rgba(0,0,0,0.35)); }
+.drv-locked .drv-name { opacity: .8; }
+.drv-lock { position: absolute; right: -7px; bottom: -3px; font-size: 17px; line-height: 1; filter: none; text-shadow: none; }
+#empty.wp-light .drv { color: #14171c; text-shadow: 0 1px 2px rgba(255,255,255,0.85), 0 0 5px rgba(255,255,255,0.6); }
+#empty.wp-light .drv:hover, #empty.wp-light .drv:focus-visible { background: rgba(0,0,0,0.09); border-color: rgba(0,0,0,0.14); }
+#empty.wp-light .drv:active { background: rgba(0,0,0,0.15); }
+.drv-note { margin: 12px 4px; font-size: 13px; color: rgba(255,255,255,0.8); text-shadow: 0 1px 2px rgba(0,0,0,0.7); }
+#empty.wp-light .drv-note { color: rgba(0,0,0,0.7); text-shadow: none; }
+html.hub-motion-off .drv, html.hub-motion-reduced .drv { transition: none; }

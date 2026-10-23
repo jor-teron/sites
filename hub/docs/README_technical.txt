@@ -45,6 +45,10 @@ It runs in one of two modes, decided by hub/wm/wm_mode.js (window.HubMode):
            (or top), the home screen shows Files (left 60%, R54b; connected drives only, R56: plus greyed
            folders that need "Allow access") and the QR /
            link tiles (right 40%).
+           H7: the Files pane is lean desktop icons (icon + name on the
+           wallpaper, column-first grid from the top left); Settings >
+           Desktop "Show Files on the desktop" (showFiles) hides it, then
+           html.hub-files-off gives the QR / link tiles the whole row.
   Phone    everything else. The original single-frame Hub: a top bar with
            the category menu, one #app-frame, home tiles.
 
@@ -103,7 +107,8 @@ Hub and desktop (Monorepo Bot):
                         overlay: images, PDF via shared/vendor/pdfjs/,
                         video, audio), hub_notify.js + hub_notification.css
                         (received-file cards)
-    drives/             hub_drives.js/.css (Files pane on the desktop home, R54b),
+    drives/             hub_drives.js/.css (Files pane on the desktop home, R54b; H7: lean icon grid,
+                        Settings > Desktop switch showFiles),
                         hub_wallpapers.js (wallpaper list + "Your picture"),
                         hub_traymeter.js (optional busy meter)
     update/             hub_sw.js (service worker, R16b, R16c),
@@ -401,7 +406,8 @@ on all of them:
           after a reload it needs one click on "Allow access".
           R56: such a folder shows greyed (desktop Files pane tile
           "Click to allow access", Files sidebar "Allow access" button),
-          not hidden.
+          not hidden. H7: on the desktop pane it is a grey icon with a
+          small lock mark; a click still asks for access.
           Removing only forgets it.
   gdrive  Google Drive, only when shared/google is loaded; the handle is
           the "hub" folder in My Drive (GDriveFs.hubRoot()). States:
@@ -656,6 +662,9 @@ localStorage, prefix sites-hub.:
   fromCat             hub.js                      category of open app
   fromLab             hub.js (old, removed)       -
   startHover          Settings > Desktop          '0' = no hover-open
+  showFiles           Settings > Desktop, H7      '0' = no Files icons on the desktop home (pane not
+                      rendered, html.hub-files-off, no FsDrives work); default ON.
+                      hub_prefs.js apply() sets the class and calls HubDrives.sync() (live)
   homeBtn             Settings > Desktop, AH1-F1  '' = Home screen (default) | apphub
                       hub.js __hubHome (Phone mode Home button only;
                       H6-B1: Desktop Show desktop no longer uses it)

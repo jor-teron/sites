@@ -8,6 +8,7 @@
  * and its second hand (key 'saverSec', smooth (default) | quartz | off; Hub R49c HubSaver.secMode).
  * AH1-F1: Home button (key 'homeBtn', '' = Home screen (default) | 'apphub' = App Hub; Hub __hubHome:
  * Phone mode Home button only. H6-B1: the Desktop Show desktop button always just minimises / restores).
+ * H7: "Show Files on the desktop" (key 'showFiles', default on, '0' = off; Hub hub_prefs.js + hub_drives.js apply it live).
  */
 (function () {
   'use strict';
@@ -38,6 +39,9 @@
         S.get('openMax') !== '0', (on) => S.set('openMax', on ? '1' : '0'));
       const hover = ui.switch('Open menu on hover', 'Point at Start to open the menu (Desktop mode)',
         S.get('startHover') !== '0', (on) => S.set('startHover', on ? '' : '0'));
+      // H7: the Files icons on the Desktop-mode home screen (default on; off = just the wallpaper and the QR / link tiles)
+      const showFiles = ui.switch('Show Files on the desktop', 'Drive icons on the left of the Desktop home screen. Files stays in the Start menu and App Hub',
+        S.get('showFiles') !== '0', (on) => S.set('showFiles', on ? '' : '0'));
       const meter = ui.switch('Busy meter in the taskbar', 'A small graph by the clock: how busy the Hub is (an estimate). Click it for System Monitor',
         S.get('trayMeter') === '1', (on) => S.set('trayMeter', on ? '1' : ''));
       // Screen saver: the Hub (HubSaver) listens for the storage event; also tell it directly if reachable
@@ -100,7 +104,7 @@
       const HOME_OLD = 'This Hub window is still running an older build: reload the Hub (Update ready) and the Home button will open App Hub.';
       const hubHasHome = () => { try { return !window.parent || window.parent === window || typeof window.parent.__hubHome === 'function'; } catch (_) { return true; } };
       const homeNote = ui.note(HOME_NOTE + (S.get('homeBtn') === 'apphub' && !hubHasHome() ? ' ' + HOME_OLD : ''));
-      pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home button (Phone mode)'), home,
+      pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home screen'), showFiles, ui.title('Home button (Phone mode)'), home,
         homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), meter,
         ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev);
       showNow();
