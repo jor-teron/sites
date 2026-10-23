@@ -1,0 +1,24 @@
+title: Everyday Words
+icon: 💬
+summary: About 30 common words with example sentences.
+
+[basics]
+1. Greetings: hello ("Hello, Sam."), goodbye ("Goodbye, see you soon."), please ("Please sit down."), thanks ("Thanks for your help."), sorry ("Sorry, I am late.").
+2. Family: mother ("My mother is kind."), father ("My father works here."), sister ("I have one sister."), brother ("My brother is tall."), friend ("She is my friend.").
+3. Food and drink: bread ("I eat bread."), rice ("We cook rice."), apple ("The apple is sweet."), water ("I drink water."), milk ("Milk is white.").
+4. Colours: blue ("The sky is blue."), green ("The grass is green."), yellow ("A banana is yellow."), black ("My bag is black."), white ("The cup is white.").
+5. Numbers: one, two, three, four, five, six, seven, eight, nine, ten ("I have two books.").
+6. Use a word three times in the same day, in a sentence you make yourself, and it will stay in your memory.
+
+[expert]
+- Learn words in groups (family, food, colours) rather than in a long random list. Related words help each other stick.
+- "Please" and "thank you" make a request polite: "Can I have some water, please?"
+- Numbers continue: eleven, twelve, thirteen, and so on. Tens end in -ty: twenty, thirty, forty.
+- Many nouns take "a" or "an" in front: "a book", "an apple". Use "an" before a vowel sound.
+- Keep a small notebook. Write the word, a short sentence, and a picture or a word in your own language.
+
+[quiz]
+Which word is a greeting? | hello | bread | green | seven
+Which word names a colour? | yellow | sister | milk | goodbye
+Which word names a family member? | brother | apple | white | please
+Complete the sentence: "I have ___ books." (2) | two | blue | milk | friend

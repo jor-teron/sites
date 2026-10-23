@@ -1,0 +1,24 @@
+title: Simple Sentences
+icon: 📝
+summary: Subject, verb and object; I am, you are, he is.
+
+[basics]
+1. A simple sentence has a subject (who or what) and a verb (the action or state): "Birds fly."
+2. Many sentences add an object, which receives the action: subject + verb + object. "I eat rice." "She reads a book."
+3. The verb "to be" has three present forms: I am, you are, he/she/it is. "I am happy." "You are kind." "She is a teacher."
+4. For we, you and they, use "are": "We are friends." "They are at home."
+5. Start with a capital letter and end with a full stop: "The cat is small."
+6. To say no, add "not": "I am not tired." "He is not here."
+
+[expert]
+- With he, she and it, most verbs add -s in the present: "I like tea" but "she likes tea".
+- Word order matters in English. "The dog bites the man" and "The man bites the dog" mean different things.
+- Short forms are common in speech: I'm, you're, he's, she's, it's, we're, they're, isn't, aren't.
+- Use "a" for one thing, and no "a" for more than one: "a dog", "two dogs".
+- Add more detail slowly: "I eat rice", then "I eat rice at home", then "I eat rice at home every day".
+
+[quiz]
+Which sentence is correct? | She is a teacher. | She am a teacher. | She are a teacher. | She be teacher.
+Choose the correct word: "I ___ happy." | am | is | are | be
+Choose the correct word: "They ___ at home." | are | is | am | be
+Which part of "I eat rice" is the object? | rice | eat | I | none of them

@@ -1,0 +1,24 @@
+title: Spelling Tips
+icon: ✏️
+summary: Silent e, double letters, plurals and common mix-ups.
+
+[basics]
+1. Silent e: a final e is not said, but it makes the vowel say its name. "cap" becomes "cape", "kit" becomes "kite".
+2. Double letters: some short words double the last letter before -ing or -ed. "run" becomes "running", "stop" becomes "stopped".
+3. Plurals: for most words add -s: "book" becomes "books". After s, x, ch or sh add -es: "box" becomes "boxes", "dish" becomes "dishes".
+4. There, their, they're: "there" is a place ("Sit there."), "their" shows ownership ("their house"), "they're" means "they are".
+5. To, too, two: "to" shows direction ("go to school"), "too" means also or very ("me too", "too hot"), "two" is the number 2.
+6. Check new words by looking at them, covering them, writing them, and then checking again.
+
+[expert]
+- Some plurals are irregular: man becomes men, child becomes children, foot becomes feet, and sheep stays sheep.
+- When a word ends in consonant + y, change y to ies: "baby" becomes "babies", "city" becomes "cities".
+- "i before e, except after c" helps with words like "believe" and "receive", but there are exceptions such as "weird".
+- "Your" shows ownership ("your bag") and "you're" means "you are". Say the long form to check which one fits.
+- Reading a lot is the best way to improve spelling, because you see correct spelling many times.
+
+[quiz]
+Which is the correct plural of "box"? | boxes | boxs | boxies | boxen
+Choose the correct word: "They left ___ bags here." (belonging to them) | their | there | they're | thare
+Choose the correct word: "I want to go ___." (also) | too | to | two | tu
+Which word has a silent e? | cake | cat | cup | cut

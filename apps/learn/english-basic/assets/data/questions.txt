@@ -1,0 +1,24 @@
+title: Questions and Answers
+icon: 🗣️
+summary: Who, what, where, when, why and how.
+
+[basics]
+1. Who asks about a person. "Who is that?" "That is my teacher."
+2. What asks about a thing. "What is this?" "It is a pen."
+3. Where asks about a place. "Where is the bank?" "It is near the station."
+4. When asks about time. "When is the class?" "It is at nine o'clock."
+5. Why asks for a reason, and the answer often starts with "because". "Why are you happy?" "Because it is Friday."
+6. How asks about the way or the state of something. "How are you?" "I am fine, thank you."
+
+[expert]
+- For yes/no questions, put the verb first: "Are you ready?" "Yes, I am." or "No, I am not."
+- With other verbs, use do or does: "Do you like tea?" "Does she live here?"
+- "How much" asks about a price or an amount that cannot be counted. "How many" asks about things you can count.
+- A question ends with a question mark, and the voice usually rises at the end of a yes/no question.
+- Short answers sound natural: "Yes, I do." is friendlier than only "Yes."
+
+[quiz]
+Which word asks about a place? | where | who | when | why
+Which word asks for a reason? | why | what | where | who
+Choose the best answer to "How are you?" | I am fine, thank you. | It is a pen. | At nine o'clock. | Near the station.
+Which question asks about time? | When is the class? | Who is that? | Where is the bank? | What is this?
