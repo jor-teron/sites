@@ -25,7 +25,7 @@
  *   sets window.HUB_VERSION ('0.299'); '—' when it can't be read.
  * API window.HubUpdate: build (running ?v= tag), version() → Promise<{version:'v0.299' | '',
  *   date:'2026-10-19' | ''}> (running copy), check({manual}) → Promise<{state:'updated' |
- *   'current' | 'error', version, build}> (Settings → About "Check for update" uses it; the
+ *   'current' | 'ready' | 'error' | 'file' (R59: opened as a file, nothing checked), version, build}> (Settings → About "Check for update" uses it; the
  *   reload then follows after ~1.2 s), refresh(), clearCache(), lastRefresh() → ms (0 = never), last9 / next9(now), nextRefresh.
  */
 (function () {
@@ -144,6 +144,7 @@
 
   async function check(opts) {
     opts = opts || {};
+    if (location.protocol === 'file:') return { state: 'file', version: '', build: BUILD };   // R59: nothing to fetch on file://
     try {
       const nw = await latest();
       try { const r = await regP; if (r) await r.update(); } catch (_) { /* offline */ }

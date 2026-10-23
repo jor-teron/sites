@@ -22,7 +22,7 @@ window.SettingsStore = (function () {
     paintSelf();
     // Live apply in the Hub: call it directly (same origin), plus the message / storage event as backup
     try { const h = window.parent !== window && window.parent; if (h && h.HubPrefs) h.HubPrefs.apply(); } catch (_) { /* cross-origin */ }
-    try { if (window.parent !== window) window.parent.postMessage({ type: 'hub-prefs', key: k }, location.origin === 'null' ? '*' : location.origin); } catch (_) { /* ignore */ }
+    try { if (window.parent !== window) window.parent.postMessage({ type: 'hub-prefs', key: k }, (location.protocol === 'file:' || location.origin === 'null') ? '*' : location.origin); } catch (_) { /* ignore */ }   // R59: on file:// origin reads 'file://', not a valid target
     listeners.forEach((fn) => fn(k));
   }
   function onChange(fn) { listeners.push(fn); }
