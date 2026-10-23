@@ -37,6 +37,7 @@ Chess,             chess/,         , , Strategy
 AoE RTS,           aoe-rts/,       , , Strategy
 Gravity Sandbox,   gravity-sandbox/, , , Simulator
 Solar System,      solar-system/,  , , Simulator
+Aquarium,          aquarium/,      , , Simulator
 Browser FPS,       browser-fps/,   , , 3D
 Island Conquest,   island-conquest/, , , Beta
 Tennis Ball Blitz, tennis-throw/,  , , Beta
