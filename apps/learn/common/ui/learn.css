@@ -8,7 +8,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .lrn { display: flex; flex-direction: column; height: 100vh; height: 100dvh; max-width: 1100px; margin: 0 auto; }
 .lrn-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); flex: none; }
 .lrn-head h1 { flex: 1; margin: 0; font-size: 1.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lrn-back { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); font-size: 1.1rem; }
+#lrn-main .lrn-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.lrn-head h1 { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: visible; }
+.lrn-crumb { flex: none; min-height: 44px; padding: 0 4px; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; border-radius: 8px; }
+.lrn-sep { flex: none; color: var(--muted); }
+.lrn-topic { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lrn-mode { display: flex; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; flex: none; }
 .lrn-mode button { min-height: 44px; padding: 0 16px; border: 0; background: var(--panel); color: var(--muted); font-weight: 600; }
 .lrn-mode button[aria-pressed="true"] { background: var(--accent); color: #fff; }
