@@ -9,7 +9,8 @@
  * Touch + mouse + keyboard: cards are buttons; Esc / the close button / a tap on the scrim close; Tab stays inside.
  * While the panel is open it keeps the keys from the game (keydown stops here); opening it pauses a running match.
  * Needs core/registry.js + the themes + ui/dom.js; loaded after core/input.js. The button is hidden in the hub
- * (ui/ping-pong.css) — the hub header owns that frame — but the saved theme still applies there.
+ * (ui/ping-pong.css) — the hub header owns that frame — and its "Customize" button opens the same panel through
+ * PP.openPicker() (called by ui/hub.js); the saved theme / ball / paddle apply there too.
  * ========================================================================
  */
 (function () {
@@ -209,6 +210,11 @@
     btn.blur();                                // Space / Enter keep going to the game
     if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
   }
+
+  // Public handles for the hub bridge (ui/hub.js): the hub header's Customize button opens the same panel.
+  PP.openPicker = function () { if (!isOpen()) open(); };
+  PP.closePicker = close;
+  PP.pickerOpen = isOpen;
 
   function pickTheme(id) { PP.setTheme(id); close(); }
   function pickBall(id) { PP.setBall(id); close(); }

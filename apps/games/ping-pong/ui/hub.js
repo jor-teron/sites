@@ -1,6 +1,6 @@
 /*
  * ========================================================================
- * Ping Pong — ui/hub.js: the optional sites-hub bridge (header name / score / New Game).
+ * Ping Pong — ui/hub.js: the optional sites-hub bridge (header name / score / New Game / Customize).
  * Loaded after core/game.js (it calls resetMatch, fitCourt); the game calls hubSendStats,
  * hubSendApp, hubRumble and hubPost at run time.
  * ========================================================================
@@ -14,6 +14,7 @@
  *   game → hub  {type:'hub-app', app, stats, buttons}  You / CPU score, New Game
  *   game → hub  {type:'hub-stat', id, value}           when a score changes
  *   hub → game  {type:'hub-action', id:'new'}          → new match
+ *   hub → game  {type:'hub-action', id:'customize'}    → open the Customize picker (themes, balls, paddles)
  *   game → hub  {type:'hub-rumble', ms | pattern}      every point (CFG.rumble.point)
  *               → the hub relays it to the paired phone controller
  * Accepted only from window.parent with a same-origin / file:// origin.
@@ -48,7 +49,10 @@ function hubSendApp() {
     type: "hub-app",
     app: { name: APP.name, version: APP.version },
     stats: stats,
-    buttons: [{ id: "new", label: CFG.text.newGame || "New Game" }],
+    buttons: [
+      { id: "new", label: CFG.text.newGame || "New Game" },
+      { id: "customize", label: CFG.text.customize || "Customize" },   // the floating Themes button is hidden in the hub
+    ],
   });
 }
 
@@ -80,7 +84,10 @@ function onHubMessage(e) {
     }
     hubSendApp();
   } else if (d.type === "hub-action" && hubLinked && d.id === "new") {
+    if (PP.pickerOpen && PP.pickerOpen()) PP.closePicker();   // a new match must not run behind the open panel
     resetMatch();
+  } else if (d.type === "hub-action" && hubLinked && d.id === "customize") {
+    if (PP.openPicker) PP.openPicker();     // same panel as the standalone Themes button (pauses a running match)
   }
 }
 
