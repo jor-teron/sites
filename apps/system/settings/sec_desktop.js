@@ -89,10 +89,19 @@
       const home = ui.choice([
         { value: 'home', label: 'Home (current)', hint: 'Back to the Home screen' },
         { value: 'apphub', label: 'App Hub', hint: 'Opens App Hub' }
-      ], S.get('homeBtn') === 'apphub' ? 'apphub' : 'home', (v) => S.set('homeBtn', v === 'apphub' ? 'apphub' : ''));
+      ], S.get('homeBtn') === 'apphub' ? 'apphub' : 'home', (v) => {
+        S.set('homeBtn', v === 'apphub' ? 'apphub' : '');
+        homeNote.textContent = HOME_NOTE + (v === 'apphub' && !hubHasHome() ? ' ' + HOME_OLD : '');
+      });
       home.classList.add('home-btn-pick');
+      // H5-B2: Settings is fetched fresh, but the Hub shell may still be the previous build (cached
+      // until "Update ready" → Reload). That shell has no __hubHome, so the choice would do nothing: say so.
+      const HOME_NOTE = 'Phone mode: the Home button. Desktop mode: Show desktop, then App Hub on top.';
+      const HOME_OLD = 'This Hub window is still running an older build: reload the Hub (Update ready) and the Home button will open App Hub.';
+      const hubHasHome = () => { try { return !window.parent || window.parent === window || typeof window.parent.__hubHome === 'function'; } catch (_) { return true; } };
+      const homeNote = ui.note(HOME_NOTE + (S.get('homeBtn') === 'apphub' && !hubHasHome() ? ' ' + HOME_OLD : ''));
       pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home button'), home,
-        ui.note('Phone mode: the Home button. Desktop mode: Show desktop, then App Hub on top.'), ui.title('Start menu'), hover, ui.title('Taskbar'), meter,
+        homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), meter,
         ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev);
       showNow();
     }
