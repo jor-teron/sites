@@ -656,8 +656,8 @@ localStorage, prefix sites-hub.:
   fromLab             hub.js (old, removed)       -
   startHover          Settings > Desktop          '0' = no hover-open
   homeBtn             Settings > Desktop, AH1-F1  '' = Home screen (default) | apphub
-                      hub.js __hubHome (Phone Home button, Desktop
-                      Show desktop then App Hub)
+                      hub.js __hubHome (Phone mode Home button only;
+                      H6-B1: Desktop Show desktop no longer uses it)
                       H5-B2: Settings is fetched fresh, the shell may be the previous build: sec_desktop.js
                       notes it when parent.__hubHome is missing. H5-B1: .menu button.app active/hover text = var(--text).
   startList           hub_flyout.js (R16c)        cached Start lists

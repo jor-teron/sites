@@ -7,7 +7,7 @@
  * clock screen saver idle time (key 'saverIdle', whole minutes 0..240, 0 = Off, unset = 5; Hub R49b HubSaver)
  * and its second hand (key 'saverSec', smooth (default) | quartz | off; Hub R49c HubSaver.secMode).
  * AH1-F1: Home button (key 'homeBtn', '' = Home screen (default) | 'apphub' = App Hub; Hub __hubHome:
- * Phone mode Home button, Desktop mode Show desktop).
+ * Phone mode Home button only. H6-B1: the Desktop Show desktop button always just minimises / restores).
  */
 (function () {
   'use strict';
@@ -85,10 +85,10 @@
       const hs = saverHub();
       if (!hs || !hs.start) prev.hidden = true;
       prev.addEventListener('click', () => { try { const h = saverHub(); if (h && h.start) h.start(); } catch (_) { /* ignore */ } });
-      // AH1-F1: what the Home button does
+      // AH1-F1: what the Phone mode Home button does (H6-B1: Phone mode only)
       const home = ui.choice([
-        { value: 'home', label: 'Home (current)', hint: 'Back to the Home screen' },
-        { value: 'apphub', label: 'App Hub', hint: 'Opens App Hub' }
+        { value: 'home', label: 'Home (current)', hint: 'Phone mode: back to the Home screen' },
+        { value: 'apphub', label: 'App Hub', hint: 'Phone mode: opens App Hub' }
       ], S.get('homeBtn') === 'apphub' ? 'apphub' : 'home', (v) => {
         S.set('homeBtn', v === 'apphub' ? 'apphub' : '');
         homeNote.textContent = HOME_NOTE + (v === 'apphub' && !hubHasHome() ? ' ' + HOME_OLD : '');
@@ -96,11 +96,11 @@
       home.classList.add('home-btn-pick');
       // H5-B2: Settings is fetched fresh, but the Hub shell may still be the previous build (cached
       // until "Update ready" → Reload). That shell has no __hubHome, so the choice would do nothing: say so.
-      const HOME_NOTE = 'Phone mode: the Home button. Desktop mode: Show desktop, then App Hub on top.';
+      const HOME_NOTE = 'Applies to Phone mode only: what the Home button in the top bar does. Pressing it again goes to the real Home screen. Desktop mode is not affected: Show desktop only shows the desktop.';
       const HOME_OLD = 'This Hub window is still running an older build: reload the Hub (Update ready) and the Home button will open App Hub.';
       const hubHasHome = () => { try { return !window.parent || window.parent === window || typeof window.parent.__hubHome === 'function'; } catch (_) { return true; } };
       const homeNote = ui.note(HOME_NOTE + (S.get('homeBtn') === 'apphub' && !hubHasHome() ? ' ' + HOME_OLD : ''));
-      pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home button'), home,
+      pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home button (Phone mode)'), home,
         homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), meter,
         ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev);
       showNow();

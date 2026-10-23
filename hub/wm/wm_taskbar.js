@@ -144,13 +144,10 @@
       return;
     }
     const vis = all.filter((w) => !w.min && HubWM.onWs(w)).sort((a, b) => +a.el.style.zIndex - +b.el.style.zIndex);
-    // AH1-F1: Home button = App Hub (Settings → Desktop): show the desktop, then App Hub on it
-    const appHub = !!(window.__hubHomeAppHub && window.__hubHomeAppHub() && window.__hubHome);
-    if (!vis.length) { if (appHub) window.__hubHome(); return; }
+    if (!vis.length) return;   // H6-B1: Show desktop only minimises / restores (the Home button setting is Phone mode only)
     const act = HubWM.active;
     HubWM.minimiseAll();
     setShown({ wins: vis, active: act });
-    if (appHub) window.__hubHome();
   });
   window.addEventListener('hub-wm-change', () => { if (shown && HubWM.list().some((w) => !w.min && HubWM.onWs(w))) setShown(null); });
   window.addEventListener('hub-wm-ws', () => { if (shown) setShown(null); });
