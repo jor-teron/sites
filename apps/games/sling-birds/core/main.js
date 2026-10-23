@@ -1,9 +1,8 @@
 // Sling Birds — entry point: boot and main loop.
 import { engine, updateTurnResolution } from './physics.js?v=sb1a';
-import { buildLevel } from './entities.js?v=sb1a';
 import { resize, initResize, render } from './render.js?v=sb1a';
 import { initInput } from './input.js?v=sb1a';
-import { initUi, showHint } from './ui.js?v=sb1a';
+import { initUi, showHint, loadLastLevel, gotoLevel } from './ui.js?v=sb1a';
 import { Engine, STEP_MS } from './config.js?v=sb1a';
 
 initResize();
@@ -30,7 +29,7 @@ function loop(now) {
 
 // ---------- BOOT ----------
 resize();
-buildLevel(0);
+gotoLevel(loadLastLevel());   // last level played (00 demo on the first visit)
 showHint('DRAG FROM THE SLINGSHOT', 3000);
 
 requestAnimationFrame((t) => {

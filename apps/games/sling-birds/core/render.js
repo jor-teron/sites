@@ -236,6 +236,22 @@ function drawCracks(w, h, damage, seed) {
   }
 }
 
+// Static rock: hills standing on the ground and floating ledges
+function drawPlatform(pl) {
+  const body = pl.body;
+  const p = w2s(body.position.x, body.position.y);
+  const w = pl.w * SCALE, h = pl.h * SCALE;
+  const g = ctx.createLinearGradient(0, p.y - h / 2, 0, p.y + h / 2);
+  g.addColorStop(0, '#6a5a3a');
+  g.addColorStop(1, '#3a2a1a');
+  ctx.fillStyle = g;
+  ctx.fillRect(p.x - w / 2, p.y - h / 2, w, h);
+  ctx.strokeStyle = '#1a1208'; ctx.lineWidth = 2;
+  ctx.strokeRect(p.x - w / 2, p.y - h / 2, w, h);
+  ctx.fillStyle = '#3a5a2a';                       // grass cap
+  ctx.fillRect(p.x - w / 2, p.y - h / 2 - 1, w, Math.max(3, 5 * SCALE));
+}
+
 function drawBlock(blockEntry) {
   const body = blockEntry.body;
   const p = w2s(body.position.x, body.position.y);
@@ -342,6 +358,7 @@ function drawPigStatus(pigEntry) {
 export function render() {
   drawBackground();
 
+  for (const pl of S.platforms) drawPlatform(pl);
   for (const b of S.blocks) drawBlock(b);
   for (const p of S.pigs) if (!p.dead) { drawPig(p); drawPigStatus(p); }
   for (const b of S.activeBirds) drawBird(b.body, b.type);

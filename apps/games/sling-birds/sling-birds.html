@@ -9,7 +9,14 @@
 <body>
 <div id="app">
   <div id="hud">
-    <div class="stat"><span class="label">LEVEL</span><span class="value" id="hud-level">1</span></div>
+    <div class="stat picker" id="picker">
+      <span class="label">LEVEL</span>
+      <div class="pick-row">
+        <button type="button" id="lvl-prev" aria-label="Previous level">&#8249;</button>
+        <input id="lvl-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" spellcheck="false" value="00" aria-label="Level 00 to 50" />
+        <button type="button" id="lvl-next" aria-label="Next level">&#8250;</button>
+      </div>
+    </div>
     <div class="stat"><span class="label">BIRDS</span><span class="value" id="hud-birds">3</span></div>
     <div class="stat"><span class="label">PIGS</span><span class="value" id="hud-pigs">0</span></div>
     <div class="stat"><span class="label">SCORE</span><span class="value" id="hud-score">0</span></div>

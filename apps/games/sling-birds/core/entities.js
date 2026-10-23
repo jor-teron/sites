@@ -1,14 +1,16 @@
 // Shared game state plus world/level building and bird loading.
-import { Engine, Bodies, Body, Composite, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, SLING_X, SLING_Y, MAT, GRAVITY, BIRD_FRICTION_AIR, PIG_HP } from './config.js?v=sb1a';
-import { LEVELS } from './levels.js?v=sb1a';
+import { Engine, Bodies, Body, Composite, SLING_X, SLING_Y, MAT, GRAVITY, BIRD_FRICTION_AIR, PIG_HP } from './config.js?v=sb1a';
+import { getLevel } from './levels.js?v=sb1a';
+import { makeGround, makeLeftWall, makeBlockBody, makePigBody, makePlatformBody } from './bodies.js?v=sb1a';
 import { engine } from './physics.js?v=sb1a';
 import { updateHud, endGame, hideOverlay } from './ui.js?v=sb1a';
 
 export const S = {
-  currentLevelIndex: 0,
+  levelNo: 0,            // level number 0-50 (00 = demo)
   birdQueue: [],         // array of bird types remaining
   currentBird: null,     // { body, type, launched }
   activeBirds: [],       // birds in flight
+  platforms: [],         // static rock { kind:'platform', body, w, h, shape }
   pigs: [],              // { kind:'pig', body, r, hp, maxHp, flash, dead }
   blocks: [],            // { kind:'block', body, material, w, h, r?, hp, maxHp, flash, dead }
   spawnTime: 0,          // engine timestamp when the level was built (damage grace)
@@ -36,6 +38,7 @@ export function clearWorld() {
   S.activeBirds = [];
   S.pigs = [];
   S.blocks = [];
+  S.platforms = [];
   S.currentBird = null;
   S.birdQueue = [];
   S.turnResolveTimer = 0;
@@ -43,32 +46,28 @@ export function clearWorld() {
   S.isDragging = false;
 }
 
-export function buildLevel(index) {
+export function buildLevel(n) {
   clearWorld();
-  S.currentLevelIndex = index;
-  const level = LEVELS[index];
+  S.levelNo = n;
+  const level = getLevel(n);
   S.score = 0;
   S.gameState = 'idle';
 
-  // Ground
-  S.ground = Bodies.rectangle(
-    WORLD_WIDTH / 2, GROUND_Y + 60,
-    WORLD_WIDTH * 2, 120,
-    { isStatic: true, friction: 0.9, restitution: 0.05 }
-  );
+  S.ground = makeGround();
   Composite.add(engine.world, S.ground);
+  Composite.add(engine.world, makeLeftWall());
 
-  // Invisible wall on the left so nothing flies out weirdly
-  Composite.add(engine.world, Bodies.rectangle(-30, WORLD_HEIGHT / 2, 60, WORLD_HEIGHT * 2, { isStatic: true }));
+  // Platforms (static hills and ledges)
+  for (const pl of level.platforms) {
+    const body = makePlatformBody(pl);
+    Composite.add(engine.world, body);
+    S.platforms.push({ kind: 'platform', body, w: pl.w, h: pl.h, shape: pl.kind });
+  }
 
   // Blocks
   for (const b of level.blocks) {
     const mat = MAT[b.material];
-    const opts = { friction: mat.friction, restitution: mat.restitution, density: mat.density };
-    const body = b.r
-      ? Bodies.circle(b.x, b.y, b.r, opts)
-      : Bodies.rectangle(b.x, b.y, b.w, b.h, opts);
-    if (b.angle) Body.setAngle(body, b.angle);
+    const body = makeBlockBody(b);
     Composite.add(engine.world, body);
     const entry = { kind: 'block', body, material: b.material, w: b.w, h: b.h, r: b.r, hp: mat.hp, maxHp: mat.hp, flash: 0, dead: false };
     body.plugin.entity = entry;
@@ -77,11 +76,7 @@ export function buildLevel(index) {
 
   // Pigs
   for (const p of level.pigs) {
-    const body = Bodies.circle(p.x, p.y, p.r, {
-      friction: 0.5,
-      restitution: 0.3,
-      density: 0.0008
-    });
+    const body = makePigBody(p);
     Composite.add(engine.world, body);
     const entry = { kind: 'pig', body, r: p.r, hp: PIG_HP, maxHp: PIG_HP, flash: 0, dead: false };
     body.plugin.entity = entry;
