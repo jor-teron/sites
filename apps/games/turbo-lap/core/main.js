@@ -36,5 +36,6 @@ window.TL = window.TL || {};
   TL.game.init();
   if (TL.picker) TL.picker.init();
   if (TL.themePicker) TL.themePicker.init();
+  if (TL.carPicker) TL.carPicker.init();
   requestAnimationFrame(loop);
 })();

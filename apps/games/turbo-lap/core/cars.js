@@ -10,7 +10,7 @@ window.TL = window.TL || {};
     SPRITE_W,
 
     createPlayer(p) {
-      return { isPlayer: true, name: 'YOU', color: CFG.playerColor, p, x: 0, speed: 0,
+      return { isPlayer: true, name: 'YOU', color: TL.carSet.color(), p, x: 0, speed: 0,
                nitro: 1, nitroOn: false, steer: 0, braking: false, bumpT: 0, hitT: 0,
                finished: false, finishTime: null, lap: 0, lapTimes: [], lapStart: 0 };
     },
