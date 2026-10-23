@@ -1,10 +1,10 @@
 // Sling Birds — entry point: boot and main loop.
-import { engine, updateTurnResolution } from './physics.js';
-import { buildLevel } from './entities.js';
-import { resize, initResize, render } from './render.js';
-import { initInput } from './input.js';
-import { initUi, showHint } from './ui.js';
-import { Engine, STEP_MS } from './config.js';
+import { engine, updateTurnResolution } from './physics.js?v=sb1a';
+import { buildLevel } from './entities.js?v=sb1a';
+import { resize, initResize, render } from './render.js?v=sb1a';
+import { initInput } from './input.js?v=sb1a';
+import { initUi, showHint } from './ui.js?v=sb1a';
+import { Engine, STEP_MS } from './config.js?v=sb1a';
 
 initResize();
 initInput();

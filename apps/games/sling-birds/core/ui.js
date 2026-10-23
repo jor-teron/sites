@@ -1,6 +1,6 @@
 // HUD, hints, overlay and end-of-level (win/loss) handling.
-import { S, buildLevel } from './entities.js';
-import { LEVELS } from './levels.js';
+import { S, buildLevel } from './entities.js?v=sb1a';
+import { LEVELS } from './levels.js?v=sb1a';
 
 const levelEl = document.getElementById('hud-level');
 const birdsEl = document.getElementById('hud-birds');

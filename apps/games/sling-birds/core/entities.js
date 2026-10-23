@@ -1,8 +1,8 @@
 // Shared game state plus world/level building and bird loading.
-import { Engine, Bodies, Body, Composite, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, SLING_X, SLING_Y, MAT, GRAVITY, BIRD_FRICTION_AIR, PIG_HP } from './config.js';
-import { LEVELS } from './levels.js';
-import { engine } from './physics.js';
-import { updateHud, endGame, hideOverlay } from './ui.js';
+import { Engine, Bodies, Body, Composite, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, SLING_X, SLING_Y, MAT, GRAVITY, BIRD_FRICTION_AIR, PIG_HP } from './config.js?v=sb1a';
+import { LEVELS } from './levels.js?v=sb1a';
+import { engine } from './physics.js?v=sb1a';
+import { updateHud, endGame, hideOverlay } from './ui.js?v=sb1a';
 
 export const S = {
   currentLevelIndex: 0,

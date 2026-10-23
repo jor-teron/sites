@@ -1,7 +1,7 @@
 // Canvas sizing, world<->screen transforms and drawing.
-import { WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y } from './config.js';
-import { S } from './entities.js';
-import { drawSling, drawTrajectory } from './slingshot.js';
+import { WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y } from './config.js?v=sb1a';
+import { S } from './entities.js?v=sb1a';
+import { drawSling, drawTrajectory } from './slingshot.js?v=sb1a';
 
 export const canvas = document.getElementById('game');
 export const ctx = canvas.getContext('2d');

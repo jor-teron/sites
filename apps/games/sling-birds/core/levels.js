@@ -1,4 +1,4 @@
-import { GROUND_Y } from './config.js';
+import { GROUND_Y } from './config.js?v=sb1a';
 
 // Helpers: place by bottom edge / surface so stacks rest exactly (1px gap)
 const G = GROUND_Y;

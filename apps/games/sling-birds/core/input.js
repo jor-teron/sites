@@ -1,8 +1,8 @@
 // Mouse/touch input for aiming the slingshot.
-import { SLING_X, SLING_Y, MAX_PULL, GRAB_RADIUS, GRAB_MIN_PX } from './config.js';
-import { S } from './entities.js';
-import { canvas, s2w, SCALE } from './render.js';
-import { releaseSling } from './slingshot.js';
+import { SLING_X, SLING_Y, MAX_PULL, GRAB_RADIUS, GRAB_MIN_PX } from './config.js?v=sb1a';
+import { S } from './entities.js?v=sb1a';
+import { canvas, s2w, SCALE } from './render.js?v=sb1a';
+import { releaseSling } from './slingshot.js?v=sb1a';
 
 function pointerWorld(e) {
   const rect = canvas.getBoundingClientRect();
