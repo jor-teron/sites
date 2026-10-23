@@ -116,6 +116,7 @@ TL.CFG = {
     autoGasDefaultTouch: true,   // auto-accelerate default on touch devices
     autoGasDefaultDesktop: false,
     pauseOnPortrait: true,
+    stickDeadzone: 0.13,         // floating steering stick (ui/joystick.js): dead zone, then scaled so full deflection = ±1
     hudTopCentreSpeed: true      // move the speed/nitro panel to the top centre so it clears the pedals
   },
 
