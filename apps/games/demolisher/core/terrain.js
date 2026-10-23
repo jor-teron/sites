@@ -40,6 +40,7 @@ function markDirty(x, y) {
   Called at the start of every world generate.
 */
 function initTerrain() {
+  Art.load();             // once-only: art is cached from game start, this just guards a re-entry
   terrain = new Uint8Array(GRID_W * GRID_H);
   terrainHp = new Float32Array(GRID_W * GRID_H); // float: hits below 0 must not wrap
   terrainCanvas = document.createElement('canvas');

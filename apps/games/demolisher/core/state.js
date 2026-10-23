@@ -21,7 +21,7 @@ const APP = CFG.APP || { name: 'Demolisher', version: '' };
 /* Numbered levels come from core/seed.js / core/levels.js (plain scripts, loaded first). */
 const SEED = DemolisherSeed;
 const LEVELS = DemolisherLevels;
-if (APP.name && !document.title.startsWith(APP.name)) document.title = APP.name;   // keeps the page title label (e.g. "Demolisher DMR1c")
+if (APP.name && !document.title.startsWith(APP.name)) document.title = APP.name;   // keeps the page title label (e.g. "Demolisher DMQ1a")
 const fmt = (t, o) => String(t).replace(/\{(\w+)\}/g, (m, k) => (o && o[k] !== undefined ? o[k] : m));
 
 const WORLD_W = CFG.world.width;

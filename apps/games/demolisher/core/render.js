@@ -4,7 +4,7 @@
   Purpose: Canvas drawing: sky, terrain blit, actors, effects, HUD overlays on the canvas.
   Plain script (no modules): top-level const / let / function share one global scope with the
   other core/*.js files, loaded in the order listed in demolisher.html.
-  Uses: state.js .. hub.js.
+  Uses: state.js .. hub.js, assets.js (Art), sprites.js (art drawing; each falls back to the shapes below).
 */
 
 'use strict';
@@ -75,15 +75,18 @@ function paintTerrain(x0, y0, x1, y1) {
 */
 function drawTerrain() {
   if (!terrain) return;
+  let rect = null;
   if (terrainDirty) {
     paintTerrain(0, 0, GRID_W - 1, GRID_H - 1);
     terrainDirty = false;
     dirtyRect = null;
+    artPainted = false;            // textured world is rebuilt for the new world
   } else if (dirtyRect) {
-    const r = dirtyRect;
+    rect = dirtyRect;
     dirtyRect = null;
-    paintTerrain(r.x0, r.y0, r.x1, r.y1);
+    paintTerrain(rect.x0, rect.y0, rect.x1, rect.y1);
   }
+  if (drawTerrainArt(rect)) return;  // sprites ready: textured world, else the 1 px image below
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(
     terrainCanvas,
@@ -103,6 +106,7 @@ function drawTargets() {
     const sy = t.y - camY;
     if (sx < -80 || sx > CW + 80 || sy < -80 || sy > CH + 80) continue;
     const pulse = 1 + Math.sin(performance.now() * 0.005) * 0.08;
+    if (drawTargetArt(t, sx, sy, pulse)) continue;
     ctx.strokeStyle = 'rgba(255, 60, 60, 0.9)';
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -124,18 +128,22 @@ function drawEnemies() {
     const sx = e.body.position.x - camX;
     const sy = e.body.position.y - camY;
     if (sx < -60 || sx > CW + 60 || sy < -60 || sy > CH + 60) continue;
-    ctx.fillStyle = '#c0392b';
-    ctx.fillRect(sx - 12, sy - 15, 24, 30);
-    ctx.fillStyle = '#e74c3c';
-    ctx.fillRect(sx - 8, sy - 22, 16, 10);
-    const eyeX = e.facing > 0 ? sx + 2 : sx - 6;
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(eyeX, sy - 18, 4, 4);
+    const art = drawEnemyArt(e, sx, sy);
+    if (!art) {
+      ctx.fillStyle = '#c0392b';
+      ctx.fillRect(sx - 12, sy - 15, 24, 30);
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillRect(sx - 8, sy - 22, 16, 10);
+      const eyeX = e.facing > 0 ? sx + 2 : sx - 6;
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(eyeX, sy - 18, 4, 4);
+    }
     if (e.hp < e.maxHp) {
+      const by = art ? sy - 36 : sy - 30;   // sprite head is taller than the old block
       ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillRect(sx - 14, sy - 30, 28, 4);
+      ctx.fillRect(sx - 14, by, 28, 4);
       ctx.fillStyle = e.hp > e.maxHp / 2 ? '#6BFF6B' : '#FF5B5B';
-      ctx.fillRect(sx - 14, sy - 30, 28 * Math.max(0, e.hp / e.maxHp), 4);
+      ctx.fillRect(sx - 14, by, 28 * Math.max(0, e.hp / e.maxHp), 4);
     }
   }
 }
@@ -147,12 +155,16 @@ function drawPlayer() {
   if (!player) return;
   const sx = player.body.position.x - camX;
   const sy = player.body.position.y - camY;
+  const armX = sx + Math.cos(aimAngle) * 16;
+  const armY = sy - 4 + Math.sin(aimAngle) * 16;
+  if (drawPlayerArt(sx, sy)) {
+    drawAimTick(armX + Math.cos(aimAngle) * 12, armY + Math.sin(aimAngle) * 12);   // from the muzzle
+    return;
+  }
   ctx.fillStyle = '#2a5a9a';
   ctx.fillRect(sx - PLAYER_W / 2, sy - PLAYER_H / 2, PLAYER_W, PLAYER_H);
   ctx.fillStyle = '#d0b090';
   ctx.fillRect(sx - 8, sy - PLAYER_H / 2 - 10, 16, 10);
-  const armX = sx + Math.cos(aimAngle) * 16;
-  const armY = sy - 4 + Math.sin(aimAngle) * 16;
   ctx.strokeStyle = '#d0b090';
   ctx.lineWidth = 5;
   ctx.beginPath();
@@ -163,6 +175,13 @@ function drawPlayer() {
   ctx.beginPath();
   ctx.arc(armX, armY, 3, 0, Math.PI * 2);
   ctx.fill();
+  drawAimTick(armX, armY);
+}
+
+/*
+  Short aim guide from the hand along the aim.
+*/
+function drawAimTick(armX, armY) {
   ctx.strokeStyle = 'rgba(255,255,255,0.25)';
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -178,6 +197,7 @@ function drawProjectiles() {
   for (const p of projectiles) {
     const sx = p.x - camX;
     const sy = p.y - camY;
+    if (drawProjectileArt(p, sx, sy)) continue;
     if (p.trail && p.trail.length > 1) {
       ctx.strokeStyle = p.weapon.color;
       ctx.globalAlpha = 0.4;
@@ -197,6 +217,7 @@ function drawProjectiles() {
     ctx.fill();
   }
   for (const p of enemyProjectiles) {
+    if (drawEnemyShotArt(p)) continue;
     ctx.fillStyle = '#FF5B5B';
     ctx.beginPath();
     ctx.arc(p.x - camX, p.y - camY, 3, 0, Math.PI * 2);
@@ -208,7 +229,15 @@ function drawProjectiles() {
   Soft radial blasts.
 */
 function drawExplosions() {
+  const art = Art.ready && Art.has('fx/smoke_puff');
+  if (art) {
+    for (const ex of explosions) {
+      if (!ex.smoked) { ex.smoked = true; if (!ex.flash) addExplosionSmoke(ex); }
+    }
+    drawSmokeArt();
+  }
   for (const ex of explosions) {
+    if (drawExplosionArt(ex)) continue;
     const t = 1 - ex.life / ex.maxLife;
     const sx = ex.x - camX;
     const sy = ex.y - camY;
@@ -228,6 +257,7 @@ function drawExplosions() {
 */
 function drawParticles() {
   for (const p of particles) {
+    if (drawParticleArt(p)) continue;
     ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
     ctx.fillStyle = p.color;
     ctx.beginPath();
@@ -289,10 +319,12 @@ function drawExit() {
   if (x < -40 || x > CW + 40) return;
   const locked = gateLocked();
   ctx.fillStyle = locked ? '#FF5B5B' : '#FFD700';
-  ctx.fillRect(x, 40, 6, CH - 80);
-  ctx.fillRect(x - 18, 40, 42, 6);
-  if (locked) {
-    for (let yy = 60; yy < CH - 40; yy += 26) ctx.fillRect(x - 18, yy, 42, 3);
+  if (!drawExitArt(x, locked)) {
+    ctx.fillRect(x, 40, 6, CH - 80);
+    ctx.fillRect(x - 18, 40, 42, 6);
+    if (locked) {
+      for (let yy = 60; yy < CH - 40; yy += 26) ctx.fillRect(x - 18, yy, 42, 3);
+    }
   }
   ctx.font = '12px Courier New';
   ctx.textAlign = 'left';
