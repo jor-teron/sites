@@ -116,6 +116,8 @@ for (const btn of weaponBtns) {
   const w = WEAPONS[btn.dataset.w];
   if (w && btn.firstChild && btn.firstChild.nodeType === 3) btn.firstChild.textContent = (w.label || w.name).toUpperCase() + ' ';
 }
+/* Fetch and bake all SVG art once (assets/); drawing falls back to shapes until each sprite is ready. */
+Art.load();
 levelNo = loadLastLevel();
 resize();
 updateAmmoUI();
