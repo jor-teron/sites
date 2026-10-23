@@ -20,6 +20,7 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `modules/draftly-flow-blocks.js`: block helpers for flow (measure, join, text map, split a block)
 - `modules/draftly-marks.js`: ¶ / ↵ format marks overlay
 - `modules/draftly-export.js`: DOCX download, Print, File-menu export buttons, Ctrl+P
+- `modules/draftly-docxgen.js`: MM6 real DOCX writer (editor HTML to WordprocessingML, packed with `draftly-zip.js`)
 - `modules/draftly-pdf.js`: PDF download
 - `modules/draftly-lists.js`: bullet and numbered lists
 - `modules/draftly-view.js`: fit-to-screen scaling, Recent and Page popups
@@ -40,7 +41,7 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `modules/draftly-hub.js`: sites hub bridge (v:1). Only active in a frame. After `hub-hello` it adds `body.in-hub`, which hides the top row. It sends `hub-app` {app, tabs, activeTab, title}, `hub-tab` {id} and `hub-title` {value}. It handles `hub-action` {id:'tab:<id>'}: `tab:file` opens the File menu at the top-left of the frame. The message shapes are kept in `Draftly.hub.shape`.
 - `modules/draftly-app.js`: thin start-up (checks modules, calls each `bind()`, loads the document)
 - `vendor/` (local, MIT; see `vendor/README.txt`):
-  - `html-docx.js`: html-docx-js 0.3.1, DOCX export
+  - `html-docx.js`: html-docx-js 0.3.1, old DOCX writer; since MM6 only a fallback if `draftly-docxgen.js` throws (it stores the text as an embedded HTML chunk that only Word shows; LibreOffice and viewers show a blank page)
   - `jspdf.umd.min.js`: jsPDF 2.5.1, PDF file
   - `html2canvas.min.js`: html2canvas 1.4.1, page images for the PDF
 - `assets/fonts/tinos/`: Tinos fonts (regular, bold, italic, bold italic), a Times New Roman-compatible fallback, with licences
@@ -64,7 +65,7 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
   - On start the last opened document loads (else the newest one, else a welcome page).
 - **Recent (clock button):** lists saved documents newest first; tap one to open it.
 - **PDF:** one image per page, true A4 in the current orientation, light colours, no marks. Named after the document. Text in the PDF isn't selectable.
-- **DOCX:** one continuous document with the same A4 size, orientation, margins and font; Word re-paginates it.
+- **DOCX:** a real Word document (text in `word/document.xml`, so Word, LibreOffice, Google Docs and viewers all show it) with the same A4 size, orientation, margins and font; Word re-paginates it. Kept: headings, bold / italic / underline / strike, colours and highlight, font and size, sub / superscript, links, alignment, indent, bullet and numbered lists (nested), tables (borders, shading, merged cells), images (PNG / JPEG / GIF), horizontal rules, page breaks, header / footer. Merge (Export all, zip or combined) uses the same writer, so the merged values are in the file.
 - **Print:** each page prints as one A4 sheet exactly as on screen (browser dialog; Save as PDF also works there).
 - **Fit to screen:** on screens narrower than a page, the pages are scaled down to fit the width. They are never enlarged.
 - **Page popup (page button):** Portrait / Landscape, plus size, margins and page count. Orientation is remembered.
@@ -90,7 +91,7 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - **Export all**: one DOCX per row in a `.zip`, or one combined DOCX with a page break between rows (header / footer fields such as page number and date stay blank in the combined file). File names come from a pattern, default `<document name>-{{#}}`; characters `\ / : * ? " < > |` and control characters become `_`, names are cut at 80 characters, and duplicates get ` (2)`, ` (3)`. Limit 2000 rows (split larger files; the same for Excel); over 200 rows shows a note; progress and Cancel are shown.
 - Saved in `draftly_merge_settings`: the file name (and drive path), delimiter, sheet (Excel), file name pattern, export type and row number. The file content is not saved.
 - Try it: open `samples/merge_sample.csv` (copy it to a Hub drive), type or paste `samples/merge_template.txt` into a new document, then Merge → Choose file. `samples/merge_sample.xlsx` has the same customers on a *Customers* sheet (dates, number formats, a formula, a yes/no column) plus an *Orders* sheet, so you can try the sheet dropdown; rebuild it with `python3 samples/make_merge_sample.py` (needs openpyxl and LibreOffice).
-- Not yet: PDF output, ods / xls / Google Sheets, images or conditions in the template. A placeholder split by formatting (e.g. half bold) is merged but not shaded.
+- Not yet: PDF output (Merge exports DOCX only; merged PDF is not available yet), ods / xls / Google Sheets, images or conditions in the template. A placeholder split by formatting (e.g. half bold) is merged but not shaded.
 
 ## 4. Keyboard
 - Ctrl/Cmd+S saves (works anywhere on the page)
@@ -119,6 +120,7 @@ Messages show briefly at the bottom (2.2 s):
 - "Could not save", "Could not open document", "Could not read recent documents"
 - "Making PDF…" then "PDF downloaded"; "Could not make PDF", "Could not save PDF", "PDF libraries missing"
 - "DOCX exported successfully" / "Failed to export DOCX"
+- If the real DOCX writer throws, a console warning "real DOCX build failed, using the html-docx fallback" is logged and the old html-docx file is made instead (blank outside Word)
 - Also "Opened <name>", "Orientation: portrait / landscape"
 - The Recent list shows "No saved documents" when empty.
 - A module that fails to load is logged in the console and skipped.
@@ -155,12 +157,14 @@ Messages show briefly at the bottom (2.2 s):
 ## 10. Known limits
 - PDF pages are images: text isn't selectable or searchable, and files are bigger.
 - DOCX is re-paginated by Word, so page breaks may differ from the screen.
+- DOCX: images must be PNG / JPEG / GIF data (pasted or inserted); webp, svg and remote images are skipped. Floating / positioned content, column layout, fonts not installed on the reader's computer, and line spacing at exact multiples of the editor's are approximations. The combined Merge DOCX has one header / footer for all rows (row fields blank).
 - Paste is plain text only; no images or tables.
 - Times New Roman is used only if installed; otherwise Tinos (same widths).
 - No document delete or rename in the app (saving under a new name makes a copy).
 - Old version after an update: hard-refresh.
 
 ## 11. Change log
+- 2026-10-23 IST: MM6 real DOCX export: new `draftly-docxgen.js` writes WordprocessingML (all DOCX paths, incl. Merge zip / combined, were blank outside Word before); html-docx kept only as a fallback.
 - 2026-10-23 IST: MM3 Excel (.xlsx) import for Merge: own reader (no library), sheet dropdown (remembered), number and date formats as shown in Excel, live refresh like CSV; `samples/merge_sample.xlsx`.
 - 2026-10-23 IST: MM1 mail merge: Merge ribbon tab, CSV reader, live refresh, preview, Export all (zip / combined DOCX).
 - 2026-10-23 IST: orientation fix: saved only under `draftly_orientation` (config `storageKeyOrientation`); the old `undefined` key (written 2026-10-02 to 2026-10-21, when that config entry was missing) is migrated once at start-up and removed if it holds an orientation value. Invalid values are not saved.

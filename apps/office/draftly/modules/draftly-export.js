@@ -1,9 +1,9 @@
 /* ============================================================
    FILE: modules/draftly-export.js
    PROJECT: Draftly
-   ROLE: DOCX download (offline, vendor/html-docx.js) and Print dialog.
+   ROLE: DOCX download (offline; real DOCX from draftly-docxgen.js, html-docx as fallback) and Print dialog.
          PDF download lives in draftly-pdf.js.
-   DEPENDS: Draftly.config, Draftly.pages, Draftly.ui, htmlDocx
+   DEPENDS: Draftly.config, Draftly.pages, Draftly.ui, Draftly.docxgen, htmlDocx (fallback)
    ISOLATION: DOCX failure shows a toast and does not throw
               out to the click handler.
    ============================================================ */
@@ -134,10 +134,37 @@ Draftly.export.hfXml = function hfXml(part, isLandscape, data) {
 };
 
 /* DOCX Blob from body HTML (what docxHtml() returns). hfData: optional {head, foot} slots
-   instead of the open document's header / footer (mail merge). Throws if html-docx is missing. */
+   instead of the open document's header / footer (mail merge).
+   MM6: real WordprocessingML via draftly-docxgen.js (the text is in word/document.xml, so Word,
+   LibreOffice and viewers all show it). html-docx (the old altChunk file) is only a fallback
+   if the conversion throws. Throws if both fail. */
 Draftly.export.makeDocxBlob = function makeDocxBlob(bodyHtml, hfData) {
   var cfg = Draftly.config;
   var isLandscape = document.body.classList.contains(cfg.landscapeClass);
+  var ps = cfg.paperSizes[cfg.paperSize] || cfg.paperSizes.A4;
+  var margins = {
+    top: cfg.docxMarginTop,
+    right: cfg.docxMarginRight,
+    bottom: cfg.docxMarginBottom,
+    left: cfg.docxMarginLeft,
+    header: Math.round(cfg.marginTopCm * 0.4 * 567),
+    footer: Math.round(cfg.marginBottomCm * 0.4 * 567)
+  };
+  var headerXml = Draftly.export.hfXml('head', isLandscape, hfData);
+  var footerXml = Draftly.export.hfXml('foot', isLandscape, hfData);
+
+  if (Draftly.docxgen) {
+    try {
+      return Draftly.docxgen.build(bodyHtml, {
+        landscape: isLandscape, pageW: ps.docxW, pageH: ps.docxH, margins: margins,
+        headerXml: headerXml, footerXml: footerXml,
+        defaults: { font: cfg.fontCommandName, sizePt: cfg.fontSizePt, lineHeight: cfg.lineHeight, paraAfterPt: cfg.paragraphSpacingPt }
+      });
+    } catch (e) {
+      console.warn('draftly docx: real DOCX build failed, using the html-docx fallback', e);
+    }
+  }
+
   var fullHtml =
     '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
     OfficePage.pageRule({ paper: cfg.paperSize, orientation: isLandscape ? 'landscape' : 'portrait',
@@ -148,20 +175,10 @@ Draftly.export.makeDocxBlob = function makeDocxBlob(bodyHtml, hfData) {
   if (typeof htmlDocx === 'undefined') throw new Error('html-docx-js missing');
   return htmlDocx.asBlob(fullHtml, {
     orientation: isLandscape ? 'landscape' : 'portrait',
-    pageSize: {
-      width: (cfg.paperSizes[cfg.paperSize] || cfg.paperSizes.A4).docxW,
-      height: (cfg.paperSizes[cfg.paperSize] || cfg.paperSizes.A4).docxH
-    },
-    margins: {
-      top: cfg.docxMarginTop,
-      right: cfg.docxMarginRight,
-      bottom: cfg.docxMarginBottom,
-      left: cfg.docxMarginLeft,
-      header: Math.round(cfg.marginTopCm * 0.4 * 567),
-      footer: Math.round(cfg.marginBottomCm * 0.4 * 567)
-    },
-    headerXml: Draftly.export.hfXml('head', isLandscape, hfData),
-    footerXml: Draftly.export.hfXml('foot', isLandscape, hfData)
+    pageSize: { width: ps.docxW, height: ps.docxH },
+    margins: margins,
+    headerXml: headerXml,
+    footerXml: footerXml
   });
 };
 
