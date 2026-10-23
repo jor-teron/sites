@@ -7,7 +7,7 @@ name, path, icon, newtab, section
 Swell Foop,        swell-foop/,    , , Puzzle
 Tetris,            tetris/,        , , Puzzle
 Tic-Tac-Toe,       tic-tac-toe/,   , , Puzzle
-Ping Pong,         pong/,          , , Arcade
+Ping Pong,         ping-pong/,     , , Arcade
 Snake,             snake/,         , , Arcade
 Space Invaders,    space-invader/, , , Arcade
 Demolisher,        demolisher/,    , , Arcade

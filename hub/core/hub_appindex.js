@@ -23,7 +23,7 @@ window.HUB_APP_INDEX = {
   "swell-foop": ["Games", "apps/games/swell-foop/", "Swell Foop", "apps/games/swell-foop/swell-foop_icon.png", 0],
   "tetris": ["Games", "apps/games/tetris/", "Tetris", "apps/games/tetris/tetris_icon.png", 0],
   "tic-tac-toe": ["Games", "apps/games/tic-tac-toe/", "Tic-Tac-Toe", "apps/games/tic-tac-toe/tic-tac-toe_icon.png", 0],
-  "pong": ["Games", "apps/games/pong/", "Ping Pong", "apps/games/pong/pong_icon.png", 0],
+  "ping-pong": ["Games", "apps/games/ping-pong/", "Ping Pong", "apps/games/ping-pong/ping-pong_icon.png", 0],
   "snake": ["Games", "apps/games/snake/", "Snake", "apps/games/snake/snake_icon.png", 0],
   "space-invader": ["Games", "apps/games/space-invader/", "Space Invaders", "apps/games/space-invader/space-invader_icon.png", 0],
   "demolisher": ["Games", "apps/games/demolisher/", "Demolisher", "apps/games/demolisher/demolisher_icon.png", 0],
