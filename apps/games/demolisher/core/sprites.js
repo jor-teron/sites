@@ -191,56 +191,150 @@ function artDrawPivot(key, scale) {
   return true;
 }
 
-const HERO_PART_KEYS = ['hero/legs', 'hero/body', 'hero/head', 'hero/arm'];
 const HERO_GUN_KEYS = { pistol: 'weapons/gun_pistol', rocket: 'weapons/gun_rocket', grenade: 'weapons/gun_grenade', laser: 'weapons/gun_laser' };
+const ENEMY_SKINS = ['grunt', 'trooper', 'scout'];
+
+/* Flash amount (0..1) for the part being drawn; set by drawRig, read by rigPart. */
+let rigFlash = 0;
+
+/* One body part: the sprite, then (during a hit) its white silhouette on top. */
+function rigPart(key, x, y, w, h) {
+  const s = Art.sprites[key];
+  if (!s) return;
+  const pw = w || s.w;
+  const ph = h || s.h;
+  ctx.drawImage(s.c, x, y, pw, ph);
+  if (rigFlash > 0.02) {
+    const sil = Art.silhouette(key);
+    if (!sil) return;
+    const a = ctx.globalAlpha;
+    ctx.globalAlpha = a * Math.min(1, rigFlash * 1.1) * 0.85;
+    ctx.drawImage(sil.c, x, y, pw, ph);
+    ctx.globalAlpha = a;
+  }
+}
+
+/* Sprite drawn about its pivot point (ART_PIVOTS) at the current origin. */
+function rigPartPivot(key) {
+  const s = Art.sprites[key];
+  if (!s) return;
+  const pv = ART_PIVOTS[key] || { x: s.w / 2, y: s.h / 2 };
+  rigPart(key, -pv.x, -pv.y);
+}
 
 /*
-  Hero: legs, torso, head (mirrored to face the aim), then the arm and weapon rotated about the
-  shoulder at (0, -4) from the body centre: the same joint the old drawing and the muzzle use.
+  Draw one animated character from its rig and the pose in st.pose (anim.js).
+  Everything is drawn in a frame that faces right and is mirrored for left. Layers, back to
+  front: cape, back leg, front leg, torso (leaning about the hips), head, arm + weapon.
+  The whole figure tips over about its feet when dead. flash: draw an enemy-style muzzle flash.
+*/
+function drawRig(rig, st, sx, sy, gunKey, flash) {
+  const P = st.pose;
+  const legB = rig.legs + '_back';
+  const legF = rig.legs + '_front';
+  const sB = Art.sprites[legB];
+  const sF = Art.sprites[legF];
+  const k = rig.legW / 22;                       // hip joints sit at fixed fractions of the leg pair
+  ctx.save();
+  ctx.translate(sx, sy);
+  if (P.face < 0) ctx.scale(-1, 1);
+  ctx.globalAlpha = P.alpha;
+  if (P.dead) {
+    ctx.translate(0, rig.footY + P.deathY - (-rig.bodyX) * Math.sin(Math.min(P.deathRot, 1.5708)));   // lie on the ground, not in it
+    ctx.rotate(-P.deathRot);
+    ctx.translate(0, -rig.footY);
+  }
+  rigFlash = P.hit;
+
+  if (rig.cape) {
+    const cs = Art.sprites[rig.cape];
+    ctx.save();
+    ctx.translate(rig.neck[0] - 4, rig.neck[1] + 2 + P.ub);
+    ctx.rotate(P.capeSway + P.lean);
+    rigPart(rig.cape, -cs.w + 6, -2);
+    ctx.restore();
+  }
+
+  const hipY = rig.legY + 1.5;
+  ctx.save();                                       // back leg
+  ctx.translate(rig.legX + 0.29 * rig.legW, hipY - P.liftBack);
+  ctx.rotate(-P.legBack);
+  rigPart(legB, -0.29 * rig.legW, -1.5);
+  ctx.restore();
+  ctx.save();                                       // front leg
+  ctx.translate(rig.legX + 0.7 * rig.legW, hipY - P.liftFront);
+  ctx.rotate(-P.legFront);
+  rigPart(legF, -0.25 * rig.legW, -1.5);
+  ctx.restore();
+
+  ctx.translate(P.shift, P.ub);                     // upper body
+  ctx.translate(rig.hip[0], rig.hip[1]);
+  ctx.rotate(P.lean);
+  ctx.translate(-rig.hip[0], -rig.hip[1]);
+  rigPart(rig.body, rig.bodyX, rig.bodyY);
+  ctx.save();
+  ctx.translate(rig.neck[0], rig.neck[1]);
+  ctx.rotate(P.tilt);
+  rigPart(rig.head, rig.headX - rig.neck[0], rig.headY - rig.neck[1], rig.headW, rig.headH);
+  ctx.restore();
+
+  const armKey = rig.arm;
+  const pv = ART_PIVOTS[armKey];
+  ctx.save();                                       // arm + weapon
+  ctx.translate(rig.shoulder[0], rig.shoulder[1]);
+  ctx.rotate(P.arm - P.lean - P.kick * 0.13);
+  ctx.translate(-P.kick * rig.kickPx, 0);
+  rigPartPivot(armKey);
+  ctx.translate(pv.hand, 0);
+  const gk = gunKey || rig.gun;
+  rigPartPivot(gk);
+  if (flash && P.muz > 0.01) {
+    const fl = Art.sprites['fx/muzzle_flash'];
+    if (fl) {
+      const gs = Art.sprites[gk];
+      const gp = ART_PIVOTS[gk] || { x: 4, y: 4 };
+      ctx.translate((gs ? gs.w : 16) - gp.x, (gs ? gs.h / 2 : 4) - gp.y);
+      const fs = rig.flashScale * (0.7 + 0.5 * P.muz);
+      ctx.globalAlpha = P.alpha * Math.min(1, P.muz * 1.4);
+      ctx.globalCompositeOperation = 'lighter';
+      const fp = ART_PIVOTS['fx/muzzle_flash'];
+      ctx.drawImage(fl.c, -fp.x * fs, -fp.y * fs, fl.w * fs, fl.h * fs);
+    }
+  }
+  ctx.restore();
+  ctx.restore();
+  rigFlash = 0;
+}
+
+/* Current time in seconds for the animation clock (render time, not the physics clock). */
+function animNow() { return performance.now() / 1000; }
+
+/* Arm angle in the facing frame from a true-space aim angle. */
+function frameAim(ang, face) { return Math.atan2(Math.sin(ang), face * Math.cos(ang)); }
+
+/*
+  Hero: animated from velocity (position change), onGround, shots fired, hp. The arm follows
+  aimAngle exactly (the muzzle, the shots and the aim guide use the same joint at (0, -4)).
 */
 function drawPlayerArt(sx, sy) {
   const gunKey = HERO_GUN_KEYS[WEAPONS[currentWeapon].name] || HERO_GUN_KEYS.pistol;
-  if (!Art.has(HERO_PART_KEYS) || !Art.has(gunKey)) return false;
+  if (!Art.has(rigKeys(HERO_RIG)) || !Art.has(gunKey)) return false;
   const face = Math.cos(aimAngle) >= 0 ? 1 : -1;
-  ctx.save();
-  ctx.translate(sx, sy);
-  if (face < 0) ctx.scale(-1, 1);
-  artDraw('hero/legs', -11, 1);
-  artDraw('hero/body', -12, -16);
-  artDraw('hero/head', -8, -28, 16, 16);
-  ctx.restore();
-  drawArmWithGun(sx, sy - 4, 'hero/arm', gunKey, 1);
+  const st = animFor(player, 0);
+  animTick(st, {
+    x: player.body.position.x, y: player.body.position.y, face: face,
+    aim: frameAim(aimAngle, face), smooth: false, grounded: player.onGround,
+    shots: player.shots || 0, hp: player.hp, dead: player.hp <= 0, finalAlpha: 0.3
+  }, animNow());
+  drawRig(HERO_RIG, st, sx, sy, gunKey, false);
   return true;
 }
 
-/* Arm rotated about the shoulder, weapon gripped at the hand, upright when aiming left. */
-function drawArmWithGun(shx, shy, armKey, gunKey, k) {
-  const pv = ART_PIVOTS[armKey];
-  const gp = ART_PIVOTS[gunKey];
-  ctx.save();
-  ctx.translate(shx, shy);
-  ctx.rotate(aimAngle);
-  if (Math.cos(aimAngle) < 0) ctx.scale(1, -1);
-  artDrawPivot(armKey, k);
-  ctx.translate(pv.hand * k, 0);
-  artDrawPivot(gunKey, k);
-  ctx.restore();
-}
-
-const ENEMY_SKINS = ['grunt', 'trooper', 'scout'];
-
 /*
   Enemy soldier. The skin is picked from the Matter body id, so it is steady for a given world.
-  Parts: legs, body, head, then arm and gun aimed at the player when alerted. Same 24 x 30 box.
+  Same 24 x 30 box; aims at the player when alerted, arm eased between poses.
 */
-function drawEnemyArt(e, sx, sy) {
-  const sk = ENEMY_SKINS[e.body.id % ENEMY_SKINS.length];
-  const legs = 'enemies/' + sk + '_legs';
-  const body = 'enemies/' + sk + '_body';
-  const head = 'enemies/' + sk + '_head';
-  const arm = 'enemies/' + sk + '_arm';
-  const gun = 'enemies/' + sk + '_gun';
-  if (!Art.has([legs, body, head, arm, gun])) return false;
+function enemyAnimInput(e) {
   let ang;
   let face = e.facing >= 0 ? 1 : -1;
   if (e.alerted && player) {
@@ -249,23 +343,93 @@ function drawEnemyArt(e, sx, sy) {
   } else {
     ang = face > 0 ? 0.45 : Math.PI - 0.45;
   }
-  ctx.save();
-  ctx.translate(sx, sy);
-  if (face < 0) ctx.scale(-1, 1);
-  artDraw(legs, -11, 0);
-  artDraw(body, -12, -15);
-  artDraw(head, -8, -27, 16, 16);
-  ctx.restore();
-  const pv = ART_PIVOTS[arm];
-  ctx.save();
-  ctx.translate(sx, sy - 4);
-  ctx.rotate(ang);
-  if (Math.cos(ang) < 0) ctx.scale(1, -1);
-  artDrawPivot(arm, 1);
-  ctx.translate(pv.hand, 0);
-  artDrawPivot(gun, 1);
-  ctx.restore();
+  return {
+    x: e.body.position.x, y: e.body.position.y, face: face, aim: frameAim(ang, face), smooth: true,
+    shots: e.shots || 0, hp: e.hp, dead: !e.alive, finalAlpha: 0
+  };
+}
+
+function drawEnemyArt(e, sx, sy) {
+  const rig = ENEMY_RIGS[ENEMY_SKINS[e.body.id % ENEMY_SKINS.length]];
+  if (!Art.has(rigKeys(rig))) return false;
+  const st = animFor(e, e.body.id);
+  animTick(st, enemyAnimInput(e), animNow());
+  drawRig(rig, st, sx, sy, null, true);
   return true;
+}
+
+/* A killed enemy keeps its record but loses its body: play the fall and fade, only if it was seen alive. */
+function drawDeadEnemyArt(e, sx, sy) {
+  const st = animStates.get(e);
+  if (!st || st.deathDone) return;
+  const rig = ENEMY_RIGS[ENEMY_SKINS[e.body.id % ENEMY_SKINS.length]];
+  if (!Art.has(rigKeys(rig))) return;
+  animTick(st, enemyAnimInput(e), animNow());
+  if (!st.deathDone) drawRig(rig, st, sx, sy, null, true);
+}
+
+/*
+  Villain (boss): drawn from the same rig and motion code. No boss exists yet, so nothing calls
+  this in play; v = { x, y (body centre), facing, aim (true angle), grounded, shots, hp, alive }.
+  See drawVillainDebug for a test path.
+*/
+function drawVillainArt(v, sx, sy) {
+  if (!Art.has(rigKeys(VILLAIN_RIG))) return false;
+  const face = v.facing >= 0 ? 1 : -1;
+  const st = animFor(v, 7);
+  animTick(st, {
+    x: v.x, y: v.y, face: face, aim: frameAim(v.aim || 0, face), smooth: true, grounded: v.grounded,
+    shots: v.shots || 0, hp: v.hp, dead: v.alive === false, finalAlpha: 0
+  }, animNow());
+  if (st.deathDone) return true;
+  drawRig(VILLAIN_RIG, st, sx, sy, null, true);
+  return true;
+}
+
+/*
+  Debug path: add ?villain to the page URL (or call debugVillain(true) in the console) to draw a
+  scripted villain 200 px from the hero: walks, jumps, fires, takes a hit, dies, repeats (16 s).
+*/
+const villainDebug = { on: false, v: null, t0: 0, cycle: -1 };
+
+function debugVillain(on) {
+  villainDebug.on = on !== false;
+  villainDebug.v = null;
+  return villainDebug.on;
+}
+if (typeof location !== 'undefined' && /[?&]villain\b/.test(location.search)) villainDebug.on = true;
+
+function drawVillainDebug() {
+  if (!villainDebug.on || !player) return;
+  const D = villainDebug;
+  const now = animNow();
+  if (!D.v) { D.t0 = now; D.v = { x: 0, y: 0, facing: -1, aim: Math.PI, grounded: true, shots: 0, hp: 10, alive: true }; D.cycle = -1; }
+  const t = (now - D.t0) % 16;
+  const cyc = Math.floor((now - D.t0) / 16);
+  const v = D.v;
+  if (cyc !== D.cycle) {                            // new life: fresh animation state
+    D.cycle = cyc;
+    D.v = { x: 0, y: 0, facing: -1, aim: Math.PI, grounded: true, shots: 0, hp: 10, alive: true };
+    return;
+  }
+  const px = player.body.position.x;
+  let gy = player.body.position.y;
+  const gx = Math.floor((px + 200) / TILE);
+  for (let i = 0, ty = Math.floor(gy / TILE) - 6; i < 40; i++, ty++) {
+    if (isSolid(gx, ty)) { gy = ty * TILE; break; }
+  }
+  const walkX = t < 5 ? 200 + 60 * Math.sin(t * 0.9) : t < 7 ? 200 : 200 + 40 * Math.sin(t * 0.7);
+  const jumpT = t >= 5 && t < 6 ? t - 5 : -1;
+  v.x = px + walkX;
+  v.y = gy - VILLAIN_RIG.footY - (jumpT >= 0 ? 60 * 4 * jumpT * (1 - jumpT) : 0);
+  v.grounded = jumpT < 0;
+  v.facing = Math.cos(Math.atan2(player.body.position.y - v.y, px - v.x)) >= 0 ? 1 : -1;
+  v.aim = Math.atan2(player.body.position.y - v.y, px - v.x);
+  const shots = (t >= 7 ? 1 : 0) + (t >= 8 ? 1 : 0) + (t >= 9.2 ? 1 : 0);
+  v.shots = shots;
+  v.hp = t >= 10 ? 6 : 10;
+  v.alive = t < 12;
+  drawVillainArt(v, v.x - camX, v.y - camY);
 }
 
 /* ============================================================

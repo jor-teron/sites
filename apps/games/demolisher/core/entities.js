@@ -67,6 +67,7 @@ function updateEnemies(dt) {
     e.lastShot -= dt;
     if (e.alerted && e.lastShot <= 0 && dist < CFG.enemies.shootDist && dist > 24 && gameState === 'playing') {
       e.lastShot = CFG.enemies.reload + Math.random() * CFG.enemies.reloadJitter;
+      e.shots = (e.shots || 0) + 1;   // animation only: counts real shots
       const angle = Math.atan2(dy, dx);
       enemyProjectiles.push({
         x: b.position.x + Math.cos(angle) * 18,
