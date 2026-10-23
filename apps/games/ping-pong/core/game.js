@@ -26,6 +26,7 @@ function tapAction() {
  */
 function serve(dir) {
   clearTimeout(serveTimer);
+  PP.fx.reset();                        // visual only: drop the old trail / particles
   leftY = (COURT_H - PADDLE_H) / 2;
   rightY = (COURT_H - PADDLE_H) / 2;
   ballX = COURT_W / 2;
@@ -106,6 +107,7 @@ function bounceOffPaddle(py) {
   } else {
     ballX = COURT_W - PADDLE_MARGIN - PADDLE_W - BALL_R - 1;
   }
+  PP.fx.hit(ballX, ballY, "paddle", sign > 0 ? 1 : -1, 0);   // visual only
 }
 
 // --- Update loop pieces -------------------------------------------------
@@ -141,9 +143,11 @@ function updateBall() {
   if (ballY - BALL_R <= 0) {
     ballY = BALL_R;
     ballVY = Math.abs(ballVY);
+    PP.fx.hit(ballX, ballY, "wall", 0, 1);                      // visual only
   } else if (ballY + BALL_R >= COURT_H) {
     ballY = COURT_H - BALL_R;
     ballVY = -Math.abs(ballVY);
+    PP.fx.hit(ballX, ballY, "wall", 0, -1);                     // visual only
   }
 
   // Left paddle
@@ -161,10 +165,12 @@ function updateBall() {
   // Point for AI (ball past left)
   if (ballX + BALL_R < 0) {
     scoreR += 1;
+    PP.fx.hit(0, ballY, "score", 1, 0);                         // visual only
     pointScored(1);
   } else if (ballX - BALL_R > COURT_W) {
     // Point for player (ball past right)
     scoreL += 1;
+    PP.fx.hit(COURT_W, ballY, "score", -1, 0);                  // visual only
     pointScored(-1);
   }
 }
@@ -179,6 +185,7 @@ function tick() {
     // Still allow paddle aim while waiting on serve
     updatePlayer();
   }
+  PP.fx.step(!paused && !winner && !waitingServe);   // visual only: trail + particles
   draw();
   requestAnimationFrame(tick);
 }
