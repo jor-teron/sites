@@ -1,0 +1,14 @@
+# Build history for 2025 (trial file).
+# Format: YYYY-MM-DD : <build number or release tag> -> <short plain-words release note>
+# One line per release, not per commit. GitHub history holds every commit.
+# One file per year: build_history_2025.txt, build_history_2026.txt, build_history_2027.txt.
+# 2025 had no build numbers or release names, so the tag is the commit range (first..last) for that day.
+2025-08-17 : 1474ad4..dd34a49 -> First commits: empty "Hello World" pages for the main site and the TV site.
+2025-08-20 : 37bee5a..b1e712a -> Phone page started; used for trying links that open Android apps such as YouTube.
+2025-08-21 : e205ab7..b84b7e6 -> README added; phone and TV home screens get shared styles, a clock, hidden scrollbars, app icons and a "More" page.
+2025-08-22 : 94d0984..0e2d535 -> More app icons (Google Pay, WhatsApp, YouTube Kids, Settings); TV home and phone "More" page restyled.
+2025-08-25 : 89b41a0..4f99197 -> Phone app lists added for AI, OTT (video), shopping and social media, loaded into the page by a small include script.
+2025-08-26 : 8cbf028..64832e1 -> Phone gets General, Media and Other lists plus a shared header; the "More" page styling reworked many times.
+2025-08-27 : 88212e7..bf317ca -> UPI payment page with QR images, and More-Phone and More-TV pages, for phone and TV.
+2025-09-01 : 84b7c4f..8f132f6 -> Phone home screen restyled; Google Pay shortcut added next to the call icon.
+2025-09-10 : d17103b -> Test file added (test.txt, "Success. OK !").
