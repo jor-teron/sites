@@ -1,6 +1,6 @@
 /*
- * Project: notebook
- * File: nb_draw.js
+ * Project: sketchbook
+ * File: sk_draw.js
  * Role: Pointer drawing (mouse, touch, pen) with basic palm rejection.
  */
 // Get pointer position relative to canvas

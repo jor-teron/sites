@@ -1,6 +1,6 @@
 # Code Lab (N1)
 
-Jupyter/Kaggle-style code cells that run on a **remote Jupyter Server**. Separate from the Notebook app.
+Jupyter/Kaggle-style code cells that run on a **remote Jupyter Server**. Separate from the Sketchbook app.
 
 - **Connection bar**: server URL (remembered), token (password field; only remembered if *Remember* is ticked), Connect, status dot (red = not connected, amber = busy, green = connected).
 - **Kernel**: kernelspecs are listed from the server; Start / Switch, Restart (↻), Interrupt (■).

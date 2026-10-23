@@ -8,7 +8,7 @@ Story,              story/,                       , , AI
 LLM Calculator,     llm-calc/,                    , , AI
 ONNX Runner,        onnx-runner/,                 , , AI
 
-Sketchbook,         notebook/,                    , , Tools
+Sketchbook,         sketchbook/,                  , , Tools
 Code Lab,           code-lab/,                    , , Tools
 Paper Keyboard,     paper-keyboard/,              , , Tools
 MyBookmark,         mybookmark/,                  , , Tools

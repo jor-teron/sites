@@ -1,14 +1,14 @@
 /*
- * Project: notebook
- * File: nb_float.js
+ * Project: sketchbook
+ * File: sk_float.js
  * Role: Floating button gestures (pointer events + pointer capture, works on Android Chrome):
- *   TAP = quick menu (nb_popup.js). HOLD still (< FLOAT_SLOP px) for 1 s = ONE crumple level
+ *   TAP = quick menu (sk_popup.js). HOLD still (< FLOAT_SLOP px) for 1 s = ONE crumple level
  *   (+1, cap 5, shake); hold again for the next. Release past 1/3 of the screen ("armed", jelly
  *   glows), book style: drag LEFT = next page, RIGHT = previous, UP = pages grid, DOWN = nothing.
- *   "Swap gestures" (page 49) flips left<->right and up<->down (gestureFor in nb_store.js).
- *   Horizontal drags drive the page curl (nb_curl.js).
+ *   "Swap gestures" (page 49) flips left<->right and up<->down (gestureFor in sk_store.js).
+ *   Horizontal drags drive the page curl (sk_curl.js).
  */
-// Visual feedback (floatFollow / floatRelease / floatShake / floatPress) lives in nb_jelly.js;
+// Visual feedback (floatFollow / floatRelease / floatShake / floatPress) lives in sk_jelly.js;
 // no-op stand-ins below keep gestures working if that file failed to load.
 if (typeof floatFollow !== 'function') { window.floatFollow = function () {}; window.floatRelease = function () {}; window.floatShake = function () {}; window.floatPress = function () {}; window.floatArm = function () {}; }
 

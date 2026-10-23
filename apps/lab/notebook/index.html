@@ -1,22 +1,18 @@
 <!DOCTYPE html>
 <!--
-  Project: notebook
-  File: index.html
-  Role: Entry redirect. Always sends the browser to notebook.html.
+  Project: sketchbook
+  File: apps/lab/notebook/index.html
+  Role: Redirect stub. This app was renamed Notebook -> Sketchbook; old bookmarks land in ../sketchbook/.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sketchbook</title>
-  <!-- Immediate redirect so a folder open lands on the notebook. -->
-  <meta http-equiv="refresh" content="0; url=notebook.html">
-  <script>
-    /* Replace history so Back does not stick on this redirect stub. */
-    location.replace('notebook.html');
-  </script>
+  <meta http-equiv="refresh" content="0; url=../sketchbook/index.html">
+  <script>location.replace('../sketchbook/index.html');</script>
 </head>
 <body>
-  <p><a href="notebook.html">Open Sketchbook</a></p>
+  <p>Notebook is now <a href="../sketchbook/index.html">Sketchbook</a>.</p>
 </body>
 </html>

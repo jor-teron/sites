@@ -1,17 +1,32 @@
 /*
- * Project: notebook
- * File: nb_store.js
- * Role: Shared state (pages, current page, canvas refs) and LocalStorage load/save. Keys paperNotebook_v2 (pages), paperNotebook_pen (pen colour),
- *   paperNotebook_btnPos (bottom|top), paperNotebook_swap (1|0).
+ * Project: sketchbook
+ * File: sk_store.js
+ * Role: Shared state (pages, current page, canvas refs) and LocalStorage load/save. Keys sketchbook_v2 (pages), sketchbook_pen (pen colour),
+ *   sketchbook_btnPos (bottom|top), sketchbook_swap (1|0). Old paperNotebook_* keys are migrated once at start-up.
  */
+// One-time migration (Notebook -> Sketchbook rename): copy old paperNotebook_* localStorage values to
+// the new sketchbook_* keys, then remove the old ones. Never overwrites a value that already exists
+// under the new key. Runs first so every later read sees the new keys. (No IndexedDB is used by this app.)
+(function migrateOldKeys() {
+  try {
+    ['v2', 'pen', 'btnPos', 'swap', 'crumple'].forEach((k) => {
+      const oldKey = 'paperNotebook_' + k, newKey = 'sketchbook_' + k;
+      const v = localStorage.getItem(oldKey);
+      if (v === null) return;
+      if (localStorage.getItem(newKey) === null) localStorage.setItem(newKey, v);
+      localStorage.removeItem(oldKey);
+    });
+  } catch (_) { /* storage blocked: nothing to migrate */ }
+})();
+
 // Total number of pages (fixed, light version)
 const TOTAL_PAGES = 50;
 
 // LocalStorage key (v2 for 50 pages)
-const STORAGE_KEY = 'paperNotebook_v2';
+const STORAGE_KEY = 'sketchbook_v2';
 
 // Pen colour (quick menu dots), saved separately
-const PEN_KEY = 'paperNotebook_pen';
+const PEN_KEY = 'sketchbook_pen';
 const PEN_COLORS = { black: '#222', blue: '#1f4fbf', red: '#c62828' };
 let penName = 'black';
 try { const v = localStorage.getItem(PEN_KEY); if (PEN_COLORS[v]) penName = v; } catch (_) { /* ignore */ }
@@ -22,8 +37,8 @@ function setPen(name) {
 }
 
 // Button position ('bottom' default | 'top') and swapped gestures, saved separately
-const BTNPOS_KEY = 'paperNotebook_btnPos';
-const SWAP_KEY = 'paperNotebook_swap';
+const BTNPOS_KEY = 'sketchbook_btnPos';
+const SWAP_KEY = 'sketchbook_swap';
 let btnTop = false, swapGestures = false;
 try { btnTop = localStorage.getItem(BTNPOS_KEY) === 'top'; swapGestures = localStorage.getItem(SWAP_KEY) === '1'; } catch (_) { /* ignore */ }
 function savePrefs() {

@@ -1,6 +1,6 @@
 /*
- * Project: notebook
- * File: nb_curl.js
+ * Project: sketchbook
+ * File: sk_curl.js
  * Role: Page-curl animation driven by a horizontal drag on ☰ (no libraries, CSS clip-path only).
  *   On the first horizontal move a copy of the page canvas is taken (#curlPage). The drag
  *   progress folds a corner: the page is clipped along a fold line and the lifted flap (#curlFlap,

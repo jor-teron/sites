@@ -1,6 +1,6 @@
 /*
- * Project: notebook
- * File: nb_cover.js
+ * Project: sketchbook
+ * File: sk_cover.js
  * Role: Printed parts of special pages, drawn on the canvas (so PNG/PDF export and wrinkles work):
  *   - drawCover(front): soft woven CLOTH (no leather) with rounded corners, a stitched spine on
  *     the left; front = elastic band strap + an empty name label (write on it with the pen) +
@@ -91,7 +91,7 @@ function drawFrontExtras(w, h) {
 }
 
 function drawBackExtras(w, h) {
-  // embossed logo: a little notebook + pen in a ring, pressed into the cloth
+  // embossed logo: a little sketchbook + pen in a ring, pressed into the cloth
   const cx = w / 2 + 17, cy = h - 90;
   const draw = (dx, dy, col) => {
     ctx.save(); ctx.translate(dx, dy); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2.5;
