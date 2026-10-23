@@ -3,7 +3,7 @@
   Project: Demolisher
   Purpose: Every tunable value: world, player, materials, weapons / ammo, enemies,
            mission, aim, touch sizes, keys, hub-controller rumble and on-screen text.
-           core/logic.js reads DEMOLISHER_CONFIG. Plain script, no modules.
+           core/state.js reads DEMOLISHER_CONFIG. Plain script, no modules.
 */
 const DEMOLISHER_CONFIG = {
   // App info (page title and the sites hub header)
