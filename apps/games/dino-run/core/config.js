@@ -1,7 +1,7 @@
 /**
  * Dino Run — configuration.
  * Physics, speeds, spawn rates, sizes, colors, keys and on-screen text.
- * dino-run_logic.js reads everything from DINO_RUN_CONFIG.
+ * core/logic.js reads everything from DINO_RUN_CONFIG.
  */
 const DINO_RUN_CONFIG = {
   bestKey: 'dino-run-best',    // localStorage key for the high score
