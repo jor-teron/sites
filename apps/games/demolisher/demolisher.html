@@ -1,8 +1,8 @@
 <!--
   File: demolisher.html
   Project: Demolisher
-  Purpose: Shell only. Styles: demolisher.css. Settings: demolisher_config.js.
-  Logic: demolisher_logic.js. Matter.js is a local copy in vendor/ (no CDN).
+  Purpose: Shell only. Styles: ui/style.css. Game code: core/*.js (plain scripts, load order below).
+  Matter.js is a local copy in core/vendor/ (no CDN).
   Buttons use tabindex="-1" so Enter / Space never re-click them (game keys).
 -->
 <!DOCTYPE html>
@@ -10,8 +10,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Demolisher DM1a</title>
-  <link rel="stylesheet" href="demolisher.css?v=dm1a" />
+  <title>Demolisher DMR1c</title>
+  <link rel="stylesheet" href="ui/style.css?v=DMR1c" />
 </head>
 <body>
 <div id="app">
@@ -66,10 +66,21 @@
     <button class="weapon" data-w="laser" type="button" tabindex="-1">LASER <span class="ammo" id="ammo-laser">50</span></button>
   </div>
 </div>
-<script src="vendor/matter.min.js?v=dm1a"></script>
-<script src="demolisher_seed.js?v=dm1a"></script>
-<script src="demolisher_levels.js?v=dm1a"></script>
-<script src="demolisher_config.js?v=dm1a"></script>
-<script src="demolisher_logic.js?v=dm1a"></script>
+<script src="core/vendor/matter.min.js?v=DMR1c"></script>
+<script src="core/seed.js?v=DMR1c"></script>
+<script src="core/levels.js?v=DMR1c"></script>
+<script src="core/config.js?v=DMR1c"></script>
+<script src="core/state.js?v=DMR1c"></script>
+<script src="core/terrain.js?v=DMR1c"></script>
+<script src="core/physics.js?v=DMR1c"></script>
+<script src="core/weapons.js?v=DMR1c"></script>
+<script src="core/effects.js?v=DMR1c"></script>
+<script src="core/entities.js?v=DMR1c"></script>
+<script src="core/modes.js?v=DMR1c"></script>
+<script src="core/ui.js?v=DMR1c"></script>
+<script src="core/input.js?v=DMR1c"></script>
+<script src="core/hub.js?v=DMR1c"></script>
+<script src="core/render.js?v=DMR1c"></script>
+<script src="core/main.js?v=DMR1c"></script>
 </body>
 </html>

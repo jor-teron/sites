@@ -1,18 +1,18 @@
 /*
-  File: demolisher_levels.js
+  File: core/levels.js
   Project: Demolisher (DM1a)
-  Purpose: Deterministic level generator for levels 01-100 (00 is the fixed Demo world, built in demolisher_logic.js).
+  Purpose: Deterministic level generator for levels 01-100 (00 is the fixed Demo world, built in core/terrain.js).
            generateLevel(n) returns a plain description (tile grid, spawn, targets, enemies, ammo);
-           demolisher_logic.js copies it into the live terrain and uses its own spawnTarget /
+           core/terrain.js copies it into the live terrain and uses its own spawnTarget /
            spawnEnemy. Difficulty d = n / 100 (and k = 0.36 n for the count / material tiers) scales hills, stone, metal guards, lava, targets,
            enemies and tightens the ammo budget. Every candidate is validated and re-rolled
            (attempt index in the seed) until it passes. Pure: no DOM, no Matter.
 */
 (function (root) {
   'use strict';
-  const SEED = root.DemolisherSeed || require('./demolisher_seed.js');
+  const SEED = root.DemolisherSeed || require('./seed.js');
 
-  /* Same ids as MAT in demolisher_logic.js (the logic passes its own table in opts.MAT). */
+  /* Same ids as MAT in core/state.js (the logic passes its own table in opts.MAT). */
   const MAT0 = { AIR: 0, DIRT: 1, GRASS: 2, STONE: 3, WATER: 4, CRATE: 5, METAL: 6, LAVA: 7, TARGET: 8 };
   const HP0 = { 1: 30, 2: 30, 3: 80, 5: 20, 6: 250, 8: 40 };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
