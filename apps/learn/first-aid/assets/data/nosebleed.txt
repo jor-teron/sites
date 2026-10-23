@@ -1,0 +1,22 @@
+title: Nosebleed
+icon: 🩸
+summary: Lean forward and pinch the soft part for 10 minutes.
+call: Get urgent medical help if the bleeding has not stopped after 20 minutes, is very heavy, follows a head injury, or you feel faint or have trouble breathing.
+
+[basics]
+1. Sit down and lean forward a little. Do not tip your head back.
+2. Pinch the soft part of the nose, just below the bony bridge, with your thumb and finger. Breathe through your mouth.
+3. Keep pinching for 10 full minutes without letting go to check. Use a timer.
+4. Spit out any blood that reaches your mouth instead of swallowing it.
+5. When it has stopped, rest. Do not blow, pick or rub your nose, and avoid hot drinks and hard exercise for the rest of the day.
+
+[expert]
+- Why lean forward: with the head back, blood runs down the throat. It can make you cough, gag or feel sick, and you cannot tell how much you are losing.
+- If it starts again, blow your nose gently once to clear clots, then pinch again for another 10 minutes.
+- Most nosebleeds come from the front of the nose and are harmless. Frequent nosebleeds, or nosebleeds while taking blood thinners, should be discussed with a doctor.
+- Common causes: dry air, colds, picking, a knock to the nose. A pharmacist can suggest ways to keep the inside of the nose moist.
+
+[quiz]
+How should you position your head during a nosebleed? | Lean forward a little | Tip your head back | Lie flat on your back | Lie flat on your side
+Where do you pinch? | The soft part of the nose below the bony bridge | The bony bridge between the eyes | The tip of the nose only | The nostrils from inside with a finger
+How long do you pinch before checking? | 10 minutes | 30 seconds | 1 minute | 2 minutes

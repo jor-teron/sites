@@ -1,0 +1,26 @@
+title: CPR (Adult)
+icon: ❤️
+summary: Call, push hard and fast, use an AED.
+call: Call emergency services first, or ask someone to, and ask for an AED (defibrillator). Do not delay starting compressions.
+
+[basics]
+1. Check the scene is safe. Tap their shoulders and shout. If they do not respond and are not breathing normally (not breathing, or only gasping), act now.
+2. Call emergency services, or send someone, and ask for an AED. Put the phone on speaker so you can follow the dispatcher.
+3. Lay the person on their back on a firm surface and kneel beside them.
+4. Put the heel of one hand on the centre of the chest, the other hand on top, arms straight. Push hard and fast: about 5 cm (2 inches) deep, 100 to 120 times a minute. Let the chest come back up fully each time. | drawing: cpr-hands
+5. After 30 compressions, give 2 rescue breaths if you are trained: tilt the head back, lift the chin, pinch the nose and breathe in for about 1 second, watching the chest rise. If you are not trained or not willing, keep doing compressions only.
+6. Keep going with 30 compressions then 2 breaths. When the AED arrives, switch it on and follow its voice instructions. Do not stop until emergency responders take over, the person starts breathing normally, or you cannot carry on.
+
+[expert]
+- Depth and rate: about 5 to 6 cm (2 to 2.4 inches) at 100 to 120 a minute. Do not lean on the chest between pushes. If someone else can help, swap about every 2 minutes.
+- Keep pauses as short as possible, ideally under 10 seconds.
+- An AED is safe for anyone to use. It checks the heart rhythm and only gives a shock if one is needed. Stand clear while it analyses and shocks. Dry a wet chest first and follow the pictures on the pads.
+- Hands-only CPR (compressions with no breaths) is a good option for an untrained bystander helping an adult.
+- Gasping (agonal breathing) is not normal breathing. Start CPR.
+- Children and babies need a changed technique. Learn it in a certified first aid course.
+
+[quiz]
+What is the CPR ratio for an adult when giving breaths? | 30 compressions, then 2 breaths | 15 compressions, then 5 breaths | 2 compressions, then 30 breaths | 10 compressions, then 1 breath
+How fast should compressions be? | 100 to 120 a minute | 40 to 60 a minute | 150 to 200 a minute | As slowly as you can manage
+Where do you place your hands for adult CPR? | Centre of the chest | Top of the stomach | Left side of the ribs | On the throat
+What should you do when an AED arrives? | Switch it on and follow its instructions | Wait until the ambulance gets there | Use it only if you are a doctor | Stop CPR and put it away

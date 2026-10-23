@@ -1,0 +1,24 @@
+title: Burns and Scalds
+icon: 🔥
+summary: Cool it with running water for 20 minutes.
+call: Call emergency services for burns that are large, deep, on the face, hands, feet, genitals or over a joint, for chemical or electrical burns, or if the person has trouble breathing.
+
+[basics]
+1. Move away from the heat. If electricity is involved, switch it off at the source before you touch the person.
+2. Cool the burn under cool (not ice cold) running water for 20 minutes, as soon as possible.
+3. Gently take off rings, watches and tight clothes near the burn before it swells. Do not pull off anything stuck to the skin.
+4. After cooling, cover the burn loosely with cling film laid lengthways (do not wrap it round), or a clean non-fluffy dressing.
+5. Keep the rest of the person warm. Pain relief from the pharmacy may help; follow the label.
+
+[expert]
+- Do not use ice, iced water, butter, oil, toothpaste or creams on a fresh burn. Ice can damage the skin further and greasy products trap heat.
+- Do not burst blisters. They protect the skin underneath.
+- Depth: a red, painful burn is shallow. Blistering, or white, brown or charred skin (which may not hurt) means a deeper burn that needs medical care.
+- Scalds from hot liquid: take off soaked clothing unless it is stuck to the skin, then cool in the same way.
+- Any burn bigger than the person's hand, and any burn in a baby or young child, should be seen by a medical professional.
+- Chemical burns: brush off dry powder first, then flush with plenty of water and keep flushing until help arrives.
+
+[quiz]
+How long should you cool a burn under running water? | 20 minutes | 2 minutes | 30 seconds | Until it stops hurting, then stop
+Which of these should you NOT put on a fresh burn? | Butter or ice | Cool running water | Loose cling film | A clean non-fluffy dressing
+What should you do with a blister? | Leave it alone | Burst it with a clean pin | Rub it with a towel | Pull the skin off

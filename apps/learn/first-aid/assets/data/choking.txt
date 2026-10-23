@@ -1,0 +1,23 @@
+title: Choking (Adult)
+icon: 😮
+summary: Cough, 5 back blows, 5 abdominal thrusts.
+call: Call emergency services right away if the person cannot breathe, cough or speak, or if they become unresponsive. Ask someone else to call while you help.
+
+[basics]
+1. Ask "Are you choking?" If they can cough, speak or breathe, encourage them to keep coughing. Do not slap their back yet.
+2. If they cannot cough, speak or breathe: lean them forward and give up to 5 firm back blows between the shoulder blades with the heel of your hand. | drawing: choking-back-blows
+3. Still choking? Give up to 5 abdominal thrusts: stand behind them, put a fist just above the belly button, hold it with your other hand and pull sharply inwards and upwards. | drawing: choking-thrusts
+4. Keep alternating 5 back blows and 5 abdominal thrusts until the object comes out or help arrives.
+5. If the person becomes unresponsive and is not breathing normally, make sure emergency services are called and start CPR.
+
+[expert]
+- Mild choking: the person can cough, speak or cry. A strong cough is the best way to clear it, so encourage it. Severe choking: they cannot speak or breathe, may clutch the throat, go silent or turn blue.
+- Late pregnancy or a very large person: give chest thrusts instead of abdominal thrusts.
+- Anyone who has needed abdominal thrusts should be checked by a doctor afterwards, because the thrusts can cause internal injury.
+- Do not sweep the mouth blindly with a finger. Only remove an object you can see and easily reach.
+- Babies under 1 year need a different technique (5 back blows and 5 chest thrusts, never abdominal thrusts). This card is for adults; take a first aid course to learn it.
+
+[quiz]
+A choking adult is coughing strongly. What do you do? | Encourage them to keep coughing | Slap their back hard at once | Give abdominal thrusts at once | Give them water to drink
+If an adult cannot cough, speak or breathe, what is the first thing to do? | Give up to 5 back blows | Give up to 5 abdominal thrusts, nothing else | Lay them flat and wait | Put your fingers down their throat
+What is the pattern if the object does not come out? | 5 back blows, then 5 abdominal thrusts, repeated | 30 back blows | 2 breaths, then 30 compressions | Back blows only

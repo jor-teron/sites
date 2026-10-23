@@ -1,0 +1,22 @@
+title: Sprains
+icon: 🦶
+summary: Rest, ice, compress, elevate.
+call: Get medical help if you cannot put weight on the limb, the joint looks out of shape, the area is numb or pale, or the pain is severe. Call emergency services if a bone is sticking through the skin or the limb is badly deformed.
+
+[basics]
+1. Stop what you are doing and rest the injured joint. Do not put weight on it.
+2. Ice: hold an ice pack wrapped in a cloth on it for 15 to 20 minutes, every 2 to 3 hours for the first day or two. Never put ice directly on the skin.
+3. Compress: wrap it with an elastic bandage, starting furthest from the body and working up. Snug, not tight. Loosen it if the area tingles, goes numb, turns cold or hurts more.
+4. Elevate: keep the joint raised above the level of your heart when you sit or lie down.
+5. See a doctor if it is not improving after a few days, or earlier if you think it could be broken.
+
+[expert]
+- A sprain is a stretched or torn ligament; a strain is a pulled muscle or tendon. A broken bone can feel the same, so get it checked if the pain is right over a bone, or you cannot take about 4 steps.
+- During the first 2 to 3 days avoid heat, alcohol, hard exercise and massage, which can increase swelling.
+- Long rest slows recovery. After the first day or two, start gentle movement as pain allows.
+- Pain relief from the pharmacy can help; follow the label.
+
+[quiz]
+What does RICE stand for? | Rest, Ice, Compression, Elevation | Run, Ice, Cool, Exercise | Rest, Inject, Cover, Exercise | Relax, Ice, Cut, Eat
+How should ice be applied? | Wrapped in a cloth, 15 to 20 minutes | Straight on the skin for an hour | Not at all, use heat | Only at night
+When should you see a doctor for a sprain? | If you cannot put weight on it, or it is severe | Never, it always heals alone | Only if it bruises | Only after a month
