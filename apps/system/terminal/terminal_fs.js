@@ -1,8 +1,9 @@
 /*
- * Terminal file tree (apps/system/terminal/terminal_fs.js), T2 — the unix-style view of the Hub's drives
+ * Terminal file tree (apps/system/terminal/terminal_fs.js), T2 (+ T3 hook) — the unix-style view of the Hub's drives
  * and the READ commands. Built on the shared code, nothing re-implemented: window.FsDrives
  * (shared/fs/fs_drives.js: list, handle, access, allow), window.FsOps (shared/fs/fs_ops.js: list, readFile,
- * stats) and, for `open <file>`, window.FsRef + window.FileTypes. Read-only: nothing here writes a file.
+ * stats) and, for `open <file>`, window.FsRef + window.FileTypes. Read-only: nothing in THIS file writes a
+ * file; the commands that change files (T3) live in terminal_wr.js and are plugged in at the end of install().
  *
  * The tree (Jor's definition):
  *   /                        root, holds only `drive`
@@ -511,7 +512,15 @@
     }
     S.ready = init().catch(() => { S.cwd = '/'; ctx.onCwd(); });
 
-    return { cmds, S, openPath, completePath, completeMount, prompt: () => pretty(S.cwd), resolve, entries, mounts, norm };
+    const api = { cmds, S, openPath, completePath, completeMount, prompt: () => pretty(S.cwd), resolve, entries, mounts, norm,
+      childNode, readText, abs, fail, flags, ready, pretty, setCwd, E, join, human, ctx };
+    /* T3: the commands that change files + find / grep (terminal_wr.js) */
+    if (window.TermWr) {
+      const w = window.TermWr.install(api);
+      Object.assign(cmds, w.cmds);
+      api.redirectCheck = w.redirectCheck; api.redirect = w.redirect;
+    }
+    return api;
   }
   window.TermFs = { install, HOME, _t: { norm, safeName, human } };
 })();

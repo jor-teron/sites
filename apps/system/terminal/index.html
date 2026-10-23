@@ -1,11 +1,12 @@
 <!doctype html>
 <!--
-  Terminal (apps/system/terminal/index.html), T1 + T2 — a small command line for the Hub: prompt
+  Terminal (apps/system/terminal/index.html), T1 + T2 + T3 — a small command line for the Hub: prompt
   jor@hub:<folder>$, history (up / down, kept in localStorage 'hub-terminal.history'), Tab completion,
   Ctrl+L clear, Ctrl+C cancel line. Commands: help, clear, echo, date, history, apps, open, build, theme
-  and (T2, read only) pwd, cd, ls, cat, head, tail, wc, tree, stat, drives, allow on the unix-style tree
-  /drive/local, /drive/gdrive, /drive/<folder>. Fixed look (near-black + terminal green), whatever the
-  Hub theme is. Scripts: terminal_fs.js + terminal.js; the files come from the shared code (shared/fs:
+  and (T2) pwd, cd, ls, cat, head, tail, wc, tree, stat, drives, allow on the unix-style tree
+  /drive/local, /drive/gdrive, /drive/<folder>, and (T3, change files) mkdir, touch, cp, mv, rm, rmdir, edit
+  (full-screen editor), find, grep and the redirects > and >>. Fixed look (near-black + terminal green), whatever the
+  Hub theme is. Scripts: terminal_wr.js + terminal_edit.js + terminal_fs.js + terminal.js; the files come from the shared code (shared/fs:
   fs_drives, fs_ops, filetypes, fs_ref; shared/google for the Drive mount, same set as the Viewer app);
   the app list comes from hub/core/hub_appindex.js (generated; also works on file://).
 -->
@@ -16,7 +17,7 @@
   <meta name="theme-color" content="#050a06" />
   <title>Terminal</title>
   <link rel="icon" href="terminal_icon.png" />
-  <link rel="stylesheet" href="terminal.css?v=20261023i" />
+  <link rel="stylesheet" href="terminal.css?v=20261023j" />
 </head>
 <body>
   <main id="term" class="term" aria-label="Terminal">
@@ -26,7 +27,7 @@
         id="in" class="in" type="text" aria-label="Command" autocomplete="off" autocapitalize="off"
         autocorrect="off" spellcheck="false" enterkeyhint="send" /></form>
   </main>
-  <script src="../../../hub/core/hub_appindex.js?v=20261023i"></script>
+  <script src="../../../hub/core/hub_appindex.js?v=20261023j"></script>
   <script src="../../../shared/google/google_config.js?v=20261019r"></script>
   <script src="../../../shared/google/google_auth.js?v=20261019r"></script>
   <script src="../../../shared/google/gdrive_fs.js?v=20261019r"></script>
@@ -34,7 +35,9 @@
   <script src="../../../shared/fs/fs_ops.js?v=20261019r"></script>
   <script src="../../../shared/fs/filetypes.js?v=20261019r"></script>
   <script src="../../../shared/fs/fs_ref.js?v=20261019r"></script>
-  <script src="terminal_fs.js?v=20261023i"></script>
-  <script src="terminal.js?v=20261023i"></script>
+  <script src="terminal_wr.js?v=20261023j"></script>
+  <script src="terminal_edit.js?v=20261023j"></script>
+  <script src="terminal_fs.js?v=20261023j"></script>
+  <script src="terminal.js?v=20261023j"></script>
 </body>
 </html>

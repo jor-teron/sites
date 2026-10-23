@@ -133,12 +133,13 @@ Hub and desktop (Monorepo Bot):
                       browse connected drives; managing is in Disk
   apps/system/sysmon/  System Monitor (tasks, CPU, memory, network,
                       storage, battery)
-  apps/system/terminal/ Terminal (T1 + T2): green-on-black command line;
-                      help, clear, echo, date, history, apps, open,
-                      build, theme + read-only file commands on the
-                      /drive/... tree (pwd, cd, ls, cat, head, tail, wc,
-                      tree, stat, drives, allow). Keys hub-terminal.*
-                      in localStorage. See its README.md
+  apps/system/terminal/ Terminal (T1 + T2 + T3): green-on-black command
+                      line; help, clear, echo, date, history, apps, open,
+                      build, theme + file commands on the /drive/... tree:
+                      read (pwd, cd, ls, cat, head, tail, wc, tree, stat,
+                      drives, allow) and, T3, change (mkdir, touch, cp,
+                      mv, rm, rmdir, edit, find, grep, > and >>). Keys
+                      hub-terminal.* in localStorage. See its README.md
   apps/system/apphub/  App Hub (AH1): Favourites row (favorite-apps.csv
                       order) + category tiles with counts; #cat=<name>
                       category pages; opens apps in the Hub. Not an
@@ -417,10 +418,15 @@ Mount names come from the drive name in FsDrives.list(), made unix-safe
 (spaces and odd characters -> "_") and unique (-2, -3 on a clash); "local"
 and "gdrive" are reserved. The name <-> drive id mapping is kept in
 localStorage 'hub-terminal.mounts' so a folder keeps its name.
-The Terminal's view of it (T2, read only): pwd, cd, ls, cat, head, tail, wc,
-tree, stat, drives, allow, open <path>. It uses shared FsDrives + FsOps and
-changes nothing in shared/fs. A real folder after a browser restart shows
-"Permission needed: run `allow <mount>`"; allow asks from the Enter key.
+The Terminal's view of it: T2 reads (pwd, cd, ls, cat, head, tail, wc, tree,
+stat, drives, allow, open <path>); T3 also changes (mkdir, touch, cp, mv, rm,
+rmdir, edit, find, grep, > and >>; terminal_wr.js + terminal_edit.js). It uses
+shared FsDrives + FsOps (copy, move, remove, mkdir, writeFile; cp/mv between
+drives is FsOps copy, then remove for mv) and changes nothing in shared/fs.
+All paths resolve inside a mount handle; /, /drive and a drive root cannot be
+removed or moved. Real host folders have no trash. A real folder after a
+browser restart (or a write the browser refuses) shows "Permission needed:
+run `allow <mount>`"; allow asks from the Enter key (readwrite).
 Other apps (Files, Drives pane) still address drives by id (#drive=<id>),
 not by this path.
 
