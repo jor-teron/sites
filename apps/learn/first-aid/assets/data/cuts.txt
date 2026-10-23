@@ -1,0 +1,27 @@
+# Card file format: header lines, then [basics], [expert] and [quiz] sections. Lines starting with # are ignored.
+# Steps are numbered ("1. text") or bulleted ("- text"). A step may end with "| drawing: some-id" (reserved for drawings later, ignored now).
+# Quiz lines: question | right answer | wrong answer | wrong answer ...   (at least one wrong answer)
+title: Cuts and Scrapes
+icon: 🩹
+summary: Stop the bleeding, clean it, cover it.
+call: Call emergency services if the bleeding is heavy, spurts, or does not stop after 10 minutes of firm pressure.
+
+[basics]
+1. Wash your hands with soap and water, or put on clean gloves if you have them.
+2. Press a clean cloth or gauze firmly on the cut. Keep pressing for 10 minutes without lifting it to check. | drawing: cuts-pressure
+3. If blood soaks through, put more cloth on top and keep pressing. Do not remove the first layer.
+4. When the bleeding stops, rinse the cut gently under clean running water and wash the skin around it with mild soap.
+5. Pat dry and cover with a clean dressing or bandage. Change it daily, or sooner if it gets wet or dirty.
+
+[expert]
+- Why pressure works: firm pressure squeezes the damaged blood vessels shut so a clot can form. Lifting early to look breaks the clot.
+- Raising an injured arm or leg above the heart can slow the bleeding. Do not move a limb you think may be broken.
+- Do not use a tourniquet unless bleeding from a limb is life threatening and firm pressure cannot control it. Follow the emergency dispatcher's instructions.
+- See a doctor for deep or gaping cuts, cuts over joints, animal or human bites, wounds from dirty or rusty objects, or if you are unsure when you last had a tetanus vaccination.
+- Signs of infection: spreading redness, warmth, swelling, pus, red streaks, or fever. See a doctor if you notice any of them.
+- Avoid putting cotton wool directly on a wound, because the fibres stick to it.
+
+[quiz]
+How long should you press firmly on a bleeding cut? | About 10 minutes without lifting to check | 10 seconds, then look | Only until the blood slows | You should not press on it
+Blood soaks through the cloth. What do you do? | Put more cloth on top and keep pressing | Take it off and start again | Stop pressing and rinse it | Wait for the blood to dry
+What do you do once the bleeding has stopped? | Rinse gently, then cover with a clean dressing | Leave it uncovered so it dries out | Rub it with a towel | Pour hot water on it

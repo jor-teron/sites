@@ -1,0 +1,13 @@
+# First Aid: the list of cards, in the order shown on the home screen.
+# One card file name per line (without .txt). Lines starting with # are comments. Remove a line to hide a card.
+# Optional settings (before or after the list):
+title: First Aid
+disclaimer: General guidance, not a substitute for professional help or emergency services
+
+cuts
+burns
+choking
+cpr
+nosebleed
+sprain
+fainting
