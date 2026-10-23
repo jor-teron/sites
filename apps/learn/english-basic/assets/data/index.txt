@@ -1,0 +1,12 @@
+# English Basic: the list of topics, in the order shown on the home screen.
+# One file name per line (without .txt). Lines starting with # are comments. Remove a line to hide a topic.
+# Optional settings (before or after the list):
+title: English Basic
+disclaimer: A simple beginner guide: practise a little every day.
+
+alphabet
+words
+sentences
+questions
+phrases
+spelling

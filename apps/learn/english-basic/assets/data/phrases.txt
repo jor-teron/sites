@@ -1,0 +1,25 @@
+title: Common Phrases
+icon: 👋
+summary: Greetings, polite words and asking for help.
+
+[basics]
+1. Greet people: "Hello" or "Hi" at any time. "Good morning", "Good afternoon" and "Good evening" suit the time of day.
+2. Say thank you: "Thank you" or "Thanks". The reply is "You're welcome."
+3. Ask politely with please: "Can I have some water, please?"
+4. Get attention or pass by with "Excuse me": "Excuse me, where is the station?"
+5. Say "Sorry" when you make a mistake. The reply is "That's okay" or "No problem."
+6. Ask for help: "Can you help me, please?" or "I don't understand. Can you say that again?"
+7. When you leave, say "Goodbye", "Bye" or "See you later."
+
+[expert]
+- "Excuse me" is for getting attention. "Sorry" is for an apology. Do not swap them.
+- "How do you do?" is very formal. In daily life, "Nice to meet you" is more usual.
+- "Pardon?" or "Sorry?" asks someone to repeat something, and it is polite.
+- "Could you..." is a little softer than "Can you...", so use it with people you do not know.
+- Say "Good night" only when someone is going to bed or you are leaving late at night.
+
+[quiz]
+What do you say to answer "Thank you"? | You're welcome. | Good morning. | See you later. | Excuse me.
+What do you say to get someone's attention? | Excuse me. | Thank you. | Goodbye. | You're welcome.
+Which phrase asks someone to repeat? | Can you say that again, please? | Good evening. | Nice to meet you. | I am fine.
+Which phrase is used when you leave? | See you later. | Good morning. | How are you? | Excuse me.

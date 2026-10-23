@@ -1,0 +1,24 @@
+title: Alphabet and Sounds
+icon: 🔤
+summary: 26 letters, vowels, consonants and common sounds.
+
+[basics]
+1. The English alphabet has 26 letters: A B C D E F G H I J K L M N O P Q R S T U V W X Y Z.
+2. Each letter has a capital form (A) and a small form (a). Capitals start sentences and names.
+3. Five letters are vowels: a, e, i, o, u. Every English word has at least one vowel sound.
+4. The other 21 letters are consonants, like b, c, d, f and g.
+5. Some letters join to make one new sound: sh in "ship", ch in "chair", th in "think".
+6. Say each letter aloud, then say a word that starts with it: A, apple. B, book. C, cat.
+
+[expert]
+- The letter y can act as a vowel, as in "sky" and "gym", or as a consonant, as in "yes".
+- The same letter can have different sounds: "c" is hard in "cat" and soft in "city".
+- "th" has two sounds: voiced in "this" and unvoiced in "thin". Put a hand on your throat to feel the difference.
+- Pairs of letters such as "ee" in "see" and "oo" in "moon" make long vowel sounds.
+- Spelling does not always match sound ("knee" starts with the sound n), so learn new words by hearing and seeing them together.
+
+[quiz]
+How many letters are in the English alphabet? | 26 | 24 | 21 | 30
+Which of these letters is a vowel? | e | b | k | t
+Which two letters together make the sound at the start of "ship"? | sh | st | sp | hs
+Which word starts with a consonant? | dog | apple | orange | egg
