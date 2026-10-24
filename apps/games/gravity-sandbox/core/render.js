@@ -16,6 +16,19 @@
   R.pushTrails = function () {
     for (const b of P.bodies) { b.trail.push(b.x, b.y); if (b.trail.length > 240) b.trail.splice(0, 2); }
   };
+  /* 0..1: how close a body is to the nearest black hole (1 at the horizon, 0 beyond 8 radii). */
+  R.nearHole = function (b, holes) {
+    let k = 0; for (const h of holes) k = Math.max(k, 1 - (Math.hypot(b.x - h.x, b.y - h.y) - h.r) / (7 * h.r));
+    return Math.min(1, k);
+  };
+  /* Black hole: soft amber/violet glow, a thin bright photon ring, and a pure black core. */
+  R.drawHole = function (b, r, z) {
+    const g = cx.createRadialGradient(b.x, b.y, r, b.x, b.y, r * 2.6);
+    g.addColorStop(0, 'rgba(255,205,150,0.55)'); g.addColorStop(0.25, 'rgba(190,140,255,0.22)'); g.addColorStop(1, 'rgba(120,90,200,0)');
+    cx.fillStyle = g; cx.beginPath(); cx.arc(b.x, b.y, r * 2.6, 0, 7); cx.fill();
+    cx.strokeStyle = 'rgba(255,222,180,0.8)'; cx.lineWidth = Math.max(1, r * 0.12 * z) / z; cx.beginPath(); cx.arc(b.x, b.y, r * 1.12, 0, 7); cx.stroke();
+    cx.fillStyle = '#000'; cx.beginPath(); cx.arc(b.x, b.y, r, 0, 7); cx.fill();
+  };
   R.draw = function () {
     const z = R.cam.z;
     cx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -25,14 +38,20 @@
       cx.fillStyle = `rgba(200,215,255,${s[3]})`; cx.fillRect(x, y, s[2], s[2]);
     }
     cx.setTransform(dpr * z, 0, 0, dpr * z, dpr * (W / 2 - R.cam.x * z), dpr * (H / 2 - R.cam.y * z));
+    const holes = P.bodies.filter(b => b.hole);
     if (R.trails) {
-      cx.lineWidth = 1 / z;
       for (const b of P.bodies) {
+        cx.lineWidth = 1 / z;
         const t = b.trail, n = t.length / 2; if (n < 2) continue;
         for (let seg = 0; seg < 4; seg++) { // fade in 4 bands
           const a = Math.floor(seg * n / 4), e = Math.min(n - 1, Math.floor((seg + 1) * n / 4));
           cx.globalAlpha = 0.12 + seg * 0.15; cx.strokeStyle = b.hole ? '#a6f' : b.col; cx.beginPath();
           cx.moveTo(t[a * 2], t[a * 2 + 1]); for (let k = a + 1; k <= e; k++) cx.lineTo(t[k * 2], t[k * 2 + 1]); cx.stroke();
+        }
+        const k = b.hole ? 0 : R.nearHole(b, holes);
+        if (k > 0) { // accretion look: the newest part of the trail glows brighter and wider near a hole
+          cx.globalAlpha = 0.25 + 0.6 * k; cx.strokeStyle = '#ffd9a8'; cx.lineWidth = (1 + 2.5 * k) / z; cx.beginPath();
+          const a0 = Math.max(0, n - 40); cx.moveTo(t[a0 * 2], t[a0 * 2 + 1]); for (let q = a0 + 1; q < n; q++) cx.lineTo(t[q * 2], t[q * 2 + 1]); cx.lineTo(b.x, b.y); cx.stroke();
         }
       }
       cx.globalAlpha = 1;
@@ -44,10 +63,7 @@
         g.addColorStop(0, b.col); g.addColorStop(1, 'rgba(255,200,80,0)'); cx.fillStyle = g;
         cx.beginPath(); cx.arc(b.x, b.y, r * 3, 0, 7); cx.fill();
       }
-      if (b.hole) {
-        cx.strokeStyle = '#b07cff'; cx.lineWidth = 2 / z; cx.beginPath(); cx.arc(b.x, b.y, r * 1.6, 0, 7); cx.stroke();
-        cx.fillStyle = '#000'; cx.beginPath(); cx.arc(b.x, b.y, r, 0, 7); cx.fill(); continue;
-      }
+      if (b.hole) { R.drawHole(b, r, z); continue; }
       cx.fillStyle = b.col; cx.beginPath(); cx.arc(b.x, b.y, r, 0, 7); cx.fill();
       if (!b.star && r * z > 3) { cx.fillStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.arc(b.x + r * 0.35, b.y + r * 0.35, r * 0.85, 0, 7); cx.fill(); }
       if (b.ring) { cx.strokeStyle = 'rgba(230,210,150,.7)'; cx.lineWidth = 1.2 / z; cx.beginPath(); cx.ellipse(b.x, b.y, r * 1.9, r * 0.6, -0.4, 0, 7); cx.stroke(); }

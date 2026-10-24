@@ -41,12 +41,16 @@ window.GS = window.GS || {};
     const bs = P.bodies; let merged = 0;
     for (let i = 0; i < bs.length; i++) {
       for (let j = i + 1; j < bs.length; j++) {
-        const a = bs[i], b = bs[j], dx = b.x - a.x, dy = b.y - a.y, rr = (a.r + b.r) * 0.6;
+        const a = bs[i], b = bs[j], dx = b.x - a.x, dy = b.y - a.y, h = !!a.hole !== !!b.hole;
+        // event horizon: a body whose centre crosses a black hole's radius is swallowed
+        const rr = Math.max((a.r + b.r) * 0.6, a.hole ? a.r : 0, b.hole ? b.r : 0);
         if (dx * dx + dy * dy < rr * rr) {
-          const big = a.m >= b.m ? a : b, sm = big === a ? b : a, M = a.m + b.m;
+          // a black hole always wins; otherwise (incl. two holes) the heavier absorbs the lighter
+          const big = h ? (a.hole ? a : b) : (a.m >= b.m ? a : b), sm = big === a ? b : a, M = a.m + b.m;
           big.x = (a.x * a.m + b.x * b.m) / M; big.y = (a.y * a.m + b.y * b.m) / M;
           big.vx = (a.vx * a.m + b.vx * b.m) / M; big.vy = (a.vy * a.m + b.vy * b.m) / M;
           if (!big.hole) big.r = Math.cbrt(Math.pow(big.r, 3) + Math.pow(sm.r, 3) * 0.5);
+          else big.r = big.r * Math.sqrt(M / big.m) + 0.05; // horizon grows a little with mass
           big.m = M; bs.splice(bs.indexOf(sm), 1); merged++;
           if (P.onMerge) P.onMerge(sm, big);
           i = -1; break;
