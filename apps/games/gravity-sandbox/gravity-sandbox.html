@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Gravity Sandbox GSQ1b</title>
+  <link rel="icon" href="gravity-sandbox_icon.png" />
+  <link rel="stylesheet" href="ui/gravity.css?v=GSQ1b" />
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <header id="bar">
+    <a id="back" href="../" title="Games">&#8592;</a>
+    <b>GRAVITY SANDBOX</b> <span id="ver">v0.1</span>
+    <select id="preset" title="Preset">
+      <option value="solar">Solar System</option>
+      <option value="binary">Binary stars</option>
+      <option value="figure8">Figure-eight 3-body</option>
+      <option value="cluster">Random cluster</option>
+      <option value="blackhole">Black hole</option>
+      <option value="empty">Empty</option>
+    </select>
+    <select id="btype" title="Body to fling">
+      <option value="moon">Moon</option>
+      <option value="planet" selected>Planet</option>
+      <option value="giant">Gas giant</option>
+      <option value="star">Star</option>
+      <option value="hole">Black hole</option>
+    </select>
+    <button id="pause" type="button">Pause</button>
+    <button id="reset" type="button">Reset</button>
+    <label>Speed <input id="speed" type="range" min="0" max="6" step="1" value="3" /></label>
+    <label><input id="trails" type="checkbox" checked /> Trails</label>
+  </header>
+  <div id="info"></div>
+  <div id="note"></div>
+  <script src="core/physics.js?v=GSQ1b"></script>
+  <script src="assets/bodies/star.js?v=GSQ1b"></script>
+  <script src="assets/bodies/planet.js?v=GSQ1b"></script>
+  <script src="assets/bodies/blackhole.js?v=GSQ1b"></script>
+  <script src="assets/presets/solar.js?v=GSQ1b"></script>
+  <script src="assets/presets/others.js?v=GSQ1b"></script>
+  <script src="ui/lensing.js?v=GSQ1b"></script>
+  <script src="ui/render.js?v=GSQ1b"></script>
+  <script src="ui/ui.js?v=GSQ1b"></script>
+  <script src="core/main.js?v=GSQ1b"></script>
+</body>
+</html>

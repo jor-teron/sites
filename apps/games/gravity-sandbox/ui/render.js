@@ -1,4 +1,4 @@
-/* Gravity Sandbox — rendering: star field, trails, bodies, fling preview. */
+/* Gravity Sandbox — rendering: star field, trails, bodies (looks in assets/bodies/), fling preview. */
 (function () {
   'use strict';
   const P = GS.P;
@@ -21,31 +21,27 @@
     let k = 0; for (const h of holes) k = Math.max(k, 1 - (Math.hypot(b.x - h.x, b.y - h.y) - h.r) / (7 * h.r));
     return Math.min(1, k);
   };
-  /* Black hole: soft amber/violet glow, a thin bright photon ring, and a pure black core. */
-  R.drawHole = function (b, r, z) {
-    const g = cx.createRadialGradient(b.x, b.y, r, b.x, b.y, r * 2.6);
-    g.addColorStop(0, 'rgba(255,205,150,0.55)'); g.addColorStop(0.25, 'rgba(190,140,255,0.22)'); g.addColorStop(1, 'rgba(120,90,200,0)');
-    cx.fillStyle = g; cx.beginPath(); cx.arc(b.x, b.y, r * 2.6, 0, 7); cx.fill();
-    cx.strokeStyle = 'rgba(255,222,180,0.8)'; cx.lineWidth = Math.max(1, r * 0.12 * z) / z; cx.beginPath(); cx.arc(b.x, b.y, r * 1.12, 0, 7); cx.stroke();
-    cx.fillStyle = '#000'; cx.beginPath(); cx.arc(b.x, b.y, r, 0, 7); cx.fill();
-  };
+  /* Look for a body: b.look, else by kind. Add a new look in assets/bodies/ and set b.look to its key. */
+  R.look = b => GS.BODIES[b.look || (b.hole ? 'hole' : b.star ? 'star' : 'planet')] || GS.BODIES.planet;
   R.draw = function () {
     const z = R.cam.z;
     cx.setTransform(dpr, 0, 0, dpr, 0, 0);
     cx.fillStyle = '#02030a'; cx.fillRect(0, 0, W, H);
-    for (const s of stars) { // parallax star field
+    const holes = P.bodies.filter(b => b.hole), lens = GS.L.prep(holes, R.toScreen, z);
+    for (const s of stars) { // parallax star field (bent near black holes by ui/lensing.js)
       const x = ((s[0] - R.cam.x * s[4] * z) % W + W) % W, y = ((s[1] - R.cam.y * s[4] * z) % H + H) % H;
+      if (lens.length && GS.L.star(cx, lens, x, y, s[2], s[3])) continue;
       cx.fillStyle = `rgba(200,215,255,${s[3]})`; cx.fillRect(x, y, s[2], s[2]);
     }
+    if (lens.length) GS.L.rings(cx, lens);
     cx.setTransform(dpr * z, 0, 0, dpr * z, dpr * (W / 2 - R.cam.x * z), dpr * (H / 2 - R.cam.y * z));
-    const holes = P.bodies.filter(b => b.hole);
     if (R.trails) {
       for (const b of P.bodies) {
         cx.lineWidth = 1 / z;
         const t = b.trail, n = t.length / 2; if (n < 2) continue;
         for (let seg = 0; seg < 4; seg++) { // fade in 4 bands
           const a = Math.floor(seg * n / 4), e = Math.min(n - 1, Math.floor((seg + 1) * n / 4));
-          cx.globalAlpha = 0.12 + seg * 0.15; cx.strokeStyle = b.hole ? '#a6f' : b.col; cx.beginPath();
+          cx.globalAlpha = 0.12 + seg * 0.15; cx.strokeStyle = R.look(b).trail || b.col; cx.beginPath();
           cx.moveTo(t[a * 2], t[a * 2 + 1]); for (let k = a + 1; k <= e; k++) cx.lineTo(t[k * 2], t[k * 2 + 1]); cx.stroke();
         }
         const k = b.hole ? 0 : R.nearHole(b, holes);
@@ -57,16 +53,8 @@
       cx.globalAlpha = 1;
     }
     for (const b of P.bodies) {
-      const r = Math.max(b.r, 1.5 / z);
-      if (b.star) {
-        const g = cx.createRadialGradient(b.x, b.y, r * 0.3, b.x, b.y, r * 3);
-        g.addColorStop(0, b.col); g.addColorStop(1, 'rgba(255,200,80,0)'); cx.fillStyle = g;
-        cx.beginPath(); cx.arc(b.x, b.y, r * 3, 0, 7); cx.fill();
-      }
-      if (b.hole) { R.drawHole(b, r, z); continue; }
-      cx.fillStyle = b.col; cx.beginPath(); cx.arc(b.x, b.y, r, 0, 7); cx.fill();
-      if (!b.star && r * z > 3) { cx.fillStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.arc(b.x + r * 0.35, b.y + r * 0.35, r * 0.85, 0, 7); cx.fill(); }
-      if (b.ring) { cx.strokeStyle = 'rgba(230,210,150,.7)'; cx.lineWidth = 1.2 / z; cx.beginPath(); cx.ellipse(b.x, b.y, r * 1.9, r * 0.6, -0.4, 0, 7); cx.stroke(); }
+      const r = Math.max(b.r, 1.5 / z), lk = R.look(b);
+      lk.draw(cx, b, r, z); if (lk.label === false) continue;
       if (b.name && z * 1 > 0.35 && (b.m > 0.01 || z > 2)) { cx.fillStyle = 'rgba(180,200,230,.7)'; cx.font = 11 / z + 'px system-ui'; cx.fillText(b.name, b.x + r + 3 / z, b.y - r - 2 / z); }
     }
     if (R.follow && P.bodies.includes(R.follow)) { const b = R.follow; cx.strokeStyle = '#6f6'; cx.lineWidth = 1 / z; cx.beginPath(); cx.arc(b.x, b.y, b.r + 5 / z, 0, 7); cx.stroke(); }
