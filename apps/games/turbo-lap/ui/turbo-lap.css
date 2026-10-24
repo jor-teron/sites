@@ -89,18 +89,20 @@ h2.win { color: #ffd400; } h2.lose { color: #cfd8ff; }
 .picker { width: min(94vw, 760px); display: flex; flex-direction: column; max-height: 94vh; overflow: hidden; }
 .pickhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .pickhead h2 { margin: 0; }
-.pickgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; margin-top: 8px; padding: 2px;
+.pickgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 8px; padding: 2px;
   overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior: contain; min-height: 0; flex: 1 1 auto; max-height: 62vh; }
-.pcell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 6px 2px; min-height: 48px;
+.pcell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 6px 6px 4px; min-height: 48px;
   border-radius: 8px; background: #2a3160; border: 2px solid transparent; font-size: clamp(14px, 2.4vmin, 18px); }
 .pcell b { font-weight: 900; letter-spacing: 1px; }
+.pcell .pmap { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 6px; background: rgba(8, 10, 24, 0.35); }
+.titlemap { flex: none; width: clamp(72px, 16vmin, 128px); height: auto; aspect-ratio: 4 / 3; border-radius: 8px; background: rgba(8, 10, 24, 0.45); }
 .pcell .pt { font-size: 10px; font-weight: normal; color: #8f9ad0; font-variant-numeric: tabular-nums; }
 .pcell.has { background: #263a6a; } .pcell.has .pt { color: #ffd400; }
 .pcell.cur { border-color: #d01c8b; }
 .pcell:focus-visible { outline: 3px solid #7fd8ff; outline-offset: 1px; }
 @media (max-height: 430px) {
-  .picker .small { display: none; } .pickgrid { max-height: 68vh; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); }
-  .pcell { min-height: 42px; padding: 3px 2px; } .circuitrow { margin: 2px 0; } .demo { margin: 2px 0 4px; }
+  .picker .small { display: none; } .pickgrid { max-height: 68vh; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+  .pcell { min-height: 42px; padding: 3px 4px; } .circuitrow { margin: 2px 0; } .demo { margin: 2px 0 4px; }
 }
 
 /* ---- themes (TLQ1b) ---- */
