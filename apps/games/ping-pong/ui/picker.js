@@ -171,7 +171,10 @@
       c.m = m;
       return c;
     });
-    paddleCards = PP.paddles.map(function (m) {
+    // Kept for later: hidden in PPQ1a, will return when paddles grow to 10 items.
+    // Only the visible models get a card: Ice Slab, Flame Blade, Neon Bar and Table Tennis Bat carry `hidden: true`
+    // (their files still load); PP.visiblePaddles() leaves them out. Remove the flag to bring one back.
+    paddleCards = PP.visiblePaddles().map(function (m) {
       const c = card(paddleList, " paddle-card", "data-paddle-id", m.id, m.name, function () { pickPaddle(m.id); });
       c.m = m;
       return c;

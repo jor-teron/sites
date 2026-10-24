@@ -126,6 +126,8 @@ const PONG_CONFIG = {
     key: "ping-pong.paddle",  // localStorage key for the chosen paddle
     default: "classic",       // paddle id used when nothing (valid) is saved
     text: { section: "Paddle" },
+    // PPQ1a: a saved pick of a now-hidden paddle (model flag `hidden: true`) moves to its replacement (PP.setPaddle)
+    migrate: { iceslab: "cricketbat", flame: "hockeystick", neon: "samuraisword", bat: "tennisracket" },
   },
 
   // Key bindings — matched against KeyboardEvent.code OR .key.

@@ -1,4 +1,8 @@
 /*
+ * Kept for later: hidden in PPQ1a, will return when paddles grow to 10 items.
+ * Hidden by `hidden: true` below: ui/picker.js lists only models without it (PP.visiblePaddles), and a saved
+ * "flame" is migrated to "hockeystick" (CFG.paddles.migrate, applied in PP.setPaddle). The file still loads and still works.
+ *
  * Ping Pong — Flame Blade: a burning bar. A dark-red to white-hot gradient body with flickering light lobes inside it, small
  * flame tips licking over both ends and an orange glow; embers rise off it all the time (its own `emit`), and a hit makes it
  * flare (a hot spot at the contact point, a bigger glow, ~16 frames) with a burst of sparks off the face. The flicker is
@@ -6,6 +10,7 @@
  */
 PP.registerPaddle({
   id: "flame",
+  hidden: true,         // PPQ1a: not in the picker (see the note at the top)
   name: "Flame Blade",
   emit: { every: 3, kind: "spark", colors: ["#ffd36a", "#ff8a1f", "#ff4a10"], size: 1.9, life: 34, speed: 0.5, rise: 0.8, glow: true },
   hit: { kind: "spark", count: 8, colors: ["#fff1a8", "#ffb040", "#ff5a1a"], speed: 4.4, life: 22, size: 2.8, glow: true },
