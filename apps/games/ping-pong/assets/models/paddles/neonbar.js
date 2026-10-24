@@ -1,10 +1,15 @@
 /*
+ * Kept for later: hidden in PPQ1a, will return when paddles grow to 10 items.
+ * Hidden by `hidden: true` below: ui/picker.js lists only models without it (PP.visiblePaddles), and a saved
+ * "neon" is migrated to "samuraisword" (CFG.paddles.migrate, applied in PP.setPaddle). The file still loads and still works.
+ *
  * Ping Pong — Neon Bar: a glowing tube. A dark glass body, a tube-coloured rim (the theme's paddle colour, so the two
  * sides stay apart) and a white-hot core; on a hit the tube flares: a brighter, bigger glow and a white flash that runs
  * from the contact point along the tube (a pulse of about 26 frames). Visual only; the body stays inside the hit box.
  */
 PP.registerPaddle({
   id: "neon",
+  hidden: true,         // PPQ1a: not in the picker (see the note at the top)
   name: "Neon Bar",
   hit: { kind: "spark", count: 6, colors: ["#ffffff", "#9ff4ff"], speed: 3.8, life: 18, size: 2.4, glow: true, ring: { color: "rgba(255,255,255,0.85)", size: 18, life: 14 } },
   draw(ctx, x, y, w, h, col, st) {

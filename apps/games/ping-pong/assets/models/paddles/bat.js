@@ -1,4 +1,8 @@
 /*
+ * Kept for later: hidden in PPQ1a, will return when paddles grow to 10 items.
+ * Hidden by `hidden: true` below: ui/picker.js lists only models without it (PP.visiblePaddles), and a saved
+ * "bat" is migrated to "tennisracket" (CFG.paddles.migrate, applied in PP.setPaddle). The file still loads and still works.
+ *
  * Ping Pong — Table Tennis Bat: a red rubber blade with a wooden handle, seen from above. It fits the paddle's hit box
  * (w x h): the blade is the top ~3/4 (an upright oval), the handle the rest (pointing down). It is oriented to the court:
  * the red rubber face is the side toward the net, the bare wood back faces the wall. On a hit the blade flexes (the oval
@@ -6,6 +10,7 @@
  */
 PP.registerPaddle({
   id: "bat",
+  hidden: true,         // PPQ1a: not in the picker (see the note at the top)
   name: "Table Tennis Bat",
   hit: { kind: "spark", count: 5, colors: ["#ffffff", "#ffd9a0"], speed: 2.8, life: 14, size: 2, glow: false, ring: { color: "rgba(255,235,200,0.85)", size: 16, life: 12 } },
   draw(ctx, x, y, w, h, col, st) {

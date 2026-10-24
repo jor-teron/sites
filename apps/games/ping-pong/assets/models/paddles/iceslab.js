@@ -1,4 +1,8 @@
 /*
+ * Kept for later: hidden in PPQ1a, will return when paddles grow to 10 items.
+ * Hidden by `hidden: true` below: ui/picker.js lists only models without it (PP.visiblePaddles), and a saved
+ * "iceslab" is migrated to "cricketbat" (CFG.paddles.migrate, applied in PP.setPaddle). The file still loads and still works.
+ *
  * Ping Pong — Ice Slab: a frosted block of ice (pale blue gradient, frost speckles, a bright bevel, a steel-blue outline so it
  * reads on dark and light courts) with a few slow twinkles. On a hit a crack splits across the slab from the contact point
  * and fades out (~40 frames) with a glint, and ice flakes and stars fly off the face. The crack shape comes from the hit
@@ -6,6 +10,7 @@
  */
 PP.registerPaddle({
   id: "iceslab",
+  hidden: true,         // PPQ1a: not in the picker (see the note at the top)
   name: "Ice Slab",
   hit: { kind: "flake", count: 5, colors: ["#ffffff", "#bfe6ff", "#7cc4ff"], speed: 3.2, life: 26, size: 5, glow: "#bfe6ff", ring: null },
   draw(ctx, x, y, w, h, col, st) {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Ping Pong PGQ1d</title>
+  <title>Ping Pong PPQ1a</title>
   <!--
     ========================================================================
     Ping Pong — HTML + CSS + JS (split: ui/ = CSS, DOM, HUD, hub bridge; core/ = config + game logic;
@@ -20,14 +20,16 @@
       Themes button (ui/picker.js); the pick is saved in localStorage "ping-pong.theme".
       Balls: 5 code-drawn ball models (assets/models/balls/), picked in the same panel (section "Ball"),
       independent of the theme, saved in localStorage "ping-pong.ball".
-      Paddles: 5 code-drawn paddle models (assets/models/paddles/), section "Paddle" of the same panel,
-      independent of theme and ball, saved in localStorage "ping-pong.paddle".
+      Paddles: code-drawn paddle models (assets/models/paddles/), section "Paddle" of the same panel,
+      independent of theme and ball, saved in localStorage "ping-pong.paddle". The picker shows Classic Bar + Cricket Bat,
+      Hockey Stick, Samurai Sword, Tennis Racket; Neon Bar, Table Tennis Bat, Ice Slab, Flame Blade still load but are
+      hidden (`hidden: true`, kept for later) and a saved pick of one migrates (CFG.paddles.migrate).
       In the sites hub the own title / score bar hides and the hub header
       shows name, version, score and New Game (hub bridge in ui/hub.js).
     ========================================================================
   -->
-  <link rel="stylesheet" href="ui/ping-pong.css?v=PGQ1d" />
-  <link rel="stylesheet" href="ui/picker.css?v=PGQ1d" />
+  <link rel="stylesheet" href="ui/ping-pong.css?v=PPQ1a" />
+  <link rel="stylesheet" href="ui/picker.css?v=PPQ1a" />
 </head>
 <body>
   <!-- Own bar: title + live score (hidden inside the hub) -->
@@ -56,34 +58,38 @@
   </div>
 
   <!-- Plain scripts; the order matters (shared globals, top-level code runs as each loads) -->
-  <script src="core/config.js?v=PGQ1d"></script>
-  <script src="core/registry.js?v=PGQ1d"></script>
-  <script src="core/state.js?v=PGQ1d"></script>
-  <script src="ui/dom.js?v=PGQ1d"></script>
-  <script src="assets/models/shared.js?v=PGQ1d"></script>
-  <script src="assets/models/net.js?v=PGQ1d"></script>
-  <script src="assets/models/paddles/classic.js?v=PGQ1d"></script>
-  <script src="assets/models/paddles/neonbar.js?v=PGQ1d"></script>
-  <script src="assets/models/paddles/bat.js?v=PGQ1d"></script>
-  <script src="assets/models/paddles/iceslab.js?v=PGQ1d"></script>
-  <script src="assets/models/paddles/flameblade.js?v=PGQ1d"></script>
-  <script src="assets/models/balls/classic.js?v=PGQ1d"></script>
-  <script src="assets/models/balls/pingpong.js?v=PGQ1d"></script>
-  <script src="assets/models/balls/iceball.js?v=PGQ1d"></script>
-  <script src="assets/models/balls/fireball.js?v=PGQ1d"></script>
-  <script src="assets/models/balls/football.js?v=PGQ1d"></script>
-  <script src="assets/themes/base.js?v=PGQ1d"></script>
-  <script src="assets/themes/classic.js?v=PGQ1d"></script>
-  <script src="assets/themes/neon.js?v=PGQ1d"></script>
-  <script src="assets/themes/tabletennis.js?v=PGQ1d"></script>
-  <script src="assets/themes/space.js?v=PGQ1d"></script>
-  <script src="assets/themes/ice.js?v=PGQ1d"></script>
-  <script src="ui/fx.js?v=PGQ1d"></script>
-  <script src="core/ai.js?v=PGQ1d"></script>
-  <script src="core/game.js?v=PGQ1d"></script>
-  <script src="core/input.js?v=PGQ1d"></script>
-  <script src="ui/picker.js?v=PGQ1d"></script>
-  <script src="ui/hub.js?v=PGQ1d"></script>
-  <script src="core/main.js?v=PGQ1d"></script>
+  <script src="core/config.js?v=PPQ1a"></script>
+  <script src="core/registry.js?v=PPQ1a"></script>
+  <script src="core/state.js?v=PPQ1a"></script>
+  <script src="ui/dom.js?v=PPQ1a"></script>
+  <script src="assets/models/shared.js?v=PPQ1a"></script>
+  <script src="assets/models/net.js?v=PPQ1a"></script>
+  <script src="assets/models/paddles/classic.js?v=PPQ1a"></script>
+  <script src="assets/models/paddles/cricketbat.js?v=PPQ1a"></script>
+  <script src="assets/models/paddles/hockeystick.js?v=PPQ1a"></script>
+  <script src="assets/models/paddles/samuraisword.js?v=PPQ1a"></script>
+  <script src="assets/models/paddles/tennisracket.js?v=PPQ1a"></script>
+  <script src="assets/models/paddles/neonbar.js?v=PPQ1a"></script>
+  <script src="assets/models/paddles/bat.js?v=PPQ1a"></script>
+  <script src="assets/models/paddles/iceslab.js?v=PPQ1a"></script>
+  <script src="assets/models/paddles/flameblade.js?v=PPQ1a"></script>
+  <script src="assets/models/balls/classic.js?v=PPQ1a"></script>
+  <script src="assets/models/balls/pingpong.js?v=PPQ1a"></script>
+  <script src="assets/models/balls/iceball.js?v=PPQ1a"></script>
+  <script src="assets/models/balls/fireball.js?v=PPQ1a"></script>
+  <script src="assets/models/balls/football.js?v=PPQ1a"></script>
+  <script src="assets/themes/base.js?v=PPQ1a"></script>
+  <script src="assets/themes/classic.js?v=PPQ1a"></script>
+  <script src="assets/themes/neon.js?v=PPQ1a"></script>
+  <script src="assets/themes/tabletennis.js?v=PPQ1a"></script>
+  <script src="assets/themes/space.js?v=PPQ1a"></script>
+  <script src="assets/themes/ice.js?v=PPQ1a"></script>
+  <script src="ui/fx.js?v=PPQ1a"></script>
+  <script src="core/ai.js?v=PPQ1a"></script>
+  <script src="core/game.js?v=PPQ1a"></script>
+  <script src="core/input.js?v=PPQ1a"></script>
+  <script src="ui/picker.js?v=PPQ1a"></script>
+  <script src="ui/hub.js?v=PPQ1a"></script>
+  <script src="core/main.js?v=PPQ1a"></script>
 </body>
 </html>

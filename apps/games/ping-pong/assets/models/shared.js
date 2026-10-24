@@ -40,6 +40,12 @@
     ctx.shadowBlur = blur * PP.unit(ctx);
   };
 
+  /** Face a model to the court: after this, draw it as the LEFT paddle (net side = x + w); the right one is mirrored
+   *  about the box centre, so it stays in the same w-wide box. Call inside ctx.save() / ctx.restore(). */
+  PP.faceNet = function (ctx, x, w, side) {
+    if (side === "R") { ctx.translate(2 * x + w, 0); ctx.scale(-1, 1); }
+  };
+
   /** Rounded-rectangle path (radius r), without relying on ctx.roundRect. */
   PP.roundRect = function (ctx, x, y, w, h, r) {
     r = Math.min(r, w / 2, h / 2);

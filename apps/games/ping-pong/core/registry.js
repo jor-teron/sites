@@ -41,6 +41,8 @@ const PP = {
   registerBall(m) { this.balls.push(m); },
   getTheme(id) { return this.themes.find(function (t) { return t.id === id; }) || this.themes[0]; },
   getPaddle(id) { return this.paddles.find(function (m) { return m.id === id; }) || this.paddles[0]; },
+  /** The paddles the picker offers: every registered model except those marked `hidden: true` (PPQ1a). */
+  visiblePaddles() { return this.paddles.filter(function (m) { return !m.hidden; }); },
   getBall(id) { return this.balls.find(function (m) { return m.id === id; }) || this.balls[0]; },
 
   /** localStorage, never throwing (private mode / blocked storage just means "not saved"). */
@@ -63,10 +65,14 @@ const PP = {
     if (this.onBall) this.onBall(this.getBall(this.ballId));
   },
 
-  /** Activate a paddle model by id (unknown id -> first registered = Classic Bar) and save it unless save === false. */
+  /** Activate a paddle model by id (unknown id -> first registered = Classic Bar) and save it unless save === false.
+   *  A hidden model's id is migrated (CFG.paddles.migrate) and the new id saved; any other hidden id -> the default. */
   setPaddle(id, save) {
-    this.paddleId = this.getPaddle(id).id;
-    if (save !== false) this.store.set(CFG.paddles.key, this.paddleId);
+    const to = CFG.paddles.migrate && CFG.paddles.migrate[id];
+    let m = this.getPaddle(to || id);
+    if (m.hidden) m = this.getPaddle(CFG.paddles.default);
+    this.paddleId = m.id;
+    if (save !== false || to) this.store.set(CFG.paddles.key, this.paddleId);
     if (this.onPaddle) this.onPaddle(this.getPaddle(this.paddleId));
   },
 

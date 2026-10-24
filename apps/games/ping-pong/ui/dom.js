@@ -16,7 +16,7 @@ const pauseBtn = document.getElementById("pause-btn");
 
 // Title from APP info
 document.querySelector("h1").textContent = APP.name;
-document.title = APP.name + " PGQ1d";
+document.title = APP.name + " PPQ1a";
 
 // --- Theme -> page chrome -------------------------------------------------
 
