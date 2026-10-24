@@ -1,4 +1,4 @@
-/* Other presets: binary stars, figure-eight 3-body (Chenciner–Montgomery), random cluster, empty. */
+/* Other presets: binary stars, black hole, figure-eight 3-body (Chenciner–Montgomery), random cluster, empty. */
 GS.PRESETS.binary = {
   label: 'Binary stars with a circumbinary planet', dt: 0.02,
   build(P) {
@@ -7,6 +7,17 @@ GS.PRESETS.binary = {
     P.add({ name: 'Star B', m, r: 10, col: '#7fb4ff', star: true, x: d, vy: v });
     const R = 220, vp = P.circV(2 * m, R);
     P.add({ name: 'Planet', m: 1, r: 4, col: '#6c6', y: R, vx: -vp });
+  }
+};
+GS.PRESETS.blackhole = {
+  label: 'Black hole — bodies that cross the horizon are swallowed and the hole grows', dt: 0.02,
+  build(P) {
+    const M = 5000, t = P.TYPES.hole; P.add({ name: 'Black hole', m: M, r: t.r, col: t.col, hole: true });
+    const cols = ['#5af', '#6c6', '#da8', '#e88', '#bbb', '#c9f', '#8fe0e8', '#e8c27a'];
+    for (let i = 0; i < 8; i++) { // circular orbits outside, eccentric ones that dip inside the horizon
+      const d = 60 + i * 28, a = i * 2.4, v = P.circV(M, d) * (i % 3 === 2 ? 0.25 : 1);
+      P.add({ name: 'Planet ' + (i + 1), m: i === 5 ? 20 : 1, r: i === 5 ? 7 : 3.5, col: cols[i], x: Math.cos(a) * d, y: Math.sin(a) * d, vx: -Math.sin(a) * v, vy: Math.cos(a) * v });
+    }
   }
 };
 GS.PRESETS.figure8 = {
