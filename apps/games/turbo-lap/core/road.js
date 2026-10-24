@@ -86,20 +86,31 @@ window.TL = window.TL || {};
     buildMap();
   };
 
-  // Integrate the bends into a 2-D outline for the minimap; spread the closing error evenly.
-  function buildMap() {
-    const segs = road.segments, N = segs.length, pts = [];
+  // Integrate the bends into a 2-D outline for the minimap; spread the closing error evenly. Pure: curves (one per segment) -> points 0..1.
+  road.mapOf = function (curves) {
+    const N = curves.length, pts = [];
     let a = 0, x = 0, y = 0;
-    const turn = segs.reduce((s, g) => s + g.curve, 0);
+    const turn = curves.reduce((s, c) => s + c, 0);
     const kk = Math.abs(turn) > 1 ? (2 * Math.PI) / turn : 0.004;
-    for (let i = 0; i < N; i++) { pts.push({ x, y }); a += segs[i].curve * kk; x += Math.sin(a); y -= Math.cos(a); }
+    for (let i = 0; i < N; i++) { pts.push({ x, y }); a += curves[i] * kk; x += Math.sin(a); y -= Math.cos(a); }
     const ex = x, ey = y;
     pts.forEach((p, i) => { p.x -= ex * i / N; p.y -= ey * i / N; });
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     pts.forEach(p => { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); });
     const s = Math.max(maxX - minX, maxY - minY) || 1;
-    road.map = pts.map(p => ({ x: (p.x - minX) / s + (1 - (maxX - minX) / s) / 2, y: (p.y - minY) / s + (1 - (maxY - minY) / s) / 2 }));
-  }
+    return pts.map(p => ({ x: (p.x - minX) / s + (1 - (maxX - minX) / s) / 2, y: (p.y - minY) / s + (1 - (maxY - minY) / s) / 2 }));
+  };
+  function buildMap() { road.map = road.mapOf(road.segments.map(g => g.curve)); }
+  // Bend per segment for track data without building the road (same easing as addRoad, plus the closing section): for previews.
+  road.curvesOf = function (track) {
+    const out = [];
+    track.sections.concat([[50, 50, 50, 0, 0]]).forEach(([e, h, l, c]) => {
+      for (let n = 0; n < e; n++) out.push(U.easeIn(0, c, n / e));
+      for (let n = 0; n < h; n++) out.push(c);
+      for (let n = 0; n < l; n++) out.push(U.easeInOut(c, 0, n / l));
+    });
+    return out;
+  };
 
   road.findSegment = z => road.segments[Math.floor(U.mod(z, road.trackLength) / CFG.segmentLength) % road.length];
 

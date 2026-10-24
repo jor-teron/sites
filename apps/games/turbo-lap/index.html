@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Turbo Lap TLQ1e</title>
+<title>Turbo Lap TLQ1f</title>
 <link rel="icon" href="turbo-lap_icon.png">
-<link rel="stylesheet" href="ui/turbo-lap.css?v=TLQ1e" />
+<link rel="stylesheet" href="ui/turbo-lap.css?v=TLQ1f" />
 </head>
 <body>
 <canvas id="game"></canvas>
@@ -29,6 +29,7 @@
     <div class="circuitrow">
       <button id="prevBtn" class="nav" aria-label="Previous circuit">◀</button>
       <div id="titleCircuit" class="circuitname">Circuit 00</div>
+      <img id="titleMap" class="titlemap" alt="" width="200" height="150">
       <button id="nextBtn" class="nav" aria-label="Next circuit">▶</button>
     </div>
     <p id="titleTag" class="tag">1 lap · 5 cars · you start last. Finish in the top 3 to win!</p>
@@ -110,47 +111,48 @@
   </div>
 </div>
 
-<script src="core/config.js?v=TLQ1e"></script>
-<script src="core/registry.js?v=TLQ1e"></script>
-<script src="core/track.js?v=TLQ1e"></script>
-<script src="core/road.js?v=TLQ1e"></script>
-<script src="core/circuits.js?v=TLQ1e"></script>
-<script src="core/cars.js?v=TLQ1e"></script>
-<script src="core/opponents.js?v=TLQ1e"></script>
-<script src="core/sprites.js?v=TLQ1e"></script>
-<script src="assets/cars/base.js?v=TLQ1e"></script>
-<script src="assets/cars/coupe.js?v=TLQ1e"></script>
-<script src="assets/cars/muscle.js?v=TLQ1e"></script>
-<script src="assets/cars/formula.js?v=TLQ1e"></script>
-<script src="assets/cars/rally.js?v=TLQ1e"></script>
-<script src="assets/cars/pickup.js?v=TLQ1e"></script>
-<script src="assets/cars/van.js?v=TLQ1e"></script>
-<script src="assets/cars/wedge.js?v=TLQ1e"></script>
-<script src="assets/cars/beetle.js?v=TLQ1e"></script>
-<script src="assets/cars/buggy.js?v=TLQ1e"></script>
-<script src="assets/cars/proto.js?v=TLQ1e"></script>
-<script src="assets/themes/base.js?v=TLQ1e"></script>
-<script src="assets/themes/coast.js?v=TLQ1e"></script>
-<script src="assets/themes/desert.js?v=TLQ1e"></script>
-<script src="assets/themes/snow.js?v=TLQ1e"></script>
-<script src="assets/themes/night.js?v=TLQ1e"></script>
-<script src="assets/themes/autumn.js?v=TLQ1e"></script>
-<script src="assets/themes/tropical.js?v=TLQ1e"></script>
-<script src="assets/themes/volcano.js?v=TLQ1e"></script>
-<script src="assets/themes/canyon.js?v=TLQ1e"></script>
-<script src="assets/themes/space.js?v=TLQ1e"></script>
-<script src="assets/themes/candy.js?v=TLQ1e"></script>
-<script src="core/render.js?v=TLQ1e"></script>
-<script src="core/hud.js?v=TLQ1e"></script>
-<script src="core/storage.js?v=TLQ1e"></script>
-<script src="core/driver.js?v=TLQ1e"></script>
-<script src="core/input.js?v=TLQ1e"></script>
-<script src="core/touch.js?v=TLQ1e"></script>
-<script src="ui/joystick.js?v=TLQ1e"></script>
-<script src="core/game.js?v=TLQ1e"></script>
-<script src="ui/picker.js?v=TLQ1e"></script>
-<script src="ui/themes.js?v=TLQ1e"></script>
-<script src="ui/cars.js?v=TLQ1e"></script>
-<script src="core/main.js?v=TLQ1e"></script>
+<script src="core/config.js?v=TLQ1f"></script>
+<script src="core/registry.js?v=TLQ1f"></script>
+<script src="core/track.js?v=TLQ1f"></script>
+<script src="core/road.js?v=TLQ1f"></script>
+<script src="core/circuits.js?v=TLQ1f"></script>
+<script src="core/cars.js?v=TLQ1f"></script>
+<script src="core/opponents.js?v=TLQ1f"></script>
+<script src="core/sprites.js?v=TLQ1f"></script>
+<script src="assets/cars/base.js?v=TLQ1f"></script>
+<script src="assets/cars/coupe.js?v=TLQ1f"></script>
+<script src="assets/cars/muscle.js?v=TLQ1f"></script>
+<script src="assets/cars/formula.js?v=TLQ1f"></script>
+<script src="assets/cars/rally.js?v=TLQ1f"></script>
+<script src="assets/cars/pickup.js?v=TLQ1f"></script>
+<script src="assets/cars/van.js?v=TLQ1f"></script>
+<script src="assets/cars/wedge.js?v=TLQ1f"></script>
+<script src="assets/cars/beetle.js?v=TLQ1f"></script>
+<script src="assets/cars/buggy.js?v=TLQ1f"></script>
+<script src="assets/cars/proto.js?v=TLQ1f"></script>
+<script src="assets/themes/base.js?v=TLQ1f"></script>
+<script src="assets/themes/coast.js?v=TLQ1f"></script>
+<script src="assets/themes/desert.js?v=TLQ1f"></script>
+<script src="assets/themes/snow.js?v=TLQ1f"></script>
+<script src="assets/themes/night.js?v=TLQ1f"></script>
+<script src="assets/themes/autumn.js?v=TLQ1f"></script>
+<script src="assets/themes/tropical.js?v=TLQ1f"></script>
+<script src="assets/themes/volcano.js?v=TLQ1f"></script>
+<script src="assets/themes/canyon.js?v=TLQ1f"></script>
+<script src="assets/themes/space.js?v=TLQ1f"></script>
+<script src="assets/themes/candy.js?v=TLQ1f"></script>
+<script src="core/render.js?v=TLQ1f"></script>
+<script src="core/hud.js?v=TLQ1f"></script>
+<script src="core/storage.js?v=TLQ1f"></script>
+<script src="core/driver.js?v=TLQ1f"></script>
+<script src="core/input.js?v=TLQ1f"></script>
+<script src="core/touch.js?v=TLQ1f"></script>
+<script src="ui/joystick.js?v=TLQ1f"></script>
+<script src="ui/minimap.js?v=TLQ1f"></script>
+<script src="core/game.js?v=TLQ1f"></script>
+<script src="ui/picker.js?v=TLQ1f"></script>
+<script src="ui/themes.js?v=TLQ1f"></script>
+<script src="ui/cars.js?v=TLQ1f"></script>
+<script src="core/main.js?v=TLQ1f"></script>
 </body>
 </html>

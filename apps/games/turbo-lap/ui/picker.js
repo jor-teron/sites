@@ -1,4 +1,4 @@
-/* Turbo Lap — circuit picker: a scrollable grid of the 100 circuits (00..99) with the best time on each.
+/* Turbo Lap — circuit picker: a scrollable grid of the 100 circuits (00..99): route preview, number below, best time.
    Works with touch, mouse and keyboard (arrows move, Enter / Space picks, Esc or C closes, Home / End jump).
    Opened from the title and finish screens through TL.game.openPicker(). Picking a circuit saves it
    (TL.storage 'circuit') and returns to the title screen on that circuit. */
@@ -13,10 +13,16 @@ window.TL = window.TL || {};
       for (let n = 0; n < TL.circuits.count; n++) {
         const b = document.createElement('button');
         b.type = 'button'; b.className = 'pcell'; b.dataset.n = n; b.setAttribute('role', 'gridcell');
-        b.innerHTML = '<b>' + TL.circuits.pad2(n) + '</b><span class="pt"></span>';
+        b.innerHTML = '<img class="pmap" alt="" width="200" height="150"><b>' + TL.circuits.pad2(n) + '</b><span class="pt"></span>';
         b.tabIndex = -1;
         grid.appendChild(b); cells.push(b);
       }
+      // previews: draw only tiles that scroll into view (each circuit is drawn once and cached by TL.minimap)
+      const show = b => { const im = b.querySelector('.pmap'); if (!im.src && TL.minimap) im.src = TL.minimap.url(+b.dataset.n); };
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { show(e.target); io.unobserve(e.target); } }), { root: grid, rootMargin: '200px 0px' });
+        cells.forEach(b => io.observe(b));
+      } else cells.forEach(show);
       grid.addEventListener('click', e => { const b = e.target.closest('.pcell'); if (b) { b.blur(); TL.game.pickCircuit(+b.dataset.n); } });
       grid.addEventListener('keydown', onKey);
       $('pickClose').addEventListener('click', e => { e.currentTarget.blur(); TL.game.closePicker(); });

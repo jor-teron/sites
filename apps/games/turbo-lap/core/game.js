@@ -244,6 +244,7 @@ window.TL = window.TL || {};
     const cn = TL.carSet.model().short;
     ['carBtn', 'carBtn2', 'carBtn3'].forEach(id => { const el = $(id); if (el) el.firstChild.nodeValue = 'Car: ' + cn + ' '; });
     const tc = $('titleCircuit'); if (tc) tc.textContent = circuitTitle();
+    const tm = $('titleMap'); if (tm && TL.minimap) { tm.src = TL.minimap.url(G.circuit); tm.alt = 'Route of ' + circuitTitle(); }
     const tg = $('titleTag'); if (tg) tg.textContent = tagline();
     const pv = $('prevBtn'), nx = $('nextBtn');
     if (pv) pv.disabled = G.circuit <= 0; if (nx) nx.disabled = G.circuit >= CFG.circuits.count - 1;
