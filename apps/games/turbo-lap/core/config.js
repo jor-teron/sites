@@ -40,6 +40,8 @@ TL.CFG = {
     playerSlow: 0.75,      // player speed multiplier on rear-ending a car
     aiSlow: 0.85,          // AI speed multiplier when bumped
     sideKick: 0.12,        // lateral push on a side bump
+    carLength: 1.2,        // car length in segments (how close counts as touching)
+    sideSpring: 12,        // how fast overlapping side-by-side cars are pushed apart (per second)
     sprite: 0.35           // speed multiplier on hitting a roadside object
   },
 
@@ -108,7 +110,8 @@ TL.CFG = {
     lookAhead: 20,         // segments to look ahead for cars to avoid
     curveSlow: 0.035,      // speed lost per unit curve, reduced by skill
     rubberBand: 0.04,      // max +/- speed adjustment based on gap to player
-    steerRate: 1.2         // offset change per second
+    steerRate: 1.2,        // offset change per second (scaled down at low speed)
+    brakeLight: 0.03       // brake lights show when slowing by more than this share of max speed
   },
 
   // Touch / phone controls

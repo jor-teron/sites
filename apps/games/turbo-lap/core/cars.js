@@ -69,29 +69,43 @@ window.TL = window.TL || {};
       pl.p += pl.speed * dt;
     },
 
-    // Bump any two racers that touch. Faster car behind loses speed, the one in front is jolted.
+    // Car-to-car contact, run once per frame after everyone has moved.
+    //  1. Rear-end: a faster car closing on one just ahead (within carLength) is slowed to the front car's pace,
+    //     the front car is jolted, and if they only overlap at the edge they are pushed apart sideways.
+    //  2. Side-by-side: two cars level with each other (gap < carLength) that overlap sideways are pushed apart
+    //     so they never drive through each other (before, equal-speed cars could ghost through one another).
+    // Each unordered pair is checked once; which car is "behind" is worked out from the lap-wrapped gap.
+    // The side to push toward is deterministic (lane, then race order) so replays and tests behave the same.
     collide(racers, dt) {
-      const L = road.trackLength, segL = CFG.segmentLength, w = CFG.bump.carWidth, B = CFG.bump;
+      const L = road.trackLength, w = CFG.bump.carWidth, B = CFG.bump;
+      const len = CFG.segmentLength * (B.carLength || 1.2);
       racers.forEach(r => { r.bumpT = Math.max(0, (r.bumpT || 0) - dt); });
       for (let i = 0; i < racers.length; i++) {
-        for (let j = 0; j < racers.length; j++) {
-          if (i === j) continue;
-          const a = racers[i], b = racers[j];                    // a behind b?
-          let gap = U.mod(b.p - a.p, L);
-          if (gap > L / 2) continue;
-          if (gap > segL * 1.2 || a.speed <= b.speed) continue;
-          if (!U.overlap(a.x, w, b.x, w)) continue;
-          if (a.bumpT > 0 && b.bumpT > 0) continue;
+        for (let j = i + 1; j < racers.length; j++) {
+          let a = racers[i], b = racers[j];
+          let gap = U.mod(b.p - a.p, L);                          // b ahead of a by gap...
+          if (gap > L / 2) { [a, b] = [b, a]; gap = L - gap; }    // ...or the other way round
+          if (gap > len || !U.overlap(a.x, w, b.x, w)) continue;
+          const side = Math.sign(a.x - b.x) || (i % 2 ? 1 : -1);  // a moves this way, b the other
+
+          // side-by-side: separate them by the overlap, shared equally (no speed change)
+          const push = Math.min(w - Math.abs(a.x - b.x), w) * 0.5 * Math.min(1, dt * (B.sideSpring || 12));
+          a.x += side * push; b.x -= side * push;
+
+          // rear-end: only when the back car is faster and no fresh bump is cooling down
+          if (a.speed <= b.speed || (a.bumpT > 0 && b.bumpT > 0)) continue;
           a.speed = b.speed * (a.isPlayer ? B.playerSlow : B.aiSlow);
           b.speed *= a.isPlayer ? B.aiSlow : 0.95;
-          const side = Math.sign(a.x - b.x) || (Math.random() < 0.5 ? -1 : 1);
           if (Math.abs(a.x - b.x) > w * 0.35) { a.x += side * B.sideKick; b.x -= side * B.sideKick * 0.5; }
           a.bumpT = b.bumpT = 0.4;
           a.bumped = b.bumped = 0.25;                            // visual shake timer
           if (a.isPlayer || b.isPlayer) TL.cars.lastBump = performance.now();
         }
       }
-      racers.forEach(r => { r.bumped = Math.max(0, (r.bumped || 0) - dt); });
+      racers.forEach(r => {
+        r.bumped = Math.max(0, (r.bumped || 0) - dt);
+        r.x = U.clamp(r.x, -CFG.maxOffset, CFG.maxOffset);      // a push never throws a car off the world
+      });
     }
   };
 })();

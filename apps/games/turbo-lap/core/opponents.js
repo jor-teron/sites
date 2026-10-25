@@ -52,19 +52,26 @@ window.TL = window.TL || {};
         if (blocker) {
           const o = blocker.car;
           const left = o.x - w * 2, right = o.x + w * 2;
-          tx = (Math.abs(left - c.x) < Math.abs(right - c.x) && left > -0.9) || right > 0.9 ? left : right;
+          // pass on the nearer side that still fits on the road; if neither fits, pick the roomier one
+          const leftOk = left > -0.9, rightOk = right < 0.9;
+          if (leftOk && rightOk) tx = Math.abs(left - c.x) < Math.abs(right - c.x) ? left : right;
+          else if (leftOk || rightOk) tx = leftOk ? left : right;
+          else tx = o.x > 0 ? left : right;
           if (blocker.gap < segL * 2 && Math.abs(o.x - c.x) < w) target = Math.min(target, o.speed * 0.98);
         }
         c.targetX = U.clamp(tx, -0.85, 0.85);
 
         // steer
-        const d = c.targetX - c.x, step = A.steerRate * dt;
+        // lateral speed grows with road speed (a parked car cannot slide sideways on the grid)
+        const roll = 0.15 + 0.85 * Math.min(1, c.speed / (CFG.maxSpeed * 0.4));
+        const d = c.targetX - c.x, step = A.steerRate * roll * dt;
         c.x += U.clamp(d, -step, step);
         c.steerVis = U.clamp(d * 4, -1, 1);
 
         // throttle
         const acc = CFG.accel * (c.speed < CFG.maxSpeed * 0.5 ? c.launch : 1);
-        c.braking = target < c.speed - 300;
+        // brake lights: on while the car is actually shedding speed by a noticeable amount
+        c.braking = target < c.speed - CFG.maxSpeed * (A.brakeLight || 0.03);
         if (c.speed < target) c.speed = Math.min(target, c.speed + acc * dt);
         else c.speed = Math.max(target, c.speed + CFG.braking * 0.5 * dt);
         c.p += c.speed * dt;
