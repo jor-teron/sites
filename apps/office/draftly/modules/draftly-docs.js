@@ -229,7 +229,7 @@ Draftly.docs.bind = function bind() {
     }, cfg.flowDebounceMs);
     clearTimeout(Draftly.app.inputTimer);
     Draftly.app.inputTimer = setTimeout(function () {
-      if (Draftly.app.ready) Draftly.storage.save();
+      if (Draftly.app.ready && (!Draftly.settings || Draftly.settings.autosave())) Draftly.storage.save();
     }, cfg.inputDebounceMs);
   });
 

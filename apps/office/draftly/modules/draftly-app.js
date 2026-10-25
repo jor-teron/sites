@@ -33,6 +33,7 @@ Draftly.app.init = function init() {
   if (!Draftly.app.guard()) return;
   try {
     Draftly.config.applyToDocument();
+    if (Draftly.settings) Draftly.settings.bind();   /* DF8: before loadTheme (auto theme) */
     Draftly.ui.loadTheme();
     try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) {}
     Draftly.editor.bind();
