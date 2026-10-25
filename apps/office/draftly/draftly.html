@@ -34,6 +34,7 @@
   <link rel="stylesheet" href="ui/colour.css?v=7">
   <link rel="stylesheet" href="ui/find.css?v=7">
   <link rel="stylesheet" href="ui/statusbar.css?v=7">
+  <link rel="stylesheet" href="ui/ruler.css?v=1">
   <link rel="stylesheet" href="ui/table.css?v=7">
   <link rel="stylesheet" href="ui/image.css?v=1">
   <link rel="stylesheet" href="ui/format.css?v=7">
@@ -230,6 +231,9 @@
       <div class="seg" role="group" aria-label="Status bar">
         <button type="button" class="seg-btn" id="statusBarToggle" aria-pressed="true" title="Show or hide the status bar"><span>Status bar</span></button>
       </div>
+      <div class="seg" role="group" aria-label="Ruler">
+        <button type="button" class="seg-btn" id="rulerToggle" aria-pressed="false" title="Show or hide the ruler"><span>Ruler</span></button>
+      </div>
       <select id="orientationSelect" class="visually-hidden" tabindex="-1" aria-hidden="true">
         <option value="portrait" selected>Portrait</option>
         <option value="landscape">Landscape</option>
@@ -374,6 +378,7 @@
   <script src="modules/draftly-zoom.js"></script>
   <script src="modules/draftly-headerfooter.js"></script>
   <script src="modules/draftly-margins.js"></script>
+  <script src="modules/draftly-ruler.js?v=1"></script>
   <script src="modules/draftly-docs.js"></script>
   <script src="modules/draftly-format.js"></script>
   <script src="modules/draftly-ribbon.js?v=5"></script>
