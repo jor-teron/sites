@@ -182,7 +182,11 @@ canvas { display: block; background: #0a0a12; touch-action: none; }
 
 /* Title row: prev, preview, name, next. Hidden while paused. */
 #map-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 8px; }
-#overlay.paused #map-row, #overlay.paused #maps-btn { display: none; }
+#overlay.paused #map-row, #overlay.paused #maps-btn, #overlay.paused #theme-row { display: none; }
+/* Theme row under the map row: ◀ swatch NAME ▶ */
+#theme-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 6px; }
+#theme-swatch { width: 28px; height: 18px; border-radius: 4px; border: 2px solid #8a6a3a; }
+#theme-name { min-width: 96px; color: #8f9ad0; font-size: 13px; font-weight: bold; letter-spacing: 2px; }
 #overlay .orow { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
 
 /* Round arrow buttons. */

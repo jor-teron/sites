@@ -17,6 +17,7 @@ import { bindInput, refreshTowerButtons } from './input.js';
 import { getMap, mapFromUrl, mapLabel } from './maps.js';
 import { lastMap, saveLastMap, saveBestWave, bestWave } from './progress.js';
 import { bindPicker } from './picker.js';
+import { initTheme } from './themes.js';
 
 /* Canvas element. */
 const canvas = document.getElementById('game');
@@ -278,6 +279,9 @@ function loop(now) {
 
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', () => setTimeout(resize, 60));
+
+/* Theme from ?theme=<id>, else the saved one, else Meadow. */
+initTheme();
 
 /* Map from ?map=NN wins, else the last map played. */
 const urlMap = mapFromUrl();

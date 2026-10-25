@@ -10,7 +10,7 @@ import { TILE, pathVersion, pathSegments, totalPathLength, posAtDistance, posAtT
 import * as state from './state.js';
 import { towerCenter } from './towers.js';
 import { drawTower, drawEnemy } from './models.js';
-import { themeFor } from './themes.js';
+import { currentTheme } from './themes.js';
 import { drawScorches, drawProjectiles, drawParticles } from './effects.js';
 
 /* Cached grass, grid, road, and IN / OUT markers. Rebuilt on resize. */
@@ -126,8 +126,8 @@ function drawStatic(ctx, CW, CH) {
     staticLayer.height = Math.floor(CH * dpr);
     const g = staticLayer.getContext('2d');
     g.scale(dpr, dpr);
-    /* Colours come from the current map's theme (themes.js). */
-    const th = themeFor(state.mapId);
+    /* Colours come from the player's selected theme (themes.js), not the map. */
+    const th = currentTheme();
     drawBackground(g, CW, CH, th);
     drawPath(g, th);
   }

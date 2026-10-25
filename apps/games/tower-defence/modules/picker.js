@@ -1,23 +1,24 @@
 /*
   File: modules/picker.js
   Project: tower-defence
-  Purpose: Map select UI: the title row (◀ preview ▶) and the 00-99 picker
-           grid with small path previews and saved best wave.
+  Purpose: Map select UI: the title row (◀ preview ▶), the theme row
+           (◀ swatch + name ▶) and the 00-99 picker grid with small path
+           previews and saved best wave. Previews use the selected theme.
            Game logic stays in main.js; this file only reports a choice.
 */
 
 import { COLS, ROWS, MAP_COUNT } from './config.js';
 import { getMap, mapLabel } from './maps.js';
 import { loadBestWaves } from './progress.js';
-import { themeFor } from './themes.js';
+import { THEMES, currentTheme, themeIndex, setThemeIndex } from './themes.js';
 
 /*
-  Draw a map's road into a small canvas in its theme colours: grass, road, green IN, red OUT.
+  Draw a map's road into a small canvas in the selected theme's colours: grass, road, green IN, red OUT.
 */
 export function drawPreview(canvas, map) {
   const g = canvas.getContext('2d');
   const s = Math.min(canvas.width / COLS, canvas.height / ROWS);
-  const th = themeFor(map.id);
+  const th = currentTheme();
   g.fillStyle = th.grass;
   g.fillRect(0, 0, canvas.width, canvas.height);
   g.fillStyle = th.preview;
@@ -42,8 +43,24 @@ export function bindPicker(opts) {
     const id = opts.getMap();
     const best = loadBestWaves()[id] || 0;
     nameEl.textContent = 'MAP ' + mapLabel(id);
-    subEl.textContent = (id === 0 ? 'DEMO • ' : '') + themeFor(id).name.toUpperCase() + ' • ' + (best ? 'BEST WAVE ' + best : 'NEW');
+    subEl.textContent = (id === 0 ? 'DEMO • ' : '') + (best ? 'BEST WAVE ' + best : 'NEW');
     drawPreview(thumb, getMap(id));
+    refreshTheme();
+  }
+
+  /* Theme row: name plus a small swatch (grass with a road stripe). */
+  const themeName = $('theme-name'), swatch = $('theme-swatch');
+  function refreshTheme() {
+    const th = currentTheme();
+    themeName.textContent = th.name.toUpperCase();
+    swatch.style.background = 'linear-gradient(180deg, ' + th.grass + ' 0 35%, ' + th.preview + ' 35% 65%, ' + th.grass + ' 65%)';
+    swatch.style.borderColor = th.edge || th.preview;
+  }
+
+  /* Step the theme by +1 / -1 (wraps). Safe mid-run: colours only. */
+  function stepTheme(d) {
+    setThemeIndex(themeIndex() + d);
+    refresh();
   }
 
   /* Build all 100 cells. Previews are tiny, so this is fast even on a Celeron. */
@@ -53,7 +70,7 @@ export function bindPicker(opts) {
     grid.textContent = '';
     for (let n = 0; n < MAP_COUNT; n++) {
       const cell = document.createElement('button');
-      cell.title = 'Map ' + mapLabel(n) + ' - ' + themeFor(n).name;
+      cell.title = 'Map ' + mapLabel(n);
       cell.className = 'pcell' + (best[n] ? ' has' : '') + (n === cur ? ' cur' : '');
       cell.dataset.map = n;
       const cv = document.createElement('canvas');
@@ -85,6 +102,8 @@ export function bindPicker(opts) {
 
   $('map-prev').addEventListener('click', () => step(-1));
   $('map-next').addEventListener('click', () => step(1));
+  $('theme-prev').addEventListener('click', () => stepTheme(-1));
+  $('theme-next').addEventListener('click', () => stepTheme(1));
   $('maps-btn').addEventListener('click', openPicker);
   $('picker-close').addEventListener('click', () => picker.classList.add('hidden'));
 
