@@ -18,6 +18,7 @@ TL.CFG = {
   accel: 12000 / 5,        // 0 -> max in ~5 s
   braking: -12000,
   decel: -12000 / 5,       // coasting
+  finishBrake: 0.6,        // after the race ends every car brakes at this fraction of `braking` until stopped
   offRoadDecel: -12000 / 2,
   offRoadLimit: 12000 / 4,
   steerRate: 2.0,          // road half-widths per second at full speed

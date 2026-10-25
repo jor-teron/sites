@@ -205,7 +205,9 @@ window.TL = window.TL || {};
       if (G.countdown <= 0) { G.state = 'race'; G.goT = 0.9; G.raceTime = 0; }
       return;
     }
-    // race or finished: everything keeps moving
+    // Race over: every car (player and AI) brakes to a halt and then stays put.
+    if (G.state === 'finished') { stopAll(dt); return; }
+    // race: everything keeps moving
     G.goT = Math.max(0, G.goT - dt);
     G.raceTime += dt;
     const ctl = G.demoActive ? TL.driver.control(pl, { t: G.raceTime, cap: 0.93, vary: 0.1 }) : input.read();
@@ -216,12 +218,27 @@ window.TL = window.TL || {};
     updatePositions();
     TL.render.scroll(road.findSegment(pl.p).curve, pl.p - before);
     if (G.state === 'race' && pl.finished) finishRace();
-    if (G.state === 'finished') {
-      const was = G.finishT;
-      G.finishT += dt;
-      if (was <= CFG.finishOverlayDelay && G.finishT > CFG.finishOverlayDelay) { if (G.panel === 'themes') G.themesFrom = 'finish'; else if (G.panel === 'cars') G.carsFrom = 'finish'; else showPanel('finish'); fillFinish(); }
-    }
   };
+
+  // End of race (state 'finished'): all cars brake smoothly to 0, using real elapsed time (dt).
+  // Laps, standings and race time are frozen: no checkLaps / updatePositions / collide here,
+  // so a car still rolling can't cross the line and change its lap or place.
+  function stopAll(dt) {
+    const decel = -CFG.braking * (CFG.finishBrake || 0.6);          // world units/s^2 (braking is negative)
+    for (const r of G.racers) {
+      r.speed = Math.max(0, r.speed - decel * dt);
+      r.braking = r.speed > 0;                                        // brake lights while slowing, off once parked
+      r.nitroOn = false;
+      if (r.steerVis) r.steerVis *= Math.pow(0.9, dt * 60);           // wheels straighten (real-time smoothing)
+      const before = r.p;
+      r.p += r.speed * dt;
+      if (r.isPlayer) TL.render.scroll(road.findSegment(r.p).curve, r.p - before);
+    }
+    // finish card appears after a short delay
+    const was = G.finishT;
+    G.finishT += dt;
+    if (was <= CFG.finishOverlayDelay && G.finishT > CFG.finishOverlayDelay) { if (G.panel === 'themes') G.themesFrom = 'finish'; else if (G.panel === 'cars') G.carsFrom = 'finish'; else showPanel('finish'); fillFinish(); }
+  }
 
   G.draw = function (ctx, W, H) {
     TL.render.frame(ctx, W, H, { player: G.player, racers: G.racers, t: G.t });
