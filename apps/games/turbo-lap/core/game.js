@@ -20,7 +20,7 @@ window.TL = window.TL || {};
     input.on('padA', onStart);
     input.on('pause', onPause);
     input.on('title', () => { if (!modal(G.panel) && (G.paused || G.state === 'finished')) G.toTitle(); });
-    input.on('padB', () => { if (G.panel === 'cars') G.closeCars(); else if (G.panel === 'themes') G.closeThemes(); else if (G.panel === 'picker') G.closePicker(); else if (G.paused || (G.state === 'finished' && G.finishT > CFG.finishOverlayDelay)) G.toTitle(); });
+    input.on('padB', () => { if (G.panel === 'cars') G.closeCars(); else if (G.panel === 'themes') G.closeThemes(); else if (G.panel === 'picker') G.closePicker(); else if (G.paused || (G.state === 'finished' && G.resultShown)) G.toTitle(); });
     input.on('prevCircuit', () => { if (G.state === 'title' && G.panel === 'title') G.stepCircuit(-1); });
     input.on('nextCircuit', () => { if (G.state === 'title' && G.panel === 'title') G.stepCircuit(1); });
     input.on('circuits', () => { if (G.panel === 'picker') G.closePicker(); else if (G.panel === 'title' || G.panel === 'finish') G.openPicker(); });
@@ -106,7 +106,8 @@ window.TL = window.TL || {};
     if (TL.carSet) TL.carSet.dress(G.ais, G.circuit);               // each rival gets its own model and paint, from the circuit number (no Math.random)
     G.racers = [G.player, ...G.ais];
     G.racers.forEach(r => { r.finished = false; r.finishTime = null; r.lapTimes = []; r.lapStart = 0; r.lap = 0; });
-    G.finishOrder = []; G.raceTime = 0; G.result = null; G.finishT = 0;
+    G.finishOrder = []; G.raceTime = 0; G.result = null; G.finishT = 0; G.resultShown = false;
+    G.racers.forEach(r => { r.park = null; r.parked = false; r.dnf = false; r.finalPos = null; });
     updatePositions();
   };
 
@@ -138,7 +139,7 @@ window.TL = window.TL || {};
     if (modal(G.panel)) return;
     if (G.paused) return setPaused(false);
     if (G.state === 'title') G.startRace();
-    else if (G.state === 'finished' && G.finishT > CFG.finishOverlayDelay) G.startRace();
+    else if (G.state === 'finished' && G.resultShown) G.startRace();
   }
   function onPause() {
     if (G.panel === 'themes' || G.panel === 'cars') return;
@@ -181,7 +182,8 @@ window.TL = window.TL || {};
 
   function finishRace() {
     const pl = G.player;
-    G.state = 'finished'; G.finishT = 0;
+    G.state = 'finished'; G.finishT = 0; G.resultShown = false;
+    assignParking();
     const best = pl.lapTimes.length ? Math.min(...pl.lapTimes) : null;
     const demo = G.demoActive;                                   // autopilot drove the whole race: not the player's result
     const saved = demo ? { isNewTotal: false, isNewLap: false, records: TL.storage.records(track().id) }
@@ -205,8 +207,8 @@ window.TL = window.TL || {};
       if (G.countdown <= 0) { G.state = 'race'; G.goT = 0.9; G.raceTime = 0; }
       return;
     }
-    // Race over: every car (player and AI) brakes to a halt and then stays put.
-    if (G.state === 'finished') { stopAll(dt); return; }
+    // Race over for the player: the player brakes, the rest finish their race and park ahead (endPhase).
+    if (G.state === 'finished') { endPhase(dt); return; }
     // race: everything keeps moving
     G.goT = Math.max(0, G.goT - dt);
     G.raceTime += dt;
@@ -220,24 +222,93 @@ window.TL = window.TL || {};
     if (G.state === 'race' && pl.finished) finishRace();
   };
 
-  // End of race (state 'finished'): all cars brake smoothly to 0, using real elapsed time (dt).
-  // Laps, standings and race time are frozen: no checkLaps / updatePositions / collide here,
-  // so a car still rolling can't cross the line and change its lap or place.
-  function stopAll(dt) {
-    const decel = -CFG.braking * (CFG.finishBrake || 0.6);          // world units/s^2 (braking is negative)
-    for (const r of G.racers) {
-      r.speed = Math.max(0, r.speed - decel * dt);
-      r.braking = r.speed > 0;                                        // brake lights while slowing, off once parked
-      r.nitroOn = false;
-      if (r.steerVis) r.steerVis *= Math.pow(0.9, dt * 60);           // wheels straighten (real-time smoothing)
-      const before = r.p;
-      r.p += r.speed * dt;
-      if (r.isPlayer) TL.render.scroll(road.findSegment(r.p).curve, r.p - before);
+  // ---------- end of race ----------
+  // Where the player's car will come to rest, braking at finishBrake from its current speed.
+  const playerDecel = () => -CFG.braking * (CFG.finishBrake || 0.6);           // world units/s^2, positive
+  const parkDecel = () => -CFG.braking * CFG.park.brake;
+
+  // Called once, the moment the player crosses the line. Every computer car gets its own bay ahead of the
+  // player's stopping point: rows of CFG.park.lanes bays, rowGap apart, so no two bays overlap. The car
+  // furthest round the track gets the furthest bay, so nobody has to drive through someone else's bay.
+  function assignParking() {
+    const P = CFG.park, segL = CFG.segmentLength, pl = G.player;
+    const stopP = pl.p + pl.speed * pl.speed / (2 * playerDecel());
+    const ais = G.ais.slice().sort((a, b) => b.p - a.p);                     // front-most first
+    const nl = P.lanes.length, rows = Math.ceil(ais.length / nl);
+    let prevRowP = Infinity;
+    for (let row = 0; row < rows; row++) {
+      const cars = ais.slice(row * nl, row * nl + nl);
+      // natural spot for this row (front-most cars use the furthest row) ...
+      let rowP = stopP + (P.gap + (rows - 1 - row) * P.rowGap) * segL;
+      // ... pushed further if a car in it is already moving too fast to stop that soon ...
+      for (const c of cars) rowP = Math.max(rowP, c.p + c.speed * c.speed / (2 * parkDecel()));
+      // ... but always at least rowGap behind the row in front of it.
+      rowP = Math.min(rowP, prevRowP - P.rowGap * segL);
+      prevRowP = rowP;
+      cars.sort((a, b) => a.x - b.x)                                         // keep left cars on the left
+        .forEach((c, i) => { c.park = { p: rowP, x: P.lanes[i + Math.floor((nl - cars.length) / 2)] }; c.parked = false; });
     }
-    // finish card appears after a short delay
-    const was = G.finishT;
+  }
+
+  // State 'finished': player brakes; AI cars still racing keep racing (normal AI, laps and finish
+  // places still counted); finished AI cars drive into their bay and stop. All movement is dt-based.
+  function endPhase(dt) {
+    const pl = G.player, P = CFG.park;
+    G.raceTime += dt;                                     // AI finish times keep counting
     G.finishT += dt;
-    if (was <= CFG.finishOverlayDelay && G.finishT > CFG.finishOverlayDelay) { if (G.panel === 'themes') G.themesFrom = 'finish'; else if (G.panel === 'cars') G.carsFrom = 'finish'; else showPanel('finish'); fillFinish(); }
+
+    // player: brake smoothly to a halt and stay put
+    const before = pl.p;
+    pl.speed = Math.max(0, pl.speed - playerDecel() * dt);
+    pl.braking = pl.speed > 0; pl.nitroOn = false;
+    if (pl.steerVis) pl.steerVis *= Math.pow(0.9, dt * 60);
+    pl.p += pl.speed * dt;
+    TL.render.scroll(road.findSegment(pl.p).curve, pl.p - before);
+
+    // AI still on its last lap: race on as normal (opponents.update avoids every car, parked ones included)
+    const racing = G.ais.filter(c => !c.finished && !c.dnf);
+    if (racing.length && TL.opponents) TL.opponents.update(racing, G.racers, pl, dt);
+    racing.forEach(checkLaps);
+
+    // finished AI: brake into its bay. Speed follows v = sqrt(2·a·distance) so it arrives at 0 exactly.
+    for (const c of G.ais) {
+      if (!(c.finished || c.dnf) || !c.park) continue;
+      const dist = c.park.p - c.p;
+      if (c.parked) { c.speed = 0; c.braking = false; }
+      else if (dist <= 0) {                               // overshot its bay (rare): just brake to a halt here
+        c.speed = Math.max(0, c.speed - parkDecel() * dt); c.p += c.speed * dt;
+        c.braking = c.speed > 0; if (c.speed === 0) c.parked = true;
+      }
+      else {
+        const vMax = Math.sqrt(2 * parkDecel() * dist);
+        if (c.speed > vMax) c.speed = Math.max(vMax, c.speed - parkDecel() * dt * 1.5);   // brake
+        else c.speed = Math.min(vMax, Math.max(c.speed, CFG.maxSpeed * P.creep));        // roll on if short
+        c.braking = c.speed < vMax * 0.98 || dist < CFG.segmentLength * 8;
+        c.p = Math.min(c.park.p, c.p + c.speed * dt);
+        if (c.p >= c.park.p - 1 || c.speed < 1) { c.speed = 0; c.parked = true; c.braking = false; }
+      }
+      const d = c.park.x - c.x, step = P.steerRate * dt;                     // line up with the bay
+      c.x += U.clamp(d, -step, step);
+      c.steerVis = U.clamp(d * 4, -1, 1) * (c.parked ? 0 : 1);
+      c.nitroOn = false;
+    }
+    updatePositions();
+
+    // timeout: anyone still out there is ranked by distance covered, then parks like the rest
+    if (G.finishT > P.timeout) {
+      G.ais.filter(c => !c.finished && !c.dnf).sort((a, b) => b.p - a.p).forEach(c => {
+        c.dnf = true; G.finishOrder.push(c); c.finalPos = G.finishOrder.length;
+      });
+      updatePositions();
+    }
+
+    // results card: after the minimum delay, once every car has finished and stopped (or on timeout)
+    const allDone = pl.speed === 0 && G.ais.every(c => c.parked);
+    if (!G.resultShown && G.finishT > CFG.finishOverlayDelay && (allDone || G.finishT > P.timeout)) {
+      G.resultShown = true;
+      if (G.panel === 'themes') G.themesFrom = 'finish'; else if (G.panel === 'cars') G.carsFrom = 'finish'; else showPanel('finish');
+      fillFinish();
+    }
   }
 
   G.draw = function (ctx, W, H) {

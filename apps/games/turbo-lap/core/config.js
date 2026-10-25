@@ -18,7 +18,7 @@ TL.CFG = {
   accel: 12000 / 5,        // 0 -> max in ~5 s
   braking: -12000,
   decel: -12000 / 5,       // coasting
-  finishBrake: 0.6,        // after the race ends every car brakes at this fraction of `braking` until stopped
+  finishBrake: 0.6,        // once the player crosses the line, the player's car brakes at this fraction of `braking`
   offRoadDecel: -12000 / 2,
   offRoadLimit: 12000 / 4,
   steerRate: 2.0,          // road half-widths per second at full speed
@@ -96,7 +96,19 @@ TL.CFG = {
   laps: 2,                 // fallback only; each circuit sets its own lap count
   countdownStep: 0.9,      // seconds per 3-2-1 step
   gridSpacing: 5,          // segments between grid rows
-  finishOverlayDelay: 1.6,
+  finishOverlayDelay: 1.6, // minimum seconds after the player finishes before the results card can show
+  // Parking after the finish: every computer car finishes its race, then pulls up AHEAD of the player
+  // so the whole field is lined up on screen when the results card appears.
+  park: {
+    gap: 10,               // segments between the player's stopping point and the first row of parked cars
+    rowGap: 5,             // segments between parking rows
+    lanes: [-0.55, 0, 0.55], // x offsets (road half-widths) of the parking bays in one row (distinct = no overlap)
+    brake: 0.9,            // strongest parking deceleration, as a fraction of `braking`
+    creep: 0.35,           // fraction of maxSpeed a car may roll at to reach its bay if it stopped short
+    steerRate: 1.2,        // road half-widths per second while lining up with the bay
+    timeout: 10            // seconds after the player finishes; then the card shows anyway and
+                           // unfinished cars are ranked by distance covered
+  },
 
   // Opponents: speed = fraction of player maxSpeed, skill 0..1 (cornering + racing line)
   opponents: [
