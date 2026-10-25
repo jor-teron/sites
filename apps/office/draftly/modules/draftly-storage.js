@@ -2,6 +2,8 @@
    FILE: modules/draftly-storage.js
    PROJECT: Draftly
    ROLE: IndexedDB documents, plus theme and orientation flags.
+         DF3: save() skips a never-stored blank document (no text,
+         image or table in body, header or footer).
    DEPENDS: Draftly.config
    ISOLATION: Failures are swallowed. A bad store does not
               stop the editor from opening.
@@ -88,6 +90,21 @@ Draftly.storage.deleteDoc = function deleteDoc(name) {
   });
 };
 
+/* True when html has no text, image or table. */
+Draftly.storage.isEmptyHtml = function isEmptyHtml(html) {
+  var d = document.createElement('div');
+  d.innerHTML = html || '';
+  if (d.querySelector('img, table, hr, svg, canvas, video')) return false;
+  return !(d.textContent || '').replace(/[\s\u00a0\u200b]+/g, '');
+};
+
+/* DF3: open doc was never stored and has nothing in it. */
+Draftly.storage.isBlankUnsaved = function isBlankUnsaved(html) {
+  if (Draftly.storage.loadedName) return false;
+  if (Draftly.hf && !Draftly.hf.isEmpty()) return false;
+  return Draftly.storage.isEmptyHtml(html);
+};
+
 /* Write the open document under its name. If the name box changed, the record moves (rename). */
 Draftly.storage.save = function save() {
   var cfg = Draftly.config;
@@ -97,12 +114,13 @@ Draftly.storage.save = function save() {
   holder.innerHTML = Draftly.pages.combinedHtml();
   if (Draftly.editor) Draftly.editor.stripMarks(holder);
   var html = holder.innerHTML;
+  /* DF3: never store a blank, never-saved document. */
+  if (Draftly.storage.isBlankUnsaved(html)) return Promise.resolve(name);
   try {
     localStorage.setItem(
       cfg.storageKeyNonPrint,
       Draftly.ui && Draftly.ui.isNonPrinting() ? cfg.nonPrintOnValue : cfg.nonPrintOffValue
     );
-    localStorage.setItem(cfg.storageKeyLastName, name);
   } catch (e) {}
   return Draftly.storage.open().then(function (db) {
     return new Promise(function (resolve, reject) {
@@ -117,6 +135,7 @@ Draftly.storage.save = function save() {
           if (b && b.name === old) { try { localStorage.removeItem(cfg.storageKeyBackup); } catch (e) {} }
         }
         Draftly.storage.loadedName = name;
+        try { localStorage.setItem(cfg.storageKeyLastName, name); } catch (e) {}
         resolve(name);
       };
       tx.onerror = function () { reject(tx.error); };
@@ -130,6 +149,7 @@ Draftly.storage.writeBackup = function writeBackup() {
   var holder = document.createElement('div');
   holder.innerHTML = Draftly.pages.combinedHtml();
   if (Draftly.editor) Draftly.editor.stripMarks(holder);
+  if (Draftly.storage.isBlankUnsaved(holder.innerHTML)) return;
   try {
     localStorage.setItem(Draftly.config.storageKeyBackup, JSON.stringify({
       name: Draftly.storage.fillNameIfEmpty(), html: holder.innerHTML,

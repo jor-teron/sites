@@ -3,6 +3,9 @@
    PROJECT: Draftly
    ROLE: Document lifecycle: load, open, new, delete, save,
          Recent list, autosave and save-on-leave.
+         DF3: a blank document is kept in memory only; it is
+         stored on its first real edit (storage.save skips blank
+         never-saved docs).
    DEPENDS: config, storage, ui, editor, pages, history, view
    ============================================================ */
 
@@ -120,7 +123,8 @@ Draftly.docs.openDoc = function openDoc(name) {
   });
 };
 
-/* Show a blank document under a fresh, unused Doc_ name. */
+/* Show a blank document under a fresh, unused Doc_ name.
+   DF3: not stored yet; the first real edit saves it. */
 Draftly.docs.showBlank = function showBlank(rows) {
   var base = Draftly.storage.makeName();
   var name = base;
@@ -136,7 +140,7 @@ Draftly.docs.showBlank = function showBlank(rows) {
   Draftly.pages.layoutAll();
   if (editor) { editor.focus(); Draftly.editor.activeEditor = editor; }
   Draftly.history.reset();
-  return Draftly.storage.save();
+  return Promise.resolve(name);
 };
 
 /* New: save the current doc, then open a blank one. */
