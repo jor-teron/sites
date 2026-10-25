@@ -5,10 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Spreadsheet</title>
   <link rel="icon" href="spreadsheet_icon.png">
-  <link rel="stylesheet" href="spreadsheet.css?v=4">
+  <link rel="stylesheet" href="spreadsheet.css?v=5">
   <link rel="stylesheet" href="../shared/office-ribbon.css?v=1">
   <link rel="stylesheet" href="../shared/office-dialog.css?v=1">
-  <link rel="stylesheet" href="spreadsheet_ribbon.css?v=4">
+  <link rel="stylesheet" href="../shared/office-theme.css?v=1">
+  <link rel="stylesheet" href="../shared/office-toast.css?v=1">
+  <link rel="stylesheet" href="../shared/office-settings.css?v=1">
+  <link rel="stylesheet" href="../shared/office-colour.css?v=1">
+  <link rel="stylesheet" href="spreadsheet_ribbon.css?v=5">
   <link rel="stylesheet" href="spreadsheet_page.css?v=4">
 </head>
 <body>
@@ -16,7 +20,12 @@
   <header class="of-topbar" id="of-topbar">
     <button type="button" class="of-file-btn" id="of-file-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="of-file-menu">File</button>
     <div class="of-tabs" id="of-tabs" role="tablist" aria-label="Ribbon"></div>
+    <!-- SH1 Settings gear: panel built by ../shared/office-settings.js (spreadsheet_settings.js) -->
+    <button type="button" class="sheet-gear" id="settingsBtn" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg></button>
   </header>
+  <!-- SH1 colour palettes (filled by ../shared/office-colour.js) -->
+  <div id="fill-colour-menu" role="menu" aria-label="Cell fill colour" hidden></div>
+  <div id="text-colour-menu" role="menu" aria-label="Text colour" hidden></div>
 
   <!-- File menu -->
   <div class="of-file-menu" id="of-file-menu" role="menu" aria-labelledby="of-file-btn" hidden>
@@ -57,8 +66,14 @@
         </select>
       </div>
       <div class="of-group">
-        <input id="fill-color" type="color" title="Cell colour" value="#1e1e1e">
-        <input id="text-color" type="color" title="Text colour" value="#e8e8e8">
+        <div class="of-split" role="group" aria-label="Cell fill">
+          <button type="button" class="of-split-main" id="fill-colour-btn" title="Cell fill" aria-label="Apply cell fill"><span class="of-colour-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 11 6-6 7 7-6 6z"/><path d="M19 15s2 2.2 2 3.5a2 2 0 0 1-4 0c0-1.3 2-3.5 2-3.5z"/></svg><span class="of-colour-bar" id="fill-colour-bar"></span></span></button>
+          <button type="button" class="of-split-arrow" id="fill-colour-arrow" title="Cell fill options" aria-label="Cell fill options" aria-haspopup="menu" aria-expanded="false" aria-controls="fill-colour-menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></button>
+        </div>
+        <div class="of-split" role="group" aria-label="Text colour">
+          <button type="button" class="of-split-main" id="text-colour-btn" title="Text colour" aria-label="Apply text colour"><span class="of-colour-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 16 12 4l5 12M8.7 12h6.6"/></svg><span class="of-colour-bar" id="text-colour-bar"></span></span></button>
+          <button type="button" class="of-split-arrow" id="text-colour-arrow" title="Text colour options" aria-label="Text colour options" aria-haspopup="menu" aria-expanded="false" aria-controls="text-colour-menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></button>
+        </div>
       </div>
       <span class="of-note">Copy / cut / paste: Ctrl/⌘+C, X, V</span>
     </div>
@@ -108,7 +123,7 @@
   </nav>
 
   <!-- Formula bar: its own row -->
-  <div class="toolbar sheet-formula-row">
+  <div class="toolbar sheet-formula-row" id="sheet-formula-row">
     <span class="eq-mark">=</span>
     <input id="formula-bar" type="text" placeholder="A1+B1" aria-label="Formula bar">
   </div>
@@ -117,6 +132,10 @@
   <script src="../shared/office-dialog.js?v=1"></script>
   <script src="../shared/office-page.js?v=1"></script>
   <script src="../shared/office-ribbon.js?v=1"></script>
+  <script src="../shared/office-toast.js?v=1"></script>
+  <script src="../shared/office-theme.js?v=1"></script>
+  <script src="../shared/office-settings.js?v=1"></script>
+  <script src="../shared/office-colour.js?v=1"></script>
   <script src="spreadsheet_config.js?v=4"></script>
   <script src="spreadsheet_formula.js?v=4"></script>
   <script src="spreadsheet_functions.js?v=4"></script>
@@ -127,9 +146,10 @@
   <script src="spreadsheet_grid.js?v=4"></script>
   <script src="spreadsheet_edit.js?v=4"></script>
   <script src="spreadsheet_fill.js?v=4"></script>
-  <script src="spreadsheet_toolbar.js?v=4"></script>
+  <script src="spreadsheet_toolbar.js?v=5"></script>
+  <script src="spreadsheet_settings.js?v=1"></script>
   <script src="spreadsheet_page.js?v=4"></script>
-  <script src="spreadsheet_ribbon.js?v=4"></script>
+  <script src="spreadsheet_ribbon.js?v=5"></script>
   <script src="spreadsheet_logic.js?v=4"></script>
   <script src="spreadsheet_format.js?v=4"></script>
   <script src="spreadsheet_undo.js?v=4"></script>

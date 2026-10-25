@@ -2,7 +2,9 @@
   ============================================================
   FILE: modules/draftly-colour.js
   PROJECT: Draftly
-  ROLE: FT3 text colour and highlight split buttons + palettes.
+  ROLE: FT3 text colour and highlight. Split buttons + palettes come
+        from ../shared/office-colour.js (SH1); this file keeps the
+        palettes and how a colour is applied to the selection.
         Colours are written as <span style="color / background-color">
         so print, PDF and DOCX keep them.
   ============================================================
@@ -26,27 +28,13 @@ Draftly.colour = {
   defaults: { text: '#ff0000', hilite: '#ffff00' },
   /* Sentinel colours: execCommand marks the selection, we then rewrite. */
   marker: { text: 'rgb(1, 2, 3)', hilite: 'rgb(3, 2, 1)' },
-  openKind: null
+  openKind: null,
+  pickers: {}
 };
 
-Draftly.colour.last = function last(kind) {
-  var v = null;
-  try { v = localStorage.getItem(Draftly.colour.keys[kind]); } catch (e) {}
-  return v === 'none' ? null : (v || Draftly.colour.defaults[kind]);
-};
-
-Draftly.colour.remember = function remember(kind, value) {
-  try { localStorage.setItem(Draftly.colour.keys[kind], value || 'none'); } catch (e) {}
-  Draftly.colour.syncBars();
-};
-
-Draftly.colour.syncBars = function syncBars() {
-  var t = document.getElementById('textColourBar');
-  var h = document.getElementById('hiliteColourBar');
-  var lt = Draftly.colour.last('text'), lh = Draftly.colour.last('hilite');
-  if (t) t.style.background = lt || '#000000';
-  if (h) { h.style.background = lh || 'transparent'; h.classList.toggle('none', !lh); }
-};
+Draftly.colour.last = function last(kind) { return Draftly.colour.pickers[kind] ? Draftly.colour.pickers[kind].last() : Draftly.colour.defaults[kind]; };
+Draftly.colour.remember = function remember(kind, value) { if (Draftly.colour.pickers[kind]) Draftly.colour.pickers[kind].remember(value); };
+Draftly.colour.syncBars = function syncBars() { var P = Draftly.colour.pickers; if (P.text) P.text.syncBar(); if (P.hilite) P.hilite.syncBar(); };
 
 /* Apply a colour (or null to remove) to the current selection. */
 Draftly.colour.apply = function apply(kind, value) {
@@ -104,87 +92,30 @@ Draftly.colour.apply = function apply(kind, value) {
   if (Draftly.ui) Draftly.ui.updateToolbarState();
 };
 
-Draftly.colour.build = function build(kind) {
-  var menu = document.getElementById(kind === 'text' ? 'textColourMenu' : 'hiliteColourMenu');
-  Draftly.colour[kind].forEach(function (c) {
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'swatch' + (c[1] ? '' : ' swatch-none');
-    b.setAttribute('role', 'menuitem');
-    b.title = c[0];
-    b.setAttribute('aria-label', c[0]);
-    if (c[1]) b.style.background = c[1];
-    else b.innerHTML = '<span>' + c[0] + '</span>';
-    b.addEventListener('mousedown', function (e) { e.preventDefault(); });
-    b.addEventListener('click', function () { Draftly.colour.close(false, true); Draftly.colour.apply(kind, c[1]); });
-    menu.appendChild(b);
-  });
-  menu.addEventListener('keydown', function (e) {
-    var items = Array.prototype.slice.call(menu.querySelectorAll('.swatch'));
-    var i = items.indexOf(document.activeElement);
-    var step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 5, ArrowUp: -5 }[e.key];
-    if (step) {
-      e.preventDefault();
-      if (i < 0) i = 0; else if (i === 0 && step > 1) i = 1; else i = Math.max(0, Math.min(items.length - 1, i + step));
-      items[i].focus();
-    } else if (e.key === 'Escape') {
-      e.preventDefault(); e.stopPropagation(); Draftly.colour.close(true);
-    } else if (e.key === 'Tab') { Draftly.colour.close(); }
-  });
-};
-
-Draftly.colour.open = function open(kind) {
-  var C = Draftly.colour;
-  if (C.openKind === kind) { C.close(); return; }
-  C.close();
-  var cur = window.getSelection();
-  C.range = (cur && cur.rangeCount && !cur.isCollapsed && Draftly.editor.isInEditor(cur.anchorNode.nodeType === 1 ? cur.anchorNode : cur.anchorNode.parentElement)) ? cur.getRangeAt(0).cloneRange() : null;
-  var arrow = document.getElementById(kind === 'text' ? 'textColourArrow' : 'hiliteColourArrow');
-  var menu = document.getElementById(kind === 'text' ? 'textColourMenu' : 'hiliteColourMenu');
-  var r = arrow.parentElement.getBoundingClientRect();
-  menu.hidden = false;
-  menu.style.top = Math.round(r.bottom + 4) + 'px';
-  menu.style.left = Math.round(Math.max(8, Math.min(r.left, window.innerWidth - menu.offsetWidth - 8))) + 'px';
-  arrow.setAttribute('aria-expanded', 'true');
-  C.openKind = kind;
-  var f = menu.querySelector('.swatch');
-  if (f) f.focus({ preventScroll: true });
-};
-
+Draftly.colour.open = function open(kind) { if (Draftly.colour.pickers[kind]) Draftly.colour.pickers[kind].open(); };
 Draftly.colour.close = function close(refocus, keepRange) {
   var C = Draftly.colour;
-  if (!C.openKind) return;
-  if (!keepRange) C.range = null;
-  var kind = C.openKind;
-  var arrow = document.getElementById(kind === 'text' ? 'textColourArrow' : 'hiliteColourArrow');
-  document.getElementById(kind === 'text' ? 'textColourMenu' : 'hiliteColourMenu').hidden = true;
-  arrow.setAttribute('aria-expanded', 'false');
-  C.openKind = null;
-  if (refocus) arrow.focus();
+  if (C.openKind && C.pickers[C.openKind]) C.pickers[C.openKind].close(refocus, keepRange);
+};
+
+/* Keep the editor selection while the palette has focus. */
+Draftly.colour.grab = function grab() {
+  var cur = window.getSelection();
+  Draftly.colour.range = (cur && cur.rangeCount && !cur.isCollapsed && Draftly.editor.isInEditor(cur.anchorNode.nodeType === 1 ? cur.anchorNode : cur.anchorNode.parentElement)) ? cur.getRangeAt(0).cloneRange() : null;
 };
 
 Draftly.colour.init = function init() {
   var C = Draftly.colour;
-  if (!document.getElementById('textColourBtn')) return;
-  C.build('text'); C.build('hilite');
-  C.syncBars();
-  [['text', 'textColour'], ['hilite', 'hiliteColour']].forEach(function (p) {
-    var main = document.getElementById(p[1] + 'Btn');
-    var arrow = document.getElementById(p[1] + 'Arrow');
-    [main, arrow].forEach(function (b) { b.addEventListener('mousedown', function (e) { e.preventDefault(); }); });
-    main.addEventListener('click', function () { C.close(); C.apply(p[0], C.last(p[0])); });
-    arrow.addEventListener('click', function () { C.open(p[0]); });
-    arrow.addEventListener('keydown', function (e) {
-      if (e.key === 'ArrowDown') { e.preventDefault(); C.open(p[0]); }
+  if (!document.getElementById('textColourBtn') || typeof OfficeColour === 'undefined') return;
+  [['text', 'textColour', 'textColourMenu', '#000000'], ['hilite', 'hiliteColour', 'hiliteColourMenu', null]].forEach(function (p) {
+    var kind = p[0];
+    C.pickers[kind] = OfficeColour.create({
+      btn: document.getElementById(p[1] + 'Btn'), arrow: document.getElementById(p[1] + 'Arrow'),
+      menu: document.getElementById(p[2]), bar: document.getElementById(p[1] + 'Bar'),
+      palette: C[kind], autoRemember: false, key: C.keys[kind], fallback: C.defaults[kind], autoBar: p[3],
+      onOpen: function () { C.grab(); C.openKind = kind; },
+      onClose: function (keep) { if (!keep) C.range = null; C.openKind = null; },
+      onPick: function (v) { C.apply(kind, v); }
     });
   });
-  document.addEventListener('mousedown', function (e) {
-    if (!C.openKind) return;
-    if (e.target.closest('.colour-menu') || e.target.closest('.split-btn')) return;
-    C.close();
-  });
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && C.openKind) C.close(true);
-  });
-  window.addEventListener('resize', function () { C.close(); });
 };

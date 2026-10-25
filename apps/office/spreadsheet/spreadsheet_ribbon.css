@@ -4,10 +4,27 @@
  * Maps the sheet's colours onto the shared --of-* variables, makes the page a column so the
  * grid takes the rest, and styles the formula-bar row.
  */
-:root {
+body {   /* on body (not :root) so the SH1 light theme vars flow through */
   --of-bg: var(--panel); --of-group: var(--btn); --of-border: var(--border); --of-text: var(--text);
-  --of-muted: var(--muted); --of-focus: var(--sel);
+  --of-muted: var(--muted); --of-focus: var(--sel); --of-hover: var(--hover); --of-active: var(--on);
 }
+
+/* SH1 Settings gear at the right end of the top bar (44px tap target, jelly press) */
+.sheet-gear {
+  margin-left: auto; width: 44px; height: 36px; padding: 0; border: 0; border-radius: 8px;
+  background: transparent; color: var(--text); cursor: pointer; transition: transform .15s, background .15s;
+}
+.sheet-gear svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.sheet-gear:hover { background: var(--hover); }
+.sheet-gear:active { transform: scale(0.9); }
+.sheet-gear:focus-visible { outline: 2px solid var(--sel); outline-offset: 1px; }
+
+/* SH1 colour split buttons inside the ribbon */
+.toolbar .of-split button { display: inline-flex; align-items: center; justify-content: center; min-height: 28px; }
+.toolbar .of-split .of-split-main { padding: 2px 8px; }
+.of-split-arrow svg, .of-colour-icon svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+@media (prefers-reduced-motion: reduce) { .sheet-gear { transition: none; } .sheet-gear:active { transform: none; } }
+@media print { .sheet-gear { display: none !important; } }
 body { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 .sheet-wrap { flex: 1 1 auto; min-height: 0; height: auto; }
 
@@ -20,3 +37,4 @@ body { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 .sheet-formula-row #formula-bar { padding: 4px 8px; }
 
 @media print { .sheet-formula-row { display: none !important; } body { display: block; height: auto; overflow: visible; } }
+.toolbar.sheet-formula-row[hidden] { display: none; }

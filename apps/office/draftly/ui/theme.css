@@ -76,3 +76,11 @@ body.dark {
   --scroll-thumb: rgba(255, 255, 255, 0.18);
   --nonprint-color: #8a8a8a;
 }
+
+/* ----- SH1: map Draftly colours onto the shared --of-* names (../shared/office-*.css).
+   Set on body so body.dark values flow through. ----- */
+body {
+  --of-bg: var(--bg-paper); --of-text: var(--text-primary); --of-border: var(--border-light);
+  --of-group: var(--bg-group); --of-muted: var(--text-secondary); --of-focus: var(--accent);
+  --of-ui-font: var(--ui-font);
+}

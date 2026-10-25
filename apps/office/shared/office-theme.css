@@ -1,0 +1,7 @@
+/*
+ * apps/office/shared/office-theme.css
+ * SH1 shared theme basics. office-theme.js sets body.of-dark / body.of-light.
+ * Each app keeps its own colour variables for both themes.
+ */
+body.of-light { color-scheme: light; }
+body.of-dark { color-scheme: dark; }

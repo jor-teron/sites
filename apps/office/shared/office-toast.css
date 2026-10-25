@@ -1,0 +1,18 @@
+/*
+ * apps/office/shared/office-toast.css
+ * SH1 shared toast (office-toast.js). Font via --of-ui-font if the app sets it.
+ */
+.of-toast {
+  position: fixed; bottom: 28px; left: 50%; z-index: 999;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(22, 22, 40, 0.88);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  color: #fff; padding: 10px 20px; border-radius: 999px;
+  font: 500 13.5px var(--of-ui-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  box-shadow: 0 10px 30px rgba(20, 10, 60, 0.35);
+  max-width: calc(100vw - 32px); white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s;
+}
+.of-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (prefers-reduced-motion: reduce) { .of-toast { transition: none; } }
+@media print { .of-toast { display: none !important; } }

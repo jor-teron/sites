@@ -1,7 +1,7 @@
 /*
  * spreadsheet_toolbar.js
  * Toolbar wiring: buttons, file import, formula bar, style controls and their sync.
- * (The ribbon will hook in here.)
+ * (The ribbon will hook in here.) Colour split buttons use ../shared/office-colour.js (SH1).
  */
 
 /**
@@ -13,8 +13,6 @@ function syncStyleUi() {
   document.getElementById("btn-bold").classList.toggle(CLS.toggleOn, !!st.bold);
   document.getElementById("btn-italic").classList.toggle(CLS.toggleOn, !!st.italic);
   document.getElementById("btn-under").classList.toggle(CLS.toggleOn, !!st.underline);
-  document.getElementById("fill-color").value = st.bg || CFG.colors.fillPicker;
-  document.getElementById("text-color").value = st.color || CFG.colors.textPicker;
   var fs = document.getElementById("fmt-sel");
   if (fs) fs.value = st.fmt || "general";
 }
@@ -76,11 +74,32 @@ function wireUi() {
     var on = !cellStyle(selR, selC).underline;
     styleSelection("underline", function (st) { st.underline = on; });
   });
-  document.getElementById("fill-color").addEventListener("input", function (ev) {
-    styleSelection("fill-color", function (st) { st.bg = ev.target.value; });
-  });
-  document.getElementById("text-color").addEventListener("input", function (ev) {
-    styleSelection("text-color", function (st) { st.color = ev.target.value; });
-  });
+  wireColours();
   if (typeof initRibbon === "function") initRibbon();   // spreadsheet_ribbon.js: tabs + File menu
+}
+
+/* SH1: cell fill + text colour palettes (null = no fill / automatic) */
+var SHEET_FILLS = [
+  ["No fill", null], ["Yellow", "#ffff00"], ["Light orange", "#ffd966"], ["Light green", "#c6efce"],
+  ["Light blue", "#bdd7ee"], ["Pink", "#f4b6c2"], ["Grey", "#d9d9d9"], ["Red", "#c00000"],
+  ["Green", "#00b050"], ["Blue", "#0070c0"], ["Purple", "#7030a0"]
+];
+var SHEET_TEXTS = [
+  ["Automatic", null], ["Black", "#000000"], ["White", "#ffffff"], ["Red", "#ff0000"],
+  ["Dark red", "#c00000"], ["Orange", "#ed7d31"], ["Gold", "#bf9000"], ["Green", "#00b050"],
+  ["Blue", "#0070c0"], ["Dark blue", "#002060"], ["Purple", "#7030a0"]
+];
+var SHEET_COLOUR = {};
+function wireColours() {
+  if (typeof OfficeColour === "undefined" || !document.getElementById("fill-colour-btn")) return;
+  [["fill", SHEET_FILLS, "#ffff00", null, "bg"], ["text", SHEET_TEXTS, "#ff0000", "var(--text)", "color"]].forEach(function (p) {
+    SHEET_COLOUR[p[0]] = OfficeColour.create({
+      btn: document.getElementById(p[0] + "-colour-btn"), arrow: document.getElementById(p[0] + "-colour-arrow"),
+      menu: document.getElementById(p[0] + "-colour-menu"), bar: document.getElementById(p[0] + "-colour-bar"),
+      palette: p[1], key: "spreadsheet.last-" + p[0] + "-colour", fallback: p[2], autoBar: p[3],
+      onPick: function (v) {
+        styleSelection("cell-" + p[0], function (st) { if (v) st[p[4]] = v; else delete st[p[4]]; });
+      }
+    });
+  });
 }

@@ -4,6 +4,8 @@
    ROLE: DF8 Settings panel (gear at the right of the top bar).
          One localStorage key 'draftly_settings' holds View,
          Editing, New document and Saving choices.
+   SH1: panel, storage and form come from ../shared/office-settings.js;
+         this file keeps Draftly's sections, migration and hooks.
    LOAD: right after draftly-storage.js. At load it migrates the
          old per-feature keys and writes the values back to them,
          so ruler / status bar / marks / theme modules read the
@@ -33,45 +35,76 @@ Draftly.settings = {
 Draftly.settings.get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
 Draftly.settings.put = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
 
-/* Read settings; on first run build them from the old keys. */
-Draftly.settings.load = function load() {
-  var S = Draftly.settings, cfg = Draftly.config, d = S.defaults, out = {}, k;
-  for (k in d) out[k] = d[k];
-  var raw = null;
-  try { raw = JSON.parse(S.get(S.KEY) || 'null'); } catch (e) {}
-  if (raw && typeof raw === 'object') {
-    for (k in d) if (raw[k] !== undefined && typeof raw[k] === typeof d[k]) out[k] = raw[k];
-  } else {
-    /* Migration from pre-DF8 keys. */
-    out.statusBar = S.get('draftly_status_bar') !== '0';
-    out.ruler = S.get('draftly_ruler') === '1';
-    out.marks = S.get(cfg.storageKeyNonPrint) === cfg.nonPrintOnValue;
-    out.theme = S.get(cfg.storageKeyTheme) === cfg.themeDarkValue ? 'dark' : 'light';
-    var p = S.get(cfg.storageKeyPaperSize), m = S.get(cfg.storageKeyMarginPreset), o = S.get(cfg.storageKeyOrientation);
-    if (cfg.paperSizes[p]) out.paper = p;
-    if (cfg.marginPresets[m] || m === 'custom') out.margins = m;
-    if (cfg.orientations.indexOf(o) !== -1) out.orientation = o;
-  }
-  if (['light', 'dark', 'auto'].indexOf(out.theme) === -1) out.theme = 'light';
-  S.s = out;
-  S.save();
+/* First run: build settings from the pre-DF8 keys. */
+Draftly.settings.migrate = function migrate() {
+  var S = Draftly.settings, cfg = Draftly.config, out = {};
+  out.statusBar = S.get('draftly_status_bar') !== '0';
+  out.ruler = S.get('draftly_ruler') === '1';
+  out.marks = S.get(cfg.storageKeyNonPrint) === cfg.nonPrintOnValue;
+  out.theme = S.get(cfg.storageKeyTheme) === cfg.themeDarkValue ? 'dark' : 'light';
+  var p = S.get(cfg.storageKeyPaperSize), m = S.get(cfg.storageKeyMarginPreset), o = S.get(cfg.storageKeyOrientation);
+  if (cfg.paperSizes[p]) out.paper = p;
+  if (cfg.marginPresets[m] || m === 'custom') out.margins = m;
+  if (cfg.orientations.indexOf(o) !== -1) out.orientation = o;
   return out;
 };
 
-Draftly.settings.save = function save() { Draftly.settings.put(Draftly.settings.KEY, JSON.stringify(Draftly.settings.s)); };
+/* Panel sections (rendered by OfficeSettings). */
+Draftly.settings.sections = function sections(s) {
+  var S = Draftly.settings, cfg = Draftly.config;
+  return [
+    { title: 'View', rows: [
+      { type: 'external', id: 'statusBarToggle', label: 'Status bar', pressed: s.statusBar },
+      { type: 'external', id: 'rulerToggle', label: 'Ruler', pressed: s.ruler },
+      { key: 'marks', type: 'switch', id: 'setMarks', label: 'Format marks (\u00b6)' },
+      { key: 'theme', type: 'select', id: 'setTheme', label: 'Theme', options: OfficeTheme.modes }
+    ] },
+    { title: 'Editing', rows: [
+      { key: 'font', type: 'select', id: 'setFont', label: 'Default font', options: S.fonts.map(function (f) { return [f, f]; }) },
+      { key: 'fontSize', type: 'select', id: 'setFontSize', label: 'Default size', cast: Number, options: S.sizes.map(function (n) { return [n, n + ' pt']; }) },
+      { key: 'lineHeight', type: 'select', id: 'setLine', label: 'Line spacing', cast: Number, options: S.spacings.map(function (n) { return [n, n.toFixed(n === 1.15 ? 2 : 1)]; }) }
+    ] },
+    { title: 'New document', rows: [
+      { key: 'paper', type: 'select', id: 'setPaper', label: 'Paper size', options: Object.keys(cfg.paperSizes).map(function (k) { return [k, cfg.paperSizes[k].label]; }) },
+      { key: 'orientation', type: 'select', id: 'setOrient', label: 'Orientation', options: [['portrait', 'Portrait'], ['landscape', 'Landscape']] },
+      { key: 'margins', type: 'select', id: 'setMargins', label: 'Margins', options: Object.keys(cfg.marginPresets).map(function (k) { return [k, cfg.marginPresets[k].label]; }).concat([['custom', 'Custom']]) }
+    ] },
+    { title: 'Saving', rows: [
+      { key: 'autosave', type: 'switch', id: 'setAutosave', label: 'Autosave while typing' },
+      { key: 'backupSec', type: 'select', id: 'setBackup', label: 'Backup copy', cast: Number, options: S.backups }
+    ] },
+    { title: 'About', rows: [{ type: 'about', id: 'setVersion', text: 'Draftly ' + cfg.version }] }
+  ];
+};
+
+/* Read settings (migrating on first run) and build the panel. */
+Draftly.settings.load = function load() {
+  var S = Draftly.settings;
+  S.panel = OfficeSettings.create({
+    key: S.KEY, defaults: S.defaults, migrate: S.migrate, sections: S.sections,
+    gearBtn: document.getElementById('settingsBtn'),
+    validate: function (out) { if (['light', 'dark', 'auto'].indexOf(out.theme) === -1) out.theme = 'light'; },
+    onChange: function (k) { S.apply(k); },
+    onReset: function () { S.s = S.panel.s; S.apply(); S.apply('font'); },
+    resetMessage: 'Reset all settings to their defaults? Your documents are not touched.',
+    confirm: function (msg) {
+      return Draftly.dialog && Draftly.dialog.confirm
+        ? Draftly.dialog.confirm({ title: 'Reset settings?', message: msg, okLabel: 'Reset', danger: true })
+        : window.confirm(msg);
+    },
+    toast: function (m) { if (Draftly.ui.showToast) Draftly.ui.showToast(m); }
+  });
+  S.s = S.panel.s;
+  return S.s;
+};
+
+Draftly.settings.save = function save() { var S = Draftly.settings; if (S.panel) { S.panel.s = S.s; S.panel.save(); } };
 
 /* Change one value, store it, apply it. */
-Draftly.settings.set = function set(k, v) {
-  var S = Draftly.settings;
-  S.s[k] = v; S.save(); S.apply(k); S.syncForm();
-};
+Draftly.settings.set = function set(k, v) { Draftly.settings.panel.set(k, v); };
 
 /* True when the theme should be dark right now. */
-Draftly.settings.isDark = function isDark() {
-  var t = Draftly.settings.s.theme;
-  if (t === 'auto') return !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
-  return t === 'dark';
-};
+Draftly.settings.isDark = function isDark() { return OfficeTheme.isDark(Draftly.settings.s.theme); };
 
 /* Write values to the old keys / config before other modules read them. */
 Draftly.settings.early = function early() {
@@ -124,51 +157,10 @@ Draftly.settings.startBackup = function startBackup() {
 /* True when typing should autosave (docs.bind checks this). */
 Draftly.settings.autosave = function autosave() { return Draftly.settings.s.autosave !== false; };
 
-/* ----- panel ----- */
-Draftly.settings.el = function (id) { return document.getElementById(id); };
-
-Draftly.settings.fill = function fill() {
-  var S = Draftly.settings, cfg = Draftly.config;
-  function opts(id, list) {
-    var sel = S.el(id); if (!sel) return;
-    sel.innerHTML = '';
-    list.forEach(function (o) {
-      var op = document.createElement('option');
-      op.value = String(o[0]); op.textContent = o[1]; sel.appendChild(op);
-    });
-  }
-  opts('setFont', S.fonts.map(function (f) { return [f, f]; }));
-  opts('setFontSize', S.sizes.map(function (n) { return [n, n + ' pt']; }));
-  opts('setLine', S.spacings.map(function (n) { return [n, n.toFixed(n === 1.15 ? 2 : 1)]; }));
-  opts('setPaper', Object.keys(cfg.paperSizes).map(function (k) { return [k, cfg.paperSizes[k].label]; }));
-  opts('setMargins', Object.keys(cfg.marginPresets).map(function (k) { return [k, cfg.marginPresets[k].label]; }).concat([['custom', 'Custom']]));
-  opts('setBackup', S.backups);
-  var v = S.el('setVersion'); if (v) v.textContent = 'Draftly ' + cfg.version;
-};
-
-/* Push current values into the form controls. */
-Draftly.settings.syncForm = function syncForm() {
-  var S = Draftly.settings, s = S.s;
-  function sw(id, on) { var b = S.el(id); if (b) { b.setAttribute('aria-pressed', String(!!on)); b.classList.toggle('active', !!on); } }
-  function val(id, v) { var e = S.el(id); if (e) e.value = String(v); }
-  sw('setMarks', s.marks); sw('setAutosave', s.autosave);
-  val('setTheme', s.theme); val('setFont', s.font); val('setFontSize', s.fontSize); val('setLine', s.lineHeight);
-  val('setPaper', s.paper); val('setOrient', s.orientation); val('setMargins', s.margins); val('setBackup', s.backupSec);
-};
-
-Draftly.settings.open = function open() {
-  var S = Draftly.settings;
-  S.syncForm();
-  S.el('settingsScrim').hidden = false; S.el('settingsPanel').hidden = false;
-  S.el('settingsBtn').setAttribute('aria-expanded', 'true');
-  S.el('settingsClose').focus();
-};
-Draftly.settings.close = function close() {
-  var S = Draftly.settings, p = S.el('settingsPanel');
-  if (!p || p.hidden) return;
-  p.hidden = true; S.el('settingsScrim').hidden = true;
-  S.el('settingsBtn').setAttribute('aria-expanded', 'false');
-};
+/* ----- panel (OfficeSettings) ----- */
+Draftly.settings.syncForm = function syncForm() { Draftly.settings.panel.syncForm(); };
+Draftly.settings.open = function open() { Draftly.settings.panel.open(); };
+Draftly.settings.close = function close() { Draftly.settings.panel.close(); };
 
 /* Wrap feature setters so ribbon / menu changes land in draftly_settings too. */
 Draftly.settings.hook = function hook() {
@@ -198,43 +190,13 @@ Draftly.settings.hook = function hook() {
       });
     };
   }
-  if (window.matchMedia) {
-    var mq = matchMedia('(prefers-color-scheme: dark)');
-    var f = function () { if (S.s.theme === 'auto') S.applyTheme(); };
-    if (mq.addEventListener) mq.addEventListener('change', f); else if (mq.addListener) mq.addListener(f);
-  }
+  OfficeTheme.watch(function () { if (S.s.theme === 'auto') S.applyTheme(); });
 };
 
 Draftly.settings.bind = function bind() {
   var S = Draftly.settings;
-  if (!S.el('settingsPanel')) return;
-  S.fill();
+  if (!S.panel || !S.panel.panel) return;
   S.hook();
-  S.el('settingsBtn').addEventListener('click', function () { S.el('settingsPanel').hidden ? S.open() : S.close(); });
-  S.el('settingsClose').addEventListener('click', S.close);
-  S.el('settingsScrim').addEventListener('click', S.close);
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') S.close(); });
-  [['setMarks', 'marks'], ['setAutosave', 'autosave']].forEach(function (p) {
-    S.el(p[0]).addEventListener('click', function () { S.set(p[1], !S.s[p[1]]); });
-  });
-  [['setTheme', 'theme', String], ['setFont', 'font', String], ['setFontSize', 'fontSize', Number],
-   ['setLine', 'lineHeight', Number], ['setPaper', 'paper', String], ['setOrient', 'orientation', String],
-   ['setMargins', 'margins', String], ['setBackup', 'backupSec', Number]].forEach(function (p) {
-    S.el(p[0]).addEventListener('change', function (e) { S.set(p[1], p[2](e.target.value)); });
-  });
-  S.el('settingsReset').addEventListener('click', function () {
-    var msg = 'Reset all settings to their defaults? Your documents are not touched.';
-    var ask = Draftly.dialog && Draftly.dialog.confirm
-      ? Draftly.dialog.confirm({ title: 'Reset settings?', message: msg, okLabel: 'Reset', danger: true })
-      : window.confirm(msg);
-    Promise.resolve(ask).then(function (yes) {
-      if (!yes) return;
-      var d = S.defaults, k; S.s = {};
-      for (k in d) S.s[k] = d[k];
-      S.save(); S.apply(); S.apply('font'); S.syncForm();
-      if (Draftly.ui.showToast) Draftly.ui.showToast('Settings reset');
-    });
-  });
   S.startBackup();
   S.syncForm();
 };

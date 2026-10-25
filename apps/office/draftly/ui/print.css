@@ -34,3 +34,5 @@
   .editor { color: #000 !important; }
   .np-mark { display: none !important; }
 }
+/* FT3: keep text colour and highlight when printing (was ui/colour.css). */
+@media print { .editor, .editor * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

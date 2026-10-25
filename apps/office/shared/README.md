@@ -1,6 +1,6 @@
 # Office shared files
 
-Shared by the Office apps (Spreadsheet, Draftly). Not the repo-root `shared/` (Hub).
+Shared by the Office apps (Spreadsheet, Draftly; PDF Tools loads none of these today). Not the repo-root `shared/` (Hub).
 Plain scripts, no build, work from `file://`. Each app keeps its own storage keys.
 
 - `office-ribbon.css` / `office-ribbon.js`: Draftly-style ribbon (36px top row with File + tabs,
@@ -8,3 +8,18 @@ Plain scripts, no build, work from `file://`. Each app keeps its own storage key
 - `office-dialog.css` / `office-dialog.js`: `OfficeDialog.prompt / confirm / form` modal dialogs.
 - `office-page.js`: paper sizes, margin presets (Normal / Narrow / Wide), `clampMargins`,
   `pageRule` (@page text), `inject` (style tag), `customMarginsDialog`.
+
+SH1 (moved from Draftly, used by Draftly and Spreadsheet). Colours come from the app's `--of-*`
+variables (`--of-bg, --of-text, --of-border, --of-group, --of-muted, --of-focus, --of-ui-font`);
+set them on `body` so dark/light overrides flow through.
+
+- `office-toast.css` / `office-toast.js`: `OfficeToast.show(msg, ms)`; uses `.of-toast` / `#toast` or creates it.
+- `office-theme.css` / `office-theme.js`: `OfficeTheme.isDark(mode)` (light / dark / auto),
+  `apply(dark, {darkClass, lightClass, key})` (body classes + per-app storage key), `watch(fn)`, `modes`.
+  Theme colours stay in each app's CSS.
+- `office-settings.css` / `office-settings.js`: `OfficeSettings.create({key, defaults, sections, migrate,
+  validate, gearBtn, onChange, onReset, confirm, toast})`. Builds the slide-in panel (switch / select /
+  external / about rows), one JSON localStorage key per app. Draftly: `draftly_settings`
+  (sections + migration in draftly-settings.js); Spreadsheet: `spreadsheet_settings`.
+- `office-colour.css` / `office-colour.js`: `OfficeColour.create({btn, arrow, menu, bar, palette, key,
+  fallback, autoBar, onPick, onOpen, onClose, autoRemember})`. Split button + swatch grid, one open at a time.

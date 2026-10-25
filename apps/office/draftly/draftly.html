@@ -19,7 +19,8 @@
   <meta name="theme-color" content="#5b5bf0">
   <link rel="icon" href="draftly_icon.png">
   <link rel="stylesheet" href="ui/fonts.css?v=7">
-  <link rel="stylesheet" href="ui/theme.css?v=8">
+  <link rel="stylesheet" href="ui/theme.css?v=9">
+  <link rel="stylesheet" href="../shared/office-theme.css?v=1">
   <link rel="stylesheet" href="ui/base.css?v=7">
   <link rel="stylesheet" href="ui/toolbar.css?v=7">
   <link rel="stylesheet" href="ui/popups.css?v=7">
@@ -29,9 +30,9 @@
   <link rel="stylesheet" href="ui/page.css?v=7">
   <link rel="stylesheet" href="ui/editor.css?v=7">
   <link rel="stylesheet" href="ui/marks.css?v=7">
-  <link rel="stylesheet" href="ui/toast.css?v=7">
-  <link rel="stylesheet" href="ui/print.css?v=7">
-  <link rel="stylesheet" href="ui/colour.css?v=7">
+  <link rel="stylesheet" href="../shared/office-toast.css?v=1">
+  <link rel="stylesheet" href="ui/print.css?v=8">
+  <link rel="stylesheet" href="../shared/office-colour.css?v=1">
   <link rel="stylesheet" href="ui/find.css?v=7">
   <link rel="stylesheet" href="ui/statusbar.css?v=7">
   <link rel="stylesheet" href="ui/ruler.css?v=2">
@@ -41,7 +42,7 @@
   <link rel="stylesheet" href="ui/headerfooter.css?v=1">
   <link rel="stylesheet" href="ui/margins.css?v=1">
   <link rel="stylesheet" href="ui/merge.css?v=2">
-  <link rel="stylesheet" href="ui/settings.css?v=1">
+  <link rel="stylesheet" href="../shared/office-settings.css?v=1">
 </head>
 <body>
 
@@ -134,13 +135,13 @@
         <button class="tool-btn" id="subBtn" title="Subscript (Ctrl/⌘+,)" aria-label="Subscript"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 11M12 5l-8 11"/><path d="M16 15.5a1.8 1.8 0 1 1 3.2 1.2L16 20h3.6"/></svg></button>
       </div>
       <div class="tool-group">
-        <div class="split-btn" role="group" aria-label="Font colour">
-          <button class="tool-btn split-main" id="textColourBtn" title="Font colour" aria-label="Apply font colour"><span class="colour-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 16 12 4l5 12M8.7 12h6.6"/></svg><span class="colour-bar" id="textColourBar"></span></span></button>
-          <button class="tool-btn split-arrow" id="textColourArrow" title="Font colour options" aria-label="Font colour options" aria-haspopup="menu" aria-expanded="false" aria-controls="textColourMenu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></button>
+        <div class="of-split" role="group" aria-label="Font colour">
+          <button class="tool-btn of-split-main" id="textColourBtn" title="Font colour" aria-label="Apply font colour"><span class="of-colour-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 16 12 4l5 12M8.7 12h6.6"/></svg><span class="of-colour-bar" id="textColourBar"></span></span></button>
+          <button class="tool-btn of-split-arrow" id="textColourArrow" title="Font colour options" aria-label="Font colour options" aria-haspopup="menu" aria-expanded="false" aria-controls="textColourMenu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></button>
         </div>
-        <div class="split-btn" role="group" aria-label="Highlight colour">
-          <button class="tool-btn split-main" id="hiliteColourBtn" title="Highlight" aria-label="Apply highlight"><span class="colour-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 4 4 4-7 7h-4v-4z"/><path d="M7.5 15 5 17.5h4"/></svg><span class="colour-bar" id="hiliteColourBar"></span></span></button>
-          <button class="tool-btn split-arrow" id="hiliteColourArrow" title="Highlight options" aria-label="Highlight options" aria-haspopup="menu" aria-expanded="false" aria-controls="hiliteColourMenu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></button>
+        <div class="of-split" role="group" aria-label="Highlight colour">
+          <button class="tool-btn of-split-main" id="hiliteColourBtn" title="Highlight" aria-label="Apply highlight"><span class="of-colour-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 4 4 4-7 7h-4v-4z"/><path d="M7.5 15 5 17.5h4"/></svg><span class="of-colour-bar" id="hiliteColourBar"></span></span></button>
+          <button class="tool-btn of-split-arrow" id="hiliteColourArrow" title="Highlight options" aria-label="Highlight options" aria-haspopup="menu" aria-expanded="false" aria-controls="hiliteColourMenu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></button>
         </div>
       </div>
       <div class="tool-group">
@@ -337,37 +338,10 @@
   <div class="pop-menu wc-pop" id="wordCountPop" role="dialog" aria-label="Word count" hidden></div>
 
   <!-- Toast -->
-  <div class="toast" id="toast" role="status"></div>
+  <div class="toast of-toast" id="toast" role="status"></div>
 
   <!-- Vendored libraries (vendor/, offline): DOCX export, PDF download. -->
-  <!-- DF8 Settings panel (gear in the top bar). Logic: modules/draftly-settings.js -->
-  <div class="settings-scrim" id="settingsScrim" hidden></div>
-  <aside class="settings-panel" id="settingsPanel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" hidden>
-    <div class="set-head"><h2 id="settingsTitle">Settings</h2><button type="button" class="tool-btn" id="settingsClose" aria-label="Close settings" title="Close (Esc)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
-    <section class="set-sec"><h3>View</h3>
-      <div class="set-row"><span>Status bar</span><button type="button" class="set-switch" id="statusBarToggle" aria-pressed="true" aria-label="Status bar"></button></div>
-      <div class="set-row"><span>Ruler</span><button type="button" class="set-switch" id="rulerToggle" aria-pressed="false" aria-label="Ruler"></button></div>
-      <div class="set-row"><span>Format marks (¶)</span><button type="button" class="set-switch" id="setMarks" aria-pressed="false" aria-label="Format marks"></button></div>
-      <label class="set-row"><span>Theme</span><select id="setTheme"><option value="light">Light</option><option value="dark">Dark</option><option value="auto">Auto (system)</option></select></label>
-    </section>
-    <section class="set-sec"><h3>Editing</h3>
-      <label class="set-row"><span>Default font</span><select id="setFont"></select></label>
-      <label class="set-row"><span>Default size</span><select id="setFontSize"></select></label>
-      <label class="set-row"><span>Line spacing</span><select id="setLine"></select></label>
-    </section>
-    <section class="set-sec"><h3>New document</h3>
-      <label class="set-row"><span>Paper size</span><select id="setPaper"></select></label>
-      <label class="set-row"><span>Orientation</span><select id="setOrient"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></label>
-      <label class="set-row"><span>Margins</span><select id="setMargins"></select></label>
-    </section>
-    <section class="set-sec"><h3>Saving</h3>
-      <div class="set-row"><span>Autosave while typing</span><button type="button" class="set-switch" id="setAutosave" aria-pressed="true" aria-label="Autosave"></button></div>
-      <label class="set-row"><span>Backup copy</span><select id="setBackup"></select></label>
-    </section>
-    <section class="set-sec"><h3>About</h3>
-      <div class="set-row"><span id="setVersion">Draftly</span><button type="button" class="tool-btn labeled" id="settingsReset"><span>Reset settings</span></button></div>
-    </section>
-  </aside>
+  <!-- DF8 Settings panel: built by ../shared/office-settings.js from modules/draftly-settings.js -->
 
   <script src="vendor/html-docx.js"></script>
   <script src="vendor/jspdf.umd.min.js"></script>
@@ -376,10 +350,14 @@
   <!-- Modules. Order matters. app.js boots last. -->
   <script src="../shared/office-dialog.js?v=1"></script>
   <script src="../shared/office-page.js?v=1"></script>
+  <script src="../shared/office-toast.js?v=1"></script>
+  <script src="../shared/office-theme.js?v=1"></script>
+  <script src="../shared/office-settings.js?v=1"></script>
+  <script src="../shared/office-colour.js?v=1"></script>
   <script src="modules/draftly-config.js"></script>
   <script src="modules/draftly-storage.js"></script>
-  <script src="modules/draftly-settings.js?v=1"></script>
-  <script src="modules/draftly-ui.js"></script>
+  <script src="modules/draftly-settings.js?v=2"></script>
+  <script src="modules/draftly-ui.js?v=2"></script>
   <script src="modules/draftly-dialog.js?v=2"></script>
   <script src="modules/draftly-editor.js"></script>
   <script src="modules/draftly-pages.js"></script>
@@ -392,7 +370,7 @@
   <script src="modules/draftly-view.js"></script>
   <script src="modules/draftly-history.js"></script>
   <script src="modules/draftly-breaks.js"></script>
-  <script src="modules/draftly-colour.js"></script>
+  <script src="modules/draftly-colour.js?v=2"></script>
   <script src="modules/draftly-wordcount.js"></script>
   <script src="modules/draftly-find.js"></script>
   <script src="modules/draftly-table.js"></script>

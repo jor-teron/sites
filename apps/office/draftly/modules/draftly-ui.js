@@ -1,7 +1,7 @@
 /* ============================================================
    FILE: modules/draftly-ui.js
    PROJECT: Draftly
-   ROLE: Toast, theme, orientation label, toolbar active state.
+   ROLE: Toast + theme (via ../shared office-toast / office-theme), orientation label, toolbar active state.
    DEPENDS: Draftly.config, Draftly.storage
    ISOLATION: Missing buttons are skipped. No throw to app.js.
    ============================================================ */
@@ -13,23 +13,12 @@ window.Draftly = Draftly;
 /* UI state and small DOM helpers. */
 Draftly.ui = {};
 
-/* Timer id for the toast hide. */
-Draftly.ui.toastTimer = null;
-
 /* Whether paragraph and line-break marks are visible. */
 Draftly.ui.showNonPrinting = false;
 
-/* Show a short message. No-op if the toast node is missing. */
+/* Show a short message (shared ../shared/office-toast.js, SH1). */
 Draftly.ui.showToast = function showToast(msg) {
-  var toast = document.getElementById('toast');
-  var cfg = Draftly.config;
-  if (!toast) return;
-  toast.textContent = msg;
-  toast.classList.add('show');
-  clearTimeout(Draftly.ui.toastTimer);
-  Draftly.ui.toastTimer = setTimeout(function () {
-    toast.classList.remove('show');
-  }, cfg.toastMs);
+  if (typeof OfficeToast !== 'undefined') OfficeToast.show(msg, Draftly.config.toastMs);
 };
 
 /* Read the non-printing flag. */
@@ -66,13 +55,9 @@ Draftly.ui.setNonPrinting = function setNonPrinting(on) {
 Draftly.ui.setTheme = function setTheme(dark) {
   var body = document.body;
   var btn = document.getElementById('themeToggleBtn');
-  if (dark) {
-    body.classList.add(Draftly.config.darkClass);
-    if (btn) btn.title = 'Light theme';
-  } else {
-    body.classList.remove(Draftly.config.darkClass);
-    if (btn) btn.title = 'Dark theme';
-  }
+  if (typeof OfficeTheme !== 'undefined') OfficeTheme.apply(dark, { darkClass: Draftly.config.darkClass });
+  else body.classList.toggle(Draftly.config.darkClass, !!dark);
+  if (btn) btn.title = dark ? 'Light theme' : 'Dark theme';
   var lab = document.getElementById('themeMenuLabel');   /* File menu item shows the theme it switches to */
   if (lab) lab.textContent = dark ? 'Light mode' : 'Dark mode';
   if (Draftly.storage) Draftly.storage.saveTheme(dark);
