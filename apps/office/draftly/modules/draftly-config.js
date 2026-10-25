@@ -27,10 +27,11 @@ Draftly.config = {
     A4: { label: 'A4', widthCm: 21, heightCm: 29.7, pdf: 'a4', docxW: 11906, docxH: 16838 },
     Legal: { label: 'Legal', widthCm: 21.59, heightCm: 35.56, pdf: 'legal', docxW: 12240, docxH: 20160 }
   },
-  /* Margin presets: same value on every side, in cm. */
+  /* Margin presets in cm (DF2: Draftly-only values; the shared
+     OfficePage presets used by Spreadsheet are not changed). */
   marginPresets: {
-    normal: { label: 'Normal', cm: 2.54 },
-    narrow: { label: 'Narrow', cm: 1.27 }
+    normal: { label: 'Normal', top: 0.5, bottom: 0.6, left: 2, right: 2, cm: 2 },
+    narrow: { label: 'Narrow', top: 0.5, bottom: 0.6, left: 1, right: 1, cm: 1 }
   },
   /* Defaults when nothing is stored yet. */
   defaultPaperSize: 'A4',
@@ -39,7 +40,7 @@ Draftly.config = {
   paperSize: 'A4',
   marginPreset: 'normal',
   /* Custom margins (cm, per side) used when marginPreset is 'custom'. */
-  marginCustom: { top: 2.54, bottom: 2.54, left: 2.54, right: 2.54 },
+  marginCustom: { top: 0.5, bottom: 0.6, left: 2, right: 2 },
   marginCustomMin: 0.5,
   marginCustomMax: 5,
   storageKeyMarginCustom: 'draftly_margin_custom',
@@ -48,13 +49,13 @@ Draftly.config = {
 
   /* ----- Margins (cm) ----- */
   /* Top page margin. */
-  marginTopCm: 2.54,
+  marginTopCm: 0.5,
   /* Bottom page margin. */
-  marginBottomCm: 2.54,
+  marginBottomCm: 0.6,
   /* Left page margin. */
-  marginLeftCm: 2.54,
+  marginLeftCm: 2,
   /* Right page margin. */
-  marginRightCm: 2.54,
+  marginRightCm: 2,
 
   /* ----- Type ----- */
   /* Default face. Not embedded. Uses the machine font. */
@@ -203,7 +204,7 @@ Draftly.config.setPage = function setPage(size, preset, custom) {
   cfg.paperWidthCm = p.widthCm;
   cfg.paperHeightCm = p.heightCm;
   cfg.pageSizeName = p.label;
-  var mc = isCustom ? cfg.marginCustom : { top: m.cm, bottom: m.cm, left: m.cm, right: m.cm };
+  var mc = isCustom ? cfg.marginCustom : { top: m.top, bottom: m.bottom, left: m.left, right: m.right };
   cfg.marginTopCm = mc.top;
   cfg.marginBottomCm = mc.bottom;
   cfg.marginLeftCm = mc.left;

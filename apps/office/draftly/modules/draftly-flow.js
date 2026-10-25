@@ -52,7 +52,7 @@ Draftly.flow.push = function push(eds, i) {
   for (k = blocks.length - 1; k > j; k--) moved.unshift(blocks[k]);
   var cont = null;
   if (straddle.getBoundingClientRect().bottom > limit + Draftly.config.paginationSlackPx) {
-    var s = straddle.tagName === 'TABLE' ? -1 : Draftly.flow.splitIndex(straddle, limit);  // tables move whole
+    var s = (straddle.tagName === 'TABLE' || straddle.classList.contains('dl-img-block')) ? -1 : Draftly.flow.splitIndex(straddle, limit);  // tables and images move whole
     if (s !== -1 && s.index > 0) cont = Draftly.flow.cut(straddle, s.map, s.index);
     else if (j > 0) moved.unshift(straddle);  // first line does not fit: move it whole
   }

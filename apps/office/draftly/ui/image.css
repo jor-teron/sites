@@ -1,0 +1,35 @@
+/* ============================================================
+   FILE: ui/image.css
+   PROJECT: Draftly
+   ROLE: DF2 images: block, selected outline, resize handle
+         (44px touch target) and 25/50/100% size bar.
+   ============================================================ */
+.dl-img-block { margin: 0.4em 0; line-height: 0; }
+.dl-img-block img, .editor img { max-width: 100%; height: auto; vertical-align: bottom; }
+.dl-img-frame { position: fixed; z-index: 59; pointer-events: none; outline: 2px solid var(--accent, #2b6cb0); }
+.dl-img-frame[hidden] { display: none; }
+.dl-img-handle {
+  position: fixed; z-index: 60; width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: nwse-resize; touch-action: none;
+}
+.dl-img-handle span {
+  width: 14px; height: 14px; border-radius: 3px;
+  background: var(--accent, #2b6cb0); border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.35);
+}
+.dl-img-handle[hidden], .dl-img-bar[hidden] { display: none; }
+.dl-img-bar {
+  position: fixed; z-index: 60; display: flex; gap: 4px; padding: 4px;
+  background: var(--surface, #fff); border: 1px solid var(--border, #ccc);
+  border-radius: 10px; box-shadow: 0 4px 14px rgba(0,0,0,.18);
+}
+.dl-img-size {
+  min-width: 44px; min-height: 44px; padding: 0 8px; border: 0; border-radius: 8px;
+  background: transparent; color: inherit; font: inherit; cursor: pointer;
+  transition: transform .12s ease;
+}
+.dl-img-size:hover { background: var(--hover, rgba(0,0,0,.06)); }
+.dl-img-size:active { transform: scale(.92); }
+@media (prefers-reduced-motion: reduce) { .dl-img-size { transition: none; } .dl-img-size:active { transform: none; } }
+@media print { .dl-img-handle, .dl-img-bar { display: none !important; } .dl-img-frame { display: none !important; } }

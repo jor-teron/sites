@@ -35,6 +35,7 @@
   <link rel="stylesheet" href="ui/find.css?v=7">
   <link rel="stylesheet" href="ui/statusbar.css?v=7">
   <link rel="stylesheet" href="ui/table.css?v=7">
+  <link rel="stylesheet" href="ui/image.css?v=1">
   <link rel="stylesheet" href="ui/format.css?v=7">
   <link rel="stylesheet" href="ui/headerfooter.css?v=1">
   <link rel="stylesheet" href="ui/margins.css?v=1">
@@ -185,6 +186,8 @@
       <div class="tool-group">
         <button class="tool-btn labeled" id="pageBreakBtn" title="Page break (Ctrl/⌘+Enter)" aria-label="Insert page break"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v6h12V3"/><path d="M6 21v-6h12v6"/><path d="M3 12h3M9 12h2M13 12h2M18 12h3"/></svg><span>Page break</span></button>
         <button class="tool-btn labeled" id="tableBtn" title="Insert table" aria-label="Insert table" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 4.5v15M14.5 4.5v15"/></svg><span>Table</span></button>
+        <button class="tool-btn labeled" id="imageBtn" title="Insert image" aria-label="Insert image"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg><span>Image</span></button>
+        <input type="file" id="imageFile" accept="image/*" hidden>
         <button class="tool-btn labeled" id="hfBtn" title="Header &amp; Footer (or double-click the top / bottom margin)" aria-label="Header and footer" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="1"/><path d="M8 7h8M8 17h8"/></svg><span>Header &amp; Footer</span></button>
       </div>
       <div class="tool-group hf-tools" id="hfTools" hidden>
@@ -366,6 +369,7 @@
   <script src="modules/draftly-wordcount.js"></script>
   <script src="modules/draftly-find.js"></script>
   <script src="modules/draftly-table.js"></script>
+  <script src="modules/draftly-image.js?v=1"></script>
   <script src="modules/draftly-spacing.js"></script>
   <script src="modules/draftly-zoom.js"></script>
   <script src="modules/draftly-headerfooter.js"></script>
