@@ -6,7 +6,7 @@
 */
 
 import { COLS, ROWS } from './config.js';
-import { TILE, pathSegments, totalPathLength, posAtDistance, posAtTiles } from './path.js';
+import { TILE, pathVersion, pathSegments, totalPathLength, posAtDistance, posAtTiles } from './path.js';
 import * as state from './state.js';
 import { towerCenter } from './towers.js';
 import { drawTower, drawEnemy } from './models.js';
@@ -101,7 +101,7 @@ function drawPath(ctx) {
 */
 function drawStatic(ctx, CW, CH) {
   const dpr = window.devicePixelRatio || 1;
-  const key = `${TILE}|${CW}|${CH}|${dpr}|${pathSegments.length}`;
+  const key = `${TILE}|${CW}|${CH}|${dpr}|${pathVersion}`;
   if (!staticLayer || key !== staticKey) {
     staticKey = key;
     staticLayer = document.createElement('canvas');

@@ -14,25 +14,13 @@ export const ROWS = 12;
 export const BASE_TILE = 48;
 
 /*
-  Waypoints in tile coordinates. Enemies walk center-to-center
-  along each segment. First point is spawn (IN), last is base (OUT).
+  Maps: 00 is the hand-made demo (maps/map00.js); 01-99 are generated
+  from their number by modules/mapgen.js. See modules/maps.js.
 */
-export const PATH = [
-  { c: 0,  r: 2  },
-  { c: 3,  r: 2  },
-  { c: 3,  r: 5  },
-  { c: 1,  r: 5  },
-  { c: 1,  r: 9  },
-  { c: 6,  r: 9  },
-  { c: 6,  r: 4  },
-  { c: 10, r: 4  },
-  { c: 10, r: 10 },
-  { c: 14, r: 10 },
-  { c: 14, r: 6  },
-  { c: 12, r: 6  },
-  { c: 12, r: 2  },
-  { c: 15, r: 2  }
-];
+export const MAP_COUNT = 100;
+
+/* Extra enemy HP on the highest map (99). Scales linearly from 0 on map 00. */
+export const MAP_HP_BONUS = 0.25;
 
 /*
   Tower catalog.

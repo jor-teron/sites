@@ -16,7 +16,8 @@ import { blast, smallDeath } from './effects.js';
 */
 export function spawnEnemy(type) {
   const def = ENEMY_TYPES[type];
-  const waveScale = 1 + (state.wave - 1) * 0.12;
+  /* mapHpMul: small bump on higher map numbers (maps.js). */
+  const waveScale = (1 + (state.wave - 1) * 0.12) * state.mapHpMul;
   const hp = Math.floor(def.hp * waveScale);
   state.enemies.push({
     type, def, hp, maxHp: hp,

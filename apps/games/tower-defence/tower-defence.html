@@ -31,7 +31,26 @@
         <h2 id="overlay-title">TOWER DEFENCE</h2>
         <p id="overlay-msg">Build towers • Stop the waves • Survive</p>
         <p id="overlay-msg2" style="font-size:11px;opacity:0.7;">Tap a tower button, then tap a grass tile</p>
-        <button id="overlay-btn">START</button>
+        <!-- Map select row (title and game over only), styled after Turbo Lap's circuit row. -->
+        <div id="map-row">
+          <button id="map-prev" class="nav" aria-label="Previous map">◀</button>
+          <canvas id="map-thumb" class="titlemap" width="128" height="96"></canvas>
+          <div class="mapname"><span id="map-name">MAP 00</span><small id="map-sub">DEMO</small></div>
+          <button id="map-next" class="nav" aria-label="Next map">▶</button>
+        </div>
+        <div class="orow">
+          <button id="overlay-btn">START</button>
+          <button id="maps-btn" class="ghost">ALL MAPS</button>
+        </div>
+      </div>
+      <!-- Map picker: 00-99 grid with path previews and best wave. -->
+      <div id="picker" class="hidden" role="dialog" aria-label="Choose a map">
+        <div class="pickhead">
+          <h2>MAPS</h2>
+          <button id="picker-close" class="ghost">BACK</button>
+        </div>
+        <p class="small">00 is the demo. Higher numbers: shorter roads, tougher enemies.</p>
+        <div id="pickgrid"></div>
       </div>
     </div>
 

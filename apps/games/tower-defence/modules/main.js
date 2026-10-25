@@ -6,7 +6,7 @@
 */
 
 import { COLS, ROWS, BASE_TILE } from './config.js';
-import { setTile, buildPath } from './path.js';
+import { setTile, buildPath, setPathPoints } from './path.js';
 import * as state from './state.js';
 import { updateTowers } from './towers.js';
 import { updateEnemies } from './enemies.js';
@@ -14,6 +14,9 @@ import { updateProjectiles } from './projectiles.js';
 import { updateWaves } from './waves.js';
 import { render } from './render.js';
 import { bindInput, refreshTowerButtons } from './input.js';
+import { getMap, mapFromUrl, mapLabel } from './maps.js';
+import { lastMap, saveLastMap, saveBestWave, bestWave } from './progress.js';
+import { bindPicker } from './picker.js';
 
 /* Canvas element. */
 const canvas = document.getElementById('game');
@@ -55,6 +58,24 @@ let CW = COLS * BASE_TILE;
 
 /* Logical canvas height in CSS pixels. */
 let CH = ROWS * BASE_TILE;
+
+/*
+  Switch the board to map n (00-99): waypoints, HP bump, saved as last map.
+  Only called while no run is active (title / game over).
+*/
+function selectMap(n) {
+  const map = getMap(n);
+  state.setMap(map.id, map.hpMul);
+  setPathPoints(map.points);
+  buildPath();
+  saveLastMap(map.id);
+  /* Keep the address bar in sync so a link shares the map. */
+  try {
+    const url = new URL(location.href);
+    url.searchParams.set('map', mapLabel(map.id));
+    history.replaceState(null, '', url);
+  } catch (e) { /* file:// may refuse; harmless */ }
+}
 
 /* Hint hide timer id. */
 let hintTimer = 0;
@@ -146,7 +167,8 @@ function showHint(text, duration = 1600) {
 /*
   Fill and show the overlay panel.
 */
-function showOverlay(title, msg, msg2, btn) {
+function showOverlay(title, msg, msg2, btn, paused = false) {
+  overlay.classList.toggle('paused', paused);
   overlayTitle.textContent = title;
   overlayMsg.textContent = msg;
   overlayMsg2.textContent = msg2 || '';
@@ -166,7 +188,11 @@ function gameOver() {
   state.setGameState('gameover');
   const best = +(localStorage.getItem('td_best') || 0);
   if (state.score > best) localStorage.setItem('td_best', state.score);
-  showOverlay('GAME OVER', `Wave ${state.wave}  •  Score ${state.score}`, `Best ${Math.max(best, state.score)}`, 'TRY AGAIN');
+  /* Per-map best wave for the picker. */
+  const rec = saveBestWave(state.mapId, state.wave);
+  showOverlay('GAME OVER', `Map ${mapLabel(state.mapId)}  •  Wave ${state.wave}  •  Score ${state.score}`,
+    `${rec ? 'New best wave!' : 'Best wave ' + bestWave(state.mapId)}  •  Best score ${Math.max(best, state.score)}`, 'TRY AGAIN');
+  picker.refresh();
   updateHud();
 }
 
@@ -186,7 +212,7 @@ function togglePause() {
   if (state.gameState === 'playing') {
     state.setGameState('paused');
     pauseBtn.textContent = 'RESUME';
-    showOverlay('PAUSED', 'Game paused', '', 'RESUME');
+    showOverlay('PAUSED', 'Game paused', '', 'RESUME', true);
   } else if (state.gameState === 'paused') {
     state.setGameState('playing');
     pauseBtn.textContent = 'PAUSE';
@@ -252,6 +278,16 @@ function loop(now) {
 
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', () => setTimeout(resize, 60));
+
+/* Map from ?map=NN wins, else the last map played. */
+const urlMap = mapFromUrl();
+selectMap(urlMap !== null ? urlMap : lastMap());
+
+/* Title row + 00-99 picker. Changing map only happens off-run. */
+const picker = bindPicker({
+  getMap: () => state.mapId,
+  onChange: (n) => { if (state.gameState !== 'playing' && state.gameState !== 'paused') selectMap(n); }
+});
 
 state.setOnGameOver(gameOver);
 bindInput(ui, {

@@ -5,12 +5,26 @@
            reject tower placement on the road. Depends on current tile size.
 */
 
-import { PATH } from './config.js';
+import { MAP00 } from '../maps/map00.js';
+
+/* Waypoints of the current map. Set by setPathPoints() when a map is chosen. */
+let points = MAP00;
+
+/* Bumped on every map change so cached drawings know to redraw. */
+export let pathVersion = 0;
+
+/*
+  Use a new map's waypoints. Caller must call buildPath() after this.
+*/
+export function setPathPoints(newPoints) {
+  points = newPoints;
+  pathVersion++;
+}
 
 /* Live tile size in pixels. main.js updates this on resize, then rebuilds. */
 export let TILE = 48;
 
-/* Pixel segments derived from PATH. Rebuilt when TILE changes. */
+/* Pixel segments derived from the current waypoints. Rebuilt when TILE changes. */
 export const pathSegments = [];
 
 /* Total walk length in pixels. Enemies leak when dist reaches this. */
@@ -30,15 +44,15 @@ export function cx(tileIndex) {
 }
 
 /*
-  Rebuild pathSegments and totalPathLength from PATH using the current TILE.
+  Rebuild pathSegments and totalPathLength from the current waypoints using the current TILE.
   Zero-length segments are skipped.
 */
 export function buildPath() {
   pathSegments.length = 0;
   totalPathLength = 0;
-  for (let i = 0; i < PATH.length - 1; i++) {
-    const a = PATH[i];
-    const b = PATH[i + 1];
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i];
+    const b = points[i + 1];
     const ax = cx(a.c);
     const ay = cx(a.r);
     const bx = cx(b.c);

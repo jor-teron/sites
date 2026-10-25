@@ -8,6 +8,12 @@
 import { START_GOLD, START_LIVES, FIRST_WAVE_DELAY } from './config.js';
 import { clearEffects, updateEffects } from './effects.js';
 
+/* Current map number 00-99. Set by main.js via setMap(). */
+export let mapId = 0;
+
+/* Enemy HP multiplier for the current map (higher maps are a bit tougher). */
+export let mapHpMul = 1;
+
 /* Player gold. */
 export let gold = START_GOLD;
 
@@ -58,6 +64,9 @@ export const floatingTexts = [];
 
 /* Optional hook set by main.js. Called when lives hit 0. */
 export let onGameOver = null;
+
+/* Store the chosen map number and its HP multiplier. */
+export function setMap(id, hpMul) { mapId = id; mapHpMul = hpMul; }
 
 /* Set gold. */
 export function setGold(value) { gold = value; }
