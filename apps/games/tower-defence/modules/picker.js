@@ -9,16 +9,18 @@
 import { COLS, ROWS, MAP_COUNT } from './config.js';
 import { getMap, mapLabel } from './maps.js';
 import { loadBestWaves } from './progress.js';
+import { themeFor } from './themes.js';
 
 /*
-  Draw a map's road into a small canvas: grass, road, green IN, red OUT.
+  Draw a map's road into a small canvas in its theme colours: grass, road, green IN, red OUT.
 */
 export function drawPreview(canvas, map) {
   const g = canvas.getContext('2d');
   const s = Math.min(canvas.width / COLS, canvas.height / ROWS);
-  g.fillStyle = '#0f1a12';
+  const th = themeFor(map.id);
+  g.fillStyle = th.grass;
   g.fillRect(0, 0, canvas.width, canvas.height);
-  g.fillStyle = '#8a6a3a';
+  g.fillStyle = th.preview;
   for (const p of map.cells) g.fillRect(p.c * s, p.r * s, s, s);
   const a = map.cells[0], b = map.cells[map.cells.length - 1];
   g.fillStyle = '#4CFF7A'; g.fillRect(a.c * s, a.r * s, s, s);
@@ -40,7 +42,7 @@ export function bindPicker(opts) {
     const id = opts.getMap();
     const best = loadBestWaves()[id] || 0;
     nameEl.textContent = 'MAP ' + mapLabel(id);
-    subEl.textContent = (id === 0 ? 'DEMO • ' : '') + (best ? 'BEST WAVE ' + best : 'NEW');
+    subEl.textContent = (id === 0 ? 'DEMO • ' : '') + themeFor(id).name.toUpperCase() + ' • ' + (best ? 'BEST WAVE ' + best : 'NEW');
     drawPreview(thumb, getMap(id));
   }
 
@@ -51,6 +53,7 @@ export function bindPicker(opts) {
     grid.textContent = '';
     for (let n = 0; n < MAP_COUNT; n++) {
       const cell = document.createElement('button');
+      cell.title = 'Map ' + mapLabel(n) + ' - ' + themeFor(n).name;
       cell.className = 'pcell' + (best[n] ? ' has' : '') + (n === cur ? ' cur' : '');
       cell.dataset.map = n;
       const cv = document.createElement('canvas');

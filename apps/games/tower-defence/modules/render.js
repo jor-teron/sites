@@ -10,6 +10,7 @@ import { TILE, pathVersion, pathSegments, totalPathLength, posAtDistance, posAtT
 import * as state from './state.js';
 import { towerCenter } from './towers.js';
 import { drawTower, drawEnemy } from './models.js';
+import { themeFor } from './themes.js';
 import { drawScorches, drawProjectiles, drawParticles } from './effects.js';
 
 /* Cached grass, grid, road, and IN / OUT markers. Rebuilt on resize. */
@@ -19,10 +20,10 @@ let staticKey = '';
 /*
   Grass fill and a faint grid.
 */
-function drawBackground(ctx, CW, CH) {
-  ctx.fillStyle = '#0f1a12';
+function drawBackground(ctx, CW, CH, th) {
+  ctx.fillStyle = th.grass;
   ctx.fillRect(0, 0, CW, CH);
-  ctx.strokeStyle = 'rgba(60, 100, 70, 0.25)';
+  ctx.strokeStyle = th.grid;
   ctx.lineWidth = 1;
   for (let c = 0; c <= COLS; c++) {
     ctx.beginPath();
@@ -41,11 +42,27 @@ function drawBackground(ctx, CW, CH) {
 /*
   Road, center dashes, and IN / OUT markers.
 */
-function drawPath(ctx) {
-  ctx.strokeStyle = '#3a2a1a';
-  ctx.lineWidth = TILE * 0.85;
+function drawPath(ctx, th) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+  /* Optional edge / glow: a slightly wider stroke under the road. */
+  if (th.edge) {
+    ctx.save();
+    ctx.strokeStyle = th.edge;
+    ctx.lineWidth = TILE * 0.95;
+    ctx.shadowColor = th.edge;
+    ctx.shadowBlur = th.glow;
+    ctx.beginPath();
+    for (let i = 0; i < pathSegments.length; i++) {
+      const s = pathSegments[i];
+      if (i === 0) ctx.moveTo(s.ax, s.ay);
+      ctx.lineTo(s.bx, s.by);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.strokeStyle = th.road;
+  ctx.lineWidth = TILE * 0.85;
   ctx.beginPath();
   for (let i = 0; i < pathSegments.length; i++) {
     const s = pathSegments[i];
@@ -54,7 +71,7 @@ function drawPath(ctx) {
   }
   ctx.stroke();
 
-  ctx.strokeStyle = 'rgba(255, 220, 150, 0.35)';
+  ctx.strokeStyle = th.dash;
   ctx.lineWidth = 2;
   ctx.setLineDash([8, 12]);
   ctx.beginPath();
@@ -101,7 +118,7 @@ function drawPath(ctx) {
 */
 function drawStatic(ctx, CW, CH) {
   const dpr = window.devicePixelRatio || 1;
-  const key = `${TILE}|${CW}|${CH}|${dpr}|${pathVersion}`;
+  const key = `${TILE}|${CW}|${CH}|${dpr}|${pathVersion}|${state.mapId}`;
   if (!staticLayer || key !== staticKey) {
     staticKey = key;
     staticLayer = document.createElement('canvas');
@@ -109,8 +126,10 @@ function drawStatic(ctx, CW, CH) {
     staticLayer.height = Math.floor(CH * dpr);
     const g = staticLayer.getContext('2d');
     g.scale(dpr, dpr);
-    drawBackground(g, CW, CH);
-    drawPath(g);
+    /* Colours come from the current map's theme (themes.js). */
+    const th = themeFor(state.mapId);
+    drawBackground(g, CW, CH, th);
+    drawPath(g, th);
   }
   ctx.drawImage(staticLayer, 0, 0, CW, CH);
 }
