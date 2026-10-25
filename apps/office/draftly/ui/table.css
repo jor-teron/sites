@@ -8,8 +8,8 @@
 /* ----- FT7 tables ----- */
 .editor table, .page table { border-collapse: collapse; width: 100%; table-layout: fixed; margin: 4px 0; }
 .page td, .page th { border: 1px solid #000; padding: 4px 6px; vertical-align: top; min-width: 1em; word-wrap: break-word; }
-#panelInsert { position: relative; }
-.table-picker { position: absolute; top: 100%; left: 8px; z-index: 50; background: var(--surface, #fff); border: 1px solid #8884; border-radius: 6px; padding: 8px; box-shadow: 0 4px 14px #0003; }
+.table-picker { position: fixed; z-index: 1000;   /* DF1: float above the ribbon (it clips overflow) */
+  background: var(--surface, #fff); border: 1px solid #8884; border-radius: 6px; padding: 8px; box-shadow: 0 4px 14px #0003; }
 .tp-grid { display: grid; grid-template-columns: repeat(8, 16px); gap: 3px; }
 .tp-cell { width: 16px; height: 16px; border: 1px solid #8888; background: transparent; padding: 0; cursor: pointer; }
 .tp-cell.on { background: #4a8cf7; border-color: #2a6cd7; }

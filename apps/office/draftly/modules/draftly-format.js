@@ -25,6 +25,7 @@ Draftly.format.onKey = function onKey(e) {
     if (key === 'u') Draftly.editor.execCmd('underline');
     return;
   }
+  if (key === 'j' && !e.shiftKey) { e.preventDefault(); Draftly.editor.execCmd('justifyFull'); return; }   /* DF1 */
   if (key === 'x' && e.shiftKey) { e.preventDefault(); Draftly.editor.execCmd('strikeThrough'); return; }
   if (e.shiftKey) return;
   if (e.key === '.' || e.code === 'Period') { e.preventDefault(); Draftly.editor.setScript('superscript'); }
@@ -45,6 +46,7 @@ Draftly.format.bind = function bind() {
   on('alignLeftBtn', function () { Draftly.editor.execCmd('justifyLeft'); });
   on('alignCenterBtn', function () { Draftly.editor.execCmd('justifyCenter'); });
   on('alignRightBtn', function () { Draftly.editor.execCmd('justifyRight'); });
+  on('alignJustifyBtn', function () { Draftly.editor.execCmd('justifyFull'); });
 
   var fontFamilySelect = document.getElementById('fontFamilySelect');
   if (fontFamilySelect) {

@@ -124,6 +124,7 @@ Draftly.ui.updateToolbarState = function updateToolbarState() {
   var alignLeftBtn = document.getElementById('alignLeftBtn');
   var alignCenterBtn = document.getElementById('alignCenterBtn');
   var alignRightBtn = document.getElementById('alignRightBtn');
+  var alignJustifyBtn = document.getElementById('alignJustifyBtn');
   try {
     if (boldBtn) boldBtn.classList.toggle('active', document.queryCommandState('bold'));
     if (italicBtn) italicBtn.classList.toggle('active', document.queryCommandState('italic'));
@@ -135,6 +136,7 @@ Draftly.ui.updateToolbarState = function updateToolbarState() {
     if (alignLeftBtn) alignLeftBtn.classList.toggle('active', document.queryCommandState('justifyLeft'));
     if (alignCenterBtn) alignCenterBtn.classList.toggle('active', document.queryCommandState('justifyCenter'));
     if (alignRightBtn) alignRightBtn.classList.toggle('active', document.queryCommandState('justifyRight'));
+    if (alignJustifyBtn) alignJustifyBtn.classList.toggle('active', document.queryCommandState('justifyFull'));
   } catch (e) {}
   Draftly.ui.syncFontSelects();
   if (Draftly.lists) Draftly.lists.syncSuffix();

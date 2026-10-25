@@ -71,6 +71,17 @@ Draftly.breaks.insert = function insert() {
     editor.appendChild(block);
   }
   editor = block.parentElement;
+  if (block.nodeName === 'TABLE') {   /* DF1: never split a table; break after it */
+    var pbT = Draftly.breaks.make(), pT = document.createElement('p');
+    pT.innerHTML = '<br>';
+    editor.insertBefore(pbT, block.nextSibling);
+    editor.insertBefore(pT, pbT.nextSibling);
+    var cT = document.createRange();
+    cT.setStart(pT, 0); cT.collapse(true);
+    sel.removeAllRanges(); sel.addRange(cT);
+    Draftly.breaks.changed();
+    return;
+  }
   /* split at the caret */
   var r = sel.getRangeAt(0);
   var tail = document.createRange();

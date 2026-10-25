@@ -95,7 +95,7 @@ Draftly.editor.insertLineBreak = function insertLineBreak() {
     while (sib && sib.nodeType === 3 && !sib.nodeValue.length) sib = sib.nextSibling;
     if (sib) { needsPlaceholder = false; break; }
     n = n.parentNode;
-    if (n && n.nodeType === 1 && /^(P|DIV|LI|H[1-6]|BLOCKQUOTE|PRE)$/.test(n.tagName)) break;
+    if (n && n.nodeType === 1 && /^(P|DIV|LI|H[1-6]|BLOCKQUOTE|PRE|TD|TH)$/.test(n.tagName)) break;
   }
   if (needsPlaceholder) br.parentNode.insertBefore(document.createElement('br'), br.nextSibling);
   var r = document.createRange();

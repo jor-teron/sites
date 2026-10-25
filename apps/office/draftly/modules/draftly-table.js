@@ -179,7 +179,16 @@ Draftly.table.picker = function picker(open) {
   if (!p) return;
   p.hidden = !open;
   b.setAttribute('aria-expanded', open ? 'true' : 'false');
-  if (open) { Draftly.table.pick(1, 1); p.querySelector('.tp-cell').focus(); }
+  if (open) {
+    /* DF1: fixed under the Table button, clamped to the viewport */
+    if (p.parentNode !== document.body) document.body.appendChild(p);   /* ribbon backdrop-filter traps fixed */
+    var r = b.getBoundingClientRect();
+    p.style.top = (r.bottom + 4) + 'px';
+    var w = p.offsetWidth, vw = document.documentElement.clientWidth;
+    p.style.left = Math.max(4, Math.min(r.left, vw - w - 4)) + 'px';
+    Draftly.table.pick(1, 1);
+    p.querySelector('.tp-cell').focus({ preventScroll: true });
+  }
 };
 
 Draftly.table.pick = function pick(r, c) {
@@ -234,6 +243,10 @@ Draftly.table.init = function init() {
   document.addEventListener('mousedown', function (ev) {
     if (!ev.target.closest('#tablePicker,#tableBtn')) T.picker(false);
   });
+  /* DF1: a fixed picker would drift; close it on resize or ribbon scroll */
+  window.addEventListener('resize', function () { T.picker(false); });
+  var rib = btn.closest('.ribbon');
+  if (rib) rib.addEventListener('scroll', function () { T.picker(false); });
   var tools = document.querySelectorAll('#tableTools [data-tbl]');
   for (var i = 0; i < tools.length; i++) {
     tools[i].addEventListener('mousedown', function (ev) { ev.preventDefault(); });
