@@ -27,6 +27,8 @@
  * - T6: terminal_rc.js (window.TermRc): ~/.hubrc read at start, alias / unalias / export / env / printenv / source /
  *   reload; every line is expanded (alias of the first word, $VAR, ${VAR}) before it runs. `ssh [-p port] user@host`
  *   opens the SSH app with its #host=user@host:port hash (plain `ssh` just opens it).
+ * - T7: BusyBox runs in a Web Worker (terminal_worker.js); its output streams into the screen (stream()), Ctrl+C
+ *   stops it at once (bb.cancel()).
  */
 (function () {
   'use strict';
@@ -113,6 +115,42 @@
     if (!after.length) return { words: plain, redir: null, cut: -1, error: "syntax error: file name missing after '" + ops[0].op + "'" };
     if (after.length > 1) return { words: plain, redir: null, cut: -1, error: "syntax error: the redirect goes last, with one file name (quote names with spaces)" };
     return { words: plain, redir: { op: ops[0].op, target: after[0] }, cut: ops[0].at };
+  }
+  /** T7: a growing output block (BusyBox streams into it): whole lines go into small child blocks (only new ones
+   *  need layout); past ~5000 lines / 256 KB on screen the oldest blocks are dropped */
+  function stream(cls) {
+    const d = document.createElement('div');
+    if (cls) d.className = cls;
+    out.appendChild(d);
+    const note = document.createElement('div');
+    note.className = 'dim'; note.textContent = '\u2026 (earlier output not kept on screen)';
+    let part = '', bytes = 0, lines = 0, raf = 0, cur = null, curL = 0;
+    const MAX_L = 5000, MAX_B = 262144, PIECE_L = 200;
+    const nl = (t) => { let c = 1, i = -1; while ((i = t.indexOf('\n', i + 1)) >= 0) c++; return c; };
+    function add(t) {   // t: whole lines without the last \n
+      const L = nl(t);
+      if (!cur || curL >= PIECE_L) { cur = document.createElement('div'); cur.textContent = t; cur._l = L; d.appendChild(cur); curL = L; }
+      else { cur.firstChild.appendData('\n' + t); cur._l += L; curL += L; }
+      lines += L; bytes += t.length + 1;
+      while ((lines > MAX_L || bytes > MAX_B) && d.firstChild) {
+        let f = d.firstChild;
+        if (f === note) f = note.nextSibling;
+        if (!f || f === cur) break;
+        lines -= f._l; bytes -= f.textContent.length + 1; f.remove();
+        if (!note.parentNode) d.insertBefore(note, d.firstChild);
+      }
+    }
+    return {
+      write(t) {
+        if (!t) return;
+        part += t;
+        const i = part.lastIndexOf('\n');
+        if (i < 0) { if (part.length < 8192) return; add(part); part = ''; }
+        else { add(part.slice(0, i)); part = part.slice(i + 1); }
+        if (!raf) raf = requestAnimationFrame(() => { raf = 0; toBottom(); });
+      },
+      end() { if (part) add(part); part = ''; if (!d.firstChild) d.remove(); toBottom(); },
+    };
   }
   function toBottom() { term.scrollTop = term.scrollHeight; }
   function columns(list) {
@@ -393,7 +431,7 @@
       hubOpen(entry, 'host=' + encodeURIComponent(target), 'SSH');
       dim('ssh: ' + target + (IS_FILE ? ' (opened as a file: the SSH app cannot be filled in, type it there)' : ' (the SSH app asks for the password or key)'));
     },
-    exit() { out.textContent = ''; print('Hub Terminal (T6)'); dim('New session. Close the window to leave.'); },
+    exit() { out.textContent = ''; print('Hub Terminal (T7)'); dim('New session. Close the window to leave.'); },
     theme(args) {
       const cur = prefsGet('theme') === 'light' ? 'light' : 'dark';
       if (!args.length) { print('Theme: ' + cur); dim('Themes: ' + THEMES.join(', ') + ' (theme <name> sets it; Terminal itself stays green)'); return; }
@@ -427,7 +465,7 @@
     finally { got = CAP; CAP = prev; }
     return got.length ? got.join('\n') + '\n' : '';
   }
-  const bb = window.TermBB && fs ? window.TermBB.install({ fs, print, err, dim, block, hasJs, capture, epoch: () => epoch, env: () => (rc ? rc.env() : {}) }) : null;
+  const bb = window.TermBB && fs ? window.TermBB.install({ fs, print, err, dim, block, hasJs, capture, stream, epoch: () => epoch, env: () => (rc ? rc.env() : {}) }) : null;
   const NAMES = Object.keys(CMDS).concat(bb ? bb.applets.filter((a) => !hasJs(a) && /^[a-z]/.test(a)) : []);
 
   /* Lines run one after the other (a file command is async), so output keeps the order of the prompts. */
@@ -562,6 +600,7 @@
       if (asking) { const v = input.value; setLine(''); answer(v, true); return true; }
       print(PS + input.value + '^C');
       epoch++;
+      if (bb && bb.cancel) bb.cancel();   // T7: stop a running BusyBox command now
       chain = Promise.resolve();   // later lines no longer wait for a slow command
       setLine(''); hPos = hist.length; draft = '';
       return true;
@@ -619,7 +658,7 @@
   window.addEventListener('resize', toBottom);
 
   /* ---------- start ---------- */
-  print('Hub Terminal (T6)');
+  print('Hub Terminal (T7)');
   dim("Type 'help' for commands. Tab completes, Up/Down = history. ls / shows the tree, cd ~ goes home, ls /bin lists the BusyBox commands.");
   if (rc && fs) chain = chain.then(() => rc.load()).catch(() => {});   // T6: ~/.hubrc, quietly (only notes for skipped lines)
   render();

@@ -14,26 +14,32 @@
  *   for find / du / tar / cp -r / grep -r / ls -R / diff -r / rm -r, else one level); a word that is a new
  *   name gets its folder created so the command can write there. ls / find / du / stat / test only need
  *   names and sizes: their files are sized, not read (and never written back).
- *   Limits: 3000 files and 32 MB read per run, 4 MB output, 20 s.
+ *   Limits: 3000 files and 32 MB read per run; output 64 MB on screen, 16 MB into a pipe (T7; in-page fallback: 4 MB, 20 s).
+ * - T7: the applet runs in a Web Worker (terminal_worker.js): staging is recorded here (a list of memory file
+ *   system calls) and replayed there; stdout / stderr stream back in chunks, so the page stays responsive and
+ *   the last command of a line prints as it goes. Ctrl+C (cancel()) terminates the worker at once, nothing is
+ *   written back, and a new worker is made for the next command. No SharedArrayBuffer / COOP / COEP needed.
+ *   Where a worker cannot be made (file:// in most browsers) it runs in the page as in T5.
  * - Pipes a | b | c, redirects > file, >> file, < file. Stages run one after the other (stdout -> stdin).
  *   A Terminal command with no BusyBox applet (help, history, apps, tree, drives, ...) may start a pipe.
  * - Output is text only (textContent via ctx.block / ctx.err), like the rest of the Terminal.
- * API: window.TermBB.install(ctx) -> { applets, isApplet, wants(name, args, line), exec(line), parse }.
+ * API: window.TermBB.install(ctx) -> { applets, isApplet, wants(name, args, line), exec(line), parse, cancel }.
+ * ctx.stream(cls) (T7, optional) -> { write(text), end() }: a growing output block.
  */
 (function () {
   'use strict';
-  const V = 'T5';
+  const V = 'T7';
   const APPLETS = ('[ [[ ascii awk base64 basename bc bunzip2 bzcat bzip2 cal cat cksum cmp comm cp crc32 cut date dc diff ' +
     'dirname dos2unix du echo egrep expand expr factor false fgrep find fold grep gunzip gzip head hexdump ln ls md5sum ' +
     'mkdir mktemp mv nl od paste printenv printf pwd readlink realpath rev rm rmdir sed seq sha1sum sha256sum sha3sum ' +
-    'sha512sum shuf sort split stat strings sum tac tail tar tee test touch tr true truncate tsort uname unexpand uniq ' +
-    'unix2dos unzip wc whoami xxd yes zcat').split(' ');   // = bin/APPLETS.txt
+    'sha512sum shuf sleep sort split stat strings sum tac tail tar tee test touch tr true truncate tsort uname unexpand uniq ' +
+    'unix2dos unzip usleep wc whoami xxd yes zcat').split(' ');   // = bin/APPLETS.txt
   const SET = new Set(APPLETS);
   const DEEP = new Set(['find', 'du', 'tar']);
   const DEEP_R = new Set(['cp', 'grep', 'egrep', 'fgrep', 'ls', 'diff', 'rm']);   // deep with -r / -R
   const META = new Set(['ls', 'find', 'du', 'stat', 'test', '[', '[[', 'realpath', 'readlink', 'basename', 'dirname']);
   const CWD_USERS = new Set(['ls', 'find', 'du']);
-  const MAX_FILES = 3000, MAX_BYTES = 32 * 1048576, META_BYTES = 64 * 1048576, MAX_OUT = 4 * 1048576, MAX_MS = 20000;
+  const MAX_FILES = 3000, MAX_BYTES = 32 * 1048576, META_BYTES = 64 * 1048576, MAX_OUT = 4 * 1048576, MAX_MS = 20000, W_MAX_OUT = 64 * 1048576, W_PIPE_OUT = 16 * 1048576;
   const ENV_ = { HOME: '/drive/local', USER: 'hub', LOGNAME: 'hub', HOSTNAME: 'hub', PATH: '/bin', SHELL: '/bin/sh', TERM: 'dumb', LANG: 'C.UTF-8' };
 
   /* ---------- loading ---------- */
@@ -68,6 +74,44 @@
     return loading;
   }
 
+  /* ---------- T7: the worker ---------- */
+  /** a stand-in for FS while staging for the worker: records the calls, knows which paths exist */
+  function recorder() {
+    const ops = [], have = new Set(['/', '/tmp', '/home', '/home/web_user', '/dev']);
+    const add = (p) => { have.add(p); };
+    const R = { ops };
+    ['mkdir', 'writeFile', 'chmod', 'symlink', 'rmdir', 'mkdirTree', 'truncate', 'utime', 'chdir'].forEach((k) => {
+      R[k] = function () {
+        const a = Array.prototype.slice.call(arguments);
+        ops.push([k].concat(a));
+        if (k === 'mkdir' || k === 'writeFile') add(a[0]);
+        else if (k === 'symlink') add(a[1]);
+        else if (k === 'rmdir') have.delete(a[0]);
+        else if (k === 'mkdirTree') { const s = a[0].split('/').filter(Boolean); let c = ''; s.forEach((x) => { c += '/' + x; add(c); }); }
+      };
+    });
+    R.analyzePath = (p) => ({ exists: have.has(p) });
+    return R;
+  }
+  let W = null, wBad = false, wReady = false, wCur = null, wId = 0;
+  function worker() {
+    if (W) return W;
+    if (wBad || typeof Worker !== 'function') return null;
+    try { W = new Worker(HERE + 'terminal_worker.js?v=' + V); } catch (_) { wBad = true; return null; }
+    W.onmessage = (ev) => { const m = ev.data || {}; if (wCur && m.id === wCur.id) wCur.on(m); };
+    W.onerror = (e) => { if (e && e.preventDefault) e.preventDefault(); if (wCur) wCur.on({ id: wCur.id, t: 'fail', msg: wReady ? 'the BusyBox worker stopped' : 'fetch' }); };
+    return W;
+  }
+  /** Ctrl+C: stop the running applet now (the worker is thrown away; the next command makes a new one) */
+  function cancel() {
+    if (!wCur) return false;
+    const c = wCur; wCur = null;
+    try { W.terminate(); } catch (_) { /* gone */ }
+    W = null;
+    c.done(null);
+    return true;
+  }
+
   /* ---------- the line: words, | > >> < ---------- */
   function parse(str) {
     const toks = [];
@@ -81,6 +125,7 @@
         else cur += c;
       } else if (c === '"' || c === "'") { q = c; has = true; }
       else if (c === '\\' && i + 1 < str.length) { cur += str[++i]; has = true; }
+      else if (c === '~' && !cur && !has && (i + 1 >= str.length || /[\s/|<>]/.test(str[i + 1]))) cur = ENV_.HOME;   // ~ and ~/x
       else if (c === '|') { flush(); toks.push({ op: '|' }); }
       else if (c === '>') { flush(); const op = str[i + 1] === '>' ? '>>' : '>'; toks.push({ op }); i += op.length - 1; }
       else if (c === '<') { flush(); toks.push({ op: '<' }); }
@@ -250,27 +295,30 @@
       await up.handle.getDirectoryHandle(nm, { create: true });
       return fs.resolve(abs);
     }
-    async function writeBack(F, st) {
-      const seenF = new Set(), seenD = new Set(), newDirs = [], writes = [];
-      function walk(p) {
+    /** what /drive holds after a run (in-page; the worker sends the same shape): { dirs, files: [{ p, same?, ph?, b? }] } */
+    function snapOf(F, st) {
+      const snap = { dirs: [], files: [] };
+      (function walk(p) {
         let names = [];
         try { names = F.readdir(p).filter((n) => n !== '.' && n !== '..'); } catch (_) { return; }
         for (const n of names) {
           const c = p + '/' + n;
           let s; try { s = F.lstat(c); } catch (_) { continue; }
-          if (F.isDir(s.mode)) { seenD.add(c); if (!st.dirs.has(c)) newDirs.push(c); walk(c); }
+          if (F.isDir(s.mode)) { snap.dirs.push(c); walk(c); }
           else if (F.isFile(s.mode)) {
-            seenF.add(c);
             const t = st.files.get(c);
-            if (t && t.ph) continue;
+            if (t && t.ph) { snap.files.push({ p: c, ph: true }); continue; }
             const b = F.readFile(c);
-            if (!t || !same(t.b, b)) writes.push({ p: c, b });
+            snap.files.push(t && same(t.b, b) ? { p: c, same: true } : { p: c, b });
           }
         }
-      }
-      let mounts = [];
-      try { mounts = F.readdir('/drive').filter((n) => n !== '.' && n !== '..'); } catch (_) { mounts = []; }
-      mounts.forEach((m) => { seenD.add('/drive/' + m); walk('/drive/' + m); });
+      })('/drive');
+      return snap;
+    }
+    async function writeBack(snap, st) {
+      const seenF = new Set(), seenD = new Set(), newDirs = [], writes = [];
+      snap.dirs.forEach((d) => { seenD.add(d); if (!st.dirs.has(d) && d.split('/').length > 3) newDirs.push(d); });
+      snap.files.forEach((f) => { seenF.add(f.p); if (f.b) writes.push({ p: f.p, b: f.b }); });
       let n = 0;
       const bad = (p, e) => { err('busybox: ' + p + ': ' + (e && (e.code === 'EPERM' || e.name === 'NotAllowedError') ? 'Permission needed: run `allow ' + (e.mount ? e.mount.name : p.split('/')[2]) + '`' : 'not saved (' + (e && e.message ? e.message : 'write failed') + ')')); };
       for (const d of newDirs) { try { await dirHandle(d, true); n++; } catch (e) { bad(d, e); } }
@@ -296,6 +344,56 @@
     }
 
     /* ---------- one applet ---------- */
+    /** T7: run in the worker; onOut / onErr get the text as it comes (null = collect it); null result = Ctrl+C */
+    async function runWorker(argv, input, ep, onOut, onErr) {
+      const st = { files: new Map(), dirs: new Map(), bytes: 0, metaBytes: 0, ep, meta: false };
+      const R = recorder();
+      try { await stageAll(R, argv, st); } catch (e) { return stageErr(e); }
+      if (ctx.epoch() !== ep) return null;
+      const w = worker();
+      if (!w) return undefined;   // no worker here: run in the page
+      const track = [];
+      st.files.forEach((v, p) => track.push([p, !!v.ph]));
+      const env = Object.assign({}, ENV_, ctx.env ? ctx.env() : {}, { PWD: fs.S.cwd });
+      const outs = [], errs = [];
+      let outN = 0;
+      const dO = new TextDecoder('utf-8'), dE = new TextDecoder('utf-8');
+      const res = await new Promise((resolve) => {
+        const id = ++wId;
+        wCur = {
+          id, done: resolve,
+          on(m) {
+            if (m.t === 'out') {
+              if (onOut) onOut(dO.decode(m.b, { stream: true }));
+              else if (outN < W_MAX_OUT) { outs.push(m.b); outN += m.b.length; }
+            } else if (m.t === 'err') {
+              if (onErr) onErr(dE.decode(m.b, { stream: true })); else errs.push(m.b);
+            } else if (m.t === 'done' || m.t === 'fail') { wCur = null; resolve(m); }
+          },
+        };
+        w.postMessage({ id, live: !!onOut, max: onOut ? W_MAX_OUT : W_PIPE_OUT, argv, env, stdin: input || new Uint8Array(0), ops: R.ops, track, cwd: fs.S.cwd });
+      });
+      if (!res) return null;
+      if (res.t === 'fail') {
+        if (res.msg === 'fetch') { if (!wReady) { wBad = true; try { w.terminate(); } catch (_) { /* gone */ } W = null; return undefined; } throw new Error('fetch'); }
+        throw new Error(res.msg);
+      }
+      wReady = true;
+      if (onOut) onOut(dO.decode());
+      if (onErr) onErr(dE.decode());
+      const wrote = await writeBack(res.snap, st);
+      const out = new Uint8Array(outN); let o = 0;
+      outs.forEach((b) => { out.set(b, o); o += b.length; });
+      let eb = new Uint8Array(errs.reduce((a, b) => a + b.length, 0)); o = 0;
+      errs.forEach((b) => { eb.set(b, o); o += b.length; });
+      return { out, err: dec.decode(eb), code: res.code, cut: res.cut ? (onOut ? 'wout' : 'wpipe') : false, wrote };
+    }
+    function stageErr(e) {
+      if (e && e.message === 'cancelled') return null;
+      if (e && e.code) { const m = e.mount; throw new Error(e.code === 'ELIMIT' ? e.message : e.code === 'EPERM' ? 'Permission needed: run `allow ' + (m ? m.name : '<mount>') + '`' : e.code === 'EDRIVE' ? 'that drive is not available' : e.message); }
+      throw e;
+    }
+    /** T5: run in the page (no worker: file://), 4 MB / 20 s */
     async function runApplet(argv, input, ep) {
       const wasm = await load();
       const out = [], errs = [];
@@ -316,20 +414,17 @@
         preRun: [(m) => { const E = (m || M || {}).ENV; if (E) Object.assign(E, ENV_, ctx.env ? ctx.env() : {}, { PWD: fs.S.cwd }); }],
       });
       const F = M.FS;
-      try { await stageAll(F, argv, st); } catch (e) {
-        if (e && e.message === 'cancelled') return null;
-        if (e && e.code) { const m = e.mount; throw new Error(e.code === 'ELIMIT' ? e.message : e.code === 'EPERM' ? 'Permission needed: run `allow ' + (m ? m.name : '<mount>') + '`' : e.code === 'EDRIVE' ? 'that drive is not available' : e.message); }
-        throw e;
-      }
+      try { await stageAll(F, argv, st); } catch (e) { return stageErr(e); }
       if (ctx.epoch() !== ep) return null;
       let code = 0;
       try { code = M.callMain(argv.slice(1)); } catch (e) {
         if (e && typeof e.status === 'number') code = e.status;
         else if (e && e.name === 'ExitStatus') code = e.status | 0;
+        else if (cut) code = 1;
         else { code = 1; errs.push.apply(errs, enc.encode('busybox: ' + (e && e.message ? e.message : 'crashed') + '\n')); }
       }
       if (typeof code !== 'number') code = 0;
-      const wrote = await writeBack(F, st);
+      const wrote = await writeBack(snapOf(F, st), st);
       return { out: Uint8Array.from(out), err: dec.decode(Uint8Array.from(errs)), code, cut, wrote };
     }
 
@@ -395,8 +490,17 @@
           r = { out: enc.encode(txt), err: '', code: 0 };
         } else {
           await fs.S.ready;
-          if (!loading) dim('(loading BusyBox \u2026)');
-          try { r = await runApplet(argv, input, ep); } catch (e) {
+          const last = s === P.stages.length - 1 && !P.out && ctx.stream;
+          let so = null, se = null;
+          const onOut = last ? (t) => { if (t) (so || (so = ctx.stream(''))).write(t); } : null;
+          const onErr = last ? (t) => { if (t) (se || (se = ctx.stream('err'))).write(t); } : null;
+          try {
+            let said = false;
+            if (!wReady && !wBad && !loading) { dim('(loading BusyBox \u2026)'); said = true; }
+            r = wBad ? undefined : await runWorker(argv, input, ep, onOut, onErr);
+            if (r === undefined) { if (!loading && !said) dim('(loading BusyBox \u2026)'); r = await runApplet(argv, input, ep); }
+            else if (r && last) { if (so) so.end(); if (se) se.end(); r.out = new Uint8Array(0); r.err = ''; }
+          } catch (e) {
             if (e && e.message === 'fetch') {
               err(name + ': BusyBox could not be loaded' + (e.file ? ': this browser does not let a page opened as a file (file://) read bin/busybox.wasm.' : '.'));
               dim(e.file ? 'Open the Hub over http(s) (any web server) to use the BusyBox commands. The Terminal\'s own commands (help) still work.' : 'Check the connection, then try again.');
@@ -407,7 +511,7 @@
           if (!r) return;   // Ctrl+C
         }
         if (r.err) err(r.err.replace(/\n$/, ''));
-        if (r.cut) dim(name + ': stopped (' + (r.cut === 'time' ? 'ran longer than 20 s' : 'more than 4 MB of output') + ')');
+        if (r.cut) dim(name + ': stopped (' + (r.cut === 'time' ? 'ran longer than 20 s' : r.cut === 'wout' ? 'more than 64 MB of output' : r.cut === 'wpipe' ? 'more than 16 MB into the pipe' : 'more than 4 MB of output') + ')');
         input = r.out;
         if (ctx.epoch() !== ep) return;
       }
@@ -415,7 +519,7 @@
         try { await writeOut(P.out.target, input, P.out.op === '>>'); } catch (e) { err('sh: ' + (e && e.message ? e.message : 'write failed')); }
       } else show(input);
     }
-    return { applets: APPLETS.slice(), isApplet: (n) => SET.has(n), wants, exec, parse, load };
+    return { applets: APPLETS.slice(), isApplet: (n) => SET.has(n), wants, exec, parse, load, cancel, busy: () => !!wCur };
   }
   window.TermBB = { install, APPLETS };
 })();

@@ -6,7 +6,7 @@
   and (T2) pwd, cd, ls, cat, head, tail, wc, tree, stat, drives, allow on the unix-style tree
   /drive/local, /drive/gdrive, /drive/<folder>, and (T3, change files) mkdir, touch, cp, mv, rm, rmdir, edit
   (full-screen editor), find, grep and the redirects > and >>, and (T5) BusyBox: ls /bin, sed, awk, sort, ...
-  with pipes |, < and >, the read-only /etc; (T6) ~/.hubrc, alias, export, $VAR, ssh (terminal_bb.js loads bin/busybox.js + bin/busybox.wasm on first use). Fixed look (near-black + terminal green), whatever the
+  with pipes |, < and >, the read-only /etc; (T6) ~/.hubrc, alias, export, $VAR, ssh; (T7) BusyBox in a Web Worker (terminal_worker.js), streamed output, Ctrl+C stops it (terminal_bb.js loads bin/busybox.js + bin/busybox.wasm on first use). Fixed look (near-black + terminal green), whatever the
   Hub theme is. Scripts: terminal_wr.js + terminal_edit.js + terminal_fs.js + terminal_etc.js + terminal_bb.js + terminal_rc.js + terminal.js; the files come from the shared code (shared/fs:
   fs_drives, fs_ops, filetypes, fs_ref; shared/google for the Drive mount, same set as the Viewer app);
   the app list comes from hub/core/hub_appindex.js (generated; also works on file://).
@@ -40,8 +40,8 @@
   <script src="terminal_edit.js?v=20261023j"></script>
   <script src="terminal_fs.js?v=20261023j"></script>
   <script src="terminal_etc.js?v=T5"></script>
-  <script src="terminal_bb.js?v=T6"></script>
+  <script src="terminal_bb.js?v=T7"></script>
   <script src="terminal_rc.js?v=T6"></script>
-  <script src="terminal.js?v=T6"></script>
+  <script src="terminal.js?v=T7"></script>
 </body>
 </html>

@@ -1,10 +1,10 @@
-# bin/ — BusyBox for the Hub Terminal (T5)
+# bin/ — BusyBox for the Hub Terminal (T5, T7)
 
 | File | What |
 |---|---|
-| `busybox.wasm` | BusyBox **1.36.1** compiled to WebAssembly (336253 bytes, sha256 `5529731ac51c8b00669df2b0ee26d64825918a3c0bf7b8bd6a9bb0ca744e19cd`) |
+| `busybox.wasm` | BusyBox **1.36.1** compiled to WebAssembly (336980 bytes, sha256 `5434231a1ee395b1f20cef8e66900bb31e43d38bb2b95eaa2abc3b41aaea52bb`) |
 | `busybox.js` | the Emscripten loader / glue (`window.BusyBoxModule`, MODULARIZE factory), unchanged except the .wasm name |
-| `APPLETS.txt` | the 87 applets built in (`busybox --list`); the same list is in `terminal_bb.js` (APPLETS) |
+| `APPLETS.txt` | the 89 applets built in (`busybox --list`); the same list is in `terminal_bb.js` (APPLETS) |
 | `BUILD.md` | this file |
 
 ## Toolchain
@@ -23,8 +23,10 @@ Started from `make allnoconfig`, then switched on (the full `.config` is below):
 - The applets in APPLETS.txt, with their common features (ls sorting / -R / -l times, find -name -type -size
   -mtime -maxdepth ..., grep -A/-B/-C, sort -k, awk with libm, diff -r, tr classes, md5/sha check, ...).
 - Left out on purpose: every shell (ash / hush: they need fork), xargs, env, nohup, timeout, time, nproc
-  (sched_getaffinity), sleep / usleep (would freeze the page), anything networking, mount / init / process tools,
+  (sched_getaffinity), anything networking, mount / init / process tools,
   and FEATURE_SEAMLESS_GZ (it forks a decompressor). tar has no -z / -j: use `gzip` / `bzip2` on the .tar.
+- T7: `sleep` (with `CONFIG_FEATURE_FANCY_SLEEP` + `CONFIG_FLOAT_DURATION`: `sleep 0.5`, `sleep 1m`) and `usleep` are in,
+  now that commands run in a Web Worker (a sleep there does not freeze the page; Ctrl+C ends it).
 - `CONFIG_EXTRA_CFLAGS="-Oz"`
 - `CONFIG_EXTRA_LDFLAGS="-sMODULARIZE=1 -sEXPORT_NAME=BusyBoxModule -sFORCE_FILESYSTEM=1 -sINVOKE_RUN=0 -sEXIT_RUNTIME=1 -sALLOW_MEMORY_GROWTH=1 -sENVIRONMENT=web,worker,node -sEXPORTED_RUNTIME_METHODS=FS,ENV,callMain -sSTACK_SIZE=1048576"`
 
@@ -48,8 +50,9 @@ If the applet list changes, update APPLETS in `terminal_bb.js` too, and bump `?v
 
 ## How the Terminal runs it
 
-`terminal_bb.js` loads `busybox.js` with a <script> tag and compiles `busybox.wasm` once (fetch), on the first
-BusyBox command. Each command gets a fresh instance (`BusyBoxModule({ thisProgram: <applet>, instantiateWasm, stdin, stdout, stderr })`
+T7: `terminal_worker.js` (a Web Worker) loads `busybox.js` with importScripts and compiles `busybox.wasm` once
+(fetch), on the first BusyBox command; output streams back in chunks and Ctrl+C terminates the worker. Where no
+worker can run (file://), `terminal_bb.js` does the same in the page (a <script> tag), as in T5. Each command gets a fresh instance (`BusyBoxModule({ thisProgram: <applet>, instantiateWasm, stdin, stdout, stderr })`
 then `callMain(args)`), with the needed /drive files copied into its memory file system and changes copied back.
 
 ## .config
@@ -60,7 +63,7 @@ The complete file (copy everything between the fences to busybox-1.36.1/.config)
 #
 # Automatically generated make config: don't edit
 # Busybox version: 1.36.1
-# Mon Oct 26 12:19:47 2026
+# Mon Oct 26 12:37:35 2026
 #
 CONFIG_HAVE_DOT_CONFIG=y
 
@@ -144,7 +147,7 @@ CONFIG_NO_DEBUG_LIB=y
 # Library Tuning
 #
 # CONFIG_FEATURE_USE_BSS_TAIL is not set
-# CONFIG_FLOAT_DURATION is not set
+CONFIG_FLOAT_DURATION=y
 # CONFIG_FEATURE_RTMINMAX is not set
 # CONFIG_FEATURE_RTMINMAX_USE_LIBC_DEFINITIONS is not set
 CONFIG_FEATURE_BUFFERS_USE_MALLOC=y
@@ -371,8 +374,8 @@ CONFIG_RMDIR=y
 CONFIG_SEQ=y
 # CONFIG_SHRED is not set
 CONFIG_SHUF=y
-# CONFIG_SLEEP is not set
-# CONFIG_FEATURE_FANCY_SLEEP is not set
+CONFIG_SLEEP=y
+CONFIG_FEATURE_FANCY_SLEEP=y
 CONFIG_SORT=y
 CONFIG_FEATURE_SORT_BIG=y
 # CONFIG_FEATURE_SORT_OPTIMIZE_MEMORY is not set
@@ -410,7 +413,7 @@ CONFIG_UNAME_OSNAME=""
 # CONFIG_BB_ARCH is not set
 CONFIG_UNIQ=y
 # CONFIG_UNLINK is not set
-# CONFIG_USLEEP is not set
+CONFIG_USLEEP=y
 # CONFIG_UUDECODE is not set
 # CONFIG_BASE32 is not set
 CONFIG_BASE64=y

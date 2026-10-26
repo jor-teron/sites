@@ -1,6 +1,6 @@
 # Terminal (apps/system/terminal/)
 
-System app (T1 + T2 + T3 + T5 + T6): a command line for the Hub that browses your drives like a unix terminal and, since T3, changes files in them. Near-black background, terminal-green monospace text and a blinking block cursor, fixed whatever the Hub theme is. Works in a Desktop window, in Phone mode and standalone.
+System app (T1 + T2 + T3 + T5 + T6 + T7): a command line for the Hub that browses your drives like a unix terminal and, since T3, changes files in them. Near-black background, terminal-green monospace text and a blinking block cursor, fixed whatever the Hub theme is. Works in a Desktop window, in Phone mode and standalone.
 
 ## The file tree
 
@@ -55,16 +55,17 @@ System app (T1 + T2 + T3 + T5 + T6): a command line for the Hub that browses you
 
 ## BusyBox (T5)
 
-Real Linux commands: BusyBox 1.36.1 built to WebAssembly (`bin/busybox.wasm`, ~330 KB, 87 applets, see `bin/APPLETS.txt` and how to rebuild in `bin/BUILD.md`). It loads on the first BusyBox command (`(loading BusyBox …)`), then stays in memory.
+Real Linux commands: BusyBox 1.36.1 built to WebAssembly (`bin/busybox.wasm`, ~330 KB, 89 applets, see `bin/APPLETS.txt` and how to rebuild in `bin/BUILD.md`). It loads on the first BusyBox command (`(loading BusyBox …)`), then stays in memory.
 
 - **Who wins.** The Terminal's own commands stay as they were for a plain line: `cd pwd history clear exit help apps open build theme drives allow tree edit` always, and `ls cat head tail wc grep find stat mkdir touch cp mv rm rmdir echo date` as long as they are used the T2 / T3 way (they know Drive permissions, ask y/n before overwriting or deleting, refuse big or binary files). BusyBox runs the line when:
   - it has a pipe `|` or an input redirect `<` (inside a pipe BusyBox's `ls cat grep ...` are used, so they read stdin; a Terminal-only command such as `history`, `apps`, `help`, `tree`, `drives` can still feed a pipe: `history | grep ls`);
   - the command is one the Terminal does not have (`sed awk sort uniq cut tr seq diff md5sum base64 tee xxd gzip tar bc ...`);
   - it is written `/bin/<name>` or `busybox <name>` (forces BusyBox: `/bin/ls -R`, `/bin/rm -r x` with **no y/n question**);
   - a shared command gets an option the Terminal's version does not know (`ls -R`, `grep -E`, `wc -m`, `echo -n`, `date +%F`, ...) or a path in `/bin`, `/etc` or `/` (`ls /bin`, `cat /etc/os-release`), or the current folder is `/bin` / `/etc`.
-- **Files.** Before a run, the files the command names are copied from the drive into BusyBox's memory (a folder: one level, all levels for `find du tar` and `-r` / `-R`); afterwards changed and new files and folders are written back and files the command removed are deleted from the drive. ls / find / du / stat / test only get names and sizes. Limits per command: 3000 files, 32 MB read, 4 MB output, 20 s. Writes need the same `allow <mount>` as T3. `/etc`, `/bin`, `/tmp`, `/dev` changes are thrown away.
+- **Files.** Before a run, the files the command names are copied from the drive into BusyBox's memory (a folder: one level, all levels for `find du tar` and `-r` / `-R`); afterwards changed and new files and folders are written back and files the command removed are deleted from the drive. ls / find / du / stat / test only get names and sizes. Limits per command: 3000 files, 32 MB read; output 64 MB to the screen, 16 MB into a pipe; no time limit (T7; on file:// without a worker: 4 MB, 20 s). Writes need the same `allow <mount>` as T3. `/etc`, `/bin`, `/tmp`, `/dev` changes are thrown away.
 - **Redirects:** `cmd > file`, `cmd >> file` (bytes, so `gzip -c f > f.gz` works), `cmd < file`. One `>` at the end; `<` on the first command.
-- **Not there:** no shell (`sh`, `;`, `&&`, `$VAR`, `$(...)`, wildcards `*.txt`: name the files), nothing that starts other programs (xargs, find -exec, tar -z: use `gzip` on the .tar), no sleep. Commands run on the page, so a long one freezes the Terminal until it ends (20 s at most); Ctrl+C stops between pipe stages only.
+- **Not there:** no shell (`sh`, `;`, `&&`, `$(...)` (T6 does `$VAR` and aliases), wildcards `*.txt`: name the files), nothing that starts other programs (xargs, find -exec, tar -z: use `gzip` on the .tar), pipe stages run one after the other (so `yes | head` makes 16 MB of `y` first).
+- **T7, worker + streaming:** BusyBox runs in a Web Worker (`terminal_worker.js`), so the Terminal stays responsive; the last command of a line prints while it runs (shown at up to ~512 KB/s, the screen keeps the last ~5000 lines of it). **Ctrl+C stops it at once** (the worker is thrown away, nothing it changed is saved, the next command starts a fresh one). `sleep` / `usleep` are there now (`sleep 0.5`, `sleep 2m`). The drive files are still read and written on the page and handed to the worker. No SharedArrayBuffer / special server headers needed. Opened as file:// (no worker, no wasm fetch) it behaves as in T5.
 - **file://:** browsers do not let a page opened as a file read `bin/busybox.wasm`; the command then says so and the Terminal's own commands keep working. Over http(s) (any web server, the Hub site) it works, also offline once the Hub's service worker has cached it (hub/update/hub_sw.js).
 
 ## How it works
@@ -76,4 +77,4 @@ Real Linux commands: BusyBox 1.36.1 built to WebAssembly (`bin/busybox.wasm`, ~3
 - **Apps list:** `hub/core/hub_appindex.js` (generated by `hub/core/hub_appindex_gen.py`).
 - **Tests hook:** `window.HubTerminal.run(line)` returns a promise; `HubTerminal.fs` is the file layer, `HubTerminal.asking()` tells whether a y/n question waits.
 
-Files: `index.html`, `terminal.js`, `terminal_fs.js`, `terminal_wr.js`, `terminal_edit.js`, `terminal_bb.js`, `terminal_etc.js`, `terminal_rc.js`, `terminal.css`, `terminal_icon.png`, `README.md`, `bin/` (`busybox.wasm`, `busybox.js`, `APPLETS.txt`, `BUILD.md`).
+Files: `index.html`, `terminal.js`, `terminal_fs.js`, `terminal_wr.js`, `terminal_edit.js`, `terminal_bb.js`, `terminal_etc.js`, `terminal_rc.js`, `terminal_worker.js`, `terminal.css`, `terminal_icon.png`, `README.md`, `bin/` (`busybox.wasm`, `busybox.js`, `APPLETS.txt`, `BUILD.md`).

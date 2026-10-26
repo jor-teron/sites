@@ -60,6 +60,7 @@ sha256sum
 sha3sum
 sha512sum
 shuf
+sleep
 sort
 split
 stat
@@ -80,6 +81,7 @@ unexpand
 uniq
 unix2dos
 unzip
+usleep
 wc
 whoami
 xxd
