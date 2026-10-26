@@ -16,6 +16,8 @@
  *               tabs:[{id, label, menu?}], activeTab, title}   title = file name
  *   app → hub  {type:'hub-tab', v:1, id}       active tab changed inside the app
  *   app → hub  {type:'hub-title', v:1, value}  file name changed
+ *   H17: hover (mouse, window .hover-tabs) 100 ms → same tab message plus hover:true; leaving a
+ *   hover-opened menu tab posts {type:'hub-menu-leave', id, delay:300} (app closes its menu).
  *   hub → app  {type:'hub-action', v:1, id:'tab:<id>'}  on a tab click (a menu:true tab
  *               such as File sends 'tab:file' too; the app draws its own menu)
  * Tabs are sized by the Hub from --wm-title-h (24 / 28 / 34); the app sends no sizes.
@@ -118,6 +120,7 @@
       });
       bar.hidden = false;
     }
+    function hoverOn() { const win = frame.closest && frame.closest('.wm-win'); return !!(win && win.classList.contains('hover-tabs')); }
     function setActiveTab(id) {
       tabEls.forEach((b, k) => {
         const on = k === String(id);
@@ -153,6 +156,27 @@
           try { frame.focus(); } catch (_) { /* ignore */ }
         });
         b.addEventListener('dblclick', (e) => e.stopPropagation());   // no maximise from a tab
+        // H17: hover to open (mouse only, window has .hover-tabs from hub-app-caps hoverTabs:true)
+        let hT = 0, lT = 0;
+        b.addEventListener('pointerenter', (e) => {
+          if (e.pointerType !== 'mouse' || !hoverOn()) return;
+          clearTimeout(lT);
+          if (t.menu && b._hoverOpen) return;
+          clearTimeout(hT);
+          hT = setTimeout(() => {
+            if (t.menu) b._hoverOpen = true; else setActiveTab(id);
+            post({ type: 'hub-action', id: 'tab:' + id, hover: true });
+          }, 100);
+        });
+        b.addEventListener('pointerleave', (e) => {
+          if (e.pointerType !== 'mouse') return;
+          clearTimeout(hT);
+          if (!t.menu || !b._hoverOpen) return;
+          // the menu lives in the app: tell it the pointer left File; the app closes the menu
+          // 300 ms later unless the pointer is on the menu (or comes back to File: re-enter cancels)
+          lT = setTimeout(() => { b._hoverOpen = false; post({ type: 'hub-menu-leave', id, delay: 300 }); }, 0);
+        });
+        b.addEventListener('click', () => { clearTimeout(hT); clearTimeout(lT); b._hoverOpen = false; }, true);
         tabEls.set(id, b);
         strip.appendChild(b);
       });

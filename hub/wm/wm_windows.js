@@ -22,6 +22,8 @@
  *   shows a cogwheel left of – in its window's title bar (class has-settings), false hides it.
  *   A click posts {type:'hub-settings'} back to that iframe. Each iframe load hides the gear
  *   again until the app re-sends its caps.
+ * - H17: hub-app-caps hoverTabs:true adds class hover-tabs (hover to open tabs / File in
+ *   hub-gamebar.js); missing or false = off; reset on each iframe load like the gear.
  * - R35: opening a window or pressing its title bar loads the deferred snap batch at once.
  * - Snapping (R10): w.snap = 'l' | 'r' (left / right half, class wm-snap-l / -r in wm.css; w.rect
  *   keeps the size from before, like maximise). Edge detection, preview and the keys live in
@@ -376,7 +378,7 @@
     });
     el.addEventListener('pointerleave', () => clearTimeout(hoverT));
     el.addEventListener('animationend', () => el.classList.remove('wm-pop'));
-    frame.addEventListener('load', () => { el.classList.remove('has-settings'); hookFrame(w); if (window.__hubInjectCtx) window.__hubInjectCtx(frame); });
+    frame.addEventListener('load', () => { el.classList.remove('has-settings', 'hover-tabs'); hookFrame(w); if (window.__hubInjectCtx) window.__hubInjectCtx(frame); });
 
     // Move by the title bar. A maximised / snapped window gets its old size back under the
     // pointer once it really moves (a plain click on the bar keeps it as it is).
@@ -565,7 +567,10 @@
     // H16: an app says whether it has a settings panel → show / hide its window's gear
     if (e.data && e.data.type === 'hub-app-caps' && (e.origin === location.origin || location.protocol === 'file:')) {
       const w = wins.find((x) => x.frame && x.frame.contentWindow === e.source);
-      if (w) w.el.classList.toggle('has-settings', e.data.settings === true);
+      if (w) {
+        w.el.classList.toggle('has-settings', e.data.settings === true);
+        w.el.classList.toggle('hover-tabs', e.data.hoverTabs === true);   // H17: read by hub-gamebar.js
+      }
     }
   });
   window.addEventListener('pagehide', () => { clearTimeout(saveT); saveNow(); });

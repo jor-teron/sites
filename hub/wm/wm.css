@@ -124,6 +124,8 @@ body.wm-desktop #wm-desk { display: block; position: absolute; inset: 0; overflo
   font-size: calc(var(--wm-title-h) * 0.43); opacity: 0.75;
 }
 .gb-file[hidden] { display: none; }
+/* H17: in a window the file name sits on the right, just before the gear / window buttons */
+.wm-gb .gb-file { order: 99; margin-left: auto; text-align: right; }
 .wm-btn {
   width: calc(var(--wm-title-h) * 1.45); height: calc(var(--wm-title-h) - 4px);
   border: 0; border-radius: 6px;
