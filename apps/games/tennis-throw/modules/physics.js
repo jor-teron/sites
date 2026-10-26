@@ -55,6 +55,7 @@
         const t = game.targets[i];
         if (Math.hypot(ball.x - t.x, ball.y - t.y) < t.radius + CFG.ball.hitRadius) {
           game.score += t.points;
+          TT.settings.vibrate();  // TB4/GS1: buzz on a hit if 'vibration' is on
           game.targets.splice(i, 1);
           TT.spawnTarget(t.type);
           return false; // ball is used up

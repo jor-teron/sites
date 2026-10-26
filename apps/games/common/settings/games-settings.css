@@ -1,0 +1,36 @@
+/*
+ * games-settings.css — GS1 Games settings page. Same palette as the Hub's
+ * System Settings app (apps/system/settings/settings.css): dark by default,
+ * html.light for light. Phone-first: one column, 48px rows, big tap targets.
+ */
+:root {
+  --accent: #6ea8fe; --bg: #12151c; --card: #1a1e27; --line: rgba(255,255,255,.08);
+  --text: #e8eaed; --muted: #9aa0a6; --danger: #f28b82; color-scheme: dark;
+}
+html.light { --bg: #f4f5f8; --card: #fff; --line: rgba(0,0,0,.09); --text: #1c1f26; --muted: #5f6672; --danger: #c5221f; color-scheme: light; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+body { max-width: 640px; margin: 0 auto; padding: 0 12px 40px; }
+.top { position: sticky; top: 0; display: flex; align-items: center; gap: 12px; padding: 10px 0; background: var(--bg); z-index: 2; }
+.top h1 { font-size: 1.2rem; margin: 0; }
+.back { color: var(--accent); text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; padding: 0 6px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 6px 14px 10px; margin: 12px 0; }
+.card h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 8px 0 2px; }
+.row { display: flex; align-items: center; gap: 10px; min-height: 48px; border-top: 1px solid var(--line); }
+.card h2 + .row { border-top: 0; }
+.lbl { flex: 1; }
+.row output { color: var(--muted); font-size: .85rem; min-width: 46px; text-align: right; }
+select { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; min-height: 36px; }
+input[type=range] { width: 42%; accent-color: var(--accent); }
+.toggle { appearance: none; width: 46px; height: 26px; border-radius: 13px; background: var(--line); position: relative; cursor: pointer; transition: background .15s; }
+.toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .15s; }
+.toggle:checked { background: var(--accent); }
+.toggle:checked::after { left: 23px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+button { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; min-height: 44px; cursor: pointer; }
+button:active { transform: scale(.97); }
+button.danger { color: var(--danger); border-color: var(--danger); }
+textarea { width: 100%; font: 12px/1.4 ui-monospace, monospace; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+.confirm { border: 1px solid var(--danger); border-radius: 10px; padding: 4px 12px; margin-top: 8px; }
+.confirm ul { max-height: 160px; overflow: auto; font: 12px ui-monospace, monospace; color: var(--muted); }
+.msg { color: var(--muted); min-height: 1.5em; }

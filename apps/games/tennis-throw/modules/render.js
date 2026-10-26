@@ -9,8 +9,9 @@
 
   function drawSky() {
     const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    g.addColorStop(0, CFG.colors.skyTop);
-    g.addColorStop(1, CFG.colors.skyBottom);
+    const c = TT.settings.get('theme') === 'dark' ? CFG.darkColors : CFG.colors; // TB4/GS1 theme
+    g.addColorStop(0, c.skyTop);
+    g.addColorStop(1, c.skyBottom);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
@@ -114,13 +115,23 @@
     if (!game.isFinished) drawAim();
     if (game.isPaused) {
       overlay([CFG.text.paused, CFG.text.pausedHint, CFG.text.pausedTouch]);
-    } else if (game.isRunning && game.clock < CFG.text.startHintSeconds) {
+    } else if (TT.settings.get('showHints') && game.isRunning && game.clock < CFG.text.startHintSeconds) {
       // TB2: start hint for touch players (no overlay, play is live)
-      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillStyle = TT.settings.get('theme') === 'dark' ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.55)'; // TB4: readable on dark sky
       ctx.font = 'bold 18px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(CFG.text.startTouch, canvas.width / 2, 24);
+    }
+    // TB4/GS1: small FPS counter (measured draw rate) when 'showFps' is on
+    if (TT.settings.get('showFps')) {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(canvas.width / 2 - 40, 42, 80, 20); // top centre, under the start hint
+      ctx.fillStyle = '#fff';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(Math.round(game.fps || 0) + '/' + TT.settings.fps() + ' fps', canvas.width / 2, 52);
     }
   };
 })(window.TT);

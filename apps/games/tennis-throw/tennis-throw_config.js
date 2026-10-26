@@ -69,7 +69,7 @@ const TENNIS_THROW_CONFIG = {
 
   // TB2: frame clock
   loop: {
-    fps: 30,                 // fixed simulation and draw rate
+    fps: 30,                 // fixed simulation and draw rate (TB4/GS1: default; Games settings fpsLimit overrides)
     maxCatchUpSteps: 5,      // after a stall, simulate at most this many steps at once
   },
 
@@ -85,6 +85,17 @@ const TENNIS_THROW_CONFIG = {
     cooldownMs: 250,         // minimum time between throws
     maxBallsInAir: 2,        // no new throw while this many balls are flying
   },
+
+  // TB4/GS1: Games settings 'difficulty' (apps/games/common/settings). Applied at each new game.
+  difficulty: {
+    easy:   { targetScore: 80,  birdSpeedScale: 0.6, extraCount: { balloon: 1 } },  // shorter goal, slow birds, one more balloon
+    normal: { targetScore: 100, birdSpeedScale: 1.0, extraCount: {} },              // the TB3 game unchanged
+    hard:   { targetScore: 150, birdSpeedScale: 1.6, extraCount: { balloon: -1 } }, // longer goal, fast birds, one balloon fewer
+  },
+
+  // TB4/GS1: hit feedback and dark theme (theme 'dark' in Games settings)
+  vibrateMs: 30,             // navigator.vibrate length on a hit (if 'vibration' is on)
+  darkColors: { skyTop: '#0b1a33', skyBottom: '#2a3f66' },
 
   // Ranks by finish time (first match wins)
   ranks: [

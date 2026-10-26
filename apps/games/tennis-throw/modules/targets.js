@@ -44,7 +44,7 @@
     }
     game.targets.push({
       type, x, y,
-      vx: type === 'bird' ? (Math.random() > 0.5 ? 1 : -1) * item.speed : 0, // px/s
+      vx: type === 'bird' ? (Math.random() > 0.5 ? 1 : -1) * item.speed * (game.birdSpeedScale || 1) : 0, // px/s (TB4: × difficulty)
       emoji: item.emoji,
       points: item.points,
       radius: type === 'star' ? T.starRadius : T.radius,
@@ -54,7 +54,12 @@
   /** Fill the screen with the configured count of each target type. */
   TT.spawnAllTargets = function () {
     game.targets = [];
-    game.targetPool.forEach(p => { for (let i = 0; i < p.count; i++) TT.spawnTarget(p.type); });
+    // TB4/GS1: difficulty adds/removes a few targets per type (never below 1)
+    const extra = game.extraCount || {};
+    game.targetPool.forEach(p => {
+      const n = Math.max(1, p.count + (extra[p.type] || 0));
+      for (let i = 0; i < n; i++) TT.spawnTarget(p.type);
+    });
   };
 
   /** Birds fly sideways and bounce off the edges. dt in seconds. */

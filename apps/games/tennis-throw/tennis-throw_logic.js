@@ -9,6 +9,7 @@
  *   modules/physics.js  throwing, ball flight, hits
  *   modules/render.js   drawing
  *   modules/input.js    keyboard + touch/mouse drag
+ *   modules/settings.js TB4/GS1 Games settings bridge (defaults if the shared script is missing)
  *   modules/loop.js     fixed-timestep clock
  */
 (function (TT) {
@@ -22,6 +23,13 @@
 
   /** Start a fresh run. */
   TT.init = function () {
+    // TB4/GS1: difficulty from Games settings (numbers in CFG.difficulty)
+    const d = CFG.difficulty[TT.settings.get('difficulty')] || CFG.difficulty.normal;
+    game.difficulty = TT.settings.get('difficulty');
+    game.targetScore = d.targetScore;
+    game.birdSpeedScale = d.birdSpeedScale;
+    game.extraCount = d.extraCount;
+    document.querySelector('.score').lastChild.textContent = '/' + d.targetScore;
     Object.assign(game, {
       score: CFG.start.score, time: 0, clock: 0, lastThrow: -1e9,
       isRunning: true, isFinished: false, isPaused: false, drag: null,
@@ -64,6 +72,20 @@
   window.game = game;
   window.minReachableY = TT.minReachableY;
   window.throwBall = TT.throwBall;
+
+  // ---- TB4/GS1: Games settings hooks ----
+  const S = TT.settings;
+  const applyHints = () => { document.querySelector('.controls-hint').style.display = S.get('showHints') ? '' : 'none'; };
+  applyHints();
+  S.onChange(ch => {
+    if ('showHints' in ch) applyHints();
+    if ('difficulty' in ch) TT.init();   // new difficulty = new run
+  });
+  // autoPause: pause when the tab/app goes to the background
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && S.get('autoPause') && game.isRunning && !game.isPaused) TT.togglePause();
+  });
+  S.mountGear(document.querySelector('.container'), 'tennis-throw');
 
   TT.init();
   TT.startLoop();
