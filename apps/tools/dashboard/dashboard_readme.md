@@ -20,6 +20,7 @@ Adding a card: create `cards/card_x.js` calling `MyDay.register(...)`, add a `<s
 - **PD2.1** — Sun & Moon card (after Weather, on by default), fully offline: NOAA solar formulas (`dashboard_sun.js`) for sunrise, sunset, solar noon/midnight, civil dawn/dusk and day length at the Weather card's saved place (fallback Guwahati); countdown to next event. Moon phase, % lit, next full/new moon (mean synodic month). 24-hour SVG dial: noon at top, midnight at bottom, day/night split by the sunrise–sunset chord, civil-twilight band, now hand, sun and moon on the rim. Refreshes every minute.
 
 - **PD2.2** — Sun & Moon dial fills its box (tight viewBox), card spans 2 columns on ≥900px with dial (clamp 320–520px) beside the list; phone: full-width dial, list below. Centre hand removed; curved progress arrow along the rim (sunrise→now by day, sunset→now at night, dimmer), arrowhead at the sun. Bigger rim labels outside the rim; place name below the centre. No hour ticks. Test hook `?now=HH:MM`.
+- **PD3** — AQI inside the Weather card: Open-Meteo air-quality (`current=us_aqi,pm2_5`), coloured US-AQI pill (Good → Hazardous) + PM2.5, cached in `myday.weather.aqi`, hidden when offline/no data; AQI >100 adds a top-strip alert. Today strip under the date: today's fixed-date holiday (from Calendar's `calendar_holidays.js`) and “N todos · N events left”, refreshed on tick and on Todo/Schedule saves (`dashboard_today.js`).
 
 ## Roadmap
 - **PD3** — Bills + Expenses (due dates, amounts, monthly total) with optional PIN

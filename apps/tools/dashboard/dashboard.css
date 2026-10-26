@@ -95,3 +95,11 @@ ul.list li:last-child{border-bottom:0}
 .sd-place{fill:#111827;font-size:14px;font-weight:700;paint-order:stroke;stroke:#fff8;stroke-width:3}
 .sd-sun{fill:#f59e0b;stroke:#fff;stroke-width:2}.sd-moon{font-size:18px}
 [data-theme=dark] .sd-night{fill:#0b1022}[data-theme=dark] .sd-day{fill:#c9a646}[data-theme=dark] .sd-twi{fill:#b4642c}
+/* PD3: Today strip + AQI pill */
+.today{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.today:empty{display:none}
+.td-pill{font-size:14px;padding:2px 10px;border-radius:999px;background:var(--acc2);animation:pop .4s cubic-bezier(.34,1.8,.64,1)}
+.td-hol{background:var(--now);font-weight:700}
+.aqi-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0}
+.aqi-pill{font-size:14px;font-weight:700;padding:3px 12px;border-radius:999px;color:#111;transition:transform .18s cubic-bezier(.34,1.8,.64,1)}.aqi-pill:hover{transform:scale(1.08)}
+.aqi-g{background:#4ade80}.aqi-m{background:#facc15}.aqi-s{background:#fb923c}.aqi-u{background:#f87171}.aqi-v{background:#c084fc}.aqi-h{background:#9f1239;color:#fff}
+@media(min-width:1000px){.td-pill{font-size:16px}.aqi-pill{font-size:16px}}

@@ -1,7 +1,7 @@
 /* Card: Weather (PD2) — Open-Meteo, free, no key. Current, next 12 hours, next 3 days.
    Place: "Use my location" or name search (Open-Meteo geocoding); saved in store 'weather.place'.
    Last response cached in store 'weather.cache' {t,data}; refresh on open if older than 30 min.
-   Pushes top-strip alerts: rain, heat, storm, wind. */
+   Pushes top-strip alerts: rain, heat, storm, wind. PD3: AQI pill via cards/weather_aqi.js. */
 (function(){
   var API = 'https://api.open-meteo.com/v1/forecast';
   var GEO = 'https://geocoding-api.open-meteo.com/v1/search';
@@ -158,6 +158,7 @@
         el('div', { text: '💧 ' + c.relative_humidity_2m + '%  ·  💨 ' + Math.round(c.wind_speed_10m) + ' km/h' })
       ])
     ]));
+    if (window.MDAqi) MDAqi.render(box, api, place);
 
     /* Next 12 hours from the current hour */
     var hrs = el('div', { 'class': 'wx-hours', role: 'list', 'aria-label': 'Next 12 hours' });
