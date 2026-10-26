@@ -58,6 +58,7 @@ Draftly.hub = {
   function sendApp() {
     lastTab = activeTab(); lastTitle = title();
     post(H.shape.app({ tab: lastTab, title: lastTitle }));
+    post({ type: 'hub-app-caps', settings: true });  /* DF12/H16: ask for the title-bar gear */
   }
   function sendTab() {
     if (!H.linked) return;
@@ -90,6 +91,12 @@ Draftly.hub = {
   if (input) { input.addEventListener('input', sendTitle); input.addEventListener('change', sendTitle); }
 
   /* File > Rename uses Draftly.dialog (draftly-ribbon.js); setCurrentName above sends hub-title. */
+
+  /* DF12/H16: the hub's title-bar gear opens Draftly's Settings panel. */
+  window.addEventListener('message', function (e) {
+    if (e.source !== window.parent || !originOk(e.origin)) return;
+    if (e.data && e.data.type === 'hub-settings' && Draftly.settings && Draftly.settings.panel) Draftly.settings.panel.open();
+  });
 
   window.addEventListener('message', function (e) {
     if (e.source !== window.parent || !originOk(e.origin)) return;
