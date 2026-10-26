@@ -212,23 +212,31 @@
       const done = (e) => { if (e.data && e.data.type === 'sw-refreshed') { navigator.serviceWorker.removeEventListener('message', done); res(e.data.changed || []); } };
       navigator.serviceWorker.addEventListener('message', done);
       c.postMessage({ type: 'refresh' });
-      setTimeout(() => { navigator.serviceWorker.removeEventListener('message', done); res([]); }, 60000);
+      setTimeout(() => { navigator.serviceWorker.removeEventListener('message', done); res(null); }, 60000);   // H12: null = no answer
     });
   }
+  let refreshAt = 0;   // H12: when the current run started (a stuck run stops blocking after 90 s)
+  const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
   async function refresh() {
-    if (refreshing) return { changed: [] };
+    if (refreshing && Date.now() - refreshAt < 90000) return { changed: [] };
     refreshing = true;
-    try { localStorage.setItem(LAST, String(Date.now())); } catch (_) { /* blocked */ }
-    let reg = null;
-    try { reg = await regP; if (reg) await reg.update(); } catch (_) { /* offline */ }
-    const changed = await askWorker();
-    const newWorker = !!(reg && (reg.waiting || reg.installing));
-    if (changed.length || newWorker) {
-      if (!idleNow()) showNote(reg);
-      else { await settle(reg); if (idleNow()) apply(reg); else showNote(reg); }   // R23: never reload onto the old worker
+    refreshAt = Date.now();
+    try {
+      let reg = null, ok = true;
+      try { reg = await regP; if (reg) await withTimeout(reg.update(), 60000); } catch (_) { ok = false; /* offline / hung */ }
+      const answer = await askWorker();
+      if (answer === null) ok = false;
+      const changed = answer || [];
+      if (ok) { try { localStorage.setItem(LAST, String(Date.now())); } catch (_) { /* blocked */ } }   // H12: only on success
+      const newWorker = !!(reg && (reg.waiting || reg.installing));
+      if (changed.length || newWorker) {
+        if (!idleNow()) showNote(reg);
+        else { await settle(reg); if (idleNow()) apply(reg); else showNote(reg); }   // R23: never reload onto the old worker
+      }
+      return { changed, newWorker };
+    } finally {
+      refreshing = false;
     }
-    refreshing = false;
-    return { changed, newWorker };
   }
   let timer = 0;
   function schedule() {
@@ -237,6 +245,7 @@
     api.nextRefresh = target;
     const wait = () => {
       if (Date.now() >= target.getTime()) { refresh(); schedule(); return; }
+      if (due() && !refreshing) refresh();   // H12: a failed refresh retries at the next hourly check
       timer = setTimeout(wait, Math.min(target - Date.now(), STEP));   // ≤ 1 h steps: a sleeping computer catches up
     };
     timer = setTimeout(wait, Math.min(target - Date.now(), STEP));
