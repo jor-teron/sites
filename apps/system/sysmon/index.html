@@ -6,7 +6,7 @@
   Opens as a window in Desktop mode, full screen in Phone mode.
   Files: sm_core.js (helpers, tabs, 1 s sampler that pauses when hidden / minimised),
   sm_chart.js (tiny canvas line graph), sm_tasks.js, sm_storage.js, sm_memory.js, sm_cpu.js,
-  sm_net.js, sm_battery.js (one tab each), sm.js (start-up), sm.css.
+  sm_net.js (+ sm_data.js data used, H21), sm_battery.js, sm_device.js (H21) (one tab each), sm.js (start-up), sm.css.
   Shared: shared/perf/busy_meter.js (busy estimate), shared/fs/ (drives, sizes), shared/dialog/.
   Deep link: index.html#cpu (any tab id; a Hub window session keeps it).
 -->
@@ -16,7 +16,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>System Monitor</title>
   <link rel="stylesheet" href="../../../shared/dialog/dialog.css?v=20261019k" />
-  <link rel="stylesheet" href="sm.css?v=20261019k" />
+  <link rel="stylesheet" href="sm.css?v=20261026h21" />
 </head>
 <body>
   <header class="top">
@@ -35,8 +35,10 @@
   <script src="sm_storage.js?v=20261019k"></script>
   <script src="sm_memory.js?v=20261019k"></script>
   <script src="sm_cpu.js?v=20261019k"></script>
-  <script src="sm_net.js?v=20261019k"></script>
+  <script src="sm_data.js?v=20261026h21"></script>
+  <script src="sm_net.js?v=20261026h21"></script>
   <script src="sm_battery.js?v=20261019k"></script>
+  <script src="sm_device.js?v=20261026h21"></script>
   <script src="sm.js?v=20261019k"></script>
 </body>
 </html>

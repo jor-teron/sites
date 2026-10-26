@@ -81,3 +81,7 @@ button:disabled { opacity: .4; cursor: default; }
 }
 @media (pointer: coarse) { .btn, .tab { min-height: 48px; } }
 @media (prefers-reduced-motion: reduce) { .panel.pop .pane, .tab, .btn, .bar i { animation: none; transition: none; } }
+/* H21: Data used card + Device tab; long values wrap on a phone */
+.kv dd { overflow-wrap: anywhere; min-width: 0; }
+.dev-cards { display: contents; }
+@media (max-width: 520px) { .kv { grid-template-columns: minmax(0, 1fr); gap: 0 0; } .kv dt { margin-top: 8px; font-size: .85rem; } .kv dd { text-align: left; } .pane { grid-template-columns: minmax(0, 1fr); } }

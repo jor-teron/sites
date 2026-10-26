@@ -2,6 +2,7 @@
  * Network tab (apps/system/sysmon/sm_net.js) — online / offline (navigator.onLine + events) and,
  * where the browser has it (Chrome / Edge / Android), navigator.connection: type, effectiveType,
  * downlink (Mbit/s estimate), rtt (ms estimate), saveData. Live on change; a 60 s rtt graph.
+ * H21: a 'Data used this session' card (sm_data.js, window.SMData), updated every second.
  */
 (function () {
   'use strict';
@@ -22,6 +23,7 @@
       ['Round trip (estimate)', C && C.rtt != null ? C.rtt + ' ms' : 'Not available'],
       ['Data saver', C && C.saveData != null ? (C.saveData ? 'On' : 'Off') : 'Not available']
     ]));
+    if (window.SMData) SMData.update();
     if (cv && C) SMChart.draw(cv, H.list(), { label: (v) => Math.round(v) + ' ms' });
   }
   window.addEventListener('online', () => draw());
@@ -34,6 +36,7 @@
       cv = C ? el('canvas', 'graph') : null;
       pane.append(card('Connection', box, cv && el('h3', '', 'Round trip, last minute'), cv,
         el('p', 'muted small', 'Speed and round trip are the browser\u2019s rough estimates (capped and rounded for privacy), not a speed test.')));
+      if (window.SMData) pane.append(card('Data used this session (estimate)', SMData.render()));
     },
     sample, draw
   });
