@@ -24,3 +24,6 @@ A basic calendar (releases C1 + C4) with four swipe screens: **Month** (default)
 - Left / Right arrow: previous / next month (Month) or year (Year)
 - PageUp / PageDown or Alt+Left / Alt+Right: previous / next screen (wraps)
 - T: today (Month)
+
+## Big-screen layout (2026-10-26)
+Above 1000 px (and 1400 px) the header, month grid, info, holiday list, year view, holiday table and settings widen to ~1200 px / 90vw, the month grid fills the screen height, sizes scale with clamp(), the year view uses 4 (6 at 1400 px) columns, and day cells show the holiday name. Phone layout unchanged (the name span is hidden below 1000 px).

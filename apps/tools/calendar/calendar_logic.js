@@ -63,7 +63,7 @@
       if (y === t.y && m === t.m && d === t.d) c.push('today');
       if (S.sel === iso(y, m, d)) c.push('sel');
       const hn = hols(iso(y, m, d)); if (hn) c.push('hol');
-      h += '<button type="button" class="' + c.join(' ') + '" data-d="' + iso(y, m, d) + '"' + (hn ? ' title="' + hn.join(', ') + '"' : '') + '>' + d + '</button>';
+      h += '<button type="button" class="' + c.join(' ') + '" data-d="' + iso(y, m, d) + '"' + (hn ? ' title="' + hn.join(', ') + '"' : '') + '>' + d + (hn ? '<span class="hn">' + hn.join(', ') + '</span>' : '') + '</button>';
     }
     $('m-grid').innerHTML = h;
     renderInfo();
