@@ -1,6 +1,6 @@
 # Terminal (apps/system/terminal/)
 
-System app (T1 + T2 + T3 + T5): a command line for the Hub that browses your drives like a unix terminal and, since T3, changes files in them. Near-black background, terminal-green monospace text and a blinking block cursor, fixed whatever the Hub theme is. Works in a Desktop window, in Phone mode and standalone.
+System app (T1 + T2 + T3 + T5 + T6): a command line for the Hub that browses your drives like a unix terminal and, since T3, changes files in them. Near-black background, terminal-green monospace text and a blinking block cursor, fixed whatever the Hub theme is. Works in a Desktop window, in Phone mode and standalone.
 
 ## The file tree
 
@@ -36,6 +36,23 @@ System app (T1 + T2 + T3 + T5): a command line for the Hub that browses your dri
 - **Quotes:** `"My Docs"`, `'My Docs'` and `My\ Docs` keep a space in one word. Errors read like unix: `ls: cannot access 'x': No such file or directory`, `cd: x: Not a directory`.
 - **Tab** completes command names, app ids (`open`), categories (`apps`), themes, mount names (`allow`) and paths (case-insensitive; a folder ends with `/`, a file gets a space; dotfiles only when you type the `.`). Up / Down walk the history (localStorage `hub-terminal.history`, last 200); Ctrl+L clears; Ctrl+C cancels the line (copies when text is selected).
 
+## Settings file, aliases, variables, ssh (T6)
+
+- **~/.hubrc** (`/drive/local/.hubrc`) is read when the Terminal starts, if it is there; the Terminal never creates it. Make one with `edit ~/.hubrc`. Only these lines are read (anything else is skipped with a note):
+
+  ```
+  # ~/.hubrc: read at Terminal start (source ~/.hubrc or reload to read it again)
+  alias ll='ls -l'
+  alias la='/bin/ls -la'
+  alias gs='grep -n'
+  export EDITOR=edit
+  export NOTES=~/notes
+  export GREETING="hello from the hub"
+  ```
+- `alias` lists, `alias name='cmd ...'` sets, `unalias name` / `unalias -a` removes. `export` lists, `export VAR=value` sets (the value may use other $VARs). `env` and `printenv [VAR]` show the variables (HOME USER LOGNAME HOSTNAME SHELL PATH TERM LANG PWD + yours). `source <file>` reads a settings file, `reload` clears and reads ~/.hubrc again. What you type at the prompt lasts for this session only; put it in ~/.hubrc to keep it.
+- **Expansion**, before every line runs (Terminal commands and BusyBox alike): an unquoted first word that is an alias is replaced by its text (aliases can chain, 10 levels, never looping), then `$VAR` and `${VAR}` are replaced (not inside `'...'`; `\$` keeps a `$`; an unknown variable becomes empty). BusyBox commands also get the variables in their environment (`printenv` in a pipe, `awk 'BEGIN{print ENVIRON["NOTES"]}'`).
+- **ssh:** `ssh` opens the SSH app. `ssh user@host`, `ssh user@host:2222` or `ssh -p 2222 user@host` opens it filled in, through the SSH app's own `#host=user@host:port` link (it asks for the password or key there; the Terminal never sees it). Running a remote command (`ssh host ls`) is not supported. On file:// the Hub drops the `#...` part, so the app opens empty and the Terminal prints the target.
+
 ## BusyBox (T5)
 
 Real Linux commands: BusyBox 1.36.1 built to WebAssembly (`bin/busybox.wasm`, ~330 KB, 87 applets, see `bin/APPLETS.txt` and how to rebuild in `bin/BUILD.md`). It loads on the first BusyBox command (`(loading BusyBox …)`), then stays in memory.
@@ -52,11 +69,11 @@ Real Linux commands: BusyBox 1.36.1 built to WebAssembly (`bin/busybox.wasm`, ~3
 
 ## How it works
 
-- **Shared code, no copy:** the page loads `shared/fs/fs_drives.js` (list / handle / access / allow), `fs_ops.js` (list / read), `filetypes.js`, `fs_ref.js` and the three `shared/google` scripts the Viewer loads (so the Drive mount appears when it is set up). `terminal_fs.js` is the file layer (tree, paths, read commands); `terminal_wr.js` (`window.TermWr`) adds the commands that change files and the redirect writer; `terminal_edit.js` (`window.TermEdit`) is the editor; `terminal_bb.js` (`window.TermBB`, T5) runs BusyBox (pipes, staging files in and out); `terminal_etc.js` (`window.TermEtc`) holds the /etc files; `terminal.js` is the line editor, the y/n question state, the redirect parser and the Hub commands.
+- **Shared code, no copy:** the page loads `shared/fs/fs_drives.js` (list / handle / access / allow), `fs_ops.js` (list / read), `filetypes.js`, `fs_ref.js` and the three `shared/google` scripts the Viewer loads (so the Drive mount appears when it is set up). `terminal_fs.js` is the file layer (tree, paths, read commands); `terminal_wr.js` (`window.TermWr`) adds the commands that change files and the redirect writer; `terminal_edit.js` (`window.TermEdit`) is the editor; `terminal_bb.js` (`window.TermBB`, T5) runs BusyBox (pipes, staging files in and out); `terminal_etc.js` (`window.TermEtc`) holds the /etc files; `terminal_rc.js` (`window.TermRc`, T6) the aliases, variables and ~/.hubrc; `terminal.js` is the line editor, the y/n question state, the redirect parser and the Hub commands.
 - **Typing:** one invisible `<input>` takes the keys, so the native phone keyboard, the Hub OSK and paste all work; tap anywhere to focus it. On file:// the Hub cannot reach the frame, so the Hub OSK keys arrive as `{type:'hub-key'}` messages from the parent window (only then, only from the parent).
 - **Hub access:** `parent.__hubOpenApp` when the Hub is the same-origin parent; on file:// a `{type:'hub-open-app'}` message to the parent (hub.js only accepts it from its own frame, and ignores a `#hash`: on file:// `open <folder>` and `open <text file>` open Files / Notely without the path; the Viewer opens in a new tab through FsRef).
 - **Safety:** all output is plain text (`textContent`), never HTML; file text in the editor goes through `textarea.value` only. Every path is resolved inside a mounted drive handle (`..` stops at `/`), so nothing outside the drives can be touched. cp / mv / rm / mkdir use the shared `FsOps` (shared/fs is unchanged). On file:// Local (browser storage) is not available, same as T2, so a write there reports it.
 - **Apps list:** `hub/core/hub_appindex.js` (generated by `hub/core/hub_appindex_gen.py`).
 - **Tests hook:** `window.HubTerminal.run(line)` returns a promise; `HubTerminal.fs` is the file layer, `HubTerminal.asking()` tells whether a y/n question waits.
 
-Files: `index.html`, `terminal.js`, `terminal_fs.js`, `terminal_wr.js`, `terminal_edit.js`, `terminal_bb.js`, `terminal_etc.js`, `terminal.css`, `terminal_icon.png`, `README.md`, `bin/` (`busybox.wasm`, `busybox.js`, `APPLETS.txt`, `BUILD.md`).
+Files: `index.html`, `terminal.js`, `terminal_fs.js`, `terminal_wr.js`, `terminal_edit.js`, `terminal_bb.js`, `terminal_etc.js`, `terminal_rc.js`, `terminal.css`, `terminal_icon.png`, `README.md`, `bin/` (`busybox.wasm`, `busybox.js`, `APPLETS.txt`, `BUILD.md`).

@@ -313,7 +313,7 @@
         stdout: (c) => { tick(); if (outN >= MAX_OUT) { cut = 'out'; throw new Error('cut'); } out.push(c); outN++; },
         stderr: (c) => { if (errN < 65536) { errs.push(c); errN++; } },
         print: () => {}, printErr: () => {},
-        preRun: [(m) => { const E = (m || M || {}).ENV; if (E) Object.assign(E, ENV_, { PWD: fs.S.cwd }); }],
+        preRun: [(m) => { const E = (m || M || {}).ENV; if (E) Object.assign(E, ENV_, ctx.env ? ctx.env() : {}, { PWD: fs.S.cwd }); }],
       });
       const F = M.FS;
       try { await stageAll(F, argv, st); } catch (e) {

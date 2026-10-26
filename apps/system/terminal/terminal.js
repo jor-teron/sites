@@ -24,6 +24,9 @@
  *   an applet the Terminal has no command for (sed, awk, sort, ...), or a Terminal file command given an option
  *   or a /bin, /etc path it does not know, runs in BusyBox (see README: who wins). cd / pwd / history / clear / exit
  *   stay here; cd also enters the virtual /bin and /etc.
+ * - T6: terminal_rc.js (window.TermRc): ~/.hubrc read at start, alias / unalias / export / env / printenv / source /
+ *   reload; every line is expanded (alias of the first word, $VAR, ${VAR}) before it runs. `ssh [-p port] user@host`
+ *   opens the SSH app with its #host=user@host:port hash (plain `ssh` just opens it).
  */
 (function () {
   'use strict';
@@ -264,6 +267,10 @@
     ['build', 'the Hub build (hub/build.txt)'],
     ['theme [name]', 'show or set the Hub theme (' + THEMES.join(', ') + ')'],
     ['exit', 'clear the screen and start a new session'],
+    ['ssh [-p port] [user@host]', 'open the SSH app (filled in with user@host:port)'],
+    ['alias [name=\'cmd\']', 'list or set aliases (unalias name, unalias -a)'],
+    ['export [VAR=value]', 'list or set variables, used as $VAR / ${VAR}; env, printenv [VAR]'],
+    ['source ~/.hubrc, reload', 'read the settings file again (alias, export, # lines)'],
   ];
   const HELP_FS = [
     ['pwd', 'print the current folder'],
@@ -365,7 +372,28 @@
         if (ver) print('Version: ' + ver);
       }).catch(() => err('build: could not read hub/build.txt'));
     },
-    exit() { out.textContent = ''; print('Hub Terminal (T5)'); dim('New session. Close the window to leave.'); },
+    ssh(args) {
+      let port = '', who = '';
+      for (let i = 0; i < args.length; i++) {
+        const a = args[i];
+        let m;
+        if (a === '-p') { port = args[++i] || ''; if (!/^\d{1,5}$/.test(port)) { err('ssh: bad port \'' + port + '\''); return; } }
+        else if ((m = /^-p(\d{1,5})$/.exec(a))) port = m[1];
+        else if (a.charAt(0) === '-') { err('ssh: option ' + a + ' is not supported here (only -p port)'); return; }
+        else if (who) { err('ssh: running a remote command is not supported; connect, then type it in the SSH app'); return; }
+        else who = a;
+      }
+      const app = appList().find((x) => x.id === 'ssh');
+      const entry = app ? app.entry : 'apps/connectivity/ssh/';
+      if (!who) { if (port) { err('usage: ssh [-p port] user@host'); return; } hubOpen(entry, null, 'SSH'); return; }
+      const m = /^(?:([^@\s]+)@)?(\[[^\]]+\]|[^:@\s]+)(?::(\d{1,5}))?$/.exec(who);
+      if (!m) { err('ssh: bad target \'' + who + '\' (user@host or user@host:port)'); return; }
+      const host = m[2], user = m[1] || '', p = port || m[3] || '22';
+      const target = (user ? user + '@' : '') + host + ':' + p;
+      hubOpen(entry, 'host=' + encodeURIComponent(target), 'SSH');
+      dim('ssh: ' + target + (IS_FILE ? ' (opened as a file: the SSH app cannot be filled in, type it there)' : ' (the SSH app asks for the password or key)'));
+    },
+    exit() { out.textContent = ''; print('Hub Terminal (T6)'); dim('New session. Close the window to leave.'); },
     theme(args) {
       const cur = prefsGet('theme') === 'light' ? 'light' : 'dark';
       if (!args.length) { print('Theme: ' + cur); dim('Themes: ' + THEMES.join(', ') + ' (theme <name> sets it; Terminal itself stays green)'); return; }
@@ -386,6 +414,9 @@
       return cd0(args);
     };
   }
+  /* T6: aliases, variables, ~/.hubrc */
+  const rc = window.TermRc ? window.TermRc.install({ print, err, dim, fs }) : null;
+  if (rc) Object.assign(CMDS, rc.cmds);
   const hasJs = (n) => Object.prototype.hasOwnProperty.call(CMDS, n);
   /** T5: run a Terminal command for a pipe and return its plain output (null: it has no plain output) */
   async function capture(name, args) {
@@ -396,7 +427,7 @@
     finally { got = CAP; CAP = prev; }
     return got.length ? got.join('\n') + '\n' : '';
   }
-  const bb = window.TermBB && fs ? window.TermBB.install({ fs, print, err, dim, block, hasJs, capture, epoch: () => epoch }) : null;
+  const bb = window.TermBB && fs ? window.TermBB.install({ fs, print, err, dim, block, hasJs, capture, epoch: () => epoch, env: () => (rc ? rc.env() : {}) }) : null;
   const NAMES = Object.keys(CMDS).concat(bb ? bb.applets.filter((a) => !hasJs(a) && /^[a-z]/.test(a)) : []);
 
   /* Lines run one after the other (a file command is async), so output keeps the order of the prompts. */
@@ -409,7 +440,8 @@
   }
   async function exec(line) {
     print(PS + line);
-    const t = line.trim();
+    let t = line.trim();
+    if (t && rc) t = rc.expand(t).trim();   // T6: alias + $VAR
     if (!t) return;
     const name = (t.match(/^[^\s>]+/) || [''])[0];
     if (!name) { err("sh: syntax error near '>'"); return; }
@@ -438,7 +470,7 @@
     if (P.redir) await fs.redirect(P.redir.target, got && got.length ? got.join('\n') + '\n' : '', P.redir.op === '>>');
     toBottom();
   }
-  const REDIR_OK = new Set(['help', 'echo', 'date', 'history', 'apps', 'build', 'theme', 'pwd', 'ls', 'cat', 'head', 'tail', 'wc', 'tree', 'stat', 'drives', 'find', 'grep']);
+  const REDIR_OK = new Set(['help', 'echo', 'date', 'history', 'apps', 'build', 'theme', 'pwd', 'ls', 'cat', 'head', 'tail', 'wc', 'tree', 'stat', 'drives', 'find', 'grep', 'alias', 'export', 'env', 'printenv']);
 
   /* ---------- Tab completion ---------- */
   function commonPrefix(list) {
@@ -587,9 +619,10 @@
   window.addEventListener('resize', toBottom);
 
   /* ---------- start ---------- */
-  print('Hub Terminal (T5)');
+  print('Hub Terminal (T6)');
   dim("Type 'help' for commands. Tab completes, Up/Down = history. ls / shows the tree, cd ~ goes home, ls /bin lists the BusyBox commands.");
+  if (rc && fs) chain = chain.then(() => rc.load()).catch(() => {});   // T6: ~/.hubrc, quietly (only notes for skipped lines)
   render();
   focusIn();
-  window.HubTerminal = { run: (l) => run(String(l)), commands: NAMES.slice(), fs, bb, asking: () => !!asking };   // tests / console
+  window.HubTerminal = { run: (l) => run(String(l)), commands: NAMES.slice(), fs, bb, rc, asking: () => !!asking };   // tests / console
 })();
