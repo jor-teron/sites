@@ -256,16 +256,23 @@ Draftly.docxread = (function () {
       });
       grid.push(cells);
     });
-    grid.forEach(function (cells) {
-      html += '<tr>';
+    /* DF10: column widths (gridCol), table width (tblW dxa vs text width), row heights */
+    var gcols = kids(first(tbl, 'tblGrid'), 'gridCol').map(function (g) { return parseInt(att(g, 'w'), 10) || 0; });
+    var gsum = gcols.reduce(function (a, w) { return a + w; }, 0), pct = gsum ? gcols.map(function (w) { return w / gsum * 100; }) : null;
+    var tStyle = Draftly.table.TBL, cfg = Draftly.config || {}, textCm = (cfg.paperWidthCm || 21) - (cfg.marginLeftCm || 2) - (cfg.marginRightCm || 2);
+    var tw0 = first(first(tbl, 'tblPr'), 'tblW');
+    if (tw0 && att(tw0, 'type') === 'dxa' && textCm > 0) { var tp = Math.min(100, parseInt(att(tw0, 'w'), 10) / 567 / textCm * 100); if (tp > 5 && tp < 99.5) tStyle = tStyle.replace('width:100%', 'width:' + tp.toFixed(2) + '%'); }
+    grid.forEach(function (cells, ri) {
+      var th = deep(first(rows[ri], 'trPr'), 'trHeight'), hv = th ? parseInt(att(th, 'val'), 10) : 0;
+      html += hv ? '<tr style="height:' + Math.round(hv / 15) + 'px">' : '<tr>';
       cells.forEach(function (c) {
         if (c.skip) return;
         var body = me.body(c.tc, true) || '<br>';
-        html += '<td style="' + Draftly.table.TD + '"' + (c.span > 1 ? ' colspan="' + c.span + '"' : '') + (c.rows > 1 ? ' rowspan="' + c.rows + '"' : '') + '>' + body + '</td>';
+        html += '<td style="' + Draftly.table.TD + (pct && c.span === 1 && pct[c.col] != null ? 'width:' + pct[c.col].toFixed(2) + '%;' : '') + '"' + (c.span > 1 ? ' colspan="' + c.span + '"' : '') + (c.rows > 1 ? ' rowspan="' + c.rows + '"' : '') + '>' + body + '</td>';
       });
       html += '</tr>';
     });
-    return '<table style="' + Draftly.table.TBL + '"><tbody>' + html + '</tbody></table>';
+    return '<table style="' + tStyle + '"><tbody>' + html + '</tbody></table>';
   };
 
   /* Block container (body, cell, header) -> HTML. inCell: plain lines, no page breaks. */

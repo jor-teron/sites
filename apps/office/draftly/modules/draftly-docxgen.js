@@ -743,7 +743,10 @@ Draftly.docxgen = (function () {
     var firstCellFlow = true;
     for (r = 0; r < rows.length; r++) {
       var trEl = rowEls[r], trStyle = trEl.style || {};
-      x += '<w:tr><w:trPr><w:cantSplit/>' + (trEl.parentNode && trEl.parentNode.tagName === 'THEAD' ? '<w:tblHeader/>' : '') + '</w:trPr>';
+      x += '<w:tr><w:trPr><w:cantSplit/>' + (function () {   /* DF10 row height */
+        var hp = trStyle.height ? lenPt(String(trStyle.height), fontPt, 0) : null;
+        return hp ? '<w:trHeight w:val="' + tw(hp) + '" w:hRule="atLeast"/>' : '';
+      })() + (trEl.parentNode && trEl.parentNode.tagName === 'THEAD' ? '<w:tblHeader/>' : '') + '</w:trPr>';
       rows[r].forEach(function (cell) {
         var el = cell.el, cs = el.style || {}, wsum = 0, q;
         for (q = 0; q < cell.span; q++) wsum += widths[cell.col + q] || 0;
