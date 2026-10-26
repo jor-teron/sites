@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Base</title>
+  <!-- BS1 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
+  <link rel="icon" href="base_icon.svg">
+  <link rel="stylesheet" href="../shared/office-ribbon.css?v=1">
+  <link rel="stylesheet" href="../shared/office-tools.css?v=1">
+  <link rel="stylesheet" href="../shared/office-dialog.css?v=1">
+  <link rel="stylesheet" href="../shared/office-theme.css?v=1">
+  <link rel="stylesheet" href="../shared/office-toast.css?v=1">
+  <link rel="stylesheet" href="../shared/office-settings.css?v=1">
+  <link rel="stylesheet" href="../shared/office-collapse.css?v=1">
+  <link rel="stylesheet" href="base.css?v=1">
+</head>
+<body>
+  <!-- TOP BAR: File + tabs (built from BASE_RIBBON_TABS by ../shared/office-ribbon.js); hidden in the Hub -->
+  <header class="of-topbar" id="of-topbar">
+    <button type="button" class="of-file-btn" id="of-file-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="of-file-menu">File</button>
+    <div class="of-tabs" id="of-tabs" role="tablist" aria-label="Ribbon"></div>
+    <button type="button" class="base-gear" id="settingsBtn" title="Settings" aria-label="Settings" data-icon="fileSettings"></button>
+  </header>
+
+  <!-- File menu: shared look (../shared/office-tools.css) -->
+  <div class="of-file-menu file-menu" id="of-file-menu" role="menu" aria-labelledby="of-file-btn" hidden>
+    <button type="button" class="file-item" role="menuitem" id="btn-new-table" data-icon="fileNew"><span>New table</span></button>
+    <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open / Import CSV</span>
+      <input id="file-import" type="file" accept=".csv,text/csv,text/plain" hidden>
+    </label>
+    <div class="file-sep" role="separator"></div>
+    <button type="button" class="file-item" role="menuitem" id="btn-export" data-icon="fileExport"><span>Export CSV</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print</span></button>
+    <button type="button" class="file-item" role="menuitem" id="settingsMenuBtn" data-icon="fileSettings"><span>Settings</span></button>
+    <div class="file-sep" role="separator"></div>
+    <div class="base-recent-title">Tables</div>
+    <div id="file-tables"></div>
+  </div>
+
+  <nav class="toolbar of-ribbon" id="of-ribbon" aria-label="Ribbon commands">
+    <div class="of-panel" role="tabpanel" id="of-panel-home" data-tab="home">
+      <div class="of-group tool-group" aria-label="Table">
+        <select id="table-sel" title="Table" aria-label="Table"></select>
+        <button type="button" id="btn-table-rename" title="Rename table">Rename</button>
+        <button type="button" id="btn-table-delete" title="Delete table">Delete</button>
+      </div>
+      <div class="of-group tool-group" aria-label="Records">
+        <button type="button" id="btn-row-add" title="Add record">+ Record</button>
+        <button type="button" id="btn-row-del" title="Delete selected record">− Record</button>
+      </div>
+      <div class="of-group tool-group" aria-label="Fields">
+        <button type="button" id="btn-field-add" title="Add field">+ Field</button>
+        <button type="button" id="btn-field-edit" title="Rename / delete / retype a field">Fields…</button>
+      </div>
+      <div class="of-group tool-group" aria-label="Find">
+        <input id="search" type="search" placeholder="Search…" aria-label="Search records">
+      </div>
+    </div>
+    <div class="of-panel" role="tabpanel" id="of-panel-view" data-tab="view" hidden>
+      <div class="of-group tool-group" aria-label="View">
+        <button type="button" id="btn-view-grid" class="base-view-btn" title="Grid view">Grid</button>
+        <button type="button" id="btn-view-form" class="base-view-btn" title="Form view (one record)">Form</button>
+      </div>
+      <div class="of-group tool-group" aria-label="Sort">
+        <button type="button" id="btn-sort-clear" title="Back to entry order">Clear sort</button>
+      </div>
+    </div>
+  </nav>
+
+  <div id="status" class="base-status" aria-live="polite"></div>
+  <main id="base-main" class="base-main">
+    <div id="grid-wrap" class="base-grid-wrap"></div>
+    <div id="form-wrap" class="base-form-wrap" hidden></div>
+  </main>
+
+  <script src="../shared/office-icons.js?v=1"></script>
+  <script src="../shared/office-dialog.js?v=1"></script>
+  <script src="../shared/office-ribbon.js?v=1"></script>
+  <script src="../shared/office-toast.js?v=1"></script>
+  <script src="../shared/office-theme.js?v=1"></script>
+  <script src="../shared/office-settings.js?v=1"></script>
+  <script src="../shared/office-hover.js?v=1"></script>
+  <script src="../shared/office-collapse.js?v=1"></script>
+  <script src="modules/base-store.js?v=1"></script>
+  <script src="modules/base-csv.js?v=1"></script>
+  <script src="modules/base-grid.js?v=1"></script>
+  <script src="modules/base-form.js?v=1"></script>
+  <script src="modules/base-ui.js?v=1"></script>
+  <script src="modules/base_hub.js?v=1"></script>
+</body>
+</html>

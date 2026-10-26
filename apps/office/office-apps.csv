@@ -6,6 +6,7 @@ Draftly,      draftly/,             , , Write
 Notely,       notely/,              , , Write
 MS Word Diff, ../tools/msword_diff/, , , Write
 Spreadsheet,  spreadsheet/,         , , Sheets
+Base,         base/,                , , Sheets
 OCR,          ocr/,                 , , Scan & Print
 Paper Scan,   paper-scan/,          , , Scan & Print
 Print,        print/,               , , Scan & Print
