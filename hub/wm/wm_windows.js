@@ -18,6 +18,10 @@
  * - Right-click / long-press on the title bar: New window, Move to workspace 1/2, Minimise,
  *   Maximise / Restore, Close (shared menu via hub_ctx.js); every same-origin app gets the
  *   in-app menu injected on load.
+ * - H16 settings gear: an app posts {type:'hub-app-caps', settings:true|false} to the Hub; true
+ *   shows a cogwheel left of – in its window's title bar (class has-settings), false hides it.
+ *   A click posts {type:'hub-settings'} back to that iframe. Each iframe load hides the gear
+ *   again until the app re-sends its caps.
  * - R35: opening a window or pressing its title bar loads the deferred snap batch at once.
  * - Snapping (R10): w.snap = 'l' | 'r' (left / right half, class wm-snap-l / -r in wm.css; w.rect
  *   keeps the size from before, like maximise). Edge detection, preview and the keys live in
@@ -218,6 +222,9 @@
     if (active === w) setActive(topVisible()); else changed();
   }
 
+  // H16: cogwheel for the title bar settings button
+  const GEAR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+
   function btn(cls, label, text) {
     const b = document.createElement('button');
     b.type = 'button';
@@ -320,10 +327,12 @@
     title.className = 'wm-title'; title.textContent = nm;
     const btns = document.createElement('div');
     btns.className = 'wm-btns';
+    const gearB = btn('wm-gear', 'Settings', '');   // H16: shown only via hub-app-caps
+    gearB.innerHTML = GEAR_SVG;
     const minB = btn('wm-min-btn', 'Minimise', '\u2013');
     const maxB = btn('wm-max-btn', 'Maximise', '\u25A2');
     const closeB = btn('wm-close-btn', 'Close', '\u00D7');
-    btns.append(minB, maxB, closeB);
+    btns.append(gearB, minB, maxB, closeB);
     const gbSlot = document.createElement('div');   // app bar (stats / buttons) from hub-gamebar.js
     gbSlot.className = 'wm-gb';
     gbSlot.hidden = true;
@@ -344,6 +353,9 @@
     });
     Object.assign(w, { el, frame, maxBtn: maxB, titleEl: title });
 
+    gearB.addEventListener('click', () => {
+      try { frame.contentWindow.postMessage({ type: 'hub-settings' }, location.protocol === 'file:' ? '*' : location.origin); } catch (_) { /* gone */ }
+    });
     minB.addEventListener('click', () => minimise(w));
     maxB.addEventListener('click', () => toggleMax(w));
     closeB.addEventListener('click', () => close(w));
@@ -364,7 +376,7 @@
     });
     el.addEventListener('pointerleave', () => clearTimeout(hoverT));
     el.addEventListener('animationend', () => el.classList.remove('wm-pop'));
-    frame.addEventListener('load', () => { hookFrame(w); if (window.__hubInjectCtx) window.__hubInjectCtx(frame); });
+    frame.addEventListener('load', () => { el.classList.remove('has-settings'); hookFrame(w); if (window.__hubInjectCtx) window.__hubInjectCtx(frame); });
 
     // Move by the title bar. A maximised / snapped window gets its old size back under the
     // pointer once it really moves (a plain click on the bar keeps it as it is).
@@ -550,6 +562,11 @@
   // Apps ask for a session save (e.g. Files after changing folder); and save on leaving
   window.addEventListener('message', (e) => {
     if (e.data && e.data.type === 'hub-wm-save' && (e.origin === location.origin || location.protocol === 'file:')) saveSoon();
+    // H16: an app says whether it has a settings panel → show / hide its window's gear
+    if (e.data && e.data.type === 'hub-app-caps' && (e.origin === location.origin || location.protocol === 'file:')) {
+      const w = wins.find((x) => x.frame && x.frame.contentWindow === e.source);
+      if (w) w.el.classList.toggle('has-settings', e.data.settings === true);
+    }
   });
   window.addEventListener('pagehide', () => { clearTimeout(saveT); saveNow(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(saveT); saveNow(); } });

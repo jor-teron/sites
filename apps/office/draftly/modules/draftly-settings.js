@@ -94,6 +94,12 @@ Draftly.settings.load = function load() {
     },
     toast: function (m) { if (Draftly.ui.showToast) Draftly.ui.showToast(m); }
   });
+  /* DF11: File > Settings opens the panel (the gear is hidden inside the Hub window). */
+  var mi = document.getElementById('settingsMenuBtn');
+  if (mi) mi.addEventListener('click', function () {
+    if (Draftly.ribbon && Draftly.ribbon.setFile) Draftly.ribbon.setFile(false);
+    S.panel.open();
+  });
   S.s = S.panel.s;
   return S.s;
 };
