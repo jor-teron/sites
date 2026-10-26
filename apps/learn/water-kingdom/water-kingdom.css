@@ -1,0 +1,173 @@
+/*
+  Water Kingdom - Children's Learning App
+  water-kingdom.css - Main styles for the book viewer
+  Project: water-kingdom
+  Clean, bright, kid-friendly layout.
+  Large fonts, high contrast, touch-friendly buttons.
+  Responsive for phones and tablets.
+*/
+
+/* Reset and base */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', sans-serif;
+  background: #b3e5fc;
+  color: #01579b;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+}
+
+/* Header */
+.app-header {
+  text-align: center;
+  margin-bottom: 10px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.app-header h1 {
+  font-size: 2.2rem;
+  color: #0277bd;
+}
+
+#chapter-title {
+  font-size: 1.1rem;
+  margin-top: 4px;
+}
+
+/* Book container */
+#book-container {
+  width: 100%;
+  max-width: 500px;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.page {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  width: 100%;
+  min-height: 420px;
+  padding: 30px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.4s ease;
+}
+
+.page h2 {
+  font-size: 1.8rem;
+  margin-bottom: 15px;
+  color: #01579b;
+}
+
+.page p {
+  font-size: 1.25rem;
+  line-height: 1.5;
+  margin: 8px 0;
+  max-width: 90%;
+}
+
+.illustration {
+  font-size: 6rem;
+  margin: 15px 0;
+  line-height: 1;
+}
+
+/* Chapter menu */
+.chapter-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 500px;
+  margin: 20px 0;
+}
+
+.chapter-btn {
+  background: #0288d1;
+  color: white;
+  border: none;
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 1.15rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.chapter-btn:active {
+  transform: scale(0.98);
+}
+
+/* Navigation */
+.nav-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 500px;
+  margin-top: 15px;
+  padding: 10px;
+}
+
+.nav-btn {
+  background: #0288d1;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 12px 24px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  min-width: 100px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.nav-btn:disabled {
+  background: #90caf9;
+  cursor: not-allowed;
+}
+
+.nav-btn:active {
+  transform: scale(0.95);
+}
+
+.done-btn {
+  background: #2e7d32;
+}
+
+.done-btn:hover {
+  background: #1b5e20;
+}
+
+#page-indicator {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #01579b;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .page {
+    min-height: 380px;
+    padding: 20px 15px;
+  }
+  .page h2 { font-size: 1.5rem; }
+  .page p { font-size: 1.1rem; }
+  .illustration { font-size: 5rem; }
+  .nav-btn { padding: 10px 18px; font-size: 1rem; }
+}

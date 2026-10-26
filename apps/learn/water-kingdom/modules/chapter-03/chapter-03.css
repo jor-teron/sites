@@ -1,0 +1,9 @@
+/*
+  Water Kingdom - Children's Learning App
+  modules/chapter-03/chapter-03.css - Chapter 3 specific styles
+  Project: water-kingdom
+  Extra styles for friends/animals chapter.
+*/
+
+/* Reuse existing themes */
+.page.theme-friends { background: linear-gradient(180deg, #e8f5e9, #c8e6c9); }

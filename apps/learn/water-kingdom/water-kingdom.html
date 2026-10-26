@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<!--
+  Water Kingdom - Children's Learning App
+  water-kingdom.html - Main shell / book viewer
+  Project: water-kingdom
+  Loads modular chapters. Starts with Chapter 1.
+  Designed as a simple swipe/page-turn children's picture book.
+  Large text, colorful backgrounds, big buttons for kids.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Water Kingdom - Chapter 1</title>
+  <!-- Main stylesheet -->
+  <link rel="stylesheet" href="water-kingdom.css">
+  <!-- Chapter styles -->
+  <link rel="stylesheet" href="modules/chapter-01/chapter-01.css">
+  <link rel="stylesheet" href="modules/chapter-02/chapter-02.css">
+  <link rel="stylesheet" href="modules/chapter-03/chapter-03.css">
+  <link rel="stylesheet" href="modules/chapter-04/chapter-04.css">
+  <link rel="stylesheet" href="modules/chapter-05/chapter-05.css">
+  <link rel="stylesheet" href="modules/chapter-06/chapter-06.css">
+  <link rel="stylesheet" href="modules/chapter-07/chapter-07.css">
+</head>
+<body>
+  <!-- App header -->
+  <header class="app-header">
+    <h1>🌊 Water Kingdom</h1>
+    <p id="chapter-title">Choose a Chapter</p>
+  </header>
+
+  <!-- Simple chapter menu (shown at start) -->
+  <div id="chapter-menu" class="chapter-menu">
+    <button class="chapter-btn" data-chapter="1">Chapter 1: Meet Droppy</button>
+    <button class="chapter-btn" data-chapter="2">Chapter 2: Droppy’s Journey</button>
+    <button class="chapter-btn" data-chapter="3">Chapter 3: Friends of the Water</button>
+    <button class="chapter-btn" data-chapter="4">Chapter 4: Water’s Three Forms</button>
+    <button class="chapter-btn" data-chapter="5">Chapter 5: Why Water Matters</button>
+    <button class="chapter-btn" data-chapter="6">Chapter 6: Be a Water Hero</button>
+    <button class="chapter-btn" data-chapter="7">Chapter 7: Bedtime Story</button>
+  </div>
+
+  <!-- Book page container -->
+  <main id="book-container">
+    <div id="page-content" class="page">
+      <!-- Pages loaded by JS -->
+    </div>
+  </main>
+
+  <!-- Navigation controls - big and touch-friendly -->
+  <footer class="nav-controls">
+    <button id="prev-btn" class="nav-btn" aria-label="Previous page">◀ Prev</button>
+    <span id="page-indicator">1 / 8</span>
+    <button id="next-btn" class="nav-btn" aria-label="Next page">Next ▶</button>
+    <button id="done-btn" class="nav-btn done-btn" style="display:none;" aria-label="Done">Done</button>
+  </footer>
+
+  <!-- Main controller script -->
+  <script src="water-kingdom.js"></script>
+  <!-- Chapter modules -->
+  <script src="modules/chapter-01/chapter-01.js"></script>
+  <script src="modules/chapter-02/chapter-02.js"></script>
+  <script src="modules/chapter-03/chapter-03.js"></script>
+  <script src="modules/chapter-04/chapter-04.js"></script>
+  <script src="modules/chapter-05/chapter-05.js"></script>
+  <script src="modules/chapter-06/chapter-06.js"></script>
+  <script src="modules/chapter-07/chapter-07.js"></script>
+</body>
+</html>

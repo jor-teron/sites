@@ -1,0 +1,9 @@
+/*
+  Water Kingdom - Children's Learning App
+  modules/chapter-02/chapter-02.css - Chapter 2 specific styles
+  Project: water-kingdom
+  Extra styles for water cycle chapter.
+*/
+
+/* Reuse existing themes; add any chapter-specific if needed later */
+.page.theme-cycle { background: linear-gradient(180deg, #e1f5fe, #81d4fa); }

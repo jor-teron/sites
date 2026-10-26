@@ -1,0 +1,19 @@
+/*
+  Water Kingdom - Children's Learning App
+  modules/chapter-01/chapter-01.css - Chapter 1 specific styles
+  Project: water-kingdom
+  Extra styles for Droppy chapter illustrations and page themes.
+  Can be extended per chapter without touching main CSS.
+*/
+
+/* Chapter-specific page background helpers (applied via JS class) */
+.page.theme-ocean { background: linear-gradient(180deg, #81d4fa, #4fc3f7); }
+.page.theme-river { background: linear-gradient(180deg, #b3e5fc, #81d4fa); }
+.page.theme-cloud { background: linear-gradient(180deg, #e1f5fe, #b3e5fc); }
+.page.theme-ice { background: linear-gradient(180deg, #e0f7fa, #b2ebf2); }
+.page.theme-welcome { background: linear-gradient(180deg, #e3f2fd, #bbdefb); }
+
+/* Drop illustration enhancement */
+.drop-character {
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+}

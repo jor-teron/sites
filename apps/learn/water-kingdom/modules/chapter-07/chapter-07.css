@@ -1,0 +1,9 @@
+/*
+  Water Kingdom - Children's Learning App
+  modules/chapter-07/chapter-07.css - Chapter 7 specific styles
+  Project: water-kingdom
+  Soft night-time colors for bedtime chapter.
+*/
+
+.page.theme-night { background: linear-gradient(180deg, #1a237e, #3949ab); color: #e3f2fd; }
+.page.theme-night h2, .page.theme-night p { color: #e3f2fd; }

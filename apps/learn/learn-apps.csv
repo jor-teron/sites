@@ -3,8 +3,11 @@
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
 name, path, icon, newtab, section
 First Aid,               first-aid/,                 , , Health
+Water Kingdom, 	water-kingdom/, , , Planet
+Animal Kingdom, 	animal-kingdom/, , , Planet
+
+English Basic,           english-basic/,             , , Language
 NE-India Dictionary,     ../tools/nei-dict/,         , , Language
 Caption for NEI,         ../tools/caption-for-nei/,  , , Language
-English Basic,           english-basic/,             , , Language
-Learning HTML (Basic),   ../tools/learning-html/,    , , Coding
 Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_icon.png, , Coding
+Learning HTML (Basic),   ../tools/learning-html/,    , , Coding

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+    Header Comment:
+    animal-kingdom.html - Main HTML file for the Animal Kingdom Learning WebApp Book.
+    Purpose: Interactive digital book for all ages with visual and text descriptions of animals.
+    Structure: Uses modules/ for chapter data, ui/ for CSS, core/ for JS logic.
+    Project: animal-kingdom
+    Date: 2026-10-25
+    Author: Grok / Jor Teron
+    Notes: Responsive, book-like navigation, search, categories. Visuals via image URLs. Suitable for kids to adults.
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animal Kingdom - Learning WebApp Book</title>
+    <!-- Link to project CSS in ui/ folder -->
+    <link rel="stylesheet" href="ui/animal-kingdom.css">
+</head>
+<body>
+    <!-- Header / Cover -->
+    <header id="book-header">
+        <h1>Animal Kingdom</h1>
+        <p class="subtitle">A Learning Book for All Ages</p>
+    </header>
+
+    <!-- Navigation Sidebar for Chapters -->
+    <nav id="chapter-nav" class="sidebar">
+        <h2>Chapters</h2>
+        <ul id="chapter-list">
+            <!-- Populated by JS from modules -->
+        </ul>
+        <input type="text" id="search-input" placeholder="Search animals..." aria-label="Search animals">
+    </nav>
+
+    <!-- Main Content Area for Animal Pages -->
+    <main id="content-area">
+        <div id="welcome-page" class="page">
+            <h2>Welcome to the Animal Kingdom</h2>
+            <p>Explore animals with pictures and descriptions. Perfect for kids and grown-ups!</p>
+            <p>Select a chapter on the left or search above.</p>
+        </div>
+        <div id="animal-display" class="page hidden">
+            <!-- Dynamic animal content here -->
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>Animal Kingdom Learning App &copy; 2026</p>
+    </footer>
+
+    <!-- Load chapter modules then core logic -->
+    <script src="modules/mammals.js"></script>
+    <script src="modules/birds.js"></script>
+    <script src="modules/reptiles.js"></script>
+    <script src="core/animal-kingdom.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+    Header Comment:
+    index.html - Entry point redirector for Animal Kingdom Learning WebApp Book.
+    Purpose: Redirects users to the main animal-kingdom.html file.
+    Project: animal-kingdom
+    Date: 2026-10-25
+    Author: Grok / Jor Teron
+    Notes: Simple meta refresh and JS fallback for compatibility. No logic here.
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animal Kingdom - Redirect</title>
+    <meta http-equiv="refresh" content="0; url=animal-kingdom.html">
+</head>
+<body>
+    <!-- Fallback link if redirect fails -->
+    <p>Redirecting to <a href="animal-kingdom.html">Animal Kingdom</a>...</p>
+    <script>
+        // Immediate JS redirect for better UX
+        window.location.href = "animal-kingdom.html";
+    </script>
+</body>
+</html>
