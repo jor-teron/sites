@@ -63,3 +63,18 @@ ul.list li:last-child{border-bottom:0}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .btn:disabled{opacity:.35;cursor:default;transform:none}
 @media(max-width:480px){.greet{font-size:20px}.clock{font-size:22px;white-space:nowrap}}
+/* PD2 weather card */
+.wx-now{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.wx-ico{font-size:52px;line-height:1;animation:pop .4s cubic-bezier(.34,1.8,.64,1)}
+.wx-temp{font-size:42px;font-weight:700}
+.wx-meta{font-size:15px;opacity:.85;line-height:1.5}
+.wx-place{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.wx-hours{display:flex;gap:8px;overflow-x:auto;padding:8px 2px;margin:8px 0}
+.wx-h,.wx-d{border:2px solid var(--line);border-radius:12px;padding:6px 8px;text-align:center;min-width:58px;transition:transform .18s cubic-bezier(.34,1.8,.64,1)}
+.wx-h:hover,.wx-d:hover{transform:scale(1.06)}
+.wx-days{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.wx-small{font-size:13px;opacity:.8}
+.wx-stale{color:var(--hi);font-size:14px}
+.wx-form{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.wx-form input{flex:1;min-width:150px;min-height:40px;font-size:16px;border:2px solid var(--line);border-radius:12px;padding:4px 10px;background:var(--card);color:inherit}
+.cards>.card{min-width:0}

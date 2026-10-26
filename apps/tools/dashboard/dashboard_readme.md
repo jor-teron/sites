@@ -9,16 +9,16 @@ One offline-first page showing what matters today. Works on phone (stacked list)
 - `dashboard_core.js` — card registry (`MyDay.register({id,title,render,defaultOn})`), layout, clock/greeting, alerts API (`MyDay.alert(key,text,'high'|'med')`, `MyDay.clearAlert(key)`), theme
 - `dashboard_settings.js` — Settings dialog: theme auto/light/dark, cards on/off and up/down order
 - `dashboard_app.js` — boot, arrow-key navigation, service worker registration
-- `cards/` — one file per card: `card_todo.js`, `card_schedule.js`, `card_notes.js`, `card_links.js`
+- `cards/` — one file per card: `card_weather.js`, `card_todo.js`, `card_schedule.js`, `card_notes.js`, `card_links.js`
 - `dashboard_sw.js` — cache-first service worker (bump `VER` when files change); `manifest.json`, icons
 
 Adding a card: create `cards/card_x.js` calling `MyDay.register(...)`, add a `<script>` in `dashboard.html` and the path in `dashboard_sw.js`.
 
 ## Releases
 - **PD1** — top strip (date, live time, greeting, alert area), card frame, Settings, Todo, Notes, Today's Schedule, Quick Links, offline PWA.
+- **PD2** — Weather card (first, on by default) via Open-Meteo, no key: now (temp, feels-like, condition, humidity, wind), next 12 hours, next 3 days (min/max, rain chance). Place via “Use my location” or name search; saved in `myday.weather.place`. Last data cached in `myday.weather.cache` with “Updated HH:MM”, stale/offline notice, auto-refresh if older than 30 min, ↻ button. Top-strip alerts: heavy rain (≥70% or ≥20 mm), heat (max ≥38 °C), thunderstorm (WMO 95–99), strong wind (gusts ≥50 km/h). Service worker never caches API calls.
 
 ## Roadmap
-- **PD2** — Weather (current, hourly, 3 days) + rain/heat/storm alerts via Open-Meteo (no key), cached offline
 - **PD3** — Bills + Expenses (due dates, amounts, monthly total) with optional PIN
 - **PD4** — Family card: medicine times, water tracker, birthdays in next 7 days, shopping list with total
 - **PD5** — News: local / Assam / national headlines (title + summary)

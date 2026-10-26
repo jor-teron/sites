@@ -7,7 +7,12 @@
   function layout(){
     var saved=MDStore.get('layout',null)||[], ids=cards.map(function(c){return c.id;});
     var out=saved.filter(function(s){return ids.indexOf(s.id)>=0;});
-    cards.forEach(function(c){if(!out.some(function(s){return s.id===c.id;}))out.push({id:c.id,on:c.defaultOn!==false});});
+    cards.forEach(function(c){
+      if(out.some(function(s){return s.id===c.id;}))return;
+      var item={id:c.id,on:c.defaultOn!==false};
+      /* Cards flagged first:true (e.g. Weather) join at the top even for existing layouts */
+      if(c.first)out.unshift(item);else out.push(item);
+    });
     return out;
   }
   function byId(id){for(var i=0;i<cards.length;i++)if(cards[i].id===id)return cards[i];}
