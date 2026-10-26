@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- My Day (Personal Dashboard) — PD1-PD3. Shell page: top strip, card grid, settings dialog. -->
+<!-- My Day (Personal Dashboard) — PD1-PD4. Shell page: top strip, card grid, settings dialog. -->
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>My Day</title>
@@ -27,6 +27,9 @@
     </div>
     <h3>Cards</h3><p class="hint">Turn cards on or off and change their order.</p>
     <ul id="cardList" class="cardlist"></ul>
+    <h3>Water</h3>
+    <div class="set-row"><label>Glass size (ml) <input type="number" id="wtSize" min="50" max="2000" step="50"></label>
+      <label>Daily goal (glasses) <input type="number" id="wtGoal" min="1" max="30"></label></div>
   </div>
 </dialog>
 <script src="dashboard_store.js"></script>
@@ -39,6 +42,8 @@
 <script src="cards/card_sun.js"></script>
 <script src="cards/card_todo.js"></script>
 <script src="cards/card_schedule.js"></script>
+<script src="cards/card_habits.js"></script>
+<script src="cards/card_water.js"></script>
 <script src="cards/card_notes.js"></script>
 <script src="cards/card_links.js"></script>
 <script src="dashboard_settings.js"></script>

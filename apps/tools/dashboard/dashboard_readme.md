@@ -22,8 +22,13 @@ Adding a card: create `cards/card_x.js` calling `MyDay.register(...)`, add a `<s
 - **PD2.2** — Sun & Moon dial fills its box (tight viewBox), card spans 2 columns on ≥900px with dial (clamp 320–520px) beside the list; phone: full-width dial, list below. Centre hand removed; curved progress arrow along the rim (sunrise→now by day, sunset→now at night, dimmer), arrowhead at the sun. Bigger rim labels outside the rim; place name below the centre. No hour ticks. Test hook `?now=HH:MM`.
 - **PD3** — AQI inside the Weather card: Open-Meteo air-quality (`current=us_aqi,pm2_5`), coloured US-AQI pill (Good → Hazardous) + PM2.5, cached in `myday.weather.aqi`, hidden when offline/no data; AQI >100 adds a top-strip alert. Today strip under the date: today's fixed-date holiday (from Calendar's `calendar_holidays.js`) and “N todos · N events left”, refreshed on tick and on Todo/Schedule saves (`dashboard_today.js`).
 
+- **PD4** — Habits card: add/remove habits, tap pill (jelly bounce) ticks today (local date key → resets at midnight), 🔥 streak, 7-day dot strip; store `myday.habits`. Water card: SVG glass fills with wobble, progress ring “5/8 · 1.25 L”, +1 glass / undo, 7-day dots; glass size (250 ml) and goal (8) in Settings; store `myday.water.*`. Today strip counts split into two pills (wrap cleanly on phones).
+
 ## Roadmap
-- **PD3** — Bills + Expenses (due dates, amounts, monthly total) with optional PIN
-- **PD4** — Family card: medicine times, water tracker, birthdays in next 7 days, shopping list with total
-- **PD5** — News: local / Assam / national headlines (title + summary)
-- **PD6** — TV mode (bigger text, remote nav, auto-refresh 15 min) + power/network log
+- **PD3** — AQI in Weather + Today strip (done)
+- **PD4** — Habits + Water (done)
+- **PD5** — Countdown: named dates, nearest big, past auto-drop
+- **PD6** — Bills + Expenses (due dates, amounts, monthly total) with optional PIN
+- **PD7** — Family card: medicine times, birthdays in next 7 days, shopping list with total
+- **PD8** — News: local / Assam / national headlines (title + summary)
+- **PD9** — TV mode (bigger text, remote nav, auto-refresh 15 min) + power/network log

@@ -12,7 +12,9 @@
     var ev = (MDStore.get('schedule', []) || []).filter(function(x){ var t = (x.time || '0:0').split(':'); return +t[0] * 60 + +t[1] > now; }).length;
     host.innerHTML = '';
     if (hol) host.appendChild(MyDay.el('span', { 'class': 'td-pill td-hol', text: '🎉 ' + hol[0] }));
-    host.appendChild(MyDay.el('span', { 'class': 'td-pill', text: '✅ ' + todos + ' todo' + (todos === 1 ? '' : 's') + ' · 📅 ' + ev + ' event' + (ev === 1 ? '' : 's') + ' left' }));
+    /* PD4: two pills so they wrap as whole pills on phones */
+    host.appendChild(MyDay.el('span', { 'class': 'td-pill', text: '✅ ' + todos + ' todo' + (todos === 1 ? '' : 's') }));
+    host.appendChild(MyDay.el('span', { 'class': 'td-pill', text: '📅 ' + ev + ' event' + (ev === 1 ? '' : 's') + ' left' }));
   }
   var set = MDStore.set;
   MDStore.set = function(k, v){ set(k, v); if (k === 'todo' || k === 'schedule') draw(); };
