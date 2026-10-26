@@ -26,6 +26,7 @@ Adding a card: create `cards/card_x.js` calling `MyDay.register(...)`, add a `<s
 - **PD4.1** — All displayed times use 12-hour format with AM/PM via shared `MDStore.fmtTime` (clock, Schedule, Sun & Moon list + dial, weather hourly as compact `3 PM`, Updated time). Stored values and time inputs stay HH:MM.
 - **PD4.2** — Sun & Moon dial flips 180° at night (sunset→sunrise): midnight on top with starry night half, day half below; 0.8 s jelly rotation on switch; rim labels and moon counter-rotate to stay upright, place name outside the rotating group. Moon position is derived from phase (lags sun by phase × 24 h), not an ephemeris. Settings: Time format 12-hour (default) / 24-hour in `myday.timefmt`, used by `MDStore.fmtTime`.
 - **PD4.3** — Sun & Moon dial uses clock time: 12:00 top, 18:00 right, 00:00 bottom, 06:00 left (clockwise). Faint fixed 6 AM–6 PM reference line through the centre; sunrise–sunset chord placed by clock so it tilts naturally. Solar noon is a small rim dot (label removed; time stays in the list). Sun, moon, progress arc, labels and the PD4.2 night flip all use clock angles.
+- **PD4.4** — Dial moon is a silver-grey SVG (#cfd4dc, slightly lighter in dark) with a soft cool glow, drawn in its current phase from `MDSun.moon().phase` (semicircle + terminator ellipse; waxing lit right, waning lit left, northern view); dark part faint with outline. Stays upright through the night flip. Sun unchanged.
 
 ## Roadmap
 - **PD3** — AQI in Weather + Today strip (done)

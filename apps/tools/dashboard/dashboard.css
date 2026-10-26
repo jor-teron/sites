@@ -129,3 +129,7 @@ ul.list li:last-child{border-bottom:0}
 .sd-star{fill:#fff;opacity:.8}
 /* PD4.3: clock-time dial */
 .sd-ref{stroke:var(--mut);stroke-width:1.5;stroke-dasharray:4 5;opacity:.45}.sd-noon{fill:#f59e0b;stroke:var(--card);stroke-width:1.5}
+/* PD4.4: silver-grey moon in real phase, soft cool glow */
+.sd-moon{filter:drop-shadow(0 0 4px #bcd3ff99)}
+.sd-moon-dark{fill:#cfd4dc;fill-opacity:.18;stroke:#cfd4dc;stroke-opacity:.7;stroke-width:1.2}.sd-moon-lit{fill:#cfd4dc}
+[data-theme=dark] .sd-moon-lit{fill:#dde2ea}[data-theme=dark] .sd-moon{filter:drop-shadow(0 0 5px #9fc2ffaa)}

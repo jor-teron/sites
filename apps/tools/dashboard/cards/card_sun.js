@@ -74,6 +74,19 @@
     return { t: s.sunrise, night: false };
   }
 
+  /* PD4.4: silver-grey moon in its phase (0 new, .5 full). Northern view: waxing lit on right, waning on left.
+     Lit shape = semicircle + terminator half-ellipse (rx = r·|cos 2πp|). Group is .sd-up so it stays upright on the night flip. */
+  function moonIcon(x, y, r, p) {
+    var g = svg('g', { 'class': 'sd-moon sd-up' });
+    g.appendChild(svg('circle', { cx: x, cy: y, r: r, 'class': 'sd-moon-dark' }));
+    var rx = Math.abs(Math.cos(2 * Math.PI * p)) * r, wax = p < 0.5, gib = p > 0.25 && p < 0.75;
+    var top = x + ' ' + (y - r), bot = x + ' ' + (y + r);
+    var d = 'M' + top + ' A' + r + ' ' + r + ' 0 0 ' + (wax ? 1 : 0) + ' ' + bot +
+      ' A' + rx + ' ' + r + ' 0 0 ' + (wax ? (gib ? 1 : 0) : (gib ? 0 : 1)) + ' ' + top + ' Z';
+    if (p > 0.02 && p < 0.98) g.appendChild(svg('path', { d: d, 'class': 'sd-moon-lit' }));
+    return g;
+  }
+
   /* PD2.2 dial: tight viewBox (wider than tall so side labels fit), bigger rim labels outside
      the rim, curved progress arrow instead of a centre hand, place name below the centre dot. */
   function dial(s, mo, now, place) {
@@ -158,9 +171,7 @@
     root.appendChild(svg('circle', { cx: sun.x, cy: sun.y, r: 10, 'class': 'sd-sun' }));
     /* Moon lags the sun by phase x 24 h around the dial (derived from phase, not an ephemeris; rotates with the dial) */
     var mp = point(cx, cy, R, aNow - mo.phase * 360);
-    var mt = svg('text', { x: mp.x, y: mp.y + 7, 'class': 'sd-moon sd-up', 'text-anchor': 'middle' });
-    mt.textContent = mo.emoji;
-    root.appendChild(mt);
+    root.appendChild(moonIcon(mp.x, mp.y, 10, mo.phase));
     return outer;
   }
 
