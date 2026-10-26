@@ -35,3 +35,7 @@ set them on `body` so dark/light overrides flow through.
 
 ## SH4 — shared ribbon controls
 Shared `../shared/office-tools.css` (tool groups, tool buttons, File menu items) and `office-icons.js` (one SVG icon set via `data-icon`). Both apps use the same Bold/Italic/Underline, Align left/center/right and File menu icons. Spreadsheet: Draftly-style File menu (with Settings) and Alignment buttons instead of the select.
+
+## SH5 — Settings pop-up
+
+`office-settings.*` now opens as a centred modal dialog (dim backdrop, close X, Esc/backdrop close, jelly pop, scrollable body with section headings, fits phones) instead of a right-side bar. Same API; ids unchanged. Document sidebar parked.

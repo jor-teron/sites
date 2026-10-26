@@ -14,3 +14,5 @@ commands, boot), `base_hub.js` (Hub title-bar bridge, same v:1 protocol as Sprea
   header-click sort (asc → desc → off), search filter; form view (one record, big fields, Prev/Next/New/Delete,
   ←/→ keys); IndexedDB autosave (memory fallback + toast); CSV import (new table, guessed types) and export;
   Settings: theme, open tabs on hover, collapse ribbon. Later (BS2+): filters, totals, reports, links between tables.
+
+- SH5: Settings opens as a centred pop-up dialog (shared office-settings.*, ?v=2).

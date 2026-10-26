@@ -120,3 +120,5 @@ localStorage key `sheet-v2` (cells, styles, formats, column widths). An older `s
 
 ## SH4 — shared ribbon controls
 Shared `../shared/office-tools.css` (tool groups, tool buttons, File menu items) and `office-icons.js` (one SVG icon set via `data-icon`). Both apps use the same Bold/Italic/Underline, Align left/center/right and File menu icons. Spreadsheet: Draftly-style File menu (with Settings) and Alignment buttons instead of the select.
+
+- SH5: Settings opens as a centred pop-up dialog (shared office-settings.*, ?v=2).

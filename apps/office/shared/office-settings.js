@@ -1,6 +1,6 @@
 /*
  * apps/office/shared/office-settings.js
- * SH1 shared Settings panel: gear button + slide-in panel, sections defined by the app,
+ * SH1 shared Settings panel: gear button + centred pop-up dialog (SH5), sections defined by the app,
  * all values in ONE localStorage key per app (JSON).
  *
  *   var S = OfficeSettings.create({
@@ -47,17 +47,18 @@ var OfficeSettings = (function () {
     S.build = function () {
       if (S.panel || !document.body) return;
       var scrim = h('div', 'of-set-scrim'); scrim.id = 'settingsScrim'; scrim.hidden = true;
-      var p = h('aside', 'of-set-panel'); p.id = 'settingsPanel'; p.hidden = true;
+      var p = h('div', 'of-set-panel'); p.id = 'settingsPanel'; p.hidden = true;
       p.setAttribute('role', 'dialog'); p.setAttribute('aria-modal', 'true'); p.setAttribute('aria-labelledby', 'settingsTitle');
       var head = h('div', 'of-set-head'), t = h('h2', null, o.title || 'Settings'); t.id = 'settingsTitle';
       var x = h('button', 'of-set-close'); x.type = 'button'; x.id = 'settingsClose';
       x.setAttribute('aria-label', 'Close settings'); x.title = 'Close (Esc)';
       x.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
       head.appendChild(t); head.appendChild(x); p.appendChild(head);
+      var body = h('div', 'of-set-body'); p.appendChild(body);
       (typeof o.sections === 'function' ? o.sections(S.s) : o.sections).forEach(function (sec) {
         var se = h('section', 'of-set-sec'); se.appendChild(h('h3', null, sec.title));
         sec.rows.forEach(function (r) { se.appendChild(S.row(r)); });
-        p.appendChild(se);
+        body.appendChild(se);
       });
       document.body.appendChild(scrim); document.body.appendChild(p);
       S.panel = p; S.scrim = scrim; S.closeBtn = x;

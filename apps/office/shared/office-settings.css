@@ -1,21 +1,33 @@
 /*
  * apps/office/shared/office-settings.css
- * SH1 shared Settings slide-in panel, scrim, switches (office-settings.js).
+ * SH1 shared Settings panel (SH5: centred pop-up dialog), scrim, switches (office-settings.js).
  * Colours: --of-bg, --of-text, --of-border, --of-group, --of-muted, --of-focus (set by the app).
  */
 .of-set-scrim { position: fixed; inset: 0; z-index: 90; background: rgba(10, 12, 30, 0.28); }
 .of-set-panel {
-  position: fixed; top: 0; right: 0; bottom: 0; z-index: 91;
-  width: min(360px, 100vw); overflow-y: auto; padding: 8px 16px 24px; box-sizing: border-box;
+  position: fixed; top: 50%; left: 50%; z-index: 91; transform: translate(-50%, -50%);
+  width: min(480px, calc(100vw - 24px)); max-height: min(86vh, 720px); box-sizing: border-box;
+  display: flex; flex-direction: column; overflow: hidden; border-radius: 16px;
   background: var(--of-bg, #fff); color: var(--of-text, #222);
   font-family: var(--of-ui-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
-  border-left: 1px solid var(--of-border, #ddd); box-shadow: -8px 0 28px rgba(20, 20, 60, 0.18);
-  animation: of-set-in 0.22s cubic-bezier(.2, .9, .3, 1.2);
+  border: 1px solid var(--of-border, #ddd); box-shadow: 0 18px 50px rgba(20, 20, 60, 0.32);
+  animation: of-set-in 0.32s cubic-bezier(.2, .9, .3, 1.35);
 }
 .of-set-scrim[hidden], .of-set-panel[hidden] { display: none; }
-@keyframes of-set-in { from { transform: translateX(100%); } to { transform: none; } }
-.of-set-head { display: flex; align-items: center; justify-content: space-between; }
-.of-set-head h2 { font-size: 17px; margin: 0; }
+.of-set-scrim { background: rgba(10, 12, 30, 0.45); animation: of-set-fade .2s ease-out; }
+@keyframes of-set-fade { from { opacity: 0; } to { opacity: 1; } }
+/* SH5 jelly pop: centred dialog squashes in and settles */
+@keyframes of-set-in {
+  0% { transform: translate(-50%, -50%) scale(.82, .78); opacity: 0; }
+  55% { transform: translate(-50%, -50%) scale(1.04, .97); opacity: 1; }
+  80% { transform: translate(-50%, -50%) scale(.98, 1.02); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+.of-set-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px 6px 18px; border-bottom: 1px solid var(--of-border, #ddd); flex-shrink: 0; }
+.of-set-body { overflow-y: auto; padding: 4px 18px 20px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.of-set-body > .of-set-sec:first-child { border-top: 0; }
+@media (max-width: 520px) { .of-set-panel { max-height: calc(100vh - 24px); border-radius: 14px; } }
+.of-set-head h2 { font-size: 18px; margin: 0; }
 .of-set-close, .of-set-btn {
   min-width: 44px; min-height: 44px; border: 0; border-radius: 8px; cursor: pointer;
   background: transparent; color: inherit; font: inherit; font-size: 13px; transition: transform .15s, background .15s;
@@ -41,7 +53,7 @@
 .of-switch:active { transform: scale(0.92); }
 .of-switch:focus-visible, .of-set-close:focus-visible, .of-set-btn:focus-visible { outline: 2px solid var(--of-focus, #4ea1ff); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
-  .of-set-panel { animation: none; }
+  .of-set-panel, .of-set-scrim { animation: none; }
   .of-switch, .of-switch::after, .of-set-close, .of-set-btn { transition: none; }
   .of-switch:active, .of-set-close:active, .of-set-btn:active { transform: none; }
 }
