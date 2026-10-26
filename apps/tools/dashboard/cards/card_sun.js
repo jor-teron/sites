@@ -35,9 +35,11 @@
     return e;
   }
 
-  /* Dial angle (deg, clockwise from top) for an instant: 0 at solar noon */
-  function angleOf(t, noon) {
-    return (t - noon) / 3600000 * 15;
+  /* PD4.3: dial angle (deg, clockwise from top) by local CLOCK time: 12:00 top, 18:00 right, 00:00 bottom, 06:00 left.
+     Second arg kept for old call sites and ignored. */
+  function angleOf(t) {
+    var d = new Date(t);
+    return (d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60 - 720) / 4;
   }
 
   function point(cx, cy, r, deg) {
@@ -108,11 +110,15 @@
       var p = point(cx, cy, R - st[1] - 8, a);
       root.appendChild(svg('circle', { cx: p.x, cy: p.y, r: st[1] % 3 ? 1.4 : 2.2, 'class': 'sd-star' }));
     });
+    /* PD4.3: faint fixed 6 AM – 6 PM reference line through the centre */
+    var p6a = point(cx, cy, R, -90), p6p = point(cx, cy, R, 90);
+    root.appendChild(svg('line', { x1: p6a.x, y1: p6a.y, x2: p6p.x, y2: p6p.y, 'class': 'sd-ref' }));
     root.appendChild(svg('circle', { cx: cx, cy: cy, r: R, 'class': 'sd-rim' }));
+    /* Solar noon: small marker on the rim (time is in the list) */
+    if (s.noon) { var pn = point(cx, cy, R, angleOf(s.noon)); root.appendChild(svg('circle', { cx: pn.x, cy: pn.y, r: 4, 'class': 'sd-noon' })); }
 
     /* Rim labels, outside the rim */
     var labels = [
-      [s.noon, '☀ ' + hhmm(s.noon)],
       [s.midnight, '☾ ' + hhmm(s.midnight)],
       [s.sunrise, '↑ ' + hhmm(s.sunrise)],
       [s.sunset, '↓ ' + hhmm(s.sunset)]

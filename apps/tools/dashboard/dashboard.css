@@ -127,3 +127,5 @@ ul.list li:last-child{border-bottom:0}
 .sd-rot{transform-box:view-box;transform-origin:235px 158px}.sd-rot.flip{transform:rotate(180deg)}
 .sd-up{transform-box:fill-box;transform-origin:center}.sd-rot.flip .sd-up{transform:rotate(180deg)}
 .sd-star{fill:#fff;opacity:.8}
+/* PD4.3: clock-time dial */
+.sd-ref{stroke:var(--mut);stroke-width:1.5;stroke-dasharray:4 5;opacity:.45}.sd-noon{fill:#f59e0b;stroke:var(--card);stroke-width:1.5}
