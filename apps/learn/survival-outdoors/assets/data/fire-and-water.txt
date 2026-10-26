@@ -1,0 +1,44 @@
+title: Fire and Water
+icon: 💧
+summary: Build a small, safe fire, put it out cold, and make water safe before you drink it.
+call: Call emergency services at once if a fire spreads beyond your fire ring and you cannot put it out in seconds, if someone is burned, or if someone has severe diarrhoea, vomiting or signs of dehydration (confusion, no urine, fainting) far from help.
+
+[basics]
+1. Check the rules first. Many forests and parks ban fires in dry or windy weather. If there is a ban, use a camping stove or go without.
+2. Use an existing fire ring if there is one. Otherwise pick bare soil or gravel at least 3 metres (10 feet) from tents, trees, bushes and dry grass, with no branches overhead.
+3. Clear the ground about 3 metres around the fire. Keep a bucket of water (or a full water bottle and a shovel or stick to throw soil) next to it before you light.
+4. Gather three sizes of dry wood: tinder (dry grass, bark shavings, paper), kindling (twigs as thin as a pencil) and fuel (sticks up to wrist thickness). Only use dead wood found on the ground.
+5. Make a small loose pile of tinder, lean kindling over it like a tent, light the tinder from the side the wind is coming from, and add bigger sticks slowly. Fire needs air, so do not pack it tight.
+6. Keep it small and never leave it alone, not even for a minute. Keep children and pets back.
+7. To put it out: drown it with water, stir the ashes and embers with a stick, then drown it again. Repeat until everything is cold.
+8. Feel for heat with the back of your hand held just above the ashes. If it is too hot to touch, it is too hot to leave.
+9. Water: never drink straight from a stream, river or lake, even if it looks clean. Germs you cannot see cause diarrhoea and sickness.
+10. The simplest safe method: bring clear water to a rolling boil for 1 minute (3 minutes above about 2,000 metres), then let it cool in a covered pot.
+11. If the water is cloudy, let it settle and pour it through a clean cloth first, then boil or treat it.
+12. Carry more water than you think you need: about 2 to 4 litres per person per day, more in heat or on hard climbs.
+
+[expert]
+- Fire triangle: a fire needs heat, fuel and oxygen. Remove any one and it goes out. Water cools, soil smothers, and spreading the fuel apart starves it.
+- Do not bury hot coals with soil only. They can smoulder underground for hours and come back up as a wildfire. Use water and stir.
+- Do not use petrol, kerosene or other fuels to start or revive a fire. Vapour can flash and cause serious burns.
+- Fire lays: a teepee lights fast and gives heat and light; a log cabin (sticks stacked in a square) burns steady and is good for cooking on coals.
+- Wet weather: split dead branches to reach the dry wood inside, shave thin feather sticks with a knife, and look for dry tinder under logs and dense trees. Birch bark and resin-rich pine burn even when damp.
+- Ways to light: lighter (most reliable, keep it warm and dry), waterproof matches, or a ferro rod scraped hard to throw hot sparks into fine fluffy tinder.
+- Never run a fire, stove or charcoal inside a closed tent or car. Carbon monoxide has no smell and can kill.
+- Water from springs, flowing streams and rain caught in clean containers is usually better than still ponds. Collect upstream of camps, animals and farms.
+- Chemical treatment: chlorine dioxide tablets or drops work against most germs; follow the label wait time (often 30 minutes to 4 hours, longer in cold water). Iodine is not for pregnant people or anyone with thyroid problems.
+- Filters: a pump or squeeze filter with a 0.1 to 0.2 micron rating removes bacteria and parasites, but not most viruses. Pair it with chemical treatment where human waste may be in the water.
+- SODIS (solar disinfection): fill clear plastic PET bottles with clear water and leave them in full sun for 6 hours (2 days if cloudy). It works, but slowly.
+- No method removes chemicals, fuel or salt. Never drink seawater or urine; they make dehydration worse.
+- Signs of dehydration: thirst, dark yellow urine, headache, dizziness and tiredness. Drink small amounts often; oral rehydration salts help after diarrhoea.
+- Finding water: follow valleys downhill, look for green plants, animal trails and insects, collect morning dew with a cloth, or tie a clear plastic bag over leafy branches in the sun to collect a little condensation.
+
+[quiz]
+How far should a campfire be from tents, trees and dry grass? | At least 3 metres (10 feet) | Half a metre | Right beside the tent for warmth | Distance does not matter
+What is the right way to put out a campfire? | Drown it, stir the ashes, drown again until cold | Cover it with soil and walk away | Let it burn down by itself | Pour on petrol to burn it out fast
+How do you check that a fire is fully out? | Hold the back of your hand above the ashes; no heat felt | Look for no flames | Wait 5 minutes | Smell for smoke
+What should you do before lighting a fire? | Check fire rules and keep water ready | Collect green branches from trees | Build it under low branches for shelter | Use fuel oil to get it going
+What is the easiest reliable way to make stream water safe? | Rolling boil for 1 minute | Warm it until it steams | Look at it to see if it is clear | Add a pinch of salt
+Clear-looking stream water is... | Still unsafe until treated | Always safe to drink | Safe if it is cold | Safe if it is moving fast
+Which can you NEVER make safe to drink by boiling or filtering? | Seawater | Rainwater | Spring water | River water
+Why should you never burn a stove or fire inside a closed tent? | Carbon monoxide can kill | It wastes fuel | It makes the tent smell | It is too bright

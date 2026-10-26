@@ -1,0 +1,7 @@
+# Survival and Outdoors: the list of topic cards, in the order shown on the home screen.
+# One card file name per line (without .txt). Lines starting with # are comments. Remove a line to hide a card.
+# Planned topics (not built yet): camping-basics, knots, navigation, shelter-and-weather, wild-food-and-animals, outdoor-first-aid
+title: Survival and Outdoors
+disclaimer: General outdoor guidance. Always follow local fire bans, park rules and expert advice
+
+fire-and-water
