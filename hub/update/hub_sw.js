@@ -58,6 +58,7 @@ const SHELL = [
   'apps/favorite/favorite-apps.csv', 'apps/games/games-apps.csv', 'apps/media/media-apps.csv', 'apps/office/office-apps.csv',
   'apps/connectivity/connectivity-apps.csv', 'apps/tools/tools-apps.csv', 'apps/lab/lab-apps.csv', 'apps/learn/learn-apps.csv', 'apps/system/system-apps.csv', 'hub/version.txt',
   'hub/update/hub_offline.html',
+  'apps/system/terminal/terminal_bb.js', 'apps/system/terminal/terminal_etc.js', 'apps/system/terminal/bin/busybox.js', 'apps/system/terminal/bin/busybox.wasm',   // T5: BusyBox works offline
 ];
 const OFFLINE = 'hub/update/hub_offline.html';
 const abs = (p) => new URL(p, self.registration.scope).href;

@@ -20,6 +20,10 @@
  *   (hub.js accepts it from its own frames only). Theme: the 'sites-hub.theme' key like Settings
  *   (sec_look.js: dark = key removed), then parent.HubPrefs.apply() and a {type:'hub-prefs'} message.
  * - Apps: window.HUB_APP_INDEX (hub/core/hub_appindex.js, generated): id -> [category, entry, name, icon, newTab].
+ * - T5: BusyBox (terminal_bb.js, window.TermBB): a line with an unquoted | or <, `busybox <applet>`, `/bin/<applet>`,
+ *   an applet the Terminal has no command for (sed, awk, sort, ...), or a Terminal file command given an option
+ *   or a /bin, /etc path it does not know, runs in BusyBox (see README: who wins). cd / pwd / history / clear / exit
+ *   stay here; cd also enters the virtual /bin and /etc.
  */
 (function () {
   'use strict';
@@ -259,6 +263,7 @@
     ['open <app|path>', 'open an app (id or name), or a file / folder (Viewer, Notely, Files)'],
     ['build', 'the Hub build (hub/build.txt)'],
     ['theme [name]', 'show or set the Hub theme (' + THEMES.join(', ') + ')'],
+    ['exit', 'clear the screen and start a new session'],
   ];
   const HELP_FS = [
     ['pwd', 'print the current folder'],
@@ -298,6 +303,12 @@
           dim('There is no trash: rm and overwriting delete for good, real host folders too. Wildcards are only for find -name.');
         }
         dim('Tree: / > drive > local (~), gdrive, <your folders>. Quote names with spaces or escape them: cat "my file.txt".');
+      }
+      if (bb) {
+        print('BusyBox (T5, ' + bb.applets.length + ' commands, ls /bin lists them):');
+        print('  ' + 'sed awk sort uniq cut tr seq diff ...'.padEnd(26) + 'real Linux commands on your /drive files; <cmd> --help for options');
+        print('  ' + 'a | b,  < file,  > file'.padEnd(26) + 'pipes and redirects; cat /etc/os-release');
+        print('  ' + '/bin/<cmd>, busybox <cmd>'.padEnd(26) + 'force the BusyBox one (ls, cat, grep, ... are the Terminal\'s own)');
       }
       dim('Keys: Up/Down history, Tab complete (commands, paths), Ctrl+L clear, Ctrl+C cancel line');
     },
@@ -354,6 +365,7 @@
         if (ver) print('Version: ' + ver);
       }).catch(() => err('build: could not read hub/build.txt'));
     },
+    exit() { out.textContent = ''; print('Hub Terminal (T5)'); dim('New session. Close the window to leave.'); },
     theme(args) {
       const cur = prefsGet('theme') === 'light' ? 'light' : 'dark';
       if (!args.length) { print('Theme: ' + cur); dim('Themes: ' + THEMES.join(', ') + ' (theme <name> sets it; Terminal itself stays green)'); return; }
@@ -364,7 +376,28 @@
     },
   };
   if (fs) Object.assign(CMDS, fs.cmds);
-  const NAMES = Object.keys(CMDS);
+  /* T5: cd also enters the virtual /, /bin and /etc (BusyBox shows them) */
+  if (fs && CMDS.cd) {
+    const cd0 = CMDS.cd;
+    CMDS.cd = async (args) => {
+      const t = args.length === 1 && args[0] !== '-' ? fs.norm(args[0], fs.S.cwd) : '';
+      if (t === '/bin' || t === '/etc') { await fs.S.ready; if (t !== fs.S.cwd) fs.S.old = fs.S.cwd; fs.setCwd(t); return; }
+      if (/^\/(bin|etc)\//.test(t)) { err('cd: ' + args[0] + ': Not a directory'); return; }
+      return cd0(args);
+    };
+  }
+  const hasJs = (n) => Object.prototype.hasOwnProperty.call(CMDS, n);
+  /** T5: run a Terminal command for a pipe and return its plain output (null: it has no plain output) */
+  async function capture(name, args) {
+    if (!REDIR_OK.has(name)) return null;
+    const prev = CAP; CAP = [];
+    let got;
+    try { await CMDS[name](args, args.join(' ')); } catch (e) { err(name + ': ' + (e && e.message ? e.message : 'failed')); }
+    finally { got = CAP; CAP = prev; }
+    return got.length ? got.join('\n') + '\n' : '';
+  }
+  const bb = window.TermBB && fs ? window.TermBB.install({ fs, print, err, dim, block, hasJs, capture, epoch: () => epoch }) : null;
+  const NAMES = Object.keys(CMDS).concat(bb ? bb.applets.filter((a) => !hasJs(a) && /^[a-z]/.test(a)) : []);
 
   /* Lines run one after the other (a file command is async), so output keeps the order of the prompts. */
   let chain = Promise.resolve();
@@ -380,6 +413,7 @@
     if (!t) return;
     const name = (t.match(/^[^\s>]+/) || [''])[0];
     if (!name) { err("sh: syntax error near '>'"); return; }
+    if (bb && bb.wants(name.split('|')[0], tokenize(t.split('|')[0]).slice(1), t)) { await bb.exec(t); toBottom(); return; }   // T5
     const rest0 = t.slice(name.length).trim();
     const P = parseLine(rest0);
     const fn = Object.prototype.hasOwnProperty.call(CMDS, name) ? CMDS[name] : null;
@@ -450,7 +484,7 @@
       let skip = false;   // grep: the first plain word is the text; find: the word after -name / -iname / -type
       if (cmd === 'grep') skip = prev.slice(1).filter((w) => w.charAt(0) !== '-').length === 0;
       else if (cmd === 'find') skip = /^-(name|iname|type)$/.test(prev[prev.length - 1] || '');
-      if (fs && !skip && (PATH_CMDS.indexOf(cmd) >= 0 || afterRedir) && !(raw.charAt(0) === '-' && !q)) {
+      if (fs && !skip && (PATH_CMDS.indexOf(cmd) >= 0 || afterRedir || (bb && (bb.isApplet(cmd) || cmd.indexOf('/bin/') === 0))) && !(raw.charAt(0) === '-' && !q)) {
         fs.completePath(raw, !afterRedir && DIRS_ONLY.indexOf(cmd) >= 0).then((r) => apply(v, pos, head.slice(0, start) + r.keep, r.hits.sort(), raw.slice(r.keep.length), tail));
         return;
       }
@@ -553,9 +587,9 @@
   window.addEventListener('resize', toBottom);
 
   /* ---------- start ---------- */
-  print('Hub Terminal (T3)');
-  dim("Type 'help' for commands. Tab completes, Up/Down = history. ls / shows the tree, cd ~ goes home.");
+  print('Hub Terminal (T5)');
+  dim("Type 'help' for commands. Tab completes, Up/Down = history. ls / shows the tree, cd ~ goes home, ls /bin lists the BusyBox commands.");
   render();
   focusIn();
-  window.HubTerminal = { run: (l) => run(String(l)), commands: NAMES.slice(), fs, asking: () => !!asking };   // tests / console
+  window.HubTerminal = { run: (l) => run(String(l)), commands: NAMES.slice(), fs, bb, asking: () => !!asking };   // tests / console
 })();
