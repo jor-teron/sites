@@ -13,6 +13,11 @@
  * At most notify.maxStack cards show (newest on top); the rest wait behind "+N more" and appear
  * as cards close. Blob URLs are revoked notify.revokeAfterMs after their card closes.
  * Settings: HUB_CTRL_CONFIG.notify. prefers-reduced-motion: no slide / fade (hub_ctrl.css).
+ * H26: notification cards replace every Hub toast.
+ *   HubNotify.notice({icon, title, text, onClick, timeoutMs}) → {close()}   a plain notice card
+ *   window.hubToast(text, opts)                                             thin wrapper (old toast callers)
+ * Timeout for all finished cards: localStorage 'sites-hub.notifyTimeout' in ms (default 60000, '0' = never;
+ * Settings → Windows → Notification timeout), read live when a card's timer starts.
  */
 (function () {
   'use strict';
@@ -21,6 +26,13 @@
     durationMs: 10000, maxStack: 3, previewSize: 56, showPreviews: true, insetPx: 12, revokeAfterMs: 600000,
     position: 'bottom-right',
   }, (window.HUB_CTRL_CONFIG || {}).notify || {});
+  function timeoutMs() {
+    let v = null;
+    try { v = localStorage.getItem('sites-hub.notifyTimeout'); } catch (_) { /* ignore */ }
+    if (v === null || v === '') return 60000;
+    const n = Number(v);
+    return isFinite(n) && n >= 0 ? n : 60000;
+  }
   const reduced = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
 
   const cards = [];          // newest first
@@ -76,7 +88,10 @@
 
   /* ---------- timers (run only while a finished card is visible and not hovered) ---------- */
   function startTimer(c) {
-    if (c.timer || !c.finished || c.hover || c.hiddenInStack || !(CFG.durationMs > 0)) return;
+    if (c.timer || !c.finished || c.hover || c.hiddenInStack) return;
+    const ms = c.ms != null ? c.ms : timeoutMs();
+    if (!(ms > 0)) return;
+    if (c.left == null || c.leftMs !== ms) { c.left = ms; c.leftMs = ms; }
     c.startedAt = Date.now();
     c.timer = setTimeout(() => close(c), c.left);
   }
@@ -157,7 +172,7 @@
     if (c) return c;
     c = {
       id: id, name: String(info.name || 'file'), type: info.type || '', size: Number(info.size) || 0,
-      kind: kindOf(info.type, info.name), left: CFG.durationMs, timer: 0, finished: false, hover: false,
+      kind: kindOf(info.type, info.name), left: null, timer: 0, finished: false, hover: false,
     };
     build(c);
     byId.set(id, c);
@@ -208,5 +223,37 @@
     startTimer(c);
   }
 
-  window.HubNotify = { start, progress, done, fail, fmtSize, kindOf, get count() { return cards.length; } };
+  /* H26: a plain notice card (icon, title, one text line, ✕). */
+  let seq = 0;
+  function notice(o) {
+    if (typeof o === 'string') o = { text: o };
+    o = o || {};
+    ensureHost();
+    const c = { id: 'notice-' + (++seq), name: '', kind: 'notice', left: null, timer: 0, finished: true, hover: false,
+      ms: o.timeoutMs != null ? o.timeoutMs : null };
+    const n = el('div', 'hn-card hn-notice');
+    n.setAttribute('role', 'status');
+    if (o.icon) n.appendChild(el('div', 'hn-icon', o.icon));
+    const body = el('div', 'hn-body');
+    if (o.title) body.appendChild(el('div', 'hn-name', o.title));
+    if (o.text) body.appendChild(el('div', 'hn-text', o.text));
+    const x = el('button', 'hn-close', '✕');
+    x.type = 'button'; x.title = 'Close'; x.setAttribute('aria-label', 'Close notification');
+    x.addEventListener('click', (e) => { e.stopPropagation(); close(c); });
+    n.append(body, x);
+    if (typeof o.onClick === 'function') n.addEventListener('click', () => { close(c); o.onClick(); });
+    else n.classList.add('static');
+    n.addEventListener('mouseenter', () => { c.hover = true; stopTimer(c); });
+    n.addEventListener('mouseleave', () => { c.hover = false; startTimer(c); });
+    c.node = n;
+    c.update = (t) => { const tx = n.querySelector('.hn-text'); if (tx) tx.textContent = t; };
+    byId.set(c.id, c);
+    cards.unshift(c);
+    host.insertBefore(n, host.firstChild);
+    layout();
+    return { close: () => close(c), update: c.update, node: n };
+  }
+  window.hubToast = (text, opts) => notice(Object.assign({ text: String(text) }, opts || {}));
+
+  window.HubNotify = { start, progress, done, fail, notice, timeoutMs, fmtSize, kindOf, get count() { return cards.length; } };
 })();

@@ -21,6 +21,7 @@
   const isArea = (el) => el.tagName === 'TEXTAREA';
 
   function toast(text) {
+    if (window.HubNotify && HubNotify.notice) { HubNotify.notice({ icon: '📋', title: 'Clipboard', text: String(text) }); return; }
     let t = document.getElementById('hub-te-toast');
     if (!t) {
       t = document.createElement('div'); t.id = 'hub-te-toast'; t.setAttribute('role', 'status');

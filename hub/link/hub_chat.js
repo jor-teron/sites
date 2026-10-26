@@ -6,7 +6,7 @@
  *   the iframe repaints from the same localStorage history.
  * - #chat-btn (🐻, before the Gamepad icon): unread badge; tap → drop-down with the last
  *   20 messages, input + Send, "Full chat" (opens Pooh Chat in the Hub). Closes on outside
- *   click / Esc. New message while closed (and Pooh Chat not open) → one quiet toast
+ *   click / Esc. New message while closed (and Pooh Chat not open) → one notification card (H26, HubNotify.notice)
  *   (6 s, updates in place, no sound); tapping it opens the panel.
  */
 (function () {
@@ -16,7 +16,7 @@
   const badge = document.getElementById('chat-badge');
   const frame = document.getElementById('app-frame');
   if (!btn) return;
-  let unread = 0, toastT = 0, toastN = 0;
+  let unread = 0, toastN = 0;
 
   // H19: a joined Hub sends with bcast so the host relays it to the other devices too.
   SharedChat.init((m) => SharedLink.send(SharedLink.role === 'join' ? Object.assign({ bcast: true }, m) : m));
@@ -39,9 +39,7 @@
   panel.append(head, log, form);
   document.body.appendChild(panel);
 
-  const toast = document.createElement('div');
-  toast.id = 'chat-toast'; toast.hidden = true; toast.setAttribute('role', 'status');
-  document.body.appendChild(toast);
+  let card = null;   // H26: the current chat notice card (HubNotify.notice), updated as messages arrive
 
   function paint() {
     log.textContent = '';
@@ -66,7 +64,7 @@
     setTimeout(() => input.focus(), 30);
   }
   function close() { panel.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
-  function hideToast() { clearTimeout(toastT); toast.hidden = true; toastN = 0; }
+  function hideToast() { if (card) card.close(); card = null; toastN = 0; }
 
   btn.addEventListener('click', (e) => { e.stopPropagation(); panel.hidden ? open() : close(); });
   x.addEventListener('click', close);
@@ -77,7 +75,6 @@
   document.addEventListener('pointerdown', (e) => { if (!panel.hidden && !panel.contains(e.target) && !btn.contains(e.target)) close(); }, true);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) { e.stopPropagation(); close(); } }, true);
   form.addEventListener('submit', (e) => { e.preventDefault(); if (SharedChat.send(input.value)) input.value = ''; });
-  toast.addEventListener('click', () => open());
 
   /* ---------- incoming ---------- */
   SharedChat.on((m) => {
@@ -86,10 +83,11 @@
     if (poohOpen()) return;                           // Pooh Chat is showing it
     setUnread(unread + 1);
     toastN++;
-    toast.textContent = toastN > 1 ? '🐻 ' + toastN + ' new messages' : '🐻 ' + m.name + ': ' + m.text;
-    toast.hidden = false;
-    clearTimeout(toastT);
-    toastT = setTimeout(hideToast, 6000);
+    const text = toastN > 1 ? toastN + ' new messages' : m.text;
+    const title = toastN > 1 ? 'Pooh Chat' : (m.name || 'Pooh Chat');
+    if (card) card.close();
+    const N = window.HubNotify;
+    if (N && N.notice) card = N.notice({ icon: '🐻', title: title, text: text, onClick: () => { card = null; toastN = 0; open(); } });
   });
 
   /* Pooh Chat inside the Hub sends through here. */

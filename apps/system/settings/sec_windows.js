@@ -18,6 +18,8 @@
  *   'filesClick'   Files app: open items with a 'single' click or a double click (default).
  *   'filesThumbs'  Files app: '0' = icons only (default: picture / video thumbnails, R12b).
  *                  "Clear thumbnail cache" empties shared/fs/thumbs_store.js (IndexedDB).
+ *   'notifyTimeout' H26: notification cards close after this many ms: 10000 / 30000 / '' (60000, default) /
+ *                  300000 / '0' (never). Read by hub/viewer/hub_notify.js whenever a card's timer starts (live).
  * All keys 'sites-hub.<key>' (settings_store.js); the Hub and Files apply them at once.
  */
 (function () {
@@ -70,8 +72,14 @@
       const showSize = (pre) => { if (window.ThumbStore) ThumbStore.stats().then((x) => { clrOut.textContent = (pre || '') + x.count + ' saved, ' + sizeText(x.bytes) + ' (up to ' + sizeText(ThumbStore.CAP) + ')'; }); };
       clr.addEventListener('click', () => { if (window.ThumbStore) ThumbStore.clear().then(() => showSize('Cleared. '), () => { clrOut.textContent = 'Could not clear it'; }); });
       showSize();
+      const nt = ui.choice([
+        { value: 10000, label: '10 s' }, { value: 30000, label: '30 s' }, { value: 60000, label: '1 min' },
+        { value: 300000, label: '5 min' }, { value: 0, label: 'Never', hint: 'Until closed' }
+      ], (() => { const v = S.get('notifyTimeout'); return v === '' || v == null ? 60000 : +v; })(),
+      (v) => S.set('notifyTimeout', v === 60000 ? '' : String(v)));
       pane.append(ui.title('Focus'), hover, ui.title('Snapping'), snap, magnet, strength, ui.title('Workspaces'), ws, ui.title('Title bar'), title,
         ui.title('Files: open items with'), files, ui.title('Files: thumbnails'), thumbs, clr, clrOut,
+        ui.title('Notification timeout'), nt,
         ui.note('Window options work in Desktop mode. Changes show at once. Snap a window by dragging it to a screen edge, or Ctrl+Alt+arrows.'));
     }
   });
