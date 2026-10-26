@@ -212,7 +212,6 @@
     isHttpOnly: isHttpOnly,
     isPlayable: isPlayable,
     categoryName: categoryName,
-    m3uKey: m3uKey,
     getPlaylistText: getPlaylistText,
     categoryTilesFor: categoryTilesFor,
     registerSource: registerSource,
