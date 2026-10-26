@@ -122,3 +122,6 @@ localStorage key `sheet-v2` (cells, styles, formats, column widths). An older `s
 Shared `../shared/office-tools.css` (tool groups, tool buttons, File menu items) and `office-icons.js` (one SVG icon set via `data-icon`). Both apps use the same Bold/Italic/Underline, Align left/center/right and File menu icons. Spreadsheet: Draftly-style File menu (with Settings) and Alignment buttons instead of the select.
 
 - SH5: Settings opens as a centred pop-up dialog (shared office-settings.*, ?v=2).
+
+## SH6 — XLSX open / save
+`spreadsheet_xlsx.js` + vendored SheetJS CE 0.20.3 (`vendor/sheetjs/`, Apache-2.0, ~930 KB, lazy-loaded on first XLSX use). File → Open takes .xlsx/.xls/.csv; File → Export XLSX. Import: first sheet only (toast names it and says if there are more), values + formulas, cells outside A–Z × 100 skipped. Export: values + formulas, sheet/file name from the title. Styles (bold/align/colours) are not read or written.

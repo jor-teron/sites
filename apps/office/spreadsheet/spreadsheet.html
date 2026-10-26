@@ -32,11 +32,12 @@
   <!-- File menu: Draftly look (../shared/office-tools.css .file-item, icons from office-icons.js) -->
   <div class="of-file-menu file-menu" id="of-file-menu" role="menu" aria-labelledby="of-file-btn" hidden>
     <button type="button" class="file-item" role="menuitem" id="btn-clear" data-icon="fileNew"><span>New / Clear</span></button>
-    <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open / Import CSV</span>
-      <input id="file-import" type="file" accept=".csv,text/csv,text/plain" hidden>
+    <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open (XLSX / CSV)</span>
+      <input id="file-import" type="file" accept=".xlsx,.xls,.csv,text/csv,text/plain" hidden>
     </label>
     <div class="file-sep" role="separator"></div>
     <button type="button" class="file-item" role="menuitem" id="btn-export" data-icon="fileExport"><span>Export CSV</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-export-xlsx" data-icon="fileExport"><span>Export XLSX</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print / PDF</span></button>
     <button type="button" class="file-item" role="menuitem" id="settingsMenuBtn" data-icon="fileSettings"><span>Settings</span></button>
     <div class="file-sep" role="separator"></div>
@@ -156,7 +157,7 @@
   <script src="spreadsheet_grid.js?v=4"></script>
   <script src="spreadsheet_edit.js?v=4"></script>
   <script src="spreadsheet_fill.js?v=4"></script>
-  <script src="spreadsheet_toolbar.js?v=6"></script>
+  <script src="spreadsheet_toolbar.js?v=7"></script>
   <script src="spreadsheet_settings.js?v=4"></script>
   <script src="spreadsheet_page.js?v=4"></script>
   <script src="spreadsheet_ribbon.js?v=7"></script>
@@ -169,6 +170,7 @@
   <script src="spreadsheet_sort.js?v=4"></script>
   <script src="spreadsheet_resize.js?v=4"></script>
   <script src="spreadsheet_keys.js?v=4"></script>
+  <script src="spreadsheet_xlsx.js?v=1"></script>
   <script src="spreadsheet_hub.js?v=1"></script>
 </body>
 </html>

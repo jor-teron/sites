@@ -52,6 +52,7 @@ function wireUi() {
   document.getElementById("file-import").addEventListener("change", function (ev) {
     var file = ev.target.files[0];
     if (!file) return;
+    if (/\.xlsx?$/i.test(file.name)) { importXlsxFile(file); ev.target.value = ""; return; }
     var reader = new FileReader();
     reader.onload = function () { importCsvText(String(reader.result)); };
     reader.readAsText(file);
