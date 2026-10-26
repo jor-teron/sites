@@ -1,0 +1,42 @@
+title: Shapes and Measuring
+icon: 📐
+summary: Measure length, area and volume in metric units, and convert between them.
+
+[basics]
+1. Length units: 10 mm = 1 cm, 100 cm = 1 m, 1,000 m = 1 km.
+2. Mass units: 1,000 g = 1 kg, 1,000 kg = 1 tonne. Volume units: 1,000 mL = 1 L.
+3. Perimeter is the distance all the way round a shape. Add up all the sides.
+4. Rectangle perimeter = 2 × (length + width). A room 5 m by 4 m has a perimeter of 2 × 9 = 18 m.
+5. Square perimeter = 4 × side. A square garden with 6 m sides needs 24 m of fencing.
+6. Area is the space inside a shape, measured in square units like cm² or m².
+7. Rectangle area = length × width. The 5 m by 4 m room has an area of 20 m².
+8. Triangle area = ½ × base × height. Base 6 cm, height 4 cm: area = 12 cm².
+9. Circle: the distance round (circumference) = 2 × π × radius, and area = π × radius². π is about 3.14 (or 22/7).
+10. A circle with radius 7 cm has circumference about 44 cm and area about 154 cm² (using 22/7).
+11. Volume of a box = length × width × height. A tank 2 m × 1 m × 1 m holds 2 m³.
+12. Real use: flooring a 20 m² room with tiles at ₹45 per m² costs 20 × 45 = ₹900, plus extra for cut pieces.
+
+[expert]
+- Area units scale by the square: 1 m = 100 cm, so 1 m² = 100 × 100 = 10,000 cm². Do not multiply by 100 only.
+- Volume units scale by the cube: 1 m³ = 100 × 100 × 100 = 10,00,000 cm³ = 1,000 litres.
+- 1 litre = 1,000 cm³ (a 10 cm cube). 1 mL = 1 cm³. A tank 2 m × 1 m × 1 m holds 2,000 litres.
+- 1 hectare = 10,000 m² (a 100 m by 100 m square). 1 km² = 100 hectares.
+- Doubling every side of a shape makes its area 4 times bigger and a solid's volume 8 times bigger.
+- Pythagoras for right-angled triangles: a² + b² = c². Sides 3 m and 4 m give a long side of 5 m. Builders use 3-4-5 to check a square corner.
+- Cylinder volume = π × r² × h. A water drum with radius 0.3 m and height 1 m holds about 3.14 × 0.09 × 1 ≈ 0.28 m³ ≈ 280 litres.
+- Paint: walls 3 m high round a 5 m × 4 m room have area 18 × 3 = 54 m². At 10 m² per litre, you need about 5.4 litres per coat, minus doors and windows.
+- Speed = distance ÷ time. 120 km in 2 hours is 60 km/h. To change km/h to m/s, multiply by 5/18: 72 km/h = 20 m/s.
+- Temperature: °F = °C × 9/5 + 32. 37 °C (body) = 98.6 °F. 100 °C = 212 °F.
+- Scale maps: on a 1 : 50,000 map, 1 cm stands for 50,000 cm = 500 m, so 4 cm is 2 km.
+- Angles: a full turn is 360°, a right angle 90°. The angles in any triangle add to 180°, and in any four-sided shape to 360°.
+- Shapes that tile a floor with no gaps include squares, rectangles, equal triangles and regular hexagons.
+
+[quiz]
+What is the perimeter of a 5 m by 4 m room? | 18 m | 20 m | 9 m | 40 m
+What is the area of a 5 m by 4 m room? | 20 m² | 18 m² | 9 m² | 40 m²
+A triangle has base 6 cm and height 4 cm. Its area is... | 12 cm² | 24 cm² | 10 cm² | 20 cm²
+How many cm² make 1 m²? | 10,000 | 100 | 1,000 | 1,00,000
+How many litres does 1 m³ hold? | 1,000 | 100 | 10 | 10,000
+A right-angled triangle has sides 3 m and 4 m. How long is the long side? | 5 m | 7 m | 6 m | 12 m
+What is 72 km/h in metres per second? | 20 m/s | 72 m/s | 7.2 m/s | 25 m/s
+How many metres are in 2.5 km? | 2,500 | 250 | 25,000 | 25

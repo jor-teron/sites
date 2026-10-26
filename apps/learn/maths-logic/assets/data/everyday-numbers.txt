@@ -1,0 +1,40 @@
+title: Everyday Numbers
+icon: 🔢
+summary: Read big numbers, round them sensibly, and add or subtract quickly in your head.
+
+[basics]
+1. Every digit has a place value. In 4,725 the 4 means 4 thousands, the 7 means 7 hundreds, the 2 means 2 tens and the 5 means 5 ones.
+2. Indian place names go ones, tens, hundreds, thousands, ten thousands, lakhs, ten lakhs, crores. 1 lakh = 1,00,000 and 1 crore = 1,00,00,000.
+3. Indian commas group the first three digits, then twos: 12,34,567 (twelve lakh thirty-four thousand five hundred sixty-seven). International style writes the same number as 1,234,567 (1.23 million).
+4. Handy links: 1 lakh = 100 thousand, 10 lakh = 1 million, 1 crore = 10 million.
+5. To round to the nearest ten, look at the ones digit: 0 to 4 rounds down, 5 to 9 rounds up. 47 becomes 50, 43 becomes 40, 45 becomes 50.
+6. To round to the nearest hundred, look at the tens digit: 3,462 becomes 3,500 and 3,438 becomes 3,400.
+7. Round prices to check a bill: ₹198 + ₹49 + ₹103 is about ₹200 + ₹50 + ₹100 = ₹350. The exact total, ₹350, should be close.
+8. Mental adding: split into tens and ones. 47 + 36 = 40 + 30 + 7 + 6 = 70 + 13 = 83.
+9. Make a round number first: 58 + 27 = 60 + 25 = 85 (move 2 from 27 to 58).
+10. Mental subtracting: count up from the smaller number. 100 − 63: 63 to 70 is 7, 70 to 100 is 30, so the answer is 37.
+11. Subtract a near-round number, then fix it: 82 − 19 = 82 − 20 + 1 = 63.
+12. Check your answer the other way: if 82 − 19 = 63, then 63 + 19 should give 82.
+
+[expert]
+- Rounding to significant figures keeps the first few non-zero digits: 48,736 to 2 significant figures is 49,000; 0.00456 to 2 significant figures is 0.0046.
+- Estimate before you calculate. 4,980 × 21 is about 5,000 × 20 = 1,00,000, so an answer of 10,458 must be wrong; the exact answer is 1,04,580.
+- Left-to-right adding is faster in your head: 365 + 248 = 500 + 100 + 13 = 613 (hundreds, then tens, then ones).
+- Compensation works for big numbers too: 1,000 − 387 = 999 − 387 + 1 = 612 + 1 = 613. Subtracting from 999 never needs borrowing.
+- Rounding errors add up. Rounding 10 items of ₹14 each down to ₹10 makes the estimate ₹100 instead of ₹140. Round some up and some down to keep it fair.
+- Negative numbers: −5 + 8 = 3, and 3 − 7 = −4. Think of a temperature scale moving up and down past zero.
+- Digit sum test for 9: a number divides by 9 exactly when its digits add to a multiple of 9. 7,452 → 7 + 4 + 5 + 2 = 18, so 7,452 ÷ 9 = 828.
+- Digit sum test for 3 works the same way: 312 → 3 + 1 + 2 = 6, a multiple of 3, so 312 ÷ 3 = 104.
+- Divisible by 4 if the last two digits make a multiple of 4 (1,316 → 16, yes). Divisible by 5 if it ends in 0 or 5.
+- Scientific notation writes big numbers short: 1 crore = 10,000,000 = 1 × 10⁷, and 3,50,000 = 3.5 × 10⁵.
+- Order of operations: brackets first, then × and ÷ left to right, then + and − left to right. 6 + 4 × 3 = 18, but (6 + 4) × 3 = 30.
+
+[quiz]
+How many zeros does 1 crore have? | 7 | 5 | 6 | 9
+What is 3,462 rounded to the nearest hundred? | 3,500 | 3,400 | 3,460 | 3,000
+How is 12,34,567 written in international style? | 1,234,567 | 123,4567 | 12,345,67 | 1,23,4567
+What is 47 + 36? | 83 | 73 | 81 | 713
+What is 100 − 63? | 37 | 47 | 33 | 43
+What is 82 − 19? | 63 | 61 | 73 | 67
+1 lakh is equal to... | 100 thousand | 10 thousand | 1 million | 1,000 thousand
+What is 6 + 4 × 3? | 18 | 30 | 13 | 24

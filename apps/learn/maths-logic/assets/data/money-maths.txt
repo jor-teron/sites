@@ -1,0 +1,41 @@
+title: Money Maths
+icon: 💰
+summary: Count change, plan a budget, work out simple interest, and find the better buy by unit price.
+
+[basics]
+1. ₹1 = 100 paise. Common notes are ₹10, ₹20, ₹50, ₹100, ₹200 and ₹500; coins are ₹1, ₹2, ₹5, ₹10 and ₹20.
+2. Making change: count up from the price. Bill ₹327, you pay ₹500. 327 → 330 is ₹3, 330 → 400 is ₹70, 400 → 500 is ₹100. Change = ₹173.
+3. Check the change by adding: ₹327 + ₹173 = ₹500.
+4. Pay smart to get easy change: for a ₹327 bill, paying ₹527 gets back exactly ₹200.
+5. A budget lists money coming in (income) and going out (expenses). Write down every expense for a month to see where money goes.
+6. Example: income ₹25,000. Rent ₹8,000, food ₹6,000, travel ₹2,000, phone and bills ₹1,500, other ₹3,500. Total spent ₹21,000, so ₹4,000 is left to save.
+7. A simple rule of thumb is 50/30/20: about 50% on needs, 30% on wants, and 20% on savings. On ₹25,000 that is ₹12,500, ₹7,500 and ₹5,000.
+8. Simple interest = Principal × Rate × Time ÷ 100. ₹10,000 at 6% a year for 3 years earns 10,000 × 6 × 3 ÷ 100 = ₹1,800.
+9. Unit price tells you the real cost: divide the price by the amount. 500 g for ₹60 is ₹0.12 per gram; 1 kg for ₹110 is ₹0.11 per gram, so the 1 kg pack is the better buy.
+10. Compare in the same unit: grams with grams, millilitres with millilitres. 1 L = 1,000 mL.
+11. A bigger pack is only a better buy if you will use it before it spoils.
+12. Keep receipts and check bills. Rounding (₹198 ≈ ₹200) helps you spot a wrong total quickly.
+
+[expert]
+- Compound interest = P × (1 + r/100)ⁿ. ₹10,000 at 10% a year for 2 years: 10,000 × 1.1 × 1.1 = ₹12,100. Simple interest would give ₹12,000.
+- Rule of 72: money roughly doubles in 72 ÷ rate years. At 8% a year, about 9 years. At 12%, about 6 years.
+- Compounding more often grows a little faster: ₹10,000 at 12% compounded monthly for 1 year is about ₹11,268, versus ₹11,200 yearly.
+- Loans work the other way: interest is charged on what you still owe. Paying extra early cuts the total interest a lot.
+- A "no-cost EMI" often hides the cost in a lost discount or a processing fee. Compare the total amount you pay with the cash price.
+- Credit card interest is often around 3% to 4% a month, which is roughly 36% to 48% a year, or more once compounded. Always pay the full balance.
+- Inflation shrinks money: at 6% inflation, ₹100 today buys about what ₹94 bought a year ago. Savings earning 4% are losing value in real terms.
+- Real return ≈ interest rate − inflation rate. 7% interest with 5% inflation is roughly a 2% real gain.
+- Unit price traps: "Buy 2 get 1 free" on ₹90 items is ₹180 for 3, or ₹60 each, a 33.3% saving, only if you need 3.
+- Price per use: a ₹1,500 pair of shoes worn 300 times costs ₹5 per wear; a ₹600 pair worn 60 times costs ₹10 per wear.
+- Emergency fund: aim to save 3 to 6 months of expenses. With ₹21,000 a month, that is ₹63,000 to ₹1,26,000.
+- GST on a bill: an item at ₹2,000 plus 18% GST costs 2,000 × 1.18 = ₹2,360.
+
+[quiz]
+Your bill is ₹327 and you pay with ₹500. How much change? | ₹173 | ₹183 | ₹273 | ₹227
+Simple interest on ₹10,000 at 6% a year for 3 years is... | ₹1,800 | ₹600 | ₹1,600 | ₹18,000
+Which is the better buy? | 1 kg for ₹110 | 500 g for ₹60 | They cost the same per gram | Cannot tell
+Under the 50/30/20 rule, how much of ₹25,000 goes to savings? | ₹5,000 | ₹2,000 | ₹7,500 | ₹12,500
+₹10,000 at 10% compound interest for 2 years becomes... | ₹12,100 | ₹12,000 | ₹11,000 | ₹12,210
+By the Rule of 72, at 8% a year money doubles in about... | 9 years | 8 years | 12 years | 72 years
+How many paise make ₹1? | 100 | 10 | 1,000 | 50
+An item costs ₹2,000 plus 18% GST. What is the total? | ₹2,360 | ₹2,018 | ₹2,180 | ₹2,036

@@ -1,0 +1,12 @@
+# Maths and Logic: the list of topic cards, in the order shown on the home screen.
+# One card file name per line (without .txt). Lines starting with # are comments. Remove a line to hide a card.
+# No "call:" header on these cards, so the shared kit shows no emergency panel.
+title: Maths and Logic
+disclaimer: Everyday maths for real life. Examples use Indian rupees (₹) and metric units
+
+everyday-numbers
+times-tables
+fractions-percent
+money-maths
+shapes-measuring
+patterns-puzzles

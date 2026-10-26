@@ -18,6 +18,7 @@
 - Health: First Aid
 - Outdoors: Survival and Outdoors (SO1a: Fire and Water; more topics planned)
 - Language: NE-India Dictionary, Caption for NEI (still in Tools), English Basic
+- Language and Maths: Maths and Logic (ML1a: 6 topics: Everyday Numbers, Times Tables, Fractions/Percent, Money Maths, Shapes and Measuring, Patterns and Puzzles)
 - Coding: Learning HTML (Basic) (still in Tools), Code Lab (still in Lab)
 
 ## Not yet in the Hub menu
