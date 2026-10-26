@@ -18,7 +18,8 @@
   if (!btn) return;
   let unread = 0, toastT = 0, toastN = 0;
 
-  SharedChat.init((m) => SharedLink.send(m));
+  // H19: a joined Hub sends with bcast so the host relays it to the other devices too.
+  SharedChat.init((m) => SharedLink.send(SharedLink.role === 'join' ? Object.assign({ bcast: true }, m) : m));
   SharedChat.listen();
 
   /* ---------- panel ---------- */
@@ -48,9 +49,9 @@
     if (!list.length) { const e = document.createElement('div'); e.className = 'cp-empty'; e.textContent = 'No messages yet'; log.appendChild(e); }
     list.forEach((m) => {
       const d = document.createElement('div');
-      const mine = m.mine || m.from === 'host';
+      const mine = SharedChat.isMine(m);
       d.className = 'cp-msg' + (mine ? ' me' : '');
-      const b = document.createElement('b'); b.textContent = mine ? 'You' : m.name;
+      const b = document.createElement('b'); b.textContent = mine ? 'You' : (m.name || 'Device');
       d.append(b, document.createTextNode(m.text));
       log.appendChild(d);
     });

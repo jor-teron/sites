@@ -4,7 +4,9 @@
   Role: SharedChat (release 4). Group chat over SharedLink, history per device.
   - Message: {type:'chat', id, from (device id), name (device name), text, ts}.
   - History: localStorage 'shared-chat-history' (last 200), survives reload.
-    Own messages are stored with mine:true (never sent on the wire).
+    H19: from = SharedLinkDevices.id() (permanent per browser). No mine flag is stored;
+    isMine(m) is m.from === this device id. Legacy rows (from not 'd-…') count as mine only
+    if an old build stored them here with mine:true, else they show as received.
   - init(sendFn): sendFn(msg) puts a message on the wire. Host (Hub) sends to all;
     a joined device sends with bcast:true so the Hub re-broadcasts it.
   - add(msg) stores an incoming message (dedupe by id) and fires on('add').
@@ -21,25 +23,32 @@
   function store(list) { try { localStorage.setItem(KEY, JSON.stringify(list.slice(-MAX))); } catch (_) { /* full */ } }
   function fire(m) { fns.forEach(function (f) { try { f(m); } catch (e) { console.warn('SharedChat', e); } }); }
 
-  function add(m, mine) {
+  function add(m) {
     if (!m || m.type !== 'chat' || !m.text) return false;
     var list = history();
     if (list.some(function (x) { return x.id === m.id; })) return false;
     var row = { type: 'chat', id: String(m.id || Date.now()), from: String(m.from || ''), name: String(m.name || 'Device').slice(0, 40), text: String(m.text).slice(0, 2000), ts: Number(m.ts) || Date.now() };
-    if (mine) row.mine = true;
     list.push(row);
     store(list);
     fire(row);
     return true;
   }
 
+  function myDeviceId() { return window.SharedLinkDevices && SharedLinkDevices.id ? SharedLinkDevices.id() : 'd-local'; }
+  function isDev(f) { return /^d-/.test(String(f || '')); }
+  function isMine(m) {
+    if (!m) return false;
+    if (isDev(m.from)) return m.from === myDeviceId();
+    return !!m.mine;   // legacy row (before H19): only what this browser stored as its own
+  }
+
   function send(text) {
     text = String(text || '').trim();
     if (!text || !sendFn) return null;
-    var myId = (window.SharedLink && SharedLink.role === 'host') ? 'host' : (window.SharedLink && SharedLink.id) || 'me';
+    var myId = myDeviceId();
     var m = { type: 'chat', id: myId + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), from: myId,
-      name: window.SharedLinkDevices ? SharedLinkDevices.name() : 'Me', text: text.slice(0, 2000), ts: Date.now() };
-    add(m, true);
+      name: window.SharedLinkDevices ? SharedLinkDevices.name() : 'Device', text: text.slice(0, 2000), ts: Date.now() };
+    add(m);
     try { sendFn(m); } catch (e) { console.warn('SharedChat send', e); }
     return m;
   }
@@ -58,6 +67,8 @@
     listen: listen,
     history: history,
     add: add,
+    isMine: isMine,
+    deviceId: myDeviceId,
     send: send,
     clear: function () { store([]); fire(null); },
     on: function (f) { fns.push(f); return f; }

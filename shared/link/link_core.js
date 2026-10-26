@@ -195,10 +195,10 @@
     if (window.SharedLinkFiles && SharedLinkFiles.handle(msg, from)) return;
     if (msg.t === 'msg') {
       // Host relays messages addressed to another device.
-      if (S.role === 'host' && msg.to && msg.to !== 'host') { send(Object.assign({}, msg, { from: from }), msg.to); return; }
+      if (S.role === 'host' && msg.to && msg.to !== 'host') { send(Object.assign({}, msg, { from: msg.from || from }), msg.to); return; }
       // Release 4: host re-broadcasts group messages (bcast) to every other device (group chat via the Hub).
       if (S.role === 'host' && msg.bcast) {
-        var fw = Object.assign({}, msg, { from: from });
+        var fw = Object.assign({}, msg, { from: msg.from || from });   // H19: keep the sender's device id + name
         S.links.forEach(function (l, id) { if (!l.legacy && id !== from) safeSend(l.conn, fw); });
       }
       emit('message', msg, from);

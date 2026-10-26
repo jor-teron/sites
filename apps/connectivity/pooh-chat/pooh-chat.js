@@ -19,7 +19,7 @@
   var btnWa = document.getElementById('btn-wa');
   var fileShare = document.getElementById('file-share');
 
-  function isMine(m) { return !!m.mine || (inHub && m.from === 'host'); }
+  function isMine(m) { return SharedChat.isMine(m); }   // H19: sender device id only
   function paint() { PoohUI.render(SharedChat.history(), isMine); }
   SharedChat.on(paint);
 
@@ -38,7 +38,6 @@
     });
     window.parent.postMessage({ sharedLink: 'ready', app: 'pooh-chat', types: ['x-none/'] }, '*');
     PoohUI.status('Connecting to Hub…', false);
-    btnName.hidden = true;
   }
 
   /* ---------- standalone ---------- */
