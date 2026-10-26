@@ -67,11 +67,11 @@ Sound Recorder,  sound-recorder/,  , , Audio
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
 name, path, icon, newtab, section
-Draftly,      draftly/,             , , Write
+Draftly,      draftly/,             , , Hub Office
+Spreadsheet,  spreadsheet/,         , , Hub Office
+Base,         base/,                , , Hub Office
 Notely,       notely/,              , , Write
 MS Word Diff, ../tools/msword_diff/, , , Write
-Spreadsheet,  spreadsheet/,         , , Sheets
-Base,         base/,                , , Sheets
 OCR,          ocr/,                 , , Scan & Print
 Paper Scan,   paper-scan/,          , , Scan & Print
 Print,        print/,               , , Scan & Print
@@ -95,6 +95,7 @@ Calculator,            calculator/,      , , Calculators
 Unit Converter,        unit-converter/,                   , , Calculators
 Stopwatch,             stopwatch/,       , , Time
 Calendar,              calendar/,        , , Time
+My Day,                dashboard/,       , , Time
 Weather,               weather-chart/,   , , Weather
 Weather Hourly,        weather-hourly/,  , , Weather
 NE-India Dictionary,   nei-dict/,        , , Language
