@@ -1,0 +1,24 @@
+<!doctype html>
+<!-- Speed Test (ST1) — ping + download against files hosted in this app (data/). No outside services, no upload. -->
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Speed Test</title><link rel="stylesheet" href="speedtest.css"></head><body>
+<main class="st">
+  <header class="st-head"><h1>Speed Test</h1>
+    <div class="seg" role="group" aria-label="Unit"><button class="btn" data-u="MBps">MB/s</button><button class="btn" data-u="Mbps">Mbps</button></div></header>
+  <section class="panel gauge-box">
+    <svg viewBox="0 0 200 120" class="gauge" aria-hidden="true">
+      <path d="M20 110 A80 80 0 0 1 180 110" class="g-bg"/><path id="gArc" d="M20 110 A80 80 0 0 1 180 110" class="g-fg"/>
+      <line id="gNeedle" x1="100" y1="110" x2="100" y2="40" class="g-needle"/><circle cx="100" cy="110" r="6" class="g-hub"/></svg>
+    <div class="g-val"><span id="speed">0.0</span> <span id="unit">MB/s</span></div>
+    <div id="status" class="mut" aria-live="polite">Ready</div>
+    <div class="row"><button id="quick" class="btn primary">▶ Quick (1 MB)</button><button id="full" class="btn">▶ Full (5 MB ×2)</button></div>
+  </section>
+  <section class="panel grid">
+    <div><div class="mut">Ping avg</div><b id="pAvg">–</b></div><div><div class="mut">Best / worst</div><b id="pBW">–</b></div>
+    <div><div class="mut">Jitter</div><b id="pJit">–</b></div><div><div class="mut">Data used</div><b id="used">–</b></div>
+  </section>
+  <section class="panel"><div class="mut">Connection (browser estimate)</div><div id="conn">Not available</div></section>
+  <section class="panel"><h2>History <button id="clr" class="btn small">Clear</button></h2><ul id="hist" class="hist"></ul></section>
+</main>
+<script src="speedtest_core.js"></script><script src="speedtest_ui.js"></script>
+</body></html>

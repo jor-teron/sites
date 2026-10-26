@@ -1,0 +1,21 @@
+/* Speed Test — light/dark via prefers-color-scheme, compact 30px buttons, jelly Start, larger on big screens. */
+:root{--bg:#f4f6fb;--card:#fff;--fg:#111827;--mut:#4b5563;--acc:#2563eb;--line:#d1d5db}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1420;--card:#1b2233;--fg:#f3f4f6;--mut:#c0c7d4;--acc:#60a5fa;--line:#374151}}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,sans-serif}
+.st{max-width:560px;margin:auto;padding:12px;display:grid;gap:12px}
+.st-head{display:flex;justify-content:space-between;align-items:center}h1{font-size:22px;margin:0}h2{font-size:17px;margin:0 0 6px;display:flex;justify-content:space-between}
+.panel{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px}
+.btn{min-height:30px;padding:3px 12px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--fg);font:inherit;cursor:pointer;transition:transform .18s cubic-bezier(.34,1.8,.64,1)}
+.btn:hover{transform:scale(1.05)}.btn:active{transform:scale(.92)}.btn:disabled{opacity:.5}.btn.small{min-height:24px;font-size:13px}
+.btn.primary,.seg .btn.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.seg{display:flex;gap:4px}.row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.jelly{animation:jelly .6s cubic-bezier(.34,1.8,.64,1)}
+@keyframes jelly{30%{transform:scale(1.15,.85)}50%{transform:scale(.9,1.1)}70%{transform:scale(1.05,.95)}}
+.gauge-box{text-align:center}.gauge{width:100%;max-width:320px}
+.g-bg,.g-fg{fill:none;stroke-width:14;stroke-linecap:round}.g-bg{stroke:var(--line)}.g-fg{stroke:var(--acc);stroke-dasharray:0 252;transition:stroke-dasharray .3s}
+.g-needle{stroke:var(--fg);stroke-width:4;stroke-linecap:round;transform-origin:100px 110px;transform:rotate(-90deg);transition:transform .3s cubic-bezier(.34,1.6,.64,1)}.g-hub{fill:var(--fg)}
+.g-val{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}.mut{color:var(--mut);font-size:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hist{list-style:none;margin:0;padding:0;font-size:14px}.hist li{padding:4px 0;border-bottom:1px solid var(--line)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media(min-width:1000px){body{font-size:18px}.st{max-width:760px}.gauge{max-width:440px}.g-val{font-size:40px}.grid{grid-template-columns:repeat(4,1fr)}}
