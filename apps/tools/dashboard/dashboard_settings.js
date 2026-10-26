@@ -1,8 +1,10 @@
-/* My Day — Settings dialog: theme (auto/light/dark) and card on/off + up/down order. */
+/* My Day — Settings dialog: theme (auto/light/dark), time format 12/24 h (PD4.2), and card on/off + up/down order. */
 (function(){
   var dlg,list;
   function drawTheme(){var t=MDStore.get('theme','auto');
     [].forEach.call(document.querySelectorAll('#themeSeg .btn'),function(b){b.setAttribute('role','radio');b.setAttribute('aria-checked',b.dataset.t===t?'true':'false');});}
+  function drawTime(){var f=MDStore.get('timefmt','12');
+    [].forEach.call(document.querySelectorAll('#timeSeg .btn'),function(b){b.setAttribute('role','radio');b.setAttribute('aria-checked',b.dataset.f===f?'true':'false');});}
   function drawList(focusId,focusDir){
     var el=MyDay.el,l=MyDay.layout();list.innerHTML='';
     l.forEach(function(s,i){var c=MyDay.cards().filter(function(x){return x.id===s.id;})[0];
@@ -18,9 +20,10 @@
   }
   window.MDSettings={init:function(){
     dlg=document.getElementById('settings');list=document.getElementById('cardList');
-    document.getElementById('gear').onclick=function(){drawTheme();drawList();dlg.showModal();};
+    document.getElementById('gear').onclick=function(){drawTheme();drawTime();drawList();dlg.showModal();};
     document.getElementById('setClose').onclick=function(){dlg.close();};
     dlg.addEventListener('click',function(e){if(e.target===dlg)dlg.close();});
     [].forEach.call(document.querySelectorAll('#themeSeg .btn'),function(b){b.onclick=function(){MDStore.set('theme',b.dataset.t);MyDay.applyTheme();drawTheme();};});
+    [].forEach.call(document.querySelectorAll('#timeSeg .btn'),function(b){b.onclick=function(){MDStore.set('timefmt',b.dataset.f);drawTime();MyDay.tick();MyDay.renderAll();};});
   }};
 })();

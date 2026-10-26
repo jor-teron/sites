@@ -89,6 +89,11 @@
       defs.appendChild(mk);
     });
     root.appendChild(defs);
+    /* PD4.2: everything below goes in a group that rotates 180° at night (midnight on top).
+       Text inside it (.sd-up) counter-rotates about its own box so it stays upright. Place name sits outside. */
+    var outer = root;
+    root = svg('g', { 'class': 'sd-rot' });
+    outer.appendChild(root);
 
     root.appendChild(svg('circle', { cx: cx, cy: cy, r: R, 'class': 'sd-night' }));
     if (s.dawn && s.dusk) {
@@ -97,6 +102,12 @@
     if (s.sunrise && s.sunset) {
       root.appendChild(svg('path', { d: segment(cx, cy, R, angleOf(s.sunrise, s.noon), angleOf(s.sunset, s.noon)), 'class': 'sd-day' }));
     }
+    /* Stars on the night side (opposite noon) */
+    [[150,40],[170,20],[195,55],[215,30],[240,62],[260,24],[285,48],[205,8],[160,58],[300,15]].forEach(function(st) {
+      var a = 180 + (st[0] - 225) * 0.9;
+      var p = point(cx, cy, R - st[1] - 8, a);
+      root.appendChild(svg('circle', { cx: p.x, cy: p.y, r: st[1] % 3 ? 1.4 : 2.2, 'class': 'sd-star' }));
+    });
     root.appendChild(svg('circle', { cx: cx, cy: cy, r: R, 'class': 'sd-rim' }));
 
     /* Rim labels, outside the rim */
@@ -113,7 +124,7 @@
       var sx = Math.sin(a * Math.PI / 180), cyA = Math.cos(a * Math.PI / 180);
       var anchor = sx < -0.3 ? 'end' : (sx > 0.3 ? 'start' : 'middle');
       var dy = anchor !== 'middle' ? 5 : (cyA > 0 ? -3 : 14);
-      var txt = svg('text', { x: p.x, y: p.y + dy, 'class': 'sd-label', 'text-anchor': anchor });
+      var txt = svg('text', { x: p.x, y: p.y + dy, 'class': 'sd-label sd-up', 'text-anchor': anchor });
       txt.textContent = l[1];
       root.appendChild(txt);
     });
@@ -135,16 +146,16 @@
     root.appendChild(svg('circle', { cx: cx, cy: cy, r: 5, 'class': 'sd-home' }));
     var name = svg('text', { x: cx, y: cy + 22, 'class': 'sd-place', 'text-anchor': 'middle' });
     name.textContent = place.name;
-    root.appendChild(name);
+    outer.appendChild(name);
 
     var sun = point(cx, cy, R, aNow);
     root.appendChild(svg('circle', { cx: sun.x, cy: sun.y, r: 10, 'class': 'sd-sun' }));
-    /* Moon lags the sun by phase x 24 h around the dial */
+    /* Moon lags the sun by phase x 24 h around the dial (derived from phase, not an ephemeris; rotates with the dial) */
     var mp = point(cx, cy, R, aNow - mo.phase * 360);
-    var mt = svg('text', { x: mp.x, y: mp.y + 7, 'class': 'sd-moon', 'text-anchor': 'middle' });
+    var mt = svg('text', { x: mp.x, y: mp.y + 7, 'class': 'sd-moon sd-up', 'text-anchor': 'middle' });
     mt.textContent = mo.emoji;
     root.appendChild(mt);
-    return root;
+    return outer;
   }
 
   /* Test hook: ?now=HH:MM forces the dial time (screenshots); ignored otherwise */
@@ -177,7 +188,15 @@
     var mo = MDSun.moon(now);
     var nx = nextEvent(s, now, place.lat, place.lon);
     var wrap = el('div', { 'class': 'sun-wrap' });
-    wrap.appendChild(dial(s, mo, now, place));
+    var dl = dial(s, mo, now, place);
+    wrap.appendChild(dl);
+    /* PD4.2: night = before sunrise or after sunset -> flip. Start from the previous state so the switch animates. */
+    var night = !!(s.sunrise && s.sunset && (now < s.sunrise || now > s.sunset));
+    var rot = dl.querySelector('.sd-rot');
+    if (box._flip) rot.classList.add('flip');
+    if (box._flip !== undefined && box._flip !== night) requestAnimationFrame(function() { requestAnimationFrame(function() { rot.classList.toggle('flip', night); }); });
+    else rot.classList.toggle('flip', night);
+    box._flip = night;
     var info = el('div', { 'class': 'sun-info' }, [
       el('div', { 'class': 'sun-next', text: nx[0] + ' in ' + dur(nx[1] - now) }),
       row(el, 'Dawn (civil)', hhmm(s.dawn)),
