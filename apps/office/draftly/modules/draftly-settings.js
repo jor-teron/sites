@@ -21,7 +21,7 @@ Draftly.settings = {
     statusBar: true, ruler: false, marks: false, theme: 'light',
     font: 'Times New Roman', fontSize: 12, lineHeight: 1.6,
     paper: 'A4', orientation: 'portrait', margins: 'normal',
-    autosave: true, backupSec: 0, hoverTabs: true
+    autosave: true, backupSec: 0, hoverTabs: true, ribbonCollapsed: false
   },
   fonts: ['Times New Roman', 'Tinos'],
   sizes: [8, 10, 11, 12, 14, 16, 18],
@@ -58,7 +58,8 @@ Draftly.settings.sections = function sections(s) {
       { type: 'external', id: 'rulerToggle', label: 'Ruler', pressed: s.ruler },
       { key: 'marks', type: 'switch', id: 'setMarks', label: 'Format marks (\u00b6)' },
       { key: 'theme', type: 'select', id: 'setTheme', label: 'Theme', options: OfficeTheme.modes },
-      { key: 'hoverTabs', type: 'switch', id: 'setHoverTabs', label: 'Open tabs on hover' }
+      { key: 'hoverTabs', type: 'switch', id: 'setHoverTabs', label: 'Open tabs on hover' },
+      { key: 'ribbonCollapsed', type: 'switch', id: 'setRibbonCollapsed', label: 'Collapse ribbon' }
     ] },
     { title: 'Editing', rows: [
       { key: 'font', type: 'select', id: 'setFont', label: 'Default font', options: S.fonts.map(function (f) { return [f, f]; }) },
@@ -144,6 +145,7 @@ Draftly.settings.apply = function apply(k) {
     if (Draftly.pages && Draftly.app.ready) Draftly.pages.layoutAll();
   }
   if (!k || k === 'backupSec') S.startBackup();
+  if (!k || k === 'ribbonCollapsed') { if (Draftly.ribbon && Draftly.ribbon.collapse) Draftly.ribbon.collapse.apply(s.ribbonCollapsed); }  /* DF13c */
 };
 
 Draftly.settings.applyTheme = function applyTheme() {

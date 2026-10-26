@@ -2,7 +2,7 @@
  * spreadsheet_settings.js
  * SH1 Settings panel for Spreadsheet (gear at the right of the top bar), built with the shared
  * ../shared/office-settings.js. One localStorage key 'spreadsheet_settings'.
- * View: theme, open tabs on hover (DF13), (light / dark / auto via ../shared/office-theme.js), gridlines, formula bar.
+ * View: theme, open tabs on hover (DF13), collapse ribbon (DF13c), (light / dark / auto via ../shared/office-theme.js), gridlines, formula bar.
  * Editing: default cell font and size. About: version + reset.
  * Runs at load (scripts sit at the end of <body>) so the theme applies before first paint.
  */
@@ -25,13 +25,14 @@ function sheetApplySetting(k) {
     b.style.setProperty("--sheet-font", "'" + s.font + "', system-ui, sans-serif");
     b.style.setProperty("--sheet-font-size", s.fontSize + "px");
   }
+  if ((!k || k === "ribbonCollapsed") && typeof SHEET_COLLAPSE !== "undefined" && SHEET_COLLAPSE) SHEET_COLLAPSE.apply(s.ribbonCollapsed);
 }
 
 function initSheetSettings() {
   if (typeof OfficeSettings === "undefined") return;
   SHEET_SETTINGS = OfficeSettings.create({
     key: SHEET_SETTINGS_KEY,
-    defaults: { theme: "dark", gridlines: true, formulaBar: true, font: "Segoe UI", fontSize: 13, hoverTabs: true },
+    defaults: { theme: "dark", gridlines: true, formulaBar: true, font: "Segoe UI", fontSize: 13, hoverTabs: true, ribbonCollapsed: false },
     gearBtn: document.getElementById("settingsBtn"),
     validate: function (s) { if (["light", "dark", "auto"].indexOf(s.theme) === -1) s.theme = "dark"; },
     sections: [
@@ -39,7 +40,8 @@ function initSheetSettings() {
         { key: "theme", type: "select", id: "set-theme", label: "Theme", options: OfficeTheme.modes },
         { key: "gridlines", type: "switch", id: "set-gridlines", label: "Gridlines" },
         { key: "formulaBar", type: "switch", id: "set-formula-bar", label: "Formula bar" },
-        { key: "hoverTabs", type: "switch", id: "set-hover-tabs", label: "Open tabs on hover" }
+        { key: "hoverTabs", type: "switch", id: "set-hover-tabs", label: "Open tabs on hover" },
+        { key: "ribbonCollapsed", type: "switch", id: "set-ribbon-collapsed", label: "Collapse ribbon" }
       ] },
       { title: "Editing", rows: [
         { key: "font", type: "select", id: "set-font", label: "Default font", options: SHEET_FONTS.map(function (f) { return [f, f]; }) },

@@ -27,3 +27,8 @@ set them on `body` so dark/light overrides flow through.
   isFileOpen, setFile, enabled, delay:100, closeDelay:300})`: mouse-only hover opens ribbon tabs (100 ms)
   and the File menu (closes 300 ms after leaving). Touch keeps click. Used by Draftly + Spreadsheet,
   each gated by a `hoverTabs` setting ("Open tabs on hover").
+- `office-collapse.css` / `office-collapse.js` (DF13c): `OfficeCollapse.attach({tabsEl, tabSelector, ribbonEl,
+  docEl, collapsed, onUserChange, onLayout})`: Word-style ribbon collapse. Click the active tab to collapse
+  (`body.ribbon-collapsed`), click / hover a tab to peek the ribbon as an overlay (`.of-peek`, hides on a
+  doc click, Esc or 300 ms after the mouse leaves), double-click a tab to expand. The ribbon element needs
+  class `of-collapsible`. Persisted by each app as setting `ribbonCollapsed` ("Collapse ribbon").

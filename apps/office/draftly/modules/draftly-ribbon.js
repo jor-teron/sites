@@ -133,12 +133,28 @@ Draftly.ribbon.init = function init() {
   if (window.OfficeHover) OfficeHover.attach({
     tabsEl: document.querySelector('.ribbon-tab') ? document.querySelector('.ribbon-tab').parentNode : null,
     tabSelector: '.ribbon-tab',
-    selectTab: function (id) { Draftly.ribbon.selectTab(id); },
+    selectTab: function (id) { Draftly.ribbon.selectTab(id); if (Draftly.ribbon.collapse) Draftly.ribbon.collapse.peek(); },
     fileBtn: fileBtn, fileMenu: menu,
     isFileOpen: Draftly.ribbon.isFileOpen,
     setFile: function (v) { Draftly.ribbon.setFile(v); },
     enabled: function () { var st = Draftly.settings && (Draftly.settings.s || (Draftly.settings.panel && Draftly.settings.panel.s)); return !st || st.hoverTabs !== false; }
   });
+  /* DF13c: Word-style collapse (shared ../shared/office-collapse.js); state in settings 'ribbonCollapsed'. */
+  var ribEl = document.querySelector('nav.ribbon');
+  if (window.OfficeCollapse && ribEl) {
+    ribEl.classList.add('of-collapsible');
+    var st0 = Draftly.settings && Draftly.settings.s;
+    Draftly.ribbon.collapse = OfficeCollapse.attach({
+      tabsEl: document.querySelector('.ribbon-tabs'), tabSelector: '.ribbon-tab',
+      ribbonEl: ribEl, docEl: document.getElementById('workspace'),
+      collapsed: !!(st0 && st0.ribbonCollapsed),
+      onUserChange: function (v) { if (Draftly.settings && Draftly.settings.panel) Draftly.settings.set('ribbonCollapsed', v); else Draftly.ribbon.collapse.apply(v); },
+      onLayout: function () {
+        if (Draftly.pages && Draftly.app && Draftly.app.ready) Draftly.pages.layoutAll();
+        if (Draftly.ruler && Draftly.ruler.on && Draftly.ruler.sync) Draftly.ruler.sync();
+      }
+    });
+  }
   /* Any action (not the Recent header) closes the menu after it runs. */
   menu.addEventListener('click', function (e) {
     var t = e.target.closest ? e.target.closest('button') : null;

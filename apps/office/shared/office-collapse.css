@@ -1,0 +1,20 @@
+/*
+ * apps/office/shared/office-collapse.css
+ * DF13c ribbon collapse (see office-collapse.js). The ribbon element gets .of-collapsible.
+ * body.ribbon-collapsed hides it; .of-peek floats it over the page under the tab row.
+ */
+body.ribbon-collapsed .of-collapsible:not(.of-peek) { display: none !important; }
+body.ribbon-collapsed .of-collapsible.of-peek {
+  position: fixed; top: var(--of-peek-top, 0px); left: 0; right: 0; z-index: 950;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .28);
+  transform-origin: top center;
+  animation: of-peek-jelly .26s cubic-bezier(.34, 1.56, .64, 1);
+}
+@keyframes of-peek-jelly {
+  0% { transform: scaleY(.85); opacity: 0; }
+  60% { transform: scaleY(1.03); opacity: 1; }
+  100% { transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.ribbon-collapsed .of-collapsible.of-peek { animation: none; }
+}

@@ -9,7 +9,11 @@
      app → hub  {type:'hub-app', app:'Draftly', tabs:[{id, label, menu?}], activeTab, title}
      app → hub  {type:'hub-tab', id}               ribbon tab changed
      app → hub  {type:'hub-title', value}          file name changed (rename / open / new)
-     hub → app  {type:'hub-action', id:'tab:<id>'} switch tab; 'tab:file' opens the File menu
+     hub → app  {type:'hub-action', id:'tab:<id>', hover?} switch tab; 'tab:file' opens the File menu
+                (hover:true = open-only, marked hover-opened; collapsed ribbon peeks)
+     hub → app  {type:'hub-menu-leave', id, delay}  DF13c: close a hover-opened File menu after
+                delay ms unless the pointer is on it (click-opened menus ignore this)
+     app → hub  {type:'hub-app-caps', settings, hoverTabs, ribbonCollapsed}
    All messages carry v:1. The message shapes live in Draftly.hub.shape below,
    so a change on the hub side is a one-place edit here.
    DEPENDS: Draftly.ribbon, Draftly.storage (wraps selectTab / setCurrentName)
@@ -57,12 +61,12 @@ Draftly.hub = {
 
   function sendCaps() {
     var st = Draftly.settings && Draftly.settings.s;
-    post({ type: 'hub-app-caps', settings: true, hoverTabs: !st || st.hoverTabs !== false });
+    post({ type: 'hub-app-caps', settings: true, hoverTabs: !st || st.hoverTabs !== false, ribbonCollapsed: !!(st && st.ribbonCollapsed) });
   }
   /* Resend caps when the hover setting changes. */
   if (Draftly.settings && Draftly.settings.apply) {
     var apply = Draftly.settings.apply;
-    Draftly.settings.apply = function (k) { var r = apply.apply(this, arguments); if (H.linked && (k === 'hoverTabs' || k === undefined)) sendCaps(); return r; };
+    Draftly.settings.apply = function (k) { var r = apply.apply(this, arguments); if (H.linked && (k === 'hoverTabs' || k === 'ribbonCollapsed' || !k)) sendCaps(); return r; };
   }
   function sendApp() {
     lastTab = activeTab(); lastTitle = title();
@@ -81,9 +85,31 @@ Draftly.hub = {
   }
 
   /* The File menu, anchored top-left inside the frame (its button is hidden). */
-  H.openFile = function () {
-    var open = !Draftly.ribbon.isFileOpen();
-    Draftly.ribbon.setFile(open, false);
+  var hoverFile = false, leaveT = null, overMenu = false;
+  function clearLeave() { if (leaveT) { clearTimeout(leaveT); leaveT = null; } }
+  function startLeave(ms) {
+    clearLeave();
+    leaveT = setTimeout(function () {
+      leaveT = null;
+      if (hoverFile && !overMenu && Draftly.ribbon.isFileOpen()) Draftly.ribbon.setFile(false);
+      if (!Draftly.ribbon.isFileOpen()) hoverFile = false;
+    }, ms);
+  }
+  var fm = document.getElementById('fileMenu');
+  if (fm) {
+    fm.addEventListener('pointerenter', function () { overMenu = true; clearLeave(); });
+    fm.addEventListener('pointerleave', function () { overMenu = false; if (hoverFile && Draftly.ribbon.isFileOpen()) startLeave(300); });
+  }
+  H.menuLeave = function (ms) {
+    if (!hoverFile || !Draftly.ribbon.isFileOpen()) return;
+    var d = Number(ms); startLeave(d >= 0 && d < 5000 ? d : 300);
+  };
+  H.openFile = function (hover) {
+    var isOpen = Draftly.ribbon.isFileOpen();
+    clearLeave();
+    if (hover) { if (!isOpen) { hoverFile = true; Draftly.ribbon.setFile(true, false); } }
+    else { hoverFile = false; Draftly.ribbon.setFile(!isOpen, false); }
+    var open = Draftly.ribbon.isFileOpen();
     if (open) {
       var m = document.getElementById('fileMenu');
       m.style.top = H.menuInset + 'px';
@@ -116,11 +142,14 @@ Draftly.hub = {
       sendApp();
     } else if (d.type === 'hub-action' && H.linked && typeof d.id === 'string' && d.id.indexOf(H.shape.actionPrefix) === 0) {
       var id = d.id.slice(H.shape.actionPrefix.length);
-      if (id === 'file') H.openFile();
+      if (id === 'file') H.openFile(d.hover === true);
       else if (H.tabs.some(function (t) { return t.id === id && !t.menu; })) {
         if (Draftly.ribbon.isFileOpen()) Draftly.ribbon.setFile(false);
         Draftly.ribbon.selectTab(id);
+        if (Draftly.ribbon.collapse) Draftly.ribbon.collapse.peek(true);  /* DF13c */
       }
+    } else if (d.type === 'hub-menu-leave' && H.linked) {
+      H.menuLeave(d.delay);
     }
   });
   post(H.shape.ready());
