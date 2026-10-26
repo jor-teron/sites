@@ -136,6 +136,10 @@ body.wm-desktop #wm-desk { display: block; position: absolute; inset: 0; overflo
 .wm-btn:active { transform: scale(0.9); }
 .wm-close-btn:hover { background: #e5484d; color: #fff; }
 .wm-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* H16: settings gear, only for apps that send hub-app-caps {settings:true} */
+.wm-gear { display: none; align-items: center; justify-content: center; }
+.wm-win.has-settings .wm-gear { display: inline-flex; }
+.wm-gear svg { width: 15px; height: 15px; pointer-events: none; }
 .wm-body { flex: 1; min-height: 0; background: #000; }
 .wm-body iframe { display: block; width: 100%; height: 100%; border: 0; background: #000; }
 /* while dragging / resizing, or while the Hub menu is open, iframes must not eat the pointer */
