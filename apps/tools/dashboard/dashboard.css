@@ -78,3 +78,16 @@ ul.list li:last-child{border-bottom:0}
 .wx-form{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
 .wx-form input{flex:1;min-width:150px;min-height:40px;font-size:16px;border:2px solid var(--line);border-radius:12px;padding:4px 10px;background:var(--card);color:inherit}
 .cards>.card{min-width:0}
+/* PD2.1 Sun & Moon card */
+.sun-wrap{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center}
+.sun-dial{width:100%;max-width:340px;height:auto}
+.sun-info{flex:1;min-width:200px}
+.sun-next{font-size:20px;font-weight:700;margin-bottom:6px}
+.sun-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--line);color:var(--mut)}.sun-row b{color:var(--fg)}
+.sun-moon{display:flex;gap:10px;align-items:center;margin-top:8px}.sun-moon-emoji{font-size:34px}
+.sd-night{fill:#1e2a4a}.sd-twi{fill:#f2a65a;opacity:.55}.sd-day{fill:#ffe9a8}.sd-rim{fill:none;stroke:var(--line);stroke-width:3}
+.sd-tick{stroke:var(--mut);stroke-width:2}.sd-label{fill:var(--fg);font-size:12px;font-weight:600}
+.sd-hand{stroke:var(--hi);stroke-width:3;stroke-linecap:round}.sd-home{fill:var(--acc);stroke:var(--card);stroke-width:2}
+.sd-place{fill:#111827;font-size:12px;font-weight:700;paint-order:stroke;stroke:#fff8;stroke-width:3}
+.sd-sun{fill:#f59e0b;stroke:#fff;stroke-width:2}.sd-moon{font-size:18px}
+[data-theme=dark] .sd-night{fill:#0b1022}[data-theme=dark] .sd-day{fill:#c9a646}[data-theme=dark] .sd-twi{fill:#b4642c}

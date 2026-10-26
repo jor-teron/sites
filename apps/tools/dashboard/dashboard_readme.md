@@ -17,6 +17,7 @@ Adding a card: create `cards/card_x.js` calling `MyDay.register(...)`, add a `<s
 ## Releases
 - **PD1** — top strip (date, live time, greeting, alert area), card frame, Settings, Todo, Notes, Today's Schedule, Quick Links, offline PWA.
 - **PD2** — Weather card (first, on by default) via Open-Meteo, no key: now (temp, feels-like, condition, humidity, wind), next 12 hours, next 3 days (min/max, rain chance). Place via “Use my location” or name search; saved in `myday.weather.place`. Last data cached in `myday.weather.cache` with “Updated HH:MM”, stale/offline notice, auto-refresh if older than 30 min, ↻ button. Top-strip alerts: heavy rain (≥70% or ≥20 mm), heat (max ≥38 °C), thunderstorm (WMO 95–99), strong wind (gusts ≥50 km/h). Service worker never caches API calls.
+- **PD2.1** — Sun & Moon card (after Weather, on by default), fully offline: NOAA solar formulas (`dashboard_sun.js`) for sunrise, sunset, solar noon/midnight, civil dawn/dusk and day length at the Weather card's saved place (fallback Guwahati); countdown to next event. Moon phase, % lit, next full/new moon (mean synodic month). 24-hour SVG dial: noon at top, midnight at bottom, day/night split by the sunrise–sunset chord, civil-twilight band, now hand, sun and moon on the rim. Refreshes every minute.
 
 ## Roadmap
 - **PD3** — Bills + Expenses (due dates, amounts, monthly total) with optional PIN

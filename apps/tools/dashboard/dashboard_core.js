@@ -11,7 +11,9 @@
       if(out.some(function(s){return s.id===c.id;}))return;
       var item={id:c.id,on:c.defaultOn!==false};
       /* Cards flagged first:true (e.g. Weather) join at the top even for existing layouts */
-      if(c.first)out.unshift(item);else out.push(item);
+      /* Cards flagged after:'id' (e.g. Sun & Moon after Weather) join right after that card */
+      var at=c.after?out.map(function(s){return s.id;}).indexOf(c.after):-1;
+      if(c.first)out.unshift(item);else if(at>=0)out.splice(at+1,0,item);else out.push(item);
     });
     return out;
   }
