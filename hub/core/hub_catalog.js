@@ -71,6 +71,7 @@ Draftly,      draftly/,             , , Write
 Notely,       notely/,              , , Write
 MS Word Diff, ../tools/msword_diff/, , , Write
 Spreadsheet,  spreadsheet/,         , , Sheets
+Base,         base/,                , , Sheets
 OCR,          ocr/,                 , , Scan & Print
 Paper Scan,   paper-scan/,          , , Scan & Print
 Print,        print/,               , , Scan & Print
@@ -163,6 +164,5 @@ System Monitor,        sysmon/,          , , System
 Device Benchmark,      devbench/,        , , System
 Terminal,              terminal/,        , , System
 App Hub,               apphub/,          , , System
-About,                 about/,           about/about_icon.png, , System
 `
 });
