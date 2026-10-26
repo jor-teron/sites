@@ -28,7 +28,18 @@ function sheetApplySetting(k) {
   if ((!k || k === "ribbonCollapsed") && typeof SHEET_COLLAPSE !== "undefined" && SHEET_COLLAPSE) SHEET_COLLAPSE.apply(s.ribbonCollapsed);
 }
 
+/* SH4: File > Settings opens the same panel as the gear */
+function wireSettingsMenuItem() {
+  var b = document.getElementById("settingsMenuBtn"), g = document.getElementById("settingsBtn");
+  if (!b || !g) return;
+  b.addEventListener("click", function () {
+    if (typeof ribbonSetFile === "function") ribbonSetFile(false);
+    g.click();
+  });
+}
+
 function initSheetSettings() {
+  wireSettingsMenuItem();
   if (typeof OfficeSettings === "undefined") return;
   SHEET_SETTINGS = OfficeSettings.create({
     key: SHEET_SETTINGS_KEY,

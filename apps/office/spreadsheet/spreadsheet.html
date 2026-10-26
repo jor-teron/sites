@@ -7,13 +7,14 @@
   <link rel="icon" href="spreadsheet_icon.png">
   <link rel="stylesheet" href="spreadsheet.css?v=5">
   <link rel="stylesheet" href="../shared/office-ribbon.css?v=1">
+  <link rel="stylesheet" href="../shared/office-tools.css?v=1">
   <link rel="stylesheet" href="../shared/office-dialog.css?v=1">
   <link rel="stylesheet" href="../shared/office-theme.css?v=1">
   <link rel="stylesheet" href="../shared/office-toast.css?v=1">
   <link rel="stylesheet" href="../shared/office-settings.css?v=1">
   <link rel="stylesheet" href="../shared/office-collapse.css?v=1">
   <link rel="stylesheet" href="../shared/office-colour.css?v=1">
-  <link rel="stylesheet" href="spreadsheet_ribbon.css?v=6">
+  <link rel="stylesheet" href="spreadsheet_ribbon.css?v=7">
   <link rel="stylesheet" href="spreadsheet_page.css?v=4">
 </head>
 <body>
@@ -28,35 +29,40 @@
   <div id="fill-colour-menu" role="menu" aria-label="Cell fill colour" hidden></div>
   <div id="text-colour-menu" role="menu" aria-label="Text colour" hidden></div>
 
-  <!-- File menu -->
-  <div class="of-file-menu" id="of-file-menu" role="menu" aria-labelledby="of-file-btn" hidden>
-    <button type="button" class="of-file-item" role="menuitem" id="btn-clear">New / Clear</button>
-    <label class="of-file-item" role="menuitem">Open / Import CSV
+  <!-- File menu: Draftly look (../shared/office-tools.css .file-item, icons from office-icons.js) -->
+  <div class="of-file-menu file-menu" id="of-file-menu" role="menu" aria-labelledby="of-file-btn" hidden>
+    <button type="button" class="file-item" role="menuitem" id="btn-clear" data-icon="fileNew"><span>New / Clear</span></button>
+    <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open / Import CSV</span>
       <input id="file-import" type="file" accept=".csv,text/csv,text/plain" hidden>
     </label>
-    <button type="button" class="of-file-item" role="menuitem" id="btn-export">Export CSV</button>
-    <button type="button" class="of-file-item" role="menuitem" id="btn-print">Print / PDF</button>
-    <a class="of-file-item" role="menuitem" href="FUNCTIONS.txt" target="_blank" rel="noopener">Functions</a>
+    <div class="file-sep" role="separator"></div>
+    <button type="button" class="file-item" role="menuitem" id="btn-export" data-icon="fileExport"><span>Export CSV</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print / PDF</span></button>
+    <button type="button" class="file-item" role="menuitem" id="settingsMenuBtn" data-icon="fileSettings"><span>Settings</span></button>
+    <div class="file-sep" role="separator"></div>
+    <a class="file-item" role="menuitem" href="FUNCTIONS.txt" target="_blank" rel="noopener" data-icon="fileHelp"><span>Functions</span></a>
   </div>
 
   <!-- RIBBON: one row per tab, scrolls sideways when narrow -->
   <nav class="toolbar of-ribbon" id="of-ribbon" aria-label="Ribbon commands">
     <div class="of-panel" role="tabpanel" id="of-panel-home" data-tab="home">
-      <div class="of-group">
+      <div class="of-group tool-group">
         <button type="button" id="btn-undo" title="Undo (Ctrl/⌘+Z)">↶</button>
         <button type="button" id="btn-redo" title="Redo (Ctrl/⌘+Y, Ctrl/⌘+Shift+Z)">↷</button>
       </div>
-      <div class="of-group">
-        <button type="button" id="btn-bold" title="Bold"><b>B</b></button>
-        <button type="button" id="btn-italic" title="Italic"><i>I</i></button>
-        <button type="button" id="btn-under" title="Underline"><u>U</u></button>
+      <div class="of-group tool-group">
+        <button type="button" class="tool-btn" id="btn-bold" data-icon="bold" title="Bold (Ctrl/⌘+B)" aria-label="Bold"></button>
+        <button type="button" class="tool-btn" id="btn-italic" data-icon="italic" title="Italic (Ctrl/⌘+I)" aria-label="Italic"></button>
+        <button type="button" class="tool-btn" id="btn-under" data-icon="underline" title="Underline (Ctrl/⌘+U)" aria-label="Underline"></button>
       </div>
-      <div class="of-group">
-        <select id="align-sel" title="Align">
-          <option value="left">Left</option>
-          <option value="center" selected>Center</option>
-          <option value="right">Right</option>
-        </select>
+      <div class="of-group tool-group">
+      </div>
+      <div class="of-group tool-group" role="group" aria-label="Alignment">
+        <button type="button" class="tool-btn" data-align="left" data-icon="alignLeft" title="Align left" aria-label="Align left"></button>
+        <button type="button" class="tool-btn" data-align="center" data-icon="alignCenter" title="Align center" aria-label="Align center"></button>
+        <button type="button" class="tool-btn" data-align="right" data-icon="alignRight" title="Align right" aria-label="Align right"></button>
+      </div>
+      <div class="of-group tool-group">
         <select id="fmt-sel" title="Number format">
           <option value="general">General</option>
           <option value="int">0</option>
@@ -66,7 +72,7 @@
           <option value="currency">₹ Currency</option>
         </select>
       </div>
-      <div class="of-group">
+      <div class="of-group tool-group">
         <div class="of-split" role="group" aria-label="Cell fill">
           <button type="button" class="of-split-main" id="fill-colour-btn" title="Cell fill" aria-label="Apply cell fill"><span class="of-colour-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 11 6-6 7 7-6 6z"/><path d="M19 15s2 2.2 2 3.5a2 2 0 0 1-4 0c0-1.3 2-3.5 2-3.5z"/></svg><span class="of-colour-bar" id="fill-colour-bar"></span></span></button>
           <button type="button" class="of-split-arrow" id="fill-colour-arrow" title="Cell fill options" aria-label="Cell fill options" aria-haspopup="menu" aria-expanded="false" aria-controls="fill-colour-menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></button>
@@ -79,44 +85,44 @@
       <span class="of-note">Copy / cut / paste: Ctrl/⌘+C, X, V</span>
     </div>
     <div class="of-panel" role="tabpanel" id="of-panel-insert" data-tab="insert" hidden>
-      <div class="of-group">
+      <div class="of-group tool-group">
         <button type="button" id="btn-row-ins" title="Insert row above the selection">+ Row</button>
         <button type="button" id="btn-row-del" title="Delete selected row(s)">− Row</button>
       </div>
-      <div class="of-group">
+      <div class="of-group tool-group">
         <button type="button" id="btn-col-ins" title="Insert column left of the selection">+ Col</button>
         <button type="button" id="btn-col-del" title="Delete selected column(s)">− Col</button>
       </div>
       <span class="of-note">Fill: drag the cell corner, or Ctrl/⌘+D down, Ctrl/⌘+R right</span>
     </div>
     <div class="of-panel" role="tabpanel" id="of-panel-page" data-tab="page" hidden>
-      <div class="of-group" role="group" aria-label="Orientation">
+      <div class="of-group tool-group" role="group" aria-label="Orientation">
         <button type="button" data-page-orientation="portrait" aria-pressed="true">Portrait</button>
         <button type="button" data-page-orientation="landscape" aria-pressed="false">Landscape</button>
       </div>
-      <div class="of-group" role="group" aria-label="Paper">
+      <div class="of-group tool-group" role="group" aria-label="Paper">
         <button type="button" data-page-paper="A4" aria-pressed="true">A4</button>
         <button type="button" data-page-paper="Letter" aria-pressed="false">Letter</button>
       </div>
-      <div class="of-group" role="group" aria-label="Margins">
+      <div class="of-group tool-group" role="group" aria-label="Margins">
         <span class="of-group-label">Margins</span>
         <button type="button" data-page-margins="normal" aria-pressed="true">Normal</button>
         <button type="button" data-page-margins="narrow" aria-pressed="false">Narrow</button>
         <button type="button" data-page-margins="wide" aria-pressed="false">Wide</button>
         <button type="button" data-page-margins="custom" id="page-custom-margins" aria-haspopup="dialog" aria-pressed="false">Custom…</button>
       </div>
-      <div class="of-group" role="group" aria-label="When printing">
+      <div class="of-group tool-group" role="group" aria-label="When printing">
         <span class="of-group-label">Print</span>
         <button type="button" data-page-toggle="gridlines" aria-pressed="true" title="Print cell gridlines">Gridlines</button>
         <button type="button" data-page-toggle="headings" aria-pressed="false" title="Print row numbers and column letters">Headings</button>
         <button type="button" data-page-toggle="fit" aria-pressed="false" title="Shrink to fit the page width">Fit width</button>
       </div>
-      <div class="of-group">
+      <div class="of-group tool-group">
         <button type="button" id="page-print" title="Print / Save as PDF">Print</button>
       </div>
     </div>
     <div class="of-panel" role="tabpanel" id="of-panel-data" data-tab="data" hidden>
-      <div class="of-group">
+      <div class="of-group tool-group">
         <button type="button" id="btn-sort-asc" title="Sort A→Z by the active column">Sort A→Z</button>
         <button type="button" id="btn-sort-desc" title="Sort Z→A by the active column">Sort Z→A</button>
       </div>
@@ -130,6 +136,7 @@
   </div>
   <div id="status" class="status"></div>
   <div id="sheet-wrap" class="sheet-wrap"></div>
+  <script src="../shared/office-icons.js?v=1"></script>
   <script src="../shared/office-dialog.js?v=1"></script>
   <script src="../shared/office-page.js?v=1"></script>
   <script src="../shared/office-ribbon.js?v=1"></script>
@@ -149,8 +156,8 @@
   <script src="spreadsheet_grid.js?v=4"></script>
   <script src="spreadsheet_edit.js?v=4"></script>
   <script src="spreadsheet_fill.js?v=4"></script>
-  <script src="spreadsheet_toolbar.js?v=5"></script>
-  <script src="spreadsheet_settings.js?v=3"></script>
+  <script src="spreadsheet_toolbar.js?v=6"></script>
+  <script src="spreadsheet_settings.js?v=4"></script>
   <script src="spreadsheet_page.js?v=4"></script>
   <script src="spreadsheet_ribbon.js?v=7"></script>
   <script src="spreadsheet_logic.js?v=4"></script>

@@ -182,3 +182,6 @@ Messages show briefly at the bottom (2.2 s):
 ## Shared Office files
 
 `apps/office/shared/` holds code shared with the Spreadsheet: `office-dialog.js/.css` (the dialogs above) and `office-page.js` (paper sizes, margin clamping and the `@page` rule used by print and DOCX export). Draftly's storage keys and margin prefs are unchanged.
+
+## SH4 — shared ribbon controls
+Shared `../shared/office-tools.css` (tool groups, tool buttons, File menu items) and `office-icons.js` (one SVG icon set via `data-icon`). Both apps use the same Bold/Italic/Underline, Align left/center/right and File menu icons. Spreadsheet: Draftly-style File menu (with Settings) and Alignment buttons instead of the select.

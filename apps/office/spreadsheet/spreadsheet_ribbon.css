@@ -7,7 +7,15 @@
 body {   /* on body (not :root) so the SH1 light theme vars flow through */
   --of-bg: var(--panel); --of-group: var(--btn); --of-border: var(--border); --of-text: var(--text);
   --of-muted: var(--muted); --of-focus: var(--sel); --of-hover: var(--hover); --of-active: var(--on);
+  /* SH4: Draftly variable names used by ../shared/office-tools.css */
+  --ctl-h: 28px; --radius: 6px; --ui-font: Segoe UI, system-ui, sans-serif;
+  --bg-group: var(--btn); --border-light: var(--border); --btn-hover: var(--hover);
+  --btn-active: var(--on); --btn-active-text: var(--text); --text-primary: var(--text);
+  --text-secondary: var(--muted); --accent: var(--sel);
 }
+/* SH4: shared File menu items inside the sheet's dropdown */
+.of-file-menu.file-menu { width: 240px; }
+.of-file-menu .file-item { text-decoration: none; }
 
 /* SH1 Settings gear at the right end of the top bar (44px tap target, jelly press) */
 .sheet-gear {

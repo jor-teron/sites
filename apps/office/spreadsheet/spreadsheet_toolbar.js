@@ -9,7 +9,12 @@
  */
 function syncStyleUi() {
   var st = cellStyle(selR, selC);
-  document.getElementById("align-sel").value = st.align || CFG.defaultStyle.align;
+  var al = st.align || CFG.defaultStyle.align;   /* SH4 alignment buttons */
+  var ab = document.querySelectorAll("[data-align]");
+  for (var i = 0; i < ab.length; i++) {
+    var on = ab[i].getAttribute("data-align") === al;
+    ab[i].classList.toggle(CLS.toggleOn, on); ab[i].setAttribute("aria-pressed", on ? "true" : "false");
+  }
   document.getElementById("btn-bold").classList.toggle(CLS.toggleOn, !!st.bold);
   document.getElementById("btn-italic").classList.toggle(CLS.toggleOn, !!st.italic);
   document.getElementById("btn-under").classList.toggle(CLS.toggleOn, !!st.underline);
@@ -59,8 +64,12 @@ function wireUi() {
       focusCell(selR, selC);
     }
   });
-  document.getElementById("align-sel").addEventListener("change", function (ev) {
-    styleSelection("align", function (st) { st.align = ev.target.value; });
+  /* SH4: Left / Center / Right buttons (shared icons); saved as style.align like before */
+  Array.prototype.forEach.call(document.querySelectorAll("[data-align]"), function (b) {
+    b.addEventListener("click", function () {
+      var v = b.getAttribute("data-align");
+      styleSelection("align", function (st) { st.align = v; });
+    });
   });
   onBtn("btn-bold", function () {
     var on = !cellStyle(selR, selC).bold;

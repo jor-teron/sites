@@ -22,11 +22,12 @@
   <link rel="stylesheet" href="ui/theme.css?v=9">
   <link rel="stylesheet" href="../shared/office-theme.css?v=1">
   <link rel="stylesheet" href="ui/base.css?v=7">
-  <link rel="stylesheet" href="ui/toolbar.css?v=7">
+  <link rel="stylesheet" href="ui/toolbar.css?v=8">
+  <link rel="stylesheet" href="../shared/office-tools.css?v=1">
   <link rel="stylesheet" href="ui/popups.css?v=7">
   <link rel="stylesheet" href="../shared/office-dialog.css?v=1">
   <link rel="stylesheet" href="ui/workspace.css?v=7">
-  <link rel="stylesheet" href="ui/ribbon.css?v=9">
+  <link rel="stylesheet" href="ui/ribbon.css?v=10">
   <link rel="stylesheet" href="ui/page.css?v=7">
   <link rel="stylesheet" href="ui/editor.css?v=7">
   <link rel="stylesheet" href="ui/marks.css?v=7">
@@ -128,9 +129,9 @@
         </select>
       </div>
       <div class="tool-group">
-        <button class="tool-btn" id="boldBtn" title="Bold (Ctrl/⌘+B)" aria-label="Bold"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5h6a3.5 3.5 0 0 1 0 7H7z"/><path d="M7 11.5h7a3.75 3.75 0 0 1 0 7.5H7z"/></svg></button>
-        <button class="tool-btn" id="italicBtn" title="Italic (Ctrl/⌘+I)" aria-label="Italic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5h8M6 19.5h8M14.5 4.5l-5 15"/></svg></button>
-        <button class="tool-btn" id="underlineBtn" title="Underline (Ctrl/⌘+U)" aria-label="Underline"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v7a5 5 0 0 0 10 0V4"/><path d="M5 20.5h14"/></svg></button>
+        <button class="tool-btn" id="boldBtn" data-icon="bold" title="Bold (Ctrl/⌘+B)" aria-label="Bold"></button>
+        <button class="tool-btn" id="italicBtn" data-icon="italic" title="Italic (Ctrl/⌘+I)" aria-label="Italic"></button>
+        <button class="tool-btn" id="underlineBtn" data-icon="underline" title="Underline (Ctrl/⌘+U)" aria-label="Underline"></button>
         <button class="tool-btn" id="strikeBtn" title="Strikethrough (Ctrl/⌘+Shift+X)" aria-label="Strikethrough"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 6.5C15.6 5.2 14 4.5 12 4.5c-2.8 0-4.5 1.5-4.5 3.5 0 1.6 1 2.6 3 3.2"/><path d="M4 12h16"/><path d="M15.8 14.5c.5.6.7 1.2.7 2 0 2.1-1.9 3.5-4.6 3.5-2.2 0-3.9-.8-4.8-2.2"/></svg></button>
         <button class="tool-btn" id="superBtn" title="Superscript (Ctrl/⌘+.)" aria-label="Superscript"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8l8 11M12 8l-8 11"/><path d="M16 5.5a1.8 1.8 0 1 1 3.2 1.2L16 10h3.6"/></svg></button>
         <button class="tool-btn" id="subBtn" title="Subscript (Ctrl/⌘+,)" aria-label="Subscript"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5l8 11M12 5l-8 11"/><path d="M16 15.5a1.8 1.8 0 1 1 3.2 1.2L16 20h3.6"/></svg></button>
@@ -146,9 +147,9 @@
         </div>
       </div>
       <div class="tool-group">
-        <button class="tool-btn" id="alignLeftBtn" title="Align left" aria-label="Align left"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg></button>
-        <button class="tool-btn" id="alignCenterBtn" title="Align center" aria-label="Align center"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg></button>
-        <button class="tool-btn" id="alignRightBtn" title="Align right" aria-label="Align right"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg></button>
+        <button class="tool-btn" id="alignLeftBtn" data-icon="alignLeft" title="Align left" aria-label="Align left"></button>
+        <button class="tool-btn" id="alignCenterBtn" data-icon="alignCenter" title="Align center" aria-label="Align center"></button>
+        <button class="tool-btn" id="alignRightBtn" data-icon="alignRight" title="Align right" aria-label="Align right"></button>
         <button class="tool-btn" id="alignJustifyBtn" title="Justify (Ctrl+J)" aria-label="Justify"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg></button>
       </div>
       <div class="tool-group">
@@ -341,6 +342,7 @@
   <!-- Vendored libraries (vendor/, offline): DOCX export, PDF download. -->
   <!-- DF8 Settings panel: built by ../shared/office-settings.js from modules/draftly-settings.js -->
 
+  <script src="../shared/office-icons.js?v=1"></script>
   <script src="vendor/html-docx.js"></script>
   <script src="vendor/jspdf.umd.min.js"></script>
   <script src="vendor/html2canvas.min.js"></script>

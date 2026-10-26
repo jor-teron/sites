@@ -32,3 +32,6 @@ set them on `body` so dark/light overrides flow through.
   (`body.ribbon-collapsed`), click / hover a tab to peek the ribbon as an overlay (`.of-peek`, hides on a
   doc click, Esc or 300 ms after the mouse leaves), double-click a tab to expand. The ribbon element needs
   class `of-collapsible`. Persisted by each app as setting `ribbonCollapsed` ("Collapse ribbon").
+
+## SH4 — shared ribbon controls
+Shared `../shared/office-tools.css` (tool groups, tool buttons, File menu items) and `office-icons.js` (one SVG icon set via `data-icon`). Both apps use the same Bold/Italic/Underline, Align left/center/right and File menu icons. Spreadsheet: Draftly-style File menu (with Settings) and Alignment buttons instead of the select.

@@ -1,0 +1,77 @@
+/*
+ * apps/office/shared/office-tools.css  (SH4)
+ * Shared ribbon controls in Draftly's look: .tool-group boxes, .tool-btn icon/labeled buttons
+ * (jelly press, .active/.on state) and the File menu items (.file-menu, .file-item, .file-sep).
+ * Uses Draftly's variable names (--ctl-h, --radius, --bg-group, --border-light, --btn-hover,
+ * --btn-active, --btn-active-text, --text-primary, --text-secondary, --accent, --ui-font);
+ * other apps map their colours onto these (see spreadsheet_ribbon.css).
+ * Icons for these buttons come from office-icons.js (data-icon="...").
+ */
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 3px;
+  border-radius: calc(var(--radius) + 2px);
+  background: var(--bg-group);
+  border: 1px solid var(--border-light);
+}
+
+.tool-btn {
+  height: var(--ctl-h);
+  min-width: var(--ctl-h);
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-primary);
+  font: 600 12.5px var(--ui-font);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.tool-btn svg {
+  width: 18px; height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.tool-btn .glyph { font: 600 17px/1 Georgia, 'Times New Roman', serif; }
+.tool-btn:hover { background: var(--btn-hover); }
+.tool-btn:disabled { opacity: 0.38; cursor: default; background: transparent; transform: none; }
+.tool-btn:active { transform: scale(0.94); }
+.tool-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tool-btn.active, .tool-btn.on {
+  background: var(--btn-active);
+  color: var(--btn-active-text);
+}
+.tool-btn.accent {
+  background: var(--accent-grad);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(110, 80, 240, 0.35);
+}
+.tool-btn.accent:hover { filter: brightness(1.07); box-shadow: 0 4px 14px rgba(110, 80, 240, 0.45); }
+
+/* File menu */
+.file-menu { width: 260px; max-height: calc(100vh - 80px); }
+.file-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 8px 12px; border: 0; border-radius: 9px;
+  background: transparent; color: var(--text-primary);
+  font: 500 13px var(--ui-font); text-align: left; cursor: pointer;
+}
+.file-item > span { flex: 1; display: flex; justify-content: space-between; }
+.file-item kbd { font: 500 11px var(--ui-font); color: var(--text-secondary); }
+.file-item svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.file-item:hover, .file-item:focus-visible { background: var(--btn-hover); outline: none; }
+.file-sep { height: 1px; margin: 5px 6px; background: var(--border-light); }

@@ -75,19 +75,7 @@ body.in-hub .topbar { display: none; }
 .page-row .seg-btn svg { width: 16px; height: 16px; }
 .page-row .panel-info { display: flex; text-align: left; justify-content: flex-start; gap: 4px 8px; margin: 0; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
 .page-row .panel-info dt { color: var(--text-secondary); }
-/* File menu */
-.file-menu { width: 260px; max-height: calc(100vh - 80px); }
-.file-item {
-  display: flex; align-items: center; gap: 10px; width: 100%;
-  padding: 8px 12px; border: 0; border-radius: 9px;
-  background: transparent; color: var(--text-primary);
-  font: 500 13px var(--ui-font); text-align: left; cursor: pointer;
-}
-.file-item > span { flex: 1; display: flex; justify-content: space-between; }
-.file-item kbd { font: 500 11px var(--ui-font); color: var(--text-secondary); }
-.file-item svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-.file-item:hover, .file-item:focus-visible { background: var(--btn-hover); outline: none; }
-.file-sep { height: 1px; margin: 5px 6px; background: var(--border-light); }
+/* File menu items now live in ../shared/office-tools.css (SH4) */
 .file-recent-head { color: var(--text-secondary); }
 .recent-inline { position: static !important; padding: 0 0 2px 14px; }
 .recent-inline[hidden] { display: none; }
