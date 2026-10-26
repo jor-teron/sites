@@ -14,6 +14,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,sans-
 .gauge-box{text-align:center}.gauge{width:100%;max-width:320px}
 .g-bg,.g-fg{fill:none;stroke-width:14;stroke-linecap:round}.g-bg{stroke:var(--line)}.g-fg{stroke:var(--acc);stroke-dasharray:0 252;transition:stroke-dasharray .3s}
 .g-needle{stroke:var(--fg);stroke-width:4;stroke-linecap:round;transform-origin:100px 110px;transform:rotate(-90deg);transition:transform .3s cubic-bezier(.34,1.6,.64,1)}.g-hub{fill:var(--fg)}
+.gauge.active .g-needle{stroke:#f97316}.gauge.active .g-hub{fill:#f97316}
 .g-val{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}.mut{color:var(--mut);font-size:14px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .hist{list-style:none;margin:0;padding:0;font-size:14px}.hist li{padding:4px 0;border-bottom:1px solid var(--line)}
