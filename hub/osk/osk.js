@@ -5,11 +5,9 @@
  * - A fixed panel on the Hub page (NOT a window / iframe), only as wide as the keys (--osk-w,
  *   centred); beside it nothing covers the desktop. z-index 95: over windows (90 = taskbar) and
  *   under the Hub menu, popovers, dialogs and right-click menus.
- * - Docked (default, every open starts docked at bottom centre): above the taskbar (below it when
- *   the taskbar is at the top); body.hub-osk-docked makes the desk (#wm-desk) end --osk-h higher,
- *   so maximised / snapped / normal windows stay above it. The grip slides it left / right.
- *   Undock = floating anywhere (no room taken), snaps back to the bottom / to the side edges
- *   while dragging (osk_drag.js).
+ * - H23: always floating (docked mode removed — its desk overlay blocked clicks). Every open starts
+ *   at bottom centre above the taskbar; drag the grip anywhere (osk_drag.js). It takes no room
+ *   from the desk and only its own box catches clicks. ✕ on the top bar closes it.
  * - It never becomes the active window and never takes focus (osk_board.js guard + tabindex -1);
  *   a key press puts focus back into the active window's frame if the Hub page had it, and back
  *   on the app's last text field if a click on the Hub page dropped it.
@@ -18,7 +16,7 @@
  *   fires keydown / keypress / keyup on the focused element (games) and types into inputs,
  *   textareas and contenteditable (insertText), plus Backspace / Delete / Enter / ← → / Home / End.
  * - Held keys are released on a window switch, mode switch, page blur / hide and when hidden.
- * - Toggle: ⌨ button in the taskbar tray, the board's hide key, or Ctrl+Alt+K.
+ * - Toggle: ⌨ button in the taskbar tray, ✕ on the top bar, or Ctrl+Alt+K.
  *   Shown / hidden is kept in localStorage 'sites-hub.osk' ('1' = shown).
  */
 (function () {
@@ -34,26 +32,31 @@
   panel.setAttribute('role', 'region');
   panel.setAttribute('aria-label', 'On-screen keyboard');
   panel.hidden = true;
-  // grip bar on top: drag = slide (docked) / move (floating); Undock / Dock button on the right
+  // grip bar on top: drag = move; ✕ close button on the right
   const grip = document.createElement('div');
   grip.className = 'osk-grip';
   grip.title = 'Drag to move the keyboard';
   const pill = document.createElement('span');
   pill.className = 'osk-pill';
-  const dockBtn = document.createElement('button');
-  dockBtn.type = 'button';
-  dockBtn.className = 'osk-dock';
-  dockBtn.tabIndex = -1;
-  grip.append(pill, dockBtn);
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'osk-close';
+  closeBtn.tabIndex = -1;
+  closeBtn.textContent = '✕';
+  closeBtn.title = 'Close keyboard (Ctrl+Alt+K)';
+  closeBtn.setAttribute('aria-label', 'Close keyboard');
+  grip.append(pill, closeBtn);
   const boardHost = document.createElement('div');
   boardHost.className = 'osk-body';
   panel.append(grip, boardHost);
   document.body.appendChild(panel);
   window.OSK_BOARD.guard(panel);
 
-  // Layout + a hide key at the end of the bottom row
+  // Layout (H23: no hide key at the bottom-right; the other keys take its room — ✕ on the top bar)
   const rows = window.OSK_LAYOUT.ROWS.map((r) => r.slice());
-  rows[rows.length - 1].push(['⌨▾', '', null, 1.3, { action: 'hide', say: 'Hide keyboard' }]);
+  // H23: docked mode is gone; drop its old body class / any old saved dock state
+  document.body.classList.remove('hub-osk-docked');
+  try { localStorage.removeItem('sites-hub.osk.docked'); } catch (_) { /* ignore */ }
 
   // ---- output: the Hub controller key path ----
   const held = new Map();   // kb_common id → message (keyup on release)
@@ -125,14 +128,19 @@
     onAction(name) { if (name === 'hide') setShown(false); },
   });
 
-  // ---- docked / floating (osk_drag.js); only docked takes room from the desk ----
-  const drag = window.OSK_DRAG.attach({
-    panel: panel, grip: grip, dockBtn: dockBtn,
-    onDock(docked) {
-      document.body.classList.toggle('hub-osk-docked', docked && !panel.hidden);
-      window.dispatchEvent(new Event('resize'));
-    },
+  // ---- floating, moved by the grip (osk_drag.js); takes no room from the desk ----
+  const drag = window.OSK_DRAG.attach({ panel: panel, grip: grip });
+
+  // ✕ close (pointerup: touchstart is cancelled on the panel, so no click)
+  let closeDown = false;
+  closeBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); closeDown = true; });
+  closeBtn.addEventListener('pointerup', (e) => {
+    if (!closeDown) return;
+    closeDown = false;
+    e.stopPropagation();
+    setShown(false);
   });
+  closeBtn.addEventListener('pointerleave', () => { closeDown = false; });
 
   function releaseAll() {
     for (const id of Array.from(held.keys())) api.keyUp(id);
@@ -162,13 +170,10 @@
     on = !!on;
     if (!on) releaseAll();
     panel.hidden = !on;
-    if (on) drag.reset();   // every open: docked at bottom centre (position is not kept)
+    if (on) drag.reset();   // every open: floating at bottom centre (position is not kept)
     document.body.classList.toggle('hub-osk-on', on);
-    document.body.classList.toggle('hub-osk-docked', on && drag.docked);
     if (btn) { btn.classList.toggle('on', on); btn.setAttribute('aria-pressed', String(on)); }
     if (!noSave) { try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (_) { /* private mode */ } }
-    // the desk changed size: let wm_windows.js keep the windows inside it
-    window.dispatchEvent(new Event('resize'));
     refocus();
   }
 

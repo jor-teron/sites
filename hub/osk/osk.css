@@ -1,8 +1,7 @@
 /*
  * Hub on-screen keyboard (hub/osk/osk.css) — the panel (osk.js), its grip (osk_drag.js) and keys
  * (osk_board.js). Desktop mode only. The panel is only as wide as the keys (--osk-w): nothing
- * covers the desktop beside it. While DOCKED (body.hub-osk-docked) the desk (#wm-desk) ends
- * --osk-h higher, so windows (normal, maximised, snapped) stay above it; floating takes no room.
+ * covers the desktop beside it. H23: always floating (osk_drag.js sets left / top), takes no room.
  * z-index 95: above windows and the taskbar (90), below the Hub menu (100), flyout (101),
  * popovers (200+), dialogs (2000) and right-click menus.
  */
@@ -18,34 +17,24 @@ body.wm-desktop #hub-osk:not([hidden]) {
   display: flex;
   flex-direction: column;
   position: fixed;
-  left: 0;                       /* osk_drag.js sets left (and top while floating) */
-  bottom: var(--wm-task-h);
+  left: 0;                       /* osk_drag.js sets left and top */
+  top: 0;
   width: var(--osk-w);
   height: var(--osk-h);
   z-index: 95;
   padding: 0 6px 6px;
   background: var(--wm-task-bg, rgba(20, 24, 32, 0.96));
   border: 1px solid var(--line, #343b48);
-  border-bottom: 0;
-  border-radius: 12px 12px 0 0;
-  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(0, 0, 0, 0.35);
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
 }
-html.hub-task-top body.wm-desktop #hub-osk:not([hidden]) { bottom: 0; padding-bottom: max(6px, env(safe-area-inset-bottom)); }
-/* floating (Undock): free position, all corners round, takes no room from the desk */
-body.wm-desktop #hub-osk.osk-float:not([hidden]),
-html.hub-task-top body.wm-desktop #hub-osk.osk-float:not([hidden]) {
-  bottom: auto;
-  border-bottom: 1px solid var(--line, #343b48);
-  border-radius: 12px;
-  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5), 0 3px 10px rgba(0, 0, 0, 0.35);
-}
 
-/* grip bar: drag handle + Dock / Undock */
+/* grip bar: drag handle + ✕ close */
 #hub-osk .osk-grip {
   flex: 0 0 22px;
   position: relative;
@@ -58,17 +47,14 @@ html.hub-task-top body.wm-desktop #hub-osk.osk-float:not([hidden]) {
 body.osk-dragging #hub-osk .osk-grip { cursor: grabbing; }
 #hub-osk .osk-pill { width: 56px; height: 5px; border-radius: 3px; background: var(--muted, #8a93a3); opacity: 0.7; }
 #hub-osk .osk-grip:hover .osk-pill { opacity: 1; }
-#hub-osk .osk-dock {
+#hub-osk .osk-close {
   position: absolute; right: 0; top: 1px;
   height: 20px; min-width: 32px; padding: 0 6px;
   border: 0; border-radius: 6px; background: transparent; color: var(--text, #eee);
   font: inherit; font-size: 14px; line-height: 1; cursor: pointer;
 }
-#hub-osk .osk-dock:hover { background: var(--wm-hover, rgba(255,255,255,0.08)); }
+#hub-osk .osk-close:hover { background: rgba(220, 60, 60, 0.85); color: #fff; }
 #hub-osk .osk-body { flex: 1 1 auto; min-height: 0; container-type: size; }
-
-/* the desk ends above the DOCKED keyboard (windows, maximised, snapped); the wallpaper stays */
-body.wm-desktop.hub-osk-on.hub-osk-docked #wm-desk { bottom: var(--osk-h); }
 
 /* snap preview while dragging the floating keyboard (same look as #wm-snap-pv in wm.css) */
 #osk-snap-pv {
