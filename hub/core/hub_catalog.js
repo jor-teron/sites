@@ -101,6 +101,7 @@ Weather Hourly,        weather-hourly/,  , , Weather
 NE-India Dictionary,   nei-dict/,        , , Language
 Caption for NEI,       caption-for-nei/, , , Language
 Learning HTML (Basic), learning-html/,   , , Learn
+Speed Test,            speedtest/,       , , Network
 `,
   "Lab": `# Lab apps — one per line. Paths are relative to this folder. Lines starting with # are comments.
 # icon optional (empty = <folder>/<folder>_icon.png or a letter tile); newtab 1 = own tab on desktop;
