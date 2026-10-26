@@ -29,6 +29,7 @@
    6. Decisions Jor made
    7. Known bugs and backlog
    8. Care notes for Team 1 and Team 2
+   9. Learn category: plan and finalized topics (added in D3)
 
 
 ================================================================================
@@ -780,4 +781,109 @@
 
 ================================================================================
  End of Team 3 week 1. Next Team 3 section goes below this line.
+================================================================================
+
+================================================================================
+ 9. LEARN CATEGORY: PLAN AND FINALIZED TOPICS (Games side, added in D3)
+================================================================================
+
+Status: PAUSED by Jor. The cards were too basic (e.g. Alphabet and Sounds was a
+one-line tutorial, not a full A-Z grid). Next step LRN3a (awaiting "Code"): block
+types in the kit (grid, table, example list; later diagram and compare), still in
+.txt, tested on English Basic > Alphabet and Sounds. Markdown (.md) later, with .txt
+kept.
+
+9.1 Rules Jor set
+ - Learn is its own category, separate from games. It belongs to the Games side,
+   which also owns apps/learn/learn-apps.csv.
+ - Teach basics, with one optional Expert toggle (no intermediate level). The shared
+   key learn.mode is one preference across all Learn apps.
+ - Real-world, real-life tutorials are preferred.
+ - Overlapping ideas are merged into broad apps, with topics inside the app (e.g.
+   Phone Tips goes inside Operating Systems and Devices; Cooking and Personal Finance
+   inside Life Skills).
+ - Section names are topic names only, never "Section A/B/C".
+ - Content lives in plain editable .txt files (index.txt lists topic order; one .txt
+   per topic), so no HTML/JS/CSS edits are needed for content.
+ - Shared code folder is apps/learn/common/ (not kit/, modules/ or engine).
+ - Feel: learning, not a school test. Last step button is "Done"; the optional quiz
+   is called "Quick check" (random questions), shown as the last tile and as a small
+   header button inside its own topic. Breadcrumb header (e.g. First Aid > Fainting >
+   Quick check), no underlined links, calm neutral slate/grey palette, emergency
+   notes as a plain highlighted panel with a bold label.
+ - Visuals (code-drawn, maybe motion) are wanted but parked; split releases when big.
+
+9.2 Built and live (finalized topics)
+ - First Aid (apps/learn/first-aid/, section Health): Cuts, Burns, Choking, CPR,
+   Nosebleed, Sprain, Fainting. Releases LRN1a (#193), LRN1c (#197).
+ - English Basic (apps/learn/english-basic/, section Language): Alphabet and Sounds,
+   Everyday Words, Simple Sentences, Questions and Answers, Common Phrases, Spelling
+   Tips. Releases LRN2a (#198), LRN2b csv row (#199).
+ - Also listed in learn-apps.csv (apps owned by the Apps side): NE-India Dictionary,
+   Caption for NEI (Language); Learning HTML (Basic), Code Lab (Coding).
+
+9.3 Agreed app plan: 31 apps in 9 sections (Jor: "keep all"; not built yet)
+ Nature
+   1 Water Kingdom (fish, sharks, whales, coral, rivers, ocean depths)
+   2 Animal Kingdom (mammals, birds, insects, reptiles, pets, food chains)
+   3 Dinosaur Age
+   4 Plant World (trees, flowers, fungi, crops, gardening, biomes)
+ Earth and Space
+   5 Earth and Atlas (globe, maps, countries, flags, landmarks, rivers and mountains)
+   6 Planet Earth (weather, climate, volcanoes, earthquakes, rocks, disasters)
+   7 Sky and Space (Sun, stars, Moon, planets, rockets, satellites, future tech)
+ Science
+   8 Human Body (organs, senses, brain, health, germs, medicine)
+   9 Physics Lab (forces, energy, light, sound, electricity, simple machines, optics)
+  10 Chemistry and Materials (periodic table, matter, everyday materials)
+  11 Life Science (genetics, evolution, microbes)
+ Technology
+  12 Computers and Internet (hardware, binary, web, networks, safety and cybersecurity)
+  13 Operating Systems and Devices (Android, iPhone, Windows, Linux, macOS, shortcuts)
+  14 Coding, Data and AI (coding basics, data, spreadsheets, AI, robots, game design)
+  15 Electronics and Making (circuits, robotics, DIY)
+ Language and Maths
+  16 English Basic (introduction, vocabulary, grammar, spelling, writing, idioms)
+  17 World Languages (greetings, numbers, phrases, scripts)
+  18 Maths and Logic (numbers, shapes, patterns, puzzles, riddles)
+ History and World
+  19 History and Inventions (timeline, empires, wars and peace, explorers, scientists)
+  20 World Cultures (food, festivals, faiths, dress, etiquette)
+  21 Civics and Law (government, rights, laws, economics)
+ Life Skills
+  22 Life Skills (money, cooking, home repair, travel, study skills, emergency skills)
+  23 Mind and Society (psychology, family, relationships, philosophy)
+  24 Careers and Business (jobs, trade, banks, startups)
+  25 Transport and Machines (cars, trains, planes, ships, bridges, car and bike care)
+ Arts and Fun
+  26 Music Basics
+  27 Art, Photo and Film (colour, drawing, cameras, comics and cartoons)
+  28 Stories and Mythology (myths, poetry, literature, folk tales)
+  29 Sports and Games (rules, events, board games, strategy, dance, magic tricks)
+ Outdoors
+  30 Survival and Outdoors (camping, knots, navigation, first aid)
+ Bonus
+  31 Trivia Arena (mixed quiz across all Learn apps)
+ Parked from earlier lists: Ocean Floor (folded into Water Kingdom), Flags and
+ Countries quiz.
+
+9.4 Real Life direction (wanted by Jor, details not finalized)
+ Jor wants real-life tutorials as their own focus. A 34-app Real Life list was
+ proposed (home and daily life, money and paperwork, health and safety, getting
+ around, tech in real life, family and community, outdoor and DIY), but Jor's later
+ direction is to put these in as topics inside the bigger apps above rather than as
+ separate apps.
+ Suggested next starters (undecided): Life Skills starter (cooking basics, personal
+ finance, study skills, fire safety); Operating Systems and Devices starter (phone
+ tips, Android basics, passwords).
+
+9.5 How to add a Learn app
+ New folder apps/learn/<app>/ with index.html (redirect), <app>.html,
+ <app>_icon.png, core/app.js, assets/data/index.txt + one .txt per topic, loading
+ ../common/. Then add a row to apps/learn/learn-apps.csv, a README line, and run
+ python3 hub/core/hub_appindex_gen.py --catalog-only (commit hub_catalog.js in the
+ same commit). Never bump the Hub build.
+
+================================================================================
+ End of section 9 (D3). Next Team 3 section goes below this line.
 ================================================================================
