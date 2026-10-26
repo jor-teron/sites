@@ -27,5 +27,17 @@ function initRibbon() {
     fileBtn: document.getElementById("of-file-btn"),
     fileMenu: document.getElementById("of-file-menu")
   });
+  /* DF13: hover opens tabs / File menu (shared ../shared/office-hover.js). */
+  if (typeof OfficeHover !== "undefined") {
+    var fb = document.getElementById("of-file-btn"), fm = document.getElementById("of-file-menu");
+    OfficeHover.attach({
+      tabsEl: tabsEl, tabSelector: ".of-tab",
+      selectTab: function (id) { ribbonSelectTab(id); },
+      fileBtn: fb, fileMenu: fm,
+      isFileOpen: function () { return !!(fm && !fm.hidden); },
+      setFile: function (v) { ribbonSetFile(v); },
+      enabled: function () { return !SHEET_SETTINGS || SHEET_SETTINGS.s.hoverTabs !== false; }
+    });
+  }
   if (typeof initPageSetup === "function") initPageSetup();
 }

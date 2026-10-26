@@ -129,6 +129,16 @@ Draftly.ribbon.init = function init() {
     if (menu.contains(e.target) || fileBtn.contains(e.target)) return;
     Draftly.ribbon.setFile(false);
   });
+  /* DF13: hover opens tabs / File menu (shared ../shared/office-hover.js). */
+  if (window.OfficeHover) OfficeHover.attach({
+    tabsEl: document.querySelector('.ribbon-tab') ? document.querySelector('.ribbon-tab').parentNode : null,
+    tabSelector: '.ribbon-tab',
+    selectTab: function (id) { Draftly.ribbon.selectTab(id); },
+    fileBtn: fileBtn, fileMenu: menu,
+    isFileOpen: Draftly.ribbon.isFileOpen,
+    setFile: function (v) { Draftly.ribbon.setFile(v); },
+    enabled: function () { var st = Draftly.settings && (Draftly.settings.s || (Draftly.settings.panel && Draftly.settings.panel.s)); return !st || st.hoverTabs !== false; }
+  });
   /* Any action (not the Recent header) closes the menu after it runs. */
   menu.addEventListener('click', function (e) {
     var t = e.target.closest ? e.target.closest('button') : null;

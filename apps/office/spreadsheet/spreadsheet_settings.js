@@ -2,7 +2,7 @@
  * spreadsheet_settings.js
  * SH1 Settings panel for Spreadsheet (gear at the right of the top bar), built with the shared
  * ../shared/office-settings.js. One localStorage key 'spreadsheet_settings'.
- * View: theme (light / dark / auto via ../shared/office-theme.js), gridlines, formula bar.
+ * View: theme, open tabs on hover (DF13), (light / dark / auto via ../shared/office-theme.js), gridlines, formula bar.
  * Editing: default cell font and size. About: version + reset.
  * Runs at load (scripts sit at the end of <body>) so the theme applies before first paint.
  */
@@ -31,14 +31,15 @@ function initSheetSettings() {
   if (typeof OfficeSettings === "undefined") return;
   SHEET_SETTINGS = OfficeSettings.create({
     key: SHEET_SETTINGS_KEY,
-    defaults: { theme: "dark", gridlines: true, formulaBar: true, font: "Segoe UI", fontSize: 13 },
+    defaults: { theme: "dark", gridlines: true, formulaBar: true, font: "Segoe UI", fontSize: 13, hoverTabs: true },
     gearBtn: document.getElementById("settingsBtn"),
     validate: function (s) { if (["light", "dark", "auto"].indexOf(s.theme) === -1) s.theme = "dark"; },
     sections: [
       { title: "View", rows: [
         { key: "theme", type: "select", id: "set-theme", label: "Theme", options: OfficeTheme.modes },
         { key: "gridlines", type: "switch", id: "set-gridlines", label: "Gridlines" },
-        { key: "formulaBar", type: "switch", id: "set-formula-bar", label: "Formula bar" }
+        { key: "formulaBar", type: "switch", id: "set-formula-bar", label: "Formula bar" },
+        { key: "hoverTabs", type: "switch", id: "set-hover-tabs", label: "Open tabs on hover" }
       ] },
       { title: "Editing", rows: [
         { key: "font", type: "select", id: "set-font", label: "Default font", options: SHEET_FONTS.map(function (f) { return [f, f]; }) },

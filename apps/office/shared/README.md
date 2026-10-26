@@ -23,3 +23,7 @@ set them on `body` so dark/light overrides flow through.
   (sections + migration in draftly-settings.js); Spreadsheet: `spreadsheet_settings`.
 - `office-colour.css` / `office-colour.js`: `OfficeColour.create({btn, arrow, menu, bar, palette, key,
   fallback, autoBar, onPick, onOpen, onClose, autoRemember})`. Split button + swatch grid, one open at a time.
+- `office-hover.js` (DF13): `OfficeHover.attach({tabsEl, tabSelector, selectTab, fileBtn, fileMenu,
+  isFileOpen, setFile, enabled, delay:100, closeDelay:300})`: mouse-only hover opens ribbon tabs (100 ms)
+  and the File menu (closes 300 ms after leaving). Touch keeps click. Used by Draftly + Spreadsheet,
+  each gated by a `hoverTabs` setting ("Open tabs on hover").
