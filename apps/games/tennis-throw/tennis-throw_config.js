@@ -1,7 +1,7 @@
 /*
  * Tennis Ball Blitz — configuration.
  * All tunable numbers, colors, target pool, ranks, keys and text.
- * tennis-throw_logic.js reads everything from TENNIS_THROW_CONFIG.
+ * All modules read everything from TENNIS_THROW_CONFIG (TB2: speeds are per second).
  */
 const TENNIS_THROW_CONFIG = {
   // Goal
@@ -16,8 +16,10 @@ const TENNIS_THROW_CONFIG = {
 
   // Physics
   physics: {
-    gravity: 0.35,           // added to ball vy every frame
-    ballSpeed: 21,           // speed at full power (TB1: was 12, too weak; apex rise = speed²/(2·gravity) ≈ 630px)
+    // TB2: per-second units (TB1 was 0.35 px/frame² and 21 px/frame at 60fps;
+    // ×3600 and ×60 keep the same arc). Apex rise = speed²/(2·gravity) = 630px.
+    gravity: 1260,           // px/s² added to ball vy
+    ballSpeed: 1260,         // px/s at full power
     reachFraction: 0.85,     // TB1: targets spawn no higher than this share of the max rise, so all are reachable
   },
 
@@ -25,13 +27,12 @@ const TENNIS_THROW_CONFIG = {
   aim: {
     angleMin: 0,             // minimum angle (degrees)
     angleMax: 180,           // maximum angle (degrees)
-    angleStep: 2,            // degrees per input tick
+    angleSpeed: 66.7,        // TB2: degrees per second while an aim key is held (was 2° per 30ms)
     powerMin: 0.1,           // minimum power
     powerMax: 1,             // maximum power
-    powerStep: 0.02,         // power change per input tick
-    inputIntervalMs: 30,     // how often held keys are applied
-    previewFrames: 36,       // TB3: dotted arc length in frames (~0.6s of flight at 60fps)
-    previewDotEvery: 3,      // TB3: draw one dot every N simulated frames
+    powerSpeed: 0.667,       // TB2: power per second while a power key is held (was 0.02 per 30ms)
+    previewSeconds: 0.6,     // TB3/TB2: dotted arc shows this much flight time
+    previewDotEvery: 0.05,   // TB2: one dot per this many seconds of flight
     crosshairSize: 20,       // half-size of the crosshair
     powerBarWidth: 60,       // width of the power bar
     powerBarHeight: 8,       // height of the power bar
@@ -60,10 +61,23 @@ const TENNIS_THROW_CONFIG = {
     pool: [
       { type: 'balloon', points: 5, emoji: '🎈', count: 4 },
       { type: 'bullseye', points: 10, emoji: '◎', count: 2 },
-      { type: 'bird', points: 15, emoji: '🐦', count: 2, speed: 1 },
+      { type: 'bird', points: 15, emoji: '🐦', count: 2, speed: 60 }, // TB2: speed in px/s (was 1 px/frame),
       { type: 'star', points: 20, emoji: '⭐', count: 2 },
       { type: 'gift', points: 25, emoji: '🎁', count: 1 },
     ],
+  },
+
+  // TB2: frame clock
+  loop: {
+    fps: 30,                 // fixed simulation and draw rate
+    maxCatchUpSteps: 5,      // after a stall, simulate at most this many steps at once
+  },
+
+  // TB2: touch / mouse drag-to-aim
+  drag: {
+    minPx: 15,               // shorter drags are taps (no throw)
+    fullPowerPx: 220,        // drag length (canvas px) that gives full power
+    lineColor: 'rgba(255,255,255,0.7)',
   },
 
   // TB1: throw limits (stop Space spam)
@@ -109,8 +123,11 @@ const TENNIS_THROW_CONFIG = {
   // On-screen text
   text: {
     paused: 'PAUSED — ENTER to resume',
-    pausedHint: 'ESC for a new game',                                      // TB3: second line on the pause screen                                   // canvas label while paused
-    controls: '← → aim | ↑ ↓ power | SPACE throw | ENTER pause | R reset aim | ESC new game', // hint under canvas
-    restart: 'Press SPACE / ENTER to play again',                            // end screen hint
+    pausedHint: 'ESC for a new game',                                      // TB3: second line on the pause screen
+    pausedTouch: 'Tap to resume',                                          // TB2: touch hint on the pause screen
+    startTouch: 'Touch: drag from anywhere to aim, release to throw',      // TB2: shown for the first seconds
+    startHintSeconds: 4,                                                   // TB2: how long the start hint shows
+    controls: '← → aim | ↑ ↓ power | SPACE throw | ENTER pause | R reset aim | ESC new game | Touch: drag to aim, release to throw', // hint under canvas
+    restart: 'Press SPACE / ENTER or tap to play again',                     // end screen hint (TB2: tap)
   },
 };

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tennis Ball Blitz TB1+TB3</title>
-  <link rel="stylesheet" href="tennis-throw.css" />
+  <title>Tennis Ball Blitz TB2</title>
+  <link rel="stylesheet" href="tennis-throw.css?v=TB2" />
 </head>
 <body>
   <div class="container">
@@ -25,7 +25,14 @@
     </div>
   </div>
 
-  <script src="tennis-throw_config.js"></script>
-  <script src="tennis-throw_logic.js"></script>
+  <!-- TB2: classic scripts sharing window.TT (ES modules are blocked on file://). Order matters. -->
+  <script src="tennis-throw_config.js?v=TB2"></script>
+  <script src="modules/state.js?v=TB2"></script>
+  <script src="modules/targets.js?v=TB2"></script>
+  <script src="modules/physics.js?v=TB2"></script>
+  <script src="modules/render.js?v=TB2"></script>
+  <script src="modules/input.js?v=TB2"></script>
+  <script src="modules/loop.js?v=TB2"></script>
+  <script src="tennis-throw_logic.js?v=TB2"></script>
 </body>
 </html>
