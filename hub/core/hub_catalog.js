@@ -50,7 +50,6 @@ Ant Farm,          ant-farm/,      , , Beta
 
 Aeroplane,          aeroplane/,                   , , Beta
 Island Game Demo,   island-demo/,                 , , Beta
-Aeroplane,          aeroplane/,                   , , Beta
 LandCraft,            landcraft/, , , Beta
 `,
   "Media": `# Media — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
