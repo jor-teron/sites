@@ -8,8 +8,7 @@
   var TV = (window.TV = window.TV || {});
 
   TV.config = {
-    // Category -> M3U path / URL. Local paths also have a generated
-    // <path>.js copy (channels/m3u-to-js.py) for file://.
+    // Category -> M3U path / URL.
     PLAYLISTS: {
       home: 'channels/home.m3u',
       kids: 'channels/kids.m3u',

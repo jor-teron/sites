@@ -10,7 +10,7 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
 - `tv.html` / `tv.css`: the current player page and styles (no-scrollbar rules included)
 - `core/`: the player scripts, plain `<script>` files (no build, no ES modules, so file:// works) loaded in this order. Each is one IIFE that adds to the only global, `window.TV`:
   - `tv_config.js` → `TV.config`, `TV.env`, `TV.state`: playlists, category tiles, logos, timings, storage keys ("EDIT THESE"); environment (`framed` = inside an iframe, `secure` = https page); shared state (`items`, `currentIndex`, `currentCategory`)
-  - `tv_playlist.js` → `TV.playlist`: M3U parser, fetch / `.m3u.js` loader, `load(category, options)` with the stale-load guard and Home fallback; http-only marking (`isHttpOnly`, `isPlayable`)
+  - `tv_playlist.js` → `TV.playlist`: M3U parser, fetch loader, `load(category, options)` with the stale-load guard and Home fallback; http-only marking (`isHttpOnly`, `isPlayable`)
   - `tv_player.js` → `TV.player`: `play(channel)` with hls.js or native HLS; the `<video>` element
   - `tv_ui.js` → `TV.ui`: channel grid, highlight, number display, grid show / auto-hide, `columns()` (columns actually rendered), `toast(msg)`
   - `tv_input.js` → `TV.input`: keys, grid-aware arrow math (`move`), number zap, click / tap shows the grid
@@ -40,10 +40,10 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
 **`channels/`**
 - `home.csv`, `home-more.csv`, `kids.csv`: the wanted channels, one `tvg-id` per row (+ optional group)
 - `home.m3u`, `home-more.m3u`, `kids.m3u`: playlists generated from the CSVs
-- `home.m3u.js`, `home-more.m3u.js`, `kids.m3u.js`: GENERATED copies of the `.m3u` files (`window.TV_M3U['<name>'] = "..."`) so v1 works from file://. Don't edit them by hand
-- `m3u-to-js.py`: writes the `.m3u.js` copies (`python3 m3u-to-js.py` inside `channels/`); `split-m3u.sh` runs it at the end
 - `local.m3u`: an extra local list (not used by any page)
-- `split-m3u.sh`: Bash script. Downloads the iptv-org master lists (India, kids, full index, in that order) and writes `<csv>.m3u` for each CSV in CSV row order (first match per `tvg-id` wins, quality tags like "(720p)" are stripped from names). Run `./split-m3u.sh` inside `channels/` when streams go stale; it also regenerates the `.m3u.js` files.
+- `split-m3u.sh`: Bash script. Downloads the iptv-org master lists (India, kids, full index, in that order) and writes `<csv>.m3u` for each CSV in CSV row order (first match per `tvg-id` wins, quality tags like "(720p)" are stripped from names). Run `./split-m3u.sh` inside `channels/` when streams go stale.
+
+**`garbage/`**: retired `.m3u.js` copies + `m3u-to-js.py` (TV8, see `garbage/README.md`)
 
 **`legacy/tv-old/` (legacy)**
 - `index.html`, `more.html`, `more-tv.html` + CSS: the original "Android TV homepage" launcher (app icons / links, clock). Kept for reference only; not linked from the hub.
@@ -53,7 +53,7 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
 ## 3. Behaviour rules (v1, the main player)
 - **Start:** resumes the last channel (category + name / URL / position from localStorage); otherwise opens the Home playlist (`channels/home.m3u`) and plays its first channel.
 - **Grid:** channel tiles (number, logo, name, group) over the video, 3–4 columns. Home starts with tiles: **Hub** (link to `../`), **Kids**, **More**, then its channels. More starts with **India**, **Import**, then **Home**, then its channels (TV6: India moved off Home; TV7: Import). Kids and India start with a **Home** tile; the Import grid starts with **Home**, **More**, **Import…**. On file:// the Hub tile opens `../index.html` (not a folder listing). Inside an iframe (the Hub) the Hub tile is hidden, because the hub bridge has no "go home" message and navigating the frame would open a hub inside the hub. The grid hides 5 s after the last action; any key or click shows it again.
-- **Categories:** Home = `channels/home.m3u`, Kids = `channels/kids.m3u`, More = `channels/home-more.m3u`, India = iptv-org India list (online, opened from the More grid). Switching loads the list in place (no page change). Over http(s) the `.m3u` is fetched (falls back to the `.m3u.js` if the fetch fails); from file:// the `.m3u.js` is loaded with a script tag (once per list). India stays online-only.
+- **Categories:** Home = `channels/home.m3u`, Kids = `channels/kids.m3u`, More = `channels/home-more.m3u`, India = iptv-org India list (online, opened from the More grid). Switching loads the list in place (no page change). Every list is fetched (TV8: the old `.m3u.js` file:// copies are in `garbage/`), so lists need a web page (GitHub Pages, the Hub or a local server), not file://.
 - **Import (TV7):** the **Import** tile (in More) opens a small panel: *Show channels* (when a list is saved), *Open file (.m3u / .m3u8)*, a URL box with *Load URL*, *Clear saved list*, *Close*. A `.m3u` / `.m3u8` file can also be dropped anywhere on the page. The playlist is parsed by the normal TV parser and shown as the **Import** grid (Home / More / Import… tiles + channels, group shown on each tile); the first channel plays. The raw text + name / URL is saved in IndexedDB, so a reload restores the list and the saved channel resumes. A new file or URL **replaces** the saved list; **Import…** reopens the panel to replace or clear. Clear deletes it (and an Import saved channel) and goes back to More. A URL that is itself one HLS stream (`#EXT-X-STREAM-INF` / `#EXT-X-TARGETDURATION`) becomes a single channel. URL import needs CORS on the other server (from file:// too); `http://` URLs are refused on https pages. Files over 20 MB and non-playlists are refused with a toast. If IndexedDB is blocked the list works for this visit only.
 - **Deep link:** `tv.html#import` opens the Import panel (over the saved Import grid if there is one, else over the normal start list); changing the hash to `#import` later opens it too.
 - **Playing:** hls.js when the browser supports it, else native HLS (Safari / iOS). Video is fitted (contain) and centred. When a stream fails, the "no signal" poster shows with a short toast (see Errors).
@@ -98,8 +98,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 
 ## 8. Safe settings
 - `core/tv_config.js`: `PLAYLISTS` (category → M3U path / URL), `DEFAULT_CATEGORY`, `CATEGORY_TILES` (Hub link + categories; name / href / logo; `screen` = the list that shows the tile, `'home'` if missing, e.g. India has `screen: 'more'`), `HOME_CATEGORY_LOGO`, `NUMBER_DELAY` (1500 ms), `HIDE_DELAY` (5000 ms), `AUTOPLAY_DELAY` (200 ms), `TOAST_DELAY` (3000 ms), `STORAGE_KEY` / `OLD_STORAGE_KEY`, `IMPORT_DB` (`tv-import-v1`), `IMPORT_MAX_BYTES` (20 MB). Action tiles: `type: 'action'` + `action` (a key of `TV.actions`, e.g. `'import'`)
-- `channels/*.csv`: add / remove / reorder channels by `tvg-id`, then run `split-m3u.sh` (it also rewrites the `.m3u.js` files)
-- Hand-edited a `channels/*.m3u`? Run `python3 m3u-to-js.py` in `channels/` and commit the `.m3u.js` too, or file:// keeps the old list
+- `channels/*.csv`: add / remove / reorder channels by `tvg-id`, then run `split-m3u.sh`
 - `split-m3u.sh` top block: `MASTER_M3U_URLS`, `CSV_FILES`, `RES_TAGS`
 - v3: `js/config.js`, `js/config-more.js` (`SPECIAL_TILES`)
 
@@ -120,7 +119,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 
 ## 10. Known limits
 - Needs the internet for streams: every stream is online (hls.js 1.5.20 is vendored in `vendor/hls/` since TV1). Free streams often go offline; refresh the playlists with `split-m3u.sh`.
-- From file:// (TV2): Home / Kids / More work offline-capable via `.m3u.js`; India needs the internet. Streams without CORS headers (e.g. 9XM) fail on file:// and http(s) alike. Chrome keeps one localStorage for all file:// pages, so the saved channel is shared with other file:// apps.
+- From file:// the channel lists don't load (TV8 dropped the `.m3u.js` copies; TV needs the internet anyway). Streams without CORS headers (e.g. 9XM) fail on file:// and http(s) alike. Chrome keeps one localStorage for all file:// pages, so the saved channel is shared with other file:// apps.
 - The v1 "no signal" poster is the local `image/no_signal.svg` (TV1; the old `../image/tv_no_signal.jpeg` was removed).
 - Inside the Hub frame there is no way back to the Hub from TV (the tile is hidden; the hub bridge has no navigate message). Use the Hub's own controls.
 - On an https host most iptv-org streams that are `http://` cannot play (mixed content); they are marked, not fixed. Use an http:// or file:// page for them.
@@ -152,6 +151,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 - 2026-10-23 IST: TV5: grid-aware Up / Down (by rendered columns, wrap by column); on-screen error toast (playlist failure, empty playlist, stream error, http-only); Hub tile hidden when framed, `../index.html` on file://; http:// channels dimmed with an HTTP badge and skipped on https pages (`TOAST_DELAY`, `TV.env`).
 - 2026-10-23 IST: TV6: India tile moved off the Home grid; it is now the first tile in More (before the Home tile). Home = Hub, Kids, More + channels. `CATEGORY_TILES` entries take `screen`. India behaviour (online-only, toast, fallback) and saved-channel resume unchanged.
 - 2026-10-23 IST: TV7: **Import** tile in More (after India) opens an Import panel: open an `.m3u` / `.m3u8` file, drop one on the page, or load a URL (fetch; toasts on CORS / HTTP errors). Parsed by the TV parser, shown as the Import grid (Home / More / Import… + channels), saved in IndexedDB `tv-import-v1` (restored on reload, replace / clear), saved-channel resume works; `tv.html#import` opens the panel. New `core/tv_import.js`; `TV.playlist.registerSource`, action tiles (`TV.actions`). Not taken from `apps/lab/iptv-player`: bare URL lines without `#EXTINF`, native video controls, now-playing label, channel count, G / Escape grid focus, initial-letter icons (it has no search or groups either).
+- 2026-10-26 IST: TV8: dropped the `.m3u.js` file:// copies and `m3u-to-js.py` (moved to `garbage/` with a note); `tv_playlist.js` just fetches; `split-m3u.sh` no longer writes them.
 
 ## 12. Related apps
 - Hub: `../hub/docs/hub_readme.md` (TV is in Favorite and Media, and a home tile that opens it in a new tab)

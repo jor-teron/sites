@@ -1,6 +1,6 @@
 /*
  * TV: playlists (tv/core/tv_playlist.js)
- * M3U parsing, loading (fetch, or generated .m3u.js on file://) and the
+ * M3U parsing, loading (fetch) and the
  * stale-load guard. TV.playlist.load(category, options) swaps the list.
  */
 (function () {
@@ -10,7 +10,6 @@
   var state = TV.state;
 
   var loadToken = 0; // bumps on every load(); stale responses are ignored (TV1)
-  var m3uScriptLoads = {}; // key -> Promise<string>, so each .m3u.js is injected once (TV2)
   var sources = {}; // category -> function () -> Promise<text>, for lists not in PLAYLISTS (TV7: import)
 
   // ---------- parse ----------
@@ -67,9 +66,7 @@
     return result;
   }
 
-  // ---------- text: fetch, or .m3u.js on file:// ----------
-  // Browsers block fetch() on file://, so local playlists also exist as
-  // generated channels/<name>.m3u.js (window.TV_M3U['<name>'] = "...").
+  // ---------- text: fetch (TV8: no .m3u.js / file:// copies) ----------
   function isLocalPlaylist(url) {
     return !/^[a-z][a-z0-9+.-]*:/i.test(url); // relative path, no scheme
   }
@@ -98,51 +95,11 @@
     return !!(config.PLAYLISTS[category] || sources[category]);
   }
 
-  function m3uKey(url) {
-    return url.split('/').pop().replace(/\.m3u8?$/i, '');
-  }
-
-  function loadM3uScript(url) {
-    var key = m3uKey(url);
-    if (window.TV_M3U && typeof window.TV_M3U[key] === 'string') {
-      return Promise.resolve(window.TV_M3U[key]);
-    }
-    if (!m3uScriptLoads[key]) {
-      m3uScriptLoads[key] = new Promise(function (resolve, reject) {
-        var script = document.createElement('script');
-        script.src = url + '.js';
-        script.onload = function () {
-          var text = window.TV_M3U && window.TV_M3U[key];
-          if (typeof text === 'string') resolve(text);
-          else reject(new Error('No TV_M3U["' + key + '"] in ' + script.src));
-        };
-        script.onerror = function () {
-          reject(new Error('Could not load ' + script.src));
-        };
-        document.head.appendChild(script);
-      }).catch(function (err) {
-        delete m3uScriptLoads[key]; // allow a retry later
-        throw err;
-      });
-    }
-    return m3uScriptLoads[key];
-  }
-
   function getPlaylistText(url) {
-    var local = isLocalPlaylist(url);
-    if (local && location.protocol === 'file:') {
-      return loadM3uScript(url); // skip fetch: it always fails (and logs) on file://
-    }
-    return fetch(url)
-      .then(function (res) {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.text();
-      })
-      .catch(function (err) {
-        if (!local) throw err; // online lists (India) stay online-only
-        console.warn('fetch failed for ' + url + ', trying ' + url + '.js', err);
-        return loadM3uScript(url);
-      });
+    return fetch(url).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    });
   }
 
   // ---------- tiles before the channels ----------
