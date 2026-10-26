@@ -1,20 +1,26 @@
 /*
-  Hub — chat bubble (release 4, hub_chat.js). Pooh icon before the Gamepad icon,
-  unread badge, small drop-down panel (last ~20 messages + input), one quiet toast.
+  Hub — chat bubble (release 4, hub_chat.js). Pooh icon before the Gamepad icon + unread badge.
+  H27: the panel itself is a full-height side panel (hub_panels.css .hub-side-panel); this file
+  only styles what is inside it: header, bubbles, input bar.
 */
 .chat-btn { position: relative; min-width: 40px; font-size: 22px; }
 .chat-badge { position: absolute; top: 2px; right: -2px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #ff5d8f; color: #fff; font: 700 11px/18px system-ui, sans-serif; text-align: center; }
-#chat-panel { position: fixed; top: 48px; right: 8px; z-index: 9000; width: min(360px, calc(100vw - 16px)); max-height: min(70vh, 520px); display: flex; flex-direction: column;
-  background: linear-gradient(160deg, #121a33, #1a1030); color: #f3ecff; border: 1px solid rgba(255,190,80,.35); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,.5); overflow: hidden; font: 14px system-ui, sans-serif; }
-#chat-panel[hidden] { display: none; }
-.cp-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: linear-gradient(90deg, rgba(43,124,255,.35), rgba(255,178,46,.35)); font-weight: 700; }
-.cp-head span { flex: 1; }
-.cp-log { flex: 1; min-height: 120px; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
-.cp-msg { max-width: 85%; padding: 6px 10px; border-radius: 14px; background: #4a3410; word-wrap: break-word; align-self: flex-start; }
-.cp-msg.me { align-self: flex-end; background: linear-gradient(135deg, #2b7cff, #8a4dff); }
-.cp-msg b { display: block; font-size: 11px; opacity: .8; }
-.cp-empty { opacity: .6; text-align: center; padding: 16px; }
-.cp-form { display: flex; gap: 6px; padding: 8px; border-top: 1px solid rgba(255,255,255,.1); }
-.cp-form input { flex: 1; min-width: 0; min-height: 44px; border-radius: 12px; border: 1px solid rgba(255,190,80,.4); background: rgba(255,255,255,.06); color: #fff; padding: 0 10px; font-size: 15px; }
-#chat-panel button { min-height: 44px; min-width: 44px; border: 0; border-radius: 12px; padding: 0 12px; cursor: pointer; font-size: 14px; color: #fff; background: rgba(255,255,255,.12); }
-#chat-panel .cp-send { background: linear-gradient(135deg, #ffb22e, #ff7a2e); color: #2a1500; font-weight: 700; }
+
+#chat-panel .cp-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+#chat-panel .cp-title strong { font-size: 19px; }
+.cp-me { display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 13px; color: var(--hp-muted); }
+.cp-me input { min-width: 0; width: 14em; min-height: 30px; padding: 2px 8px; border-radius: 8px; border: 1px solid var(--hp-line); background: var(--hp-field); color: var(--hp-text); font: inherit; font-size: 13px; }
+.cp-log { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
+.cp-msg { position: relative; max-width: 78%; padding: 8px 12px 6px; border-radius: 18px 18px 18px 6px; background: var(--hp-card); border: 1px solid var(--hp-line); color: var(--hp-text); align-self: flex-start; margin-top: 8px; overflow-wrap: anywhere; }
+.cp-msg.cont { margin-top: 0; border-top-left-radius: 6px; }
+.cp-msg.me { align-self: flex-end; border-radius: 18px 18px 6px 18px; background: var(--accent, #6ea8fe); border-color: transparent; color: #fff; }
+.cp-msg.me.cont { border-top-right-radius: 6px; }
+.cp-who { display: block; font-size: 12px; font-weight: 700; color: var(--accent, #6ea8fe); margin-bottom: 2px; }
+.cp-text { font-size: 15px; line-height: 1.4; white-space: pre-wrap; }
+.cp-time { display: block; text-align: right; font-size: 11px; opacity: .65; margin-top: 2px; }
+.cp-empty { margin: auto; color: var(--hp-muted); text-align: center; padding: 24px; font-size: 15px; }
+.cp-form { display: flex; gap: 10px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--hp-line); background: var(--hp-head); }
+.cp-form input { flex: 1; min-width: 0; min-height: 48px; border-radius: 24px; border: 1px solid var(--hp-line); background: var(--hp-field); color: var(--hp-text); padding: 0 18px; font-size: 16px; font-family: inherit; }
+.cp-form input:focus, .cp-me input:focus { outline: 2px solid var(--accent, #6ea8fe); outline-offset: 0; }
+#chat-panel .cp-send { min-height: 48px; min-width: 76px; border: 0; border-radius: 24px; padding: 0 18px; cursor: pointer; font: 700 15px system-ui, sans-serif; background: var(--accent, #6ea8fe); color: #fff; }
+#chat-panel .cp-full { min-height: 40px; }
