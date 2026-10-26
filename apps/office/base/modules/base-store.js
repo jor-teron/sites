@@ -2,12 +2,13 @@
  * base-store.js  (BS1)
  * Data model + IndexedDB storage for Base. Whole database kept in memory (small) and saved as ONE
  * record ('db') in IndexedDB 'office-base'; falls back to memory-only with a toast.
- *   BASE.db = { tables: [{ id, name, fields: [{id, name, type}], rows: [{id, v: {fieldId: value}}] }], current }
+ *   BASE.db = { tables: [{ id, name, fields: [{id, name, type}], rows: [{id, v: {fieldId: value}}] }], current,
+ *               queries: [saved query, see base-query.js] (BS2) }
  *   Types: text | number | date | bool.
  * API: BaseStore.load(cb), BaseStore.save() (debounced autosave), BaseStore.newTable(name, fields),
  *      BaseStore.table(), BaseStore.templates, BaseStore.uid()
  */
-var BASE = { db: { tables: [], current: null }, memOnly: false, sort: null, view: "grid", formIndex: 0, selRow: null, search: "" };
+var BASE = { db: { tables: [], current: null, queries: [] }, query: null, totals: false, memOnly: false, sort: null, view: "grid", formIndex: 0, selRow: null, search: "" };
 
 var BaseStore = (function () {
   var DB_NAME = "office-base", STORE = "kv", idb = null, saveT = null;

@@ -1,12 +1,12 @@
 /*
- * base-ui.js  (BS1)
+ * base-ui.js  (BS1, BS2: Query tab, Totals toggle, dropdowns for field type + template)
  * Base app shell: ribbon (shared office-ribbon / hover / collapse), Settings panel (office-settings,
  * key 'base_settings'), File menu, table + field + record commands, view switch, starter templates, boot.
- * Field editing uses OfficeDialog.form: one "name : type" box per field (empty = delete field).
- * Types typed as text / number / date / yes-no.
+ * Field editing uses OfficeDialog.form: a name box + type dropdown per field (empty name = delete field).
  */
-var BASE_RIBBON_TABS = [{ id: "home", label: "Home" }, { id: "view", label: "View" }];
-var BASE_VERSION = "BS1";
+var BASE_RIBBON_TABS = [{ id: "home", label: "Home" }, { id: "query", label: "Query" }, { id: "view", label: "View" }];
+var BASE_VERSION = "BS2";
+var BASE_TYPE_OPTS = [{ value: "text", label: "Text" }, { value: "number", label: "Number" }, { value: "date", label: "Date" }, { value: "bool", label: "Yes/No" }];
 var BASE_RIBBON = null, BASE_COLLAPSE = null, BASE_SETTINGS = null;
 var BASE_TYPES = { text: "Text", number: "Number", date: "Date", bool: "Yes/No" };
 
@@ -42,7 +42,9 @@ var BaseUI = (function () {
     });
     $("grid-wrap").hidden = BASE.view !== "grid"; $("form-wrap").hidden = BASE.view !== "form";
     $("btn-view-grid").classList.toggle("on", BASE.view === "grid"); $("btn-view-form").classList.toggle("on", BASE.view === "form");
+    $("btn-totals").classList.toggle("on", !!BASE.totals);
     if (BASE.view === "grid") BaseGrid.render(); else BaseForm.render();
+    if (typeof BaseQuery !== "undefined") BaseQuery.renderPicker();
     if (typeof BASE_HUB !== "undefined" && BASE_HUB.sendTitle) BASE_HUB.sendTitle();
   }
   function switchTable(id) { BASE.db.current = id; BASE.sort = null; BASE.selRow = null; BASE.formIndex = 0; BaseStore.save(); render(); }
@@ -59,10 +61,10 @@ var BaseUI = (function () {
   function uniqueName(n) { var base = n, i = 2; while (BASE.db.tables.some(function (t) { return t.name === n; })) n = base + " " + i++; return n; }
   function fromTemplate(k, name) { var tp = BaseStore.templates[k]; BaseStore.newTable(uniqueName(name), tp.fields, tp.rows); BASE.sort = null; BASE.selRow = null; render(); toast("Table “" + BaseStore.table().name + "” created"); }
   function newTable() {
-    OfficeDialog.form({ title: "New table", message: "Template: Contacts, Expenses, Stock or Blank",
-      fields: [{ key: "name", label: "Table name", value: "Table" }, { key: "tpl", label: "Template", value: "Blank" }],
-      validate: function (v) { return !v.name.trim() ? "Enter a name" : matchTpl(v.tpl) ? "" : "Template: Contacts, Expenses, Stock or Blank"; }
-    }).then(function (v) { if (v) fromTemplate(matchTpl(v.tpl), v.name.trim()); });
+    OfficeDialog.form({ title: "New table",
+      fields: [{ key: "name", label: "Table name", value: "Table" }, { key: "tpl", label: "Template", type: "select", options: Object.keys(BaseStore.templates), value: "Blank" }],
+      validate: function (v) { return !v.name.trim() ? "Enter a name" : ""; }
+    }).then(function (v) { if (v) fromTemplate(matchTpl(v.tpl) || "Blank", v.name.trim()); });
   }
   function matchTpl(s) { s = String(s || "").trim().toLowerCase() || "blank"; return Object.keys(BaseStore.templates).filter(function (k) { return k.toLowerCase().indexOf(s) === 0; })[0]; }
   function renameTable() {
@@ -89,8 +91,8 @@ var BaseUI = (function () {
   }
   function addField() {
     var t = BaseStore.table(); if (!t) return;
-    OfficeDialog.form({ title: "Add field", fields: [{ key: "name", label: "Field name", value: "" }, { key: "type", label: "Type: text, number, date, yes/no", value: "text" }],
-      validate: function (v) { return !v.name.trim() ? "Enter a name" : parseType(v.type) ? "" : "Type must be text, number, date or yes/no"; }
+    OfficeDialog.form({ title: "Add field", fields: [{ key: "name", label: "Field name", value: "" }, { key: "type", label: "Type", type: "select", options: BASE_TYPE_OPTS, value: "text" }],
+      validate: function (v) { return !v.name.trim() ? "Enter a name" : ""; }
     }).then(function (v) {
       if (!v) return; var f = { id: BaseStore.uid(), name: v.name.trim(), type: parseType(v.type) };
       t.fields.push(f); t.rows.forEach(function (r) { r.v[f.id] = f.type === "bool" ? false : ""; }); BaseStore.save(); render();
@@ -98,18 +100,19 @@ var BaseUI = (function () {
   }
   function editFields() {
     var t = BaseStore.table(); if (!t) return;
-    OfficeDialog.form({ title: "Fields of " + t.name, message: "Edit “name : type” (text, number, date, yes/no). Clear a box to delete that field.",
-      fields: t.fields.map(function (f, i) { return { key: f.id, label: "Field " + (i + 1), value: f.name + " : " + typeLabel(f.type) }; }),
-      validate: function (v) {
-        var keep = 0, bad = "";
-        t.fields.forEach(function (f) { var s = v[f.id].trim(); if (!s) return; keep++; var p = s.split(":"); if (!p[0].trim()) bad = "A field needs a name"; else if (!parseType(p[1])) bad = "Unknown type in “" + s + "”"; });
-        return bad || (keep ? "" : "Keep at least one field");
-      }
+    var fs = [];
+    t.fields.forEach(function (f, i) {
+      fs.push({ key: "n_" + f.id, label: "Field " + (i + 1) + " name", value: f.name });
+      fs.push({ key: "t_" + f.id, label: "Type", type: "select", options: BASE_TYPE_OPTS, value: f.type });
+    });
+    OfficeDialog.form({ title: "Fields of " + t.name, message: "Rename or change the type. Clear a name to delete that field.", fields: fs,
+      validate: function (v) { return t.fields.some(function (f) { return v["n_" + f.id].trim(); }) ? "" : "Keep at least one field"; }
     }).then(function (v) {
       if (!v) return;
       t.fields = t.fields.filter(function (f) {
-        var s = v[f.id].trim(); if (!s) { t.rows.forEach(function (r) { delete r.v[f.id]; }); return false; }
-        var p = s.split(":"), nt = parseType(p[1]); f.name = p[0].trim();
+        var nm = v["n_" + f.id].trim(), nt = v["t_" + f.id] || f.type;
+        if (!nm) { t.rows.forEach(function (r) { delete r.v[f.id]; }); return false; }
+        f.name = nm;
         if (nt !== f.type) { t.rows.forEach(function (r) { r.v[f.id] = BaseCsv.cast(String(r.v[f.id] === true ? "yes" : r.v[f.id] === false ? "" : r.v[f.id]), nt); if (nt === "number" && isNaN(r.v[f.id])) r.v[f.id] = ""; }); f.type = nt; }
         return true;
       });
@@ -187,6 +190,15 @@ function initBaseSettings() {
   $("btn-field-edit").addEventListener("click", BaseUI.editFields);
   $("btn-view-grid").addEventListener("click", function () { BaseUI.setView("grid"); });
   $("btn-view-form").addEventListener("click", function () { BaseUI.setView("form"); });
+  $("btn-totals").addEventListener("click", function () { BASE.totals = !BASE.totals; try { localStorage.setItem("base_totals", BASE.totals ? "1" : ""); } catch (e) {} BaseUI.render(); });
+  try { BASE.totals = !!localStorage.getItem("base_totals"); } catch (e) {}
+  $("btn-query").addEventListener("click", BaseQuery.open);
+  $("btn-query-clear").addEventListener("click", BaseQuery.clear);
+  $("btn-query-save").addEventListener("click", BaseQuery.save);
+  $("btn-query-rename").addEventListener("click", BaseQuery.rename);
+  $("btn-query-delete").addEventListener("click", BaseQuery.remove);
+  $("btn-query-sql").addEventListener("click", function () { BaseQuery.open(); BaseQuery.toggleSql(); });
+  $("query-pick").addEventListener("change", function (e) { if (e.target.value) BaseQuery.pick(e.target.value); });
   $("btn-sort-clear").addEventListener("click", function () { BASE.sort = null; BaseUI.render(); });
   var st = null;
   $("search").addEventListener("input", function (e) { clearTimeout(st); st = setTimeout(function () { BASE.search = e.target.value; BaseUI.render(); }, 150); });

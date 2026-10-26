@@ -63,3 +63,25 @@ body.in-hub .of-topbar { display: none; }
 @keyframes base-jelly { 0% { transform: scale(.96); } 40% { transform: scale(1.02); } 70% { transform: scale(.995); } 100% { transform: none; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 @media print { .of-topbar, .of-ribbon, .base-status, #of-file-menu { display: none !important; } body { height: auto; background: #fff; color: #000; } .base-main { overflow: visible; } }
+
+/* BS2: query builder panel, totals row */
+.base-query-wrap { padding: 6px 0 10px; }
+.bq { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 12px 14px; animation: base-jelly .45s; }
+.bq-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.bq-label { margin: 12px 0 4px; font-size: 13px; color: var(--muted); }
+.bq-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+.bq-sel, .bq-val { min-height: 44px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--cell); font-size: 15px; }
+.bq-val { flex: 1; min-width: 120px; }
+.bq-join { font-size: 12px; font-weight: 700; color: var(--sel); min-width: 28px; }
+.bq-x { min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid var(--border); background: var(--btn); cursor: pointer; transition: transform .2s cubic-bezier(.34,1.56,.64,1); }
+.bq-x:active { transform: scale(.85); }
+.bq-check { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 10px; border: 1px solid var(--border); border-radius: 20px; background: var(--btn); cursor: pointer; }
+.bq-check input { width: 20px; height: 20px; accent-color: var(--sel); }
+.base-btn.on, .of-ribbon button.on { background: var(--on); border-color: var(--sel); }
+.bq-sql { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--cell); border: 1px dashed var(--border); animation: base-jelly .45s; }
+.bq-sql pre { margin: 0 0 8px; white-space: pre-wrap; font: 14px ui-monospace, Consolas, monospace; color: var(--sel); }
+.bq-sql ul { margin: 0; padding-left: 18px; font-size: 13px; }
+.bq-sql code { font-weight: 600; }
+.bq-note { margin-top: 6px; font-size: 12px; color: var(--muted); }
+.base-grid tfoot td { position: sticky; bottom: 0; background: var(--panel); padding: 6px 10px; font-size: 12px; color: var(--muted); border-top: 2px solid var(--sel); }
+@media print { .base-query-wrap { display: none; } }

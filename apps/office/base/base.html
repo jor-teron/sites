@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="../shared/office-toast.css?v=1">
   <link rel="stylesheet" href="../shared/office-settings.css?v=2">
   <link rel="stylesheet" href="../shared/office-collapse.css?v=1">
-  <link rel="stylesheet" href="base.css?v=1">
+  <link rel="stylesheet" href="base.css?v=2">
 </head>
 <body>
   <!-- TOP BAR: File + tabs (built from BASE_RIBBON_TABS by ../shared/office-ribbon.js); hidden in the Hub -->
@@ -34,6 +34,8 @@
     <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print</span></button>
     <button type="button" class="file-item" role="menuitem" id="settingsMenuBtn" data-icon="fileSettings"><span>Settings</span></button>
     <div class="file-sep" role="separator"></div>
+    <div class="base-recent-title" id="file-queries-title" hidden>Saved queries</div>
+    <div id="file-queries"></div>
     <div class="base-recent-title">Tables</div>
     <div id="file-tables"></div>
   </div>
@@ -57,6 +59,21 @@
         <input id="search" type="search" placeholder="Search…" aria-label="Search records">
       </div>
     </div>
+    <div class="of-panel" role="tabpanel" id="of-panel-query" data-tab="query" hidden>
+      <div class="of-group tool-group" aria-label="Query">
+        <button type="button" id="btn-query" title="Open the query builder">Query builder</button>
+        <button type="button" id="btn-query-clear" title="Show all records again">Show all</button>
+      </div>
+      <div class="of-group tool-group" aria-label="Saved queries">
+        <select id="query-pick" title="Run a saved query" aria-label="Saved queries"></select>
+        <button type="button" id="btn-query-save" title="Save the query">Save…</button>
+        <button type="button" id="btn-query-rename" title="Rename saved query">Rename</button>
+        <button type="button" id="btn-query-delete" title="Delete saved query">Delete</button>
+      </div>
+      <div class="of-group tool-group" aria-label="Learn">
+        <button type="button" id="btn-query-sql" title="Show the query as SQL (read-only)">Show as SQL</button>
+      </div>
+    </div>
     <div class="of-panel" role="tabpanel" id="of-panel-view" data-tab="view" hidden>
       <div class="of-group tool-group" aria-label="View">
         <button type="button" id="btn-view-grid" class="base-view-btn" title="Grid view">Grid</button>
@@ -65,28 +82,33 @@
       <div class="of-group tool-group" aria-label="Sort">
         <button type="button" id="btn-sort-clear" title="Back to entry order">Clear sort</button>
       </div>
+      <div class="of-group tool-group" aria-label="Totals">
+        <button type="button" id="btn-totals" title="Sum / Avg / Count for Number fields">Totals row</button>
+      </div>
     </div>
   </nav>
 
   <div id="status" class="base-status" aria-live="polite"></div>
   <main id="base-main" class="base-main">
+    <div id="query-wrap" class="base-query-wrap" hidden></div>
     <div id="grid-wrap" class="base-grid-wrap"></div>
     <div id="form-wrap" class="base-form-wrap" hidden></div>
   </main>
 
   <script src="../shared/office-icons.js?v=1"></script>
-  <script src="../shared/office-dialog.js?v=1"></script>
+  <script src="../shared/office-dialog.js?v=2"></script>
   <script src="../shared/office-ribbon.js?v=1"></script>
   <script src="../shared/office-toast.js?v=1"></script>
   <script src="../shared/office-theme.js?v=1"></script>
   <script src="../shared/office-settings.js?v=2"></script>
   <script src="../shared/office-hover.js?v=1"></script>
   <script src="../shared/office-collapse.js?v=1"></script>
-  <script src="modules/base-store.js?v=1"></script>
-  <script src="modules/base-csv.js?v=1"></script>
-  <script src="modules/base-grid.js?v=1"></script>
-  <script src="modules/base-form.js?v=1"></script>
-  <script src="modules/base-ui.js?v=1"></script>
-  <script src="modules/base_hub.js?v=1"></script>
+  <script src="modules/base-store.js?v=2"></script>
+  <script src="modules/base-csv.js?v=2"></script>
+  <script src="modules/base-grid.js?v=2"></script>
+  <script src="modules/base-form.js?v=2"></script>
+  <script src="modules/base-query.js?v=2"></script>
+  <script src="modules/base-ui.js?v=2"></script>
+  <script src="modules/base_hub.js?v=2"></script>
 </body>
 </html>

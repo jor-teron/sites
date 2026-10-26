@@ -3,7 +3,8 @@
  * Small modal dialogs shared by the Office apps (Draftly, Spreadsheet). No window.prompt / confirm.
  *   OfficeDialog.prompt({title, label, value, okLabel, emptyError}) → Promise<string|null>
  *   OfficeDialog.confirm({title, message, okLabel, danger})         → Promise<boolean>
- *   OfficeDialog.form({title, message, fields:[{key,label,type,value,min,max,step}], okLabel,
+ *   OfficeDialog.form({title, message, fields:[{key,label,type,value,min,max,step,options}], okLabel,
+ *     (type:'select' + options:[{value,label}] or ['a','b'] gives a dropdown; added for Base BS2)
  *                      validate(values) → error text | ""})        → Promise<object|null>
  * Keys: Enter = OK (except when Cancel has focus), Esc or a backdrop click = cancel,
  * Tab stays inside the dialog. A prompt selects its text and refuses an empty value.
@@ -59,8 +60,17 @@ window.OfficeDialog = OfficeDialog;
         (o.fields || []).forEach(function (f) {
           var l = el('label', 'dlg-label');
           l.appendChild(el('span', null, f.label || f.key));
-          var i = el('input', 'dlg-input');
-          i.type = f.type || 'text'; i.spellcheck = false; i.dataset.key = f.key;
+          var i;
+          if (f.type === 'select') {
+            i = el('select', 'dlg-input'); i.dataset.key = f.key;
+            (f.options || []).forEach(function (op) {
+              var oo = el('option', null, op.label != null ? op.label : (op.value != null ? op.value : op));
+              oo.value = op.value != null ? op.value : op; i.appendChild(oo);
+            });
+          } else {
+            i = el('input', 'dlg-input');
+            i.type = f.type || 'text'; i.spellcheck = false; i.dataset.key = f.key;
+          }
           if (f.min != null) i.min = f.min;
           if (f.max != null) i.max = f.max;
           if (f.step != null) i.step = f.step;
@@ -139,7 +149,7 @@ window.OfficeDialog = OfficeDialog;
       });
       inputs.forEach(function (i) { i.addEventListener('input', function () { if (err) err.hidden = true; }); });
       current = { kind: kind, close: function (r) { close(r); } };
-      if (input) { input.focus(); input.select(); }
+      if (input) { input.focus(); if (input.select) input.select(); }
       else (o.danger ? cancel : ok).focus();
     });
   }
