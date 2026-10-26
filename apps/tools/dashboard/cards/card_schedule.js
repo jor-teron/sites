@@ -13,7 +13,7 @@
     if(!items.length)box.appendChild(el('div',{'class':'empty',text:'Nothing planned. Add a time below.'}));
     items.forEach(function(it,i){
       var cls=i===cur?'now':i===nxt?'next':mins(it.time)<now?'past':'';
-      ul.appendChild(el('li',{'class':cls},[el('span',{'class':'t',text:it.time}),el('span',{'class':'grow',text:it.label}),
+      ul.appendChild(el('li',{'class':cls},[el('span',{'class':'t',text:MDStore.fmtTime(it.time)}),el('span',{'class':'grow',text:it.label}),
         cls==='now'?el('span',{'class':'tag',text:'NOW'}):cls==='next'?el('span',{'class':'tag',text:'NEXT'}):null,
         el('button',{'class':'btn small danger','aria-label':'Delete '+it.label,text:'✕',onclick:function(){items=items.filter(function(x){return x!==it;});save();}})]));
     });

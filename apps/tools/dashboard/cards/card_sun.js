@@ -15,7 +15,7 @@
 
   function hhmm(d) {
     if (!d) return '—';
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return MDStore.fmtTime(d);
   }
 
   function dur(ms) {

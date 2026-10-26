@@ -29,7 +29,7 @@
   }
   function tick(){
     var d=new Date(),h=d.getHours();
-    document.getElementById('clock').textContent=d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    document.getElementById('clock').textContent=MDStore.fmtTime(d);
     document.getElementById('greet').textContent=h<5?'Good night':h<12?'Good morning':h<17?'Good afternoon':'Good evening';
     document.getElementById('date').textContent=d.toLocaleDateString([], {weekday:'long',day:'numeric',month:'long',year:'numeric'});
   }

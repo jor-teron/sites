@@ -25,7 +25,7 @@
 
   function hhmm(t) {
     var d = new Date(t);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return MDStore.fmtTime(d);
   }
 
   function forecastUrl(p) {
@@ -170,7 +170,7 @@
     for (var j = start; j < Math.min(start + 12, d.hourly.time.length); j++) {
       var hw = wmo(d.hourly.weather_code[j]);
       hrs.appendChild(el('div', { 'class': 'wx-h', role: 'listitem' }, [
-        el('div', { 'class': 'wx-small', text: d.hourly.time[j].slice(11, 16) }),
+        el('div', { 'class': 'wx-small', text: MDStore.fmtTime(d.hourly.time[j].slice(11, 16), true) }),
         el('div', { text: hw[1] }),
         el('div', { text: Math.round(d.hourly.temperature_2m[j]) + '°' }),
         el('div', { 'class': 'wx-small', text: '☔' + (d.hourly.precipitation_probability[j] || 0) + '%' })

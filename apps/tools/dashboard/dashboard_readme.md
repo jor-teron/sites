@@ -23,6 +23,7 @@ Adding a card: create `cards/card_x.js` calling `MyDay.register(...)`, add a `<s
 - **PD3** — AQI inside the Weather card: Open-Meteo air-quality (`current=us_aqi,pm2_5`), coloured US-AQI pill (Good → Hazardous) + PM2.5, cached in `myday.weather.aqi`, hidden when offline/no data; AQI >100 adds a top-strip alert. Today strip under the date: today's fixed-date holiday (from Calendar's `calendar_holidays.js`) and “N todos · N events left”, refreshed on tick and on Todo/Schedule saves (`dashboard_today.js`).
 
 - **PD4** — Habits card: add/remove habits, tap pill (jelly bounce) ticks today (local date key → resets at midnight), 🔥 streak, 7-day dot strip; store `myday.habits`. Water card: SVG glass fills with wobble, progress ring “5/8 · 1.25 L”, +1 glass / undo, 7-day dots; glass size (250 ml) and goal (8) in Settings; store `myday.water.*`. Today strip counts split into two pills (wrap cleanly on phones).
+- **PD4.1** — All displayed times use 12-hour format with AM/PM via shared `MDStore.fmtTime` (clock, Schedule, Sun & Moon list + dial, weather hourly as compact `3 PM`, Updated time). Stored values and time inputs stay HH:MM.
 
 ## Roadmap
 - **PD3** — AQI in Weather + Today strip (done)
