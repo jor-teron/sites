@@ -11,7 +11,7 @@
  *   clean-up   ThumbStore.stats() / clear() (shared/fs/thumbs_store.js, IndexedDB 'sites-thumbs');
  *              "Empty Local" removes every entry of the OPFS root after a danger confirm, then
  *              posts {type:'drives'} on 'sites-fs' so Files and the Hub redraw.
- * Theme: html.light / --accent from the Hub's localStorage keys (like Settings).
+ * Theme: shared/theme/hub_theme.js: html.light / --accent follow the Hub theme (H22, no picker).
  */
 (function () {
   'use strict';
@@ -20,14 +20,7 @@
   const FILES = '../files/';
   const sizes = new Map();   // drive id → text ('…' while counting)
 
-  // ---- theme (same keys as Settings) ----
-  (function theme() {
-    const r = document.documentElement;
-    const get = (k) => { try { return localStorage.getItem('sites-hub.' + k) || ''; } catch (_) { return ''; } };
-    const acc = get('accent');
-    if (/^#[0-9a-f]{6}$/i.test(acc)) r.style.setProperty('--accent', acc);
-    r.classList.toggle('light', get('theme') === 'light');
-  })();
+  // ---- theme: shared/theme/hub_theme.js (H22) follows the Hub automatically ----
 
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function btn(text, cls, fn, title) { const b = el('button', 'btn ' + (cls || ''), text); b.type = 'button'; if (title) b.title = title; b.addEventListener('click', fn); return b; }

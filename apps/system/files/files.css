@@ -6,6 +6,10 @@
  */
 :root { --accent: #6ea8fe; --bg: #12151c; --side: #0d1016; --card: #1a1e27; --line: rgba(255,255,255,.08);
   --text: #e8eaed; --muted: #9aa0a6; --hi: color-mix(in srgb, var(--accent) 22%, transparent); --bad: #f87171; color-scheme: dark; }
+/* H20: light look (html.light from shared/theme/hub_theme.js: the Hub theme, H22) */
+html.light { --bg: #f4f5f8; --side: #e9ecf2; --card: #ffffff; --line: rgba(0,0,0,.09); --text: #1c1f26; --muted: #5f6672; --bad: #c62828; color-scheme: light;
+  --uid-bg: #ffffff; --uid-line: rgba(0,0,0,.12); --uid-text: #1c1f26; --uid-muted: #5f6672; --uid-bad: #c62828;
+  --ctx-bg: #ffffff; --ctx-line: rgba(0,0,0,.12); --ctx-text: #1c1f26; --ctx-muted: #5f6672; --ctx-bad: #c62828; }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 button { font: inherit; color: inherit; cursor: pointer; }

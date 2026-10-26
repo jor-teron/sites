@@ -20,7 +20,7 @@ function devbenchChartDraw(cv, samples) {
   g.lineWidth = 3; g.lineJoin = "round"; g.strokeStyle = grad; g.stroke();
   g.lineTo(x(samples.length - 1), h - pad); g.lineTo(x(0), h - pad); g.closePath();
   g.globalAlpha = 0.18; g.fillStyle = grad; g.fill(); g.globalAlpha = 1;
-  g.fillStyle = "#e8eaed"; g.font = "12px system-ui, sans-serif";
+  g.fillStyle = (getComputedStyle(document.documentElement).getPropertyValue("--text") || "").trim() || "#e8eaed"; g.font = "12px system-ui, sans-serif";   // H20: theme text colour
   g.fillText(samples[0].toFixed(2) + " GFLOPS", pad, 12);
   var last = samples[samples.length - 1].toFixed(2), tw = g.measureText(last).width;
   g.fillText(last, w - pad - tw, 12);

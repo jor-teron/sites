@@ -19,8 +19,8 @@
  * Open: parent.__hubFly.openFromCat (same-origin Hub, as the Start flyout does); otherwise a
  * {type:'hub-open-app', url, name} message to the Hub (file://, as T1 / category pages do);
  * standalone (no Hub) a friendly message with a link to the Hub.
- * Theme: html.light + --accent from localStorage sites-hub.theme / sites-hub.accent, live via the
- * 'storage' event and a {type:'hub-prefs'} message. All text goes in with textContent.
+ * Theme: shared/theme/hub_theme.js (H22) paints html.light + --accent from the Hub theme (no picker).
+ * All text goes in with textContent.
  */
 (function () {
   'use strict';
@@ -30,21 +30,7 @@
   const $ = (id) => document.getElementById(id);
   const view = $('view');
 
-  // ---- theme (same keys as Settings / Disk) ----
-  function theme() {
-    const r = document.documentElement;
-    const get = (k) => { try { return localStorage.getItem('sites-hub.' + k) || ''; } catch (_) { return ''; } };
-    const acc = get('accent');
-    if (/^#[0-9a-f]{6}$/i.test(acc)) r.style.setProperty('--accent', acc); else r.style.removeProperty('--accent');
-    r.classList.toggle('light', get('theme') === 'light');
-  }
-  theme();
-  window.addEventListener('storage', (e) => { if (!e.key || e.key.indexOf('sites-hub.') === 0) theme(); });
-  window.addEventListener('message', (e) => {
-    if (!IS_FILE && e.origin !== location.origin) return;
-    if (e.data && e.data.type === 'hub-prefs') theme();
-  });
-  window.addEventListener('focus', theme);
+  // ---- theme: shared/theme/hub_theme.js (H22) follows the Hub automatically ----
 
   // ---- Hub link ----
   function hubWin() {

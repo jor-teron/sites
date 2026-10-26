@@ -1,11 +1,13 @@
-/* Terminal (apps/system/terminal/terminal.css), T1 / T2 — fixed colours: near-black background, terminal
-   green text, blinking block cursor. Deliberately ignores the Hub theme / accent (Jor: dark BG + green). */
-:root { --bg: #050a06; --fg: #33ff66; --dim: #1fa847; --err: #b6ff9e; color-scheme: dark; }
+/* Terminal (apps/system/terminal/terminal.css), T1 / T2: dark = near-black background, terminal green text
+   (Jor: dark BG + green), blinking block cursor. H22: html.light (shared/theme/hub_theme.js: the Hub theme, or
+   `theme dark|light`) = pale paper with deep green text. No accent: the Terminal keeps its green. */
+:root { --bg: #050a06; --fg: #33ff66; --dim: #1fa847; --err: #b6ff9e; --glow: rgba(51, 255, 102, 0.35); --edge: #134d22; --panel: #07120a; --askbg: #1a2a10; color-scheme: dark; }
+html.light { --bg: #f3f7f1; --fg: #0d6b2c; --dim: #4f7f5c; --err: #a12a00; --glow: transparent; --edge: #b9d3bf; --panel: #e4eee5; --askbg: #fbe9d9; color-scheme: light; }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); }
 body { color: var(--fg); font: 15px/1.45 ui-monospace, 'Cascadia Mono', 'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', 'Liberation Mono', monospace; }
 .term { height: 100vh; height: 100dvh; overflow-y: auto; overscroll-behavior: contain; padding: 10px 12px 24px;
-  text-shadow: 0 0 4px rgba(51, 255, 102, 0.35); cursor: text; -webkit-tap-highlight-color: transparent; }
+  text-shadow: 0 0 4px var(--glow); cursor: text; -webkit-tap-highlight-color: transparent; }
 .out { white-space: pre-wrap; word-break: break-word; }
 .out div { min-height: 1.45em; }
 .out .dim { color: var(--dim); }
@@ -23,7 +25,7 @@ body { color: var(--fg); font: 15px/1.45 ui-monospace, 'Cascadia Mono', 'SF Mono
   font: inherit; font-size: 16px; color: transparent; background: transparent; caret-color: transparent; outline: none; }
 ::selection { background: var(--fg); color: var(--bg); }
 .term::-webkit-scrollbar { width: 8px; }
-.term::-webkit-scrollbar-thumb { background: #134d22; border-radius: 4px; }
+.term::-webkit-scrollbar-thumb { background: var(--edge); border-radius: 4px; }
 @media (max-width: 500px) { body { font-size: 14px; } .term { padding: 8px 8px 40px; } }
 @media (prefers-reduced-motion: reduce) { .cur { animation: none; } }
 
@@ -31,15 +33,15 @@ body { color: var(--fg); font: 15px/1.45 ui-monospace, 'Cascadia Mono', 'SF Mono
 .ed { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; height: 100vh; height: 100dvh;
   background: var(--bg); color: var(--fg); }
 .ed[hidden], .ed-ask[hidden] { display: none; }
-.ed-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 6px 10px; border-bottom: 1px solid #134d22; background: #07120a; }
+.ed-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 6px 10px; border-bottom: 1px solid var(--edge); background: var(--panel); }
 .ed-path { font-weight: bold; overflow-wrap: anywhere; min-width: 0; flex: 1 1 12em; }
 .ed-mod { color: var(--err); font-weight: bold; min-width: 0; }
 .ed-msg { color: var(--dim); min-width: 0; flex: 1 1 8em; overflow-wrap: anywhere; }
 .ed-msg.bad { color: var(--err); font-weight: bold; }
 .ed-btn { font: inherit; color: var(--bg); background: var(--fg); border: 0; border-radius: 3px; padding: 4px 12px; min-height: 32px; cursor: pointer; text-shadow: none; }
 .ed-btn:focus-visible { outline: 2px solid var(--err); outline-offset: 2px; }
-.ed-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 6px 10px; background: #1a2a10; color: var(--err); font-weight: bold; }
+.ed-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 6px 10px; background: var(--askbg); color: var(--err); font-weight: bold; }
 .ed-text { flex: 1 1 auto; min-height: 0; width: 100%; resize: none; border: 0; outline: none; margin: 0; padding: 10px 12px; background: var(--bg); color: var(--fg);
   font: inherit; font-size: 15px; line-height: 1.45; tab-size: 4; caret-color: var(--fg); white-space: pre-wrap; overflow-wrap: anywhere; overflow-y: auto; }
-.ed-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding: 4px 10px; border-top: 1px solid #134d22; background: #07120a; color: var(--dim); font-size: 13px; }
+.ed-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding: 4px 10px; border-top: 1px solid var(--edge); background: var(--panel); color: var(--dim); font-size: 13px; }
 @media (max-width: 500px) { .ed-text { font-size: 16px; padding: 8px; } .ed-btn { min-height: 44px; padding: 4px 14px; } .ed-foot { font-size: 12px; } }

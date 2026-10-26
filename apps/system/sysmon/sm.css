@@ -5,6 +5,12 @@
  */
 :root { --accent: #6ea8fe; --bg: #12151c; --card: #1a1e27; --line: rgba(255,255,255,.08); --text: #e8eaed;
   --muted: #9aa0a6; --ok: #50e6aa; --bad: #f87171; --hi: color-mix(in srgb, var(--accent) 22%, transparent); color-scheme: dark; }
+/* H20: light look (html.light from shared/theme/hub_theme.js) */
+html.light { --bg: #f4f5f8; --card: #ffffff; --line: rgba(0,0,0,.09); --text: #1c1f26; --muted: #5f6672; --ok: #11845b; --bad: #c62828;
+  --soft: rgba(0,0,0,.06); --soft2: rgba(0,0,0,.1); --grid: rgba(0,0,0,.08); color-scheme: light;
+  --uid-bg: #ffffff; --uid-line: rgba(0,0,0,.12); --uid-text: #1c1f26; --uid-muted: #5f6672; --uid-bad: #c62828;
+  --ctx-bg: #ffffff; --ctx-line: rgba(0,0,0,.12); --ctx-text: #1c1f26; --ctx-muted: #5f6672; --ctx-bad: #c62828; }
+:root { --soft: rgba(255,255,255,.08); --soft2: rgba(255,255,255,.14); --grid: rgba(255,255,255,.07); }
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 button { font: inherit; color: inherit; cursor: pointer; }
@@ -18,7 +24,7 @@ button:disabled { opacity: .4; cursor: default; }
 .tabs { display: flex; gap: 6px; padding: 8px 12px; overflow-x: auto; scrollbar-width: none; position: sticky; top: 0; background: var(--bg); z-index: 2; }
 .tab { flex: none; display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 0; border-radius: 22px;
   background: var(--card); font-weight: 600; transition: transform .18s cubic-bezier(.34,1.56,.64,1), background .12s; }
-.tab:hover { background: color-mix(in srgb, var(--card) 70%, #fff 8%); }
+.tab:hover { background: color-mix(in srgb, var(--card) 88%, var(--text) 12%); }
 .tab.on { background: var(--hi); box-shadow: inset 0 0 0 2px var(--accent); }
 .tab:active, .btn:active { transform: scale(.94, .9); }
 .tab-ico { font-size: 1.1rem; }
@@ -41,21 +47,21 @@ button:disabled { opacity: .4; cursor: default; }
 .kv { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 14px; margin: 8px 0; }
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
-.bar { height: 14px; border-radius: 7px; background: rgba(255,255,255,.08); overflow: hidden; margin: 4px 0 8px; }
+.bar { height: 14px; border-radius: 7px; background: var(--soft); overflow: hidden; margin: 4px 0 8px; }
 .bar i { display: block; height: 100%; border-radius: 7px; background: linear-gradient(90deg, #3dd6ff, #7c5cff, #ff5fa2); transition: width .4s cubic-bezier(.34,1.56,.64,1); }
 .bar.low i { background: var(--bad); }
 .graph { display: block; width: 100%; height: 150px; margin: 4px 0; }
 
 .btn { min-height: 44px; min-width: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--line); font-weight: 700;
   transition: transform .18s cubic-bezier(.34,1.56,.64,1); }
-.btn:hover { background: rgba(255,255,255,.14); }
+.btn:hover { background: var(--soft2); }
 .btn.primary { background: var(--accent); color: #0b0d12; }
 .btn.danger { color: var(--bad); }
 .btn.danger:hover { background: color-mix(in srgb, var(--bad) 22%, transparent); }
 
 .tasks { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
 .task { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 8px 10px;
-  border-radius: 12px; background: rgba(255,255,255,.03); border: 2px solid transparent; }
+  border-radius: 12px; background: color-mix(in srgb, var(--text) 4%, transparent); border: 2px solid transparent; }
 .task.active { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
 .task.min { opacity: .7; }
 .task-ico { width: 40px; height: 40px; border-radius: 9px; object-fit: contain; }

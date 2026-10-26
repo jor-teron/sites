@@ -1,6 +1,6 @@
 # Terminal (apps/system/terminal/)
 
-System app (T1 + T2 + T3 + T5 + T6 + T7): a command line for the Hub that browses your drives like a unix terminal and, since T3, changes files in them. Near-black background, terminal-green monospace text and a blinking block cursor, fixed whatever the Hub theme is. Works in a Desktop window, in Phone mode and standalone.
+System app (T1 + T2 + T3 + T5 + T6 + T7): a command line for the Hub that browses your drives like a unix terminal and, since T3, changes files in them. Terminal-green monospace text and a blinking block cursor: near-black background in dark, pale paper with deep green text in light. By default it follows the Hub theme (Settings > Look); `theme dark|light` forces its own. Works in a Desktop window, in Phone mode and standalone.
 
 ## The file tree
 
@@ -32,7 +32,7 @@ System app (T1 + T2 + T3 + T5 + T6 + T7): a command line for the Hub that browse
   - `find [path...] [-name pat | -iname pat] [-type f|d]` (`*` and `?`, shows paths as you typed them) and `grep [-i] [-n] [-r] <text> <file|dir>...` (plain text, not a pattern; `-r` walks folders and skips binary or big files with a note). Both stop at 200 lines and say so; Ctrl+C stops a long search.
   - A drive without write permission: `Permission needed: run \`allow <mount>\``. This also covers a write the browser refuses.
   - The y/n question: the next Enter answers it; only `y` / `yes` is yes, an empty Enter is no, anything else asks again, Ctrl+C is no. Tab and Up / Down are off while it waits.
-- **Hub:** `help`, `clear`, `echo <text>`, `date`, `history [-c]`, `apps [category]`, `open <app|path>` (an app id or name, e.g. `open 2048`, or a path: a folder opens the Files app there, an image or video opens the Viewer, a text file opens Notely), `build` (hub/build.txt + hub/version.txt; not on file://), `theme [dark|light]` (same key as Settings > Look). `exit` clears the screen and starts a new session. Anything else: `<name>: command not found`.
+- **Hub:** `help`, `clear`, `echo <text>`, `date`, `history [-c]`, `apps [category]`, `open <app|path>` (an app id or name, e.g. `open 2048`, or a path: a folder opens the Files app there, an image or video opens the Viewer, a text file opens Notely), `build` (hub/build.txt + hub/version.txt; not on file://), `theme [system|dark|light]` (H22: the Terminal's own built-in theme, kept in localStorage `hub-terminal.theme`; `system`, the default, follows the Hub theme and switches live; `theme` alone shows the current one). `exit` clears the screen and starts a new session. Anything else: `<name>: command not found`.
 - **Quotes:** `"My Docs"`, `'My Docs'` and `My\ Docs` keep a space in one word. Errors read like unix: `ls: cannot access 'x': No such file or directory`, `cd: x: Not a directory`.
 - **Tab** completes command names, app ids (`open`), categories (`apps`), themes, mount names (`allow`) and paths (case-insensitive; a folder ends with `/`, a file gets a space; dotfiles only when you type the `.`). Up / Down walk the history (localStorage `hub-terminal.history`, last 200); Ctrl+L clears; Ctrl+C cancels the line (copies when text is selected).
 

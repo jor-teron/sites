@@ -2,17 +2,24 @@
   File: devbench.css
   Project: devbench
   Role: Layout and base styles: score card, tabs, test cards, Settings sheet.
-  No test logic here. Dark UI, tap targets >= 44 px.
+  No test logic here. Dark UI, or light (H20: html.light from shared/theme/hub_theme.js) via the colour
+  variables below. Tap targets >= 44 px.
 */
 
 * { box-sizing: border-box; }
+
+/* H20: colours. Dark is the original look; html.light = the Hub's light theme. */
+:root { --bg: #121418; --card: #1c1f26; --line: #2c313a; --chip: #2c313a; --card2: #232833; --sheet: #171a20;
+  --text: #e8eaed; --muted: #9aa0a6; --desc: #b8bec7; color-scheme: dark; }
+html.light { --bg: #f4f5f8; --card: #ffffff; --line: #dde1e8; --chip: #e6e9ef; --card2: #eef0f4; --sheet: #ffffff;
+  --text: #1c1f26; --muted: #5f6672; --desc: #4a505a; color-scheme: light; }
 
 /* Page background and default text. */
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
-  background: #121418;
-  color: #e8eaed;
+  background: var(--bg);
+  color: var(--text);
 }
 
 /* Centered app column. */
@@ -31,13 +38,13 @@ body {
 h1 { font-size: 1.4rem; margin: 0; }
 
 /* Muted helper text. */
-.muted, .note { color: #9aa0a6; font-size: 0.9rem; }
+.muted, .note { color: var(--muted); font-size: 0.9rem; }
 .note { margin: 4px 2px 12px; }
 
 /* Card container. */
 .card {
-  background: #1c1f26;
-  border: 1px solid #2c313a;
+  background: var(--card);
+  border: 1px solid var(--line);
   border-radius: 14px;
   padding: 14px 16px;
   margin-bottom: 12px;
@@ -58,7 +65,7 @@ button {
 }
 button:disabled { opacity: 0.5; cursor: default; }
 button.big { display: block; width: 100%; min-height: 54px; margin: 12px 0 8px; font-size: 1.1rem; font-weight: 600; }
-.icon-btn { background: #2c313a; font-size: 1.4rem; width: 48px; height: 48px; padding: 0; }
+.icon-btn { background: var(--chip); color: var(--text); font-size: 1.4rem; width: 48px; height: 48px; padding: 0; }
 
 /* Overall score. */
 .score-card { margin-top: 12px; text-align: center; }
@@ -66,31 +73,31 @@ button.big { display: block; width: 100%; min-height: 54px; margin: 12px 0 8px; 
 .score small { font-size: 1rem; opacity: 0.6; margin-left: 4px; }
 
 /* Progress bars. */
-.bar { height: 8px; background: #2c313a; border-radius: 99px; margin-top: 10px; overflow: hidden; }
+.bar { height: 8px; background: var(--chip); border-radius: 99px; margin-top: 10px; overflow: hidden; }
 .bar > span { display: block; height: 100%; width: 0; background: #3d7eff; transition: width 0.2s; }
 
 /* Tabs: four big pills. */
 .tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 4px 0 12px; }
-.tabs button { background: #1c1f26; border: 1px solid #2c313a; min-height: 48px; padding: 0 2px; font-size: 0.85rem; }
-.tabs button.on { background: #3d7eff; border-color: #3d7eff; font-weight: 600; }
+.tabs button { background: var(--card); color: var(--text); border: 1px solid var(--line); min-height: 48px; padding: 0 2px; font-size: 0.85rem; }
+.tabs button.on { background: #3d7eff; border-color: #3d7eff; color: #fff; font-weight: 600; }
 
 /* Test card head: title left, Run button right. */
 .test .head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .test .head h2 { margin: 0; }
-.test .desc { margin: 4px 0 0; color: #b8bec7; font-size: 0.88rem; }
+.test .desc { margin: 4px 0 0; color: var(--desc); font-size: 0.88rem; }
 .test .out { margin-top: 8px; font-size: 0.95rem; }
 .stage { display: flex; justify-content: center; }
 .stage canvas { max-width: 100%; margin-top: 10px; border-radius: 10px; }
 
 /* Device facts rows. */
 .facts { margin: 0; }
-.facts div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #2c313a; font-size: 0.88rem; }
-.facts dt { color: #9aa0a6; }
+.facts div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 0.88rem; }
+.facts dt { color: var(--muted); }
 .facts dd { margin: 0; text-align: right; word-break: break-word; }
 
 /* Feature checklist grid. */
 .feat { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; }
-.feat li { background: #232833; border-radius: 8px; padding: 6px 10px; font-size: 0.88rem; }
+.feat li { background: var(--card2); border-radius: 8px; padding: 6px 10px; font-size: 0.88rem; }
 
 /* Good / OK / Poor colors. */
 .ok { color: #38c172; } .warn { color: #f6c344; } .no, .bad { color: #ff6b6b; }
@@ -100,9 +107,9 @@ button.big { display: block; width: 100%; min-height: 54px; margin: 12px 0 8px; 
 dialog {
   width: min(560px, 94vw);
   max-height: 90vh;
-  background: #171a20;
-  color: #e8eaed;
-  border: 1px solid #2c313a;
+  background: var(--sheet);
+  color: var(--text);
+  border: 1px solid var(--line);
   border-radius: 18px;
   padding: 16px;
 }
@@ -110,3 +117,4 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 dialog h2 { margin: 0 0 8px; }
 dialog h3 { margin: 16px 0 8px; font-size: 0.95rem; opacity: 0.8; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; }
+html.light .ok { color: #1f8a4c; } html.light .warn { color: #a66d00; } html.light .no, html.light .bad { color: #c62828; }

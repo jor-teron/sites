@@ -32,9 +32,7 @@ window.SettingsStore = (function () {
   }
   function paintSelf() {
     const r = document.documentElement;
-    const acc = get('accent');
-    if (/^#[0-9a-f]{6}$/i.test(acc)) r.style.setProperty('--accent', acc); else r.style.removeProperty('--accent');
-    r.classList.toggle('light', get('theme') === 'light');
+    if (window.HubTheme) window.HubTheme.apply();   // H20: html.light + --accent (Settings always follows the Hub theme)
     r.classList.toggle('motion-off', get('motion') === 'off');
   }
   window.addEventListener('storage', (e) => { if (!e.key || e.key.indexOf(P) === 0) { paintSelf(); listeners.forEach((fn) => fn(e.key ? e.key.slice(P.length) : '')); } });

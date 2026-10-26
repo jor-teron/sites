@@ -17,8 +17,9 @@
  * - Output is always text (textContent); nothing typed ever goes through innerHTML.
  * - Hub access (R57 rules): parent.__hubOpenApp when the Hub is the same-origin parent; on file://
  *   (no frame access) a {type:'hub-open-app'} message to the parent with '*', else location.origin
- *   (hub.js accepts it from its own frames only). Theme: the 'sites-hub.theme' key like Settings
- *   (sec_look.js: dark = key removed), then parent.HubPrefs.apply() and a {type:'hub-prefs'} message.
+ *   (hub.js accepts it from its own frames only). Theme (H22): shared/theme/hub_theme.js paints html.light
+ *   from the Hub theme; `theme system|dark|light` is the Terminal's own built-in choice (localStorage
+ *   'hub-terminal.theme'; system = follow the Hub, the default).
  * - Apps: window.HUB_APP_INDEX (hub/core/hub_appindex.js, generated): id -> [category, entry, name, icon, newTab].
  * - T5: BusyBox (terminal_bb.js, window.TermBB): a line with an unquoted | or <, `busybox <applet>`, `/bin/<applet>`,
  *   an applet the Terminal has no command for (sed, awk, sort, ...), or a Terminal file command given an option
@@ -36,7 +37,7 @@
   const ROOT = '../../../';
   const HIST_KEY = 'hub-terminal.history', HIST_MAX = 200;
   let PS = 'hub@hub:~$ ';   // T2: follows the current folder (terminal_fs.js)
-  const THEMES = ['dark', 'light'];
+  const THEMES = ['system', 'dark', 'light'];   // H22: the Terminal's own built-in theme (shared/theme/hub_theme.js)
   const term = document.getElementById('term'), out = document.getElementById('out');
   const form = document.getElementById('line'), input = document.getElementById('in');
   const elB = document.getElementById('before'), elC = document.getElementById('cur'), elA = document.getElementById('after');
@@ -303,7 +304,7 @@
     ['apps [category]', 'list the Hub apps (ids for open)'],
     ['open <app|path>', 'open an app (id or name), or a file / folder (Viewer, Notely, Files)'],
     ['build', 'the Hub build (hub/build.txt)'],
-    ['theme [name]', 'show or set the Hub theme (' + THEMES.join(', ') + ')'],
+    ['theme [name]', 'show or set the Terminal theme (' + THEMES.join(', ') + '; system = follow the Hub)'],
     ['exit', 'clear the screen and start a new session'],
     ['ssh [-p port] [user@host]', 'open the SSH app (filled in with user@host:port)'],
     ['alias [name=\'cmd\']', 'list or set aliases (unalias name, unalias -a)'],
@@ -433,12 +434,19 @@
     },
     exit() { out.textContent = ''; print('Hub Terminal (T7)'); dim('New session. Close the window to leave.'); },
     theme(args) {
-      const cur = prefsGet('theme') === 'light' ? 'light' : 'dark';
-      if (!args.length) { print('Theme: ' + cur); dim('Themes: ' + THEMES.join(', ') + ' (theme <name> sets it; Terminal itself stays green)'); return; }
+      // H22: the Terminal's own built-in theme; system (default) follows the Hub theme (Settings > Look)
+      const HT = window.HubTheme;
+      const hubT = HT ? HT.hub() : (prefsGet('theme') === 'light' ? 'light' : 'dark');
+      if (!args.length) {
+        const pref = HT ? HT.own() : 'system';
+        print('Theme: ' + (pref === 'system' ? 'system (follows the Hub: ' + hubT + ')' : pref));
+        dim('Themes: ' + THEMES.join(', ') + ' (theme <name> sets it)');
+        return;
+      }
       const t = args[0].toLowerCase();
       if (THEMES.indexOf(t) < 0) { err('theme: unknown theme "' + args[0] + '"'); dim('Themes: ' + THEMES.join(', ')); return; }
-      if (!prefsSet('theme', t === 'dark' ? '' : t)) { err('theme: could not save (storage blocked)'); return; }
-      print('Theme set to ' + t);
+      if (!HT || !HT.setOwn(t)) { err('theme: could not save (storage blocked)'); return; }
+      print('Theme set to ' + t + (t === 'system' ? ' (follows the Hub: ' + hubT + ')' : ''));
     },
   };
   if (fs) Object.assign(CMDS, fs.cmds);
