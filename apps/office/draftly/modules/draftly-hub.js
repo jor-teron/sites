@@ -55,10 +55,19 @@ Draftly.hub = {
   }
   function title() { return Draftly.storage.currentName(); }
 
+  function sendCaps() {
+    var st = Draftly.settings && Draftly.settings.s;
+    post({ type: 'hub-app-caps', settings: true, hoverTabs: !st || st.hoverTabs !== false });
+  }
+  /* Resend caps when the hover setting changes. */
+  if (Draftly.settings && Draftly.settings.apply) {
+    var apply = Draftly.settings.apply;
+    Draftly.settings.apply = function (k) { var r = apply.apply(this, arguments); if (H.linked && (k === 'hoverTabs' || k === undefined)) sendCaps(); return r; };
+  }
   function sendApp() {
     lastTab = activeTab(); lastTitle = title();
     post(H.shape.app({ tab: lastTab, title: lastTitle }));
-    post({ type: 'hub-app-caps', settings: true });  /* DF12/H16: ask for the title-bar gear */
+    sendCaps();  /* DF12/H16 gear, DF13/H17 hover */
   }
   function sendTab() {
     if (!H.linked) return;
