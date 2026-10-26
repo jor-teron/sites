@@ -1,0 +1,40 @@
+<!doctype html>
+<!-- My Day (Personal Dashboard) — PD1. Shell page: top strip, card grid, settings dialog. -->
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Day</title>
+<meta name="theme-color" content="#1b2233">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="dashboard_icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="dashboard_icon_192.png">
+<link rel="stylesheet" href="dashboard.css">
+</head><body>
+<header class="strip">
+  <div class="strip-main">
+    <div><div id="greet" class="greet">Hello</div><div id="date" class="date"></div></div>
+    <div class="strip-right"><div id="clock" class="clock">--:--</div>
+      <button id="gear" class="btn icon" aria-label="Settings" title="Settings">⚙</button></div>
+  </div>
+  <div id="alerts" class="alerts" aria-live="polite"></div>
+</header>
+<main id="cards" class="cards"></main>
+<dialog id="settings" class="dlg" aria-labelledby="setTitle">
+  <div class="dlg-head"><h2 id="setTitle">Settings</h2><button class="btn icon" id="setClose" aria-label="Close">✕</button></div>
+  <div class="dlg-body">
+    <h3>Theme</h3>
+    <div class="seg" role="radiogroup" id="themeSeg">
+      <button class="btn" data-t="auto">Auto</button><button class="btn" data-t="light">Light</button><button class="btn" data-t="dark">Dark</button>
+    </div>
+    <h3>Cards</h3><p class="hint">Turn cards on or off and change their order.</p>
+    <ul id="cardList" class="cardlist"></ul>
+  </div>
+</dialog>
+<script src="dashboard_store.js"></script>
+<script src="dashboard_core.js"></script>
+<script src="cards/card_todo.js"></script>
+<script src="cards/card_schedule.js"></script>
+<script src="cards/card_notes.js"></script>
+<script src="cards/card_links.js"></script>
+<script src="dashboard_settings.js"></script>
+<script src="dashboard_app.js"></script>
+</body></html>
