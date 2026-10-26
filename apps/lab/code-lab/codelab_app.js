@@ -1,7 +1,7 @@
 /* Code Lab — UI. Cells, outputs, connection bar, settings, swipe screens. Persistence only via CodeLabSave. */
 (function () {
   'use strict';
-  const VERSION = 'N1 · CL5', SWIPE = 75, K = window.CodeLabKernel, SV = window.CodeLabSave, CM = window.CodeLabLib.cm;
+  const VERSION = 'N1 · CL10', SWIPE = 75, K = window.CodeLabKernel, SV = window.CodeLabSave, CM = window.CodeLabLib.cm;
   const $ = (id) => document.getElementById(id);
   const P = Object.assign({ theme: 'dark', url: '', kernel: 'python3', rememberToken: false, token: '', timeout: 0, onDisc: 'shutdown', kid: '', kurl: '', kname: '' }, SV.loadSettings());
   if (['system', 'light', 'dark'].indexOf(P.theme) < 0) P.theme = 'dark';
@@ -91,8 +91,16 @@
     const el = document.createElement('div'); el.className = 'cell'; el.dataset.id = c.id;
     el.innerHTML = '<div class="main"><div class="cnt"></div><div class="ed"></div><div class="out"></div></div>' +
       '<div class="tools"><button type="button" class="mini run">▶</button>' +
-      '<button type="button" class="mini up">↑</button><button type="button" class="mini down">↓</button>' +
-      '<button type="button" class="mini del danger">✕</button></div>';
+      '<button type="button" class="mini more-btn" aria-haspopup="menu" aria-expanded="false">⋯</button>' +
+      '<div class="cmenu" role="menu" hidden>' +
+      '<button type="button" role="menuitem" class="above">Add above</button>' +
+      '<button type="button" role="menuitem" class="below">Add below</button>' +
+      '<button type="button" role="menuitem" class="up">Move up</button>' +
+      '<button type="button" role="menuitem" class="down">Move down</button>' +
+      '<button type="button" role="menuitem" class="dup">Duplicate</button>' +
+      '<button type="button" role="menuitem" class="clr">Clear output</button>' +
+      '<button type="button" role="menuitem" class="del danger">Delete</button>' +
+      '</div></div>';
     el.setAttribute('role', 'group');
     c.el = el; c.outEl = el.querySelector('.out'); c.cntEl = el.querySelector('.cnt');
     c.view = new CM.EditorView({
@@ -119,11 +127,97 @@
     el.querySelector('.up').onclick = () => move(c, -1);
     el.querySelector('.down').onclick = () => move(c, 1);
     el.querySelector('.del').onclick = (e) => del(c, e.detail === 0);
+    wireMenu(c);
     el.addEventListener('pointerdown', () => select(c));
     if (at == null || at >= cells.length) { cells.push(c); $('cells').appendChild(el); }
     else { cells.splice(at, 0, c); $('cells').insertBefore(el, cells[at + 1].el); }
     OUT.init(c, data.outputs || []); relabel();
     return c;
+  }
+  /* CL10: per-cell ⋯ menu (keyboard: Enter/Space opens, arrows move, Esc closes) */
+  let openMenu = null;
+  function closeMenu(focusBtn) {
+    if (!openMenu) return;
+    const m = openMenu;
+    openMenu = null;
+    m.menu.hidden = true;
+    m.btn.setAttribute('aria-expanded', 'false');
+    m.cell.el.classList.remove('menu-open');
+    if (focusBtn) m.btn.focus({ preventScroll: true });
+  }
+  function wireMenu(c) {
+    const btn = c.el.querySelector('.more-btn');
+    const menu = c.el.querySelector('.cmenu');
+    const items = () => Array.from(menu.querySelectorAll('[role=menuitem]'));
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const wasOpen = openMenu && openMenu.menu === menu;
+      closeMenu(false);
+      if (wasOpen) return;
+      menu.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+      c.el.classList.add('menu-open');
+      openMenu = { menu, btn, cell: c };
+      select(c);
+      items()[0].focus({ preventScroll: true });
+    };
+    menu.addEventListener('keydown', (e) => {
+      const list = items();
+      const i = list.indexOf(document.activeElement);
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeMenu(true); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); list[(i + 1) % list.length].focus(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); list[(i - 1 + list.length) % list.length].focus(); }
+      else if (e.key === 'Home') { e.preventDefault(); list[0].focus(); }
+      else if (e.key === 'End') { e.preventDefault(); list[list.length - 1].focus(); }
+      else if (e.key === 'Tab') { closeMenu(false); }
+    });
+    menu.addEventListener('click', (e) => {
+      if (e.target.closest('[role=menuitem]')) closeMenu(e.detail === 0);
+    });
+    c.el.querySelector('.above').onclick = () => addAt(cells.indexOf(c));
+    c.el.querySelector('.below').onclick = () => addAt(cells.indexOf(c) + 1);
+    c.el.querySelector('.dup').onclick = () => duplicate(c);
+    c.el.querySelector('.clr').onclick = () => clearOutput(c);
+  }
+  document.addEventListener('pointerdown', (e) => {
+    if (openMenu && !openMenu.menu.contains(e.target) && e.target !== openMenu.btn) closeMenu(false);
+  });
+  function addAt(at) {
+    const c = makeCell({}, at);
+    select(c);
+    c.view.focus();
+    c.el.scrollIntoView({ block: 'nearest' });
+    save();
+    return c;
+  }
+  function duplicate(c) {
+    const copy = makeCell({ source: c.view.state.doc.toString() }, cells.indexOf(c) + 1);
+    select(copy);
+    copy.el.scrollIntoView({ block: 'nearest' });
+    save();
+    toast('Cell duplicated');
+  }
+  function clearOutput(c) {
+    if (c.state !== 'idle') { toast('Cell is busy: stop it first'); return; }
+    OUT.reset(c);
+    c.count = null;
+    c.note = '';
+    renderCount(c);
+    save();
+  }
+  /* CL10: plain status line, e.g. "Connected · idle" or "Running cell 3…" */
+  function statusLine() {
+    const s = K.state();
+    const k = s.kernel;
+    const run = cells.findIndex((x) => x.state === 'running');
+    let t;
+    if (s.lost) t = 'Connection lost';
+    else if (s.reconnecting) t = 'Reconnecting…';
+    else if (!s.connected) t = 'Not connected';
+    else if (!k) t = 'Connected · no kernel';
+    else if (run >= 0) t = 'Running cell ' + (run + 1) + '…';
+    else t = 'Connected · ' + k.status;
+    $('kstate').textContent = t;
   }
   function select(c) { if (sel) sel.el.classList.remove('sel'); sel = c; if (c) c.el.classList.add('sel'); }
   /* c.state: 'idle' | 'queued' | 'running'. c.note is a short, unsaved reason shown next to the count (skipped / interrupted) */
@@ -139,6 +233,8 @@
     lab(c.el.querySelector('.up'), 'Move cell ' + N + ' up', 'Move up'); lab(c.el.querySelector('.down'), 'Move cell ' + N + ' down', 'Move down'); lab(c.el.querySelector('.del'), 'Delete cell ' + N, 'Delete');
     c.el.setAttribute('aria-label', 'Cell ' + N + ' of ' + cells.length); c.outEl.setAttribute('role', 'group'); c.outEl.setAttribute('aria-label', 'Output of cell ' + N);
     c.view.contentDOM.setAttribute('aria-label', 'Code of cell ' + N + '. Tab moves to the next control.');
+    lab(c.el.querySelector('.more-btn'), 'More actions for cell ' + N, 'More actions');
+    if (typeof K !== 'undefined') statusLine();
   }
   /* numbers in the names follow the order: call after add / delete / move */
   function relabel() { cells.forEach(renderCount); }
@@ -319,11 +415,11 @@
     $('connect-btn').textContent = s.lost ? 'Reconnect' : s.connected ? 'Disconnect' : 'Connect';
     $('connect-btn').classList.toggle('acc', !s.connected || s.lost);
     $('kernel').disabled = !s.connected; $('start-btn').disabled = !s.connected;
-    $('start-btn').textContent = k ? '⇆' : '＋'; /* glyph only: ＋ start a kernel, ⇆ switch to the selected kernel */
+    $('start-btn').textContent = k ? '⇆ Switch' : '＋ Start'; /* glyph only: ＋ start a kernel, ⇆ switch to the selected kernel */
     $('start-btn').title = k ? 'Switch kernel (shuts down the current one)' : 'Start kernel';
     $('start-btn').setAttribute('aria-label', $('start-btn').title);
     $('restart-btn').disabled = $('intr-btn').disabled = !k || down;
-    $('kstate').textContent = s.lost ? 'lost' : s.reconnecting ? '…' : k ? k.status : (s.connected ? 'no kernel' : '—');
+    statusLine();
     $('kstate').dataset.status = s.lost ? 'lost' : k ? k.status : '';
     /* connection transitions (announced through #msg, which is aria-live) */
     if (down && linkSeen === 'ok') {
