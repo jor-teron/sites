@@ -17,7 +17,8 @@ const TENNIS_THROW_CONFIG = {
   // Physics
   physics: {
     gravity: 0.35,           // added to ball vy every frame
-    ballSpeed: 12,           // speed at full power
+    ballSpeed: 21,           // speed at full power (TB1: was 12, too weak; apex rise = speed²/(2·gravity) ≈ 630px)
+    reachFraction: 0.85,     // TB1: targets spawn no higher than this share of the max rise, so all are reachable
   },
 
   // Aim controls
@@ -29,7 +30,8 @@ const TENNIS_THROW_CONFIG = {
     powerMax: 1,             // maximum power
     powerStep: 0.02,         // power change per input tick
     inputIntervalMs: 30,     // how often held keys are applied
-    previewLength: 150,      // aim line length in pixels
+    previewFrames: 36,       // TB3: dotted arc length in frames (~0.6s of flight at 60fps)
+    previewDotEvery: 3,      // TB3: draw one dot every N simulated frames
     crosshairSize: 20,       // half-size of the crosshair
     powerBarWidth: 60,       // width of the power bar
     powerBarHeight: 8,       // height of the power bar
@@ -52,6 +54,9 @@ const TENNIS_THROW_CONFIG = {
     radius: 25,              // default target radius
     starRadius: 15,          // radius for 'star' targets
     // Pool: how many of each target type are on screen, their points and look
+    minGap: 70,              // TB3: minimum distance between target centres
+    birdClearance: 45,       // TB3: non-bird targets keep this far (vertically) from bird flight rows
+    spawnTries: 30,          // TB3: random positions tried before accepting the last one
     pool: [
       { type: 'balloon', points: 5, emoji: '🎈', count: 4 },
       { type: 'bullseye', points: 10, emoji: '◎', count: 2 },
@@ -59,6 +64,12 @@ const TENNIS_THROW_CONFIG = {
       { type: 'star', points: 20, emoji: '⭐', count: 2 },
       { type: 'gift', points: 25, emoji: '🎁', count: 1 },
     ],
+  },
+
+  // TB1: throw limits (stop Space spam)
+  throwing: {
+    cooldownMs: 250,         // minimum time between throws
+    maxBallsInAir: 2,        // no new throw while this many balls are flying
   },
 
   // Ranks by finish time (first match wins)
@@ -77,7 +88,7 @@ const TENNIS_THROW_CONFIG = {
     ball: '#FFD700',                      // ball fill
     ballOutline: '#FFA500',               // ball outline
     crosshair: 'rgba(255, 255, 255, 0.6)',// crosshair lines
-    aimLine: 'rgba(255, 255, 100, 0.7)',  // aim direction line
+    aimLine: 'rgba(255, 255, 100, 0.85)', // TB3: dotted predicted arc
     powerBarOutline: 'rgba(255, 255, 255, 0.8)', // power bar border
     targetFont: 'Arial',                  // font used for emoji targets
   },
@@ -89,15 +100,16 @@ const TENNIS_THROW_CONFIG = {
     start: ['Enter', 'KeyP', 'p', 'P'], // pause / resume; play again when finished (Start / P)
     restart: ['Escape'],              // new game (Select)
     resetAim: ['KeyR', 'r', 'R'],     // reset aim angle and power
-    aimLeft: ['ArrowLeft'],           // decrease angle (hold)
-    aimRight: ['ArrowRight'],         // increase angle (hold)
+    aimLeft: ['ArrowLeft'],           // aim further left = raise angle (hold)
+    aimRight: ['ArrowRight'],         // aim further right = lower angle (hold)
     powerUp: ['ArrowUp'],             // more power (hold)
     powerDown: ['ArrowDown'],         // less power (hold)
   },
 
   // On-screen text
   text: {
-    paused: 'PAUSED — ENTER to resume',                                   // canvas label while paused
+    paused: 'PAUSED — ENTER to resume',
+    pausedHint: 'ESC for a new game',                                      // TB3: second line on the pause screen                                   // canvas label while paused
     controls: '← → aim | ↑ ↓ power | SPACE throw | ENTER pause | R reset aim | ESC new game', // hint under canvas
     restart: 'Press SPACE / ENTER to play again',                            // end screen hint
   },

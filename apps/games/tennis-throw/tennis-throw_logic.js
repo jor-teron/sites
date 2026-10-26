@@ -21,7 +21,8 @@ function isKey(list, e) {
 const game = {
   score: CFG.start.score,
   targetScore: CFG.targetScore,
-  time: 0,
+  time: 0,            // TB1: seconds as a number (formatted only for display)
+  lastThrow: 0,       // TB1: Date.now() of the last throw (cooldown)
   startTime: null,
   isRunning: false,
   isFinished: false,
@@ -67,13 +68,51 @@ function init() {
   });
 }
 
+/** Launch point of every ball. */
+function launchPoint() {
+  return { x: canvas.width / 2, y: canvas.height - CFG.ball.launchOffsetY };
+}
+
+/**
+ * TB1: highest y a target may use. The ball's max rise (full power, straight up)
+ * is speed²/(2·gravity); only a share of it (reachFraction) is used so every
+ * target can be hit with some margin.
+ */
+function minReachableY() {
+  const rise = (game.ballSpeed * game.ballSpeed) / (2 * game.gravity) * CFG.physics.reachFraction;
+  return Math.max(CFG.targets.marginTop, launchPoint().y - rise);
+}
+
+/** TB3: true if (x, y) is clear of other targets and (for non-birds) of bird rows. */
+function spotIsFree(x, y, type) {
+  const T = CFG.targets;
+  return game.targets.every(t => {
+    if (Math.hypot(t.x - x, t.y - y) < T.minGap) return false;
+    // Birds fly sideways across the whole width: keep other targets out of their row
+    if ((t.type === 'bird') !== (type === 'bird') && Math.abs(t.y - y) < T.birdClearance) return false;
+    return true;
+  });
+}
+
 function spawnTarget(type) {
   const T = CFG.targets;
   const poolItem = game.targetPool.find(p => p.type === type);
+  const yMin = minReachableY();
+  const yMax = canvas.height - T.bottomReserve;
+  // TB3: retry random spots until one is free. If none is, keep the try
+  // farthest from its nearest target so overlaps stay rare.
+  let x, y, best = -1;
+  for (let i = 0; i < T.spawnTries; i++) {
+    const cx = Math.random() * (canvas.width - T.marginX * 2) + T.marginX;
+    const cy = yMin + Math.random() * (yMax - yMin);
+    if (spotIsFree(cx, cy, type)) { x = cx; y = cy; break; }
+    const near = Math.min(Infinity, ...game.targets.map(t => Math.hypot(t.x - cx, t.y - cy)));
+    if (near > best) { best = near; x = cx; y = cy; }
+  }
   const target = {
     type: type,
-    x: Math.random() * (canvas.width - T.marginX * 2) + T.marginX,
-    y: Math.random() * (canvas.height - T.bottomReserve) + T.marginTop,
+    x: x,
+    y: y,
     vx: type === 'bird' ? (Math.random() > 0.5 ? 1 : -1) * poolItem.speed : 0,
     emoji: poolItem.emoji,
     points: poolItem.points,
@@ -82,15 +121,30 @@ function spawnTarget(type) {
   game.targets.push(target);
 }
 
-function throwBall() {
+/** Initial velocity for the current aim (shared by throws and the arc preview). */
+function aimVelocity() {
   const radians = (game.aimAngle * Math.PI) / 180;
   const speed = game.ballSpeed * game.aimPower;
+  return { vx: Math.cos(radians) * speed, vy: -Math.sin(radians) * speed };
+}
 
+/** TB1: throw only after the cooldown and while fewer than maxBallsInAir are flying. */
+function tryThrow() {
+  const now = Date.now();
+  if (now - game.lastThrow < CFG.throwing.cooldownMs) return;
+  if (game.balls.length >= CFG.throwing.maxBallsInAir) return;
+  game.lastThrow = now;
+  throwBall();
+}
+
+function throwBall() {
+  const p = launchPoint();
+  const v = aimVelocity();
   const ball = {
-    x: canvas.width / 2,
-    y: canvas.height - CFG.ball.launchOffsetY,
-    vx: Math.cos(radians) * speed,
-    vy: -Math.sin(radians) * speed,
+    x: p.x,
+    y: p.y,
+    vx: v.vx,
+    vy: v.vy,
     trailX: [],
     trailY: [],
     maxTrail: CFG.ball.maxTrail
@@ -150,8 +204,8 @@ function updateTargets() {
 
 function updateTimer() {
   if (game.isRunning) {
-    game.time = ((Date.now() - game.startTime) / 1000).toFixed(1);
-    document.getElementById('timerValue').textContent = game.time;
+    game.time = (Date.now() - game.startTime) / 1000; // TB1: keep as a number
+    document.getElementById('timerValue').textContent = game.time.toFixed(1);
   }
 }
 
@@ -163,8 +217,7 @@ function updateScore() {
 }
 
 function getRank(seconds) {
-  const sec = parseFloat(seconds);
-  return CFG.ranks.find(r => sec < r.maxSeconds) || CFG.ranks[CFG.ranks.length - 1];
+  return CFG.ranks.find(r => seconds < r.maxSeconds) || CFG.ranks[CFG.ranks.length - 1];
 }
 
 function finishGame() {
@@ -176,7 +229,7 @@ function finishGame() {
 
   document.getElementById('rankText').textContent = rank.name;
   document.getElementById('badge').textContent = rank.emoji;
-  document.getElementById('finalTime').textContent = game.time;
+  document.getElementById('finalTime').textContent = game.time.toFixed(1);
 
   endScreen.classList.add('show');
 }
@@ -217,13 +270,7 @@ function drawTargets() {
 
 function drawAim() {
   const A = CFG.aim;
-  const radians = (game.aimAngle * Math.PI) / 180;
-  const previewLength = A.previewLength;
-
-  const startX = canvas.width / 2;
-  const startY = canvas.height - CFG.ball.launchOffsetY;
-  const endX = startX + Math.cos(radians) * previewLength;
-  const endY = startY - Math.sin(radians) * previewLength;
+  const { x: startX, y: startY } = launchPoint();
   const ch = A.crosshairSize;
 
   // Crosshair
@@ -236,13 +283,22 @@ function drawAim() {
   ctx.lineTo(startX, startY + ch);
   ctx.stroke();
 
-  // Aim line
-  ctx.strokeStyle = CFG.colors.aimLine;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(startX, startY);
-  ctx.lineTo(endX, endY);
-  ctx.stroke();
+  // TB3: dotted predicted arc. Same per-frame steps as updateBalls(),
+  // so the dots sit exactly where the ball will fly.
+  let { vx, vy } = aimVelocity();
+  let x = startX, y = startY;
+  ctx.fillStyle = CFG.colors.aimLine;
+  game.arcDots = 0; // read by tests
+  for (let f = 1; f <= A.previewFrames; f++) {
+    x += vx; y += vy; vy += game.gravity;
+    if (x < 0 || x > canvas.width || y > canvas.height) break;
+    if (f % A.previewDotEvery === 0) {
+      ctx.beginPath();
+      ctx.arc(x, y, 3 - 1.5 * f / A.previewFrames, 0, Math.PI * 2); // dots shrink along the arc
+      ctx.fill();
+      game.arcDots++;
+    }
+  }
 
   // Power indicator (red = strong, green = weak)
   const bw = A.powerBarWidth;
@@ -278,13 +334,15 @@ function draw() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(CFG.text.paused, canvas.width / 2, canvas.height / 2);
+    ctx.font = '18px sans-serif'; // TB3: Esc hint
+    ctx.fillText(CFG.text.pausedHint, canvas.width / 2, canvas.height / 2 + 36);
   }
 }
 
 function gameLoop() {
   updateTimer();
-  updateScore();
   if (game.isRunning) {
+    updateScore(); // TB3: no score / game-over checks while paused
     updateBalls();
     updateTargets();
   }
@@ -322,8 +380,8 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault();
     if (game.isFinished) {
       if (!e.repeat) init();
-    } else if (game.isRunning) {
-      throwBall();
+    } else if (game.isRunning && !e.repeat) { // TB1: held Space does not auto-fire
+      tryThrow();
     }
   } else if (isKey(CFG.keys.start, e)) {
     e.preventDefault();
@@ -357,8 +415,9 @@ function held(list) {
 setInterval(() => {
   const A = CFG.aim;
   if (game.isRunning) {
-    if (held(CFG.keys.aimLeft)) game.aimAngle = Math.max(A.angleMin, game.aimAngle - A.angleStep);
-    if (held(CFG.keys.aimRight)) game.aimAngle = Math.min(A.angleMax, game.aimAngle + A.angleStep);
+    // TB1: angle 0 = right, 180 = left, so Left raises the angle and Right lowers it
+    if (held(CFG.keys.aimLeft)) game.aimAngle = Math.min(A.angleMax, game.aimAngle + A.angleStep);
+    if (held(CFG.keys.aimRight)) game.aimAngle = Math.max(A.angleMin, game.aimAngle - A.angleStep);
     if (held(CFG.keys.powerUp)) game.aimPower = Math.min(A.powerMax, game.aimPower + A.powerStep);
     if (held(CFG.keys.powerDown)) game.aimPower = Math.max(A.powerMin, game.aimPower - A.powerStep);
   }
