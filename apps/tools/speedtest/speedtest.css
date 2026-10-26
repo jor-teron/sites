@@ -1,6 +1,8 @@
-/* Speed Test — light/dark via prefers-color-scheme, compact 30px buttons, jelly Start, larger on big screens. */
-:root{--bg:#f4f6fb;--card:#fff;--fg:#111827;--mut:#4b5563;--acc:#2563eb;--line:#d1d5db}
-@media(prefers-color-scheme:dark){:root{--bg:#0f1420;--card:#1b2233;--fg:#f3f4f6;--mut:#c0c7d4;--acc:#60a5fa;--line:#374151}}
+/* Speed Test — Hub theme (shared/theme/hub_theme.js: html.light / data-theme + --accent; R), system scheme if no theme set,
+   compact 30px buttons, jelly Start, larger on big screens. */
+:root{--bg:#f4f6fb;--card:#fff;--fg:#111827;--mut:#4b5563;--acc:var(--accent,#2563eb);--line:#d1d5db}
+@media(prefers-color-scheme:dark){:root:not([data-theme]){--bg:#0f1420;--card:#1b2233;--fg:#f3f4f6;--mut:#c0c7d4;--acc:var(--accent,#60a5fa);--line:#374151}}
+html[data-theme="dark"]{--bg:#0f1420;--card:#1b2233;--fg:#f3f4f6;--mut:#c0c7d4;--acc:var(--accent,#60a5fa);--line:#374151}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,sans-serif}
 .st{max-width:560px;margin:auto;padding:12px;display:grid;gap:12px}
 .st-head{display:flex;justify-content:space-between;align-items:center}h1{font-size:22px;margin:0}h2{font-size:17px;margin:0 0 6px;display:flex;justify-content:space-between}

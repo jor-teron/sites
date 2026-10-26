@@ -1,4 +1,5 @@
-/* Weather Hourly page styles. Values are supplied by weather-hourly_config.js. */
+/* Weather Hourly page styles. Values are supplied by weather-hourly_config.js (light).
+   Hub theme (R): shared/theme/hub_theme.js sets html[data-theme]; dark colours on body below. */
 * {
   box-sizing: border-box;
 }
@@ -73,3 +74,18 @@ h1 {
 .weather-table .weather-row-even {
   background-color: var(--weather-even-row-background);
 }
+
+/* Hub dark theme (colours only; on body so they beat the config vars set on <html>) */
+html[data-theme="dark"] body {
+  --weather-page-background: #0f1420;
+  --weather-body-text: #e5e7eb;
+  --weather-heading-text: #f3f4f6;
+  --weather-muted-text: #9ca3af;
+  --weather-error-text: #f87171;
+  --weather-panel-background: #1b2233;
+  --weather-even-row-background: #161c2b;
+  --weather-header-background: #232c40;
+  --weather-cell-border: 1px solid #374151;
+  --weather-panel-shadow: 0 4px 12px rgb(0 0 0 / 0.4);
+}
+html[data-theme] .weather-table thead tr { border-bottom: 2px solid var(--accent, transparent); }

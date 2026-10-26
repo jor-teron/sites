@@ -2,6 +2,7 @@
  * Weather Chart — logic.
  * Fetches today's hourly temperature from Open-Meteo and draws it on a canvas.
  * Settings, colours and text come from WEATHER_CHART_CONFIG (weather-chart_config.js).
+ * Hub theme (R): dots/labels use #weather-graph's CSS colour; redraws when HubTheme changes.
  */
 const WC = WEATHER_CHART_CONFIG;
 
@@ -115,7 +116,7 @@ async function drawWeatherChart() {
     ctx.stroke();
 
     // Plot points and labels (only for original data points)
-    ctx.fillStyle = WC.colors.text;
+    ctx.fillStyle = window.HubTheme ? getComputedStyle(canvas.parentElement).color : WC.colors.text;
     ctx.font = WC.fonts.label;
     values.forEach((temp, i) => {
         const x = getX(i * 2), y = tempToY(temp); // Adjust index for interpolated data
@@ -138,3 +139,4 @@ async function drawWeatherChart() {
 }
 
 drawWeatherChart();
+if (window.HubTheme) HubTheme.onChange(function () { drawWeatherChart(); });
