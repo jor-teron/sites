@@ -38,3 +38,6 @@ body { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 
 @media print { .sheet-formula-row { display: none !important; } body { display: block; height: auto; overflow: visible; } }
 .toolbar.sheet-formula-row[hidden] { display: none; }
+
+/* SH3: inside the Sites hub the title bar shows tabs, name and gear (spreadsheet_hub.js). */
+body.in-hub .of-topbar { display: none; }
