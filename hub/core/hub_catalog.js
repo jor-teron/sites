@@ -39,6 +39,7 @@ Gravity Sandbox,   gravity-sandbox/, , , Simulator
 Solar System,      solar-system/,  , , Simulator
 Aquarium,          aquarium/,      , , Simulator
 Browser FPS,       browser-fps/,   , , 3D
+LandCraft,         landcraft/,     , , 3D
 Island Conquest,   island-conquest/, , , Beta
 Tennis Ball Blitz, tennis-throw/,  , , Beta
 AR Game,           ar-game/,       , , Beta
@@ -50,7 +51,6 @@ Ant Farm,          ant-farm/,      , , Beta
 
 Aeroplane,          aeroplane/,                   , , Beta
 Island Game Demo,   island-demo/,                 , , Beta
-LandCraft,            landcraft/, , , Beta
 Game Settings,      common/settings/games-settings.html, , , Settings
 `,
   "Media": `# Media — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
