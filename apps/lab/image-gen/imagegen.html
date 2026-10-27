@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Image Gen IG1</title>
+  <script>/* theme early to avoid flash */try{var p=JSON.parse(localStorage.getItem('imagegen-settings-v1')||'{}').theme||'dark',h=localStorage.getItem('sites-hub.theme');if(p==='dark'||(p==='system'&&(h?h==='dark':matchMedia('(prefers-color-scheme: dark)').matches)))document.documentElement.classList.add('dark');}catch(e){document.documentElement.classList.add('dark');}</script>
+  <link rel="stylesheet" href="imagegen.css?v=IG1">
+</head>
+<body>
+<div id="app">
+  <div id="track">
+    <!-- Screen 1: Generate -->
+    <section class="pane" id="pane-gen">
+      <div class="grid">
+        <div class="stage">
+          <div id="empty" class="drop"><p><b>Describe a picture, then Generate</b><br><span class="mut">Runs on your own Ollama — nothing leaves your network</span></p></div>
+          <div id="result" hidden>
+            <img id="out-img" alt="Generated image">
+            <div class="row"><span id="out-info" class="mut ell2"></span><span class="sp"></span>
+              <button id="save-btn" class="btn acc">Save PNG</button></div>
+          </div>
+        </div>
+        <div class="ctl">
+          <textarea id="prompt" rows="4" placeholder="A cat on a rooftop at night, city lights, cinematic" aria-label="Prompt"></textarea>
+          <div class="field"><div class="lbl">Size</div><div class="seg" data-key="size"><button data-v="square" title="1024×1024">Square</button><button data-v="portrait" title="768×1024">Portrait</button><button data-v="landscape" title="1024×768">Landscape</button></div></div>
+          <div class="field noswipe"><div class="lbl">Steps <b id="steps-v"></b></div><input type="range" id="steps" min="1" max="50" step="1" aria-label="Steps"></div>
+          <div class="field"><div class="lbl">Model</div><span id="model-l" class="mut ell"></span></div>
+          <div id="prog" hidden><div class="bar"><i id="bar"></i></div><div class="row"><span id="prog-t" class="mut"></span><span class="sp"></span><button id="cancel-btn" class="btn">Cancel</button></div></div>
+          <button id="gen-btn" class="btn acc big">Generate</button>
+        </div>
+      </div>
+    </section>
+    <!-- Screen 2: Gallery -->
+    <section class="pane" id="pane-gal">
+      <div class="set wide">
+        <h2>Recent <span id="gal-n" class="mut"></span></h2>
+        <p id="gal-empty" class="mut">No images yet. The last 20 you make are kept here, on this device.</p>
+        <div id="gal"></div>
+      </div>
+    </section>
+    <!-- Screen 3: Settings -->
+    <section class="pane" id="pane-set">
+      <div class="set">
+        <h2>Settings</h2>
+        <div class="field"><div class="lbl">Ollama URL</div><input id="url" class="txt" type="url" spellcheck="false" placeholder="http://localhost:11434"></div>
+        <div class="field"><div class="lbl">Model</div><select id="model-s" class="txt"></select><button id="refresh-btn" class="btn sm" title="Reload models">↻</button></div>
+        <div class="field" id="custom-f" hidden><div class="lbl">Model name</div><input id="model-c" class="txt" spellcheck="false" placeholder="x/z-image-turbo"></div>
+        <p id="models-t" class="mut small"></p>
+        <div class="field"><div class="lbl">Theme</div><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+        <h2>About</h2>
+        <p><b>Image Gen</b> <span class="mut">release IG1</span></p>
+        <p class="mut">Makes pictures from a text prompt with an image model on your own Ollama (for example <code>x/z-image-turbo</code> or <code>x/flux2-klein</code>). Images are kept on this device only.</p>
+        <p class="mut">Ollama image generation is experimental (macOS). Versions 0.32.6 and later have it turned off; use 0.32.5. To let this site reach Ollama, start it with <code>OLLAMA_ORIGINS=https://jor-teron.github.io</code>.</p>
+        <p class="mut">Swipe left/right or use ←/→ to switch screens.</p>
+      </div>
+    </section>
+  </div>
+  <div id="dots"><i></i><i></i><i></i></div>
+</div>
+<div id="viewer" hidden><div class="vbox">
+  <img id="v-img" alt="Saved image">
+  <p id="v-info" class="mut small"></p>
+  <p id="v-prompt"></p>
+  <div class="row wrap"><button id="v-del" class="btn bad">Delete</button><span class="sp"></span><button id="v-reuse" class="btn">Reuse prompt</button><button id="v-save" class="btn">Save PNG</button><button id="v-close" class="btn acc">Close</button></div>
+</div></div>
+<div id="dialog" hidden><div class="dbox"><p id="dlg-h" class="dh"></p><div id="dlg-t"></div><div class="row"><span class="sp"></span><button id="dlg-no" class="btn">Cancel</button><button id="dlg-ok" class="btn acc">OK</button></div></div></div>
+<div id="toast" hidden></div>
+<script src="imagegen_save.js?v=IG1"></script>
+<script src="imagegen_store.js?v=IG1"></script>
+<script src="imagegen_ollama.js?v=IG1"></script>
+<script src="imagegen_app.js?v=IG1"></script>
+</body>
+</html>
