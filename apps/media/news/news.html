@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<!--
+  News (NEWS1) — headlines from Google News (en-IN): place tabs (India, Assam, your own), topic tabs (World, Sports, Tech, Business),
+  search, Saved for later, new-story dots, offline lists. Modules: news_store (localStorage), news_feed (fetch/cache),
+  news_notify (Hub cards), news_settings (theme/time/auto refresh), news_ui (tabs, cards), news_app (boot). Styles: news.css.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#141821">
+  <title>News</title>
+  <link rel="icon" href="news_icon.png">
+  <link rel="stylesheet" href="news.css?v=20261027n1">
+  <script src="../../../shared/theme/hub_theme.js?v=20261026h22"></script>
+  <script>try{var s=JSON.parse(localStorage.getItem('news.set')||'{}'),m=s.theme||'system';document.documentElement.dataset.nt=m==='light'||m==='dark'?m:(localStorage.getItem('sites-hub.theme')==='light'?'light':'dark')}catch(e){document.documentElement.dataset.nt='dark'}</script>
+</head>
+<body>
+<header class="top">
+  <h1 class="brand">📰 News</h1>
+  <form id="search" class="search" role="search"><input name="q" type="search" placeholder="Search any topic" aria-label="Search news" enterkeyhint="search"></form>
+  <button type="button" class="nb" id="btnRef" title="Refresh" aria-label="Refresh">↻</button>
+  <button type="button" class="nb" id="btnSet" title="Settings" aria-label="Settings">⚙</button>
+</header>
+<nav id="tabs" class="tabs" role="tablist" aria-label="News tabs"></nav>
+<div id="addRow" class="addrow" hidden></div>
+<div id="status" class="status" aria-live="polite"></div>
+<main id="grid" class="grid"></main>
+<dialog id="settings" class="dlg" aria-labelledby="setTitle">
+  <div class="dlg-head"><h2 id="setTitle">Settings</h2><button type="button" class="nb" id="setClose" aria-label="Close">✕</button></div>
+  <h3>Theme</h3><div class="seg" id="setTheme" role="radiogroup" aria-label="Theme"></div>
+  <h3>Time format</h3><div class="seg" id="setTime" role="radiogroup" aria-label="Time format"></div>
+  <h3>Auto refresh</h3>
+  <label class="every">Every <select id="setEvery" aria-label="Auto refresh every"></select></label>
+  <p class="hint">Only the open tab refreshes, while the app is open. ↻ always refreshes now.</p>
+  <p class="hint">Headlines from Google News via feedrapp.info. Stories are kept 2 days; Saved stays until you remove it.</p>
+</dialog>
+<script src="news_store.js?v=20261027n1"></script>
+<script src="news_feed.js?v=20261027n1"></script>
+<script src="news_notify.js?v=20261027n1"></script>
+<script src="news_settings.js?v=20261027n1"></script>
+<script src="news_ui.js?v=20261027n1"></script>
+<script src="news_app.js?v=20261027n1"></script>
+</body>
+</html>
