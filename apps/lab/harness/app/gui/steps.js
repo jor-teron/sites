@@ -28,7 +28,7 @@ HR.steps = (function () {
   function model(req) {
     return row('🧠', req.model, function (body, s) {
       var a = el('dl', 'st-dl'), b = el('dl', 'st-dl'), r = s.res;
-      kv(a, 'POST', req.base + '/api/chat'); kv(a, 'loop step', req.step); kv(a, 'messages', req.messages); kv(a, 'tools', req.tools);
+      kv(a, 'provider', req.provider); kv(a, 'base', req.base); kv(a, 'loop step', req.step); kv(a, 'messages', req.messages); kv(a, 'tools', req.tools);
       kv(a, 'last user', cut(req.last || '', 160)); kv(a, 'think', req.think);
       kv(b, 'status', s.status); kv(b, 'time', s.ms ? (s.ms / 1000).toFixed(2) + ' s' : '');
       kv(b, 'reply chars', r.chars); kv(b, 'thinking chars', r.thinkChars || ''); kv(b, 'tool calls', r.tool_calls);

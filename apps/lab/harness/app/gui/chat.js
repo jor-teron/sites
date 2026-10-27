@@ -47,7 +47,7 @@ HR.chat = (function () {
     HR.view.clearErrors(); input.value = ''; grow();
     var u = HR.msgs.add({ role: 'user', content: text }); HR.view.bubble(u); HR.logs.user(text);
     ctrl = new AbortController(); busy(true);
-    var opts = { base: HR.set.get('baseUrl'), model: model, think: HR.set.get('think'), signal: ctrl.signal, maxSteps: HR.set.maxSteps(), useTools: HR.set.get('tools') !== 'off',
+    var opts = { adapter: HR.models.current(), cfg: HR.models.cfg(), model: model, think: HR.set.get('think'), signal: ctrl.signal, maxSteps: HR.set.maxSteps(), useTools: HR.set.get('tools') !== 'off',
       system: HR.prompt.system, ui: { modelStart: modelStart, toolStart: toolStart, note: note, approve: approve } };
     HR.loop.run(opts).then(function (r) {
       if (r.status === 'stop') note('■ Stopped.');
@@ -55,7 +55,7 @@ HR.chat = (function () {
       return r;
     }, function (e) {
       HR.view.errorCard(e);
-      HR.notify({ icon: '⚠️', title: 'Harness', text: e.kind === 'unreachable' ? 'Can\'t reach Ollama' : 'Ollama: ' + e.message });
+      HR.notify({ icon: '⚠️', title: 'Harness', text: (opts.adapter.label) + ': ' + (e.kind === 'unreachable' ? 'can\'t reach ' + opts.cfg.base : e.message) });
     }).then(function () { ctrl = null; busy(false); HR.msgs.save(); input.focus(); });
   }
   function grow() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 180) + 'px'; }

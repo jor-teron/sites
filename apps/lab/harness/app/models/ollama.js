@@ -47,3 +47,9 @@ HR.ollama = (function () {
   function tps(s) { return s && s.eval_count && s.eval_duration ? s.eval_count / (s.eval_duration / 1e9) : 0; }
   return { tags: tags, chat: chat, tps: tps };
 })();
+/* HR6: Ollama as a provider adapter (default) */
+HR.models.register({ id: 'ollama', label: 'Ollama', needsKey: false,
+  models: function (c) { return HR.ollama.tags(c.base).then(function (l) { return l.map(function (m) {
+    var gb = m.size ? ' · ' + (m.size / 1073741824).toFixed(m.size < 1073741824 * 10 ? 1 : 0) + ' GB' : '';
+    return { name: m.name, label: m.name + (m.details.parameter_size ? ' · ' + m.details.parameter_size : '') + gb }; }); }); },
+  chat: function (o) { return HR.ollama.chat({ base: o.cfg.base, model: o.model, messages: o.messages, think: o.think, tools: o.tools, signal: o.signal, onDelta: o.onDelta }); } });

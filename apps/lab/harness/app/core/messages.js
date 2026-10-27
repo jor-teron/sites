@@ -1,6 +1,6 @@
 /* Harness — app/core/messages.js: chat history (HR.msgs) kept in memory and mirrored to sessionStorage
    ('harness.history', cleared when the tab closes). Message: {role:'user'|'assistant'|'tool', content, thinking, stats, error,
-   tool_calls (assistant, HR2), tool_name / args / ok / ms (tool result, HR2)}.
+   tool_calls (assistant, HR2), tool_name / tool_call_id / args / ok / ms (tool result, HR2/HR6)}.
    splitThink(text) moves <think>…</think> (also an unclosed <think> while streaming) out of the visible text. */
 window.HR = window.HR || {};
 HR.msgs = (function () {
@@ -16,7 +16,7 @@ HR.msgs = (function () {
       .map(function (m) {
         var o = { role: m.role, content: m.content || '' };
         if (m.tool_calls && m.tool_calls.length) o.tool_calls = m.tool_calls;
-        if (m.role === 'tool') o.tool_name = m.tool_name;
+        if (m.role === 'tool') { o.tool_name = m.tool_name; if (m.tool_call_id) o.tool_call_id = m.tool_call_id; }
         return o;
       });
   }

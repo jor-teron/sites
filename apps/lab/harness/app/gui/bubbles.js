@@ -1,6 +1,6 @@
 /* Harness — app/gui/bubbles.js: chat views (HR.view). bubble(m) -> {paint(live), el} for user / assistant messages:
    plain text with ``` code blocks, folded Thinking box (<think>…</think> or Ollama 'thinking'), stats line, tool-call chips.
-   tool(m) -> {done(ok,text,ms)}: folded 🔧 chip with args + result preview. note(text), hello() (+ folder hint, HR4), errorCard(e). */
+   tool(m) -> {done(ok,text,ms)}: folded 🔧 chip with args + result preview. note(text), hello() (+ folder hint, HR4), errorCard(e) (Ollama help; HR6 online provider key / URL errors). */
 HR.view = (function () {
   var log;
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
@@ -67,7 +67,14 @@ HR.view = (function () {
     clearErrors(); var h = log.querySelector('.hello'); if (h) h.remove();
     var base = HR.set.get('baseUrl'), origin = location.origin === 'null' ? '*' : location.origin;
     var c = el('div', 'ecard'), t = el('div', 'ec-t'), p = el('div', 'ec-b');
-    if (e.kind === 'unreachable') {
+    var prov = HR.models.id(), lab = HR.models.current().label;
+    if (prov !== 'ollama' && e.kind !== 'abort') {
+      var cb = HR.models.base();
+      if (e.kind === 'nokey') { t.textContent = '🔑 ' + lab + ' needs an API key'; p.textContent = 'Add it in Settings ⚙ → Provider. It is stored only in this browser on this device.'; }
+      else if (e.kind === 'unreachable') { t.textContent = '🔌 Can\'t reach ' + cb; p.textContent = 'Check the base URL and your connection. The provider must allow browser (CORS) requests; OpenAI, Groq, OpenRouter and Gemini do. ' + (e.message || ''); }
+      else if (e.kind === 'empty') { t.textContent = '📦 No models listed'; p.textContent = 'Type a model name in Settings ⚙ → Provider.'; }
+      else { t.textContent = (e.status === 401 || e.status === 403 ? '🔑 API key rejected' : '⚠️ ' + lab + ' error') + (e.status ? ' (' + e.status + ')' : ''); p.textContent = e.message || String(e); }
+    } else if (e.kind === 'unreachable') {
       t.textContent = '🔌 Can\'t reach Ollama at ' + base;
       var ol = el('ol'), li1 = el('li', null, 'Make sure Ollama is running: '), li2 = el('li', null, 'Allow this page\'s origin. Ollama blocks browser pages unless OLLAMA_ORIGINS includes ');
       li1.appendChild(code('ollama serve')); li2.appendChild(code(origin));

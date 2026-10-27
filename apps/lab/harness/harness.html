@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <!--
-  Harness (HR1-HR5) — browser AI agent harness, all in browser JS. HR1: chat with a local Ollama model (streaming, Stop,
+  Harness (HR1-HR6) — browser AI agent harness, all in browser JS. HR1: chat with a local Ollama model (streaming, Stop,
   Thinking box, tok/s), Steps pane. HR2: agent loop with tools (get_time), step limit, Stop. HR3: folder tools
   (File System Access; write needs approval). HR4: daily Markdown logs, memory notes, editable system prompt in
   <folder>/harness/. HR5: run_shell through helper/harness-helper.sh (local bash helper, token, approval per command).
-  See harness_readme.md roadmap.
+  HR6: online models (OpenAI-compatible, Gemini) behind one adapter interface. See harness_readme.md roadmap.
   Styles: ui/main.css (theme, layout), ui/components.css (buttons, bubbles, cards, dialog), ui/steps.css (steps pane).
-  Scripts (order matters): app/core (messages, tools, loop, prompt), app/models/ollama.js, app/storage (fs, logs), app/tools/*,
-  app/gui (settings, model, steps, bubbles, approve, folder, helperset, chat), app/main.js.
+  Scripts (order matters): app/core (messages, tools, loop, prompt, helper), app/models (net, registry, ollama, openai, gemini), app/storage (fs, logs), app/tools/*,
+  app/gui (settings, model, steps, bubbles, approve, folder, helperset, provider, chat), app/main.js.
 -->
 <html lang="en">
 <head>
@@ -17,9 +17,9 @@
   <meta name="theme-color" content="#111318">
   <title>Harness</title>
   <link rel="icon" href="harness_icon.png">
-  <link rel="stylesheet" href="ui/main.css?v=20261027hr5">
-  <link rel="stylesheet" href="ui/components.css?v=20261027hr5">
-  <link rel="stylesheet" href="ui/steps.css?v=20261027hr5">
+  <link rel="stylesheet" href="ui/main.css?v=20261027hr6">
+  <link rel="stylesheet" href="ui/components.css?v=20261027hr6">
+  <link rel="stylesheet" href="ui/steps.css?v=20261027hr6">
   <script src="../../../shared/theme/hub_theme.js?v=20261026h22"></script>
   <script>try{var s=JSON.parse(localStorage.getItem('harness.settings')||'{}'),m=s.theme||'dark';document.documentElement.dataset.ht=m==='light'?'light':m==='system'?(localStorage.getItem('sites-hub.theme')==='light'?'light':'dark'):'dark'}catch(e){document.documentElement.dataset.ht='dark'}</script>
 </head>
@@ -50,11 +50,21 @@
 <dialog id="settings" class="dlg" aria-labelledby="setTitle">
   <div class="dlg-head"><h2 id="setTitle">Settings</h2><button type="button" class="hb" id="setClose" aria-label="Close">✕</button></div>
   <h3>Theme</h3><div class="seg" id="setTheme" role="radiogroup" aria-label="Theme"></div>
+  <h3>Provider</h3><div class="seg" id="setProv" role="radiogroup" aria-label="Provider"></div>
+  <div id="provOllama">
   <h3>Ollama base URL</h3>
   <input id="setBase" class="inp" type="url" spellcheck="false" placeholder="http://localhost:11434" aria-label="Ollama base URL">
   <p class="hint">Ollama must allow this page: OLLAMA_ORIGINS = <code id="setOrigin"></code></p>
+  </div>
+  <div id="provOnline" hidden>
+  <div id="provOA"><div class="ec-row start" id="provPresets"></div>
+  <input id="setOABase" class="inp gap" type="url" spellcheck="false" placeholder="https://api.openai.com/v1" aria-label="OpenAI-compatible base URL"></div>
+  <input id="setKey" class="inp gap" type="password" spellcheck="false" autocomplete="off" placeholder="API key" aria-label="API key">
+  <p class="hint" id="keyNote"></p>
+  <input id="setModelName" class="inp gap" type="text" spellcheck="false" aria-label="Model name">
+  </div>
   <h3>Thinking</h3><div class="seg" id="setThink" role="radiogroup" aria-label="Thinking"></div>
-  <p class="hint">Auto = model default. On / Off send Ollama's <code>think</code> flag (only thinking models accept it).</p>
+  <p class="hint">Auto = model default. On / Off send Ollama's <code>think</code> flag (only thinking models accept it); Gemini: On shows thought summaries, Off sets thinking budget 0. Not sent to OpenAI-compatible providers.</p>
   <h3>Tools</h3><div class="seg" id="setTools" role="radiogroup" aria-label="Tools"></div>
   <label class="lbl">Step limit (model calls per message) <input id="setSteps" class="inp num" type="number" min="1" max="30" step="1"></label>
   <h3>Folder</h3>
@@ -69,26 +79,31 @@
   <p class="hint">Start it in a terminal: <code>bash helper/harness-helper.sh</code> (needs socat or ncat; listens on 127.0.0.1 only). Every command shows an Approve / Deny card first.</p>
   <p class="hint">Daily logs go to harness/chats/YYYY_MM/YYYY_MM_DD.md; memory to harness/memory.md; system prompt in harness/prompts/system.md (edit it there). In-app history stays in this tab (sessionStorage). Settings are saved.</p>
 </dialog>
-<script src="app/core/messages.js?v=20261027hr5"></script>
-<script src="app/core/tools.js?v=20261027hr5"></script>
-<script src="app/core/loop.js?v=20261027hr5"></script>
-<script src="app/core/prompt.js?v=20261027hr5"></script>
-<script src="app/core/helper.js?v=20261027hr5"></script>
-<script src="app/models/ollama.js?v=20261027hr5"></script>
-<script src="app/storage/fs.js?v=20261027hr5"></script>
-<script src="app/storage/logs.js?v=20261027hr5"></script>
-<script src="app/tools/time.js?v=20261027hr5"></script>
-<script src="app/tools/files.js?v=20261027hr5"></script>
-<script src="app/tools/memory.js?v=20261027hr5"></script>
-<script src="app/tools/shell.js?v=20261027hr5"></script>
-<script src="app/gui/settings.js?v=20261027hr5"></script>
-<script src="app/gui/model.js?v=20261027hr5"></script>
-<script src="app/gui/steps.js?v=20261027hr5"></script>
-<script src="app/gui/bubbles.js?v=20261027hr5"></script>
-<script src="app/gui/approve.js?v=20261027hr5"></script>
-<script src="app/gui/folder.js?v=20261027hr5"></script>
-<script src="app/gui/helperset.js?v=20261027hr5"></script>
-<script src="app/gui/chat.js?v=20261027hr5"></script>
-<script src="app/main.js?v=20261027hr5"></script>
+<script src="app/core/messages.js?v=20261027hr6"></script>
+<script src="app/core/tools.js?v=20261027hr6"></script>
+<script src="app/core/loop.js?v=20261027hr6"></script>
+<script src="app/core/prompt.js?v=20261027hr6"></script>
+<script src="app/core/helper.js?v=20261027hr6"></script>
+<script src="app/models/net.js?v=20261027hr6"></script>
+<script src="app/models/registry.js?v=20261027hr6"></script>
+<script src="app/models/ollama.js?v=20261027hr6"></script>
+<script src="app/models/openai.js?v=20261027hr6"></script>
+<script src="app/models/gemini.js?v=20261027hr6"></script>
+<script src="app/storage/fs.js?v=20261027hr6"></script>
+<script src="app/storage/logs.js?v=20261027hr6"></script>
+<script src="app/tools/time.js?v=20261027hr6"></script>
+<script src="app/tools/files.js?v=20261027hr6"></script>
+<script src="app/tools/memory.js?v=20261027hr6"></script>
+<script src="app/tools/shell.js?v=20261027hr6"></script>
+<script src="app/gui/settings.js?v=20261027hr6"></script>
+<script src="app/gui/model.js?v=20261027hr6"></script>
+<script src="app/gui/steps.js?v=20261027hr6"></script>
+<script src="app/gui/bubbles.js?v=20261027hr6"></script>
+<script src="app/gui/approve.js?v=20261027hr6"></script>
+<script src="app/gui/folder.js?v=20261027hr6"></script>
+<script src="app/gui/helperset.js?v=20261027hr6"></script>
+<script src="app/gui/provider.js?v=20261027hr6"></script>
+<script src="app/gui/chat.js?v=20261027hr6"></script>
+<script src="app/main.js?v=20261027hr6"></script>
 </body>
 </html>

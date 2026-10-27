@@ -34,5 +34,6 @@ HR.notify = (function () {
   HR.chat.init();
   HR.folder.init();
   HR.helperSet.init();
+  HR.provider.init();
   HR.model.init();
 })();
