@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Video Chat VC1</title>
+  <link rel="icon" href="videochat_icon.png?v=VC1">
+  <link rel="stylesheet" href="videochat.css?v=VC1">
+</head>
+<body>
+<div id="app">
+  <div id="dots"><button class="dot on" data-i="0" aria-label="Call"></button><button class="dot" data-i="1" aria-label="Settings"></button></div>
+  <div id="viewport"><div id="track">
+    <section class="pane" id="pane-call">
+      <div class="bar"><div><b id="me-name"></b><div id="status" class="mut">Starting…</div></div>
+        <button class="mini" id="btn-code">Code</button></div>
+      <ul id="devices"></ul>
+      <p id="empty" class="mut">No other devices yet. Open Video Chat on another device with the same Hub code.</p>
+    </section>
+    <section class="pane" id="pane-set"><div class="set-wrap">
+      <h2>This device</h2>
+      <div class="set-row"><label for="in-name">Name</label><input id="in-name" maxlength="40"></div>
+      <h2>Camera &amp; microphone</h2>
+      <div class="set-row"><label for="sel-cam">Camera</label><select id="sel-cam"><option value="">Default</option></select></div>
+      <div class="set-row"><label for="sel-mic">Microphone</label><select id="sel-mic"><option value="">Default</option></select></div>
+      <h2>Look</h2>
+      <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+      <h2>About</h2>
+      <div class="about"><img src="videochat_icon.png?v=VC1" width="48" height="48" alt=""><div><b>Video Chat</b> <span id="ver">VC1</span>
+        <p>One-to-one video calls between devices on the same Hub Connect Code. Peer to peer over PeerJS; nothing is stored on a server.</p></div></div>
+    </div></section>
+  </div></div>
+</div>
+
+<div id="incall" hidden>
+  <video id="remote" autoplay playsinline></video>
+  <video id="self" autoplay playsinline muted></video>
+  <div id="ctop"><b id="c-name"></b><span id="c-state"></span><span id="c-time">0:00</span></div>
+  <div id="cside">
+    <button class="cb" id="b-mute" title="Mute">🎤</button>
+    <button class="cb" id="b-cam" title="Camera on/off">📷</button>
+    <button class="cb" id="b-flip" title="Switch camera">🔄</button>
+    <button class="cb end" id="b-end" title="End">✕</button>
+  </div>
+</div>
+
+<div id="ringing" hidden><div class="box"><div class="big">📞</div><p><b id="r-name"></b><br><span class="mut">is calling…</span></p>
+  <div class="row"><button class="btn bad" id="b-decline">Decline</button><button class="btn good" id="b-accept">Accept</button></div></div></div>
+
+<div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="4" placeholder="4-digit code"><div class="row" id="d-row"></div></div></div>
+<div id="toast"></div>
+
+<script src="../../../shared/link/link_devices.js?v=VC1"></script>
+<script src="videochat_store.js?v=VC1"></script>
+<script src="videochat_peer.js?v=VC1"></script>
+<script src="videochat_call.js?v=VC1"></script>
+<script src="videochat_app.js?v=VC1"></script>
+</body>
+</html>
