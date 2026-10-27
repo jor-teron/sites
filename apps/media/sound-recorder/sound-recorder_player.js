@@ -3,7 +3,7 @@
    Sound ◀ / ▶ jump between sound regions. View state is exposed as SR.player for tests. */
 (() => {
   'use strict';
-  const { $, toast } = SR, MIN_SPAN = 2;
+  const { $ } = SR, N = SRNotify, MIN_SPAN = 2;
   let rec = null, url = null, regs = [], dur = 0, v0 = 0, v1 = 1, raf = 0, colors = null;
   const audio = () => $('p-audio');
   const now = () => (rec ? Math.min(dur, audio().currentTime || 0) : 0);
@@ -71,13 +71,13 @@
   function toggle() {
     if (!rec) return;
     const a = audio();
-    if (a.paused) { if (now() >= dur - 0.05) seek(0); a.play().catch(() => toast('Cannot play this file')); } else a.pause();
+    if (a.paused) { if (now() >= dur - 0.05) seek(0); a.play().catch(() => N({ icon: '⚠️', title: 'Cannot play', text: 'This file format is not supported here' })); } else a.pause();
   }
   function jump(dir) {
     if (!rec) return;
     const t = now();
     const r = dir > 0 ? regs.find((x) => x.s > t + 0.05) : [...regs].reverse().find((x) => x.s < t - 0.3);
-    if (!r) { toast(dir > 0 ? 'No more sound after this' : 'No sound before this'); return; }
+    if (!r) { N({ icon: '🔇', title: dir > 0 ? 'No more sound' : 'No earlier sound', text: dir > 0 ? 'Nothing after this point' : 'Nothing before this point', timeoutMs: 2500 }); return; }
     seek(r.s);
     if (r.s < v0 || r.s > v1) setView(r.s - span() * 0.1, r.s + span() * 0.9);
   }

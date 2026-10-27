@@ -2,7 +2,7 @@
    Peaks come from an AudioWorklet while recording (no decoding later); audio from MediaRecorder. */
 (() => {
   'use strict';
-  const { $, P, toast } = SR, PPS = SRAudio.PPS, LIVE_S = 8;
+  const { $, P } = SR, N = SRNotify, PPS = SRAudio.PPS, LIVE_S = 8;
   const MIMES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
   let stream = null, mr = null, chunks = [], ctx = null, node = null, peaks = [], t0 = 0, acc = 0, paused = false, busy = false, level = 0, raf = 0, stopping = false, why = '';
   const state = () => (mr ? (paused ? 'paused' : 'rec') : 'idle');
@@ -21,7 +21,7 @@
 
   async function start() {
     if (busy || mr) return;
-    if (!navigator.mediaDevices || !window.MediaRecorder) { toast('Recording is not supported in this browser'); return; }
+    if (!navigator.mediaDevices || !window.MediaRecorder) { N({ icon: '⚠️', title: 'Cannot record', text: 'This browser does not support recording' }); return; }
     busy = true;
     try {
       try { stream = await navigator.mediaDevices.getUserMedia({ audio: P.mic ? { deviceId: { exact: P.mic } } : true }); }
@@ -29,10 +29,10 @@
     } catch (e) {
       busy = false;
       const n = e && e.name;
-      if (n === 'NotAllowedError' || n === 'SecurityError') toast('Microphone blocked · allow it in site settings');
-      else if (n === 'NotFoundError' || n === 'OverconstrainedError') toast('No microphone found');
-      else if (n === 'NotReadableError' || n === 'AbortError') toast('Microphone busy in another app');
-      else toast('Could not open the microphone');
+      if (n === 'NotAllowedError' || n === 'SecurityError') N({ icon: '🎙️', title: 'Microphone blocked', text: 'Allow the microphone in site settings' });
+      else if (n === 'NotFoundError' || n === 'OverconstrainedError') N({ icon: '🎙️', title: 'No microphone found', text: 'Connect a microphone and try again' });
+      else if (n === 'NotReadableError' || n === 'AbortError') N({ icon: '🎙️', title: 'Microphone busy', text: 'Another app is using it' });
+      else N({ icon: '🎙️', title: 'Microphone error', text: 'Could not open the microphone' });
       return;
     }
     try {
@@ -49,12 +49,12 @@
       mr.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
       mr.onstop = finish;
       /* mic taken by a call / another app, unplugged, or recorder error: stop and save what we have */
-      mr.onerror = () => { why = 'Recording error · '; stop(); };
-      stream.getAudioTracks().forEach((t) => { t.onended = () => { if (mr) { why = 'Mic stopped · '; stop(); } }; });
+      mr.onerror = () => { why = 'Recording error'; stop(); };
+      stream.getAudioTracks().forEach((t) => { t.onended = () => { if (mr) { why = 'Microphone stopped'; stop(); } }; });
       mr.start(1000);
       t0 = performance.now(); acc = 0; paused = false; stopping = false; why = '';
       listMics();
-    } catch (e) { cleanup(); toast('Could not start recording'); }
+    } catch (e) { cleanup(); N({ icon: '⚠️', title: 'Could not start recording', text: 'Please try again' }); }
     busy = false; ui();
   }
   function pause() {
@@ -72,13 +72,13 @@
     const type = (mr && mr.mimeType) || pickMime() || 'audio/webm';
     const blob = new Blob(chunks, { type }), pk = Float32Array.from(peaks), dur = finalDur, note = why;
     cleanup();
-    if (!blob.size) { toast(note + 'Nothing recorded'); return; }
+    if (!blob.size) { N({ icon: '⚠️', title: note || 'Nothing recorded', text: 'The recording was empty' }); return; }
     const d = new Date(), p = (n) => String(n).padStart(2, '0');
     const rec = { id: 'r' + d.getTime().toString(36) + Math.random().toString(36).slice(2, 6), name: 'Recording ' + d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()),
       date: d.getTime(), dur, mime: type, size: blob.size, blob, peaks: pk, pps: PPS };
-    try { await SRStore.put(rec); toast(note + 'Saved · ' + SR.fmt(dur)); SR.emit('changed', { added: rec.id }); }
+    try { await SRStore.put(rec); N({ icon: '✅', title: note ? note + ' · saved' : 'Recording saved', text: rec.name + ' · ' + SR.fmt(dur), onClick: () => SR.emit('open', rec.id) }); SR.emit('changed', { added: rec.id }); }
     catch (_) { /* storage full / unavailable: never lose the audio, download it instead */
-      SRSave.save(blob, SRSave.fileName(rec.name, SRSave.ext(type))).then((n) => toast('Could not save here · downloaded ' + n)); }
+      SRSave.save(blob, SRSave.fileName(rec.name, SRSave.ext(type))).then((n) => N({ icon: '💾', title: 'Saved as a download', text: 'Storage full or unavailable · ' + n })); }
   }
   function cleanup() {
     if (stream) stream.getTracks().forEach((t) => t.stop());
@@ -114,7 +114,7 @@
     $('r-rec').onclick = () => { if (!mr) start(); else if (paused) pause(); };
     $('r-pause').onclick = pause;
     $('r-stop').onclick = stop;
-    $('mic').onchange = () => { P.mic = $('mic').value; SR.saveP(); toast('Used for the next recording'); };
+    $('mic').onchange = () => { P.mic = $('mic').value; SR.saveP(); N({ icon: '🎙️', title: 'Microphone changed', text: 'Used for the next recording', timeoutMs: 2500 }); };
     if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener('devicechange', listMics);
     listMics(); ui();
   });

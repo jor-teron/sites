@@ -1,13 +1,13 @@
 /* Sound Recorder — Recordings screen: list with mini waveform, rename / delete (own dialogs), download, import. */
 (() => {
   'use strict';
-  const { $, toast } = SR;
+  const { $ } = SR, N = SRNotify;
   let items = [];
   const when = (ms) => new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   const size = (b) => (b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
 
   async function load() {
-    try { items = await SRStore.all(); } catch (_) { items = []; toast('Storage not available'); }
+    try { items = await SRStore.all(); } catch (_) { items = []; N({ icon: '⚠️', title: 'Storage not available', text: 'Recordings cannot be listed' }); }
     render();
   }
   function render() {
@@ -36,29 +36,29 @@
       if (v == null || !v || v === r.name) return;
       const old = r.name; r.name = v.slice(0, 80);
       try { await SRStore.rename(r.id, r.name); render(); SR.emit('changed', { renamed: r.id }); }
-      catch (_) { r.name = old; toast('Could not rename'); load(); }
+      catch (_) { r.name = old; N({ icon: '⚠️', title: 'Could not rename', text: 'Storage error, please try again' }); load(); }
     } else if (a === 'del') {
       const ok = await SR.ask({ text: 'Delete "' + r.name + '"? This cannot be undone.', ok: 'Delete', danger: true });
       if (!ok) return;
-      try { await SRStore.del(r.id); items = items.filter((x) => x !== r); render(); toast('Deleted'); SR.emit('changed', { deleted: r.id }); }
-      catch (_) { toast('Could not delete'); load(); }
+      try { await SRStore.del(r.id); items = items.filter((x) => x !== r); render(); N({ icon: '🗑️', title: 'Deleted', text: r.name }); SR.emit('changed', { deleted: r.id }); }
+      catch (_) { N({ icon: '⚠️', title: 'Could not delete', text: 'Storage error, please try again' }); load(); }
     } else if (a === 'dl') {
       try {
-        const full = await SRStore.get(r.id); if (!full || !full.blob) { toast('Recording not found'); load(); return; }
-        const n = await SRSave.save(full.blob, SRSave.fileName(r.name, SRSave.ext(full.blob.type || r.mime))); toast('Downloading ' + n);
-      } catch (_) { toast('Could not read this recording'); }
+        const full = await SRStore.get(r.id); if (!full || !full.blob) { N({ icon: '⚠️', title: 'Recording not found', text: 'It may have been deleted' }); load(); return; }
+        const n = await SRSave.save(full.blob, SRSave.fileName(r.name, SRSave.ext(full.blob.type || r.mime))); N({ icon: '⬇️', title: 'Downloading', text: n });
+      } catch (_) { N({ icon: '⚠️', title: 'Could not read recording', text: 'Storage error, please try again' }); }
     }
   }
   async function importFile(f) {
     if (!f) return;
-    toast('Reading ' + f.name + '…');
+    const card = N({ icon: '📥', title: 'Importing', text: f.name, timeoutMs: 0 });
     try {
-      const { peaks, dur } = await SRAudio.decodePeaks(f, (p) => toast('Analysing ' + Math.round(p * 100) + '%'));
+      const { peaks, dur } = await SRAudio.decodePeaks(f, (p) => card.update(f.name + ' · ' + Math.round(p * 100) + '%'));
       const d = Date.now();
       const rec = { id: 'r' + d.toString(36) + Math.random().toString(36).slice(2, 6), name: f.name.replace(/\.[^.]+$/, '') || 'Imported', date: d, dur, mime: f.type || 'audio/*', size: f.size, blob: f, peaks, pps: SRAudio.PPS };
-      await SRStore.put(rec); toast('Imported · ' + SR.fmt(dur));
+      await SRStore.put(rec); card.close(); N({ icon: '✅', title: 'Imported', text: rec.name + ' · ' + SR.fmt(dur), onClick: () => SR.emit('open', rec.id) });
       SR.emit('changed', { added: rec.id });
-    } catch (_) { toast('Could not read this audio file'); }
+    } catch (_) { card.close(); N({ icon: '⚠️', title: 'Could not import', text: 'Unsupported or damaged audio file' }); }
   }
 
   SR.on('init', () => {

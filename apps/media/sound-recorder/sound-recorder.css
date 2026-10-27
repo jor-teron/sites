@@ -1,7 +1,9 @@
-:root{--bg:#f6f7f9;--fg:#15181d;--mut:#6b7280;--card:#fff;--line:#e3e6ea;--acc:#2563eb;--good:#16a34a;--bad:#dc2626;
+:root{--bg:#f6f7f9;--fg:#15181d;--mut:#6b7280;--card:#fff;--line:#e3e6ea;--acc:var(--accent,#2563eb);--good:#16a34a;--bad:#dc2626;
   --wave:#334155;--sil:rgba(100,116,139,.16);--play:#f97316;--dim:rgba(0,0,0,.28);--rec:#dc2626}
-:root.dark{--bg:#111316;--fg:#eef0f3;--mut:#9aa3ae;--card:#1c1f24;--line:#2b3037;--acc:#60a5fa;--good:#4ade80;--bad:#f87171;
+:root.dark{--bg:#111316;--fg:#eef0f3;--mut:#9aa3ae;--card:#1c1f24;--line:#2b3037;--acc:var(--accent,#60a5fa);--good:#4ade80;--bad:#f87171;
   --wave:#cbd5e1;--sil:rgba(148,163,184,.12);--play:#fb923c;--dim:rgba(0,0,0,.45);--rec:#ef4444}
+/* --accent comes from shared/theme/hub_theme.js; color-scheme pinned to the app's own light / dark */
+:root{color-scheme:light!important}:root.dark{color-scheme:dark!important}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 #app{position:fixed;inset:0;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
@@ -75,7 +77,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 .about img{border-radius:9px}
 .about p{margin:4px 0 0;color:var(--mut);font-size:14px;line-height:1.4}
 #ver{color:var(--mut);font-size:13px}
-/* dialog + toast */
+/* dialog */
 #dialog{position:fixed;inset:0;background:rgba(0,0,0,.4);display:grid;place-items:center;z-index:10}
 #dialog[hidden]{display:none}
 #dialog .box{background:var(--card);border-radius:14px;padding:18px;width:min(320px,88vw);box-shadow:0 8px 30px rgba(0,0,0,.3)}
@@ -83,6 +85,14 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 #dlg-in{width:100%;height:38px;margin:0 0 14px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font-size:15px;padding:0 10px;user-select:text}
 #dlg-in[hidden]{display:none}
 #dialog .row{display:flex;justify-content:flex-end;gap:8px}
-#toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:6px 14px;border-radius:16px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:11;white-space:nowrap}
-#toast.show{opacity:1}
+/* local notification cards (standalone; inside the Hub, Hub cards are used) */
+.srn-host{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));z-index:11;display:flex;flex-direction:column;gap:6px;width:min(300px,calc(100vw - 24px));pointer-events:none}
+.srn-card{display:flex;align-items:flex-start;gap:8px;padding:8px 6px 8px 10px;background:var(--card);color:var(--fg);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.25);pointer-events:auto}
+.srn-card.click{cursor:pointer}
+.srn-icon{font-size:20px;line-height:22px;flex:none}
+.srn-body{flex:1;min-width:0}
+.srn-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srn-text{font-size:12px;color:var(--mut);word-break:break-word}
+.srn-x{flex:none;width:24px;height:24px;border:0;border-radius:50%;background:none;color:var(--mut);font-size:13px;cursor:pointer}
+@media (min-width:1200px){.srn-host{width:360px}.srn-title{font-size:15px}.srn-text{font-size:14px}.srn-icon{font-size:24px}}
 @media (min-width:800px){.wave.main{height:360px}#r-wave{height:240px}}

@@ -5,7 +5,8 @@ A microphone recorder built for **long recordings**: the waveform shows where th
 
 ## 2. Files
 - `sound-recorder.html` / `sound-recorder.css`: page, layout, light / dark, safe-area
-- `sound-recorder_app.js`: screens, top-bar swipe, settings, theme, own dialog, toast, keys
+- `sound-recorder_app.js`: screens, top-bar swipe, settings, theme (System = follow the Hub via `shared/theme/hub_theme.js`, default), own dialog, keys
+- `sound-recorder_notify.js`: `SRNotify({icon,title,text,onClick,timeoutMs})` — Hub notification cards inside the Hub, small local cards standalone
 - `sound-recorder_recorder.js`: Record / Pause / Stop, live waveform, level meter, timer, mic picker
 - `sound-recorder_list.js`: Recordings list, rename, delete, download, import
 - `sound-recorder_player.js`: waveform player, seek, zoom, overview, sound regions

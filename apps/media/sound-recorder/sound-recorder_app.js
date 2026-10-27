@@ -1,5 +1,6 @@
-/* Sound Recorder — app shell: screens + top-bar swipe, settings, theme, own dialog, toast, helpers.
+/* Sound Recorder — app shell: screens + top-bar swipe, settings, theme, own dialog, helpers (cards: sound-recorder_notify.js).
    Settings in localStorage 'sound-recorder-settings-v1': { theme:'system'|'light'|'dark', thr:-50|-40|-30, mic }
+   theme 'system' (default) = follow the Hub's Dark / Light via shared/theme/hub_theme.js, which also sets --accent.
    State in 'sound-recorder-state-v1': { mode:'rec'|'list'|'play'|'set', cur: recording id }
    Modules hook in with SR.on('mode'|'settings'|'changed', fn). */
 const SR = (() => {
@@ -7,7 +8,7 @@ const SR = (() => {
   const VERSION = '1.0', SKEY = 'sound-recorder-settings-v1', KEY = 'sound-recorder-state-v1', SWIPE = 75, MOVE = 10;
   const MODES = ['rec', 'list', 'play', 'set'], NAMES = { rec: 'Recorder', list: 'Recordings', play: 'Player', set: 'Settings' };
   const $ = (id) => document.getElementById(id);
-  const P = { theme: 'dark', thr: -40, mic: '' };
+  const P = { theme: 'system', thr: -40, mic: '' };
   const S = { mode: 'rec', cur: null };
   try { Object.assign(P, JSON.parse(localStorage.getItem(SKEY) || '{}')); } catch (_) { /* defaults */ }
   try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) { /* defaults */ }
@@ -19,8 +20,8 @@ const SR = (() => {
   const emit = (k, a) => (hooks[k] || []).forEach((f) => f(a));
 
   function theme() {
-    const t = localStorage.getItem('sites-hub.theme');
-    const dark = P.theme === 'dark' || (P.theme === 'system' && (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)));
+    const hub = window.HubTheme ? HubTheme.hub() : (localStorage.getItem('sites-hub.theme') === 'light' ? 'light' : 'dark');
+    const dark = P.theme === 'dark' || (P.theme !== 'light' && hub === 'dark');
     document.documentElement.classList.toggle('dark', dark);
   }
   const pad = (n) => String(n).padStart(2, '0');
@@ -33,9 +34,6 @@ const SR = (() => {
     return r;
   }
   const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-  let tt;
-  function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 1800); }
 
   /* own dialog: ask({ text, value?, ok, danger }) -> Promise<true | string | null> */
   let dlgDone = null;
@@ -113,13 +111,12 @@ const SR = (() => {
       if (e.key === 'PageUp' || (e.altKey && e.key === 'ArrowLeft')) { e.preventDefault(); step(-1); return; }
       if (!e.altKey) emit('key', e);
     });
+    if (window.HubTheme) HubTheme.onChange(() => { theme(); emit('settings', 'theme'); });
     addEventListener('storage', (e) => {
-      if (e.key === 'sites-hub.theme') { theme(); emit('settings', 'theme'); }
       if (e.key === SKEY) { try { Object.assign(P, JSON.parse(e.newValue || '{}')); } catch (_) { /* */ } theme(); renderSeg(); emit('settings', 'all'); }
     });
-    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { theme(); emit('settings', 'theme'); });
     emit('init');
     setMode(S.mode);
   }
-  return { $, P, S, saveP, saveS, on, emit, fmt, esc, toast, ask, setMode, init, MODES };
+  return { $, P, S, saveP, saveS, on, emit, fmt, esc, ask, setMode, init, MODES };
 })();
