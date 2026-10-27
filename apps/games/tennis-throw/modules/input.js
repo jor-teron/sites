@@ -2,7 +2,7 @@
  * File: modules/input.js
  * Project: tennis-throw
  * Purpose: Keyboard (held keys applied per second in the loop) and
- *          pointer drag-to-aim for touch and mouse.
+ *          pointer aim for touch and mouse. TB5: slingshot pull-back by default.
  */
 (function (TT) {
   const CFG = TT.CFG, game = TT.game, canvas = TT.canvas;
@@ -60,14 +60,19 @@
     return { x: (e.clientX - r.left) * canvas.width / r.width, y: (e.clientY - r.top) * canvas.height / r.height };
   }
 
-  /** Drag direction sets the angle, drag length sets the power. */
+  /**
+   * Drag sets angle and power. TB5: slingshot (default) throws opposite the
+   * drag (pull back, release); 'forward' (legacy) throws along the drag.
+   */
   function aimFromDrag(d) {
-    const dx = d.x1 - d.x0, dy = d.y0 - d.y1; // screen y is down; flip so up is positive
+    const sling = CFG.drag.style !== 'forward';
+    let dx = d.x1 - d.x0, dy = d.y0 - d.y1;   // screen y is down; flip so up is positive
+    if (sling) { dx = -dx; dy = -dy; }
     const len = Math.hypot(dx, dy);
     if (len < CFG.drag.minPx) return false;
     const A = CFG.aim;
     let ang = Math.atan2(dy, dx) * 180 / Math.PI;      // -180..180
-    if (ang < 0) ang = dx >= 0 ? A.angleMin : A.angleMax; // dragging downward: clamp to the horizon
+    if (ang < 0) ang = dx >= 0 ? A.angleMin : A.angleMax; // aiming below the horizon: clamp to the lowest angle
     game.aimAngle = Math.max(A.angleMin, Math.min(A.angleMax, ang));
     game.aimPower = Math.max(A.powerMin, Math.min(A.powerMax, len / CFG.drag.fullPowerPx));
     return true;

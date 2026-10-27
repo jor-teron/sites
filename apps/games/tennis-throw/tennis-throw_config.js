@@ -25,12 +25,12 @@ const TENNIS_THROW_CONFIG = {
 
   // Aim controls
   aim: {
-    angleMin: 0,             // minimum angle (degrees)
-    angleMax: 180,           // maximum angle (degrees)
-    angleSpeed: 66.7,        // TB2: degrees per second while an aim key is held (was 2° per 30ms)
+    angleMin: 10,            // TB5: minimum angle (degrees), no flat throws
+    angleMax: 170,           // TB5: maximum angle (degrees)
+    angleSpeed: 90,          // TB5: degrees per second while an aim key is held
     powerMin: 0.1,           // minimum power
     powerMax: 1,             // maximum power
-    powerSpeed: 0.667,       // TB2: power per second while a power key is held (was 0.02 per 30ms)
+    powerSpeed: 1.0,         // TB5: power per second while a power key is held
     previewSeconds: 0.6,     // TB3/TB2: dotted arc shows this much flight time
     previewDotEvery: 0.05,   // TB2: one dot per this many seconds of flight
     crosshairSize: 20,       // half-size of the crosshair
@@ -75,7 +75,9 @@ const TENNIS_THROW_CONFIG = {
 
   // TB2: touch / mouse drag-to-aim
   drag: {
+    style: 'slingshot',      // TB5: 'slingshot' = pull back, throw goes opposite the drag; 'forward' = legacy TB2 drag-forward
     minPx: 15,               // shorter drags are taps (no throw)
+    bandMaxPx: 120,          // TB5: longest pull-back band drawn from the launch point
     fullPowerPx: 220,        // drag length (canvas px) that gives full power
     lineColor: 'rgba(255,255,255,0.7)',
   },
@@ -136,9 +138,9 @@ const TENNIS_THROW_CONFIG = {
     paused: 'PAUSED — ENTER to resume',
     pausedHint: 'ESC for a new game',                                      // TB3: second line on the pause screen
     pausedTouch: 'Tap to resume',                                          // TB2: touch hint on the pause screen
-    startTouch: 'Touch: drag from anywhere to aim, release to throw',      // TB2: shown for the first seconds
+    startTouch: 'Pull back (drag away from the targets) and release to throw', // TB5: shown for the first seconds
     startHintSeconds: 4,                                                   // TB2: how long the start hint shows
-    controls: '← → aim | ↑ ↓ power | SPACE throw | ENTER pause | R reset aim | ESC new game | Touch: drag to aim, release to throw', // hint under canvas
+    controls: '← → aim | ↑ ↓ power | SPACE throw | ENTER pause | R reset aim | ESC new game | Touch: pull back and release', // hint under canvas
     restart: 'Press SPACE / ENTER or tap to play again',                     // end screen hint (TB2: tap)
   },
 };

@@ -78,14 +78,16 @@
     ctx.lineWidth = 1;
     ctx.strokeRect(sx - bw / 2, by, bw, A.powerBarHeight);
 
-    // TB2: while dragging, show the drag line and the power as a percentage
-    const d = game.drag;
-    if (d) {
+    // TB5: while dragging, draw the pull-back band from the launch point
+    // (behind the ball, opposite the throw) and the power as a percentage
+    if (game.drag) {
+      const r = game.aimAngle * Math.PI / 180, len = game.aimPower * CFG.drag.bandMaxPx;
+      const bx = sx - Math.cos(r) * len, byy = sy + Math.sin(r) * len;
       ctx.strokeStyle = CFG.drag.lineColor;
       ctx.lineWidth = 3;
-      ctx.setLineDash([6, 6]);
-      ctx.beginPath(); ctx.moveTo(d.x0, d.y0); ctx.lineTo(d.x1, d.y1); ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(sx - 14, sy); ctx.lineTo(bx, byy); ctx.lineTo(sx + 14, sy); ctx.stroke();
+      ctx.fillStyle = CFG.colors.ball;
+      ctx.beginPath(); ctx.arc(bx, byy, 6, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 16px sans-serif';
       ctx.textAlign = 'center';
