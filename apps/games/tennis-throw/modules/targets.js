@@ -1,7 +1,8 @@
 /*
  * File: modules/targets.js
  * Project: tennis-throw
- * Purpose: Target spawning (reachable band, spacing, bird rows) and bird movement.
+ * Purpose: Target spawning (reachable band, spacing, bird rows) and movement.
+ *          TB8: band derived from the reachable rise; targets bob in later rounds.
  */
 (function (TT) {
   const CFG = TT.CFG, game = TT.game;
@@ -32,7 +33,7 @@
     const T = CFG.targets, W = TT.canvas.width;
     const item = game.targetPool.find(p => p.type === type);
     const yMin = TT.minReachableY();
-    const yMax = TT.canvas.height - T.bottomReserve;
+    const yMax = TT.launchPoint().y - T.minRiseAbove;   // TB8: derived from the launch point, not a fixed reserve
     // TB3: retry random spots; if none is free keep the one farthest from its neighbour
     let x, y, best = -1;
     for (let i = 0; i < T.spawnTries; i++) {
@@ -44,7 +45,10 @@
     }
     game.targets.push({
       type, x, y,
-      vx: type === 'bird' ? (Math.random() > 0.5 ? 1 : -1) * item.speed * (game.birdSpeedScale || 1) : 0, // px/s (TB4: × difficulty)
+      vx: type === 'bird' ? (Math.random() > 0.5 ? 1 : -1) * item.speed * (game.birdSpeedScale || 1) * (1 + CFG.rounds.birdSpeedPerRound * ((game.round || 1) - 1)) : 0, // px/s (TB4: × difficulty, TB8: × round)
+      baseY: y, phase: Math.random() * Math.PI * 2,   // TB8: bobbing
+      bob: type !== 'bird' && type !== 'gift' && (game.round || 1) >= CFG.rounds.bobFromRound,
+      born: game.clock || 0,                          // TB9: spawn pop animation
       emoji: item.emoji,
       points: item.points,
       radius: type === 'star' ? T.starRadius : T.radius,
@@ -62,9 +66,11 @@
     });
   };
 
-  /** Birds fly sideways and bounce off the edges. dt in seconds. */
+  /** Birds fly sideways and bounce off the edges; TB8: others may bob. dt in seconds. */
   TT.updateTargets = function (dt) {
+    const T = CFG.targets, bobW = T.bobSpeed * (1 + CFG.rounds.bobPerRound * ((game.round || 1) - 1));
     for (const t of game.targets) {
+      if (t.bob) { t.phase += bobW * dt; t.y = t.baseY + Math.sin(t.phase) * T.bobAmp; }
       if (t.type !== 'bird') continue;
       t.x += t.vx * dt;
       if (t.x - t.radius < 0) { t.x = t.radius; t.vx = Math.abs(t.vx); }

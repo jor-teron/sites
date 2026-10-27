@@ -21,7 +21,8 @@
     game.time = game.clock;   // timer counts only running time (pause freezes it)
     TT.updateBalls(dt);
     TT.updateTargets(dt);
-    TT.updateHud();           // TB3: score / finish checks only while running
+    TT.updateRounds(dt);      // TB8: round goal, countdown, game over
+    if (game.isRunning) TT.updateHud();
   }
 
   function frame(now) {

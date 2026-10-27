@@ -116,6 +116,17 @@
     drawTargets();
     drawBalls();
     if (!game.isFinished) drawAim();
+    if (game.banner > 0 && !game.isFinished) {   // TB8: round banner
+      ctx.globalAlpha = Math.min(1, game.banner * 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(0, canvas.height / 2 - 50, canvas.width, 100);
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 40px sans-serif';
+      ctx.fillText('Round ' + game.round, canvas.width / 2, canvas.height / 2 - 14);
+      ctx.font = '20px sans-serif';
+      ctx.fillText('Score ' + game.roundGoal + ' in ' + game.roundSeconds + 's', canvas.width / 2, canvas.height / 2 + 24);
+      ctx.globalAlpha = 1;
+    }
     if (game.isPaused) {
       overlay([CFG.text.paused, CFG.text.pausedHint, CFG.text.pausedTouch]);
     } else if (TT.settings.get('showHints') && game.isRunning && game.clock < CFG.text.startHintSeconds) {

@@ -4,14 +4,13 @@
  * All modules read everything from TENNIS_THROW_CONFIG (TB2: speeds are per second).
  */
 const TENNIS_THROW_CONFIG = {
-  // Goal
-  targetScore: 100,          // points needed to finish a run
+  // TB8: goals are per round (see rounds / difficulty below)
 
   // Starting values
   start: {
     score: 0,                // initial score
     aimAngle: 45,            // initial aim angle in degrees (0 = right, 180 = left)
-    aimPower: 0.5,           // initial power (0..1)
+    aimPower: 0.75,          // TB8: initial power (0..1); the default throw reaches the target band
   },
 
   // Physics
@@ -51,8 +50,10 @@ const TENNIS_THROW_CONFIG = {
   // Target spawning
   targets: {
     marginX: 30,             // keep targets this far from left/right edge
-    marginTop: 50,           // minimum y
-    bottomReserve: 200,      // space kept free above the bottom (launch area)
+    marginTop: 60,           // minimum y (under the HUD)
+    minRiseAbove: 110,       // TB8: lowest targets sit this far above the launch point
+    bobAmp: 28,              // TB8: px up/down for bobbing targets (later rounds)
+    bobSpeed: 1.6,           // TB8: radians per second of the bob
     radius: 25,              // default target radius
     starRadius: 15,          // radius for 'star' targets
     // Pool: how many of each target type are on screen, their points and look
@@ -90,22 +91,38 @@ const TENNIS_THROW_CONFIG = {
   },
 
   // TB4/GS1: Games settings 'difficulty' (apps/games/common/settings). Applied at each new game.
+  // TB8: goalScale scales each round's goal, roundSeconds is the time per round.
   difficulty: {
-    easy:   { targetScore: 80,  birdSpeedScale: 0.6, extraCount: { balloon: 1 } },  // shorter goal, slow birds, one more balloon
-    normal: { targetScore: 100, birdSpeedScale: 1.0, extraCount: {} },              // the TB3 game unchanged
-    hard:   { targetScore: 150, birdSpeedScale: 1.6, extraCount: { balloon: -1 } }, // longer goal, fast birds, one balloon fewer
+    easy:   { goalScale: 0.8, roundSeconds: 40, birdSpeedScale: 0.6, extraCount: { balloon: 1 } },
+    normal: { goalScale: 1.0, roundSeconds: 35, birdSpeedScale: 1.0, extraCount: {} },
+    hard:   { goalScale: 1.3, roundSeconds: 30, birdSpeedScale: 1.4, extraCount: { balloon: -1 } },
   },
+
+  // TB8: rounds. Goal for round n = (goalBase + goalStep·(n-1)) · goalScale.
+  rounds: {
+    goalBase: 60,            // points needed in round 1 (normal)
+    goalStep: 25,            // extra points per later round
+    bobFromRound: 2,         // balloons / bullseyes / stars bob up and down from this round
+    birdSpeedPerRound: 0.15, // birds get this much faster each round (×)
+    bobPerRound: 0.2,        // bob speed grows this much each round (×)
+    betweenSeconds: 1.8,     // 'Round n' banner time before play resumes
+  },
+
+  // TB8: combo multiplier. Consecutive hits raise it; a ball that misses resets it.
+  combo: { step: 0.5, max: 3 },  // ×1, ×1.5, ×2 ... up to ×3
+
+  bestKey: 'tennisThrow.best',   // TB8: localStorage key for the best score
 
   // TB4/GS1: hit feedback and dark theme (theme 'dark' in Games settings)
   vibrateMs: 30,             // navigator.vibrate length on a hit (if 'vibration' is on)
   darkColors: { skyTop: '#0b1a33', skyBottom: '#2a3f66' },
 
-  // Ranks by finish time (first match wins)
+  // TB8: ranks by the round reached (first match wins)
   ranks: [
-    { maxSeconds: 30, name: 'GOLD', emoji: '🥇' },
-    { maxSeconds: 45, name: 'SILVER', emoji: '🥈' },
-    { maxSeconds: 60, name: 'BRONZE', emoji: '🥉' },
-    { maxSeconds: Infinity, name: 'FINISHED', emoji: '⭐' },
+    { minRound: 8, name: 'GOLD', emoji: '🥇' },
+    { minRound: 5, name: 'SILVER', emoji: '🥈' },
+    { minRound: 3, name: 'BRONZE', emoji: '🥉' },
+    { minRound: 0, name: 'GOOD TRY', emoji: '🎾' },
   ],
 
   // Colors
@@ -142,6 +159,8 @@ const TENNIS_THROW_CONFIG = {
     startTouch: 'Pull back (drag away from the targets) and release to throw', // TB5: shown for the first seconds
     startHintSeconds: 4,                                                   // TB2: how long the start hint shows
     controls: '← → aim | ↑ ↓ power | SPACE throw | ENTER pause | R reset aim | ESC new game | Touch: pull back and release', // hint under canvas
+    gameOver: 'TIME UP!',                                                  // TB8
+    newBest: 'NEW BEST!',                                                  // TB8
     restart: 'Press SPACE / ENTER or tap to play again',                     // end screen hint (TB2: tap)
   },
 };

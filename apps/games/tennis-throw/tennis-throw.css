@@ -55,7 +55,8 @@ canvas {
   pointer-events: none;
 }
 
-.score, .timer {
+.score, .timer, .round {
+  text-align: center;
   background: rgba(0, 0, 0, 0.4);
   padding: 0.4em 0.9em;
   border-radius: 4px;
@@ -121,3 +122,8 @@ canvas {
 /* TB7: touch-only devices get no keyboard hint (the in-canvas hint explains pull-back) */
 @media (pointer: coarse) { .controls-hint { display: none; } }
 /* TB7: rotate hint is not needed: 4:3 letterboxes in both portrait and landscape */
+
+/* TB8: HUD extras */
+.ui small { font-size: 0.7em; opacity: 0.85; }
+.combo { color: #ffd34d; }
+.timer.low { color: #ff6b6b; }
