@@ -1,5 +1,6 @@
 /* Harness — app/storage/logs.js: daily Markdown chat logs in the granted folder (HR4).
-   harness/chats/YYYY_MM/YYYY_MM_DD.md: "# user — HH:MM", "## assistant — HH:MM", tool steps as short "> 🔧 …" blockquotes.
+   harness/chats/YYYY_MM/YYYY_MM_DD.md: "# user — HH:MM", "## assistant — HH:MM", tool steps as short "> 🔧 …" blockquotes,
+   HR5 shell runs as "> 💻" + a fenced output block (first ~1500 chars).
    Only when a folder is connected and Settings → Save chats to folder is on (default). Appends are queued one at a time;
    a failed write shows one notice card and logging carries on. */
 HR.logs = (function () {
@@ -26,6 +27,10 @@ HR.logs = (function () {
   function tool(name, args, ok, text, ms) {
     return put('\n> 🔧 ' + name + '(' + one(JSON.stringify(args || {}), 120) + ') ' + (ok ? '✓' : '✕') + ' ' + Math.round(ms) + ' ms → ' + one(text, 200) + '\n');
   }
+  function shell(cmd, cwd, r) {
+    var out = ((r.stdout || '') + (r.stderr ? '\n[stderr]\n' + r.stderr : '')).replace(/```/g, "'''"), cap = out.length > 1500 ? out.slice(0, 1500) + '\n…' : out;
+    return put('\n> 💻 `' + one(cmd, 300).replace(/`/g, "'") + '`' + (cwd ? ' in ' + one(cwd, 100) : '') + ' → exit ' + r.code + ', ' + r.ms + ' ms\n\n```text\n' + (cap || '(no output)') + '\n```\n');
+  }
   function note(text) { return put('\n> ℹ ' + one(text, 200) + '\n'); }
-  return { path: path, user: user, assistant: assistant, tool: tool, note: note, enabled: on };
+  return { path: path, user: user, assistant: assistant, tool: tool, shell: shell, note: note, enabled: on };
 })();
