@@ -21,7 +21,7 @@ function baseApplySetting(k) {
 
 var BaseUI = (function () {
   function $(id) { return document.getElementById(id); }
-  function toast(m) { if (typeof OfficeToast !== "undefined") OfficeToast.show(m, 2500); }
+  function toast(m) { if (typeof OfficeNotify !== "undefined") OfficeNotify.show(m, 2500); }
   function status(m) { $("status").textContent = m; }
   function typeLabel(t) { return BASE_TYPES[t] || "Text"; }
   function parseType(s) {
@@ -164,7 +164,7 @@ function initBaseSettings() {
     onChange: function (k) { baseApplySetting(k); },
     onReset: function () { baseApplySetting(); },
     confirm: function (msg) { return OfficeDialog.confirm({ title: "Reset settings?", message: msg, okLabel: "Reset" }); },
-    toast: function (m) { OfficeToast.show(m); }
+    toast: function (m) { OfficeNotify.show(m); }
   });
   baseApplySetting();
   if (typeof OfficeTheme.watch === "function") OfficeTheme.watch(function () { if (BASE_SETTINGS.s.theme === "auto") baseApplySetting("theme"); });

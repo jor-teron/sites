@@ -124,7 +124,7 @@ var OfficeSettings = (function () {
       Promise.resolve(ask).then(function (yes) {
         if (!yes) return;
         S.reset();
-        if (o.toast) o.toast('Settings reset'); else if (window.OfficeToast) OfficeToast.show('Settings reset');
+        if (o.toast) o.toast('Settings reset'); else if (window.OfficeNotify) OfficeNotify.show('Settings reset');
       });
     };
 

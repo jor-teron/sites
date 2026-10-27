@@ -5,7 +5,7 @@ A page organiser for PDF files that runs entirely in the browser: open a PDF, se
 
 ## 2. Files
 - `pdf-tools.html` / `pdf-tools.css`: page shell, compact layout, light / dark, safe-area
-- `pdf-tools_ui.js`: shared state `PT.S`, settings + theme, small menu (theme, Close file, About), own dialog, toast
+- `pdf-tools_ui.js`: shared state `PT.S`, settings + theme, small menu (theme, Close file, About), own dialog, messages as cards (`../shared/office-notify.js`)
 - `pdf-tools_load.js`: Open button, drag-drop, validation and friendly errors
 - `pdf-tools_thumbs.js`: thumbnail grid, lazy rendering
 - `pdf-tools_select.js`: selection, drag-to-reorder (mouse + touch long-press), auto-scroll

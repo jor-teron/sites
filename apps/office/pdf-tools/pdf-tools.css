@@ -57,6 +57,4 @@ html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:
 .dlg { background:var(--panel); border-radius:12px; padding:16px; width:min(340px,100%); box-shadow:0 10px 30px rgba(0,0,0,.4); }
 .dlg h2 { margin:0 0 6px; font-size:16px; } .dlg p { margin:0 0 14px; color:var(--mut); white-space:pre-line; }
 .dlg-btns { display:flex; justify-content:flex-end; gap:8px; }
-#toast { position:fixed; left:50%; bottom:calc(16px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px); background:#333; color:#fff; padding:8px 14px; border-radius:18px; opacity:0; transition:.2s; pointer-events:none; z-index:60; max-width:80vw; text-align:center; }
-#toast.on { opacity:1; transform:translateX(-50%); }
 [hidden] { display:none !important; }

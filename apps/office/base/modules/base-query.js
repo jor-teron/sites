@@ -21,7 +21,7 @@ var BaseQuery = (function () {
   var draft = null, showSql = false;
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, txt) { var n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; }
-  function toast(m) { if (typeof OfficeToast !== "undefined") OfficeToast.show(m, 2500); }
+  function toast(m) { if (typeof OfficeNotify !== "undefined") OfficeNotify.show(m, 2500); }
   function queries() { if (!BASE.db.queries) BASE.db.queries = []; return BASE.db.queries; }
   function fieldOf(t, id) { return t.fields.filter(function (f) { return f.id === id; })[0]; }
   function opOf(id) { return OPS.filter(function (o) { return o.id === id; })[0]; }

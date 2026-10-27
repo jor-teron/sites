@@ -10,7 +10,7 @@
    ============================================================ */
 @media print {
   body { background: #fff !important; overflow: visible !important; height: auto !important; }
-  .toolbar, .file-menu, .toast, .np-layer, .pop-menu { display: none !important; }
+  .toolbar, .file-menu, .of-notes, .np-layer, .pop-menu { display: none !important; }
   .pages-scaler { width: auto !important; height: auto !important; }
   .pages { transform: none !important; gap: 0 !important; }
   .workspace {

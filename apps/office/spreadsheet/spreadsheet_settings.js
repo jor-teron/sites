@@ -67,7 +67,7 @@ function initSheetSettings() {
         ? OfficeDialog.confirm({ title: "Reset settings?", message: msg, okLabel: "Reset" })
         : window.confirm(msg);
     },
-    toast: function (m) { OfficeToast.show(m); }
+    toast: function (m) { OfficeNotify.show(m); }
   });
   sheetApplySetting();
   OfficeTheme.watch(function () { if (SHEET_SETTINGS.s.theme === "auto") sheetApplySetting("theme"); });

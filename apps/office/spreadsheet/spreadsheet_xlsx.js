@@ -23,7 +23,7 @@ function xlsxLoad() {
   return SHEET_XLSX.loading;
 }
 
-function xlsxToast(m) { setStatus(m); if (window.OfficeToast) OfficeToast.show(m); }
+function xlsxToast(m) { setStatus(m); if (window.OfficeNotify) OfficeNotify.show(m); }
 
 function xlsxTitle() {
   var t = (window.SHEET_HUB && SHEET_HUB.title) ? SHEET_HUB.title() : "Sheet";

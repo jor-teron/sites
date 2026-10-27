@@ -13,12 +13,15 @@ SH1 (moved from Draftly, used by Draftly and Spreadsheet). Colours come from the
 variables (`--of-bg, --of-text, --of-border, --of-group, --of-muted, --of-focus, --of-ui-font`);
 set them on `body` so dark/light overrides flow through.
 
-- `office-toast.css` / `office-toast.js`: `OfficeToast.show(msg, ms)`; uses `.of-toast` / `#toast` or creates it.
+- `office-notify.css` / `office-notify.js` (SH7, was office-toast): `OfficeNotify.show(msg, ms)` or
+  `OfficeNotify.show({icon, title, text, onClick, timeoutMs})` -> `{close(), update(text)}`. Inside the Hub it shows a
+  Hub notification card (`HubNotify.notice`); standalone a small local card (bottom-right, ~5 s, max 3). Plain text gets
+  an icon from its wording and the app name as title. `OfficeToast` stays as an alias.
 - `office-theme.css` / `office-theme.js`: `OfficeTheme.isDark(mode)` (light / dark / auto),
   `apply(dark, {darkClass, lightClass, key})` (body classes + per-app storage key), `watch(fn)`, `modes`.
   Theme colours stay in each app's CSS.
 - `office-settings.css` / `office-settings.js`: `OfficeSettings.create({key, defaults, sections, migrate,
-  validate, gearBtn, onChange, onReset, confirm, toast})`. Builds the slide-in panel (switch / select /
+  validate, gearBtn, onChange, onReset, confirm, toast})` (`toast` = optional message fn; default OfficeNotify). Builds the slide-in panel (switch / select /
   external / about rows), one JSON localStorage key per app. Draftly: `draftly_settings`
   (sections + migration in draftly-settings.js); Spreadsheet: `spreadsheet_settings`.
 - `office-colour.css` / `office-colour.js`: `OfficeColour.create({btn, arrow, menu, bar, palette, key,

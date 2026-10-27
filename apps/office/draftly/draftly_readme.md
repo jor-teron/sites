@@ -8,12 +8,12 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `ui/` stylesheets, linked in this cascade order:
   `fonts.css` (Tinos faces), `theme.css` (variables, light/dark), `base.css`, `toolbar.css`,
   `popups.css` (File / Recent / Page), `workspace.css`, `ribbon.css`, `page.css` (paper, page numbers, breaks),
-  `editor.css`, `marks.css`, `toast.css`, `print.css`, `colour.css`, `find.css`,
+  `editor.css`, `marks.css`, `print.css`, `colour.css`, `find.css`,
   `statusbar.css` (status bar, word count, zoom), `table.css`, `format.css` (selection, sup/sub),
   `headerfooter.css`, `margins.css` (Custom margins dialog)
 - `modules/draftly-config.js`: all sizes, keys, timings and default text
 - `modules/draftly-storage.js`: IndexedDB documents, theme / marks / orientation flags
-- `modules/draftly-ui.js`: toast, theme, orientation, toolbar active state, click helper, theme / marks buttons
+- `modules/draftly-ui.js`: messages as cards (`../shared/office-notify.js`), theme, orientation, toolbar active state, click helper, theme / marks buttons
 - `modules/draftly-editor.js`: selection, formatting commands, font, plain-text paste, Enter / Shift+Enter
 - `modules/draftly-pages.js`: page cards and pagination entry points
 - `modules/draftly-flow.js`: flow across pages (push / pull, caret, reflow, joined HTML)
@@ -137,7 +137,7 @@ Messages show briefly at the bottom (2.2 s):
 - `fontFamily`, `fontSizePt`, `lineHeight`, `paragraphSpacingPt`: type
 - `pageGapPx`: gap between pages on screen
 - `namePrefix`: start of automatic names
-- `toastMs`: how long messages stay
+- `toastMs`: how long messages stay (cards stay at least ~5 s)
 - `inputDebounceMs`: autosave delay after typing
 - `pdfScale` / `pdfJpegQuality`: PDF sharpness and size
 - `docxFileName` / `pdfFileName`: names used when the name box is empty

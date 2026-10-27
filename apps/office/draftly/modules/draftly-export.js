@@ -52,7 +52,7 @@ Draftly.export.setupPrintStyles = function setupPrintStyles() {
     OfficePage.pageRule({ paper: cfg.paperSize, orientation: isLandscape ? 'landscape' : 'portrait', margins: '0' }) +
     '@media print {' +
     ' body { background: #fff !important; overflow: visible !important; height: auto !important; }' +
-    ' .toolbar, .toast, .np-layer, .status-bar, .find-bar { display: none !important; }' +
+    ' .toolbar, .of-notes, .np-layer, .status-bar, .find-bar { display: none !important; }' +
     ' .workspace { overflow: visible !important; padding: 0 !important; background: #fff !important; display: block !important; }' +
     ' .pages-scaler { width: auto !important; height: auto !important; }' +
     ' .pages { transform: none !important; width: auto !important; gap: 0 !important; }' +

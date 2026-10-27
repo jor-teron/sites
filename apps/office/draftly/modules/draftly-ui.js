@@ -1,7 +1,7 @@
 /* ============================================================
    FILE: modules/draftly-ui.js
    PROJECT: Draftly
-   ROLE: Toast + theme (via ../shared office-toast / office-theme), orientation label, toolbar active state.
+   ROLE: Notification cards + theme (via ../shared office-notify / office-theme), orientation label, toolbar active state.
    DEPENDS: Draftly.config, Draftly.storage
    ISOLATION: Missing buttons are skipped. No throw to app.js.
    ============================================================ */
@@ -16,9 +16,9 @@ Draftly.ui = {};
 /* Whether paragraph and line-break marks are visible. */
 Draftly.ui.showNonPrinting = false;
 
-/* Show a short message (shared ../shared/office-toast.js, SH1). */
+/* Show a short message as a notification card (shared ../shared/office-notify.js, SH7). */
 Draftly.ui.showToast = function showToast(msg) {
-  if (typeof OfficeToast !== 'undefined') OfficeToast.show(msg, Draftly.config.toastMs);
+  if (typeof OfficeNotify !== 'undefined') OfficeNotify.show(msg, Draftly.config.toastMs);
 };
 
 /* Read the non-printing flag. */

@@ -13,7 +13,7 @@ var BASE = { db: { tables: [], current: null, queries: [] }, query: null, totals
 var BaseStore = (function () {
   var DB_NAME = "office-base", STORE = "kv", idb = null, saveT = null;
   function uid() { return Math.random().toString(36).slice(2, 9); }
-  function toast(m) { if (typeof OfficeToast !== "undefined") OfficeToast.show(m, 3000); }
+  function toast(m) { if (typeof OfficeNotify !== "undefined") OfficeNotify.show(m, 3000); }
   function open(cb) {
     try {
       var r = indexedDB.open(DB_NAME, 1);

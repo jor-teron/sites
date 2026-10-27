@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   PDF Tools — P1 page organiser. Page shell only.
-  Styles: pdf-tools.css. Modules: pdf-tools_ui.js (state, theme, menu, dialog, toast),
+  Styles: pdf-tools.css. Modules: pdf-tools_ui.js (state, theme, menu, dialog, cards via ../shared/office-notify.js),
   pdf-tools_load.js (open + errors), pdf-tools_thumbs.js (lazy thumbnail grid),
   pdf-tools_select.js (selection + drag reorder), pdf-tools_edit.js (rotate, delete, undo/redo),
   pdf-tools_save.js (one save(blob, name) for every file), pdf-tools_app.js (wiring, keys).
@@ -16,7 +16,8 @@
   <title>PDF Tools</title>
   <link rel="icon" href="pdf-tools_icon.png">
   <script>try{var m=(JSON.parse(localStorage.getItem('pdf-tools-settings-v1')||'{}').theme)||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
-  <link rel="stylesheet" href="pdf-tools.css?v=20261022a">
+  <link rel="stylesheet" href="pdf-tools.css?v=20261027sh7">
+  <link rel="stylesheet" href="../shared/office-notify.css?v=sh7">
 </head>
 <body>
 <div id="app">
@@ -66,13 +67,13 @@
       <div class="dlg-btns"><button type="button" id="dlg-no" class="pill ghost">Cancel</button><button type="button" id="dlg-yes" class="pill">OK</button></div>
     </div>
   </div>
-  <div id="toast" role="status" aria-live="polite"></div>
   <input type="file" id="file" accept="application/pdf,.pdf" hidden>
 </div>
 
 <script src="../../../shared/vendor/pdfjs/pdf.min.js"></script>
 <script src="vendor/pdf-lib.min.js"></script>
-<script src="pdf-tools_ui.js?v=20261022a"></script>
+<script src="../shared/office-notify.js?v=sh7"></script>
+<script src="pdf-tools_ui.js?v=20261027sh7"></script>
 <script src="pdf-tools_save.js?v=20261022a"></script>
 <script src="pdf-tools_load.js?v=20261022a"></script>
 <script src="pdf-tools_thumbs.js?v=20261022a"></script>

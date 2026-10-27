@@ -19,14 +19,8 @@ const PT = (() => {
     document.querySelectorAll('#theme-seg button').forEach((b) => b.classList.toggle('on', b.dataset.v === P.theme));
   }
 
-  let tt;
-  function toast(msg, ms) {
-    const t = $('toast');
-    t.textContent = msg;
-    t.classList.add('on');
-    clearTimeout(tt);
-    tt = setTimeout(() => t.classList.remove('on'), ms || 2200);
-  }
+  /* messages: shared Office notification cards (../shared/office-notify.js, SH7) */
+  function toast(msg, ms) { if (window.OfficeNotify) return OfficeNotify.show(msg, ms); }
 
   /* Own confirm / alert. ask({ title, text, yes, no, danger }) -> Promise<boolean>. no:false = alert. */
   let pending = null;
