@@ -3,12 +3,15 @@
  * hub_remote.js and hub_chat.js. Re-arranges the 🎮 Devices popover (#ctrl-popover) into a
  * full-height side panel with sections, adds "Join with code", and keeps only one panel
  * (Devices or 🐻 Chat) open at a time. Look: hub_panels.css.
- *   This Hub   : editable device name (SharedLinkUI.mountName), code + Connect QR, New code /
- *                Disconnect row (hub_linkstate.js).
- *   Devices    : SharedLinkUI.mountDevices list (styled as roomy rows).
+ *   H27.1 order, top to bottom (no QR here: the desktop home screen shows the Connect QR):
+ *   This Hub   : editable device name (SharedLinkUI.mountName), big code + New code /
+ *                Disconnect button (hub_linkstate.js; its repeated "Code … · N devices" text hidden).
  *   Join       : 4-digit box + Join + 📷 (SharedLinkScan.ask) → location ?join=CODE (as
  *                hub_remote.js). Own code is rejected. A join that has not connected after
  *                20 s shows "Hub not found — check the code" (sessionStorage 'hub-join-try').
+ *   Devices    : SharedLinkUI.mountDevices list (styled as roomy rows).
+ *   One-tap switch: with Devices open, a tap on 🐻 (under #ctrl-backdrop) closes Devices and
+ *                opens Chat; 🎮 with Chat open already works (chat closes on outside pointerdown).
  */
 (function () {
   'use strict';
@@ -22,7 +25,6 @@
     const hc = window.__hubController;
     return (hc && hc.code) || (window.SharedLink && SharedLink.code) || '';
   }
-  function connectUrl(c) { const u = new URL(location.href); u.search = '?join=' + c; u.hash = ''; return u.href; }
 
   if (pop) {
     const head = pop.querySelector('.ctrl-pop-head');
@@ -40,13 +42,12 @@
     const c1 = el('div', 'hp-card');
     if (nameBox) c1.appendChild(nameBox);
     const hub = el('div', 'hp-hub');
-    const qr = el('div', 'hp-qr'); qr.title = 'Scan with a phone to connect';
     const info = el('div', 'hp-hubinfo');
-    const codeLbl = el('div', 'hp-codelbl', R ? 'Joined Hub code' : 'Hub code · scan the QR or type it on a device');
+    const codeLbl = el('div', 'hp-codelbl', R ? 'Joined Hub code' : 'Hub code');
     const codeEl = el('div', 'hp-code', '——');
     info.append(codeLbl, codeEl);
-    if (lsRow) info.appendChild(lsRow);
-    hub.append(qr, info);
+    hub.appendChild(info);
+    if (lsRow) { lsRow.classList.add(R ? 'hp-ls-remote' : 'hp-ls-host'); hub.appendChild(lsRow); }
     c1.appendChild(hub);
     s1.appendChild(c1);
     /* Devices */
@@ -61,7 +62,7 @@
     const err = el('div', 'hp-err'); err.setAttribute('role', 'status');
     form.append(inp, go, scan, err);
     s3.append(form, el('div', 'hp-hint', 'Type the 4-digit code shown on the other Hub, or scan its QR code.'));
-    body.append(s1, s2, s3);
+    body.append(s1, s3, s2);
     if (extra) extra.remove();
     pop.appendChild(body);
     if (head) pop.insertBefore(head, pop.firstChild);
@@ -69,10 +70,6 @@
     function paintHub() {
       const c = myCode();
       codeEl.textContent = c || '——';
-      qr.textContent = '';
-      if (!c || typeof qrcode === 'undefined') { qr.hidden = !c; return; }
-      qr.hidden = false;
-      try { const q = qrcode(0, 'M'); q.addData(connectUrl(c)); q.make(); qr.innerHTML = q.createSvgTag(4, 8); } catch (_) { qr.hidden = true; }
     }
     window.addEventListener('hub-ctrl-link', () => setTimeout(paintHub, 0));
     if (window.SharedLink) ['status', 'open'].forEach((ev) => SharedLink.on(ev, () => setTimeout(paintHub, 0)));
@@ -112,6 +109,15 @@
   }
 
   function closeChat() { const x = chat && chat.querySelector('.hp-x'); if (x) x.click(); }
+  /* H27.1 one-tap switch: #ctrl-backdrop covers the bar, so a tap on 🐻 used to only close Devices. */
+  const backdrop = document.getElementById('ctrl-backdrop');
+  const chatBtn = document.getElementById('chat-btn');
+  if (backdrop && chatBtn) {
+    backdrop.addEventListener('click', (e) => {
+      const under = document.elementsFromPoint ? document.elementsFromPoint(e.clientX, e.clientY) : [];
+      if (under.some((n) => n !== backdrop && chatBtn.contains(n))) setTimeout(() => { if (chat && chat.hidden) chatBtn.click(); }, 0);
+    });
+  }
   if (chat) {
     new MutationObserver(() => {
       if (!chat.hidden && pop && !pop.hidden && window.__hubController && window.__hubController.closePopover) window.__hubController.closePopover();

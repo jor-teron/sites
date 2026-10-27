@@ -107,10 +107,8 @@ html.hub-task-top body.wm-desktop #ctrl-popover, html.hub-task-top body.wm-deskt
 .hp-sec { display: flex; flex-direction: column; gap: 10px; }
 .hp-sec > h3 { margin: 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--hp-muted); }
 .hp-card { background: var(--hp-card); border: 1px solid var(--hp-line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-.hp-hub { flex-direction: row; align-items: center; gap: 16px; flex-wrap: wrap; }
-.hp-qr { flex: 0 0 auto; width: 132px; height: 132px; padding: 6px; background: #fff; border-radius: 12px; display: grid; place-items: center; }
-.hp-qr svg { width: 120px; height: 120px; display: block; }
-.hp-hubinfo { flex: 1; min-width: 170px; display: flex; flex-direction: column; gap: 8px; }
+.hp-hub { display: flex; flex-direction: row; align-items: center; gap: 12px 16px; flex-wrap: wrap; }   /* H27.1: no QR */
+.hp-hubinfo { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 6px; }
 .hp-codelbl { font-size: 13px; color: var(--hp-muted); }
 .hp-code { font: 700 34px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .18em; color: var(--accent, #6ea8fe); }
 #ctrl-popover .sl-name { margin: 0; display: flex; flex-direction: column; align-items: stretch; gap: 6px; font-size: 13px; color: var(--hp-muted); }
@@ -120,6 +118,8 @@ html.hub-task-top body.wm-desktop #ctrl-popover, html.hub-task-top body.wm-deskt
 }
 #ctrl-popover input:focus { outline: 2px solid var(--accent, #6ea8fe); outline-offset: 0; }
 #ctrl-popover .ls-row { margin: 0; padding: 0; border: 0; gap: 10px; }
+#ctrl-popover .ls-row.hp-ls-host .ls-info { display: none; }   /* H27.1: drop repeated "Code … · N devices" */
+#ctrl-popover .ls-row.hp-ls-remote { flex-basis: 100%; }
 #ctrl-popover .ls-info { font-size: 14px; color: var(--hp-muted); min-width: 0; }
 #ctrl-popover .ls-btn { min-height: 44px; border-radius: 12px; font: 600 15px system-ui, sans-serif; background: var(--accent, #6ea8fe); color: #fff; }
 #ctrl-popover .ls-btn.ls-disc { background: rgba(248, 113, 113, 0.18); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.45); }
