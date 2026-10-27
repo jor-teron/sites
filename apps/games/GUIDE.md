@@ -11,6 +11,7 @@ Everything shared lives in `common/settings/` (release GS1):
 |---|---|
 | `games-settings.js` | Small library, a classic script, sets `window.GameSettings`. All settings are saved in ONE localStorage key, `games.settings`. |
 | `games-settings.html` + `.css` | The settings page players see (theme, FPS limit, sound, controls, difficulty, ...). `?from=<game-folder>` adds a "Back to game" link. |
+| Games menu tile **Game Settings** | Opens the settings page from the Games menu (`games-apps.csv`, section *Settings*). This is the games-wide control panel; Back returns to the Games menu. |
 | `README.md` | Full list of settings, the API, the 7 rules, "Clear all game progress", how to add a new setting, and the **rollout table**. |
 
 ## House rules
@@ -23,7 +24,9 @@ Everything shared lives in `common/settings/` (release GS1):
    Each file starts with a comment saying what it does, what it uses and which settings it ignores.
 4. **Graceful fallback.** If `games-settings.js` is missing or blocked, the game still runs with its old defaults (no gear shown).
 5. **Phone / touch first.** Test portrait and landscape on a small screen; touch must work without a keyboard.
-6. **Weak phone.** The target is a Lava Play Ultra 5G (and a weak PC): keep draw calls, particles and canvas size modest.
+6. **Theme is optional.** Most games (~90%) keep their own look and ignore the shared `theme`.
+   Only plain board / menu-style games follow it (e.g. Tic-Tac-Toe, Tetris). Don't restyle an art-heavy game for it.
+7. **Weak phone.** The target is a Lava Play Ultra 5G (and a weak PC): keep draw calls, particles and canvas size modest.
 
 ## How to link a game (5 steps)
 
@@ -34,7 +37,8 @@ Everything shared lives in `common/settings/` (release GS1):
    Examples: `tetris/tetris_settings.js`, `tic-tac-toe/tic-tac-toe_settings.js`, `tennis-throw/modules/settings.js`.
 3. **Add the gear** with `mountGear(target, '<game-folder>')`. The folder name becomes `?from=`, so Back returns to the game.
 4. **Apply the settings** that fit: read them at start and again in `onChange` (the settings page may be open in another tab).
-   Typical: `fpsLimit`, `difficulty`, `theme`, `autoPause`, `showHints`, `showFps`, `vibration`, sound volume.
+   Typical: `fpsLimit`, `difficulty`, `autoPause`, `showHints`, `showFps`, `vibration`, sound volume.
+   `theme` only if the game is a plain board / menu style (rule 6).
    Per-game numbers (what "hard" means) go in the game's config, not in the library.
 5. **Update the rollout table** at the end of `common/settings/README.md`: status plus which settings are used and which are not.
 

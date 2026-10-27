@@ -6,13 +6,15 @@ Players set theme, FPS limit, sound, controls and difficulty once; each game rea
 - `games-settings.js` — classic script (no build, works from `file://`), sets `window.GameSettings`.
 - `games-settings.html` / `.css` — the settings page (phone-first, Hub colours). Open with
   `games-settings.html?from=<game-folder>` to get a "‹ Back to game" link to `../../<game-folder>/index.html`.
+- Games menu: the **Game Settings** tile (`games-apps.csv`, section *Settings*) opens the page without `?from=`;
+  its Back link then returns to the Games tiles page (`../../games.html`). This page is the games-wide control panel.
 - Storage: **one** localStorage key, `games.settings` (JSON). Missing/invalid fields fall back to defaults.
 
 ## Settings
 
 | Key | Type | Values / range | Default |
 |---|---|---|---|
-| theme | enum | `auto` (game default), `light`, `dark` | `auto` |
+| theme | enum | `auto` (game default), `light`, `dark` — optional per game, see below | `auto` |
 | fpsLimit | enum (number) | 30, 45, 60 | 30 |
 | lowGraphics | bool | | false |
 | screenShake | bool | | true |
@@ -34,6 +36,9 @@ Players set theme, FPS limit, sound, controls and difficulty once; each game rea
 | holdRepeat | bool | touch: holding an action button repeats it | true |
 
 Numbers are clamped to their range; enums accept strings like `"60"`.
+
+**Theme is optional.** Most games (~90%) keep their own look and ignore `theme`. Only plain board / menu-style
+games follow it (Tic-Tac-Toe, Tetris). The settings page says so under the Theme row.
 
 ## API (`window.GameSettings`)
 

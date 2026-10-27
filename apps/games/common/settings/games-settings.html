@@ -3,17 +3,21 @@
   apps/games/common/settings/games-settings.html — GS1 Games settings page.
   Phone-first; reads/writes window.GameSettings (games-settings.js), one key 'games.settings'.
   Open as games-settings.html?from=<game-folder> to get a Back link to that game.
+  GS3: also the "Game Settings" tile in the Games menu (games-apps.csv, section Settings). Opened without
+  ?from= the Back link goes to the Games tiles page (../../games.html), in the Hub frame as well.
+  A field may carry a short note (5th FIELDS item), e.g. the theme row.
   Controls are built from FIELDS below (data-driven), grouped Display/Sound/Controls/Gameplay/Data.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Games Settings GS1</title>
+  <title>Games Settings</title>
   <link rel="stylesheet" href="games-settings.css?v=GS1">
 </head>
 <body>
   <header class="top">
+    <!-- Default Back = Games tiles page (tile / no ?from=); a ?from=<game> link replaces it below -->
     <a id="back" class="back" href="../../games.html">‹ Games</a>
     <h1>Games Settings</h1>
   </header>
@@ -42,9 +46,9 @@
     var $ = function (id) { return document.getElementById(id); };
     var msg = function (t) { $('msg').textContent = t; };
 
-    /* UI description: [group, key, label, control]. Types/ranges come from GS.SCHEMA. */
+    /* UI description: [group, key, label, control, note?]. Types/ranges come from GS.SCHEMA. */
     var FIELDS = [
-      ['Display', 'theme', 'Theme', 'select'], ['Display', 'fpsLimit', 'FPS limit', 'select'],
+      ['Display', 'theme', 'Theme', 'select', 'Only some games follow this; most keep their own look.'], ['Display', 'fpsLimit', 'FPS limit', 'select'],
       ['Display', 'lowGraphics', 'Low graphics', 'toggle'],
       ['Display', 'renderDistance', 'Render distance (3D, chunks)', 'select'], ['Display', 'pixelRatio', 'Resolution (pixel ratio)', 'select'], ['Display', 'screenShake', 'Screen shake', 'toggle'],
       ['Sound', 'masterVolume', 'Master volume', 'range'], ['Sound', 'music', 'Music', 'toggle'],
@@ -77,7 +81,7 @@
       }
       var key = f[1], s = GS.SCHEMA[key], row = document.createElement('label'), el;
       row.className = 'row';
-      row.innerHTML = '<span class="lbl">' + f[2] + '</span>';
+      row.innerHTML = '<span class="lbl">' + f[2] + (f[4] ? '<small class="note">' + f[4] + '</small>' : '') + '</span>';
       if (f[3] === 'select') {
         el = document.createElement('select');
         s.values.forEach(function (v) { var o = new Option(LABELS[v] || v, v); el.add(o); });
