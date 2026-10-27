@@ -21,6 +21,31 @@ var TETRIS_CONFIG = {
     grid: "#222222"    /* grid lines */
   },
 
+  /* GS2: colours used when the shared Games Settings theme is "light" (auto / dark = colors above) */
+  colorsLight: {
+    bg: "#ffffff",
+    block: "#000000",
+    ghost: "#aaaaaa",
+    grid: "#dddddd"
+  },
+
+  /* GS2: shared "difficulty" setting = multiplier on the level fall interval (soft drop / minMs unchanged) */
+  difficulty: {
+    easy: 1.35,    /* slower fall */
+    normal: 1,     /* same as before GS2 */
+    hard: 0.7      /* faster fall */
+  },
+
+  /* GS2: phone vibration (only when the shared "vibration" setting is on). ms or a pattern array */
+  vibrate: {
+    lineMs: 25,               /* 1-3 lines cleared */
+    tetrisPattern: [40, 30, 40], /* 4 lines at once */
+    gameOverMs: 200
+  },
+
+  /* GS2: on-screen FPS counter (shared "showFps" setting) refresh interval */
+  fpsMeterMs: 500,
+
   /* Timing (milliseconds) */
   timing: {
     baseMs: 800,       /* fall interval at level 1 */

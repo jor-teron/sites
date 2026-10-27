@@ -57,7 +57,16 @@ const SWELL_FOOP_CONFIG = {
         bounceHeight2: 0.08,   // second bounce height (fraction of ball size)
         bounceSplit: 0.6,      // phase split between first and second bounce
         idleMs: 33,            // wait before each idle redraw of themes with an animated overlay (<= ~30fps; flat themes never redraw)
+                               // GS2: with the shared Games Settings loaded, its fpsLimit sets this rate instead
     },
+
+    // GS2: phone vibration (shared "vibration" setting). ms or a pattern array; 0 = off
+    vibrate: {
+        bigGroup: 10,          // removing a group of at least this many blocks ...
+        bigGroupMs: 20,        // ... buzzes this long
+        gameOverMs: 150,
+    },
+    fpsMeterMs: 500,           // GS2: FPS counter (shared "showFps") refresh interval
 
     // On-screen text
     text: {

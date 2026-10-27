@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Swell Foop SF2a</title>
     <!-- Self-contained: no CDN / network requests (works offline and from file://) -->
-    <link rel="stylesheet" href="ui/style.css?v=SF2a" />
+    <link rel="stylesheet" href="ui/style.css?v=GS2" />
 </head>
 <body>
     <div class="game-container">
@@ -48,7 +48,10 @@
         </div>
     </div>
 
-  <script src="core/config.js?v=SF2a"></script>
+  <!-- GS2: shared Games Settings (optional: the game runs with defaults if it fails to load) -->
+  <script src="../common/settings/games-settings.js?v=GS1"></script>
+  <script src="core/config.js?v=GS2"></script>
+  <script src="core/settings.js?v=GS2"></script>
   <script src="core/themes.js?v=SF2a"></script>
   <script src="assets/themes/shared.js?v=SF2a"></script>
   <script src="assets/themes/classic.js?v=SF2a"></script>
@@ -62,6 +65,6 @@
   <script src="assets/themes/marble.js?v=SF2a"></script>
   <script src="assets/themes/emoji.js?v=SF2a"></script>
   <script src="ui/theme_picker.js?v=SF2a"></script>
-  <script src="core/logic.js?v=SF2a"></script>
+  <script src="core/logic.js?v=GS2"></script>
 </body>
 </html>

@@ -179,6 +179,8 @@ html, body {
 }
 #controls button:active { transform: scale(0.96); }
 #controls button:disabled { opacity: 0.35; cursor: not-allowed; }
+/* GS2: ⚙ shared settings link, sized like the buttons (inline styles come from games-settings.js) */
+#controls .gs-gear { width: 34px !important; height: 34px !important; font-size: 19px !important; align-self: center; background: #1919A6 !important; color: #FFD700 !important; border: 1px solid #3B3BFF; }
 
 /* Landscape on a short screen (phones): HUD left, board centre, buttons right */
 @media (orientation: landscape) and (max-height: 600px) {

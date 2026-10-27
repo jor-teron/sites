@@ -78,3 +78,11 @@ kbd {
   #side .muted:not(#status) { width: 100%; font-size: 11px; }
   #status { width: 100%; margin: 0; }
 }
+
+/* GS2: shared Games Settings — theme "light" inverts the B/W look (canvas colours: tetris_config.js colorsLight) */
+html.gs-light, html.gs-light body { background: #fff; color: #000; }
+html.gs-light canvas { background: #fff; border-color: #000; }
+html.gs-light #nextBox, html.gs-light kbd { border-color: #000; }
+html.gs-light .muted { color: #555; }
+/* GS2: showHints off hides the controls help (status line stays) */
+html.gs-nohints #side .muted:not(#status) { display: none; }

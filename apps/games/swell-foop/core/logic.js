@@ -4,8 +4,17 @@
  * Self-contained (no network). The "Hub bridge" section at the bottom lets the
  * sites hub show name / Score / Moves / New Game in its header; standalone it
  * does nothing.
+ * GS2: shared Games Settings via core/settings.js (SF_SETTINGS): FPS cap, FPS counter, vibration, ⚙ gear.
  */
 const CFG = SWELL_FOOP_CONFIG;
+// GS2: shared Games Settings bridge (core/settings.js); stub if that file is missing
+const SET = (typeof SF_SETTINGS !== 'undefined' && SF_SETTINGS) || {
+    get: (k) => ({ vibration: true, showFps: false })[k], frameMs: () => CFG.animation.idleMs,
+    onChange: () => () => {}, mountGear: () => null, vibrate: () => {},
+    fpsMeter: () => ({ show() {}, tick() {} }),
+};
+let lastDrawTs = 0;   // GS2: last drawn animation frame (FPS cap)
+let fpsMeter = null;  // GS2: created in initCanvas()
 const LAY = CFG.layout;
 let GRID_COLS = CFG.grid.cols; // board size in cells: computed from the window (see "Responsive layout")
 let GRID_ROWS = CFG.grid.rows;
@@ -87,6 +96,12 @@ function initCanvas() {
     theme = SF_THEMES.get(loadSavedTheme());
     canvas.style.background = theme.bg || '';
     if (typeof SFPicker !== 'undefined') SFPicker.init();
+
+    // GS2: shared settings — ⚙ next to New Game / Theme, FPS counter, live changes
+    SET.mountGear(document.querySelector('.sf-controls'));
+    fpsMeter = SET.fpsMeter(CFG.fpsMeterMs || 500);
+    fpsMeter.show(!!SET.get('showFps'));
+    SET.onChange((ch) => { if ('showFps' in ch) fpsMeter.show(!!ch.showFps); });
 
     // Initial game start
     startNewGame();
@@ -270,6 +285,7 @@ function inHoverGroup(r, c) { return hoverSet !== null && hoverSet.has(r * GRID_
  */
 function drawGrid(timestamp) {
     if (!grid.length) return;
+    if (fpsMeter) fpsMeter.tick();
     ctx.clearRect(0, 0, BOARD_W, BOARD_H); // Clear canvas (game units; context is scaled)
     if (theme.board) theme.board(ctx, BOARD_W, BOARD_H);
     const T = timestamp || performance.now();
@@ -348,17 +364,26 @@ function drawGrid(timestamp) {
     }
 }
 
-/** Schedules one drawGrid on the next animation frame (never more than one pending). */
+/**
+ * Schedules one drawGrid on the next animation frame (never more than one pending).
+ * GS2 FPS cap: while the fall animation runs, frames that come before the next slot (SET.frameMs()) are skipped.
+ * The fall is timed in ms, so it takes the same time at any frame rate.
+ */
 function scheduleFrame() {
     if (framePending) return;
     framePending = true;
-    requestAnimationFrame((ts) => { framePending = false; drawGrid(ts); });
+    requestAnimationFrame(function frame(ts) {
+        if (animationActive && ts - lastDrawTs < SET.frameMs() - 1) { requestAnimationFrame(frame); return; }
+        framePending = false;
+        lastDrawTs = ts;
+        drawGrid(ts);
+    });
 }
 
 /** Idle redraw for animated-overlay themes, throttled to CFG.animation.idleMs (~30fps). Classic has no overlay, so never loops. */
 function scheduleIdle() {
     if (framePending || idleTimer) return;
-    idleTimer = setTimeout(() => { idleTimer = 0; scheduleFrame(); }, ANIM.idleMs);
+    idleTimer = setTimeout(() => { idleTimer = 0; scheduleFrame(); }, SET.frameMs()); // GS2: fpsLimit (fallback ANIM.idleMs)
 }
 
 /** Recomputes the same-colour group size of every cell (used for reactive themes). */
@@ -495,6 +520,7 @@ function handleClick(row, col) {
 
         score += calculateScore(connectedBalls.length);
         moves++;
+        if (CFG.vibrate && connectedBalls.length >= CFG.vibrate.bigGroup) SET.vibrate(CFG.vibrate.bigGroupMs); // GS2
         updateScoreDisplay();
 
         // Start the falling animation
@@ -650,6 +676,7 @@ function checkGameOver() {
 
     if (!possibleMovesExist) {
         isGameOver = true;
+        if (CFG.vibrate) SET.vibrate(CFG.vibrate.gameOverMs); // GS2
         showMessageBox(CFG.text.gameOverTitle, CFG.text.gameOverText.replace('{score}', score));
     }
 }

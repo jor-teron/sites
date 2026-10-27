@@ -41,6 +41,12 @@ const TICTACTOE_CONFIG = {
     delayMs: 400,           // pause before the CPU moves (human input blocked meanwhile)
     easyWinChance: 0.6,     // Easy: chance to take a winning move when it has one
     easyBlockChance: 0.4,   // Easy: chance to block your winning move; otherwise random
+    // GS2: the shared "difficulty" setting picks the Easy chances (normal = the two values above).
+    // "vs CPU Hard" (minimax) is unaffected.
+    easyByDifficulty: {
+      easy: { win: 0.35, block: 0.2 },
+      hard: { win: 0.9, block: 0.8 },
+    },
   },
 
   // Phone-controller rumble via the hub (ms, or a pattern array; 0 = off)

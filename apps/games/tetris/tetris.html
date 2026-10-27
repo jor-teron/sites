@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Tetris B/W</title>
-  <link rel="stylesheet" href="tetris.css" />
+  <link rel="stylesheet" href="tetris.css?v=GS2" />
 </head>
 <body>
   <div id="wrap">
@@ -28,7 +28,10 @@
     </div>
   </div>
 
-  <script src="tetris_config.js"></script>
-  <script src="tetris_logic.js"></script>
+  <!-- GS2: shared Games Settings (optional: the game runs with defaults if it fails to load) -->
+  <script src="../common/settings/games-settings.js?v=GS1"></script>
+  <script src="tetris_config.js?v=GS2"></script>
+  <script src="tetris_settings.js?v=GS2"></script>
+  <script src="tetris_logic.js?v=GS2"></script>
 </body>
 </html>

@@ -265,3 +265,11 @@ body.in-hub .sf-fitbar { display: none; }
 .sf-theme-name { font-weight: 700; font-size: 0.95rem; }
 @media (min-width: 440px) { .sf-theme-list { grid-template-columns: 1fr 1fr; } .sf-theme-sheet { width: min(94vw, 500px); } }
 @media (max-height: 500px) { .sf-theme-list { grid-template-columns: 1fr 1fr 1fr; } .sf-theme-sheet { width: min(94vw, 640px); } }
+
+/* GS2: shared Games Settings — ⚙ link in the button row (inline styles from games-settings.js) and FPS counter */
+.sf-controls .gs-gear { align-self: center; background: #3a4660 !important; }
+.sf-fps {
+    position: fixed; left: 6px; bottom: 6px; z-index: 40; pointer-events: none;
+    font: 11px monospace; color: #0f0; background: rgba(0, 0, 0, 0.5); padding: 1px 4px;
+}
+.sf-fps.hidden { display: none; }

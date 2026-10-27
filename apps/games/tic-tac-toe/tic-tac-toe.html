@@ -10,7 +10,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Tic-tac-toe</title>
-    <link rel="stylesheet" href="tic-tac-toe.css?v=20261004b" />
+    <link rel="stylesheet" href="tic-tac-toe.css?v=GS2" />
 </head>
 <body>
     <div class="container" id="app">
@@ -45,7 +45,10 @@
         </div>
     </div>
 
-    <script src="tic-tac-toe_config.js?v=20261004b"></script>
-    <script src="tic-tac-toe_logic.js?v=20261004b"></script>
+    <!-- GS2: shared Games Settings (optional: the game runs with defaults if it fails to load) -->
+    <script src="../common/settings/games-settings.js?v=GS1"></script>
+    <script src="tic-tac-toe_config.js?v=GS2"></script>
+    <script src="tic-tac-toe_settings.js?v=GS2"></script>
+    <script src="tic-tac-toe_logic.js?v=GS2"></script>
 </body>
 </html>

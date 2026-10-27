@@ -4,6 +4,8 @@
  * the cell. Modes: vs CPU Easy (default) / vs CPU Hard (minimax) / 2 Players.
  * Score per mode in localStorage (safe when storage is blocked). Keyboard / gamepad
  * focus. Sites hub bridge (same protocol as Snake / 2048).
+ * GS2: shared Games Settings via tic-tac-toe_settings.js (TTT_SETTINGS): difficulty (Easy CPU),
+ * theme, vibration, ⚙ gear. Optional: without it the game uses its own defaults.
  */
 (function () {
     'use strict';
@@ -13,6 +15,9 @@
     const P2 = CFG.players.second;
     const HUMAN = P1, CPU = P2;
     const winPatterns = CFG.winPatterns;
+    // GS2: shared settings bridge; stub if tic-tac-toe_settings.js is missing
+    const SET = (typeof TTT_SETTINGS !== 'undefined' && TTT_SETTINGS) ||
+        { get: () => undefined, onChange: () => () => {}, mountGear: () => null, vibrate: () => {} };
 
     const boardEl = document.getElementById('board');
     const wrapEl = document.getElementById('boardWrap');
@@ -123,10 +128,14 @@
             if (free.length === 9) return [0, 2, 4, 6, 8][Math.floor(Math.random() * 5)];
             return minimax(state.slice(), CPU, 0).idx;
         }
+        // Easy: chances from the shared difficulty setting (GS2), else the config defaults
+        const d = (CFG.cpu.easyByDifficulty || {})[SET.get('difficulty')] || {};
+        const winChance = d.win !== undefined ? d.win : CFG.cpu.easyWinChance;
+        const blockChance = d.block !== undefined ? d.block : CFG.cpu.easyBlockChance;
         const win = findWinningMove(state, CPU);
-        if (win >= 0 && Math.random() < CFG.cpu.easyWinChance) return win;
+        if (win >= 0 && Math.random() < winChance) return win;
         const block = findWinningMove(state, HUMAN);
-        if (block >= 0 && Math.random() < CFG.cpu.easyBlockChance) return block;
+        if (block >= 0 && Math.random() < blockChance) return block;
         return free[Math.floor(Math.random() * free.length)];
     }
     function scheduleCpu() {
@@ -342,8 +351,10 @@
             buttons: [{ id: 'new', label: T.hubNewGame }, { id: 'mode', label: T.modePrefix + mode().label }],
         });
     }
+    /** Rumble: off when the shared "vibration" setting is off (GS2); standalone = this phone vibrates. */
     function hubRumble(v) {
-        if (!hubLinked || !v) return;
+        if (!v || SET.get('vibration') === false) return;
+        if (!hubLinked) { SET.vibrate(v); return; }
         if (Array.isArray(v)) hubPost({ type: 'hub-rumble', pattern: v.slice(0, 20) });
         else if (Number(v) > 0) hubPost({ type: 'hub-rumble', ms: Number(v) });
     }
@@ -376,7 +387,16 @@
         get cpuPending() { return cpuPending; },
         get score() { return Object.assign({}, modeScore()); },
         get inHub() { return hubLinked; },
+        cpuChoose: (state, level) => cpuChoose(state.slice(), level),   // GS2 tests
     };
+
+    // ---------- shared settings (GS2) ----------
+    function applyTheme() {
+        document.documentElement.classList.toggle('gs-light', SET.get('theme') === 'light');
+    }
+    applyTheme();
+    SET.onChange((ch) => { if ('theme' in ch) applyTheme(); });
+    SET.mountGear(document.querySelector('.side-btns'));   // ⚙ after the buttons
 
     // ---------- boot ----------
     resetGame();

@@ -13,6 +13,8 @@
   Storage:     localStorage keys from G2048_CONFIG.storage
                (best score, current game). Every access is
                wrapped: blocked storage just means no saving.
+  Settings:    GS2 — shared Games Settings via 2048_settings.js
+               (G2048_SETTINGS): vibration + ⚙ gear. Optional.
   Notes:       Tiles are DOM nodes moved with translate on the
                outer element; the appear / pop animations run on
                an inner element so they never cancel the move.
@@ -27,6 +29,9 @@
   const RUMBLE = CFG.rumble || {};
   const KEYS = CFG.keys || {};
   const STORE = CFG.storage || { best: '2048_best', game: '2048_game' };
+  // GS2: shared settings bridge; stub if 2048_settings.js is missing
+  const SET = (typeof G2048_SETTINGS !== 'undefined' && G2048_SETTINGS) ||
+    { get: () => true, onChange: () => () => {}, mountGear: () => null, vibrate: () => {} };
 
   /* Board is always 4x4 */
   const SIZE = 4;
@@ -593,8 +598,10 @@
       hubPost({ type: 'hub-stat', id: st.id, value: st.value });
     });
   }
+  /** Rumble: off when the shared "vibration" setting is off (GS2); standalone = this phone vibrates. */
   function hubRumble(v) {
-    if (!hubLinked || !v) return;
+    if (!v || SET.get('vibration') === false) return;
+    if (!hubLinked) { SET.vibrate(v); return; }
     if (Array.isArray(v)) hubPost({ type: 'hub-rumble', pattern: v.slice(0, 20) });
     else if (Number(v) > 0) hubPost({ type: 'hub-rumble', ms: Number(v) });
   }
@@ -624,6 +631,7 @@
   if (IN_FRAME) window.addEventListener('message', onHubMessage);
 
   // ---------- BOOT ----------
+  SET.mountGear(document.getElementById('controls'));   // GS2: ⚙ next to UNDO / NEW GAME
   buildCells();
   computeCellSize();
   grid = emptyGrid();

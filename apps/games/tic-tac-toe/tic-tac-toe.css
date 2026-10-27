@@ -184,3 +184,18 @@ body.in-hub .container { padding: 6px; }
 @media (prefers-reduced-motion: reduce) {
     .cell, .reset-btn, .mode-btn { transition: none; }
 }
+
+/* GS2: shared Games Settings — theme "light" (auto / dark = the colours above) */
+html.gs-light {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #e2e8f0;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --x-color: #2563eb;
+    --o-color: #dc2626;
+    --accent: #059669;
+    --border: #cbd5e1;
+}
+html.gs-light .chip { background: rgba(255, 255, 255, 0.7); }
+/* ⚙ link (inline styles from games-settings.js) sits in the button group */
+.side-btns .gs-gear { align-self: center; flex: 0 0 auto; }

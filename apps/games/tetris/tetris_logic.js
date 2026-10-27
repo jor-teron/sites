@@ -4,6 +4,9 @@
  * Grid: 10 columns x 20 visible rows.
  * Pieces: I O T S Z J L (classic tetrominoes).
  * Controls: arrows, X rotate, space hard drop, P pause, R restart.
+ * GS2: shared Games Settings via tetris_settings.js (TETRIS_SETTINGS): theme,
+ *      FPS cap, difficulty, auto pause, hints, FPS counter, vibration, ⚙ gear.
+ *      Works the same without it (fallback defaults).
  * ============================================================================= */
 
 /* --- Config aliases (all values live in tetris_config.js) --- */
@@ -22,6 +25,18 @@ var MIN_MS = CFG.timing.minMs;
 var SHAPES = CFG.shapes;
 var PIECE_NAMES = CFG.pieceNames;
 var KICKS = CFG.kicks;
+
+/* --- GS2: shared settings bridge (fallback stub if tetris_settings.js is missing) --- */
+var TS = (typeof TETRIS_SETTINGS !== "undefined" && TETRIS_SETTINGS) || {
+  get: function (k) { return { theme: "auto", difficulty: "normal", showHints: true, autoPause: true, showFps: false }[k]; },
+  frameMs: function () { return 1000 / 30; },
+  onChange: function () { return function () {}; },
+  mountGear: function () { return null; },
+  vibrate: function () {},
+  fpsMeter: function () { return { show: function () {}, tick: function () {} }; }
+};
+var lastDraw = 0;          /* last drawn frame (FPS cap) */
+var fpsMeter = null;       /* created at start-up */
 
 /* True if the event's code or key is in the binding list. */
 function isKey(list, e) {
@@ -188,6 +203,7 @@ function spawn() {
   if (!fits(current, current.rot, current.x, current.y)) {
     gameOver = true;
     elStatus.textContent = CFG.text.gameOver;
+    TS.vibrate(CFG.vibrate && CFG.vibrate.gameOverMs);
   }
 }
 
@@ -242,6 +258,7 @@ function clearLines() {
     lines += cleared;
     level = Math.floor(lines / CFG.scoring.linesPerLevel) + CFG.start.level;
     updateHud();
+    if (CFG.vibrate) TS.vibrate(cleared >= 4 ? CFG.vibrate.tetrisPattern : CFG.vibrate.lineMs);
   }
 }
 
@@ -330,12 +347,14 @@ function ghostY() {
 /* -----------------------------------------------------------------------------
  * fallInterval
  * Gravity delay for the current level (or soft-drop speed).
+ * GS2: the shared "difficulty" setting scales the level delay (tetris_config.js).
  * --------------------------------------------------------------------------- */
 function fallInterval() {
   if (softDrop) {
     return SOFT_MS;
   }
-  var ms = BASE_MS - (level - 1) * LEVEL_STEP_MS;
+  var mul = (CFG.difficulty && CFG.difficulty[TS.get("difficulty")]) || 1;
+  var ms = (BASE_MS - (level - 1) * LEVEL_STEP_MS) * mul;
   if (ms < MIN_MS) {
     ms = MIN_MS;
   }
@@ -461,24 +480,47 @@ function drawNext() {
 /* -----------------------------------------------------------------------------
  * tick
  * Main loop: gravity, then redraw.
+ * Gravity runs on real time (ms since the last step), so the fall speed is the
+ * same at any frame rate. A capped / slow frame rate catches up missed steps
+ * (at most 3 per frame); after a long gap (tab hidden) it starts fresh.
+ * Drawing is throttled to the shared fpsLimit (default 30 fps).
  * --------------------------------------------------------------------------- */
 function tick(now) {
+  var iv;
+  var steps = 0;
+  var fm;
+  var since;
   if (!lastTick) {
     lastTick = now;
   }
   if (!gameOver && !paused) {
-    if (now - lastTick >= fallInterval()) {
-      lastTick = now;
+    iv = fallInterval();
+    if (now - lastTick > iv * 4) {
+      lastTick = now - iv;    /* long gap: one step now, no burst */
+    }
+    while (!gameOver && now - lastTick >= iv && steps < 3) {
+      lastTick += iv;
+      steps += 1;
       if (!tryMove(0, 1)) {
         lockPiece();
+        lastTick = now;       /* new piece starts a fresh interval */
+        break;
       } else if (softDrop) {
         score += CFG.scoring.softDropPerCell;
         updateHud();
       }
+      iv = fallInterval();
     }
   }
-  drawBoard();
-  drawNext();
+  /* FPS cap: draw only when a frame slot is due (keeps the leftover so 30 stays 30 on a 60 Hz screen) */
+  fm = TS.frameMs();
+  since = now - lastDraw;
+  if (since >= fm - 1) {
+    lastDraw = (since >= fm && since < 2 * fm) ? now - (since - fm) : now;
+    drawBoard();
+    drawNext();
+    fpsMeter.tick(now);
+  }
   requestAnimationFrame(tick);
 }
 
@@ -575,6 +617,8 @@ function cellPx() {
 
 function onPointerDown(e) {
   if (gesture) return;
+  /* GS2: a press on the ⚙ settings link is a link click, not a rotate tap */
+  if (e.target && e.target.closest && e.target.closest(".gs-gear")) return;
   gesture = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(),
     anchorX: e.clientX, axis: null, moved: false, samples: [[performance.now(), e.clientY]],
     piece: current, done: false };
@@ -665,7 +709,38 @@ window.addEventListener("pointercancel", onPointerUp);
 window.addEventListener("touchmove", function (e) { if (e.cancelable) e.preventDefault(); }, { passive: false });
 window.addEventListener("gesturestart", function (e) { e.preventDefault(); });
 window.addEventListener("blur", clearKeys);
-document.addEventListener("visibilitychange", function () { if (document.hidden) clearKeys(); });
+document.addEventListener("visibilitychange", function () {
+  if (!document.hidden) return;
+  clearKeys();
+  /* GS2 autoPause: leaving the tab pauses (P / Enter / tap resumes) */
+  if (TS.get("autoPause") && !gameOver && !paused) {
+    paused = true;
+    elStatus.textContent = CFG.text.paused;
+  }
+});
+
+/* -----------------------------------------------------------------------------
+ * applySettings (GS2)
+ * Theme colours, hints and FPS counter from the shared settings. Difficulty and
+ * the FPS cap are read live in fallInterval() / tick().
+ * --------------------------------------------------------------------------- */
+function applySettings() {
+  var light = TS.get("theme") === "light" && CFG.colorsLight;
+  var col = light ? CFG.colorsLight : CFG.colors;
+  COLOR_BG = col.bg;
+  COLOR_BLOCK = col.block;
+  COLOR_GHOST = col.ghost;
+  COLOR_GRID = col.grid;
+  document.documentElement.classList.toggle("gs-light", !!light);
+  document.documentElement.classList.toggle("gs-nohints", TS.get("showHints") === false);
+  fpsMeter.show(!!TS.get("showFps"));
+  lastDraw = 0;               /* redraw on the next frame */
+  fitBoard();                 /* hiding the help changes the space left in portrait */
+}
+
+fpsMeter = TS.fpsMeter(CFG.fpsMeterMs || 500);
+TS.mountGear("top-right");
+TS.onChange(applySettings);
 resetGame();
-fitBoard();
+applySettings();
 requestAnimationFrame(tick);
