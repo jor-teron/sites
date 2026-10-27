@@ -154,6 +154,7 @@ Animal Kingdom, 	animal-kingdom/, , , Planet
 English Basic,           english-basic/,             , , Language
 NE-India Dictionary,     ../tools/nei-dict/,         , , Language
 Caption for NEI,         ../tools/caption-for-nei/,  , , Language
+Typing Tutor,            typing-tutor/,              , , Language
 Maths and Logic,         maths-logic/,               , , Language and Maths
 Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_icon.png, , Coding
 Learning HTML (Basic),   ../tools/learning-html/,    , , Coding
