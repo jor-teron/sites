@@ -14,6 +14,9 @@
  *   H28.1, all Bearer: groq GET api.groq.com/openai/v1/models, openrouter GET openrouter.ai/api/v1/key
  *   (its /models list is public, so /key is what proves the key), deepseek GET api.deepseek.com/models,
  *   xai GET api.x.ai/v1/models. All four answer browser (CORS) requests.
+ *   H28.2 gvision POST vision.googleapis.com/v1/images:annotate?key= with no images ({ requests: [] }: nothing to
+ *   bill). 400 with reason API_KEY_INVALID = bad key; any other 400 / 200 = the key reached Vision; 403 tells apart
+ *   API not enabled, billing off and key restrictions.
  * Guide: hub/keys.readme.md (shown folded at the bottom, plus a GitHub link).
  */
 (function () {
@@ -92,6 +95,22 @@
       if (d.limit_remaining != null) bits.push('$' + (+d.limit_remaining).toFixed(2) + ' left on this key');
       if (f && f.limit != null) bits.push(f.remaining + ' / ' + f.limit + ' free-model requests left today');
       return { ok: true, text: 'Key works' + (bits.length ? ' \u00b7 ' + bits.join(' \u00b7 ') : '') };
+    },
+    async gvision(v) {   // H28.2
+      const r = await fetchT('https://vision.googleapis.com/v1/images:annotate?key=' + encodeURIComponent(v),
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requests: [] }) });
+      if (r.ok) return { ok: true, text: 'Key works (Vision API answered; no image sent, nothing billed)' };
+      const e = ((await r.json().catch(() => ({}))).error) || {};
+      const why = (e.details || []).map((d) => d && d.reason).filter(Boolean).join(' ') + ' ' + (e.status || '') + ' ' + (e.message || '');
+      if (/API_KEY_INVALID|API key not valid/i.test(why)) return { ok: false, text: 'Key rejected: not a valid API key (' + r.status + ')' };
+      if (r.status === 400) return { ok: true, text: 'Key works (Vision API reached; the empty test request was refused, as expected)' };
+      if (/SERVICE_DISABLED|accessNotConfigured|has not been used|is disabled/i.test(why)) return { ok: false, text: 'Key is valid, but the Cloud Vision API is not enabled in its Google Cloud project' };
+      if (/BILLING_DISABLED|billing/i.test(why)) return { ok: false, text: 'Key is valid, but billing is not enabled for its project (Vision needs a billing account)' };
+      if (/REFERRER_BLOCKED|referer/i.test(why)) return { ok: false, text: 'Key is restricted to other websites (add this site under Application restrictions)' };
+      if (/API_KEY_SERVICE_BLOCKED|blocked/i.test(why)) return { ok: false, text: 'Key is not allowed to use the Cloud Vision API (check its API restrictions)' };
+      if (r.status === 429) return { ok: false, text: 'Key works, but the Vision quota is used up for now (429)' };
+      if (r.status === 401 || r.status === 403) return { ok: false, text: 'Key refused (' + r.status + ')' + (e.message ? ': ' + e.message.slice(0, 120) : '') };
+      return { ok: false, text: 'Vision answered ' + r.status };
     },
   };
   /** GET <url> with a Bearer key; 400 / 401 / 403 = key rejected (xAI answers 400 to a bad key). */

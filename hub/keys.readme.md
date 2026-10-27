@@ -1,4 +1,4 @@
-# Hub keys guide (H28, H28.1)
+# Hub keys guide (H28, H28.1, H28.2)
 
 One place for the API keys that Hub apps use: **Settings → API Keys**.
 Add a key once and every Hub app (Agent, News, …) can use it. No app asks again.
@@ -39,6 +39,9 @@ Add a key once and every Hub app (Agent, News, …) can use it. No app asks agai
   <https://aistudio.google.com/rate-limit>, and prices and free models are at <https://ai.google.dev/gemini-api/docs/pricing>.
   Daily limits reset at midnight Pacific time. On the free tier Google may use your prompts to improve its products.
 - **Test button:** lists the models your key can use (free, no tokens used).
+- **Shared key (H28.2):** one Gemini key from AI Studio works for **Agent**, **Caption for Nei** and **Transcribe**.
+  Agent reads it from this row. Caption for Nei and Transcribe still keep their own key field for now, so paste
+  the same key there too.
 
 ### `openai_base` + `openai_key`: OpenAI-compatible server
 
@@ -102,6 +105,21 @@ also have their own rows below (H28.1). Use those, and keep this pair for anythi
   Prices per model are at <https://docs.x.ai/docs/models>.
 - **Test button:** lists the models (`GET api.x.ai/v1/models`), which is free. xAI answers a bad key with 400.
 
+### `gvision`: Google Cloud Vision (H28.2)
+
+- **For:** image understanding: text in photos and scans (OCR), labels, objects. The OCR app's "Vision" engine uses this API
+  (it still has its own key field for now).
+- **Get it:** in the Google Cloud console create or pick a project, enable **Cloud Vision API**
+  (<https://console.cloud.google.com/apis/library/vision.googleapis.com>), then **Create credentials → API key** at
+  <https://console.cloud.google.com/apis/credentials> (keys start with `AIza`). Restricting the key to the Cloud Vision API
+  and to this site's address is a good idea. This is a different key from the Gemini one (AI Studio).
+- **Billing:** a billing account must be linked to the project, even for free use.
+- **Free:** the first 1,000 units a month are free (each feature on each image is one unit; a PDF page counts as an image),
+  then it's paid per 1,000 units. Prices change, so **check the page**: <https://cloud.google.com/vision/pricing>
+- **Test button:** sends an empty request (`POST vision.googleapis.com/v1/images:annotate`, no image, nothing billed).
+  A bad key is reported as rejected. It also tells you when the key is fine but the Vision API isn't enabled,
+  billing is off, or the key's restrictions block this site.
+
 ### Custom keys
 
 Any other name (for example `groq`, `openweather`). An app asks for it by name, and
@@ -125,7 +143,7 @@ HubKeys.KNOWN              // [{name, label, kind: 'key' | 'url', url, hint}]
 ```
 
 Known names: `tavily`, `gemini`, `openai_base`, `openai_key`, `ollama_url`, `groq`, `openrouter`,
-`deepseek`, `xai`. Names are lowercased.
+`deepseek`, `xai`, `gvision`. Names are lowercased.
 
 **Standalone fallback.** When the app is opened on its own (not in the Hub), `window.top.HubKeys`
 doesn't exist. Keep the app's own key field for that case:
@@ -143,4 +161,4 @@ Inside the Hub, hide the app's own key field and show a "Set in Settings → API
 (`HubKeys.open(name)`) instead.
 
 Read keys when you need them, not once at start, so a changed key works at once.
-Never log keys or put them in URLs that get saved. Gemini's test URL is the one exception, because the API takes `?key=`.
+Never log keys or put them in URLs that get saved. Gemini's and Vision's test URLs are the exceptions, because those APIs take `?key=`.
