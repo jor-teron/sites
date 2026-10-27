@@ -8,6 +8,7 @@ The built-in group chat on the one Hub link (`shared/link`).
 - Every message carries the device name and time. Hub relays to all connected devices.
 - History: last 200 messages per device (`shared-chat-history`), survives reload.
 - 🟢 tap: share typed text (or the last message) to WhatsApp (`wa.me`). Long-press / Shift+click: pick files and share via the phone share sheet. ↗ on a message shares that message.
+- Short notices (Hub not ready, renamed, nothing to share, files shared, Hub disconnected): inside the Hub they are Hub notification cards (`window.top.HubNotify.notice`); standalone a small toast (H32).
 - Hub header 🐻 bubble: last 20 messages, quick reply, "Full chat"; one quiet toast for new messages.
 
 ## Files

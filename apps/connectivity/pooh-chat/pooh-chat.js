@@ -7,6 +7,8 @@
     else the saved code if it ever connected, else the Join dialog (code + Scan QR).
     Sends {type:'chat', …, bcast:true}; the Hub re-broadcasts to every device.
   - 🟢: share the typed text (or the last message) to WhatsApp; long-press → share files.
+  - H32: short notices (Hub not ready, renamed, nothing to share, files shared, Hub
+    disconnected) go through PoohUI.notify → Hub notification card, own toast standalone.
 */
 (function () {
   'use strict';
@@ -61,7 +63,7 @@
     });
     SharedLink.on('open', function () { PoohUI.status('Connected · ' + SharedLink.code, true); });
     SharedLink.on('close', function () { PoohUI.status('Reconnecting…', false); });
-    SharedLink.on('bye', function () { PoohUI.status('Hub disconnected', false); btnJoin.hidden = false; });
+    SharedLink.on('bye', function () { PoohUI.status('Hub disconnected', false); btnJoin.hidden = false; PoohUI.notify({ icon: '🔌', title: 'Pooh Chat', text: 'Hub disconnected' }); });
     btnJoin.addEventListener('click', askJoin);
     var saved = '';
     try { saved = localStorage.getItem('shared-link-join-code') || ''; } catch (_) { /* blocked */ }
@@ -76,7 +78,7 @@
     var t = input.value.trim();
     if (!t) return;
     if (inHub) {
-      if (!hubLinked) { PoohUI.status('Hub not ready', false); return; }
+      if (!hubLinked) { PoohUI.status('Hub not ready', false); PoohUI.notify({ icon: '⚠️', title: 'Pooh Chat', text: 'Hub not ready — message not sent' }); return; }
       window.parent.postMessage({ sharedLink: 'chat', text: t }, '*');
       setTimeout(paint, 30);
     } else {
@@ -89,7 +91,7 @@
   btnName.addEventListener('click', function () {
     if (!window.SharedLinkDevices) return;
     var n = window.prompt('Name for this device:', SharedLinkDevices.name());
-    if (n) SharedLinkDevices.setName(n);
+    if (n) { SharedLinkDevices.setName(n); PoohUI.notify({ icon: '✏️', title: 'Pooh Chat', text: 'This device is now “' + SharedLinkDevices.name() + '”' }); }
   });
 
   /* 🟢 tap: WhatsApp text. Long press (or Shift+click): pick files and share them. */
@@ -102,8 +104,16 @@
     var t = input.value.trim();
     if (!t) { var h = SharedChat.history(); t = h.length ? h[h.length - 1].text : ''; }
     if (t) ShareWA.text(t);
+    else PoohUI.notify({ icon: '🟢', title: 'Pooh Chat', text: 'Nothing to share yet' });
   });
-  fileShare.addEventListener('change', function () { ShareWA.files(fileShare.files); fileShare.value = ''; });
+  fileShare.addEventListener('change', function () {
+    var n = fileShare.files.length;
+    ShareWA.files(fileShare.files).then(function (r) {
+      if (r === 'downloaded') PoohUI.notify({ icon: '⬇️', title: 'Pooh Chat', text: n + ' file' + (n === 1 ? '' : 's') + ' downloaded (share sheet not available)' });
+      else if (r === 'shared') PoohUI.notify({ icon: '🟢', title: 'Pooh Chat', text: n + ' file' + (n === 1 ? '' : 's') + ' shared' });
+    });
+    fileShare.value = '';
+  });
 
   paint();
   if (inHub) bootHub(); else bootStandalone();

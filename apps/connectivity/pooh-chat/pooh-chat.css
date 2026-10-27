@@ -49,6 +49,10 @@ button:active { transform: scale(.95); }
 .send { background: linear-gradient(135deg, #ffb22e, #ff7a2e); color: #2a1500; font-weight: 700; }
 .wa { background: #1a8f4a; font-size: 18px; padding: 0 10px; }
 
+/* H32: standalone toast (inside the Hub, notices are Hub cards instead) */
+.pooh-toast { position: fixed; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom)); transform: translate(-50%, 12px); max-width: min(92vw, 420px); padding: 10px 16px; border-radius: 14px; background: rgba(20,16,40,.95); border: 1px solid rgba(255,190,80,.45); color: #fff; font-size: 14px; box-shadow: 0 6px 24px rgba(0,0,0,.45); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 50; }
+.pooh-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
 @keyframes pop { from { transform: scale(.85) translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes pulse { 50% { box-shadow: 0 0 2px #3dd68c; } }
 @keyframes bob { 50% { transform: translateY(-3px) rotate(-6deg); } }

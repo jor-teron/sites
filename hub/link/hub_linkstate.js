@@ -4,7 +4,7 @@
  *              "Code 1234 · ↻ New code" row: fresh random 4-digit code, re-registers the peer,
  *              saved, QR tiles redrawn (hub-controller.js newCode). Joined devices must pair again.
  *   Phone (joined, window.__hubRemote): "⏏ Disconnect from Hub" button in the same popover
- *              (moved out of the Menu); state line shows Connected / Connecting.
+ *              (moved out of the Menu). H31: no "Hub 1234 · Connected" state line; the dot on 🎮 shows it.
  */
 (function () {
   'use strict';
@@ -30,11 +30,9 @@
       e.stopPropagation();
       if (window.__hubRemoteApi) window.__hubRemoteApi.disconnect();
     });
-    const paint = () => {
-      info.textContent = 'Hub ' + window.__hubRemote.code + ' · ' + (SharedLink.connected ? 'Connected' : 'Connecting…');
-    };
-    ['open', 'close', 'status'].forEach((ev) => SharedLink.on(ev, paint));
-    paint();
+    // H31: no "Hub 1234 · Connected" line; the state is the dot on 🎮 (hub_remote.js)
+    info.hidden = true;
+    info.style.display = 'none';
     return;
   }
 

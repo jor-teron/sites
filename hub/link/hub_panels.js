@@ -7,7 +7,7 @@
  *   This Hub   : editable device name (SharedLinkUI.mountName), big code + New code /
  *                Disconnect button (hub_linkstate.js; its repeated "Code … · N devices" text hidden).
  *   Join       : 4-digit box + Join + 📷 (SharedLinkScan.ask) → location ?join=CODE (as
- *                hub_remote.js). Own code is rejected. A join that has not connected after
+ *                hub_remote.js). Own code is rejected (H31: on a phone whose link is down it rejoins now). A join that has not connected after
  *                20 s shows "Hub not found — check the code" (sessionStorage 'hub-join-try').
  *   Devices    : SharedLinkUI.mountDevices list (styled as roomy rows).
  *   One-tap switch: with Devices open, a tap on 🐻 (under #ctrl-backdrop) closes Devices and
@@ -78,7 +78,11 @@
       err.textContent = '';
       c = String(c || '').replace(/\D/g, '');
       if (!/^\d{4}$/.test(c)) { err.textContent = 'Enter the 4-digit code.'; return; }
-      if (c === myCode()) { err.textContent = R ? 'Already joined to this Hub.' : 'That is this Hub’s own code.'; return; }
+      if (c === myCode()) {
+        // H31 / H25: the same Hub while the link is down → rejoin now (the bar chip with its scan is gone)
+        if (R && window.SharedLink && !SharedLink.connected && window.__hubRemoteApi) { window.__hubRemoteApi.rejoin(); err.textContent = 'Reconnecting…'; return; }
+        err.textContent = R ? 'Already joined to this Hub.' : 'That is this Hub’s own code.'; return;
+      }
       try { sessionStorage.setItem('hub-join-try', c); } catch (_) { /* private mode */ }
       location.replace(location.pathname + '?join=' + c);
     }

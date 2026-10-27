@@ -3,6 +3,8 @@
   PoohUI.render(list, myIds): draws SharedChat history into #log (mine on the right,
   device name + time on every message, small WhatsApp share per message).
   PoohUI.status(text, ok), PoohUI.sys(text). Text only (textContent), no HTML injection.
+  H32: PoohUI.notify({icon, title, text, timeoutMs}) — inside the Hub a Hub notification card
+  (window.top.HubNotify.notice); standalone a small toast at the bottom of the app.
 */
 (function () {
   'use strict';
@@ -42,5 +44,33 @@
 
   function status(text, ok) { stText.textContent = text; st.classList.toggle('ok', !!ok); }
 
-  window.PoohUI = { render: render, sys: sys, status: status };
+  /* H32: one notify path — Hub card when the Hub is there, own toast otherwise */
+  function hubNotify() {
+    try {
+      var t = window.top;
+      if (t && t !== window && t.HubNotify && typeof t.HubNotify.notice === 'function') return t.HubNotify;
+    } catch (_) { /* cross-origin top */ }
+    return null;
+  }
+  var toastEl = null, toastT = 0;
+  function notify(o) {
+    o = typeof o === 'string' ? { text: o } : (o || {});
+    var N = hubNotify();
+    if (N) {
+      try { return N.notice({ icon: o.icon || '🐻', title: o.title || 'Pooh Chat', text: o.text || '', timeoutMs: o.timeoutMs }); } catch (_) { /* fall back */ }
+    }
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.className = 'pooh-toast';
+      toastEl.setAttribute('role', 'status');
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = (o.icon || '🐻') + ' ' + (o.title && o.title !== 'Pooh Chat' ? o.title + ' — ' : '') + (o.text || '');
+    toastEl.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(function () { toastEl.classList.remove('show'); }, o.timeoutMs || 3000);
+    return { close: function () { clearTimeout(toastT); toastEl.classList.remove('show'); } };
+  }
+
+  window.PoohUI = { render: render, sys: sys, status: status, notify: notify };
 })();
