@@ -1,6 +1,7 @@
 /* Harness — app/gui/chat.js: input, Send / Stop, and the UI side of the agent loop (HR2).
    send() adds the user message and runs HR.loop with hooks that draw assistant bubbles (rAF-throttled streaming),
-   tool chips, notes and step rows. Stop aborts the in-flight model call and halts the loop. Errors -> HR.view.errorCard. */
+   tool chips, notes and step rows. Stop aborts the in-flight model call and halts the loop. Errors -> HR.view.errorCard.
+   HR4: system prompt from HR.prompt.system() on every call; user / assistant / tool lines go to HR.logs (daily Markdown). */
 HR.chat = (function () {
   var log, input, sendBtn, ctrl = null;
   function busy(on) { sendBtn.textContent = on ? '■' : '➤'; sendBtn.title = on ? 'Stop' : 'Send'; sendBtn.setAttribute('aria-label', on ? 'Stop' : 'Send'); sendBtn.classList.toggle('stop', on); }
@@ -22,18 +23,19 @@ HR.chat = (function () {
       done: function (s) {
         var tps = HR.ollama.tps(s); a.tool_calls = (s.tool_calls || []).length ? s.tool_calls : undefined;
         a.stats = { tokens: s.eval_count || chunks, tps: tps || (first ? chunks / Math.max(.001, (performance.now() - first) / 1000) : 0), sec: (performance.now() - t0) / 1000 };
+        HR.logs.assistant(a);
         close('ok', { eval_count: s.eval_count, prompt_eval_count: s.prompt_eval_count, done_reason: s.done_reason, tps: a.stats.tps, tool_calls: a.tool_calls ? a.tool_calls.length : '' });
         return a;
       },
-      stopped: function () { a.stats = { tokens: chunks, sec: (performance.now() - t0) / 1000, note: 'stopped' }; close('stop', {}); if (a.content || a.thinking) return a; view.el.remove(); return null; },
+      stopped: function () { a.stats = { tokens: chunks, sec: (performance.now() - t0) / 1000, note: 'stopped' }; close('stop', {}); HR.logs.assistant(a, 'stopped'); if (a.content || a.thinking) return a; view.el.remove(); return null; },
       fail: function (e, retrying) { view.el.remove(); close(retrying ? 'stop' : 'err', { error: e.message + (retrying ? ' → retry without tools' : '') }); }
     };
   }
   function toolStart(c) {
     var m = { role: 'tool', tool_name: c.name, args: c.args }, chip = HR.view.tool(m), step = HR.steps.tool(c);
-    return { done: function (ok, text, ms) { chip.done(ok, text, ms); step.finish(ok ? 'ok' : 'err', { result: text, ms: ms }); } };
+    return { done: function (ok, text, ms) { chip.done(ok, text, ms); HR.logs.tool(c.name, c.args, ok, text, ms); step.finish(ok ? 'ok' : 'err', { result: text, ms: ms }); } };
   }
-  function note(t) { HR.view.note(t); HR.steps.note(t); }
+  function note(t) { HR.view.note(t); HR.steps.note(t); HR.logs.note(t); }
   /* approve(info) is filled in by HR3 (app/gui/approve.js); default denies */
   function approve(info) { return HR.approve ? HR.approve(info, ctrl && ctrl.signal) : Promise.resolve(false); }
   function send() {
@@ -43,10 +45,10 @@ HR.chat = (function () {
     if (!model) { HR.model.load(); return; }
     var h = log.querySelector('.hello'); if (h) h.remove();
     HR.view.clearErrors(); input.value = ''; grow();
-    var u = HR.msgs.add({ role: 'user', content: text }); HR.view.bubble(u);
+    var u = HR.msgs.add({ role: 'user', content: text }); HR.view.bubble(u); HR.logs.user(text);
     ctrl = new AbortController(); busy(true);
     var opts = { base: HR.set.get('baseUrl'), model: model, think: HR.set.get('think'), signal: ctrl.signal, maxSteps: HR.set.maxSteps(), useTools: HR.set.get('tools') !== 'off',
-      ui: { modelStart: modelStart, toolStart: toolStart, note: note, approve: approve } };
+      system: HR.prompt.system, ui: { modelStart: modelStart, toolStart: toolStart, note: note, approve: approve } };
     HR.loop.run(opts).then(function (r) {
       if (r.status === 'stop') note('■ Stopped.');
       if (document.hidden && r.status !== 'stop') HR.notify({ icon: '🧪', title: 'Harness', text: 'Reply ready from ' + model, onClick: function () { window.focus(); } });
@@ -66,6 +68,7 @@ HR.chat = (function () {
     input.addEventListener('input', grow);
     document.getElementById('btnClear').onclick = clearChat;
     renderAll();
+    HR.fs.onChange(HR.view.folderHint);
   }
-  return { init: init, errorCard: function (e) { HR.view.errorCard(e); }, clearErrors: function () { HR.view.clearErrors(); }, busy: function () { return !!ctrl; } };
+  return { init: init, note: note, errorCard: function (e) { HR.view.errorCard(e); }, clearErrors: function () { HR.view.clearErrors(); }, busy: function () { return !!ctrl; } };
 })();

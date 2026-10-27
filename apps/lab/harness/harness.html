@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <!--
-  Harness (HR1-HR3) — browser AI agent harness, all in browser JS. HR1: chat with a local Ollama model (streaming, Stop,
+  Harness (HR1-HR4) — browser AI agent harness, all in browser JS. HR1: chat with a local Ollama model (streaming, Stop,
   Thinking box, tok/s), Steps pane. HR2: agent loop with tools (get_time), step limit, Stop. HR3: folder tools
-  (File System Access; write needs approval). See harness_readme.md roadmap.
+  (File System Access; write needs approval). HR4: daily Markdown logs, memory notes, editable system prompt in
+  <folder>/harness/. See harness_readme.md roadmap.
   Styles: ui/main.css (theme, layout), ui/components.css (buttons, bubbles, cards, dialog), ui/steps.css (steps pane).
-  Scripts (order matters): app/core (messages, tools, loop), app/models/ollama.js, app/storage/fs.js, app/tools/*,
+  Scripts (order matters): app/core (messages, tools, loop, prompt), app/models/ollama.js, app/storage (fs, logs), app/tools/*,
   app/gui (settings, model, steps, bubbles, approve, folder, chat), app/main.js.
 -->
 <html lang="en">
@@ -15,9 +16,9 @@
   <meta name="theme-color" content="#111318">
   <title>Harness</title>
   <link rel="icon" href="harness_icon.png">
-  <link rel="stylesheet" href="ui/main.css?v=20261027hr3">
-  <link rel="stylesheet" href="ui/components.css?v=20261027hr3">
-  <link rel="stylesheet" href="ui/steps.css?v=20261027hr3">
+  <link rel="stylesheet" href="ui/main.css?v=20261027hr4">
+  <link rel="stylesheet" href="ui/components.css?v=20261027hr4">
+  <link rel="stylesheet" href="ui/steps.css?v=20261027hr4">
   <script src="../../../shared/theme/hub_theme.js?v=20261026h22"></script>
   <script>try{var s=JSON.parse(localStorage.getItem('harness.settings')||'{}'),m=s.theme||'dark';document.documentElement.dataset.ht=m==='light'?'light':m==='system'?(localStorage.getItem('sites-hub.theme')==='light'?'light':'dark'):'dark'}catch(e){document.documentElement.dataset.ht='dark'}</script>
 </head>
@@ -58,22 +59,26 @@
   <h3>Folder</h3>
   <p class="hint" id="folderStat"></p>
   <div class="ec-row start"><button type="button" class="hb wide" id="btnPick">Pick folder</button><button type="button" class="hb wide" id="btnReconnect" hidden>Reconnect folder</button></div>
-  <p class="hint">Chat history stays in this tab only (sessionStorage). Settings are saved.</p>
+  <h3>Save chats to folder</h3><div class="seg" id="setSave" role="radiogroup" aria-label="Save chats to folder"></div>
+  <p class="hint">Daily logs go to harness/chats/YYYY_MM/YYYY_MM_DD.md; memory to harness/memory.md; system prompt in harness/prompts/system.md (edit it there). In-app history stays in this tab (sessionStorage). Settings are saved.</p>
 </dialog>
-<script src="app/core/messages.js?v=20261027hr3"></script>
-<script src="app/core/tools.js?v=20261027hr3"></script>
-<script src="app/core/loop.js?v=20261027hr3"></script>
-<script src="app/models/ollama.js?v=20261027hr3"></script>
-<script src="app/storage/fs.js?v=20261027hr3"></script>
-<script src="app/tools/time.js?v=20261027hr3"></script>
-<script src="app/tools/files.js?v=20261027hr3"></script>
-<script src="app/gui/settings.js?v=20261027hr3"></script>
-<script src="app/gui/model.js?v=20261027hr3"></script>
-<script src="app/gui/steps.js?v=20261027hr3"></script>
-<script src="app/gui/bubbles.js?v=20261027hr3"></script>
-<script src="app/gui/approve.js?v=20261027hr3"></script>
-<script src="app/gui/folder.js?v=20261027hr3"></script>
-<script src="app/gui/chat.js?v=20261027hr3"></script>
-<script src="app/main.js?v=20261027hr3"></script>
+<script src="app/core/messages.js?v=20261027hr4"></script>
+<script src="app/core/tools.js?v=20261027hr4"></script>
+<script src="app/core/loop.js?v=20261027hr4"></script>
+<script src="app/core/prompt.js?v=20261027hr4"></script>
+<script src="app/models/ollama.js?v=20261027hr4"></script>
+<script src="app/storage/fs.js?v=20261027hr4"></script>
+<script src="app/storage/logs.js?v=20261027hr4"></script>
+<script src="app/tools/time.js?v=20261027hr4"></script>
+<script src="app/tools/files.js?v=20261027hr4"></script>
+<script src="app/tools/memory.js?v=20261027hr4"></script>
+<script src="app/gui/settings.js?v=20261027hr4"></script>
+<script src="app/gui/model.js?v=20261027hr4"></script>
+<script src="app/gui/steps.js?v=20261027hr4"></script>
+<script src="app/gui/bubbles.js?v=20261027hr4"></script>
+<script src="app/gui/approve.js?v=20261027hr4"></script>
+<script src="app/gui/folder.js?v=20261027hr4"></script>
+<script src="app/gui/chat.js?v=20261027hr4"></script>
+<script src="app/main.js?v=20261027hr4"></script>
 </body>
 </html>

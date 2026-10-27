@@ -1,6 +1,6 @@
 /* Harness — app/gui/bubbles.js: chat views (HR.view). bubble(m) -> {paint(live), el} for user / assistant messages:
    plain text with ``` code blocks, folded Thinking box (<think>…</think> or Ollama 'thinking'), stats line, tool-call chips.
-   tool(m) -> {done(ok,text,ms)}: folded 🔧 chip with args + result preview. note(text), hello(), errorCard(e) (Ollama setup help). */
+   tool(m) -> {done(ok,text,ms)}: folded 🔧 chip with args + result preview. note(text), hello() (+ folder hint, HR4), errorCard(e). */
 HR.view = (function () {
   var log;
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
@@ -53,7 +53,13 @@ HR.view = (function () {
   function hello() {
     var h = el('div', 'hello');
     h.append(el('div', 'hello-ico', '🧪'), el('div', 'hello-t', 'Harness'), el('div', 'hello-s', 'Chat with a local Ollama model. It can call tools; every model and tool call shows in Steps.'));
-    log.appendChild(h);
+    h.appendChild(el('div', 'hello-f')); log.appendChild(h); folderHint();
+  }
+  function folderHint() {
+    var f = log.querySelector('.hello-f'), s = HR.fs.state(); if (!f) return;
+    f.textContent = s === 'ready' ? '📁 ' + HR.fs.name() + ': chats saved to harness/chats/, memory in harness/memory.md, system prompt in harness/prompts/system.md.'
+      : s === 'unsupported' ? 'History stays in this tab. Folder logs and memory need desktop Chrome or Edge.'
+      : 'No folder: history stays in this tab only. Pick a folder (📁) to save daily chat logs, memory notes and an editable system prompt.';
   }
   function clearErrors() { [].forEach.call(log.querySelectorAll('.ecard'), function (c) { c.remove(); }); }
   function code(t) { return el('code', null, t); }
@@ -77,5 +83,5 @@ HR.view = (function () {
     row.append(retry, x); c.append(t, p, row); log.appendChild(c); bottom(true);
   }
   function init(l) { log = l; }
-  return { init: init, el: el, bubble: bubble, tool: tool, note: note, hello: hello, errorCard: errorCard, clearErrors: clearErrors, bottom: bottom };
+  return { init: init, el: el, bubble: bubble, tool: tool, note: note, hello: hello, folderHint: folderHint, errorCard: errorCard, clearErrors: clearErrors, bottom: bottom };
 })();
