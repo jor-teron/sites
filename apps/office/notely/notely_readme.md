@@ -1,13 +1,13 @@
 # Notely
 
 ## 1. What it is
-One page of plain-text notes that saves itself as you type. Open and download `.txt` files, change the text size, dark or light theme. Works on phones and desktops, offline.
+One page of plain-text notes that saves itself as you type. Open and download `.txt` files, change the text size, System (follows the Hub), light or dark theme. Works on phones and desktops, offline.
 
 ## 2. Files
 - `notely.html` / `notely.css`: toolbar, text area, undo bar, layout
 - `notely_config.js`: themes, font sizes, timings, file name, storage keys
 - `nl_store.js`: safe localStorage access (never throws)
-- `nl_theme.js`: dark / light colours
+- `nl_theme.js`: theme mode System / Light / Dark (System follows the Hub via `shared/theme/hub_theme.js`)
 - `nl_editor.js`: text area, autosave, word / character count, text size, one-time import from Notepad
 - `nl_files.js`: Open (picker or drag-and-drop) and Download
 - `nl_clear.js`: Clear with a 5-second Undo
@@ -24,7 +24,7 @@ One page of plain-text notes that saves itself as you type. Open and download `.
 - **Download:** saves the text as `Notely.txt`.
 - **Clear:** asks first, then shows "Text cleared. Undo" for 5 s.
 - **A− / A+:** text size 12–32 px in steps of 2 (default 17). Remembered.
-- **Theme:** dark (default) or light. Remembered.
+- **Theme:** the button cycles System (default) → Light → Dark and shows the current mode. System follows the Hub's dark / light live; a Hub accent colour replaces the theme accent. Remembered (an old saved light / dark choice is kept).
 - **Tab** inserts a tab character instead of leaving the text area.
 - **From Notepad:** the first time Notely opens with no notes, it copies the old Notepad text once. Notepad's own text is never changed.
 
@@ -70,7 +70,7 @@ Shown briefly in the toolbar:
 ## 9. Browser checklist
 1. Type, reload: the text is still there.
 2. A+ twice, reload: still bigger.
-3. Light, reload: still light.
+3. Theme to Light, reload: still Light.
 4. Clear → OK → Undo: the text is back.
 5. Download: `Notely.txt` has the same text.
 6. Open a `.txt` file: it replaces the text and says "Opened …".
@@ -83,6 +83,7 @@ Shown briefly in the toolbar:
 - Old version after an update: hard-refresh.
 
 ## 11. Change log
+- 2026-10-27 IST: NL1 System theme mode (default), follows the Hub theme and accent live.
 - 2026-10-04 23:24 IST: moved from `apps/tools/notely/` to `apps/office/notely/`, now in the hub's Office menu; notes are kept (commit 3a32f4e).
 - 2026-10-04 11:39 IST: new app (commit 5aeb4bf).
 
