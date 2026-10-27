@@ -3,7 +3,8 @@
  * Sections register with Settings.add({ id, title, icon, render(el) }) (sec_*.js) and are
  * shown in that order. Wide screens: list left, options right. Narrow (< 700 px, phone):
  * list first; tapping a section opens it with ‹ Back. The open section is in the hash
- * (#wallpaper, #about …) so links like settings/#about work.
+ * (#wallpaper, #about …) so links like settings/#about work. H28: '#<section>/<sub>' (e.g. #keys/tavily)
+ * opens the section and passes sub to render(el, sub) (the row to scroll to).
  * Helpers for sections: Settings.ui.choice(), .switch(), .title(), .note().
  */
 window.Settings = (function () {
@@ -18,17 +19,21 @@ window.Settings = (function () {
 
   function add(sec) { sections.push(sec); }
 
-  function open(id, fromHash) {
+  function open(full, fromHash) {
+    const cut = String(full || '').indexOf('/');
+    const id = cut < 0 ? full : full.slice(0, cut);
+    let sub = cut < 0 ? '' : full.slice(cut + 1);
+    try { sub = decodeURIComponent(sub); } catch (_) { /* keep raw */ }
     const sec = sections.find((s) => s.id === id);
     if (!sec) { showList(); return; }
-    current = id;
+    current = full;
     nav.querySelectorAll('.nav-item').forEach((b) => b.classList.toggle('on', b.dataset.id === id));
     paneTitle.textContent = sec.title;
     pane.replaceChildren();
-    sec.render(pane);
+    sec.render(pane, sub);
     document.body.classList.add('in-section');
-    pane.scrollTop = 0;
-    if (!fromHash && location.hash !== '#' + id) history.replaceState(null, '', '#' + id);
+    if (!sub) pane.scrollTop = 0;
+    if (!fromHash && location.hash !== '#' + full) history.replaceState(null, '', '#' + full);
   }
   function showList() {
     document.body.classList.remove('in-section');
@@ -51,7 +56,7 @@ window.Settings = (function () {
     back.addEventListener('click', showList);
     window.addEventListener('hashchange', () => { const id = location.hash.slice(1); if (id && id !== current) open(id, true); });
     const id = location.hash.slice(1);
-    if (id && sections.some((s) => s.id === id)) open(id, true);
+    if (id && sections.some((s) => s.id === id.split('/')[0])) open(id, true);
     else showList();
   }
 

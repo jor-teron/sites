@@ -180,3 +180,38 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
 .saver-min{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .saver-min input{width:5.5em;padding:6px 8px;border-radius:8px;border:1px solid var(--line,#444);background:transparent;color:inherit;font:inherit}
 .saver-min small{margin:0;flex-basis:100%}
+
+/* H28: API Keys (sec_keys.js) */
+.key-note { display: block; }
+.key-readme-link { color: var(--accent); white-space: nowrap; }
+.key-row { padding: 14px 16px; margin-top: 10px; }
+.key-row.key-focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--hi); }
+.key-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.key-label { font-size: 1.02rem; }
+.key-name { font-size: .78rem; color: var(--muted); background: var(--line); padding: 1px 7px; border-radius: 6px; }
+.key-get { margin-left: auto; color: var(--accent); font-size: .88rem; text-decoration: none; }
+.key-get:hover { text-decoration: underline; }
+.card p.key-hint { color: var(--muted); font-size: .84rem; margin: 4px 0 8px; }
+.key-line { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.key-input { flex: 1 1 220px; min-width: 0; min-height: 44px; padding: 8px 12px; border-radius: 12px;
+  border: 2px solid var(--line); background: var(--bg); color: var(--text); font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.key-input:focus { outline: none; border-color: var(--accent); }
+.key-newname { flex: 0 1 170px; }
+.key-btn { min-height: 44px; min-width: 44px; padding: 0 14px; border-radius: 12px; border: 2px solid var(--line);
+  background: var(--card); cursor: pointer; font-weight: 600; transition: transform .18s cubic-bezier(.34,1.56,.64,1); }
+.key-btn:hover:not(:disabled) { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+.key-btn:active:not(:disabled) { transform: scale(.93, .9); }
+.key-btn:disabled { opacity: .45; cursor: default; }
+.key-btn.on { border-color: var(--accent); background: var(--hi); }
+.key-save:not(:disabled) { background: var(--accent); border-color: var(--accent); color: #0b0d12; }
+.key-del:not(:disabled):hover { border-color: #f87171; color: #f87171; }
+.card p.key-out { margin: 6px 0 0; min-height: 1.3em; font-size: .88rem; font-weight: 600; color: var(--muted); }
+.card p.key-out.ok { color: #34d399; } .card p.key-out.bad { color: #f87171; }
+.card p.key-out:empty { display: none; }
+.key-guide { margin-top: 10px; }
+.key-readme { white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  max-height: 60vh; overflow: auto; margin: 0; padding: 12px; border-radius: 10px; background: var(--bg); }
+@media (max-width: 699px) {
+  .key-line .key-input { flex-basis: 100%; }
+  .key-btn { flex: 1 1 0; }
+}

@@ -1,7 +1,7 @@
 # Settings (apps/system/settings/)
 
 Hub settings app. Opens from the Hub menu's **Settings** row (a window in Desktop mode,
-full screen on phone). Deep links: `apps/system/settings/#wallpaper`, `#desktop`, `#sizes`, `#look`, `#howto`, `#about`.
+full screen on phone). Deep links: `apps/system/settings/#wallpaper`, `#desktop`, `#sizes`, `#look`, `#keys` (H28; `#keys/<name>` jumps to that key's row), `#howto`, `#about`.
 
 | File | What |
 |---|---|
@@ -13,6 +13,7 @@ full screen on phone). Deep links: `apps/system/settings/#wallpaper`, `#desktop`
 | sec_desktop.js | Auto / Desktop / Phone mode, Open windows maximised (`openMax`, R51, default on), Show Files on the desktop (`showFiles`, H7, default on; hides the Files icon pane on the Desktop home), Start-on-hover, busy meter, Screen saver minutes 0–240, 0 = Off, unset 5 (`saverIdle`, R49b) + Second hand Smooth / Quartz / Off (`saverSec`, R49c, Preview when the Hub's `HubSaver` is reachable) |
 | sec_sizes.js | Taskbar position bottom/top, size 32/40/48, title bar 24/28/34 |
 | sec_look.js | Accent, Dark/Light, animations On/Reduced/Off |
+| sec_keys.js | H28 API Keys: one row per key from `hub/core/hub_keys.js` (`HubKeys.KNOWN`: tavily, gemini, openai_base, openai_key, ollama_url) + custom keys; masked input + reveal, Save, Test (Tavily /usage, Gemini model list, Ollama /api/tags, OpenAI-compatible /models), Delete; Add custom key; the keys guide `hub/keys.readme.md` folded at the bottom. Stored in `sites-hub.keys` (JSON), only in this browser |
 | sec_howto.js | How-to: plain help on the Hub, desktop, windows, taskbar, copies, modes, phone, updates, privacy / tech |
 | sec_about.js | About: Credit, Current release (date from hub/version.txt), Release date, Check for update, GitHub contact / issues |
 
