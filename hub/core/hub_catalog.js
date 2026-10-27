@@ -114,6 +114,7 @@ Local AI Chat,      local-ai-chat/,               , , AI
 Story,              story/,                       , , AI
 LLM Calculator,     llm-calc/,                    , , AI
 ONNX Runner,        onnx-runner/,                 , , AI
+Harness,            harness/,                     , , AI
 
 Sketchbook,         sketchbook/,                  , , Tools
 Code Lab,           code-lab/,                    , , Tools
