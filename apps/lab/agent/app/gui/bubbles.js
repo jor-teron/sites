@@ -1,7 +1,8 @@
 /* Agent — app/gui/bubbles.js: chat views (HR.view). bubble(m) -> {paint(live), el} for user / assistant messages:
    plain text with ``` code blocks, folded Thinking box (<think>…</think> or Ollama 'thinking'), stats line, tool-call chips.
    tool(m) -> {done(ok,text,ms)}: folded 🔧 chip with args + result preview. note(text, cls), hello() (+ folder hint, HR4), errorCard(e) (Ollama help; HR6 online provider key / URL errors;
-   AG2 kind 'download' -> the Browser model card, HR.bcard). AG5: each user / assistant bubble gets HR.edit actions.
+   AG2 kind 'download' -> the Browser model card, HR.bcard). AG5: each user / assistant bubble gets HR.edit actions. AG9: Show thinking live (thinkLive) keeps the Thinking box open
+   while thinking streams and folds it when the answer starts (a tap on it leaves it to the user).
    AG7: tool(m).live(text) streams shell output into the chip; write_file chips get ↶ Undo write (undoBtn, HR.trash). */
 HR.view = (function () {
   var log;
@@ -19,6 +20,8 @@ HR.view = (function () {
     var b = el('div', 'msg ' + m.role), think = el('details', 'think'), sum = el('summary', null, 'Thinking'),
       tb = el('div', 'think-body'), body = el('div', 'body'), calls = el('div', 'calls'), stat = el('div', 'stat');
     think.append(sum, tb); think.hidden = true;
+    var auto = 0, user = false;   /* AG9 thinkLive: 1 = we opened it while thinking streams; a tap on the summary hands control to the user */
+    sum.addEventListener('click', function () { user = true; });
     if (m.role === 'assistant') b.append(think);
     b.append(body, calls, stat); log.appendChild(b);
     function paint(live) {
@@ -28,6 +31,11 @@ HR.view = (function () {
       var thinkingNow = !!live && (sp.open || (!!m.thinkField && !sp.content));
       think.hidden = !th; tb.textContent = th; think.classList.toggle('live', thinkingNow);
       sum.textContent = thinkingNow ? 'Thinking…' : 'Thinking · ' + th.length + ' chars';
+      if (HR.set.get('thinkLive') !== 'off' && !user) {
+        if (thinkingNow && !think.open) { think.open = true; auto = 1; }
+        else if (!thinkingNow && auto) { think.open = false; auto = 0; }
+        if (thinkingNow) tb.scrollTop = tb.scrollHeight;
+      }
       var tc = m.tool_calls || [];
       rich(body, m.content || (live || tc.length ? '' : '(empty reply)'));
       if (live && !m.content && !th) body.appendChild(el('span', 'dots', '•••'));
@@ -91,7 +99,7 @@ HR.view = (function () {
   function errorCard(e) {
     if (e && e.kind === 'download') { if (HR.bcard) HR.bcard.show(); return; }
     clearErrors(); var h = log.querySelector('.hello'); if (h) h.remove();
-    var base = HR.set.get('baseUrl'), origin = location.origin === 'null' ? '*' : location.origin;
+    var base = HR.models.base('ollama'), origin = location.origin === 'null' ? '*' : location.origin;
     var c = el('div', 'ecard'), t = el('div', 'ec-t'), p = el('div', 'ec-b');
     var prov = HR.models.id(), lab = HR.models.current().label;
     if (prov !== 'ollama' && e.kind !== 'abort') {

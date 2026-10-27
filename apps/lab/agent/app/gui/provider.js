@@ -3,22 +3,23 @@
    Keys live in localStorage 'agent.keys' per host (this device only; sent only to that provider). Changes reload models.
    AG2: Browser (built-in Story Mini, app/models/browser.js) has no fields here; its status / Remove are in app/gui/browsercard.js.
    Panels follow the chosen provider, not a session fallback. AG5: this is the default for new chats (HR.models.def());
-   changing it here also moves the open chat to it. */
+   changing it here also moves the open chat to it. AG9: rows using a Hub key show "From Hub ✓" (app/gui/hubrows.js). */
 HR.provider = (function () {
   var PRE = [['OpenAI', 'https://api.openai.com/v1', 'gpt-4o-mini'], ['Groq', 'https://api.groq.com/openai/v1', 'llama-3.3-70b-versatile'],
-    ['OpenRouter', 'https://openrouter.ai/api/v1', 'openai/gpt-4o-mini']];
+    ['OpenRouter', 'https://openrouter.ai/api/v1', 'openai/gpt-4o-mini'], ['DeepSeek', 'https://api.deepseek.com', 'deepseek-chat'], ['xAI', 'https://api.x.ai/v1', 'grok-4']];   /* AG9: + DeepSeek, xAI (Hub keys deepseek / xai) */
   var dirty = false, $ = function (id) { return document.getElementById(id); };
   function host(b) { try { return new URL(b).host; } catch (e) { return b; } }
   function draw() {
     var p = HR.models.def(), on = p !== 'ollama' && p !== 'browser', b = HR.models.base(p);
     $('provOllama').hidden = p !== 'ollama'; $('provOnline').hidden = !on;
     $('provOA').hidden = p !== 'openai';
-    if (!on) return;
+    if (!on) { HR.hubRows.paint(); return; }
     $('setOABase').value = HR.set.get('openaiBase') || PRE[0][1];
-    $('setKey').value = HR.models.getKey(p, b);
+    $('setKey').value = HR.models.localKey(p, b);   /* AG9: never show a Hub key */
     $('setModelName').value = HR.set.get(p + 'Model') || '';
     $('setModelName').placeholder = 'Model (optional, else pick from the list) e.g. ' + (p === 'gemini' ? 'gemini-2.5-flash' : (PRE.filter(function (x) { return x[1] === b; })[0] || PRE[0])[2]);
     $('keyNote').textContent = '🔒 Your API key is stored only in this browser on this device (localStorage) and is sent only to ' + host(b) + '. Clear the field to remove it.';
+    HR.hubRows.paint();
   }
   function saveBase(v) { v = String(v || '').trim().replace(/\/+$/, '') || PRE[0][1]; if (!/^https?:\/\//.test(v)) v = 'https://' + v; if (v !== HR.set.get('openaiBase')) { HR.set.put('openaiBase', v); dirty = true; } }
   function init() {

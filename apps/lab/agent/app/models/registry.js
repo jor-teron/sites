@@ -5,7 +5,8 @@
    'openai' | 'gemini' | 'browser' (AG2), openaiBase, model per provider. fallback(on): use 'browser' for this page session
    while the chosen provider can't be used (unreachable / no key); id() is the provider in use, chosen() the saved one.
    AG5: setChat(p, m) — the open chat's own provider + model (HR.chats); chosen() is the chat's provider when set, else the
-   Settings default; chatModel() the chat's model for that provider ('' = default). Settings provider = default for new chats. API keys: localStorage 'agent.keys' {host|'gemini': key} — this device only. */
+   Settings default; chatModel() the chat's model for that provider ('' = default). Settings provider = default for new chats. API keys: localStorage 'agent.keys' {host|'gemini': key} — this device only.
+   AG9: inside the Hub, HR.hubKeys values come first (ollama_url, openai_base, gemini / openai_key / groq / openrouter / deepseek / xai); local = fallback. */
 HR.models = (function () {
   var reg = {}, KEYS = 'agent.keys', over = '', chat = { p: '', m: '' };
   var OPENAI = 'https://api.openai.com/v1', GEMINI = 'https://generativelanguage.googleapis.com/v1beta';
@@ -19,12 +20,17 @@ HR.models = (function () {
   function current() { return reg[id()]; }
   function keys() { try { return JSON.parse(localStorage.getItem(KEYS) || '{}') || {}; } catch (e) { return {}; } }
   function keySlot(p, base) { if (p === 'gemini') return 'gemini'; try { return new URL(base).host; } catch (e) { return base; } }
-  function getKey(p, base) { return keys()[keySlot(p, base)] || ''; }
+  function hubKey(p, base) { var n = HR.hubKeys ? HR.hubKeys.forProvider(p, base) : ''; return n ? HR.hubKeys.val(n) : ''; }   /* AG9: Hub first */
+  function getKey(p, base) { return hubKey(p, base) || keys()[keySlot(p, base)] || ''; }
+  function localKey(p, base) { return keys()[keySlot(p, base)] || ''; }
   function setKey(p, base, v) { var k = keys(), s = keySlot(p, base); if (v) k[s] = v; else delete k[s]; try { localStorage.setItem(KEYS, JSON.stringify(k)); } catch (e) {} }
-  function base(p) { p = p || id(); return p === 'ollama' ? HR.set.get('baseUrl') : p === 'browser' ? 'this browser' : p === 'gemini' ? GEMINI : (HR.set.get('openaiBase') || OPENAI); }
+  function hv(n) { return HR.hubKeys ? HR.hubKeys.val(n).replace(/\/+$/, '') : ''; }
+  function base(p) { p = p || id(); return p === 'ollama' ? hv('ollama_url') || HR.set.get('baseUrl') : p === 'browser' ? 'this browser' : p === 'gemini' ? GEMINI : oaBase(); }
+  /* AG9: a named preset (Groq / OpenRouter / DeepSeek / xAI) keeps its own base (its Hub key still applies); otherwise the Hub's openai_base wins */
+  function oaBase() { var lb = HR.set.get('openaiBase') || OPENAI; return HR.hubKeys && HR.hubKeys.named(lb) ? lb : hv('openai_base') || lb; }
   function cfg() { var p = id(), b = base(p), online = p !== 'ollama' && p !== 'browser';
     return { provider: p, base: b, key: online ? getKey(p, b) : '', typed: online ? (HR.set.get(p + 'Model') || '').trim() : '' }; }
   function modelKey() { var p = id(); return p === 'ollama' ? 'model' : 'model_' + p; }
-  return { register: register, current: current, id: id, chosen: chosen, def: def, setChat: setChat, chatModel: chatModel, fallback: fallback, fallen: function () { return !!over; }, cfg: cfg, base: base, getKey: getKey, setKey: setKey, keySlot: keySlot, modelKey: modelKey,
+  return { register: register, current: current, id: id, chosen: chosen, def: def, setChat: setChat, chatModel: chatModel, fallback: fallback, fallen: function () { return !!over; }, cfg: cfg, base: base, getKey: getKey, localKey: localKey, setKey: setKey, keySlot: keySlot, modelKey: modelKey,
     all: function () { return Object.keys(reg).map(function (k) { return reg[k]; }); } };
 })();

@@ -1,4 +1,4 @@
-/* Agent — app/main.js (AG8: also registers agent_sw.js): HR.notify (Hub cards) and boot.
+/* Agent — app/main.js (AG8: also registers agent_sw.js; AG9: boots after HR.hubKeys.load()): HR.notify (Hub cards) and boot.
    HR.notify({icon,title,text,onClick,timeoutMs}) -> {close(), update(text)}: inside the Hub uses
    window.top.HubNotify.notice; standalone / Hub unreachable -> small local card bottom-right (✕, ~5 s, max 3). Never toasts.
    AG4: HR.chats.init runs once HR.folder.init settles (so the last chat is read from the folder when it is connected). */
@@ -29,8 +29,9 @@ HR.notify = (function () {
   };
 })();
 var AGENT_VER = (function () { try { return new URL(document.currentScript.src).searchParams.get('v') || 'dev'; } catch (e) { return 'dev'; } })();
-(function () {
-  HR.set.applyTheme();
+HR.set.applyTheme();
+/* AG9: read the Hub's keys first (in-memory only; at most 1.5 s), then boot */
+Promise.race([HR.hubKeys.load().catch(function () {}), new Promise(function (r) { setTimeout(r, 1500); })]).then(function () {
   HR.set.init();
   HR.set.applyDisplay();
   HR.steps.init();
@@ -42,9 +43,10 @@ var AGENT_VER = (function () { try { return new URL(document.currentScript.src).
   HR.model.init();
   HR.meter.init();
   HR.usageView.init();
+  HR.hubRows.init();
   Promise.resolve(folder).catch(function () {}).then(HR.chats.init);   /* AG4: chats after the folder handle is known */
   HR.chatSearch.init();
   /* AG8: Agent's own offline service worker, scope apps/lab/agent/ (agent_sw.js); version = this script's ?v= tag */
   if ('serviceWorker' in navigator && location.protocol !== 'file:')
     navigator.serviceWorker.register('agent_sw.js?v=' + AGENT_VER, { scope: './', updateViaCache: 'none' }).catch(function () {});
-})();
+});

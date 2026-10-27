@@ -8,7 +8,7 @@
    401 / 429 / 432 / 433 -> a clear error card in the chat (HR.view.infoCard) and an error result for the model. */
 HR.web = (function () {
   var API = 'https://api.tavily.com', LIMIT = 8000;
-  function key() { return String(HR.set.get('tavilyKey') || '').trim(); }
+  function key() { return (HR.hubKeys && HR.hubKeys.val('tavily')) || String(HR.set.get('tavilyKey') || '').trim(); }   /* AG9: Hub key first */
   function ready() { return !!key() && HR.set.get('allowWeb') !== 'off'; }
   function depth() { return HR.set.get('webDepth') === 'advanced' ? 'advanced' : 'basic'; }
   function card(st, msg) {

@@ -93,3 +93,7 @@
 .us-t th:first-child,.us-t td:first-child{text-align:left}.us-m{word-break:break-all}.us-tot td{font-weight:600;border-bottom:0}
 .us-price td{text-align:left;color:var(--mut)}.us-in{width:96px;height:26px;margin:0 6px 0 0}
 .us-h.warn{color:var(--warn)}
+/* AG9 Settings rows using a Hub key (app/gui/hubrows.js) */
+.hubrow{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:4px 0 6px;font-size:13px}.hubrow[hidden]{display:none}
+.hub-ok{color:var(--ok);font-weight:600}.hub-no{color:var(--mut)}.hb.hub-open{height:30px;font-size:13px}
+.inp:disabled{opacity:.6;cursor:not-allowed}

@@ -12,10 +12,12 @@
    AG5 Display: tokenMeter 'on' (default), ctxMax (context size fallback when the provider doesn't report one, default 8192).
    AG7: liveShell 'off' (default; 'on' streams run_shell output via the helper's /run_stream, Stop kills the command),
    AG6 Web: allowWeb 'on' (default; tools still hidden until tavilyKey is set), tavilyKey (localStorage only), webDepth 'basic' | 'advanced'.
+   AG9: thinkLive 'on' (default; Thinking box open while thinking streams, folds when the answer starts); showSteps now
+   defaults 'off' (only for people with no saved choice — saved values always win via all()).
    prices {'provider|model': {in, out}} $ per 1M tokens (Settings → Usage, app/gui/usageview.js). */
 HR.set = (function () {
   var KEY = 'agent.settings', DEF = { theme: 'dark', baseUrl: 'http://localhost:11434', model: '', think: 'auto', tools: 'on', maxSteps: 8, saveChats: 'on', helper: 'off', helperUrl: 'http://127.0.0.1:11500', helperToken: '', provider: 'ollama', openaiBase: 'https://api.openai.com/v1', browserModel: '',
-    autoWrite: 'off', autoShell: 'off', allowWrite: 'on', allowShell: 'on', memory: 'on', showThink: 'on', showSteps: 'on', notifyLong: 'on', tokenMeter: 'on', ctxMax: 8192, liveShell: 'off', prices: {}, allowWeb: 'on', tavilyKey: '', webDepth: 'basic' };
+    autoWrite: 'off', autoShell: 'off', allowWrite: 'on', allowShell: 'on', memory: 'on', showThink: 'on', showSteps: 'off', thinkLive: 'on', notifyLong: 'on', tokenMeter: 'on', ctxMax: 8192, liveShell: 'off', prices: {}, allowWeb: 'on', tavilyKey: '', webDepth: 'basic' };
   function all() { var s = {}; try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { s = {}; } return Object.assign({}, DEF, s); }
   function get(k) { return all()[k]; }
   function put(k, v) { var s = all(); s[k] = v; try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* memory only */ } }
@@ -45,7 +47,7 @@ HR.set = (function () {
     seg('setTheme', 'theme', [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']], applyTheme);
     seg('setThink', 'think', [['auto', 'Auto'], ['on', 'On'], ['off', 'Off']]);
     seg('setTools', 'tools', OO);
-    ['autoWrite', 'autoShell', 'allowWrite', 'allowShell', 'memory', 'showThink', 'showSteps', 'notifyLong', 'tokenMeter', 'liveShell', 'allowWeb'].forEach(function (k) {
+    ['autoWrite', 'autoShell', 'allowWrite', 'allowShell', 'memory', 'showThink', 'thinkLive', 'showSteps', 'notifyLong', 'tokenMeter', 'liveShell', 'allowWeb'].forEach(function (k) {
       seg('set_' + k, k, OO, applyDisplay);
     });
     applyDisplay();
@@ -55,6 +57,7 @@ HR.set = (function () {
     seg('setHelper', 'helper', [['on', 'On'], ['off', 'Off']], function () { HR.helper.test(); });
     document.getElementById('setSteps').value = maxSteps(); document.getElementById('setCtx').value = ctxMax();
     var u = document.getElementById('setBase'); u.value = get('baseUrl');
+    if (HR.hubRows) HR.hubRows.paint();   /* AG9 */
     document.getElementById('setOrigin').textContent = location.origin === 'null' ? 'file:// (use "*" or serve over http)' : location.origin;
   }
   function ctxMax() { var v = parseInt(get('ctxMax'), 10); return Math.max(512, Math.min(2000000, isNaN(v) ? 8192 : v)); }
@@ -71,6 +74,7 @@ HR.set = (function () {
     document.getElementById('setClose').onclick = function () { dlg.close(); };
     dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
     dlg.addEventListener('close', function () {
+      if (u.disabled) return;   /* AG9: Hub ollama_url in use */
       var v = u.value.trim().replace(/\/+$/, '') || DEF.baseUrl; if (!/^https?:\/\//.test(v)) v = 'http://' + v;
       if (v !== get('baseUrl')) { put('baseUrl', v); HR.model.load(); }
     });
