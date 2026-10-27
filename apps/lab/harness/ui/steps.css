@@ -20,3 +20,4 @@
 @keyframes sheet{0%{transform:translateY(40%);opacity:0}100%{transform:none;opacity:1}}
 @media(min-width:960px){.steps{width:340px;flex:none}}
 @media(min-width:1600px){.steps{width:380px}}
+.st-note{font-size:12px;color:var(--mut);padding:2px 8px;border-left:3px solid var(--line)}

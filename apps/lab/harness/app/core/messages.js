@@ -1,5 +1,6 @@
 /* Harness — app/core/messages.js: chat history (HR.msgs) kept in memory and mirrored to sessionStorage
-   ('harness.history', cleared when the tab closes). Message: {role:'user'|'assistant', content, thinking, stats, error}.
+   ('harness.history', cleared when the tab closes). Message: {role:'user'|'assistant'|'tool', content, thinking, stats, error,
+   tool_calls (assistant, HR2), tool_name / args / ok / ms (tool result, HR2)}.
    splitThink(text) moves <think>…</think> (also an unclosed <think> while streaming) out of the visible text. */
 window.HR = window.HR || {};
 HR.msgs = (function () {
@@ -11,8 +12,13 @@ HR.msgs = (function () {
   function all() { return list; }
   /* What the model sees: role + content only, no failed/empty replies */
   function toApi() {
-    return list.filter(function (m) { return !m.error && (m.role === 'user' || m.content); })
-      .map(function (m) { return { role: m.role, content: m.content }; });
+    return list.filter(function (m) { return !m.error && (m.role !== 'assistant' || m.content || (m.tool_calls && m.tool_calls.length)); })
+      .map(function (m) {
+        var o = { role: m.role, content: m.content || '' };
+        if (m.tool_calls && m.tool_calls.length) o.tool_calls = m.tool_calls;
+        if (m.role === 'tool') o.tool_name = m.tool_name;
+        return o;
+      });
   }
   function splitThink(text) {
     var think = '', out = '', s = String(text || ''), re = /<think>([\s\S]*?)(<\/think>|$)/g, last = 0, m;

@@ -1,9 +1,10 @@
 /* Harness — app/gui/settings.js: settings in localStorage 'harness.settings' and the Settings dialog.
    theme 'dark' (default) | 'light' | 'system' (follows the Hub's Dark / Light live via shared/theme/hub_theme.js);
    written as html[data-ht] so hub_theme.js (class / data-theme / color-scheme) never fights it; Hub accent used when set.
-   baseUrl (default http://localhost:11434), model (last picked), think 'auto' | 'on' | 'off' (Ollama "think" field). */
+   baseUrl (default http://localhost:11434), model (last picked), think 'auto' | 'on' | 'off' (Ollama "think" field),
+   tools 'on' (default) | 'off' (HR2: offer tools to the model), maxSteps 1–30 model calls per turn (default 8). */
 HR.set = (function () {
-  var KEY = 'harness.settings', DEF = { theme: 'dark', baseUrl: 'http://localhost:11434', model: '', think: 'auto' };
+  var KEY = 'harness.settings', DEF = { theme: 'dark', baseUrl: 'http://localhost:11434', model: '', think: 'auto', tools: 'on', maxSteps: 8 };
   function all() { var s = {}; try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { s = {}; } return Object.assign({}, DEF, s); }
   function get(k) { return all()[k]; }
   function put(k, v) { var s = all(); s[k] = v; try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* memory only */ } }
@@ -25,10 +26,15 @@ HR.set = (function () {
   function draw() {
     seg('setTheme', 'theme', [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']], applyTheme);
     seg('setThink', 'think', [['auto', 'Auto'], ['on', 'On'], ['off', 'Off']]);
+    seg('setTools', 'tools', [['on', 'On'], ['off', 'Off']]);
+    document.getElementById('setSteps').value = maxSteps();
     var u = document.getElementById('setBase'); u.value = get('baseUrl');
     document.getElementById('setOrigin').textContent = location.origin === 'null' ? 'file:// (use "*" or serve over http)' : location.origin;
   }
+  function maxSteps() { var v = parseInt(get('maxSteps'), 10); return Math.max(1, Math.min(30, isNaN(v) ? 8 : v)); }
   function init() {
+    var st = document.getElementById('setSteps');
+    st.addEventListener('change', function () { put('maxSteps', Math.max(1, Math.min(30, parseInt(st.value, 10) || 8))); st.value = maxSteps(); });
     var dlg = document.getElementById('settings'), u = document.getElementById('setBase');
     document.getElementById('btnSet').onclick = function () { draw(); dlg.showModal(); };
     document.getElementById('setClose').onclick = function () { dlg.close(); };
@@ -38,5 +44,5 @@ HR.set = (function () {
       if (v !== get('baseUrl')) { put('baseUrl', v); HR.model.load(); }
     });
   }
-  return { get: get, put: put, applyTheme: applyTheme, init: init };
+  return { get: get, put: put, maxSteps: maxSteps, applyTheme: applyTheme, init: init };
 })();
