@@ -133,9 +133,10 @@ ul.list li:last-child{border-bottom:0}
 .sd-moon{filter:drop-shadow(0 0 4px #bcd3ff99)}
 .sd-moon-dark{fill:#cfd4dc;fill-opacity:.18;stroke:#cfd4dc;stroke-opacity:.7;stroke-width:1.2}.sd-moon-lit{fill:#cfd4dc}
 [data-theme=dark] .sd-moon-lit{fill:#dde2ea}[data-theme=dark] .sd-moon{filter:drop-shadow(0 0 5px #9fc2ffaa)}
-/* PD8 News */
+/* PD8 News (PD8.1 minimal: places, add input) */
 .nw-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
-.nw-seg{gap:6px}
+.nw-seg{gap:6px;flex-wrap:wrap}.nw-x{padding:2px 8px;margin-left:-4px}
+.nw-add{display:flex;gap:6px;margin-bottom:8px}.nw-add input{flex:1;min-width:0;min-height:34px}
 .btn.spin{animation:nwspin 1s linear infinite}@keyframes nwspin{to{transform:rotate(360deg)}}
 .nw-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .nw-list li{animation:pop .4s cubic-bezier(.34,1.8,.64,1) both}
