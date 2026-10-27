@@ -61,6 +61,7 @@ TV,              ../../tv/,        , , Watch
 Draw,            draw/,            , , Draw & Paint
 Photo Editor v2, photo-editor-v2/, , , Photo
 Camera,          camera/,          , , Photo
+Gallery,         gallery/,         , , Photo
 Sound Recorder,  sound-recorder/,  , , Audio
 3D Viewer,       3d-viewer/,       , , 3D
 News,            news/,            , , Read

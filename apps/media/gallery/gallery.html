@@ -2,40 +2,55 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Photo Viewer</title>
-  <link rel="stylesheet" href="gallery.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Gallery GA1</title>
+  <script>/* theme early to avoid flash */try{var p=JSON.parse(localStorage.getItem('gallery-settings-v1')||'{}').theme||'dark',h=localStorage.getItem('sites-hub.theme');if(p==='dark'||(p==='system'&&(h?h==='dark':matchMedia('(prefers-color-scheme: dark)').matches)))document.documentElement.classList.add('dark');}catch(e){document.documentElement.classList.add('dark');}</script>
+  <link rel="stylesheet" href="gallery.css?v=GA1">
 </head>
 <body>
-  <header class="bar">
-    <h1>Photos</h1>
-    <div class="actions">
-      <label class="btn">
-        Add photos
-        <input id="file-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" multiple>
-      </label>
-      <button type="button" id="clear-btn" class="btn ghost">Clear</button>
-    </div>
-  </header>
-
-  <main id="grid" class="grid" aria-label="Photo grid">
-    <p class="empty" id="empty">Add photos to start</p>
-  </main>
-
-  <div id="viewer" class="viewer" hidden>
-    <button type="button" id="close-btn" class="icon-btn close" aria-label="Close">×</button>
-    <button type="button" id="prev-btn" class="icon-btn nav prev" aria-label="Previous">‹</button>
-    <div class="stage">
-      <img id="full-photo" alt="">
-    </div>
-    <button type="button" id="next-btn" class="icon-btn nav next" aria-label="Next">›</button>
-    <div class="meta">
-      <span id="photo-name"></span>
-      <span id="photo-count"></span>
-    </div>
+<div id="app">
+  <div id="track">
+    <section class="pane" id="pane-gal">
+      <div class="bar">
+        <span id="count" class="mut ell">No photos</span><span class="sp"></span>
+        <button id="reopen-btn" class="btn" hidden></button>
+        <button id="files-btn" class="btn">Files</button>
+        <button id="folder-btn" class="btn acc">Open folder</button>
+      </div>
+      <div id="empty" class="drop"><p><b>Open a folder of photos</b><br><span class="mut">or pick files / drop them here — nothing is uploaded</span></p></div>
+      <div id="gal" class="cols-m"></div>
+    </section>
+    <section class="pane" id="pane-set">
+      <div class="set">
+        <h2>Settings</h2>
+        <div class="field"><div class="lbl">Theme</div><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+        <div class="field"><div class="lbl">Thumbnail size</div><div class="seg" data-key="cols"><button data-v="s">Small</button><button data-v="m">Medium</button><button data-v="l">Large</button></div></div>
+        <div class="field"><div class="lbl">Sort</div><div class="seg" data-key="sort"><button data-v="date-desc">Newest</button><button data-v="date-asc">Oldest</button><button data-v="name">Name</button></div></div>
+        <div class="field"><div class="lbl">Group by month</div><div class="seg" data-key="group"><button data-v="1">On</button><button data-v="0">Off</button></div></div>
+        <div class="field" id="forget-row" hidden><div class="lbl">Remembered folder</div><button id="forget-btn" class="btn">Forget</button></div>
+        <h2>About</h2>
+        <p><b>Gallery</b> <span class="mut">release GA1</span></p>
+        <p class="mut">Browse photos from a folder or files on this device. Photos are read locally and never uploaded; only settings (and, where the browser supports it, the last folder's permission handle) are stored.</p>
+        <p class="mut">Viewer: swipe or ←/→, pinch / double-tap / wheel to zoom, drag to pan, Esc to close.</p>
+      </div>
+    </section>
   </div>
-
-  <script src="gallery_config.js"></script>
-  <script src="gallery_logic.js"></script>
+  <div id="dots"><i></i><i></i></div>
+</div>
+<div id="viewer" hidden tabindex="-1">
+  <div id="v-stage"><img id="v-img" alt="" draggable="false"></div>
+  <div id="v-top"><div class="vi"><div id="v-name" class="ell"></div><div id="v-meta" class="mut"></div></div>
+    <button id="v-share" class="btn" hidden>Share</button><button id="v-dl" class="btn">Download</button><button id="v-close" class="btn">✕</button></div>
+  <button id="v-prev" class="nav" aria-label="Previous">‹</button><button id="v-next" class="nav" aria-label="Next">›</button>
+</div>
+<input type="file" id="files" accept="image/*" multiple hidden>
+<input type="file" id="dir" webkitdirectory multiple hidden>
+<div id="dialog" hidden><div class="dbox"><p id="dlg-t"></p><div class="row"><span class="sp"></span><button id="dlg-no" class="btn">Cancel</button><button id="dlg-ok" class="btn acc">OK</button></div></div></div>
+<div id="toast" hidden></div>
+<script src="gallery_save.js?v=GA1"></script>
+<script src="gallery_store.js?v=GA1"></script>
+<script src="gallery_grid.js?v=GA1"></script>
+<script src="gallery_viewer.js?v=GA1"></script>
+<script src="gallery_app.js?v=GA1"></script>
 </body>
 </html>
