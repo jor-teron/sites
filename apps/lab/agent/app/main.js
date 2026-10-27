@@ -30,6 +30,7 @@ HR.notify = (function () {
 (function () {
   HR.set.applyTheme();
   HR.set.init();
+  HR.set.applyDisplay();
   HR.steps.init();
   HR.chat.init();
   HR.folder.init();

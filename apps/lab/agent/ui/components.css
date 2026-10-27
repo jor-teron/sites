@@ -60,3 +60,8 @@
 /* AG2 Browser model download card */
 .dcard{border:1.5px solid var(--acc);border-radius:14px;background:var(--card);padding:10px 12px;animation:pop .35s cubic-bezier(.34,1.7,.64,1) both}
 .dbar{display:block;width:100%;height:8px;margin-top:8px;accent-color:var(--acc)}.dbar[hidden]{display:none}.dcard .ec-row[hidden]{display:none}
+/* AG3 Settings switches: label + On / Off with big tap targets */
+.grp{border-top:1px solid var(--line);padding-top:12px}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;font-size:14px}.sw small{color:var(--mut)}
+.dlg .seg .hb{height:40px;min-width:60px}
+.no-think .think{display:none!important}.no-steps .steps,.no-steps #btnSteps{display:none!important}

@@ -1,6 +1,6 @@
 /* Agent — app/core/prompt.js: system prompt + memory (HR4). HR.prompt.system() is read on every send / model call.
    With a folder: agent/prompts/system.md (created with DEFAULT on first use; edit it to change behaviour) plus the newest
-   ~800 chars of agent/memory.md. Without a folder: no system prompt (as in HR1–HR3). */
+   ~800 chars of agent/memory.md (AG3: left out when Settings → Memory is off). Without a folder: no system prompt. */
 HR.prompt = (function () {
   var SYS = 'agent/prompts/system.md', MEM = 'agent/memory.md', CAP = 800, making = null;
   var DEFAULT = '# Agent system prompt\n\n' +
@@ -29,7 +29,7 @@ HR.prompt = (function () {
   }
   async function system() {
     if (!HR.fs.ready()) return '';
-    try { var s = await base(), mem = trimMem(await readOr(MEM)); } catch (e) { return ''; }
+    try { var s = await base(), mem = HR.perms.memory() ? trimMem(await readOr(MEM)) : ''; } catch (e) { return ''; }
     return s + (mem ? '\n\n## Memory notes (agent/memory.md)\n' + mem : '');
   }
   return { system: system, MEM: MEM, SYS: SYS };

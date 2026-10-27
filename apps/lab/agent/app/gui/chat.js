@@ -3,9 +3,11 @@
    tool chips, notes and step rows. Stop aborts the in-flight model call and halts the loop. Errors -> HR.view.errorCard.
    HR4: system prompt from HR.prompt.system() on every call; user / assistant / tool lines go to HR.logs (daily Markdown).
    AG2: Browser provider (story model) -> tools, loop and system prompt off, one quiet note in Steps only; an unreachable
-   provider mid-chat -> HR.model.fall() switches to Browser; 'download' errors show the download card. */
+   provider mid-chat -> HR.model.fall() switches to Browser; 'download' errors show the download card.
+   AG3: auto-approve (HR.perms.auto) skips the card, sets info.auto and marks the step / chip / log 'auto';
+   one Hub card when a run that took >20 s finishes (Settings → Hub card, default on). */
 HR.chat = (function () {
-  var log, input, sendBtn, ctrl = null;
+  var log, input, sendBtn, ctrl = null, curTool = null, LONG = 20000;
   function busy(on) { sendBtn.textContent = on ? '■' : '➤'; sendBtn.title = on ? 'Stop' : 'Send'; sendBtn.setAttribute('aria-label', on ? 'Stop' : 'Send'); sendBtn.classList.toggle('stop', on); }
   function renderAll() {
     log.innerHTML = ''; var l = HR.msgs.all(); if (!l.length) HR.view.hello();
@@ -34,12 +36,17 @@ HR.chat = (function () {
     };
   }
   function toolStart(c) {
-    var m = { role: 'tool', tool_name: c.name, args: c.args }, chip = HR.view.tool(m), step = HR.steps.tool(c);
-    return { done: function (ok, text, ms) { chip.done(ok, text, ms); HR.logs.tool(c.name, c.args, ok, text, ms); step.finish(ok ? 'ok' : 'err', { result: text, ms: ms }); } };
+    var m = { role: 'tool', tool_name: c.name, args: c.args }, chip = HR.view.tool(m), step = HR.steps.tool(c), t = curTool = { auto: false };
+    return { done: function (ok, text, ms) {
+      if (curTool === t) curTool = null;
+      chip.done(ok, text, ms, t.auto); HR.logs.tool(c.name, c.args, ok, text, ms, t.auto); step.finish(ok ? 'ok' : 'err', { result: text, ms: ms, auto: t.auto }); } };
   }
   function note(t) { HR.view.note(t); HR.steps.note(t); HR.logs.note(t); }
   /* approve(info) is filled in by HR3 (app/gui/approve.js); default denies */
-  function approve(info) { return HR.approve ? HR.approve(info, ctrl && ctrl.signal) : Promise.resolve(false); }
+  function approve(info) {
+    if (HR.perms.auto(info.kind)) { info.auto = true; if (curTool) curTool.auto = true; return Promise.resolve(true); }
+    return HR.approve ? HR.approve(info, ctrl && ctrl.signal) : Promise.resolve(false);
+  }
   function send() {
     if (ctrl) { ctrl.abort(); return; }
     var text = input.value.trim(), model = HR.model.current();
@@ -52,9 +59,11 @@ HR.chat = (function () {
     var opts = { adapter: HR.models.current(), cfg: HR.models.cfg(), model: model, think: HR.set.get('think'), signal: ctrl.signal, maxSteps: HR.set.maxSteps(), useTools: HR.set.get('tools') !== 'off',
       system: HR.prompt.system, ui: { modelStart: modelStart, toolStart: toolStart, note: note, approve: approve } };
     if (opts.adapter.id === 'browser') { opts.useTools = false; opts.maxSteps = 1; opts.system = null; HR.steps.note('Browser model: tools and the loop are off (story model); it continues your text as a story.'); }
+    var t0 = Date.now();
     HR.loop.run(opts).then(function (r) {
+      var sec = (Date.now() - t0) / 1000;
       if (r.status === 'stop') note('■ Stopped.');
-      if (document.hidden && r.status !== 'stop') HR.notify({ icon: '🧪', title: 'Agent', text: 'Reply ready from ' + model, onClick: function () { window.focus(); } });
+      else if (sec * 1000 > LONG && HR.set.get('notifyLong') !== 'off') HR.notify({ icon: '🧪', title: 'Agent', text: 'Finished in ' + Math.round(sec) + ' s · ' + model, onClick: function () { window.focus(); } });
       return r;
     }, function (e) {
       if (e.kind === 'download') { HR.view.errorCard(e); return; }

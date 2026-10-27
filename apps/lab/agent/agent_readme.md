@@ -11,6 +11,7 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 - `app/core/migrate.js` — AG1 one-time carry-over from the old Harness names (storage keys, folder handle, `harness/` data folder)
 - `app/core/messages.js` — `HR.msgs`: history (memory + sessionStorage `agent.history`), roles user / assistant (+`tool_calls`) / tool, `toApi()`, `splitThink()`
 - `app/core/tools.js` — `HR.tools`: registry of `{name, description, parameters (JSON schema), where:'browser', run(args, ctx), available?}`, `schemas()` for Ollama
+- `app/core/perms.js` — AG3 `HR.perms`: Settings → Permissions (`allowed(tool)`, `auto(kind)`, `memory()`)
 - `app/core/loop.js` — `HR.loop.run()`: the one agent loop (model + tools → run tool calls → append `tool` results → repeat; step limit, Stop, no-tools retry)
 - `app/core/prompt.js` — `HR.prompt.system()`: `agent/prompts/system.md` (default created on first use) + newest ~800 chars of `agent/memory.md`, read on every call
 - `app/core/helper.js` — `HR.helper`: client for the bash helper (`/health` test, `/run`), status
@@ -58,6 +59,7 @@ Ollama only answers browser pages whose origin is in `OLLAMA_ORIGINS`. Example: 
 
 - **AG1** — Renamed Harness → Agent: folder `apps/lab/agent/`, `agent.html`, `agent_readme.md`, `agent_icon.png`, `helper/agent-helper.sh` (env `AGENT_*`, e.g. `AGENT_ORIGINS`; header `X-Agent-Token`), data folder `<folder>/agent/`, keys `agent.settings` / `agent.keys` / `agent.history`, IndexedDB `agent`. One-time migration copies the old `harness.*` values, the remembered folder handle and `<folder>/harness/**` files (missing ones only; old folder kept).
 - **AG2** — Built-in **Browser** provider (no Ollama, no API key): Story Mini = `onnx-community/TinyStories-3M-ONNX` (GPT-Neo, q8 `model_quantized.onnx` 17.0 MB + tokenizer 3.6 MB ≈ 20.6 MB from Hugging Face) on Agent's own Transformers.js 3.7.0 in `vendor/` (plain ORT wasm, 1 thread, no arena) inside a module Web Worker; tokens stream, Stop terminates the worker (the next send reloads from cache in about a second). Files live in Agent's own Cache API store `agent-browser-model`. Nothing downloads until you tap the card, which shows the sizes (≈ 33 MB once incl. the 12 MB engine, ~3 MB compressed) and progress; then it is remembered (`browserModel: 'ready'`). First start or an unreachable provider / missing key → Browser for this session with a quiet note (↻ retries the chosen provider). While Browser is in use tools, the loop and the system prompt are off (story model: it continues your last message), noted in Steps only. Settings → Browser model → Remove browser model frees the space.
+- **AG3** — Settings switches with big On / Off targets. **Permissions:** Auto-approve file writes (off), Auto-approve shell commands (off, separate; a warning line shows while on), Allow file writes (on; off removes `write_file` = read-only), Allow shell (on; off hides `run_shell` even with the helper connected), Memory (on; off hides `memory_read` / `memory_append` and leaves memory notes out of the system prompt). **Display:** Show thinking (on), Show steps pane (on; off hides the pane and ☰), Hub card when a long task finishes (on; one card only when the run took over 20 s, via `HR.notify` = `window.top.HubNotify.notice` in a try block, small local card as fallback; no start / progress cards). Auto-approved writes and commands still show in Steps, the tool chip and the daily log, marked `auto`.
 
 ## Roadmap
 - **HR1** — Chat skeleton with Ollama streaming, Thinking box, steps pane (done)
@@ -67,4 +69,6 @@ Ollama only answers browser pages whose origin is in `OLLAMA_ORIGINS`. Example: 
 - **HR5** — Bash helper on localhost: tiny local helper (token, optional origin allow-list) so the agent can run shell commands with approval (done; output returned when the command ends, not streamed)
 - **HR6** — Online models: OpenAI-compatible + Gemini adapters with streaming and tool calling (done)
 - **AG2** — Built-in Browser model (Story Mini, Transformers.js in a worker) with fallback (done)
+- **AG3** — Permissions and Display switches (done)
+- **AG4** — Multiple chats, memory layout (next)
 - **Later** — system prompt presets, export / import sessions, cost / token totals

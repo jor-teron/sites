@@ -1,7 +1,8 @@
 /* Agent — app/gui/steps.js: steps pane. One row per model call (🧠) and per tool call (🔧), plus notes (ℹ).
    Tap a row to expand: model -> request (base, model, messages, tools offered, last user text, think) and response
    (chars, thinking, tokens, tok/s, tool calls, done reason, error); tool -> args, result preview, ms. Newest on top.
-   Phone: pane is a sheet toggled by the ☰ button; big screens: side pane, ☰ collapses it. */
+   Phone: pane is a sheet toggled by the ☰ button; big screens: side pane, ☰ collapses it.
+   AG3: auto-approved tool rows show "auto" (res.auto); Settings → Show steps pane off hides pane + ☰ (body.no-steps). */
 HR.steps = (function () {
   var host, count, n = 0, rows = 0;
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
@@ -18,7 +19,7 @@ HR.steps = (function () {
       s.status = status; s.ms = res && res.ms != null ? res.ms : performance.now() - s.t0; Object.assign(s.res, res || {});
       r.className = 'st-row ' + status;
       var sec = s.ms < 1000 ? Math.round(s.ms) + ' ms' : (s.ms / 1000).toFixed(1) + ' s';
-      stat.textContent = (status === 'ok' ? '✓ ' : status === 'stop' ? '■ ' : '✕ ') + sec + (s.res.tps ? ' · ' + s.res.tps.toFixed(1) + ' tok/s' : '');
+      stat.textContent = (status === 'ok' ? '✓ ' : status === 'stop' ? '■ ' : '✕ ') + sec + (s.res.tps ? ' · ' + s.res.tps.toFixed(1) + ' tok/s' : '') + (s.res.auto ? ' · auto' : '');
       if (!body.hidden) draw();
     };
     rows++; host.prepend(r); count.textContent = rows;
@@ -41,7 +42,7 @@ HR.steps = (function () {
     return row('🔧', c.name + ' ' + cut(c.args || {}, 40), function (body, s) {
       var a = el('dl', 'st-dl');
       kv(a, 'where', 'browser'); kv(a, 'args', cut(c.args || {}, 600)); kv(a, 'status', s.status);
-      kv(a, 'time', s.ms != null ? Math.round(s.ms) + ' ms' : ''); kv(a, 'result', cut(s.res.result || '', 600));
+      kv(a, 'time', s.ms != null ? Math.round(s.ms) + ' ms' : ''); kv(a, 'approval', s.res.auto ? 'auto (Settings → Permissions)' : ''); kv(a, 'result', cut(s.res.result || '', 600));
       body.appendChild(a);
     });
   }

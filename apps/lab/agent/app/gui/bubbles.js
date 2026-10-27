@@ -40,9 +40,9 @@ HR.view = (function () {
   function tool(m) {
     var d = el('details', 'tool run'), s = el('summary', null, '🔧 ' + m.tool_name + ' · running…'), pre = el('pre', 'tool-body');
     d.append(s, pre); log.appendChild(d);
-    function done(ok, text, ms) {
+    function done(ok, text, ms, auto) {
       d.className = 'tool ' + (ok ? 'ok' : 'err');
-      s.textContent = '🔧 ' + m.tool_name + ' ' + (ok ? '✓' : '✕') + ' · ' + Math.round(ms) + ' ms · ' + short(text.replace(/\s+/g, ' '), 70);
+      s.textContent = '🔧 ' + m.tool_name + ' ' + (ok ? '✓' : '✕') + ' · ' + Math.round(ms) + ' ms' + (auto ? ' · auto' : '') + ' · ' + short(text.replace(/\s+/g, ' '), 70);
       pre.textContent = 'args: ' + JSON.stringify(m.args || {}) + '\n\n' + short(text, 2000);
       bottom();
     }

@@ -6,9 +6,12 @@
    saveChats 'on' (default) | 'off' (HR4: daily Markdown logs in the folder),
    helper 'off' (default) | 'on', helperUrl, helperToken (HR5 bash helper; see app/gui/helperset.js),
    provider 'ollama' (default) | 'openai' | 'gemini' | 'browser', openaiBase, openaiModel / geminiModel, model_<provider> (HR6, app/gui/provider.js),
-   browserModel '' | 'ready' (AG2: Story Mini downloaded, app/models/browser.js). */
+   browserModel '' | 'ready' (AG2: Story Mini downloaded, app/models/browser.js).
+   AG3 Permissions (app/core/perms.js): autoWrite / autoShell 'off' (default), allowWrite / allowShell / memory 'on' (default).
+   AG3 Display: showThink, showSteps, notifyLong 'on' (default); applyDisplay() sets body.no-think / body.no-steps. */
 HR.set = (function () {
-  var KEY = 'agent.settings', DEF = { theme: 'dark', baseUrl: 'http://localhost:11434', model: '', think: 'auto', tools: 'on', maxSteps: 8, saveChats: 'on', helper: 'off', helperUrl: 'http://127.0.0.1:11500', helperToken: '', provider: 'ollama', openaiBase: 'https://api.openai.com/v1', browserModel: '' };
+  var KEY = 'agent.settings', DEF = { theme: 'dark', baseUrl: 'http://localhost:11434', model: '', think: 'auto', tools: 'on', maxSteps: 8, saveChats: 'on', helper: 'off', helperUrl: 'http://127.0.0.1:11500', helperToken: '', provider: 'ollama', openaiBase: 'https://api.openai.com/v1', browserModel: '',
+    autoWrite: 'off', autoShell: 'off', allowWrite: 'on', allowShell: 'on', memory: 'on', showThink: 'on', showSteps: 'on', notifyLong: 'on' };
   function all() { var s = {}; try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { s = {}; } return Object.assign({}, DEF, s); }
   function get(k) { return all()[k]; }
   function put(k, v) { var s = all(); s[k] = v; try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* memory only */ } }
@@ -18,6 +21,11 @@ HR.set = (function () {
     var m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = t === 'light' ? '#f4f5f8' : '#111318';
   }
   if (window.HubTheme) HubTheme.onChange(applyTheme);
+  function applyDisplay() {
+    var b = document.body; b.classList.toggle('no-think', get('showThink') === 'off'); b.classList.toggle('no-steps', get('showSteps') === 'off');
+    var w = document.getElementById('autoShellWarn'); if (w) w.hidden = get('autoShell') !== 'on';
+  }
+  var OO = [['on', 'On'], ['off', 'Off']];
   function seg(id, key, opts, after) {
     var box = document.getElementById(id); box.innerHTML = '';
     opts.forEach(function (o) {
@@ -31,7 +39,11 @@ HR.set = (function () {
     seg('setProv', 'provider', [['ollama', 'Ollama'], ['openai', 'OpenAI-compatible'], ['gemini', 'Gemini'], ['browser', 'Browser']], function () { HR.provider.changed(); });
     seg('setTheme', 'theme', [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']], applyTheme);
     seg('setThink', 'think', [['auto', 'Auto'], ['on', 'On'], ['off', 'Off']]);
-    seg('setTools', 'tools', [['on', 'On'], ['off', 'Off']]);
+    seg('setTools', 'tools', OO);
+    ['autoWrite', 'autoShell', 'allowWrite', 'allowShell', 'memory', 'showThink', 'showSteps', 'notifyLong'].forEach(function (k) {
+      seg('set_' + k, k, OO, applyDisplay);
+    });
+    applyDisplay();
     seg('setSave', 'saveChats', [['on', 'On'], ['off', 'Off']]);
     seg('setHelper', 'helper', [['on', 'On'], ['off', 'Off']], function () { HR.helper.test(); });
     document.getElementById('setSteps').value = maxSteps();
@@ -51,5 +63,5 @@ HR.set = (function () {
       if (v !== get('baseUrl')) { put('baseUrl', v); HR.model.load(); }
     });
   }
-  return { get: get, put: put, redraw: draw, maxSteps: maxSteps, applyTheme: applyTheme, init: init };
+  return { get: get, put: put, redraw: draw, maxSteps: maxSteps, applyTheme: applyTheme, applyDisplay: applyDisplay, init: init };
 })();
