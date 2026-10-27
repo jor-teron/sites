@@ -1,7 +1,7 @@
 /* Gallery store: settings in 'gallery-settings-v1' + last folder handle in IndexedDB (where supported). */
 window.GAStore = (function () {
   const SKEY = 'gallery-settings-v1', DB = 'gallery-v1', OS = 'kv';
-  const P = { theme: 'dark', cols: 'm', sort: 'date-desc', group: '1' };
+  const P = { theme: 'dark', cols: 'm', sort: 'date-desc', group: '1', kind: 'all', speed: '1', loop: '0' };
   try { Object.assign(P, JSON.parse(localStorage.getItem(SKEY) || '{}')); } catch (_) { /* */ }
   const save = () => { try { localStorage.setItem(SKEY, JSON.stringify(P)); } catch (_) { /* */ } };
   const canHandles = typeof window.showDirectoryPicker === 'function' && typeof indexedDB !== 'undefined';

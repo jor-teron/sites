@@ -1,4 +1,4 @@
-/* Gallery GA1 app: screens, swipes (not in the viewer), settings, theme, opening folders / files / drops, remembered folder. */
+/* Gallery GA2 app: screens, swipes (not in the viewer), settings, theme, opening folders / files / drops, remembered folder. */
 (function () {
   'use strict';
   const SWIPE = 75, TAP_MOVE = 10, $ = (id) => document.getElementById(id), S = GAStore, P = S.P;
@@ -34,23 +34,25 @@
   let srcName = '';
   function draw() {
     gal.className = 'cols-' + P.cols;
-    const n = GAGrid.items.length;
-    $('empty').hidden = n > 0; $('count').textContent = n ? n + ' photo' + (n === 1 ? '' : 's') + (srcName ? ' · ' + srcName : '') : 'No photos';
-    GAGrid.render(gal, { sort: P.sort, group: P.group === '1' });
+    const all = GAGrid.items, n = all.length, nv = all.filter((x) => x.video).length, np = n - nv;
+    const pl = (k, w) => k + ' ' + w + (k === 1 ? '' : 's');
+    $('empty').hidden = n > 0;
+    $('count').textContent = n ? [np && pl(np, 'photo'), nv && pl(nv, 'video')].filter(Boolean).join(', ') + (srcName ? ' · ' + srcName : '') : 'No photos or videos';
+    GAGrid.render(gal, { sort: P.sort, group: P.group === '1', kind: P.kind });
   }
   function load(list, name) {
     const n = GAGrid.set(list.map((f) => ({ file: f, name: f.name, size: f.size, date: f.lastModified || 0 })));
     srcName = name || '';
-    if (!n) { dialog('No images found' + (name ? ' in "' + name + '"' : '') + '.'); }
+    if (!n) { dialog('No photos or videos found' + (name ? ' in "' + name + '"' : '') + '.'); }
     draw(); $('pane-gal').scrollTop = 0;
   }
-  GAGrid.onOpen((i) => GAViewer.open(GAGrid.items, i));
+  GAGrid.onOpen((i) => GAViewer.open(GAGrid.view, i));
   GAViewer.init({ toast, onClose: (i) => { const c = gal.querySelector('.cell[data-i="' + i + '"]'); c && c.focus({ preventScroll: false }); } });
 
   /* open folder: File System Access where supported, else <input webkitdirectory> */
   async function readDir(h, out, depth) {
     for await (const e of h.values()) {
-      if (e.kind === 'file') { if (/\.(jpe?g|png|webp|gif|bmp|avif|svg)$/i.test(e.name)) { try { out.push(await e.getFile()); } catch (_) { /* */ } } }
+      if (e.kind === 'file') { if (GAGrid.MEDIA.test(e.name)) { try { out.push(await e.getFile()); } catch (_) { /* */ } } }
       else if (depth < 4) await readDir(e, out, depth + 1);
     }
     return out;
