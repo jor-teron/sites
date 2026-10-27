@@ -1,8 +1,10 @@
-/* Calendar logic. Settings in 'calendar-settings-v1': { week:'sun'|'mon', hol:'on'|'off', theme:'system'|'light'|'dark' }.
+/* Calendar logic. Settings in 'calendar-settings-v1': { week:'sun'|'mon', hol:'on'|'off', theme:'system'|'light'|'dark',
+   sat24, satAll, dateOnly (booleans, C5, default false) }. Red days (C5): Sundays, fixed holidays (when On) and the
+   Saturday options get a red cell; Saturday holidays only colour the cell (no names, not in holiday lists).
    State in 'calendar-state-v1': { mode:'month'|'year'|'hol'|'set', y, m (0-11), sel:'YYYY-MM-DD'|null, from, to, inc } */
 (function () {
   'use strict';
-  const KEY = 'calendar-state-v1', SKEY = 'calendar-settings-v1', VERSION = '1.1', SWIPE = 75, MOVE = 10;
+  const KEY = 'calendar-state-v1', SKEY = 'calendar-settings-v1', VERSION = '1.2', SWIPE = 75, MOVE = 10;
   const MODES = ['month', 'year', 'hol', 'set'];
   const MN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], WDL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -16,6 +18,7 @@
   try { Object.assign(P, JSON.parse(localStorage.getItem(SKEY) || '{}')); } catch (_) { /* bad data */ }
   if (P.week !== 'mon') P.week = 'sun';
   if (P.hol !== 'off') P.hol = 'on';
+  ['sat24', 'satAll', 'dateOnly'].forEach((k) => { P[k] = P[k] === true; });
   const HOL = window.CalHolidays;
   const hols = (s) => (P.hol === 'on' && HOL ? HOL.get(s) : null);
   const WDS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -47,6 +50,9 @@
     return Math.ceil(((t - y1) / 864e5 + 1) / 7);
   }
   const first = () => (P.week === 'mon' ? 1 : 0);
+  /* red day: Sunday, a Saturday holiday option, or a fixed holiday */
+  const satHol = (d, wd) => wd === 6 && (P.satAll || (P.sat24 && ((d >= 8 && d <= 14) || (d >= 22 && d <= 28))));
+  const red = (y, m, d) => { const wd = dow(y, m, d); return wd === 0 || satHol(d, wd) || !!hols(iso(y, m, d)); };
 
   /* month view */
   function renderMonth() {
@@ -59,13 +65,14 @@
       const dt = new Date(Date.UTC(S.y, S.m, 1 - lead + i)), y = dt.getUTCFullYear(), m = dt.getUTCMonth(), d = dt.getUTCDate();
       const c = [];
       if (m !== S.m) c.push('out');
-      if (dt.getUTCDay() === 0) c.push('we');
+      if (red(y, m, d)) c.push('red');
       if (y === t.y && m === t.m && d === t.d) c.push('today');
       if (S.sel === iso(y, m, d)) c.push('sel');
       const hn = hols(iso(y, m, d)); if (hn) c.push('hol');
-      h += '<button type="button" class="' + c.join(' ') + '" data-d="' + iso(y, m, d) + '"' + (hn ? ' title="' + hn.join(', ') + '"' : '') + '>' + d + (hn ? '<span class="hn">' + hn.join(', ') + '</span>' : '') + '</button>';
+      h += '<button type="button" class="' + c.join(' ') + '" data-d="' + iso(y, m, d) + '"' + (hn ? ' title="' + hn.join(', ') + '"' : '') + '>' + d + (hn && !P.dateOnly ? '<span class="hn">' + hn.join(', ') + '</span>' : '') + '</button>';
     }
     $('m-grid').innerHTML = h;
+    $('m-grid').classList.toggle('donly', P.dateOnly);
     renderInfo();
     const L = [];
     for (let d = 1; d <= n; d++) { const hn = hols(iso(S.y, S.m, d)); if (hn) L.push('<div><span>' + d + '</span> ' + hn.join(', ') + '</div>'); }
@@ -102,7 +109,7 @@
       const lead = (dow(yv, m, 1) - f + 7) % 7, n = dim(yv, m);
       let g = [0, 1, 2, 3, 4, 5, 6].map((i) => '<i>' + WD[(i + f) % 7][0] + '</i>').join('');
       for (let i = 0; i < lead; i++) g += '<span></span>';
-      for (let d = 1; d <= n; d++) g += '<span' + ((yv === t.y && m === t.m && d === t.d) ? ' class="t"' : hols(iso(yv, m, d)) ? ' class="h"' : '') + '>' + d + '</span>';
+      for (let d = 1; d <= n; d++) { const cl = [(yv === t.y && m === t.m && d === t.d) ? 't' : '', red(yv, m, d) ? 'h' : ''].join(' ').trim(); g += '<span' + (cl ? ' class="' + cl + '"' : '') + '>' + d + '</span>'; }
       h += '<button type="button" class="mm' + (yv === t.y && m === t.m ? ' cur' : '') + '" data-m="' + m + '"><b>' + MN[m] + '</b><div class="g">' + g + '</div></button>';
     }
     $('year').innerHTML = h;
@@ -165,7 +172,15 @@
   const step = (k) => setMode(MODES[(MODES.indexOf(S.mode) + k + MODES.length) % MODES.length]);
   document.querySelectorAll('.dot').forEach((d) => { d.onclick = () => setMode(d.dataset.mode); });
   $('ver').textContent = 'v' + VERSION;
-    function renderSeg() { document.querySelectorAll('.seg').forEach((g) => g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', P[g.dataset.key] === b.dataset.v))); }
+  function renderSeg() {
+    document.querySelectorAll('.seg').forEach((g) => g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', P[g.dataset.key] === b.dataset.v)));
+    document.querySelectorAll('input.sw').forEach((i) => { i.checked = !!P[i.dataset.key]; });
+    const s24 = document.querySelector('input.sw[data-key="sat24"]');
+    if (s24) { s24.disabled = P.satAll; s24.closest('.set-row').classList.toggle('off', P.satAll); }
+  }
+  document.querySelectorAll('input.sw').forEach((i) => i.addEventListener('change', () => {
+    P[i.dataset.key] = i.checked; saveP(); renderSeg(); renderMonth(); renderYear();
+  }));
   document.querySelectorAll('.seg').forEach((g) => g.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     P[g.dataset.key] = b.dataset.v; saveP(); theme(); renderSeg(); renderMonth(); renderYear();
@@ -209,7 +224,7 @@
   });
   addEventListener('storage', (e) => {
     if (e.key === 'sites-hub.theme') theme();
-    if (e.key === SKEY) { try { Object.assign(P, JSON.parse(e.newValue || '{}')); } catch (_) { /* */ } theme(); renderSeg(); renderMonth(); renderYear(); }
+    if (e.key === SKEY) { try { Object.assign(P, JSON.parse(e.newValue || '{}')); } catch (_) { /* */ } ['sat24', 'satAll', 'dateOnly'].forEach((k) => { P[k] = P[k] === true; }); theme(); renderSeg(); renderMonth(); renderYear(); }
   });
 
   renderSeg(); renderMonth(); renderYear(); renderHol(); count(); setMode(S.mode);

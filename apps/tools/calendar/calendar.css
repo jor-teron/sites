@@ -1,5 +1,5 @@
-:root{--bg:#f6f7f9;--fg:#15181d;--mut:#6b7280;--card:#fff;--line:#e3e6ea;--acc:#2563eb;--good:#16a34a;--bad:#dc2626;}
-:root.dark{--bg:#111316;--fg:#eef0f3;--mut:#9aa3ae;--card:#1c1f24;--line:#2b3037;--acc:#60a5fa;--good:#4ade80;--bad:#f87171;}
+:root{--bg:#f6f7f9;--fg:#15181d;--mut:#6b7280;--card:#fff;--line:#e3e6ea;--acc:#2563eb;--good:#16a34a;--bad:#dc2626;--red-bg:rgba(220,38,38,.13);--red-fg:#b91c1c;}
+:root.dark{--bg:#111316;--fg:#eef0f3;--mut:#9aa3ae;--card:#1c1f24;--line:#2b3037;--acc:#60a5fa;--good:#4ade80;--bad:#f87171;--red-bg:rgba(248,113,113,.18);--red-fg:#fecaca;}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 #app{position:fixed;inset:0;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
@@ -20,11 +20,22 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 #grid-wrap{padding:0 12px;max-width:720px;width:100%;margin:0 auto;touch-action:pan-y}
 .wd,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
 .wd span{text-align:center;font-size:12px;color:var(--mut);padding:4px 0}
-.grid button{aspect-ratio:1.1;max-height:72px;border:0;border-radius:10px;background:var(--card);color:var(--fg);font-size:16px;cursor:pointer;font-variant-numeric:tabular-nums}
+.grid button{aspect-ratio:1.1;max-height:72px;border:0;border-radius:10px;background:var(--card);color:var(--fg);font-size:20px;cursor:pointer;font-variant-numeric:tabular-nums}
 .grid button.out{background:none;color:var(--mut);opacity:.55}
-.grid button.we{color:var(--bad)}
 .grid button.today{background:var(--acc);color:#fff;font-weight:700}
 .grid button.sel{outline:2px solid var(--fg);outline-offset:-2px}
+/* C5 red days (Sundays, holidays, Saturday options): soft red cell; today on a red day keeps an accent ring */
+.grid button.red{background:var(--red-bg);color:var(--red-fg);font-weight:600}
+.grid button.today.red{background:var(--red-bg);color:var(--red-fg);font-weight:700;box-shadow:inset 0 0 0 3px var(--acc)}
+.grid.donly button{font-size:24px;font-weight:600}
+/* C5 switches */
+.sw{appearance:none;-webkit-appearance:none;flex:none;width:44px;height:26px;border-radius:13px;background:var(--line);position:relative;cursor:pointer;margin:0;transition:background .15s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .15s}
+.sw:checked{background:var(--acc)}
+.sw:checked::after{transform:translateX(18px)}
+.set-row.off{opacity:.45}
+.set-row.off .sw{cursor:default}
+label.set-row{cursor:pointer}
 #info{padding:10px 16px;color:var(--mut);font-size:14px;max-width:720px;width:100%;margin:0 auto;line-height:1.5}
 #info b{color:var(--fg)}
 #year{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:4px 12px 12px;max-width:900px;width:100%;margin:0 auto}
@@ -35,6 +46,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 .mm .g{display:grid;grid-template-columns:repeat(7,1fr);font-size:9px;text-align:center;line-height:1.5;font-variant-numeric:tabular-nums}
 .mm .g i{font-style:normal;color:var(--mut)}
 .mm .g .t{background:var(--acc);color:#fff;border-radius:3px}
+.mm .g .h{background:var(--red-bg);color:var(--red-fg);border-radius:3px;font-weight:700}
+.mm .g .t.h{background:var(--red-bg);color:var(--red-fg);box-shadow:inset 0 0 0 1.5px var(--acc)}
 .set-wrap{padding:8px 18px;overflow-y:auto;max-width:520px;width:100%;margin:0 auto}
 .set-wrap h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:14px 0 8px;font-weight:600}
 .set-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
@@ -51,9 +64,6 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 .about img{border-radius:9px}
 .about p{margin:4px 0 0;color:var(--mut);font-size:14px;line-height:1.4}
 #ver{color:var(--mut);font-size:13px}
-.grid button.hol{color:#f59e0b;box-shadow:inset 0 -3px 0 #f59e0b}
-.grid button.today.hol{color:#fff}
-.mm .g .h{text-decoration:underline;color:#f59e0b;font-weight:700}
 .hol-n{color:#f59e0b}
 #hol-list{padding:0 16px 12px;max-width:720px;width:100%;margin:0 auto;font-size:13px;color:var(--mut);line-height:1.6}
 #hol-list b{color:var(--fg);font-weight:600}
@@ -80,9 +90,12 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 #pane-month #grid-wrap{flex:1 0 auto;display:flex;flex-direction:column;min-height:calc(100vh - 230px)}
 .wd span{font-size:clamp(14px,1.1vw,18px);padding:8px 0}
 .grid{flex:1;grid-auto-rows:1fr;gap:6px}
-.grid button{aspect-ratio:auto;max-height:none;min-height:80px;font-size:clamp(22px,1.6vw,26px);border-radius:12px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;padding:8px 10px;overflow:hidden;text-align:left}
-.grid button .hn{display:block;width:100%;margin-top:auto;font-size:clamp(11px,.8vw,13px);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#f59e0b}
+.grid button{aspect-ratio:auto;max-height:none;min-height:80px;font-size:clamp(26px,2.1vw,44px);border-radius:12px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;padding:8px 10px;overflow:hidden;text-align:left}
+.grid button .hn{display:block;width:100%;margin-top:auto;font-size:clamp(11px,.8vw,13px);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:inherit;opacity:.85}
 .grid button.today .hn{color:#fff}
+.grid button.today.red .hn{color:var(--red-fg)}
+.grid.donly button{font-size:clamp(34px,3vw,64px);align-items:center;justify-content:center;text-align:center}
+.sw{width:52px;height:30px;border-radius:15px}.sw::after{width:24px;height:24px}.sw:checked::after{transform:translateX(22px)}
 #info{font-size:16px}
 #hol-list{font-size:15px}
 #year{grid-template-columns:repeat(4,1fr);gap:16px;max-width:min(1200px,90vw)}
