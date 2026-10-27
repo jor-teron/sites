@@ -13,7 +13,7 @@ HR.browser = (function () {
   function kill() { if (w) { w.terminate(); w = null; } }
   function spawn() {
     if (w) return w;
-    w = new Worker('app/models/browser_worker.js?v=20261027ag3', { type: 'module' });
+    w = new Worker('app/models/browser_worker.js?v=20261027ag4', { type: 'module' });
     w.onmessage = function (e) { if (job) job(e.data || {}); };
     w.onerror = function (e) { e.preventDefault && e.preventDefault(); var j = job; kill(); if (j) j({ type: 'error', msg: (e && e.message) || 'worker failed to start' }); };
     return w;

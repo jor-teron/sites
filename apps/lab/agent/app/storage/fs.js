@@ -1,6 +1,7 @@
 /* Agent — app/storage/fs.js: granted folder via the File System Access API (HR3). No OPFS fallback.
    HR.fs: supported, state() 'unsupported'|'none'|'need'|'ready', name(), init() (handle from IndexedDB 'agent'/'kv'/'root',
    queryPermission; AG1: falls back once to the old 'harness' db), pick(), reconnect() (requestPermission; needs a tap), ready(), onChange(fn).
+   AG4: remove(path) deletes one file (chat delete).
    Paths are relative to the folder root: '/', '\', 'C:' and '..' are rejected (norm). list(path), read(path) -> {text,size},
    write(path, text), append(path, text), stat(path), walk(path, fn) — all stay inside the folder. */
 HR.fs = (function () {
@@ -53,6 +54,7 @@ HR.fs = (function () {
   async function stat(path) { try { var f = await (await fileH(path)).getFile(); return { size: f.size, exists: true }; } catch (e) { return { size: 0, exists: false }; } }
   async function read(path) { var f = await (await fileH(path)).getFile(); return { text: await f.text(), size: f.size }; }
   async function write(path, text) { var w = await (await fileH(path, true)).createWritable(); await w.write(text); await w.close(); }
+  async function remove(path) { var parts = norm(path); need(); var d = await dir(parts.slice(0, -1)); await d.removeEntry(parts[parts.length - 1]); }
   async function append(path, text) {
     var h = await fileH(path, true), size = (await h.getFile()).size, w = await h.createWritable({ keepExistingData: true });
     await w.seek(size); await w.write(text); await w.close();
@@ -70,5 +72,5 @@ HR.fs = (function () {
     }
   }
   return { supported: supported, state: function () { return st; }, name: function () { return root ? root.name : ''; }, ready: function () { return st === 'ready'; },
-    init: init, pick: pick, reconnect: reconnect, onChange: onChange, norm: norm, list: list, stat: stat, read: read, write: write, append: append, walk: walk };
+    init: init, pick: pick, reconnect: reconnect, onChange: onChange, norm: norm, list: list, stat: stat, read: read, write: write, append: append, remove: remove, walk: walk };
 })();

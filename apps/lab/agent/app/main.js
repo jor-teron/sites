@@ -1,6 +1,7 @@
 /* Agent — app/main.js: HR.notify (Hub cards) and boot.
    HR.notify({icon,title,text,onClick,timeoutMs}) -> {close(), update(text)}: inside the Hub uses
-   window.top.HubNotify.notice; standalone / Hub unreachable -> small local card bottom-right (✕, ~5 s, max 3). Never toasts. */
+   window.top.HubNotify.notice; standalone / Hub unreachable -> small local card bottom-right (✕, ~5 s, max 3). Never toasts.
+   AG4: HR.chats.init runs once HR.folder.init settles (so the last chat is read from the folder when it is connected). */
 HR.notify = (function () {
   var host = null;
   function mk(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
@@ -33,9 +34,10 @@ HR.notify = (function () {
   HR.set.applyDisplay();
   HR.steps.init();
   HR.chat.init();
-  HR.folder.init();
+  var folder = HR.folder.init();
   HR.helperSet.init();
   HR.provider.init();
   HR.bcard.init();
   HR.model.init();
+  Promise.resolve(folder).catch(function () {}).then(HR.chats.init);   /* AG4: chats after the folder handle is known */
 })();

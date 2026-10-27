@@ -5,7 +5,8 @@
    AG2: Browser provider (story model) -> tools, loop and system prompt off, one quiet note in Steps only; an unreachable
    provider mid-chat -> HR.model.fall() switches to Browser; 'download' errors show the download card.
    AG3: auto-approve (HR.perms.auto) skips the card, sets info.auto and marks the step / chip / log 'auto';
-   one Hub card when a run that took >20 s finishes (Settings → Hub card, default on). */
+   one Hub card when a run that took >20 s finishes (Settings → Hub card, default on).
+   AG4: render() redraws the open chat (HR.chats switches chats; ＋ / New chat lives in app/gui/chats.js). */
 HR.chat = (function () {
   var log, input, sendBtn, ctrl = null, curTool = null, LONG = 20000;
   function busy(on) { sendBtn.textContent = on ? '■' : '➤'; sendBtn.title = on ? 'Stop' : 'Send'; sendBtn.setAttribute('aria-label', on ? 'Stop' : 'Send'); sendBtn.classList.toggle('stop', on); }
@@ -73,16 +74,14 @@ HR.chat = (function () {
     }).then(function () { ctrl = null; busy(false); HR.msgs.save(); input.focus(); });
   }
   function grow() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 180) + 'px'; }
-  function clearChat() { if (ctrl) ctrl.abort(); HR.msgs.clear(); HR.steps.clear(); renderAll(); }
   function init() {
     log = document.getElementById('log'); input = document.getElementById('input'); sendBtn = document.getElementById('btnSend');
     HR.view.init(log);
     sendBtn.onclick = send;
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
     input.addEventListener('input', grow);
-    document.getElementById('btnClear').onclick = clearChat;
     renderAll();
     HR.fs.onChange(HR.view.folderHint);
   }
-  return { init: init, note: note, errorCard: function (e) { HR.view.errorCard(e); }, clearErrors: function () { HR.view.clearErrors(); }, busy: function () { return !!ctrl; } };
+  return { init: init, render: renderAll, note: note, errorCard: function (e) { HR.view.errorCard(e); }, clearErrors: function () { HR.view.clearErrors(); }, busy: function () { return !!ctrl; } };
 })();

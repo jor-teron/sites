@@ -7,13 +7,14 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 ## Files
 - `index.html` — redirect to `agent.html`
 - `agent.html` — page shell (top bar, chat, steps pane, settings dialog)
-- `ui/main.css` — theme variables (`html[data-ht]`), layout; `ui/components.css` — buttons, bubbles, Thinking box, error cards, dialog, notice cards; `ui/steps.css` — steps pane
+- `ui/main.css` — theme variables (`html[data-ht]`), layout; `ui/components.css` — buttons, bubbles, Thinking box, error cards, dialog, notice cards; `ui/steps.css` — steps pane; `ui/chats.css` — Chats drawer
 - `app/core/migrate.js` — AG1 one-time carry-over from the old Harness names (storage keys, folder handle, `harness/` data folder)
-- `app/core/messages.js` — `HR.msgs`: history (memory + sessionStorage `agent.history`), roles user / assistant (+`tool_calls`) / tool, `toApi()`, `splitThink()`
+- `app/core/messages.js` — `HR.msgs`: the open chat's history (AG4: per chat via `set()`, saved by `HR.chats`), roles user / assistant (+`tool_calls`) / tool, `toApi()` (recent turns in full, older ones as a trimmed note), `splitThink()`
 - `app/core/tools.js` — `HR.tools`: registry of `{name, description, parameters (JSON schema), where:'browser', run(args, ctx), available?}`, `schemas()` for Ollama
 - `app/core/perms.js` — AG3 `HR.perms`: Settings → Permissions (`allowed(tool)`, `auto(kind)`, `memory()`)
 - `app/core/loop.js` — `HR.loop.run()`: the one agent loop (model + tools → run tool calls → append `tool` results → repeat; step limit, Stop, no-tools retry)
-- `app/core/prompt.js` — `HR.prompt.system()`: `agent/prompts/system.md` (default created on first use) + newest ~800 chars of `agent/memory.md`, read on every call
+- `app/core/prompt.js` — `HR.prompt.system()`: `agent/prompts/system.md` (default created on first use) + a live "Current settings" section + memory from `HR.mem.block()`, read on every call
+- `app/core/memory.js` — AG4 `HR.mem`: `agent/memory/` layout (user, assistant, sessions/<chat>, date/YYYY_MM, topics/<name>), prompt block, one-time `memory.md` → `memory/user.md`
 - `app/core/helper.js` — `HR.helper`: client for the bash helper (`/health` test, `/run`), status
 - `app/models/net.js` — `HR.net`: shared fetch errors + SSE reader
 - `app/models/registry.js` — `HR.models`: provider adapters behind one interface, settings → `cfg()`, API keys (`agent.keys`, per host)
@@ -24,11 +25,13 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 - `vendor/transformers-3.7.0/` — pinned `transformers.min.js` + plain ORT wasm (12 MB total; see its README)
 - `app/models/ollama.js` — `HR.ollama`: `tags()`, streaming `chat()` (NDJSON, AbortController, `tools` param, collects `tool_calls`), `tps()`; registered as the default `ollama` adapter
 - `app/storage/fs.js` — `HR.fs`: File System Access folder (handle kept in IndexedDB `agent`/`kv`/`root`, permission re-check on load), safe relative paths, list / read / write / append / walk
-- `app/storage/logs.js` — `HR.logs`: daily Markdown chat log `agent/chats/YYYY_MM/YYYY_MM_DD.md`
+- `app/storage/logs.js` — `HR.logs`: daily Markdown chat log `agent/chats/YYYY_MM/YYYY_MM_DD.md` (the diary)
+- `app/storage/threadfmt.js` — AG4 `HR.threadfmt`: one chat ⇄ Markdown
+- `app/storage/threads.js` — AG4 `HR.threads`: chat files + index in the folder, or IndexedDB `agent-chats` without one
 - `app/tools/time.js` — `get_time` test tool (local ISO, 12h text, timezone, UTC offset)
 - `app/tools/files.js` — `list_dir`, `read_file` (~20k cap), `write_file` (approval), `search` (names + text, capped); only offered when a folder is connected
 - `app/tools/shell.js` — `run_shell` (approval card per command; only while the helper test passed)
-- `app/tools/memory.js` — `memory_read`, `memory_append` (no approval; shows in steps)
+- `app/tools/memory.js` — `memory_read`, `memory_append` with `target` user / assistant / session / topic (+ `name`) / date (read); no approval, shows in steps
 - `app/gui/settings.js` — `HR.set`: `agent.settings` {theme, baseUrl, model, think, tools, maxSteps, saveChats}, theme apply, Settings dialog
 - `app/gui/model.js` — `HR.model`: model picker from the current provider (typed model name as fallback)
 - `app/gui/provider.js` — Settings → Provider (Ollama / OpenAI-compatible / Gemini, base URL presets, API key, model name)
@@ -38,7 +41,8 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 - `app/gui/approve.js` — `HR.approve`: Approve / Deny card (path, size, preview)
 - `app/gui/folder.js` — `HR.folder`: top-bar folder chip, Settings → Folder (Pick / Reconnect, unsupported note)
 - `app/gui/helperset.js` — Settings → Helper (On / Off, URL, token, Test, status)
-- `app/gui/chat.js` — `HR.chat`: input, send / Stop, UI hooks for the loop
+- `app/gui/chat.js` — `HR.chat`: input, send / Stop, UI hooks for the loop, `render()`
+- `app/gui/chats.js` — AG4 `HR.chats`: Chats drawer (new, switch, rename, delete), resume last chat, per-chat provider + model
 - `app/main.js` — `HR.notify` (Hub cards, local fallback) + boot
 - `helper/agent-helper.sh` — local bash helper (HR5), bash + socat or ncat, no Python
 - `agent_icon.png`
@@ -60,6 +64,7 @@ Ollama only answers browser pages whose origin is in `OLLAMA_ORIGINS`. Example: 
 - **AG1** — Renamed Harness → Agent: folder `apps/lab/agent/`, `agent.html`, `agent_readme.md`, `agent_icon.png`, `helper/agent-helper.sh` (env `AGENT_*`, e.g. `AGENT_ORIGINS`; header `X-Agent-Token`), data folder `<folder>/agent/`, keys `agent.settings` / `agent.keys` / `agent.history`, IndexedDB `agent`. One-time migration copies the old `harness.*` values, the remembered folder handle and `<folder>/harness/**` files (missing ones only; old folder kept).
 - **AG2** — Built-in **Browser** provider (no Ollama, no API key): Story Mini = `onnx-community/TinyStories-3M-ONNX` (GPT-Neo, q8 `model_quantized.onnx` 17.0 MB + tokenizer 3.6 MB ≈ 20.6 MB from Hugging Face) on Agent's own Transformers.js 3.7.0 in `vendor/` (plain ORT wasm, 1 thread, no arena) inside a module Web Worker; tokens stream, Stop terminates the worker (the next send reloads from cache in about a second). Files live in Agent's own Cache API store `agent-browser-model`. Nothing downloads until you tap the card, which shows the sizes (≈ 33 MB once incl. the 12 MB engine, ~3 MB compressed) and progress; then it is remembered (`browserModel: 'ready'`). First start or an unreachable provider / missing key → Browser for this session with a quiet note (↻ retries the chosen provider). While Browser is in use tools, the loop and the system prompt are off (story model: it continues your last message), noted in Steps only. Settings → Browser model → Remove browser model frees the space.
 - **AG3** — Settings switches with big On / Off targets. **Permissions:** Auto-approve file writes (off), Auto-approve shell commands (off, separate; a warning line shows while on), Allow file writes (on; off removes `write_file` = read-only), Allow shell (on; off hides `run_shell` even with the helper connected), Memory (on; off hides `memory_read` / `memory_append` and leaves memory notes out of the system prompt). **Display:** Show thinking (on), Show steps pane (on; off hides the pane and ☰), Hub card when a long task finishes (on; one card only when the run took over 20 s, via `HR.notify` = `window.top.HubNotify.notice` in a try block, small local card as fallback; no start / progress cards). Auto-approved writes and commands still show in Steps, the tool chip and the daily log, marked `auto`.
+- **AG4** — **Multiple chats:** 💬 opens the Chats drawer (slide-over on phone, docked pane from 960px; 💬 hides it): big ＋ New chat (also ＋ in the top bar), chats newest first, tap to switch, ✎ rename, 🗑 delete (file + session notes; the daily log stays). Each chat is its own Markdown file `agent/chats/threads/<id>.md` (`: ` header lines, `# user — time`, `## assistant — time · model`, `### tool — name ✓ · ms` with `: args` / `: tool_calls` meta lines; body lines starting with `#`, `:` or `\` are escaped with `\`) plus `agent/chats/threads/index.json` (id, title, provider, model, created, updated). Without a folder (or with Save chats Off) the same text goes to IndexedDB `agent-chats`; picking a folder later copies those chats into it. Title = first user message; each chat remembers its provider + model and switches to them when opened. Reload resumes the last open chat (`agent.chat`); a pre-AG4 tab history becomes the first chat. Daily logs `chats/YYYY_MM/YYYY_MM_DD.md` stay as the diary. **History:** about the last 6000 chars of turns go in full (always from the latest user turn, starting at a user turn so tool pairs stay whole); older turns go as one system note, each line cut to 160 chars, the note ≤1500 chars (newest kept). No extra model call. **Memory layout** `agent/memory/`: `user.md`, `assistant.md`, `sessions/<chat id>.md`, `date/YYYY_MM.md` (every append is copied here as a diary line), `topics/<name>.md`. `memory_read` / `memory_append` take `target` user | assistant | session | topic (+ `name`); `memory_read` also reads `date`. The prompt gets user + assistant + this chat's session only (never other chats'), newest ~800 chars each and ~2000 in total. Old `agent/memory.md` is copied once to `memory/user.md` (old file kept). **Prompt:** the default `system.md` no longer hard-codes "every write asks first"; a "Current settings" section is built on every call from Tools / Allow writes / Allow shell / Auto-approve / Memory and overrides older text in an existing `system.md`.
 
 ## Roadmap
 - **HR1** — Chat skeleton with Ollama streaming, Thinking box, steps pane (done)
@@ -70,5 +75,5 @@ Ollama only answers browser pages whose origin is in `OLLAMA_ORIGINS`. Example: 
 - **HR6** — Online models: OpenAI-compatible + Gemini adapters with streaming and tool calling (done)
 - **AG2** — Built-in Browser model (Story Mini, Transformers.js in a worker) with fallback (done)
 - **AG3** — Permissions and Display switches (done)
-- **AG4** — Multiple chats, memory layout (next)
+- **AG4** — Multiple chats, memory layout (done)
 - **Later** — system prompt presets, export / import sessions, cost / token totals

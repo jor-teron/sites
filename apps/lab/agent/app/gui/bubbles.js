@@ -58,7 +58,7 @@ HR.view = (function () {
   }
   function folderHint() {
     var f = log.querySelector('.hello-f'), s = HR.fs.state(); if (!f) return;
-    f.textContent = s === 'ready' ? '📁 ' + HR.fs.name() + ': chats saved to agent/chats/, memory in agent/memory.md, system prompt in agent/prompts/system.md.'
+    f.textContent = s === 'ready' ? '📁 ' + HR.fs.name() + ': chats saved to agent/chats/, memory in agent/memory/, system prompt in agent/prompts/system.md.'
       : s === 'unsupported' ? 'History stays in this tab. Folder logs and memory need desktop Chrome or Edge.'
       : 'No folder: history stays in this tab only. Pick a folder (📁) to save daily chat logs, memory notes and an editable system prompt.';
   }
