@@ -1,5 +1,5 @@
-:root{--bg:#f6f7f9;--fg:#15181d;--mut:#6b7280;--card:#fff;--line:#e3e6ea;--acc:#2563eb;--good:#16a34a;--bad:#dc2626;--red-bg:rgba(220,38,38,.13);--red-fg:#b91c1c;}
-:root.dark{--bg:#111316;--fg:#eef0f3;--mut:#9aa3ae;--card:#1c1f24;--line:#2b3037;--acc:#60a5fa;--good:#4ade80;--bad:#f87171;--red-bg:rgba(248,113,113,.18);--red-fg:#fecaca;}
+:root{--bg:#f6f7f9;--fg:#15181d;--mut:#6b7280;--card:#fff;--line:#e3e6ea;--acc:#2563eb;--good:#16a34a;--bad:#dc2626;--red-bg:#b91c1c;--red-fg:var(--fg);}
+:root.dark{--bg:#111316;--fg:#eef0f3;--mut:#9aa3ae;--card:#1c1f24;--line:#2b3037;--acc:#60a5fa;--good:#4ade80;--bad:#f87171;--red-bg:#b91c1c;--red-fg:#fff;}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 #app{position:fixed;inset:0;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
@@ -24,8 +24,9 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 .grid button.out{background:none;color:var(--mut);opacity:.55}
 .grid button.today{background:var(--acc);color:#fff;font-weight:700}
 .grid button.sel{outline:2px solid var(--fg);outline-offset:-2px}
-/* C5 red days (Sundays, holidays, Saturday options): soft red cell; today on a red day keeps an accent ring */
+/* C5 red days (Sundays, holidays, Saturday options): solid red cell (C5.1), normal number colour; today on a red day keeps an accent ring */
 .grid button.red{background:var(--red-bg);color:var(--red-fg);font-weight:600}
+:root.dark .grid button:not(.out),:root.dark .mm .g span{color:#fff}
 .grid button.today.red{background:var(--red-bg);color:var(--red-fg);font-weight:700;box-shadow:inset 0 0 0 3px var(--acc)}
 .grid.donly button{font-size:24px;font-weight:600}
 /* C5 switches */

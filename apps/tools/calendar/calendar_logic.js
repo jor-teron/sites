@@ -1,5 +1,5 @@
 /* Calendar logic. Settings in 'calendar-settings-v1': { week:'sun'|'mon', hol:'on'|'off', theme:'system'|'light'|'dark',
-   sat24, satAll, dateOnly (booleans, C5, default false) }. Red days (C5): Sundays, fixed holidays (when On) and the
+   sat24, satAll (booleans, C5, default false), dateOnly (boolean, default true since C5.1) }. Red days (C5): Sundays, fixed holidays (when On) and the
    Saturday options get a red cell; Saturday holidays only colour the cell (no names, not in holiday lists).
    State in 'calendar-state-v1': { mode:'month'|'year'|'hol'|'set', y, m (0-11), sel:'YYYY-MM-DD'|null, from, to, inc } */
 (function () {
@@ -18,7 +18,7 @@
   try { Object.assign(P, JSON.parse(localStorage.getItem(SKEY) || '{}')); } catch (_) { /* bad data */ }
   if (P.week !== 'mon') P.week = 'sun';
   if (P.hol !== 'off') P.hol = 'on';
-  ['sat24', 'satAll', 'dateOnly'].forEach((k) => { P[k] = P[k] === true; });
+  ['sat24', 'satAll'].forEach((k) => { P[k] = P[k] === true; }); P.dateOnly = P.dateOnly !== false;
   const HOL = window.CalHolidays;
   const hols = (s) => (P.hol === 'on' && HOL ? HOL.get(s) : null);
   const WDS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -224,7 +224,7 @@
   });
   addEventListener('storage', (e) => {
     if (e.key === 'sites-hub.theme') theme();
-    if (e.key === SKEY) { try { Object.assign(P, JSON.parse(e.newValue || '{}')); } catch (_) { /* */ } ['sat24', 'satAll', 'dateOnly'].forEach((k) => { P[k] = P[k] === true; }); theme(); renderSeg(); renderMonth(); renderYear(); }
+    if (e.key === SKEY) { try { Object.assign(P, JSON.parse(e.newValue || '{}')); } catch (_) { /* */ } ['sat24', 'satAll'].forEach((k) => { P[k] = P[k] === true; }); P.dateOnly = P.dateOnly !== false; theme(); renderSeg(); renderMonth(); renderYear(); }
   });
 
   renderSeg(); renderMonth(); renderYear(); renderHol(); count(); setMode(S.mode);
