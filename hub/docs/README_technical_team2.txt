@@ -433,6 +433,16 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - #47 About update/Clear Cache labels and the release read from `hub/build.txt`; #70 Screen saver picker (`sites-hub.saverIdle`). #18 is an older Settings PR and its author isn't verified (see §2.4).
 - **Hub Bot now owns** the screen-saver control (`sec_desktop.js`) and the whole `apps/system/` move. `apps/settings/index.html` and the old `apps/tools/{files,sysmon,viewer,devbench}` folders are redirect stubs.
 
+### 1.15 Image Gen: `apps/lab/image-gen/` (Lab → Tools, after Code Lab), release IG1
+- Text-to-image through the user's own Ollama. Screens: Generate · Gallery · Settings (dots, 75 px wrap-around swipes, ←/→).
+- Files: `imagegen.html/.css`, `imagegen_app.js` (UI, theme, swipes, dialogs), `imagegen_ollama.js` (API), `imagegen_store.js` (IndexedDB gallery), `imagegen_save.js` (the only save path), `imagegen_icon.png`.
+- API: `POST {url}/api/generate` `{model, prompt, width, height, steps, stream:true}`; NDJSON lines with `completed/total` drive the bar, the last line has `image` (base64 PNG). Cancel = AbortController. Models: `/api/tags`, plus `/api/show` capabilities when tags lack them; `image` models first, "Other" lets you type a name.
+- Sizes: Square 1024×1024, Portrait 768×1024, Landscape 1024×768. Steps default 8 (z-image-turbo), 4 for flux models.
+- Storage: `imagegen-settings-v1` `{theme, url, model, size, steps, prompt}`; IndexedDB `imagegen-v1`/`images` keeps the newest 20.
+- Error dialogs: unreachable/CORS → `OLLAMA_ORIGINS=https://jor-teron.github.io`; HTTP 400 "…not currently supported" → Ollama 0.32.6+ disabled image gen, use 0.32.5 on macOS; no image models → `ollama pull x/z-image-turbo`.
+- CSV icon column is set explicitly (`image-gen/imagegen_icon.png`) because the default would look for `image-gen/image-gen_icon.png` (same quirk as Code Lab).
+- Tested only against a mock Ollama (headless Chromium); not yet against a real Ollama 0.32.5 on a Mac.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
