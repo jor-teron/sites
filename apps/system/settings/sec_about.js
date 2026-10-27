@@ -13,6 +13,9 @@
  * R41: the Hub version label is not shown anywhere (Jor's request); only the release date is.
  * R59: opened as a file (file://) nothing is fetched (Chrome blocks it); Update says
  *   'Updates not available when opened as a file' and Current release shows '\u2014'.
+ * H30.1: "Profile folder" card (id 'profile', deep link #about/profile): the Hub's settings saved to
+ *   <connected folder>/hub/hub-profile/hub.json by hub/core/hub_profile.js (window.HubProfile in the Hub).
+ *   Shows the folder (a choice when more than one is connected), status, last save, Save now / Load now.
  */
 (function () {
   'use strict';
@@ -144,9 +147,78 @@
     return a;
   }
 
+  /* H30.1: Profile folder */
+  const STATE_TEXT = {
+    none: 'No folder connected. Add a folder in Files or Disk and the Hub keeps its settings there.',
+    unsupported: 'This browser cannot keep a profile folder.',
+    prompt: 'The browser wants a click to use the folder again. Save now or Load now asks for it.',
+    denied: 'Access to the folder was refused.',
+    ready: 'Saving automatically a few seconds after each change.',
+  };
+  function profileCard(sub) {
+    const card = ui.el('section', 'card');
+    card.id = 'profile';
+    card.appendChild(ui.el('h3', '', 'Profile folder'));
+    const hub = S.hub();
+    const HP = hub && hub.HubProfile;
+    if (!HP) {
+      card.appendChild(ui.el('p', 'opt-note', 'Open Settings inside the Hub to save your Hub settings to your connected folder.'));
+      return card;
+    }
+    const body = ui.el('div');
+    const out = ui.el('p', 'upd-out', '');
+    out.setAttribute('aria-live', 'polite');
+    const saveB = ui.el('button', 'big-btn', 'Save now'); saveB.type = 'button'; saveB.id = 'profile-save';
+    const loadB = ui.el('button', 'big-btn', 'Load now'); loadB.type = 'button'; loadB.id = 'profile-load';
+    const btns = ui.el('div', 'profile-btns');
+    btns.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
+    btns.append(saveB, loadB);
+    card.append(body, btns, out,
+      ui.el('p', 'opt-note', 'Saved as hub/hub-profile/hub.json inside the folder, as plain JSON. API keys and sign-ins are never saved there.'));
+    async function draw() {
+      const st = await HP.status();
+      body.textContent = '';
+      if (st.folders.length > 1) {
+        const sel = ui.el('select', 'profile-pick');
+        sel.setAttribute('aria-label', 'Profile folder');
+        st.folders.forEach((f) => { const o = ui.el('option', '', f.name); o.value = f.id; if (f.id === st.driveId) o.selected = true; sel.appendChild(o); });
+        sel.addEventListener('change', () => { HP.setFolder(sel.value).then(draw); });
+        const r = ui.el('div', 'about-row');
+        r.append(ui.el('span', 'about-k', 'Folder'), sel);
+        body.appendChild(r);
+      } else body.appendChild(row('Folder', st.folder || '\u2014'));
+      body.appendChild(row('Status', st.state === 'ready' ? 'Connected' : st.state === 'prompt' ? 'Needs a click'
+        : st.state === 'denied' ? 'No access' : st.state === 'unsupported' ? 'Not supported' : 'No folder'));
+      body.appendChild(row('Last saved', niceTime(st.lastSave)));
+      if (st.lastLoad) body.appendChild(row('Last loaded', niceTime(st.lastLoad)));
+      if (st.path) body.appendChild(row('File', st.path));
+      body.appendChild(ui.el('p', 'opt-note', st.error || STATE_TEXT[st.state] || ''));
+      saveB.disabled = loadB.disabled = !st.driveId;
+    }
+    saveB.addEventListener('click', async () => {
+      saveB.disabled = true; out.className = 'upd-out'; out.textContent = 'Saving\u2026';
+      const r = await HP.save({ ask: true, force: true });
+      out.className = 'upd-out ' + (r.ok ? 'ok' : 'bad');
+      out.textContent = r.ok ? 'Saved' : r.reason === 'permission' ? 'No access to the folder' : 'Could not save';
+      draw();
+    });
+    loadB.addEventListener('click', async () => {
+      loadB.disabled = true; out.className = 'upd-out'; out.textContent = 'Loading\u2026';
+      const r = await HP.load({ ask: true, force: true });
+      out.className = 'upd-out ' + (r.applied ? 'ok' : 'bad');
+      out.textContent = r.applied ? 'Loaded \u2014 reloading the Hub\u2026' : r.reason === 'no-file' ? 'No saved profile in this folder yet'
+        : r.reason === 'permission' ? 'No access to the folder' : 'Could not load';
+      if (r.applied) setTimeout(() => hub.location.reload(), 400); else draw();
+    });
+    const off = HP.onChange(() => { if (card.isConnected) draw(); else off(); });
+    draw();
+    if (sub === 'profile') setTimeout(() => card.scrollIntoView({ block: 'start' }), 50);
+    return card;
+  }
+
   Settings.add({
     id: 'about', title: 'About', icon: '\u2139\uFE0F',
-    render(pane) {
+    render(pane, sub) {
       const card = ui.el('section', 'card ver-card');
       const head = ui.el('div', 'ver-head');
       const img = document.createElement('img'); img.src = 'settings_icon.png'; img.alt = '';
@@ -189,7 +261,7 @@
       fb.id = 'feedback';
       fb.append(ui.el('h3', '', 'Feedback'), ui.el('p', '', 'Found a bug or have an idea? Open an issue on GitHub.'),
         link(REPO + '/issues', 'GitHub Issues', 'Report a problem or suggest something'));
-      pane.append(card, contact, fb);
+      pane.append(card, profileCard(sub), contact, fb);
     }
   });
 })();

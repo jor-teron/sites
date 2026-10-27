@@ -63,6 +63,7 @@ const SHELL = [
   'apps/system/terminal/terminal_worker.js', 'apps/system/terminal/terminal_rc.js',   // T7: the BusyBox worker (+ T6 settings file) work offline
   'hub/link/hub_panels.css', 'hub/link/hub_panels.js',   // H27
   'hub/core/hub_keys.js', 'hub/keys.readme.md',   // H28
+  'hub/core/hub_profile.js',   // H30.1
 ];
 const OFFLINE = 'hub/update/hub_offline.html';
 const abs = (p) => new URL(p, self.registration.scope).href;
