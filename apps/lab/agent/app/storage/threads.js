@@ -2,6 +2,7 @@
    Folder connected: agent/chats/threads/<id>.md (HR.threadfmt Markdown) + agent/chats/threads/index.json
    ({v:1, chats:[{id,title,provider,model,created,updated}]}). No folder: the same text in IndexedDB 'agent-chats'/'kv'
    ('index', 't:<id>'); Settings → Save chats Off also keeps them there. When a folder becomes ready, chats only in IndexedDB are copied into it (IndexedDB copy kept).
+   AG8: index rows may carry pinned:true (pin()); every() = rows for chat search (folder + IndexedDB-only).
    The daily diary agent/chats/YYYY_MM/YYYY_MM_DD.md (HR.logs) is separate and unchanged. */
 HR.threads = (function () {
   var DIR = 'agent/chats/threads/', IDX = DIR + 'index.json';
@@ -39,6 +40,7 @@ HR.threads = (function () {
     if (disk) await HR.fs.write(DIR + id + '.md', text); else await idb.put('t:' + id, text);
     var arr = await readIdx(disk), i = arr.findIndex(function (c) { return c.id === id; }), row = {
       id: id, title: meta.title || 'New chat', provider: meta.provider || '', model: meta.model || '', created: meta.created || meta.updated, updated: meta.updated };
+    if (meta.pinned != null ? meta.pinned : i >= 0 && arr[i].pinned) row.pinned = true;   /* AG8 */
     if (i < 0) arr.push(row); else arr[i] = row;
     await writeIdx(disk, sort(arr));
   }
@@ -60,7 +62,20 @@ HR.threads = (function () {
     if (n) await writeIdx(true, sort(disk));
     return n;
   }
+  /* AG8: pin / unpin in the index only (the chat file is untouched); both stores, so a later merge keeps it */
+  async function pin(id, on) {
+    id = safe(id);
+    for (var k = 0; k < 2; k++) { var disk = !k; if (disk && !onDisk()) continue;
+      var arr = await readIdx(disk), r = arr.filter(function (c) { return c.id === id; })[0]; if (!r) continue;
+      if (on) r.pinned = true; else delete r.pinned; await writeIdx(disk, arr).catch(function () {}); }
+  }
+  /* AG8 search: every chat row (folder index + IndexedDB-only ones while a folder is used) */
+  async function every() {
+    var a = await list(); if (!onDisk()) return a;
+    var have = {}; a.forEach(function (c) { have[c.id] = 1; });
+    return a.concat((await readIdx(false)).filter(function (c) { return !have[c.id]; }).map(function (c) { return Object.assign({ browser: true }, c); }));
+  }
   function newId() { var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
     return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + '-' + Math.random().toString(36).slice(2, 6); }
-  return { list: list, load: load, save: save, remove: remove, merge: merge, newId: newId, DIR: DIR };
+  return { list: list, every: every, pin: pin, load: load, save: save, remove: remove, merge: merge, newId: newId, DIR: DIR };
 })();

@@ -9,7 +9,8 @@
   (auto-approve, allow writes / shell, memory) and Display (thinking, steps pane, long-task Hub card). See agent_readme.md.
   Styles: ui/main.css (theme, layout), ui/components.css (buttons, bubbles, cards, dialog), ui/steps.css (steps pane).
   Scripts (order matters): app/core (migrate, messages, tools, perms, loop, prompt, helper), app/models (net, registry, ollama, openai, gemini, browser [+ browser_worker.js]), app/storage (fs, logs, threadfmt, threads, usage, trash), app/tools/* (time, files, memory, shell, web),
-  app/gui (settings, model, steps, bubbles, approve, folder, helperset, provider, browsercard, chat, chats, meter, edit, usageview), app/main.js.
+  app/gui (settings, model, steps, bubbles, approve, folder, helperset, provider, browsercard, chat, chats, chatsearch, meter, edit, usageview), app/main.js.
+  Offline (AG8): agent_sw.js, Agent's own service worker (scope this folder), registered by app/main.js.
 -->
 <html lang="en">
 <head>
@@ -19,10 +20,10 @@
   <meta name="theme-color" content="#111318">
   <title>Agent</title>
   <link rel="icon" href="agent_icon.png">
-  <link rel="stylesheet" href="ui/main.css?v=20261027ag7b">
-  <link rel="stylesheet" href="ui/components.css?v=20261027ag7b">
-  <link rel="stylesheet" href="ui/steps.css?v=20261027ag7b">
-  <link rel="stylesheet" href="ui/chats.css?v=20261027ag7b">
+  <link rel="stylesheet" href="ui/main.css?v=20261027ag8">
+  <link rel="stylesheet" href="ui/components.css?v=20261027ag8">
+  <link rel="stylesheet" href="ui/steps.css?v=20261027ag8">
+  <link rel="stylesheet" href="ui/chats.css?v=20261027ag8">
   <script src="../../../shared/theme/hub_theme.js?v=20261026h22"></script>
   <script>try{var s=JSON.parse(localStorage.getItem('agent.settings')||localStorage.getItem('harness.settings')||'{}'),m=s.theme||'dark';document.documentElement.dataset.ht=m==='light'?'light':m==='system'?(localStorage.getItem('sites-hub.theme')==='light'?'light':'dark'):'dark'}catch(e){document.documentElement.dataset.ht='dark'}</script>
 </head>
@@ -41,6 +42,7 @@
   <div id="chatsBack" class="ch-back"></div>
   <aside class="chats" id="chats" aria-label="Chats">
     <div class="ch-top"><button type="button" class="hb wide ch-new" id="btnNewChat">＋ New chat</button><button type="button" class="hb ch-x" id="chatsClose" title="Close" aria-label="Close chats">✕</button></div>
+    <div class="ch-find"><input id="chatSearch" class="inp" type="search" spellcheck="false" autocomplete="off" placeholder="🔍 Search chats" aria-label="Search chats"><button type="button" class="hb ch-fx" id="chatSearchX" title="Clear search" aria-label="Clear search" hidden>✕</button></div>
     <div id="chatList" class="ch-list"></div>
     <p id="chatsWhere" class="ch-where"></p>
   </aside>
@@ -120,45 +122,46 @@
   <div id="pickList" class="pk-list"></div>
   <button type="button" class="hb wide pk-def" id="pickDef">Make default for new chats</button>
 </dialog>
-<script src="app/core/migrate.js?v=20261027ag7b"></script>
-<script src="app/core/messages.js?v=20261027ag7b"></script>
-<script src="app/core/tools.js?v=20261027ag7b"></script>
-<script src="app/core/perms.js?v=20261027ag7b"></script>
-<script src="app/core/loop.js?v=20261027ag7b"></script>
-<script src="app/core/prompt.js?v=20261027ag7b"></script>
-<script src="app/core/memory.js?v=20261027ag7b"></script>
-<script src="app/core/helper.js?v=20261027ag7b"></script>
-<script src="app/models/net.js?v=20261027ag7b"></script>
-<script src="app/models/registry.js?v=20261027ag7b"></script>
-<script src="app/models/ollama.js?v=20261027ag7b"></script>
-<script src="app/models/openai.js?v=20261027ag7b"></script>
-<script src="app/models/gemini.js?v=20261027ag7b"></script>
-<script src="app/models/browser.js?v=20261027ag7b"></script>
-<script src="app/storage/fs.js?v=20261027ag7b"></script>
-<script src="app/storage/logs.js?v=20261027ag7b"></script>
-<script src="app/storage/threadfmt.js?v=20261027ag7b"></script>
-<script src="app/storage/threads.js?v=20261027ag7b"></script>
-<script src="app/storage/usage.js?v=20261027ag7b"></script>
-<script src="app/storage/trash.js?v=20261027ag7b"></script>
-<script src="app/tools/time.js?v=20261027ag7b"></script>
-<script src="app/tools/files.js?v=20261027ag7b"></script>
-<script src="app/tools/memory.js?v=20261027ag7b"></script>
-<script src="app/tools/shell.js?v=20261027ag7b"></script>
-<script src="app/tools/web.js?v=20261027ag7b"></script>
-<script src="app/gui/settings.js?v=20261027ag7b"></script>
-<script src="app/gui/model.js?v=20261027ag7b"></script>
-<script src="app/gui/steps.js?v=20261027ag7b"></script>
-<script src="app/gui/bubbles.js?v=20261027ag7b"></script>
-<script src="app/gui/approve.js?v=20261027ag7b"></script>
-<script src="app/gui/folder.js?v=20261027ag7b"></script>
-<script src="app/gui/helperset.js?v=20261027ag7b"></script>
-<script src="app/gui/provider.js?v=20261027ag7b"></script>
-<script src="app/gui/browsercard.js?v=20261027ag7b"></script>
-<script src="app/gui/chat.js?v=20261027ag7b"></script>
-<script src="app/gui/chats.js?v=20261027ag7b"></script>
-<script src="app/gui/meter.js?v=20261027ag7b"></script>
-<script src="app/gui/edit.js?v=20261027ag7b"></script>
-<script src="app/gui/usageview.js?v=20261027ag7b"></script>
-<script src="app/main.js?v=20261027ag7b"></script>
+<script src="app/core/migrate.js?v=20261027ag8"></script>
+<script src="app/core/messages.js?v=20261027ag8"></script>
+<script src="app/core/tools.js?v=20261027ag8"></script>
+<script src="app/core/perms.js?v=20261027ag8"></script>
+<script src="app/core/loop.js?v=20261027ag8"></script>
+<script src="app/core/prompt.js?v=20261027ag8"></script>
+<script src="app/core/memory.js?v=20261027ag8"></script>
+<script src="app/core/helper.js?v=20261027ag8"></script>
+<script src="app/models/net.js?v=20261027ag8"></script>
+<script src="app/models/registry.js?v=20261027ag8"></script>
+<script src="app/models/ollama.js?v=20261027ag8"></script>
+<script src="app/models/openai.js?v=20261027ag8"></script>
+<script src="app/models/gemini.js?v=20261027ag8"></script>
+<script src="app/models/browser.js?v=20261027ag8"></script>
+<script src="app/storage/fs.js?v=20261027ag8"></script>
+<script src="app/storage/logs.js?v=20261027ag8"></script>
+<script src="app/storage/threadfmt.js?v=20261027ag8"></script>
+<script src="app/storage/threads.js?v=20261027ag8"></script>
+<script src="app/storage/usage.js?v=20261027ag8"></script>
+<script src="app/storage/trash.js?v=20261027ag8"></script>
+<script src="app/tools/time.js?v=20261027ag8"></script>
+<script src="app/tools/files.js?v=20261027ag8"></script>
+<script src="app/tools/memory.js?v=20261027ag8"></script>
+<script src="app/tools/shell.js?v=20261027ag8"></script>
+<script src="app/tools/web.js?v=20261027ag8"></script>
+<script src="app/gui/settings.js?v=20261027ag8"></script>
+<script src="app/gui/model.js?v=20261027ag8"></script>
+<script src="app/gui/steps.js?v=20261027ag8"></script>
+<script src="app/gui/bubbles.js?v=20261027ag8"></script>
+<script src="app/gui/approve.js?v=20261027ag8"></script>
+<script src="app/gui/folder.js?v=20261027ag8"></script>
+<script src="app/gui/helperset.js?v=20261027ag8"></script>
+<script src="app/gui/provider.js?v=20261027ag8"></script>
+<script src="app/gui/browsercard.js?v=20261027ag8"></script>
+<script src="app/gui/chat.js?v=20261027ag8"></script>
+<script src="app/gui/chats.js?v=20261027ag8"></script>
+<script src="app/gui/chatsearch.js?v=20261027ag8"></script>
+<script src="app/gui/meter.js?v=20261027ag8"></script>
+<script src="app/gui/edit.js?v=20261027ag8"></script>
+<script src="app/gui/usageview.js?v=20261027ag8"></script>
+<script src="app/main.js?v=20261027ag8"></script>
 </body>
 </html>

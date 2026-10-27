@@ -1,5 +1,6 @@
 /* Agent — app/gui/chats.js: multiple chats (AG4). HR.chats: init(), id(), dirty(), newChat(), open(id).
-   Drawer (#chats): "+ New chat", then chats newest first (tap = switch, ✎ rename, 🗑 delete). Phone: slide-over with a
+   Drawer (#chats): "+ New chat", search (AG8, app/gui/chatsearch.js), 📌 Pinned then Recent chats, newest first
+   (tap = switch; ⋯ / long-press / right-click = small menu: Pin / Unpin, Rename, Delete; pinned:true lives in the index). Phone: slide-over with a
    backdrop (💬 opens, tap outside / pick closes). >=960px: docked left pane, 💬 shows / hides it (agent.chatsPane).
    The open chat id is kept in localStorage 'agent.chat' so a reload resumes it. Title = first user message (until renamed).
    Each chat stores its provider + model; opening a chat switches to them (AG5: HR.models.setChat, the Settings default is
@@ -56,20 +57,45 @@ HR.chats = (function () {
     refresh();
   }
   function when(s) { var d = new Date(s); if (isNaN(d)) return ''; var t = new Date(); return d.toDateString() === t.toDateString() ? d.toTimeString().slice(0, 5) : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
-  function draw() {
-    if (!listEl) return; listEl.innerHTML = '';
-    var all = rows.slice(); if (meta && !all.some(function (r) { return r.id === meta.id; })) all.unshift({ id: meta.id, title: meta.title || 'New chat', updated: meta.updated, draft: true });
-    all.forEach(function (c) {
-      var li = document.createElement('div'), b = document.createElement('button'), r = document.createElement('button'), x = document.createElement('button');
-      li.className = 'ch-row' + (meta && c.id === meta.id ? ' on' : '');
-      b.type = r.type = x.type = 'button'; b.className = 'ch-open'; r.className = x.className = 'hb ch-act';
-      var t = document.createElement('span'); t.className = 'ch-title'; t.textContent = c.title || 'New chat';
-      var s = document.createElement('span'); s.className = 'ch-sub'; s.textContent = [when(c.updated), c.model].filter(Boolean).join(' · ');
-      b.append(t, s); b.onclick = function () { open(c.id); };
-      r.textContent = '✎'; r.title = 'Rename'; r.setAttribute('aria-label', 'Rename chat'); r.onclick = function () { rename(c); };
-      x.textContent = '🗑'; x.title = 'Delete'; x.setAttribute('aria-label', 'Delete chat'); x.onclick = function () { del(c); };
-      li.append(b); if (!c.draft) li.append(r, x); listEl.appendChild(li);
+  /* AG8: one ⋯ button per row (also long-press / right-click) opens a small menu: Pin / Unpin, Rename, Delete */
+  var menu = null;
+  function closeMenu() { if (menu) { menu.remove(); menu = null; } }
+  function openMenu(li, c) {
+    closeMenu(); if (c.draft) return;
+    menu = document.createElement('div'); menu.className = 'ch-menu'; menu.setAttribute('role', 'menu');
+    [[c.pinned ? '📌 Unpin' : '📌 Pin', function () { pin(c, !c.pinned); }], ['✎ Rename', function () { rename(c); }], ['🗑 Delete', function () { del(c); }]].forEach(function (x) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'ch-mi'; b.setAttribute('role', 'menuitem'); b.textContent = x[0];
+      b.onclick = function (e) { e.stopPropagation(); closeMenu(); x[1](); }; menu.appendChild(b);
     });
+    li.appendChild(menu); menu.querySelector('button').focus();
+  }
+  async function pin(c, on) {
+    await saving; if (meta && meta.id === c.id) meta.pinned = on;
+    await HR.threads.pin(c.id, on).catch(function () {}); refresh();
+  }
+  function row(c) {
+    var li = document.createElement('div'), b = document.createElement('button'), m = document.createElement('button'), press = 0;
+    li.className = 'ch-row' + (meta && c.id === meta.id ? ' on' : '');
+    b.type = m.type = 'button'; b.className = 'ch-open'; m.className = 'hb ch-act';
+    var t = document.createElement('span'); t.className = 'ch-title'; t.textContent = (c.pinned ? '📌 ' : '') + (c.title || 'New chat');
+    var s = document.createElement('span'); s.className = 'ch-sub'; s.textContent = [when(c.updated), c.model].filter(Boolean).join(' · ');
+    b.append(t, s); b.onclick = function (e) { if (press === -1) { press = 0; e.stopPropagation(); return; } open(c.id); };
+    b.addEventListener('contextmenu', function (e) { e.preventDefault(); openMenu(li, c); });
+    b.addEventListener('touchstart', function () { press = setTimeout(function () { press = -1; openMenu(li, c); }, 550); }, { passive: true });
+    b.addEventListener('touchend', function () { if (press > 0) clearTimeout(press); });
+    b.addEventListener('touchmove', function () { if (press > 0) clearTimeout(press); press = 0; }, { passive: true });
+    m.textContent = '⋯'; m.title = 'Chat actions'; m.setAttribute('aria-label', 'Actions for ' + (c.title || 'chat')); m.setAttribute('aria-haspopup', 'menu');
+    m.onclick = function (e) { e.stopPropagation(); if (menu && menu.parentNode === li) closeMenu(); else openMenu(li, c); };
+    li.append(b); if (!c.draft) li.append(m); return li;
+  }
+  function head(t) { var h = document.createElement('div'); h.className = 'ch-sec'; h.textContent = t; return h; }
+  function draw() {
+    if (!listEl) return; if (HR.chatSearch && HR.chatSearch.active()) { HR.chatSearch.run(); return; }
+    closeMenu(); listEl.innerHTML = '';
+    var all = rows.slice(); if (meta && !all.some(function (r) { return r.id === meta.id; })) all.unshift({ id: meta.id, title: meta.title || 'New chat', updated: meta.updated, draft: true });
+    var pins = all.filter(function (c) { return c.pinned; }), rest = all.filter(function (c) { return !c.pinned; });
+    if (pins.length) { listEl.appendChild(head('Pinned')); pins.forEach(function (c) { listEl.appendChild(row(c)); }); if (rest.length) listEl.appendChild(head('Recent')); }
+    rest.forEach(function (c) { listEl.appendChild(row(c)); });
     $('chatsWhere').textContent = HR.fs.ready() && HR.set.get('saveChats') !== 'off' ? 'Saved in 📁 ' + HR.fs.name() + '/' + HR.threads.DIR : 'Saved in this browser (pick a folder to keep them as files)';
   }
   function phone() { return !matchMedia('(min-width:960px)').matches; }
@@ -80,6 +106,8 @@ HR.chats = (function () {
   }
   async function init() {
     pane = $('chats'); listEl = $('chatList');
+    document.addEventListener('click', function (e) { if (menu && !menu.contains(e.target)) closeMenu(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
     $('btnChats').onclick = toggle; $('chatsClose').onclick = function () { document.body.classList.remove('chats-open'); };
     $('chatsBack').onclick = close; $('btnNewChat').onclick = newChat; $('btnClear').onclick = newChat;
     if (localStorage.getItem('agent.chatsPane') === 'off') document.body.classList.add('chats-off');
@@ -93,5 +121,5 @@ HR.chats = (function () {
     if (pick) { var l = await HR.threads.load(pick.id); if (l) { meta = Object.assign({}, pick); HR.msgs.set(l); show(); useModel(pick); return; } }
     meta = fresh(); HR.msgs.set([]); show();
   }
-  return { init: init, id: function () { return meta ? meta.id : ''; }, dirty: dirty, flush: flush, newChat: newChat, open: open, picked: picked };
+  return { init: init, redraw: draw, rows: function () { return rows; }, id: function () { return meta ? meta.id : ''; }, dirty: dirty, flush: flush, newChat: newChat, open: open, picked: picked };
 })();
