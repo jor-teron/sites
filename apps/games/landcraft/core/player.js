@@ -1,6 +1,7 @@
 // LandCraft player: an axis-aligned box (0.6 x 1.8 x 0.6) with gravity, jumping and block collision.
 // Movement is split into small substeps and resolved one axis at a time, so the player never tunnels
 // through blocks, slides along walls, and stands stably on block edges.
+// LC3: input.autoJump (touch setting) hops up a 1-block step when walking into it on the ground.
 import { solid } from './blocks.js';
 
 export const EYE = 1.62;
@@ -13,6 +14,7 @@ export class Player {
     this.pos = { x: x, y: y, z: z };
     this.vel = { x: 0, y: 0, z: 0 };
     this.yaw = 0; this.pitch = 0; this.onGround = false;
+    this.bumped = false; // walked into a wall this update (x or z blocked)
   }
   // True if the block cell (x, y, z) would intersect the player's box.
   overlaps(x, y, z) {
@@ -36,11 +38,20 @@ export class Player {
       if (d < 0) { p.y = Math.floor(p.y) + 1; this.onGround = true; }
       else p.y = Math.floor(p.y + HEIGHT) - HEIGHT - EPS;
     } else {
+      this.bumped = true;
       p[axis] = d > 0 ? Math.floor(p[axis] + HALF) - HALF - EPS : Math.floor(p[axis] - HALF) + 1 + HALF + EPS;
     }
     this.vel[axis] = 0;
   }
-  // input: fwd and strafe in -1..1, jump boolean. dt in seconds.
+  // True if the spot 0.45 ahead (dx, dz = walk direction) and one block up is free: a 1-high step, not a wall.
+  stepFree(dx, dz) {
+    const l = Math.hypot(dx, dz) || 1, p = this.pos, x = p.x, y = p.y, z = p.z;
+    p.x += dx / l * 0.45; p.z += dz / l * 0.45; p.y = Math.floor(y + 0.01) + 1.01;
+    const free = !this.collides();
+    p.x = x; p.y = y; p.z = z;
+    return free;
+  }
+  // input: fwd and strafe in -1..1, jump and autoJump booleans. dt in seconds.
   update(dt, input) {
     let f = input.fwd, s = input.strafe;
     const len = Math.hypot(f, s);
@@ -52,8 +63,10 @@ export class Player {
     this.vel.y = Math.max(-40, this.vel.y - GRAVITY * dt);
     const v = this.vel, steps = Math.max(1, Math.ceil(Math.max(Math.abs(v.x), Math.abs(v.y), Math.abs(v.z)) * dt / 0.25));
     const h = dt / steps;
-    this.onGround = false;
+    const wasGround = this.onGround;
+    this.onGround = false; this.bumped = false;
     for (let i = 0; i < steps; i++) { this.moveAxis('y', v.y * h); this.moveAxis('x', v.x * h); this.moveAxis('z', v.z * h); }
+    if (input.autoJump && this.bumped && (this.onGround || wasGround) && (f || s) && this.stepFree(-sin * f + cos * s, -cos * f - sin * s)) this.vel.y = JUMP;
     if (this.pos.y < -20) { Object.assign(this.pos, this.spawn); this.vel.y = 0; } // fell off the world edge
   }
 }

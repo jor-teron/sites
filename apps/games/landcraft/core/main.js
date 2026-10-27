@@ -1,6 +1,9 @@
 // LandCraft LCR1a: generated voxel maps 00-99 chosen in a title picker (or ?map=NN; 00 = flat test world),
 // three.js r170 vendored, first-person movement and block break/place. Each map keeps its own save (edits + player),
 // autosaved every 30 s and on map switch / picker / page hide; a map is rebuilt from its number plus the save's diff.
+// LC3: shared Games settings (core/settings.js): FPS limit throttles drawing inside setAnimationLoop using real
+// elapsed time (movement stays per second), render distance (+ fog), pixel ratio, look sensitivity, FPS counter,
+// touch auto-jump and hold-to-repeat, and a ⚙ gear (top right). Changes apply live, even from another tab.
 import * as THREE from 'three';
 import { makeAtlas } from '../assets/textures/atlas.js';
 import { generate, worldHash } from './mapgen.js';
@@ -9,15 +12,17 @@ import { setupControls } from './controls.js';
 import { setupInteract } from './interact.js';
 import { setupPicker } from './picker.js';
 import { readSave, writeSave, hasSave, dropSave, saveKey } from './save.js';
+import { settings } from './settings.js';
+import { setupHud } from './hud.js';
 
 const SKY = 0x8ec9ff;
 const renderer = new THREE.WebGLRenderer({ antialias: false });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setPixelRatio(settings.pixelRatio());
 document.body.prepend(renderer.domElement); // first, so the overlay UI stacks above it
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(SKY);
-scene.fog = new THREE.Fog(SKY, 40, 90);
+scene.fog = new THREE.Fog(SKY, 40, 90); // distances follow the render distance (applyView)
 scene.add(new THREE.AmbientLight(0xffffff, 1.1));
 const sun = new THREE.DirectionalLight(0xfff4e0, 1.8);
 sun.position.set(30, 60, 20);
@@ -29,7 +34,14 @@ const materials = [ // [0] opaque + cutout leaves, [1] translucent glass
   new THREE.MeshLambertMaterial({ map: atlas, vertexColors: true, alphaTest: 0.5 }),
   new THREE.MeshLambertMaterial({ map: atlas, vertexColors: true, transparent: true, depthWrite: false })
 ];
-const LOAD = 5; // chunks meshed around the player; the rest stream in a few per frame as you walk
+let LOAD = 5; // chunks meshed around the player (setting 'renderDistance' 3-5); the rest stream in a few per frame
+
+// Render distance and the fog that hides its edge: 5 chunks -> fog 40..90 (the original look), 3 -> 26..58.
+function applyView() {
+  LOAD = settings.get('renderDistance');
+  scene.fog.far = LOAD * 16 + 10; scene.fog.near = Math.round(scene.fog.far * 0.45);
+  camera.far = scene.fog.far + 20; camera.updateProjectionMatrix();
+}
 
 function resize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -38,10 +50,12 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 resize();
+applyView();
 
 const player = new Player(null, 0, 0, 0);
-const controls = setupControls(renderer.domElement, player);
-const ctx = { scene: scene, camera: camera, world: null, player: player, canvas: renderer.domElement, controls: controls, atlas: atlas };
+const controls = setupControls(renderer.domElement, player, { sens: function () { return settings.get('sensitivity'); } });
+const ctx = { scene: scene, camera: camera, world: null, player: player, canvas: renderer.domElement, controls: controls, atlas: atlas,
+  holdRepeat: function () { return settings.get('holdRepeat'); } };
 const interact = setupInteract(ctx); // reads ctx.world on every use, so a map switch only swaps ctx.world
 let mapNum = null, last = performance.now();
 
@@ -80,15 +94,37 @@ const picker = setupPicker({ canvas: renderer.domElement, current: function () {
 window.landcraft.picker = picker;
 setInterval(autosave, AUTOSAVE_MS);
 window.addEventListener('pagehide', save);
+
+// Settings: gear, FPS counter, and live updates (the settings page may be open in another tab).
+settings.mountGear('top-right');
+const hud = setupHud(settings);
+settings.onChange(function (ch) {
+  if ('pixelRatio' in ch || 'lowGraphics' in ch) { renderer.setPixelRatio(settings.pixelRatio()); resize(); }
+  if ('renderDistance' in ch) applyView();
+  if ('holdRepeat' in ch && !settings.get('holdRepeat')) interact.stopHold();
+});
+window.landcraft.settings = settings;
 document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') save(); });
 
+let lastDraw = -Infinity;
 renderer.setAnimationLoop(function (t) {
-  // Clamp to 0..0.05 s: a background tab can't cause a huge step, and the first frame's timestamp can
-  // predate `last` after a slow map build (a negative dt pushed the player into the ground).
-  const dt = Math.max(0, Math.min(0.05, (t - last) / 1000));
+  // FPS limit: skip display refreshes until a frame is due (1 ms slack so 60 on a 60 Hz screen draws every
+  // refresh). The remainder is carried over, so 30 on a 60 Hz screen draws every second refresh, evenly.
+  const fm = settings.frameMs(), since = t - lastDraw;
+  if (since < fm - 1) return;
+  lastDraw = since >= fm && since < 2 * fm ? t - (since - fm) : t;
+  // Real elapsed time since the last drawn frame, clamped to 0..0.1 s: a background tab can't cause a huge
+  // step, and the first frame's timestamp can predate `last` after a slow map build (negative dt).
+  const dt = Math.max(0, Math.min(0.1, (t - last) / 1000));
   last = t;
+  hud.tick(t);
   if (!ctx.world) { renderer.render(scene, camera); return; } // sky behind the picker until a map is chosen
-  if (!picker.isOpen()) player.update(dt, controls.read()); // the world holds still while the picker is open
+  if (!picker.isOpen()) { // the world holds still while the picker is open
+    const input = controls.read();
+    input.autoJump = controls.touch() && settings.get('autoJump'); // auto-jump is a touch helper only
+    player.update(dt, input);
+    interact.tick(t);
+  }
   ctx.world.buildNear(scene, materials, player.pos.x, player.pos.z, LOAD, 2);
   camera.position.set(player.pos.x, player.pos.y + EYE, player.pos.z);
   camera.rotation.set(player.pitch, player.yaw, 0, 'YXZ');

@@ -1,6 +1,7 @@
 /*
  * File: apps/games/common/settings/games-settings.js
  * Release: GS1 — shared settings for the whole Games category.
+ *          LC3 (LandCraft) added renderDistance, pixelRatio, autoJump, holdRepeat.
  * Purpose: Tiny no-build library (classic script, works from file://) that
  *          exposes window.GameSettings. Every setting lives in ONE localStorage
  *          key, 'games.settings', as JSON. Unknown keys are ignored and bad
@@ -31,6 +32,11 @@
     difficulty:    { type: 'enum',  def: 'normal', values: ['easy', 'normal', 'hard'] },
     autoPause:     { type: 'bool',  def: true },
     showFps:       { type: 'bool',  def: false },
+    // LC3: for 3D / first-person games (LandCraft first). 'auto' = the game's own default.
+    renderDistance: { type: 'enum', def: 5,      values: [3, 4, 5] },          // chunks (16 blocks each)
+    pixelRatio:    { type: 'enum',  def: 'auto', values: ['auto', 1, 1.5, 2] }, // lower = faster on weak phones
+    autoJump:      { type: 'bool',  def: true },  // touch: hop up 1-block steps while walking
+    holdRepeat:    { type: 'bool',  def: true },  // touch: holding an action button repeats it
   };
 
   /* Return a valid value for key k, or undefined if v is not acceptable. */

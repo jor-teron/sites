@@ -45,17 +45,19 @@
     /* UI description: [group, key, label, control]. Types/ranges come from GS.SCHEMA. */
     var FIELDS = [
       ['Display', 'theme', 'Theme', 'select'], ['Display', 'fpsLimit', 'FPS limit', 'select'],
-      ['Display', 'lowGraphics', 'Low graphics', 'toggle'], ['Display', 'screenShake', 'Screen shake', 'toggle'],
+      ['Display', 'lowGraphics', 'Low graphics', 'toggle'],
+      ['Display', 'renderDistance', 'Render distance (3D, chunks)', 'select'], ['Display', 'pixelRatio', 'Resolution (pixel ratio)', 'select'], ['Display', 'screenShake', 'Screen shake', 'toggle'],
       ['Sound', 'masterVolume', 'Master volume', 'range'], ['Sound', 'music', 'Music', 'toggle'],
       ['Sound', 'sfx', 'Sound effects', 'toggle'], ['Sound', 'vibration', 'Vibration', 'toggle'],
       ['Controls', 'controlsSide', 'Joystick side', 'select'], ['Controls', 'joystickSize', 'Joystick size', 'range'],
       ['Controls', 'buttonOpacity', 'Button opacity', 'range'], ['Controls', 'sensitivity', 'Sensitivity', 'range'],
       ['Controls', 'showHints', 'Show control hints', 'toggle'],
+      ['Controls', 'autoJump', 'Auto-jump (touch)', 'toggle'], ['Controls', 'holdRepeat', 'Hold button to repeat (touch)', 'toggle'],
       ['Gameplay', 'difficulty', 'Difficulty', 'select'], ['Gameplay', 'autoPause', 'Pause when app is hidden', 'toggle'],
       ['Gameplay', 'showFps', 'Show FPS counter', 'toggle'],
     ];
     var LABELS = { auto: 'Game default', light: 'Light', dark: 'Dark', right: 'Right', left: 'Left',
-      easy: 'Easy', normal: 'Normal', hard: 'Hard' };
+      easy: 'Easy', normal: 'Normal', hard: 'Hard', 1: '1× (fastest)', 1.5: '1.5×', 2: '2× (sharpest)' };
 
     // Hub look: follow the Hub's light/dark choice when the setting is 'auto'
     function applyTheme() {

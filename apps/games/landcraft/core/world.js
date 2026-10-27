@@ -63,12 +63,14 @@ export class World {
     for (const c of this.chunks.values()) scene.add(c.build(this, materials));
   }
   // Load radius: mesh unbuilt chunks within `radius` chunks of (x, z), nearest first, at most `max` per call.
+  // LC3: meshes already built but now beyond `radius` (render distance lowered, or walked away) are hidden.
   buildNear(scene, materials, x, z, radius, max) {
     this.scene = scene; this.materials = materials;
     const pcx = Math.floor(x / CS), pcz = Math.floor(z / CS), todo = [];
     for (const c of this.chunks.values()) {
       const d = Math.max(Math.abs(c.cx - pcx), Math.abs(c.cz - pcz));
-      if (!c.mesh && d <= radius) todo.push([d, c]);
+      if (!c.mesh) { if (d <= radius) todo.push([d, c]); }
+      else c.mesh.visible = d <= radius;
     }
     todo.sort(function (a, b) { return a[0] - b[0]; });
     for (let i = 0; i < Math.min(max, todo.length); i++) scene.add(todo[i][1].build(this, materials));

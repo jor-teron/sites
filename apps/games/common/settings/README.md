@@ -28,6 +28,10 @@ Players set theme, FPS limit, sound, controls and difficulty once; each game rea
 | difficulty | enum | `easy`, `normal`, `hard` | `normal` |
 | autoPause | bool | pause on `visibilitychange` | true |
 | showFps | bool | | false |
+| renderDistance | enum (number) | 3, 4, 5 (chunks of 16 blocks; 3D games) | 5 |
+| pixelRatio | enum | `auto` (game default), 1, 1.5, 2 | `auto` |
+| autoJump | bool | touch: hop up 1-block steps | true |
+| holdRepeat | bool | touch: holding an action button repeats it | true |
 
 Numbers are clamped to their range; enums accept strings like `"60"`.
 
@@ -93,4 +97,5 @@ nor are Hub/Learn/other keys. The page lists the keys and asks to confirm first.
 | Game | Status | Notes |
 |---|---|---|
 | Tennis Ball Blitz (`tennis-throw`) | done (TB4/GS1) | fpsLimit, difficulty, vibration, showHints, showFps, autoPause, theme (dark sky), gear. No sound, so music/sfx/volume unused |
+| LandCraft (`landcraft`) | done (LC3) | fpsLimit (render throttle), renderDistance (+ fog), pixelRatio (`auto` = up to 2, or 1 with lowGraphics), sensitivity, showFps, autoJump + holdRepeat (touch only), gear. No sound; theme, difficulty, autoPause, vibration, joystick/button options unused |
 | All other games | pending | |

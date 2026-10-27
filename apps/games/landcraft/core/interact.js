@@ -1,5 +1,7 @@
 // LandCraft L1c block editing: target the block under the crosshair (reach 5), outline it,
 // break / place it, and pick the block to place from a 7-slot hotbar.
+// LC3: holding the touch Break / Place button repeats it (setting 'holdRepeat'); tick(now) drives the repeat
+// from the game loop, so there are no timers to leak and nothing repeats while the loop is idle.
 import * as THREE from 'three';
 import { raycast } from './raycast.js';
 import { AIR, HOTBAR, NAMES, solid } from './blocks.js';
@@ -8,7 +10,9 @@ import { TILE } from '../assets/textures/atlas.js';
 
 const REACH = 5;
 
-export function setupInteract(o) { // o: { scene, camera, world, player, canvas, controls, atlas }
+const HOLD_FIRST = 350, HOLD_EVERY = 250; // ms before the first repeat, then between repeats
+
+export function setupInteract(o) { // o: { scene, camera, world, player, canvas, controls, atlas, holdRepeat() }
   const outline = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.004, 1.004, 1.004)),
     new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.6 }));
   outline.visible = false;
@@ -53,9 +57,24 @@ export function setupInteract(o) { // o: { scene, camera, world, player, canvas,
     if (!down || down.locked || !o.controls.lockFailed() || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) return;
     update(); if (e.button === 0) breakBlock(); else if (e.button === 2) placeBlock();
   });
-  // Touch: Break and Place buttons act on the block under the crosshair.
-  document.getElementById('break').addEventListener('pointerdown', function (e) { e.preventDefault(); update(); breakBlock(); });
-  document.getElementById('place').addEventListener('pointerdown', function (e) { e.preventDefault(); update(); placeBlock(); });
+  // Touch: Break and Place buttons act on the block under the crosshair; held = repeat (if enabled).
+  let hold = null; // { fn, next } while a button is held
+  function holdable(id, fn) {
+    const b = document.getElementById(id);
+    b.addEventListener('pointerdown', function (e) {
+      e.preventDefault(); update(); fn();
+      if (!o.holdRepeat || o.holdRepeat()) hold = { fn: fn, next: performance.now() + HOLD_FIRST };
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (n) { b.addEventListener(n, function () { hold = null; }); });
+  }
+  holdable('break', breakBlock);
+  holdable('place', placeBlock);
+  // Called every drawn frame: fire the held action when due (catch-up capped to one per frame).
+  function tick(now) {
+    if (!hold || now < hold.next) return;
+    update(); hold.fn();
+    hold.next = Math.max(hold.next + HOLD_EVERY, now);
+  }
 
   function update() {
     o.camera.getWorldDirection(dir);
@@ -63,5 +82,5 @@ export function setupInteract(o) { // o: { scene, camera, world, player, canvas,
     outline.visible = !!target;
     if (target) outline.position.set(target.x + 0.5, target.y + 0.5, target.z + 0.5);
   }
-  return { update: update, slot: function () { return HOTBAR[slot]; }, index: function () { return slot; }, select: select, target: function () { return target; } };
+  return { update: update, tick: tick, stopHold: function () { hold = null; }, slot: function () { return HOTBAR[slot]; }, index: function () { return slot; }, select: select, target: function () { return target; } };
 }

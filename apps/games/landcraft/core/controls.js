@@ -1,6 +1,8 @@
 // LandCraft input. Desktop: click for pointer-lock mouse look (drag also looks), WASD/arrows, Space.
 // Touch: left half is a virtual joystick, right half drags to look, plus a jump button.
-export function setupControls(canvas, player) {
+// LC3: opts.sens() is the look-sensitivity multiplier from the Games settings (1 = default).
+export function setupControls(canvas, player, opts) {
+  const sens = opts && opts.sens ? opts.sens : function () { return 1; };
   const keys = {}, stick = { id: null, x: 0, y: 0, dx: 0, dy: 0 }, look = { id: null, x: 0, y: 0 };
   const base = document.getElementById('stick'), knob = document.getElementById('knob'), jumpBtn = document.getElementById('jump');
   const R = 50;
@@ -8,6 +10,7 @@ export function setupControls(canvas, player) {
   if (matchMedia('(pointer: coarse)').matches) document.body.classList.add('touch');
 
   function turn(dx, dy, k) {
+    k *= sens();
     player.yaw -= dx * k;
     player.pitch = Math.max(-1.55, Math.min(1.55, player.pitch - dy * k));
   }
@@ -62,6 +65,7 @@ export function setupControls(canvas, player) {
   function k(a, b) { return keys[a] || keys[b] ? 1 : 0; }
   return {
     lockFailed: function () { return lockFailed; },
+    touch: function () { return document.body.classList.contains('touch'); },
     read: function () {
       return {
         fwd: k('KeyW', 'ArrowUp') - k('KeyS', 'ArrowDown') - stick.dy / R,
