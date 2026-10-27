@@ -1,5 +1,5 @@
 /* Harness — ui/components.css: 30px buttons (~18px icons), chat bubbles, folded Thinking box, code blocks, stats line,
-   tool chips + notes (HR2), error cards, empty-state hello, settings dialog, local notice cards (.hn-*). */
+   tool chips + notes (HR2), folder chip + approval card (HR3), error cards, empty-state hello, settings dialog, local notice cards (.hn-*). */
 .hb{min-width:30px;height:30px;padding:0 6px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);font-size:17px;line-height:1;cursor:pointer;
   display:inline-flex;align-items:center;justify-content:center;flex:none;position:relative;transition:transform .18s cubic-bezier(.34,1.8,.64,1),border-color .15s}
 .hb:hover{border-color:var(--acc);transform:scale(1.08)}.hb:active{transform:scale(.9)}.hb:disabled{opacity:.4;transform:none;cursor:default}
@@ -46,3 +46,12 @@
 .tool-body{margin:0;padding:6px 10px;border-top:1px solid var(--line);font:12px/1.4 var(--mono);white-space:pre-wrap;word-break:break-word;max-height:240px;overflow-y:auto}
 .note{align-self:center;font-size:12.5px;color:var(--mut);background:var(--think);border-radius:10px;padding:3px 10px}
 .lbl{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;font-size:13.5px;color:var(--mut)}.inp.num{width:80px}
+/* HR3 folder chip, approval card */
+.chip{height:30px;max-width:38vw;border:1.5px solid var(--line);border-radius:15px;background:var(--card);padding:0 10px;font-size:13px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.ready{border-color:var(--ok)}.chip.need{border-color:var(--warn);color:var(--warn)}.chip[hidden]{display:none}
+.hint.warn{color:var(--warn)}.ec-row.start{justify-content:flex-start}
+.acard{align-self:stretch;max-width:760px;border:1.5px solid var(--warn);border-radius:14px;background:var(--card);padding:10px 12px;animation:pop .35s cubic-bezier(.34,1.7,.64,1) both}
+.acard.yes{border-color:var(--ok)}.acard.no{border-color:var(--line);opacity:.8}.acard .ec-row{justify-content:flex-start}.acard.yes .ec-row,.acard.no .ec-row{display:none}
+.ac-t{font-weight:600}.ac-m{font-size:13px;color:var(--mut);margin-top:4px}
+.ac-p{margin:8px 0 0;max-height:220px;overflow:auto;background:var(--think);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:12px/1.4 var(--mono);white-space:pre-wrap;word-break:break-word}
+.hb.ok{border-color:var(--ok);color:var(--ok)}

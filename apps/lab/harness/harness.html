@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <!--
-  Harness (HR1-HR2) — browser AI agent harness, all in browser JS. HR1: chat with a local Ollama model (streaming, Stop,
-  Thinking box, tok/s), Steps pane. HR2: agent loop with tools (get_time), step limit, Stop. See harness_readme.md roadmap.
+  Harness (HR1-HR3) — browser AI agent harness, all in browser JS. HR1: chat with a local Ollama model (streaming, Stop,
+  Thinking box, tok/s), Steps pane. HR2: agent loop with tools (get_time), step limit, Stop. HR3: folder tools
+  (File System Access; write needs approval). See harness_readme.md roadmap.
   Styles: ui/main.css (theme, layout), ui/components.css (buttons, bubbles, cards, dialog), ui/steps.css (steps pane).
-  Scripts (order matters): app/core (messages, tools, loop), app/models/ollama.js, app/tools/*, app/gui (settings, model, steps,
-  bubbles, chat), app/main.js.
+  Scripts (order matters): app/core (messages, tools, loop), app/models/ollama.js, app/storage/fs.js, app/tools/*,
+  app/gui (settings, model, steps, bubbles, approve, folder, chat), app/main.js.
 -->
 <html lang="en">
 <head>
@@ -14,9 +15,9 @@
   <meta name="theme-color" content="#111318">
   <title>Harness</title>
   <link rel="icon" href="harness_icon.png">
-  <link rel="stylesheet" href="ui/main.css?v=20261027hr2">
-  <link rel="stylesheet" href="ui/components.css?v=20261027hr2">
-  <link rel="stylesheet" href="ui/steps.css?v=20261027hr2">
+  <link rel="stylesheet" href="ui/main.css?v=20261027hr3">
+  <link rel="stylesheet" href="ui/components.css?v=20261027hr3">
+  <link rel="stylesheet" href="ui/steps.css?v=20261027hr3">
   <script src="../../../shared/theme/hub_theme.js?v=20261026h22"></script>
   <script>try{var s=JSON.parse(localStorage.getItem('harness.settings')||'{}'),m=s.theme||'dark';document.documentElement.dataset.ht=m==='light'?'light':m==='system'?(localStorage.getItem('sites-hub.theme')==='light'?'light':'dark'):'dark'}catch(e){document.documentElement.dataset.ht='dark'}</script>
 </head>
@@ -26,6 +27,7 @@
   <select id="model" class="model" aria-label="Model"></select>
   <button type="button" class="hb" id="btnModels" title="Reload models" aria-label="Reload models">↻</button>
   <span class="grow"></span>
+  <button type="button" class="chip" id="btnFolder" hidden>📁 Pick folder</button>
   <button type="button" class="hb" id="btnSteps" title="Steps" aria-label="Show steps">☰<span id="stepCount" class="badge"></span></button>
   <button type="button" class="hb" id="btnClear" title="New chat" aria-label="New chat">🗑</button>
   <button type="button" class="hb" id="btnSet" title="Settings" aria-label="Settings">⚙</button>
@@ -53,18 +55,25 @@
   <p class="hint">Auto = model default. On / Off send Ollama's <code>think</code> flag (only thinking models accept it).</p>
   <h3>Tools</h3><div class="seg" id="setTools" role="radiogroup" aria-label="Tools"></div>
   <label class="lbl">Step limit (model calls per message) <input id="setSteps" class="inp num" type="number" min="1" max="30" step="1"></label>
+  <h3>Folder</h3>
+  <p class="hint" id="folderStat"></p>
+  <div class="ec-row start"><button type="button" class="hb wide" id="btnPick">Pick folder</button><button type="button" class="hb wide" id="btnReconnect" hidden>Reconnect folder</button></div>
   <p class="hint">Chat history stays in this tab only (sessionStorage). Settings are saved.</p>
 </dialog>
-<script src="app/core/messages.js?v=20261027hr2"></script>
-<script src="app/core/tools.js?v=20261027hr2"></script>
-<script src="app/core/loop.js?v=20261027hr2"></script>
-<script src="app/models/ollama.js?v=20261027hr2"></script>
-<script src="app/tools/time.js?v=20261027hr2"></script>
-<script src="app/gui/settings.js?v=20261027hr2"></script>
-<script src="app/gui/model.js?v=20261027hr2"></script>
-<script src="app/gui/steps.js?v=20261027hr2"></script>
-<script src="app/gui/bubbles.js?v=20261027hr2"></script>
-<script src="app/gui/chat.js?v=20261027hr2"></script>
-<script src="app/main.js?v=20261027hr2"></script>
+<script src="app/core/messages.js?v=20261027hr3"></script>
+<script src="app/core/tools.js?v=20261027hr3"></script>
+<script src="app/core/loop.js?v=20261027hr3"></script>
+<script src="app/models/ollama.js?v=20261027hr3"></script>
+<script src="app/storage/fs.js?v=20261027hr3"></script>
+<script src="app/tools/time.js?v=20261027hr3"></script>
+<script src="app/tools/files.js?v=20261027hr3"></script>
+<script src="app/gui/settings.js?v=20261027hr3"></script>
+<script src="app/gui/model.js?v=20261027hr3"></script>
+<script src="app/gui/steps.js?v=20261027hr3"></script>
+<script src="app/gui/bubbles.js?v=20261027hr3"></script>
+<script src="app/gui/approve.js?v=20261027hr3"></script>
+<script src="app/gui/folder.js?v=20261027hr3"></script>
+<script src="app/gui/chat.js?v=20261027hr3"></script>
+<script src="app/main.js?v=20261027hr3"></script>
 </body>
 </html>

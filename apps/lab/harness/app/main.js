@@ -32,5 +32,6 @@ HR.notify = (function () {
   HR.set.init();
   HR.steps.init();
   HR.chat.init();
+  HR.folder.init();
   HR.model.init();
 })();
