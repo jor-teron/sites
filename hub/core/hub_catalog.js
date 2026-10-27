@@ -122,6 +122,7 @@ Agent,              agent/,                       , , AI
 
 Sketchbook,         sketchbook/,                  , , Tools
 Code Lab,           code-lab/,                    , , Tools
+Vision,             vision/,                      vision/vision_icon.png, , Tools
 Paper Keyboard,     paper-keyboard/,              , , Tools
 MyBookmark,         mybookmark/,                  , , Tools
 Wiki Extractor,     wiki-extractor/,              , , Tools
