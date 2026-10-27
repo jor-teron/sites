@@ -967,3 +967,8 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   20261023q / hub-shell-v95 (H8) -> 20261027a / hub-shell-v96. Team 1 shipped H10-H32
   and T5-T7 without a bump, so their shell files were in SHELL but never precached.
   SHELL already listed every file hub.html loads; nothing added. --check OK (7 places).
+
+2026-10-27 IST, H43 (Team 2, week 2): hub/wm/wm_windows.js (~line 347) dropped the redundant
+  frame.setAttribute('allowfullscreen','') (kept as a legacy comment). The iframe's allow policy
+  now always includes fullscreen. Tested in hub.html: fullscreen is in allow, no warning, no errors.
+  Same build as H42 (20261027a), no extra bump. About 4 minutes.

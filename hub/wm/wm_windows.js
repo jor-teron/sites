@@ -343,8 +343,11 @@
     body.className = 'wm-body';
     const frame = document.createElement('iframe');
     frame.title = nm;
-    frame.setAttribute('allow', (appFrame && appFrame.getAttribute('allow')) || 'fullscreen');
-    frame.setAttribute('allowfullscreen', '');
+    // H43: use only the `allow` policy; make sure it includes fullscreen.
+    // Legacy (removed): frame.setAttribute('allowfullscreen', '');  - redundant with allow, caused a console warning
+    let allowPol = (appFrame && appFrame.getAttribute('allow')) || 'fullscreen';
+    if (!/(^|;)\s*fullscreen\b/.test(allowPol)) allowPol += '; fullscreen';
+    frame.setAttribute('allow', allowPol);
     body.appendChild(frame);
     el.append(bar, body);
     ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'].forEach((dir) => {
