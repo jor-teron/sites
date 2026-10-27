@@ -215,3 +215,14 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
   .key-line .key-input { flex-basis: 100%; }
   .key-btn { flex: 1 1 0; }
 }
+
+/* H30.5: Settings → About → Profile → 'Save profile to' (one row per place, multi-select) */
+.profile-places { display: flex; flex-direction: column; gap: 6px; }
+.profile-place { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 12px; border-radius: 12px;
+  background: rgba(127,127,127,.08); cursor: pointer; }
+.profile-place input { width: 20px; height: 20px; accent-color: var(--accent, #6ea8fe); flex: none; }
+.profile-place .pp-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-place .pp-state { color: var(--muted); font-size: .8rem; }
+.profile-place .pp-state.ready { color: #3fb950; }
+.profile-place .pp-state.signin, .profile-place .pp-state.prompt { color: #e3a008; }
+.profile-place .pp-state.denied, .profile-place .pp-state.error { color: #f85149; }

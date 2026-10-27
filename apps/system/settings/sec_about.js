@@ -17,6 +17,9 @@
  *   <connected folder>/hub/hub-profile/hub.json by hub/core/hub_profile.js (window.HubProfile in the Hub).
  *   Shows the folder (a choice when more than one is connected), status, last save, Save now / Load now.
  * H30.2: also lists the System apps whose settings go to hub/hub-profile/system/<app>.json.
+ * H30.5: 'Save profile to' — tick Google Drive and / or any connected host folder (by its real name); every ticked
+ *   place gets the profile, the newest copy wins on start. Drive not signed in → 'Sign in to Google Drive' in its row.
+ * H30.6: 'Save every' 30 s / 1 min (default) / 5 min / 15 min / Manual only (HubProfile.setEvery).
  * H30.3: 'Include keys in profile' switch (off by default; on = the API keys go into hub.json too) and
  *   Export profile / Import profile (one .json file, for devices without a folder; works with no folder).
  */
@@ -156,12 +159,18 @@
     unsupported: 'This browser cannot keep a profile folder.',
     prompt: 'The browser wants a click to use the folder again. Save now or Load now asks for it.',
     denied: 'Access to the folder was refused.',
-    ready: 'Saving automatically a few seconds after each change.',
+    ready: 'Saving automatically after a change.',
   };
+  /* H30.6 */
+  const EVERY_OPTS = [{ value: 30, label: '30 s' }, { value: 60, label: '1 min' }, { value: 300, label: '5 min' },
+    { value: 900, label: '15 min' }, { value: 0, label: 'Manual only' }];
+  const everyText = (s) => !s ? 'Manual only: nothing is saved until you press Save now (or the Hub is closed with unsaved changes).'
+    : 'Saving ' + (s < 60 ? s + ' s' : s / 60 + ' min') + ' after a change, only when something changed; also when the Hub is closed.';
+  const TSTATE = { ready: 'Connected', prompt: 'Needs a click', denied: 'No access', signin: 'Sign in to Google Drive', error: 'Error' };
   function profileCard(sub) {
     const card = ui.el('section', 'card');
     card.id = 'profile';
-    card.appendChild(ui.el('h3', '', 'Profile folder'));
+    card.appendChild(ui.el('h3', '', 'Profile'));
     const hub = S.hub();
     const HP = hub && hub.HubProfile;
     if (!HP) {
@@ -216,31 +225,54 @@
       out.textContent = r.ok ? 'Imported \u2014 reloading the Hub\u2026' : 'That file is not a Hub profile';
       if (r.ok) setTimeout(() => hub.location.reload(), 400);
     });
-    card.append(body, btns, out, keysSw, keyNote, btns2,
-      ui.el('p', 'opt-note', 'Saved as hub/hub-profile/hub.json inside the folder, as plain JSON; System app settings go to hub/hub-profile/system/<app>.json. Sign-ins are never saved. Export / Import use one .json file, for devices without a folder.'));
+    // H30.5: where
+    const placesBox = ui.el('div', 'profile-places');
+    placesBox.id = 'profile-places';
+    placesBox.setAttribute('role', 'group');
+    placesBox.setAttribute('aria-label', 'Save profile to');
+    // H30.6: when
+    const everyNote = ui.el('p', 'opt-note', everyText(HP.every ? HP.every() : 60));
+    const everySeg = ui.choice(EVERY_OPTS, HP.every ? HP.every() : 60, (v) => { HP.setEvery(v); everyNote.textContent = everyText(v); });
+    everySeg.id = 'profile-every';
+    card.append(ui.el('h4', 'opt-title', 'Save profile to'), placesBox, ui.el('h4', 'opt-title', 'Save every'), everySeg, everyNote,
+      body, btns, out, keysSw, keyNote, btns2,
+      ui.el('p', 'opt-note', 'Saved as hub/hub-profile/hub.json in each ticked place (in Google Drive: hub \u203A hub-profile), as plain JSON; System app settings go to hub-profile/system/<app>.json. Sign-ins are never saved. Export / Import use one .json file, for devices without a folder.'));
+    function drawPlaces(st) {
+      placesBox.textContent = '';
+      (st.targets || []).forEach((t) => {
+        const lab = ui.el('label', 'profile-place');
+        lab.dataset.id = t.id;
+        const cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.checked = !!t.ticked; cb.value = t.id;
+        cb.addEventListener('change', () => {
+          const ids = [...placesBox.querySelectorAll('input[type=checkbox]')].filter((x) => x.checked).map((x) => x.value);
+          out.className = 'upd-out'; out.textContent = '';
+          HP.setTargets(ids).then(draw);
+        });
+        const name = ui.el('span', 'pp-name', (t.kind === 'gdrive' ? '\u2601\uFE0F ' : '\uD83D\uDCC1 ') + t.name + (t.account ? ' (' + t.account + ')' : ''));
+        const stt = ui.el('small', 'pp-state ' + t.state, t.error && t.ticked ? 'Error: ' + t.error : TSTATE[t.state] || t.state);
+        lab.append(cb, name, stt);
+        placesBox.appendChild(lab);
+      });
+      if (!(st.targets || []).some((t) => t.kind === 'folder')) placesBox.appendChild(ui.el('p', 'opt-note', 'No host folder connected (add one in Files or Disk).'));
+    }
     async function draw() {
       const st = await HP.status();
       body.textContent = '';
-      if (st.folders.length > 1) {
-        const sel = ui.el('select', 'profile-pick');
-        sel.setAttribute('aria-label', 'Profile folder');
-        st.folders.forEach((f) => { const o = ui.el('option', '', f.name); o.value = f.id; if (f.id === st.driveId) o.selected = true; sel.appendChild(o); });
-        sel.addEventListener('change', () => { HP.setFolder(sel.value).then(draw); });
-        const r = ui.el('div', 'about-row');
-        r.append(ui.el('span', 'about-k', 'Folder'), sel);
-        body.appendChild(r);
-      } else body.appendChild(row('Folder', st.folder || '\u2014'));
-      body.appendChild(row('Status', st.state === 'ready' ? 'Connected' : st.state === 'prompt' ? 'Needs a click'
-        : st.state === 'denied' ? 'No access' : st.state === 'unsupported' ? 'Not supported' : 'No folder'));
+      drawPlaces(st);
+      const on = (st.targets || []).filter((t) => t.ticked);
+      body.appendChild(row('Status', on.length ? on.map((t) => t.name + ': ' + (TSTATE[t.state] || t.state)).join(' \u00B7 ')
+        : st.state === 'unsupported' ? 'Not supported' : 'Nowhere ticked'));
       body.appendChild(row('Last saved', niceTime(st.lastSave)));
       if (st.lastLoad) body.appendChild(row('Last loaded', niceTime(st.lastLoad)));
-      if (st.path) body.appendChild(row('File', st.path));
-      if (st.driveId && HP.apps) {   // H30.2: System app settings next to hub.json
+      on.forEach((t) => body.appendChild(row(on.length > 1 ? 'File (' + t.name + ')' : 'File', t.path)));
+      if (on.length && HP.apps) {   // H30.2: System app settings next to hub.json
         const names = HP.apps().map((a) => a[0].toUpperCase() + a.slice(1));
         body.appendChild(row('System apps', names.join(', ')));
       }
-      body.appendChild(ui.el('p', 'opt-note', st.error || STATE_TEXT[st.state] || ''));
-      saveB.disabled = loadB.disabled = !st.driveId;
+      body.appendChild(ui.el('p', 'opt-note', st.error || (on.length ? '' : STATE_TEXT.none)));
+      if (everySeg.repaint && st.every != null) { everySeg.repaint(st.every); everyNote.textContent = everyText(st.every); }
+      saveB.disabled = loadB.disabled = !on.length;
       keysSw.classList.toggle('on', !!st.includeKeys); keysSw.setAttribute('aria-checked', st.includeKeys ? 'true' : 'false');
       paintKeyNote(!!st.includeKeys);
     }
@@ -248,15 +280,16 @@
       saveB.disabled = true; out.className = 'upd-out'; out.textContent = 'Saving\u2026';
       const r = await HP.save({ ask: true, force: true });
       out.className = 'upd-out ' + (r.ok ? 'ok' : 'bad');
-      out.textContent = r.ok ? 'Saved' : r.reason === 'permission' ? 'No access to the folder' : 'Could not save';
+      out.textContent = r.ok ? 'Saved' + (r.places > 1 ? ' to ' + r.places + ' places' : '') + (r.errors && r.errors.length ? ' (not to ' + r.errors.join('; ') + ')' : '')
+        : r.reason === 'permission' ? 'No access to the ticked places' : r.reason === 'no-folder' ? 'Tick a place first' : 'Could not save';
       draw();
     });
     loadB.addEventListener('click', async () => {
       loadB.disabled = true; out.className = 'upd-out'; out.textContent = 'Loading\u2026';
       const r = await HP.load({ ask: true, force: true });
       out.className = 'upd-out ' + (r.applied ? 'ok' : 'bad');
-      out.textContent = r.applied ? 'Loaded \u2014 reloading the Hub\u2026' : r.reason === 'no-file' ? 'No saved profile in this folder yet'
-        : r.reason === 'permission' ? 'No access to the folder' : 'Could not load';
+      out.textContent = r.applied ? 'Loaded \u2014 reloading the Hub\u2026' : r.reason === 'no-file' ? 'No saved profile in the ticked places yet'
+        : r.reason === 'permission' ? 'No access to the ticked places' : 'Could not load';
       if (r.applied) setTimeout(() => hub.location.reload(), 400); else draw();
     });
     const off = HP.onChange(() => { if (card.isConnected) draw(); else off(); });

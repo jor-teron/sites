@@ -4,7 +4,7 @@ One place for the API keys that Hub apps use: **Settings → API Keys**.
 Add a key once and every Hub app (Agent, News, …) can use it. No app asks again.
 
 - Keys are saved **only in this browser on this device** (localStorage `sites-hub.keys`), unless you turn on
-  **Settings → About → Profile folder → Include keys in profile** (off by default). Then they are also written,
+  **Settings → About → Profile → Include keys in profile** (off by default). Then they are also written,
   as plain text, to `hub/hub-profile/hub.json` in your connected folder and to exported profile files.
 - They are **not** synced to a joined phone. Add them on each device you use.
 - The Hub never sends them anywhere. Each app sends a key only to its own service
