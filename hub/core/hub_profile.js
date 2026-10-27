@@ -23,6 +23,15 @@
  *   Hub reloads quietly, once. When the browser wants a click first (permission 'prompt') a notification
  *   card asks 'Continue with your saved Hub?' with a Continue button. A newly added folder is picked up
  *   at once (BroadcastChannel 'sites-fs').
+ * H30.2 System apps: each System app (apps/system/*) with settings of its own gets
+ *   <connected folder>/hub/hub-profile/system/<app>.json = { version: 1, app, savedAt, settings: { '<localStorage key>': value } }
+ *   files    'sites-files.*' (view, sort, dir)        viewer   'sites-viewer.speed'
+ *   terminal 'hub-terminal.theme'
+ *   (The Settings app's own choices are the 'sites-hub.*' keys in hub.json. Not saved: Terminal history / cwd / mounts,
+ *   video resume points, DevBench run history; those are per-device state, not settings.) Apps write localStorage
+ *   as before; HubProfile watches those keys (same debounce), writes only the files that changed and loads them
+ *   back together with hub.json (only keys that belong to that app are accepted; key-like values never).
+ *   More apps: HubProfile.registerApp(name, { keys: [...], prefixes: [...] }).
  * API window.HubProfile:
  *   save({ ask, force })  → Promise<{ ok, reason? }>   ask: may ask the browser for access (call from a click)
  *   load({ ask, force })  → Promise<{ ok, applied, reason? }>   force: apply even when not newer (Load now)
@@ -44,6 +53,20 @@
   const KEY_NAME = /key|token|secret|passw|auth|cred|cookie/i;
   const KEY_VALUE = /(sk-[A-Za-z0-9_-]{8,}|sk_(live|test)_|gsk_[A-Za-z0-9]{8,}|xai-[A-Za-z0-9]{8,}|AIza[0-9A-Za-z_-]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_|tvly-[A-Za-z0-9]{8,}|hf_[A-Za-z0-9]{20,}|ya29\.|Bearer\s|-----BEGIN)/;
   const OPAQUE = /^[A-Za-z0-9_\-+=]{32,}$/;   // one long token-looking word
+  /* H30.2: System apps → hub/hub-profile/system/<app>.json */
+  const APPS = {
+    files: { keys: [], prefixes: ['sites-files.'] },
+    viewer: { keys: ['sites-viewer.speed'], prefixes: [] },
+    terminal: { keys: ['hub-terminal.theme'], prefixes: [] },
+  };
+  function appOf(k) {
+    if (!k || k.indexOf(P) === 0) return '';
+    for (const a in APPS) {
+      const d = APPS[a];
+      if (d.keys.indexOf(k) >= 0 || d.prefixes.some((x) => k.indexOf(x) === 0)) return a;
+    }
+    return '';
+  }
 
   const ls = (() => { try { return window.localStorage; } catch (_) { return null; } })();
   const proto = window.Storage && Storage.prototype;
@@ -76,6 +99,21 @@
       let val = v;
       if (/^\s*[[{]/.test(v)) { try { val = JSON.parse(v); } catch (_) { val = v; } }
       out[n] = val;
+    });
+    return out;
+  }
+  /** one System app's settings → { '<localStorage key>': value } (filtered like hub.json) */
+  function collectApp(app) {
+    const out = {};
+    if (!ls || !APPS[app]) return out;
+    const names = [];
+    for (let i = 0; i < ls.length; i++) { const k = ls.key(i); if (k && appOf(k) === app) names.push(k); }
+    names.sort().forEach((k) => {
+      const v = lget(k);
+      if (v == null || KEY_NAME.test(k) || v.length > MAX_VALUE || keyLike(v)) return;
+      let val = v;
+      if (/^\s*[[{]/.test(v)) { try { val = JSON.parse(v); } catch (_) { val = v; } }
+      out[k] = val;
     });
     return out;
   }
@@ -157,6 +195,13 @@
   }
 
   let lastText = '';   // what this page wrote last (skip identical writes)
+  const appText = {};  // H30.2: same per System app
+  async function writeJson(dir, name, data) {
+    const fh = await dir.getFileHandle(name, { create: true });
+    const w = await fh.createWritable();
+    await w.write(JSON.stringify(data, null, 2) + '\n');
+    await w.close();
+  }
   let saving = null;
   async function save(o) {
     o = o || {};
@@ -168,15 +213,25 @@
       if (await perm(rec.handle, !!o.ask) !== 'granted') { await status(); emit(); return { ok: false, reason: 'permission' }; }
       const hub = collect();
       const body = JSON.stringify(hub);
-      if (!o.force && body === lastText) return { ok: true, reason: 'unchanged' };
+      const apps = {};
+      Object.keys(APPS).forEach((a) => {
+        const set = collectApp(a), t = JSON.stringify(set);
+        if (o.force ? Object.keys(set).length || appText[a] != null : t !== (appText[a] == null ? '{}' : appText[a])) apps[a] = { set, t };
+      });
+      if (!o.force && body === lastText && !Object.keys(apps).length) return { ok: true, reason: 'unchanged' };
       const now = Date.now();
-      const data = { version: 1, savedAt: new Date(now).toISOString(), device: deviceInfo(), hub };
+      const savedAt = new Date(now).toISOString();
+      const data = { version: 1, savedAt, device: deviceInfo(), hub };
       try {
         const dir = await profileDir(rec.handle, true);
-        const fh = await dir.getFileHandle(FILE, { create: true });
-        const w = await fh.createWritable();
-        await w.write(JSON.stringify(data, null, 2) + '\n');
-        await w.close();
+        await writeJson(dir, FILE, data);
+        if (Object.keys(apps).length) {
+          const sys = await dir.getDirectoryHandle('system', { create: true });
+          for (const a of Object.keys(apps)) {
+            await writeJson(sys, a + '.json', { version: 1, app: a, savedAt, settings: apps[a].set });
+            appText[a] = apps[a].t;
+          }
+        }
       } catch (e) {
         setState({ error: 'Could not save: ' + (e && e.message || e) });
         return { ok: false, reason: 'error', error: String(e && e.message || e) };
@@ -246,12 +301,40 @@
       return { ok: true, applied: false, reason: 'not-newer', savedAt: data.savedAt };
     }
     const n = apply(data.hub);
+    const appsLoaded = await loadApps(rec);
     lset(K_AT, at || Date.now());
     lset(K_LOADED, Date.now());
     lastText = JSON.stringify(collect());
     await status();
     setState({ error: '' });
-    return { ok: true, applied: true, count: n, savedAt: data.savedAt };
+    return { ok: true, applied: true, count: n, apps: appsLoaded, savedAt: data.savedAt };
+  }
+
+  /** H30.2: system/<app>.json → localStorage (only that app's own keys) */
+  async function loadApps(rec) {
+    const done = [];
+    let sys = null;
+    try { sys = await (await profileDir(rec.handle, false)).getDirectoryHandle('system'); } catch (_) { return done; }
+    for (const a of Object.keys(APPS)) {
+      let d = null;
+      try { d = JSON.parse(await (await (await sys.getFileHandle(a + '.json')).getFile()).text()); } catch (_) { continue; }
+      if (!d || d.version !== 1 || !d.settings || typeof d.settings !== 'object') continue;
+      applying = true;
+      try {
+        const want = {};
+        Object.keys(d.settings).forEach((k) => {
+          const v = d.settings[k], s = typeof v === 'string' ? v : JSON.stringify(v);
+          if (appOf(k) === a && !KEY_NAME.test(k) && typeof s === 'string' && s.length <= MAX_VALUE && !keyLike(s)) want[k] = s;
+        });
+        const have = [];
+        for (let i = 0; i < ls.length; i++) { const k = ls.key(i); if (k && appOf(k) === a) have.push(k); }
+        have.forEach((k) => { if (!(k in want)) ldel(k); });
+        Object.keys(want).forEach((k) => lset(k, want[k]));
+      } finally { applying = false; }
+      appText[a] = JSON.stringify(collectApp(a));
+      done.push(a);
+    }
+    return done;
   }
 
   /** reload the Hub once for a given profile (never loops) */
@@ -268,7 +351,8 @@
   /* ---------- changes → debounced save ---------- */
   let timer = 0;
   function touched(key) {
-    if (applying || !key || key.indexOf(P) !== 0 || !allowedName(key.slice(P.length))) return;
+    if (applying || !key) return;
+    if (key.indexOf(P) === 0 ? !allowedName(key.slice(P.length)) : !appOf(key)) return;
     lset(K_AT, Date.now());
     if (last.state === 'none' && !last.driveId) { /* re-check cheaply on the timer */ }
     clearTimeout(timer);
@@ -339,6 +423,14 @@
     onChange(fn) { fns.push(fn); return () => { const i = fns.indexOf(fn); if (i >= 0) fns.splice(i, 1); }; },
     get state() { return Object.assign({}, last); },
     PATH: DIRS.join('/') + '/' + FILE,
+    apps: () => Object.keys(APPS),
+    collectApp,
+    registerApp(name, def) {   // H30.2: more System apps
+      if (!/^[a-z0-9-]+$/.test(name || '') || !def) return false;
+      const ok = (k) => typeof k === 'string' && k && k.indexOf(P) !== 0 && !KEY_NAME.test(k);
+      APPS[name] = { keys: (def.keys || []).filter(ok), prefixes: (def.prefixes || []).filter(ok) };
+      return true;
+    },
     _start: start, _allowed: allowed,
   };
   const go = () => setTimeout(() => start().catch(() => {}), 800);

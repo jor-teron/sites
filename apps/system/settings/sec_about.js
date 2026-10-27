@@ -16,6 +16,7 @@
  * H30.1: "Profile folder" card (id 'profile', deep link #about/profile): the Hub's settings saved to
  *   <connected folder>/hub/hub-profile/hub.json by hub/core/hub_profile.js (window.HubProfile in the Hub).
  *   Shows the folder (a choice when more than one is connected), status, last save, Save now / Load now.
+ * H30.2: also lists the System apps whose settings go to hub/hub-profile/system/<app>.json.
  */
 (function () {
   'use strict';
@@ -174,7 +175,7 @@
     btns.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
     btns.append(saveB, loadB);
     card.append(body, btns, out,
-      ui.el('p', 'opt-note', 'Saved as hub/hub-profile/hub.json inside the folder, as plain JSON. API keys and sign-ins are never saved there.'));
+      ui.el('p', 'opt-note', 'Saved as hub/hub-profile/hub.json inside the folder, as plain JSON; System app settings go to hub/hub-profile/system/<app>.json. API keys and sign-ins are never saved there.'));
     async function draw() {
       const st = await HP.status();
       body.textContent = '';
@@ -192,6 +193,10 @@
       body.appendChild(row('Last saved', niceTime(st.lastSave)));
       if (st.lastLoad) body.appendChild(row('Last loaded', niceTime(st.lastLoad)));
       if (st.path) body.appendChild(row('File', st.path));
+      if (st.driveId && HP.apps) {   // H30.2: System app settings next to hub.json
+        const names = HP.apps().map((a) => a[0].toUpperCase() + a.slice(1));
+        body.appendChild(row('System apps', names.join(', ')));
+      }
       body.appendChild(ui.el('p', 'opt-note', st.error || STATE_TEXT[st.state] || ''));
       saveB.disabled = loadB.disabled = !st.driveId;
     }
