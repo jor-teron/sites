@@ -62,6 +62,7 @@ Photo Editor v2, photo-editor-v2/, , , Photo
 Camera,          camera/,          , , Photo
 Sound Recorder,  sound-recorder/,  , , Audio
 3D Viewer,       3d-viewer/,       , , 3D
+News,            news/,            , , Read
 `,
   "Office": `# Office — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
