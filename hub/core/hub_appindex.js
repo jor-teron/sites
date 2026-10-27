@@ -80,6 +80,7 @@ window.HUB_APP_INDEX = {
   "water-kingdom": ["Learn", "apps/learn/water-kingdom/", "Water Kingdom", "apps/learn/water-kingdom/water-kingdom_icon.png", 0],
   "animal-kingdom": ["Learn", "apps/learn/animal-kingdom/", "Animal Kingdom", "apps/learn/animal-kingdom/animal-kingdom_icon.png", 0],
   "english-basic": ["Learn", "apps/learn/english-basic/", "English Basic", "apps/learn/english-basic/english-basic_icon.png", 0],
+  "typing-tutor": ["Learn", "apps/learn/typing-tutor/", "Typing Tutor", "apps/learn/typing-tutor/typing-tutor_icon.png", 0],
   "maths-logic": ["Learn", "apps/learn/maths-logic/", "Maths and Logic", "apps/learn/maths-logic/maths-logic_icon.png", 0],
   "code-lab": ["Learn", "apps/lab/code-lab/", "Code Lab", "apps/lab/code-lab/codelab_icon.png", 0],
   "survival-outdoors": ["Learn", "apps/learn/survival-outdoors/", "Survival and Outdoors", "apps/learn/survival-outdoors/survival-outdoors_icon.png", 0],
