@@ -17,7 +17,7 @@ A live TV (IPTV) player for a TV box, phone or PC. It plays free HLS streams fro
   - `tv_pip.js` → `TV.pip`: auto picture-in-picture
   - `tv_import.js` → `TV['import']` (TV7): Import panel (file / drop / URL), saves the imported playlist in IndexedDB, registers the `import` list with `TV.playlist.registerSource` and the `import` action in `TV.actions`, `#import` deep link
   - `tv_app.js` → `TV.app`: activate a tile, Hub link (`linkHref`), saved channel (+ old-key migration), start-up. Loaded last
-- `vendor/hls/`: hls.js 1.5.20 (+ LICENSE.md); `image/no_signal.svg`: the poster
+- `vendor/hls/`: hls.js 1.5.20 (+ LICENSE.md); `image/no_signal.png`: the poster
 - `tv_icon.png`: hub icon
 
 **Older players (moved to `legacy/` in TV4; paths below are relative to `legacy/`)**
@@ -120,7 +120,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 ## 10. Known limits
 - Needs the internet for streams: every stream is online (hls.js 1.5.20 is vendored in `vendor/hls/` since TV1). Free streams often go offline; refresh the playlists with `split-m3u.sh`.
 - From file:// the channel lists don't load (TV8 dropped the `.m3u.js` copies; TV needs the internet anyway). Streams without CORS headers (e.g. 9XM) fail on file:// and http(s) alike. Chrome keeps one localStorage for all file:// pages, so the saved channel is shared with other file:// apps.
-- The v1 "no signal" poster is the local `image/no_signal.svg` (TV1; the old `../image/tv_no_signal.jpeg` was removed).
+- The v1 "no signal" poster is the local `image/no_signal.png` (TV1; the old `../image/tv_no_signal.jpeg` was removed).
 - Inside the Hub frame there is no way back to the Hub from TV (the tile is hidden; the hub bridge has no navigate message). Use the Hub's own controls.
 - On an https host most iptv-org streams that are `http://` cannot play (mixed content); they are marked, not fixed. Use an http:// or file:// page for them.
 - The grid CSS fits 3 or 4 columns, never 5 (the gaps don't let 5 × 20% fit). The arrow math handles any count.
@@ -145,7 +145,7 @@ Works in the Hub (also as a tile that opens in a new tab) and responds to the hu
 - 2026-09-29 09:06 IST: repository restructure (6d7ba68).
 - 2026-10-05 00:35 IST: tile icons switched to `shared/image/placeholder.png` after `image/` was removed (7d7ac04).
 - 2026-10-23 IST: TV4: retired v2 / v3 pages, `js/`, `tv-old/`, `photo.html` / `video.html` moved to `legacy/` (paths not fixed).
-- 2026-10-23 IST: TV1: hls.js 1.5.20 vendored in `vendor/hls/` (with LICENSE.md, no CDN); local `image/no_signal.svg` poster; category switches only after its playlist loads (stale loads ignored, failure keeps the old list, falls back to Home if nothing loaded); empty playlists and auto-start never open link / category tiles; M3U name = text after the first comma outside quotes, else `tvg-name`.
+- 2026-10-23 IST: TV1: hls.js 1.5.20 vendored in `vendor/hls/` (with LICENSE.md, no CDN); local `image/no_signal.png` poster; category switches only after its playlist loads (stale loads ignored, failure keeps the old list, falls back to Home if nothing loaded); empty playlists and auto-start never open link / category tiles; M3U name = text after the first comma outside quotes, else `tvg-name`.
 - 2026-10-23 IST: TV2: works from file://: `channels/m3u-to-js.py` (run by `split-m3u.sh`) writes `home.m3u.js`, `kids.m3u.js`, `home-more.m3u.js`; `tv-v1.js` loads them with a script tag on file:// or when fetch fails; http(s) still uses fetch.
 - 2026-10-23 IST: TV3: `tv-v1.js` split into `core/tv_*.js` modules under one global `window.TV` (same behaviour); page renamed `tv.html` / `tv.css` (inline no-scrollbar style moved into `tv.css`); `tv-v1.html` is now a redirect stub; storage key `tv-v1-last` → `tv-last-v1` (migrated on start).
 - 2026-10-23 IST: TV5: grid-aware Up / Down (by rendered columns, wrap by column); on-screen error toast (playlist failure, empty playlist, stream error, http-only); Hub tile hidden when framed, `../index.html` on file://; http:// channels dimmed with an HTTP badge and skipped on https pages (`TOAST_DELAY`, `TV.env`).

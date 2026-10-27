@@ -2,7 +2,7 @@
  * TV: player (tv/core/tv_player.js)
  * Plays one stream: hls.js (vendor/hls) when supported, else native HLS
  * (Safari / iOS). A failed stream leaves the "no signal" poster
- * (image/no_signal.svg, set on the <video> in tv.html); errors go to the console.
+ * (image/no_signal.png, set on the <video> in tv.html); errors go to the console.
  */
 (function () {
   'use strict';
