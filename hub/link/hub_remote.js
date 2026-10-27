@@ -10,6 +10,10 @@
  *     settings (posted into the frame as {type:'ctrl-settings'});
  *   - Disconnect (button in the 🎮 Devices popover, hub_linkstate.js): manual Disconnect (bye, forget code),
  *     then reload as a normal host Hub. Reloads otherwise rejoin from the saved code.
+ * H25: retries stop after 5 minutes without the Hub (GIVE_UP_MS; window.HUB_REMOTE_GIVEUP_MS overrides it for
+ *   tests): SharedLink.pause() (no bye, the saved code stays) and the red 'Hub 1234 …' chip hides. Tapping 🎮,
+ *   scanning / typing the same code (the chip's scan, or the Connect QR = hub.html?join=) and coming back to the
+ *   tab (visibilitychange) rejoin straight away with a fresh backoff; the 5-minute clock starts again.
  */
 (function () {
   'use strict';
@@ -38,8 +42,35 @@
   fsBtn.hidden = setBtn.hidden = true;
   if (right) right.prepend(chip, fsBtn, setBtn);
 
+  /* H25: give up after 5 minutes without the Hub; 🎮 / scan / tab visible rejoins */
+  const GIVE_UP_MS = +window.HUB_REMOTE_GIVEUP_MS || 5 * 60 * 1000;
+  let downSince = Date.now(), gaveUp = false;
+  function giveUp() {
+    if (gaveUp || SharedLink.connected) return;
+    gaveUp = true;
+    SharedLink.pause();   // quiet: no bye, 'shared-link-join-code' stays
+    chip.hidden = true; chip.style.display = 'none';   // .ctrl-btn sets display, so hide inline too
+    document.documentElement.classList.add('hub-remote-idle');
+  }
+  function rejoinNow() {
+    gaveUp = false;
+    downSince = Date.now();
+    chip.hidden = false; chip.style.display = '';
+    document.documentElement.classList.remove('hub-remote-idle');
+    if (SharedLink.connected) { paint(); return; }
+    SharedLink.join({ prefix: 'jtsites-', code: R.code, meta: { pad: 1 } });   // fresh backoff
+    paint();
+  }
+  setInterval(() => {
+    if (SharedLink.connected) { downSince = 0; return; }
+    if (!downSince) downSince = Date.now();
+    if (!gaveUp && Date.now() - downSince >= GIVE_UP_MS) giveUp();
+  }, Math.min(10000, Math.max(250, GIVE_UP_MS / 4)));
+
   function paint() {
     const on = SharedLink.connected;
+    if (on) { downSince = 0; if (gaveUp) { gaveUp = false; chip.hidden = false; chip.style.display = ''; document.documentElement.classList.remove('hub-remote-idle'); } }
+    else if (!downSince) downSince = Date.now();
     chip.classList.toggle('connected', on);
     if (ctrlBtn) ctrlBtn.classList.toggle('connected', on);
     txt.textContent = 'Hub ' + R.code + (on ? '' : ' …');
@@ -49,7 +80,8 @@
   chip.addEventListener('click', () => {
     if (!window.SharedLinkScan) return;
     SharedLinkScan.ask({ title: 'Join a Hub' }).then((c) => {
-      if (!c || !/^\d{4}$/.test(c) || c === R.code) return;
+      if (!c || !/^\d{4}$/.test(c)) return;
+      if (c === R.code) { rejoinNow(); return; }   // H25: same Hub → rejoin now
       location.replace(location.pathname + '?join=' + c);
     });
   });
@@ -71,6 +103,8 @@
   });
 
   // 🎮 click → Devices popover (hub-controller.js remote branch). Do not open Gamepad here.
+  // H25: the tap also rejoins straight away when the link is down (retrying or given up).
+  if (ctrlBtn) ctrlBtn.addEventListener('click', () => { if (!SharedLink.connected) rejoinNow(); }, true);
 
   /* ---------- manual Disconnect (button lives in the 🎮 popover: hub_linkstate.js) ---------- */
   function disconnect() {
@@ -82,9 +116,9 @@
   SharedLink.join({ prefix: 'jtsites-', code: R.code, meta: { pad: 1 } });
   window.addEventListener('pagehide', () => SharedLink.pause());   // quiet: the desktop keeps us
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && !SharedLink.connected && SharedLink.role === 'join') SharedLink.restart();
+    if (document.visibilityState === 'visible' && !SharedLink.connected && SharedLink.role === 'join') rejoinNow();   // H25
   });
   paint();
 
-  window.__hubRemoteApi = { disconnect: disconnect, get code() { return R.code; } };
+  window.__hubRemoteApi = { disconnect: disconnect, rejoin: rejoinNow, get code() { return R.code; }, get gaveUp() { return gaveUp; } };
 })();
