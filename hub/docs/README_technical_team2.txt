@@ -962,3 +962,8 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   - Touch and phone layout work.
   - Frame rate holds 60 fps at stress counts (Ant Farm 300 ants, Gravity about 180 bodies).
   - After a CSV change, the tile appears in the right section on the hub, and hub_catalog.js was regenerated.
+
+2026-10-27 IST, H42 (Team 2, week 2): overdue Hub build bump with hub/tools/hub_bump.py,
+  20261023q / hub-shell-v95 (H8) -> 20261027a / hub-shell-v96. Team 1 shipped H10-H32
+  and T5-T7 without a bump, so their shell files were in SHELL but never precached.
+  SHELL already listed every file hub.html loads; nothing added. --check OK (7 places).
