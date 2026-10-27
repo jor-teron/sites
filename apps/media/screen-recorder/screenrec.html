@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!-- Screen Recorder SC1 — Record + Settings screens. Swipe >=75 px (wrap-around). Capture: screenrec_capture.js, save: screenrec_save.js, UI: screenrec_app.js. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Screen Recorder SC1</title>
+  <link rel="icon" href="screenrec_icon.png">
+  <link rel="stylesheet" href="screenrec.css?v=SC1">
+  <script>try{var s=JSON.parse(localStorage.getItem('screenrec-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
+</head>
+<body>
+<div id="app">
+  <div id="dots" role="tablist" aria-label="Screen">
+    <button type="button" class="dot" data-i="0" aria-label="Record"></button>
+    <button type="button" class="dot" data-i="1" aria-label="Settings"></button>
+  </div>
+  <div id="viewport"><div id="track">
+    <section class="pane" id="pane-rec">
+      <div id="unsupported" hidden><b>Screen capture works on computers only.</b><p>This browser can't record the screen. Open the app in Chrome, Edge or Firefox on a desktop or laptop.</p></div>
+      <div id="rec-ui">
+        <div id="stage">
+          <video id="preview" controls playsinline hidden></video>
+          <div id="idle"><div class="time" id="timer">00:00</div><div class="hint" id="status">Ready</div><div class="hint" id="size"></div></div>
+          <div id="count" hidden>3</div>
+        </div>
+        <div id="side">
+          <label class="tog"><input type="checkbox" id="opt-mic"> Mic</label>
+          <label class="tog"><input type="checkbox" id="opt-sys" checked> System / tab audio</label>
+          <button type="button" id="rec-btn" class="big" title="Record">●</button>
+          <button type="button" id="pause-btn" class="mini" hidden>Pause</button>
+          <button type="button" id="stop-btn" class="mini danger" hidden>Stop</button>
+          <button type="button" id="save-btn" class="mini acc" hidden>Save</button>
+          <button type="button" id="discard-btn" class="mini" hidden>Discard</button>
+        </div>
+      </div>
+    </section>
+    <section class="pane" id="pane-set"><div class="set-wrap">
+      <h2>Settings</h2>
+      <div class="set-row"><span>Quality</span><div class="seg" data-key="quality"><button type="button" data-v="720">720p</button><button type="button" data-v="1080">1080p</button><button type="button" data-v="native">Native</button></div></div>
+      <div class="set-row"><span>Frame rate</span><div class="seg" data-key="fps"><button type="button" data-v="15">15</button><button type="button" data-v="30">30</button><button type="button" data-v="60">60</button></div></div>
+      <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>
+      <h2>About</h2>
+      <div class="about"><img src="screenrec_icon.png" alt="" width="40" height="40">
+        <div><b>Screen Recorder</b> <span id="ver">SC1</span>
+        <p>Record your screen, a window or a tab, with mic and system audio. Everything stays on your device. Computers only — phone browsers don't allow screen capture.</p></div></div>
+    </div></section>
+  </div></div>
+  <div id="dialog" hidden><div class="box" role="dialog" aria-modal="true"><p id="dlg-t"></p>
+    <div class="row"><button type="button" class="mini" id="dlg-no">Cancel</button><button type="button" class="mini danger" id="dlg-yes">OK</button></div></div></div>
+  <div id="toast" role="status"></div>
+</div>
+<script src="screenrec_save.js?v=SC1"></script>
+<script src="screenrec_capture.js?v=SC1"></script>
+<script src="screenrec_app.js?v=SC1"></script>
+</body>
+</html>

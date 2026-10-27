@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>GIF Maker GM2</title>
+  <script>/* theme early to avoid flash */try{var p=JSON.parse(localStorage.getItem('gifmaker-settings-v1')||'{}').theme||'dark',h=localStorage.getItem('sites-hub.theme');if(p==='dark'||(p==='system'&&(h?h==='dark':matchMedia('(prefers-color-scheme: dark)').matches)))document.documentElement.classList.add('dark');}catch(e){document.documentElement.classList.add('dark');}</script>
+  <link rel="stylesheet" href="gifmaker.css?v=GM2">
+</head>
+<body>
+<div id="app">
+  <div id="track">
+    <!-- Screen 1: Make -->
+    <section class="pane" id="pane-make">
+      <div class="grid">
+        <div class="stage">
+          <div id="drop" class="drop">
+            <p><b>Open or drop a video</b><br><span class="mut">MP4, WebM, MOV… stays on this device</span></p>
+            <button id="open-btn" class="btn acc">Open video</button>
+          </div>
+          <div id="photos" hidden>
+            <div id="ph-empty" class="drop"><p><b>Open or drop photos</b><br><span class="mut">JPG, PNG, WebP, GIF (first frame)</span></p>
+              <button id="ph-open" class="btn acc">Open photos</button></div>
+            <img id="ph-big" alt="Selected frame" hidden>
+            <div id="strip" class="noswipe"></div>
+            <div class="row" id="ph-bar" hidden><span id="ph-info" class="mut"></span><span class="sp"></span>
+              <button id="ph-left" class="btn" title="Move left">◀</button><button id="ph-right" class="btn" title="Move right">▶</button>
+              <button id="ph-add" class="btn">+ Add</button></div>
+          </div>
+          <video id="vid" class="noswipe" hidden playsinline muted controls></video>
+          <div id="result" hidden>
+            <img id="gif-img" alt="GIF result">
+            <div class="row"><span id="gif-info" class="mut"></span><span class="sp"></span>
+              <button id="discard-btn" class="btn">Close</button><button id="save-btn" class="btn acc">Save GIF</button></div>
+          </div>
+        </div>
+        <div class="ctl">
+          <div class="field"><div class="lbl">Source</div><div class="seg" data-key="src"><button data-v="video">Video</button><button data-v="photos">Photos</button></div></div>
+          <div id="vname" class="mut ell v-only">No video</div>
+          <div class="field noswipe v-only">
+            <div class="lbl">Trim <span id="trim-len" class="mut"></span></div>
+            <div class="dual"><div class="rail"><div id="sel"></div></div>
+              <input type="range" id="r-start" min="0" max="1" step="0.1" value="0" aria-label="Start">
+              <input type="range" id="r-end" min="0" max="1" step="0.1" value="1" aria-label="End"></div>
+            <div class="row nums"><label>Start <input type="number" id="n-start" min="0" step="0.1" value="0"></label>
+              <label>End <input type="number" id="n-end" min="0" step="0.1" value="0"></label></div>
+            <div id="warn" class="warn" hidden></div>
+          </div>
+          <div class="field"><div class="lbl">Width</div><div class="seg" data-key="width"><button data-v="240">240</button><button data-v="360">360</button><button data-v="480">480</button></div></div>
+          <div class="field v-only"><div class="lbl">FPS</div><div class="seg" data-key="fps"><button data-v="5">5</button><button data-v="10">10</button><button data-v="15">15</button></div></div>
+          <div class="field p-only"><div class="lbl">Delay ms <span class="mut">(frame)</span></div><input type="number" id="d-sel" min="20" max="10000" step="10" class="num"></div>
+          <div class="field p-only"><div class="lbl">Default ms</div><input type="number" id="d-def" min="20" max="10000" step="10" class="num"><button id="d-all" class="btn sm">Apply to all</button></div>
+          <div class="field p-only"><div class="lbl">Fit</div><div class="seg" data-key="fit"><button data-v="black">Black</button><button data-v="white">White</button><button data-v="cover">Cover</button></div></div>
+          <div class="field"><div class="lbl">Colours</div><div class="seg" data-key="colors"><button data-v="64">64</button><button data-v="128">128</button><button data-v="256">256</button></div></div>
+          <div class="field"><div class="lbl">Loop</div><div class="seg" data-key="loop"><button data-v="1">Forever</button><button data-v="0">Once</button></div></div>
+          <div id="est" class="mut est">—</div>
+          <div id="prog" hidden><div class="bar"><i id="bar"></i></div><div class="row"><span id="prog-t" class="mut"></span><span class="sp"></span><button id="cancel-btn" class="btn">Cancel</button></div></div>
+          <button id="make-btn" class="btn acc big" disabled>Make GIF</button>
+        </div>
+      </div>
+    </section>
+    <!-- Screen 2: Settings -->
+    <section class="pane" id="pane-set">
+      <div class="set">
+        <h2>Settings</h2>
+        <div class="field"><div class="lbl">Theme</div><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+        <h2>About</h2>
+        <p><b>GIF Maker</b> <span class="mut">release GM2</span></p>
+        <p class="mut">Turns a short video — or a set of photos — into an animated GIF, entirely on your device — nothing is uploaded. Pick a range of up to 15 s, a width, frame rate and palette, then Make GIF.</p>
+        <p class="mut">Photos: add several images, reorder by dragging (long-press on touch) or ◀ ▶, set a delay per frame.</p>
+        <p class="mut">Encoding: gifenc by Matt DesLauriers (MIT).</p>
+        <p class="mut">Swipe left/right or use ←/→ to switch screens.</p>
+      </div>
+    </section>
+  </div>
+  <div id="dots"><i></i><i></i></div>
+</div>
+<input type="file" id="file" accept="video/*" hidden>
+<input type="file" id="pfile" accept="image/*" multiple hidden>
+<div id="dialog" hidden><div class="dbox"><p id="dlg-t"></p><div class="row"><span class="sp"></span><button id="dlg-no" class="btn">Cancel</button><button id="dlg-ok" class="btn acc">OK</button></div></div></div>
+<div id="toast" hidden></div>
+<script src="vendor/gifenc.js?v=GM2"></script>
+<script src="gifmaker_core.js?v=GM2"></script>
+<script src="gifmaker_save.js?v=GM2"></script>
+<script src="gifmaker_video.js?v=GM2"></script>
+<script src="gifmaker_encode.js?v=GM2"></script>
+<script src="gifmaker_photos.js?v=GM2"></script>
+<script src="gifmaker_app.js?v=GM2"></script>
+</body>
+</html>
