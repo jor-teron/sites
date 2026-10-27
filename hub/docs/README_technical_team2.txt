@@ -443,6 +443,16 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - CSV icon column is set explicitly (`image-gen/imagegen_icon.png`) because the default would look for `image-gen/image-gen_icon.png` (same quirk as Code Lab).
 - Tested only against a mock Ollama (headless Chromium); not yet against a real Ollama 0.32.5 on a Mac.
 
+### 1.16 Vision: `apps/lab/vision/` (Lab → Tools, after Image Gen), release VS1
+- Ask a vision model on the user's own Ollama about a photo. Screens: Look · Recent · Settings (dots, 75 px wrap-around swipes, ←/→).
+- Photo in: Open photo, Camera (`<input capture=environment>`, phones), drag-drop, paste. Shrunk to ≤1024 px JPEG q0.85.
+- Modes: Describe, Read text (OCR), Image prompt (one text-to-image prompt), Ask. A typed question is always sent as-is; follow-ups keep the chat (image rides only on the first user message).
+- API: `POST {url}/api/chat` `{model, messages, stream:true}`; NDJSON `message.content` chunks stream into the reply bubble. Cancel = AbortController. Models: `/api/tags` + `/api/show` capabilities (`vision` first, then name guesses llava/llama3.2-vision/qwen2.5vl/gemma3/minicpm-v…), "Other" to type a name.
+- Files: `vision.html/.css`, `vision_app.js` (UI), `vision_ollama.js` (API), `vision_save.js` (the one save module: IndexedDB history, Copy answer, Save .txt), `vision_icon.png`.
+- Storage: `vision-settings-v1` `{theme, url, model, mode}`; IndexedDB `vision-v1`/`chats` `{id, ts, mode, model, img, messages}`, newest 20; tap a Recent card to reopen and keep asking.
+- Errors (in-app dialogs): unreachable/CORS → `OLLAMA_ORIGINS=https://jor-teron.github.io`; no vision model → `ollama pull llama3.2-vision` / `gemma3`; model rejects images or answers "I can't see an image" (heuristic) → pick a vision model.
+- Tested only against a mock Ollama in headless Chromium; not yet against a real Ollama or a phone camera.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
