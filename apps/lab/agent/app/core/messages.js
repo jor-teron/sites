@@ -4,6 +4,7 @@
    thinking, stats, error, model, tool_calls (assistant, HR2), tool_name / tool_call_id / args / ok / ms (tool result, HR2/HR6)}.
    toApi(): recent turns in full (about RECENT chars, always from the last user turn), older turns as one short trimmed
    system note (each line ≤ LINE chars, the note ≤ OLDCAP chars, newest kept) — plain truncation, no extra model call.
+   AG5: truncate(n) keeps the first n messages (retry / edit), usage {p, o} on assistant messages = provider token counts.
    splitThink(text) moves <think>…</think> (also an unclosed <think> while streaming) out of the visible text. */
 window.HR = window.HR || {};
 HR.msgs = (function () {
@@ -13,6 +14,7 @@ HR.msgs = (function () {
   function add(m) { if (!m.at) m.at = new Date().toISOString().slice(0, 16); list.push(m); save(); return m; }
   function set(l) { list = Array.isArray(l) ? l : []; }
   function clear() { list = []; save(); }
+  function truncate(n) { if (n < list.length) { list.length = Math.max(0, n); save(); } }   /* AG5 retry / edit */
   function all() { return list; }
   function size(o) { return (o.content || '').length + (o.tool_calls ? JSON.stringify(o.tool_calls).length : 0) + 20; }
   function cut(t, n) { t = String(t || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n - 1) + '…' : t; }
@@ -44,5 +46,5 @@ HR.msgs = (function () {
     out += s.slice(last);
     return { content: out.replace(/^\s+/, ''), thinking: think.trim(), open: /<think>(?![\s\S]*<\/think>)/.test(s) };
   }
-  return { add: add, set: set, clear: clear, all: all, save: save, legacy: legacy, toApi: toApi, splitThink: splitThink };
+  return { add: add, set: set, clear: clear, truncate: truncate, all: all, save: save, legacy: legacy, toApi: toApi, splitThink: splitThink };
 })();

@@ -3,12 +3,17 @@
    -> {tool_calls:[{id?, function:{name, arguments(object)}}], eval_count, prompt_eval_count, eval_duration (ns), done_reason}}.
    Messages in and out use the internal (Ollama-style) format; adapters translate. Settings: provider 'ollama' (default) |
    'openai' | 'gemini' | 'browser' (AG2), openaiBase, model per provider. fallback(on): use 'browser' for this page session
-   while the chosen provider can't be used (unreachable / no key); id() is the provider in use, chosen() the saved one. API keys: localStorage 'agent.keys' {host|'gemini': key} — this device only. */
+   while the chosen provider can't be used (unreachable / no key); id() is the provider in use, chosen() the saved one.
+   AG5: setChat(p, m) — the open chat's own provider + model (HR.chats); chosen() is the chat's provider when set, else the
+   Settings default; chatModel() the chat's model for that provider ('' = default). Settings provider = default for new chats. API keys: localStorage 'agent.keys' {host|'gemini': key} — this device only. */
 HR.models = (function () {
-  var reg = {}, KEYS = 'agent.keys', over = '';
+  var reg = {}, KEYS = 'agent.keys', over = '', chat = { p: '', m: '' };
   var OPENAI = 'https://api.openai.com/v1', GEMINI = 'https://generativelanguage.googleapis.com/v1beta';
   function register(a) { reg[a.id] = a; }
-  function chosen() { var p = HR.set.get('provider'); return reg[p] ? p : 'ollama'; }
+  function def() { var p = HR.set.get('provider'); return reg[p] ? p : 'ollama'; }
+  function chosen() { return chat.p && reg[chat.p] ? chat.p : def(); }
+  function setChat(p, m) { chat = { p: p || '', m: m || '' }; }
+  function chatModel() { return chat.p && chat.p === id() ? chat.m : ''; }
   function id() { return over && reg[over] ? over : chosen(); }
   function fallback(on) { over = on && reg.browser && chosen() !== 'browser' ? 'browser' : ''; return !!over; }
   function current() { return reg[id()]; }
@@ -20,6 +25,6 @@ HR.models = (function () {
   function cfg() { var p = id(), b = base(p), online = p !== 'ollama' && p !== 'browser';
     return { provider: p, base: b, key: online ? getKey(p, b) : '', typed: online ? (HR.set.get(p + 'Model') || '').trim() : '' }; }
   function modelKey() { var p = id(); return p === 'ollama' ? 'model' : 'model_' + p; }
-  return { register: register, current: current, id: id, chosen: chosen, fallback: fallback, fallen: function () { return !!over; }, cfg: cfg, base: base, getKey: getKey, setKey: setKey, keySlot: keySlot, modelKey: modelKey,
+  return { register: register, current: current, id: id, chosen: chosen, def: def, setChat: setChat, chatModel: chatModel, fallback: fallback, fallen: function () { return !!over; }, cfg: cfg, base: base, getKey: getKey, setKey: setKey, keySlot: keySlot, modelKey: modelKey,
     all: function () { return Object.keys(reg).map(function (k) { return reg[k]; }); } };
 })();

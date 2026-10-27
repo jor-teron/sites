@@ -39,5 +39,6 @@ HR.notify = (function () {
   HR.provider.init();
   HR.bcard.init();
   HR.model.init();
+  HR.meter.init();
   Promise.resolve(folder).catch(function () {}).then(HR.chats.init);   /* AG4: chats after the folder handle is known */
 })();

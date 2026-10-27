@@ -2,7 +2,8 @@
    Drawer (#chats): "+ New chat", then chats newest first (tap = switch, ✎ rename, 🗑 delete). Phone: slide-over with a
    backdrop (💬 opens, tap outside / pick closes). >=960px: docked left pane, 💬 shows / hides it (agent.chatsPane).
    The open chat id is kept in localStorage 'agent.chat' so a reload resumes it. Title = first user message (until renamed).
-   Each chat stores its provider + model; opening a chat switches to them. Saves are debounced (HR.msgs.save -> dirty()). */
+   Each chat stores its provider + model; opening a chat switches to them (AG5: HR.models.setChat, the Settings default is
+   untouched; picked() records a pick from the model chip; a new chat starts on the Settings default). Saves are debounced (HR.msgs.save -> dirty()). */
 HR.chats = (function () {
   var meta = null, rows = [], timer = 0, saving = Promise.resolve(), pane, listEl, KEY = 'agent.chat', $ = function (id) { return document.getElementById(id); };
   function stamp() { return new Date().toISOString().slice(0, 19); }
@@ -21,17 +22,18 @@ HR.chats = (function () {
     return saving;
   }
   async function refresh() { rows = await HR.threads.list().catch(function () { return []; }); draw(); }
+  /* AG5: the chat's own provider + model (no saved pair -> Settings default) */
   function useModel(c) {
-    if (!c.provider || !c.model) return;
-    var same = c.provider === HR.models.chosen() && c.model === HR.model.current() && !HR.models.fallen();
-    if (same) return;
-    HR.set.put('provider', c.provider); HR.models.fallback(false); HR.set.put(HR.models.modelKey(), c.model); HR.model.load();
+    var p = c && c.provider || '', m = c && c.model || '';
+    if (p === HR.models.chosen() && m && m === HR.model.current() && !HR.models.fallen()) { HR.models.setChat(p, m); return; }
+    HR.models.setChat(p, m); HR.model.load();
   }
+  function picked() { if (!meta) return; meta.provider = HR.models.chosen(); meta.model = HR.models.chatModel(); if (HR.msgs.all().length) dirty(); draw(); }
   function show() { HR.steps.clear(); HR.chat.render(); remember(); draw(); }
   function busy() { if (HR.chat.busy()) { HR.chat.note('Stop the current reply first.'); return true; } return false; }
   async function newChat() {
     if (busy()) return; await flush();
-    meta = fresh(); HR.msgs.set([]); show(); close(); $('input').focus();
+    meta = fresh(); HR.msgs.set([]); show(); useModel(null); close(); $('input').focus();
   }
   async function open(id) {
     if (busy()) return;
@@ -91,5 +93,5 @@ HR.chats = (function () {
     if (pick) { var l = await HR.threads.load(pick.id); if (l) { meta = Object.assign({}, pick); HR.msgs.set(l); show(); useModel(pick); return; } }
     meta = fresh(); HR.msgs.set([]); show();
   }
-  return { init: init, id: function () { return meta ? meta.id : ''; }, dirty: dirty, flush: flush, newChat: newChat, open: open };
+  return { init: init, id: function () { return meta ? meta.id : ''; }, dirty: dirty, flush: flush, newChat: newChat, open: open, picked: picked };
 })();

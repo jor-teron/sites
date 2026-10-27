@@ -22,7 +22,7 @@
   function parse(a) { if (!a) return {}; try { return JSON.parse(a); } catch (e) { return { _raw: a }; } }
   function models(c) {
     return fetch(N.trim(c.base) + '/models', { headers: hdr(c) }).then(function (r) { return r.ok ? r.json() : N.httpErr(r); })
-      .then(function (j) { return (j.data || j.models || []).map(function (m) { return { name: m.id || m.name, label: m.id || m.name }; })
+      .then(function (j) { return (j.data || j.models || []).map(function (m) { return { name: m.id || m.name, label: m.id || m.name, ctx: +(m.context_length || m.context_window) || 0 }; })
         .sort(function (a, b) { return a.name.localeCompare(b.name); }); })
       .catch(function (e) { throw N.wrap(e); });
   }

@@ -2,14 +2,15 @@
    OpenAI-compatible: base URL (presets OpenAI / Groq / OpenRouter), API key, optional model name. Gemini: API key, model.
    Keys live in localStorage 'agent.keys' per host (this device only; sent only to that provider). Changes reload models.
    AG2: Browser (built-in Story Mini, app/models/browser.js) has no fields here; its status / Remove are in app/gui/browsercard.js.
-   Panels follow the chosen provider, not a session fallback. */
+   Panels follow the chosen provider, not a session fallback. AG5: this is the default for new chats (HR.models.def());
+   changing it here also moves the open chat to it. */
 HR.provider = (function () {
   var PRE = [['OpenAI', 'https://api.openai.com/v1', 'gpt-4o-mini'], ['Groq', 'https://api.groq.com/openai/v1', 'llama-3.3-70b-versatile'],
     ['OpenRouter', 'https://openrouter.ai/api/v1', 'openai/gpt-4o-mini']];
   var dirty = false, $ = function (id) { return document.getElementById(id); };
   function host(b) { try { return new URL(b).host; } catch (e) { return b; } }
   function draw() {
-    var p = HR.models.chosen(), on = p !== 'ollama' && p !== 'browser', b = HR.models.base(p);
+    var p = HR.models.def(), on = p !== 'ollama' && p !== 'browser', b = HR.models.base(p);
     $('provOllama').hidden = p !== 'ollama'; $('provOnline').hidden = !on;
     $('provOA').hidden = p !== 'openai';
     if (!on) return;
@@ -25,10 +26,10 @@ HR.provider = (function () {
     PRE.forEach(function (x) { var b = document.createElement('button'); b.type = 'button'; b.className = 'hb wide'; b.textContent = x[0];
       b.onclick = function () { saveBase(x[1]); draw(); }; box.appendChild(b); });
     $('setOABase').addEventListener('change', function () { saveBase(this.value); draw(); });
-    $('setKey').addEventListener('change', function () { var p = HR.models.chosen(); HR.models.setKey(p, HR.models.base(p), this.value.trim()); dirty = true; });
-    $('setModelName').addEventListener('change', function () { HR.set.put(HR.models.chosen() + 'Model', this.value.trim()); dirty = true; });
+    $('setKey').addEventListener('change', function () { var p = HR.models.def(); HR.models.setKey(p, HR.models.base(p), this.value.trim()); dirty = true; });
+    $('setModelName').addEventListener('change', function () { HR.set.put(HR.models.def() + 'Model', this.value.trim()); dirty = true; });
     $('btnSet').addEventListener('click', draw);
     $('settings').addEventListener('close', function () { if (dirty) { dirty = false; HR.model.load(); } });
   }
-  return { init: init, draw: draw, changed: function () { draw(); HR.model.load(); } };
+  return { init: init, draw: draw, changed: function () { HR.models.setChat('', ''); if (HR.chats.picked) HR.chats.picked(); draw(); HR.model.load(); } };
 })();

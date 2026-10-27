@@ -8,10 +8,11 @@
    provider 'ollama' (default) | 'openai' | 'gemini' | 'browser', openaiBase, openaiModel / geminiModel, model_<provider> (HR6, app/gui/provider.js),
    browserModel '' | 'ready' (AG2: Story Mini downloaded, app/models/browser.js).
    AG3 Permissions (app/core/perms.js): autoWrite / autoShell 'off' (default), allowWrite / allowShell / memory 'on' (default).
-   AG3 Display: showThink, showSteps, notifyLong 'on' (default); applyDisplay() sets body.no-think / body.no-steps. */
+   AG3 Display: showThink, showSteps, notifyLong 'on' (default); applyDisplay() sets body.no-think / body.no-steps.
+   AG5 Display: tokenMeter 'on' (default), ctxMax (context size fallback when the provider doesn't report one, default 8192). */
 HR.set = (function () {
   var KEY = 'agent.settings', DEF = { theme: 'dark', baseUrl: 'http://localhost:11434', model: '', think: 'auto', tools: 'on', maxSteps: 8, saveChats: 'on', helper: 'off', helperUrl: 'http://127.0.0.1:11500', helperToken: '', provider: 'ollama', openaiBase: 'https://api.openai.com/v1', browserModel: '',
-    autoWrite: 'off', autoShell: 'off', allowWrite: 'on', allowShell: 'on', memory: 'on', showThink: 'on', showSteps: 'on', notifyLong: 'on' };
+    autoWrite: 'off', autoShell: 'off', allowWrite: 'on', allowShell: 'on', memory: 'on', showThink: 'on', showSteps: 'on', notifyLong: 'on', tokenMeter: 'on', ctxMax: 8192 };
   function all() { var s = {}; try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { s = {}; } return Object.assign({}, DEF, s); }
   function get(k) { return all()[k]; }
   function put(k, v) { var s = all(); s[k] = v; try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* memory only */ } }
@@ -24,6 +25,7 @@ HR.set = (function () {
   function applyDisplay() {
     var b = document.body; b.classList.toggle('no-think', get('showThink') === 'off'); b.classList.toggle('no-steps', get('showSteps') === 'off');
     var w = document.getElementById('autoShellWarn'); if (w) w.hidden = get('autoShell') !== 'on';
+    if (HR.meter) HR.meter.update();
   }
   var OO = [['on', 'On'], ['off', 'Off']];
   function seg(id, key, opts, after) {
@@ -40,20 +42,23 @@ HR.set = (function () {
     seg('setTheme', 'theme', [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']], applyTheme);
     seg('setThink', 'think', [['auto', 'Auto'], ['on', 'On'], ['off', 'Off']]);
     seg('setTools', 'tools', OO);
-    ['autoWrite', 'autoShell', 'allowWrite', 'allowShell', 'memory', 'showThink', 'showSteps', 'notifyLong'].forEach(function (k) {
+    ['autoWrite', 'autoShell', 'allowWrite', 'allowShell', 'memory', 'showThink', 'showSteps', 'notifyLong', 'tokenMeter'].forEach(function (k) {
       seg('set_' + k, k, OO, applyDisplay);
     });
     applyDisplay();
     seg('setSave', 'saveChats', [['on', 'On'], ['off', 'Off']]);
     seg('setHelper', 'helper', [['on', 'On'], ['off', 'Off']], function () { HR.helper.test(); });
-    document.getElementById('setSteps').value = maxSteps();
+    document.getElementById('setSteps').value = maxSteps(); document.getElementById('setCtx').value = ctxMax();
     var u = document.getElementById('setBase'); u.value = get('baseUrl');
     document.getElementById('setOrigin').textContent = location.origin === 'null' ? 'file:// (use "*" or serve over http)' : location.origin;
   }
+  function ctxMax() { var v = parseInt(get('ctxMax'), 10); return Math.max(512, Math.min(2000000, isNaN(v) ? 8192 : v)); }
   function maxSteps() { var v = parseInt(get('maxSteps'), 10); return Math.max(1, Math.min(30, isNaN(v) ? 8 : v)); }
   function init() {
     var st = document.getElementById('setSteps');
     st.addEventListener('change', function () { put('maxSteps', Math.max(1, Math.min(30, parseInt(st.value, 10) || 8))); st.value = maxSteps(); });
+    var cx = document.getElementById('setCtx');
+    cx.addEventListener('change', function () { put('ctxMax', Math.max(512, Math.min(2000000, parseInt(cx.value, 10) || 8192))); cx.value = ctxMax(); applyDisplay(); });
     var dlg = document.getElementById('settings'), u = document.getElementById('setBase');
     document.getElementById('btnSet').onclick = function () { draw(); dlg.showModal(); };
     document.getElementById('setClose').onclick = function () { dlg.close(); };
@@ -63,5 +68,5 @@ HR.set = (function () {
       if (v !== get('baseUrl')) { put('baseUrl', v); HR.model.load(); }
     });
   }
-  return { get: get, put: put, redraw: draw, maxSteps: maxSteps, applyTheme: applyTheme, applyDisplay: applyDisplay, init: init };
+  return { get: get, put: put, redraw: draw, maxSteps: maxSteps, ctxMax: ctxMax, applyTheme: applyTheme, applyDisplay: applyDisplay, init: init };
 })();

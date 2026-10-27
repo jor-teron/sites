@@ -1,7 +1,7 @@
 /* Agent — app/gui/bubbles.js: chat views (HR.view). bubble(m) -> {paint(live), el} for user / assistant messages:
    plain text with ``` code blocks, folded Thinking box (<think>…</think> or Ollama 'thinking'), stats line, tool-call chips.
    tool(m) -> {done(ok,text,ms)}: folded 🔧 chip with args + result preview. note(text, cls), hello() (+ folder hint, HR4), errorCard(e) (Ollama help; HR6 online provider key / URL errors;
-   AG2 kind 'download' -> the Browser model card, HR.bcard). */
+   AG2 kind 'download' -> the Browser model card, HR.bcard). AG5: each user / assistant bubble gets HR.edit actions. */
 HR.view = (function () {
   var log;
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
@@ -34,7 +34,7 @@ HR.view = (function () {
       var s = m.stats; stat.textContent = s ? [s.tokens ? s.tokens + ' tokens' : '', s.tps ? s.tps.toFixed(1) + ' tok/s' : '', s.sec ? s.sec.toFixed(1) + ' s' : '', s.note || ''].filter(Boolean).join(' · ') : '';
       stat.hidden = !stat.textContent;
     }
-    paint(false); bottom(m.role === 'user');
+    paint(false); bottom(m.role === 'user'); if (HR.edit) HR.edit.attach(m, b, body);   /* AG5 actions */
     return { paint: paint, el: b };
   }
   function tool(m) {

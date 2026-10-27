@@ -3,7 +3,8 @@
    chat({base,model,messages,think,tools,signal,onDelta(content,thinking)}) streams POST <base>/api/chat (NDJSON, one JSON per line)
    and resolves with the final chunk's stats {eval_count, eval_duration, prompt_eval_count, total_duration, done_reason}
    plus tool_calls [{function:{name, arguments}}] collected from any chunk (HR2: Ollama native tool calling, `tools` param).
-   Errors carry .kind: 'unreachable' (network/CORS), 'http' (status + Ollama's error text), 'abort' (Stop). */
+   Errors carry .kind: 'unreachable' (network/CORS), 'http' (status + Ollama's error text), 'abort' (Stop).
+   ctx(base, model) (AG5) -> context window from POST /api/show (context_length, capped by a Modelfile num_ctx). */
 HR.ollama = (function () {
   function trim(b) { return String(b || '').replace(/\/+$/, ''); }
   function fail(kind, msg, status) { var e = new Error(msg); e.kind = kind; e.status = status; return e; }
@@ -44,8 +45,15 @@ HR.ollama = (function () {
       .catch(function (e) { throw wrap(e); });
   }
   /* tokens per second from Ollama's final stats (eval_duration is in ns) */
+  /* AG5: context window from /api/show (model_info '<arch>.context_length'); 0 when unknown */
+  function ctx(base, model) {
+    return fetch(trim(base) + '/api/show', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: model }) })
+      .then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
+        var mi = j.model_info || {}, n = 0; Object.keys(mi).forEach(function (key) { if (/\.context_length$/.test(key)) n = +mi[key] || n; });
+        var pm = /num_ctx\s+(\d+)/.exec(j.parameters || ''); return pm ? Math.min(+pm[1], n || +pm[1]) : n; });
+  }
   function tps(s) { return s && s.eval_count && s.eval_duration ? s.eval_count / (s.eval_duration / 1e9) : 0; }
-  return { tags: tags, chat: chat, tps: tps };
+  return { tags: tags, ctx: ctx, chat: chat, tps: tps };
 })();
 /* HR6: Ollama as a provider adapter (default) */
 HR.models.register({ id: 'ollama', label: 'Ollama', needsKey: false,

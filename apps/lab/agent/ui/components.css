@@ -65,3 +65,22 @@
 .sw{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;font-size:14px}.sw small{color:var(--mut)}
 .dlg .seg .hb{height:40px;min-width:60px}
 .no-think .think{display:none!important}.no-steps .steps,.no-steps #btnSteps{display:none!important}
+/* AG5: model chip + picker, bubble actions (hover / tap), token meter */
+.mchip{min-width:0;max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick .dlg-head{gap:6px}.pick .dlg-head h2{flex:1}
+.pk-list{display:flex;flex-direction:column;gap:4px;margin:10px 0;max-height:52vh;overflow-y:auto}
+.pk-row{min-height:44px;text-align:left;padding:8px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--card);cursor:pointer;overflow-wrap:anywhere}
+.pk-row.on{border-color:var(--acc);outline:1.5px solid var(--acc)}
+.pk-def{width:100%;height:40px}
+.msg .acts{display:none;gap:6px;flex-wrap:wrap;margin-top:6px}
+.msg.acts-on .acts,.msg.editing .acts{display:flex}
+@media(hover:hover){.msg:hover .acts:not(:empty){display:flex}}
+.msg .act{height:38px;min-width:76px}
+.ed-ta{width:100%;min-height:70px;resize:vertical;border:1.5px solid var(--acc);border-radius:10px;background:var(--card);padding:7px 10px;font:inherit;color:inherit}
+.meter{display:flex;align-items:center;gap:8px;padding:3px max(10px,env(safe-area-inset-right)) 3px max(10px,env(safe-area-inset-left));font-size:12px;color:var(--mut);background:var(--panel);border-top:1px solid var(--line)}
+.meter[hidden]{display:none}
+.mt-bar{flex:0 0 90px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}.mt-bar i{display:block;height:100%;width:0;background:var(--ok)}
+.meter.amber .mt-bar i{background:var(--warn)}.meter.amber .mt-t{color:var(--warn);cursor:pointer}
+.meter.red .mt-bar i{background:var(--err)}.meter.red .mt-t{color:var(--err);cursor:pointer;font-weight:600}
+@media(min-width:960px){.meter{padding-left:max(24px,calc((100% - 860px)/2));padding-right:max(24px,calc((100% - 860px)/2))}}
+.chip.warn{border-color:var(--warn);color:var(--warn)}

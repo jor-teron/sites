@@ -1,6 +1,7 @@
 /* Agent — app/storage/threadfmt.js: one chat as Markdown (AG4), same text in the folder and in IndexedDB.
    Header lines start with ':' (": agent chat", ": id", ": title"). Turns: "# user — <iso>", "## assistant — <iso> · model",
-   "### tool — name ✓|✕ · ms". Meta lines right under a heading: ": tool_calls <json>", ": args <json>", ": id <tool_call_id>".
+   "### tool — name ✓|✕ · ms". Meta lines right under a heading: ": tool_calls <json>", ": args <json>", ": id <tool_call_id>",
+   ": usage <prompt> <output>" (AG5: the provider's token counts, for the meter).
    Body lines starting with '#', ':' or '\' are written with a leading '\' so they never look like headings (read strips it).
    toMd(meta, list) -> text; parse(text) -> {meta, list}. Failed replies (m.error) are not kept. */
 HR.threadfmt = (function () {
@@ -13,7 +14,7 @@ HR.threadfmt = (function () {
       if (m.error) return;
       var t = m.at || '';
       if (m.role === 'user') out.push('# user — ' + t);
-      else if (m.role === 'assistant') { out.push('## assistant — ' + t + (m.model ? ' · ' + one(m.model) : '')); if (m.tool_calls && m.tool_calls.length) out.push(': tool_calls ' + JSON.stringify(m.tool_calls)); }
+      else if (m.role === 'assistant') { out.push('## assistant — ' + t + (m.model ? ' · ' + one(m.model) : '')); if (m.tool_calls && m.tool_calls.length) out.push(': tool_calls ' + JSON.stringify(m.tool_calls)); if (m.usage && m.usage.p) out.push(': usage ' + m.usage.p + ' ' + (m.usage.o || 0)); }
       else if (m.role === 'tool') { out.push('### tool — ' + one(m.tool_name) + ' ' + (m.ok === false ? '✕' : '✓') + ' · ' + (m.ms || 0)); out.push(': args ' + JSON.stringify(m.args || {})); if (m.tool_call_id) out.push(': id ' + m.tool_call_id); }
       else return;
       out.push('', esc(m.content), '');
@@ -39,6 +40,7 @@ HR.threadfmt = (function () {
           else if (mm[1] === 'tool_calls') cur.tool_calls = JSON.parse(mm[2]);
           else if (mm[1] === 'args') cur.args = JSON.parse(mm[2]);
           else if (mm[1] === 'id') cur.tool_call_id = mm[2];
+          else if (mm[1] === 'usage') { var u = mm[2].split(' '); cur.usage = { p: +u[0] || 0, o: +u[1] || 0 }; }
         } catch (e) { /* bad meta line: skip */ }
         return;
       }

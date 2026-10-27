@@ -19,10 +19,10 @@
   <meta name="theme-color" content="#111318">
   <title>Agent</title>
   <link rel="icon" href="agent_icon.png">
-  <link rel="stylesheet" href="ui/main.css?v=20261027ag4">
-  <link rel="stylesheet" href="ui/components.css?v=20261027ag4">
-  <link rel="stylesheet" href="ui/steps.css?v=20261027ag4">
-  <link rel="stylesheet" href="ui/chats.css?v=20261027ag4">
+  <link rel="stylesheet" href="ui/main.css?v=20261027ag5">
+  <link rel="stylesheet" href="ui/components.css?v=20261027ag5">
+  <link rel="stylesheet" href="ui/steps.css?v=20261027ag5">
+  <link rel="stylesheet" href="ui/chats.css?v=20261027ag5">
   <script src="../../../shared/theme/hub_theme.js?v=20261026h22"></script>
   <script>try{var s=JSON.parse(localStorage.getItem('agent.settings')||localStorage.getItem('harness.settings')||'{}'),m=s.theme||'dark';document.documentElement.dataset.ht=m==='light'?'light':m==='system'?(localStorage.getItem('sites-hub.theme')==='light'?'light':'dark'):'dark'}catch(e){document.documentElement.dataset.ht='dark'}</script>
 </head>
@@ -30,8 +30,7 @@
 <header class="top">
   <button type="button" class="hb" id="btnChats" title="Chats" aria-label="Chats">💬</button>
   <h1 class="brand">🧪 Agent</h1>
-  <select id="model" class="model" aria-label="Model"></select>
-  <button type="button" class="hb" id="btnModels" title="Reload models" aria-label="Reload models">↻</button>
+  <button type="button" class="chip mchip" id="modelChip" aria-haspopup="dialog">Loading…</button>
   <span class="grow"></span>
   <button type="button" class="chip" id="btnFolder" hidden>📁 Pick folder</button>
   <button type="button" class="hb" id="btnSteps" title="Steps" aria-label="Show steps">☰<span id="stepCount" class="badge"></span></button>
@@ -47,6 +46,7 @@
   </aside>
   <section class="chat" aria-label="Chat">
     <div id="log" class="log" aria-live="polite"></div>
+    <div id="meter" class="meter" hidden><span class="mt-bar"><i id="meterFill"></i></span><span id="meterText" class="mt-t"></span></div>
     <div class="composer">
       <textarea id="input" rows="1" placeholder="Message the model…  (Enter sends, Shift+Enter new line)" aria-label="Message"></textarea>
       <button type="button" class="hb send" id="btnSend" title="Send" aria-label="Send">➤</button>
@@ -90,6 +90,8 @@
   <h3 class="grp">Display</h3>
   <div class="sw"><span>Show thinking</span><div class="seg" id="set_showThink" role="radiogroup" aria-label="Show thinking"></div></div>
   <div class="sw"><span>Show steps pane</span><div class="seg" id="set_showSteps" role="radiogroup" aria-label="Show steps pane"></div></div>
+  <div class="sw"><span>Token meter <small>(context used by this chat)</small></span><div class="seg" id="set_tokenMeter" role="radiogroup" aria-label="Token meter"></div></div>
+  <label class="lbl">Context size when the provider doesn't say (tokens) <input id="setCtx" class="inp num" type="number" min="512" max="2000000" step="512"></label>
   <div class="sw"><span>Hub card when a long task finishes <small>(over 20 s)</small></span><div class="seg" id="set_notifyLong" role="radiogroup" aria-label="Hub card when a long task finishes"></div></div>
   <h3>Folder</h3>
   <p class="hint" id="folderStat"></p>
@@ -103,39 +105,47 @@
   <p class="hint">Start it in a terminal: <code>bash helper/agent-helper.sh</code> (needs socat or ncat; listens on 127.0.0.1 only). Every command shows an Approve / Deny card first.</p>
   <p class="hint">Daily logs go to agent/chats/YYYY_MM/YYYY_MM_DD.md; memory to agent/memory.md; system prompt in agent/prompts/system.md (edit it there). In-app history stays in this tab (sessionStorage). Settings are saved.</p>
 </dialog>
-<script src="app/core/migrate.js?v=20261027ag4"></script>
-<script src="app/core/messages.js?v=20261027ag4"></script>
-<script src="app/core/tools.js?v=20261027ag4"></script>
-<script src="app/core/perms.js?v=20261027ag4"></script>
-<script src="app/core/loop.js?v=20261027ag4"></script>
-<script src="app/core/prompt.js?v=20261027ag4"></script>
-<script src="app/core/memory.js?v=20261027ag4"></script>
-<script src="app/core/helper.js?v=20261027ag4"></script>
-<script src="app/models/net.js?v=20261027ag4"></script>
-<script src="app/models/registry.js?v=20261027ag4"></script>
-<script src="app/models/ollama.js?v=20261027ag4"></script>
-<script src="app/models/openai.js?v=20261027ag4"></script>
-<script src="app/models/gemini.js?v=20261027ag4"></script>
-<script src="app/models/browser.js?v=20261027ag4"></script>
-<script src="app/storage/fs.js?v=20261027ag4"></script>
-<script src="app/storage/logs.js?v=20261027ag4"></script>
-<script src="app/storage/threadfmt.js?v=20261027ag4"></script>
-<script src="app/storage/threads.js?v=20261027ag4"></script>
-<script src="app/tools/time.js?v=20261027ag4"></script>
-<script src="app/tools/files.js?v=20261027ag4"></script>
-<script src="app/tools/memory.js?v=20261027ag4"></script>
-<script src="app/tools/shell.js?v=20261027ag4"></script>
-<script src="app/gui/settings.js?v=20261027ag4"></script>
-<script src="app/gui/model.js?v=20261027ag4"></script>
-<script src="app/gui/steps.js?v=20261027ag4"></script>
-<script src="app/gui/bubbles.js?v=20261027ag4"></script>
-<script src="app/gui/approve.js?v=20261027ag4"></script>
-<script src="app/gui/folder.js?v=20261027ag4"></script>
-<script src="app/gui/helperset.js?v=20261027ag4"></script>
-<script src="app/gui/provider.js?v=20261027ag4"></script>
-<script src="app/gui/browsercard.js?v=20261027ag4"></script>
-<script src="app/gui/chat.js?v=20261027ag4"></script>
-<script src="app/gui/chats.js?v=20261027ag4"></script>
-<script src="app/main.js?v=20261027ag4"></script>
+<dialog id="pick" class="dlg pick" aria-labelledby="pickTitle">
+  <div class="dlg-head"><h2 id="pickTitle">Model for this chat</h2><button type="button" class="hb" id="btnModels" title="Reload models" aria-label="Reload models">↻</button><button type="button" class="hb" id="pickClose" aria-label="Close">✕</button></div>
+  <div class="seg" id="pickProv" role="radiogroup" aria-label="Provider"></div>
+  <div id="pickList" class="pk-list"></div>
+  <button type="button" class="hb wide pk-def" id="pickDef">Make default for new chats</button>
+</dialog>
+<script src="app/core/migrate.js?v=20261027ag5"></script>
+<script src="app/core/messages.js?v=20261027ag5"></script>
+<script src="app/core/tools.js?v=20261027ag5"></script>
+<script src="app/core/perms.js?v=20261027ag5"></script>
+<script src="app/core/loop.js?v=20261027ag5"></script>
+<script src="app/core/prompt.js?v=20261027ag5"></script>
+<script src="app/core/memory.js?v=20261027ag5"></script>
+<script src="app/core/helper.js?v=20261027ag5"></script>
+<script src="app/models/net.js?v=20261027ag5"></script>
+<script src="app/models/registry.js?v=20261027ag5"></script>
+<script src="app/models/ollama.js?v=20261027ag5"></script>
+<script src="app/models/openai.js?v=20261027ag5"></script>
+<script src="app/models/gemini.js?v=20261027ag5"></script>
+<script src="app/models/browser.js?v=20261027ag5"></script>
+<script src="app/storage/fs.js?v=20261027ag5"></script>
+<script src="app/storage/logs.js?v=20261027ag5"></script>
+<script src="app/storage/threadfmt.js?v=20261027ag5"></script>
+<script src="app/storage/threads.js?v=20261027ag5"></script>
+<script src="app/tools/time.js?v=20261027ag5"></script>
+<script src="app/tools/files.js?v=20261027ag5"></script>
+<script src="app/tools/memory.js?v=20261027ag5"></script>
+<script src="app/tools/shell.js?v=20261027ag5"></script>
+<script src="app/gui/settings.js?v=20261027ag5"></script>
+<script src="app/gui/model.js?v=20261027ag5"></script>
+<script src="app/gui/steps.js?v=20261027ag5"></script>
+<script src="app/gui/bubbles.js?v=20261027ag5"></script>
+<script src="app/gui/approve.js?v=20261027ag5"></script>
+<script src="app/gui/folder.js?v=20261027ag5"></script>
+<script src="app/gui/helperset.js?v=20261027ag5"></script>
+<script src="app/gui/provider.js?v=20261027ag5"></script>
+<script src="app/gui/browsercard.js?v=20261027ag5"></script>
+<script src="app/gui/chat.js?v=20261027ag5"></script>
+<script src="app/gui/chats.js?v=20261027ag5"></script>
+<script src="app/gui/meter.js?v=20261027ag5"></script>
+<script src="app/gui/edit.js?v=20261027ag5"></script>
+<script src="app/main.js?v=20261027ag5"></script>
 </body>
 </html>

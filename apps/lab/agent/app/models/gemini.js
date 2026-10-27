@@ -27,7 +27,7 @@
   function models(c) {
     return fetch(N.trim(c.base) + '/models?pageSize=200', { headers: hdr(c) }).then(function (r) { return r.ok ? r.json() : N.httpErr(r); })
       .then(function (j) { return (j.models || []).filter(function (m) { return (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0; })
-        .map(function (m) { var n = m.name.replace(/^models\//, ''); return { name: n, label: n + (m.displayName ? ' · ' + m.displayName : '') }; }); })
+        .map(function (m) { var n = m.name.replace(/^models\//, ''); return { name: n, label: n + (m.displayName ? ' · ' + m.displayName : ''), ctx: m.inputTokenLimit || 0 }; }); })
       .catch(function (e) { throw N.wrap(e); });
   }
   function chat(o) {
