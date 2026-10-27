@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<!--
+  Harness (HR1) — browser AI agent harness, all in browser JS. HR1: chat with a local Ollama model (streaming, Stop,
+  Thinking box, tok/s) and a Steps pane listing every model call. No tools / loop yet (see harness_readme.md roadmap).
+  Styles: ui/main.css (theme, layout), ui/components.css (buttons, bubbles, cards, dialog), ui/steps.css (steps pane).
+  Scripts (order matters): app/core/messages.js, app/models/ollama.js, app/gui/settings.js, model.js, steps.js, chat.js, app/main.js.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#111318">
+  <title>Harness</title>
+  <link rel="icon" href="harness_icon.png">
+  <link rel="stylesheet" href="ui/main.css?v=20261027hr1">
+  <link rel="stylesheet" href="ui/components.css?v=20261027hr1">
+  <link rel="stylesheet" href="ui/steps.css?v=20261027hr1">
+  <script src="../../../shared/theme/hub_theme.js?v=20261026h22"></script>
+  <script>try{var s=JSON.parse(localStorage.getItem('harness.settings')||'{}'),m=s.theme||'dark';document.documentElement.dataset.ht=m==='light'?'light':m==='system'?(localStorage.getItem('sites-hub.theme')==='light'?'light':'dark'):'dark'}catch(e){document.documentElement.dataset.ht='dark'}</script>
+</head>
+<body>
+<header class="top">
+  <h1 class="brand">🧪 Harness</h1>
+  <select id="model" class="model" aria-label="Model"></select>
+  <button type="button" class="hb" id="btnModels" title="Reload models" aria-label="Reload models">↻</button>
+  <span class="grow"></span>
+  <button type="button" class="hb" id="btnSteps" title="Steps" aria-label="Show steps">☰<span id="stepCount" class="badge"></span></button>
+  <button type="button" class="hb" id="btnClear" title="New chat" aria-label="New chat">🗑</button>
+  <button type="button" class="hb" id="btnSet" title="Settings" aria-label="Settings">⚙</button>
+</header>
+<div class="main">
+  <section class="chat" aria-label="Chat">
+    <div id="log" class="log" aria-live="polite"></div>
+    <div class="composer">
+      <textarea id="input" rows="1" placeholder="Message the model…  (Enter sends, Shift+Enter new line)" aria-label="Message"></textarea>
+      <button type="button" class="hb send" id="btnSend" title="Send" aria-label="Send">➤</button>
+    </div>
+  </section>
+  <aside class="steps" aria-label="Steps">
+    <div class="st-top"><h2>Steps</h2><button type="button" class="hb" id="stepsClose" title="Hide steps" aria-label="Hide steps">✕</button></div>
+    <div id="stepList" class="st-list"></div>
+  </aside>
+</div>
+<dialog id="settings" class="dlg" aria-labelledby="setTitle">
+  <div class="dlg-head"><h2 id="setTitle">Settings</h2><button type="button" class="hb" id="setClose" aria-label="Close">✕</button></div>
+  <h3>Theme</h3><div class="seg" id="setTheme" role="radiogroup" aria-label="Theme"></div>
+  <h3>Ollama base URL</h3>
+  <input id="setBase" class="inp" type="url" spellcheck="false" placeholder="http://localhost:11434" aria-label="Ollama base URL">
+  <p class="hint">Ollama must allow this page: OLLAMA_ORIGINS = <code id="setOrigin"></code></p>
+  <h3>Thinking</h3><div class="seg" id="setThink" role="radiogroup" aria-label="Thinking"></div>
+  <p class="hint">Auto = model default. On / Off send Ollama's <code>think</code> flag (only thinking models accept it).</p>
+  <p class="hint">Chat history stays in this tab only (sessionStorage). Settings are saved.</p>
+</dialog>
+<script src="app/core/messages.js?v=20261027hr1"></script>
+<script src="app/models/ollama.js?v=20261027hr1"></script>
+<script src="app/gui/settings.js?v=20261027hr1"></script>
+<script src="app/gui/model.js?v=20261027hr1"></script>
+<script src="app/gui/steps.js?v=20261027hr1"></script>
+<script src="app/gui/chat.js?v=20261027hr1"></script>
+<script src="app/main.js?v=20261027hr1"></script>
+</body>
+</html>
