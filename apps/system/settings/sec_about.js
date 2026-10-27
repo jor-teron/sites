@@ -17,6 +17,8 @@
  *   <connected folder>/hub/hub-profile/hub.json by hub/core/hub_profile.js (window.HubProfile in the Hub).
  *   Shows the folder (a choice when more than one is connected), status, last save, Save now / Load now.
  * H30.2: also lists the System apps whose settings go to hub/hub-profile/system/<app>.json.
+ * H30.3: 'Include keys in profile' switch (off by default; on = the API keys go into hub.json too) and
+ *   Export profile / Import profile (one .json file, for devices without a folder; works with no folder).
  */
 (function () {
   'use strict';
@@ -174,8 +176,48 @@
     const btns = ui.el('div', 'profile-btns');
     btns.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
     btns.append(saveB, loadB);
-    card.append(body, btns, out,
-      ui.el('p', 'opt-note', 'Saved as hub/hub-profile/hub.json inside the folder, as plain JSON; System app settings go to hub/hub-profile/system/<app>.json. API keys and sign-ins are never saved there.'));
+    // H30.3: keys switch + one-file export / import
+    const keyNote = ui.el('p', 'opt-note', '');
+    const paintKeyNote = (on) => {
+      keyNote.textContent = on
+        ? 'Your API keys are saved in hub.json and in exported files as plain text. Anyone who can open the folder or the file can use them.'
+        : 'API keys stay only in this browser. Sign-ins are never saved.';
+    };
+    const keysSw = ui.switch('Include keys in profile', 'Also save your API keys (Settings \u2192 API Keys) in the profile',
+      HP.includeKeys(), (on) => { paintKeyNote(on); HP.setIncludeKeys(on).then(draw); });
+    keysSw.id = 'profile-keys';
+    paintKeyNote(HP.includeKeys());
+    const expB = ui.el('button', 'big-btn', 'Export profile'); expB.type = 'button'; expB.id = 'profile-export';
+    const impB = ui.el('button', 'big-btn', 'Import profile'); impB.type = 'button'; impB.id = 'profile-import';
+    const file = document.createElement('input');
+    file.type = 'file'; file.accept = '.json,application/json'; file.hidden = true; file.id = 'profile-file';
+    const btns2 = ui.el('div', 'profile-btns');
+    btns2.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
+    btns2.append(expB, impB, file);
+    expB.addEventListener('click', () => {
+      const data = HP.exportData();
+      const blob = new Blob([JSON.stringify(data, null, 2) + '\n'], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'hub-profile-' + data.savedAt.slice(0, 10) + '.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      out.className = 'upd-out ok';
+      out.textContent = 'Exported ' + a.download + (data.keys ? ' (with API keys)' : '');
+    });
+    impB.addEventListener('click', () => file.click());
+    file.addEventListener('change', async () => {
+      const f = file.files && file.files[0];
+      file.value = '';
+      if (!f) return;
+      let r;
+      try { r = await HP.importData(await f.text()); } catch (_) { r = { ok: false }; }
+      out.className = 'upd-out ' + (r.ok ? 'ok' : 'bad');
+      out.textContent = r.ok ? 'Imported \u2014 reloading the Hub\u2026' : 'That file is not a Hub profile';
+      if (r.ok) setTimeout(() => hub.location.reload(), 400);
+    });
+    card.append(body, btns, out, keysSw, keyNote, btns2,
+      ui.el('p', 'opt-note', 'Saved as hub/hub-profile/hub.json inside the folder, as plain JSON; System app settings go to hub/hub-profile/system/<app>.json. Sign-ins are never saved. Export / Import use one .json file, for devices without a folder.'));
     async function draw() {
       const st = await HP.status();
       body.textContent = '';
@@ -199,6 +241,8 @@
       }
       body.appendChild(ui.el('p', 'opt-note', st.error || STATE_TEXT[st.state] || ''));
       saveB.disabled = loadB.disabled = !st.driveId;
+      keysSw.classList.toggle('on', !!st.includeKeys); keysSw.setAttribute('aria-checked', st.includeKeys ? 'true' : 'false');
+      paintKeyNote(!!st.includeKeys);
     }
     saveB.addEventListener('click', async () => {
       saveB.disabled = true; out.className = 'upd-out'; out.textContent = 'Saving\u2026';

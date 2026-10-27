@@ -252,7 +252,7 @@
       if (!K) { pane.appendChild(ui.note('The key store (hub/core/hub_keys.js) did not load.')); return; }
       const focusName = String(sub || '').toLowerCase();
       const note = ui.el('p', 'opt-note key-note');
-      note.textContent = '\uD83D\uDD12 Keys stay only in this browser on this device (localStorage). They are not synced to a joined phone and the Hub sends them nowhere; each app sends a key only to its own service. Every Hub app can read them.';
+      note.textContent = '\uD83D\uDD12 Keys stay only in this browser on this device (localStorage). They are not synced to a joined phone and the Hub sends them nowhere; each app sends a key only to its own service. Every Hub app can read them. (If you turn on About \u2192 Profile folder \u2192 Include keys in profile, they are also saved in your profile file.)';
       const list = ui.el('div', 'key-list');
       K.KNOWN.forEach((def) => list.appendChild(keyRow(def, focusName)));
       const known = new Set(K.KNOWN.map((d) => d.name));

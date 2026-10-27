@@ -32,6 +32,14 @@
  *   as before; HubProfile watches those keys (same debounce), writes only the files that changed and loads them
  *   back together with hub.json (only keys that belong to that app are accepted; key-like values never).
  *   More apps: HubProfile.registerApp(name, { keys: [...], prefixes: [...] }).
+ * H30.3 Keys + export:
+ *   'Include keys in profile' (Settings → About → Profile folder; localStorage 'sites-hub.profileKeys' = '1', off by
+ *   default): when on, hub.json also holds "keys": { name: value } (the API keys of sites-hub.keys, H28), saved
+ *   on change like the rest. A hub.json / export file that has "keys" brings them in on load (merged: the file's
+ *   names win, other local keys stay) and turns the switch on here too. Off = keys never leave this browser.
+ *   exportData() → one object { version: 1, kind: 'hub-profile', savedAt, device, hub, system: { app: settings },
+ *   keys? } for a single .json file (devices without a folder); importData(obj) applies such a file (or a
+ *   plain hub.json), then the Hub reloads.
  * API window.HubProfile:
  *   save({ ask, force })  → Promise<{ ok, reason? }>   ask: may ask the browser for access (call from a click)
  *   load({ ask, force })  → Promise<{ ok, applied, reason? }>   force: apply even when not newer (Load now)
@@ -49,7 +57,8 @@
   const RELOAD_GUARD = 'sites-hub.profileReload';   // sessionStorage: the savedAt we already reloaded for
   const DEBOUNCE = 3000, MAX_VALUE = 200000;
   const EXCLUDE = new Set(['keys', 'google', 'phonekeyRooms', 'startList', 'lastRefresh', 'wmSession', 'lastApp',
-    'updTried', 'fromCat', 'fromLab', 'profileAt', 'profileSaved', 'profileLoaded', 'profileDrive']);
+    'updTried', 'fromCat', 'fromLab', 'profileAt', 'profileSaved', 'profileLoaded', 'profileDrive', 'profileKeys']);
+  const K_KEYS = P + 'profileKeys', K_STORE = P + 'keys';   // H30.3
   const KEY_NAME = /key|token|secret|passw|auth|cred|cookie/i;
   const KEY_VALUE = /(sk-[A-Za-z0-9_-]{8,}|sk_(live|test)_|gsk_[A-Za-z0-9]{8,}|xai-[A-Za-z0-9]{8,}|AIza[0-9A-Za-z_-]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_|tvly-[A-Za-z0-9]{8,}|hf_[A-Za-z0-9]{20,}|ya29\.|Bearer\s|-----BEGIN)/;
   const OPAQUE = /^[A-Za-z0-9_\-+=]{32,}$/;   // one long token-looking word
@@ -117,6 +126,24 @@
     });
     return out;
   }
+  /* H30.3: API keys, only when the switch is on */
+  const includeKeys = () => lget(K_KEYS) === '1';
+  function readKeys() {
+    try { const o = JSON.parse(lget(K_STORE) || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (_) { return {}; }
+  }
+  /** merge a file's keys into this browser's key store (file names win) */
+  function importKeys(k) {
+    if (!k || typeof k !== 'object' || Array.isArray(k)) return 0;
+    const cur = readKeys();
+    let n = 0;
+    Object.keys(k).forEach((name) => {
+      if (/^[\w.-]{1,60}$/.test(name) && typeof k[name] === 'string' && k[name] && k[name].length < 4096) { cur[name] = k[name]; n++; }
+    });
+    if (!n) return 0;
+    applying = true;
+    try { lset(K_STORE, JSON.stringify(cur)); lset(K_KEYS, '1'); } finally { applying = false; }
+    return n;
+  }
   function deviceInfo() {
     const ua = navigator.userAgent || '';
     const browser = /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /Chrome\//.test(ua) ? 'Chrome'
@@ -182,7 +209,7 @@
     const { all, rec } = await pick();
     const st = {
       folders: all.map((f) => ({ id: f.id, name: f.name })),
-      lastSave: +lget(K_SAVED) || 0, lastLoad: +lget(K_LOADED) || 0, localAt: +lget(K_AT) || 0,
+      lastSave: +lget(K_SAVED) || 0, includeKeys: includeKeys(), lastLoad: +lget(K_LOADED) || 0, localAt: +lget(K_AT) || 0,
     };
     if (!rec) Object.assign(st, { state: window.indexedDB ? 'none' : 'unsupported', folder: '', driveId: '', path: '' });
     else {
@@ -212,7 +239,8 @@
       if (!rec) return { ok: false, reason: 'no-folder' };
       if (await perm(rec.handle, !!o.ask) !== 'granted') { await status(); emit(); return { ok: false, reason: 'permission' }; }
       const hub = collect();
-      const body = JSON.stringify(hub);
+      const keys = includeKeys() ? readKeys() : null;
+      const body = JSON.stringify([hub, keys]);
       const apps = {};
       Object.keys(APPS).forEach((a) => {
         const set = collectApp(a), t = JSON.stringify(set);
@@ -222,6 +250,7 @@
       const now = Date.now();
       const savedAt = new Date(now).toISOString();
       const data = { version: 1, savedAt, device: deviceInfo(), hub };
+      if (keys) data.keys = keys;   // H30.3: only with 'Include keys in profile' on
       try {
         const dir = await profileDir(rec.handle, true);
         await writeJson(dir, FILE, data);
@@ -296,18 +325,19 @@
     const at = Date.parse(data.savedAt) || 0;
     const localAt = +lget(K_AT) || 0;
     if (!o.force && at <= localAt) {
-      lastText = lastText || (JSON.stringify(collect()) === JSON.stringify(data.hub) ? JSON.stringify(data.hub) : '');
+      lastText = '';
       await status(); emit();
       return { ok: true, applied: false, reason: 'not-newer', savedAt: data.savedAt };
     }
     const n = apply(data.hub);
     const appsLoaded = await loadApps(rec);
+    const nKeys = data.keys ? importKeys(data.keys) : 0;
     lset(K_AT, at || Date.now());
     lset(K_LOADED, Date.now());
-    lastText = JSON.stringify(collect());
+    lastText = JSON.stringify([collect(), includeKeys() ? readKeys() : null]);
     await status();
     setState({ error: '' });
-    return { ok: true, applied: true, count: n, apps: appsLoaded, savedAt: data.savedAt };
+    return { ok: true, applied: true, count: n, apps: appsLoaded, keys: nKeys, savedAt: data.savedAt };
   }
 
   /** H30.2: system/<app>.json → localStorage (only that app's own keys) */
@@ -319,22 +349,51 @@
       let d = null;
       try { d = JSON.parse(await (await (await sys.getFileHandle(a + '.json')).getFile()).text()); } catch (_) { continue; }
       if (!d || d.version !== 1 || !d.settings || typeof d.settings !== 'object') continue;
-      applying = true;
-      try {
-        const want = {};
-        Object.keys(d.settings).forEach((k) => {
-          const v = d.settings[k], s = typeof v === 'string' ? v : JSON.stringify(v);
-          if (appOf(k) === a && !KEY_NAME.test(k) && typeof s === 'string' && s.length <= MAX_VALUE && !keyLike(s)) want[k] = s;
-        });
-        const have = [];
-        for (let i = 0; i < ls.length; i++) { const k = ls.key(i); if (k && appOf(k) === a) have.push(k); }
-        have.forEach((k) => { if (!(k in want)) ldel(k); });
-        Object.keys(want).forEach((k) => lset(k, want[k]));
-      } finally { applying = false; }
-      appText[a] = JSON.stringify(collectApp(a));
+      applyApp(a, d.settings);
       done.push(a);
     }
     return done;
+  }
+  function applyApp(a, settings) {
+    applying = true;
+    try {
+      const want = {};
+      Object.keys(settings).forEach((k) => {
+        const v = settings[k], s = typeof v === 'string' ? v : JSON.stringify(v);
+        if (appOf(k) === a && !KEY_NAME.test(k) && typeof s === 'string' && s.length <= MAX_VALUE && !keyLike(s)) want[k] = s;
+      });
+      const have = [];
+      for (let i = 0; i < ls.length; i++) { const k = ls.key(i); if (k && appOf(k) === a) have.push(k); }
+      have.forEach((k) => { if (!(k in want)) ldel(k); });
+      Object.keys(want).forEach((k) => lset(k, want[k]));
+    } finally { applying = false; }
+    appText[a] = JSON.stringify(collectApp(a));
+  }
+
+  /* H30.3: one .json file for devices without a folder */
+  function exportData() {
+    const system = {};
+    Object.keys(APPS).forEach((a) => { const st = collectApp(a); if (Object.keys(st).length) system[a] = st; });
+    const out = { version: 1, kind: 'hub-profile', savedAt: new Date().toISOString(), device: deviceInfo(), hub: collect(), system };
+    if (includeKeys()) out.keys = readKeys();
+    return out;
+  }
+  async function importData(obj) {
+    if (typeof obj === 'string') { try { obj = JSON.parse(obj); } catch (_) { return { ok: false, reason: 'bad-file' }; } }
+    if (!obj || obj.version !== 1 || !obj.hub || typeof obj.hub !== 'object') return { ok: false, reason: 'bad-file' };
+    const n = apply(obj.hub);
+    const apps = [];
+    if (obj.system && typeof obj.system === 'object') {
+      Object.keys(obj.system).forEach((a) => { if (APPS[a] && obj.system[a] && typeof obj.system[a] === 'object') { applyApp(a, obj.system[a]); apps.push(a); } });
+    }
+    const nKeys = obj.keys ? importKeys(obj.keys) : 0;
+    lset(K_AT, Date.now());
+    lset(K_LOADED, Date.now());
+    lastText = '';
+    const st = await status();
+    if (st.state === 'ready') await save({ force: true });   // the folder gets the imported settings too
+    emit();
+    return { ok: true, count: n, apps, keys: nKeys };
   }
 
   /** reload the Hub once for a given profile (never loops) */
@@ -352,7 +411,8 @@
   let timer = 0;
   function touched(key) {
     if (applying || !key) return;
-    if (key.indexOf(P) === 0 ? !allowedName(key.slice(P.length)) : !appOf(key)) return;
+    const keysOn = key === K_STORE && includeKeys();   // H30.3
+    if (!keysOn && (key.indexOf(P) === 0 ? !allowedName(key.slice(P.length)) : !appOf(key))) return;
     lset(K_AT, Date.now());
     if (last.state === 'none' && !last.driveId) { /* re-check cheaply on the timer */ }
     clearTimeout(timer);
@@ -424,6 +484,14 @@
     get state() { return Object.assign({}, last); },
     PATH: DIRS.join('/') + '/' + FILE,
     apps: () => Object.keys(APPS),
+    exportData, importData,
+    includeKeys,
+    setIncludeKeys(on) {   // H30.3: off by default; changing it rewrites hub.json (keys added / removed)
+      if (on) lset(K_KEYS, '1'); else ldel(K_KEYS);
+      lastText = '';
+      emit();
+      return save({ force: true }).catch(() => ({ ok: false }));
+    },
     collectApp,
     registerApp(name, def) {   // H30.2: more System apps
       if (!/^[a-z0-9-]+$/.test(name || '') || !def) return false;
