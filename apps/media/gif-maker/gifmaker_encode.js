@@ -3,11 +3,11 @@
 window.GMEncode = (function () {
   function mainThread(o) {
     const enc = GMCore.create(o);
-    return { mode: 'main', add(img) { enc.add(img.data); return new Promise((r) => setTimeout(r, 0)); },
+    return { mode: 'main', add(img, delay) { enc.add(img.data, delay); return new Promise((r) => setTimeout(r, 0)); },
       finish() { return Promise.resolve(new Blob([enc.finish()], { type: 'image/gif' })); }, cancel() {} };
   }
   function viaWorker(o) {
-    const w = new Worker('gifmaker_worker.js?v=GM1');
+    const w = new Worker('gifmaker_worker.js?v=GM2');
     let pending = [], doneR = null, failed = null;
     const fail = (msg) => { failed = new Error(msg); pending.forEach((p) => p.j(failed)); pending = []; if (doneR) doneR.j(failed); };
     w.onerror = (e) => { e.preventDefault && e.preventDefault(); fail(e.message || 'worker error'); };
@@ -19,8 +19,8 @@ window.GMEncode = (function () {
     };
     w.postMessage(Object.assign({ type: 'start' }, o));
     return { mode: 'worker',
-      add(img) { if (failed) return Promise.reject(failed); const buf = img.data.buffer;
-        return new Promise((r, j) => { pending.push({ r, j }); w.postMessage({ type: 'frame', buf }, [buf]); }); },
+      add(img, delay) { if (failed) return Promise.reject(failed); const buf = img.data.buffer;
+        return new Promise((r, j) => { pending.push({ r, j }); w.postMessage({ type: 'frame', buf, delay }, [buf]); }); },
       finish() { if (failed) return Promise.reject(failed); return new Promise((r, j) => { doneR = { r, j }; w.postMessage({ type: 'finish' }); }); },
       cancel() { w.terminate(); fail('cancelled'); },
     };
@@ -31,7 +31,7 @@ window.GMEncode = (function () {
     if (ok !== null) return Promise.resolve(ok);
     if (typeof Worker === 'undefined') return Promise.resolve(ok = false);
     return new Promise((res) => {
-      let w; try { w = new Worker('gifmaker_worker.js?v=GM1'); } catch (_) { return res(ok = false); }
+      let w; try { w = new Worker('gifmaker_worker.js?v=GM2'); } catch (_) { return res(ok = false); }
       const t = setTimeout(() => { w.terminate(); res(ok = false); }, 3000);
       w.onerror = (e) => { e.preventDefault && e.preventDefault(); clearTimeout(t); w.terminate(); res(ok = false); };
       w.onmessage = (e) => { clearTimeout(t); w.terminate(); res(ok = e.data && e.data.type === 'error'); }; /* finish w/o start → error reply = alive */

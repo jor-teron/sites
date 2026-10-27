@@ -1,10 +1,10 @@
-/* GIF Maker GM1 app: screens, swipes, settings, theme, trim UI and the make pipeline.
-   Settings in 'gifmaker-settings-v1': { theme, width, fps, colors, loop }. */
+/* GIF Maker GM2 app: screens, swipes, settings, theme, trim UI and the make pipeline.
+   Settings in 'gifmaker-settings-v1': { theme, width, fps, colors, loop, src, delay, fit }. */
 (function () {
   'use strict';
   const SKEY = 'gifmaker-settings-v1', SWIPE = 75, TAP_MOVE = 10, MAXLEN = 15, LONG_MS = 5000;
   const $ = (id) => document.getElementById(id);
-  const P = { theme: 'dark', width: '360', fps: '10', colors: '256', loop: '1' };
+  const P = { theme: 'dark', width: '360', fps: '10', colors: '256', loop: '1', src: 'video', delay: 500, fit: 'black' };
   try { Object.assign(P, JSON.parse(localStorage.getItem(SKEY) || '{}')); } catch (_) { /* */ }
   const saveP = () => { try { localStorage.setItem(SKEY, JSON.stringify(P)); } catch (_) { /* */ } };
 
@@ -38,7 +38,7 @@
   function renderSeg() { document.querySelectorAll('.seg').forEach((g) => g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', P[g.dataset.key] === b.dataset.v))); }
   document.querySelectorAll('.seg').forEach((g) => g.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
-    P[g.dataset.key] = b.dataset.v; saveP(); theme(); renderSeg(); estimate();
+    P[g.dataset.key] = b.dataset.v; saveP(); theme(); renderSeg(); srcMode(); estimate();
   }));
   renderSeg();
 
@@ -61,7 +61,7 @@
     ['r-start', 'r-end'].forEach((id) => { $(id).max = V.dur; });
     $('n-start').max = $('n-end').max = V.dur;
     setTrim(0, Math.min(V.dur, MAXLEN), 'e');
-    $('make-btn').disabled = false;
+    canMake();
   });
   vid.addEventListener('error', () => { if (V) dialog('This video format is not supported by the browser.'); });
   /* keep preview playback inside the range */
@@ -88,12 +88,37 @@
 
   /* rough size: bytes/pixel/frame after LZW, by palette */
   function estimate() {
+    if (P.src === 'photos') {
+      const L = GMPhotos.list; if (!L.length) { $('est').textContent = '—'; return; }
+      const { w, h } = GMPhotos.dims(+P.width), bpp = { 64: 0.2, 128: 0.25, 256: 0.3 }[P.colors] || 0.3;
+      $('est').textContent = w + '×' + h + ' · ' + L.length + ' frames · ≈ ' + size(w * h * L.length * bpp * 1.5); return;
+    }
     if (!V || !V.dur) { $('est').textContent = '—'; return; }
     const { w, h } = GMVideo.dims(vid.videoWidth || 16, vid.videoHeight || 9, +P.width);
     const n = Math.max(1, Math.round((T.e - T.s) * +P.fps)), bpp = { 64: 0.2, 128: 0.25, 256: 0.3 }[P.colors] || 0.3;
     $('est').textContent = w + '×' + h + ' · ' + n + ' frames · ≈ ' + size(w * h * n * bpp);
   }
   function size(b) { return b < 1024 * 1024 ? Math.max(1, Math.round(b / 1024)) + ' KB' : (b / 1048576).toFixed(1) + ' MB'; }
+
+  /* source switch + photos */
+  function canMake() { $('make-btn').disabled = busy || (P.src === 'photos' ? GMPhotos.list.length < 1 : !V || !V.dur); }
+  function srcMode() {
+    const ph = P.src === 'photos'; document.body.classList.toggle('src-photos', ph);
+    if (!result) { $('photos').hidden = !ph; vid.hidden = ph || !V; $('drop').hidden = ph || !!V; if (ph) vid.pause(); }
+    canMake();
+  }
+  $('d-def').value = P.delay;
+  $('d-def').addEventListener('change', () => { P.delay = GMPhotos.clampDelay($('d-def').value); $('d-def').value = P.delay; saveP(); });
+  $('d-all').onclick = () => { P.delay = GMPhotos.clampDelay($('d-def').value); $('d-def').value = P.delay; saveP(); GMPhotos.setAll(P.delay); toast('Delay ' + P.delay + ' ms on all frames'); };
+  GMPhotos.init({ defDelay: () => P.delay, onChange: () => { canMake(); estimate(); } });
+  async function addPhotos(files) {
+    if (busy || !files.length) return;
+    clearResult();
+    const r = await GMPhotos.add(files);
+    if (!r.added) dialog('No images could be opened.'); else if (r.skipped) toast(r.skipped + ' file(s) skipped');
+  }
+  $('ph-open').onclick = $('ph-add').onclick = () => $('pfile').click();
+  $('pfile').onchange = (e) => { addPhotos([...e.target.files]); e.target.value = ''; };
 
   /* open / drop */
   $('open-btn').onclick = () => $('file').click();
@@ -102,11 +127,11 @@
   const drop = $('pane-make');
   ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); $('drop').classList.add('over'); }));
   ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, () => $('drop').classList.remove('over')));
-  drop.addEventListener('drop', (e) => { e.preventDefault(); openFile(e.dataTransfer.files[0]); });
+  drop.addEventListener('drop', (e) => { e.preventDefault(); const f = [...e.dataTransfer.files]; if (P.src === 'photos') addPhotos(f); else openFile(f[0]); });
 
   /* make */
   let busy = false, cancelled = false, enc = null, result = null;
-  function clearResult() { if (result) URL.revokeObjectURL(result.url); result = null; $('result').hidden = true; if (V) vid.hidden = false; }
+  function clearResult() { if (result) URL.revokeObjectURL(result.url); result = null; $('result').hidden = true; srcMode(); }
   $('discard-btn').onclick = clearResult;
   $('save-btn').onclick = () => {
     if (!result) return;
@@ -114,27 +139,38 @@
     GMSave.save(result.blob, result.base + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + '.gif').then((n) => toast('Saved ' + n));
   };
   function setBusy(b) {
-    busy = b; $('prog').hidden = !b; $('make-btn').disabled = b || !V;
-    document.querySelectorAll('.ctl input, .ctl .seg button').forEach((el) => { el.disabled = b; });
+    busy = b; $('prog').hidden = !b; canMake();
+    document.querySelectorAll('.ctl input, .ctl .seg button, #d-all, #ph-bar button, #strip .x').forEach((el) => { el.disabled = b; });
   }
   function progress(f, t) { $('bar').style.width = Math.round(f * 100) + '%'; $('prog-t').textContent = t; }
   $('cancel-btn').onclick = () => { cancelled = true; enc && enc.cancel(); };
   $('make-btn').onclick = async () => {
     if (!V || busy) return;
     vid.pause(); clearResult(); cancelled = false; setBusy(true); progress(0, 'Starting…');
-    const t0 = performance.now(), fps = +P.fps;
+    const t0 = performance.now(), fps = +P.fps, photos = P.src === 'photos';
     try {
+      let r;
+      if (photos) {
+        const L = GMPhotos.list, { w, h } = GMPhotos.dims(+P.width);
+        enc = await GMEncode.open({ w, h, colors: +P.colors, loop: P.loop === '1', delay: 500 });
+        for (let i = 0; i < L.length && !cancelled; i++) {
+          await enc.add(GMPhotos.render(i, w, h, P.fit), L[i].delay);
+          progress((i + 1) / L.length, 'Frame ' + (i + 1) + ' / ' + L.length);
+        }
+        r = { w, h, n: L.length };
+      } else {
       const { w, h } = GMVideo.dims(vid.videoWidth, vid.videoHeight, +P.width);
       enc = await GMEncode.open({ w, h, colors: +P.colors, loop: P.loop === '1', delay: Math.round(1000 / fps) });
-      const r = await GMVideo.grab(V.url, { start: T.s, end: T.e, fps, width: +P.width },
+      r = await GMVideo.grab(V.url, { start: T.s, end: T.e, fps, width: +P.width },
         async (img, i, n) => { if (cancelled) return; await enc.add(img); progress((i + 1) / n, 'Frame ' + (i + 1) + ' / ' + n); },
         () => cancelled);
+      }
       if (cancelled) throw new Error('cancel');
       progress(1, 'Finishing…');
       const blob = await enc.finish();
       const ms = performance.now() - t0;
-      result = { blob, url: URL.createObjectURL(blob), base: V.name, ms };
-      $('gif-img').src = result.url; $('result').hidden = false; vid.hidden = true;
+      result = { blob, url: URL.createObjectURL(blob), base: photos ? 'photos' : V.name, ms };
+      $('gif-img').src = result.url; $('result').hidden = false; vid.hidden = true; $('photos').hidden = true;
       $('gif-info').textContent = r.w + '×' + r.h + ' · ' + r.n + ' frames · ' + size(blob.size) + ' · ' + (ms / 1000).toFixed(1) + ' s';
       document.body.dataset.encMode = enc.mode; document.body.dataset.encMs = Math.round(ms);
       if (ms > LONG_MS) notify('GIF ready', size(blob.size) + ', ' + r.n + ' frames'); else toast('GIF ready · ' + size(blob.size));
@@ -173,6 +209,7 @@
     if (e.target.closest && e.target.closest('input')) return;
     if (e.key === 'ArrowRight') go(cur + 1); else if (e.key === 'ArrowLeft') go(cur - 1);
   });
-  addEventListener('storage', (e) => { if (e.key === SKEY) { try { Object.assign(P, JSON.parse(e.newValue || '{}')); } catch (_) { /* */ } theme(); renderSeg(); estimate(); } });
+  addEventListener('storage', (e) => { if (e.key === SKEY) { try { Object.assign(P, JSON.parse(e.newValue || '{}')); } catch (_) { /* */ } theme(); renderSeg(); srcMode(); estimate(); } });
+  srcMode();
   window.GMApp = { go, get screen() { return cur; } };
 })();
