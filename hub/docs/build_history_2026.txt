@@ -314,6 +314,21 @@
 2026-10-23 , MM1 => Apps: Draftly Merge ribbon tab, CSV mail merge (#182)
 2026-10-23 , T4 (0aaf10f) => Terminal: prompt is now hub@hub: (no build bump)
 2026-10-23 , D (457fe28) => Docs: build_history_2025.txt added
+2026-10-24 , bb51ad6 => MM6: real WordprocessingML DOCX export for Draftly (#191)
+2026-10-24 , 00f3027 => TLQ1e: floating analog steering stick for Turbo Lap (touch, left half), replaces the ◀ ▶ pads
+2026-10-24 , 2039063 => LRN1a: new Learn category kit + First Aid app (text-driven cards, Basics/Expert, quiz, progress)
+2026-10-24 , 071a548 => LN1: Learn category: learn-apps.csv, learn.html tiles page, index redirect, icon, README (#194)
+2026-10-24 , 9e51cf9 => H9: Learn category in the Hub menu (config, menu row, category page, offline cache, catalog)
+2026-10-24 , 92c7e37 => LRN1b: breadcrumb header (First Aid > icon Topic), no 'Pick a topic', assets/title to LRN1b
+2026-10-24 , 9db0fe0 => LRN1c: Done button, Quick check (mixed + per topic), breadcrumb header, neutral slate palette, no link underline
+2026-10-24 , 86a4001 => LRN2a: English Basic, new Learn app on the shared kit (6 topics)
+2026-10-24 , 00ebbca => LRN2b: list English Basic in learn-apps.csv (Language), refresh hub_catalog.js
+2026-10-24 , 6a9b400 => TLQ1f: route preview drawings on Circuits tiles and start page
+2026-10-24 , 71ab157 => GSQ1a: Black hole body - event horizon swallows bodies, hole grows, accretion trail glow
+2026-10-24 , 749f0dc => GSQ1b: move page to gravity-sandbox.html (index.html redirects), display code core/ -> ui/
+2026-10-24 , 084091d => GSQ1b: body looks in assets/bodies/, gravitational lensing of background stars near black holes
+2026-10-24 , 126a154 => PPQ1a: Ping Pong paddles - add Cricket Bat, Hockey Stick, Samurai Sword, Tennis Racket; hide Ice Slab / Flame Blade / Neon Bar / Table Tennis Bat (kept, hidden: true) with saved-pick migration; title + ?v=PPQ1a
+2026-10-24 , 31d5b26 => D2: Team 3 technical week report
 2026-10-25 , H10 (0b38a91) => Hub: category order Media, Connectivity, Office, Games and the rest
 2026-10-25 , b8ea342 => Draftly DF1: justify, table picker overlay, Shift+Enter in cells, page break in tables
 2026-10-25 , 59150dc => Draftly DF2: new Normal/Narrow margins, Insert Image with resize
