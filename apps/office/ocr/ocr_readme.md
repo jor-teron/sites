@@ -8,6 +8,7 @@ Turns text in photos, scans and PDFs into editable text. Runs offline with Tesse
 - `ocr_config.js`: every setting (accepted files, engine paths, PDF, Vision, camera, send-from-phone, texts)
 - `ocr_state.js`: app state + small event bus
 - `ocr_engine.js`: Tesseract worker (one, reused) and Cloud Vision
+- `ocr_hubkey.js`: release 4, the Cloud Vision key from the Hub (`HubKeys` `gvision`, memory only)
 - `ocr_pdf.js`: PDFs with pdf.js (text layer first, OCR only for scanned pages)
 - `ocr_io.js`: files in (picker, drop, paste) and text out (Copy, .txt, .docx)
 - `ocr_jobs.js`: open / queue files, page change, Start OCR, All pages, Cancel
@@ -25,7 +26,7 @@ Turns text in photos, scans and PDFs into editable text. Runs offline with Tesse
 - **One PDF:** page 1 shows; Start OCR reads this page, All pages reads every page. Each page's own text is used when it has some (exact and instant); only scanned pages are OCR'd (rendered at about 216 dpi). Pages are marked "— Page n —". ‹ › or tap the page number to change page.
 - **Several files:** read one after another into one text, each under "=== name ===".
 - **Busy lock:** while reading, page changes, new files and engine switches wait; Start / All pages turn into Cancel.
-- **Engines:** Tesseract (offline) or Cloud Vision (needs the internet and a key via Key 🗝️; Show / Clear / Save).
+- **Engines:** Tesseract (offline) or Cloud Vision (needs the internet and a key via Key 🗝️; Show / Clear / Save). Inside the Hub the key comes from Hub › API Keys (`gvision`) first; see release 4.
 - **Camera 📷:** live view (back camera on phones, switch button when there are several). Capture freezes the frame → Use (OCR starts) or Retake. Without camera access it falls back to the phone's photo picker.
 - **QR (send from phone):** shows a QR; the phone opens `ocr_send.html`, taps Choose file, and the file arrives here and is read as if dropped. One phone per QR; the phone reconnects by itself after a drop (gives up after 2 minutes); the session ends on ✕ or after 10 minutes idle. A "📱 Connected" chip shows while linked.
 - **Text out:** the text box is editable. Copy, Download .txt or .docx (named after the source file, else `ocr-text`).
@@ -46,6 +47,7 @@ Inside the hub the phone D-pad sends synthetic keys: Left / Right change PDF pag
 - `ocr_engine`: `tesseract` or `vision`
 - `ocr_vision_api_key`: your Cloud Vision key (same name as v1, so an old key carries over). Stored in plain text in this browser; Clear removes it.
 - No text or files are saved.
+- Inside the Hub, the Hub's `gvision` key is read when needed and kept in memory only; it is never copied here.
 
 ## 6. Errors
 Status line messages:
@@ -55,6 +57,7 @@ Status line messages:
 - "Password-protected PDFs are not supported"
 - "OCR engine failed to load" / "OCR engine cannot start from file:// — open the app over http(s)"
 - "Add a Cloud Vision API key first (Key 🗝️)" / "Cloud Vision needs an internet connection"
+- In the Hub: "Add a Cloud Vision key in Hub › API Keys (gvision), or in Key 🗝️"; Vision 400 / 401 / 403 errors end with " — check gvision in Hub › API Keys"
 - "Cancelled" / "Cancelled after n of N files"
 - Camera: "Camera permission denied — …", "No camera found", "Camera is busy in another app", "Camera needs the app opened over http(s)", "Camera disconnected", "Camera failed to start"
 - Phone: "Phone disconnected", "Phone disconnected (idle … min)"
@@ -108,3 +111,12 @@ Status line messages:
 - Standalone: QR / 4-digit code (`jtocr-` + code, kept across reloads in `jtocr-host-code`). The phone page also has a code box.
 - Only Disconnect (✕ on the phone chip, or Disconnect on the phone) ends the link; reloads reconnect.
 - Manual test: Hub → phone scans Hub QR once → open OCR in the Hub → open `ocr_send.html` on the phone → send a photo → text appears. Standalone `ocr.html` → QR → send → reload the computer → phone reconnects.
+
+## Hub key (release 4)
+- 2026-10-27 IST. Inside the Hub, Cloud Vision uses `window.top.HubKeys.get('gvision')` (Hub H28.2, `hub/keys.readme.md`): read in try/catch (standalone or cross-origin = no Hub), on start and again before each Vision request, kept in memory only and never written to localStorage.
+- Hub key set: the Key 🗝️ popover hides and disables its own field and shows "Using the Hub's key" + **Open** (`HubKeys.open('gvision')`). The 🗝️ button shows green.
+- In the Hub with no `gvision` key: "Not in Hub keys — using this field" + **Add in Hub**; the field still works (saved as `ocr_vision_api_key` as before).
+- Standalone: no Hub line, the field works as before.
+- `HubKeys.onChange` (name `gvision` or '') re-reads the key and refreshes the toolbar and popover.
+- No settings keys added or renamed. `?v=20261027r4` on the changed files (`ocr.html`, `ocr_send.html` for `ocr_config.js`).
+

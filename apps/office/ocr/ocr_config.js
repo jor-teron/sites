@@ -47,6 +47,7 @@ OCR.config = {
     jpegQuality: 0.9
   },
 
+  // Inside the Hub the key comes from HubKeys 'gvision' first (ocr_hubkey.js, memory only, never stored here)
   storage: {
     key: 'ocr_vision_api_key',          // same name as v1, so a saved key carries over
     engine: 'ocr_engine'
@@ -110,6 +111,8 @@ OCR.config = {
       engineFailed: 'OCR engine failed to load',
       engineFileUrl: 'OCR engine cannot start from file:// — open the app over http(s)',
       needKey: 'Add a Cloud Vision API key first (Key 🗝️)',
+      needKeyHub: 'Add a Cloud Vision key in Hub › API Keys (gvision), or in Key 🗝️',
+      keyHubHint: ' — check gvision in Hub › API Keys',
       visionOffline: 'Cloud Vision needs an internet connection',
       cancelled: 'Cancelled'
     }

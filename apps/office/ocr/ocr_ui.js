@@ -1,7 +1,7 @@
 /*
  * OCR — ocr_ui.js
  * Toolbar, status line, panels (both are drop zones; tap to open before a file is loaded),
- * Preview / Text tabs on narrow screens, the Cloud Vision key popover, keyboard — and start-up.
+ * Preview / Text tabs on narrow screens, the Cloud Vision key popover (release 4: Hub key line, paintKey), keyboard — and start-up.
  */
 (function (OCR) {
   'use strict';
@@ -48,12 +48,23 @@
     const pop = $('key-pop');
     $('key-input').value = OCR.engine.getKey();
     $('key-input').type = 'password'; $('key-show').textContent = 'Show';
-    pop.hidden = false;
+    pop.hidden = false; U.paintKey();
     const b = $('key-btn').getBoundingClientRect();
     const w = pop.offsetWidth;
     pop.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, b.left)) + 'px';
     pop.style.top = (b.bottom + 6) + 'px';
-    setTimeout(() => $('key-input').focus(), 0);
+    setTimeout(() => { if (!$('key-input').disabled) $('key-input').focus(); }, 0);
+  };
+  // Release 4: Hub key line. Hub key in use -> field hidden + disabled, "Using the Hub's key" + Open.
+  // In the Hub with no 'gvision' key -> "Not in Hub keys" + "Add in Hub", field stays usable. Standalone -> no line.
+  U.paintKey = () => {
+    const H = OCR.hubKey, inHub = !!(H && H.inHub()), used = inHub && !!H.value();
+    $('key-hub').hidden = !inHub;
+    $('key-hub-text').textContent = used ? 'Using the Hub\'s key' : 'Not in Hub keys — using this field';
+    $('key-hub-open').textContent = used ? 'Open' : 'Add in Hub';
+    $('key-hub').classList.toggle('used', used);
+    for (const id of ['key-input', 'key-show', 'key-clear', 'key-save']) $(id).disabled = used;
+    $('key-local').hidden = used;
   };
   U.closeKey = () => { $('key-pop').hidden = true; };
 
@@ -68,7 +79,7 @@
       b.disabled = busy;
     }
     $('key-btn').hidden = S.engine !== 'vision';
-    $('key-btn').classList.toggle('has-key', !!OCR.engine.getKey());
+    $('key-btn').classList.toggle('has-key', !!OCR.engine.key());
 
     $('nav').hidden = !isPdf;
     if (isPdf) {
@@ -169,6 +180,7 @@
       OCR.engine.setKey(k); U.closeKey();
       OCR.status(k ? 'Key saved' : 'Key cleared', k ? 'ok' : ''); U.sync();
     });
+    U.onTap($('key-hub-open'), () => OCR.hubKey.open());
     $('key-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('key-save').click(); } });
     document.addEventListener('pointerdown', (e) => {
       if (!$('key-pop').hidden && !e.target.closest('#key-pop, #key-btn')) U.closeKey();
@@ -213,6 +225,7 @@
     U.init();
     if (OCR.send) OCR.send.init();
     if (OCR.camera) OCR.camera.init();
+    if (OCR.hubKey) OCR.hubKey.init();
     if (typeof Tesseract === 'undefined' || !OCR.pdf.available()) {
       OCR.status('Some app files failed to load — reload the page', 'err');
     }

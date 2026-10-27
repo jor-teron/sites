@@ -11,7 +11,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#121418">
   <title>OCR</title>
-  <link rel="stylesheet" href="ocr.css?v=20261004c">
+  <link rel="stylesheet" href="ocr.css?v=20261027r4">
 </head>
 <body class="empty">
 <div id="app">
@@ -70,13 +70,16 @@
 
   <div id="key-pop" class="pop" hidden>
     <label for="key-input">API Key</label>
-    <input type="password" id="key-input" autocomplete="off" spellcheck="false" placeholder="Cloud Vision API key">
-    <div class="row">
-      <button type="button" class="btn" id="key-show">Show</button>
-      <button type="button" class="btn" id="key-clear">Clear</button>
-      <button type="button" class="btn primary" id="key-save">Save</button>
+    <p class="hubkey" id="key-hub" hidden><span id="key-hub-text"></span> <button type="button" class="linkbtn" id="key-hub-open">Open</button></p>
+    <div id="key-local">
+      <input type="password" id="key-input" autocomplete="off" spellcheck="false" placeholder="Cloud Vision API key">
+      <div class="row">
+        <button type="button" class="btn" id="key-show">Show</button>
+        <button type="button" class="btn" id="key-clear">Clear</button>
+        <button type="button" class="btn primary" id="key-save">Save</button>
+      </div>
+      <p class="note">Saved only in this browser.</p>
     </div>
-    <p class="note">Saved only in this browser.</p>
   </div>
 
   <div id="qr-pop" class="pop" hidden role="dialog" aria-label="Send from phone">
@@ -105,12 +108,13 @@
 <script src="vendor/tesseract.min.js?v=20261004a"></script>
 <script src="vendor/pdf.min.js?v=20261004a"></script>
 <script src="vendor/jszip.min.js?v=20261004a"></script>
-<script src="ocr_config.js?v=20261004c"></script>
+<script src="ocr_config.js?v=20261027r4"></script>
 <script src="ocr_state.js?v=20261004a"></script>
-<script src="ocr_engine.js?v=20261004a"></script>
+<script src="ocr_engine.js?v=20261027r4"></script>
+<script src="ocr_hubkey.js?v=20261027r4"></script>
 <script src="ocr_pdf.js?v=20261004a"></script>
 <script src="ocr_io.js?v=20261004a"></script>
-<script src="ocr_jobs.js?v=20261004b"></script>
+<script src="ocr_jobs.js?v=20261027r4"></script>
 <script src="../../../shared/link/link_core.js?v=20261011d"></script>
 <script src="../../../shared/link/link_devices.js?v=20261011c"></script>
 <script src="../../../shared/link/link_files.js?v=20261011c"></script>
@@ -118,6 +122,6 @@
 <script src="ocr_send_common.js?v=20261004b"></script>
 <script src="ocr_send.js?v=20261011c"></script>
 <script src="ocr_camera.js?v=20261004c"></script>
-<script src="ocr_ui.js?v=20261004c"></script>
+<script src="ocr_ui.js?v=20261027r4"></script>
 </body>
 </html>

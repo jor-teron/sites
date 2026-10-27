@@ -132,6 +132,11 @@ body.empty #ocr-text { pointer-events: none; }
 }
 .pop .row { display: flex; gap: 6px; justify-content: flex-end; margin-top: 10px; }
 .pop .note { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+/* release 4: Hub key line (ocr_hubkey.js) */
+.pop .hubkey { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+.pop .hubkey.used { color: #9fe3b8; }
+.pop .hubkey .linkbtn { background: none; border: 0; padding: 0 2px; font: inherit; color: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+#key-local[hidden], .pop .hubkey[hidden] { display: none; }
 
 /* ---------- send from phone: QR box + connected chip ---------- */
 .chip {

@@ -4,6 +4,7 @@
  *   - Tesseract.js: ONE worker, created on first use and reused for every page/file.
  *     Progress is reported through the onProgress callback of the running job.
  *   - Google Cloud Vision (DOCUMENT_TEXT_DETECTION) with the user's API key.
+ *     Release 4: the Hub's 'gvision' key (ocr_hubkey.js) wins over the saved one; key errors point to Hub › API Keys there.
  * Input is always a canvas (already scaled down by the caller).
  */
 (function (OCR) {
@@ -75,6 +76,8 @@
   };
 
   // ----- Google Cloud Vision -----
+  // Key in use: the Hub's (memory only) first, else this browser's own (standalone fallback).
+  E.key = () => (OCR.hubKey && OCR.hubKey.value()) || E.getKey();
   E.getKey = () => { try { return localStorage.getItem(cfg().storage.key) || ''; } catch (_) { return ''; } };
   E.setKey = (k) => {
     try { if (k) localStorage.setItem(cfg().storage.key, k); else localStorage.removeItem(cfg().storage.key); } catch (_) { /* ignore */ }
@@ -91,8 +94,10 @@
   }
 
   E.vision = async (canvas, onProgress) => {
-    const key = E.getKey();
-    if (!key) throw new Error(cfg().text.status.needKey);
+    const inHub = !!(OCR.hubKey && OCR.hubKey.inHub());
+    if (inHub) await OCR.hubKey.load();          // read when needed, so a changed Hub key works at once
+    const key = E.key();
+    if (!key) throw new Error(inHub ? cfg().text.status.needKeyHub : cfg().text.status.needKey);
     if (onProgress) onProgress(0.1);
     const b64 = canvas.toDataURL('image/jpeg', cfg().vision.jpegQuality).split(',')[1];
     if (onProgress) onProgress(0.3);
@@ -112,7 +117,8 @@
     if (onProgress) onProgress(0.9);
     let json = {};
     try { json = await res.json(); } catch (_) { json = {}; }
-    if (!res.ok) throw new Error('Cloud Vision: ' + ((json.error && json.error.message) || ('HTTP ' + res.status)));
+    const where = (st) => (inHub && (st === 400 || st === 401 || st === 403) ? cfg().text.status.keyHubHint : '');
+    if (!res.ok) throw new Error('Cloud Vision: ' + ((json.error && json.error.message) || ('HTTP ' + res.status)) + where(res.status));
     const a = json.responses && json.responses[0];
     if (a && a.error && a.error.message) throw new Error('Cloud Vision: ' + a.error.message);
     if (a && a.fullTextAnnotation && a.fullTextAnnotation.text) return a.fullTextAnnotation.text;

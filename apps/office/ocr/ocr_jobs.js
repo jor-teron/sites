@@ -28,7 +28,7 @@
     if (err && err.cancelled) { OCR.status(ST().cancelled, ''); return; }
     const msg = (err && err.message) || String(err);
     OCR.status(msg, 'err');
-    if (msg === ST().needKey) OCR.ui.openKey();
+    if (msg === ST().needKey || msg === ST().needKeyHub) OCR.ui.openKey();
     // expected, user-facing problems are only shown in the status line
     const known = Object.values(ST()).indexOf(msg) !== -1 || /^Cloud Vision/.test(msg);
     if (!known) console.warn('[ocr]', err);
