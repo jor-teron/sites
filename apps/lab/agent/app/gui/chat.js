@@ -8,7 +8,8 @@
    one Hub card when a run that took >20 s finishes (Settings → Hub card, default on).
    AG4: render() redraws the open chat (HR.chats switches chats; ＋ / New chat lives in app/gui/chats.js).
    AG5: retry(m) drops the last reply (and its tool steps) and re-runs; resend(m, text) edits a user message, drops
-   everything after it and re-runs (both via run()); token counts land on the reply as usage {p, o}; HR.meter updates. */
+   everything after it and re-runs (both via run()); token counts land on the reply as usage {p, o}; HR.meter updates.
+   AG7: every model call goes to HR.usage; live shell output -> chip.live; write_file undo info -> chip / step Undo. */
 HR.chat = (function () {
   var log, input, sendBtn, ctrl = null, curTool = null, LONG = 20000;
   function busy(on) { sendBtn.textContent = on ? '■' : '➤'; sendBtn.title = on ? 'Stop' : 'Send'; sendBtn.setAttribute('aria-label', on ? 'Stop' : 'Send'); sendBtn.classList.toggle('stop', on); }
@@ -31,6 +32,7 @@ HR.chat = (function () {
         var tps = HR.ollama.tps(s); a.tool_calls = (s.tool_calls || []).length ? s.tool_calls : undefined;
         a.stats = { tokens: s.eval_count || chunks, tps: tps || (first ? chunks / Math.max(.001, (performance.now() - first) / 1000) : 0), sec: (performance.now() - t0) / 1000 };
         if (s.prompt_eval_count) a.usage = { p: s.prompt_eval_count, o: s.eval_count || 0 };
+        try { HR.usage.record(HR.models.id(), req.model, s.prompt_eval_count || HR.meter.est(), s.eval_count || chunks, !s.prompt_eval_count || !s.eval_count); } catch (e) { /* AG7 usage is best-effort */ }
         HR.logs.assistant(a); setTimeout(HR.meter.update, 0);
         close('ok', { eval_count: s.eval_count, prompt_eval_count: s.prompt_eval_count, done_reason: s.done_reason, tps: a.stats.tps, tool_calls: a.tool_calls ? a.tool_calls.length : '' });
         return a;
@@ -41,9 +43,9 @@ HR.chat = (function () {
   }
   function toolStart(c) {
     var m = { role: 'tool', tool_name: c.name, args: c.args }, chip = HR.view.tool(m), step = HR.steps.tool(c), t = curTool = { auto: false };
-    return { done: function (ok, text, ms) {
-      if (curTool === t) curTool = null;
-      chip.done(ok, text, ms, t.auto); HR.logs.tool(c.name, c.args, ok, text, ms, t.auto); step.finish(ok ? 'ok' : 'err', { result: text, ms: ms, auto: t.auto }); } };
+    return { live: function (txt) { chip.live(txt); }, done: function (ok, text, ms, tm) {
+      if (curTool === t) curTool = null; if (tm && tm.undo) m.undo = tm.undo; m.ok = ok;
+      chip.done(ok, text, ms, t.auto); HR.logs.tool(c.name, c.args, ok, text, ms, t.auto); step.finish(ok ? 'ok' : 'err', { result: text, ms: ms, auto: t.auto, undo: m.undo, msg: tm }); } };
   }
   function note(t) { HR.view.note(t); HR.steps.note(t); HR.logs.note(t); }
   /* approve(info) is filled in by HR3 (app/gui/approve.js); default denies */

@@ -9,10 +9,12 @@
    browserModel '' | 'ready' (AG2: Story Mini downloaded, app/models/browser.js).
    AG3 Permissions (app/core/perms.js): autoWrite / autoShell 'off' (default), allowWrite / allowShell / memory 'on' (default).
    AG3 Display: showThink, showSteps, notifyLong 'on' (default); applyDisplay() sets body.no-think / body.no-steps.
-   AG5 Display: tokenMeter 'on' (default), ctxMax (context size fallback when the provider doesn't report one, default 8192). */
+   AG5 Display: tokenMeter 'on' (default), ctxMax (context size fallback when the provider doesn't report one, default 8192).
+   AG7: liveShell 'off' (default; 'on' streams run_shell output via the helper's /run_stream, Stop kills the command),
+   prices {'provider|model': {in, out}} $ per 1M tokens (Settings → Usage, app/gui/usageview.js). */
 HR.set = (function () {
   var KEY = 'agent.settings', DEF = { theme: 'dark', baseUrl: 'http://localhost:11434', model: '', think: 'auto', tools: 'on', maxSteps: 8, saveChats: 'on', helper: 'off', helperUrl: 'http://127.0.0.1:11500', helperToken: '', provider: 'ollama', openaiBase: 'https://api.openai.com/v1', browserModel: '',
-    autoWrite: 'off', autoShell: 'off', allowWrite: 'on', allowShell: 'on', memory: 'on', showThink: 'on', showSteps: 'on', notifyLong: 'on', tokenMeter: 'on', ctxMax: 8192 };
+    autoWrite: 'off', autoShell: 'off', allowWrite: 'on', allowShell: 'on', memory: 'on', showThink: 'on', showSteps: 'on', notifyLong: 'on', tokenMeter: 'on', ctxMax: 8192, liveShell: 'off', prices: {} };
   function all() { var s = {}; try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { s = {}; } return Object.assign({}, DEF, s); }
   function get(k) { return all()[k]; }
   function put(k, v) { var s = all(); s[k] = v; try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* memory only */ } }
@@ -42,7 +44,7 @@ HR.set = (function () {
     seg('setTheme', 'theme', [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']], applyTheme);
     seg('setThink', 'think', [['auto', 'Auto'], ['on', 'On'], ['off', 'Off']]);
     seg('setTools', 'tools', OO);
-    ['autoWrite', 'autoShell', 'allowWrite', 'allowShell', 'memory', 'showThink', 'showSteps', 'notifyLong', 'tokenMeter'].forEach(function (k) {
+    ['autoWrite', 'autoShell', 'allowWrite', 'allowShell', 'memory', 'showThink', 'showSteps', 'notifyLong', 'tokenMeter', 'liveShell'].forEach(function (k) {
       seg('set_' + k, k, OO, applyDisplay);
     });
     applyDisplay();

@@ -43,7 +43,7 @@ HR.steps = (function () {
       var a = el('dl', 'st-dl');
       kv(a, 'where', 'browser'); kv(a, 'args', cut(c.args || {}, 600)); kv(a, 'status', s.status);
       kv(a, 'time', s.ms != null ? Math.round(s.ms) + ' ms' : ''); kv(a, 'approval', s.res.auto ? 'auto (Settings → Permissions)' : ''); kv(a, 'result', cut(s.res.result || '', 600));
-      body.appendChild(a);
+      body.appendChild(a); if (s.res.undo) HR.view.undoBtn(body, s.res.undo);   /* AG7 */
     });
   }
   function note(t) {

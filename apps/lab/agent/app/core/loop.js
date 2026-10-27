@@ -3,7 +3,8 @@
    append role 'tool' results -> repeat until a reply without tool calls, the step limit (o.maxSteps model calls), or Stop.
    o = {adapter (HR.models, HR6), cfg {provider, base, key}, model, think, signal, maxSteps, useTools, system() -> Promise<string|''>, ui}
    ui.modelStart(req) -> {delta(c,th), done(res) -> assistant msg, stopped() -> partial msg|null, fail(e, retrying)}
-   ui.toolStart({name,args}) -> {done(ok, text, ms)}; ui.note(text); ui.approve(info) -> Promise<boolean>.
+   ui.toolStart({name,args}) -> {done(ok, text, ms, toolMsg), live?(text)} (AG7: ctx.live streams shell output; ctx.undo(info) from
+   write_file lands on the tool message as .undo); ui.note(text); ui.approve(info) -> Promise<boolean>.
    'does not support tools' -> one retry without tools (noted). Resolves {status:'ok'|'stop'|'limit'}; other errors reject. */
 HR.loop = (function () {
   var CAP = 20000;
@@ -38,14 +39,17 @@ HR.loop = (function () {
       for (var i = 0; i < tc.length; i++) {
         if (o.signal.aborted) return { status: 'stop' };
         var f = tc[i].function || {}, name = f.name || '?', args = parseArgs(f.arguments);
-        var tv = o.ui.toolStart({ name: name, args: args }), t0 = performance.now(), ok = true, out;
-        try { out = await HR.tools.run(name, args, { signal: o.signal, approve: o.ui.approve, note: o.ui.note }); }
+        var tv = o.ui.toolStart({ name: name, args: args }), t0 = performance.now(), ok = true, out, undo = null;
+        try { out = await HR.tools.run(name, args, { signal: o.signal, approve: o.ui.approve, note: o.ui.note, live: tv.live,
+          undo: function (u) { undo = u; } }); }
         catch (err) { ok = false; out = 'Error: ' + (err && err.message || err); }
         var text = typeof out === 'string' ? out : JSON.stringify(out);
         if (text.length > CAP) text = text.slice(0, CAP) + '\n…[truncated at ' + CAP + ' chars]';
         var ms = performance.now() - t0;
-        tv.done(ok, text, ms);
-        HR.msgs.add({ role: 'tool', tool_name: name, tool_call_id: tc[i].id, args: args, content: text, ok: ok, ms: Math.round(ms) });
+        var tm = { role: 'tool', tool_name: name, tool_call_id: tc[i].id, args: args, content: text, ok: ok, ms: Math.round(ms) };
+        if (undo) tm.undo = undo;
+        tv.done(ok, text, ms, tm);
+        HR.msgs.add(tm);
       }
     }
   }

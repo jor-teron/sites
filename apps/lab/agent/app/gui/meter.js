@@ -40,6 +40,8 @@ HR.meter = (function () {
     box.onclick = function () { if (box.classList.contains('red') || box.classList.contains('amber')) HR.chats.newChat(); };
     update();
   }
-  var api = { init: init, update: update, sys: 0 };
+  /* chars/4 estimate of what the next call sends (history + system prompt); AG7 usage log uses it when the provider gives no counts */
+  function est() { return Math.ceil((HR.msgs.toApi().reduce(function (s, m) { return s + chars(m); }, 0) + (api.sys || 0)) / 4); }
+  var api = { init: init, update: update, est: est, sys: 0 };
   return api;
 })();

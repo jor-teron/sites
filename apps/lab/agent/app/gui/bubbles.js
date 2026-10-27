@@ -1,7 +1,8 @@
 /* Agent — app/gui/bubbles.js: chat views (HR.view). bubble(m) -> {paint(live), el} for user / assistant messages:
    plain text with ``` code blocks, folded Thinking box (<think>…</think> or Ollama 'thinking'), stats line, tool-call chips.
    tool(m) -> {done(ok,text,ms)}: folded 🔧 chip with args + result preview. note(text, cls), hello() (+ folder hint, HR4), errorCard(e) (Ollama help; HR6 online provider key / URL errors;
-   AG2 kind 'download' -> the Browser model card, HR.bcard). AG5: each user / assistant bubble gets HR.edit actions. */
+   AG2 kind 'download' -> the Browser model card, HR.bcard). AG5: each user / assistant bubble gets HR.edit actions.
+   AG7: tool(m).live(text) streams shell output into the chip; write_file chips get ↶ Undo write (undoBtn, HR.trash). */
 HR.view = (function () {
   var log;
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
@@ -40,15 +41,34 @@ HR.view = (function () {
   function tool(m) {
     var d = el('details', 'tool run'), s = el('summary', null, '🔧 ' + m.tool_name + ' · running…'), pre = el('pre', 'tool-body');
     d.append(s, pre); log.appendChild(d);
+    function live(text) {   /* AG7 live shell output */
+      var t = String(text || ''), lastLine = t.trimEnd().split('\n').pop() || '';
+      s.textContent = '🔧 ' + m.tool_name + ' · running… ' + short(lastLine, 60); pre.textContent = t.length > 4000 ? '…' + t.slice(-4000) : t; d.classList.add('live');
+      if (!d.open && t) d.open = true; pre.scrollTop = pre.scrollHeight; bottom();
+    }
     function done(ok, text, ms, auto) {
-      d.className = 'tool ' + (ok ? 'ok' : 'err');
+      d.className = 'tool ' + (ok ? 'ok' : 'err'); d.open = false;
       s.textContent = '🔧 ' + m.tool_name + ' ' + (ok ? '✓' : '✕') + ' · ' + Math.round(ms) + ' ms' + (auto ? ' · auto' : '') + ' · ' + short(text.replace(/\s+/g, ' '), 70);
       pre.textContent = 'args: ' + JSON.stringify(m.args || {}) + '\n\n' + short(text, 2000);
+      if (m.undo) undoBtn(d, m.undo);
       bottom();
     }
     if (m.content != null && m.ok != null) done(m.ok, m.content, m.ms || 0);
     bottom();
-    return { done: done };
+    return { done: done, live: live };
+  }
+  /* AG7: Undo for a write_file (HR.trash); the tool message keeps .undo so it survives a reload */
+  function undoBtn(host, u) {
+    if (host._undo) host._undo.remove();   /* a chip (<details>) gets it right below, so it shows while folded */
+    var b = el('button', 'hb wide undo', u.done ? 'Undone ✓' : '↶ Undo write'); b.type = 'button'; b.disabled = !!u.done;
+    b.title = u.backup ? 'Put back the old ' + u.path + ' (from ' + u.backup + ')' : 'Remove ' + u.path + ' (it was new; a copy goes to agent/trash/)';
+    b.onclick = function (e) {
+      e.preventDefault(); e.stopPropagation(); if (!HR.fs.ready()) { note('Connect the folder first (📁) to undo.'); return; }
+      b.disabled = true;
+      HR.trash.undo(u).then(function (t) { b.textContent = 'Undone ✓'; HR.msgs.save(); HR.steps.note('↶ ' + t); HR.logs.note('↶ Undo: ' + t); [].forEach.call(document.querySelectorAll('.undo'), function (x) { if (x !== b && x._u === u) { x.textContent = 'Undone ✓'; x.disabled = true; } }); },
+        function (err) { b.disabled = false; note('Undo failed: ' + (err && err.message || err), 'err'); });
+    };
+    b._u = u; host._undo = b; if (host.tagName === 'DETAILS') host.insertAdjacentElement('afterend', b); else host.appendChild(b); return b;
   }
   function note(text, cls) { var n = el('div', 'note' + (cls ? ' ' + cls : ''), text); log.appendChild(n); bottom(); return n; }
   function hello() {
@@ -92,5 +112,5 @@ HR.view = (function () {
     row.append(retry, x); c.append(t, p, row); log.appendChild(c); bottom(true);
   }
   function init(l) { log = l; }
-  return { init: init, el: el, bubble: bubble, tool: tool, note: note, hello: hello, folderHint: folderHint, errorCard: errorCard, clearErrors: clearErrors, bottom: bottom };
+  return { init: init, el: el, undoBtn: undoBtn, bubble: bubble, tool: tool, note: note, hello: hello, folderHint: folderHint, errorCard: errorCard, clearErrors: clearErrors, bottom: bottom };
 })();

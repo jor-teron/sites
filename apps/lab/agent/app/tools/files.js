@@ -1,6 +1,7 @@
 /* Agent — app/tools/files.js: folder tools (HR3), offered only while a folder is connected (HR.fs.ready()).
    list_dir(path), read_file(path) (capped ~20k chars), write_file(path, content) (Approve / Deny card; deny -> 'User denied'),
-   search(query, path?) (file names + plain text, capped results). Paths are relative to the folder root. */
+   search(query, path?) (file names + plain text, capped results). Paths are relative to the folder root.
+   AG7: write_file backs up the old file to agent/trash/YYYY_MM_DD/<path>~HHMMSS first (HR.trash) and hands Undo info to ctx.undo. */
 (function () {
   var READ_CAP = 20000, HITS = 40, FILES = 3000, BIG = 1024 * 1024;
   var BIN = /\.(png|jpe?g|gif|webp|ico|pdf|zip|gz|tgz|7z|rar|mp[34]|m4a|wav|ogg|webm|mov|avi|woff2?|ttf|otf|exe|dll|so|bin|wasm|class|jar|pyc)$/i;
@@ -26,8 +27,10 @@
       var old = await HR.fs.stat(path);
       var ok = ctx.approve ? await ctx.approve({ kind: 'write', path: path, size: new Blob([content]).size, exists: old.exists, oldSize: old.size, preview: content }) : false;
       if (!ok) return 'User denied';
-      await HR.fs.write(path, content);
-      return 'Wrote ' + path + ' (' + content.length + ' chars' + (old.exists ? ', replaced existing file' : ', new file') + ')';
+      if (/^agent\/trash\//.test(path)) throw new Error('agent/trash/ holds backups; write somewhere else');
+      var u = await HR.trash.before(path);   /* AG7: old version -> agent/trash/, Undo on the chip */
+      await HR.fs.write(path, content); if (ctx.undo) ctx.undo(u);
+      return 'Wrote ' + path + ' (' + content.length + ' chars' + (old.exists ? ', replaced existing file; old version kept in ' + u.backup : ', new file') + ')';
     } });
   HR.tools.register({ name: 'search', available: avail, description: 'Search the user\'s folder: file names and plain text lines containing the query (case-insensitive). Capped results.',
     parameters: { type: 'object', properties: { query: P('Text to find'), path: P('Optional relative folder to search in') }, required: ['query'] },
