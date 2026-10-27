@@ -41,13 +41,13 @@ HR.bcard = (function () {
   function draw() {
     var on = HR.browser.ready(); $('btnBrowserRm').disabled = !on;
     $('browserStat').textContent = on ? 'Story Mini (' + HR.browser.id + ') is downloaded in this browser (~' + HR.browser.size.model + ' MB).'
-      : 'Not downloaded. Pick Browser above (or use it when another provider is offline) and tap Download in the chat.';
+      : 'Not downloaded. Pick Browser in Model (or use it when another provider is offline) and tap Download in the chat.';
   }
   function init() {
     $('btnSet').addEventListener('click', draw);
     $('btnBrowserRm').onclick = function () {
       if (HR.chat.busy() && HR.models.id() === 'browser') return;
-      HR.browser.remove().then(function () { draw(); $('browserStat').textContent = 'Removed. Space freed.'; if (HR.models.id() === 'browser') HR.model.load(HR.models.fallen()); });
+      HR.browser.remove().then(function () { draw(); $('browserStat').textContent = 'Storage freed. Download again any time from the chat.'; if (HR.models.id() === 'browser') HR.model.load(HR.models.fallen()); });
     };
   }
   return { show: show, hide: hide, check: check, draw: draw, init: init };

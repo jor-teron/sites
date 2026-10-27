@@ -3,7 +3,8 @@
    tool(m) -> {done(ok,text,ms)}: folded 🔧 chip with args + result preview. note(text, cls), hello() (+ folder hint, HR4), errorCard(e) (Ollama help; HR6 online provider key / URL errors;
    AG2 kind 'download' -> the Browser model card, HR.bcard). AG5: each user / assistant bubble gets HR.edit actions. AG9: Show thinking live (thinkLive) keeps the Thinking box open
    while thinking streams and folds it when the answer starts (a tap on it leaves it to the user).
-   AG7: tool(m).live(text) streams shell output into the chip; write_file chips get ↶ Undo write (undoBtn, HR.trash). */
+   AG7: tool(m).live(text) streams shell output into the chip; write_file chips get ↶ Undo write (undoBtn, HR.trash).
+   AG10: inside the Hub, key / URL errors say Hub › API Keys and get an Open button (hubBtn). */
 HR.view = (function () {
   var log;
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
@@ -92,36 +93,47 @@ HR.view = (function () {
   }
   function clearErrors() { [].forEach.call(log.querySelectorAll('.ecard'), function (c) { c.remove(); }); }
   function code(t) { return el('code', null, t); }
-  function infoCard(title, text) {   /* AG6: tool-side error card (e.g. Tavily 401 / 429 / out of credits) */
+  /* AG10: inside the Hub, key / base errors point to Hub › API Keys with an Open button */
+  function inHub() { return !!(HR.hubKeys && HR.hubKeys.inHub()); }
+  function where(local) { return inHub() ? 'Hub › API Keys' : local; }
+  function hubBtn(row, name) {
+    if (!inHub() || !name) return; var b = el('button', 'hb wide hub-open', 'Open Hub › API Keys'); b.type = 'button';
+    b.onclick = function () { HR.hubKeys.open(name); }; row.appendChild(b);
+  }
+  function infoCard(title, text, hubName) {   /* AG6: tool-side error card (e.g. Tavily 401 / 429 / out of credits) */
     var c = el('div', 'ecard'), x = el('button', 'hb', '✕'), row = el('div', 'ec-row'); x.type = 'button'; x.setAttribute('aria-label', 'Dismiss'); x.onclick = function () { c.remove(); };
-    row.appendChild(x); c.append(el('div', 'ec-t', title), el('div', 'ec-b', text), row); log.appendChild(c); bottom(); return c;
+    hubBtn(row, hubName); row.appendChild(x); c.append(el('div', 'ec-t', title), el('div', 'ec-b', text), row); log.appendChild(c); bottom(); return c;
   }
   function errorCard(e) {
     if (e && e.kind === 'download') { if (HR.bcard) HR.bcard.show(); return; }
     clearErrors(); var h = log.querySelector('.hello'); if (h) h.remove();
     var base = HR.models.base('ollama'), origin = location.origin === 'null' ? '*' : location.origin;
     var c = el('div', 'ecard'), t = el('div', 'ec-t'), p = el('div', 'ec-b');
-    var prov = HR.models.id(), lab = HR.models.current().label;
+    var prov = HR.models.id(), lab = HR.models.current().label, hubName = '';
     if (prov !== 'ollama' && e.kind !== 'abort') {
-      var cb = HR.models.base();
-      if (e.kind === 'nokey') { t.textContent = '🔑 ' + lab + ' needs an API key'; p.textContent = 'Add it in Settings ⚙ → Provider. It is stored only in this browser on this device.'; }
-      else if (e.kind === 'unreachable') { t.textContent = '🔌 Can\'t reach ' + cb; p.textContent = 'Check the base URL and your connection. The provider must allow browser (CORS) requests; OpenAI, Groq, OpenRouter and Gemini do. ' + (e.message || ''); }
-      else if (e.kind === 'empty') { t.textContent = '📦 No models listed'; p.textContent = 'Type a model name in Settings ⚙ → Provider.'; }
-      else { t.textContent = (e.status === 401 || e.status === 403 ? '🔑 API key rejected' : '⚠️ ' + lab + ' error') + (e.status ? ' (' + e.status + ')' : ''); p.textContent = e.message || String(e); }
+      var cb = HR.models.base(), kn = HR.hubKeys ? HR.hubKeys.forProvider(prov, cb) || 'openai_key' : '';
+      if (e.kind === 'nokey') { hubName = kn; t.textContent = '🔑 ' + lab + ' needs an API key'; p.textContent = inHub() ? 'Add ' + kn + ' in Hub › API Keys.' : 'Add it in Settings ⚙ → Model. It is stored only in this browser on this device.'; }
+      else if (e.kind === 'unreachable') { t.textContent = '🔌 Can\'t reach ' + cb; p.textContent = 'Check the base URL (' + where('Settings ⚙ → Model') + ') and your connection. The provider must allow browser (CORS) requests; OpenAI, Groq, OpenRouter and Gemini do. ' + (e.message || ''); }
+      else if (e.kind === 'empty') { t.textContent = '📦 No models listed'; p.textContent = 'Type a model name in Settings ⚙ → Model.'; }
+      else {
+        var bad = e.status === 401 || e.status === 403; if (bad) hubName = kn;
+        t.textContent = (bad ? '🔑 API key rejected' : '⚠️ ' + lab + ' error') + (e.status ? ' (' + e.status + ')' : '');
+        p.textContent = (bad ? 'Check the key in ' + where('Settings ⚙ → Model') + '. ' : '') + (e.message || String(e));
+      }
     } else if (e.kind === 'unreachable') {
-      t.textContent = '🔌 Can\'t reach Ollama at ' + base;
+      t.textContent = '🔌 Can\'t reach Ollama at ' + base; hubName = 'ollama_url';
       var ol = el('ol'), li1 = el('li', null, 'Make sure Ollama is running: '), li2 = el('li', null, 'Allow this page\'s origin. Ollama blocks browser pages unless OLLAMA_ORIGINS includes ');
       li1.appendChild(code('ollama serve')); li2.appendChild(code(origin));
       ['Linux / macOS (terminal): OLLAMA_ORIGINS="' + origin + '" ollama serve', 'macOS app: launchctl setenv OLLAMA_ORIGINS "' + origin + '"  then restart Ollama',
         'Linux service: systemctl edit ollama  →  Environment="OLLAMA_ORIGINS=' + origin + '"  then restart', 'Windows: setx OLLAMA_ORIGINS "' + origin + '"  then quit and reopen Ollama']
         .forEach(function (x) { li2.appendChild(el('div', 'ec-cmd', x)); });
-      ol.append(li1, li2, el('li', null, 'Check the Base URL in Settings ⚙. An https page can only reach http://localhost (not a LAN IP over http).')); p.appendChild(ol);
+      ol.append(li1, li2, el('li', null, 'Check the Ollama URL in ' + where('Settings ⚙ → Model') + '. An https page can only reach http://localhost (not a LAN IP over http).')); p.appendChild(ol);
     } else if (e.kind === 'empty') { t.textContent = '📦 Ollama has no models'; p.append('Pull one in a terminal, e.g. ', code('ollama pull qwen3:4b'), ' then tap ↻.'); }
     else { t.textContent = '⚠️ Ollama error' + (e.status ? ' (' + e.status + ')' : ''); p.textContent = e.message || String(e); }
     var row = el('div', 'ec-row'), retry = el('button', 'hb wide', 'Retry'), x = el('button', 'hb', '✕');
     retry.type = x.type = 'button'; retry.onclick = function () { HR.model.load(); };
     x.setAttribute('aria-label', 'Dismiss'); x.onclick = function () { c.remove(); };
-    row.append(retry, x); c.append(t, p, row); log.appendChild(c); bottom(true);
+    row.appendChild(retry); hubBtn(row, hubName); row.appendChild(x); c.append(t, p, row); log.appendChild(c); bottom(true);
   }
   function init(l) { log = l; }
   return { init: init, el: el, undoBtn: undoBtn, infoCard: infoCard, bubble: bubble, tool: tool, note: note, hello: hello, folderHint: folderHint, errorCard: errorCard, clearErrors: clearErrors, bottom: bottom };

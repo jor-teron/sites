@@ -1,6 +1,6 @@
 /* Agent — app/gui/usageview.js: Settings → Usage (AG7). Today and This month: per provider · model calls, input / output
    tokens (≈ when some calls were estimated as chars/4) and, for online models with a price, estimated cost.
-   AG6: 'Tavily: N/1000 this month' (web search credits, free plan size) above the tables.
+   AG6: 'Tavily: N/1000 this month' (web search credits, free plan size); AG10: shown in Settings → Web (#webCredits).
    Price fields ($ per 1M input / output tokens) show under each online model of this month; saved in setting 'prices'. */
 HR.usageView = (function () {
   var box;
@@ -43,7 +43,8 @@ HR.usageView = (function () {
     if (!box) return;
     var j = await HR.usage.month(), today = HR.usage.day();
     box.innerHTML = ''; var tav = (j.credits && j.credits.tavily) || 0;
-    if (tav || HR.web && HR.web.key()) box.appendChild(el('div', 'us-h' + (tav >= 900 ? ' warn' : ''), 'Tavily: ' + tav + '/1000 this month' + (tav >= 1000 ? ' — free credits used up' : '')));
+    var wc = document.getElementById('webCredits');   /* AG10: lives in the Web card */
+    if (wc) { wc.textContent = 'Tavily: ' + tav + '/1000 credits this month' + (tav >= 1000 ? ' — free credits used up' : ''); wc.classList.toggle('warn', tav >= 900); }
     box.append(table('Today', sum(j.days, today), false), table('This month (' + HR.usage.ym().replace('_', '-') + ')', sum(j.days), true),
       el('p', 'hint', (HR.fs.ready() ? 'Saved to agent/usage/' + HR.usage.ym() + '.json.' : 'Saved in this browser (pick a folder to keep it as agent/usage/YYYY_MM.json).') +
         ' Counts come from the provider; ≈ = some calls estimated as characters / 4. Costs are estimates from your prices.'));

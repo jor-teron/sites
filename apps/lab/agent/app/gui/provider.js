@@ -1,9 +1,10 @@
 /* Agent — app/gui/provider.js: Settings → Provider (HR6). Ollama (default) | OpenAI-compatible | Gemini.
    OpenAI-compatible: base URL (presets OpenAI / Groq / OpenRouter), API key, optional model name. Gemini: API key, model.
    Keys live in localStorage 'agent.keys' per host (this device only; sent only to that provider). Changes reload models.
-   AG2: Browser (built-in Story Mini, app/models/browser.js) has no fields here; its status / Remove are in app/gui/browsercard.js.
+   AG2: Browser (built-in Story Mini, app/models/browser.js) has no fields here; its status / free-storage button are in app/gui/browsercard.js (Advanced).
    Panels follow the chosen provider, not a session fallback. AG5: this is the default for new chats (HR.models.def());
-   changing it here also moves the open chat to it. AG9: rows using a Hub key show "From Hub ✓" (app/gui/hubrows.js). */
+   changing it here also moves the open chat to it. AG9: rows using a Hub key show "From Hub ✓" (app/gui/hubrows.js).
+   AG10: lives in the Settings → Model card; inside the Hub its key / base fields are hidden (one "Keys come from Hub" line). */
 HR.provider = (function () {
   var PRE = [['OpenAI', 'https://api.openai.com/v1', 'gpt-4o-mini'], ['Groq', 'https://api.groq.com/openai/v1', 'llama-3.3-70b-versatile'],
     ['OpenRouter', 'https://openrouter.ai/api/v1', 'openai/gpt-4o-mini'], ['DeepSeek', 'https://api.deepseek.com', 'deepseek-chat'], ['xAI', 'https://api.x.ai/v1', 'grok-4']];   /* AG9: + DeepSeek, xAI (Hub keys deepseek / xai) */

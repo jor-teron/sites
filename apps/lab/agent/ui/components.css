@@ -61,7 +61,6 @@
 .dcard{border:1.5px solid var(--acc);border-radius:14px;background:var(--card);padding:10px 12px;animation:pop .35s cubic-bezier(.34,1.7,.64,1) both}
 .dbar{display:block;width:100%;height:8px;margin-top:8px;accent-color:var(--acc)}.dbar[hidden]{display:none}.dcard .ec-row[hidden]{display:none}
 /* AG3 Settings switches: label + On / Off with big tap targets */
-.grp{border-top:1px solid var(--line);padding-top:12px}
 .sw{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;font-size:14px}.sw small{color:var(--mut)}
 .dlg .seg .hb{height:40px;min-width:60px}
 .no-think .think{display:none!important}.no-steps .steps,.no-steps #btnSteps{display:none!important}
@@ -93,7 +92,6 @@
 .us-t th:first-child,.us-t td:first-child{text-align:left}.us-m{word-break:break-all}.us-tot td{font-weight:600;border-bottom:0}
 .us-price td{text-align:left;color:var(--mut)}.us-in{width:96px;height:26px;margin:0 6px 0 0}
 .us-h.warn{color:var(--warn)}
-/* AG9 Settings rows using a Hub key (app/gui/hubrows.js) */
-.hubrow{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:4px 0 6px;font-size:13px}.hubrow[hidden]{display:none}
+/* AG9/AG10 Hub key line (app/gui/hubrows.js, error cards) */
 .hub-ok{color:var(--ok);font-weight:600}.hub-no{color:var(--mut)}.hb.hub-open{height:30px;font-size:13px}
 .inp:disabled{opacity:.6;cursor:not-allowed}

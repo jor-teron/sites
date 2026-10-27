@@ -1,0 +1,19 @@
+/* Agent — ui/settings.css (AG10): Settings as collapsible rounded cards (<details class="scard">), one column on phones,
+   two columns from 760px; big on/off switches (.tg, role=switch) and the "Keys come from Hub › API Keys" line (.hubline). */
+.setdlg{width:min(440px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto}
+.set-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px;align-items:start}
+@media (min-width:760px){.setdlg{width:min(920px,calc(100vw - 48px))}.set-grid{grid-template-columns:1fr 1fr}}
+.scard{border:1.5px solid var(--line);border-radius:14px;background:var(--card);overflow:hidden}
+.scard>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:12px 14px;font-size:15px;font-weight:600;cursor:pointer;user-select:none}
+.scard>summary::-webkit-details-marker{display:none}
+.scard>summary::after{content:'▾';margin-left:auto;color:var(--mut);transition:transform .18s}.scard[open]>summary::after{transform:rotate(180deg)}
+.scard>summary:hover{color:var(--acc)}.sc-i{font-size:18px;width:22px;text-align:center}
+.sc-b{padding:0 14px 14px;border-top:1px solid var(--line)}.sc-b>:first-child{margin-top:10px}
+.sc-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;font-size:14px}.sc-row small{color:var(--mut)}
+.scard .sw{margin-top:12px;align-items:center}.scard .sw>span{display:flex;flex-direction:column;gap:2px}.scard .sw small{font-size:12px}
+.tg{flex:none;width:52px;height:30px;border-radius:15px;border:1.5px solid var(--line);background:var(--panel);position:relative;cursor:pointer;padding:0;transition:background .18s,border-color .18s}
+.tg::after{content:'';position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:var(--mut);transition:transform .2s cubic-bezier(.34,1.5,.64,1),background .18s}
+.tg[aria-checked=true]{background:var(--acc);border-color:var(--acc)}.tg[aria-checked=true]::after{transform:translateX(22px);background:var(--ink)}
+.tg:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.hubline{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0 0;font-size:13px}.hubline[hidden],#helperBox[hidden]{display:none}
+#settings [hidden]{display:none!important}

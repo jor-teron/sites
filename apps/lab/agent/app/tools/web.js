@@ -5,17 +5,18 @@
    Read-only: no approval card, but every call shows in Steps / the diary like other tools.
    Offered only when a Tavily key is set and Allow web is on (HR.web.ready(); also HR.perms). Tavily allows browser
    CORS (Access-Control-Allow-Origin: *, checked AG6). Credits used go to HR.usage.credits('tavily', n) (Settings → Usage).
-   401 / 429 / 432 / 433 -> a clear error card in the chat (HR.view.infoCard) and an error result for the model. */
+   401 / 429 / 432 / 433 -> a clear error card in the chat (HR.view.infoCard) and an error result for the model. AG10: in the Hub the key card points to Hub › API Keys (Open). */
 HR.web = (function () {
   var API = 'https://api.tavily.com', LIMIT = 8000;
   function key() { return (HR.hubKeys && HR.hubKeys.val('tavily')) || String(HR.set.get('tavilyKey') || '').trim(); }   /* AG9: Hub key first */
   function ready() { return !!key() && HR.set.get('allowWeb') !== 'off'; }
   function depth() { return HR.set.get('webDepth') === 'advanced' ? 'advanced' : 'basic'; }
+  function inHub() { return !!(HR.hubKeys && HR.hubKeys.inHub()); }   /* AG10: errors point to Hub › API Keys there */
   function card(st, msg) {
     var t = st === 401 || st === 403 ? '🔑 Tavily key rejected (' + st + ')' : st === 429 ? '⏳ Tavily rate limit (429)' : st === 432 || st === 433 ? '🪫 Tavily credits used up (' + st + ')' : '⚠️ Tavily error' + (st ? ' (' + st + ')' : '');
-    var b = st === 401 || st === 403 ? 'Check the key in Settings ⚙ → Web (get one at tavily.com).' : st === 429 ? 'Too many requests right now; wait a minute and try again.'
+    var b = st === 401 || st === 403 ? (inHub() ? 'Check tavily in Hub › API Keys' : 'Check the key in Settings ⚙ → Web') + ' (get one at tavily.com).' : st === 429 ? 'Too many requests right now; wait a minute and try again.'
       : st === 432 || st === 433 ? 'This month\'s plan credits (free: 1,000) are gone. Wait for the reset, upgrade at tavily.com, or turn Allow web off.' : (msg || '');
-    try { HR.view.infoCard(t, b + (msg && b !== msg ? ' — ' + msg : '')); } catch (e) {}
+    try { HR.view.infoCard(t, b + (msg && b !== msg ? ' — ' + msg : ''), st === 401 || st === 403 || st === 432 || st === 433 ? 'tavily' : ''); } catch (e) {}
     return t + ': ' + b;
   }
   async function call(path, body, signal) {

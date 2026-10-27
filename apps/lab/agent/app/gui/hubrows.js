@@ -1,36 +1,32 @@
-/* Agent — app/gui/hubrows.js: Settings rows that can use a Hub key (AG9). HR.hubRows.paint() after each Settings draw.
-   Row = input id + Hub key name: Ollama base URL (ollama_url), OpenAI-compatible base (openai_base), provider API key
-   (gemini / openai_key / groq / openrouter / deepseek / xai, from HR.hubKeys.forProvider), Tavily key (tavily).
-   Hub key set -> the field is disabled and left empty (the Hub value is never shown or copied) and a line
-   "From Hub ✓ · Change in Hub" appears; inside the Hub without that key -> "Not in Hub keys · Add in Hub" and the local
-   field still works as the fallback. Standalone -> nothing extra. Hub changes repaint while Settings is open. */
+/* Agent — app/gui/hubrows.js: Settings and the Hub's keys (AG9, AG10). HR.hubRows.paint() after each Settings draw.
+   AG10: inside the Hub (window.top.HubKeys) every key / base field (.hub-hide: Ollama URL, OpenAI-compatible base,
+   API key + note, Tavily key + note) is hidden and the Model / Web cards show one line "Keys come from Hub › API Keys"
+   with ✓ / "not set" for the key in use and an Open button (HubKeys.open(name)). Standalone: the fields show as before.
+   Hub values are never shown or copied. Hub key changes repaint open Settings and reload models. */
 HR.hubRows = (function () {
-  function rows() {
+  function modelKey() {
     var p = HR.models.def(), b = HR.models.base(p);
-    return [['setBase', 'ollama_url'], ['setOABase', HR.hubKeys.named(HR.set.get('openaiBase') || '') ? '' : 'openai_base'], ['setKey', p === 'ollama' || p === 'browser' ? '' : HR.hubKeys.forProvider(p, b)], ['setTavKey', 'tavily']];
+    return p === 'browser' ? '' : p === 'ollama' ? 'ollama_url' : HR.hubKeys.forProvider(p, b) || 'openai_key';
+  }
+  function line(id, n, what) {
+    var el = document.getElementById(id); if (!el) return;
+    el.hidden = !n; el.innerHTML = ''; if (!n) return;
+    var t = document.createElement('span'), b = document.createElement('button');
+    t.textContent = 'Keys come from Hub › API Keys · ' + n + (HR.hubKeys.has(n) ? ' ✓' : ' not set' + (what ? ' (' + what + ')' : ''));
+    t.className = HR.hubKeys.has(n) ? 'hub-ok' : 'hub-no';
+    b.type = 'button'; b.className = 'hb wide hub-open'; b.textContent = 'Open'; b.onclick = function () { HR.hubKeys.open(n); };
+    el.append(t, b);
   }
   function paint() {
     var inHub = HR.hubKeys.inHub();
-    rows().forEach(function (r) {
-      var i = document.getElementById(r[0]); if (!i) return;
-      var tag = document.getElementById(r[0] + 'Hub'), n = r[1];
-      if (!inHub || !n) { if (tag) tag.hidden = true; if (i.dataset.hub) { i.disabled = false; i.placeholder = i.dataset.ph || i.placeholder; delete i.dataset.hub; } return; }
-      if (!tag) { tag = document.createElement('div'); tag.id = r[0] + 'Hub'; tag.className = 'hubrow'; i.insertAdjacentElement('afterend', tag); }
-      tag.hidden = false; tag.innerHTML = '';
-      var used = HR.hubKeys.has(n), t = document.createElement('span'), btn = document.createElement('button');
-      t.textContent = used ? 'From Hub ✓ (' + n + ')' : 'Not in Hub keys (' + n + ') — using this field';
-      t.className = used ? 'hub-ok' : 'hub-no';
-      btn.type = 'button'; btn.className = 'hb wide hub-open'; btn.textContent = used ? 'Change in Hub' : 'Add in Hub';
-      btn.onclick = function () { HR.hubKeys.open(n); };
-      tag.append(t, btn);
-      if (!i.dataset.hub) i.dataset.ph = i.placeholder;
-      if (used) { i.dataset.hub = '1'; i.disabled = true; i.value = ''; i.placeholder = 'Using the Hub value (Settings → API Keys)'; }
-      else if (i.dataset.hub) { i.disabled = false; i.placeholder = i.dataset.ph; delete i.dataset.hub; }
-    });
+    [].forEach.call(document.querySelectorAll('#settings .hub-hide'), function (e) { e.hidden = inHub; });
+    var p = HR.models.def();
+    line('hubModelLine', inHub ? modelKey() : '', p === 'ollama' ? 'default http://localhost:11434' : 'needed for ' + p);
+    line('hubWebLine', inHub ? 'tavily' : '', 'web tools stay hidden');
   }
   function init() {
     HR.hubKeys.onChange(function (n) {
-      var d = document.getElementById('settings'); if (d && d.open) { HR.set.redraw(); HR.provider.draw(); paint(); }
+      var d = document.getElementById('settings'); if (d && d.open) { HR.set.redraw(); HR.provider.draw(); }
       if (n !== 'tavily') HR.model.load();
     });
   }
