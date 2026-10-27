@@ -1,5 +1,8 @@
 // LandCraft chunk: 16 x 16 columns, CH blocks tall. Meshing emits only faces not hidden by an opaque
-// neighbour. Glass goes in a second index group drawn with the transparent material.
+// neighbour. One geometry, three index groups -> materials: [0] opaque (+ cutout leaves), [2] water, [1] glass.
+// LC4: water has its own group and material (double-sided, so the surface shows from below). Groups are
+// ordered opaque, water, glass: three draws a chunk's transparent groups in that order, so glass is always
+// drawn after the water behind it (before, both shared one group and drew in block-scan order).
 import * as THREE from 'three';
 import { tileUV } from '../assets/textures/atlas.js';
 import { FACE_TILES } from '../assets/models/block_models.js';
@@ -30,7 +33,7 @@ export class Chunk {
 
   // Build (or rebuild) this chunk's mesh; world.get() looks across chunk borders.
   build(world, materials) {
-    const pos = [], nor = [], uvs = [], col = [], ind = [], glassInd = [];
+    const pos = [], nor = [], uvs = [], col = [], ind = [], waterInd = [], glassInd = [];
     this.builds++;
     const ox = this.cx * CS, oz = this.cz * CS;
     for (let y = 0; y < CH; y++) for (let z = 0; z < CS; z++) for (let x = 0; x < CS; x++) {
@@ -48,7 +51,7 @@ export class Chunk {
           uvs.push(f.uv[i][0] ? r[2] : r[0], f.uv[i][1] ? r[3] : r[1]);
           col.push(f.shade, f.shade, f.shade);
         }
-        (b === GLASS || b === WATER ? glassInd : ind).push(n, n + 1, n + 2, n + 2, n + 1, n + 3);
+        (b === WATER ? waterInd : b === GLASS ? glassInd : ind).push(n, n + 1, n + 2, n + 2, n + 1, n + 3);
       }
     }
     const geo = new THREE.BufferGeometry();
@@ -56,9 +59,10 @@ export class Chunk {
     geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
     geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-    geo.setIndex(ind.concat(glassInd));
+    geo.setIndex(ind.concat(waterInd, glassInd));
     geo.addGroup(0, ind.length, 0);
-    geo.addGroup(ind.length, glassInd.length, 1);
+    geo.addGroup(ind.length, waterInd.length, 2);
+    geo.addGroup(ind.length + waterInd.length, glassInd.length, 1);
     geo.computeBoundingSphere();
     if (this.mesh) { this.mesh.geometry.dispose(); this.mesh.geometry = geo; }
     else { this.mesh = new THREE.Mesh(geo, materials); this.mesh.position.set(ox, 0, oz); }

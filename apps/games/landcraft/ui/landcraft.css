@@ -61,3 +61,6 @@ body.touch #mapbtn { min-height: 40px; padding: 6px 12px; font-size: 14px; }
 #fps { position: fixed; right: max(10px, env(safe-area-inset-right)); top: calc(max(10px, env(safe-area-inset-top)) + 46px); z-index: 3;
   padding: 2px 8px; font: 600 12px ui-monospace, monospace; color: #fff; background: rgba(20,24,32,.55); border-radius: 6px; pointer-events: none; }
 #fps[hidden] { display: none; }
+/* LC4: blue tint over the view while the camera is under water (under all HUD controls). */
+#underwater { position: fixed; inset: 0; background: rgba(20, 70, 150, .28); pointer-events: none; }
+#underwater[hidden] { display: none; }

@@ -4,6 +4,8 @@
 // LC3: shared Games settings (core/settings.js): FPS limit throttles drawing inside setAnimationLoop using real
 // elapsed time (movement stays per second), render distance (+ fog), pixel ratio, look sensitivity, FPS counter,
 // touch auto-jump and hold-to-repeat, and a ⚙ gear (top right). Changes apply live, even from another tab.
+// LC4: water gets its own double-sided material (surface visible from below, drawn before glass), and
+// core/water.js gives an underwater fog + tint while the camera is in water. Swimming is in player.js.
 import * as THREE from 'three';
 import { makeAtlas } from '../assets/textures/atlas.js';
 import { generate, worldHash } from './mapgen.js';
@@ -14,6 +16,7 @@ import { setupPicker } from './picker.js';
 import { readSave, writeSave, hasSave, dropSave, saveKey } from './save.js';
 import { settings } from './settings.js';
 import { setupHud } from './hud.js';
+import { setupUnderwater } from './water.js';
 
 const SKY = 0x8ec9ff;
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -30,17 +33,20 @@ scene.add(sun);
 
 const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 200);
 const atlas = makeAtlas();
-const materials = [ // [0] opaque + cutout leaves, [1] translucent glass
+const materials = [ // [0] opaque + cutout leaves, [1] translucent glass, [2] water (both sides)
   new THREE.MeshLambertMaterial({ map: atlas, vertexColors: true, alphaTest: 0.5 }),
-  new THREE.MeshLambertMaterial({ map: atlas, vertexColors: true, transparent: true, depthWrite: false })
+  new THREE.MeshLambertMaterial({ map: atlas, vertexColors: true, transparent: true, depthWrite: false }),
+  new THREE.MeshLambertMaterial({ map: atlas, vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide })
 ];
+const underwater = setupUnderwater({ scene: scene, sky: SKY, canvas: renderer.domElement });
 let LOAD = 5; // chunks meshed around the player (setting 'renderDistance' 3-5); the rest stream in a few per frame
 
 // Render distance and the fog that hides its edge: 5 chunks -> fog 40..90 (the original look), 3 -> 26..58.
 function applyView() {
   LOAD = settings.get('renderDistance');
-  scene.fog.far = LOAD * 16 + 10; scene.fog.near = Math.round(scene.fog.far * 0.45);
-  camera.far = scene.fog.far + 20; camera.updateProjectionMatrix();
+  const far = LOAD * 16 + 10;
+  underwater.setDry(Math.round(far * 0.45), far); // sets scene.fog unless the camera is under water
+  camera.far = far + 20; camera.updateProjectionMatrix();
 }
 
 function resize() {
@@ -104,6 +110,7 @@ settings.onChange(function (ch) {
   if ('holdRepeat' in ch && !settings.get('holdRepeat')) interact.stopHold();
 });
 window.landcraft.settings = settings;
+window.landcraft.view = function () { return { fog: [scene.fog.near, scene.fog.far], under: underwater.isUnder(), pixelRatio: renderer.getPixelRatio() }; };
 document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') save(); });
 
 let lastDraw = -Infinity;
@@ -129,6 +136,7 @@ renderer.setAnimationLoop(function (t) {
   camera.position.set(player.pos.x, player.pos.y + EYE, player.pos.z);
   camera.rotation.set(player.pitch, player.yaw, 0, 'YXZ');
   camera.updateMatrixWorld();
+  underwater.update(ctx.world, camera.position);
   interact.update();
   renderer.render(scene, camera);
 });
