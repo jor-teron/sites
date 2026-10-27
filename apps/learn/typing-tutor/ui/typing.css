@@ -1,0 +1,86 @@
+/* Typing Tutor TT1 — app look on top of the Learn kit (../common/ui/learn.css). Finger colours, text box, keyboard, hands, results.
+   Light mode follows the Hub theme (html.light from shared/theme/hub_theme.js). Plain CSS, no heavy effects (weak phones). */
+.tt { --accent: #7fb7e6; --ok: #7ccf95; --bad: #ff6b6b;
+  --f-lp: #c77dff; --f-lr: #5aa9ff; --f-lm: #3fd0b0; --f-li: #f6c453; --f-ri: #ff9f5a; --f-rm: #3fd0b0; --f-rr: #5aa9ff; --f-rp: #c77dff; --f-th: #9aa4b2; }
+html.light { --bg: #f4f6f9; --panel: #ffffff; --panel2: #e9edf2; --text: #1b2430; --muted: #5b6676; --line: #cfd6df; --note: #eef2f7; --on: #ffffff; }
+html.light .lrn-call b { color: var(--text); }
+.tt-ver { flex: none; font-size: 0.75rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 99px; }
+.tt-main { display: flex; flex-direction: column; gap: 10px; }
+.tt-stage { margin: 14px 0 8px; font-size: 1.05rem; color: var(--muted); }
+.tt-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+.tt-lesson, .tt-test { min-height: 96px; }
+.tt-lesson.locked { opacity: 0.5; cursor: default; }
+.tt-lesson.passed { border-color: var(--ok); }
+.tt-num { font-size: 0.8rem; color: var(--muted); }
+.tt-keys { display: flex; flex-wrap: wrap; gap: 4px; }
+kbd { display: inline-block; min-width: 1.6em; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--line); border-bottom-width: 2px; background: var(--panel2); font: 600 0.9em ui-monospace, Menlo, Consolas, monospace; text-align: center; }
+
+/* live stats */
+.tt-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.tt-stat { display: flex; flex-direction: column; align-items: center; padding: 6px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); }
+.tt-stat b { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.tt-stat span { font-size: 0.75rem; color: var(--muted); }
+.tt-stat.big b { font-size: 2rem; color: var(--accent); }
+
+/* text to type: 3 lines visible, scrolls with the cursor */
+.tt-textwrap { position: relative; }
+.tt-text { --lh: 1.7em; height: calc(var(--lh) * 3 + 20px); overflow: hidden; padding: 10px 14px; border-radius: 14px; background: var(--panel); border: 2px solid var(--line);
+  font: 1.45rem/var(--lh) ui-monospace, Menlo, Consolas, "Courier New", monospace; letter-spacing: 0.02em; cursor: text; color: var(--muted); }
+.tt-text:focus, .tt-textwrap:focus-within .tt-text { border-color: var(--accent); outline: none; }
+.tt-text .w { white-space: nowrap; }
+.tt-text span.ok { color: var(--text); }
+.tt-text span.bad { color: var(--bad); background: rgba(255, 80, 80, 0.16); border-radius: 3px; text-decoration: underline wavy; }
+.tt-text span.sp.bad { background: rgba(255, 80, 80, 0.45); text-decoration: none; }
+.tt-text span.cur { color: var(--text); background: var(--accent); color: var(--on); border-radius: 3px; }
+.tt-input { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; font-size: 16px; }
+.tt-hint { margin: 0; min-height: 1.6em; text-align: center; color: var(--muted); }
+.tt-hint kbd { color: var(--text); }
+
+/* keyboard + hands */
+.tt-board { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.tt-kb { width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 4px; user-select: none; }
+.tt-row { display: flex; gap: 4px; }
+.tt-key { flex: 1 1 0; min-width: 0; height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 7px;
+  background: var(--panel2); border: 1px solid var(--line); border-bottom: 3px solid var(--fc, var(--line)); font: 600 0.9rem ui-monospace, Menlo, Consolas, monospace; line-height: 1; color: var(--text); overflow: hidden; }
+.tt-key.tt-wide { font: 600 0.72rem system-ui, sans-serif; color: var(--muted); }
+.tt-key .tt-s { font-size: 0.65rem; color: var(--muted); }
+.tt-key.tt-bump::after { content: ''; width: 10px; height: 2px; margin-top: 2px; background: var(--muted); border-radius: 1px; }
+.tt-key.tt-next { background: var(--fc); color: #111; border-color: var(--fc); box-shadow: 0 0 0 2px var(--text) inset; }
+.tt-key.tt-next .tt-s { color: #222; }
+.tt-key.tt-hit { filter: brightness(1.3); }
+.tt-key.tt-miss { background: var(--bad) !important; color: #fff; }
+.f-lp { --fc: var(--f-lp); } .f-lr { --fc: var(--f-lr); } .f-lm { --fc: var(--f-lm); } .f-li { --fc: var(--f-li); } .f-th { --fc: var(--f-th); }
+.f-ri { --fc: var(--f-ri); } .f-rm { --fc: var(--f-rm); } .f-rr { --fc: var(--f-rr); } .f-rp { --fc: var(--f-rp); }
+.tt-hands { display: flex; gap: 40px; justify-content: center; }
+.tt-hand { position: relative; display: flex; align-items: flex-end; gap: 4px; height: 64px; padding-bottom: 20px; }
+.tt-palm { position: absolute; left: -2px; right: -2px; bottom: 0; height: 26px; border-radius: 6px 6px 14px 14px; background: var(--panel2); border: 1px solid var(--line); }
+.tt-fing { position: relative; z-index: 1; width: 13px; border-radius: 7px 7px 3px 3px; background: var(--panel2); border: 2px solid var(--fc); }
+.tt-fing.n0 { height: 26px; } .tt-fing.n1 { height: 36px; } .tt-fing.n2 { height: 42px; } .tt-fing.n3 { height: 37px; } .tt-fing.n4 { height: 20px; transform: rotate(35deg); transform-origin: bottom; }
+.tt-hand.right .tt-fing.n4 { transform: rotate(-35deg); }
+.tt-fing.tt-on { background: var(--fc); box-shadow: 0 0 8px var(--fc); }
+.tt-tools { margin: 4px 0; align-items: center; }
+.tt-tip { margin-left: auto; }
+
+/* results */
+.tt-done { margin-top: 6px; }
+.tt-best { font-size: 0.85rem; padding: 2px 10px; border-radius: 99px; background: var(--ok); color: #10301c; }
+.tt-pass { border-left-color: var(--ok); } .tt-fail { border-left-color: var(--warn); }
+.tt-missed { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tt-chip { padding: 2px 8px; border-radius: 99px; background: var(--panel); border: 1px solid var(--line); }
+
+/* small screens */
+@media (max-width: 600px) {
+  .tt-text { font-size: 1.15rem; padding: 8px 10px; }
+  .tt-key { height: 32px; font-size: 0.75rem; border-radius: 5px; }
+  .tt-key.tt-wide { font-size: 0.55rem; }
+  .tt-key .tt-s { display: none; }
+  .tt-row { gap: 2px; } .tt-kb { gap: 2px; }
+  .tt-stat b { font-size: 1.1rem; } .tt-stat.big b { font-size: 1.5rem; }
+  .tt-hands { display: none; }
+  .tt-tip { display: none; }
+}
+@media (max-height: 520px) {
+  .tt-hands, .tt-tip, .tt-stat span { display: none; } .tt-main { gap: 6px; padding-top: 8px; }
+  .tt-key { height: 26px; } .tt-text { --lh: 1.5em; height: calc(var(--lh) * 2 + 16px); font-size: 1.1rem; padding: 6px 10px; }
+  .tt-stat { padding: 2px; } .tt-stat b { font-size: 1rem; } .tt-hint { min-height: 0; font-size: 0.85rem; }
+}
