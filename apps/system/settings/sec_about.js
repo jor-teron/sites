@@ -16,7 +16,8 @@
  * H30.1: "Profile folder" card (id 'profile', deep link #about/profile): the Hub's settings saved to
  *   <connected folder>/hub/hub-profile/hub.json by hub/core/hub_profile.js (window.HubProfile in the Hub).
  *   Shows the folder (a choice when more than one is connected), status, last save, Save now / Load now.
- * H30.2: also lists the System apps whose settings go to hub/hub-profile/system/<app>.json.
+ * H30.2: also lists the System apps whose settings go to hub/hub-profile/system/<app>.json
+ *   (H30.7: and the Media / Connectivity / Tools / Office apps → hub-profile/<category>/<app>.json).
  * H30.5: 'Save profile to' — tick Google Drive and / or any connected host folder (by its real name); every ticked
  *   place gets the profile, the newest copy wins on start. Drive not signed in → 'Sign in to Google Drive' in its row.
  * H30.6: 'Save every' 30 s / 1 min (default) / 5 min / 15 min / Manual only (HubProfile.setEvery).
@@ -236,7 +237,7 @@
     everySeg.id = 'profile-every';
     card.append(ui.el('h4', 'opt-title', 'Save profile to'), placesBox, ui.el('h4', 'opt-title', 'Save every'), everySeg, everyNote,
       body, btns, out, keysSw, keyNote, btns2,
-      ui.el('p', 'opt-note', 'Saved as hub/hub-profile/hub.json in each ticked place (in Google Drive: hub \u203A hub-profile), as plain JSON; System app settings go to hub-profile/system/<app>.json. Sign-ins are never saved. Export / Import use one .json file, for devices without a folder.'));
+      ui.el('p', 'opt-note', 'Saved as hub/hub-profile/hub.json in each ticked place (in Google Drive: hub \u203A hub-profile), as plain JSON; app settings go to hub-profile/<category>/<app>.json (system, media, connectivity, tools, office). Sign-ins, history, documents and device data are never saved. Export / Import use one .json file, for devices without a folder.'));
     function drawPlaces(st) {
       placesBox.textContent = '';
       (st.targets || []).forEach((t) => {
@@ -266,10 +267,10 @@
       body.appendChild(row('Last saved', niceTime(st.lastSave)));
       if (st.lastLoad) body.appendChild(row('Last loaded', niceTime(st.lastLoad)));
       on.forEach((t) => body.appendChild(row(on.length > 1 ? 'File (' + t.name + ')' : 'File', t.path)));
-      if (on.length && HP.apps) {   // H30.2: System app settings next to hub.json
-        const names = HP.apps().map((a) => a[0].toUpperCase() + a.slice(1));
-        body.appendChild(row('System apps', names.join(', ')));
-      }
+      if (on.length && HP.appsBy) {   // H30.2 / H30.7: app settings next to hub.json, one folder per category
+        const by = HP.appsBy(), nice = (a) => (a[0].toUpperCase() + a.slice(1)).replace(/[-_]/g, ' ');
+        Object.keys(by).forEach((c) => { if (by[c].length) body.appendChild(row(c[0].toUpperCase() + c.slice(1) + ' apps', by[c].map(nice).join(', '))); });
+      } else if (on.length && HP.apps) body.appendChild(row('System apps', HP.apps().join(', ')));
       body.appendChild(ui.el('p', 'opt-note', st.error || (on.length ? '' : STATE_TEXT.none)));
       if (everySeg.repaint && st.every != null) { everySeg.repaint(st.every); everyNote.textContent = everyText(st.every); }
       saveB.disabled = loadB.disabled = !on.length;

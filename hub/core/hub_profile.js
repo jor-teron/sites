@@ -18,7 +18,7 @@
  *   the H30.1 choice 'sites-hub.profileDrive' or else the first folder). Every ticked place gets the same files.
  *   Google Drive uses the Hub's own Google sign-in (sites-hub.google via shared/google/google_auth.js
  *   GoogleAuth.fetchApi; the 'drives' batch of hub_loader.js is loaded when Drive is ticked) and keeps
- *   <Drive "hub" folder (GDriveFs.hubRoot)>/hub-profile/hub.json + system/<app>.json. No duplicate folders:
+ *   <Drive "hub" folder (GDriveFs.hubRoot)>/hub-profile/hub.json + <category>/<app>.json. No duplicate folders:
  *   the folder's Drive id is kept in 'sites-hub.profileGdrive' and in hub.json ("driveFolderId"), the folder
  *   carries appProperties { hubProfile: '1' }; lookup = by id, then by that tag, and only then create. Several
  *   tagged folders → the one with the newest hub.json is used and a notification card names the others.
@@ -41,7 +41,13 @@
  *   video resume points, DevBench run history; those are per-device state, not settings.) Apps write localStorage
  *   as before; HubProfile watches those keys (same debounce), writes only the files that changed and loads them
  *   back together with hub.json (only keys that belong to that app are accepted; key-like values never).
- *   More apps: HubProfile.registerApp(name, { keys: [...], prefixes: [...] }).
+ *   More apps: HubProfile.registerApp(name, { category, keys: [...], prefixes: [...] }).
+ * H30.7 Media, Connectivity, Tools, Office: the same for those apps, one file per app in a folder per category:
+ *   hub-profile/<category>/<app>.json (category = media | connectivity | tools | office; the files carry
+ *   "category" too). The list (APP_LIST below) lives here on the Hub side; the apps are not changed. Only small
+ *   settings / preferences; never saved: caches, history, playback / last URL, documents and autosaves, pairing
+ *   and join codes, device ids, saved hosts / known_hosts, tokens and API keys (see the comments in APP_LIST).
+ *   Export files: "system": { app: settings } as before + "apps": { category: { app: settings } }.
  * H30.3 Keys + export:
  *   'Include keys in profile' (Settings → About → Profile folder; localStorage 'sites-hub.profileKeys' = '1', off by
  *   default): when on, hub.json also holds "keys": { name: value } (the API keys of sites-hub.keys, H28), saved
@@ -79,12 +85,58 @@
   const KEY_NAME = /key|token|secret|passw|auth|cred|cookie/i;
   const KEY_VALUE = /(sk-[A-Za-z0-9_-]{8,}|sk_(live|test)_|gsk_[A-Za-z0-9]{8,}|xai-[A-Za-z0-9]{8,}|AIza[0-9A-Za-z_-]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_|tvly-[A-Za-z0-9]{8,}|hf_[A-Za-z0-9]{20,}|ya29\.|Bearer\s|-----BEGIN)/;
   const OPAQUE = /^[A-Za-z0-9_\-+=]{32,}$/;   // one long token-looking word
-  /* H30.2: System apps → hub/hub-profile/system/<app>.json */
-  const APPS = {
-    files: { keys: [], prefixes: ['sites-files.'] },
-    viewer: { keys: ['sites-viewer.speed'], prefixes: [] },
-    terminal: { keys: ['hub-terminal.theme'], prefixes: [] },
-  };
+  /* H30.2 / H30.7: app settings → hub/hub-profile/<category>/<app>.json. [category, app, keys, prefixes] */
+  const CATS = ['system', 'media', 'connectivity', 'tools', 'office'];
+  const APP_LIST = [
+    ['system', 'files', [], ['sites-files.']],
+    ['system', 'viewer', ['sites-viewer.speed']],
+    ['system', 'terminal', ['hub-terminal.theme']],
+    // H30.7 Media. Not saved: draw-autosave(-meta) (drawing), paint-image (picture), mv_alpha_last_url (3D viewer last
+    // URL), sound-recorder-state-v1 (screen / current take), news.saved / seen / tab / cache, shared-link-join-code
+    ['media', 'camera', ['camera-settings-v1']],
+    ['media', 'webcam', ['sites-webcam-theme']],
+    ['media', 'sound-recorder', ['sound-recorder-settings-v1']],
+    ['media', 'news', ['news.set', 'news.places']],
+    // Connectivity. Not saved: ssh-hosts-v1, ssh-known-hosts-v1, SSH login keys, p2pchat_profile_v1 (WebRTC chat
+    // device id), shared-link-join-code, the pairing data in sessionStorage
+    ['connectivity', 'filedrop', ['shared-link-auto-download']],
+    ['connectivity', 'ssh', ['ssh-settings-v1']],
+    // Tools. Not saved: calc_history, calendar / stopwatch / unitconv state, cfn_gemini_api_key_v01, cfn_rpd_utc_v1,
+    // cfn_hour_* logs, myday.todo / schedule, speedtest.hist, gemini_transcribe_api_key, webdesk_auth / webdesk_ts
+    ['tools', 'calculator', ['calc_angle']],
+    ['tools', 'calendar', ['calendar-settings-v1']],
+    ['tools', 'caption-for-nei', ['cfn_abc_mode_v1', 'cfn_mic_gain_v1']],
+    ['tools', 'dashboard', ['myday.theme', 'myday.timefmt', 'myday.layout']],
+    ['tools', 'msword_diff', ['msword_diff_pt', 'msword_diff_map', 'msword_diff_counts']],
+    ['tools', 'speedtest', ['speedtest.unit', 'speedtest.dur']],
+    ['tools', 'stopwatch', ['stopwatch-settings-v1']],
+    ['tools', 'unit-converter', ['unitconv-settings-v1']],
+    ['tools', 'vDesktop', ['webdesk_theme', 'webdesk_wall']],
+    // Office. Not saved: documents (sheet-v2(-page), sheet-v1, spreadsheet-name, draftly-backup, draftly_last_name,
+    // notely-text, notepad-text), draftly_merge_settings (data file + row), notely-imported, ocr_vision_api_key,
+    // jtocr-* / jtprint-* codes and links, jtprint-history / jtprint-sent, paper-scan-order, basic-mail-token
+    ['office', 'base', ['base_settings', 'base_theme', 'base-ribbon-tab', 'base_totals']],
+    ['office', 'draftly', ['draftly_settings', 'draftly_theme', 'draftly_nonprinting', 'draftly_orientation',
+      'draftly_paper_size', 'draftly_margin_preset', 'draftly_margin_custom', 'draftly_page_numbers', 'draftly_page_number_pos',
+      'draftly_ruler', 'draftly_status_bar', 'draftly_zoom', 'draftly-ribbon-tab', 'draftly.lastTextColour', 'draftly.lastHiliteColour']],
+    ['office', 'mail', ['basic-mail-theme']],
+    ['office', 'notely', ['notely-theme', 'notely-font']],
+    ['office', 'ocr', ['ocr_engine']],
+    ['office', 'paper-scan', ['paper-scan-quality']],
+    ['office', 'pdf-tools', ['pdf-tools-settings-v1']],
+    ['office', 'print', ['jtprint-inpage-size']],
+    ['office', 'spreadsheet', ['spreadsheet_settings', 'spreadsheet_theme', 'spreadsheet-ribbon-tab'], ['spreadsheet.last-']],
+  ];
+  /* id = '<category>/<app>' → { cat, name, keys, prefixes } */
+  const APPS = {};
+  const keyOk = (k) => typeof k === 'string' && !!k && k.indexOf(P) !== 0 && !KEY_NAME.test(k);
+  function addApp(cat, name, keys, prefixes) {
+    if (CATS.indexOf(cat) < 0 || !/^[A-Za-z0-9_-]{1,60}$/.test(name || '')) return '';
+    const id = cat + '/' + name;
+    APPS[id] = { cat, name, keys: (keys || []).filter(keyOk), prefixes: (prefixes || []).filter(keyOk) };
+    return id;
+  }
+  APP_LIST.forEach((a) => addApp(a[0], a[1], a[2], a[3]));
   function appOf(k) {
     if (!k || k.indexOf(P) === 0) return '';
     for (const a in APPS) {
@@ -228,18 +280,35 @@
         try { return JSON.parse(await (await (await (await profileDir(rec.handle, false)).getFileHandle(FILE)).getFile()).text()); }
         catch (e) { if (notFound(e)) return null; throw e; }
       },
-      async readApp(a) {
+      async listApps() {   // H30.7: { category: Set(file names) } of what is there
+        const out = {};
+        let dir;
+        try { dir = await profileDir(rec.handle, false); } catch (_) { return out; }
+        for (const c of CATS) {
+          try {
+            const d = await dir.getDirectoryHandle(c), names = new Set();
+            for await (const [n, h] of d.entries()) if (h.kind === 'file' && /\.json$/.test(n)) names.add(n);
+            out[c] = names;
+          } catch (_) { /* no such category folder */ }
+        }
+        return out;
+      },
+      async readApp(id) {
+        const d = APPS[id];
+        if (!d) return null;
         try {
-          const sys = await (await profileDir(rec.handle, false)).getDirectoryHandle('system');
-          return JSON.parse(await (await (await sys.getFileHandle(a + '.json')).getFile()).text());
+          const cd = await (await profileDir(rec.handle, false)).getDirectoryHandle(d.cat);
+          return JSON.parse(await (await (await cd.getFileHandle(d.name + '.json')).getFile()).text());
         } catch (_) { return null; }
       },
       async write(data, apps) {
         const dir = await profileDir(rec.handle, true);
         await writeJson(dir, FILE, data);
-        if (apps.length) {
-          const sys = await dir.getDirectoryHandle('system', { create: true });
-          for (const x of apps) await writeJson(sys, x.app + '.json', x.data);
+        const cds = {};
+        for (const x of apps) {
+          const c = APPS[x.app].cat;
+          if (!cds[c]) cds[c] = await dir.getDirectoryHandle(c, { create: true });
+          await writeJson(cds[c], APPS[x.app].name + '.json', x.data);
         }
       },
     };
@@ -265,9 +334,10 @@
     }
     return r.status === 204 ? {} : r.json();
   }
-  let gFolder = null, gFor = '', gSys = null, dupShown = false;
+  let gFolder = null, gFor = '', dupShown = false;
   const gIds = {};   // parentId/name → file id (cache)
-  function gReset() { gFolder = null; gSys = null; Object.keys(gIds).forEach((k) => delete gIds[k]); }
+  const gCats = {};   // H30.7: category → Drive folder id
+  function gReset() { gFolder = null; [gIds, gCats].forEach((o) => Object.keys(o).forEach((k) => delete o[k])); }
   async function gFind(parent, name, folder) {
     const p = new URLSearchParams({
       q: dq(parent) + ' in parents and name = ' + dq(name) + ' and trashed = false' + (folder ? " and mimeType = '" + GFOLDER + "'" : ''),
@@ -358,13 +428,21 @@
     if (!r.ok) throw new Error('Google Drive: HTTP ' + r.status);
     return JSON.parse(await r.text());
   }
-  async function gSystem(create) {
-    if (gSys) return gSys;
-    const f = await gFind(gFolder.id, 'system', true);
-    if (f) { gSys = f.id; return gSys; }
+  /** the '<category>' folder inside hub-profile (H30.2 'system', H30.7 the others) */
+  async function gCat(cat, create) {
+    if (gCats[cat]) return gCats[cat];
+    const f = await gFind(gFolder.id, cat, true);
+    if (f) { gCats[cat] = f.id; return f.id; }
     if (!create) return '';
-    gSys = (await dj('files?fields=id', jbody('POST', { name: 'system', mimeType: GFOLDER, parents: [gFolder.id] }))).id;
-    return gSys;
+    gCats[cat] = (await dj('files?fields=id', jbody('POST', { name: cat, mimeType: GFOLDER, parents: [gFolder.id] }))).id;
+    return gCats[cat];
+  }
+  async function gChildren(parent, folder) {   // [{ id, name }] (one page of up to 1000)
+    const p = new URLSearchParams({
+      q: dq(parent) + ' in parents and trashed = false' + (folder ? " and mimeType = '" + GFOLDER + "'" : " and mimeType != '" + GFOLDER + "'"),
+      fields: 'files(id,name)', pageSize: '1000',
+    });
+    return (await dj('files?' + p)).files || [];
   }
   const driveTarget = {
     id: GID, kind: 'gdrive', name: 'Google Drive', path: 'Google Drive \u203A hub \u203A hub-profile \u203A ' + FILE,
@@ -374,11 +452,26 @@
       return G.signedIn() ? 'ready' : 'signin';
     },
     async read() { if (!await gResolve(false)) return null; return gRead(gFolder.id, FILE); },
-    async readApp(a) { try { if (!await gResolve(false)) return null; const s = await gSystem(false); return s ? await gRead(s, a + '.json') : null; } catch (_) { return null; } },
+    async listApps() {   // H30.7: a few list calls instead of one lookup per app
+      const out = {};
+      if (!await gResolve(false)) return out;
+      for (const f of await gChildren(gFolder.id, true)) if (CATS.indexOf(f.name) >= 0 && !gCats[f.name]) gCats[f.name] = f.id;
+      for (const c of CATS) {
+        if (!gCats[c]) continue;
+        const names = new Set();
+        for (const f of await gChildren(gCats[c], false)) { names.add(f.name); if (!gIds[gCats[c] + '/' + f.name]) gIds[gCats[c] + '/' + f.name] = f.id; }
+        out[c] = names;
+      }
+      return out;
+    },
+    async readApp(id) {
+      const d = APPS[id];
+      try { if (!d || !await gResolve(false)) return null; const s = await gCat(d.cat, false); return s ? await gRead(s, d.name + '.json') : null; } catch (_) { return null; }
+    },
     async write(data, apps) {
       await gResolve(true);
       await gWrite(gFolder.id, FILE, data);
-      if (apps.length) { const s = await gSystem(true); for (const x of apps) await gWrite(s, x.app + '.json', x.data); }
+      for (const x of apps) await gWrite(await gCat(APPS[x.app].cat, true), APPS[x.app].name + '.json', x.data);
     },
   };
 
@@ -463,7 +556,7 @@
       if (keys) data.keys = keys;   // H30.3: only with 'Include keys in profile' on
       const gfid = lget(K_GFOLDER);
       if (gfid) data.driveFolderId = gfid;
-      const appFiles = apps.map((x) => ({ app: x.app, data: { version: 1, app: x.app, savedAt, settings: x.set } }));
+      const appFiles = apps.map((x) => ({ app: x.app, data: { version: 1, app: APPS[x.app].name, category: APPS[x.app].cat, savedAt, settings: x.set } }));
       let okN = 0;
       const errs = [];
       for (const t of ready) {
@@ -561,12 +654,16 @@
     return { ok: true, applied: true, count: n, apps: appsLoaded, keys: nKeys, savedAt: best.data.savedAt, from: best.t.id };
   }
 
-  /** H30.2: system/<app>.json → localStorage (only that app's own keys) */
+  /** H30.2 / H30.7: <category>/<app>.json → localStorage (only that app's own keys) */
   async function loadApps(t) {
     const done = [];
+    let have = null;
+    if (t.listApps) { try { have = await t.listApps(); } catch (_) { have = null; } }
     for (const a of Object.keys(APPS)) {
+      const ad = APPS[a];
+      if (have && !(have[ad.cat] && have[ad.cat].has(ad.name + '.json'))) continue;   // no file for this app
       const d = await t.readApp(a);
-      if (!d || d.version !== 1 || !d.settings || typeof d.settings !== 'object') continue;
+      if (!d || d.version !== 1 || !d.settings || typeof d.settings !== 'object' || Array.isArray(d.settings)) continue;
       applyApp(a, d.settings);
       done.push(a);
     }
@@ -590,9 +687,14 @@
 
   /* H30.3: one .json file for devices without a folder */
   function exportData() {
-    const system = {};
-    Object.keys(APPS).forEach((a) => { const st = collectApp(a); if (Object.keys(st).length) system[a] = st; });
-    const out = { version: 1, kind: 'hub-profile', savedAt: new Date().toISOString(), device: deviceInfo(), hub: collect(), system };
+    const system = {}, apps = {};
+    Object.keys(APPS).forEach((a) => {
+      const st = collectApp(a), d = APPS[a];
+      if (!Object.keys(st).length) return;
+      if (d.cat === 'system') system[d.name] = st;
+      else (apps[d.cat] = apps[d.cat] || {})[d.name] = st;   // H30.7
+    });
+    const out = { version: 1, kind: 'hub-profile', savedAt: new Date().toISOString(), device: deviceInfo(), hub: collect(), system, apps };
     if (includeKeys()) out.keys = readKeys();
     return out;
   }
@@ -601,9 +703,12 @@
     if (!obj || obj.version !== 1 || !obj.hub || typeof obj.hub !== 'object') return { ok: false, reason: 'bad-file' };
     const n = apply(obj.hub);
     const apps = [];
-    if (obj.system && typeof obj.system === 'object') {
-      Object.keys(obj.system).forEach((a) => { if (APPS[a] && obj.system[a] && typeof obj.system[a] === 'object') { applyApp(a, obj.system[a]); apps.push(a); } });
-    }
+    const take = (cat, o) => {
+      if (!o || typeof o !== 'object' || Array.isArray(o)) return;
+      Object.keys(o).forEach((n) => { const id = cat + '/' + n; if (APPS[id] && o[n] && typeof o[n] === 'object' && !Array.isArray(o[n])) { applyApp(id, o[n]); apps.push(id); } });
+    };
+    take('system', obj.system);
+    if (obj.apps && typeof obj.apps === 'object') CATS.forEach((c) => { if (c !== 'system') take(c, obj.apps[c]); });   // H30.7
     const nKeys = obj.keys ? importKeys(obj.keys) : 0;
     lset(K_AT, Date.now());
     lset(K_LOADED, Date.now());
@@ -744,7 +849,14 @@
     onChange(fn) { fns.push(fn); return () => { const i = fns.indexOf(fn); if (i >= 0) fns.splice(i, 1); }; },
     get state() { return Object.assign({}, last); },
     PATH: DIRS.join('/') + '/' + FILE,
-    apps: () => Object.keys(APPS),
+    apps: () => Object.keys(APPS).filter((a) => APPS[a].cat === 'system').map((a) => APPS[a].name),   // H30.2 (System only)
+    appsBy() {   // H30.7: { category: [app names] }
+      const o = {};
+      CATS.forEach((c) => { o[c] = []; });
+      Object.keys(APPS).forEach((a) => o[APPS[a].cat].push(APPS[a].name));
+      return o;
+    },
+    categories: CATS.slice(),
     exportData, importData,
     includeKeys,
     setIncludeKeys(on) {   // H30.3: off by default; changing it rewrites hub.json (keys added / removed)
@@ -753,12 +865,10 @@
       emit();
       return save({ force: true }).catch(() => ({ ok: false }));
     },
-    collectApp,
-    registerApp(name, def) {   // H30.2: more System apps
-      if (!/^[a-z0-9-]+$/.test(name || '') || !def) return false;
-      const ok = (k) => typeof k === 'string' && k && k.indexOf(P) !== 0 && !KEY_NAME.test(k);
-      APPS[name] = { keys: (def.keys || []).filter(ok), prefixes: (def.prefixes || []).filter(ok) };
-      return true;
+    collectApp(app) { return collectApp(APPS[app] ? app : 'system/' + app); },   // '<category>/<app>' or a System app name
+    registerApp(name, def) {   // H30.2 / H30.7: def = { category: 'system' (default) | 'media' | 'connectivity' | 'tools' | 'office', keys, prefixes }
+      if (!def) return false;
+      return !!addApp(def.category || 'system', name, def.keys, def.prefixes);
     },
     _start: start, _allowed: allowed, _drive: { resolve: gResolve, reset: () => { gReset(); gFor = ''; dupShown = false; } },
   };
