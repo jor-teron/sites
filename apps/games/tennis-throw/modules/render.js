@@ -63,7 +63,8 @@
     game.arcDots = 0;
     for (let i = 1; i <= n; i++) {
       TT.stepBody(p, step);
-      if (p.x < 0 || p.x > canvas.width || p.y > canvas.height) break;
+      TT.bounceWalls(p, canvas.width);   // TB6: preview follows the wall bounce
+      if (p.y > canvas.height) break;
       ctx.beginPath();
       ctx.arc(p.x, p.y, 3 - 1.5 * i / n, 0, Math.PI * 2); // dots shrink along the arc
       ctx.fill();

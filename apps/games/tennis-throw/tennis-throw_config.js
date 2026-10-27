@@ -16,10 +16,11 @@ const TENNIS_THROW_CONFIG = {
 
   // Physics
   physics: {
-    // TB2: per-second units (TB1 was 0.35 px/frame² and 21 px/frame at 60fps;
-    // ×3600 and ×60 keep the same arc). Apex rise = speed²/(2·gravity) = 630px.
-    gravity: 1260,           // px/s² added to ball vy
-    ballSpeed: 1260,         // px/s at full power
+    // TB6: per-second units, slower and floatier than TB2 (1260/1260).
+    // Apex rise = speed²/(2·gravity) ≈ 645px at full power straight up.
+    gravity: 700,            // px/s² added to ball vy
+    ballSpeed: 950,          // px/s at full power
+    wallBounce: 0.6,         // TB6: side walls reflect vx times this (damping)
     reachFraction: 0.85,     // TB1: targets spawn no higher than this share of the max rise, so all are reachable
   },
 
@@ -31,7 +32,7 @@ const TENNIS_THROW_CONFIG = {
     powerMin: 0.1,           // minimum power
     powerMax: 1,             // maximum power
     powerSpeed: 1.0,         // TB5: power per second while a power key is held
-    previewSeconds: 0.6,     // TB3/TB2: dotted arc shows this much flight time
+    previewSeconds: 1.0,     // TB6: dotted arc shows this much flight time
     previewDotEvery: 0.05,   // TB2: one dot per this many seconds of flight
     crosshairSize: 20,       // half-size of the crosshair
     powerBarWidth: 60,       // width of the power bar
