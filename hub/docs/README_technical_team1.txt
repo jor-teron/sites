@@ -827,3 +827,309 @@ files change.
     file:// pages are all origin 'null', so the Hub cannot read an app's
     page: after #contact the hash / title stay "contact" (the frame
     itself shows Settings > About).
+
+
+
+==========================================================================
+WEEK NOTES: Sun 2026-10-25 night to Tue 2026-10-27 night - Team 1
+Written by Hub Main Bot Team 1, with notes from Hub Apps Bot and Hub
+Games Bot. GitHub main at end of day: d232e3b.
+==========================================================================
+
+--- HUB MAIN BOT (hub/, hub.html, sw.js, apps/system/**, shared/**, Pooh Chat)
+
+Releases (all pushed), Sun 25 night to Mon 26:
+  - H10 0b38a91  Category order: Media, Connectivity, Office, Games,
+    Learn, Tools, Lab, System.
+  - H16 740e8a0  Settings gear in the window title bar for apps that ask
+    (hub-app-caps / hub-settings messages).
+  - H17 a99b338  Title bar shows the file name on the right; hover opens
+    ribbon tabs and the File menu (hoverTabs via hub-app-caps).
+  - H12 8d63c92  Daily refresh saves lastRefresh only on success; the
+    refreshing flag can't get stuck.
+  - T5 3f780a9  BusyBox 1.36.1 (wasm, 87 applets) in the Hub Terminal on
+    the /drive files: pipes, redirects, read-only /etc, lazy load.
+  - T6 f706c47  ~/.hubrc (alias, export), env/printenv/source/reload,
+    $VAR expansion, ssh user@host opens the SSH app.
+  - T7 0b4a9c0  BusyBox in a Web Worker: streamed output, Ctrl+C kills
+    the worker at once, no 20 s limit, sleep/usleep built in.
+  - H19 1827ec4  Pooh Chat sender by permanent device id
+    (shared-link-device-id); rename in Hub; joined Hub broadcasts.
+  - H18 8d47648  About removed from the System category (lives in
+    Settings > About; apps/system/about/ redirect kept).
+  - H21 60c376c  System Monitor: data used this session + Device tab.
+  - H22 fa78419  The 8 System apps follow the Hub theme and accent
+    automatically (shared/theme/hub_theme.js, no per-app picker);
+    Terminal keeps its own theme command (system|dark|light).
+    H20 (the picker version) was dropped and its backup branch deleted.
+  - H23 8a2fea3  OSK always floating, close button on its top bar, no
+    docked mode (it blocked clicks); Lab keyboard untouched.
+  - Box fix: git push now works through gh (gh auth setup-git).
+
+Releases (all pushed), Tue 27:
+  - H24 723b2b8  System Monitor always opens on the Device tab; tab order
+    Device, CPU, Memory, Storage, Network, Battery.
+  - H26 ee810e3  Bottom-right notification cards replace toasts (close
+    button, 1 min default, stack of 3, pause on hover). Settings > Windows >
+    Notification timeout. API: window.top.HubNotify.notice({icon,title,
+    text,onClick,timeoutMs}) -> {close()}  (hub/viewer/hub_notify.js).
+  - H27 b7fdf9b  Devices and Pooh Chat popovers rebuilt as full-height
+    side panels.
+  - H27.1 33d652f  Devices panel: no QR; This Hub = name + code + New
+    code; Join with code right under it; repeated code line removed;
+    one-tap switch Devices <-> Pooh Chat (backdrop no longer eats it).
+    Files: hub/link/hub_panels.js, hub_panels.css, hub.html.
+  - H28 4f813a5  Hub key store. New hub/core/hub_keys.js (window.HubKeys),
+    apps/system/settings/sec_keys.js (Settings > API Keys: masked rows,
+    reveal, Test, Delete, custom keys), hub/keys.readme.md.
+    Storage: localStorage 'sites-hub.keys'. Every Hub app gets keys
+    automatically (Jor: no per-app prompt).
+    API (window.top.HubKeys): get(name)->Promise<string|null>,
+    set(name,value), remove(name), has(name), list(), open(name),
+    onChange(fn)->unsubscribe (also fires on other tabs), KNOWN, STORE,
+    SETTINGS_URL. Names: [a-z0-9][a-z0-9_.-]{0,39}.
+  - H28.1 82e175c  Keys groq, openrouter, deepseek, xai with live Test.
+  - H28.2 3f370ba  Key gvision (Google Cloud Vision; Test sends an empty
+    request, no billing). Readme: one Gemini key is shared by Agent,
+    Caption for Nei and Transcribe.
+    Known keys now: tavily, gemini, openai_base, openai_key, ollama_url,
+    groq, openrouter, deepseek, xai, gvision.
+  - H30.1 95ef383  Hub profile in the user's connected drive folder (not a
+    fixed name): <folder>/hub/hub-profile/hub.json, plain JSON.
+    New hub/core/hub_profile.js (window.HubProfile: save, load, status,
+    onChange, registerApp, apps, appsBy). Settings > About > Profile
+    folder (Save now / Load now). Excludes keys, Google tokens,
+    phonekeyRooms, caches, session state, anything key-like.
+    "Continue with your saved Hub?" card if the browser needs a click.
+  - H30.2 b19c0d0  System app settings: hub-profile/system/<app>.json
+    (files, viewer, terminal). Terminal history, cwd and mounts left out.
+  - H30.3 795c8f1  "Include keys in profile" switch (off by default);
+    Export / Import profile (.json) for devices without a folder.
+  - H30.5+H30.6 da90d61  "Save profile to": tick Google Drive and/or each
+    host folder by name (sites-hub.profileTargets); newest savedAt wins on
+    load, other places then updated. Drive: hub/hub-profile/ inside the
+    Hub's existing 'hub' folder; ID kept in sites-hub.profileGdrive and
+    hub.json driveFolderId; folder tagged appProperties {hubProfile:'1'};
+    lookup by ID, then tag, create only if neither; several tagged ->
+    newest used + card. "Save every" 30 s / 1 min (default) / 5 min /
+    15 min / Manual (sites-hub.profileEvery).
+  - H30.7 c6037e7  Profile covers 24 apps in Media, Connectivity, Tools,
+    Office: hub-profile/<category>/<app>.json, from a registry in
+    hub_profile.js (apps not edited). Settings only; history, documents,
+    device data, tokens and in-app API keys never saved.
+  - H25 2f0add2  Joined phone stops rejoin retries after 5 min, keeps the
+    saved code; tapping the gamepad icon, scanning or typing the code, or
+    returning to the tab rejoins.
+  - H31+H32 beb985e  Joined phone: "Hub NNNN" chip and Connected line
+    gone; dot on the gamepad icon (green connected, red reconnecting,
+    none after give-up). Pooh Chat notices go through HubNotify cards
+    (own small toast when standalone).
+
+Retired: H11, H13, H14 (old code-review fixes; Jor says already fixed;
+  Code Reviewer has no record). H20 must never come back.
+
+Known limits:
+  - Profile save on page close is best effort; a last-second change is
+    saved on the next start instead.
+  - Real folder picker, real Google Drive and a real phone link were not
+    tested headless (stand-ins used). Jor to try once for real.
+  - Two devices creating the Drive folder at the same moment can still
+    make two; the several-folders card handles it afterwards.
+  - Sound Recorder's settings carry the mic device id (won't match on
+    another device). SSH saved hosts not synced (one-line change if
+    wanted).
+  - New H28/H30 files are only cached offline once V/CACHE is bumped.
+  - hub/keys.readme.md still says OCR has its own key field "for now"
+    (out of date since OCR release 4); fix waits for Jor's go.
+
+Parked / planned (need Jor's go):
+  - H29 Sync between phone and PC over the Connect Code (H29.1-H29.4).
+  - H30.4 App and game progress in the profile (needs discussion).
+  - H33 D-Pad Controller link bug.  H34 bear icon on the gamepad page.
+  - H35 Gamepad hold-to-repeat.  H36 Pong focus problem.
+  - H37 Phone mode ideas.  H38 System Monitor ideas.
+  - H39 Terminal /drive rename.  H40 the bundle.  H15 manual screen-saver
+    button (parked).  H41 section for other tokens (Mail sign-in, Code Lab
+    Jupyter token, SSH), planned and parked.
+  - Possible: drop OCR's plain 3.8 MB tesseract build (Hub Apps Bot's app;
+    breaks old browsers). No answer yet.
+
+Repo notes:
+  - Accidental 26 MB island-demo body_4k_src.glb removed by Games Bot
+    (27533eb); backup at /workspace/backups/body_4k_src.glb. It is still
+    in git history, so GitHub size barely drops (~101 MB with history,
+    85.4 MB plain files).
+  - Wallpapers and Speed Test files stay (Jor: necessary).
+
+
+--- HUB APPS BOT (apps/ outside games, learn and system; tv/)
+All pushed. Shas are exact.
+
+Sun 25 night - Mon 26:
+  DRAFTLY / OFFICE (apps/office)
+  - Oct 25: DF3 a2752b2 no autosave of blank docs; DF4 ffd7145 ruler +
+    draggable margins; 56e9e7a stale image note removed; DF7 1d8e907
+    ruler indent markers; DF8 a75a05a settings panel.
+  - Oct 26: DF6 06e4a35 .docx open; SH1 e0b5bf7 shared toast/theme/
+    settings/colour picker; DF10 cf8e3fb table resize; DF11 29bf590
+    Settings in File menu; DF12 922a5aa Hub title-bar gear; DF13 85262c0 /
+    DF13b 8b525fd / DF13c 06605fa hover ribbon and File menu, Word-style
+    collapse; SH3 f85a2bc Spreadsheet title-bar bridge; DF9 ebc86de;
+    SH4 5a32b49 shared ribbon + icons; BS1 1de505c Base app (tables,
+    grid/form, IndexedDB autosave, CSV, templates); SH5 70eab2c Settings
+    as centred dialog; BS2 b5ad4cd query builder, saved queries, SQL
+    view, totals; SH6 aad8780 Spreadsheet XLSX (vendored SheetJS CE
+    0.20.3); fa4d1ed Office section CSV.
+  MY DAY (apps/tools/dashboard)
+  - PD1 e1b80fb dashboard, card registry, Todo/Schedule/Notes/Links,
+    offline PWA; PD2 03f373c Open-Meteo weather, offline cache; PD2.1
+    1172596 offline NOAA sun/moon dial; PD2.2 ab3e334; PD3 3de7b8c AQI +
+    Today strip; PD4 f737bad Habits + Water; PD4.1 0f968d3 12h time;
+    PD4.2 5e37162 night flip + 12/24h; PD4.3 205b878 noon-aligned dial.
+  CALENDAR: 085cc4d more fixed-date holidays (Sankranti, Netaji,
+    Women's, Bohag Bihu, Teachers', Children's); 358dbb0 big-screen
+    layout.
+  SPEED TEST: ST1 a7e832d ping + download; ST2 e03c5c6 parallel timed
+    download, orange needle.
+  CODE LAB: CL10 91218e3 per-cell menu, labelled top bar, status line.
+  TV: TV8 5af5bb6 dropped .m3u.js file:// copies (moved to tv/garbage/);
+    TV8.1 bd4ab03 blank-screen fix (leftover m3uKey export).
+
+Tue 27:
+  THEME / NOTIFY
+  - 06a0750 Hub theme (shared/theme/hub_theme.js) for Calculator, Speed
+    Test, weather-chart, weather-hourly.
+  - PD4.4 59ba8c8 My Day grey moon, real phase.
+  - SH7 843023e office-toast.* renamed office-notify.* (OfficeNotify.
+    show/notice, OfficeToast alias) for Draftly, Base, Spreadsheet, PDF
+    Tools. Paper Scan alert()s left alone.
+  TV: TV9 5fec046 / TV9.1 ec5c4be tv/image/no_signal.png 1280x720,
+    3,805 B, 7 colour bars, no text; old SVG deleted.
+  SOUND RECORDER (apps/media/sound-recorder): SR1 8cf889f no silent audio
+    loss, failed saves download; SR2 856ca25 storage.persist, IDB v2 meta
+    store, mic errors, player cleanup; SR3 cfc71ba System theme default,
+    Hub card notifications.
+  NOTELY: NL 2262224 no focus outline, block caret; NL1 171abff System/
+    Light/Dark, System default.
+  CALENDAR: C5 8dfdd68 2nd+4th Sat / all Sat toggles (off), date-only
+    mode, bigger dates; C5.1 6c22348 solid #b91c1c holiday cells, normal
+    date colour, date-only default on.
+  MY DAY: PD8 cfb78be News card + Phone card (battery and this app's
+    storage only); PD8.1 85ac654 top 3, Assam/India + user places, manual
+    refresh + auto after 6 AM/6 PM, SW cache myday-pd8-1.
+  NEWS (apps/media/news): NEWS1 6cc2301 Google News RSS via feedrapp.info
+    (allorigins fallback, flaky); India/Assam tabs + user places, topics,
+    Saved, search; auto refresh 1-24 h (default 12, aligned 6 AM/PM);
+    System/Light/Dark.
+  AGENT (apps/lab/agent, formerly apps/lab/harness)
+  - HR1 cd60585 chat + Ollama streaming; HR2 c356994 loop, step limit,
+    get_time; HR3 7083fbc folder tools (File System Access) + approve
+    card; HR4 f0a5d42 daily md logs, memory, system.md; HR5 01eb883
+    helper/harness-helper.sh (bash + socat/ncat, 127.0.0.1:11500, token)
+    + run_shell; HR6 053f21c OpenAI-compatible + Gemini adapters.
+  - AG1 e8c680f rename to Agent (one-time migration); AG2 273b11e Browser
+    provider TinyStories-3M q8 (~20.6 MB) via vendored Transformers.js
+    3.7.0 (~12 MB) in a worker; AG3 6433703 permissions/display toggles;
+    AG4 511924e multiple chats (agent/chats/threads/*.md + index.json),
+    memory layout agent/memory/; AG5 f494383 retry/edit/copy, per-chat
+    model chip, token meter; AG7 6bc4b80 usage log, live shell
+    /run_stream with Stop, undo writes via agent/trash; AG6 4fd5d33
+    Tavily web_search/web_fetch, credits in Usage; AG8 2496a23 chat
+    search, pinned chats, offline agent_sw.js (agent-* caches only); AG9
+    dd83194 HubKeys, live Show thinking, Steps pane off by default; AG10
+    5787a29 Settings in 8 collapsible cards, key fields hidden in Hub.
+  - Limits: browser model ~180-230 MB in desktop Chrome (tablet untested);
+    story model only, tools off while active; folder tools need desktop
+    Chrome/Edge; helper Linux/macOS only, token in localStorage; trash
+    never cleaned; step max 30; old local keys still used in the Hub when
+    the Hub key is missing.
+  OCR (apps/office/ocr): release 4 d232e3b, new ocr_hubkey.js; HubKeys
+    'gvision' first, own field fallback, "Using the Hub's key" + Open.
+    Limit: a non-key Vision 400 may show the gvision hint.
+
+Open / parked / waiting for Jor's go:
+  - Caption for Nei + Transcribe -> HubKeys 'gemini'.
+  - NEWS2 AI summary per card (Tavily extract or Gemini, Hub keys first).
+  - AG11 step max 100 + Continue button (proposed).
+  - Agent parked: read aloud, image input, folders, agent profiles, chat
+    export, trash cleanup, merge AI Chat into Agent.
+  - My Day parked: PD5 countdown, PD6 bills, PD7 family, PD9.
+  - Sound Recorder readme names SR1-SR3 clash (suggested SR6-SR8).
+  - Calculator browser bar colour (offered, unanswered).
+  - CL6 waits for Jor to reproduce the bug.
+
+
+--- HUB GAMES BOT (apps/games, apps/learn)
+All live on main; nothing waiting to be pushed.
+
+Sun 25 night:
+  - 32a7d32 Turbo Lap cars: side-by-side separation, deterministic bumps,
+    AI steer scales with speed, smarter overtake side, brake lights.
+  - 7b26342 Turbo Lap: all cars brake to a stop at race end; laps and
+    standings freeze (finishBrake).
+  - f8d5e94 Tower Defence R1+R2: 100 maps (00 demo, 01-99 seeded), ?map=NN,
+    map picker with previews, best wave per map, last map, HP bump.
+  - 77d67e1 Tower Defence R3: 10 colour themes (themes.js).
+
+Mon 26:
+  - 558cfaa Turbo Lap: AI cars finish their race and park in bays;
+    results wait for all (10 s timeout, unfinished ranked by distance).
+  - 8c46f6f Tower Defence: player-chosen theme separate from map (start
+    screen row, localStorage, default Meadow, ?theme=<id>).
+  - 0e13f1e Animal Kingdom and Water Kingdom (Jor's own work, Planet).
+  - c05ad14 Learn SO1a apps/learn/survival-outdoors/ Fire and Water topic,
+    Outdoors section, catalog regen.
+  - db9e9a7 Learn ML1a apps/learn/maths-logic/ 6 topics, Basics/Expert +
+    quick check, 'Language and Maths' section, catalog regen.
+  - e4ae3a0 Ant Farm AFV1: code-drawn soil, surface, chambers, frame, new
+    ant.js, 30fps cap. About 2x slower draw (16.6 ms at 400 ants).
+  - c2b0697 duplicate Aeroplane row removed (regen 7aef6b4).
+  - 75bbbe3 Tennis Ball Blitz TB1+TB3: reachable targets, aim keys, 250 ms
+    cooldown with max 2 balls, numeric timer, arc preview, spacing, pause.
+  - ba69e32 TB2: split into modules, fixed 30fps real-time clock,
+    drag-to-throw (touch and mouse), touch hints.
+  - d491757 GS1 + TB4: apps/games/common/settings/ (window.GameSettings,
+    localStorage games.settings, get/set/all/onChange/reset/fps/frameMs/
+    mountGear), settings page, README; Tennis uses it.
+
+Tue 27:
+  - 27533eb removed the 26 MB island-demo body_4k_src.glb (backup at
+    /workspace/backups/, sha256 checked).
+  - c19b1f5 LandCraft LC3: shared settings, FPS limit, render distance
+    3/4/5 + fog, pixel ratio, look sensitivity, FPS counter, touch
+    auto-jump, hold-to-repeat, gear; step cap 0.05 -> 0.1 s; new library
+    settings renderDistance, pixelRatio, autoJump, holdRepeat.
+  - d5c3015 LandCraft LC4: core/water.js, swimming, underwater fog and
+    tint, double-sided water, water drawn before glass in a chunk.
+  - 12b8e74 GS2: Tetris, Tic-Tac-Toe, 2048, Swell Foop on shared settings
+    (still work from file://, fall back to defaults).
+  - 7b0ce0e apps/games/GUIDE.md handover guide for Teams 2 and 3; removed
+    defunct apps/games/minecraft.html.
+  - f93005b GS3: Game Settings tile ('Settings' section), title 'Games
+    Settings', rule 6 'Theme is optional'. Regens 0793444, 43ddfe7.
+  - 348a8d1 LandCraft tile icon.
+  - Reviews: Tennis Ball Blitz (26, led to TB1-TB3); LandCraft (27, ~850
+    lines, 13 files, three r170, well structured).
+
+Parked / planned (waiting for Jor):
+  - LC1 LandCraft plain scripts so it works from file://, fixed 30fps.
+  - LC2 hide touching leaf faces, pixel ratio cap 1.5, loading message,
+    chunk streaming, map edge wall, wheel ignored while picker open.
+  - LRN3a Learn kit grid, table and example-list blocks.
+  - Next settings batches: Ant Farm, Turbo Lap, Desert Road, then games
+    with difficulty or sound.
+  - Technology Learn topic not picked (Android Phone Basics, Staying Safe
+    Online, What is AI?, Simple Circuits).
+  - Survival and Outdoors: 6 more topics planned.
+  - Ant Farm simpler ants for big colonies if the phone lags.
+  - Backlog: Desert Road R2/R3, Pac-Man R6, Turbo Lap 60fps option,
+    browser FPS items.
+
+Open limits / bugs:
+  - Tetris cuts off the top of the board in landscape on short phones.
+  - The Hub hides the gear in 2048, Swell Foop and Tic-Tac-Toe button
+    rows; use the Game Settings tile.
+  - LandCraft draws water and glass in distance order across chunks; on
+    the phone it may need a hard refresh for updates.
+  - Security: the Google OAuth tvClientSecret is still in git history;
+    Jor to rotate it in Google Cloud.
