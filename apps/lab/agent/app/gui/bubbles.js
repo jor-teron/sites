@@ -1,6 +1,7 @@
 /* Agent — app/gui/bubbles.js: chat views (HR.view). bubble(m) -> {paint(live), el} for user / assistant messages:
    plain text with ``` code blocks, folded Thinking box (<think>…</think> or Ollama 'thinking'), stats line, tool-call chips.
-   tool(m) -> {done(ok,text,ms)}: folded 🔧 chip with args + result preview. note(text), hello() (+ folder hint, HR4), errorCard(e) (Ollama help; HR6 online provider key / URL errors). */
+   tool(m) -> {done(ok,text,ms)}: folded 🔧 chip with args + result preview. note(text, cls), hello() (+ folder hint, HR4), errorCard(e) (Ollama help; HR6 online provider key / URL errors;
+   AG2 kind 'download' -> the Browser model card, HR.bcard). */
 HR.view = (function () {
   var log;
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
@@ -49,10 +50,10 @@ HR.view = (function () {
     bottom();
     return { done: done };
   }
-  function note(text) { log.appendChild(el('div', 'note', text)); bottom(); }
+  function note(text, cls) { var n = el('div', 'note' + (cls ? ' ' + cls : ''), text); log.appendChild(n); bottom(); return n; }
   function hello() {
     var h = el('div', 'hello');
-    h.append(el('div', 'hello-ico', '🧪'), el('div', 'hello-t', 'Agent'), el('div', 'hello-s', 'Chat with a local Ollama model. It can call tools; every model and tool call shows in Steps.'));
+    h.append(el('div', 'hello-ico', '🧪'), el('div', 'hello-t', 'Agent'), el('div', 'hello-s', 'Chat with Ollama, an online provider, or the built-in Browser model. Models can call tools; every model and tool call shows in Steps.'));
     h.appendChild(el('div', 'hello-f')); log.appendChild(h); folderHint();
   }
   function folderHint() {
@@ -64,6 +65,7 @@ HR.view = (function () {
   function clearErrors() { [].forEach.call(log.querySelectorAll('.ecard'), function (c) { c.remove(); }); }
   function code(t) { return el('code', null, t); }
   function errorCard(e) {
+    if (e && e.kind === 'download') { if (HR.bcard) HR.bcard.show(); return; }
     clearErrors(); var h = log.querySelector('.hello'); if (h) h.remove();
     var base = HR.set.get('baseUrl'), origin = location.origin === 'null' ? '*' : location.origin;
     var c = el('div', 'ecard'), t = el('div', 'ec-t'), p = el('div', 'ec-b');

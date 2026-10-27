@@ -35,5 +35,6 @@ HR.notify = (function () {
   HR.folder.init();
   HR.helperSet.init();
   HR.provider.init();
+  HR.bcard.init();
   HR.model.init();
 })();

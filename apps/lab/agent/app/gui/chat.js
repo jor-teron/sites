@@ -1,7 +1,9 @@
 /* Agent — app/gui/chat.js: input, Send / Stop, and the UI side of the agent loop (HR2).
    send() adds the user message and runs HR.loop with hooks that draw assistant bubbles (rAF-throttled streaming),
    tool chips, notes and step rows. Stop aborts the in-flight model call and halts the loop. Errors -> HR.view.errorCard.
-   HR4: system prompt from HR.prompt.system() on every call; user / assistant / tool lines go to HR.logs (daily Markdown). */
+   HR4: system prompt from HR.prompt.system() on every call; user / assistant / tool lines go to HR.logs (daily Markdown).
+   AG2: Browser provider (story model) -> tools, loop and system prompt off, one quiet note in Steps only; an unreachable
+   provider mid-chat -> HR.model.fall() switches to Browser; 'download' errors show the download card. */
 HR.chat = (function () {
   var log, input, sendBtn, ctrl = null;
   function busy(on) { sendBtn.textContent = on ? '■' : '➤'; sendBtn.title = on ? 'Stop' : 'Send'; sendBtn.setAttribute('aria-label', on ? 'Stop' : 'Send'); sendBtn.classList.toggle('stop', on); }
@@ -49,11 +51,14 @@ HR.chat = (function () {
     ctrl = new AbortController(); busy(true);
     var opts = { adapter: HR.models.current(), cfg: HR.models.cfg(), model: model, think: HR.set.get('think'), signal: ctrl.signal, maxSteps: HR.set.maxSteps(), useTools: HR.set.get('tools') !== 'off',
       system: HR.prompt.system, ui: { modelStart: modelStart, toolStart: toolStart, note: note, approve: approve } };
+    if (opts.adapter.id === 'browser') { opts.useTools = false; opts.maxSteps = 1; opts.system = null; HR.steps.note('Browser model: tools and the loop are off (story model); it continues your text as a story.'); }
     HR.loop.run(opts).then(function (r) {
       if (r.status === 'stop') note('■ Stopped.');
       if (document.hidden && r.status !== 'stop') HR.notify({ icon: '🧪', title: 'Agent', text: 'Reply ready from ' + model, onClick: function () { window.focus(); } });
       return r;
     }, function (e) {
+      if (e.kind === 'download') { HR.view.errorCard(e); return; }
+      if (HR.model.fall(e)) return;
       HR.view.errorCard(e);
       HR.notify({ icon: '⚠️', title: 'Agent', text: (opts.adapter.label) + ': ' + (e.kind === 'unreachable' ? 'can\'t reach ' + opts.cfg.base : e.message) });
     }).then(function () { ctrl = null; busy(false); HR.msgs.save(); input.focus(); });

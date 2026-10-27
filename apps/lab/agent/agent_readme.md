@@ -2,7 +2,7 @@
 
 Formerly **Harness** (releases HR1–HR6). Renamed in AG1; release prefix is now **AG**.
 
-Browser AI agent, fully in browser JS (no build, no server of its own). Talks to a local **Ollama** over HTTP, or (HR6) an OpenAI-compatible API or Gemini with your API key.
+Browser AI agent, fully in browser JS (no build, no server of its own). Talks to a local **Ollama** over HTTP, or (HR6) an OpenAI-compatible API or Gemini with your API key, or (AG2) runs the small built-in **Browser** model with neither.
 
 ## Files
 - `index.html` — redirect to `agent.html`
@@ -18,6 +18,9 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 - `app/models/registry.js` — `HR.models`: provider adapters behind one interface, settings → `cfg()`, API keys (`agent.keys`, per host)
 - `app/models/openai.js` — OpenAI-compatible adapter (OpenAI, Groq, OpenRouter, …): streaming + tools
 - `app/models/gemini.js` — Gemini adapter: streaming + function calling (thought signatures kept)
+- `app/models/browser.js` — AG2 `HR.browser` + the `browser` adapter: Story Mini via a worker, tap-to-download, own cache, Stop, remove
+- `app/models/browser_worker.js` — AG2 module Web Worker: Agent's own Transformers.js 3.7.0, `text-generation` pipeline, streams tokens
+- `vendor/transformers-3.7.0/` — pinned `transformers.min.js` + plain ORT wasm (12 MB total; see its README)
 - `app/models/ollama.js` — `HR.ollama`: `tags()`, streaming `chat()` (NDJSON, AbortController, `tools` param, collects `tool_calls`), `tps()`; registered as the default `ollama` adapter
 - `app/storage/fs.js` — `HR.fs`: File System Access folder (handle kept in IndexedDB `agent`/`kv`/`root`, permission re-check on load), safe relative paths, list / read / write / append / walk
 - `app/storage/logs.js` — `HR.logs`: daily Markdown chat log `agent/chats/YYYY_MM/YYYY_MM_DD.md`
@@ -28,6 +31,7 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 - `app/gui/settings.js` — `HR.set`: `agent.settings` {theme, baseUrl, model, think, tools, maxSteps, saveChats}, theme apply, Settings dialog
 - `app/gui/model.js` — `HR.model`: model picker from the current provider (typed model name as fallback)
 - `app/gui/provider.js` — Settings → Provider (Ollama / OpenAI-compatible / Gemini, base URL presets, API key, model name)
+- `app/gui/browsercard.js` — AG2 `HR.bcard`: download card (sizes, progress, Cancel) and Settings → Browser model (status, Remove)
 - `app/gui/steps.js` — `HR.steps`: one row per model call (🧠) and per tool call (🔧), notes; tap to expand
 - `app/gui/bubbles.js` — `HR.view`: bubbles, Thinking box, tool chips, notes, hello, error cards
 - `app/gui/approve.js` — `HR.approve`: Approve / Deny card (path, size, preview)
@@ -53,6 +57,7 @@ Ollama only answers browser pages whose origin is in `OLLAMA_ORIGINS`. Example: 
 - **HR6** — Online models: Settings → Provider (Ollama default / OpenAI-compatible / Gemini). OpenAI-compatible takes any base URL (presets OpenAI, Groq, OpenRouter) and streams `/chat/completions` with `tools`; Gemini streams `streamGenerateContent` with function declarations. Both translate the internal message format both ways (tool call ids, JSON-string arguments, `functionResponse`, Gemini thought signatures) and show reasoning in the Thinking box. API key stored in localStorage per provider host, with a note that it stays on this device. Model list from the provider plus an optional typed model name. The loop is unchanged apart from calling `adapter.chat()`; the "no tools" retry also catches OpenRouter's wording.
 
 - **AG1** — Renamed Harness → Agent: folder `apps/lab/agent/`, `agent.html`, `agent_readme.md`, `agent_icon.png`, `helper/agent-helper.sh` (env `AGENT_*`, e.g. `AGENT_ORIGINS`; header `X-Agent-Token`), data folder `<folder>/agent/`, keys `agent.settings` / `agent.keys` / `agent.history`, IndexedDB `agent`. One-time migration copies the old `harness.*` values, the remembered folder handle and `<folder>/harness/**` files (missing ones only; old folder kept).
+- **AG2** — Built-in **Browser** provider (no Ollama, no API key): Story Mini = `onnx-community/TinyStories-3M-ONNX` (GPT-Neo, q8 `model_quantized.onnx` 17.0 MB + tokenizer 3.6 MB ≈ 20.6 MB from Hugging Face) on Agent's own Transformers.js 3.7.0 in `vendor/` (plain ORT wasm, 1 thread, no arena) inside a module Web Worker; tokens stream, Stop terminates the worker (the next send reloads from cache in about a second). Files live in Agent's own Cache API store `agent-browser-model`. Nothing downloads until you tap the card, which shows the sizes (≈ 33 MB once incl. the 12 MB engine, ~3 MB compressed) and progress; then it is remembered (`browserModel: 'ready'`). First start or an unreachable provider / missing key → Browser for this session with a quiet note (↻ retries the chosen provider). While Browser is in use tools, the loop and the system prompt are off (story model: it continues your last message), noted in Steps only. Settings → Browser model → Remove browser model frees the space.
 
 ## Roadmap
 - **HR1** — Chat skeleton with Ollama streaming, Thinking box, steps pane (done)
@@ -61,4 +66,5 @@ Ollama only answers browser pages whose origin is in `OLLAMA_ORIGINS`. Example: 
 - **HR4** — Memory: daily Markdown logs, memory notes (read / append tools), editable system prompt, all in the folder (done)
 - **HR5** — Bash helper on localhost: tiny local helper (token, optional origin allow-list) so the agent can run shell commands with approval (done; output returned when the command ends, not streamed)
 - **HR6** — Online models: OpenAI-compatible + Gemini adapters with streaming and tool calling (done)
+- **AG2** — Built-in Browser model (Story Mini, Transformers.js in a worker) with fallback (done)
 - **Later** — system prompt presets, export / import sessions, cost / token totals

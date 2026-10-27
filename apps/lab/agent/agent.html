@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <!--
-  Agent (HR1-HR6, AG1; was "Harness") — browser AI agent, all in browser JS. HR1: chat with a local Ollama model (streaming, Stop,
+  Agent (HR1-HR6, AG1-AG2; was "Harness") — browser AI agent, all in browser JS. HR1: chat with a local Ollama model (streaming, Stop,
   Thinking box, tok/s), Steps pane. HR2: agent loop with tools (get_time), step limit, Stop. HR3: folder tools
   (File System Access; write needs approval). HR4: daily Markdown logs, memory notes, editable system prompt in
   <folder>/agent/. HR5: run_shell through helper/agent-helper.sh (local bash helper, token, approval per command).
-  HR6: online models (OpenAI-compatible, Gemini) behind one adapter interface. See agent_readme.md roadmap.
+  HR6: online models (OpenAI-compatible, Gemini) behind one adapter interface. AG2: built-in Browser model (Story Mini via
+  Agent's own vendor/transformers-3.7.0 in a Web Worker; tap-to-download, fallback when others are offline). See agent_readme.md.
   Styles: ui/main.css (theme, layout), ui/components.css (buttons, bubbles, cards, dialog), ui/steps.css (steps pane).
-  Scripts (order matters): app/core (migrate, messages, tools, loop, prompt, helper), app/models (net, registry, ollama, openai, gemini), app/storage (fs, logs), app/tools/*,
-  app/gui (settings, model, steps, bubbles, approve, folder, helperset, provider, chat), app/main.js.
+  Scripts (order matters): app/core (migrate, messages, tools, loop, prompt, helper), app/models (net, registry, ollama, openai, gemini, browser [+ browser_worker.js]), app/storage (fs, logs), app/tools/*,
+  app/gui (settings, model, steps, bubbles, approve, folder, helperset, provider, browsercard, chat), app/main.js.
 -->
 <html lang="en">
 <head>
@@ -17,9 +18,9 @@
   <meta name="theme-color" content="#111318">
   <title>Agent</title>
   <link rel="icon" href="agent_icon.png">
-  <link rel="stylesheet" href="ui/main.css?v=20261027ag1">
-  <link rel="stylesheet" href="ui/components.css?v=20261027ag1">
-  <link rel="stylesheet" href="ui/steps.css?v=20261027ag1">
+  <link rel="stylesheet" href="ui/main.css?v=20261027ag2">
+  <link rel="stylesheet" href="ui/components.css?v=20261027ag2">
+  <link rel="stylesheet" href="ui/steps.css?v=20261027ag2">
   <script src="../../../shared/theme/hub_theme.js?v=20261026h22"></script>
   <script>try{var s=JSON.parse(localStorage.getItem('agent.settings')||localStorage.getItem('harness.settings')||'{}'),m=s.theme||'dark';document.documentElement.dataset.ht=m==='light'?'light':m==='system'?(localStorage.getItem('sites-hub.theme')==='light'?'light':'dark'):'dark'}catch(e){document.documentElement.dataset.ht='dark'}</script>
 </head>
@@ -63,6 +64,9 @@
   <p class="hint" id="keyNote"></p>
   <input id="setModelName" class="inp gap" type="text" spellcheck="false" aria-label="Model name">
   </div>
+  <h3>Browser model</h3>
+  <p class="hint" id="browserStat"></p>
+  <div class="ec-row start"><button type="button" class="hb wide" id="btnBrowserRm">Remove browser model</button></div>
   <h3>Thinking</h3><div class="seg" id="setThink" role="radiogroup" aria-label="Thinking"></div>
   <p class="hint">Auto = model default. On / Off send Ollama's <code>think</code> flag (only thinking models accept it); Gemini: On shows thought summaries, Off sets thinking budget 0. Not sent to OpenAI-compatible providers.</p>
   <h3>Tools</h3><div class="seg" id="setTools" role="radiogroup" aria-label="Tools"></div>
@@ -79,32 +83,34 @@
   <p class="hint">Start it in a terminal: <code>bash helper/agent-helper.sh</code> (needs socat or ncat; listens on 127.0.0.1 only). Every command shows an Approve / Deny card first.</p>
   <p class="hint">Daily logs go to agent/chats/YYYY_MM/YYYY_MM_DD.md; memory to agent/memory.md; system prompt in agent/prompts/system.md (edit it there). In-app history stays in this tab (sessionStorage). Settings are saved.</p>
 </dialog>
-<script src="app/core/migrate.js?v=20261027ag1"></script>
-<script src="app/core/messages.js?v=20261027ag1"></script>
-<script src="app/core/tools.js?v=20261027ag1"></script>
-<script src="app/core/loop.js?v=20261027ag1"></script>
-<script src="app/core/prompt.js?v=20261027ag1"></script>
-<script src="app/core/helper.js?v=20261027ag1"></script>
-<script src="app/models/net.js?v=20261027ag1"></script>
-<script src="app/models/registry.js?v=20261027ag1"></script>
-<script src="app/models/ollama.js?v=20261027ag1"></script>
-<script src="app/models/openai.js?v=20261027ag1"></script>
-<script src="app/models/gemini.js?v=20261027ag1"></script>
-<script src="app/storage/fs.js?v=20261027ag1"></script>
-<script src="app/storage/logs.js?v=20261027ag1"></script>
-<script src="app/tools/time.js?v=20261027ag1"></script>
-<script src="app/tools/files.js?v=20261027ag1"></script>
-<script src="app/tools/memory.js?v=20261027ag1"></script>
-<script src="app/tools/shell.js?v=20261027ag1"></script>
-<script src="app/gui/settings.js?v=20261027ag1"></script>
-<script src="app/gui/model.js?v=20261027ag1"></script>
-<script src="app/gui/steps.js?v=20261027ag1"></script>
-<script src="app/gui/bubbles.js?v=20261027ag1"></script>
-<script src="app/gui/approve.js?v=20261027ag1"></script>
-<script src="app/gui/folder.js?v=20261027ag1"></script>
-<script src="app/gui/helperset.js?v=20261027ag1"></script>
-<script src="app/gui/provider.js?v=20261027ag1"></script>
-<script src="app/gui/chat.js?v=20261027ag1"></script>
-<script src="app/main.js?v=20261027ag1"></script>
+<script src="app/core/migrate.js?v=20261027ag2"></script>
+<script src="app/core/messages.js?v=20261027ag2"></script>
+<script src="app/core/tools.js?v=20261027ag2"></script>
+<script src="app/core/loop.js?v=20261027ag2"></script>
+<script src="app/core/prompt.js?v=20261027ag2"></script>
+<script src="app/core/helper.js?v=20261027ag2"></script>
+<script src="app/models/net.js?v=20261027ag2"></script>
+<script src="app/models/registry.js?v=20261027ag2"></script>
+<script src="app/models/ollama.js?v=20261027ag2"></script>
+<script src="app/models/openai.js?v=20261027ag2"></script>
+<script src="app/models/gemini.js?v=20261027ag2"></script>
+<script src="app/models/browser.js?v=20261027ag2"></script>
+<script src="app/storage/fs.js?v=20261027ag2"></script>
+<script src="app/storage/logs.js?v=20261027ag2"></script>
+<script src="app/tools/time.js?v=20261027ag2"></script>
+<script src="app/tools/files.js?v=20261027ag2"></script>
+<script src="app/tools/memory.js?v=20261027ag2"></script>
+<script src="app/tools/shell.js?v=20261027ag2"></script>
+<script src="app/gui/settings.js?v=20261027ag2"></script>
+<script src="app/gui/model.js?v=20261027ag2"></script>
+<script src="app/gui/steps.js?v=20261027ag2"></script>
+<script src="app/gui/bubbles.js?v=20261027ag2"></script>
+<script src="app/gui/approve.js?v=20261027ag2"></script>
+<script src="app/gui/folder.js?v=20261027ag2"></script>
+<script src="app/gui/helperset.js?v=20261027ag2"></script>
+<script src="app/gui/provider.js?v=20261027ag2"></script>
+<script src="app/gui/browsercard.js?v=20261027ag2"></script>
+<script src="app/gui/chat.js?v=20261027ag2"></script>
+<script src="app/main.js?v=20261027ag2"></script>
 </body>
 </html>
