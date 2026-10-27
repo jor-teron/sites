@@ -4,7 +4,7 @@
   'use strict';
   const { $, P, toast } = SR, PPS = SRAudio.PPS, LIVE_S = 8;
   const MIMES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
-  let stream = null, mr = null, chunks = [], ctx = null, node = null, peaks = [], t0 = 0, acc = 0, paused = false, busy = false, level = 0, raf = 0;
+  let stream = null, mr = null, chunks = [], ctx = null, node = null, peaks = [], t0 = 0, acc = 0, paused = false, busy = false, level = 0, raf = 0, stopping = false, why = '';
   const state = () => (mr ? (paused ? 'paused' : 'rec') : 'idle');
   const elapsed = () => acc + (mr && !paused ? (performance.now() - t0) / 1000 : 0);
   const pickMime = () => (window.MediaRecorder && MediaRecorder.isTypeSupported ? MIMES.find((m) => MediaRecorder.isTypeSupported(m)) || '' : '');
@@ -40,8 +40,11 @@
       chunks = [];
       mr.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
       mr.onstop = finish;
+      /* mic taken by a call / another app, unplugged, or recorder error: stop and save what we have */
+      mr.onerror = () => { why = 'Recording error · '; stop(); };
+      stream.getAudioTracks().forEach((t) => { t.onended = () => { if (mr) { why = 'Mic stopped · '; stop(); } }; });
       mr.start(1000);
-      t0 = performance.now(); acc = 0; paused = false;
+      t0 = performance.now(); acc = 0; paused = false; stopping = false; why = '';
       listMics();
     } catch (e) { cleanup(); toast('Could not start recording'); }
     busy = false; ui();
@@ -52,22 +55,28 @@
     ui();
   }
   let finalDur = 0;
-  function stop() { if (!mr) return; finalDur = elapsed(); acc = finalDur; paused = true; mr.stop(); }
+  function stop() {
+    if (!mr || stopping) return;
+    stopping = true; finalDur = elapsed(); acc = finalDur; paused = true;
+    if (mr.state !== 'inactive') mr.stop(); else finish();
+  }
   async function finish() {
     const type = (mr && mr.mimeType) || pickMime() || 'audio/webm';
-    const blob = new Blob(chunks, { type }), pk = Float32Array.from(peaks), dur = finalDur;
+    const blob = new Blob(chunks, { type }), pk = Float32Array.from(peaks), dur = finalDur, note = why;
     cleanup();
-    if (!blob.size) { toast('Nothing recorded'); return; }
+    if (!blob.size) { toast(note + 'Nothing recorded'); return; }
     const d = new Date(), p = (n) => String(n).padStart(2, '0');
     const rec = { id: 'r' + d.getTime().toString(36) + Math.random().toString(36).slice(2, 6), name: 'Recording ' + d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()),
       date: d.getTime(), dur, mime: type, size: blob.size, blob, peaks: pk, pps: PPS };
-    try { await SRStore.put(rec); toast('Saved · ' + SR.fmt(dur)); SR.emit('changed', { added: rec.id }); }
-    catch (_) { toast('Could not save (storage full?)'); }
+    try { await SRStore.put(rec); toast(note + 'Saved · ' + SR.fmt(dur)); SR.emit('changed', { added: rec.id }); }
+    catch (_) { /* storage full / unavailable: never lose the audio, download it instead */
+      SRSave.save(blob, SRSave.fileName(rec.name, SRSave.ext(type))).then((n) => toast('Could not save here · downloaded ' + n)); }
   }
   function cleanup() {
     if (stream) stream.getTracks().forEach((t) => t.stop());
     if (ctx) ctx.close().catch(() => {});
-    stream = null; ctx = null; node = null; mr = null; paused = false; acc = 0; level = 0;
+    if (stream) stream.getAudioTracks().forEach((t) => { t.onended = null; });
+    stream = null; ctx = null; node = null; mr = null; paused = false; acc = 0; level = 0; stopping = false; why = '';
     ui();
   }
   function ui() {

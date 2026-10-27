@@ -34,11 +34,14 @@
     if (a === 'ren') {
       const v = await SR.ask({ text: 'Rename recording', value: r.name, ok: 'Rename' });
       if (v == null || !v || v === r.name) return;
-      r.name = v.slice(0, 80); await SRStore.put(r); render(); SR.emit('changed', { renamed: r.id });
+      const old = r.name; r.name = v.slice(0, 80);
+      try { await SRStore.put(r); render(); SR.emit('changed', { renamed: r.id }); }
+      catch (_) { r.name = old; toast('Could not rename'); load(); }
     } else if (a === 'del') {
       const ok = await SR.ask({ text: 'Delete "' + r.name + '"? This cannot be undone.', ok: 'Delete', danger: true });
       if (!ok) return;
-      await SRStore.del(r.id); items = items.filter((x) => x !== r); render(); toast('Deleted'); SR.emit('changed', { deleted: r.id });
+      try { await SRStore.del(r.id); items = items.filter((x) => x !== r); render(); toast('Deleted'); SR.emit('changed', { deleted: r.id }); }
+      catch (_) { toast('Could not delete'); load(); }
     } else if (a === 'dl') {
       SRSave.save(r.blob, SRSave.fileName(r.name, SRSave.ext(r.blob.type || r.mime))).then((n) => toast('Downloading ' + n));
     }
