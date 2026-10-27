@@ -26,7 +26,15 @@
     try {
       try { stream = await navigator.mediaDevices.getUserMedia({ audio: P.mic ? { deviceId: { exact: P.mic } } : true }); }
       catch (e) { if (!P.mic) throw e; stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-    } catch (_) { busy = false; toast('Microphone not allowed'); return; }
+    } catch (e) {
+      busy = false;
+      const n = e && e.name;
+      if (n === 'NotAllowedError' || n === 'SecurityError') toast('Microphone blocked · allow it in site settings');
+      else if (n === 'NotFoundError' || n === 'OverconstrainedError') toast('No microphone found');
+      else if (n === 'NotReadableError' || n === 'AbortError') toast('Microphone busy in another app');
+      else toast('Could not open the microphone');
+      return;
+    }
     try {
       ctx = new AudioContext();
       await ctx.audioWorklet.addModule(SRAudio.workletURL());

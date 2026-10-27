@@ -62,7 +62,10 @@
     requestAnimationFrame(draw);
   }
   function close() {
-    audio().pause(); rec = null; regs = []; SR.S.cur = null; SR.saveS();
+    const a = audio(); a.pause(); a.onloadedmetadata = null; a.ontimeupdate = null;
+    a.removeAttribute('src'); a.load();
+    if (url) { URL.revokeObjectURL(url); url = null; }
+    rec = null; regs = []; SR.S.cur = null; SR.saveS();
     $('p-none').hidden = false; $('p-body').hidden = true; $('p-name').textContent = 'Player'; $('p-regs').textContent = '';
   }
   function toggle() {

@@ -13,7 +13,7 @@
   function render() {
     const ul = $('l-items');
     ul.innerHTML = items.map((r) => '<li data-id="' + r.id + '"' + (r.id === SR.S.cur ? ' class="cur"' : '') + '><div class="meta"><div class="nm">' + SR.esc(r.name) +
-      '</div><div class="sub">' + when(r.date) + ' · <b>' + SR.fmt(r.dur) + '</b> · ' + size(r.size || r.blob.size) + '</div><canvas></canvas></div><div class="acts">' +
+      '</div><div class="sub">' + when(r.date) + ' · <b>' + SR.fmt(r.dur) + '</b> · ' + size(r.size || 0) + '</div><canvas></canvas></div><div class="acts">' +
       '<button type="button" data-a="ren" aria-label="Rename" title="Rename">&#9998;</button>' +
       '<button type="button" data-a="dl" aria-label="Download" title="Download">&#8595;</button>' +
       '<button type="button" data-a="del" aria-label="Delete" title="Delete">&#128465;</button></div></li>').join('');
@@ -35,7 +35,7 @@
       const v = await SR.ask({ text: 'Rename recording', value: r.name, ok: 'Rename' });
       if (v == null || !v || v === r.name) return;
       const old = r.name; r.name = v.slice(0, 80);
-      try { await SRStore.put(r); render(); SR.emit('changed', { renamed: r.id }); }
+      try { await SRStore.rename(r.id, r.name); render(); SR.emit('changed', { renamed: r.id }); }
       catch (_) { r.name = old; toast('Could not rename'); load(); }
     } else if (a === 'del') {
       const ok = await SR.ask({ text: 'Delete "' + r.name + '"? This cannot be undone.', ok: 'Delete', danger: true });
@@ -43,7 +43,10 @@
       try { await SRStore.del(r.id); items = items.filter((x) => x !== r); render(); toast('Deleted'); SR.emit('changed', { deleted: r.id }); }
       catch (_) { toast('Could not delete'); load(); }
     } else if (a === 'dl') {
-      SRSave.save(r.blob, SRSave.fileName(r.name, SRSave.ext(r.blob.type || r.mime))).then((n) => toast('Downloading ' + n));
+      try {
+        const full = await SRStore.get(r.id); if (!full || !full.blob) { toast('Recording not found'); load(); return; }
+        const n = await SRSave.save(full.blob, SRSave.fileName(r.name, SRSave.ext(full.blob.type || r.mime))); toast('Downloading ' + n);
+      } catch (_) { toast('Could not read this recording'); }
     }
   }
   async function importFile(f) {
