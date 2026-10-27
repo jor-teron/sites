@@ -1,0 +1,25 @@
+/* Agent — ui/main.css: theme variables (html[data-ht] dark default / light; Hub --accent when set) and page layout.
+   Phone: one column, steps pane is a bottom sheet (body.steps-on). >=960px: chat + steps side by side; ☰ collapses steps. */
+:root{--bg:#111318;--panel:#181b22;--card:#1f232c;--fg:#e9ecf2;--mut:#9aa3b2;--line:#2c313c;--acc:var(--accent,#8b5cf6);--ink:#fff;
+  --user:#2a2f3b;--think:#171a21;--ok:#34d399;--err:#f87171;--warn:#fbbf24;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+html[data-ht=light]{--bg:#f4f5f8;--panel:#fff;--card:#fff;--fg:#14161c;--mut:#5d6472;--line:#dfe2e8;--acc:var(--accent,#7c3aed);--ink:#fff;
+  --user:#ece9fb;--think:#f6f7f9;--ok:#059669;--err:#dc2626;--warn:#b45309;color-scheme:light!important}
+html[data-ht=dark]{color-scheme:dark!important}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{display:flex;flex-direction:column;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+code{font-family:var(--mono);font-size:.9em;background:var(--think);border:1px solid var(--line);border-radius:5px;padding:0 4px}
+.top{display:flex;align-items:center;gap:6px;padding:8px max(10px,env(safe-area-inset-right)) 8px max(10px,env(safe-area-inset-left));border-bottom:1px solid var(--line);background:var(--panel)}
+.brand{font-size:17px;margin:0 2px 0 0;white-space:nowrap}
+.model{min-width:0;max-width:46vw;height:30px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);padding:0 6px}
+.grow{flex:1}
+.main{flex:1;min-height:0;display:flex}
+.chat{flex:1;min-width:0;display:flex;flex-direction:column}
+.log{flex:1;overflow-y:auto;padding:12px max(10px,env(safe-area-inset-right)) 12px max(10px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:10px}
+.composer{display:flex;gap:6px;align-items:flex-end;padding:8px max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));border-top:1px solid var(--line);background:var(--panel)}
+.composer textarea{flex:1;min-height:36px;max-height:180px;resize:none;border:1.5px solid var(--line);border-radius:12px;background:var(--card);padding:7px 10px}
+.composer textarea:focus,.inp:focus,.model:focus{outline:2px solid var(--acc);outline-offset:0;border-color:transparent}
+@media(min-width:960px){.log,.composer{padding-left:max(24px,calc((100% - 860px)/2));padding-right:max(24px,calc((100% - 860px)/2))}}
+@media(min-width:1600px){html,body{font-size:17px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}

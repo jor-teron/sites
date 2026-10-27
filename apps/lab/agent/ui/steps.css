@@ -1,0 +1,23 @@
+/* Agent — ui/steps.css: steps pane. Phone: bottom sheet (60vh) shown with body.steps-on.
+   >=960px: 340px side pane (380px from 1600px), hidden with body.steps-off. Rows: run (pulsing) / ok / err / stop. */
+.steps{display:none;flex-direction:column;background:var(--panel);border-left:1px solid var(--line);min-height:0}
+.steps-on .steps{display:flex}
+.st-top{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--line)}
+.st-top h2{margin:0;font-size:15px}
+.st-list{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
+.st-empty{color:var(--mut);font-size:13px;text-align:center;margin:20px 0}
+.st-row{border:1.5px solid var(--line);border-left:4px solid var(--mut);border-radius:10px;background:var(--card);animation:pop .3s cubic-bezier(.34,1.7,.64,1) both}
+.st-row.run{border-left-color:var(--acc)}.st-row.run .st-stat{animation:pulse 1s ease-in-out infinite}
+.st-row.ok{border-left-color:var(--ok)}.st-row.err{border-left-color:var(--err)}.st-row.stop{border-left-color:var(--warn)}
+.st-head{width:100%;display:flex;align-items:center;gap:6px;padding:6px 8px;border:0;background:none;cursor:pointer;text-align:left;font-size:13px}
+.st-n{color:var(--mut);font-family:var(--mono);flex:none}.st-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st-stat{flex:none;color:var(--mut);font-size:12px}
+.st-body{padding:0 8px 8px;font-size:12.5px}
+.st-sub{font-weight:600;color:var(--mut);margin:6px 0 2px}
+.st-dl{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;margin:0}.st-dl dt{color:var(--mut)}.st-dl dd{margin:0;word-break:break-word;font-family:var(--mono)}
+@media(max-width:959px){.steps{position:fixed;left:0;right:0;bottom:0;height:60vh;z-index:20;border-left:0;border-top:1.5px solid var(--line);border-radius:16px 16px 0 0;
+  box-shadow:0 -8px 30px rgba(0,0,0,.35);animation:sheet .35s cubic-bezier(.34,1.5,.64,1)}}
+@keyframes sheet{0%{transform:translateY(40%);opacity:0}100%{transform:none;opacity:1}}
+@media(min-width:960px){.steps{width:340px;flex:none}}
+@media(min-width:1600px){.steps{width:380px}}
+.st-note{font-size:12px;color:var(--mut);padding:2px 8px;border-left:3px solid var(--line)}
