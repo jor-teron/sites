@@ -24,7 +24,8 @@ window.TT = window.TT || {};
    */
   TT.game = {
     score: CFG.start.score,
-    targetScore: CFG.targetScore,
+    round: 1, roundScore: 0, roundGoal: 0, roundSeconds: 35, timeLeft: 0, banner: 0, // TB8
+    combo: 0, best: 0, newBest: false,                                               // TB8
     time: 0,            // TB1: elapsed seconds as a number (formatted only for display)
     clock: 0,           // TB2: simulated seconds while running (drives cooldown + hints)
     lastThrow: -1e9,    // TB2: game.clock of the last throw (cooldown)

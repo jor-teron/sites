@@ -7,8 +7,11 @@
  *   modules/state.js    shared state, canvas, helpers
  *   modules/targets.js  target spawning and bird movement
  *   modules/physics.js  throwing, ball flight, hits
+ *   modules/rounds.js   TB8 rounds, countdown, combo, best score
  *   modules/render.js   drawing
  *   modules/input.js    keyboard + touch/mouse drag
+ *   modules/fx.js       TB9 hit particles + floating points
+ *   modules/sound.js    TB9 WebAudio blips (masterVolume / sfx)
  *   modules/settings.js TB4/GS1 Games settings bridge (defaults if the shared script is missing)
  *   modules/loop.js     fixed-timestep clock
  */
@@ -19,24 +22,25 @@
   // On-screen text from config
   document.querySelector('.controls-hint').textContent = CFG.text.controls;
   document.querySelector('.restart-hint').textContent = CFG.text.restart;
-  document.querySelector('.score').lastChild.textContent = '/' + CFG.targetScore;
 
-  /** Start a fresh run. */
+  /** Start a fresh run (round 1). */
   TT.init = function () {
     // TB4/GS1: difficulty from Games settings (numbers in CFG.difficulty)
     const d = CFG.difficulty[TT.settings.get('difficulty')] || CFG.difficulty.normal;
     game.difficulty = TT.settings.get('difficulty');
-    game.targetScore = d.targetScore;
+    game.goalScale = d.goalScale;
+    game.roundSeconds = d.roundSeconds;
     game.birdSpeedScale = d.birdSpeedScale;
     game.extraCount = d.extraCount;
-    document.querySelector('.score').lastChild.textContent = '/' + d.targetScore;
     Object.assign(game, {
-      score: CFG.start.score, time: 0, clock: 0, lastThrow: -1e9,
+      score: CFG.start.score, time: 0, clock: 0, lastThrow: -1e9, combo: 0,
       isRunning: true, isFinished: false, isPaused: false, drag: null,
       aimAngle: CFG.start.aimAngle, aimPower: CFG.start.aimPower, balls: [],
+      best: TT.loadBest(), newBest: false,
     });
     $('endScreen').classList.remove('show');
-    TT.spawnAllTargets();
+    TT.startRound(1);
+    TT.updateHud();
   };
 
   /** Pause / resume a running game (game time stops while paused). */
@@ -46,23 +50,31 @@
     else if (game.isRunning) { game.isPaused = true; game.isRunning = false; game.drag = null; }
   };
 
-  const getRank = s => CFG.ranks.find(r => s < r.maxSeconds) || CFG.ranks[CFG.ranks.length - 1];
+  const getRank = n => CFG.ranks.find(r => n >= r.minRound) || CFG.ranks[CFG.ranks.length - 1];
 
-  function finishGame() {
-    game.isRunning = false;
-    game.isFinished = true;
-    const rank = getRank(game.time);
+  /** TB8: time-up screen with round, score and best. */
+  TT.showEnd = function () {
+    TT.updateHud();
+    const rank = getRank(game.round);
+    $('endTitle').textContent = CFG.text.gameOver + (game.newBest ? ' ' + CFG.text.newBest : '');
     $('rankText').textContent = rank.name;
     $('badge').textContent = rank.emoji;
-    $('finalTime').textContent = game.time.toFixed(1);
+    $('finalRound').textContent = game.round;
+    $('finalScore').textContent = game.score;
+    $('finalBest').textContent = game.best;
     $('endScreen').classList.add('show');
-  }
+  };
 
-  /** Update timer and score text; finish when the goal is reached. */
+  /** Update the HUD text (score, round goal, countdown, combo, best). */
   TT.updateHud = function () {
-    $('timerValue').textContent = game.time.toFixed(1);
     $('scoreValue').textContent = game.score;
-    if (game.score >= game.targetScore && !game.isFinished) finishGame();
+    $('roundValue').textContent = game.round;
+    $('goalValue').textContent = Math.min(game.roundScore, game.roundGoal) + '/' + game.roundGoal;
+    $('timerValue').textContent = Math.ceil(game.timeLeft);
+    $('timerValue').parentNode.classList.toggle('low', game.timeLeft < 6 && game.banner <= 0);
+    const m = Math.min(CFG.combo.max, 1 + CFG.combo.step * game.combo);
+    $('comboValue').textContent = game.combo > 0 ? '×' + m.toFixed(1).replace('.0', '') : '';
+    $('bestValue').textContent = Math.max(game.best, game.score);
   };
 
   // TB2: tap the end screen to play again

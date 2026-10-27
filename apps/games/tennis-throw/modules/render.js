@@ -2,46 +2,67 @@
  * File: modules/render.js
  * Project: tennis-throw
  * Purpose: All canvas drawing: sky, targets, balls, aim (crosshair, predicted
- *          arc, power bar, drag line) and the pause / start-hint overlays.
+ *          arc, power bar, pull-back band) and the pause / start-hint overlays.
+ *          TB9: clouds, grass + clay court, spinning ball with seam, spawn pop, fx.
  */
 (function (TT) {
   const CFG = TT.CFG, game = TT.game, ctx = TT.ctx, canvas = TT.canvas;
 
+  // TB9: static scenery is drawn once to an offscreen canvas per theme (cheap per frame)
+  let scene = null, sceneTheme = null;
+  function buildScene(dark) {
+    const c = document.createElement('canvas'); c.width = canvas.width; c.height = canvas.height;
+    const g = c.getContext('2d'), W = c.width, H = c.height, C = CFG.colors, S = dark ? CFG.darkColors : C;
+    const grad = g.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, S.skyTop); grad.addColorStop(1, S.skyBottom);
+    g.fillStyle = grad; g.fillRect(0, 0, W, H);
+    g.fillStyle = dark ? 'rgba(255,255,255,0.12)' : C.cloud;
+    [[120, 110, 1], [560, 80, 1.3], [380, 190, 0.8], [700, 220, 0.9]].forEach(([x, y, k]) => {
+      g.beginPath(); g.arc(x, y, 22 * k, 0, 7); g.arc(x + 26 * k, y - 10 * k, 28 * k, 0, 7); g.arc(x + 56 * k, y, 22 * k, 0, 7); g.fill();
+    });
+    const gy = H - 24;
+    g.fillStyle = dark ? '#1f4d27' : C.ground; g.fillRect(0, gy, W, 24);
+    g.fillStyle = dark ? '#7a4127' : C.court;              // clay court (perspective trapezoid)
+    g.beginPath(); g.moveTo(W / 2 - 150, H); g.lineTo(W / 2 - 100, gy - 30); g.lineTo(W / 2 + 100, gy - 30); g.lineTo(W / 2 + 150, H); g.fill();
+    g.strokeStyle = C.courtLine; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(W / 2 - 150, H); g.lineTo(W / 2 - 100, gy - 30); g.lineTo(W / 2 + 100, gy - 30); g.lineTo(W / 2 + 150, H);
+    g.moveTo(W / 2, gy - 30); g.lineTo(W / 2, H); g.moveTo(W / 2 - 125, gy - 2); g.lineTo(W / 2 + 125, gy - 2); g.stroke();
+    return c;
+  }
   function drawSky() {
-    const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    const c = TT.settings.get('theme') === 'dark' ? CFG.darkColors : CFG.colors; // TB4/GS1 theme
-    g.addColorStop(0, c.skyTop);
-    g.addColorStop(1, c.skyBottom);
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const dark = TT.settings.get('theme') === 'dark'; // TB4/GS1 theme
+    if (!scene || sceneTheme !== dark) { scene = buildScene(dark); sceneTheme = dark; }
+    ctx.drawImage(scene, 0, 0);
   }
 
   function drawTargets() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (const t of game.targets) {
-      ctx.font = (t.radius * 2) + 'px ' + CFG.colors.targetFont;
+      const age = (game.clock || 0) - (t.born || 0), k = age < 0.25 ? 0.4 + 0.6 * age / 0.25 : 1; // TB9: spawn pop
+      ctx.font = Math.round(t.radius * 2 * k) + 'px ' + CFG.colors.targetFont;
       ctx.fillText(t.emoji, t.x, t.y);
     }
   }
 
   function drawBalls() {
+    const R = CFG.ball.radius;
     for (const b of game.balls) {
-      if (b.trailX.length > 0) {   // trail
-        ctx.strokeStyle = CFG.colors.trail;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(b.trailX[0], b.trailY[0]);
-        for (let i = 1; i < b.trailX.length; i++) ctx.lineTo(b.trailX[i], b.trailY[i]);
-        ctx.stroke();
+      const n = b.trailX.length;
+      ctx.fillStyle = CFG.colors.trail;     // TB9: fading dot trail (cheap, no per-segment stroke)
+      for (let i = 0; i < n; i += 2) {
+        ctx.globalAlpha = (i + 1) / n;
+        ctx.beginPath(); ctx.arc(b.trailX[i], b.trailY[i], R * (0.3 + 0.5 * i / n), 0, 7); ctx.fill();
       }
+      ctx.globalAlpha = 1;
       ctx.fillStyle = CFG.colors.ball;
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, CFG.ball.radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = CFG.colors.ballOutline;
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = CFG.colors.ballOutline; ctx.lineWidth = 2; ctx.stroke();
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.spin || 0);   // TB9: spinning seam
+      ctx.strokeStyle = CFG.colors.seam; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(-R * 1.1, 0, R * 0.8, -0.9, 0.9); ctx.stroke();
+      ctx.beginPath(); ctx.arc(R * 1.1, 0, R * 0.8, Math.PI - 0.9, Math.PI + 0.9); ctx.stroke();
+      ctx.restore();
     }
   }
 
@@ -63,7 +84,8 @@
     game.arcDots = 0;
     for (let i = 1; i <= n; i++) {
       TT.stepBody(p, step);
-      if (p.x < 0 || p.x > canvas.width || p.y > canvas.height) break;
+      TT.bounceWalls(p, canvas.width);   // TB6: preview follows the wall bounce
+      if (p.y > canvas.height) break;
       ctx.beginPath();
       ctx.arc(p.x, p.y, 3 - 1.5 * i / n, 0, Math.PI * 2); // dots shrink along the arc
       ctx.fill();
@@ -78,14 +100,16 @@
     ctx.lineWidth = 1;
     ctx.strokeRect(sx - bw / 2, by, bw, A.powerBarHeight);
 
-    // TB2: while dragging, show the drag line and the power as a percentage
-    const d = game.drag;
-    if (d) {
+    // TB5: while dragging, draw the pull-back band from the launch point
+    // (behind the ball, opposite the throw) and the power as a percentage
+    if (game.drag) {
+      const r = game.aimAngle * Math.PI / 180, len = game.aimPower * CFG.drag.bandMaxPx;
+      const bx = sx - Math.cos(r) * len, byy = sy + Math.sin(r) * len;
       ctx.strokeStyle = CFG.drag.lineColor;
       ctx.lineWidth = 3;
-      ctx.setLineDash([6, 6]);
-      ctx.beginPath(); ctx.moveTo(d.x0, d.y0); ctx.lineTo(d.x1, d.y1); ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(sx - 14, sy); ctx.lineTo(bx, byy); ctx.lineTo(sx + 14, sy); ctx.stroke();
+      ctx.fillStyle = CFG.colors.ball;
+      ctx.beginPath(); ctx.arc(bx, byy, 6, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 16px sans-serif';
       ctx.textAlign = 'center';
@@ -112,7 +136,19 @@
     drawSky();
     drawTargets();
     drawBalls();
+    if (TT.fx) TT.fx.draw(ctx);   // TB9
     if (!game.isFinished) drawAim();
+    if (game.banner > 0 && !game.isFinished) {   // TB8: round banner
+      ctx.globalAlpha = Math.min(1, game.banner * 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(0, canvas.height / 2 - 50, canvas.width, 100);
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 40px sans-serif';
+      ctx.fillText('Round ' + game.round, canvas.width / 2, canvas.height / 2 - 14);
+      ctx.font = '20px sans-serif';
+      ctx.fillText('Score ' + game.roundGoal + ' in ' + game.roundSeconds + 's', canvas.width / 2, canvas.height / 2 + 24);
+      ctx.globalAlpha = 1;
+    }
     if (game.isPaused) {
       overlay([CFG.text.paused, CFG.text.pausedHint, CFG.text.pausedTouch]);
     } else if (TT.settings.get('showHints') && game.isRunning && game.clock < CFG.text.startHintSeconds) {
