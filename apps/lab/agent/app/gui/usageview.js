@@ -1,5 +1,6 @@
 /* Agent — app/gui/usageview.js: Settings → Usage (AG7). Today and This month: per provider · model calls, input / output
    tokens (≈ when some calls were estimated as chars/4) and, for online models with a price, estimated cost.
+   AG6: 'Tavily: N/1000 this month' (web search credits, free plan size) above the tables.
    Price fields ($ per 1M input / output tokens) show under each online model of this month; saved in setting 'prices'. */
 HR.usageView = (function () {
   var box;
@@ -9,7 +10,7 @@ HR.usageView = (function () {
   function online(key) { var p = key.split('|')[0]; return p !== 'ollama' && p !== 'browser'; }
   function sum(days, only) {
     var out = {}; Object.keys(days).forEach(function (d) { if (only && d !== only) return; var dd = days[d];
-      Object.keys(dd).forEach(function (key) { var r = dd[key], t = out[key] = out[key] || { p: 0, o: 0, n: 0, e: 0 }; t.p += r.p; t.o += r.o; t.n += r.n; t.e += r.e || 0; }); });
+      Object.keys(dd).forEach(function (key) { if (key === '_credits') return; var r = dd[key], t = out[key] = out[key] || { p: 0, o: 0, n: 0, e: 0 }; t.p += r.p; t.o += r.o; t.n += r.n; t.e += r.e || 0; }); });
     return out;
   }
   function table(title, rows, prices) {
@@ -41,7 +42,8 @@ HR.usageView = (function () {
   async function draw() {
     if (!box) return;
     var j = await HR.usage.month(), today = HR.usage.day();
-    box.innerHTML = '';
+    box.innerHTML = ''; var tav = (j.credits && j.credits.tavily) || 0;
+    if (tav || HR.web && HR.web.key()) box.appendChild(el('div', 'us-h' + (tav >= 900 ? ' warn' : ''), 'Tavily: ' + tav + '/1000 this month' + (tav >= 1000 ? ' — free credits used up' : '')));
     box.append(table('Today', sum(j.days, today), false), table('This month (' + HR.usage.ym().replace('_', '-') + ')', sum(j.days), true),
       el('p', 'hint', (HR.fs.ready() ? 'Saved to agent/usage/' + HR.usage.ym() + '.json.' : 'Saved in this browser (pick a folder to keep it as agent/usage/YYYY_MM.json).') +
         ' Counts come from the provider; ≈ = some calls estimated as characters / 4. Costs are estimates from your prices.'));

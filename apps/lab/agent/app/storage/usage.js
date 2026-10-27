@@ -2,6 +2,7 @@
    Per day, per "provider|model": {p (prompt / input tokens), o (output tokens), n (calls), e (calls with estimated counts)}.
    Folder connected: agent/usage/YYYY_MM.json ({v:1, days:{'YYYY-MM-DD':{'provider|model':{p,o,n,e}}}}); no folder:
    the same JSON in IndexedDB 'agent-chats'/'kv' under 'usage:YYYY_MM'. Writes are queued one after another.
+   AG6: credits(service, n) adds API credits (Tavily) to the month: j.credits {service: n} and j.days[d]._credits {service: n}.
    Prices (Settings → Usage, online models only): setting 'prices' {'provider|model': {in, out}} in $ per 1M tokens; cost(key, p, o). */
 HR.usage = (function () {
   var q = Promise.resolve(), subs = [];
@@ -34,8 +35,17 @@ HR.usage = (function () {
     }).catch(function () { /* usage is best effort */ });
     return q;
   }
+  function credits(svc, n) {
+    n = +n || 0; if (n <= 0) return q; var m = ym(), d = day();
+    q = q.then(async function () {
+      var j = await month(m), c = j.credits = j.credits || {}, dd = j.days[d] = j.days[d] || {}, dc = dd._credits = dd._credits || {};
+      c[svc] = (c[svc] || 0) + n; dc[svc] = (dc[svc] || 0) + n;
+      await save(m, j); subs.forEach(function (f) { try { f(); } catch (e) {} });
+    }).catch(function () {});
+    return q;
+  }
   function prices() { var v = HR.set.get('prices'); return v && typeof v === 'object' ? v : {}; }
   function setPrice(key, kind, val) { var p = prices(), r = p[key] = p[key] || {}; var n = parseFloat(val); if (isNaN(n) || n < 0) delete r[kind]; else r[kind] = n; if (!Object.keys(r).length) delete p[key]; HR.set.put('prices', p); }
   function cost(key, p, o) { var r = prices()[key]; if (!r || (r.in == null && r.out == null)) return null; return (p * (r.in || 0) + o * (r.out || 0)) / 1e6; }
-  return { record: record, month: month, ym: ym, day: day, prices: prices, setPrice: setPrice, cost: cost, onChange: function (f) { subs.push(f); } };
+  return { record: record, credits: credits, month: month, ym: ym, day: day, prices: prices, setPrice: setPrice, cost: cost, onChange: function (f) { subs.push(f); } };
 })();

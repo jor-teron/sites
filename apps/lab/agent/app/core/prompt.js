@@ -32,6 +32,7 @@ HR.prompt = (function () {
       : '- Files: read-only (list_dir, read_file, search). Writing is turned off — do not offer to write files.');
     else L.push('- No folder is connected: no file tools.');
     if (have.run_shell) L.push('- Shell: run_shell is available. ' + (HR.perms.auto('shell') ? 'Commands are auto-approved and run at once — only run safe commands.' : 'Every command asks the user first.'));
+    if (have.web_search) L.push('- Web: web_search (title, url, snippet) and web_fetch (page text, ~8k chars) are available; each call uses Tavily credits, so search only when the answer needs current or outside information and cite the URLs you used.');   /* AG6 */
     if (have.memory_read) L.push('- Memory is on: memory_read / memory_append with target user (facts about the user), assistant (your notes), ' +
       'session (what this chat is working on), topic (+ name). Save short durable facts; user and assistant notes are shared by all chats, session notes belong to this chat only.');
     else L.push('- Memory is off: you have no memory tools and no saved notes.');

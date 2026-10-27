@@ -84,7 +84,7 @@
 .meter.red .mt-bar i{background:var(--err)}.meter.red .mt-t{color:var(--err);cursor:pointer;font-weight:600}
 @media(min-width:960px){.meter{padding-left:max(24px,calc((100% - 860px)/2));padding-right:max(24px,calc((100% - 860px)/2))}}
 .chip.warn{border-color:var(--warn);color:var(--warn)}
-/* AG7 live shell chip, Undo write, Settings → Usage tables */
+/* AG7 live shell chip, Undo write, Settings → Usage tables (AG6: .us-h.warn Tavily credits) */
 .tool.live{border-left-color:var(--acc)}.tool.live .tool-body{max-height:320px}
 .hb.undo{align-self:flex-start;margin:-6px 0 0 6px;font-size:12px;height:26px;padding:0 10px}.steps .hb.undo{margin:6px 0 0}
 .undo:disabled{opacity:.6;cursor:default}
@@ -92,3 +92,4 @@
 .us-t{width:100%;border-collapse:collapse;font:12px/1.4 var(--mono)}.us-t th,.us-t td{padding:3px 6px;border-bottom:1px solid var(--line);text-align:right}
 .us-t th:first-child,.us-t td:first-child{text-align:left}.us-m{word-break:break-all}.us-tot td{font-weight:600;border-bottom:0}
 .us-price td{text-align:left;color:var(--mut)}.us-in{width:96px;height:26px;margin:0 6px 0 0}
+.us-h.warn{color:var(--warn)}

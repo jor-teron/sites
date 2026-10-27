@@ -11,10 +11,11 @@
    AG3 Display: showThink, showSteps, notifyLong 'on' (default); applyDisplay() sets body.no-think / body.no-steps.
    AG5 Display: tokenMeter 'on' (default), ctxMax (context size fallback when the provider doesn't report one, default 8192).
    AG7: liveShell 'off' (default; 'on' streams run_shell output via the helper's /run_stream, Stop kills the command),
+   AG6 Web: allowWeb 'on' (default; tools still hidden until tavilyKey is set), tavilyKey (localStorage only), webDepth 'basic' | 'advanced'.
    prices {'provider|model': {in, out}} $ per 1M tokens (Settings → Usage, app/gui/usageview.js). */
 HR.set = (function () {
   var KEY = 'agent.settings', DEF = { theme: 'dark', baseUrl: 'http://localhost:11434', model: '', think: 'auto', tools: 'on', maxSteps: 8, saveChats: 'on', helper: 'off', helperUrl: 'http://127.0.0.1:11500', helperToken: '', provider: 'ollama', openaiBase: 'https://api.openai.com/v1', browserModel: '',
-    autoWrite: 'off', autoShell: 'off', allowWrite: 'on', allowShell: 'on', memory: 'on', showThink: 'on', showSteps: 'on', notifyLong: 'on', tokenMeter: 'on', ctxMax: 8192, liveShell: 'off', prices: {} };
+    autoWrite: 'off', autoShell: 'off', allowWrite: 'on', allowShell: 'on', memory: 'on', showThink: 'on', showSteps: 'on', notifyLong: 'on', tokenMeter: 'on', ctxMax: 8192, liveShell: 'off', prices: {}, allowWeb: 'on', tavilyKey: '', webDepth: 'basic' };
   function all() { var s = {}; try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { s = {}; } return Object.assign({}, DEF, s); }
   function get(k) { return all()[k]; }
   function put(k, v) { var s = all(); s[k] = v; try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* memory only */ } }
@@ -44,10 +45,12 @@ HR.set = (function () {
     seg('setTheme', 'theme', [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']], applyTheme);
     seg('setThink', 'think', [['auto', 'Auto'], ['on', 'On'], ['off', 'Off']]);
     seg('setTools', 'tools', OO);
-    ['autoWrite', 'autoShell', 'allowWrite', 'allowShell', 'memory', 'showThink', 'showSteps', 'notifyLong', 'tokenMeter', 'liveShell'].forEach(function (k) {
+    ['autoWrite', 'autoShell', 'allowWrite', 'allowShell', 'memory', 'showThink', 'showSteps', 'notifyLong', 'tokenMeter', 'liveShell', 'allowWeb'].forEach(function (k) {
       seg('set_' + k, k, OO, applyDisplay);
     });
     applyDisplay();
+    seg('setWebDepth', 'webDepth', [['basic', 'Basic (1 credit)'], ['advanced', 'Advanced (2 credits)']]);
+    document.getElementById('setTavKey').value = get('tavilyKey') || '';
     seg('setSave', 'saveChats', [['on', 'On'], ['off', 'Off']]);
     seg('setHelper', 'helper', [['on', 'On'], ['off', 'Off']], function () { HR.helper.test(); });
     document.getElementById('setSteps').value = maxSteps(); document.getElementById('setCtx').value = ctxMax();
@@ -59,6 +62,8 @@ HR.set = (function () {
   function init() {
     var st = document.getElementById('setSteps');
     st.addEventListener('change', function () { put('maxSteps', Math.max(1, Math.min(30, parseInt(st.value, 10) || 8))); st.value = maxSteps(); });
+    var tk = document.getElementById('setTavKey');
+    tk.addEventListener('change', function () { put('tavilyKey', tk.value.trim()); });
     var cx = document.getElementById('setCtx');
     cx.addEventListener('change', function () { put('ctxMax', Math.max(512, Math.min(2000000, parseInt(cx.value, 10) || 8192))); cx.value = ctxMax(); applyDisplay(); });
     var dlg = document.getElementById('settings'), u = document.getElementById('setBase');

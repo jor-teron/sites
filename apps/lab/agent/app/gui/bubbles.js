@@ -84,6 +84,10 @@ HR.view = (function () {
   }
   function clearErrors() { [].forEach.call(log.querySelectorAll('.ecard'), function (c) { c.remove(); }); }
   function code(t) { return el('code', null, t); }
+  function infoCard(title, text) {   /* AG6: tool-side error card (e.g. Tavily 401 / 429 / out of credits) */
+    var c = el('div', 'ecard'), x = el('button', 'hb', '✕'), row = el('div', 'ec-row'); x.type = 'button'; x.setAttribute('aria-label', 'Dismiss'); x.onclick = function () { c.remove(); };
+    row.appendChild(x); c.append(el('div', 'ec-t', title), el('div', 'ec-b', text), row); log.appendChild(c); bottom(); return c;
+  }
   function errorCard(e) {
     if (e && e.kind === 'download') { if (HR.bcard) HR.bcard.show(); return; }
     clearErrors(); var h = log.querySelector('.hello'); if (h) h.remove();
@@ -112,5 +116,5 @@ HR.view = (function () {
     row.append(retry, x); c.append(t, p, row); log.appendChild(c); bottom(true);
   }
   function init(l) { log = l; }
-  return { init: init, el: el, undoBtn: undoBtn, bubble: bubble, tool: tool, note: note, hello: hello, folderHint: folderHint, errorCard: errorCard, clearErrors: clearErrors, bottom: bottom };
+  return { init: init, el: el, undoBtn: undoBtn, infoCard: infoCard, bubble: bubble, tool: tool, note: note, hello: hello, folderHint: folderHint, errorCard: errorCard, clearErrors: clearErrors, bottom: bottom };
 })();

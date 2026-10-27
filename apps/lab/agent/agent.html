@@ -8,7 +8,7 @@
   Agent's own vendor/transformers-3.7.0 in a Web Worker; tap-to-download, fallback when others are offline). AG3: Settings → Permissions
   (auto-approve, allow writes / shell, memory) and Display (thinking, steps pane, long-task Hub card). See agent_readme.md.
   Styles: ui/main.css (theme, layout), ui/components.css (buttons, bubbles, cards, dialog), ui/steps.css (steps pane).
-  Scripts (order matters): app/core (migrate, messages, tools, perms, loop, prompt, helper), app/models (net, registry, ollama, openai, gemini, browser [+ browser_worker.js]), app/storage (fs, logs, threadfmt, threads, usage, trash), app/tools/*,
+  Scripts (order matters): app/core (migrate, messages, tools, perms, loop, prompt, helper), app/models (net, registry, ollama, openai, gemini, browser [+ browser_worker.js]), app/storage (fs, logs, threadfmt, threads, usage, trash), app/tools/* (time, files, memory, shell, web),
   app/gui (settings, model, steps, bubbles, approve, folder, helperset, provider, browsercard, chat, chats, meter, edit, usageview), app/main.js.
 -->
 <html lang="en">
@@ -19,10 +19,10 @@
   <meta name="theme-color" content="#111318">
   <title>Agent</title>
   <link rel="icon" href="agent_icon.png">
-  <link rel="stylesheet" href="ui/main.css?v=20261027ag7">
-  <link rel="stylesheet" href="ui/components.css?v=20261027ag7">
-  <link rel="stylesheet" href="ui/steps.css?v=20261027ag7">
-  <link rel="stylesheet" href="ui/chats.css?v=20261027ag7">
+  <link rel="stylesheet" href="ui/main.css?v=20261027ag7b">
+  <link rel="stylesheet" href="ui/components.css?v=20261027ag7b">
+  <link rel="stylesheet" href="ui/steps.css?v=20261027ag7b">
+  <link rel="stylesheet" href="ui/chats.css?v=20261027ag7b">
   <script src="../../../shared/theme/hub_theme.js?v=20261026h22"></script>
   <script>try{var s=JSON.parse(localStorage.getItem('agent.settings')||localStorage.getItem('harness.settings')||'{}'),m=s.theme||'dark';document.documentElement.dataset.ht=m==='light'?'light':m==='system'?(localStorage.getItem('sites-hub.theme')==='light'?'light':'dark'):'dark'}catch(e){document.documentElement.dataset.ht='dark'}</script>
 </head>
@@ -87,6 +87,12 @@
   <div class="sw"><span>Allow file writes <small>(Off = read-only)</small></span><div class="seg" id="set_allowWrite" role="radiogroup" aria-label="Allow file writes"></div></div>
   <div class="sw"><span>Allow shell <small>(Off hides run_shell)</small></span><div class="seg" id="set_allowShell" role="radiogroup" aria-label="Allow shell"></div></div>
   <div class="sw"><span>Memory <small>(tools + notes in the prompt)</small></span><div class="seg" id="set_memory" role="radiogroup" aria-label="Memory"></div></div>
+  <h3 class="grp">Web</h3>
+  <div class="sw"><span>Allow web <small>(web_search / web_fetch; needs a key)</small></span><div class="seg" id="set_allowWeb" role="radiogroup" aria-label="Allow web"></div></div>
+  <input id="setTavKey" class="inp gap" type="password" spellcheck="false" autocomplete="off" placeholder="Tavily API key (tvly-…)" aria-label="Tavily API key">
+  <p class="hint">🔒 Stored only in this browser on this device (localStorage) and sent only to api.tavily.com. Get a free key at <a href="https://tavily.com" target="_blank" rel="noopener">tavily.com</a> (1,000 credits / month). Clear the field to remove it.</p>
+  <h3>Search depth</h3><div class="seg" id="setWebDepth" role="radiogroup" aria-label="Search depth"></div>
+  <p class="hint">Basic = 1 credit per search or page read; Advanced = 2 credits, better results. Web tools need no approval (read-only) but show in Steps.</p>
   <h3 class="grp">Display</h3>
   <div class="sw"><span>Show thinking</span><div class="seg" id="set_showThink" role="radiogroup" aria-label="Show thinking"></div></div>
   <div class="sw"><span>Show steps pane</span><div class="seg" id="set_showSteps" role="radiogroup" aria-label="Show steps pane"></div></div>
@@ -114,44 +120,45 @@
   <div id="pickList" class="pk-list"></div>
   <button type="button" class="hb wide pk-def" id="pickDef">Make default for new chats</button>
 </dialog>
-<script src="app/core/migrate.js?v=20261027ag7"></script>
-<script src="app/core/messages.js?v=20261027ag7"></script>
-<script src="app/core/tools.js?v=20261027ag7"></script>
-<script src="app/core/perms.js?v=20261027ag7"></script>
-<script src="app/core/loop.js?v=20261027ag7"></script>
-<script src="app/core/prompt.js?v=20261027ag7"></script>
-<script src="app/core/memory.js?v=20261027ag7"></script>
-<script src="app/core/helper.js?v=20261027ag7"></script>
-<script src="app/models/net.js?v=20261027ag7"></script>
-<script src="app/models/registry.js?v=20261027ag7"></script>
-<script src="app/models/ollama.js?v=20261027ag7"></script>
-<script src="app/models/openai.js?v=20261027ag7"></script>
-<script src="app/models/gemini.js?v=20261027ag7"></script>
-<script src="app/models/browser.js?v=20261027ag7"></script>
-<script src="app/storage/fs.js?v=20261027ag7"></script>
-<script src="app/storage/logs.js?v=20261027ag7"></script>
-<script src="app/storage/threadfmt.js?v=20261027ag7"></script>
-<script src="app/storage/threads.js?v=20261027ag7"></script>
-<script src="app/storage/usage.js?v=20261027ag7"></script>
-<script src="app/storage/trash.js?v=20261027ag7"></script>
-<script src="app/tools/time.js?v=20261027ag7"></script>
-<script src="app/tools/files.js?v=20261027ag7"></script>
-<script src="app/tools/memory.js?v=20261027ag7"></script>
-<script src="app/tools/shell.js?v=20261027ag7"></script>
-<script src="app/gui/settings.js?v=20261027ag7"></script>
-<script src="app/gui/model.js?v=20261027ag7"></script>
-<script src="app/gui/steps.js?v=20261027ag7"></script>
-<script src="app/gui/bubbles.js?v=20261027ag7"></script>
-<script src="app/gui/approve.js?v=20261027ag7"></script>
-<script src="app/gui/folder.js?v=20261027ag7"></script>
-<script src="app/gui/helperset.js?v=20261027ag7"></script>
-<script src="app/gui/provider.js?v=20261027ag7"></script>
-<script src="app/gui/browsercard.js?v=20261027ag7"></script>
-<script src="app/gui/chat.js?v=20261027ag7"></script>
-<script src="app/gui/chats.js?v=20261027ag7"></script>
-<script src="app/gui/meter.js?v=20261027ag7"></script>
-<script src="app/gui/edit.js?v=20261027ag7"></script>
-<script src="app/gui/usageview.js?v=20261027ag7"></script>
-<script src="app/main.js?v=20261027ag7"></script>
+<script src="app/core/migrate.js?v=20261027ag7b"></script>
+<script src="app/core/messages.js?v=20261027ag7b"></script>
+<script src="app/core/tools.js?v=20261027ag7b"></script>
+<script src="app/core/perms.js?v=20261027ag7b"></script>
+<script src="app/core/loop.js?v=20261027ag7b"></script>
+<script src="app/core/prompt.js?v=20261027ag7b"></script>
+<script src="app/core/memory.js?v=20261027ag7b"></script>
+<script src="app/core/helper.js?v=20261027ag7b"></script>
+<script src="app/models/net.js?v=20261027ag7b"></script>
+<script src="app/models/registry.js?v=20261027ag7b"></script>
+<script src="app/models/ollama.js?v=20261027ag7b"></script>
+<script src="app/models/openai.js?v=20261027ag7b"></script>
+<script src="app/models/gemini.js?v=20261027ag7b"></script>
+<script src="app/models/browser.js?v=20261027ag7b"></script>
+<script src="app/storage/fs.js?v=20261027ag7b"></script>
+<script src="app/storage/logs.js?v=20261027ag7b"></script>
+<script src="app/storage/threadfmt.js?v=20261027ag7b"></script>
+<script src="app/storage/threads.js?v=20261027ag7b"></script>
+<script src="app/storage/usage.js?v=20261027ag7b"></script>
+<script src="app/storage/trash.js?v=20261027ag7b"></script>
+<script src="app/tools/time.js?v=20261027ag7b"></script>
+<script src="app/tools/files.js?v=20261027ag7b"></script>
+<script src="app/tools/memory.js?v=20261027ag7b"></script>
+<script src="app/tools/shell.js?v=20261027ag7b"></script>
+<script src="app/tools/web.js?v=20261027ag7b"></script>
+<script src="app/gui/settings.js?v=20261027ag7b"></script>
+<script src="app/gui/model.js?v=20261027ag7b"></script>
+<script src="app/gui/steps.js?v=20261027ag7b"></script>
+<script src="app/gui/bubbles.js?v=20261027ag7b"></script>
+<script src="app/gui/approve.js?v=20261027ag7b"></script>
+<script src="app/gui/folder.js?v=20261027ag7b"></script>
+<script src="app/gui/helperset.js?v=20261027ag7b"></script>
+<script src="app/gui/provider.js?v=20261027ag7b"></script>
+<script src="app/gui/browsercard.js?v=20261027ag7b"></script>
+<script src="app/gui/chat.js?v=20261027ag7b"></script>
+<script src="app/gui/chats.js?v=20261027ag7b"></script>
+<script src="app/gui/meter.js?v=20261027ag7b"></script>
+<script src="app/gui/edit.js?v=20261027ag7b"></script>
+<script src="app/gui/usageview.js?v=20261027ag7b"></script>
+<script src="app/main.js?v=20261027ag7b"></script>
 </body>
 </html>
