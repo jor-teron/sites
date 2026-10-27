@@ -26,6 +26,7 @@
     game.banner = CFG.rounds.betweenSeconds;   // seconds the 'Round n' banner shows (timer waits)
     game.balls = [];
     TT.spawnAllTargets();
+    if (TT.fx) TT.fx.clear();
     if (TT.sound) TT.sound('round');
   };
 

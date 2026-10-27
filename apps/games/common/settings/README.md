@@ -103,7 +103,7 @@ nor are Hub/Learn/other keys. The page lists the keys and asks to confirm first.
 
 | Game | Status | Notes |
 |---|---|---|
-| Tennis Ball Blitz (`tennis-throw`) | done (TB4/GS1) | fpsLimit, difficulty, vibration, showHints, showFps, autoPause, theme (dark sky), gear. No sound, so music/sfx/volume unused |
+| Tennis Ball Blitz (`tennis-throw`) | done (TB4/GS1, TB9) | fpsLimit, difficulty (round goal, round time, bird speed), vibration, showHints, showFps (real-time), autoPause, theme (dark sky), sfx + masterVolume (WebAudio blips), lowGraphics (fewer particles), gear |
 | LandCraft (`landcraft`) | done (LC3) | fpsLimit (render throttle), renderDistance (+ fog), pixelRatio (`auto` = up to 2, or 1 with lowGraphics), sensitivity, showFps, autoJump + holdRepeat (touch only), gear. No sound; theme, difficulty, autoPause, vibration, joystick/button options unused |
 | Tetris (`tetris`) | done (GS2) | fpsLimit (draw throttle; gravity on real time, catches up missed steps), difficulty (fall-speed multiplier in `tetris_config.js`), theme (`light` = inverted B/W, auto/dark = classic black), autoPause, showHints (controls help), showFps, vibration (lines / game over), gear (top-right). No sound; controls/3D options unused |
 | Tic-tac-toe (`tic-tac-toe`) | done (GS2) | difficulty (vs CPU Easy win/block chances in config; Hard stays perfect play), theme (light/dark colours), vibration (win/loss; hub rumble or phone), gear (button row). No loop/timer or sound: fpsLimit, showFps, autoPause, sound unused |

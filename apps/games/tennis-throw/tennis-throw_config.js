@@ -111,6 +111,10 @@ const TENNIS_THROW_CONFIG = {
   // TB8: combo multiplier. Consecutive hits raise it; a ball that misses resets it.
   combo: { step: 0.5, max: 3 },  // ×1, ×1.5, ×2 ... up to ×3
 
+  // TB9: hit effects (kept modest for weak phones) and sound
+  fx: { particlesPerHit: 10, maxParticles: 40, particleSpeed: 220, particleLife: 0.6, textLife: 0.9 },
+  sound: { volume: 0.25 },   // × Games settings masterVolume
+
   bestKey: 'tennisThrow.best',   // TB8: localStorage key for the best score
 
   // TB4/GS1: hit feedback and dark theme (theme 'dark' in Games settings)
@@ -136,6 +140,11 @@ const TENNIS_THROW_CONFIG = {
     aimLine: 'rgba(255, 255, 100, 0.85)', // TB3: dotted predicted arc
     powerBarOutline: 'rgba(255, 255, 255, 0.8)', // power bar border
     targetFont: 'Arial',                  // font used for emoji targets
+    ground: '#3f9b4a',                    // TB9: grass strip
+    court: '#c96b3c',                     // TB9: clay court at the launcher
+    courtLine: 'rgba(255,255,255,0.85)',  // TB9: court lines
+    seam: '#ffffff',                      // TB9: tennis ball seam
+    cloud: 'rgba(255,255,255,0.7)',       // TB9: clouds
   },
 
   // Key bindings — matched against KeyboardEvent.code OR .key.

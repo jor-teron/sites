@@ -42,7 +42,7 @@
   /** Launch a ball now (no limits; use tryThrow for player input). */
   TT.throwBall = function () {
     const p = TT.launchPoint(), v = TT.aimVelocity();
-    game.balls.push({ x: p.x, y: p.y, vx: v.vx, vy: v.vy, age: 0, trailX: [], trailY: [] });
+    game.balls.push({ x: p.x, y: p.y, vx: v.vx, vy: v.vy, age: 0, spin: 0, trailX: [], trailY: [] });
   };
 
   /** TB1: throw only after the cooldown and while fewer than maxBallsInAir fly. */
@@ -52,6 +52,7 @@
     if (game.balls.length >= CFG.throwing.maxBallsInAir) return false;
     game.lastThrow = game.clock;
     TT.throwBall();
+    if (TT.sound) TT.sound('throw');
     return true;
   };
 
@@ -62,6 +63,7 @@
       const px = ball.x, py = ball.y;
       TT.stepBody(ball, dt);
       ball.age += dt;
+      ball.spin += ball.vx * dt * 0.05;   // TB9: rolling spin for the seam
       if (TT.bounceWalls(ball, W) && TT.onBounce) TT.onBounce(ball);
       ball.trailX.push(ball.x); ball.trailY.push(ball.y);
       if (ball.trailX.length > CFG.ball.maxTrail) { ball.trailX.shift(); ball.trailY.shift(); }

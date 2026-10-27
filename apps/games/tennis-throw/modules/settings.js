@@ -1,16 +1,16 @@
 /*
  * File: modules/settings.js
- * Project: tennis-throw — TB4/GS1
+ * Project: tennis-throw — TB4/GS1, TB9 sound
  * Purpose: Bridge to the shared Games settings (apps/games/common/settings).
  *          TT.settings has get(), fps(), onChange(), mountGear(), vibrate().
  *          If games-settings.js did not load (blocked, offline, old copy),
  *          it falls back to fixed defaults, so the game always runs.
- *          Note: this game has no sound, so music / sfx / masterVolume are not used.
+ *          TB9: sfx + masterVolume drive modules/sound.js; lowGraphics halves particles.
  */
 (function (TT) {
   const GS = window.GameSettings;
   const FALLBACK = { theme: 'auto', fpsLimit: TT.CFG.loop.fps, difficulty: 'normal', vibration: true,
-    showHints: true, showFps: false, autoPause: true };
+    showHints: true, showFps: false, autoPause: true, sfx: true, masterVolume: 0.8, lowGraphics: false };
 
   TT.settings = GS ? {
     get: k => GS.get(k),

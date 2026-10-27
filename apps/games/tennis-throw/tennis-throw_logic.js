@@ -10,6 +10,8 @@
  *   modules/rounds.js   TB8 rounds, countdown, combo, best score
  *   modules/render.js   drawing
  *   modules/input.js    keyboard + touch/mouse drag
+ *   modules/fx.js       TB9 hit particles + floating points
+ *   modules/sound.js    TB9 WebAudio blips (masterVolume / sfx)
  *   modules/settings.js TB4/GS1 Games settings bridge (defaults if the shared script is missing)
  *   modules/loop.js     fixed-timestep clock
  */
