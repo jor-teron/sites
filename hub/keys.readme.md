@@ -1,4 +1,4 @@
-# Hub keys guide (H28)
+# Hub keys guide (H28, H28.1)
 
 One place for the API keys that Hub apps use: **Settings → API Keys**.
 Add a key once and every Hub app (Agent, News, …) can use it. No app asks again.
@@ -40,7 +40,8 @@ Add a key once and every Hub app (Agent, News, …) can use it. No app asks agai
 
 ### `openai_base` + `openai_key`: OpenAI-compatible server
 
-Any service that speaks the OpenAI API. Set the base URL and its key:
+Any service that speaks the OpenAI API. Set the base URL and its key. Groq, OpenRouter, DeepSeek and xAI
+also have their own rows below (H28.1). Use those, and keep this pair for anything else (or a local server).
 
 | Service | Base URL (`openai_base`) | Key (`openai_key`) |
 |---|---|---|
@@ -64,6 +65,41 @@ Any service that speaks the OpenAI API. Set the base URL and its key:
   A page served over https can't reach `http://` addresses other than localhost.
 - **Test button:** calls `<url>/api/tags` and counts your models.
 
+### `groq`: Groq (H28.1)
+
+- **For:** fast open models (for example gpt-oss, Qwen and Llama) through an OpenAI-style API. Base URL `https://api.groq.com/openai/v1`.
+- **Get it:** <https://console.groq.com/keys> (sign in, then **Create API Key**; keys start with `gsk_`).
+- **Free:** there is a free plan, and its limits are per model (requests and tokens per minute and per day).
+  They change often, so **check the page**: <https://console.groq.com/docs/rate-limits>, and your own limits are under
+  Settings → Limits in the console. The paid Developer plan has higher limits.
+- **Test button:** lists the models (`GET api.groq.com/openai/v1/models`), which is free.
+
+### `openrouter`: OpenRouter (H28.1)
+
+- **For:** hundreds of models from many providers behind one key and one OpenAI-style API. Base URL `https://openrouter.ai/api/v1`.
+- **Get it:** <https://openrouter.ai/settings/keys> (keys start with `sk-or-`).
+- **Free:** models whose id ends in `:free` cost nothing. They're limited to 20 requests a minute, and to 50 requests a day
+  until you've bought at least 10 credits, then 1,000 a day. Other models are paid from prepaid credits.
+  Details: <https://openrouter.ai/docs/api-reference/limits>
+- **Test button:** reads the key's info (`GET openrouter.ai/api/v1/key`): the credit left on the key and the free-model
+  requests left today. The model list (`/api/v1/models`) is public, so it can't prove a key works.
+
+### `deepseek`: DeepSeek (H28.1)
+
+- **For:** DeepSeek's models (chat and reasoning) through an OpenAI-style API. Base URL `https://api.deepseek.com`.
+- **Get it:** <https://platform.deepseek.com/api_keys> (sign up at <https://platform.deepseek.com>).
+- **Free:** no free tier is listed. It's pay as you go from a prepaid balance (top up in the platform). For prices,
+  **check the page**: <https://api-docs.deepseek.com/quick_start/pricing>
+- **Test button:** lists the models (`GET api.deepseek.com/models`), which is free.
+
+### `xai`: Grok API by xAI (H28.1)
+
+- **For:** xAI's Grok models (chat, code, images, voice) through an OpenAI-style API. Base URL `https://api.x.ai/v1`.
+- **Get it:** <https://console.x.ai> (sign in, then **API Keys** → **Create API key**; keys start with `xai-`).
+- **Free:** it's paid per token. For any free credits on your account, **check the page** (console.x.ai, Billing).
+  Prices per model are at <https://docs.x.ai/docs/models>.
+- **Test button:** lists the models (`GET api.x.ai/v1/models`), which is free. xAI answers a bad key with 400.
+
 ### Custom keys
 
 Any other name (for example `groq`, `openweather`). An app asks for it by name, and
@@ -86,7 +122,8 @@ HubKeys.onChange(fn)       // fn({name, present}); also fires for changes made i
 HubKeys.KNOWN              // [{name, label, kind: 'key' | 'url', url, hint}]
 ```
 
-Known names: `tavily`, `gemini`, `openai_base`, `openai_key`, `ollama_url`. Names are lowercased.
+Known names: `tavily`, `gemini`, `openai_base`, `openai_key`, `ollama_url`, `groq`, `openrouter`,
+`deepseek`, `xai`. Names are lowercased.
 
 **Standalone fallback.** When the app is opened on its own (not in the Hub), `window.top.HubKeys`
 doesn't exist. Keep the app's own key field for that case:

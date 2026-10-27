@@ -14,7 +14,7 @@
  *                              frame, via the 'storage' event); name '' = several changed. Returns unsubscribe().
  *   HubKeys.KNOWN              [{name, label, kind, url, hint}] the keys Settings shows a row for
  * Names: lowercase letters, digits, '_', '-', '.' (1–40). Known: tavily, gemini, openai_base,
- * openai_key, ollama_url; anything else is a custom key. Standalone app fallback:
+ * openai_key, ollama_url, groq, openrouter, deepseek, xai (H28.1); anything else is a custom key. Standalone app fallback:
  *   const k = window.top?.HubKeys ? await window.top.HubKeys.get('tavily') : localKey;
  * Readme: hub/keys.readme.md.
  */
@@ -29,6 +29,11 @@
     { name: 'openai_base', label: 'OpenAI-compatible base URL', kind: 'url', url: 'https://platform.openai.com/docs/api-reference', hint: 'e.g. https://api.openai.com/v1, https://api.groq.com/openai/v1, https://openrouter.ai/api/v1' },
     { name: 'openai_key', label: 'OpenAI-compatible key', kind: 'key', url: 'https://platform.openai.com/api-keys', hint: 'The key for the base URL above.' },
     { name: 'ollama_url', label: 'Ollama URL', kind: 'url', url: 'https://ollama.com/download', hint: 'Local models, e.g. http://localhost:11434 (no key).' },
+    // H28.1
+    { name: 'groq', label: 'Groq', kind: 'key', url: 'https://console.groq.com/keys', hint: 'Fast open models (Llama, Qwen, gpt-oss). Free plan with per-model limits.' },
+    { name: 'openrouter', label: 'OpenRouter', kind: 'key', url: 'https://openrouter.ai/settings/keys', hint: 'Hundreds of models behind one key; some :free models.' },
+    { name: 'deepseek', label: 'DeepSeek', kind: 'key', url: 'https://platform.deepseek.com/api_keys', hint: 'DeepSeek models. Paid (prepaid balance).' },
+    { name: 'xai', label: 'Grok API (xAI)', kind: 'key', url: 'https://console.x.ai', hint: 'Grok models from xAI. Paid per token.' },
   ];
   const listeners = new Set();
 

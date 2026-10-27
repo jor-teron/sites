@@ -11,6 +11,9 @@
  *   gemini      GET generativelanguage.googleapis.com/v1beta/models (model list, free)
  *   ollama_url  GET <url>/api/tags
  *   openai_*    GET <base>/models with the key (Bearer)
+ *   H28.1, all Bearer: groq GET api.groq.com/openai/v1/models, openrouter GET openrouter.ai/api/v1/key
+ *   (its /models list is public, so /key is what proves the key), deepseek GET api.deepseek.com/models,
+ *   xai GET api.x.ai/v1/models. All four answer browser (CORS) requests.
  * Guide: hub/keys.readme.md (shown folded at the bottom, plus a GitHub link).
  */
 (function () {
@@ -75,7 +78,31 @@
       const n = (j.data || j.models || []).length;
       return { ok: true, text: 'Works' + (n ? ' \u00b7 ' + n + ' models' : '') };
     },
+    // H28.1: OpenAI-style model lists (Bearer key)
+    groq: (v) => modelsTest('https://api.groq.com/openai/v1/models', v),
+    deepseek: (v) => modelsTest('https://api.deepseek.com/models', v),
+    xai: (v) => modelsTest('https://api.x.ai/v1/models', v),
+    async openrouter(v) {
+      const r = await fetchT('https://openrouter.ai/api/v1/key', { headers: { Authorization: 'Bearer ' + v } });
+      if (r.status === 401 || r.status === 403) return { ok: false, text: 'Key rejected (' + r.status + ')' };
+      if (!r.ok) return { ok: false, text: 'OpenRouter answered ' + r.status };
+      const d = ((await r.json().catch(() => ({}))).data) || {};
+      const f = d.free_model_daily_requests;
+      const bits = [];
+      if (d.limit_remaining != null) bits.push('$' + (+d.limit_remaining).toFixed(2) + ' left on this key');
+      if (f && f.limit != null) bits.push(f.remaining + ' / ' + f.limit + ' free-model requests left today');
+      return { ok: true, text: 'Key works' + (bits.length ? ' \u00b7 ' + bits.join(' \u00b7 ') : '') };
+    },
   };
+  /** GET <url> with a Bearer key; 400 / 401 / 403 = key rejected (xAI answers 400 to a bad key). */
+  async function modelsTest(url, v) {
+    const r = await fetchT(url, { headers: { Authorization: 'Bearer ' + v } });
+    if (r.status === 400 || r.status === 401 || r.status === 403) return { ok: false, text: 'Key rejected (' + r.status + ')' };
+    if (!r.ok) return { ok: false, text: 'Server answered ' + r.status };
+    const j = await r.json().catch(() => ({}));
+    const n = (j.data || j.models || []).length;
+    return { ok: true, text: 'Key works' + (n ? ' \u00b7 ' + n + ' models' : '') };
+  }
   const testFor = (name) => (name === 'openai_base' || name === 'openai_key' ? TESTS.openai : TESTS[name]);
   const REACH = {
     ollama_url: 'Could not reach Ollama. Is it running, and started with OLLAMA_ORIGINS set to allow this site?',
