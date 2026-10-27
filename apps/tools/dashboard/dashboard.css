@@ -133,3 +133,24 @@ ul.list li:last-child{border-bottom:0}
 .sd-moon{filter:drop-shadow(0 0 4px #bcd3ff99)}
 .sd-moon-dark{fill:#cfd4dc;fill-opacity:.18;stroke:#cfd4dc;stroke-opacity:.7;stroke-width:1.2}.sd-moon-lit{fill:#cfd4dc}
 [data-theme=dark] .sd-moon-lit{fill:#dde2ea}[data-theme=dark] .sd-moon{filter:drop-shadow(0 0 5px #9fc2ffaa)}
+/* PD8 News */
+.nw-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.nw-seg{gap:6px}
+.btn.spin{animation:nwspin 1s linear infinite}@keyframes nwspin{to{transform:rotate(360deg)}}
+.nw-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.nw-list li{animation:pop .4s cubic-bezier(.34,1.8,.64,1) both}
+.nw-a{display:block;padding:8px 10px;border:2px solid var(--line);border-radius:12px;color:var(--fg);text-decoration:none;transition:transform .18s cubic-bezier(.34,1.8,.64,1),border-color .15s}
+.nw-a:hover,.nw-a:focus{transform:scale(1.02);border-color:var(--acc)}
+.nw-t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:600;line-height:1.3}
+.nw-m{display:block;font-size:13px;color:var(--mut);margin-top:2px}
+.nw-foot{margin-top:6px}
+/* PD8 Phone */
+.ph-bat{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.ph-cell{position:relative;width:120px;height:46px;border:3px solid var(--fg);border-radius:10px;overflow:hidden}
+.ph-fill{height:100%;background:var(--low);transition:width .6s cubic-bezier(.34,1.8,.64,1)}
+.ph-bat.mid .ph-fill{background:var(--med)}.ph-bat.low .ph-fill{background:var(--hi)}
+.ph-bat.chg .ph-fill{animation:phglow 1.6s ease-in-out infinite}@keyframes phglow{50%{opacity:.6}}
+.ph-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:var(--fg)}
+.ph-txt{font-size:15px}.ph-lbl{font-weight:600;margin-bottom:4px}
+.ph-bar{height:12px;border-radius:8px;background:var(--acc2);overflow:hidden;margin-bottom:4px}.ph-bar>div{height:100%;background:var(--acc);border-radius:8px}
+@media(min-width:1000px){.nw-m,.ph-txt{font-size:16px}.ph-cell{width:150px;height:56px}.ph-pct{font-size:24px}}

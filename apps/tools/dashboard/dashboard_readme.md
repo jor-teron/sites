@@ -9,7 +9,7 @@ One offline-first page showing what matters today. Works on phone (stacked list)
 - `dashboard_core.js` — card registry (`MyDay.register({id,title,render,defaultOn})`), layout, clock/greeting, alerts API (`MyDay.alert(key,text,'high'|'med')`, `MyDay.clearAlert(key)`), theme
 - `dashboard_settings.js` — Settings dialog: theme auto/light/dark, cards on/off and up/down order
 - `dashboard_app.js` — boot, arrow-key navigation, service worker registration
-- `cards/` — one file per card: `card_weather.js`, `card_todo.js`, `card_schedule.js`, `card_notes.js`, `card_links.js`
+- `cards/` — one file per card: `card_weather.js`, `card_todo.js`, `card_schedule.js`, `card_notes.js`, `card_links.js`, `card_news.js`, `card_phone.js`
 - `dashboard_sw.js` — cache-first service worker (bump `VER` when files change); `manifest.json`, icons
 
 Adding a card: create `cards/card_x.js` calling `MyDay.register(...)`, add a `<script>` in `dashboard.html` and the path in `dashboard_sw.js`.
@@ -27,6 +27,7 @@ Adding a card: create `cards/card_x.js` calling `MyDay.register(...)`, add a `<s
 - **PD4.2** — Sun & Moon dial flips 180° at night (sunset→sunrise): midnight on top with starry night half, day half below; 0.8 s jelly rotation on switch; rim labels and moon counter-rotate to stay upright, place name outside the rotating group. Moon position is derived from phase (lags sun by phase × 24 h), not an ephemeris. Settings: Time format 12-hour (default) / 24-hour in `myday.timefmt`, used by `MDStore.fmtTime`.
 - **PD4.3** — Sun & Moon dial uses clock time: 12:00 top, 18:00 right, 00:00 bottom, 06:00 left (clockwise). Faint fixed 6 AM–6 PM reference line through the centre; sunrise–sunset chord placed by clock so it tilts naturally. Solar noon is a small rim dot (label removed; time stays in the list). Sun, moon, progress arc, labels and the PD4.2 night flip all use clock angles.
 - **PD4.4** — Dial moon is a silver-grey SVG (#cfd4dc, slightly lighter in dark) with a soft cool glow, drawn in its current phase from `MDSun.moon().phase` (semicircle + terminator ellipse; waxing lit right, waning lit left, northern view); dark part faint with outline. Stays upright through the night flip. Sun unchanged.
+- **PD8** — News card: top 5 headlines (title, source, “2 h ago · time” via `MDStore.fmtTime`), tap opens in a new tab; Assam / India toggle (`myday.news.region`); ↻ refresh, auto-refresh if older than 30 min; last list cached in `myday.news.cache` and shown offline with “offline, showing saved”. Source: Google News RSS (Assam = search `Assam when:2d`, India = top stories) via feedrapp.info (free RSS→JSON, CORS `*`, no key), fallback allorigins.win raw XML. Limits: third-party free services with no uptime guarantee; links go via news.google.com redirect; headlines only (no summary). Phone card: battery % bar + charging / time left with live updates (`navigator.getBattery`, Chrome/Edge/Android only), low-battery (≤15%, not charging) top-strip alert; “This app's storage” used / allowed (`navigator.storage.estimate`). Unsupported parts hidden. SW `myday-pd8`, `?v=20261027pd8` on all local tags.
 
 ## Roadmap
 - **PD3** — AQI in Weather + Today strip (done)
@@ -34,5 +35,5 @@ Adding a card: create `cards/card_x.js` calling `MyDay.register(...)`, add a `<s
 - **PD5** — Countdown: named dates, nearest big, past auto-drop
 - **PD6** — Bills + Expenses (due dates, amounts, monthly total) with optional PIN
 - **PD7** — Family card: medicine times, birthdays in next 7 days, shopping list with total
-- **PD8** — News: local / Assam / national headlines (title + summary)
+- **PD8** — News: Assam / India headlines (done) + Phone card (battery, storage)
 - **PD9** — TV mode (bigger text, remote nav, auto-refresh 15 min) + power/network log
