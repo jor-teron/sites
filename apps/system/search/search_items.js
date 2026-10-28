@@ -1,0 +1,43 @@
+/*
+ * Hub Search items (apps/system/search/search_items.js), H48 — the Hub things that are not apps.
+ * window.HUB_SEARCH_ITEMS.settings: Settings pages / options → opens apps/system/settings/#<hash>.
+ *   hash 'section' opens that page; 'section/sub' also scrolls to that card (only subs the section
+ *   really handles: about/device (H46), about/profile). Keep in step with apps/system/settings/sec_*.js
+ *   (Settings.add ids and their ui.title() rows) when a page or option is added or renamed.
+ *   words: extra search words (not shown; the top-level pages also have 'settings', so the query
+ *   'settings' lists the pages, not every option).
+ * window.HUB_SEARCH_ITEMS.actions: Hub actions, run on the parent Hub's window.HubWM (Desktop mode only);
+ *   search.js knows each id. Only safe, undoable ones (nothing closes or deletes).
+ */
+window.HUB_SEARCH_ITEMS = {
+  settings: [
+    { name: 'Wallpaper', hash: 'wallpaper', icon: '\uD83D\uDDBC\uFE0F', where: 'Settings', words: 'settings background picture colours gradients desktop image' },
+    { name: 'Desktop', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings', words: 'settings screen mode phone home screen home button start menu taskbar screen saver' },
+    { name: 'Screen mode (Desktop / Phone)', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'phone mode desktop mode auto' },
+    { name: 'Open windows maximised', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'maximize fullscreen new windows' },
+    { name: 'Start menu: open on hover', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'menu hover start' },
+    { name: 'Show Files on the desktop', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'drives icons home' },
+    { name: 'Busy meter in the taskbar', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'cpu graph tray clock' },
+    { name: 'Screen saver', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'saver idle clock lock' },
+    { name: 'Windows', hash: 'windows', icon: '\uD83E\uDE9F', where: 'Settings', words: 'settings focus hover snapping snap magnetic edges workspaces title bar thumbnails notifications' },
+    { name: 'Workspaces', hash: 'windows', icon: '\uD83E\uDE9F', where: 'Settings \u203A Windows', words: 'virtual desktops two one' },
+    { name: 'Snap windows to screen edges', hash: 'windows', icon: '\uD83E\uDE9F', where: 'Settings \u203A Windows', words: 'snapping half magnet magnetic' },
+    { name: 'Files: open items with', hash: 'windows', icon: '\uD83E\uDE9F', where: 'Settings \u203A Windows', words: 'click double files thumbnails' },
+    { name: 'Notification timeout', hash: 'windows', icon: '\uD83E\uDE9F', where: 'Settings \u203A Windows', words: 'toast notify cards' },
+    { name: 'Sizes', hash: 'sizes', icon: '\uD83D\uDCCF', where: 'Settings', words: 'settings taskbar position taskbar size title bar height bottom top' },
+    { name: 'Look', hash: 'look', icon: '\uD83C\uDFA8', where: 'Settings', words: 'settings theme dark light accent colour color animations motion' },
+    { name: 'Theme (Dark / Light)', hash: 'look', icon: '\uD83C\uDFA8', where: 'Settings \u203A Look', words: 'dark mode light mode' },
+    { name: 'Accent colour', hash: 'look', icon: '\uD83C\uDFA8', where: 'Settings \u203A Look', words: 'color accent' },
+    { name: 'API Keys', hash: 'keys', icon: '\uD83D\uDD11', where: 'Settings', words: 'settings api key keys services tavily token secret custom' },
+    { name: 'How-to', hash: 'howto', icon: '\uD83D\uDCA1', where: 'Settings', words: 'settings help tips guide shortcuts keyboard' },
+    { name: 'About', hash: 'about', icon: '\u2139\uFE0F', where: 'Settings', words: 'settings version build release update contact feedback github' },
+    { name: 'Device name', hash: 'about/device', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'device name rename sharedlink link gamepad phone' },
+    { name: 'Profile (save / load settings)', hash: 'about/profile', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'profile backup export import restore keys' },
+    { name: 'Contact & Feedback', hash: 'about', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'bug issue github idea' }
+  ],
+  actions: [
+    { id: 'showdesk', name: 'Show desktop', icon: '\u2B1C', words: 'minimise minimize all windows home desktop' },
+    { id: 'ws1', name: 'Switch to workspace 1', icon: '1\uFE0F\u20E3', words: 'workspace desktop virtual switch one' },
+    { id: 'ws2', name: 'Switch to workspace 2', icon: '2\uFE0F\u20E3', words: 'workspace desktop virtual switch two' }
+  ]
+};
