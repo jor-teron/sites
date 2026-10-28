@@ -988,7 +988,10 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   - The game page itself (currently coming soon).
   - Exports: .json and PNG are done; GLB, OBJ and STL are still to do.
   - Save slots, poses and the neon look.
-- Ant Farm v0.2: thin branching tunnels and more entrances.
+- Ant Farm v0.2 and v0.3 shipped (local branches games/ant-farm-af2 and games/ant-farm-af3, Team 2):
+  - v0.2 (AF2): tunnels are 1 cell wide and branch from dig jobs (`w.tips` in core/colony.js), 2-4 surface entrances, side chambers at some tunnel ends, shared GameSettings gear (fpsLimit, showFps, autoPause, lowGraphics). Test hook: `?seed=N&sim=SECONDS` fast-forwards the colony.
+  - v0.3 (AF3): tapping drops food that falls from the sky, plus natural food drops by day; a brood room beside the queen, where nurses carry her eggs; egg, larva, pupa, then a new ant (capped at 300, or 150 with lowGraphics); a day and night cycle with a clock, a night tint, and foragers sleeping in the nest at night.
+  - Next ideas (not approved): wet soil drying, food storage limits, ants dying of old age.
 - Simulators: the Aquarium simulator (R1 tank, R2 fish, R3 decor, R4 care) and other proposed sims (falling sand, ecosystem, traffic, weather, garden, cooking, farm, glider).
 
 ### Parked

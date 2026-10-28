@@ -5,8 +5,7 @@
   var KEYS = [[[18, 24, 54], [52, 50, 86]], [[110, 160, 220], [240, 190, 150]], [[110, 175, 230], [205, 232, 246]],
               [[110, 175, 230], [205, 232, 246]], [[80, 90, 160], [245, 150, 100]], [[18, 24, 54], [52, 50, 86]]];
   function mix(a, b, t) { return 'rgb(' + (a[0] + (b[0] - a[0]) * t | 0) + ',' + (a[1] + (b[1] - a[1]) * t | 0) + ',' + (a[2] + (b[2] - a[2]) * t | 0) + ')'; }
-  // 0..1 position in the day; starts mid-morning so a new colony opens in daylight.
-  AF.dayPhase = function (w) { return ((w.t / (AF.DAY || 60)) + 0.3) % 1; };
+  // AF.dayPhase (0..1 position in the day) now lives in core/world.js.
 
   // One puffy cloud sprite, drawn once and reused for every cloud.
   var cloud = document.createElement('canvas'); cloud.width = 120; cloud.height = 50;

@@ -1,4 +1,4 @@
-// UI + main loop. AF2: shared settings (AF_SETTINGS: fpsLimit, showFps, autoPause,
+// UI + main loop. AF3: day clock in the stats, ant cap (300, or 150 with lowGraphics). AF2: shared settings (AF_SETTINGS: fpsLimit, showFps, autoPause,
 // lowGraphics, gear) and test hooks ?seed=N&sim=SECONDS (fast-forward the colony at start).
 (function () {
   var cv = document.getElementById('c'), $ = function (id) { return document.getElementById(id); };
@@ -7,7 +7,8 @@
   function size() { var d = window.devicePixelRatio || 1; cv.width = innerWidth * d; cv.height = innerHeight * d; U.dpr = d; }
   addEventListener('resize', size); size();
   var SET = window.AF_SETTINGS, Q = {}; location.search.replace(/[?&](\w+)=([\d.]+)/g, function (m, k, v) { Q[k] = +v; });
-  if (SET) { SET.mountGear($('bar')); SET.onChange(function () { FRAME = SET.frameMs(); }); }
+  function cap() { AF.MAXANTS = SET && SET.get('lowGraphics') ? 150 : 300; }
+  cap(); if (SET) { SET.mountGear($('bar')); SET.onChange(function () { FRAME = SET.frameMs(); cap(); }); }
   document.addEventListener('visibilitychange', function () { if (document.hidden && (!SET || SET.get('autoPause'))) { U.paused = true; $('pause').textContent = 'Play'; } });
   $('pause').onclick = function () { U.paused = !U.paused; this.textContent = U.paused ? 'Play' : 'Pause'; };
   $('reset').onclick = function () { start(U.seed); };
@@ -29,8 +30,9 @@
     if (!U.paused) { acc += dt * U.speed; var n = 0; while (acc >= DT && n < 40) { AF.step(AF.w, DT); acc -= DT; n++; } if (n === 40) acc = 0; }
     var d = U.dpr, w = AF.w;
     AF.render(cv, w, { top: $('bar').offsetHeight * d + 4, bot: $('stats').offsetHeight * d + 4, trails: U.trails && !(SET && SET.get('lowGraphics')), low: SET && SET.get('lowGraphics') });
-    $('stats').textContent = 'Ants ' + w.ants.length + ' · Food stored ' + Math.floor(w.stored) + ' · Eggs ' + AF.countStage(w, 'egg') + ' / Larvae ' + AF.countStage(w, 'larva') +
-      ' · Day ' + (1 + Math.floor(w.t / AF.DAY)) + ' · Tunnels ' + w.dug + ' · Entrances ' + w.ents.length + ' · Rooms ' + w.rooms.length +
+    var hr = AF.dayPhase(w) * 24, clock = (hr | 0) + ':' + ('0' + ((hr % 1) * 60 | 0)).slice(-2) + (AF.nightAmt(w) > 0.3 ? ' ☾' : ' ☀');
+    $('stats').textContent = 'Ants ' + w.ants.length + '/' + AF.MAXANTS + ' · Food stored ' + Math.floor(w.stored) + ' · Eggs ' + AF.countStage(w, 'egg') + ' / Larvae ' + AF.countStage(w, 'larva') +
+      ' / Pupae ' + AF.countStage(w, 'pupa') + ' · Day ' + (1 + Math.floor((w.t / AF.DAY) + 0.3)) + ' ' + clock + ' · Tunnels ' + w.dug + ' · Rooms ' + w.rooms.length +
       ' · ×' + U.speed + (U.paused ? ' (paused)' : '') + (SET && SET.get('showFps') ? ' · ' + Math.round(U.fps) + ' fps' : '');
   }
   start(Q.seed >= 0 ? Q.seed | 0 : Math.random() * 1e6 | 0);

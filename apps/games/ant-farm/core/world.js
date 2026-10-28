@@ -1,5 +1,6 @@
 // Ant Farm world: grid of cells (0 air, 1 soil, 2 stone), surface, fields.
 // AF2: 2-4 thin (1-cell) entrance shafts, dig tips (w.tips) and rooms (w.rooms).
+// AF3: brood room beside the queen (w.bx, w.by), day clock (AF.dayPhase / AF.nightAmt).
 // Uses nothing but the browser; no shared settings are read here.
 var AF = window.AF = {};
 AF.W = 160; AF.H = 100; AF.SURF = 14; // first soil row
@@ -10,17 +11,18 @@ AF.newWorld = function (seed) {
   var W = AF.W, H = AF.H, S = AF.SURF, r = AF.rng(seed), i, x, y;
   var w = { seed: seed, r: r, g: new Uint8Array(W * H), wet: new Float32Array(W * H), ph: new Float32Array(W * H),
     mound: new Float32Array(W), food: [], drops: [], ants: [], brood: [], stored: 30, t: 0, dug: 0,
-    dirty: [], full: true, fieldT: 0, laidT: 0, phT: 0, tips: [], tun: [], rooms: [], ents: [], tipT: 2 };
+    dirty: [], full: true, fieldT: 0, laidT: 0, phT: 0, tips: [], tun: [], rooms: [], ents: [], tipT: 2, falls: [], natT: 8 };
   for (y = S; y < H; y++) for (x = 0; x < W; x++) w.g[y * W + x] = 1;
   for (i = 0; i < 14; i++) { // stones
     var cx = 3 + r() * (W - 6) | 0, cy = S + 8 + r() * (H - S - 10) | 0, rad = 1 + r() * 2.5;
     for (y = -3; y <= 3; y++) for (x = -4; x <= 4; x++) if (x * x / 1.4 + y * y <= rad * rad) AF.set(w, cx + x, cy + y, 2);
   }
   w.qx = 40 + r() * 80 | 0; w.qy = S + 26 + r() * 12 | 0;
-  w.sx = w.qx + (r() < 0.5 ? -13 : 13); w.sy = w.qy + 1;
-  AF.carveEll(w, w.qx, w.qy, 5, 2.6); AF.carveEll(w, w.sx, w.sy, 4.5, 2.2);
+  var side = r() < 0.5 ? -1 : 1; w.sx = w.qx + side * 13; w.sy = w.qy + 1; w.bx = w.qx - side * 12; w.by = w.qy + 1;
+  AF.carveEll(w, w.qx, w.qy, 5, 2.6); AF.carveEll(w, w.sx, w.sy, 4.5, 2.2); AF.carveEll(w, w.bx, w.by, 4, 1.8);
+  w.rooms.push({ x: w.bx, y: w.by, rx: 4, ry: 1.8, kind: 'brood' });
   w.rooms.push({ x: w.qx, y: w.qy, rx: 5, ry: 2.6, kind: 'queen' }, { x: w.sx, y: w.sy, rx: 4.5, ry: 2.2, kind: 'store' });
-  for (x = Math.min(w.qx, w.sx); x <= Math.max(w.qx, w.sx); x++) { AF.set(w, x, w.qy + 1, 0); w.tun.push((w.qy + 1) * W + x); }
+  for (x = Math.min(w.bx, w.sx); x <= Math.max(w.bx, w.sx); x++) { AF.set(w, x, w.qy + 1, 0); w.tun.push((w.qy + 1) * W + x); }
   // AF2: main shaft from the surface down to the queen room, then 1-3 extra entrances joining the tunnels
   x = w.qx + (r() * 16 - 8 | 0); w.ex = x; w.ents.push(x);
   AF.path(w, x, S, w.qx, w.qy - 3, r);
@@ -35,8 +37,7 @@ AF.newWorld = function (seed) {
     w.ents.push(ex); AF.path(w, ex, S, tc % W, tc / W | 0, r);
   }
   // first dig jobs: out of the far side of each room and down from the queen room
-  var side = w.sx > w.qx ? 1 : -1;
-  AF.addTip(w, w.qx - side * 5, w.qy, -side, 0, 14 + r() * 12);
+  AF.addTip(w, w.bx - side * 4, w.by, -side, 0, 14 + r() * 12);
   AF.addTip(w, w.sx + side * 4, w.sy, side, 0, 10 + r() * 12);
   AF.addTip(w, w.qx, w.qy + 2, 0, 1, 10 + r() * 10);
   // soil colour noise per cell
@@ -46,6 +47,9 @@ AF.newWorld = function (seed) {
   AF.fields(w);
   return w;
 };
+// AF3 day clock: 0..1 through one colony day (AF.DAY sim seconds), 0 = midnight; a new colony starts at ~7am.
+AF.dayPhase = function (w) { return ((w.t / (AF.DAY || 60)) + 0.3) % 1; };
+AF.nightAmt = function (w) { return Math.min(1, Math.max(0, (Math.abs(AF.dayPhase(w) - 0.5) * 4 - 1.2) / 0.6)); };   // 0 day .. 1 midnight
 AF.set = function (w, x, y, v) { if (x >= 0 && y >= 0 && x < AF.W && y < AF.H) { w.g[y * AF.W + x] = v; w.dirty.push(y * AF.W + x); } };
 AF.carveEll = function (w, cx, cy, rx, ry) {
   for (var y = -ry - 1 | 0; y <= ry + 1; y++) for (var x = -rx - 1 | 0; x <= rx + 1; x++)
@@ -84,5 +88,6 @@ AF.fields = function (w) {
   var s = []; for (var x = 0; x < AF.W; x++) s.push((AF.SURF - 1) * AF.W + x);
   w.distS = AF.bfs(w, s);
   var t = []; for (var i = 0; i < w.tips.length; i++) if (AF.walk(w, w.tips[i].x, w.tips[i].y)) t.push(w.tips[i].y * AF.W + w.tips[i].x);
-  w.distT = t.length ? AF.bfs(w, t) : null;      // AF2: diggers walk down this to the nearest dig job
+  w.distT = t.length ? AF.bfs(w, t) : null;
+  w.distQ = AF.bfs(w, [w.qy * AF.W + w.qx]); w.distB = AF.bfs(w, [w.by * AF.W + w.bx]);   // AF3: queen + brood rooms      // AF2: diggers walk down this to the nearest dig job
 };
