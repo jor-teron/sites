@@ -1,0 +1,37 @@
+/* Clock Reading CR1 — app look on top of the Learn kit (../common/ui/learn.css): the clock on the left (on top in
+   portrait), the panel beside it. Light mode follows the Hub theme (html.light). Plain CSS, no heavy effects. */
+.cr { --accent: #ffb347; --ok: #7ccf95; --bad: #ff6b6b; --hh: #3d7bdc; --mh: #e5484d; }
+.cr-ver { flex: none; font-size: 0.75rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 99px; }
+.cr-modes button { padding: 0 12px; }
+.cr-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 420px); gap: 14px; overflow: hidden; }
+.cr-left { min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.cr-panel { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
+.cr-clock { width: 100%; flex: 1 1 auto; min-height: 0; max-height: min(72dvh, 560px); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.cr-rim { fill: var(--accent); } .cr-face { fill: #fffdf6; }
+.cr-tick { stroke: #555; stroke-width: 1; } .cr-tick5 { stroke: #222; stroke-width: 3; }
+.cr-num { fill: #1b2430; font: 700 17px system-ui, sans-serif; text-anchor: middle; pointer-events: none; }
+.cr-hand { cursor: grab; } .cr-hv { stroke-linecap: round; } .cr-hit { stroke: transparent; stroke-width: 22; }
+.cr-hh .cr-hv, .cr-hh .cr-knob { stroke: var(--hh); fill: var(--hh); } .cr-mh .cr-hv, .cr-mh .cr-knob { stroke: var(--mh); fill: var(--mh); }
+.cr-sh { pointer-events: none; } .cr-sh .cr-hv { stroke: #222; } .cr-sh .cr-knob { display: none; } .cr-sh .cr-hit { display: none; }
+.cr-pin { fill: #222; } .locked .cr-hand { cursor: default; } .locked .cr-knob { display: none; }
+.drag-h .cr-hh .cr-hv, .drag-m .cr-mh .cr-hv { filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)); }
+.cr-dig { font: 800 clamp(1.8rem, 6vw, 2.8rem) ui-monospace, Menlo, Consolas, monospace; color: var(--accent); line-height: 1; }
+.cr-words { font-weight: 600; text-align: center; min-height: 1.3em; }
+.cr-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cr-tog[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #111; }
+.cr-levels { display: grid; gap: 8px; } .cr-lv { display: flex; justify-content: space-between; align-items: center; min-height: 52px; text-align: left; }
+.cr-opts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.cr-opt { min-height: 56px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: 800 1.5rem ui-monospace, Menlo, Consolas, monospace; }
+.cr-opt.ok { background: rgba(124, 207, 149, 0.25); border-color: var(--ok); } .cr-opt.bad { background: rgba(255, 107, 107, 0.22); border-color: var(--bad); }
+.cr-go { background: var(--accent); border-color: var(--accent); color: #111; min-width: 120px; align-self: flex-start; }
+.cr-target { font-size: 1.3rem; font-weight: 700; color: var(--accent); margin: 0; }
+.cr-fb { min-height: 1.4em; margin: 0; font-weight: 600; } .cr-fb.ok { color: var(--ok); } .cr-fb.bad { color: var(--bad); }
+.cr-big { font-size: 2.6rem; font-weight: 800; color: var(--accent); margin: 0; }
+.cr-panel .lrn-h { margin: 0; }
+@media (max-aspect-ratio: 1/1) {
+  .cr-main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; gap: 8px; }
+  .cr-panel { max-height: 46dvh; }
+}
+@media (max-aspect-ratio: 1/1) and (max-height: 700px) { .cr-panel > .lrn-h:first-child, .cr-panel > p.lrn-sub:last-child { display: none; } }
+@media (max-width: 560px) { .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; flex-basis: 100%; } .cr-panel .lrn-sub { font-size: 0.85rem; } }
+@media (max-height: 460px) { .lrn-head { padding: 4px 10px; } .lrn-main.cr-main { padding: 6px 10px; } .cr-dig { font-size: 1.5rem; } .cr-opt { min-height: 44px; font-size: 1.2rem; } .cr-panel > p.lrn-sub:last-child { display: none; } }
