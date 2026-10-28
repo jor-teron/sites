@@ -13,24 +13,10 @@
  * R41: the Hub version label is not shown anywhere (Jor's request); only the release date is.
  * R59: opened as a file (file://) nothing is fetched (Chrome blocks it); Update says
  *   'Updates not available when opened as a file' and Current release shows '\u2014'.
- * H30.1: "Profile folder" card (id 'profile', deep link #about/profile): the Hub's settings saved to
- *   <connected folder>/hub/hub-profile/hub.json by hub/core/hub_profile.js (window.HubProfile in the Hub).
- *   Shows the folder (a choice when more than one is connected), status, last save, Save now / Load now.
- * H30.2: also lists the System apps whose settings go to hub/hub-profile/system/<app>.json
- *   (H30.7: and the Media / Connectivity / Tools / Office apps → hub-profile/<category>/<app>.json).
- * H30.5: 'Save profile to' — tick Google Drive and / or any connected host folder (by its real name); every ticked
- *   place gets the profile, the newest copy wins on start. Drive not signed in → 'Sign in to Google Drive' in its row.
- * H30.6: 'Save every' 30 s / 1 min (default) / 5 min / 15 min / Manual only (HubProfile.setEvery).
- * H30.3: 'Include keys in profile' switch (off by default; on = the API keys go into hub.json too) and
- *   Export profile / Import profile (one .json file, for devices without a folder; works with no folder).
- * H46: "Device name" card (id 'device', deep link #about/device; moved here from the Hub's 🎮 Devices pop-up,
- *   which now only shows 'Name: X ›' and opens this card). Text box (max 40, like SharedLinkUI.mountName) + Save.
- *   Inside the Hub (also a phone that joined a Hub, window.__hubRemote) it calls the Hub's own
- *   SharedLinkDevices.setName(): saves localStorage 'shared-link-device-name' and sends {t:'name'} over the
- *   live link (the host re-broadcasts the device list), then fires 'hub-device-name' on the Hub window so the
- *   pop-up text repaints. Opened on its own it uses its own SharedLinkDevices (shared/link/link_devices.js,
- *   no link here): the key is saved and any open Hub tab picks it up from the 'storage' event (hub_panels.js).
- *   Empty = the default name guessed from the browser (shown as the placeholder).
+ * H29.2b: the Device name, Profile and Send profile cards (H46 / H30.x / H29.1 / H29.2) moved to the new Devices
+ *   section (sec_devices.js, #devices/device, #devices/profile, #devices/sync; old #about/… anchors redirect in
+ *   settings.js). Their notes moved with them. About keeps the Hub card (release, Update, Last refreshed, Clear
+ *   Cache), Contact and Feedback.
  */
 (function () {
   'use strict';
@@ -61,7 +47,8 @@
       .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
       .then((text) => {
         const l = String(text).split(/\r?\n/).map((x) => x.trim());
-        const rel = /^[RH]\w+$/.test(l[2] || '') ? l[2] : '';   // H46: H-numbered Hub releases too (was R only)
+        // const rel = /^[RH]\w+$/.test(l[2] || '') ? l[2] : '';   // H46: H-numbered Hub releases too (was R only)
+        const rel = /^[RH][\w.+]+$/.test(l[2] || '') ? l[2] : '';   // H29.1: dotted ids like H29.1 too
         const date = /^\d{4}-\d{2}-\d{2}/.test(l[3] || '') ? l[3] : '';
         if (!rel && !date) return '';
         return [rel ? 'Release ' + rel : '', date].filter(Boolean).join(' \u00b7 ');
@@ -162,201 +149,12 @@
     return a;
   }
 
-  /* H30.1: Profile folder */
-  const STATE_TEXT = {
-    none: 'No folder connected. Add a folder in Files or Disk and the Hub keeps its settings there.',
-    unsupported: 'This browser cannot keep a profile folder.',
-    prompt: 'The browser wants a click to use the folder again. Save now or Load now asks for it.',
-    denied: 'Access to the folder was refused.',
-    ready: 'Saving automatically after a change.',
-  };
-  /* H30.6 */
-  const EVERY_OPTS = [{ value: 30, label: '30 s' }, { value: 60, label: '1 min' }, { value: 300, label: '5 min' },
-    { value: 900, label: '15 min' }, { value: 0, label: 'Manual only' }];
-  const everyText = (s) => !s ? 'Manual only: nothing is saved until you press Save now (or the Hub is closed with unsaved changes).'
-    : 'Saving ' + (s < 60 ? s + ' s' : s / 60 + ' min') + ' after a change, only when something changed; also when the Hub is closed.';
-  const TSTATE = { ready: 'Connected', prompt: 'Needs a click', denied: 'No access', signin: 'Sign in to Google Drive', error: 'Error' };
-  function profileCard(sub) {
-    const card = ui.el('section', 'card');
-    card.id = 'profile';
-    card.appendChild(ui.el('h3', '', 'Profile'));
-    const hub = S.hub();
-    const HP = hub && hub.HubProfile;
-    if (!HP) {
-      card.appendChild(ui.el('p', 'opt-note', 'Open Settings inside the Hub to save your Hub settings to your connected folder.'));
-      return card;
-    }
-    const body = ui.el('div');
-    const out = ui.el('p', 'upd-out', '');
-    out.setAttribute('aria-live', 'polite');
-    const saveB = ui.el('button', 'big-btn', 'Save now'); saveB.type = 'button'; saveB.id = 'profile-save';
-    const loadB = ui.el('button', 'big-btn', 'Load now'); loadB.type = 'button'; loadB.id = 'profile-load';
-    const btns = ui.el('div', 'profile-btns');
-    btns.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
-    btns.append(saveB, loadB);
-    // H30.3: keys switch + one-file export / import
-    const keyNote = ui.el('p', 'opt-note', '');
-    const paintKeyNote = (on) => {
-      keyNote.textContent = on
-        ? 'Your API keys are saved in hub.json and in exported files as plain text. Anyone who can open the folder or the file can use them.'
-        : 'API keys stay only in this browser. Sign-ins are never saved.';
-    };
-    const keysSw = ui.switch('Include keys in profile', 'Also save your API keys (Settings \u2192 API Keys) in the profile',
-      HP.includeKeys(), (on) => { paintKeyNote(on); HP.setIncludeKeys(on).then(draw); });
-    keysSw.id = 'profile-keys';
-    paintKeyNote(HP.includeKeys());
-    const expB = ui.el('button', 'big-btn', 'Export profile'); expB.type = 'button'; expB.id = 'profile-export';
-    const impB = ui.el('button', 'big-btn', 'Import profile'); impB.type = 'button'; impB.id = 'profile-import';
-    const file = document.createElement('input');
-    file.type = 'file'; file.accept = '.json,application/json'; file.hidden = true; file.id = 'profile-file';
-    const btns2 = ui.el('div', 'profile-btns');
-    btns2.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
-    btns2.append(expB, impB, file);
-    expB.addEventListener('click', () => {
-      const data = HP.exportData();
-      const blob = new Blob([JSON.stringify(data, null, 2) + '\n'], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'hub-profile-' + data.savedAt.slice(0, 10) + '.json';
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-      out.className = 'upd-out ok';
-      out.textContent = 'Exported ' + a.download + (data.keys ? ' (with API keys)' : '');
-    });
-    impB.addEventListener('click', () => file.click());
-    file.addEventListener('change', async () => {
-      const f = file.files && file.files[0];
-      file.value = '';
-      if (!f) return;
-      let r;
-      try { r = await HP.importData(await f.text()); } catch (_) { r = { ok: false }; }
-      out.className = 'upd-out ' + (r.ok ? 'ok' : 'bad');
-      out.textContent = r.ok ? 'Imported \u2014 reloading the Hub\u2026' : 'That file is not a Hub profile';
-      if (r.ok) setTimeout(() => hub.location.reload(), 400);
-    });
-    // H30.5: where
-    const placesBox = ui.el('div', 'profile-places');
-    placesBox.id = 'profile-places';
-    placesBox.setAttribute('role', 'group');
-    placesBox.setAttribute('aria-label', 'Save profile to');
-    // H30.6: when
-    const everyNote = ui.el('p', 'opt-note', everyText(HP.every ? HP.every() : 60));
-    const everySeg = ui.choice(EVERY_OPTS, HP.every ? HP.every() : 60, (v) => { HP.setEvery(v); everyNote.textContent = everyText(v); });
-    everySeg.id = 'profile-every';
-    card.append(ui.el('h4', 'opt-title', 'Save profile to'), placesBox, ui.el('h4', 'opt-title', 'Save every'), everySeg, everyNote,
-      body, btns, out, keysSw, keyNote, btns2,
-      ui.el('p', 'opt-note', 'Saved as hub/hub-profile/hub.json in each ticked place (in Google Drive: hub \u203A hub-profile), as plain JSON; app settings go to hub-profile/<category>/<app>.json (system, media, connectivity, tools, office). Sign-ins, history, documents and device data are never saved. Export / Import use one .json file, for devices without a folder.'));
-    function drawPlaces(st) {
-      placesBox.textContent = '';
-      (st.targets || []).forEach((t) => {
-        const lab = ui.el('label', 'profile-place');
-        lab.dataset.id = t.id;
-        const cb = document.createElement('input');
-        cb.type = 'checkbox'; cb.checked = !!t.ticked; cb.value = t.id;
-        cb.addEventListener('change', () => {
-          const ids = [...placesBox.querySelectorAll('input[type=checkbox]')].filter((x) => x.checked).map((x) => x.value);
-          out.className = 'upd-out'; out.textContent = '';
-          HP.setTargets(ids).then(draw);
-        });
-        const name = ui.el('span', 'pp-name', (t.kind === 'gdrive' ? '\u2601\uFE0F ' : '\uD83D\uDCC1 ') + t.name + (t.account ? ' (' + t.account + ')' : ''));
-        const stt = ui.el('small', 'pp-state ' + t.state, t.error && t.ticked ? 'Error: ' + t.error : TSTATE[t.state] || t.state);
-        lab.append(cb, name, stt);
-        placesBox.appendChild(lab);
-      });
-      if (!(st.targets || []).some((t) => t.kind === 'folder')) placesBox.appendChild(ui.el('p', 'opt-note', 'No host folder connected (add one in Files or Disk).'));
-    }
-    async function draw() {
-      const st = await HP.status();
-      body.textContent = '';
-      drawPlaces(st);
-      const on = (st.targets || []).filter((t) => t.ticked);
-      body.appendChild(row('Status', on.length ? on.map((t) => t.name + ': ' + (TSTATE[t.state] || t.state)).join(' \u00B7 ')
-        : st.state === 'unsupported' ? 'Not supported' : 'Nowhere ticked'));
-      body.appendChild(row('Last saved', niceTime(st.lastSave)));
-      if (st.lastLoad) body.appendChild(row('Last loaded', niceTime(st.lastLoad)));
-      on.forEach((t) => body.appendChild(row(on.length > 1 ? 'File (' + t.name + ')' : 'File', t.path)));
-      if (on.length && HP.appsBy) {   // H30.2 / H30.7: app settings next to hub.json, one folder per category
-        const by = HP.appsBy(), nice = (a) => (a[0].toUpperCase() + a.slice(1)).replace(/[-_]/g, ' ');
-        Object.keys(by).forEach((c) => { if (by[c].length) body.appendChild(row(c[0].toUpperCase() + c.slice(1) + ' apps', by[c].map(nice).join(', '))); });
-      } else if (on.length && HP.apps) body.appendChild(row('System apps', HP.apps().join(', ')));
-      body.appendChild(ui.el('p', 'opt-note', st.error || (on.length ? '' : STATE_TEXT.none)));
-      if (everySeg.repaint && st.every != null) { everySeg.repaint(st.every); everyNote.textContent = everyText(st.every); }
-      saveB.disabled = loadB.disabled = !on.length;
-      keysSw.classList.toggle('on', !!st.includeKeys); keysSw.setAttribute('aria-checked', st.includeKeys ? 'true' : 'false');
-      paintKeyNote(!!st.includeKeys);
-    }
-    saveB.addEventListener('click', async () => {
-      saveB.disabled = true; out.className = 'upd-out'; out.textContent = 'Saving\u2026';
-      const r = await HP.save({ ask: true, force: true });
-      out.className = 'upd-out ' + (r.ok ? 'ok' : 'bad');
-      out.textContent = r.ok ? 'Saved' + (r.places > 1 ? ' to ' + r.places + ' places' : '') + (r.errors && r.errors.length ? ' (not to ' + r.errors.join('; ') + ')' : '')
-        : r.reason === 'permission' ? 'No access to the ticked places' : r.reason === 'no-folder' ? 'Tick a place first' : 'Could not save';
-      draw();
-    });
-    loadB.addEventListener('click', async () => {
-      loadB.disabled = true; out.className = 'upd-out'; out.textContent = 'Loading\u2026';
-      const r = await HP.load({ ask: true, force: true });
-      out.className = 'upd-out ' + (r.applied ? 'ok' : 'bad');
-      out.textContent = r.applied ? 'Loaded \u2014 reloading the Hub\u2026' : r.reason === 'no-file' ? 'No saved profile in the ticked places yet'
-        : r.reason === 'permission' ? 'No access to the ticked places' : 'Could not load';
-      if (r.applied) setTimeout(() => hub.location.reload(), 400); else draw();
-    });
-    const off = HP.onChange(() => { if (card.isConnected) draw(); else off(); });
-    draw();
-    if (sub === 'profile') setTimeout(() => card.scrollIntoView({ block: 'start' }), 50);
-    return card;
-  }
-
-  /* H46: Device name (was the editable box in the Hub's 🎮 Devices pop-up) */
-  const NAME_KEY = 'shared-link-device-name';
-  function deviceCard(sub) {
-    const card = ui.el('section', 'card');
-    card.id = 'device';
-    card.appendChild(ui.el('h3', '', 'Device name'));
-    const hub = S.hub();
-    const D = (hub && hub.SharedLinkDevices) || window.SharedLinkDevices || null;
-    const stored = () => { try { return localStorage.getItem(NAME_KEY) || ''; } catch (_) { return ''; } };
-    const guess = D && D.guess ? D.guess() : 'Device';
-    card.appendChild(ui.el('p', 'opt-note', 'The name your other devices see in Devices and Chat. Leave it empty to use \u201C' + guess + '\u201D.'));
-    const form = ui.el('form', 'key-line');
-    form.autocomplete = 'off';
-    const inp = ui.el('input', 'key-input device-input');
-    inp.type = 'text'; inp.id = 'device-name'; inp.maxLength = 40; inp.placeholder = guess;
-    inp.setAttribute('aria-label', 'Device name');
-    inp.value = stored();
-    const save = ui.el('button', 'key-btn key-save', 'Save');
-    save.type = 'submit'; save.id = 'device-save';
-    form.append(inp, save);
-    const out = ui.el('p', 'key-out', '');
-    out.setAttribute('aria-live', 'polite');
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const v = inp.value.trim().slice(0, 40);
-      let n = v || guess;
-      try {
-        if (D) n = D.setName(v);
-        else if (v) localStorage.setItem(NAME_KEY, v); else localStorage.removeItem(NAME_KEY);
-      } catch (_) { out.className = 'key-out bad'; out.textContent = 'Could not save the name'; return; }
-      try { if (hub) hub.dispatchEvent(new hub.CustomEvent('hub-device-name', { detail: { name: n } })); } catch (_) { /* no Hub */ }
-      inp.value = stored();
-      out.className = 'key-out ok';
-      out.textContent = 'Saved \u2014 this device is now \u201C' + n + '\u201D';
-    });
-    inp.addEventListener('input', () => { out.textContent = ''; });
-    // renamed somewhere else (another tab, the controller pad, Chat): follow it unless typing here
-    const onStore = (e) => {
-      if (!card.isConnected) { window.removeEventListener('storage', onStore); return; }
-      if ((e.key === NAME_KEY || e.key === null) && document.activeElement !== inp) inp.value = stored();
-    };
-    window.addEventListener('storage', onStore);
-    card.append(form, out);
-    if (sub === 'device') setTimeout(() => { card.scrollIntoView({ block: 'start' }); try { inp.focus({ preventScroll: true }); } catch (_) { /* old browser */ } }, 50);
-    return card;
-  }
+  /* H29.2b: profileCard (H30.x), syncCard (H29.1 / H29.2) and deviceCard (H46) moved to sec_devices.js with
+   * their constants (STATE_TEXT, EVERY_OPTS, everyText, TSTATE, GROUP_NAME, WHAT_OPTS, short, NAME_KEY). */
 
   Settings.add({
     id: 'about', title: 'About', icon: '\u2139\uFE0F',
-    render(pane, sub) {
+    render(pane) {
       const card = ui.el('section', 'card ver-card');
       const head = ui.el('div', 'ver-head');
       const img = document.createElement('img'); img.src = 'settings_icon.png'; img.alt = '';
@@ -399,7 +197,9 @@
       fb.id = 'feedback';
       fb.append(ui.el('h3', '', 'Feedback'), ui.el('p', '', 'Found a bug or have an idea? Open an issue on GitHub.'),
         link(REPO + '/issues', 'GitHub Issues', 'Report a problem or suggest something'));
-      pane.append(card, deviceCard(sub), profileCard(sub), contact, fb);   // H46: Device name after the About card
+      // pane.append(card, deviceCard(sub), profileCard(sub), contact, fb);   // H46: Device name after the About card
+      // pane.append(card, deviceCard(sub), profileCard(sub), syncCard(sub), contact, fb);   // H29.1: Send profile after Profile
+      pane.append(card, contact, fb);   // H29.2b: Device name / Profile / Send profile moved to Devices (sec_devices.js)
     }
   });
 })();

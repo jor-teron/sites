@@ -105,7 +105,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   - `wm_snap.js` — edge snap (half / maximise, preview), magnet with strength slider (R10/R13/R14/R35). Loaded at once on first title-bar press (R35).
   - `wm_workspaces.js` — two workspaces, monitor-shaped buttons (R10/R41).
 - Menus: `shared/ctxmenu` + `hub/menu/hub_ctx*.js` (R3c) — own right-click / long-press on desktop, taskbar, title bars, drives, tiles; `ctx_in_app.js` injected into same-origin apps; Shift+right-click = browser menu.
-- Settings glue: `hub/menu/hub_settings.js` opens `apps/system/settings/` (with #section). Settings app = settings.js + settings_store.js + sec_{wallpaper,desktop,windows,sizes,look,howto,about}.js. Deep links `#wallpaper #desktop #sizes #look #howto #about`.
+- Settings glue: `hub/menu/hub_settings.js` opens `apps/system/settings/` (with #section). Settings app = settings.js + settings_store.js + sec_{wallpaper,desktop,windows,sizes,look,keys,howto,devices,about}.js (H29.2b: sec_devices.js loads before sec_about.js so Devices sits above About). Deep links `#wallpaper #desktop #sizes #look #keys #howto #devices #about` (+ `#devices/device|connected|profile|sync`; old `#about/device|profile|sync` redirect, settings.js ALIASES).
 - Drives / Files / Disk
   - `shared/fs/fs_drives.js` — drive list: Local (OPFS, persist asked once), added PC folders (`showDirectoryPicker`, handles in IndexedDB, "Allow access" re-grant), Google Drive (`shared/google/gdrive_fs.js` directory-handle adapter so FsOps works unchanged).
   - `fs_ops.js` (copy/move/rename/delete/upload), `fs_ref.js`, `filetypes.js` (Open with → apps/system/viewer/), `thumbs_store.js` (thumbnail cache).
@@ -1224,3 +1224,148 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   new hello, Draftly buttons + tabs and in-app bar hidden, Insert tab selects Draftly's ribbon,
   2048 bar unchanged, H48b Search button, Phone mode no quick buttons and Draftly keeps its bar),
   Spreadsheet and Base checked too; no console errors or 4xx.
+
+2026-10-28 IST, H29.1 (Team 2, week 2): Send profile to a connected device with preview and Apply.
+  H29 HUB SYNC PLAN (agreed with Jor, 28 Oct; Team 1's H29.1-H29.4 idea reworked):
+  - No automatic sync, ever: devices are peers over the Connect Code link with no server, so an
+    automatic sync would just bounce between devices. Every send and every apply is a button press.
+  - H29.1 (this release): send the whole profile (no API keys) + preview on the receiver with
+    Keep mine / Use incoming per setting, Keep all mine / Use all incoming, Apply / Cancel, summary.
+    Mode groups Shared / Desktop / Phone with Desktop layout / Phone layout ticks (Jor's scope add).
+  - H29.2 (built, see below): choose what to send (Hub settings / System app settings / everything)
+    + an API keys tick (off by default). Keys masked to the last 4 characters in the preview and
+    never overwrite on their own: same key = skipped, missing = added, different = conflict with
+    Keep mine (default) / Use incoming / Keep both where the service allows it.
+  - H29.3 (not built): backup of the old settings before Apply + 'Undo last sync' in Settings, and
+    the PC's connected folder copy (hub/hub-profile/) updated straight after a sync.
+  - Dropped: Team 1's H29.4 automatic sync (see above).
+  Profile before H29.1 (checked): hub.json "hub" is one flat object of every allowed sites-hub.*
+  setting, not split by Desktop / Phone mode (device.mode only records the saving device's mode); app
+  settings are per app file. Mode groups are therefore new, kept in ONE map in hub_profile.js:
+    SYNC_GROUPS.desktop = taskPos, taskH, titleH, openMax, startHover, showFiles, trayMeter,
+      hoverFocus, snapEdges, snapMagnet, snapMagnetPx, workspaces, saverIdle, saverSec
+    SYNC_GROUPS.phone   = homeBtn
+    shared              = everything else (theme, accent, motion, wallpaper, favorites,
+                          notifyTimeout, files*, profileEvery, osk ...) and every app setting
+    SYNC_SKIP           = wmMode (each device's own Screen mode; never sent / applied)
+  HubProfile.groupOf(scope, name) reads it; add a key to SYNC_GROUPS to move it out of Shared.
+  Files: hub/link/hub_sync.js (new, window.HubSync), hub/core/hub_profile.js (exportData(o) with
+  o.keys === false; diffData(profile, {groups}); applyItems(items); groupOf; SYNC_GROUPS),
+  hub/link/hub_link.js ('hubsync…' messages not forwarded to app frames, like 'phonekey…'),
+  apps/system/settings/sec_about.js (syncCard, id 'sync', #about/sync, after Profile; About's
+  release regex accepts dotted ids), settings.css (.sync-*), index.html (?v=20261028h291),
+  hub.html (hub_sync.js after hub_link.js; hub_profile.js now on the build stamp), hub_sw.js SHELL.
+  Wire (SharedLink.send, host relays 'to'; replies go to msg.from, else 'host' on a joined phone):
+  - {type:'hubsync-profile', v:1, id, name, mode, include:{desktop, phone}, profile}
+  - {type:'hubsync-got', id}  -> sender shows 'Received, waiting for review'
+  - {type:'hubsync-result', id, state:'applied'|'cancelled'|'bad', applied, kept} -> sender card
+  Choice: the RECEIVER filters groups. The sender sends Shared + Desktop + Phone settings and its
+  two ticks; the receiver keeps Shared + the group of its own mode (HubMode.mode; a joined phone
+  Hub is always Phone) + ticked groups, and only counts the rest ('N Desktop layout settings not
+  included'). Simpler and robust: the sender does not need to know the other device's mode.
+  Receiver: one pending offer (a new one replaces it), diffed again against the current settings
+  each time the preview draws. Identical settings are counted, not listed; settings the sender
+  does not have are left alone (never deleted). New settings default to Use incoming, changed
+  ones to Keep mine. Apply writes only the chosen items through applyItems (same filters as
+  load / import: allowed names, the app's own keys, no key-like values, no "keys"), calls
+  HubPrefs.apply() for a live repaint and marks the profile dirty so the normal Save every timer
+  writes the profile places. Cancel writes nothing. Limits: 200,000 chars per offer, 2000
+  settings, values <= 200,000 chars; all text drawn with textContent.
+  Bump 20261028f / v102 -> 20261028g / hub-shell-v103 (hub_bump.py --release H29.1).
+  Playwright (system Chrome, two browser contexts: PC 1366 px Desktop mode as host, phone 400 px
+  Phone mode as a joined device; SharedLink.send / devices / id / role stubbed and bridged
+  between the two pages, no real PeerJS link): 40/40. Send lists the device, ticks off by
+  default, payload has no keys even with Include keys on, receiver card + Review opens
+  #about/sync, rows grouped / tagged, defaults, Use incoming changes, Keep mine keeps, new items
+  applied, Desktop settings never reach the Phone-mode receiver without the tick and Phone
+  settings never reach the Desktop-mode receiver without the tick (and do with it), Cancel
+  changes nothing, sender gets got / applied / cancelled, bad version / oversize rejected,
+  unknown and secret keys ignored, HTML shown as text, standalone Settings note, no console
+  errors. Real phone <-> PC over the internet not tested: Jor to try once on real devices.
+
+2026-10-28 IST, H29.2 (Team 2, week 2): Choose what to send and optional API keys in profile sync.
+  Plan status: H29.1 done, H29.2 this release, H29.3 still planned (backup of the old settings before
+  Apply + 'Undo last sync' in Settings + the PC's connected folder copy hub/hub-profile/ updated straight
+  after a sync). Sync stays manual only (peers, no server).
+  What to send (Send card, radio 'What to send', default Everything):
+    everything = Hub settings + every app's settings (= the parts of the H30.3 export file)
+    hub        = the sites-hub.* settings only (hub.json "hub")
+    system     = the System apps only (Files, Viewer, Terminal; profile "system")
+  The Desktop layout / Phone layout ticks and the receiver-side mode filter (H29.1) are unchanged; the
+  ticks are disabled when System app settings is picked (no layout in it). Wire: include gains
+  what + keys: {type:'hubsync-profile', v:1, id, name, mode, include:{desktop, phone, what, keys}, profile}.
+  Sender: HubProfile.exportData({ what, keys }) (exportData now takes o.what; o.keys === true adds the
+  key store even with the profile's 'Include keys' switch off; o.keys === false never; not set = the
+  switch, as the H30.3 export). Receiver: diffData(profile, { groups, what, keys }) drops the parts
+  outside 'what' again (counted as ignored), so the receiver does not trust the sender for it.
+  API keys ('Include API keys' tick, off by default):
+  - Store: the Hub key store hub/core/hub_keys.js (H28, localStorage sites-hub.keys = {name: value}).
+    It holds ONE value per name, so 'Keep both' is not offered for any key (no key supports it).
+  - Unticked: send() still forces keys off (exportData({keys:false}) + delete profile.keys; the H29.1
+    lines are kept as comments). Ticked: profile.keys = the cleaned key store (names /^[a-z0-9][a-z0-9_.-]{0,39}$/,
+    non-empty strings < 4096 chars). Sent only with SharedLink.send(msg, picked device); phone -> phone
+    goes through the PC host's normal relay (link_core.js), never into a notification.
+  - Receiver lists keys only when include.keys is true (a "keys" block without it is ignored), as group
+    'keys' (heading 'API keys'). diffData items for keys: { id:'key:<name>', scope:'key', group:'keys',
+    isKey, mine: masked | null, incoming: masked, isNew }. maskKey(v) = '••••' + last 4 (values shorter than
+    8 chars: '••••' only). The full value stays in hub_sync.js (pend.profile.keys) until Apply / Cancel;
+    pending(), lastSend(), lastResult(), the notification card, the summary and the DOM only ever see the
+    masked text or the key name.
+  - Same key: counted (keysSame, 'N keys are already the same'), not listed. Missing here: tag New,
+    buttons Add (default) / Skip. Different: tag Different, Keep mine (default) / Use incoming.
+  - 'Keep all mine' / 'Use all incoming' skip key rows (each key is chosen on its own row; documented in
+    the preview note). HubSync.apply(choices) defaults are the same (New = Add, Different = Keep mine).
+  - Apply: HubProfile.applyItems gets { scope:'key', key, value } for the chosen keys (value taken from
+    the held offer) and writes them with HubKeys.set (raw store write if HubKeys is missing); nothing is
+    written before Apply; Cancel writes nothing and drops the held keys.
+  - The key-like value filter (KEY_VALUE / OPAQUE, KEY_NAME) still runs on every hub and app setting, so
+    a secret can only travel inside the explicit "keys" block. Size caps unchanged (200,000 chars per
+    offer, 2000 items, keys < 4096 chars).
+  Files: hub/link/hub_sync.js, hub/core/hub_profile.js (exportData what/keys, cleanKeys, maskKey,
+  diffData what/keys, applyItems scope 'key', SYNC_WHAT), apps/system/settings/sec_about.js (What to
+  send radios, Include API keys tick, API keys group, Add/Skip, bulk skip keys), settings.css (.sync-what,
+  .sync-tag-keys, .sync-conflict), index.html (?v=20261028h292).
+  Bump 20261028g / v103 -> 20261028h / hub-shell-v104 (hub_bump.py --release H29.2).
+  Playwright (system Chrome, same two-context set-up as H29.1, SharedLink stubbed and bridged, no
+  real PeerJS link): H29.2 45/45 (each choice sends / lists only its part, receiver enforces 'what',
+  layout ticks disabled for System, keys absent unticked and present ticked with the profile switch off,
+  key-like hub value and app secret still blocked, masking, no full key in pending(), lastSend, DOM text /
+  attributes / inputs, notification, summary or console, same / new / different cases and defaults, no
+  Keep both, Use all incoming leaves keys, Cancel changes nothing, Apply adds new + keeps conflict +
+  leaves other keys, Use incoming replaces, keys without include.keys ignored, bad key names / sizes
+  dropped, short key mask, size cap, no console errors) + H29.1 suite 40/40 again.
+  Real phone <-> PC not tested: Jor to try once on real devices.
+
+2026-10-28 IST, H29.2b (Team 2, week 2): New Devices section in Settings, directly above About.
+  About was getting crowded, so everything about this device and the devices it is linked with moved
+  to a new section apps/system/settings/sec_devices.js (id 'devices', icon 📲, title Devices), loaded in
+  index.html just before sec_about.js (Settings shows sections in registration order). Cards, in order:
+    Device name (H46, id 'device')      #devices/device     moved unchanged from sec_about.js
+    Connected devices (new, 'connected') #devices/connected read-only
+    Profile (H30.x, id 'profile')        #devices/profile    moved unchanged
+    Send profile (H29.1/H29.2, 'sync')   #devices/sync       moved unchanged, all choices
+  plus an empty .pane-end spacer (140 px) so Apply / Cancel never sit under a Hub notification card.
+  About keeps the Hub card (Credit, Release date, Current release, Update, Last refreshed, Clear Cache,
+  Running build), Contact and Feedback. The old pane.append line is kept as a comment.
+  Connected devices: this device row (name, Desktop / Phone mode = HubSync.mode(), 'This Hub · code N'
+  / 'Joined Hub N' / 'Link off', Linked / Waiting / Not linked) and one row per device the link knows
+  from the new HubSync.peers() -> [{id, name, online, legacy, host, mode}] (offline devices too, an old
+  Gamepad only while online; host = the 'host' entry, tagged Hub; mode = what that device said in its
+  last profile offer, else 'Mode not known yet'). Text only, repaints on SharedLink devices / status /
+  open / close and HubSync.onChange. Empty: 'No other device connected...' hint to 🎮 Devices;
+  Settings opened on its own: 'Open Settings inside the Hub...'.
+  Redirects: settings.js ALIASES {about/device, about/profile, about/sync, about/devices,
+  about/connected} -> devices/...; on load and on hashchange the hash is replaced (replaceState).
+  Callers updated (old lines kept as comments): hub_panels.js 'Name: X ›' -> hash 'devices/device',
+  hub_sync.js review() -> 'devices/sync', Search search_items.js (Devices, Device name, Connected
+  devices, Profile, Send profile rows under Settings › Devices). #about from the context menus / update
+  icon still opens About. hub_keys.js header: keys leave the browser only with the profile sync
+  'Include API keys' tick (old line kept as a comment).
+  Bump 20261028h / v104 -> 20261028i / hub-shell-v105 (hub_bump.py --release H29.2b); hub_panels.js
+  ?v= and the Settings / Search file ?v= moved by hand.
+  Playwright (system Chrome): H29.2b 30/30 (nav order, icon, 4 cards, About without them, the three
+  old anchors on load and on hashchange, narrow list-first, Desktop-mode Hub: pop-up link, connected
+  list online / offline / gamepad, this-device row, mode learnt from an offer, Review notification ->
+  #devices/sync, empty state, Search 'device name' -> #devices/device, #about still About; Phone-mode
+  joined Hub: pop-up link, PC listed as Hub, this device Phone mode; no console errors) + H29.1 40/40
+  (Review anchor now #devices/sync) + H29.2 45/45.

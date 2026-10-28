@@ -6,6 +6,8 @@
  * (#wallpaper, #about …) so links like settings/#about work. H28: '#<section>/<sub>' (e.g. #keys/tavily)
  * opens the section and passes sub to render(el, sub) (the row to scroll to).
  * Helpers for sections: Settings.ui.choice(), .switch(), .title(), .note().
+ * H29.2b: ALIASES rewrites old deep links of cards that moved section (#about/device → #devices/device,
+ *   #about/profile → #devices/profile, #about/sync → #devices/sync); the hash is replaced, so Back skips the old one.
  */
 window.Settings = (function () {
   'use strict';
@@ -16,10 +18,17 @@ window.Settings = (function () {
   const back = document.getElementById('back');
   const narrow = window.matchMedia('(max-width: 699px)');
   let current = '';
+  /* H29.2b: cards that moved from About to Devices; old links (bookmarks, other apps, older Hub builds) still land */
+  const ALIASES = { 'about/device': 'devices/device', 'about/profile': 'devices/profile', 'about/sync': 'devices/sync',
+    'about/devices': 'devices', 'about/connected': 'devices/connected' };
+  const alias = (full) => { const f = String(full || ''); return Object.prototype.hasOwnProperty.call(ALIASES, f) ? ALIASES[f] : f; };
 
   function add(sec) { sections.push(sec); }
 
   function open(full, fromHash) {
+    const was = full;
+    full = alias(full);   // H29.2b
+    if (fromHash && full !== was) fromHash = false;   // H29.2b: rewrite the old hash to the new anchor
     const cut = String(full || '').indexOf('/');
     const id = cut < 0 ? full : full.slice(0, cut);
     let sub = cut < 0 ? '' : full.slice(cut + 1);
@@ -54,9 +63,11 @@ window.Settings = (function () {
       nav.appendChild(b);
     });
     back.addEventListener('click', showList);
-    window.addEventListener('hashchange', () => { const id = location.hash.slice(1); if (id && id !== current) open(id, true); });
-    const id = location.hash.slice(1);
-    if (id && sections.some((s) => s.id === id.split('/')[0])) open(id, true);
+    // window.addEventListener('hashchange', () => { const id = location.hash.slice(1); if (id && id !== current) open(id, true); });   // (before H29.2b)
+    window.addEventListener('hashchange', () => { const id = location.hash.slice(1); if (id && alias(id) !== current) open(id, true); });   // H29.2b
+    // const id = location.hash.slice(1);   // (before H29.2b)
+    const id = alias(location.hash.slice(1));   // H29.2b: old #about/device etc.
+    if (id && sections.some((s) => s.id === id.split('/')[0])) open(location.hash.slice(1), true);   // H29.2b: raw hash, so open() rewrites an old one
     else showList();
   }
 

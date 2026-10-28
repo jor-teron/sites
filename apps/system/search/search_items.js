@@ -2,7 +2,8 @@
  * Hub Search items (apps/system/search/search_items.js), H48 — the Hub things that are not apps.
  * window.HUB_SEARCH_ITEMS.settings: Settings pages / options → opens apps/system/settings/#<hash>.
  *   hash 'section' opens that page; 'section/sub' also scrolls to that card (only subs the section
- *   really handles: about/device (H46), about/profile). Keep in step with apps/system/settings/sec_*.js
+ *   really handles: devices/device, devices/connected, devices/profile, devices/sync (H29.2b; were about/device (H46),
+ *   about/profile; the old ones still redirect)). Keep in step with apps/system/settings/sec_*.js
  *   (Settings.add ids and their ui.title() rows) when a page or option is added or renamed.
  *   words: extra search words (not shown; the top-level pages also have 'settings', so the query
  *   'settings' lists the pages, not every option).
@@ -30,9 +31,15 @@ window.HUB_SEARCH_ITEMS = {
     { name: 'Accent colour', hash: 'look', icon: '\uD83C\uDFA8', where: 'Settings \u203A Look', words: 'color accent' },
     { name: 'API Keys', hash: 'keys', icon: '\uD83D\uDD11', where: 'Settings', words: 'settings api key keys services tavily token secret custom' },
     { name: 'How-to', hash: 'howto', icon: '\uD83D\uDCA1', where: 'Settings', words: 'settings help tips guide shortcuts keyboard' },
+    // H29.2b: Device name and Profile moved from About to the new Devices section (old rows kept as comments)
+    // { name: 'Device name', hash: 'about/device', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'device name rename sharedlink link gamepad phone' },
+    // { name: 'Profile (save / load settings)', hash: 'about/profile', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'profile backup export import restore keys' },
+    { name: 'Devices', hash: 'devices', icon: '\uD83D\uDCF2', where: 'Settings', words: 'settings devices device name profile sync send connected link phone pc' },
+    { name: 'Device name', hash: 'devices/device', icon: '\uD83D\uDCF2', where: 'Settings \u203A Devices', words: 'device name rename sharedlink link gamepad phone' },
+    { name: 'Connected devices', hash: 'devices/connected', icon: '\uD83D\uDCF2', where: 'Settings \u203A Devices', words: 'connected devices linked connect code phone pc online offline' },
+    { name: 'Profile (save / load settings)', hash: 'devices/profile', icon: '\uD83D\uDCF2', where: 'Settings \u203A Devices', words: 'profile backup export import restore keys' },
+    { name: 'Send profile (sync to a device)', hash: 'devices/sync', icon: '\uD83D\uDCF2', where: 'Settings \u203A Devices', words: 'sync send profile phone pc share settings api keys' },
     { name: 'About', hash: 'about', icon: '\u2139\uFE0F', where: 'Settings', words: 'settings version build release update contact feedback github' },
-    { name: 'Device name', hash: 'about/device', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'device name rename sharedlink link gamepad phone' },
-    { name: 'Profile (save / load settings)', hash: 'about/profile', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'profile backup export import restore keys' },
     { name: 'Contact & Feedback', hash: 'about', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'bug issue github idea' }
   ],
   actions: [

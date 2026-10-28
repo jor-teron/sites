@@ -56,6 +56,15 @@
  *   exportData() → one object { version: 1, kind: 'hub-profile', savedAt, device, hub, system: { app: settings },
  *   keys? } for a single .json file (devices without a folder); importData(obj) applies such a file (or a
  *   plain hub.json), then the Hub reloads.
+ * H29.1 Send profile (hub/link/hub_sync.js): exportData({ keys: false }) is sent over the Connect Code link;
+ *   the receiver runs diffData(profile, { groups }) for a preview and applyItems(chosen) after Apply. Mode groups
+ *   (shared / desktop / phone) come from SYNC_GROUPS below (unknown = shared); wmMode is never synced.
+ * H29.2 What + keys: exportData({ what: 'hub' | 'system' | 'everything', keys: true }) and
+ *   diffData(profile, { groups, what, keys: true }). what = Hub settings (hub.json "hub") / System app settings
+ *   ("system") / everything (hub + system + every app category). keys: true adds the key store (sites-hub.keys,
+ *   H28) as its own 'keys' group; diff items for keys carry MASKED values only (maskKey: '••••' + last 4) and
+ *   the receiver applies the real value from the offer it holds (applyItems item.scope 'key' + item.value).
+ *   The key-like value filter still runs on every hub / app setting; keys only ever travel in "keys".
  * API window.HubProfile:
  *   save({ ask, force })  → Promise<{ ok, reason? }>   ask: may ask the browser for access (call from a click)
  *   load({ ask, force })  → Promise<{ ok, applied, reason? }>   force: apply even when not newer (Load now)
@@ -686,17 +695,173 @@
   }
 
   /* H30.3: one .json file for devices without a folder */
-  function exportData() {
+  // function exportData() {   // (before H29.1: no options; keys followed the 'Include keys' switch only)
+  // function exportData(o) {   // H29.1: o.keys === false → never add keys (Send profile reuses this path)
+  /* H29.2: o.what = 'hub' | 'system' | 'everything' (default, = the H30.3 export file: hub + system + apps);
+   * o.keys: false = never keys (H29.1), true = the key store (Send profile with 'Include API keys' ticked;
+   * the profile switch is not needed for that), not set = the 'Include keys' switch (H30.3 export). */
+  const SYNC_WHAT = ['hub', 'system', 'everything'];
+  function exportData(o) {
+    o = o || {};
+    const what = SYNC_WHAT.indexOf(o.what) >= 0 ? o.what : 'everything';
     const system = {}, apps = {};
     Object.keys(APPS).forEach((a) => {
       const st = collectApp(a), d = APPS[a];
       if (!Object.keys(st).length) return;
+      if (what === 'hub' || (what === 'system' && d.cat !== 'system')) return;   // H29.2
       if (d.cat === 'system') system[d.name] = st;
       else (apps[d.cat] = apps[d.cat] || {})[d.name] = st;   // H30.7
     });
-    const out = { version: 1, kind: 'hub-profile', savedAt: new Date().toISOString(), device: deviceInfo(), hub: collect(), system, apps };
-    if (includeKeys()) out.keys = readKeys();
+    // const out = { version: 1, kind: 'hub-profile', savedAt: new Date().toISOString(), device: deviceInfo(), hub: collect(), system, apps };   // (before H29.2)
+    const out = { version: 1, kind: 'hub-profile', savedAt: new Date().toISOString(), device: deviceInfo(), hub: what === 'system' ? {} : collect(), system, apps };
+    // if (includeKeys()) out.keys = readKeys();   // (before H29.1)
+    // if (o.keys !== false && includeKeys()) out.keys = readKeys();   // (H29.1)
+    if (o.keys === true || (o.keys !== false && includeKeys())) out.keys = cleanKeys(readKeys());
     return out;
+  }
+  /* H29.2: only well-formed key-store entries travel (same name rule as hub_keys.js, value < 4096 chars) */
+  const KEYNAME_RE = /^[a-z0-9][a-z0-9_.-]{0,39}$/;
+  function cleanKeys(k) {
+    const out = {};
+    if (!plainObj(k)) return out;
+    Object.keys(k).sort().forEach((n) => { if (KEYNAME_RE.test(n) && typeof k[n] === 'string' && k[n] && k[n].length < 4096) out[n] = k[n]; });
+    return out;
+  }
+  /** H29.2: '••••' + the last 4 characters (a value shorter than 8 shows no characters at all) */
+  function maskKey(v) {
+    if (typeof v !== 'string' || !v) return '';
+    return '\u2022\u2022\u2022\u2022' + (v.length >= 8 ? v.slice(-4) : '');
+  }
+
+  /* ---------- H29.1: Send profile to a connected device (diff + apply chosen items) ----------
+   * Mode groups (one central map, unknown names = 'shared'):
+   *   shared  : theme, accent, motion, wallpaper, favorites, notifyTimeout, files*, profileEvery, ... and every
+   *             app setting (System / Media / Connectivity / Tools / Office apps)
+   *   desktop : the Desktop-mode layout (taskbar, title bar, windows, snapping, workspaces, desktop icons,
+   *             Start hover, tray meter, clock screen saver)
+   *   phone   : the Phone-mode layout (Home button target)
+   *   Never synced: wmMode (each device's own Screen mode choice; a phone must not be switched to Desktop).
+   * Keys are never part of a sync payload (exportData({ keys: false }); diffData ignores "keys"). (H29.1)
+   * H29.2: keys are, when the sender ticks 'Include API keys' (exportData({ keys: true })) and the receiver
+   * asks diffData for them ({ keys: true }); they form their own 'keys' group with masked values only. */
+  const SYNC_GROUPS = {
+    desktop: ['taskPos', 'taskH', 'titleH', 'openMax', 'startHover', 'showFiles', 'trayMeter', 'hoverFocus',
+      'snapEdges', 'snapMagnet', 'snapMagnetPx', 'workspaces', 'saverIdle', 'saverSec'],
+    phone: ['homeBtn'],
+  };
+  const SYNC_SKIP = new Set(['wmMode']);
+  const SYNC_MAX_ITEMS = 2000;
+  /** 'shared' | 'desktop' | 'phone' for a 'sites-hub.<name>' setting (scope 'hub') or an app key (scope 'app') */
+  function groupOf(scope, name) {
+    if (scope !== 'hub') return 'shared';
+    if (SYNC_GROUPS.desktop.indexOf(name) >= 0) return 'desktop';
+    if (SYNC_GROUPS.phone.indexOf(name) >= 0) return 'phone';
+    return 'shared';
+  }
+  const plainObj = (o) => !!o && typeof o === 'object' && !Array.isArray(o);
+  const asText = (v) => (typeof v === 'string' ? v : JSON.stringify(v));
+  /** stored localStorage text → the same form exportData sends (JSON objects re-serialised) */
+  function norm(v) {
+    if (v == null) return null;
+    if (/^\s*[[{]/.test(v)) { try { return JSON.stringify(JSON.parse(v)); } catch (_) { return v; } }
+    return v;
+  }
+  /**
+   * diffData(profile, { groups: ['shared', 'phone', ...] }) → { ok, items, same, ignored, skipped: { desktop, phone }, reason? }
+   * items: [{ id, scope: 'hub' | 'app', app?, key, label, group, mine (text | null), incoming (text), isNew }]
+   * Only settings the profile may hold pass (same filters as load / import); unknown apps and keys, key-like
+   * values and the profile's "keys" are ignored. Identical settings are counted in 'same' and not listed.
+   * H29.2: o.what ('hub' | 'system' | 'everything', default everything) drops the other parts (counted in
+   * ignored); o.keys === true adds the profile's "keys" as group 'keys': items { id: 'key:<name>', scope: 'key',
+   * key, label, group: 'keys', mine: masked | null, incoming: masked, isNew, isKey: true } (never the full value).
+   * The same key is counted in 'same'; the key store holds ONE value per name, so there is no 'keep both'.
+   */
+  function diffData(obj, o) {
+    o = o || {};
+    if (!plainObj(obj) || obj.version !== 1 || (obj.kind && obj.kind !== 'hub-profile') || !plainObj(obj.hub)) return { ok: false, reason: 'bad-profile' };
+    const groups = Array.isArray(o.groups) ? o.groups : ['shared', 'desktop', 'phone'];
+    const what = SYNC_WHAT.indexOf(o.what) >= 0 ? o.what : 'everything';   // H29.2
+    const items = [], skipped = { desktop: 0, phone: 0 };
+    let same = 0, ignored = 0, n = 0;
+    const consider = (it) => {
+      if (++n > SYNC_MAX_ITEMS) { ignored++; return; }
+      if (groups.indexOf(it.group) < 0) { skipped[it.group] = (skipped[it.group] || 0) + 1; return; }
+      if (it.mine === it.incoming) { same++; return; }
+      it.isNew = it.mine == null;
+      items.push(it);
+    };
+    Object.keys(obj.hub).forEach((name) => {
+      if (what === 'system') { ignored++; return; }   // H29.2
+      const s = asText(obj.hub[name]);
+      if (SYNC_SKIP.has(name) || typeof s !== 'string' || !allowed(name, s)) { ignored++; return; }
+      const mine = norm(lget(P + name));
+      consider({ id: 'hub:' + name, scope: 'hub', key: name, label: name, group: groupOf('hub', name),
+        mine: mine != null && allowed(name, mine) ? mine : null, incoming: norm(s) });
+    });
+    const takeApps = (cat, set) => {
+      if (!plainObj(set)) return;
+      Object.keys(set).forEach((an) => {
+        const id = cat + '/' + an, st = set[an];
+        if (!APPS[id] || !plainObj(st)) { ignored++; return; }
+        Object.keys(st).forEach((k) => {
+          const s = asText(st[k]);
+          if (appOf(k) !== id || KEY_NAME.test(k) || typeof s !== 'string' || s.length > MAX_VALUE || keyLike(s)) { ignored++; return; }
+          const mine = norm(lget(k));
+          consider({ id: 'app:' + id + ':' + k, scope: 'app', app: id, key: k, label: id + ' \u203A ' + k, group: 'shared',
+            mine: mine != null && !keyLike(mine) ? mine : null, incoming: norm(s) });
+        });
+      });
+    };
+    // takeApps('system', obj.system);   // (H29.1)
+    // if (plainObj(obj.apps)) Object.keys(obj.apps).forEach((c) => { if (CATS.indexOf(c) > 0) takeApps(c, obj.apps[c]); else ignored++; });
+    if (what !== 'hub') takeApps('system', obj.system); else if (plainObj(obj.system) && Object.keys(obj.system).length) ignored++;   // H29.2
+    if (plainObj(obj.apps)) Object.keys(obj.apps).forEach((c) => { if (what === 'everything' && CATS.indexOf(c) > 0) takeApps(c, obj.apps[c]); else ignored++; });
+    // if (obj.keys) ignored++;   // H29.1: keys never come in through a sync (H29.2)
+    let keysSame = 0;
+    if (obj.keys && o.keys === true && plainObj(obj.keys)) {   // H29.2: only when the sender ticked keys
+      const cur = readKeys();
+      Object.keys(obj.keys).forEach((name) => {
+        const v = obj.keys[name];
+        if (!KEYNAME_RE.test(name) || typeof v !== 'string' || !v || v.length >= 4096) { ignored++; return; }
+        const m = typeof cur[name] === 'string' && cur[name] ? cur[name] : null;
+        if (m === v) { same++; keysSame++; return; }
+        if (++n > SYNC_MAX_ITEMS) { ignored++; return; }
+        items.push({ id: 'key:' + name, scope: 'key', key: name, label: name, group: 'keys', isKey: true,
+          mine: m == null ? null : maskKey(m), incoming: maskKey(v), isNew: m == null });
+      });
+    } else if (obj.keys) ignored++;
+    return { ok: true, items, same, ignored, skipped, keysSame };
+  }
+  /** write the chosen items (each checked again); → number written. The profile places are saved by the
+   *  normal 'Save every' timer like any other change (H29.3 adds the immediate folder update + backup). */
+  function applyItems(list) {
+    let n = 0;
+    applying = true;
+    try {
+      (Array.isArray(list) ? list : []).forEach((it) => {
+        if (!it || typeof it.incoming !== 'string') return;
+        if (it.scope === 'hub') {
+          if (SYNC_SKIP.has(it.key) || !allowed(it.key, it.incoming)) return;
+          lset(P + it.key, it.incoming); n++;
+        } else if (it.scope === 'app') {
+          const k = it.key, s = it.incoming;
+          if (!APPS[it.app] || appOf(k) !== it.app || KEY_NAME.test(k) || s.length > MAX_VALUE || keyLike(s)) return;
+          lset(k, s); n++;
+        }
+      });
+    } finally { applying = false; }
+    // H29.2: API keys ({ scope: 'key', key: name, value: the full key from the offer }), through HubKeys so
+    // Settings › API Keys and the apps hear about it; one value per name (the key store has no second slot)
+    const ks = (Array.isArray(list) ? list : []).filter((it) => it && it.scope === 'key' && KEYNAME_RE.test(it.key || '') &&
+      typeof it.value === 'string' && it.value && it.value.length < 4096);
+    ks.forEach((it) => {
+      let done = false;
+      try { if (window.HubKeys && window.HubKeys.set) done = window.HubKeys.set(it.key, it.value) !== false; } catch (_) { done = false; }
+      if (!done) { const cur = readKeys(); cur[it.key] = it.value; lset(K_STORE, JSON.stringify(cur)); done = readKeys()[it.key] === it.value; }
+      if (done) n++;
+    });
+    if (n) { lset(K_AT, Date.now()); lastText = ''; dirty = true; schedule(); emit(); }
+    return n;
   }
   async function importData(obj) {
     if (typeof obj === 'string') { try { obj = JSON.parse(obj); } catch (_) { return { ok: false, reason: 'bad-file' }; } }
@@ -858,6 +1023,8 @@
     },
     categories: CATS.slice(),
     exportData, importData,
+    diffData, applyItems, groupOf, SYNC_GROUPS, SYNC_SKIP: [...SYNC_SKIP],   // H29.1
+    maskKey, SYNC_WHAT: SYNC_WHAT.slice(),   // H29.2
     includeKeys,
     setIncludeKeys(on) {   // H30.3: off by default; changing it rewrites hub.json (keys added / removed)
       if (on) lset(K_KEYS, '1'); else ldel(K_KEYS);
