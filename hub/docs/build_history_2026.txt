@@ -447,3 +447,4 @@
 2026-10-27 , dd83194 => Agent AG9: Hub keys (window.top.HubKeys, Hub first, From Hub ✓ rows, onChange), Show thinking live, steps pane default Off; ?v=20261027ag9
 2026-10-27 , 5787a29 => AG10: Agent Settings clean-up — 8 collapsible cards, big switches, Hub keys line, error cards point to Hub › API Keys
 2026-10-27 , d232e3b => OCR release 4: Cloud Vision key from Hub › API Keys (gvision), own field as fallback
+2026-10-28 , 20261028a => H46: device name moved from the 🎮 Devices pop-up to Settings › About › Device name (#about/device); pop-up shows 'Name: X ›'; hub-shell-v97 (hub_bump.py)

@@ -111,6 +111,7 @@ html.hub-task-top body.wm-desktop #ctrl-popover, html.hub-task-top body.wm-deskt
 .hp-hubinfo { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 6px; }
 .hp-codelbl { font-size: 13px; color: var(--hp-muted); }
 .hp-code { font: 700 34px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .18em; color: var(--accent, #6ea8fe); }
+/* H46 legacy: .sl-name is no longer shown in the pop-up (kept for reference) */
 #ctrl-popover .sl-name { margin: 0; display: flex; flex-direction: column; align-items: stretch; gap: 6px; font-size: 13px; color: var(--hp-muted); }
 #ctrl-popover .sl-name input, .hp-join input {
   min-height: 46px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--hp-line);
@@ -145,3 +146,13 @@ html.hub-task-top body.wm-desktop #ctrl-popover, html.hub-task-top body.wm-deskt
 .hp-err { width: 100%; font-size: 14px; color: #f87171; }
 .hp-err:empty { display: none; }
 .hp-hint { font-size: 13px; color: var(--hp-muted); margin: 0 4px; }
+
+/* H46: the device name is edited in Settings › About; the pop-up shows it as one small line */
+.hp-name {
+  align-self: flex-start; max-width: 100%; margin: 0; padding: 4px 2px; border: 0; background: none; cursor: pointer;
+  display: flex; align-items: baseline; gap: 5px; font: 13px system-ui, sans-serif; color: var(--hp-muted); text-align: left;
+}
+.hp-name-v { color: var(--hp-text); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hp-name-go { color: var(--accent, #6ea8fe); font-weight: 700; }
+.hp-name:hover .hp-name-v, .hp-name:focus-visible .hp-name-v { text-decoration: underline; }
+.hp-name:focus-visible { outline: 2px solid var(--accent, #6ea8fe); outline-offset: 2px; border-radius: 6px; }

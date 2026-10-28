@@ -1,7 +1,7 @@
 # Settings (apps/system/settings/)
 
 Hub settings app. Opens from the Hub menu's **Settings** row (a window in Desktop mode,
-full screen on phone). Deep links: `apps/system/settings/#wallpaper`, `#desktop`, `#sizes`, `#look`, `#keys` (H28; `#keys/<name>` jumps to that key's row), `#howto`, `#about`.
+full screen on phone). Deep links: `apps/system/settings/#wallpaper`, `#desktop`, `#sizes`, `#look`, `#keys` (H28; `#keys/<name>` jumps to that key's row), `#howto`, `#about` (`#about/profile` H30.1, `#about/device` H46).
 
 | File | What |
 |---|---|
@@ -15,7 +15,7 @@ full screen on phone). Deep links: `apps/system/settings/#wallpaper`, `#desktop`
 | sec_look.js | Accent, Dark/Light, animations On/Reduced/Off |
 | sec_keys.js | H28 API Keys: one row per key from `hub/core/hub_keys.js` (`HubKeys.KNOWN`: tavily, gemini, openai_base, openai_key, ollama_url; H28.1: groq, openrouter, deepseek, xai) + custom keys; masked input + reveal, Save, Test (Tavily /usage, Gemini model list, Ollama /api/tags, OpenAI-compatible /models; Groq / DeepSeek / xAI /models, OpenRouter /api/v1/key), Delete; Add custom key; the keys guide `hub/keys.readme.md` folded at the bottom. Stored in `sites-hub.keys` (JSON), only in this browser |
 | sec_howto.js | How-to: plain help on the Hub, desktop, windows, taskbar, copies, modes, phone, updates, privacy / tech |
-| sec_about.js | About: Credit, Current release (date from hub/version.txt), Release date, Check for update, GitHub contact / issues |
+| sec_about.js | About: Credit, Current release (date from hub/version.txt), Release date, Check for update, GitHub contact / issues. H46: **Device name** card (`#about/device`): this device's SharedLink name (`shared-link-device-name`, max 40, empty = guessed default), moved here from the Hub's 🎮 Devices pop-up; Save uses the Hub's `SharedLinkDevices.setName()` (live link + `hub-device-name` event), or on its own `shared/link/link_devices.js` (Hub tabs follow the `storage` event) |
 
 The Hub applies the keys live in `hub/core/hub_prefs.js`. Keys: `wallpaper`, `taskPos`, `taskH`, `titleH`,
 `accent`, `theme`, `motion`, `wmMode`, `openMax` (R51: '1' / empty = new windows maximised, '0' = normal size), `startHover`, `saverIdle` (Hub R49b screen saver: minutes 0..240, 0 = Off, empty = 5), `saverSec` (R49c: smooth (default) | quartz | off).
