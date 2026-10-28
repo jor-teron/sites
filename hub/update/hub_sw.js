@@ -26,8 +26,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261028e';
-const CACHE = 'hub-shell-v101';  // 2026-10-28e: Optional app descriptions in category CSVs
+const V = '20261028f';
+const CACHE = 'hub-shell-v102';  // 2026-10-28f: Office quick actions and tabs on the Hub window title bar
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)

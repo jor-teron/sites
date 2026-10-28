@@ -1144,3 +1144,51 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   only in System descriptions; index rows = live __hubAppIndex; System flyout, App Hub #cat=System
   and system.html list the same 9 apps with no description text leaked), no console errors / 4xx,
   no 'out of date' notice. H48d: Apps / Games bots fill their own CSVs (format above).
+
+2026-10-28 IST, H48d index (Team 2, week 2): hub_appindex.js regenerated after #228 (Apps bot) and
+  #229 (Games bot) were merged into h48-search-app (merge commit, no rebase; no conflicts). Run:
+  /workspace/.venv-pw/bin/python via runpy with playwright BrowserType.launch patched to
+  executable_path=/usr/bin/google-chrome, headless=True. 124 apps, every category row has a 6th
+  description item (Games 33, Lab 27, Learn 16, Tools 11, Office 10, Connectivity 9, Media 9,
+  System 8, Favorite 1); code-school (Learn) after code-lab; tv Favorite only; caption-for-nei
+  Tools only; code-lab icon codelab_icon.png. Old line order restored after the run. No bump.
+
+2026-10-28 IST, H49 (Team 2, week 2): Office quick actions and tabs on the Hub window title bar.
+  Hub side of HO1 (Apps bot; app side apps/office/shared/office-hubbar.js + office-quick.js, used
+  by Draftly, Spreadsheet and Base). Code: hub/link/hub-gamebar.js (makeBar(frame, bar,
+  {titleBar:true}) for window bars only; the Phone header #gamebar never uses it), hub/wm/wm.css,
+  hub/wm/wm_windows.js (drag / dblclick ignore .gb-qbtn).
+  Contract (all v:1; unknown v ignored):
+  - app -> hub  window.parent.postMessage({hubTitleBar:{v:1, op:'set', buttons:[{id, label, icon,
+    enabled, title}], tabs:[{id, label}], activeTab}}, location.origin)   ('*' only on file://)
+  - app -> hub  {hubTitleBar:{v:1, op:'update', buttons:[{id, label?, icon?, enabled?, title?}],
+    activeTab?}}  patches existing buttons by id (unknown ids ignored); no add / remove (use set)
+  - app -> hub  {hubTitleBar:{v:1, op:'clear'}}
+  - hub -> app  iframe.contentWindow.postMessage({hubTitleBarHello:{v:1}}, origin): sent with each
+    hub-hello burst after the iframe loads (0 / 150 / 400 / 900 / 1800 ms) until a set arrives;
+    the app answers with set. Only in Desktop mode.
+  - hub -> app  {hubTitleBarClick:{v:1, kind:'button'|'tab', id}} on a click (enabled buttons
+    only; a tab click also highlights that tab at once).
+  Checks: event.source === the window's iframe contentWindow AND event.origin === location.origin
+  ('null' on file://); Hub -> app messages are only sent to a frame showing a Hub-origin page.
+  Limits: 8 buttons, 10 tabs; strings cut to id 32, label 24, icon 4, title 60, tab label 20;
+  drawn with textContent only (no HTML). Button shows icon (if any) else label; tooltip = title
+  else label; aria-label = label. enabled:false -> disabled + greyed (opacity 0.35).
+  Layout (.wm-gb): [app name hidden] [.gb-qa quick buttons | divider] [.gb-tbtabs tabs]
+  [.gb-fold-btn 'Active ▾'] [hub-app stats] [hub-app buttons, max 3] [.gb-file file name].
+  hubTitleBar tabs replace the R44 hub-app tabs (never both); legacy hub-tab messages still move
+  the highlight. Fold: a ResizeObserver on the window re-measures; if the bar or tab strip
+  overflows, .gb-fold hides the strip and shows the ▾ button; its drop-down (.gb-tabmenu, fixed,
+  on <body>) closes on pick, Esc, outside press or window blur. Cleared on iframe load (new
+  document), on iframe src change (MutationObserver), on op:'clear', on window close and when the
+  mode becomes Phone (hub-wm-mode). No Hub shortcuts are added; focus goes back to the iframe
+  after every click, so Ctrl+Z / Ctrl+S / Ctrl+P stay with the app. Apps that do not use
+  hubTitleBar draw exactly as before.
+  Bump 20261028e / v101 -> 20261028f / hub-shell-v102 (hub.html wm.css now carries the build
+  stamp). Playwright (system Chrome, throwaway test page in /tmp, not committed): 35/35 (order,
+  disabled, icon / label / title, click messages, disabled sends nothing, focus back to iframe,
+  update patch + activeTab, HTML stays text, fold + menu + pick, unfold, 8 / 10 limits, nested
+  child frame ignored, foreign origin ignored, v:2 ignored, clear, auto-clear on navigation +
+  new hello, Draftly buttons + tabs and in-app bar hidden, Insert tab selects Draftly's ribbon,
+  2048 bar unchanged, H48b Search button, Phone mode no quick buttons and Draftly keeps its bar),
+  Spreadsheet and Base checked too; no console errors or 4xx.
