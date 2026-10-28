@@ -15,7 +15,7 @@
 
 ## Current list
 
-- Health: First Aid, Human Body Explorer (HBE1: 15 main parts in 6 groups, tap a part for its card, list view, 8-question quiz; Expert/All mode planned for HBE2)
+- Health: First Aid, Human Body Explorer (HBE2: Simple mode with 15 main parts, Expert mode with about 50 parts incl. brain parts, senses, nerves, blood vessels, full skeleton, more muscles and skin; neutral body with no private parts; back parts drawn dashed; foldable card on phones; 8-question quiz per mode)
 - Outdoors: Survival and Outdoors (SO1a: Fire and Water; more topics planned)
 - Language: NE-India Dictionary, Caption for NEI (still in Tools), English Basic, Typing Tutor (TT1: graded keyboard lessons, on-screen keyboard, 1/2/5 minute test)
 - Language and Maths: Maths and Logic (ML1a: 6 topics: Everyday Numbers, Times Tables, Fractions/Percent, Money Maths, Shapes and Measuring, Patterns and Puzzles)
