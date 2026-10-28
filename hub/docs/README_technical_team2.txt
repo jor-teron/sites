@@ -521,6 +521,15 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Tested in headless Chrome (puppeteer, `/workspace/base-perf/edge3.js`): normal start, save, open never answers (ready ~1.6 s, banner), blocked open, late success (record not overwritten), no indexedDB, 4 broken data shapes (all repaired, banner), forced render error (dialog, download, cancel, reset to templates, record cleared). No page errors and no native dialogs.
 - Not done: BS3b (draw only the rows on screen for big tables). Delete safety (typed-name table delete, row confirm, Undo) is planned for BS4.
 
+### 1.24 Office Quick Access Toolbar + Hub title-bar helper: release HO1 (Draftly, Spreadsheet, Base)
+- New shared files in `apps/office/shared/`: `office-quick.js` (`OfficeQuick.register({...})`), `office-quick.css`, `office-hubbar.js` (`HubTitleBar.set/update/clear/onClick/onHello`). Per-app glue: `draftly/modules/draftly-quick.js`, `spreadsheet/spreadsheet_quick.js`, `base/modules/base-quick.js`.
+- Bar order: Undo | Redo | Save | Print, then the ribbon tabs (File, Home, ...). Save = save now + "✓ Saved" tick (download stays in File). Print = the app's existing print flow. Disabled when unavailable; phone (<=820px) icons only, tabs scroll sideways (<=600px).
+- Shortcuts Ctrl/Cmd+Z, Ctrl+Y, Ctrl+Shift+Z, Ctrl+S, Ctrl+P all route through OfficeQuick (one capture keydown); browser Save/Print dialogs are prevented. Old per-app Z/Y/S/P handlers removed (draftly-history/-docs/-export, spreadsheet_keys). Inside plain text fields Ctrl+Z stays native.
+- Undo/Redo: Draftly = D.history, Spreadsheet = UNDO stack. Base has no history yet: Undo/Redo stay disabled (design later); Save (BaseStore.saveNow) and Print work.
+- Hub title bar (contract H49, Hub side owned by Hub Main Bot 2): app -> Hub `{hubTitleBar:{v:1,op:'set',buttons:[{id,label,icon,enabled,title}],tabs:[{id,label}],activeTab}}`, `op:'update'` (partial patch by id; Save label becomes '✓ Saved' / 'Save failed' for 1.8s), `op:'clear'`; posted with `postMessage(msg, location.origin)` ('*' only on file://). Hub -> app `{hubTitleBarHello:{v:1}}` (app replies with set) and `{hubTitleBarClick:{v:1,kind:'button'|'tab',id}}`. Checks `event.origin===location.origin && event.source===window.parent`. Max 8 buttons / 10 tabs, text labels. Nothing is sent before hello.
+- In the Hub without hello (`body.in-hub`), the bar moves into the ribbon row as an in-app fallback (`.of-quick-fallback`); after hello `body.hub-titlebar` hides it. Apps still send the old hub-app tabs, so the Hub should prefer hubTitleBar tabs when both arrive.
+- Versions: every touched script/css uses `?v=HO1`. No build bump. base.html only got 4 added lines (BS3a lines untouched). Tested headless (desktop 1280 + phone 390) standalone and in a harness frame: 115 checks pass.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

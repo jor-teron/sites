@@ -221,19 +221,7 @@ Draftly.history.init = function init() {
   h.wrap(Draftly.lists, 'apply');
   h.wrap(Draftly.lists, 'applySuffix');
 
-  document.addEventListener('keydown', function (ev) {
-    if (!(ev.ctrlKey || ev.metaKey) || ev.altKey) return;
-    var key = ev.key.toLowerCase();
-    var isUndo = key === 'z' && !ev.shiftKey;
-    var isRedo = (key === 'z' && ev.shiftKey) || (key === 'y' && !ev.shiftKey);
-    if (!isUndo && !isRedo) return;
-    var active = document.activeElement;
-    var inEditor = Draftly.editor.isInEditor(ev.target) ||
-      (active && active.classList && active.classList.contains(Draftly.config.editorClass));
-    if (!inEditor) return;
-    ev.preventDefault();
-    if (isUndo) h.undo(); else h.redo();
-  }, true);
+  /* HO1: Ctrl/Cmd+Z, Ctrl+Y, Ctrl/Cmd+Shift+Z go through ../shared/office-quick.js (draftly-quick.js). */
 
   document.addEventListener('beforeinput', function (ev) {
     if (!Draftly.editor.isInEditor(ev.target)) return;
