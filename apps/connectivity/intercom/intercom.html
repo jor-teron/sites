@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Intercom IC1</title>
+  <link rel="icon" href="intercom_icon.png?v=IC1">
+  <link rel="stylesheet" href="intercom.css?v=IC1">
+</head>
+<body>
+<div id="app">
+  <div id="dots"><button class="dot on" data-i="0" aria-label="Talk"></button><button class="dot" data-i="1" aria-label="Settings"></button></div>
+  <div id="viewport"><div id="track">
+    <section class="pane" id="pane-talk">
+      <div class="bar"><div class="who"><b id="me-name"></b><div id="status" class="mut">Starting…</div></div>
+        <button class="mini" id="btn-code">Code</button></div>
+      <div id="banner" hidden></div>
+      <div id="sound" hidden>🔇 Tap here to turn on sound</div>
+      <div id="main">
+        <div id="listcol">
+          <ul id="devices"></ul>
+          <p id="empty" class="mut">No other devices yet. Open Intercom on another device with the same Hub code.</p>
+        </div>
+        <div id="side">
+          <button id="b-talk" aria-label="Talk"><span class="ic">🎙️</span><span id="talk-lbl">Talk</span></button>
+          <div id="talk-to" class="mut">to Everyone</div>
+          <div id="talk-hint" class="mut">Tap to talk, tap again to stop · or hold</div>
+          <button class="sb" id="b-dnd" title="Do Not Disturb">🌙<span>DND off</span></button>
+          <div class="vol"><span id="vol-ic">🔊</span><input type="range" id="vol" min="0" max="100" step="5" aria-label="Volume"><span id="vol-n" class="mut"></span></div>
+        </div>
+      </div>
+    </section>
+    <section class="pane" id="pane-set"><div class="set-wrap">
+      <h2>This device</h2>
+      <div class="set-row"><label for="in-name">Name</label><input id="in-name" maxlength="40"></div>
+      <div class="set-row"><span>Hub code</span><span><b id="code-lbl">—</b> <button class="mini" id="btn-code2">Change</button></span></div>
+      <h2>Sound</h2>
+      <div class="set-row"><label for="chk-chime">Chime before someone talks</label><input type="checkbox" id="chk-chime" class="sw"></div>
+      <div class="set-row"><label for="chk-dnd">Do Not Disturb</label><input type="checkbox" id="chk-dnd" class="sw"></div>
+      <div class="set-row"><label for="vol2">Volume</label><input type="range" id="vol2" min="0" max="100" step="5"></div>
+      <h2>Look</h2>
+      <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+      <h2>About</h2>
+      <div class="about"><img src="intercom_icon.png?v=IC1" width="48" height="48" alt=""><div><b>Intercom</b> <span id="ver">IC1</span>
+        <p>Talk live to every device on the same Hub Connect Code, or pick one. Tap Talk to go live, tap again to stop (or hold and let go). A short chime plays before anyone is heard; Reply talks straight back. Do Not Disturb keeps this device quiet. Peer to peer over PeerJS; nothing is recorded or stored on a server.</p></div></div>
+    </div></section>
+  </div></div>
+</div>
+
+<div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="4" placeholder="4-digit code"><div class="row" id="d-row"></div></div></div>
+<div id="toast"></div>
+
+<script src="../../../shared/link/link_devices.js?v=IC1"></script>
+<script src="intercom_save.js?v=IC1"></script>
+<script src="intercom_peer.js?v=IC1"></script>
+<script src="intercom_talk.js?v=IC1"></script>
+<script src="intercom_app.js?v=IC1"></script>
+</body>
+</html>
