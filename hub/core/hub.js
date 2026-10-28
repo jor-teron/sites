@@ -1101,7 +1101,8 @@
     (list || []).forEach((a) => {
       const entryUrl = normalizeEntryUrl(a && a.entryUrl);
       if (!entryUrl || !a.name || findApp(entryUrl)) return;
-      const app = { category: cat, name: a.name, entryUrl, iconUrl: a.icon || '', newTab: !!a.newTab, order: 0, hidden: false, csv: true };
+      // const app = { category: cat, name: a.name, entryUrl, iconUrl: a.icon || '', newTab: !!a.newTab, order: 0, hidden: false, csv: true };   // before H48c
+      const app = { category: cat, name: a.name, entryUrl, iconUrl: a.icon || '', newTab: !!a.newTab, order: 0, hidden: false, csv: true, description: a.description || '' };
       apps.push(app);
       registerApp(app);
     });
@@ -1134,7 +1135,7 @@
   }
 
   /* ---------- R33c: app index (hub/core/hub_appindex.js) for a first visit ---------- */
-  // HUB_APP_INDEX = { id: [category, entryUrl, name, icon, newTab] } for every CSV app, made from
+  // HUB_APP_INDEX = { id: [category, entryUrl, name, icon, newTab(, description: H48c, optional)] } for every CSV app, made from
   // the real ids (hub/core/hub_appindex_gen.py). On a first visit the hash / last app / saved
   // windows found there open at once, without waiting for any CSV. Those apps are NOT registered
   // (registration stays in HUB_CAT_CSV order, so ids never change). Stale index: an id / entry not
@@ -1150,7 +1151,14 @@
   /** The index the registered CSV apps really give (hub_appindex_gen.py writes it to the file). */
   window.__hubAppIndex = () => {
     const o = {};
-    apps.forEach((a) => { if (a.csv && entryToId.has(a.entryUrl)) o[entryToId.get(a.entryUrl)] = [a.category, a.entryUrl, a.name, a.iconUrl || '', a.newTab ? 1 : 0]; });
+    // apps.forEach((a) => { if (a.csv && entryToId.has(a.entryUrl)) o[entryToId.get(a.entryUrl)] = [a.category, a.entryUrl, a.name, a.iconUrl || '', a.newTab ? 1 : 0]; });   // before H48c
+    // H48c: a 6th item, the CSV description, only when the row has one (5 items otherwise, as before)
+    apps.forEach((a) => {
+      if (!a.csv || !entryToId.has(a.entryUrl)) return;
+      const row = [a.category, a.entryUrl, a.name, a.iconUrl || '', a.newTab ? 1 : 0];
+      if (a.description) row.push(a.description);
+      o[entryToId.get(a.entryUrl)] = row;
+    });
     return o;
   };
   function checkIndex() {   // after all CSVs: a stale index only costs the R33b wait; say so

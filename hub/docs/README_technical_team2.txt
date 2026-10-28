@@ -1094,3 +1094,29 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   Header comment updated (workspace switcher note fixed to R43 position). Bump 20261028c / v99 ->
   20261028d / hub-shell-v100. Playwright (system Chrome): 13/13 (order, size, opens, focuses
   after minimise, box focused, taskbar top, Phone mode hidden), no console errors or 4xx.
+
+2026-10-28 IST, H48c (Team 2, week 2): Optional app descriptions in category CSVs (split 3 of 4).
+  CSV format (any apps/<cat>/<cat>-apps.csv): optional LAST column 'description', read only when
+  the header row names it: name, path, icon, newtab, section, description. One plain line,
+  < ~90 chars, NO commas (cells are split on ','; no quoting), not starting with '#'. Empty or
+  missing cell = no description. Old 5-column CSVs need no change.
+  Readers: shared/tiles/tiles.js parse() -> {.., description} (COLS default order + description;
+  tiles do not draw it); hub/menu/hub_flyout.js build() keeps description (cached start lists are
+  keyed by CSV text hash, so an edited CSV rebuilds them); hub/core/hub.js addCsvApps keeps
+  app.description and __hubAppIndex() pushes it as a 6th item only when non-empty (checkIndex
+  String compare stays equal for 5-item rows); apphub.js uses TilesCsv.parse (unchanged; extra
+  column ignored); terminal.js reads index items 0-2 only; search.js reads index item 5 and the
+  CSV description (H48). hub_appindex_gen.py: header / docstring updated, plus csv_descriptions()
+  that maps entry path -> description from every CSV with the column (mirrors tiles.js parse;
+  path resolved against the CSV folder) and appends it to the browser's rows; CSVs without the
+  column -> rows unchanged. apps/system/system-apps.csv: header + 9 descriptions (Files, Disk,
+  Viewer, Settings, System Monitor, Device Benchmark, Terminal, App Hub, Search; Settings is not
+  in the index because hub_apps.js registers it first, Search still reads its CSV description).
+  Regenerated hub_catalog.js (System CSV text only) and hub_appindex.js (old line order and the
+  existing caption-for-nei Favorite row kept; the run flips it to Tools, registration order is
+  not stable for apps listed in two CSVs), so the diff is the 8 System descriptions + header.
+  Bump 20261028d / v100 -> 20261028e / hub-shell-v101. Playwright (system Chrome): 13/13
+  (Search standalone + in Hub matches 'organise' / 'unix' / 'battery' / 'wallpaper preferences'
+  only in System descriptions; index rows = live __hubAppIndex; System flyout, App Hub #cat=System
+  and system.html list the same 9 apps with no description text leaked), no console errors / 4xx,
+  no 'out of date' notice. H48d: Apps / Games bots fill their own CSVs (format above).

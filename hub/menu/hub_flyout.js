@@ -80,6 +80,7 @@
       const entryUrl = joinPath(dir, a.path);
       return {
         name: a.name, entryUrl, newTab: !!a.newTab, section: a.section,
+        description: a.description || '',   // H48c: optional CSV description (hub.js → hub_appindex.js, Search)
         icon: a.icon ? joinPath(dir, a.icon).replace(/\/$/, '') : window.TilesCsv.defaultIcon(entryUrl)
       };
     });
