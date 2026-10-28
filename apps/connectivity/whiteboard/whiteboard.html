@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>Whiteboard WB1</title>
+  <link rel="icon" href="whiteboard_icon.png?v=WB1">
+  <link rel="stylesheet" href="whiteboard.css?v=WB1">
+</head>
+<body>
+<div id="app">
+  <div id="dots"><button class="dot on" data-i="0" aria-label="Board"></button><button class="dot" data-i="1" aria-label="Settings"></button></div>
+  <div id="viewport"><div id="track">
+    <section class="pane" id="pane-board">
+      <div id="stage">
+        <canvas id="board" data-tool="pen"></canvas>
+        <div id="hud"><span id="status">Starting…</span> <span id="zoom-lbl">100%</span></div>
+        <div id="tools" role="toolbar" aria-label="Tools">
+          <button class="tb" data-tool="pen" title="Pen (P)">✏️</button>
+          <button class="tb" data-tool="hl" title="Highlighter (H)">🖍️</button>
+          <button class="tb" data-tool="eraser" title="Eraser (E)">🧽</button>
+          <button class="tb" data-tool="shape" id="b-shape" title="Shapes: line (L), rectangle (R), ellipse (O), arrow (A)">▭</button>
+          <button class="tb txt" data-tool="text" title="Text (T)">T</button>
+          <button class="tb" data-tool="hand" title="Pan (hold Space, or two fingers)">✋</button>
+          <button class="tb" id="b-color" title="Colour and size"><span id="swatch"></span></button>
+          <span class="sep"></span>
+          <button class="tb" id="b-undo" title="Undo (Ctrl+Z)">↶</button>
+          <button class="tb" id="b-redo" title="Redo (Ctrl+Shift+Z)">↷</button>
+          <button class="tb" id="b-fit" title="Fit drawing (0)">⤢</button>
+          <button class="tb" id="b-people" title="People on this board">👥<span id="n-people">1</span></button>
+          <button class="tb" id="b-save" title="Save PNG">💾</button>
+          <button class="tb" id="b-clear" title="Clear board">🗑️</button>
+        </div>
+        <div id="pop-shape" class="pop" hidden>
+          <button data-shape="line" title="Line (L)">╱</button><button data-shape="rect" title="Rectangle (R)">▭</button>
+          <button data-shape="ell" title="Ellipse (O)">◯</button><button data-shape="arrow" title="Arrow (A)">➚</button>
+        </div>
+        <div id="pop-color" class="pop" hidden>
+          <div id="colors"></div>
+          <div id="sizes"></div>
+        </div>
+        <div id="pop-people" class="pop" hidden>
+          <b>On this board</b>
+          <ul id="people"></ul>
+          <p class="mut" id="people-hint">Open Whiteboard on another device with the same Hub code to draw together.</p>
+          <button class="mini" id="btn-code">Code</button>
+        </div>
+      </div>
+    </section>
+    <section class="pane" id="pane-set"><div class="set-wrap">
+      <h2>This device</h2>
+      <div class="set-row"><label for="in-name">Name</label><input id="in-name" maxlength="40"></div>
+      <div class="set-row"><span>Hub code</span><span><b id="code-lbl">—</b> <button class="mini" id="btn-code2">Change</button></span></div>
+      <h2>Board</h2>
+      <div class="set-row"><span>Background</span><div class="seg" data-key="bg"><button data-v="plain">Plain</button><button data-v="grid">Grid</button><button data-v="dots">Dots</button></div></div>
+      <h2>Look</h2>
+      <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+      <h2>About</h2>
+      <div class="about"><img src="whiteboard_icon.png?v=WB1" width="48" height="48" alt=""><div><b>Whiteboard</b> <span id="ver">WB1</span>
+        <p>Draw together live with every device on the same Hub Connect Code. Pen, highlighter, eraser, shapes and text; two fingers or Space to pan, pinch or wheel to zoom. Peer to peer over PeerJS; the board is kept on this device (autosave) and nothing is stored on a server.</p></div></div>
+    </div></section>
+  </div></div>
+</div>
+
+<div id="dialog" hidden><div class="box"><p id="d-text"></p><textarea id="d-area" hidden rows="3" maxlength="500"></textarea><input id="d-input" hidden inputmode="numeric" maxlength="4" placeholder="4-digit code"><div class="row" id="d-row"></div></div></div>
+<div id="toast"></div>
+
+<script src="../../../shared/link/link_devices.js?v=WB1"></script>
+<script src="whiteboard_store.js?v=WB1"></script>
+<script src="whiteboard_peer.js?v=WB1"></script>
+<script src="whiteboard_board.js?v=WB1"></script>
+<script src="whiteboard_save.js?v=WB1"></script>
+<script src="whiteboard_app.js?v=WB1"></script>
+</body>
+</html>

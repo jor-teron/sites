@@ -1,4 +1,4 @@
-/* Video Chat VC1 — settings store. localStorage 'videochat-settings-v1':
+/* Video Chat VC2 — settings store. localStorage 'videochat-settings-v1':
    { name, cam, mic, theme:'system'|'light'|'dark' }. Theme follows sites-hub.theme when set. */
 (function () {
   'use strict';

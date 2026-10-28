@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Screen Share SS1</title>
+  <link rel="icon" href="screenshare_icon.png?v=SS1">
+  <link rel="stylesheet" href="screenshare.css?v=SS1">
+</head>
+<body>
+<div id="app">
+  <div id="dots"><button class="dot on" data-i="0" aria-label="Share"></button><button class="dot" data-i="1" aria-label="Settings"></button></div>
+  <div id="viewport"><div id="track">
+    <section class="pane" id="pane-main"><div class="main">
+      <div class="col">
+        <div class="bar"><div><b id="me-name"></b><div id="status" class="mut">Starting…</div></div>
+          <button class="mini" id="btn-code">Code</button></div>
+        <div id="mine" class="card" hidden>
+          <video id="preview" autoplay playsinline muted></video>
+          <div class="mine-info">
+            <div><b id="mine-title">You are sharing</b> <span id="mine-state" class="pill live">Live</span></div>
+            <div class="mut" id="v-count">No viewers yet</div>
+            <ul id="v-list"></ul>
+          </div>
+        </div>
+        <h2 class="sec">Live shares</h2>
+        <ul id="shares"></ul>
+        <p id="empty" class="mut">No one is sharing yet. Open Screen Share on a computer with the same Hub code and press Share.</p>
+        <p id="online" class="mut"></p>
+      </div>
+      <div class="side">
+        <button class="btn big" id="b-share">Share screen</button>
+        <label class="chk" id="l-audio"><input type="checkbox" id="chk-audio"> Share tab audio</label>
+        <div id="sharing-ctl" hidden>
+          <button class="btn alt" id="b-pause">Pause</button>
+          <button class="btn bad" id="b-stop">Stop</button>
+        </div>
+        <p class="mut small" id="q-note"></p>
+      </div>
+    </div></section>
+    <section class="pane" id="pane-set"><div class="set-wrap">
+      <h2>This device</h2>
+      <div class="set-row"><label for="in-name">Name</label><input id="in-name" maxlength="40"></div>
+      <h2>Sharing</h2>
+      <div class="set-row"><span>Quality</span><div class="seg" data-key="quality"><button data-v="720">720p</button><button data-v="1080">1080p</button></div></div>
+      <div class="set-row"><span>Frame rate</span><div class="seg" data-key="fps"><button data-v="5">5</button><button data-v="15">15</button><button data-v="30">30 fps</button></div></div>
+      <div class="set-row"><span>Tab audio</span><div class="seg" data-key="audio"><button data-v="off">Off</button><button data-v="on">On</button></div></div>
+      <h2>Watching</h2>
+      <div class="set-row"><span>Video</span><div class="seg" data-key="fit"><button data-v="fit">Fit</button><button data-v="fill">Fill</button></div></div>
+      <h2>Look</h2>
+      <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+      <h2>About</h2>
+      <div class="about"><img src="screenshare_icon.png?v=SS1" width="48" height="48" alt=""><div><b>Screen Share</b> <span id="ver">SS1</span>
+        <p>Share a screen, window or tab from a computer to devices on the same Hub Connect Code (up to 4 viewers). Phones and tablets can watch. Peer to peer over PeerJS; nothing is recorded or stored on a server.</p>
+        <p>Lower quality or frame rate if viewers stutter. Tab audio works in Chrome and Edge when you pick a tab.</p></div></div>
+    </div></section>
+  </div></div>
+</div>
+
+<div id="watch" hidden>
+  <div id="stage"><div id="zoomer"><video id="remote" autoplay playsinline></video></div></div>
+  <div id="paused-ov" hidden><div><div class="pz">⏸</div><p><b id="p-name"></b> paused sharing</p></div></div>
+  <div id="wtop"><b id="w-name"></b><span id="w-state"></span><span id="w-zoom"></span></div>
+  <div id="wside">
+    <button class="cb" id="b-fit" title="Fit / Fill">⤢</button>
+    <button class="cb" id="b-zoom" title="Reset zoom">1:1</button>
+    <button class="cb" id="b-full" title="Full screen">⛶</button>
+    <button class="cb" id="b-sound" title="Sound" hidden>🔊</button>
+    <button class="cb end" id="b-leave" title="Stop watching">✕</button>
+  </div>
+</div>
+
+<div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="4" placeholder="4-digit code"><div class="row" id="d-row"></div></div></div>
+<div id="toast"></div>
+
+<script src="../../../shared/link/link_devices.js?v=SS1"></script>
+<script src="screenshare_store.js?v=SS1"></script>
+<script src="screenshare_peer.js?v=SS1"></script>
+<script src="screenshare_share.js?v=SS1"></script>
+<script src="screenshare_app.js?v=SS1"></script>
+</body>
+</html>

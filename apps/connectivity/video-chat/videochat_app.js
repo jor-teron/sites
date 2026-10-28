@@ -1,4 +1,5 @@
-/* Video Chat VC1 — UI: screens (Call, Settings), swipe 75 px, dialogs, call screen.
+/* Video Chat VC2 — UI: screens (Call, Settings), swipe 75 px, dialogs, call screen (grid of up to
+   4 tiles, active speaker, screen-share stage, Add-to-call sheet).
    Hub code, in order: #code= / ?hub= (QR), the Hub's {sharedLink:'hello'} (inside the Hub),
    parent.__hubRemote.code (phone Hub), localStorage 'jtsites-hub-ctrl-code' (desktop Hub),
    'shared-link-join-code', our last code, else the code dialog. */
@@ -73,50 +74,149 @@
       var av = document.createElement('span'); av.className = 'av'; av.textContent = (d.name || '?').charAt(0).toUpperCase();
       var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = d.name || 'Device';
       var b = document.createElement('button'); b.className = 'btn sm'; b.textContent = 'Call'; b.dataset.id = d.id;
-      b.onclick = function () { VCCall.start(d.id, d.name || 'Device'); };
+      b.onclick = function () { VCCall.start(d.id, d.name || 'Device'); if (VCCall.active()) $('incall').hidden = false; };
       li.append(av, nm, b); ul.appendChild(li);
     });
   }
   VCPeer.on('status', function (t) { $('status').textContent = t; });
-  VCPeer.on('roster', function (l) { paintList(l); VCCall.roster(l); });
+  VCPeer.on('roster', function (l) { paintList(l); VCCall.roster(l); if (!$('addsheet').hidden) paintAdd(); });
   VCPeer.on('signal', function (m, from) { VCCall.signal(m, from); });
   VCPeer.on('call', function (c) { VCCall.incoming(c); });
 
   /* ---------- call screen ---------- */
-  function showCall(name) { $('ringing').hidden = true; $('incall').hidden = false; $('c-name').textContent = name; $('c-time').textContent = '0:00'; ['b-mute', 'b-cam'].forEach(function (b) { $(b).classList.remove('off'); }); }
-  VCCall.on('outgoing', function (n) { showCall(n); $('c-state').textContent = 'Starting camera…'; });
-  VCCall.on('incoming', function (n) {
-    $('r-name').textContent = n; $('ringing').hidden = false;
-    hubNotify({ icon: '📹', title: 'Video Chat', text: n + ' is calling' });
+  var grid = $('grid'), tiles = {}, selfBack = false;
+  function ini(n) { return (n || '?').trim().charAt(0).toUpperCase() || '?'; }
+  function tileFor(id) {
+    if (tiles[id]) return tiles[id];
+    var el = document.createElement('div'); el.className = 'tile'; el.dataset.id = id;
+    var v = document.createElement('video'); v.autoplay = true; v.playsInline = true; v.setAttribute('playsinline', ''); if (id === 'me') v.muted = true;
+    var av = document.createElement('div'); av.className = 'av'; av.appendChild(document.createElement('span'));
+    var lbl = document.createElement('div'); lbl.className = 'lbl';
+    var n = document.createElement('span'); n.className = 'n'; var i = document.createElement('span'); i.className = 'i';
+    lbl.append(n, i);
+    var tag = document.createElement('div'); tag.className = 'tag';
+    el.append(v, av, lbl, tag);
+    if (id === 'me') dragPip(el);
+    return (tiles[id] = { el: el, v: v, av: av, n: n, i: i, tag: tag });
+  }
+  function setVideo(t, stream) { if (t.v.srcObject !== stream) { t.v.srcObject = stream || null; if (stream && t.v.play) t.v.play().catch(function () {}); } }
+  function render() {
+    var ppl = VCCall.people(), me = VCCall.me(), spk = VCCall.speaker();
+    var live = ppl.filter(function (p) { return p.state === 'live'; });
+    var sharer = me.st.share ? 'me' : (live.filter(function (p) { return p.st.share; })[0] || {}).id;
+    var items = ppl.concat([me]);
+    if (sharer) items.sort(function (a, b) { return (b.id === sharer) - (a.id === sharer); });
+    var mode = sharer ? 'stage' : ppl.length <= 1 ? 'one' : 'n' + Math.min(4, items.length);
+    grid.className = mode;
+    var keep = {};
+    items.forEach(function (p) {
+      keep[p.id] = 1;
+      var t = tileFor(p.id), isMe = p.id === 'me', st = p.st || {};
+      var vs = isMe ? (me.screen || me.stream) : p.stream;
+      setVideo(t, vs);
+      var hasV = !!(vs && vs.getVideoTracks().length), showing = isMe ? (me.screen || st.cam) : (st.share || st.cam);
+      t.av.hidden = hasV && showing && (isMe || p.state === 'live');
+      t.av.firstChild.textContent = ini(p.name);
+      t.n.textContent = isMe ? 'You' : p.name;
+      var ic = []; if (st.mute) ic.push('🔇'); if (!st.cam && !st.share) ic.push('📷✕'); if (st.share) ic.push('🖥️');
+      t.i.textContent = ic.join(' '); t.i.classList.toggle('bad', !!(st.mute || (!st.cam && !st.share)));
+      var tag = p.state === 'ringing' ? 'Ringing…' : p.state === 'connecting' ? 'Connecting…' : p.net === 'disconnected' ? 'Reconnecting…' : (st.share && !isMe ? 'Sharing screen' : isMe && me.screen ? 'You are sharing' : '');
+      t.tag.textContent = tag; t.tag.hidden = !tag;
+      var pip = mode === 'one' && isMe;
+      t.el.className = 'tile' + (isMe ? ' me' : '') + (isMe && !me.screen && !selfBack ? ' mirror' : '') + ((isMe && me.screen) || (!isMe && st.share) ? ' scr' : '') +
+        (p.id === sharer ? ' big' : '') + (pip ? ' pip' : '') + (mode !== 'one' && spk && (spk === p.id) ? ' spk' : '') + (p.state === 'ringing' ? ' ringing' : '');
+      if (!pip) ['left', 'top', 'right', 'bottom'].forEach(function (k) { t.el.style[k] = ''; });
+      grid.appendChild(t.el);
+    });
+    Object.keys(tiles).forEach(function (id) { if (!keep[id]) { tiles[id].v.srcObject = null; tiles[id].el.remove(); delete tiles[id]; } });
+    var names = live.map(function (p) { return p.name; });
+    if (ppl.length) $('c-name').textContent = names.length ? names.join(', ') : ppl.map(function (p) { return p.name; }).join(', ');
+    $('b-add').disabled = VCCall.count() >= VCCall.MAX;
+    $('b-share').hidden = VCCall.isPhone();
+    $('b-share').classList.toggle('on', VCCall.sharing());
+    $('b-share').title = VCCall.sharing() ? 'Stop sharing' : 'Share screen';
+    $('b-mute').classList.toggle('off', !!me.st.mute); $('b-cam').classList.toggle('off', !me.st.cam);
+    if (!$('addsheet').hidden) paintAdd();
+  }
+  function showCall() { $('ringing').hidden = true; $('incall').hidden = false; $('c-time').textContent = '0:00'; render(); }
+  VCCall.on('outgoing', function (n) { $('c-name').textContent = n; showCall(); $('c-state').textContent = 'Starting camera…'; });
+  VCCall.on('incoming', function (n, members) {
+    $('r-name').textContent = n;
+    $('r-sub').textContent = members && members.length ? 'invites you to a group call' : 'is calling…';
+    $('r-members').textContent = members && members.length ? 'Already in: ' + members.join(', ') : '';
+    $('r-members').hidden = !(members && members.length);
+    $('ringing').hidden = false;
+    hubNotify({ icon: '📹', title: 'Video Chat', text: n + (members && members.length ? ' invites you to a call with ' + members.join(', ') : ' is calling') });
   });
   VCCall.on('accepted', showCall);
-  VCCall.on('local', function (s) { $('self').srcObject = s; });
-  VCCall.on('remote', function (s) { $('remote').srcObject = s; $('remote').play && $('remote').play().catch(function () {}); });
+  VCCall.on('local', render);
+  VCCall.on('people', function () { if (!$('incall').hidden) render(); });
+  VCCall.on('speaker', function () { if (!$('incall').hidden) render(); });
+  VCCall.on('share', function (s) { render(); toast(s ? 'Sharing your screen with everyone in the call' : 'Screen sharing stopped — camera back on'); });
+  VCCall.on('note', function (t) { toast(t); });
+  VCCall.on('joined', function (n) { if (VCCall.count() > 2) toast(n + ' joined'); });
   VCCall.on('state', function (t) { $('c-state').textContent = t; });
   VCCall.on('timer', function (ms) { var s = Math.floor(ms / 1000); $('c-time').textContent = Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); });
-  VCCall.on('ended', function (why, quiet, isErr) {
-    $('incall').hidden = true; $('ringing').hidden = true; $('remote').srcObject = null; $('self').srcObject = null;
+  VCCall.on('ended', function (why, quiet) {
+    $('incall').hidden = true; $('ringing').hidden = true; $('addsheet').hidden = true;
+    Object.keys(tiles).forEach(function (id) { tiles[id].v.srcObject = null; tiles[id].el.remove(); delete tiles[id]; });
+    selfBack = false;
     if (quiet) toast(why); else dialog(why, ['OK']);
-    if (isErr) return;
   });
   $('b-accept').onclick = function () { VCCall.accept(); };
   $('b-decline').onclick = function () { VCCall.decline(); };
   $('b-end').onclick = function () { VCCall.end(); };
-  $('b-mute').onclick = function () { $('b-mute').classList.toggle('off', !!VCCall.mute()); };
-  $('b-cam').onclick = function () { $('b-cam').classList.toggle('off', !!VCCall.camOff()); };
-  $('b-flip').onclick = function () { VCCall.flip().then(function () { $('self').classList.toggle('back'); }).catch(function (e) { toast(e.message); }); };
+  $('b-mute').onclick = function () { VCCall.mute(); };
+  $('b-cam').onclick = function () { VCCall.camOff(); };
+  $('b-flip').onclick = function () { VCCall.flip().then(function (back) { selfBack = !!back; render(); }).catch(function (e) { toast(e.message); }); };
+  var phoneMsg = 'Phones and tablets can’t share their screen from a browser, but they see a shared screen big when someone on a computer shares.';
+  $('b-share').onclick = function () {
+    VCCall.share().catch(function (e) {
+      if (e.message === 'phone') dialog(phoneMsg, ['OK']); else if (e.quiet) toast(e.message); else dialog(e.message, ['OK']);
+    });
+  };
 
-  /* draggable self-view */
-  (function () {
-    var v = $('self'), sx, sy, ox, oy, drag = false;
-    v.addEventListener('pointerdown', function (e) { drag = true; v.setPointerCapture(e.pointerId); var r = v.getBoundingClientRect(); sx = e.clientX; sy = e.clientY; ox = r.left; oy = r.top; });
+  /* Add-to-call sheet (the device list, inside the call) */
+  function paintAdd() {
+    var ul = $('addlist'), list = VCPeer.roster(), full = VCCall.count() >= VCCall.MAX, byId = {};
+    VCCall.people().forEach(function (p) { byId[p.id] = p; });
+    ul.innerHTML = '';
+    $('add-empty').hidden = list.length > 0;
+    $('add-note').textContent = VCCall.count() + ' of ' + VCCall.MAX + ' in the call';
+    list.forEach(function (d) {
+      var li = document.createElement('li'), p = byId[d.id];
+      var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = d.name || 'Device';
+      li.appendChild(nm);
+      if (p && p.state === 'ringing') {
+        var st = document.createElement('span'); st.className = 'st'; st.textContent = 'Ringing…';
+        var c = document.createElement('button'); c.className = 'mini'; c.textContent = 'Cancel'; c.onclick = function () { VCCall.cancelInvite(d.id); };
+        li.append(st, c);
+      } else if (p) {
+        var s2 = document.createElement('span'); s2.className = 'st'; s2.textContent = p.state === 'live' ? 'In the call' : 'Joining…'; li.appendChild(s2);
+      } else {
+        var b = document.createElement('button'); b.className = 'btn sm'; b.textContent = 'Invite'; b.disabled = full; if (full) b.style.opacity = .4;
+        b.dataset.id = d.id;
+        b.onclick = function () { VCCall.start(d.id, d.name || 'Device'); };
+        li.appendChild(b);
+      }
+      ul.appendChild(li);
+    });
+  }
+  $('b-add').onclick = function () { if (VCCall.count() >= VCCall.MAX) { toast('A call holds up to ' + VCCall.MAX + ' people'); return; } paintAdd(); $('addsheet').hidden = false; };
+  $('b-addclose').onclick = function () { $('addsheet').hidden = true; };
+  $('addsheet').addEventListener('click', function (e) { if (e.target === $('addsheet')) $('addsheet').hidden = true; });
+
+  /* draggable self-view (1:1 picture-in-picture only) */
+  function dragPip(v) {
+    var sx, sy, ox, oy, drag = false;
+    v.addEventListener('pointerdown', function (e) { if (!v.classList.contains('pip')) return; drag = true; v.setPointerCapture(e.pointerId); var r = v.getBoundingClientRect(); sx = e.clientX; sy = e.clientY; ox = r.left; oy = r.top; });
     v.addEventListener('pointermove', function (e) {
       if (!drag) return;
       var x = Math.max(0, Math.min(innerWidth - v.offsetWidth, ox + e.clientX - sx)), y = Math.max(0, Math.min(innerHeight - v.offsetHeight, oy + e.clientY - sy));
       v.style.left = x + 'px'; v.style.top = y + 'px'; v.style.right = 'auto'; v.style.bottom = 'auto';
     });
     ['pointerup', 'pointercancel'].forEach(function (n) { v.addEventListener(n, function () { drag = false; }); });
-  })();
+  }
 
   /* ---------- screens + swipe ---------- */
   function show(i) { page = i; $('track').style.transform = 'translateX(' + (-50 * i) + '%)'; document.querySelectorAll('.dot').forEach(function (d, k) { d.classList.toggle('on', k === i); }); if (i === 1) listMedia(); }

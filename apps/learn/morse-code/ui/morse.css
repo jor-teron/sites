@@ -1,0 +1,41 @@
+/* Morse Code MC1 — app look on top of the Learn kit (../common/ui/learn.css). Settings row with the lamp on top, the screen
+   below it scrolls. Light mode follows the Hub theme (html.light). Plain CSS, no heavy effects (weak phones). */
+.mc { --accent: #ffb347; --ok: #7ccf95; --bad: #ff6b6b; --lamp: #ffe27a; }
+.mc-ver { flex: none; font-size: 0.75rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 99px; }
+.mc-modes button { padding: 0 10px; }
+.mc-sos { flex: none; background: #c0392b; border-color: #c0392b; color: #fff; font-weight: 800; letter-spacing: 0.05em; }
+.mc-main { display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+.mc-body { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
+.mc-set { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; font-weight: 600; font-size: 0.9rem; }
+.mc-set label { display: inline-flex; align-items: center; gap: 6px; } .mc-set input { width: 110px; } .mc-set output { min-width: 4.5em; color: var(--muted); }
+.mc-lamp { width: 30px; height: 30px; border-radius: 50%; background: #3a3a2a; border: 2px solid var(--line); flex: none; }
+.mc-lamp.on { background: var(--lamp); box-shadow: 0 0 18px var(--lamp); }
+.mc-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; } .mc-row .lrn-h { flex: 1; margin: 0; }
+.mc-gh { font-size: 1rem; margin: 8px 0 4px; color: var(--muted); }
+.mc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+.mc-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 58px; padding: 4px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--text); }
+.mc-cell b { font-size: 1.3rem; } .mc-cell.lit { background: var(--lamp); color: #111; border-color: var(--lamp); }
+.mc-empty { visibility: hidden; }
+.mc-code { display: inline-flex; align-items: center; gap: 3px; }
+.mc-code i { display: block; height: 7px; border-radius: 4px; background: currentColor; } .mc-code .dt { width: 7px; } .mc-code .ds { width: 21px; }
+.mc-trow { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 3px; margin-bottom: 3px; }
+.mc-trow .mc-cell { min-height: 50px; padding: 2px; } .mc-trow .mc-code { gap: 2px; } .mc-trow .mc-code .ds { width: 12px; } .mc-trow .mc-code i { height: 5px; } .mc-trow .mc-code .dt { width: 5px; }
+.mc-ta { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: 1.1rem system-ui, sans-serif; resize: vertical; }
+.mc-mono { font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.04em; }
+.mc-go { background: var(--accent); border-color: var(--accent); color: #111; min-width: 110px; }
+.mc-out { min-height: 2.4em; padding: 8px 10px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); font-size: 1.4rem; white-space: pre-wrap; word-break: break-all; }
+.mc-part { min-height: 1.6em; text-align: center; font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+.mc-body > *, .mc-quiz > * { flex: none; }
+.mc-body > .mc-key, .mc-quiz > .mc-key { flex: 1 1 120px; min-height: 64px; max-height: 260px; width: 100%; border-radius: 24px; border: 3px solid var(--line); background: var(--panel2); color: var(--text);
+  font: 800 2rem system-ui, sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.mc-key.down { background: var(--lamp); color: #111; border-color: var(--lamp); }
+.mc-lessons { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); } .mc-les { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.mc-quiz { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; max-width: 560px; width: 100%; margin: 0 auto; }
+.mc-opts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
+.mc-opt { min-height: 56px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-size: 1.5rem; font-weight: 800; }
+.mc-opt.ok { background: rgba(124, 207, 149, 0.25); border-color: var(--ok); } .mc-opt.bad { background: rgba(255, 107, 107, 0.22); border-color: var(--bad); }
+.mc-fb { min-height: 1.4em; margin: 0; font-weight: 600; display: flex; align-items: center; gap: 6px; } .mc-fb.ok { color: var(--ok); } .mc-fb.bad { color: var(--bad); }
+.mc-ans { justify-content: center; min-height: 44px; }
+.mc-big { font-size: 3rem; font-weight: 800; color: var(--accent); margin: 0; line-height: 1.1; }
+@media (max-width: 560px) { .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; flex-basis: 100%; } .mc-set input { width: 80px; } .mc-trow .mc-cell b { font-size: 0.95rem; } }
+@media (max-height: 460px) { .lrn-head { padding: 4px 10px; } .lrn-main.mc-main { padding: 6px 10px; gap: 4px; } .mc-big { font-size: 2rem; } .mc-body > .mc-key, .mc-quiz > .mc-key { flex-basis: 64px; } .mc-body > p.lrn-sub { display: none; } .mc-quiz .lrn-h { font-size: 1rem; margin: 0; } .mc-quiz { gap: 2px; } .mc-part { min-height: 1.2em; font-size: 1.3rem; } .mc-out { font-size: 1.1rem; min-height: 1.6em; padding: 4px 10px; } }
