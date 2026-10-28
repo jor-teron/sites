@@ -85,6 +85,7 @@ window.HUB_APP_INDEX = {
   "maths-logic": ["Learn", "apps/learn/maths-logic/", "Maths and Logic", "apps/learn/maths-logic/maths-logic_icon.png", 0],
   "code-lab": ["Learn", "apps/lab/code-lab/", "Code Lab", "apps/lab/code-lab/codelab_icon.png", 0],
   "survival-outdoors": ["Learn", "apps/learn/survival-outdoors/", "Survival and Outdoors", "apps/learn/survival-outdoors/survival-outdoors_icon.png", 0],
+  "piano-basics": ["Learn", "apps/learn/piano-basics/", "Piano Basics", "apps/learn/piano-basics/piano-basics_icon.png", 0],
   "myllm": ["Lab", "apps/lab/myllm/", "MyLLM", "apps/lab/myllm/myllm_icon.png", 0],
   "local-ai-chat": ["Lab", "apps/lab/local-ai-chat/", "Local AI Chat", "apps/lab/local-ai-chat/local-ai-chat_icon.png", 0],
   "story": ["Lab", "apps/lab/story/", "Story", "apps/lab/story/story_icon.png", 0],
