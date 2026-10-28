@@ -545,6 +545,15 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Tested in headless Chrome with a simulated PeerJS (in-memory bus between pages; the box blocks WebRTC): host + 4 displays (3 × 640×400, 1 × 560×360) in a 2×2 grid with 30 px bezel → correct rects and gradient pixels on every display, clock offsets with ±5 s / −3 s skewed clocks, picture chunks, late joiner, Identify, take-over, themes, swipes, Hub ready→hello. 37 checks pass. Not yet tried on real devices.
 - Limits / next: no video (planned MW2), no per-device physical-size calibration (different pixel densities show content at different physical sizes), the host does not show a slice itself, phones in a Hub iframe may refuse fullscreen (use "Open as its own page").
 
+### 1.26 Base delete safety: `apps/office/base/` (Office), release BS4
+- Why: deleting a table or a record was one tap on a button right beside the table / in the form view, easy to hit by accident and easy to confuse with each other.
+- New `modules/base-delete.js` (`BaseDelete.table()`, `.records(rows?)`, `.menu(anchor, items)`). Ribbon Home: `#btn-table-delete` and `#btn-row-del` (− Record) removed; a `⋯` button after Rename (`#btn-table-more`) and after + Record (`#btn-row-more`) opens a small fixed-position menu (not clipped by the scrolling ribbon) with one red item: `#menu-table-delete` "🗑 Delete table…" / `#menu-row-delete` "⊖ Delete record…". Form view lost its Delete button.
+- Typed-confirm dialog (in-app, shared `dlg-*` look, no alert/confirm): red button starts disabled; Enter only works when the text is right; Esc / Cancel / backdrop cancel; focus trapped. Table: solid red header 🗑 "Delete whole table", facts Table / Records / Fields, type the table name exactly (case sensitive, outer spaces ignored). Record: red-outline header ⊖ "Delete 1 record" (or N), preview of the first record (first 6 fields), type `DELETE` or the count.
+- Deletes call `BaseStore.saveNow()` (no 400 ms debounce), so they survive an immediate reload. Deleting a table also clears an active query on it. No Undo toast; HO1 Undo/Redo stay disabled in Base (Undo/Redo is a later release).
+- A capture keydown guard: Delete / Backspace outside an editable field are prevented and never delete anything; inside a cell they edit text as before.
+- `<title>Base BS4</title>`, `BASE_VERSION = "BS4"`, Base's own `?v=` now `BS4` (base-quick.js and shared files keep their tags, unchanged). Shared Office files untouched. No build bump.
+- Tested headless (puppeteer, `/workspace/bs4-test/test.js`) at 1280x800 and 390x844 phone: 43 checks each pass, no page errors, no native dialogs. Not tested inside the Hub frame. Multi-record selection does not exist yet, so the record dialog is always for 1 record for now.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
