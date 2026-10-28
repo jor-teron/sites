@@ -166,6 +166,7 @@ Learning HTML (Basic),   ../tools/learning-html/,    , , Coding
 Survival and Outdoors,   survival-outdoors/,         , , Outdoors
 Piano Basics,            piano-basics/,              , , Music
 Guitar Chords,           guitar-chords/,             , , Music
+Tuner & Metronome,       tuner-metronome/,           , , Music
 Periodic Table,          periodic-table/,            , , Science
 Road Safety,             road-safety/,               , , Life Skills
 `,
