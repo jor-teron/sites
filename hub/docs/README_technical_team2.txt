@@ -1474,3 +1474,84 @@ Line counts are HTML+JS+CSS, excluding vendor/.
     standalone shows the old message as You and others as received, migration once, stale d- id
     converted again with both kept, Hub page same id + isMine, new message uses new id, Screen Wall
     dev() = new id, no console errors) + H29.1 40/40 + H29.2 45/45 + H29.2b 30/30 + H29.3 40/40.
+
+2026-10-29 IST, H50 (Team 2, week 2): Hub mesh core: one shared connection per Connect Code.
+  Files: shared/link/hub_mesh.js (new, window.HubMesh), hub/link/hub_meshlink.js (new, Hub glue),
+    hub.html (both loaded after hub_sync.js), hub/update/hub_sw.js (precache both),
+    apps/system/settings/sec_devices.js (Hub mesh list in Connected devices; ?v=20261028h50) +
+    settings.css (.mesh-*), shared/link/README.md. No Apps bot file edited.
+  Peers: device peer 'jtsites-' + code + '-mesh-' + deviceId (H50a id); lobby peer
+    'jtsites-' + code + '-mesh-0', a second Peer opened only by the device holding the lobby (the lobby
+    device talks to itself in-process). The PeerJS broker's unavailable-id is the lock: one holder.
+  Start: hub_meshlink.js check() (SharedLink status / open / close, every 3 s, 500 ms after load):
+    role 'host' with a live code peer, or role 'join' and connected -> HubMesh.start(code,
+    {preferLobby: host && Desktop mode}); stop only when the link is really off (no role / no code /
+    host peer gone / hub-mesh-off = '1'). A phone that lost the PC keeps its mesh.
+    preferLobby: claim -0 at once. Others try to join -0 first; no answer in 5 s -> takeover logic
+    with rank >= 1 (so a PC that is starting wins).
+  Join: member dials -0 with metadata {kind:'mesh', v:1, dev}; sends hello {name, mode, apps, site}.
+    Lobby checks: conn.peer = 'jtsites-<code>-mesh-' + dev and dev matches metadata, site = its
+    location.host (weak), hooks.approveJoin(hello, peerId), roster size <= 32 (offline entries older
+    than 10 min pruned). Then welcome {roster} to the newcomer and roster to all. joinOrder = next
+    number, kept for a returning device. Lobby control channel '_mesh': welcome, roster, hb, bye
+    {reason: site | denied | full} (refused state, no retry until start() again), info (name / mode /
+    apps changed: HubMesh.refresh(), on hub-wm-mode / hub-device-name / storage).
+  Direct links: every online non-relayed pair, the smaller deviceId dials (metadata {kind:'mesh-peer'}).
+    Relay: online devices sorted lobby first, then joinOrder; the first 8 are direct, the rest are
+    marked relay and only talk through the lobby. Broadcast = direct to every direct peer + one copy
+    via the lobby with skip:[already reached], the lobby forwards to the rest (each once, deduped by
+    message id, LRU 600).
+  Liveness: hb every 2 s on every link; a link silent 6 s is dropped. Lobby lost (closed / silent 6 s /
+    no welcome): rank the living devices (me + direct peers heard within 6 s, not the old lobby) by
+    joinOrder; wait rank x 3 s + random 0-1.5 s, then claim -0. unavailable-id -> someone won, join
+    it. New lobby: term + 1, everyone offline until their hello, joinOrders kept; a hello with a newer
+    term makes the lobby go above it. Members accept welcome / roster only with term >= theirs.
+    Old PC returning: joins as a normal device (its preferLobby claim gets unavailable-id), keeps #1.
+  Envelope {v:1, ch, from, to ('*' or deviceId), t, term, id, data}. accept(): shape (v, ch regex
+    /^[a-z][a-z0-9-]{0,31}$/ or '_mesh', ids /^hub-.../ ), size <= 240 KiB UTF-8 JSON, from = the
+    conn's device (direct links; via lobby the lobby vouches), rate 60/s burst 120 per sender, then
+    hooks.verify, then term < mine -> drop (stats.dropTerm). Data with a newer term raises mine.
+    Known trade-off: during a takeover, direct messages from a device still on the old term are
+    dropped by devices already on the new one (a few seconds).
+  API: start(code, {preferLobby, name, mode}) -> Promise(me), stop(), me(), peers(), roster(),
+    on/off('peers'|'lobby'|'roster'|'status'), channel(name) -> {send(to, data) -> {ok, via|reason},
+    broadcast(data), on(fn(data, from, env)) -> unsubscribe, peers}, setAppIdentity(app, obj)
+    (localStorage 'hub-mesh-id-<app>', max 2 KB, shown in roster.apps), appIdentity(app), refresh(),
+    isLobby(), term(), lobbyId(), state(), stats(), hooks, LIMITS. Test helpers _env / _raw.
+    send reasons: stopped, to, size, rate, offline.
+  Settings > Devices > Connected devices: new 'Hub mesh' list under the SharedLink list (HubMesh.roster(),
+    textContent only, repaints on roster / peers / lobby / status + every 5 s): name, Lobby, This
+    device, Relayed, Desktop / Phone mode, join #, Apps: ..., Online / Offline; note = code, term, state.
+  Unchanged: controller / gamepad, H29 sync, Pooh Chat, file transfer keep SharedLink. Seen in tests
+    with the mesh off too (pre-existing, not H50): the PC controller keeps one SharedLink phone at a
+    time (hub-controller attachConn closes the older link), so two phones take turns on SharedLink;
+    on the mesh both stay online.
+  Open security risks (for the security talk, not fixed in H50; hooks left: approveJoin, sign, verify):
+    1. Anyone who knows the code can join; the 4-digit code is brute-forceable (10,000 values).
+    2. No join approval (approveJoin allows all) and no allow-list of known devices.
+    3. Device ids are claimable on the public PeerJS broker: someone can register another device's
+       mesh peer id while it is away, or claim -0 first and act as the lobby.
+    4. A malicious lobby can forge the roster, drop or change relayed messages, mark devices relay.
+    5. The lobby sees all relayed traffic (devices past 8 and broadcast copies).
+    6. No end-to-end signing or encryption beyond WebRTC DTLS; 'from' is only checked per link.
+    7. The site check (location.host in hello) is self-reported and can be faked.
+    8. DoS: hello / message floods (rate limit per sender only), roster fill to 32, takeover storms by
+       claiming -0.
+    9. Identity data (name, mode, app identities) is visible to every device in the mesh.
+    10. Term numbers are trusted: a device can send a huge term and reset others' view.
+    11. Messages are JSON from other devices: apps must keep showing them as text only.
+  Screen Wall: not edited. H50 changes nothing it uses (SharedLink, SharedLinkDevices.id()); the only
+    impact is still the H50a one-time re-place of a display. Moving it onto the mesh is H50d (later).
+  Tests: this box's managed Chrome policy (WebRtcIPHandling disable_non_proxied_udp) blocks WebRTC
+    UDP, so real PeerJS DataChannels never open here (checked: no ICE candidates even in one page).
+    So: (1) real PeerJS cloud broker 4/4 (real PeerJS 1.5.4, 3 simultaneous -0 claims -> exactly one
+    open + 2 unavailable-id, HubMesh preferLobby claims the lobby, no errors); (2) mesh core 35/35
+    with a PeerJS stand-in (same Peer / DataConnection API, Python broker between contexts; real
+    hub_mesh.js): roster on 4, joinOrder, lobby tag, modes, H50a ids, full mesh, app identity, direct
+    + broadcast, oversize send + raw 245 KB drop, spoofed from, takeover by lowest joinOrder (~6.7 s),
+    single winner, term 2, old-term drop, returning PC normal + no flapping, 9 devices with 1 relayed,
+    relay broadcast / direct, rate limit, no console errors; (3) Hub integration 20/20 (stand-in for
+    every Peer, real Hub pages): PC Desktop holds lobby, two ?join phones, roster 3 online, Settings
+    Devices roster (screenshot), PC closes -> phone takes over at term 2, no console errors.
+    H29.1 40/40, H29.2 45/45, H29.2b 30/30, H29.3 40/40, H50a 22/22.
+  Bump 20261028k / v107 -> 20261029a / hub-shell-v108 (hub_bump.py --release H50, --check OK).

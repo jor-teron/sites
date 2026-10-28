@@ -583,8 +583,56 @@
     function stop() { EVS.forEach((ev) => { try { L.off(ev, onEv); } catch (_) { /* old link */ } }); if (offSync) offSync(); }
     window.addEventListener('pagehide', stop);
     draw();
+    meshSection(card, hub);   // H50: the shared Hub mesh roster (one connection per Connect Code)
     if (sub === 'connected') setTimeout(() => card.scrollIntoView({ block: 'start' }), 50);
     return card;
+  }
+
+  /* H50: Hub mesh roster (read-only). Every field comes from other devices: textContent only. */
+  function meshSection(card, hub) {
+    const M = hub && hub.HubMesh;
+    if (!M) return;
+    const box = ui.el('div', 'mesh-box'); box.id = 'mesh-box';
+    box.appendChild(ui.el('h4', 'mesh-h', 'Hub mesh'));
+    const note = ui.el('p', 'opt-note mesh-note'); note.id = 'mesh-note';
+    const list = ui.el('ul', 'conn-list mesh-list'); list.id = 'mesh-list';
+    list.setAttribute('aria-label', 'Hub mesh devices');
+    box.append(note, list);
+    card.appendChild(box);
+    const clip = (v, n) => String(v == null ? '' : v).slice(0, n);
+    const MODE = { desktop: 'Desktop mode', phone: 'Phone mode' };
+    function draw() {
+      if (!box.isConnected && drawn) { stop(); return; }
+      drawn = true;
+      const me = M.me();
+      list.textContent = '';
+      if (!me) { note.textContent = 'Mesh off: it starts when a Connect Code link is on.'; return; }
+      const st = { lobby: 'this device is the lobby', linked: 'linked', joining: 'joining…', takeover: 'lobby lost, taking over…', claiming: 'claiming the lobby…', refused: 'refused by the lobby (' + clip(me.refused, 20) + ')' }[me.state] || clip(me.state, 20);
+      note.textContent = 'Code ' + clip(me.code, 12) + ' · term ' + me.term + ' · ' + st + '. Shared by all Hub apps (one connection per Connect Code).';
+      const ros = M.roster();
+      ros.forEach((r) => {
+        const self = r.deviceId === me.deviceId;
+        const li = ui.el('li', 'conn-dev mesh-dev' + (self ? ' conn-self' : ''));
+        li.dataset.id = clip(r.deviceId, 40);
+        const top = ui.el('div', 'conn-top');
+        top.append(ui.el('b', 'conn-name', clip(r.name || 'Device', 40) + (self ? ' (this device)' : '')),
+          ui.el('span', 'conn-state ' + (r.online ? 'on' : 'off'), r.online ? 'Online' : 'Offline'));
+        const meta = ui.el('div', 'conn-meta');
+        const apps = Object.keys(r.apps || {}).slice(0, 8).map((a) => clip(a, 24));
+        [r.lobby ? 'Lobby' : '', self ? 'This device' : '', r.relay ? 'Relayed' : '', MODE[r.mode] || '', '#' + (r.joinOrder | 0), apps.length ? 'Apps: ' + apps.join(', ') : '']
+          .filter(Boolean).forEach((t) => meta.appendChild(ui.el('span', 'conn-tag' + (t === 'Lobby' ? ' mesh-lobby' : t === 'Relayed' ? ' mesh-relay' : ''), t)));
+        li.append(top, meta);
+        list.appendChild(li);
+      });
+    }
+    let drawn = false, t = 0;
+    const onEv = () => { clearTimeout(t); t = setTimeout(draw, 0); };
+    const EVS = ['roster', 'peers', 'lobby', 'status'];
+    EVS.forEach((ev) => M.on(ev, onEv));
+    const tick = setInterval(draw, 5000);   // mesh may start after this card (Hub glue checks every 3 s)
+    function stop() { EVS.forEach((ev) => M.off(ev, onEv)); clearInterval(tick); }
+    window.addEventListener('pagehide', stop);
+    draw();
   }
 
   Settings.add({

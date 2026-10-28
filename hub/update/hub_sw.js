@@ -26,8 +26,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261028k';
-const CACHE = 'hub-shell-v107';  // 2026-10-28k: H50a New 16-char Hub device ID (hub-xxxxxxxx-xxx)
+const V = '20261029a';
+const CACHE = 'hub-shell-v108';  // 2026-10-29a: Hub mesh core: one shared connection per Connect Code
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -65,6 +65,7 @@ const SHELL = [
   'hub/core/hub_keys.js', 'hub/keys.readme.md',   // H28
   'hub/core/hub_profile.js',   // H30.1
   'hub/link/hub_sync.js',   // H29.1
+  'shared/link/hub_mesh.js', 'hub/link/hub_meshlink.js',   // H50
 ];
 const OFFLINE = 'hub/update/hub_offline.html';
 const abs = (p) => new URL(p, self.registration.scope).href;
