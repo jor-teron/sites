@@ -1,0 +1,47 @@
+<!doctype html>
+<!--
+  Search (apps/system/search/index.html), H48 — Hub Search, a System app. One box that finds:
+  apps (name, category, section and the optional CSV description from H48c), Settings pages and
+  options (opens Settings at #section or #section/sub, e.g. #about/device), Start-menu categories
+  (App Hub #cat=…), Hub actions (Show desktop, workspaces) and open windows (focus).
+  Actions and windows only show inside the Hub in Desktop mode (parent window.HubWM); on its own the
+  page still searches apps and Settings. Opens apps the Start-menu way (parent.__hubFly.openFromCat).
+  Data: hub_config.js, hub_apps.js, hub_appindex.js (instant list), hub_catalog.js + tiles.js (CSV
+  sections / descriptions). Hub items: search_items.js. Look: search.css (follows the Hub theme).
+  Planned: H48b taskbar 🔍 button, H48c CSV description column, H48d descriptions for every category.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Hub Search: find apps, Settings, categories, Hub actions and open windows." />
+  <title>Search</title>
+  <link rel="icon" href="search_icon.png" />
+  <link rel="stylesheet" href="search.css?v=20261028h48" />
+  <script src="../../../shared/theme/hub_theme.js?v=20261026h22"></script>
+</head>
+<body>
+  <header class="top">
+    <img class="top-icon" src="search_icon.png" alt="" width="32" height="32" />
+    <div class="box">
+      <span class="lens" aria-hidden="true">&#x1F50D;&#xFE0E;</span>
+      <input id="q" type="search" autocomplete="off" spellcheck="false" autofocus
+        placeholder="Search apps, settings and the Hub" aria-label="Search the Hub"
+        role="combobox" aria-expanded="true" aria-controls="results" aria-autocomplete="list" />
+      <button id="clear" class="clear" type="button" title="Clear (Esc)" aria-label="Clear" hidden>&times;</button>
+    </div>
+  </header>
+  <p id="msg" class="msg" role="status" aria-live="polite" hidden></p>
+  <main>
+    <div id="results" class="results" role="listbox" aria-label="Results"></div>
+    <p id="count" class="count muted" aria-live="polite"></p>
+  </main>
+  <script src="../../../hub/core/hub_config.js?v=20261023p"></script>
+  <script src="../../../hub/core/hub_apps.js?v=20261023p"></script>
+  <script src="../../../hub/core/hub_appindex.js?v=20261028h48"></script>
+  <script src="../../../hub/core/hub_catalog.js?v=20261028h48"></script>
+  <script src="../../../shared/tiles/tiles.js?v=20261023p"></script>
+  <script src="search_items.js?v=20261028h48"></script>
+  <script src="search.js?v=20261028h48"></script>
+</body>
+</html>

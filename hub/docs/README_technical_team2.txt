@@ -1065,3 +1065,21 @@ Line counts are HTML+JS+CSS, excluding vendor/.
 2026-10-28 IST, H47 (Team 2, week 2): H47: hub_appindex.js regenerated with hub_appindex_gen.py (122 apps). Adds Connectivity Screen Share SS1, Video Chat VC2, Whiteboard WB1, Shared Clipboard CB1, Intercom IC1, plus Gallery, GIF Maker, Screen Recorder, Image Gen, Vision; TV now listed under Favorite; Code Lab now under Lab (its lab-apps.csv icon path code-lab_icon.png is wrong, file is codelab_icon.png: Apps bot fix).
   Build 20261028b / hub-shell-v98. Generator run with system Chrome (Playwright bundled browser
   missing on the box). hub.html load: no 4xx responses, no broken images. About 6 minutes.
+
+2026-10-28 IST, H48 (Team 2, week 2): Hub Search app (System category), split release 1 of 4.
+  New apps/system/search/: index.html, search.js, search_items.js, search.css, README.md,
+  search_icon.png; row in apps/system/system-apps.csv (existing columns only). Data: hub_appindex.js
+  (instant list, reads an optional 6th item as description), then every category CSV via
+  TilesCsv.parse for sections and a.description (absent today = ''). Hub items in search_items.js:
+  Settings pages / options -> __hubOpenApp('apps/system/settings/', {hash}) (#about/device,
+  #about/profile); categories -> App Hub #cat=; actions (minimiseAll, setWs) only when parent
+  HubMode.isDesktop(); open windows from parent __hubTasks.list / focus (skips its own window).
+  Apps open with parent __hubFly.openFromCat like the Start flyout; hub-open-app message on
+  file://; standalone navigates. Scoring: every query word must match; name > section / category
+  > description; whole-query name prefix +50; groups sorted by their best row. Not touched:
+  wm_taskbar.js, hub_appindex_gen.py, tiles.js. Planned: H48b taskbar search button after Show
+  desktop, H48c optional CSV description column (last column), H48d descriptions filled in by the
+  Apps / Games bots. Index regenerated (123 apps; line order kept so the diff is the Search row
+  only). Bump 20261028b / v98 -> 20261028c / hub-shell-v99. Playwright (system Chrome): 27/27
+  (standalone, Start > System > Search window, settings / device / tetris / games, keys, Enter,
+  windows, workspace + Show desktop actions, Phone mode #search), no console errors or 4xx.
