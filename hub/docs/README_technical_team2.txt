@@ -1045,3 +1045,17 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   frame.setAttribute('allowfullscreen','') (kept as a legacy comment). The iframe's allow policy
   now always includes fullscreen. Tested in hub.html: fullscreen is in allow, no warning, no errors.
   Same build as H42 (20261027a), no extra bump. About 4 minutes.
+
+2026-10-28 IST, H46 (Team 2, week 2): device name moved out of the 🎮 Devices pop-up into
+  Settings > About > Device name (sec_about.js deviceCard, id 'device', deep link #about/device;
+  text box maxLength 40 + Save). Save uses the Hub's SharedLinkDevices.setName() when Settings is in
+  the Hub (desktop or a joined phone, __hubRemote): same key 'shared-link-device-name', {t:'name'}
+  over the live link, host re-broadcasts the list; then fires 'hub-device-name' on the Hub window.
+  On its own Settings loads shared/link/link_devices.js and only saves the key; hub_panels.js
+  follows the 'storage' event and re-sends the name to the link. hub_panels.js: the
+  SharedLinkUI.mountName box is removed (legacy comment), the card shows 'Name: X ›' (.hp-name)
+  which closes the pop-up and calls __hubOpenApp('apps/system/settings/', {hash:'about/device'}).
+  ctrl_settings.js and the Chat name box untouched. Small extra: About's readBuild accepts
+  H-numbered releases (was /^R/ only). Bump 20261023q / v95 -> 20261028a / hub-shell-v97
+  (v96 left for H42, PR #211, still open). Playwright: 16/16 (pop-up, live repaint, standalone,
+  storage event, joined-phone mode), no console errors. About 7 minutes.

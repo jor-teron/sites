@@ -448,3 +448,4 @@
 2026-10-27 , 5787a29 => AG10: Agent Settings clean-up — 8 collapsible cards, big switches, Hub keys line, error cards point to Hub › API Keys
 2026-10-27 , d232e3b => OCR release 4: Cloud Vision key from Hub › API Keys (gvision), own field as fallback
 2026-10-27 , 20261027a => H42: Hub build bump 20261023q -> 20261027a / hub-shell-v96 (hub_bump.py); SW now precaches the H10-H32 / T5-T7 shell files
+2026-10-28 , 20261028a => H46: device name moved from the 🎮 Devices pop-up to Settings › About › Device name (#about/device); pop-up shows 'Name: X ›'; hub-shell-v97 (hub_bump.py)
