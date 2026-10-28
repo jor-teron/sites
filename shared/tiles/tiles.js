@@ -11,6 +11,9 @@
  *   - newtab 1 = own tab on a desktop Hub (a phone joined to the Hub keeps it in the frame).
  *   - section: optional group name, per category (never shared). Sections appear in order of
  *     first appearance; apps without one go last under "Other". No sections at all = no headings.
+ *   - description (H48c): optional LAST column, one short line (< ~90 chars, NO commas: cells are
+ *     split on ','). Read only when the header row names it; used by Hub Search
+ *     (apps/system/search/) and hub_appindex.js. Absent / empty = ''. Not drawn on the tiles.
  *
  * Also loaded by hub.html (no #grid there): it then only shares the reader as
  * window.TilesCsv = { parse, groups, defaultIcon } for the Hub menu flyout (hub/menu/hub_flyout.js).
@@ -24,7 +27,8 @@
 (function () {
   'use strict';
   const grid = document.getElementById('grid'), msg = document.getElementById('msg');
-  const COLS = ['name', 'path', 'icon', 'newtab', 'section'];   // default order (no header row)
+  // const COLS = ['name', 'path', 'icon', 'newtab', 'section'];   // before H48c
+  const COLS = ['name', 'path', 'icon', 'newtab', 'section', 'description'];   // default order (no header row); H48c: + optional description
 
   function parse(text) {
     const rows = String(text || '').split(/\r?\n/).map((l) => l.trim()).filter((l) => l && l[0] !== '#')
@@ -36,7 +40,8 @@
     const at = (r, k) => { const i = cols.indexOf(k); return i >= 0 ? r[i] || '' : ''; };
     return rows.filter((r) => at(r, 'name') && at(r, 'path')).map((r) => ({
       name: at(r, 'name'), path: at(r, 'path'), icon: at(r, 'icon'),
-      newTab: at(r, 'newtab') === '1', section: at(r, 'section')
+      newTab: at(r, 'newtab') === '1', section: at(r, 'section'),
+      description: at(r, 'description')   // H48c: optional last column ('' when absent)
     }));
   }
   /** Apps → [{ section, apps }] in first-appearance order; unsectioned last as "Other".

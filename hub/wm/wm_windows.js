@@ -45,6 +45,7 @@
  * R51: new windows open maximised (localStorage 'sites-hub.openMax', '1' / missing = on, '0' = off).
  * App bar: the title/stats/buttons an app sends (hub-gamebar.js protocol) show in its own
  * title bar (__hubGamebarAttach).
+ * H49: Office quick buttons + tabs (hubTitleBar contract, hub-gamebar.js) show there too, first.
  * Task list for apps (System Monitor): window.__hubTasks (list / focus / minimise / close / idOf /
  *   onChange), see below.
  * Target frame for the rest of the Hub (phone gamepad keys, SharedLink, …):
@@ -255,7 +256,8 @@
   /** Drag helper: pointer capture on el; onMove(dx, dy, ev) from the start point; onEnd(ev). */
   function dragOn(el, onStart, onMove, onEnd) {
     el.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0 || e.target.closest('.wm-btn, .gb-btn, .gb-tab')) return;
+      // Legacy: if (e.button !== 0 || e.target.closest('.wm-btn, .gb-btn, .gb-tab')) return;
+      if (e.button !== 0 || e.target.closest('.wm-btn, .gb-btn, .gb-tab, .gb-qbtn')) return;   // H49 quick buttons
       e.preventDefault();
       const sx = e.clientX, sy = e.clientY;
       if (onStart(e) === false) return;
@@ -364,7 +366,8 @@
     minB.addEventListener('click', () => minimise(w));
     maxB.addEventListener('click', () => toggleMax(w));
     closeB.addEventListener('click', () => close(w));
-    bar.addEventListener('dblclick', (e) => { if (!e.target.closest('.wm-btn, .gb-btn, .gb-tab')) toggleMax(w); });
+    // Legacy: bar.addEventListener('dblclick', (e) => { if (!e.target.closest('.wm-btn, .gb-btn, .gb-tab')) toggleMax(w); });
+    bar.addEventListener('dblclick', (e) => { if (!e.target.closest('.wm-btn, .gb-btn, .gb-tab, .gb-qbtn')) toggleMax(w); });   // H49
     w.bar = bar;
     // (hub-gamebar.js loads after hub.js; a window restored at start-up attaches once the page is parsed)
     const attachGb = () => { if (!w.gb && window.__hubGamebarAttach && wins.includes(w)) w.gb = window.__hubGamebarAttach(frame, gbSlot); };
