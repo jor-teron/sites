@@ -976,13 +976,12 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   - Fast bodies can tunnel through black holes at ×8.
   - There are no on-screen zoom buttons.
   - There are no saves.
-- **Ant Farm v0.1**
-  - Tunnels are wide blobs, not branches.
-  - There's only one entrance.
-  - Food comes in slowly early on.
-  - Wet soil never dries.
-  - The tank looks small on a portrait phone.
-  - Ants are drawn top-down and walk over the mounds.
+- **Ant Farm v0.3** (local branches games/ant-farm-af2 and games/ant-farm-af3)
+  - Fixed in v0.2: tunnels are now 1 cell wide and branch (no more wide blobs), and there are 2-4 entrances instead of one.
+  - Eased in v0.3: food still starts slowly, but besides tap-to-drop, food now also falls in naturally by day.
+  - Still open: wet soil never dries.
+  - Still open: the tank looks small on a portrait phone.
+  - Still open: ants are drawn top-down and walk over the mounds.
 - **Neon Fist**
   - The roster takes up too much of the view (R2d is proposed).
   - Kai still has facial hair (R3a is planned).
@@ -1009,7 +1008,10 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   - The game page itself (currently coming soon).
   - Exports: .json and PNG are done; GLB, OBJ and STL are still to do.
   - Save slots, poses and the neon look.
-- Ant Farm v0.2: thin branching tunnels and more entrances.
+- Ant Farm v0.2 and v0.3 shipped (local branches games/ant-farm-af2 and games/ant-farm-af3, Team 2):
+  - v0.2 (AF2): tunnels are 1 cell wide and branch from dig jobs (`w.tips` in core/colony.js), 2-4 surface entrances, side chambers at some tunnel ends, shared GameSettings gear (fpsLimit, showFps, autoPause, lowGraphics). Test hook: `?seed=N&sim=SECONDS` fast-forwards the colony.
+  - v0.3 (AF3): tapping drops food that falls from the sky, plus natural food drops by day; a brood room beside the queen, where nurses carry her eggs; egg, larva, pupa, then a new ant (capped at 300, or 150 with lowGraphics); a day and night cycle with a clock, a night tint, and foragers sleeping in the nest at night.
+  - Next ideas (not approved): wet soil drying, food storage limits, ants dying of old age.
 - Simulators: the Aquarium simulator (R1 tank, R2 fish, R3 decor, R4 care) and other proposed sims (falling sand, ecosystem, traffic, weather, garden, cooking, farm, glider).
 
 ### Parked
