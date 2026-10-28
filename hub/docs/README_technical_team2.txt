@@ -506,6 +506,12 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Files: `intercom.html/.css`, `intercom_save.js`, `intercom_peer.js`, `intercom_talk.js`, `intercom_app.js`, `intercom_icon.png` (192 px; CSV icon set explicitly), `intercom_readme.md`.
 - Tested in headless Chromium with a simulated peer only (fake MediaConnections, WebAudio test streams, PeerJS blocked): talk to all / one, DND skip + refuse, hold vs tap, chime then unmute, banner, Reply two-way, volume, swipes, themes, settings reload, Hub ready→hello. The box Chrome policy blocks real WebRTC, so not yet tried between two real devices. `audio.volume` is ignored on iPhone/iPad (system volume only there). IC2 (video toggle, front/back camera, auto-answer for trusted devices) not started.
 
+### 1.22 App descriptions in my category CSVs: release H48d (format from Hub H48c)
+- Connectivity, Favorite, Lab, Media, Office and Tools CSVs get the optional LAST column `description` (header `name, path, icon, newtab, section, description`): one plain searchable line per app, under ~90 chars, no commas (`:` or ` - ` instead). 67 descriptions, written from each app's readme / page. Empty icon/newtab/section cells kept empty.
+- Duplicates removed: TV stays in Favorite (Watch) and leaves Media (its folder is repo-root `tv/`, not a category; Favorite is what the Hub already shows, and keeps Favorite from going empty). Caption for NEI stays in Tools (Language), its folder `apps/tools/caption-for-nei/`, and leaves Favorite. App ids are folder-based, so `#caption-for-nei` / `#tv` links do not change.
+- Code Lab icon set explicitly to `code-lab/codelab_icon.png` (the default `code-lab_icon.png` does not exist).
+- `hub_catalog.js` regenerated (`--catalog-only`); `hub_appindex.js` left for the Hub bot. Checked on main's code (before H48c): tiles.js and hub.js find columns by header name, so the 6th cell is ignored; every category page draws the same tiles, no broken images, no errors. The live Hub index differs from the committed one only in Caption for NEI (Favorite → Tools) and the Code Lab icon.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
