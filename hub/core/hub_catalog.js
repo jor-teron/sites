@@ -94,10 +94,11 @@ File Drop,  filedrop/,   , , Share, Send files and photos device to device: scan
 QR Scanner, qr-scanner/, , , Share, Scan QR codes and barcodes with the camera or from a photo
 Whiteboard, whiteboard/, whiteboard/whiteboard_icon.png, , Share, Draw together live on a shared whiteboard with every connected device
 Shared Clipboard, shared-clipboard/, shared-clipboard/clipboard_icon.png, , Share, Copy on one device and paste on another: text links and images
+Multi-Screen Wall, screen-wall/, screen-wall/screenwall_icon.png, , Share, Join phones tablets and PCs into one big screen: picture - clock - scrolling text
 Pooh Chat,  pooh-chat/,  , , Chat, Group text chat for every device on the Hub Connect Code
 Video Chat, video-chat/, , , Chat, Video and audio calls: one-to-one or groups of up to 4 with screen sharing
 Screen Share, screen-share/, screen-share/screenshare_icon.png, , Chat, Share your computer screen window or tab with phones and other devices
-Intercom, intercom/, intercom/intercom_icon.png, , Chat, Tap-to-talk live voice to all connected devices or just one
+Intercom, intercom/, intercom/intercom_icon.png, , Chat, Tap-to-talk live voice or video to all devices or one - trusted devices can look in
 SSH,        ssh/,        , , Remote, SSH terminal in the browser: password login - saved hosts - auto-reconnect
 `,
   "Tools": `# Tools — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).

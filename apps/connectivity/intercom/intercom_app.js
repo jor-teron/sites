@@ -1,6 +1,8 @@
-/* Intercom IC1 — UI: screens (Talk, Settings), dots + 75 px wrap-around swipes, in-app dialogs,
-   device list (Everyone + each device; tap to pick who you talk to), Talk button + DND + volume on the right,
-   "who's talking" banner with Reply.
+/* Intercom IC2 — UI: screens (Talk, Settings), dots + 75 px wrap-around swipes, in-app dialogs,
+   device list (Everyone + each device; tap to pick who you talk to; 📹 View on devices that trust this one),
+   Talk button + Video toggle + camera flip + DND + volume on the right, "who's talking" banner with Reply /
+   Two-way / Stop, video stage (callers' doorbell views + your own small preview), red "Camera on" bar + Stop,
+   Settings: Video (start with video, front/back) and Auto-answer (off by default, trusted devices list).
    Hub code, in order: #code= / ?hub= (QR), the Hub's {sharedLink:'hello'} (inside the Hub, after we post
    {sharedLink:'ready'}), parent.__hubRemote.code (phone Hub), localStorage 'jtsites-hub-ctrl-code' (desktop Hub),
    'shared-link-join-code', our last code, else the code dialog. */
@@ -85,7 +87,17 @@
       nm.appendChild(sub);
       var st = document.createElement('span'); st.className = 'st';
       if (d.dnd) { st.textContent = '🌙 DND'; st.classList.add('moon'); } else if (d.id === tgt) st.textContent = '✓';
-      li.append(av, nm, st);
+      li.append(av, nm);
+      if (!d.all && ICTalk.canView(d.id)) {
+        var watching = tk[d.id] && tk[d.id].view && tk[d.id].mine;
+        var vw = document.createElement('button'); vw.className = 'vw' + (watching ? ' on' : '');
+        vw.textContent = watching ? '■ Stop' : ICTalk.asking(d.id) ? 'Asking…' : '📹 View';
+        vw.title = watching ? 'Stop watching ' + (d.name || 'Device') : 'Open ' + (d.name || 'Device') + '’s camera (it trusts this device)';
+        vw.onclick = function (e) { e.stopPropagation(); viewBtn(d); };
+        li.appendChild(vw);
+        if (!tk[d.id] && !(s && s.calls[d.id])) sub.textContent = 'online · trusts this device';
+      }
+      li.appendChild(st);
       li.onclick = function () {
         if (ICTalk.talking()) { toast('Stop talking first, then pick who to talk to'); return; }
         if (d.dnd) toast(d.name + ' has Do Not Disturb on');
@@ -93,6 +105,13 @@
       };
       ul.appendChild(li);
     });
+  }
+  function viewBtn(d) {
+    var t = ICTalk.talkers().filter(function (x) { return x.id === d.id; })[0];
+    if (t && t.view && t.mine) { ICTalk.stopView(d.id); return; }
+    if (ICTalk.asking(d.id)) return;
+    ICTalk.unlock();
+    ICTalk.requestView(d.id).then(function () { toast('Asking ' + (d.name || 'the device') + ' to open its camera…'); paintList(); }, function (e) { dialog(e.message, ['OK']); });
   }
   function targetName() {
     var t = target(); if (t === 'all') return 'Everyone';
@@ -102,7 +121,7 @@
   ICPeer.on('status', setStatus);
   ICPeer.on('roster', function (l) {
     var t = target(); if (t !== 'all' && !l.some(function (d) { return d.id === t; }) && !ICTalk.talking()) ICSave.set('target', 'all');
-    ICTalk.roster(l); paintList(); paintTalk(); paintBanner();
+    ICTalk.roster(l); paintList(); paintTalk(); paintBanner(); paintTrust();
   });
   ICPeer.on('signal', function (m, from) { ICTalk.signal(m, from); });
   ICPeer.on('call', function (c) { ICTalk.incoming(c); });
@@ -117,7 +136,14 @@
     $('talk-lbl').textContent = s ? (s.starting ? 'Starting…' : 'Live ' + (timeTxt || '0:00')) : 'Talk';
     var tn = s ? (s.all ? 'Everyone' : (ICPeer.roster().filter(function (x) { return x.id === s.to; })[0] || {}).name || 'Device') : targetName();
     $('talk-to').textContent = 'to ' + tn;
-    $('talk-hint').textContent = s ? 'Tap to stop' + (s.all && !s.starting ? ' · ' + Object.keys(s.calls).length + ' hearing' : '') : 'Tap to talk, tap again to stop · or hold';
+    $('talk-hint').textContent = s ? (s.view ? 'Camera view · tap to stop' : 'Tap to stop' + (s.all && !s.starting ? ' · ' + Object.keys(s.calls).length + ' hearing' : '')) : 'Tap to talk, tap again to stop · or hold';
+    var vOn = s && !s.starting ? !!s.camOn : !!ICSave.get('video');
+    $('b-vid').classList.toggle('vid', vOn); $('b-vid').lastChild.textContent = vOn ? 'Video on' : 'Video off';
+    $('b-vid').title = s && !s.starting ? (vOn ? 'Turn your camera off' : 'Turn your camera on for this talk') : 'Start talks with video';
+    $('chk-video').checked = !!ICSave.get('video');
+    $('b-flip').hidden = !vOn;
+    $('b-flip').title = 'Switch camera (now ' + (ICSave.get('facing') === 'environment' ? 'back' : 'front') + ')';
+    paintCamOn(); paintStage(); paintFacing();
   }
   function startTalk(t) {
     ICTalk.unlock();
@@ -140,7 +166,7 @@
   tb.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { e.preventDefault(); if (ICTalk.talking()) ICTalk.stop(); else startTalk(); } });
   ICTalk.on('talk', function (s) { if (!s) timeTxt = ''; paintTalk(); paintList(); });
   ICTalk.on('tick', function (ms) { timeTxt = fmt(ms); paintTalk(); });
-  ICTalk.on('note', toast);
+  ICTalk.on('note', function (t) { toast(t); paintList(); });
   ICTalk.on('missed', function (n) { toast('🌙 ' + n + ' tried to talk (Do Not Disturb is on)'); });
 
   /* ---------- who's talking banner ---------- */
@@ -162,12 +188,151 @@
         setTarget(t.id); startTalk(t.id);
       };
       var s = ICTalk.talking(); if (s && !s.all && s.to === t.id) rp.textContent = 'Stop';
-      row.append(w, tx, rp); bn.appendChild(row);
+      if (t.view) {
+        b.nextSibling.textContent = t.mine ? ' · camera view' : ' · camera view (auto-answer)';
+        sm.textContent = 'live until stopped';
+        if (!(s && !s.all && s.to === t.id)) rp.textContent = '🎙️ Talk back';
+      } else if (t.video) sm.textContent += t.cam ? ' · with video' : ' · camera off';
+      row.append(w, tx);
+      if (t.video && !(s && !s.all && s.to === t.id && s.camOn)) {
+        var tw = document.createElement('button'); tw.className = 'mini'; tw.textContent = '📹 Two-way'; tw.title = 'Talk back with your camera on';
+        tw.onclick = function () { twoWay(t.id); };
+        row.appendChild(tw);
+      }
+      row.appendChild(rp);
+      if (t.view && t.mine) {
+        var sv = document.createElement('button'); sv.className = 'mini'; sv.textContent = '■ Stop'; sv.title = 'Stop watching';
+        sv.onclick = function () { ICTalk.stopView(t.id); };
+        row.appendChild(sv);
+      }
+      bn.appendChild(row);
     });
-    document.title = list.length ? '🔊 ' + list.map(function (t) { return t.name; }).join(', ') + ' · Intercom IC1' : 'Intercom IC1';
+    paintTitle();
   }
-  ICTalk.on('talkers', function () { paintBanner(); paintList(); });
+  function paintTitle() {
+    var list = ICTalk.talkers(), s = ICTalk.talking(), cam = s && !s.starting && (s.camOn || s.view);
+    document.title = (cam ? '🔴 ' : '') + (list.length ? '🔊 ' + list.map(function (t) { return t.name; }).join(', ') + ' · Intercom IC2' : 'Intercom IC2');
+  }
+  function twoWay(id) {
+    var s = ICTalk.talking();
+    ICTalk.unlock();
+    if (s && !s.all && s.to === id) { if (!s.camOn) ICTalk.setVideo(true).catch(function (e) { dialog(e.message, ['OK']); }); return; }
+    if (s) ICTalk.stop();
+    setTarget(id);
+    ICTalk.start(id, { video: true }).catch(function (e) { dialog(e.message, ['OK']); });
+  }
+
+  /* ---------- IC2: camera-on bar + video stage ---------- */
+  function paintCamOn() {
+    var s = ICTalk.talking(), bar = $('camon');
+    var on = !!(s && !s.starting && (s.camOn || s.view));
+    bar.hidden = !on; if (!on) return;
+    var who = s.all ? 'everyone' : ((ICPeer.roster().filter(function (x) { return x.id === s.to; })[0] || {}).name || s.viewer || 'Device');
+    $('camon-t').textContent = s.view
+      ? (s.camOn ? 'Camera on · ' : 'Microphone on · ') + who + ' is watching (auto-answer)'
+      : 'Camera on · ' + (s.all ? 'everyone can see you' : who + ' can see you');
+  }
+  $('b-camstop').onclick = function () { ICTalk.stop(); };
+  var tiles = {};
+  function mkTile(key) {
+    var el = document.createElement('div'); el.className = 'vt'; el.dataset.k = key;
+    var lbl = document.createElement('span'); lbl.className = 'lbl';
+    var off = document.createElement('div'); off.className = 'off'; off.textContent = '📷 Camera off'; off.hidden = true;
+    var acts = document.createElement('div'); acts.className = 'acts';
+    el.append(off, lbl, acts); el._lbl = lbl; el._off = off; el._acts = acts;
+    return el;
+  }
+  function paintStage() {
+    var st = $('stage'), want = {}, s = ICTalk.talking();
+    ICTalk.talkers().forEach(function (t) {
+      if (!t.video || !t.el) return;
+      var k = 't-' + t.id; want[k] = 1;
+      var tile = tiles[k] || (tiles[k] = mkTile(k));
+      if (tile.parentNode !== st) st.appendChild(tile);
+      if (t.el.parentNode !== tile) { tile.insertBefore(t.el, tile.firstChild); t.el.play().catch(function () {}); }
+      tile.classList.toggle('view', !!t.view);
+      tile._lbl.textContent = t.name + (t.view ? ' · camera view' : '') + (t.state === 'chime' ? ' · …' : '');
+      tile._off.hidden = t.cam !== false;
+    });
+    if (s && !s.starting && s.camOn && s.stream) {
+      want.me = 1;
+      var me = tiles.me;
+      if (!me) {
+        me = tiles.me = mkTile('me'); me.classList.add('me');
+        var v = document.createElement('video'); v.muted = true; v.autoplay = true; v.playsInline = true; v.setAttribute('playsinline', '');
+        me.insertBefore(v, me.firstChild); me._v = v;
+        var fb = document.createElement('button'); fb.className = 'mini'; fb.textContent = '🔄'; fb.title = 'Switch camera'; fb.onclick = flip;
+        me._acts.appendChild(fb);
+      }
+      if (me._v.srcObject !== s.stream) { me._v.srcObject = s.stream; }
+      if (st.lastChild !== me) st.appendChild(me);   // keep last (it floats over the others)
+      if (me._v.paused) me._v.play().catch(function () {});
+      me._lbl.textContent = 'You' + (ICSave.get('facing') === 'environment' ? ' · back camera' : '');
+      me.classList.toggle('back', ICSave.get('facing') === 'environment');
+    }
+    var remote = Object.keys(want).filter(function (k) { return k !== 'me'; }).length;
+    if (tiles.me) tiles.me.classList.toggle('solo', !remote);
+    Object.keys(tiles).forEach(function (k) {
+      if (want[k]) return;
+      var tl = tiles[k]; if (k === 'me' && tl._v) tl._v.srcObject = null;
+      tl.remove(); delete tiles[k];
+    });
+    st.hidden = !Object.keys(want).length;
+  }
+  function flip() {
+    ICTalk.flip().then(function (back) { toast(back ? 'Back camera' : 'Front camera'); paintTalk(); }, function (e) { toast(e.message); paintTalk(); });
+  }
+  $('b-flip').onclick = flip;
+  $('b-vid').onclick = function () {
+    var s = ICTalk.talking(), on = s && !s.starting ? !s.camOn : !ICSave.get('video');
+    ICTalk.unlock();
+    ICTalk.setVideo(on).then(function () { if (!s) toast(on ? '📹 Your next talk starts with video' : 'Talks are voice only'); paintTalk(); }, function (e) { dialog(e.message, ['OK']); paintTalk(); });
+  };
+  $('chk-video').onchange = function () { if (!ICTalk.talking()) ICSave.set('video', this.checked); else ICTalk.setVideo(this.checked).catch(function (e) { toast(e.message); }); paintTalk(); };
+  function paintFacing() { document.querySelectorAll('.seg[data-key=facing] button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === ICSave.get('facing')); }); }
+  document.querySelectorAll('.seg[data-key=facing] button').forEach(function (b) {
+    b.onclick = function () { if (b.dataset.v !== ICSave.get('facing')) flip(); };
+  });
+  ICTalk.on('view', function (s) {
+    toast('🔴 Camera on: ' + s.viewer + ' is watching (auto-answer)');
+    if (inHub) { try { window.top.HubNotify.notice({ icon: '🔴', title: 'Intercom', text: 'Camera on: ' + s.viewer + ' is watching', timeoutMs: 8000 }); } catch (_) { /* cross-origin / no Hub */ } }
+  });
+  ICTalk.on('refused', function (r) { if (r.why === 'off' || r.why === 'dnd') toast(r.name + ' tried to open the camera (' + (r.why === 'dnd' ? 'Do Not Disturb is on' : 'auto-answer is off') + ')'); });
+  ICTalk.on('viewing', paintList);
+  ICTalk.on('keys', function () { paintList(); paintTrust(); });
+
+  /* ---------- IC2: auto-answer settings ---------- */
+  function paintTrust() {
+    var ul = $('trust-list'), tr = ICSave.get('trusted') || {}, rows = {}, order = [];
+    ICPeer.roster().forEach(function (d) { if (d.did && !rows[d.did]) { rows[d.did] = { did: d.did, name: d.name || 'Device', online: true }; order.push(d.did); } });
+    Object.keys(tr).forEach(function (did) { if (!rows[did]) { rows[did] = { did: did, name: tr[did].name || 'Device', online: false }; order.push(did); } });
+    ul.innerHTML = '';
+    order.forEach(function (did) {
+      var r = rows[did], li = document.createElement('li');
+      var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = r.name;
+      var sm = document.createElement('small'); sm.textContent = (r.online ? 'online' : 'offline') + (tr[did] ? ' · trusted' : ''); nm.appendChild(sm);
+      var sw = document.createElement('input'); sw.type = 'checkbox'; sw.className = 'sw'; sw.checked = !!tr[did]; sw.setAttribute('aria-label', 'Trust ' + r.name);
+      sw.onchange = function () {
+        ICTalk.trust(did, r.name, sw.checked);
+        toast(sw.checked ? r.name + ' is trusted' + (ICSave.get('autoAnswer') ? '' : ' (turn on Auto-answer to let it in)') : r.name + ' is no longer trusted');
+        paintTrust();
+      };
+      li.append(nm, sw); ul.appendChild(li);
+    });
+    $('trust-empty').hidden = order.length > 0;
+    var keys = ICSave.get('keys') || {}, kn = Object.keys(keys).map(function (k) { return keys[k].name; });
+    $('keys-line').hidden = !kn.length;
+    $('keys-line').textContent = kn.length ? 'These devices trust this one: ' + kn.join(', ') + '. Use 📹 View next to them on the Talk screen.' : '';
+    $('chk-aa').checked = !!ICSave.get('autoAnswer');
+  }
+  $('chk-aa').onchange = function () {
+    ICTalk.setAutoAnswer(this.checked);
+    toast(this.checked ? 'Auto-answer on: trusted devices can open this camera without a tap' : 'Auto-answer off');
+    paintTalk();
+  };
+  ICTalk.on('talkers', function () { paintBanner(); paintList(); paintStage(); });
   ICTalk.on('talk', paintBanner);
+  ICTalk.on('trust', paintTrust);
   ICTalk.on('heard', function (t) {
     if (inHub && document.hidden) { try { window.top.HubNotify.notice({ icon: '🔊', title: 'Intercom', text: t.name + ' is talking' + (t.all ? ' to everyone' : ' to you'), timeoutMs: 6000 }); } catch (_) { /* cross-origin / no Hub */ } }
   });
@@ -214,6 +379,6 @@
 
   /* ---------- start ---------- */
   $('me-name').textContent = ICSave.name();
-  paintSeg(); paintDnd(); paintVol(); paintList(); paintTalk(); paintBanner();
+  paintSeg(); paintDnd(); paintVol(); paintList(); paintTalk(); paintBanner(); paintTrust();
   boot();
 })();

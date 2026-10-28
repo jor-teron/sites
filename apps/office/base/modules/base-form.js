@@ -1,6 +1,7 @@
 /*
- * base-form.js  (BS1)
- * Form view: one record at a time with big fields (phone friendly). Prev / Next / New / Delete.
+ * base-form.js  (BS1, BS4)
+ * Form view: one record at a time with big fields (phone friendly). Prev / Next / New.
+ * BS4: no Delete button here any more; delete a record from Home > Records ⋯ (typed confirm).
  * Walks the same filtered + sorted list as the grid. Arrow keys (outside inputs) also move.
  * API: BaseForm.render()
  */
@@ -31,7 +32,6 @@ var BaseForm = (function () {
     nav.appendChild(pos);
     nav.appendChild(btn("Next ▶", "", function () { go(1); }));
     nav.appendChild(btn("+ New", "primary", BaseUI.addRow));
-    if (r) nav.appendChild(btn("Delete", "", BaseUI.deleteRow));
     box.appendChild(nav); wrap.appendChild(box);
     BaseUI.status(t.name + " · record " + pos.textContent);
     var first = box.querySelector("input"); if (first && BASE.focusForm) { first.focus(); BASE.focusForm = false; }

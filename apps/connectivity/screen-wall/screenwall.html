@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Multi-Screen Wall MW1</title>
+  <link rel="icon" href="screenwall_icon.png?v=MW1">
+  <link rel="stylesheet" href="screenwall.css?v=MW1">
+</head>
+<body>
+<div id="app">
+  <div id="dots"><button class="dot on" data-i="0" aria-label="Wall"></button><button class="dot" data-i="1" aria-label="Content"></button><button class="dot" data-i="2" aria-label="Settings"></button></div>
+  <div id="viewport"><div id="track">
+    <!-- 0: Wall (host = layout editor, display = this device's slice) -->
+    <section class="pane" id="pane-wall">
+      <div class="bar"><div class="who"><b id="me-name"></b><div id="status" class="mut">Starting…</div></div>
+        <span id="role-badge" class="badge"></span><button class="mini" id="btn-code">Code</button></div>
+      <!-- host -->
+      <div id="host-view" class="main" hidden>
+        <div class="leftcol">
+          <div id="editor"><canvas id="pv"></canvas><div id="cells"></div></div>
+          <p class="mut tip" id="ed-tip">Drag each device into a cell (or tap a device, then a cell). Drag back to the list to remove it.</p>
+        </div>
+        <div class="side">
+          <div class="step"><span>Rows</span><button class="mini sq" data-step="rows" data-d="-1">−</button><b id="rows-n">1</b><button class="mini sq" data-step="rows" data-d="1">＋</button></div>
+          <div class="step"><span>Columns</span><button class="mini sq" data-step="cols" data-d="-1">−</button><b id="cols-n">2</b><button class="mini sq" data-step="cols" data-d="1">＋</button></div>
+          <label class="sl"><span>Bezel <b id="bezel-n">0</b> px</span><input type="range" id="bezel" min="0" max="120" step="1"></label>
+          <button class="sb" id="b-auto">Auto-place</button>
+          <div class="trayhead"><span>Devices</span><small id="dev-count" class="mut"></small></div>
+          <ul id="tray"></ul>
+          <p id="tray-empty" class="mut">No displays yet. Open Multi-Screen Wall on other phones, tablets or PCs with the same Hub code.</p>
+        </div>
+      </div>
+      <!-- display -->
+      <div id="disp-view" class="main" hidden>
+        <div class="leftcol"><div id="stage"><canvas id="cv"></canvas><div id="fs-exit" hidden><button class="mini" id="b-exit">Exit full screen</button></div></div></div>
+        <div class="side">
+          <div id="d-num" class="bignum">?</div>
+          <div id="d-info" class="mut">Waiting for the host…</div>
+          <button id="b-fs" class="mainbtn">⛶<span>Full screen</span></button>
+          <div id="d-sync" class="mut"></div>
+          <button class="sb" id="b-pop" hidden>Open as its own page</button>
+        </div>
+      </div>
+    </section>
+    <!-- 1: Content (host) -->
+    <section class="pane" id="pane-content">
+      <div id="c-host" class="main">
+        <div class="leftcol"><canvas id="cpv"></canvas><p class="mut tip" id="c-tip"></p></div>
+        <div class="side scroll">
+          <div class="seg col" data-key="kind"><button data-v="pattern">Test pattern</button><button data-v="clock">Clock</button><button data-v="text">Scrolling text</button><button data-v="image">Picture</button></div>
+          <div class="opt" data-for="pattern"><div class="seg" data-key="pattern"><button data-v="grid">Grid</button><button data-v="gradient">Gradient</button><button data-v="solid">Solid</button></div></div>
+          <div class="opt" data-for="text">
+            <textarea id="c-text" rows="2" maxlength="300" placeholder="Text to scroll"></textarea>
+            <label class="sl"><span>Speed <b id="speed-n"></b></span><input type="range" id="c-speed" min="40" max="800" step="10"></label>
+            <label class="sl"><span>Size <b id="size-n"></b>%</span><input type="range" id="c-size" min="15" max="90" step="5"></label>
+          </div>
+          <div class="opt" data-for="image">
+            <button class="sb" id="b-pick">🖼️ Pick a picture</button><input type="file" id="f-img" accept="image/*" hidden>
+            <div class="seg" data-key="fit"><button data-v="cover">Fill</button><button data-v="contain">Fit</button></div>
+            <small class="mut" id="img-info"></small>
+          </div>
+          <div class="colors"><label>Text <input type="color" id="c-fg"></label><label>Back <input type="color" id="c-bg"></label><label class="bg2">2nd <input type="color" id="c-bg2"></label></div>
+        </div>
+      </div>
+      <div id="c-disp" class="center" hidden>
+        <p>This device is a <b>display</b>. The host picks what the wall shows.</p>
+        <button class="btn" id="b-become">Make this device the host</button>
+      </div>
+    </section>
+    <!-- 2: Settings -->
+    <section class="pane" id="pane-set"><div class="set-wrap">
+      <h2>This device</h2>
+      <div class="set-row"><label for="in-name">Name</label><input id="in-name" maxlength="40"></div>
+      <div class="set-row"><span>Role</span><div class="seg" data-key="role"><button data-v="display">Display</button><button data-v="host">Host</button></div></div>
+      <div class="set-row"><span>Hub code</span><span><b id="code-lbl">—</b> <button class="mini" id="btn-code2">Change</button></span></div>
+      <h2>Look</h2>
+      <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+      <h2>About</h2>
+      <div class="about"><img src="screenwall_icon.png?v=MW1" width="48" height="48" alt=""><div><b>Multi-Screen Wall</b> <span id="ver">MW1</span>
+        <p>Join phones, tablets and PCs on the same Hub Connect Code into one big screen. One device is the host: it arranges the others in a grid, sets the bezel gap and picks a test pattern, a big clock, scrolling text or a picture. Every display shows only its own slice, full screen, with the screen kept awake. Clocks and scrolling follow the host's time. Peer to peer over PeerJS; nothing is stored on a server. Video on the wall is planned for MW2.</p></div></div>
+    </div></section>
+  </div></div>
+</div>
+
+<div id="ident" hidden><b id="ident-n"></b><span id="ident-name"></span></div>
+<div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="4" placeholder="4-digit code"><div class="row" id="d-row"></div></div></div>
+<div id="toast"></div>
+
+<script src="../../../shared/link/link_core.js?v=MW1"></script>
+<script src="../../../shared/link/link_devices.js?v=MW1"></script>
+<script src="screenwall_save.js?v=MW1"></script>
+<script src="screenwall_peer.js?v=MW1"></script>
+<script src="screenwall_wall.js?v=MW1"></script>
+<script src="screenwall_app.js?v=MW1"></script>
+</body>
+</html>
