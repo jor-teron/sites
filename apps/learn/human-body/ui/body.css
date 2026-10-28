@@ -1,10 +1,11 @@
-/* Human Body Explorer HBE1 — app look on top of the Learn kit (../common/ui/learn.css): system chips, body figure, info card, list, quiz.
+/* Human Body Explorer HBE2 — app look on top of the Learn kit (../common/ui/learn.css): system chips, body figure, info card, list, quiz.
    Light mode follows the Hub theme (html.light from shared/theme/hub_theme.js). Plain CSS, no filters or animations loops (weak phones). */
 .hb { --accent: #f28b9b; --ok: #7ccf95; --bad: #ff6b6b; --skin: #3a414c; --skin-line: #59626f; }
 html.light { --bg: #f4f6f9; --panel: #ffffff; --panel2: #e9edf2; --text: #1b2430; --muted: #5b6676; --line: #cfd6df; --note: #eef2f7; --on: #ffffff; }
 html.light .hb { --skin: #e6d5c8; --skin-line: #c4ad9c; }
 .hb-ver { flex: none; font-size: 0.75rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 99px; }
-.hb-modes button { padding: 0 12px; }
+.hb-modes button, .hb-lv button { padding: 0 12px; }
+.hb-lv button[aria-pressed="true"] { background: #7fb7e6; }
 .hb-main { display: flex; flex-direction: column; gap: 10px; }
 .hb-picker { display: flex; gap: 6px; overflow-x: auto; flex: none; padding-bottom: 2px; scrollbar-width: thin; }
 .hb-chip { flex: none; min-height: 40px; padding: 0 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-weight: 600; font-size: 0.9rem; white-space: nowrap; }
@@ -27,7 +28,9 @@ html.light .hb-part.on .hb-fill { stroke: #111; }
 
 .hb-card { padding: 12px 14px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); border-left: 6px solid var(--pc, var(--accent)); }
 .hb-card p { margin: 6px 0; } .hb-card ul { margin: 4px 0 0; padding-left: 20px; } .hb-card li { margin: 3px 0; }
-.hb-card-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .hb-card-h b { font-size: 1.3rem; }
+.hb-card-h { display: flex; align-items: center; gap: 8px; } .hb-card-h b { font-size: 1.3rem; }
+.hb-card-h .lrn-sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-hits [data-id] { cursor: pointer; }
 .hb-x { margin-left: auto; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); font-size: 1.3rem; line-height: 1; }
 .hb-job { font-weight: 600; color: var(--pc, var(--accent)); }
 html.light .hb-job { color: var(--text); }
@@ -54,10 +57,28 @@ html.light .hb-job { color: var(--text); }
 .hb-row { display: flex; gap: 10px; justify-content: center; }
 
 /* portrait phones: figure on top, card below */
+/* HBE2: Explore fits the screen; the figure shrinks and the card scrolls inside itself (no page scroll on phones) */
+.hb-main.hb-ex { overflow: hidden; }
+.hb-ex .hb-stage { flex: 1; min-height: 0; align-items: stretch; }
+.hb-ex .hb-fig { min-height: 0; height: 100%; }
+.hb-ex .hb-svg { height: 100%; max-height: none; }
+.hb-side { min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.hb-card.min > :not(.hb-card-h):not(.hb-job):not(.hb-backnote) { display: none; }
+.hb-card.min .hb-job { margin-bottom: 0; }
+.hb-fold { margin-left: auto; } .hb-fold + .hb-x { margin-left: 0; }
+.hb-backnote { font-size: 0.85rem; color: var(--muted); font-style: italic; }
+.hb-back .hb-fill { stroke-dasharray: 3 2; fill-opacity: 0.55; stroke: var(--text); stroke-width: 1; }
+.hb-part .hb-str { stroke: var(--pc); stroke-linecap: round; stroke-linejoin: round; }
+.hb-back .hb-str { stroke: var(--pc); stroke-opacity: 0.6; }
+.hb-part.on .hb-str { stroke: var(--pc); stroke-opacity: 1; }
+.hb-picker { scrollbar-width: none; }
 @media (max-aspect-ratio: 1/1) {
+  .hb-ex .hb-stage { grid-template-rows: minmax(0, 1fr) auto; }
+  .hb-ex .hb-side { max-height: 40dvh; }
+  .hb-card-h b { font-size: 1.1rem; }
   .hb-stage { grid-template-columns: 1fr; }
   .hb-svg { max-height: 46dvh; }
   .hb-qfig .hb-svg { max-height: calc(100dvh - 280px); }
 }
-@media (max-width: 520px) { .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; } .hb-modes button { padding: 0 10px; } }
+@media (max-width: 520px) { .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; flex-basis: 100%; } .hb-modes button, .hb-lv button { padding: 0 10px; } }
 @media (max-height: 460px) { .lrn-foot { display: none; } .hb-svg { max-height: calc(100dvh - 130px); } .hb-qfig .hb-svg { max-height: calc(100dvh - 150px); } }
