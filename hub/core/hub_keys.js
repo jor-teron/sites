@@ -1,7 +1,10 @@
 /**
  * Hub — one key store for API keys (H28). Every app gets keys automatically: no per-app prompt,
  * no access list. Keys stay only in this browser (localStorage 'sites-hub.keys', JSON {name: value});
- * nothing is synced to a joined phone and nothing is sent anywhere by the Hub itself.
+ * (before H29.2b:) nothing is synced to a joined phone and nothing is sent anywhere by the Hub itself.
+ * H29.2b: nothing is synced to a joined phone and nothing is sent anywhere by the Hub itself, except when the
+ *   profile sync 'Include API keys' tick (Settings › Devices › Send profile, H29.2) is used: then the keys go only
+ *   to the one picked device over the existing Connect Code link, masked in its preview, applied only as chosen there.
  * Loaded by hub.html (window.HubKeys) and by the Settings app (Settings → API Keys, its own copy
  * when Settings is opened on its own). Apps are same-origin iframes, so they call window.top.HubKeys:
  *   HubKeys.get(name)          → Promise<string|null>

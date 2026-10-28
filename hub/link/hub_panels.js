@@ -9,6 +9,8 @@
  *   H46: the editable device name moved to Settings › About › Device name (#about/device,
  *                apps/system/settings/sec_about.js). The pop-up only shows the name as text; a tap
  *                closes the pop-up and opens Settings there (__hubOpenApp, hash 'about/device').
+ *   H29.2b: that card is now in Settings › Devices (sec_devices.js), so the tap opens hash 'devices/device'
+ *                (the old #about/device still redirects there in settings.js).
  *                The text repaints on 'hub-device-name' (sent by Settings), the 'storage' event for
  *                'shared-link-device-name' (another tab / Settings opened on its own: it also re-sends
  *                the name to the link) and on SharedLink 'devices' / pop-up open.
@@ -44,7 +46,7 @@
     /* H46 legacy (H27): the editable name box sat at the top of the This Hub card.
     if (nameBox && nameBox.firstChild && nameBox.firstChild.nodeType === 3) nameBox.firstChild.textContent = 'This device name';
     */
-    if (nameBox) nameBox.remove();   // H46: not used here any more (no duplicate name inputs); edit in Settings › About
+    if (nameBox) nameBox.remove();   // H46: not used here any more (no duplicate name inputs); edit in Settings › Devices (H29.2b; was About)
 
     const body = el('div', 'hp-body');
     /* This Hub */
@@ -59,7 +61,7 @@
     hub.appendChild(info);
     if (lsRow) { lsRow.classList.add(R ? 'hp-ls-remote' : 'hp-ls-host'); hub.appendChild(lsRow); }
     c1.appendChild(hub);
-    /* H46: plain 'Name: X ›' → Settings › About › Device name */
+    /* H46: plain 'Name: X ›' → Settings › About › Device name (H29.2b: Settings › Devices › Device name) */
     const nameLink = el('button', 'hp-name');
     nameLink.type = 'button'; nameLink.id = 'hp-name';
     nameLink.title = 'Change the device name in Settings';
@@ -68,7 +70,8 @@
     nameLink.addEventListener('click', () => {
       const x = document.getElementById('ctrl-close');
       if (x && !pop.hidden) x.click();
-      if (window.__hubOpenApp) window.__hubOpenApp('apps/system/settings/', { hash: 'about/device' });
+      // if (window.__hubOpenApp) window.__hubOpenApp('apps/system/settings/', { hash: 'about/device' });   // (before H29.2b)
+      if (window.__hubOpenApp) window.__hubOpenApp('apps/system/settings/', { hash: 'devices/device' });   // H29.2b
     });
     c1.appendChild(nameLink);
     s1.appendChild(c1);
@@ -99,7 +102,7 @@
       nameVal.textContent = n || 'Device';
       nameLink.setAttribute('aria-label', 'Device name ' + (n || 'Device') + '. Change in Settings');
     }
-    window.addEventListener('hub-device-name', paintName);   // H46: Settings › About saved a new name
+    window.addEventListener('hub-device-name', paintName);   // H46: Settings › Devices (H29.2b; was About) saved a new name
     window.addEventListener('storage', (e) => {               // H46: another tab, or Settings opened on its own
       if (e.key !== 'shared-link-device-name' && e.key !== null) return;
       paintName();
