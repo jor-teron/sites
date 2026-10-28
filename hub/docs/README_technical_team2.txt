@@ -1200,7 +1200,7 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   - H29.1 (this release): send the whole profile (no API keys) + preview on the receiver with
     Keep mine / Use incoming per setting, Keep all mine / Use all incoming, Apply / Cancel, summary.
     Mode groups Shared / Desktop / Phone with Desktop layout / Phone layout ticks (Jor's scope add).
-  - H29.2 (next, not built): choose what to send (Hub settings / System app settings / everything)
+  - H29.2 (built, see below): choose what to send (Hub settings / System app settings / everything)
     + an API keys tick (off by default). Keys masked to the last 4 characters in the preview and
     never overwrite on their own: same key = skipped, missing = added, different = conflict with
     Keep mine (default) / Use incoming / Keep both where the service allows it.
@@ -1250,3 +1250,56 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   changes nothing, sender gets got / applied / cancelled, bad version / oversize rejected,
   unknown and secret keys ignored, HTML shown as text, standalone Settings note, no console
   errors. Real phone <-> PC over the internet not tested: Jor to try once on real devices.
+
+2026-10-28 IST, H29.2 (Team 2, week 2): Choose what to send and optional API keys in profile sync.
+  Plan status: H29.1 done, H29.2 this release, H29.3 still planned (backup of the old settings before
+  Apply + 'Undo last sync' in Settings + the PC's connected folder copy hub/hub-profile/ updated straight
+  after a sync). Sync stays manual only (peers, no server).
+  What to send (Send card, radio 'What to send', default Everything):
+    everything = Hub settings + every app's settings (= the parts of the H30.3 export file)
+    hub        = the sites-hub.* settings only (hub.json "hub")
+    system     = the System apps only (Files, Viewer, Terminal; profile "system")
+  The Desktop layout / Phone layout ticks and the receiver-side mode filter (H29.1) are unchanged; the
+  ticks are disabled when System app settings is picked (no layout in it). Wire: include gains
+  what + keys: {type:'hubsync-profile', v:1, id, name, mode, include:{desktop, phone, what, keys}, profile}.
+  Sender: HubProfile.exportData({ what, keys }) (exportData now takes o.what; o.keys === true adds the
+  key store even with the profile's 'Include keys' switch off; o.keys === false never; not set = the
+  switch, as the H30.3 export). Receiver: diffData(profile, { groups, what, keys }) drops the parts
+  outside 'what' again (counted as ignored), so the receiver does not trust the sender for it.
+  API keys ('Include API keys' tick, off by default):
+  - Store: the Hub key store hub/core/hub_keys.js (H28, localStorage sites-hub.keys = {name: value}).
+    It holds ONE value per name, so 'Keep both' is not offered for any key (no key supports it).
+  - Unticked: send() still forces keys off (exportData({keys:false}) + delete profile.keys; the H29.1
+    lines are kept as comments). Ticked: profile.keys = the cleaned key store (names /^[a-z0-9][a-z0-9_.-]{0,39}$/,
+    non-empty strings < 4096 chars). Sent only with SharedLink.send(msg, picked device); phone -> phone
+    goes through the PC host's normal relay (link_core.js), never into a notification.
+  - Receiver lists keys only when include.keys is true (a "keys" block without it is ignored), as group
+    'keys' (heading 'API keys'). diffData items for keys: { id:'key:<name>', scope:'key', group:'keys',
+    isKey, mine: masked | null, incoming: masked, isNew }. maskKey(v) = '••••' + last 4 (values shorter than
+    8 chars: '••••' only). The full value stays in hub_sync.js (pend.profile.keys) until Apply / Cancel;
+    pending(), lastSend(), lastResult(), the notification card, the summary and the DOM only ever see the
+    masked text or the key name.
+  - Same key: counted (keysSame, 'N keys are already the same'), not listed. Missing here: tag New,
+    buttons Add (default) / Skip. Different: tag Different, Keep mine (default) / Use incoming.
+  - 'Keep all mine' / 'Use all incoming' skip key rows (each key is chosen on its own row; documented in
+    the preview note). HubSync.apply(choices) defaults are the same (New = Add, Different = Keep mine).
+  - Apply: HubProfile.applyItems gets { scope:'key', key, value } for the chosen keys (value taken from
+    the held offer) and writes them with HubKeys.set (raw store write if HubKeys is missing); nothing is
+    written before Apply; Cancel writes nothing and drops the held keys.
+  - The key-like value filter (KEY_VALUE / OPAQUE, KEY_NAME) still runs on every hub and app setting, so
+    a secret can only travel inside the explicit "keys" block. Size caps unchanged (200,000 chars per
+    offer, 2000 items, keys < 4096 chars).
+  Files: hub/link/hub_sync.js, hub/core/hub_profile.js (exportData what/keys, cleanKeys, maskKey,
+  diffData what/keys, applyItems scope 'key', SYNC_WHAT), apps/system/settings/sec_about.js (What to
+  send radios, Include API keys tick, API keys group, Add/Skip, bulk skip keys), settings.css (.sync-what,
+  .sync-tag-keys, .sync-conflict), index.html (?v=20261028h292).
+  Bump 20261028g / v103 -> 20261028h / hub-shell-v104 (hub_bump.py --release H29.2).
+  Playwright (system Chrome, same two-context set-up as H29.1, SharedLink stubbed and bridged, no
+  real PeerJS link): H29.2 45/45 (each choice sends / lists only its part, receiver enforces 'what',
+  layout ticks disabled for System, keys absent unticked and present ticked with the profile switch off,
+  key-like hub value and app secret still blocked, masking, no full key in pending(), lastSend, DOM text /
+  attributes / inputs, notification, summary or console, same / new / different cases and defaults, no
+  Keep both, Use all incoming leaves keys, Cancel changes nothing, Apply adds new + keeps conflict +
+  leaves other keys, Use incoming replaces, keys without include.keys ignored, bad key names / sizes
+  dropped, short key mask, size cap, no console errors) + H29.1 suite 40/40 again.
+  Real phone <-> PC not tested: Jor to try once on real devices.

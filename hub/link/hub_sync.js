@@ -16,9 +16,23 @@
  *   Settings › About › Send profile (#about/sync), where the preview lists each changed setting (Keep mine is the
  *   default; settings this device does not have yet default to Use incoming). Apply writes only the chosen
  *   items (HubProfile.applyItems), Cancel drops the offer. Limits: payload <= MAX_CHARS of JSON, plain text only.
+ * H29.2 Choose what to send + optional API keys:
+ *   include.what = 'hub' (Hub settings) | 'system' (System app settings) | 'everything' (default: Hub settings +
+ *   every app setting, the same parts as the H30.3 export file). The sender exports only that part
+ *   (HubProfile.exportData({ what })) and the receiver diffs only that part again (diffData({ what })).
+ *   include.keys (Send card 'Include API keys', off by default): the key store goes in profile.keys; without the
+ *   tick the H29.1 rule stands (exportData({ keys: false }) + delete). The receiver lists keys only when
+ *   include.keys is true, in their own 'API keys' group; pending() items carry masked values only
+ *   ('••••' + last 4); the full values stay inside this module (pend.profile.keys) until Apply or Cancel and are
+ *   never put in a notification, the DOM, lastSend / lastResult or a log. Defaults: same key = counted, not listed;
+ *   new key = Add ('incoming'); different key = Keep mine. 'Use all incoming' / 'Keep all mine' leave key rows
+ *   alone (Settings), and apply() never takes a key the choices do not name unless it is New (default Add).
+ *   No 'Keep both': the Hub key store (H28) holds one value per name.
+ *   Path: the offer goes only to the picked device over the existing link (phone → phone is relayed by the PC
+ *   host in memory, as every link message is).
  * API window.HubSync:
  *   devices() → [{ id, name }]   connected devices (not this one, no old Gamepads)
- *   send(to, { desktop, phone }) → { ok, reason?, id }
+ *   send(to, { desktop, phone, what, keys }) → { ok, reason?, id }   (H29.2: what + keys)
  *   pending() → null | { id, from, name, mode, at, include, groups, items, same, ignored, skipped }   (diffed now)
  *   apply(choices) → { ok, applied, kept }   choices: { itemId: 'incoming' | 'mine' } (missing = item default)
  *   cancel()
@@ -31,7 +45,10 @@
   if (!window.SharedLink) return;
   const T_OFFER = 'hubsync-profile', T_GOT = 'hubsync-got', T_RESULT = 'hubsync-result';
   const MAX_CHARS = 200000;   // one WebRTC message (PeerJS json) stays well under Chrome's 256 KiB limit
-  const GROUPS = ['shared', 'desktop', 'phone'];
+  // const GROUPS = ['shared', 'desktop', 'phone'];   // (H29.1)
+  const GROUPS = ['shared', 'desktop', 'phone', 'keys'];   // H29.2: + API keys
+  const WHAT = ['hub', 'system', 'everything'];             // H29.2
+  const whatOf = (w) => (WHAT.indexOf(w) >= 0 ? w : 'everything');
   const HP = () => window.HubProfile;
   const fns = [];
   let pend = null, sent = null, result = null, card = null;
@@ -54,14 +71,21 @@
     if (!HP() || !HP().exportData) return { ok: false, reason: 'no-profile' };
     const dev = devices().find((d) => d.id === to);
     if (!dev) return { ok: false, reason: 'no-device' };
-    const profile = HP().exportData({ keys: false });
-    delete profile.keys;   // belt and braces: keys come with H29.2 only
+    inc = inc || {};
+    const what = whatOf(inc.what), withKeys = inc.keys === true;   // H29.2
+    // const profile = HP().exportData({ keys: false });   // (H29.1)
+    // delete profile.keys;   // belt and braces: keys come with H29.2 only   (H29.1)
+    const profile = HP().exportData({ what, keys: withKeys });
+    if (!withKeys) delete profile.keys;   // H29.2: still forced off unless 'Include API keys' is ticked
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    // const msg = { type: T_OFFER, v: 1, id, name: myName(), mode: mode(),
+    //   include: { desktop: !!(inc && inc.desktop), phone: !!(inc && inc.phone) }, profile };   // (H29.1)
     const msg = { type: T_OFFER, v: 1, id, name: myName(), mode: mode(),
-      include: { desktop: !!(inc && inc.desktop), phone: !!(inc && inc.phone) }, profile };
+      include: { desktop: !!inc.desktop, phone: !!inc.phone, what, keys: withKeys && !!profile.keys }, profile };
     if (JSON.stringify(msg).length > MAX_CHARS) return { ok: false, reason: 'too-big' };
     const ok = SharedLink.send(msg, to);
-    sent = { id, to, toName: dev.name, state: ok ? 'sent' : 'failed', at: Date.now() };
+    sent = { id, to, toName: dev.name, state: ok ? 'sent' : 'failed', at: Date.now(), what, keys: msg.include.keys,
+      keyCount: profile.keys ? Object.keys(profile.keys).length : 0 };   // H29.2: names / values of keys never kept here
     emit();
     return ok ? { ok: true, id } : { ok: false, reason: 'not-sent' };
   }
@@ -75,10 +99,12 @@
   function pending() {
     if (!pend || !HP() || !HP().diffData) return null;
     const groups = groupsFor(pend.include);
-    const d = HP().diffData(pend.profile, { groups });
+    // const d = HP().diffData(pend.profile, { groups });   // (H29.1)
+    const d = HP().diffData(pend.profile, { groups, what: pend.include.what, keys: pend.include.keys === true });   // H29.2
     if (!d.ok) return null;
+    if (pend.include.keys) groups.push('keys');
     return { id: pend.id, from: pend.from, name: pend.name, mode: pend.mode, at: pend.at, include: Object.assign({}, pend.include),
-      groups, items: d.items, same: d.same, ignored: d.ignored, skipped: d.skipped };
+      groups, items: d.items, same: d.same, ignored: d.ignored, skipped: d.skipped, keysSame: d.keysSame || 0 };
   }
   const reply = (to, o) => { try { SharedLink.send(o, to); } catch (_) { /* gone */ } };
 
@@ -87,11 +113,15 @@
     if (!p) return { ok: false, reason: 'nothing' };
     choices = choices || {};
     const take = p.items.filter((it) => (choices[it.id] || (it.isNew ? 'incoming' : 'mine')) === 'incoming');
-    const n = HP().applyItems(take);
+    // H29.2: a chosen key gets its real value from the offer held here (pending() only ever has masked text)
+    const real = pend.profile && pend.profile.keys && typeof pend.profile.keys === 'object' ? pend.profile.keys : {};
+    const n = HP().applyItems(take.map((it) => (it.scope === 'key' ? { scope: 'key', key: it.key, value: real[it.key] } : it)));
     const kept = p.items.length - n;
     try { if (window.HubPrefs && window.HubPrefs.apply) window.HubPrefs.apply(); } catch (_) { /* ignore */ }
     reply(pend.from, { type: T_RESULT, id: p.id, state: 'applied', applied: n, kept });
-    result = { name: p.name, applied: n, kept, same: p.same, at: Date.now(), labels: take.map((it) => it.label) };
+    // result = { name: p.name, applied: n, kept, same: p.same, at: Date.now(), labels: take.map((it) => it.label) };   // (H29.1)
+    result = { name: p.name, applied: n, kept, same: p.same, at: Date.now(),
+      labels: take.map((it) => (it.scope === 'key' ? 'API key ' + it.key : it.label)) };   // H29.2: key names only
     pend = null; closeCard(); emit();
     return { ok: true, applied: n, kept };
   }
@@ -134,8 +164,10 @@
       const id = clean(m.id, 24);
       if (size > MAX_CHARS || m.v !== 1 || !m.profile || typeof m.profile !== 'object') { reply(back, { type: T_RESULT, id, state: 'bad' }); return; }
       const inc = m.include && typeof m.include === 'object' ? m.include : {};
+      // pend = { id, from: back, name: clean(m.name || 'Device'), mode: m.mode === 'desktop' ? 'desktop' : 'phone', at: Date.now(),
+      //   include: { desktop: inc.desktop === true, phone: inc.phone === true }, profile: m.profile };   // (H29.1)
       pend = { id, from: back, name: clean(m.name || 'Device'), mode: m.mode === 'desktop' ? 'desktop' : 'phone', at: Date.now(),
-        include: { desktop: inc.desktop === true, phone: inc.phone === true }, profile: m.profile };
+        include: { desktop: inc.desktop === true, phone: inc.phone === true, what: whatOf(inc.what), keys: inc.keys === true }, profile: m.profile };
       const p = pending();
       if (!p) { pend = null; reply(back, { type: T_RESULT, id, state: 'bad' }); return; }
       result = null;
@@ -160,7 +192,7 @@
     lastSend: () => (sent ? Object.assign({}, sent) : null),
     lastResult: () => (result ? Object.assign({}, result) : null),
     groupOf: (scope, key) => (HP() && HP().groupOf ? HP().groupOf(scope, key) : 'shared'),
-    GROUPS: GROUPS.slice(), MAX_CHARS,
+    GROUPS: GROUPS.slice(), WHAT: WHAT.slice(), MAX_CHARS,
     onChange(fn) { fns.push(fn); return () => { const i = fns.indexOf(fn); if (i >= 0) fns.splice(i, 1); }; },
   };
 })();

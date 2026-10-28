@@ -314,7 +314,12 @@
   }
 
   /* H29.1: Send profile to a connected device + review an incoming one (Hub side: hub/link/hub_sync.js) */
-  const GROUP_NAME = { shared: 'Shared', desktop: 'Desktop', phone: 'Phone' };
+  // const GROUP_NAME = { shared: 'Shared', desktop: 'Desktop', phone: 'Phone' };   // (H29.1)
+  const GROUP_NAME = { shared: 'Shared', desktop: 'Desktop', phone: 'Phone', keys: 'API keys' };   // H29.2: + keys
+  /* H29.2: what to send (same parts as the profile export file; Everything is the default) */
+  const WHAT_OPTS = [['everything', 'Everything', 'Hub settings and every app\u2019s settings'],
+    ['hub', 'Hub settings', 'Theme, accent, wallpaper, favorites, layout (Settings app choices)'],
+    ['system', 'System app settings', 'Files, Viewer and Terminal settings only']];
   const short = (v) => { if (v == null) return '(not set)'; const t = String(v); return t.length > 120 ? t.slice(0, 117) + '\u2026' : t; };
   function syncCard(sub) {
     const card = ui.el('section', 'card sync-card');
@@ -326,8 +331,10 @@
       card.appendChild(ui.el('p', 'opt-note', 'Open Settings inside the Hub to send your profile to a connected device.'));
       return card;
     }
+    // card.appendChild(ui.el('p', 'opt-note', 'Send this device\u2019s Hub and app settings to a device connected with the Connect Code (\uD83C\uDFAE Devices). ' +
+    //   'API keys and sign-ins are never sent. Nothing changes on the other device until it reviews the list and presses Apply.'));   // (H29.1)
     card.appendChild(ui.el('p', 'opt-note', 'Send this device\u2019s Hub and app settings to a device connected with the Connect Code (\uD83C\uDFAE Devices). ' +
-      'API keys and sign-ins are never sent. Nothing changes on the other device until it reviews the list and presses Apply.'));
+      'Sign-ins are never sent, and API keys only when you tick them. Nothing changes on the other device until it reviews the list and presses Apply.'));
     const devBox = ui.el('div', 'sync-devs'); devBox.id = 'sync-devs';
     devBox.setAttribute('role', 'radiogroup'); devBox.setAttribute('aria-label', 'Send to');
     let picked = '';
@@ -340,12 +347,33 @@
     };
     const tickD = tick('sync-inc-desktop', 'Desktop layout', 'Also copy Desktop settings (taskbar, windows, snapping, desktop icons) to a device in Phone mode');
     const tickP = tick('sync-inc-phone', 'Phone layout', 'Also copy Phone settings (Home button) to a device in Desktop mode');
+    // H29.2: what to send + API keys
+    const whatBox = ui.el('div', 'sync-what'); whatBox.id = 'sync-what';
+    whatBox.setAttribute('role', 'radiogroup'); whatBox.setAttribute('aria-label', 'What to send');
+    let what = 'everything';
+    WHAT_OPTS.forEach((o) => {
+      const lab = ui.el('label', 'sync-tick');
+      const r = document.createElement('input'); r.type = 'radio'; r.name = 'sync-what'; r.value = o[0]; r.id = 'sync-what-' + o[0];
+      r.checked = o[0] === what;
+      r.addEventListener('change', () => { if (r.checked) { what = o[0]; layoutOn(); } });
+      const t = ui.el('span', ''); t.append(ui.el('b', '', o[1]), ui.el('small', '', o[2]));
+      lab.append(r, t);
+      whatBox.appendChild(lab);
+    });
+    const tickK = tick('sync-inc-keys', 'Include API keys', 'Off by default. Keys are shown masked (last 4 characters) on the other device and never replace its own keys unless chosen there.');
+    function layoutOn() {   // the layout ticks only matter when Hub settings go
+      [tickD, tickP].forEach((l) => { l.firstChild.disabled = what === 'system'; l.classList.toggle('off', what === 'system'); });
+    }
     const sendB = ui.el('button', 'big-btn', 'Send'); sendB.type = 'button'; sendB.id = 'sync-send';
     const out = ui.el('p', 'upd-out', ''); out.id = 'sync-out'; out.setAttribute('aria-live', 'polite');
-    const groupsNote = ui.el('p', 'opt-note', 'Always sent: Shared settings (theme, accent, wallpaper, favorites, app settings) plus the layout of the mode the other device is in. ' +
-      'Your Screen mode choice is never sent.');
+    // const groupsNote = ui.el('p', 'opt-note', 'Always sent: Shared settings (theme, accent, wallpaper, favorites, app settings) plus the layout of the mode the other device is in. ' +
+    //   'Your Screen mode choice is never sent.');   // (H29.1)
+    const groupsNote = ui.el('p', 'opt-note', 'From what you pick above, the other device gets the Shared settings plus the layout of the mode it is in (the ticks add the other layout). ' +
+      'Your Screen mode choice is never sent.');   // H29.2
     const prev = ui.el('div', 'sync-prev'); prev.id = 'sync-preview';
-    card.append(ui.el('h4', 'opt-title', 'Send to'), devBox, ui.el('h4', 'opt-title', 'Also include'), tickD, tickP, groupsNote, sendB, out, prev);
+    // card.append(ui.el('h4', 'opt-title', 'Send to'), devBox, ui.el('h4', 'opt-title', 'Also include'), tickD, tickP, groupsNote, sendB, out, prev);   // (H29.1)
+    card.append(ui.el('h4', 'opt-title', 'Send to'), devBox, ui.el('h4', 'opt-title', 'What to send'), whatBox,
+      ui.el('h4', 'opt-title', 'Also include'), tickD, tickP, tickK, groupsNote, sendB, out, prev);   // H29.2
 
     const SENT = { sent: 'Sent \u2014 waiting for that device', got: 'Received \u2014 waiting for that device to review it', failed: 'Could not send (device gone?)',
       cancelled: 'Cancelled on that device. Nothing changed there.', bad: 'That device could not read the profile' };
@@ -372,7 +400,8 @@
         : (SENT[s.state] || s.state) + ' (' + s.toName + ')';
     }
     sendB.addEventListener('click', () => {
-      const r = HS.send(picked, { desktop: tickD.firstChild.checked, phone: tickP.firstChild.checked });
+      // const r = HS.send(picked, { desktop: tickD.firstChild.checked, phone: tickP.firstChild.checked });   // (H29.1)
+      const r = HS.send(picked, { desktop: tickD.firstChild.checked, phone: tickP.firstChild.checked, what, keys: tickK.firstChild.checked });   // H29.2
       if (!r.ok) {
         out.className = 'upd-out bad';
         out.textContent = r.reason === 'too-big' ? 'The profile is too big to send over the link' : r.reason === 'no-device' ? 'Pick a connected device' : 'Could not send';
@@ -402,6 +431,12 @@
       const skipTxt = ['desktop', 'phone'].filter((g) => p.skipped[g]).map((g) => p.skipped[g] + ' ' + GROUP_NAME[g] + ' layout setting' + (p.skipped[g] === 1 ? '' : 's') + ' not included');
       prev.appendChild(ui.el('p', 'opt-note', 'This device is in ' + GROUP_NAME[HS.mode()] + ' mode. Showing: ' + p.groups.map((g) => GROUP_NAME[g]).join(', ') + '. ' +
         p.items.length + ' differ, ' + p.same + ' already the same' + (skipTxt.length ? '; ' + skipTxt.join(', ') : '') + '. Nothing changes until Apply.'));
+    if (p.include && p.include.keys) {   // H29.2
+      const kn = ui.el('p', 'opt-note sync-keynote', 'API keys are shown masked (last 4 characters). ' + (p.keysSame ? p.keysSame + ' key' + (p.keysSame === 1 ? ' is' : 's are') + ' already the same. ' : '') +
+        'Each key is chosen on its own row: \u201CKeep all mine\u201D and \u201CUse all incoming\u201D leave keys alone.');
+      kn.id = 'sync-keynote';
+      prev.appendChild(kn);
+    }
       const choice = {};
       const rows = [];
       if (p.items.length) {
@@ -413,25 +448,32 @@
         allMine.addEventListener('click', () => rows.forEach((r) => r.set('mine')));
         allIn.addEventListener('click', () => rows.forEach((r) => r.set('incoming')));
       }
-      ['shared', 'desktop', 'phone'].forEach((g) => {
+      // ['shared', 'desktop', 'phone'].forEach((g) => {   // (H29.1)
+      ['shared', 'desktop', 'phone', 'keys'].forEach((g) => {
         const its = p.items.filter((it) => it.group === g);
         if (!its.length) return;
         const sec = ui.el('div', 'sync-group'); sec.dataset.group = g;
-        sec.appendChild(ui.el('h5', 'sync-gh', GROUP_NAME[g] + (g === 'shared' ? '' : ' layout') + ' (' + its.length + ')'));
+        // sec.appendChild(ui.el('h5', 'sync-gh', GROUP_NAME[g] + (g === 'shared' ? '' : ' layout') + ' (' + its.length + ')'));   // (H29.1)
+        sec.appendChild(ui.el('h5', 'sync-gh', GROUP_NAME[g] + (g === 'shared' || g === 'keys' ? '' : ' layout') + ' (' + its.length + ')'));
         its.forEach((it) => {
           const row = ui.el('div', 'sync-item'); row.dataset.id = it.id; row.dataset.group = g;
           const head = ui.el('div', 'sync-ih');
           head.append(ui.el('b', 'sync-name', it.label), ui.el('span', 'sync-tag sync-tag-' + g, GROUP_NAME[g]));
           if (it.isNew) head.appendChild(ui.el('span', 'sync-tag sync-new', 'New'));
+          else if (it.isKey) head.appendChild(ui.el('span', 'sync-tag sync-conflict', 'Different'));   // H29.2
           const vals = ui.el('div', 'sync-vals');
+          // H29.2: key rows only ever get the masked text from HubSync.pending() (never the key itself)
           vals.append(ui.el('span', 'sync-mine', 'This device: ' + short(it.mine)), ui.el('span', 'sync-in', 'Incoming: ' + short(it.incoming)));
           const seg = ui.el('div', 'sync-seg');
           const mk = (v, t) => { const b = ui.el('button', 'seg-btn sync-' + v, t); b.type = 'button'; b.dataset.v = v; seg.appendChild(b); return b; };
-          const bm = mk('mine', 'Keep mine'), bi = mk('incoming', 'Use incoming');
+          // const bm = mk('mine', 'Keep mine'), bi = mk('incoming', 'Use incoming');   // (H29.1)
+          const newKey = it.isKey && it.isNew;   // H29.2: a key this device does not have: Add (default) / Skip
+          const bm = mk('mine', newKey ? 'Skip' : 'Keep mine'), bi = mk('incoming', newKey ? 'Add' : 'Use incoming');
           const set = (v) => { choice[it.id] = v; bm.classList.toggle('on', v === 'mine'); bi.classList.toggle('on', v === 'incoming'); row.dataset.choice = v; };
           bm.addEventListener('click', () => set('mine')); bi.addEventListener('click', () => set('incoming'));
           set(it.isNew ? 'incoming' : 'mine');
-          rows.push({ set });
+          // rows.push({ set });   // (H29.1)
+          if (!it.isKey) rows.push({ set });   // H29.2: the bulk buttons never touch API keys
           row.append(head, vals, seg);
           sec.appendChild(row);
         });

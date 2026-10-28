@@ -252,3 +252,9 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
 .sync-seg { display: flex; gap: 6px; }
 .sync-seg .seg-btn { min-height: 36px; min-width: 0; padding: 4px 10px; border-radius: 10px; }
 .sync-summary { border: 1px solid var(--accent); border-radius: 12px; padding: 8px 12px; margin-top: 10px; }
+/* H29.2: what to send + API keys group */
+.sync-what { display: flex; flex-direction: column; gap: 0; }
+.sync-tick.off { opacity: .5; cursor: default; }
+.sync-tag-keys { background: color-mix(in srgb, #a78bfa 22%, transparent); color: #a78bfa; }
+.sync-conflict { background: color-mix(in srgb, #f6c344 22%, transparent); color: #f6c344; }
+.sync-group[data-group="keys"] .sync-vals { font-family: ui-monospace, monospace; }
