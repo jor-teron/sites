@@ -85,6 +85,7 @@ window.HUB_APP_INDEX = {
   "agent": ["Lab", "apps/lab/agent/", "Agent", "apps/lab/agent/agent_icon.png", 0],
   "sketchbook": ["Lab", "apps/lab/sketchbook/", "Sketchbook", "apps/lab/sketchbook/sketchbook_icon.png", 0],
   "code-lab": ["Lab", "apps/lab/code-lab/", "Code Lab", "apps/lab/code-lab/code-lab_icon.png", 0],
+  "code-school": ["Learn", "apps/learn/code-school/", "Code School", "apps/learn/code-school/code-school_icon.png", 0],
   "image-gen": ["Lab", "apps/lab/image-gen/", "Image Gen", "apps/lab/image-gen/imagegen_icon.png", 0],
   "vision": ["Lab", "apps/lab/vision/", "Vision", "apps/lab/vision/vision_icon.png", 0],
   "paper-keyboard": ["Lab", "apps/lab/paper-keyboard/", "Paper Keyboard", "apps/lab/paper-keyboard/paper-keyboard_icon.png", 0],

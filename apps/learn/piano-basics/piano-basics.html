@@ -3,24 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- Piano Basics PB1 (Learn > Music): play an on-screen piano, play along with simple tunes, name-the-note quiz.
+<!-- Piano Basics PB2 (Learn > Music): play an on-screen piano, play along with simple tunes (step by step or falling notes,
+     optional left hand), record and play back, four sounds, name-the-note quiz.
      Sound is made with WebAudio (no audio files). Classic scripts only, works from file:// and offline. -->
-<title>Piano Basics PB1</title>
+<title>Piano Basics PB2</title>
 <meta name="theme-color" content="#14171c">
 <link rel="icon" href="piano-basics_icon.png">
-<script src="../../../shared/theme/hub_theme.js?v=PB1"></script>
-<link rel="stylesheet" href="../common/ui/learn.css?v=PB1">
-<link rel="stylesheet" href="ui/piano.css?v=PB1">
+<script src="../../../shared/theme/hub_theme.js?v=PB2"></script>
+<link rel="stylesheet" href="../common/ui/learn.css?v=PB2">
+<link rel="stylesheet" href="ui/piano.css?v=PB2">
 </head>
 <body>
 <div id="app" class="lrn"><p>Loading…</p></div>
 <noscript><p>Piano Basics needs JavaScript. Play a piano, learn the note names and play simple songs.</p></noscript>
-<!-- load order: shared kit state (localStorage helpers), notes, songs, sound, piano keys, then the app screens -->
-<script src="../common/core/state.js?v=PB1"></script>
-<script src="core/notes.js?v=PB1"></script>
-<script src="core/songs.js?v=PB1"></script>
-<script src="core/audio.js?v=PB1"></script>
-<script src="ui/piano.js?v=PB1"></script>
-<script src="ui/app.js?v=PB1"></script>
+<!-- load order: shared kit state (localStorage helpers), notes, songs, sound, recorder, piano keys, falling notes, then the app screens -->
+<script src="../common/core/state.js?v=PB2"></script>
+<script src="core/notes.js?v=PB2"></script>
+<script src="core/songs.js?v=PB2"></script>
+<script src="core/audio.js?v=PB2"></script>
+<script src="core/rec.js?v=PB2"></script>
+<script src="ui/piano.js?v=PB2"></script>
+<script src="ui/fall.js?v=PB2"></script>
+<script src="ui/app.js?v=PB2"></script>
 </body>
 </html>
