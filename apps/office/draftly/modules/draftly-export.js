@@ -210,10 +210,5 @@ Draftly.export.bind = function bind() {
   Draftly.ui.onClick('printBtn', function () { Draftly.export.printDocument(); });
   Draftly.ui.onClick('exportDocxBtn', function () { Draftly.export.exportDocx(); });
   Draftly.ui.onClick('exportPdfBtn', function () { Draftly.pdf.download(); });
-  document.addEventListener('keydown', function (e) {
-    if (!((e.ctrlKey || e.metaKey) && !e.altKey)) return;   /* Ctrl or Cmd */
-    if (e.key.toLowerCase() !== 'p' || e.shiftKey) return;
-    e.preventDefault();
-    Draftly.export.printDocument();
-  });
+  /* HO1: Ctrl/Cmd+P goes through ../shared/office-quick.js (same printDocument). */
 };

@@ -212,12 +212,7 @@ Draftly.docs.bind = function bind() {
   /* Margins come from the Page panel preset (see Draftly.docs.load). Drop the old free-form key. */
   try { localStorage.removeItem(cfg.storageKeyMargins); } catch (e) {}
 
-  document.addEventListener('keydown', function (e) {
-    if (!((e.ctrlKey || e.metaKey) && !e.altKey)) return;   /* Ctrl or Cmd */
-    if (e.key.toLowerCase() !== 's') return;
-    e.preventDefault();
-    Draftly.docs.save();
-  });
+  /* HO1: Ctrl/Cmd+S goes through ../shared/office-quick.js (save now + ✓ Saved tick). */
 
   /* Flow pages quickly after typing; save on a slower timer. */
   var flowTimer = null;

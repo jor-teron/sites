@@ -42,3 +42,7 @@ Shared `../shared/office-tools.css` (tool groups, tool buttons, File menu items)
 ## SH5 — Settings pop-up
 
 `office-settings.*` now opens as a centred modal dialog (dim backdrop, close X, Esc/backdrop close, jelly pop, scrollable body with section headings, fits phones) instead of a right-side bar. Same API; ids unchanged. Document sidebar parked.
+
+## HO1 — Quick Access Toolbar + Hub title-bar helper
+
+`office-quick.js/.css`: `OfficeQuick.register({app, undo, redo, canUndo, canRedo, save, canSave, print, undoKey, tabs, activeTab, onTab, mount, before, fallback})` draws Undo | Redo | Save | Print before the ribbon tabs, routes Ctrl/Cmd+Z/Y/Shift+Z/S/P, shows the "✓ Saved" tick. `office-hubbar.js`: `HubTitleBar.set/update/clear/onClick/onHello` (Hub contract H49, `hubTitleBar` / `hubTitleBarHello` / `hubTitleBarClick`, v:1). In-app bar hides only after the Hub's hello. Base: Undo/Redo disabled until it has history.
