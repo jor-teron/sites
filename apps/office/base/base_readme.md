@@ -32,3 +32,7 @@ pick table Expenses, add the condition Amount `>` 500, sort by Date descending. 
 WHERE = which records, ORDER BY = sort. Base writes this for you; you never have to type it.
 
 - SH5: Settings opens as a centred pop-up dialog (shared office-settings.*, ?v=2).
+
+## BS3 (safe start)
+- If storage does not answer within 1.5 s or is blocked, Base works in memory only and shows a warning banner.
+- Damaged saved data is repaired on load (original kept as a backup). If Base still cannot show it, a recovery dialog offers "Download raw data" and "Reset Base".
