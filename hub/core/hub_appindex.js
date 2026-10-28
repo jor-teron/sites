@@ -77,6 +77,7 @@ window.HUB_APP_INDEX = {
   "terminal": ["System", "apps/system/terminal/", "Terminal", "apps/system/terminal/terminal_icon.png", 0],
   "apphub": ["System", "apps/system/apphub/", "App Hub", "apps/system/apphub/apphub_icon.png", 0],
   "first-aid": ["Learn", "apps/learn/first-aid/", "First Aid", "apps/learn/first-aid/first-aid_icon.png", 0],
+  "human-body": ["Learn", "apps/learn/human-body/", "Human Body Explorer", "apps/learn/human-body/human-body_icon.png", 0],
   "water-kingdom": ["Learn", "apps/learn/water-kingdom/", "Water Kingdom", "apps/learn/water-kingdom/water-kingdom_icon.png", 0],
   "animal-kingdom": ["Learn", "apps/learn/animal-kingdom/", "Animal Kingdom", "apps/learn/animal-kingdom/animal-kingdom_icon.png", 0],
   "english-basic": ["Learn", "apps/learn/english-basic/", "English Basic", "apps/learn/english-basic/english-basic_icon.png", 0],

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Human Body Explorer HBE1 (Learn > Health): tap the main body parts to learn what they do, then take a quiz.
+     Classic scripts only, code-drawn SVG body, works from file:// and offline. -->
+<title>Human Body Explorer HBE1</title>
+<meta name="theme-color" content="#14171c">
+<link rel="icon" href="human-body_icon.png">
+<script src="../../../shared/theme/hub_theme.js?v=HBE1"></script>
+<link rel="stylesheet" href="../common/ui/learn.css?v=HBE1">
+<link rel="stylesheet" href="ui/body.css?v=HBE1">
+</head>
+<body>
+<div id="app" class="lrn"><p>Loading…</p></div>
+<noscript><p>Human Body Explorer needs JavaScript. Tap the brain, heart, lungs and more to learn what they do.</p></noscript>
+<!-- load order: shared kit state (localStorage helpers), body data, quiz logic, SVG drawing, then the app screens -->
+<script src="../common/core/state.js?v=HBE1"></script>
+<script src="core/parts.js?v=HBE1"></script>
+<script src="core/quiz.js?v=HBE1"></script>
+<script src="ui/body.js?v=HBE1"></script>
+<script src="ui/app.js?v=HBE1"></script>
+</body>
+</html>

@@ -150,6 +150,7 @@ Keyboard,           keyboard/,                    , , Legacy
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
 name, path, icon, newtab, section
 First Aid,               first-aid/,                 , , Health
+Human Body Explorer,     human-body/,                , , Health
 Water Kingdom, 	water-kingdom/, , , Planet
 Animal Kingdom, 	animal-kingdom/, , , Planet
 
