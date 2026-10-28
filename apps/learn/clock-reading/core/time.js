@@ -1,4 +1,4 @@
-/* Clock Reading CR1 — time maths and words (no drawing). A time is t = minutes since midnight (0..1439).
+/* Clock Reading CR2 — time maths and words (no drawing). A time is t = minutes since midnight (0..1439).
    CR.words(t) gives British-style kid wording: "seven o'clock", "five past nine", "quarter past three", "half past twelve",
    "twenty to five", "seven minutes past two". CR.pick(level) makes a random quiz time for a level. */
 window.CR = window.CR || {};
@@ -12,7 +12,7 @@ window.CR = window.CR || {};
   C.min = t => C.norm(t) % 60;
   C.h12 = t => (C.h24(t) % 12) || 12;
   C.pad = n => (n < 10 ? '0' : '') + n;
-  C.fmt12 = (t, ampm) => C.h12(t) + ':' + C.pad(C.min(t)) + (ampm ? (C.h24(t) < 12 ? ' am' : ' pm') : '');
+  C.fmt12 = (t, ampm) => C.h12(t) + ':' + C.pad(C.min(t)) + (ampm ? (C.h24(t) < 12 ? ' AM' : ' PM') : '');
   C.fmt24 = t => C.pad(C.h24(t)) + ':' + C.pad(C.min(t));
   C.words = t => {
     const m = C.min(t), h = C.h12(t), next = (h % 12) + 1;
