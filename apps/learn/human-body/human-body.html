@@ -3,24 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- Human Body Explorer HBE2 (Learn > Health): tap body parts (Simple: 15 main parts, Expert: about 50) to learn what they do, then take a quiz.
+<!-- Human Body Explorer HBE3 (Learn > Health): outside parts (default tab: face, body, arms, hands, legs, feet, front and back) and inside parts (Simple: 15 main parts, Expert: about 50); tap to learn what they do, then take a quiz.
      Classic scripts only, code-drawn SVG body, works from file:// and offline. -->
-<title>Human Body Explorer HBE2</title>
+<title>Human Body Explorer HBE3</title>
 <meta name="theme-color" content="#14171c">
 <link rel="icon" href="human-body_icon.png">
-<script src="../../../shared/theme/hub_theme.js?v=HBE2"></script>
-<link rel="stylesheet" href="../common/ui/learn.css?v=HBE2">
-<link rel="stylesheet" href="ui/body.css?v=HBE2">
+<script src="../../../shared/theme/hub_theme.js?v=HBE3"></script>
+<link rel="stylesheet" href="../common/ui/learn.css?v=HBE3">
+<link rel="stylesheet" href="ui/body.css?v=HBE3">
 </head>
 <body>
 <div id="app" class="lrn"><p>Loading…</p></div>
 <noscript><p>Human Body Explorer needs JavaScript. Tap the brain, heart, lungs and more to learn what they do.</p></noscript>
-<!-- load order: shared kit state (localStorage helpers), body data (simple, then expert), quiz logic, SVG drawing, then the app screens -->
-<script src="../common/core/state.js?v=HBE2"></script>
-<script src="core/parts.js?v=HBE2"></script>
-<script src="core/parts-expert.js?v=HBE2"></script>
-<script src="core/quiz.js?v=HBE2"></script>
-<script src="ui/body.js?v=HBE2"></script>
-<script src="ui/app.js?v=HBE2"></script>
+<!-- load order: shared kit state (localStorage helpers), body data (simple, expert, external, then the art upgrade), quiz logic, SVG drawing, then the app screens -->
+<script src="../common/core/state.js?v=HBE3"></script>
+<script src="core/parts.js?v=HBE3"></script>
+<script src="core/parts-expert.js?v=HBE3"></script>
+<script src="core/parts-external.js?v=HBE3"></script>
+<script src="core/art.js?v=HBE3"></script>
+<script src="core/quiz.js?v=HBE3"></script>
+<script src="ui/body.js?v=HBE3"></script>
+<script src="ui/app.js?v=HBE3"></script>
 </body>
 </html>
