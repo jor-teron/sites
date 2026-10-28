@@ -433,14 +433,18 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - #47 About update/Clear Cache labels and the release read from `hub/build.txt`; #70 Screen saver picker (`sites-hub.saverIdle`). #18 is an older Settings PR and its author isn't verified (see §2.4).
 - **Hub Bot now owns** the screen-saver control (`sec_desktop.js`) and the whole `apps/system/` move. `apps/settings/index.html` and the old `apps/tools/{files,sysmon,viewer,devbench}` folders are redirect stubs.
 
-### 1.15 Image Gen: `apps/lab/image-gen/` (Lab → Tools, after Code Lab), release IG1
+### 1.15 Image Gen: `apps/lab/image-gen/` (Lab → Tools, after Code Lab), release IG3 (IG1 → IG3; IG2 skipped for now)
 - Text-to-image through the user's own Ollama. Screens: Generate · Gallery · Settings (dots, 75 px wrap-around swipes, ←/→).
-- Files: `imagegen.html/.css`, `imagegen_app.js` (UI, theme, swipes, dialogs), `imagegen_ollama.js` (API), `imagegen_store.js` (IndexedDB gallery), `imagegen_save.js` (the only save path), `imagegen_icon.png`.
+- Files: `imagegen.html/.css`, `imagegen_app.js` (UI, theme, swipes, dialogs, compare), `imagegen_ollama.js` (API), `imagegen_edit.js` (IG3: start photo, upscale, similarity), `imagegen_store.js` (IndexedDB gallery), `imagegen_save.js` (the only save path), `imagegen_icon.png`.
 - API: `POST {url}/api/generate` `{model, prompt, width, height, steps, stream:true}`; NDJSON lines with `completed/total` drive the bar, the last line has `image` (base64 PNG). Cancel = AbortController. Models: `/api/tags`, plus `/api/show` capabilities when tags lack them; `image` models first, "Other" lets you type a name.
 - Sizes: Square 1024×1024, Portrait 768×1024, Landscape 1024×768. Steps default 8 (z-image-turbo), 4 for flux models.
 - Storage: `imagegen-settings-v1` `{theme, url, model, size, steps, prompt}`; IndexedDB `imagegen-v1`/`images` keeps the newest 20.
 - Error dialogs: unreachable/CORS → `OLLAMA_ORIGINS=https://jor-teron.github.io`; HTTP 400 "…not currently supported" → Ollama 0.32.6+ disabled image gen, use 0.32.5 on macOS; no image models → `ollama pull x/z-image-turbo`.
 - CSV icon column is set explicitly (`image-gen/imagegen_icon.png`) because the default would look for `image-gen/image-gen_icon.png` (same quirk as Code Lab).
+- IG3 start photo (image-to-image): Add photo / drop / paste / "Use as start"; ≤1024 px JPEG sent as `images:[b64]` on `/api/generate`; size "Photo" = long side 1024, multiples of 16. **Ollama doesn't really support it**: editing landed in 0.15.1 for flux2 only (commit c01608b; z-image → HTTP 400 "model does not support image editing") and worked through v0.15.4; the v0.15.5 runner rewrite dropped the dispatch so 0.15.5–0.32.5 silently ignore `images` (issue #14306, fix PR #14408 closed unmerged; v0.32.5 `x/imagegen/imagegen.go` always calls `GenerateImage`), and 0.32.6+ removed image gen. No strength option exists. The app shows a heads-up, maps a 400 to "Start photo not supported", and flags "Ollama ignored the start photo" when the result's grey 32×32 correlation with the photo is < 0.3 (heuristic).
+- IG3 Upscale 2×: canvas `imageSmoothingQuality:'high'` + optional mild sharpen (`sharpen` setting, default on), new gallery item `kind:'up'`, max 4096 px a side. Gallery records may carry `kind:'edit'` + `src` (start photo blob) or `kind:'up'` + `from`.
+- IG3 Compare: overlay with two stacked images and a draggable divider (drag / range / ←→, Swap, Esc). Gallery → Compare → tap two; "Before / after" on edits.
+- IG3 Send to Gallery: `apps/media/gallery` has no shared store (it reads a folder/files the user opens; IndexedDB `gallery-v1` only holds the folder handle), so it saves the PNG (`IGSave.toGallery`) and explains how to open it in Gallery. Gallery files untouched.
 - Tested only against a mock Ollama (headless Chromium); not yet against a real Ollama 0.32.5 on a Mac.
 
 ### 1.16 Vision: `apps/lab/vision/` (Lab → Tools, after Image Gen), release VS1

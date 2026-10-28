@@ -1,12 +1,14 @@
-/* Image Gen IG1 app: screens, swipes, settings, theme, generate flow, gallery.
-   Settings in 'imagegen-settings-v1': { theme, url, model, size, steps, prompt }. */
+/* Image Gen IG3 app: screens, swipes, settings, theme, generate flow (text or start photo), gallery,
+   upscale 2×, compare slider, Send to Gallery.
+   Settings in 'imagegen-settings-v1': { theme, url, model, size, steps, prompt, sharpen }. */
 (function () {
   'use strict';
   const SKEY = 'imagegen-settings-v1', SWIPE = 75, TAP_MOVE = 10;
   const SIZES = { square: [1024, 1024], portrait: [768, 1024], landscape: [1024, 768] };
   const ORIGIN = 'https://jor-teron.github.io';
   const $ = (id) => document.getElementById(id);
-  const P = { theme: 'dark', url: 'http://localhost:11434', model: '', size: 'square', steps: 8, prompt: '' };
+  const P = { theme: 'dark', url: 'http://localhost:11434', model: '', size: 'square', steps: 8, prompt: '', sharpen: 'on' };
+  const IGNORED = 0.3; /* grey-correlation below this = the result does not look like the start photo */
   try { Object.assign(P, JSON.parse(localStorage.getItem(SKEY) || '{}')); } catch (_) { /* */ }
   const saveP = () => { try { localStorage.setItem(SKEY, JSON.stringify(P)); } catch (_) { /* */ } };
   const defSteps = (m) => (/flux/i.test(m || '') ? 4 : 8);
@@ -40,6 +42,9 @@
       '<p class="mut">On a Mac app install: <code>launchctl setenv OLLAMA_ORIGINS "' + ORIGIN + '"</code>, then restart Ollama. Check the URL in Settings.</p>');
     if (e.kind === 'disabled') return dialog('Image generation is off in this Ollama',
       '<p>Ollama said: <i>' + esc(e.message) + '</i></p><p>Ollama 0.32.6 and later have image generation switched off for now. Use <b>Ollama 0.32.5 on macOS</b> with an image model such as <code>x/z-image-turbo</code>.</p>');
+    if (e.kind === 'noedit') return dialog('Start photo not supported',
+      '<p>Ollama said: <i>' + esc(e.message) + '</i></p><p><b>Ollama doesn\u2019t support start photos (image-to-image) for this model yet.</b> Remove the start photo to make a picture from the prompt alone.</p>' +
+      '<p class="mut">Only <code>x/flux2-klein</code> ever took a start photo, in Ollama 0.15.1\u20130.15.4 on macOS.</p>');
     if (e.kind === 'nomodel') return dialog('Model not found', '<p>' + esc(e.message) + '</p><p>Download one with <code>ollama pull x/z-image-turbo</code>, then tap ↻ in Settings.</p>');
     if (e.kind === 'noimage') return dialog('No image came back', '<p>' + esc(e.message) + '</p><p>Image models: <code>x/z-image-turbo</code>, <code>x/flux2-klein</code>.</p>');
     return dialog('Something went wrong', '<p>' + esc(e.message || e) + '</p>');
@@ -50,6 +55,7 @@
   document.querySelectorAll('.seg').forEach((g) => g.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     P[g.dataset.key] = b.dataset.v; saveP(); theme(); renderSeg();
+    if (g.dataset.key === 'size') renderSrc();
   }));
 
   /* prompt + steps */
@@ -116,32 +122,151 @@
     if (curUrl) URL.revokeObjectURL(curUrl);
     curBlob = blob; curMeta = meta; curUrl = URL.createObjectURL(blob);
     $('out-img').src = curUrl; $('result').hidden = false; $('empty').hidden = true;
-    $('out-info').textContent = meta.w + '×' + meta.h + ' · ' + meta.steps + ' steps · ' + meta.model + (meta.secs ? ' · ' + meta.secs + ' s' : '');
+    $('out-info').textContent = (meta.kind === 'edit' ? 'From start photo · ' : meta.kind === 'up' ? 'Upscaled 2× · ' : '') + meta.w + '×' + meta.h + ' · ' + meta.steps + ' steps · ' + meta.model + (meta.secs ? ' · ' + meta.secs + ' s' : '');
+    $('ba-btn').hidden = !meta.src;
   }
+  /* start photo (image-to-image): Add photo, drop, paste, or "Use as start" */
+  let src = null, srcUrl = null;
+  async function setSrc(blob) {
+    if (!blob) return;
+    try { src = await IGEdit.loadPhoto(blob); } catch (e) { dialog('Can\u2019t use that picture', '<p>' + esc(e.message || e) + '</p>'); return; }
+    P.size = 'photo'; saveP(); renderSrc(); renderSeg(); go(0); toast('Start photo set');
+  }
+  function clearSrc() { src = null; if (P.size === 'photo') { P.size = 'square'; saveP(); } renderSrc(); renderSeg(); }
+  function renderSrc() {
+    if (srcUrl) { URL.revokeObjectURL(srcUrl); srcUrl = null; }
+    $('src-box').hidden = $('src-note').hidden = $('size-photo').hidden = !src;
+    $('src-add').textContent = src ? 'Change' : 'Add photo';
+    if (src) {
+      srcUrl = URL.createObjectURL(src.blob); $('src-img').src = srcUrl;
+      $('src-info').textContent = src.w + '\u00d7' + src.h + ' \u2192 makes ' + src.gw + '\u00d7' + src.gh;
+      $('size-photo').title = 'Match the start photo (' + src.gw + '\u00d7' + src.gh + ')';
+    } else if (P.size === 'photo') { P.size = 'square'; }
+  }
+  const sizeWH = () => (P.size === 'photo' && src ? [src.gw, src.gh] : SIZES[P.size] || SIZES.square);
+  $('src-add').onclick = () => $('src-file').click();
+  $('src-file').onchange = (e) => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) setSrc(f); };
+  $('src-del').onclick = clearSrc;
+  const appEl = $('app');
+  const imgFile = (list) => [...(list || [])].find((f) => f && /^image\//.test(f.type));
+  appEl.addEventListener('dragover', (e) => { if ([...(e.dataTransfer.items || [])].some((i) => i.kind === 'file')) { e.preventDefault(); appEl.classList.add('dragover'); } });
+  appEl.addEventListener('dragleave', (e) => { if (e.target === appEl || !appEl.contains(e.relatedTarget)) appEl.classList.remove('dragover'); });
+  appEl.addEventListener('drop', (e) => {
+    appEl.classList.remove('dragover'); const f = imgFile(e.dataTransfer.files);
+    if (f) { e.preventDefault(); setSrc(f); } else if (e.dataTransfer.files.length) { e.preventDefault(); toast('Drop a picture file'); }
+  });
+  addEventListener('paste', (e) => {
+    if (!$('dialog').hidden) return;
+    const f = imgFile([...(e.clipboardData && e.clipboardData.items || [])].filter((i) => i.kind === 'file').map((i) => i.getAsFile()));
+    if (f) { e.preventDefault(); setSrc(f); }
+  });
+
   $('gen-btn').onclick = async () => {
     const prompt = pr.value.trim();
-    if (!prompt) { dialog('Add a prompt', '<p>Describe the picture you want first.</p>'); pr.focus(); return; }
+    if (!prompt) { dialog('Add a prompt', '<p>Describe the picture you want' + (src ? ', or what to change in the start photo,' : '') + ' first.</p>'); pr.focus(); return; }
     if (!P.model) {
       const ok = await loadModels(true);
       if (!ok || !P.model) return;
     }
-    const [w, h] = SIZES[P.size] || SIZES.square, t0 = Date.now();
+    const [w, h] = sizeWH(), t0 = Date.now(), s0 = src;
     ac = new AbortController(); busy(true);
     try {
-      const r = await IGOllama.generate({ url: P.url, model: P.model, prompt, width: w, height: h, steps: P.steps, signal: ac.signal,
+      const r = await IGOllama.generate({ url: P.url, model: P.model, prompt, width: w, height: h, steps: P.steps, signal: ac.signal, images: s0 ? [s0.b64] : null,
         onProgress: (c, t) => { $('bar').parentNode.classList.remove('ind'); $('bar').style.width = Math.min(100, c / t * 100) + '%'; $('prog-t').textContent = 'Step ' + c + ' / ' + t; } });
       const blob = IGOllama.b64ToBlob(r.b64), meta = { prompt, model: P.model, w, h, steps: P.steps, secs: Math.round((Date.now() - t0) / 1000) };
+      if (s0) { meta.kind = 'edit'; meta.src = s0.blob; }
       showResult(blob, meta);
-      try { await IGStore.add(Object.assign({ blob }, meta)); renderGallery(); } catch (_) { toast('Could not keep it in the gallery (storage full?)'); }
+      try { meta.id = await IGStore.add(Object.assign({ blob }, meta)); renderGallery(); } catch (_) { toast('Could not keep it in the gallery (storage full?)'); }
+      if (s0) {
+        let sim = 1; try { sim = await IGEdit.similarity(s0.blob, blob); } catch (_) { /* can't tell */ }
+        meta.sim = sim;
+        if (sim < IGNORED) dialog('Ollama ignored the start photo',
+          '<p>The picture came back, but it doesn\u2019t look like your start photo, so this Ollama made a brand-new image from the prompt.</p>' +
+          '<p><b>Ollama doesn\u2019t support start photos (image-to-image) yet.</b> It accepts <code>images</code> but ignores them in 0.15.5\u20130.32.5, and 0.32.6+ has image generation off.</p>' +
+          '<p class="mut">Check with Before / after. (Guess from a similarity score of ' + sim.toFixed(2) + '; big edits can fool it.)</p>');
+      }
     } catch (e) {
       if (e && e.name === 'AbortError') toast('Cancelled'); else explain(e);
     } finally { ac = null; busy(false); }
   };
   $('cancel-btn').onclick = () => { if (ac) ac.abort(); };
-  $('save-btn').onclick = () => { if (curBlob) IGSave.save(curBlob, IGSave.fileName(curMeta && curMeta.prompt)).then((n) => toast('Saved ' + n)); };
+  $('save-btn').onclick = () => { if (curBlob) IGSave.save(curBlob, IGSave.fileName(curMeta && curMeta.prompt, tagOf(curMeta))).then((n) => toast('Saved ' + n)); };
+  $('send-btn').onclick = () => { if (curBlob) sendToGallery(curBlob, curMeta); };
+  $('up-btn').onclick = () => { if (curBlob) upscale(curBlob, curMeta, curMeta && curMeta.id); };
+  $('tostart-btn').onclick = () => { if (curBlob) setSrc(curBlob); };
+  $('ba-btn').onclick = () => { if (curMeta && curMeta.src) openCompare(curMeta.src, curBlob, 'Before', 'After'); };
+
+  /* upscale 2× on this device -> new gallery item */
+  const tagOf = (m) => (m && m.kind === 'up' ? 'x2' : m && m.kind === 'edit' ? 'edit' : '');
+  let upBusy = false;
+  async function upscale(blob, meta, fromId) {
+    if (upBusy) return; upBusy = true; toast('Upscaling 2\u00d7\u2026');
+    try {
+      const r = await IGEdit.upscale2x(blob, P.sharpen !== 'off');
+      const rec = { blob: r.blob, prompt: (meta && meta.prompt) || '', model: (meta && meta.model) || '', w: r.w, h: r.h, steps: (meta && meta.steps) || 0, kind: 'up' };
+      if (fromId != null) rec.from = fromId;
+      let id = null; try { id = await IGStore.add(rec); } catch (_) { toast('Could not keep it in the gallery (storage full?)'); }
+      await renderGallery();
+      const saved = id != null ? await IGStore.get(id) : null;
+      if (saved) { go(1); openViewer(saved); }
+      toast('Upscaled to ' + r.w + '\u00d7' + r.h + (saved ? ' \u2014 new gallery image' : ''));
+    } catch (e) {
+      dialog(e.kind === 'toobig' ? 'Already big' : 'Couldn\u2019t upscale', '<p>' + esc(e.message || e) + '</p>');
+    } finally { upBusy = false; }
+  }
+
+  /* Send to Gallery: Gallery keeps no shared store (it shows a folder/files you open), so save + explain */
+  function sendToGallery(blob, meta) {
+    IGSave.toGallery(blob, meta && meta.prompt, tagOf(meta)).then((n) => dialog('Saved for Gallery',
+      '<p>Saved <b>' + esc(n) + '</b> to your Downloads.</p>' +
+      '<p>Gallery shows pictures from a folder on this device. In Gallery tap <b>Open folder</b> and pick your Downloads folder (or <b>Files</b> and pick this image). If Gallery already remembers that folder, the picture shows next time you open it.</p>' +
+      '<p><a href="../../media/gallery/gallery.html" target="_blank" rel="noopener">Open Gallery \u2197</a></p>'));
+  }
+
+  /* compare: two images on top of each other, slider reveals B on the right */
+  const cmp = { a: null, b: null, ua: null, ub: null, x: 50, la: '', lb: '' };
+  function cmpPlace() {
+    $('c-b').style.clipPath = 'inset(0 0 0 ' + cmp.x + '%)'; $('c-line').style.left = cmp.x + '%'; $('c-range').value = cmp.x;
+  }
+  async function openCompare(a, b, la, lb) {
+    closeViewer();
+    [cmp.ua, cmp.ub].forEach((u) => u && URL.revokeObjectURL(u));
+    Object.assign(cmp, { a, b, la, lb, x: 50, ua: URL.createObjectURL(a), ub: URL.createObjectURL(b) });
+    let d = { w: 1, h: 1 }; try { d = await IGEdit.size(b); } catch (_) { /* */ }
+    const wrap = $('c-wrap'); wrap.style.aspectRatio = d.w + ' / ' + d.h;
+    wrap.style.width = 'min(100%, calc(78vh * ' + (d.w / d.h).toFixed(4) + '))'; wrap.style.margin = '0 auto';
+    $('c-a').src = cmp.ua; $('c-b').src = cmp.ub; $('c-la').textContent = la; $('c-lb').textContent = lb;
+    cmpPlace(); $('compare').hidden = false;
+  }
+  function closeCompare() { $('compare').hidden = true; [cmp.ua, cmp.ub].forEach((u) => u && URL.revokeObjectURL(u)); cmp.ua = cmp.ub = null; }
+  $('c-close').onclick = closeCompare;
+  $('compare').addEventListener('click', (e) => { if (e.target.id === 'compare') closeCompare(); });
+  $('c-range').addEventListener('input', (e) => { cmp.x = +e.target.value; cmpPlace(); });
+  $('c-swap').onclick = () => { const { a, b, la, lb } = cmp; openCompare(b, a, lb, la); };
+  let cdrag = null;
+  const cset = (e) => { const r = $('c-wrap').getBoundingClientRect(); cmp.x = Math.max(0, Math.min(100, (e.clientX - r.left) / r.width * 100)); cmpPlace(); };
+  $('c-wrap').addEventListener('pointerdown', (e) => { cdrag = e.pointerId; try { $('c-wrap').setPointerCapture(e.pointerId); } catch (_) { /* */ } cset(e); e.preventDefault(); });
+  $('c-wrap').addEventListener('pointermove', (e) => { if (cdrag === e.pointerId) cset(e); });
+  const cend = (e) => { if (cdrag === e.pointerId) cdrag = null; };
+  $('c-wrap').addEventListener('pointerup', cend); $('c-wrap').addEventListener('pointercancel', cend);
 
   /* gallery */
-  let galUrls = [], viewRec = null, viewUrl = null;
+  let galUrls = [], viewRec = null, viewUrl = null, picking = false, picks = [];
+  function setPicking(on) {
+    picking = on; picks = []; $('cmp-btn').textContent = on ? 'Cancel' : 'Compare'; $('cmp-hint').hidden = !on;
+    $('gal').classList.toggle('picking', on); document.querySelectorAll('#gal button.sel').forEach((b) => { b.classList.remove('sel'); });
+  }
+  $('cmp-btn').onclick = () => setPicking(!picking);
+  function pick(r, b) {
+    const i = picks.findIndex((p) => p.r.id === r.id);
+    if (i >= 0) { picks.splice(i, 1); b.classList.remove('sel'); } else { picks.push({ r, b }); b.classList.add('sel'); }
+    picks.forEach((p, k) => { p.b.dataset.n = k + 1; });
+    if (picks.length === 2) {
+      const [x, y] = picks; setPicking(false);
+      const lab = (q) => (q.kind === 'up' ? '2\u00d7 ' : q.kind === 'edit' ? 'Edit ' : '') + q.w + '\u00d7' + q.h;
+      openCompare(x.r.blob, y.r.blob, '1 \u00b7 ' + lab(x.r), '2 \u00b7 ' + lab(y.r));
+    }
+  }
   async function renderGallery() {
     let list = []; try { list = await IGStore.list(); } catch (_) { /* no IndexedDB */ }
     galUrls.forEach((u) => URL.revokeObjectURL(u)); galUrls = [];
@@ -150,23 +275,29 @@
     list.forEach((r) => {
       const b = document.createElement('button'), im = document.createElement('img'), u = URL.createObjectURL(r.blob);
       galUrls.push(u); im.src = u; im.alt = r.prompt; im.loading = 'lazy'; b.title = r.prompt; b.appendChild(im);
-      b.onclick = () => openViewer(r); g.appendChild(b);
+      if (r.kind) { const t = document.createElement('span'); t.className = 'bdg'; t.textContent = r.kind === 'up' ? '2\u00d7' : 'edit'; b.appendChild(t); }
+      b.onclick = () => (picking ? pick(r, b) : openViewer(r)); g.appendChild(b);
     });
   }
   function openViewer(r) {
     viewRec = r; if (viewUrl) URL.revokeObjectURL(viewUrl); viewUrl = URL.createObjectURL(r.blob);
     $('v-img').src = viewUrl; $('v-prompt').textContent = r.prompt;
-    $('v-info').textContent = new Date(r.ts).toLocaleString() + ' · ' + r.w + '×' + r.h + ' · ' + r.steps + ' steps · ' + r.model;
+    $('v-info').textContent = new Date(r.ts).toLocaleString() + ' · ' + (r.kind === 'up' ? 'upscaled 2× · ' : r.kind === 'edit' ? 'from start photo · ' : '') + r.w + '×' + r.h + ' · ' + r.steps + ' steps · ' + r.model;
+    $('v-ba').hidden = !r.src;
     $('viewer').hidden = false;
   }
   function closeViewer() { $('viewer').hidden = true; viewRec = null; }
   $('v-close').onclick = closeViewer;
   $('viewer').addEventListener('click', (e) => { if (e.target.id === 'viewer') closeViewer(); });
-  $('v-save').onclick = () => { if (viewRec) IGSave.save(viewRec.blob, IGSave.fileName(viewRec.prompt)).then((n) => toast('Saved ' + n)); };
+  $('v-save').onclick = () => { if (viewRec) IGSave.save(viewRec.blob, IGSave.fileName(viewRec.prompt, tagOf(viewRec))).then((n) => toast('Saved ' + n)); };
+  $('v-send').onclick = () => { if (viewRec) { const r = viewRec; closeViewer(); sendToGallery(r.blob, r); } };
+  $('v-up').onclick = () => { if (viewRec) { const r = viewRec; closeViewer(); upscale(r.blob, r, r.id); } };
+  $('v-start').onclick = () => { if (viewRec) { const r = viewRec; closeViewer(); setSrc(r.blob); } };
+  $('v-ba').onclick = () => { if (viewRec && viewRec.src) openCompare(viewRec.src, viewRec.blob, 'Before', 'After'); };
   $('v-reuse').onclick = () => {
     if (!viewRec) return;
     pr.value = P.prompt = viewRec.prompt;
-    const sz = Object.keys(SIZES).find((k) => SIZES[k][0] === viewRec.w && SIZES[k][1] === viewRec.h); if (sz) P.size = sz;
+    const sz = Object.keys(SIZES).find((k) => SIZES[k][0] === viewRec.w && SIZES[k][1] === viewRec.h); if (sz && P.size !== 'photo') P.size = sz;
     P.steps = viewRec.steps || P.steps; saveP(); renderSeg(); renderSteps(); closeViewer(); go(0);
   };
   $('v-del').onclick = async () => {
@@ -180,10 +311,10 @@
   let cur = 0;
   function place(dx) { track.style.transform = 'translateX(calc(' + (-cur * 100) + '% + ' + dx + 'px))'; }
   function go(i) { cur = (i + N) % N; place(0); dots.forEach((d, k) => d.classList.toggle('on', k === cur)); }
-  const noSwipe = (el) => el.closest && el.closest('input, textarea, select, .noswipe, .seg, button, #dialog, #viewer');
+  const noSwipe = (el) => el.closest && el.closest('input, textarea, select, .noswipe, .seg, button, a, #dialog, #viewer, #compare');
   let g = null;
   app.addEventListener('pointerdown', (e) => {
-    if (!$('dialog').hidden || !$('viewer').hidden || (e.pointerType === 'mouse' && e.button !== 0) || noSwipe(e.target)) { g = null; return; }
+    if (!$('dialog').hidden || !$('viewer').hidden || !$('compare').hidden || (e.pointerType === 'mouse' && e.button !== 0) || noSwipe(e.target)) { g = null; return; }
     g = { x: e.clientX, y: e.clientY, axis: null, id: e.pointerId };
   });
   app.addEventListener('pointermove', (e) => {
@@ -201,7 +332,13 @@
   app.addEventListener('pointercancel', (e) => end(e, true));
   addEventListener('keydown', (e) => {
     if (!$('dialog').hidden) { if (e.key === 'Escape') closeDlg(false); if (e.key === 'Enter') closeDlg(true); return; }
+    if (!$('compare').hidden) {
+      if (e.key === 'Escape') closeCompare();
+      else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && e.target.id !== 'c-range') { cmp.x = Math.max(0, Math.min(100, cmp.x + (e.key === 'ArrowLeft' ? -5 : 5))); cmpPlace(); }
+      return;
+    }
     if (!$('viewer').hidden) { if (e.key === 'Escape') closeViewer(); return; }
+    if (picking && e.key === 'Escape') { setPicking(false); return; }
     if (e.target.closest && e.target.closest('input, textarea, select')) {
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && e.target === pr) $('gen-btn').click();
       return;
@@ -213,6 +350,6 @@
     if (e.key === SKEY) { try { Object.assign(P, JSON.parse(e.newValue || '{}')); } catch (_) { /* */ } theme(); renderSeg(); renderSteps(); renderModelLabel(); }
   });
 
-  go(0); renderSeg(); renderSteps(); renderModelLabel(); fillSelect(); renderGallery(); loadModels(false);
-  window.IGApp = { go, get screen() { return cur; } };
+  renderSrc(); go(0); renderSeg(); renderSteps(); renderModelLabel(); fillSelect(); renderGallery(); loadModels(false);
+  window.IGApp = { go, get screen() { return cur; }, setSrc, get src() { return src; }, openCompare };
 })();
