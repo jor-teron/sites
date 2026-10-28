@@ -158,12 +158,17 @@ English Basic,           english-basic/,             , , Language
 NE-India Dictionary,     ../tools/nei-dict/,         , , Language
 Caption for NEI,         ../tools/caption-for-nei/,  , , Language
 Typing Tutor,            typing-tutor/,              , , Language
+Morse Code,              morse-code/,                , , Language
 Maths and Logic,         maths-logic/,               , , Language and Maths
+Clock Reading,           clock-reading/,             , , Language and Maths
 Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_icon.png, , Coding
 Learning HTML (Basic),   ../tools/learning-html/,    , , Coding
 Survival and Outdoors,   survival-outdoors/,         , , Outdoors
 Piano Basics,            piano-basics/,              , , Music
 Guitar Chords,           guitar-chords/,             , , Music
+Tuner & Metronome,       tuner-metronome/,           , , Music
+Periodic Table,          periodic-table/,            , , Science
+Road Safety,             road-safety/,               , , Life Skills
 `,
   "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools; R53c: D-Pad Controller listed here from Games, folder stays in hub/controller/; R54: new Disk app; T1: Terminal; AH1: App Hub). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
