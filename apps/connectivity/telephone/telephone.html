@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Telephone TP1</title>
+  <link rel="icon" href="telephone_icon.png?v=TP1">
+  <link rel="stylesheet" href="telephone.css?v=TP1">
+</head>
+<body>
+<div id="app">
+  <div id="dots"><button class="dot on" data-i="0" aria-label="Phone"></button><button class="dot" data-i="1" aria-label="Recent calls"></button><button class="dot" data-i="2" aria-label="Settings"></button></div>
+  <div id="viewport"><div id="track">
+    <section class="pane" id="pane-phone">
+      <div class="bar"><div class="who"><b id="me-name"></b><div id="status" class="mut">Starting…</div></div>
+        <button class="mini" id="btn-code">Code</button></div>
+      <div id="sound" hidden>🔇 Tap here to turn on sound</div>
+      <div id="main">
+        <div id="listcol">
+          <div id="mycard"><span class="mut">My number</span><b id="my-num">––––</b><span id="my-sub" class="mut"></span></div>
+          <div class="hd">Online now</div>
+          <ul id="devices"></ul>
+          <p id="empty" class="mut">No other phones yet. Open Telephone on another device with the same Hub code.</p>
+        </div>
+        <div id="side">
+          <div id="dialbox"><output id="dial" aria-live="polite"></output><button id="b-back" aria-label="Delete digit" title="Delete">⌫</button></div>
+          <div id="dial-who" class="mut">&nbsp;</div>
+          <div id="pad">
+            <button data-k="1">1<small>&nbsp;</small></button><button data-k="2">2<small>ABC</small></button><button data-k="3">3<small>DEF</small></button>
+            <button data-k="4">4<small>GHI</small></button><button data-k="5">5<small>JKL</small></button><button data-k="6">6<small>MNO</small></button>
+            <button data-k="7">7<small>PQRS</small></button><button data-k="8">8<small>TUV</small></button><button data-k="9">9<small>WXYZ</small></button>
+            <button data-k="*">*<small>&nbsp;</small></button><button data-k="0">0<small>+</small></button><button data-k="#">#<small>&nbsp;</small></button>
+          </div>
+          <button id="b-call" aria-label="Call">📞<span>Call</span></button>
+        </div>
+      </div>
+    </section>
+    <section class="pane" id="pane-log">
+      <div class="bar"><div class="who"><b>Recent calls</b><div id="log-sub" class="mut"></div></div><button class="mini" id="b-clear">Clear</button></div>
+      <ul id="log"></ul>
+      <p id="log-empty" class="mut">No calls yet. Calls you make, take and miss show up here. Tap one to call back.</p>
+    </section>
+    <section class="pane" id="pane-set"><div class="set-wrap">
+      <h2>This device</h2>
+      <div class="set-row"><label for="in-name">Name</label><input id="in-name" maxlength="40"></div>
+      <div class="set-row"><span>My number</span><span><b id="num-lbl">—</b> <button class="mini" id="b-newnum">New number</button></span></div>
+      <div class="set-row"><span>Hub code</span><span><b id="code-lbl">—</b> <button class="mini" id="btn-code2">Change</button></span></div>
+      <h2>Sound</h2>
+      <div class="set-row"><label for="vol">Call and ring volume</label><input type="range" id="vol" min="0" max="100" step="5"></div>
+      <div class="set-row"><label for="chk-keys">Keypad tones</label><input type="checkbox" id="chk-keys" class="sw"></div>
+      <div class="set-row"><span>Speaker</span><span><span id="sink-lbl" class="mut">Default</span> <button class="mini" id="b-sink2">Choose</button></span></div>
+      <h2>Look</h2>
+      <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+      <h2>About</h2>
+      <div class="about"><img src="telephone_icon.png?v=TP1" width="48" height="48" alt=""><div><b>Telephone</b> <span id="ver">TP1</span>
+        <p>A phone for every device on the same Hub Connect Code. Each device gets its own 4-digit number. Dial it on the keypad or tap a phone in Online now: only that device rings, with Answer and Decline. During a call: Mute, Speaker and Hang up. Recent calls keeps calls in, out and missed; tap one to call back. Calls ring only while Telephone is open on the other device. Peer to peer over PeerJS; nothing is recorded or stored on a server.</p></div></div>
+    </div></section>
+  </div></div>
+</div>
+
+<div id="call" hidden>
+  <div id="c-info">
+    <div id="c-av">?</div>
+    <div id="c-name"></div>
+    <div id="c-num" class="mut"></div>
+    <div id="c-state"></div>
+    <div id="c-note" class="mut"></div>
+  </div>
+  <div id="c-ctl">
+    <div id="c-in"><button class="cb red" id="b-decline"><span class="ic hg">📞</span>Decline</button><button class="cb green" id="b-answer"><span class="ic">📞</span>Answer</button></div>
+    <div id="c-on">
+      <button class="cb" id="b-mute"><span class="ic">🎙️</span><span class="lb">Mute</span></button>
+      <button class="cb" id="b-sink"><span class="ic">🔊</span><span class="lb">Speaker</span></button>
+      <button class="cb red" id="b-hang"><span class="ic hg">📞</span>Hang up</button>
+    </div>
+  </div>
+</div>
+
+<div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="4" placeholder="4-digit code"><div id="d-list" hidden></div><div class="row" id="d-row"></div></div></div>
+<div id="toast"></div>
+
+<script src="../../../shared/link/link_core.js?v=TP1"></script>
+<script src="../../../shared/link/link_devices.js?v=TP1"></script>
+<script src="telephone_save.js?v=TP1"></script>
+<script src="telephone_peer.js?v=TP1"></script>
+<script src="telephone_call.js?v=TP1"></script>
+<script src="telephone_app.js?v=TP1"></script>
+</body>
+</html>
