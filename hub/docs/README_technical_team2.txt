@@ -1083,3 +1083,14 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   only). Bump 20261028b / v98 -> 20261028c / hub-shell-v99. Playwright (system Chrome): 27/27
   (standalone, Start > System > Search window, settings / device / tetris / games, keys, Enter,
   windows, workspace + Show desktop actions, Phone mode #search), no console errors or 4xx.
+
+2026-10-28 IST, H48b (Team 2, week 2): Search icon on the Hub bar beside Show Desktop (split 2 of 4).
+  wm_taskbar.js: button#wm-search (title / aria-label 'Search', magnifier SVG) appended right after
+  #wm-showdesk: bar order Start, Show desktop, Search, tasks, [workspaces 1 2, OSK, tray, clock on
+  the right since R43]. Click: closes ctx menu / Start menu; Search window open (key
+  apps/system/search/) -> HubWM.focus (active one else topmost) + focus #q in its frame
+  (same origin; search.js also focuses q on window focus); else __hubOpenApp('apps/system/search/')
+  and focus q on frame load. wm.css: #wm-search shares every #wm-showdesk rule except .on.
+  Header comment updated (workspace switcher note fixed to R43 position). Bump 20261028c / v99 ->
+  20261028d / hub-shell-v100. Playwright (system Chrome): 13/13 (order, size, opens, focuses
+  after minimise, box focused, taskbar top, Phone mode hidden), no console errors or 4xx.

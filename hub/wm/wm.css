@@ -211,16 +211,16 @@ body.wm-desktop #wm-taskbar {
 .wm-clock { color: var(--muted); font-size: calc(var(--wm-task-h) * 0.33); font-variant-numeric: tabular-nums; padding: 0 6px 0 4px; white-space: nowrap; }
 
 /* Show Desktop (right after Start): minimise all ↔ restore; .on while the desktop is shown */
-#wm-showdesk {
+#wm-showdesk, #wm-search {   /* H48b: Search button shares the Show Desktop look */
   width: var(--tb-btn); height: var(--tb-btn); flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
   border: 0; border-radius: 9px; background: transparent; color: var(--text); cursor: pointer; padding: 0;
   transition: background 0.12s ease, transform 0.15s cubic-bezier(.3,1.6,.5,1);
 }
-#wm-showdesk svg { width: var(--tb-ico); height: var(--tb-ico); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
-#wm-showdesk:hover { background: var(--wm-hover); }
+#wm-showdesk svg, #wm-search svg { width: var(--tb-ico); height: var(--tb-ico); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+#wm-showdesk:hover, #wm-search:hover { background: var(--wm-hover); }
 #wm-showdesk.on { background: var(--wm-hi); color: var(--accent); }
-#wm-showdesk:active { transform: scale(0.88, 0.82); }
-#wm-showdesk:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+#wm-showdesk:active, #wm-search:active { transform: scale(0.88, 0.82); }
+#wm-showdesk:focus-visible, #wm-search:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 /* Right-click menus: shared/ctxmenu/ctxmenu.css (hub_ctx.js); only the Hub's motion setting here */
 html.hub-motion-reduced .ctx, html.hub-motion-off .ctx { animation: none; }
@@ -278,7 +278,7 @@ html.hub-motion-off *, html.hub-motion-off *::before, html.hub-motion-off *::aft
 
 @media (prefers-reduced-motion: reduce) {
   .wm-win.wm-pop { animation: none; }
-  #wm-start, #wm-showdesk, .wm-task, .wm-btn { transition: none; }
+  #wm-start, #wm-showdesk, #wm-search, .wm-task, .wm-btn { transition: none; }
 }
 
 /* Optional busy meter left of the clock (hub_traymeter.js; Settings → Desktop) */
