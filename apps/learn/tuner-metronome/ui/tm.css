@@ -1,0 +1,48 @@
+/* Tuner & Metronome TM1 — app look on top of the Learn kit (../common/ui/learn.css): metronome pendulum, beat dots,
+   BPM slider and big touch buttons; tuner readout, cents needle (green when in tune) and guitar string buttons.
+   Light mode follows the Hub theme (html.light). */
+.tm { --accent: #ffb000; --ok: #3ecf6e; }
+.tm-ver { flex: none; font-size: 0.75rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 99px; }
+.tm-main { display: flex; flex-direction: column; overflow: hidden; }
+.tm-page { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.tm-page > * { flex: none; } .tm-page .lrn-h { margin: 0; }
+.tm-help { margin: 0; color: var(--muted); line-height: 1.4; max-width: 70ch; }
+.tm-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tm-row .lrn-qc[aria-pressed="true"], .tm-go { background: var(--accent); border-color: var(--accent); color: #111; }
+.tm-go { min-width: 120px; font-weight: 700; }
+.tm-lab { color: var(--muted); font-size: 0.9rem; }
+.tm-metro { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+.tm-vis { flex: 0 1 240px; display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 0 auto; }
+.tm-pend { width: 100%; max-width: 240px; height: auto; color: var(--text); }
+.tm-ctl { flex: 1 1 300px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.tm-bpm { font-size: 2.4rem; font-weight: 800; line-height: 1; } .tm-word { color: var(--muted); }
+.tm-sl { flex-wrap: nowrap; } .tm-slider { flex: 1; min-width: 0; height: 40px; accent-color: var(--accent); }
+.tm-step { min-width: 48px; font-size: 1.3rem; font-weight: 700; }
+.tm-dots { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.tm-dot { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--line); color: var(--muted); font-weight: 700; transition: background 0.05s; }
+.tm-dot.one { border-color: var(--accent); }
+.tm-dot.on { background: #4dabf7; border-color: #4dabf7; color: #111; } .tm-dot.one.on { background: var(--accent); }
+.tm-msg { margin: 0; padding: 10px 12px; border-radius: 10px; background: rgba(255, 176, 0, 0.14); border: 1px solid rgba(255, 176, 0, 0.5); line-height: 1.4; }
+.tm-msg[hidden], .tm-strings[hidden] { display: none; }
+.tm-chk { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; cursor: pointer; }
+.tm-chk input { width: 20px; height: 20px; accent-color: var(--accent); }
+.tm-tuner { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; }
+.tm-readout { flex: 0 1 200px; text-align: center; }
+.tm-note { font-size: 3.4rem; font-weight: 800; line-height: 1.05; } .tm-sar { min-height: 1.3em; color: var(--accent); font-weight: 700; }
+.tm-hz { color: var(--muted); font-size: 0.95rem; }
+.tm-meter { flex: 0 1 320px; width: 100%; max-width: 320px; height: auto; color: var(--text); }
+.tm-needle { stroke: #ff6b6b; transition: all 0.12s; } .tm-meter.ok .tm-needle { stroke: var(--ok); }
+.tm-hint { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); text-align: center; min-height: 1.4em; }
+.tm-hint:empty { display: none; } .tm-hint.ok { border-color: var(--ok); color: var(--ok); font-weight: 700; }
+.tm-strings { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.tm-strings button { display: flex; flex-direction: column; align-items: center; padding: 6px 2px; min-width: 0; }
+.tm-strings small { font-size: 0.7rem; color: var(--muted); }
+.tm-strings button.near { border-color: var(--ok); box-shadow: 0 0 0 2px var(--ok) inset; }
+@media (max-width: 560px) {
+  .tm .lrn-head { flex-wrap: wrap; } .tm .lrn-head h1 { flex-basis: 100%; }
+  .tm-bpm { font-size: 2rem; } .tm-note { font-size: 2.8rem; } .tm-vis { flex-basis: 180px; }
+}
+@media (max-height: 460px) {
+  .tm-page { gap: 6px; } .tm-help { font-size: 0.85rem; }
+  .tm-pend { max-width: 150px; } .tm-meter { max-width: 230px; } .tm-note { font-size: 2.4rem; } .tm-bpm { font-size: 1.8rem; }
+}
