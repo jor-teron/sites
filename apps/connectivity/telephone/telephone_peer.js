@@ -1,8 +1,8 @@
-/* Telephone TP1 — presence + signals over PeerJS (own peers; the Hub's peer is never touched).
+/* Telephone TP2 — presence + signals over PeerJS (own peers; the Hub's peer is never touched).
    Ids: me = 'jtsites-<code>-telephone-<random>' (voice calls go to this id); lobby = 'jtsites-<code>-telephone-0'.
    The first device to claim the lobby id keeps the roster (same pattern as Intercom); every device (lobby owner too)
-   opens a data connection to the lobby and sends {t:'hi', id, name, num, did, busy, since};
-   the lobby broadcasts {t:'roster', list:[{id, name, num, did, busy, since}]}.
+   opens a data connection to the lobby and sends {t:'hi', id, name, num, did, busy, dnd, since};
+   the lobby broadcasts {t:'roster', list:[{id, name, num, did, busy, dnd, since}]}.
    Signals go to ONE device only: {t:'to', to, msg} → lobby relays {t:'sig', from, msg}. There is no "ring everyone".
    If the lobby goes away, each device waits a random 0.3–1.8 s and tries to claim it (failover).
    PeerJS: SharedLink.PEERJS_URL (shared/link/link_core.js), else the same pinned URL. */
@@ -25,7 +25,7 @@
   function rid() { return Math.random().toString(36).slice(2, 10); }
   function lobbyId() { return 'jtsites-' + code + '-telephone-0'; }
   function clean(m) {
-    return { name: String(m.name || '').slice(0, 40), num: /^\d{4}$/.test(String(m.num)) ? String(m.num) : '', did: String(m.did || '').slice(0, 32), busy: !!m.busy, since: +m.since || 0 };
+    return { name: String(m.name || '').slice(0, 40), num: /^\d{4}$/.test(String(m.num)) ? String(m.num) : '', did: String(m.did || '').slice(0, 32), busy: !!m.busy, dnd: !!m.dnd, since: +m.since || 0 };
   }
 
   function start(c) {
@@ -61,7 +61,7 @@
     conn.on('close', function () { if (conn._tpid && clients[conn._tpid] && clients[conn._tpid].conn === conn) { delete clients[conn._tpid]; broadcast(); } });
   }
   function broadcast() {
-    var list = Object.keys(clients).map(function (id) { var c = clients[id]; return { id: id, name: c.name, num: c.num, did: c.did, busy: c.busy, since: c.since }; });
+    var list = Object.keys(clients).map(function (id) { var c = clients[id]; return { id: id, name: c.name, num: c.num, did: c.did, busy: c.busy, dnd: c.dnd, since: c.since }; });
     Object.keys(clients).forEach(function (id) { try { clients[id].conn.send({ t: 'roster', list: list }); } catch (_) { /* */ } });
   }
   /* every device */
@@ -84,7 +84,7 @@
   }
   function relobby() { if (dead) return; emit('status', 'Reconnecting…'); setTimeout(claimLobby, 300 + Math.random() * 1500); }
   function hi() {
-    if (lconn && lconn.open) lconn.send({ t: 'hi', id: me.id, name: TPSave.name(), num: TPSave.get('num'), did: TPSave.get('did'), busy: !!(window.TPCall && TPCall.busy()), since: since });
+    if (lconn && lconn.open) lconn.send({ t: 'hi', id: me.id, name: TPSave.name(), num: TPSave.get('num'), did: TPSave.get('did'), busy: !!(window.TPCall && TPCall.busy()), dnd: !!TPSave.get('dnd'), since: since });
   }
   function sendTo(to, msg) { if (lconn && lconn.open) { lconn.send({ t: 'to', to: to, msg: msg }); return true; } return false; }
   function stop() {
@@ -98,7 +98,7 @@
   addEventListener('pagehide', stop);
   L._emit = emit;   // test hook (checks with a simulated peer)
   L.start = start; L.stop = stop; L.on = on; L.sendTo = sendTo; L.update = hi;
-  /* voice call; metadata {kind:'phone', cid, num, name} */
+  /* voice call; metadata {kind:'phone', cid, num, name}; TP2 one-way camera: {kind:'phone-video', cid} */
   L.call = function (id, stream, meta) { return me && me.call(id, stream, { metadata: Object.assign({ kind: 'phone', name: TPSave.name(), num: TPSave.get('num') }, meta || {}) }); };
   L.myId = function () { return me ? me.id : ''; };
   L.since = function () { return since; };

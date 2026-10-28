@@ -12,5 +12,5 @@ Pooh Chat,  pooh-chat/,  , , Chat, Group text chat for every device on the Hub C
 Video Chat, video-chat/, , , Chat, Video and audio calls: one-to-one or groups of up to 4 with screen sharing
 Screen Share, screen-share/, screen-share/screenshare_icon.png, , Chat, Share your computer screen window or tab with phones and other devices
 Intercom, intercom/, intercom/intercom_icon.png, , Chat, Tap-to-talk live voice or video to all devices or one - trusted devices can look in
-Telephone, telephone/, telephone/telephone_icon.png, , Chat, Phone calls between your devices: each gets its own number - keypad - call log
+Telephone, telephone/, telephone/telephone_icon.png, , Chat, Phone calls between your devices: own numbers - contacts - missed-call badge - Do Not Disturb - video calls
 SSH,        ssh/,        , , Remote, SSH terminal in the browser: password login - saved hosts - auto-reconnect

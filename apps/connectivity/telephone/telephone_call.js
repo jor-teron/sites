@@ -1,4 +1,4 @@
-/* Telephone TP1 — one call at a time: dial → ring → answer → talk → hang up, plus all tones.
+/* Telephone TP2 — one call at a time: dial → ring → answer → talk → hang up, plus all tones.
    Signals (always to ONE device, relayed by the lobby; every one carries the call id cid):
      caller → callee {t:'ring', cid, num, name, did}      callee → caller {t:'ringing', cid}  (ack; none in 6 s = unreachable)
      callee → caller {t:'answer', cid} | {t:'decline', cid} | {t:'busy', cid}
@@ -8,7 +8,14 @@
    Media: getUserMedia audio only (echo cancel, noise suppression, AGC), asked BEFORE the other phone rings.
    Output: <audio>.setSinkId(sink) where the browser has it (Chrome/Edge desktop, Android Chrome); else the browser decides.
    Tones are WebAudio oscillators (no files): ringback 440+480 Hz 2 s on / 4 s off, busy 480+620 Hz ½ s on/off ×4,
-   ringtone 2 short warbles every 3 s, "not online" three rising notes, keypad DTMF 120 ms. */
+   ringtone 2 short warbles every 3 s, "not online" three rising notes, keypad DTMF 120 ms.
+   TP2 Do Not Disturb: a ring while DND is on (and the caller is not a favourite contact with "favourites ring" on) is
+     declined without a sound: {t:'dnd', cid} to the caller ("Do Not Disturb") and a missed entry why:'dnd' here.
+   TP2 video (IC2 / Video Chat pattern, but one-way streams so nothing is renegotiated): during an active call, Video on =
+     getUserMedia camera (640×480 ideal, 15 fps) → a SECOND MediaConnection {kind:'phone-video', cid} carrying only that
+     camera, + {t:'vid', on:true}. The other side answers it receive-only (only when peer + cid match the live call) and
+     shows it big. Both sides can do this at once (two one-way streams). Video off = {t:'vid', on:false} + close + camera
+     released. Front/back flip = new camera track + RTCRtpSender.replaceTrack (exact facingMode first; one camera → note). */
 (function () {
   'use strict';
   var T = {}, cb = {}, RING_MS = 30000, ACK_MS = 6000, CONNECT_MS = 15000, SHOW_END_MS = 2200;
@@ -95,6 +102,74 @@
   function emit() { fire('state', c); }
   function idleChanged() { try { TPPeer.update(); } catch (_) { /* */ } }
   function send(msg) { if (c) { msg.cid = c.cid; TPPeer.sendTo(c.peer, msg); } }
+  /* ---------- video (TP2) ---------- */
+  function camC(facing) {   // null = any camera (fallback)
+    var o = { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 15, max: 20 } };
+    if (facing !== null) o.facingMode = facing || TPSave.get('facing');
+    return o;
+  }
+  function camFriendly(e) {
+    var n = e && e.name;
+    if (n === 'NotAllowedError' || n === 'SecurityError') return 'The camera is blocked. Allow it for this site in the browser settings, then try again.';
+    if (n === 'NotFoundError' || n === 'OverconstrainedError') return 'No camera was found on this device.';
+    if (n === 'NotReadableError') return 'The camera is being used by another app. Close it and try again.';
+    return 'Could not start the camera' + (e && e.message ? ': ' + e.message : '.');
+  }
+  function cam(facing, exact) {
+    var md = navigator.mediaDevices;
+    if (!md || !md.getUserMedia) { var e = new Error('This browser cannot use the camera here.'); e.name = 'NoMedia'; return Promise.reject(e); }
+    var cc = camC(facing); if (exact) cc.facingMode = { exact: facing };
+    return md.getUserMedia({ video: cc, audio: false });
+  }
+  function dropOut(x, tell) {   // stop sending my camera
+    var v = x && x.vout; if (!v) return;
+    x.vout = null;
+    if (tell && x.state === 'active') send({ t: 'vid', on: false });
+    try { v.media && v.media.close(); } catch (_) { /* */ }
+    if (v.stream) v.stream.getTracks().forEach(function (t) { try { t.stop(); } catch (_) { /* */ } });
+  }
+  function dropIn(x) {   // stop showing theirs
+    var v = x && x.vin; if (!v) return;
+    x.vin = null;
+    try { v.media && v.media.close(); } catch (_) { /* */ }
+  }
+  T.video = function (on) {
+    var x = c;
+    if (!x || x.state !== 'active') return Promise.reject(new Error('Video can be turned on once the call is connected.'));
+    on = on === undefined ? !x.vout : !!on;
+    if (!on) { dropOut(x, true); emit(); return Promise.resolve(false); }
+    if (x.vout) return Promise.resolve(true);
+    x.vout = { starting: true }; emit();
+    return cam(TPSave.get('facing')).catch(function (e) { if (e && (e.name === 'NotAllowedError' || e.name === 'NoMedia')) throw e; return cam(null); }).then(function (st) {
+      if (c !== x || x.state !== 'active' || !x.vout || !x.vout.starting) { st.getTracks().forEach(function (t) { t.stop(); }); return false; }
+      var media = TPPeer.call(x.peer, st, { kind: 'phone-video', cid: x.cid });
+      if (!media) { st.getTracks().forEach(function (t) { t.stop(); }); x.vout = null; emit(); throw new Error('Video could not start. Try again.'); }
+      x.vout = { media: media, stream: st };
+      media.on('close', function () { if (c === x && x.vout && x.vout.media === media) { dropOut(x, false); emit(); } });
+      media.on('error', function () { if (c === x && x.vout && x.vout.media === media) { dropOut(x, false); emit(); } });
+      send({ t: 'vid', on: true });
+      emit();
+      return true;
+    }, function (e) { if (c === x) { x.vout = null; emit(); } throw new Error(camFriendly(e)); });
+  };
+  T.flip = function () {   // front ↔ back (as Intercom IC2 / Video Chat VC2)
+    var x = c, want = TPSave.get('facing') === 'user' ? 'environment' : 'user';
+    if (!x || !x.vout || !x.vout.stream) { TPSave.set('facing', want); emit(); return Promise.resolve(want); }
+    var v = x.vout, old = v.stream.getVideoTracks()[0];
+    if (old) old.stop();   // phones often allow only one open camera
+    function put(nt) {
+      if (c !== x || x.vout !== v) { nt.stop(); return; }
+      if (old) v.stream.removeTrack(old); v.stream.addTrack(nt);
+      var pc = v.media && v.media.peerConnection;
+      (pc && pc.getSenders ? pc.getSenders() : []).forEach(function (snd) {
+        if (snd.track ? snd.track.kind === 'video' : true) { try { var r = snd.replaceTrack(nt); if (r && r.catch) r.catch(function () {}); } catch (_) { /* */ } }
+      });
+      emit();
+    }
+    return cam(want, true).then(function (st) { TPSave.set('facing', want); put(st.getVideoTracks()[0]); return want; }, function () {
+      return cam(TPSave.get('facing')).then(function (st) { put(st.getVideoTracks()[0]); throw new Error('This device has only one camera.'); }, function (e) { dropOut(x, true); emit(); throw new Error(camFriendly(e)); });
+    });
+  };
   function clearTimers() { if (!c) return; clearTimeout(c.ringT); clearTimeout(c.ackT); clearTimeout(c.conT); clearInterval(c.tickT); }
   function end(why, tn) {
     if (!c || c.state === 'ended') return;
@@ -102,12 +177,13 @@
     x.state = 'ended'; x.why = why;   // first, so a media 'close' fired by the cleanup below cannot end (and log) it twice
     clearTimers(); stopTone();
     if (navigator.vibrate) { try { navigator.vibrate(0); } catch (_) { /* */ } }
+    dropOut(x, false); dropIn(x);
     try { x.media && x.media.close(); } catch (_) { /* */ }
     if (x.stream) x.stream.getTracks().forEach(function (t) { try { t.stop(); } catch (_) { /* */ } });
     if (x.el) { try { x.el.pause(); x.el.srcObject = null; x.el.remove(); } catch (_) { /* */ } x.el = null; }
     x.dur = x.t0 ? (Date.now() - x.t0) / 1000 : 0;
     var dir = x.dir === 'out' ? 'out' : (x.t0 || why === 'declined' ? 'in' : 'missed');
-    TPSave.addLog({ dir: dir, num: x.num, name: x.name, at: x.at, dur: x.dur, why: why });
+    TPSave.addLog({ dir: dir, num: x.num, name: x.name, did: x.did, at: x.at, dur: x.dur, why: why });
     if (tn) playTone(tn);
     if (dir === 'missed') fire('missed', x);
     emit(); idleChanged();
@@ -132,7 +208,7 @@
     T.unlock();
     var d = T.find(num);
     if (!d) { fresh({ dir: 'out', num: num, name: '', peer: '' }); emit(); end('notfound', 'notfound'); return Promise.resolve(c); }
-    var x = fresh({ dir: 'out', num: num, name: d.name || 'Device', peer: d.id });
+    var x = fresh({ dir: 'out', num: num, name: d.name || 'Device', peer: d.id, did: d.did || '' });
     emit(); idleChanged();
     return mic().then(function (s) {
       if (c !== x || x.state === 'ended') { s.getTracks().forEach(function (t) { t.stop(); }); return x; }
@@ -194,6 +270,18 @@
   }
   T.incoming = function (media) {
     var m = media.metadata || {};
+    if (m.kind === 'phone-video') {   // their camera, receive-only
+      var x = c;
+      if (!x || x.state !== 'active' || media.peer !== x.peer || m.cid !== x.cid) { try { media.close(); } catch (_) { /* */ } return; }
+      dropIn(x);
+      x.vin = { media: media, stream: null };
+      media.answer();
+      media.on('stream', function (st) { if (c === x && x.vin && x.vin.media === media) { x.vin.stream = st; emit(); } });
+      media.on('close', function () { if (c === x && x.vin && x.vin.media === media) { x.vin = null; emit(); } });
+      media.on('error', function () { if (c === x && x.vin && x.vin.media === media) { x.vin = null; emit(); } });
+      emit();
+      return;
+    }
     if (!c || c.state !== 'connecting' || c.dir !== 'in' || media.peer !== c.peer || m.cid !== c.cid || !c.stream) { try { media.close(); } catch (_) { /* */ } return; }
     media.answer(c.stream);
     wire(media);
@@ -202,8 +290,17 @@
     if (!m || typeof m !== 'object' || typeof m.cid !== 'string') return;
     if (m.t === 'ring') {
       var num = /^\d{4}$/.test(String(m.num)) ? String(m.num) : '', nm = String(m.name || '').slice(0, 40) || 'Device';
-      if (T.busy()) { TPPeer.sendTo(from, { t: 'busy', cid: m.cid }); TPSave.addLog({ dir: 'missed', num: num, name: nm, why: 'busy' }); fire('missed', { num: num, name: nm }); return; }
-      var x = fresh({ dir: 'in', cid: m.cid, num: num, name: nm, peer: from, state: 'incoming' });
+      var did = /^[0-9a-f]{16}$/.test(String(m.did || '')) ? String(m.did) : '';
+      if (TPSave.get('dnd')) {
+        var ct = TPSave.contact(num, did);
+        if (!(ct && ct.fav && TPSave.get('dndFav'))) {   // silent: no ring, no screen; logged as missed (DND)
+          TPPeer.sendTo(from, { t: 'dnd', cid: m.cid });
+          TPSave.addLog({ dir: 'missed', num: num, name: nm, did: did, why: 'dnd' }); fire('missed', { num: num, name: nm, did: did, why: 'dnd' });
+          return;
+        }
+      }
+      if (T.busy()) { TPPeer.sendTo(from, { t: 'busy', cid: m.cid }); TPSave.addLog({ dir: 'missed', num: num, name: nm, did: did, why: 'busy' }); fire('missed', { num: num, name: nm, did: did, why: 'busy' }); return; }
+      var x = fresh({ dir: 'in', cid: m.cid, num: num, name: nm, did: did, peer: from, state: 'incoming' });
       TPPeer.sendTo(from, { t: 'ringing', cid: m.cid });
       playTone('ring');
       if (navigator.vibrate) { try { navigator.vibrate([400, 200, 400, 2000, 400, 200, 400]); } catch (_) { /* */ } }
@@ -214,6 +311,8 @@
     if (!c || c.cid !== m.cid || c.peer !== from || c.state === 'ended') return;
     if (m.t === 'ringing' && c.dir === 'out') { c.acked = true; clearTimeout(c.ackT); emit(); }
     else if (m.t === 'busy' && c.dir === 'out') end('busy', 'busy');
+    else if (m.t === 'dnd' && c.dir === 'out') end('dnd', 'busy');
+    else if (m.t === 'vid') { if (!m.on) dropIn(c); c.rvid = !!m.on; emit(); }
     else if (m.t === 'decline' && c.dir === 'out') end('declined', 'busy');
     else if (m.t === 'answer' && c.dir === 'out' && c.state === 'ringing') {
       var y = c; stopTone(); clearTimeout(y.ringT); clearTimeout(y.ackT);

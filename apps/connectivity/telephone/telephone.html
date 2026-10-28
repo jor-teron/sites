@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Telephone TP1</title>
-  <link rel="icon" href="telephone_icon.png?v=TP1">
-  <link rel="stylesheet" href="telephone.css?v=TP1">
+  <title>Telephone TP2</title>
+  <link rel="icon" href="telephone_icon.png?v=TP2">
+  <link rel="stylesheet" href="telephone.css?v=TP2">
 </head>
 <body>
 <div id="app">
-  <div id="dots"><button class="dot on" data-i="0" aria-label="Phone"></button><button class="dot" data-i="1" aria-label="Recent calls"></button><button class="dot" data-i="2" aria-label="Settings"></button></div>
+  <div id="dots"><button class="dot on" data-i="0" aria-label="Phone"></button><button class="dot" data-i="1" aria-label="Recent calls"><span class="bdg" id="badge" hidden></span></button><button class="dot" data-i="2" aria-label="Contacts"></button><button class="dot" data-i="3" aria-label="Settings"></button></div>
   <div id="viewport"><div id="track">
     <section class="pane" id="pane-phone">
       <div class="bar"><div class="who"><b id="me-name"></b><div id="status" class="mut">Starting…</div></div>
-        <button class="mini" id="btn-code">Code</button></div>
+        <span class="btns"><button class="mini" id="b-dnd" title="Do Not Disturb: calls are declined silently and logged as missed">🌙 DND</button><button class="mini" id="btn-code">Code</button></span></div>
       <div id="sound" hidden>🔇 Tap here to turn on sound</div>
       <div id="main">
         <div id="listcol">
@@ -40,11 +40,19 @@
       <ul id="log"></ul>
       <p id="log-empty" class="mut">No calls yet. Calls you make, take and miss show up here. Tap one to call back.</p>
     </section>
+    <section class="pane" id="pane-con">
+      <div class="bar"><div class="who"><b>Contacts</b><div id="con-sub" class="mut"></div></div><button class="mini" id="b-addcon">＋ Add</button></div>
+      <ul id="contacts"></ul>
+      <p id="con-empty" class="mut">No contacts yet. Tap ＋ Add, or ＋ next to a number in Recent calls.</p>
+    </section>
     <section class="pane" id="pane-set"><div class="set-wrap">
       <h2>This device</h2>
       <div class="set-row"><label for="in-name">Name</label><input id="in-name" maxlength="40"></div>
       <div class="set-row"><span>My number</span><span><b id="num-lbl">—</b> <button class="mini" id="b-newnum">New number</button></span></div>
       <div class="set-row"><span>Hub code</span><span><b id="code-lbl">—</b> <button class="mini" id="btn-code2">Change</button></span></div>
+      <h2>Do Not Disturb</h2>
+      <div class="set-row"><label for="chk-dnd">Do Not Disturb<small class="mut">Calls are declined without a sound and show as missed</small></label><input type="checkbox" id="chk-dnd" class="sw"></div>
+      <div class="set-row"><label for="chk-dndfav">Favourites still ring<small class="mut">Contacts marked ⭐ get through while Do Not Disturb is on</small></label><input type="checkbox" id="chk-dndfav" class="sw"></div>
       <h2>Sound</h2>
       <div class="set-row"><label for="vol">Call and ring volume</label><input type="range" id="vol" min="0" max="100" step="5"></div>
       <div class="set-row"><label for="chk-keys">Keypad tones</label><input type="checkbox" id="chk-keys" class="sw"></div>
@@ -52,13 +60,14 @@
       <h2>Look</h2>
       <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
       <h2>About</h2>
-      <div class="about"><img src="telephone_icon.png?v=TP1" width="48" height="48" alt=""><div><b>Telephone</b> <span id="ver">TP1</span>
-        <p>A phone for every device on the same Hub Connect Code. Each device gets its own 4-digit number. Dial it on the keypad or tap a phone in Online now: only that device rings, with Answer and Decline. During a call: Mute, Speaker and Hang up. Recent calls keeps calls in, out and missed; tap one to call back. Calls ring only while Telephone is open on the other device. Peer to peer over PeerJS; nothing is recorded or stored on a server.</p></div></div>
+      <div class="about"><img src="telephone_icon.png?v=TP2" width="48" height="48" alt=""><div><b>Telephone</b> <span id="ver">TP2</span>
+        <p>A phone for every device on the same Hub Connect Code. Each device gets its own 4-digit number. Dial it on the keypad or tap a phone in Online now: only that device rings, with Answer and Decline. Contacts keep names and numbers, show who is online, and ⭐ favourites. During a call: Mute, Speaker, Video (front or back camera) and Hang up. Recent calls keeps calls in, out and missed with a red badge for new missed calls; tap one to call back or ＋ to save it. Do Not Disturb declines calls silently (favourites can still ring). Calls ring only while Telephone is open on the other device. Peer to peer over PeerJS; nothing is recorded or stored on a server.</p></div></div>
     </div></section>
   </div></div>
 </div>
 
 <div id="call" hidden>
+  <div id="c-stage" hidden><video id="v-remote" autoplay playsinline muted></video><video id="v-self" autoplay playsinline muted></video><div id="v-wait" class="mut" hidden>Their video is starting…</div></div>
   <div id="c-info">
     <div id="c-av">?</div>
     <div id="c-name"></div>
@@ -71,19 +80,21 @@
     <div id="c-on">
       <button class="cb" id="b-mute"><span class="ic">🎙️</span><span class="lb">Mute</span></button>
       <button class="cb" id="b-sink"><span class="ic">🔊</span><span class="lb">Speaker</span></button>
+      <button class="cb" id="b-video"><span class="ic">📹</span><span class="lb">Video</span></button>
+      <button class="cb" id="b-flip" title="Switch between the front and back camera"><span class="ic">🔄</span><span class="lb">Flip</span></button>
       <button class="cb red" id="b-hang"><span class="ic hg">📞</span>Hang up</button>
     </div>
   </div>
 </div>
 
-<div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="4" placeholder="4-digit code"><div id="d-list" hidden></div><div class="row" id="d-row"></div></div></div>
+<div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="4" placeholder="4-digit code"><div id="d-list" hidden></div><div id="d-form" hidden></div><div class="row" id="d-row"></div></div></div>
 <div id="toast"></div>
 
-<script src="../../../shared/link/link_core.js?v=TP1"></script>
-<script src="../../../shared/link/link_devices.js?v=TP1"></script>
-<script src="telephone_save.js?v=TP1"></script>
-<script src="telephone_peer.js?v=TP1"></script>
-<script src="telephone_call.js?v=TP1"></script>
-<script src="telephone_app.js?v=TP1"></script>
+<script src="../../../shared/link/link_core.js?v=TP2"></script>
+<script src="../../../shared/link/link_devices.js?v=TP2"></script>
+<script src="telephone_save.js?v=TP2"></script>
+<script src="telephone_peer.js?v=TP2"></script>
+<script src="telephone_call.js?v=TP2"></script>
+<script src="telephone_app.js?v=TP2"></script>
 </body>
 </html>

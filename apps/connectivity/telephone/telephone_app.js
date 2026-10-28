@@ -1,4 +1,8 @@
-/* Telephone TP1 — UI: screens (Phone, Recent, Settings), dots + 75 px wrap-around swipes, in-app dialogs only.
+/* Telephone TP2 — UI: screens (Phone, Recent, Contacts, Settings), dots + 75 px wrap-around swipes, in-app dialogs only.
+   TP2: contacts (add / edit / delete with an in-app confirm, ⭐ favourites, online state, add from Recent), names from
+   contacts everywhere (online list, keypad, Recent, ringing screen), missed-call badge on the Recent dot + "(n)" in the tab
+   title (cleared when Recent is seen; Hub notice when hidden inside the Hub), Do Not Disturb (🌙 on Phone + Settings),
+   video during a call (Video / Flip, theirs big + mine small).
    Phone: my number (big) + Online now on the left; dial display + keypad + Call on the RIGHT (phone: stacked).
    Call screen (overlay): who + state / timer on the left, Answer · Decline or Mute · Speaker · Hang up on the RIGHT.
    Number clash: when another device (other did) with an older 'since' already has my number, I take a new one.
@@ -8,7 +12,7 @@
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var inHub = window.parent !== window, page = 0, PAGES = 3, SW = 75, started = false, code = '', dial = '', baseTitle = document.title;
+  var inHub = window.parent !== window, page = 0, PAGES = 4, SW = 75, started = false, code = '', dial = '', baseTitle = document.title;
 
   /* ---------- dialogs / toast ---------- */
   function dialog(text, buttons, opt) {
@@ -17,6 +21,14 @@
       $('d-text').textContent = text;
       var inp = $('d-input'), ask = !!opt.ask; inp.hidden = !ask; inp.value = '';
       var lst = $('d-list'); lst.innerHTML = ''; lst.hidden = !opt.list;
+      var frm = $('d-form'); frm.innerHTML = ''; frm.hidden = !opt.form; var fin = {};
+      (opt.form || []).forEach(function (f) {
+        var lb = document.createElement('label'), inp2 = document.createElement('input');
+        inp2.id = 'f-' + f.k; inp2.name = f.k;
+        if (f.type === 'check') { lb.className = 'ck'; inp2.type = 'checkbox'; inp2.className = 'sw'; inp2.checked = !!f.value; lb.append(document.createTextNode(f.label), inp2); }
+        else { inp2.value = f.value || ''; if (f.max) inp2.maxLength = f.max; if (f.mode) inp2.inputMode = f.mode; if (f.ph) inp2.placeholder = f.ph; lb.append(document.createTextNode(f.label), inp2); }
+        fin[f.k] = inp2; frm.appendChild(lb);
+      });
       (opt.list || []).forEach(function (it) {
         var b = document.createElement('button'); b.textContent = it.label; b.className = it.on ? 'on' : '';
         b.onclick = function () { $('dialog').hidden = true; res({ pick: it.id }); };
@@ -24,16 +36,24 @@
       });
       var row = $('d-row'); row.innerHTML = '';
       (buttons || ['OK']).forEach(function (b, i, a) {
-        var el = document.createElement('button'); el.className = i === a.length - 1 ? 'btn' : 'mini'; el.textContent = b;
+        var el = document.createElement('button'); el.className = (i === a.length - 1 ? 'btn' : 'mini') + (opt.danger === i ? ' danger' : ''); el.textContent = b;
         el.onclick = function () {
+          if (opt.form && i === a.length - 1) {
+            var v = {}; Object.keys(fin).forEach(function (k) { v[k] = fin[k].type === 'checkbox' ? fin[k].checked : fin[k].value.trim(); fin[k].classList.remove('err'); });
+            var bad = opt.check ? opt.check(v) : null;
+            if (bad) { $('d-text').textContent = bad.text; if (fin[bad.k]) { fin[bad.k].classList.add('err'); fin[bad.k].focus(); } return; }
+            $('dialog').hidden = true; return res(v);
+          }
           if (ask && i === a.length - 1) { var c = (inp.value.match(/\d{4}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 4-digit code.'; return; } $('dialog').hidden = true; return res(c); }
           $('dialog').hidden = true; res(ask ? null : i);
         };
         row.appendChild(el);
       });
       $('dialog').hidden = false; if (ask) setTimeout(function () { inp.focus(); }, 50);
+      if (opt.form) setTimeout(function () { var f0 = $('d-form').querySelector('input'); if (f0) f0.focus(); }, 50);
     });
   }
+  $('d-form').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); var b = $('d-row').lastChild; if (b) b.click(); } });
   var toastT = 0;
   function toast(t) { var e = $('toast'); e.textContent = t; e.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { e.classList.remove('show'); }, 2600); }
 
@@ -95,19 +115,33 @@
     });
   };
 
-  /* ---------- online list ---------- */
+  /* ---------- names: contact first, then the device's own name ---------- */
   function initial(n) { return (n || '?').trim().charAt(0).toUpperCase() || '?'; }
+  function nameFor(num, did, fallback) {
+    var ct = TPSave.contact(num, did); if (ct) return ct.name;
+    var d = num && TPCall.find(num); if (d && d.name) return d.name;
+    return fallback || '';
+  }
+  function devFor(ct) {   // the online device of a contact: same device id first, else the number
+    var l = TPPeer.roster();
+    return (ct.did && l.filter(function (d) { return d.did === ct.did; }).sort(function (a, b) { return (b.since || 0) - (a.since || 0); })[0]) || TPCall.find(ct.num);
+  }
+  function stateOf(d) { return !d ? 'offline' : d.busy ? 'on a call' : d.dnd ? 'do not disturb' : 'online'; }
+
+  /* ---------- online list ---------- */
   function paintList() {
     var ul = $('devices'), list = TPPeer.roster().filter(function (d) { return d.num; }).slice().sort(function (a, b) { return (a.name || '').localeCompare(b.name || '') || a.num.localeCompare(b.num); });
     ul.innerHTML = '';
     $('empty').hidden = list.length > 0;
     list.forEach(function (d) {
       var li = document.createElement('li'); li.dataset.id = d.id; li.dataset.num = d.num; li.className = d.busy ? 'busy' : '';
-      var av = document.createElement('span'); av.className = 'av'; av.textContent = initial(d.name);
-      var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = d.name || 'Device';
+      var ct = TPSave.contact(d.num, d.did), who = ct ? ct.name : (d.name || 'Device');
+      var av = document.createElement('span'); av.className = 'av'; av.textContent = initial(who);
+      var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = who;
+      if (ct && ct.fav) { var st = document.createElement('span'); st.className = 'fav'; st.textContent = '⭐'; nm.appendChild(st); }
       var sub = document.createElement('small'); var nb = document.createElement('span'); nb.className = 'num'; nb.textContent = d.num;
-      sub.appendChild(nb); sub.appendChild(document.createTextNode(d.busy ? ' · on a call' : ' · online')); nm.appendChild(sub);
-      var cl = document.createElement('button'); cl.className = 'cl'; cl.textContent = '📞'; cl.title = 'Call ' + (d.name || 'Device') + ' (' + d.num + ')'; cl.setAttribute('aria-label', cl.title);
+      sub.appendChild(nb); sub.appendChild(document.createTextNode(' · ' + stateOf(d) + (ct && d.name && d.name !== ct.name ? ' · ' + d.name : ''))); nm.appendChild(sub);
+      var cl = document.createElement('button'); cl.className = 'cl'; cl.textContent = '📞'; cl.title = 'Call ' + who + ' (' + d.num + ')'; cl.setAttribute('aria-label', cl.title);
       li.append(av, nm, cl);
       li.onclick = function () { call(d.num); };
       ul.appendChild(li);
@@ -115,7 +149,11 @@
     paintDial();
   }
   TPPeer.on('status', setStatus);
-  TPPeer.on('roster', function (l) { checkClash(l); TPCall.roster(l); paintList(); paintLog(); });
+  TPPeer.on('roster', function (l) {
+    checkClash(l);
+    l.forEach(function (d) { if (d.did && d.num) TPSave.followNum(d.did, d.num).forEach(function (n) { toast(n + '’s number is now ' + d.num); }); });
+    TPCall.roster(l); paintList(); paintLog(); paintContacts();
+  });
   TPPeer.on('signal', function (m, from) { TPCall.signal(m, from); });
   TPPeer.on('call', function (c) { TPCall.incoming(c); });
   TPPeer.on('online', function () { paintDial(); });
@@ -127,8 +165,8 @@
     if (dial.length === 4) {
       var d = dial === TPSave.get('num') ? null : TPCall.find(dial);
       if (dial === TPSave.get('num')) { w.textContent = 'This is your own number'; w.classList.add('no'); }
-      else if (d) { w.textContent = (d.name || 'Device') + (d.busy ? ' · on a call' : ''); w.classList.add('ok'); }
-      else { w.textContent = 'Not online right now'; w.classList.add('no'); }
+      else if (d) { w.textContent = nameFor(d.num, d.did, d.name || 'Device') + (d.busy ? ' · on a call' : d.dnd ? ' · do not disturb' : ''); w.classList.add('ok'); }
+      else { var ct = TPSave.contact(dial); w.textContent = (ct ? ct.name + ' · ' : '') + 'Not online right now'; w.classList.add('no'); }
     } else w.innerHTML = dial ? 'Numbers have 4 digits' : '&nbsp;';
     $('b-call').disabled = TPCall.busy();
   }
@@ -148,17 +186,19 @@
   }
 
   /* ---------- call screen ---------- */
-  var WHY = { busy: 'Busy', declined: 'Call declined', noanswer: 'No answer', notfound: 'Not online', unreachable: 'Could not reach the phone', failed: 'Call could not connect', lost: 'Call dropped', mic: 'Microphone not available', missed: 'Missed call', cancelled: 'Call cancelled', done: 'Call ended' };
+  var WHY = { dnd: 'Do Not Disturb', busy: 'Busy', declined: 'Call declined', noanswer: 'No answer', notfound: 'Not online', unreachable: 'Could not reach the phone', failed: 'Call could not connect', lost: 'Call dropped', mic: 'Microphone not available', missed: 'Missed call', cancelled: 'Call cancelled', done: 'Call ended' };
   function fmt(s) { s = Math.floor(s); var h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60; return (h ? h + ':' + ('0' + m).slice(-2) : m) + ':' + ('0' + s % 60).slice(-2); }
   function paintCall() {
     var c = TPCall.current(), box = $('call');
     box.hidden = !c;
     $('b-call').disabled = TPCall.busy();
-    if (!c) { document.title = baseTitle; return; }
-    box.className = c.state === 'incoming' ? 'ring' : c.state;
-    $('c-av').textContent = c.name ? initial(c.name) : '#';
-    $('c-name').textContent = c.name || c.num;
-    $('c-num').textContent = c.name ? c.num : '';
+    if (!c) { document.title = titleBase(); paintVideo(null); return; }
+    var who = nameFor(c.num, c.did, c.name);
+    var vid = paintVideo(c);
+    box.className = (c.state === 'incoming' ? 'ring' : c.state) + (vid ? ' vid' : '');
+    $('c-av').textContent = who ? initial(who) : '#';
+    $('c-name').textContent = who || c.num;
+    $('c-num').textContent = who ? c.num : '';
     var st = '', note = '';
     if (c.state === 'dialing') st = 'Calling…';
     else if (c.state === 'ringing') { st = c.acked ? 'Ringing…' : 'Calling…'; var d = TPCall.find(c.num); if (d && d.busy) note = 'They may be on another call'; }
@@ -168,7 +208,8 @@
     else if (c.state === 'ended') {
       st = WHY[c.why] || 'Call ended';
       if (c.why === 'notfound') note = 'Nobody with the number ' + c.num + ' is online on this Hub code';
-      else if (c.why === 'busy') note = (c.name || 'They') + ' is on another call. Try again later.';
+      else if (c.why === 'busy') note = (who || 'They') + ' is on another call. Try again later.';
+      else if (c.why === 'dnd') note = (who || 'They') + ' has Do Not Disturb on. Try again later.';
       else if (c.why === 'noanswer') note = (c.name || 'They') + ' did not answer';
       else if (c.dur) note = fmt(c.dur);
     }
@@ -177,17 +218,37 @@
     $('c-on').hidden = c.state === 'incoming';
     var live = c.state !== 'ended';
     $('b-mute').disabled = !live || !c.stream; $('b-hang').disabled = !live; $('b-sink').disabled = !live;
+    var vo = !!c.vout;
+    $('b-video').disabled = c.state !== 'active' || !!(c.vout && c.vout.starting); $('b-video').classList.toggle('on', vo);
+    $('b-video').querySelector('.lb').textContent = vo ? 'Video off' : 'Video';
+    $('b-flip').disabled = !(c.vout && c.vout.stream);
     $('b-mute').classList.toggle('on', !!c.muted); $('b-mute').querySelector('.lb').textContent = c.muted ? 'Unmute' : 'Mute';
     $('b-mute').querySelector('.ic').textContent = c.muted ? '🔇' : '🎙️';
     $('b-sink').classList.toggle('on', !!TPSave.get('sink'));
-    document.title = (c.state === 'incoming' ? '📞 ' + (c.name || c.num) + ' calling' : c.state === 'active' ? '📞 ' + fmt((Date.now() - c.t0) / 1000) : c.state === 'ended' ? baseTitle : '📞 Calling ' + (c.name || c.num)) + (c.state === 'ended' ? '' : ' · Telephone');
+    document.title = (c.state === 'incoming' ? '📞 ' + (who || c.num) + ' calling' : c.state === 'active' ? '📞 ' + fmt((Date.now() - c.t0) / 1000) : c.state === 'ended' ? '' : '📞 Calling ' + (who || c.num)) + (c.state === 'ended' ? '' : ' · Telephone');
+    if (c.state === 'ended') document.title = titleBase();
   }
-  TPCall.on('state', function () { paintCall(); paintList(); });
+  function setSrc(el, st) { if (el.srcObject !== st) { el.srcObject = st; if (st) el.play().catch(function () { /* muted video: autoplay allowed */ }); } }
+  function paintVideo(c) {   // returns true when the video stage is showing
+    var vin = c && c.vin && c.vin.stream, vout = c && c.vout && c.vout.stream, on = !!(c && c.state === 'active' && (vin || vout || c.rvid));
+    $('c-stage').hidden = !on;
+    setSrc($('v-remote'), on && vin ? vin : null); $('v-remote').hidden = !(on && vin);
+    setSrc($('v-self'), on && vout ? vout : null); $('v-self').hidden = !(on && vout);
+    $('v-self').classList.toggle('solo', !vin); $('v-self').classList.toggle('mir', TPSave.get('facing') === 'user');
+    $('v-wait').hidden = !(on && c.rvid && !vin);
+    return on;
+  }
+  TPCall.on('state', function () { paintCall(); paintList(); if (!TPCall.current()) seen(); });
   TPCall.on('tick', function () { var c = TPCall.current(); if (c && c.state === 'active') { $('c-state').textContent = fmt((Date.now() - c.t0) / 1000); document.title = '📞 ' + fmt((Date.now() - c.t0) / 1000) + ' · Telephone'; } });
   TPCall.on('ring', function (c) {
     if (inHub && document.hidden) { try { window.top.HubNotify.notice({ icon: '📞', title: 'Telephone', text: (c.name || c.num) + ' is calling', timeoutMs: 15000 }); } catch (_) { /* cross-origin / no Hub */ } }
   });
-  TPCall.on('missed', function (c) { toast('Missed call from ' + (c.name || c.num)); });
+  TPCall.on('missed', function (c) {
+    if (c.why === 'dnd') return;   // Do Not Disturb: silent, only the badge
+    var who = nameFor(c.num, c.did, c.name) || c.num;
+    toast('Missed call from ' + who);
+    if (inHub && document.hidden) { try { window.top.HubNotify.notice({ icon: '📞', title: 'Telephone', text: 'Missed call from ' + who, timeoutMs: 15000 }); } catch (_) { /* cross-origin / no Hub */ } }
+  });
   TPCall.on('blocked', function (b) { $('sound').hidden = !b; });
   $('sound').onclick = function () { TPCall.unlock(); $('sound').hidden = true; };
   document.addEventListener('pointerdown', function () { if (!TPCall.soundOk()) TPCall.unlock(); }, true);
@@ -195,6 +256,8 @@
   $('b-decline').onclick = function () { TPCall.decline(); };
   $('b-hang').onclick = function () { TPCall.hangup(); };
   $('b-mute').onclick = function () { TPCall.mute(); };
+  $('b-video').onclick = function () { TPCall.video().catch(function (e) { dialog(e.message, ['OK']); }); };
+  $('b-flip').onclick = function () { TPCall.flip().then(function (f) { toast(f === 'environment' ? 'Back camera' : 'Front camera'); }, function (e) { toast(e.message); }); };
   $('b-sink').onclick = chooseSink; $('b-sink2').onclick = chooseSink;
 
   /* ---------- speaker (audio output) ---------- */
@@ -228,7 +291,7 @@
     if (day === 0) return 'Today ' + hm; if (day === 1) return 'Yesterday ' + hm;
     return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ' ' + hm;
   }
-  var LWHY = { busy: 'busy', declined: 'declined', noanswer: 'no answer', notfound: 'not online', unreachable: 'not reached', failed: 'failed', cancelled: 'cancelled', mic: 'no microphone', lost: 'dropped' };
+  var LWHY = { dnd: 'do not disturb', busy: 'busy', declined: 'declined', noanswer: 'no answer', notfound: 'not online', unreachable: 'not reached', failed: 'failed', cancelled: 'cancelled', mic: 'no microphone', lost: 'dropped' };
   function paintLog() {
     var ul = $('log'), l = TPSave.log(), online = {};
     TPPeer.roster().forEach(function (d) { if (d.num) online[d.num] = d; });
@@ -239,19 +302,104 @@
       var li = document.createElement('li'); li.className = e.dir; li.dataset.num = e.num;
       var ic = document.createElement('span'); ic.className = 'ic'; ic.textContent = e.dir === 'in' ? '↙' : e.dir === 'out' ? '↗' : '✕';
       ic.title = e.dir === 'in' ? 'Incoming' : e.dir === 'out' ? 'Outgoing' : 'Missed';
-      var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = (online[e.num] && online[e.num].name) || e.name || e.num;
+      var ct = TPSave.contact(e.num, e.did);
+      var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = ct ? ct.name : (online[e.num] && online[e.num].name) || e.name || e.num;
       var sub = document.createElement('small'); var nb = document.createElement('span'); nb.className = 'num'; nb.textContent = e.num;
-      var what = e.dir === 'missed' ? 'missed' + (e.why === 'busy' ? ' (you were on a call)' : '') : (e.dur || e.why === 'done') ? fmt(e.dur) : (LWHY[e.why] || (e.dir === 'in' ? 'incoming' : 'outgoing'));
+      var what = e.dir === 'missed' ? 'missed' + (e.why === 'busy' ? ' (you were on a call)' : e.why === 'dnd' ? ' (Do Not Disturb)' : '') : (e.dur || e.why === 'done') ? fmt(e.dur) : (LWHY[e.why] || (e.dir === 'in' ? 'incoming' : 'outgoing'));
       sub.appendChild(nb); sub.appendChild(document.createTextNode(' · ' + (e.dir === 'in' ? 'in' : e.dir === 'out' ? 'out' : '') + (e.dir === 'missed' ? '' : ' · ') + what + (online[e.num] ? ' · online' : '')));
       nm.appendChild(sub);
       var tm = document.createElement('span'); tm.className = 'tm'; tm.textContent = when(e.at);
       li.append(ic, nm, tm);
+      if (!ct && /^\d{4}$/.test(e.num) && e.num !== TPSave.get('num')) {
+        var ad = document.createElement('button'); ad.className = 'add'; ad.textContent = '＋'; ad.title = 'Add ' + e.num + ' to contacts'; ad.setAttribute('aria-label', ad.title);
+        ad.onclick = function (ev) { ev.stopPropagation(); editContact(null, { name: (online[e.num] && online[e.num].name) || e.name, num: e.num, did: e.did }); };
+        li.appendChild(ad);
+      }
       li.title = 'Call ' + e.num + ' back';
       li.onclick = function () { call(e.num); };
       ul.appendChild(li);
     });
   }
-  TPSave.onlog = paintLog;
+  TPSave.onlog = function () { paintLog(); seen(); paintBadge(); };
+
+  /* ---------- missed-call badge (Recent dot + tab title) ---------- */
+  function missedNew() { var t = TPSave.get('missedSeen') || 0; return TPSave.log().filter(function (e) { return e.dir === 'missed' && e.at > t; }).length; }
+  function titleBase() { var n = missedNew(); return (n ? '(' + n + ') ' : '') + baseTitle; }
+  function paintBadge() {
+    var n = missedNew(), b = $('badge');
+    b.hidden = !n; b.textContent = n > 9 ? '9+' : String(n);
+    $('badge').parentNode.setAttribute('aria-label', 'Recent calls' + (n ? ', ' + n + ' missed' : ''));
+    if (!TPCall.current() || TPCall.current().state === 'ended') document.title = titleBase();
+  }
+  function seen() {   // Recent is on screen (and no call screen over it) → missed calls are seen
+    if (page !== 1 || document.hidden || TPCall.current() || !missedNew()) return;
+    TPSave.set('missedSeen', Date.now()); paintBadge();
+  }
+  document.addEventListener('visibilitychange', seen);
+
+  /* ---------- contacts ---------- */
+  function paintContacts() {
+    var ul = $('contacts'), l = TPSave.contacts(), on = 0;
+    ul.innerHTML = ''; $('con-empty').hidden = l.length > 0;
+    l.forEach(function (ct) {
+      var d = devFor(ct), st = stateOf(d); if (d) on++;
+      var li = document.createElement('li'); li.dataset.id = ct.id; li.dataset.num = ct.num; li.className = d ? 'online' : 'offline';
+      var av = document.createElement('span'); av.className = 'av' + (d ? (d.busy ? ' busy' : d.dnd ? ' dnd' : ' on') : ''); av.textContent = initial(ct.name);
+      var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = ct.name;
+      if (ct.fav) { var fv = document.createElement('span'); fv.className = 'fav'; fv.textContent = '⭐'; fv.title = 'Favourite'; nm.appendChild(fv); }
+      var sub = document.createElement('small'); var nb = document.createElement('span'); nb.className = 'num'; nb.textContent = ct.num;
+      var sp = document.createElement('span'); sp.className = d ? (d.busy ? 'st-busy' : d.dnd ? '' : 'st-on') : ''; sp.textContent = st;
+      sub.append(nb, document.createTextNode(' · '), sp); nm.appendChild(sub);
+      var ed = document.createElement('button'); ed.className = 'ed'; ed.textContent = '✎'; ed.title = 'Edit ' + ct.name; ed.setAttribute('aria-label', ed.title);
+      ed.onclick = function (ev) { ev.stopPropagation(); editContact(ct); };
+      var cl = document.createElement('button'); cl.className = 'cl'; cl.textContent = '📞'; cl.title = 'Call ' + ct.name + ' (' + ct.num + ')'; cl.setAttribute('aria-label', cl.title);
+      li.append(av, nm, ed, cl);
+      li.onclick = function () { call(d ? d.num : ct.num); };
+      ul.appendChild(li);
+    });
+    $('con-sub').textContent = l.length ? l.length + ' contact' + (l.length === 1 ? '' : 's') + ' · ' + on + ' online' : '';
+  }
+  function editContact(ct, pre) {   // ct = edit; pre = new contact prefilled (from Recent)
+    var x = ct || Object.assign({ name: '', num: '', did: '', fav: false }, pre || {});
+    var form = [{ k: 'name', label: 'Name', value: x.name || '', max: 40, ph: 'Name' }, { k: 'num', label: 'Number (4 digits)', value: x.num || '', max: 4, mode: 'numeric', ph: '1234' }, { k: 'fav', label: '⭐ Favourite', type: 'check', value: x.fav }];
+    var btns = ct ? ['Delete', 'Cancel', 'Save'] : ['Cancel', 'Save'];
+    function check(v) {
+      if (!v.name) return { k: 'name', text: 'Type a name.' };
+      if (!/^\d{4}$/.test(v.num)) return { k: 'num', text: 'Numbers have 4 digits.' };
+      if (v.num === TPSave.get('num')) return { k: 'num', text: 'That is this device’s own number.' };
+      var dup = TPSave.contacts().filter(function (o) { return o.num === v.num && (!ct || o.id !== ct.id); })[0];
+      if (dup) return { k: 'num', text: '“' + dup.name + '” already has the number ' + v.num + '.' };
+      return null;
+    }
+    return dialog(ct ? 'Edit contact' : 'New contact', btns, { form: form, check: check, danger: ct ? 0 : undefined }).then(function (r) {
+      if (r && typeof r === 'object') {
+        var did = x.did && v0(x.num) === r.num ? x.did : ((TPCall.find(r.num) || {}).did || '');
+        var saved = TPSave.saveContact({ id: ct ? ct.id : '', name: r.name, num: r.num, did: did, fav: r.fav });
+        if (!saved) { dialog('The contact could not be saved (the list is full at 200).', ['OK']); return; }
+        toast(ct ? 'Contact saved' : saved.name + ' added to contacts');
+        return saved;
+      }
+      if (ct && r === 0) {
+        return dialog('Delete “' + ct.name + '” (' + ct.num + ') from contacts? Recent calls stay.', ['Cancel', 'Delete'], { danger: 1 }).then(function (i) {
+          if (i === 1 && TPSave.deleteContact(ct.id)) toast(ct.name + ' deleted');
+        });
+      }
+    });
+  }
+  function v0(n) { return String(n || ''); }
+  TPSave.oncontacts = function () { paintContacts(); paintList(); paintLog(); paintCall(); };
+  $('b-addcon').onclick = function () { editContact(null); };
+
+  /* ---------- Do Not Disturb ---------- */
+  function paintDnd() {
+    var on = !!TPSave.get('dnd');
+    $('b-dnd').classList.toggle('on', on); $('b-dnd').setAttribute('aria-pressed', on ? 'true' : 'false');
+    $('chk-dnd').checked = on; $('chk-dndfav').checked = !!TPSave.get('dndFav');
+  }
+  function setDnd(on) { TPSave.set('dnd', !!on); paintDnd(); TPPeer.update(); toast(on ? '🌙 Do Not Disturb on' + (TPSave.get('dndFav') ? ' (favourites still ring)' : '') : 'Do Not Disturb off'); }
+  $('b-dnd').onclick = function () { setDnd(!TPSave.get('dnd')); };
+  $('chk-dnd').onchange = function () { setDnd(this.checked); };
+  $('chk-dndfav').onchange = function () { TPSave.set('dndFav', this.checked); };
   $('b-clear').onclick = function () { dialog('Clear all recent calls on this device?', ['Cancel', 'Clear']).then(function (i) { if (i === 1) { TPSave.clearLog(); toast('Recent calls cleared'); } }); };
   setInterval(function () { if (page === 1) paintLog(); }, 60000);   // keep "Today / Yesterday" right
 
@@ -271,7 +419,7 @@
   });
 
   /* ---------- screens + swipe (75 px, wrap-around) ---------- */
-  function show(i) { page = i; $('viewport').scrollLeft = 0; $('track').style.transform = 'translateX(' + (-100 / PAGES * i) + '%)'; document.querySelectorAll('.dot').forEach(function (d, k) { d.classList.toggle('on', k === i); }); if (i === 1) paintLog(); }
+  function show(i) { page = i; $('viewport').scrollLeft = 0; $('track').style.transform = 'translateX(' + (-100 / PAGES * i) + '%)'; document.querySelectorAll('.dot').forEach(function (d, k) { d.classList.toggle('on', k === i); }); if (i === 1) { paintLog(); seen(); } if (i === 2) paintContacts(); }
   document.querySelectorAll('.dot').forEach(function (d) { d.onclick = function () { show(+d.dataset.i); }; });
   (function () {
     var x0 = null, y0 = 0, vp = $('viewport');
@@ -294,7 +442,7 @@
   document.querySelectorAll('.seg[data-key=theme] button').forEach(function (b) { b.onclick = function () { TPSave.set('theme', b.dataset.v); paintSeg(); }; });
 
   /* ---------- start ---------- */
-  paintMe(); paintSeg(); paintVol(); paintSink(); paintList(); paintLog(); paintCall();
+  paintMe(); paintSeg(); paintVol(); paintSink(); paintDnd(); paintList(); paintLog(); paintContacts(); paintCall(); paintBadge();
   boot();
-  window.TPApp = { show: show, dial: function () { return dial; } };   // test hook
+  window.TPApp = { show: show, dial: function () { return dial; }, page: function () { return page; } };   // test hook
 })();
