@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Shared Clipboard CB1</title>
+  <link rel="icon" href="clipboard_icon.png?v=CB1">
+  <link rel="stylesheet" href="clipboard.css?v=CB1">
+</head>
+<body>
+<div id="app">
+  <div id="dots"><button class="dot on" data-i="0" aria-label="Clipboard"></button><button class="dot" data-i="1" aria-label="Devices"></button><button class="dot" data-i="2" aria-label="Settings"></button></div>
+  <div id="viewport"><div id="track">
+    <section class="pane" id="pane-clip">
+      <div class="bar"><div class="who"><b id="me-name"></b><div id="status" class="mut">Starting…</div></div>
+        <button class="mini" id="btn-code">Code</button></div>
+      <div id="compose">
+        <div id="drop">
+          <textarea id="box" rows="3" placeholder="Paste, type or drop text / an image here…"></textarea>
+          <div id="img-wrap" hidden><img id="img-prev" alt="Image to send"><button class="x" id="img-x" title="Remove image">✕</button><span id="img-info" class="mut"></span></div>
+        </div>
+        <div id="side">
+          <button class="sb" id="b-paste" title="Paste from clipboard">📥<span>Paste</span></button>
+          <button class="sb" id="b-img" title="Pick an image">🖼️<span>Image</span></button>
+          <button class="sb go" id="b-send" title="Send">➤<span>Send</span></button>
+          <select id="sel-to" title="Send to"><option value="all">All devices</option></select>
+        </div>
+      </div>
+      <div class="hhead"><span class="mut">History</span><button class="mini" id="b-clear">Clear</button></div>
+      <ul id="hist"></ul>
+      <p id="empty" class="mut">Nothing yet. Paste something and press Send, or copy on another device with the same Hub code.</p>
+    </section>
+    <section class="pane" id="pane-dev">
+      <div class="bar"><div class="who"><b>Devices</b><div id="status2" class="mut"></div></div></div>
+      <ul id="devices"></ul>
+      <p id="dev-empty" class="mut">No other devices yet. Open Shared Clipboard on another device with the same Hub code.</p>
+    </section>
+    <section class="pane" id="pane-set"><div class="set-wrap">
+      <h2>This device</h2>
+      <div class="set-row"><label for="in-name">Name</label><input id="in-name" maxlength="40"></div>
+      <div class="set-row"><span>Hub code</span><span><b id="code-lbl">—</b> <button class="mini" id="btn-code2">Change</button></span></div>
+      <h2>Incoming</h2>
+      <div class="set-row"><label for="chk-auto">Auto-copy incoming text</label><input type="checkbox" id="chk-auto" class="sw"></div>
+      <div class="set-row"><label for="chk-notice">Show a notice</label><input type="checkbox" id="chk-notice" class="sw"></div>
+      <h2>Look</h2>
+      <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+      <h2>About</h2>
+      <div class="about"><img src="clipboard_icon.png?v=CB1" width="48" height="48" alt=""><div><b>Shared Clipboard</b> <span id="ver">CB1</span>
+        <p>Copy on one device, paste on another. Send text, links and images to every device on the same Hub Connect Code, or to one of them. Peer to peer over PeerJS; history (last 50, pinned kept) stays on this device and nothing is stored on a server.</p></div></div>
+    </div></section>
+  </div></div>
+</div>
+
+<div id="notice" hidden><div class="n-body"><b id="n-title"></b><span id="n-text"></span></div><button class="mini" id="n-copy">Copy</button><button class="x" id="n-x" title="Dismiss">✕</button></div>
+<div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="4" placeholder="4-digit code"><div class="row" id="d-row"></div></div></div>
+<div id="toast"></div>
+<input type="file" id="file" accept="image/*" hidden>
+
+<script src="../../../shared/link/link_devices.js?v=CB1"></script>
+<script src="clipboard_store.js?v=CB1"></script>
+<script src="clipboard_peer.js?v=CB1"></script>
+<script src="clipboard_save.js?v=CB1"></script>
+<script src="clipboard_app.js?v=CB1"></script>
+</body>
+</html>

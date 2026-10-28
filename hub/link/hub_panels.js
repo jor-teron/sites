@@ -4,8 +4,15 @@
  * full-height side panel with sections, adds "Join with code", and keeps only one panel
  * (Devices or 🐻 Chat) open at a time. Look: hub_panels.css.
  *   H27.1 order, top to bottom (no QR here: the desktop home screen shows the Connect QR):
- *   This Hub   : editable device name (SharedLinkUI.mountName), big code + New code /
- *                Disconnect button (hub_linkstate.js; its repeated "Code … · N devices" text hidden).
+ *   This Hub   : big code + New code / Disconnect button (hub_linkstate.js; its repeated
+ *                "Code … · N devices" text hidden), then a small plain 'Name: X ›' line (H46).
+ *   H46: the editable device name moved to Settings › About › Device name (#about/device,
+ *                apps/system/settings/sec_about.js). The pop-up only shows the name as text; a tap
+ *                closes the pop-up and opens Settings there (__hubOpenApp, hash 'about/device').
+ *                The text repaints on 'hub-device-name' (sent by Settings), the 'storage' event for
+ *                'shared-link-device-name' (another tab / Settings opened on its own: it also re-sends
+ *                the name to the link) and on SharedLink 'devices' / pop-up open.
+ *                The SharedLinkUI.mountName box (hub_link.js) is still made, but removed here unused.
  *   Join       : 4-digit box + Join + 📷 (SharedLinkScan.ask) → location ?join=CODE (as
  *                hub_remote.js). Own code is rejected (H31: on a phone whose link is down it rejoins now). A join that has not connected after
  *                20 s shows "Hub not found — check the code" (sessionStorage 'hub-join-try').
@@ -34,13 +41,16 @@
     const nameBox = extra && extra.querySelector('.sl-name');
     const devs = extra && extra.querySelector('.sl-devices');
     const lsRow = pop.querySelector('.ls-row');
+    /* H46 legacy (H27): the editable name box sat at the top of the This Hub card.
     if (nameBox && nameBox.firstChild && nameBox.firstChild.nodeType === 3) nameBox.firstChild.textContent = 'This device name';
+    */
+    if (nameBox) nameBox.remove();   // H46: not used here any more (no duplicate name inputs); edit in Settings › About
 
     const body = el('div', 'hp-body');
     /* This Hub */
     const s1 = el('section', 'hp-sec'); s1.appendChild(el('h3', '', R ? 'This device' : 'This Hub'));
     const c1 = el('div', 'hp-card');
-    if (nameBox) c1.appendChild(nameBox);
+    // if (nameBox) c1.appendChild(nameBox);   // H46 legacy (H27): replaced by the Name line below
     const hub = el('div', 'hp-hub');
     const info = el('div', 'hp-hubinfo');
     const codeLbl = el('div', 'hp-codelbl', R ? 'Joined Hub code' : 'Hub code');
@@ -49,6 +59,18 @@
     hub.appendChild(info);
     if (lsRow) { lsRow.classList.add(R ? 'hp-ls-remote' : 'hp-ls-host'); hub.appendChild(lsRow); }
     c1.appendChild(hub);
+    /* H46: plain 'Name: X ›' → Settings › About › Device name */
+    const nameLink = el('button', 'hp-name');
+    nameLink.type = 'button'; nameLink.id = 'hp-name';
+    nameLink.title = 'Change the device name in Settings';
+    const nameVal = el('span', 'hp-name-v', '');
+    nameLink.append(el('span', 'hp-name-k', 'Name:'), nameVal, el('span', 'hp-name-go', '\u203A'));
+    nameLink.addEventListener('click', () => {
+      const x = document.getElementById('ctrl-close');
+      if (x && !pop.hidden) x.click();
+      if (window.__hubOpenApp) window.__hubOpenApp('apps/system/settings/', { hash: 'about/device' });
+    });
+    c1.appendChild(nameLink);
     s1.appendChild(c1);
     /* Devices */
     const s2 = el('section', 'hp-sec'); s2.appendChild(el('h3', '', 'Connected devices'));
@@ -70,7 +92,21 @@
     function paintHub() {
       const c = myCode();
       codeEl.textContent = c || '——';
+      paintName();
     }
+    function paintName() {   // H46
+      const n = window.SharedLinkDevices ? SharedLinkDevices.name() : (function () { try { return localStorage.getItem('shared-link-device-name') || ''; } catch (_) { return ''; } })();
+      nameVal.textContent = n || 'Device';
+      nameLink.setAttribute('aria-label', 'Device name ' + (n || 'Device') + '. Change in Settings');
+    }
+    window.addEventListener('hub-device-name', paintName);   // H46: Settings › About saved a new name
+    window.addEventListener('storage', (e) => {               // H46: another tab, or Settings opened on its own
+      if (e.key !== 'shared-link-device-name' && e.key !== null) return;
+      paintName();
+      // tell the link too (Settings on its own has no SharedLink); same value → no new storage event
+      if (e.key && window.SharedLink && window.SharedLinkDevices) { try { SharedLinkDevices.setName(e.newValue || ''); } catch (_) { /* link not ready */ } }
+    });
+    if (window.SharedLink) SharedLink.on('devices', () => setTimeout(paintName, 0));
     window.addEventListener('hub-ctrl-link', () => setTimeout(paintHub, 0));
     if (window.SharedLink) ['status', 'open'].forEach((ev) => SharedLink.on(ev, () => setTimeout(paintHub, 0)));
 

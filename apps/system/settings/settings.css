@@ -226,3 +226,6 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
 .profile-place .pp-state.ready { color: #3fb950; }
 .profile-place .pp-state.signin, .profile-place .pp-state.prompt { color: #e3a008; }
 .profile-place .pp-state.denied, .profile-place .pp-state.error { color: #f85149; }
+
+/* H46: Device name card (sec_about.js #about/device) — reuses the key row look, plain text font */
+.key-input.device-input { font: 15px/1.4 system-ui, sans-serif; }

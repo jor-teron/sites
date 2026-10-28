@@ -23,6 +23,14 @@
  * H30.6: 'Save every' 30 s / 1 min (default) / 5 min / 15 min / Manual only (HubProfile.setEvery).
  * H30.3: 'Include keys in profile' switch (off by default; on = the API keys go into hub.json too) and
  *   Export profile / Import profile (one .json file, for devices without a folder; works with no folder).
+ * H46: "Device name" card (id 'device', deep link #about/device; moved here from the Hub's 🎮 Devices pop-up,
+ *   which now only shows 'Name: X ›' and opens this card). Text box (max 40, like SharedLinkUI.mountName) + Save.
+ *   Inside the Hub (also a phone that joined a Hub, window.__hubRemote) it calls the Hub's own
+ *   SharedLinkDevices.setName(): saves localStorage 'shared-link-device-name' and sends {t:'name'} over the
+ *   live link (the host re-broadcasts the device list), then fires 'hub-device-name' on the Hub window so the
+ *   pop-up text repaints. Opened on its own it uses its own SharedLinkDevices (shared/link/link_devices.js,
+ *   no link here): the key is saved and any open Hub tab picks it up from the 'storage' event (hub_panels.js).
+ *   Empty = the default name guessed from the browser (shown as the placeholder).
  */
 (function () {
   'use strict';
@@ -53,7 +61,7 @@
       .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
       .then((text) => {
         const l = String(text).split(/\r?\n/).map((x) => x.trim());
-        const rel = /^R\w+$/.test(l[2] || '') ? l[2] : '';
+        const rel = /^[RH]\w+$/.test(l[2] || '') ? l[2] : '';   // H46: H-numbered Hub releases too (was R only)
         const date = /^\d{4}-\d{2}-\d{2}/.test(l[3] || '') ? l[3] : '';
         if (!rel && !date) return '';
         return [rel ? 'Release ' + rel : '', date].filter(Boolean).join(' \u00b7 ');
@@ -299,6 +307,53 @@
     return card;
   }
 
+  /* H46: Device name (was the editable box in the Hub's 🎮 Devices pop-up) */
+  const NAME_KEY = 'shared-link-device-name';
+  function deviceCard(sub) {
+    const card = ui.el('section', 'card');
+    card.id = 'device';
+    card.appendChild(ui.el('h3', '', 'Device name'));
+    const hub = S.hub();
+    const D = (hub && hub.SharedLinkDevices) || window.SharedLinkDevices || null;
+    const stored = () => { try { return localStorage.getItem(NAME_KEY) || ''; } catch (_) { return ''; } };
+    const guess = D && D.guess ? D.guess() : 'Device';
+    card.appendChild(ui.el('p', 'opt-note', 'The name your other devices see in Devices and Chat. Leave it empty to use \u201C' + guess + '\u201D.'));
+    const form = ui.el('form', 'key-line');
+    form.autocomplete = 'off';
+    const inp = ui.el('input', 'key-input device-input');
+    inp.type = 'text'; inp.id = 'device-name'; inp.maxLength = 40; inp.placeholder = guess;
+    inp.setAttribute('aria-label', 'Device name');
+    inp.value = stored();
+    const save = ui.el('button', 'key-btn key-save', 'Save');
+    save.type = 'submit'; save.id = 'device-save';
+    form.append(inp, save);
+    const out = ui.el('p', 'key-out', '');
+    out.setAttribute('aria-live', 'polite');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = inp.value.trim().slice(0, 40);
+      let n = v || guess;
+      try {
+        if (D) n = D.setName(v);
+        else if (v) localStorage.setItem(NAME_KEY, v); else localStorage.removeItem(NAME_KEY);
+      } catch (_) { out.className = 'key-out bad'; out.textContent = 'Could not save the name'; return; }
+      try { if (hub) hub.dispatchEvent(new hub.CustomEvent('hub-device-name', { detail: { name: n } })); } catch (_) { /* no Hub */ }
+      inp.value = stored();
+      out.className = 'key-out ok';
+      out.textContent = 'Saved \u2014 this device is now \u201C' + n + '\u201D';
+    });
+    inp.addEventListener('input', () => { out.textContent = ''; });
+    // renamed somewhere else (another tab, the controller pad, Chat): follow it unless typing here
+    const onStore = (e) => {
+      if (!card.isConnected) { window.removeEventListener('storage', onStore); return; }
+      if ((e.key === NAME_KEY || e.key === null) && document.activeElement !== inp) inp.value = stored();
+    };
+    window.addEventListener('storage', onStore);
+    card.append(form, out);
+    if (sub === 'device') setTimeout(() => { card.scrollIntoView({ block: 'start' }); try { inp.focus({ preventScroll: true }); } catch (_) { /* old browser */ } }, 50);
+    return card;
+  }
+
   Settings.add({
     id: 'about', title: 'About', icon: '\u2139\uFE0F',
     render(pane, sub) {
@@ -344,7 +399,7 @@
       fb.id = 'feedback';
       fb.append(ui.el('h3', '', 'Feedback'), ui.el('p', '', 'Found a bug or have an idea? Open an issue on GitHub.'),
         link(REPO + '/issues', 'GitHub Issues', 'Report a problem or suggest something'));
-      pane.append(card, profileCard(sub), contact, fb);
+      pane.append(card, deviceCard(sub), profileCard(sub), contact, fb);   // H46: Device name after the About card
     }
   });
 })();
