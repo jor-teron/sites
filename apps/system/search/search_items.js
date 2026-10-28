@@ -3,7 +3,7 @@
  * window.HUB_SEARCH_ITEMS.settings: Settings pages / options → opens apps/system/settings/#<hash>.
  *   hash 'section' opens that page; 'section/sub' also scrolls to that card (only subs the section
  *   really handles: devices/device, devices/connected, devices/profile, devices/sync (H29.2b; were about/device (H46),
- *   about/profile; the old ones still redirect), devices/undo (H29.3)). Keep in step with apps/system/settings/sec_*.js
+ *   about/profile; the old ones still redirect), devices/undo (H29.3), hubbar/<key> (H52), about/autoupdate (H52)). Keep in step with apps/system/settings/sec_*.js
  *   (Settings.add ids and their ui.title() rows) when a page or option is added or renamed.
  *   words: extra search words (not shown; the top-level pages also have 'settings', so the query
  *   'settings' lists the pages, not every option).
@@ -18,7 +18,19 @@ window.HUB_SEARCH_ITEMS = {
     { name: 'Open windows maximised', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'maximize fullscreen new windows' },
     { name: 'Start menu: open on hover', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'menu hover start' },
     { name: 'Show Files on the desktop', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'drives icons home' },
-    { name: 'Busy meter in the taskbar', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'cpu graph tray clock' },
+    // { name: 'Busy meter in the taskbar', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'cpu graph tray clock' },   // H52: moved to Hub bar
+    // H52: Settings → Hub bar (sec_hubbar.js): the page + one row per switch (#hubbar/<key> scrolls to it)
+    { name: 'Hub bar', hash: 'hubbar', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings', words: 'settings taskbar tray icons show hide toggle bar items start' },
+    { name: 'Hub bar: Show Desktop button', hash: 'hubbar/barShowDesk', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar minimise all hide' },
+    { name: 'Hub bar: Search button', hash: 'hubbar/barSearch', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar magnifier hide' },
+    { name: 'Hub bar: Window buttons', hash: 'hubbar/barTasks', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar open windows tasks hide' },
+    { name: 'Hub bar: Workspaces switcher', hash: 'hubbar/barWorkspaces', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar workspace 1 2 hide' },
+    { name: 'Hub bar: On-screen keyboard button', hash: 'hubbar/barOsk', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar osk keyboard hide' },
+    { name: 'Hub bar: Pooh Chat icon', hash: 'hubbar/barPooh', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar tray pooh chat bear hide show' },
+    { name: 'Hub bar: Devices button', hash: 'hubbar/barDevices', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar tray gamepad devices controller hide' },
+    { name: 'Hub bar: Update icon', hash: 'hubbar/barUpdate', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar tray update ready dot start hide show' },
+    { name: 'Busy meter in the taskbar', hash: 'hubbar/trayMeter', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'cpu graph tray clock busy meter' },
+    { name: 'Hub bar: Clock', hash: 'hubbar/barClock', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar tray time clock hide' },
     { name: 'Screen saver', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'saver idle clock lock' },
     { name: 'Windows', hash: 'windows', icon: '\uD83E\uDE9F', where: 'Settings', words: 'settings focus hover snapping snap magnetic edges workspaces title bar thumbnails notifications' },
     { name: 'Workspaces', hash: 'windows', icon: '\uD83E\uDE9F', where: 'Settings \u203A Windows', words: 'virtual desktops two one' },
@@ -41,6 +53,7 @@ window.HUB_SEARCH_ITEMS = {
     { name: 'Send profile (sync to a device)', hash: 'devices/sync', icon: '\uD83D\uDCF2', where: 'Settings \u203A Devices', words: 'sync send profile phone pc share settings api keys' },
     { name: 'Undo last sync', hash: 'devices/undo', icon: '\uD83D\uDCF2', where: 'Settings \u203A Devices', words: 'undo sync revert restore backup profile previous settings keys' },   // H29.3
     { name: 'About', hash: 'about', icon: '\u2139\uFE0F', where: 'Settings', words: 'settings version build release update contact feedback github' },
+    { name: 'Auto update every', hash: 'about/autoupdate', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'auto update automatic daily days 6 am interval refresh last updated' },   // H52
     { name: 'Contact & Feedback', hash: 'about', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'bug issue github idea' }
   ],
   actions: [

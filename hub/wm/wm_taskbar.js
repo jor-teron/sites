@@ -31,6 +31,10 @@
  *   mode and moved back to the top bar in Phone mode (same elements, so their own scripts
  *   keep working; their popovers open upward, see wm.css).
  * - Clock: 12-hour with AM/PM (11:56 PM), date in the tooltip.
+ * - H52: Settings → Hub bar switches each item on / off (Start can't be): hub_prefs.js sets
+ *   html.hub-bar-off-<item>, wm.css hides it inside #wm-taskbar (live, Phone mode untouched). Defaults: all
+ *   shown except Pooh Chat and Update. Update hidden + a build waiting → a dot on Start (html.hub-upd-ready).
+ *   The empty-bar right-click menu gets "Hub bar settings".
  * Redraws on 'hub-wm-change' (wm_windows.js). Look in wm.css.
  */
 (function () {
@@ -232,6 +236,7 @@
           if (window.HubPrefs) HubPrefs.apply();
         } },
         { sep: true },
+        { label: 'Hub bar settings', icon: '\u2630', action: () => C.openApp(C.SETTINGS, { hash: 'hubbar' }) },   // H52
         { label: 'Settings', icon: '\u2699', action: () => C.openApp(C.SETTINGS) }
       ];
       const br = bar.getBoundingClientRect();

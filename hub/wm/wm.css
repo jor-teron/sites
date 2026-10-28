@@ -350,3 +350,23 @@ html.hub-motion-reduced #wm-snap-pv, html.hub-motion-off #wm-snap-pv { animation
 .wm-ws button:active { transform: scale(0.86, 0.8); }
 .wm-ws button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 @media (max-width: 600px) { body.wm-desktop #hub-notify.hn-bottom-right { bottom: calc(var(--wm-task-h) + 8px); } }
+
+/* ---------- H52: Hub bar switches (Settings → Hub bar; hub_prefs.js sets html.hub-bar-off-<item>) ----------
+   Desktop-mode taskbar only: every rule is inside #wm-taskbar (in Phone mode the tray items sit back in the top
+   bar, outside it, so Phone mode is untouched). Start has no switch. The window buttons keep their space
+   (visibility) so the tray stays on the right. */
+html.hub-bar-off-showdesk #wm-taskbar #wm-showdesk,
+html.hub-bar-off-search #wm-taskbar #wm-search,
+html.hub-bar-off-ws #wm-taskbar .wm-ws,
+html.hub-bar-off-osk #wm-taskbar .wm-osk-btn,
+html.hub-bar-off-pooh #wm-taskbar #chat-btn,
+html.hub-bar-off-devices #wm-taskbar #ctrl-btn,
+html.hub-bar-off-update #wm-taskbar #upd-btn,
+html.hub-bar-off-clock #wm-taskbar .wm-clock { display: none !important; }
+html.hub-bar-off-tasks #wm-taskbar .wm-tasks { visibility: hidden; }
+/* Update icon hidden + a new build waiting (html.hub-upd-ready, hub_update.js) → small dot on Start */
+#wm-start { position: relative; }
+html.hub-bar-off-update.hub-upd-ready #wm-taskbar #wm-start::after {
+  content: ''; position: absolute; top: 3px; right: 4px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent, #6ea8fe); box-shadow: 0 0 0 2px var(--wm-task-bg, #111);
+}

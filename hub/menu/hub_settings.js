@@ -25,7 +25,8 @@
    * when Settings is opened again or clicked into and the prefs differ, reload it (same #section). */
   const SET = '/apps/system/settings/';   // R53 (was /apps/settings/, now a legacy redirect)
   const PREFS = ['wallpaper', 'taskH', 'titleH', 'taskPos', 'accent', 'theme', 'motion', 'wmMode', 'startHover', 'trayMeter', 'showFiles', 'homeBtn',
-    'hoverFocus', 'snapEdges', 'snapMagnet', 'snapMagnetPx', 'workspaces', 'filesClick', 'filesThumbs'];
+    'hoverFocus', 'snapEdges', 'snapMagnet', 'snapMagnetPx', 'workspaces', 'filesClick', 'filesThumbs',
+    'barShowDesk', 'barSearch', 'barTasks', 'barWorkspaces', 'barOsk', 'barPooh', 'barDevices', 'barUpdate', 'barClock', 'updEvery'];   // H52
   const snap = () => PREFS.map((k) => { try { return localStorage.getItem('sites-hub.' + k) || ''; } catch (_) { return ''; } }).join('|');
   let seen = snap();
   const frames = () => [...document.querySelectorAll('iframe')].filter((f) => { try { return f.contentWindow.location.pathname.indexOf(SET) >= 0; } catch (_) { return false; } });

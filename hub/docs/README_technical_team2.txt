@@ -1555,3 +1555,47 @@ Line counts are HTML+JS+CSS, excluding vendor/.
     Devices roster (screenshot), PC closes -> phone takes over at term 2, no console errors.
     H29.1 40/40, H29.2 45/45, H29.2b 30/30, H29.3 40/40, H50a 22/22.
   Bump 20261028k / v107 -> 20261029a / hub-shell-v108 (hub_bump.py --release H50, --check OK).
+
+2026-10-29 IST, H52 (Team 2, week 2): Hub bar section in Settings and auto update every N days.
+  Hub bar items (Desktop taskbar, hub/wm): Start #wm-start (always shown, locked switch), Show Desktop
+    #wm-showdesk, Search #wm-search (H48b), Window buttons .wm-tasks, Workspaces .wm-ws, OSK
+    .wm-osk-btn (hub_loader stub / osk.js), Pooh #chat-btn, Devices #ctrl-btn, Update #upd-btn (R50),
+    Busy meter (hub_traymeter.js, own key trayMeter, default off as before), Clock .wm-clock.
+    There is no Battery item in the Hub bar. Phone-remote extras (#rm-fs, #rm-set) are Phone only: no switch.
+  Keys: sites-hub.barShowDesk / barSearch / barTasks / barWorkspaces / barOsk / barPooh / barDevices /
+    barUpdate / barClock. Default on except barPooh and barUpdate; stored '0' = off (default-on
+    items), '1' = on (default-off items), '' = default. HubPrefs.BAR + HubPrefs.barOn(key).
+  Live apply: SettingsStore.set -> parent HubPrefs.apply() + postMessage {type:'hub-prefs', key};
+    other tabs via the storage event. apply() toggles html.hub-bar-off-<item>; wm.css hides with
+    display:none !important only under #wm-taskbar (Window buttons: visibility:hidden, keeps space).
+    Phone mode moves .header-right back to the top bar, so no rule matches there (checked).
+  Update dot: showNote() also sets html.hub-upd-ready; html.hub-bar-off-update.hub-upd-ready
+    #wm-taskbar #wm-start::after = 8 px accent dot.
+  Settings: apps/system/settings/sec_hubbar.js (new, after Desktop), Desktop's Busy meter switch
+    commented out and replaced by a "Hub bar icons ›" link; taskbar empty-area menu has
+    "Hub bar settings". H29: bar* keys added to SYNC_GROUPS.desktop; updEvery in shared;
+    lastBuild / lastUpdated in EXCLUDE (never synced).
+  Auto update before H52 (R16c, indicator from R50): due once a day at 09:00 browser-local time, or on
+    the next open after a missed 09:00 (sites-hub.lastRefresh), hourly timer steps; refresh re-fetches
+    the shell through the service worker and reloads quietly only when idleNow() (Desktop: no windows;
+    Phone: no app open), else shows the R50 #upd-btn indicator. R50 only replaced the old toast with
+    that indicator; a manual check() never reloads.
+  Auto update from H52 (hub_update.js; old due() / schedule() kept as comments): N = updEvery
+    (1 default, 7, 15, 30 days). Due when never run, or now - lastRefresh >= N x 24 h (also on load),
+    or inside the 6 AM window (06:00-06:59 local) of the first 06:00 after max(last + (N-1) days,
+    now - 1 h). N=1: every morning at 6 AM, or 24 h after the last one if 6 AM was missed. One
+    timer: first check 5 s after load, steps <= 1 h, 1 h retry after a failed run; rescheduled on
+    visibilitychange, storage (updEvery / lastRefresh) and hub-prefs key updEvery. The busy-safe
+    idleNow() rule is unchanged. On load, when BUILD differs from sites-hub.lastBuild, lastBuild and
+    lastUpdated are stored (About shows Last updated). API adds every, dueAt, due, dueRule,
+    sixAfter, tick, schedule.
+  About: "Auto update" card (#autoupdate): Auto update every, Last auto update, Next auto update,
+    Last updated (+ build). The old "Last refreshed" row is commented out.
+  Search: rows for Hub bar, each switch (hubbar/<key>, Busy meter -> hubbar/trayMeter; old Desktop
+    row commented out) and Auto update every (about/autoupdate).
+  Tests (system Chrome headless, real pages): H52 64/64 (defaults, every switch live in the bar,
+    Start locked, Update dot, reset, storage event across tabs, About card, Search rows, H29 groups,
+    rule table, fake-clock runs: 6 AM, missed 6 AM -> 24 h, on-load after 26 h, 7 days day 6 / day 7,
+    Phone mode unaffected, no console errors). H29.1 40/40, H29.2 45/45, H29.2b 30/30, H29.3 40/40,
+    H50 mesh 35/35, H50 Hub 20/20.
+  Bump 20261029a / v108 -> 20261029b / hub-shell-v109 (hub_bump.py --release H52, --check OK).
