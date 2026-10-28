@@ -10,7 +10,7 @@
     var k = Math.min(cw / (W + 4), (ch - top - bot) / (H + 4)), ox = (cw - W * k) / 2, oy = top + (ch - top - bot - H * k) / 2;
     AF.view = { k: k, ox: ox, oy: oy };              // used by ui.js for tap mapping
     c.fillStyle = '#1a130c'; c.fillRect(0, 0, cw, ch);
-    AF.drawSky(c, w, ox, oy, k);
+    AF.drawSky(c, w, ox, oy, k, opt.low);
     c.imageSmoothingEnabled = false; c.drawImage(soil, ox, oy, W * k, H * k); c.imageSmoothingEnabled = true;
     AF.drawSurface(c, w, ox, oy, k);
     // pheromone trails

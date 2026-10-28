@@ -14,7 +14,7 @@
     [[30, 32, 18], [55, 22, 22], [82, 30, 18], [60, 36, 16]].forEach(function (p) { g.beginPath(); g.arc(p[0], p[1], p[2], 0, 7); g.fill(); }); })();
   var CL = [[0.1, 2.5, 1, 1.0], [0.45, 4.5, 0.7, 1.6], [0.75, 1.8, 0.85, 1.25]];  // x, y(cells), scale, speed
 
-  AF.drawSky = function (c, w, ox, oy, k) {
+  AF.drawSky = function (c, w, ox, oy, k, low) {   // low: lowGraphics, skip clouds
     var p = AF.dayPhase(w) * 5, i = p | 0, t = p - i, a = KEYS[i], b = KEYS[i + 1];
     var g = c.createLinearGradient(0, oy, 0, oy + S * k); g.addColorStop(0, mix(a[0], b[0], t)); g.addColorStop(1, mix(a[1], b[1], t));
     c.fillStyle = g; c.fillRect(ox, oy, W * k, S * k);
@@ -23,7 +23,7 @@
     if (night > 0) { c.fillStyle = 'rgba(255,255,230,' + Math.min(1, night) + ')';
       for (var s = 0; s < 24; s++) c.fillRect(ox + ((s * 97) % W) * k, oy + ((s * 53) % (S - 4)) * k, Math.max(1, k * .2), Math.max(1, k * .2)); }
     c.globalAlpha = 1 - Math.min(0.7, night);
-    for (var j = 0; j < CL.length; j++) { var q = CL[j], cw = 18 * q[2] * k, span = W * k + cw;
+    for (var j = 0; j < (low ? 0 : CL.length); j++) { var q = CL[j], cw = 18 * q[2] * k, span = W * k + cw;
       var cx = ox - cw + ((q[0] * span + w.t * q[3] * k * 0.4) % span);
       c.drawImage(cloud, cx, oy + q[1] * k, cw, cw * 0.42); }
     c.restore(); c.globalAlpha = 1;
