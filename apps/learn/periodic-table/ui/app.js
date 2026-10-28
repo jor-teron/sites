@@ -1,9 +1,10 @@
-/* Periodic Table PT1 — screens: Table (all 118 elements in the usual 18-column layout with the lanthanide and actinide
-   rows below; colour by category or by state, legend chips filter, search box, zoom, tap an element for its card) and
+/* Periodic Table PT2 — screens: Table (all 118 elements in the usual 18-column layout with the lanthanide and actinide
+   rows below, at the top of the page; under it the search row with Category / State and zoom, then the legend chips
+   that filter; tap an element for its card) and
    Quiz (symbol -> name, name -> symbol, find it on the table; 10 questions; levels first 20 / first 36 / all 118).
    Saves in localStorage: learn.periodic-table.view ('cat' / 'state'), .zoom, .hint (landscape hint closed) and .best (via the Learn kit). */
 (() => {
-  const P = window.PT, VER = 'PT1', PRE = 'learn.periodic-table.', N = 10;
+  const P = window.PT, VER = 'PT2', PRE = 'learn.periodic-table.', N = 10;
   const prog = LRN.progress(PRE), store = LRN.store;
   const root = document.getElementById('app');
   const h = (tag, attrs, ...kids) => {
@@ -42,14 +43,21 @@
       cells[e.z] = b; grid.append(b);
     });
     const scroll = h('div', { class: 'pt-scroll' }, grid);
+    // On the Table screen the grid is the top row and only as tall as it needs (rows below sit right under it), so the
+    // height it may use is the page area minus the rows below, not its own box (which would shrink to fit itself).
+    const room = () => {
+      const m = scroll.parentNode; if (!scroll.classList.contains('pt-top') || !m) return scroll.clientHeight;
+      const cs = getComputedStyle(m), gap = parseFloat(cs.rowGap) || 0, kids = [...m.children].filter(k => k !== scroll && k.offsetHeight);
+      return m.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - kids.reduce((a, k) => a + k.offsetHeight + gap, 0);
+    };
     const fit = () => {
-      const w = scroll.clientWidth - 6, hh = scroll.clientHeight - 6; if (w <= 0) return;
+      const w = scroll.clientWidth - 6, hh = room() - 6; if (w <= 0) return;
       const fw = (w - 58) / 18, fh = (hh - 42) / 9.35 || 1e9;   // short landscape screens may go down to 22 px so the whole table fits
       const c = Math.floor(Math.max(fh < fw ? 22 : 30, Math.min(fw, fh, 84)) * zoom);
       grid.style.setProperty('--cell', c + 'px'); grid.classList.toggle('big', c >= 58); grid.classList.toggle('tiny', c < 38);
     };
     const paint = () => P.els.forEach(e => cells[e.z].style.setProperty('--c', COL[byCat ? e.cat : key(e)]));
-    paint(); new ResizeObserver(fit).observe(scroll);
+    paint(); const ro = new ResizeObserver(fit); ro.observe(scroll); ro.observe(main);
     return { el: scroll, cells, fit, paint };
   }
 
@@ -91,7 +99,7 @@
         onclick: () => { filter = filter === k ? null : k; drawLegend(); apply(); } }, h('i'), k === 'unknown' ? 'Not known' : list[k])));
     }
     drawLegend();
-    main.replaceChildren(bar, hint, legend, G.el); apply();
+    G.el.classList.add('pt-top'); main.replaceChildren(G.el, bar, legend, hint); apply(); G.fit();   // PT2: the table is the top row, search / view / zoom and the legend below it
   }
 
   // ---------- element card ----------
