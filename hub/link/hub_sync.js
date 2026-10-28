@@ -30,6 +30,14 @@
  *   No 'Keep both': the Hub key store (H28) holds one value per name.
  *   Path: the offer goes only to the picked device over the existing link (phone → phone is relayed by the PC
  *   host in memory, as every link message is).
+ * H29.3 Backup + Undo last sync + profile folder (manual only, like the rest):
+ *   apply() passes { backup: { from: <sender name> } } to HubProfile.applyItems, which saves the previous value of
+ *   every setting and key it is about to write (only the last sync is kept; Cancel and an Apply that writes nothing
+ *   leave the old backup alone). undo() → HubProfile.undoSync() puts them back exactly (new ones removed), repaints
+ *   (HubPrefs.apply) and clears the backup. After Apply and after Undo, when this device has a ticked, ready
+ *   connected folder (hub/hub-profile/, H30), HubProfile.save() runs at once instead of waiting for 'Save every';
+ *   no folder (a phone, or none attached) = skipped quietly. lastResult().folder / lastUndo().folder =
+ *   'pending' | 'saved' | 'none' | 'failed'.
  * API window.HubSync:
  *   devices() → [{ id, name }]   connected devices (not this one, no old Gamepads)
  *   peers() → [{ id, name, online, legacy, host, mode }]   H29.2b: every device the link knows (Settings › Devices ›
@@ -41,6 +49,9 @@
  *   lastSend() → null | { id, to, toName, state: 'sent'|'got'|'applied'|'cancelled'|'bad'|'failed', applied, kept, at }
  *   lastResult() → null | { name, applied, kept, at }   (the receiver's summary after Apply)
  *   mode() → 'desktop' | 'phone'     onChange(fn) → unsubscribe
+ *   backup() → null | { at, from, settings, keys }   H29.3 (counts only, never a value)
+ *   undo() → { ok, settings, keys, from, at } | { ok: false, reason }   H29.3 (ask the user first; Settings does)
+ *   lastUndo() → null | { at, from, settings, keys, folder }   H29.3
  */
 (function () {
   'use strict';
@@ -54,6 +65,7 @@
   const HP = () => window.HubProfile;
   const fns = [];
   let pend = null, sent = null, result = null, card = null;
+  let undone = null;   // H29.3: the last Undo's summary
 
   function emit() { fns.slice().forEach((f) => { try { f(); } catch (_) { /* ignore */ } }); }
   const myName = () => (window.SharedLinkDevices ? SharedLinkDevices.name() : 'Device');
@@ -125,15 +137,47 @@
     const take = p.items.filter((it) => (choices[it.id] || (it.isNew ? 'incoming' : 'mine')) === 'incoming');
     // H29.2: a chosen key gets its real value from the offer held here (pending() only ever has masked text)
     const real = pend.profile && pend.profile.keys && typeof pend.profile.keys === 'object' ? pend.profile.keys : {};
-    const n = HP().applyItems(take.map((it) => (it.scope === 'key' ? { scope: 'key', key: it.key, value: real[it.key] } : it)));
+    // const n = HP().applyItems(take.map((it) => (it.scope === 'key' ? { scope: 'key', key: it.key, value: real[it.key] } : it)));   // (H29.2)
+    const n = HP().applyItems(take.map((it) => (it.scope === 'key' ? { scope: 'key', key: it.key, value: real[it.key] } : it)),
+      { backup: { from: p.name } });   // H29.3: the Undo last sync backup is saved first
     const kept = p.items.length - n;
     try { if (window.HubPrefs && window.HubPrefs.apply) window.HubPrefs.apply(); } catch (_) { /* ignore */ }
     reply(pend.from, { type: T_RESULT, id: p.id, state: 'applied', applied: n, kept });
     // result = { name: p.name, applied: n, kept, same: p.same, at: Date.now(), labels: take.map((it) => it.label) };   // (H29.1)
+    // result = { name: p.name, applied: n, kept, same: p.same, at: Date.now(),
+    //   labels: take.map((it) => (it.scope === 'key' ? 'API key ' + it.key : it.label)) };   // H29.2: key names only
     result = { name: p.name, applied: n, kept, same: p.same, at: Date.now(),
-      labels: take.map((it) => (it.scope === 'key' ? 'API key ' + it.key : it.label)) };   // H29.2: key names only
+      labels: take.map((it) => (it.scope === 'key' ? 'API key ' + it.key : it.label)),   // H29.2: key names only
+      undo: n > 0 && !!backup(), folder: n > 0 ? 'pending' : 'none' };   // H29.3
+    undone = null;
     pend = null; closeCard(); emit();
+    if (n > 0) { const r = result; saveFolder().then((f) => { r.folder = f; emit(); }); }   // H29.3
     return { ok: true, applied: n, kept };
+  }
+  /* H29.3: Undo last sync + the immediate profile folder save */
+  function backup() { try { return HP() && HP().syncBackup ? HP().syncBackup() : null; } catch (_) { return null; } }
+  function undo() {
+    if (!HP() || !HP().undoSync) return { ok: false, reason: 'no-profile' };
+    const r = HP().undoSync();
+    if (!r.ok) return r;
+    try { if (window.HubPrefs && window.HubPrefs.apply) window.HubPrefs.apply(); } catch (_) { /* ignore */ }
+    const u = undone = { at: Date.now(), from: r.from, settings: r.settings, keys: r.keys, folder: 'pending' };
+    result = null;
+    emit();
+    saveFolder().then((f) => { u.folder = f; emit(); });
+    return r;
+  }
+  /** a ticked + ready connected folder → HubProfile.save() now (the H30 save, all ticked places); else 'none' */
+  async function saveFolder() {
+    const H = HP();
+    if (!H || !H.status || !H.save) return 'none';
+    try {
+      const st = await H.status();
+      const has = (st.targets || []).some((t) => t.kind === 'folder' && t.ticked && t.state === 'ready');
+      if (!has) return 'none';
+      const r = await H.save();
+      return r && r.ok ? 'saved' : 'failed';
+    } catch (_) { return 'failed'; }
   }
   function cancel() {
     if (!pend) return;
@@ -201,6 +245,7 @@
 
   window.HubSync = {
     devices, peers, send, pending, apply, cancel, mode, review,   // H29.2b: + peers
+    backup, undo, lastUndo: () => (undone ? Object.assign({}, undone) : null),   // H29.3
     lastSend: () => (sent ? Object.assign({}, sent) : null),
     lastResult: () => (result ? Object.assign({}, result) : null),
     groupOf: (scope, key) => (HP() && HP().groupOf ? HP().groupOf(scope, key) : 'shared'),

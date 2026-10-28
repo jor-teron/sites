@@ -34,6 +34,13 @@
  *   Incoming: preview grouped Shared / Desktop / Phone, each row tagged, name + This device + Incoming value,
  *   Keep mine (default) / Use incoming (default for settings this device does not have, marked New),
  *   Keep all mine / Use all incoming, Apply / Cancel; summary + Reload Hub after Apply. Text only (textContent).
+ * H29.3: "Undo last sync" card (id 'undo', deep link #devices/undo, right after Send profile). Shows the backup
+ *   HubSync.backup() kept at the last Apply: time, sender, how many settings and API keys (counts only, never a
+ *   key value). Undo last sync asks first (UiDialog.confirm), then HubSync.undo() puts every one back exactly
+ *   (settings that were new are removed again), the API Keys page repaints (HubKeys onChange), the backup is
+ *   cleared, and a summary offers Reload Hub. No backup: the button is disabled with a hint. The Apply summary
+ *   in Send profile has an Undo button too, and both summaries say 'Saved to profile folder' once the
+ *   immediate folder save (hub_sync.js) worked.
  */
 (function () {
   'use strict';
@@ -204,6 +211,82 @@
     ['hub', 'Hub settings', 'Theme, accent, wallpaper, favorites, layout (Settings app choices)'],
     ['system', 'System app settings', 'Files, Viewer and Terminal settings only']];
   const short = (v) => { if (v == null) return '(not set)'; const t = String(v); return t.length > 120 ? t.slice(0, 117) + '\u2026' : t; };
+  /* H29.3: 'Saved to profile folder' line for the Apply / Undo summaries */
+  function folderLine(state, id) {
+    const t = state === 'saved' ? 'Saved to profile folder' : state === 'pending' ? 'Saving to profile folder\u2026'
+      : state === 'failed' ? 'Could not save to the profile folder; it is saved again on the next change' : '';
+    if (!t) return null;
+    const p = ui.el('p', 'upd-out ' + (state === 'failed' ? 'bad' : 'ok'), t); p.id = id;
+    return p;
+  }
+  const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+  function backupText(b) {
+    return plural(b.settings, 'setting') + (b.keys ? ' and ' + plural(b.keys, 'API key') : '');
+  }
+  /* H29.3: confirm, then undo (shared by the Undo last sync card and the Apply summary) */
+  async function askUndo(HS, hub) {
+    const b = HS.backup();
+    if (!b) return false;
+    const D = window.UiDialog;
+    const text = 'Puts back the ' + backupText(b) + ' changed by the profile from ' + b.from + ' (' + niceTime(b.at) + ') exactly as they were. ' +
+      'Settings and keys that sync added are removed again.';
+    const ok = D ? await D.confirm('Undo last sync?', text, 'Undo', true) : window.confirm('Undo last sync? ' + text);
+    if (!ok) return false;
+    const r = HS.undo();
+    return !!(r && r.ok);
+  }
+  function undoCard(sub) {
+    const card = ui.el('section', 'card sync-undo-card');
+    card.id = 'undo';
+    card.appendChild(ui.el('h3', '', 'Undo last sync'));
+    const hub = S.hub();
+    const HS = hub && hub.HubSync;
+    if (!HS || !HS.backup) {
+      card.appendChild(ui.el('p', 'opt-note', 'Open Settings inside the Hub to undo a profile sync.'));
+      return card;
+    }
+    card.appendChild(ui.el('p', 'opt-note', 'Each time you press Apply on an incoming profile, the settings and API keys it changes are backed up on this device first (only the last sync). ' +
+      'Undo puts them back exactly; key values are never shown.'));
+    const info = ui.el('div', 'sync-undo-info'); info.id = 'undo-info';
+    const btn = ui.el('button', 'big-btn', 'Undo last sync'); btn.type = 'button'; btn.id = 'undo-btn';
+    const hint = ui.el('p', 'opt-note', ''); hint.id = 'undo-hint';
+    const out = ui.el('div', 'sync-undo-out'); out.id = 'undo-out'; out.setAttribute('aria-live', 'polite');
+    card.append(info, btn, hint, out);
+    btn.addEventListener('click', () => { askUndo(HS, hub); });
+    function draw() {
+      if (!card.isConnected) { off(); return; }
+      paint();
+    }
+    function paint() {   // the first paint runs before the card is in the page
+      const b = HS.backup();
+      info.textContent = '';
+      if (b) {
+        info.append(row('Last sync', niceTime(b.at)), row('From', b.from), row('Covers', backupText(b)));
+        btn.disabled = false; hint.textContent = '';
+      } else {
+        btn.disabled = true;
+        hint.textContent = 'Nothing to undo. A backup is kept when you press Apply on a profile sent from another device.';
+      }
+      out.textContent = '';
+      const u = HS.lastUndo && HS.lastUndo();
+      if (u) {
+        const sm = ui.el('div', 'sync-summary'); sm.id = 'undo-summary';
+        sm.append(ui.el('h4', 'opt-title', 'Last sync undone'),
+          ui.el('p', '', 'Put back ' + backupText(u) + ' from before the profile from ' + u.from + '.'));
+        const fl = folderLine(u.folder, 'undo-folder');
+        if (fl) sm.appendChild(fl);
+        const rl = ui.el('button', 'big-btn', 'Reload Hub'); rl.type = 'button'; rl.id = 'undo-reload';
+        rl.addEventListener('click', () => hub.location.reload());
+        sm.append(ui.el('p', 'opt-note', 'Reload the Hub to see every change.'), rl);
+        out.appendChild(sm);
+      }
+    }
+    const off = HS.onChange(draw);
+    window.addEventListener('pagehide', () => off());
+    paint();
+    if (sub === 'undo') setTimeout(() => card.scrollIntoView({ block: 'start' }), 50);
+    return card;
+  }
   function syncCard(sub) {
     const card = ui.el('section', 'card sync-card');
     card.id = 'sync';
@@ -303,9 +386,20 @@
           sm.append(ui.el('h4', 'opt-title', 'Profile from ' + res.name + ' applied'),
             ui.el('p', '', 'Used ' + res.applied + ' incoming setting' + (res.applied === 1 ? '' : 's') + ', kept ' + res.kept + ' of yours' + (res.same ? ', ' + res.same + ' were already the same' : '') + '.'));
           if (res.labels && res.labels.length) sm.appendChild(ui.el('p', 'opt-note', 'Changed: ' + res.labels.slice(0, 30).join(', ') + (res.labels.length > 30 ? ' \u2026' : '')));
+          const fl = folderLine(res.folder, 'sync-folder');   // H29.3
+          if (fl) sm.appendChild(fl);
           const rl = ui.el('button', 'big-btn', 'Reload Hub'); rl.type = 'button'; rl.id = 'sync-reload';
           rl.addEventListener('click', () => hub.location.reload());
-          sm.append(ui.el('p', 'opt-note', 'Most changes show at once; reload the Hub to see every one.'), rl);
+          // sm.append(ui.el('p', 'opt-note', 'Most changes show at once; reload the Hub to see every one.'), rl);   // (H29.2)
+          sm.append(ui.el('p', 'opt-note', 'Most changes show at once; reload the Hub to see every one.' + (res.undo ? ' Undo puts back everything this sync changed.' : '')));
+          const btns = ui.el('div', 'profile-btns sync-act');   // H29.3: Reload Hub + Undo
+          btns.appendChild(rl);
+          if (res.undo && HS.backup && HS.backup()) {
+            const ub = ui.el('button', 'big-btn', 'Undo'); ub.type = 'button'; ub.id = 'sync-undo-now';
+            ub.addEventListener('click', () => askUndo(HS, hub));
+            btns.appendChild(ub);
+          }
+          sm.appendChild(btns);
           prev.appendChild(sm);
         }
         return;
@@ -498,7 +592,8 @@
     render(pane, sub) {
       const end = ui.el('div', 'pane-end');   // room below the last buttons (Apply / Cancel) so Hub notification cards never cover them
       end.setAttribute('aria-hidden', 'true');
-      pane.append(deviceCard(sub), connectedCard(sub), profileCard(sub), syncCard(sub), end);
+      // pane.append(deviceCard(sub), connectedCard(sub), profileCard(sub), syncCard(sub), end);   // (H29.2b)
+      pane.append(deviceCard(sub), connectedCard(sub), profileCard(sub), syncCard(sub), undoCard(sub), end);   // H29.3: + Undo last sync
     }
   });
 })();

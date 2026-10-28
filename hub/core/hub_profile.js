@@ -65,6 +65,15 @@
  *   H28) as its own 'keys' group; diff items for keys carry MASKED values only (maskKey: '••••' + last 4) and
  *   the receiver applies the real value from the offer it holds (applyItems item.scope 'key' + item.value).
  *   The key-like value filter still runs on every hub / app setting; keys only ever travel in "keys".
+ * H29.3 Backup + Undo last sync: applyItems(list, { backup: { from } }) first works out what it will write,
+ *   then (only when something will be written) saves the previous value of each of those settings in
+ *   localStorage 'sites-hub.syncUndo' = { v: 1, at, from, settings: [{ k: '<localStorage key>', prev: text | null }],
+ *   keys: count } (prev null = did not exist → Undo removes it; only the last sync is kept, a new one replaces it)
+ *   and the keys' old values through HubKeys.backupKeys (their own entry 'sites-hub.keysUndo', see hub_keys.js;
+ *   never in syncUndo, never shown). Then it writes. undoSync() restores both exactly and clears them;
+ *   syncBackup() → null | { at, from, settings, keys } (counts only); clearSyncBackup(). Both entries are excluded
+ *   from the profile (EXCLUDE). The immediate profile folder save after Apply / Undo is done by hub_sync.js
+ *   with the normal save() below.
  * API window.HubProfile:
  *   save({ ask, force })  → Promise<{ ok, reason? }>   ask: may ask the browser for access (call from a click)
  *   load({ ask, force })  → Promise<{ ok, applied, reason? }>   force: apply even when not newer (Load now)
@@ -87,9 +96,14 @@
   const MAX_VALUE = 200000;
   const K_TARGETS = P + 'profileTargets', K_GFOLDER = P + 'profileGdrive', K_EVERY = P + 'profileEvery';   // H30.5 / H30.6
   const GID = 'gdrive', EVERY = [30, 60, 300, 900, 0], EVERY_DEFAULT = 60;
+  // const EXCLUDE = new Set(['keys', 'google', 'phonekeyRooms', 'startList', 'lastRefresh', 'wmSession', 'lastApp',
+  //   'updTried', 'fromCat', 'fromLab', 'profileAt', 'profileSaved', 'profileLoaded', 'profileDrive', 'profileKeys',
+  //   'profileTargets', 'profileGdrive']);   // H30.5: per-device places + Drive folder id   (before H29.3)
   const EXCLUDE = new Set(['keys', 'google', 'phonekeyRooms', 'startList', 'lastRefresh', 'wmSession', 'lastApp',
     'updTried', 'fromCat', 'fromLab', 'profileAt', 'profileSaved', 'profileLoaded', 'profileDrive', 'profileKeys',
-    'profileTargets', 'profileGdrive']);   // H30.5: per-device places + Drive folder id
+    'profileTargets', 'profileGdrive',   // H30.5: per-device places + Drive folder id
+    'syncUndo', 'keysUndo']);   // H29.3: this device's Undo last sync backup (never in the profile, never synced)
+  const K_UNDO = P + 'syncUndo';   // H29.3
   const K_KEYS = P + 'profileKeys', K_STORE = P + 'keys';   // H30.3
   const KEY_NAME = /key|token|secret|passw|auth|cred|cookie/i;
   const KEY_VALUE = /(sk-[A-Za-z0-9_-]{8,}|sk_(live|test)_|gsk_[A-Za-z0-9]{8,}|xai-[A-Za-z0-9]{8,}|AIza[0-9A-Za-z_-]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_|tvly-[A-Za-z0-9]{8,}|hf_[A-Za-z0-9]{20,}|ya29\.|Bearer\s|-----BEGIN)/;
@@ -832,28 +846,67 @@
     } else if (obj.keys) ignored++;
     return { ok: true, items, same, ignored, skipped, keysSame };
   }
-  /** write the chosen items (each checked again); → number written. The profile places are saved by the
-   *  normal 'Save every' timer like any other change (H29.3 adds the immediate folder update + backup). */
-  function applyItems(list) {
-    let n = 0;
-    applying = true;
-    try {
-      (Array.isArray(list) ? list : []).forEach((it) => {
-        if (!it || typeof it.incoming !== 'string') return;
-        if (it.scope === 'hub') {
-          if (SYNC_SKIP.has(it.key) || !allowed(it.key, it.incoming)) return;
-          lset(P + it.key, it.incoming); n++;
-        } else if (it.scope === 'app') {
-          const k = it.key, s = it.incoming;
-          if (!APPS[it.app] || appOf(k) !== it.app || KEY_NAME.test(k) || s.length > MAX_VALUE || keyLike(s)) return;
-          lset(k, s); n++;
-        }
-      });
-    } finally { applying = false; }
+  /* (before H29.3: applyItems(list) wrote each item as it went, with no backup; kept below as comments) */
+  // /** write the chosen items (each checked again); → number written. The profile places are saved by the
+  //  *  normal 'Save every' timer like any other change (H29.3 adds the immediate folder update + backup). */
+  // function applyItems(list) {
+  //   let n = 0;
+  //   applying = true;
+  //   try {
+  //     (Array.isArray(list) ? list : []).forEach((it) => {
+  //       if (!it || typeof it.incoming !== 'string') return;
+  //       if (it.scope === 'hub') {
+  //         if (SYNC_SKIP.has(it.key) || !allowed(it.key, it.incoming)) return;
+  //         lset(P + it.key, it.incoming); n++;
+  //       } else if (it.scope === 'app') {
+  //         const k = it.key, s = it.incoming;
+  //         if (!APPS[it.app] || appOf(k) !== it.app || KEY_NAME.test(k) || s.length > MAX_VALUE || keyLike(s)) return;
+  //         lset(k, s); n++;
+  //       }
+  //     });
+  //   } finally { applying = false; }
+  //   // H29.2: API keys ({ scope: 'key', key: name, value: the full key from the offer }), through HubKeys so
+  //   // Settings › API Keys and the apps hear about it; one value per name (the key store has no second slot)
+  //   const ks = (Array.isArray(list) ? list : []).filter((it) => it && it.scope === 'key' && KEYNAME_RE.test(it.key || '') &&
+  //     typeof it.value === 'string' && it.value && it.value.length < 4096);
+  //   ks.forEach((it) => {
+  //     let done = false;
+  //     try { if (window.HubKeys && window.HubKeys.set) done = window.HubKeys.set(it.key, it.value) !== false; } catch (_) { done = false; }
+  //     if (!done) { const cur = readKeys(); cur[it.key] = it.value; lset(K_STORE, JSON.stringify(cur)); done = readKeys()[it.key] === it.value; }
+  //     if (done) n++;
+  //   });
+  //   if (n) { lset(K_AT, Date.now()); lastText = ''; dirty = true; schedule(); emit(); }
+  //   return n;
+  // }
+  /** write the chosen items (each checked again); → number written. H29.3: o.backup = { from } saves what is about
+   *  to change first (the Undo last sync backup, see the header); the profile folder save right after a sync is
+   *  done by hub_sync.js (HubProfile.save), the 'Save every' timer still runs as before. */
+  function applyItems(list, o) {
+    o = o || {};
+    const all = Array.isArray(list) ? list : [];
+    // 1. what will be written (same checks as before H29.3)
+    const plan = [];   // { k: localStorage key, v } for settings
+    all.forEach((it) => {
+      if (!it || typeof it.incoming !== 'string') return;
+      if (it.scope === 'hub') {
+        if (SYNC_SKIP.has(it.key) || !allowed(it.key, it.incoming)) return;
+        plan.push({ k: P + it.key, v: it.incoming });
+      } else if (it.scope === 'app') {
+        const k = it.key, s = it.incoming;
+        if (!APPS[it.app] || appOf(k) !== it.app || KEY_NAME.test(k) || s.length > MAX_VALUE || keyLike(s)) return;
+        plan.push({ k, v: s });
+      }
+    });
     // H29.2: API keys ({ scope: 'key', key: name, value: the full key from the offer }), through HubKeys so
     // Settings › API Keys and the apps hear about it; one value per name (the key store has no second slot)
-    const ks = (Array.isArray(list) ? list : []).filter((it) => it && it.scope === 'key' && KEYNAME_RE.test(it.key || '') &&
+    const ks = all.filter((it) => it && it.scope === 'key' && KEYNAME_RE.test(it.key || '') &&
       typeof it.value === 'string' && it.value && it.value.length < 4096);
+    // 2. H29.3: the backup, before anything is written (only when something will be)
+    if (o.backup && (plan.length || ks.length)) saveUndo(plan, ks.map((it) => it.key), o.backup);
+    // 3. write
+    let n = 0;
+    applying = true;
+    try { plan.forEach((x) => { lset(x.k, x.v); n++; }); } finally { applying = false; }
     ks.forEach((it) => {
       let done = false;
       try { if (window.HubKeys && window.HubKeys.set) done = window.HubKeys.set(it.key, it.value) !== false; } catch (_) { done = false; }
@@ -862,6 +915,83 @@
     });
     if (n) { lset(K_AT, Date.now()); lastText = ''; dirty = true; schedule(); emit(); }
     return n;
+  }
+
+  /* ---------- H29.3: Undo last sync ---------- */
+  const K_KEYS_UNDO = P + 'keysUndo';   // fallback only (no HubKeys): same entry and format hub_keys.js uses
+  function saveUndo(plan, keyNames, meta) {
+    const seen = new Set();
+    const settings = [];
+    plan.forEach((x) => { if (seen.has(x.k)) return; seen.add(x.k); settings.push({ k: x.k, prev: lget(x.k) }); });
+    let keys = 0;
+    if (keyNames.length) {
+      try {
+        if (window.HubKeys && window.HubKeys.backupKeys) keys = window.HubKeys.backupKeys(keyNames);
+        else {
+          const cur = readKeys(), prev = {};
+          keyNames.forEach((nm) => { prev[nm] = typeof cur[nm] === 'string' ? cur[nm] : null; });
+          lset(K_KEYS_UNDO, JSON.stringify({ v: 1, at: Date.now(), prev }));
+          keys = Object.keys(prev).length;
+        }
+      } catch (_) { keys = -1; }
+    } else clearKeysUndo();   // only the last sync is kept: an older key backup goes too
+    const rec = { v: 1, at: Date.now(), from: String((meta && meta.from) || 'Device').slice(0, 40), settings, keys: Math.max(0, keys) };
+    lset(K_UNDO, JSON.stringify(rec));
+    if (lget(K_UNDO) == null) { clearKeysUndo(); return false; }   // no room: no half backup
+    return true;
+  }
+  function clearKeysUndo() {
+    try { if (window.HubKeys && window.HubKeys.clearBackup) { window.HubKeys.clearBackup(); return; } } catch (_) { /* fall through */ }
+    ldel(K_KEYS_UNDO);
+  }
+  function readUndo() {
+    try {
+      const b = JSON.parse(lget(K_UNDO) || 'null');
+      return b && b.v === 1 && Array.isArray(b.settings) ? b : null;
+    } catch (_) { return null; }
+  }
+  /** → null | { at, from, settings: count, keys: count }  (never a value) */
+  function syncBackup() {
+    const b = readUndo();
+    if (!b) return null;
+    let keys = 0;
+    try { const i = window.HubKeys && window.HubKeys.backupInfo ? window.HubKeys.backupInfo() : null; keys = i ? i.count : 0; } catch (_) { keys = 0; }
+    if (!keys && !(window.HubKeys && window.HubKeys.backupInfo)) {
+      try { const k = JSON.parse(lget(K_KEYS_UNDO) || 'null'); keys = k && k.prev ? Object.keys(k.prev).length : 0; } catch (_) { keys = 0; }
+    }
+    if (!b.settings.length && !keys) return null;
+    return { at: +b.at || 0, from: String(b.from || 'Device'), settings: b.settings.length, keys };
+  }
+  function clearSyncBackup() { ldel(K_UNDO); clearKeysUndo(); }
+  /** put back exactly what the last sync changed (new items removed again), then clear the backup */
+  function undoSync() {
+    const b = readUndo();
+    const info = syncBackup();
+    if (!b || !info) return { ok: false, reason: 'no-backup' };
+    let settings = 0, keys = 0;
+    applying = true;
+    try {
+      b.settings.forEach((x) => {
+        if (!x || typeof x.k !== 'string' || !x.k || x.k === K_UNDO || x.k === K_STORE || x.k === K_KEYS_UNDO) return;
+        if (x.k.indexOf(P) === 0 ? SYNC_SKIP.has(x.k.slice(P.length)) || !allowedName(x.k.slice(P.length)) : !appOf(x.k)) return;
+        if (x.prev == null) ldel(x.k); else lset(x.k, x.prev);
+        settings++;
+      });
+    } finally { applying = false; }
+    try {
+      if (window.HubKeys && window.HubKeys.restoreBackup) keys = window.HubKeys.restoreBackup();
+      else {
+        const k = JSON.parse(lget(K_KEYS_UNDO) || 'null');
+        if (k && k.prev) {
+          const cur = readKeys();
+          Object.keys(k.prev).forEach((nm) => { if (!KEYNAME_RE.test(nm)) return; if (typeof k.prev[nm] === 'string' && k.prev[nm]) cur[nm] = k.prev[nm]; else delete cur[nm]; keys++; });
+          lset(K_STORE, JSON.stringify(cur));
+        }
+      }
+    } catch (_) { /* keys not restored */ }
+    clearSyncBackup();
+    lset(K_AT, Date.now()); lastText = ''; dirty = true; schedule(); emit();
+    return { ok: true, settings, keys, from: info.from, at: info.at };
   }
   async function importData(obj) {
     if (typeof obj === 'string') { try { obj = JSON.parse(obj); } catch (_) { return { ok: false, reason: 'bad-file' }; } }
@@ -1025,6 +1155,7 @@
     exportData, importData,
     diffData, applyItems, groupOf, SYNC_GROUPS, SYNC_SKIP: [...SYNC_SKIP],   // H29.1
     maskKey, SYNC_WHAT: SYNC_WHAT.slice(),   // H29.2
+    syncBackup, undoSync, clearSyncBackup,   // H29.3
     includeKeys,
     setIncludeKeys(on) {   // H30.3: off by default; changing it rewrites hub.json (keys added / removed)
       if (on) lset(K_KEYS, '1'); else ldel(K_KEYS);
