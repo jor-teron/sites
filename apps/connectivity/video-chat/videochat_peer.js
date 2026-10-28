@@ -1,4 +1,4 @@
-/* Video Chat VC1 — presence over PeerJS (own peers; the Hub's peer is never touched).
+/* Video Chat VC2 — presence over PeerJS (own peers; the Hub's peer is never touched).
    Ids: me = 'jtsites-<code>-vc-<random>' (calls go to this id); lobby = 'jtsites-<code>-vc-0'.
    The first device to claim the lobby id keeps the roster; every device (lobby owner too)
    opens a data connection to the lobby and sends {t:'hi', id, name}; the lobby broadcasts
@@ -90,7 +90,9 @@
   addEventListener('pagehide', stop);
   L._emit = emit;   // test hook (quick checks)
   L.start = start; L.stop = stop; L.on = on; L.signal = signal; L.rename = hi;
-  L.call = function (id, stream) { return me && me.call(id, stream, { metadata: { name: VCStore.name() } }); };
+  /* metadata: {name} (VC1) + VC2 {kind:'invite'|'join', room, members:[{id,name}]} */
+  L.call = function (id, stream, meta) { return me && me.call(id, stream, { metadata: Object.assign({ name: VCStore.name() }, meta || {}) }); };
+  L.myId = function () { return me ? me.id : ''; };
   L.roster = function () { return roster; };
   L.code = function () { return code; };
   window.VCPeer = L;

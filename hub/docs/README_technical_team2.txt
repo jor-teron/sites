@@ -467,6 +467,15 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Files: `screenshare.html/.css`, `screenshare_store.js` (`screenshare-settings-v1` `{name, theme, quality, fps, audio, fit}`), `screenshare_peer.js`, `screenshare_share.js`, `screenshare_app.js`, `screenshare_icon.png` (CSV icon set explicitly).
 - Tested in headless Chromium with a simulated peer (`SSPeer._emit`) and a fake `getDisplayMedia` only. A real two-browser PeerJS run was not possible on the test box (its Chrome policy blocks WebRTC UDP); PeerJS signalling and the lobby were confirmed. Not yet tried on real devices / NATs.
 
+### 1.18 Video Chat: `apps/connectivity/video-chat/` (Connectivity → Chat), release VC2 (VC1 = 1:1)
+- Calls between devices on the same Hub Connect Code: 1:1 as VC1 or a group of up to 4 (mesh: every pair has its own PeerJS MediaConnection). Hub code flow, `-vc-` peer ids, lobby/roster and `videochat-settings-v1` are unchanged from VC1.
+- Invite: `VCPeer.call(id, cam, {kind:'invite', room, members})` + `{t:'ring'}`; ring screen shows "Already in: …". Add people from the in-call ＋ sheet (Invite / Ringing… Cancel / In the call; 45 s no-answer → `cancel`). On Accept the newcomer dials each member with `{kind:'join', room}`; members auto-answer joins for their room (5th → `{t:'full'}`, other rooms ignored).
+- `{t:'st', mute, cam, share, ids}` on connect and every change → tile icons; a member that hears of someone it has no call with dials them if its peer id sorts lower (3 s later); a double dial keeps the lower id's call. Other signals: `decline`, `busy`, `cancel`, `end`. Roster loss (4 s) or ICE `failed` drops a person; the call ends when nobody is left (1:1 keeps VC1's dialogs). A VC1 call (no `kind`) is treated as a 1:1 invite.
+- Layout: 1:1 = remote full + draggable self PiP; 3–4 = 2×2 grid (3 = one tall + two); tiles show name, 🔇 / 📷✕ / 🖥️, Ringing…/Connecting…; active speaker = WebAudio RMS per stream (200 ms, 1.5 s hold) → green outline.
+- Screen share (desktop only; button hidden on phones): `getDisplayMedia` ≤1080p/15 fps → `replaceTrack` on every video sender (late joiners too); sharer's tile big (contain) with cameras beside it (below on portrait). Stop or the browser's "Stop sharing" → camera track back. Audio-only joiners (no video sender) can't receive the share.
+- Files: `videochat_call.js` rewritten (group state, share, speaker), `videochat_app.js` call screen (tiles, sheet), `.html/.css`, `videochat_peer.js` (`call(id, stream, meta)`, `myId()`).
+- Tested in headless Chromium with simulated peers only (fake MediaConnections, canvas streams, fake `getDisplayMedia`); the box Chrome policy blocks real WebRTC. Not yet tried with 3–4 real devices (mesh upload load on phones is the main unknown).
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
