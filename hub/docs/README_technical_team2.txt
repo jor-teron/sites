@@ -1441,3 +1441,36 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   Note from testing: Search -> Settings was checked with a fresh Settings window; with Settings
   already open on a hash the test had set by hand, the reused window did not move (not H29.3 code,
   left as is). Real phone <-> PC and a real PC folder not tested: Jor to try once on real devices.
+
+2026-10-28 IST, H50a (Team 2, week 2): New 16-char Hub device ID (hub-xxxxxxxx-xxx).
+  First step of H50 (Hub mesh): the mesh uses the existing H19 device id, in Jor's new format.
+  Format: 'hub-' + 8 random + '-' + 3 clock = 16 chars, lowercase [a-z0-9], ^hub-[a-z0-9]{8}-[a-z0-9]{3}$,
+    e.g. hub-k3x9p0qa-m2f. Random: crypto.getRandomValues bytes, a byte >= 252 is dropped (252 = 7 x 36)
+    so every character is equally likely (no modulo bias); Math.random only when crypto is missing.
+    Clock: last 3 chars of Date.now().toString(36) (wraps every ~46.7 s; only lowers clash odds).
+  Keys: shared-link-device-id (current id), shared-link-device-id-old (comma list of old 'd-...' ids,
+    newest last, max 5; never deleted). Migration: link_devices.js calls id() once at load; an old
+    'd-...' value is added to the -old list and a new id written; every id() call re-reads the key, so
+    two tabs converting at once settle on the last write. A page still running a cached pre-H50a
+    link_devices.js would not accept the new id and writes a fresh 'd-...' one; the next new page
+    converts it again and remembers it too (so chat 'You' still holds). Pages loading the file with
+    an old ?v= (Apps bot's connectivity apps, photo editor, OCR, paper scan, paper keyboard, filedrop)
+    get the new file when their HTTP cache expires (GitHub Pages ~10 min); Settings and Controller now
+    use ?v=20261028h50a.
+  API SharedLinkDevices: id(), oldIds() -> [ids], isMe(id) -> current or old id of this device, ID_RE.
+  link_chat.js: isDev accepts 'd-' and 'hub-'; isMine(m) = SharedLinkDevices.isMe(m.from) (fallback
+    m.from === id()). Old lines kept as comments.
+  Never synced: the id is not a 'sites-hub.*' key, so HubProfile.collect / exportData / H29 sync never
+    carry it (tested: id and key name absent from exportData({}), exportData({what:'everything',
+    keys:true}) and collect()). Two devices with one id would be clones; the mesh (H50) relies on this.
+  Screen Wall (apps/connectivity/screen-wall, Apps bot, not edited): SWSave.dev() returns
+    SharedLinkDevices.id() and uses it only as an opaque string (<= 40 chars) for the roster and the
+    host's cells:{<dev>:{r,c}} layout. Works with the new format; after the one-time conversion a
+    display's saved cell (keyed by its old d- id) is not found, so the host places it again once.
+  Bump 20261028j / v106 -> 20261028k / hub-shell-v107 (hub_bump.py --release H50a, --check OK).
+  Playwright (system Chrome, real pages, no stubs): H50a 22/22 (fresh id format + 16 chars, stored,
+    clock part, stable across reload, second tab same id, 40 regenerated ids valid + unique, id not in
+    profile export / sync payload, migration from d-k3x9p0qa7m2f, old id kept + oldIds + isMe, Pooh Chat
+    standalone shows the old message as You and others as received, migration once, stale d- id
+    converted again with both kept, Hub page same id + isMine, new message uses new id, Screen Wall
+    dev() = new id, no console errors) + H29.1 40/40 + H29.2 45/45 + H29.2b 30/30 + H29.3 40/40.

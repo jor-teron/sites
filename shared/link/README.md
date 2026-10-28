@@ -4,7 +4,7 @@ One PeerJS connection layer for every app. Plain JS, script tags, no build.
 
 ## Files
 - `link_core.js` — `window.SharedLink`: PeerJS loader (pinned **once**: `https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js`), host / join roles, retry, device list, messages.
-- `link_devices.js` — `window.SharedLinkDevices`: this device's editable name (`shared-link-device-name`, default guess "Android phone", "Windows PC"…).
+- `link_devices.js` — `window.SharedLinkDevices`: this device's editable name (`shared-link-device-name`, default guess "Android phone", "Windows PC"…). H19 / H50a: `id()` = the permanent device id `hub-xxxxxxxx-xxx` (16 chars, `^hub-[a-z0-9]{8}-[a-z0-9]{3}$`, key `shared-link-device-id`); an old `d-…` id is converted once and kept in `shared-link-device-id-old` (`oldIds()`, `isMe(id)`). Never synced or exported.
 - `link_files.js` — chunked file transfer (`SharedLink.sendFile`), progress events, Hub relay.
 - `link_ui.js` — `SharedLinkUI.mountDevices(el)` (name + green online dot), `mountName(el)`.
 - `link.css` — widget styles.
