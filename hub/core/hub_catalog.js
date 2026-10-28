@@ -9,170 +9,177 @@ window.SITES_CSV = Object.assign(window.SITES_CSV || {}, {
   "Favorite": `# Favorite — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-TV,              ../../tv/,                 , , Watch
-Caption for NEI, ../tools/caption-for-nei/, , , Language
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+TV,              ../../tv/,                 , , Watch, Live TV player for free IPTV channels from M3U playlists - remote and touch
 `,
   "Games": `# Games — one per line. Paths are relative to this folder. Lines starting with # are comments.
 # icon empty = <folder>/<folder>_icon.png or a letter tile; newtab 1 = own tab on desktop;
-# section = optional group heading for Games only (first appearance sets the order; empty = "Other", shown last).
+# section = optional group heading for Games only (first appearance sets the order; empty = "Other", shown last);
+# description = one plain searchable line (no commas; use : or -). Old 5-column rows still work.
 # This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
-name, path, icon, newtab, section
-2048,              2048/,          , , Puzzle
-Swell Foop,        swell-foop/,    , , Puzzle
-Tetris,            tetris/,        , , Puzzle
-Tic-Tac-Toe,       tic-tac-toe/,   , , Puzzle
-Ping Pong,         ping-pong/,     , , Arcade
-Snake,             snake/,         , , Arcade
-Space Invaders,    space-invader/, , , Arcade
-Demolisher,        demolisher/,    , , Arcade
-Sling Birds,       sling-birds/, , , Arcade
-Pacman,            pacman/, , , Arcade
-Dino Run,          dino-run/,      , , Runners
-Car Run,           car-run/,       , , Runners
-Desert Road,       desert-road/,   , , Runners
-Turbo Lap,         turbo-lap/,     , , Runners
-Tower Defence,     tower-defence/, , , Strategy
-Chess,             chess/,         , , Strategy
-AoE RTS,           aoe-rts/,       , , Strategy
-Gravity Sandbox,   gravity-sandbox/, , , Simulator
-Solar System,      solar-system/,  , , Simulator
-Aquarium,          aquarium/,      , , Simulator
-Browser FPS,       browser-fps/,   , , 3D
-LandCraft,         landcraft/,     , , 3D
-Island Conquest,   island-conquest/, , , Beta
-Tennis Ball Blitz, tennis-throw/,  , , Beta
-AR Game,           ar-game/,       , , Beta
-Island (Alpha),    island-alpha/,  , , Beta
-Neon Raid,          neon-raid/,     , , Beta
-Neon Fist,         neon-fist/,     , , Beta
-Neon Fist 3D,      neon-fist-3d/,  , , Beta
-Ant Farm,          ant-farm/,      , , Beta
+name, path, icon, newtab, section, description
+2048,              2048/,          , , Puzzle, Slide number tiles and merge matching pairs to reach the 2048 tile
+Swell Foop,        swell-foop/,    , , Puzzle, Tap groups of same-coloured balls to clear the board - bigger groups score more
+Tetris,            tetris/,        , , Puzzle, Classic falling blocks: clear lines before the stack reaches the top
+Tic-Tac-Toe,       tic-tac-toe/,   , , Puzzle, Get three in a row on a 3x3 grid - play a friend or the computer
+Ping Pong,         ping-pong/,     , , Arcade, Paddle and ball table tennis - return the ball and outscore your opponent
+Snake,             snake/,         , , Arcade, Steer the snake to eat food and grow longer without hitting yourself
+Space Invaders,    space-invader/, , , Arcade, Retro shooter: move your cannon and blast waves of descending aliens
+Demolisher,        demolisher/,    , , Arcade, Side-scrolling action: smash buildings and fight enemies with physics weapons
+Sling Birds,       sling-birds/, , , Arcade, Physics slingshot: launch birds to knock down towers and defeat the pigs
+Pacman,            pacman/, , , Arcade, Maze chase: eat every dot and dodge the ghosts - power pellets turn the tables
+Dino Run,          dino-run/,      , , Runners, Endless runner: jump the dinosaur over obstacles - pick your dino and theme
+Car Run,           car-run/,       , , Runners, Endless driving: change lanes - jump and use nitro to dodge traffic and potholes
+Desert Road,       desert-road/,   , , Runners, Drive a desert highway and dodge cacti - animals and rocks on the road
+Turbo Lap,         turbo-lap/,     , , Runners, Top-down lap racing against AI cars with gas - brake and steering
+Tower Defence,     tower-defence/, , , Strategy, Build gun - cannon and frost towers to stop enemy waves on many maps
+Chess,             chess/,         , , Strategy, Classic chess against the computer with hints and undo - two levels for learners
+AoE RTS,           aoe-rts/,       , , Strategy, Tiny real-time strategy in Age of Empires style: gather - build and command units
+Gravity Sandbox,   gravity-sandbox/, , , Simulator, Drop planets - stars and black holes and watch gravity make orbits
+Solar System,      solar-system/,  , , Simulator, Explore the Sun and planets: tap a planet for key facts - pan and zoom
+Aquarium,          aquarium/,      , , Simulator, Virtual fish tank: meet the fish - feed them and keep the water clean
+Browser FPS,       browser-fps/,   , , 3D, 3D first-person shooter: explore or fight on camp - island - snow and forest maps
+LandCraft,         landcraft/,     , , 3D, Voxel block world in Minecraft style: explore - break and place blocks - swim
+Island Conquest,   island-conquest/, , , Beta, Strategy: send ships to capture islands from the AI before it takes yours
+Tennis Ball Blitz, tennis-throw/,  , , Beta, Aim and throw tennis balls at targets against the clock - win medals
+AR Game,           ar-game/,       , , Beta, Phone camera AR game: catch pets or chase ghosts and zombies in your room
+Island (Alpha),    island-alpha/,  , , Beta, 3D island walk demo with hills and day and night - early alpha
+Neon Raid,          neon-raid/,     , , Beta, Futuristic run-and-gun platformer against the clock - alpha
+Neon Fist,         neon-fist/,     , , Beta, Neon fighting game character viewer - preview build
+Neon Fist 3D,      neon-fist-3d/,  , , Beta, 3D hero builder: make a fighter - pick body - hair and clothes and save it
+Ant Farm,          ant-farm/,      , , Beta, Ant colony sim: ants dig tunnels and forage - drop food and water to help
 
-Aeroplane,          aeroplane/,                   , , Beta
-Island Game Demo,   island-demo/,                 , , Beta
-Game Settings,      common/settings/games-settings.html, , , Settings
+Aeroplane,          aeroplane/,                   , , Beta, Fly a small plane around a mini planet - simple 3D flight sim
+Island Game Demo,   island-demo/,                 , , Beta, 3D island demo: walk or run as a male or female character and explore
+Game Settings,      common/settings/games-settings.html, , , Settings, Shared game settings: display - FPS limit - sound - touch controls and difficulty
 `,
   "Media": `# Media — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-TV,              ../../tv/,        , , Watch
-Draw,            draw/,            , , Draw & Paint
-Photo Editor v2, photo-editor-v2/, , , Photo
-Camera,          camera/,          , , Photo
-Gallery,         gallery/,         , , Photo
-GIF Maker,       gif-maker/,       , , Photo
-Sound Recorder,  sound-recorder/,  , , Audio
-Screen Recorder, screen-recorder/, , , Video
-3D Viewer,       3d-viewer/,       , , 3D
-News,            news/,            , , Read
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+Draw,            draw/,            , , Draw & Paint, Draw with finger stylus or mouse: pen - eraser - fill - shapes - export PNG
+Photo Editor v2, photo-editor-v2/, , , Photo, Edit photos: crop - rotate - brightness - contrast - B&W and sepia looks
+Camera,          camera/,          , , Photo, Take photos and record videos with the device camera
+Gallery,         gallery/,         , , Photo, Browse photos and videos from a folder or files on this device
+GIF Maker,       gif-maker/,       , , Photo, Turn a short video into an animated GIF on your device
+Sound Recorder,  sound-recorder/,  , , Audio, Record audio from the microphone - long recordings with a waveform
+Screen Recorder, screen-recorder/, , , Video, Record your screen window or tab with microphone audio
+3D Viewer,       3d-viewer/,       , , 3D, View 3D GLB and glTF models: orbit - play animations - screenshot
+News,            news/,            , , Read, Latest headlines from Google News India in story cards
 `,
   "Office": `# Office — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-Draftly,      draftly/,             , , Hub Office
-Spreadsheet,  spreadsheet/,         , , Hub Office
-Base,         base/,                , , Hub Office
-Notely,       notely/,              , , Write
-MS Word Diff, ../tools/msword_diff/, , , Write
-OCR,          ocr/,                 , , Scan & Print
-Paper Scan,   paper-scan/,          , , Scan & Print
-Print,        print/,               , , Scan & Print
-PDF Tools,    pdf-tools/,           , , PDF
-Mail,         mail/,                , , Mail
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+Draftly,      draftly/,             , , Hub Office, Word processor with A4 pages: write documents offline - save as PDF or DOCX
+Spreadsheet,  spreadsheet/,         , , Hub Office, Offline spreadsheet with formulas and styles - CSV import/export and print
+Base,         base/,                , , Hub Office, Small database app: tables - forms and queries like Access
+Notely,       notely/,              , , Write, Plain-text notes that save as you type - open and download .txt
+MS Word Diff, ../tools/msword_diff/, , , Write, Compare two Word .docx files and see what text changed
+OCR,          ocr/,                 , , Scan & Print, Turn text in photos scans and PDFs into editable text - works offline
+Paper Scan,   paper-scan/,          , , Scan & Print, Scan paper pages with the camera into one PDF
+Print,        print/,               , , Scan & Print, Send photos or PDFs from your phone to print on this computer
+PDF Tools,    pdf-tools/,           , , PDF, Organise PDF pages: reorder - rotate - delete and save a new copy
+Mail,         mail/,                , , Mail, Simple Gmail client: read and send email after Google sign-in
 `,
   "Connectivity": `# Connectivity — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-File Drop,  filedrop/,   , , Share
-QR Scanner, qr-scanner/, , , Share
-Whiteboard, whiteboard/, whiteboard/whiteboard_icon.png, , Share
-Shared Clipboard, shared-clipboard/, shared-clipboard/clipboard_icon.png, , Share
-Pooh Chat,  pooh-chat/,  , , Chat
-Video Chat, video-chat/, , , Chat
-Screen Share, screen-share/, screen-share/screenshare_icon.png, , Chat
-Intercom, intercom/, intercom/intercom_icon.png, , Chat
-SSH,        ssh/,        , , Remote
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+File Drop,  filedrop/,   , , Share, Send files and photos device to device: scan a QR or type a 4-digit code
+QR Scanner, qr-scanner/, , , Share, Scan QR codes and barcodes with the camera or from a photo
+Whiteboard, whiteboard/, whiteboard/whiteboard_icon.png, , Share, Draw together live on a shared whiteboard with every connected device
+Shared Clipboard, shared-clipboard/, shared-clipboard/clipboard_icon.png, , Share, Copy on one device and paste on another: text links and images
+Pooh Chat,  pooh-chat/,  , , Chat, Group text chat for every device on the Hub Connect Code
+Video Chat, video-chat/, , , Chat, Video and audio calls: one-to-one or groups of up to 4 with screen sharing
+Screen Share, screen-share/, screen-share/screenshare_icon.png, , Chat, Share your computer screen window or tab with phones and other devices
+Intercom, intercom/, intercom/intercom_icon.png, , Chat, Tap-to-talk live voice to all connected devices or just one
+SSH,        ssh/,        , , Remote, SSH terminal in the browser: password login - saved hosts - auto-reconnect
 `,
   "Tools": `# Tools — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-Calculator,            calculator/,      , , Calculators
-Unit Converter,        unit-converter/,                   , , Calculators
-Stopwatch,             stopwatch/,       , , Time
-Calendar,              calendar/,        , , Time
-My Day,                dashboard/,       , , Time
-Weather,               weather-chart/,   , , Weather
-Weather Hourly,        weather-hourly/,  , , Weather
-NE-India Dictionary,   nei-dict/,        , , Language
-Caption for NEI,       caption-for-nei/, , , Language
-Learning HTML (Basic), learning-html/,   , , Learn
-Speed Test,            speedtest/,       , , Network
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+Calculator,            calculator/,      , , Calculators, Calculator with a live answer as you type and history of recent sums
+Unit Converter,        unit-converter/,                   , , Calculators, Convert units offline: length - weight - temperature - area and more
+Stopwatch,             stopwatch/,       , , Time, Stopwatch with laps and an analog or digital display
+Calendar,              calendar/,        , , Time, Month and year calendar with Indian holidays list
+My Day,                dashboard/,       , , Time, Personal dashboard: clock - weather - todo - notes - schedule and links
+Weather,               weather-chart/,   , , Weather, Today's hourly temperature chart for Diphu from Open-Meteo
+Weather Hourly,        weather-hourly/,  , , Weather, Hourly weather forecast for Diphu Assam
+NE-India Dictionary,   nei-dict/,        , , Language, Northeast India dictionary: look up words in local languages
+Caption for NEI,       caption-for-nei/, , , Language, Live captions for English - Assamese - Hindi - Bengali and Nepali
+Learning HTML (Basic), learning-html/,   , , Learn, Try HTML: type code and see the result live as you type
+Speed Test,            speedtest/,       , , Network, Test your internet speed: ping and download from this site
 `,
   "Lab": `# Lab apps — one per line. Paths are relative to this folder. Lines starting with # are comments.
 # icon optional (empty = <folder>/<folder>_icon.png or a letter tile); newtab 1 = own tab on desktop;
 # section = optional group heading for Lab only (first appearance sets the order; empty = "Other", shown last).
-name, path, icon, newtab, section
-MyLLM,              myllm/,                       , , AI
-Local AI Chat,      local-ai-chat/,               , , AI
-Story,              story/,                       , , AI
-LLM Calculator,     llm-calc/,                    , , AI
-ONNX Runner,        onnx-runner/,                 , , AI
-Agent,              agent/,                       , , AI
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+MyLLM,              myllm/,                       , , AI, Train a tiny character-level language model from scratch in your browser
+Local AI Chat,      local-ai-chat/,               , , AI, Chat with a small AI model (SmolLM2) running fully in your browser
+Story,              story/,                       , , AI, Type a beginning and get a short story from a tiny on-device AI model
+LLM Calculator,     llm-calc/,                    , , AI, Plan a tiny LLM: parameters - file size - memory and training time
+ONNX Runner,        onnx-runner/,                 , , AI, Run any .onnx machine learning model in the browser - nothing uploaded
+Agent,              agent/,                       , , AI, Browser AI agent with tools: local Ollama - OpenAI-compatible API or Gemini
 
-Sketchbook,         sketchbook/,                  , , Tools
-Code Lab,           code-lab/,                    , , Tools
-Image Gen,          image-gen/,                   image-gen/imagegen_icon.png, , Tools
-Vision,             vision/,                      vision/vision_icon.png, , Tools
-Paper Keyboard,     paper-keyboard/,              , , Tools
-MyBookmark,         mybookmark/,                  , , Tools
-Wiki Extractor,     wiki-extractor/,              , , Tools
-Google Drive Test,  gdrive-test/,                 , , Tools
+Sketchbook,         sketchbook/,                  , , Tools, Paper sketchbook with 50 pages: draw with finger mouse or pen
+Code Lab,           code-lab/,                    code-lab/codelab_icon.png, , Tools, Jupyter-style code cells: run Python on a remote Jupyter server
+Image Gen,          image-gen/,                   image-gen/imagegen_icon.png, , Tools, Text-to-image: generate pictures from a prompt with your own Ollama
+Vision,             vision/,                      vision/vision_icon.png, , Tools, Ask a vision AI model on your own Ollama about a photo
+Paper Keyboard,     paper-keyboard/,              , , Tools, Phone keyboard that types on a desktop over PeerJS (demo)
+MyBookmark,         mybookmark/,                  , , Tools, View and manage your browser bookmarks: import - search - organise
+Wiki Extractor,     wiki-extractor/,              , , Tools, Extract plain text from Wikipedia pages and linked pages - download .txt
+Google Drive Test,  gdrive-test/,                 , , Tools, Test Google sign-in and a first Google Drive call
 
-Media Explorer,     media-explorer/,              , , Media
-IPTV player,        iptv-player/,                 , , Media
-Channel Cleaner,    m3u-cleaner/,                 , , Media
-Three.js Viewer v2, threejs-viewer-v2/,           , , Media
+Media Explorer,     media-explorer/,              , , Media, Browse and view photos and videos from a folder or URL
+IPTV player,        iptv-player/,                 , , Media, Drag and drop an M3U playlist to watch IPTV channels
+Channel Cleaner,    m3u-cleaner/,                 , , Media, Test M3U playlist channels and remove dead streams - export a clean list
+Three.js Viewer v2, threejs-viewer-v2/,           , , Media, Run Three.js code and view 3D scenes - export GLB or glTF
 
-WebRTC Chat,        ../connectivity/webrtc-chat/, , , Connect
-P2P Chat,           ../connectivity/p2pchat.html, , , Connect
-Phone,              ../media/phone/,              , , Connect
+WebRTC Chat,        ../connectivity/webrtc-chat/, , , Connect, Peer-to-peer chat by QR or 6-digit code over WebRTC
+P2P Chat,           ../connectivity/p2pchat.html, , , Connect, Simple peer-to-peer chat: host a 4-digit code and a friend joins
+Phone,              ../media/phone/,              , , Connect, Android-style shortcut page that opens phone apps and settings
 
-Paint,              ../media/paint/,              , , Legacy
-Photo Editor,       ../media/photo-editor/,       , , Legacy
-Notepad,            ../office/notepad/,           , , Legacy
-Calculator (Legacy), ../tools/calculator-beta/,   , , Legacy
-Webcam,             ../media/webcam/,             , , Legacy
-Keyboard,           keyboard/,                    , , Legacy
+Paint,              ../media/paint/,              , , Legacy, Old simple paint app: brush - eraser - fill and shapes
+Photo Editor,       ../media/photo-editor/,       , , Legacy, Old photo editor: brightness - contrast - rotate - crop and print
+Notepad,            ../office/notepad/,           , , Legacy, Old simple notepad: type - save and download text
+Calculator (Legacy), ../tools/calculator-beta/,   , , Legacy, Old basic calculator with keyboard support
+Webcam,             ../media/webcam/,             , , Legacy, Old webcam viewer: see your camera and save a snapshot
+Keyboard,           keyboard/,                    , , Legacy, On-screen keyboard demo and test bed for the Hub keyboard
 `,
   "Learn": `# Learn — tiles page + Hub menu flyout. This CSV is the source of truth for the Learn category (see README.md).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
-# section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-First Aid,               first-aid/,                 , , Health
-Human Body Explorer,     human-body/,                , , Health
-Water Kingdom, 	water-kingdom/, , , Planet
-Animal Kingdom, 	animal-kingdom/, , , Planet
+# section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last),
+# description (one plain searchable line; no commas - use : or -)
+name, path, icon, newtab, section, description
+First Aid,               first-aid/,                 , , Health, First aid basics: CPR - choking - burns - cuts - sprains - fainting and nosebleeds
+Human Body Explorer,     human-body/,                , , Health, Tap body parts outside and inside to learn their names and jobs - with quiz
+Water Kingdom, 	water-kingdom/, , , Planet, Picture book about water: meet Droppy - the water cycle and how to save water
+Animal Kingdom, 	animal-kingdom/, , , Planet, Animal picture book: mammals - birds and reptiles with facts and search
 
-English Basic,           english-basic/,             , , Language
-NE-India Dictionary,     ../tools/nei-dict/,         , , Language
-Caption for NEI,         ../tools/caption-for-nei/,  , , Language
-Typing Tutor,            typing-tutor/,              , , Language
-Morse Code,              morse-code/,                , , Language
-Maths and Logic,         maths-logic/,               , , Language and Maths
-Clock Reading,           clock-reading/,             , , Language and Maths
-Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_icon.png, , Coding
-Learning HTML (Basic),   ../tools/learning-html/,    , , Coding
-Survival and Outdoors,   survival-outdoors/,         , , Outdoors
-Piano Basics,            piano-basics/,              , , Music
-Guitar Chords,           guitar-chords/,             , , Music
-Tuner & Metronome,       tuner-metronome/,           , , Music
-Periodic Table,          periodic-table/,            , , Science
-Road Safety,             road-safety/,               , , Life Skills
+English Basic,           english-basic/,             , , Language, English basics: alphabet - words - spelling - phrases - sentences and questions
+NE-India Dictionary,     ../tools/nei-dict/,         , , Language, Dictionary for Northeast India languages: Karbi - Mizo - Khasi - Dimasa and more
+Caption for NEI,         ../tools/caption-for-nei/,  , , Language, Live speech captions for English - Assamese - Hindi - Bengali and Nepali
+Typing Tutor,            typing-tutor/,              , , Language, Learn touch typing on a computer keyboard with graded lessons
+Morse Code,              morse-code/,                , , Language, Morse code chart and translator with sound and lamp - tap key and listen lessons
+Maths and Logic,         maths-logic/,               , , Language and Maths, Maths practice: times tables - fractions - money - shapes - patterns and puzzles
+Clock Reading,           clock-reading/,             , , Language and Maths, Learn to tell the time: drag clock hands - 12 h and 24 h - read and set quizzes
+Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_icon.png, , Coding, Jupyter-style code cells that run on a remote Jupyter server
+Learning HTML (Basic),   ../tools/learning-html/,    , , Coding, Try HTML: type code in a box and see the web page result as you type
+Code School,             code-school/,               , , Coding, Code playground: HTML - CSS - JavaScript with live preview and SQL with a sample database
+Survival and Outdoors,   survival-outdoors/,         , , Outdoors, Outdoor survival basics: making fire and finding safe drinking water
+Piano Basics,            piano-basics/,              , , Music, Learn piano: play songs step by step or with falling notes - sargam - record
+Guitar Chords,           guitar-chords/,             , , Music, Learn guitar chords: finger charts - strum sound - chord change practice and quiz
+Tuner & Metronome,       tuner-metronome/,           , , Music, Microphone tuner for guitar and voice plus a metronome with tap tempo
+Periodic Table,          periodic-table/,            , , Science, All 118 chemical elements: search - element facts - colour by category and quizzes
+Road Safety,             road-safety/,               , , Life Skills, Indian road signs - traffic lights - safe crossing game - road rules and quiz
 `,
   "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools; R53c: D-Pad Controller listed here from Games, folder stays in hub/controller/; R54: new Disk app; T1: Terminal; AH1: App Hub; H48: Search). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),

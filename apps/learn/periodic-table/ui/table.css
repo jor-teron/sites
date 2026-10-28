@@ -1,4 +1,4 @@
-/* Periodic Table PT1 — app look on top of the Learn kit (../common/ui/learn.css). The grid is a CSS grid of 18 columns
+/* Periodic Table PT2 — app look on top of the Learn kit (../common/ui/learn.css). The grid is a CSS grid of 18 columns
    sized by --cell (set in JS to fit the screen, times the zoom); it scrolls sideways on phones. Element colours are set
    inline as --c (category or state). Light mode follows the Hub theme (html.light). */
 .pt { --accent: #4dabf7; --ok: #7ccf95; --bad: #ff6b6b; }
@@ -18,6 +18,7 @@
 .pt-hint { display: none; margin: 0; padding: 6px 10px; border-radius: 10px; background: rgba(77, 171, 247, 0.15); font-size: 0.85rem; align-items: center; gap: 8px; }
 .pt-x { margin-left: auto; min-width: 36px; min-height: 36px; border: 0; border-radius: 99px; background: transparent; color: var(--text); font-size: 1.4rem; cursor: pointer; }
 .pt-scroll { flex: 1 1 auto !important; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.pt-scroll.pt-top { flex: 0 1 auto !important; }   /* PT2: table on top, search row straight under it */
 .pt-grid { --cell: 48px; display: grid; grid-template-columns: 18px repeat(18, var(--cell)); grid-template-rows: 16px repeat(7, var(--cell)) calc(var(--cell) * 0.35) repeat(2, var(--cell)); gap: 2px; width: max-content; margin: 0 auto; padding: 2px; }
 .pt-gnum, .pt-pnum { font-size: 0.65rem; color: var(--muted); display: flex; align-items: end; justify-content: center; }
 .pt-pnum { align-items: center; }
@@ -67,7 +68,7 @@
 @media (orientation: portrait) and (max-width: 700px) { .pt-hint { display: flex; } }
 @media (max-width: 560px) {
   .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; flex-basis: 100%; }
-  .lrn-main.pt-main { padding: 8px; } .pt-search { flex-basis: 100%; max-width: none; } .pt-views { margin-left: 0; }
+  .lrn-main.pt-main { padding: 8px; } .pt-search { flex-basis: 100%; max-width: none; } .pt-views { margin-left: 0; } .pt-found:empty { display: none; }
   .pt-chip { min-height: 26px; padding: 0 8px; font-size: 0.72rem; } .pt-kvs { grid-template-columns: 1fr 1fr; } .pt-prompt { min-height: 84px; } .pt-prompt b { font-size: 2.6rem; }
 }
 @media (max-height: 460px) {

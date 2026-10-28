@@ -1,24 +1,26 @@
 # Learn — tiles page + Hub menu flyout. This CSV is the source of truth for the Learn category (see README.md).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
-# section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-First Aid,               first-aid/,                 , , Health
-Human Body Explorer,     human-body/,                , , Health
-Water Kingdom, 	water-kingdom/, , , Planet
-Animal Kingdom, 	animal-kingdom/, , , Planet
+# section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last),
+# description (one plain searchable line; no commas - use : or -)
+name, path, icon, newtab, section, description
+First Aid,               first-aid/,                 , , Health, First aid basics: CPR - choking - burns - cuts - sprains - fainting and nosebleeds
+Human Body Explorer,     human-body/,                , , Health, Tap body parts outside and inside to learn their names and jobs - with quiz
+Water Kingdom, 	water-kingdom/, , , Planet, Picture book about water: meet Droppy - the water cycle and how to save water
+Animal Kingdom, 	animal-kingdom/, , , Planet, Animal picture book: mammals - birds and reptiles with facts and search
 
-English Basic,           english-basic/,             , , Language
-NE-India Dictionary,     ../tools/nei-dict/,         , , Language
-Caption for NEI,         ../tools/caption-for-nei/,  , , Language
-Typing Tutor,            typing-tutor/,              , , Language
-Morse Code,              morse-code/,                , , Language
-Maths and Logic,         maths-logic/,               , , Language and Maths
-Clock Reading,           clock-reading/,             , , Language and Maths
-Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_icon.png, , Coding
-Learning HTML (Basic),   ../tools/learning-html/,    , , Coding
-Survival and Outdoors,   survival-outdoors/,         , , Outdoors
-Piano Basics,            piano-basics/,              , , Music
-Guitar Chords,           guitar-chords/,             , , Music
-Tuner & Metronome,       tuner-metronome/,           , , Music
-Periodic Table,          periodic-table/,            , , Science
-Road Safety,             road-safety/,               , , Life Skills
+English Basic,           english-basic/,             , , Language, English basics: alphabet - words - spelling - phrases - sentences and questions
+NE-India Dictionary,     ../tools/nei-dict/,         , , Language, Dictionary for Northeast India languages: Karbi - Mizo - Khasi - Dimasa and more
+Caption for NEI,         ../tools/caption-for-nei/,  , , Language, Live speech captions for English - Assamese - Hindi - Bengali and Nepali
+Typing Tutor,            typing-tutor/,              , , Language, Learn touch typing on a computer keyboard with graded lessons
+Morse Code,              morse-code/,                , , Language, Morse code chart and translator with sound and lamp - tap key and listen lessons
+Maths and Logic,         maths-logic/,               , , Language and Maths, Maths practice: times tables - fractions - money - shapes - patterns and puzzles
+Clock Reading,           clock-reading/,             , , Language and Maths, Learn to tell the time: drag clock hands - 12 h and 24 h - read and set quizzes
+Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_icon.png, , Coding, Jupyter-style code cells that run on a remote Jupyter server
+Learning HTML (Basic),   ../tools/learning-html/,    , , Coding, Try HTML: type code in a box and see the web page result as you type
+Code School,             code-school/,               , , Coding, Code playground: HTML - CSS - JavaScript with live preview and SQL with a sample database
+Survival and Outdoors,   survival-outdoors/,         , , Outdoors, Outdoor survival basics: making fire and finding safe drinking water
+Piano Basics,            piano-basics/,              , , Music, Learn piano: play songs step by step or with falling notes - sargam - record
+Guitar Chords,           guitar-chords/,             , , Music, Learn guitar chords: finger charts - strum sound - chord change practice and quiz
+Tuner & Metronome,       tuner-metronome/,           , , Music, Microphone tuner for guitar and voice plus a metronome with tap tempo
+Periodic Table,          periodic-table/,            , , Science, All 118 chemical elements: search - element facts - colour by category and quizzes
+Road Safety,             road-safety/,               , , Life Skills, Indian road signs - traffic lights - safe crossing game - road rules and quiz

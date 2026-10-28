@@ -1,11 +1,14 @@
 /*
- * base-ui.js  (BS1, BS2: Query tab, Totals toggle, dropdowns for field type + template)
+ * base-ui.js  (BS1, BS2: Query tab, Totals toggle, dropdowns for field type + template, BS3: safe start)
  * Base app shell: ribbon (shared office-ribbon / hover / collapse), Settings panel (office-settings,
  * key 'base_settings'), File menu, table + field + record commands, view switch, starter templates, boot.
  * Field editing uses OfficeDialog.form: a name box + type dropdown per field (empty name = delete field).
+ * BS3: boot wraps the first render in try/catch; on failure BaseUI.recover(err) shows an in-app dialog
+ *   (office-dialog look, no alert/confirm): "Download raw data" (JSON file of what was loaded) and
+ *   "Reset Base" (second in-app confirm, then BaseStore.reset() and the templates screen).
  */
 var BASE_RIBBON_TABS = [{ id: "home", label: "Home" }, { id: "query", label: "Query" }, { id: "view", label: "View" }];
-var BASE_VERSION = "BS2";
+var BASE_VERSION = "BS3";
 var BASE_TYPE_OPTS = [{ value: "text", label: "Text" }, { value: "number", label: "Number" }, { value: "date", label: "Date" }, { value: "bool", label: "Yes/No" }];
 var BASE_RIBBON = null, BASE_COLLAPSE = null, BASE_SETTINGS = null;
 var BASE_TYPES = { text: "Text", number: "Number", date: "Date", bool: "Yes/No" };
@@ -125,7 +128,46 @@ var BaseUI = (function () {
     rd.onload = function () { var t = BaseCsv.importText(uniqueName(file.name.replace(/\.[^.]+$/, "")), String(rd.result)); if (!t) return toast("That CSV is empty"); BASE.sort = null; render(); toast("Imported " + t.rows.length + " records"); };
     rd.readAsText(file);
   }
-  return { render: render, renderEmpty: renderEmpty, status: status, typeLabel: typeLabel, addRow: addRow, deleteRow: deleteRow,
+  function downloadRaw() {
+    var data = BaseStore.raw(); if (data == null) data = BASE.db;
+    var txt; try { txt = JSON.stringify(data, null, 2); } catch (e) { txt = String(data); }
+    try {
+      var a = document.createElement("a"), url = URL.createObjectURL(new Blob([txt], { type: "application/json" }));
+      a.href = url; a.download = "base-raw-data-" + new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-") + ".json";
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      toast("Raw data downloaded");
+    } catch (e) { toast("Download failed"); }
+  }
+  /* In-app recovery dialog after a failed render. Built with the shared dlg-* classes. */
+  function recover(err) {
+    try { console.error("Base could not start:", err); } catch (e) {}
+    var old = document.getElementById("base-recover"); if (old) old.remove();
+    var back = document.createElement("div"); back.className = "dlg-backdrop base-recover"; back.id = "base-recover";
+    var box = document.createElement("div"); box.className = "dlg"; box.setAttribute("role", "alertdialog"); box.setAttribute("aria-modal", "true");
+    box.setAttribute("aria-labelledby", "base-recover-title");
+    var ti = document.createElement("div"); ti.className = "dlg-title"; ti.id = "base-recover-title"; ti.textContent = "Base could not open your data"; box.appendChild(ti);
+    var msg = document.createElement("div"); msg.className = "dlg-message";
+    msg.textContent = "Your saved data could not be shown. Download it first to keep a copy, then reset Base to start again from the templates.";
+    box.appendChild(msg);
+    var det = document.createElement("div"); det.className = "base-recover-err"; det.textContent = String(err && err.message || err || "Unknown error"); box.appendChild(det);
+    var act = document.createElement("div"); act.className = "dlg-actions";
+    function btn(label, cls, fn) { var b = document.createElement("button"); b.type = "button"; b.className = "dlg-btn " + cls; b.textContent = label; b.addEventListener("click", fn); act.appendChild(b); return b; }
+    var dl = btn("Download raw data", "dlg-ok base-recover-dl", downloadRaw);
+    btn("Reset Base", "dlg-ok dlg-danger base-recover-reset", function () {
+      back.hidden = true;
+      OfficeDialog.confirm({ title: "Reset Base?", message: "This deletes all saved Base tables and queries on this device. Download the raw data first if you want to keep it.", okLabel: "Reset", danger: true }).then(function (ok) {
+        if (!ok) { back.hidden = false; dl.focus(); return; }
+        back.remove();
+        BaseStore.reset(function () {
+          BASE.view = "grid";
+          try { render(); } catch (e) { $("grid-wrap").textContent = ""; renderEmpty($("grid-wrap")); }
+          toast("Base was reset");
+        });
+      });
+    });
+    box.appendChild(act); back.appendChild(box); document.body.appendChild(back); dl.focus();
+  }
+  return { recover: recover, downloadRaw: downloadRaw, render: render, renderEmpty: renderEmpty, status: status, typeLabel: typeLabel, addRow: addRow, deleteRow: deleteRow,
     newTable: newTable, renameTable: renameTable, deleteTable: deleteTable, addField: addField, editFields: editFields,
     setView: setView, switchTable: switchTable, importFile: importFile };
 })();
@@ -203,5 +245,7 @@ function initBaseSettings() {
   var st = null;
   $("search").addEventListener("input", function (e) { clearTimeout(st); st = setTimeout(function () { BASE.search = e.target.value; BaseUI.render(); }, 150); });
   window.addEventListener("pagehide", BaseStore.saveNow);
-  BaseStore.load(function () { BaseUI.render(); if (typeof BASE_HUB !== "undefined" && BASE_HUB.start) BASE_HUB.start(); });
+  BaseStore.load(function () {
+    try { BaseUI.render(); } catch (e) { BaseUI.recover(e); }
+    if (typeof BASE_HUB !== "undefined" && BASE_HUB.start) BASE_HUB.start(); });
 })();

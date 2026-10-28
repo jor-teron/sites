@@ -1,4 +1,4 @@
-/* Piano Basics PB1 — the on-screen piano. PB.makePiano({ onDown(m), onUp(m) }) returns { el, build(lo, octaves), light(m, cls), clear(cls), labels(style) }.
+/* Piano Basics PB2 — the on-screen piano. PB.makePiano({ onDown(m), onUp(m) }) returns { el, build(lo, octaves), light(m, cls), unlight(m, cls), clear(cls), labels(style) }.
    White keys fill the width; black keys sit on top. Pointer events with one entry per pointerId give multi-touch,
    and sliding a finger across keys plays each new key (glissando). touch-action: none stops the page from scrolling. */
 window.PB = window.PB || {};
@@ -44,6 +44,7 @@ window.PB = window.PB || {};
       el, build, press, release,
       has: m => !!keys[m],
       light(m, cls) { const k = keys[m]; if (k) k.classList.add(cls || 'pb-next'); },
+      unlight(m, cls) { const k = keys[m]; if (k) k.classList.remove(cls || 'pb-next'); },
       clear(cls) { el.querySelectorAll('.' + (cls || 'pb-next')).forEach(k => k.classList.remove(cls || 'pb-next')); },
       labels(s) { style = s; for (const m in keys) label(keys[m], +m); }
     };

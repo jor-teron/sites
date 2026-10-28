@@ -1,5 +1,6 @@
-/* Clock Reading CR1 — the analog clock, drawn in code as one SVG (face, 60 minute ticks, numbers 1-12, hour hand blue,
-   minute hand red, optional second hand). Drag a hand to set the time: the minute hand also moves the hour hand along
+/* Clock Reading CR2 — the analog clock, drawn in code as one SVG (face, 60 minute ticks, numbers 1-12, hour hand black,
+   minute hand blue, second hand red; the face stays light in dark theme so the black hand shows). It is redrawn only when
+   the time changes (once a second by the app's tick) or on a drag event, so dragging stays immediate. Drag a hand to set the time: the minute hand also moves the hour hand along
    (passing 12 goes to the next or previous hour), the hour hand moves in steps of the snap. Grabbing near one hand drags that hand; where both
    hands are (or none), near the middle drags the hour hand and near the edge the minute hand.
    CR.makeClock({ onChange(t) }) -> { el, set(t), get(), snap(n), lock(bool), seconds(s or null) }. */
@@ -39,7 +40,7 @@ window.CR = window.CR || {};
       } else {
         const half = C.h24(t) >= 12 ? 720 : 0, old = C.norm(t) % 720;
         let v = Math.round(a * 2 / step) * step % 720;              // hour hand: 0.5 degree per minute
-        if (v - old > 360) v -= 720; if (old - v > 360) v += 720;  // keep am / pm unless it really went round
+        if (v - old > 360) v -= 720; if (old - v > 360) v += 720;  // keep AM / PM unless it really went round
         t = C.norm(half + v);
       }
       draw(); o.onChange && o.onChange(t);

@@ -1,4 +1,4 @@
-/* Periodic Table PT1 — data for all 118 elements: symbol, name, standard atomic weight (IUPAC, shown rounded; [n] = mass
+/* Periodic Table PT2 — data for all 118 elements: symbol, name, standard atomic weight (IUPAC, shown rounded; [n] = mass
    number of the longest-lived isotope when there is no standard weight) and year of discovery (0 = known since ancient
    times). Group, period, grid place, category and state at room temperature (20 °C) are worked out below.
    Layout: 18 columns, periods 1-7; La-Lu and Ac-Lr sit in two rows below (rows 9 and 10), shown as 57-71 / 89-103 in group 3.
