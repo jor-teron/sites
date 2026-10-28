@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Telephone TP2</title>
-  <link rel="icon" href="telephone_icon.png?v=TP2">
-  <link rel="stylesheet" href="telephone.css?v=TP2">
+  <title>Telephone TP2b</title>
+  <link rel="icon" href="telephone_icon.png?v=TP2b">
+  <link rel="stylesheet" href="telephone.css?v=TP2b">
 </head>
 <body>
 <div id="app">
@@ -17,7 +17,7 @@
       <div id="sound" hidden>🔇 Tap here to turn on sound</div>
       <div id="main">
         <div id="listcol">
-          <div id="mycard"><span class="mut">My number</span><b id="my-num">––––</b><span id="my-sub" class="mut"></span></div>
+          <div id="mycard"><span class="mut">My number</span><b id="my-num">–––––</b><span id="my-sub" class="mut"></span></div>
           <div class="hd">Online now</div>
           <ul id="devices"></ul>
           <p id="empty" class="mut">No other phones yet. Open Telephone on another device with the same Hub code.</p>
@@ -60,8 +60,8 @@
       <h2>Look</h2>
       <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
       <h2>About</h2>
-      <div class="about"><img src="telephone_icon.png?v=TP2" width="48" height="48" alt=""><div><b>Telephone</b> <span id="ver">TP2</span>
-        <p>A phone for every device on the same Hub Connect Code. Each device gets its own 4-digit number. Dial it on the keypad or tap a phone in Online now: only that device rings, with Answer and Decline. Contacts keep names and numbers, show who is online, and ⭐ favourites. During a call: Mute, Speaker, Video (front or back camera) and Hang up. Recent calls keeps calls in, out and missed with a red badge for new missed calls; tap one to call back or ＋ to save it. Do Not Disturb declines calls silently (favourites can still ring). Calls ring only while Telephone is open on the other device. Peer to peer over PeerJS; nothing is recorded or stored on a server.</p></div></div>
+      <div class="about"><img src="telephone_icon.png?v=TP2b" width="48" height="48" alt=""><div><b>Telephone</b> <span id="ver">TP2b</span>
+        <p>A phone for every device on the same Hub Connect Code. Each device gets its own 5-digit number (10000–99999), checked against the phones online before it is kept; if two devices still end up with the same number, the one that got it last picks a new one and says so. Dial it on the keypad or tap a phone in Online now: only that device rings, with Answer and Decline. Contacts keep names and numbers, show who is online, and ⭐ favourites. During a call: Mute, Speaker, Video (front or back camera) and Hang up. Recent calls keeps calls in, out and missed with a red badge for new missed calls; tap one to call back or ＋ to save it. Do Not Disturb declines calls silently (favourites can still ring). Calls ring only while Telephone is open on the other device. Peer to peer over PeerJS; nothing is recorded or stored on a server.</p></div></div>
     </div></section>
   </div></div>
 </div>
@@ -90,11 +90,11 @@
 <div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="4" placeholder="4-digit code"><div id="d-list" hidden></div><div id="d-form" hidden></div><div class="row" id="d-row"></div></div></div>
 <div id="toast"></div>
 
-<script src="../../../shared/link/link_core.js?v=TP2"></script>
-<script src="../../../shared/link/link_devices.js?v=TP2"></script>
-<script src="telephone_save.js?v=TP2"></script>
-<script src="telephone_peer.js?v=TP2"></script>
-<script src="telephone_call.js?v=TP2"></script>
-<script src="telephone_app.js?v=TP2"></script>
+<script src="../../../shared/link/link_core.js?v=TP2b"></script>
+<script src="../../../shared/link/link_devices.js?v=TP2b"></script>
+<script src="telephone_save.js?v=TP2b"></script>
+<script src="telephone_peer.js?v=TP2b"></script>
+<script src="telephone_call.js?v=TP2b"></script>
+<script src="telephone_app.js?v=TP2b"></script>
 </body>
 </html>

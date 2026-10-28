@@ -1,8 +1,10 @@
-/* Telephone TP2 — presence + signals over PeerJS (own peers; the Hub's peer is never touched).
+/* Telephone TP2b — presence + signals over PeerJS (own peers; the Hub's peer is never touched).
    Ids: me = 'jtsites-<code>-telephone-<random>' (voice calls go to this id); lobby = 'jtsites-<code>-telephone-0'.
    The first device to claim the lobby id keeps the roster (same pattern as Intercom); every device (lobby owner too)
-   opens a data connection to the lobby and sends {t:'hi', id, name, num, did, busy, dnd, since};
-   the lobby broadcasts {t:'roster', list:[{id, name, num, did, busy, dnd, since}]}.
+   opens a data connection to the lobby and sends {t:'hi', id, name, num, did, busy, dnd, since, at, old};
+   the lobby broadcasts {t:'roster', list:[{id, name, num, did, busy, dnd, since, at, old}]}.
+   TP2b: num = 5 digits (10000–99999), '' while this device's new number is still being checked; at = when the number was
+   set (later clashes: the newer one moves); old = the 4-digit number it replaced (old contacts / Recent entries follow).
    Signals go to ONE device only: {t:'to', to, msg} → lobby relays {t:'sig', from, msg}. There is no "ring everyone".
    If the lobby goes away, each device waits a random 0.3–1.8 s and tries to claim it (failover).
    PeerJS: SharedLink.PEERJS_URL (shared/link/link_core.js), else the same pinned URL. */
@@ -25,7 +27,7 @@
   function rid() { return Math.random().toString(36).slice(2, 10); }
   function lobbyId() { return 'jtsites-' + code + '-telephone-0'; }
   function clean(m) {
-    return { name: String(m.name || '').slice(0, 40), num: /^\d{4}$/.test(String(m.num)) ? String(m.num) : '', did: String(m.did || '').slice(0, 32), busy: !!m.busy, dnd: !!m.dnd, since: +m.since || 0 };
+    return { name: String(m.name || '').slice(0, 40), num: /^[1-9]\d{4}$/.test(String(m.num)) ? String(m.num) : '', did: String(m.did || '').slice(0, 32), busy: !!m.busy, dnd: !!m.dnd, since: +m.since || 0, at: +m.at || 0, old: /^\d{4}$/.test(String(m.old || '')) ? String(m.old) : '' };
   }
 
   function start(c) {
@@ -61,7 +63,7 @@
     conn.on('close', function () { if (conn._tpid && clients[conn._tpid] && clients[conn._tpid].conn === conn) { delete clients[conn._tpid]; broadcast(); } });
   }
   function broadcast() {
-    var list = Object.keys(clients).map(function (id) { var c = clients[id]; return { id: id, name: c.name, num: c.num, did: c.did, busy: c.busy, dnd: c.dnd, since: c.since }; });
+    var list = Object.keys(clients).map(function (id) { var c = clients[id]; return { id: id, name: c.name, num: c.num, did: c.did, busy: c.busy, dnd: c.dnd, since: c.since, at: c.at, old: c.old }; });
     Object.keys(clients).forEach(function (id) { try { clients[id].conn.send({ t: 'roster', list: list }); } catch (_) { /* */ } });
   }
   /* every device */
@@ -84,7 +86,7 @@
   }
   function relobby() { if (dead) return; emit('status', 'Reconnecting…'); setTimeout(claimLobby, 300 + Math.random() * 1500); }
   function hi() {
-    if (lconn && lconn.open) lconn.send({ t: 'hi', id: me.id, name: TPSave.name(), num: TPSave.get('num'), did: TPSave.get('did'), busy: !!(window.TPCall && TPCall.busy()), dnd: !!TPSave.get('dnd'), since: since });
+    if (lconn && lconn.open) lconn.send({ t: 'hi', id: me.id, name: TPSave.name(), num: TPSave.pending() ? '' : TPSave.get('num'), did: TPSave.get('did'), busy: !!(window.TPCall && TPCall.busy()), dnd: !!TPSave.get('dnd'), since: since, at: TPSave.get('numAt'), old: TPSave.get('oldNum') });
   }
   function sendTo(to, msg) { if (lconn && lconn.open) { lconn.send({ t: 'to', to: to, msg: msg }); return true; } return false; }
   function stop() {

@@ -1,11 +1,15 @@
-/* Telephone TP2 — UI: screens (Phone, Recent, Contacts, Settings), dots + 75 px wrap-around swipes, in-app dialogs only.
+/* Telephone TP2b — UI: screens (Phone, Recent, Contacts, Settings), dots + 75 px wrap-around swipes, in-app dialogs only.
    TP2: contacts (add / edit / delete with an in-app confirm, ⭐ favourites, online state, add from Recent), names from
    contacts everywhere (online list, keypad, Recent, ringing screen), missed-call badge on the Recent dot + "(n)" in the tab
    title (cleared when Recent is seen; Hub notice when hidden inside the Hub), Do Not Disturb (🌙 on Phone + Settings),
    video during a call (Video / Flip, theirs big + mine small).
    Phone: my number (big) + Online now on the left; dial display + keypad + Call on the RIGHT (phone: stacked).
    Call screen (overlay): who + state / timer on the left, Answer · Decline or Mute · Speaker · Hang up on the RIGHT.
-   Number clash: when another device (other did) with an older 'since' already has my number, I take a new one.
+   TP2b numbers: 5 digits (10000–99999). A new number (fresh device, or replacing a saved 4-digit one ONCE) is checked
+   against the online roster before it is saved (re-picked if taken); no roster within CHECK_MS → it is kept.
+   Later clash: when another device (other did) has my number, the one whose number was set more recently (roster 'at')
+   takes a new one with an in-app notice; same 'at' → the higher device id moves. Old 4-digit contacts / Recent entries stay
+   (shown as "old number") until their device is seen with its new number (by device id, or by its advertised 'old').
    Hub code, in order: #code= / ?hub= (QR), the Hub's {sharedLink:'hello'} (inside the Hub, after we post
    {sharedLink:'ready'}), parent.__hubRemote.code (phone Hub), localStorage 'jtsites-hub-ctrl-code' (desktop Hub),
    'shared-link-join-code', our last code, else the code dialog. Keyboard: digits, Backspace, Enter = call / answer, Esc = hang up. */
@@ -94,24 +98,39 @@
 
   /* ---------- my number ---------- */
   function paintMe() {
+    var pend = TPSave.pending();
     $('me-name').textContent = TPSave.name();
     $('my-num').textContent = TPSave.get('num'); $('num-lbl').textContent = TPSave.get('num');
-    $('my-sub').textContent = TPSave.name();
+    $('mycard').classList.toggle('pend', pend);
+    $('my-sub').textContent = pend ? 'Checking that no other phone has this number…' : TPSave.name();
   }
-  function checkClash(list) {
-    var mine = TPSave.get('num'), did = TPSave.get('did'), my = TPPeer.since();
-    var clash = list.filter(function (d) { return d.num === mine && d.did && d.did !== did && ((d.since || 0) < my || ((d.since || 0) === my && d.did < did)); });
-    if (!clash.length || TPCall.busy()) return;
-    var n = TPSave.newNum(list.map(function (d) { return d.num; }));
-    TPSave.set('num', n); paintMe(); TPPeer.update();
-    dialog('“' + (clash[0].name || 'Another device') + '” already has the number ' + mine + ', so this device now has the number ' + n + '.', ['OK']);
+  /* TP2b: check a new number before keeping it */
+  var CHECK_MS = +window.__tpCheckMs || 5000, checkT = 0;
+  function othersNums(list) { var did = TPSave.get('did'); return list.filter(function (d) { return d.num && d.did !== did; }).map(function (d) { return d.num; }); }
+  function numChecked(list) {   // list = the roster that answered, or null when nobody answered in time
+    clearTimeout(checkT);
+    var r = TPSave.checked(list ? othersNums(list) : null); if (!r) return;
+    paintMe(); TPPeer.update(); paintDial();
+    if (r.old) dialog('Phone numbers now have 5 digits. This device’s old number ' + r.old + ' is now ' + r.num + '. Contacts on other phones follow by themselves once they see this device online.', ['OK']);
+    else toast('Your number is ' + r.num);
+  }
+  if (TPSave.pending()) checkT = setTimeout(function () { numChecked(null); }, CHECK_MS);
+  function checkClash(list) {   // a later clash (a device that was offline when my number was picked)
+    if (TPSave.pending()) return;
+    var mine = TPSave.get('num'), did = TPSave.get('did'), my = +TPSave.get('numAt') || 0;
+    var clash = list.filter(function (d) { var at = +d.at || 0; return d.num === mine && d.did && d.did !== did && (at < my || (at === my && d.did < did)); });
+    if (!clash.length || TPCall.busy()) return;   // in a call: checked again when it ends
+    var n = TPSave.newNum(othersNums(list).concat(mine));
+    TPSave.setNum(n); paintMe(); TPPeer.update(); paintDial();
+    dialog('Your number changed: “' + (clash[0].name || 'Another device') + '” already had the number ' + mine + ' first, so this device now has the number ' + n + '. Other phones need the new number to call you (your contacts on them follow by themselves).', ['OK']);
   }
   $('b-newnum').onclick = function () {
     if (TPCall.busy()) { toast('Hang up first'); return; }
+    if (TPSave.pending()) { toast('Still checking your number…'); return; }
     dialog('Get a new random number for this device? Other phones will need the new number to call you.', ['Cancel', 'New number']).then(function (i) {
       if (i !== 1) return;
-      var n = TPSave.newNum(TPPeer.roster().map(function (d) { return d.num; }).concat(TPSave.get('num')));
-      TPSave.set('num', n); paintMe(); TPPeer.update(); toast('Your number is now ' + n);
+      var n = TPSave.newNum(othersNums(TPPeer.roster()).concat(TPSave.get('num')));
+      TPSave.setNum(n); paintMe(); TPPeer.update(); toast('Your number is now ' + n);
     });
   };
 
@@ -150,8 +169,13 @@
   }
   TPPeer.on('status', setStatus);
   TPPeer.on('roster', function (l) {
+    if (TPSave.pending() && TPPeer.online()) numChecked(l);   // the lobby answered → check, then keep
     checkClash(l);
-    l.forEach(function (d) { if (d.did && d.num) TPSave.followNum(d.did, d.num).forEach(function (n) { toast(n + '’s number is now ' + d.num); }); });
+    l.forEach(function (d) {
+      if (!d.did || !d.num) return;
+      TPSave.followNum(d.did, d.num, d.old).forEach(function (n) { toast(n + '’s number is now ' + d.num); });
+      TPSave.followLog(d.did, d.num, d.old);
+    });
     TPCall.roster(l); paintList(); paintLog(); paintContacts();
   });
   TPPeer.on('signal', function (m, from) { TPCall.signal(m, from); });
@@ -162,17 +186,17 @@
   function paintDial() {
     $('dial').textContent = dial; $('b-back').disabled = !dial;
     var w = $('dial-who'); w.className = 'mut';
-    if (dial.length === 4) {
+    if (dial.length === 5) {
       var d = dial === TPSave.get('num') ? null : TPCall.find(dial);
       if (dial === TPSave.get('num')) { w.textContent = 'This is your own number'; w.classList.add('no'); }
       else if (d) { w.textContent = nameFor(d.num, d.did, d.name || 'Device') + (d.busy ? ' · on a call' : d.dnd ? ' · do not disturb' : ''); w.classList.add('ok'); }
       else { var ct = TPSave.contact(dial); w.textContent = (ct ? ct.name + ' · ' : '') + 'Not online right now'; w.classList.add('no'); }
-    } else w.innerHTML = dial ? 'Numbers have 4 digits' : '&nbsp;';
+    } else w.innerHTML = dial ? 'Numbers have 5 digits' : '&nbsp;';
     $('b-call').disabled = TPCall.busy();
   }
   function press(k) {
     TPCall.unlock(); TPCall.key(k);
-    if (/\d/.test(k) && dial.length < 4) dial += k;
+    if (/\d/.test(k) && dial.length < 5) dial += k;
     paintDial();
   }
   document.querySelectorAll('#pad button').forEach(function (b) { b.onclick = function () { press(b.dataset.k); }; });
@@ -238,7 +262,7 @@
     $('v-wait').hidden = !(on && c.rvid && !vin);
     return on;
   }
-  TPCall.on('state', function () { paintCall(); paintList(); if (!TPCall.current()) seen(); });
+  TPCall.on('state', function () { paintCall(); paintList(); if (!TPCall.current()) seen(); if (!TPCall.busy()) checkClash(TPPeer.roster()); });
   TPCall.on('tick', function () { var c = TPCall.current(); if (c && c.state === 'active') { $('c-state').textContent = fmt((Date.now() - c.t0) / 1000); document.title = '📞 ' + fmt((Date.now() - c.t0) / 1000) + ' · Telephone'; } });
   TPCall.on('ring', function (c) {
     if (inHub && document.hidden) { try { window.top.HubNotify.notice({ icon: '📞', title: 'Telephone', text: (c.name || c.num) + ' is calling', timeoutMs: 15000 }); } catch (_) { /* cross-origin / no Hub */ } }
@@ -304,19 +328,20 @@
       ic.title = e.dir === 'in' ? 'Incoming' : e.dir === 'out' ? 'Outgoing' : 'Missed';
       var ct = TPSave.contact(e.num, e.did);
       var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = ct ? ct.name : (online[e.num] && online[e.num].name) || e.name || e.num;
-      var sub = document.createElement('small'); var nb = document.createElement('span'); nb.className = 'num'; nb.textContent = e.num;
+      var sub = document.createElement('small'); var nb = document.createElement('span'); nb.className = 'num' + (TPSave.isOld(e.num) ? ' oldn' : ''); nb.textContent = e.num;
+      if (TPSave.isOld(e.num)) { nb.title = 'Old 4-digit number: it changes by itself once that device is seen online'; li.classList.add('old'); }
       var what = e.dir === 'missed' ? 'missed' + (e.why === 'busy' ? ' (you were on a call)' : e.why === 'dnd' ? ' (Do Not Disturb)' : '') : (e.dur || e.why === 'done') ? fmt(e.dur) : (LWHY[e.why] || (e.dir === 'in' ? 'incoming' : 'outgoing'));
-      sub.appendChild(nb); sub.appendChild(document.createTextNode(' · ' + (e.dir === 'in' ? 'in' : e.dir === 'out' ? 'out' : '') + (e.dir === 'missed' ? '' : ' · ') + what + (online[e.num] ? ' · online' : '')));
+      sub.appendChild(nb); sub.appendChild(document.createTextNode(' · ' + (e.dir === 'in' ? 'in' : e.dir === 'out' ? 'out' : '') + (e.dir === 'missed' ? '' : ' · ') + what + (TPSave.isOld(e.num) ? ' · old number' : online[e.num] ? ' · online' : '')));
       nm.appendChild(sub);
       var tm = document.createElement('span'); tm.className = 'tm'; tm.textContent = when(e.at);
       li.append(ic, nm, tm);
-      if (!ct && /^\d{4}$/.test(e.num) && e.num !== TPSave.get('num')) {
+      if (!ct && TPSave.numOk(e.num) && e.num !== TPSave.get('num')) {
         var ad = document.createElement('button'); ad.className = 'add'; ad.textContent = '＋'; ad.title = 'Add ' + e.num + ' to contacts'; ad.setAttribute('aria-label', ad.title);
         ad.onclick = function (ev) { ev.stopPropagation(); editContact(null, { name: (online[e.num] && online[e.num].name) || e.name, num: e.num, did: e.did }); };
         li.appendChild(ad);
       }
       li.title = 'Call ' + e.num + ' back';
-      li.onclick = function () { call(e.num); };
+      li.onclick = function () { var dv = e.did && devFor({ did: e.did, num: e.num }); call(dv ? dv.num : e.num); };
       ul.appendChild(li);
     });
   }
@@ -342,12 +367,12 @@
     var ul = $('contacts'), l = TPSave.contacts(), on = 0;
     ul.innerHTML = ''; $('con-empty').hidden = l.length > 0;
     l.forEach(function (ct) {
-      var d = devFor(ct), st = stateOf(d); if (d) on++;
+      var d = devFor(ct), st = !d && TPSave.isOld(ct.num) ? 'old number · not reachable until seen online' : stateOf(d); if (d) on++;
       var li = document.createElement('li'); li.dataset.id = ct.id; li.dataset.num = ct.num; li.className = d ? 'online' : 'offline';
       var av = document.createElement('span'); av.className = 'av' + (d ? (d.busy ? ' busy' : d.dnd ? ' dnd' : ' on') : ''); av.textContent = initial(ct.name);
       var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = ct.name;
       if (ct.fav) { var fv = document.createElement('span'); fv.className = 'fav'; fv.textContent = '⭐'; fv.title = 'Favourite'; nm.appendChild(fv); }
-      var sub = document.createElement('small'); var nb = document.createElement('span'); nb.className = 'num'; nb.textContent = ct.num;
+      var sub = document.createElement('small'); var nb = document.createElement('span'); nb.className = 'num' + (TPSave.isOld(ct.num) ? ' oldn' : ''); nb.textContent = ct.num;
       var sp = document.createElement('span'); sp.className = d ? (d.busy ? 'st-busy' : d.dnd ? '' : 'st-on') : ''; sp.textContent = st;
       sub.append(nb, document.createTextNode(' · '), sp); nm.appendChild(sub);
       var ed = document.createElement('button'); ed.className = 'ed'; ed.textContent = '✎'; ed.title = 'Edit ' + ct.name; ed.setAttribute('aria-label', ed.title);
@@ -361,11 +386,11 @@
   }
   function editContact(ct, pre) {   // ct = edit; pre = new contact prefilled (from Recent)
     var x = ct || Object.assign({ name: '', num: '', did: '', fav: false }, pre || {});
-    var form = [{ k: 'name', label: 'Name', value: x.name || '', max: 40, ph: 'Name' }, { k: 'num', label: 'Number (4 digits)', value: x.num || '', max: 4, mode: 'numeric', ph: '1234' }, { k: 'fav', label: '⭐ Favourite', type: 'check', value: x.fav }];
+    var form = [{ k: 'name', label: 'Name', value: x.name || '', max: 40, ph: 'Name' }, { k: 'num', label: 'Number (5 digits)', value: x.num || '', max: 5, mode: 'numeric', ph: '12345' }, { k: 'fav', label: '⭐ Favourite', type: 'check', value: x.fav }];
     var btns = ct ? ['Delete', 'Cancel', 'Save'] : ['Cancel', 'Save'];
     function check(v) {
       if (!v.name) return { k: 'name', text: 'Type a name.' };
-      if (!/^\d{4}$/.test(v.num)) return { k: 'num', text: 'Numbers have 4 digits.' };
+      if (!(TPSave.numOk(v.num) || (ct && TPSave.isOld(v.num) && v.num === ct.num))) return { k: 'num', text: 'Numbers have 5 digits (10000–99999).' };
       if (v.num === TPSave.get('num')) return { k: 'num', text: 'That is this device’s own number.' };
       var dup = TPSave.contacts().filter(function (o) { return o.num === v.num && (!ct || o.id !== ct.id); })[0];
       if (dup) return { k: 'num', text: '“' + dup.name + '” already has the number ' + v.num + '.' };
