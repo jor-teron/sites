@@ -1059,3 +1059,7 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   H-numbered releases (was /^R/ only). Bump 20261023q / v95 -> 20261028a / hub-shell-v97
   (v96 left for H42, PR #211, still open). Playwright: 16/16 (pop-up, live repaint, standalone,
   storage event, joined-phone mode), no console errors. About 7 minutes.
+
+2026-10-28 IST, H47 (Team 2, week 2): H47: hub_appindex.js regenerated with hub_appindex_gen.py (122 apps). Adds Connectivity Screen Share SS1, Video Chat VC2, Whiteboard WB1, Shared Clipboard CB1, Intercom IC1, plus Gallery, GIF Maker, Screen Recorder, Image Gen, Vision; TV now listed under Favorite; Code Lab now under Lab (its lab-apps.csv icon path code-lab_icon.png is wrong, file is codelab_icon.png: Apps bot fix).
+  Build 20261028b / hub-shell-v98. Generator run with system Chrome (Playwright bundled browser
+  missing on the box). hub.html load: no 4xx responses, no broken images. About 6 minutes.
