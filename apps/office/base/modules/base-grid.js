@@ -1,7 +1,7 @@
 /*
  * base-grid.js  (BS1, BS2: query filter + shown fields, Totals row)
  * Grid view: one <input> per cell (inline edit, autosave), header click sorts (asc -> desc -> off),
- * search box filters rows (any field contains text). Row number click selects a row for "− Record".
+ * search box filters rows (any field contains text). Row number click selects a row (for Records ⋯ > Delete record…, BS4).
  * API: BaseGrid.render(), BaseGrid.visibleRows(t, ignoreSearch), BaseGrid.inputFor(field, value)
  */
 var BaseGrid = (function () {

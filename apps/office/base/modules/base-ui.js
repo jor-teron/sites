@@ -3,12 +3,13 @@
  * Base app shell: ribbon (shared office-ribbon / hover / collapse), Settings panel (office-settings,
  * key 'base_settings'), File menu, table + field + record commands, view switch, starter templates, boot.
  * Field editing uses OfficeDialog.form: a name box + type dropdown per field (empty name = delete field).
+ * BS4: delete table / delete record go through BaseDelete (modules/base-delete.js): ribbon ⋯ menus, typed confirm.
  * BS3: boot wraps the first render in try/catch; on failure BaseUI.recover(err) shows an in-app dialog
  *   (office-dialog look, no alert/confirm): "Download raw data" (JSON file of what was loaded) and
  *   "Reset Base" (second in-app confirm, then BaseStore.reset() and the templates screen).
  */
 var BASE_RIBBON_TABS = [{ id: "home", label: "Home" }, { id: "query", label: "Query" }, { id: "view", label: "View" }];
-var BASE_VERSION = "BS3";
+var BASE_VERSION = "BS4";
 var BASE_TYPE_OPTS = [{ value: "text", label: "Text" }, { value: "number", label: "Number" }, { value: "date", label: "Date" }, { value: "bool", label: "Yes/No" }];
 var BASE_RIBBON = null, BASE_COLLAPSE = null, BASE_SETTINGS = null;
 var BASE_TYPES = { text: "Text", number: "Number", date: "Date", bool: "Yes/No" };
@@ -74,24 +75,14 @@ var BaseUI = (function () {
     var t = BaseStore.table(); if (!t) return;
     OfficeDialog.prompt({ title: "Rename table", label: "Name", value: t.name }).then(function (v) { if (v) { t.name = v.trim(); BaseStore.save(); render(); } });
   }
-  function deleteTable() {
-    var t = BaseStore.table(); if (!t) return;
-    OfficeDialog.confirm({ title: "Delete table?", message: "Delete “" + t.name + "” and its " + t.rows.length + " records?", okLabel: "Delete", danger: true }).then(function (ok) {
-      if (!ok) return; BASE.db.tables = BASE.db.tables.filter(function (x) { return x !== t; }); BASE.db.current = BASE.db.tables[0] ? BASE.db.tables[0].id : null; BaseStore.save(); render();
-    });
-  }
+  function deleteTable() { return BaseDelete.table(); }   /* BS4: typed-name confirm */
   function addRow() {
     var t = BaseStore.table(); if (!t) return;
     var r = { id: BaseStore.uid(), v: {} }; t.fields.forEach(function (f) { r.v[f.id] = f.type === "bool" ? false : ""; });
     t.rows.push(r); BASE.selRow = r.id; BASE.search = ""; $("search").value = ""; BASE.sort = null; BaseStore.save(); BASE.focusForm = true; render();
     var tr = document.querySelector(".base-grid tr.sel"); if (tr) { tr.classList.add("pop"); tr.scrollIntoView({ block: "nearest" }); var i = tr.querySelector("input"); if (i) i.focus(); }
   }
-  function deleteRow() {
-    var t = BaseStore.table(); if (!t) return;
-    var r = t.rows.filter(function (x) { return x.id === BASE.selRow; })[0];
-    if (!r) return toast("Click a row number (or a cell) to pick a record first");
-    t.rows.splice(t.rows.indexOf(r), 1); BASE.selRow = null; BaseStore.save(); render(); toast("Record deleted");
-  }
+  function deleteRow() { return BaseDelete.records(); }   /* BS4: typed DELETE confirm, no one-tap delete */
   function addField() {
     var t = BaseStore.table(); if (!t) return;
     OfficeDialog.form({ title: "Add field", fields: [{ key: "name", label: "Field name", value: "" }, { key: "type", label: "Type", type: "select", options: BASE_TYPE_OPTS, value: "text" }],
@@ -225,9 +216,13 @@ function initBaseSettings() {
   $("file-import").addEventListener("change", function (e) { var f = e.target.files[0]; ribbonSetFile(false); if (f) BaseUI.importFile(f); e.target.value = ""; });
   $("table-sel").addEventListener("change", function (e) { BaseUI.switchTable(e.target.value); });
   $("btn-table-rename").addEventListener("click", BaseUI.renameTable);
-  $("btn-table-delete").addEventListener("click", BaseUI.deleteTable);
+  $("btn-table-more").addEventListener("click", function () {
+    BaseDelete.menu($("btn-table-more"), [{ id: "menu-table-delete", icon: "🗑", label: "Delete table…", danger: true, hint: "Delete this whole table (asks you to type its name)", run: BaseUI.deleteTable }]);
+  });
   $("btn-row-add").addEventListener("click", BaseUI.addRow);
-  $("btn-row-del").addEventListener("click", BaseUI.deleteRow);
+  $("btn-row-more").addEventListener("click", function () {
+    BaseDelete.menu($("btn-row-more"), [{ id: "menu-row-delete", icon: "⊖", label: "Delete record…", danger: true, hint: "Delete the selected record (asks you to type DELETE)", run: BaseUI.deleteRow }]);
+  });
   $("btn-field-add").addEventListener("click", BaseUI.addField);
   $("btn-field-edit").addEventListener("click", BaseUI.editFields);
   $("btn-view-grid").addEventListener("click", function () { BaseUI.setView("grid"); });

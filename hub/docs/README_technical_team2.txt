@@ -530,6 +530,30 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - In the Hub without hello (`body.in-hub`), the bar moves into the ribbon row as an in-app fallback (`.of-quick-fallback`); after hello `body.hub-titlebar` hides it. Apps still send the old hub-app tabs, so the Hub should prefer hubTitleBar tabs when both arrive.
 - Versions: every touched script/css uses `?v=HO1`. No build bump. base.html only got 4 added lines (BS3a lines untouched). Tested headless (desktop 1280 + phone 390) standalone and in a harness frame: 115 checks pass.
 
+### 1.25 Multi-Screen Wall: `apps/connectivity/screen-wall/` (Connectivity → Share, after Shared Clipboard), release MW1
+- Joins phones, tablets and PCs on the same Hub Connect Code into one big screen. One device is the Host (Settings → Role, or "Make this device the host" on the Content screen); all others are Displays that show only their slice. Screens: Wall · Content · Settings (dots, 75 px wrap-around swipes; none in full screen or on tiles/cells/the slice). Controls on the RIGHT.
+- Hub Connect Code exactly as Intercom / Shared Clipboard: `#code=`/`?hub=`, `{sharedLink:'ready', app:'screen-wall'}` → Hub `{sharedLink:'hello', code}`, then `__hubRemote.code` / `jtsites-hub-ctrl-code` / `shared-link-join-code` / `screenwall-last-code` / Code dialog. Loads `shared/link/link_core.js` (for `SharedLink.PEERJS_URL`) + `link_devices.js` (name, permanent device id); no shared/ or hub/ edits.
+- Peers: own ids `jtsites-<code>-screenwall-<rand>`, lobby `jtsites-<code>-screenwall-0` (first device; roster `{id, name, dev, role, since, w, h, dpr}`, relays `{t:'all'}` / `{t:'to'}`, reclaimed by a remaining device 0.3–1.8 s after it goes). Data connections only.
+- Host Wall screen = live preview of the whole wall with the grid on top: rows 1–4 × cols 1–6, drag a device tile into a cell (or tap tile → tap cell), drop on a used cell swaps, drag back to the list removes; Auto-place; per-device Identify (`{k:'ident', n}` → the display flashes its number 3 s); Bezel slider 0–120 px (gap between cells, darkened in the preview). Placements are keyed by the permanent device id, so a device that reloads goes back to its cell.
+- Layout: column width = widest device (CSS px innerWidth/innerHeight) in that column, row height = tallest in that row (empty 480×300), device centred in its cell. Host sends `{k:'wall', host:{id, since}, W, H, rects:{<dev>:{x,y,w,h,r,c,n}}, content}` on every change and roster change (debounced).
+- Content: Test pattern (Grid with wall coordinates + diagonals + rings, Gradient, Solid), Clock (fixed-width digit slots so slices never jitter), Scrolling text (speed, size; host sends `twu` = text width per px of font so every slice loops alike), Picture (JPEG ≤1920 px, q 0.82, `{k:'img', id, i, n, d}` chunks of 16 000 chars, 8 ms apart; a display missing it asks `{k:'need', img}` after 1.5 s; Fill/Fit). Text/background colours.
+- Clock sync: display pings the host (5 × 400 ms, then every 10 s): offset = th − (t0+t1)/2 from the lowest-RTT sample of the last 8. Clock and text use host time.
+- Displays: Full screen button / tap the slice / F → Fullscreen API (`body.fs` pseudo full screen when refused, e.g. Hub iframe without allow=fullscreen) + Screen Wake Lock (re-requested on visibilitychange). Windowed, the slice is scaled to fit the stage. Size changes are re-sent (`hi`) and the host recomputes. Inside the Hub: "Open as its own page" (`#code=`).
+- One host: taking over asks with an in-app dialog; a host that sees a newer host (`since`) turns into a display.
+- Storage: `screenwall_save.js` is the one save module: `screenwall-settings-v1` `{name, theme, role}`, `screenwall-state-v1` (host: rows, cols, cells, bezel, content), `screenwall-image-v1` (host: last picture), `screenwall-last-code`, `screenwall-dev` (only when the Hub device id is missing).
+- Files: `screenwall.html/.css`, `screenwall_save.js`, `screenwall_peer.js`, `screenwall_wall.js`, `screenwall_app.js`, `screenwall_icon.png` (192 px; CSV icon set explicitly), `screenwall_readme.md`, `index.html`. `<title>Multi-Screen Wall MW1</title>`, every `?v=MW1`. No build bump.
+- Tested in headless Chrome with a simulated PeerJS (in-memory bus between pages; the box blocks WebRTC): host + 4 displays (3 × 640×400, 1 × 560×360) in a 2×2 grid with 30 px bezel → correct rects and gradient pixels on every display, clock offsets with ±5 s / −3 s skewed clocks, picture chunks, late joiner, Identify, take-over, themes, swipes, Hub ready→hello. 37 checks pass. Not yet tried on real devices.
+- Limits / next: no video (planned MW2), no per-device physical-size calibration (different pixel densities show content at different physical sizes), the host does not show a slice itself, phones in a Hub iframe may refuse fullscreen (use "Open as its own page").
+
+### 1.26 Base delete safety: `apps/office/base/` (Office), release BS4
+- Why: deleting a table or a record was one tap on a button right beside the table / in the form view, easy to hit by accident and easy to confuse with each other.
+- New `modules/base-delete.js` (`BaseDelete.table()`, `.records(rows?)`, `.menu(anchor, items)`). Ribbon Home: `#btn-table-delete` and `#btn-row-del` (− Record) removed; a `⋯` button after Rename (`#btn-table-more`) and after + Record (`#btn-row-more`) opens a small fixed-position menu (not clipped by the scrolling ribbon) with one red item: `#menu-table-delete` "🗑 Delete table…" / `#menu-row-delete` "⊖ Delete record…". Form view lost its Delete button.
+- Typed-confirm dialog (in-app, shared `dlg-*` look, no alert/confirm): red button starts disabled; Enter only works when the text is right; Esc / Cancel / backdrop cancel; focus trapped. Table: solid red header 🗑 "Delete whole table", facts Table / Records / Fields, type the table name exactly (case sensitive, outer spaces ignored). Record: red-outline header ⊖ "Delete 1 record" (or N), preview of the first record (first 6 fields), type `DELETE` or the count.
+- Deletes call `BaseStore.saveNow()` (no 400 ms debounce), so they survive an immediate reload. Deleting a table also clears an active query on it. No Undo toast; HO1 Undo/Redo stay disabled in Base (Undo/Redo is a later release).
+- A capture keydown guard: Delete / Backspace outside an editable field are prevented and never delete anything; inside a cell they edit text as before.
+- `<title>Base BS4</title>`, `BASE_VERSION = "BS4"`, Base's own `?v=` now `BS4` (base-quick.js and shared files keep their tags, unchanged). Shared Office files untouched. No build bump.
+- Tested headless (puppeteer, `/workspace/bs4-test/test.js`) at 1280x800 and 390x844 phone: 43 checks each pass, no page errors, no native dialogs. Not tested inside the Hub frame. Multi-record selection does not exist yet, so the record dialog is always for 1 record for now.
+
 ### 1.27 Intercom video + trusted auto-answer: `apps/connectivity/intercom/`, release IC2
 - Video toggle (off by default, saved `video`): a talk opens camera + mic, audio+video MediaConnections with metadata `video:true`. Camera off mid-talk = `replaceTrack(null)` + `{t:'vid', on:false}` and the camera is released; on = replaceTrack(video). Video turned on during a voice talk restarts it with video (`cont`). Red "camera on" bar + 🔴 in the title whenever the camera is live.
 - Front/back flip (only while video is on), saved `facing`; toast when there is one camera.
@@ -1097,3 +1121,106 @@ Line counts are HTML+JS+CSS, excluding vendor/.
 2026-10-28 IST, H47 (Team 2, week 2): H47: hub_appindex.js regenerated with hub_appindex_gen.py (122 apps). Adds Connectivity Screen Share SS1, Video Chat VC2, Whiteboard WB1, Shared Clipboard CB1, Intercom IC1, plus Gallery, GIF Maker, Screen Recorder, Image Gen, Vision; TV now listed under Favorite; Code Lab now under Lab (its lab-apps.csv icon path code-lab_icon.png is wrong, file is codelab_icon.png: Apps bot fix).
   Build 20261028b / hub-shell-v98. Generator run with system Chrome (Playwright bundled browser
   missing on the box). hub.html load: no 4xx responses, no broken images. About 6 minutes.
+
+2026-10-28 IST, H48 (Team 2, week 2): Hub Search app (System category), split release 1 of 4.
+  New apps/system/search/: index.html, search.js, search_items.js, search.css, README.md,
+  search_icon.png; row in apps/system/system-apps.csv (existing columns only). Data: hub_appindex.js
+  (instant list, reads an optional 6th item as description), then every category CSV via
+  TilesCsv.parse for sections and a.description (absent today = ''). Hub items in search_items.js:
+  Settings pages / options -> __hubOpenApp('apps/system/settings/', {hash}) (#about/device,
+  #about/profile); categories -> App Hub #cat=; actions (minimiseAll, setWs) only when parent
+  HubMode.isDesktop(); open windows from parent __hubTasks.list / focus (skips its own window).
+  Apps open with parent __hubFly.openFromCat like the Start flyout; hub-open-app message on
+  file://; standalone navigates. Scoring: every query word must match; name > section / category
+  > description; whole-query name prefix +50; groups sorted by their best row. Not touched:
+  wm_taskbar.js, hub_appindex_gen.py, tiles.js. Planned: H48b taskbar search button after Show
+  desktop, H48c optional CSV description column (last column), H48d descriptions filled in by the
+  Apps / Games bots. Index regenerated (123 apps; line order kept so the diff is the Search row
+  only). Bump 20261028b / v98 -> 20261028c / hub-shell-v99. Playwright (system Chrome): 27/27
+  (standalone, Start > System > Search window, settings / device / tetris / games, keys, Enter,
+  windows, workspace + Show desktop actions, Phone mode #search), no console errors or 4xx.
+
+2026-10-28 IST, H48b (Team 2, week 2): Search icon on the Hub bar beside Show Desktop (split 2 of 4).
+  wm_taskbar.js: button#wm-search (title / aria-label 'Search', magnifier SVG) appended right after
+  #wm-showdesk: bar order Start, Show desktop, Search, tasks, [workspaces 1 2, OSK, tray, clock on
+  the right since R43]. Click: closes ctx menu / Start menu; Search window open (key
+  apps/system/search/) -> HubWM.focus (active one else topmost) + focus #q in its frame
+  (same origin; search.js also focuses q on window focus); else __hubOpenApp('apps/system/search/')
+  and focus q on frame load. wm.css: #wm-search shares every #wm-showdesk rule except .on.
+  Header comment updated (workspace switcher note fixed to R43 position). Bump 20261028c / v99 ->
+  20261028d / hub-shell-v100. Playwright (system Chrome): 13/13 (order, size, opens, focuses
+  after minimise, box focused, taskbar top, Phone mode hidden), no console errors or 4xx.
+
+2026-10-28 IST, H48c (Team 2, week 2): Optional app descriptions in category CSVs (split 3 of 4).
+  CSV format (any apps/<cat>/<cat>-apps.csv): optional LAST column 'description', read only when
+  the header row names it: name, path, icon, newtab, section, description. One plain line,
+  < ~90 chars, NO commas (cells are split on ','; no quoting), not starting with '#'. Empty or
+  missing cell = no description. Old 5-column CSVs need no change.
+  Readers: shared/tiles/tiles.js parse() -> {.., description} (COLS default order + description;
+  tiles do not draw it); hub/menu/hub_flyout.js build() keeps description (cached start lists are
+  keyed by CSV text hash, so an edited CSV rebuilds them); hub/core/hub.js addCsvApps keeps
+  app.description and __hubAppIndex() pushes it as a 6th item only when non-empty (checkIndex
+  String compare stays equal for 5-item rows); apphub.js uses TilesCsv.parse (unchanged; extra
+  column ignored); terminal.js reads index items 0-2 only; search.js reads index item 5 and the
+  CSV description (H48). hub_appindex_gen.py: header / docstring updated, plus csv_descriptions()
+  that maps entry path -> description from every CSV with the column (mirrors tiles.js parse;
+  path resolved against the CSV folder) and appends it to the browser's rows; CSVs without the
+  column -> rows unchanged. apps/system/system-apps.csv: header + 9 descriptions (Files, Disk,
+  Viewer, Settings, System Monitor, Device Benchmark, Terminal, App Hub, Search; Settings is not
+  in the index because hub_apps.js registers it first, Search still reads its CSV description).
+  Regenerated hub_catalog.js (System CSV text only) and hub_appindex.js (old line order and the
+  existing caption-for-nei Favorite row kept; the run flips it to Tools, registration order is
+  not stable for apps listed in two CSVs), so the diff is the 8 System descriptions + header.
+  Bump 20261028d / v100 -> 20261028e / hub-shell-v101. Playwright (system Chrome): 13/13
+  (Search standalone + in Hub matches 'organise' / 'unix' / 'battery' / 'wallpaper preferences'
+  only in System descriptions; index rows = live __hubAppIndex; System flyout, App Hub #cat=System
+  and system.html list the same 9 apps with no description text leaked), no console errors / 4xx,
+  no 'out of date' notice. H48d: Apps / Games bots fill their own CSVs (format above).
+
+2026-10-28 IST, H48d index (Team 2, week 2): hub_appindex.js regenerated after #228 (Apps bot) and
+  #229 (Games bot) were merged into h48-search-app (merge commit, no rebase; no conflicts). Run:
+  /workspace/.venv-pw/bin/python via runpy with playwright BrowserType.launch patched to
+  executable_path=/usr/bin/google-chrome, headless=True. 124 apps, every category row has a 6th
+  description item (Games 33, Lab 27, Learn 16, Tools 11, Office 10, Connectivity 9, Media 9,
+  System 8, Favorite 1); code-school (Learn) after code-lab; tv Favorite only; caption-for-nei
+  Tools only; code-lab icon codelab_icon.png. Old line order restored after the run. No bump.
+
+2026-10-28 IST, H49 (Team 2, week 2): Office quick actions and tabs on the Hub window title bar.
+  Hub side of HO1 (Apps bot; app side apps/office/shared/office-hubbar.js + office-quick.js, used
+  by Draftly, Spreadsheet and Base). Code: hub/link/hub-gamebar.js (makeBar(frame, bar,
+  {titleBar:true}) for window bars only; the Phone header #gamebar never uses it), hub/wm/wm.css,
+  hub/wm/wm_windows.js (drag / dblclick ignore .gb-qbtn).
+  Contract (all v:1; unknown v ignored):
+  - app -> hub  window.parent.postMessage({hubTitleBar:{v:1, op:'set', buttons:[{id, label, icon,
+    enabled, title}], tabs:[{id, label}], activeTab}}, location.origin)   ('*' only on file://)
+  - app -> hub  {hubTitleBar:{v:1, op:'update', buttons:[{id, label?, icon?, enabled?, title?}],
+    activeTab?}}  patches existing buttons by id (unknown ids ignored); no add / remove (use set)
+  - app -> hub  {hubTitleBar:{v:1, op:'clear'}}
+  - hub -> app  iframe.contentWindow.postMessage({hubTitleBarHello:{v:1}}, origin): sent with each
+    hub-hello burst after the iframe loads (0 / 150 / 400 / 900 / 1800 ms) until a set arrives;
+    the app answers with set. Only in Desktop mode.
+  - hub -> app  {hubTitleBarClick:{v:1, kind:'button'|'tab', id}} on a click (enabled buttons
+    only; a tab click also highlights that tab at once).
+  Checks: event.source === the window's iframe contentWindow AND event.origin === location.origin
+  ('null' on file://); Hub -> app messages are only sent to a frame showing a Hub-origin page.
+  Limits: 8 buttons, 10 tabs; strings cut to id 32, label 24, icon 4, title 60, tab label 20;
+  drawn with textContent only (no HTML). Button shows icon (if any) else label; tooltip = title
+  else label; aria-label = label. enabled:false -> disabled + greyed (opacity 0.35).
+  Layout (.wm-gb): [app name hidden] [.gb-qa quick buttons | divider] [.gb-tbtabs tabs]
+  [.gb-fold-btn 'Active ▾'] [hub-app stats] [hub-app buttons, max 3] [.gb-file file name].
+  hubTitleBar tabs replace the R44 hub-app tabs (never both); legacy hub-tab messages still move
+  the highlight. Fold: a ResizeObserver on the window re-measures; if the bar or tab strip
+  overflows, .gb-fold hides the strip and shows the ▾ button; its drop-down (.gb-tabmenu, fixed,
+  on <body>) closes on pick, Esc, outside press or window blur. Cleared on iframe load (new
+  document), on iframe src change (MutationObserver), on op:'clear', on window close and when the
+  mode becomes Phone (hub-wm-mode). No Hub shortcuts are added; focus goes back to the iframe
+  after every click, so Ctrl+Z / Ctrl+S / Ctrl+P stay with the app. Apps that do not use
+  hubTitleBar draw exactly as before.
+  Bump 20261028e / v101 -> 20261028f / hub-shell-v102 (hub.html wm.css now carries the build
+  stamp). Playwright (system Chrome, throwaway test page in /tmp, not committed): 35/35 (order,
+  disabled, icon / label / title, click messages, disabled sends nothing, focus back to iframe,
+  update patch + activeTab, HTML stays text, fold + menu + pick, unfold, 8 / 10 limits, nested
+  child frame ignored, foreign origin ignored, v:2 ignored, clear, auto-clear on navigation +
+  new hello, Draftly buttons + tabs and in-app bar hidden, Insert tab selects Draftly's ribbon,
+  2048 bar unchanged, H48b Search button, Phone mode no quick buttons and Draftly keeps its bar),
+  Spreadsheet and Base checked too; no console errors or 4xx.
