@@ -54,7 +54,9 @@ It runs in one of two modes, decided by hub/wm/wm_mode.js (window.HubMode):
 
 Override: Settings > Desktop (localStorage sites-hub.wmMode = 'auto' |
 'desktop' | 'phone'). A phone remote Hub (window.__hubRemote, set by
-hub/core/hub_role.js for hub.html?join=CODE) is always Phone. A mode change
+hub/core/hub_role.js for hub.html?join=CODE) is always Phone. (before H53)
+H53: a joined Hub (window.__hubRemote) follows the choice too; Auto there
+needs no mouse: Desktop at 1024 px wide or more (same hysteresis), else Phone. A mode change
 fires 'hub-wm-mode' on window; modules listen and re-layout.
 
 Opening an app always goes through hub.js: window.__hubOpenApp(entryUrl)

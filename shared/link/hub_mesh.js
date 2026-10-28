@@ -104,7 +104,8 @@
   function status(st) { if (S) { S.state = st; emit('status', st); } }
 
   /* ---------- identity ---------- */
-  function myMode() { return S && S.opts.mode ? S.opts.mode : (window.__hubRemote ? 'phone' : (window.HubMode && window.HubMode.mode === 'desktop' ? 'desktop' : 'phone')); }
+  // function myMode() { return S && S.opts.mode ? S.opts.mode : (window.__hubRemote ? 'phone' : (window.HubMode && window.HubMode.mode === 'desktop' ? 'desktop' : 'phone')); }   // (before H53)
+  function myMode() { return S && S.opts.mode ? S.opts.mode : (window.HubMode && window.HubMode.mode === 'desktop' ? 'desktop' : 'phone'); }   // H53: a joined device reports its real mode
   function myName() { var D = window.SharedLinkDevices; return String((S && S.opts.name) || (D ? D.name() : 'Device')).slice(0, 40); }
   function cleanIdentity(o) {
     if (o == null) return null;

@@ -537,7 +537,8 @@
     list.setAttribute('aria-label', 'Connected devices');
     card.append(meBox, list);
     const myName = () => (hub.SharedLinkDevices ? hub.SharedLinkDevices.name() : 'This device');
-    const myMode = () => (HS && HS.mode ? HS.mode() : (hub.__hubRemote ? 'phone' : (hub.HubMode && hub.HubMode.mode === 'desktop' ? 'desktop' : 'phone')));
+    // const myMode = () => (HS && HS.mode ? HS.mode() : (hub.__hubRemote ? 'phone' : (hub.HubMode && hub.HubMode.mode === 'desktop' ? 'desktop' : 'phone')));   // (before H53)
+    const myMode = () => (HS && HS.mode ? HS.mode() : (hub.HubMode && hub.HubMode.mode === 'desktop' ? 'desktop' : 'phone'));   // H53: real mode, joined or not
     function peers() {
       if (HS && HS.peers) return HS.peers();
       const me = L.id;

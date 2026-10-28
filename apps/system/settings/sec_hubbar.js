@@ -24,7 +24,8 @@
     ['barWorkspaces', 'Workspaces', 'The 1 / 2 workspace switcher (only shows with two workspaces)', true],
     ['barOsk', 'On-screen keyboard', 'The \u2328 button (Ctrl+Alt+K still works)', true],
     ['barPooh', 'Pooh Chat', 'The \uD83D\uDC3B chat icon. Off only hides the icon; Pooh Chat keeps working', false],
-    ['barDevices', 'Devices', 'The \uD83C\uDFAE button: Connect Code, phone link and connected devices', true],
+    // ['barDevices', 'Devices', 'The \uD83C\uDFAE button: Connect Code, phone link and connected devices', true],   // (before H53)
+    ['barDevices', 'Devices', 'The \uD83C\uDFAE button: Connect Code, phone link and connected devices. Always shown on a device joined to a Hub (Disconnect lives there)', true],   // H53
     ['barUpdate', 'Update', 'Shows when a new build is ready. Off: a small dot on Start instead (the Hub also updates itself, see About)', false]
   ];
   const on = (key, def) => { const v = S.get(key); return def ? v !== '0' : v === '1'; };

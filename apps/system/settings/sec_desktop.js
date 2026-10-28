@@ -11,6 +11,8 @@
  * H7: "Show Files on the desktop" (key 'showFiles', default on, '0' = off; Hub hub_prefs.js + hub_drives.js apply it live).
  * H52: the busy meter switch moved to the new Hub bar section (sec_hubbar.js, same key 'trayMeter'); the Taskbar
  *   heading here now just points there (kept below as comments).
+ * H53: a device joined to a Hub (Connect QR / join code) follows the choice too (it used to be forced into Phone);
+ *   the note says so, and what Auto does there (Desktop on a big screen, no mouse needed).
  */
 (function () {
   'use strict';
@@ -21,12 +23,25 @@
       const note = ui.note('');
       const showNow = () => {
         const h = S.hub();
+        /* (before H53)
         note.textContent = h ? 'Now: ' + (h.HubMode.isDesktop() ? 'Desktop' : 'Phone') +
           (h.HubMode.pref === 'auto' ? ' (Auto picks Desktop at ' + h.HubMode.minWidth + ' px wide or more with a mouse)' : '') :
           'Open Settings from the Hub to see the current mode.';
+        */
+        // H53: a joined device follows the choice too; Auto there needs no mouse
+        const joined = !!(h && (h.__hubRemote || h.HubMode.joined));
+        note.textContent = h ? 'Now: ' + (h.HubMode.isDesktop() ? 'Desktop' : 'Phone') +
+          (h.HubMode.pref === 'auto' ? (joined
+            ? ' (Auto on a joined device picks Desktop at ' + h.HubMode.minWidth + ' px wide or more, touch or mouse)'
+            : ' (Auto picks Desktop at ' + h.HubMode.minWidth + ' px wide or more with a mouse)') : '') +
+          (joined ? '. This device is joined to Hub ' + (h.__hubRemote && h.__hubRemote.code ? h.__hubRemote.code + ' ' : '') +
+            'and still follows your choice: Desktop and Phone both keep the remote; Disconnect is in \uD83C\uDFAE Devices on the Hub bar.' :
+            '. A device joined to another Hub (Connect QR or join code) follows your choice too.') :
+          'Open Settings from the Hub to see the current mode.';
       };
       const mode = ui.choice([
-        { value: 'auto', label: 'Auto', hint: 'Windows on a big screen with a mouse, else Phone' },
+        // { value: 'auto', label: 'Auto', hint: 'Windows on a big screen with a mouse, else Phone' },   // (before H53)
+        { value: 'auto', label: 'Auto', hint: 'Windows on a big screen with a mouse (joined device: big screen, touch is fine), else Phone' },   // H53
         { value: 'desktop', label: 'Desktop', hint: 'Apps open in windows with a taskbar' },
         { value: 'phone', label: 'Phone', hint: 'One app at a time, full screen' }
       ], S.get('wmMode', 'auto'), (v) => {

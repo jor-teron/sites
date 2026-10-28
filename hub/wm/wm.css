@@ -360,7 +360,8 @@ html.hub-bar-off-search #wm-taskbar #wm-search,
 html.hub-bar-off-ws #wm-taskbar .wm-ws,
 html.hub-bar-off-osk #wm-taskbar .wm-osk-btn,
 html.hub-bar-off-pooh #wm-taskbar #chat-btn,
-html.hub-bar-off-devices #wm-taskbar #ctrl-btn,
+/* html.hub-bar-off-devices #wm-taskbar #ctrl-btn,   (before H53) */
+html.hub-bar-off-devices:not(.hub-remote) #wm-taskbar #ctrl-btn,   /* H53: a joined device always keeps 🎮 (Disconnect) */
 html.hub-bar-off-update #wm-taskbar #upd-btn,
 html.hub-bar-off-clock #wm-taskbar .wm-clock { display: none !important; }
 html.hub-bar-off-tasks #wm-taskbar .wm-tasks { visibility: hidden; }

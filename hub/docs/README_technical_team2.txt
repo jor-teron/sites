@@ -1599,3 +1599,30 @@ Line counts are HTML+JS+CSS, excluding vendor/.
     Phone mode unaffected, no console errors). H29.1 40/40, H29.2 45/45, H29.2b 30/30, H29.3 40/40,
     H50 mesh 35/35, H50 Hub 20/20.
   Bump 20261029a / v108 -> 20261029b / hub-shell-v109 (hub_bump.py --release H52, --check OK).
+
+2026-10-29 IST, H53 (Team 2, week 2): a joined device follows the Screen mode choice.
+  Bug: hub/wm/wm_mode.js compute() returned 'phone' whenever window.__hubRemote was set (hub_role.js:
+    ?join=CODE, or a saved 'shared-link-join-code' on a touch-primary device), whatever sites-hub.wmMode
+    said. A big tablet that had joined a PC once was stuck in Phone mode on every load.
+  Fix (old line kept as a comment): a manual 'desktop' / 'phone' always wins. Auto: not joined = unchanged
+    ((hover: hover) and (pointer: fine) + >= MIN_WIDTH, R21 hysteresis); joined = no mouse needed,
+    Desktop at >= MIN_WIDTH (1024), kept down to MIN_WIDTH - HYST (960), else Phone. HubMode.joined.
+  Joined + Desktop checked: .header-right (🎮 #ctrl-btn, #rm-fs, #rm-set) moves to the taskbar tray as
+    for any Desktop Hub (wm_taskbar placeTray); hub_remote.js dot / rejoin-on-tap unchanged; the Devices
+    pop-up (hub-controller.js remote branch, hub_linkstate.js "⏏ Disconnect from Hub", hub_panels.js
+    Join with code) opens above the taskbar (wm.css body.wm-desktop #ctrl-popover). wm.css: Hub bar
+    Devices off no longer hides 🎮 on html.hub-remote (Disconnect must stay reachable). hub.js Gamepad
+    forceFrame + tiles.js remote links: open as Desktop windows, fine. #rm-fs / #rm-set only follow
+    #app-frame (Phone single frame), so a Gamepad window in Desktop mode has no bar extras (own title bar).
+  Mode reporting: hub_sync.js mode(), hub_mesh.js myMode(), sec_devices.js myMode() no longer say 'phone'
+    for every joined device (old lines kept): roster / HubSync groups follow the real mode.
+    hub_meshlink.js desktop() untouched (only used for the host's preferLobby).
+  Settings › Desktop: Auto hint + "Now:" note (joined to Hub CODE, follows your choice, Disconnect in
+    🎮 Devices); Hub bar Devices hint says it stays on a joined device. Settings ?v=20261029h53.
+  Tests (system Chrome headless, real pages, PeerJS stand-in broker): H53 37/37 (touch emulation +
+    saved code + Desktop → Desktop, + Phone → Phone, Auto 400 px → Phone, Auto 1280 / 1366 px → Desktop,
+    hysteresis 990 / 900 / 1010 / 1280, ?join= + Desktop, not-joined tablet unchanged, mouse PC host
+    unchanged, 🎮 + Disconnect reachable with Hub bar Devices off, Disconnect works from Desktop, roster
+    shows desktop, Settings note, Gamepad window, no console errors; screenshot /workspace/h53_tablet.png).
+    H52 64/64, H29.1 40/40, H29.2 45/45, H29.2b 30/30, H29.3 40/40, H50a 22/22, H50 mesh 35/35, H50 Hub 20/20.
+  Bump 20261029b / v109 -> 20261029c / hub-shell-v110 (hub_bump.py --release H53, --check OK).
