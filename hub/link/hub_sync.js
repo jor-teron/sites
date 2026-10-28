@@ -13,7 +13,7 @@
  *   filters (it alone knows its mode): Shared + the group of its own mode (HubMode.mode; a joined phone is always
  *   Phone) + any ticked group. Other groups are dropped before the preview and only counted.
  * Receiver: one pending offer (a new one replaces it) + a notification card 'Profile from <name>' → Review opens
- *   Settings › About › Send profile (#about/sync), where the preview lists each changed setting (Keep mine is the
+ *   Settings › About › Send profile (#about/sync; H29.2b: Settings › Devices › Send profile, #devices/sync), where the preview lists each changed setting (Keep mine is the
  *   default; settings this device does not have yet default to Use incoming). Apply writes only the chosen
  *   items (HubProfile.applyItems), Cancel drops the offer. Limits: payload <= MAX_CHARS of JSON, plain text only.
  * H29.2 Choose what to send + optional API keys:
@@ -32,6 +32,8 @@
  *   host in memory, as every link message is).
  * API window.HubSync:
  *   devices() → [{ id, name }]   connected devices (not this one, no old Gamepads)
+ *   peers() → [{ id, name, online, legacy, host, mode }]   H29.2b: every device the link knows (Settings › Devices ›
+ *     Connected devices, read-only); mode = 'desktop' | 'phone' once that device sent a profile here, else ''
  *   send(to, { desktop, phone, what, keys }) → { ok, reason?, id }   (H29.2: what + keys)
  *   pending() → null | { id, from, name, mode, at, include, groups, items, same, ignored, skipped }   (diffed now)
  *   apply(choices) → { ok, applied, kept }   choices: { itemId: 'incoming' | 'mine' } (missing = item default)
@@ -65,6 +67,14 @@
     const me = SharedLink.id;
     return (SharedLink.devices || []).filter((d) => d && !d.legacy && d.online !== false && d.id && d.id !== me)
       .map((d) => ({ id: String(d.id), name: clean(d.name || 'Device') }));
+  }
+  /* H29.2b: read-only list for Settings › Devices (offline devices too; an old Gamepad only while online) */
+  const seenMode = {};
+  function peers() {
+    const me = SharedLink.id;
+    return (SharedLink.devices || []).filter((d) => d && d.id && d.id !== me && !(d.legacy && d.online === false))
+      .map((d) => ({ id: String(d.id), name: clean(d.name || (d.legacy ? 'Gamepad' : 'Device')), online: d.online !== false,
+        legacy: !!d.legacy, host: d.id === 'host', mode: seenMode[String(d.id)] || '' }));
   }
 
   function send(to, inc) {
@@ -134,7 +144,8 @@
 
   function review() {
     closeCard();
-    if (window.__hubOpenApp) window.__hubOpenApp('apps/system/settings/', { hash: 'about/sync' });
+    // if (window.__hubOpenApp) window.__hubOpenApp('apps/system/settings/', { hash: 'about/sync' });   // (before H29.2b)
+    if (window.__hubOpenApp) window.__hubOpenApp('apps/system/settings/', { hash: 'devices/sync' });   // H29.2b: Devices section
   }
   function showCard(p) {
     const N = window.HubNotify;
@@ -168,6 +179,7 @@
       //   include: { desktop: inc.desktop === true, phone: inc.phone === true }, profile: m.profile };   // (H29.1)
       pend = { id, from: back, name: clean(m.name || 'Device'), mode: m.mode === 'desktop' ? 'desktop' : 'phone', at: Date.now(),
         include: { desktop: inc.desktop === true, phone: inc.phone === true, what: whatOf(inc.what), keys: inc.keys === true }, profile: m.profile };
+      seenMode[String(back)] = pend.mode;   // H29.2b: shown in Settings › Devices › Connected devices
       const p = pending();
       if (!p) { pend = null; reply(back, { type: T_RESULT, id, state: 'bad' }); return; }
       result = null;
@@ -188,7 +200,7 @@
   SharedLink.on('devices', emit);
 
   window.HubSync = {
-    devices, send, pending, apply, cancel, mode, review,
+    devices, peers, send, pending, apply, cancel, mode, review,   // H29.2b: + peers
     lastSend: () => (sent ? Object.assign({}, sent) : null),
     lastResult: () => (result ? Object.assign({}, result) : null),
     groupOf: (scope, key) => (HP() && HP().groupOf ? HP().groupOf(scope, key) : 'shared'),

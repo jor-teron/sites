@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Settings app (apps/system/settings/index.html) — Hub settings: Wallpaper, Desktop, Windows, Sizes, Look, API Keys (H28), How-to, About.
+  Settings app (apps/system/settings/index.html) — Hub settings: Wallpaper, Desktop, Windows, Sizes, Look, API Keys (H28), How-to, Devices (H29.2b), About.
   Sections list left, options right (phone: list first, tap into a section, ‹ Back).
   Choices are saved in localStorage (settings_store.js) and the Hub applies them live
   (hub/core/hub_prefs.js, storage event + postMessage). Deep link: index.html#about etc.
@@ -11,7 +11,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Settings</title>
-  <link rel="stylesheet" href="settings.css?v=20261028h292" />
+  <link rel="stylesheet" href="settings.css?v=20261028h292b" />
   <script src="../../../shared/theme/hub_theme.js?v=20261026h22"></script>
   <link rel="stylesheet" href="../../../shared/dialog/dialog.css?v=20261020e" />
 </head>
@@ -36,7 +36,7 @@
   <script src="settings_store.js?v=20261026h22"></script>
   <script src="../../../shared/link/link_devices.js?v=20261023q"></script><!-- H46: Device name card (name / guess / setName) when opened on its own -->
   <script src="../../../hub/core/hub_keys.js?v=20261027h282"></script>
-  <script src="settings.js?v=20261027h28"></script>
+  <script src="settings.js?v=20261028h292b"></script>
   <script src="sec_wallpaper.js?v=20261020a"></script>
   <script src="sec_desktop.js?v=20261023n"></script>
   <script src="sec_windows.js?v=20261027h26"></script>
@@ -44,7 +44,8 @@
   <script src="sec_look.js?v=20261020a"></script>
   <script src="sec_keys.js?v=20261027h282"></script>
   <script src="sec_howto.js?v=20261020a"></script>
-  <script src="sec_about.js?v=20261028h292"></script>
+  <script src="sec_devices.js?v=20261028h292b"></script><!-- H29.2b: before About, so Devices sits above it -->
+  <script src="sec_about.js?v=20261028h292b"></script>
   <script>Settings.start();</script>
 </body>
 </html>

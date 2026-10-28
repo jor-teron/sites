@@ -105,7 +105,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   - `wm_snap.js` — edge snap (half / maximise, preview), magnet with strength slider (R10/R13/R14/R35). Loaded at once on first title-bar press (R35).
   - `wm_workspaces.js` — two workspaces, monitor-shaped buttons (R10/R41).
 - Menus: `shared/ctxmenu` + `hub/menu/hub_ctx*.js` (R3c) — own right-click / long-press on desktop, taskbar, title bars, drives, tiles; `ctx_in_app.js` injected into same-origin apps; Shift+right-click = browser menu.
-- Settings glue: `hub/menu/hub_settings.js` opens `apps/system/settings/` (with #section). Settings app = settings.js + settings_store.js + sec_{wallpaper,desktop,windows,sizes,look,howto,about}.js. Deep links `#wallpaper #desktop #sizes #look #howto #about`.
+- Settings glue: `hub/menu/hub_settings.js` opens `apps/system/settings/` (with #section). Settings app = settings.js + settings_store.js + sec_{wallpaper,desktop,windows,sizes,look,keys,howto,devices,about}.js (H29.2b: sec_devices.js loads before sec_about.js so Devices sits above About). Deep links `#wallpaper #desktop #sizes #look #keys #howto #devices #about` (+ `#devices/device|connected|profile|sync`; old `#about/device|profile|sync` redirect, settings.js ALIASES).
 - Drives / Files / Disk
   - `shared/fs/fs_drives.js` — drive list: Local (OPFS, persist asked once), added PC folders (`showDirectoryPicker`, handles in IndexedDB, "Allow access" re-grant), Google Drive (`shared/google/gdrive_fs.js` directory-handle adapter so FsOps works unchanged).
   - `fs_ops.js` (copy/move/rename/delete/upload), `fs_ref.js`, `filetypes.js` (Open with → apps/system/viewer/), `thumbs_store.js` (thumbnail cache).
@@ -1303,3 +1303,37 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   leaves other keys, Use incoming replaces, keys without include.keys ignored, bad key names / sizes
   dropped, short key mask, size cap, no console errors) + H29.1 suite 40/40 again.
   Real phone <-> PC not tested: Jor to try once on real devices.
+
+2026-10-28 IST, H29.2b (Team 2, week 2): New Devices section in Settings, directly above About.
+  About was getting crowded, so everything about this device and the devices it is linked with moved
+  to a new section apps/system/settings/sec_devices.js (id 'devices', icon 📲, title Devices), loaded in
+  index.html just before sec_about.js (Settings shows sections in registration order). Cards, in order:
+    Device name (H46, id 'device')      #devices/device     moved unchanged from sec_about.js
+    Connected devices (new, 'connected') #devices/connected read-only
+    Profile (H30.x, id 'profile')        #devices/profile    moved unchanged
+    Send profile (H29.1/H29.2, 'sync')   #devices/sync       moved unchanged, all choices
+  plus an empty .pane-end spacer (140 px) so Apply / Cancel never sit under a Hub notification card.
+  About keeps the Hub card (Credit, Release date, Current release, Update, Last refreshed, Clear Cache,
+  Running build), Contact and Feedback. The old pane.append line is kept as a comment.
+  Connected devices: this device row (name, Desktop / Phone mode = HubSync.mode(), 'This Hub · code N'
+  / 'Joined Hub N' / 'Link off', Linked / Waiting / Not linked) and one row per device the link knows
+  from the new HubSync.peers() -> [{id, name, online, legacy, host, mode}] (offline devices too, an old
+  Gamepad only while online; host = the 'host' entry, tagged Hub; mode = what that device said in its
+  last profile offer, else 'Mode not known yet'). Text only, repaints on SharedLink devices / status /
+  open / close and HubSync.onChange. Empty: 'No other device connected...' hint to 🎮 Devices;
+  Settings opened on its own: 'Open Settings inside the Hub...'.
+  Redirects: settings.js ALIASES {about/device, about/profile, about/sync, about/devices,
+  about/connected} -> devices/...; on load and on hashchange the hash is replaced (replaceState).
+  Callers updated (old lines kept as comments): hub_panels.js 'Name: X ›' -> hash 'devices/device',
+  hub_sync.js review() -> 'devices/sync', Search search_items.js (Devices, Device name, Connected
+  devices, Profile, Send profile rows under Settings › Devices). #about from the context menus / update
+  icon still opens About. hub_keys.js header: keys leave the browser only with the profile sync
+  'Include API keys' tick (old line kept as a comment).
+  Bump 20261028h / v104 -> 20261028i / hub-shell-v105 (hub_bump.py --release H29.2b); hub_panels.js
+  ?v= and the Settings / Search file ?v= moved by hand.
+  Playwright (system Chrome): H29.2b 30/30 (nav order, icon, 4 cards, About without them, the three
+  old anchors on load and on hashchange, narrow list-first, Desktop-mode Hub: pop-up link, connected
+  list online / offline / gamepad, this-device row, mode learnt from an offer, Review notification ->
+  #devices/sync, empty state, Search 'device name' -> #devices/device, #about still About; Phone-mode
+  joined Hub: pop-up link, PC listed as Hub, this device Phone mode; no console errors) + H29.1 40/40
+  (Review anchor now #devices/sync) + H29.2 45/45.

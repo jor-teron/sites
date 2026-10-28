@@ -230,7 +230,7 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
 /* H46: Device name card (sec_about.js #about/device) — reuses the key row look, plain text font */
 .key-input.device-input { font: 15px/1.4 system-ui, sans-serif; }
 
-/* H29.1: Settings › About › Send profile (sec_about.js syncCard) */
+/* H29.1: Settings › About › Send profile (sec_about.js syncCard; H29.2b: Settings › Devices, sec_devices.js) */
 .sync-devs { display: flex; flex-direction: column; gap: 6px; }
 .sync-dev, .sync-tick { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
 .sync-tick { margin-bottom: 6px; }
@@ -258,3 +258,17 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
 .sync-tag-keys { background: color-mix(in srgb, #a78bfa 22%, transparent); color: #a78bfa; }
 .sync-conflict { background: color-mix(in srgb, #f6c344 22%, transparent); color: #f6c344; }
 .sync-group[data-group="keys"] .sync-vals { font-family: ui-monospace, monospace; }
+/* H29.2b: Settings › Devices › Connected devices (sec_devices.js connectedCard, read-only) */
+.conn-me { margin-bottom: 8px; }
+.conn-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.card ul.conn-list { padding-left: 0; margin: 0; }
+.conn-dev { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; }
+.conn-self { border-color: var(--accent); }
+.conn-top { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.conn-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conn-state { font-size: .78rem; font-weight: 600; flex: none; }
+.conn-state.on { color: #3fb950; } .conn-state.off { color: var(--muted); }
+.conn-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.conn-tag { font-size: .72rem; padding: 1px 8px; border-radius: 999px; background: var(--hi); color: var(--accent); }
+.conn-empty { color: var(--muted); font-size: .9rem; padding: 6px 2px; }
+.pane-end { height: 140px; }   /* H29.2b: Devices is the last long page before About; keeps Apply / Cancel clear of notification cards */
