@@ -3,7 +3,7 @@
  * window.HUB_SEARCH_ITEMS.settings: Settings pages / options → opens apps/system/settings/#<hash>.
  *   hash 'section' opens that page; 'section/sub' also scrolls to that card (only subs the section
  *   really handles: devices/device, devices/connected, devices/profile, devices/sync (H29.2b; were about/device (H46),
- *   about/profile; the old ones still redirect)). Keep in step with apps/system/settings/sec_*.js
+ *   about/profile; the old ones still redirect), devices/undo (H29.3)). Keep in step with apps/system/settings/sec_*.js
  *   (Settings.add ids and their ui.title() rows) when a page or option is added or renamed.
  *   words: extra search words (not shown; the top-level pages also have 'settings', so the query
  *   'settings' lists the pages, not every option).
@@ -39,6 +39,7 @@ window.HUB_SEARCH_ITEMS = {
     { name: 'Connected devices', hash: 'devices/connected', icon: '\uD83D\uDCF2', where: 'Settings \u203A Devices', words: 'connected devices linked connect code phone pc online offline' },
     { name: 'Profile (save / load settings)', hash: 'devices/profile', icon: '\uD83D\uDCF2', where: 'Settings \u203A Devices', words: 'profile backup export import restore keys' },
     { name: 'Send profile (sync to a device)', hash: 'devices/sync', icon: '\uD83D\uDCF2', where: 'Settings \u203A Devices', words: 'sync send profile phone pc share settings api keys' },
+    { name: 'Undo last sync', hash: 'devices/undo', icon: '\uD83D\uDCF2', where: 'Settings \u203A Devices', words: 'undo sync revert restore backup profile previous settings keys' },   // H29.3
     { name: 'About', hash: 'about', icon: '\u2139\uFE0F', where: 'Settings', words: 'settings version build release update contact feedback github' },
     { name: 'Contact & Feedback', hash: 'about', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'bug issue github idea' }
   ],

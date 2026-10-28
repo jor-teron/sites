@@ -1258,9 +1258,11 @@ Line counts are HTML+JS+CSS, excluding vendor/.
     + an API keys tick (off by default). Keys masked to the last 4 characters in the preview and
     never overwrite on their own: same key = skipped, missing = added, different = conflict with
     Keep mine (default) / Use incoming / Keep both where the service allows it.
-  - H29.3 (not built): backup of the old settings before Apply + 'Undo last sync' in Settings, and
-    the PC's connected folder copy (hub/hub-profile/) updated straight after a sync.
+  - H29.3 (built, see below; was 'not built' until 28 Oct): backup of the old settings before Apply +
+    'Undo last sync' in Settings, and the PC's connected folder copy (hub/hub-profile/) updated
+    straight after a sync.
   - Dropped: Team 1's H29.4 automatic sync (see above).
+  - Status (28 Oct, after H29.3): H29 COMPLETE (H29.1, H29.2, H29.2b, H29.3); H29.4 dropped.
   Profile before H29.1 (checked): hub.json "hub" is one flat object of every allowed sites-hub.*
   setting, not split by Desktop / Phone mode (device.mode only records the saving device's mode); app
   settings are per app file. Mode groups are therefore new, kept in ONE map in hub_profile.js:
@@ -1391,3 +1393,51 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   #devices/sync, empty state, Search 'device name' -> #devices/device, #about still About; Phone-mode
   joined Hub: pop-up link, PC listed as Hub, this device Phone mode; no console errors) + H29.1 40/40
   (Review anchor now #devices/sync) + H29.2 45/45.
+
+2026-10-28 IST, H29.3 (Team 2, week 2): Backup and Undo last sync, profile folder saved after sync.
+  Plan status: H29.1, H29.2, H29.2b and H29.3 done -> H29 COMPLETE. Team 1's H29.4 automatic sync
+  stays dropped (peers, no server; every send / apply is a button press).
+  Backup (only the last sync, on this device):
+    sites-hub.syncUndo  {v:1, at, from, settings:[{k, prev}], keys}   hub_profile.js (K_UNDO)
+      prev = the old raw localStorage text, or null = 'did not exist'; keys = count only.
+    sites-hub.keysUndo  {v:1, at, prev:{name: oldValue | null}}       hub_keys.js only (UNDO)
+  applyItems(list, {backup:{from}}) (hub_sync.js apply) first builds the write plan, then (only when it
+  will write something) saves the backup, then writes. Settings: prevs via lget. Keys: HubKeys.backupKeys
+  (names) snapshots the old values inside hub_keys.js; nothing outside it reads them: backupInfo() ->
+  {count, names, at}, restoreBackup() -> count. A sync without keys clears the old key backup (only the
+  last sync is kept); if the settings backup cannot be written the key backup is cleared too.
+  Keys kept separate: there is no protected / encrypted store in the browser for the Hub key store
+  (sites-hub.keys is plain localStorage, H28), so the key backup sits next to it in its own entry with
+  the same exposure, is managed only by hub_keys.js, is never rendered, logged, put in a notification,
+  summary, profile, export file or sync (both entries in hub_profile.js EXCLUDE), and is deleted on Undo
+  or replaced by the next sync. Cancel never touches either entry; an Apply that writes nothing keeps
+  the previous backup.
+  Undo: HubProfile.undoSync() puts each setting back exactly (null -> removed; same allowedName / app
+  guards as apply), HubKeys.restoreBackup() writes the old key values raw (no trim) and deletes keys that
+  did not exist, then emits one key change ('' = re-read all, so open Settings > API Keys rows repaint),
+  both backups are cleared, the profile is marked changed. HubSync.undo() then HubPrefs.apply(), keeps
+  lastUndo() {at, from, settings, keys, folder} for the summary.
+  UI (sec_devices.js, card id 'undo', #devices/undo, after Send profile): note, Last sync / From /
+  Covers ('N settings and M API keys'), 'Undo last sync' -> UiDialog.confirm (sender, time, counts) ->
+  'Last sync undone' summary + Reload Hub; disabled + hint 'Nothing to undo...' without a backup;
+  repaints on HubSync.onChange. The Apply summary has Reload Hub + Undo. Old pane.append line kept.
+  PC folder copy: after an Apply that wrote something, and after Undo, HubSync.saveFolder() calls the
+  existing HubProfile.save() at once when HubProfile.status() has a ticked folder target in state
+  'ready' ('Saved to profile folder' / 'Could not save...'); no folder (phone, not ticked, permission
+  needed) = skipped quietly, nothing shown. The normal Save every timer is unchanged.
+  Search: 'Undo last sync' row (Settings > Devices, #devices/undo).
+  Bump 20261028i / v105 -> 20261028j / hub-shell-v106 (hub_bump.py --release H29.3, --check OK);
+  Settings / Search file ?v= moved by hand (20261028h293), hub.html hub_keys.js ?v=20261028j.
+  Playwright (system Chrome, two contexts: PC 1366 px Desktop mode host + phone 400 px Phone mode
+  joined; SharedLink send / devices / id / role stubbed and bridged between them (stand-ins); PC folder
+  = a real OPFS directory handle in the 'sites-fs' drives store (fake folder); HubProfile.save wrapped
+  with a counter): H29.3 40/40 (disabled + hint without backup, Cancel no backup + no change, Apply
+  backup with sender / time / counts and did-not-exist, key backup separate, backup not in the profile,
+  Undo dialog Cancel, Undo restores settings + keys exactly and removes new items, backup cleared,
+  key listeners told, second / third sync replace the backup, PC folder saved once after Apply and
+  once more after Undo with the file content back, phone skips quietly, API Keys row repaints, Search
+  -> #devices/undo, standalone Settings note, no key value in DOM / logs / backup info, no console
+  errors) + H29.1 40/40 + H29.2 45/45 + H29.2b 30/30 (its card list now includes 'undo').
+  Note from testing: Search -> Settings was checked with a fresh Settings window; with Settings
+  already open on a hash the test had set by hand, the reused window did not move (not H29.3 code,
+  left as is). Real phone <-> PC and a real PC folder not tested: Jor to try once on real devices.

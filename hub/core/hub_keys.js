@@ -16,6 +16,17 @@
  *   HubKeys.onChange(fn)       fn({name, present}) on every change (this page or another tab /
  *                              frame, via the 'storage' event); name '' = several changed. Returns unsubscribe().
  *   HubKeys.KNOWN              [{name, label, kind, url, hint}] the keys Settings shows a row for
+ * H29.3 Undo last sync (profile sync backup, Settings › Devices › Undo last sync). The key store has no protected or
+ *   encrypted space (H28: plain localStorage), so the backup of the keys a sync is about to change is kept in its
+ *   OWN entry next to it, localStorage 'sites-hub.keysUndo' = { v: 1, at, prev: { name: old value | null } }
+ *   (null = the key did not exist, so Undo removes it). Only this file reads or writes that entry, and its API
+ *   gives names and counts only, never a value. It is never in the profile (hub_profile.js EXCLUDE, and 'keys' in
+ *   the name). Only the last backup is kept (a new one replaces it).
+ *   HubKeys.backupKeys(names)  → count   snapshot of those names (replaces the last backup; [] = clear)
+ *   HubKeys.backupInfo()       → null | { count, names, at }   (names only)
+ *   HubKeys.restoreBackup()    → count   puts the exact old values back (removes the ones that were new), clears
+ *                                        the backup, fires onChange('', null) so Settings › API Keys repaints
+ *   HubKeys.clearBackup()
  * Names: lowercase letters, digits, '_', '-', '.' (1–40). Known: tavily, gemini, openai_base,
  * openai_key, ollama_url, groq, openrouter, deepseek, xai (H28.1), gvision (H28.2); anything else is a custom key. Standalone app fallback:
  *   const k = window.top?.HubKeys ? await window.top.HubKeys.get('tavily') : localKey;
@@ -92,6 +103,48 @@
     return () => listeners.delete(fn);
   }
 
+  /* H29.3: backup of the keys a profile sync changes (values never leave this file) */
+  const UNDO = 'sites-hub.keysUndo';
+  function readUndo() {
+    try {
+      const o = JSON.parse(localStorage.getItem(UNDO) || 'null');
+      return o && o.v === 1 && o.prev && typeof o.prev === 'object' && !Array.isArray(o.prev) ? o : null;
+    } catch (_) { return null; }
+  }
+  function clearBackup() { try { localStorage.removeItem(UNDO); } catch (_) { /* blocked */ } }
+  function backupKeys(names) {
+    const cur = read(), prev = {};
+    (Array.isArray(names) ? names : []).map(norm).filter((n) => NAME_RE.test(n)).forEach((n) => {
+      prev[n] = typeof cur[n] === 'string' ? cur[n] : null;
+    });
+    const count = Object.keys(prev).length;
+    if (!count) { clearBackup(); return 0; }
+    try { localStorage.setItem(UNDO, JSON.stringify({ v: 1, at: Date.now(), prev })); } catch (_) { return -1; }   // -1 = no room
+    return count;
+  }
+  function backupInfo() {
+    const b = readUndo();
+    if (!b) return null;
+    const names = Object.keys(b.prev).filter((n) => NAME_RE.test(n)).sort();
+    return names.length ? { count: names.length, names, at: +b.at || 0 } : null;
+  }
+  function restoreBackup() {
+    const b = readUndo();
+    if (!b) return 0;
+    const o = read();
+    let n = 0;
+    Object.keys(b.prev).forEach((k) => {
+      if (!NAME_RE.test(k)) return;
+      const v = b.prev[k];
+      if (typeof v === 'string' && v) o[k] = v; else delete o[k];   // exact old value (no trim), or gone again
+      n++;
+    });
+    const ok = write(o);
+    clearBackup();
+    if (ok && n) emit('', null);   // several may have changed: every listener re-reads (Settings › API Keys rows)
+    return ok ? n : 0;
+  }
+
   // Settings app url, relative to this script (hub/core/hub_keys.js → apps/system/settings/)
   const SELF = (document.currentScript && document.currentScript.src) || location.href;
   const SETTINGS_URL = new URL('../../apps/system/settings/', SELF).href;
@@ -119,5 +172,7 @@
   });
   listeners.add(() => { last = JSON.stringify(read()); });   // keep the diff base fresh after our own writes
 
-  window.HubKeys = { get, set, remove, has, list, open, onChange, KNOWN, STORE, SETTINGS_URL };
+  // window.HubKeys = { get, set, remove, has, list, open, onChange, KNOWN, STORE, SETTINGS_URL };   // (before H29.3)
+  window.HubKeys = { get, set, remove, has, list, open, onChange, KNOWN, STORE, SETTINGS_URL,
+    backupKeys, backupInfo, restoreBackup, clearBackup, UNDO };   // H29.3
 })();
