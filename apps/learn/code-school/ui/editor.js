@@ -2,11 +2,13 @@
    numbers, Tab = 2 spaces (Shift+Tab takes them away, works on many lines), auto-indent on Enter (one step more after
    { ( [ or an opening tag), optional auto-close of tags when you type ">", and a key bar for phone keyboards.
    Edits go through execCommand('insertText') so Undo keeps working; setRangeText is the fallback.
-   CS.editor(host, {autoClose: () => bool, onChange: fn}) -> {get value, set value, insert, focus} */
+   CS.editor(host, {autoClose: () => bool, onChange: fn}) -> {get value, set value, insert, focus, setLang, selection}
+   setLang({hl, keys}) swaps the colouring function and the key bar (Web or SQL, CS4). */
 window.CS = window.CS || {};
 (() => {
   const VOID = /^(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr|!doctype)$/i;
   const KEYS = ['Tab', '<', '>', '/', '=', '"', "'", '{', '}', '(', ')', ';', ':', '#', '.'];
+  window.CS.KEYS = KEYS;
   window.CS.editor = function (host, opt) {
     const el = (t, c) => { const e = document.createElement(t); if (c) e.className = c; return e; };
     const box = el('div', 'ed'), gut = el('div', 'ed-gut'), nums = el('div', 'ed-nums'), area = el('div', 'ed-box');
@@ -14,14 +16,16 @@ window.CS = window.CS || {};
     pre.setAttribute('aria-hidden', 'true'); pre.append(code); gut.append(nums); area.append(pre, ta); box.append(gut, area);
     Object.entries({ spellcheck: 'false', autocapitalize: 'off', autocomplete: 'off', autocorrect: 'off', wrap: 'off', 'aria-label': 'Your code' }).forEach(([k, v]) => ta.setAttribute(k, v));
     bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Code keys');
-    KEYS.forEach(k => { const b = el('button'); b.type = 'button'; b.textContent = k === 'Tab' ? '\u21E5' : k; b.title = k === 'Tab' ? 'Tab (2 spaces)' : k;
+    let hl = CS.highlight;
+    const keysFor = list => bar.replaceChildren(...list.map(k => { const b = el('button'); b.type = 'button'; b.textContent = k === 'Tab' ? '\u21E5' : k; b.title = k === 'Tab' ? 'Tab (2 spaces)' : k;
       b.addEventListener('pointerdown', e => e.preventDefault());          // keep the phone keyboard open
       b.addEventListener('click', () => { if (k === 'Tab') indent(false); else { insert(k); if (k === '>') autoClose(); } });
-      bar.append(b); });
+      return b; }));
+    keysFor(KEYS);
     host.append(box, bar);
     let lines = 0, raf = 0, busy = false;
     function paint() {
-      raf = 0; code.innerHTML = CS.highlight(ta.value) + '\n';
+      raf = 0; code.innerHTML = hl(ta.value) + '\n';
       const n = ta.value.split('\n').length;
       if (n !== lines) { lines = n; nums.textContent = Array.from({ length: n }, (_, i) => i + 1).join('\n'); }
       sync();
@@ -71,7 +75,9 @@ window.CS = window.CS || {};
     return {
       get value() { return ta.value; },
       set value(v) { ta.value = v; ta.scrollTop = ta.scrollLeft = 0; paint(); },
-      insert: t => insert(t), focus: () => ta.focus(), textarea: ta
+      insert: t => insert(t), focus: () => ta.focus(), textarea: ta,
+      setLang(l) { hl = l.hl; keysFor(l.keys); paint(); },
+      selection: () => ({ start: ta.selectionStart, end: ta.selectionEnd })
     };
   };
 })();

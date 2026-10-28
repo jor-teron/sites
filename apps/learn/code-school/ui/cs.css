@@ -1,6 +1,6 @@
-/* Code School CS1a — app look on top of the Learn kit (../common/ui/learn.css): full-width editor + preview side by
+/* Code School CS4 — app look on top of the Learn kit (../common/ui/learn.css): full-width editor + preview side by
    side, stacked with Code / Preview tabs on a phone held upright; coloured code layer under a transparent textarea;
-   key bar for touch; Files and Help sheets. The code area stays dark in light mode (like most code editors). */
+   key bar for touch; Files and Help sheets; SQL results tables and Tables list (CS4). The code area stays dark in light mode (like most code editors). */
 .cs { --accent: #4dabf7; max-width: none; }
 .cs-ver { flex: none; font-size: 0.75rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 99px; }
 .cs-tabs { display: none; }
@@ -9,7 +9,7 @@
 .cs-chk { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 4px; cursor: pointer; font-size: 0.9rem; }
 .cs-chk input { width: 20px; height: 20px; accent-color: var(--accent); }
 .cs-main { flex: 1; min-height: 0; display: flex; gap: 0; }
-.cs-code, .cs-view { flex: 1 1 50%; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.cs-code, .cs-view, .cs-sql { flex: 1 1 50%; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 .cs-code { border-right: 1px solid var(--line); }
 .cs-frame { flex: 1; min-height: 0; width: 100%; border: 0; background: #fff; }
 .cs-msgs { flex: none; max-height: 30%; overflow: auto; padding: 4px 10px; background: #101317; border-top: 1px solid var(--line); font: 13px/1.4 ui-monospace, Menlo, Consolas, monospace; }
@@ -39,7 +39,8 @@
   .lrn-head h1 { font-size: 1.05rem; } .cs-ver { display: none; }
   .cs-bar { padding: 6px 10px; gap: 6px; } .cs-bar .lrn-qc { padding: 0 10px; } .cs-chk { font-size: 0.85rem; }
   .cs-main { flex-direction: column; } .cs-code { border-right: 0; }
-  .cs[data-tab="code"] .cs-view, .cs[data-tab="view"] .cs-code { display: none; }
+  .cs[data-tab="code"] .cs-view, .cs[data-tab="code"] .cs-sql, .cs[data-tab="view"] .cs-code { display: none; }
+  .cs-modes button { padding: 0 10px; } .lrn-head { gap: 6px; padding: 8px 10px; }
 }
 
 /* Files and Help sheets */
@@ -57,3 +58,33 @@
 .cs-tips { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; line-height: 1.4; }
 .cs-tips b { color: var(--accent); }
 html.light .cs-msgs { background: #f3f5f8; } html.light .cs-m { color: #333; } html.light .cs-error { color: #c62828; } html.light .cs-warn { color: #8a5a00; }
+
+/* modes (CS4): Web shows the preview, SQL shows results; [data-only] controls belong to one mode */
+.cs[data-mode="web"] [data-only="sql"], .cs[data-mode="sql"] [data-only="web"], .cs[data-mode="web"] .cs-sql, .cs[data-mode="sql"] .cs-view { display: none !important; }
+.cs-tag { font-style: normal; font-size: 0.7rem; font-weight: 700; padding: 1px 6px; border-radius: 99px; background: var(--bg); color: var(--accent); vertical-align: 2px; }
+.cs-sql { background: var(--bg); }
+.sq-tables { flex: none; max-height: 36%; overflow: auto; border-bottom: 1px solid var(--line); background: var(--panel); }
+.sq-tables summary { min-height: 40px; display: flex; align-items: center; padding: 0 12px; cursor: pointer; font-weight: 700; color: var(--muted); }
+.sq-list { list-style: none; margin: 0; padding: 0 8px 8px; display: flex; flex-direction: column; gap: 6px; }
+.sq-tn { display: flex; align-items: baseline; gap: 8px; min-height: 36px; width: 100%; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); text-align: left; }
+.sq-tn small { color: var(--muted); } .sq-tn:hover { border-color: var(--accent); }
+.sq-cols { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 4px 8px 0; font: 13px ui-monospace, Menlo, Consolas, monospace; }
+.sq-cols i { color: var(--muted); font-style: normal; } .sq-cols .pk { color: #f2cc60; }
+.sq-res { flex: 1; min-height: 0; overflow: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 12px; }
+.sq-blk { flex: none; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel); }
+.sq-h { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; padding: 6px 10px; font-size: 0.85rem; }
+.sq-h span { color: var(--muted); font-family: ui-monospace, Menlo, Consolas, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1 1 200px; }
+.sq-ok { color: var(--ok); }
+.sq-tw { max-height: 320px; overflow: auto; border-top: 1px solid var(--line); }
+.sq-tw table { border-collapse: collapse; min-width: 100%; font-size: 0.9rem; }
+.sq-tw th, .sq-tw td { padding: 5px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.sq-tw th { position: sticky; top: 0; background: var(--panel2); font-weight: 700; }
+.sq-tw td.num { text-align: right; font-variant-numeric: tabular-nums; } .sq-tw td.null { color: var(--muted); font-style: italic; }
+.sq-tw tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.03); }
+.sq-err { flex: none; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 12px; border: 1px solid #b85450; background: rgba(255, 90, 80, 0.12); line-height: 1.4; }
+.sq-err b { color: #ff8a80; } .sq-err small { color: var(--muted); font-family: ui-monospace, Menlo, Consolas, monospace; }
+.sq-note { margin: 0; color: var(--muted); }
+@media (min-width: 1000px) {                        /* wide screens: Tables as a sidebar next to the results */
+  .cs-sql { flex-direction: row; } .sq-tables { width: 230px; max-height: none; border-bottom: 0; border-right: 1px solid var(--line); }
+}
+html.light .sq-err b { color: #c62828; }

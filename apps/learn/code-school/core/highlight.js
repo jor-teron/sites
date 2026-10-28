@@ -73,5 +73,17 @@ window.CS = window.CS || {};
     }
     return out;
   }
-  window.CS.highlight = html; window.CS.hlCss = css; window.CS.hlJs = js;
+  // SQL (CS4): keywords in any case, 'strings' (with '' inside), "names", -- and /* */ comments, numbers, functions
+  const SQLKW = /(?:select|from|where|and|or|not|in|is|null|like|between|as|on|join|inner|left|right|outer|cross|natural|using|group|by|order|asc|desc|having|limit|offset|distinct|all|union|except|intersect|insert|into|values|update|set|delete|create|table|view|index|unique|primary|key|foreign|references|default|check|constraint|autoincrement|drop|alter|add|column|rename|to|if|exists|case|when|then|else|end|begin|commit|rollback|transaction|integer|int|text|real|numeric|blob|boolean|date|varchar|true|false|pragma|with|recursive|replace|vacuum)(?![\w$])/iy;
+  const sql = src => lex(src, [
+    ['com', /--[^\n]*|\/\*[\s\S]*?(?:\*\/|$)/y],
+    ['str', /'(?:''|[^'])*'?/y],
+    ['attr', /"(?:""|[^"])*"?|`[^`]*`?|\[[^\]\n]*\]?/y],
+    ['kw', SQLKW],
+    ['fn', /[A-Za-z_][\w$]*(?=\s*\()/y],
+    ['num', /\d[\d.]*(?:e[+-]?\d+)?/iy],
+    ['pun', /[(),;*=<>!+\-\/%|.]/y],
+    ['', /[A-Za-z_][\w$]*|\s+/y]
+  ]);
+  window.CS.highlight = html; window.CS.hlCss = css; window.CS.hlJs = js; window.CS.hlSql = sql;
 })();
