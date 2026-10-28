@@ -1,4 +1,4 @@
-/* Telephone TP2 — one call at a time: dial → ring → answer → talk → hang up, plus all tones.
+/* Telephone TP2b — one call at a time: dial → ring → answer → talk → hang up, plus all tones.
    Signals (always to ONE device, relayed by the lobby; every one carries the call id cid):
      caller → callee {t:'ring', cid, num, name, did}      callee → caller {t:'ringing', cid}  (ack; none in 6 s = unreachable)
      callee → caller {t:'answer', cid} | {t:'decline', cid} | {t:'busy', cid}
@@ -202,7 +202,8 @@
   T.dial = function (num) {
     num = String(num || '').replace(/\D/g, '');
     if (T.busy()) return Promise.reject(new Error('You are already on a call.'));
-    if (!/^\d{4}$/.test(num)) return Promise.reject(new Error('Phone numbers here have 4 digits.'));
+    if (/^\d{4}$/.test(num)) return Promise.reject(new Error(num + ' is an old 4-digit number. Phone numbers now have 5 digits; it changes to the new number by itself once that device is online with Telephone TP2b.'));
+    if (!TPSave.numOk(num)) return Promise.reject(new Error('Phone numbers here have 5 digits (10000–99999).'));
     if (num === TPSave.get('num')) return Promise.reject(new Error('That is this device’s own number.'));
     if (!TPPeer.online()) return Promise.reject(new Error('Not connected yet. Check the Hub code and the internet, then try again.'));
     T.unlock();
@@ -289,7 +290,7 @@
   T.signal = function (m, from) {
     if (!m || typeof m !== 'object' || typeof m.cid !== 'string') return;
     if (m.t === 'ring') {
-      var num = /^\d{4}$/.test(String(m.num)) ? String(m.num) : '', nm = String(m.name || '').slice(0, 40) || 'Device';
+      var num = /^\d{4,5}$/.test(String(m.num)) ? String(m.num) : '', nm = String(m.name || '').slice(0, 40) || 'Device';
       var did = /^[0-9a-f]{16}$/.test(String(m.did || '')) ? String(m.did) : '';
       if (TPSave.get('dnd')) {
         var ct = TPSave.contact(num, did);
