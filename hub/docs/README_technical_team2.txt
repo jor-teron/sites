@@ -530,6 +530,15 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - In the Hub without hello (`body.in-hub`), the bar moves into the ribbon row as an in-app fallback (`.of-quick-fallback`); after hello `body.hub-titlebar` hides it. Apps still send the old hub-app tabs, so the Hub should prefer hubTitleBar tabs when both arrive.
 - Versions: every touched script/css uses `?v=HO1`. No build bump. base.html only got 4 added lines (BS3a lines untouched). Tested headless (desktop 1280 + phone 390) standalone and in a harness frame: 115 checks pass.
 
+### 1.26 Base delete safety: `apps/office/base/` (Office), release BS4
+- Why: deleting a table or a record was one tap on a button right beside the table / in the form view, easy to hit by accident and easy to confuse with each other.
+- New `modules/base-delete.js` (`BaseDelete.table()`, `.records(rows?)`, `.menu(anchor, items)`). Ribbon Home: `#btn-table-delete` and `#btn-row-del` (− Record) removed; a `⋯` button after Rename (`#btn-table-more`) and after + Record (`#btn-row-more`) opens a small fixed-position menu (not clipped by the scrolling ribbon) with one red item: `#menu-table-delete` "🗑 Delete table…" / `#menu-row-delete` "⊖ Delete record…". Form view lost its Delete button.
+- Typed-confirm dialog (in-app, shared `dlg-*` look, no alert/confirm): red button starts disabled; Enter only works when the text is right; Esc / Cancel / backdrop cancel; focus trapped. Table: solid red header 🗑 "Delete whole table", facts Table / Records / Fields, type the table name exactly (case sensitive, outer spaces ignored). Record: red-outline header ⊖ "Delete 1 record" (or N), preview of the first record (first 6 fields), type `DELETE` or the count.
+- Deletes call `BaseStore.saveNow()` (no 400 ms debounce), so they survive an immediate reload. Deleting a table also clears an active query on it. No Undo toast; HO1 Undo/Redo stay disabled in Base (Undo/Redo is a later release).
+- A capture keydown guard: Delete / Backspace outside an editable field are prevented and never delete anything; inside a cell they edit text as before.
+- `<title>Base BS4</title>`, `BASE_VERSION = "BS4"`, Base's own `?v=` now `BS4` (base-quick.js and shared files keep their tags, unchanged). Shared Office files untouched. No build bump.
+- Tested headless (puppeteer, `/workspace/bs4-test/test.js`) at 1280x800 and 390x844 phone: 43 checks each pass, no page errors, no native dialogs. Not tested inside the Hub frame. Multi-record selection does not exist yet, so the record dialog is always for 1 record for now.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

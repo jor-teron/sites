@@ -4,7 +4,7 @@ Small database app (like a light LibreOffice Base / Access). Plain HTML/CSS/JS, 
 Uses the shared Office files in `../shared/` (ribbon, tools, icons, dialog, notify cards, theme, settings, hover, collapse).
 
 Files: `base.html`, `base.css`, `base_icon.svg/.png`, `modules/base-store.js` (data + IndexedDB 'office-base'),
-`base-csv.js` (import/export), `base-grid.js` (grid view), `base-form.js` (form view), `base-query.js` (BS2 query builder, saved queries, SQL view), `base-ui.js` (ribbon, settings,
+`base-csv.js` (import/export), `base-grid.js` (grid view), `base-form.js` (form view), `base-query.js` (BS2 query builder, saved queries, SQL view), `base-delete.js` (BS4 delete safety: ⋯ menus + typed-confirm dialogs), `base-ui.js` (ribbon, settings,
 commands, boot), `base_hub.js` (Hub title-bar bridge, same v:1 protocol as Spreadsheet).
 
 ## Releases
@@ -36,3 +36,12 @@ WHERE = which records, ORDER BY = sort. Base writes this for you; you never have
 ## BS3 (safe start)
 - If storage does not answer within 1.5 s or is blocked, Base works in memory only and shows a warning banner.
 - Damaged saved data is repaired on load (original kept as a backup). If Base still cannot show it, a recovery dialog offers "Download raw data" and "Reset Base".
+
+## BS4 (delete safety)
+- No delete button beside the table, on rows or in the form view. Deleting lives in the small ⋯ menus on the Home tab, in red:
+  Table ⋯ > 🗑 **Delete table…** and Records ⋯ > ⊖ **Delete record…** (pick a record first by tapping its row number or a cell).
+- Delete table: a red dialog shows the table name, record and field count. Type the table name exactly to enable "Delete table".
+- Delete record: a dialog with a red outline shows how many records and a preview of the record. Type DELETE (or the count) to enable "Delete record".
+- Wrong or empty text keeps the button disabled; Cancel, Esc or a tap outside keep the data. Deletes are saved straight away.
+- The Delete and Backspace keys never delete records; they only edit text inside a cell.
+- No Undo yet (Undo/Redo is a later release); the Quick Access Undo/Redo stay disabled in Base.

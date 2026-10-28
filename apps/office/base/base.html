@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Base BS3</title>
-  <!-- BS1-BS3 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
+  <title>Base BS4</title>
+  <!-- BS1-BS4 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
   <link rel="icon" href="base_icon.svg">
   <link rel="stylesheet" href="../shared/office-ribbon.css?v=1">
   <link rel="stylesheet" href="../shared/office-tools.css?v=1">
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="../shared/office-notify.css?v=sh7">
   <link rel="stylesheet" href="../shared/office-settings.css?v=2">
   <link rel="stylesheet" href="../shared/office-collapse.css?v=1">
-  <link rel="stylesheet" href="base.css?v=BS3">
+  <link rel="stylesheet" href="base.css?v=BS4">
 </head>
 <body>
   <!-- TOP BAR: File + tabs (built from BASE_RIBBON_TABS by ../shared/office-ribbon.js); hidden in the Hub -->
@@ -46,11 +46,11 @@
       <div class="of-group tool-group" aria-label="Table">
         <select id="table-sel" title="Table" aria-label="Table"></select>
         <button type="button" id="btn-table-rename" title="Rename table">Rename</button>
-        <button type="button" id="btn-table-delete" title="Delete table">Delete</button>
+        <button type="button" id="btn-table-more" class="base-more-btn" title="More table actions" aria-label="More table actions" aria-haspopup="menu" aria-expanded="false">⋯</button>
       </div>
       <div class="of-group tool-group" aria-label="Records">
         <button type="button" id="btn-row-add" title="Add record">+ Record</button>
-        <button type="button" id="btn-row-del" title="Delete selected record">− Record</button>
+        <button type="button" id="btn-row-more" class="base-more-btn" title="More record actions" aria-label="More record actions" aria-haspopup="menu" aria-expanded="false">⋯</button>
       </div>
       <div class="of-group tool-group" aria-label="Fields">
         <button type="button" id="btn-field-add" title="Add field">+ Field</button>
@@ -107,12 +107,13 @@
   <script src="../shared/office-settings.js?v=3"></script>
   <script src="../shared/office-hover.js?v=1"></script>
   <script src="../shared/office-collapse.js?v=1"></script>
-  <script src="modules/base-store.js?v=BS3"></script>
-  <script src="modules/base-csv.js?v=BS3"></script>
-  <script src="modules/base-grid.js?v=BS3"></script>
-  <script src="modules/base-form.js?v=BS3"></script>
-  <script src="modules/base-query.js?v=BS3"></script>
-  <script src="modules/base-ui.js?v=BS3"></script>
-  <script src="modules/base_hub.js?v=BS3"></script>
+  <script src="modules/base-store.js?v=BS4"></script>
+  <script src="modules/base-csv.js?v=BS4"></script>
+  <script src="modules/base-grid.js?v=BS4"></script>
+  <script src="modules/base-form.js?v=BS4"></script>
+  <script src="modules/base-query.js?v=BS4"></script>
+  <script src="modules/base-delete.js?v=BS4"></script>
+  <script src="modules/base-ui.js?v=BS4"></script>
+  <script src="modules/base_hub.js?v=BS4"></script>
 </body>
 </html>
