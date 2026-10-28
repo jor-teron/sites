@@ -10,8 +10,14 @@
  * - Show Desktop button right after Start: click = minimise every window (remembers which were
  *   open), click again = bring exactly those back (focus as before). Opening / restoring any
  *   window in between forgets the list (like any OS).
- * - Workspace switcher "1" "2" right after Show Desktop: wm_workspaces.js. Show Desktop and
- *   the window buttons cover the current workspace only.
+ * - H48b: Search button (magnifier, #wm-search) right after Show Desktop, same look: click = open
+ *   the System Search app (apps/system/search/) in its own Hub window, the way the Start menu opens
+ *   apps (hub.js __hubOpenApp); already open = focus that window (switches workspace / restores
+ *   it) and its search box. Desktop mode only, like Show Desktop (the whole taskbar is hidden in
+ *   Phone mode, wm.css). No keyboard shortcut.
+ * - Workspace switcher "1" "2": wm_workspaces.js (R43: on the right, just before the tray; it
+ *   used to sit right after Show Desktop). Show Desktop and the window buttons cover the
+ *   current workspace only.
  * - One button per open window of the current workspace (HubWM.list() + HubWM.onWs): click = focus / restore, or minimise when it is
  *   already the active window. Active window highlighted, minimised ones dimmed.
  *   Right-click / long-press = menu: New window (another instance), Move to workspace 1 / 2,
@@ -61,7 +67,16 @@
   showDesk.setAttribute('aria-label', 'Show desktop');
   showDesk.setAttribute('aria-pressed', 'false');
   showDesk.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>';
-  bar.append(start, showDesk, tasks, tray, clock);
+  // H48b: Search (System Search app), right after Show Desktop
+  const SEARCH_ENTRY = 'apps/system/search/';
+  const searchBtn = document.createElement('button');
+  searchBtn.type = 'button';
+  searchBtn.id = 'wm-search';
+  searchBtn.title = 'Search';
+  searchBtn.setAttribute('aria-label', 'Search');
+  searchBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20"/></svg>';
+  // bar.append(start, showDesk, tasks, tray, clock);   // before H48b
+  bar.append(start, showDesk, searchBtn, tasks, tray, clock);
   document.body.appendChild(bar);
 
   // Old top bar items ↔ tray
@@ -151,6 +166,30 @@
   });
   window.addEventListener('hub-wm-change', () => { if (shown && HubWM.list().some((w) => !w.min && HubWM.onWs(w))) setShown(null); });
   window.addEventListener('hub-wm-ws', () => { if (shown) setShown(null); });
+
+  // H48b: Search button → System Search app window (open, or focus the one already open)
+  const isSearch = (w) => String(w.key || '').split(/[?#]/)[0].replace(/index\.html$/, '') === SEARCH_ENTRY;
+  function focusSearchBox(w) {
+    try {
+      const doc = w && w.frame && w.frame.contentDocument;
+      const q = doc && doc.getElementById('q');
+      if (q) { q.focus({ preventScroll: true }); q.select(); }
+    } catch (_) { /* file:// / not loaded yet: search.js focuses its box on load and window focus */ }
+  }
+  searchBtn.addEventListener('click', () => {
+    if (window.CtxMenu) CtxMenu.close();
+    if (menu.classList.contains('open')) catBtn.click();
+    const open = HubWM.list().filter(isSearch);
+    if (open.length) {   // focus the active one, else the topmost
+      const w = open.indexOf(HubWM.active) >= 0 ? HubWM.active : open.sort((a, b) => +b.el.style.zIndex - +a.el.style.zIndex)[0];
+      HubWM.focus(w);
+      focusSearchBox(w);
+      return;
+    }
+    if (window.__hubOpenApp) window.__hubOpenApp(SEARCH_ENTRY);
+    const w = HubWM.list().find(isSearch);
+    if (w && w.frame) w.frame.addEventListener('load', () => focusSearchBox(w), { once: true });
+  });
 
   // Right-click menus (hub_ctx.js + shared/ctxmenu): anchored to the bar, above it (bottom) / below it (top)
   const taskOf = new WeakMap();   // task button → window

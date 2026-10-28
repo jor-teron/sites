@@ -182,19 +182,22 @@ Tuner & Metronome,       tuner-metronome/,           , , Music, Microphone tuner
 Periodic Table,          periodic-table/,            , , Science, All 118 chemical elements: search - element facts - colour by category and quizzes
 Road Safety,             road-safety/,               , , Life Skills, Indian road signs - traffic lights - safe crossing game - road rules and quiz
 `,
-  "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools; R53c: D-Pad Controller listed here from Games, folder stays in hub/controller/; R54: new Disk app; T1: Terminal; AH1: App Hub). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
+  "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools; R53c: D-Pad Controller listed here from Games, folder stays in hub/controller/; R54: new Disk app; T1: Terminal; AH1: App Hub; H48: Search). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
-# section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-Files,                 files/,           , , Files
-Disk,                  disk/,            , , Files
-Viewer,                viewer/,          , , Files
+# section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last),
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+# name, path, icon, newtab, section   (header before H48c)
+name, path, icon, newtab, section, description
+Files,                 files/,           , , Files, Browse upload and organise files on Local storage added folders and Google Drive
+Disk,                  disk/,            , , Files, Manage the Hub's drives and storage: add folders and see space used
+Viewer,                viewer/,          , , Files, View pictures and videos from any Hub drive
 # H8: D-Pad Controller hidden until its ../../hub/controller/ link is fixed (opens a wrong folder from the App Hub); uncomment to restore
 # D-Pad Controller,      ../../hub/controller/, ../../hub/controller/controller_icon.png, 1, Hub tools
-Settings,              settings/,        , , System
-System Monitor,        sysmon/,          , , System
-Device Benchmark,      devbench/,        , , System
-Terminal,              terminal/,        , , System
-App Hub,               apphub/,          , , System
+Settings,              settings/,        , , System, Wallpaper theme taskbar device name and other Hub preferences
+System Monitor,        sysmon/,          , , System, Live device info with CPU memory storage network and battery graphs
+Device Benchmark,      devbench/,        , , System, Quick speed tests for phones TVs and PCs: CPU GPU memory and AI
+Terminal,              terminal/,        , , System, Unix style command line to browse drives edit files and open Hub apps
+App Hub,               apphub/,          , , System, Browse every category and app in one place
+Search,                search/,          search/search_icon.png, , System, Find apps Settings pages Hub actions and open windows
 `
 });

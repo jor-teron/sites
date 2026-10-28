@@ -1104,3 +1104,106 @@ Line counts are HTML+JS+CSS, excluding vendor/.
 2026-10-28 IST, H47 (Team 2, week 2): H47: hub_appindex.js regenerated with hub_appindex_gen.py (122 apps). Adds Connectivity Screen Share SS1, Video Chat VC2, Whiteboard WB1, Shared Clipboard CB1, Intercom IC1, plus Gallery, GIF Maker, Screen Recorder, Image Gen, Vision; TV now listed under Favorite; Code Lab now under Lab (its lab-apps.csv icon path code-lab_icon.png is wrong, file is codelab_icon.png: Apps bot fix).
   Build 20261028b / hub-shell-v98. Generator run with system Chrome (Playwright bundled browser
   missing on the box). hub.html load: no 4xx responses, no broken images. About 6 minutes.
+
+2026-10-28 IST, H48 (Team 2, week 2): Hub Search app (System category), split release 1 of 4.
+  New apps/system/search/: index.html, search.js, search_items.js, search.css, README.md,
+  search_icon.png; row in apps/system/system-apps.csv (existing columns only). Data: hub_appindex.js
+  (instant list, reads an optional 6th item as description), then every category CSV via
+  TilesCsv.parse for sections and a.description (absent today = ''). Hub items in search_items.js:
+  Settings pages / options -> __hubOpenApp('apps/system/settings/', {hash}) (#about/device,
+  #about/profile); categories -> App Hub #cat=; actions (minimiseAll, setWs) only when parent
+  HubMode.isDesktop(); open windows from parent __hubTasks.list / focus (skips its own window).
+  Apps open with parent __hubFly.openFromCat like the Start flyout; hub-open-app message on
+  file://; standalone navigates. Scoring: every query word must match; name > section / category
+  > description; whole-query name prefix +50; groups sorted by their best row. Not touched:
+  wm_taskbar.js, hub_appindex_gen.py, tiles.js. Planned: H48b taskbar search button after Show
+  desktop, H48c optional CSV description column (last column), H48d descriptions filled in by the
+  Apps / Games bots. Index regenerated (123 apps; line order kept so the diff is the Search row
+  only). Bump 20261028b / v98 -> 20261028c / hub-shell-v99. Playwright (system Chrome): 27/27
+  (standalone, Start > System > Search window, settings / device / tetris / games, keys, Enter,
+  windows, workspace + Show desktop actions, Phone mode #search), no console errors or 4xx.
+
+2026-10-28 IST, H48b (Team 2, week 2): Search icon on the Hub bar beside Show Desktop (split 2 of 4).
+  wm_taskbar.js: button#wm-search (title / aria-label 'Search', magnifier SVG) appended right after
+  #wm-showdesk: bar order Start, Show desktop, Search, tasks, [workspaces 1 2, OSK, tray, clock on
+  the right since R43]. Click: closes ctx menu / Start menu; Search window open (key
+  apps/system/search/) -> HubWM.focus (active one else topmost) + focus #q in its frame
+  (same origin; search.js also focuses q on window focus); else __hubOpenApp('apps/system/search/')
+  and focus q on frame load. wm.css: #wm-search shares every #wm-showdesk rule except .on.
+  Header comment updated (workspace switcher note fixed to R43 position). Bump 20261028c / v99 ->
+  20261028d / hub-shell-v100. Playwright (system Chrome): 13/13 (order, size, opens, focuses
+  after minimise, box focused, taskbar top, Phone mode hidden), no console errors or 4xx.
+
+2026-10-28 IST, H48c (Team 2, week 2): Optional app descriptions in category CSVs (split 3 of 4).
+  CSV format (any apps/<cat>/<cat>-apps.csv): optional LAST column 'description', read only when
+  the header row names it: name, path, icon, newtab, section, description. One plain line,
+  < ~90 chars, NO commas (cells are split on ','; no quoting), not starting with '#'. Empty or
+  missing cell = no description. Old 5-column CSVs need no change.
+  Readers: shared/tiles/tiles.js parse() -> {.., description} (COLS default order + description;
+  tiles do not draw it); hub/menu/hub_flyout.js build() keeps description (cached start lists are
+  keyed by CSV text hash, so an edited CSV rebuilds them); hub/core/hub.js addCsvApps keeps
+  app.description and __hubAppIndex() pushes it as a 6th item only when non-empty (checkIndex
+  String compare stays equal for 5-item rows); apphub.js uses TilesCsv.parse (unchanged; extra
+  column ignored); terminal.js reads index items 0-2 only; search.js reads index item 5 and the
+  CSV description (H48). hub_appindex_gen.py: header / docstring updated, plus csv_descriptions()
+  that maps entry path -> description from every CSV with the column (mirrors tiles.js parse;
+  path resolved against the CSV folder) and appends it to the browser's rows; CSVs without the
+  column -> rows unchanged. apps/system/system-apps.csv: header + 9 descriptions (Files, Disk,
+  Viewer, Settings, System Monitor, Device Benchmark, Terminal, App Hub, Search; Settings is not
+  in the index because hub_apps.js registers it first, Search still reads its CSV description).
+  Regenerated hub_catalog.js (System CSV text only) and hub_appindex.js (old line order and the
+  existing caption-for-nei Favorite row kept; the run flips it to Tools, registration order is
+  not stable for apps listed in two CSVs), so the diff is the 8 System descriptions + header.
+  Bump 20261028d / v100 -> 20261028e / hub-shell-v101. Playwright (system Chrome): 13/13
+  (Search standalone + in Hub matches 'organise' / 'unix' / 'battery' / 'wallpaper preferences'
+  only in System descriptions; index rows = live __hubAppIndex; System flyout, App Hub #cat=System
+  and system.html list the same 9 apps with no description text leaked), no console errors / 4xx,
+  no 'out of date' notice. H48d: Apps / Games bots fill their own CSVs (format above).
+
+2026-10-28 IST, H48d index (Team 2, week 2): hub_appindex.js regenerated after #228 (Apps bot) and
+  #229 (Games bot) were merged into h48-search-app (merge commit, no rebase; no conflicts). Run:
+  /workspace/.venv-pw/bin/python via runpy with playwright BrowserType.launch patched to
+  executable_path=/usr/bin/google-chrome, headless=True. 124 apps, every category row has a 6th
+  description item (Games 33, Lab 27, Learn 16, Tools 11, Office 10, Connectivity 9, Media 9,
+  System 8, Favorite 1); code-school (Learn) after code-lab; tv Favorite only; caption-for-nei
+  Tools only; code-lab icon codelab_icon.png. Old line order restored after the run. No bump.
+
+2026-10-28 IST, H49 (Team 2, week 2): Office quick actions and tabs on the Hub window title bar.
+  Hub side of HO1 (Apps bot; app side apps/office/shared/office-hubbar.js + office-quick.js, used
+  by Draftly, Spreadsheet and Base). Code: hub/link/hub-gamebar.js (makeBar(frame, bar,
+  {titleBar:true}) for window bars only; the Phone header #gamebar never uses it), hub/wm/wm.css,
+  hub/wm/wm_windows.js (drag / dblclick ignore .gb-qbtn).
+  Contract (all v:1; unknown v ignored):
+  - app -> hub  window.parent.postMessage({hubTitleBar:{v:1, op:'set', buttons:[{id, label, icon,
+    enabled, title}], tabs:[{id, label}], activeTab}}, location.origin)   ('*' only on file://)
+  - app -> hub  {hubTitleBar:{v:1, op:'update', buttons:[{id, label?, icon?, enabled?, title?}],
+    activeTab?}}  patches existing buttons by id (unknown ids ignored); no add / remove (use set)
+  - app -> hub  {hubTitleBar:{v:1, op:'clear'}}
+  - hub -> app  iframe.contentWindow.postMessage({hubTitleBarHello:{v:1}}, origin): sent with each
+    hub-hello burst after the iframe loads (0 / 150 / 400 / 900 / 1800 ms) until a set arrives;
+    the app answers with set. Only in Desktop mode.
+  - hub -> app  {hubTitleBarClick:{v:1, kind:'button'|'tab', id}} on a click (enabled buttons
+    only; a tab click also highlights that tab at once).
+  Checks: event.source === the window's iframe contentWindow AND event.origin === location.origin
+  ('null' on file://); Hub -> app messages are only sent to a frame showing a Hub-origin page.
+  Limits: 8 buttons, 10 tabs; strings cut to id 32, label 24, icon 4, title 60, tab label 20;
+  drawn with textContent only (no HTML). Button shows icon (if any) else label; tooltip = title
+  else label; aria-label = label. enabled:false -> disabled + greyed (opacity 0.35).
+  Layout (.wm-gb): [app name hidden] [.gb-qa quick buttons | divider] [.gb-tbtabs tabs]
+  [.gb-fold-btn 'Active ▾'] [hub-app stats] [hub-app buttons, max 3] [.gb-file file name].
+  hubTitleBar tabs replace the R44 hub-app tabs (never both); legacy hub-tab messages still move
+  the highlight. Fold: a ResizeObserver on the window re-measures; if the bar or tab strip
+  overflows, .gb-fold hides the strip and shows the ▾ button; its drop-down (.gb-tabmenu, fixed,
+  on <body>) closes on pick, Esc, outside press or window blur. Cleared on iframe load (new
+  document), on iframe src change (MutationObserver), on op:'clear', on window close and when the
+  mode becomes Phone (hub-wm-mode). No Hub shortcuts are added; focus goes back to the iframe
+  after every click, so Ctrl+Z / Ctrl+S / Ctrl+P stay with the app. Apps that do not use
+  hubTitleBar draw exactly as before.
+  Bump 20261028e / v101 -> 20261028f / hub-shell-v102 (hub.html wm.css now carries the build
+  stamp). Playwright (system Chrome, throwaway test page in /tmp, not committed): 35/35 (order,
+  disabled, icon / label / title, click messages, disabled sends nothing, focus back to iframe,
+  update patch + activeTab, HTML stays text, fold + menu + pick, unfold, 8 / 10 limits, nested
+  child frame ignored, foreign origin ignored, v:2 ignored, clear, auto-clear on navigation +
+  new hello, Draftly buttons + tabs and in-app bar hidden, Insert tab selects Draftly's ribbon,
+  2048 bar unchanged, H48b Search button, Phone mode no quick buttons and Draftly keeps its bar),
+  Spreadsheet and Base checked too; no console errors or 4xx.
