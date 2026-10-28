@@ -495,6 +495,17 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Files: `clipboard.html/.css`, `clipboard_store.js`, `clipboard_peer.js`, `clipboard_save.js`, `clipboard_app.js`, `clipboard_icon.png` (192 px; CSV icon set explicitly), `clipboard_readme.md`.
 - Tested in headless Chromium with a simulated peer only (`CBPeer._emit` / `CBPeer._provided` test hooks, PeerJS blocked): paste from clipboard (text + 3200 px image → 1600 px), send to all / one device, incoming text/image/private, bad image dropped, notice, Copy text + image, auto-copy, pin, 50-item trim, delete, clear, IndexedDB reload, late-join recent list, permission-denied fallback, paste event image, themes, swipes. Not yet tried between two real devices. Recent list may carry several images in one message (no chunking beyond PeerJS's own).
 
+### 1.21 Intercom: `apps/connectivity/intercom/` (Connectivity → Chat, after Screen Share), release IC1
+- Live tap-to-talk audio to every device on the same Hub Connect Code ("Everyone") or one picked device. Replaces the Walkie-Talkie idea. Screens: Talk · Settings (dots, 75 px wrap-around swipes). Talk screen: device list on the left (Everyone + each device, tap to pick; 🌙 DND shown), Talk button + target + DND toggle + volume on the RIGHT; "who's talking" banner on top with Reply.
+- Hub Connect Code exactly as Video Chat / Shared Clipboard: `#code=`/`?hub=`, `{sharedLink:'ready', app:'intercom'}` → Hub `{sharedLink:'hello', code}`, then `__hubRemote.code` / `jtsites-hub-ctrl-code` / `shared-link-join-code` / `intercom-last-code` / Code dialog. Uses only `SharedLink.PEERJS_URL` + `SharedLinkDevices.name()`; no shared/ or hub/ edits.
+- Peers: own ids `jtsites-<code>-intercom-<rand>`, lobby `jtsites-<code>-intercom-0` (first device; roster `{id, name, dnd}`, relays `{t:'all'}` / `{t:'to'}`, reclaimed by a remaining device 0.3–1.8 s after it goes).
+- Talk: tap = on/off toggle; hold > 0.5 s and release = push-to-talk; 2 min max. `getUserMedia` audio only (echo cancel, noise suppression, AGC) → one audio MediaConnection per target, metadata `{kind:'talk', sid, all, name}`, plus `{t:'talk', on:true|false, sid}`. "Everyone" skips DND devices. Mic released on stop.
+- Hear: answered receive-only; the `<audio>` stays muted during a two-note chime (660→990 Hz, ~0.45 s; Settings can turn the chime off), then plays at the saved volume. Several talkers mix. Banner: "<name> is about to talk… / is talking · to everyone / to you only"; Reply talks straight back to that device (both directions live = two-way); tab title shows 🔊 name; hidden page inside the Hub → `window.top.HubNotify.notice`. If autoplay is blocked a "Tap here to turn on sound" strip appears.
+- DND: saved, sent in `hi` (roster shows 🌙); a talk that still arrives is closed and the talker gets `{t:'dnd'}` → toast "did not hear you". A device leaving the roster ends its talk.
+- Storage: `intercom_save.js` is the one save module: `intercom-settings-v1` `{name, theme, dnd, volume, chime, target}` + `intercom-last-code`.
+- Files: `intercom.html/.css`, `intercom_save.js`, `intercom_peer.js`, `intercom_talk.js`, `intercom_app.js`, `intercom_icon.png` (192 px; CSV icon set explicitly), `intercom_readme.md`.
+- Tested in headless Chromium with a simulated peer only (fake MediaConnections, WebAudio test streams, PeerJS blocked): talk to all / one, DND skip + refuse, hold vs tap, chime then unmute, banner, Reply two-way, volume, swipes, themes, settings reload, Hub ready→hello. The box Chrome policy blocks real WebRTC, so not yet tried between two real devices. `audio.volume` is ignored on iPhone/iPad (system volume only there). IC2 (video toggle, front/back camera, auto-answer for trusted devices) not started.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
@@ -1024,6 +1035,16 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   - Touch and phone layout work.
   - Frame rate holds 60 fps at stress counts (Ant Farm 300 ants, Gravity about 180 bodies).
   - After a CSV change, the tile appears in the right section on the hub, and hub_catalog.js was regenerated.
+
+2026-10-27 IST, H42 (Team 2, week 2): overdue Hub build bump with hub/tools/hub_bump.py,
+  20261023q / hub-shell-v95 (H8) -> 20261027a / hub-shell-v96. Team 1 shipped H10-H32
+  and T5-T7 without a bump, so their shell files were in SHELL but never precached.
+  SHELL already listed every file hub.html loads; nothing added. --check OK (7 places).
+
+2026-10-27 IST, H43 (Team 2, week 2): hub/wm/wm_windows.js (~line 347) dropped the redundant
+  frame.setAttribute('allowfullscreen','') (kept as a legacy comment). The iframe's allow policy
+  now always includes fullscreen. Tested in hub.html: fullscreen is in allow, no warning, no errors.
+  Same build as H42 (20261027a), no extra bump. About 4 minutes.
 
 2026-10-28 IST, H46 (Team 2, week 2): device name moved out of the 🎮 Devices pop-up into
   Settings > About > Device name (sec_about.js deviceCard, id 'device', deep link #about/device;
