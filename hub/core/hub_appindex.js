@@ -86,6 +86,7 @@ window.HUB_APP_INDEX = {
   "maths-logic": ["Learn", "apps/learn/maths-logic/", "Maths and Logic", "apps/learn/maths-logic/maths-logic_icon.png", 0],
   "clock-reading": ["Learn", "apps/learn/clock-reading/", "Clock Reading", "apps/learn/clock-reading/clock-reading_icon.png", 0],
   "code-lab": ["Learn", "apps/lab/code-lab/", "Code Lab", "apps/lab/code-lab/codelab_icon.png", 0],
+  "code-school": ["Learn", "apps/learn/code-school/", "Code School", "apps/learn/code-school/code-school_icon.png", 0],
   "survival-outdoors": ["Learn", "apps/learn/survival-outdoors/", "Survival and Outdoors", "apps/learn/survival-outdoors/survival-outdoors_icon.png", 0],
   "piano-basics": ["Learn", "apps/learn/piano-basics/", "Piano Basics", "apps/learn/piano-basics/piano-basics_icon.png", 0],
   "guitar-chords": ["Learn", "apps/learn/guitar-chords/", "Guitar Chords", "apps/learn/guitar-chords/guitar-chords_icon.png", 0],

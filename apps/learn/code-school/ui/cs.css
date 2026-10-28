@@ -1,0 +1,59 @@
+/* Code School CS1a — app look on top of the Learn kit (../common/ui/learn.css): full-width editor + preview side by
+   side, stacked with Code / Preview tabs on a phone held upright; coloured code layer under a transparent textarea;
+   key bar for touch; Files and Help sheets. The code area stays dark in light mode (like most code editors). */
+.cs { --accent: #4dabf7; max-width: none; }
+.cs-ver { flex: none; font-size: 0.75rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 99px; }
+.cs-tabs { display: none; }
+.cs-bar { flex: none; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 14px; border-bottom: 1px solid var(--line); }
+.cs-run { background: var(--accent); border-color: var(--accent); color: #111; min-width: 90px; }
+.cs-chk { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 4px; cursor: pointer; font-size: 0.9rem; }
+.cs-chk input { width: 20px; height: 20px; accent-color: var(--accent); }
+.cs-main { flex: 1; min-height: 0; display: flex; gap: 0; }
+.cs-code, .cs-view { flex: 1 1 50%; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.cs-code { border-right: 1px solid var(--line); }
+.cs-frame { flex: 1; min-height: 0; width: 100%; border: 0; background: #fff; }
+.cs-msgs { flex: none; max-height: 30%; overflow: auto; padding: 4px 10px; background: #101317; border-top: 1px solid var(--line); font: 13px/1.4 ui-monospace, Menlo, Consolas, monospace; }
+.cs-m { white-space: pre-wrap; word-break: break-word; color: #c9d1d9; } .cs-error { color: #ff8a80; } .cs-warn { color: #ffd479; }
+
+/* editor: pre and textarea share every text metric so the colours sit exactly under the letters */
+.ed { flex: 1; min-height: 0; display: flex; background: #0f1216; overflow: hidden; }
+.ed-gut { flex: none; width: 3.4em; overflow: hidden; background: #14181d; border-right: 1px solid #262c34; }
+.ed-nums, .ed-hl, .ed-ta { margin: 0; padding: 10px; border: 0; font: 14px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace; letter-spacing: 0; tab-size: 2; font-variant-ligatures: none; }
+.ed-nums { white-space: pre; text-align: right; color: #5c6773; padding-right: 8px; user-select: none; }
+.ed-box { position: relative; flex: 1; min-width: 0; overflow: hidden; }
+.ed-hl { position: absolute; top: 0; left: 0; min-width: 100%; white-space: pre; color: #d6dde6; pointer-events: none; will-change: transform; }
+.ed-ta { position: absolute; inset: 0; width: 100%; height: 100%; resize: none; outline: none; white-space: pre; overflow: auto; background: transparent; color: transparent; caret-color: #fff; -webkit-text-fill-color: transparent; }
+.ed-ta::selection { background: rgba(77, 171, 247, 0.35); }
+.h-tag { color: #ff7b72; } .h-attr { color: #79c0ff; } .h-str { color: #a5d6a7; } .h-com { color: #7d8590; font-style: italic; }
+.h-pun { color: #8b949e; } .h-sel { color: #ffa657; } .h-prop { color: #79c0ff; } .h-kw { color: #d2a8ff; } .h-num { color: #f2cc60; } .h-fn { color: #ffd479; }
+.ed-keys { flex: none; display: none; gap: 4px; padding: 4px; overflow-x: auto; background: var(--panel); border-top: 1px solid var(--line); scrollbar-width: none; }
+.ed-keys button { flex: none; min-width: 40px; min-height: 40px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); font: 600 17px ui-monospace, Menlo, Consolas, monospace; touch-action: manipulation; }
+@media (pointer: coarse), (max-width: 720px) {
+  .ed-keys { display: flex; }
+  .ed-nums, .ed-hl, .ed-ta { font-size: 16px; }    /* 16px stops phones from zooming into the box */
+}
+
+/* phone held upright: one pane at a time with Code / Preview tabs */
+@media (max-width: 720px) and (orientation: portrait) {
+  .cs-tabs { display: flex; } .cs-tabs button { padding: 0 12px; }
+  .lrn-head h1 { font-size: 1.05rem; } .cs-ver { display: none; }
+  .cs-bar { padding: 6px 10px; gap: 6px; } .cs-bar .lrn-qc { padding: 0 10px; } .cs-chk { font-size: 0.85rem; }
+  .cs-main { flex-direction: column; } .cs-code { border-right: 0; }
+  .cs[data-tab="code"] .cs-view, .cs[data-tab="view"] .cs-code { display: none; }
+}
+
+/* Files and Help sheets */
+.cs-sheet { position: fixed; inset: 0; z-index: 4; display: flex; align-items: flex-start; justify-content: center; padding: 6vh 12px 12px; background: rgba(0, 0, 0, 0.55); overflow: auto; }
+.cs-card { width: 100%; max-width: 560px; padding: 14px 16px 16px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.cs-card h2 { margin: 0; font-size: 1.25rem; } .cs-card h3 { margin: 4px 0 0; font-size: 1.05rem; }
+.cs-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cs-help { margin: 0; color: var(--muted); line-height: 1.4; }
+.cs-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cs-name { flex: 1 1 160px; min-width: 0; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; }
+.cs-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 40vh; overflow: auto; }
+.cs-list li { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 12px; background: var(--panel2); }
+.cs-fn { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.cs-fn small { color: var(--muted); font-weight: 400; }
+.cs-tips { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; line-height: 1.4; }
+.cs-tips b { color: var(--accent); }
+html.light .cs-msgs { background: #f3f5f8; } html.light .cs-m { color: #333; } html.light .cs-error { color: #c62828; } html.light .cs-warn { color: #8a5a00; }

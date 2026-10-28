@@ -169,6 +169,7 @@ Maths and Logic,         maths-logic/,               , , Language and Maths, Mat
 Clock Reading,           clock-reading/,             , , Language and Maths, Learn to tell the time: drag clock hands - 12 h and 24 h - read and set quizzes
 Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_icon.png, , Coding, Jupyter-style code cells that run on a remote Jupyter server
 Learning HTML (Basic),   ../tools/learning-html/,    , , Coding, Try HTML: type code in a box and see the web page result as you type
+Code School,             code-school/,               , , Coding, Coding playground: write HTML - CSS and JavaScript with live preview - save and download
 Survival and Outdoors,   survival-outdoors/,         , , Outdoors, Outdoor survival basics: making fire and finding safe drinking water
 Piano Basics,            piano-basics/,              , , Music, Learn piano: play songs step by step or with falling notes - sargam - record
 Guitar Chords,           guitar-chords/,             , , Music, Learn guitar chords: finger charts - strum sound - chord change practice and quiz
