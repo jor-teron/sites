@@ -22,6 +22,7 @@
 - Coding: Learning HTML (Basic) (still in Tools), Code Lab (still in Lab)
 - Music: Piano Basics (PB1: on-screen piano with WebAudio sound, note names in letters or sargam, 6 play-along tunes, name-the-note quiz), Guitar Chords (GC1: code-drawn neck in standard tuning, 20 chords with finger dots and O/X marks, plucked-string sound, strum by swipe or button, left-handed mode, chord-change practice with metronome, name-the-chord quiz)
 - Science: Periodic Table (PT1: all 118 elements in the standard layout, colour by category or state with legend filter, search, element cards with mass, group, period, state, year and kid-friendly facts, symbol/name/find-it quizzes in 3 levels)
+- Life Skills: Road Safety (RS1: 31 Indian road signs in mandatory/cautionary/informatory groups, traffic light trainer with pedestrian signal, left-hand-traffic safe-crossing game with Look Right-Left-Right, rule cards incl. helmet, seatbelt and 112, sign and scenario quizzes in 3 levels)
 
 ## Not yet in the Hub menu
 

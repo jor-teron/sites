@@ -1,0 +1,54 @@
+/* Road Safety RS1 — app look on top of the Learn kit (../common/ui/learn.css): sign grid, sign card, traffic light,
+   crossing game canvas with big touch buttons, rule cards and quiz. Light mode follows the Hub theme (html.light). */
+.rs { --accent: #ffb000; --ok: #7ccf95; --bad: #ff6b6b; }
+.rs-ver { flex: none; font-size: 0.75rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 99px; }
+.rs-modes button { padding: 0 10px; }
+.rs-main { display: flex; flex-direction: column; overflow: hidden; }
+.rs-page { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.rs-page > * { flex: none; } .rs-page .lrn-h, .rs-page .lrn-sub { margin: 0; }
+.rs-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rs-tab[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #111; }
+.rs-go { background: var(--accent); border-color: var(--accent); color: #111; min-width: 110px; }
+.rs-ginfo { margin: 0; padding: 8px 12px; border-radius: 10px; background: rgba(255, 176, 0, 0.12); }
+.rs-signs { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.rs-st { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; font-size: 0.85rem; cursor: pointer; text-align: center; }
+.rs-st.seen { border-color: rgba(124, 207, 149, 0.6); }
+.rs-sv { display: flex; justify-content: center; } .rs-sign { width: 72px; height: 72px; } .rs-sign.big { width: 150px; height: 150px; }
+.rs-over { position: fixed; inset: 0; z-index: 20; background: rgba(0, 0, 0, 0.55); display: flex; align-items: center; justify-content: center; padding: 12px; }
+.rs-over[hidden] { display: none; }
+.rs-card { position: relative; width: min(420px, 100%); max-height: 100%; overflow: auto; background: var(--panel); color: var(--text); border-radius: 16px; padding: 16px; text-align: center; }
+.rs-card h2 { margin: 6px 0 2px; } .rs-card p { margin: 6px 0; line-height: 1.4; }
+.rs-x { position: absolute; top: 6px; right: 6px; min-width: 40px; min-height: 40px; border: 0; background: transparent; color: var(--text); font-size: 1.5rem; cursor: pointer; }
+.rs-grp { font-weight: 700; } .g-m { color: #ff6b6b; } .g-c { color: #ffa94d; } .g-i { color: #4dabf7; }
+.rs-lights { flex-direction: row; align-items: flex-start; flex-wrap: wrap; }
+.rs-lbox { flex: 0 0 auto; } .rs-light { width: 200px; height: 220px; }
+.rs-lights > div:last-child { flex: 1 1 280px; display: flex; flex-direction: column; gap: 10px; }
+.rs-carinfo, .rs-walkinfo { padding: 10px 12px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); line-height: 1.4; }
+.rs-game { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.rs-game > * { flex: none; } .rs-gtop .lrn-sub { margin-right: auto; }
+.rs-cvwrap { flex: 1 1 auto !important; min-height: 120px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.rs-cv { border-radius: 12px; touch-action: manipulation; display: block; }
+.rs-ctl { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.rs-big { min-height: 60px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; font-size: 1.05rem; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+.rs-big:active { transform: scale(0.97); } .rs-crossb { background: var(--accent); border-color: var(--accent); color: #111; }
+.rs-rules { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.rs-rule { display: flex; gap: 12px; align-items: flex-start; } .rs-rule p { margin: 4px 0 0; line-height: 1.4; } .rs-ic { font-size: 2rem; line-height: 1; }
+.rs-levels { display: grid; gap: 8px; max-width: 560px; }
+.rs-lv { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; cursor: pointer; } .rs-best { font-size: 0.8rem; color: var(--accent); }
+.rs-quiz { max-width: 640px; width: 100%; margin: 0 auto; } .rs-qsign { width: 120px; height: 120px; }
+.rs-opts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.rs-opt { min-height: 54px; padding: 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+.rs-opt.ok { background: rgba(124, 207, 149, 0.25); border-color: var(--ok); } .rs-opt.bad { background: rgba(255, 107, 107, 0.22); border-color: var(--bad); }
+.rs-fb { margin: 0; min-height: 1.4em; font-weight: 600; } .rs-fb.ok { color: var(--ok); } .rs-fb.bad { color: var(--bad); }
+.rs-score { font-size: 2.6rem; font-weight: 800; color: var(--accent); margin: 0; }
+@media (max-width: 560px) {
+  .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; flex-basis: 100%; } .lrn-main.rs-main { padding: 8px; }
+  .rs-signs { grid-template-columns: repeat(3, 1fr); } .rs-sign { width: 60px; height: 60px; } .rs-st { font-size: 0.75rem; padding: 8px 4px; }
+  .rs-opts { grid-template-columns: 1fr; } .rs-opt { min-height: 46px; } .rs-lights { flex-direction: column; align-items: center; } .rs-light { width: 160px; height: 176px; }
+  .rs-big { font-size: 0.9rem; min-height: 56px; }
+}
+@media (max-height: 460px) {
+  .lrn-head { padding: 4px 10px; } .lrn-main.rs-main { padding: 6px 10px; } .rs-game { gap: 4px; } .rs-ginfo { padding: 4px 10px; font-size: 0.85rem; }
+  .rs-game { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto 1fr; } .rs-gtop, .rs-game .rs-ginfo { grid-column: 1 / 3; }
+  .rs-ctl { grid-template-columns: 1fr; align-content: center; width: 150px; } .rs-big { min-height: 50px; } .rs-qsign { width: 80px; height: 80px; } .rs-light { width: 140px; height: 154px; }
+}
