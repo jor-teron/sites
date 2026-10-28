@@ -20,7 +20,7 @@
 - Language: NE-India Dictionary, Caption for NEI (still in Tools), English Basic, Typing Tutor (TT1: graded keyboard lessons, on-screen keyboard, 1/2/5 minute test)
 - Language and Maths: Maths and Logic (ML1a: 6 topics: Everyday Numbers, Times Tables, Fractions/Percent, Money Maths, Shapes and Measuring, Patterns and Puzzles)
 - Coding: Learning HTML (Basic) (still in Tools), Code Lab (still in Lab)
-- Music: Piano Basics (PB1: on-screen piano with WebAudio sound, note names in letters or sargam, 6 play-along tunes, name-the-note quiz)
+- Music: Piano Basics (PB1: on-screen piano with WebAudio sound, note names in letters or sargam, 6 play-along tunes, name-the-note quiz), Guitar Chords (GC1: code-drawn neck in standard tuning, 20 chords with finger dots and O/X marks, plucked-string sound, strum by swipe or button, left-handed mode, chord-change practice with metronome, name-the-chord quiz)
 
 ## Not yet in the Hub menu
 
