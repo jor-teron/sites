@@ -89,6 +89,7 @@ Mail,         mail/,                , , Mail
 name, path, icon, newtab, section
 File Drop,  filedrop/,   , , Share
 QR Scanner, qr-scanner/, , , Share
+Shared Clipboard, shared-clipboard/, shared-clipboard/clipboard_icon.png, , Share
 Pooh Chat,  pooh-chat/,  , , Chat
 Video Chat, video-chat/, , , Chat
 SSH,        ssh/,        , , Remote
