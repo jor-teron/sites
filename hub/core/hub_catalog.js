@@ -15,43 +15,44 @@ Caption for NEI, ../tools/caption-for-nei/, , , Language
 `,
   "Games": `# Games — one per line. Paths are relative to this folder. Lines starting with # are comments.
 # icon empty = <folder>/<folder>_icon.png or a letter tile; newtab 1 = own tab on desktop;
-# section = optional group heading for Games only (first appearance sets the order; empty = "Other", shown last).
+# section = optional group heading for Games only (first appearance sets the order; empty = "Other", shown last);
+# description = one plain searchable line (no commas; use : or -). Old 5-column rows still work.
 # This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
-name, path, icon, newtab, section
-2048,              2048/,          , , Puzzle
-Swell Foop,        swell-foop/,    , , Puzzle
-Tetris,            tetris/,        , , Puzzle
-Tic-Tac-Toe,       tic-tac-toe/,   , , Puzzle
-Ping Pong,         ping-pong/,     , , Arcade
-Snake,             snake/,         , , Arcade
-Space Invaders,    space-invader/, , , Arcade
-Demolisher,        demolisher/,    , , Arcade
-Sling Birds,       sling-birds/, , , Arcade
-Pacman,            pacman/, , , Arcade
-Dino Run,          dino-run/,      , , Runners
-Car Run,           car-run/,       , , Runners
-Desert Road,       desert-road/,   , , Runners
-Turbo Lap,         turbo-lap/,     , , Runners
-Tower Defence,     tower-defence/, , , Strategy
-Chess,             chess/,         , , Strategy
-AoE RTS,           aoe-rts/,       , , Strategy
-Gravity Sandbox,   gravity-sandbox/, , , Simulator
-Solar System,      solar-system/,  , , Simulator
-Aquarium,          aquarium/,      , , Simulator
-Browser FPS,       browser-fps/,   , , 3D
-LandCraft,         landcraft/,     , , 3D
-Island Conquest,   island-conquest/, , , Beta
-Tennis Ball Blitz, tennis-throw/,  , , Beta
-AR Game,           ar-game/,       , , Beta
-Island (Alpha),    island-alpha/,  , , Beta
-Neon Raid,          neon-raid/,     , , Beta
-Neon Fist,         neon-fist/,     , , Beta
-Neon Fist 3D,      neon-fist-3d/,  , , Beta
-Ant Farm,          ant-farm/,      , , Beta
+name, path, icon, newtab, section, description
+2048,              2048/,          , , Puzzle, Slide number tiles and merge matching pairs to reach the 2048 tile
+Swell Foop,        swell-foop/,    , , Puzzle, Tap groups of same-coloured balls to clear the board - bigger groups score more
+Tetris,            tetris/,        , , Puzzle, Classic falling blocks: clear lines before the stack reaches the top
+Tic-Tac-Toe,       tic-tac-toe/,   , , Puzzle, Get three in a row on a 3x3 grid - play a friend or the computer
+Ping Pong,         ping-pong/,     , , Arcade, Paddle and ball table tennis - return the ball and outscore your opponent
+Snake,             snake/,         , , Arcade, Steer the snake to eat food and grow longer without hitting yourself
+Space Invaders,    space-invader/, , , Arcade, Retro shooter: move your cannon and blast waves of descending aliens
+Demolisher,        demolisher/,    , , Arcade, Side-scrolling action: smash buildings and fight enemies with physics weapons
+Sling Birds,       sling-birds/, , , Arcade, Physics slingshot: launch birds to knock down towers and defeat the pigs
+Pacman,            pacman/, , , Arcade, Maze chase: eat every dot and dodge the ghosts - power pellets turn the tables
+Dino Run,          dino-run/,      , , Runners, Endless runner: jump the dinosaur over obstacles - pick your dino and theme
+Car Run,           car-run/,       , , Runners, Endless driving: change lanes - jump and use nitro to dodge traffic and potholes
+Desert Road,       desert-road/,   , , Runners, Drive a desert highway and dodge cacti - animals and rocks on the road
+Turbo Lap,         turbo-lap/,     , , Runners, Top-down lap racing against AI cars with gas - brake and steering
+Tower Defence,     tower-defence/, , , Strategy, Build gun - cannon and frost towers to stop enemy waves on many maps
+Chess,             chess/,         , , Strategy, Classic chess against the computer with hints and undo - two levels for learners
+AoE RTS,           aoe-rts/,       , , Strategy, Tiny real-time strategy in Age of Empires style: gather - build and command units
+Gravity Sandbox,   gravity-sandbox/, , , Simulator, Drop planets - stars and black holes and watch gravity make orbits
+Solar System,      solar-system/,  , , Simulator, Explore the Sun and planets: tap a planet for key facts - pan and zoom
+Aquarium,          aquarium/,      , , Simulator, Virtual fish tank: meet the fish - feed them and keep the water clean
+Browser FPS,       browser-fps/,   , , 3D, 3D first-person shooter: explore or fight on camp - island - snow and forest maps
+LandCraft,         landcraft/,     , , 3D, Voxel block world in Minecraft style: explore - break and place blocks - swim
+Island Conquest,   island-conquest/, , , Beta, Strategy: send ships to capture islands from the AI before it takes yours
+Tennis Ball Blitz, tennis-throw/,  , , Beta, Aim and throw tennis balls at targets against the clock - win medals
+AR Game,           ar-game/,       , , Beta, Phone camera AR game: catch pets or chase ghosts and zombies in your room
+Island (Alpha),    island-alpha/,  , , Beta, 3D island walk demo with hills and day and night - early alpha
+Neon Raid,          neon-raid/,     , , Beta, Futuristic run-and-gun platformer against the clock - alpha
+Neon Fist,         neon-fist/,     , , Beta, Neon fighting game character viewer - preview build
+Neon Fist 3D,      neon-fist-3d/,  , , Beta, 3D hero builder: make a fighter - pick body - hair and clothes and save it
+Ant Farm,          ant-farm/,      , , Beta, Ant colony sim: ants dig tunnels and forage - drop food and water to help
 
-Aeroplane,          aeroplane/,                   , , Beta
-Island Game Demo,   island-demo/,                 , , Beta
-Game Settings,      common/settings/games-settings.html, , , Settings
+Aeroplane,          aeroplane/,                   , , Beta, Fly a small plane around a mini planet - simple 3D flight sim
+Island Game Demo,   island-demo/,                 , , Beta, 3D island demo: walk or run as a male or female character and explore
+Game Settings,      common/settings/games-settings.html, , , Settings, Shared game settings: display - FPS limit - sound - touch controls and difficulty
 `,
   "Media": `# Media — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
@@ -151,28 +152,29 @@ Keyboard,           keyboard/,                    , , Legacy
 `,
   "Learn": `# Learn — tiles page + Hub menu flyout. This CSV is the source of truth for the Learn category (see README.md).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
-# section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-First Aid,               first-aid/,                 , , Health
-Human Body Explorer,     human-body/,                , , Health
-Water Kingdom, 	water-kingdom/, , , Planet
-Animal Kingdom, 	animal-kingdom/, , , Planet
+# section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last),
+# description (one plain searchable line; no commas - use : or -)
+name, path, icon, newtab, section, description
+First Aid,               first-aid/,                 , , Health, First aid basics: CPR - choking - burns - cuts - sprains - fainting and nosebleeds
+Human Body Explorer,     human-body/,                , , Health, Tap body parts outside and inside to learn their names and jobs - with quiz
+Water Kingdom, 	water-kingdom/, , , Planet, Picture book about water: meet Droppy - the water cycle and how to save water
+Animal Kingdom, 	animal-kingdom/, , , Planet, Animal picture book: mammals - birds and reptiles with facts and search
 
-English Basic,           english-basic/,             , , Language
-NE-India Dictionary,     ../tools/nei-dict/,         , , Language
-Caption for NEI,         ../tools/caption-for-nei/,  , , Language
-Typing Tutor,            typing-tutor/,              , , Language
-Morse Code,              morse-code/,                , , Language
-Maths and Logic,         maths-logic/,               , , Language and Maths
-Clock Reading,           clock-reading/,             , , Language and Maths
-Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_icon.png, , Coding
-Learning HTML (Basic),   ../tools/learning-html/,    , , Coding
-Survival and Outdoors,   survival-outdoors/,         , , Outdoors
-Piano Basics,            piano-basics/,              , , Music
-Guitar Chords,           guitar-chords/,             , , Music
-Tuner & Metronome,       tuner-metronome/,           , , Music
-Periodic Table,          periodic-table/,            , , Science
-Road Safety,             road-safety/,               , , Life Skills
+English Basic,           english-basic/,             , , Language, English basics: alphabet - words - spelling - phrases - sentences and questions
+NE-India Dictionary,     ../tools/nei-dict/,         , , Language, Dictionary for Northeast India languages: Karbi - Mizo - Khasi - Dimasa and more
+Caption for NEI,         ../tools/caption-for-nei/,  , , Language, Live speech captions for English - Assamese - Hindi - Bengali and Nepali
+Typing Tutor,            typing-tutor/,              , , Language, Learn touch typing on a computer keyboard with graded lessons
+Morse Code,              morse-code/,                , , Language, Morse code chart and translator with sound and lamp - tap key and listen lessons
+Maths and Logic,         maths-logic/,               , , Language and Maths, Maths practice: times tables - fractions - money - shapes - patterns and puzzles
+Clock Reading,           clock-reading/,             , , Language and Maths, Learn to tell the time: drag clock hands - 12 h and 24 h - read and set quizzes
+Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_icon.png, , Coding, Jupyter-style code cells that run on a remote Jupyter server
+Learning HTML (Basic),   ../tools/learning-html/,    , , Coding, Try HTML: type code in a box and see the web page result as you type
+Survival and Outdoors,   survival-outdoors/,         , , Outdoors, Outdoor survival basics: making fire and finding safe drinking water
+Piano Basics,            piano-basics/,              , , Music, Learn piano: play songs step by step or with falling notes - sargam - record
+Guitar Chords,           guitar-chords/,             , , Music, Learn guitar chords: finger charts - strum sound - chord change practice and quiz
+Tuner & Metronome,       tuner-metronome/,           , , Music, Microphone tuner for guitar and voice plus a metronome with tap tempo
+Periodic Table,          periodic-table/,            , , Science, All 118 chemical elements: search - element facts - colour by category and quizzes
+Road Safety,             road-safety/,               , , Life Skills, Indian road signs - traffic lights - safe crossing game - road rules and quiz
 `,
   "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools; R53c: D-Pad Controller listed here from Games, folder stays in hub/controller/; R54: new Disk app; T1: Terminal; AH1: App Hub). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
