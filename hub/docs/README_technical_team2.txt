@@ -476,6 +476,15 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Files: `videochat_call.js` rewritten (group state, share, speaker), `videochat_app.js` call screen (tiles, sheet), `.html/.css`, `videochat_peer.js` (`call(id, stream, meta)`, `myId()`).
 - Tested in headless Chromium with simulated peers only (fake MediaConnections, canvas streams, fake `getDisplayMedia`); the box Chrome policy blocks real WebRTC. Not yet tried with 3–4 real devices (mesh upload load on phones is the main unknown).
 
+### 1.19 Whiteboard: `apps/connectivity/whiteboard/` (Connectivity → Share, after QR Scanner), release WB1
+- Shared live whiteboard for every device on the same Hub Connect Code. Screens: Board · Settings (dots, 75 px wrap-around swipes that only start off the canvas). Toolbar on the right: Pen, Highlighter, Eraser (whole strokes), Shapes (line/rect/ellipse/arrow; Shift = square/45°), Text (in-app dialog), Hand, colour + size, Undo, Redo, Fit, People, Save PNG, Clear (confirm). No select/move tool in WB1.
+- Hub Connect Code exactly as Video Chat VC1: `#code=`/`?hub=`, `{sharedLink:'ready', app:'whiteboard'}` → Hub `{sharedLink:'hello', code}`, then `__hubRemote.code` / `jtsites-hub-ctrl-code` / `shared-link-join-code` / `whiteboard-last-code` / Code dialog. Uses only `SharedLink.PEERJS_URL` + `SharedLinkDevices.name()`; no shared/ or hub/ edits.
+- Peers: own ids `jtsites-<code>-wb-<rand>`, lobby `jtsites-<code>-wb-0` (first device; roster, relays `{t:'all'}` to everyone else, reclaimed if lost). PeerJS data connections only. On a NEW device's `hi` the lobby sends `{k:'state', its, clr}` from its own board (`WBPeer.provide`).
+- Sync: `lb/lp/ls/le/lx` live strokes (points batched 40 ms), `add/del/clear` ops, `cur` cursors (70 ms; coloured arrow + name per device, hidden after 5 s idle). Items `{id, by, ts, k, c, w, pts, text?, fs?}` in world coords, kept sorted by (ts, id). Colour `ink` = white on dark / black on light. Undo/redo covers only this device's own adds and erases (sent as del/add). Late joiner: the lobby board replaces ours, then our offline ops are replayed; an empty lobby board is seeded from ours.
+- Storage: `whiteboard-settings-v1` `{name, theme, bg:'plain'|'grid'|'dots', tool, shape, color, size}`; IndexedDB `whiteboard-v1`/`boards` key = code (or `local`) `{items, clr, ts}`, autosaved 0.7 s after a change. `whiteboard_save.js` is the one save module (autosave + PNG, cropped to the drawing, ≤4096 px, current theme/background).
+- Files: `whiteboard.html/.css`, `whiteboard_store.js`, `whiteboard_peer.js`, `whiteboard_board.js`, `whiteboard_save.js`, `whiteboard_app.js`, `whiteboard_icon.png` (192 px; CSV icon set explicitly).
+- Tested in headless Chromium with a simulated peer only (`WBPeer._emit` test hook, PeerJS blocked): drawing/sync messages, remote live strokes, cursors, undo/redo, eraser, clear, late-join state + offline replay, pinch/wheel zoom, PNG, autosave reload, themes. Not yet tried between two real devices. Big boards are sent as one state message (no chunking beyond PeerJS's own).
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
