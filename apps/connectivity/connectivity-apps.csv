@@ -7,4 +7,5 @@ QR Scanner, qr-scanner/, , , Share
 Whiteboard, whiteboard/, whiteboard/whiteboard_icon.png, , Share
 Pooh Chat,  pooh-chat/,  , , Chat
 Video Chat, video-chat/, , , Chat
+Screen Share, screen-share/, screen-share/screenshare_icon.png, , Chat
 SSH,        ssh/,        , , Remote

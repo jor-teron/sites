@@ -1,0 +1,79 @@
+/* Periodic Table PT1 — app look on top of the Learn kit (../common/ui/learn.css). The grid is a CSS grid of 18 columns
+   sized by --cell (set in JS to fit the screen, times the zoom); it scrolls sideways on phones. Element colours are set
+   inline as --c (category or state). Light mode follows the Hub theme (html.light). */
+.pt { --accent: #4dabf7; --ok: #7ccf95; --bad: #ff6b6b; }
+.pt-ver { flex: none; font-size: 0.75rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 99px; }
+.pt-main { display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+.pt-main > * { flex: none; }
+.pt-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pt-search { flex: 1 1 200px; min-width: 0; max-width: 360px; min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; }
+.pt-found { font-size: 0.85rem; color: var(--muted); min-width: 4em; }
+.pt-views { display: flex; gap: 4px; margin-left: auto; }
+.pt-tog[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #111; }
+.pt-zoom { min-width: 40px; font-size: 1.2rem; }
+.pt-legend { display: flex; flex-wrap: wrap; gap: 6px; }
+.pt-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; font-size: 0.8rem; cursor: pointer; }
+.pt-chip i { width: 12px; height: 12px; border-radius: 3px; background: var(--c); }
+.pt-chip[aria-pressed="true"] { border-color: var(--c); box-shadow: inset 0 0 0 2px var(--c); font-weight: 700; }
+.pt-hint { display: none; margin: 0; padding: 6px 10px; border-radius: 10px; background: rgba(77, 171, 247, 0.15); font-size: 0.85rem; align-items: center; gap: 8px; }
+.pt-x { margin-left: auto; min-width: 36px; min-height: 36px; border: 0; border-radius: 99px; background: transparent; color: var(--text); font-size: 1.4rem; cursor: pointer; }
+.pt-scroll { flex: 1 1 auto !important; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.pt-grid { --cell: 48px; display: grid; grid-template-columns: 18px repeat(18, var(--cell)); grid-template-rows: 16px repeat(7, var(--cell)) calc(var(--cell) * 0.35) repeat(2, var(--cell)); gap: 2px; width: max-content; margin: 0 auto; padding: 2px; }
+.pt-gnum, .pt-pnum { font-size: 0.65rem; color: var(--muted); display: flex; align-items: end; justify-content: center; }
+.pt-pnum { align-items: center; }
+.pt-el, .pt-ph { position: relative; border: 0; border-radius: calc(var(--cell) * 0.12); background: var(--c); color: #111; padding: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; overflow: hidden; font-family: inherit; transition: opacity 0.15s; }
+.pt-ph { font-size: calc(var(--cell) * 0.2); font-weight: 700; opacity: 0.75; cursor: default; }
+.pt-z { position: absolute; top: 3px; left: 4px; font-size: calc(var(--cell) * 0.2); }
+.pt-s { font-size: calc(var(--cell) * 0.4); font-weight: 800; }
+.pt-n { display: none; font-size: calc(var(--cell) * 0.14); margin-top: 2px; max-width: 96%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pt-grid.big .pt-n { display: block; } .pt-grid.big .pt-s { margin-top: 6px; }
+.pt-grid.tiny .pt-z { font-size: 8px; top: 1px; left: 2px; } .pt-grid.tiny .pt-s { margin-top: 6px; }
+.pt-el:hover { filter: brightness(1.12); } .pt-el:focus-visible { outline: 3px solid var(--text); outline-offset: 1px; z-index: 1; }
+.pt-el.dim, .pt-ph.dim { opacity: 0.18; }
+.pt-el.quiz .pt-s, .pt-el.quiz .pt-n { visibility: hidden; }
+.pt-el.ok { box-shadow: 0 0 0 3px var(--ok); z-index: 1; opacity: 1; } .pt-el.ok .pt-s, .pt-el.ok .pt-n, .pt-el.bad .pt-s { visibility: visible; }
+.pt-el.bad { box-shadow: 0 0 0 3px var(--bad); z-index: 1; }
+.pt-over { position: fixed; inset: 0; z-index: 20; background: rgba(0, 0, 0, 0.55); display: flex; align-items: center; justify-content: center; padding: 12px; }
+.pt-over[hidden] { display: none; }
+.pt-card { width: min(440px, 100%); max-height: 100%; overflow: auto; background: var(--panel); color: var(--text); border-radius: 16px; border-top: 8px solid var(--c); padding: 14px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
+.pt-card-top { display: flex; gap: 12px; align-items: center; }
+.pt-card-top h2 { margin: 0; font-size: 1.5rem; } .pt-card-top p { margin: 2px 0 0; color: var(--muted); }
+.pt-big { flex: none; width: 76px; height: 76px; border-radius: 12px; background: var(--c); color: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
+.pt-big span { font-size: 0.9rem; } .pt-big b { font-size: 2.2rem; }
+.pt-close { align-self: flex-start; }
+.pt-kvs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pt-kv { display: flex; flex-direction: column; padding: 6px 8px; border-radius: 8px; background: rgba(127, 127, 127, 0.12); }
+.pt-kv span { font-size: 0.75rem; color: var(--muted); }
+.pt-fact { margin: 0; line-height: 1.4; }
+.pt-cnav { display: flex; justify-content: space-between; }
+.pt-menu { overflow: auto; flex: 1 1 auto !important; min-height: 0; display: flex; flex-direction: column; gap: 10px; max-width: 640px; width: 100%; margin: 0 auto; }
+.pt-menu > * { flex: none; }
+.pt-qt { display: flex; flex-direction: column; gap: 6px; }
+.pt-lvs { display: flex; flex-wrap: wrap; gap: 6px; }
+.pt-lv { display: flex; flex-direction: column; align-items: center; min-width: 92px; line-height: 1.2; padding: 6px 10px; }
+.pt-lv small { font-size: 0.7rem; color: var(--muted); }
+.pt-prompt { align-self: center; min-width: 120px; min-height: 110px; padding: 10px 18px; border-radius: 16px; background: var(--c); color: #111; display: flex; align-items: center; justify-content: center; }
+.pt-prompt b { font-size: 3.4rem; } .pt-prompt span { font-size: 1.8rem; font-weight: 800; }
+.pt-opts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.pt-opt { min-height: 54px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; font-size: 1.15rem; font-weight: 700; cursor: pointer; }
+.pt-opt.ok { background: rgba(124, 207, 149, 0.25); border-color: var(--ok); } .pt-opt.bad { background: rgba(255, 107, 107, 0.22); border-color: var(--bad); }
+.pt-fb { min-height: 1.4em; margin: 0; font-weight: 600; } .pt-fb.ok { color: var(--ok); } .pt-fb.bad { color: var(--bad); }
+.pt-go { background: var(--accent); border-color: var(--accent); color: #111; min-width: 110px; align-self: flex-start; }
+.pt-qhead { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.pt-qhead .lrn-sub, .pt-qhead .lrn-h { margin: 0; } .pt-qhead .pt-qtop { flex-basis: 100%; }
+.pt-target { color: var(--accent); }
+.pt-score { font-size: 2.6rem; font-weight: 800; color: var(--accent); margin: 0; }
+.pt-row { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (orientation: portrait) and (max-width: 700px) { .pt-hint { display: flex; } }
+@media (max-width: 560px) {
+  .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; flex-basis: 100%; }
+  .lrn-main.pt-main { padding: 8px; } .pt-search { flex-basis: 100%; max-width: none; } .pt-views { margin-left: 0; }
+  .pt-chip { min-height: 26px; padding: 0 8px; font-size: 0.72rem; } .pt-kvs { grid-template-columns: 1fr 1fr; } .pt-prompt { min-height: 84px; } .pt-prompt b { font-size: 2.6rem; }
+}
+@media (max-height: 460px) {
+  .lrn-head { padding: 4px 10px; } .lrn-main.pt-main { padding: 6px 10px; gap: 6px; }
+  .pt-search { min-height: 34px; flex-basis: 160px; } .pt-legend { flex-wrap: nowrap; overflow-x: auto; } .pt-chip { flex: none; min-height: 26px; }
+  .pt-prompt { min-height: 60px; padding: 4px 14px; } .pt-prompt b { font-size: 2rem; } .pt-prompt span { font-size: 1.3rem; } .pt-opt { min-height: 42px; }
+  .pt-card { gap: 6px; padding: 10px; } .pt-kvs { grid-template-columns: repeat(3, 1fr); } .pt-big { width: 56px; height: 56px; } .pt-big b { font-size: 1.6rem; }
+}
+html.light .pt-over { background: rgba(0, 0, 0, 0.35); }
