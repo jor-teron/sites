@@ -15,7 +15,7 @@
 
 ## Current list
 
-- Health: First Aid, Human Body Explorer (HBE2: Simple mode with 15 main parts, Expert mode with about 50 parts incl. brain parts, senses, nerves, blood vessels, full skeleton, more muscles and skin; neutral body with no private parts; back parts drawn dashed; foldable card on phones; 8-question quiz per mode)
+- Health: First Aid, Human Body Explorer (HBE3: External tab by default with 38 outside parts (face, body, arms, hands, legs, feet, skin; Front/Back toggle) and an Inside tab with Simple mode with 15 main parts, Expert mode with about 50 parts incl. brain parts, senses, nerves, blood vessels, full skeleton, more muscles and skin; smooth code-drawn figure with shaded organs, bone-shaped bones and fibre-textured muscles; neutral body with no private parts; back parts drawn dashed; foldable card on phones; 8-question quiz per tab and mode)
 - Outdoors: Survival and Outdoors (SO1a: Fire and Water; more topics planned)
 - Language: NE-India Dictionary, Caption for NEI (still in Tools), English Basic, Typing Tutor (TT1: graded keyboard lessons, on-screen keyboard, 1/2/5 minute test), Morse Code (MC1: chart of A-Z, 0-9 and punctuation with optional tree view, text <-> Morse translator with sound and lamp at 5-25 WPM, tap key with live decoding, 10 graded listen/tap lessons, SOS button)
 - Language and Maths: Maths and Logic (ML1a: 6 topics: Everyday Numbers, Times Tables, Fractions/Percent, Money Maths, Shapes and Measuring, Patterns and Puzzles), Clock Reading (CR1: drag the clock hands, digital 12 h / 24 h, time in words, Read / Set / Match quizzes in 5 levels)

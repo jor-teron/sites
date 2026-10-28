@@ -1,11 +1,19 @@
-/* Human Body Explorer HBE2 — app look on top of the Learn kit (../common/ui/learn.css): system chips, body figure, info card, list, quiz.
-   Light mode follows the Hub theme (html.light from shared/theme/hub_theme.js). Plain CSS, no filters or animations loops (weak phones). */
-.hb { --accent: #f28b9b; --ok: #7ccf95; --bad: #ff6b6b; --skin: #3a414c; --skin-line: #59626f; }
+/* Human Body Explorer HBE3 — app look on top of the Learn kit (../common/ui/learn.css): tabs, system chips, body figure, info card, list, quiz.
+   Light mode follows the Hub theme (html.light from shared/theme/hub_theme.js). No animation loops (weak phones): one short fade when the
+   figure changes, and a soft glow (drop-shadow) only on the picked part. */
+.hb { --accent: #f28b9b; --ok: #7ccf95; --bad: #ff6b6b; --skin: #3a414c; --skin-line: #59626f; --skin-hi: #4a5361; --skin-lo: #2c323b;
+  --eskin-hi: #f6d3b8; --eskin-lo: #c98f6c; --eskin-line: #a8714f; }
 html.light { --bg: #f4f6f9; --panel: #ffffff; --panel2: #e9edf2; --text: #1b2430; --muted: #5b6676; --line: #cfd6df; --note: #eef2f7; --on: #ffffff; }
-html.light .hb { --skin: #e6d5c8; --skin-line: #c4ad9c; }
+html.light .hb { --skin: #e6d5c8; --skin-line: #c4ad9c; --skin-hi: #f1e4da; --skin-lo: #d6bfae; }
 .hb-ver { flex: none; font-size: 0.75rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 99px; }
-.hb-modes button, .hb-lv button { padding: 0 12px; }
+.hb-modes button, .hb-lv button, .hb-tabs button, .hb-sidebar button { padding: 0 12px; }
 .hb-lv button[aria-pressed="true"] { background: #7fb7e6; }
+.hb-tabs button[aria-pressed="true"] { background: #f2b880; }
+.hb-sidebar button[aria-pressed="true"] { background: #a5d6a7; }
+.hb-lv[hidden] { display: none; }
+.hb-pickrow { display: flex; gap: 8px; align-items: center; flex: none; min-width: 0; }
+.hb-pickrow .hb-picker { flex: 1; min-width: 0; }
+.hb-sidebar { flex: none; }
 .hb-main { display: flex; flex-direction: column; gap: 10px; }
 .hb-picker { display: flex; gap: 6px; overflow-x: auto; flex: none; padding-bottom: 2px; scrollbar-width: thin; }
 .hb-chip { flex: none; min-height: 40px; padding: 0 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-weight: 600; font-size: 0.9rem; white-space: nowrap; }
@@ -15,14 +23,36 @@ html.light .hb { --skin: #e6d5c8; --skin-line: #c4ad9c; }
 .hb-stage { flex: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 12px; align-items: start; }
 .hb-fig { display: flex; justify-content: center; min-height: 0; }
 .hb-svg { width: 100%; height: auto; max-height: calc(100dvh - 190px); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-.hb-body > * { fill: var(--skin); stroke: var(--skin-line); stroke-width: 1.5; }
+.hb-body > * { stroke: var(--skin-line); stroke-width: 1.2; stroke-linejoin: round; }
+.hb-ext .hb-body > * { stroke: var(--eskin-line); stroke-width: 0.8; }
+.hb-ext .hb-body > .hb-crease { fill: none; stroke: rgba(140, 80, 50, 0.35); stroke-width: 0.7; stroke-linecap: round; }
+.hb-ext .hb-ctx, .hb-ctx * { pointer-events: none; }
+.hb-ctx path, .hb-ctx ellipse { stroke: none; }
+.hb-deco, .hb-tex { pointer-events: none; }
+.hb-tex { stroke: none; }
+.hb-svg { animation: hb-in 0.28s ease-out; }
+@keyframes hb-in { from { opacity: 0.25; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .hb-svg { animation: none; } }
 .hb-part { cursor: pointer; outline: none; }
 .hb-part .hb-fill { stroke: rgba(0, 0, 0, 0.35); stroke-width: 1; }
 .hb-line { stroke: rgba(0, 0, 0, 0.35); }
 .hb-bone { stroke: #e8e0c8; }
 .hb-svg.has-on .hb-part:not(.on) { opacity: 0.45; }
 .hb-part.hover .hb-fill, .hb-part:focus-visible .hb-fill { stroke: var(--text); stroke-width: 2; }
-.hb-part.on .hb-fill { stroke: #fff; stroke-width: 2.5; }
+.hb-part.on .hb-fill { stroke: #fff; stroke-width: 2; }
+.hb-part.on { filter: drop-shadow(0 0 3px var(--pc)) drop-shadow(0 0 6px var(--pc)); }
+.hb-part .hb-nos { stroke: none; }
+.hb-part.on .hb-nos { stroke: #fff; stroke-width: 1; }
+/* External: features keep their colour; zones are faint tints that light up when picked */
+.hb-ext .hb-part .hb-fill { stroke: rgba(90, 45, 25, 0.45); stroke-width: 0.5; }
+.hb-ext .hb-part .hb-zone { fill-opacity: 0.1; stroke: none; }
+.hb-ext .hb-skinpart .hb-zone { fill-opacity: 0; stroke: none; }
+.hb-ext .hb-part.on .hb-zone { fill-opacity: 0.55; stroke: var(--pc); stroke-dasharray: none; stroke-width: 0.8; }
+.hb-ext .hb-part.on .hb-feat { stroke: #fff; stroke-width: 0.7; }
+.hb-ext .hb-part.hover .hb-fill { stroke: var(--text); stroke-width: 0.9; }
+.hb-ext .hb-part.hover .hb-zone { fill-opacity: 0.3; }
+.hb-ext.has-on .hb-part:not(.on) { opacity: 0.7; }
+.hb-ext .hb-part.wrong .hb-fill { stroke-width: 1.2; fill-opacity: 0.5; }
 html.light .hb-part.on .hb-fill { stroke: #111; }
 .hb-part.wrong { opacity: 1 !important; } .hb-part.wrong .hb-fill { stroke: var(--bad); stroke-width: 3; }
 
@@ -80,5 +110,6 @@ html.light .hb-job { color: var(--text); }
   .hb-svg { max-height: 46dvh; }
   .hb-qfig .hb-svg { max-height: calc(100dvh - 280px); }
 }
-@media (max-width: 520px) { .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; flex-basis: 100%; } .hb-modes button, .hb-lv button { padding: 0 10px; } }
+@media (max-width: 520px) { .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; flex-basis: 100%; }
+  .hb-modes button, .hb-lv button, .hb-tabs button, .hb-sidebar button { padding: 0 9px; } .hb-ver { display: none; } }
 @media (max-height: 460px) { .lrn-foot { display: none; } .hb-svg { max-height: calc(100dvh - 130px); } .hb-qfig .hb-svg { max-height: calc(100dvh - 150px); } }

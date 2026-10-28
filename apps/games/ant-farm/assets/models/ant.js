@@ -3,6 +3,7 @@
 // antennae and a cheap glossy highlight (flat translucent ellipses, no gradients
 // or shadowBlur, so hundreds of ants stay fast on weak phones).
 // queen=true adds small folded wings and a larger gaster.
+// load: 1 soil grain, 2 food, 3 egg (AF3: carried by a nurse).
 AF.drawAnt = function (c, x, y, ang, s, phase, col, load, moving, queen) {
   c.save(); c.translate(x, y); c.rotate(ang); c.scale(s, s);
   var sw = moving ? Math.sin(phase) * 0.3 : 0, gx = queen ? -0.85 : -0.7, gr = queen ? 0.66 : 0.5;
@@ -32,6 +33,6 @@ AF.drawAnt = function (c, x, y, ang, s, phase, col, load, moving, queen) {
   c.ellipse(gx + gr * .2, -gr * .35, gr * .45, gr * .16, -0.2, 0, 7);
   c.ellipse(0.72, -0.12, 0.12, 0.06, 0, 0, 7); c.ellipse(0.16, -0.08, 0.12, 0.04, 0, 0, 7);
   c.fill(); }
-  if (load) { c.fillStyle = load === 2 ? '#9ce05a' : '#8a5a2b'; c.beginPath(); c.arc(1.12, 0, 0.3, 0, 7); c.fill(); }
+  if (load) { c.fillStyle = load === 2 ? '#9ce05a' : load === 3 ? '#fffbea' : '#8a5a2b'; c.beginPath(); c.arc(1.12, 0, 0.3, 0, 7); c.fill(); }
   c.restore();
 };

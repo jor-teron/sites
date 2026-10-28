@@ -64,10 +64,10 @@ use `frameMs()` in the loop's frame skip, and re-apply changed values in `onChan
 ## Status
 
 Linked (see the rollout table for details): Tennis Ball Blitz (`tennis-throw`), LandCraft (`landcraft`),
-Tetris, Tic-Tac-Toe, 2048, Swell Foop.
+Tetris, Tic-Tac-Toe, 2048, Swell Foop, Ant Farm (`ant-farm`).
 
 Next batches:
-1. Games that already have a 30 fps loop: Ant Farm (`ant-farm`), Turbo Lap (`turbo-lap`), Desert Road (`desert-road`), ...
+1. Games that already have a 30 fps loop: Turbo Lap (`turbo-lap`), Desert Road (`desert-road`), ...
 2. Then games with difficulty and/or sound.
 
 ## Workflow
