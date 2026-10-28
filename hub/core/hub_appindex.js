@@ -89,6 +89,7 @@ window.HUB_APP_INDEX = {
   "survival-outdoors": ["Learn", "apps/learn/survival-outdoors/", "Survival and Outdoors", "apps/learn/survival-outdoors/survival-outdoors_icon.png", 0],
   "piano-basics": ["Learn", "apps/learn/piano-basics/", "Piano Basics", "apps/learn/piano-basics/piano-basics_icon.png", 0],
   "guitar-chords": ["Learn", "apps/learn/guitar-chords/", "Guitar Chords", "apps/learn/guitar-chords/guitar-chords_icon.png", 0],
+  "periodic-table": ["Learn", "apps/learn/periodic-table/", "Periodic Table", "apps/learn/periodic-table/periodic-table_icon.png", 0],
   "myllm": ["Lab", "apps/lab/myllm/", "MyLLM", "apps/lab/myllm/myllm_icon.png", 0],
   "local-ai-chat": ["Lab", "apps/lab/local-ai-chat/", "Local AI Chat", "apps/lab/local-ai-chat/local-ai-chat_icon.png", 0],
   "story": ["Lab", "apps/lab/story/", "Story", "apps/lab/story/story_icon.png", 0],

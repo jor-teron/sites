@@ -21,6 +21,7 @@
 - Language and Maths: Maths and Logic (ML1a: 6 topics: Everyday Numbers, Times Tables, Fractions/Percent, Money Maths, Shapes and Measuring, Patterns and Puzzles), Clock Reading (CR1: drag the clock hands, digital 12 h / 24 h, time in words, Read / Set / Match quizzes in 5 levels)
 - Coding: Learning HTML (Basic) (still in Tools), Code Lab (still in Lab)
 - Music: Piano Basics (PB1: on-screen piano with WebAudio sound, note names in letters or sargam, 6 play-along tunes, name-the-note quiz), Guitar Chords (GC1: code-drawn neck in standard tuning, 20 chords with finger dots and O/X marks, plucked-string sound, strum by swipe or button, left-handed mode, chord-change practice with metronome, name-the-chord quiz)
+- Science: Periodic Table (PT1: all 118 elements in the standard layout, colour by category or state with legend filter, search, element cards with mass, group, period, state, year and kid-friendly facts, symbol/name/find-it quizzes in 3 levels)
 
 ## Not yet in the Hub menu
 
