@@ -1,15 +1,16 @@
 # Tools — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-Calculator,            calculator/,      , , Calculators
-Unit Converter,        unit-converter/,                   , , Calculators
-Stopwatch,             stopwatch/,       , , Time
-Calendar,              calendar/,        , , Time
-My Day,                dashboard/,       , , Time
-Weather,               weather-chart/,   , , Weather
-Weather Hourly,        weather-hourly/,  , , Weather
-NE-India Dictionary,   nei-dict/,        , , Language
-Caption for NEI,       caption-for-nei/, , , Language
-Learning HTML (Basic), learning-html/,   , , Learn
-Speed Test,            speedtest/,       , , Network
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+Calculator,            calculator/,      , , Calculators, Calculator with a live answer as you type and history of recent sums
+Unit Converter,        unit-converter/,                   , , Calculators, Convert units offline: length - weight - temperature - area and more
+Stopwatch,             stopwatch/,       , , Time, Stopwatch with laps and an analog or digital display
+Calendar,              calendar/,        , , Time, Month and year calendar with Indian holidays list
+My Day,                dashboard/,       , , Time, Personal dashboard: clock - weather - todo - notes - schedule and links
+Weather,               weather-chart/,   , , Weather, Today's hourly temperature chart for Diphu from Open-Meteo
+Weather Hourly,        weather-hourly/,  , , Weather, Hourly weather forecast for Diphu Assam
+NE-India Dictionary,   nei-dict/,        , , Language, Northeast India dictionary: look up words in local languages
+Caption for NEI,       caption-for-nei/, , , Language, Live captions for English - Assamese - Hindi - Bengali and Nepali
+Learning HTML (Basic), learning-html/,   , , Learn, Try HTML: type code and see the result live as you type
+Speed Test,            speedtest/,       , , Network, Test your internet speed: ping and download from this site

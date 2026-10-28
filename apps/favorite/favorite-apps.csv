@@ -1,6 +1,6 @@
 # Favorite — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-TV,              ../../tv/,                 , , Watch
-Caption for NEI, ../tools/caption-for-nei/, , , Language
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+TV,              ../../tv/,                 , , Watch, Live TV player for free IPTV channels from M3U playlists - remote and touch

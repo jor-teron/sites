@@ -1,14 +1,15 @@
 # Office — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-Draftly,      draftly/,             , , Hub Office
-Spreadsheet,  spreadsheet/,         , , Hub Office
-Base,         base/,                , , Hub Office
-Notely,       notely/,              , , Write
-MS Word Diff, ../tools/msword_diff/, , , Write
-OCR,          ocr/,                 , , Scan & Print
-Paper Scan,   paper-scan/,          , , Scan & Print
-Print,        print/,               , , Scan & Print
-PDF Tools,    pdf-tools/,           , , PDF
-Mail,         mail/,                , , Mail
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+Draftly,      draftly/,             , , Hub Office, Word processor with A4 pages: write documents offline - save as PDF or DOCX
+Spreadsheet,  spreadsheet/,         , , Hub Office, Offline spreadsheet with formulas and styles - CSV import/export and print
+Base,         base/,                , , Hub Office, Small database app: tables - forms and queries like Access
+Notely,       notely/,              , , Write, Plain-text notes that save as you type - open and download .txt
+MS Word Diff, ../tools/msword_diff/, , , Write, Compare two Word .docx files and see what text changed
+OCR,          ocr/,                 , , Scan & Print, Turn text in photos scans and PDFs into editable text - works offline
+Paper Scan,   paper-scan/,          , , Scan & Print, Scan paper pages with the camera into one PDF
+Print,        print/,               , , Scan & Print, Send photos or PDFs from your phone to print on this computer
+PDF Tools,    pdf-tools/,           , , PDF, Organise PDF pages: reorder - rotate - delete and save a new copy
+Mail,         mail/,                , , Mail, Simple Gmail client: read and send email after Google sign-in

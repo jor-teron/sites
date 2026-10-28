@@ -26,8 +26,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261028a';
-const CACHE = 'hub-shell-v97';  // 2026-10-28a: H46 device name → Settings About (v96 = H42, PR #211)
+const V = '20261028b';
+const CACHE = 'hub-shell-v98';  // 2026-10-28b: H47: hub_appindex.js regenerated (new Connectivity apps SS1/VC2/WB1/CB1/IC1, Gallery, GIF Maker, Screen Recorder, Image Gen, Vision; TV now under Favorite)
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)

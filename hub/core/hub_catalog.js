@@ -9,9 +9,9 @@ window.SITES_CSV = Object.assign(window.SITES_CSV || {}, {
   "Favorite": `# Favorite — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-TV,              ../../tv/,                 , , Watch
-Caption for NEI, ../tools/caption-for-nei/, , , Language
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+TV,              ../../tv/,                 , , Watch, Live TV player for free IPTV channels from M3U playlists - remote and touch
 `,
   "Games": `# Games — one per line. Paths are relative to this folder. Lines starting with # are comments.
 # icon empty = <folder>/<folder>_icon.png or a letter tile; newtab 1 = own tab on desktop;
@@ -57,98 +57,102 @@ Game Settings,      common/settings/games-settings.html, , , Settings, Shared ga
   "Media": `# Media — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-TV,              ../../tv/,        , , Watch
-Draw,            draw/,            , , Draw & Paint
-Photo Editor v2, photo-editor-v2/, , , Photo
-Camera,          camera/,          , , Photo
-Gallery,         gallery/,         , , Photo
-GIF Maker,       gif-maker/,       , , Photo
-Sound Recorder,  sound-recorder/,  , , Audio
-Screen Recorder, screen-recorder/, , , Video
-3D Viewer,       3d-viewer/,       , , 3D
-News,            news/,            , , Read
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+Draw,            draw/,            , , Draw & Paint, Draw with finger stylus or mouse: pen - eraser - fill - shapes - export PNG
+Photo Editor v2, photo-editor-v2/, , , Photo, Edit photos: crop - rotate - brightness - contrast - B&W and sepia looks
+Camera,          camera/,          , , Photo, Take photos and record videos with the device camera
+Gallery,         gallery/,         , , Photo, Browse photos and videos from a folder or files on this device
+GIF Maker,       gif-maker/,       , , Photo, Turn a short video into an animated GIF on your device
+Sound Recorder,  sound-recorder/,  , , Audio, Record audio from the microphone - long recordings with a waveform
+Screen Recorder, screen-recorder/, , , Video, Record your screen window or tab with microphone audio
+3D Viewer,       3d-viewer/,       , , 3D, View 3D GLB and glTF models: orbit - play animations - screenshot
+News,            news/,            , , Read, Latest headlines from Google News India in story cards
 `,
   "Office": `# Office — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-Draftly,      draftly/,             , , Hub Office
-Spreadsheet,  spreadsheet/,         , , Hub Office
-Base,         base/,                , , Hub Office
-Notely,       notely/,              , , Write
-MS Word Diff, ../tools/msword_diff/, , , Write
-OCR,          ocr/,                 , , Scan & Print
-Paper Scan,   paper-scan/,          , , Scan & Print
-Print,        print/,               , , Scan & Print
-PDF Tools,    pdf-tools/,           , , PDF
-Mail,         mail/,                , , Mail
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+Draftly,      draftly/,             , , Hub Office, Word processor with A4 pages: write documents offline - save as PDF or DOCX
+Spreadsheet,  spreadsheet/,         , , Hub Office, Offline spreadsheet with formulas and styles - CSV import/export and print
+Base,         base/,                , , Hub Office, Small database app: tables - forms and queries like Access
+Notely,       notely/,              , , Write, Plain-text notes that save as you type - open and download .txt
+MS Word Diff, ../tools/msword_diff/, , , Write, Compare two Word .docx files and see what text changed
+OCR,          ocr/,                 , , Scan & Print, Turn text in photos scans and PDFs into editable text - works offline
+Paper Scan,   paper-scan/,          , , Scan & Print, Scan paper pages with the camera into one PDF
+Print,        print/,               , , Scan & Print, Send photos or PDFs from your phone to print on this computer
+PDF Tools,    pdf-tools/,           , , PDF, Organise PDF pages: reorder - rotate - delete and save a new copy
+Mail,         mail/,                , , Mail, Simple Gmail client: read and send email after Google sign-in
 `,
   "Connectivity": `# Connectivity — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-File Drop,  filedrop/,   , , Share
-QR Scanner, qr-scanner/, , , Share
-Whiteboard, whiteboard/, whiteboard/whiteboard_icon.png, , Share
-Shared Clipboard, shared-clipboard/, shared-clipboard/clipboard_icon.png, , Share
-Pooh Chat,  pooh-chat/,  , , Chat
-Video Chat, video-chat/, , , Chat
-Screen Share, screen-share/, screen-share/screenshare_icon.png, , Chat
-Intercom, intercom/, intercom/intercom_icon.png, , Chat
-SSH,        ssh/,        , , Remote
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+File Drop,  filedrop/,   , , Share, Send files and photos device to device: scan a QR or type a 4-digit code
+QR Scanner, qr-scanner/, , , Share, Scan QR codes and barcodes with the camera or from a photo
+Whiteboard, whiteboard/, whiteboard/whiteboard_icon.png, , Share, Draw together live on a shared whiteboard with every connected device
+Shared Clipboard, shared-clipboard/, shared-clipboard/clipboard_icon.png, , Share, Copy on one device and paste on another: text links and images
+Pooh Chat,  pooh-chat/,  , , Chat, Group text chat for every device on the Hub Connect Code
+Video Chat, video-chat/, , , Chat, Video and audio calls: one-to-one or groups of up to 4 with screen sharing
+Screen Share, screen-share/, screen-share/screenshare_icon.png, , Chat, Share your computer screen window or tab with phones and other devices
+Intercom, intercom/, intercom/intercom_icon.png, , Chat, Tap-to-talk live voice to all connected devices or just one
+SSH,        ssh/,        , , Remote, SSH terminal in the browser: password login - saved hosts - auto-reconnect
 `,
   "Tools": `# Tools — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-Calculator,            calculator/,      , , Calculators
-Unit Converter,        unit-converter/,                   , , Calculators
-Stopwatch,             stopwatch/,       , , Time
-Calendar,              calendar/,        , , Time
-My Day,                dashboard/,       , , Time
-Weather,               weather-chart/,   , , Weather
-Weather Hourly,        weather-hourly/,  , , Weather
-NE-India Dictionary,   nei-dict/,        , , Language
-Caption for NEI,       caption-for-nei/, , , Language
-Learning HTML (Basic), learning-html/,   , , Learn
-Speed Test,            speedtest/,       , , Network
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+Calculator,            calculator/,      , , Calculators, Calculator with a live answer as you type and history of recent sums
+Unit Converter,        unit-converter/,                   , , Calculators, Convert units offline: length - weight - temperature - area and more
+Stopwatch,             stopwatch/,       , , Time, Stopwatch with laps and an analog or digital display
+Calendar,              calendar/,        , , Time, Month and year calendar with Indian holidays list
+My Day,                dashboard/,       , , Time, Personal dashboard: clock - weather - todo - notes - schedule and links
+Weather,               weather-chart/,   , , Weather, Today's hourly temperature chart for Diphu from Open-Meteo
+Weather Hourly,        weather-hourly/,  , , Weather, Hourly weather forecast for Diphu Assam
+NE-India Dictionary,   nei-dict/,        , , Language, Northeast India dictionary: look up words in local languages
+Caption for NEI,       caption-for-nei/, , , Language, Live captions for English - Assamese - Hindi - Bengali and Nepali
+Learning HTML (Basic), learning-html/,   , , Learn, Try HTML: type code and see the result live as you type
+Speed Test,            speedtest/,       , , Network, Test your internet speed: ping and download from this site
 `,
   "Lab": `# Lab apps — one per line. Paths are relative to this folder. Lines starting with # are comments.
 # icon optional (empty = <folder>/<folder>_icon.png or a letter tile); newtab 1 = own tab on desktop;
 # section = optional group heading for Lab only (first appearance sets the order; empty = "Other", shown last).
-name, path, icon, newtab, section
-MyLLM,              myllm/,                       , , AI
-Local AI Chat,      local-ai-chat/,               , , AI
-Story,              story/,                       , , AI
-LLM Calculator,     llm-calc/,                    , , AI
-ONNX Runner,        onnx-runner/,                 , , AI
-Agent,              agent/,                       , , AI
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+MyLLM,              myllm/,                       , , AI, Train a tiny character-level language model from scratch in your browser
+Local AI Chat,      local-ai-chat/,               , , AI, Chat with a small AI model (SmolLM2) running fully in your browser
+Story,              story/,                       , , AI, Type a beginning and get a short story from a tiny on-device AI model
+LLM Calculator,     llm-calc/,                    , , AI, Plan a tiny LLM: parameters - file size - memory and training time
+ONNX Runner,        onnx-runner/,                 , , AI, Run any .onnx machine learning model in the browser - nothing uploaded
+Agent,              agent/,                       , , AI, Browser AI agent with tools: local Ollama - OpenAI-compatible API or Gemini
 
-Sketchbook,         sketchbook/,                  , , Tools
-Code Lab,           code-lab/,                    , , Tools
-Image Gen,          image-gen/,                   image-gen/imagegen_icon.png, , Tools
-Vision,             vision/,                      vision/vision_icon.png, , Tools
-Paper Keyboard,     paper-keyboard/,              , , Tools
-MyBookmark,         mybookmark/,                  , , Tools
-Wiki Extractor,     wiki-extractor/,              , , Tools
-Google Drive Test,  gdrive-test/,                 , , Tools
+Sketchbook,         sketchbook/,                  , , Tools, Paper sketchbook with 50 pages: draw with finger mouse or pen
+Code Lab,           code-lab/,                    code-lab/codelab_icon.png, , Tools, Jupyter-style code cells: run Python on a remote Jupyter server
+Image Gen,          image-gen/,                   image-gen/imagegen_icon.png, , Tools, Text-to-image: generate pictures from a prompt with your own Ollama
+Vision,             vision/,                      vision/vision_icon.png, , Tools, Ask a vision AI model on your own Ollama about a photo
+Paper Keyboard,     paper-keyboard/,              , , Tools, Phone keyboard that types on a desktop over PeerJS (demo)
+MyBookmark,         mybookmark/,                  , , Tools, View and manage your browser bookmarks: import - search - organise
+Wiki Extractor,     wiki-extractor/,              , , Tools, Extract plain text from Wikipedia pages and linked pages - download .txt
+Google Drive Test,  gdrive-test/,                 , , Tools, Test Google sign-in and a first Google Drive call
 
-Media Explorer,     media-explorer/,              , , Media
-IPTV player,        iptv-player/,                 , , Media
-Channel Cleaner,    m3u-cleaner/,                 , , Media
-Three.js Viewer v2, threejs-viewer-v2/,           , , Media
+Media Explorer,     media-explorer/,              , , Media, Browse and view photos and videos from a folder or URL
+IPTV player,        iptv-player/,                 , , Media, Drag and drop an M3U playlist to watch IPTV channels
+Channel Cleaner,    m3u-cleaner/,                 , , Media, Test M3U playlist channels and remove dead streams - export a clean list
+Three.js Viewer v2, threejs-viewer-v2/,           , , Media, Run Three.js code and view 3D scenes - export GLB or glTF
 
-WebRTC Chat,        ../connectivity/webrtc-chat/, , , Connect
-P2P Chat,           ../connectivity/p2pchat.html, , , Connect
-Phone,              ../media/phone/,              , , Connect
+WebRTC Chat,        ../connectivity/webrtc-chat/, , , Connect, Peer-to-peer chat by QR or 6-digit code over WebRTC
+P2P Chat,           ../connectivity/p2pchat.html, , , Connect, Simple peer-to-peer chat: host a 4-digit code and a friend joins
+Phone,              ../media/phone/,              , , Connect, Android-style shortcut page that opens phone apps and settings
 
-Paint,              ../media/paint/,              , , Legacy
-Photo Editor,       ../media/photo-editor/,       , , Legacy
-Notepad,            ../office/notepad/,           , , Legacy
-Calculator (Legacy), ../tools/calculator-beta/,   , , Legacy
-Webcam,             ../media/webcam/,             , , Legacy
-Keyboard,           keyboard/,                    , , Legacy
+Paint,              ../media/paint/,              , , Legacy, Old simple paint app: brush - eraser - fill and shapes
+Photo Editor,       ../media/photo-editor/,       , , Legacy, Old photo editor: brightness - contrast - rotate - crop and print
+Notepad,            ../office/notepad/,           , , Legacy, Old simple notepad: type - save and download text
+Calculator (Legacy), ../tools/calculator-beta/,   , , Legacy, Old basic calculator with keyboard support
+Webcam,             ../media/webcam/,             , , Legacy, Old webcam viewer: see your camera and save a snapshot
+Keyboard,           keyboard/,                    , , Legacy, On-screen keyboard demo and test bed for the Hub keyboard
 `,
   "Learn": `# Learn — tiles page + Hub menu flyout. This CSV is the source of truth for the Learn category (see README.md).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
