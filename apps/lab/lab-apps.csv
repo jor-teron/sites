@@ -1,35 +1,36 @@
 # Lab apps — one per line. Paths are relative to this folder. Lines starting with # are comments.
 # icon optional (empty = <folder>/<folder>_icon.png or a letter tile); newtab 1 = own tab on desktop;
 # section = optional group heading for Lab only (first appearance sets the order; empty = "Other", shown last).
-name, path, icon, newtab, section
-MyLLM,              myllm/,                       , , AI
-Local AI Chat,      local-ai-chat/,               , , AI
-Story,              story/,                       , , AI
-LLM Calculator,     llm-calc/,                    , , AI
-ONNX Runner,        onnx-runner/,                 , , AI
-Agent,              agent/,                       , , AI
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+MyLLM,              myllm/,                       , , AI, Train a tiny character-level language model from scratch in your browser
+Local AI Chat,      local-ai-chat/,               , , AI, Chat with a small AI model (SmolLM2) running fully in your browser
+Story,              story/,                       , , AI, Type a beginning and get a short story from a tiny on-device AI model
+LLM Calculator,     llm-calc/,                    , , AI, Plan a tiny LLM: parameters - file size - memory and training time
+ONNX Runner,        onnx-runner/,                 , , AI, Run any .onnx machine learning model in the browser - nothing uploaded
+Agent,              agent/,                       , , AI, Browser AI agent with tools: local Ollama - OpenAI-compatible API or Gemini
 
-Sketchbook,         sketchbook/,                  , , Tools
-Code Lab,           code-lab/,                    , , Tools
-Image Gen,          image-gen/,                   image-gen/imagegen_icon.png, , Tools
-Vision,             vision/,                      vision/vision_icon.png, , Tools
-Paper Keyboard,     paper-keyboard/,              , , Tools
-MyBookmark,         mybookmark/,                  , , Tools
-Wiki Extractor,     wiki-extractor/,              , , Tools
-Google Drive Test,  gdrive-test/,                 , , Tools
+Sketchbook,         sketchbook/,                  , , Tools, Paper sketchbook with 50 pages: draw with finger mouse or pen
+Code Lab,           code-lab/,                    code-lab/codelab_icon.png, , Tools, Jupyter-style code cells: run Python on a remote Jupyter server
+Image Gen,          image-gen/,                   image-gen/imagegen_icon.png, , Tools, Text-to-image: generate pictures from a prompt with your own Ollama
+Vision,             vision/,                      vision/vision_icon.png, , Tools, Ask a vision AI model on your own Ollama about a photo
+Paper Keyboard,     paper-keyboard/,              , , Tools, Phone keyboard that types on a desktop over PeerJS (demo)
+MyBookmark,         mybookmark/,                  , , Tools, View and manage your browser bookmarks: import - search - organise
+Wiki Extractor,     wiki-extractor/,              , , Tools, Extract plain text from Wikipedia pages and linked pages - download .txt
+Google Drive Test,  gdrive-test/,                 , , Tools, Test Google sign-in and a first Google Drive call
 
-Media Explorer,     media-explorer/,              , , Media
-IPTV player,        iptv-player/,                 , , Media
-Channel Cleaner,    m3u-cleaner/,                 , , Media
-Three.js Viewer v2, threejs-viewer-v2/,           , , Media
+Media Explorer,     media-explorer/,              , , Media, Browse and view photos and videos from a folder or URL
+IPTV player,        iptv-player/,                 , , Media, Drag and drop an M3U playlist to watch IPTV channels
+Channel Cleaner,    m3u-cleaner/,                 , , Media, Test M3U playlist channels and remove dead streams - export a clean list
+Three.js Viewer v2, threejs-viewer-v2/,           , , Media, Run Three.js code and view 3D scenes - export GLB or glTF
 
-WebRTC Chat,        ../connectivity/webrtc-chat/, , , Connect
-P2P Chat,           ../connectivity/p2pchat.html, , , Connect
-Phone,              ../media/phone/,              , , Connect
+WebRTC Chat,        ../connectivity/webrtc-chat/, , , Connect, Peer-to-peer chat by QR or 6-digit code over WebRTC
+P2P Chat,           ../connectivity/p2pchat.html, , , Connect, Simple peer-to-peer chat: host a 4-digit code and a friend joins
+Phone,              ../media/phone/,              , , Connect, Android-style shortcut page that opens phone apps and settings
 
-Paint,              ../media/paint/,              , , Legacy
-Photo Editor,       ../media/photo-editor/,       , , Legacy
-Notepad,            ../office/notepad/,           , , Legacy
-Calculator (Legacy), ../tools/calculator-beta/,   , , Legacy
-Webcam,             ../media/webcam/,             , , Legacy
-Keyboard,           keyboard/,                    , , Legacy
+Paint,              ../media/paint/,              , , Legacy, Old simple paint app: brush - eraser - fill and shapes
+Photo Editor,       ../media/photo-editor/,       , , Legacy, Old photo editor: brightness - contrast - rotate - crop and print
+Notepad,            ../office/notepad/,           , , Legacy, Old simple notepad: type - save and download text
+Calculator (Legacy), ../tools/calculator-beta/,   , , Legacy, Old basic calculator with keyboard support
+Webcam,             ../media/webcam/,             , , Legacy, Old webcam viewer: see your camera and save a snapshot
+Keyboard,           keyboard/,                    , , Legacy, On-screen keyboard demo and test bed for the Hub keyboard

@@ -1,14 +1,14 @@
 # Media — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
-name, path, icon, newtab, section
-TV,              ../../tv/,        , , Watch
-Draw,            draw/,            , , Draw & Paint
-Photo Editor v2, photo-editor-v2/, , , Photo
-Camera,          camera/,          , , Photo
-Gallery,         gallery/,         , , Photo
-GIF Maker,       gif-maker/,       , , Photo
-Sound Recorder,  sound-recorder/,  , , Audio
-Screen Recorder, screen-recorder/, , , Video
-3D Viewer,       3d-viewer/,       , , 3D
-News,            news/,            , , Read
+# description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
+name, path, icon, newtab, section, description
+Draw,            draw/,            , , Draw & Paint, Draw with finger stylus or mouse: pen - eraser - fill - shapes - export PNG
+Photo Editor v2, photo-editor-v2/, , , Photo, Edit photos: crop - rotate - brightness - contrast - B&W and sepia looks
+Camera,          camera/,          , , Photo, Take photos and record videos with the device camera
+Gallery,         gallery/,         , , Photo, Browse photos and videos from a folder or files on this device
+GIF Maker,       gif-maker/,       , , Photo, Turn a short video into an animated GIF on your device
+Sound Recorder,  sound-recorder/,  , , Audio, Record audio from the microphone - long recordings with a waveform
+Screen Recorder, screen-recorder/, , , Video, Record your screen window or tab with microphone audio
+3D Viewer,       3d-viewer/,       , , 3D, View 3D GLB and glTF models: orbit - play animations - screenshot
+News,            news/,            , , Read, Latest headlines from Google News India in story cards
