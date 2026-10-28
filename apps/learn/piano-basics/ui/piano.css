@@ -1,4 +1,4 @@
-/* Piano Basics PB1 — app look on top of the Learn kit (../common/ui/learn.css): screen area on top, button bar, piano at the bottom.
+/* Piano Basics PB2 — app look on top of the Learn kit (../common/ui/learn.css): screen area on top, button bar, piano at the bottom.
    Light mode follows the Hub theme (html.light). Plain CSS, no heavy effects (weak phones). */
 .pb { --accent: #f6c453; --ok: #7ccf95; --bad: #ff6b6b; --lit: #5aa9ff; --demo: #c77dff; }
 html.light { --bg: #f4f6f9; --panel: #ffffff; --panel2: #e9edf2; --text: #1b2430; --muted: #5b6676; --line: #cfd6df; --note: #eef2f7; --on: #ffffff; }
@@ -55,3 +55,30 @@ kbd { padding: 0 5px; border-radius: 5px; border: 1px solid var(--line); border-
 .pb-sabox { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
 .pb-sa { min-height: 44px; padding: 0 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); font: inherit; }
 .pb-hint { flex: none; margin: 0; text-align: center; color: var(--muted); font-size: 0.8rem; }
+/* PB2: left-hand keys, options row, falling notes, recorder, help */
+.pb-key.pb-nextl { background: var(--ok); color: #111; }
+.pb-n .pb-l { display: block; font-size: 0.7em; color: var(--ok); }
+.pb-n.cur .pb-l { color: #0c4a1e; }
+.pb-opts2 { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin: 6px 0; }
+.pb-opts2 .lrn-mode button { padding: 0 12px; }
+.pb-chk { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-weight: 600; cursor: pointer; }
+.pb-chk input { width: 22px; height: 22px; accent-color: var(--accent); }
+.pb-top.pb-fallon { display: flex; flex-direction: column; overflow: hidden; }
+.pb-fall { flex: 1; min-height: 70px; width: 100%; display: block; border-radius: 8px 8px 0 0; background: rgba(128, 128, 128, 0.06); }
+.pb-score { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: center; align-items: baseline; }
+.pb-score .pb-msg { margin: 0; }
+.pb-scoreval { color: var(--accent); }
+.pb-rec.on { background: var(--bad); border-color: var(--bad); color: #fff; }
+.pb-playback:disabled { opacity: 0.5; }
+.pb-help { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; padding: 12px; background: rgba(0, 0, 0, 0.55); }
+.pb-help[hidden] { display: none; }
+.pb-helpbox { max-width: 560px; max-height: 100%; overflow: auto; padding: 16px 18px; border-radius: 14px; background: var(--panel); color: var(--text); border: 1px solid var(--line); }
+.pb-helpbox p { margin: 8px 0; line-height: 1.4; }
+.pb-helpbox .pb-go { display: block; margin: 12px auto 0; }
+@media (max-height: 460px) { .pb-fallon .pb-tip { display: none; } .pb-fallon .lrn-h { margin-bottom: 0; } .pb-opts2 { margin: 2px 0; } .pb-chk, .pb-opts2 .lrn-mode button { min-height: 38px; } }
+@media (max-width: 520px) { .pb-opts2 .lrn-mode button { padding: 0 9px; font-size: 0.85rem; } }
+/* while falling notes run: only the score line, the falling bars and the keys (more room on phones) */
+.pb-stop { display: none; min-height: 36px; }
+.pb-run .pb-stop { display: inline-block; }
+.pb-run .pb-fallon > :not(.pb-score):not(.pb-fall), .pb-run .pb-hint, .pb-run .pb-rot, .pb-run .pb-bar { display: none; }
+@media (max-height: 460px) { .pb-run .lrn-head { display: none; } }
