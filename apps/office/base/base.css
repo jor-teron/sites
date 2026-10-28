@@ -1,5 +1,5 @@
 /*
- * base.css  (BS1)
+ * base.css  (BS1, BS3: warning banner + recovery dialog)
  * Base look: dark default + body.base-light, mapped onto the shared --of-* variables.
  * Big tap targets, jelly/bouncy press effects. Shared ribbon/tools/menu look comes from ../shared/.
  */
@@ -85,3 +85,13 @@ body.in-hub .of-topbar { display: none; }
 .bq-note { margin-top: 6px; font-size: 12px; color: var(--muted); }
 .base-grid tfoot td { position: sticky; bottom: 0; background: var(--panel); padding: 6px 10px; font-size: 12px; color: var(--muted); border-top: 2px solid var(--sel); }
 @media print { .base-query-wrap { display: none; } }
+/* BS3 safe start: storage / repair warning banner + recovery dialog */
+.base-warn { padding: 6px 12px 0; }
+.base-warn-line { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; padding: 6px 10px; border-radius: 10px; border: 1px solid #c9952c; background: rgba(230, 170, 40, .16); color: var(--text); font-size: 13px; animation: base-jelly .45s; }
+.base-warn-line span { flex: 1; }
+.base-warn-x { border: 0; background: none; cursor: pointer; font-size: 18px; line-height: 1; min-width: 32px; min-height: 32px; color: var(--muted); }
+.base-recover .dlg { max-width: 460px; }
+.base-recover-err { margin-top: 8px; padding: 6px 8px; border-radius: 6px; background: var(--cell); color: var(--muted); font: 12px ui-monospace, Consolas, monospace; word-break: break-word; }
+.base-recover .dlg-actions { flex-wrap: wrap; }
+.base-recover[hidden] { display: none; }
+@media print { .base-warn, .base-recover { display: none !important; } }
