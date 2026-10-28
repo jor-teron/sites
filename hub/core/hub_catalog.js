@@ -91,6 +91,7 @@ File Drop,  filedrop/,   , , Share
 QR Scanner, qr-scanner/, , , Share
 Pooh Chat,  pooh-chat/,  , , Chat
 Video Chat, video-chat/, , , Chat
+Screen Share, screen-share/, screen-share/screenshare_icon.png, , Chat
 SSH,        ssh/,        , , Remote
 `,
   "Tools": `# Tools — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).

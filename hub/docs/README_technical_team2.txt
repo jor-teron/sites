@@ -457,6 +457,16 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Errors (in-app dialogs): unreachable/CORS → `OLLAMA_ORIGINS=https://jor-teron.github.io`; no vision model → `ollama pull llama3.2-vision` / `gemma3`; model rejects images or answers "I can't see an image" (heuristic) → pick a vision model.
 - Tested only against a mock Ollama in headless Chromium; not yet against a real Ollama or a phone camera.
 
+### 1.17 Screen Share: `apps/connectivity/screen-share/` (Connectivity → Chat, after Video Chat), release SS1
+- Share a computer's screen, window or tab with devices on the same Hub Connect Code; up to 4 viewers. Phones/tablets watch only (Share shows "phones can't share, but can watch"). Screens: Share · Settings (dots, 75 px swipe). Controls on the right.
+- Hub Connect Code exactly as Video Chat VC1: `#code=`/`?hub=`, `{sharedLink:'ready', app:'screen-share'}` → Hub `{sharedLink:'hello', code}`, then `__hubRemote.code` / `jtsites-hub-ctrl-code` / `shared-link-join-code` / `screenshare-last-code` / Code dialog. Uses only `SharedLink.PEERJS_URL` + `SharedLinkDevices.name()`; no shared/ or hub/ edits.
+- Peers: own ids `jtsites-<code>-ss-<rand>`, lobby `jtsites-<code>-ss-0` (first device; keeps roster, relays signals, reclaimed if lost). Roster entries `{id, name, share:null|{on, paused, audio}}` → "Live shares" list.
+- Signals: viewer `watch`/`leave`; sharer `paused {on}`/`stopped`/`full`. Sharer calls each viewer with the display stream (one MediaConnection per viewer); viewer answers receive-only and only for the sharer it asked.
+- Sharer: `getDisplayMedia` 720p/1080p, 5/15/30 fps (live `applyConstraints`), optional tab audio; preview, viewer count + names, Pause/Resume (`track.enabled`), Stop; browser "Stop sharing" (track `ended`) auto-stops.
+- Viewer: overlay with Fit/Fill, full screen (iPhone: video-only `webkitEnterFullscreen`), wheel/pinch zoom 1–8× + pan, double-click/tap 2.5×, Paused overlay, sound toggle.
+- Files: `screenshare.html/.css`, `screenshare_store.js` (`screenshare-settings-v1` `{name, theme, quality, fps, audio, fit}`), `screenshare_peer.js`, `screenshare_share.js`, `screenshare_app.js`, `screenshare_icon.png` (CSV icon set explicitly).
+- Tested in headless Chromium with a simulated peer (`SSPeer._emit`) and a fake `getDisplayMedia` only. A real two-browser PeerJS run was not possible on the test box (its Chrome policy blocks WebRTC UDP); PeerJS signalling and the lobby were confirmed. Not yet tried on real devices / NATs.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
