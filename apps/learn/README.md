@@ -17,7 +17,7 @@
 
 - Health: First Aid, Human Body Explorer (HBE2: Simple mode with 15 main parts, Expert mode with about 50 parts incl. brain parts, senses, nerves, blood vessels, full skeleton, more muscles and skin; neutral body with no private parts; back parts drawn dashed; foldable card on phones; 8-question quiz per mode)
 - Outdoors: Survival and Outdoors (SO1a: Fire and Water; more topics planned)
-- Language: NE-India Dictionary, Caption for NEI (still in Tools), English Basic, Typing Tutor (TT1: graded keyboard lessons, on-screen keyboard, 1/2/5 minute test)
+- Language: NE-India Dictionary, Caption for NEI (still in Tools), English Basic, Typing Tutor (TT1: graded keyboard lessons, on-screen keyboard, 1/2/5 minute test), Morse Code (MC1: chart of A-Z, 0-9 and punctuation with optional tree view, text <-> Morse translator with sound and lamp at 5-25 WPM, tap key with live decoding, 10 graded listen/tap lessons, SOS button)
 - Language and Maths: Maths and Logic (ML1a: 6 topics: Everyday Numbers, Times Tables, Fractions/Percent, Money Maths, Shapes and Measuring, Patterns and Puzzles)
 - Coding: Learning HTML (Basic) (still in Tools), Code Lab (still in Lab)
 - Music: Piano Basics (PB1: on-screen piano with WebAudio sound, note names in letters or sargam, 6 play-along tunes, name-the-note quiz), Guitar Chords (GC1: code-drawn neck in standard tuning, 20 chords with finger dots and O/X marks, plucked-string sound, strum by swipe or button, left-handed mode, chord-change practice with metronome, name-the-chord quiz)
