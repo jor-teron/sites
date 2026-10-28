@@ -31,6 +31,11 @@
  *   pop-up text repaints. Opened on its own it uses its own SharedLinkDevices (shared/link/link_devices.js,
  *   no link here): the key is saved and any open Hub tab picks it up from the 'storage' event (hub_panels.js).
  *   Empty = the default name guessed from the browser (shown as the placeholder).
+ * H29.1: "Send profile" card (id 'sync', deep link #about/sync; Hub side hub/link/hub_sync.js, window.HubSync).
+ *   Send: pick a connected device, optional ticks 'Desktop layout' / 'Phone layout' (off), Send (no API keys).
+ *   Incoming: preview grouped Shared / Desktop / Phone, each row tagged, name + This device + Incoming value,
+ *   Keep mine (default) / Use incoming (default for settings this device does not have, marked New),
+ *   Keep all mine / Use all incoming, Apply / Cancel; summary + Reload Hub after Apply. Text only (textContent).
  */
 (function () {
   'use strict';
@@ -61,7 +66,8 @@
       .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
       .then((text) => {
         const l = String(text).split(/\r?\n/).map((x) => x.trim());
-        const rel = /^[RH]\w+$/.test(l[2] || '') ? l[2] : '';   // H46: H-numbered Hub releases too (was R only)
+        // const rel = /^[RH]\w+$/.test(l[2] || '') ? l[2] : '';   // H46: H-numbered Hub releases too (was R only)
+        const rel = /^[RH][\w.+]+$/.test(l[2] || '') ? l[2] : '';   // H29.1: dotted ids like H29.1 too
         const date = /^\d{4}-\d{2}-\d{2}/.test(l[3] || '') ? l[3] : '';
         if (!rel && !date) return '';
         return [rel ? 'Release ' + rel : '', date].filter(Boolean).join(' \u00b7 ');
@@ -307,6 +313,146 @@
     return card;
   }
 
+  /* H29.1: Send profile to a connected device + review an incoming one (Hub side: hub/link/hub_sync.js) */
+  const GROUP_NAME = { shared: 'Shared', desktop: 'Desktop', phone: 'Phone' };
+  const short = (v) => { if (v == null) return '(not set)'; const t = String(v); return t.length > 120 ? t.slice(0, 117) + '\u2026' : t; };
+  function syncCard(sub) {
+    const card = ui.el('section', 'card sync-card');
+    card.id = 'sync';
+    card.appendChild(ui.el('h3', '', 'Send profile'));
+    const hub = S.hub();
+    const HS = hub && hub.HubSync, HP = hub && hub.HubProfile;
+    if (!HS || !HP) {
+      card.appendChild(ui.el('p', 'opt-note', 'Open Settings inside the Hub to send your profile to a connected device.'));
+      return card;
+    }
+    card.appendChild(ui.el('p', 'opt-note', 'Send this device\u2019s Hub and app settings to a device connected with the Connect Code (\uD83C\uDFAE Devices). ' +
+      'API keys and sign-ins are never sent. Nothing changes on the other device until it reviews the list and presses Apply.'));
+    const devBox = ui.el('div', 'sync-devs'); devBox.id = 'sync-devs';
+    devBox.setAttribute('role', 'radiogroup'); devBox.setAttribute('aria-label', 'Send to');
+    let picked = '';
+    const tick = (id, label, hint) => {
+      const lab = ui.el('label', 'sync-tick');
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.id = id;
+      const t = ui.el('span', ''); t.append(ui.el('b', '', label), ui.el('small', '', hint));
+      lab.append(cb, t);
+      return lab;
+    };
+    const tickD = tick('sync-inc-desktop', 'Desktop layout', 'Also copy Desktop settings (taskbar, windows, snapping, desktop icons) to a device in Phone mode');
+    const tickP = tick('sync-inc-phone', 'Phone layout', 'Also copy Phone settings (Home button) to a device in Desktop mode');
+    const sendB = ui.el('button', 'big-btn', 'Send'); sendB.type = 'button'; sendB.id = 'sync-send';
+    const out = ui.el('p', 'upd-out', ''); out.id = 'sync-out'; out.setAttribute('aria-live', 'polite');
+    const groupsNote = ui.el('p', 'opt-note', 'Always sent: Shared settings (theme, accent, wallpaper, favorites, app settings) plus the layout of the mode the other device is in. ' +
+      'Your Screen mode choice is never sent.');
+    const prev = ui.el('div', 'sync-prev'); prev.id = 'sync-preview';
+    card.append(ui.el('h4', 'opt-title', 'Send to'), devBox, ui.el('h4', 'opt-title', 'Also include'), tickD, tickP, groupsNote, sendB, out, prev);
+
+    const SENT = { sent: 'Sent \u2014 waiting for that device', got: 'Received \u2014 waiting for that device to review it', failed: 'Could not send (device gone?)',
+      cancelled: 'Cancelled on that device. Nothing changed there.', bad: 'That device could not read the profile' };
+    function drawDevs() {
+      const list = HS.devices();
+      devBox.textContent = '';
+      if (!list.some((d) => d.id === picked)) picked = list.length ? list[0].id : '';
+      list.forEach((d, i) => {
+        const lab = ui.el('label', 'sync-dev');
+        const r = document.createElement('input'); r.type = 'radio'; r.name = 'sync-dev'; r.value = d.id; r.id = 'sync-dev-' + i;
+        r.checked = d.id === picked;
+        r.addEventListener('change', () => { picked = d.id; });
+        lab.append(r, ui.el('span', '', d.name));
+        devBox.appendChild(lab);
+      });
+      if (!list.length) devBox.appendChild(ui.el('p', 'opt-note', 'No device connected. Connect one with the code in \uD83C\uDFAE Devices first.'));
+      sendB.disabled = !list.length;
+    }
+    function drawSent() {
+      const s = HS.lastSend();
+      if (!s) return;
+      out.className = 'upd-out ' + (s.state === 'failed' || s.state === 'bad' ? 'bad' : 'ok');
+      out.textContent = s.state === 'applied' ? s.toName + ' used ' + s.applied + ' setting' + (s.applied === 1 ? '' : 's') + ' and kept ' + s.kept + ' of its own'
+        : (SENT[s.state] || s.state) + ' (' + s.toName + ')';
+    }
+    sendB.addEventListener('click', () => {
+      const r = HS.send(picked, { desktop: tickD.firstChild.checked, phone: tickP.firstChild.checked });
+      if (!r.ok) {
+        out.className = 'upd-out bad';
+        out.textContent = r.reason === 'too-big' ? 'The profile is too big to send over the link' : r.reason === 'no-device' ? 'Pick a connected device' : 'Could not send';
+      } else drawSent();
+    });
+
+    let cancelled = false;
+    function drawPrev() {
+      prev.textContent = '';
+      const p = HS.pending(), res = HS.lastResult();
+      if (p) cancelled = false;
+      if (!p) {
+        if (cancelled && !res) { const c = ui.el('p', 'upd-out', 'Cancelled \u2014 nothing changed.'); c.id = 'sync-cancelled'; prev.appendChild(c); }
+        if (res) {
+          const sm = ui.el('div', 'sync-summary'); sm.id = 'sync-summary';
+          sm.append(ui.el('h4', 'opt-title', 'Profile from ' + res.name + ' applied'),
+            ui.el('p', '', 'Used ' + res.applied + ' incoming setting' + (res.applied === 1 ? '' : 's') + ', kept ' + res.kept + ' of yours' + (res.same ? ', ' + res.same + ' were already the same' : '') + '.'));
+          if (res.labels && res.labels.length) sm.appendChild(ui.el('p', 'opt-note', 'Changed: ' + res.labels.slice(0, 30).join(', ') + (res.labels.length > 30 ? ' \u2026' : '')));
+          const rl = ui.el('button', 'big-btn', 'Reload Hub'); rl.type = 'button'; rl.id = 'sync-reload';
+          rl.addEventListener('click', () => hub.location.reload());
+          sm.append(ui.el('p', 'opt-note', 'Most changes show at once; reload the Hub to see every one.'), rl);
+          prev.appendChild(sm);
+        }
+        return;
+      }
+      prev.appendChild(ui.el('h4', 'opt-title', 'Incoming profile from ' + p.name));
+      const skipTxt = ['desktop', 'phone'].filter((g) => p.skipped[g]).map((g) => p.skipped[g] + ' ' + GROUP_NAME[g] + ' layout setting' + (p.skipped[g] === 1 ? '' : 's') + ' not included');
+      prev.appendChild(ui.el('p', 'opt-note', 'This device is in ' + GROUP_NAME[HS.mode()] + ' mode. Showing: ' + p.groups.map((g) => GROUP_NAME[g]).join(', ') + '. ' +
+        p.items.length + ' differ, ' + p.same + ' already the same' + (skipTxt.length ? '; ' + skipTxt.join(', ') : '') + '. Nothing changes until Apply.'));
+      const choice = {};
+      const rows = [];
+      if (p.items.length) {
+        const bulk = ui.el('div', 'profile-btns sync-bulk');
+        const allMine = ui.el('button', 'key-btn', 'Keep all mine'); allMine.type = 'button'; allMine.id = 'sync-all-mine';
+        const allIn = ui.el('button', 'key-btn', 'Use all incoming'); allIn.type = 'button'; allIn.id = 'sync-all-in';
+        bulk.append(allMine, allIn);
+        prev.appendChild(bulk);
+        allMine.addEventListener('click', () => rows.forEach((r) => r.set('mine')));
+        allIn.addEventListener('click', () => rows.forEach((r) => r.set('incoming')));
+      }
+      ['shared', 'desktop', 'phone'].forEach((g) => {
+        const its = p.items.filter((it) => it.group === g);
+        if (!its.length) return;
+        const sec = ui.el('div', 'sync-group'); sec.dataset.group = g;
+        sec.appendChild(ui.el('h5', 'sync-gh', GROUP_NAME[g] + (g === 'shared' ? '' : ' layout') + ' (' + its.length + ')'));
+        its.forEach((it) => {
+          const row = ui.el('div', 'sync-item'); row.dataset.id = it.id; row.dataset.group = g;
+          const head = ui.el('div', 'sync-ih');
+          head.append(ui.el('b', 'sync-name', it.label), ui.el('span', 'sync-tag sync-tag-' + g, GROUP_NAME[g]));
+          if (it.isNew) head.appendChild(ui.el('span', 'sync-tag sync-new', 'New'));
+          const vals = ui.el('div', 'sync-vals');
+          vals.append(ui.el('span', 'sync-mine', 'This device: ' + short(it.mine)), ui.el('span', 'sync-in', 'Incoming: ' + short(it.incoming)));
+          const seg = ui.el('div', 'sync-seg');
+          const mk = (v, t) => { const b = ui.el('button', 'seg-btn sync-' + v, t); b.type = 'button'; b.dataset.v = v; seg.appendChild(b); return b; };
+          const bm = mk('mine', 'Keep mine'), bi = mk('incoming', 'Use incoming');
+          const set = (v) => { choice[it.id] = v; bm.classList.toggle('on', v === 'mine'); bi.classList.toggle('on', v === 'incoming'); row.dataset.choice = v; };
+          bm.addEventListener('click', () => set('mine')); bi.addEventListener('click', () => set('incoming'));
+          set(it.isNew ? 'incoming' : 'mine');
+          rows.push({ set });
+          row.append(head, vals, seg);
+          sec.appendChild(row);
+        });
+        prev.appendChild(sec);
+      });
+      const act = ui.el('div', 'profile-btns sync-act');
+      const ap = ui.el('button', 'big-btn', 'Apply'); ap.type = 'button'; ap.id = 'sync-apply';
+      const cn = ui.el('button', 'big-btn', 'Cancel'); cn.type = 'button'; cn.id = 'sync-cancel';
+      act.append(ap, cn);
+      prev.appendChild(act);
+      ap.addEventListener('click', () => { HS.apply(choice); });
+      cn.addEventListener('click', () => { cancelled = true; HS.cancel(); });
+    }
+    function draw() { if (!card.isConnected) { off(); return; } drawDevs(); drawSent(); drawPrev(); }
+    const off = HS.onChange(draw);
+    window.addEventListener('pagehide', () => off());
+    drawDevs(); drawSent(); drawPrev();
+    if (sub === 'sync') setTimeout(() => card.scrollIntoView({ block: 'start' }), 50);
+    return card;
+  }
+
   /* H46: Device name (was the editable box in the Hub's 🎮 Devices pop-up) */
   const NAME_KEY = 'shared-link-device-name';
   function deviceCard(sub) {
@@ -399,7 +545,8 @@
       fb.id = 'feedback';
       fb.append(ui.el('h3', '', 'Feedback'), ui.el('p', '', 'Found a bug or have an idea? Open an issue on GitHub.'),
         link(REPO + '/issues', 'GitHub Issues', 'Report a problem or suggest something'));
-      pane.append(card, deviceCard(sub), profileCard(sub), contact, fb);   // H46: Device name after the About card
+      // pane.append(card, deviceCard(sub), profileCard(sub), contact, fb);   // H46: Device name after the About card
+      pane.append(card, deviceCard(sub), profileCard(sub), syncCard(sub), contact, fb);   // H29.1: Send profile after Profile
     }
   });
 })();

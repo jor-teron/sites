@@ -229,3 +229,26 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
 
 /* H46: Device name card (sec_about.js #about/device) — reuses the key row look, plain text font */
 .key-input.device-input { font: 15px/1.4 system-ui, sans-serif; }
+
+/* H29.1: Settings › About › Send profile (sec_about.js syncCard) */
+.sync-devs { display: flex; flex-direction: column; gap: 6px; }
+.sync-dev, .sync-tick { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
+.sync-tick { margin-bottom: 6px; }
+.sync-tick span { display: flex; flex-direction: column; }
+.sync-tick small { color: var(--muted); font-size: .8rem; }
+.sync-dev input, .sync-tick input { width: 18px; height: 18px; accent-color: var(--accent); }
+.sync-prev:empty { display: none; }
+.sync-bulk, .sync-act { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.sync-gh { margin: 14px 0 6px; font-size: .95rem; }
+.sync-item { border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; margin-bottom: 8px; }
+.sync-ih { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sync-name { word-break: break-all; }
+.sync-tag { font-size: .72rem; padding: 1px 8px; border-radius: 999px; background: var(--hi); color: var(--accent); }
+.sync-tag-desktop { background: color-mix(in srgb, #f6c344 22%, transparent); color: #f6c344; }
+.sync-tag-phone { background: color-mix(in srgb, #4ade80 22%, transparent); color: #4ade80; }
+.sync-new { background: color-mix(in srgb, #ff5d8f 22%, transparent); color: #ff5d8f; }
+.sync-vals { display: flex; flex-direction: column; gap: 2px; margin: 6px 0; font-size: .85rem; color: var(--muted); word-break: break-all; }
+.sync-in { color: inherit; }
+.sync-seg { display: flex; gap: 6px; }
+.sync-seg .seg-btn { min-height: 36px; min-width: 0; padding: 4px 10px; border-radius: 10px; }
+.sync-summary { border: 1px solid var(--accent); border-radius: 12px; padding: 8px 12px; margin-top: 10px; }

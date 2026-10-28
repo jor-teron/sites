@@ -1192,3 +1192,61 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   new hello, Draftly buttons + tabs and in-app bar hidden, Insert tab selects Draftly's ribbon,
   2048 bar unchanged, H48b Search button, Phone mode no quick buttons and Draftly keeps its bar),
   Spreadsheet and Base checked too; no console errors or 4xx.
+
+2026-10-28 IST, H29.1 (Team 2, week 2): Send profile to a connected device with preview and Apply.
+  H29 HUB SYNC PLAN (agreed with Jor, 28 Oct; Team 1's H29.1-H29.4 idea reworked):
+  - No automatic sync, ever: devices are peers over the Connect Code link with no server, so an
+    automatic sync would just bounce between devices. Every send and every apply is a button press.
+  - H29.1 (this release): send the whole profile (no API keys) + preview on the receiver with
+    Keep mine / Use incoming per setting, Keep all mine / Use all incoming, Apply / Cancel, summary.
+    Mode groups Shared / Desktop / Phone with Desktop layout / Phone layout ticks (Jor's scope add).
+  - H29.2 (next, not built): choose what to send (Hub settings / System app settings / everything)
+    + an API keys tick (off by default). Keys masked to the last 4 characters in the preview and
+    never overwrite on their own: same key = skipped, missing = added, different = conflict with
+    Keep mine (default) / Use incoming / Keep both where the service allows it.
+  - H29.3 (not built): backup of the old settings before Apply + 'Undo last sync' in Settings, and
+    the PC's connected folder copy (hub/hub-profile/) updated straight after a sync.
+  - Dropped: Team 1's H29.4 automatic sync (see above).
+  Profile before H29.1 (checked): hub.json "hub" is one flat object of every allowed sites-hub.*
+  setting, not split by Desktop / Phone mode (device.mode only records the saving device's mode); app
+  settings are per app file. Mode groups are therefore new, kept in ONE map in hub_profile.js:
+    SYNC_GROUPS.desktop = taskPos, taskH, titleH, openMax, startHover, showFiles, trayMeter,
+      hoverFocus, snapEdges, snapMagnet, snapMagnetPx, workspaces, saverIdle, saverSec
+    SYNC_GROUPS.phone   = homeBtn
+    shared              = everything else (theme, accent, motion, wallpaper, favorites,
+                          notifyTimeout, files*, profileEvery, osk ...) and every app setting
+    SYNC_SKIP           = wmMode (each device's own Screen mode; never sent / applied)
+  HubProfile.groupOf(scope, name) reads it; add a key to SYNC_GROUPS to move it out of Shared.
+  Files: hub/link/hub_sync.js (new, window.HubSync), hub/core/hub_profile.js (exportData(o) with
+  o.keys === false; diffData(profile, {groups}); applyItems(items); groupOf; SYNC_GROUPS),
+  hub/link/hub_link.js ('hubsync…' messages not forwarded to app frames, like 'phonekey…'),
+  apps/system/settings/sec_about.js (syncCard, id 'sync', #about/sync, after Profile; About's
+  release regex accepts dotted ids), settings.css (.sync-*), index.html (?v=20261028h291),
+  hub.html (hub_sync.js after hub_link.js; hub_profile.js now on the build stamp), hub_sw.js SHELL.
+  Wire (SharedLink.send, host relays 'to'; replies go to msg.from, else 'host' on a joined phone):
+  - {type:'hubsync-profile', v:1, id, name, mode, include:{desktop, phone}, profile}
+  - {type:'hubsync-got', id}  -> sender shows 'Received, waiting for review'
+  - {type:'hubsync-result', id, state:'applied'|'cancelled'|'bad', applied, kept} -> sender card
+  Choice: the RECEIVER filters groups. The sender sends Shared + Desktop + Phone settings and its
+  two ticks; the receiver keeps Shared + the group of its own mode (HubMode.mode; a joined phone
+  Hub is always Phone) + ticked groups, and only counts the rest ('N Desktop layout settings not
+  included'). Simpler and robust: the sender does not need to know the other device's mode.
+  Receiver: one pending offer (a new one replaces it), diffed again against the current settings
+  each time the preview draws. Identical settings are counted, not listed; settings the sender
+  does not have are left alone (never deleted). New settings default to Use incoming, changed
+  ones to Keep mine. Apply writes only the chosen items through applyItems (same filters as
+  load / import: allowed names, the app's own keys, no key-like values, no "keys"), calls
+  HubPrefs.apply() for a live repaint and marks the profile dirty so the normal Save every timer
+  writes the profile places. Cancel writes nothing. Limits: 200,000 chars per offer, 2000
+  settings, values <= 200,000 chars; all text drawn with textContent.
+  Bump 20261028f / v102 -> 20261028g / hub-shell-v103 (hub_bump.py --release H29.1).
+  Playwright (system Chrome, two browser contexts: PC 1366 px Desktop mode as host, phone 400 px
+  Phone mode as a joined device; SharedLink.send / devices / id / role stubbed and bridged
+  between the two pages, no real PeerJS link): 40/40. Send lists the device, ticks off by
+  default, payload has no keys even with Include keys on, receiver card + Review opens
+  #about/sync, rows grouped / tagged, defaults, Use incoming changes, Keep mine keeps, new items
+  applied, Desktop settings never reach the Phone-mode receiver without the tick and Phone
+  settings never reach the Desktop-mode receiver without the tick (and do with it), Cancel
+  changes nothing, sender gets got / applied / cancelled, bad version / oversize rejected,
+  unknown and secret keys ignored, HTML shown as text, standalone Settings note, no console
+  errors. Real phone <-> PC over the internet not tested: Jor to try once on real devices.
