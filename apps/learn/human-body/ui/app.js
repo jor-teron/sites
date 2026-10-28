@@ -1,8 +1,9 @@
-/* Human Body Explorer HBE1 — screens: Explore (body + group picker + info card), List (parts by group) and Quiz.
+/* Human Body Explorer HBE2 — screens: Explore (body + group picker + info card), List (parts by group) and Quiz.
+   Level toggle: Simple (15 main parts, default) or Expert (about 50 parts); saved as learn.human-body.level.
    Tap or hover a part to light it up and read its card. Quiz: 8 questions, tap-the-part and what-does-it-do.
    Uses the Learn kit look (learn.css), the Hub theme and LRN.store. Esc closes the card / leaves the quiz. */
 (() => {
-  const H = window.HB, VER = 'HBE1';
+  const H = window.HB, VER = 'HBE2';
   const root = document.getElementById('app');
   const h = (tag, attrs, ...kids) => {
     const el = document.createElement(tag);
@@ -11,48 +12,64 @@
     return el;
   };
   const viewKey = 'learn.human-body.view';
+  H.level = LRN.store.read('learn.human-body.level', 'simple') === 'expert' ? 'expert' : 'simple';
   let view = (LRN.store.read(viewKey, 'organs'));
-  if (!H.views.some(v => v.id === view)) view = 'organs';
+  const fixView = () => { if (!H.viewsNow().some(v => v.id === view)) view = 'organs'; };
+  fixView();
   let mode = 'explore', sel = null;
 
   const modes = ['explore', 'list', 'quiz'], modeNames = { explore: 'Explore', list: 'List', quiz: 'Quiz' };
   const modeBar = h('div', { class: 'lrn-mode hb-modes', role: 'group', 'aria-label': 'Mode' },
     modes.map(m => h('button', { type: 'button', 'data-m': m, onclick: () => go(m) }, modeNames[m])));
-  const head = h('header', { class: 'lrn-head' }, h('h1', null, h('span', { class: 'lrn-here' }, 'Human Body')), modeBar, h('span', { class: 'hb-ver' }, VER));
+  const lvBar = h('div', { class: 'lrn-mode hb-lv', role: 'group', 'aria-label': 'Level' },
+    [['simple', 'Simple'], ['expert', 'Expert']].map(([k, t]) => h('button', { type: 'button', 'data-lv': k, 'aria-pressed': String(H.level === k), onclick: () => setLevel(k) }, t)));
+  function setLevel(k) {
+    H.level = k; LRN.store.write('learn.human-body.level', k); sel = null; fixView();
+    lvBar.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lv === k)));
+    go(mode);
+  }
+  const head = h('header', { class: 'lrn-head' }, h('h1', null, h('span', { class: 'lrn-here' }, 'Human Body')), lvBar, modeBar, h('span', { class: 'hb-ver' }, VER));
   const main = h('main', { class: 'lrn-main hb-main', id: 'lrn-main' });
-  const foot = h('footer', { class: 'lrn-foot' }, 'Front view, simplified. Tap a part to learn what it does.');
+  const foot = h('footer', { class: 'lrn-foot' }, 'Front view, simplified. Dashed parts are at the back. Tap a part to learn what it does.');
   root.className = 'lrn hb'; root.replaceChildren(head, main, foot);
 
   function go(m) {
-    mode = m; sel = m === 'quiz' ? null : sel;
+    mode = m; sel = m === 'quiz' ? null : sel; main.className = 'lrn-main hb-main';
     modeBar.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === m)));
     document.title = 'Human Body Explorer ' + VER + (m === 'explore' ? '' : ' \u2013 ' + modeNames[m]);
     if (m === 'explore') explore(); else if (m === 'list') list(); else quizStart();
   }
 
   const picker = onPick => h('div', { class: 'hb-picker', role: 'group', 'aria-label': 'Body system' },
-    H.views.map(v => h('button', { type: 'button', class: 'hb-chip', 'aria-pressed': String(v.id === view), onclick: () => { view = v.id; LRN.store.write(viewKey, view); sel = null; onPick(); } }, v.icon + ' ' + v.name)));
+    H.viewsNow().map(v => h('button', { type: 'button', class: 'hb-chip', 'aria-pressed': String(v.id === view), onclick: () => { view = v.id; LRN.store.write(viewKey, view); sel = null; onPick(); } }, v.icon + ' ' + v.name)));
 
   function card(p, onClose) {
     if (!p) return h('div', { class: 'hb-card hb-empty' }, h('b', null, 'Tap a part'), h('p', null, 'Pick a system above, then tap a part of the body to see what it does.'));
     H.quiz.markViewed(p.id);
     const g = H.groupOf(p);
-    return h('article', { class: 'hb-card', style: '--pc:' + p.color, 'aria-live': 'polite' },
-      h('div', { class: 'hb-card-h' }, h('i', { class: 'hb-dot' }), h('b', null, p.name), h('span', { class: 'lrn-sub' }, g.icon + ' ' + g.name),
-        h('button', { type: 'button', class: 'hb-x', 'aria-label': 'Close', onclick: onClose }, '\u00D7')),
+    const art = h('article', { class: 'hb-card' + (cardMin ? ' min' : ''), style: '--pc:' + p.color, 'aria-live': 'polite' });
+    const fold = h('button', { type: 'button', class: 'hb-x hb-fold', 'aria-label': 'Show less or more', 'aria-expanded': String(!cardMin),
+      onclick: () => { cardMin = !cardMin; art.classList.toggle('min', cardMin); fold.setAttribute('aria-expanded', String(!cardMin)); fold.textContent = cardMin ? '\u25B4' : '\u25BE'; } }, cardMin ? '\u25B4' : '\u25BE');
+    art.append(
+      h('div', { class: 'hb-card-h' }, h('i', { class: 'hb-dot' }), h('b', null, p.name), h('span', { class: 'lrn-sub' }, g.icon + ' ' + H.gname(g)),
+        fold, h('button', { type: 'button', class: 'hb-x', 'aria-label': 'Close', onclick: onClose }, '\u00D7')),
       h('p', { class: 'hb-job' }, p.job + '.'),
+      h('p', { class: 'hb-backnote', hidden: !p.back }, '\u21BA At the back: this part sits behind others, so it is drawn dashed.'),
       h('p', null, p.info),
       h('b', { class: 'hb-ff' }, 'Fun facts'),
       h('ul', null, p.facts.map(f => h('li', null, f))));
+    return art;
   }
+  let cardMin = matchMedia('(max-aspect-ratio: 1/1) and (max-height: 700px)').matches;   // short phone: start with the card folded
 
   // ---------- explore ----------
   function explore() {
     const slot = h('div', { class: 'hb-side' });
     const svg = H.drawBody(view, { onPick: id => show(id) });
     const show = id => { sel = id; H.highlight(svg, id); slot.replaceChildren(card(H.byId[id], () => show(null))); };
-    svg.addEventListener('pointerover', e => { const g = e.target.closest('.hb-part'); if (g && e.pointerType === 'mouse') H.highlight(svg, g.dataset.id, 'hover'); });
+    svg.addEventListener('pointerover', e => { const g = e.target.closest('[data-id]'); if (g && e.pointerType === 'mouse') H.highlight(svg, g.dataset.id, 'hover'); });
     svg.addEventListener('pointerleave', () => H.highlight(svg, null, 'hover'));
+    main.className = 'lrn-main hb-main hb-ex';
     main.replaceChildren(picker(explore), h('div', { class: 'hb-stage' }, h('div', { class: 'hb-fig' }, svg), slot));
     show(sel && H.partsOf(view).some(p => p.id === sel) ? sel : null);
   }
@@ -60,10 +77,11 @@
   // ---------- list ----------
   function list() {
     const seen = H.quiz.viewed();
-    main.replaceChildren(picker(list), ...H.groups.filter(g => H.partsOf(view).some(p => p.sys === g.id)).map(g =>
-      h('section', { class: 'hb-sec' }, h('h2', { class: 'hb-gh' }, g.icon + ' ' + g.name),
-        h('div', { class: 'lrn-grid hb-grid' }, H.parts.filter(p => p.sys === g.id).map(p =>
-          h('button', { type: 'button', class: 'lrn-card hb-item', style: '--pc:' + p.color, onclick: () => { sel = p.id; view = p.sys; go('explore'); } },
+    const inView = H.partsOf(view);
+    main.replaceChildren(picker(list), ...H.groupsNow().filter(g => inView.some(p => H.sysOf(p) === g.id)).map(g =>
+      h('section', { class: 'hb-sec' }, h('h2', { class: 'hb-gh' }, g.icon + ' ' + H.gname(g)),
+        h('div', { class: 'lrn-grid hb-grid' }, H.levelParts().filter(p => H.sysOf(p) === g.id).map(p =>
+          h('button', { type: 'button', class: 'lrn-card hb-item', 'data-id': p.id, style: '--pc:' + p.color, onclick: () => { sel = p.id; view = H.sysOf(p); go('explore'); } },
             h('b', null, h('i', { class: 'hb-dot' }), ' ', p.name), h('span', { class: 'lrn-sub' }, p.job),
             seen[p.id] ? h('span', { class: 'lrn-tags' }, h('i', null, 'seen')) : null))))));
   }
@@ -73,7 +91,7 @@
   function quizStart() {
     const b = H.quiz.best();
     main.replaceChildren(h('div', { class: 'hb-qhome' },
-      h('h2', { class: 'lrn-h' }, '\u{1F9E0} Body quiz'),
+      h('h2', { class: 'lrn-h' }, '\u{1F9E0} Body quiz' + (H.level === 'expert' ? ' (Expert)' : '')),
       h('p', null, H.quiz.N + ' questions: find parts on the body and pick what they do.'),
       h('p', { class: 'lrn-sub' }, b ? 'Best: ' + b.score + ' / ' + b.of : 'No best score yet.'),
       h('button', { type: 'button', class: 'lrn-qc hb-go', onclick: () => { Q = H.quiz.start(); ask(); } }, 'Start quiz')));

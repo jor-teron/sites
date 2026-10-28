@@ -1,5 +1,6 @@
-/* Human Body Explorer HBE1 — the data: groups (systems) and body parts. HBE1 keeps it small on purpose: 15 main parts.
-   To grow it later (HBE2 Expert/All), just add groups and parts here; the screens read everything from this file.
+/* Human Body Explorer HBE2 — the data for Simple mode: groups (systems) and the 15 main parts. Expert parts are in parts-expert.js.
+   lv: 's' = Simple only (replaced by finer parts in Expert), 'x' = Expert only, none = both. xsys = group in Expert if different.
+   back: 1 = sits behind other parts (drawn dashed, the card says so). noall: 1 = not shown in the busy 'All organs' view.
    Part: id, sys (group id), name, pl (1 = plural name), job (one short line, used as a quiz answer), info (what it does), facts (2-3 fun facts),
    color, shapes: [tag, attrs] SVG shapes drawn on the 200 x 420 body (viewBox), viewer's left = the body's right side. */
 window.HB = window.HB || {};
@@ -17,19 +18,19 @@ window.HB = window.HB || {};
     ['path', { d: 'M102 246 L138 246 L134 398 Q136 410 128 410 L116 410 Q104 410 104 400 Z' }]
   ];
 
-  H.groups = [
+  H.groups = [                                         // x: 1 = Expert only; xname = name in Expert
     { id: 'brain', name: 'Brain and senses', icon: '\u{1F9E0}' },
-    { id: 'chest', name: 'Heart and lungs', icon: '\u2764\uFE0F' },
+    { id: 'chest', name: 'Heart and lungs', xname: 'Lungs and breathing', icon: '\u{1FAC1}' },
+    { id: 'blood', x: 1, name: 'Heart and blood', icon: '\u2764\uFE0F' },
     { id: 'digest', name: 'Digestion', icon: '\u{1F34E}' },
     { id: 'clean', name: 'Kidneys and bladder', icon: '\u{1F4A7}' },
     { id: 'bones', name: 'Skeleton', icon: '\u{1F9B4}' },
-    { id: 'muscles', name: 'Muscles', icon: '\u{1F4AA}' }
+    { id: 'muscles', name: 'Muscles', icon: '\u{1F4AA}' },
+    { id: 'skin', x: 1, name: 'Skin', icon: '\u270B' }
   ];
-  H.views = [{ id: 'organs', name: 'All organs', icon: '\u{1FAC0}', groups: ['brain', 'chest', 'digest', 'clean'] }]
-    .concat(H.groups.map(g => ({ id: g.id, name: g.name, icon: g.icon, groups: [g.id] })));
 
   H.parts = [
-    { id: 'brain', sys: 'brain', name: 'Brain', color: '#f4a6c0', job: 'Controls thinking, feeling and moving',
+    { id: 'brain', sys: 'brain', lv: 's', name: 'Brain', color: '#f4a6c0', job: 'Controls thinking, feeling and moving',
       info: 'Your brain is the boss of your body. It thinks, remembers, feels and sends messages along your nerves to tell every part what to do.',
       facts: ['Your brain has about 86 billion nerve cells.', 'It uses about one fifth of your body\u2019s energy, even when you sleep.', 'An adult brain weighs about 1.4 kg, like a small bag of sugar.'],
       shapes: [['ellipse', { cx: 100, cy: 34, rx: 23, ry: 16 }], ['path', { d: 'M100 19 L100 49 M84 30 Q92 26 96 34 M104 34 Q108 26 116 30', fill: 'none', 'stroke-width': 1.5, class: 'hb-line' }]] },
@@ -41,7 +42,7 @@ window.HB = window.HB || {};
       info: 'When you breathe in, your lungs fill with air. Oxygen from the air goes into your blood, and the used gas, carbon dioxide, goes out when you breathe out.',
       facts: ['Your left lung is a little smaller, to make room for your heart.', 'Lungs have hundreds of millions of tiny air bags called alveoli.', 'You breathe around 20,000 times a day.'],
       shapes: [['path', { d: 'M96 102 Q72 100 66 130 Q62 160 70 166 Q84 168 96 160 Z' }], ['path', { d: 'M104 102 Q128 100 134 130 Q138 160 130 166 Q116 168 104 160 Z' }]] },
-    { id: 'heart', sys: 'chest', name: 'Heart', color: '#e5484d', job: 'Pumps blood all around the body',
+    { id: 'heart', sys: 'chest', xsys: 'blood', name: 'Heart', color: '#e5484d', job: 'Pumps blood all around the body',
       info: 'Your heart is a strong muscle that pumps blood through tubes called blood vessels. The blood carries oxygen and food to every part of you.',
       facts: ['Your heart is about the size of your fist.', 'It beats around 100,000 times every day.', 'It has four rooms inside called chambers.'],
       shapes: [['path', { d: 'M108 128 Q100 118 94 126 Q88 136 108 154 Q126 136 120 126 Q114 118 108 128 Z' }]] },
@@ -53,11 +54,11 @@ window.HB = window.HB || {};
       info: 'Your stomach is a stretchy bag. It squeezes and mixes the food you swallow with strong juices until it turns into a thick soup.',
       facts: ['It can stretch to hold more than a litre of food and drink.', 'Stomach juice is very strong, so a slimy lining protects the stomach.', 'A growling tummy is just gas and liquid moving around.'],
       shapes: [['path', { d: 'M112 166 Q126 162 132 172 Q136 186 124 192 Q112 196 108 186 Q114 180 110 172 Z' }]] },
-    { id: 'intestines', sys: 'digest', name: 'Intestines', pl: 1, color: '#f2c48d', job: 'Take in goodness and water from food',
+    { id: 'intestines', sys: 'digest', lv: 's', name: 'Intestines', pl: 1, color: '#f2c48d', job: 'Take in goodness and water from food',
       info: 'After the stomach, food moves through a long tube. The small intestine soaks up the goodness from food, and the large intestine soaks up water.',
       facts: ['Your small intestine is about 6 metres long, all folded up.', 'The large intestine is wider but much shorter.', 'Food can take a day or more to go all the way through.'],
       shapes: [['rect', { x: 78, y: 198, width: 44, height: 36, rx: 10 }], ['path', { d: 'M84 206 Q92 200 100 206 T116 206 M84 216 Q92 210 100 216 T116 216 M84 226 Q92 220 100 226 T116 226', fill: 'none', 'stroke-width': 1.5, class: 'hb-line' }]] },
-    { id: 'kidneys', sys: 'clean', name: 'Kidneys', pl: 1, color: '#a0446a', job: 'Filter the blood and make urine (pee)',
+    { id: 'kidneys', sys: 'clean', back: 1, name: 'Kidneys', pl: 1, color: '#a0446a', job: 'Filter the blood and make urine (pee)',
       info: 'You have two kidneys near your back. They filter your blood, keep the water and goodness you need, and turn waste into urine.',
       facts: ['Each kidney is about the size of a computer mouse.', 'They clean all your blood around 40 times a day.', 'A person can live a healthy life with just one kidney.'],
       shapes: [['path', { d: 'M70 196 Q62 200 64 214 Q66 226 74 224 Q72 212 76 206 Q76 196 70 196 Z' }], ['path', { d: 'M130 196 Q138 200 136 214 Q134 226 126 224 Q128 212 124 206 Q124 196 130 196 Z' }]] },
@@ -69,14 +70,14 @@ window.HB = window.HB || {};
       info: 'Your skull is the hard bony case around your brain. It also shapes your face and holds your teeth.',
       facts: ['It is made of 22 bones joined together.', 'Your lower jaw is the only part of the skull that moves.', 'Babies have soft spots in the skull that close up as they grow.'],
       shapes: [['path', { d: 'M100 16 Q128 16 128 44 Q128 60 118 66 L118 74 L82 74 L82 66 Q72 60 72 44 Q72 16 100 16 Z' }], ['path', { d: 'M86 46 a5 5 0 1 0 0.1 0 M114 46 a5 5 0 1 0 0.1 0 M92 66 L108 66', fill: 'none', 'stroke-width': 2, class: 'hb-line' }]] },
-    { id: 'ribcage', sys: 'bones', name: 'Ribcage', color: '#e8e0c8', job: 'Protects the heart and lungs',
-      info: 'Your ribs curve around your chest like a cage. They guard your heart and lungs, and move up and out when you breathe in.',
-      facts: ['Most people have 12 pairs of ribs.', 'Bendy cartilage joins the ribs to the breastbone, so they can move.', 'Your ribcage moves about 20,000 times a day as you breathe.'],
-      shapes: [['path', { d: 'M96 100 Q66 104 64 166 L74 168 Q76 120 96 112 Z M104 100 Q134 104 136 166 L126 168 Q124 120 104 112 Z' }], ['path', { d: 'M70 124 Q84 118 96 124 M68 138 Q84 132 96 138 M68 152 Q84 146 96 152 M104 124 Q116 118 130 124 M104 138 Q116 132 132 138 M104 152 Q116 146 132 152', fill: 'none', 'stroke-width': 3, class: 'hb-bone' }]] },
     { id: 'spine', sys: 'bones', name: 'Spine', color: '#d9cfa8', job: 'Holds you up and protects the spinal cord',
-      info: 'Your spine, or backbone, is a stack of small bones called vertebrae. It holds you upright and protects the spinal cord, the nerve cable from your brain.',
+      info: 'Your spine, or backbone, is a stack of small bones called vertebrae. It holds you upright and protects the spinal cord, the nerve cable from your brain. Behind the chest it is hidden by the ribcage.',
       facts: ['It is made of 33 small bones when you are born.', 'You are a tiny bit taller in the morning than at night.', 'Soft discs between the bones work like cushions.'],
       shapes: [['rect', { x: 95, y: 76, width: 10, height: 168, rx: 4 }], ['path', { d: 'M95 90 H105 M95 104 H105 M95 118 H105 M95 132 H105 M95 146 H105 M95 160 H105 M95 174 H105 M95 188 H105 M95 202 H105 M95 216 H105 M95 230 H105', fill: 'none', 'stroke-width': 2, class: 'hb-line' }]] },
+    { id: 'ribcage', sys: 'bones', name: 'Ribcage', color: '#e8e0c8', job: 'Protects the heart and lungs',
+      info: 'Your ribs curve around your chest like a cage. The flat breastbone in the middle joins them at the front. They guard your heart and lungs, and move up and out when you breathe in.',
+      facts: ['Most people have 12 pairs of ribs.', 'Bendy cartilage joins the ribs to the breastbone, so they can move.', 'Your ribcage moves about 20,000 times a day as you breathe.'],
+      shapes: [['rect', { x: 95, y: 98, width: 10, height: 54, rx: 3 }], ['path', { d: 'M96 100 Q66 104 64 166 L74 168 Q76 120 96 112 Z M104 100 Q134 104 136 166 L126 168 Q124 120 104 112 Z' }], ['path', { d: 'M70 124 Q84 118 96 124 M68 138 Q84 132 96 138 M68 152 Q84 146 96 152 M104 124 Q116 118 130 124 M104 138 Q116 132 132 138 M104 152 Q116 146 132 152', fill: 'none', 'stroke-width': 3, class: 'hb-bone' }]] },
     { id: 'biceps', sys: 'muscles', name: 'Biceps', color: '#d9534f', job: 'Bends your arm at the elbow',
       info: 'The biceps is the muscle at the front of your upper arm. When it gets shorter it pulls your lower arm up and bends your elbow.',
       facts: ['Muscles can only pull, never push.', 'The triceps at the back of your arm pulls it straight again.', 'Muscles get stronger when you use them.'],
@@ -91,7 +92,22 @@ window.HB = window.HB || {};
       shapes: [['ellipse', { cx: 81, cy: 290, rx: 13, ry: 38 }], ['ellipse', { cx: 119, cy: 290, rx: 13, ry: 38 }]] }
   ];
 
-  H.byId = {}; H.parts.forEach(p => { H.byId[p.id] = p; });
-  H.partsOf = viewId => { const v = H.views.find(x => x.id === viewId) || H.views[0]; return H.parts.filter(p => v.groups.indexOf(p.sys) >= 0); };
-  H.groupOf = p => H.groups.find(g => g.id === p.sys);
+  // level-aware helpers (Simple / Expert). H.level is set by the app; parts-expert.js adds more parts and calls H.reindex().
+  H.level = 'simple';
+  const X = () => H.level === 'expert';
+  H.reindex = () => { H.byId = {}; H.parts.forEach(p => { H.byId[p.id] = p; }); };
+  H.inLevel = p => X() ? p.lv !== 's' : p.lv !== 'x';
+  H.sysOf = p => X() && p.xsys ? p.xsys : p.sys;
+  H.gname = g => X() && g.xname ? g.xname : g.name;
+  H.groupsNow = () => H.groups.filter(g => X() || !g.x);
+  H.viewsNow = () => [{ id: 'organs', name: 'All organs', icon: '\u{1FAC0}', groups: ['brain', 'chest', 'blood', 'digest', 'clean'] }]
+    .concat(H.groupsNow().map(g => ({ id: g.id, name: H.gname(g), icon: g.icon, groups: [g.id] })));
+  H.levelParts = () => H.parts.filter(H.inLevel);
+  H.partsOf = viewId => {                               // parts drawn in a view: back parts first, so front parts sit on top
+    const v = H.viewsNow().find(x => x.id === viewId) || H.viewsNow()[0];
+    const list = H.levelParts().filter(p => v.groups.indexOf(H.sysOf(p)) >= 0 && !(v.id === 'organs' && p.noall));
+    return list.filter(p => p.back).concat(list.filter(p => !p.back));
+  };
+  H.groupOf = p => H.groups.find(g => g.id === H.sysOf(p));
+  H.reindex();
 })();
