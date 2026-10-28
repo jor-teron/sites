@@ -1,4 +1,5 @@
-/* Image Gen gallery: IndexedDB 'imagegen-v1', store 'images' {id, ts, prompt, model, w, h, steps, blob}. Keeps the newest 20. */
+/* Image Gen gallery: IndexedDB 'imagegen-v1', store 'images' {id, ts, prompt, model, w, h, steps, blob,
+   kind?: 'edit'|'up', src?: start-photo blob (edit), from?: source id (up)}. Keeps the newest 20. */
 window.IGStore = (function () {
   const MAX = 20;
   let dbp = null;
