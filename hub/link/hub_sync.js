@@ -70,7 +70,7 @@
   function emit() { fns.slice().forEach((f) => { try { f(); } catch (_) { /* ignore */ } }); }
   const myName = () => (window.SharedLinkDevices ? SharedLinkDevices.name() : 'Device');
   function mode() {
-    if (window.__hubRemote) return 'phone';
+    // if (window.__hubRemote) return 'phone';   // (before H53: a joined device was always Phone)
     return window.HubMode && window.HubMode.mode === 'desktop' ? 'desktop' : 'phone';
   }
   const clean = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, n || 40);

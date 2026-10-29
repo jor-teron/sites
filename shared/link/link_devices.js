@@ -8,6 +8,18 @@
   H19: id() = a permanent random device id ('d-' + 12 chars), created once and saved in
   localStorage 'shared-link-device-id'. Chat uses it as the sender (from). Two tabs of the
   same browser share it (same device) and both show those messages as "You".
+  H50a (Jor): new 16-char id format 'hub-' + 8 random + '-' + 3 from the clock, lowercase [a-z0-9],
+  e.g. hub-k3x9p0qa-m2f (regex ^hub-[a-z0-9]{8}-[a-z0-9]{3}$). Random part: crypto.getRandomValues with
+  rejection sampling (bytes >= 252 dropped, so every one of the 36 characters is equally likely; no modulo
+  bias); clock part: the last 3 characters of Date.now().toString(36). A device that still has an old
+  'd-…' id is converted ONCE on first load: the new id goes to 'shared-link-device-id', the old one to
+  'shared-link-device-id-old' (kept, never deleted; a comma list, max 5), so oldIds() / isMe(id) still know it and Pooh Chat
+  keeps showing this device's old messages as "You". The id is per browser and must never be copied or
+  synced to another device (two devices would become clones): it is not a 'sites-hub.*' key, so the Hub
+  profile, export file and H29 sync never carry it (hub_profile.js collect() only reads 'sites-hub.*' and
+  the listed app keys). Clearing browser data makes a new id (the device then looks new to the others).
+  API: id(), oldIds() → [old ids], isMe(id) → true for the current or an old id of this device,
+  ID_RE (the new format).
 */
 (function () {
   'use strict';
@@ -31,17 +43,58 @@
 
   var ID_KEY = 'shared-link-device-id';
   var memId = '';
-  function id() {
-    var v = '';
-    try { v = localStorage.getItem(ID_KEY) || ''; } catch (_) { /* blocked */ }
-    if (/^d-[a-z0-9]{6,}$/.test(v)) return v;
-    if (memId) return memId;
+  // (before H50a)
+  // function id() {
+  //   var v = '';
+  //   try { v = localStorage.getItem(ID_KEY) || ''; } catch (_) { /* blocked */ }
+  //   if (/^d-[a-z0-9]{6,}$/.test(v)) return v;
+  //   if (memId) return memId;
+  //   var r = '';
+  //   try { var a = new Uint8Array(9); crypto.getRandomValues(a); a.forEach(function (x) { r += (x % 36).toString(36); }); } catch (_) { r = Math.random().toString(36).slice(2, 11); }
+  //   memId = 'd-' + r + Date.now().toString(36).slice(-3);
+  //   try { localStorage.setItem(ID_KEY, memId); } catch (_) { /* blocked: per-page id */ }
+  //   return memId;
+  // }
+  /* H50a: new format + one-time migration of an old 'd-…' id */
+  var OLD_KEY = 'shared-link-device-id-old';
+  var ID_RE = /^hub-[a-z0-9]{8}-[a-z0-9]{3}$/;
+  var OLD_RE = /^d-[a-z0-9]{6,}$/;
+  function rand8() {
     var r = '';
-    try { var a = new Uint8Array(9); crypto.getRandomValues(a); a.forEach(function (x) { r += (x % 36).toString(36); }); } catch (_) { r = Math.random().toString(36).slice(2, 11); }
-    memId = 'd-' + r + Date.now().toString(36).slice(-3);
-    try { localStorage.setItem(ID_KEY, memId); } catch (_) { /* blocked: per-page id */ }
+    try {
+      while (r.length < 8) {
+        var a = new Uint8Array(16);
+        crypto.getRandomValues(a);
+        for (var i = 0; i < a.length && r.length < 8; i++) if (a[i] < 252) r += (a[i] % 36).toString(36);   // 252 = 7 × 36: no bias
+      }
+    } catch (_) {
+      while (r.length < 8) r += Math.random().toString(36).slice(2);   // very old browser without crypto
+      r = r.slice(0, 8);
+    }
+    return r;
+  }
+  function clock3() { var c = Date.now().toString(36); return ('000' + c).slice(-3); }
+  function makeId() { return 'hub-' + rand8() + '-' + clock3(); }
+  function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch (_) { return ''; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (_) { return false; } }
+  function id() {
+    var v = lsGet(ID_KEY);
+    if (ID_RE.test(v)) return v;
+    if (memId) return memId;
+    if (OLD_RE.test(v)) {
+      // one-time migration: keep the old id first (another tab may convert at the same moment; the last
+      // write wins and every later id() call re-reads the key, so all tabs settle on one id).
+      // A page still running a cached pre-H50a link_devices.js could write a fresh 'd-…' id once more;
+      // that one is added too (list, newest last, max 5), so its chat messages also stay "You".
+      var olds = oldIds();
+      if (olds.indexOf(v) < 0) { olds.push(v); lsSet(OLD_KEY, olds.slice(-5).join(',')); }
+    }
+    memId = makeId();
+    if (lsSet(ID_KEY, memId)) { var back = lsGet(ID_KEY); if (ID_RE.test(back)) memId = back; }   // blocked storage: per-page id
     return memId;
   }
+  function oldIds() { return lsGet(OLD_KEY).split(',').filter(function (x) { return OLD_RE.test(x); }); }   // comma list
+  function isMe(x) { x = String(x || ''); return !!x && (x === id() || oldIds().indexOf(x) >= 0); }
 
   function setName(n) {
     n = String(n || '').trim().slice(0, 40);
@@ -54,5 +107,7 @@
     return name();
   }
 
-  window.SharedLinkDevices = { id: id, name: name, setName: setName, guess: guess };
+  id();   // H50a: convert an old 'd-…' id on first load (not only when Chat first asks)
+  // window.SharedLinkDevices = { id: id, name: name, setName: setName, guess: guess };   // (before H50a)
+  window.SharedLinkDevices = { id: id, oldIds: oldIds, isMe: isMe, ID_RE: ID_RE, name: name, setName: setName, guess: guess };
 })();

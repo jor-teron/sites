@@ -9,6 +9,10 @@
  * AH1-F1: Home button (key 'homeBtn', '' = Home screen (default) | 'apphub' = App Hub; Hub __hubHome:
  * Phone mode Home button only. H6-B1: the Desktop Show desktop button always just minimises / restores).
  * H7: "Show Files on the desktop" (key 'showFiles', default on, '0' = off; Hub hub_prefs.js + hub_drives.js apply it live).
+ * H52: the busy meter switch moved to the new Hub bar section (sec_hubbar.js, same key 'trayMeter'); the Taskbar
+ *   heading here now just points there (kept below as comments).
+ * H53: a device joined to a Hub (Connect QR / join code) follows the choice too (it used to be forced into Phone);
+ *   the note says so, and what Auto does there (Desktop on a big screen, no mouse needed).
  */
 (function () {
   'use strict';
@@ -19,12 +23,25 @@
       const note = ui.note('');
       const showNow = () => {
         const h = S.hub();
+        /* (before H53)
         note.textContent = h ? 'Now: ' + (h.HubMode.isDesktop() ? 'Desktop' : 'Phone') +
           (h.HubMode.pref === 'auto' ? ' (Auto picks Desktop at ' + h.HubMode.minWidth + ' px wide or more with a mouse)' : '') :
           'Open Settings from the Hub to see the current mode.';
+        */
+        // H53: a joined device follows the choice too; Auto there needs no mouse
+        const joined = !!(h && (h.__hubRemote || h.HubMode.joined));
+        note.textContent = h ? 'Now: ' + (h.HubMode.isDesktop() ? 'Desktop' : 'Phone') +
+          (h.HubMode.pref === 'auto' ? (joined
+            ? ' (Auto on a joined device picks Desktop at ' + h.HubMode.minWidth + ' px wide or more, touch or mouse)'
+            : ' (Auto picks Desktop at ' + h.HubMode.minWidth + ' px wide or more with a mouse)') : '') +
+          (joined ? '. This device is joined to Hub ' + (h.__hubRemote && h.__hubRemote.code ? h.__hubRemote.code + ' ' : '') +
+            'and still follows your choice: Desktop and Phone both keep the remote; Disconnect is in \uD83C\uDFAE Devices on the Hub bar.' :
+            '. A device joined to another Hub (Connect QR or join code) follows your choice too.') :
+          'Open Settings from the Hub to see the current mode.';
       };
       const mode = ui.choice([
-        { value: 'auto', label: 'Auto', hint: 'Windows on a big screen with a mouse, else Phone' },
+        // { value: 'auto', label: 'Auto', hint: 'Windows on a big screen with a mouse, else Phone' },   // (before H53)
+        { value: 'auto', label: 'Auto', hint: 'Windows on a big screen with a mouse (joined device: big screen, touch is fine), else Phone' },   // H53
         { value: 'desktop', label: 'Desktop', hint: 'Apps open in windows with a taskbar' },
         { value: 'phone', label: 'Phone', hint: 'One app at a time, full screen' }
       ], S.get('wmMode', 'auto'), (v) => {
@@ -42,8 +59,15 @@
       // H7: the Files icons on the Desktop-mode home screen (default on; off = just the wallpaper and the QR / link tiles)
       const showFiles = ui.switch('Show Files on the desktop', 'Drive icons on the left of the Desktop home screen. Files stays in the Start menu and App Hub',
         S.get('showFiles') !== '0', (on) => S.set('showFiles', on ? '' : '0'));
+      /* H52: moved to Settings → Hub bar (sec_hubbar.js)
       const meter = ui.switch('Busy meter in the taskbar', 'A small graph by the clock: how busy the Hub is (an estimate). Click it for System Monitor',
         S.get('trayMeter') === '1', (on) => S.set('trayMeter', on ? '1' : ''));
+      */
+      const barLink = ui.el('button', 'tap', 'Hub bar icons ›');   // H52
+      barLink.type = 'button';
+      barLink.id = 'to-hubbar';
+      barLink.appendChild(ui.el('small', '', 'Show or hide each taskbar item (Search, Pooh, Update, clock, busy meter…)'));
+      barLink.addEventListener('click', () => Settings.open('hubbar'));
       // Screen saver: the Hub (HubSaver) listens for the storage event; also tell it directly if reachable
       const saverHub = () => {
         for (const w of [window.parent, window.top]) {
@@ -104,9 +128,12 @@
       const HOME_OLD = 'This Hub window is still running an older build: reload the Hub (Update ready) and the Home button will open App Hub.';
       const hubHasHome = () => { try { return !window.parent || window.parent === window || typeof window.parent.__hubHome === 'function'; } catch (_) { return true; } };
       const homeNote = ui.note(HOME_NOTE + (S.get('homeBtn') === 'apphub' && !hubHasHome() ? ' ' + HOME_OLD : ''));
+      // pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home screen'), showFiles, ui.title('Home button (Phone mode)'), home,
+      //   homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), meter,
+      //   ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev);   // (before H52)
       pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home screen'), showFiles, ui.title('Home button (Phone mode)'), home,
-        homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), meter,
-        ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev);
+        homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), barLink,
+        ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev);   // H52: Taskbar → link to Hub bar
       showNow();
     }
   });

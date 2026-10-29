@@ -10,7 +10,7 @@
  *   settings, notification timeout, ...) without the 'sites-hub.' prefix. JSON values (favorites) are stored
  *   as JSON so the file stays readable.
  * Never in the file: sites-hub.keys (API keys, H28), sites-hub.google (sign-in tokens), phonekeyRooms,
- *   caches / per-session state (startList, lastRefresh, wmSession, lastApp, updTried, fromCat, fromLab),
+ *   caches / per-session state (startList, lastRefresh, wmSession, lastApp, updTried, fromCat, fromLab; H52: lastBuild, lastUpdated),
  *   this module's own keys (profile*), any name that looks like a key / token / secret, and any value that
  *   looks like an API key or token. The same filter runs again when a file is loaded.
  * H30.5 Where: Settings → About → Profile → 'Save profile to' ticks any of Google Drive and every connected
@@ -102,7 +102,8 @@
   const EXCLUDE = new Set(['keys', 'google', 'phonekeyRooms', 'startList', 'lastRefresh', 'wmSession', 'lastApp',
     'updTried', 'fromCat', 'fromLab', 'profileAt', 'profileSaved', 'profileLoaded', 'profileDrive', 'profileKeys',
     'profileTargets', 'profileGdrive',   // H30.5: per-device places + Drive folder id
-    'syncUndo', 'keysUndo']);   // H29.3: this device's Undo last sync backup (never in the profile, never synced)
+    'syncUndo', 'keysUndo',   // H29.3: this device's Undo last sync backup (never in the profile, never synced)
+    'lastBuild', 'lastUpdated']);   // H52: this device's running build + when it arrived (hub_update.js)
   const K_UNDO = P + 'syncUndo';   // H29.3
   const K_KEYS = P + 'profileKeys', K_STORE = P + 'keys';   // H30.3
   const KEY_NAME = /key|token|secret|passw|auth|cred|cookie/i;
@@ -752,15 +753,19 @@
    *   shared  : theme, accent, motion, wallpaper, favorites, notifyTimeout, files*, profileEvery, ... and every
    *             app setting (System / Media / Connectivity / Tools / Office apps)
    *   desktop : the Desktop-mode layout (taskbar, title bar, windows, snapping, workspaces, desktop icons,
-   *             Start hover, tray meter, clock screen saver)
+   *             Start hover, tray meter, clock screen saver, H52 Hub bar switches bar*)
    *   phone   : the Phone-mode layout (Home button target)
    *   Never synced: wmMode (each device's own Screen mode choice; a phone must not be switched to Desktop).
    * Keys are never part of a sync payload (exportData({ keys: false }); diffData ignores "keys"). (H29.1)
    * H29.2: keys are, when the sender ticks 'Include API keys' (exportData({ keys: true })) and the receiver
    * asks diffData for them ({ keys: true }); they form their own 'keys' group with masked values only. */
   const SYNC_GROUPS = {
+    // desktop: ['taskPos', 'taskH', 'titleH', 'openMax', 'startHover', 'showFiles', 'trayMeter', 'hoverFocus',
+    //   'snapEdges', 'snapMagnet', 'snapMagnetPx', 'workspaces', 'saverIdle', 'saverSec'],   // (before H52)
     desktop: ['taskPos', 'taskH', 'titleH', 'openMax', 'startHover', 'showFiles', 'trayMeter', 'hoverFocus',
-      'snapEdges', 'snapMagnet', 'snapMagnetPx', 'workspaces', 'saverIdle', 'saverSec'],
+      'snapEdges', 'snapMagnet', 'snapMagnetPx', 'workspaces', 'saverIdle', 'saverSec',
+      // H52: Settings → Hub bar switches (Desktop-mode taskbar)
+      'barShowDesk', 'barSearch', 'barTasks', 'barWorkspaces', 'barOsk', 'barPooh', 'barDevices', 'barUpdate', 'barClock'],
     phone: ['homeBtn'],
   };
   const SYNC_SKIP = new Set(['wmMode']);

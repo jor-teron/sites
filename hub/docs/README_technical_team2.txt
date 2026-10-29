@@ -1450,3 +1450,188 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   Note from testing: Search -> Settings was checked with a fresh Settings window; with Settings
   already open on a hash the test had set by hand, the reused window did not move (not H29.3 code,
   left as is). Real phone <-> PC and a real PC folder not tested: Jor to try once on real devices.
+
+2026-10-28 IST, H50a (Team 2, week 2): New 16-char Hub device ID (hub-xxxxxxxx-xxx).
+  First step of H50 (Hub mesh): the mesh uses the existing H19 device id, in Jor's new format.
+  Format: 'hub-' + 8 random + '-' + 3 clock = 16 chars, lowercase [a-z0-9], ^hub-[a-z0-9]{8}-[a-z0-9]{3}$,
+    e.g. hub-k3x9p0qa-m2f. Random: crypto.getRandomValues bytes, a byte >= 252 is dropped (252 = 7 x 36)
+    so every character is equally likely (no modulo bias); Math.random only when crypto is missing.
+    Clock: last 3 chars of Date.now().toString(36) (wraps every ~46.7 s; only lowers clash odds).
+  Keys: shared-link-device-id (current id), shared-link-device-id-old (comma list of old 'd-...' ids,
+    newest last, max 5; never deleted). Migration: link_devices.js calls id() once at load; an old
+    'd-...' value is added to the -old list and a new id written; every id() call re-reads the key, so
+    two tabs converting at once settle on the last write. A page still running a cached pre-H50a
+    link_devices.js would not accept the new id and writes a fresh 'd-...' one; the next new page
+    converts it again and remembers it too (so chat 'You' still holds). Pages loading the file with
+    an old ?v= (Apps bot's connectivity apps, photo editor, OCR, paper scan, paper keyboard, filedrop)
+    get the new file when their HTTP cache expires (GitHub Pages ~10 min); Settings and Controller now
+    use ?v=20261028h50a.
+  API SharedLinkDevices: id(), oldIds() -> [ids], isMe(id) -> current or old id of this device, ID_RE.
+  link_chat.js: isDev accepts 'd-' and 'hub-'; isMine(m) = SharedLinkDevices.isMe(m.from) (fallback
+    m.from === id()). Old lines kept as comments.
+  Never synced: the id is not a 'sites-hub.*' key, so HubProfile.collect / exportData / H29 sync never
+    carry it (tested: id and key name absent from exportData({}), exportData({what:'everything',
+    keys:true}) and collect()). Two devices with one id would be clones; the mesh (H50) relies on this.
+  Screen Wall (apps/connectivity/screen-wall, Apps bot, not edited): SWSave.dev() returns
+    SharedLinkDevices.id() and uses it only as an opaque string (<= 40 chars) for the roster and the
+    host's cells:{<dev>:{r,c}} layout. Works with the new format; after the one-time conversion a
+    display's saved cell (keyed by its old d- id) is not found, so the host places it again once.
+  Bump 20261028j / v106 -> 20261028k / hub-shell-v107 (hub_bump.py --release H50a, --check OK).
+  Playwright (system Chrome, real pages, no stubs): H50a 22/22 (fresh id format + 16 chars, stored,
+    clock part, stable across reload, second tab same id, 40 regenerated ids valid + unique, id not in
+    profile export / sync payload, migration from d-k3x9p0qa7m2f, old id kept + oldIds + isMe, Pooh Chat
+    standalone shows the old message as You and others as received, migration once, stale d- id
+    converted again with both kept, Hub page same id + isMine, new message uses new id, Screen Wall
+    dev() = new id, no console errors) + H29.1 40/40 + H29.2 45/45 + H29.2b 30/30 + H29.3 40/40.
+
+2026-10-29 IST, H50 (Team 2, week 2): Hub mesh core: one shared connection per Connect Code.
+  Files: shared/link/hub_mesh.js (new, window.HubMesh), hub/link/hub_meshlink.js (new, Hub glue),
+    hub.html (both loaded after hub_sync.js), hub/update/hub_sw.js (precache both),
+    apps/system/settings/sec_devices.js (Hub mesh list in Connected devices; ?v=20261028h50) +
+    settings.css (.mesh-*), shared/link/README.md. No Apps bot file edited.
+  Peers: device peer 'jtsites-' + code + '-mesh-' + deviceId (H50a id); lobby peer
+    'jtsites-' + code + '-mesh-0', a second Peer opened only by the device holding the lobby (the lobby
+    device talks to itself in-process). The PeerJS broker's unavailable-id is the lock: one holder.
+  Start: hub_meshlink.js check() (SharedLink status / open / close, every 3 s, 500 ms after load):
+    role 'host' with a live code peer, or role 'join' and connected -> HubMesh.start(code,
+    {preferLobby: host && Desktop mode}); stop only when the link is really off (no role / no code /
+    host peer gone / hub-mesh-off = '1'). A phone that lost the PC keeps its mesh.
+    preferLobby: claim -0 at once. Others try to join -0 first; no answer in 5 s -> takeover logic
+    with rank >= 1 (so a PC that is starting wins).
+  Join: member dials -0 with metadata {kind:'mesh', v:1, dev}; sends hello {name, mode, apps, site}.
+    Lobby checks: conn.peer = 'jtsites-<code>-mesh-' + dev and dev matches metadata, site = its
+    location.host (weak), hooks.approveJoin(hello, peerId), roster size <= 32 (offline entries older
+    than 10 min pruned). Then welcome {roster} to the newcomer and roster to all. joinOrder = next
+    number, kept for a returning device. Lobby control channel '_mesh': welcome, roster, hb, bye
+    {reason: site | denied | full} (refused state, no retry until start() again), info (name / mode /
+    apps changed: HubMesh.refresh(), on hub-wm-mode / hub-device-name / storage).
+  Direct links: every online non-relayed pair, the smaller deviceId dials (metadata {kind:'mesh-peer'}).
+    Relay: online devices sorted lobby first, then joinOrder; the first 8 are direct, the rest are
+    marked relay and only talk through the lobby. Broadcast = direct to every direct peer + one copy
+    via the lobby with skip:[already reached], the lobby forwards to the rest (each once, deduped by
+    message id, LRU 600).
+  Liveness: hb every 2 s on every link; a link silent 6 s is dropped. Lobby lost (closed / silent 6 s /
+    no welcome): rank the living devices (me + direct peers heard within 6 s, not the old lobby) by
+    joinOrder; wait rank x 3 s + random 0-1.5 s, then claim -0. unavailable-id -> someone won, join
+    it. New lobby: term + 1, everyone offline until their hello, joinOrders kept; a hello with a newer
+    term makes the lobby go above it. Members accept welcome / roster only with term >= theirs.
+    Old PC returning: joins as a normal device (its preferLobby claim gets unavailable-id), keeps #1.
+  Envelope {v:1, ch, from, to ('*' or deviceId), t, term, id, data}. accept(): shape (v, ch regex
+    /^[a-z][a-z0-9-]{0,31}$/ or '_mesh', ids /^hub-.../ ), size <= 240 KiB UTF-8 JSON, from = the
+    conn's device (direct links; via lobby the lobby vouches), rate 60/s burst 120 per sender, then
+    hooks.verify, then term < mine -> drop (stats.dropTerm). Data with a newer term raises mine.
+    Known trade-off: during a takeover, direct messages from a device still on the old term are
+    dropped by devices already on the new one (a few seconds).
+  API: start(code, {preferLobby, name, mode}) -> Promise(me), stop(), me(), peers(), roster(),
+    on/off('peers'|'lobby'|'roster'|'status'), channel(name) -> {send(to, data) -> {ok, via|reason},
+    broadcast(data), on(fn(data, from, env)) -> unsubscribe, peers}, setAppIdentity(app, obj)
+    (localStorage 'hub-mesh-id-<app>', max 2 KB, shown in roster.apps), appIdentity(app), refresh(),
+    isLobby(), term(), lobbyId(), state(), stats(), hooks, LIMITS. Test helpers _env / _raw.
+    send reasons: stopped, to, size, rate, offline.
+  Settings > Devices > Connected devices: new 'Hub mesh' list under the SharedLink list (HubMesh.roster(),
+    textContent only, repaints on roster / peers / lobby / status + every 5 s): name, Lobby, This
+    device, Relayed, Desktop / Phone mode, join #, Apps: ..., Online / Offline; note = code, term, state.
+  Unchanged: controller / gamepad, H29 sync, Pooh Chat, file transfer keep SharedLink. Seen in tests
+    with the mesh off too (pre-existing, not H50): the PC controller keeps one SharedLink phone at a
+    time (hub-controller attachConn closes the older link), so two phones take turns on SharedLink;
+    on the mesh both stay online.
+  Open security risks (for the security talk, not fixed in H50; hooks left: approveJoin, sign, verify):
+    1. Anyone who knows the code can join; the 4-digit code is brute-forceable (10,000 values).
+    2. No join approval (approveJoin allows all) and no allow-list of known devices.
+    3. Device ids are claimable on the public PeerJS broker: someone can register another device's
+       mesh peer id while it is away, or claim -0 first and act as the lobby.
+    4. A malicious lobby can forge the roster, drop or change relayed messages, mark devices relay.
+    5. The lobby sees all relayed traffic (devices past 8 and broadcast copies).
+    6. No end-to-end signing or encryption beyond WebRTC DTLS; 'from' is only checked per link.
+    7. The site check (location.host in hello) is self-reported and can be faked.
+    8. DoS: hello / message floods (rate limit per sender only), roster fill to 32, takeover storms by
+       claiming -0.
+    9. Identity data (name, mode, app identities) is visible to every device in the mesh.
+    10. Term numbers are trusted: a device can send a huge term and reset others' view.
+    11. Messages are JSON from other devices: apps must keep showing them as text only.
+  Screen Wall: not edited. H50 changes nothing it uses (SharedLink, SharedLinkDevices.id()); the only
+    impact is still the H50a one-time re-place of a display. Moving it onto the mesh is H50d (later).
+  Tests: this box's managed Chrome policy (WebRtcIPHandling disable_non_proxied_udp) blocks WebRTC
+    UDP, so real PeerJS DataChannels never open here (checked: no ICE candidates even in one page).
+    So: (1) real PeerJS cloud broker 4/4 (real PeerJS 1.5.4, 3 simultaneous -0 claims -> exactly one
+    open + 2 unavailable-id, HubMesh preferLobby claims the lobby, no errors); (2) mesh core 35/35
+    with a PeerJS stand-in (same Peer / DataConnection API, Python broker between contexts; real
+    hub_mesh.js): roster on 4, joinOrder, lobby tag, modes, H50a ids, full mesh, app identity, direct
+    + broadcast, oversize send + raw 245 KB drop, spoofed from, takeover by lowest joinOrder (~6.7 s),
+    single winner, term 2, old-term drop, returning PC normal + no flapping, 9 devices with 1 relayed,
+    relay broadcast / direct, rate limit, no console errors; (3) Hub integration 20/20 (stand-in for
+    every Peer, real Hub pages): PC Desktop holds lobby, two ?join phones, roster 3 online, Settings
+    Devices roster (screenshot), PC closes -> phone takes over at term 2, no console errors.
+    H29.1 40/40, H29.2 45/45, H29.2b 30/30, H29.3 40/40, H50a 22/22.
+  Bump 20261028k / v107 -> 20261029a / hub-shell-v108 (hub_bump.py --release H50, --check OK).
+
+2026-10-29 IST, H52 (Team 2, week 2): Hub bar section in Settings and auto update every N days.
+  Hub bar items (Desktop taskbar, hub/wm): Start #wm-start (always shown, locked switch), Show Desktop
+    #wm-showdesk, Search #wm-search (H48b), Window buttons .wm-tasks, Workspaces .wm-ws, OSK
+    .wm-osk-btn (hub_loader stub / osk.js), Pooh #chat-btn, Devices #ctrl-btn, Update #upd-btn (R50),
+    Busy meter (hub_traymeter.js, own key trayMeter, default off as before), Clock .wm-clock.
+    There is no Battery item in the Hub bar. Phone-remote extras (#rm-fs, #rm-set) are Phone only: no switch.
+  Keys: sites-hub.barShowDesk / barSearch / barTasks / barWorkspaces / barOsk / barPooh / barDevices /
+    barUpdate / barClock. Default on except barPooh and barUpdate; stored '0' = off (default-on
+    items), '1' = on (default-off items), '' = default. HubPrefs.BAR + HubPrefs.barOn(key).
+  Live apply: SettingsStore.set -> parent HubPrefs.apply() + postMessage {type:'hub-prefs', key};
+    other tabs via the storage event. apply() toggles html.hub-bar-off-<item>; wm.css hides with
+    display:none !important only under #wm-taskbar (Window buttons: visibility:hidden, keeps space).
+    Phone mode moves .header-right back to the top bar, so no rule matches there (checked).
+  Update dot: showNote() also sets html.hub-upd-ready; html.hub-bar-off-update.hub-upd-ready
+    #wm-taskbar #wm-start::after = 8 px accent dot.
+  Settings: apps/system/settings/sec_hubbar.js (new, after Desktop), Desktop's Busy meter switch
+    commented out and replaced by a "Hub bar icons ›" link; taskbar empty-area menu has
+    "Hub bar settings". H29: bar* keys added to SYNC_GROUPS.desktop; updEvery in shared;
+    lastBuild / lastUpdated in EXCLUDE (never synced).
+  Auto update before H52 (R16c, indicator from R50): due once a day at 09:00 browser-local time, or on
+    the next open after a missed 09:00 (sites-hub.lastRefresh), hourly timer steps; refresh re-fetches
+    the shell through the service worker and reloads quietly only when idleNow() (Desktop: no windows;
+    Phone: no app open), else shows the R50 #upd-btn indicator. R50 only replaced the old toast with
+    that indicator; a manual check() never reloads.
+  Auto update from H52 (hub_update.js; old due() / schedule() kept as comments): N = updEvery
+    (1 default, 7, 15, 30 days). Due when never run, or now - lastRefresh >= N x 24 h (also on load),
+    or inside the 6 AM window (06:00-06:59 local) of the first 06:00 after max(last + (N-1) days,
+    now - 1 h). N=1: every morning at 6 AM, or 24 h after the last one if 6 AM was missed. One
+    timer: first check 5 s after load, steps <= 1 h, 1 h retry after a failed run; rescheduled on
+    visibilitychange, storage (updEvery / lastRefresh) and hub-prefs key updEvery. The busy-safe
+    idleNow() rule is unchanged. On load, when BUILD differs from sites-hub.lastBuild, lastBuild and
+    lastUpdated are stored (About shows Last updated). API adds every, dueAt, due, dueRule,
+    sixAfter, tick, schedule.
+  About: "Auto update" card (#autoupdate): Auto update every, Last auto update, Next auto update,
+    Last updated (+ build). The old "Last refreshed" row is commented out.
+  Search: rows for Hub bar, each switch (hubbar/<key>, Busy meter -> hubbar/trayMeter; old Desktop
+    row commented out) and Auto update every (about/autoupdate).
+  Tests (system Chrome headless, real pages): H52 64/64 (defaults, every switch live in the bar,
+    Start locked, Update dot, reset, storage event across tabs, About card, Search rows, H29 groups,
+    rule table, fake-clock runs: 6 AM, missed 6 AM -> 24 h, on-load after 26 h, 7 days day 6 / day 7,
+    Phone mode unaffected, no console errors). H29.1 40/40, H29.2 45/45, H29.2b 30/30, H29.3 40/40,
+    H50 mesh 35/35, H50 Hub 20/20.
+  Bump 20261029a / v108 -> 20261029b / hub-shell-v109 (hub_bump.py --release H52, --check OK).
+
+2026-10-29 IST, H53 (Team 2, week 2): a joined device follows the Screen mode choice.
+  Bug: hub/wm/wm_mode.js compute() returned 'phone' whenever window.__hubRemote was set (hub_role.js:
+    ?join=CODE, or a saved 'shared-link-join-code' on a touch-primary device), whatever sites-hub.wmMode
+    said. A big tablet that had joined a PC once was stuck in Phone mode on every load.
+  Fix (old line kept as a comment): a manual 'desktop' / 'phone' always wins. Auto: not joined = unchanged
+    ((hover: hover) and (pointer: fine) + >= MIN_WIDTH, R21 hysteresis); joined = no mouse needed,
+    Desktop at >= MIN_WIDTH (1024), kept down to MIN_WIDTH - HYST (960), else Phone. HubMode.joined.
+  Joined + Desktop checked: .header-right (🎮 #ctrl-btn, #rm-fs, #rm-set) moves to the taskbar tray as
+    for any Desktop Hub (wm_taskbar placeTray); hub_remote.js dot / rejoin-on-tap unchanged; the Devices
+    pop-up (hub-controller.js remote branch, hub_linkstate.js "⏏ Disconnect from Hub", hub_panels.js
+    Join with code) opens above the taskbar (wm.css body.wm-desktop #ctrl-popover). wm.css: Hub bar
+    Devices off no longer hides 🎮 on html.hub-remote (Disconnect must stay reachable). hub.js Gamepad
+    forceFrame + tiles.js remote links: open as Desktop windows, fine. #rm-fs / #rm-set only follow
+    #app-frame (Phone single frame), so a Gamepad window in Desktop mode has no bar extras (own title bar).
+  Mode reporting: hub_sync.js mode(), hub_mesh.js myMode(), sec_devices.js myMode() no longer say 'phone'
+    for every joined device (old lines kept): roster / HubSync groups follow the real mode.
+    hub_meshlink.js desktop() untouched (only used for the host's preferLobby).
+  Settings › Desktop: Auto hint + "Now:" note (joined to Hub CODE, follows your choice, Disconnect in
+    🎮 Devices); Hub bar Devices hint says it stays on a joined device. Settings ?v=20261029h53.
+  Tests (system Chrome headless, real pages, PeerJS stand-in broker): H53 37/37 (touch emulation +
+    saved code + Desktop → Desktop, + Phone → Phone, Auto 400 px → Phone, Auto 1280 / 1366 px → Desktop,
+    hysteresis 990 / 900 / 1010 / 1280, ?join= + Desktop, not-joined tablet unchanged, mouse PC host
+    unchanged, 🎮 + Disconnect reachable with Hub bar Devices off, Disconnect works from Desktop, roster
+    shows desktop, Settings note, Gamepad window, no console errors; screenshot /workspace/h53_tablet.png).
+    H52 64/64, H29.1 40/40, H29.2 45/45, H29.2b 30/30, H29.3 40/40, H50a 22/22, H50 mesh 35/35, H50 Hub 20/20.
+  Bump 20261029b / v109 -> 20261029c / hub-shell-v110 (hub_bump.py --release H53, --check OK).

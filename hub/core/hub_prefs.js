@@ -24,9 +24,16 @@
  *                        (wm_windows.js reads the class; Settings → Windows)
  *   sites-hub.wmMode / sites-hub.startHover: read by wm_mode.js / wm_taskbar.js; a change made
  *   in Settings is passed to HubMode here.
+ *   H52 Hub bar (Settings → Hub bar, Desktop-mode taskbar only; Start is always shown):
+ *   sites-hub.barShowDesk / barSearch / barTasks / barWorkspaces / barOsk / barDevices / barClock
+ *                        '0' = hidden (default shown)                    → html.hub-bar-off-<item>
+ *   sites-hub.barPooh / barUpdate  '1' = shown (default HIDDEN)          → html.hub-bar-off-pooh / -update
+ *                        (Pooh: only the icon; Pooh Chat keeps running. Update hidden + a build waiting →
+ *                        dot on Start, html.hub-upd-ready set by hub_update.js; CSS in wm.css)
+ *   (the busy meter keeps its own key sites-hub.trayMeter, hub_traymeter.js; Settings shows it in Hub bar)
  * Live: the 'storage' event (Settings runs in another document) and a
  * {type:'hub-prefs'} postMessage from a same-origin frame both re-apply everything.
- * API: window.HubPrefs.get(key), .apply()
+ * API: window.HubPrefs.get(key), .apply(), .BAR (H52: [{ key, item, def }] the Hub bar switches), .barOn(key)
  */
 (function () {
   'use strict';
@@ -36,8 +43,24 @@
   const num = (v, ok, d) => (ok.indexOf(+v) >= 0 ? +v : d);
   const hex = (v) => (/^#[0-9a-f]{6}$/i.test(v) ? v : '');
 
+  /* H52: Hub bar items. def true = shown unless the key is '0'; def false = hidden unless the key is '1'. */
+  const BAR = [
+    { key: 'barShowDesk', item: 'showdesk', def: true },
+    { key: 'barSearch', item: 'search', def: true },
+    { key: 'barTasks', item: 'tasks', def: true },
+    { key: 'barWorkspaces', item: 'ws', def: true },
+    { key: 'barOsk', item: 'osk', def: true },
+    { key: 'barPooh', item: 'pooh', def: false },
+    { key: 'barDevices', item: 'devices', def: true },
+    { key: 'barUpdate', item: 'update', def: false },
+    { key: 'barClock', item: 'clock', def: true }
+  ];
+  const barOn = (key) => { const b = BAR.find((x) => x.key === key); if (!b) return true; const v = get(key); return b.def ? v !== '0' : v === '1'; };
+
   let lastBar = '', lastMine = '';
   function apply() {
+    // H52: Hub bar switches (classes only; wm.css hides the items inside #wm-taskbar, so Phone mode is untouched)
+    BAR.forEach((b) => root.classList.toggle('hub-bar-off-' + b.item, !barOn(b.key)));
     // sizes + taskbar position (a change re-clamps the windows: wm_windows.js listens to resize)
     const top = get('taskPos') === 'top';
     root.classList.toggle('hub-task-top', top);
@@ -88,7 +111,7 @@
     if (window.HubMode && window.HubMode.pref !== m) window.HubMode.setPref(m);
   }
 
-  window.HubPrefs = { get, apply };
+  window.HubPrefs = { get, apply, BAR, barOn };   // H52: + BAR, barOn
   apply();
   window.addEventListener('storage', (e) => { if (!e.key || e.key.indexOf(P) === 0) apply(); });
   window.addEventListener('message', (e) => {

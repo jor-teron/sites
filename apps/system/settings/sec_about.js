@@ -17,6 +17,11 @@
  *   section (sec_devices.js, #devices/device, #devices/profile, #devices/sync; old #about/… anchors redirect in
  *   settings.js). Their notes moved with them. About keeps the Hub card (release, Update, Last refreshed, Clear
  *   Cache), Contact and Feedback.
+ * H52: new "Auto update" card (#about/autoupdate) after the Hub card: "Auto update every" 1 day (default) / 7 / 15 /
+ *   30 days (key 'updEvery', '' = 1; hub_update.js re-plans live), Last auto update ('lastRefresh', moved here from
+ *   the Hub card's "Last refreshed" row), Next auto update (HubUpdate.dueAt: last + N days, or 06:00 on the morning
+ *   the interval ends, whichever is first) and Last updated ('lastUpdated' + 'lastBuild': when this device first ran
+ *   the current build).
  */
 (function () {
   'use strict';
@@ -149,12 +154,55 @@
     return a;
   }
 
+  /* ---------- H52: Auto update card ---------- */
+  const EVERY = [1, 7, 15, 30], DAY = 24 * 3600 * 1000;
+  const everyNow = () => { const n = +S.get('updEvery', '1') || 1; return EVERY.indexOf(n) >= 0 ? n : 1; };
+  /** Same rule as hub_update.js dueAt (used when Settings is opened on its own): last + n days, or the next
+   *  6 AM window (06:00 after max(last + n − 1 days, now − 1 h)), whichever is first; 0 = now. */
+  function dueAtLocal(last, n, now) {
+    if (!last) return 0;
+    const t = Math.max(last + (n - 1) * DAY, now - 3600 * 1000), d = new Date(t);
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 6, 0, 0, 0);
+    if (x.getTime() <= t) x.setDate(x.getDate() + 1);
+    return Math.min(last + n * DAY, x.getTime());
+  }
+  function autoCard(sub) {
+    const card = ui.el('section', 'card');
+    card.id = 'autoupdate';
+    card.appendChild(ui.el('h3', '', 'Auto update'));
+    card.appendChild(ui.el('p', 'opt-note', 'The Hub updates itself when the last auto update is older than the interval below, ' +
+      'or at 6 AM on the morning the interval ends (every morning for 1 day), whichever comes first. It only reloads when no window or app is open; ' +
+      'otherwise it waits, and Update (or a dot on Start) shows that a new build is ready.'));
+    const hubUpd = () => { const h = S.hub(); return h && h.HubUpdate ? h.HubUpdate : null; };
+    const lastAuto = () => { try { return +localStorage.getItem('sites-hub.lastRefresh') || 0; } catch (_) { return 0; } };
+    const nextRow = row('Next auto update', '\u2026');
+    const paintNext = () => {
+      const u = hubUpd(), n = everyNow(), last = lastAuto();
+      const now = Date.now(), at = u && u.dueAt ? u.dueAt(last, n, now) : dueAtLocal(last, n, now);
+      nextRow.lastChild.textContent = IS_FILE ? '\u2014' : (at <= now ? 'Now (when the Hub is idle)' : niceTime(at));
+    };
+    const pick = ui.choice(EVERY.map((n) => ({ value: n, label: n === 1 ? '1 day' : n + ' days' })), everyNow(), (v) => {
+      S.set('updEvery', +v === 1 ? '' : String(v));
+      try { const u = hubUpd(); if (u && u.schedule) u.schedule(); } catch (_) { /* older Hub */ }
+      paintNext();
+    });
+    pick.id = 'upd-every';
+    let upd = 0, build = '';
+    try { upd = +localStorage.getItem('sites-hub.lastUpdated') || 0; build = localStorage.getItem('sites-hub.lastBuild') || ''; } catch (_) { /* blocked */ }
+    card.append(ui.el('h4', '', 'Auto update every'), pick,
+      row('Last auto update', niceTime(lastAuto())), nextRow,
+      row('Last updated', upd ? niceTime(upd) + (build ? ' (build ' + build + ')' : '') : 'Never'));
+    paintNext();
+    if (sub === 'autoupdate') setTimeout(() => card.scrollIntoView({ block: 'start' }), 50);
+    return card;
+  }
+
   /* H29.2b: profileCard (H30.x), syncCard (H29.1 / H29.2) and deviceCard (H46) moved to sec_devices.js with
    * their constants (STATE_TEXT, EVERY_OPTS, everyText, TSTATE, GROUP_NAME, WHAT_OPTS, short, NAME_KEY). */
 
   Settings.add({
     id: 'about', title: 'About', icon: '\u2139\uFE0F',
-    render(pane) {
+    render(pane, sub) {   // H52: + sub ('autoupdate')
       const card = ui.el('section', 'card ver-card');
       const head = ui.el('div', 'ver-head');
       const img = document.createElement('img'); img.src = 'settings_icon.png'; img.alt = '';
@@ -174,7 +222,8 @@
       card.append(btn, out);
       let last = 0;
       try { last = +localStorage.getItem('sites-hub.lastRefresh') || 0; } catch (_) { /* blocked */ }
-      card.appendChild(row('Last refreshed', niceTime(last)));
+      // card.appendChild(row('Last refreshed', niceTime(last)));   // H52: now 'Last auto update' in the Auto update card
+      void last;
       const clr = ui.el('button', 'big-btn', 'Clear Cache');
       clr.type = 'button';
       clr.id = 'clear-cache';
@@ -199,7 +248,8 @@
         link(REPO + '/issues', 'GitHub Issues', 'Report a problem or suggest something'));
       // pane.append(card, deviceCard(sub), profileCard(sub), contact, fb);   // H46: Device name after the About card
       // pane.append(card, deviceCard(sub), profileCard(sub), syncCard(sub), contact, fb);   // H29.1: Send profile after Profile
-      pane.append(card, contact, fb);   // H29.2b: Device name / Profile / Send profile moved to Devices (sec_devices.js)
+      // pane.append(card, contact, fb);   // H29.2b: Device name / Profile / Send profile moved to Devices (sec_devices.js)
+      pane.append(card, autoCard(sub), contact, fb);   // H52: + Auto update
     }
   });
 })();

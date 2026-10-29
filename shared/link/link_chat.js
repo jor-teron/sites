@@ -7,6 +7,9 @@
     H19: from = SharedLinkDevices.id() (permanent per browser). No mine flag is stored;
     isMine(m) is m.from === this device id. Legacy rows (from not 'd-…') count as mine only
     if an old build stored them here with mine:true, else they show as received.
+    H50a: device ids are now 'hub-xxxxxxxx-xxx' (old 'd-…' ids are converted once, link_devices.js).
+    isMine(m) uses SharedLinkDevices.isMe(m.from): the current id OR this device's old id, so messages
+    sent before the conversion still show as "You". Both id formats count as device ids.
   - init(sendFn): sendFn(msg) puts a message on the wire. Host (Hub) sends to all;
     a joined device sends with bcast:true so the Hub re-broadcasts it.
   - add(msg) stores an incoming message (dedupe by id) and fires on('add').
@@ -35,10 +38,15 @@
   }
 
   function myDeviceId() { return window.SharedLinkDevices && SharedLinkDevices.id ? SharedLinkDevices.id() : 'd-local'; }
-  function isDev(f) { return /^d-/.test(String(f || '')); }
+  // function isDev(f) { return /^d-/.test(String(f || '')); }   // (before H50a)
+  function isDev(f) { return /^(d|hub)-/.test(String(f || '')); }   // H50a: old 'd-…' and new 'hub-…' ids
   function isMine(m) {
     if (!m) return false;
-    if (isDev(m.from)) return m.from === myDeviceId();
+    // if (isDev(m.from)) return m.from === myDeviceId();   // (before H50a)
+    if (isDev(m.from)) {
+      var D = window.SharedLinkDevices;
+      return D && D.isMe ? D.isMe(m.from) : m.from === myDeviceId();   // H50a: current or old id of this device
+    }
     return !!m.mine;   // legacy row (before H19): only what this browser stored as its own
   }
 
