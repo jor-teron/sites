@@ -228,3 +228,15 @@ html.hub-glass #hub-notify .hn-card, html.hub-glass .hn-more {
 html.hub-glass .hn-text, html.hub-glass .hn-meta, html.hub-glass .hn-close { color: var(--gl-muted); }
 html.hub-glass .hn-close:hover { background: var(--gl-hover); color: #fff; }
 html.hub-glass .hn-thumb { background: rgba(255, 255, 255, 0.10); }
+
+/* ---------- H66: 🔔 Notification Centre side panel (hub/viewer/hub_notifcenter.css) ----------
+   .hub-side-panel already gets the glass --hp-* colours above; this adds the blur / gloss of #chat-panel. */
+html.hub-glass #notif-panel {
+  background-image: var(--gl-gloss-soft);
+  -webkit-backdrop-filter: var(--gl-fx);
+  backdrop-filter: var(--gl-fx);
+  box-shadow: -18px 0 50px rgba(0, 0, 0, 0.32), inset 1px 0 0 var(--gl-line);
+}
+html.hub-glass #notif-panel .np-ico { background: rgba(255, 255, 255, 0.10); }
+html.hub-glass #notif-panel .np-x { color: var(--gl-text); }
+html.hub-glass #notif-panel .np-del:hover { color: #fff; }

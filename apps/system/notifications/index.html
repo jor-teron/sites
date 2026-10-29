@@ -1,0 +1,37 @@
+<!doctype html>
+<!--
+  Notification Centre (apps/system/notifications/index.html), H66 — every notification the Hub showed on
+  THIS device (newest first, last 100), filter by app, clear one / all, Do Not Disturb.
+  The history is localStorage 'sites-hub.notifs' and DND 'sites-hub.dnd', written by the Hub's
+  hub/viewer/hub_notifcenter.js (window.HubNotifCenter); this page reads the same keys and follows the
+  'storage' event, so it stays live. A tap asks the Hub to run the notice's action / open its app.
+  Opens as a window in Desktop mode, full screen in Phone mode. Files: nc.js, nc.css, README.md.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notification Centre</title>
+  <link rel="stylesheet" href="nc.css?v=20261029s" />
+  <script src="../../../shared/theme/hub_theme.js?v=20261026h22"></script>
+</head>
+<body>
+  <header class="top">
+    <h1><img src="notifications_icon.png" alt="" /> Notification Centre</h1>
+    <p class="honest">Notifications shown on this device (last 100). Not synced to other devices.</p>
+  </header>
+  <main class="panel">
+    <div class="bar">
+      <label class="dnd"><input type="checkbox" id="nc-dnd" /><span class="sw"></span><span>Do Not Disturb</span></label>
+      <label class="filter">App
+        <select id="nc-filter" aria-label="Filter by app"><option value="">All apps</option></select>
+      </label>
+      <button type="button" class="btn" id="nc-clear">Clear all</button>
+    </div>
+    <p class="muted small" id="nc-dnd-note" hidden>Do Not Disturb is on: no pop-up cards. New notifications are still saved here.</p>
+    <p class="muted small" id="nc-count"></p>
+    <div class="list" id="nc-list" aria-live="polite"></div>
+  </main>
+  <script src="nc.js?v=20261029s"></script>
+</body>
+</html>

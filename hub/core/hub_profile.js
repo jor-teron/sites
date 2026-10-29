@@ -103,7 +103,9 @@
     'updTried', 'fromCat', 'fromLab', 'profileAt', 'profileSaved', 'profileLoaded', 'profileDrive', 'profileKeys',
     'profileTargets', 'profileGdrive',   // H30.5: per-device places + Drive folder id
     'syncUndo', 'keysUndo',   // H29.3: this device's Undo last sync backup (never in the profile, never synced)
-    'lastBuild', 'lastUpdated']);   // H52: this device's running build + when it arrived (hub_update.js)
+    // 'lastBuild', 'lastUpdated']);   // H52: this device's running build + when it arrived (hub_update.js)   (before H66)
+    'lastBuild', 'lastUpdated',   // H52: this device's running build + when it arrived (hub_update.js)
+    'notifs']);   // H66: this device's Notification Centre history (never saved, never synced)
   const K_UNDO = P + 'syncUndo';   // H29.3
   const K_KEYS = P + 'profileKeys', K_STORE = P + 'keys';   // H30.3
   const KEY_NAME = /key|token|secret|passw|auth|cred|cookie/i;
@@ -760,6 +762,7 @@
    *   H63: Eye comfort eyeWarm / eyeMode / eyeFrom / eyeTo and the Hub bar barEye = Shared (not listed)
    *   H64: Auto theme themeAuto / themeSunrise / themeSunset / themeOffset = Shared (not listed), with theme;
    *        a receiver in Auto rewrites theme from its own clock at once (hub_autotheme.js)
+   *   H66: the Hub bar barNotif = Shared (not listed); dnd never synced; notifs (the history) is in EXCLUDE
    *   Never synced: wmMode, H63 eyeNow (the 🌙 override); (each device's own Screen mode choice; a phone must not be switched to Desktop).
    * Keys are never part of a sync payload (exportData({ keys: false }); diffData ignores "keys"). (H29.1)
    * H29.2: keys are, when the sender ticks 'Include API keys' (exportData({ keys: true })) and the receiver
@@ -778,7 +781,9 @@
   // const SYNC_SKIP = new Set(['wmMode']);   (before H63)
   // H63: eyeNow (the 🌙 Eye comfort override for the current period) is this device's own moment, never synced;
   //   eyeWarm / eyeMode / eyeFrom / eyeTo and barEye are not listed in SYNC_GROUPS = Shared group (like theme)
-  const SYNC_SKIP = new Set(['wmMode', 'eyeNow']);
+  // const SYNC_SKIP = new Set(['wmMode', 'eyeNow']);   (before H66)
+  // H66: dnd (Notification Centre Do Not Disturb) is this device's own; barNotif is not listed = Shared (like barEye)
+  const SYNC_SKIP = new Set(['wmMode', 'eyeNow', 'dnd']);
   const SYNC_MAX_ITEMS = 2000;
   /** 'shared' | 'desktop' | 'phone' for a 'sites-hub.<name>' setting (scope 'hub') or an app key (scope 'app') */
   function groupOf(scope, name) {

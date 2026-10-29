@@ -44,6 +44,7 @@
  *                        (Pooh: only the icon; Pooh Chat keeps running. Update hidden + a build waiting →
  *                        dot on Start, html.hub-upd-ready set by hub_update.js; CSS in wm.css; H52c: dot removed)
  *   sites-hub.barEye     H63: '1' = shown (default HIDDEN), the Eye comfort 🌙, both modes → html.hub-bar-off-eye
+ *   sites-hub.barNotif   H66: '0' = hidden (default SHOWN), the Notification Centre 🔔, both modes → html.hub-bar-off-notif
  *   H63 Eye comfort keys eyeWarm / eyeMode / eyeFrom / eyeTo / eyeNow: read by hub/core/hub_eye.js (apply() calls HubEye.apply())
  *   (the busy meter keeps its own key sites-hub.trayMeter, hub_traymeter.js; Settings shows it in Hub bar)
  * Live: the 'storage' event (Settings runs in another document) and a
@@ -69,7 +70,9 @@
     { key: 'barDevices', item: 'devices', def: true },
     { key: 'barUpdate', item: 'update', def: false },
     { key: 'barClock', item: 'clock', def: true },
-    { key: 'barEye', item: 'eye', def: false }   // H63: Eye comfort 🌙 (both modes, like Pooh / Devices / Update)
+    // { key: 'barEye', item: 'eye', def: false }   // H63: Eye comfort 🌙 (both modes, like Pooh / Devices / Update)   (before H66: last item)
+    { key: 'barEye', item: 'eye', def: false },   // H63: Eye comfort 🌙 (both modes, like Pooh / Devices / Update)
+    { key: 'barNotif', item: 'notif', def: true }   // H66: Notification Centre 🔔 (both modes, default shown)
   ];
   const barOn = (key) => { const b = BAR.find((x) => x.key === key); if (!b) return true; const v = get(key); return b.def ? v !== '0' : v === '1'; };
 

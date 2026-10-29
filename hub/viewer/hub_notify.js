@@ -18,6 +18,10 @@
  *   window.hubToast(text, opts)                                             thin wrapper (old toast callers)
  * Timeout for all finished cards: localStorage 'sites-hub.notifyTimeout' in ms (default 60000, '0' = never;
  * Settings → Windows → Notification timeout), read live when a card's timer starts.
+ * H66: every notice and every finished / failed file card is also saved to the Notification Centre history
+ *   (hub/viewer/hub_notifcenter.js, window.HubNotifCenter.capture / captureFile). Do Not Disturb
+ *   (sites-hub.dnd '1'): notice() shows no card (it returns a handle with a detached node, so callers that
+ *   add buttons to card.node still work) and html.hub-dnd hides the file cards (hub_notifcenter.css).
  */
 (function () {
   'use strict';
@@ -209,6 +213,7 @@
     if (/^(image|pdf|video|audio)$/.test(c.kind) && c.url && window.HubViewer) {
       HubViewer.pushAndShow({ url: c.url, name: c.name, type: c.type, kind: c.kind });
     }
+    try { if (window.HubNotifCenter) HubNotifCenter.captureFile(c, true); } catch (_) { /* H66 history only */ }
     startTimer(c);
   }
 
@@ -220,6 +225,7 @@
     c.bar.remove();
     c.metaEl.textContent = '';
     c.metaEl.appendChild(el('span', 'bad', text || 'Failed'));
+    try { if (window.HubNotifCenter) HubNotifCenter.captureFile(c, false, text); } catch (_) { /* H66 history only */ }
     startTimer(c);
   }
 
@@ -228,6 +234,15 @@
   function notice(o) {
     if (typeof o === 'string') o = { text: o };
     o = o || {};
+    // H66: save to the Notification Centre; Do Not Disturb → no card, a quiet handle instead
+    const NC = window.HubNotifCenter;
+    let rec = null;
+    try { rec = NC && NC.capture ? NC.capture(o) : null; } catch (_) { rec = null; }
+    if (rec && rec.mute) {
+      const q = el('div', 'hn-card hn-notice hn-quiet');
+      q.appendChild(el('div', 'hn-body'));
+      return { close: () => {}, update: (t) => { try { NC.update(rec.id, t); } catch (_) { /* gone */ } }, node: q, quiet: true };
+    }
     ensureHost();
     const c = { id: 'notice-' + (++seq), name: '', kind: 'notice', left: null, timer: 0, finished: true, hover: false,
       ms: o.timeoutMs != null ? o.timeoutMs : null };
@@ -246,7 +261,8 @@
     n.addEventListener('mouseenter', () => { c.hover = true; stopTimer(c); });
     n.addEventListener('mouseleave', () => { c.hover = false; startTimer(c); });
     c.node = n;
-    c.update = (t) => { const tx = n.querySelector('.hn-text'); if (tx) tx.textContent = t; };
+    // c.update = (t) => { const tx = n.querySelector('.hn-text'); if (tx) tx.textContent = t; };   (before H66)
+    c.update = (t) => { const tx = n.querySelector('.hn-text'); if (tx) tx.textContent = t; if (rec && NC) { try { NC.update(rec.id, t); } catch (_) { /* gone */ } } };   // H66: history follows
     byId.set(c.id, c);
     cards.unshift(c);
     host.insertBefore(n, host.firstChild);

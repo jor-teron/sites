@@ -129,6 +129,7 @@ window.HUB_APP_INDEX = {
   "viewer": ["System", "apps/system/viewer/", "Viewer", "apps/system/viewer/viewer_icon.png", 0, "View pictures and videos from any Hub drive"],
   "sysmon": ["System", "apps/system/sysmon/", "System Monitor", "apps/system/sysmon/sysmon_icon.png", 0, "Live device info with CPU memory storage network and battery graphs"],
   "mesh-viewer": ["System", "apps/system/mesh-viewer/", "Mesh Viewer", "apps/system/mesh-viewer/mesh-viewer_icon.png", 0, "See this Hub's mesh network: devices online join stats and a live connection log"],
+  "notifications": ["System", "apps/system/notifications/", "Notification Centre", "apps/system/notifications/notifications_icon.png", 0, "Past Hub notifications on this device: filter by app - clear - Do Not Disturb"],
   "devbench": ["System", "apps/system/devbench/", "Device Benchmark", "apps/system/devbench/devbench_icon.png", 0, "Quick speed tests for phones TVs and PCs: CPU GPU memory and AI"],
   "terminal": ["System", "apps/system/terminal/", "Terminal", "apps/system/terminal/terminal_icon.png", 0, "Unix style command line to browse drives edit files and open Hub apps"],
   "apphub": ["System", "apps/system/apphub/", "App Hub", "apps/system/apphub/apphub_icon.png", 0, "Browse every category and app in one place"],

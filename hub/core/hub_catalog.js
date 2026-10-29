@@ -186,7 +186,7 @@ Tuner & Metronome,       tuner-metronome/,           , , Music, Microphone tuner
 Periodic Table,          periodic-table/,            , , Science, All 118 chemical elements: search - element facts - colour by category and quizzes
 Road Safety,             road-safety/,               , , Life Skills, Indian road signs - traffic lights - safe crossing game - road rules and quiz
 `,
-  "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools; R53c: D-Pad Controller listed here from Games, folder stays in hub/controller/; R54: new Disk app; T1: Terminal; AH1: App Hub; H48: Search; H69: Mesh Viewer). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
+  "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools; R53c: D-Pad Controller listed here from Games, folder stays in hub/controller/; R54: new Disk app; T1: Terminal; AH1: App Hub; H48: Search; H69: Mesh Viewer; H66: Notification Centre). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last),
 # description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
@@ -200,6 +200,7 @@ Viewer,                viewer/,          , , Files, View pictures and videos fro
 Settings,              settings/,        , , System, Wallpaper theme taskbar device name and other Hub preferences
 System Monitor,        sysmon/,          , , System, Live device info with CPU memory storage network and battery graphs
 Mesh Viewer,           mesh-viewer/,     , , System, See this Hub's mesh network: devices online join stats and a live connection log
+Notification Centre,   notifications/,   , , System, Past Hub notifications on this device: filter by app - clear - Do Not Disturb
 Device Benchmark,      devbench/,        , , System, Quick speed tests for phones TVs and PCs: CPU GPU memory and AI
 Terminal,              terminal/,        , , System, Unix style command line to browse drives edit files and open Hub apps
 App Hub,               apphub/,          , , System, Browse every category and app in one place
