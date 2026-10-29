@@ -48,6 +48,10 @@
  *   with "Invite to my code" per online device when this Hub has its own code (HubMeshLink.ownCode(): hosting,
  *   not yet paired); received invites show with Join / Dismiss (HubMeshLink.invites()). Text only. The H50
  *   Hub mesh box under Connected devices points here while this device is on 0000.
+ * H55b: both mesh notes (#mesh-note private, #pub-note public; data-state = the key) show the real link state
+ *   from HubMesh.me().joinState (linkState()): Linking… Ns (seconds into the 60 s wait), Lobby (you), Linked,
+ *   Retrying in Ns, Refused (reason), Not linked: tap Retry (gave up after 5 minutes). A Retry button
+ *   (#mesh-retry / #pub-retry → HubMesh.retry(), a fresh run) shows while retrying or given up. Redrawn every 1 s.
  */
 (function () {
   'use strict';
@@ -596,6 +600,26 @@
     return card;
   }
 
+  /* H55b: the real link state of this device's mesh (HubMesh.me().joinState), for both mesh cards */
+  function linkState(me) {
+    const clip = (v, n) => String(v == null ? '' : v).slice(0, n);
+    const secs = (ms) => Math.max(0, Math.round(ms / 1000));
+    const js = me.joinState || '';
+    if (me.lobby || js === 'lobby') return { k: 'lobby', t: 'Lobby (you)' };
+    if (js === 'linking') return { k: 'linking', t: 'Linking… ' + secs(Date.now() - (me.joinSince || Date.now())) + 's' };
+    if (js === 'linked') return { k: 'linked', t: 'Linked' };
+    if (js === 'retrying') return { k: 'retrying', t: me.retryAt ? 'Retrying in ' + Math.max(1, Math.ceil((me.retryAt - Date.now()) / 1000)) + 's' : 'Retrying…' };
+    if (js === 'refused' || me.state === 'refused') return { k: 'refused', t: 'Refused (' + clip(me.refused || 'refused', 20) + ')' };
+    if (js === 'gaveup' || me.gaveUp) return { k: 'gaveup', t: 'Not linked: tap Retry' };
+    return { k: me.state, t: { starting: 'Starting…', claiming: 'Linking…', retry: 'Reconnecting…', duplicate: 'Open in another tab?', error: 'Error' }[me.state] || clip(me.state, 20) };
+  }
+  /** H55b: "Retry" for a mesh that gave up (or is waiting to retry) */
+  function retryBtn(M, id, redraw) {
+    const b = ui.el('button', 'key-btn mesh-retry', 'Retry'); b.type = 'button'; b.id = id;
+    b.addEventListener('click', () => { M.retry(); setTimeout(redraw, 50); });
+    return b;
+  }
+
   /* H50: Hub mesh roster (read-only). Every field comes from other devices: textContent only. */
   function meshSection(card, hub) {
     const M = hub && hub.HubMesh;
@@ -617,8 +641,12 @@
       // if (!me) { note.textContent = 'Mesh off: it starts when a Connect Code link is on.'; return; }   (H50)
       if (!me) { note.textContent = 'Mesh off: it starts when a Connect Code link is on (or with Join public mesh below).'; return; }   // H55
       if (me.public) { note.textContent = 'Not in a private mesh: this device is on the public mesh ' + clip(me.code, 12) + ' (see Public mesh below).'; return; }   // H55
-      const st = { lobby: 'this device is the lobby', linked: 'linked', joining: 'joining…', takeover: 'lobby lost, taking over…', claiming: 'claiming the lobby…', refused: 'refused by the lobby (' + clip(me.refused, 20) + ')' }[me.state] || clip(me.state, 20);
-      note.textContent = 'Code ' + clip(me.code, 12) + ' · term ' + me.term + ' · ' + st + '. Shared by all Hub apps (one connection per Connect Code).';
+      // const st = { lobby: 'this device is the lobby', linked: 'linked', joining: 'joining…', takeover: 'lobby lost, taking over…', claiming: 'claiming the lobby…', refused: 'refused by the lobby (' + clip(me.refused, 20) + ')' }[me.state] || clip(me.state, 20);   (before H55b)
+      // note.textContent = 'Code ' + clip(me.code, 12) + ' · term ' + me.term + ' · ' + st + '. Shared by all Hub apps (one connection per Connect Code).';   (before H55b)
+      const ls = linkState(me);   // H55b: the real link state
+      note.textContent = 'Code ' + clip(me.code, 12) + ' · term ' + me.term + ' · ' + ls.t + '. Shared by all Hub apps (one connection per Connect Code).';
+      note.dataset.state = ls.k;
+      if (ls.k === 'gaveup' || ls.k === 'retrying') list.appendChild(ui.el('li', 'conn-empty mesh-retry-row')).appendChild(retryBtn(M, 'mesh-retry', draw));
       const ros = M.roster();
       ros.forEach((r) => {
         const self = r.deviceId === me.deviceId;
@@ -639,7 +667,8 @@
     const onEv = () => { clearTimeout(t); t = setTimeout(draw, 0); };
     const EVS = ['roster', 'peers', 'lobby', 'status'];
     EVS.forEach((ev) => M.on(ev, onEv));
-    const tick = setInterval(draw, 5000);   // mesh may start after this card (Hub glue checks every 3 s)
+    // const tick = setInterval(draw, 5000);   // mesh may start after this card (Hub glue checks every 3 s)   (before H55b)
+    const tick = setInterval(draw, 1000);   // H55b: 1 s, for the Linking… / Retrying in Ns counters
     function stop() { EVS.forEach((ev) => M.off(ev, onEv)); clearInterval(tick); }
     window.addEventListener('pagehide', stop);
     draw();
@@ -694,7 +723,11 @@
         return;
       }
       const ros = M.roster().filter((r) => r.online || r.deviceId === me.deviceId).slice(0, PUB_SHOW);
-      note.textContent = 'On the public mesh 0000 · ' + ros.length + ' online' + (own ? ' · your code ' + own : '') + '.';
+      // note.textContent = 'On the public mesh 0000 · ' + ros.length + ' online' + (own ? ' · your code ' + own : '') + '.';   (before H55b: said "on" whatever the link state)
+      const ls = linkState(me);   // H55b
+      note.textContent = 'Public mesh 0000 · ' + ls.t + (ls.k === 'linked' || ls.k === 'lobby' ? ' · ' + ros.length + ' online' : '') + (own ? ' · your code ' + own : '') + '.';   // count only once linked
+      note.dataset.state = ls.k;
+      if (ls.k === 'gaveup' || ls.k === 'retrying') inv.appendChild(retryBtn(M, 'pub-retry', draw));
       ros.forEach((r) => {
         const self = r.deviceId === me.deviceId;
         const li = ui.el('li', 'conn-dev pub-dev' + (self ? ' conn-self' : ''));
@@ -715,14 +748,16 @@
         }
         list.appendChild(li);
       });
-      if (ros.length < 2) { const e = ui.el('li', 'conn-empty', 'No other Hub on the public mesh right now.'); e.id = 'pub-empty'; list.appendChild(e); }
+      // if (ros.length < 2) { const e = ui.el('li', 'conn-empty', 'No other Hub on the public mesh right now.'); e.id = 'pub-empty'; list.appendChild(e); }   (before H55b)
+      if (ros.length < 2) { const e = ui.el('li', 'conn-empty', ls.k === 'linked' || ls.k === 'lobby' ? 'No other Hub on the public mesh right now.' : 'Not linked to the public mesh yet.'); e.id = 'pub-empty'; list.appendChild(e); }   // H55b
     }
     let drawn = false, t = 0;
     const onEv = () => { clearTimeout(t); t = setTimeout(draw, 0); };
     const EVS = ['roster', 'peers', 'lobby', 'status'];
     EVS.forEach((ev) => M.on(ev, onEv));
     hub.addEventListener('hub-mesh-invites', onEv);
-    const tick = setInterval(draw, 3000);
+    // const tick = setInterval(draw, 3000);   (before H55b)
+    const tick = setInterval(draw, 1000);   // H55b: 1 s counters
     function stop() { EVS.forEach((ev) => M.off(ev, onEv)); hub.removeEventListener('hub-mesh-invites', onEv); clearInterval(tick); }
     window.addEventListener('pagehide', stop);
     draw();

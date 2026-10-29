@@ -26,8 +26,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261029f';
-const CACHE = 'hub-shell-v113';  // 2026-10-29f: H52c no Update dot
+const V = '20261029g';
+const CACHE = 'hub-shell-v114';  // 2026-10-29g: H55b: mesh join waits 60 s, hello every 2.5 s, flat 5 s retry, give up after 5 min
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
