@@ -29,6 +29,7 @@
   const rot = h('p', { class: 'gc-rot' }, '\u{1F4F1}\u21BB Landscape recommended: turn your phone sideways for a bigger neck.');
   const main = h('main', { class: 'lrn-main gc-main', id: 'lrn-main' }, top, rot, board.el, bar);
   root.className = 'lrn gc'; root.replaceChildren(head, main);
+  if (window.LearnHubBar) LearnHubBar.attach(root.querySelector('.lrn-head'));   // TB2: Hub desktop window: the mode tabs go to the title bar
   const strumBtns = () => [h('button', { type: 'button', class: 'lrn-qc gc-strum', onclick: () => strum(false) }, 'Strum \u2193'),
     h('button', { type: 'button', class: 'lrn-qc', onclick: () => strum(true) }, 'Strum \u2191')];
 

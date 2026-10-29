@@ -17,6 +17,7 @@
   const main = h('main', { class: 'lrn-main rs-main', id: 'lrn-main' }), over = h('div', { class: 'rs-over', hidden: true, onclick: e => { if (e.target === over) closeCard(); } });
   root.className = 'lrn rs';
   root.replaceChildren(h('header', { class: 'lrn-head' }, h('h1', null, h('span', { class: 'lrn-here' }, 'Road Safety')), modeBar, h('span', { class: 'rs-ver' }, VER)), main, over);
+  if (window.LearnHubBar) LearnHubBar.attach(root.querySelector('.lrn-head'));   // TB2: Hub desktop window: the mode tabs go to the title bar
   let stopper = null;
   function go(m) {
     stopper && stopper(); stopper = null; closeCard();

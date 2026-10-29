@@ -29,6 +29,7 @@
   const main = h('main', { class: 'lrn-main pt-main', id: 'lrn-main' });
   const overlay = h('div', { class: 'pt-over', hidden: true, onclick: e => { if (e.target === overlay) closeCard(); } });
   root.className = 'lrn pt'; root.replaceChildren(head, main, overlay);
+  if (window.LearnHubBar) LearnHubBar.attach(root.querySelector('.lrn-head'));   // TB2: Hub desktop window: the mode tabs go to the title bar
 
   // ---------- the grid (used by Table and by the Find quiz) ----------
   function makeGrid(onPick, byCat) {
