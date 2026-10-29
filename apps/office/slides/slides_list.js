@@ -8,19 +8,14 @@
   var $ = function (id) { return document.getElementById(id); };
   var listEl, inEl, cb = {}, slides = [], cur = 0;
   var MAX_LINES = 9;
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function thumbScale() { return matchMedia('(max-width:760px)').matches ? 112 / 960 : 144 / 960; }
-  function inner(s, i) {
-    var lines = String(s.body || '').split('\n').filter(function (l) { return l.replace(/\t/g, '').trim() !== ''; }).slice(0, MAX_LINES);
-    var t = s.title ? '<div class="t">' + esc(s.title) + '</div>' : '<div class="t empty">Slide ' + (i + 1) + '</div>';
-    return t + '<div class="b">' + lines.map(function (l) { return '<div class="l' + (l.charAt(0) === '\t' ? 1 : 0) + '">' + esc(l.replace(/^\t+/, '')) + '</div>'; }).join('') + '</div>';
-  }
+  function inner(s, i) { return SLEdit.html(s, i, { max: MAX_LINES }); }   /* SL2: one renderer, shared with Present */
   function item(s, i) {
     var li = document.createElement('li');
     li.className = 'th' + (i === cur ? ' cur' : ''); li.dataset.i = i;
     li.setAttribute('aria-label', 'Slide ' + (i + 1) + (s.title ? ': ' + s.title : ''));
     li.setAttribute('aria-current', i === cur ? 'true' : 'false');
-    li.innerHTML = '<span class="num">' + (i + 1) + '</span><div class="mini-s"><div class="mini-in slide" style="transform:scale(' + thumbScale() + ')">' + inner(s, i) + '</div></div>';
+    li.innerHTML = '<span class="num">' + (i + 1) + '</span><div class="mini-s"><div class="mini-in slide sv" style="transform:scale(' + thumbScale() + ')">' + inner(s, i) + '</div></div>';
     return li;
   }
   function render(arr, c) {

@@ -1,4 +1,4 @@
-/* Hub Office Slides SL1 — Stopwatch style, dark default. Slide list on the left (a strip on top on phones), controls on the right. */
+/* Hub Office Slides SL1 + SL2 Present — Stopwatch style, dark default. Slide list on the left (a strip on top on phones), controls on the right. */
 :root{--bg:#f6f7f9;--fg:#15181d;--mut:#6b7280;--card:#fff;--line:#e3e6ea;--acc:#2563eb;--good:#16a34a;--bad:#dc2626;--hot:#f97316;--shade:rgba(0,0,0,.08)}
 :root.dark{--bg:#111316;--fg:#eef0f3;--mut:#9aa3ae;--card:#1c1f24;--line:#2b3037;--acc:#60a5fa;--good:#4ade80;--bad:#f87171;--hot:#fb923c;--shade:rgba(0,0,0,.4)}
 *{box-sizing:border-box}
@@ -61,15 +61,19 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 .s-mirror .ln.l1 .d::before{width:8px;height:8px;top:.58em;left:-26px;background:transparent;border:2px solid #6b7280}
 textarea.s-title:focus,textarea.s-body:focus{background:transparent}
 .s-body:focus{box-shadow:none}
-/* thumbnail content (inside .mini-in, same design) */
-.mini-in .slide{box-shadow:none;border-radius:0}
-.mini-in .t{font:700 44px/1.18 system-ui,sans-serif;color:#111827;padding:4px 0 10px;margin:0 0 14px;border-bottom:3px solid #f97316;min-height:66px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.mini-in .t.empty{color:#b6bcc6}
-.mini-in .b{font:400 28px/1.4 system-ui,sans-serif;color:#1f2430;padding-left:40px}
-.mini-in .b div{position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mini-in .b div::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:#f97316}
-.mini-in .b div.l1{padding-left:48px}
-.mini-in .b div.l1::before{left:22px;width:8px;height:8px;background:transparent;border:2px solid #6b7280}
+/* static slide view (.sv): thumbnails and Present use the same renderer (SLEdit.html) and design */
+.mini-in .slide,.mini-in.slide{box-shadow:none;border-radius:0}
+.sv .t{font:700 44px/1.18 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#111827;padding:4px 0 10px;margin:0 0 14px;border-bottom:3px solid #f97316;min-height:66px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.sv .t.empty{color:#b6bcc6}
+.sv .b{font:400 28px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1f2430;padding-left:40px}
+.sv .b div{position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.4em}
+.sv .b div::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:#f97316}
+.sv .b div.l1{padding-left:48px}
+.sv .b div.l1::before{left:22px;width:8px;height:8px;background:transparent;border:2px solid #6b7280}
+.sv .b div.e::before{display:none}
+/* Present (.pv): long titles and bullets wrap like in the editor */
+.pv .t{white-space:normal;overflow-wrap:break-word}
+.pv .b div{white-space:pre-wrap;overflow:visible;overflow-wrap:break-word;text-overflow:clip}
 /* menus */
 .menu{position:fixed;z-index:15;min-width:200px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 8px 30px rgba(0,0,0,.3);display:flex;flex-direction:column}
 .menu button{display:block;text-align:left;border:0;background:none;color:var(--fg);font-size:14px;padding:9px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
@@ -112,12 +116,29 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border:1px solid var(--l
 #ver{color:var(--mut);font-size:13px}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:7px 14px;border-radius:16px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:40;max-width:90vw;text-align:center}
 #toast.show{opacity:1}
+/* SL2 Present: black, the slide letterboxed in the middle; counter + buttons fade after 2 s idle (cursor too) */
+#show{position:fixed;inset:0;z-index:60;background:#000;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;outline:none;overflow:hidden;cursor:default}
+#show-fit{position:relative;flex:none;overflow:hidden}
+#show-slide{position:absolute;left:0;top:0;transform-origin:0 0;border-radius:0;box-shadow:none;pointer-events:none}
+#show-end{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9aa3ae;font:400 clamp(15px,2.4vw,22px)/1.4 system-ui,sans-serif;text-align:center;padding:20px}
+#show-end p{margin:0}
+.show-ui{transition:opacity .35s}
+#show.idle .show-ui{opacity:0;pointer-events:none}
+#show.idle{cursor:none}
+#show-count{position:absolute;left:max(14px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));padding:4px 10px;border-radius:12px;background:rgba(0,0,0,.55);color:#e5e7eb;font:600 13px/1.4 system-ui,sans-serif;font-variant-numeric:tabular-nums;pointer-events:none}
+.show-ctl{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:6px}
+.show-ctl button{width:40px;height:40px;border-radius:20px;border:1px solid rgba(255,255,255,.18);background:rgba(20,20,20,.6);color:#f3f4f6;font:400 22px/1 system-ui,sans-serif;cursor:pointer;padding:0}
+.show-ctl button:disabled{opacity:.35;cursor:default}
+.show-ctl button:hover:not(:disabled){background:rgba(60,60,60,.8)}
+html.presenting #app>*:not(#show){visibility:hidden}
 /* phones / narrow windows: the slide list becomes a strip on top */
 @media (max-width:760px){
   #top{padding:6px 8px;gap:4px}
   .deck-btn{font-size:15px;padding:0 6px;max-width:38vw}
   #saved{display:none}
   #b-add{padding:0 10px}
+  #b-show{padding:0 10px}
+  #b-show .lbl{display:none}
   #main{flex-direction:column;gap:8px;padding:0 8px 8px}
   #list{width:auto;height:84px;overflow-x:auto;overflow-y:hidden}
   #list-in{flex-direction:row;padding:6px 40px 6px 6px;height:100%;width:max-content}
