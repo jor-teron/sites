@@ -2,7 +2,9 @@
    stage (ResizeObserver). Title = one textarea (Enter goes to the bullets). Bullets = a textarea, one bullet per line;
    a leading TAB = indented one level (Tab / Shift+Tab on the selected lines, Enter keeps the indent, native undo kept via execCommand where it works).
    The dots are drawn by a mirror div behind the textarea (same font, width and wrapping, transparent text), so wrapped
-   lines keep one dot. Only the visible slide is live DOM; thumbnails are plain text (slides_list.js). */
+   lines keep one dot. Only the visible slide is live DOM; thumbnails are plain text (slides_list.js).
+   SL2: SLEdit.html(slide, i, o) is the one static slide renderer (same design classes), used by the thumbnails
+   (o.max = 9 lines, no empty lines, one line each) and by Present (slides_show.js: every line, wrapped). */
 (function () {
   'use strict';
   var W = 960, H = 540;
@@ -89,7 +91,22 @@
     title.value = slide ? slide.title : ''; body.value = slide ? slide.body : '';
     body.scrollTop = 0; autoTitle(); drawMirror();
   }
-  window.SLEdit = { init: init, show: show, fit: doFit, scale: function () { return scale; }, indent: indent,
+  /* the static slide renderer (thumbnails + Present). o = { max: lines (default all), show: true for Present } */
+  function escq(x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function html(s, i, o) {
+    o = o || {}; s = s || {};
+    var lines = String(s.body || '').split('\n');
+    if (!o.show) lines = lines.filter(function (l) { return l.replace(/\t/g, '').trim() !== ''; });
+    else while (lines.length && lines[lines.length - 1].replace(/\t/g, '').trim() === '') lines.pop();
+    if (o.max) lines = lines.slice(0, o.max);
+    var t = s.title ? '<div class="t">' + escq(s.title) + '</div>'
+      : (o.show ? (lines.length ? '' : '<div class="t empty"></div>') : '<div class="t empty">Slide ' + ((i | 0) + 1) + '</div>');
+    return t + '<div class="b">' + lines.map(function (l) {
+      var txt = l.replace(/^\t+/, '');
+      return '<div class="l' + (l.charAt(0) === '\t' ? 1 : 0) + (txt.trim() ? '' : ' e') + '">' + (escq(txt) || '\u200b') + '</div>';
+    }).join('') + '</div>';
+  }
+  window.SLEdit = { init: init, show: show, html: html, W: W, H: H, fit: doFit, scale: function () { return scale; }, indent: indent,
     focusTitle: function () { title.focus(); var n = title.value.length; title.setSelectionRange(n, n); },
     focusBody: function () { body.focus(); } };
 })();

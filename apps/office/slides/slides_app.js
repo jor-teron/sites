@@ -1,9 +1,11 @@
 /* Hub Office Slides SL1 — app: decks (new / open / rename / delete with confirm / import / export), slide actions
    (add after, duplicate, move ▲▼, delete with confirm), menus, in-app dialogs, settings + About, keys, auto-save status.
-   window.Slides = small read-only API for tests and later releases (SL2 Present reads Slides.deck()). */
+   window.Slides = small read-only API for tests and later releases.
+   SL2: ▶ Present (top bar, from this slide), deck menu Present from start / from this slide, F5 (start), Shift+F5 or P
+   outside the text (this slide). Present itself is slides_show.js (SLShow); Esc returns here on the slide shown last. */
 (function () {
   'use strict';
-  var VERSION = 'SL1';
+  var VERSION = 'SL2';
   var $ = function (id) { return document.getElementById(id); };
   var deck = null;
 
@@ -114,7 +116,7 @@
   /* ---------- deck + slides ---------- */
   function showDeck(d) {
     deck = d; SLSave.setCurrent(d.id);
-    $('deck-name').textContent = d.name; document.title = d.name + ' · Slides SL1';
+    $('deck-name').textContent = d.name; document.title = d.name + ' · Slides SL2';
     renderAll();
   }
   function renderAll() { SLList.render(deck.slides, deck.cur); showSlide(); }
@@ -187,7 +189,7 @@
   function renameDeck() {
     askName('Rename deck', deck.name, 'Rename').then(function (n) {
       if (!n || n === deck.name) return;
-      deck.name = n; $('deck-name').textContent = n; document.title = n + ' · Slides SL1'; dirty(); SLSave.flush(); toast('Renamed');
+      deck.name = n; $('deck-name').textContent = n; document.title = n + ' · Slides SL2'; dirty(); SLSave.flush(); toast('Renamed');
     });
   }
   function deleteDeck() {
@@ -199,6 +201,14 @@
       showDeck(d || SLSave.newDeck('Untitled deck'));
       toast('Deleted “' + name + '”');
     });
+  }
+  /* ---------- SL2 Present ---------- */
+  function present(fromStart) {
+    if (SLShow.on()) return;
+    if (dlgDone) dlgDone(null);
+    closeMenus(); if (!$('settings').hidden) $('settings').hidden = true;
+    SLSave.flush();
+    SLShow.enter(deck.slides, fromStart ? 0 : deck.cur);
   }
   function exportDeck() { SLSave.flush(); var f = SLFile.download(deck); toast('Exported ' + f); }
   function importFile(file) {
@@ -234,11 +244,13 @@
   $('b-up').onclick = function () { nudge(-1); };
   $('b-down').onclick = function () { nudge(1); };
   $('b-set').onclick = openSettings;
+  $('b-show').onclick = function () { present(false); };
   $('menu-deck').addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b) return; closeMenus();
     var a = b.dataset.a;
     if (a === 'new') newDeck(); else if (a === 'open') openDeck(); else if (a === 'rename') renameDeck();
     else if (a === 'import') { $('file-in').value = ''; $('file-in').click(); } else if (a === 'export') exportDeck(); else if (a === 'deldeck') deleteDeck();
+    else if (a === 'show0') present(true); else if (a === 'showcur') present(false);
   });
   $('menu-slide').addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b || b.disabled) return; closeMenus();
@@ -251,12 +263,23 @@
   addEventListener('dragover', function (e) { if (e.dataTransfer && [].indexOf.call(e.dataTransfer.types || [], 'Files') >= 0) e.preventDefault(); });
   addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) { e.preventDefault(); importFile(f); } });
   addEventListener('keydown', function (e) {
+    if (SLShow.on()) return;
+    /* F5 = present from the start, Shift+F5 = from this slide (never reloads the page); P outside the text = this slide */
+    if (e.key === 'F5' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); if ($('dialog').hidden) present(!e.shiftKey); return; }
     if (!$('dialog').hidden || !$('settings').hidden) return;
+    var tg = e.target, typing = tg && (tg.tagName === 'TEXTAREA' || tg.tagName === 'INPUT' || tg.isContentEditable);
+    if ((e.key === 'p' || e.key === 'P') && !typing && !e.ctrlKey && !e.metaKey && !e.altKey && $('menu-deck').hidden && $('menu-slide').hidden) { e.preventDefault(); present(false); return; }
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); addSlide(); }
     else if (e.key === 'Escape') closeMenus();
   });
 
   SLEdit.init({ onChange: function (s) { var i = deck.slides.indexOf(s); if (i >= 0) SLList.update(i); dirty(); } });
+  SLShow.init({ onExit: function (last) {
+    /* back in the editor on the slide shown last */
+    if (last !== deck.cur) select(last); else { SLList.reveal(); }
+    SLEdit.fit();
+    try { $('b-show').focus({ preventScroll: true }); } catch (_) { /* */ }
+  } });
   SLList.init({ onSelect: select, onMove: move, onNudge: nudge, onEnter: function () { SLEdit.focusTitle(); } });
 
   /* ---------- start: the last deck, else the newest, else a first deck ---------- */
@@ -270,7 +293,7 @@
   window.Slides = {
     version: VERSION,
     deck: function () { return deck; },
-    select: select, add: addSlide, move: move, decks: function () { return SLSave.list(); },
+    select: select, add: addSlide, present: present, move: move, decks: function () { return SLSave.list(); },
     exportJSON: function () { return SLFile.toJSON(deck); }, importText: function (t) { var r = SLFile.parse(t); if (!r.error) { SLSave.flush(); showDeck(SLSave.newDeck(uniqueName(r.deck.name), r.deck.slides)); } return r; }
   };
 })();
