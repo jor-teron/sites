@@ -3,23 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- Clock Reading CR2 (Learn > Language and Maths): a big code-drawn clock with hands you can drag, digital 12 h / 24 h,
-     the time in words, and Read / Set / Match quizzes in 5 levels. Classic scripts only, works from file:// and offline. -->
-<title>Clock Reading CR2</title>
+<!-- Clock Reading CR3 (Learn > Language and Maths): one page with a big live clock showing the real time in GMT, digital
+     12 h / 24 h and the time in words. Hover or tap any part of the clock to learn its name; pick from 7 code-drawn clock
+     styles (Simple, Railway, Roman, Pocket watch, Grandfather, Cuckoo, Sundial). Classic scripts only, works from file:// and offline. -->
+<title>Clock Reading CR3</title>
 <meta name="theme-color" content="#14171c">
 <link rel="icon" href="clock-reading_icon.png">
-<script src="../../../shared/theme/hub_theme.js?v=CR2"></script>
-<link rel="stylesheet" href="../common/ui/learn.css?v=CR2">
-<link rel="stylesheet" href="ui/clock.css?v=CR2">
+<script src="../../../shared/theme/hub_theme.js?v=CR3"></script>
+<link rel="stylesheet" href="../common/ui/learn.css?v=CR3">
+<link rel="stylesheet" href="ui/clock.css?v=CR3">
 </head>
 <body>
 <div id="app" class="lrn"><p>Loading…</p></div>
-<noscript><p>Clock Reading needs JavaScript. Learn to read an analog clock and tell the time.</p></noscript>
-<!-- load order: shared kit state (localStorage helpers), time maths and words, the clock, then the app screens -->
-<script src="../common/core/state.js?v=CR2"></script>
-<script src="core/time.js?v=CR2"></script>
-<script src="ui/clock.js?v=CR2"></script>
-<script src="../shared/learn-hubbar.js?v=CR2"></script>
-<script src="ui/app.js?v=CR2"></script>
+<noscript><p>Clock Reading needs JavaScript. A live clock that shows the time now; learn the parts of a clock and tell the time.</p></noscript>
+<!-- load order: shared kit state (localStorage helpers), time maths and words, the clock styles and part words, the clock, the Hub title bar helper, then the app -->
+<script src="../common/core/state.js?v=CR3"></script>
+<script src="core/time.js?v=CR3"></script>
+<script src="core/styles.js?v=CR3"></script>
+<script src="ui/clock.js?v=CR3"></script>
+<script src="../shared/learn-hubbar.js?v=CR3"></script>
+<script src="ui/app.js?v=CR3"></script>
 </body>
 </html>

@@ -175,7 +175,7 @@ Caption for NEI,         ../tools/caption-for-nei/,  , , Language, Live speech c
 Typing Tutor,            typing-tutor/,              , , Language, Learn touch typing on a computer keyboard with graded lessons
 Morse Code,              morse-code/,                , , Language, Morse code chart and translator with sound and lamp - tap key and listen lessons
 Maths and Logic,         maths-logic/,               , , Language and Maths, Maths practice: times tables - fractions - money - shapes - patterns and puzzles
-Clock Reading,           clock-reading/,             , , Language and Maths, Learn to tell the time: drag clock hands - 12 h and 24 h - read and set quizzes
+Clock Reading,           clock-reading/,             , , Language and Maths, A live clock in 7 styles - tap any part to learn its name - 12 h and 24 h GMT time
 Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_icon.png, , Coding, Jupyter-style code cells that run on a remote Jupyter server
 Learning HTML (Basic),   ../tools/learning-html/,    , , Coding, Try HTML: type code in a box and see the web page result as you type
 Code School,             code-school/,               , , Coding, Code playground: HTML - CSS - JavaScript with live preview and SQL with a sample database

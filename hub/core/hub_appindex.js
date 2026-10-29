@@ -88,7 +88,7 @@ window.HUB_APP_INDEX = {
   "typing-tutor": ["Learn", "apps/learn/typing-tutor/", "Typing Tutor", "apps/learn/typing-tutor/typing-tutor_icon.png", 0, "Learn touch typing on a computer keyboard with graded lessons"],
   "morse-code": ["Learn", "apps/learn/morse-code/", "Morse Code", "apps/learn/morse-code/morse-code_icon.png", 0, "Morse code chart and translator with sound and lamp - tap key and listen lessons"],
   "maths-logic": ["Learn", "apps/learn/maths-logic/", "Maths and Logic", "apps/learn/maths-logic/maths-logic_icon.png", 0, "Maths practice: times tables - fractions - money - shapes - patterns and puzzles"],
-  "clock-reading": ["Learn", "apps/learn/clock-reading/", "Clock Reading", "apps/learn/clock-reading/clock-reading_icon.png", 0, "Learn to tell the time: drag clock hands - 12 h and 24 h - read and set quizzes"],
+  "clock-reading": ["Learn", "apps/learn/clock-reading/", "Clock Reading", "apps/learn/clock-reading/clock-reading_icon.png", 0, "A live clock in 7 styles - tap any part to learn its name - 12 h and 24 h GMT time"],
   "code-lab": ["Learn", "apps/lab/code-lab/", "Code Lab", "apps/lab/code-lab/codelab_icon.png", 0, "Jupyter-style code cells that run on a remote Jupyter server"],
   "code-school": ["Learn", "apps/learn/code-school/", "Code School", "apps/learn/code-school/code-school_icon.png", 0, "Code playground: HTML - CSS - JavaScript with live preview and SQL with a sample database"],
   "survival-outdoors": ["Learn", "apps/learn/survival-outdoors/", "Survival and Outdoors", "apps/learn/survival-outdoors/survival-outdoors_icon.png", 0, "Outdoor survival basics: making fire and finding safe drinking water"],
