@@ -1,39 +1,59 @@
 /*
- * H61 Glass theme (hub/core/hub_glass.css), Windows 7 / Vista Aero and iPhone style frosted glass.
- * Settings › Look › Glass: hub_prefs.js sets html.hub-glass (on top of html.hub-light, so Glass is a light
- * theme: dark text on light frosted surfaces). Keys: sites-hub.glass '1' (+ sites-hub.theme 'light'),
+ * H61 Glass theme (hub/core/hub_glass.css), Windows 7 / Vista Aero and iPhone style glass.
+ * H61b "smoky glass": the H61 milky white tint (50-70 % white, dark text) hid the wallpaper and looked weak.
+ * Glass now follows the Desktop right-pane tiles (.tile in hub_main.css: clear tint, thin bright edge, white
+ * text with a dark shadow) but the tint is a clear DARK smoke (~25 % on bars, ~40 % on menus / dialogs /
+ * panels) with a heavy blur + saturate, so white text stays readable on white / bright wallpapers too and
+ * colourful wallpapers glow through. Glass surfaces set their own text variables (--text / --muted / --line /
+ * --wm-hover / --hp-* / --ctx-* / --uid-*), so anything that is not glass (app contents, on-screen keyboard,
+ * home tiles) keeps the Light theme.
+ * Settings › Look › Glass: hub_prefs.js sets html.hub-glass (on top of html.hub-light; apps inside windows
+ * still see Light). Keys: sites-hub.glass '1' (+ sites-hub.theme 'light'),
  * sites-hub.glassSolid '1' = Reduce transparency (html.hub-glass-solid).
  * Glass surfaces: window title bars + frames, Start menu + flyout, Desktop taskbar, Phone top bar,
  * right-click menus, dialogs, 🎮 / Pooh side panels, camera pop-up, received-file cards.
  * App contents (iframes) are never glass; apps that follow the Hub (shared/theme/hub_theme.js) see Light.
- * Solid fallback (no blur, near-opaque colours): Reduce transparency, no backdrop-filter support,
+ * Solid fallback (no blur, solid dark slate + white text): Reduce transparency, no backdrop-filter support,
  * or prefers-reduced-transparency. Loaded last in hub.html so it overrides wm.css / hub_main.css.
  * Performance: blur only on small strips (title bars, taskbars) and menus / pop-ups; a window's own body is
  * not blurred (its app covers it). The taskbar / top bar blur sits on a ::before so the bar is not a
  * backdrop root for the Start menu inside #header.
  */
 html.hub-glass {
-  --gl-fx: blur(18px) saturate(175%);
-  --gl-tint: rgba(255, 255, 255, 0.50);          /* bars: wallpaper shows through, tinted for dark text */
-  --gl-tint-dim: rgba(255, 255, 255, 0.38);      /* inactive title bars */
-  --gl-tint-menu: rgba(250, 251, 254, 0.70);     /* menus / pop-ups: more text, more tint */
-  --gl-solid: rgba(243, 245, 249, 0.97);
-  --gl-line: rgba(255, 255, 255, 0.60);          /* bright glass edge */
-  --gl-edge: rgba(20, 30, 50, 0.22);             /* outer dark hairline */
-  --gl-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.20) 46%,
-    rgba(255, 255, 255, 0.04) 54%, rgba(255, 255, 255, 0.14) 100%);   /* Aero shine: bright top half */
-  --gl-gloss-soft: linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0) 36%);
-  --gl-shadow: 0 18px 48px rgba(10, 20, 40, 0.30), 0 2px 8px rgba(10, 20, 40, 0.16);
-  --gl-inset: inset 0 1px 0 rgba(255, 255, 255, 0.75);
-  --gl-text: #142033;
-  --gl-glow: 0 1px 0 rgba(255, 255, 255, 0.65), 0 0 8px rgba(255, 255, 255, 0.55);   /* Aero text glow */
-  --wm-hover: rgba(255, 255, 255, 0.40);
-  --line: rgba(20, 30, 50, 0.14);
+  --gl-fx: blur(24px) saturate(180%);              /* H61: blur(18px) saturate(175%) */
+  --gl-tint: rgba(20, 24, 32, 0.40);               /* bars: smoked glass. H61: rgba(255, 255, 255, 0.50) */
+  --gl-tint-dim: rgba(20, 24, 32, 0.33);           /* inactive title bars. H61: rgba(255, 255, 255, 0.38) */
+  --gl-tint-menu: rgba(18, 22, 30, 0.44);          /* menus / pop-ups: long lists. H61: rgba(250, 251, 254, 0.70) */
+  --gl-solid: rgba(30, 34, 44, 0.96);              /* H61: rgba(243, 245, 249, 0.97) */
+  --gl-line: rgba(255, 255, 255, 0.22);            /* thin bright glass edge. H61: rgba(255, 255, 255, 0.60) */
+  --gl-edge: rgba(0, 0, 0, 0.28);                  /* outer dark hairline. H61: rgba(20, 30, 50, 0.22) */
+  /* H61: --gl-gloss: linear-gradient(180deg, rgba(255,255,255,.62) 0%, rgba(255,255,255,.20) 46%,
+     rgba(255,255,255,.04) 54%, rgba(255,255,255,.14) 100%); */
+  --gl-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 50%,
+    rgba(255, 255, 255, 0) 52%, rgba(255, 255, 255, 0.03) 100%);   /* faint Aero shine */
+  /* H61: --gl-gloss-soft: linear-gradient(180deg, rgba(255,255,255,.45) 0%, rgba(255,255,255,0) 36%); */
+  --gl-gloss-soft: linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0) 30%);
+  --gl-shadow: 0 18px 48px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.20);
+  --gl-inset: inset 0 1px 0 rgba(255, 255, 255, 0.20);            /* H61: inset 0 1px 0 rgba(255,255,255,.75) */
+  --gl-text: #ffffff;                                               /* H61: #142033 */
+  --gl-muted: rgba(255, 255, 255, 0.74);
+  --gl-sep: rgba(255, 255, 255, 0.14);
+  --gl-hover: rgba(255, 255, 255, 0.16);
+  --gl-glow: 0 1px 3px rgba(0, 0, 0, 0.70), 0 0 1px rgba(0, 0, 0, 0.45);   /* like .tile (+ a hairline for white wallpapers). H61: 0 1px 0 rgba(255,255,255,.65), 0 0 8px rgba(255,255,255,.55) */
+  /* H61: --wm-hover: rgba(255, 255, 255, 0.40); --line: rgba(20, 30, 50, 0.14);  (now set per glass surface) */
+}
+/* Glass surfaces: white text set + dark-glass hover / lines (inherit into everything inside) */
+html.hub-glass .wm-bar, html.hub-glass body.wm-desktop #wm-taskbar, html.hub-glass body:not(.wm-desktop) #header,
+html.hub-glass .menu, html.hub-glass .menu-fly, html.hub-glass .gb-tabmenu, html.hub-glass #hub-notify .hn-card, html.hub-glass .hn-more {
+  --text: var(--gl-text); --muted: var(--gl-muted); --line: var(--gl-sep); --wm-hover: var(--gl-hover);
+  --wm-hi: color-mix(in srgb, var(--accent) 38%, rgba(255, 255, 255, 0.08));
+  --wm-bar-fg: rgba(255, 255, 255, 0.82); --wm-bar-fg-on: #fff;
 }
 /* ---------- solid fallback ---------- */
 html.hub-glass.hub-glass-solid {
   --gl-fx: none; --gl-tint: var(--gl-solid); --gl-tint-dim: var(--gl-solid); --gl-tint-menu: var(--gl-solid);
-  --gl-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 60%);
+  /* H61: --gl-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 60%); */
+  --gl-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 60%);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   html.hub-glass { --gl-fx: none; --gl-tint: var(--gl-solid); --gl-tint-dim: var(--gl-solid); --gl-tint-menu: var(--gl-solid); }
@@ -42,7 +62,7 @@ html.hub-glass.hub-glass-solid {
   html.hub-glass { --gl-fx: none; --gl-tint: var(--gl-solid); --gl-tint-dim: var(--gl-solid); --gl-tint-menu: var(--gl-solid); }
 }
 
-/* ---------- windows: glass frame + glossy title bar; the app inside stays as it is ---------- */
+/* ---------- windows: glass frame + title bar; the app inside stays as it is ---------- */
 html.hub-glass .wm-win {
   background: transparent;
   border: 1px solid var(--gl-edge);
@@ -51,29 +71,32 @@ html.hub-glass .wm-win {
 }
 html.hub-glass .wm-win.wm-active {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--gl-edge));
-  box-shadow: 0 24px 64px rgba(10, 20, 40, 0.38), 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent), inset 0 0 0 1px var(--gl-line);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.40), 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent), inset 0 0 0 1px var(--gl-line);
 }
 html.hub-glass .wm-win.wm-max, html.hub-glass .wm-win.wm-snap-l, html.hub-glass .wm-win.wm-snap-r { border-radius: 0; }
 html.hub-glass .wm-bar {
   background: var(--gl-gloss), var(--gl-tint-dim);
   -webkit-backdrop-filter: var(--gl-fx);
   backdrop-filter: var(--gl-fx);
-  color: rgba(20, 32, 51, 0.72);
+  color: rgba(255, 255, 255, 0.80);                   /* H61: rgba(20, 32, 51, 0.72) */
   text-shadow: var(--gl-glow);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12); /* H61: rgba(255, 255, 255, 0.45) */
   box-shadow: var(--gl-inset);
 }
 html.hub-glass .wm-win.wm-active .wm-bar {
-  background: var(--gl-gloss), color-mix(in srgb, var(--accent) 16%, var(--gl-tint));
+  /* H61: background: var(--gl-gloss), color-mix(in srgb, var(--accent) 16%, var(--gl-tint)); */
+  background: var(--gl-gloss), color-mix(in srgb, var(--accent) 14%, var(--gl-tint));
   color: var(--gl-text);
 }
+html.hub-glass .wm-bar button, html.hub-glass .wm-bar svg { color: inherit; }
+html.hub-glass .wm-bar button:hover { background: var(--gl-hover); }
 html.hub-glass .wm-body, html.hub-glass .wm-body iframe { background: #f4f5f8; }   /* while an app loads */
-html.hub-glass .wm-close-btn:hover { text-shadow: none; }
+html.hub-glass .wm-close-btn:hover { text-shadow: none; background: #e81123; color: #fff; }
 
 /* ---------- Desktop taskbar (blur on ::before: no backdrop root for anything inside) ---------- */
 html.hub-glass body.wm-desktop #wm-taskbar {
   background: transparent;
-  border-top: 1px solid rgba(255, 255, 255, 0.55);
+  border-top: 1px solid rgba(255, 255, 255, 0.20);   /* H61: rgba(255, 255, 255, 0.55) */
   box-shadow: 0 -1px 0 var(--gl-edge);
   color: var(--gl-text);
 }
@@ -85,18 +108,27 @@ html.hub-glass #header::before {
   backdrop-filter: var(--gl-fx);
 }
 html.hub-glass #wm-start, html.hub-glass .wm-task, html.hub-glass .wm-clock { text-shadow: var(--gl-glow); color: var(--gl-text); }
+html.hub-glass body.wm-desktop #wm-taskbar button { color: var(--gl-text); text-shadow: var(--gl-glow); }
+html.hub-glass body.wm-desktop #wm-taskbar svg { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55)); }
 html.hub-glass .wm-task.active, html.hub-glass #wm-start[aria-expanded="true"] {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.15)), var(--wm-hi);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  /* H61: background: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.15)), var(--wm-hi);
+     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6); */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04)), var(--wm-hi);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
 }
-html.hub-glass.hub-task-top body.wm-desktop #wm-taskbar { border-top: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.55); box-shadow: 0 1px 0 var(--gl-edge); }
+html.hub-glass.hub-task-top body.wm-desktop #wm-taskbar { border-top: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.20); box-shadow: 0 1px 0 var(--gl-edge); }
 
 /* ---------- Phone mode top bar: glass; on the home screen the wallpaper runs up behind it ---------- */
-html.hub-glass #header { background: transparent; border-bottom: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 1px 0 var(--gl-edge); }
+/* H61: border-bottom: 1px solid rgba(255, 255, 255, 0.5) */
+html.hub-glass #header { background: transparent; border-bottom: 1px solid rgba(255, 255, 255, 0.18); box-shadow: 0 1px 0 var(--gl-edge); }
+/* Desktop: the wallpaper runs on under the taskbar, so the taskbar glass shows the wallpaper (not the page background) */
+html.hub-glass body.wm-desktop #empty { bottom: calc(-1 * var(--wm-task-h)); padding-bottom: calc(16px + var(--wm-task-h)); }
+html.hub-glass.hub-task-top body.wm-desktop #empty { bottom: 0; padding-bottom: 16px; top: calc(-1 * var(--wm-task-h)); padding-top: calc(16px + var(--wm-task-h)); }
 html.hub-glass body.wm-desktop #header { border: 0; box-shadow: none; }
 html.hub-glass body.wm-desktop #header::before { display: none; }   /* Desktop: header is 0 px high, the taskbar is the bar */
 html.hub-glass body:not(.wm-desktop) #header .cat-btn,
-html.hub-glass body:not(.wm-desktop) #header .header-right { text-shadow: var(--gl-glow); color: var(--gl-text); }
+html.hub-glass body:not(.wm-desktop) #header .header-right,
+html.hub-glass body:not(.wm-desktop) #header button { text-shadow: var(--gl-glow); color: var(--gl-text); }
 html.hub-glass body:not(.wm-desktop) #frame-wrap:has(> #empty:not(.hidden)) { top: 0; height: 100vh; height: 100dvh; }
 html.hub-glass body:not(.wm-desktop) #frame-wrap:has(> #empty:not(.hidden)) > #empty { padding-top: calc(var(--header-h) + 16px); }
 
@@ -109,48 +141,73 @@ html.hub-glass .menu, html.hub-glass .menu-fly {
   border-radius: 14px;
   box-shadow: var(--gl-shadow), inset 0 0 0 1px var(--gl-line);
   color: var(--gl-text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
-html.hub-glass .menu .menu-cat:hover, html.hub-glass .menu button.app:hover { background: rgba(255, 255, 255, 0.55); }
+/* H61: html.hub-glass .menu .menu-cat:hover, html.hub-glass .menu button.app:hover { background: rgba(255, 255, 255, 0.55); } */
+html.hub-glass .menu .menu-cat, html.hub-glass .menu button.app, html.hub-glass .menu-fly .fly-app { color: var(--gl-text); }
+html.hub-glass .menu .menu-cat:hover, html.hub-glass .menu button.app:hover,
+html.hub-glass .menu-fly .fly-app:hover { background: var(--gl-hover); color: var(--gl-text); }
+html.hub-glass .menu .menu-cat.fly-on, html.hub-glass .menu .menu-cat[aria-expanded="true"] { background: var(--wm-hi); color: var(--gl-text); }
 html.hub-glass .menu button.app .icon { background: transparent; }
+html.hub-glass .menu input, html.hub-glass .menu-fly input {
+  background: rgba(0, 0, 0, 0.30); color: #fff; border-color: rgba(255, 255, 255, 0.22); text-shadow: none;
+}
+html.hub-glass .menu input::placeholder, html.hub-glass .menu-fly input::placeholder { color: rgba(255, 255, 255, 0.62); }
+html.hub-glass .menu .menu-error { color: #ffb4b4; }
 
 /* ---------- right-click menus (shared/ctxmenu) + title-bar tab menu ---------- */
 html.hub-glass .ctx {
-  --ctx-bg: var(--gl-tint-menu); --ctx-line: rgba(20, 30, 50, 0.12); --ctx-text: var(--gl-text); --ctx-muted: #4f5a6b; --ctx-bad: #c42b2b;
+  /* H61: --ctx-line: rgba(20,30,50,.12); --ctx-text: var(--gl-text); --ctx-muted: #4f5a6b; --ctx-bad: #c42b2b; */
+  --ctx-bg: var(--gl-tint-menu); --ctx-line: var(--gl-sep); --ctx-text: var(--gl-text); --ctx-muted: var(--gl-muted); --ctx-bad: #ff8a8a;
   background-image: var(--gl-gloss-soft);
   -webkit-backdrop-filter: var(--gl-fx);
   backdrop-filter: var(--gl-fx);
   border-color: var(--gl-edge);
   box-shadow: var(--gl-shadow), inset 0 0 0 1px var(--gl-line);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 html.hub-glass .gb-tabmenu {
   background: var(--gl-gloss-soft), var(--gl-tint-menu); color: var(--gl-text);
   -webkit-backdrop-filter: var(--gl-fx); backdrop-filter: var(--gl-fx);
   border-color: var(--gl-edge); box-shadow: var(--gl-shadow);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
+html.hub-glass .gb-tabmenu-it:hover { background: var(--gl-hover); }
 
 /* ---------- dialogs (shared/dialog) ---------- */
 html.hub-glass .uid {
-  --uid-bg: var(--gl-tint-menu); --uid-line: rgba(20, 30, 50, 0.12); --uid-text: var(--gl-text); --uid-muted: #4f5a6b; --uid-bad: #d93636;
+  /* H61: --uid-line: rgba(20,30,50,.12); --uid-muted: #4f5a6b; --uid-bad: #d93636; */
+  --uid-bg: var(--gl-tint-menu); --uid-line: rgba(255, 255, 255, 0.18); --uid-text: var(--gl-text); --uid-muted: var(--gl-muted); --uid-bad: #ff8a8a;
   background-image: var(--gl-gloss-soft);
   -webkit-backdrop-filter: var(--gl-fx);
   backdrop-filter: var(--gl-fx);
   border-color: var(--gl-edge);
   box-shadow: var(--gl-shadow), inset 0 0 0 1px var(--gl-line);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40);
 }
-html.hub-glass .uid-in { background: rgba(255, 255, 255, 0.7); }
+/* H61: html.hub-glass .uid-in { background: rgba(255, 255, 255, 0.7); } */
+html.hub-glass .uid-in { background: rgba(0, 0, 0, 0.30); color: #fff; text-shadow: none; }
+html.hub-glass .uid-in::placeholder { color: rgba(255, 255, 255, 0.6); }
 html.hub-glass .uid-btn.primary { color: #fff; }
 html.hub-glass .uid-btn:focus-visible { outline-color: var(--accent); }
 
 /* ---------- 🎮 Devices + Pooh side panels, camera pop-up ---------- */
 html.hub-glass .hub-side-panel, html.hub-glass #ctrl-popover, html.hub-glass .hp-cam {
-  --hp-bg: var(--gl-tint-menu); --hp-head: rgba(255, 255, 255, 0.25); --hp-card: rgba(255, 255, 255, 0.55);
-  --hp-field: rgba(255, 255, 255, 0.8); --hp-line: rgba(20, 30, 50, 0.12); --hp-text: var(--gl-text); --hp-muted: #4f5a6b;
+  /* H61: --hp-head: rgba(255,255,255,.25); --hp-card: rgba(255,255,255,.55); --hp-field: rgba(255,255,255,.8);
+     --hp-line: rgba(20,30,50,.12); --hp-muted: #4f5a6b; */
+  --hp-bg: var(--gl-tint-menu); --hp-head: rgba(255, 255, 255, 0.04); --hp-card: rgba(255, 255, 255, 0.08);
+  --hp-field: rgba(0, 0, 0, 0.30); --hp-line: rgba(255, 255, 255, 0.15); --hp-text: var(--gl-text); --hp-muted: var(--gl-muted);
+  --text: var(--gl-text); --muted: var(--gl-muted); --line: var(--gl-sep);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40);
 }
+html.hub-glass #ctrl-popover input, html.hub-glass .hub-side-panel input, html.hub-glass .hub-side-panel textarea { text-shadow: none; color: #fff; }
+html.hub-glass #ctrl-popover input::placeholder, html.hub-glass .hub-side-panel input::placeholder,
+html.hub-glass .hub-side-panel textarea::placeholder { color: rgba(255, 255, 255, 0.6); }
 html.hub-glass #ctrl-popover, html.hub-glass #chat-panel {
   background-image: var(--gl-gloss-soft);
   -webkit-backdrop-filter: var(--gl-fx);
   backdrop-filter: var(--gl-fx);
-  box-shadow: -18px 0 50px rgba(10, 20, 40, 0.28), inset 1px 0 0 var(--gl-line);
+  box-shadow: -18px 0 50px rgba(0, 0, 0, 0.32), inset 1px 0 0 var(--gl-line);
 }
 html.hub-glass .hp-cam-card {
   background-image: var(--gl-gloss-soft);
@@ -165,5 +222,9 @@ html.hub-glass #hub-notify .hn-card, html.hub-glass .hn-more {
   -webkit-backdrop-filter: var(--gl-fx);
   backdrop-filter: var(--gl-fx);
   color: var(--gl-text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40);
   box-shadow: 0 0 0 1px var(--gl-edge), var(--gl-shadow), inset 0 0 0 1px var(--gl-line);
 }
+html.hub-glass .hn-text, html.hub-glass .hn-meta, html.hub-glass .hn-close { color: var(--gl-muted); }
+html.hub-glass .hn-close:hover { background: var(--gl-hover); color: #fff; }
+html.hub-glass .hn-thumb { background: rgba(255, 255, 255, 0.10); }
