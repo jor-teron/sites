@@ -31,6 +31,7 @@
   const left = h('div', { class: 'cr-left' }, clock.el, digital, words, gmt), panel = h('div', { class: 'cr-panel' });
   const main = h('main', { class: 'lrn-main cr-main', id: 'lrn-main' }, left, panel);
   root.className = 'lrn cr'; root.replaceChildren(head, main);
+  if (window.LearnHubBar) LearnHubBar.attach(head);   // TB1: Hub desktop window: the mode tabs go to the title bar
 
   function go(m) {
     stopTick(); unfollow(); clock.seconds(null); mode = m;
