@@ -156,3 +156,47 @@ html.hub-task-top body.wm-desktop #ctrl-popover, html.hub-task-top body.wm-deskt
 .hp-name-go { color: var(--accent, #6ea8fe); font-weight: 700; }
 .hp-name:hover .hp-name-v, .hp-name:focus-visible .hp-name-v { text-decoration: underline; }
 .hp-name:focus-visible { outline: 2px solid var(--accent, #6ea8fe); outline-offset: 2px; border-radius: 6px; }
+
+/* ---------- H59: minimal Devices / Gamepad pop-up (QR · code ↻ · join row) ---------- */
+#ctrl-popover .ctrl-pop-head.hp-head-min { background: none; border-bottom: 0; padding: 10px 10px 0 10px; justify-content: flex-end; }
+#ctrl-popover .ctrl-pop-head.hp-head-min strong { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }   /* no heading; kept for screen readers */
+.hp-body.hp-min { align-items: center; justify-content: flex-start; gap: 16px; padding: 4px 22px 24px; }
+.hp-qr { width: 196px; height: 196px; flex: 0 0 auto; border-radius: 12px; overflow: hidden; background: #fff; }
+.hp-qr:empty { background: var(--hp-card); }
+.hp-coderow { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.hp-min .hp-code { font-size: 40px; letter-spacing: .16em; }
+#ctrl-popover .hp-coderow .ls-row { display: flex; margin: 0; flex: 0 0 auto; }
+#ctrl-popover .hp-coderow .ls-row.hp-ls-remote { flex-basis: auto; }
+#ctrl-popover .ls-btn.hp-mini { min-height: 36px; width: 36px; min-width: 36px; padding: 0; border-radius: 50%; font-size: 18px; line-height: 1; display: grid; place-items: center; }
+#ctrl-popover .ls-btn.hp-mini:not(.ls-disc) { background: var(--hp-card); color: var(--hp-text); border: 1px solid var(--hp-line); }
+.hp-joinwrap { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 6px; }
+.hp-min .hp-join { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; }
+.hp-min .hp-join input { min-width: 0; width: 100%; flex: 1 1 auto; }
+.hp-min .hp-join input::placeholder { font: 400 15px system-ui, sans-serif; letter-spacing: 0; color: var(--hp-muted); }
+.hp-min .hp-err { min-height: 18px; font-size: 13px; text-align: center; }
+.hp-min .hp-err:empty { display: block; }   /* reserve its line so a message never shifts the row */
+
+/* camera modal (#hp-cam): its own pop-up, centred, over everything */
+.hp-cam {
+  --hp-bg: rgba(22, 26, 34, 0.96); --hp-card: rgba(255, 255, 255, 0.06); --hp-line: rgba(255, 255, 255, 0.12); --hp-text: #e8eaed; --hp-muted: #9aa0a6;
+  position: fixed; inset: 0; z-index: 9600;
+  display: flex; align-items: center; justify-content: center; padding: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  font: 15px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+.hp-cam-card {
+  width: min(400px, 100%); display: flex; flex-direction: column; gap: 12px; padding: 16px;
+  background: var(--hp-bg); color: var(--hp-text); border: 1px solid var(--hp-line); border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+body:not(.wm-desktop) .hp-cam-card { width: min(94vw, 520px); }   /* Phone mode: near full width */
+.hp-cam-view { width: 100%; aspect-ratio: 1 / 1; border-radius: 12px; overflow: hidden; background: #000; }
+.hp-cam-view video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hp-cam-msg { min-height: 20px; font-size: 14px; text-align: center; color: var(--hp-muted); }
+.hp-cam-msg.bad { color: #f87171; }
+.hp-cam .hp-cam-cancel {
+  min-height: 44px; border: 1px solid var(--hp-line); border-radius: 12px; background: var(--hp-card); color: var(--hp-text);
+  font: 600 15px system-ui, sans-serif; cursor: pointer;
+}
+.hp-cam .hp-cam-cancel:hover { border-color: var(--accent, #6ea8fe); }
+html.hub-light .hp-cam { --hp-bg: rgba(248, 249, 252, 0.97); --hp-card: #fff; --hp-line: rgba(0, 0, 0, 0.12); --hp-text: #1d2330; --hp-muted: #5f6672; }
