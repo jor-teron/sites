@@ -757,7 +757,8 @@
    *             H52b: barPooh / barDevices / barUpdate work in both modes, so they are Shared)
    *             H55: meshPublic (Settings › Devices › Join public mesh) is not listed = Shared
    *   phone   : the Phone-mode layout (Home button target)
-   *   Never synced: wmMode (each device's own Screen mode choice; a phone must not be switched to Desktop).
+   *   H63: Eye comfort eyeWarm / eyeMode / eyeFrom / eyeTo and the Hub bar barEye = Shared (not listed)
+   *   Never synced: wmMode, H63 eyeNow (the 🌙 override); (each device's own Screen mode choice; a phone must not be switched to Desktop).
    * Keys are never part of a sync payload (exportData({ keys: false }); diffData ignores "keys"). (H29.1)
    * H29.2: keys are, when the sender ticks 'Include API keys' (exportData({ keys: true })) and the receiver
    * asks diffData for them ({ keys: true }); they form their own 'keys' group with masked values only. */
@@ -772,7 +773,10 @@
       'barShowDesk', 'barSearch', 'barTasks', 'barWorkspaces', 'barOsk', 'barClock'],
     phone: ['homeBtn'],
   };
-  const SYNC_SKIP = new Set(['wmMode']);
+  // const SYNC_SKIP = new Set(['wmMode']);   (before H63)
+  // H63: eyeNow (the 🌙 Eye comfort override for the current period) is this device's own moment, never synced;
+  //   eyeWarm / eyeMode / eyeFrom / eyeTo and barEye are not listed in SYNC_GROUPS = Shared group (like theme)
+  const SYNC_SKIP = new Set(['wmMode', 'eyeNow']);
   const SYNC_MAX_ITEMS = 2000;
   /** 'shared' | 'desktop' | 'phone' for a 'sites-hub.<name>' setting (scope 'hub') or an app key (scope 'app') */
   function groupOf(scope, name) {

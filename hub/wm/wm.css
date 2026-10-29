@@ -371,6 +371,7 @@ html.hub-bar-off-osk #wm-taskbar .wm-osk-btn,
 html.hub-bar-off-pooh #chat-btn,
 html.hub-bar-off-devices:not(.hub-remote) #ctrl-btn,   /* H53: a joined device always keeps 🎮 (Disconnect) */
 html.hub-bar-off-update #upd-btn,
+html.hub-bar-off-eye #eye-btn,   /* H63: Eye comfort 🌙, default off, both modes */
 html.hub-bar-off-clock #wm-taskbar .wm-clock { display: none !important; }
 html.hub-bar-off-tasks #wm-taskbar .wm-tasks { visibility: hidden; }
 /* H52c: no Update dot any more. With the Hub bar Update switch off there is no indicator at all (Start /

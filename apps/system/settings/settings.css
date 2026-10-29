@@ -298,3 +298,9 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
   font-size: 11px; font-weight: 500; opacity: .6; vertical-align: 1px; white-space: nowrap; }
 .switch:disabled:active { transform: none; }
 button.tap { width: 100%; text-align: left; border: 1px solid var(--line); font: inherit; cursor: pointer; }
+
+/* H63: Eye comfort From / To times (sec_look.js) */
+.eye-times { display: flex; flex-wrap: wrap; gap: 12px; margin: 10px 0; }
+.eye-times[hidden] { display: none; }
+.eye-time { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 14px; border: 1px solid var(--line); border-radius: 12px; }
+.eye-time input { font: inherit; min-height: 36px; padding: 2px 8px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: inherit; color-scheme: light dark; }

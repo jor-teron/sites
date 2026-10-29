@@ -26,8 +26,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261029n';
-const CACHE = 'hub-shell-v121';  // 2026-10-29n: Glass theme (Settings > Look)
+const V = '20261029o';
+const CACHE = 'hub-shell-v122';  // 2026-10-29o: H63: Eye comfort (warm screen layer, schedule, 🌙 Hub bar button)
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -37,7 +37,8 @@ const SHELL = [
   'hub.html',
   'manifest.webmanifest',
   'hub/core/hub_main.css', 'hub/controller/hub_controller.css', 'hub/viewer/hub_notification.css', 'hub/menu/hub_flyout.css', 'hub/wm/wm.css', 'hub/link/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',   // H61: + hub_glass.css
-  'hub/core/hub_role.js', 'hub/core/hub_config.js', 'hub/core/hub_appindex.js', 'hub/core/hub_catalog.js', 'hub/core/hub_apps.js', 'hub/menu/hub_tiles.js', 'hub/core/hub.js', 'hub/menu/hub_flyout.js', 'hub/core/hub_prefs.js', 'hub/drives/hub_wallpapers.js', 'hub/menu/hub_settings.js',
+  'hub/core/hub_role.js', 'hub/core/hub_config.js', 'hub/core/hub_appindex.js', 'hub/core/hub_catalog.js', 'hub/core/hub_apps.js', 'hub/menu/hub_tiles.js', 'hub/core/hub.js', 'hub/menu/hub_flyout.js', 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'hub/menu/hub_settings.js',   // H63: + hub_daynight.js, hub_eye.js
+ 
   'hub/wm/wm_mode.js', 'hub/wm/wm_windows.js', 'hub/wm/wm_taskbar.js', 'hub/wm/wm_snap.js', 'hub/wm/wm_workspaces.js',
   'hub/menu/hub_ctx.js', 'hub/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'hub/controller/hub_controller_config.js', 'hub/viewer/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',
   'hub/link/hub_pointer.js', 'hub/link/hub_receive.js', 'hub/link/hub_remote.js', 'hub/controller/hub-controller.js', 'hub/controller/hub_textedit.js', 'hub/link/hub_link.js', 'hub/link/hub_linkstate.js',

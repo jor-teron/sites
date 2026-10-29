@@ -662,6 +662,11 @@ localStorage, prefix sites-hub.:
                       hub_prefs.js → html.hub-glass, CSS hub/core/hub_glass.css
   glassSolid          Settings > Look, H61        '1' = Reduce transparency (Glass, no blur)
                       hub_prefs.js → html.hub-glass-solid
+  eyeWarm             Settings > Look, H63        0..100 warmth, '' = 50, '0' = Off (hub_eye.js #hub-eye layer)
+  eyeMode             Settings > Look, H63        '' = off | always | sched
+  eyeFrom / eyeTo     Settings > Look, H63        'HH:MM', '' = 19:00 / 06:00 (hub_daynight.js)
+  eyeNow              hub_eye.js 🌙, H63          '1@<period>' | '0@<period>' override, not synced
+  barEye              Settings > Hub bar, H63     '1' = 🌙 button shown (default hidden)
   saverIdle           Settings > Desktop, R49b    0 (off) | 1..240 min, unset 5
                       hub_saver.js (screen saver)
   saverSec            Settings > Desktop, R49c    smooth (default) | quartz | off

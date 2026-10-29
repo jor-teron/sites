@@ -26,7 +26,8 @@
   const SET = '/apps/system/settings/';   // R53 (was /apps/settings/, now a legacy redirect)
   const PREFS = ['wallpaper', 'taskH', 'titleH', 'taskPos', 'accent', 'theme', 'motion', 'wmMode', 'startHover', 'trayMeter', 'showFiles', 'homeBtn',
     'hoverFocus', 'snapEdges', 'snapMagnet', 'snapMagnetPx', 'workspaces', 'filesClick', 'filesThumbs',
-    'barShowDesk', 'barSearch', 'barTasks', 'barWorkspaces', 'barOsk', 'barPooh', 'barDevices', 'barUpdate', 'barClock', 'updEvery', 'glass', 'glassSolid'];   // H52; H61: glass, glassSolid
+    'barShowDesk', 'barSearch', 'barTasks', 'barWorkspaces', 'barOsk', 'barPooh', 'barDevices', 'barUpdate', 'barClock', 'updEvery', 'glass', 'glassSolid',
+    'barEye', 'eyeWarm', 'eyeMode', 'eyeFrom', 'eyeTo'];   // H52; H61: glass, glassSolid; H63: Eye comfort
   const snap = () => PREFS.map((k) => { try { return localStorage.getItem('sites-hub.' + k) || ''; } catch (_) { return ''; } }).join('|');
   let seen = snap();
   const frames = () => [...document.querySelectorAll('iframe')].filter((f) => { try { return f.contentWindow.location.pathname.indexOf(SET) >= 0; } catch (_) { return false; } });
