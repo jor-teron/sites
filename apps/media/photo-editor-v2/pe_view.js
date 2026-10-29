@@ -16,6 +16,14 @@
   let rebuildTimer = 0, resizeTimer = 0, rafId = 0, sharpTimer = 0, sharpData = null;
   V.baseScale = 0;
 
+  // HPS2 hooks (backward compatible; Photo Editor v2 never replaces them):
+  //  V.drawPhoto(ctx, photo, crop, m, outW, outH, scale, scaleY) draws the photo for the preview (here)
+  //  and for Save (pe_io.js). Default = exactly the old drawOriented call. Hub Photo Studio wraps it
+  //  to draw its layers on top in photo space, so crop / rotate / resize carry the layers along.
+  //  V.rebuild() rebuilds the preview now (Studio calls it while a layer is dragged).
+  V.drawPhoto = (x, P, cr, m, w, h, a, b) => T.drawOriented(x, P.bitmap, cr.x, cr.y, cr.w, cr.h, m, w, h, a, b);
+  V.rebuild = () => buildBase();
+
   V.init = () => {
     V.stage = document.getElementById('stage');
     canvas = document.getElementById('view');
@@ -135,7 +143,7 @@
     bctx.imageSmoothingEnabled = true;
     bctx.imageSmoothingQuality = 'high';
     const kk = bw / O.w;
-    T.drawOriented(bctx, P.bitmap, c.crop.x, c.crop.y, c.crop.w, c.crop.h, e.m, bw, bh, kk * c.sx, kk * c.sy);
+    V.drawPhoto(bctx, P, c.crop, e.m, bw, bh, kk * c.sx, kk * c.sy);   // HPS2 hook (default = drawOriented)
     V.baseScale = k;
     baseData = null; sharpData = null;
     V.lastBaseMs = performance.now() - t0;

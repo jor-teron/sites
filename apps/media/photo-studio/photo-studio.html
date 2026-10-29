@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <!--
-  Hub Photo Studio (HPS1) — the Hub's bigger photo editor, built on Photo Editor v2. Page shell only.
+  Hub Photo Studio (HPS2) — the Hub's bigger photo editor, built on Photo Editor v2. Page shell only.
   Reuse: Photo Editor v2's pe_*.js modules and stylesheet are LOADED from ../photo-editor-v2/ (not copied),
   so fixes there apply here too. Studio's own files (ps_*.js, photo-studio.css) add the name, settings
   (own save keys), theme, About, in-app messages and the slot for later heavy features.
+  HPS2: Layers (ps_layers.js), the .hps project + .ora export (ps_project.js, ps_zip.js). Two backward-compatible
+  engine hooks (pe_view.js drawPhoto / rebuild, pe_io.js uses drawPhoto) are loaded as ?v=HPS2.
   All scripts share window.PE (plain scripts, works from file://). No libraries, no CDN.
 -->
 <html lang="en">
@@ -11,11 +13,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#141518">
-  <title>Hub Photo Studio HPS1</title>
-  <link rel="icon" href="photo-studio_icon.png?v=HPS1">
+  <title>Hub Photo Studio HPS2</title>
+  <link rel="icon" href="photo-studio_icon.png?v=HPS2">
   <link rel="stylesheet" href="../photo-editor-v2/photo-editor-v2.css?v=PE5">
-  <link rel="stylesheet" href="photo-studio.css?v=HPS1">
-  <script src="ps_save.js?v=HPS1"></script>
+  <link rel="stylesheet" href="photo-studio.css?v=HPS2">
+  <script src="ps_save.js?v=HPS2"></script>
 </head>
 <body class="ps">
 <div id="app">
@@ -23,15 +25,47 @@
     <canvas id="view"></canvas>
     <div id="empty">
       <div class="card">
-        <img src="photo-studio_icon.png?v=HPS1" class="ps-logo" alt="" width="64" height="64">
+        <img src="photo-studio_icon.png?v=HPS2" class="ps-logo" alt="" width="64" height="64">
         <h1>Hub Photo Studio</h1>
         <button type="button" tabindex="-1" class="primary" data-act="open">Open photo</button>
         <p>or drop a photo here, or paste one</p>
+        <p><button type="button" tabindex="-1" class="btn ghost" id="ps-open-hps-empty">Open project (.hps)</button></p>
       </div>
     </div>
     <button id="zoom-pill" type="button" tabindex="-1" hidden>100%</button>
     <div id="toast"></div>
   </div>
+
+  <!-- HPS2: Layers panel (ps_layers.js). Top layer first; the photo is the locked background at the bottom. -->
+  <aside id="ps-layers" hidden aria-label="Layers">
+    <div class="pl-head">
+      <b>Layers</b> <span id="pl-count" class="ps-mut"></span>
+      <button type="button" tabindex="-1" class="btn ghost pl-x" id="pl-close" title="Close (L)">Done</button>
+    </div>
+    <div class="pl-add">
+      <button type="button" tabindex="-1" class="chip" id="pl-add-image" title="Add an image layer">+ Image</button>
+      <button type="button" tabindex="-1" class="chip" id="pl-add-text" title="Add a text layer">+ Text</button>
+      <button type="button" tabindex="-1" class="chip" id="pl-add-rect" title="Add a rectangle">▭</button>
+      <button type="button" tabindex="-1" class="chip" id="pl-add-ellipse" title="Add an ellipse">◯</button>
+      <button type="button" tabindex="-1" class="chip" id="pl-add-line" title="Add a line">╱</button>
+    </div>
+    <ul id="pl-list"></ul>
+    <div id="pl-props" hidden>
+      <div class="pl-prow"><span>Opacity</span><input type="range" id="pl-op" min="0" max="100" step="1" tabindex="-1" aria-label="Opacity"><b id="pl-op-v">100%</b></div>
+      <div class="pl-prow" id="pl-blend-row"><span>Blend</span><select id="pl-blend" tabindex="-1" aria-label="Blend mode"></select></div>
+      <div id="pl-shape" hidden>
+        <div class="pl-prow" id="pl-fill-row"><span>Fill</span><input type="color" id="pl-fill" tabindex="-1" aria-label="Fill colour"><button type="button" tabindex="-1" class="chip" id="pl-fill-on">Fill on</button></div>
+        <div class="pl-prow"><span>Stroke</span><input type="color" id="pl-stroke" tabindex="-1" aria-label="Stroke colour"><input type="range" id="pl-sw" min="0" max="120" step="1" tabindex="-1" aria-label="Stroke width"><b id="pl-sw-v"></b></div>
+      </div>
+      <div class="pl-acts">
+        <button type="button" tabindex="-1" class="chip" id="pl-edit">Edit text…</button>
+        <button type="button" tabindex="-1" class="chip" id="pl-rename">Rename</button>
+        <button type="button" tabindex="-1" class="chip" id="pl-dup">Duplicate</button>
+        <button type="button" tabindex="-1" class="chip danger" id="pl-del">Delete</button>
+      </div>
+    </div>
+    <input type="file" id="ps-layer-in" accept="image/*" hidden>
+  </aside>
 
   <div id="dock" hidden>
     <div id="panel-crop" class="panel" hidden>
@@ -98,6 +132,9 @@
     <div class="menu-head" id="save-info"></div>
     <button type="button" tabindex="-1" data-act="saveJpeg">Save JPEG</button>
     <button type="button" tabindex="-1" data-act="savePng">Save PNG</button>
+    <button type="button" tabindex="-1" id="ps-save-hps" title="Layers and edits, to keep working later">Save project (.hps)</button>
+    <button type="button" tabindex="-1" id="ps-export-ora" title="OpenRaster layers for GIMP and Krita">Export layers (.ora)</button>
+    <button type="button" tabindex="-1" id="ps-open-hps">Open project (.hps)</button>
     <button type="button" tabindex="-1" data-act="print">Print 🖨</button>
     <button type="button" tabindex="-1" data-act="send">Send 📤</button>
   </div>
@@ -146,14 +183,15 @@
         <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Y</kbd> Undo / redo</span><span><kbd>C</kbd> Crop (<kbd>Enter</kbd> applies)</span>
         <span><kbd>R</kbd> / <kbd>Shift</kbd>+<kbd>R</kbd> Rotate</span><span><kbd>H</kbd> / <kbd>V</kbd> Flip</span>
         <span><kbd>A</kbd> Adjust</span><span><kbd>E</kbd> Resize</span>
+        <span><kbd>L</kbd> Layers</span><span><kbd>Del</kbd> Delete layer</span>
         <span><kbd>+</kbd> <kbd>-</kbd> <kbd>0</kbd> Zoom</span><span><kbd>,</kbd> Settings</span>
       </div>
       <h3>About</h3>
       <div class="ps-about">
-        <img src="photo-studio_icon.png?v=HPS1" alt="" width="40" height="40">
+        <img src="photo-studio_icon.png?v=HPS2" alt="" width="40" height="40">
         <div><b>Hub Photo Studio</b> <span id="ps-ver"></span>
-          <p>The Hub's bigger photo editor. Crop, rotate, flip, resize (smaller or larger), brightness, contrast, saturation, warmth, sharpen and looks, with undo and redo. Edits stay as settings on top of your original photo and are only applied when you save, print or send. Everything runs on this device; nothing is uploaded.</p>
-          <p class="ps-mut">Built on Photo Editor v2. Layers, selections, retouch and pro adjustments are planned.</p></div>
+          <p>The Hub's bigger photo editor. Layers (images, text and shapes, with opacity and blend modes), crop, rotate, flip, resize (smaller or larger), brightness, contrast, saturation, warmth, sharpen and looks, with undo and redo. Edits stay as settings on top of your original photo and are only applied when you save, print or send. Save your work as a Photo Studio project (.hps) to keep editing later, or export the layers as .ora for GIMP and Krita. Everything runs on this device; nothing is uploaded.</p>
+          <p class="ps-mut">Built on Photo Editor v2. Selections, retouch and pro adjustments are planned.</p></div>
       </div>
     </div>
   </div>
@@ -164,17 +202,48 @@
       <div class="row"><button type="button" tabindex="-1" class="btn primary" id="ps-msg-ok">OK</button></div>
     </div>
   </div>
-  <input type="file" id="file-in" accept="image/*" hidden>
+  <!-- HPS2: add / edit a text layer -->
+  <div id="dlg-text" class="dlg-wrap" hidden>
+    <div class="dlg ps-text" role="dialog" aria-modal="true" aria-labelledby="tx-title">
+      <h2 id="tx-title">Add text</h2>
+      <textarea id="tx-text" rows="3" maxlength="2000" placeholder="Your text" aria-label="Text"></textarea>
+      <div class="ps-row"><span>Font</span><select id="tx-font" tabindex="-1" aria-label="Font"></select></div>
+      <div class="ps-row"><span>Size<small>photo pixels</small></span><div class="rs-in tx-size"><input id="tx-size" type="number" inputmode="numeric" min="4" max="2000" step="1"><i>px</i></div></div>
+      <div class="ps-row"><span>Colour</span><input type="color" id="tx-color" tabindex="-1" aria-label="Text colour"></div>
+      <div class="ps-row"><span>Style</span>
+        <div class="tx-style"><button type="button" tabindex="-1" class="chip" id="tx-bold"><b>B</b> Bold</button>
+          <div class="seg" id="tx-align"><button type="button" tabindex="-1" data-v="left">Left</button><button type="button" tabindex="-1" data-v="center">Centre</button><button type="button" tabindex="-1" data-v="right">Right</button></div></div></div>
+      <div class="row">
+        <button type="button" tabindex="-1" class="btn ghost" id="tx-cancel">Cancel</button>
+        <button type="button" tabindex="-1" class="btn primary" id="tx-ok">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HPS2: in-app confirm / prompt (PE.studio.ask) -->
+  <div id="dlg-ask" class="dlg-wrap" hidden>
+    <div class="dlg ps-msg" role="alertdialog" aria-modal="true" aria-labelledby="ask-title">
+      <h2 id="ask-title"></h2>
+      <p id="ask-text"></p>
+      <input id="ask-input" type="text" maxlength="60" aria-label="Name" hidden>
+      <div class="row">
+        <button type="button" tabindex="-1" class="btn ghost" id="ask-cancel">Cancel</button>
+        <button type="button" tabindex="-1" class="btn primary" id="ask-ok">OK</button>
+      </div>
+    </div>
+  </div>
+  <input type="file" id="file-in" accept="image/*,.hps" hidden>
+  <input type="file" id="ps-hps-in" accept=".hps,application/zip" hidden>
 </div>
 <!-- Photo Editor v2 engine (shared, loaded in place) -->
 <script src="../photo-editor-v2/pe_config.js?v=PE5"></script>
-<script src="ps_config.js?v=HPS1"></script>
+<script src="ps_config.js?v=HPS2"></script>
 <script src="../photo-editor-v2/pe_state.js?v=PE5"></script>
 <script src="../photo-editor-v2/pe_transform.js?v=PE5"></script>
 <script src="../photo-editor-v2/pe_adjust.js?v=PE5"></script>
-<script src="../photo-editor-v2/pe_view.js?v=PE5"></script>
+<script src="../photo-editor-v2/pe_view.js?v=HPS2"></script>  <!-- ?v=HPS2: the copy with the drawPhoto / rebuild hooks -->
 <script src="../photo-editor-v2/pe_crop.js?v=PE5"></script>
-<script src="../photo-editor-v2/pe_io.js?v=PE5"></script>
+<script src="../photo-editor-v2/pe_io.js?v=HPS2"></script>    <!-- ?v=HPS2: save draws through PE.view.drawPhoto -->
 <script src="../photo-editor-v2/pe_resize.js?v=PE5"></script>
 <script src="../photo-editor-v2/pe_input.js?v=PE5"></script>
 <script src="../photo-editor-v2/pe_print.js?v=PE5"></script>
@@ -185,7 +254,10 @@
 <script src="../photo-editor-v2/vendor/jsQR.js"></script>
 <script src="../photo-editor-v2/pe_send.js?v=HPS1"></script>  <!-- ?v=HPS1: fetch the copy with the HPS1 hooks (appId, notify) -->
 <script src="../photo-editor-v2/pe_ui.js?v=PE5"></script>
-<!-- Studio layer -->
-<script src="ps_app.js?v=HPS1"></script>
+<!-- Studio layer: HPS2 features register through PE.studio, then ps_app.js boots them -->
+<script src="ps_zip.js?v=HPS2"></script>
+<script src="ps_layers.js?v=HPS2"></script>
+<script src="ps_project.js?v=HPS2"></script>
+<script src="ps_app.js?v=HPS2"></script>
 </body>
 </html>

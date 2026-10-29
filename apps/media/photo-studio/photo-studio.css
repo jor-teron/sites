@@ -1,7 +1,8 @@
 /*
- * Hub Photo Studio HPS1 — Stopwatch style, dark default. Loaded AFTER ../photo-editor-v2/photo-editor-v2.css
+ * Hub Photo Studio HPS2 — Stopwatch style, dark default. Loaded AFTER ../photo-editor-v2/photo-editor-v2.css
  * (the shared layout: photo, dock and toolbar; toolbar at the bottom in portrait, on the RIGHT in landscape).
- * This file only adds Studio's own parts (logo, Settings + About sheet, message box, tool slot)
+ * This file only adds Studio's own parts (logo, Settings + About sheet, message box, tool slot,
+ * HPS2: Layers panel, text dialog, confirm / prompt)
  * and the light theme (html.light, set by ps_save.js).
  */
 #empty .ps-logo { display: block; margin: 0 auto; width: 64px; height: 64px; border-radius: 14px; }
@@ -28,6 +29,58 @@ kbd { display: inline-block; min-width: 18px; padding: 1px 5px; border: 1px soli
 .dlg.ps-msg { max-width: 340px; }
 .ps-msg p { margin: 2px 0 4px; font-size: 15px; line-height: 1.4; white-space: pre-line; }
 @media (max-width: 380px) { .ps-keys { grid-template-columns: 1fr; } }
+
+/* HPS2: Layers panel — a strip under the photo in portrait, a column next to the toolbar in landscape */
+#ps-layers { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; background: #1a1b1f;
+  border-top: 1px solid #2c2d33; z-index: 2; max-height: 42vh; max-height: 42dvh; overflow-y: auto; touch-action: pan-y; font-size: 13px; }
+.pl-head { display: flex; align-items: center; gap: 8px; }
+.pl-head b { font-size: 14px; }
+.pl-x { margin-left: auto; padding: 5px 14px; font-size: 13px; }
+.pl-add { display: flex; flex-wrap: wrap; gap: 6px; }
+.pl-add .chip { padding: 5px 10px; }
+#pl-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.pl-row { display: flex; align-items: center; gap: 4px; min-height: 38px; padding: 2px 4px; border-radius: 10px; background: #222328;
+  border: 1px solid transparent; cursor: pointer; position: relative; }
+.pl-row.sel { background: #2b3a55; border-color: #3d5a8f; }
+.pl-row.off .pl-name, .pl-row.off .pl-type { opacity: 0.45; }
+.pl-row.dragging { z-index: 3; box-shadow: 0 6px 18px rgba(0,0,0,0.45); opacity: 0.92; }
+.pl-row.drop-above { box-shadow: inset 0 2px 0 #8ab4ff; }
+.pl-row.drop-below { box-shadow: inset 0 -2px 0 #8ab4ff; }
+.pl-grip { flex: 0 0 18px; text-align: center; color: #7b7c84; cursor: grab; touch-action: none; letter-spacing: -2px; font-size: 12px; align-self: stretch; display: grid; place-items: center; }
+.pl-ic { flex: 0 0 30px; height: 30px; border: 0; background: transparent; color: #d8d9de; border-radius: 8px; cursor: pointer; font-size: 11px; display: grid; place-items: center; padding: 0; }
+.pl-ic:disabled { opacity: 0.25; cursor: default; }
+.pl-ic svg, .pl-type svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pl-type { flex: 0 0 22px; display: grid; place-items: center; color: #9a9ba3; }
+.pl-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pl-op, .pl-lock { flex: 0 0 auto; color: #9a9ba3; font-size: 11px; padding-right: 4px; }
+@media (hover: hover) { .pl-row:not(.sel):hover { background: #2a2b31; } .pl-ic:not(:disabled):hover { background: #33343b; } }
+#pl-props { display: flex; flex-direction: column; gap: 6px; padding-top: 4px; border-top: 1px solid #2c2d33; }
+#pl-shape { display: flex; flex-direction: column; gap: 6px; }
+.pl-prow { display: flex; align-items: center; gap: 8px; }
+.pl-prow > span { flex: 0 0 56px; color: #9a9ba3; font-size: 12px; }
+.pl-prow input[type=range] { flex: 1 1 auto; min-width: 0; accent-color: #8ab4ff; height: 28px; margin: 0; touch-action: none; }
+.pl-prow b { flex: 0 0 48px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; font-size: 12px; }
+.pl-prow select, .ps-text select { flex: 1 1 auto; min-width: 0; background: #24252a; color: #e8e8ea; border: 1px solid #33343b; border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 13px; }
+input[type=color] { width: 40px; height: 30px; padding: 0 2px; border: 1px solid #33343b; border-radius: 8px; background: #24252a; cursor: pointer; flex: 0 0 auto; }
+.pl-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.pl-acts .chip { padding: 5px 10px; }
+.chip.danger, .btn.primary.danger { color: #ffb4ab; }
+.btn.primary.danger { background: #b3261e; color: #fff; }
+@media (orientation: landscape) {
+  #ps-layers { width: 270px; max-height: none; border-top: 0; border-left: 1px solid #2c2d33; }
+}
+
+/* HPS2: text dialog + confirm / prompt */
+.dlg.ps-text { max-width: 400px; }
+.ps-text textarea, #ask-input { width: 100%; background: #24252a; color: #e8e8ea; border: 1px solid #33343b; border-radius: 10px; padding: 8px 10px; font: inherit; font-size: 15px; resize: vertical; outline: none; }
+.ps-text textarea:focus, #ask-input:focus { border-color: #3d5a8f; }
+.ps-text .ps-row > span:first-child { flex: 0 0 auto; }
+.tx-size { width: 110px; flex: 0 0 auto; }
+.tx-style { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ps-msg h2 { margin: 0; font-size: 16px; }
+.ps-msg h2:empty { display: none; }
+#empty .btn.ghost { font-size: 13px; padding: 7px 16px; }
+
 
 /* Light theme: the panels go light; the photo sits on a soft grey (config.studio.stageLight) */
 html.light, html.light body { background: #f4f5f7; color: #1d1e22; }
@@ -60,3 +113,15 @@ html.light .seg button.sel { background: #dce7ff; color: #1f4fb8; }
 html.light .ps-keys, html.light .ps-about p { color: #3a3b42; }
 html.light kbd { background: #f4f5f7; border-color: #c9cbd2; color: #2c2d33; }
 html.light body.dragging #stage::after { background: rgba(244,245,247,0.7); }
+html.light #ps-layers { background: #f7f8fa; border-color: #dcdde2; }
+html.light .pl-row { background: #ffffff; }
+html.light .pl-row.sel { background: #dce7ff; border-color: #9db8f0; }
+@media (hover: hover) { html.light .pl-row:not(.sel):hover { background: #eef0f4; } html.light .pl-ic:not(:disabled):hover { background: #e3e5ea; } }
+html.light .pl-ic { color: #3a3b42; }
+html.light .pl-type, html.light .pl-op, html.light .pl-lock, html.light .pl-prow > span, html.light .pl-grip { color: #6b6c74; }
+html.light #pl-props { border-color: #dcdde2; }
+html.light .pl-prow select, html.light .ps-text select, html.light input[type=color],
+html.light .ps-text textarea, html.light #ask-input { background: #ffffff; color: #1d1e22; border-color: #d4d6dc; }
+html.light .pl-prow input[type=range] { accent-color: #2f66d6; }
+html.light .chip.danger { color: #b3261e; }
+.menu button:disabled { opacity: 0.4; cursor: default; }

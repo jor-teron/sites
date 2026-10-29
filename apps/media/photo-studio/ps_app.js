@@ -1,7 +1,9 @@
 /*
- * Hub Photo Studio (HPS1) — ps_app.js, the Studio layer. Loaded LAST, after Photo Editor v2's
+ * Hub Photo Studio (HPS2) — ps_app.js, the Studio layer. Loaded LAST, after Photo Editor v2's
  * pe_ui.js (which boots the shared engine on DOMContentLoaded). It adds what makes Studio its own app:
  *  - PE.ui.notify: in-app message box (pe_send.js uses it instead of alert() when present)
+ *  - PE.studio.ask({ title, text, input, ok, danger }): in-app confirm / prompt (HPS2) → Promise
+ *    (true / false, or the typed string / null when `input` is given)
  *  - Settings + About sheet (theme, Ctrl+S format, JPEG quality), saved by ps_save.js under Studio's own keys
  *  - light / dark theme for the photo background
  *  - PE.studio: the slot where the heavy features (layers, selections, retouch, pro adjustments) plug in.
@@ -63,6 +65,30 @@
     $('dlg-msg').hidden = false;
     msgDone = res;
   });
+  // ---------- in-app confirm / prompt (HPS2) ----------
+  let askDone = null;
+  ST.ask = (o) => new Promise((res) => {
+    o = o || {};
+    if (askDone) { const r = askDone; askDone = null; r(o.input != null ? null : false); }
+    $('ask-title').textContent = o.title || '';
+    $('ask-text').textContent = o.text || ''; $('ask-text').hidden = !o.text;
+    const inp = $('ask-input'), withInput = o.input != null;
+    inp.hidden = !withInput; inp.value = withInput ? String(o.input) : '';
+    $('ask-ok').textContent = o.ok || 'OK';
+    $('ask-ok').classList.toggle('danger', !!o.danger);
+    $('dlg-ask').hidden = false;
+    askDone = (v) => res(v);
+    ST._askInput = withInput;
+    if (withInput) setTimeout(() => { try { inp.focus(); inp.select(); } catch (_) { /* ignore */ } }, 30);
+  });
+  function closeAsk(ok) {
+    if (!askDone) return;
+    const r = askDone; askDone = null;
+    $('dlg-ask').hidden = true;
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    r(ST._askInput ? (ok ? $('ask-input').value : null) : !!ok);
+  }
+
   function closeMsg() { if ($('dlg-msg').hidden) return; $('dlg-msg').hidden = true; const r = msgDone; msgDone = null; if (r) r(); }
 
   // ---------- settings sheet ----------
@@ -107,6 +133,9 @@
       });
     }
     onTap($('ps-msg-ok'), closeMsg);
+    onTap($('ask-ok'), () => closeAsk(true));
+    onTap($('ask-cancel'), () => closeAsk(false));
+    onTap($('dlg-ask'), (e) => { if (e && e.target === $('dlg-ask')) closeAsk(false); });
     onTap($('dlg-msg'), (e) => { if (e && e.target === $('dlg-msg')) closeMsg(); });
 
     PSSave.onTheme(applyTheme);
@@ -121,6 +150,13 @@
 
     // modal sheets: swallow the editor's keys while open (capture runs before pe_input.js)
     window.addEventListener('keydown', (e) => {
+      if (!$('dlg-ask').hidden && $('dlg-msg').hidden) {
+        if (e.key === 'Escape') { closeAsk(false); e.preventDefault(); }
+        else if (e.key === 'Enter') { closeAsk(true); e.preventDefault(); }
+        else if (e.target !== $('ask-input') && e.key !== 'Tab') e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
       if (!$('dlg-msg').hidden) {
         if (e.key === 'Escape' || e.key === 'Enter') closeMsg();
         if (e.key !== 'Tab') { e.preventDefault(); e.stopImmediatePropagation(); }
