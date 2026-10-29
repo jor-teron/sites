@@ -1,0 +1,61 @@
+<!doctype html>
+<!--
+  Mesh Viewer (apps/system/mesh-viewer/index.html), H69 — a READ-ONLY look at the Hub mesh
+  (shared/link/hub_mesh.js, window.HubMesh): this device, the devices in the mesh, the H55b join
+  stats and a live connection log (hub/link/hub_meshlog.js, window.HubMeshLog, last 200 events).
+  Data comes from the Hub page around us (window.parent, same origin, like System Monitor's Tasks tab).
+  Only two actions: Retry join now (HubMesh.retry(), as Settings › Devices Retry) and a link to
+  Settings › Devices. Opens as a window in Desktop mode, full screen in Phone mode.
+  Files: mv.js (everything), mv.css (look), README.md.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mesh Viewer</title>
+  <link rel="stylesheet" href="mv.css?v=20261029r" />
+  <script src="../../../shared/theme/hub_theme.js?v=20261026h22"></script>
+</head>
+<body>
+  <header class="top">
+    <h1><img src="mesh-viewer_icon.png" alt="" /> Mesh Viewer</h1>
+    <p class="honest">Read-only view of this Hub's mesh. Names and ids come from other devices.</p>
+  </header>
+  <main class="panel">
+    <div class="pane">
+      <section class="card" id="mv-me-card">
+        <h2>This device</h2>
+        <p class="big" id="mv-state"><span class="dot"></span> <span id="mv-state-t">Loading…</span></p>
+        <dl class="kv" id="mv-me"></dl>
+        <div class="acts">
+          <button type="button" class="btn primary" id="mv-retry">Retry join now</button>
+          <button type="button" class="btn" id="mv-settings">Settings › Devices</button>
+        </div>
+        <p class="muted small" id="mv-retry-note"></p>
+      </section>
+      <section class="card" id="mv-stats-card">
+        <h2>Join stats</h2>
+        <dl class="kv" id="mv-stats"></dl>
+        <p class="muted small">A join waits up to 60 s for the lobby, retries every 5 s, and gives up after 5 minutes of failures (H55b).</p>
+      </section>
+      <section class="card wide" id="mv-devs-card">
+        <h2>Devices in the mesh <span class="count" id="mv-count"></span></h2>
+        <div class="devs" id="mv-devs"></div>
+        <p class="muted small">Trust and approval are not built yet (H51): every device here joined with the code. Last seen is the lobby's last heartbeat, refreshed about every 10 s.</p>
+      </section>
+      <section class="card wide" id="mv-log-card">
+        <div class="log-head">
+          <h2>Connection log <span class="count" id="mv-log-count"></span></h2>
+          <div class="acts">
+            <button type="button" class="btn" id="mv-copy">Copy log</button>
+            <button type="button" class="btn" id="mv-clear">Clear</button>
+          </div>
+        </div>
+        <ol class="log" id="mv-log" aria-live="polite"></ol>
+        <p class="muted small" id="mv-log-note">Last 200 events since the Hub started (not saved).</p>
+      </section>
+    </div>
+  </main>
+  <script src="mv.js?v=20261029r"></script>
+</body>
+</html>

@@ -13,6 +13,8 @@
  * Keys ('sites-hub.<key>', hub/core/hub_prefs.js applies them live as html.hub-bar-off-<item>, wm.css hides):
  *   barShowDesk, barSearch, barTasks, barWorkspaces, barOsk, barDevices, barClock: '0' = off (default on);
  *   barPooh, barUpdate: '1' = on (default OFF). H63: barEye (Eye comfort 🌙, both modes) '1' = on (default OFF). Pooh off only hides the icon (Pooh Chat keeps working).
+ *   H66: barNotif (Notification Centre 🔔, right after Devices, both modes) '0' = off (default ON). Off only hides the 🔔;
+ *   notifications are still saved and the Notification Centre app (System) still works.
  *   Update off: when a new build waits, a small dot shows on Start instead.   (H52 / H52b)
  *   H52c: Update off = no indicator at all (no dot on Start / Home ▾); the Hub still updates itself and
  *   Settings › About still shows a waiting build.
@@ -36,7 +38,9 @@
     ['barDevices', 'Devices', 'The \uD83C\uDFAE button: Connect Code, phone link and connected devices. Always shown on a device joined to a Hub (Disconnect lives there)', true],   // H53
     // ['barUpdate', 'Update', 'Shows when a new build is ready. Off: a small dot on Start instead (the Hub also updates itself, see About)', false]   (H52 / H52b)
     ['barUpdate', 'Update', 'Shows when a new build is ready. Off: no indicator at all; the Hub still updates itself and Settings \u203A About shows a waiting build', false],   // H52c
-    ['barEye', 'Eye comfort', 'The \uD83C\uDF19 button: warm screen on / off now, until the next scheduled change (Settings \u203A Look \u203A Eye comfort)', false]   // H63
+    // ['barEye', 'Eye comfort', 'The \uD83C\uDF19 button: warm screen on / off now, until the next scheduled change (Settings \u203A Look \u203A Eye comfort)', false]   // H63   (before H66: last item)
+    ['barEye', 'Eye comfort', 'The \uD83C\uDF19 button: warm screen on / off now, until the next scheduled change (Settings \u203A Look \u203A Eye comfort)', false],   // H63
+    ['barNotif', 'Notifications', 'The \uD83D\uDD14 button: past notifications with an unread count, and Do Not Disturb (the Notification Centre app keeps working when it is off)', true]   // H66
   ];
   /* H52b: switches with nothing in Phone mode's top bar get a small "Desktop only" tag */
   const DESK_ONLY = ['barShowDesk', 'barSearch', 'barTasks', 'barWorkspaces', 'barOsk', 'trayMeter', 'barClock'];
@@ -85,11 +89,13 @@
         ui.note('The bar at the bottom (or top) of the screen in Desktop mode, and the top bar in Phone mode. One set of switches for both modes; changes show at once. Items marked Desktop only are not in the Phone bar. With Update off nothing on the bar shows a waiting build (see About).'),   // H52c
         ui.title('Left'), start, rows[0], rows[1], rows[2],
         // ui.title('Right'), rows[3], rows[4], rows[5], rows[6], rows[7], meter, clock,   (before H63)
-        ui.title('Right'), rows[3], rows[4], rows[8], rows[5], rows[6], rows[7], meter, clock,   // H63: Eye comfort 🌙 sits just before Pooh
+        // ui.title('Right'), rows[3], rows[4], rows[8], rows[5], rows[6], rows[7], meter, clock,   // H63: Eye comfort 🌙 sits just before Pooh   (before H66)
+        ui.title('Right'), rows[3], rows[4], rows[8], rows[5], rows[6], rows[9], rows[7], meter, clock,   // H66: Notifications 🔔 right after Devices 🎮
         reset,
         // ui.note('These are Desktop layout settings: Send profile (Devices) sends them with the Desktop group.'));   (H52)
         // ui.note('Send profile (Devices): Pooh Chat, Devices and Update go with the Shared group; the Desktop only switches with the Desktop group.'));   // H52b
-        ui.note('Send profile (Devices): Eye comfort, Pooh Chat, Devices and Update go with the Shared group; the Desktop only switches with the Desktop group.'));   // H63: + Eye comfort
+        // ui.note('Send profile (Devices): Eye comfort, Pooh Chat, Devices and Update go with the Shared group; the Desktop only switches with the Desktop group.'));   // H63: + Eye comfort   (before H66)
+        ui.note('Send profile (Devices): Eye comfort, Pooh Chat, Devices, Notifications and Update go with the Shared group; the Desktop only switches with the Desktop group.'));   // H66: + Notifications
       if (sub) setTimeout(() => { const r = pane.querySelector('[data-key="' + sub + '"]'); if (r) r.scrollIntoView({ block: 'center' }); }, 50);
     }
   });

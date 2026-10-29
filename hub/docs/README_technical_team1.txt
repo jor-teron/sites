@@ -667,6 +667,11 @@ localStorage, prefix sites-hub.:
   eyeFrom / eyeTo     Settings > Look, H63        'HH:MM', '' = 19:00 / 06:00 (hub_daynight.js)
   eyeNow              hub_eye.js 🌙, H63          '1@<period>' | '0@<period>' override, not synced
   barEye              Settings > Hub bar, H63     '1' = 🌙 button shown (default hidden)
+  barNotif            Settings > Hub bar, H66     '0' = 🔔 button hidden (default shown)
+  notifs              hub_notifcenter.js, H66     JSON history, newest first, max 100; this device only
+                      (not in profile file / folder, not synced)
+  dnd                 🔔 panel / Notification     '1' = Do Not Disturb (no pop-up cards, still saved);
+                      Centre app, H66             this device only, never synced
   themeAuto           Settings > Look, H64        '1' = Auto theme (Light by day, Dark by night);
                       hub_autotheme.js then keeps writing theme = 'light' | 'dark'
   themeSunrise        Settings > Look, H64        'HH:MM', '' = 06:00

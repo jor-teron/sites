@@ -1,0 +1,56 @@
+/*
+ * Notification Centre look (apps/system/notifications/nc.css), H66. Same look as Mesh Viewer / System Monitor:
+ * dark by default, html.light from shared/theme/hub_theme.js (Light, Auto by day, Glass → light).
+ */
+:root { --accent: #6ea8fe; --bg: #12151c; --card: #1a1e27; --line: rgba(255,255,255,.08); --text: #e8eaed;
+  --muted: #9aa0a6; --bad: #f87171; --soft: rgba(255,255,255,.08); --soft2: rgba(255,255,255,.14); color-scheme: dark; }
+html.light { --bg: #f4f5f8; --card: #ffffff; --line: rgba(0,0,0,.09); --text: #1c1f26; --muted: #5f6672; --bad: #c62828;
+  --soft: rgba(0,0,0,.06); --soft2: rgba(0,0,0,.1); color-scheme: light; }
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+button, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { opacity: .4; cursor: default; }
+.top { padding: 12px 16px 4px; }
+.top h1 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 1.25rem; }
+.top h1 img { width: 34px; height: 34px; border-radius: 9px; }
+.honest { margin: 4px 0 0; color: var(--muted); font-size: .85rem; }
+.panel { padding: 8px 12px 24px; max-width: 860px; }
+.muted { color: var(--muted); }
+.small { font-size: .82rem; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; padding: 10px 12px; background: var(--card);
+  border: 1px solid var(--line); border-radius: 16px; }
+.dnd { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 700; cursor: pointer; flex: 1 1 auto; }
+.dnd input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.sw { position: relative; width: 44px; height: 26px; border-radius: 13px; background: var(--soft2); flex: none; transition: background .2s; }
+.sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.35); transition: transform .2s; }
+.dnd input:checked + .sw { background: var(--accent); }
+.dnd input:checked + .sw::after { transform: translateX(18px); }
+.dnd input:focus-visible + .sw { outline: 2px solid var(--accent); outline-offset: 2px; }
+.filter { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-weight: 600; }
+.filter select { min-height: 40px; max-width: 60vw; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+.btn { min-height: 44px; min-width: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--line); font-weight: 700; }
+.btn:hover:not(:disabled) { background: var(--soft2); }
+#nc-count { margin: 10px 4px 0; }
+#nc-dnd-note { margin: 8px 4px 0; }
+.list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.day { margin: 14px 4px 2px; font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.empty { margin: 40px 0; text-align: center; color: var(--muted); }
+.item { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 12px 10px 12px 16px; background: var(--card);
+  border: 1px solid var(--line); border-radius: 14px; cursor: pointer; }
+.item:hover { border-color: var(--accent); }
+.item:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.item.unread::before { content: ''; position: absolute; left: 5px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: var(--accent); }
+.ico { flex: 0 0 38px; width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px;
+  background: var(--soft); overflow: hidden; }
+.ico img { width: 100%; height: 100%; object-fit: cover; }
+.body { flex: 1; min-width: 0; }
+.meta { display: flex; gap: 10px; align-items: baseline; font-size: .8rem; color: var(--muted); }
+.app { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.time { flex: none; font-variant-numeric: tabular-nums; }
+.t { font-weight: 700; overflow-wrap: anywhere; }
+.x { font-size: .92rem; overflow-wrap: anywhere; white-space: pre-line; }
+.del { flex: none; width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); }
+.del:hover { background: color-mix(in srgb, var(--bad) 22%, transparent); color: var(--text); }
+@media (max-width: 520px) { .filter select { max-width: 52vw; } }
