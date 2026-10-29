@@ -1,38 +1,77 @@
-/* Clock Reading CR2 — app look on top of the Learn kit (../common/ui/learn.css): the clock on the left (on top in
-   portrait), the panel beside it. Light mode follows the Hub theme (html.light). Plain CSS, no heavy effects. */
-.cr { --accent: #ffb347; --ok: #7ccf95; --bad: #ff6b6b; --hh: #111; --mh: #1f6feb; --sh: #e5221b; }
+/* Clock Reading CR3 — app look on top of the Learn kit (../common/ui/learn.css): the live clock on the left (on top in
+   portrait), the time panel beside it and the row of clock styles across the bottom. The 7 clock styles are coloured here
+   (.st-*). Light mode follows the Hub theme (html.light). Plain CSS, no blur or heavy filters (weak phones). */
+.cr { --accent: #ffb347; --hh: #111; --mh: #1f6feb; --sh: #e5221b; --wood: #8a5a2b; --wood2: #5e3a19; --gold: #d4a63a; }
 .cr-ver { flex: none; font-size: 0.75rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 99px; }
-.cr-modes button { padding: 0 12px; }
-.cr-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 420px); gap: 14px; overflow: hidden; }
-.cr-left { min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
-.cr-panel { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 8px; }
-.cr-clock { width: 100%; flex: 1 1 auto; min-height: 0; max-height: min(72dvh, 560px); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.cr-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 360px); grid-template-rows: minmax(0, 1fr) auto; gap: 10px 14px; overflow: hidden; }
+.cr-stage { position: relative; min-height: 0; min-width: 0; display: flex; align-items: center; justify-content: center; }
+.cr-side { min-height: 0; overflow: auto; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 8px; }
+.cr-styles { grid-column: 1 / -1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.cr-strow { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 4px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+.cr-st { flex: 0 0 auto; width: 104px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cr-st[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+.cr-st svg { width: 100%; height: 64px; pointer-events: none; }
+.cr-stn { font-size: 0.78rem; font-weight: 700; line-height: 1.15; text-align: center; }
+.cr-note { margin: 0; font-size: 0.86rem; color: var(--muted); line-height: 1.35; min-height: 2.7em; }
+.cr-note b { color: var(--text); }
+/* the clock */
+.cr-clock { width: 100%; height: 100%; max-height: min(64dvh, 560px); touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.cr-clock [data-part] { cursor: help; }
 .cr-rim { fill: var(--accent); } .cr-face { fill: #fffdf6; }
-.cr-tick { stroke: #555; stroke-width: 1; } .cr-tick5 { stroke: #222; stroke-width: 3; }
-.cr-num { fill: #1b2430; font: 700 17px system-ui, sans-serif; text-anchor: middle; pointer-events: none; }
-.cr-hand { cursor: grab; } .cr-hv { stroke-linecap: round; } .cr-hit { stroke: transparent; stroke-width: 22; }
-.cr-hh .cr-hv, .cr-hh .cr-knob { stroke: var(--hh); fill: var(--hh); } .cr-mh .cr-hv, .cr-mh .cr-knob { stroke: var(--mh); fill: var(--mh); }
-.cr-sh { pointer-events: none; } .cr-sh .cr-hv { stroke: var(--sh); } .cr-sh .cr-knob { display: none; } .cr-sh .cr-hit { display: none; }
-.cr-pin { fill: #222; } .locked .cr-hand { cursor: default; } .locked .cr-knob { display: none; }
-.drag-h .cr-hh .cr-hv, .drag-m .cr-mh .cr-hv { filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)); }
+.cr-tick { stroke: #555; stroke-width: 1; } .cr-tick5 { stroke: #222; stroke-width: 3; } .cr-bar { stroke: #111; stroke-width: 7; }
+.cr-ticks, .cr-nums, .cr-hv, .cr-lolly { pointer-events: none; }
+.cr-num { fill: #1b2430; font: 700 17px system-ui, sans-serif; text-anchor: middle; }
+.cr-rom { font: 700 14px Georgia, 'Times New Roman', serif; letter-spacing: -0.5px; }
+.cr-fancy { font: italic 700 18px Georgia, 'Times New Roman', serif; }
+.cr-hv { stroke-linecap: round; } .cr-butt { stroke-linecap: butt; }
+.cr-hit { fill: transparent; stroke: transparent; pointer-events: all; } .cr-hitw { stroke-width: 12; }
+.cr-on .cr-hit, .cr-hit.cr-on { fill: rgba(255, 179, 71, 0.35); stroke: rgba(255, 179, 71, 0.45); }
+.cr-face.cr-on, .cr-rim.cr-on { stroke: rgba(255, 140, 0, 0.6); stroke-width: 3; }
+.cr-on .cr-woodv, .cr-on .cr-cone, .cr-on .cr-bob, .cr-on .cr-leaf, .cr-on .cr-crown, .cr-on .cr-bow, .cr-on .cr-gnomonv, .cr-on .cr-shadowv { stroke: #ff8c00; stroke-width: 3; }
+.cr-hh .cr-hv { stroke: var(--hh); } .cr-mh .cr-hv { stroke: var(--mh); } .cr-sh .cr-hv { stroke: var(--sh); } .cr-lolly { fill: var(--sh); }
+.cr-pin { fill: #222; }
+/* style: railway station */
+.st-rail .cr-rim { fill: #151515; } .st-rail .cr-face { fill: #fff; } .st-rail .cr-num { font: 800 22px Helvetica, Arial, sans-serif; fill: #111; }
+.st-rail .cr-tick { stroke: #111; stroke-width: 1.6; }
+/* style: Roman wall clock */
+.st-roman .cr-woodv { fill: var(--wood); stroke: var(--wood2); stroke-width: 2; } .st-roman .cr-brass { fill: var(--gold); } .st-roman .cr-face { fill: #fbf3df; }
+/* style: pocket watch */
+.st-pocket .cr-rim { fill: var(--gold); stroke: #a67c1a; stroke-width: 3; } .st-pocket .cr-face { fill: #fffaf0; }
+.cr-bow { fill: none; stroke: var(--gold); stroke-width: 6; } .cr-crown { fill: var(--gold); stroke: #a67c1a; stroke-width: 1.5; } .cr-ridge { stroke: #a67c1a; stroke-width: 1.2; pointer-events: none; }
+.cr-chainv { fill: none; stroke: var(--gold); stroke-width: 4.5; stroke-dasharray: 7 3; stroke-linecap: round; }
+/* style: grandfather clock */
+.cr-woodv { fill: var(--wood); stroke: var(--wood2); stroke-width: 2; } .cr-dark { fill: var(--wood2); }
+.st-grand .cr-rim { fill: var(--gold); } .st-grand .cr-face { fill: #f8f0dc; } .cr-glass { fill: #2b1a0c; stroke: var(--gold); stroke-width: 2; }
+.cr-rod { stroke: var(--gold); stroke-width: 3; } .cr-bob { fill: var(--gold); stroke: #a67c1a; stroke-width: 2; }
+/* style: cuckoo clock */
+.st-cuckoo .cr-rim { fill: #6b4423; } .st-cuckoo .cr-face { fill: #fff6e0; } .cr-carve { fill: #4a2c12; pointer-events: none; }
+.cr-leaf { fill: #6b4423; stroke: #3b220c; stroke-width: 1.5; } .cr-chainl { stroke: #c9a040; stroke-width: 2; stroke-dasharray: 3 2; }
+.cr-cone { fill: #6b3f1d; stroke: #3b220c; stroke-width: 1.5; } .cr-scale { stroke: #3b220c; stroke-width: 1.4; fill: none; pointer-events: none; }
+.cr-door { fill: #4a2c12; stroke: #2b1808; stroke-width: 1.5; } .cr-doorhole { fill: #1a0e04; display: none; }
+.cr-bird { display: none; } .cr-birdb { fill: #8b5a2b; stroke: #3b220c; stroke-width: 1; } .cr-beak { fill: #f0a020; } .cr-eye { fill: #111; }
+.cr-birdg.out .cr-door { display: none; } .cr-birdg.out .cr-doorhole, .cr-birdg.out .cr-bird { display: inline; }
+/* style: sundial */
+.st-sun .cr-rim { fill: #9a958a; stroke: #77726a; stroke-width: 2; } .st-sun .cr-face { fill: #e8e2d2; } .st-sun .cr-num { fill: #3d3a33; }
+.st-sun .cr-tick { stroke: #8a8578; } .st-sun .cr-tick5 { stroke: #5a564e; stroke-width: 2.5; } .cr-sunline { stroke: #b8b1a0; stroke-width: 0.8; }
+.cr-shadowv { fill: rgba(40, 36, 30, 0.45); } .cr-gnomonv { fill: #b07a2a; stroke: #6e4a14; stroke-width: 1.2; }
+/* the popup for a part */
+.cr-tip { position: absolute; z-index: 5; max-width: min(260px, 90%); padding: 8px 10px; border-radius: 10px; background: #1b2430; color: #fff;
+  border: 1px solid var(--accent); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35); font-size: 0.9rem; line-height: 1.3; pointer-events: none; display: flex; flex-direction: column; gap: 2px; }
+.cr-tip[hidden] { display: none; } .cr-tip b { color: var(--accent); }
+/* the time panel */
 .cr-dig { font: 800 clamp(1.8rem, 6vw, 2.8rem) ui-monospace, Menlo, Consolas, monospace; color: var(--accent); line-height: 1; }
-.cr-words { flex: none; font-weight: 600; text-align: center; min-height: 1.3em; }
-.cr-gmt { flex: none; font-weight: 800; font-size: 0.9rem; letter-spacing: 0.04em; padding: 2px 10px; border-radius: 99px; background: var(--accent); color: #111; }
+.cr-words { font-weight: 600; min-height: 1.3em; }
+.cr-gmt { font-weight: 800; font-size: 0.9rem; letter-spacing: 0.04em; padding: 2px 10px; border-radius: 99px; background: var(--accent); color: #111; }
 .cr-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .cr-tog[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #111; }
-.cr-levels { display: grid; gap: 8px; } .cr-lv { display: flex; justify-content: space-between; align-items: center; min-height: 52px; text-align: left; }
-.cr-opts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-.cr-opt { min-height: 56px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: 800 1.5rem ui-monospace, Menlo, Consolas, monospace; }
-.cr-opt.ok { background: rgba(124, 207, 149, 0.25); border-color: var(--ok); } .cr-opt.bad { background: rgba(255, 107, 107, 0.22); border-color: var(--bad); }
-.cr-go { background: var(--accent); border-color: var(--accent); color: #111; min-width: 120px; align-self: flex-start; }
-.cr-target { font-size: 1.3rem; font-weight: 700; color: var(--accent); margin: 0; }
-.cr-fb { min-height: 1.4em; margin: 0; font-weight: 600; } .cr-fb.ok { color: var(--ok); } .cr-fb.bad { color: var(--bad); }
-.cr-big { font-size: 2.6rem; font-weight: 800; color: var(--accent); margin: 0; }
-.cr-panel .lrn-h { margin: 0; }
+.cr-hint { margin: 0; }
 @media (max-aspect-ratio: 1/1) {
-  .cr-main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; gap: 8px; }
-  .cr-panel { max-height: 46dvh; }
+  .cr-main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto auto; gap: 8px; }
+  .cr-side { align-items: center; text-align: center; gap: 6px; } .cr-side .cr-row { justify-content: center; }
+  .cr-clock { max-height: 50dvh; }
 }
-@media (max-aspect-ratio: 1/1) and (max-height: 700px) { .cr-panel > .lrn-h:first-child, .cr-panel > p.lrn-sub:last-child { display: none; } }
-@media (max-width: 560px) { .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; flex-basis: 100%; } .cr-panel .lrn-sub { font-size: 0.85rem; } }
-@media (max-height: 460px) { .lrn-head { padding: 4px 10px; } .lrn-main.cr-main { padding: 6px 10px; } .cr-dig { font-size: 1.5rem; } .cr-opt { min-height: 44px; font-size: 1.2rem; } .cr-panel > p.lrn-sub:last-child { display: none; } }
+@media (max-aspect-ratio: 1/1) and (max-height: 760px) { .cr-hint { display: none; } }
+@media (max-width: 560px) { .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; } .cr-st { width: 88px; } .cr-st svg { height: 54px; } .cr-note { font-size: 0.8rem; } }
+@media (max-height: 520px) { .lrn-head { padding: 4px 10px; } .lrn-main.cr-main { padding: 6px 10px; } .cr-dig { font-size: 1.5rem; } .cr-st svg { height: 40px; } .cr-hint { display: none; } }
+@media (prefers-reduced-motion: reduce) { .cr-strow { scroll-behavior: auto; } }
