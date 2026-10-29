@@ -10,8 +10,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#141518">
-  <title>Photo Editor v2</title>
-  <link rel="stylesheet" href="photo-editor-v2.css?v=20261004a">
+  <title>Photo Editor v2 PE5</title>
+  <link rel="stylesheet" href="photo-editor-v2.css?v=PE5">
 </head>
 <body>
 <div id="app">
@@ -77,6 +77,9 @@
     <button class="tb" id="tb-adjust" data-act="adjust" type="button" tabindex="-1" title="Adjust (A)">
       <svg viewBox="0 0 24 24"><path d="M4 7h9M18 7h2M4 17h3M11 17h9"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="8.5" cy="17" r="2.3"/></svg>
     </button>
+    <button class="tb" id="tb-resize" data-act="resize" type="button" tabindex="-1" title="Resize (E)">
+      <svg viewBox="0 0 24 24"><rect x="3.5" y="11.5" width="9" height="9" rx="1.5"/><path d="M12 4h8v8"/><path d="M20 4l-7.5 7.5"/></svg>
+    </button>
     <span class="sep"></span>
     <button class="tb" id="tb-save" data-act="save" type="button" tabindex="-1" title="Save (Ctrl+S)">
       <svg viewBox="0 0 24 24"><path d="M12 3.5v11"/><path d="M7.5 10.5l4.5 4.5 4.5-4.5"/><path d="M4.5 19.5h15"/></svg>
@@ -91,23 +94,52 @@
     <button type="button" tabindex="-1" data-act="send">Send 📤</button>
   </div>
 
+  <div id="dlg-resize" class="dlg-wrap" hidden>
+    <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="rs-title">
+      <h2 id="rs-title">Resize</h2>
+      <div class="rs-sizes">
+        <div>Current <b id="rs-cur"></b></div>
+        <div>New <b id="rs-new"></b></div>
+      </div>
+      <div class="chips">
+        <button type="button" tabindex="-1" class="chip" id="rs-u-px">Pixels</button>
+        <button type="button" tabindex="-1" class="chip" id="rs-u-pct">Percent</button>
+      </div>
+      <div class="rs-fields">
+        <label>Width <span class="rs-in"><input id="rs-w" type="number" inputmode="decimal" min="1" step="any"><i id="rs-unit-w">px</i></span></label>
+        <button type="button" tabindex="-1" class="chip rs-lock" id="rs-lock" aria-label="Lock aspect ratio">
+          <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+        </button>
+        <label>Height <span class="rs-in"><input id="rs-h" type="number" inputmode="decimal" min="1" step="any"><i id="rs-unit-h">px</i></span></label>
+      </div>
+      <div class="chips" id="rs-presets"></div>
+      <p class="rs-note warn" id="rs-cap" hidden></p>
+      <p class="rs-note">Enlarging makes the photo bigger but can't add real detail; it only smooths the pixels. Very large sizes may be slow to save on low-RAM machines.</p>
+      <div class="row">
+        <button type="button" tabindex="-1" class="btn ghost" id="rs-cancel">Cancel</button>
+        <button type="button" tabindex="-1" class="btn primary" id="rs-apply">Apply</button>
+      </div>
+    </div>
+  </div>
+
   <input type="file" id="file-in" accept="image/*" hidden>
 </div>
-<script src="pe_config.js?v=20261004a"></script>
-<script src="pe_state.js?v=20261004a"></script>
-<script src="pe_transform.js?v=20261004a"></script>
-<script src="pe_adjust.js?v=20261004a"></script>
-<script src="pe_view.js?v=20261004a"></script>
-<script src="pe_crop.js?v=20261004a"></script>
-<script src="pe_io.js?v=20261004a"></script>
-<script src="pe_input.js?v=20261004a"></script>
-<script src="pe_print.js?v=20261011a"></script>
+<script src="pe_config.js?v=PE5"></script>
+<script src="pe_state.js?v=PE5"></script>
+<script src="pe_transform.js?v=PE5"></script>
+<script src="pe_adjust.js?v=PE5"></script>
+<script src="pe_view.js?v=PE5"></script>
+<script src="pe_crop.js?v=PE5"></script>
+<script src="pe_io.js?v=PE5"></script>
+<script src="pe_resize.js?v=PE5"></script>
+<script src="pe_input.js?v=PE5"></script>
+<script src="pe_print.js?v=PE5"></script>
 <script src="../../../shared/link/link_core.js?v=20261011d"></script>
 <script src="../../../shared/link/link_devices.js?v=20261011c"></script>
 <script src="../../../shared/link/link_files.js?v=20261011c"></script>
 <script src="../../../shared/link/link_scan.js?v=20261011d"></script>
 <script src="vendor/jsQR.js"></script>
-<script src="pe_send.js?v=20261011d"></script>
-<script src="pe_ui.js?v=20261011c"></script>
+<script src="pe_send.js?v=PE5"></script>
+<script src="pe_ui.js?v=PE5"></script>
 </body>
 </html>

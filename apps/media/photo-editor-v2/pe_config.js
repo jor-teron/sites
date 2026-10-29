@@ -7,6 +7,7 @@ window.PE = window.PE || {};
 
 PE.config = {
   version: '1.0',
+  release: 'PE5',               // PE5: Sharpen + Resize
 
   // Working-copy limits. A photo bigger than this is downscaled once on open
   // (phones have much smaller canvas limits than desktops; iOS caps at ~16.7 MP).
@@ -24,7 +25,8 @@ PE.config = {
     zoomMin: 1,                 // relative to "fit to screen"
     zoomMax: 8,
     doubleTapZoom: 2.5,
-    rebuildDelay: 160           // ms after zooming before the sharper preview is rebuilt
+    rebuildDelay: 160,          // ms after zooming before the sharper preview is rebuilt
+    sharpenDelay: 90            // ms debounce for the live Sharpen preview (PE5)
   },
 
   crop: {
@@ -46,8 +48,10 @@ PE.config = {
       { id: 'b', label: 'Brightness' },
       { id: 'c', label: 'Contrast' },
       { id: 's', label: 'Saturation' },
-      { id: 'w', label: 'Warmth' }
+      { id: 'w', label: 'Warmth' },
+      { id: 'sh', label: 'Sharpen', min: 0, max: 100 }   // PE5: unsharp mask (3x3), not affected by presets
     ],
+    sharpenMax: 2,              // unsharp-mask strength at Sharpen 100
     // A preset adds its "adj" values on top of the sliders, then applies an optional 3x3 colour matrix.
     presets: [
       { id: 'none',  label: 'Original' },
@@ -64,6 +68,15 @@ PE.config = {
     jpegBackground: '#ffffff',  // transparent areas become this colour in JPEG
     stripRows: 512,             // full-size processing is done in strips of this many rows
     suffix: '-edited'
+  },
+
+  // PE5 resize dialog (both ways: smaller and larger).
+  resize: {
+    maxFactor: 4,               // at most 4x the cropped photo on each side …
+    maxSide: 8000,              // … and at most 8000 px on the longest side (whichever is smaller)
+    minSide: 8,
+    percents: [25, 50, 75, 200, 400],
+    widths: [640, 1280, 1920, 3840]
   },
 
   historyLimit: 60,
@@ -83,6 +96,7 @@ PE.config = {
     crop: 'c',          // C starts crop; C again (or Enter) applies
     resetZoom: '0',
     flipH: 'h', flipV: 'v',
-    adjust: 'a'
+    adjust: 'a',
+    resize: 'e'         // PE5: resize dialog
   }
 };

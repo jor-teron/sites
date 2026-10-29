@@ -2,7 +2,7 @@
  * Photo Editor v2 — pe_input.js
  * Pointer events on the photo (finger, pen, mouse): drag to pan, two-finger pinch to
  * zoom + pan, double-tap / double-click to zoom, mouse wheel to zoom, crop-box dragging.
- * Keyboard: Ctrl+Z, Ctrl+Y / Ctrl+Shift+Z, Ctrl+S, Ctrl+O, R / Shift+R, C, H, V, A,
+ * Keyboard: Ctrl+Z, Ctrl+Y / Ctrl+Shift+Z, Ctrl+S, Ctrl+O, R / Shift+R, C, H, V, A, E (resize),
  * 0 (reset zoom), + / -, Enter (apply crop), Esc (cancel).
  */
 (function (PE) {
@@ -103,6 +103,11 @@
     const K = PE.config.keys, t = e.target, ui = PE.ui;
     if (t && ((t.tagName === 'INPUT' && t.type !== 'range') || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
     const k = (e.key || '').toLowerCase();
+    if (PE.resize.open) {                    // modal dialog: only Esc / Enter
+      if (k === 'escape') { PE.resize.close(); e.preventDefault(); }
+      else if (k === 'enter') { PE.resize.apply(); e.preventDefault(); }
+      return;
+    }
     if (e.ctrlKey || e.metaKey) {
       if (k === K.undo && !e.shiftKey) ui.act('undo');
       else if (k === K.redo || (k === K.undo && e.shiftKey)) ui.act('redo');
@@ -122,6 +127,7 @@
       case K.flipH: ui.act('fliph'); break;
       case K.flipV: ui.act('flipv'); break;
       case K.adjust: ui.act('adjust'); break;
+      case K.resize: ui.act('resize'); break;
       case '+': case '=': PE.view.zoomAt(1.25, cx, cy); break;
       case '-': case '_': PE.view.zoomAt(0.8, cx, cy); break;
       case 'escape': ui.act('cancel'); break;

@@ -117,6 +117,35 @@
     return base + PE.config.save.suffix + '.' + (fmt === 'png' ? 'png' : 'jpg');
   };
 
+  // Colour (lut) and sharpen (amount > 0) on the whole canvas, strip by strip, so memory stays
+  // small. Sharpen needs one row above and below each strip: the row above is kept from the
+  // previous strip before it was sharpened, the row below is read fresh.
+  async function processFull(x, W, H, lut, amount, rows) {
+    let tYield = performance.now(), prevRow = null;
+    const W4 = W * 4;
+    for (let y = 0; y < H; y += rows) {
+      const hh = Math.min(rows, H - y);
+      if (!amount) {
+        const id = x.getImageData(0, y, W, hh);
+        PE.adjust.process(id.data, lut);
+        x.putImageData(id, 0, y);
+      } else {
+        const top = Math.max(0, y - 1), bot = Math.min(H, y + hh + 1), n = bot - top;
+        const id = x.getImageData(0, top, W, n), d = id.data;
+        if (top < y) {
+          if (lut) PE.adjust.process(d.subarray(W4), lut);
+          d.set(prevRow, 0);                         // unsharpened, already coloured
+        } else if (lut) PE.adjust.process(d, lut);
+        const last = (y + hh - 1 - top) * W4;
+        prevRow = d.slice(last, last + W4);
+        const out = new ImageData(W, n);
+        PE.adjust.sharpen(d, out.data, W, n, y - top, y - top + hh, amount);
+        x.putImageData(out, 0, top, 0, y - top, W, hh);
+      }
+      if (performance.now() - tYield > 50) { await nextFrame(); tYield = performance.now(); }
+    }
+  }
+
   // Render the edits on the full-size photo (strip by strip) and download it.
   // onBlob (optional): receive the rendered blob instead of downloading it (used by Print).
   IO.save = async (fmt, onBlob) => {
@@ -128,23 +157,24 @@
     const t0 = performance.now();
     let c = null;
     try {
-      const P = S.photo, e = S.edits, O = T.outputSize(), cs = PE.config.save;
-      c = document.createElement('canvas'); c.width = O.w; c.height = O.h;
-      const x = c.getContext('2d', { willReadFrequently: true });
-      if (fmt === 'jpeg') { x.fillStyle = cs.jpegBackground; x.fillRect(0, 0, O.w, O.h); }
-      T.drawOriented(x, P.bitmap, e.crop.x, e.crop.y, e.crop.w, e.crop.h, e.m, O.w, O.h, 1);
-      const eff = PE.adjust.effective(e);
-      if (!PE.adjust.isIdentity(eff)) {
-        const lut = PE.adjust.build(eff);
-        let tYield = performance.now();
-        for (let y = 0; y < O.h; y += cs.stripRows) {
-          const hh = Math.min(cs.stripRows, O.h - y);
-          const id = x.getImageData(0, y, O.w, hh);
-          PE.adjust.process(id.data, lut);
-          x.putImageData(id, 0, y);
-          if (performance.now() - tYield > 50) { await nextFrame(); tYield = performance.now(); }
-        }
+      const P = S.photo, e = S.edits, O = T.outputSize(), B = T.baseSize(), cs = PE.config.save;
+      const resized = O.w !== B.w || O.h !== B.h;
+      // 1. crop + orientation at the photo's own resolution
+      c = document.createElement('canvas'); c.width = B.w; c.height = B.h;
+      let x = c.getContext('2d', { willReadFrequently: !resized });
+      if (fmt === 'jpeg') { x.fillStyle = cs.jpegBackground; x.fillRect(0, 0, B.w, B.h); }
+      T.drawOriented(x, P.bitmap, e.crop.x, e.crop.y, e.crop.w, e.crop.h, e.m, B.w, B.h, 1);
+      // 2. PE5 resize: halving / doubling steps with high-quality smoothing
+      if (resized) {
+        await nextFrame();
+        const r = PE.resize.resample(c, O.w, O.h);
+        if (r !== c) { c.width = 0; c.height = 0; c = r; }
+        x = c.getContext('2d', { willReadFrequently: true });
       }
+      // 3. colour + sharpen at full output resolution, in strips
+      const eff = PE.adjust.effective(e);
+      const lut = PE.adjust.isIdentity(eff) ? null : PE.adjust.build(eff);
+      if (lut || eff.sh) await processFull(x, O.w, O.h, lut, eff.sh ? PE.adjust.sharpenAmount(eff.sh) : 0, cs.stripRows);
       const mime = fmt === 'png' ? 'image/png' : 'image/jpeg';
       const blob = await new Promise((res) => c.toBlob(res, mime, fmt === 'png' ? undefined : cs.jpegQuality));
       if (!blob) throw new Error('encode failed');
