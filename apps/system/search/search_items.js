@@ -45,7 +45,6 @@ window.HUB_SEARCH_ITEMS = {
     { name: 'Theme (Dark / Light)', hash: 'look', icon: '\uD83C\uDFA8', where: 'Settings \u203A Look', words: 'dark mode light mode' },
     { name: 'Accent colour', hash: 'look', icon: '\uD83C\uDFA8', where: 'Settings \u203A Look', words: 'color accent' },
     { name: 'API Keys', hash: 'keys', icon: '\uD83D\uDD11', where: 'Settings', words: 'settings api key keys services tavily token secret custom' },
-    { name: 'How-to', hash: 'howto', icon: '\uD83D\uDCA1', where: 'Settings', words: 'settings help tips guide shortcuts keyboard' },
     // H29.2b: Device name and Profile moved from About to the new Devices section (old rows kept as comments)
     // { name: 'Device name', hash: 'about/device', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'device name rename sharedlink link gamepad phone' },
     // { name: 'Profile (save / load settings)', hash: 'about/profile', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'profile backup export import restore keys' },
@@ -55,6 +54,8 @@ window.HUB_SEARCH_ITEMS = {
     { name: 'Profile (save / load settings)', hash: 'devices/profile', icon: '\uD83D\uDCF2', where: 'Settings \u203A Devices', words: 'profile backup export import restore keys' },
     { name: 'Send profile (sync to a device)', hash: 'devices/sync', icon: '\uD83D\uDCF2', where: 'Settings \u203A Devices', words: 'sync send profile phone pc share settings api keys' },
     { name: 'Undo last sync', hash: 'devices/undo', icon: '\uD83D\uDCF2', where: 'Settings \u203A Devices', words: 'undo sync revert restore backup profile previous settings keys' },   // H29.3
+    // H56: How-to moved below Devices (was above it, right after API Keys)
+    { name: 'How-to', hash: 'howto', icon: '\uD83D\uDCA1', where: 'Settings', words: 'settings help tips guide shortcuts keyboard' },
     { name: 'About', hash: 'about', icon: '\u2139\uFE0F', where: 'Settings', words: 'settings version build release update contact feedback github' },
     { name: 'Auto update every', hash: 'about/autoupdate', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'auto update automatic daily days 6 am interval refresh last updated' },   // H52
     { name: 'Contact & Feedback', hash: 'about', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'bug issue github idea' }
