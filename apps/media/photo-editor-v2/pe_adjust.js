@@ -1,7 +1,8 @@
 /*
  * Photo Editor v2 — pe_adjust.js
- * Brightness / Contrast / Saturation / Warmth (one slider shown at a time),
- * presets (B&W, Sepia, Vivid) and Reset.
+ * Brightness / Contrast / Saturation / Warmth / Sharpen (one slider shown at a time),
+ * presets (B&W, Sepia, Vivid) and Reset. Sharpen (PE5) is a 3x3 unsharp mask run after
+ * the colour step, on the preview copy while editing and on the full photo on save.
  * The same pixel function is used for the screen preview (on the small preview copy,
  * see pe_view.js) and for the full-size save (pe_io.js), so what you see is what you get.
  */
@@ -26,10 +27,34 @@
       c: clampV(e.adj.c + (pa.c || 0)),
       s: clampV(e.adj.s + (pa.s || 0)),
       w: clampV(e.adj.w + (pa.w || 0)),
+      sh: Math.max(0, Math.min(100, e.adj.sh || 0)),
       matrix: p.matrix || null
     };
   };
+  // Colour step only (Sharpen is checked separately with eff.sh).
   A.isIdentity = (eff) => !eff.b && !eff.c && !eff.s && !eff.w && !eff.matrix;
+
+  // ---------- Sharpen (PE5): 3x3 unsharp mask ----------
+  // blur = 1-2-1 Gaussian (weights /16); out = px + amount * (px - blur). Edges repeat.
+  A.sharpenAmount = (v) => (Math.max(0, Math.min(100, v)) / 100) * PE.config.adjust.sharpenMax;
+  // src / dst: RGBA arrays of w x h pixels; only rows y0 .. y1-1 of dst are written.
+  A.sharpen = (src, dst, w, h, y0, y1, amount) => {
+    const W4 = w * 4, a = amount, a1 = 1 + amount, inv = a / 16;
+    for (let y = y0; y < y1; y++) {
+      const rU = (y > 0 ? y - 1 : 0) * W4, rC = y * W4, rD = (y < h - 1 ? y + 1 : y) * W4;
+      for (let x = 0; x < w; x++) {
+        const cx = x * 4, lx = (x > 0 ? x - 1 : 0) * 4, rx = (x < w - 1 ? x + 1 : x) * 4;
+        for (let ch = 0; ch < 3; ch++) {
+          const c = src[rC + cx + ch];
+          const sum = src[rU + lx + ch] + 2 * src[rU + cx + ch] + src[rU + rx + ch]
+                    + 2 * src[rC + lx + ch] + 4 * c + 2 * src[rC + rx + ch]
+                    + src[rD + lx + ch] + 2 * src[rD + cx + ch] + src[rD + rx + ch];
+          dst[rC + cx + ch] = a1 * c - inv * sum;      // Uint8ClampedArray rounds and clamps
+        }
+        dst[rC + cx + 3] = src[rC + cx + 3];
+      }
+    }
+  };
 
   // Build lookup tables (brightness, contrast, warmth are per channel) and a 3x3 colour
   // matrix (saturation, then the preset matrix).
@@ -118,15 +143,20 @@
     A.sync();
   };
 
-  A.resetAll = () => S.apply((e) => { e.adj = { b: 0, c: 0, s: 0, w: 0 }; e.preset = 'none'; }, 'adj');
+  A.resetAll = () => S.apply((e) => { e.adj = { b: 0, c: 0, s: 0, w: 0, sh: 0 }; e.preset = 'none'; }, 'adj');
   A.current = () => cur;
 
   A.sync = () => {
     if (!slider) return;
     const e = S.edits;
-    const v = e ? e.adj[cur] : 0;
+    const v = e ? (e.adj[cur] || 0) : 0;
+    const sd = cfg().sliders.find((q) => q.id === cur) || {};
+    const mn = sd.min != null ? sd.min : cfg().min, mx = sd.max != null ? sd.max : cfg().max;
+    if (+slider.min !== mn) slider.min = mn;            // Sharpen is 0..100, the others -100..+100
+    if (+slider.max !== mx) slider.max = mx;
     if (+slider.value !== v) slider.value = v;
-    valueBtn.textContent = (v > 0 ? '+' : '') + v;
+    valueBtn.textContent = (v > 0 && mn < 0 ? '+' : '') + v;
+    slider.setAttribute('aria-label', sd.label || 'Adjustment');
     for (const b of chipsEl.children) {
       b.classList.toggle('sel', b.dataset.id === cur);
       b.classList.toggle('changed', !!(e && e.adj[b.dataset.id]));

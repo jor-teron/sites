@@ -48,6 +48,7 @@
   U.act = (a) => {
     const C = PE.crop, T = PE.transform, has = !!S.photo;
     if (a !== 'save' && a !== 'saveJpeg' && a !== 'savePng' && a !== 'print' && a !== 'send') $('pop-save').hidden = true;
+    if (PE.resize.open && a !== 'cancel') return;      // the resize dialog is modal
     switch (a) {
       case 'open': PE.io.pick(); break;
       case 'undo': if (!C.active) S.undo(); break;
@@ -67,6 +68,11 @@
         if (C.active) C.cancel();
         U.panel = U.panel === 'adjust' ? null : 'adjust';
         break;
+      case 'resize':
+        if (!has) break;
+        U.panel = null;
+        PE.resize.show();
+        break;
       case 'save':
         if (!has) break;
         $('pop-save').hidden = !$('pop-save').hidden;
@@ -78,7 +84,8 @@
       case 'saveDefault': PE.io.save(); break;
       case 'resetZoom': PE.view.resetZoom(); break;
       case 'cancel':
-        if (C.active) C.cancel();
+        if (PE.resize.open) PE.resize.close();
+        else if (C.active) C.cancel();
         else if (U.panel) U.panel = null;
         else PE.view.resetZoom();
         break;
@@ -103,13 +110,14 @@
     $('tb-crop').classList.toggle('active', C.active);
     $('tb-adjust').classList.toggle('active', U.panel === 'adjust' && !C.active);
     $('tb-save').classList.toggle('active', !$('pop-save').hidden);
+    $('tb-resize').classList.toggle('active', PE.resize.open);
     const cropOn = C.active, adjOn = !C.active && U.panel === 'adjust' && has;
     $('panel-crop').hidden = !cropOn;
     $('panel-adjust').hidden = !adjOn;
     $('dock').hidden = !(cropOn || adjOn);
     if (has) {
       const O = PE.transform.outputSize();
-      $('save-info').textContent = O.w + ' × ' + O.h + (S.photo.scaled ? ' (reduced)' : '');
+      $('save-info').textContent = O.w + ' × ' + O.h + (PE.transform.isResized(S.edits) ? ' (resized)' : '') + (S.photo.scaled ? ' (reduced)' : '');
     }
   };
 
@@ -136,6 +144,7 @@
     PE.crop.init();
     PE.adjust.init();
     PE.io.init();
+    PE.resize.init();
     PE.input.init();
     U.init();
   }

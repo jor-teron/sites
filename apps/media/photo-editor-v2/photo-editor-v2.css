@@ -103,6 +103,29 @@ body.busy #stage { cursor: progress; }
 .menu button { background: none; border: 0; text-align: left; font-size: 15px; padding: 10px 12px; border-radius: 8px; cursor: pointer; }
 .menu button:hover { background: #2f3036; }
 
+/* Resize dialog (PE5) */
+.dlg-wrap { position: absolute; inset: 0; z-index: 20; background: rgba(0,0,0,0.55); display: grid; place-items: center; padding: 12px; }
+.dlg {
+  width: 100%; max-width: 380px; max-height: 100%; overflow-y: auto;
+  background: #1e1f23; border: 1px solid #33343b; border-radius: 16px; padding: 14px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 10px;
+  user-select: text; -webkit-user-select: text; touch-action: auto;
+}
+.dlg h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.rs-sizes { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: #9a9ba3; flex-wrap: wrap; }
+.rs-sizes b { color: #e8e8ea; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rs-fields { display: flex; align-items: flex-end; gap: 8px; }
+.rs-fields label { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #9a9ba3; }
+.rs-in { display: flex; align-items: center; background: #24252a; border: 1px solid #33343b; border-radius: 10px; padding: 0 8px; }
+.rs-in input { flex: 1 1 auto; min-width: 0; width: 100%; background: transparent; border: 0; color: #e8e8ea; font: inherit; font-size: 15px; padding: 8px 0; outline: none; font-variant-numeric: tabular-nums; }
+.rs-in i { font-style: normal; color: #9a9ba3; font-size: 12px; }
+.rs-in:focus-within { border-color: #3d5a8f; }
+.rs-lock { flex: 0 0 auto; height: 38px; padding: 0 10px; display: flex; align-items: center; }
+.rs-lock svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.rs-lock:not(.sel) svg path { transform: translate(3px, -1.5px); }
+.rs-note { margin: 0; font-size: 12px; color: #9a9ba3; line-height: 1.4; }
+.rs-note.warn { color: #ffcf7a; }
+
 #zoom-pill {
   position: absolute; top: 8px; right: 8px; z-index: 2;
   border: 0; border-radius: 999px; padding: 6px 10px;

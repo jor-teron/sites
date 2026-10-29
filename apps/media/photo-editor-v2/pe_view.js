@@ -13,7 +13,7 @@
   const S = PE.state, T = PE.transform;
   const cfg = () => PE.config.view;
   let canvas, ctx, base, bctx, adj, actx, baseData = null, workData = null;
-  let rebuildTimer = 0, resizeTimer = 0, rafId = 0;
+  let rebuildTimer = 0, resizeTimer = 0, rafId = 0, sharpTimer = 0, sharpData = null;
   V.baseScale = 0;
 
   V.init = () => {
@@ -28,7 +28,11 @@
     else window.addEventListener('resize', () => V.resize());
     V.resize(true);
     PE.on((kind) => {
-      if (kind === 'adj' || kind === 'adjlive') buildAdjusted();
+      if (kind === 'adjlive' && PE.adjust.effective(S.edits).sh) {
+        // PE5: sharpen is a neighbourhood pass, so live slider moves are debounced (light on slow CPUs)
+        clearTimeout(sharpTimer);
+        sharpTimer = setTimeout(buildAdjusted, cfg().sharpenDelay);
+      } else if (kind === 'adj' || kind === 'adjlive') buildAdjusted();
       else if (kind === 'photo') { V.zoom = 1; V.panX = V.panY = 0; buildBase(); }
       else if (kind === 'geom' || kind === 'history' || kind === 'crop') { clampPan(); buildBase(); }
     });
@@ -49,8 +53,12 @@
   // What is on screen: the crop (or the whole photo while cropping) after orientation.
   V.content = () => {
     const P = S.photo, e = S.edits;
-    const crop = PE.crop.active ? { x: 0, y: 0, w: P.w, h: P.h } : e.crop;
-    return { crop: crop, O: T.orientedSize(crop.w, crop.h, e.m) };
+    if (PE.crop.active) {                  // crop mode: the whole photo, before any resize
+      const full = { x: 0, y: 0, w: P.w, h: P.h };
+      return { crop: full, O: T.orientedSize(P.w, P.h, e.m), sx: 1, sy: 1 };
+    }
+    const sc = T.scaledCrop(e);            // PE5: after the resize (may change the shape)
+    return { crop: e.crop, O: T.orientedSize(sc.w, sc.h, e.m), sx: sc.w / e.crop.w, sy: sc.h / e.crop.h };
   };
   V.pad = () => (PE.crop.active ? PE.config.crop.pad : cfg().pad);
   V.fit = () => {
@@ -126,18 +134,21 @@
     base.width = bw; base.height = bh;               // also clears it
     bctx.imageSmoothingEnabled = true;
     bctx.imageSmoothingQuality = 'high';
-    T.drawOriented(bctx, P.bitmap, c.crop.x, c.crop.y, c.crop.w, c.crop.h, e.m, bw, bh, bw / O.w);
+    const kk = bw / O.w;
+    T.drawOriented(bctx, P.bitmap, c.crop.x, c.crop.y, c.crop.w, c.crop.h, e.m, bw, bh, kk * c.sx, kk * c.sy);
     V.baseScale = k;
-    baseData = null;
+    baseData = null; sharpData = null;
     V.lastBaseMs = performance.now() - t0;
     buildAdjusted();
   }
 
   function buildAdjusted() {
+    clearTimeout(sharpTimer);
     if (!S.photo) return;
     const t0 = performance.now();
     const eff = PE.adjust.effective(S.edits);
-    if (PE.adjust.isIdentity(eff)) {
+    const colour = !PE.adjust.isIdentity(eff);
+    if (!colour && !eff.sh) {
       V.shown = base;
     } else {
       const w = base.width, h = base.height;
@@ -147,8 +158,12 @@
         adj.width = w; adj.height = h;
       }
       workData.data.set(baseData.data);
-      PE.adjust.process(workData.data, PE.adjust.build(eff));
-      actx.putImageData(workData, 0, 0);
+      if (colour) PE.adjust.process(workData.data, PE.adjust.build(eff));
+      if (eff.sh) {
+        if (!sharpData) sharpData = new ImageData(w, h);
+        PE.adjust.sharpen(workData.data, sharpData.data, w, h, 0, h, PE.adjust.sharpenAmount(eff.sh));
+        actx.putImageData(sharpData, 0, 0);
+      } else actx.putImageData(workData, 0, 0);
       V.shown = adj;
     }
     V.renderNow();

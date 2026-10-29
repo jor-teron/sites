@@ -10,7 +10,7 @@
 
   const S = PE.state = {
     photo: null,   // { bitmap, w, h, origW, origH, scaled, name, type }
-    edits: null,   // { m:[a,b,c,d], crop:{x,y,w,h}, adj:{b,c,s,w}, preset }
+    edits: null,   // { m:[a,b,c,d], crop:{x,y,w,h}, adj:{b,c,s,w,sh}, preset, k:[kx,ky] }
     history: [],
     index: -1
   };
@@ -27,8 +27,9 @@
   S.defaultEdits = (w, h) => ({
     m: [1, 0, 0, 1],
     crop: { x: 0, y: 0, w: w, h: h },
-    adj: { b: 0, c: 0, s: 0, w: 0 },
-    preset: 'none'
+    adj: { b: 0, c: 0, s: 0, w: 0, sh: 0 },   // sh = Sharpen 0..100 (PE5)
+    preset: 'none',
+    k: [1, 1]                                 // PE5 resize: scale along the photo's x / y axes
   });
 
   S.setPhoto = (photo) => {

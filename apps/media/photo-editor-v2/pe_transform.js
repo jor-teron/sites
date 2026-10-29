@@ -26,8 +26,10 @@
   T.orientedSize = (w, h, m) => (T.swaps(m) ? { w: h, h: w } : { w: w, h: h });
 
   // Draw photo rect (sx,sy,sw,sh) oriented by m, centred in an outW x outH target, scaled.
-  T.drawOriented = (ctx, img, sx, sy, sw, sh, m, outW, outH, scale) => {
-    ctx.setTransform(m[0] * scale, m[2] * scale, m[1] * scale, m[3] * scale, outW / 2, outH / 2);
+  // scaleY (optional, PE5 resize): a different scale along the photo's y axis.
+  T.drawOriented = (ctx, img, sx, sy, sw, sh, m, outW, outH, scale, scaleY) => {
+    const a = scale, b = scaleY == null ? scale : scaleY;
+    ctx.setTransform(m[0] * a, m[2] * a, m[1] * b, m[3] * b, outW / 2, outH / 2);
     ctx.drawImage(img, sx, sy, sw, sh, -sw / 2, -sh / 2, sw, sh);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   };
@@ -71,9 +73,25 @@
   T.rotate = (dir) => changeOrientation(dir < 0 ? ROT_L : ROT_R);
   T.flip = (axis) => changeOrientation(axis === 'v' ? FLIP_V : FLIP_H);
 
-  // Size of the saved image for the current edits.
-  T.outputSize = () => {
+  // PE5 resize: e.k = [kx, ky] scales the crop along the photo's own x / y axes, so it
+  // follows later crops and rotations. Missing = [1, 1].
+  T.k = (e) => (e && e.k) || [1, 1];
+  T.isResized = (e) => { const k = T.k(e); return k[0] !== 1 || k[1] !== 1; };
+  // Crop size in photo axes after the resize (whole pixels, at least 1).
+  T.scaledCrop = (e) => {
+    const k = T.k(e);
+    return { w: Math.max(1, Math.round(e.crop.w * k[0])), h: Math.max(1, Math.round(e.crop.h * k[1])) };
+  };
+  // Size before the resize (crop + orientation only).
+  T.baseSize = () => {
     const e = S.edits;
     return e ? T.orientedSize(e.crop.w, e.crop.h, e.m) : { w: 0, h: 0 };
+  };
+  // Size of the saved image for the current edits (crop + orientation + resize).
+  T.outputSize = () => {
+    const e = S.edits;
+    if (!e) return { w: 0, h: 0 };
+    const c = T.scaledCrop(e);
+    return T.orientedSize(c.w, c.h, e.m);
   };
 })(window.PE);
