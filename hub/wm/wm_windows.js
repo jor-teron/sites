@@ -43,8 +43,8 @@
  * Fires 'hub-wm-change' on window after every change (taskbar redraws) and 'hub-wm-focus'
  * when the focused window changes.
  * R51: new windows open maximised (localStorage 'sites-hub.openMax', '1' / missing = on, '0' = off).
- * H60b: Windowed by default ('1' = maximised, '0' / missing = windowed). A new window cascades 30 px
- *   down-right of the topmost normal window on this workspace (cascadeAt); when it would leave the
+ * H60b: Windowed by default ('1' = maximised, '0' / missing = windowed). A new window cascades 80 px right / 40 px down (was 30 px)
+*   from the topmost normal window on this workspace (cascadeAt); when it would leave the
  *   desk (above the taskbar) it wraps back to the start (40, 16). Restored session rects still win.
  * App bar: the title/stats/buttons an app sends (hub-gamebar.js protocol) show in its own
  * title bar (__hubGamebarAttach).
@@ -306,7 +306,8 @@
   /** H60b: where a new window goes: CASCADE px down-right of the topmost normal (not minimised /
    *  maximised / snapped) window on this workspace, else the start; back to the start when the
    *  window would run past the desk's right or bottom edge (the desk ends above the taskbar). */
-  const CASCADE = 30, START_X = 40, START_Y = 16;
+  // const CASCADE = 30, START_X = 40, START_Y = 16;  (H60 first cut)
+  const CASCADE_X = 80, CASCADE_Y = 40, START_X = 40, START_Y = 16;
   function cascadeAt(d, wd, ht) {
     let top = null;
     wins.forEach((x) => {
@@ -314,7 +315,7 @@
       if (!top || +x.el.style.zIndex > +top.el.style.zIndex) top = x;
     });
     let x = START_X, y = START_Y;
-    if (top) { x = Math.round(top.rect.x) + CASCADE; y = Math.round(top.rect.y) + CASCADE; }
+    if (top) { x = Math.round(top.rect.x) + CASCADE_X; y = Math.round(top.rect.y) + CASCADE_Y; }
     if (x < 0 || y < 0 || x + wd > d.width || y + ht > d.height) { x = START_X; y = START_Y; }
     return { x, y };
   }
