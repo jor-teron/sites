@@ -163,7 +163,7 @@
       c = document.createElement('canvas'); c.width = B.w; c.height = B.h;
       let x = c.getContext('2d', { willReadFrequently: !resized });
       if (fmt === 'jpeg') { x.fillStyle = cs.jpegBackground; x.fillRect(0, 0, B.w, B.h); }
-      T.drawOriented(x, P.bitmap, e.crop.x, e.crop.y, e.crop.w, e.crop.h, e.m, B.w, B.h, 1);
+      PE.view.drawPhoto(x, P, e.crop, e.m, B.w, B.h, 1);   // HPS2 hook (default = drawOriented)
       // 2. PE5 resize: halving / doubling steps with high-quality smoothing
       if (resized) {
         await nextFrame();

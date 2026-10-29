@@ -11,6 +11,10 @@
 (function (PE) {
   'use strict';
   const inHub = window.parent && window.parent !== window;
+  // HPS1 hooks (backward compatible): Hub Photo Studio loads this file too. It sets PE.config.appId
+  // and PE.ui.notify (its in-app message box); without them Photo Editor v2 behaves exactly as before.
+  const appId = PE.config.appId || 'photo-editor-v2';
+  const alert = (m) => (PE.ui && PE.ui.notify ? PE.ui.notify(m) : window.alert(m));
   let hubHello = false, hubDevices = [];
 
   if (inHub) {
@@ -20,7 +24,7 @@
       if (d.sharedLink === 'hello') { hubHello = true; hubDevices = d.devices || []; }
       else if (d.sharedLink === 'devices') hubDevices = d.devices || [];
     });
-    window.parent.postMessage({ sharedLink: 'ready', app: 'photo-editor-v2', types: ['x-none/']   /* sender only: never offered in "Open in…" */ }, '*');
+    window.parent.postMessage({ sharedLink: 'ready', app: appId, types: ['x-none/']   /* sender only: never offered in "Open in…" */ }, '*');
   }
 
   /* Small big-button chooser. items [{label, value}] → Promise(value | null). */
