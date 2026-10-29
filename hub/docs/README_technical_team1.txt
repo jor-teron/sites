@@ -283,7 +283,8 @@ Desktop; Ctrl+Alt+PageUp / PageDown (also Super+Ctrl+Left/Right);
 "Move to workspace 1 / 2" in window menus. sites-hub.workspaces = '1'
 means one workspace (switcher hidden, all windows on 1).
 R51 open maximised: every NEW window (any app, Settings too) opens
-maximised unless sites-hub.openMax = '0' ('1' / missing = on). The
+maximised unless sites-hub.openMax = '0' ('1' / missing = on). H60b: now
+only when openMax = '1' (missing = Windowed, cascading 30 px). The
 key is read on every open, so a change (Settings > Desktop "Open
 windows maximised", or the storage event from another tab) applies to
 the next window. The normal cascade rect is still set first, so
@@ -655,8 +656,12 @@ localStorage, prefix sites-hub.:
   Key                 Written by / used by        Value
   wmMode              Settings > Desktop          auto | desktop | phone
   wmSession           wm_windows.js               JSON window session
-  openMax             Settings > Desktop, R51     '1' / missing = on, '0' = off
+  openMax             Settings > Desktop, R51     '1' = on, '0' / missing = off (H60b; was '1' / missing = on)
                       wm_windows.js (new windows maximised)
+  glass               Settings > Look, H61        '1' = Glass theme (saved with theme 'light')
+                      hub_prefs.js → html.hub-glass, CSS hub/core/hub_glass.css
+  glassSolid          Settings > Look, H61        '1' = Reduce transparency (Glass, no blur)
+                      hub_prefs.js → html.hub-glass-solid
   saverIdle           Settings > Desktop, R49b    0 (off) | 1..240 min, unset 5
                       hub_saver.js (screen saver)
   saverSec            Settings > Desktop, R49c    smooth (default) | quartz | off

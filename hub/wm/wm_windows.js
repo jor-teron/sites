@@ -43,6 +43,9 @@
  * Fires 'hub-wm-change' on window after every change (taskbar redraws) and 'hub-wm-focus'
  * when the focused window changes.
  * R51: new windows open maximised (localStorage 'sites-hub.openMax', '1' / missing = on, '0' = off).
+ * H60b: Windowed by default ('1' = maximised, '0' / missing = windowed). A new window cascades 80 px right / 40 px down (was 30 px)
+*   from the topmost normal window on this workspace (cascadeAt); when it would leave the
+ *   desk (above the taskbar) it wraps back to the start (40, 16). Restored session rects still win.
  * App bar: the title/stats/buttons an app sends (hub-gamebar.js protocol) show in its own
  * title bar (__hubGamebarAttach).
  * H49: Office quick buttons + tabs (hubTitleBar contract, hub-gamebar.js) show there too, first.
@@ -300,6 +303,23 @@
     s.left = x + 'px'; s.top = y + 'px'; s.width = wd + 'px'; s.height = ht + 'px';
   }
 
+  /** H60b: where a new window goes: CASCADE px down-right of the topmost normal (not minimised /
+   *  maximised / snapped) window on this workspace, else the start; back to the start when the
+   *  window would run past the desk's right or bottom edge (the desk ends above the taskbar). */
+  // const CASCADE = 30, START_X = 40, START_Y = 16;  (H60 first cut)
+  const CASCADE_X = 80, CASCADE_Y = 40, START_X = 40, START_Y = 16;
+  function cascadeAt(d, wd, ht) {
+    let top = null;
+    wins.forEach((x) => {
+      if (x.min || x.max || x.snap || !onWs(x)) return;
+      if (!top || +x.el.style.zIndex > +top.el.style.zIndex) top = x;
+    });
+    let x = START_X, y = START_Y;
+    if (top) { x = Math.round(top.rect.x) + CASCADE_X; y = Math.round(top.rect.y) + CASCADE_Y; }
+    if (x < 0 || y < 0 || x + wd > d.width || y + ht > d.height) { x = START_X; y = START_Y; }
+    return { x, y };
+  }
+
   function open(o) {
     const same = wins.filter((x) => x.key === o.key);
     if (o.restore) {
@@ -449,15 +469,17 @@
 
     // Cascade new windows from the top-left
     const wd = Math.min(960, Math.round(d.width * 0.7)), ht = Math.min(640, Math.round(d.height * 0.8));
-    const n = wins.length % 8;
+    // const n = wins.length % 8;   // legacy: step by the window count (ignored where windows are)
     const r = o.rect;   // restored session rect (clamped by setRect)
     if (r) setRect(w, r.x, r.y, r.w, r.h, true);
-    else setRect(w, 40 + n * 32, 16 + n * 28, wd, ht);
+    // else setRect(w, 40 + n * 32, 16 + n * 28, wd, ht);   // legacy
+    else { const c = cascadeAt(d, wd, ht); setRect(w, c.x, c.y, wd, ht, true); }   // H60b
     if (o.restore) el.classList.remove('wm-pop');   // no jelly for a restored session
     // R51: a NEW window opens maximised unless 'sites-hub.openMax' = '0' (read on every open, so a
     // Settings change applies to the next window at once); its normal rect / w.pref above is what
     // Restore goes back to. Restored session windows keep their saved state.
-    const openMax = !o.restore && (() => { try { return localStorage.getItem('sites-hub.openMax') !== '0'; } catch (_) { return true; } })();
+    // const openMax = !o.restore && (() => { try { return localStorage.getItem('sites-hub.openMax') !== '0'; } catch (_) { return true; } })();
+    const openMax = !o.restore && (() => { try { return localStorage.getItem('sites-hub.openMax') === '1'; } catch (_) { return false; } })();   // H60b: Windowed default
     if (o.max || openMax) { w.max = true; el.classList.add('wm-max'); }
     else if (o.snap === 'l' || o.snap === 'r') { w.snap = o.snap; el.classList.add('wm-snap-' + o.snap); }
     setMaxBtn(w);

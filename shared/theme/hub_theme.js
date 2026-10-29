@@ -5,7 +5,8 @@
  * data-own-key="<localStorage key>" holding 'dark' | 'light' | '' (= System, follow the Hub).
  *
  * localStorage (same origin as the Hub):
- *   sites-hub.theme    'light' | '' (dark)    the Hub theme (hub/core/hub_prefs.js)
+ *   (legacy) sites-hub.theme 'light' | '' (dark)
+ *   sites-hub.theme    H60a: 'dark' | 'light' | '' (light)   the Hub theme (hub/core/hub_prefs.js)
  *   sites-hub.accent   '#rrggbb' | ''         → --accent
  * Paints <html>: class 'light', data-theme="dark|light", --accent, color-scheme.
  * Live: 'storage' event, a {type:'hub-prefs'} postMessage from the Hub, window focus.
@@ -23,7 +24,9 @@
   const fns = [];
   const read = (k) => { try { return localStorage.getItem(k) || ''; } catch (_) { return ''; } };
 
-  function hub() { return read(P + 'theme') === 'light' ? 'light' : 'dark'; }
+  // function hub() { return read(P + 'theme') === 'light' ? 'light' : 'dark'; }   // legacy: unset = Dark
+  function hub() { return read(P + 'theme') === 'dark' ? 'dark' : 'light'; }   // H60a: the Hub defaults to Light
+  // H61: Glass (sites-hub.glass '1' with theme 'light', or a theme of 'glass') is a light theme: apps get 'light'
   function own() { const v = ownKey ? read(ownKey) : ''; return v === 'dark' || v === 'light' ? v : 'system'; }
   function effective() { const o = own(); return o === 'system' ? hub() : o; }
   function setOwn(pref) {
