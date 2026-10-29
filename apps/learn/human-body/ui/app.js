@@ -42,21 +42,33 @@
     sideBar.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.side === k)));
     if (mode === 'quiz') return; go(mode);
   }
+  // TB3: Hub desktop window: learn-hubbar.js moves the row into the title bar. Explore / List / Quiz = tabs; External / Inside and
+  // Simple / Expert = one flip button each, labelled with the current choice. These flip buttons exist only in the title bar
+  // (display:none in the page, where the two-button groups stay). The app name is never sent.
+  const flip = (id, fn) => h('button', { type: 'button', class: 'hb-flip', 'data-hb': id, style: 'display:none', onclick: fn });
+  const tabFlip = flip('side', () => setTab(H.tab === 'inside' ? 'external' : 'inside')), lvFlip = flip('level', () => setLevel(H.level === 'expert' ? 'simple' : 'expert'));
+  function syncFlips() {
+    const ins = H.tab === 'inside', exp = H.level === 'expert';
+    tabFlip.textContent = (ins ? 'Inside' : 'External') + ' \u21C4'; tabFlip.title = 'Showing ' + (ins ? 'inside' : 'outside') + ' - switch to ' + (ins ? 'External' : 'Inside');
+    lvFlip.textContent = (exp ? 'Expert' : 'Simple') + ' \u21C4'; lvFlip.title = 'Level ' + (exp ? 'Expert' : 'Simple') + ' - switch to ' + (exp ? 'Simple' : 'Expert');
+    lvFlip.hidden = lvBar.hidden;
+  }
   function syncHead() {
     const ext = H.tab === 'external';
-    lvBar.hidden = ext;
+    lvBar.hidden = ext; syncFlips();
     foot.textContent = ext ? 'Outside of the body, simplified. Use Front / Back to turn around. Tap a part to learn about it.'
       : 'Inside the body, front view, simplified. Dashed parts are at the back. Tap a part to learn what it does.';
   }
   function setLevel(k) {
     H.level = k; LRN.store.write('learn.human-body.level', k); sel = null; fixView();
     lvBar.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lv === k)));
-    go(mode);
+    syncFlips(); go(mode);
   }
-  const head = h('header', { class: 'lrn-head' }, h('h1', null, h('span', { class: 'lrn-here' }, 'Human Body')), tabBar, lvBar, modeBar, h('span', { class: 'hb-ver' }, VER));
+  const head = h('header', { class: 'lrn-head' }, h('h1', null, h('span', { class: 'lrn-here' }, 'Human Body')), tabBar, lvBar, modeBar, tabFlip, lvFlip, h('span', { class: 'hb-ver' }, VER));
   const main = h('main', { class: 'lrn-main hb-main', id: 'lrn-main' });
   const foot = h('footer', { class: 'lrn-foot' }, 'Front view, simplified. Dashed parts are at the back. Tap a part to learn what it does.');
   root.className = 'lrn hb'; root.replaceChildren(head, main, foot); syncHead();
+  if (window.LearnHubBar) LearnHubBar.attach(head, { tabs: '.hb-modes', buttons: '.hb-flip' });
 
   function go(m) {
     mode = m; sel = m === 'quiz' ? null : sel; main.className = 'lrn-main hb-main';
