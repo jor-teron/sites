@@ -20,15 +20,15 @@ window.HUB_SEARCH_ITEMS = {
     { name: 'Show Files on the desktop', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'drives icons home' },
     // { name: 'Busy meter in the taskbar', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'cpu graph tray clock' },   // H52: moved to Hub bar
     // H52: Settings → Hub bar (sec_hubbar.js): the page + one row per switch (#hubbar/<key> scrolls to it)
-    { name: 'Hub bar', hash: 'hubbar', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings', words: 'settings taskbar tray icons show hide toggle bar items start' },
+    { name: 'Hub bar', hash: 'hubbar', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings', words: 'settings taskbar tray icons show hide toggle bar items start phone top bar' },   // H52b: + phone top bar
     { name: 'Hub bar: Show Desktop button', hash: 'hubbar/barShowDesk', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar minimise all hide' },
     { name: 'Hub bar: Search button', hash: 'hubbar/barSearch', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar magnifier hide' },
     { name: 'Hub bar: Window buttons', hash: 'hubbar/barTasks', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar open windows tasks hide' },
     { name: 'Hub bar: Workspaces switcher', hash: 'hubbar/barWorkspaces', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar workspace 1 2 hide' },
     { name: 'Hub bar: On-screen keyboard button', hash: 'hubbar/barOsk', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar osk keyboard hide' },
-    { name: 'Hub bar: Pooh Chat icon', hash: 'hubbar/barPooh', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar tray pooh chat bear hide show' },
-    { name: 'Hub bar: Devices button', hash: 'hubbar/barDevices', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar tray gamepad devices controller hide' },
-    { name: 'Hub bar: Update icon', hash: 'hubbar/barUpdate', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar tray update ready dot start hide show' },
+    { name: 'Hub bar: Pooh Chat icon', hash: 'hubbar/barPooh', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar tray pooh chat bear hide show phone top bar' },   // H52b
+    { name: 'Hub bar: Devices button', hash: 'hubbar/barDevices', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar tray gamepad devices controller hide phone top bar' },   // H52b
+    { name: 'Hub bar: Update icon', hash: 'hubbar/barUpdate', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar tray update ready dot start hide show phone top bar home menu' },   // H52b
     { name: 'Busy meter in the taskbar', hash: 'hubbar/trayMeter', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'cpu graph tray clock busy meter' },
     { name: 'Hub bar: Clock', hash: 'hubbar/barClock', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar tray time clock hide' },
     { name: 'Screen saver', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'saver idle clock lock' },

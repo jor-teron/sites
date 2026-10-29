@@ -1635,3 +1635,35 @@ Line counts are HTML+JS+CSS, excluding vendor/.
     shows desktop, Settings note, Gamepad window, no console errors; screenshot /workspace/h53_tablet.png).
     H52 64/64, H29.1 40/40, H29.2 45/45, H29.2b 30/30, H29.3 40/40, H50a 22/22, H50 mesh 35/35, H50 Hub 20/20.
   Bump 20261029b / v109 -> 20261029c / hub-shell-v110 (hub_bump.py --release H53, --check OK).
+
+2026-10-29 IST, H52b (Team 2, week 2): the Hub bar switches apply in Phone mode too.
+  Ask (Jor): one set of switches for both modes, no separate Phone set.
+  Phone mode's top bar (hub.html #header): .header-left = #cat-btn "Home ▾" (the Phone Start, opens the Hub
+    menu) + #home-btn (R42 Home, shown while an app is open); #gamebar / #lab-label (app bar); .header-right =
+    #rm-fs / #rm-set (phone-remote Gamepad extras, hub_remote.js) + #chat-btn 🐻 + #ctrl-btn 🎮 + #upd-btn.
+    wm_taskbar.js placeTray moves the same .header-right into the taskbar tray in Desktop mode. Show Desktop,
+    Search, window buttons, workspaces, the OSK button, busy meter and clock only exist in #wm-taskbar.
+  Before H52b: every H52 rule in wm.css was scoped to #wm-taskbar, so Phone mode never matched (by design).
+  wm.css (old lines kept as comments): html.hub-bar-off-pooh #chat-btn, html.hub-bar-off-devices:not(.hub-remote)
+    #ctrl-btn (H53 joined-device exception kept), html.hub-bar-off-update #upd-btn: no #wm-taskbar scope, so they
+    hide in both places. Update dot: html.hub-bar-off-update.hub-upd-ready body:not(.wm-desktop) #header
+    #cat-btn::after (same 8 px accent dot as Start; #cat-btn position: relative in Phone mode only). #rm-fs /
+    #rm-set, #cat-btn and #home-btn have no switch (Phone essentials). hub_prefs.js unchanged apart from comments
+    (same html.hub-bar-off-<item> classes, so live apply / hub-prefs message / storage event work as before).
+  Settings › Hub bar (sec_hubbar.js, ?v=20261029h52b; settings.css .bar-donly): help text now "the bar at the
+    bottom (or top) in Desktop mode, and the top bar in Phone mode. One set of switches for both modes";
+    a "Desktop only" tag on Show Desktop, Search, Window buttons, Workspaces, On-screen keyboard, Busy meter,
+    Clock (DESK_ONLY). Bottom note: Pooh / Devices / Update go with the Shared group.
+  H29 (hub_profile.js): barPooh, barDevices, barUpdate removed from SYNC_GROUPS.desktop (so Shared); the
+    Desktop-only bar keys and trayMeter stay Desktop. Search rows (search_items.js ?v=20261029h52b): Hub bar,
+    Pooh, Devices, Update rows also match "phone top bar".
+  Behaviour change on phones: Pooh 🐻 and the Update icon are now hidden by default in Phone mode too (H52
+    defaults), with the Update dot on Home ▾ when a build waits.
+  Tests (system Chrome headless, real pages, PeerJS stand-in broker): H52b 47/47 (Phone defaults, Pooh /
+    Devices / Update live in the top bar, Update dot on Home ▾ on/off, Desktop-only switches leave the phone
+    bar alone, all off keeps Home ▾ + Home, Pooh Chat still opens, other-tab storage event, same page switched
+    to Desktop, Desktop: all 10 switches live + Start dot, H29 groups, joined phone keeps 🎮 with Devices off,
+    ⛶ / ⚙ Gamepad extras shown with every item off, 🎮 opens Devices, no console errors; screenshot
+    /workspace/h52b_phone.png). H52 64/64 (its Phone-mode and H29-group checks updated for H52b),
+    H53 37/37, H29.1 40/40, H29.2 45/45, H29.2b 30/30, H29.3 40/40, H50a 22/22, H50 mesh 35/35, H50 Hub 20/20.
+  Bump 20261029c / v110 -> 20261029d / hub-shell-v111 (hub_bump.py --release H52b, --check OK).

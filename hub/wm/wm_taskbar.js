@@ -35,6 +35,8 @@
  *   html.hub-bar-off-<item>, wm.css hides it inside #wm-taskbar (live, Phone mode untouched). Defaults: all
  *   shown except Pooh Chat and Update. Update hidden + a build waiting → a dot on Start (html.hub-upd-ready).
  *   The empty-bar right-click menu gets "Hub bar settings".
+ * - H52b: Pooh Chat / Devices / Update (the .header-right items placeTray moves) follow the same switches in
+ *   Phone mode's top bar too; Update off + a build waiting → the dot on Home ▾ (#cat-btn) there. wm.css.
  * Redraws on 'hub-wm-change' (wm_windows.js). Look in wm.css.
  */
 (function () {

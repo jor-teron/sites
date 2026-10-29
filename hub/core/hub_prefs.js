@@ -25,6 +25,8 @@
  *   sites-hub.wmMode / sites-hub.startHover: read by wm_mode.js / wm_taskbar.js; a change made
  *   in Settings is passed to HubMode here.
  *   H52 Hub bar (Settings → Hub bar, Desktop-mode taskbar only; Start is always shown):
+ *   (H52b: one set for both modes: pooh / devices / update also hide in Phone mode's top bar, and the
+ *   Update dot goes on Home ▾ there; the other items only exist in the Desktop taskbar. CSS in wm.css)
  *   sites-hub.barShowDesk / barSearch / barTasks / barWorkspaces / barOsk / barDevices / barClock
  *                        '0' = hidden (default shown)                    → html.hub-bar-off-<item>
  *   sites-hub.barPooh / barUpdate  '1' = shown (default HIDDEN)          → html.hub-bar-off-pooh / -update
@@ -60,6 +62,7 @@
   let lastBar = '', lastMine = '';
   function apply() {
     // H52: Hub bar switches (classes only; wm.css hides the items inside #wm-taskbar, so Phone mode is untouched)
+    // H52b: same classes; wm.css now also hides Pooh / Devices / Update in Phone mode's top bar
     BAR.forEach((b) => root.classList.toggle('hub-bar-off-' + b.item, !barOn(b.key)));
     // sizes + taskbar position (a change re-clamps the windows: wm_windows.js listens to resize)
     const top = get('taskPos') === 'top';

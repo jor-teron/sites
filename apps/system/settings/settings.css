@@ -286,5 +286,8 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
 
 /* H52: Hub bar section — Start's switch is locked on; the Desktop → Taskbar link is a button styled like .tap */
 .switch.locked, .switch:disabled { opacity: .6; cursor: default; }
+/* H52b: "Desktop only" tag on Hub bar switches that have nothing in Phone mode's top bar */
+.bar-donly { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; border: 1px solid currentColor;
+  font-size: 11px; font-weight: 500; opacity: .6; vertical-align: 1px; white-space: nowrap; }
 .switch:disabled:active { transform: none; }
 button.tap { width: 100%; text-align: left; border: 1px solid var(--line); font: inherit; cursor: pointer; }

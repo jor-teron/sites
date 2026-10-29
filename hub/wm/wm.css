@@ -352,6 +352,8 @@ html.hub-motion-reduced #wm-snap-pv, html.hub-motion-off #wm-snap-pv { animation
 @media (max-width: 600px) { body.wm-desktop #hub-notify.hn-bottom-right { bottom: calc(var(--wm-task-h) + 8px); } }
 
 /* ---------- H52: Hub bar switches (Settings → Hub bar; hub_prefs.js sets html.hub-bar-off-<item>) ----------
+   H52b: Pooh Chat, Devices and Update (and the Update dot) now apply in Phone mode too, see below; the
+   rest exist only in the Desktop taskbar ("Desktop only" in Settings). H52 note:
    Desktop-mode taskbar only: every rule is inside #wm-taskbar (in Phone mode the tray items sit back in the top
    bar, outside it, so Phone mode is untouched). Start has no switch. The window buttons keep their space
    (visibility) so the tray stays on the right. */
@@ -359,15 +361,23 @@ html.hub-bar-off-showdesk #wm-taskbar #wm-showdesk,
 html.hub-bar-off-search #wm-taskbar #wm-search,
 html.hub-bar-off-ws #wm-taskbar .wm-ws,
 html.hub-bar-off-osk #wm-taskbar .wm-osk-btn,
-html.hub-bar-off-pooh #wm-taskbar #chat-btn,
+/* html.hub-bar-off-pooh #wm-taskbar #chat-btn,   (H52, before H52b: Desktop taskbar only) */
 /* html.hub-bar-off-devices #wm-taskbar #ctrl-btn,   (before H53) */
-html.hub-bar-off-devices:not(.hub-remote) #wm-taskbar #ctrl-btn,   /* H53: a joined device always keeps 🎮 (Disconnect) */
-html.hub-bar-off-update #wm-taskbar #upd-btn,
+/* html.hub-bar-off-devices:not(.hub-remote) #wm-taskbar #ctrl-btn,   (H53, before H52b) */
+/* html.hub-bar-off-update #wm-taskbar #upd-btn,   (H52, before H52b) */
+/* H52b: Pooh / Devices / Update live in .header-right, which is the taskbar tray in Desktop mode and the
+   top bar in Phone mode (same elements, wm_taskbar.js placeTray), so these three rules are not scoped to
+   #wm-taskbar any more: one switch, both modes. The phone-remote #rm-fs / #rm-set are not touched. */
+html.hub-bar-off-pooh #chat-btn,
+html.hub-bar-off-devices:not(.hub-remote) #ctrl-btn,   /* H53: a joined device always keeps 🎮 (Disconnect) */
+html.hub-bar-off-update #upd-btn,
 html.hub-bar-off-clock #wm-taskbar .wm-clock { display: none !important; }
 html.hub-bar-off-tasks #wm-taskbar .wm-tasks { visibility: hidden; }
 /* Update icon hidden + a new build waiting (html.hub-upd-ready, hub_update.js) → small dot on Start */
 #wm-start { position: relative; }
-html.hub-bar-off-update.hub-upd-ready #wm-taskbar #wm-start::after {
+html.hub-bar-off-update.hub-upd-ready #wm-taskbar #wm-start::after,
+html.hub-bar-off-update.hub-upd-ready body:not(.wm-desktop) #header #cat-btn::after {   /* H52b: Phone mode's Start = the Home ▾ menu button */
   content: ''; position: absolute; top: 3px; right: 4px; width: 8px; height: 8px; border-radius: 50%;
   background: var(--accent, #6ea8fe); box-shadow: 0 0 0 2px var(--wm-task-bg, #111);
 }
+body:not(.wm-desktop) #header #cat-btn { position: relative; }   /* H52b: anchor for the Update dot */
