@@ -26,6 +26,7 @@
 
   // function hub() { return read(P + 'theme') === 'light' ? 'light' : 'dark'; }   // legacy: unset = Dark
   function hub() { return read(P + 'theme') === 'dark' ? 'dark' : 'light'; }   // H60a: the Hub defaults to Light
+  // H61: Glass (sites-hub.glass '1' with theme 'light', or a theme of 'glass') is a light theme: apps get 'light'
   function own() { const v = ownKey ? read(ownKey) : ''; return v === 'dark' || v === 'light' ? v : 'system'; }
   function effective() { const o = own(); return o === 'system' ? hub() : o; }
   function setOwn(pref) {

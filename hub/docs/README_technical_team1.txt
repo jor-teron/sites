@@ -658,6 +658,10 @@ localStorage, prefix sites-hub.:
   wmSession           wm_windows.js               JSON window session
   openMax             Settings > Desktop, R51     '1' = on, '0' / missing = off (H60b; was '1' / missing = on)
                       wm_windows.js (new windows maximised)
+  glass               Settings > Look, H61        '1' = Glass theme (saved with theme 'light')
+                      hub_prefs.js → html.hub-glass, CSS hub/core/hub_glass.css
+  glassSolid          Settings > Look, H61        '1' = Reduce transparency (Glass, no blur)
+                      hub_prefs.js → html.hub-glass-solid
   saverIdle           Settings > Desktop, R49b    0 (off) | 1..240 min, unset 5
                       hub_saver.js (screen saver)
   saverSec            Settings > Desktop, R49c    smooth (default) | quartz | off
