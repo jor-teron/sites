@@ -6,6 +6,7 @@ name, path, icon, newtab, section, description
 Draftly,      draftly/,             , , Hub Office, Word processor with A4 pages: write documents offline - save as PDF or DOCX
 Spreadsheet,  spreadsheet/,         , , Hub Office, Offline spreadsheet with formulas and styles - CSV import/export and print
 Base,         base/,                , , Hub Office, Small database app: tables - forms and queries like Access
+Slides,       slides/,              , , Hub Office, Make slide decks: a title and bullets on 16:9 slides - auto-save and .hslides export
 Notely,       notely/,              , , Write, Plain-text notes that save as you type - open and download .txt
 MS Word Diff, ../tools/msword_diff/, , , Write, Compare two Word .docx files and see what text changed
 OCR,          ocr/,                 , , Scan & Print, Turn text in photos scans and PDFs into editable text - works offline

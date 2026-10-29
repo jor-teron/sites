@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<!--
+  Hub Office Slides SL1 — a basic slide editor: slide list (left; a strip on top on phones), a 16:9 slide with a title and
+  bullets, add / delete (confirm) / reorder (▲▼ + drag), several decks, auto-save, .hslides export / import.
+  Files: slides_save.js (SLSave, the one save module), slides_file.js (SLFile, .hslides), slides_edit.js (SLEdit, the slide
+  canvas), slides_list.js (SLList, the slide list + drag), slides_app.js (top bar, menus, decks, dialogs, settings, keys).
+  Stopwatch style: dark default, System / Light / Dark following sites-hub.theme, in-app dialogs only. No libraries.
+  SL2 Present, SL3 Layouts, SL4 Office bits (shared ribbon + quick bar, print / PDF) come later.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Slides SL1</title>
+  <link rel="icon" href="slides_icon.png?v=SL1">
+  <link rel="stylesheet" href="slides.css?v=SL1">
+  <script>try{var s=JSON.parse(localStorage.getItem('slides-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <button type="button" id="b-deck" class="deck-btn" aria-haspopup="menu" aria-expanded="false" title="Deck: new, open, rename, import, export">
+      <span id="deck-name">Slides</span><span class="caret">▾</span></button>
+    <span id="saved" class="mut" aria-live="polite"></span>
+    <span class="sp"></span>
+    <button type="button" class="mini acc" id="b-add" title="Add a slide after this one (Ctrl+Enter)">＋ Slide</button>
+    <button type="button" class="mini sq" id="b-up" title="Move slide up (Alt+↑)" aria-label="Move slide up">▲</button>
+    <button type="button" class="mini sq" id="b-down" title="Move slide down (Alt+↓)" aria-label="Move slide down">▼</button>
+    <button type="button" class="mini sq" id="b-more" title="More slide actions" aria-label="More slide actions" aria-haspopup="menu" aria-expanded="false">⋯</button>
+    <button type="button" class="mini sq" id="b-set" title="Settings and About" aria-label="Settings">⚙</button>
+  </header>
+  <div id="warn" role="alert" hidden><span id="warn-t"></span><button type="button" class="x" id="warn-x" aria-label="Hide warning">×</button></div>
+  <div id="main">
+    <nav id="list" aria-label="Slides" tabindex="0"><ol id="list-in"></ol></nav>
+    <section id="stage" aria-label="Slide">
+      <div id="fit">
+        <div id="slide" class="slide">
+          <textarea id="s-title" class="s-title" rows="1" spellcheck="true" maxlength="300" placeholder="Click to add a title" aria-label="Slide title"></textarea>
+          <div class="s-body-wrap">
+            <div id="mirror" class="s-body s-mirror" aria-hidden="true"></div>
+            <textarea id="s-body" class="s-body" spellcheck="true" maxlength="5000" placeholder="Click to add bullets: one per line, Tab to indent" aria-label="Slide bullets, one per line"></textarea>
+          </div>
+        </div>
+      </div>
+      <div id="pos" class="mut"></div>
+    </section>
+  </div>
+
+  <!-- menus (in-app; Delete items are red and always ask first) -->
+  <div class="menu" id="menu-deck" role="menu" hidden>
+    <button type="button" role="menuitem" data-a="new">＋ New deck</button>
+    <button type="button" role="menuitem" data-a="open">📂 Open deck…</button>
+    <button type="button" role="menuitem" data-a="rename">✎ Rename deck…</button>
+    <div class="sep"></div>
+    <button type="button" role="menuitem" data-a="import">⬆ Import .hslides…</button>
+    <button type="button" role="menuitem" data-a="export">⬇ Export .hslides</button>
+    <div class="sep"></div>
+    <button type="button" role="menuitem" data-a="deldeck" class="danger-t">🗑 Delete deck…</button>
+  </div>
+  <div class="menu" id="menu-slide" role="menu" hidden>
+    <button type="button" role="menuitem" data-a="add">＋ Add slide after</button>
+    <button type="button" role="menuitem" data-a="dup">⧉ Duplicate slide</button>
+    <button type="button" role="menuitem" data-a="up">▲ Move up</button>
+    <button type="button" role="menuitem" data-a="down">▼ Move down</button>
+    <div class="sep"></div>
+    <button type="button" role="menuitem" data-a="del" class="danger-t">🗑 Delete slide…</button>
+  </div>
+  <input type="file" id="file-in" accept=".hslides,application/json,.json" hidden>
+
+  <!-- settings + about -->
+  <div id="settings" class="sheet" hidden>
+    <div class="box set-wrap" role="dialog" aria-modal="true" aria-labelledby="set-h">
+      <div class="bar"><h2 id="set-h">Settings</h2><button type="button" class="mini sq" id="set-x" aria-label="Close settings">✕</button></div>
+      <div class="set-row"><span>Theme<small class="mut">System follows the Hub, then this device</small></span>
+        <div class="seg" data-key="theme"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>
+      <div class="set-row"><span>Storage<small class="mut" id="set-store"></small></span></div>
+      <h3>Keyboard</h3>
+      <div class="keys">
+        <span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> New slide after this one</span>
+        <span><kbd>Tab</kbd> / <kbd>Shift</kbd>+<kbd>Tab</kbd> Indent / outdent bullets</span>
+        <span><kbd>Enter</kbd> in the title: go to the bullets</span>
+        <span><kbd>↑</kbd> <kbd>↓</kbd> Previous / next slide (in the slide list)</span>
+        <span><kbd>Alt</kbd>+<kbd>↑</kbd> <kbd>↓</kbd> Move the slide</span>
+        <span><kbd>Esc</kbd> Close a menu or dialog</span>
+      </div>
+      <h3>About</h3>
+      <div class="about">
+        <img src="slides_icon.png?v=SL1" alt="" width="40" height="40">
+        <div><b>Hub Office Slides</b> <span id="ver">SL1</span>
+          <p>Make simple slide decks: a title and bullets on each slide. Decks save on this device as you type, and you can keep several.
+            Export a deck as a .hslides file (open JSON) to back it up or move it to another device. Nothing is uploaded.</p>
+          <p class="mut">Coming next: SL2 Present (full-screen slideshow), SL3 Layouts and pictures, SL4 Office ribbon and print / PDF.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="dialog" class="sheet" hidden>
+    <div class="box" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+      <p id="dlg-t"></p>
+      <p id="dlg-m" class="mut"></p>
+      <input type="text" id="dlg-in" maxlength="80" hidden>
+      <ul id="dlg-list" class="rows" hidden></ul>
+      <div class="row" id="dlg-btns"></div>
+    </div>
+  </div>
+  <div id="toast" role="status"></div>
+</div>
+<script src="slides_save.js?v=SL1"></script>
+<script src="slides_file.js?v=SL1"></script>
+<script src="slides_edit.js?v=SL1"></script>
+<script src="slides_list.js?v=SL1"></script>
+<script src="slides_app.js?v=SL1"></script>
+</body>
+</html>
