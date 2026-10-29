@@ -1,0 +1,62 @@
+/*
+ * Hub Photo Studio HPS1 — Stopwatch style, dark default. Loaded AFTER ../photo-editor-v2/photo-editor-v2.css
+ * (the shared layout: photo, dock and toolbar; toolbar at the bottom in portrait, on the RIGHT in landscape).
+ * This file only adds Studio's own parts (logo, Settings + About sheet, message box, tool slot)
+ * and the light theme (html.light, set by ps_save.js).
+ */
+#empty .ps-logo { display: block; margin: 0 auto; width: 64px; height: 64px; border-radius: 14px; }
+.ps-slot { display: contents; }
+.ps-slot:empty { display: none; }
+
+/* Settings + About sheet (reuses .dlg-wrap / .dlg from Photo Editor v2) */
+.dlg.ps-set { max-width: 440px; gap: 12px; }
+.ps-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ps-head .btn { padding: 6px 16px; }
+.ps-set h3 { margin: 4px 0 0; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #9a9ba3; }
+.ps-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+.ps-row > span { display: flex; flex-direction: column; gap: 2px; }
+.ps-row small, .ps-mut { font-size: 12px; color: #9a9ba3; }
+.seg { display: inline-flex; background: #24252a; border: 1px solid #33343b; border-radius: 999px; padding: 2px; }
+.seg button { border: 0; background: transparent; color: #d8d9de; border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+.seg button.sel { background: #2b3a55; color: #b9d0ff; }
+.ps-keys { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 12px; color: #c8c9ce; }
+kbd { display: inline-block; min-width: 18px; padding: 1px 5px; border: 1px solid #3a3b42; border-bottom-width: 2px; border-radius: 5px; background: #24252a; font: 600 11px system-ui, sans-serif; text-align: center; }
+.ps-about { display: flex; gap: 12px; align-items: flex-start; font-size: 13px; }
+.ps-about img { border-radius: 10px; flex: 0 0 auto; }
+.ps-about p { margin: 6px 0 0; line-height: 1.45; color: #c8c9ce; }
+#ps-ver { color: #9a9ba3; font-size: 12px; }
+.dlg.ps-msg { max-width: 340px; }
+.ps-msg p { margin: 2px 0 4px; font-size: 15px; line-height: 1.4; white-space: pre-line; }
+@media (max-width: 380px) { .ps-keys { grid-template-columns: 1fr; } }
+
+/* Light theme: the panels go light; the photo sits on a soft grey (config.studio.stageLight) */
+html.light, html.light body { background: #f4f5f7; color: #1d1e22; }
+html.light #toolbar { background: #ffffff; border-color: #dcdde2; }
+html.light .tb { color: #3a3b42; }
+html.light .tb.active { background: #dce7ff; color: #2456c4; }
+@media (hover: hover) { html.light .tb:not(:disabled):not(.active):hover { background: #eceef2; } }
+html.light .sep { background: #dcdde2; }
+html.light #dock { background: #f7f8fa; border-color: #dcdde2; }
+html.light .chip { background: #ffffff; border-color: #d4d6dc; color: #2c2d33; }
+html.light .chip.sel { background: #dce7ff; border-color: #9db8f0; color: #1f4fb8; }
+html.light .chip.ghost { background: transparent; color: #6b6c74; }
+html.light .chip.changed::after { background: #2f66d6; }
+html.light .btn.ghost { background: #e9eaee; color: #2c2d33; }
+html.light #adj-slider { accent-color: #2f66d6; }
+html.light #adj-value { background: #ffffff; color: #1d1e22; border: 1px solid #d4d6dc; }
+html.light .pop { background: #ffffff; border-color: #d4d6dc; box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+html.light .menu button:hover { background: #eef0f4; }
+html.light .menu-head, html.light .rs-note, html.light .rs-sizes, html.light .rs-fields label,
+html.light .ps-set h3, html.light .ps-row small, html.light .ps-mut, html.light #ps-ver, html.light #empty p { color: #6b6c74; }
+html.light .dlg-wrap { background: rgba(20,22,28,0.35); }
+html.light .dlg { background: #ffffff; border-color: #d4d6dc; box-shadow: 0 12px 36px rgba(0,0,0,0.2); }
+html.light .rs-sizes b { color: #1d1e22; }
+html.light .rs-in { background: #f4f5f7; border-color: #d4d6dc; }
+html.light .rs-in input { color: #1d1e22; }
+html.light .rs-note.warn { color: #a86400; }
+html.light .seg { background: #f0f1f4; border-color: #d4d6dc; }
+html.light .seg button { color: #3a3b42; }
+html.light .seg button.sel { background: #dce7ff; color: #1f4fb8; }
+html.light .ps-keys, html.light .ps-about p { color: #3a3b42; }
+html.light kbd { background: #f4f5f7; border-color: #c9cbd2; color: #2c2d33; }
+html.light body.dragging #stage::after { background: rgba(244,245,247,0.7); }

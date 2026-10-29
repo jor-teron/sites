@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<!--
+  Hub Photo Studio (HPS1) — the Hub's bigger photo editor, built on Photo Editor v2. Page shell only.
+  Reuse: Photo Editor v2's pe_*.js modules and stylesheet are LOADED from ../photo-editor-v2/ (not copied),
+  so fixes there apply here too. Studio's own files (ps_*.js, photo-studio.css) add the name, settings
+  (own save keys), theme, About, in-app messages and the slot for later heavy features.
+  All scripts share window.PE (plain scripts, works from file://). No libraries, no CDN.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#141518">
+  <title>Hub Photo Studio HPS1</title>
+  <link rel="icon" href="photo-studio_icon.png?v=HPS1">
+  <link rel="stylesheet" href="../photo-editor-v2/photo-editor-v2.css?v=PE5">
+  <link rel="stylesheet" href="photo-studio.css?v=HPS1">
+  <script src="ps_save.js?v=HPS1"></script>
+</head>
+<body class="ps">
+<div id="app">
+  <div id="stage">
+    <canvas id="view"></canvas>
+    <div id="empty">
+      <div class="card">
+        <img src="photo-studio_icon.png?v=HPS1" class="ps-logo" alt="" width="64" height="64">
+        <h1>Hub Photo Studio</h1>
+        <button type="button" tabindex="-1" class="primary" data-act="open">Open photo</button>
+        <p>or drop a photo here, or paste one</p>
+      </div>
+    </div>
+    <button id="zoom-pill" type="button" tabindex="-1" hidden>100%</button>
+    <div id="toast"></div>
+  </div>
+
+  <div id="dock" hidden>
+    <div id="panel-crop" class="panel" hidden>
+      <div class="chips" id="ratio-chips"></div>
+      <div class="row">
+        <button type="button" tabindex="-1" class="btn ghost" data-act="cropCancel">Cancel</button>
+        <button type="button" tabindex="-1" class="btn primary" data-act="cropApply">Apply</button>
+      </div>
+    </div>
+    <div id="panel-adjust" class="panel" hidden>
+      <div class="chips" id="adj-chips"></div>
+      <div class="slider-row">
+        <input type="range" id="adj-slider" min="-100" max="100" step="1" value="0" tabindex="-1" aria-label="Adjustment">
+        <button type="button" tabindex="-1" id="adj-value" title="Tap to set to 0">0</button>
+      </div>
+      <div class="chips" id="preset-chips"></div>
+    </div>
+  </div>
+
+  <nav id="toolbar">
+    <button class="tb" data-act="open" type="button" tabindex="-1" title="Open photo (Ctrl+O)">
+      <svg viewBox="0 0 24 24"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.8l2 2h7.2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>
+    </button>
+    <button class="tb" data-act="undo" type="button" tabindex="-1" title="Undo (Ctrl+Z)">
+      <svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+    </button>
+    <button class="tb" data-act="redo" type="button" tabindex="-1" title="Redo (Ctrl+Y)">
+      <svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>
+    </button>
+    <span class="sep"></span>
+    <button class="tb" data-act="rotl" type="button" tabindex="-1" title="Rotate left (Shift+R)">
+      <svg viewBox="0 0 24 24"><path d="M3.5 4v5h5"/><path d="M4 9a8.5 8.5 0 1 1 1.6 8.6"/></svg>
+    </button>
+    <button class="tb" data-act="rotr" type="button" tabindex="-1" title="Rotate right (R)">
+      <svg viewBox="0 0 24 24"><path d="M20.5 4v5h-5"/><path d="M20 9a8.5 8.5 0 1 0-1.6 8.6"/></svg>
+    </button>
+    <button class="tb" data-act="fliph" type="button" tabindex="-1" title="Flip horizontal (H)">
+      <svg viewBox="0 0 24 24"><path d="M12 3v18" stroke-dasharray="2 2.2"/><path d="M9 7L3.5 17H9z"/><path d="M15 7l5.5 10H15z"/></svg>
+    </button>
+    <button class="tb" data-act="flipv" type="button" tabindex="-1" title="Flip vertical (V)">
+      <svg viewBox="0 0 24 24"><path d="M3 12h18" stroke-dasharray="2 2.2"/><path d="M7 9l10-5.5V9z"/><path d="M7 15l10 5.5V15z"/></svg>
+    </button>
+    <span class="sep"></span>
+    <button class="tb" id="tb-crop" data-act="crop" type="button" tabindex="-1" title="Crop (C)">
+      <svg viewBox="0 0 24 24"><path d="M6.5 2.5v13a2 2 0 0 0 2 2h13"/><path d="M17.5 21.5v-13a2 2 0 0 0-2-2h-13"/></svg>
+    </button>
+    <button class="tb" id="tb-adjust" data-act="adjust" type="button" tabindex="-1" title="Adjust (A)">
+      <svg viewBox="0 0 24 24"><path d="M4 7h9M18 7h2M4 17h3M11 17h9"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="8.5" cy="17" r="2.3"/></svg>
+    </button>
+    <button class="tb" id="tb-resize" data-act="resize" type="button" tabindex="-1" title="Resize (E)">
+      <svg viewBox="0 0 24 24"><rect x="3.5" y="11.5" width="9" height="9" rx="1.5"/><path d="M12 4h8v8"/><path d="M20 4l-7.5 7.5"/></svg>
+    </button>
+    <span id="ps-tools" class="ps-slot"></span><!-- HPS: heavy-feature tools (PE.studio.addTool) go here -->
+    <span class="sep"></span>
+    <button class="tb" id="tb-save" data-act="save" type="button" tabindex="-1" title="Save (Ctrl+S)">
+      <svg viewBox="0 0 24 24"><path d="M12 3.5v11"/><path d="M7.5 10.5l4.5 4.5 4.5-4.5"/><path d="M4.5 19.5h15"/></svg>
+    </button>
+    <button class="tb" id="tb-settings" data-ps="settings" type="button" tabindex="-1" title="Settings and About (,)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </nav>
+
+  <div id="pop-save" class="pop menu" hidden>
+    <div class="menu-head" id="save-info"></div>
+    <button type="button" tabindex="-1" data-act="saveJpeg">Save JPEG</button>
+    <button type="button" tabindex="-1" data-act="savePng">Save PNG</button>
+    <button type="button" tabindex="-1" data-act="print">Print 🖨</button>
+    <button type="button" tabindex="-1" data-act="send">Send 📤</button>
+  </div>
+
+  <div id="dlg-resize" class="dlg-wrap" hidden>
+    <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="rs-title">
+      <h2 id="rs-title">Resize</h2>
+      <div class="rs-sizes">
+        <div>Current <b id="rs-cur"></b></div>
+        <div>New <b id="rs-new"></b></div>
+      </div>
+      <div class="chips">
+        <button type="button" tabindex="-1" class="chip" id="rs-u-px">Pixels</button>
+        <button type="button" tabindex="-1" class="chip" id="rs-u-pct">Percent</button>
+      </div>
+      <div class="rs-fields">
+        <label>Width <span class="rs-in"><input id="rs-w" type="number" inputmode="decimal" min="1" step="any"><i id="rs-unit-w">px</i></span></label>
+        <button type="button" tabindex="-1" class="chip rs-lock" id="rs-lock" aria-label="Lock aspect ratio">
+          <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+        </button>
+        <label>Height <span class="rs-in"><input id="rs-h" type="number" inputmode="decimal" min="1" step="any"><i id="rs-unit-h">px</i></span></label>
+      </div>
+      <div class="chips" id="rs-presets"></div>
+      <p class="rs-note warn" id="rs-cap" hidden></p>
+      <p class="rs-note">Enlarging makes the photo bigger but can't add real detail; it only smooths the pixels. Very large sizes may be slow to save on low-RAM machines.</p>
+      <div class="row">
+        <button type="button" tabindex="-1" class="btn ghost" id="rs-cancel">Cancel</button>
+        <button type="button" tabindex="-1" class="btn primary" id="rs-apply">Apply</button>
+      </div>
+    </div>
+  </div>
+
+    <!-- HPS1: Settings + About (in-app sheet, Stopwatch style) -->
+  <div id="dlg-settings" class="dlg-wrap" hidden>
+    <div class="dlg ps-set" role="dialog" aria-modal="true" aria-labelledby="ps-set-title">
+      <div class="ps-head"><h2 id="ps-set-title">Settings</h2><button type="button" tabindex="-1" class="btn ghost" id="ps-set-close">Done</button></div>
+      <div class="ps-row"><span>Theme</span>
+        <div class="seg" data-key="theme"><button type="button" tabindex="-1" data-v="system">System</button><button type="button" tabindex="-1" data-v="light">Light</button><button type="button" tabindex="-1" data-v="dark">Dark</button></div></div>
+      <div class="ps-row"><span>Ctrl+S saves as<small>Auto = PNG for PNG photos, else JPEG</small></span>
+        <div class="seg" data-key="format"><button type="button" tabindex="-1" data-v="auto">Auto</button><button type="button" tabindex="-1" data-v="jpeg">JPEG</button><button type="button" tabindex="-1" data-v="png">PNG</button></div></div>
+      <div class="ps-row"><span>JPEG quality<small>Also used by Print and Send</small></span>
+        <div class="seg" data-key="quality"><button type="button" tabindex="-1" data-v="0.8">Smaller</button><button type="button" tabindex="-1" data-v="0.92">High</button><button type="button" tabindex="-1" data-v="0.98">Best</button></div></div>
+      <h3>Keyboard</h3>
+      <div class="ps-keys">
+        <span><kbd>Ctrl</kbd>+<kbd>O</kbd> Open</span><span><kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
+        <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Y</kbd> Undo / redo</span><span><kbd>C</kbd> Crop (<kbd>Enter</kbd> applies)</span>
+        <span><kbd>R</kbd> / <kbd>Shift</kbd>+<kbd>R</kbd> Rotate</span><span><kbd>H</kbd> / <kbd>V</kbd> Flip</span>
+        <span><kbd>A</kbd> Adjust</span><span><kbd>E</kbd> Resize</span>
+        <span><kbd>+</kbd> <kbd>-</kbd> <kbd>0</kbd> Zoom</span><span><kbd>,</kbd> Settings</span>
+      </div>
+      <h3>About</h3>
+      <div class="ps-about">
+        <img src="photo-studio_icon.png?v=HPS1" alt="" width="40" height="40">
+        <div><b>Hub Photo Studio</b> <span id="ps-ver"></span>
+          <p>The Hub's bigger photo editor. Crop, rotate, flip, resize (smaller or larger), brightness, contrast, saturation, warmth, sharpen and looks, with undo and redo. Edits stay as settings on top of your original photo and are only applied when you save, print or send. Everything runs on this device; nothing is uploaded.</p>
+          <p class="ps-mut">Built on Photo Editor v2. Layers, selections, retouch and pro adjustments are planned.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="dlg-msg" class="dlg-wrap" hidden>
+    <div class="dlg ps-msg" role="alertdialog" aria-modal="true">
+      <p id="ps-msg-text"></p>
+      <div class="row"><button type="button" tabindex="-1" class="btn primary" id="ps-msg-ok">OK</button></div>
+    </div>
+  </div>
+  <input type="file" id="file-in" accept="image/*" hidden>
+</div>
+<!-- Photo Editor v2 engine (shared, loaded in place) -->
+<script src="../photo-editor-v2/pe_config.js?v=PE5"></script>
+<script src="ps_config.js?v=HPS1"></script>
+<script src="../photo-editor-v2/pe_state.js?v=PE5"></script>
+<script src="../photo-editor-v2/pe_transform.js?v=PE5"></script>
+<script src="../photo-editor-v2/pe_adjust.js?v=PE5"></script>
+<script src="../photo-editor-v2/pe_view.js?v=PE5"></script>
+<script src="../photo-editor-v2/pe_crop.js?v=PE5"></script>
+<script src="../photo-editor-v2/pe_io.js?v=PE5"></script>
+<script src="../photo-editor-v2/pe_resize.js?v=PE5"></script>
+<script src="../photo-editor-v2/pe_input.js?v=PE5"></script>
+<script src="../photo-editor-v2/pe_print.js?v=PE5"></script>
+<script src="../../../shared/link/link_core.js?v=20261011d"></script>
+<script src="../../../shared/link/link_devices.js?v=20261011c"></script>
+<script src="../../../shared/link/link_files.js?v=20261011c"></script>
+<script src="../../../shared/link/link_scan.js?v=20261011d"></script>
+<script src="../photo-editor-v2/vendor/jsQR.js"></script>
+<script src="../photo-editor-v2/pe_send.js?v=HPS1"></script>  <!-- ?v=HPS1: fetch the copy with the HPS1 hooks (appId, notify) -->
+<script src="../photo-editor-v2/pe_ui.js?v=PE5"></script>
+<!-- Studio layer -->
+<script src="ps_app.js?v=HPS1"></script>
+</body>
+</html>
