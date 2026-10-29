@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Settings app (apps/system/settings/index.html) — Hub settings: Wallpaper, Desktop, Hub bar (H52), Windows, Sizes, Look, API Keys (H28), How-to, Devices (H29.2b), About.
+  Settings app (apps/system/settings/index.html) — Hub settings: Wallpaper, Desktop, Hub bar (H52), Windows, Sizes, Look, API Keys (H28), Devices (H29.2b), How-to, About (H56: How-to and Devices swapped; was ... How-to, Devices, About).
   Sections list left, options right (phone: list first, tap into a section, ‹ Back).
   Choices are saved in localStorage (settings_store.js) and the Hub applies them live
   (hub/core/hub_prefs.js, storage event + postMessage). Deep link: index.html#about etc.
@@ -53,12 +53,13 @@
   <script src="sec_sizes.js?v=20261020a"></script>
   <script src="sec_look.js?v=20261020a"></script>
   <script src="sec_keys.js?v=20261027h282"></script>
-  <script src="sec_howto.js?v=20261020a"></script>
+  <!-- H56: old order was ... sec_keys.js, sec_howto.js, sec_devices.js, sec_about.js; now Devices sits above How-to -->
   <!-- <script src="sec_devices.js?v=20261028h293"></script> -->
   <!-- <script src="sec_devices.js?v=20261028h50"></script> -->
   <!-- <script src="sec_devices.js?v=20261029h53"></script> -->
   <!-- <script src="sec_devices.js?v=20261029h55"></script> -->
   <script src="sec_devices.js?v=20261029h55b"></script><!-- H29.2b: before About, so Devices sits above it; H50: + Hub mesh roster; H55: + Public mesh; H55b: real link state + Retry -->
+  <script src="sec_howto.js?v=20261020a"></script><!-- H56: after Devices (was before it) -->
   <!-- <script src="sec_about.js?v=20261028h292b"></script> -->
   <!-- <script src="sec_about.js?v=20261029h52"></script> -->
   <script src="sec_about.js?v=20261029h52c"></script><!-- H52: + Auto update card; H52c: no dot in the note -->

@@ -1,7 +1,7 @@
 /*
  * Settings → Devices (apps/system/settings/sec_devices.js, H29.2b). Everything about this device and the
  * devices it is linked with, moved out of About (About was getting crowded): Device name, Connected devices
- * (new, read-only), Profile, Send profile. Listed in the nav directly above About (index.html loads this file
+ * (new, read-only), Profile, Send profile. Listed in the nav above How-to (H56; was directly above About, after How-to) (index.html loads this file
  * before sec_about.js; Settings shows sections in the order they register). Deep links: #devices,
  * #devices/device, #devices/connected, #devices/profile, #devices/sync. The old #about/device, #about/profile
  * and #about/sync still work: settings.js (ALIASES) rewrites them to the #devices/… anchors.
