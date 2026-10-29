@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<!--
+  Music Player MP1 — play music from a folder or files on this device.
+  Screens (dots, 75 px swipes): Songs · Playlists · Settings. Player controls on the right (bottom on phones).
+  Files: music-player_save.js (the one save module), music-player_tags.js (light ID3 reader),
+  music-player_player.js (one <audio>, queue, Media Session, level bar), music-player_app.js (UI).
+  Shared: ../shared-media/media_files.js (open folder / files, list audio, remembered positions). No libraries.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Music Player MP1</title>
+  <link rel="icon" href="music-player_icon.png?v=MP1">
+  <link rel="stylesheet" href="music-player.css?v=MP1">
+  <script>try{var s=JSON.parse(localStorage.getItem('music-player-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
+</head>
+<body>
+<div id="app">
+  <div id="dots" role="tablist" aria-label="Screen">
+    <button type="button" class="dot on" data-i="0" role="tab" aria-label="Songs"></button>
+    <button type="button" class="dot" data-i="1" role="tab" aria-label="Playlists"></button>
+    <button type="button" class="dot" data-i="2" role="tab" aria-label="Settings"></button>
+  </div>
+  <div id="main">
+    <div id="viewport"><div id="track">
+      <!-- 0: Songs -->
+      <section class="pane" id="pane-songs">
+        <div class="bar">
+          <button type="button" class="mini acc" id="b-folder" title="Open a music folder (O)">📁 Folder</button>
+          <button type="button" class="mini" id="b-files" title="Open music files">🎵 Files</button>
+          <input type="search" id="q" placeholder="Search songs" autocomplete="off" spellcheck="false" aria-label="Search songs">
+        </div>
+        <div class="bar sub">
+          <div class="seg" data-key="sort" aria-label="Sort by"><button type="button" data-v="title">Title</button><button type="button" data-v="artist">Artist</button><button type="button" data-v="album">Album</button></div>
+          <span id="lib-info" class="mut"></span>
+        </div>
+        <div id="reopen-row" class="note" hidden><span id="reopen-t"></span><button type="button" class="mini acc" id="b-reopen">Open again</button></div>
+        <div id="list" tabindex="-1"><div id="list-in"></div></div>
+        <div id="empty" class="empty">
+          <div class="big">🎵</div>
+          <p><b>No music open</b></p>
+          <p class="mut">Open a folder (or a few files) with your songs. Music stays on this device: nothing is uploaded.</p>
+          <p class="mut" id="drop-hint">You can also drop files or a folder here.</p>
+        </div>
+      </section>
+      <!-- 1: Playlists -->
+      <section class="pane" id="pane-lists">
+        <div id="pl-home" class="col">
+          <div class="bar"><h2>Playlists</h2><button type="button" class="mini acc" id="b-newpl">＋ New</button></div>
+          <ul id="pls" class="rows"></ul>
+          <p id="pls-empty" class="mut pad">No playlists yet. Tap ＋ New, then add songs with ⋯ on any song.</p>
+        </div>
+        <div id="pl-detail" class="col" hidden>
+          <div class="bar"><button type="button" class="mini" id="b-plback" aria-label="Back to playlists">‹ Back</button><h2 id="pl-name"></h2></div>
+          <div class="bar sub wrap">
+            <button type="button" class="mini acc" id="b-plplay">▶ Play</button>
+            <button type="button" class="mini" id="b-plshuf">🔀 Shuffle</button>
+            <button type="button" class="mini" id="b-pladd">＋ Add playing song</button>
+            <button type="button" class="mini" id="b-plren">Rename</button>
+            <button type="button" class="mini danger-t" id="b-pldel">Delete</button>
+          </div>
+          <div id="pl-missing" class="note" hidden><span id="pl-missing-t"></span><button type="button" class="mini acc" id="b-plfolder">Open folder</button></div>
+          <ul id="pl-items" class="rows"></ul>
+          <p id="pl-empty" class="mut pad" hidden>This playlist is empty. Use ⋯ on a song → Add to playlist.</p>
+        </div>
+      </section>
+      <!-- 2: Settings -->
+      <section class="pane" id="pane-set">
+        <div class="set-wrap">
+          <h2>Settings</h2>
+          <div class="set-row"><span>Theme</span>
+            <div class="seg" data-key="theme"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>
+          <div class="set-row"><span>Level bar<small class="mut">Uses a little more CPU</small></span>
+            <div class="seg" data-key="vis"><button type="button" data-v="0">Off</button><button type="button" data-v="1">On</button></div></div>
+          <div class="set-row"><span>Folder<small class="mut" id="set-folder">None</small></span>
+            <button type="button" class="mini" id="b-forget">Forget</button></div>
+          <h2>Keyboard</h2>
+          <div class="keys">
+            <span><kbd>Space</kbd> Play / pause</span><span><kbd>N</kbd> / <kbd>P</kbd> Next / previous</span>
+            <span><kbd>←</kbd> <kbd>→</kbd> Seek 5 s (Shift 30 s)</span><span><kbd>↑</kbd> <kbd>↓</kbd> Volume</span>
+            <span><kbd>S</kbd> Shuffle</span><span><kbd>R</kbd> Repeat</span><span><kbd>M</kbd> Mute</span>
+            <span><kbd>V</kbd> Level bar</span><span><kbd>/</kbd> Search</span><span><kbd>O</kbd> Open folder</span>
+            <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> Screens</span>
+          </div>
+          <h2>About</h2>
+          <div class="about">
+            <img src="music-player_icon.png?v=MP1" alt="" width="40" height="40">
+            <div><b>Music Player</b> <span id="ver"></span>
+              <p>Plays music from a folder or files on this device, with playlists, shuffle and repeat. Keeps playing in the background and works with lock-screen and media keys. Reads song titles from the files where it can. Nothing is uploaded.</p></div>
+          </div>
+        </div>
+      </section>
+    </div></div>
+    <!-- player: right column (bottom bar on phones) -->
+    <aside id="side" aria-label="Player">
+      <div class="np" id="np" title="Tap for more">
+        <div class="art" id="art">♪</div>
+        <div class="np-t"><b id="np-title">Nothing playing</b><span id="np-sub" class="mut">Open a folder to start</span></div>
+      </div>
+      <canvas id="vis" hidden></canvas>
+      <div class="seek"><span id="t-cur">0:00</span><input type="range" id="seek" min="0" max="1000" value="0" step="1" aria-label="Seek"><span id="t-dur">0:00</span></div>
+      <div class="ctl">
+        <button type="button" class="ic tog" id="b-shuf" title="Shuffle (S)" aria-label="Shuffle">🔀</button>
+        <button type="button" class="ic" id="b-prev" title="Previous (P)" aria-label="Previous">⏮</button>
+        <button type="button" class="ic play" id="b-play" title="Play / pause (Space)" aria-label="Play">▶</button>
+        <button type="button" class="ic" id="b-next" title="Next (N)" aria-label="Next">⏭</button>
+        <button type="button" class="ic tog" id="b-rep" title="Repeat (R)" aria-label="Repeat off">🔁</button>
+      </div>
+      <div class="vol"><button type="button" class="ic sm" id="b-mute" title="Mute (M)" aria-label="Mute">🔊</button><input type="range" id="vol" min="0" max="100" step="1" aria-label="Volume"></div>
+      <div id="q-info" class="mut"></div>
+    </aside>
+  </div>
+  <div id="dialog" hidden>
+    <div class="box" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+      <p id="dlg-t"></p>
+      <p id="dlg-m" class="mut"></p>
+      <input type="text" id="dlg-in" maxlength="80" hidden>
+      <ul id="dlg-list" class="rows" hidden></ul>
+      <div class="row" id="dlg-btns"></div>
+    </div>
+  </div>
+  <div id="toast" role="status"></div>
+</div>
+<script src="../shared-media/media_files.js?v=MP1"></script>
+<script src="music-player_save.js?v=MP1"></script>
+<script src="music-player_tags.js?v=MP1"></script>
+<script src="music-player_player.js?v=MP1"></script>
+<script src="music-player_app.js?v=MP1"></script>
+</body>
+</html>
