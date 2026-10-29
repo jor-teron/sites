@@ -19,6 +19,7 @@
   const main = h('main', { class: 'lrn-main tm-main', id: 'lrn-main' });
   root.className = 'lrn tm';
   root.replaceChildren(h('header', { class: 'lrn-head' }, h('h1', null, h('span', { class: 'lrn-here' }, 'Tuner & Metronome')), modeBar, h('span', { class: 'tm-ver' }, VER)), main);
+  if (window.LearnHubBar) LearnHubBar.attach(root.querySelector('.lrn-head'));   // TB2: Hub desktop window: the mode tabs go to the title bar
   let stopper = null;
   function go(m) {
     stopper && stopper(); stopper = null;
