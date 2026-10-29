@@ -10,7 +10,10 @@
  *   sites-hub.titleH     window title bar 24 | 28 | 34 px (default 28)        → --wm-title-h
  *   sites-hub.taskPos    taskbar 'bottom' (default) | 'top'                    → html.hub-task-top
  *   sites-hub.accent     accent colour '#rrggbb' (default #6ea8fe)            → --accent
- *   sites-hub.theme      'dark' (default) | 'light'                           → html.hub-light
+ *   (legacy) sites-hub.theme 'dark' (default) | 'light'                       → html.hub-light
+ *   sites-hub.theme      H60a: 'light' (default, also '') | 'dark'            → html.hub-light
+ *                        (the Hub is the theme source, so it has no Auto; Settings now saves 'dark'.
+ *                        Before H60 Dark was saved as '' = missing, so those older picks read as Light.)
  *   sites-hub.homeBtn    '' = Home button goes to the Home screen (default) | 'apphub' = opens App Hub
  *                        (AH1-F1; hub.js __hubHome reads it per click)        → #home-btn title
  *   sites-hub.showFiles  '0' = no Files icons on the Desktop home (H7; default on) → html.hub-files-off, HubDrives.sync()
@@ -76,7 +79,8 @@
     const acc = hex(get('accent'));
     if (acc) root.style.setProperty('--accent', acc); else root.style.removeProperty('--accent');
     // theme + motion
-    root.classList.toggle('hub-light', get('theme') === 'light');
+    // root.classList.toggle('hub-light', get('theme') === 'light');   // legacy: unset = Dark
+    root.classList.toggle('hub-light', get('theme') !== 'dark');   // H60a: unset = Light
     root.classList.toggle('hub-hover-focus', get('hoverFocus') === '1');
     root.classList.toggle('hub-snap-off', get('snapEdges') === '0');
     root.classList.toggle('hub-magnet-off', get('snapMagnet') === '0');

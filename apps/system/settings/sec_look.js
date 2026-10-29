@@ -35,7 +35,8 @@
       paint();
       const theme = ui.choice([
         { value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }
-      ], S.get('theme', 'dark'), (v) => S.set('theme', v === 'dark' ? '' : v));
+      // ], S.get('theme', 'dark'), (v) => S.set('theme', v === 'dark' ? '' : v));   // legacy: Dark default, saved as ''
+      ], S.get('theme') === 'dark' ? 'dark' : 'light', (v) => S.set('theme', v));   // H60a: Light default, both saved
       const motion = ui.choice([
         { value: 'on', label: 'On', hint: 'Jelly + bouncy' },
         { value: 'reduced', label: 'Reduced', hint: 'No jelly' },

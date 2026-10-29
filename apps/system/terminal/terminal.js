@@ -436,7 +436,8 @@
     theme(args) {
       // H22: the Terminal's own built-in theme; system (default) follows the Hub theme (Settings > Look)
       const HT = window.HubTheme;
-      const hubT = HT ? HT.hub() : (prefsGet('theme') === 'light' ? 'light' : 'dark');
+      // const hubT = HT ? HT.hub() : (prefsGet('theme') === 'light' ? 'light' : 'dark');   // legacy: unset = Dark
+      const hubT = HT ? HT.hub() : (prefsGet('theme') === 'dark' ? 'dark' : 'light');   // H60a: unset = Light
       if (!args.length) {
         const pref = HT ? HT.own() : 'system';
         print('Theme: ' + (pref === 'system' ? 'system (follows the Hub: ' + hubT + ')' : pref));

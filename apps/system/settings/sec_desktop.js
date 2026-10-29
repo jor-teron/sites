@@ -1,6 +1,7 @@
 /*
  * Settings → Desktop (apps/system/settings/sec_desktop.js). Screen mode Auto / Desktop / Phone,
  * R51 'Open windows maximised' (key 'openMax', default on, '0' = off; Hub wm_windows.js reads it on every open),
+ *   H60b: default OFF now = Windowed ('1' = on, '0' / unset = off; an older saved '1' / '0' is kept),
  * (key 'wmMode', the Hub's HubMode applies it) and "Open menu on hover" for the Desktop
  * mode Start button (key 'startHover', default on, '0' = off), and the optional taskbar busy
  * meter (key 'trayMeter', '1' = on, default off; hub/drives/hub_traymeter.js), and the
@@ -52,8 +53,11 @@
       });
       mode.classList.add('seg-col');
       // R51: new Desktop-mode windows open maximised (default on)
-      const openMax = ui.switch('Open windows maximised', 'New windows fill the screen; Restore gives the normal size',
-        S.get('openMax') !== '0', (on) => S.set('openMax', on ? '1' : '0'));
+      // const openMax = ui.switch('Open windows maximised', 'New windows fill the screen; Restore gives the normal size',
+      //   S.get('openMax') !== '0', (on) => S.set('openMax', on ? '1' : '0'));
+      // H60b: Windowed is the default (off unless '1'); new windows step down-right so they don't cover each other
+      const openMax = ui.switch('Open windows maximised', 'Off: new windows open in a window, each a little lower and to the right',
+        S.get('openMax') === '1', (on) => S.set('openMax', on ? '1' : '0'));
       const hover = ui.switch('Open menu on hover', 'Point at Start to open the menu (Desktop mode)',
         S.get('startHover') !== '0', (on) => S.set('startHover', on ? '' : '0'));
       // H7: the Files icons on the Desktop-mode home screen (default on; off = just the wallpaper and the QR / link tiles)
