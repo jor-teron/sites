@@ -27,8 +27,12 @@
   const PREFS = ['wallpaper', 'taskH', 'titleH', 'taskPos', 'accent', 'theme', 'motion', 'wmMode', 'startHover', 'trayMeter', 'showFiles', 'homeBtn',
     'hoverFocus', 'snapEdges', 'snapMagnet', 'snapMagnetPx', 'workspaces', 'filesClick', 'filesThumbs',
     'barShowDesk', 'barSearch', 'barTasks', 'barWorkspaces', 'barOsk', 'barPooh', 'barDevices', 'barUpdate', 'barClock', 'updEvery', 'glass', 'glassSolid',
-    'barEye', 'eyeWarm', 'eyeMode', 'eyeFrom', 'eyeTo'];   // H52; H61: glass, glassSolid; H63: Eye comfort
-  const snap = () => PREFS.map((k) => { try { return localStorage.getItem('sites-hub.' + k) || ''; } catch (_) { return ''; } }).join('|');
+    'barEye', 'eyeWarm', 'eyeMode', 'eyeFrom', 'eyeTo',
+    'themeAuto', 'themeSunrise', 'themeSunset', 'themeOffset'];   // H52; H61: glass, glassSolid; H63: Eye comfort; H64: Auto theme
+  // const snap = () => PREFS.map((k) => { try { return localStorage.getItem('sites-hub.' + k) || ''; } catch (_) { return ''; } }).join('|');   (before H64)
+  // H64: with Auto on, the clock rewrites theme; Settings already follows that live, so it is not a reason to reload it
+  const rdP = (k) => { try { return localStorage.getItem('sites-hub.' + k) || ''; } catch (_) { return ''; } };
+  const snap = () => PREFS.map((k) => (k === 'theme' && rdP('themeAuto') === '1' ? 'auto' : rdP(k))).join('|');
   let seen = snap();
   const frames = () => [...document.querySelectorAll('iframe')].filter((f) => { try { return f.contentWindow.location.pathname.indexOf(SET) >= 0; } catch (_) { return false; } });
   function fresh() {

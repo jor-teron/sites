@@ -17,6 +17,10 @@
  *   sites-hub.glass      H61: '1' = Glass (Settings › Look saves it with theme 'light', so apps that read
  *                        sites-hub.theme still see Light; a theme of 'glass' is read as Glass too) → html.hub-glass
  *                        (+ html.hub-light; CSS in hub/core/hub_glass.css). Ignored when theme is 'dark'.
+ *   sites-hub.themeAuto  H64: '1' = Auto theme (Light by day, Dark by night; hub/core/hub_autotheme.js, loaded
+ *                        before this file). While on, apply() first calls HubAutoTheme.sync(), which writes the
+ *                        effective 'light' / 'dark' into sites-hub.theme (so every app reading it follows) and
+ *                        clears sites-hub.glass. Times: themeSunrise / themeSunset / themeOffset (hub_autotheme.js).
  *   sites-hub.glassSolid H61: '1' = Reduce transparency (Glass without blur, solid colours) → html.hub-glass-solid
  *   sites-hub.homeBtn    '' = Home button goes to the Home screen (default) | 'apphub' = opens App Hub
  *                        (AH1-F1; hub.js __hubHome reads it per click)        → #home-btn title
@@ -86,10 +90,13 @@
     const acc = hex(get('accent'));
     if (acc) root.style.setProperty('--accent', acc); else root.style.removeProperty('--accent');
     // theme + motion
+    // H64: Auto theme first: keeps sites-hub.theme = the effective light / dark (writes only on a change)
+    if (window.HubAutoTheme) window.HubAutoTheme.sync();
     // root.classList.toggle('hub-light', get('theme') === 'light');   // legacy: unset = Dark
     root.classList.toggle('hub-light', get('theme') !== 'dark');   // H60a: unset = Light
     // H61: Glass = a light theme with frosted bars / menus / pop-ups (hub_glass.css)
-    const glass = get('theme') === 'glass' || (get('glass') === '1' && get('theme') !== 'dark');
+    // const glass = get('theme') === 'glass' || (get('glass') === '1' && get('theme') !== 'dark');   (before H64)
+    const glass = get('themeAuto') !== '1' && (get('theme') === 'glass' || (get('glass') === '1' && get('theme') !== 'dark'));   // H64: Auto is never Glass
     root.classList.toggle('hub-glass', glass);
     root.classList.toggle('hub-glass-solid', glass && get('glassSolid') === '1');
     root.classList.toggle('hub-hover-focus', get('hoverFocus') === '1');

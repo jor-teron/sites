@@ -758,6 +758,8 @@
    *             H55: meshPublic (Settings › Devices › Join public mesh) is not listed = Shared
    *   phone   : the Phone-mode layout (Home button target)
    *   H63: Eye comfort eyeWarm / eyeMode / eyeFrom / eyeTo and the Hub bar barEye = Shared (not listed)
+   *   H64: Auto theme themeAuto / themeSunrise / themeSunset / themeOffset = Shared (not listed), with theme;
+   *        a receiver in Auto rewrites theme from its own clock at once (hub_autotheme.js)
    *   Never synced: wmMode, H63 eyeNow (the 🌙 override); (each device's own Screen mode choice; a phone must not be switched to Desktop).
    * Keys are never part of a sync payload (exportData({ keys: false }); diffData ignores "keys"). (H29.1)
    * H29.2: keys are, when the sender ticks 'Include API keys' (exportData({ keys: true })) and the receiver
