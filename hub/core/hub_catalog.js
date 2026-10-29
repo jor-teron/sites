@@ -65,6 +65,7 @@ Camera,          camera/,          , , Photo, Take photos and record videos with
 Gallery,         gallery/,         , , Photo, Browse photos and videos from a folder or files on this device
 GIF Maker,       gif-maker/,       , , Photo, Turn a short video into an animated GIF on your device
 Sound Recorder,  sound-recorder/,  , , Audio, Record audio from the microphone - long recordings with a waveform
+Music Player,    music-player/,    , , Audio, Play music from a folder on this device: playlists - shuffle - repeat - lock-screen controls
 Screen Recorder, screen-recorder/, , , Video, Record your screen window or tab with microphone audio
 3D Viewer,       3d-viewer/,       , , 3D, View 3D GLB and glTF models: orbit - play animations - screenshot
 News,            news/,            , , Read, Latest headlines from Google News India in story cards
