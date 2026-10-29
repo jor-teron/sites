@@ -64,6 +64,7 @@
   const rot = h('p', { class: 'pb-rot' }, '\u{1F4F1}\u21BB Turn your phone sideways for bigger keys.');
   const main = h('main', { class: 'lrn-main pb-main', id: 'lrn-main' }, top, saHint, rot, bar, piano.el);
   root.className = 'lrn pb'; root.replaceChildren(head, main, help);
+  if (window.LearnHubBar) LearnHubBar.attach(root.querySelector('.lrn-head'), { buttons: '.pb-helpbtn' });   // TB2: Hub desktop window: mode tabs + Help button
   const setRun = on => root.classList.toggle('pb-run', on);   // falling notes running: hide everything but score, bars and keys
 
   function range(fixed) {                                   // fixed = songs / quiz: middle C (or the whole song) must be on screen

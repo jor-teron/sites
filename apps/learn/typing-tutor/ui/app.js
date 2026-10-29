@@ -19,6 +19,7 @@
   const main = h('main', { class: 'lrn-main tt-main', id: 'lrn-main' });
   const foot = h('footer', { class: 'lrn-foot' }, 'Rest your fingers on the home row: the F and J keys have small bumps. Accuracy first, speed comes later.');
   root.className = 'lrn tt'; root.replaceChildren(head, main, foot);
+  if (window.LearnHubBar) LearnHubBar.attach(root.querySelector('.lrn-head'), { buttons: '.lrn-crumb' });   // TB2: Hub desktop window: the Lessons back button (only in a lesson)
 
   let S = null;              // current practice session
   let ticker = 0;
