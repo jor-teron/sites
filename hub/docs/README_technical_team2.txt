@@ -1667,3 +1667,51 @@ Line counts are HTML+JS+CSS, excluding vendor/.
     /workspace/h52b_phone.png). H52 64/64 (its Phone-mode and H29-group checks updated for H52b),
     H53 37/37, H29.1 40/40, H29.2 45/45, H29.2b 30/30, H29.3 40/40, H50a 22/22, H50 mesh 35/35, H50 Hub 20/20.
   Bump 20261029c / v110 -> 20261029d / hub-shell-v111 (hub_bump.py --release H52b, --check OK).
+
+2026-10-29 IST, H55 (Team 2, week 2): the public Hub mesh 0000.
+  Ask (Jor): every Hub that is not in a private mesh joins one public mesh "0000" so nearby Hubs see each
+    other and can invite each other to their own Connect Code. Public PeerJS server as before.
+  When a Hub is private (hub/link/hub_meshlink.js check(), old check() kept as a comment): every non-remote
+    Hub hosts its own 4-digit code from first boot (hub-controller.js), so "hosting a code" can not mean
+    private (no Hub would ever be on 0000). Rule: a joined device (window.__hubRemote) is private once
+    SharedLink.connected; a host is private once its code is PAIRED (a device connected to it at least once:
+    localStorage 'hub-mesh-paired' = code, sticky so a phone screen-off does not flap the mesh; cleared by the
+    host's Disconnect (SharedLink.live false) or a new code). Everything else runs HubMesh.start('0000',
+    {preferLobby:false}). A joiner still connecting stops the public mesh and waits. hub-mesh-off still wins.
+  Switch: Settings › Devices › Public mesh (#devices/public, sec_devices.js publicCard) "Join public mesh",
+    key sites-hub.meshPublic ('' = on, default; '0' = off), Shared group in H29 (not in SYNC_GROUPS). Off =
+    leave 0000 at once (storage event / hub-prefs event / HubMeshLink.setPublic). Private meshes unaffected.
+  Code generation (link_core.js randomCode, hub-controller.js loadCode, old lines kept): 0000 is never picked
+    and a saved 0000 is replaced. Joining 0000 by hand (?join=0000 in hub_role.js, or 0000 in the Devices
+    pop-up join box in hub_panels.js) = public: no remote, saved join code removed, meshPublic back on; a
+    joined device typing 0000 disconnects from its Hub.
+  Mesh-level enforcement (shared/link/hub_mesh.js, me().public, HubMesh.isPublic(), PUBLIC_CODE): on a public
+    mesh accept() (incoming, so relayed traffic too: the lobby route() only relays what accept() passed) and
+    sendEnv() (outgoing, returns {ok:false, reason:'public'}) allow only CTRL '_mesh' (hello / welcome /
+    roster / hb / info / bye) and the reserved 'invite' channel sent to ONE device with data exactly
+    {k:'invite', code: 4 digits, not 0000}. Sync, keys, profile, every app channel: dropped (stats.dropPublic).
+    channel('invite') throws (reserved). myApps() = {} and roster apps stripped, names cut to 16 (PUB_NAME)
+    in hello / info / roster, roster capped at 20 (PUB_ROSTER; private stays 64). Relay stays (presence only).
+  Invites: HubMesh.invite(deviceId, code) (target must be in the roster, own code refused, 3 s gap per
+    target) → 'invite' event {from, name, code, at}. HubMeshLink keeps the last 5, shows a HubNotify notice
+    "NAME invites you" / "Join code X? Tap to join." and lists them in Settings (Join / Dismiss). Accept =
+    sessionStorage hub-join-try + location.replace('?join=CODE') (the normal H50 / H53 join path). Invites are
+    cleared when the mesh stops. window.HubMeshLink = {PUBLIC_CODE, publicOn, setPublic, isPrivate,
+    privateCode, ownCode, invite, invites, accept, dismiss}; 'hub-mesh-invites' window event.
+  Settings › Devices: Public mesh card after Connected devices (privacy note, invites, list of up to 20:
+    short name, Online, mode, device ID, Lobby, "Invite to my code" on others when this Hub has a code). The
+    H50 Hub mesh box notes "on the public mesh 0000". settings.css .pub-*; ?v=20261029h55. Search row "Join
+    public mesh" (#devices/public). Old Connect / join behaviour unchanged.
+  Open risks (public mesh): anyone can see device names / device IDs / mode on 0000 and send invites (rate
+    limited, only a code, only joins after a tap); a hostile peer can claim the 0000 lobby (presence only, no
+    data channels); names are self-chosen (spoofing); still no signing (H50 hooks).
+  Tests (system Chrome headless, real pages, PeerJS stand-in broker): H55 39/39 (auto-join 0000 on start for
+    PC + phones, roster 3, 16-char names, no app identities, sync / keys / profile / app send refused, raw
+    envelopes dropped, invite reserved, randomCode never 0000, Settings public list + screenshot
+    /workspace/h55_public.png, invite → notice → tap → phone joins the PC code → both private, third Hub alone
+    on 0000, phone Disconnect and PC Disconnect back on 0000, switch off / on, Shared group, ?join=0000 public,
+    saved code 0000 replaced, join box 0000, no console errors); H55 mesh relay 8/8 (10 devices on 0000, 2
+    relayed, lobby drops relayed app envelopes, relayed invite delivered). H52b 47/47, H53 37/37, H52 64/64,
+    H29.1 40/40, H29.2 45/45, H50a 22/22, H50 mesh 35/35; updated for H55 (originals *_preH55.py): H50 Hub
+    20/20 (PC on 0000 until paired), H29.2b 30/30 and H29.3 40/40 (Devices card list includes 'public').
+  Bump 20261029d / v111 -> 20261029e / hub-shell-v112 (hub_bump.py --release H55, --check OK).

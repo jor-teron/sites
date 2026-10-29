@@ -755,6 +755,7 @@
    *   desktop : the Desktop-mode layout (taskbar, title bar, windows, snapping, workspaces, desktop icons,
    *             Start hover, tray meter, clock screen saver, H52 Hub bar switches bar*;
    *             H52b: barPooh / barDevices / barUpdate work in both modes, so they are Shared)
+   *             H55: meshPublic (Settings › Devices › Join public mesh) is not listed = Shared
    *   phone   : the Phone-mode layout (Home button target)
    *   Never synced: wmMode (each device's own Screen mode choice; a phone must not be switched to Desktop).
    * Keys are never part of a sync payload (exportData({ keys: false }); diffData ignores "keys"). (H29.1)

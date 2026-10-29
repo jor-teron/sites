@@ -271,7 +271,14 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
 .conn-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
 .conn-tag { font-size: .72rem; padding: 1px 8px; border-radius: 999px; background: var(--hi); color: var(--accent); }
 .conn-empty { color: var(--muted); font-size: .9rem; padding: 6px 2px; }
-.pane-end { height: 140px; }   /* H29.2b: Devices is the last long page before About; keeps Apply / Cancel clear of notification cards */
+.pane-end { height: 140px; }
+/* H55: Settings › Devices › Public mesh (sec_devices.js publicCard) */
+.pub-dev { display: flex; flex-direction: column; gap: 4px; }
+.pub-dev .pub-inv { align-self: flex-start; margin-top: 4px; }
+.pub-invites { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.pub-invite { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border: 1px solid var(--accent); border-radius: 12px; padding: 8px 12px; }
+.pub-invite span { flex: 1; min-width: 0; }
+.pub-note { margin-top: 10px; }   /* H29.2b: Devices is the last long page before About; keeps Apply / Cancel clear of notification cards */
 /* H29.3: Undo last sync card */
 .sync-undo-info:empty { display: none; }
 .sync-undo-info { margin: 4px 0 10px; }
