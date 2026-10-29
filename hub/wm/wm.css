@@ -352,7 +352,7 @@ html.hub-motion-reduced #wm-snap-pv, html.hub-motion-off #wm-snap-pv { animation
 @media (max-width: 600px) { body.wm-desktop #hub-notify.hn-bottom-right { bottom: calc(var(--wm-task-h) + 8px); } }
 
 /* ---------- H52: Hub bar switches (Settings → Hub bar; hub_prefs.js sets html.hub-bar-off-<item>) ----------
-   H52b: Pooh Chat, Devices and Update (and the Update dot) now apply in Phone mode too, see below; the
+   H52b: Pooh Chat, Devices and Update (and the Update dot, removed in H52c) now apply in Phone mode too, see below; the
    rest exist only in the Desktop taskbar ("Desktop only" in Settings). H52 note:
    Desktop-mode taskbar only: every rule is inside #wm-taskbar (in Phone mode the tray items sit back in the top
    bar, outside it, so Phone mode is untouched). Start has no switch. The window buttons keep their space
@@ -373,11 +373,14 @@ html.hub-bar-off-devices:not(.hub-remote) #ctrl-btn,   /* H53: a joined device a
 html.hub-bar-off-update #upd-btn,
 html.hub-bar-off-clock #wm-taskbar .wm-clock { display: none !important; }
 html.hub-bar-off-tasks #wm-taskbar .wm-tasks { visibility: hidden; }
-/* Update icon hidden + a new build waiting (html.hub-upd-ready, hub_update.js) → small dot on Start */
+/* H52c: no Update dot any more. With the Hub bar Update switch off there is no indicator at all (Start /
+   Home ▾ stay plain); the Hub still updates itself (About › Auto update) and Settings › About still shows a
+   waiting build. html.hub-upd-ready is still set by hub_update.js (harmless). Old H52 / H52b rules:
 #wm-start { position: relative; }
 html.hub-bar-off-update.hub-upd-ready #wm-taskbar #wm-start::after,
-html.hub-bar-off-update.hub-upd-ready body:not(.wm-desktop) #header #cat-btn::after {   /* H52b: Phone mode's Start = the Home ▾ menu button */
+html.hub-bar-off-update.hub-upd-ready body:not(.wm-desktop) #header #cat-btn::after {   (H52b: Phone mode's Start = the Home ▾ menu button)
   content: ''; position: absolute; top: 3px; right: 4px; width: 8px; height: 8px; border-radius: 50%;
   background: var(--accent, #6ea8fe); box-shadow: 0 0 0 2px var(--wm-task-bg, #111);
 }
-body:not(.wm-desktop) #header #cat-btn { position: relative; }   /* H52b: anchor for the Update dot */
+body:not(.wm-desktop) #header #cat-btn { position: relative; }   (H52b: anchor for the Update dot)
+*/

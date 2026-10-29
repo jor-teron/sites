@@ -33,10 +33,10 @@
  * - Clock: 12-hour with AM/PM (11:56 PM), date in the tooltip.
  * - H52: Settings → Hub bar switches each item on / off (Start can't be): hub_prefs.js sets
  *   html.hub-bar-off-<item>, wm.css hides it inside #wm-taskbar (live, Phone mode untouched). Defaults: all
- *   shown except Pooh Chat and Update. Update hidden + a build waiting → a dot on Start (html.hub-upd-ready).
+ *   shown except Pooh Chat and Update. Update hidden + a build waiting → a dot on Start (html.hub-upd-ready; H52c: removed, no indicator).
  *   The empty-bar right-click menu gets "Hub bar settings".
  * - H52b: Pooh Chat / Devices / Update (the .header-right items placeTray moves) follow the same switches in
- *   Phone mode's top bar too; Update off + a build waiting → the dot on Home ▾ (#cat-btn) there. wm.css.
+ *   Phone mode's top bar too; Update off + a build waiting → the dot on Home ▾ (#cat-btn) there (H52c: removed). wm.css.
  * Redraws on 'hub-wm-change' (wm_windows.js). Look in wm.css.
  */
 (function () {

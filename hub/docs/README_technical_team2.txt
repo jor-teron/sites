@@ -1715,3 +1715,21 @@ Line counts are HTML+JS+CSS, excluding vendor/.
     H29.1 40/40, H29.2 45/45, H50a 22/22, H50 mesh 35/35; updated for H55 (originals *_preH55.py): H50 Hub
     20/20 (PC on 0000 until paired), H29.2b 30/30 and H29.3 40/40 (Devices card list includes 'public').
   Bump 20261029d / v111 -> 20261029e / hub-shell-v112 (hub_bump.py --release H55, --check OK).
+
+2026-10-29 IST, H52c (Team 2, week 2): no Update dot.
+  Ask (Jor): with Settings › Hub bar › Update off, show no indicator at all for a waiting build.
+  wm.css: the H52 / H52b rules html.hub-bar-off-update.hub-upd-ready #wm-taskbar #wm-start::after (Desktop
+    Start) and ... body:not(.wm-desktop) #header #cat-btn::after (Phone Home ▾), plus their position:
+    relative anchors, are now one comment block (kept). hub_update.js still sets html.hub-upd-ready (no CSS
+    uses it) and still unhides #upd-btn, which the Update switch hides; auto update (H52 interval / 6 AM, idle
+    reload) unchanged; Settings › About › Check for update still reports a ready build. Comments only in
+    hub_update.js, hub_prefs.js, wm_taskbar.js.
+  Settings: sec_hubbar.js (?v=20261029h52c) Update hint "Off: no indicator at all; the Hub still updates
+    itself and Settings › About shows a waiting build"; section note adds "With Update off nothing on the bar
+    shows a waiting build (see About)". sec_about.js (?v=20261029h52c) Auto update note drops "or a dot on
+    Start". Search row Hub bar: Update icon loses the dot / start / home menu words (?v=20261029h52c).
+    Old lines kept as comments.
+  Tests: H52 64/64 and H52b 48/48 (dot checks now expect no dot on Start / Home ▾ with Update off;
+    originals kept as h52test/t52_preH52c.py, h52btest/t52b_preH52c.py; old screenshot kept as
+    /workspace/h52b_phone_preH52c.png), H55 39/39.
+  Bump 20261029e / v112 -> 20261029f / hub-shell-v113 (hub_bump.py --release H52c, --check OK).

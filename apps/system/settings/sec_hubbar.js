@@ -5,7 +5,7 @@
  * H52b: the same switches apply in Phone mode too (no separate Phone set). Phone mode's top bar has
  *   Home ▾ (= Start, always on) · Home button (R42, always on) · [app bar] · 🐻 Pooh · 🎮 Devices · Update
  *   (+ the phone-remote ⛶ / ⚙ Gamepad extras, no switch). So Pooh Chat, Devices and Update work in both
- *   modes (Update off: the dot goes on Home ▾); every other switch is marked "Desktop only" (DESK_ONLY).
+ *   modes (Update off: the dot goes on Home ▾; H52c: no dot any more); every other switch is marked "Desktop only" (DESK_ONLY).
  * Items, left to right (hub/wm/wm_taskbar.js, wm_workspaces.js, hub/core/hub_loader.js + hub/osk/osk.js,
  * hub.html .header-right, hub/drives/hub_traymeter.js):
  *   Start (always on, no switch) · Show Desktop · Search (H48b) · Window buttons · Workspaces 1 / 2 ·
@@ -13,7 +13,9 @@
  * Keys ('sites-hub.<key>', hub/core/hub_prefs.js applies them live as html.hub-bar-off-<item>, wm.css hides):
  *   barShowDesk, barSearch, barTasks, barWorkspaces, barOsk, barDevices, barClock: '0' = off (default on);
  *   barPooh, barUpdate: '1' = on (default OFF). Pooh off only hides the icon (Pooh Chat keeps working).
- *   Update off: when a new build waits, a small dot shows on Start instead.
+ *   Update off: when a new build waits, a small dot shows on Start instead.   (H52 / H52b)
+ *   H52c: Update off = no indicator at all (no dot on Start / Home ▾); the Hub still updates itself and
+ *   Settings › About still shows a waiting build.
  *   Busy meter: the existing key 'trayMeter' ('1' = on, default off; hub_traymeter.js), moved here from Desktop.
  * All of them are in the Desktop group of H29 Send profile (hub_profile.js SYNC_GROUPS.desktop).   (H52)
  * H52b: barPooh, barDevices, barUpdate apply in both modes, so they moved to the Shared group; the
@@ -32,7 +34,8 @@
     ['barPooh', 'Pooh Chat', 'The \uD83D\uDC3B chat icon. Off only hides the icon; Pooh Chat keeps working', false],
     // ['barDevices', 'Devices', 'The \uD83C\uDFAE button: Connect Code, phone link and connected devices', true],   // (before H53)
     ['barDevices', 'Devices', 'The \uD83C\uDFAE button: Connect Code, phone link and connected devices. Always shown on a device joined to a Hub (Disconnect lives there)', true],   // H53
-    ['barUpdate', 'Update', 'Shows when a new build is ready. Off: a small dot on Start instead (the Hub also updates itself, see About)', false]
+    // ['barUpdate', 'Update', 'Shows when a new build is ready. Off: a small dot on Start instead (the Hub also updates itself, see About)', false]   (H52 / H52b)
+    ['barUpdate', 'Update', 'Shows when a new build is ready. Off: no indicator at all; the Hub still updates itself and Settings \u203A About shows a waiting build', false]   // H52c
   ];
   /* H52b: switches with nothing in Phone mode's top bar get a small "Desktop only" tag */
   const DESK_ONLY = ['barShowDesk', 'barSearch', 'barTasks', 'barWorkspaces', 'barOsk', 'trayMeter', 'barClock'];
@@ -77,7 +80,8 @@
       });
       pane.append(
         // ui.note('The bar at the bottom (or top) of the screen in Desktop mode. Changes show at once. Phone mode is not affected.'),   (H52)
-        ui.note('The bar at the bottom (or top) of the screen in Desktop mode, and the top bar in Phone mode. One set of switches for both modes; changes show at once. Items marked Desktop only are not in the Phone bar.'),   // H52b
+        // ui.note('The bar at the bottom (or top) of the screen in Desktop mode, and the top bar in Phone mode. One set of switches for both modes; changes show at once. Items marked Desktop only are not in the Phone bar.'),   (H52b)
+        ui.note('The bar at the bottom (or top) of the screen in Desktop mode, and the top bar in Phone mode. One set of switches for both modes; changes show at once. Items marked Desktop only are not in the Phone bar. With Update off nothing on the bar shows a waiting build (see About).'),   // H52c
         ui.title('Left'), start, rows[0], rows[1], rows[2],
         ui.title('Right'), rows[3], rows[4], rows[5], rows[6], rows[7], meter, clock,
         reset,

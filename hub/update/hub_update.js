@@ -17,7 +17,7 @@
  *   Never run (no lastRefresh) = due now. Checked 5 s after load, then on a timer (≤ 1 h steps, so a sleeping
  *   computer catches up), when the tab becomes visible again, and re-planned live when N changes. A failed run
  *   retries after 1 h. Busy-safe (unchanged, R16c / R23 / R56): it reloads ONLY when idleNow() (Desktop: no
- *   windows; Phone: no app open); otherwise the Update indicator shows (Hub bar Update off → a dot on Start).
+ *   windows; Phone: no app open); otherwise the Update indicator shows (Hub bar Update off → a dot on Start; H52c: no indicator at all).
  *   Last build change: 'sites-hub.lastBuild' (running ?v= tag) and 'sites-hub.lastUpdated' (ms when this device
  *   first ran it); About shows them. API: HubUpdate.every(), dueAt(last, n, now) (next run, ms), due(now), sixAfter(t).
  * - (R16c, before H52) Daily refresh at 09:00 browser local time, or on the next open after a missed 09:00:
@@ -65,7 +65,7 @@
   function showNote(reg) {   // R50: name kept (callers + HubUpdate.showNote); shows the indicator
     if (reg) lastReg = reg;
     if (updBtn) updBtn.hidden = false;
-    document.documentElement.classList.add('hub-upd-ready');   // H52: the dot on Start when the Hub bar hides Update
+    document.documentElement.classList.add('hub-upd-ready');   // H52: the dot on Start when the Hub bar hides Update (H52c: dot removed, class kept, no CSS uses it)
   }
   /* R50 legacy (R16b toast), not used any more:
   // let note = null;

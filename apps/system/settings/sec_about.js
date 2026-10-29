@@ -172,7 +172,8 @@
     card.appendChild(ui.el('h3', '', 'Auto update'));
     card.appendChild(ui.el('p', 'opt-note', 'The Hub updates itself when the last auto update is older than the interval below, ' +
       'or at 6 AM on the morning the interval ends (every morning for 1 day), whichever comes first. It only reloads when no window or app is open; ' +
-      'otherwise it waits, and Update (or a dot on Start) shows that a new build is ready.'));
+      // 'otherwise it waits, and Update (or a dot on Start) shows that a new build is ready.'));   (H52 / H52b)
+      'otherwise it waits, and the Update icon (if shown in Hub bar) or Check for update here shows that a new build is ready.'));   // H52c: no dot
     const hubUpd = () => { const h = S.hub(); return h && h.HubUpdate ? h.HubUpdate : null; };
     const lastAuto = () => { try { return +localStorage.getItem('sites-hub.lastRefresh') || 0; } catch (_) { return 0; } };
     const nextRow = row('Next auto update', '\u2026');
