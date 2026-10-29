@@ -60,7 +60,7 @@ Game Settings,      common/settings/games-settings.html, , , Settings, Shared ga
 # description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
 name, path, icon, newtab, section, description
 Draw,            draw/,            , , Draw & Paint, Draw with finger stylus or mouse: pen - eraser - fill - shapes - export PNG
-Photo Editor v2, photo-editor-v2/, , , Photo, Edit photos: crop - rotate - brightness - contrast - B&W and sepia looks
+Photo Editor v2, photo-editor-v2/, , , Photo, Edit photos: crop - rotate - resize - brightness - contrast - sharpen - B&W and sepia looks
 Camera,          camera/,          , , Photo, Take photos and record videos with the device camera
 Gallery,         gallery/,         , , Photo, Browse photos and videos from a folder or files on this device
 GIF Maker,       gif-maker/,       , , Photo, Turn a short video into an animated GIF on your device

@@ -1,7 +1,7 @@
 # Photo Editor v2
 
 ## 1. What it is
-A phone-first photo editor: rotate, flip, crop, and adjust brightness, contrast, saturation and warmth, with a few looks (B&W, Sepia, Vivid). Edits never change the original pixels until you save, and the saved photo is full size. Works offline.
+A phone-first photo editor: rotate, flip, crop, resize (smaller or larger), and adjust brightness, contrast, saturation, warmth and sharpen, with a few looks (B&W, Sepia, Vivid). Current release: **PE5**. Edits never change the original pixels until you save, and the saved photo is full size. Works offline.
 
 ## 2. Files
 - `photo-editor-v2.html` / `photo-editor-v2.css`: toolbar, panels, save menu, layout
@@ -10,7 +10,8 @@ A phone-first photo editor: rotate, flip, crop, and adjust brightness, contrast,
 - `pe_transform.js`: rotate and flip (90° steps, lossless), shared geometry
 - `pe_view.js`: fit to screen, zoom and pan, the fast screen preview
 - `pe_crop.js`: crop box and ratios
-- `pe_adjust.js`: sliders, presets, Reset
+- `pe_adjust.js`: sliders, presets, Reset, the Sharpen filter (PE5)
+- `pe_resize.js`: the Resize dialog and the step-by-step resampling (PE5)
 - `pe_input.js`: touch / mouse gestures and keyboard
 - `pe_io.js`: open (picker, drag-and-drop, paste) and save
 - `pe_ui.js`: toolbar, panels, save menu, toast, zoom pill, start-up
@@ -22,7 +23,9 @@ A phone-first photo editor: rotate, flip, crop, and adjust brightness, contrast,
 - **Big photos:** kept full size up to 50 MP on desktops and 16.7 MP on phones / touch devices (longest side 16384 px). Bigger ones are reduced once on open ("Large photo: working at W×H").
 - **Rotate / flip:** rotate left / right and flip horizontal / vertical, in 90° steps, without quality loss.
 - **Crop:** a box over the whole photo with large handles; drag corners, edges or the inside. Ratios: Free, Original, 1:1, 4:3, 16:9 (tap a ratio again for the portrait version, e.g. 3:4). Apply or Cancel. Undo and redo are paused while cropping.
-- **Adjust:** pick Brightness, Contrast, Saturation or Warmth and move the one slider (−100 to +100). Tap the number to set it back to 0. Presets add their look on top of the sliders. Reset clears all sliders and the preset.
+- **Adjust:** pick Brightness, Contrast, Saturation, Warmth or Sharpen and move the one slider (−100 to +100; Sharpen 0 to 100, default 0). Tap the number to set it back to 0. Presets add their look on top of the sliders (they never change Sharpen). Reset clears all sliders, Sharpen included, and the preset.
+- **Sharpen (PE5):** a 3×3 unsharp mask (1-2-1 blur; strength up to 2× at 100), run after the colour sliders. While dragging, the preview copy is redrawn 90 ms after you stop moving, so it stays light; the full photo is sharpened on save, in strips, with the same maths.
+- **Resize (PE5):** toolbar Resize button or `E` opens a dialog: Width and Height in Pixels or Percent (of the current size), a lock button to keep the shape (on by default), presets (Original, 25%, 50%, 75%, 200%, 400%, 640 / 1280 / 1920 / 3840 wide), and the current and new size. Apply or Enter sets it, Cancel or Esc leaves it. Works both ways: smaller (halving steps) and larger (2× steps), both with high-quality smoothing. Largest size: 4× the cropped photo on each side or 8000 px on the longest side, whichever is smaller (and the device's canvas limit); the dialog says when it capped the size. Enlarging can't add real detail, and very large sizes may be slow to save on low-RAM machines. The resize is a setting like the others (undo / redo work); it follows later crops and rotations (a crop after a 50% resize is also saved at 50%). Crop mode shows the photo before the resize.
 - **Undo / redo:** last 60 steps (one step per finished slider move).
 - **Zoom:** pinch, double-tap / double-click (2.5×), mouse wheel, `+` / `-`; 1× (fit) to 8×. Drag to pan when zoomed. The zoom pill resets.
 - **Save:** opens a menu with Save JPEG / Save PNG and the output size. Ctrl+S saves straight away: PNG for PNG photos, otherwise JPEG (quality 0.92; transparent parts turn white in JPEG). File name: original name + `-edited`. Saving an open crop applies it first.
@@ -36,6 +39,7 @@ A phone-first photo editor: rotate, flip, crop, and adjust brightness, contrast,
 - `H` / `V` flip horizontal / vertical
 - `C` crop (again or Enter = apply), Esc = cancel
 - `A` adjust panel
+- `E` resize dialog (Enter = apply, Esc = cancel)
 - `0` reset zoom; `+` / `-` zoom
 - Ctrl/Cmd+V pastes a photo
 
@@ -58,7 +62,9 @@ Toasts:
 
 ## 8. Safe settings (`pe_config.js`)
 - `limits.maxPixelsTouch`, `limits.maxPixelsDesktop`, `limits.maxSide`
-- `view.zoomMax`, `view.doubleTapZoom`, `view.previewMaxPixels`
+- `view.zoomMax`, `view.doubleTapZoom`, `view.previewMaxPixels`, `view.sharpenDelay`
+- `adjust.sharpenMax` (Sharpen strength at 100)
+- `resize.maxFactor`, `resize.maxSide`, `resize.minSide`, `resize.percents`, `resize.widths`
 - `crop.ratios`, `crop.minSize`
 - `adjust.presets` (each may add slider values and a colour matrix)
 - `save.defaultFormat` (`auto`, `jpeg` or `png`), `save.jpegQuality`, `save.jpegBackground`, `save.suffix`
@@ -72,6 +78,10 @@ Toasts:
 4. Adjust → Brightness +50, then B&W: the preview changes.
 5. Save JPEG: `<name>-edited.jpg` at full size (check the toast size).
 6. Pinch / wheel zoom, tap the zoom pill: back to fit.
+7. Adjust → Sharpen 70: edges get crisper after a moment; Undo: back to 0.
+8. Resize → 50%: the new size shows half; Apply; Save: the toast shows the half size. Undo: full size again.
+9. Resize → Percent 200 → Apply → Save: double size. Type 10000 in Width: the new size stops at the cap with a note.
+10. Resize → unlock → change only Width: Height stays.
 
 ## 10. Known limits
 - No drawing, text, stickers or straighten (free rotation).
@@ -79,9 +89,12 @@ Toasts:
 - Saving big photos can take a few seconds and may fail on low-memory phones.
 - Edits are lost on reload (no autosave).
 - Old version after an update: hard-refresh.
+- Sharpen preview is done on the screen-sized copy, so at fit-to-screen it looks a little stronger than on the full photo; zoom in to judge it.
+- Enlarging only smooths pixels (no AI upscaling). Saving very large sizes (for example 8000 px) needs a few hundred MB of memory and can be slow or fail on 4 GB machines.
 
 ## 11. Change log
 - 2026-10-04 02:14 IST: new app (commit 4d2a684).
+- 2026-10-29 IST: PE5, Sharpen slider and Resize dialog (smaller and larger).
 
 ## 12. Related apps
 - Photo Editor: the older version, left unchanged.
@@ -98,3 +111,8 @@ Toasts:
 
 ## Release 4
 - Standalone Send: code entry + Scan QR dialog (`shared/link/link_scan.js`, `vendor/jsQR.js`, BarcodeDetector when available) instead of a prompt. Unknown code → "Hub not found" with Retry.
+
+## Release 5 (PE5): Sharpen and Resize
+- Adjust → Sharpen (0 to 100, default 0): 3×3 unsharp mask, debounced live preview, full resolution on save, undo / redo, cleared by Reset.
+- Resize dialog (toolbar or `E`): pixels or percent, aspect lock, presets, current and new size, both smaller (halving steps) and larger (2× steps) with `imageSmoothingQuality: 'high'`, capped at 4× or 8000 px on the longest side (whichever is smaller). Stored as the edit `k` (scale along the photo's own x / y axes), so undo / redo work and it follows later crops and rotations.
+- `<title>Photo Editor v2 PE5</title>`, every app `?v=PE5` (the shared/link scripts keep their own versions).
