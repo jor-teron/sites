@@ -1,0 +1,151 @@
+/* Hub Office Slides SL1 + SL2 Present — Stopwatch style, dark default. Slide list on the left (a strip on top on phones), controls on the right. */
+:root{--bg:#f6f7f9;--fg:#15181d;--mut:#6b7280;--card:#fff;--line:#e3e6ea;--acc:#2563eb;--good:#16a34a;--bad:#dc2626;--hot:#f97316;--shade:rgba(0,0,0,.08)}
+:root.dark{--bg:#111316;--fg:#eef0f3;--mut:#9aa3ae;--card:#1c1f24;--line:#2b3037;--acc:#60a5fa;--good:#4ade80;--bad:#f87171;--hot:#fb923c;--shade:rgba(0,0,0,.4)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.mut{color:var(--mut);font-size:13px}
+.mini{height:32px;padding:0 12px;border-radius:16px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:13px;cursor:pointer;white-space:nowrap;flex:none}
+.mini:disabled{opacity:.4;cursor:default}
+.mini.acc{background:var(--acc);border-color:var(--acc);color:#fff}
+.mini.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+.mini.sq{width:32px;padding:0;text-align:center}
+.danger-t{color:var(--bad)!important}
+/* top bar */
+#top{display:flex;align-items:center;gap:6px;padding:8px 12px;flex:none;min-width:0}
+.deck-btn{display:flex;align-items:center;gap:6px;min-width:0;max-width:44vw;height:34px;padding:0 10px;border:0;border-radius:10px;background:none;color:var(--fg);font:600 16px system-ui,sans-serif;cursor:pointer}
+.deck-btn:hover,.deck-btn[aria-expanded=true]{background:color-mix(in srgb,var(--fg) 8%,transparent)}
+#deck-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.caret{color:var(--mut);font-size:12px}
+#saved{white-space:nowrap}
+#saved.warn{color:var(--hot)}
+.sp{flex:1}
+/* storage warning (memory only) */
+#warn{display:flex;align-items:center;gap:8px;margin:0 12px 6px;padding:8px 10px;border-radius:10px;font-size:13px;flex:none;background:color-mix(in srgb,var(--hot) 16%,var(--card));border:1px solid color-mix(in srgb,var(--hot) 40%,var(--line))}
+#warn span{flex:1}
+.x{border:0;background:none;color:var(--fg);font-size:18px;cursor:pointer;width:28px;height:28px;border-radius:14px}
+/* main: list + stage */
+#main{flex:1;min-height:0;display:flex;gap:12px;padding:0 12px 12px}
+#list{width:196px;flex:none;overflow-y:auto;overflow-x:hidden;border-radius:12px;background:var(--card);border:1px solid var(--line);outline:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;position:relative}
+#list:focus-visible{box-shadow:0 0 0 2px var(--acc)}
+#list-in{list-style:none;margin:0;padding:8px 8px 40px;display:flex;flex-direction:column;gap:8px}
+.th{display:flex;align-items:flex-start;gap:6px;cursor:pointer;border-radius:8px;padding:3px;position:relative}
+.th .num{width:16px;flex:none;text-align:right;font-size:12px;color:var(--mut);padding-top:2px;font-variant-numeric:tabular-nums}
+.th .mini-s{width:144px;height:81px;flex:none;border-radius:5px;overflow:hidden;background:#fff;box-shadow:0 0 0 1px var(--line);position:relative}
+.th.cur .mini-s{box-shadow:0 0 0 2px var(--acc)}
+.th.cur .num{color:var(--acc);font-weight:700}
+.th:hover .mini-s{box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 50%,var(--line))}
+.th.cur:hover .mini-s{box-shadow:0 0 0 2px var(--acc)}
+.th.lifted{opacity:.35}
+.mini-in{position:absolute;left:0;top:0;width:960px;height:540px;transform-origin:0 0;pointer-events:none}
+#drag-ghost{position:fixed;z-index:30;pointer-events:none;opacity:.9;transform:rotate(-2deg);box-shadow:0 8px 24px rgba(0,0,0,.35);border-radius:6px}
+#drop-line{position:absolute;left:8px;right:8px;height:3px;border-radius:2px;background:var(--hot);pointer-events:none;z-index:5}
+#drop-line.v{width:3px;height:auto;top:8px;bottom:8px;left:auto;right:auto}
+/* stage: the 16:9 slide scales to fit */
+#stage{flex:1;min-width:0;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px}
+#fit{position:relative;flex:none}
+#slide{position:absolute;left:0;top:0;transform-origin:0 0}
+#pos{flex:none;height:16px}
+/* slide design (960 x 540 design pixels; thumbnails reuse it scaled down). SL3 brings layouts + theme colours. */
+.slide{width:960px;height:540px;background:#fff;color:#1f2430;border-radius:4px;box-shadow:0 4px 18px var(--shade),0 0 0 1px var(--line);display:flex;flex-direction:column;padding:44px 64px 40px;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.s-title{flex:none;width:100%;border:0;outline:none;resize:none;background:transparent;color:#111827;font:700 44px/1.18 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:4px 0 10px;margin:0 0 14px;border-bottom:3px solid #f97316;overflow:hidden;min-height:66px}
+.s-body-wrap{flex:1;min-height:0;position:relative}
+.s-body{position:absolute;inset:0;margin:0;border:0;outline:none;resize:none;background:transparent;font:400 28px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:2px 0 0 40px;white-space:pre-wrap;overflow-wrap:break-word;word-wrap:break-word;tab-size:7;-moz-tab-size:7;overflow-y:auto;scrollbar-width:none;color:#1f2430;letter-spacing:normal}
+.s-body::-webkit-scrollbar{display:none}
+.s-title::placeholder,.s-body::placeholder{color:#9aa3ae}
+.s-mirror{color:transparent;pointer-events:none;overflow:hidden;user-select:none}
+.s-mirror .ln{min-height:1.4em}
+.s-mirror .d{position:relative}
+.s-mirror .d::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:#f97316}
+.s-mirror .ln.l1 .d::before{width:8px;height:8px;top:.58em;left:-26px;background:transparent;border:2px solid #6b7280}
+textarea.s-title:focus,textarea.s-body:focus{background:transparent}
+.s-body:focus{box-shadow:none}
+/* static slide view (.sv): thumbnails and Present use the same renderer (SLEdit.html) and design */
+.mini-in .slide,.mini-in.slide{box-shadow:none;border-radius:0}
+.sv .t{font:700 44px/1.18 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#111827;padding:4px 0 10px;margin:0 0 14px;border-bottom:3px solid #f97316;min-height:66px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.sv .t.empty{color:#b6bcc6}
+.sv .b{font:400 28px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1f2430;padding-left:40px}
+.sv .b div{position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.4em}
+.sv .b div::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:#f97316}
+.sv .b div.l1{padding-left:48px}
+.sv .b div.l1::before{left:22px;width:8px;height:8px;background:transparent;border:2px solid #6b7280}
+.sv .b div.e::before{display:none}
+/* Present (.pv): long titles and bullets wrap like in the editor */
+.pv .t{white-space:normal;overflow-wrap:break-word}
+.pv .b div{white-space:pre-wrap;overflow:visible;overflow-wrap:break-word;text-overflow:clip}
+/* menus */
+.menu{position:fixed;z-index:15;min-width:200px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 8px 30px rgba(0,0,0,.3);display:flex;flex-direction:column}
+.menu button{display:block;text-align:left;border:0;background:none;color:var(--fg);font-size:14px;padding:9px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.menu button:hover,.menu button:focus-visible{background:color-mix(in srgb,var(--fg) 8%,transparent);outline:none}
+.menu button:disabled{opacity:.4;cursor:default;background:none}
+.menu .sep{height:1px;background:var(--line);margin:5px 4px}
+/* sheets: settings + dialog */
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;z-index:20}
+.sheet .box{background:var(--card);color:var(--fg);border-radius:14px;padding:18px;width:min(360px,90vw);max-height:84vh;display:flex;flex-direction:column;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+#dialog p{margin:0 0 10px;font-size:15px}
+#dialog #dlg-t{font-weight:600}
+#dialog #dlg-m{font-size:13px;line-height:1.4}
+#dialog #dlg-m:empty{display:none}
+#dialog input{height:36px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:0 12px;font-size:15px;margin:0 0 12px;outline:none}
+#dialog input:focus{border-color:var(--acc)}
+#dialog .row{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.rows{list-style:none;margin:0 -6px 12px;padding:0;overflow-y:auto;max-height:50vh;border-top:1px solid var(--line)}
+.rows li{display:flex;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid var(--line);cursor:pointer;min-height:48px;border-radius:0}
+.rows li:hover,.rows li:focus-visible{background:color-mix(in srgb,var(--fg) 6%,transparent);outline:none}
+.rows li .tx{flex:1;min-width:0}
+.rows li .tx b,.rows li .tx small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rows li .tx b{font-weight:500;font-size:14px}
+.rows li .tx small{color:var(--mut);font-size:12px;margin-top:2px}
+.rows li.cur .tx b{color:var(--acc);font-weight:700}
+.set-wrap{width:min(560px,94vw)!important;overflow-y:auto}
+.set-wrap .bar{display:flex;align-items:center;gap:8px}
+.set-wrap h2{font-size:18px;margin:0;flex:1}
+.set-wrap h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:16px 0 8px;font-weight:600}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.set-row small{display:block;margin-top:2px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:none}
+.seg button{border:0;background:var(--card);color:var(--fg);padding:7px 11px;font-size:13px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--acc);color:#fff}
+.keys{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 12px;font-size:13px;color:var(--mut)}
+kbd{display:inline-block;min-width:20px;padding:1px 5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;background:var(--bg);color:var(--fg);font:12px/1.4 system-ui,sans-serif;text-align:center}
+.about{display:flex;gap:12px;align-items:flex-start}
+.about img{border-radius:9px;flex:none}
+.about p{margin:4px 0 0;color:var(--mut);font-size:14px;line-height:1.4}
+#ver{color:var(--mut);font-size:13px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:7px 14px;border-radius:16px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:40;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+/* SL2 Present: black, the slide letterboxed in the middle; counter + buttons fade after 2 s idle (cursor too) */
+#show{position:fixed;inset:0;z-index:60;background:#000;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;outline:none;overflow:hidden;cursor:default}
+#show-fit{position:relative;flex:none;overflow:hidden}
+#show-slide{position:absolute;left:0;top:0;transform-origin:0 0;border-radius:0;box-shadow:none;pointer-events:none}
+#show-end{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9aa3ae;font:400 clamp(15px,2.4vw,22px)/1.4 system-ui,sans-serif;text-align:center;padding:20px}
+#show-end p{margin:0}
+.show-ui{transition:opacity .35s}
+#show.idle .show-ui{opacity:0;pointer-events:none}
+#show.idle{cursor:none}
+#show-count{position:absolute;left:max(14px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));padding:4px 10px;border-radius:12px;background:rgba(0,0,0,.55);color:#e5e7eb;font:600 13px/1.4 system-ui,sans-serif;font-variant-numeric:tabular-nums;pointer-events:none}
+.show-ctl{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:6px}
+.show-ctl button{width:40px;height:40px;border-radius:20px;border:1px solid rgba(255,255,255,.18);background:rgba(20,20,20,.6);color:#f3f4f6;font:400 22px/1 system-ui,sans-serif;cursor:pointer;padding:0}
+.show-ctl button:disabled{opacity:.35;cursor:default}
+.show-ctl button:hover:not(:disabled){background:rgba(60,60,60,.8)}
+html.presenting #app>*:not(#show){visibility:hidden}
+/* phones / narrow windows: the slide list becomes a strip on top */
+@media (max-width:760px){
+  #top{padding:6px 8px;gap:4px}
+  .deck-btn{font-size:15px;padding:0 6px;max-width:38vw}
+  #saved{display:none}
+  #b-add{padding:0 10px}
+  #b-show{padding:0 10px}
+  #b-show .lbl{display:none}
+  #main{flex-direction:column;gap:8px;padding:0 8px 8px}
+  #list{width:auto;height:84px;overflow-x:auto;overflow-y:hidden}
+  #list-in{flex-direction:row;padding:6px 40px 6px 6px;height:100%;width:max-content}
+  .th{flex-direction:column;gap:0;padding:2px}
+  .th .num{position:absolute;left:5px;bottom:5px;z-index:2;width:auto;background:var(--card);border-radius:4px;padding:0 4px;font-size:11px}
+  .th .mini-s{width:112px;height:63px}
+  #warn{margin:0 8px 6px}
+  #stage{justify-content:flex-start;padding-top:10px}
+}
+@media (max-width:380px){#b-up,#b-down{display:none}}

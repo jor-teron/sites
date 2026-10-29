@@ -61,6 +61,7 @@ Game Settings,      common/settings/games-settings.html, , , Settings, Shared ga
 name, path, icon, newtab, section, description
 Draw,            draw/,            , , Draw & Paint, Draw with finger stylus or mouse: pen - eraser - fill - shapes - export PNG
 Photo Editor v2, photo-editor-v2/, , , Photo, Edit photos: crop - rotate - resize - brightness - contrast - sharpen - B&W and sepia looks
+Hub Photo Studio, photo-studio/,   , , Photo, Bigger photo editor: layers - text - shapes - .hps projects - crop - rotate - resize - adjust - looks - undo and redo
 Camera,          camera/,          , , Photo, Take photos and record videos with the device camera
 Gallery,         gallery/,         , , Photo, Browse photos and videos from a folder or files on this device
 GIF Maker,       gif-maker/,       , , Photo, Turn a short video into an animated GIF on your device
@@ -78,6 +79,7 @@ name, path, icon, newtab, section, description
 Draftly,      draftly/,             , , Hub Office, Word processor with A4 pages: write documents offline - save as PDF or DOCX
 Spreadsheet,  spreadsheet/,         , , Hub Office, Offline spreadsheet with formulas and styles - CSV import/export and print
 Base,         base/,                , , Hub Office, Small database app: tables - forms and queries like Access
+Slides,       slides/,              , , Hub Office, Make slide decks: a title and bullets on 16:9 slides - present full screen - auto-save and .hslides export
 Notely,       notely/,              , , Write, Plain-text notes that save as you type - open and download .txt
 MS Word Diff, ../tools/msword_diff/, , , Write, Compare two Word .docx files and see what text changed
 OCR,          ocr/,                 , , Scan & Print, Turn text in photos scans and PDFs into editable text - works offline
