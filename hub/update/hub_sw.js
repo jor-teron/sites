@@ -26,8 +26,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261029h';
-const CACHE = 'hub-shell-v115';  // 2026-10-29h: Settings: How-to and Devices swap places
+const V = '20261029i';
+const CACHE = 'hub-shell-v116';  // 2026-10-29i: Random friendly device names (Brave Mango) + dice
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)

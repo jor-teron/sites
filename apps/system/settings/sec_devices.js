@@ -29,6 +29,8 @@
  *   pop-up text repaints. Opened on its own it uses its own SharedLinkDevices (shared/link/link_devices.js,
  *   no link here): the key is saved and any open Hub tab picks it up from the 'storage' event (hub_panels.js).
  *   Empty = the default name guessed from the browser (shown as the placeholder).
+ *   H57: no more guessed names: an unnamed device gets a random 'Adjective Noun' (SharedLinkDevices.randomName,
+ *   saved on first start, old guessed names count as unset); the 🎲 button (#device-dice) rolls and saves a new one.
  * H29.1: "Send profile" card (id 'sync', deep link #about/sync; Hub side hub/link/hub_sync.js, window.HubSync).
  *   Send: pick a connected device, optional ticks 'Desktop layout' / 'Phone layout' (off), Send (no API keys).
  *   Incoming: preview grouped Shared / Desktop / Phone, each row tagged, name + This device + Incoming value,
@@ -493,16 +495,20 @@
     const D = (hub && hub.SharedLinkDevices) || window.SharedLinkDevices || null;
     const stored = () => { try { return localStorage.getItem(NAME_KEY) || ''; } catch (_) { return ''; } };
     const guess = D && D.guess ? D.guess() : 'Device';
-    card.appendChild(ui.el('p', 'opt-note', 'The name your other devices see in Devices and Chat. Leave it empty to use \u201C' + guess + '\u201D.'));
+    // card.appendChild(ui.el('p', 'opt-note', 'The name your other devices see in Devices and Chat. Leave it empty to use \u201C' + guess + '\u201D.'));   (before H57)
+    card.appendChild(ui.el('p', 'opt-note', 'The name your other devices see in Devices and Chat. Type your own, or tap \uD83C\uDFB2 for a new random one. Leave it empty for a random name.'));   // H57
     const form = ui.el('form', 'key-line');
     form.autocomplete = 'off';
     const inp = ui.el('input', 'key-input device-input');
-    inp.type = 'text'; inp.id = 'device-name'; inp.maxLength = 40; inp.placeholder = guess;
+    inp.type = 'text'; inp.id = 'device-name'; inp.maxLength = 40; inp.placeholder = 'Random name';   // H57 (was: guess)
     inp.setAttribute('aria-label', 'Device name');
     inp.value = stored();
     const save = ui.el('button', 'key-btn key-save', 'Save');
     save.type = 'submit'; save.id = 'device-save';
-    form.append(inp, save);
+    // form.append(inp, save);   (before H57)
+    const dice = ui.el('button', 'key-btn device-dice', '\uD83C\uDFB2');   // H57: roll a random name
+    dice.type = 'button'; dice.id = 'device-dice'; dice.title = 'New random name'; dice.setAttribute('aria-label', 'New random name');
+    form.append(inp, dice, save);
     const out = ui.el('p', 'key-out', '');
     out.setAttribute('aria-live', 'polite');
     form.addEventListener('submit', (e) => {
@@ -513,6 +519,15 @@
         if (D) n = D.setName(v);
         else if (v) localStorage.setItem(NAME_KEY, v); else localStorage.removeItem(NAME_KEY);
       } catch (_) { out.className = 'key-out bad'; out.textContent = 'Could not save the name'; return; }
+      try { if (hub) hub.dispatchEvent(new hub.CustomEvent('hub-device-name', { detail: { name: n } })); } catch (_) { /* no Hub */ }
+      inp.value = stored();
+      out.className = 'key-out ok';
+      out.textContent = 'Saved \u2014 this device is now \u201C' + n + '\u201D';
+    });
+    dice.addEventListener('click', () => {   // H57: pick and save a new random name at once
+      let n;
+      if (D && D.roll) n = D.roll();
+      else { n = inp.value; }
       try { if (hub) hub.dispatchEvent(new hub.CustomEvent('hub-device-name', { detail: { name: n } })); } catch (_) { /* no Hub */ }
       inp.value = stored();
       out.className = 'key-out ok';

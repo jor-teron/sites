@@ -2,7 +2,8 @@
   Project: sites (shared)
   File: shared/link/link_devices.js
   Role: This device's name for SharedLink. Saved in localStorage
-  'shared-link-device-name'; default is a guess from the user agent
+  'shared-link-device-name'; default is a guess from the user agent (H57: now a random 'Adjective Noun' like
+  'Brave Mango', saved on first start; the old guessed names count as unset; roll() picks a new one)
   ('Android phone', 'Windows PC', 'iPhone', 'Mac', 'Linux PC', 'Device').
   Renaming sends {t:'name', name} to the host, which re-broadcasts the list.
   H19: id() = a permanent random device id ('d-' + 12 chars), created once and saved in
@@ -37,9 +38,42 @@
     return 'Device';
   }
 
-  function name() {
-    try { return localStorage.getItem(KEY) || guess(); } catch (_) { return guess(); }
+  // (before H57)
+  // function name() {
+  //   try { return localStorage.getItem(KEY) || guess(); } catch (_) { return guess(); }
+  // }
+  /* H57: random friendly names (like LocalSend). A device with no name, or with one of the old guessed
+     defaults below (an untouched device), gets a random 'Adjective Noun' on first start, saved under KEY.
+     Every name fits the 16-character public mesh limit. A name the user typed is kept. */
+  var ADJ = ['Brave', 'Quiet', 'Happy', 'Sunny', 'Lucky', 'Clever', 'Gentle', 'Jolly', 'Swift', 'Calm',
+    'Bright', 'Cosy', 'Merry', 'Kind', 'Bold', 'Witty', 'Zesty', 'Fuzzy', 'Breezy', 'Cheery',
+    'Dandy', 'Eager', 'Fancy', 'Giddy', 'Humble', 'Jazzy', 'Keen', 'Lively', 'Mellow', 'Nimble',
+    'Plucky', 'Proud', 'Rosy', 'Snappy', 'Spry', 'Tidy', 'Peppy', 'Vivid', 'Warm', 'Zippy'];
+  var NOUN = ['Mango', 'Panda', 'Kiwi', 'Otter', 'Peach', 'Koala', 'Lemon', 'Tiger', 'Plum', 'Falcon',
+    'Cherry', 'Dolphin', 'Apple', 'Rabbit', 'Melon', 'Fox', 'Banana', 'Penguin', 'Grape', 'Owl',
+    'Papaya', 'Turtle', 'Lime', 'Parrot', 'Fig', 'Hedgehog', 'Guava', 'Badger', 'Pear', 'Squirrel',
+    'Lychee', 'Beaver', 'Apricot', 'Robin', 'Coconut', 'Gecko', 'Berry', 'Llama', 'Orange', 'Zebra'];
+  var OLD_DEFAULTS = ['Android phone', 'Android tablet', 'iPhone', 'iPad', 'Windows PC', 'Mac', 'Chromebook', 'Linux PC', 'Device', 'Hub', 'Phone'];
+  function pick(a) {
+    var i;
+    try { var b = new Uint32Array(1); crypto.getRandomValues(b); i = b[0] % a.length; } catch (_) { i = Math.floor(Math.random() * a.length); }
+    return a[i];
   }
+  function randomName(not) {
+    for (var k = 0; k < 10; k++) { var n = pick(ADJ) + ' ' + pick(NOUN); if (n !== not && n.length <= 16) return n; }
+    return 'Happy Panda';
+  }
+  function isUnset(v) { v = String(v || '').trim(); return !v || OLD_DEFAULTS.indexOf(v) >= 0; }
+  var memName = '';
+  function name() {
+    var v = '';
+    try { v = localStorage.getItem(KEY) || ''; } catch (_) { /* blocked */ }
+    if (!isUnset(v)) return v;
+    if (!memName) memName = randomName();
+    try { localStorage.setItem(KEY, memName); var back = localStorage.getItem(KEY); if (back && !isUnset(back)) memName = back; } catch (_) { /* blocked: per-page name */ }
+    return memName;
+  }
+  function roll() { return setName(randomName(name())); }   // H57: the 🎲 button
 
   var ID_KEY = 'shared-link-device-id';
   var memId = '';
@@ -98,7 +132,8 @@
 
   function setName(n) {
     n = String(n || '').trim().slice(0, 40);
-    try { if (n) localStorage.setItem(KEY, n); else localStorage.removeItem(KEY); } catch (_) { /* blocked */ }
+    // try { if (n) localStorage.setItem(KEY, n); else localStorage.removeItem(KEY); } catch (_) { /* blocked */ }   (before H57)
+    try { if (n) localStorage.setItem(KEY, n); else { localStorage.removeItem(KEY); memName = ''; } } catch (_) { /* blocked */ }   // H57: empty = a new random name (name() below)
     var L = window.SharedLink;
     if (L) {
       L._targets().forEach(function (c) { L._safeSend(c, { t: 'name', name: name() }); });
@@ -109,5 +144,7 @@
 
   id();   // H50a: convert an old 'd-…' id on first load (not only when Chat first asks)
   // window.SharedLinkDevices = { id: id, name: name, setName: setName, guess: guess };   // (before H50a)
-  window.SharedLinkDevices = { id: id, oldIds: oldIds, isMe: isMe, ID_RE: ID_RE, name: name, setName: setName, guess: guess };
+  // window.SharedLinkDevices = { id: id, oldIds: oldIds, isMe: isMe, ID_RE: ID_RE, name: name, setName: setName, guess: guess };   // (before H57)
+  name();   // H57: give an unnamed device its random name on first start
+  window.SharedLinkDevices = { id: id, oldIds: oldIds, isMe: isMe, ID_RE: ID_RE, name: name, setName: setName, guess: guess, roll: roll, randomName: randomName, isUnset: isUnset, ADJ: ADJ, NOUN: NOUN };
 })();
