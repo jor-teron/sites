@@ -33,6 +33,7 @@
   const body = h('div', { class: 'mc-body' });
   const main = h('main', { class: 'lrn-main mc-main', id: 'lrn-main' }, settings, body);
   root.className = 'lrn mc'; root.replaceChildren(head, main);
+  if (window.LearnHubBar) LearnHubBar.attach(root.querySelector('.lrn-head'), { buttons: '.mc-sos' });   // TB2: Hub desktop window: mode tabs + SOS button
 
   function go(m) {
     A.stop(); light(false); A.key(false); if (keyer) keyer.reset(); keyer = null; mode = m;

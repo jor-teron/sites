@@ -1,4 +1,4 @@
-/* Learn kit — app shell: header (breadcrumb, Basics/Expert toggle, in-topic Quick check button), view router, footer disclaimer, keyboard (Esc = back,
+/* Learn kit — app shell: header (breadcrumb, Basics/Expert toggle, in-topic Quick check button; in a Hub window: the title bar), view router, footer disclaimer, keyboard (Esc = back,
    arrows = steps). One call per Learn app: LRN.app({root, base, ver, prefix, title, fallback, disclaimer}). */
 window.LRN = window.LRN || {};
 (() => {
@@ -9,7 +9,11 @@ window.LRN = window.LRN || {};
     const modeBtns = [['basics', 'Basics'], ['expert', 'Expert']].map(([m, t]) => h('button', { type: 'button', 'data-mode': m, onclick: () => { L.mode.set(m); sync(); if (S.view === 'card') draw(); } }, t));
     const qc = h('button', { type: 'button', class: 'lrn-qc', hidden: true, onclick: () => x.go('quiz', S.id) }, 'Quick check');
     const mode = h('div', { class: 'lrn-mode', role: 'group', 'aria-label': 'Detail level' }, modeBtns);
-    const head = h('header', { class: 'lrn-head' }, h('h1', null, cfg.title), mode, qc);
+    // TB2: Hub desktop window: learn-hubbar.js moves this row into the title bar (Basics / Expert = tabs, Back + Quick check = buttons;
+    // the app name is never sent). Back is title-bar only (display:none in the page, where the path links do the job).
+    const back = h('button', { type: 'button', class: 'lrn-qc', 'data-hb': 'back', title: 'Back (Esc)', style: 'display:none', hidden: true, onclick: () => up() }, '\u2039 Back');
+    const head = h('header', { class: 'lrn-head' }, h('h1', null, cfg.title), back, mode, qc);
+    if (window.LearnHubBar) LearnHubBar.attach(head, { buttons: '.lrn-qc' });
     const main = h('main', { class: 'lrn-main', id: 'lrn-main' }, h('p', { class: 'lrn-note' }, 'Loading\u2026'));
     const foot = h('footer', { class: 'lrn-foot' }, cfg.disclaimer);
     root.replaceChildren(head, main, foot);
@@ -35,7 +39,7 @@ window.LRN = window.LRN || {};
     // header: "App" | "App > icon Topic" | "App > icon Topic > Quick check" | "App > Quick check"; every part but the last is a link
     function crumb() {
       const c = S.id ? x.card() : null, h1 = head.querySelector('h1'), q = S.view === 'quiz', sep = () => h('span', { class: 'lrn-sep', 'aria-hidden': 'true' }, ' \u203A ');
-      qc.hidden = S.view !== 'card' || !c.quiz.length; mode.hidden = q;
+      qc.hidden = S.view !== 'card' || !c.quiz.length; mode.hidden = q; back.hidden = S.view === 'home';
       if (S.view === 'home') return h1.replaceChildren(appTitle);
       const topic = h(q ? 'button' : 'span', q ? { type: 'button', class: 'lrn-crumb lrn-topic', onclick: () => x.go('card', S.id) } : { class: 'lrn-topic' }, c ? h('span', { 'aria-hidden': 'true' }, c.icon) : null, c ? ' ' + c.title : null);
       h1.replaceChildren(h('button', { type: 'button', class: 'lrn-crumb', onclick: () => x.go('home') }, appTitle), sep(), ...(c ? [topic] : []), ...(c && q ? [sep()] : []), ...(q ? [h('span', { class: 'lrn-here' }, 'Quick check')] : []));

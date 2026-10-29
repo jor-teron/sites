@@ -5,7 +5,9 @@
  *     tabs:    selector of the mode group whose buttons become title-bar tabs (default '.lrn-mode')
  *     buttons: selector of extra head buttons sent as quick buttons (default: none). The app name (h1) and the
  *              version label are never sent: the Hub window already shows the app name.
- * Mirroring: tab id = the button's data-m (or its index), active tab = the button with aria-pressed="true".
+ * Mirroring: tab id = the button's data-m / data-mode / data-tab (or its index); a hidden tab group sends no tabs; hidden buttons
+ *   are left out. A title-bar-only button: style="display:none" in the page, toggled with its hidden attribute (Learn kit Back).
+ *   Active tab = the button with aria-pressed="true".
  * A title-bar click calls .click() on the matching in-page button, so the app's own handlers run unchanged.
  * The row changing (mode switch, buttons enabled / disabled) is watched and sent as 'update' (or 'set' if the list changed).
  * Messages: app -> hub window.parent.postMessage({hubTitleBar:{v:1, op, ...}}, origin) ('*' on file://, origin 'null');
@@ -29,9 +31,9 @@ var LearnHubBar = (function () {
     if (!head || !IN_FRAME) return null;
     opts = opts || {};
     var tabSel = opts.tabs || '.lrn-mode', btnSel = opts.buttons || '', last = '', lastActive = null, queued = false;
-    function tabEls() { var g = head.querySelector(tabSel); return g ? Array.prototype.slice.call(g.querySelectorAll('button')).slice(0, MAX_T) : []; }
+    function tabEls() { var g = head.querySelector(tabSel); return g && !g.hidden ? Array.prototype.slice.call(g.querySelectorAll('button')).slice(0, MAX_T) : []; }
     function btnEls() { return btnSel ? Array.prototype.slice.call(head.querySelectorAll(btnSel)).filter(function (b) { return !b.closest(tabSel); }).slice(0, MAX_B) : []; }
-    function tabId(b, i) { return str(b.dataset.m || b.dataset.tab || 't' + i, 32); }
+    function tabId(b, i) { return str(b.dataset.m || b.dataset.mode || b.dataset.tab || 't' + i, 32); }
     function btnId(b, i) { return str(b.dataset.hb || b.id || 'b' + i, 32); }
     function snap() {
       var active = '', tabs = tabEls().map(function (b, i) { var id = tabId(b, i); if (b.getAttribute('aria-pressed') === 'true' || b.getAttribute('aria-selected') === 'true') active = id; return { id: id, label: str(b.textContent, 20) }; });
