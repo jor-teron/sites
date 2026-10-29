@@ -56,6 +56,19 @@
         only (no '*'), code 4 digits and never 0000, at most 1 per INVITE_GAP_MS per sender both ways; a valid
         one fires on('invite', {from, name, code, at}). 'invite' is reserved: channel('invite') throws.
     API: isPublic(), PUBLIC_CODE, invite(to, code), on('invite', fn); me().public.
+  H55b join wait (public 0000 AND private meshes, one set of constants): a join gets JOIN_WAIT_MS (60 s) for the
+    PeerJS connection to open AND the lobby's 'welcome' to arrive (H50 closed it after 5 s, so on slow real links
+    (Jio carrier NAT, Tailscale, TURN) devices looped claim / rejoin every ~9 s and never linked). 'hello' is resent
+    every HELLO_MS (2.5 s) until 'welcome' (as link_core.js does); a PeerJS close / error ends the wait early, and
+    peer-unavailable (-0 really free) goes straight to the takeover. The heartbeat takeover (tick) never fires on a
+    join that is still inside its wait. A failed join (no welcome) counts as a join failure: the device checks -0
+    (claim); if someone holds it, it waits RETRY_MS (a flat 5 s) and joins again ('retrying', retryAt). Retries stop
+    GIVEUP_MS (5 min) after the first failure of the current run ('gaveup' = "Not linked: tap to retry"); a fresh
+    run starts with HubMesh.retry() (Settings › Devices Retry), the tab becoming visible, the network coming back
+    ('online') or a Connect link opening / closing (hub_meshlink.js). Success (welcome, or becoming the lobby)
+    resets the run. window.HUB_MESH_JOIN_WAIT_MS / HUB_MESH_RETRY_MS / HUB_MESH_GIVEUP_MS override them (tests,
+    as H25's HUB_REMOTE_GIVEUP_MS). me(): + joinState ('linking' | 'linked' | 'lobby' | 'retrying' | 'refused' |
+    'gaveup' | ''), joinSince, retryAt, joinWaitMs; stats(): + joinFails, lastJoinMs, joinState, joinGaveUp.
   Not here (later releases): postMessage bridge for app frames (H50b), media calls (H50c), removing the
   per-app lobbies (H50d). Existing SharedLink behaviour (controller, H29 sync, Pooh Chat) is unchanged.
 */
@@ -76,6 +89,10 @@
   /* H55: public mesh */
   var PUBLIC_CODE = '0000', PUB_NAME = 16, PUB_ROSTER = 20, INVITE_CH = 'invite', INVITE_GAP_MS = 3000;
   var INV_CODE_RE = /^\d{4}$/;
+  /* H55b: join wait / retry / give up (one set for 0000 and private meshes) */
+  function tune(k, d) { var v = +window[k]; return v > 0 ? v : d; }
+  var JOIN_WAIT_MS = tune('HUB_MESH_JOIN_WAIT_MS', 60000), HELLO_MS = 2500;
+  var RETRY_MS = tune('HUB_MESH_RETRY_MS', 5000), GIVEUP_MS = tune('HUB_MESH_GIVEUP_MS', 5 * 60 * 1000);
   function pub() { return !!(S && S.pub); }
   function rosterCap() { return pub() ? PUB_ROSTER : MAX_ROSTER; }
   function nameCap() { return pub() ? PUB_NAME : 40; }
@@ -113,9 +130,12 @@
       members: new Map(),     // lobby only: deviceId -> { conn, last }
       roster: new Map(),      // deviceId -> entry
       rv: 0, idRetry: 0, seen: [], seenSet: new Set(), buckets: new Map(), out: { tokens: RATE_BURST, at: Date.now() },
-      stats: { sent: 0, recv: 0, dropSize: 0, dropRate: 0, dropShape: 0, dropTerm: 0, dropSpoof: 0, relayed: 0, dropPublic: 0 },
+      stats: { sent: 0, recv: 0, dropSize: 0, dropRate: 0, dropShape: 0, dropTerm: 0, dropSpoof: 0, relayed: 0, dropPublic: 0, joinGaveUp: 0 },   // H55b: + joinGaveUp (times)
       hb: 0, seq: 0,
-      pub: code === PUBLIC_CODE || !!(opts && opts.public), invOut: 0, invIn: new Map()   // H55
+      pub: code === PUBLIC_CODE || !!(opts && opts.public), invOut: 0, invIn: new Map(),   // H55
+      // H55b: join wait / retries
+      joining: null, joinStart: 0, helloTimer: 0, joinState: '', joinFails: 0, lastJoinMs: 0, failStart: 0,
+      retryTimer: 0, retryAt: 0, gaveUp: false
     };
   }
   function lobbyPeerId() { return PREFIX + S.code + '-mesh-0'; }
@@ -323,24 +343,71 @@
   }
 
   /* ---------- member side: joining the lobby ---------- */
+  // (before H55b: a 5 s deadline for the welcome and one 'hello')
+  // function joinLobby() {
+  //   if (!S || S.isLobby || !S.peer || !S.peer.open) return;
+  //   clearTimeout(S.joinTimer);
+  //   var me = S;
+  //   status('joining');
+  //   var conn = me.peer.connect(lobbyPeerId(), { reliable: true, serialization: 'json', metadata: { kind: 'mesh', v: 1, dev: me.dev } });
+  //   me.lobbyConn = conn; me.lobbyLast = Date.now(); me.lobbyAsk = Date.now();
+  //   var welcomed = false;
+  //   conn.on('open', function () {
+  //     if (S !== me || me.lobbyConn !== conn) return;
+  //     safeSend(conn, envelope(CTRL, '*', Object.assign({ k: 'hello', site: location.host }, selfInfo())));
+  //   });
+  //   conn.on('data', function (x) {
+  //     if (S !== me || me.lobbyConn !== conn) return;
+  //     if (!x || badShape(x)) { me.stats.dropShape++; return; }
+  //     if (x.ch === CTRL && x.data && x.data.k === 'welcome') {
+  //       if (x.term < me.term) { me.stats.dropTerm++; try { conn.close(); } catch (_) { /* stale lobby */ } return; }
+  //       welcomed = true;
+  //       me.term = x.term; me.lobbyDev = x.from; me.lobbyLast = Date.now();
+  //       clearTimeout(me.claimTimer); me.claimTimer = 0;
+  //       status('linked');
+  //       setRoster(x.data.roster, x.term, x.from);
+  //       emit('lobby', lobbyInfo());
+  //       return;
+  //     }
+  //     if (!accept(x, 'lobby', '')) return;
+  //     me.lobbyLast = Date.now();
+  //     if (x.ch === CTRL) { ctrlFromLobby(x); return; }
+  //     deliver(x);
+  //   });
+  //   conn.on('close', function () { if (S === me && me.lobbyConn === conn && !me.refused) lobbyLost(welcomed ? 'closed' : 'no-answer'); });
+  //   conn.on('error', function () { /* close follows */ });
+  //   // no welcome in time = treat as missing
+  //   setTimeout(function () { if (S === me && me.lobbyConn === conn && !welcomed) { try { conn.close(); } catch (_) { /* gone */ } lobbyLost('no-answer'); } }, 5000);
+  // }
+
+  /** H55b: join the lobby, waiting up to JOIN_WAIT_MS for open + welcome; 'hello' every HELLO_MS until welcome */
   function joinLobby() {
-    if (!S || S.isLobby || !S.peer || !S.peer.open) return;
-    clearTimeout(S.joinTimer);
+    if (!S || S.isLobby || !S.peer || !S.peer.open || S.gaveUp) return;
+    clearTimeout(S.joinTimer); clearTimeout(S.retryTimer); S.retryTimer = 0; S.retryAt = 0;
     var me = S;
     status('joining');
     var conn = me.peer.connect(lobbyPeerId(), { reliable: true, serialization: 'json', metadata: { kind: 'mesh', v: 1, dev: me.dev } });
     me.lobbyConn = conn; me.lobbyLast = Date.now(); me.lobbyAsk = Date.now();
+    me.joining = conn; me.joinStart = Date.now(); me.joinState = 'linking';
     var welcomed = false;
+    function hello() { if (S === me && me.lobbyConn === conn && !welcomed) safeSend(conn, envelope(CTRL, '*', Object.assign({ k: 'hello', site: location.host }, selfInfo()))); }
+    function endWait() { clearInterval(me.helloTimer); me.helloTimer = 0; clearTimeout(me.joinTimer); me.joinTimer = 0; if (me.joining === conn) me.joining = null; }
     conn.on('open', function () {
       if (S !== me || me.lobbyConn !== conn) return;
-      safeSend(conn, envelope(CTRL, '*', Object.assign({ k: 'hello', site: location.host }, selfInfo())));
+      me.lobbyLast = Date.now();
+      hello();
+      clearInterval(me.helloTimer);
+      me.helloTimer = setInterval(function () { if (S !== me || me.lobbyConn !== conn || welcomed) { clearInterval(me.helloTimer); return; } hello(); }, HELLO_MS);
     });
     conn.on('data', function (x) {
       if (S !== me || me.lobbyConn !== conn) return;
       if (!x || badShape(x)) { me.stats.dropShape++; return; }
       if (x.ch === CTRL && x.data && x.data.k === 'welcome') {
+        if (welcomed) return;   // H55b: one welcome per join (hello may have been resent)
         if (x.term < me.term) { me.stats.dropTerm++; try { conn.close(); } catch (_) { /* stale lobby */ } return; }
         welcomed = true;
+        endWait();
+        me.lastJoinMs = Date.now() - me.joinStart; me.joinState = 'linked'; joinOk();
         me.term = x.term; me.lobbyDev = x.from; me.lobbyLast = Date.now();
         clearTimeout(me.claimTimer); me.claimTimer = 0;
         status('linked');
@@ -353,10 +420,67 @@
       if (x.ch === CTRL) { ctrlFromLobby(x); return; }
       deliver(x);
     });
-    conn.on('close', function () { if (S === me && me.lobbyConn === conn && !me.refused) lobbyLost(welcomed ? 'closed' : 'no-answer'); });
+    conn.on('close', function () {
+      if (S !== me) return;
+      if (!welcomed) endWait();
+      if (me.lobbyConn === conn && !me.refused) { if (welcomed) lobbyLost('closed'); else joinFailed('closed'); }   // H50: lobbyLost(welcomed ? 'closed' : 'no-answer')
+    });
     conn.on('error', function () { /* close follows */ });
-    // no welcome in time = treat as missing
-    setTimeout(function () { if (S === me && me.lobbyConn === conn && !welcomed) { try { conn.close(); } catch (_) { /* gone */ } lobbyLost('no-answer'); } }, 5000);
+    // no welcome within JOIN_WAIT_MS = a failed join (H50: 5 s)
+    me.joinTimer = setTimeout(function () {
+      if (S !== me || me.lobbyConn !== conn || welcomed) return;
+      endWait();
+      me.lobbyConn = null;
+      try { conn.close(); } catch (_) { /* gone */ }
+      joinFailed('timeout');   // H50: lobbyLost('no-answer')
+    }, JOIN_WAIT_MS);
+  }
+  /* H55b: join bookkeeping */
+  function joinOk() { var me = S; me.joinFails = 0; me.failStart = 0; me.gaveUp = false; clearTimeout(me.retryTimer); me.retryTimer = 0; me.retryAt = 0; }
+  /** a join ended without a welcome (wait over, or PeerJS closed it): check -0 at once (free = take it, held =
+   *  scheduleRetry via the claim's unavailable-id), or give up when the run is past GIVEUP_MS */
+  function joinFailed(why) {
+    var me = S;
+    me.lobbyConn = null;
+    me.joinFails++;
+    if (!me.failStart) me.failStart = me.joinStart || Date.now();
+    me.joinState = 'retrying'; me.lastFail = why;
+    if (overBudget()) { giveUp(); return; }
+    clearTimeout(me.claimTimer); me.claimTimer = 0;
+    status('retrying');
+    claimLobby('probe');
+  }
+  function overBudget() { return !!(S.failStart && Date.now() - S.failStart >= GIVEUP_MS); }
+  function giveUp() {
+    var me = S;
+    if (me.gaveUp) return;
+    me.gaveUp = true; me.joinState = 'gaveup'; me.stats.joinGaveUp++;
+    clearTimeout(me.retryTimer); me.retryTimer = 0; me.retryAt = 0;
+    clearTimeout(me.claimTimer); me.claimTimer = 0;
+    if (me.lobbyConn) { var c = me.lobbyConn; me.lobbyConn = null; try { c.close(); } catch (_) { /* gone */ } }
+    status('gaveup');
+  }
+  /** -0 is held by someone who did not answer: wait RETRY_MS, then join again (or give up after GIVEUP_MS) */
+  function scheduleRetry() {
+    var me = S;
+    if (overBudget()) { giveUp(); return; }
+    me.joinState = 'retrying'; me.retryAt = Date.now() + RETRY_MS;
+    clearTimeout(me.retryTimer);
+    me.retryTimer = setTimeout(function () { if (S !== me) return; me.retryTimer = 0; me.retryAt = 0; if (!me.isLobby && !me.lobbyConn) joinLobby(); }, RETRY_MS);
+    status('retrying');
+  }
+  /** a fresh run: Settings Retry, tab visible, back online, a Connect link opened / closed */
+  function retry(why) {
+    if (!S || S.isLobby || S.refused) return false;
+    var me = S;
+    if (!me.gaveUp && why !== 'manual') return false;   // automatic triggers only restart a run that gave up
+    me.gaveUp = false; me.failStart = 0;
+    clearTimeout(me.retryTimer); me.retryTimer = 0; me.retryAt = 0;
+    clearTimeout(me.claimTimer); me.claimTimer = 0;
+    if (me.lobbyConn && me.joining !== me.lobbyConn) return true;   // already linked
+    if (me.joining) return true;   // a join is in its wait already
+    if (me.peer && me.peer.open) joinLobby(); else if (!me.peer) startPeer();
+    return true;
   }
   function ctrlFromLobby(x) {
     var k = x.data && x.data.k;
@@ -364,17 +488,20 @@
     else if (k === 'bye') {   // the lobby refused us (site / denied / full): stop asking until start() again
       S.refused = String(x.data.reason || 'refused').slice(0, 20);
       var c = S.lobbyConn; S.lobbyConn = null; try { if (c) c.close(); } catch (_) { /* gone */ }
+      S.joinState = 'refused'; S.joining = null; clearInterval(S.helloTimer); clearTimeout(S.joinTimer);   // H55b
       status('refused');
     }
     else if (k === 'hb') { /* lobbyLast already updated */ }
   }
-  function lobbyMissing() { if (S && !S.isLobby && S.lobbyConn) { var c = S.lobbyConn; S.lobbyConn = null; try { c.close(); } catch (_) { /* gone */ } lobbyLost('missing'); } }
+  function lobbyMissing() { if (S && !S.isLobby && S.lobbyConn) { var c = S.lobbyConn; S.lobbyConn = null; S.joining = null; clearInterval(S.helloTimer); clearTimeout(S.joinTimer);   /* H55b: -0 is free: end the join wait */ try { c.close(); } catch (_) { /* gone */ } lobbyLost('missing'); } }
 
   /** lobby gone or never there: rank the living devices, the first claims after a random delay */
   function lobbyLost(why) {
-    if (!S || S.isLobby || S.refused) return;
+    // if (!S || S.isLobby || S.refused) return;   (before H55b)
+    if (!S || S.isLobby || S.refused || S.gaveUp) return;   // H55b: given up = wait for retry()
     var me = S;
     me.lobbyConn = null;
+    if (me.failStart && overBudget()) { giveUp(); return; }   // H55b
     var oldLobby = me.lobbyDev;
     if (oldLobby) {
       me.lobbyDev = '';
@@ -428,12 +555,16 @@
       // 'unavailable-id' = someone else holds -0 (won): join it. Anything else: try joining too.
       try { lp.destroy(); } catch (_) { /* gone */ }
       me.lobbyPeer = null;
+      // setTimeout(function () { if (S === me && !me.isLobby) joinLobby(); }, type === 'unavailable-id' ? 200 : 2000);   (before H55b)
+      // H55b: after a failed join, -0 held = a flat RETRY_MS wait (no 9 s claim / rejoin loop); first race = 200 ms as before
+      if (me.joinFails > 0) { scheduleRetry(); return; }
       setTimeout(function () { if (S === me && !me.isLobby) joinLobby(); }, type === 'unavailable-id' ? 200 : 2000);
     });
   }
   function becomeLobby() {
     var me = S;
     me.isLobby = true; me.everLobby = true;
+    joinOk(); me.joinState = 'lobby'; me.joining = null; clearInterval(me.helloTimer); clearTimeout(me.joinTimer);   // H55b
     clearTimeout(me.claimTimer); me.claimTimer = 0;
     if (me.lobbyConn) { try { me.lobbyConn.close(); } catch (_) { /* gone */ } me.lobbyConn = null; }
     me.term = me.term + 1;
@@ -552,10 +683,13 @@
       });
       var me = S.roster.get(S.dev); if (me) me.lastSeen = now;
       if (++S.hb % 5 === 0) { pruneOffline(false); broadcastRoster(); }   // every 10 s: lastSeen refresh
+    } else if (S.joining && S.lobbyConn === S.joining) {
+      /* H55b: a join inside its JOIN_WAIT_MS: no heartbeat takeover (its own deadline decides) */
     } else if (S.lobbyConn && S.lobbyConn.open) {
       if (now - S.lobbyLast > DEAD_MS) { var c = S.lobbyConn; S.lobbyConn = null; try { c.close(); } catch (_) { /* gone */ } lobbyLost('dead'); return; }
       safeSend(S.lobbyConn, envelope(CTRL, S.lobbyDev || '*', { k: 'hb' }));
-    } else if (!S.lobbyConn && !S.claimTimer && !S.lobbyPeer && S.peer && S.peer.open && S.state !== 'lobby') {
+    // } else if (!S.lobbyConn && !S.claimTimer && !S.lobbyPeer && S.peer && S.peer.open && S.state !== 'lobby') {   (before H55b)
+    } else if (!S.lobbyConn && !S.claimTimer && !S.lobbyPeer && !S.retryTimer && !S.gaveUp && !S.refused && S.peer && S.peer.open && S.state !== 'lobby') {   // H55b: not while waiting to retry / given up
       lobbyLost('idle');   // nothing pending: try again
     }
   }
@@ -659,7 +793,7 @@
   function stop() {
     if (!S) return;
     var old = S; S = null;
-    clearTimeout(old.claimTimer); clearTimeout(old.joinTimer);
+    clearTimeout(old.claimTimer); clearTimeout(old.joinTimer); clearTimeout(old.retryTimer); clearInterval(old.helloTimer);   // H55b: + retry / hello
     try { if (old.lobbyConn) old.lobbyConn.close(); } catch (_) { /* gone */ }
     old.direct.forEach(function (r) { try { r.conn.close(); } catch (_) { /* gone */ } });
     old.members.forEach(function (m) { try { m.conn.close(); } catch (_) { /* gone */ } });
@@ -670,10 +804,14 @@
   function me() {
     if (!S) return null;
     var r = S.roster.get(S.dev) || {};
-    return { deviceId: S.dev, name: myName(), mode: myMode(), apps: myApps(), lobby: S.isLobby, relay: !!r.relay, term: S.term, state: S.state, code: S.code, joinOrder: r.joinOrder || 0, refused: S.refused || '', public: !!S.pub };   // H55: + public
+    return { deviceId: S.dev, name: myName(), mode: myMode(), apps: myApps(), lobby: S.isLobby, relay: !!r.relay, term: S.term, state: S.state, code: S.code, joinOrder: r.joinOrder || 0, refused: S.refused || '', public: !!S.pub,   // H55: + public
+      joinState: S.joinState, joinSince: S.joining ? S.joinStart : 0, retryAt: S.retryAt, joinWaitMs: JOIN_WAIT_MS, gaveUp: S.gaveUp };   // H55b
   }
 
   window.addEventListener('pagehide', function (e) { if (!e.persisted) stop(); });
+  // H55b: a run that gave up starts again once on its own when the tab is visible again or the network is back
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') retry('visible'); });
+  window.addEventListener('online', function () { retry('online'); });
 
   window.HubMesh = {
     start: start, stop: stop, me: me,
@@ -684,10 +822,13 @@
     term: function () { return S ? S.term : 0; },
     lobbyId: function () { return S ? S.lobbyDev : ''; },
     state: function () { return S ? S.state : 'stopped'; },
-    stats: function () { return S ? Object.assign({ direct: Array.from(S.direct.keys()).filter(function (d) { return S.direct.get(d).conn.open; }) }, S.stats) : null; },
+    // stats: function () { return S ? Object.assign({ direct: Array.from(S.direct.keys()).filter(function (d) { return S.direct.get(d).conn.open; }) }, S.stats) : null; },   (before H55b)
+    stats: function () { return S ? Object.assign({ direct: Array.from(S.direct.keys()).filter(function (d) { return S.direct.get(d).conn.open; }) }, S.stats, { joinFails: S.joinFails, lastJoinMs: S.lastJoinMs, joinState: S.joinState }) : null; },   // H55b
+    retry: function () { return retry('manual'); },   // H55b: Settings › Devices Retry (a fresh 5-minute run)
     hooks: hooks,
     // LIMITS: { HB_MS: HB_MS, DEAD_MS: DEAD_MS, MAX_DIRECT: MAX_DIRECT, MAX_ROSTER: MAX_ROSTER, MAX_BYTES: MAX_BYTES, RATE_PER_S: RATE_PER_S, RATE_BURST: RATE_BURST },   (before H55)
-    LIMITS: { HB_MS: HB_MS, DEAD_MS: DEAD_MS, MAX_DIRECT: MAX_DIRECT, MAX_ROSTER: MAX_ROSTER, MAX_BYTES: MAX_BYTES, RATE_PER_S: RATE_PER_S, RATE_BURST: RATE_BURST, PUB_ROSTER: PUB_ROSTER, PUB_NAME: PUB_NAME, INVITE_GAP_MS: INVITE_GAP_MS },
+    LIMITS: { HB_MS: HB_MS, DEAD_MS: DEAD_MS, MAX_DIRECT: MAX_DIRECT, MAX_ROSTER: MAX_ROSTER, MAX_BYTES: MAX_BYTES, RATE_PER_S: RATE_PER_S, RATE_BURST: RATE_BURST, PUB_ROSTER: PUB_ROSTER, PUB_NAME: PUB_NAME, INVITE_GAP_MS: INVITE_GAP_MS,
+      JOIN_WAIT_MS: JOIN_WAIT_MS, HELLO_MS: HELLO_MS, RETRY_MS: RETRY_MS, GIVEUP_MS: GIVEUP_MS },   // H55b
     // H55: public mesh
     PUBLIC_CODE: PUBLIC_CODE, isPublic: pub, invite: invite,
     // tests only: put a raw envelope on the wire to one device (no checks on this side)

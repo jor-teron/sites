@@ -29,6 +29,8 @@
  *   list window.HubMeshLink.invites() (Settings › Devices shows Accept / Dismiss). Accept = the same path as
  *   🎮 Devices › Join (location ?join=CODE, hub_role.js → hub_remote.js). window.HubMeshLink:
  *   { publicOn(), setPublic(on), isPrivate(), privateCode(), invite(deviceId), invites(), accept(i), dismiss(i) }.
+ * H55b: a mesh that gave up joining (5 minutes of failed joins) gets one fresh run when a Connect link opens or
+ *   closes (HubMesh.retry()); HubMesh itself also retries on tab visible / back online.
  */
 (function () {
   'use strict';
@@ -87,6 +89,8 @@
     HubMesh.start(PUB, { preferLobby: false }).catch((e) => console.warn('HubMesh start', e && e.message));
   }
   ['status', 'open', 'close'].forEach((ev) => SharedLink.on(ev, () => setTimeout(check, 0)));
+  // H55b: a Connect link opening (a device joined) or closing (Disconnect) restarts a mesh run that gave up, once
+  ['open', 'close'].forEach((ev) => SharedLink.on(ev, () => setTimeout(() => { const m = HubMesh.me(); if (m && m.gaveUp) HubMesh.retry(); }, 50)));
   setInterval(check, 3000);
   setTimeout(check, 500);
   // this device renamed / switched Desktop ↔ Phone: the roster follows

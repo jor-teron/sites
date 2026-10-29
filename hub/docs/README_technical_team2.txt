@@ -1744,3 +1744,58 @@ Line counts are HTML+JS+CSS, excluding vendor/.
     originals kept as h52test/t52_preH52c.py, h52btest/t52b_preH52c.py; old screenshot kept as
     /workspace/h52b_phone_preH52c.png), H55 39/39.
   Bump 20261029e / v112 -> 20261029f / hub-shell-v113 (hub_bump.py --release H52c, --check OK).
+
+2026-10-29 IST, H55b (Team 2, week 2): the mesh join waits 60 s (public 0000 and private meshes).
+  Bug (Jor: laptop and tablet both on 0000, neither sees the other): hub_mesh.js joinLobby() closed the lobby
+    connection when 'welcome' had not arrived 5 s after connect() and sent 'hello' only once. lobbyLost()
+    then waited 3-4.5 s and claimed -0, got unavailable-id (someone holds it) and joined again 200 ms later:
+    a ~9 s loop. On real networks (Jio carrier NAT, Tailscale, TURN) WebRTC setup takes longer than 5 s, so a
+    device never linked, on 0000 and on private meshes alike. The tick() heartbeat check could also drop an
+    open-but-not-welcomed join after DEAD_MS (6 s). link_core.js (no open deadline, 'hello' resent) worked.
+  Fix (shared/link/hub_mesh.js, old joinLobby() kept as a comment block, old lines kept as comments):
+    one set of constants for every mesh: JOIN_WAIT_MS 60 s, HELLO_MS 2.5 s, RETRY_MS 5 s (flat), GIVEUP_MS
+    5 min (window.HUB_MESH_JOIN_WAIT_MS / HUB_MESH_RETRY_MS / HUB_MESH_GIVEUP_MS override, for tests, like
+    H25's HUB_REMOTE_GIVEUP_MS; HubMesh.LIMITS lists them).
+    - joinLobby(): up to JOIN_WAIT_MS for the connection to open AND 'welcome' to arrive; a PeerJS close /
+      error ends it early; 'hello' resent every HELLO_MS from open until welcome (the lobby ignores extra
+      hellos; one welcome handled per join). peer-unavailable (-0 really free) still goes straight to the
+      takeover (lobbyMissing() also ends the wait), so a free lobby is claimed at once.
+    - tick(): no heartbeat takeover while a join is inside its wait (S.joining); the idle re-join branch
+      skips while a retry is scheduled, given up or refused.
+    - a failed join (no welcome) = joinFailed(): joinFails++, failStart (first failure of the run), check -0
+      at once (claimLobby('probe')): free = this device becomes the lobby; held (unavailable-id) =
+      scheduleRetry(): a flat RETRY_MS wait ('retrying', me().retryAt), then join again. The first race on
+      start (no failure yet) keeps the 200 ms rejoin. Jor's spec moved from the planned growing back-off
+      (2, 4, 8, 15, 30 s) to the flat 5 s.
+    - give up: GIVEUP_MS after the first failed attempt of the run (checked when a join fails and before
+      each retry): status / joinState 'gaveup', timers cleared, stats.joinGaveUp++ (count). A fresh run
+      (failStart reset): HubMesh.retry() (Settings Retry button), document visibilitychange → visible,
+      window 'online', and a Connect link opening / closing (hub/link/hub_meshlink.js: SharedLink 'open' /
+      'close' → HubMesh.retry() when me().gaveUp). Automatic triggers only restart a run that gave up; a
+      joining / linked mesh is left alone. Joining another code / Disconnect restart the mesh anyway (stop +
+      start = fresh state). Success (welcome, or becoming the lobby) resets joinFails / failStart.
+    - me(): + joinState ('linking' | 'linked' | 'lobby' | 'retrying' | 'refused' | 'gaveup' | ''), joinSince
+      (start of the current join wait, 0 when none), retryAt, joinWaitMs, gaveUp. stats(): + joinFails,
+      lastJoinMs (open + welcome time of the last successful join), joinState, joinGaveUp.
+  Settings › Devices (sec_devices.js ?v=20261029h55b, linkState() + retryBtn()): the H50 Hub mesh note
+    (#mesh-note: 'Code C · term N · STATE.') and the Public mesh note (#pub-note: 'Public mesh 0000 · STATE ·
+    N online · your code C.'; the online count only once linked; before H55b it said "On the public mesh"
+    whatever the state) show Linking… Ns (seconds into the wait), Lobby (you), Linked, Retrying in Ns,
+    Refused (reason), Not linked: tap Retry; data-state = the key. Retry button (#mesh-retry / #pub-retry)
+    while retrying or given up. Empty public list says "Not linked to the public mesh yet." until linked.
+    Both cards redraw every 1 s (was 5 s / 3 s).
+  Tests (system Chrome headless, PeerJS stand-in broker; broker.py now takes BK.delay = {peer id or suffix:
+    seconds} to delay a connection open (inf = never) and BK.deaf = ids that hold their id but receive
+    nothing; original kept as h50test/broker_preH55b.py): H55b core 32/32 (/workspace/h55btest/t55b.py:
+    constants, 8 s and 40 s opens link on the first try with no takeover / claim, lastJoinMs >= delay, a lobby
+    holding -0 that never answers: still linking at 20 s, hello resent, the attempt ends at 60 s, flat 5 s
+    retry, next attempt; shortened constants: give-up, stays stopped, visible / online give one fresh run,
+    manual Retry links after the lobby answers again, triggers ignored while linked, a free -0 is claimed
+    at once, no console errors); H55b Hub UI 18/18 (t55bh.py: real Hub pages, Lobby (you), Linking… Ns
+    counting up with a 25 s open (screenshot /workspace/h55b_linking.png), Linked, Refused (denied),
+    Retrying in Ns, Not linked: tap Retry + Retry button → Linked, visible after give-up, private mesh notes
+    Lobby (you) / Linked, no console errors). H50 Hub +1 check (mesh note Lobby (you); original
+    th_preH55b.py). Reruns: see the H55b commit message.
+  Not done (leftovers): the optional lobby -1 fallback (a second lobby id when -0 is held by a device that
+    never answers); clearing the H55 pairing (hub-mesh-paired) on give-up; SharedLink open / close retry is
+    covered by code review only (the stand-in has no way to fire those events alone).
