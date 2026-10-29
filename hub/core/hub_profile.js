@@ -753,7 +753,9 @@
    *   shared  : theme, accent, motion, wallpaper, favorites, notifyTimeout, files*, profileEvery, ... and every
    *             app setting (System / Media / Connectivity / Tools / Office apps)
    *   desktop : the Desktop-mode layout (taskbar, title bar, windows, snapping, workspaces, desktop icons,
-   *             Start hover, tray meter, clock screen saver, H52 Hub bar switches bar*)
+   *             Start hover, tray meter, clock screen saver, H52 Hub bar switches bar*;
+   *             H52b: barPooh / barDevices / barUpdate work in both modes, so they are Shared)
+   *             H55: meshPublic (Settings › Devices › Join public mesh) is not listed = Shared
    *   phone   : the Phone-mode layout (Home button target)
    *   Never synced: wmMode (each device's own Screen mode choice; a phone must not be switched to Desktop).
    * Keys are never part of a sync payload (exportData({ keys: false }); diffData ignores "keys"). (H29.1)
@@ -765,7 +767,9 @@
     desktop: ['taskPos', 'taskH', 'titleH', 'openMax', 'startHover', 'showFiles', 'trayMeter', 'hoverFocus',
       'snapEdges', 'snapMagnet', 'snapMagnetPx', 'workspaces', 'saverIdle', 'saverSec',
       // H52: Settings → Hub bar switches (Desktop-mode taskbar)
-      'barShowDesk', 'barSearch', 'barTasks', 'barWorkspaces', 'barOsk', 'barPooh', 'barDevices', 'barUpdate', 'barClock'],
+      // 'barShowDesk', 'barSearch', 'barTasks', 'barWorkspaces', 'barOsk', 'barPooh', 'barDevices', 'barUpdate', 'barClock'],   (H52)
+      // H52b: barPooh / barDevices / barUpdate apply in Phone mode too → not listed = Shared group
+      'barShowDesk', 'barSearch', 'barTasks', 'barWorkspaces', 'barOsk', 'barClock'],
     phone: ['homeBtn'],
   };
   const SYNC_SKIP = new Set(['wmMode']);

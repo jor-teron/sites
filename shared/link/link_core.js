@@ -95,10 +95,12 @@
   function save(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* blocked */ } }
   function drop(k) { try { localStorage.removeItem(k); } catch (_) { /* blocked */ } }
 
-  /* Random 4-digit code (avoid = skip this one). */
+  /* Random 4-digit code (avoid = skip this one). H55: never '0000' (the public Hub mesh, hub_mesh.js). */
+  var PUBLIC_CODE = '0000';
   function randomCode(avoid) {
     var c = avoid;
-    while (c === avoid) c = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    // while (c === avoid) c = String(Math.floor(Math.random() * 10000)).padStart(4, '0');   (before H55)
+    while (c === avoid || c === PUBLIC_CODE) c = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
     return c;
   }
 
@@ -213,7 +215,8 @@
     S.opts = opts || {};
     S.prefix = S.opts.prefix || 'jtsites-';
     var key = S.opts.codeKey;
-    S.code = S.opts.code || (key && load(key)) || randomCode('');
+    // S.code = S.opts.code || (key && load(key)) || randomCode('');   (before H55)
+    S.code = S.opts.code || (key && load(key) !== PUBLIC_CODE && load(key)) || randomCode('');   // H55: a saved 0000 is never hosted
     if (key) save(key, S.code);
     S.idRetry = 0; S.netRetry = 0;
     return loadPeer().then(function () { startHost(false); return S.code; },
@@ -448,6 +451,7 @@
     PEERJS_URL: PEERJS_URL,
     loadPeer: loadPeer,
     randomCode: randomCode,
+    PUBLIC_CODE: PUBLIC_CODE,   // H55
     on: on, off: off, emit: emit,
     host: host, join: join, newCode: newCode, stop: stop,
     pause: destroy,   // drop the peer quietly (page hide): no bye, devices reconnect

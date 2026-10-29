@@ -41,6 +41,13 @@
  *   cleared, and a summary offers Reload Hub. No backup: the button is disabled with a hint. The Apply summary
  *   in Send profile has an Undo button too, and both summaries say 'Saved to profile folder' once the
  *   immediate folder save (hub_sync.js) worked.
+ * H55: "Public mesh" card (id 'public', deep link #devices/public, right after Connected devices). Switch
+ *   'Join public mesh' ('sites-hub.meshPublic', '0' = off, default on, H29 Shared group; the Hub's
+ *   HubMeshLink.setPublic() applies it at once: off leaves 0000). Lists the devices on the public mesh 0000
+ *   (HubMesh.roster() while HubMesh.me().public; short name (16), Desktop / Phone mode, device ID; at most 20)
+ *   with "Invite to my code" per online device when this Hub has its own code (HubMeshLink.ownCode(): hosting,
+ *   not yet paired); received invites show with Join / Dismiss (HubMeshLink.invites()). Text only. The H50
+ *   Hub mesh box under Connected devices points here while this device is on 0000.
  */
 (function () {
   'use strict';
@@ -607,7 +614,9 @@
       drawn = true;
       const me = M.me();
       list.textContent = '';
-      if (!me) { note.textContent = 'Mesh off: it starts when a Connect Code link is on.'; return; }
+      // if (!me) { note.textContent = 'Mesh off: it starts when a Connect Code link is on.'; return; }   (H50)
+      if (!me) { note.textContent = 'Mesh off: it starts when a Connect Code link is on (or with Join public mesh below).'; return; }   // H55
+      if (me.public) { note.textContent = 'Not in a private mesh: this device is on the public mesh ' + clip(me.code, 12) + ' (see Public mesh below).'; return; }   // H55
       const st = { lobby: 'this device is the lobby', linked: 'linked', joining: 'joining…', takeover: 'lobby lost, taking over…', claiming: 'claiming the lobby…', refused: 'refused by the lobby (' + clip(me.refused, 20) + ')' }[me.state] || clip(me.state, 20);
       note.textContent = 'Code ' + clip(me.code, 12) + ' · term ' + me.term + ' · ' + st + '. Shared by all Hub apps (one connection per Connect Code).';
       const ros = M.roster();
@@ -636,13 +645,99 @@
     draw();
   }
 
+  /* H55: the public mesh 0000 (presence + invites only; HubMesh enforces it) */
+  const PUB_SHOW = 20;
+  function publicCard(sub) {
+    const card = ui.el('section', 'card pub-card');
+    card.id = 'public';
+    card.appendChild(ui.el('h3', '', 'Public mesh'));
+    const hub = S.hub();
+    const M = hub && hub.HubMesh, ML = hub && hub.HubMeshLink;
+    const on = () => S.get('meshPublic') !== '0';
+    const sw = ui.switch('Join public mesh', 'When this Hub is not in a private mesh, it joins the public mesh 0000 so nearby Hubs can see each other and invite you to their code',
+      on(), (v) => { S.set('meshPublic', v ? '' : '0'); if (ML) ML.setPublic(v); setTimeout(draw, 300); });
+    sw.id = 'mesh-public-sw';
+    card.appendChild(sw);
+    card.appendChild(ui.el('p', 'opt-note', 'Anyone’s Hub can be on 0000, so it only shares a short device name, Desktop / Phone mode and the device ID, plus invites. ' +
+      'Profile sync, API keys and every app stay off the public mesh. Joining a Hub’s code leaves 0000; Disconnect comes back.'));
+    if (!M || !ML) {
+      card.appendChild(ui.el('p', 'opt-note', 'Open Settings inside the Hub to see the public mesh.'));
+      return card;
+    }
+    const note = ui.el('p', 'opt-note pub-note'); note.id = 'pub-note';
+    const inv = ui.el('div', 'pub-invites'); inv.id = 'pub-invites';
+    const list = ui.el('ul', 'conn-list pub-list'); list.id = 'pub-list';
+    list.setAttribute('aria-label', 'Devices on the public mesh');
+    const out = ui.el('p', 'upd-out', ''); out.id = 'pub-out'; out.setAttribute('aria-live', 'polite');
+    card.append(note, inv, list, out);
+    const clip = (v, n) => String(v == null ? '' : v).slice(0, n);
+    const MODE = { desktop: 'Desktop mode', phone: 'Phone mode' };
+    const WHY = { rate: 'Wait a few seconds between invites', 'no-code': 'This Hub has no code of its own to invite to', 'not-public': 'Not on the public mesh', offline: 'That device is gone', public: 'Not allowed on the public mesh' };
+    function draw() {
+      if (!card.isConnected && drawn) { stop(); return; }
+      drawn = true;
+      const me = M.me(), own = ML.ownCode();
+      inv.textContent = ''; list.textContent = '';
+      ML.invites().forEach((v, i) => {
+        const row = ui.el('div', 'pub-invite');
+        row.appendChild(ui.el('span', '', clip(v.name, 16) + ' invites you to join code ' + clip(v.code, 4)));
+        const j = ui.el('button', 'key-btn pub-join', 'Join'); j.type = 'button';
+        j.addEventListener('click', () => ML.accept(i));
+        const d = ui.el('button', 'key-btn pub-dismiss', 'Dismiss'); d.type = 'button';
+        d.addEventListener('click', () => { ML.dismiss(i); draw(); });
+        row.append(j, d);
+        inv.appendChild(row);
+      });
+      if (!me || !me.public) {
+        note.textContent = !on() ? 'Off: this Hub stays off the public mesh.'
+          : ML.isPrivate() ? 'This Hub is in a private mesh (code ' + clip(ML.privateCode(), 12) + '), so it is not on 0000.' : 'Joining the public mesh…';
+        return;
+      }
+      const ros = M.roster().filter((r) => r.online || r.deviceId === me.deviceId).slice(0, PUB_SHOW);
+      note.textContent = 'On the public mesh 0000 · ' + ros.length + ' online' + (own ? ' · your code ' + own : '') + '.';
+      ros.forEach((r) => {
+        const self = r.deviceId === me.deviceId;
+        const li = ui.el('li', 'conn-dev pub-dev' + (self ? ' conn-self' : ''));
+        li.dataset.id = clip(r.deviceId, 40);
+        const top = ui.el('div', 'conn-top');
+        top.append(ui.el('b', 'conn-name', clip(r.name || 'Device', 16) + (self ? ' (this device)' : '')), ui.el('span', 'conn-state on', 'Online'));
+        const meta = ui.el('div', 'conn-meta');
+        [MODE[r.mode] || '', clip(r.deviceId, 24), r.lobby ? 'Lobby' : ''].filter(Boolean).forEach((t) => meta.appendChild(ui.el('span', 'conn-tag', t)));
+        li.append(top, meta);
+        if (!self && own) {
+          const b = ui.el('button', 'key-btn pub-inv', 'Invite to my code'); b.type = 'button';
+          b.addEventListener('click', () => {
+            const r2 = ML.invite(r.deviceId);
+            out.className = 'upd-out ' + (r2.ok ? 'ok' : 'bad');
+            out.textContent = r2.ok ? 'Invite to code ' + own + ' sent to ' + clip(r.name, 16) : (WHY[r2.reason] || 'Could not send the invite');
+          });
+          li.appendChild(b);
+        }
+        list.appendChild(li);
+      });
+      if (ros.length < 2) { const e = ui.el('li', 'conn-empty', 'No other Hub on the public mesh right now.'); e.id = 'pub-empty'; list.appendChild(e); }
+    }
+    let drawn = false, t = 0;
+    const onEv = () => { clearTimeout(t); t = setTimeout(draw, 0); };
+    const EVS = ['roster', 'peers', 'lobby', 'status'];
+    EVS.forEach((ev) => M.on(ev, onEv));
+    hub.addEventListener('hub-mesh-invites', onEv);
+    const tick = setInterval(draw, 3000);
+    function stop() { EVS.forEach((ev) => M.off(ev, onEv)); hub.removeEventListener('hub-mesh-invites', onEv); clearInterval(tick); }
+    window.addEventListener('pagehide', stop);
+    draw();
+    if (sub === 'public') setTimeout(() => card.scrollIntoView({ block: 'start' }), 50);
+    return card;
+  }
+
   Settings.add({
     id: 'devices', title: 'Devices', icon: '\uD83D\uDCF2',
     render(pane, sub) {
       const end = ui.el('div', 'pane-end');   // room below the last buttons (Apply / Cancel) so Hub notification cards never cover them
       end.setAttribute('aria-hidden', 'true');
       // pane.append(deviceCard(sub), connectedCard(sub), profileCard(sub), syncCard(sub), end);   // (H29.2b)
-      pane.append(deviceCard(sub), connectedCard(sub), profileCard(sub), syncCard(sub), undoCard(sub), end);   // H29.3: + Undo last sync
+      // pane.append(deviceCard(sub), connectedCard(sub), profileCard(sub), syncCard(sub), undoCard(sub), end);   // H29.3: + Undo last sync
+      pane.append(deviceCard(sub), connectedCard(sub), publicCard(sub), profileCard(sub), syncCard(sub), undoCard(sub), end);   // H55: + Public mesh
     }
   });
 })();

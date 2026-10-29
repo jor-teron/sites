@@ -18,6 +18,8 @@
  *   Join       : 4-digit box + Join + 📷 (SharedLinkScan.ask) → location ?join=CODE (as
  *                hub_remote.js). Own code is rejected (H31: on a phone whose link is down it rejoins now). A join that has not connected after
  *                20 s shows "Hub not found — check the code" (sessionStorage 'hub-join-try').
+ *                H55: 0000 is the public mesh, not a Hub: on a joined phone it disconnects (back to 0000),
+ *                elsewhere it turns Settings › Devices › Join public mesh on (HubMeshLink.setPublic).
  *   Devices    : SharedLinkUI.mountDevices list (styled as roomy rows).
  *   One-tap switch: with Devices open, a tap on 🐻 (under #ctrl-backdrop) closes Devices and
  *                opens Chat; 🎮 with Chat open already works (chat closes on outside pointerdown).
@@ -117,6 +119,12 @@
       err.textContent = '';
       c = String(c || '').replace(/\D/g, '');
       if (!/^\d{4}$/.test(c)) { err.textContent = 'Enter the 4-digit code.'; return; }
+      if (c === '0000') {   // H55: 0000 = the public mesh: leave a private Hub (joined: Disconnect) and turn public on
+        if (R && window.__hubRemoteApi) { try { localStorage.removeItem('sites-hub.meshPublic'); } catch (_) { /* blocked */ } window.__hubRemoteApi.disconnect(); return; }
+        if (window.HubMeshLink) window.HubMeshLink.setPublic(true);
+        err.textContent = window.HubMeshLink && window.HubMeshLink.isPrivate() ? 'Public mesh 0000 is on; this Hub joins it when it leaves its private mesh.' : 'Joined the public mesh 0000 (Settings \u203A Devices).';
+        return;
+      }
       if (c === myCode()) {
         // H31 / H25: the same Hub while the link is down → rejoin now (the bar chip with its scan is gone)
         if (R && window.SharedLink && !SharedLink.connected && window.__hubRemoteApi) { window.__hubRemoteApi.rejoin(); err.textContent = 'Reconnecting…'; return; }

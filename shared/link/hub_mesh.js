@@ -44,6 +44,18 @@
     channel(name) → { send(to, data), broadcast(data), on(fn(data, from, env)) → unsubscribe, peers() }
     setAppIdentity(app, obj | null)   saved in localStorage 'hub-mesh-id-<app>', advertised in the roster
     appIdentity(app); refresh() (name / mode changed); isLobby(); term(); lobbyId(); state(); stats()
+  H55 public mesh: code PUBLIC_CODE '0000' (or start(code, { public: true })) = the public mesh every Hub without a
+    private mesh joins (hub_meshlink.js decides). S.pub is enforced HERE, not just in the UI:
+      - only '_mesh' control (hello / welcome / roster / hb / info / bye = presence) and the 'invite' channel pass,
+        on send (channel().send / broadcast → {ok:false, reason:'public'}) and on receive (accept(): dropped,
+        stats.dropPublic), so a lobby relaying on 0000 (overflow past MAX_DIRECT) only ever relays presence /
+        invites; sync, keys, profile and every app channel are refused both ways;
+      - names trimmed to PUB_NAME (16) characters, app identities never advertised (apps = {}) in or out;
+      - roster capped at PUB_ROSTER (20): the lobby says bye 'full' to the 21st (after pruning offline ones);
+      - invite: HubMesh.invite(toDeviceId, code) → envelope ch 'invite' data {k:'invite', code, name}; one device
+        only (no '*'), code 4 digits and never 0000, at most 1 per INVITE_GAP_MS per sender both ways; a valid
+        one fires on('invite', {from, name, code, at}). 'invite' is reserved: channel('invite') throws.
+    API: isPublic(), PUBLIC_CODE, invite(to, code), on('invite', fn); me().public.
   Not here (later releases): postMessage bridge for app frames (H50b), media calls (H50c), removing the
   per-app lobbies (H50d). Existing SharedLink behaviour (controller, H29 sync, Pooh Chat) is unchanged.
 */
@@ -61,6 +73,19 @@
   var DEV_RE = /^hub-[a-z0-9]{8}-[a-z0-9]{3}$/;
   var CODE_RE = /^[A-Za-z0-9]{3,12}$/;
   var IDK = 'hub-mesh-id-';
+  /* H55: public mesh */
+  var PUBLIC_CODE = '0000', PUB_NAME = 16, PUB_ROSTER = 20, INVITE_CH = 'invite', INVITE_GAP_MS = 3000;
+  var INV_CODE_RE = /^\d{4}$/;
+  function pub() { return !!(S && S.pub); }
+  function rosterCap() { return pub() ? PUB_ROSTER : MAX_ROSTER; }
+  function nameCap() { return pub() ? PUB_NAME : 40; }
+  /** H55: may this envelope travel on the public mesh? (presence + a well-formed one-to-one invite only) */
+  function pubAllowed(e) {
+    if (e.ch === CTRL) return true;
+    if (e.ch !== INVITE_CH || e.to === '*') return false;
+    var d = e.data;
+    return !!(d && typeof d === 'object' && d.k === 'invite' && INV_CODE_RE.test(String(d.code)) && d.code !== PUBLIC_CODE);
+  }
 
   var enc = window.TextEncoder ? new TextEncoder() : null;
   function bytes(s) { return enc ? enc.encode(s).length : s.length * 3; }
@@ -88,8 +113,9 @@
       members: new Map(),     // lobby only: deviceId -> { conn, last }
       roster: new Map(),      // deviceId -> entry
       rv: 0, idRetry: 0, seen: [], seenSet: new Set(), buckets: new Map(), out: { tokens: RATE_BURST, at: Date.now() },
-      stats: { sent: 0, recv: 0, dropSize: 0, dropRate: 0, dropShape: 0, dropTerm: 0, dropSpoof: 0, relayed: 0 },
-      hb: 0, seq: 0
+      stats: { sent: 0, recv: 0, dropSize: 0, dropRate: 0, dropShape: 0, dropTerm: 0, dropSpoof: 0, relayed: 0, dropPublic: 0 },
+      hb: 0, seq: 0,
+      pub: code === PUBLIC_CODE || !!(opts && opts.public), invOut: 0, invIn: new Map()   // H55
     };
   }
   function lobbyPeerId() { return PREFIX + S.code + '-mesh-0'; }
@@ -106,7 +132,8 @@
   /* ---------- identity ---------- */
   // function myMode() { return S && S.opts.mode ? S.opts.mode : (window.__hubRemote ? 'phone' : (window.HubMode && window.HubMode.mode === 'desktop' ? 'desktop' : 'phone')); }   // (before H53)
   function myMode() { return S && S.opts.mode ? S.opts.mode : (window.HubMode && window.HubMode.mode === 'desktop' ? 'desktop' : 'phone'); }   // H53: a joined device reports its real mode
-  function myName() { var D = window.SharedLinkDevices; return String((S && S.opts.name) || (D ? D.name() : 'Device')).slice(0, 40); }
+  // function myName() { var D = window.SharedLinkDevices; return String((S && S.opts.name) || (D ? D.name() : 'Device')).slice(0, 40); }   // (before H55)
+  function myName() { var D = window.SharedLinkDevices; return String((S && S.opts.name) || (D ? D.name() : 'Device')).slice(0, nameCap()); }   // H55: 16 on 0000
   function cleanIdentity(o) {
     if (o == null) return null;
     var s;
@@ -116,6 +143,7 @@
   }
   function myApps() {
     var out = {};
+    if (pub()) return out;   // H55: no app identities on the public mesh
     try {
       for (var i = 0; i < localStorage.length; i++) {
         var k = localStorage.key(i);
@@ -174,6 +202,7 @@
     if (via !== 'local' && !rateOk(via === 'lobby' ? 'lobby:' + e.from : e.from)) { S.stats.dropRate++; return false; }
     if (!hooks.verify(e, connDev)) { S.stats.dropSpoof++; return false; }
     if (e.term < S.term) { S.stats.dropTerm++; return false; }   // older lobby term: ignore
+    if (S.pub && !pubAllowed(e)) { S.stats.dropPublic++; return false; }   // H55: presence + invites only on 0000
     return true;
   }
 
@@ -185,6 +214,7 @@
     if (dup(e.id)) return;
     if (e.term > S.term && e.ch !== CTRL) S.term = e.term;   // gossip: a newer term seen on data
     S.stats.recv++;
+    if (e.ch === INVITE_CH) { gotInvite(e); return; }   // H55
     (chans[e.ch] || []).slice().forEach(function (f) { try { f(e.data, e.from, e); } catch (err) { console.warn('HubMesh channel ' + e.ch, err); } });
   }
 
@@ -200,11 +230,13 @@
   function setRoster(list, term, lobbyDev) {
     var before = peersKey();
     S.roster = new Map();
-    (list || []).slice(0, MAX_ROSTER).forEach(function (r) {
+    // (list || []).slice(0, MAX_ROSTER).forEach(function (r) {   (before H55)
+    (list || []).slice(0, rosterCap()).forEach(function (r) {   // H55: 20 on 0000
       if (!r || !DEV_RE.test(String(r.deviceId))) return;
       S.roster.set(r.deviceId, {
-        deviceId: r.deviceId, name: String(r.name || 'Device').slice(0, 40), mode: r.mode === 'desktop' ? 'desktop' : r.mode === 'phone' ? 'phone' : '',
-        apps: r.apps && typeof r.apps === 'object' && !Array.isArray(r.apps) ? r.apps : {}, joinOrder: Number(r.joinOrder) || 0,
+        // deviceId: r.deviceId, name: String(r.name || 'Device').slice(0, 40), ...   (before H55)
+        deviceId: r.deviceId, name: String(r.name || 'Device').slice(0, nameCap()), mode: r.mode === 'desktop' ? 'desktop' : r.mode === 'phone' ? 'phone' : '',
+        apps: !S.pub && r.apps && typeof r.apps === 'object' && !Array.isArray(r.apps) ? r.apps : {}, joinOrder: Number(r.joinOrder) || 0,   // H55: no apps on 0000
         lastSeen: Number(r.lastSeen) || 0, online: !!r.online, lobby: r.deviceId === lobbyDev, relay: !!r.relay
       });
     });
@@ -439,7 +471,8 @@
         if (badShape(x) || x.ch !== CTRL || !x.data || x.data.k !== 'hello' || x.from !== d) return;
         if (x.data.site && x.data.site !== location.host) { safeSend(conn, envelope(CTRL, d, { k: 'bye', reason: 'site' })); return; }   // same site only (weak: can be faked)
         if (!hooks.approveJoin(x.data, conn.peer)) { safeSend(conn, envelope(CTRL, d, { k: 'bye', reason: 'denied' })); return; }
-        if (!me.roster.has(d) && me.roster.size >= MAX_ROSTER) { pruneOffline(true); if (me.roster.size >= MAX_ROSTER) { safeSend(conn, envelope(CTRL, d, { k: 'bye', reason: 'full' })); return; } }
+        // if (!me.roster.has(d) && me.roster.size >= MAX_ROSTER) { pruneOffline(true); if (me.roster.size >= MAX_ROSTER) {   (before H55)
+        if (!me.roster.has(d) && me.roster.size >= rosterCap()) { pruneOffline(true); if (me.roster.size >= rosterCap()) { safeSend(conn, envelope(CTRL, d, { k: 'bye', reason: 'full' })); return; } }
         rec.hello = true;
         var old = me.members.get(d);
         if (old && old.conn !== conn) { try { old.conn.close(); } catch (_) { /* gone */ } }
@@ -471,8 +504,8 @@
   }
   function info(o) {
     var apps = {};
-    if (o.apps && typeof o.apps === 'object' && !Array.isArray(o.apps)) Object.keys(o.apps).slice(0, 32).forEach(function (a) { if (CH_RE.test(a)) { var v = cleanIdentity(o.apps[a]); if (v) apps[a] = v; } });
-    return { name: String(o.name || 'Device').replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, 40), mode: o.mode === 'desktop' ? 'desktop' : o.mode === 'phone' ? 'phone' : '', apps: apps };
+    if (!pub() && o.apps && typeof o.apps === 'object' && !Array.isArray(o.apps)) Object.keys(o.apps).slice(0, 32).forEach(function (a) { if (CH_RE.test(a)) { var v = cleanIdentity(o.apps[a]); if (v) apps[a] = v; } });
+    return { name: String(o.name || 'Device').replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, nameCap()), mode: o.mode === 'desktop' ? 'desktop' : o.mode === 'phone' ? 'phone' : '', apps: apps };
   }
   function memberGone(d) {
     var r = S.roster.get(d);
@@ -530,6 +563,7 @@
   /* ---------- sending ---------- */
   function sendEnv(e) {
     if (!S || !S.dev) return { ok: false, reason: 'stopped' };
+    if (S.pub && !pubAllowed(e)) { S.stats.dropPublic++; return { ok: false, reason: 'public' }; }   // H55
     if (sizeOf(e) > MAX_BYTES) { S.stats.dropSize++; return { ok: false, reason: 'size' }; }
     if (!outRateOk()) { S.stats.dropRate++; return { ok: false, reason: 'rate' }; }
     S.stats.sent++;
@@ -553,6 +587,7 @@
   function channel(name) {
     name = String(name || '');
     if (!CH_RE.test(name)) throw new Error('HubMesh: bad channel name');
+    if (name === INVITE_CH) throw new Error('HubMesh: reserved channel');   // H55: use HubMesh.invite()
     return {
       name: name,
       send: function (to, data) { if (!S) return { ok: false, reason: 'stopped' }; if (!DEV_RE.test(String(to))) return { ok: false, reason: 'to' }; return sendEnv(envelope(name, to, data)); },
@@ -560,6 +595,27 @@
       on: function (fn) { (chans[name] = chans[name] || []).push(fn); return function () { var l = chans[name] || []; var i = l.indexOf(fn); if (i >= 0) l.splice(i, 1); }; },
       peers: peers
     };
+  }
+
+  /* ---------- H55: invites (the only message besides presence on the public mesh) ---------- */
+  function invite(to, code) {
+    if (!S) return { ok: false, reason: 'stopped' };
+    code = String(code || '');
+    if (!DEV_RE.test(String(to)) || to === S.dev) return { ok: false, reason: 'to' };
+    if (!INV_CODE_RE.test(code) || code === PUBLIC_CODE || code === S.code) return { ok: false, reason: 'code' };
+    var now = Date.now();
+    if (now - S.invOut < INVITE_GAP_MS) return { ok: false, reason: 'rate' };
+    S.invOut = now;
+    return sendEnv(envelope(INVITE_CH, to, { k: 'invite', code: code, name: myName() }));
+  }
+  function gotInvite(e) {
+    if (e.to !== S.dev || !pubAllowed(e)) return;
+    var now = Date.now(), last = S.invIn.get(e.from) || 0;
+    if (now - last < INVITE_GAP_MS) { S.stats.dropRate++; return; }
+    S.invIn.set(e.from, now);
+    var r = S.roster.get(e.from);
+    var nm = String((r && r.name) || e.data.name || 'Device').replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, PUB_NAME);
+    emit('invite', { from: e.from, name: nm, code: String(e.data.code), at: now });
   }
 
   /* ---------- app identity ---------- */
@@ -614,7 +670,7 @@
   function me() {
     if (!S) return null;
     var r = S.roster.get(S.dev) || {};
-    return { deviceId: S.dev, name: myName(), mode: myMode(), apps: myApps(), lobby: S.isLobby, relay: !!r.relay, term: S.term, state: S.state, code: S.code, joinOrder: r.joinOrder || 0, refused: S.refused || '' };
+    return { deviceId: S.dev, name: myName(), mode: myMode(), apps: myApps(), lobby: S.isLobby, relay: !!r.relay, term: S.term, state: S.state, code: S.code, joinOrder: r.joinOrder || 0, refused: S.refused || '', public: !!S.pub };   // H55: + public
   }
 
   window.addEventListener('pagehide', function (e) { if (!e.persisted) stop(); });
@@ -630,7 +686,10 @@
     state: function () { return S ? S.state : 'stopped'; },
     stats: function () { return S ? Object.assign({ direct: Array.from(S.direct.keys()).filter(function (d) { return S.direct.get(d).conn.open; }) }, S.stats) : null; },
     hooks: hooks,
-    LIMITS: { HB_MS: HB_MS, DEAD_MS: DEAD_MS, MAX_DIRECT: MAX_DIRECT, MAX_ROSTER: MAX_ROSTER, MAX_BYTES: MAX_BYTES, RATE_PER_S: RATE_PER_S, RATE_BURST: RATE_BURST },
+    // LIMITS: { HB_MS: HB_MS, DEAD_MS: DEAD_MS, MAX_DIRECT: MAX_DIRECT, MAX_ROSTER: MAX_ROSTER, MAX_BYTES: MAX_BYTES, RATE_PER_S: RATE_PER_S, RATE_BURST: RATE_BURST },   (before H55)
+    LIMITS: { HB_MS: HB_MS, DEAD_MS: DEAD_MS, MAX_DIRECT: MAX_DIRECT, MAX_ROSTER: MAX_ROSTER, MAX_BYTES: MAX_BYTES, RATE_PER_S: RATE_PER_S, RATE_BURST: RATE_BURST, PUB_ROSTER: PUB_ROSTER, PUB_NAME: PUB_NAME, INVITE_GAP_MS: INVITE_GAP_MS },
+    // H55: public mesh
+    PUBLIC_CODE: PUBLIC_CODE, isPublic: pub, invite: invite,
     // tests only: put a raw envelope on the wire to one device (no checks on this side)
     _raw: function (to, env) { if (!S) return false; var r = S.direct.get(to); if (r && r.conn.open) return safeSend(r.conn, env); return viaLobby(env); },
     _env: function (ch, to, data) { return S ? envelope(ch, to, data) : null; }

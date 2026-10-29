@@ -81,7 +81,8 @@
   const heldKeys = new Map();   // code|key -> last keydown message (keyup sent on release)
 
   function loadCode() {
-    try { const c = (localStorage.getItem(CODE_KEY) || '').toUpperCase(); return CODE_RE.test(c) ? c : ''; } catch (_) { return ''; }
+    // try { const c = (localStorage.getItem(CODE_KEY) || '').toUpperCase(); return CODE_RE.test(c) ? c : ''; } catch (_) { return ''; }   (before H55)
+    try { const c = (localStorage.getItem(CODE_KEY) || '').toUpperCase(); return CODE_RE.test(c) && c !== '0000' ? c : ''; } catch (_) { return ''; }   // H55: 0000 = public mesh, never a Hub's own code
   }
   function saveCode(c) {
     try { localStorage.setItem(CODE_KEY, c); } catch (_) { /* ignore */ }
