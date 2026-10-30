@@ -6,7 +6,8 @@
     c.moveTo(x1, y1); c.quadraticCurveTo((x1 + xa) / 2, ya * .8 + y1 * .2, xa, ya);
     c.quadraticCurveTo((xa + x2) / 2, y2 * .7 + ya * .3, x2, y2); c.closePath();
   }
-  function render(c, s, L, ph) {
+  function render(c, s, L, ph, f) {
+    if (s.draw) return s.draw(c, L, ph, f || {});   // AQQ1d: non-fish animals draw themselves
     var h = s.H * L, b = Math.sin(ph) * s.amp * L, e = s.eye;
     c.lineJoin = 'round'; c.lineWidth = Math.max(1, L * .018); c.strokeStyle = '#111';
     if (s.extra) s.extra(c, L, h, b);

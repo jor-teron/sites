@@ -1,4 +1,4 @@
-// Aquarium AQQ1a/AQQ1c (from AQ1b): HUD gauges, fish info card, tank picker, tap input, 30 fps frame loop and boot.
+// Aquarium AQQ1a-AQQ1d (from AQ1b): HUD gauges, fish info card, tank picker, tap input, 30 fps frame loop and boot.
 (function () {
   'use strict';
   var A = window.AQ, S = A.st, C = A.core, V = A.view, cv = V.cv, raf = 0, last = 0, slow = 0, nfr = 0;
@@ -55,7 +55,12 @@
   var pk = $('picker'), tiles = $('tiles');
   function useTank(id) {
     show(null); C.setTank(id); V.layout(); hud();
-    $('note').hidden = S.fish.length > 0;   // tanks without animals yet just show their scenery
+    tidy();
+  }
+  function tidy() {   // AQQ1d: an empty tank shows only its note (no hint, no Feed); 'animal' once non-fish live there
+    var n = S.fish.length, odd = S.fish.some(function (f) { return f.sp.mode; });
+    $('note').hidden = n > 0; $('feed').hidden = !n; $('hint').style.display = n ? '' : 'none';
+    if (!S.armed) $('hint').textContent = 'Tap ' + (odd ? 'an animal' : 'a fish') + ' to meet it \u00b7 tap near the surface to feed';
   }
   function picker(on) {
     if (on && !tiles.children.length) A.TANKS.forEach(function (tk) {
@@ -84,7 +89,7 @@
   window.addEventListener('resize', V.layout);
   setTimeout(function () { if (!S.armed) $('hint').classList.add('off'); }, 9000);
   var saved = null; try { saved = localStorage.getItem('aquarium.tank'); } catch (e) { /* storage blocked */ }
-  C.setTank(saved || 'freshwater'); V.layout(); C.load(); hud(); $('note').hidden = S.fish.length > 0; start();
+  C.setTank(saved || 'freshwater'); V.layout(); C.load(); hud(); tidy(); start();
   setInterval(hud, 250); setInterval(C.save, 30000);
   window.addEventListener('pagehide', C.save); document.addEventListener('visibilitychange', function () { if (document.hidden) C.save(); });
 })();

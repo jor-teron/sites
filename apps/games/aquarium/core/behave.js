@@ -29,5 +29,5 @@
   function startle(x, y) {   // empty-water tap: nearby fish dart away for about a second
     var n = 0; S.fish.forEach(function (f) { if (Math.hypot(f.x - x, f.y - y) < 170 * S.U) { f.fleeT = .8 + rnd() * .4; f.fx = x; f.fy = y; f.st = 'flee'; n++; } }); return n;
   }
-  A.behave = { step: step, startle: startle, word: function (f) { return WORD[f.st || 'swim']; } };
+  A.behave = { step: step, startle: startle, word: function (f) { var v = f.sp.verb; return (!f.st || f.st === 'swim') && v ? (typeof v === 'function' ? v(f) : v) : WORD[f.st || 'swim']; } };
 })();

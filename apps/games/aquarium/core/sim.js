@@ -14,7 +14,7 @@
     var W = S.W, H = S.H, U = S.U, src = rnd() < .5; b.x = src ? (rnd() < .5 ? W * .2 : W * .78) + (rnd() - .5) * 10 : rnd() * W; b.y = init ? rnd() * H : sandTop(b.x) - 4;
     b.r = (1.5 + rnd() * 3.5) * U; b.vy = (28 + rnd() * 40) * U * (.6 + b.r / (6 * U)); b.ph = rnd() * 6.3; b.wob = (3 + rnd() * 6) * U;
   }
-  function bounds(f) { return { x0: f.L * .5 + 6, x1: S.W - f.L * .5 - 6, y0: 24 * S.U + f.hh * .5, y1: sandTop(f.x) - f.hh * (f.sp.id === 'pleco' ? .3 : .5) - 5 }; }
+  function bounds(f) { return { x0: f.L * .5 + 6, x1: S.W - f.L * .5 - 6, y0: 24 * S.U + f.hh * .5, y1: sandTop(f.x) - (f.sp.floor ? f.hh * .45 : f.hh * (f.sp.id === 'pleco' ? .3 : .5) + 5) }; }
   function place(f) { var b = bounds(f); f.x = clamp(f.x, b.x0, b.x1); f.y = clamp(f.y, b.y0, Math.max(b.y0, b.y1)); }
   function spawn() {
     var W = S.W, H = S.H, U = S.U;
@@ -49,6 +49,7 @@
     fish.forEach(function (f) {
       var sp = f.sp, u = U, spd = sp.spd * u * (.6 + .4 * f.mood), b = bounds(f), tg = target(f), still, ax = 0, ay = 0, i, g, dx, dy, d, n = 0, mx = 0, my = 0, vx = 0, vy = 0, gx = 0, gy = 0, gn = 0;
       spd *= A.behave.step(f, dt, tg); still = f.st === 'rest' || f.st === 'sleep';
+      if (sp.mode) { A.move[sp.mode](f, b, spd, tg, still, dt); life(f, tg, still, dt, spd); return; }   // AQQ1d: non-fish movers (core/move.js)
       if (sp.id === 'pleco') {   // cruise the sand, pause now and then
         f.tm -= dt; if (f.tm <= 0) { f.mode = f.mode ? 0 : 1; f.tm = f.mode ? 4 + rnd() * 6 : 2 + rnd() * 4; if (f.mode) f.dir = rnd() < .5 ? -1 : 1; }
         if (still) { f.mode = 0; f.tm = Math.max(f.tm, .5); }
@@ -87,19 +88,24 @@
       if (f.y < b.y0) { f.y = b.y0; f.vy = Math.abs(f.vy); } else if (f.y > Math.max(b.y0, b.y1)) { f.y = Math.max(b.y0, b.y1); f.vy = -Math.abs(f.vy); }
       if (Math.abs(f.vx) > .1 * spd) f.face += clamp((f.vx > 0 ? 1 : -1) - f.face, -dt * 5, dt * 5);
       f.pitch += (Math.atan2(f.vy, Math.abs(f.vx) + 1) * (sp.id === 'pleco' ? .1 : .7) - f.pitch) * Math.min(1, dt * 6);
-      f.hunger = Math.min(100, f.hunger + f.hr * dt * (still ? .7 : 1)); f.mood += ((100 - f.hunger) / 100 * .75 + S.wq / 100 * .25 - f.mood) * Math.min(1, dt * .5);
-      if (tg && Math.hypot(tg.x - (f.x + f.face * f.L * .5), tg.y - f.y) < f.L * .25 + 7 * u) { tg.dead = 1; f.hunger = Math.max(0, f.hunger - sp.eat); S.wq -= .25; }
-      f.ph += dt * ((sp.id === 'pleco' && !f.mode) || still ? 1.5 : 4 + 7 * Math.min(1.3, Math.hypot(f.vx, f.vy) / spd));
+      life(f, tg, still, dt, spd);
     });
     care(dt);
     S.bubbles.forEach(function (b) { b.y -= b.vy * dt; b.ph += dt * 3; if (b.y < 26 * U) respawn(b, false); });
   }
 
+  function life(f, tg, still, dt, spd) {   // hunger, mood, eating and animation phase for every animal; non-eaters (jellyfish) never get hungry
+    var sp = f.sp, u = S.U, ex = sp.mode ? f.x : f.x + f.face * f.L * .5, er = sp.mode ? f.L * .4 + 7 * u : f.L * .25 + 7 * u;
+    f.hunger = sp.eat ? Math.min(100, f.hunger + f.hr * dt * (still ? .7 : 1)) : 10; f.mood += ((100 - f.hunger) / 100 * .75 + S.wq / 100 * .25 - f.mood) * Math.min(1, dt * .5);
+    if (tg && Math.hypot(tg.x - ex, tg.y - f.y) < er) { tg.dead = 1; f.hunger = Math.max(0, f.hunger - sp.eat); S.wq -= .25; }
+    f.ph += dt * ((sp.id === 'pleco' && !f.mode) || still ? 1.5 : 4 + 7 * Math.min(1.3, Math.hypot(f.vx, f.vy) / spd));
+  }
+
   // ---- care (AQ1b): food, hunger/mood, water quality, clean ----
   var FOODCOL = ['#e8b04a', '#d96a3a', '#7fb552'], MAXFOOD = 100;
   function target(f) {   // nearest food this fish wants: hungry only; pleco only takes it low down, others skip flakes already on the sand
-    var h = f.hunger, pl = f.sp.id === 'pleco', best = null, bd = (pl ? 420 : 260) * S.U, i, p, d;
-    if (h < (pl ? 20 : 24)) return null;
+    var h = f.hunger, pl = f.sp.id === 'pleco' || f.sp.floor, best = null, bd = (pl ? 420 : 260) * S.U, i, p, d;
+    if (!f.sp.eat || h < (pl ? 20 : 24)) return null;
     for (i = 0; i < food.length; i++) {
       p = food[i]; if (p.dead) continue;
       if (pl ? p.y < S.floorY - 170 * S.U : p.y > sandTop(p.x) - 24 * S.U) continue;
@@ -138,6 +144,7 @@
   function moodWord(f) { return f.hunger > 70 ? 'Very hungry' : f.hunger > 45 ? 'Hungry' : f.mood < .5 ? 'Uneasy' : f.mood > .8 ? 'Happy' : 'Content'; }
 
   // ---- save (AQ1b, per tank since AQQ1c): 'aquarium.save.<tankId>', validated decode, corrupt saves ignored.
+  // Species added or removed since a save (AQQ1d) are tolerated: missing entries start fresh, extra ones are ignored.
   // Migration: with no Freshwater save yet, the pre-AQQ1c 'aquarium.save' is read as the Freshwater save (its extra clownfish entry is ignored).
   // The old key is left untouched (read-only) so going back to an older build still finds it.
   var OLD_KEY = 'aquarium.save', SAVE_VER = 1, key = function () { return OLD_KEY + '.' + S.tank.id; };
@@ -145,7 +152,7 @@
   function decodeSave(d) {
     var num = function (v) { if (typeof v !== 'number' || !isFinite(v)) throw new Error('bad number'); return v; }, h = {};
     if (!d || typeof d !== 'object' || d.v !== SAVE_VER || !d.hunger || typeof d.hunger !== 'object') throw new Error('bad save');
-    S.tank.fish.forEach(function (e) { var a = d.hunger[e[0]]; if (!Array.isArray(a) || a.length !== e[1]) throw new Error('bad fish'); h[e[0]] = a.map(function (v) { return clamp(num(v), 0, 100); }); });
+    S.tank.fish.forEach(function (e) { var a = d.hunger[e[0]]; if (a === undefined) return; if (!Array.isArray(a)) throw new Error('bad fish'); h[e[0]] = a.slice(0, e[1]).map(function (v) { return clamp(num(v), 0, 100); }); });
     return { saved: num(d.saved), wq: clamp(num(d.wq), 0, 100), h: h };
   }
   function writeSave() { try { localStorage.setItem(key(), JSON.stringify(buildSave())); return true; } catch (e) { return false; } }
@@ -155,7 +162,8 @@
     el = clamp(((now || Date.now()) - d.saved) / 1000, 0, 14 * 86400);
     var dh = Math.min(30, el * .03), dw = Math.min(20, el * .006);   // gentle offline drift, capped so a long absence is never punishing
     var wq = S.wq = Math.max(d.wq - dw, Math.min(d.wq, 40));
-    fish.forEach(function (f) { var i = idx[f.sp.id] = (idx[f.sp.id] || 0), h0 = d.h[f.sp.id][i]; idx[f.sp.id]++; f.hunger = Math.min(h0 + dh, Math.max(h0, 75)); f.mood = (100 - f.hunger) / 100 * .75 + wq / 100 * .25; });
+    fish.forEach(function (f) { var i = idx[f.sp.id] = (idx[f.sp.id] || 0), h0 = (d.h[f.sp.id] || [])[i]; idx[f.sp.id]++; if (h0 === undefined) return;   // AQQ1d: animals new to this tank start fresh
+      f.hunger = Math.min(h0 + dh, Math.max(h0, 75)); f.mood = (100 - f.hunger) / 100 * .75 + wq / 100 * .25; });
     return true;
   }
 
