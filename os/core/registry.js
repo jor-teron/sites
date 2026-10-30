@@ -53,3 +53,13 @@ export async function start(id, os) {
   if (typeof mod.start !== 'function') throw new Error(id + ' has no start()');
   return mod.start(os);
 }
+
+// Panel launch: calls the app's open(os) if it has one, else start(os).
+export async function open(id, os) {
+  const app = get(id);
+  if (!app) throw new Error('unknown app: ' + id);
+  const mod = await import(app.url);
+  const fn = mod.open || mod.start;
+  if (typeof fn !== 'function') throw new Error(id + ' has no open() or start()');
+  return fn(os);
+}

@@ -11,21 +11,25 @@ A small browser OS that runs as static files on GitHub Pages. OS1 is the bare co
 - No login.
 
 ## File map
-- `index.html` — plain page; shows the boot status and log, loads `core/boot.js`.
-- `core/boot.js` — boot loader: starts storage, checks a write/read, loads packages, runs autostart apps, logs each step.
+- `index.html` — entry page; loads `core/ui.css` and `core/boot.js`; boot log sits in a small collapsible box (top right).
+- `core/boot.js` — boot loader: starts storage, checks a write/read, loads packages, runs autostart apps, mounts the desktop, logs each step.
 - `core/storage.js` — file helper with folders: `writeFile`, `readFile`, `deleteFile`, `listFiles(dir)`, `mkdir`, `rename`, `exists`, `normalize`.
-- `core/registry.js` — app registry: `register`, `list`, `get`, `loadPackages`, `start(id, os)`.
-- `core/api.js` — builds the `os` object given to apps: `{ storage, registry, log }`.
+- `core/registry.js` — app registry: `register`, `list`, `get`, `loadPackages`, `start(id, os)`, `open(id, os)` (panel launch: `open` or else `start`).
+- `core/api.js` — builds the `os` object given to apps: `{ storage, registry, wm, ui, log }`.
+- `core/desktop.js` — desktop area + bottom panel: app buttons and open-window buttons.
+- `core/wm.js` — tiny window manager: `createWindow({title, width, height})` → `{el, body, close, focus}`; drag, close, focus, clamp.
+- `core/ui.css` — minimal neutral styling (theme comes in OS4).
 - `packages/index.json` — list of package folder names to load.
 - `packages/hello/` — example app (`metadata.json` + `main.js`).
 
 ## How to add an app
 1. Make a folder `packages/<name>/`.
 2. Add `metadata.json` with `id`, `name`, `version`, `main` (e.g. `main.js`), `description`, and `autostart: true` if it should run at boot.
-3. Add the main file exporting `export async function start(os) { ... }`. Use `os.storage`, `os.registry`, `os.log`.
+3. Add the main file exporting `start(os)` (runs at boot if autostart) and/or `open(os)` (runs from the panel; open a window with `os.wm.createWindow`). Use `os.storage`, `os.registry`, `os.wm`, `os.log`.
 4. Add `"<name>"` to `packages/index.json`.
 5. Reload `index.html` and check the boot log. A failing app is logged and does not stop boot.
 
 ## Change log
 2026-10-30 IST: OS1 , bare-minimum core: boot loader, browser storage, app registry, no GUI
 2026-10-30 IST: OS2 , app package loading, hello example app, storage folders + rename
+2026-10-30 IST: OS3 , minimal desktop: panel, window manager, hello opens in a window
