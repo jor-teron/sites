@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<!--
+  File: code-maker.html
+  Project: code-maker (QR1)
+  Purpose: Make QR codes, barcodes and other 2D codes offline. PNG/SVG/copy/share/print. History on this device.
+  Library: vendor/bwip-js-min.js (MIT). No network needed; works from file://.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f6f8">
+  <title>Code Maker QR1</title>
+  <link rel="icon" href="code-maker_icon.png?v=QR1">
+  <link rel="stylesheet" href="code-maker.css?v=QR1">
+</head>
+<body>
+<header class="top">
+  <h1>Code Maker</h1>
+  <button type="button" class="mini" id="themeBtn" title="Theme">Theme: <span id="themeLbl">System</span></button>
+</header>
+<main class="wrap">
+  <section class="card" id="formCard">
+    <label class="lbl">Type
+      <select id="type">
+        <optgroup label="QR code">
+          <option value="text">Text</option><option value="url">Website link</option><option value="wifi">Wi-Fi</option>
+          <option value="vcard">Contact card</option><option value="tel">Phone</option><option value="sms">SMS</option>
+          <option value="email">Email</option><option value="geo">Location</option><option value="event">Calendar event</option>
+          <option value="upi">UPI payment</option>
+        </optgroup>
+        <optgroup label="Barcode">
+          <option value="ean13">EAN-13</option><option value="ean8">EAN-8</option><option value="upca">UPC-A</option>
+          <option value="code128">Code 128</option><option value="code39">Code 39</option><option value="itf14">ITF-14</option>
+          <option value="codabar">Codabar</option>
+        </optgroup>
+        <optgroup label="Other 2D">
+          <option value="datamatrix">Data Matrix</option><option value="pdf417">PDF417</option><option value="aztec">Aztec</option>
+        </optgroup>
+      </select>
+    </label>
+    <div id="fields"></div>
+    <p class="hint" id="hint"></p>
+    <details class="opts" id="opts">
+      <summary>Options</summary>
+      <label class="lbl">Size <input type="range" id="scale" min="1" max="12" value="5"><span id="scaleLbl">5</span></label>
+      <label class="lbl" id="eccRow">Error correction
+        <select id="ecc"><option value="L">L (7%)</option><option value="M" selected>M (15%)</option><option value="Q">Q (25%)</option><option value="H">H (30%)</option></select>
+      </label>
+      <div class="row2">
+        <label class="lbl">Colour <input type="color" id="fg" value="#000000"></label>
+        <label class="lbl">Background <input type="color" id="bg" value="#ffffff"></label>
+      </div>
+      <label class="lbl">Margin <input type="range" id="margin" min="0" max="10" value="4"><span id="marginLbl">4</span></label>
+      <label class="lbl">Label under code <input type="text" id="label" maxlength="60" placeholder="Optional"></label>
+      <div class="lbl" id="logoRow">Centre logo (QR)
+        <span class="logo-btns"><button type="button" class="mini" id="logoBtn">Choose image</button><button type="button" class="mini" id="logoClr" hidden>Remove</button></span>
+        <input type="file" id="logoFile" accept="image/*" hidden>
+      </div>
+    </details>
+  </section>
+
+  <section class="card out" id="outCard">
+    <div class="preview" id="preview"><canvas id="cv" aria-label="Generated code"></canvas><span class="badge" id="badge" hidden>Scans OK</span></div>
+    <p class="err" id="err" hidden></p>
+    <div class="acts">
+      <button type="button" class="btn" id="pngBtn">PNG</button>
+      <button type="button" class="btn" id="svgBtn">SVG</button>
+      <button type="button" class="btn" id="copyBtn">Copy</button>
+      <button type="button" class="btn" id="shareBtn" hidden>Share</button>
+      <button type="button" class="btn" id="printBtn">Print</button>
+      <button type="button" class="btn pri" id="saveBtn">Save</button>
+    </div>
+    <div class="print-row"><label>Copies <input type="number" id="copies" min="1" max="60" value="12"></label></div>
+    <p class="mut" id="toast" aria-live="polite"></p>
+  </section>
+
+  <section class="card" id="histCard">
+    <h2>Recent <button type="button" class="mini" id="histClr">Clear</button></h2>
+    <ul class="hist" id="hist"></ul>
+    <p class="mut" id="histEmpty">Nothing saved yet. Press Save to keep a code here.</p>
+  </section>
+</main>
+<div id="printArea" aria-hidden="true"></div>
+<script src="vendor/bwip-js-min.js?v=QR1"></script>
+<script src="code-maker_types.js?v=QR1"></script>
+<script src="code-maker.js?v=QR1"></script>
+</body>
+</html>
