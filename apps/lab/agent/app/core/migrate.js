@@ -8,7 +8,9 @@ HR.migrate = (function () {
   function copy(store, from, to) { try { var v = store.getItem(from); if (v != null && store.getItem(to) == null) store.setItem(to, v); } catch (e) { /* blocked */ } }
   try {
     if (!localStorage.getItem('agent.migrated')) { copy(localStorage, 'harness.settings', 'agent.settings'); copy(localStorage, 'harness.keys', 'agent.keys'); localStorage.setItem('agent.migrated', 'ag1'); }
-    copy(sessionStorage, 'harness.history', 'agent.history');
+    // copy(sessionStorage, 'harness.history', 'agent.history');   /* pre-AG-F1: ran on every load and never removed harness.history -> a new duplicate chat per reload */
+    /* AG-F1: copy once per tab, then drop the old key so legacy() can't re-import it */
+    if (sessionStorage.getItem('harness.history') != null) { copy(sessionStorage, 'harness.history', 'agent.history'); sessionStorage.removeItem('harness.history'); }
   } catch (e) { /* storage blocked */ }
   function oldRoot() {
     return new Promise(function (ok) {

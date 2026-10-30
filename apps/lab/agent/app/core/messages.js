@@ -9,7 +9,9 @@
 window.HR = window.HR || {};
 HR.msgs = (function () {
   var list = [], RECENT = 6000, LINE = 160, OLDCAP = 1500;
-  function legacy() { try { var l = JSON.parse(sessionStorage.getItem('agent.history') || '[]'); sessionStorage.removeItem('agent.history'); return Array.isArray(l) ? l : []; } catch (e) { return []; } }
+  // function legacy() { try { var l = JSON.parse(sessionStorage.getItem('agent.history') || '[]'); sessionStorage.removeItem('agent.history'); return Array.isArray(l) ? l : []; } catch (e) { return []; } }
+  /* AG-F1: also drop harness.history so a pre-AG1 tab can't be imported again on the next load */
+  function legacy() { try { sessionStorage.removeItem('harness.history'); } catch (e) {} try { var l = JSON.parse(sessionStorage.getItem('agent.history') || '[]'); sessionStorage.removeItem('agent.history'); return Array.isArray(l) ? l : []; } catch (e) { return []; } }
   function save() { if (HR.chats && HR.chats.dirty) HR.chats.dirty(); }
   function add(m) { if (!m.at) m.at = new Date().toISOString().slice(0, 16); list.push(m); save(); return m; }
   function set(l) { list = Array.isArray(l) ? l : []; }
