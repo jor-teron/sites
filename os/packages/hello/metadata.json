@@ -1,0 +1,8 @@
+{
+  "id": "hello",
+  "name": "Hello",
+  "version": "1.0.0",
+  "main": "main.js",
+  "description": "Example app: writes and reads a file at boot.",
+  "autostart": true
+}
