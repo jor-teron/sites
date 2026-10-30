@@ -159,6 +159,7 @@
       $('src-info').textContent = src.w + '\u00d7' + src.h + ' \u2192 makes ' + src.gw + '\u00d7' + src.gh;
       $('size-photo').title = 'Match the start photo (' + src.gw + '\u00d7' + src.gh + ')';
     } else if (P.size === 'photo') { P.size = 'square'; }
+    if (isOn()) { $('src-box').hidden = $('src-note').hidden = $('size-photo').hidden = true; }  /* IG4 fix: no start-photo preview in Online mode */
   }
   const sizeWH = () => (P.size === 'photo' && src ? [src.gw, src.gh] : SIZES[P.size] || SIZES.square);
   $('src-add').onclick = () => $('src-file').click();
