@@ -153,7 +153,14 @@ HR.chats = (function () {
     addEventListener('pagehide', flush); document.addEventListener('visibilitychange', function () { if (document.hidden) flush(); });
     HR.fs.onChange(function (s) { if (s !== 'ready') { refresh(); return; } HR.threads.merge().catch(function () {}).then(function () { if (meta && HR.msgs.all().length) dirty(); refresh(); }); });
     await refresh();
-    if (HR.msgs.all().length) { meta = fresh(); remember(); await flush(); return; }   /* typed before chats loaded */
+    // if (HR.msgs.all().length) { meta = fresh(); remember(); await flush(); return; }   /* typed before chats loaded */
+    /* AG-F4: typed / sent before the chats loaded -> continue the last chat (its turns go above the new ones) instead of a new chat */
+    if (HR.msgs.all().length) {
+      var lastId = localStorage.getItem(KEY), pk = rows.filter(function (r) { return r.id === lastId; })[0] || rows[0], pl = pk && await HR.threads.load(pk.id).catch(function () { return null; });
+      if (pl && pl.length) { var live = HR.msgs.all(); live.unshift.apply(live, pl); meta = Object.assign({}, pk); setBase(pk.id, pk.updated, pl.length); remember(); if (!HR.chat.busy()) HR.chat.render(); draw(); useModel(pk); }
+      else { meta = fresh(); remember(); }
+      await flush(); return;
+    }
     var old = HR.msgs.legacy(), last = localStorage.getItem(KEY);
     // if (old.length) { meta = fresh(); HR.msgs.set(old); show(); await flush(); return; }   /* pre-AG-F1: new random id per load -> duplicates */
     /* AG-F1: the imported chat gets an id from its content (legacyId); already saved -> skip and open the last chat as usual */
