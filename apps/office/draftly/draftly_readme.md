@@ -119,7 +119,7 @@ Works inside the hub and responds to its phone D-pad, but the hub's key presses 
   - `draftly_margins`: old key, removed at start-up
   - `draftly_merge_settings`: Merge tab settings (JSON: `src`, `delim`, `sheet`, `pattern`, `fmt`, `row`)
   - `draftly-ribbon-tab`: last ribbon tab (now may be `merge`)
-- To reset, clear site data for the page. There is no delete button for single documents.
+- To reset, clear site data for the page. A single document is removed with File > Delete document (asks first).
 
 ## 6. Errors
 Messages show briefly at the bottom (2.2 s):
@@ -166,7 +166,7 @@ Messages show briefly at the bottom (2.2 s):
 - DOCX: images must be PNG / JPEG / GIF data (pasted or inserted); webp, svg and remote images are skipped. Floating / positioned content, column layout, fonts not installed on the reader's computer, and line spacing at exact multiples of the editor's are approximations. The combined Merge DOCX has one header / footer for all rows (row fields blank).
 - Paste is plain text only; no images or tables.
 - Times New Roman is used only if installed; otherwise Tinos (same widths).
-- No document delete or rename in the app (saving under a new name makes a copy).
+- Rename (File > Rename, or typing in the name box) moves the document to the new name; it does not make a copy. File > Delete document removes it after a confirm. Known bug DF15-B1: renaming to the name of another saved document replaces that document without a warning.
 - Old version after an update: hard-refresh.
 
 ## 11. Change log
