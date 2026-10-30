@@ -1,5 +1,5 @@
-/* Vision VS1 app: screens, swipes, settings, theme, photo intake, streamed chat about one photo, history.
-   Settings in 'vision-settings-v1': { theme, url, model, mode }. */
+/* Vision VS2 app: screens, swipes, settings, theme, photo intake, streamed chat about one photo, history.
+   Settings in 'vision-settings-v1': { theme, url, model, mode, engine, gmode, gkey }. VS2: engine 'gcv' (Cloud Vision) | 'ollama'. */
 (function () {
   'use strict';
   const SKEY = 'vision-settings-v1', SWIPE = 75, TAP_MOVE = 10, MAXPX = 1024;
@@ -11,7 +11,8 @@
     ask: { label: 'Ask', text: '' },
   };
   const $ = (id) => document.getElementById(id);
-  const P = { theme: 'dark', url: 'http://localhost:11434', model: '', mode: 'describe' };
+  // const P = { theme: 'dark', url: 'http://localhost:11434', model: '', mode: 'describe' };  (VS1)
+  const P = { theme: 'dark', url: 'http://localhost:11434', model: '', mode: 'describe', engine: '', gmode: 'labels', gkey: '' };
   try { Object.assign(P, JSON.parse(localStorage.getItem(SKEY) || '{}')); } catch (_) { /* */ }
   const saveP = () => { try { localStorage.setItem(SKEY, JSON.stringify(P)); } catch (_) { /* */ } };
 
@@ -47,13 +48,31 @@
     if (e.kind === 'empty') return dialog('No answer came back', '<p>' + esc(e.message) + ' Try again, or pick another model in Settings.</p>');
     return dialog('Something went wrong', '<p>' + esc(e.message || e) + '</p>');
   }
+  /* VS2: Cloud Vision errors */
+  function explainG(e) {
+    const inHub = !!VSGcv.hub(), where = inHub ? 'Hub \u203a Settings \u203a API Keys (<code>gvision</code>)' : 'Vision \u203a Settings \u203a Cloud Vision key';
+    const tail = '<p>Fix it in ' + where + '.' + (inHub ? '' : ' Or switch the engine to Ollama.') + '</p>';
+    const T = {
+      nokey: ['No Cloud Vision key', '<p>Add a Google Cloud Vision API key, or switch the engine to Ollama.</p>'],
+      invalid: ['Key not valid', '<p>Google says this is not a valid API key.</p>'],
+      disabled: ['Cloud Vision API not enabled', '<p>The key is fine, but the Cloud Vision API is not enabled in its Google Cloud project.</p>'],
+      billing: ['Billing not enabled', '<p>Cloud Vision needs a billing account on the key\u2019s project (the first ~1,000 units a month per feature are free).</p>'],
+      blocked: ['Key not allowed here', '<p>The key is restricted: allow this site under Application restrictions, and Cloud Vision under API restrictions.</p>'],
+      quota: ['Quota used up', '<p>The Vision quota is used up for now (429). Try later or check quotas in Google Cloud.</p>'],
+      unreachable: ['Can\u2019t reach Cloud Vision', '<p>Could not reach vision.googleapis.com. Check the connection.</p>'],
+    }[e.kind] || ['Cloud Vision error', '<p>' + esc(e.message || e) + '</p>'];
+    const extra = e.message && e.kind !== 'http' && e.kind !== 'nokey' ? '<p class="mut"><i>' + esc(e.message) + '</i></p>' : '';
+    return dialog(T[0], T[1] + extra + tail, inHub).then((ok) => { if (ok && inHub) VSGcv.openHub(); });
+  }
+  const gKey = () => VSGcv.hubKey() || P.gkey || '';
+  const isG = () => P.engine === 'gcv';
   const noVision = () => dialog('No vision model', '<p>This Ollama has no model that can look at pictures.</p>' + PULL + '<p class="mut">Or type a model name under Settings \u2192 Vision model \u2192 Other.</p>');
 
   /* segmented controls */
   function renderSeg() { document.querySelectorAll('.seg').forEach((g) => g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', P[g.dataset.key] === b.dataset.v))); }
   document.querySelectorAll('.seg').forEach((g) => g.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
-    P[g.dataset.key] = b.dataset.v; saveP(); theme(); renderSeg(); renderGo();
+    P[g.dataset.key] = b.dataset.v; saveP(); theme(); renderSeg(); renderEngine(); renderGo();
     if (g.dataset.key === 'mode' && P.mode === 'ask') $('q').focus();
   }));
 
@@ -70,7 +89,37 @@
     sel.value = known ? P.model : CUSTOM;
     $('custom-f').hidden = known; cust.value = known ? '' : P.model;
   }
-  const setModel = (m) => { P.model = m; saveP(); renderModelLabel(); };
+  // const setModel = (m) => { P.model = m; saveP(); renderModelLabel(); };  (VS1)
+  const setModel = (m) => { P.model = m; saveP(); renderModelLabel(); fillMain(); };
+  /* VS2: Ollama model select on the main screen (Settings select stays as is) */
+  const msel = $('model-m');
+  function fillMain() {
+    msel.innerHTML = '';
+    const names = modelList.filter((m) => m.vision !== false).map((m) => m.name);
+    if (P.model && !names.includes(P.model)) names.unshift(P.model);
+    if (!names.length) { const o = document.createElement('option'); o.value = ''; o.textContent = 'none \u2014 open Settings'; msel.appendChild(o); }
+    names.forEach((n) => { const o = document.createElement('option'); o.value = n; o.textContent = n; msel.appendChild(o); });
+    msel.value = P.model || '';
+  }
+  msel.addEventListener('change', () => { if (msel.value) { setModel(msel.value); fillSelect(); } });
+  /* VS2: engine view */
+  function renderEngine() {
+    const g = isG();
+    $('gmode').hidden = !g; $('omode').hidden = g; $('model-mf').hidden = g; $('model-lf').hidden = g;
+    $('priv').textContent = g ? 'Cloud Vision sends the photo to Google (about 1,000 free units a month per feature).' : 'Ollama runs on your own network; the photo stays there.';
+    renderKeyLine();
+  }
+  function renderKeyLine() {
+    const t = $('gkey-t'), hk = VSGcv.hubKey();
+    if (VSGcv.hub()) {
+      t.innerHTML = hk ? 'Using the Hub\u2019s key. <button id="gkey-open" class="btn sm">Open</button>' : 'Not in Hub keys \u2014 the field above is used. <button id="gkey-open" class="btn sm">Add in Hub</button>';
+      $('gkey-open').onclick = () => VSGcv.openHub();
+    } else t.textContent = 'Standalone: the key is kept on this device only.';
+    $('gkey').disabled = !!hk;
+  }
+  const gk = $('gkey'); gk.value = P.gkey || '';
+  gk.addEventListener('change', () => { P.gkey = gk.value.trim(); saveP(); if (!P.engine) pickEngine(); });
+  function pickEngine() { if (!P.engine) { P.engine = gKey() ? 'gcv' : 'ollama'; saveP(); } renderSeg(); renderEngine(); renderGo(); }
   sel.addEventListener('change', () => {
     if (sel.value === CUSTOM) { $('custom-f').hidden = false; cust.focus(); return; }
     $('custom-f').hidden = true; setModel(sel.value);
@@ -84,7 +133,7 @@
       const vis = modelList.filter((m) => m.vision !== false);
       if (!P.model || !modelList.some((m) => m.name === P.model)) { if (vis[0]) setModel(vis[0].name); }
       $('models-t').textContent = modelList.length ? vis.length + ' vision model' + (vis.length === 1 ? '' : 's') + ' of ' + modelList.length + ' installed.' : 'No models installed.';
-      fillSelect();
+      fillSelect(); fillMain();
       if (showErr && !vis.length && !P.model) noVision();
       return true;
     } catch (e) {
@@ -108,7 +157,7 @@
   }
   async function openSession(rec) {
     if (S && S.url) URL.revokeObjectURL(S.url);
-    S = { id: rec.id, img: rec.img, b64: await blobToB64(rec.img), url: URL.createObjectURL(rec.img), messages: rec.messages || [], mode: rec.mode, model: rec.model };
+    S = { id: rec.id, img: rec.img, b64: await blobToB64(rec.img), url: URL.createObjectURL(rec.img), messages: rec.messages || [], mode: rec.mode, model: rec.model, engine: rec.engine || 'ollama' };
     $('photo').src = S.url; $('thumb').src = S.url; $('thumb').hidden = false; $('view').hidden = false; $('empty').hidden = true;
     renderChat(); renderGo(); go(0);
   }
@@ -117,7 +166,8 @@
     if (!file || !/^image\//.test(file.type || 'image/')) { dialog('Not an image', '<p>Pick a photo or picture file.</p>'); return; }
     let img; try { img = await shrink(file); } catch (_) { dialog('Can\u2019t read that image', '<p>This browser could not open it. Try a JPG, PNG or WebP.</p>'); return; }
     await openSession({ id: undefined, img, messages: [] });
-    if (P.mode !== 'ask') run(); else { $('q').focus(); toast('Type your question, then Ask'); }
+    // if (P.mode !== 'ask') run();  (VS1)
+    if (isG() || P.mode !== 'ask') run(); else { $('q').focus(); toast('Type your question, then Ask'); }
   }
   const pfile = $('pfile'), cfile = $('cfile');
   const pick = () => { if (!busyNow()) { pfile.value = ''; pfile.click(); } }, cam = () => { if (!busyNow()) { cfile.value = ''; cfile.click(); } };
@@ -143,13 +193,30 @@
     const c = $('chat'); c.innerHTML = '';
     (S ? S.messages : []).forEach((m) => {
       const d = document.createElement('div'); d.className = 'msg ' + (m.role === 'user' ? 'user' : 'ai');
-      d.textContent = m.role === 'user' ? (m.label || m.content) : m.content; c.appendChild(d);
+      // d.textContent = m.role === 'user' ? (m.label || m.content) : m.content;  (VS1)
+      if (m.role !== 'user' && m.engine === 'gcv') paintG(d, m.content); else d.textContent = m.role === 'user' ? (m.label || m.content) : m.content;
+      c.appendChild(d);
     });
     const has = !!lastAnswer();
     $('copy-btn').disabled = !has; $('txt-btn').disabled = !has; $('new-btn').disabled = !(S && S.messages.length);
   }
+  /* VS2: Cloud Vision text with colour swatches for "\u25a0 #rrggbb" lines */
+  function paintG(d, txt) {
+    txt.split('\n').forEach((ln, i) => {
+      if (i) d.appendChild(document.createTextNode('\n'));
+      const mm = /^\u25a0 (#[0-9a-f]{6})(.*)$/.exec(ln);
+      if (mm) { const s = document.createElement('span'); s.className = 'sw'; s.style.background = mm[1]; d.appendChild(s); d.appendChild(document.createTextNode(mm[1] + mm[2])); }
+      else d.appendChild(document.createTextNode(ln));
+    });
+  }
   function renderGo() {
     const b = $('go-btn'), t = q.value.trim();
+    if (isG()) {
+      q.hidden = true; $('q-note').hidden = false;
+      b.disabled = !S || busyNow(); b.textContent = VSGcv.MODES[P.gmode] ? VSGcv.MODES[P.gmode].label : 'Labels';
+      return;
+    }
+    q.hidden = false; $('q-note').hidden = true;
     b.disabled = !S || busyNow() || (P.mode === 'ask' && !t);
     b.textContent = t ? (S && S.messages.length ? 'Ask follow-up' : 'Ask') : MODES[P.mode].label;
     q.placeholder = S && S.messages.length ? 'Ask a follow-up about the same photo' : (P.mode === 'ask' ? 'Ask a question about the photo' : 'Ask a question about the photo (optional)');
@@ -162,19 +229,38 @@
     if (on) { $('bar').parentNode.classList.add('ind'); $('prog-t').textContent = 'Looking at the photo\u2026'; }
     renderGo(); if (!on) renderChat();
   }
+  /* VS2: one Cloud Vision request per tap; result kept as an assistant message tagged engine 'gcv' */
+  async function runG() {
+    const key = gKey(); if (!key) { explainG({ kind: 'nokey' }); return; }
+    const gm = VSGcv.MODES[P.gmode] ? P.gmode : 'labels';
+    S.messages.push({ role: 'user', content: VSGcv.MODES[gm].label, label: 'Cloud Vision \u00b7 ' + VSGcv.MODES[gm].label, engine: 'gcv' });
+    if (!S.id && S.messages.length === 1) S.mode = 'gcv:' + gm;
+    S.engine = 'gcv'; S.model = 'Google Cloud Vision'; renderChat();
+    ac = new AbortController(); busy(true);
+    try {
+      const r = await VSGcv.annotate({ key, b64: S.b64, mode: gm, signal: ac.signal });
+      S.messages.push({ role: 'assistant', content: r.text || 'Nothing found.', engine: 'gcv' });
+      try { S.id = await VSSave.put({ id: S.id, img: S.img, mode: S.mode, model: S.model, engine: S.engine, messages: S.messages }); renderHistory(); } catch (_) { toast('Could not keep it in history (storage full?)'); }
+    } catch (e) {
+      S.messages.pop();
+      if (e && e.name === 'AbortError') toast('Cancelled'); else explainG(e);
+    } finally { ac = null; busy(false); }
+  }
   async function run() {
     if (!S || busyNow()) return;
+    if (isG()) return runG();
     const t = q.value.trim();
     if (!t && P.mode === 'ask') { q.focus(); return; }
     if (!P.model) {
       if (!(await loadModels(false))) { explain(lastErr || { kind: 'unreachable' }); return; }
       if (!P.model) { noVision(); return; }
     }
-    const first = !S.messages.length;
+    // const first = !S.messages.length;  (VS1)
+    const first = !S.messages.some((m) => m.engine !== 'gcv');  /* VS2: Cloud Vision turns are not sent to Ollama */
     const msg = t ? { role: 'user', content: t } : { role: 'user', content: MODES[P.mode].text, label: MODES[P.mode].label };
     if (first) { msg.first = true; S.mode = t ? 'ask' : P.mode; }
-    S.messages.push(msg); S.model = P.model;
-    const send = S.messages.map((m) => (m.first ? { role: m.role, content: m.content, images: [S.b64] } : { role: m.role, content: m.content }));
+    S.messages.push(msg); S.model = P.model; S.engine = 'ollama';
+    const send = S.messages.filter((m) => m.engine !== 'gcv').map((m) => (m.first ? { role: m.role, content: m.content, images: [S.b64] } : { role: m.role, content: m.content }));
     q.value = ''; renderChat();
     const live = document.createElement('div'); live.className = 'msg ai live'; $('chat').appendChild(live);
     ac = new AbortController(); busy(true);
@@ -182,7 +268,7 @@
       const ans = await VSOllama.chat({ url: P.url, model: P.model, messages: send, signal: ac.signal, first,
         onText: (c, all) => { live.textContent = all.replace(/^\s+/, ''); $('prog-t').textContent = 'Answering\u2026 ' + all.length + ' chars'; live.scrollIntoView({ block: 'nearest' }); } });
       S.messages.push({ role: 'assistant', content: ans });
-      try { S.id = await VSSave.put({ id: S.id, img: S.img, mode: S.mode, model: S.model, messages: S.messages }); renderHistory(); } catch (_) { toast('Could not keep it in history (storage full?)'); }
+      try { S.id = await VSSave.put({ id: S.id, img: S.img, mode: S.mode, model: S.model, engine: S.engine, messages: S.messages }); renderHistory(); } catch (_) { toast('Could not keep it in history (storage full?)'); }
     } catch (e) {
       S.messages.pop(); if (!t) { /* nothing to restore */ } else q.value = t;
       if (e && e.name === 'AbortError') toast('Cancelled'); else explain(e);
@@ -193,7 +279,7 @@
   $('copy-btn').onclick = async () => { const a = lastAnswer(); if (a) toast((await VSSave.copy(a)) ? 'Answer copied' : 'Copy failed'); };
   $('txt-btn').onclick = () => {
     if (!S) return;
-    const txt = S.messages.map((m) => (m.role === 'user' ? '> ' + (m.label || m.content) : m.content)).join('\n\n') + '\n\n(' + S.model + ', Vision VS1)\n';
+    const txt = S.messages.map((m) => (m.role === 'user' ? '> ' + (m.label || m.content) : m.content)).join('\n\n') + '\n\n(' + S.model + ', Vision VS2)\n';
     const first = S.messages.find((m) => m.role === 'assistant');
     const slug = (first ? first.content : 'vision').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'vision';
     VSSave.download(txt, slug + '.txt'); toast('Saved ' + slug + '.txt');
@@ -214,7 +300,9 @@
       const b = document.createElement('div'), u = URL.createObjectURL(r.img); histUrls.push(u);
       b.className = 'hi'; b.tabIndex = 0;
       const ans = (r.messages || []).find((m) => m.role === 'assistant');
-      const mode = r.mode === 'ask' ? 'Ask' : (MODES[r.mode] || MODES.describe).label;
+      // const mode = r.mode === 'ask' ? 'Ask' : (MODES[r.mode] || MODES.describe).label;  (VS1)
+      const gm = /^gcv:/.test(r.mode || '') && VSGcv.MODES[r.mode.slice(4)];
+      const mode = gm ? 'Cloud Vision \u00b7 ' + gm.label : r.mode === 'ask' ? 'Ask' : (MODES[r.mode] || MODES.describe).label;
       const turns = (r.messages || []).filter((m) => m.role === 'user').length;
       b.innerHTML = '<img alt=""><div class="t"></div><div class="m"></div><button class="x" title="Delete">\u00d7</button>';
       b.querySelector('img').src = u; b.querySelector('.t').textContent = ans ? ans.content : '';
@@ -262,9 +350,11 @@
   });
   addEventListener('storage', (e) => {
     if (e.key === 'sites-hub.theme') theme();
-    if (e.key === SKEY) { try { Object.assign(P, JSON.parse(e.newValue || '{}')); } catch (_) { /* */ } theme(); renderSeg(); renderModelLabel(); renderGo(); }
+    if (e.key === SKEY) { try { Object.assign(P, JSON.parse(e.newValue || '{}')); } catch (_) { /* */ } theme(); renderSeg(); renderEngine(); renderModelLabel(); renderGo(); }
   });
 
-  go(0); renderSeg(); renderModelLabel(); fillSelect(); renderChat(); renderGo(); renderHistory(); loadModels(false);
+  // go(0); renderSeg(); renderModelLabel(); fillSelect(); renderChat(); renderGo(); renderHistory(); loadModels(false);  (VS1)
+  go(0); renderSeg(); renderModelLabel(); fillSelect(); fillMain(); renderEngine(); renderChat(); renderGo(); renderHistory(); loadModels(false);
+  VSGcv.loadHub().then(pickEngine); VSGcv.onHubChange(() => { renderKeyLine(); if (!P.engine) pickEngine(); });
   window.VSApp = { go, get screen() { return cur; } };
 })();

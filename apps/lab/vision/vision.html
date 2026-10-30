@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Vision VS1</title>
+  <title>Vision VS2</title>
   <script>/* theme early to avoid flash */try{var p=JSON.parse(localStorage.getItem('vision-settings-v1')||'{}').theme||'dark',h=localStorage.getItem('sites-hub.theme');if(p==='dark'||(p==='system'&&(h?h==='dark':matchMedia('(prefers-color-scheme: dark)').matches)))document.documentElement.classList.add('dark');}catch(e){document.documentElement.classList.add('dark');}</script>
-  <link rel="stylesheet" href="vision.css?v=VS1">
+  <link rel="stylesheet" href="vision.css?v=VS2">
 </head>
 <body>
 <div id="app">
@@ -14,7 +14,7 @@
     <section class="pane" id="pane-look">
       <div class="grid">
         <div class="stage">
-          <div id="empty" class="drop"><p><b>Pick, drop or paste a photo</b><br><span class="mut">A vision model on your own Ollama looks at it — nothing leaves your network</span></p>
+          <div id="empty" class="drop"><p><b>Pick, drop or paste a photo</b><br><span class="mut" id="empty-t">Google Cloud Vision reads labels, text, objects, landmarks, colours and safe-search — the photo goes to Google (about 1,000 free units a month per feature). Or pick Ollama: a vision model on your own network, nothing leaves it.</span></p>
             <div class="row center"><button id="pick-btn2" class="btn acc">Open photo</button><button id="cam-btn2" class="btn">📷 Camera</button></div></div>
           <div id="view" hidden>
             <img id="photo" alt="Your photo">
@@ -23,13 +23,19 @@
         </div>
         <div class="ctl">
           <div class="row top"><button id="pick-btn" class="btn">Open photo</button><button id="cam-btn" class="btn">📷 Camera</button><span class="sp"></span><img id="thumb" alt="" hidden></div>
+          <div class="field"><div class="lbl">Engine</div></div>
+          <div class="seg full" data-key="engine"><button data-v="gcv">Cloud Vision</button><button data-v="ollama">Ollama</button></div>
+          <p id="priv" class="mut small"></p>
+          <div class="field" id="model-mf" hidden><div class="lbl">Model</div><select id="model-m" class="txt" aria-label="Ollama model"></select></div>
           <div class="field"><div class="lbl">Mode</div></div>
-          <div class="seg full" data-key="mode"><button data-v="describe">Describe</button><button data-v="ocr">Read text</button><button data-v="prompt">Image prompt</button><button data-v="ask">Ask</button></div>
+          <div class="seg full gm" id="gmode" data-key="gmode" hidden><button data-v="labels">Labels</button><button data-v="text">Read text</button><button data-v="objects">Objects</button><button data-v="landmarks">Landmarks &amp; logos</button><button data-v="colours">Colours</button><button data-v="safe">Safe search</button><button data-v="all">All</button></div>
+          <div class="seg full" id="omode" data-key="mode"><button data-v="describe">Describe</button><button data-v="ocr">Read text</button><button data-v="prompt">Image prompt</button><button data-v="ask">Ask</button></div>
+          <p id="q-note" class="mut small" hidden>Follow-up questions need Ollama — Cloud Vision gives fixed results, not a chat.</p>
           <textarea id="q" rows="3" placeholder="Ask a question about the photo (optional)" aria-label="Question"></textarea>
           <div id="prog" hidden><div class="bar"><i id="bar"></i></div><div class="row"><span id="prog-t" class="mut"></span><span class="sp"></span><button id="cancel-btn" class="btn">Cancel</button></div></div>
           <button id="go-btn" class="btn acc big" disabled>Describe</button>
           <div class="row"><button id="copy-btn" class="btn" disabled>Copy answer</button><button id="txt-btn" class="btn" disabled title="Save the whole chat as a .txt file">Save .txt</button><span class="sp"></span><button id="new-btn" class="btn" disabled title="Start over with the same photo">Clear chat</button></div>
-          <div class="field"><div class="lbl">Model</div><span id="model-l" class="mut ell"></span></div>
+          <div class="field" id="model-lf"><div class="lbl">Model</div><span id="model-l" class="mut ell"></span></div>
         </div>
       </div>
     </section>
@@ -45,14 +51,17 @@
     <section class="pane" id="pane-set">
       <div class="set">
         <h2>Settings</h2>
+        <div class="field"><div class="lbl">Cloud Vision key</div><input id="gkey" class="txt" type="password" spellcheck="false" autocomplete="off" placeholder="Google Cloud Vision API key"></div>
+        <p id="gkey-t" class="mut small"></p>
         <div class="field"><div class="lbl">Ollama URL</div><input id="url" class="txt" type="url" spellcheck="false" placeholder="http://localhost:11434"></div>
         <div class="field"><div class="lbl">Vision model</div><select id="model-s" class="txt"></select><button id="refresh-btn" class="btn sm" title="Reload models">↻</button></div>
         <div class="field" id="custom-f" hidden><div class="lbl">Model name</div><input id="model-c" class="txt" spellcheck="false" placeholder="llama3.2-vision"></div>
         <p id="models-t" class="mut small"></p>
         <div class="field"><div class="lbl">Theme</div><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
         <h2>About</h2>
-        <p><b>Vision</b> <span class="mut">release VS1</span></p>
-        <p class="mut">Ask a vision model on your own Ollama about a photo: describe it, read its text, turn it into an image-generation prompt, or ask anything — then keep asking follow-ups about the same photo. Photos are shrunk to about 1024 px before sending and kept on this device only.</p>
+        <p><b>Vision</b> <span class="mut">release VS2</span></p>
+        <p class="mut"><b>Cloud Vision</b> (default when a key exists): labels, text (OCR), objects, landmarks &amp; logos, colours and safe-search from Google Cloud Vision. The photo is sent to Google; about 1,000 units a month per feature are free. Key: the Hub's <code>gvision</code> (Settings → API Keys), or the field above when used on its own.</p>
+        <p class="mut"><b>Ollama</b>: ask a vision model on your own Ollama about a photo: describe it, read its text, turn it into an image-generation prompt, or ask anything — then keep asking follow-ups about the same photo. Photos are shrunk to about 1024 px before sending and kept on this device only.</p>
         <p class="mut">Good models: <code>llama3.2-vision</code>, <code>gemma3</code>, <code>qwen2.5vl</code>, <code>llava</code>, <code>minicpm-v</code>. To let this site reach Ollama, start it with <code>OLLAMA_ORIGINS=https://jor-teron.github.io</code>.</p>
         <p class="mut">Swipe left/right or use ←/→ to switch screens. Paste a photo with Ctrl/⌘+V.</p>
       </div>
@@ -64,8 +73,9 @@
 <input type="file" id="cfile" accept="image/*" capture="environment" hidden>
 <div id="dialog" hidden><div class="dbox"><p id="dlg-h" class="dh"></p><div id="dlg-t"></div><div class="row"><span class="sp"></span><button id="dlg-no" class="btn">Cancel</button><button id="dlg-ok" class="btn acc">OK</button></div></div></div>
 <div id="toast" hidden></div>
-<script src="vision_save.js?v=VS1"></script>
-<script src="vision_ollama.js?v=VS1"></script>
-<script src="vision_app.js?v=VS1"></script>
+<script src="vision_save.js?v=VS2"></script>
+<script src="vision_ollama.js?v=VS2"></script>
+<script src="vision_gcv.js?v=VS2"></script>
+<script src="vision_app.js?v=VS2"></script>
 </body>
 </html>
