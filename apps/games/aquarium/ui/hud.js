@@ -1,4 +1,4 @@
-// Aquarium AQQ1a-AQQ1d (from AQ1b): HUD gauges, fish info card, tank picker, tap input, 30 fps frame loop and boot.
+// Aquarium AQQ1a-AQQ1e (from AQ1b): HUD gauges, fish info card, tank picker, tap input, 30 fps frame loop and boot.
 (function () {
   'use strict';
   var A = window.AQ, S = A.st, C = A.core, V = A.view, cv = V.cv, raf = 0, last = 0, slow = 0, nfr = 0;
