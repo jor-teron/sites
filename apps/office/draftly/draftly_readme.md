@@ -21,7 +21,8 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `modules/draftly-marks.js`: ¶ / ↵ format marks overlay
 - `modules/draftly-export.js`: DOCX download, Print, File-menu export buttons, Ctrl+P
 - `modules/draftly-docxgen.js`: MM6 real DOCX writer (editor HTML to WordprocessingML, packed with `draftly-zip.js`)
-- `modules/draftly-pdf.js`: PDF download
+- `modules/draftly-pdf.js`: PDF download (image PDF; since MM4 only the fallback for non-Latin text or errors)
+- `modules/draftly-pdfgen.js`: MM4/DF14 real-text PDF (selectable text, jsPDF standard fonts) and Merge to PDF
 - `modules/draftly-lists.js`: bullet and numbered lists
 - `modules/draftly-view.js`: fit-to-screen scaling, Recent and Page popups
 - `modules/draftly-history.js`: undo / redo
@@ -92,6 +93,11 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - Saved in `draftly_merge_settings`: the file name (and drive path), delimiter, sheet (Excel), file name pattern, export type and row number. The file content is not saved.
 - Try it: open `samples/merge_sample.csv` (copy it to a Hub drive), type or paste `samples/merge_template.txt` into a new document, then Merge → Choose file. `samples/merge_sample.xlsx` has the same customers on a *Customers* sheet (dates, number formats, a formula, a yes/no column) plus an *Orders* sheet, so you can try the sheet dropdown; rebuild it with `python3 samples/make_merge_sample.py` (needs openpyxl and LibreOffice).
 - Not yet: PDF output (Merge exports DOCX only; merged PDF is not available yet), ods / xls / Google Sheets, images or conditions in the template. A placeholder split by formatting (e.g. half bold) is merged but not shaded.
+
+### Merge to PDF (MM4) and real-text PDF (DF14)
+- File > PDF and Merge > Finish > Export PDF write a PDF with real, selectable text (words measured from a hidden copy of the page, drawn with jsPDF Times/Helvetica/Courier), plus borders, table fills, highlights, underline/strike, images, list markers, header and footer (`{page}`, `{pages}`, `{date}`).
+- With merge data loaded, a dialog asks: all rows in one PDF (`<name>-merge.pdf`), one row (`<name>-row<N>.pdf`), or (from File only) the plain template (`<name>.pdf`). Progress bar with Cancel.
+- Limits: standard fonts only (look close, not exact); text outside Latin-1/WinAnsi falls back to the old image PDF (in merge, image slices may cut a line); a table row taller than a page is not split; in merge `{page}`/`{pages}` count per row; highlight is drawn per word. MM7 (header/footer fields in the combined merge DOCX) not done.
 
 ## 4. Keyboard
 - Ctrl/Cmd+S saves (works anywhere on the page)
@@ -164,6 +170,7 @@ Messages show briefly at the bottom (2.2 s):
 - Old version after an update: hard-refresh.
 
 ## 11. Change log
+- 2026-10-30 IST: MM4 Merge to PDF + DF14 real-text PDF (`draftly-pdfgen.js`); old image PDF kept as fallback.
 - 2026-10-23 IST: MM6 real DOCX export: new `draftly-docxgen.js` writes WordprocessingML (all DOCX paths, incl. Merge zip / combined, were blank outside Word before); html-docx kept only as a fallback.
 - 2026-10-23 IST: MM3 Excel (.xlsx) import for Merge: own reader (no library), sheet dropdown (remembered), number and date formats as shown in Excel, live refresh like CSV; `samples/merge_sample.xlsx`.
 - 2026-10-23 IST: MM1 mail merge: Merge ribbon tab, CSV reader, live refresh, preview, Export all (zip / combined DOCX).

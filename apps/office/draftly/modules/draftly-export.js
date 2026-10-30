@@ -209,6 +209,8 @@ Draftly.export.exportDocx = function exportDocx() {
 Draftly.export.bind = function bind() {
   Draftly.ui.onClick('printBtn', function () { Draftly.export.printDocument(); });
   Draftly.ui.onClick('exportDocxBtn', function () { Draftly.export.exportDocx(); });
-  Draftly.ui.onClick('exportPdfBtn', function () { Draftly.pdf.download(); });
+  /* Legacy (before MM4): image PDF only.
+  Draftly.ui.onClick('exportPdfBtn', function () { Draftly.pdf.download(); }); */
+  Draftly.ui.onClick('exportPdfBtn', function () { if (Draftly.pdfgen) Draftly.pdfgen.exportDocument(); else Draftly.pdf.download(); });   /* MM4 / DF14 real-text PDF */
   /* HO1: Ctrl/Cmd+P goes through ../shared/office-quick.js (same printDocument). */
 };
