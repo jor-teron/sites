@@ -127,6 +127,7 @@ window.HUB_APP_INDEX = {
   "files": ["System", "apps/system/files/", "Files", "apps/system/files/files_icon.png", 0, "Browse upload and organise files on Local storage added folders and Google Drive"],
   "disk": ["System", "apps/system/disk/", "Disk", "apps/system/disk/disk_icon.png", 0, "Manage the Hub's drives and storage: add folders and see space used"],
   "viewer": ["System", "apps/system/viewer/", "Viewer", "apps/system/viewer/viewer_icon.png", 0, "View pictures and videos from any Hub drive"],
+  "controller": ["System", "hub/controller/", "D-Pad Controller", "hub/controller/controller_icon.png", 1],   // H72a: restored
   "sysmon": ["System", "apps/system/sysmon/", "System Monitor", "apps/system/sysmon/sysmon_icon.png", 0, "Live device info with CPU memory storage network and battery graphs"],
   "mesh-viewer": ["System", "apps/system/mesh-viewer/", "Mesh Viewer", "apps/system/mesh-viewer/mesh-viewer_icon.png", 0, "See this Hub's mesh network: devices online join stats and a live connection log"],
   "notifications": ["System", "apps/system/notifications/", "Notification Centre", "apps/system/notifications/notifications_icon.png", 0, "Past Hub notifications on this device: filter by app - clear - Do Not Disturb"],
