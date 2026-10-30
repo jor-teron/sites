@@ -14,14 +14,16 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `modules/draftly-config.js`: all sizes, keys, timings and default text
 - `modules/draftly-storage.js`: IndexedDB documents, theme / marks / orientation flags
 - `modules/draftly-ui.js`: messages as cards (`../shared/office-notify.js`), theme, orientation, toolbar active state, click helper, theme / marks buttons
-- `modules/draftly-editor.js`: selection, formatting commands, font, plain-text paste, Enter / Shift+Enter
+- `modules/draftly-editor.js`: selection, formatting commands, font, plain-text paste (`pastePlain`), Enter / Shift+Enter
+- `modules/draftly-paste.js` (DF16): formatted paste - allow-list sanitizer, Word / Google Docs / LibreOffice clean-up, tables, data images, "Paste as text" chip
 - `modules/draftly-pages.js`: page cards and pagination entry points
 - `modules/draftly-flow.js`: flow across pages (push / pull, caret, reflow, joined HTML)
 - `modules/draftly-flow-blocks.js`: block helpers for flow (measure, join, text map, split a block)
 - `modules/draftly-marks.js`: ¶ / ↵ format marks overlay
 - `modules/draftly-export.js`: DOCX download, Print, File-menu export buttons, Ctrl+P
 - `modules/draftly-docxgen.js`: MM6 real DOCX writer (editor HTML to WordprocessingML, packed with `draftly-zip.js`)
-- `modules/draftly-pdf.js`: PDF download
+- `modules/draftly-pdf.js`: PDF download (image PDF; since MM4 only the fallback for non-Latin text or errors)
+- `modules/draftly-pdfgen.js`: MM4/DF14 real-text PDF (selectable text, jsPDF standard fonts) and Merge to PDF
 - `modules/draftly-lists.js`: bullet and numbered lists
 - `modules/draftly-view.js`: fit-to-screen scaling, Recent and Page popups
 - `modules/draftly-history.js`: undo / redo
@@ -58,7 +60,7 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - **¶ button (format marks):** shows ¶ at each paragraph end and ↵ at each line break. They are drawn on an overlay only, so they are never saved, printed or exported and don't change line wrapping. The on/off setting is remembered.
 - **Type:** Times New Roman (machine font), else the built-in Tinos, then Liberation Serif, then serif. Size list 8–36 (default 12 pt). Line height 1.6.
 - **Formatting:** bold, italic, underline, align left / centre / right, lists (• bullet, 1 2 3, a b c, A B C; suffix `.` `,` `)` or none for numbered lists, display only).
-- **Paste:** plain text only.
+- **Paste (DF16):** formatted. Bold, italic, underline, strike, sup/sub, colour, highlight, font size (nearest Draftly size), headings, lists, links, tables and pasted images are kept; everything else is cleaned out. Ctrl+Shift+V pastes plain text, and a **Paste as text** chip appears after a formatted paste.
 - **Saving:**
   - Autosave 0.8 s after typing stops, when closing the tab, and on the Save button or Ctrl/Cmd+S ("Saved <name>").
   - Documents are kept in IndexedDB by the name in the name box, and saving overwrites that name. An empty name box gets `Doc_YYYY_MM_DD_HH-MM`. Typing a new name and saving makes a new document.
@@ -93,6 +95,11 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - Try it: open `samples/merge_sample.csv` (copy it to a Hub drive), type or paste `samples/merge_template.txt` into a new document, then Merge → Choose file. `samples/merge_sample.xlsx` has the same customers on a *Customers* sheet (dates, number formats, a formula, a yes/no column) plus an *Orders* sheet, so you can try the sheet dropdown; rebuild it with `python3 samples/make_merge_sample.py` (needs openpyxl and LibreOffice).
 - Not yet: PDF output (Merge exports DOCX only; merged PDF is not available yet), ods / xls / Google Sheets, images or conditions in the template. A placeholder split by formatting (e.g. half bold) is merged but not shaded.
 
+### Merge to PDF (MM4) and real-text PDF (DF14)
+- File > PDF and Merge > Finish > Export PDF write a PDF with real, selectable text (words measured from a hidden copy of the page, drawn with jsPDF Times/Helvetica/Courier), plus borders, table fills, highlights, underline/strike, images, list markers, header and footer (`{page}`, `{pages}`, `{date}`).
+- With merge data loaded, a dialog asks: all rows in one PDF (`<name>-merge.pdf`), one row (`<name>-row<N>.pdf`), or (from File only) the plain template (`<name>.pdf`). Progress bar with Cancel.
+- Limits: standard fonts only (look close, not exact); text outside Latin-1/WinAnsi falls back to the old image PDF (in merge, image slices may cut a line); a table row taller than a page is not split; in merge `{page}`/`{pages}` count per row; highlight is drawn per word. MM7 (header/footer fields in the combined merge DOCX) not done.
+
 ## 4. Keyboard
 - Ctrl/Cmd+S saves (works anywhere on the page)
 - Ctrl/Cmd+B / I / U: bold, italic, underline (in the text)
@@ -113,7 +120,7 @@ Works inside the hub and responds to its phone D-pad, but the hub's key presses 
   - `draftly_margins`: old key, removed at start-up
   - `draftly_merge_settings`: Merge tab settings (JSON: `src`, `delim`, `sheet`, `pattern`, `fmt`, `row`)
   - `draftly-ribbon-tab`: last ribbon tab (now may be `merge`)
-- To reset, clear site data for the page. There is no delete button for single documents.
+- To reset, clear site data for the page. A single document is removed with File > Delete document (asks first).
 
 ## 6. Errors
 Messages show briefly at the bottom (2.2 s):
@@ -158,12 +165,13 @@ Messages show briefly at the bottom (2.2 s):
 - PDF pages are images: text isn't selectable or searchable, and files are bigger.
 - DOCX is re-paginated by Word, so page breaks may differ from the screen.
 - DOCX: images must be PNG / JPEG / GIF data (pasted or inserted); webp, svg and remote images are skipped. Floating / positioned content, column layout, fonts not installed on the reader's computer, and line spacing at exact multiples of the editor's are approximations. The combined Merge DOCX has one header / footer for all rows (row fields blank).
-- Paste is plain text only; no images or tables.
+- Paste (DF16): remote (http) images are skipped (offline); colspan / rowspan are flattened to plain cells; a table pasted inside a table cell becomes tab-separated lines; fonts (font-family), margins, alignment and line spacing from the source are not kept; HTML over 2 MB is pasted as plain text with a toast; Google Docs 11pt maps to 10pt (nearest Draftly size).
 - Times New Roman is used only if installed; otherwise Tinos (same widths).
-- No document delete or rename in the app (saving under a new name makes a copy).
+- Rename (File > Rename, or typing in the name box) moves the document to the new name; it does not make a copy. File > Delete document removes it after a confirm. Known bug DF15-B1: renaming to the name of another saved document replaces that document without a warning.
 - Old version after an update: hard-refresh.
 
 ## 11. Change log
+- 2026-10-30 IST: MM4 Merge to PDF + DF14 real-text PDF (`draftly-pdfgen.js`); old image PDF kept as fallback.
 - 2026-10-23 IST: MM6 real DOCX export: new `draftly-docxgen.js` writes WordprocessingML (all DOCX paths, incl. Merge zip / combined, were blank outside Word before); html-docx kept only as a fallback.
 - 2026-10-23 IST: MM3 Excel (.xlsx) import for Merge: own reader (no library), sheet dropdown (remembered), number and date formats as shown in Excel, live refresh like CSV; `samples/merge_sample.xlsx`.
 - 2026-10-23 IST: MM1 mail merge: Merge ribbon tab, CSV reader, live refresh, preview, Export all (zip / combined DOCX).
@@ -187,3 +195,13 @@ Messages show briefly at the bottom (2.2 s):
 Shared `../shared/office-tools.css` (tool groups, tool buttons, File menu items) and `office-icons.js` (one SVG icon set via `data-icon`). Both apps use the same Bold/Italic/Underline, Align left/center/right and File menu icons. Spreadsheet: Draftly-style File menu (with Settings) and Alignment buttons instead of the select.
 
 - SH5: Settings opens as a centred pop-up dialog (shared office-settings.*, ?v=2).
+
+## DF16 - Formatted paste (30 Oct 2026)
+
+- New `modules/draftly-paste.js`; `Draftly.editor.onPaste` now calls `Draftly.paste.handle` (legacy plain paste kept as a comment, plain path is `Draftly.editor.pastePlain`, R7 font rule kept).
+- Clipboard HTML is parsed with DOMParser (inert, no scripts run) and rebuilt from an allow-list. Kept: b/strong, i/em, u, s/strike/del, sup, sub, a (http/https/mailto only), h1-h3 (bold 24/18/14pt paragraphs), p, br, ul/ol/li, table/tr/td/th (FT7 table style, th -> bold td), `data:` PNG/JPEG/GIF/WebP images (as `dl-img-block`, resizable). Inline styles kept: color, background-color, font-weight, font-style, text-decoration, font-size.
+- Dropped: script/style/meta/link/iframe/object/svg/form and other embeds, on* attributes, class/id, Word `mso-*` styles and list bullet spans (MsoListParagraph -> real lists), comments / conditional comments, the Google Docs `b#docs-internal-guid` wrapper, LibreOffice font wrappers.
+- Plain text: text/plain only, Ctrl+Shift+V, or HTML over 2 MB (toast). An image-only clipboard (file) goes through `Draftly.image.load` + `insert`.
+- Inside a table cell: no nested tables (rows -> lines, cells -> tabs), block tags become line breaks.
+- One undo step per paste; "Paste as text" chip swaps the paste for plain text, still one step. Pages reflow after paste.
+- Tests: `/tmp/mm4t/df16.js` (32 checks) http + file://.

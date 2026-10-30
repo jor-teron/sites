@@ -1,7 +1,7 @@
 # Sound Recorder
 
 ## 1. What it is
-A microphone recorder built for **long recordings**: the waveform shows where the sound is, silent stretches are shaded, and you can jump from one sound to the next. Four swipe screens: **Recorder** (default), **Recordings**, **Player**, **Settings**. Version 1.0 (releases SR1–SR3; SR4 markers and SR5 speed / skip-silence are planned).
+A microphone recorder built for **long recordings**: the waveform shows where the sound is, silent stretches are shaded, and you can jump from one sound to the next. Four swipe screens: **Recorder** (default), **Recordings**, **Player**, **Settings**. Version 1.0. Release ids are listed in section 6 (SR-F1 fixed a clash where SR1–SR3 were used twice).
 
 ## 2. Files
 - `sound-recorder.html` / `sound-recorder.css`: page, layout, light / dark, safe-area
@@ -36,3 +36,12 @@ A microphone recorder built for **long recordings**: the waveform shows where th
 - Recorder: R or Space record / pause, P pause, S stop
 - Player: Space play / pause, ← / → −10 / +10 s, + / − zoom, N / P next / previous sound
 - Esc closes a dialog, Enter confirms rename
+
+## 6. Releases
+Ids are unique from SR-F1 on. Old commit messages keep their old ids; this list maps them.
+- **SR1–SR3**: first build, version 1.0 (PR #97, 22 Oct 2026).
+- **SR6** (commit `8cf889f`, first labelled "SR1"): no silent audio loss, failed saves download.
+- **SR7** (commit `856ca25`, first labelled "SR2"): storage.persist, IndexedDB v2 meta store, mic errors, player cleanup.
+- **SR8** (commit `cfc71ba`, first labelled "SR3"): System theme default, Hub card notifications.
+- **SR-F1** (30 Oct 2026): this release-id fix; text only, no behaviour change.
+- **Parked**: SR4 markers and SR5 playback speed / skip silence. The 23 Oct review plan first called "SR4–SR7" is renamed **SR9–SR12** so no id repeats; re-read that plan before starting.
