@@ -196,7 +196,8 @@ Files,                 files/,           , , Files, Browse upload and organise f
 Disk,                  disk/,            , , Files, Manage the Hub's drives and storage: add folders and see space used
 Viewer,                viewer/,          , , Files, View pictures and videos from any Hub drive
 # H8: D-Pad Controller hidden until its ../../hub/controller/ link is fixed (opens a wrong folder from the App Hub); uncomment to restore
-# D-Pad Controller,      ../../hub/controller/, ../../hub/controller/controller_icon.png, 1, Hub tools
+# H72a: link fixed in hub.js loadApp (new-tab apps opened from the App Hub resolved against the App Hub's folder); row restored
+D-Pad Controller,      ../../hub/controller/, ../../hub/controller/controller_icon.png, 1, Hub tools
 Settings,              settings/,        , , System, Wallpaper theme taskbar device name and other Hub preferences
 System Monitor,        sysmon/,          , , System, Live device info with CPU memory storage network and battery graphs
 Mesh Viewer,           mesh-viewer/,     , , System, See this Hub's mesh network: devices online join stats and a live connection log

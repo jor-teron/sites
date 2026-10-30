@@ -345,7 +345,8 @@
     }
     if (app.newTab && !opts.forceFrame) {
       setOpen(false);
-      window.open(frameUrlFor(app.entryUrl), '_blank', 'noopener');
+      // window.open(frameUrlFor(app.entryUrl), '_blank', 'noopener');   // before H72a: a relative path was resolved against the CALLING page (e.g. App Hub frame -> apps/system/apphub/hub/controller/)
+      window.open(new URL(frameUrlFor(app.entryUrl), location.href).href, '_blank', 'noopener');   // H72a: always resolve against hub.html
       return;
     }
     const id = appIdFor(app.entryUrl);
