@@ -1,4 +1,4 @@
-// Aquarium AQQ1a (from AQ1b): HUD gauges, fish info card, tap input, frame loop and boot.
+// Aquarium AQQ1a/AQQ1c (from AQ1b): HUD gauges, fish info card, tank picker, tap input, 30 fps frame loop and boot.
 (function () {
   'use strict';
   var A = window.AQ, S = A.st, C = A.core, V = A.view, cv = V.cv, raf = 0, last = 0, slow = 0, nfr = 0;
@@ -49,19 +49,42 @@
   $('close').addEventListener('click', function () { show(null); });
   $('feed').addEventListener('click', function () { C.setArmed(!S.armed); S.armedT = 12; });
   $('clean').addEventListener('click', C.clean);
-  window.addEventListener('keydown', function (e) { if (e.key === 'Escape') show(null); });
+  window.addEventListener('keydown', function (e) { if (e.key === 'Escape') { show(null); picker(false); } });
+
+  // ---- tank picker (AQQ1c): one code-drawn preview tile per tank; the choice is kept in 'aquarium.tank' ----
+  var pk = $('picker'), tiles = $('tiles');
+  function useTank(id) {
+    show(null); C.setTank(id); V.layout(); hud();
+    $('note').hidden = S.fish.length > 0;   // tanks without animals yet just show their scenery
+  }
+  function picker(on) {
+    if (on && !tiles.children.length) A.TANKS.forEach(function (tk) {
+      var b = document.createElement('button'), lab = document.createElement('span'); b.type = 'button'; b.dataset.tank = tk.id;
+      b.appendChild(V.preview(tk, 120, 84)); lab.textContent = tk.name; b.appendChild(lab); tiles.appendChild(b);
+      b.addEventListener('click', function () { picker(false); if (tk !== S.tank) { useTank(tk.id); } });
+    });
+    if (on) { show(null); [].forEach.call(tiles.children, function (b) { b.classList.toggle('on', b.dataset.tank === S.tank.id); }); }
+    pk.hidden = !on;
+  }
+  $('tank').addEventListener('click', function () { picker(pk.hidden); });
+  pk.addEventListener('click', function (e) { if (e.target === pk) picker(false); });
+  A.ui.picker = picker;
 
   // ---- loop ----
+  var FPS = 30;
   function frame(ts) {
-    raf = requestAnimationFrame(frame); var dt = Math.min(.05, (ts - last) / 1000); last = ts;
+    raf = requestAnimationFrame(frame);
+    if (ts - last < 1000 / FPS - 2) return;   // GUIDE rule 2: skip display frames until the next 1/30 s slot
+    var ms = ts - last, dt = Math.min(.05, ms / 1000); last = ts;
     C.update(dt); V.draw();
-    if (V.maxDpr() > 1.25 && ++nfr > 20) { slow += dt > .03 ? 1 : 0; if (nfr > 120) { if (slow > 80) { V.maxDpr(1.25); V.layout(); } nfr = -1e9; } }   // one-off quality drop on very slow devices
+    if (V.maxDpr() > 1.25 && ++nfr > 20) { slow += ms > 50 ? 1 : 0; if (nfr > 120) { if (slow > 80) { V.maxDpr(1.25); V.layout(); } nfr = -1e9; } }   // one-off quality drop on very slow devices
   }
   function start() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } }
   document.addEventListener('visibilitychange', function () { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else start(); });
   window.addEventListener('resize', V.layout);
   setTimeout(function () { if (!S.armed) $('hint').classList.add('off'); }, 9000);
-  V.layout(); C.load(); hud(); start();
+  var saved = null; try { saved = localStorage.getItem('aquarium.tank'); } catch (e) { /* storage blocked */ }
+  C.setTank(saved || 'freshwater'); V.layout(); C.load(); hud(); $('note').hidden = S.fish.length > 0; start();
   setInterval(hud, 250); setInterval(C.save, 30000);
   window.addEventListener('pagehide', C.save); document.addEventListener('visibilitychange', function () { if (document.hidden) C.save(); });
 })();

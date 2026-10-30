@@ -9,7 +9,7 @@
     c.strokeStyle = 'rgba(235,235,225,.85)'; c.lineWidth = .025 * L; c.lineCap = 'round'; c.beginPath();
     c.moveTo(.14 * L, .3 * h); c.quadraticCurveTo(.1 * L, h * 1.1, -.02 * L, h * 1.45); c.stroke();
   }
-  window.AQ.registerSpecies({ id: 'angelfish', name: 'Angelfish', sci: 'Pterophyllum scalare', n: 3, L: 54, H: .95, spd: 38, z: 2, band: [.35, .7], amp: .045, school: 1, R: 150,
+  window.AQ.registerSpecies({ id: 'angelfish', name: 'Angelfish', sci: 'Pterophyllum scalare', L: 54, H: .95, spd: 38, z: 2, band: [.35, .7], amp: .045, school: 1, R: 150,
       top: '#f0e9c8', bot: '#fffbe8', pat: patAngel, extra: streamers, eye: [.34, -.12, .045],
       tail: { tl: .3, ts: .55, fork: .3, col: 'rgba(235,230,200,.55)' }, dorsal: { x1: .12, xa: -.14, x2: -.26, dh: 1.0, col: 'rgba(235,230,200,.7)' }, anal: { x1: .06, xa: -.16, x2: -.26, dh: .95, col: 'rgba(235,230,200,.7)' },
       desc: 'Angelfish are tall, thin cichlids from the slow, weedy rivers of the Amazon basin. Their dark stripes blend with plant stems, and pairs guard their eggs on a broad leaf.',
