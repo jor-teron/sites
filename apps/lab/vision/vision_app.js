@@ -1,4 +1,4 @@
-/* Vision VS2 app: screens, swipes, settings, theme, photo intake, streamed chat about one photo, history.
+/* Vision VS2 + VI-F1 app: screens, swipes, settings, theme, photo intake, streamed chat about one photo, history.
    Settings in 'vision-settings-v1': { theme, url, model, mode, engine, gmode, gkey }. VS2: engine 'gcv' (Cloud Vision) | 'ollama'. */
 (function () {
   'use strict';
@@ -170,7 +170,48 @@
     if (isG() || P.mode !== 'ask') run(); else { $('q').focus(); toast('Type your question, then Ask'); }
   }
   const pfile = $('pfile'), cfile = $('cfile');
-  const pick = () => { if (!busyNow()) { pfile.value = ''; pfile.click(); } }, cam = () => { if (!busyNow()) { cfile.value = ''; cfile.click(); } };
+  // const pick = () => { if (!busyNow()) { pfile.value = ''; pfile.click(); } }, cam = () => { if (!busyNow()) { cfile.value = ''; cfile.click(); } };  (VS1)
+  const pick = () => { if (!busyNow()) { pfile.value = ''; pfile.click(); } };
+  const camFile = () => { cfile.value = ''; cfile.click(); };
+  /* VI-F1: live camera (getUserMedia) with Capture / Switch / Cancel; falls back to the capture file input */
+  const camV = $('cam-v');
+  let camStream = null, camFacing = 'environment', camIds = [], camIdx = -1;
+  const camOk = () => !!(window.isSecureContext && navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  function camStop() { if (camStream) camStream.getTracks().forEach((t) => t.stop()); camStream = null; camV.srcObject = null; }
+  function camClose() { camStop(); $('cam').hidden = true; }
+  async function camStart() {
+    camStop();
+    const video = camIdx >= 0 && camIds[camIdx] ? { deviceId: { exact: camIds[camIdx] } } : { facingMode: camFacing };
+    camStream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+    camV.srcObject = camStream; try { await camV.play(); } catch (_) { /* autoplay */ }
+    try { camIds = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'videoinput').map((d) => d.deviceId); } catch (_) { camIds = []; }
+    $('cam-sw').hidden = camIds.length < 2;
+  }
+  async function cam() {
+    if (busyNow()) return;
+    if (!camOk()) { camFile(); return; }
+    $('cam').hidden = false;
+    try { await camStart(); }
+    catch (e) {
+      camClose();
+      const n = e && e.name;
+      toast(n === 'NotAllowedError' || n === 'SecurityError' ? 'Camera not allowed \u2014 opening the photo picker' : n === 'NotFoundError' || n === 'OverconstrainedError' ? 'No camera found \u2014 opening the photo picker' : 'Camera unavailable \u2014 opening the photo picker');
+      camFile();
+    }
+  }
+  $('cam-no').onclick = camClose;
+  $('cam-sw').onclick = async () => {
+    if (camIds.length > 1) { const curId = camStream && camStream.getVideoTracks()[0] && camStream.getVideoTracks()[0].getSettings().deviceId; camIdx = (Math.max(0, camIds.indexOf(curId)) + 1) % camIds.length; }
+    else { camFacing = camFacing === 'environment' ? 'user' : 'environment'; camIdx = -1; }
+    try { await camStart(); } catch (_) { toast('Could not switch camera'); camIdx = -1; try { await camStart(); } catch (_e) { camClose(); } }
+  };
+  $('cam-shot').onclick = () => {
+    const w = camV.videoWidth, h = camV.videoHeight; if (!w || !h) return;
+    const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(camV, 0, 0, w, h);
+    c.toBlob((b) => { camClose(); if (b) takePhoto(new File([b], 'camera.jpg', { type: 'image/jpeg' })); }, 'image/jpeg', 0.92);
+  };
+  addEventListener('keydown', (e) => { if (!$('cam').hidden) { e.stopImmediatePropagation(); if (e.key === 'Escape') camClose(); else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('cam-shot').click(); } } }, true);
+  addEventListener('pagehide', camStop);
   $('pick-btn').onclick = $('pick-btn2').onclick = pick; $('cam-btn').onclick = $('cam-btn2').onclick = cam;
   pfile.addEventListener('change', () => takePhoto(pfile.files[0]));
   cfile.addEventListener('change', () => takePhoto(cfile.files[0]));
@@ -321,7 +362,7 @@
   let cur = 0;
   function place(dx) { track.style.transform = 'translateX(calc(' + (-cur * 100) + '% + ' + dx + 'px))'; }
   function go(i) { cur = (i + N) % N; place(0); dots.forEach((d, k) => d.classList.toggle('on', k === cur)); }
-  const noSwipe = (el) => el.closest && el.closest('input, textarea, select, .noswipe, .seg, button, #dialog');
+  const noSwipe = (el) => el.closest && el.closest('input, textarea, select, .noswipe, .seg, button, #dialog, #cam');
   let g = null;
   app.addEventListener('pointerdown', (e) => {
     if (!$('dialog').hidden || (e.pointerType === 'mouse' && e.button !== 0) || noSwipe(e.target)) { g = null; return; }

@@ -1,4 +1,4 @@
-# Vision (VS2)
+# Vision (VI-F1)
 
 Ask a vision model on your own Ollama about a photo. Lab → Tools.
 
@@ -22,3 +22,7 @@ Ollama: start with `OLLAMA_ORIGINS=https://jor-teron.github.io` so the site can 
 - Results are plain text in the answer bubble, so Copy, Save .txt and Recent work as before; history records `engine`, and mode `gcv:<mode>`.
 - Follow-up box is hidden for Cloud Vision (fixed results, not a chat); Cloud Vision turns are not sent to Ollama if you switch engines. Main-screen Ollama model select appears when engine = Ollama (Settings model UI unchanged).
 - Privacy: Cloud Vision sends the photo to Google (about 1,000 free units a month per feature); Ollama stays on your network.
+
+## VI-F1 — live camera
+- 📷 Camera opens a full-screen in-app camera (`getUserMedia({video:{facingMode:'environment'}})`): Capture (canvas → JPEG 0.92 → same `takePhoto` flow as Open photo), Switch (cycles `enumerateDevices` video inputs, else toggles front/back; hidden with one camera), Cancel / Esc (Enter = Capture). All tracks are stopped on close, after capture and on pagehide.
+- Fallback to the old `capture=environment` file input when `mediaDevices` is missing or the page is not a secure context (file://), or on NotAllowed / NotFound / other errors (short toast first).

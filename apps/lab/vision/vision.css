@@ -77,3 +77,9 @@ code{background:var(--line);padding:0 4px;border-radius:4px;font-size:12px;word-
 .seg.gm{flex-wrap:wrap}.seg.gm button{flex:1 0 30%}
 .small{font-size:12px;margin:2px 0}
 .sw{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid var(--line);vertical-align:-2px;margin-right:4px}
+
+/* VI-F1 live camera */
+#cam{position:fixed;inset:0;z-index:12;background:var(--bg);display:flex;flex-direction:column}
+#cam[hidden]{display:none}
+#cam video{flex:1;min-height:0;width:100%;object-fit:contain;background:#000}
+#cam .cam-bar{padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line)}
