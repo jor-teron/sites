@@ -54,7 +54,7 @@
     })(x, y, -1.5708 + (r() - .5) * .3, s * .35, s * .12, 0);
   }
   function build() {
-    var o = scene(S.tank, W, H, dpr, U); bg = o.bg; fg = o.fg; plants = o.plants; rays = o.rays; specks = o.specks; S.plantX = o.spots;
+    var o = scene(S.tank, W, H, dpr, U); bg = o.bg; fg = o.fg; plants = o.plants; rays = o.rays; specks = o.specks; S.plantX = o.spots; S.rockX = [W * .09, W * .86, W * .6];   // AQQ1d: front rocks = eel dens
     var bubbles = S.bubbles; bubbles.length = 0; for (var i = 0; i < S.tank.bubbles; i++) { bubbles.push({}); C.respawn(bubbles[i], true); }
   }
   function preview(tk, w, h) {   // picker tile: the same scene, small and still
@@ -80,10 +80,10 @@
   function drawFish(f) {   // hungry / unhappy fish are drawn paler and a little see-through
     var p = clamp((.8 - f.mood) / .6, 0, 1);
     var k = f.st === 'sleep' ? .65 : 1;   // sleepers are drawn dimmer
-    if (p < .04) { cx.globalAlpha = k; A.render(cx, f.sp, f.L, f.ph); cx.globalAlpha = 1; return; }
+    if (p < .04) { cx.globalAlpha = k; A.render(cx, f.sp, f.L, f.ph, f); cx.globalAlpha = 1; return; }
     var sw = f.L * 2.4, sh = Math.max(sw, f.hh * 3.8), g = scratch.getContext('2d');
     scratch.width = Math.ceil(sw * dpr); scratch.height = Math.ceil(sh * dpr); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.translate(sw / 2, sh / 2);
-    A.render(g, f.sp, f.L, f.ph); g.globalCompositeOperation = 'source-atop'; g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = 'rgba(150,180,196,' + .6 * p + ')'; g.fillRect(0, 0, scratch.width, scratch.height);
+    A.render(g, f.sp, f.L, f.ph, f); g.globalCompositeOperation = 'source-atop'; g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = 'rgba(150,180,196,' + .6 * p + ')'; g.fillRect(0, 0, scratch.width, scratch.height);
     cx.globalAlpha = k * (1 - .3 * p); cx.drawImage(scratch, -sw / 2, -sh / 2, sw, sh); cx.globalAlpha = 1;
   }
   function draw() {
