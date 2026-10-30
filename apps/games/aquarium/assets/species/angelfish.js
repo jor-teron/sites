@@ -14,5 +14,6 @@
       tail: { tl: .3, ts: .55, fork: .3, col: 'rgba(235,230,200,.55)' }, dorsal: { x1: .12, xa: -.14, x2: -.26, dh: 1.0, col: 'rgba(235,230,200,.7)' }, anal: { x1: .06, xa: -.16, x2: -.26, dh: .95, col: 'rgba(235,230,200,.7)' },
       desc: 'Angelfish are tall, thin cichlids from the slow, weedy rivers of the Amazon basin. Their dark stripes blend with plant stems, and pairs guard their eggs on a broad leaf.',
       facts: ['They reach about 15 cm long and 20 cm tall, fins included.', 'Wild angelfish live in Amazon, Orinoco and Essequibo waters.', 'A well-kept angelfish can live around 10 years.'],
-      eat: 14 });
+      eat: 14,
+      rest: { chance: .35, where: 'plant' }, sleep: { chance: .1 }, flee: { speed: 2 } });
 })();

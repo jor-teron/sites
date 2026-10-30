@@ -11,5 +11,6 @@
       tail: { tl: .3, ts: .3, fork: .3, col: 'rgba(210,235,245,.6)' }, dorsal: { x1: .08, xa: -.05, x2: -.16, dh: .3, col: 'rgba(210,235,245,.7)' }, anal: { x1: -.04, xa: -.14, x2: -.22, dh: .2, col: 'rgba(235,90,100,.7)' },
       desc: 'Neon tetras are tiny schooling fish from the blackwater streams of the upper Amazon. Their glowing blue stripe helps the group stay together in dim water.',
       facts: ['They grow to only about 3-4 cm.', 'The blue stripe is structural colour, made by light-reflecting crystals in the skin.', 'They feel safest in a school of six or more.'],
-      eat: 8 });
+      eat: 8,
+      rest: { chance: .08, where: 'sand' }, sleep: { chance: .06 }, flee: { speed: 2.8 } });
 })();

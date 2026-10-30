@@ -38,6 +38,7 @@
       for (var k = 0, m = 2 + (r() * 3 | 0); k < m; k++) bl.push({ dx: (k - m / 2) * 7 * U + r() * 4, h: (.14 + r() * .26) * H * (near ? .6 : 1), ph: r() * 6.3, sp: .8 + r() * .7, col: 'hsl(' + (105 + r() * 45) + ',55%,' + (26 + r() * 14) + '%)' });
       plants.push({ x: px, near: near, bl: bl });
     }
+    S.plantX = plants.map(function (p) { return p.x; });
     rays = []; for (i = 0, n = clamp(W / 150 | 0, 4, 9); i < n; i++) rays.push({ x: r() * W * 1.1 - W * .05, w: (20 + r() * 50) * U, sl: (.15 + r() * .3) * (r() < .5 ? -1 : 1) * H, sp: .4 + r() * .8, ph: r() * 6.3 });
     var bubbles = S.bubbles; bubbles.length = 0; for (i = 0; i < 28; i++) { bubbles.push({}); C.respawn(bubbles[i], true); }
   }
@@ -59,11 +60,12 @@
   }
   function drawFish(f) {   // hungry / unhappy fish are drawn paler and a little see-through
     var p = clamp((.8 - f.mood) / .6, 0, 1);
-    if (p < .04) { A.render(cx, f.sp, f.L, f.ph); return; }
+    var k = f.st === 'sleep' ? .65 : 1;   // sleepers are drawn dimmer
+    if (p < .04) { cx.globalAlpha = k; A.render(cx, f.sp, f.L, f.ph); cx.globalAlpha = 1; return; }
     var sw = f.L * 2.4, sh = Math.max(sw, f.hh * 3.8), g = scratch.getContext('2d');
     scratch.width = Math.ceil(sw * dpr); scratch.height = Math.ceil(sh * dpr); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.translate(sw / 2, sh / 2);
     A.render(g, f.sp, f.L, f.ph); g.globalCompositeOperation = 'source-atop'; g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = 'rgba(150,180,196,' + .6 * p + ')'; g.fillRect(0, 0, scratch.width, scratch.height);
-    cx.globalAlpha = 1 - .3 * p; cx.drawImage(scratch, -sw / 2, -sh / 2, sw, sh); cx.globalAlpha = 1;
+    cx.globalAlpha = k * (1 - .3 * p); cx.drawImage(scratch, -sw / 2, -sh / 2, sw, sh); cx.globalAlpha = 1;
   }
   function draw() {
     var sel = S.sel, wq = S.wq, cleanT = S.cleanT, fish = S.fish; t = S.t;

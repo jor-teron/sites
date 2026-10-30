@@ -11,5 +11,6 @@
       tail: { tl: .6, ts: .65, fork: .1, col: 'rgba(255,90,60,.85)' }, dorsal: { x1: .1, xa: -.1, x2: -.2, dh: .5, col: 'rgba(80,140,255,.85)' }, anal: { x1: -.06, xa: -.14, x2: -.22, dh: .2, col: 'rgba(255,170,60,.8)' },
       desc: 'Guppies come from northeastern South America and the nearby islands. Males wear flashy fan tails to impress the larger, plainer females, and the young are born alive and swimming.',
       facts: ['They are livebearers, not egg-layers.', 'Females reach about 6 cm, males only about 3 cm.', 'They are nicknamed "million fish" because they breed so freely.'],
-      eat: 10 });
+      eat: 10,
+      rest: { chance: .12, where: 'plant' }, sleep: { chance: .06 }, flee: { speed: 2.6 } });
 })();
