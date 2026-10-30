@@ -60,10 +60,12 @@ HR.threads = (function () {
   /* AG-F6: union of two chats in original order: folder list first; each browser-only message goes right after
      the last message both had before it. -> {list, added: browser-only count} */
   function combine(a, b) {
-    var out = a.slice(), ok = keys(a), has = {}, pos = -1, added = 0, bk = keys(b);
-    ok.forEach(function (k) { has[k] = 1; });
+    var out = a.slice(), ok = keys(a), has = {}, pos = -1, added = 0, bk = keys(b), inb = {};
+    ok.forEach(function (k) { has[k] = 1; }); bk.forEach(function (k) { inb[k] = 1; });
     for (var i = 0; i < b.length; i++) {
       if (has[bk[i]]) { pos = ok.indexOf(bk[i]); continue; }
+      /* AG-F6 fix: skip past folder-only messages that are not later than this one, so the result keeps time order */
+      while (pos + 1 < out.length && !inb[ok[pos + 1]] && out[pos + 1].at && b[i].at && String(out[pos + 1].at) <= String(b[i].at)) pos++;
       out.splice(pos + 1, 0, b[i]); ok.splice(pos + 1, 0, bk[i]); has[bk[i]] = 1; pos++; added++;
     }
     return { list: out, added: added };
