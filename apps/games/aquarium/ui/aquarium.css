@@ -31,3 +31,16 @@ html, body { margin: 0; height: 100%; background: #0a2f57; color: #e6f4fb; overf
   #card h2 { font-size: 16px; } #c-desc { font-size: 12.5px; margin-bottom: 6px; } #c-facts { font-size: 12px; }
   #card:not([hidden]) ~ #hint { display: none; }
 }
+/* AQQ1c: Tank picker, empty-tank note, in-hub. The HUD Tank button stays in the hub too (the hub header also gets a Tank button). */
+#hud { width: 236px; }
+#note { position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); padding: 8px 16px; border-radius: 18px; background: rgba(0, 20, 40, .45); color: rgba(255, 255, 255, .8); font-size: 14px; pointer-events: none; }
+#picker { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 10, 25, .55); z-index: 5; }
+#picker[hidden] { display: none; }
+#picker .box { background: rgba(6, 28, 52, .92); border: 1px solid rgba(160, 220, 240, .45); border-radius: 16px; padding: 12px 14px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); overflow: auto; }
+#picker h2 { margin: 0 0 10px; font-size: 15px; color: #fff; text-align: center; }
+#tiles { display: grid; grid-template-columns: repeat(2, 128px); gap: 10px; }
+@media (min-width: 600px) { #tiles { grid-template-columns: repeat(4, 128px); } }
+#tiles button { padding: 3px; border: 2px solid transparent; border-radius: 10px; background: rgba(255, 255, 255, .06); color: #fff; font: inherit; font-size: 13px; cursor: pointer; }
+#tiles button.on { border-color: #ffd890; }
+#tiles canvas { display: block; width: 120px; height: 84px; border-radius: 7px; }
+#tiles span { display: block; padding: 4px 0 2px; }

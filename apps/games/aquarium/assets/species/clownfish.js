@@ -8,7 +8,7 @@
     });
   }
   function patClown(c, L, h) { bands(c, L, h, [[.24, .1, '#fff'], [-.02, .13, '#fff'], [-.3, .07, '#fff']], true); }
-  window.AQ.registerSpecies({ id: 'clownfish', name: 'Clownfish', sci: 'Amphiprion ocellaris', n: 3, L: 42, H: .4, spd: 46, z: 3, band: [.5, .85], amp: .06, school: 1, R: 120,
+  window.AQ.registerSpecies({ id: 'clownfish', name: 'Clownfish', sci: 'Amphiprion ocellaris', L: 42, H: .4, spd: 46, z: 3, band: [.5, .85], amp: .06, school: 1, R: 120,
       top: '#ff8a1c', bot: '#ff6a0e', pat: patClown, eye: [.36, -.08, .05],
       tail: { tl: .24, ts: .4, fork: 0, col: '#ff7a14', edge: 1 }, dorsal: { x1: .15, xa: -.05, x2: -.25, dh: .3, col: '#ff7a14', edge: 1 }, anal: { x1: -.1, xa: -.18, x2: -.26, dh: .22, col: '#ff7a14', edge: 1 },
       desc: 'Clownfish live among the stinging tentacles of sea anemones, protected by a mucus coat. Here they swim free in a fantasy tank, a sea fish among river fish.',
