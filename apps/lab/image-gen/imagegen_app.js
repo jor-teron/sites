@@ -1,13 +1,15 @@
-/* Image Gen IG3 app: screens, swipes, settings, theme, generate flow (text or start photo), gallery,
+/* Image Gen IG4 app: screens, swipes, settings, theme, generate flow (text or start photo), gallery,
    upscale 2×, compare slider, Send to Gallery.
-   Settings in 'imagegen-settings-v1': { theme, url, model, size, steps, prompt, sharpen }. */
+   Settings in 'imagegen-settings-v1': { theme, url, model, size, steps, prompt, sharpen, engine, seed }. IG4: engine 'ollama' | 'online' (Pollinations). */
 (function () {
   'use strict';
   const SKEY = 'imagegen-settings-v1', SWIPE = 75, TAP_MOVE = 10;
   const SIZES = { square: [1024, 1024], portrait: [768, 1024], landscape: [1024, 768] };
   const ORIGIN = 'https://jor-teron.github.io';
   const $ = (id) => document.getElementById(id);
-  const P = { theme: 'dark', url: 'http://localhost:11434', model: '', size: 'square', steps: 8, prompt: '', sharpen: 'on' };
+  // const P = { theme: 'dark', url: 'http://localhost:11434', model: '', size: 'square', steps: 8, prompt: '', sharpen: 'on' };  (IG3)
+  const P = { theme: 'dark', url: 'http://localhost:11434', model: '', size: 'square', steps: 8, prompt: '', sharpen: 'on', engine: 'ollama', seed: '' };
+  const isOn = () => P.engine === 'online';
   const IGNORED = 0.3; /* grey-correlation below this = the result does not look like the start photo */
   try { Object.assign(P, JSON.parse(localStorage.getItem(SKEY) || '{}')); } catch (_) { /* */ }
   const saveP = () => { try { localStorage.setItem(SKEY, JSON.stringify(P)); } catch (_) { /* */ } };
@@ -49,12 +51,27 @@
     if (e.kind === 'noimage') return dialog('No image came back', '<p>' + esc(e.message) + '</p><p>Image models: <code>x/z-image-turbo</code>, <code>x/flux2-klein</code>.</p>');
     return dialog('Something went wrong', '<p>' + esc(e.message || e) + '</p>');
   }
+  /* IG4: online (Pollinations) errors */
+  function explainOn(e) {
+    if (e.kind === 'limit') return dialog('Free limit reached', '<p>Pollinations allows one free image at a time, at least 45 s apart, per network. Try again in about ' + (+e.retry || 45) + ' s.</p>');
+    if (e.kind === 'unreachable') return dialog('Can\u2019t reach Pollinations', '<p>Could not reach <code>image.pollinations.ai</code>. Check the connection, or switch the engine to Ollama.</p>');
+    if (e.kind === 'refused') return dialog('Prompt refused', '<p>Pollinations refused this prompt (safety filter).</p><p class="mut"><i>' + esc(e.message) + '</i></p>');
+    return dialog('Online generator error', '<p>' + esc(e.message || e) + '</p><p class="mut">The free service is best effort; try again later or use Ollama.</p>');
+  }
+  /* IG4: engine view — start photo + steps are Ollama only */
+  function renderEngine() {
+    const on = isOn();
+    $('online-note').hidden = !on; $('seed-f').hidden = !on; $('steps-f').hidden = on; $('src-f').hidden = on; $('model-lf').hidden = on;
+    if (on) { $('src-box').hidden = $('src-note').hidden = true; } else renderSrc();
+    $('size-photo').hidden = on || !src;
+  }
 
   /* segmented controls */
   function renderSeg() { document.querySelectorAll('.seg').forEach((g) => g.querySelectorAll('button').forEach((b) => b.classList.toggle('on', P[g.dataset.key] === b.dataset.v))); }
   document.querySelectorAll('.seg').forEach((g) => g.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     P[g.dataset.key] = b.dataset.v; saveP(); theme(); renderSeg();
+    if (g.dataset.key === 'engine') renderEngine();
     if (g.dataset.key === 'size') renderSrc();
   }));
 
@@ -122,7 +139,7 @@
     if (curUrl) URL.revokeObjectURL(curUrl);
     curBlob = blob; curMeta = meta; curUrl = URL.createObjectURL(blob);
     $('out-img').src = curUrl; $('result').hidden = false; $('empty').hidden = true;
-    $('out-info').textContent = (meta.kind === 'edit' ? 'From start photo · ' : meta.kind === 'up' ? 'Upscaled 2× · ' : '') + meta.w + '×' + meta.h + ' · ' + meta.steps + ' steps · ' + meta.model + (meta.secs ? ' · ' + meta.secs + ' s' : '');
+    $('out-info').textContent = (meta.kind === 'edit' ? 'From start photo · ' : meta.kind === 'up' ? 'Upscaled 2× · ' : '') + meta.w + '×' + meta.h + ' · ' + (meta.engine === 'online' ? 'seed ' + meta.seed : meta.steps + ' steps') + ' · ' + meta.model + (meta.secs ? ' · ' + meta.secs + ' s' : '');
     $('ba-btn').hidden = !meta.src;
   }
   /* start photo (image-to-image): Add photo, drop, paste, or "Use as start" */
@@ -161,19 +178,37 @@
     if (f) { e.preventDefault(); setSrc(f); }
   });
 
+  const seedEl = $('seed'); seedEl.value = P.seed || '';
+  seedEl.addEventListener('change', () => { P.seed = seedEl.value.trim(); saveP(); });
+  /* IG4: online generate — spinner only, Cancel via AbortController; saved like Ollama results with engine 'online' */
+  async function genOnline(prompt) {
+    const left = IGOnline.waitLeft();
+    if (left) { dialog('Please wait', '<p>The free online generator allows one image every 45 s. Try again in ' + left + ' s.</p>'); return; }
+    const wh = P.size === 'photo' ? IGOnline.SIZES.square : (IGOnline.SIZES[P.size] || IGOnline.SIZES.square), t0 = Date.now();
+    ac = new AbortController(); busy(true); $('prog-t').textContent = 'Generating online (Pollinations)\u2026';
+    try {
+      const r = await IGOnline.generate({ prompt, width: wh[0], height: wh[1], seed: P.seed, signal: ac.signal });
+      const meta = { prompt, model: IGOnline.name, engine: 'online', seed: r.seed, w: r.w, h: r.h, steps: 0, secs: Math.round((Date.now() - t0) / 1000) };
+      showResult(r.blob, meta);
+      try { meta.id = await IGStore.add(Object.assign({ blob: r.blob }, meta)); renderGallery(); } catch (_) { toast('Could not keep it in the gallery (storage full?)'); }
+    } catch (e) {
+      if (e && e.name === 'AbortError') toast('Cancelled'); else explainOn(e);
+    } finally { ac = null; busy(false); }
+  }
   $('gen-btn').onclick = async () => {
     const prompt = pr.value.trim();
+    if (isOn()) { if (!prompt) { dialog('Add a prompt', '<p>Describe the picture you want first.</p>'); pr.focus(); return; } return genOnline(prompt); }
     if (!prompt) { dialog('Add a prompt', '<p>Describe the picture you want' + (src ? ', or what to change in the start photo,' : '') + ' first.</p>'); pr.focus(); return; }
     if (!P.model) {
       const ok = await loadModels(true);
       if (!ok || !P.model) return;
     }
-    const [w, h] = sizeWH(), t0 = Date.now(), s0 = src;
+    const [w, h] = sizeWH(), t0 = Date.now(), s0 = src;  /* Ollama path unchanged; records engine below */
     ac = new AbortController(); busy(true);
     try {
       const r = await IGOllama.generate({ url: P.url, model: P.model, prompt, width: w, height: h, steps: P.steps, signal: ac.signal, images: s0 ? [s0.b64] : null,
         onProgress: (c, t) => { $('bar').parentNode.classList.remove('ind'); $('bar').style.width = Math.min(100, c / t * 100) + '%'; $('prog-t').textContent = 'Step ' + c + ' / ' + t; } });
-      const blob = IGOllama.b64ToBlob(r.b64), meta = { prompt, model: P.model, w, h, steps: P.steps, secs: Math.round((Date.now() - t0) / 1000) };
+      const blob = IGOllama.b64ToBlob(r.b64), meta = { prompt, model: P.model, w, h, steps: P.steps, secs: Math.round((Date.now() - t0) / 1000), engine: 'ollama' };
       if (s0) { meta.kind = 'edit'; meta.src = s0.blob; }
       showResult(blob, meta);
       try { meta.id = await IGStore.add(Object.assign({ blob }, meta)); renderGallery(); } catch (_) { toast('Could not keep it in the gallery (storage full?)'); }
@@ -282,7 +317,7 @@
   function openViewer(r) {
     viewRec = r; if (viewUrl) URL.revokeObjectURL(viewUrl); viewUrl = URL.createObjectURL(r.blob);
     $('v-img').src = viewUrl; $('v-prompt').textContent = r.prompt;
-    $('v-info').textContent = new Date(r.ts).toLocaleString() + ' · ' + (r.kind === 'up' ? 'upscaled 2× · ' : r.kind === 'edit' ? 'from start photo · ' : '') + r.w + '×' + r.h + ' · ' + r.steps + ' steps · ' + r.model;
+    $('v-info').textContent = new Date(r.ts).toLocaleString() + ' · ' + (r.kind === 'up' ? 'upscaled 2× · ' : r.kind === 'edit' ? 'from start photo · ' : '') + r.w + '×' + r.h + ' · ' + (r.engine === 'online' ? 'seed ' + r.seed : r.steps + ' steps') + ' · ' + r.model;
     $('v-ba').hidden = !r.src;
     $('viewer').hidden = false;
   }
@@ -298,7 +333,7 @@
     if (!viewRec) return;
     pr.value = P.prompt = viewRec.prompt;
     const sz = Object.keys(SIZES).find((k) => SIZES[k][0] === viewRec.w && SIZES[k][1] === viewRec.h); if (sz && P.size !== 'photo') P.size = sz;
-    P.steps = viewRec.steps || P.steps; saveP(); renderSeg(); renderSteps(); closeViewer(); go(0);
+    P.steps = viewRec.steps || P.steps; if (viewRec.engine === 'online') { P.engine = 'online'; P.seed = String(viewRec.seed); seedEl.value = P.seed; } saveP(); renderEngine(); renderSeg(); renderSteps(); closeViewer(); go(0);
   };
   $('v-del').onclick = async () => {
     if (!viewRec) return; const r = viewRec; $('viewer').hidden = true;
@@ -347,9 +382,10 @@
   });
   addEventListener('storage', (e) => {
     if (e.key === 'sites-hub.theme') theme();
-    if (e.key === SKEY) { try { Object.assign(P, JSON.parse(e.newValue || '{}')); } catch (_) { /* */ } theme(); renderSeg(); renderSteps(); renderModelLabel(); }
+    if (e.key === SKEY) { try { Object.assign(P, JSON.parse(e.newValue || '{}')); } catch (_) { /* */ } theme(); renderSeg(); renderSteps(); renderModelLabel(); renderEngine(); }
   });
 
-  renderSrc(); go(0); renderSeg(); renderSteps(); renderModelLabel(); fillSelect(); renderGallery(); loadModels(false);
+  // renderSrc(); go(0); renderSeg(); renderSteps(); renderModelLabel(); fillSelect(); renderGallery(); loadModels(false);  (IG3)
+  renderSrc(); go(0); renderSeg(); renderSteps(); renderModelLabel(); fillSelect(); renderEngine(); renderGallery(); loadModels(false);
   window.IGApp = { go, get screen() { return cur; }, setSrc, get src() { return src; }, openCompare };
 })();

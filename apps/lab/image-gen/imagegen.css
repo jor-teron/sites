@@ -81,3 +81,5 @@ code{background:var(--line);padding:0 4px;border-radius:4px;font-size:12px;word-
 #c-range{flex:1;accent-color:var(--acc)}
 .note code{word-break:normal;white-space:nowrap}
 #dialog a{color:var(--acc);font-weight:600}
+/* IG4 */
+#seed{max-width:140px}

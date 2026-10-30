@@ -1,4 +1,4 @@
-# Image Gen (IG3)
+# Image Gen (IG4)
 
 Text-to-image (and, where Ollama allows it, image-to-image) with an image model on your own Ollama. Lab → Tools.
 
@@ -18,3 +18,10 @@ Text-to-image (and, where Ollama allows it, image-to-image) with an image model 
 - **Send to Gallery**: Gallery (`apps/media/gallery`) has no shared store; it shows files from a folder/files the user opens (IndexedDB `gallery-v1` only keeps the folder handle). So Send to Gallery = save PNG to Downloads via `IGSave.toGallery` + a dialog explaining how to open it in Gallery (link opens Gallery in a new tab). Gallery files are untouched.
 
 Ollama notes: image generation is experimental (macOS) and is switched off in 0.32.6+; use 0.32.5 with `x/z-image-turbo` or `x/flux2-klein`. Start Ollama with `OLLAMA_ORIGINS=https://jor-teron.github.io` so the site can call it.
+
+## IG4 — free online generator (Pollinations)
+- Engine picker on Generate: **Ollama** (unchanged) | **Online (free)**, saved as `engine` in `imagegen-settings-v1` (plus `seed`).
+- `imagegen_online.js`: `GET https://image.pollinations.ai/prompt/{encoded prompt}?width&height&seed` (Classic API, no key, CORS `*`, checked 30 Oct 2026). Fetched as a blob, converted to PNG on this device, shown and stored like Ollama results (`IGStore`, `engine:'online'`, `seed`, `steps:0`); Save PNG / Upscale / Compare / Send to Gallery work the same.
+- Limits from the docs: one image at a time per IP, ≥45 s apart (app blocks earlier tries), ≤768×768 area (Square 768², Portrait 576×768, Landscape 768×576), one model, a small Pollinations logo always (`nologo` and model choice need a paid key, so not used). Over the limit = HTTP 402 + `Retry-After` → "Free limit reached" dialog.
+- Spinner only (no step progress); Cancel = AbortController. Seed field (blank = random); Reuse prompt restores engine + seed.
+- Start photo and Steps are hidden for Online (Ollama only), with a note. Privacy: the prompt goes to Pollinations, and results are cached there by URL.
