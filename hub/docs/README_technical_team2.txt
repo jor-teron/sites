@@ -1868,3 +1868,802 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   Not done (leftovers): the optional lobby -1 fallback (a second lobby id when -0 is held by a device that
     never answers); clearing the H55 pairing (hub-mesh-paired) on give-up; SharedLink open / close retry is
     covered by code review only (the stand-in has no way to fire those events alone).
+
+
+================================================================================
+ Team 2, Week 2 (2nd week) hand-over (to Team 3), 2026-10-30
+================================================================================
+ Snapshot date : 2026-10-30 IST
+ Based on      : origin/main @ 8df20cf (PR #257, merged 2026-10-29 23:05 IST)
+ Hub build     : 20261029s / hub-shell-v126 (release H66)
+ Period        : 2026-10-27 to 2026-10-29 IST (Team 2, week 2)
+
+ AUTHORS
+   Part A  Hub & System    - Maker A (Main) (hub/, apps/system/, shared hub code)
+   Part B  Apps            - Maker B (Apps) (apps/* except games, learn, system)
+   Part C  Games & Learn   - Maker C (Games) (apps/games/, apps/learn/)
+   Part D  Shared storage keys and sync rules
+   Part F  All known open bugs and findings (Week 1 + Week 2, every team)
+   Part E  Hand-over checklist for Team 3
+
+ HOW TO READ
+   - The dated "2026-10-2x IST, Hxx (Team 2, week 2)" entries above this
+     section already describe H42 to H55b in detail. This section adds
+     H56 to H66, sums up the whole week, and lists what is left.
+   - Full per-release detail for H56 to H66 is in hub/docs/hub_readme.md,
+     section 11 (Change log).
+   - Apps sections 1.25 to 1.37 in Part 2 above cover the Apps releases.
+   - Status words (parked, on hold, approved) are Jor's own decisions only.
+     "Discussed, not approved" means an idea that was talked about and
+     never given a go.
+   - [unverified] = the author could not confirm it from git.
+
+
+--------------------------------------------------------------------------------
+ A) Hub & System (Maker A, Main)
+--------------------------------------------------------------------------------
+
+ A1. SHIPPED (all merged into main; merge sha, build per release)
+ - PR #211 (5471a4f)
+   - H42  20261027a / hub-shell-v96: overdue build bump, SW now precaches
+     the Team 1 H10-H32 files.
+   - H43  same build: dropped the redundant allowfullscreen attribute on
+     WM iframes.
+ - PR #224 (f907173)
+   - H46  20261028a / v97: device name moved to Settings > About > Device
+     name.
+ - PR #226 (02bd275)
+   - H47  20261028b / v98: hub_appindex.js regenerated (new Connectivity
+     apps).
+ - PR #233 (cbdee7a)
+   - H48  20261028c / v99: Hub Search app (apps/system/search/).
+   - H48b 20261028d / v100: Search icon on the Hub bar beside Show
+     Desktop.
+   - H48c 20261028e / v101: optional 6th "description" column in category
+     CSVs.
+   - H48d 20261028e / v101: hub_appindex.js regenerated with descriptions
+     (124 apps).
+   - H49  20261028f / v102: Office quick actions and tabs on the Hub window
+     title bar (hubTitleBar contract, Hub side of HO1).
+ - PR #237 (408a55f)
+   - H29.1  20261028g / v103: send profile to a connected device with
+     preview and Apply.
+   - H29.2  20261028h / v104: choose what to send, optional masked API
+     keys.
+   - H29.2b 20261028i / v105: new Devices section in Settings above About
+     (old #about/* anchors redirect).
+ - PR #239 (100d02d)
+   - H29.3 20261028j / v106: Backup and Undo last sync; profile folder saved
+     after sync.
+ - PR #241 (93d2c33)
+   - H50a 20261028k / v107: new 16-char Hub device ID (hub-xxxxxxxx-xxx).
+   - H50  20261029a / v108: Hub mesh core, one shared connection per Connect
+     Code (window.HubMesh, shared/link/hub_mesh.js).
+   - H52  20261029b / v109: Hub bar section in Settings; auto update every
+     N days.
+   - H53  20261029c / v110: a joined device follows the Screen mode choice.
+ - PR #243 (ed33898)
+   - H52b 20261029d / v111: Hub bar switches apply in Phone mode too.
+   - H55  20261029e / v112: public Hub mesh 0000 (presence + invites
+     only).
+   - H52c 20261029f / v113: no Update dot when the Hub bar Update switch is
+     off.
+ - PR #246 (16ebdd4)
+   - H55b 20261029g / v114: mesh join waits 60 s, flat 5 s retry, gives up
+     after 5 min with Retry; Settings shows the real link state.
+ - PR #253 (849b0a8, merge build 20261029k / v118)
+   - H56 20261029h / v115: Settings list order is now ... API Keys,
+     Devices, How-to, About.
+   - H57 20261029i / v116: random friendly device names (e.g. Brave Mango)
+     + 🎲 in Settings > Devices.
+   - H59 (includes the H58 camera questions) 20261029j / v117: minimal 🎮
+     pop-up (QR row, code + ↻ row, join row); 📷 opens its own centred
+     camera scan pop-up (jsQR).
+   - 20261029k / v118: bump after merging main into the branch.
+ - PR #255 (c85d8f8)
+   - H60 (H60a + H60b) 20261029l / v119: Hub + System apps Light by
+     default; new windows open Windowed and cascade.
+   - H60c 20261029m / v120: cascade step 80 px right, 40 px down.
+   - H61 20261029n / v121: Glass theme in Settings > Look + Reduce
+     transparency switch.
+ - PR #256 (e2f8d37)
+   - H63  20261029o / v122: Eye comfort (warm screen layer; Off / Always /
+     Scheduled; optional 🌙 Hub bar button).
+   - H61b 20261029p / v123: smoky dark Glass (dark tint, blur 24px, white
+     text with shadow).
+   - H64  20261029q / v124: Auto theme (Auto / Light / Dark / Glass;
+     Sunrise / Sunset + offset).
+ - PR #257 (8df20cf)
+   - H69 20261029r / v125: Mesh Viewer System app
+     (apps/system/mesh-viewer/) + hub/link/hub_meshlog.js.
+   - H66 20261029s / v126: Notification Centre (apps/system/notifications/
+     + 🔔 Hub bar panel, history, Do Not Disturb).
+ - Final build on main: 20261029s / hub-shell-v126.
+
+ A2. TECH NOTES
+ - Build bump (every Hub shell release):
+   - python3 hub/tools/hub_bump.py --release HNN --note 'text'
+   - then python3 hub/tools/hub_bump.py --check (all 7 places agree).
+   - Add a change-log line to hub/docs/hub_readme.md section 11.
+   - App-only changes need no bump.
+ - Commit identity:
+   git -c user.name=jor-teron -c user.email=1854500+jor-teron@users.noreply.github.com
+ - Theme (hub/core/hub_prefs.js, shared/theme/hub_theme.js):
+   - sites-hub.theme: 'dark' = Dark; 'light' or unset = Light (H60a).
+   - sites-hub.glass '1' = Glass, always saved together with theme
+     'light', so apps that read theme see Light. App contents (iframes)
+     are never glass.
+   - sites-hub.glassSolid '1' = Reduce transparency. The same solid look
+     is used with no backdrop-filter or prefers-reduced-transparency.
+   - Glass CSS: hub/core/hub_glass.css (loaded last in hub.html). H61
+     values kept as comments. Bars rgba(20,24,32,.40), menus
+     rgba(18,22,30,.44), blur(24px) saturate(180%).
+   - Auto (H64, hub/core/hub_autotheme.js, window.HubAutoTheme):
+     sites-hub.themeAuto '1', themeSunrise ('' = 06:00), themeSunset
+     ('' = 18:00), themeOffset (minutes, -120..+120, '' = 0). While Auto is
+     on, the Hub writes the current 'light' / 'dark' into sites-hub.theme so
+     every app follows live. Picking Light / Dark / Glass clears Auto;
+     Auto clears Glass.
+   - hub_daynight.js + hub_autotheme.js load before hub_prefs.js in
+     hub.html (first paint has the right theme).
+ - Eye comfort (H63, hub/core/hub_eye.js; time maths in
+   hub/core/hub_daynight.js, window.HubDayNight):
+   - sites-hub.eyeWarm 0..100 ('' = 50), eyeMode '' / 'always' / 'sched',
+     eyeFrom ('' = 19:00), eyeTo ('' = 06:00), barEye '1' = show 🌙
+     (default hidden).
+   - eyeNow '1@<period>' / '0@<period>' = the 🌙 override until the next
+     scheduled change; this device only (hub_profile.js SYNC_SKIP).
+   - The layer (#hub-eye) is pointer-events:none at z-index 2147483647.
+     It cannot warm the phone status bar, other tabs or apps in browser
+     full screen.
+ - Windows (hub/wm/wm_windows.js):
+   - sites-hub.openMax unset = Windowed ('1' = maximised).
+   - New Desktop-mode windows cascade CASCADE_X = 80, CASCADE_Y = 40 from
+     the top window, wrapping back to START (40, 16). Restored session
+     windows keep their place; Phone mode stays full screen.
+   - Note: the hub_readme.md H60 line still says "30 px"; H60c (80/40) has
+     no change-log line of its own.
+ - Mesh (H50 / H55 / H55b, shared/link/hub_mesh.js, hub/link/hub_meshlink.js):
+   - window.HubMesh is the shared connection per Connect Code; public
+     mesh code is 0000.
+   - Keys: sites-hub.meshPublic ('0' = off), hub-mesh-paired,
+     hub-mesh-invites, hub-mesh-off ('1' = turn mesh off for tests).
+   - Device id: shared-link-device-id (hub-xxxxxxxx-xxx; old kept in
+     shared-link-device-id-old). Name: shared-link-device-name.
+   - App frames have no mesh access yet; the hub_meshlink.js header says
+     "H50b adds the postMessage bridge" [unverified: H50b not shipped].
+ - Mesh Viewer (H69): read-only; reads the Hub page's window.HubMesh
+   (same origin). hub/link/hub_meshlog.js (window.HubMeshLog) keeps the last
+   200 events in memory only. Only action: Retry join now.
+ - Notification Centre (H66, hub/viewer/hub_notifcenter.js,
+   window.HubNotifCenter):
+   - Saves every HubNotify.notice, hubToast, Pooh Chat card and finished /
+     failed received-file card to sites-hub.notifs (newest first, max 100).
+   - sites-hub.dnd '1' = Do Not Disturb: no pop-ups, still saved, 🔔 turns
+     🔕.
+   - barNotif '0' hides 🔔 (default shown, both modes).
+   - window.HubNotify is an OBJECT (start, progress, done, fail, notice,
+     ...), not a function (hub/viewer/hub_notify.js line 274).
+ - Gamepad pop-up (H59, hub/link/hub_panels.js / .css): camera scan uses
+   hub/controller/vendor/jsQR.js (in the offline shell).
+ - Catalog: after a CSV change run
+   python3 hub/core/hub_appindex_gen.py --catalog-only (hub_catalog.js).
+   hub_appindex.js rows for Mesh Viewer and Notifications were added by
+   hand (see A8).
+ - Tests: Playwright via /workspace/.venv-pw/bin/python with
+   executable_path /usr/bin/google-chrome. PeerJS stand-in broker:
+   /workspace/h50test/broker.py. H69 test /workspace/h69test/t69.py
+   (42/42); H66 52/52 new checks; H69 and Auto theme tests re-run green.
+ - New shell files must be added to SHELL in hub/update/hub_sw.js.
+ - Old Dark users: anyone who picked Dark before H60 must pick Dark again
+   (Dark used to be saved as an empty key, which now reads as Light).
+
+ A3. PARKED (Jor)
+ - H67 Screenshot (System app).
+ - H68 Accessibility (System app).
+ - H70 Screen Time (System app).
+ - H71 Startup Apps (System app).
+ - H53b Pooh Chat fix (medium priority).
+ - H54 own PeerJS server (low priority).
+
+ A4. ON HOLD (Jor)
+ - H62 Gamepad's own link + single controller. Idea: the Gamepad joins with
+   the same 4-digit SharedLink code as device join (meta pad:1); any pad or
+   joined device can control the Hub; the last pad to speak gets the
+   rumble. Jor: "Hold H62", "need more thoughts".
+
+ A5. PAUSED / WAITING ON JOR
+ - H51 mesh security (trust between devices). Waiting on Jor's go.
+   Mesh Viewer shows trust as "not checked" until H51 lands.
+ - Offline SQL: Code School vendor files (sql.js) in hub_sw.js. Waiting on
+   Jor's go for the next Hub release (Maker C's request).
+
+ A6. DISCUSSED, NOT APPROVED
+ - H65 Typing break: default 25 min, OFF by default, cannot be forced open,
+   LOCKED 5 min with a countdown, user can change the times.
+ - Home tile label readability: white labels are unreadable on a white /
+   bright wallpaper (about a 5 min fix).
+ - Rejected as System apps: Task Manager (System Monitor exists), Backup
+   (persistent folder exists), Clipboard (exists in the Apps category).
+
+ A7. LEFT FOR OTHER TEAMS
+ - Team 3: Apps and Games side of the H60 theme defaults (apps outside
+   apps/system were not edited).
+ - Team 3: Video Chat and Screen Share notice bug (see A8).
+
+ A8. KNOWN BUGS AND OPEN GAPS
+ - apps/connectivity/video-chat/videochat_app.js (line 31) and
+   apps/connectivity/screen-share/screenshare_app.js (line 30) call
+   window.top.HubNotify(o) as a function. HubNotify is an object, so the
+   call throws inside a try and those notices never show or get saved in
+   the Notification Centre. Fix: call window.top.HubNotify.notice(o)
+   [unverified: exact argument shape].
+ - Known 404s on hub.html:
+   - Video Chat icon (connectivity-apps.csv icon column is empty; the file
+     is videochat_icon.png).
+   - Speed Test icon (tools-apps.csv icon column is empty; there is no
+     speedtest_icon.png in apps/tools/speedtest/, but hub_appindex.js
+     points to one).
+ - hub_appindex.js is behind a full generator run; recent rows were added
+   by hand. A full hub_appindex_gen.py run (needs Playwright) is due.
+ - H69 gaps: no trust info until H51; no ping time; the log is in memory
+   only (lost on reload); the messages count shows 0 on 0000.
+ - H66 gaps: after a reload, tapping a notice opens its source app instead
+   of the notice's own action; DND does not hold back photos opening in the
+   viewer.
+ - Never done: offline caching for Search; no tests on real devices (all
+   Hub tests are headless Playwright on the box).
+ - H55b leftovers (from its entry above): optional lobby -1 fallback;
+   clearing hub-mesh-paired on give-up; SharedLink open / close retry is
+   code-review only.
+
+
+--------------------------------------------------------------------------------
+ B) Apps (Maker B, Apps)
+--------------------------------------------------------------------------------
+
+ B1. SHIPPED (all merged into main; no build bumps)
+ - MW1 Multi-Screen Wall: PR #234 (4b9b2dd).
+ - BS4 Base delete safety: PR #235 (47b5fa3).
+ - IC2 Intercom video toggle, front / back camera, auto-answer for
+   trusted: PR #236 (7e7a82f).
+ - TP1 + TP2 Telephone: PR #238 (53359d4).
+ - TP2b 5-digit numbers 10000-99999 with a clash check: PR #240 (c14e18e).
+ - PH1 phone/ gesture launcher with category drawer: PR #242 (6e27212).
+ - PE5 Photo Editor v2 Sharpen + Resize: PR #247 (e2d801f).
+ - MP1 Music Player + apps/media/shared-media/media_files.js: PR #248
+   (6db4699).
+ - HPS1 + HPS2 Hub Photo Studio basic + layers, .hps, .ora export: PR #250
+   (a37cb25); Part 2 sections 1.34 / 1.35.
+ - SL1 Slides basic + .hslides: PR #251 (08a7d20); section 1.36.
+ - SL2 Present mode: PR #252 (62db659); section 1.37.
+ - Earlier in the week: IC1 (#225, 4d5666b), SS1 (#220, e71f392), VC2
+   (#221, 5e9a224), WB1 (#222, 6488770), CB1 (#223, d1b3f47).
+ - Also merged this week from Apps branches (from git, not in Maker B's
+   list): H48d descriptions #228 (c312087), Base perf #231
+   (5e83035), HO1 Quick Access #232 (cc278b3).
+
+ B2. TECH NOTES
+ - Stopwatch style, one save module per app, in-app dialogs only.
+ - Release id in <title> and in every ?v=.
+ - Keep apps light enough for a 4 GB Celeron.
+ - Connectivity apps use PeerJS with the Hub Connect Code. New work should
+   use window.HubMesh / shared/link/hub_mesh.js and the link_devices.js
+   device id. Phones rejoin after screen off.
+ - Photo Studio loads Photo Editor v2 pe_*.js in place, with
+   backward-compatible hooks in pe_send.js, pe_view.js, pe_io.js.
+   Keys photo-studio-*. .hps = ZIP of project.json, images/, layers/,
+   preview.png.
+ - Slides keys: slides-settings-v1, slides-decks-v1, slides-deck-v1:<id>.
+   .hslides is JSON.
+ - Music keys: music-player-*. media_files.js uses IndexedDB
+   shared-media-v1 + localStorage shared-media-pos-v1.
+ - Catalog: CSV row, then hub_appindex_gen.py --catalog-only.
+
+ B3. PARKED (Jor)
+ - AG11 and AG12. Jor on AG11: "must just the continue button. i didn't
+   plan to rise loop to 100".
+ - BS3b virtual rows (optional).
+ - Second Screen Keyboard.
+
+ B4. ON HOLD
+ - None.
+
+ B5. PAUSED
+ - None.
+
+ B6. DISCUSSED, NOT APPROVED
+ - LL1 Live Location; LL2 history (needs a home server).
+ - PH2 always-on location; PH3 Android APK.
+ - VP1 Video Player; Gallery music update.
+ - HPS3 to HPS6.
+ - SL3 layouts / pictures / themes; SL4 Office bits (shared ribbon, HO1
+   bar, PDF).
+ - MW2.
+ - Video editor VD1 to VD3 (VirtualDub-style, no name yet; handed over
+   from Maker C).
+ - Shared PeerJS id idea: superseded by the H50 mesh.
+ - Dropped: TP3, Walkie-Talkie.
+
+ B7. LEFT FOR OTHER TEAMS
+ - Team 1: My Day Sun & Moon dial night bug. Jor: "we will leave this to
+   Team 1".
+
+ B8. KNOWN BUGS AND OPEN GAPS
+ - My Day dial 180-degree night flip (PD4.2, .sd-rot) rotates the sun and
+   moon so the sun shows in the starry area.
+ - My Day moon position comes from the phase, not an ephemeris.
+ - Hub Photo Studio is missing from the "Open with" list in
+   shared/fs/filetypes.js (Hub side file).
+ - TP, PH1, HPS, SL, MP1 and MW1 are only headless-tested.
+
+
+--------------------------------------------------------------------------------
+ C) Games & Learn (Maker C, Games)
+--------------------------------------------------------------------------------
+
+ C1. SHIPPED (all merged into main; no build bumps)
+ - PR #219 (4690c9f): Morse Code MC1, Clock Reading CR1, Periodic Table
+   PT1, Road Safety RS1 (Indian rules, new Life Skills section), Tuner &
+   Metronome TM1.
+ - PR #227 (9808ffe): Ant Farm v0.2 (branching tunnels, chambers, settings
+   gear) and v0.3 (food, brood room, egg to larva to pupa to ant, day and
+   night, ant cap); Human Body Explorer HBE3 (External view default,
+   shaded art).
+ - PR #229 (c06d65c): Piano Basics PB2 (16 songs, two hands, record); H48d
+   catalog descriptions; Code School CS1a (web playground) and CS4 (SQL via
+   vendored sql.js).
+ - PR #230 (a6ff4e5): Clock Reading CR2 (GMT, AM/PM, coloured hands,
+   1 FPS); Periodic Table PT2 (table on top, search below).
+ - PR #244 (da88274): title bar on Clock Reading +
+   apps/learn/shared/learn-hubbar.js.
+ - PR #245 (83aa8fc): title bar for 11 Learn apps (4 kit apps, Guitar
+   Chords, Periodic Table, Road Safety, Tuner & Metronome, Morse Code,
+   Piano Basics, Typing Tutor).
+ - PR #249 (6987f36): title bar for Human Body Explorer (tabs + 2 flip
+   buttons).
+ - PR #254 (1e84f26): CR3, one page with no quizzes, live GMT clock in 7
+   styles, tap / hover labels on every part and hour mark.
+
+ C2. TECH NOTES
+ - Games rules in apps/games/GUIDE.md: classic scripts only, must work from
+   file://, 30 fps cap, touch first, built for weak phones.
+ - GameSettings gear rollout table: apps/games/common/settings/README.md.
+ - Learn kit apps share apps/learn/common/ui/app.js.
+ - learn-hubbar.js uses the H49 hubTitleBar postMessage:
+   - mirrors the mode row as tabs + optional buttons;
+   - hides the in-page row only after hubTitleBarHello;
+   - resends 'set' after every hello;
+   - never sends the app name;
+   - Phone mode and standalone keep the in-page row.
+ - games-apps.csv and learn-apps.csv have 6 columns: name, path, icon,
+   newtab, section, description. After a change run
+   python3 hub/core/hub_appindex_gen.py --catalog-only, then add the
+   hub_appindex.js row by hand.
+ - Code School vendors sql.js 1.15.2 in apps/learn/code-school/vendor
+   (wasm over http, asm.js on file://).
+ - Storage: per-app localStorage keys; see each app's ui/app.js (no full
+   key list was made).
+
+ C3. PARKED (Jor)
+ - TT2 Typing Tutor hand visuals.
+ - Code School CS3 (Python).
+ - Basic games fixes (Jor: not bugs for now).
+ - LandCraft and Neon Fist items.
+
+ C4. ON HOLD
+ - Offline SQL: Code School vendor files in hub_sw.js (Hub side, see A5).
+
+ C5. PAUSED
+ - None.
+
+ C6. DISCUSSED, NOT APPROVED
+ - New apps: Times Tables and Money and Budget (top picks); Flags and
+   Capitals, Ear Training, Braille, Healthy Eating.
+ - GC2, TB10.
+ - Icons for Water Kingdom and Animal Kingdom.
+ - Code School title bar (Maker C suggested skipping it).
+ - Video editor: handed to Maker B (see B6).
+
+ C7. LEFT FOR OTHER TEAMS
+ - Team 3: Aquarium.
+
+ C8. KNOWN BUGS AND OPEN GAPS
+ - Water Kingdom and Animal Kingdom have no icons (404s on the Learn page).
+ - Title bar not tested with the Hub opened from file://; phone mode not
+   re-tested for the 11 apps in #245.
+ - CR3: the cuckoo bird pop-out was not seen on screen; the Grandfather and
+   Cuckoo dials look small on wide screens.
+ - Stray uncommitted deletions (from other makers) sit in Maker C's
+   working tree; never staged, but need a clean-up.
+
+
+--------------------------------------------------------------------------------
+ D) Shared storage keys and sync rules
+--------------------------------------------------------------------------------
+
+ - Prefix: Hub keys are localStorage 'sites-hub.<key>' (full older list in
+   README_technical_team1.txt and hub/core/hub_prefs.js header).
+ - Sync = H29 Send profile (hub/core/hub_profile.js), manual only.
+   SYNC_GROUPS: desktop = Desktop-mode layout keys, phone = homeBtn, any
+   key not listed = Shared. API keys optional and masked, "Keep mine"
+   default.
+ - New or changed this week (Hub):
+   - theme, glass, glassSolid: Shared group (not listed in SYNC_GROUPS =
+     Shared).
+   - themeAuto, themeSunrise, themeSunset, themeOffset: Shared group; a
+     receiver in Auto rewrites theme from its own clock.
+   - eyeWarm, eyeMode, eyeFrom, eyeTo, barEye: Shared group.
+   - eyeNow: device only (SYNC_SKIP).
+   - barNotif: Shared group.
+   - dnd: device only (SYNC_SKIP).
+   - notifs: device only, never in the profile file / folder (EXCLUDE).
+   - openMax: unset = Windowed; Desktop group.
+   - H52 Hub bar switches: barShowDesk, barSearch, barTasks, barWorkspaces,
+     barOsk, barClock = Desktop group; barPooh, barDevices, barUpdate =
+     Shared group (both modes since H52b). updEvery = auto update every N
+     days [unverified: sync group].
+   - meshPublic: '0' = leave the public mesh 0000 (H29 Shared group).
+   - wmMode: device only (SYNC_SKIP; each device's own Screen mode).
+ - Current SYNC_SKIP on main: wmMode, eyeNow, dnd.
+ - Non-prefixed link / mesh keys (device level): shared-link-device-id,
+   shared-link-device-id-old, shared-link-device-name, hub-mesh-paired,
+   hub-mesh-invites, hub-mesh-off.
+ - Apps keys (Part B): photo-studio-*, slides-settings-v1,
+   slides-decks-v1, slides-deck-v1:<id>, music-player-*, IndexedDB
+   shared-media-v1, shared-media-pos-v1.
+ - Games / Learn keys: per app, see each app's ui/app.js.
+
+
+--------------------------------------------------------------------------------
+ E) Hand-over checklist for Team 3
+--------------------------------------------------------------------------------
+
+ - [ ] git fetch; branch from origin/main (8df20cf or later); PRs only, no
+       rebase or force-push without Jor's OK.
+ - [ ] Check the build: hub/build.txt = 20261029s / hub-shell-v126; run
+       python3 hub/tools/hub_bump.py --check.
+ - [ ] Read hub/docs/hub_readme.md section 11 (H56-H66) and this section.
+ - [ ] Go through part F (all known open bugs and findings, Week 1 +
+       Week 2, every team) before searching the older readmes; tick or
+       strike items there as they are fixed.
+ - [ ] Fix the Video Chat / Screen Share HubNotify call (A8).
+ - [ ] Apps / Games side of the H60 theme defaults (Light default,
+       follow hub_theme.js / sites-hub.theme, Auto writes theme live).
+ - [ ] Fix the known icon 404s: Video Chat, Speed Test, Water Kingdom,
+       Animal Kingdom.
+ - [ ] Add Hub Photo Studio to "Open with" in shared/fs/filetypes.js.
+ - [ ] hub_appindex.js: a full hub_appindex_gen.py run reorders the file and needs Playwright; keep only the rows you meant to change (see F1).
+ - [ ] Ask Jor about offline caching (Search, Code School sql.js in
+       hub_sw.js) before adding it.
+ - [ ] Real-device tests: mesh / public 0000, Gamepad camera scan, Eye
+       comfort, Glass on low-end GPUs, Notification Centre, Telephone,
+       Intercom, Phone launcher, Learn title bars in Phone mode.
+ - [ ] Do not start parked / on-hold / not-approved items without Jor's
+       words: H51, H53b, H54, H62, H65, H67, H68, H70, H71, home tile
+       labels, AG11, AG12, BS3b, Second Screen Keyboard, TT2, CS3, and
+       everything in A6 / B6 / C6.
+ - [ ] Aquarium is Team 3's (C7). My Day night dial bug stays with Team 1
+       (B7).
+ - [ ] Clean up stray deletions in old working trees; never touch
+       /workspace/sites' dirty tree for docs work.
+ - [ ] Conventions: plan before coding, keep legacy code as comments, lists
+       not tables, times in IST, minutes taken at the end of each release.
+
+
+
+--------------------------------------------------------------------------------
+ F) All known open bugs and findings (Week 1 + Week 2, every team)
+--------------------------------------------------------------------------------
+
+ HOW TO READ
+ - One place for every bug and finding that is still open on origin/main
+   @ 8df20cf, so nobody has to search the older readmes again.
+ - Found by:
+   - [T1]   README_technical_team1.txt (section 17 + Team 1 week notes)
+   - [T2w1] README_technical_team2.txt Parts 1-3 (snapshot 22-23 Oct)
+   - [T2w2] this week (dated H-entries above + parts A-C)
+   - [T3]   README_technical_team3.txt section 7 (D2 check, 24 Oct)
+   - [new]  found while writing this section (30 Oct)
+ - Owner: Hub side (hub/, apps/system/, shared/), Apps side (apps/* except
+   games, learn, system; phone/; tv/), Games side (apps/games/, apps/learn/).
+ - [checked] = confirmed on origin/main while writing this section.
+   [unverified] = copied from the source readme, not re-checked in code.
+ - Left out because they are fixed on main (checked):
+   - Draftly orientation under the key 'undefined': fixed 2026-10-23
+     (draftly-config.js:103 storageKeyOrientation 'draftly_orientation',
+     old key migrated once at start-up).
+   - LandCraft icon missing: apps/games/landcraft/landcraft_icon.png now
+     exists.
+   - Code Lab icon path: lab-apps.csv:14 and hub_appindex.js now use
+     codelab_icon.png.
+   - hub_appindex.js notebook row (T3 said line 72): gone.
+   - shared/script/api_keys.js: GEMINI is an empty string, no live key.
+   - New H28/H30 files not cached offline: fixed by the H42 bump.
+   - Everything struck through or marked "(done)" / "fixed in Rxx" in the
+     older readmes.
+
+ F1. HUB / SYSTEM (owner: Hub side)
+ - Video Chat and Screen Share notices never show or get saved.
+   - Where: apps/connectivity/video-chat/videochat_app.js:31,
+     apps/connectivity/screen-share/screenshare_app.js:30 call
+     window.top.HubNotify(o); HubNotify is an object
+     (hub/viewer/hub_notify.js:274).
+   - Found: [T2w2] Maker A. Owner: Apps side files, Team 3 to fix.
+   - Fix hint: window.top.HubNotify.notice({icon, title, text, onClick})
+     (API from [T1] H26) [unverified: exact fields each app passes].
+   - [checked]
+ - Icon 404s on hub.html / tiles pages.
+   - Video Chat: connectivity-apps.csv:12 icon column empty, so the
+     default video-chat/video-chat_icon.png is used; the file is
+     videochat_icon.png. Fix: put video-chat/videochat_icon.png in the
+     icon column, then --catalog-only. [checked]
+   - Speed Test: tools-apps.csv:16 icon empty and hub_appindex.js:30
+     points to apps/tools/speedtest/speedtest_icon.png; no such file.
+     Fix: add an icon file. [checked]
+   - Water Kingdom / Animal Kingdom: see F3.
+   - Found: [T2w2]. Owner: Apps side (Video Chat, Speed Test).
+ - hub_appindex.js has "code-lab" twice (line 92 under Learn, line 107
+   under Lab). In one object literal the later key wins, so the Learn row
+   is lost. [new] [checked: two rows; effect unverified]
+ - hub_appindex.js is behind a full generator run (recent rows were added
+   by hand), but a full run of hub/core/hub_appindex_gen.py reorders the
+   file and swaps notebook / sketchbook rows (big unrelated diff) and needs
+   Playwright. Fix hint: run it, keep only the intended rows.
+   Found: [T3] 7.2, [T2w2]. [unverified: reorder still happens]
+ - hub/core/hub_apps.js:124 still has the old Lab Notebook row
+   (apps/lab/notebook/). The stub redirects to Sketchbook, so low
+   priority. Found: [T3] 7.1. [checked]
+ - D-Pad Controller hidden: its row is commented out in
+   apps/system/system-apps.csv:10-11 because it opens a wrong folder from
+   the App Hub. Cause not found. Fix hint: find the bad relative path, then
+   uncomment, --catalog-only, add the hub_appindex.js row. Found: [T3] 5.2,
+   [T1] H33. [checked: still commented]
+ - Category tiles pages (<cat>.html) fail from file:// because they fetch
+   the CSV. Found: [T3] 7.2. [unverified]
+ - Desktop home: tile / icon labels are white and hard to read on light or
+   white wallpapers. Found: [T3] 7.2, [T2w2] (fix not approved yet,
+   about 5 min).
+ - Desktop: centre the QR / link tiles when Files is switched off.
+   Found: [T3] 7.2. [unverified]
+ - Files sidebar: the "Google Drive" label is squeezed. Found: [T1] 17.
+   [unverified]
+ - Settings: wallpaper thumbnails load the full images. Found: [T1] 17
+   [unverified] (H-side hub_wallthumbs_gen.py exists; may be partly fixed).
+ - Mail shares the Hub's Google sign-in record. Found: [T1] 17.
+   [unverified]
+ - hub/keys.readme.md:43 and :111 say Caption for Nei / Transcribe / OCR
+   keep their own key field "for now"; OCR uses HubKeys 'gvision' since
+   OCR release 4. Fix waits for Jor's go. Found: [T1]. [checked: text
+   still there]
+ - hub_readme.md H60 line says the cascade is 30 px; real value is 80 / 40
+   (hub/wm/wm_windows.js:310); H60c has no change-log line. Found: [T2w2].
+   [checked]
+ - Old Dark users: a Dark pick from before H60 now reads as Light (the old
+   empty value); they must pick Dark again. Found: [T2w2]. By design.
+ - H66 Notification Centre: after a reload a tap on a notice opens its
+   source app, not the notice's own action; DND does not hold back photos
+   opening in the viewer. Found: [T2w2] Maker A.
+ - H69 Mesh Viewer: no trust info until H51; no ping time; log in memory
+   only (lost on reload); the messages count shows 0 on 0000.
+   Found: [T2w2] Maker A.
+ - H55b leftovers: optional lobby -1 fallback (a second lobby id when -0
+   is held by a device that never answers); hub-mesh-paired not cleared on
+   give-up; SharedLink open / close retry covered by code review only.
+   Found: [T2w2].
+ - The PC controller keeps one SharedLink phone at a time
+   (hub-controller attachConn closes the older link), so two phones take
+   turns on SharedLink (pre-H50, still true outside the mesh).
+   Found: [T2w2] H50 entry. [unverified]
+ - App frames have no HubMesh access yet; the hub_meshlink.js header says
+   H50b adds the postMessage bridge. Screen Wall moving onto the mesh is
+   "H50d (later)". Found: [T2w2]. [unverified: plan status]
+ - Profile save on page close is best effort (a last-second change is
+   saved on the next start). Two devices creating the Drive profile folder
+   at the same moment can still make two (a card handles it later).
+   Found: [T1]. [unverified]
+ - Hub Photo Studio is missing from the "Open with" list in
+   shared/fs/filetypes.js. Found: [T2w2] Maker B. Owner: Hub side.
+   [unverified]
+ - Offline gaps: Search and Code School's sql.js vendor files are not in
+   hub/update/hub_sw.js (waiting on Jor). Found: [T2w2].
+ - file:// limits outside the Hub: Aeroplane planet.glb / plane.glb XHRs
+   blocked by CORS (falls back to shapes); Chrome "non-JS module files
+   deprecated" warning; after #contact the Hub title stays "contact".
+   Found: [T1] 17. [unverified]
+ - Low priority: R21 / R22-style mode / size edge cases on odd viewports.
+   Found: [T2w1]. [unverified]
+
+ F2. APPS (owner: Apps side)
+ - vDesktop wallpapers never load.
+   - Where: apps/tools/vDesktop/wallpaper.csv lists images as
+     ../../wallpaper/*.jpg, which resolves to apps/wallpaper/ (does not
+     exist); the files are in shared/wallpaper/. vDesktop.js:282 fetches
+     wallpaper.csv.
+   - Fix: change the paths to ../../../shared/wallpaper/<file>.jpg.
+   - Found: [new]; resolves the [T2w1] "[unverified] wallpaper.csv path"
+     item. [checked]
+ - My Day (apps/tools/dashboard): the 180-degree night flip (PD4.2,
+   .sd-rot) rotates sun and moon so the sun shows in the starry area; the
+   moon position comes from the phase, not an ephemeris. Found: [T2w2]
+   Maker B. Left for Team 1 (Jor).
+ - Draftly: PDF export is image-based (text not selectable); DOCX
+   pagination differs; paste is plain text only; no in-app delete or rename
+   (save under a new name makes a copy). Found: [T2w1]. [unverified]
+ - Draftly: MM6 DOCX not yet tested in real MS Word; only PNG / JPEG / GIF
+   images kept; the merge DOCX has one header / footer, so a {{field}} there
+   comes out blank; Merge has no PDF output (MM4); File > Export PDF
+   screenshots the editor, so it shows {{placeholders}}. Found: [T3] 5.4,
+   7.4. [unverified]
+ - Spreadsheet: fixed 26 x 100 grid; column widths not in undo; cut + paste
+   does not re-point formulas; sort has no header detection; inside the Hub
+   paste uses only the internal copy. Found: [T2w1]. [unverified]
+ - SSH: Ed25519-only hosts fail (no curve25519 KEX, no Ed25519 keys, no
+   chacha20-poly1305); host keys not persisted; relay wss not tested end to
+   end; ws:// is blocked from the https site (needs a wss relay).
+   Found: [T2w1]. [unverified]
+ - Code Lab: no ipywidgets / plotly; input() unsupported; needs a running
+   Jupyter + token; Tailscale path and phone UX not tested. Found: [T2w1],
+   [T3] 7.4. [unverified]
+ - Camera: mirrored video can drop frames; pause does not work in every
+   browser; slow motion needs a camera that really gives >= 60 fps.
+   Found: [T2w1]. [unverified]
+ - Sound Recorder: recordings live only in IndexedDB (clearing site data
+   deletes them); its settings carry the mic device id (won't match on
+   another device); readme release names SR1-SR3 clash (suggested
+   SR6-SR8). Found: [T2w1], [T1]. [unverified]
+ - ONNX Runner: depends on a CDN, so it does not work offline; batch 1, no
+   .onnx_data, single-threaded WASM unless cross-origin isolated.
+   Found: [T2w1]. [unverified]
+ - SSH saved hosts are not in the profile sync (one-line change if
+   wanted). Found: [T1]. [unverified]
+ - Agent (apps/lab/agent): browser model ~180-230 MB; story model only,
+   tools off while active; folder tools need desktop Chrome / Edge; helper
+   Linux / macOS only, token in localStorage; agent/trash never cleaned;
+   step max 30; old local keys still used when the Hub key is missing.
+   Found: [T1]. [unverified]
+ - OCR: a non-key Vision 400 may show the gvision hint. News: feedrapp /
+   allorigins fallback is flaky. Found: [T1]. [unverified]
+ - Unit Converter bigha / katha values were not re-verified and vary by
+   district. Found: [T2w1]. [unverified]
+ - Telephone TP2b: devices still on TP1 / TP2 drop 5-digit numbers (every
+   device needs TP2b); the clash check sees only online devices; per-app
+   lobby until it moves to the mesh. Found: [T2w2] Maker B.
+ - Phone launcher PH1 (phone/): notices panel empty; apps that navigate
+   inside their frame add history entries; Esc goes to the app; no icon
+   drag-to-reorder; offline only with the Hub's service worker;
+   ownership of phone/ still to agree with the Hub side. Found: [T2w2].
+ - Photo Editor v2 PE5 / Photo Studio: Sharpen preview at fit looks
+   stronger than the saved photo; 8000 px saves need several hundred MB
+   and may fail on 4 GB machines; crop mode shows the un-resized photo;
+   .hps text uses device fonts; .ora export only; undo not saved in .hps.
+   Found: [T2w2].
+ - Music Player MP1: without showDirectoryPicker (most phones) the folder
+   must be picked again after reload; tags from MP3 only; reorder by
+   up / down buttons only; the level bar keeps its Web Audio route until
+   reload. Found: [T2w2].
+ - Slides SL1 / SL2: no app Undo / Redo; long text scrolls (editor) or is
+   cut off (show) instead of shrinking; no print / PDF, transitions or
+   speaker notes. Found: [T2w2].
+ - Base: BS3b (draw only visible rows for big tables) not done; BS4 not
+   tested inside the Hub frame; no multi-record selection. Found: [T2w2].
+
+ F3. GAMES / LEARN (owner: Games side)
+ - Water Kingdom and Animal Kingdom have no icons (learn-apps.csv:8-9 icon
+   column empty, no *_icon.png in their folders), so the Learn page gets
+   404s. Fix: add icons (not approved yet). Found: [T2w2] Maker C.
+   [checked]
+ - Learn title bar (learn-hubbar.js) not tested with the Hub opened from
+   file://; phone mode not re-tested for the 11 apps in #245.
+   Found: [T2w2] Maker C.
+ - Clock Reading CR3: cuckoo bird pop-out not seen on screen; Grandfather
+   and Cuckoo dials look small on wide screens. Found: [T2w2] Maker C.
+ - First Aid topic emojis and app icon are still red (Learn style says no
+   red). Found: [T3] 7.3. [unverified]
+ - Tetris cuts off the top of the board in landscape on short phones.
+   Found: [T1]. [unverified]
+ - The Hub hides the settings gear in the 2048, Swell Foop and Tic-Tac-Toe
+   button rows (use the Game Settings tile). Found: [T1]. [unverified]
+ - LandCraft draws water and glass in distance order across chunks; on a
+   phone it may need a hard refresh for updates. Found: [T1].
+   [unverified]
+ - Turbo Lap: on an upright touch phone the rotate screen covers the menus.
+   Found: [T3] 7.3. [unverified]
+ - Ping Pong: Samurai Sword hit glint draws outside the paddle box (visual
+   only); the Paddle section is below the fold on 390 px phones.
+   Found: [T3] 7.3. [unverified]
+ - Gravity Sandbox: lensing subtle when zoomed out; a black hole always
+   beats heavier stars; not to scale; light planets are easily knocked off;
+   labels overlap near the Sun; fast bodies tunnel through black holes at
+   x8; no zoom buttons; no saves. Found: [T2w1], [T3]. [unverified]
+ - Ant Farm: wet soil never dries; the tank looks small on a portrait
+   phone; ants are drawn top-down and walk over the mounds.
+   Found: [T2w1]. [unverified]
+ - Neon Fist 3D v0.5: mannequin face, hair a smooth shell, slight finger
+   webbing, blobby male shoulders, hoodie hem pokes through a skirt, ~1 s
+   pause on the first build of each body, fixed clothes colours; needs
+   http(s) (ES modules + import map), not file://. Found: [T2w1].
+   [unverified]
+ - Neon Fist: roster takes too much of the view; Kai still has facial hair;
+   no fighting yet. Found: [T2w1]. [unverified]
+ - browser-fps and island-alpha load libraries from a CDN (not vendor/), so
+   they do not work offline. Found: [T2w1]. [unverified]
+
+ F4. REPO HYGIENE (owner: whoever Jor picks)
+ - apps/games/hero-builder/node_modules: 199 tracked files of old npm junk
+   (moved from apps/lab/hero-builder in R58). Fix hint: separate PR to
+   remove it from git + add node_modules/ to .gitignore, after checking no
+   hero-builder page imports from it; needs Jor's OK. Found: [T2w1], [T1].
+   [checked: 199 files]
+ - SSH vendor build inputs (apps/connectivity/ssh/vendor/build/
+   shim-buffer.js, ssh-lib-entry.js, stub-empty.js, stub-stream.js) are in
+   git and needed for a rebuild, but missing on disk in the old clones
+   /workspace/sites, /workspace/sites_apps and /workspace/sites_games. Fix:
+   git checkout -- apps/connectivity/ssh/vendor/build in that clone; never
+   commit the deletion. Found: [T2w1]. [checked: on main, 0 files on disk
+   in those 3 clones]
+ - Dirty working trees in the old clones (stray deletions, never staged):
+   /workspace/sites 287, /workspace/sites_apps 369, /workspace/sites_games
+   370 changed paths (git status, 30 Oct). Includes hero-builder
+   node_modules and apps/games/ar-game/vendor/three/build/
+   three.module.min.js. Do not stash / reset / clean other makers' clones;
+   use a fresh worktree. Found: [T2w1], [T3] 8.1, [T2w2] Maker C. [checked]
+ - tree.txt is stale (last changed 2026-10-23, f2d28d9): no terminal,
+   mesh-viewer, notifications rows. Fix: regenerate. Found: [T3] 7.1.
+   [checked]
+ - The 26 MB island-demo body_4k_src.glb was removed (27533eb) but stays
+   in git history (~101 MB repo with history). Found: [T1]. Only a history
+   rewrite would shrink it (needs Jor).
+ - Gravity Sandbox old paths core/render.js and core/ui.js now 404
+   (nothing in the repo uses them). Found: [T3] 7.3. [unverified]
+ - Old local branches (25 Apps, 35 games/*) are merged and stale; safe to
+   delete after a check. Found: [T2w1]. [unverified: current count]
+
+ F5. SECURITY
+ - Leaked Google OAuth TV (device-flow) client secret is still in git
+   history. Jor must delete / rotate it in Google Cloud Console. Code keeps
+   tvClientId / tvClientSecret empty and the QR device flow off.
+   Found: [T1], [T2w1].
+ - Mesh (H50 / H55), open until H51 (waiting on Jor; hooks approveJoin,
+   sign, verify are in place):
+   1. Anyone who knows the 4-digit code can join; it is brute-forceable
+      (10,000 values).
+   2. No join approval and no allow-list of known devices.
+   3. Device ids can be claimed on the public PeerJS broker (impersonate an
+      away device, or claim -0 and act as the lobby).
+   4. A malicious lobby can forge the roster, drop or change relayed
+      messages, mark devices relayed.
+   5. The lobby sees all relayed traffic.
+   6. No end-to-end signing / encryption beyond WebRTC DTLS.
+   7. The site check (location.host in hello) is self-reported.
+   8. DoS: hello / message floods, roster fill to 32, takeover storms.
+   9. Names, mode and app identities are visible to every mesh device; on
+      public 0000 anyone sees names / ids / mode and can send invites
+      (rate limited, join only after a tap).
+   10. Term numbers are trusted (a huge term resets others' view).
+   11. Messages are JSON from other devices: apps must show them as text
+      only.
+   Found: [T2w2] H50 and H55 entries above.
+ - Agent helper token is kept in localStorage. Found: [T1]. [unverified]
+ - shared/script/api_keys.js is public by design; keep GEMINI empty or use
+   only a referrer-locked, no-billing key (file header). [checked: empty]
+
+ F6. UNTESTED (headless / box only, needs real devices)
+ - The box Chrome policy blocks WebRTC UDP, so no real PeerJS data
+   channels were ever opened here; every link / mesh test used a stand-in
+   broker (/workspace/h50test/broker.py).
+ - Hub: mesh and public 0000 between real phones / PCs; H29 profile send /
+   undo between real devices; Gamepad camera scan (H59); Eye comfort
+   colours; Glass blur on low-end GPUs / 4 GB Celeron; Notification
+   Centre; Disk Add folder (Chrome / Edge on a PC); real Google Drive
+   sign-in end to end; touch on a real phone (Lava). Found: [T1], [T2w1],
+   [T2w2].
+ - Apps: Telephone, PH1 (real Android WebView), Hub Photo Studio, Slides
+   (phone, iPhone, projector, wake lock), Music Player, Multi-Screen Wall
+   (only headless); Screen Share, Video Chat (3-4 real devices),
+   Whiteboard, Shared Clipboard, Intercom (simulated peers only); Image Gen
+   and Vision only against a mock Ollama; SSH on real phones / Windows;
+   Camera R3 on a real 60 / 120 fps device; PE5 on a real phone.
+   Found: [T2w1], [T2w2].
+ - Games / Learn: title bars from file:// and in Phone mode (#245);
+   Agent browser model on tablets. Found: [T2w2], [T1].
