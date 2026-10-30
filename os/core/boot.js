@@ -2,6 +2,7 @@
 import * as storage from './storage.js';
 import * as registry from './registry.js';
 import { createApi } from './api.js';
+import * as desktop from './desktop.js';
 
 const statusEl = document.getElementById('status');
 const logEl = document.getElementById('log');
@@ -32,6 +33,9 @@ async function boot() {
       log('app ' + app.id + ' failed: ' + e.message);
     }
   }
+
+  desktop.mount(os);
+  log('desktop: ready');
 
   statusEl.textContent = 'OS booted';
   log('boot: done');

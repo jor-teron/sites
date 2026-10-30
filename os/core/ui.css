@@ -1,0 +1,16 @@
+/* Minimal neutral styling. Theme work comes in OS4. */
+html, body { margin: 0; height: 100%; font: 14px system-ui, sans-serif; overflow: hidden; }
+#desktop { position: fixed; inset: 0 0 40px 0; background: #6b7b8c; }
+#panel { position: fixed; left: 0; right: 0; bottom: 0; height: 40px; display: flex; gap: 6px;
+  align-items: center; padding: 0 6px; background: #222; color: #eee; box-sizing: border-box; }
+#panel button { background: #444; color: #eee; border: 1px solid #555; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+#panel .sep { flex: 1; }
+#panel button.task.active { background: #666; }
+.win { position: absolute; background: #fff; border: 1px solid #888; border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.3); display: flex; flex-direction: column; overflow: hidden; }
+.win .title { display: flex; align-items: center; background: #ddd; padding: 4px 8px;
+  cursor: move; user-select: none; touch-action: none; }
+.win .title span { flex: 1; font-weight: 600; }
+.win .title button { border: 0; background: none; font-size: 16px; cursor: pointer; }
+.win .body { flex: 1; overflow: auto; padding: 8px; }
+.win pre { margin: 0; white-space: pre-wrap; font-size: 12px; }

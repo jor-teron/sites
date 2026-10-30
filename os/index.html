@@ -4,10 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Jor OS</title>
+  <link rel="stylesheet" href="./core/ui.css">
 </head>
 <body>
-  <p id="status">Booting…</p>
-  <pre id="log"></pre>
+  <details id="bootlog" style="position:fixed;top:4px;right:4px;z-index:100000;background:#fff;padding:2px 6px;border-radius:4px;max-width:60vw">
+    <summary id="status">Booting…</summary>
+    <pre id="log"></pre>
+  </details>
   <script type="module" src="./core/boot.js"></script>
 </body>
 </html>
