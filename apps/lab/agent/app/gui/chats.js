@@ -9,6 +9,12 @@ HR.chats = (function () {
   var meta = null, rows = [], timer = 0, saving = Promise.resolve(), pane, listEl, KEY = 'agent.chat', $ = function (id) { return document.getElementById(id); };
   function stamp() { return new Date().toISOString().slice(0, 19); }
   function fresh() { return { id: HR.threads.newId(), title: '', provider: HR.models.chosen(), model: HR.model.current() || '', created: stamp(), updated: stamp() }; }
+  /* AG-F1: stable id for an imported pre-AG4 chat: 'legacy-' + FNV-1a hash of its turns (same chat -> same id) */
+  function legacyId(l) {
+    var s = l.map(function (m) { return (m.role || '') + '\u0001' + (m.content || ''); }).join('\u0002'), h = 0x811c9dc5;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+    return 'legacy-' + ('0000000' + h.toString(16)).slice(-8);
+  }
   function remember() { try { localStorage.setItem(KEY, meta.id); } catch (e) {} }
   function titleOf(l) { var u = l.filter(function (m) { return m.role === 'user' && m.content; })[0]; if (!u) return ''; var t = u.content.replace(/\s+/g, ' ').trim(); return t.length > 48 ? t.slice(0, 47) + '…' : t; }
   function dirty() { clearTimeout(timer); timer = setTimeout(flush, 400); }
@@ -116,7 +122,10 @@ HR.chats = (function () {
     await refresh();
     if (HR.msgs.all().length) { meta = fresh(); remember(); await flush(); return; }   /* typed before chats loaded */
     var old = HR.msgs.legacy(), last = localStorage.getItem(KEY);
-    if (old.length) { meta = fresh(); HR.msgs.set(old); show(); await flush(); return; }
+    // if (old.length) { meta = fresh(); HR.msgs.set(old); show(); await flush(); return; }   /* pre-AG-F1: new random id per load -> duplicates */
+    /* AG-F1: the imported chat gets an id from its content (legacyId); already saved -> skip and open the last chat as usual */
+    if (old.length) { var lid = legacyId(old);
+      if (!rows.some(function (r) { return r.id === lid; })) { meta = fresh(); meta.id = lid; HR.msgs.set(old); show(); await flush(); return; } }
     var pick = rows.filter(function (r) { return r.id === last; })[0] || rows[0];
     if (pick) { var l = await HR.threads.load(pick.id); if (l) { meta = Object.assign({}, pick); HR.msgs.set(l); show(); useModel(pick); return; } }
     meta = fresh(); HR.msgs.set([]); show();
