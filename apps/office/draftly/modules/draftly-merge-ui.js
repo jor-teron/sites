@@ -103,6 +103,7 @@ Draftly.mergeUi = { previewOn: false };
     $('mmFieldsBtn').disabled = !d;
     $('mmPreviewBtn').disabled = !has;
     $('mmExportBtn').disabled = !has;
+    if ($('mmExportPdfBtn')) $('mmExportPdfBtn').disabled = !has;   /* MM4 */
     $('mmPrevBtn').disabled = !has || !U.previewOn || M.row <= 0;
     $('mmNextBtn').disabled = !has || !U.previewOn || M.row >= n - 1;
     $('mmCounter').textContent = has ? 'Row ' + (M.row + 1) + ' of ' + n : 'Row \u2013';
@@ -573,6 +574,86 @@ Draftly.mergeUi = { previewOn: false };
     setTimeout(next, 30);
   }
 
+  /* ---------------------------------------------------------- MM4: Export PDF
+     fromFile: opened by File > Export PDF (offers the template too). */
+  function pdfDialog(fromFile) {
+    var P = Draftly.pdfgen;
+    if (!P) return;
+    if (!M.data || !M.count()) { if (fromFile) P.exportTemplate(); else toast('Choose a file with data rows first'); return; }
+    if (U.previewOn) setPreview(false);
+    scan();
+    var n = M.count(), tooMany = n > M.maxRowsExport;
+    var m = modal('Export PDF', true);
+    m.box.id = 'mmPdfDialog';
+    m.box.appendChild(h('div', 'dlg-message', 'Make a PDF with the values from ' + M.data.name + '.'));
+    var pick = fromFile ? 'all' : (M.settings.pdfPick === 'row' ? 'row' : 'all');
+    var radios = h('div', 'mm-radios');
+    function radio(value, label, hint) {
+      var l = h('label', 'mm-radio');
+      var i = h('input'); i.type = 'radio'; i.name = 'mmPdfPick'; i.value = value; i.checked = pick === value;
+      i.addEventListener('change', function () { pick = value; });
+      var t = h('span'); t.appendChild(h('strong', null, label)); t.appendChild(h('span', 'mm-radio-hint', hint));
+      l.appendChild(i); l.appendChild(t);
+      radios.appendChild(l);
+    }
+    radio('all', 'Filled rows (all)', 'One PDF, ' + plural(n, 'row') + ', each row starts on a new page.');
+    radio('row', 'Current row', 'Only row ' + (M.row + 1) + '.');
+    if (fromFile) radio('template', 'Template', 'The document as typed, with the {{fields}}.');
+    m.box.appendChild(radios);
+    var unk = U.unknown || [];
+    if (unk.length) m.box.appendChild(h('div', 'dlg-error mm-warn-line', 'Unknown fields stay as typed: ' + unk.map(function (u) { return '{{' + u + '}}'; }).join(', ')));
+    if (tooMany) m.box.appendChild(h('div', 'dlg-error', 'Too many rows (' + n + ') for all rows. The limit is ' + M.maxRowsExport + '.'));
+    buttons(m.box, [
+      { label: 'Cancel', key: 'cancel', fn: function () { m.close(); } },
+      { label: 'Export PDF', key: 'go', ok: true, id: 'mmPdfGo', fn: function () {
+        if (pick === 'all' && tooMany) return;
+        if (pick !== 'template') { M.settings.pdfPick = pick; M.saveSettings(); }
+        m.close();
+        if (pick === 'template') P.exportTemplate();
+        else runPdf(pick === 'row' ? [M.row] : null);
+      } }
+    ]).go.focus();
+  }
+
+  /* rows: list of row indexes, or null for all rows. */
+  function runPdf(rows) {
+    var P = Draftly.pdfgen, map = M.index(), base = M.docHtml(), name = docName();
+    var idx = rows || Array.apply(null, Array(M.count())).map(function (x, i) { return i; });
+    var hfOn = Draftly.hf && !Draftly.hf.isEmpty();
+    var parts = idx.map(function (i) {
+      var d = hfOn ? Draftly.hf.data : null;
+      return { html: M.mergeHtml(base, i), hf: d ? { head: d.head.map(function (t) { return M.mergeText(t, i, map); }), foot: d.foot.map(function (t) { return M.mergeText(t, i, map); }) } : null };
+    });
+    var real = P.canUse(parts.map(function (p) { return p.html; }), parts.map(function (p) { return p.hf; }));
+    if (!real) toast('Text outside Latin letters: making an image PDF instead');
+    var pm = modal('Making PDF\u2026', false);
+    pm.sticky = true;
+    var bar = h('progress', 'mm-progress'); bar.max = parts.length; bar.value = 0;
+    var label = h('div', 'dlg-message', '0 of ' + parts.length);
+    pm.box.appendChild(label); pm.box.appendChild(bar);
+    var cancelled = false, finished = false;
+    buttons(pm.box, [{ label: 'Cancel', fn: function () { cancelled = true; } }]);
+    pm.onClose = function () { if (!finished) cancelled = true; };
+    var fname = rows && rows.length === 1 ? P.fileName('-row' + (rows[0] + 1)) : P.fileName('-merge');
+    var opts = { title: fname.replace(/\.pdf$/, ''), cancelled: function () { return cancelled; },
+      onProgress: function (k, n) { bar.value = k; label.textContent = k + ' of ' + n; } };
+    function go(useReal) { return useReal ? P.render(parts, opts) : P.renderImages(parts, opts); }
+    go(real).catch(function (e) {
+      if (!real || cancelled) throw e;
+      console.warn('draftly merge pdf: real-text PDF failed, using the image PDF', e);
+      return go(false);
+    }).then(function (doc) {
+      finished = true; pm.close();
+      doc.save(fname);
+      toast('Exported ' + plural(parts.length, 'row') + ' to ' + fname);
+    }).catch(function (e) {
+      finished = true; pm.close();
+      if (cancelled) { toast('Export cancelled'); return; }
+      console.warn('draftly merge pdf:', e);
+      toast('PDF failed: ' + ((e && e.message) || e));
+    });
+  }
+
   /* ---------------------------------------------------------- wiring */
   function bind() {
     if (!$('panelMerge')) return;
@@ -603,6 +684,7 @@ Draftly.mergeUi = { previewOn: false };
     $('mmPrevBtn').addEventListener('click', function () { M.setRow(M.row - 1); });
     $('mmNextBtn').addEventListener('click', function () { M.setRow(M.row + 1); });
     $('mmExportBtn').addEventListener('click', exportDialog);
+    if ($('mmExportPdfBtn')) $('mmExportPdfBtn').addEventListener('click', function () { pdfDialog(false); });   /* MM4 */
     document.addEventListener('keydown', function (e) {
       if (!U.previewOn) return;
       if (e.key === 'Escape' && !document.querySelector('.mm-backdrop')) { e.preventDefault(); setPreview(false); }
@@ -648,5 +730,7 @@ Draftly.mergeUi = { previewOn: false };
   U.scan = scan;
   U.tick = tick;
   U.runExport = runExport;
+  U.pdfDialog = pdfDialog;   /* MM4: File > Export PDF uses it while merge data is loaded */
+  U.runPdf = runPdf;
   bind();
 })();

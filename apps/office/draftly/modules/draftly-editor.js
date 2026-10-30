@@ -178,17 +178,38 @@ Draftly.editor.applyFontSize = function applyFontSize(pt) {
   if (host) host.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'formatFontSize' }));
 };
 
-/* Paste plain text only, then restyle and reflow. */
+/* DF16: legacy plain-text paste kept as comment; now Draftly.editor.pastePlain.
+/* Paste plain text only, then restyle and reflow. * /
 Draftly.editor.onPaste = function onPaste(e) {
   e.preventDefault();
   var text = (e.clipboardData || window.clipboardData).getData('text/plain');
   var fontSelect = document.getElementById('fontFamilySelect');
   var font = fontSelect ? fontSelect.value : Draftly.config.fontCommandName;
-  /* Set the typing font first so the inserted text takes it. */
+  /* Set the typing font first so the inserted text takes it. * /
   Draftly.editor.setFontFamily(font);
   document.execCommand('insertText', false, text);
   Draftly.editor.saveSelection();
   if (Draftly.pages) Draftly.pages.checkPagination();
+};
+
+*/
+
+/* Plain text paste (R7: takes the toolbar font), then reflow. */
+Draftly.editor.pastePlain = function pastePlain(text) {
+  var fontSelect = document.getElementById('fontFamilySelect');
+  var font = fontSelect ? fontSelect.value : Draftly.config.fontCommandName;
+  Draftly.editor.setFontFamily(font);
+  document.execCommand('insertText', false, text);
+  Draftly.editor.saveSelection();
+  if (Draftly.pages) Draftly.pages.checkPagination();
+};
+
+/* DF16: formatted paste lives in draftly-paste.js; plain text otherwise. */
+Draftly.editor.onPaste = function onPaste(e) {
+  if (Draftly.paste && Draftly.paste.handle) return Draftly.paste.handle(e);
+  e.preventDefault();
+  var cd = e.clipboardData || window.clipboardData;
+  Draftly.editor.pastePlain(cd.getData('text/plain'));
 };
 
 /* Enter / Shift+Enter, paste and focus from every page editor. */
