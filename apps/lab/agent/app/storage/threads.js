@@ -54,6 +54,20 @@ HR.threads = (function () {
     await idb.del('t:' + id).catch(function () {});
     var ia = (await readIdx(false)).filter(function (c) { return c.id !== id; }); await writeIdx(false, ia).catch(function () {});
   }
+  /* AG-F6: message key = role + time + tool call id + content, plus its occurrence number (two equal messages stay two) */
+  function keys(l) { var seen = {}; return l.map(function (m) {
+    var k = [m.role, m.at || '', m.tool_call_id || '', m.tool_name || '', m.content || ''].join('\u0001'); seen[k] = (seen[k] || 0) + 1; return k + '\u0002' + seen[k]; }); }
+  /* AG-F6: union of two chats in original order: folder list first; each browser-only message goes right after
+     the last message both had before it. -> {list, added: browser-only count} */
+  function combine(a, b) {
+    var out = a.slice(), ok = keys(a), has = {}, pos = -1, added = 0, bk = keys(b);
+    ok.forEach(function (k) { has[k] = 1; });
+    for (var i = 0; i < b.length; i++) {
+      if (has[bk[i]]) { pos = ok.indexOf(bk[i]); continue; }
+      out.splice(pos + 1, 0, b[i]); ok.splice(pos + 1, 0, bk[i]); has[bk[i]] = 1; pos++; added++;
+    }
+    return { list: out, added: added };
+  }
   /* Folder just became ready: copy IndexedDB-only chats into it */
   async function merge() {
     var mine = onDisk() ? await readIdx(false) : []; if (!mine.length) return 0;
@@ -67,8 +81,21 @@ HR.threads = (function () {
     for (var i = 0; i < mine.length; i++) {
       var c = mine[i], t = await idb.get('t:' + c.id); if (t == null) continue;
       var row = Object.assign({}, c); delete row.pending;
-      if (have[c.id]) { var d = disk[at[c.id]]; if (String(c.updated || '') <= String(d.updated || '')) continue;
-        if (d.pinned && row.pinned == null) row.pinned = true; await HR.fs.write(DIR + c.id + '.md', t); disk[at[c.id]] = row; n++; continue; }
+      // if (have[c.id]) { var d = disk[at[c.id]]; if (String(c.updated || '') <= String(d.updated || '')) continue;
+      //   if (d.pinned && row.pinned == null) row.pinned = true; await HR.fs.write(DIR + c.id + '.md', t); disk[at[c.id]] = row; n++; continue; }
+      /* AG-F6: same id in both -> combine the two message lists (nothing replaced); newer row keeps title / model */
+      if (have[c.id]) { var d = disk[at[c.id]], ft = null;
+        try { ft = (await HR.fs.read(DIR + safe(c.id) + '.md')).text; } catch (e) { ft = null; }
+        var fl = ft == null ? [] : HR.threadfmt.parse(ft).list, bl = HR.threadfmt.parse(t).list, both = combine(fl, bl);
+        if (!both.added) continue;   /* the browser copy has nothing the folder lacks */
+        var newer = String(c.updated || '') > String(d.updated || '') ? row : Object.assign({}, d);
+        newer.created = [c.created, d.created].filter(Boolean).sort()[0] || newer.created;
+        // newer.updated = [c.updated, d.updated].map(String).sort().pop();
+        newer.updated = new Date().toISOString().slice(0, 19);   /* a new time: an open tab (AG-F3) sees the change and loads the combined chat instead of overwriting it */
+        if (d.pinned || c.pinned) newer.pinned = true; delete newer.pending;
+        var txt = HR.threadfmt.toMd(newer, both.list);
+        await HR.fs.write(DIR + safe(c.id) + '.md', txt); await idb.put('t:' + safe(c.id), txt).catch(function () {});
+        disk[at[c.id]] = newer; n++; continue; }
       await HR.fs.write(DIR + c.id + '.md', t); disk.push(row); n++;
     }
     if (n) await writeIdx(true, sort(disk));
