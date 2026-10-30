@@ -16,7 +16,7 @@
     $('hud').title = 'Mood ' + Math.round(s.mood * 100) + '% (avg hunger ' + Math.round(s.hunger) + '%), water ' + Math.round(s.wq) + '%';
     if (S.sel) cardState();
   }
-  function cardState() { var sel = S.sel; $('c-mood').textContent = C.moodWord(sel); $('c-hunger').textContent = 'Hunger ' + Math.round(sel.hunger) + '%'; $('c-bar').style.width = Math.round(sel.hunger) + '%'; }
+  function cardState() { var sel = S.sel; $('c-mood').textContent = A.behave.word(sel) + ' \u00b7 ' + C.moodWord(sel); $('c-hunger').textContent = 'Hunger ' + Math.round(sel.hunger) + '%'; $('c-bar').style.width = Math.round(sel.hunger) + '%'; }
 
   // ---- selection card ----
   function show(f) {
@@ -41,6 +41,7 @@
       var hit = pick(e.clientX, e.clientY);
       if (hit || !card.hidden) show(hit);   // a fish opens its card; any tap on empty water first closes an open card
       else if (S.armed || e.clientY < S.H * .3) C.drop(e.clientX, e.clientY);   // otherwise empty water near the surface (or any water when Feed is armed) gets food
+      else A.behave.startle(e.clientX, e.clientY);   // deeper empty water: nearby fish dart away
     }
     down = null;
   });

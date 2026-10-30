@@ -12,5 +12,6 @@
       tail: { tl: .26, ts: .5, fork: .12, col: '#5a4a30' }, dorsal: { x1: .2, xa: -.02, x2: -.2, dh: .95, col: '#4e3f28', ribs: 1 }, anal: { x1: -.1, xa: -.2, x2: -.26, dh: .3, col: '#6a5a3c' },
       desc: 'Plecos are armoured catfish that spend their days clinging to rocks and glass, rasping algae off the surface with a sucker-like mouth. They are shy and mostly nocturnal, so this one patrols the sand floor.',
       facts: ['Its body is covered in bony plates instead of scales.', 'Common plecos can grow to about 50 cm.', 'The family has hundreds of species, all from South and Central America.'],
-      eat: 22 });
+      eat: 22,
+      rest: { chance: .5, where: 'sand' }, sleep: { chance: .15 }, flee: { speed: 1.5 } });
 })();

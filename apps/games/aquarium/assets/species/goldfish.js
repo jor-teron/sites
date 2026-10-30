@@ -12,5 +12,6 @@
       tail: { tl: .55, ts: .6, fork: .35, col: 'rgba(255,130,30,.8)' }, dorsal: { x1: .22, xa: -.05, x2: -.2, dh: .55, col: 'rgba(255,125,30,.85)' }, anal: { x1: -.08, xa: -.16, x2: -.24, dh: .3, col: 'rgba(255,125,30,.85)' },
       desc: 'Goldfish were bred from a dull Asian carp in China more than a thousand years ago and are among the oldest domesticated fish. They are curious, sociable and quick to learn who feeds them.',
       facts: ['They can remember things for months, not seconds.', 'The oldest known goldfish lived about 43 years.', 'They have no true stomach and graze almost constantly.'],
-      eat: 16 });
+      eat: 16,
+      rest: { chance: .2, where: 'plant' }, sleep: { chance: .12 }, flee: { speed: 1.6 } });
 })();

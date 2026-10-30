@@ -39,9 +39,11 @@
     var W = S.W, H = S.H, U = S.U, floorY = S.floorY;
     S.t += dt;
     fish.forEach(function (f) {
-      var sp = f.sp, u = U, spd = sp.spd * u * (.6 + .4 * f.mood), b = bounds(f), tg = target(f), ax = 0, ay = 0, i, g, dx, dy, d, n = 0, mx = 0, my = 0, vx = 0, vy = 0, gx = 0, gy = 0, gn = 0;
+      var sp = f.sp, u = U, spd = sp.spd * u * (.6 + .4 * f.mood), b = bounds(f), tg = target(f), still, ax = 0, ay = 0, i, g, dx, dy, d, n = 0, mx = 0, my = 0, vx = 0, vy = 0, gx = 0, gy = 0, gn = 0;
+      spd *= A.behave.step(f, dt, tg); still = f.st === 'rest' || f.st === 'sleep';
       if (sp.id === 'pleco') {   // cruise the sand, pause now and then
         f.tm -= dt; if (f.tm <= 0) { f.mode = f.mode ? 0 : 1; f.tm = f.mode ? 4 + rnd() * 6 : 2 + rnd() * 4; if (f.mode) f.dir = rnd() < .5 ? -1 : 1; }
+        if (still) { f.mode = 0; f.tm = Math.max(f.tm, .5); }
         if (f.x < b.x0 + 30) f.dir = 1; else if (f.x > b.x1 - 30) f.dir = -1;
         ax = ((f.mode ? f.dir * spd * .8 : 0) - f.vx) * 1.5;
         if (tg) ax = (clamp((tg.x - f.x) / 12, -1, 1) * spd * 1.3 - f.vx) * 2;   // hungry pleco grazes along the bottom toward sinking food
@@ -61,13 +63,15 @@
         var lo = b.y0 + (floorY - b.y0) * sp.band[0], hi = b.y0 + (floorY - b.y0) * sp.band[1], z = 90 * u;
         if (f.y < lo) ay += (lo - f.y) / z * spd; else if (f.y > hi) ay -= (f.y - hi) / z * spd;
         if (tg) { dx = tg.x - f.x; dy = tg.y - f.y; d = Math.hypot(dx, dy) + .01; ax = ax * .25 + dx / d * spd * 5; ay = ay * .25 + dy / d * spd * 4.5; }   // chase food
+        if (still) { ax = ax * .2 + ((f.rx - f.x) * .6 - f.vx) * 1.2; ay = ay * .2 + ((f.ry - f.y) * .6 - f.vy) * 1.2; }   // hover at the rest spot
         var a2 = Math.hypot(ax, ay), cap = spd * 5; if (a2 > cap) { ax *= cap / a2; ay *= cap / a2; }
       }
+      if (f.st === 'flee') { dx = f.x - f.fx; dy = f.y - f.fy; d = Math.hypot(dx, dy) + .01; spd *= sp.flee.speed; ax += dx / d * spd * 10; ay += dy / d * spd * 6; }   // dart away from the tap
       var w = 90 * u;   // soft walls
       if (f.x - b.x0 < w) ax += spd * 3.5 * (1 - (f.x - b.x0) / w); if (b.x1 - f.x < w) ax -= spd * 3.5 * (1 - (b.x1 - f.x) / w);
       if (f.y - b.y0 < w * .6) ay += spd * 3.5 * (1 - (f.y - b.y0) / (w * .6)); if (b.y1 - f.y < w * .6) ay -= spd * 3.5 * (1 - (b.y1 - f.y) / (w * .6));
       f.vx += ax * dt; f.vy += ay * dt; f.vy *= 1 - 1.5 * dt;
-      var s = Math.hypot(f.vx, f.vy), mn = sp.id === 'pleco' ? 0 : spd * .45, mxs = spd * 1.35;
+      var s = Math.hypot(f.vx, f.vy), mn = sp.id === 'pleco' || still ? 0 : spd * .45, mxs = spd * 1.35;
       if (s > mxs) { f.vx *= mxs / s; f.vy *= mxs / s; } else if (s < mn) { if (s < .01) { f.vx = f.dir * mn; } else { f.vx *= mn / s; f.vy *= mn / s; } }
       f.vy = clamp(f.vy, -.5 * Math.max(Math.abs(f.vx), spd * .5), .5 * Math.max(Math.abs(f.vx), spd * .5));
       f.x += f.vx * dt; f.y += f.vy * dt;
@@ -75,9 +79,9 @@
       if (f.y < b.y0) { f.y = b.y0; f.vy = Math.abs(f.vy); } else if (f.y > Math.max(b.y0, b.y1)) { f.y = Math.max(b.y0, b.y1); f.vy = -Math.abs(f.vy); }
       if (Math.abs(f.vx) > .1 * spd) f.face += clamp((f.vx > 0 ? 1 : -1) - f.face, -dt * 5, dt * 5);
       f.pitch += (Math.atan2(f.vy, Math.abs(f.vx) + 1) * (sp.id === 'pleco' ? .1 : .7) - f.pitch) * Math.min(1, dt * 6);
-      f.hunger = Math.min(100, f.hunger + f.hr * dt); f.mood += ((100 - f.hunger) / 100 * .75 + S.wq / 100 * .25 - f.mood) * Math.min(1, dt * .5);
+      f.hunger = Math.min(100, f.hunger + f.hr * dt * (still ? .7 : 1)); f.mood += ((100 - f.hunger) / 100 * .75 + S.wq / 100 * .25 - f.mood) * Math.min(1, dt * .5);
       if (tg && Math.hypot(tg.x - (f.x + f.face * f.L * .5), tg.y - f.y) < f.L * .25 + 7 * u) { tg.dead = 1; f.hunger = Math.max(0, f.hunger - sp.eat); S.wq -= .25; }
-      f.ph += dt * (sp.id === 'pleco' && !f.mode ? 1.5 : 4 + 7 * Math.min(1.3, Math.hypot(f.vx, f.vy) / spd));
+      f.ph += dt * ((sp.id === 'pleco' && !f.mode) || still ? 1.5 : 4 + 7 * Math.min(1.3, Math.hypot(f.vx, f.vy) / spd));
     });
     care(dt);
     S.bubbles.forEach(function (b) { b.y -= b.vy * dt; b.ph += dt * 3; if (b.y < 26 * U) respawn(b, false); });
