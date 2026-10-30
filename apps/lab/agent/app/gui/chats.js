@@ -102,7 +102,13 @@ HR.chats = (function () {
     var pins = all.filter(function (c) { return c.pinned; }), rest = all.filter(function (c) { return !c.pinned; });
     if (pins.length) { listEl.appendChild(head('Pinned')); pins.forEach(function (c) { listEl.appendChild(row(c)); }); if (rest.length) listEl.appendChild(head('Recent')); }
     rest.forEach(function (c) { listEl.appendChild(row(c)); });
-    $('chatsWhere').textContent = HR.fs.ready() && HR.set.get('saveChats') !== 'off' ? 'Saved in 📁 ' + HR.fs.name() + '/' + HR.threads.DIR : 'Saved in this browser (pick a folder to keep them as files)';
+    // $('chatsWhere').textContent = HR.fs.ready() && HR.set.get('saveChats') !== 'off' ? 'Saved in 📁 ' + HR.fs.name() + '/' + HR.threads.DIR : 'Saved in this browser (pick a folder to keep them as files)';
+    /* AG-F2: folder remembered but not allowed yet -> say so and show Reconnect (no silent switch to browser storage) */
+    var wait = HR.threads.waiting(), rb = $('chatsReconnect');
+    $('chatsWhere').textContent = wait ? '⚠ Folder' + (HR.fs.name() ? ' “' + HR.fs.name() + '”' : '') + ' needs permission again. Chats are kept in this browser for now and go to the folder when you reconnect.'
+      : HR.fs.ready() && HR.set.get('saveChats') !== 'off' ? 'Saved in 📁 ' + HR.fs.name() + '/' + HR.threads.DIR : 'Saved in this browser (pick a folder to keep them as files)';
+    $('chatsWhere').classList.toggle('warn', wait);
+    if (rb) { rb.hidden = !wait; if (wait) HR.threads.pendingCount().then(function (n) { rb.textContent = '📁 Reconnect folder' + (n ? ' · ' + n + ' waiting' : ''); }); }
   }
   function phone() { return !matchMedia('(min-width:960px)').matches; }
   function close() { if (phone()) document.body.classList.remove('chats-open'); }
@@ -115,6 +121,7 @@ HR.chats = (function () {
     document.addEventListener('click', function (e) { if (menu && !menu.contains(e.target)) closeMenu(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
     $('btnChats').onclick = toggle; $('chatsClose').onclick = function () { document.body.classList.remove('chats-open'); };
+    if ($('chatsReconnect')) $('chatsReconnect').onclick = function () { HR.fs.reconnect().catch(function (e) { if (!e || e.name !== 'AbortError') HR.chat.note('Folder: ' + (e && e.message || e)); }); };   /* AG-F2: tap = user gesture */
     $('chatsBack').onclick = close; $('btnNewChat').onclick = newChat; $('btnClear').onclick = newChat;
     if (localStorage.getItem('agent.chatsPane') === 'off') document.body.classList.add('chats-off');
     addEventListener('pagehide', flush); document.addEventListener('visibilitychange', function () { if (document.hidden) flush(); });
