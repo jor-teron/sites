@@ -95,6 +95,7 @@ Mail,         mail/,                , , Mail, Simple Gmail client: read and send
 name, path, icon, newtab, section, description
 File Drop,  filedrop/,   , , Share, Send files and photos device to device: scan a QR or type a 4-digit code
 QR Scanner, qr-scanner/, , , Share, Scan QR codes and barcodes with the camera or from a photo
+Code Maker, code-maker/, code-maker/code-maker_icon.png, , Share, Make QR codes and barcodes: Wi-Fi - contact - UPI - links - EAN - Code 128
 Whiteboard, whiteboard/, whiteboard/whiteboard_icon.png, , Share, Draw together live on a shared whiteboard with every connected device
 Shared Clipboard, shared-clipboard/, shared-clipboard/clipboard_icon.png, , Share, Copy on one device and paste on another: text links and images
 Multi-Screen Wall, screen-wall/, screen-wall/screenwall_icon.png, , Share, Join phones tablets and PCs into one big screen: picture - clock - scrolling text

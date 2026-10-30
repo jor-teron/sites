@@ -1,0 +1,48 @@
+/* code-maker.css (QR1). Light by default; html.dark for dark. Phone first, two columns from 900px. */
+:root { --bg:#f5f6f8; --card:#fff; --ink:#1b1f24; --mut:#667; --line:#dde1e6; --acc:#2563eb; --bad:#c62828; }
+html.dark { --bg:#121417; --card:#1d2126; --ink:#e8eaed; --mut:#9aa3ad; --line:#2f353c; --acc:#5b8dff; --bad:#ff6b6b; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; padding-bottom:env(safe-area-inset-bottom); }
+.top { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; padding-top:max(10px, env(safe-area-inset-top)); }
+.top h1 { font-size:19px; margin:0; }
+.wrap { display:grid; gap:12px; padding:0 12px 16px; max-width:1200px; margin:0 auto; }
+@media (min-width:900px) { .wrap { grid-template-columns:minmax(320px,420px) 1fr; align-items:start; } #histCard { grid-column:1 / -1; } }
+.card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; min-width:0; }
+.lbl { display:flex; flex-direction:column; gap:4px; margin:0 0 10px; font-size:13px; color:var(--mut); }
+.lbl.chk { flex-direction:row; align-items:center; gap:8px; color:var(--ink); font-size:15px; }
+.lbl input[type=range] { width:100%; }
+input[type=text],input[type=url],input[type=tel],input[type=email],input[type=number],input[type=datetime-local],select,textarea {
+  font:inherit; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px; width:100%; min-height:44px; }
+textarea { resize:vertical; }
+input[type=color] { width:100%; height:40px; border:1px solid var(--line); border-radius:10px; background:var(--bg); padding:2px; }
+.row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.opts summary { cursor:pointer; padding:6px 0 10px; font-weight:600; }
+.hint { font-size:13px; color:var(--acc); min-height:1em; margin:0 0 6px; }
+.btn,.mini { font:inherit; border:1px solid var(--line); background:var(--bg); color:var(--ink); border-radius:10px; cursor:pointer; }
+.btn { min-height:44px; padding:0 14px; flex:1 1 30%; }
+.btn.pri { background:var(--acc); border-color:var(--acc); color:#fff; }
+.mini { padding:6px 10px; font-size:13px; }
+.logo-btns { display:flex; gap:8px; }
+.preview { position:relative; display:flex; justify-content:center; align-items:center; min-height:220px; padding:12px;
+  background:repeating-conic-gradient(var(--line) 0 25%, transparent 0 50%) 0 0/16px 16px; border-radius:10px; overflow:auto; }
+.preview canvas { max-width:100%; height:auto; image-rendering:pixelated; box-shadow:0 1px 6px rgba(0,0,0,.15); }
+.bad .preview canvas { visibility:hidden; }
+.badge { position:absolute; top:8px; right:8px; background:#1b873f; color:#fff; font-size:12px; padding:3px 8px; border-radius:20px; }
+.err { color:var(--bad); font-weight:600; margin:10px 0 0; }
+.acts { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.print-row { margin-top:8px; font-size:13px; color:var(--mut); }
+.print-row input { width:80px; min-height:36px; padding:6px; margin-left:6px; }
+.mut { color:var(--mut); font-size:13px; }
+h2 { font-size:16px; margin:0 0 8px; display:flex; justify-content:space-between; align-items:center; }
+.hist { list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+@media (min-width:900px) { .hist { grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); } }
+.hist li { display:flex; gap:8px; align-items:center; border:1px solid var(--line); border-radius:10px; padding:6px 8px; }
+.hopen { flex:1; min-width:0; text-align:left; background:none; border:0; color:inherit; font:inherit; cursor:pointer; display:flex; flex-direction:column; }
+.hopen span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:13px; }
+.hopen small { color:var(--mut); font-size:11px; }
+#printArea { display:none; }
+@media print {
+  body > *:not(#printArea) { display:none !important; }
+  #printArea { display:grid !important; grid-template-columns:repeat(auto-fill,minmax(45mm,1fr)); gap:6mm; }
+  #printArea img { width:100%; height:auto; break-inside:avoid; }
+}
