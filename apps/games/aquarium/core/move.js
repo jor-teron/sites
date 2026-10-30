@@ -1,4 +1,4 @@
-// Aquarium AQQ1d: movement modes for non-fish animals (species set mode: 'walk'|'crawl'|'upright'|'pulse'|'snake').
+// Aquarium AQQ1d/AQQ1e: movement modes for non-fish animals (species set mode: 'walk'|'crawl'|'upright'|'pulse'|'snake'|'jet'|'octo'|'glide'|'cruise').
 // Each mode sets f.vx/f.vy/f.x/f.y for one frame; behave.js states (rest, sleep, eat, flee) still drive what they aim for.
 (function () {
   'use strict';
@@ -18,7 +18,7 @@
     var sp = f.sp, y1 = Math.max(b.y0, b.y1), rx = S.rockX || [];
     f.gx = b.x0 + rnd() * (b.x1 - b.x0); f.gy = b.y0 + (y1 - b.y0) * (sp.band[0] + rnd() * (sp.band[1] - sp.band[0])); f.gt = 4 + rnd() * 6;
     if (sp.hide && (f.hide = !f.hide) && rx.length) { f.gx = clamp(rx[rnd() * rx.length | 0] + (rnd() - .5) * 30 * S.U, b.x0, b.x1); f.gy = y1 - 4 * S.U; f.gt = 8 + rnd() * 10; }
-    if (sp.surface && rnd() < sp.surface) { f.gy = b.y0; f.gt = 6; }
+    if (sp.surface && rnd() < sp.surface) { f.gy = b.y0; f.gt = 20; }
   }
   // walk / crawl: along the sand only; scuttle to a spot, pause, repeat (crawlers pause much more)
   function walk(f, b, spd, tg, still, dt) {
@@ -48,5 +48,32 @@
     if (f.st === 'flee') f.vx += (f.x > f.fx ? 1 : -1) * spd * dt * 2;
     f.vy += (spd * .25 - f.vy) * Math.min(1, dt * .8); f.vx *= 1 - dt * .5; go(f, b, dt);
   }
-  A.move = { walk: walk, crawl: walk, upright: drift, snake: drift, pulse: pulse, drift: drift, seek: seek, go: go, away: away };
+  function aim(f, b, still, tg) {   // where a free swimmer is heading this frame
+    if (f.st === 'flee') return away(f, .5); if (tg) return [tg.x, tg.y]; if (still) return [f.rx, f.ry];
+    if (!(f.gt > 0) || Math.hypot(f.gx - f.x, f.gy - f.y) < 25 * S.U) goal(f, b); return [f.gx, f.gy];
+  }
+  // jet (squid): coast with drag, then a quick squeeze-and-squirt burst toward the goal
+  function jet(f, b, spd, tg, still, dt) {
+    var t = aim(f, b, still, tg), dx = t[0] - f.x, dy = t[1] - f.y, d = Math.hypot(dx, dy) + .01;
+    f.pp = Math.max(0, (f.pp || 0) - dt * 3); f.gt -= dt;
+    if ((f.pt = (f.pt || 0) - dt) <= 0 && d > 15 * S.U) { var k = spd * (f.st === 'flee' ? 4 : 2.2); f.vx = dx / d * k; f.vy = dy / d * k; f.pp = 1; f.pt = (still ? 3 : 1.2) + rnd() * 1.5; }
+    f.vx *= 1 - Math.min(1, dt * 1.6); f.vy *= 1 - Math.min(1, dt * 1.6); go(f, b, dt);
+  }
+  // octo: crawls the sand like a walker; a scare makes it jet up, then it sinks back down
+  function octo(f, b, spd, tg, still, dt) {
+    var y1 = Math.max(b.y0, b.y1);
+    if (f.up === undefined) { f.up = 0; f.y = y1; }   // starts on the sand like the walkers
+    f.hue = (f.hue || 0) + ((f.st === 'flee' ? 1 : .15 + .15 * Math.sin(S.t * .3 + f.k * 5)) - (f.hue || 0)) * Math.min(1, dt * 1.5);   // colour shifts a little, blushes when startled
+    if (f.st === 'flee' && !(f.up > 0) && f.y > y1 - 5) { f.up = 1.2; f.vy = -spd * 7; f.vx = (f.x > f.fx ? 1 : -1) * spd * 2; f.pp = 1; }
+    f.pp = Math.max(0, (f.pp || 0) - dt * 2);
+    if (f.up > 0 || f.y < y1 - 2) { f.up -= dt; f.vy += spd * 3 * dt; f.vy = Math.min(f.vy, spd * 1.5); f.vx *= 1 - dt; go(f, b, dt); f.pitch = 0; return; }
+    walk(f, b, spd, tg, still, dt);
+  }
+  // cruise (shark): a slow patrol; anything close by swims off (AQQ1b flee), nobody is ever eaten or hurt
+  function cruise(f, b, spd, tg, still, dt) {
+    drift(f, b, spd, null, still, dt);
+    var R = (f.sp.scare || 130) * S.U;
+    S.fish.forEach(function (o) { if (o !== f && o.sp.id !== f.sp.id && Math.hypot(o.x - f.x, o.y - f.y) < R) { o.fleeT = Math.max(o.fleeT || 0, .5); o.fx = f.x; o.fy = f.y; } });
+  }
+  A.move = { walk: walk, crawl: walk, upright: drift, snake: drift, pulse: pulse, drift: drift, glide: drift, jet: jet, octo: octo, cruise: cruise, seek: seek, go: go, away: away };
 })();
