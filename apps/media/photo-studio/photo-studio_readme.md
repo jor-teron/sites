@@ -1,9 +1,10 @@
-# Hub Photo Studio (HPS2)
+# Hub Photo Studio (HPS3)
 
 The Hub's bigger photo editor (Media → Photo). Release **HPS1** had exactly Photo Editor v2's
 feature set (PE5) under its own name, settings and About. Release **HPS2** adds **layers** (image,
 text and shape layers with opacity and blend modes), the **.hps project file** and **.ora export**.
-Planned next: selections and masks, retouch, pro adjustments.
+Release **HPS3** adds **selections** (rectangle, ellipse, lasso, magic wand) that limit Adjust / Looks,
+and **layer masks** (mask brush, mask from selection). Planned next: retouch, pro adjustments.
 
 Open `photo-studio.html` (or the folder; `index.html` redirects). Works from `file://` too.
 
@@ -46,7 +47,9 @@ Studio's own files:
 | `ps_app.js` | Studio layer, loaded last: `PE.ui.notify` (in-app message box), `PE.studio.ask` (in-app confirm / prompt, HPS2), Settings sheet, theme → photo background, Studio keys, `PE.studio` feature slot |
 | `ps_zip.js` | HPS2: tiny ZIP writer / reader (`PSZip.write / read / crc32`), store + deflate (`CompressionStream('deflate-raw')`, falls back to store), CRC-checked reads |
 | `ps_layers.js` | HPS2: the Layers feature (`PE.layers`): model, drawing, on-canvas handles, panel, text dialog |
-| `ps_project.js` | HPS2: `.hps` save / open and `.ora` export (`PE.project`) |
+| `ps_project.js` | HPS2: `.hps` save / open and `.ora` export (`PE.project`); HPS3: masks in / out, Adjust area in the .ora |
+| `ps_select.js` | HPS3: pixel store `PE.pix`, selections `PE.select`, marching ants, the `PE.view.adjustMask` hook, selection bar |
+| `ps_mask.js` | HPS3: layer masks `PE.masks`: drawing hooks, mask brush, mask bar, .hps mask entries |
 
 Photo Editor v2 stores nothing in localStorage of its own, and Studio writes only
 `photo-studio-*` keys (plus the shared `shared-link-*` keys written by `shared/link` for Send),
@@ -63,7 +66,15 @@ HPS2 added two more, both backward compatible:
   the preview copy).
 - `pe_io.js`: Save step 1 draws through `PE.view.drawPhoto` (same arguments as before).
 
-Photo Editor v2 never replaces `drawPhoto`, so it draws exactly as before (PE5 test 46/46).
+HPS3 added one more, backward compatible:
+- `pe_view.js` + `pe_io.js`: `PE.view.adjustMask(ctx, outW, outH, offY)`, default `null`. When set and it
+  returns true, it has drawn an alpha mask for the output (or for the 512-row strip starting at `offY`);
+  Adjust / Looks / Sharpen are then kept only where the mask is opaque (preview: destination-in over the
+  plain copy; save: per-strip blend with the untouched pixels). Old lines are kept as comments.
+- `ps_layers.js` (Studio's own) gained `L.drawBg`, `L.bgMasked`, `L.engineDraw`, `L.mapping`, `L.toLocal`,
+  `L.boxH` so `ps_mask.js` can wrap drawing.
+
+Photo Editor v2 never replaces `drawPhoto` and never sets `adjustMask`, so it draws exactly as before (PE5 test 46/46).
 Studio loads `pe_view.js` / `pe_io.js` and every other engine file straight from the
 Photo Editor v2 copy.
 
@@ -96,6 +107,27 @@ everything else:
   the end: background + layers are composited first, then the colour and sharpen pass runs, both in
   the preview and in Save / Print / Send.
 
+## Selections (HPS3)
+- Tools on the toolbar (Select, Wand) and the floating bar at the top: Rectangle / Ellipse (`M`, press
+  again to switch), Lasso (`Shift+L`), Magic wand (`W`: Tolerance 0–128, Contiguous on / off, sample the
+  whole Image or only the selected Layer). New / Add / Subtract chips, or hold `Shift` (add) / `Alt`
+  (subtract) while you drag or tap. A tap without dragging deselects. All, None, Invert; `Ctrl+A`,
+  `Esc` / `Ctrl+D`, `Ctrl+I`. `Done` / `Esc` closes the tool.
+- A selection is an alpha mask over the original photo (max about 4 MP, `config.studio.select`), so it
+  follows crop / rotate / flip / resize and is drawn bigger for the full-size save. Marching ants show it.
+- **Adjust / Looks inside the selection**: the selection that is active when you change a slider or a look
+  is remembered with that step (`edits.adjSel`); Adjust then applies only there, in the preview and in
+  Save / Print / Send / .ora. Change Adjust with no selection to make it global again. Undo restores both.
+- **Delete** with a selection hides that area of the selected layer (or the background) through its mask.
+- Every selection change is one undo step. The selection itself is not saved in the .hps.
+
+## Layer masks (HPS3)
+- Mask brush (`B`): paint **Hide** / **Show** on the selected layer (the background when none), Size
+  (`[` / `]`), Hardness; one stroke = one undo step. The bar also has Mask on / off, From selection
+  (shows only the selection), Delete mask (asks first).
+- A mask covers the layer's own box (max about 4 MP, `config.studio.mask`), so it moves, scales and
+  rotates with the layer. Masks apply in the preview, Save / Print / Send and the .ora export.
+
 ## The .hps project file (version 1)
 A `.hps` is a plain ZIP (open it with any unzip tool):
 
@@ -104,7 +136,9 @@ A `.hps` is a plain ZIP (open it with any unzip tool):
 | `project.json` | the project (below), deflated |
 | `images/background.<ext>` | the original photo file, byte for byte (stored) |
 | `images/<src>.<ext>` | the original file of each image layer, byte for byte (stored) |
-| `layers/<id>.png` | raster pixels for painted layers (reserved: none in HPS2) |
+| `layers/<id>.png` | raster pixels for painted layers (reserved: none in HPS2 / HPS3) |
+| `masks/<id>.png`, `masks/background.png` | HPS3: layer / background masks (alpha = visible). The layer gets `"mask": {"src": "masks/<id>.png", "on": true, "w": …, "h": …}`, `background` gets `"mask": {"src", "on"}` |
+| `masks/adjust.png` | HPS3: the area Adjust / Looks apply to; `edits.adjSel: "masks/adjust.png"` (missing = whole image) |
 | `preview.png` | flattened preview, longest side ≤ 256 px |
 
 `project.json`:
@@ -135,6 +169,8 @@ A `.hps` is a plain ZIP (open it with any unzip tool):
   radians clockwise, `opacity` 0..1, `blend` = a canvas `globalCompositeOperation` name. A line is a
   shape with `h: 0` drawn along its width. Text `w / h` are recomputed from the font on open.
 - `images/` files are never re-encoded; image layers are decoded at their stored `w / h`.
+- HPS3 masks are additive: the version stays 1; HPS2 ignores the `mask` / `adjSel` fields (and then shows
+  layers unmasked), HPS3 opens every HPS2 file unchanged.
 - Open checks `format` and `version` (newer versions get a friendly "made by a newer Photo Studio"
   message), skips unknown layer types, and repairs missing values. Undo history is not saved.
 
@@ -165,6 +201,8 @@ add another backward-compatible hook in the release that first needs it.
 Ctrl+O open, Ctrl+S save, Ctrl+Z / Ctrl+Y undo / redo, C crop (Enter applies), R / Shift+R rotate,
 H / V flip, A adjust, E resize, L layers, Delete delete the selected layer (asks first),
 + / - / 0 zoom, `,` settings, Esc deselect / close. In the text dialog Ctrl+Enter adds.
+HPS3: M marquee (rectangle / ellipse), Shift+L lasso, W magic wand, B mask brush ([ ] size), Shift / Alt add /
+subtract, Ctrl+A select all, Esc / Ctrl+D deselect, Ctrl+I invert, Delete with a selection hides it.
 
 ## Light on old laptops
 Same engine as Photo Editor v2: the preview is a screen-sized copy (≤ 2.5 MP), sliders only rebuild
@@ -175,8 +213,17 @@ friendly in-app messages explain both caps. Decoded layer bitmaps are kept, text
 the preview is rebuilt only when something changes (once per frame while dragging); with no layers
 the engine draws exactly as before. On a 4 GB Celeron keep enlargements to about 4000–5000 px.
 
+## Limits (HPS3)
+- Selections and masks are kept at most about 4 MP each, so on a 12 MP photo their edges are about 1.7×
+  softer than the photo's pixels. Selections are not saved in the .hps; the undo history keeps up to 60 steps
+  (old mask / selection buffers are freed as soon as no step uses them).
+- No feather / grow / shrink, no selection move, no Fill; the wand samples the original (unadjusted) pixels.
+- Adjust is still one setting for the whole image, limited to one area (not per layer).
+- Line shapes: the round caps just past the ends are cut off when the layer has a mask.
+- Syntax-checked only so far (no browser test yet).
+
 ## Limits (HPS2)
-- 10 layers, ~12 MP. No masks, selections, brushes or layer groups yet; no per-layer Adjust
+- 10 layers, ~12 MP. (HPS2:) No masks, selections, brushes or layer groups yet; no per-layer Adjust
   (Adjust is for the whole flattened image). Layers outside the crop are clipped.
 - Text uses the device's fonts (Sans / Serif / Mono / Impact / Casual map to common system fonts),
   so a .hps opened on another device can look slightly different.

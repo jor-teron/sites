@@ -120,11 +120,13 @@
   // Colour (lut) and sharpen (amount > 0) on the whole canvas, strip by strip, so memory stays
   // small. Sharpen needs one row above and below each strip: the row above is kept from the
   // previous strip before it was sharpened, the row below is read fresh.
-  async function processFull(x, W, H, lut, amount, rows) {
-    let tYield = performance.now(), prevRow = null;
+  // HPS3: mask (optional, PE.view.adjustMask) keeps the result only inside the mask, strip by strip.
+  async function processFull(x, W, H, lut, amount, rows, mask) {
+    let tYield = performance.now(), prevRow = null, mc = null;
     const W4 = W * 4;
     for (let y = 0; y < H; y += rows) {
       const hh = Math.min(rows, H - y);
+      const orig = mask ? x.getImageData(0, y, W, hh) : null;   // HPS3: untouched strip (null for Photo Editor v2)
       if (!amount) {
         const id = x.getImageData(0, y, W, hh);
         PE.adjust.process(id.data, lut);
@@ -141,6 +143,23 @@
         const out = new ImageData(W, n);
         PE.adjust.sharpen(d, out.data, W, n, y - top, y - top + hh, amount);
         x.putImageData(out, 0, top, 0, y - top, W, hh);
+      }
+      if (orig) {                                    // HPS3: blend back outside the mask
+        if (!mc) mc = document.createElement('canvas');
+        mc.width = W; mc.height = hh;
+        const mx = mc.getContext('2d', { willReadFrequently: true });
+        if (!mask(mx, W, H, y)) mask = null;
+        else {
+          const a = mx.getImageData(0, 0, W, hh).data, r = x.getImageData(0, y, W, hh), d = r.data, o = orig.data;
+          for (let i = 0; i < d.length; i += 4) {
+            const k = a[i + 3];
+            if (k === 255) continue;
+            if (k === 0) { d[i] = o[i]; d[i + 1] = o[i + 1]; d[i + 2] = o[i + 2]; continue; }
+            const f = k / 255;
+            d[i] = o[i] + (d[i] - o[i]) * f; d[i + 1] = o[i + 1] + (d[i + 1] - o[i + 1]) * f; d[i + 2] = o[i + 2] + (d[i + 2] - o[i + 2]) * f;
+          }
+          x.putImageData(r, 0, y);
+        }
       }
       if (performance.now() - tYield > 50) { await nextFrame(); tYield = performance.now(); }
     }
@@ -174,7 +193,8 @@
       // 3. colour + sharpen at full output resolution, in strips
       const eff = PE.adjust.effective(e);
       const lut = PE.adjust.isIdentity(eff) ? null : PE.adjust.build(eff);
-      if (lut || eff.sh) await processFull(x, O.w, O.h, lut, eff.sh ? PE.adjust.sharpenAmount(eff.sh) : 0, cs.stripRows);
+      // legacy (PE5): if (lut || eff.sh) await processFull(x, O.w, O.h, lut, eff.sh ? PE.adjust.sharpenAmount(eff.sh) : 0, cs.stripRows);
+      if (lut || eff.sh) await processFull(x, O.w, O.h, lut, eff.sh ? PE.adjust.sharpenAmount(eff.sh) : 0, cs.stripRows, PE.view.adjustMask || null);
       const mime = fmt === 'png' ? 'image/png' : 'image/jpeg';
       const blob = await new Promise((res) => c.toBlob(res, mime, fmt === 'png' ? undefined : cs.jpegQuality));
       if (!blob) throw new Error('encode failed');

@@ -1,5 +1,5 @@
 /*
- * Hub Photo Studio (HPS2) — ps_layers.js, the Layers feature (one file, registered through PE.studio).
+ * Hub Photo Studio (HPS2, hooks for HPS3 masks) — ps_layers.js, the Layers feature (one file, registered through PE.studio).
  *
  * Model (all inside the engine's edit settings, so undo / redo and the 60-step history just work):
  *   S.edits.bg     = { name, visible, opacity }                 the photo = the background layer
@@ -110,13 +110,17 @@
 
   // Engine hook: background + layers. opts.only = 'bg' | layer id (ORA export: one part, raw).
   const engineDraw = V.drawPhoto;
+  // HPS3: the background draw and the "background is masked" test are hooks, so ps_mask.js can mask it.
+  L.engineDraw = engineDraw;
+  L.bgMasked = () => false;
+  L.drawBg = (x, P, cr, m, w, h, a, b, alpha) => { x.save(); x.globalAlpha = alpha; engineDraw(x, P, cr, m, w, h, a, b); x.restore(); };
   L.drawAll = (x, P, cr, m, w, h, a, b, opts) => {
     const only = opts && opts.only, bg = L.bg(), ls = L.list();
-    if (!only && !ls.length && bg.visible && bg.opacity >= 1) return engineDraw(x, P, cr, m, w, h, a, b);
+    // legacy (HPS2): if (!only && !ls.length && bg.visible && bg.opacity >= 1) return engineDraw(x, P, cr, m, w, h, a, b);
+    if (!only && !ls.length && bg.visible && bg.opacity >= 1 && !L.bgMasked()) return engineDraw(x, P, cr, m, w, h, a, b);
     if (only === 'bg' || (!only && bg.visible)) {
-      x.save(); x.globalAlpha = only ? 1 : clamp(bg.opacity, 0, 1);
-      engineDraw(x, P, cr, m, w, h, a, b);
-      x.restore();
+      // legacy (HPS2): x.save(); x.globalAlpha = only ? 1 : clamp(bg.opacity, 0, 1); engineDraw(x, P, cr, m, w, h, a, b); x.restore();
+      L.drawBg(x, P, cr, m, w, h, a, b, only ? 1 : clamp(bg.opacity, 0, 1));
     }
     if (only === 'bg') return;
     const bb = b == null ? a : b;
@@ -145,6 +149,7 @@
     return { A: m[0] * a, B: m[1] * b, C: m[2] * a, D: m[3] * b,
       cx: c.crop.x + c.crop.w / 2, cy: c.crop.y + c.crop.h / 2, rx: r.x + r.w / 2, ry: r.y + r.h / 2 };
   }
+  L.mapping = mapping;                                  // HPS3: used by ps_select.js / ps_mask.js
   L.toScreen = (px, py, M) => {
     M = M || mapping(); const dx = px - M.cx, dy = py - M.cy;
     return { x: M.A * dx + M.B * dy + M.rx, y: M.C * dx + M.D * dy + M.ry };
@@ -162,7 +167,9 @@
     const dx = p.x - l.x, dy = p.y - l.y, c = Math.cos(-(l.rot || 0)), s = Math.sin(-(l.rot || 0)), k = l.scale || 1;
     return { x: (dx * c - dy * s) / k, y: (dx * s + dy * c) / k };
   }
+  L.toLocal = toLocal; L.localPt = localPt;             // HPS3
   const boxH = (l) => (l.type === 'shape' && l.shape === 'line' ? Math.max(l.h, l.sw || 1) : l.h);
+  L.boxH = boxH;
   // Screen geometry of a layer's box + handles.
   L.geom = (l, M) => {
     M = M || mapping();

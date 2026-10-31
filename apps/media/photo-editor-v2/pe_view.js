@@ -23,6 +23,22 @@
   //  V.rebuild() rebuilds the preview now (Studio calls it while a layer is dragged).
   V.drawPhoto = (x, P, cr, m, w, h, a, b) => T.drawOriented(x, P.bitmap, cr.x, cr.y, cr.w, cr.h, m, w, h, a, b);
   V.rebuild = () => buildBase();
+  // HPS3 hook (backward compatible; Photo Editor v2 never sets it, so nothing changes there):
+  //  V.adjustMask(ctx, outW, outH, offY) — when set, draws an alpha mask for the output (or for the strip
+  //  of it starting at row offY) into ctx and returns true; Adjust / Looks / Sharpen then apply only where
+  //  the mask is opaque (Hub Photo Studio selections). Returns false = apply everywhere, as before.
+  V.adjustMask = null;
+  let mk = null;
+  function clipAdjusted(w, h) {
+    if (!V.adjustMask) return;
+    if (!mk) mk = document.createElement('canvas');
+    mk.width = w; mk.height = h;
+    if (!V.adjustMask(mk.getContext('2d'), w, h, 0)) return;
+    actx.save(); actx.setTransform(1, 0, 0, 1, 0, 0);
+    actx.globalCompositeOperation = 'destination-in'; actx.drawImage(mk, 0, 0);
+    actx.globalCompositeOperation = 'destination-over'; actx.drawImage(base, 0, 0);
+    actx.restore();
+  }
 
   V.init = () => {
     V.stage = document.getElementById('stage');
@@ -172,6 +188,7 @@
         PE.adjust.sharpen(workData.data, sharpData.data, w, h, 0, h, PE.adjust.sharpenAmount(eff.sh));
         actx.putImageData(sharpData, 0, 0);
       } else actx.putImageData(workData, 0, 0);
+      clipAdjusted(w, h);                  // HPS3 hook (no-op unless V.adjustMask is set)
       V.shown = adj;
     }
     V.renderNow();

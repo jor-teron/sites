@@ -63,7 +63,7 @@ Sudoku,                sudoku/,  , , Puzzle, Simple 9x9 sudoku with easy puzzles
 name, path, icon, newtab, section, description
 Draw,            draw/,            , , Draw & Paint, Draw with finger stylus or mouse: pen - eraser - fill - shapes - export PNG
 Photo Editor v2, photo-editor-v2/, , , Photo, Edit photos: crop - rotate - resize - brightness - contrast - sharpen - B&W and sepia looks
-Hub Photo Studio, photo-studio/,   , , Photo, Bigger photo editor: layers - text - shapes - .hps projects - crop - rotate - resize - adjust - looks - undo and redo
+Hub Photo Studio, photo-studio/,   , , Photo, Bigger photo editor: layers - text - shapes - selections - masks - .hps projects - crop - rotate - resize - adjust - looks - undo and redo
 Camera,          camera/,          , , Photo, Take photos and record videos with the device camera
 Gallery,         gallery/,         , , Photo, Browse photos and videos from a folder or files on this device
 GIF Maker,       gif-maker/,       , , Photo, Turn a short video into an animated GIF on your device
