@@ -4,7 +4,7 @@
    ?year=YYYY (from Calendar's "Make printable") wins over the saved year. Exposes window.CM for CM2 / CM3 plug-ins. */
 window.CM = (function () {
   'use strict';
-  const SKEY = 'calendar-maker-settings', RELEASE = 'CM9';
+  const SKEY = 'calendar-maker-settings', RELEASE = 'CM10';
   const $ = (id) => document.getElementById(id);
   let P = {};
   try { P = JSON.parse(localStorage.getItem(SKEY) || '{}') || {}; } catch (_) { P = {}; }
@@ -12,13 +12,14 @@ window.CM = (function () {
   try { cal = JSON.parse(localStorage.getItem('calendar-settings-v1') || '{}') || {}; } catch (_) { cal = {}; }
   const D = { year: new Date().getFullYear(), colour: 'green', sundays: true,
     sat: cal.satAll ? 'all' : (cal.sat24 ? '24' : 'none'), week: cal.week === 'mon' ? 'mon' : 'sun',
-    bg: 'none', soft: '#fef9e7', faint: 25, strip: false, layout: 'p3', fold: true, custom: '#92d36e', font: '#000000', rcol: '#cfcfcf' }; /* CM9: restricted holiday colour */ /* CM6: custom holiday colour + font colour */ /* CM5: fold on (existing users get it too) */ /* CM4: bg default None = white */
+    bg: 'none', soft: '#fef9e7', faint: 25, strip: false, layout: 'p3', fold: true, custom: '#92d36e', font: '#000000', rcol: '#cfcfcf', lhead: '' }; /* CM10: Holiday List header */ /* CM9: restricted holiday colour */ /* CM6: custom holiday colour + font colour */ /* CM5: fold on (existing users get it too) */ /* CM4: bg default None = white */
   Object.keys(D).forEach((k) => { if (P[k] === undefined || P[k] === null) P[k] = D[k]; });
   if (!window.CMRender.LAYOUTS[P.layout]) P.layout = 'p3';
   const HEX = /^#[0-9a-f]{6}$/i; /* CM6 */
   if (!HEX.test(P.custom)) P.custom = D.custom;
   if (!HEX.test(P.font)) P.font = D.font;
   if (!HEX.test(P.rcol)) P.rcol = D.rcol; /* CM9 */
+  if (typeof P.lhead !== 'string') P.lhead = ''; /* CM10 */
   if (P.colour !== 'custom' && !window.CMRender.COLOURS[P.colour]) P.colour = 'green';
   if (['none', 'soft', 'pic'].indexOf(P.bg) < 0) P.bg = 'none'; /* CM4: unknown / old value -> white */
   P.year = D.year; /* opens on the current year unless Calendar passes ?year= */
@@ -106,7 +107,9 @@ window.CM = (function () {
     tabs.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t === b));
     $('page-design').hidden = b.dataset.page !== 'design';
     $('page-hol').hidden = b.dataset.page !== 'hol';
+    if ($('page-list')) $('page-list').hidden = b.dataset.page !== 'list'; /* CM10 */
     if (b.dataset.page === 'hol' && window.CMHol) window.CMHol.show(P.year);
+    else if (b.dataset.page === 'list' && api.listRender) { api.listRender(); render(); } /* CM10 */
     else render();
   });
   window.addEventListener('storage', (e) => { if (e.key === SKEY) { try { Object.assign(P, JSON.parse(e.newValue || '{}')); } catch (_) { /* */ } render(); } });

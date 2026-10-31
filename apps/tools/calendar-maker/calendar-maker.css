@@ -81,3 +81,9 @@ body.land #sheet{aspect-ratio:297/210;max-width:calc((100vh - 90px) * 1.4142)}
 .hl .chip{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid #6aa84f;background:#92d36e;color:#000}
 .hl .chip.r{border-color:#999;background:#cfcfcf}
 .hl li.sub{font-weight:700;opacity:.8;padding-top:10px;border:0}
+/* CM10: Holiday List page */
+#list-wrap{flex:1;display:flex;justify-content:center;align-items:flex-start;min-width:0}
+#list-sheet{width:100%;max-width:calc((100vh - 90px) * 0.7071);height:auto;aspect-ratio:210/297;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.25);border-radius:2px}
+.list-opts{width:320px;flex:none;display:flex;flex-direction:column;gap:10px}
+@media (max-width:760px){.list-opts{width:100%}#list-sheet{max-width:100%}}
+#list-header{height:38px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);padding:0 8px;font-size:14px}

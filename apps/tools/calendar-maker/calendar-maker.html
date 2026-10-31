@@ -4,6 +4,7 @@
   Pages: Design (landing: live A4 preview + options, Print, Download PDF) and Holidays (CM3).
   Styles: calendar-maker.css. Drawing: calendar-maker_render.js. Page logic: calendar-maker.js.
   Download PDF + background: calendar-maker_pdf.js (CM2, jsPDF in vendor/). Holidays page: calendar-maker_holidays.js (CM3).
+  Holiday List page (printable A4 list): calendar-maker_list.js (CM10).
   Holiday defaults come from the Calendar app (../calendar/calendar_holidays.js), not a copy.
 -->
 <html lang="en">
@@ -25,6 +26,7 @@
     <nav id="tabs" role="tablist">
       <button type="button" class="tab on" data-page="design" role="tab">Design</button>
       <button type="button" class="tab" data-page="hol" role="tab">Holidays</button>
+      <!--CM10--><button type="button" class="tab" data-page="list" role="tab">Holiday List</button>
     </nav>
     <!--/CM3-->
   </header>
@@ -93,6 +95,16 @@
     </div>
   </main>
   <!--/CM3-->
+  <!--CM10-->
+  <main id="page-list" class="page" hidden>
+    <div id="list-wrap"><canvas id="list-sheet" aria-label="A4 holiday list preview"></canvas></div>
+    <aside class="list-opts">
+      <label class="row col"><span>Header (optional)</span><input type="text" id="list-header" maxlength="80" placeholder="e.g. organisation name"></label>
+      <p class="note">Holidays for the year chosen on the Design page: main holidays, then Restricted Holidays. Colours and font colour follow the Design page.</p>
+      <div class="acts"><button type="button" class="btn" id="list-print">Print</button><button type="button" class="btn" id="list-pdf">Download PDF</button></div>
+    </aside>
+  </main>
+  <!--/CM10-->
 </div>
 <img id="print-img" alt="">
 <script src="../../../shared/dialog/dialog.js"></script>
@@ -105,6 +117,7 @@
 <!--CM2-->
 <script src="vendor/jspdf.umd.min.js"></script>
 <script src="calendar-maker_pdf.js"></script>
+<script src="calendar-maker_list.js"></script> <!-- CM10 -->
 <!--/CM2-->
 </body>
 </html>
