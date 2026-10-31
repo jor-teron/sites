@@ -923,3 +923,13 @@ kept.
   "Lobby: <name> (<site>)", plus "· different site" if it is not this
   site. Also shown while Refused (site) when the holder sent its info.
 - Older Hubs send nothing, so the line stays hidden until they update.
+
+-- H78: Redirect pages, no flash (31 Oct 2026) --
+- My 9 redirect pages (root index.html, apps/system/, apps/system/about/
+  index + about / contact / feedback.html, apps/system/devbench/,
+  hub/controller/ index + dpad.html) now copy Hub Apps Bot's IX1
+  pattern (apps/index_redirects_readme.md): head script location.replace
+  keeps ?query and #hash (About always goes to #about), meta refresh and
+  the "Open …" link only in <noscript>, so no body text flashes.
+- Colour follows the Hub theme before paint (sites-hub.theme, else the
+  device setting). Each page keeps a one-line legacy comment on top.

@@ -1,15 +1,20 @@
 <!DOCTYPE html>
+<!-- Site root → hub.html. R56: keep ?query and #hash (e.g. ?join=CODE, #app). H78: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: visible "Redirecting to hub.html…" body text; the meta refresh was already in <noscript>. -->
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>sites</title>
-  <!-- R56: keep ?query and #hash (e.g. ?join=CODE, #app) when sending the site root to the Hub -->
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
   <script>
-    window.location.replace('hub.html' + window.location.search + window.location.hash);
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('hub.html' + location.search + location.hash);
+    })();
   </script>
-  <noscript><meta http-equiv="refresh" content="0; url=hub.html" /></noscript>
+  <noscript><meta http-equiv="refresh" content="0; url=hub.html"></noscript>
 </head>
-<body>
-  <p>Redirecting to <a href="hub.html">hub.html</a>…</p>
-</body>
+<body><noscript><p><a href="hub.html">Open the Hub</a></p></noscript></body>
 </html>
