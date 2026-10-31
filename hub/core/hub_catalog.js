@@ -53,6 +53,8 @@ Ant Farm,          ant-farm/,      , , Beta, Ant colony sim: ants dig tunnels an
 Aeroplane,          aeroplane/,                   , , Beta, Fly a small plane around a mini planet - simple 3D flight sim
 Island Game Demo,   island-demo/,                 , , Beta, 3D island demo: walk or run as a male or female character and explore
 Game Settings,      common/settings/games-settings.html, , , Settings, Shared game settings: display - FPS limit - sound - touch controls and difficulty
+Rock Paper Scissors,   rps/,     , , Arcade, Rock paper scissors against the computer
+Sudoku,                sudoku/,  , , Puzzle, Simple 9x9 sudoku with easy puzzles
 `,
   "Media": `# Media — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
@@ -122,6 +124,8 @@ NE-India Dictionary,   nei-dict/,        , , Language, Northeast India dictionar
 Caption for NEI,       caption-for-nei/, , , Language, Live captions for English - Assamese - Hindi - Bengali and Nepali
 Learning HTML (Basic), learning-html/,   , , Learn, Try HTML: type code and see the result live as you type
 Speed Test,            speedtest/,       , , Network, Test your internet speed: ping and download from this site
+Altimeter,             altimeter/,          , , Weather, GPS altitude from your phone location - needs location permission
+Password Generator,    password-generator/, , , , Generate strong passwords with options - works offline
 `,
   "Lab": `# Lab apps — one per line. Paths are relative to this folder. Lines starting with # are comments.
 # icon optional (empty = <folder>/<folder>_icon.png or a letter tile); newtab 1 = own tab on desktop;
