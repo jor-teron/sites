@@ -58,6 +58,7 @@
     const hc = T.headerColour(o.hcolour);
     const htc = T.textOn(hc, fc); /* white text on the Excel blue */
     const rc = T.restrictedColour(o.rcolour);
+    const bc = L.bandColour(o); /* CM16-F2: stripe fill or null */
     const deco = o.deco !== false, abcd = o.abcd !== false, merge = o.merge !== false;
     c.fillStyle = '#fff'; c.fillRect(0, 0, W, H);
     const M = C.margin(), TW = W - 2 * M;
@@ -144,8 +145,13 @@
       else spans.push({ m: x.r.m, sec: x.r.sec, start: i, end: i });
     });
     const ys = []; Lay.rs.forEach((x) => { ys.push(yy); yy += x.h; }); ys.push(yy);
+    let k = 0; /* CM16-F2: stripe counter, restarts after the Restricted heading */
     Lay.rs.forEach((x, i) => {
       const y0 = ys[i];
+      if (x.r.head) k = 0;
+      else if (bc && (k++ % 2) === 1) { /* merged month cell stays white; 'month every row' follows the stripe */
+        c.fillStyle = bc; c.fillRect(merge ? cx[1] : cx[0], y0, merge ? cx[4] - cx[1] : TW, x.h);
+      }
       if (x.r.head) {
         c.fillStyle = rc; c.fillRect(cx[0], y0, TW, x.h);
         c.font = font('700', fs); c.fillStyle = fc; c.textAlign = 'center'; c.fillText(x.r.text, W / 2, y0 + x.h / 2);

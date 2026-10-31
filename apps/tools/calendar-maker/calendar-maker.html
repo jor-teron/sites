@@ -50,6 +50,7 @@
         <div class="swatches" id="mfills"></div>
         <label class="cpick" title="Custom month label fill"><input type="color" id="mcustom" aria-label="Custom month label fill"> Custom</label></div>
       <label class="row"><span>Show legend</span><input type="checkbox" class="sw" id="legend"></label>
+      <!--CM16-F1--><label class="row" id="lgsz-row"><span>Legend size</span><span class="lgsz"><input type="number" id="lgsz" min="0.5" max="2" step="0.05" inputmode="decimal" aria-label="Legend size in em of the date text"> em</span></label><!--/CM16-F1-->
       <!--/CM12-F3-->
       <!--CM6-->
       <div class="row"><span>Font colour</span>
@@ -116,6 +117,9 @@
         <label class="row"><input type="checkbox" id="list-merge"> <span>Merge month cells (off = month on every row)</span></label>
         <div class="row col"><span>Header row colour</span><div class="swatches" id="list-hcolours"></div><label class="cpick" title="Custom header colour"><input type="color" id="list-hcustom" aria-label="Custom header row colour"> Custom</label></div>
       </div><!--/CM12-->
+      <!--CM16-F2--><label class="row"><input type="checkbox" id="list-band"> <span>Striped rows</span></label>
+      <div class="row col" id="list-band-row"><span>Stripe colour</span><div class="swatches" id="list-bands"></div><label class="cpick" title="Custom stripe colour"><input type="color" id="list-bcustom" aria-label="Custom stripe colour"> Custom</label></div>
+      <!--CM16-F3--><label class="row"><input type="checkbox" id="list-showr"> <span>Show restricted holidays</span></label>
       <p class="note">Holidays for the year chosen on the Design page: main holidays, then Restricted Holidays. Colours and font colour follow the Design page.</p>
       <div class="acts"><button type="button" class="btn" id="list-print">Print</button><button type="button" class="btn" id="list-pdf">Download PDF</button></div>
     </aside>
