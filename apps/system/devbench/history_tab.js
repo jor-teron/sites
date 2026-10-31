@@ -114,8 +114,11 @@ function devbenchHtInit() {
     try { out.textContent = "Imported " + (await window.DevbenchHistIO.importFile(f)) + " new runs."; } catch (err) { out.textContent = "Import failed: " + err.message; }
     e.target.value = "";
   });
-  devbenchHt$("hist-clear").addEventListener("click", function () {
-    if (confirm("Delete all saved runs in this browser?")) { window.DevbenchHistory.clear(); }
+  devbenchHt$("hist-clear").addEventListener("click", async function () {
+    var D = window.UiDialog;   // H76: shared Hub dialog; browser confirm only if it is missing
+    var ok = D ? await D.confirm("Delete all saved runs?", "Removes every saved Devbench run from this browser.", "Delete", true)
+      : confirm("Delete all saved runs in this browser?");
+    if (ok) { window.DevbenchHistory.clear(); }
   });
   document.addEventListener("devbench:tab", function (e) { if (e.detail === "history") { devbenchHtRender(true); } });
   document.addEventListener("devbench:history", function () { devbenchHtRender(false); });

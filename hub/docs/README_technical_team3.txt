@@ -899,3 +899,9 @@ kept.
 - Limits: file-manager paste and drag-drop are simulated events; phones,
   real Microsoft Word and the real OS clipboard are not covered. Say
   clearly in the report what was real and what was mocked.
+
+-- H76: Devbench delete confirm (31 Oct 2026) --
+- Devbench History "Delete all" now uses UiDialog.confirm (red Delete).
+  Browser confirm stays only as a fallback if shared/dialog is missing.
+- devbench.html links shared/dialog/dialog.css + dialog.js (relative,
+  no ?v=). With H75 merged the Hub draws it over the whole desktop.
