@@ -6,6 +6,7 @@
  *                              output{w,h}, edits{m,crop,adj,preset,k}, background{name,visible,opacity,src,type,fileName},
  *                              images{ id:{path,name,type,w,h} }, layers[ bottom … top ] }
  *              images/      the original files, byte for byte (background + each image layer)
+ *              masks/       HPS3: <layer id>.png, background.png, adjust.png — alpha = visibility (optional)
  *              layers/      PNGs for painted raster layers (none in HPS2; reserved, read if listed)
  *              preview.png  ≤ 256 px flattened preview
  * .ora = ZIP:  mimetype (first, stored) 'image/openraster', stack.xml, data/*.png (one full-size PNG per layer,
@@ -79,6 +80,15 @@
       if (amt) { const o = new ImageData(W, n); PE.adjust.sharpen(id.data, o.data, W, n, y - top, y - top + hh, amt); ox.putImageData(o, 0, top, 0, y - top, W, hh); }
       else ox.putImageData(id, 0, top);
       if (performance.now() - t > 50) { await nextFrame(); t = performance.now(); }
+    }
+    // HPS3: Adjust / Looks only inside the selection they were made with (same hook as the preview / save)
+    if (PE.view.adjustMask) {
+      const mk = canvas(W, H);
+      if (PE.view.adjustMask(mk.getContext('2d'), W, H, 0)) {
+        ox.save(); ox.globalCompositeOperation = 'destination-in'; ox.drawImage(mk, 0, 0);
+        ox.globalCompositeOperation = 'destination-over'; ox.drawImage(c, 0, 0); ox.restore();
+      }
+      free(mk);
     }
     free(c);
     return out;
@@ -154,8 +164,10 @@
       files.push({ name: path, data: blob, method: 'store' });
     }
     const J = P_.json(bgPath, bgf.blob.type || bgf.type || typeOf(bgExt), bgf.name, imgs);
+    const masks = PE.masks ? await PE.masks.toHps(J) : [];    // HPS3: layer masks -> masks/*.png (rewrites J)
     const prev = await renderSmall(256), prevBlob = await toBlob(prev); free(prev);
     entries.push({ name: 'project.json', data: JSON.stringify(J, null, 1), method: 'deflate' });
+    entries.push(...masks);
     entries.push({ name: bgPath, data: bgf.blob, method: 'store' });
     entries.push(...files);
     entries.push({ name: 'preview.png', data: prevBlob, method: 'store' });
@@ -246,6 +258,8 @@
       }
       e.layers = layers;
       e.bg = { name: str(B.name, 'Background'), visible: B.visible !== false, opacity: clamp(num(B.opacity, 1), 0, 1) };
+      // HPS3: masks (masks/*.png) for layers, the background and the Adjust area; older files have none
+      if (PE.masks) await PE.masks.fromHps(J, e, async (name) => { const m = zip.get(name); return m ? m.blob('image/png') : null; });
       closeImages(L.images);
       L.images = imgs; L.bgFile = { blob: bgBlob, name: str(B.fileName, 'background', 200), type: bgBlob.type };
       S.edits = e; S.history = [clone(e)]; S.index = 0;

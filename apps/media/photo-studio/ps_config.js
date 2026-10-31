@@ -1,5 +1,5 @@
 /*
- * Hub Photo Studio (HPS2) — ps_config.js. Loaded right AFTER ../photo-editor-v2/pe_config.js:
+ * Hub Photo Studio (HPS3) — ps_config.js. Loaded right AFTER ../photo-editor-v2/pe_config.js:
  * Photo Studio starts from Photo Editor v2's settings (limits, preview, crop, adjust, resize, keys)
  * and only overrides what makes it its own app. Change shared tunables in pe_config.js; change
  * Studio-only ones here.
@@ -10,7 +10,8 @@
   C.app = 'Hub Photo Studio';
   C.appId = 'photo-studio';          // Hub link 'ready' id (used by pe_send.js)
   C.version = '1.0';
-  C.release = 'HPS2';                // HPS1: Photo Editor v2 feature set, own name / settings / About · HPS2: layers + .hps / .ora
+  // legacy: C.release = 'HPS2';
+  C.release = 'HPS3';                // HPS1: Photo Editor v2 feature set, own name / settings / About · HPS2: layers + .hps / .ora · HPS3: selections + layer masks
 
   // HPS2: about 12 MP for the working copy on every device (layers stay smooth on a 4 GB Celeron).
   // Bigger photos are reduced once on open (with a message); Resize and image layers keep to the same cap.
@@ -30,7 +31,9 @@
       handle: 22,                     // touch radius of a layer handle (CSS px)
       rotGap: 34,                     // rotate handle distance above the box (CSS px)
       minSize: 6                      // smallest layer side, photo px
-    }
+    },
+    select: { maxPixels: 4000000 },   // HPS3 (ps_select.js): a selection mask is kept at most this big (photo space)
+    mask: { maxPixels: 4000000 }      // HPS3 (ps_mask.js): a layer mask is kept at most this big (layer box)
   };
 
   // Feature slot stub: feature files loaded before ps_app.js can already register; ps_app.js takes these over.
