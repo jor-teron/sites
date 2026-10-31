@@ -90,7 +90,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 #xfers{margin:8px 0}
 #xfers li{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 10px}
 .x-col{flex:1;min-width:0}.x-lbl{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.x-bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:4px}.x-bar i{display:block;height:100%;background:var(--acc);transition:width .2s}
+.x-bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:4px}.x-bar i{display:block;height:100%;background:var(--acc)}
 .it-file{display:flex;align-items:center;gap:8px;padding:4px 0;min-width:0}
 .f-ic{font-size:26px;flex:none}.f-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}.f-sz{flex:none;font-size:13px}
 #drop-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;z-index:12;pointer-events:none}

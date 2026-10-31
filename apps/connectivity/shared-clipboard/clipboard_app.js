@@ -332,16 +332,22 @@
     Object.keys(xfers).forEach(function (k) { var x = xfers[k]; if (!x.out && t - x.last > 60000) { delete xfers[k]; ch = true; toast(x.fname + ' stopped arriving'); } });
     if (ch) paintXfers();
   }, 10000);
+  /* CB2 fix: update rows in place (rebuilding them every few pieces detached the Cancel button mid-click) */
   function paintXfers() {
-    var ul = $('xfers'), ks = Object.keys(xfers); ul.innerHTML = ''; ul.hidden = !ks.length;
+    var ul = $('xfers'), ks = Object.keys(xfers); ul.hidden = !ks.length;
+    [].slice.call(ul.children).forEach(function (li) { if (!xfers[li.dataset.id]) li.remove(); });
     ks.forEach(function (k) {
-      var x = xfers[k], li = document.createElement('li');
-      var lb = document.createElement('div'); lb.className = 'x-lbl';
-      lb.textContent = (x.out ? '⬆ ' : '⬇ ') + x.fname + ' · ' + size(x.size) + ' · ' + Math.floor(100 * x.got / x.n) + '%';
-      var bar = document.createElement('div'); bar.className = 'x-bar'; var fill = document.createElement('i'); fill.style.width = (100 * x.got / x.n) + '%'; bar.appendChild(fill);
-      var b = document.createElement('button'); b.className = 'mini'; b.textContent = 'Cancel'; b.onclick = function () { cancelXfer(x); };
-      var col = document.createElement('div'); col.className = 'x-col'; col.append(lb, bar);
-      li.append(col, b); ul.appendChild(li);
+      var x = xfers[k], li = ul.querySelector('li[data-id="' + k + '"]');
+      if (!li) {
+        li = document.createElement('li'); li.dataset.id = k;
+        var lb = document.createElement('div'); lb.className = 'x-lbl';
+        var bar = document.createElement('div'); bar.className = 'x-bar'; bar.appendChild(document.createElement('i'));
+        var b = document.createElement('button'); b.className = 'mini'; b.textContent = 'Cancel'; b.onclick = function () { cancelXfer(x); };
+        var col = document.createElement('div'); col.className = 'x-col'; col.append(lb, bar);
+        li.append(col, b); ul.appendChild(li);
+      }
+      li.querySelector('.x-lbl').textContent = (x.out ? '⬆ ' : '⬇ ') + x.fname + ' · ' + size(x.size) + ' · ' + Math.floor(100 * x.got / x.n) + '%';
+      li.querySelector('.x-bar i').style.width = (100 * x.got / x.n) + '%';
     });
   }
   function openFile(it) {
