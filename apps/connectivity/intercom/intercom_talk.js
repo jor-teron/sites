@@ -329,7 +329,7 @@
     var on = {}, tr = ICSave.get('trusted') || {};
     list.forEach(function (d) {
       on[d.id] = 1;
-      if (d.did && tr[d.did] && !trustSent[d.id] && !ICPeer.open()) {   // IC3: tokens only on a private code trustSent[d.id] = 1; ICPeer.sendTo(d.id, { t: 'trust', did: ICSave.get('did'), name: ICSave.name(), token: tr[d.did].token }); }
+      if (d.did && tr[d.did] && !trustSent[d.id] && !ICPeer.open()) {   /* IC3: tokens only on a private code */ trustSent[d.id] = 1; ICPeer.sendTo(d.id, { t: 'trust', did: ICSave.get('did'), name: ICSave.name(), token: tr[d.did].token }); }
     });
     Object.keys(trustSent).forEach(function (id) { if (!on[id]) delete trustSent[id]; });
     Object.keys(talkers).forEach(function (id) { if (!on[id]) endTalker(id); });
