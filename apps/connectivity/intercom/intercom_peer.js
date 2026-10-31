@@ -96,10 +96,17 @@
   L._emit = emit;   // test hook (quick checks with a simulated peer)
   L.start = start; L.stop = stop; L.on = on; L.send = send; L.sendTo = sendTo; L.rename = hi; L.update = hi;
   /* talk call; metadata {kind:'talk', sid, name, all, did, video?, view?, cont?} (IC2 adds video/view/cont) */
-  L.call = function (id, stream, meta) { return me && me.call(id, stream, { metadata: Object.assign({ name: ICSave.name(), kind: 'talk', did: ICSave.get('did') }, meta || {}) }); };
+  L.call = function (id, stream, meta) {
+    // IC3: on the public mesh, prove trust with the token the callee gave us (callee checks it before auto-playing)
+    var d = roster.filter(function (x) { return x.id === id; })[0], k = d && d.did && (ICSave.get('keys') || {})[d.did];
+    var base = { name: ICSave.name(), kind: 'talk', did: ICSave.get('did') }; if (k && k.token) base.tok = k.token;
+    return me && me.call(id, stream, { metadata: Object.assign(base, meta || {}) });
+  };
+  /* IC2: L.call = function (id, stream, meta) { return me && me.call(id, stream, { metadata: Object.assign({ name: ICSave.name(), kind: 'talk', did: ICSave.get('did') }, meta || {}) }); }; */
   L.myId = function () { return me ? me.id : ''; };
   L.online = function () { return !!(lconn && lconn.open); };
   L.roster = function () { return roster; };
   L.code = function () { return code; };
+  L.open = function () { return code === '0000'; };   // IC3: public Hub mesh (strangers share the namespace)
   window.ICPeer = L;
 })();
