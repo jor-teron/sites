@@ -82,9 +82,7 @@ The home directory inside the cage is `/home`. The journal path is `/home/journa
 
 - **The AI calls `end_session`.** The log line is `Ended by AI at Xs: <reason>`, where X is the number of seconds since the session started. The run does not wait for the clock.
 - **The clock runs out.** The log line is `Time's up at HH:MM:SS after N turns (session S)`.
-- **The model replies with no tool call.** The run stops. The text is kept in the log as a final thought, and the summary line is `Ended with no tool call at Xs: <text>`. The script does **not** send a follow-up such as "Carry on". That nudge kept finished runs busy until the timer expired.
-
-A tool-less reply ends the session because another turn, with no new instruction, tends to be more prose and more API calls until the clock runs out. The system prompt tells the model this: call a tool to keep going, call `end_session` to finish on purpose, and do not send plain text if it still wants another turn.
+- **The model replies with no tool call.** The text is kept in the log as a thought, and the script sends a nudge: `[Ns left] Carry on, or do anything else you like. Call end_session if you want to finish early.` The run keeps going. The AI ends the session early only by calling `end_session`.
 
 A reply can include both a thought and tool calls. The thought is logged and the tools still run. `end_session` stops the session at that call; later tool calls in the same reply are not run.
 

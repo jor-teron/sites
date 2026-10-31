@@ -20,7 +20,8 @@ prompt is used again. The AI's only memory of earlier sessions is the
 newest part of cage/home/journal.md.
 
 The AI calls run_shell to act and end_session when it has written its
-final journal summary. A reply with no tool call also ends the run.
+final journal summary. A reply with no tool call gets a "Carry on" nudge
+and the run keeps going.
 
 API key (first one found wins):
   1. GEMINI_API_KEY or GOOGLE_API_KEY in the environment
@@ -107,7 +108,7 @@ compose_system_prompt() {
 
 Your home folder is /home. Keep a journal at /home/journal.md: append a line with the time (use the date command) and what you are doing and why. The journal is your only memory between sessions: anything not written there will be forgotten. Before you stop, append a short final summary to the journal.
 
-Act by calling tools. run_shell runs a command in the sandbox. end_session stops this run immediately; call it once the final journal summary is written, and pass a short reason. A reply that does not call a tool also ends the session, so do not send plain text if you still want another turn."
+Act by calling tools. run_shell runs a command in the sandbox. end_session stops this run immediately; you may end early whenever you want. Call it once the final journal summary is written, and pass a short reason."
 }
 
 attach_journal_memory() {
@@ -188,11 +189,9 @@ dispatch_tool() {
   esac
 }
 
-# A reply with no tool call ends the session. The old script injected a
-# "Carry on" user message to keep the model busy; that padded runs, so a
-# tool-less reply is treated as the model finishing. Plain text is stored
-# as the ending reason. end_session is the explicit stop and is logged
-# separately. Anything still running when the clock hits zero is "time's up".
+# A reply with no tool call gets a "Carry on" nudge and the loop keeps going
+# (as in agent-v2.sh). The AI ends the session early only by calling
+# end_session. Anything still running when the clock hits zero is "time's up".
 run_loop() {
   local now wait left reply thought ncalls i err
   trap 'echo; record "## Stopped by you at $(clock)"; exit 130' INT
@@ -233,10 +232,8 @@ run_loop() {
       ''|*[!0-9]*) ncalls=0 ;;
     esac
     if [ "$ncalls" -eq 0 ]; then
-      END_KIND=text
-      END_REASON="$(one_line "$thought")"
-      [ -n "$END_REASON" ] || END_REASON="(no tool call)"
-      break
+      add_message "$("$JQ" -nc --arg c "[$(seconds_left)s left] Carry on, or do anything else you like. Call end_session if you want to finish early." '{role:"user",content:$c}')"
+      continue
     fi
 
     for (( i=0; i<ncalls; i++ )); do

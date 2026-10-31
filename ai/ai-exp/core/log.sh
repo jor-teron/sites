@@ -28,7 +28,7 @@ start_log() {
   record "## Steps"
 }
 
-# END_KIND is "ai" (end_session), "text" (no tool call), or "time".
+# END_KIND is "ai" (end_session) or "time". ("text" is no longer set; kept for old callers.)
 finish_log() {
   local elapsed
   elapsed="$(elapsed_s)"
