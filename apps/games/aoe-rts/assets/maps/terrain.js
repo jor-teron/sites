@@ -45,6 +45,25 @@ function initTerrain(num) {
         if (!put.length) continue;
         const now = reachCount();
         if (now !== reach - put.length) put.forEach(i => { rock[i] = 0; }); else reach = now; }
+    // ARQ1t MOUNTAINS: ridges of rocky peaks (impassable, mount[] + rock[]), hilly foothills round them; kept only if no land is cut off
+    const ranges = S < 32 ? 0 : Math.round((1 + R() * 2) * area);
+    for (let m = 0; m < ranges; m++) { const p = spot(keep + 4); if (!p) continue;
+        const len = 6 + Math.floor(R() * 10), put = []; let x = p[0], y = p[1], a = R() * 6.283;
+        for (let t = 0; t < len; t++) {
+            [[0, 0], [1, 0], [0, 1]].forEach(o => { const qx = x + o[0], qy = y + o[1]; if ((!o[0] && !o[1] || R() < 0.55) && okRock(qx, qy)) { rock[qy * S + qx] = mount[qy * S + qx] = 1; put.push(qy * S + qx); } });
+            a += (R() - 0.5) * 1.2; x = Math.round(x + Math.cos(a)); y = Math.round(y + Math.sin(a)); }
+        const now = reachCount();
+        if (now !== reach - put.length) { put.forEach(i => { rock[i] = mount[i] = 0; }); continue; }
+        reach = now;
+        put.forEach(i => { const px = i % S, py = (i - px) / S; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const qx = px + dx, qy = py + dy, j = qy * S + qx;
+            if (inMap(qx, qy) && isLand(qx, qy) && !ford[j] && far(qx, qy, keep + 1)) hill[j] = 1; } });
+    }
+    // ARQ1t: reserve the farthest flat, open, reachable spot as a future AI start (cleared of resources in a radius of 2)
+    const seen = landSeen(); aiStart = null;
+    const cand = []; for (let y = 3; y < S - 3; y++) for (let x = 3; x < S - 3; x++) cand.push([Math.hypot(x - cx0, y - cy0), x, y]);
+    cand.sort((p, q) => q[0] - p[0] || p[2] - q[2] || p[1] - q[1]);
+    for (const c of cand) if (seen[c[2] * S + c[1]] && flatAt(c[1], c[2], 3)) { aiStart = { x: c[1], y: c[2] }; break; }
+    if (aiStart) for (let y = aiStart.y - 2; y <= aiStart.y + 2; y++) for (let x = aiStart.x - 2; x <= aiStart.x + 2; x++) if (mapData[y][x] && mapData[y][x].kind !== 'tc' && mapData[y][x].kind !== 'fish') mapData[y][x] = null;
     // GROUND: grass shades from low-frequency noise, dirt patches, sand next to water (visual only)
     for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const i = y * S + x;
         if (water[i]) { ground[i] = 0; continue; }
@@ -53,6 +72,22 @@ function initTerrain(num) {
         const n1 = valueNoise(x, y, 7, k0) * 0.7 + valueNoise(x, y, 3, k0 + 1) * 0.3, n2 = valueNoise(x, y, 4, k0 + 2);
         ground[i] = n2 > 0.78 && far(x, y, 3) ? 3 : n1 < 0.36 ? 1 : n1 > 0.64 ? 2 : 0;
     }
+}
+/** ARQ1t hooks: hill test (slower walking now, combat bonus later) and flat open ground (no water/rock/hill/ford in radius r) */
+function isHill(x, y) { return inMap(x, y) && hill[y * MAP_SIZE + x] === 1; }
+function flatAt(x, y, r) { for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const qx = x + dx, qy = y + dy;
+    if (dx * dx + dy * dy > r * r + 1) continue; if (!isLand(qx, qy) || isHill(qx, qy) || ford[qy * MAP_SIZE + qx]) return false; } return true; }
+/** ARQ1t test hook: islands, fords per river, inland lakes, flat + reachable starts */
+function mapCheck() {
+    const S = MAP_SIZE, seen = landSeen(), fords = {}, rivers = {}; let land = 0, cut = 0, lakeEdge = 0, mt = 0;
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const i = y * S + x;
+        if (isLand(x, y)) { land++; if (!seen[i]) cut++; }
+        if (riv[i]) { rivers[riv[i]] = 1; if (ford[i]) fords[riv[i]] = (fords[riv[i]] || 0) + 1; }
+        if (water[i] && !riv[i] && (x < 2 || y < 2 || x > S - 3 || y > S - 3)) lakeEdge++; if (mount[i]) mt++; }
+    const t = townCenter;
+    return { land, cut, rivers: Object.keys(rivers).length, riversNoFord: Object.keys(rivers).filter(r => !fords[r]).length, lakeEdge, mountains: mt,
+        tcFlat: flatAt(t.x, t.y, 3) && flatAt(t.x + 1, t.y + 1, 3), ai: aiStart, aiFlat: !!aiStart && flatAt(aiStart.x, aiStart.y, 3), aiReach: !!aiStart && !!seen[aiStart.y * S + aiStart.x],
+        aiDist: aiStart ? Math.round(Math.hypot(aiStart.x - t.x, aiStart.y - t.y)) : 0 };
 }
 /** Test hook: terrain counts + checks */
 function terrainReport() {
@@ -64,4 +99,4 @@ function terrainReport() {
         if (!water[i]) { const g = ground[i]; if (g === 4) r.sand++; else if (g === 3) r.dirt++; else if (g === 1) r.lush++; else if (g === 2) r.dry++; } }
     return r;
 }
-function terrainHash() { let h = 2166136261; for (let i = 0; i < MAP_SIZE * MAP_SIZE; i++) h = Math.imul(h ^ (rock[i] | hill[i] << 1 | ford[i] << 2 | ground[i] << 3 | water[i] << 6), 16777619) >>> 0; return h.toString(16); }
+function terrainHash() { let h = 2166136261; for (let i = 0; i < MAP_SIZE * MAP_SIZE; i++) h = Math.imul(h ^ (rock[i] | hill[i] << 1 | ford[i] << 2 | ground[i] << 3 | water[i] << 6 | mount[i] << 7), 16777619) >>> 0; return h.toString(16); }

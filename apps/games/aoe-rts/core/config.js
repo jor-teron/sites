@@ -67,6 +67,7 @@ const DEER_FLEE_T = 1.1, DEER_FLEE_CD = 2.6;    // seconds of fleeing, then calm
 const HUNT_R = 200;               // iso-corrected px: hunters throw from here (outside the flee radius)
 const HUNT_AIM = 0.8;             // seconds to aim + throw
 const HILL_COST = 1.35;           // R2b: A* step cost on hill tiles (paths prefer going round)
+const HILL_SPEED = 0.75;          // ARQ1t: walk speed factor on hill tiles
 const AUTOSAVE_MS = 30000;        // R2d: autosave every 30 s of real time
 
 /** Resource node definitions */
