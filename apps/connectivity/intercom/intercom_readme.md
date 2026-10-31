@@ -17,3 +17,13 @@ Live, tap-to-talk audio between devices on the same Hub Connect Code (Connectivi
 - **Receiving video:** the caller's picture shows at once while audio stays muted during the chime. Banner adds **📹 Two-way** (talk back with your camera) next to Reply. Stage: other side big, you small; camera-off shows a placeholder.
 - **Trusted devices + auto-answer (Settings):** each device gets a lasting random id (`did`). Trusting an online device makes a 32-hex token, saved in `trusted` and sent to it (`{t:'trust'}`, re-sent when it comes back); that device stores it in `keys` and gets a **📹 View** button. A view request `{t:'view', did, token}` is accepted only when Auto-answer is on (default off), the device and token match, DND is off and nobody else is viewing; otherwise `{t:'viewno', why:'off'|'untrusted'|'dnd'|'busy'}`. **DND always wins** and also stops a running view. A view has no 2-minute limit; it ends on Stop (either side), untrust (`{t:'untrust'}`), DND, or the viewer leaving. The viewer hears at once (no chime) and gets Two-way / Talk back / Stop.
 - IC1 voice talks still work unchanged between IC1 and IC2 devices.
+
+## IC4 — Public 0000 by default
+
+- **Code choice:** `#code=` / `?hub=` / `join=` in the URL wins (and is not changed later). Inside the Hub: if `parent.HubMeshLink.isPrivate()` → `privateCode()`, else **0000 (Public)**. The Hub's own Connect Code (`{sharedLink:'hello'}`, `__hubRemote.code`, `jtsites-hub-ctrl-code`, `shared-link-join-code`) is used only in an older Hub without `HubMeshLink`. Standalone: last code, else 0000 (no code dialog at start).
+- **Following the Hub:** every 5 s Intercom re-reads `HubMeshLink` (read-only). If the Hub joined or left a private mesh and nobody is talking, it switches by itself with a toast; during a talk it only shows a **Switch to <code>** / **Back to Public** button at the top.
+- A code picked with Code/Change (or Public) holds for the session; the default logic never overrides it. IC3 Accept/Decline on 0000 is unchanged.
+
+## Legacy code notes
+
+- IC2/IC3 `localCode()` + `boot()` (Hub's own Connect Code first, code dialog when none) are kept as comments in `intercom_app.js` above the IC4 code choice.
