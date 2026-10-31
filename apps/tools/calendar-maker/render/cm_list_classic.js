@@ -48,7 +48,9 @@
       });
     };
     const all = hols || [];
-    return { gaz: grp(all.filter((h) => !h.r)), res: grp(all.filter((h) => h.r)) };
+    /* return { gaz: grp(all.filter((h) => !h.r)), res: grp(all.filter((h) => h.r)) };  (CM12-CM17) */
+    const of = (t) => grp(all.filter((h) => Hd.typeOf(h) === t)); /* CM18 */
+    return { gaz: of('g'), res: of('r'), pub: of('p'), sch: of('s') };
   }
 
   function drawClassic(cv, o) {
@@ -92,6 +94,10 @@
       body.push({ head: true, text: 'Restricted Holidays' });
       sec.res.forEach((r) => body.push(Object.assign({ sec: 'r' }, r)));
     }
+    L.SECS.forEach(([k, text, t]) => { /* CM18: Public, School sections */
+      if (!sec[k].length) return;
+      body.push({ head: true, text, t }); sec[k].forEach((r) => body.push(Object.assign({ sec: t }, r)));
+    });
     const cx = [M, M + Math.round(TW * 0.15), M + Math.round(TW * 0.32), M + Math.round(TW * 0.56), W - M];
     const avail = H - M - top;
     /* layout pass at a font size: each row's line count -> height */
@@ -153,7 +159,7 @@
         c.fillStyle = bc; c.fillRect(merge ? cx[1] : cx[0], y0, merge ? cx[4] - cx[1] : TW, x.h);
       }
       if (x.r.head) {
-        c.fillStyle = rc; c.fillRect(cx[0], y0, TW, x.h);
+        c.fillStyle = x.r.t ? L.headFill(x.r, o) : rc; c.fillRect(cx[0], y0, TW, x.h); /* CM18: was rc */
         c.font = font('700', fs); c.fillStyle = fc; c.textAlign = 'center'; c.fillText(x.r.text, W / 2, y0 + x.h / 2);
         full(y0); return;
       }

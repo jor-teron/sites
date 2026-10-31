@@ -1,6 +1,7 @@
 /* Calendar Maker CM13 core: holiday data and date maths (no DOM).
    Merges the Calendar app's built-in list (window.CalHolidays) with the user's every-year and this-year-only holidays.
-   Holiday: {m (0-11), d, name, r?: true = Restricted (CM9), em?/ed?: end month/day, same year (CM11)}.
+   Holiday: {m (0-11), d, name, r?: true = Restricted (CM9), t?: 'p' Public | 's' School (CM18), em?/ed?: end month/day, same year (CM11)}.
+   CM18 types: typeOf(h) = 'p' | 's' from t, else 'r' when r, else 'g' (Gazetted). Old saves (no t) load unchanged.
    window.CM.Holidays */
 window.CM = window.CM || {};
 window.CM.Holidays = (function () {
@@ -20,6 +21,12 @@ window.CM.Holidays = (function () {
   /* 'A', 'A & B', 'A, B & C' */
   const join = (a) => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' & ' + a[a.length - 1];
 
+  /* CM18: holiday types. Restricted keeps r:true (CM9 readers); Public / School carry t, never r. */
+  const TYPES = ['g', 'r', 'p', 's'];
+  const TYPE_NAMES = { g: 'Gazetted', r: 'Restricted', p: 'Public', s: 'School' };
+  const RANK = { g: 3, r: 2, p: 1, s: 0 }; /* priority below Sunday > Saturday holiday */
+  const typeOf = (h) => (h && (h.t === 'p' || h.t === 's') ? h.t : (h && h.r ? 'r' : 'g'));
+  const setType = (h, t) => { delete h.t; delete h.r; if (t === 'r') h.r = true; else if (t === 'p' || t === 's') h.t = t; return h; };
   /* CM11: end as m*100+d (a range only when the end is after the start) */
   const endOf = (h) => (h.em != null && h.ed != null && (h.em * 100 + h.ed) > (h.m * 100 + h.d))
     ? h.em * 100 + h.ed : h.m * 100 + h.d;
@@ -46,7 +53,9 @@ window.CM.Holidays = (function () {
   }
   /* CM9: strip sections { gaz, res }, each date-sorted */
   function stripSections(hols) {
-    return { gaz: stripRows((hols || []).filter((h) => !h.r)), res: stripRows((hols || []).filter((h) => h.r)) };
+    /* return { gaz: stripRows((hols || []).filter((h) => !h.r)), res: stripRows((hols || []).filter((h) => h.r)) };  (CM9-CM17) */
+    const of = (t) => stripRows((hols || []).filter((h) => typeOf(h) === t)); /* CM18: + pub, sch */
+    return { gaz: of('g'), res: of('r'), pub: of('p'), sch: of('s') };
   }
   /* CM11: '05 Jan', '20–23 Oct', '30 Sep–02 Oct' */
   function dateText(r) {
@@ -76,6 +85,7 @@ window.CM.Holidays = (function () {
     /* CM11: ranges carry em/ed; 29 Feb start skipped in non-leap years, a 29 Feb end becomes 28 Feb */
     const out = fixedOf(H).filter((h) => h.d <= dim(y, h.m)).map((h) => {
       const o = { m: h.m, d: h.d, name: h.name, r: h.r === true };
+      if (h.t === 'p' || h.t === 's') { o.t = h.t; o.r = false; } /* CM18 */
       if (h.em != null) {
         const ed = Math.min(h.ed, dim(y, h.em));
         if (h.em * 100 + ed > h.m * 100 + h.d) { o.em = h.em; o.ed = ed; }
@@ -85,6 +95,7 @@ window.CM.Holidays = (function () {
     H.dated.forEach((h) => {
       if (+h.date.slice(0, 4) !== y) return;
       const o = { m: +h.date.slice(5, 7) - 1, d: +h.date.slice(8, 10), name: h.name, r: h.r === true };
+      if (h.t === 'p' || h.t === 's') { o.t = h.t; o.r = false; } /* CM18 */
       if (h.end) { o.em = +h.end.slice(5, 7) - 1; o.ed = +h.end.slice(8, 10); }
       out.push(o);
     });
@@ -105,6 +116,6 @@ window.CM.Holidays = (function () {
 
   return {
     MN, MS, WD, WDF, p2, dim, dow, mlen, sfx, join, endOf, stripRows, stripSections, dateText, daysOf,
-    builtIns, fixedOf, forYear, readFx
+    builtIns, fixedOf, forYear, readFx, TYPES, TYPE_NAMES, RANK, typeOf, setType /* CM18 */
   };
 })();

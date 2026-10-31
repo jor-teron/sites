@@ -2,9 +2,9 @@
    'calendar-maker-settings' (CM1+): { year, colour: preset key | 'custom', sundays, sat: 'none'|'24'|'all',
      week: 'sun'|'mon' (default from Calendar's 'calendar-settings-v1'), bg: 'none'|'soft'|'pic', soft, faint,
      strip (CM2), layout (CM4), fold (CM5), custom, font (CM6), rcol (CM9), lhead (CM10), legend, mfill (CM12-F3), lgsz (CM16-F1), wfill, wmatch (CM16-F5),
-     llay, lsub, ldeco, labcd, lmerge, lhc (CM12), lband, lbandc (CM16-F2), lshowr (CM16-F3), theme: 'auto'|'light'|'dark' (CM15) }
-   'calendar-maker-holidays' (CM3): { fixed: null (= Calendar's built-in list) | [{m, d, name, r?, em?, ed?}],
-     dated: [{date: 'YYYY-MM-DD', end?, name, r?}] }
+     llay, lsub, ldeco, labcd, lmerge, lhc (CM12), lband, lbandc (CM16-F2), lshowr (CM16-F3), pcol, scol, lshowp, lshows (CM18), theme: 'auto'|'light'|'dark' (CM15) }
+   'calendar-maker-holidays' (CM3): { fixed: null (= Calendar's built-in list) | [{m, d, name, r?, t?, em?, ed?}],
+     dated: [{date: 'YYYY-MM-DD', end?, name, r?, t?}] }  (CM18: t 'p' Public | 's' School; none = r ? Restricted : Gazetted)
    'calendar-maker-bg' (CM2): picture background as a JPEG data URL (<= 1600 px).
    ?year=YYYY (from Calendar's "Make printable") wins over the saved year; CM17-F1: otherwise the last saved year
    (1900-2200), else the current year (legacy CM1-CM17: always opened on the current year). */
@@ -24,7 +24,8 @@ window.CM.Settings = (function () {
       sat: cal.satAll ? 'all' : (cal.sat24 ? '24' : 'none'), week: cal.week === 'mon' ? 'mon' : 'sun',
       bg: 'none', soft: '#fef9e7', faint: 25, strip: false, layout: 'p3', fold: true,
       custom: '#15803d', /* CM12-F4: was '#92d36e' (CM6); saved custom values are kept */
-      font: '#000000', rcol: '#cfcfcf', lhead: '', legend: true, mfill: '#d9d9d9', lgsz: 0.58, wfill: '#d9d9d9', wmatch: false }; /* CM16-F5 wfill, wmatch */
+      font: '#000000', rcol: '#cfcfcf', lhead: '', legend: true, mfill: '#d9d9d9', lgsz: 0.58, wfill: '#d9d9d9', wmatch: false, /* CM16-F5 wfill, wmatch */
+      pcol: '#d9d2e9', scol: '#fff2cc' }; /* CM18: Public light purple, School light yellow */
     /* CM16-F1: legend size in em of the date font (0.58 = the CM12-F3 look) */
     /* CM12-F3: legend + month row fill */ /* CM10: Holiday List header */ /* CM9: restricted holiday colour */
     /* CM6: custom holiday colour + font colour */ /* CM5: fold on (existing users get it too) */
@@ -50,6 +51,8 @@ window.CM.Settings = (function () {
     ['lhc', (v) => T.HEX.test(v), () => '#2e75b6'],
     ['lband', isBool, () => true], ['lbandc', (v) => T.HEX.test(v), () => '#ddebf7'], /* CM16-F2: striped rows, light blue */
     ['lshowr', isBool, () => true], /* CM16-F3: restricted section on the Holiday List */
+    ['pcol', (v) => T.HEX.test(v), (D) => D.pcol], ['scol', (v) => T.HEX.test(v), (D) => D.scol], /* CM18 */
+    ['lshowp', isBool, () => true], ['lshows', isBool, () => true], /* CM18: Public / School list sections */
     ['theme', (v) => v === 'light' || v === 'dark', () => 'auto'], /* CM15: app UI theme only */
     ['colour', (v) => v === 'custom' || !!T.COLOURS[v], () => 'green'],
     ['bg', (v) => ['none', 'soft', 'pic'].indexOf(v) >= 0, () => 'none'] /* CM4: unknown / old value -> white */
@@ -96,6 +99,11 @@ window.CM.Settings = (function () {
       if (h.em == null && h.ed == null) return;
       const ok = h.em >= 0 && h.em <= 11 && h.ed >= 1 && h.ed <= Hd.mlen(h.em) && h.em * 100 + h.ed > h.m * 100 + h.d;
       if (!ok) { delete h.em; delete h.ed; }
+    });
+    /* CM18: a bad t is dropped (falls back to r / Gazetted); Public / School never also carry r */
+    H.dated.concat(H.fixed || []).forEach((h) => {
+      if (h.t == null) return;
+      if (h.t === 'p' || h.t === 's') delete h.r; else delete h.t;
     });
     return H;
   }

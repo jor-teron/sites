@@ -27,6 +27,9 @@ window.CM.Theme = (function () {
   };
   /* CM9: restricted presets */
   const RCOLOURS = { grey: '#cfcfcf', silver: '#e3e3e3', stone: '#d6d3c4', lilac: '#d9c8ee', sky: '#c9e7f2' };
+  /* CM18: Public / School tile presets (first = default) */
+  const PCOLOURS = { purple: '#d9d2e9', blue: '#cfe2f3', pink: '#f4cccc' };
+  const SCOLOURS = { yellow: '#fff2cc', orange: '#fce5cd', teal: '#d0e0e3' };
   /* CM12: Classic list header row presets */
   const HCOLOURS = { blue: '#2e75b6', navy: '#1f3864', green: '#00b050', grey: '#7f7f7f', orange: '#c55a11' };
   /* CM12-F3: month-name row fill presets [value, label]; white = no fill */
@@ -42,6 +45,7 @@ window.CM.Theme = (function () {
   const fontColour = (v) => (isHex(v) ? v : '#000000');
   const holidayColour = (v) => (isHex(v) ? v : (COLOURS[v] || COLOURS.green)[0]);
   const restrictedColour = (v) => (isHex(v) ? v : RCOLOURS.grey);
+  const publicColour = (v) => (isHex(v) ? v : PCOLOURS.purple), schoolColour = (v) => (isHex(v) ? v : SCOLOURS.yellow); /* CM18 */
   const headerColour = (v) => (isHex(v) ? v : (HCOLOURS[v] || HCOLOURS.blue));
   /* text-colour rule: text uses the font colour, except white on a dark fill (Classic header row) */
   const isDark = (hex) => {
@@ -51,7 +55,7 @@ window.CM.Theme = (function () {
   const textOn = (fill, fc) => (isDark(fill) ? '#ffffff' : fc);
 
   return {
-    FONT, HEX, isHex, COLOURS, COLOUR_NAMES, RCOLOURS, HCOLOURS, MFILLS, SOFTS, GRID,
-    cap1, colourName, fontColour, holidayColour, restrictedColour, headerColour, isDark, textOn
+    FONT, HEX, isHex, COLOURS, COLOUR_NAMES, RCOLOURS, PCOLOURS, SCOLOURS, HCOLOURS, MFILLS, SOFTS, GRID,
+    cap1, colourName, fontColour, holidayColour, restrictedColour, publicColour, schoolColour, headerColour, isDark, textOn
   };
 })();

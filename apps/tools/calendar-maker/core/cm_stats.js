@@ -1,6 +1,8 @@
 /* Calendar Maker CM14 core: Year Overview numbers (no DOM). window.CM.Stats
    Day rules: off = Sunday, Saturday holiday (sat '24' = 2nd & 4th, 'all'), or any day of a Gazetted holiday.
-   Restricted days are NOT off (never deducted), only counted and named. Multi-day holidays count every day.
+   Restricted days are NOT off (never deducted), only counted and named.
+   CM18: Public and School the same (counted, named '(P) Name' / '(S) Name'); a day with several types counts once,
+   as its highest (Gazetted > Restricted > Public > School). Multi-day holidays count every day.
    Stats.year(y, hols, sat) -> { days, summary, streaks, stretches }
    CM17-F2: streak / stretch .ft = ordinal From – To cell (fromTo), .names = every off day in order joined with ' + '. */
 window.CM = window.CM || {};
@@ -14,16 +16,19 @@ window.CM.Stats = (function () {
   function classify(y, hols, sat) {
     const map = {};
     (hols || []).forEach((h) => Hd.daysOf(h, y).forEach(([m, d]) => {
-      const k = m * 100 + d, e = map[k] || (map[k] = { gaz: [], res: [] });
-      const list = h.r ? e.res : e.gaz;
+      /* const k = m * 100 + d, e = map[k] || (map[k] = { gaz: [], res: [] }); const list = h.r ? e.res : e.gaz;  (CM14-CM17) */
+      const k = m * 100 + d, e = map[k] || (map[k] = { gaz: [], res: [], pub: [], sch: [] });
+      const list = e[{ g: 'gaz', r: 'res', p: 'pub', s: 'sch' }[Hd.typeOf(h)]]; /* CM18 */
       if (list.indexOf(h.name) < 0) list.push(h.name);
     }));
     const out = [];
     for (let dt = new Date(y, 0, 1); dt.getFullYear() === y; dt.setDate(dt.getDate() + 1)) {
-      const m = dt.getMonth(), d = dt.getDate(), wd = dt.getDay(), e = map[m * 100 + d] || { gaz: [], res: [] };
+      const m = dt.getMonth(), d = dt.getDate(), wd = dt.getDay(), e = map[m * 100 + d] || { gaz: [], res: [], pub: [], sch: [] };
       const sun = wd === 0, satOff = wd === 6 && isSatOff(sat, d);
-      out.push({ m, d, wd, sun, satOff, gaz: e.gaz, res: e.gaz.length ? [] : e.res,
-        off: sun || satOff || e.gaz.length > 0 });
+      /* CM18: only the highest type of the day is kept (res / pub / sch emptied under a higher one) */
+      const g = e.gaz.length > 0, r = !g && e.res.length > 0, p = !g && !r && e.pub.length > 0;
+      out.push({ m, d, wd, sun, satOff, gaz: e.gaz, res: g ? [] : e.res, pub: g || r ? [] : e.pub,
+        sch: g || r || p ? [] : e.sch, off: sun || satOff || g });
     }
     return out;
   }
@@ -32,7 +37,8 @@ window.CM.Stats = (function () {
     const sundays = n((x) => x.sun), sats = n((x) => x.satOff), gaz = n((x) => x.gaz.length > 0);
     const gazWk = n((x) => x.gaz.length > 0 && (x.sun || x.satOff)), actual = n((x) => x.off);
     return { total: days.length, sundays, sats, satRule: SAT_RULE[sat] || 'None', gaz, gazWk,
-      totalHol: sundays + sats + gaz, actual, working: days.length - actual, restricted: n((x) => x.res.length > 0) };
+      totalHol: sundays + sats + gaz, actual, working: days.length - actual, restricted: n((x) => x.res.length > 0),
+      public: n((x) => x.pub.length > 0), school: n((x) => x.sch.length > 0) }; /* CM18 */
   }
   // CM14-CM17 (weekday + date text, grouped names):
   //   /* 'Sat 17 Oct – Thu 22 Oct' */
@@ -74,6 +80,7 @@ window.CM.Stats = (function () {
       else if (x.sun) parts.push('Sunday');
       else if (x.satOff) parts.push('Saturday');
       x.res.forEach((s) => add('(R) ' + s));
+      x.pub.forEach((s) => add('(P) ' + s)); x.sch.forEach((s) => add('(S) ' + s)); /* CM18 */
     }
     return parts.join(' + ');
   }

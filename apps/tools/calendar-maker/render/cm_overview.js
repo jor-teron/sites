@@ -20,7 +20,8 @@ window.CM.Overview = (function () {
       ['Total holidays (Sundays + Saturday holidays + Gazetted, with overlaps)', u.totalHol],
       ['Actual holidays (each day once)', u.actual], ['Working days (total days − actual holidays)', u.working],
       ['Restricted holidays (days, not deducted)', u.restricted]
-    ].map((r) => [r[0], String(r[1])]);
+    ].concat(u.public ? [['Public holidays (days, not deducted)', u.public]] : [], /* CM18: only when the year has them */
+      u.school ? [['School holidays (days, not deducted)', u.school]] : []).map((r) => [r[0], String(r[1])]);
     return [
       { title: 'Summary', cols: [0.78, 0.22], head: ['Item', 'Days'], align: ['l', 'c'], rows: sum, bold: [6, 7] },
       { title: 'Holiday Streaks', /* CM16-F4, was 'Holiday streaks (3 or more days off in a row)' */ cols: [0.07, 0.33, 0.1, 0.5],

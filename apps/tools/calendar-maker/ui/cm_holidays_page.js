@@ -2,6 +2,7 @@
    CM11: optional range end, additive: fixed {em, ed} (end month/day, same year), dated {end:'YYYY-MM-DD'}; no end = one day.
    Every-year input is Day + Month selects (no year); 29 Feb only shows in leap years.
    CM9: any holiday may carry r:true = Restricted; missing r = Gazetted (older saves load unchanged).
+   CM18: type select per row (Gazetted, Restricted, Public, School); t 'p' / 's' for Public / School (Hd.setType).
    Saved in 'calendar-maker-holidays' (see core/cm_settings.js). Custom holidays stay in Calendar Maker only;
    the Calendar app is not changed. */
 window.CM = window.CM || {};
@@ -42,14 +43,24 @@ window.CM.Hol = (function () {
   //   }
   */
   /* CM9: each row gets a Gazetted/Restricted chip; Restricted rows listed in their own block below the main ones */
-  const chip = (h) => '<button type="button" class="chip' + (h.r ? ' r' : '') +
-    '" data-act="type" title="Tap to switch type">' + (h.r ? 'Restricted' : 'Gazetted') + '</button>';
+  /* const chip = (h) => '<button type="button" class="chip' + (h.r ? ' r' : '') +
+    '" data-act="type" title="Tap to switch type">' + (h.r ? 'Restricted' : 'Gazetted') + '</button>';  (CM9-CM17) */
+  /* CM18: type select chip with the 4 types */
+  const chip = (h) => { const t = Hd.typeOf(h);
+    return '<select class="chip ' + t + '" data-act="type" aria-label="Type" title="Holiday type">' + Hd.TYPES.map((k) =>
+      '<option value="' + k + '"' + (k === t ? ' selected' : '') + '>' + Hd.TYPE_NAMES[k] + '</option>').join('') + '</select>'; };
   const rowBtns = (h) => chip(h) +
     '<button type="button" data-act="ren">Rename</button><button type="button" data-act="del">Delete</button></li>';
-  const split = (rows, empty) => {
+  /* const split = (rows, empty) => {
     const g = rows.filter((x) => !x.h.r), r = rows.filter((x) => x.h.r);
     return (g.length ? g.map((x) => x.html).join('') : '<li class="empty">' + empty + '</li>') +
       (r.length ? '<li class="sub">Restricted Holidays</li>' + r.map((x) => x.html).join('') : '');
+  };  (CM9-CM17) */
+  const split = (rows, empty) => { /* CM18: Gazetted, then Restricted, Public, School blocks */
+    const of = (t) => rows.filter((x) => Hd.typeOf(x.h) === t), g = of('g');
+    return (g.length ? g.map((x) => x.html).join('') : '<li class="empty">' + empty + '</li>') +
+      ['r', 'p', 's'].map((t) => { const l = of(t);
+        return l.length ? '<li class="sub">' + Hd.TYPE_NAMES[t] + ' Holidays</li>' + l.map((x) => x.html).join('') : ''; }).join('');
   };
   /* CM11: Day + Month selects (no year). Day list fits the month; Feb lists 29 (used in leap years only). blank = no end */
   const dayOpts = (m, sel, blank) => (blank ? '<option value="">To</option>' : '') +
@@ -111,8 +122,9 @@ window.CM.Hol = (function () {
       if (r.em != null) { item.em = r.em; item.ed = r.ed; } else { delete item.em; delete item.ed; }
       save(); draw(); return;
     }
+    if (e.type === 'change' && a === 'type') { Hd.setType(item, e.target.value); save(); draw(); return; } /* CM18 */
     if (e.type !== 'click') return;
-    if (a === 'type') { if (item.r) delete item.r; else item.r = true; save(); draw(); return; } /* CM9 */
+    /* if (a === 'type') { if (item.r) delete item.r; else item.r = true; save(); draw(); return; }  (CM9-CM17 chip toggle) */
     if (a === 'ren') {
       const n = await window.UiDialog.ask('Rename holiday', item.name, 'Rename');
       if (n && n.trim()) { item.name = n.trim().slice(0, 60); save(); draw(); }
@@ -134,11 +146,13 @@ window.CM.Hol = (function () {
     if (!v || !n) { window.UiDialog.info('Add holiday', [['Needed', 'Pick a date and type a name.']]); return; }
     if (!isFx && ev && ev.slice(5) <= v.slice(5)) { badRange(); return; }
     /* if (isFx) own().push({ m, d, name: n }); else H.dated.push({ date, name: n });  (CM3-CM8) */
-    const ti = $(isFx ? 'fx-type' : 'dt-type'), rs = !!(ti && ti.value === 'r'); /* CM9 */
+    /* const ti = $(isFx ? 'fx-type' : 'dt-type'), rs = !!(ti && ti.value === 'r');  (CM9-CM17) */
+    const ti = $(isFx ? 'fx-type' : 'dt-type'), tv = ti && Hd.TYPES.indexOf(ti.value) >= 0 ? ti.value : 'g'; /* CM18 */
     /* const it = isFx ? { m: +v.slice(5, 7) - 1, d: +v.slice(8, 10), name: n } : { date: year + v.slice(4), name: n };  (CM3-CM10) */
     const it = isFx ? Object.assign(fr, { name: n }) : { date: year + v.slice(4), name: n }; /* CM11 */
     if (!isFx && ev) it.end = year + ev.slice(4);
-    if (rs) it.r = true;
+    /* if (rs) it.r = true;  (CM9-CM17) */
+    Hd.setType(it, tv);
     if (isFx) own().push(it); else H.dated.push(it);
     ni.value = '';
     if (isFx) { $('fx-ed').value = ''; $('fx-em').value = ''; } else if ($('dt-end')) $('dt-end').value = ''; /* CM11 */
