@@ -1,1 +1,21 @@
-<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=dashboard.html"><title>My Day</title><a href="dashboard.html">My Day</a>
+<!DOCTYPE html>
+<!-- Redirect entry point to dashboard.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "My Day" link were always visible in <head>/<body>; both now live in <noscript>. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Day</title>
+  <link rel="canonical" href="dashboard.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('dashboard.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=dashboard.html"></noscript>
+</head>
+<body><noscript><p><a href="dashboard.html">My Day</a></p></noscript></body>
+</html>

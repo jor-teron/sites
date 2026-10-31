@@ -1,13 +1,21 @@
 <!DOCTYPE html>
+<!-- Redirect entry point to calculator.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "Open Calculator" link were always visible in <head>/<body>; both now live in <noscript>. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="0; url=calculator.html">
   <title>Calculator</title>
-  <script>location.replace('calculator.html' + location.search + location.hash);</script>
+  <link rel="canonical" href="calculator.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('calculator.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=calculator.html"></noscript>
 </head>
-<body style="background:#121418;color:#9aa0a6;font-family:sans-serif">
-  <p><a href="calculator.html" style="color:#6ea8fe">Open Calculator</a></p>
-</body>
+<body><noscript><p><a href="calculator.html">Open Calculator</a></p></noscript></body>
 </html>
