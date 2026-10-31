@@ -30,6 +30,7 @@
         <div class="head">
           <h1 id="m-title"></h1>
           <button type="button" class="mini" id="m-tools" aria-label="Jump to date and day counter" title="Jump / Count">&#128197;</button>
+          <button type="button" class="mini" id="m-make" aria-label="Make printable" title="Make printable (Calendar Maker)">&#128424;</button>
           <button type="button" class="nav" id="m-prev" aria-label="Previous month">&#8249;</button>
           <button type="button" class="mini" id="m-today">Today</button>
           <button type="button" class="nav" id="m-next" aria-label="Next month">&#8250;</button>
@@ -44,6 +45,7 @@
       <section class="pane" id="pane-year">
         <div class="head">
           <h1 id="y-title"></h1>
+          <button type="button" class="mini" id="y-make" aria-label="Make printable" title="Make printable (Calendar Maker)">&#128424;</button>
           <button type="button" class="nav" id="y-prev" aria-label="Previous year">&#8249;</button>
           <button type="button" class="mini" id="y-today">Today</button>
           <button type="button" class="nav" id="y-next" aria-label="Next year">&#8250;</button>
@@ -96,5 +98,14 @@
 </div>
 <script src="calendar_holidays.js"></script>
 <script src="calendar_logic.js"></script>
+<script>
+/* CM1: "Make printable" opens Calendar Maker on the year being viewed (Month title "November 2026" / Year title "2026"). */
+['m', 'y'].forEach(function (k) {
+  document.getElementById(k + '-make').onclick = function () {
+    var y = (/(\d{4})\s*$/.exec(document.getElementById(k + '-title').textContent) || [])[1] || new Date().getFullYear();
+    location.href = '../calendar-maker/calendar-maker.html?year=' + y;
+  };
+});
+</script>
 </body>
 </html>

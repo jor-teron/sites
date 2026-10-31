@@ -7,6 +7,7 @@ Calculator,            calculator/,      , , Calculators, Calculator with a live
 Unit Converter,        unit-converter/,                   , , Calculators, Convert units offline: length - weight - temperature - area and more
 Stopwatch,             stopwatch/,       , , Time, Stopwatch with laps and an analog or digital display
 Calendar,              calendar/,        , , Time, Month and year calendar with Indian holidays list
+Calendar Maker,        calendar-maker/,  , , Time, Design and print a one-page A4 year calendar (PDF)
 My Day,                dashboard/,       , , Time, Personal dashboard: clock - weather - todo - notes - schedule and links
 Weather,               weather-chart/,   , , Weather, Today's hourly temperature chart for Diphu from Open-Meteo
 Weather Hourly,        weather-hourly/,  , , Weather, Hourly weather forecast for Diphu Assam

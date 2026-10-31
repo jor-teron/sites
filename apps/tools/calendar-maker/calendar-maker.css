@@ -1,0 +1,66 @@
+:root{--bg:#f6f7f9;--fg:#15181d;--mut:#6b7280;--card:#fff;--line:#e3e6ea;--acc:#2563eb}
+:root.dark{--bg:#111316;--fg:#eef0f3;--mut:#9aa3ae;--card:#1c1f24;--line:#2b3037;--acc:#60a5fa}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+#app{min-height:100vh;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#bar{display:flex;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid var(--line)}
+#bar .name{font-size:17px;flex:1}
+#tabs{display:flex;gap:4px}
+.tab{height:34px;padding:0 14px;border-radius:17px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:14px;cursor:pointer}
+.tab.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.page{flex:1;display:flex;gap:16px;padding:14px;min-height:0}
+.page[hidden]{display:none}
+#preview-wrap{flex:1;display:flex;justify-content:center;align-items:flex-start;min-width:0}
+#sheet{width:100%;max-width:calc((100vh - 90px) * 0.7071);height:auto;aspect-ratio:210/297;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.25);border-radius:2px}
+#opts{width:320px;flex:none;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px}
+.row.col{flex-direction:column;align-items:stretch}
+.row[hidden]{display:none}
+.yr{display:flex;align-items:center;gap:6px}
+.yr input{width:84px;height:36px;text-align:center;font-size:17px;font-weight:600;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+.nav{width:36px;height:36px;border-radius:18px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:22px;line-height:1;cursor:pointer}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{flex:1;height:34px;border:0;background:none;color:var(--fg);font-size:13px;cursor:pointer}
+.seg button.on{background:var(--acc);color:#fff;font-weight:600}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.swatches button{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);cursor:pointer}
+.swatches button.on{outline:3px solid var(--acc);outline-offset:2px}
+.sw{width:42px;height:24px;accent-color:var(--acc)}
+.pic{display:flex;gap:8px}
+.faint{display:flex;align-items:center;gap:10px}
+.faint input{flex:1}
+.mini{height:34px;padding:0 14px;border-radius:17px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:14px;cursor:pointer}
+.acts{display:flex;gap:8px}
+.btn{flex:1;height:42px;border-radius:21px;border:0;background:var(--acc);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+.btn:disabled{opacity:.5}
+.about{font-size:12px;color:var(--mut);line-height:1.5}
+.about img{vertical-align:middle;border-radius:6px}
+/* CM3 holidays page */
+.hol-wrap{display:flex;gap:16px;width:100%;max-width:1000px;margin:0 auto;flex-wrap:wrap}
+.hol-wrap section{flex:1 1 360px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.hol-wrap h2{margin:0 0 10px;font-size:17px}
+.hol-wrap h2 small{font-weight:400;color:var(--mut);font-size:13px}
+.add{display:flex;gap:6px;margin-bottom:10px}
+.add input{height:38px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);padding:0 8px;font-size:14px;min-width:0}
+.add input[type=text]{flex:1}
+.add .btn{flex:none;padding:0 16px}
+.hl{list-style:none;margin:0 0 10px;padding:0}
+.hl li{display:flex;align-items:center;gap:6px;padding:6px 0;border-top:1px solid var(--line)}
+.hl li input[type=date]{height:32px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);font-size:13px;width:140px}
+.hl li span{flex:1;font-size:14px;overflow:hidden;text-overflow:ellipsis}
+.hl li button{height:30px;padding:0 10px;border-radius:15px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font-size:12px;cursor:pointer}
+.hl .empty{color:var(--mut);font-size:13px}
+.note{font-size:12px;color:var(--mut)}
+#print-img{display:none}
+@media (max-width:760px){
+  .page{flex-direction:column}
+  #opts{width:100%}
+  #sheet{max-width:100%}
+}
+/* Print: only the A4 sheet image (it already holds its own ~7 mm margins) */
+@page{size:A4 portrait;margin:0}
+@media print{
+  html,body{background:#fff}
+  #app{display:none!important}
+  #print-img{display:block;width:209mm;height:auto;max-height:296mm;margin:0 auto;page-break-after:avoid}
+}

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<!--
+  Calendar Maker (CM1-CM3): design and print a one-sheet A4 year calendar (all 12 months).
+  Pages: Design (landing: live A4 preview + options, Print, Download PDF) and Holidays (CM3).
+  Styles: calendar-maker.css. Drawing: calendar-maker_render.js. Page logic: calendar-maker.js.
+  Download PDF + background: calendar-maker_pdf.js (CM2, jsPDF in vendor/). Holidays page: calendar-maker_holidays.js (CM3).
+  Holiday defaults come from the Calendar app (../calendar/calendar_holidays.js), not a copy.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Calendar Maker</title>
+  <link rel="icon" href="calendar-maker_icon.png">
+  <link rel="stylesheet" href="../../../shared/dialog/dialog.css">
+  <link rel="stylesheet" href="calendar-maker.css">
+  <script>try{var s=JSON.parse(localStorage.getItem('calendar-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
+</head>
+<body>
+<div id="app">
+  <header id="bar">
+    <b class="name">Calendar Maker</b>
+  </header>
+  <main id="page-design" class="page">
+    <div id="preview-wrap"><canvas id="sheet" aria-label="A4 calendar preview"></canvas></div>
+    <aside id="opts">
+      <div class="row"><span>Year</span>
+        <div class="yr"><button type="button" class="nav" id="y-prev" aria-label="Previous year">&#8249;</button><input type="number" id="year" min="1900" max="2200"><button type="button" class="nav" id="y-next" aria-label="Next year">&#8250;</button></div></div>
+      <div class="row col"><span>Holiday colour</span>
+        <div class="swatches" id="colours"></div></div>
+      <label class="row"><span>Colour Sundays</span><input type="checkbox" class="sw" id="sundays"></label>
+      <div class="row col"><span>Saturdays as holiday</span>
+        <div class="seg" data-key="sat"><button type="button" data-v="none">None</button><button type="button" data-v="24">2nd &amp; 4th</button><button type="button" data-v="all">All</button></div></div>
+      <div class="row col"><span>Week starts</span>
+        <div class="seg" data-key="week"><button type="button" data-v="sun">Sunday</button><button type="button" data-v="mon">Monday</button></div></div>
+      <div class="acts">
+        <button type="button" class="btn" id="print">Print</button>
+      </div>
+      <p class="about"><img src="calendar-maker_icon.png" alt="" width="28" height="28"> <b>Calendar Maker</b> <span id="ver"></span><br>One A4 sheet with all 12 months. Holidays from the Calendar app. Works offline.</p>
+    </aside>
+  </main>
+</div>
+<img id="print-img" alt="">
+<script src="../../../shared/dialog/dialog.js"></script>
+<script src="../calendar/calendar_holidays.js"></script>
+<script src="calendar-maker_render.js"></script>
+<script src="calendar-maker.js"></script>
+</body>
+</html>
