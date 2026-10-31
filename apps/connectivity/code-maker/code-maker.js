@@ -211,7 +211,13 @@
     if (!lsSet(HKEY, JSON.stringify(h.slice(0, MAXH)))) toast('Could not save (storage full or blocked).'); else toast('Saved to Recent.');
     paintHist();
   };
-  $('histClr').onclick = function () { if (confirm('Clear all recent codes on this device?')) { lsSet(HKEY, '[]'); paintHist(); } };
+  /* UD1: Hub dialog instead of native confirm
+  $('histClr').onclick = function () { if (confirm('Clear all recent codes on this device?')) { lsSet(HKEY, '[]'); paintHist(); } }; */
+  $('histClr').onclick = async function () {
+    var q = 'Clear all recent codes on this device?';
+    var ok = window.UiDialog ? await UiDialog.confirm(q, '', 'Clear', true) : confirm(q);
+    if (ok) { lsSet(HKEY, '[]'); paintHist(); }
+  };
 
   function load(it) {
     if (!T[it.type]) return;
