@@ -11,7 +11,8 @@
   C.appId = 'photo-studio';          // Hub link 'ready' id (used by pe_send.js)
   C.version = '1.0';
   // legacy: C.release = 'HPS2';
-  C.release = 'HPS3';                // HPS1: Photo Editor v2 feature set, own name / settings / About · HPS2: layers + .hps / .ora · HPS3: selections + layer masks
+  // legacy: C.release = 'HPS3';
+  C.release = 'HPS4';                // HPS1: Photo Editor v2 feature set, own name / settings / About · HPS2: layers + .hps / .ora · HPS3: selections + layer masks · HPS4: retouch
 
   // HPS2: about 12 MP for the working copy on every device (layers stay smooth on a 4 GB Celeron).
   // Bigger photos are reduced once on open (with a message); Resize and image layers keep to the same cap.
@@ -33,7 +34,8 @@
       minSize: 6                      // smallest layer side, photo px
     },
     select: { maxPixels: 4000000 },   // HPS3 (ps_select.js): a selection mask is kept at most this big (photo space)
-    mask: { maxPixels: 4000000 }      // HPS3 (ps_mask.js): a layer mask is kept at most this big (layer box)
+    mask: { maxPixels: 4000000 },     // HPS3 (ps_mask.js): a layer mask is kept at most this big (layer box)
+    retouch: { maxPixels: 4000000 }   // HPS4 (ps_retouch.js): a retouch patch / brush work buffer is at most this big
   };
 
   // Feature slot stub: feature files loaded before ps_app.js can already register; ps_app.js takes these over.

@@ -1,4 +1,4 @@
-# Hub Photo Studio (HPS3)
+# Hub Photo Studio (HPS4)
 
 The Hub's bigger photo editor (Media → Photo). Release **HPS1** had exactly Photo Editor v2's
 feature set (PE5) under its own name, settings and About. Release **HPS2** adds **layers** (image,
@@ -50,6 +50,7 @@ Studio's own files:
 | `ps_project.js` | HPS2: `.hps` save / open and `.ora` export (`PE.project`); HPS3: masks in / out, Adjust area in the .ora |
 | `ps_select.js` | HPS3: pixel store `PE.pix`, selections `PE.select`, marching ants, the `PE.view.adjustMask` hook, selection bar |
 | `ps_mask.js` | HPS3: layer masks `PE.masks`: drawing hooks, mask brush, mask bar, .hps mask entries |
+| `ps_retouch.js` | HPS4: retouch `PE.retouch`: healing, clone, red-eye, blur, smudge, RGBA patches, retouch bar, .hps retouch entries |
 
 Photo Editor v2 stores nothing in localStorage of its own, and Studio writes only
 `photo-studio-*` keys (plus the shared `shared-link-*` keys written by `shared/link` for Send),
@@ -77,6 +78,24 @@ HPS3 added one more, backward compatible:
 Photo Editor v2 never replaces `drawPhoto` and never sets `adjustMask`, so it draws exactly as before (PE5 test 46/46).
 Studio loads `pe_view.js` / `pe_io.js` and every other engine file straight from the
 Photo Editor v2 copy.
+
+## Retouch (HPS4)
+One toolbar button (Retouch) opens a floating bar: Healing, Clone, Red-eye, Blur, Smudge, with Size,
+Hardness (not Red-eye) and Strength, plus Set source / Aligned (Clone and Healing) and Remove retouch
+(in-app confirm). Opening it closes Layers, Select and the Mask brush, and the other way round.
+- **Clone stamp (S):** Alt+click (or Set source, then tap) picks the source. Aligned keeps the same offset
+  between strokes; off, every stroke starts again from the source point.
+- **Healing brush (J):** clone, then the copied colour is shifted to the average colour around the brush,
+  so texture comes from the source and tone from the surroundings.
+- **Red-eye (Shift+J):** click an eye (a box the brush size) or drag a box; only strongly red pixels get
+  their red pulled down to the green/blue level.
+- **Blur (U) and Smudge (Shift+U):** soft box blur under the brush; smudge drags colour along the stroke.
+- Paints on the selected image layer or the Background (text and shape layers: a message). An active
+  selection limits painting; a mask still hides what it hides. One stroke = one undo step.
+- Storage: a patch per target (RGBA over the original photo / the layer's picture, transparent where
+  untouched, at most `C.studio.retouch.maxPixels` = 4 MP), kept in `PE.pix` as 256 px tiles shared
+  between undo steps. It is laid over the source picture before Adjust / Looks, masks and opacity, through
+  the `L.drawBg`, `L.bgMasked` and `L.drawLayer` hooks, so preview, Save, Print, Send and .ora all show it.
 
 ## Layers (HPS2)
 Open the Layers panel with `L` or the layers button (a strip under the photo in portrait, a column
@@ -138,6 +157,7 @@ A `.hps` is a plain ZIP (open it with any unzip tool):
 | `images/<src>.<ext>` | the original file of each image layer, byte for byte (stored) |
 | `layers/<id>.png` | raster pixels for painted layers (reserved: none in HPS2 / HPS3) |
 | `masks/<id>.png`, `masks/background.png` | HPS3: layer / background masks (alpha = visible). The layer gets `"mask": {"src": "masks/<id>.png", "on": true, "w": …, "h": …}`, `background` gets `"mask": {"src", "on"}` |
+| `retouch/<id>.png`, `retouch/background.png` | HPS4: RGBA retouch patch (transparent = untouched). Image layers get `"retouch": {"src": "retouch/<id>.png"}`, `background` gets the same. Older files have none; HPS3 ignores them |
 | `masks/adjust.png` | HPS3: the area Adjust / Looks apply to; `edits.adjSel: "masks/adjust.png"` (missing = whole image) |
 | `preview.png` | flattened preview, longest side ≤ 256 px |
 
@@ -174,6 +194,8 @@ A `.hps` is a plain ZIP (open it with any unzip tool):
 - Open checks `format` and `version` (newer versions get a friendly "made by a newer Photo Studio"
   message), skips unknown layer types, and repairs missing values. Undo history is not saved.
 
+- HPS4 retouch is additive too: version stays 1, every older file opens unchanged.
+
 ## The .ora export (OpenRaster, for GIMP / Krita / MyPaint)
 ZIP with, in this order: `mimetype` (first entry, stored, `image/openraster`), `stack.xml`
 (`<image w h>` + one `<layer>` per layer, top first, with `opacity`, `visibility` and
@@ -204,6 +226,9 @@ H / V flip, A adjust, E resize, L layers, Delete delete the selected layer (asks
 HPS3: M marquee (rectangle / ellipse), Shift+L lasso, W magic wand, B mask brush ([ ] size), Shift / Alt add /
 subtract, Ctrl+A select all, Esc / Ctrl+D deselect, Ctrl+I invert, Delete with a selection hides it.
 
+HPS4: J healing, Shift+J red-eye, S clone stamp (Alt+click = source), U blur, Shift+U smudge (same key
+again closes; [ ] size; Esc closes when nothing is selected).
+
 ## Light on old laptops
 Same engine as Photo Editor v2: the preview is a screen-sized copy (≤ 2.5 MP), sliders only rebuild
 that copy, the full photo is rendered once at save in 512-row strips.
@@ -212,6 +237,16 @@ photo, Resize and each image layer (an image layer is also never decoded bigger 
 friendly in-app messages explain both caps. Decoded layer bitmaps are kept, text metrics cached, and
 the preview is rebuilt only when something changes (once per frame while dragging); with no layers
 the engine draws exactly as before. On a 4 GB Celeron keep enlargements to about 4000–5000 px.
+
+## Limits (HPS4)
+- A retouch patch is at most 4 MP: on a 12 MP photo retouched spots are a little softer than the rest.
+- Healing is a simple colour match (average under the brush), not Photoshop-style content-aware blending.
+- Clone / Healing copy from the picture as it was when the stroke started (no feedback within a stroke)
+  and only within the same layer. The source point is forgotten when another photo opens.
+- Retouch works on image layers and the Background, not text or shape layers. Retouching under a mask
+  is hidden by the mask. After Resize the patch is scaled along (the next stroke re-samples it once).
+- Big brushes (Blur / Smudge over ~200 px) can lag on old laptops; each stroke frame redraws the whole
+  photo. Touch / pen pressure is not used.
 
 ## Limits (HPS3)
 - Selections and masks are kept at most about 4 MP each, so on a 12 MP photo their edges are about 1.7×
