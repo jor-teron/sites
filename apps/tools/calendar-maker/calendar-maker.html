@@ -82,15 +82,15 @@
     <div class="hol-wrap">
       <section>
         <h2>Every year <small>same date every year</small></h2>
-        <div class="add"><input type="date" id="fx-date" aria-label="Date"><input type="text" id="fx-name" placeholder="Holiday name" maxlength="60"><!--CM9--><select id="fx-type" aria-label="Type"><option value="g">Gazetted</option><option value="r">Restricted</option></select><button type="button" class="btn" id="fx-add">Add</button></div>
+        <div class="add"><!--CM3-CM10: <input type="date" id="fx-date" aria-label="Date"> --><!--CM11--><select id="fx-d" aria-label="Day"></select><select id="fx-m" aria-label="Month"></select><span class="to">to</span><select id="fx-ed" aria-label="To day (optional)"></select><select id="fx-em" aria-label="To month (optional)"></select><input type="text" id="fx-name" placeholder="Holiday name" maxlength="60"><!--CM9--><select id="fx-type" aria-label="Type"><option value="g">Gazetted</option><option value="r">Restricted</option></select><button type="button" class="btn" id="fx-add">Add</button></div>
         <ul class="hl" id="fx-list"></ul>
         <button type="button" class="mini" id="fx-reset">Restore defaults</button>
       </section>
       <section>
         <h2>This year only <small id="dt-year"></small></h2>
-        <div class="add"><input type="date" id="dt-date" aria-label="Date"><input type="text" id="dt-name" placeholder="e.g. Diwali" maxlength="60"><!--CM9--><select id="dt-type" aria-label="Type"><option value="g">Gazetted</option><option value="r">Restricted</option></select><button type="button" class="btn" id="dt-add">Add</button></div>
+        <div class="add"><input type="date" id="dt-date" aria-label="Date"><!--CM11--><span class="to">to</span><input type="date" id="dt-end" aria-label="To (optional)" title="To (optional)"><input type="text" id="dt-name" placeholder="e.g. Diwali" maxlength="60"><!--CM9--><select id="dt-type" aria-label="Type"><option value="g">Gazetted</option><option value="r">Restricted</option></select><button type="button" class="btn" id="dt-add">Add</button></div>
         <ul class="hl" id="dt-list"></ul>
-        <p class="note">For festivals whose date changes each year. Only the year chosen on the Design page is shown.</p>
+        <p class="note">For festivals whose date changes each year. Leave To empty for a one-day holiday. Only the year chosen on the Design page is shown.</p>
       </section>
     </div>
   </main>
