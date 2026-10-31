@@ -933,3 +933,9 @@ kept.
   the "Open …" link only in <noscript>, so no body text flashes.
 - Colour follows the Hub theme before paint (sites-hub.theme, else the
   device setting). Each page keeps a one-line legacy comment on top.
+
+NV-S2 (hub.html ?v= labels)
+- hub.html keeps one ?v= label only, on hub/core/hub.js. Settings > About,
+  HubUpdate (build tag + update check) and hub_bump.py read the build there,
+  so don't remove it. Every other src / href is bare; the service worker
+  stores shell files under origin + pathname, so no label is needed.
