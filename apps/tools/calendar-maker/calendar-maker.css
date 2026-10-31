@@ -125,3 +125,10 @@ body.land #sheet{aspect-ratio:297/210;max-width:calc((100vh - 90px) * 1.4142)}
 body.hub-titlebar #bar{display:none}
 /* CM16-F1: legend size box */
 .lgsz{display:flex;align-items:center;gap:6px}.lgsz input{width:72px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--card);color:inherit}
+/* CM15: About page (Settings, How to, About cards) */
+.about-wrap{width:100%;max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.about-wrap .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;line-height:1.5;font-size:14px}
+.about-wrap h2{margin:0 0 10px;font-size:17px}
+.about-wrap .row{margin-bottom:8px}.about-wrap .row small{color:var(--mut);font-size:12px;margin-left:6px}
+.about-wrap .note{color:var(--mut);font-size:12px;margin:4px 0 12px}
+.howto{margin:0;padding-left:20px}.howto li{margin-bottom:6px}

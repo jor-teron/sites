@@ -6,7 +6,9 @@
   const CM = window.CM, S = CM.Settings, T = CM.Theme, R = CM.Render;
   /* const RELEASE = 'CM13';  (CM13) */
   /* const RELEASE = 'CM14';  (CM14) */
-  const RELEASE = 'CM16'; /* was 'CM12' (CM10-CM12), 'CM13', 'CM14' */
+  /* const RELEASE = 'CM16';  (CM16-CM16-F5) */
+  const RELEASE = 'CM15'; /* was 'CM12' (CM10-CM12), 'CM13', 'CM14', 'CM16' */
+  CM.RELEASE = RELEASE; /* CM15: About card */
   const $ = (id) => document.getElementById(id);
   const P = S.loadSettings(location.search);
   const save = () => S.saveSettings(P);
@@ -149,6 +151,7 @@
     $('page-hol').hidden = pg !== 'hol';
     if ($('page-list')) $('page-list').hidden = pg !== 'list'; /* CM10 */
     if ($('page-ovw')) $('page-ovw').hidden = pg !== 'ovw'; /* CM14 */
+    if ($('page-about')) $('page-about').hidden = pg !== 'about'; /* CM15 */
     if (pg === 'hol' && CM.Hol) CM.Hol.show(P.year);
     else if (pg === 'list' && CM.listRender) { CM.listRender(); render(); } /* CM10 */
     else if (pg === 'ovw' && CM.ovwRender) { CM.ovwRender(); render(); } /* CM14 */
