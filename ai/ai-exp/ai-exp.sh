@@ -2,24 +2,24 @@
 # AI sandbox experiment.
 # Run an AI inside an offline BusyBox cage for a fixed time and log what it does.
 # Usage: ./ai-exp.sh --help
-# Settings live in lib/config.sh.
+# Settings live in core/config.sh.
 
 set -u
 
 AI_EXP_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=lib/config.sh
-source "$AI_EXP_ROOT/lib/config.sh"
-# shellcheck source=lib/util.sh
-source "$AI_EXP_ROOT/lib/util.sh"
-# shellcheck source=lib/log.sh
-source "$AI_EXP_ROOT/lib/log.sh"
-# shellcheck source=lib/cage.sh
-source "$AI_EXP_ROOT/lib/cage.sh"
-# shellcheck source=lib/api.sh
-source "$AI_EXP_ROOT/lib/api.sh"
-# shellcheck source=lib/session.sh
-source "$AI_EXP_ROOT/lib/session.sh"
+# shellcheck source=core/config.sh
+source "$AI_EXP_ROOT/core/config.sh"
+# shellcheck source=core/util.sh
+source "$AI_EXP_ROOT/core/util.sh"
+# shellcheck source=core/log.sh
+source "$AI_EXP_ROOT/core/log.sh"
+# shellcheck source=core/cage.sh
+source "$AI_EXP_ROOT/core/cage.sh"
+# shellcheck source=core/api.sh
+source "$AI_EXP_ROOT/core/api.sh"
+# shellcheck source=core/session.sh
+source "$AI_EXP_ROOT/core/session.sh"
 
 main() {
   parse_args "$@"

@@ -98,7 +98,7 @@ ai/ai-exp/
   README.md
   .gitignore
   .env                 optional, gitignored
-  lib/
+  core/
     config.sh          all default settings
     util.sh            find tools, errors, one-line summaries
     cage.sh            build the cage and run a command in it
@@ -129,7 +129,7 @@ Each step in `log-N.md` starts with the clock time, like `- 12:04:01 [turn 2]`.
 
 ## Settings
 
-Defaults are in `lib/config.sh`. Override any of them by exporting the same name before you start. `AI_MODEL` sets the model id (the script stores it as `MODEL`).
+Defaults are in `core/config.sh`. Override any of them by exporting the same name before you start. `AI_MODEL` sets the model id (the script stores it as `MODEL`).
 
 | Setting | Default | Meaning |
 | --- | --- | --- |

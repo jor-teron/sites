@@ -28,7 +28,7 @@ API key (first one found wins):
   3. A hidden prompt, when this is run from a terminal
 
 Needs: bash, curl, jq, a static busybox, unshare, chroot
-Settings: $AI_EXP_ROOT/lib/config.sh
+Settings: $AI_EXP_ROOT/core/config.sh
 EOF
   exit "$code"
 }
