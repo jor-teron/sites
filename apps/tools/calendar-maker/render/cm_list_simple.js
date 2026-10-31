@@ -52,7 +52,7 @@
       if (r.head) k = 0;
       else if (bc && (k++ % 2) === 1) { c.fillStyle = bc; c.fillRect(cx[0], yy, TW, RH); }
       if (r.head) {
-        c.fillStyle = rc; c.fillRect(cx[0], yy, TW, RH);
+        c.fillStyle = r.t ? L.headFill(r, o) : rc; c.fillRect(cx[0], yy, TW, RH); /* CM18: was rc */
         c.fillStyle = fc; c.font = font('700', FS); c.fillText(r.text, cx[0] + pad, yy + RH / 2);
         lines.push([yy, false]); yy += RH; return;
       }

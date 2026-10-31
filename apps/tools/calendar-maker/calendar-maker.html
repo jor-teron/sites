@@ -50,6 +50,14 @@
         <div class="swatches" id="rcolours"></div>
         <label class="cpick" title="Custom restricted colour"><input type="color" id="rcustom" aria-label="Custom restricted colour"> Custom</label></div>
       <!--/CM9-->
+      <!--CM18-->
+      <div class="row col"><span>Public holiday colour</span>
+        <div class="swatches" id="pcolours"></div>
+        <label class="cpick" title="Custom public holiday colour"><input type="color" id="pcustom" aria-label="Custom public holiday colour"> Custom</label></div>
+      <div class="row col"><span>School holiday colour</span>
+        <div class="swatches" id="scolours"></div>
+        <label class="cpick" title="Custom school holiday colour"><input type="color" id="scustom" aria-label="Custom school holiday colour"> Custom</label></div>
+      <!--/CM18-->
       <!--CM12-F3-->
       <div class="row col"><span>Month label fill</span>
         <div class="swatches" id="mfills"></div>
@@ -102,13 +110,13 @@
     <div class="hol-wrap">
       <section>
         <h2>Every year <small>same date every year</small></h2>
-        <div class="add"><!--CM3-CM10: <input type="date" id="fx-date" aria-label="Date"> --><!--CM11--><select id="fx-d" aria-label="Day"></select><select id="fx-m" aria-label="Month"></select><span class="to">to</span><select id="fx-ed" aria-label="To day (optional)"></select><select id="fx-em" aria-label="To month (optional)"></select><input type="text" id="fx-name" placeholder="Holiday name" maxlength="60"><!--CM9--><select id="fx-type" aria-label="Type"><option value="g">Gazetted</option><option value="r">Restricted</option></select><button type="button" class="btn" id="fx-add">Add</button></div>
+        <div class="add"><!--CM3-CM10: <input type="date" id="fx-date" aria-label="Date"> --><!--CM11--><select id="fx-d" aria-label="Day"></select><select id="fx-m" aria-label="Month"></select><span class="to">to</span><select id="fx-ed" aria-label="To day (optional)"></select><select id="fx-em" aria-label="To month (optional)"></select><input type="text" id="fx-name" placeholder="Holiday name" maxlength="60"><!--CM9--><select id="fx-type" aria-label="Type"><option value="g">Gazetted</option><option value="r">Restricted</option><!--CM18--><option value="p">Public</option><option value="s">School</option></select><button type="button" class="btn" id="fx-add">Add</button></div>
         <ul class="hl" id="fx-list"></ul>
         <button type="button" class="mini" id="fx-reset">Restore defaults</button>
       </section>
       <section>
         <h2>This year only <small id="dt-year"></small></h2>
-        <div class="add"><input type="date" id="dt-date" aria-label="Date"><!--CM11--><span class="to">to</span><input type="date" id="dt-end" aria-label="To (optional)" title="To (optional)"><input type="text" id="dt-name" placeholder="e.g. Diwali" maxlength="60"><!--CM9--><select id="dt-type" aria-label="Type"><option value="g">Gazetted</option><option value="r">Restricted</option></select><button type="button" class="btn" id="dt-add">Add</button></div>
+        <div class="add"><input type="date" id="dt-date" aria-label="Date"><!--CM11--><span class="to">to</span><input type="date" id="dt-end" aria-label="To (optional)" title="To (optional)"><input type="text" id="dt-name" placeholder="e.g. Diwali" maxlength="60"><!--CM9--><select id="dt-type" aria-label="Type"><option value="g">Gazetted</option><option value="r">Restricted</option><!--CM18--><option value="p">Public</option><option value="s">School</option></select><button type="button" class="btn" id="dt-add">Add</button></div>
         <ul class="hl" id="dt-list"></ul>
         <p class="note">For festivals whose date changes each year. Leave To empty for a one-day holiday. Only the year chosen on the Design page is shown.</p>
       </section>
@@ -131,7 +139,9 @@
       <!--CM16-F2--><label class="row"><input type="checkbox" id="list-band"> <span>Striped rows</span></label>
       <div class="row col" id="list-band-row"><span>Stripe colour</span><div class="swatches" id="list-bands"></div><label class="cpick" title="Custom stripe colour"><input type="color" id="list-bcustom" aria-label="Custom stripe colour"> Custom</label></div>
       <!--CM16-F3--><label class="row"><input type="checkbox" id="list-showr"> <span>Show restricted holidays</span></label>
-      <p class="note">Holidays for the year chosen on the Design page: main holidays, then Restricted Holidays. Colours and font colour follow the Design page.</p>
+      <!--CM18--><label class="row"><input type="checkbox" id="list-showp"> <span>Show public holidays</span></label>
+      <label class="row"><input type="checkbox" id="list-shows"> <span>Show school holidays</span></label>
+      <p class="note">Holidays for the year chosen on the Design page: main (Gazetted) holidays, then Restricted, Public and School Holidays. Colours and font colour follow the Design page.</p>
       <div class="acts"><button type="button" class="btn" id="list-print">Print</button><button type="button" class="btn" id="list-pdf">Download PDF</button></div>
     </aside>
   </main>
@@ -140,7 +150,7 @@
   <main id="page-ovw" class="page" hidden>
     <div id="ovw-wrap"><canvas id="ovw-sheet" aria-label="A4 year overview preview"></canvas></div>
     <aside class="list-opts">
-      <p class="note">Year overview for the year chosen on the Design page: totals, holiday streaks (3 or more days off in a row) and holiday stretches (days off at least as many as working days). Off days are Sundays, Saturday holidays (Design page setting) and Gazetted holidays. Restricted holidays are shown but never deducted. Header and header row colour follow the Holiday List page.</p>
+      <p class="note">Year overview for the year chosen on the Design page: totals, holiday streaks (3 or more days off in a row) and holiday stretches (days off at least as many as working days). Off days are Sundays, Saturday holidays (Design page setting) and Gazetted holidays. Restricted, Public and School holidays are shown but never deducted. Header and header row colour follow the Holiday List page.</p>
       <div class="acts"><button type="button" class="btn" id="ovw-print">Print</button><button type="button" class="btn" id="ovw-pdf">Download PDF</button></div>
     </aside>
   </main>
@@ -157,14 +167,14 @@
         <p class="note">Resets colours, layout, legend, background and Holiday List options. Your holidays are never touched.</p>
         <!--CM17--><div class="row"><span>Holiday list</span><span><button type="button" class="mini" id="csv-export">Export holidays (CSV)</button> <button type="button" class="mini" id="csv-import">Import holidays (CSV)</button></span></div>
         <input type="file" id="csv-file" accept=".csv,text/csv" hidden>
-        <p class="note">CSV columns: Name, Start, End, Type (Gazetted / Restricted), Repeat (Every year / This year). Opens in Excel. Import shows a preview first, then Add to existing or Replace all.</p>
+        <p class="note">CSV columns: name, start, end, type (gazetted / restricted / public / school), repeat (yes = every year / no = this year). Only this format imports.<!--CM18 CSV follow-up: was 'Older CM17 files still import.'--><!--CM18: was Type (Gazetted / Restricted), Repeat (Every year / This year)--> Opens in Excel. Import shows a preview first, then Add to existing or Replace all.</p>
       </section>
       <section class="card">
         <h2>How to</h2>
         <ol class="howto">
-          <li><b>Holidays tab:</b> add holidays. <i>Every year</i> for fixed dates, <i>This year only</i> for festivals whose date changes. Pick a To date for a multi-day holiday, and Gazetted or Restricted for the type.</li>
-          <li><b>Design tab:</b> choose the year and the look: holiday, restricted, month label and weekday row colours, legend and its size, Saturdays, week start, layout, fold 6th week, background. Zoom the preview with Fit or the slider.</li>
-          <li><b>Holiday List tab:</b> Classic or Simple layout, header and subtitle, striped rows, and whether to show restricted holidays.</li>
+          <li><b>Holidays tab:</b> add holidays. <i>Every year</i> for fixed dates, <i>This year only</i> for festivals whose date changes. Pick a To date for a multi-day holiday, and the type: Gazetted, Restricted, Public or School. If a day has several, the calendar shows Sunday, then Saturday holiday, Gazetted, Restricted, Public, School.</li>
+          <li><b>Design tab:</b> choose the year and the look: holiday, restricted, public, school, month label and weekday row colours, legend and its size, Saturdays, week start, layout, fold 6th week, background. Zoom the preview with Fit or the slider.</li>
+          <li><b>Holiday List tab:</b> Classic or Simple layout, header and subtitle, striped rows, and whether to show restricted, public and school holidays.</li>
           <li><b>Year Overview tab:</b> summary of days off and working days, holiday streaks and holiday stretches for the year.</li>
           <li><b>Print or Download PDF</b> on each of those three tabs. PDF files are named like <code>2027-calendar.pdf</code>, <code>2027-holiday-list.pdf</code>, <code>2027-year-overview.pdf</code>.</li>
           <!--CM17--><li><b>Back up or edit in Excel:</b> About tab, Export holidays (CSV) saves <code>2027-holidays.csv</code>; Import holidays (CSV) brings a list back (Add to existing or Replace all).</li>

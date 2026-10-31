@@ -2,7 +2,9 @@
    The same drawing is used for the on-screen preview, Print (as an image) and the PDF (CM2), so all three match.
    CM.Render.draw(canvas, o) with o = { year, week: 'sun'|'mon', colour (preset key or #rrggbb, CM6), font (CM6),
      rcolour (CM9), sundays, sat: 'none'|'24'|'all', hols: [{m, d, name, r?, em?, ed?}], fold (CM5, default true),
-     bg: {type: 'none'|'soft'|'pic', colour, img, faint} (CM2), strip (CM2), layout (CM4), legend, mfill (CM12-F3), wfill, wmatch (CM16-F5) }
+     bg: {type: 'none'|'soft'|'pic', colour, img, faint} (CM2), strip (CM2), layout (CM4), legend, mfill (CM12-F3), wfill, wmatch (CM16-F5),
+     pcolour, scolour (CM18 Public / School tiles) }
+   CM18: tile priority Sunday > Saturday holiday > Gazetted > Restricted > Public > School.
    History: CM1 3 x 4 sheet; CM7 all grid lines one weight/colour; CM8 one uniform grid, one text size;
    CM9 Restricted tiles (Gazetted wins on a shared date); CM11 ranges tile every day, strip shows a range as one row. */
 window.CM = window.CM || {};
@@ -29,17 +31,24 @@ window.CM.Render = (function () {
     const rc = T.restrictedColour(o.rcolour);
     /* const hol = {}; (o.hols || []).forEach((h) => { const k = h.m * 100 + h.d;
          hol[k] = (h.r && hol[k] !== 'g') ? 'r' : 'g'; });  (CM9-CM10) */
-    const hol = {}; /* CM11: ranges */
+    /* const hol = {}; (CM11-CM17: ranges, Gazetted wins)
     (o.hols || []).forEach((h) => Hd.daysOf(h, y).forEach(([m, d]) => {
       const k = m * 100 + d; hol[k] = (h.r && hol[k] !== 'g') ? 'r' : 'g';
-    }));
+    })); */
+    const hol = {}; /* CM18: highest type wins (Gazetted > Restricted > Public > School) */
+    (o.hols || []).forEach((h) => { const t = Hd.typeOf(h); Hd.daysOf(h, y).forEach(([m, d]) => {
+      const k = m * 100 + d; if (!hol[k] || Hd.RANK[t] > Hd.RANK[hol[k]]) hol[k] = t;
+    }); });
+    const pc = T.publicColour(o.pcolour), sc = T.schoolColour(o.scolour); /* CM18 */
+    const TC = { g: col[0], r: rc, p: pc, s: sc };
     const isHol = (m, d) => {
       const wd = dow(y, m, d);
       if (wd === 0 && o.sundays !== false) return col[0];
       const sat24 = (d >= 8 && d <= 14) || (d >= 22 && d <= 28);
       if (wd === 6 && (o.sat === 'all' || (o.sat === '24' && sat24))) return col[0];
       const t = hol[m * 100 + d];
-      return t === 'g' ? col[0] : (t === 'r' ? rc : false);
+      /* return t === 'g' ? col[0] : (t === 'r' ? rc : false);  (CM9-CM17) */
+      return t ? TC[t] : false;
     };
     /* page + background (CM2) */
     const bg = o.bg || { type: 'none' };
@@ -76,6 +85,10 @@ window.CM.Render = (function () {
         rows.push({ head: 'Restricted Holidays' });
         sec.res.forEach((r) => rows.push({ ...r, r: true }));
       }
+      [['pub', 'Public Holidays', 'p'], ['sch', 'School Holidays', 's']].forEach(([k, label, t]) => { /* CM18 */
+        if (!sec[k].length) return;
+        rows.push({ head: label }); sec[k].forEach((r) => rows.push({ ...r, t }));
+      });
       const per = Math.ceil(rows.length / 3);
       /* stripH = rows.length ? 70 + per * 40 : 0;  (CM2-CM4) */
       stripH = rows.length ? 60 + per * 40 : 0; /* CM5: only the height it needs */
@@ -183,7 +196,11 @@ window.CM.Render = (function () {
     if (LFS) {
       const ly = gy0 + UH * gRows + legGap + Math.round(LFS * 0.7), sz = Math.round(LFS * 0.9);
       const items = [[col[0], '*Holiday']];
-      if ((o.hols || []).some((h) => h.r)) items.push([rc, '*Restricted holiday']);
+      /* if ((o.hols || []).some((h) => h.r)) items.push([rc, '*Restricted holiday']);  (CM12-F3-CM17) */
+      const has = (t) => (o.hols || []).some((h) => Hd.typeOf(h) === t); /* CM18: only types in this year's list */
+      if (has('r')) items.push([rc, '*Restricted holiday']);
+      if (has('p')) items.push([pc, '*Public holiday']);
+      if (has('s')) items.push([sc, '*School holiday']);
       let lx = gx0;
       c.font = font('400', LFS); c.textAlign = 'left'; c.textBaseline = 'middle';
       items.forEach(([sc, label]) => {
@@ -207,7 +224,8 @@ window.CM.Render = (function () {
         const x = M + Math.floor(i / per) * sw, yy = sy + 72 + (i % per) * 40;
         if (r.head) { c.fillStyle = fc; c.font = font('700', 27); c.fillText(r.head, x, yy + 2); return; } /* CM9 */
         /* c.fillStyle = col[0];  (CM2-CM8) */
-        c.fillStyle = r.r ? rc : col[0]; C.rr(c, x, yy - 14, 28, 28, 6); c.fill();
+        /* c.fillStyle = r.r ? rc : col[0];  (CM9-CM17) */
+        c.fillStyle = r.t ? TC[r.t] : (r.r ? rc : col[0]); C.rr(c, x, yy - 14, 28, 28, 6); c.fill();
         c.fillStyle = fc; c.font = font('700', 27); /* CM6: was '#111' */
         /* const dt = String(r.d).padStart(2, '0') + ' ' + MS[r.m];  (CM2-CM10) */
         const dt = Hd.dateText(r); /* CM11 */

@@ -1,6 +1,6 @@
 /* Calendar Maker CM13 ui: Design page (CM1) + page tabs. Adds P, save, hols, render, isLand, sheetCanvas to window.CM.
    Settings keys, defaults and validation live in core/cm_settings.js.
-   ?year=YYYY (from Calendar's "Make printable") wins over the saved year. */
+   ?year=YYYY (from Calendar's "Make printable") wins over the saved year; CM17-F1: else the last saved year, else this year. */
 (function () {
   'use strict';
   const CM = window.CM, S = CM.Settings, T = CM.Theme, R = CM.Render;
@@ -8,7 +8,8 @@
   /* const RELEASE = 'CM14';  (CM14) */
   /* const RELEASE = 'CM16';  (CM16-CM16-F5) */
   /* const RELEASE = 'CM15';  (CM15) */
-  const RELEASE = 'CM17'; /* was 'CM12' (CM10-CM12), 'CM13', 'CM14', 'CM16', 'CM15' */
+  /* const RELEASE = 'CM17';  (CM17-CM17-F2) */
+  const RELEASE = 'CM18'; /* was 'CM12' (CM10-CM12), 'CM13', 'CM14', 'CM16', 'CM15', 'CM17' */
   CM.RELEASE = RELEASE; /* CM15: About card */
   const $ = (id) => document.getElementById(id);
   const P = S.loadSettings(location.search);
@@ -26,7 +27,8 @@
       font: P.font, /* CM6 */ rcolour: P.rcol, /* CM9 */ sundays: P.sundays, sat: P.sat, hols: hols(P.year),
       bg: { type: P.bg, colour: P.soft, img: CM.bgImg, faint: P.faint / 100 }, strip: P.strip, layout: P.layout,
       fold: P.fold !== false, legend: P.legend, mfill: P.mfill, lgsz: P.lgsz, /* CM12-F3, CM16-F1 lgsz */
-      wfill: P.wfill, wmatch: P.wmatch === true }; /* CM16-F5 */
+      wfill: P.wfill, wmatch: P.wmatch === true, /* CM16-F5 */
+      pcolour: P.pcol, scolour: P.scol }; /* CM18 */
   }
   let raf = 0;
   function render() {
@@ -56,6 +58,8 @@
     }
     if ($('font')) $('font').value = P.font;
     if ($('rcustom')) { $('rcustom').value = P.rcol; markOn('#rcolours button', P.rcol); } /* CM9 */
+    if ($('pcustom')) { $('pcustom').value = P.pcol; markOn('#pcolours button', P.pcol); } /* CM18 */
+    if ($('scustom')) { $('scustom').value = P.scol; markOn('#scolours button', P.scol); }
     $('sundays').checked = P.sundays !== false;
     $('fold').checked = P.fold !== false; /* CM5 */
     if ($('legend')) $('legend').checked = P.legend !== false; /* CM12-F3 */
@@ -90,6 +94,11 @@
   const rcs = T.RCOLOURS;
   if ($('rcolours')) swatches('rcolours', Object.keys(rcs).map((k) => [rcs[k], rcs[k], k, T.cap1(k)]), 'rcol');
   if ($('rcustom')) $('rcustom').oninput = () => { P.rcol = $('rcustom').value; save(); render(); };
+  /* CM18: Public / School tile colours */
+  [['pcolours', 'pcustom', T.PCOLOURS, 'pcol'], ['scolours', 'scustom', T.SCOLOURS, 'scol']].forEach(([id, cid, pr, key]) => {
+    if ($(id)) swatches(id, Object.keys(pr).map((k) => [pr[k], pr[k], k, T.cap1(k)]), key);
+    if ($(cid)) $(cid).oninput = () => { P[key] = $(cid).value; save(); render(); };
+  });
   /* CM6: custom holiday colour + font colour */
   if ($('custom')) $('custom').oninput = () => { P.custom = $('custom').value; P.colour = 'custom'; save(); render(); };
   if ($('font')) $('font').oninput = () => { P.font = $('font').value; save(); render(); };

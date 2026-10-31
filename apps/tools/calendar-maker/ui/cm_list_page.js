@@ -8,7 +8,8 @@
   const opts = () => ({ year: P.year, hols: CM.hols(P.year), colour: P.colour === 'custom' ? P.custom : P.colour,
     rcolour: P.rcol, font: P.font, header: P.lhead,
     layout: P.llay, sub: P.lsub, deco: P.ldeco, abcd: P.labcd, merge: P.lmerge, hcolour: P.lhc, /* CM12 */
-    band: P.lband, bandc: P.lbandc, showr: P.lshowr }); /* CM16-F2, CM16-F3 */
+    band: P.lband, bandc: P.lbandc, showr: P.lshowr, /* CM16-F2, CM16-F3 */
+    pcolour: P.pcol, scolour: P.scol, showp: P.lshowp, shows: P.lshows }); /* CM18 */
   const canvas = () => L.draw(document.createElement('canvas'), opts());
   CM.listRender = () => L.draw($('list-sheet'), opts());
   const hi = $('list-header');
@@ -17,7 +18,8 @@
   const hcs = T.HCOLOURS, set = (k, v) => { P[k] = v; CM.save(); syncL(); CM.listRender(); };
   /* const CHECKS = [['list-deco', 'ldeco'], ['list-abcd', 'labcd'], ['list-merge', 'lmerge']];  (CM12-CM16-F1) */
   const CHECKS = [['list-deco', 'ldeco'], ['list-abcd', 'labcd'], ['list-merge', 'lmerge'],
-    ['list-band', 'lband'], ['list-showr', 'lshowr']]; /* CM16-F2, CM16-F3 */
+    ['list-band', 'lband'], ['list-showr', 'lshowr'], /* CM16-F2, CM16-F3 */
+    ['list-showp', 'lshowp'], ['list-shows', 'lshows']]; /* CM18 */
   const BANDS = L.BANDS, BN = { blue: 'Light blue', grey: 'Light grey', green: 'Light green' };
   function syncL() {
     if ($('list-layout')) $('list-layout').value = P.llay;

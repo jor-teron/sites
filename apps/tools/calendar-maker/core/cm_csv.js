@@ -1,5 +1,9 @@
 /* Calendar Maker CM17 core: holiday list CSV (no DOM). window.CM.Csv
-   Header: Name,Start,End,Type,Repeat. Type Gazetted | Restricted. Repeat Every year | This year.
+   CM18 header: name,start,end,type,repeat. type gazetted | restricted | public | school; repeat yes (every year) | no.
+   Import accepts ONLY this format (header names / values any case, columns in any order). CM18 CSV follow-up:
+   CM17 repeat values (Every year / This year) are skipped 'repeat must be yes or no', so a CM17 file has no valid rows.
+   (removed: 'Import also reads the CM17 file ... any case; repeat also y / n / true / false.')
+   CM17 (legacy export): Header: Name,Start,End,Type,Repeat. Type Gazetted | Restricted. Repeat Every year | This year.
    Every year: Start/End as DD-MM (29-02 allowed); This year: YYYY-MM-DD. End blank = one day; ranges stay in one year.
    Export: UTF-8 with BOM, CRLF, RFC 4180 quoting. Import: BOM optional, CRLF or LF, Type/Repeat any case,
    columns matched by header name. Data model as core/cm_settings.js:
@@ -7,7 +11,14 @@
 window.CM = window.CM || {};
 window.CM.Csv = (function () {
   'use strict';
-  const HEAD = ['Name', 'Start', 'End', 'Type', 'Repeat'];
+  const HEAD = ['Name', 'Start', 'End', 'Type', 'Repeat']; /* column keys (matched case-insensitively) */
+  const OUT_HEAD = ['name', 'start', 'end', 'type', 'repeat']; /* CM18 export header (CM17 wrote HEAD) */
+  const Hd = window.CM.Holidays;
+  const TWORD = { g: 'gazetted', r: 'restricted', p: 'public', s: 'school' }; /* CM18 */
+  const TCODE = { gazetted: 'g', restricted: 'r', public: 'p', school: 's' };
+  /* const REP = { 'every year': true, yes: true, y: true, true: true, 'this year': false, no: false, n: false, false: false };  (CM18 first cut) */
+  const REP = { yes: true, no: false }; /* CM18 CSV follow-up: new format only */
+  const tword = (h) => TWORD[Hd ? Hd.typeOf(h) : (h.r ? 'r' : 'g')];
   const p2 = (n) => String(n).padStart(2, '0');
   const mlen = (m) => new Date(2000, m + 1, 0).getDate(); /* Feb = 29 */
   const q = (s) => { s = String(s == null ? '' : s); return /[",\r\n]/.test(s) || /^\s|\s$/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
@@ -16,13 +27,16 @@ window.CM.Csv = (function () {
 
   /* H = {fixed: [...] (or already resolved), dated: [...]} -> CSV text (BOM + CRLF) */
   function serialize(fixed, dated) {
-    const out = [line(HEAD)];
+    /* const out = [line(HEAD)];  (CM17) */
+    const out = [line(OUT_HEAD)]; /* CM18 */
     (fixed || []).slice().sort((a, b) => a.m - b.m || a.d - b.d).forEach((h) => {
       const e = h.em != null && h.ed != null && h.em * 100 + h.ed > h.m * 100 + h.d ? p2(h.ed) + '-' + p2(h.em + 1) : '';
-      out.push(line([h.name, p2(h.d) + '-' + p2(h.m + 1), e, h.r ? 'Restricted' : 'Gazetted', 'Every year']));
+      /* out.push(line([h.name, p2(h.d) + '-' + p2(h.m + 1), e, h.r ? 'Restricted' : 'Gazetted', 'Every year']));  (CM17) */
+      out.push(line([h.name, p2(h.d) + '-' + p2(h.m + 1), e, tword(h), 'yes']));
     });
     (dated || []).slice().sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)).forEach((h) => {
-      out.push(line([h.name, h.date, h.end || '', h.r ? 'Restricted' : 'Gazetted', 'This year']));
+      /* out.push(line([h.name, h.date, h.end || '', h.r ? 'Restricted' : 'Gazetted', 'This year']));  (CM17) */
+      out.push(line([h.name, h.date, h.end || '', tword(h), 'no']));
     });
     return '\uFEFF' + out.join('\r\n') + '\r\n';
   }
@@ -77,10 +91,17 @@ window.CM.Csv = (function () {
       const name = g('Name'), type = g('Type').toLowerCase(), rep = g('Repeat').toLowerCase().replace(/\s+/g, ' ');
       const s = g('Start'), e = g('End');
       if (!name) return skip('missing name');
-      if (type !== 'gazetted' && type !== 'restricted') return skip('unknown type "' + g('Type') + '"');
+      /* if (type !== 'gazetted' && type !== 'restricted') return skip('unknown type "' + g('Type') + '"');
       if (rep !== 'every year' && rep !== 'this year') return skip('unknown repeat "' + g('Repeat') + '"');
       const rr = type === 'restricted';
-      if (rep === 'every year') {
+      if (rep === 'every year') {  (CM17) */
+      const tc = TCODE.hasOwnProperty(type) ? TCODE[type] : null; /* CM18 */
+      if (!tc) return skip('unknown type "' + g('Type') + '" (use gazetted, restricted, public or school)');
+      /* if (!REP.hasOwnProperty(rep)) return skip('unknown repeat "' + g('Repeat') + '" (use yes or no)');  (CM18 first cut) */
+      if (!REP.hasOwnProperty(rep)) return skip('repeat must be yes or no (got "' + g('Repeat') + '")');
+      const rr = tc === 'r', every = REP[rep];
+      const typed = (o) => { if (tc === 'p' || tc === 's') o.t = tc; return o; };
+      if (every) {
         const a = dm(s); if (!a) return skip('bad start date "' + s + '" (use DD-MM)');
         const o = { m: a.m, d: a.d, name };
         if (rr) o.r = true;
@@ -90,7 +111,7 @@ window.CM.Csv = (function () {
           if (k2 < k1) return skip('end before start (ranges cannot cross into the next year)');
           if (k2 > k1) { o.em = b.m; o.ed = b.d; }
         }
-        res.fixed.push(o);
+        res.fixed.push(typed(o));
       } else {
         const a = ymd(s); if (!a) return skip('bad start date "' + s + '" (use YYYY-MM-DD)');
         const o = { date: a, name };
@@ -101,7 +122,7 @@ window.CM.Csv = (function () {
           if (b > a) o.end = b;
         }
         if (rr) o.r = true;
-        res.dated.push(o);
+        res.dated.push(typed(o));
       }
     });
     return res;
@@ -120,5 +141,5 @@ window.CM.Csv = (function () {
     return { fixed: F, dated: D, added, dup };
   }
 
-  return { HEAD, serialize, parse, rows, merge, fname };
+  return { HEAD, OUT_HEAD, serialize, parse, rows, merge, fname };
 })();
