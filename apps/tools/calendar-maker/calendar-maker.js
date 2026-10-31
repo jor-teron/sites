@@ -12,7 +12,7 @@ window.CM = (function () {
   try { cal = JSON.parse(localStorage.getItem('calendar-settings-v1') || '{}') || {}; } catch (_) { cal = {}; }
   const D = { year: new Date().getFullYear(), colour: 'green', sundays: true,
     sat: cal.satAll ? 'all' : (cal.sat24 ? '24' : 'none'), week: cal.week === 'mon' ? 'mon' : 'sun',
-    bg: 'none', soft: '#fef9e7', faint: 25, strip: false, layout: 'p3', fold: true, custom: '#92d36e', font: '#000000', rcol: '#cfcfcf', lhead: '' }; /* CM10: Holiday List header */ /* CM9: restricted holiday colour */ /* CM6: custom holiday colour + font colour */ /* CM5: fold on (existing users get it too) */ /* CM4: bg default None = white */
+    bg: 'none', soft: '#fef9e7', faint: 25, strip: false, layout: 'p3', fold: true, custom: '#92d36e', font: '#000000', rcol: '#cfcfcf', lhead: '', legend: true, mfill: '#d9d9d9' }; /* CM12-F3: legend + month row fill */ /* CM10: Holiday List header */ /* CM9: restricted holiday colour */ /* CM6: custom holiday colour + font colour */ /* CM5: fold on (existing users get it too) */ /* CM4: bg default None = white */
   Object.keys(D).forEach((k) => { if (P[k] === undefined || P[k] === null) P[k] = D[k]; });
   if (!window.CMRender.LAYOUTS[P.layout]) P.layout = 'p3';
   const HEX = /^#[0-9a-f]{6}$/i; /* CM6 */
@@ -20,6 +20,7 @@ window.CM = (function () {
   if (!HEX.test(P.font)) P.font = D.font;
   if (!HEX.test(P.rcol)) P.rcol = D.rcol; /* CM9 */
   if (typeof P.lhead !== 'string') P.lhead = ''; /* CM10 */
+  if (typeof P.legend !== 'boolean') P.legend = true; if (!HEX.test(P.mfill)) P.mfill = D.mfill; /* CM12-F3 */
   /* CM12: holiday list layout (Classic default) + Classic options */
   if (P.llay !== 'simple') P.llay = 'classic';
   if (typeof P.lsub !== 'string') P.lsub = 'LIST OF HOLIDAYS';
@@ -41,7 +42,7 @@ window.CM = (function () {
 
   function opts() {
     return { year: P.year, week: P.week, colour: P.colour === 'custom' ? P.custom : P.colour, font: P.font, /* CM6 */ rcolour: P.rcol, /* CM9 */ sundays: P.sundays, sat: P.sat, hols: hols(P.year),
-      bg: { type: P.bg, colour: P.soft, img: api.bgImg, faint: P.faint / 100 }, strip: P.strip, layout: P.layout, fold: P.fold !== false };
+      bg: { type: P.bg, colour: P.soft, img: api.bgImg, faint: P.faint / 100 }, strip: P.strip, layout: P.layout, fold: P.fold !== false, legend: P.legend, mfill: P.mfill }; /* CM12-F3 */
   }
   let raf = 0;
   function render() {
@@ -69,6 +70,8 @@ window.CM = (function () {
     if ($('rcustom')) { $('rcustom').value = P.rcol; document.querySelectorAll('#rcolours button').forEach((b) => b.classList.toggle('on', b.dataset.v === P.rcol)); } /* CM9 */
     $('sundays').checked = P.sundays !== false;
     $('fold').checked = P.fold !== false; /* CM5 */
+    if ($('legend')) $('legend').checked = P.legend !== false; /* CM12-F3 */
+    if ($('mcustom')) { $('mcustom').value = P.mfill; document.querySelectorAll('#mfills button').forEach((b) => b.classList.toggle('on', b.dataset.v === P.mfill.toLowerCase())); }
     if (api.onSync) api.onSync();
   }
 
@@ -92,6 +95,13 @@ window.CM = (function () {
   if ($('font-reset')) $('font-reset').onclick = () => { P.font = '#000000'; save(); render(); };
   $('sundays').onchange = () => { P.sundays = $('sundays').checked; save(); render(); };
   $('fold').onchange = () => { P.fold = $('fold').checked; save(); render(); }; /* CM5 */
+  /* CM12-F3: legend toggle + month row fill (White = none, Light grey, custom) */
+  if ($('legend')) $('legend').onchange = () => { P.legend = $('legend').checked; save(); render(); };
+  if ($('mfills')) {
+    $('mfills').innerHTML = [['#ffffff', 'White (no fill)'], ['#d9d9d9', 'Light grey']].map(([v, n]) => '<button type="button" data-v="' + v + '" style="background:' + v + '" aria-label="' + n + '" title="' + n + '"></button>').join('');
+    $('mfills').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; P.mfill = b.dataset.v; save(); render(); });
+  }
+  if ($('mcustom')) $('mcustom').oninput = () => { P.mfill = $('mcustom').value; save(); render(); };
   const setYear = (y) => { y = Math.round(+y); if (!(y >= 1900 && y <= 2200)) { sync(); return; } P.year = y; save(); render(); if (api.onYear) api.onYear(); };
   $('y-prev').onclick = () => setYear(P.year - 1);
   $('y-next').onclick = () => setYear(P.year + 1);
