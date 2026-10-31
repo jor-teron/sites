@@ -1,4 +1,4 @@
-/* Sudoku SD1 — UI styles. */
+/* Sudoku SDQ1a — UI styles. */
 :root {
   --bg: #0f1419;
   --panel: #1a2129;
@@ -7,45 +7,54 @@
   --accent: #5dade2;
   --line: #2c3642;
   --given: #a0c4e8;
+  --user: #6aa8ff;
   --ok: #58d68d;
   --bad: #e74c3c;
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.3 system-ui, -apple-system, sans-serif; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 16px/1.3 system-ui, -apple-system, sans-serif; }
 button { font: inherit; color: inherit; }
 
-.sd-wrap { max-width: 420px; margin: 0 auto; padding: 12px; text-align: center; }
-.sd-title { font-size: 1.4rem; margin: 0 0 10px; }
+/* SDQ1a: "use all the space" - the board is the biggest square that fits; --b is its side. Controls go below (portrait) or beside (landscape). */
+.sd-wrap { --b: min(100vw - 16px, 100dvh - 250px); box-sizing: border-box; min-height: 100dvh; align-content: center; display: grid; grid-template-areas: 'title' 'board' 'side'; justify-content: center; padding: 8px; text-align: center; }
+.sd-title { grid-area: title; font-size: 1.4rem; margin: 0 0 8px; }
+.sd-side { grid-area: side; width: var(--b); max-width: 520px; justify-self: center; }
+@media (orientation: landscape) and (min-width: 560px) {
+  .sd-wrap { --b: min(100dvh - 16px, 100vw - 300px); grid-template-areas: 'board title' 'board side'; grid-template-rows: auto 1fr; column-gap: 16px; align-content: center; min-height: 100dvh; }
+  .sd-side { width: 260px; align-self: start; }
+  .sd-wrap .sd-board { margin: 0; }
+}
 
 .sd-board {
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
+  /* SDQ1a: spacer tracks between boxes give thick lines of 1px gap + 2px track + 1px gap = 4px, same as the outer border */
+  grid-template-columns: 1fr 1fr 1fr 2px 1fr 1fr 1fr 2px 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr 2px 1fr 1fr 1fr 2px 1fr 1fr 1fr;
   gap: 1px;
   background: #3a4550;
-  border: 3px solid #3a4550;
+  border: 4px solid #3a4550;
   border-radius: 8px;
-  margin: 0 auto 12px;
-  width: min(100%, 360px);
-  aspect-ratio: 1;
+  grid-area: board;
+  margin: 0 auto 8px;
+  width: var(--b); height: var(--b);
 }
 .sd-cell {
   background: var(--panel);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: calc(var(--b) / 9 * .55);
   font-weight: 600;
   cursor: pointer;
   user-select: none;
 }
 .sd-cell.given { color: var(--given); cursor: default; }
 .sd-cell.selected { outline: 2px solid var(--accent); z-index: 1; }
-.sd-cell.bad { color: var(--bad); }
-.sd-cell:nth-child(3n) { border-right: 2px solid #3a4550; }
-.sd-cell:nth-child(9n) { border-right: 0; }
-.sd-cell:nth-child(n+19):nth-child(-n+27),
-.sd-cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid #3a4550; }
+.sd-cell.user { color: var(--user); font-weight: 500; }
+.sd-cell.bad { color: var(--bad); background: #2e1f22; }
+.sd-cell:focus { outline: none; }
+.sd-cell:focus-visible, .sd-cell.selected:focus-visible { outline: 3px solid var(--accent); }
 
 .sd-pad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 10px; }
 .sd-pad button {

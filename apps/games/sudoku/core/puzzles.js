@@ -1,4 +1,4 @@
-/* Sudoku SD1 — a few easy puzzles (0 = empty). */
+/* Sudoku SDQ1a — a few easy puzzles (0 = empty). */
 window.SD_PUZZLES = [
   [
     5,3,0, 0,7,0, 0,0,0,
