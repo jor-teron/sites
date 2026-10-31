@@ -44,6 +44,7 @@
     channel(name) → { send(to, data), broadcast(data), on(fn(data, from, env)) → unsubscribe, peers() }
     setAppIdentity(app, obj | null)   saved in localStorage 'hub-mesh-id-<app>', advertised in the roster
     appIdentity(app); refresh() (name / mode changed); isLobby(); term(); lobbyId(); state(); stats()
+    lobbyInfo() → { dev, name, site, self } | null   (H77: who holds the lobby; site = location.host, 'file' on file://)
   H55 public mesh: code PUBLIC_CODE '0000' (or start(code, { public: true })) = the public mesh every Hub without a
     private mesh joins (hub_meshlink.js decides). S.pub is enforced HERE, not just in the UI:
       - only '_mesh' control (hello / welcome / roster / hb / info / bye = presence) and the 'invite' channel pass,
@@ -135,7 +136,8 @@
       pub: code === PUBLIC_CODE || !!(opts && opts.public), invOut: 0, invIn: new Map(),   // H55
       // H55b: join wait / retries
       joining: null, joinStart: 0, helloTimer: 0, joinState: '', joinFails: 0, lastJoinMs: 0, failStart: 0,
-      retryTimer: 0, retryAt: 0, gaveUp: false
+      retryTimer: 0, retryAt: 0, gaveUp: false,
+      holder: null            // H77: { dev, name, site } the lobby says about itself (roster / welcome / bye)
     };
   }
   function lobbyPeerId() { return PREFIX + S.code + '-mesh-0'; }
@@ -176,6 +178,9 @@
     } catch (_) { /* blocked */ }
     return out;
   }
+  // H77: who holds the lobby: the lobby adds { dev, name, site } to welcome / roster / bye; members keep it
+  function holderSelf() { return { dev: S.dev, name: myName(), site: location.protocol === 'file:' ? 'file' : String(location.host).slice(0, 64) }; }
+  function keepHolder(x) { var h = x.data && x.data.lobby; S.holder = h && typeof h === 'object' ? { dev: x.from, name: String(h.name || '').slice(0, nameCap()), site: String(h.site || '').slice(0, 64) } : null; }
   function selfInfo() { return { deviceId: S.dev, name: myName(), mode: myMode(), apps: myApps() }; }
 
   /* ---------- envelopes ---------- */
@@ -411,6 +416,7 @@
         me.term = x.term; me.lobbyDev = x.from; me.lobbyLast = Date.now();
         clearTimeout(me.claimTimer); me.claimTimer = 0;
         status('linked');
+        keepHolder(x);   // H77
         setRoster(x.data.roster, x.term, x.from);
         emit('lobby', lobbyInfo());
         return;
@@ -484,9 +490,10 @@
   }
   function ctrlFromLobby(x) {
     var k = x.data && x.data.k;
-    if (k === 'roster') { if (x.from !== S.lobbyDev) return; if (x.term > S.term) S.term = x.term; setRoster(x.data.roster, x.term, x.from); }
+    if (k === 'roster') { if (x.from !== S.lobbyDev) return; if (x.term > S.term) S.term = x.term; keepHolder(x); setRoster(x.data.roster, x.term, x.from); }
     else if (k === 'bye') {   // the lobby refused us (site / denied / full): stop asking until start() again
       S.refused = String(x.data.reason || 'refused').slice(0, 20);
+      keepHolder(x);   // H77: who refused us (older lobbies send nothing)
       var c = S.lobbyConn; S.lobbyConn = null; try { if (c) c.close(); } catch (_) { /* gone */ }
       S.joinState = 'refused'; S.joining = null; clearInterval(S.helloTimer); clearTimeout(S.joinTimer);   // H55b
       status('refused');
@@ -503,6 +510,7 @@
     me.lobbyConn = null;
     if (me.failStart && overBudget()) { giveUp(); return; }   // H55b
     var oldLobby = me.lobbyDev;
+    me.holder = null;   // H77
     if (oldLobby) {
       me.lobbyDev = '';
       var r = me.roster.get(oldLobby);
@@ -600,7 +608,7 @@
       rec.last = Date.now();
       if (!rec.hello) {
         if (badShape(x) || x.ch !== CTRL || !x.data || x.data.k !== 'hello' || x.from !== d) return;
-        if (x.data.site && x.data.site !== location.host) { safeSend(conn, envelope(CTRL, d, { k: 'bye', reason: 'site' })); return; }   // same site only (weak: can be faked)
+        if (x.data.site && x.data.site !== location.host) { safeSend(conn, envelope(CTRL, d, { k: 'bye', reason: 'site', lobby: holderSelf() })); return; }   // same site only (weak: can be faked)
         if (!hooks.approveJoin(x.data, conn.peer)) { safeSend(conn, envelope(CTRL, d, { k: 'bye', reason: 'denied' })); return; }
         // if (!me.roster.has(d) && me.roster.size >= MAX_ROSTER) { pruneOffline(true); if (me.roster.size >= MAX_ROSTER) {   (before H55)
         if (!me.roster.has(d) && me.roster.size >= rosterCap()) { pruneOffline(true); if (me.roster.size >= rosterCap()) { safeSend(conn, envelope(CTRL, d, { k: 'bye', reason: 'full' })); return; } }
@@ -613,7 +621,7 @@
         Object.assign(r, info(x.data), { online: true, lastSeen: Date.now(), lobby: false });
         me.roster.set(d, r);
         computeRelay();
-        safeSend(conn, envelope(CTRL, d, { k: 'welcome', roster: rosterList() }));
+        safeSend(conn, envelope(CTRL, d, { k: 'welcome', roster: rosterList(), lobby: holderSelf() }));
         broadcastRoster(d);
         emit('roster', rosterList()); emit('peers', peers());
         return;
@@ -644,7 +652,7 @@
   }
   function broadcastRoster() {
     var list = rosterList();
-    S.members.forEach(function (m, d) { safeSend(m.conn, envelope(CTRL, d, { k: 'roster', roster: list })); });
+    S.members.forEach(function (m, d) { safeSend(m.conn, envelope(CTRL, d, { k: 'roster', roster: list, lobby: holderSelf() })); });
     linkDirect();
   }
   function pruneOffline(force) {
@@ -821,6 +829,13 @@
     isLobby: function () { return !!(S && S.isLobby); },
     term: function () { return S ? S.term : 0; },
     lobbyId: function () { return S ? S.lobbyDev : ''; },
+    // H77: { dev, name, site, self } of the lobby holder, or null (not known yet / older lobby)
+    lobbyInfo: function () {
+      if (!S) return null;
+      if (S.isLobby) return Object.assign(holderSelf(), { self: true });
+      var h = S.holder;
+      return h && (h.dev === S.lobbyDev || S.refused) ? { dev: h.dev, name: h.name, site: h.site, self: false } : null;
+    },
     state: function () { return S ? S.state : 'stopped'; },
     // stats: function () { return S ? Object.assign({ direct: Array.from(S.direct.keys()).filter(function (d) { return S.direct.get(d).conn.open; }) }, S.stats) : null; },   (before H55b)
     stats: function () { return S ? Object.assign({ direct: Array.from(S.direct.keys()).filter(function (d) { return S.direct.get(d).conn.open; }) }, S.stats, { joinFails: S.joinFails, lastJoinMs: S.lastJoinMs, joinState: S.joinState }) : null; },   // H55b
