@@ -34,7 +34,7 @@ Everything shared lives in `common/settings/` (release GS1):
    `<script src="../common/settings/games-settings.js"></script>`
 2. **Add a per-game settings file** (a "bridge") loaded after the config and before the logic.
    It wraps `GameSettings` and falls back to fixed defaults when the library is missing.
-   Examples: `tetris/tetris_settings.js`, `tic-tac-toe/tic-tac-toe_settings.js`, `tennis-throw/modules/settings.js`.
+   Examples: `tetris/ui/settings.js`, `tic-tac-toe/ui/settings.js`, `tennis-throw/ui/settings.js`.
 3. **Add the gear** with `mountGear(target, '<game-folder>')`. The folder name becomes `?from=`, so Back returns to the game.
 4. **Apply the settings** that fit: read them at start and again in `onChange` (the settings page may be open in another tab).
    Typical: `fpsLimit`, `difficulty`, `autoPause`, `showHints`, `showFps`, `vibration`, sound volume.

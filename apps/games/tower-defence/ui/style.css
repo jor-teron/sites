@@ -1,0 +1,238 @@
+/*
+  File: ui/style.css
+  Project: tower-defence
+  Purpose: Layout and chrome for the tower-defense shell.
+           Canvas drawing stays in ui/render.js.
+*/
+
+/* Reset tap flash and box model for touch play. */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+/* Full-viewport dark page. No scroll; game owns the screen. */
+html, body {
+  margin: 0; padding: 0;
+  width: 100%; height: 100%;
+  background: #0a0a0f; color: #fff;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+/* Column: stage (board + stats strip), toolbar. Safe-area insets for notched phones. */
+#app {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Canvas host. Flexes to leftover space. */
+#stage {
+  flex: 1 1 auto;
+  position: relative;
+  min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Game surface. */
+canvas { display: block; background: #0a0a12; touch-action: none; }
+
+/* Bottom build and control row. */
+#toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Tower pick button. */
+.tbtn {
+  background: #1919A6; color: #FFD700;
+  border: 1px solid #3B3BFF; border-radius: 6px;
+  padding: 8px 10px;
+  font-family: inherit; font-size: 11px; letter-spacing: 1px;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center;
+  min-width: 68px; gap: 2px;
+  transition: background 120ms, transform 80ms;
+}
+
+/* Cost line under a tower name. */
+.tbtn .cost { color: #FFB852; font-size: 10px; }
+
+/* Selected build type. */
+.tbtn.active { background: #FFD700; color: #000; border-color: #FFD700; }
+
+/* Cost color when the button is selected. */
+.tbtn.active .cost { color: #333; }
+
+/* Press feedback. */
+.tbtn:active { transform: scale(0.96); }
+
+/* Cannot afford or game not running. */
+.tbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Upgrade / sell / speed / pause cluster. */
+#ctrls { display: flex; gap: 6px; }
+
+/* Generic action button. */
+.abtn {
+  background: #2a2a3a; color: #fff;
+  border: 1px solid #444; border-radius: 6px;
+  padding: 8px 12px;
+  font-family: inherit; font-size: 11px; letter-spacing: 1px;
+  cursor: pointer;
+}
+
+/* Press feedback for action buttons. */
+.abtn:active { transform: scale(0.96); }
+
+/* Disabled action button. */
+.abtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Pause uses a warning color. */
+.abtn.warn { background: #b33; border-color: #f55; }
+
+/* Start, pause, and game-over panel. */
+#overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.85);
+  text-align: center; padding: 20px;
+  z-index: 10; gap: 8px;
+}
+
+/* Hidden overlay does not block the canvas. */
+#overlay.hidden { display: none; }
+
+/* Overlay title. */
+#overlay h2 { margin: 0; font-size: 26px; color: #FFD700; letter-spacing: 3px; }
+
+/* Overlay body lines. */
+#overlay p { margin: 4px 0; font-size: 13px; color: #ccc; }
+
+/* Overlay primary button. */
+#overlay button {
+  margin-top: 12px; padding: 12px 28px;
+  background: #FFD700; color: #000;
+  border: none; border-radius: 6px;
+  font-family: inherit; font-size: 15px; font-weight: bold;
+  cursor: pointer; letter-spacing: 2px;
+}
+
+/* Press feedback for the overlay button. */
+#overlay button:active { transform: scale(0.96); }
+
+/* Transient build hint above the canvas. */
+#hint {
+  position: absolute;
+  top: 8px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.75);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 11px; color: #FFD700; letter-spacing: 1px;
+  pointer-events: none; opacity: 0;
+  transition: opacity 200ms;
+  z-index: 5;
+}
+
+/* Visible hint. main.js moves it just under the stats strip. */
+#hint.show { opacity: 1; }
+
+/*
+  Stats strip drawn over board row 0. main.js sets left/top/width/height
+  and font-size from the canvas position and tile size on every resize.
+*/
+#hud {
+  position: absolute;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.6em;
+  padding: 0 0.5em;
+  background: linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.30));
+  color: #fff;
+  font-weight: bold;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;
+  text-shadow: 0 1px 2px #000, 0 0 3px #000;
+  z-index: 4;
+}
+
+/* Left group of stats. */
+#hud .stats { display: flex; gap: 0.9em; }
+
+/* One stat: icon then value. */
+#hud .stat { display: flex; align-items: center; gap: 0.25em; }
+#hud .stat b { font-weight: bold; }
+#hud .hp { color: #FF7B7B; }
+#hud .gold { color: #FFD700; }
+#hud .wave { color: #9FD0FF; }
+#hud .score { color: #C8FFC8; }
+
+/* Right side: next-wave countdown or enemies left. */
+#hud-timer { color: #FFD700; }
+#hud-timer.active { color: #FF8C8C; }
+
+/* ---- Map select (R2), styled after Turbo Lap's circuit row and picker ---- */
+
+/* Title row: prev, preview, name, next. Hidden while paused. */
+#map-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 8px; }
+#overlay.paused #map-row, #overlay.paused #maps-btn, #overlay.paused #theme-row { display: none; }
+/* Theme row under the map row: ◀ swatch NAME ▶ */
+#theme-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 6px; }
+#theme-swatch { width: 28px; height: 18px; border-radius: 4px; border: 2px solid #8a6a3a; }
+#theme-name { min-width: 96px; color: #8f9ad0; font-size: 13px; font-weight: bold; letter-spacing: 2px; }
+#overlay .orow { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
+
+/* Round arrow buttons. */
+#overlay button.nav, #overlay button.ghost, #picker button.ghost {
+  margin-top: 0; padding: 6px 14px; min-width: 44px; min-height: 40px;
+  background: #1919A6; color: #FFD700; border: 1px solid #3B3BFF; font-size: 14px;
+}
+#overlay .orow button { margin-top: 12px; }
+
+/* Map name and its best-wave line. */
+.mapname { display: flex; flex-direction: column; min-width: 96px; font-weight: bold; color: #FFD700; font-size: 18px; letter-spacing: 2px; }
+.mapname small { font-size: 11px; color: #8f9ad0; letter-spacing: 1px; font-weight: normal; }
+
+/* Path preview on the title row. */
+.titlemap { width: clamp(72px, 16vmin, 128px); height: auto; aspect-ratio: 4 / 3; border-radius: 6px; background: #0f1a12; }
+
+/* Picker panel covers the stage like the overlay. */
+#picker {
+  position: absolute; inset: 0; z-index: 11;
+  display: flex; flex-direction: column;
+  background: rgba(0,0,0,0.92); padding: 12px;
+}
+#picker.hidden { display: none; }
+#picker .pickhead { display: flex; align-items: center; justify-content: space-between; }
+#picker h2 { margin: 0; color: #FFD700; letter-spacing: 3px; font-size: 22px; }
+#picker .small { margin: 4px 0; font-size: 11px; color: #aaa; }
+
+/* Scrollable grid of map cells. */
+#pickgrid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px;
+  overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior: contain;
+  flex: 1 1 auto; min-height: 0; padding: 2px;
+}
+.pcell {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px;
+  border-radius: 8px; background: #1a1f45; border: 2px solid transparent;
+  color: #fff; font-family: inherit; font-size: 13px; cursor: pointer;
+}
+.pcell b { letter-spacing: 1px; }
+.pcell canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; border-radius: 5px; background: #0f1a12; }
+.pcell .pt { font-size: 10px; color: #8f9ad0; }
+.pcell.has { background: #263a6a; } .pcell.has .pt { color: #FFD700; }
+.pcell.cur { border-color: #FFD700; }
+
+@media (max-height: 430px) {
+  #overlay h2 { font-size: 20px; } #overlay p { margin: 1px 0; }
+  #map-row { margin-top: 2px; } #overlay .orow button { margin-top: 6px; }
+  #picker .small { display: none; }
+}
