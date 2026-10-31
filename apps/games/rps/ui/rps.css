@@ -1,4 +1,4 @@
-/* Rock Paper Scissors RPS1 — UI styles. */
+/* Rock Paper Scissors RPSQ1a — UI styles. */
 :root {
   --bg: #0f1419;
   --panel: #1a2129;
@@ -12,6 +12,7 @@
 }
 
 * { box-sizing: border-box; }
+.rps-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); margin: 0; }
 html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.4 system-ui, -apple-system, sans-serif; }
 button { font: inherit; color: inherit; }
 

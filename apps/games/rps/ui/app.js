@@ -1,13 +1,13 @@
-/* Rock Paper Scissors RPS1 — UI. */
+/* Rock Paper Scissors RPSQ1a — UI. */
 (function () {
   'use strict';
 
   var score = { win: 0, lose: 0, draw: 0 };
   var last = null;
 
-  function render() {
+  function render(focusSel) {
     var choices = RPS.CHOICES.map(function (c) {
-      return '<button type="button" data-id="' + c.id + '" title="' + c.name + '">' + c.emoji + '</button>';
+      return '<button type="button" data-id="' + c.id + '" title="' + c.name + '" aria-label="' + c.name + '">' + c.emoji + '</button>';
     }).join('');
 
     var resultHtml = '';
@@ -38,7 +38,11 @@
       '</div>';
 
     bind();
+    var f = typeof focusSel === 'string' && document.querySelector(focusSel);   // RPSQ1a: re-render replaced the buttons; keep keyboard focus where it was
+    if (f) f.focus();
   }
+
+  function say(t) { var el = document.getElementById('rps-live'); if (el) el.textContent = t; }   // RPSQ1a: persistent live region (the result box is rebuilt each round)
 
   function bind() {
     document.querySelectorAll('.rps-choices button').forEach(function (btn) {
@@ -46,7 +50,8 @@
         var id = btn.getAttribute('data-id');
         last = RPS.play(id);
         score[last.result]++;
-        render();
+        render(document.activeElement === btn ? '.rps-choices [data-id="' + id + '"]' : null);
+        say('Computer chose ' + RPS.CHOICES.find(function (c) { return c.id === last.cpu; }).name + '. ' + (last.result === 'win' ? 'You win!' : last.result === 'lose' ? 'Computer wins.' : 'Draw.') + ' You ' + score.win + ', draw ' + score.draw + ', CPU ' + score.lose + '.');
       });
     });
 
@@ -55,7 +60,8 @@
       reset.addEventListener('click', function () {
         score = { win: 0, lose: 0, draw: 0 };
         last = null;
-        render();
+        render(document.activeElement === reset ? '#rps-reset' : null);
+        say('Score reset.');
       });
     }
   }
