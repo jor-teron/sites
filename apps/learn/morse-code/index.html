@@ -1,10 +1,21 @@
 <!DOCTYPE html>
+<!-- Redirect entry point to morse-code.html (keeps ?query and #hash). NIX-L1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh + location.replace; visible text in <body>. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Morse Code MC1</title>
-  <meta http-equiv="refresh" content="0; url=morse-code.html">
-  <script>location.replace("morse-code.html" + location.search + location.hash);</script>
+  <link rel="canonical" href="morse-code.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('morse-code.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=morse-code.html"></noscript>
 </head>
-<body><p>Moved: <a href="morse-code.html">Morse Code</a></p></body>
+<body><noscript><p><a href="morse-code.html">Open Morse Code</a></p></noscript></body>
 </html>
