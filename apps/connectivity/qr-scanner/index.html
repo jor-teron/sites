@@ -1,28 +1,21 @@
 <!DOCTYPE html>
-<!--
-  File: index.html
-  Project: qr-scanner
-  Purpose: Redirect entry point. Opens the main scanner page.
-  Notes: Camera access needs HTTPS or localhost. This file only forwards.
--->
+<!-- Redirect entry point to qr-scanner.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "Open qr-scanner" link were always visible in <head>/<body>; both now live in <noscript>. -->
 <html lang="en">
 <head>
-  <!-- Character encoding for the redirect page. -->
   <meta charset="UTF-8">
-  <!-- Viewport so the redirect is safe on phones before the main page loads. -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Immediate redirect to the project HTML file. -->
-  <meta http-equiv="refresh" content="0; url=qr-scanner.html">
-  <!-- Title shown if the redirect is slow. -->
   <title>qr-scanner</title>
-  <!-- Script fallback if meta refresh is ignored. -->
+  <link rel="canonical" href="qr-scanner.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
   <script>
-    /* Replace the current history entry so Back does not return to this stub. */
-    location.replace("qr-scanner.html");
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('qr-scanner.html' + location.search + location.hash);
+    })();
   </script>
+  <noscript><meta http-equiv="refresh" content="0; url=qr-scanner.html"></noscript>
 </head>
-<body>
-  <!-- Plain link if both redirect methods fail. -->
-  <p><a href="qr-scanner.html">Open qr-scanner</a></p>
-</body>
+<body><noscript><p><a href="qr-scanner.html">Open qr-scanner</a></p></noscript></body>
 </html>
