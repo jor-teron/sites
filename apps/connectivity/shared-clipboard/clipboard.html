@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Shared Clipboard CB1</title>
-  <link rel="icon" href="clipboard_icon.png?v=CB1">
-  <link rel="stylesheet" href="clipboard.css?v=CB1">
+  <title>Shared Clipboard CB2</title>
+  <link rel="icon" href="clipboard_icon.png?v=20261031cb2">
+  <link rel="stylesheet" href="clipboard.css?v=20261031cb2">
 </head>
 <body>
 <div id="app">
@@ -16,8 +16,9 @@
         <button class="mini" id="btn-code">Code</button></div>
       <div id="compose">
         <div id="drop">
-          <textarea id="box" rows="3" placeholder="Paste, type or drop text / an image here…"></textarea>
+          <textarea id="box" rows="3" placeholder="Paste, type or drop text, an image or files here…"></textarea>
           <div id="img-wrap" hidden><img id="img-prev" alt="Image to send"><button class="x" id="img-x" title="Remove image">✕</button><span id="img-info" class="mut"></span></div>
+          <ul id="files-pend" hidden></ul>
         </div>
         <div id="side">
           <button class="sb" id="b-paste" title="Paste from clipboard">📥<span>Paste</span></button>
@@ -26,6 +27,7 @@
           <select id="sel-to" title="Send to"><option value="all">All devices</option></select>
         </div>
       </div>
+      <ul id="xfers" hidden></ul>
       <div class="hhead"><span class="mut">History</span><button class="mini" id="b-clear">Clear</button></div>
       <ul id="hist"></ul>
       <p id="empty" class="mut">Nothing yet. Paste something and press Send, or copy on another device with the same Hub code.</p>
@@ -42,11 +44,13 @@
       <h2>Incoming</h2>
       <div class="set-row"><label for="chk-auto">Auto-copy incoming text</label><input type="checkbox" id="chk-auto" class="sw"></div>
       <div class="set-row"><label for="chk-notice">Show a notice</label><input type="checkbox" id="chk-notice" class="sw"></div>
+      <div class="set-row" id="row-folder"><span>Save folder<br><small class="mut" id="folder-lbl">Downloads</small></span><span><button class="mini" id="btn-folder">Choose</button> <button class="mini" id="btn-folder-x" hidden>Reset</button></span></div>
+      <p class="mut" id="folder-note" hidden>Save downloads files here (this browser can't pick a folder).</p>
       <h2>Look</h2>
       <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
       <h2>About</h2>
-      <div class="about"><img src="clipboard_icon.png?v=CB1" width="48" height="48" alt=""><div><b>Shared Clipboard</b> <span id="ver">CB1</span>
-        <p>Copy on one device, paste on another. Send text, links and images to every device on the same Hub Connect Code, or to one of them. Peer to peer over PeerJS; history (last 50, pinned kept) stays on this device and nothing is stored on a server.</p></div></div>
+      <div class="about"><img src="clipboard_icon.png?v=20261031cb2" width="48" height="48" alt=""><div><b>Shared Clipboard</b> <span id="ver">CB2</span>
+        <p>Copy on one device, paste on another. Send text, links, images and files (up to 25 MB each; pasted from a file manager or dropped) to every device on the same Hub Connect Code, or to one of them. Peer to peer over PeerJS; history (last 50, pinned kept) stays on this device and nothing is stored on a server.</p></div></div>
     </div></section>
   </div></div>
 </div>
@@ -54,12 +58,13 @@
 <div id="notice" hidden><div class="n-body"><b id="n-title"></b><span id="n-text"></span></div><button class="mini" id="n-copy">Copy</button><button class="x" id="n-x" title="Dismiss">✕</button></div>
 <div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="4" placeholder="4-digit code"><div class="row" id="d-row"></div></div></div>
 <div id="toast"></div>
+<div id="drop-ov" hidden><div>Drop files to share</div></div>
 <input type="file" id="file" accept="image/*" hidden>
 
-<script src="../../../shared/link/link_devices.js?v=CB1"></script>
-<script src="clipboard_store.js?v=CB1"></script>
-<script src="clipboard_peer.js?v=CB1"></script>
-<script src="clipboard_save.js?v=CB1"></script>
-<script src="clipboard_app.js?v=CB1"></script>
+<script src="../../../shared/link/link_devices.js?v=20261031cb2"></script>
+<script src="clipboard_store.js?v=20261031cb2"></script>
+<script src="clipboard_peer.js?v=20261031cb2"></script>
+<script src="clipboard_save.js?v=20261031cb2"></script>
+<script src="clipboard_app.js?v=20261031cb2"></script>
 </body>
 </html>

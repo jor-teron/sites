@@ -1,4 +1,4 @@
-# Shared Clipboard — CB1
+# Shared Clipboard — CB1 / CB2
 
 Copy on one device, paste on another: text, links and images go to every device on the same Hub Connect Code (Connectivity → Share), or to one chosen device.
 
@@ -8,3 +8,12 @@ Copy on one device, paste on another: text, links and images go to every device 
 - **Getting content in:** Paste button (`navigator.clipboard.read()` for images, then `readText()`; a help dialog if the browser refuses), Ctrl/⌘+V into the page, drag & drop, or the Image button (file picker). Images are shrunk to ≤1600 px (PNG kept for png/gif/webp unless large, else JPEG 0.85). Ctrl/⌘+Enter sends.
 - **History:** newest first with device name + time; Copy (text via `writeText`, images via `ClipboardItem` PNG, fallbacks: textarea copy / download), Download (images), Open link, Pin, Delete, Clear (confirm; pinned kept). Local only — deleting never touches other devices.
 - **Files:** `clipboard_store.js` (settings `clipboard-settings-v1` `{name, theme, autocopy, notice, target}`), `clipboard_peer.js` (presence + relay), `clipboard_save.js` (the one save module: IndexedDB `clipboard-v1`/`items`, last 50 + pinned, copy/download), `clipboard_app.js` (UI, paste/drop, sync glue, dialogs, swipe).
+
+## CB2 — files (2026-10-31)
+
+- **In:** Ctrl/⌘+V on the page (`clipboardData.files`, else `items` of kind `file` — files copied in a file manager arrive here when the browser exposes them) and drag & drop anywhere on the page (overlay). One png/jpeg/gif/webp alone stays an `image` item (CB1 behaviour); anything else waits as a file chip until Send. No Attach button, no helper program.
+- **Limit:** 25 MB per file; bigger files are refused with a pointer to File Drop.
+- **Wire:** `{k:'fmeta', id, n, it:{id, ts, kind:'file', name, fname, mime, size}, priv?}` then `n × {k:'fchunk', id, i, n, data:ArrayBuffer}` (64 KB) through the normal lobby relay, paced on the data channel `bufferedAmount` (≤1 MB queued). `{k:'fcancel', id}` from either side. The receiver checks the piece count and total size before keeping the file; idle transfers drop after 60 s. CB1 clients ignore these `k` values, and files are never in `clip` or `recent`.
+- **Cards:** icon by type, name, size, sender/time; Open (blob URL tab), Save, Share (`navigator.share` with files, only where `canShare`), Pin, Delete.
+- **Save folder (Settings):** where `showDirectoryPicker` exists (Chrome/Edge desktop) pick a folder once; the handle is kept in IndexedDB `clipboard-v1`/`kv` (DB version 2), permission is re-asked on use, and names get ` (1)`, ` (2)`… instead of overwriting. Otherwise, or when permission is refused, Save is a normal download. Nothing is ever saved automatically.
+- **Storage:** file blobs live in IndexedDB; all files together ≤ 200 MB — the oldest unpinned files go first, with a notice.
