@@ -164,3 +164,5 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
   #c-in .cb{width:calc(50% - 6px)}
 }
 @media (max-height:520px) and (min-width:641px){.cb{height:46px}#pad button{height:44px}#b-call{height:46px}#dialbox{height:44px}#dial{font-size:28px}}
+#tp-switch{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:15}
+#tp-switch[hidden]{display:none}
