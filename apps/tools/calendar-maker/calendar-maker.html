@@ -4,6 +4,7 @@
   Pages: Design (landing: live A4 preview + options, Print, Download PDF) and Holidays (CM3).
   Styles: calendar-maker.css. Drawing: calendar-maker_render.js. Page logic: calendar-maker.js.
   Download PDF + background: calendar-maker_pdf.js (CM2, jsPDF in vendor/). Holidays page: calendar-maker_holidays.js (CM3).
+  Holiday List page (printable A4 list): calendar-maker_list.js (CM10).
   Holiday defaults come from the Calendar app (../calendar/calendar_holidays.js), not a copy.
 -->
 <html lang="en">
@@ -25,6 +26,7 @@
     <nav id="tabs" role="tablist">
       <button type="button" class="tab on" data-page="design" role="tab">Design</button>
       <button type="button" class="tab" data-page="hol" role="tab">Holidays</button>
+      <!--CM10--><button type="button" class="tab" data-page="list" role="tab">Holiday List</button>
     </nav>
     <!--/CM3-->
   </header>
@@ -36,6 +38,11 @@
       <div class="row col"><span>Holiday colour</span>
         <div class="swatches" id="colours"></div>
         <!--CM6--><label class="cpick" title="Custom colour"><input type="color" id="custom" aria-label="Custom holiday colour"> Custom</label><!--/CM6--></div>
+      <!--CM9-->
+      <div class="row col"><span>Restricted colour</span>
+        <div class="swatches" id="rcolours"></div>
+        <label class="cpick" title="Custom restricted colour"><input type="color" id="rcustom" aria-label="Custom restricted colour"> Custom</label></div>
+      <!--/CM9-->
       <!--CM6-->
       <div class="row"><span>Font colour</span>
         <div class="cfont"><input type="color" id="font" aria-label="Font colour"><button type="button" class="btn" id="font-reset">Black</button></div></div>
@@ -75,19 +82,29 @@
     <div class="hol-wrap">
       <section>
         <h2>Every year <small>same date every year</small></h2>
-        <div class="add"><input type="date" id="fx-date" aria-label="Date"><input type="text" id="fx-name" placeholder="Holiday name" maxlength="60"><button type="button" class="btn" id="fx-add">Add</button></div>
+        <div class="add"><input type="date" id="fx-date" aria-label="Date"><input type="text" id="fx-name" placeholder="Holiday name" maxlength="60"><!--CM9--><select id="fx-type" aria-label="Type"><option value="g">Gazetted</option><option value="r">Restricted</option></select><button type="button" class="btn" id="fx-add">Add</button></div>
         <ul class="hl" id="fx-list"></ul>
         <button type="button" class="mini" id="fx-reset">Restore defaults</button>
       </section>
       <section>
         <h2>This year only <small id="dt-year"></small></h2>
-        <div class="add"><input type="date" id="dt-date" aria-label="Date"><input type="text" id="dt-name" placeholder="e.g. Diwali" maxlength="60"><button type="button" class="btn" id="dt-add">Add</button></div>
+        <div class="add"><input type="date" id="dt-date" aria-label="Date"><input type="text" id="dt-name" placeholder="e.g. Diwali" maxlength="60"><!--CM9--><select id="dt-type" aria-label="Type"><option value="g">Gazetted</option><option value="r">Restricted</option></select><button type="button" class="btn" id="dt-add">Add</button></div>
         <ul class="hl" id="dt-list"></ul>
         <p class="note">For festivals whose date changes each year. Only the year chosen on the Design page is shown.</p>
       </section>
     </div>
   </main>
   <!--/CM3-->
+  <!--CM10-->
+  <main id="page-list" class="page" hidden>
+    <div id="list-wrap"><canvas id="list-sheet" aria-label="A4 holiday list preview"></canvas></div>
+    <aside class="list-opts">
+      <label class="row col"><span>Header (optional)</span><input type="text" id="list-header" maxlength="80" placeholder="e.g. organisation name"></label>
+      <p class="note">Holidays for the year chosen on the Design page: main holidays, then Restricted Holidays. Colours and font colour follow the Design page.</p>
+      <div class="acts"><button type="button" class="btn" id="list-print">Print</button><button type="button" class="btn" id="list-pdf">Download PDF</button></div>
+    </aside>
+  </main>
+  <!--/CM10-->
 </div>
 <img id="print-img" alt="">
 <script src="../../../shared/dialog/dialog.js"></script>
@@ -100,6 +117,7 @@
 <!--CM2-->
 <script src="vendor/jspdf.umd.min.js"></script>
 <script src="calendar-maker_pdf.js"></script>
+<script src="calendar-maker_list.js"></script> <!-- CM10 -->
 <!--/CM2-->
 </body>
 </html>
