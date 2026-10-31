@@ -22,7 +22,8 @@
     return { year: P.year, week: P.week, colour: P.colour === 'custom' ? P.custom : P.colour,
       font: P.font, /* CM6 */ rcolour: P.rcol, /* CM9 */ sundays: P.sundays, sat: P.sat, hols: hols(P.year),
       bg: { type: P.bg, colour: P.soft, img: CM.bgImg, faint: P.faint / 100 }, strip: P.strip, layout: P.layout,
-      fold: P.fold !== false, legend: P.legend, mfill: P.mfill, lgsz: P.lgsz }; /* CM12-F3, CM16-F1 lgsz */
+      fold: P.fold !== false, legend: P.legend, mfill: P.mfill, lgsz: P.lgsz, /* CM12-F3, CM16-F1 lgsz */
+      wfill: P.wfill, wmatch: P.wmatch === true }; /* CM16-F5 */
   }
   let raf = 0;
   function render() {
@@ -60,6 +61,10 @@
       if (document.activeElement !== $('lgsz')) $('lgsz').value = P.lgsz;
     }
     if ($('mcustom')) { $('mcustom').value = P.mfill; markOn('#mfills button', P.mfill.toLowerCase()); }
+    if ($('wcustom')) { /* CM16-F5: weekday row fill; picker greyed while matching the holiday colour */
+      $('wcustom').value = P.wfill; markOn('#wfills button', P.wmatch ? '' : P.wfill.toLowerCase());
+      $('wmatch').checked = P.wmatch === true; $('wcustom').disabled = P.wmatch === true;
+    }
     if (CM.onSync) CM.onSync();
   }
 
@@ -98,6 +103,11 @@
   }
   if ($('mfills')) swatches('mfills', T.MFILLS.map(([v, n]) => [v, v, n]), 'mfill');
   if ($('mcustom')) $('mcustom').oninput = () => { P.mfill = $('mcustom').value; save(); render(); };
+  /* CM16-F5: weekday row fill + match holiday colour */
+  if ($('wfills')) { swatches('wfills', T.MFILLS.map(([v, n]) => [v, v, n]), 'wfill');
+    $('wfills').addEventListener('click', (e) => { if (e.target.closest('button')) { P.wmatch = false; save(); render(); } }, true); } /* picking a swatch ends matching */
+  if ($('wcustom')) $('wcustom').oninput = () => { P.wfill = $('wcustom').value; P.wmatch = false; save(); render(); };
+  if ($('wmatch')) $('wmatch').onchange = () => { P.wmatch = $('wmatch').checked; save(); render(); };
   const setYear = (y) => {
     y = Math.round(+y); if (!(y >= 1900 && y <= 2200)) { sync(); return; }
     P.year = y; save(); render(); if (CM.onYear) CM.onYear();

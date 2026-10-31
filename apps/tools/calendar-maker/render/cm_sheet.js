@@ -2,7 +2,7 @@
    The same drawing is used for the on-screen preview, Print (as an image) and the PDF (CM2), so all three match.
    CM.Render.draw(canvas, o) with o = { year, week: 'sun'|'mon', colour (preset key or #rrggbb, CM6), font (CM6),
      rcolour (CM9), sundays, sat: 'none'|'24'|'all', hols: [{m, d, name, r?, em?, ed?}], fold (CM5, default true),
-     bg: {type: 'none'|'soft'|'pic', colour, img, faint} (CM2), strip (CM2), layout (CM4), legend, mfill (CM12-F3) }
+     bg: {type: 'none'|'soft'|'pic', colour, img, faint} (CM2), strip (CM2), layout (CM4), legend, mfill (CM12-F3), wfill, wmatch (CM16-F5) }
    History: CM1 3 x 4 sheet; CM7 all grid lines one weight/colour; CM8 one uniform grid, one text size;
    CM9 Restricted tiles (Gazetted wins on a shared date); CM11 ranges tile every day, strip shows a range as one row. */
 window.CM = window.CM || {};
@@ -134,7 +134,10 @@ window.CM.Render = (function () {
       const cw = UW, gt = y0 + nameH, wh = UH, ch = UH; /* CM8: every row and column the same size */
       c.font = font('700', UFS); c.textAlign = 'center';
       /* c.fillStyle = '#f1f1f1'; c.fillRect(x0, gt, mw, wh);  (CM4-CM5 grey) */
-      c.fillStyle = col[0]; c.fillRect(x0, gt, mw, wh); /* CM6: weekday row = holiday colour */
+      /* c.fillStyle = col[0]; c.fillRect(x0, gt, mw, wh);  (CM6-CM16-F4: weekday row = holiday colour) */
+      /* CM16-F5: own weekday row fill (default light grey), or the holiday colour when wmatch is on */
+      const wf = o.wmatch === true ? col[0] : (T.isHex(o.wfill) ? o.wfill : '#d9d9d9');
+      c.fillStyle = wf; c.fillRect(x0, gt, mw, wh);
       /* for (...) { c.fillStyle = '#444'; ... }  (CM4-CM5) */
       for (let i = 0; i < 7; i++) { c.fillStyle = fc; c.fillText(WD[(i + f) % 7], x0 + cw * i + cw / 2, gt + wh / 2); }
       /* const lead = ..., n = ...;  (CM4: moved up in CM5) */
