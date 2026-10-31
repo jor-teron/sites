@@ -1,7 +1,8 @@
 /* Calendar Maker CM17 core: holiday list CSV (no DOM). window.CM.Csv
    CM18 header: name,start,end,type,repeat. type gazetted | restricted | public | school; repeat yes (every year) | no.
-   Import also reads the CM17 file (Name,Start,End,Type,Repeat, Gazetted | Restricted, Every year | This year), any case;
-   repeat also y / n / true / false.
+   Import accepts ONLY this format (header names / values any case, columns in any order). CM18 CSV follow-up:
+   CM17 repeat values (Every year / This year) are skipped 'repeat must be yes or no', so a CM17 file has no valid rows.
+   (removed: 'Import also reads the CM17 file ... any case; repeat also y / n / true / false.')
    CM17 (legacy export): Header: Name,Start,End,Type,Repeat. Type Gazetted | Restricted. Repeat Every year | This year.
    Every year: Start/End as DD-MM (29-02 allowed); This year: YYYY-MM-DD. End blank = one day; ranges stay in one year.
    Export: UTF-8 with BOM, CRLF, RFC 4180 quoting. Import: BOM optional, CRLF or LF, Type/Repeat any case,
@@ -15,7 +16,8 @@ window.CM.Csv = (function () {
   const Hd = window.CM.Holidays;
   const TWORD = { g: 'gazetted', r: 'restricted', p: 'public', s: 'school' }; /* CM18 */
   const TCODE = { gazetted: 'g', restricted: 'r', public: 'p', school: 's' };
-  const REP = { 'every year': true, yes: true, y: true, true: true, 'this year': false, no: false, n: false, false: false };
+  /* const REP = { 'every year': true, yes: true, y: true, true: true, 'this year': false, no: false, n: false, false: false };  (CM18 first cut) */
+  const REP = { yes: true, no: false }; /* CM18 CSV follow-up: new format only */
   const tword = (h) => TWORD[Hd ? Hd.typeOf(h) : (h.r ? 'r' : 'g')];
   const p2 = (n) => String(n).padStart(2, '0');
   const mlen = (m) => new Date(2000, m + 1, 0).getDate(); /* Feb = 29 */
@@ -95,7 +97,8 @@ window.CM.Csv = (function () {
       if (rep === 'every year') {  (CM17) */
       const tc = TCODE.hasOwnProperty(type) ? TCODE[type] : null; /* CM18 */
       if (!tc) return skip('unknown type "' + g('Type') + '" (use gazetted, restricted, public or school)');
-      if (!REP.hasOwnProperty(rep)) return skip('unknown repeat "' + g('Repeat') + '" (use yes or no)');
+      /* if (!REP.hasOwnProperty(rep)) return skip('unknown repeat "' + g('Repeat') + '" (use yes or no)');  (CM18 first cut) */
+      if (!REP.hasOwnProperty(rep)) return skip('repeat must be yes or no (got "' + g('Repeat') + '")');
       const rr = tc === 'r', every = REP[rep];
       const typed = (o) => { if (tc === 'p' || tc === 's') o.t = tc; return o; };
       if (every) {
