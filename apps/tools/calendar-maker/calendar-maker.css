@@ -38,7 +38,8 @@ body.land #sheet{aspect-ratio:297/210;max-width:calc((100vh - 90px) * 1.4142)}
 .about{font-size:12px;color:var(--mut);line-height:1.5}
 .about img{vertical-align:middle;border-radius:6px}
 /* CM3 holidays page */
-.hol-wrap{display:flex;gap:16px;width:100%;max-width:1000px;margin:0 auto;flex-wrap:wrap}
+/* .hol-wrap{display:flex;gap:16px;width:100%;max-width:1000px;margin:0 auto;flex-wrap:wrap}  (CM3-CM12) */
+.hol-wrap{display:flex;gap:16px;width:100%;max-width:1600px;margin:0 auto;flex-wrap:wrap;padding:0 8px;box-sizing:border-box}
 .hol-wrap section{flex:1 1 360px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
 .hol-wrap h2{margin:0 0 10px;font-size:17px}
 .hol-wrap h2 small{font-weight:400;color:var(--mut);font-size:13px}
@@ -94,3 +95,23 @@ body.land #sheet{aspect-ratio:297/210;max-width:calc((100vh - 90px) * 1.4142)}
 .hl li select{height:32px;font-size:13px}
 .add .to{align-self:center;font-size:13px;opacity:.7}
 .hl{overflow-x:auto}
+.list-classic[hidden]{display:none} /* CM12 */
+.list-opts-in{display:flex;flex-direction:column;gap:10px}
+#list-layout,#list-sub{height:38px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);padding:0 8px;font-size:14px}
+/* CM12-F1: wide Holidays page - sections side by side, name gets the room, row on one line */
+.hol-wrap section{flex:1 1 480px;min-width:0}
+.hl li{flex-wrap:nowrap}
+.hl li span{flex:1 1 auto;min-width:120px;white-space:nowrap}
+.hl li select,.hl li input,.hl li button,.hl .chip{flex:none}
+.add input[type=text]{flex:1 1 220px;min-width:160px}
+@media (max-width:760px){.hl li{flex-wrap:wrap}.hl li span{flex-basis:100%;white-space:normal;order:-1}.hol-wrap{padding:0}}
+/* CM12-F2: preview zoom */
+#preview-wrap,#list-wrap{overflow:auto;max-height:calc(100vh - 120px);touch-action:pan-x pan-y;padding:8px;box-sizing:border-box;flex-direction:column;align-items:center;justify-content:flex-start}
+#preview-wrap.zoomed,#list-wrap.zoomed{align-items:flex-start;cursor:grab}
+#preview-wrap canvas,#list-wrap canvas{flex:none}
+#preview-wrap.grabbing,#list-wrap.grabbing{cursor:grabbing;user-select:none}
+.zoom-bar{position:sticky;top:0;left:0;z-index:2;align-self:stretch;background:var(--bg);padding:4px 0;display:flex;align-items:center;gap:8px;font-size:13px;margin:0 0 6px;justify-content:center}
+.zoom-bar input{width:160px}
+.zoom-bar button{height:28px;padding:0 12px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+.zoom-bar button:disabled{opacity:.5;cursor:default}
+.zoom-pct{min-width:44px;text-align:right;font-variant-numeric:tabular-nums}

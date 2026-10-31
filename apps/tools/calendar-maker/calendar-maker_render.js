@@ -17,7 +17,11 @@ window.CMRender = (function () {
   const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; /* CM6 */
   /* const COLOURS = { green: ['#15803d', '#fff'], red: ['#b91c1c', '#fff'], yellow: ['#facc15', '#111'], blue: ['#1d4ed8', '#fff'], orange: ['#ea580c', '#fff'] };  (CM1-CM5: dark tiles, white text) */
   /* CM6: light print colours, black text readable on all; [1] kept for callers but text uses the font colour */
-  const COLOURS = { green: ['#92d36e', '#000'], red: ['#f4a6a6', '#000'], yellow: ['#fde68a', '#000'], blue: ['#a5c8f5', '#000'], orange: ['#fdba74', '#000'] };
+  /* const COLOURS = { green: ['#92d36e', '#000'], red: ['#f4a6a6', '#000'], yellow: ['#fde68a', '#000'], blue: ['#a5c8f5', '#000'], orange: ['#fdba74', '#000'] };  (CM6-CM12-F3: light tints only) */
+  /* CM12-F4: original strong CM1-CM5 colours back (black text kept), CM6 light tints kept as 'Light ...' presets */
+  const COLOURS = { green: ['#15803d', '#000'], red: ['#b91c1c', '#000'], yellow: ['#facc15', '#000'], blue: ['#1d4ed8', '#000'], orange: ['#ea580c', '#000'],
+    lgreen: ['#92d36e', '#000'], lred: ['#f4a6a6', '#000'], lyellow: ['#fde68a', '#000'], lblue: ['#a5c8f5', '#000'], lorange: ['#fdba74', '#000'] };
+  const COLOUR_NAMES = { green: 'Green', red: 'Red', yellow: 'Yellow', blue: 'Blue', orange: 'Orange', lgreen: 'Light green', lred: 'Light red (pink)', lyellow: 'Light yellow', lblue: 'Light blue', lorange: 'Light orange' }; /* CM12-F4 */
   const RCOLOURS = { grey: '#cfcfcf', silver: '#e3e3e3', stone: '#d6d3c4', lilac: '#d9c8ee', sky: '#c9e7f2' }; /* CM9: restricted presets */
   const isHex = (v) => /^#[0-9a-f]{6}$/i.test(v || '');
   const FONT = 'system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
@@ -63,6 +67,7 @@ window.CMRender = (function () {
     return { gaz: stripRows((hols || []).filter((h) => !h.r)), res: stripRows((hols || []).filter((h) => h.r)) };
   }
 
+  const api_last = {}; /* CM12-F3: last layout facts (tests) */
   function draw(cv, o) {
     const L = layoutOf(o.layout);
     const W = L.land ? 2923 : 2067, H = L.land ? 2067 : 2923; /* CM4 */
@@ -132,8 +137,14 @@ window.CMRender = (function () {
        Column width UW and row height UH are the largest that fit the area inside the 4 mm margins, title band and strip. */
     const wkN = fold ? 5 : 6, RPM = 2 + wkN;
     const gCols = cols * 7 + (cols - 1), gRows = rowsN * RPM + (rowsN - 1);
-    const UW = (W - 2 * M) / gCols, UH = (H - top - M - stripH) / gRows;
-    const gx0 = M + (W - 2 * M - UW * gCols) / 2, gy0 = top + (H - top - M - stripH - UH * gRows) / 2; /* centred if any leftover */
+    /* const UW = (W - 2 * M) / gCols, UH = (H - top - M - stripH) / gRows;
+    const gx0 = M + (W - 2 * M - UW * gCols) / 2, gy0 = top + (H - top - M - stripH - UH * gRows) / 2;  (CM8-CM12) */
+    /* CM12-F3: legend band below the grids (outside the uniform grid): gap + one line at ~58% of the date font. 0 when off. */
+    const UW = (W - 2 * M) / gCols, UH0 = (H - top - M - stripH) / gRows;
+    const LFS = o.legend !== false ? Math.max(14, Math.round(Math.min(UH0 * 0.6, UW * 0.42) * 0.58)) : 0;
+    const legGap = LFS ? Math.round(2 * PX_MM) : 0, legH = LFS ? legGap + Math.round(LFS * 1.4) : 0;
+    const UH = (H - top - M - stripH - legH) / gRows;
+    const gx0 = M + (W - 2 * M - UW * gCols) / 2, gy0 = top + (H - top - M - stripH - legH - UH * gRows) / 2; /* centred if any leftover */
     const mw = UW * 7, mh = UH * RPM;
     /* CM8: one text size for month name, weekdays and dates ('Wed' must fit the column width) */
     const UFS = Math.round(Math.min(UH * 0.6, UW * 0.42));
@@ -149,6 +160,9 @@ window.CMRender = (function () {
       /* CM6: month name is the grid's first row, merged & centred across 7 columns, no fill */
       /* const nameH = Math.min(62, mh * 0.13), nfs = Math.round(Math.min(46, nameH * 0.72));  (CM6-CM7) */
       const nameH = UH, nfs = UFS; /* CM8 */
+      /* CM12-F3: optional month-name row fill (default light grey, white/none = no fill) */
+      const mf = o.mfill === undefined ? '#d9d9d9' : o.mfill;
+      if (isHex(mf) && !/^#ffffff$/i.test(mf)) { c.fillStyle = mf; c.fillRect(x0, y0, mw, nameH); }
       c.fillStyle = fc; c.textAlign = 'center'; c.font = '700 ' + nfs + 'px ' + FONT;
       c.fillText(MN[m], x0 + mw / 2, y0 + nameH / 2);
       const lead = (dow(y, m, 1) - f + 7) % 7, n = dim(y, m);
@@ -205,6 +219,21 @@ window.CMRender = (function () {
       c.strokeStyle = GC; c.lineWidth = GW; c.strokeRect(sn(x0), sn(y0), sn(x0 + mw) - sn(x0), sn(gb) - sn(y0));
       /* CM1-CM3 (no grid): rounded tiles rr(c, cx + 3, cy + 3, cw - 6, ch - 6, 10), month name at y0 + 34, hh = 78 */
     }
+    /* CM12-F3: legend - swatch (thin border) + '*Holiday', and '*Restricted holiday' only if the year has one */
+    if (LFS) {
+      const ly = gy0 + UH * gRows + legGap + Math.round(LFS * 0.7), sz = Math.round(LFS * 0.9);
+      const items = [[col[0], '*Holiday']];
+      if ((o.hols || []).some((h) => h.r)) items.push([rc, '*Restricted holiday']);
+      let lx = gx0;
+      c.font = '400 ' + LFS + 'px ' + FONT; c.textAlign = 'left'; c.textBaseline = 'middle';
+      items.forEach(([sc, label]) => {
+        c.fillStyle = sc; c.beginPath(); c.rect(lx, ly - sz / 2, sz, sz); c.fill();
+        c.strokeStyle = '#333'; c.lineWidth = 1.5; c.stroke();
+        c.fillStyle = fc; c.fillText(label, lx + sz + LFS * 0.4, ly + 1);
+        lx += sz + LFS * 0.4 + c.measureText(label).width + LFS * 1.6;
+      });
+      api_last.legend = { y: ly - sz / 2, h: sz, font: LFS, items: items.length, gridBottom: gy0 + UH * gRows, dateFont: UFS };
+    } else api_last.legend = null;
     if (stripH) {
       const sy = H - M - stripH + 20;
       c.strokeStyle = '#999'; c.lineWidth = 2; c.beginPath(); c.moveTo(M, sy); c.lineTo(W - M, sy); c.stroke();
@@ -230,5 +259,5 @@ window.CMRender = (function () {
     }
     return cv;
   }
-  return { draw, W, H, COLOURS, RCOLOURS, stripRows, stripSections, dateText, daysOf, endOf, LAYOUTS, layoutOf };
+  return { last: api_last, draw, W, H, COLOURS, COLOUR_NAMES, RCOLOURS, stripRows, stripSections, dateText, daysOf, endOf, LAYOUTS, layoutOf };
 })();
