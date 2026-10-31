@@ -86,3 +86,5 @@ h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--
 #d-input{display:block;width:100%;max-width:none;margin:0 0 14px;font-size:22px;text-align:center;letter-spacing:.3em}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:6px 14px;border-radius:16px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20;max-width:90vw;text-align:center}
 #toast.show{opacity:1}
+#ss-switch{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:15}
+#ss-switch[hidden]{display:none}

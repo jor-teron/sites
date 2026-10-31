@@ -5,6 +5,7 @@
    {t:'roster', list:[{id, name, share}]} where share = null | {on:true, paused, audio}.
    (Same lobby/roster pattern as Video Chat VC1, with '-ss-' ids so the two apps never mix.) Signals between devices go {t:'to', to, msg} through the lobby.
    If the lobby goes away, each device waits a random 0.3–1.8 s and tries to claim it.
+   SS2: hi/roster also carry did (the device's lasting id).
    PeerJS: SharedLink.PEERJS_URL (link_core.js) when present, else the same pinned URL. */
 (function () {
   'use strict';
@@ -51,14 +52,14 @@
   function hostConn(conn) {
     conn.on('data', function (m) {
       if (!m || typeof m !== 'object') return;
-      if (m.t === 'hi') { clients[m.id] = { conn: conn, name: String(m.name || '').slice(0, 40), share: cleanShare(m.share) }; conn._ssid = m.id; broadcast(); }
+      if (m.t === 'hi') { clients[m.id] = { conn: conn, name: String(m.name || '').slice(0, 40), share: cleanShare(m.share), did: String(m.did || '').slice(0, 32) }; conn._ssid = m.id; broadcast(); }
       else if (m.t === 'to' && clients[m.to]) clients[m.to].conn.send({ t: 'sig', from: conn._ssid, msg: m.msg });
     });
     conn.on('close', function () { if (conn._ssid && clients[conn._ssid] && clients[conn._ssid].conn === conn) { delete clients[conn._ssid]; broadcast(); } });
   }
   function cleanShare(x) { return x && x.on ? { on: true, paused: !!x.paused, audio: !!x.audio } : null; }
   function broadcast() {
-    var list = Object.keys(clients).map(function (id) { return { id: id, name: clients[id].name, share: clients[id].share }; });
+    var list = Object.keys(clients).map(function (id) { return { id: id, name: clients[id].name, share: clients[id].share, did: clients[id].did }; });
     Object.keys(clients).forEach(function (id) { try { clients[id].conn.send({ t: 'roster', list: list }); } catch (_) { /* */ } });
   }
   /* every device */
@@ -81,7 +82,7 @@
   }
   function relobby() { if (dead) return; emit('status', 'Reconnecting…'); setTimeout(claimLobby, 300 + Math.random() * 1500); }
   var myShare = null;
-  function hi() { if (lconn && lconn.open) lconn.send({ t: 'hi', id: me.id, name: SSStore.name(), share: myShare }); }
+  function hi() { if (lconn && lconn.open) lconn.send({ t: 'hi', id: me.id, name: SSStore.name(), share: myShare, did: SSStore.get('did') }); }   // SS2: + did
   L.setShare = function (x) { myShare = x ? { on: true, paused: !!x.paused, audio: !!x.audio } : null; hi(); };
   function signal(to, msg) { if (lconn && lconn.open) lconn.send({ t: 'to', to: to, msg: msg }); }
   function stop() {
@@ -98,5 +99,6 @@
   L.id = function () { return me && me.id; };
   L.roster = function () { return roster; };
   L.code = function () { return code; };
+  L.open = function () { return code === '0000'; };   // SS2: public Hub mesh (strangers share the namespace)
   window.SSPeer = L;
 })();
