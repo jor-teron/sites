@@ -1,4 +1,4 @@
-/* Calendar Maker renderer (CM9: hols[].r = Restricted -> o.rcolour tile (default light grey), Gazetted wins on a shared date; strip lists Restricted in its own section; CM1; CM8: whole sheet is one uniform grid - every row/column, incl. gaps between months, same size; one text size; CM7: folded dates drawn as normal dates, all grid lines one weight/colour; CM6: o.colour may be a #rrggbb custom colour, o.font = text colour, default black): draws the whole A4 portrait sheet (all 12 months, 3 x 4) on a canvas.
+/* Calendar Maker renderer (CM11: hols[].em/ed = optional end month/day, every day in the range tiled, strip shows a range as one row; CM9: hols[].r = Restricted -> o.rcolour tile (default light grey), Gazetted wins on a shared date; strip lists Restricted in its own section; CM1; CM8: whole sheet is one uniform grid - every row/column, incl. gaps between months, same size; one text size; CM7: folded dates drawn as normal dates, all grid lines one weight/colour; CM6: o.colour may be a #rrggbb custom colour, o.font = text colour, default black): draws the whole A4 portrait sheet (all 12 months, 3 x 4) on a canvas.
    The same drawing is used for the on-screen preview, Print (as an image) and the PDF (CM2), so all three match.
    window.CMRender.draw(canvas, o) with o = { year, week:'sun'|'mon', colour, sundays, sat:'none'|'24'|'all',
      hols:[{m,d,name}], fold (CM5, default true), bg:{type:'none'|'soft'|'pic', colour, img, faint} (CM2), strip (CM2) }
@@ -27,10 +27,35 @@ window.CMRender = (function () {
   function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
 
   /* sorted, de-duplicated holiday list for the strip: [{m,d,name}] */
+  /* CM2-CM10 (single days only):
+  // function stripRows(hols) {
+  //   const map = {};
+  //   hols.forEach((h) => { const k = h.m * 100 + h.d; map[k] = map[k] ? map[k] + ' / ' + h.name : h.name; });
+  //   return Object.keys(map).map(Number).sort((a, b) => a - b).map((k) => ({ m: Math.floor(k / 100), d: k % 100, name: map[k] }));
+  // }
+  */
+  /* CM11: a range (em/ed = end month/day, same year) is ONE row; same start+end names joined with ' / ' */
+  const endOf = (h) => (h.em != null && h.ed != null && (h.em * 100 + h.ed) > (h.m * 100 + h.d)) ? h.em * 100 + h.ed : h.m * 100 + h.d;
   function stripRows(hols) {
     const map = {};
-    hols.forEach((h) => { const k = h.m * 100 + h.d; map[k] = map[k] ? map[k] + ' / ' + h.name : h.name; });
-    return Object.keys(map).map(Number).sort((a, b) => a - b).map((k) => ({ m: Math.floor(k / 100), d: k % 100, name: map[k] }));
+    hols.forEach((h) => { const k = (h.m * 100 + h.d) * 10000 + endOf(h); map[k] = map[k] ? map[k] + ' / ' + h.name : h.name; });
+    return Object.keys(map).map(Number).sort((a, b) => a - b).map((k) => {
+      const s = Math.floor(k / 10000), e = k % 10000, r = { m: Math.floor(s / 100), d: s % 100, name: map[k] };
+      if (e !== s) { r.em = Math.floor(e / 100); r.ed = e % 100; }
+      return r;
+    });
+  }
+  /* CM11: '05 Jan', '20–23 Oct', '30 Sep–02 Oct' */
+  const p2 = (n) => String(n).padStart(2, '0');
+  function dateText(r) {
+    if (r.em == null) return p2(r.d) + ' ' + MS[r.m];
+    return r.em === r.m ? p2(r.d) + '–' + p2(r.ed) + ' ' + MS[r.m] : p2(r.d) + ' ' + MS[r.m] + '–' + p2(r.ed) + ' ' + MS[r.em];
+  }
+  /* CM11: every [m, d] covered by a holiday (range or single) in year y */
+  function daysOf(h, y) {
+    const out = [], e = endOf(h);
+    for (let dt = new Date(y, h.m, h.d); dt.getFullYear() === y && dt.getMonth() * 100 + dt.getDate() <= e; dt.setDate(dt.getDate() + 1)) out.push([dt.getMonth(), dt.getDate()]);
+    return out;
   }
 
   /* CM9: strip sections { gaz, res }, each date-sorted */
@@ -52,7 +77,8 @@ window.CMRender = (function () {
     /* const hol = {}; ... hol[k] = true; isHol -> true/false  (CM1-CM8) */
     /* CM9: isHol returns the tile colour (or false). Gazetted / Sundays / Saturdays = holiday colour; Restricted only if nothing gazetted that day */
     const rc = isHex(o.rcolour) ? o.rcolour : RCOLOURS.grey;
-    const hol = {}; (o.hols || []).forEach((h) => { const k = h.m * 100 + h.d; hol[k] = (h.r && hol[k] !== 'g') ? 'r' : 'g'; });
+    /* const hol = {}; (o.hols || []).forEach((h) => { const k = h.m * 100 + h.d; hol[k] = (h.r && hol[k] !== 'g') ? 'r' : 'g'; });  (CM9-CM10) */
+    const hol = {}; (o.hols || []).forEach((h) => daysOf(h, y).forEach(([m, d]) => { const k = m * 100 + d; hol[k] = (h.r && hol[k] !== 'g') ? 'r' : 'g'; })); /* CM11: ranges */
     const isHol = (m, d) => {
       const wd = dow(y, m, d);
       if (wd === 0 && o.sundays !== false) return col[0];
@@ -191,16 +217,18 @@ window.CMRender = (function () {
         /* c.fillStyle = col[0];  (CM2-CM8) */
         c.fillStyle = r.r ? rc : col[0]; rr(c, x, yy - 14, 28, 28, 6); c.fill();
         c.fillStyle = fc; c.font = '700 27px ' + FONT; /* CM6: was '#111' */
-        const dt = String(r.d).padStart(2, '0') + ' ' + MS[r.m];
+        /* const dt = String(r.d).padStart(2, '0') + ' ' + MS[r.m];  (CM2-CM10) */
+        const dt = dateText(r); /* CM11 */
         c.fillText(dt, x + 40, yy + 2);
+        const nx = Math.max(x + 130, x + 40 + c.measureText(dt).width + 14); /* CM11: ranges are wider */
         c.font = '400 27px ' + FONT;
-        let name = r.name; const max = sw - 150;
+        let name = r.name; const max = sw - (nx - x) - 20;
         while (c.measureText(name).width > max && name.length > 4) name = name.slice(0, -2);
         if (name !== r.name) name = name.replace(/\s*\S?$/, '') + '…';
-        c.fillText(name, x + 130, yy + 2);
+        c.fillText(name, nx, yy + 2); /* CM2-CM10: x + 130 */
       });
     }
     return cv;
   }
-  return { draw, W, H, COLOURS, RCOLOURS, stripRows, stripSections, LAYOUTS, layoutOf };
+  return { draw, W, H, COLOURS, RCOLOURS, stripRows, stripSections, dateText, daysOf, endOf, LAYOUTS, layoutOf };
 })();

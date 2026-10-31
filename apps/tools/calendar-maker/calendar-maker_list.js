@@ -14,7 +14,12 @@ window.CMList = (function () {
   /* table rows: [{head:true,text}] for headings, else {m,d,wd,name,r} */
   function rows(hols, y) {
     const R = window.CMRender, sec = R.stripSections(hols || []);
-    const one = (h, r) => ({ m: h.m, d: h.d, wd: WD[new Date(y, h.m, h.d).getDay()], name: h.name, r });
+    /* const one = (h, r) => ({ m: h.m, d: h.d, wd: WD[new Date(y, h.m, h.d).getDay()], name: h.name, r });  (CM10) */
+    const one = (h, r) => { /* CM11: ranges -> date '20–23 Oct', weekday 'Tue–Fri' */
+      const o = { m: h.m, d: h.d, wd: WD[new Date(y, h.m, h.d).getDay()], name: h.name, r, date: R.dateText(h) };
+      if (h.em != null) { o.em = h.em; o.ed = h.ed; o.wd += '–' + WD[new Date(y, h.em, h.ed).getDay()]; }
+      return o;
+    };
     const out = sec.gaz.map((h) => one(h, false));
     if (sec.res.length) { out.push({ head: true, text: 'Restricted Holidays' }); sec.res.forEach((h) => out.push(one(h, true))); }
     return out;
@@ -50,7 +55,9 @@ window.CMList = (function () {
     const n = 1 + Math.max(1, list.length); /* header + rows (or one 'No holidays' row) */
     const RH = Math.max(40, Math.min(Math.round(14 * PX_MM), Math.floor((H - top - M) / n))); /* row height, up to 14 mm */
     const FS = Math.round(Math.max(22, Math.min(72, RH * 0.55)));
-    const TW = W - 2 * M, cx = [M, M + Math.round(TW * 0.2), M + Math.round(TW * 0.36), W - M];
+    /* const TW = W - 2 * M, cx = [M, M + Math.round(TW * 0.2), M + Math.round(TW * 0.36), W - M];  (CM10) */
+    const wide = list.some((r) => r.em != null); /* CM11: room for '30 Sep–02 Oct' and 'Tue–Fri' */
+    const TW = W - 2 * M, cx = wide ? [M, M + Math.round(TW * 0.27), M + Math.round(TW * 0.45), W - M] : [M, M + Math.round(TW * 0.2), M + Math.round(TW * 0.36), W - M];
     const sn = (v) => Math.round(v);
     let yy = top;
     /* header row on the holiday colour */
@@ -68,7 +75,8 @@ window.CMList = (function () {
         lines.push([yy, false]); yy += RH; return;
       }
       c.fillStyle = fc; c.font = '700 ' + FS + 'px ' + FONT;
-      c.fillText(String(r.d).padStart(2, '0') + ' ' + MS[r.m], cx[0] + pad, yy + RH / 2);
+      /* c.fillText(String(r.d).padStart(2, '0') + ' ' + MS[r.m], cx[0] + pad, yy + RH / 2);  (CM10) */
+      c.fillText(r.date || (String(r.d).padStart(2, '0') + ' ' + MS[r.m]), cx[0] + pad, yy + RH / 2); /* CM11 */
       c.font = '400 ' + FS + 'px ' + FONT;
       c.fillText(r.wd, cx[1] + pad, yy + RH / 2);
       let name = r.name; const max = cx[3] - cx[2] - 2 * pad;

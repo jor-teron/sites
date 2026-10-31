@@ -87,3 +87,10 @@ body.land #sheet{aspect-ratio:297/210;max-width:calc((100vh - 90px) * 1.4142)}
 .list-opts{width:320px;flex:none;display:flex;flex-direction:column;gap:10px}
 @media (max-width:760px){.list-opts{width:100%}#list-sheet{max-width:100%}}
 #list-header{height:38px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);padding:0 8px;font-size:14px}
+
+/* CM11: Day/Month selects + To */
+.add{flex-wrap:wrap}
+.add select,.hl li select{height:38px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);padding:0 4px;font-size:14px}
+.hl li select{height:32px;font-size:13px}
+.add .to{align-self:center;font-size:13px;opacity:.7}
+.hl{overflow-x:auto}

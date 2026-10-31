@@ -1,4 +1,6 @@
-/* CM9: any holiday may carry r:true = Restricted; missing r = Gazetted (older saves load unchanged).
+/* CM11: optional range end, additive: fixed {em, ed} (end month/day, same year), dated {end:'YYYY-MM-DD'}; no end = one day.
+   Every-year input is Day + Month selects (no year); 29 Feb only shows in leap years.
+   CM9: any holiday may carry r:true = Restricted; missing r = Gazetted (older saves load unchanged).
    Calendar Maker CM3: Holidays page. Saved in 'calendar-maker-holidays':
    { fixed: null (= Calendar's built-in list) | [{m (0-11), d, name}], dated: [{date:'YYYY-MM-DD', name}] }
    Custom holidays stay in Calendar Maker only; the Calendar app is not changed. */
@@ -17,6 +19,10 @@ window.CMHol = (function () {
   const okName = (h) => h && typeof h.name === 'string';
   H.dated = H.dated.filter((h) => okName(h) && /^\d{4}-\d{2}-\d{2}$/.test(h.date));
   if (H.fixed) H.fixed = H.fixed.filter((h) => okName(h) && h.m >= 0 && h.m <= 11 && h.d >= 1 && h.d <= 31);
+  /* CM11: drop a broken end (keeps the holiday as one day) */
+  const mlen = (m) => new Date(2000, m + 1, 0).getDate(); /* leap year: Feb = 29 */
+  H.dated.forEach((h) => { if (h.end != null && !(typeof h.end === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(h.end) && h.end.slice(0, 4) === h.date.slice(0, 4) && h.end > h.date)) delete h.end; });
+  if (H.fixed) H.fixed.forEach((h) => { if (h.em != null || h.ed != null) { if (!(h.em >= 0 && h.em <= 11 && h.ed >= 1 && h.ed <= mlen(h.em) && h.em * 100 + h.ed > h.m * 100 + h.d)) { delete h.em; delete h.ed; } } });
   const defaults = () => (window.CalHolidays ? window.CalHolidays.list(2000).map((h) => ({ m: h.m, d: h.d, name: h.name })) : []); /* built-ins = Gazetted */
   const fixed = () => H.fixed || defaults();
   /* const save = () => { try { localStorage.setItem(HKEY, JSON.stringify(H)); } catch (_) { (empty) } if (window.CM) window.CM.render(); };  (CM3) */
@@ -33,8 +39,19 @@ window.CMHol = (function () {
 
   function forYear(y) {
     /* const out = fixed()...map((h) => ({ m: h.m, d: h.d, name: h.name }));  (CM3-CM8) */
-    const out = fixed().filter((h) => h.d <= new Date(y, h.m + 1, 0).getDate()).map((h) => ({ m: h.m, d: h.d, name: h.name, r: h.r === true })); /* CM9 */
-    H.dated.forEach((h) => { if (+h.date.slice(0, 4) === y) out.push({ m: +h.date.slice(5, 7) - 1, d: +h.date.slice(8, 10), name: h.name, r: h.r === true }); });
+    /* const out = fixed().filter(...).map((h) => ({ m: h.m, d: h.d, name: h.name, r: h.r === true })); H.dated.forEach(... single day ...);  (CM9-CM10) */
+    /* CM11: ranges carry em/ed; 29 Feb start skipped in non-leap years, a 29 Feb end becomes 28 Feb */
+    const out = fixed().filter((h) => h.d <= new Date(y, h.m + 1, 0).getDate()).map((h) => {
+      const o = { m: h.m, d: h.d, name: h.name, r: h.r === true };
+      if (h.em != null) { const ed = Math.min(h.ed, new Date(y, h.em + 1, 0).getDate()); if (h.em * 100 + ed > h.m * 100 + h.d) { o.em = h.em; o.ed = ed; } }
+      return o;
+    });
+    H.dated.forEach((h) => {
+      if (+h.date.slice(0, 4) !== y) return;
+      const o = { m: +h.date.slice(5, 7) - 1, d: +h.date.slice(8, 10), name: h.name, r: h.r === true };
+      if (h.end) { o.em = +h.end.slice(5, 7) - 1; o.ed = +h.end.slice(8, 10); }
+      out.push(o);
+    });
     return out;
   }
 
@@ -56,15 +73,23 @@ window.CMHol = (function () {
     return (g.length ? g.map((x) => x.html).join('') : '<li class="empty">' + empty + '</li>') +
       (r.length ? '<li class="sub">Restricted Holidays</li>' + r.map((x) => x.html).join('') : '');
   };
+  /* CM11: Day + Month selects (no year). Day list fits the month; Feb lists 29 (used in leap years only). blank = no end */
+  const dayOpts = (m, sel, blank) => (blank ? '<option value="">To</option>' : '') + Array.from({ length: m == null || m === '' ? 31 : mlen(+m) }, (_, k) => '<option value="' + (k + 1) + '"' + (+sel === k + 1 ? ' selected' : '') + '>' + (k + 1) + '</option>').join('');
+  const monOpts = (sel, blank) => (blank ? '<option value="">–</option>' : '') + MS.map((n, k) => '<option value="' + k + '"' + (sel !== '' && sel != null && +sel === k ? ' selected' : '') + '>' + n + '</option>').join('');
+  const dm = (act, m, d, blank) => '<select data-act="' + act + 'd" aria-label="Day">' + dayOpts(m, d, blank) + '</select><select data-act="' + act + 'm" aria-label="Month">' + monOpts(m, blank) + '</select>';
+  const label = (h) => h.d + ' ' + MS[h.m] + (h.em != null ? '–' + h.ed + ' ' + MS[h.em] : '');
+  const dlabel = (h) => h.end ? +h.date.slice(8, 10) + ' ' + MS[+h.date.slice(5, 7) - 1] + '–' + +h.end.slice(8, 10) + ' ' + MS[+h.end.slice(5, 7) - 1] + ' ' : '';
   function draw() {
+    /* CM3-CM10 fixed row: <input type="date" data-act="date" value="YEAR-MM-DD"> ... <b>d Mon</b> name */
     const fx = fixed().map((h, i) => ({ h, i })).sort((a, b) => a.h.m - b.h.m || a.h.d - b.h.d)
-      .map(({ h, i }) => ({ h, html: '<li data-i="' + i + '"><input type="date" data-act="date" value="' + year + '-' + p2(h.m + 1) + '-' + p2(h.d) + '" aria-label="Date"><span title="' + esc(h.name) + '"><b>' + h.d + ' ' + MS[h.m] + '</b> ' + esc(h.name) + '</span>' + rowBtns(h) }));
+      .map(({ h, i }) => ({ h, html: '<li data-i="' + i + '">' + dm('s', h.m, h.d, false) + dm('e', h.em, h.ed, true) + '<span title="' + esc(h.name) + '"><b>' + label(h) + '</b> ' + esc(h.name) + '</span>' + rowBtns(h) }));
     $('fx-list').innerHTML = fx.length ? split(fx, 'No gazetted every-year holidays.') : '<li class="empty">No every-year holidays.</li>';
     const dt = H.dated.map((h, i) => ({ h, i })).filter(({ h }) => +h.date.slice(0, 4) === year).sort((a, b) => (a.h.date < b.h.date ? -1 : 1))
-      .map(({ h, i }) => ({ h, html: '<li data-i="' + i + '"><input type="date" data-act="date" value="' + h.date + '" min="' + year + '-01-01" max="' + year + '-12-31" aria-label="Date"><span title="' + esc(h.name) + '">' + esc(h.name) + '</span>' + rowBtns(h) }));
+      .map(({ h, i }) => ({ h, html: '<li data-i="' + i + '"><input type="date" data-act="date" value="' + h.date + '" min="' + year + '-01-01" max="' + year + '-12-31" aria-label="Date"><input type="date" data-act="end" value="' + (h.end || '') + '" min="' + year + '-01-01" max="' + year + '-12-31" aria-label="To (optional)" title="To (optional)"><span title="' + esc(h.name) + '"><b>' + dlabel(h) + '</b>' + esc(h.name) + '</span>' + rowBtns(h) })); /* CM11: + To date */
     $('dt-list').innerHTML = dt.length ? split(dt, 'No gazetted ones for ' + year + '.') : '<li class="empty">None for ' + year + ' yet.</li>';
     $('dt-year').textContent = '(' + year + ')';
-    ['fx-date', 'dt-date'].forEach((id) => { $(id).min = year + '-01-01'; $(id).max = year + '-12-31'; });
+    /* ['fx-date', 'dt-date'].forEach(...)  (CM3-CM10) */
+    ['dt-date', 'dt-end'].forEach((id) => { if ($(id)) { $(id).min = year + '-01-01'; $(id).max = year + '-12-31'; } }); /* CM11 */
   }
   function show(y) { year = y; draw(); }
 
@@ -72,9 +97,23 @@ window.CMHol = (function () {
     const li = e.target.closest('li[data-i]'); if (!li) return;
     const i = +li.dataset.i, a = e.target.dataset.act, isFx = list === 'fx';
     const arr = isFx ? own() : H.dated, item = arr[i];
-    if (e.type === 'change' && a === 'date') {
+    /* CM3-CM10: change 'date' -> fixed m/d from a full date, or dated date */
+    if (e.type === 'change' && a === 'date' && !isFx) {
       const v = e.target.value; if (!v) return;
-      if (isFx) { item.m = +v.slice(5, 7) - 1; item.d = +v.slice(8, 10); } else item.date = v;
+      if (item.end && item.end <= v) { badRange(); draw(); return; } /* CM11 */
+      item.date = v; save(); draw(); return;
+    }
+    if (e.type === 'change' && a === 'end') { /* CM11 */
+      const v = e.target.value;
+      if (!v) delete item.end; else if (v <= item.date) { badRange(); draw(); return; } else item.end = v;
+      save(); draw(); return;
+    }
+    if (e.type === 'change' && /^[se][dm]$/.test(a)) { /* CM11: Day/Month selects on an every-year row */
+      const q = (k) => li.querySelector('[data-act="' + k + '"]').value;
+      if (q('em') !== '' && q('ed') === '') { const es = li.querySelector('[data-act="ed"]'); es.innerHTML = dayOpts(q('em'), '', true); return; } /* end month picked first: wait for its day */
+      const r = readFx(q('sd'), q('sm'), q('ed'), q('em'));
+      if (!r) { badRange(); draw(); return; }
+      item.m = r.m; item.d = r.d; if (r.em != null) { item.em = r.em; item.ed = r.ed; } else { delete item.em; delete item.ed; }
       save(); draw(); return;
     }
     if (e.type !== 'click') return;
@@ -86,20 +125,47 @@ window.CMHol = (function () {
       if (await window.UiDialog.confirm('Delete holiday?', item.name, 'Delete', true)) { arr.splice(i, 1); save(); draw(); }
     }
   }
+  /* CM11: end before (or on) start is refused with an in-app note */
+  function badRange() { if (window.UiDialog) window.UiDialog.info('Check the dates', [['To', 'The To date must be after the start date (same year). Leave To empty for a one-day holiday.']]); }
+  /* CM11: every-year Day/Month values -> {m, d, em?, ed?} or null when invalid. Day is clamped to the month (29 Feb allowed). */
+  function readFx(sd, sm, ed, em) {
+    if (sd === '' || sm === '' || sd == null || sm == null) return null;
+    const m = +sm, d = Math.min(+sd, mlen(m)), o = { m, d };
+    const hasE = ed !== '' && ed != null, hasM = em !== '' && em != null;
+    if (!hasE && !hasM) return o;
+    const eM = hasM ? +em : m; if (!hasE) return o; /* month alone, no day: still one day */
+    const eD = Math.min(+ed, mlen(eM));
+    if (eM * 100 + eD <= m * 100 + d) return null;
+    o.em = eM; o.ed = eD; return o;
+  }
   function add(isFx) {
-    const di = $(isFx ? 'fx-date' : 'dt-date'), ni = $(isFx ? 'fx-name' : 'dt-name');
-    const v = di.value, n = ni.value.trim().slice(0, 60);
+    /* CM3-CM10: const di = $(isFx ? 'fx-date' : 'dt-date') ... v = di.value (fixed took m/d from a full date) */
+    const ni = $(isFx ? 'fx-name' : 'dt-name'), n = ni.value.trim().slice(0, 60);
+    const fr = isFx ? readFx($('fx-d').value, $('fx-m').value, $('fx-ed').value, $('fx-em').value) : null;
+    const v = isFx ? (fr ? 'ok' : '') : $('dt-date').value, ev = isFx ? '' : ($('dt-end') ? $('dt-end').value : '');
+    if (isFx && !fr && $('fx-d').value && $('fx-m').value && n) { badRange(); return; }
     if (!v || !n) { window.UiDialog.info('Add holiday', [['Needed', 'Pick a date and type a name.']]); return; }
+    if (!isFx && ev && ev.slice(5) <= v.slice(5)) { badRange(); return; }
     /* if (isFx) own().push({ m, d, name: n }); else H.dated.push({ date, name: n });  (CM3-CM8) */
     const ti = $(isFx ? 'fx-type' : 'dt-type'), rs = !!(ti && ti.value === 'r'); /* CM9 */
-    const it = isFx ? { m: +v.slice(5, 7) - 1, d: +v.slice(8, 10), name: n } : { date: year + v.slice(4), name: n };
+    /* const it = isFx ? { m: +v.slice(5, 7) - 1, d: +v.slice(8, 10), name: n } : { date: year + v.slice(4), name: n };  (CM3-CM10) */
+    const it = isFx ? Object.assign(fr, { name: n }) : { date: year + v.slice(4), name: n }; /* CM11 */
+    if (!isFx && ev) it.end = year + ev.slice(4);
     if (rs) it.r = true;
     if (isFx) own().push(it); else H.dated.push(it);
-    ni.value = ''; save(); draw();
+    ni.value = ''; if (isFx) { $('fx-ed').value = ''; $('fx-em').value = ''; } else if ($('dt-end')) $('dt-end').value = ''; /* CM11 */
+    save(); draw();
   }
 
   document.addEventListener('DOMContentLoaded', () => {
     ['fx', 'dt'].forEach((k) => { const l = $(k + '-list'); l.addEventListener('click', (e) => act(k, e)); l.addEventListener('change', (e) => act(k, e)); });
+    /* CM11: fill the add-row Day/Month selects; a month change refits its day list */
+    const fit = (dId, mId, blank) => { const dv = $(dId).value; $(dId).innerHTML = dayOpts($(mId).value, dv, blank); };
+    if ($('fx-m')) {
+      $('fx-m').innerHTML = monOpts(new Date().getMonth(), false); $('fx-d').innerHTML = dayOpts($('fx-m').value, new Date().getDate(), false);
+      $('fx-em').innerHTML = monOpts('', true); $('fx-ed').innerHTML = dayOpts('', '', true);
+      $('fx-m').onchange = () => fit('fx-d', 'fx-m', false); $('fx-em').onchange = () => fit('fx-ed', 'fx-em', true);
+    }
     $('fx-add').onclick = () => add(true);
     $('dt-add').onclick = () => add(false);
     $('fx-name').onkeydown = (e) => { if (e.key === 'Enter') add(true); };
@@ -108,5 +174,5 @@ window.CMHol = (function () {
       if (await window.UiDialog.confirm('Restore defaults?', 'Every-year holidays go back to the Calendar list. This-year-only holidays are kept.', 'Restore', true)) { H.fixed = null; save(); draw(); }
     };
   });
-  return { forYear, show, _H: H, _save: save, _own: own }; /* _ = test hooks */
+  return { forYear, show, readFx, _H: H, _save: save, _own: own, _act: act, _add: add }; /* _ = test hooks */
 })();
