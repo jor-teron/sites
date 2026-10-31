@@ -899,3 +899,13 @@ kept.
 - Limits: file-manager paste and drag-drop are simulated events; phones,
   real Microsoft Word and the real OS clipboard are not covered. Say
   clearly in the report what was real and what was mocked.
+
+-- H75: Hub draws shared dialogs (31 Oct 2026) --
+- Apps keep calling UiDialog.ask / confirm / choose / info (shared/dialog).
+  Inside the Hub the call is posted to hub.html, which shows its own
+  dialog over the whole desktop and posts the answer back.
+- Hub side: hub/core/hub_dialog_bridge.js (sets window.__hubDialogHost).
+  Same origin only, sender must be a Hub iframe, 4 methods only.
+- Standalone, file://, or no Hub ack within 400 ms: drawn in the app as
+  before. UiDialog.local.* always draws in the page itself.
+- Apps must load shared/dialog/dialog.js to get this (devbench: H76).

@@ -11,6 +11,11 @@
  *        buttons: [{ value, label, kind: 'primary'|'danger'|'' }]; opts.allLabel adds a
  *        "Do this for all" checkbox (result.all)
  *   info(title, rows)                       → Promise (rows: [[label, value], …], one OK button)
+ *
+ * H75: inside the Hub (an app frame whose same-origin parent set window.__hubDialogHost, see
+ * hub/core/hub_dialog_bridge.js) each call is posted up as {type:'hub-dialog', id, method, args}
+ * and the Hub draws it over the whole desktop, answering {type:'hub-dialog-ack', id} then
+ * {type:'hub-dialog-result', id, value}. Standalone / file:// / no ack in 400 ms → drawn here.
  */
 window.UiDialog = (function () {
   'use strict';
@@ -58,7 +63,32 @@ window.UiDialog = (function () {
   }
   const CANCEL = { value: null, label: 'Cancel' };
 
-  return {
+  // H75: forward to the Hub when we are one of its app frames
+  function inHub() {
+    try { return window.parent !== window && window.parent.__hubDialogHost === true; } catch (_) { return false; }
+  }
+  let seq = 0;
+  function viaHub(method, args, local) {
+    let data;
+    try { data = JSON.parse(JSON.stringify(args)); } catch (_) { return local(); }   // not plain data → local
+    return new Promise((done) => {
+      const id = 'd' + Date.now().toString(36) + '-' + (++seq);
+      let acked = false, over = false;
+      const stop = () => { over = true; clearTimeout(t); window.removeEventListener('message', on); };
+      const on = (e) => {
+        const d = e.data;
+        if (over || e.source !== window.parent || e.origin !== location.origin || !d || d.id !== id) return;
+        if (d.type === 'hub-dialog-ack') acked = true;
+        else if (d.type === 'hub-dialog-result') { stop(); done(d.value); }
+      };
+      const t = setTimeout(() => { if (!acked) { stop(); local().then(done); } }, 400);
+      window.addEventListener('message', on);
+      try { window.parent.postMessage({ type: 'hub-dialog', id, method, args: data }, location.origin); }
+      catch (_) { stop(); local().then(done); }
+    });
+  }
+
+  const api = {
     ask(title, value, okText) {
       const i = el('input', 'uid-in');
       i.type = 'text'; i.value = value || ''; i.spellcheck = false;
@@ -89,4 +119,13 @@ window.UiDialog = (function () {
       return box(title, [t], [{ value: true, label: 'OK', kind: 'primary', main: true }]);
     }
   };
+  const out = { local: api };
+  Object.keys(api).forEach((m) => {
+    out[m] = function () {
+      const args = Array.prototype.slice.call(arguments);
+      const local = () => api[m].apply(api, args);
+      return inHub() ? viaHub(m, args, local) : local();
+    };
+  });
+  return out;
 })();
