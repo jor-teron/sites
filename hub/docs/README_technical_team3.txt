@@ -909,3 +909,8 @@ kept.
 - Standalone, file://, or no Hub ack within 400 ms: drawn in the app as
   before. UiDialog.local.* always draws in the page itself.
 - Apps must load shared/dialog/dialog.js to get this (devbench: H76).
+-- H76: Devbench delete confirm (31 Oct 2026) --
+- Devbench History "Delete all" now uses UiDialog.confirm (red Delete).
+  Browser confirm stays only as a fallback if shared/dialog is missing.
+- devbench.html links shared/dialog/dialog.css + dialog.js (relative,
+  no ?v=). With H75 merged the Hub draws it over the whole desktop.
