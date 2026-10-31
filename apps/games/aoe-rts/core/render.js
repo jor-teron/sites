@@ -14,17 +14,27 @@ function bakeGround(scene) {
     for (let cy0 = 0; cy0 < MAP_SIZE; cy0 += CHUNK) for (let cx0 = 0; cx0 < MAP_SIZE; cx0 += CHUNK) {
         const x1 = Math.min(MAP_SIZE, cx0 + CHUNK), y1 = Math.min(MAP_SIZE, cy0 + CHUNK);
         const left = tileCenter(cx0, y1 - 1).x - hw, right = tileCenter(x1 - 1, cy0).x + hw;
-        const top = tileCenter(cx0, cy0).y - hh - 150, bottom = tileCenter(x1 - 1, y1 - 1).y + hh;
+        const top = tileCenter(cx0, cy0).y - hh - 60, bottom = tileCenter(x1 - 1, y1 - 1).y + hh;
         groundChunks.push({ img: null, key: 'ground' + groundChunks.length, cx0, cy0, cx1: x1, cy1: y1, x0: left, y0: top, x1: right, y1: bottom, used: 0 });
     }
 }
 const GROUND_CACHE = 16;   // baked chunks kept in memory (each ~1100x560 px)
-/** ARQ1t2: cells from each mountain cell to the range edge (8-neighbour layers; 0 = not mountain), cached per map */
-let mDepth = null, mDepthOf = null;
-function mountDepth() { if (mDepthOf === mount) return mDepth; const S = MAP_SIZE, d = new Uint8Array(S * S); let q = [];
-    for (let i = 0; i < S * S; i++) if (mount[i]) { const x = i % S, y = (i - x) / S; d[i] = 255; if ([-1, 0, 1].some(a => [-1, 0, 1].some(b => !inMap(x + a, y + b) || !mount[(y + b) * S + x + a]))) { d[i] = 1; q.push(i); } }
-    for (let k = 1; q.length; k++) { const n = []; q.forEach(i => { const x = i % S, y = (i - x) / S; for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const j = (y + b) * S + x + a; if (inMap(x + a, y + b) && d[j] === 255) { d[j] = k + 1; n.push(j); } } }); q = n; }
-    mDepth = d; mDepthOf = mount; return d; }
+/** ARQ1t3: smooth dome heights on a fine vertex grid (MOUNT_SUB steps per cell): chamfer distance from any vertex touching
+ *  non-mountain, blurred once, then a quarter-sine rise to a broad rounded crest (0 at the edge, 1 on top). Cached per map. */
+const MOUNT_SUB = 4;
+let mHt = null, mHtOf = null;
+function mountHeights() { if (mHtOf === mount) return mHt; const n = MOUNT_SUB, S = MAP_SIZE, V = S * n + 1, d = new Float32Array(V * V);
+    const inside = (vx, vy) => { for (let a = -1; a <= 0; a++) for (let b = -1; b <= 0; b++) { const cx = Math.floor((vx + a * 0.5) / n), cy = Math.floor((vy + b * 0.5) / n);
+        if (!inMap(cx, cy) || !mount[cy * S + cx]) return false; } return true; };
+    for (let i = 0; i < V * V; i++) d[i] = inside(i % V, (i / V) | 0) ? 1e9 : 0;
+    const pass = (s0, s1, st) => { for (let y = s0; y !== s1; y += st) for (let x = s0; x !== s1; x += st) { const i = y * V + x; if (!d[i]) continue;
+        [[-st, 0, 1], [0, -st, 1], [-st, -st, 1.41], [st, -st, 1.41]].forEach(([a, b, w]) => { const q = (y + b) * V + x + a; if (x + a >= 0 && x + a < V && y + b >= 0 && y + b < V) d[i] = Math.min(d[i], d[q] + w); }); } };
+    pass(0, V, 1); pass(V - 1, -1, -1);
+    const h = new Float32Array(V * V), R = n * 2;
+    for (let i = 0; i < V * V; i++) h[i] = Math.sin(Math.min(1, d[i] / R) * Math.PI / 2);
+    for (let k = 0; k < 3; k++) { const t = h.slice(); for (let y = 1; y < V - 1; y++) for (let x = 1; x < V - 1; x++) { const i = y * V + x;
+        if (d[i]) h[i] = (t[i - V - 1] + t[i - V] + t[i - V + 1] + t[i - 1] + t[i] + t[i + 1] + t[i + V - 1] + t[i + V] + t[i + V + 1]) / 9; } }
+    mHt = h; mHtOf = mount; return h; }
 /** Bake one grass chunk on demand (only chunks near the view exist as textures) */
 function bakeChunk(ch) {
     const hw = TILE_WIDTH / 2, hh = TILE_HEIGHT / 2;
@@ -56,12 +66,12 @@ function bakeChunk(ch) {
             c.moveTo(p.x, p.y - hh); c.lineTo(p.x + hw, p.y); c.lineTo(p.x, p.y + hh); c.lineTo(p.x - hw, p.y); c.closePath(); c.stroke();
         }
         drawWaterTiles(c, cx0, cy0, x1, y1);
-        const isMount = (hx, hy) => inMap(hx, hy) && mount[hy * MAP_SIZE + hx] === 1, dep = (hx, hy) => inMap(hx, hy) ? mountDepth()[hy * MAP_SIZE + hx] : 0;
+        const isMount = (hx, hy) => inMap(hx, hy) && mount[hy * MAP_SIZE + hx] === 1, HT = mountHeights(), HV = MAP_SIZE * MOUNT_SUB + 1, ht = (vx, vy) => HT[vy * HV + vx];
         const isHill = (hx, hy) => inMap(hx, hy) && hill[hy * MAP_SIZE + hx] === 1;   // R2b: hills + fords
         for (let y = cy0; y < y1; y++) for (let x = cx0; x < x1; x++) { const i = y * MAP_SIZE + x;
             if (mount[i]) continue; if (ford[i]) TerrainArt.ford(c, tileCenter(x, y), x, y, hash); else { if (hill[i]) TerrainArt.hill(c, tileCenter(x, y), x, y, isHill, hash); if (!water[i]) TerrainArt.foothill(c, tileCenter(x, y), x, y, isMount); } }
         for (let s = cx0 + cy0; s <= x1 + y1 - 2; s++) for (let x = cx0; x < x1; x++) { const y = s - x;   // ARQ1t2: mountains back to front
-            if (y >= cy0 && y < y1 && mount[y * MAP_SIZE + x]) TerrainArt.mountain(c, tileCenter(x, y), x, y, dep, hash); }
+            if (y >= cy0 && y < y1 && mount[y * MAP_SIZE + x]) TerrainArt.mountain(c, tileCenter(x, y), x, y, ht, MOUNT_SUB); }
         if (Math.abs(tc.x - (left + right) / 2) < W / 2 + 220 && Math.abs(tc.y - (top + bottom) / 2) < H / 2 + 120) {  // dirt around TC
             const grd = c.createRadialGradient(tc.x, tc.y, 20, tc.x, tc.y, 180);
             grd.addColorStop(0, 'rgba(150,120,80,0.9)'); grd.addColorStop(0.6, 'rgba(140,110,70,0.5)'); grd.addColorStop(1, 'rgba(140,110,70,0)');
