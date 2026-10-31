@@ -2,7 +2,7 @@
    'calendar-maker-settings' (CM1+): { year, colour: preset key | 'custom', sundays, sat: 'none'|'24'|'all',
      week: 'sun'|'mon' (default from Calendar's 'calendar-settings-v1'), bg: 'none'|'soft'|'pic', soft, faint,
      strip (CM2), layout (CM4), fold (CM5), custom, font (CM6), rcol (CM9), lhead (CM10), legend, mfill (CM12-F3), lgsz (CM16-F1),
-     llay, lsub, ldeco, labcd, lmerge, lhc (CM12) }
+     llay, lsub, ldeco, labcd, lmerge, lhc (CM12), lband, lbandc (CM16-F2), lshowr (CM16-F3) }
    'calendar-maker-holidays' (CM3): { fixed: null (= Calendar's built-in list) | [{m, d, name, r?, em?, ed?}],
      dated: [{date: 'YYYY-MM-DD', end?, name, r?}] }
    'calendar-maker-bg' (CM2): picture background as a JPEG data URL (<= 1600 px).
@@ -45,6 +45,8 @@ window.CM.Settings = (function () {
     ['lsub', isStr, () => 'LIST OF HOLIDAYS'],
     ['ldeco', isBool, () => true], ['labcd', isBool, () => true], ['lmerge', isBool, () => true],
     ['lhc', (v) => T.HEX.test(v), () => '#2e75b6'],
+    ['lband', isBool, () => true], ['lbandc', (v) => T.HEX.test(v), () => '#ddebf7'], /* CM16-F2: striped rows, light blue */
+    ['lshowr', isBool, () => true], /* CM16-F3: restricted section on the Holiday List */
     ['colour', (v) => v === 'custom' || !!T.COLOURS[v], () => 'green'],
     ['bg', (v) => ['none', 'soft', 'pic'].indexOf(v) >= 0, () => 'none'] /* CM4: unknown / old value -> white */
   ];
