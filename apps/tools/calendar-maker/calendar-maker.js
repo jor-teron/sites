@@ -4,7 +4,7 @@
    ?year=YYYY (from Calendar's "Make printable") wins over the saved year. Exposes window.CM for CM2 / CM3 plug-ins. */
 window.CM = (function () {
   'use strict';
-  const SKEY = 'calendar-maker-settings', RELEASE = 'CM5';
+  const SKEY = 'calendar-maker-settings', RELEASE = 'CM6';
   const $ = (id) => document.getElementById(id);
   let P = {};
   try { P = JSON.parse(localStorage.getItem(SKEY) || '{}') || {}; } catch (_) { P = {}; }
@@ -12,9 +12,13 @@ window.CM = (function () {
   try { cal = JSON.parse(localStorage.getItem('calendar-settings-v1') || '{}') || {}; } catch (_) { cal = {}; }
   const D = { year: new Date().getFullYear(), colour: 'green', sundays: true,
     sat: cal.satAll ? 'all' : (cal.sat24 ? '24' : 'none'), week: cal.week === 'mon' ? 'mon' : 'sun',
-    bg: 'none', soft: '#fef9e7', faint: 25, strip: false, layout: 'p3', fold: true }; /* CM5: fold on (existing users get it too) */ /* CM4: bg default None = white */
+    bg: 'none', soft: '#fef9e7', faint: 25, strip: false, layout: 'p3', fold: true, custom: '#92d36e', font: '#000000' }; /* CM6: custom holiday colour + font colour */ /* CM5: fold on (existing users get it too) */ /* CM4: bg default None = white */
   Object.keys(D).forEach((k) => { if (P[k] === undefined || P[k] === null) P[k] = D[k]; });
   if (!window.CMRender.LAYOUTS[P.layout]) P.layout = 'p3';
+  const HEX = /^#[0-9a-f]{6}$/i; /* CM6 */
+  if (!HEX.test(P.custom)) P.custom = D.custom;
+  if (!HEX.test(P.font)) P.font = D.font;
+  if (P.colour !== 'custom' && !window.CMRender.COLOURS[P.colour]) P.colour = 'green';
   if (['none', 'soft', 'pic'].indexOf(P.bg) < 0) P.bg = 'none'; /* CM4: unknown / old value -> white */
   P.year = D.year; /* opens on the current year unless Calendar passes ?year= */
   const q = /[?&]year=(\d{4})/.exec(location.search);
@@ -29,7 +33,7 @@ window.CM = (function () {
   const api = { P, save, hols, render, bgImg: null, sheet: null };
 
   function opts() {
-    return { year: P.year, week: P.week, colour: P.colour, sundays: P.sundays, sat: P.sat, hols: hols(P.year),
+    return { year: P.year, week: P.week, colour: P.colour === 'custom' ? P.custom : P.colour, font: P.font, /* CM6 */ sundays: P.sundays, sat: P.sat, hols: hols(P.year),
       bg: { type: P.bg, colour: P.soft, img: api.bgImg, faint: P.faint / 100 }, strip: P.strip, layout: P.layout, fold: P.fold !== false };
   }
   let raf = 0;
@@ -53,6 +57,8 @@ window.CM = (function () {
     $('year').value = P.year;
     document.querySelectorAll('.seg').forEach((s) => s.querySelectorAll('button').forEach((b) => b.classList.toggle('on', String(P[s.dataset.key]) === b.dataset.v)));
     document.querySelectorAll('#colours button').forEach((b) => b.classList.toggle('on', b.dataset.v === P.colour));
+    if ($('custom')) { $('custom').value = P.custom; $('custom').closest('label').classList.toggle('on', P.colour === 'custom'); } /* CM6 */
+    if ($('font')) $('font').value = P.font;
     $('sundays').checked = P.sundays !== false;
     $('fold').checked = P.fold !== false; /* CM5 */
     if (api.onSync) api.onSync();
@@ -65,6 +71,10 @@ window.CM = (function () {
   document.querySelectorAll('.seg').forEach((s) => s.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return; P[s.dataset.key] = b.dataset.v; save(); render();
   }));
+  /* CM6: custom holiday colour + font colour */
+  if ($('custom')) $('custom').oninput = () => { P.custom = $('custom').value; P.colour = 'custom'; save(); render(); };
+  if ($('font')) $('font').oninput = () => { P.font = $('font').value; save(); render(); };
+  if ($('font-reset')) $('font-reset').onclick = () => { P.font = '#000000'; save(); render(); };
   $('sundays').onchange = () => { P.sundays = $('sundays').checked; save(); render(); };
   $('fold').onchange = () => { P.fold = $('fold').checked; save(); render(); }; /* CM5 */
   const setYear = (y) => { y = Math.round(+y); if (!(y >= 1900 && y <= 2200)) { sync(); return; } P.year = y; save(); render(); if (api.onYear) api.onYear(); };
