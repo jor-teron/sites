@@ -1,20 +1,21 @@
 <!DOCTYPE html>
-<!--
-  File: index.html
-  Project: story
-  Description: Redirects to the main application file story.html
-  Purpose: Entry point for the story webapp as per project rules
-  Author: Grok
-  Date: 2026-10-17
--->
+<!-- Redirect entry point to story.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "story.html" link were always visible in <head>/<body>; both now live in <noscript>. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=story.html">
-  <title>Redirecting to Story</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Story</title>
+  <link rel="canonical" href="story.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('story.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=story.html"></noscript>
 </head>
-<body>
-  <!-- Redirect body -->
-  <p>Redirecting to <a href="story.html">story.html</a>...</p>
-</body>
+<body><noscript><p><a href="story.html">story.html</a></p></noscript></body>
 </html>

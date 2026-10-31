@@ -1,7 +1,21 @@
-<!doctype html>
-<!-- LEGACY (R56): AoE RTS moved to apps/games/aoe-rts/. This page only redirects old links, saved windows and cached
-     Hubs there, keeping ?query and #hash (like apps/tools/files/). Safe to delete once old links are gone. -->
-<html lang="en"><head><meta charset="utf-8" /><title>Moved</title>
-<script>location.replace('../../games/aoe-rts/' + location.search + location.hash);</script>
-<noscript><meta http-equiv="refresh" content="0; url=../../games/aoe-rts/" /></noscript>
-</head><body><p><a href="../../games/aoe-rts/">Open</a></p></body></html>
+<!DOCTYPE html>
+<!-- Redirect entry point to ../../games/aoe-rts/ (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "Open" link were always visible in <head>/<body>; both now live in <noscript>. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Moved</title>
+  <link rel="canonical" href="../../games/aoe-rts/">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('../../games/aoe-rts/' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=../../games/aoe-rts/"></noscript>
+</head>
+<body><noscript><p><a href="../../games/aoe-rts/">Open</a></p></noscript></body>
+</html>

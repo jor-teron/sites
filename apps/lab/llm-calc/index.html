@@ -1,31 +1,21 @@
 <!DOCTYPE html>
-<!--
-================================================================================
-File: index.html
-Project: llm-calc
-Description: Entry point that redirects to the main application file.
-Purpose: Satisfies the project structure rule requiring index.html to redirect
-         to the primary HTML file named after the project.
-Author: Grok
-Date: 2026-10-19 (R1)
-================================================================================
--->
+<!-- Redirect entry point to llm-calc.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "LLM Calculator" link were always visible in <head>/<body>; both now live in <noscript>. -->
 <html lang="en">
 <head>
-    <!-- Meta tags for character set and viewport -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirecting to LLM Calculator</title>
-    <!-- Immediate redirect to the main project file -->
-    <meta http-equiv="refresh" content="0; url=llm-calc.html">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM Calculator</title>
+  <link rel="canonical" href="llm-calc.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('llm-calc.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=llm-calc.html"></noscript>
 </head>
-<body>
-    <!-- Fallback message if redirect is blocked -->
-    <p>Redirecting to <a href="llm-calc.html">LLM Calculator</a>...</p>
-    <!-- JavaScript fallback redirect -->
-    <script>
-        // Immediate client-side redirect as backup
-        window.location.href = "llm-calc.html";
-    </script>
-</body>
+<body><noscript><p><a href="llm-calc.html">LLM Calculator</a></p></noscript></body>
 </html>

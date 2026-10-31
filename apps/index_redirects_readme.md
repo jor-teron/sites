@@ -13,7 +13,8 @@ Every app folder has an `index.html` that only forwards to the real page (e.g. `
 ## Progress (category by category)
 - IX1 Connectivity: done (13 pages).
 - IX2 Tools: done (16 pages, incl. the 4 "Moved" stubs to apps/system/ and live-subtitle-assam → caption-for-nei).
-- To do: Lab, Media, Office, About, Favorite, Settings, `tv/`.
+- IX3 Lab: done (27 pages, incl. the "Moved" stubs to games/, office/ and renamed apps).
+- To do: Media, Office, About, Favorite, Settings, `tv/`.
 - Not ours: Games and Learn (Hub Games Bot), `apps/system/` and root `index.html` (Hub Main Bot).
 
 ## Legacy code notes

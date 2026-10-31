@@ -1,6 +1,21 @@
 <!DOCTYPE html>
-<!-- Old location of Mail. Moved to apps/office/mail/; keeps query string and hash. -->
-<html lang="en"><head><meta charset="UTF-8"><title>Mail moved</title>
-<meta http-equiv="refresh" content="0; url=../../office/mail/">
-<script>location.replace('../../office/mail/' + location.search + location.hash);</script>
-</head><body><p><a href="../../office/mail/">Mail has moved — open it here</a></p></body></html>
+<!-- Redirect entry point to ../../office/mail/ (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "Mail has moved — open it here" link were always visible in <head>/<body>; both now live in <noscript>. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mail moved</title>
+  <link rel="canonical" href="../../office/mail/">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('../../office/mail/' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=../../office/mail/"></noscript>
+</head>
+<body><noscript><p><a href="../../office/mail/">Mail has moved — open it here</a></p></noscript></body>
+</html>
