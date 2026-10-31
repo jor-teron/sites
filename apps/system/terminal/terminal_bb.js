@@ -28,7 +28,6 @@
  */
 (function () {
   'use strict';
-  const V = 'T7';
   const APPLETS = ('[ [[ ascii awk base64 basename bc bunzip2 bzcat bzip2 cal cat cksum cmp comm cp crc32 cut date dc diff ' +
     'dirname dos2unix du echo egrep expand expr factor false fgrep find fold grep gunzip gzip head hexdump ln ls md5sum ' +
     'mkdir mktemp mv nl od paste printenv printf pwd readlink realpath rev rm rmdir sed seq sha1sum sha256sum sha3sum ' +
@@ -52,12 +51,12 @@
       if (typeof window.BusyBoxModule !== 'function') {
         await new Promise((res, rej) => {
           const s = document.createElement('script');
-          s.src = HERE + 'bin/busybox.js?v=' + V;
+          s.src = HERE + 'bin/busybox.js';
           s.onload = res; s.onerror = () => rej(new Error('could not load bin/busybox.js'));
           document.head.appendChild(s);
         });
       }
-      const url = HERE + 'bin/busybox.wasm?v=' + V;
+      const url = HERE + 'bin/busybox.wasm';
       let buf = null;
       try { const r = await fetch(url); if (!r.ok) throw new Error('HTTP ' + r.status); buf = await r.arrayBuffer(); } catch (e) {
         buf = await new Promise((res) => {   // some browsers allow XHR on file:// where fetch is refused
@@ -97,7 +96,7 @@
   function worker() {
     if (W) return W;
     if (wBad || typeof Worker !== 'function') return null;
-    try { W = new Worker(HERE + 'terminal_worker.js?v=' + V); } catch (_) { wBad = true; return null; }
+    try { W = new Worker(HERE + 'terminal_worker.js'); } catch (_) { wBad = true; return null; }
     W.onmessage = (ev) => { const m = ev.data || {}; if (wCur && m.id === wCur.id) wCur.on(m); };
     W.onerror = (e) => { if (e && e.preventDefault) e.preventDefault(); if (wCur) wCur.on({ id: wCur.id, t: 'fail', msg: wReady ? 'the BusyBox worker stopped' : 'fetch' }); };
     return W;

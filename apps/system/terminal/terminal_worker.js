@@ -13,12 +13,12 @@
  * { p, same: true } (no bytes), a staged size-only file as { p, ph: true }.
  */
 'use strict';
-const V = 'T7', FLUSH_MS = 40, FLUSH_BYTES = 65536, LIVE_RATE = 524288;
+const FLUSH_MS = 40, FLUSH_BYTES = 65536, LIVE_RATE = 524288;
 let wasm = null;
 async function ready() {
   if (wasm) return wasm;
-  importScripts('bin/busybox.js?v=' + V);
-  const r = await fetch('bin/busybox.wasm?v=' + V);
+  importScripts('bin/busybox.js');
+  const r = await fetch('bin/busybox.wasm');
   if (!r.ok) throw new Error('HTTP ' + r.status);
   wasm = await WebAssembly.compile(await r.arrayBuffer());
   return wasm;

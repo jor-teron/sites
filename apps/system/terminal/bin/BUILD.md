@@ -46,7 +46,7 @@ sed 's/busybox_unstripped\.wasm/busybox.wasm/g' busybox_unstripped | sed '1{/^#!
 node -e "require('<repo>/apps/system/terminal/bin/busybox.js')({print:console.log,thisProgram:'busybox'}).then(m=>{try{m.callMain(['--list'])}catch(e){}})" > <repo>/apps/system/terminal/bin/APPLETS.txt
 ```
 
-If the applet list changes, update APPLETS in `terminal_bb.js` too, and bump `?v=` in `terminal_bb.js` (V) and `index.html`.
+If the applet list changes, update APPLETS in `terminal_bb.js` too.
 
 ## How the Terminal runs it
 
