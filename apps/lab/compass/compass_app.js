@@ -1,6 +1,6 @@
 /* Compass CP1: device heading -> rotating SVG dial, smoothing, true/magnetic (offline WMM2025), lock bearing,
    calibration hint, no-sensor fallback with manual drag, wake lock.
-   Settings in 'compass-settings-v1': { theme, north:'mag'|'true', lock:null|deg, awake:bool, loc:{lat,lon,ts}|null } */
+   Settings in 'compass-settings-v1': { tab (CP2), theme, north:'mag'|'true', lock:null|deg, awake:bool, loc:{lat,lon,ts}|null } */
 (function () {
   'use strict';
   const SKEY = 'compass-settings-v1';
@@ -181,10 +181,23 @@
   aw.onchange = () => { P.awake = aw.checked; saveP(); if (P.awake) wake(); else if (wl) { wl.release(); wl = null; } };
   document.addEventListener('visibilitychange', wake);
 
+  /* CP2 tabs: last tab saved, #speed opens Speed; others listen for 'cp-tab' */
+  function setTab(t, save) {
+    P.tab = t === 'speed' ? 'speed' : 'compass'; if (save) saveP();
+    $('pane-compass').hidden = P.tab !== 'compass'; $('pane-speed').hidden = P.tab !== 'speed';
+    for (const b of $('tabs').children) b.classList.toggle('on', b.dataset.v === P.tab);
+    if (location.hash !== '#' + P.tab && (save || location.hash)) history.replaceState(null, '', '#' + P.tab);
+    dispatchEvent(new CustomEvent('cp-tab', { detail: P.tab }));
+  }
+  $('tabs').onclick = (e) => { const v = e.target.dataset && e.target.dataset.v; if (v) setTab(v, true); };
+  addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h === 'speed' || h === 'compass') setTab(h, true); });
+  window.CompassApp = { tab: () => P.tab };
+
   $('start').onclick = start;
   calcDecl(); renderSeg(); renderLock(); wake();
   // no permission prompt needed (Android/desktop): start right away; iOS keeps the button for the tap
   if (!(window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function')) start();
   if (!window.DeviceOrientationEvent) noSensor();
   requestAnimationFrame(frame);
+  setTimeout(() => setTab(location.hash === '#speed' ? 'speed' : location.hash === '#compass' ? 'compass' : (P.tab || 'compass'), false), 0);
 })();
