@@ -4,7 +4,7 @@
    ?year=YYYY (from Calendar's "Make printable") wins over the saved year. Exposes window.CM for CM2 / CM3 plug-ins. */
 window.CM = (function () {
   'use strict';
-  const SKEY = 'calendar-maker-settings', RELEASE = 'CM6';
+  const SKEY = 'calendar-maker-settings', RELEASE = 'CM7';
   const $ = (id) => document.getElementById(id);
   let P = {};
   try { P = JSON.parse(localStorage.getItem(SKEY) || '{}') || {}; } catch (_) { P = {}; }

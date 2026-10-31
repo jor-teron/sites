@@ -1,4 +1,4 @@
-/* Calendar Maker renderer (CM1; CM6: o.colour may be a #rrggbb custom colour, o.font = text colour, default black): draws the whole A4 portrait sheet (all 12 months, 3 x 4) on a canvas.
+/* Calendar Maker renderer (CM1; CM7: folded dates drawn as normal dates, all grid lines one weight/colour; CM6: o.colour may be a #rrggbb custom colour, o.font = text colour, default black): draws the whole A4 portrait sheet (all 12 months, 3 x 4) on a canvas.
    The same drawing is used for the on-screen preview, Print (as an image) and the PDF (CM2), so all three match.
    window.CMRender.draw(canvas, o) with o = { year, week:'sun'|'mon', colour, sundays, sat:'none'|'24'|'all',
      hols:[{m,d,name}], fold (CM5, default true), bg:{type:'none'|'soft'|'pic', colour, img, faint} (CM2), strip (CM2) }
@@ -117,12 +117,16 @@ window.CMRender = (function () {
         const p = lead + d - 1;
         if (fold && p >= 35) { /* CM5: folded date -> empty leading cell of row 1, same weekday column */
           const fx = x0 + ((p - 35) % 7) * cw, fy = gt + wh, h = isHol(m, d);
+          /* CM5-CM6: half-cell tint + diagonal split, small date in the corner:
           if (h) { c.fillStyle = col[0]; c.beginPath(); c.moveTo(fx + cw - 1, fy + 1); c.lineTo(fx + cw - 1, fy + ch - 1); c.lineTo(fx + 1, fy + ch - 1); c.closePath(); c.fill(); }
           c.strokeStyle = '#888'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(fx + cw, fy); c.lineTo(fx, fy + ch); c.stroke();
           c.font = '700 ' + Math.round(fs * 0.6) + 'px ' + FONT;
-          c.fillStyle = fc; /* CM6: was h ? col[1] : '#111' */
-          c.fillText(String(d), fx + cw * 0.7, fy + ch * 0.7);
-          c.font = '700 ' + Math.round(fs) + 'px ' + FONT;
+          c.fillStyle = fc; c.fillText(String(d), fx + cw * 0.7, fy + ch * 0.7);
+          c.font = '700 ' + Math.round(fs) + 'px ' + FONT; */
+          /* CM7: folded date drawn like any other date; holiday tile fills the whole cell, no split */
+          if (h) { c.fillStyle = col[0]; c.beginPath(); c.rect(fx + 1, fy + 1, cw - 2, ch - 2); c.fill(); }
+          c.fillStyle = fc;
+          c.fillText(String(d), fx + cw / 2, fy + ch / 2 + 2);
           continue;
         }
         const cx = x0 + (p % 7) * cw, cy = gt + wh + Math.floor(p / 7) * ch;
@@ -131,15 +135,20 @@ window.CMRender = (function () {
         c.fillStyle = fc; /* CM6: was h ? col[1] : '#111' */
         c.fillText(String(d), cx + cw / 2, cy + ch / 2 + 2);
       }
-      /* grid lines: inner lines thin, outer border a bit thicker (every cell, incl. empty ones) */
-      c.strokeStyle = '#888'; c.lineWidth = 1.5; c.beginPath();
-      c.moveTo(x0, gt); c.lineTo(x0 + mw, gt); /* CM6: line under the month-name row */
-      for (let i = 1; i < 7; i++) { c.moveTo(x0 + cw * i, gt); c.lineTo(x0 + cw * i, gt + wh + wkN * ch); }
-      c.moveTo(x0, gt + wh); c.lineTo(x0 + mw, gt + wh);
-      for (let r = 1; r < wkN; r++) { c.moveTo(x0, gt + wh + r * ch); c.lineTo(x0 + mw, gt + wh + r * ch); }
+      /* CM4-CM6 grid lines: inner thin '#888' 1.5 px, outer border '#333' 3 px:
+      c.strokeStyle = '#888'; c.lineWidth = 1.5; ... inner lines ...; c.stroke();
+      c.strokeStyle = '#333'; c.lineWidth = 3; c.strokeRect(x0, y0, mw, nameH + wh + wkN * ch); */
+      /* CM7: Excel 'All Borders' - every line (outer border, under month row, under weekday row, between cells) same weight + colour.
+         Positions snapped to whole pixels so lines stay crisp at print resolution. */
+      const GW = 3, GC = '#333', sn = (v) => Math.round(v);
+      c.strokeStyle = GC; c.lineWidth = GW; c.beginPath();
+      const gb = gt + wh + wkN * ch;
+      c.moveTo(sn(x0), sn(gt)); c.lineTo(sn(x0 + mw), sn(gt));
+      for (let i = 1; i < 7; i++) { c.moveTo(sn(x0 + cw * i), sn(gt)); c.lineTo(sn(x0 + cw * i), sn(gb)); }
+      c.moveTo(sn(x0), sn(gt + wh)); c.lineTo(sn(x0 + mw), sn(gt + wh));
+      for (let r = 1; r < wkN; r++) { c.moveTo(sn(x0), sn(gt + wh + r * ch)); c.lineTo(sn(x0 + mw), sn(gt + wh + r * ch)); }
       c.stroke();
-      /* c.strokeRect(x0, gt, mw, wh + wkN * ch);  (CM4-CM5) */
-      c.strokeStyle = '#333'; c.lineWidth = 3; c.strokeRect(x0, y0, mw, nameH + wh + wkN * ch); /* CM6: border includes the month row */
+      c.strokeStyle = GC; c.lineWidth = GW; c.strokeRect(sn(x0), sn(y0), sn(x0 + mw) - sn(x0), sn(gb) - sn(y0));
       /* CM1-CM3 (no grid): rounded tiles rr(c, cx + 3, cy + 3, cw - 6, ch - 6, 10), month name at y0 + 34, hh = 78 */
     }
     if (stripH) {
