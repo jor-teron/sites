@@ -29,7 +29,7 @@ function viewRect(m) {
 // ============================================================================
 function villagerAt(px, py) {
     let best = null, bd = Infinity;   // villager body box ~40x110 above the feet; front-most (lowest y) wins ties
-    villagers.forEach(v => { if (Math.abs(px - v.x) > 22 || py > v.y + 6 || py < v.y - 104) return; const d = Math.abs(px - v.x) + Math.abs(py - (v.y - 50)) * 0.3 - v.y * 0.01; if (d < bd) { bd = d; best = v; } });
+    villagers.forEach(v => { if (v.owner || Math.abs(px - v.x) > 22 || py > v.y + 6 || py < v.y - 104) return; const d = Math.abs(px - v.x) + Math.abs(py - (v.y - 50)) * 0.3 - v.y * 0.01; if (d < bd) { bd = d; best = v; } });
     return best;
 }
 function deerAt(px, py) { let best = null, bd = Infinity; deer.forEach(d => { if (Math.abs(px - d.x) > 40 || py > d.y + 12 || py < d.y - 70) return; const k = Math.abs(px - d.x) + Math.abs(py - d.y + 30); if (k < bd) { bd = k; best = d; } }); return best; }
@@ -66,7 +66,7 @@ function onPointerUp(pointer) {
     const d = dragSel; dragSel = null;
     if (d.active) {
         const x0 = Math.min(d.sx, d.ex), x1 = Math.max(d.sx, d.ex), y0 = Math.min(d.sy, d.ey), y1 = Math.max(d.sy, d.ey);
-        const inside = villagers.filter(v => v.x >= x0 && v.x <= x1 && v.y - 50 >= y0 - 30 && v.y - 50 <= y1 + 30);
+        const inside = villagers.filter(v => !v.owner && v.x >= x0 && v.x <= x1 && v.y - 50 >= y0 - 30 && v.y - 50 <= y1 + 30);
         if (!d.shift) deselectAll();
         townCenter.selected = false;
         inside.forEach(v => v.selected = true);
@@ -83,7 +83,7 @@ function leftClick(px, py, shift) {
     }
     const t = screenToTile(px, py), cell = inMap(t.x, t.y) && mapData[t.y][t.x];
     const tcC = tileCenter(townCenter.x + 0.5, townCenter.y + 0.5);
-    const onTC = (cell && cell.kind === 'tc') || (Math.abs(px - tcC.x) < 110 && py > tcC.y - 250 && py < tcC.y + 40);
+    const onTC = townCenter.owner === 'p' && ((cell && cell.kind === 'tc' && !cell.tc) || (Math.abs(px - tcC.x) < 110 && py > tcC.y - 250 && py < tcC.y + 40));
     if (onTC && !shift) { deselectAll(); townCenter.selected = true; return; }
     if (!shift) deselectAll();     // empty ground / resource: deselect
 }
@@ -112,5 +112,5 @@ window.addEventListener('keydown', e => {
     else if (e.key === '-' || e.key === '_') setSpeed(speed - 1);
     else if (e.key === 'Escape') { if (placing) { placing = null; flash('Placement cancelled'); } else deselectAll(); }
     else if (e.key === ' ') { e.preventDefault(); if (cam) centerOnTC(); }
-    else if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); townCenter.selected = false; villagers.forEach(u => u.selected = true); }
+    else if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) { e.preventDefault(); townCenter.selected = false; villagers.forEach(u => u.selected = !u.owner); }
 });

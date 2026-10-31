@@ -120,3 +120,11 @@ html, body {
 #confirm-overlay p { color: #ddd; font-size: 15px; margin: 0 0 16px; }
 #confirm-overlay button { touch-action: manipulation; font-size: 18px; padding: 8px 20px; background: #5a4426; color: #fff; border: 2px solid #c8a46a; border-radius: 8px; cursor: pointer; }
 #confirm-overlay #confirm-ok { background: #7a2e1e; }
+/* ARQ1a start screen (game mode) */
+#mode-overlay { position: fixed; inset: 0; z-index: 45; display: none; align-items: center; justify-content: center; background: rgba(10,8,4,0.7); }
+#mode-overlay > div { text-align: center; background: rgba(20,16,10,0.95); border: 2px solid #c8a46a; border-radius: 12px; padding: 20px 26px; max-width: 86vw; }
+#mode-overlay h1 { margin: 0; color: #f0d9a0; font-size: 28px; letter-spacing: 2px; }
+#mode-overlay p { color: #bbb; margin: 6px 0 14px; }
+#mode-overlay .mode-col { display: flex; flex-direction: column; gap: 10px; }
+#mode-overlay button { touch-action: manipulation; font-size: 20px; padding: 12px 22px; min-width: 240px; background: #5a4426; color: #fff; border: 2px solid #c8a46a; border-radius: 8px; cursor: pointer; }
+#mode-overlay small { display: block; font-size: 12px; color: #d8c8a0; margin-top: 2px; }

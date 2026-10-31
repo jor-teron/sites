@@ -33,6 +33,9 @@ const URL_MAP = (() => { const v = new URLSearchParams(location.search).get('map
 function storedMap() { try { const v = localStorage.getItem('aoe-rts.map'); return v !== null && /^\d{1,2}$/.test(v) ? parseInt(v, 10) : null; } catch (e) { return null; } }
 const MAP_NUM = URL_MAP !== null ? URL_MAP : (storedMap() !== null ? storedMap() : 0);
 /** Map number -> tiles per side: 00=16, 01-20=32, 21-40=48, 41-60=64, 61-80=80, 81-99=96 */
+// ARQ1a: game mode from ?mode= (open | vs | aivai); no mode = start screen (shows Open World behind it)
+const URL_MODE = new URLSearchParams(location.search).get('mode'), MODE = ['vs', 'aivai'].indexOf(URL_MODE) >= 0 ? URL_MODE : 'open';
+const TEAM = { p: { tint: null, mm: '#3a6ad0', name: 'You' }, ai1: { tint: 0xff7a6a, col: 0xe03828, mm: '#e04030', name: 'Red' }, ai2: { tint: 0xffd86a, col: 0xf0c020, mm: '#f0c020', name: 'Gold' } };
 function mapSizeFor(n) { return n <= 0 ? 16 : 16 * (1 + Math.ceil(n / 20)); }
 function mapLabel(n) { return String(n).padStart(2, '0'); }
 let MAP_SIZE = mapSizeFor(MAP_NUM);   // tiles per side (only the test hook swaps it)

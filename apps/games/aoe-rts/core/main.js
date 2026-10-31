@@ -13,7 +13,8 @@ function create() {
     gUnder = this.add.graphics().setDepth(-5);
     gfx = this.add.graphics().setDepth(1e7);
     const c = townCenter;
-    [[c.x - 1, c.y + 2], [c.x + 2, c.y - 1], [c.x + 2, c.y + 2]].slice(0, START_VILLAGERS).forEach(p => spawnVillager(p[0], p[1]));
+    initAI();
+    if (MODE !== 'aivai') [[c.x - 1, c.y + 2], [c.x + 2, c.y - 1], [c.x + 2, c.y + 2]].slice(0, START_VILLAGERS).forEach(p => spawnVillager(p[0], p[1]));
     hudText = document.getElementById('hud');
     infoText = { setText: t => { document.getElementById('info').textContent = t; } };
     infoText.setText(DEFAULT_INFO);
@@ -46,7 +47,8 @@ function update(time, delta) {
         const sim = dt * speed, n = Math.max(1, Math.ceil(sim / SIM_STEP - 1e-6)), h = sim / n;
         for (let k = 0; k < n; k++) simStep(h);
     }
-    const hud = `Wood ${resources.wood} · Food ${resources.food} · Gold ${resources.gold} · Stone ${resources.stone} · Pop ${popCount()}/${popCap()}`;
+    const ai = id => innerWidth < 700 ? `${TEAM[id].name} Pop ${popCount(id)}/${popCap(id)}` : `${TEAM[id].name} W${factions[id].res.wood} F${factions[id].res.food} G${factions[id].res.gold} S${factions[id].res.stone} · Pop ${popCount(id)}/${popCap(id)}`;
+    const hud = MODE === 'aivai' ? Object.keys(factions).map(ai).join(' | ') : `Wood ${resources.wood} · Food ${resources.food} · Gold ${resources.gold} · Stone ${resources.stone} · Pop ${popCount()}/${popCap()}` + (factions.ai1 ? ' | ' + ai('ai1') : '');
     if (hudText.textContent !== hud) hudText.textContent = hud;
     updateBar();
     render();
@@ -60,6 +62,7 @@ function simStep(dt) {
     regrowBerries(dt);
     for (let i = 0; i < deer.length; i++) updateDeer(deer[i], dt);
     updateTraining(dt);
+    updateAI(dt);
 }
 
 // ============================================================================

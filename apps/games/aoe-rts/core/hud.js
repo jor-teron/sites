@@ -52,14 +52,14 @@ function updateMinimap(time) {
         const d = mmDots.getContext('2d'); d.drawImage(mmBase, 0, 0);
         for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) {
             const cell = mapData[y][x]; if (!cell) continue;
-            const p = tileCenter(x, y); d.fillStyle = MM_COL[cell.kind] || '#fff';
+            const p = tileCenter(x, y); d.fillStyle = cell.tc ? TEAM[cell.tc.owner].mm : cell.house ? TEAM[own(cell.house)].mm : cell.kind === 'tc' ? TEAM[townCenter.owner].mm : MM_COL[cell.kind] || '#fff';
             const z = cell.kind === 'tc' ? 4 : cell.kind === 'tree' ? 2 : 3; d.fillRect(p.x * s - z / 2, p.y * s - z / 2, z, z);
         }
     }
     c.drawImage(mmDots, 0, 0);
     c.fillStyle = '#8a4a1a'; deer.forEach(d => c.fillRect(d.x * s - 1.5, d.y * s - 1.5, 3, 3));   // deer: small brown dots
     c.fillStyle = '#ffffff';
-    villagers.forEach(v => { c.fillStyle = v.selected ? '#ffff66' : '#ffffff'; c.fillRect(v.x * s - 1.5, v.y * s - 1.5, 3, 3); });
+    villagers.forEach(v => { c.fillStyle = v.selected ? '#ffff66' : v.owner ? TEAM[v.owner].mm : '#ffffff'; c.fillRect(v.x * s - 1.5, v.y * s - 1.5, 3, 3); });
     const r = viewRect(0);
     c.strokeStyle = '#ffffff'; c.lineWidth = 1; c.strokeRect(r.x0 * s + 0.5, r.y0 * s + 0.5, (r.x1 - r.x0) * s, (r.y1 - r.y0) * s);
 }
@@ -93,8 +93,9 @@ function updateBar() {
             button('house', placing ? 'Click a tile… (Esc)' : 'Build House', costText(HOUSE_COST) + ` · +${POP_PER_HOUSE} pop`, canAfford(HOUSE_COST)) +
             button('deselect', 'Deselect', 'clear selection', true);
     } else {
-        html = `<span class="sel">Nothing selected</span>` + button('idle', 'Select Idle', villagers.filter(u => u.state === 'idle').length + ' idle', true);
+        html = `<span class="sel">Nothing selected</span>` + button('idle', 'Select Idle', villagers.filter(u => !u.owner && u.state === 'idle').length + ' idle', true);
     }
+    if (MODE === 'aivai') html = `<span class="sel">Watching ${Object.keys(factions).map(k => TEAM[k].name).join(' vs ')}</span>`;
     if (html !== barKey) { bar.innerHTML = html; barKey = html; }
 }
 bar.addEventListener('pointerdown', e => {
@@ -107,7 +108,7 @@ bar.addEventListener('pointerdown', e => {
     else if (cmd === 'cancel') { if (trainQueue) { trainQueue--; refund(VILLAGER_COST); if (!trainQueue) trainTimer = 0; } }
     else if (cmd === 'house') { placing = placing ? null : 'house'; if (placing) flash('Left-click a free tile to place the House · right-click or Esc cancels'); }
     else if (cmd === 'deselect') { villagers.forEach(u => u.selected = false); placing = null; }
-    else if (cmd === 'idle') { villagers.forEach(u => u.selected = u.state === 'idle'); }
+    else if (cmd === 'idle') { villagers.forEach(u => u.selected = !u.owner && u.state === 'idle'); }
 });
 
 // ============================================================================
@@ -151,7 +152,7 @@ const askConfirm = (() => {
     inp.addEventListener('keydown', e => e.stopPropagation());
     // keep taps inside the dialog away from the game (nothing steals focus or closes the picker)
     ['pointerdown', 'mousedown', 'touchstart', 'wheel'].forEach(t => ov.addEventListener(t, e => e.stopPropagation(), { passive: true }));
-    const go = n => { remember(n); location.search = '?map=' + mapLabel(n); };   // other map = page reload into it
+    const go = n => { remember(n); location.search = '?map=' + mapLabel(n) + '&mode=' + MODE; };   // other map = page reload into it
     const close = () => { ov.style.display = 'none'; inp.blur(); setPaused(false); };
     bResume.addEventListener('click', () => {
         const n = pick(); if (n === null) return;
@@ -174,5 +175,13 @@ const askConfirm = (() => {
     document.getElementById('newmap-btn').addEventListener('pointerdown', e => e.stopPropagation());
     // Auto start: straight into the map (?map=NN, last played, or 00) and resume its save (see resumeSave)
     remember(MAP_NUM); inp.value = mapLabel(MAP_NUM);
+    // ARQ1a start screen: no ?mode= -> pick Open World / Vs AI / AI vs AI (each mode keeps its own saves)
+    const ms = document.getElementById('mode-overlay');
+    ['pointerdown', 'mousedown', 'touchstart', 'wheel'].forEach(t => ms.addEventListener(t, e => e.stopPropagation(), { passive: true }));
+    ms.querySelectorAll('button[data-mode]').forEach(b => b.addEventListener('click', () => { location.search = '?map=' + mapLabel(MAP_NUM) + '&mode=' + b.dataset.mode; }));
+    document.getElementById('mode-btn').addEventListener('click', () => { writeSave(); location.search = '?map=' + mapLabel(MAP_NUM); });
+    document.getElementById('mode-btn').addEventListener('pointerdown', e => e.stopPropagation());
+    if (URL_MODE === null) { saveBlocked = true; paused = true; ms.style.display = 'flex'; }
+    window.aoeTest.ai = { MODE, get factions() { return factions; }, get tcs() { return tcs; } };
     window.aoeTest.save = { buildSave, writeSave, hasSave, saveKey, open, get houses() { return houses; } };
 })();
