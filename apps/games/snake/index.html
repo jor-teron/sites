@@ -1,41 +1,21 @@
 <!DOCTYPE html>
+<!-- Redirect entry point to snake.html (keeps ?query and #hash). NIX-G1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: index.html held the full game and snake.html was a visible "Moved" redirect back to it; NIX-G1 swapped them (game now in snake.html, git mv). -->
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Snake SNR1a</title>
-  <link rel="icon" href="snake_icon.png" />
-  <link rel="stylesheet" href="ui/snake.css" />
+  <link rel="canonical" href="snake.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('snake.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=snake.html"></noscript>
 </head>
-<body>
-  <canvas id="c"></canvas>
-  <div id="hud">
-    <span id="score">0</span>
-    <span id="wrap-ind" class="wrap-off" title="Wrap walls">WRAP</span>
-    <span id="best">BEST 0</span>
-  </div>
-  <div id="help">←→↑↓ move · A/Space boost · B/X wrap · Start/Enter pause · Select/Esc restart</div>
-  <button id="dpad-toggle" class="ui" type="button" aria-pressed="false" title="Show D-pad">✛</button>
-  <div id="dpad" class="ui" hidden>
-    <button type="button" data-dir="up" class="d-up" aria-label="Up">▲</button>
-    <button type="button" data-dir="left" class="d-left" aria-label="Left">◀</button>
-    <button type="button" data-dir="right" class="d-right" aria-label="Right">▶</button>
-    <button type="button" data-dir="down" class="d-down" aria-label="Down">▼</button>
-  </div>
-  <div id="overlay" class="overlay">
-    <div class="card">
-      <h1 id="title">SNAKE</h1>
-      <p id="msg">Press Start / Enter</p>
-      <p id="sub" class="sub"></p>
-    </div>
-  </div>
-  <script src="core/config.js"></script>
-  <script src="core/core.js"></script>
-  <script src="core/hub.js"></script>
-  <script src="core/game.js"></script>
-  <script src="core/input.js"></script>
-  <script src="core/touch.js"></script>
-  <script src="core/render.js"></script>
-  <script src="core/main.js"></script>
-</body>
+<body><noscript><p><a href="snake.html">Snake SNR1a</a></p></noscript></body>
 </html>

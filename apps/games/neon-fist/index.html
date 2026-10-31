@@ -1,93 +1,21 @@
 <!DOCTYPE html>
+<!-- Redirect entry point to neon-fist.html (keeps ?query and #hash). NIX-G1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: index.html held the full game and neon-fist.html was a visible "Moved" redirect back to it; NIX-G1 swapped them (game now in neon-fist.html, git mv). -->
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Neon Fist — Character Viewer</title>
-<link rel="stylesheet" href="css/neon-fist.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Neon Fist</title>
+  <link rel="canonical" href="neon-fist.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('neon-fist.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=neon-fist.html"></noscript>
 </head>
-<body>
-<canvas id="game" aria-label="Neon Fist character viewer"></canvas>
-
-<header class="ui top">
-  <div class="logo">NEON <span>FIST</span> <small>character viewer · preview build</small></div>
-  <div class="row">
-    <button id="prevBtn" aria-label="Previous character">◀</button>
-    <button data-char="0">Kai <kbd>1</kbd></button>
-    <button data-char="1">Nova <kbd>2</kbd></button>
-    <button id="nextBtn" aria-label="Next character">▶</button>
-  </div>
-  <div class="row gen">
-    <button id="genPrev" aria-label="Previous fighter">◀</button>
-    <label>Fighter <input id="genNum" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" placeholder="00" aria-label="Fighter number 00 to 99" autocomplete="off"></label>
-    <button id="genNext" aria-label="Next fighter">▶</button>
-    <button id="genRand">Random <kbd>R</kbd></button>
-  </div>
-</header>
-
-<aside class="ui info" aria-live="polite">
-  <h1 id="cName">KAI</h1>
-  <h2 id="cTitle"></h2>
-  <p id="cDesc"></p>
-  <div id="cStats" class="stats"></div>
-</aside>
-
-<nav class="ui bottom">
-  <div class="row">
-    <button data-pose="idle">Idle <kbd>I</kbd></button>
-    <button data-pose="punch">Punch <kbd>P</kbd></button>
-    <button data-pose="kick">Kick <kbd>K</kbd></button>
-    <button data-pose="block">Block <kbd>B</kbd></button>
-    <button data-pose="special">Special <kbd>S</kbd></button>
-  </div>
-  <div class="row small">
-    <button id="flipBtn">Flip <kbd>F</kbd></button>
-    <button id="vsBtn">Versus <kbd>V</kbd></button>
-    <button id="holdBtn">Hold pose <kbd>H</kbd></button>
-    <button id="fpsBtn">FPS: 60</button>
-    <button id="rosterBtn">Roster</button>
-  </div>
-</nav>
-
-<section id="roster" aria-label="Fighter select">
-  <header class="rTop">
-    <div class="logo">NEON <span>FIST</span> <small>fighter select</small></div>
-    <div class="row gen">
-      <button id="rPrev" aria-label="Previous fighter">◀</button>
-      <label>Fighter <input id="rNum" type="text" inputmode="numeric" maxlength="2" placeholder="00" aria-label="Fighter number 00 to 99" autocomplete="off"></label>
-      <button id="rNext" aria-label="Next fighter">▶</button>
-      <button id="rRand">Random <kbd>R</kbd></button>
-      <button id="rViewer">Viewer</button>
-    </div>
-  </header>
-  <div class="rBody">
-    <div class="rList">
-      <div id="rGrid" class="rGrid"></div>
-    </div>
-    <aside class="rSide">
-      <canvas id="rCanvas"></canvas>
-      <h1 id="rName"></h1><h2 id="rTitle"></h2><p id="rDesc"></p><div id="rStats" class="stats"></div>
-      <div class="rPicks"><span class="p1t">P1 <b id="rP1">—</b></span><span class="p2t">P2 <b id="rP2">—</b></span></div>
-      <div class="row"><button id="rClear">Clear</button><button id="rFight" class="fight" disabled>FIGHT!</button></div>
-    </aside>
-  </div>
-</section>
-
-<script src="core/config.js"></script>
-<script src="assets/models/skeleton.js"></script>
-<script src="assets/models/poses.js"></script>
-<script src="assets/models/characters.js"></script>
-<script src="assets/models/draw.js"></script>
-<script src="assets/models/outfits.js"></script>
-<script src="assets/models/gear.js"></script>
-<script src="assets/models/bodies.js"></script>
-<script src="assets/models/hair.js"></script>
-<script src="assets/models/generator.js"></script>
-<script src="core/fighter.js"></script>
-<script src="assets/stages/stage.js"></script>
-<script src="core/hud.js"></script>
-<script src="core/viewer.js"></script>
-<script src="core/roster.js"></script>
-<script src="core/main.js"></script>
-</body>
+<body><noscript><p><a href="neon-fist.html">Neon Fist</a></p></noscript></body>
 </html>

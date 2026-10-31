@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Solar System Explorer SSR1a</title>
+  <link rel="icon" href="solar-system_icon.png" />
+  <link rel="stylesheet" href="ui/solar.css" />
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <aside id="info" hidden>
+    <button id="close" type="button" title="Close (Esc)">&times;</button>
+    <h2 id="i-name"></h2>
+    <div id="i-type"></div>
+    <div id="i-body">
+      <dl id="i-stats"></dl>
+      <div id="i-about"></div>
+      <h3 id="i-fh">Key facts</h3>
+      <ul id="i-facts"></ul>
+    </div>
+  </aside>
+  <nav id="ctl">
+    <button id="play" type="button" title="Pause / play (Space)">&#10074;&#10074;</button>
+    <button id="slower" type="button" title="Slower">&minus;</button>
+    <span id="speed">1&times;</span>
+    <button id="faster" type="button" title="Faster">+</button>
+    <button id="fit" type="button" title="Reset view">Fit</button>
+    <button id="list" type="button" title="Go to a planet" aria-expanded="false">Planets &#9662;</button>
+    <div id="menu" hidden></div>
+  </nav>
+  <div id="hint">Tap a planet &middot; drag to pan &middot; wheel or pinch to zoom</div>
+  <script src="core/data.js"></script>
+  <script src="core/about.js"></script>
+  <script src="core/art.js"></script>
+  <script src="core/solar.js"></script>
+</body>
+</html>

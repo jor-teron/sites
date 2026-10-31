@@ -1,37 +1,21 @@
 <!DOCTYPE html>
+<!-- Redirect entry point to landcraft.html (keeps ?query and #hash). NIX-G1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: index.html held the full game; NIX-G1 renamed it to landcraft.html (git mv). -->
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LandCraft LC4</title>
-  <link rel="stylesheet" href="ui/landcraft.css" />
-  <!-- LC3: shared Games settings (classic script, sets window.GameSettings); the game falls back to defaults without it -->
-  <script src="../common/settings/games-settings.js"></script>
-  <script type="importmap">{ "imports": { "three": "./vendor/three/build/three.module.min.js" } }</script>
+  <link rel="canonical" href="landcraft.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('landcraft.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=landcraft.html"></noscript>
 </head>
-<body>
-  <div id="cross">+</div>
-  <div id="hint">Click to look &middot; WASD move &middot; Space jump &middot; left break &middot; right place &middot; 1-7 / wheel pick &middot; Esc maps &middot; &#9881; settings</div>
-  <div id="stick"><div id="knob"></div></div>
-  <nav id="hotbar"></nav>
-  <button id="break" class="act" type="button">Break</button>
-  <button id="place" class="act" type="button">Place</button>
-  <button id="jump" type="button" aria-label="Jump">&#8679;</button>
-  <button id="mapbtn" type="button" hidden aria-label="Change map">Map --</button>
-  <div id="picker" hidden>
-    <form class="card" onsubmit="return false">
-      <h1>LandCraft</h1>
-      <label for="map-input">Map number</label>
-      <input id="map-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="00" />
-      <p id="map-note"></p>
-      <div class="row">
-        <button id="map-play" type="button">Play</button>
-        <button id="map-random" type="button">Random</button>
-      </div>
-      <button id="map-continue" type="button">Continue</button>
-      <button id="map-reset" type="button" hidden>Reset map</button>
-    </form>
-  </div>
-  <script type="module" src="core/main.js"></script>
-</body>
+<body><noscript><p><a href="landcraft.html">LandCraft LC4</a></p></noscript></body>
 </html>

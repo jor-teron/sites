@@ -1,42 +1,21 @@
 <!DOCTYPE html>
+<!-- Redirect entry point to pacman.html (keeps ?query and #hash). NIX-G1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: index.html held the full game; NIX-G1 renamed it to pacman.html (git mv). -->
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Pac-Man Clone</title>
-<link rel="stylesheet" href="css/style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pac-Man Clone</title>
+  <link rel="canonical" href="pacman.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('pacman.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=pacman.html"></noscript>
 </head>
-<body>
-<div id="app">
-  <div id="hud">
-    <div>SCORE <span id="score">0</span></div>
-    <div>HIGH <span id="high">0</span></div>
-    <div>LVL <span id="level">1</span></div>
-    <div class="fruits" id="fruits" title="Bonus fruit"></div>
-    <div class="lives" id="lives"></div>
-    <button id="pause-btn" class="pause-btn hidden" aria-label="Pause" title="Pause (P)">❚❚</button>
-  </div>
-  <div id="stage">
-    <canvas id="game"></canvas>
-    <div id="overlay">
-      <h1 id="overlay-title">PAC-MAN</h1>
-      <p id="overlay-msg">Arrows / WASD / Swipe to move • P to pause</p>
-      <button id="overlay-btn">START</button>
-      <p class="hint">Enter / Space</p>
-    </div>
-  </div>
-</div>
-
-<!-- Classic scripts (not ES modules) so the game also runs when index.html is opened straight from disk (file://).
-     Every file adds to one global namespace, window.PAC. Order matters: each file only uses the ones above it,
-     and game.js boots the game. -->
-<script src="js/maze.js"></script>
-<script src="js/levels.js"></script>
-<script src="js/pacman.js"></script>
-<script src="js/ghosts.js"></script>
-<script src="js/fruit.js"></script>
-<script src="js/render.js"></script>
-<script src="js/input.js"></script>
-<script src="js/game.js"></script>
-</body>
+<body><noscript><p><a href="pacman.html">Pac-Man Clone</a></p></noscript></body>
 </html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Pac-Man Clone</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div>SCORE <span id="score">0</span></div>
+    <div>HIGH <span id="high">0</span></div>
+    <div>LVL <span id="level">1</span></div>
+    <div class="fruits" id="fruits" title="Bonus fruit"></div>
+    <div class="lives" id="lives"></div>
+    <button id="pause-btn" class="pause-btn hidden" aria-label="Pause" title="Pause (P)">❚❚</button>
+  </div>
+  <div id="stage">
+    <canvas id="game"></canvas>
+    <div id="overlay">
+      <h1 id="overlay-title">PAC-MAN</h1>
+      <p id="overlay-msg">Arrows / WASD / Swipe to move • P to pause</p>
+      <button id="overlay-btn">START</button>
+      <p class="hint">Enter / Space</p>
+    </div>
+  </div>
+</div>
+
+<!-- Classic scripts (not ES modules) so the game also runs when index.html is opened straight from disk (file://).
+     Every file adds to one global namespace, window.PAC. Order matters: each file only uses the ones above it,
+     and game.js boots the game. -->
+<script src="js/maze.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/pacman.js"></script>
+<script src="js/ghosts.js"></script>
+<script src="js/fruit.js"></script>
+<script src="js/render.js"></script>
+<script src="js/input.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
