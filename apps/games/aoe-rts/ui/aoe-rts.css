@@ -76,7 +76,7 @@ html, body {
 #hud { position: static; background: none; padding: 0; font-size: 14px; font-weight: bold; color: #f0d9a0; }
 #info { position: fixed; top: 42px; left: 8px; max-width: calc(100% - 16px); z-index: 25; pointer-events: none; font-size: 13px; color: #ddd;
     background: rgba(0,0,0,0.45); padding: 3px 8px; border-radius: 4px; }
-#minimap-wrap { position: fixed; left: 8px; bottom: 56px; z-index: 25; line-height: 0; }
+#minimap-wrap { position: fixed; left: 8px; bottom: 56px; z-index: 25; line-height: 0; opacity: 0.999; }   /* ARQ1t2: own layer; stops a blank ghost of the minimap at top-left */
 #minimap { display: block; border: 2px solid #c8a46a; background: #111; cursor: pointer; }
 #mute-btn { top: 8px; width: 36px; height: 36px; font-size: 18px; }
 #pause-btn { position: fixed; top: 8px; right: 52px; z-index: 30; width: 36px; height: 36px; font-size: 16px; border-radius: 50%;

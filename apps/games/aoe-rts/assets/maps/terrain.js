@@ -48,12 +48,15 @@ function initTerrain(num) {
     // ARQ1t MOUNTAINS: ridges of rocky peaks (impassable, mount[] + rock[]), hilly foothills round them; kept only if no land is cut off
     const ranges = S < 32 ? 0 : Math.round((1 + R() * 2) * area);
     for (let m = 0; m < ranges; m++) { const p = spot(keep + 4); if (!p) continue;
-        const len = 6 + Math.floor(R() * 10), put = []; let x = p[0], y = p[1], a = R() * 6.283;
-        for (let t = 0; t < len; t++) {
-            [[0, 0], [1, 0], [0, 1]].forEach(o => { const qx = x + o[0], qy = y + o[1]; if ((!o[0] && !o[1] || R() < 0.55) && okRock(qx, qy)) { rock[qy * S + qx] = mount[qy * S + qx] = 1; put.push(qy * S + qx); } });
-            a += (R() - 0.5) * 1.2; x = Math.round(x + Math.cos(a)); y = Math.round(y + Math.sin(a)); }
+        const len = 3 + Math.floor(R() * 7), put = [], cut = []; let x = p[0], y = p[1], a = R() * 6.283;
+        for (let t = 0; t < len; t++) { const r = 1 + R() * 1.1;   // ARQ1t2: thick ranges, 2-4 cells across, round a winding spine
+            for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const qx = x + dx, qy = y + dy, j = qy * S + qx;
+                if (Math.hypot(dx, dy) > r || !inMap(qx, qy) || mount[j]) continue;
+                const cell = mapData[qy][qx], tree = cell && cell.kind === 'tree'; if (tree) mapData[qy][qx] = null;   // ranges swallow trees
+                if (okRock(qx, qy)) { rock[j] = mount[j] = 1; put.push(j); if (tree) cut.push([qx, qy, cell]); } else if (tree) mapData[qy][qx] = cell; }
+            a += (R() - 0.5) * 1.2; x = Math.round(x + Math.cos(a) * 1.5); y = Math.round(y + Math.sin(a) * 1.5); }
         const now = reachCount();
-        if (now !== reach - put.length) { put.forEach(i => { rock[i] = mount[i] = 0; }); continue; }
+        if (now !== reach - put.length) { put.forEach(i => { rock[i] = mount[i] = 0; }); cut.forEach(t => { mapData[t[1]][t[0]] = t[2]; }); continue; }
         reach = now;
         put.forEach(i => { const px = i % S, py = (i - px) / S; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const qx = px + dx, qy = py + dy, j = qy * S + qx;
             if (inMap(qx, qy) && isLand(qx, qy) && !ford[j] && far(qx, qy, keep + 1)) hill[j] = 1; } });
@@ -79,13 +82,15 @@ function flatAt(x, y, r) { for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx
     if (dx * dx + dy * dy > r * r + 1) continue; if (!isLand(qx, qy) || isHill(qx, qy) || ford[qy * MAP_SIZE + qx]) return false; } return true; }
 /** ARQ1t test hook: islands, fords per river, inland lakes, flat + reachable starts */
 function mapCheck() {
-    const S = MAP_SIZE, seen = landSeen(), fords = {}, rivers = {}; let land = 0, cut = 0, lakeEdge = 0, mt = 0;
+    const S = MAP_SIZE, seen = landSeen(), fords = {}, rivers = {}; let land = 0, cut = 0, lakeEdge = 0, mt = 0, inner = 0, ranges = 0;
+    const lab = new Uint8Array(S * S); for (let i = 0; i < S * S; i++) if (mount[i] && !lab[i]) { ranges++; const st = [i]; lab[i] = 1;   // 8-joined ranges
+        while (st.length) { const k = st.pop(), kx = k % S, ky = (k - kx) / S; for (let d = 0; d < 9; d++) { const nx = kx + d % 3 - 1, ny = ky + Math.floor(d / 3) - 1, j = ny * S + nx; if (inMap(nx, ny) && mount[j] && !lab[j]) { lab[j] = 1; st.push(j); } } } }
     for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const i = y * S + x;
         if (isLand(x, y)) { land++; if (!seen[i]) cut++; }
         if (riv[i]) { rivers[riv[i]] = 1; if (ford[i]) fords[riv[i]] = (fords[riv[i]] || 0) + 1; }
-        if (water[i] && !riv[i] && (x < 2 || y < 2 || x > S - 3 || y > S - 3)) lakeEdge++; if (mount[i]) mt++; }
+        if (water[i] && !riv[i] && (x < 2 || y < 2 || x > S - 3 || y > S - 3)) lakeEdge++; if (mount[i]) { mt++; if ([-1, 0, 1].every(dy => [-1, 0, 1].every(dx => inMap(x + dx, y + dy) && mount[(y + dy) * S + x + dx]))) inner++; } }
     const t = townCenter;
-    return { land, cut, rivers: Object.keys(rivers).length, riversNoFord: Object.keys(rivers).filter(r => !fords[r]).length, lakeEdge, mountains: mt,
+    return { land, cut, rivers: Object.keys(rivers).length, riversNoFord: Object.keys(rivers).filter(r => !fords[r]).length, lakeEdge, mountains: mt, mountInner: inner, ranges,
         tcFlat: flatAt(t.x, t.y, 3) && flatAt(t.x + 1, t.y + 1, 3), ai: aiStart, aiFlat: !!aiStart && flatAt(aiStart.x, aiStart.y, 3), aiReach: !!aiStart && !!seen[aiStart.y * S + aiStart.x],
         aiDist: aiStart ? Math.round(Math.hypot(aiStart.x - t.x, aiStart.y - t.y)) : 0 };
 }
