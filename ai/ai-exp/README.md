@@ -71,12 +71,25 @@ On continue, the only memory given back is `/home/journal.md`. The model does no
 
 ## What the AI is allowed to do
 
-Two tools:
+Three tools:
 
 - `run_shell` runs one shell command in the cage. Several commands can be chained with `;` or `&&` in that single call. The result sent back ends with `[Ns left]`.
+- `web_search` takes a `query` and searches the web with Tavily. See "Web search" below.
 - `end_session` takes a short `reason` and stops the run immediately. The instructions tell the model to write a final summary in `/home/journal.md` and then call this.
 
 The home directory inside the cage is `/home`. The journal path is `/home/journal.md`.
+
+### Web search
+
+`web_search` is run by `ai-exp.sh` on your PC with curl (`https://api.tavily.com/search`), outside the cage. The cage stays offline. The AI gets back Tavily's answer (if any) plus title, URL and a short extract per result, cut to `MAX_OUTPUT` characters. Each query and its result go into `log-N.md`.
+
+Put your Tavily key in `.env` next to the script (or export it):
+
+```
+TAVILY_API_KEY=tvly-your_key
+```
+
+Without a key the tool answers `web_search unavailable: no TAVILY_API_KEY`. At most `MAX_SEARCHES` searches (default 10) run per session; after that the AI is told the limit is reached. Note that web pages can contain text meant to steer the AI.
 
 ### How a run stops
 
@@ -101,6 +114,7 @@ ai/ai-exp/
     util.sh            find tools, errors, one-line summaries
     cage.sh            build the cage and run a command in it
     api.sh             API key, chat request, tool schema
+    search.sh          web_search via Tavily (runs on the host)
     log.sh             markdown session log
     session.sh         new run, --continue, turn loop
   experiments/         gitignored, created on the first run
@@ -137,6 +151,8 @@ Defaults are in `core/config.sh`. Override any of them by exporting the same nam
 | `CMD_KILL_GRACE` | `2` | Seconds after SIGTERM before SIGKILL (`timeout -k`). |
 | `MAX_OUTPUT` | `4000` | Characters of command output returned to the model. The rest is replaced with `...(output cut)`. |
 | `MAX_JOURNAL` | `8000` | Newest characters of `journal.md` shown on `--continue`. |
+| `MAX_SEARCHES` | `10` | `web_search` calls allowed per session. |
+| `SEARCH_RESULTS` | `5` | Results asked from Tavily per search. |
 | `AI_MODEL` | `gemini-3.1-flash-lite` | Model id sent to the API. |
 | `API_URL` | Google's OpenAI-compatible chat completions URL | Endpoint. |
 | `API_TIMEOUT_FLOOR` | `5` | Minimum curl timeout, so a turn near the end of the clock can still finish. |

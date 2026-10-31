@@ -18,6 +18,12 @@ CMD_KILL_GRACE="${CMD_KILL_GRACE:-2}"
 # Characters of command output sent back to the AI.
 MAX_OUTPUT="${MAX_OUTPUT:-4000}"
 
+# web_search calls allowed per session (Tavily free plan is ~1000 credits/month).
+MAX_SEARCHES="${MAX_SEARCHES:-10}"
+
+# Results asked from Tavily per web_search.
+SEARCH_RESULTS="${SEARCH_RESULTS:-5}"
+
 # Newest characters of journal.md fed back on --continue.
 MAX_JOURNAL="${MAX_JOURNAL:-8000}"
 
@@ -36,7 +42,7 @@ EXPERIMENTS_DIR="${EXPERIMENTS_DIR:-$AI_EXP_ROOT/experiments}"
 
 validate_config() {
   local name val
-  for name in TIME_LIMIT REQUEST_GAP CMD_TIMEOUT MAX_OUTPUT MAX_JOURNAL API_TIMEOUT_FLOOR; do
+  for name in TIME_LIMIT REQUEST_GAP CMD_TIMEOUT MAX_OUTPUT MAX_JOURNAL API_TIMEOUT_FLOOR MAX_SEARCHES SEARCH_RESULTS; do
     val="${!name}"
     case "$val" in
       ''|*[!0-9]*) fail "$name must be a positive whole number (got: ${val:-empty})" ;;

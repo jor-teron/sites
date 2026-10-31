@@ -18,6 +18,8 @@ source "$AI_EXP_ROOT/core/log.sh"
 source "$AI_EXP_ROOT/core/cage.sh"
 # shellcheck source=core/api.sh
 source "$AI_EXP_ROOT/core/api.sh"
+# shellcheck source=core/search.sh
+source "$AI_EXP_ROOT/core/search.sh"
 # shellcheck source=core/session.sh
 source "$AI_EXP_ROOT/core/session.sh"
 
@@ -27,6 +29,7 @@ main() {
   require_host_tools
   init_cage_tz
   load_api_key
+  load_tavily_key
   prepare_experiment
   verify_cage
   START="$(date +%s)"
