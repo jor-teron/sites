@@ -71,9 +71,9 @@ games follow it (Tic-Tac-Toe, Tetris). The settings page says so under the Theme
 </script>
 ```
 
-Tennis Ball Blitz shows the fuller pattern: `apps/games/tennis-throw/modules/settings.js` (bridge with fallback).
+Tennis Ball Blitz shows the fuller pattern: `apps/games/tennis-throw/ui/settings.js` (bridge with fallback).
 Classic-script games (no modules, work from `file://`) use a global bridge file instead, e.g.
-`tetris/tetris_settings.js` (`TETRIS_SETTINGS`), loaded after the game config and before the logic.
+`tetris/ui/settings.js` (`TETRIS_SETTINGS`), loaded after the game config and before the logic.
 
 ## Rules
 
@@ -105,7 +105,7 @@ nor are Hub/Learn/other keys. The page lists the keys and asks to confirm first.
 |---|---|---|
 | Tennis Ball Blitz (`tennis-throw`) | done (TB4/GS1, TB9) | fpsLimit, difficulty (round goal, round time, bird speed), vibration, showHints, showFps (real-time), autoPause, theme (dark sky), sfx + masterVolume (WebAudio blips), lowGraphics (fewer particles), gear |
 | LandCraft (`landcraft`) | done (LC3) | fpsLimit (render throttle), renderDistance (+ fog), pixelRatio (`auto` = up to 2, or 1 with lowGraphics), sensitivity, showFps, autoJump + holdRepeat (touch only), gear. No sound; theme, difficulty, autoPause, vibration, joystick/button options unused |
-| Tetris (`tetris`) | done (GS2) | fpsLimit (draw throttle; gravity on real time, catches up missed steps), difficulty (fall-speed multiplier in `tetris_config.js`), theme (`light` = inverted B/W, auto/dark = classic black), autoPause, showHints (controls help), showFps, vibration (lines / game over), gear (top-right). No sound; controls/3D options unused |
+| Tetris (`tetris`) | done (GS2) | fpsLimit (draw throttle; gravity on real time, catches up missed steps), difficulty (fall-speed multiplier in `tetris/core/config.js`), theme (`light` = inverted B/W, auto/dark = classic black), autoPause, showHints (controls help), showFps, vibration (lines / game over), gear (top-right). No sound; controls/3D options unused |
 | Tic-tac-toe (`tic-tac-toe`) | done (GS2) | difficulty (vs CPU Easy win/block chances in config; Hard stays perfect play), theme (light/dark colours), vibration (win/loss; hub rumble or phone), gear (button row). No loop/timer or sound: fpsLimit, showFps, autoPause, sound unused |
 | 2048 (`2048`) | done (GS2) | vibration (big tile / 2048 / game over; hub rumble or phone), gear (button row). Turn-based CSS animations, no sound: fpsLimit, showFps, autoPause, sound unused; difficulty/hints not meaningful; always dark |
 | Swell Foop (`swell-foop`) | done (GS2) | fpsLimit (fall animation + animated-theme idle redraw; fall timed in ms), showFps, vibration (big group / game over), gear (button row). No sound; turn-based so autoPause unused; difficulty/hints not meaningful; page stays dark (block look = game's own Theme picker) |

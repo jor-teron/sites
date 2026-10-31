@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Tennis Ball Blitz TB9</title>
-  <link rel="stylesheet" href="tennis-throw.css" />
+  <title>Tennis Ball Blitz TB9 NIX-G2</title>
+  <link rel="stylesheet" href="ui/style.css" />
 </head>
 <body>
   <div class="container">
@@ -27,19 +27,19 @@
   </div>
 
   <!-- TB2: classic scripts sharing window.TT (ES modules are blocked on file://). Order matters. -->
-  <!-- TB4/GS1: shared Games settings (optional: if it fails to load, modules/settings.js uses defaults) -->
+  <!-- TB4/GS1: shared Games settings (optional: if it fails to load, ui/settings.js uses defaults) -->
   <script src="../common/settings/games-settings.js"></script>
-  <script src="tennis-throw_config.js"></script>
-  <script src="modules/state.js"></script>
-  <script src="modules/targets.js"></script>
-  <script src="modules/physics.js"></script>
-  <script src="modules/rounds.js"></script>
-  <script src="modules/fx.js"></script>
-  <script src="modules/sound.js"></script>
-  <script src="modules/render.js"></script>
-  <script src="modules/input.js"></script>
-  <script src="modules/settings.js"></script>
-  <script src="modules/loop.js"></script>
-  <script src="tennis-throw_logic.js"></script>
+  <script src="core/config.js"></script>
+  <script src="core/state.js"></script>
+  <script src="core/targets.js"></script>
+  <script src="core/physics.js"></script>
+  <script src="core/rounds.js"></script>
+  <script src="ui/fx.js"></script>
+  <script src="ui/sound.js"></script>
+  <script src="ui/render.js"></script>
+  <script src="ui/input.js"></script>
+  <script src="ui/settings.js"></script>
+  <script src="core/loop.js"></script>
+  <script src="core/logic.js"></script>
 </body>
 </html>

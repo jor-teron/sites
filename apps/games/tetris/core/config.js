@@ -1,0 +1,178 @@
+/* =============================================================================
+ * TETRIS — configuration
+ * Every tunable value (board, colors, timing, shapes, scoring, keys, text).
+ * core/logic.js reads everything from TETRIS_CONFIG.
+ * ============================================================================= */
+var TETRIS_CONFIG = {
+  /* Board size and drawing scale */
+  board: {
+    cols: 10,   /* columns in the well (classic 10) */
+    rows: 20,   /* visible rows (classic 20) */
+    cell: 24,   /* pixel size of one cell; 24 * 10 = 240 wide */
+    spawnX: 3,  /* grid column where new pieces appear */
+    spawnY: 0   /* grid row where new pieces appear */
+  },
+
+  /* Theme colors (B/W only) */
+  colors: {
+    bg: "#000000",     /* empty cell / canvas background */
+    block: "#ffffff",  /* locked and falling blocks */
+    ghost: "#555555",  /* ghost piece (landing preview) */
+    grid: "#222222"    /* grid lines */
+  },
+
+  /* GS2: colours used when the shared Games Settings theme is "light" (auto / dark = colors above) */
+  colorsLight: {
+    bg: "#ffffff",
+    block: "#000000",
+    ghost: "#aaaaaa",
+    grid: "#dddddd"
+  },
+
+  /* GS2: shared "difficulty" setting = multiplier on the level fall interval (soft drop / minMs unchanged) */
+  difficulty: {
+    easy: 1.35,    /* slower fall */
+    normal: 1,     /* same as before GS2 */
+    hard: 0.7      /* faster fall */
+  },
+
+  /* GS2: phone vibration (only when the shared "vibration" setting is on). ms or a pattern array */
+  vibrate: {
+    lineMs: 25,               /* 1-3 lines cleared */
+    tetrisPattern: [40, 30, 40], /* 4 lines at once */
+    gameOverMs: 200
+  },
+
+  /* GS2: on-screen FPS counter (shared "showFps" setting) refresh interval */
+  fpsMeterMs: 500,
+
+  /* Timing (milliseconds) */
+  timing: {
+    baseMs: 800,       /* fall interval at level 1 */
+    softMs: 50,        /* soft-drop interval while holding down */
+    levelStepMs: 70,   /* ms subtracted per level */
+    minMs: 80          /* fastest fall interval */
+  },
+
+  /* Starting values */
+  start: {
+    score: 0,  /* initial score */
+    lines: 0,  /* initial lines cleared */
+    level: 1   /* initial level */
+  },
+
+  /* Scoring and progression */
+  scoring: {
+    lineTable: [0, 100, 300, 500, 800],  /* points for 0/1/2/3/4 lines (x level) */
+    linesPerLevel: 10,                   /* lines needed per level up */
+    hardDropPerCell: 2,                  /* points per cell for hard drop */
+    softDropPerCell: 1                   /* points per gravity step while soft dropping */
+  },
+
+  /* Next-piece preview */
+  preview: {
+    cellSize: 20  /* pixel size of a cell in the NEXT box */
+  },
+
+  /* Piece shapes: each piece is a list of rotation states,
+   * each state a list of [x, y] cells (grid units). */
+  shapes: {
+    /* I: long bar */
+    I: [
+      [[0, 1], [1, 1], [2, 1], [3, 1]],
+      [[2, 0], [2, 1], [2, 2], [2, 3]],
+      [[0, 2], [1, 2], [2, 2], [3, 2]],
+      [[1, 0], [1, 1], [1, 2], [1, 3]]
+    ],
+    /* O: 2x2 square */
+    O: [
+      [[1, 0], [2, 0], [1, 1], [2, 1]],
+      [[1, 0], [2, 0], [1, 1], [2, 1]],
+      [[1, 0], [2, 0], [1, 1], [2, 1]],
+      [[1, 0], [2, 0], [1, 1], [2, 1]]
+    ],
+    /* T: three across plus one in the middle */
+    T: [
+      [[1, 0], [0, 1], [1, 1], [2, 1]],
+      [[1, 0], [1, 1], [2, 1], [1, 2]],
+      [[0, 1], [1, 1], [2, 1], [1, 2]],
+      [[1, 0], [0, 1], [1, 1], [1, 2]]
+    ],
+    /* S: right snake */
+    S: [
+      [[1, 0], [2, 0], [0, 1], [1, 1]],
+      [[1, 0], [1, 1], [2, 1], [2, 2]],
+      [[1, 1], [2, 1], [0, 2], [1, 2]],
+      [[0, 0], [0, 1], [1, 1], [1, 2]]
+    ],
+    /* Z: left snake */
+    Z: [
+      [[0, 0], [1, 0], [1, 1], [2, 1]],
+      [[2, 0], [1, 1], [2, 1], [1, 2]],
+      [[0, 1], [1, 1], [1, 2], [2, 2]],
+      [[1, 0], [0, 1], [1, 1], [0, 2]]
+    ],
+    /* J: stem plus foot on the left */
+    J: [
+      [[0, 0], [0, 1], [1, 1], [2, 1]],
+      [[1, 0], [2, 0], [1, 1], [1, 2]],
+      [[0, 1], [1, 1], [2, 1], [2, 2]],
+      [[1, 0], [1, 1], [0, 2], [1, 2]]
+    ],
+    /* L: stem plus foot on the right */
+    L: [
+      [[2, 0], [0, 1], [1, 1], [2, 1]],
+      [[1, 0], [1, 1], [1, 2], [2, 2]],
+      [[0, 1], [1, 1], [2, 1], [0, 2]],
+      [[0, 0], [1, 0], [1, 1], [1, 2]]
+    ]
+  },
+
+  /* Names used when filling the 7-bag */
+  pieceNames: ["I", "O", "T", "S", "Z", "J", "L"],
+
+  /* Wall-kick offsets tried after a rotate fails in place */
+  kicks: [[0, 0], [-1, 0], [1, 0], [0, -1], [-2, 0], [2, 0]],
+
+  /* Key bindings — matched against KeyboardEvent.code OR .key.
+     Hub / phone controller: D-pad = arrows, A = Space, B = x, Start = Enter, Select = Escape */
+  keys: {
+    left: ["ArrowLeft", "KeyA"],                 /* move left */
+    right: ["ArrowRight", "KeyD"],               /* move right */
+    softDrop: ["ArrowDown", "KeyS"],             /* hold for soft drop */
+    rotate: ["ArrowUp", "KeyW", "KeyX", "x", "X"], /* rotate clockwise (B) */
+    hardDrop: ["Space", " "],                    /* slam to floor (A) */
+    start: ["Enter"],                            /* pause / resume; new game after game over (Start) */
+    pause: ["KeyP", "p", "P"],                   /* toggle pause */
+    restart: ["Escape", "KeyR", "r", "R"]        /* new game (Select / R) */
+  },
+
+
+  /* On-screen text */
+  text: {
+    title: "TETRIS",                              /* sidebar heading */
+    paused: "PAUSED",                             /* status while paused */
+    gameOver: "GAME OVER — Enter / R to restart",         /* status on game over */
+    helpHtml:                                     /* controls help (HTML) */
+      '<span class="kbd-help"><kbd>←</kbd> <kbd>→</kbd> move<br />' +
+      '<kbd>↑</kbd> / <kbd>X</kbd> rotate<br />' +
+      '<kbd>↓</kbd> soft drop<br />' +
+      '<kbd>SPACE</kbd> hard drop<br />' +
+      '<kbd>Enter</kbd> / <kbd>P</kbd> pause<br />' +
+      '<kbd>Esc</kbd> / <kbd>R</kbd> restart<br /><br /></span>' +
+      '<span class="touch-help">TOUCH: tap rotate · drag ←→ move · drag ↓ soft drop · flick ↓ or swipe ↑ hard drop · tap after game over = new game</span>'
+  },
+
+  /* Touch gestures (pointer events; no on-screen buttons) */
+  touch: {
+    tapMaxMs: 250,        /* a press shorter than this with little movement = tap (rotate) */
+    tapMaxMove: 10,       /* px of movement still counted as a tap */
+    axisLockPx: 10,       /* movement before the gesture locks to horizontal or vertical */
+    softDelayMs: 120,     /* downward drag held at least this long = soft drop */
+    flickMinPx: 40,       /* downward distance for a hard-drop flick */
+    flickMinSpeed: 0.6,   /* px/ms (recent or whole-gesture average) for a hard-drop flick */
+    flickMaxMs: 300,      /* the whole flick must be quicker than this */
+    swipeUpMinPx: 40,     /* upward swipe distance for hard drop */
+    swipeUpMaxMs: 600     /* upward swipe must be quicker than this */
+  }
+};
