@@ -1,0 +1,53 @@
+/* Altimeter AL1 — UI styles. */
+:root {
+  --bg: #0f1419;
+  --panel: #1a2129;
+  --text: #e8eef4;
+  --muted: #8b9bb0;
+  --accent: #5dade2;
+  --line: #2c3642;
+  --ok: #58d68d;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.4 system-ui, -apple-system, sans-serif; }
+button { font: inherit; color: inherit; }
+
+.al-wrap { max-width: 420px; margin: 0 auto; padding: 24px 16px; text-align: center; }
+.al-title { font-size: 1.4rem; margin: 0 0 20px; }
+
+.al-display {
+  background: var(--panel);
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  padding: 28px 16px;
+  margin-bottom: 16px;
+}
+
+.al-value {
+  font-size: 3.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin: 0;
+}
+.al-unit { font-size: 1.2rem; color: var(--muted); margin: 4px 0 12px; }
+
+.al-acc { font-size: 0.9rem; color: var(--muted); }
+.al-status { min-height: 1.4em; color: var(--muted); margin: 12px 0; }
+
+.al-btn {
+  min-height: 52px;
+  padding: 0 28px;
+  border-radius: 14px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #0f1419;
+  font-weight: 700;
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+.al-btn:disabled { opacity: 0.5; }
+.al-btn.stop { background: transparent; color: var(--text); border-color: var(--line); }
+
+.al-note { font-size: 0.8rem; color: var(--muted); margin-top: 18px; line-height: 1.4; }
