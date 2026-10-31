@@ -1,8 +1,8 @@
-# Video Chat — VC2
+# Video Chat — VC3
 
 Video + audio calls between devices on the same Hub Connect Code (Connectivity → Chat): one-to-one as in VC1, or a group of up to 4, with screen sharing from computers.
 
-- **Code:** `#code=1234` / `?hub=` (QR), the Hub's `{sharedLink:'hello'}` inside the Hub, `parent.__hubRemote.code`, `jtsites-hub-ctrl-code` / `shared-link-join-code`, the last code (`videochat-last-code`), else the Code dialog.
+- **Code (VC3):** `#code=1234` / `?hub=` / `join=` (QR) wins and holds for the session; inside the Hub, the active private mesh (`parent.HubMeshLink.isPrivate()` → `privateCode()`), else **0000 · Public**; an older Hub without `HubMeshLink` uses the VC2 order ending at 0000; standalone uses the last code (`videochat-last-code`), else 0000. No Code dialog at start; the Code dialog has Cancel · Public · Join.
 - **Peers (own, never the Hub's):** `jtsites-<code>-vc-<random>` per device; lobby `jtsites-<code>-vc-0` is claimed by the first device and keeps the roster (`hi` → `roster`) and relays signals. If the lobby goes, a remaining device claims it. PeerJS from `SharedLink.PEERJS_URL` when loaded, else the same pinned URL (peerjs 1.5.4).
 - **Group calls (mesh, max 4 incl. you):** every pair has its own MediaConnection.
   - Invite = `VCPeer.call(id, cam, {kind:'invite', room, members})` + `{t:'ring'}`. The ring screen shows "Already in: …". Start a call from the device list; add people from the call's ＋ sheet (Invite / Ringing… Cancel / In the call).
@@ -14,3 +14,14 @@ Video + audio calls between devices on the same Hub Connect Code (Connectivity �
 - **Screen share (computers):** 🖥️ → `getDisplayMedia` (≤1080p, 15 fps) → `RTCRtpSender.replaceTrack` on every peer connection's video sender; people who join later get it too. The sharer's tile goes big (contain) with cameras small beside it (below on portrait). Stop, or the browser's own "Stop sharing", puts the camera track back. Phones don't show the button but watch the stage.
 - **Files:** `videochat_store.js` (settings `videochat-settings-v1`, theme), `videochat_peer.js` (presence), `videochat_call.js` (media, ringtone, group state, screen share, speaker), `videochat_app.js` (UI, tiles, swipe, dialogs).
 - Screens: Call (device list) and Settings (name, camera, mic, theme, About). Swipe 75 px, disabled during a call. Incoming calls also go to `window.top.HubNotify` when present.
+
+## VC3 — Public 0000 by default; only invited peers can join
+
+- Every device meets on the open Hub mesh (0000) unless the URL or an active Hub private mesh gives a code. The Code button shows the current code (`0000 · Public`).
+- Every 5 s the app checks the Hub's private mesh. When idle (no ringing, invite or call) it switches by itself with a toast; during a call it stays and shows a non-blocking **Switch to <code>** / **Back to Public** button. Picking a code mid-call says "Hang up first". A code picked from the dialog or the URL holds for the session.
+- **Join gating (all codes):** a member answers `{kind:'join', room}` only from a peer it expects for that room: people it invited, people listed in the invite it accepted, ids a live member sent in `{t:'expect', room, id}` (the inviter sends this to members when it invites; `{t:'unexpect'}` withdraws it if the invite is declined, cancelled or unanswered) or in `{t:'st', ids}`. An unknown joiner waits up to 5 s for that news, else its call is closed silently. Invites still ring with Accept / Decline.
+- VC2 compatibility: a VC2 inviter sends no `expect`, so a VC3 member admits its newcomer once the inviter's `st` lists them (within the 5 s wait); VC2 members ignore `expect` / `unexpect`.
+
+## Legacy code notes
+
+- VC2 code choice (Hub's own Connect Code, then last code, else the Code dialog) is kept as comments in `videochat_app.js`; the VC2 "answer any join for my room" line is kept as a comment in `videochat_call.js`.

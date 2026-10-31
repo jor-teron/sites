@@ -107,3 +107,6 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 @media (max-height:480px){.cb{width:46px;height:46px;font-size:18px}#cside{gap:8px}#grid{padding-right:66px}}
 #c-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #c-state,#c-time{flex:none}
+/* VC3: non-blocking private-mesh switch offer */
+#vc-switch { position: fixed; left: 50%; top: 10px; transform: translateX(-50%); z-index: 60; }
+#vc-switch[hidden]{display:none}
