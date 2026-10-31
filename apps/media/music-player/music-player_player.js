@@ -107,7 +107,7 @@
     if (!MS || !window.MediaMetadata) return;
     try {
       MS.metadata = new MediaMetadata({ title: s.t || s.e.name, artist: s.a || '', album: s.al || '',
-        artwork: [{ src: new URL('music-player_icon.png?v=MP1', location.href).href, sizes: '192x192', type: 'image/png' }] });
+        artwork: [{ src: new URL('music-player_icon.png', location.href).href, sizes: '192x192', type: 'image/png' }] });
     } catch (_) { /* */ }
   }
   function msState() { if (MS) try { MS.playbackState = !cur() ? 'none' : A.paused ? 'paused' : 'playing'; } catch (_) { /* */ } }

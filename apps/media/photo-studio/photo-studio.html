@@ -5,7 +5,7 @@
   so fixes there apply here too. Studio's own files (ps_*.js, photo-studio.css) add the name, settings
   (own save keys), theme, About, in-app messages and the slot for later heavy features.
   HPS2: Layers (ps_layers.js), the .hps project + .ora export (ps_project.js, ps_zip.js). Two backward-compatible
-  engine hooks (pe_view.js drawPhoto / rebuild, pe_io.js uses drawPhoto) are loaded as ?v=HPS2.
+  engine hooks (pe_view.js drawPhoto / rebuild, pe_io.js uses drawPhoto) are the HPS2 copies.
   All scripts share window.PE (plain scripts, works from file://). No libraries, no CDN.
 -->
 <html lang="en">
@@ -14,10 +14,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#141518">
   <title>Hub Photo Studio HPS2</title>
-  <link rel="icon" href="photo-studio_icon.png?v=HPS2">
-  <link rel="stylesheet" href="../photo-editor-v2/photo-editor-v2.css?v=PE5">
-  <link rel="stylesheet" href="photo-studio.css?v=HPS2">
-  <script src="ps_save.js?v=HPS2"></script>
+  <link rel="icon" href="photo-studio_icon.png">
+  <link rel="stylesheet" href="../photo-editor-v2/photo-editor-v2.css">
+  <link rel="stylesheet" href="photo-studio.css">
+  <script src="ps_save.js"></script>
 </head>
 <body class="ps">
 <div id="app">
@@ -25,7 +25,7 @@
     <canvas id="view"></canvas>
     <div id="empty">
       <div class="card">
-        <img src="photo-studio_icon.png?v=HPS2" class="ps-logo" alt="" width="64" height="64">
+        <img src="photo-studio_icon.png" class="ps-logo" alt="" width="64" height="64">
         <h1>Hub Photo Studio</h1>
         <button type="button" tabindex="-1" class="primary" data-act="open">Open photo</button>
         <p>or drop a photo here, or paste one</p>
@@ -188,7 +188,7 @@
       </div>
       <h3>About</h3>
       <div class="ps-about">
-        <img src="photo-studio_icon.png?v=HPS2" alt="" width="40" height="40">
+        <img src="photo-studio_icon.png" alt="" width="40" height="40">
         <div><b>Hub Photo Studio</b> <span id="ps-ver"></span>
           <p>The Hub's bigger photo editor. Layers (images, text and shapes, with opacity and blend modes), crop, rotate, flip, resize (smaller or larger), brightness, contrast, saturation, warmth, sharpen and looks, with undo and redo. Edits stay as settings on top of your original photo and are only applied when you save, print or send. Save your work as a Photo Studio project (.hps) to keep editing later, or export the layers as .ora for GIMP and Krita. Everything runs on this device; nothing is uploaded.</p>
           <p class="ps-mut">Built on Photo Editor v2. Selections, retouch and pro adjustments are planned.</p></div>
@@ -236,28 +236,28 @@
   <input type="file" id="ps-hps-in" accept=".hps,application/zip" hidden>
 </div>
 <!-- Photo Editor v2 engine (shared, loaded in place) -->
-<script src="../photo-editor-v2/pe_config.js?v=PE5"></script>
-<script src="ps_config.js?v=HPS2"></script>
-<script src="../photo-editor-v2/pe_state.js?v=PE5"></script>
-<script src="../photo-editor-v2/pe_transform.js?v=PE5"></script>
-<script src="../photo-editor-v2/pe_adjust.js?v=PE5"></script>
-<script src="../photo-editor-v2/pe_view.js?v=HPS2"></script>  <!-- ?v=HPS2: the copy with the drawPhoto / rebuild hooks -->
-<script src="../photo-editor-v2/pe_crop.js?v=PE5"></script>
-<script src="../photo-editor-v2/pe_io.js?v=HPS2"></script>    <!-- ?v=HPS2: save draws through PE.view.drawPhoto -->
-<script src="../photo-editor-v2/pe_resize.js?v=PE5"></script>
-<script src="../photo-editor-v2/pe_input.js?v=PE5"></script>
-<script src="../photo-editor-v2/pe_print.js?v=PE5"></script>
-<script src="../../../shared/link/link_core.js?v=20261011d"></script>
-<script src="../../../shared/link/link_devices.js?v=20261011c"></script>
-<script src="../../../shared/link/link_files.js?v=20261011c"></script>
-<script src="../../../shared/link/link_scan.js?v=20261011d"></script>
+<script src="../photo-editor-v2/pe_config.js"></script>
+<script src="ps_config.js"></script>
+<script src="../photo-editor-v2/pe_state.js"></script>
+<script src="../photo-editor-v2/pe_transform.js"></script>
+<script src="../photo-editor-v2/pe_adjust.js"></script>
+<script src="../photo-editor-v2/pe_view.js"></script>  <!-- the copy with the drawPhoto / rebuild hooks -->
+<script src="../photo-editor-v2/pe_crop.js"></script>
+<script src="../photo-editor-v2/pe_io.js"></script>    <!-- save draws through PE.view.drawPhoto -->
+<script src="../photo-editor-v2/pe_resize.js"></script>
+<script src="../photo-editor-v2/pe_input.js"></script>
+<script src="../photo-editor-v2/pe_print.js"></script>
+<script src="../../../shared/link/link_core.js"></script>
+<script src="../../../shared/link/link_devices.js"></script>
+<script src="../../../shared/link/link_files.js"></script>
+<script src="../../../shared/link/link_scan.js"></script>
 <script src="../photo-editor-v2/vendor/jsQR.js"></script>
-<script src="../photo-editor-v2/pe_send.js?v=HPS1"></script>  <!-- ?v=HPS1: fetch the copy with the HPS1 hooks (appId, notify) -->
-<script src="../photo-editor-v2/pe_ui.js?v=PE5"></script>
+<script src="../photo-editor-v2/pe_send.js"></script>  <!-- the copy with the HPS1 hooks (appId, notify) -->
+<script src="../photo-editor-v2/pe_ui.js"></script>
 <!-- Studio layer: HPS2 features register through PE.studio, then ps_app.js boots them -->
-<script src="ps_zip.js?v=HPS2"></script>
-<script src="ps_layers.js?v=HPS2"></script>
-<script src="ps_project.js?v=HPS2"></script>
-<script src="ps_app.js?v=HPS2"></script>
+<script src="ps_zip.js"></script>
+<script src="ps_layers.js"></script>
+<script src="ps_project.js"></script>
+<script src="ps_app.js"></script>
 </body>
 </html>

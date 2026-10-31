@@ -55,7 +55,7 @@ so the two never clash.
 HPS1 added two small backward-compatible hooks to `../photo-editor-v2/pe_send.js`:
 `PE.config.appId` (Hub link "ready" id, default `'photo-editor-v2'`) and `PE.ui.notify` (used
 instead of `alert()` when present). Photo Editor v2 sets neither, so it behaves exactly as before.
-Studio loads that file as `pe_send.js?v=HPS1` so browsers fetch the hooked copy.
+Studio loads `pe_send.js` (plain link, no version tag).
 
 HPS2 added two more, both backward compatible:
 - `pe_view.js`: `PE.view.drawPhoto(ctx, P, crop, m, w, h, a, b)` (default = the old
@@ -64,8 +64,8 @@ HPS2 added two more, both backward compatible:
 - `pe_io.js`: Save step 1 draws through `PE.view.drawPhoto` (same arguments as before).
 
 Photo Editor v2 never replaces `drawPhoto`, so it draws exactly as before (PE5 test 46/46).
-Studio loads those two as `pe_view.js?v=HPS2` / `pe_io.js?v=HPS2`; every other engine file keeps
-Photo Editor v2's `?v=PE5`.
+Studio loads `pe_view.js` / `pe_io.js` and every other engine file straight from the
+Photo Editor v2 copy.
 
 ## Layers (HPS2)
 Open the Layers panel with `L` or the layers button (a strip under the photo in portrait, a column
