@@ -28,7 +28,8 @@ HR.notify = (function () {
     return local(o);
   };
 })();
-var AGENT_VER = (function () { try { return new URL(document.currentScript.src).searchParams.get('v') || 'dev'; } catch (e) { return 'dev'; } })();
+/* AG-F7: no version read from ?v= any more
+var AGENT_VER = (function () { try { return new URL(document.currentScript.src).searchParams.get('v') || 'dev'; } catch (e) { return 'dev'; } })(); */
 HR.set.applyTheme();
 /* AG9: read the Hub's keys first (in-memory only; at most 1.5 s), then boot */
 Promise.race([HR.hubKeys.load().catch(function () {}), new Promise(function (r) { setTimeout(r, 1500); })]).then(function () {
@@ -46,7 +47,8 @@ Promise.race([HR.hubKeys.load().catch(function () {}), new Promise(function (r) 
   HR.hubRows.init();
   Promise.resolve(folder).catch(function () {}).then(HR.chats.init);   /* AG4: chats after the folder handle is known */
   HR.chatSearch.init();
-  /* AG8: Agent's own offline service worker, scope apps/lab/agent/ (agent_sw.js); version = this script's ?v= tag */
+  /* AG8: Agent's own offline service worker, scope apps/lab/agent/ (agent_sw.js); AG-F7: plain link, plain 'agent-files' cache
+    navigator.serviceWorker.register('agent_sw.js?v=' + AGENT_VER, { scope: './', updateViaCache: 'none' }).catch(function () {}); */
   if ('serviceWorker' in navigator && location.protocol !== 'file:')
-    navigator.serviceWorker.register('agent_sw.js?v=' + AGENT_VER, { scope: './', updateViaCache: 'none' }).catch(function () {});
+    navigator.serviceWorker.register('agent_sw.js', { scope: './', updateViaCache: 'none' }).catch(function () {});
 });
