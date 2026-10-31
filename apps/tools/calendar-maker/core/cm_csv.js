@@ -3,6 +3,9 @@
    Import accepts ONLY this format (header names / values any case, columns in any order). CM18 CSV follow-up:
    CM17 repeat values (Every year / This year) are skipped 'repeat must be yes or no', so a CM17 file has no valid rows.
    (removed: 'Import also reads the CM17 file ... any case; repeat also y / n / true / false.')
+   CM19: repeat moving = every year, date changes. Export: one row per moving holiday for the previewed year
+   (start/end YYYY-MM-DD, empty when undated that year). Import: dated moving rows set that year's date (merged by
+   name + type into an existing moving holiday); empty start/end only allowed for moving (adds it undated).
    CM17 (legacy export): Header: Name,Start,End,Type,Repeat. Type Gazetted | Restricted. Repeat Every year | This year.
    Every year: Start/End as DD-MM (29-02 allowed); This year: YYYY-MM-DD. End blank = one day; ranges stay in one year.
    Export: UTF-8 with BOM, CRLF, RFC 4180 quoting. Import: BOM optional, CRLF or LF, Type/Repeat any case,
@@ -17,7 +20,8 @@ window.CM.Csv = (function () {
   const TWORD = { g: 'gazetted', r: 'restricted', p: 'public', s: 'school' }; /* CM18 */
   const TCODE = { gazetted: 'g', restricted: 'r', public: 'p', school: 's' };
   /* const REP = { 'every year': true, yes: true, y: true, true: true, 'this year': false, no: false, n: false, false: false };  (CM18 first cut) */
-  const REP = { yes: true, no: false }; /* CM18 CSV follow-up: new format only */
+  /* const REP = { yes: true, no: false };  (CM18 CSV follow-up - CM18) */
+  const REP = { yes: true, no: false, moving: 'm' }; /* CM19 */
   const tword = (h) => TWORD[Hd ? Hd.typeOf(h) : (h.r ? 'r' : 'g')];
   const p2 = (n) => String(n).padStart(2, '0');
   const mlen = (m) => new Date(2000, m + 1, 0).getDate(); /* Feb = 29 */
@@ -26,7 +30,8 @@ window.CM.Csv = (function () {
   const fname = (y) => y + '-holidays.csv';
 
   /* H = {fixed: [...] (or already resolved), dated: [...]} -> CSV text (BOM + CRLF) */
-  function serialize(fixed, dated) {
+  /* function serialize(fixed, dated) {  (CM17-CM18) */
+  function serialize(fixed, dated, moving, year) { /* CM19: + moving rows for year */
     /* const out = [line(HEAD)];  (CM17) */
     const out = [line(OUT_HEAD)]; /* CM18 */
     (fixed || []).slice().sort((a, b) => a.m - b.m || a.d - b.d).forEach((h) => {
@@ -37,6 +42,10 @@ window.CM.Csv = (function () {
     (dated || []).slice().sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)).forEach((h) => {
       /* out.push(line([h.name, h.date, h.end || '', h.r ? 'Restricted' : 'Gazetted', 'This year']));  (CM17) */
       out.push(line([h.name, h.date, h.end || '', tword(h), 'no']));
+    });
+    (moving || []).slice().sort((a, b) => (a.name < b.name ? -1 : 1)).forEach((h) => { /* CM19 */
+      const v = (h.dates && h.dates[year]) || {};
+      out.push(line([h.name, v.start || '', v.end || '', tword(h), 'moving']));
     });
     return '\uFEFF' + out.join('\r\n') + '\r\n';
   }
@@ -77,7 +86,7 @@ window.CM.Csv = (function () {
 
   /* text -> {fixed: [...], dated: [...], skipped: [{line, reason}], total} ; never throws */
   function parse(text) {
-    const res = { fixed: [], dated: [], skipped: [], total: 0 };
+    const res = { fixed: [], dated: [], moving: [], skipped: [], total: 0 }; /* CM19: + moving [{name, r?, t?, start?, end?}] */
     const R = rows(text);
     if (!R.length) { res.skipped.push({ line: 1, reason: 'empty file' }); return res; }
     const hd = R[0].cells.map((c) => c.trim().toLowerCase()), col = {};
@@ -98,9 +107,24 @@ window.CM.Csv = (function () {
       const tc = TCODE.hasOwnProperty(type) ? TCODE[type] : null; /* CM18 */
       if (!tc) return skip('unknown type "' + g('Type') + '" (use gazetted, restricted, public or school)');
       /* if (!REP.hasOwnProperty(rep)) return skip('unknown repeat "' + g('Repeat') + '" (use yes or no)');  (CM18 first cut) */
-      if (!REP.hasOwnProperty(rep)) return skip('repeat must be yes or no (got "' + g('Repeat') + '")');
+      /* if (!REP.hasOwnProperty(rep)) return skip('repeat must be yes or no (got "' + g('Repeat') + '")');  (CM18) */
+      if (!REP.hasOwnProperty(rep)) return skip('repeat must be yes, no or moving (got "' + g('Repeat') + '")'); /* CM19 */
       const rr = tc === 'r', every = REP[rep];
       const typed = (o) => { if (tc === 'p' || tc === 's') o.t = tc; return o; };
+      if (every === 'm') { /* CM19: moving; empty start = undated */
+        const o = { name }; if (rr) o.r = true;
+        if (!s) { if (e) return skip('end without start'); res.moving.push(typed(o)); return; }
+        const a = ymd(s); if (!a) return skip('bad start date "' + s + '" (use YYYY-MM-DD)');
+        o.start = a;
+        if (e) {
+          const b = ymd(e); if (!b) return skip('bad end date "' + e + '" (use YYYY-MM-DD)');
+          if (b.slice(0, 4) !== a.slice(0, 4)) return skip('range crosses into another year');
+          if (b < a) return skip('end before start');
+          if (b > a) o.end = b;
+        }
+        res.moving.push(typed(o)); return;
+      }
+      if (!s) return skip('empty start (only moving rows may have no date)'); /* CM19 */
       if (every) {
         const a = dm(s); if (!a) return skip('bad start date "' + s + '" (use DD-MM)');
         const o = { m: a.m, d: a.d, name };
@@ -141,5 +165,23 @@ window.CM.Csv = (function () {
     return { fixed: F, dated: D, added, dup };
   }
 
-  return { HEAD, OUT_HEAD, serialize, parse, rows, merge, fname };
+  /* CM19: merge parsed moving rows into a moving list (copies). Same name + type = same holiday: a dated row sets
+     that year's date (dup when already that date); an undated row adds the holiday only when new. */
+  const tkey = (h) => h.name.toLowerCase() + '|' + (Hd ? Hd.typeOf(h) : (h.r ? 'r' : 'g'));
+  function mergeMoving(moving, rowsM) {
+    const M = (moving || []).map((h) => Object.assign({}, h, { dates: Object.assign({}, h.dates) }));
+    let added = 0, dup = 0, dated = 0;
+    (rowsM || []).forEach((r) => {
+      let h = M.find((x) => tkey(x) === tkey(r)), isNew = false;
+      if (!h) { h = { name: r.name, dates: {}, len: 1 }; if (r.r) h.r = true; if (r.t) h.t = r.t; M.push(h); isNew = true; added++; }
+      if (!r.start) { if (!isNew) dup++; return; }
+      const y = r.start.slice(0, 4), v = h.dates[y];
+      if (v && v.start === r.start && (v.end || '') === (r.end || '')) { if (!isNew) dup++; return; }
+      if (Hd) Hd.setMoving(h, y, r.start, r.end || ''); else h.dates[y] = r.end ? { start: r.start, end: r.end } : { start: r.start };
+      if (!isNew) dated++;
+    });
+    return { moving: M, added, dup, dated };
+  }
+
+  return { mergeMoving, /* CM19 */ HEAD, OUT_HEAD, serialize, parse, rows, merge, fname };
 })();

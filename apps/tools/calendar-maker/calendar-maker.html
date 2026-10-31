@@ -42,6 +42,7 @@
   <main id="page-design" class="page">
     <div id="preview-wrap"><canvas id="sheet" aria-label="A4 calendar preview"></canvas></div>
     <aside id="opts">
+      <!--CM19--><p class="note mv-note" hidden></p>
       <div class="row"><span>Year</span>
         <div class="yr"><button type="button" class="nav" id="y-prev" aria-label="Previous year">&#8249;</button><input type="number" id="year" min="1900" max="2200"><button type="button" class="nav" id="y-next" aria-label="Next year">&#8250;</button></div></div>
       <div class="row col"><span>Holiday colour</span>
@@ -109,6 +110,12 @@
   </main>
   <!--CM3-->
   <main id="page-hol" class="page" hidden>
+    <!--CM19--><p class="mv-remind" id="mv-remind" hidden></p>
+    <section class="mv-need" id="mv-need" hidden>
+      <h2>Needs a date for <span id="mv-need-year"></span> <small>not on the calendar until dated</small></h2>
+      <ul class="hl" id="mv-need-list"></ul>
+      <p class="note">Pick the start date; To fills in from last time's length and can be changed.</p>
+    </section><!--/CM19-->
     <div class="hol-wrap">
       <section>
         <h2>Every year <small>same date every year</small></h2>
@@ -120,8 +127,14 @@
         <h2>This year only <small id="dt-year"></small></h2>
         <div class="add"><input type="date" id="dt-date" aria-label="Date"><!--CM11--><span class="to">to</span><input type="date" id="dt-end" aria-label="To (optional)" title="To (optional)"><input type="text" id="dt-name" placeholder="e.g. Diwali" maxlength="60"><!--CM9--><select id="dt-type" aria-label="Type"><option value="g">Gazetted</option><option value="r">Restricted</option><!--CM18--><option value="p">Public</option><option value="s">School</option></select><button type="button" class="btn" id="dt-add">Add</button></div>
         <ul class="hl" id="dt-list"></ul>
-        <p class="note">For festivals whose date changes each year. Leave To empty for a one-day holiday. Only the year chosen on the Design page is shown.</p>
+        <p class="note">For a one-off holiday this year. Leave To empty for a one-day holiday. Only the year chosen on the Design page is shown.</p><!--CM11-CM18: was 'For festivals whose date changes each year. Leave To empty ...'-->
       </section>
+      <!--CM19--><section>
+        <h2>Every year, date changes <small id="mv-year"></small></h2>
+        <div class="add"><input type="date" id="mv-date" aria-label="Date (optional)"><span class="to">to</span><input type="date" id="mv-end" aria-label="To (optional)" title="To (optional)"><input type="text" id="mv-name" placeholder="e.g. Diwali" maxlength="60"><select id="mv-type" aria-label="Type"><option value="g">Gazetted</option><option value="r">Restricted</option><option value="p">Public</option><option value="s">School</option></select><button type="button" class="btn" id="mv-add">Add</button></div>
+        <ul class="hl" id="mv-list"></ul>
+        <p class="note">For festivals whose date changes each year. They carry over to every year by name and type; each new year asks for its date (Needs a date, at the top). Delete asks: this year only, or every year.</p>
+      </section><!--/CM19-->
     </div>
   </main>
   <!--/CM3-->
@@ -129,6 +142,7 @@
   <main id="page-list" class="page" hidden>
     <div id="list-wrap"><canvas id="list-sheet" aria-label="A4 holiday list preview"></canvas></div>
     <aside class="list-opts">
+      <!--CM19--><p class="note mv-note" hidden></p>
       <label class="row col"><span>Header (optional)</span><input type="text" id="list-header" maxlength="80" placeholder="e.g. organisation name"></label>
       <!--CM12--><label class="row col"><span>Layout</span><select id="list-layout"><option value="classic">Classic</option><option value="simple">Simple</option></select></label>
       <div class="list-classic list-opts-in">
@@ -169,12 +183,12 @@
         <p class="note">Resets colours, layout, legend, background and Holiday List options. Your holidays are never touched.</p>
         <!--CM17--><div class="row"><span>Holiday list</span><span><button type="button" class="mini" id="csv-export">Export holidays (CSV)</button> <button type="button" class="mini" id="csv-import">Import holidays (CSV)</button></span></div>
         <input type="file" id="csv-file" accept=".csv,text/csv" hidden>
-        <p class="note">CSV columns: name, start, end, type (gazetted / restricted / public / school), repeat (yes = every year / no = this year). Only this format imports.<!--CM18 CSV follow-up: was 'Older CM17 files still import.'--><!--CM18: was Type (Gazetted / Restricted), Repeat (Every year / This year)--> Opens in Excel. Import shows a preview first, then Add to existing or Replace all.</p>
+        <p class="note">CSV columns: name, start, end, type (gazetted / restricted / public / school), repeat (yes = every year / no = this year / moving = every year, date changes). Moving rows hold the date for the year on the Design page and may have empty dates.<!--CM17-CM18: was 'repeat (yes = every year / no = this year).'--> Only this format imports.<!--CM18 CSV follow-up: was 'Older CM17 files still import.'--><!--CM18: was Type (Gazetted / Restricted), Repeat (Every year / This year)--> Opens in Excel. Import shows a preview first, then Add to existing or Replace all.</p>
       </section>
       <section class="card">
         <h2>How to</h2>
         <ol class="howto">
-          <li><b>Holidays tab:</b> add holidays. <i>Every year</i> for fixed dates, <i>This year only</i> for festivals whose date changes. Pick a To date for a multi-day holiday, and the type: Gazetted, Restricted, Public or School. If a day has several, the calendar shows Sunday, then Saturday holiday, Gazetted, Restricted, Public, School.</li>
+          <li><b>Holidays tab:</b> add holidays. <i>Every year</i> for fixed dates, <i>This year only</i> for one-offs, <i>Every year, date changes</i> for festivals like Diwali: they carry over each year and ask for the new date under <i>Needs a date</i>.<!--CM3-CM18: was '<i>This year only</i> for festivals whose date changes.'--> Pick a To date for a multi-day holiday, and the type: Gazetted, Restricted, Public or School. If a day has several, the calendar shows Sunday, then Saturday holiday, Gazetted, Restricted, Public, School.</li>
           <li><b>Design tab:</b> choose the year and the look: holiday, restricted, public, school, month label and weekday row colours, legend and its size, Saturdays, week start, layout, fold 6th week, background. Zoom the preview with Fit or the slider.</li>
           <li><b>Holiday List tab:</b> Classic or Simple layout, header and subtitle, striped rows, and whether to show restricted, public and school holidays.</li>
           <li><b>Year Overview tab:</b> summary of days off and working days, holiday streaks and holiday stretches for the year.</li>

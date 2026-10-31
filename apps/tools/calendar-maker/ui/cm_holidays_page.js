@@ -3,6 +3,8 @@
    Every-year input is Day + Month selects (no year); 29 Feb only shows in leap years.
    CM9: any holiday may carry r:true = Restricted; missing r = Gazetted (older saves load unchanged).
    CM18: type select per row (Gazetted, Restricted, Public, School); t 'p' / 's' for Public / School (Hd.setType).
+   CM19: third repeat choice 'Every year, date changes' (H.moving, see core/cm_holidays.js): carried to every year by
+   name; a year with no date shows in 'Needs a date for YYYY' at the top and is not drawn or counted.
    Saved in 'calendar-maker-holidays' (see core/cm_settings.js). Custom holidays stay in Calendar Maker only;
    the Calendar app is not changed. */
 window.CM = window.CM || {};
@@ -91,8 +93,80 @@ window.CM.Hol = (function () {
     $('dt-list').innerHTML = dt.length ? split(dt, 'No gazetted ones for ' + year + '.')
       : '<li class="empty">None for ' + year + ' yet.</li>';
     $('dt-year').textContent = '(' + year + ')';
+    drawMoving(); /* CM19 */
     /* ['fx-date', 'dt-date'].forEach(...)  (CM3-CM10) */
-    ['dt-date', 'dt-end'].forEach((id) => { if ($(id)) { $(id).min = year + '-01-01'; $(id).max = year + '-12-31'; } }); /* CM11 */
+    ['dt-date', 'dt-end', 'mv-date', 'mv-end'].forEach((id) => { if ($(id)) { $(id).min = year + '-01-01'; $(id).max = year + '-12-31'; } }); /* CM11 */
+  }
+  /* CM19: moving holidays. Rows carry the year's start / To dates (empty when undated). */
+  const mvRow = (h, i) => { const v = (h.dates && h.dates[year]) || {};
+    return '<li data-i="' + i + '"><input type="date" data-act="mstart" value="' + (v.start || '') + '"' + yrange() +
+      ' aria-label="Date for ' + year + '"><input type="date" data-act="mend" value="' + (v.end || '') + '"' + yrange() +
+      ' aria-label="To (optional)" title="To (optional)"><span title="' + esc(h.name) + '"><b>' + (v.start ? dlabel({ date: v.start, end: v.end }) ||
+      (+v.start.slice(8, 10) + ' ' + MS[+v.start.slice(5, 7) - 1] + ' ') : '') + '</b>' + esc(h.name) + '</span>' + rowBtns(h); };
+  const needN = (y) => Hd.needDate(H, y).length;
+  const needText = (y) => { const n = needN(y); return n ? n + ' holiday' + (n === 1 ? ' needs a date' : 's need dates') + ' for ' + y : ''; };
+  /* CM19: small note on Design / Holiday List (elements with class mv-note) */
+  function notes(y) {
+    const t = needText(y);
+    document.querySelectorAll('.mv-note').forEach((el) => { el.textContent = t ? t + ' (Holidays tab); they are not on the calendar yet.' : ''; el.hidden = !t; });
+  }
+  function drawMoving() {
+    if (!$('mv-list')) return;
+    const need = Hd.needDate(H, year), sorted = (a) => a.sort((x, y) => (x.h.name < y.h.name ? -1 : 1));
+    $('mv-need').hidden = !need.length;
+    $('mv-need-year').textContent = year;
+    $('mv-need-list').innerHTML = sorted(need).map(({ h, i }) => mvRow(h, i)).join('');
+    $('mv-remind').textContent = needText(year); $('mv-remind').hidden = !need.length;
+    const dt = H.moving.map((h, i) => ({ h, i })).filter(({ h }) => h.dates && h.dates[year])
+      .sort((a, b) => (a.h.dates[year].start < b.h.dates[year].start ? -1 : 1))
+      .map(({ h, i }) => ({ h, html: mvRow(h, i) }));
+    $('mv-list').innerHTML = dt.length ? split(dt, 'No gazetted ones dated for ' + year + '.')
+      : '<li class="empty">' + (H.moving.length ? 'None dated for ' + year + ' yet.' : 'None yet.') + '</li>';
+    $('mv-year').textContent = '(' + year + ')';
+    notes(year);
+  }
+  async function actMv(e) {
+    const li = e.target.closest('li[data-i]'); if (!li) return;
+    const item = H.moving[+li.dataset.i], a = e.target.dataset.act; if (!item) return;
+    const cur = (item.dates && item.dates[year]) || {};
+    if (e.type === 'change' && a === 'mstart') {
+      const v = e.target.value;
+      if (!v) { Hd.setMoving(item, year, ''); save(); draw(); return; }
+      if (v.slice(0, 4) !== String(year)) { draw(); return; }
+      Hd.setMoving(item, year, v, Hd.autoEnd(v, item.len)); /* end auto-filled from the last known length */
+      save(); draw(); return;
+    }
+    if (e.type === 'change' && a === 'mend') {
+      const v = e.target.value;
+      if (!cur.start) { draw(); return; }
+      if (v && v <= cur.start) { badRange(); draw(); return; }
+      Hd.setMoving(item, year, cur.start, v); save(); draw(); return;
+    }
+    if (e.type === 'change' && a === 'type') { Hd.setType(item, e.target.value); save(); draw(); return; }
+    if (e.type !== 'click') return;
+    if (a === 'ren') {
+      const n = await window.UiDialog.ask('Rename holiday', item.name, 'Rename');
+      if (n && n.trim()) { item.name = n.trim().slice(0, 60); save(); draw(); }
+    } else if (a === 'del') {
+      const pick = await window.UiDialog.choose('Delete holiday?', item.name + ': remove it for ' + year + ' only, or every year?',
+        [{ value: 'all', label: 'Every year', kind: 'danger' }, { value: 'year', label: year + ' only', kind: 'primary' }]);
+      const v = pick && pick.value;
+      if (v === 'all') H.moving.splice(H.moving.indexOf(item), 1);
+      else if (v === 'year') Hd.setMoving(item, year, '', '', true); /* off this year: not asked for again */
+      else return;
+      save(); draw();
+    }
+  }
+  function addMv() {
+    const n = $('mv-name').value.trim().slice(0, 60), sd = $('mv-date').value, ed = $('mv-end').value;
+    if (!n) { window.UiDialog.info('Add holiday', [['Needed', 'Type a name. The date is optional; you can fill it in later.']]); return; }
+    if (sd && ed && ed <= sd) { badRange(); return; }
+    const ti = $('mv-type'), tv = ti && Hd.TYPES.indexOf(ti.value) >= 0 ? ti.value : 'g';
+    const it = Hd.setType({ name: n, len: 1, dates: {} }, tv);
+    if (sd) Hd.setMoving(it, year, year + sd.slice(4), ed ? year + ed.slice(4) : '');
+    H.moving.push(it);
+    $('mv-name').value = ''; $('mv-date').value = ''; $('mv-end').value = '';
+    save(); draw();
   }
   function show(y) { year = y; draw(); }
 
@@ -172,6 +246,11 @@ window.CM.Hol = (function () {
       $('fx-em').innerHTML = monOpts('', true); $('fx-ed').innerHTML = dayOpts('', '', true);
       $('fx-m').onchange = () => fit('fx-d', 'fx-m', false); $('fx-em').onchange = () => fit('fx-ed', 'fx-em', true);
     }
+    if ($('mv-list')) { /* CM19 */
+      ['mv-list', 'mv-need-list'].forEach((id) => { $(id).addEventListener('click', actMv); $(id).addEventListener('change', actMv); });
+      $('mv-add').onclick = addMv;
+      $('mv-name').onkeydown = (e) => { if (e.key === 'Enter') addMv(); };
+    }
     $('fx-add').onclick = () => add(true);
     $('dt-add').onclick = () => add(false);
     $('fx-name').onkeydown = (e) => { if (e.key === 'Enter') add(true); };
@@ -181,5 +260,6 @@ window.CM.Hol = (function () {
       if (await window.UiDialog.confirm('Restore defaults?', msg, 'Restore', true)) { H.fixed = null; save(); draw(); }
     };
   });
-  return { forYear, show, readFx, _H: H, _save: save, _own: own, _act: act, _add: add }; /* _ = test hooks */
+  /* return { forYear, show, readFx, _H: H, _save: save, _own: own, _act: act, _add: add };  (CM13-CM18) */
+  return { forYear, show, readFx, notes, needText, _H: H, _save: save, _own: own, _act: act, _add: add, _actMv: actMv, _addMv: addMv }; /* _ = test hooks; CM19 notes, needText, _actMv, _addMv */
 })();

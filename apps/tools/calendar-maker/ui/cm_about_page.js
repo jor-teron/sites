@@ -52,7 +52,8 @@
   const Csv = CM.Csv;
   const holH = () => (CM.Hol && CM.Hol._H) || S.loadHolidays();
   CM.csvExport = () => {
-    const H = holH(), txt = Csv.serialize(CM.Holidays.fixedOf(H), H.dated), name = Csv.fname(P.year);
+    /* const H = holH(), txt = Csv.serialize(CM.Holidays.fixedOf(H), H.dated), name = Csv.fname(P.year);  (CM17-CM18) */
+    const H = holH(), txt = Csv.serialize(CM.Holidays.fixedOf(H), H.dated, H.moving, P.year), name = Csv.fname(P.year); /* CM19 */
     try {
       const url = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' }));
       const a = document.createElement('a'); a.href = url; a.download = name;
@@ -69,7 +70,8 @@
   };
   /* text -> preview dialog -> save; resolves 'add' | 'replace' | null */
   CM.csvImport = async (text) => {
-    const D = window.UiDialog, R = Csv.parse(text), n = R.fixed.length + R.dated.length;
+    /* const D = window.UiDialog, R = Csv.parse(text), n = R.fixed.length + R.dated.length;  (CM17-CM18) */
+    const D = window.UiDialog, R = Csv.parse(text), n = R.fixed.length + R.dated.length + R.moving.length; /* CM19 */
     const sk = R.skipped.slice(0, 12).map((x) => 'line ' + x.line + ': ' + x.reason).join('; ') +
       (R.skipped.length > 12 ? '; and ' + (R.skipped.length - 12) + ' more' : '');
     const head = n + ' holiday' + (n === 1 ? '' : 's') + ' found, ' + R.skipped.length + ' row' + (R.skipped.length === 1 ? '' : 's') + ' skipped.';
@@ -81,10 +83,12 @@
     const H = holH();
     let m;
     if (v === 'replace') {
-      if (!(await D.confirm('Replace all holidays?', 'Every saved holiday (every-year and this-year-only) is replaced by the ' + n + ' from the file.', 'Replace all', true))) return null;
+      if (!(await D.confirm('Replace all holidays?', 'Every saved holiday (every-year, this-year-only and date-changes) is replaced by the ' + n + ' from the file.', 'Replace all', true))) return null;
       m = Csv.merge([], [], R);
     } else m = Csv.merge(CM.Holidays.fixedOf(H), H.dated, R);
     H.fixed = m.fixed; H.dated = m.dated;
+    const mm = Csv.mergeMoving(v === 'replace' ? [] : H.moving, R.moving); /* CM19 */
+    H.moving = mm.moving; m.added += mm.added + mm.dated; m.dup += mm.dup;
     if (CM.Hol && CM.Hol._save) CM.Hol._save(); else S.saveHolidays(H);
     refresh();
     await D.info('Holidays imported', [['Added', String(m.added)], ['Duplicates skipped', String(m.dup)], ['Rows skipped', String(R.skipped.length)]]);
