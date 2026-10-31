@@ -1,7 +1,7 @@
 /* Calendar Maker CM13 core: every saved key, with defaults and validation, in one place. window.CM.Settings
    'calendar-maker-settings' (CM1+): { year, colour: preset key | 'custom', sundays, sat: 'none'|'24'|'all',
      week: 'sun'|'mon' (default from Calendar's 'calendar-settings-v1'), bg: 'none'|'soft'|'pic', soft, faint,
-     strip (CM2), layout (CM4), fold (CM5), custom, font (CM6), rcol (CM9), lhead (CM10), legend, mfill (CM12-F3), lgsz (CM16-F1),
+     strip (CM2), layout (CM4), fold (CM5), custom, font (CM6), rcol (CM9), lhead (CM10), legend, mfill (CM12-F3), lgsz (CM16-F1), wfill, wmatch (CM16-F5),
      llay, lsub, ldeco, labcd, lmerge, lhc (CM12), lband, lbandc (CM16-F2), lshowr (CM16-F3) }
    'calendar-maker-holidays' (CM3): { fixed: null (= Calendar's built-in list) | [{m, d, name, r?, em?, ed?}],
      dated: [{date: 'YYYY-MM-DD', end?, name, r?}] }
@@ -23,7 +23,7 @@ window.CM.Settings = (function () {
       sat: cal.satAll ? 'all' : (cal.sat24 ? '24' : 'none'), week: cal.week === 'mon' ? 'mon' : 'sun',
       bg: 'none', soft: '#fef9e7', faint: 25, strip: false, layout: 'p3', fold: true,
       custom: '#15803d', /* CM12-F4: was '#92d36e' (CM6); saved custom values are kept */
-      font: '#000000', rcol: '#cfcfcf', lhead: '', legend: true, mfill: '#d9d9d9', lgsz: 0.58 };
+      font: '#000000', rcol: '#cfcfcf', lhead: '', legend: true, mfill: '#d9d9d9', lgsz: 0.58, wfill: '#d9d9d9', wmatch: false }; /* CM16-F5 wfill, wmatch */
     /* CM16-F1: legend size in em of the date font (0.58 = the CM12-F3 look) */
     /* CM12-F3: legend + month row fill */ /* CM10: Holiday List header */ /* CM9: restricted holiday colour */
     /* CM6: custom holiday colour + font colour */ /* CM5: fold on (existing users get it too) */
@@ -39,6 +39,8 @@ window.CM.Settings = (function () {
     ['lhead', isStr, () => ''], /* CM10 */
     ['legend', isBool, () => true], /* CM12-F3 */
     ['mfill', (v) => T.HEX.test(v), (D) => D.mfill],
+    ['wfill', (v) => T.HEX.test(v), (D) => D.wfill], /* CM16-F5 */
+    ['wmatch', isBool, () => false], /* CM16-F5 */
     ['lgsz', (v) => typeof v === 'number' && isFinite(v), (D) => D.lgsz], /* CM16-F1: then clamped below */
     /* CM12: holiday list layout (Classic default) + Classic options */
     ['llay', (v) => v === 'simple', () => 'classic'],
