@@ -1,5 +1,7 @@
 /* Calendar Maker CM14 render: Year Overview page, one A4 portrait 250 dpi canvas (preview, Print, PDF).
    window.CM.Overview.draw(canvas, o), o = { year, hols, sat, font, header, hcolour }.
+   CM17-F2: From – To = ordinal dates with superscript suffix + a smaller '(Friday to Tuesday)' line; Holidays in it
+   = every off day in order joined with ' + '.
    CM16-F4: title band is just 'YEAR OVERVIEW' + spaced year (legacy CM14: optional Header first), one blank row between sections.
    Title band (legacy: optional Header, 'YEAR OVERVIEW', spaced year) like the Classic list, then three all-borders tables:
    Summary, Holiday streaks, Holiday stretches. Header rows use the list header colour; whole page shrinks to fit. */
@@ -23,10 +25,10 @@ window.CM.Overview = (function () {
       { title: 'Summary', cols: [0.78, 0.22], head: ['Item', 'Days'], align: ['l', 'c'], rows: sum, bold: [6, 7] },
       { title: 'Holiday Streaks', /* CM16-F4, was 'Holiday streaks (3 or more days off in a row)' */ cols: [0.07, 0.33, 0.1, 0.5],
         head: ['#', 'From – To', 'Days', 'Holidays in it'], align: ['c', 'c', 'c', 'l'],
-        rows: s.streaks.map((k, i) => [String(i + 1), k.from, String(k.len), k.names]) },
+        rows: s.streaks.map((k, i) => [String(i + 1), k.ft, String(k.len), k.names]) }, /* CM17-F2: k.ft was k.from (CM14-CM17) */
       { title: 'Holiday Stretches', /* CM16-F4, was 'Holiday stretches (days off ≥ working days)' */ cols: [0.06, 0.3, 0.09, 0.07, 0.1, 0.38],
         head: ['#', 'From – To', 'Total', 'Off', 'Working', 'Holidays in it'], align: ['c', 'c', 'c', 'c', 'c', 'l'],
-        rows: s.stretches.map((k, i) => [String(i + 1), k.from, String(k.len), String(k.off), String(k.work), k.names]) }
+        rows: s.stretches.map((k, i) => [String(i + 1), k.ft, String(k.len), String(k.off), String(k.work), k.names]) } /* CM17-F2: k.ft was k.from */
     ];
   }
 
@@ -59,6 +61,7 @@ window.CM.Overview = (function () {
     /* layout at a font size: wrapped cell lines per row */
     const lay = (fs) => {
       const pad = Math.round(fs * 0.35), LH = Math.round(fs * 1.2), base = LH + 2 * pad, gapT = Math.round(fs * 1.9);
+      const sfs = Math.round(fs * 0.75), SLH = Math.round(sfs * 1.2); /* CM17-F2: weekday line */
       let total = 0;
       const sec = base; /* CM16-F4: one blank row between sections */
       const ts = tbs.map((t, ti) => {
@@ -66,17 +69,28 @@ window.CM.Overview = (function () {
         c.font = font('400', fs);
         const rs = (t.rows.length ? t.rows : [null]).map((r) => {
           if (!r) return { none: true, h: base };
-          const ls = r.map((v, i) => C.wrap(c, v, xs[i + 1] - xs[i] - 2 * pad));
-          return { r, ls, h: Math.max(...ls.map((x) => x.length)) * LH + 2 * pad };
+          /* const ls = r.map((v, i) => C.wrap(c, v, xs[i + 1] - xs[i] - 2 * pad));
+          return { r, ls, h: Math.max(...ls.map((x) => x.length)) * LH + 2 * pad };  (CM14-CM17) */
+          /* CM17-F2: a cell is text, or {toks, sub} = ordinal date tokens + a smaller weekday line */
+          const ls = r.map((v, i) => {
+            const mw = xs[i + 1] - xs[i] - 2 * pad;
+            if (v && typeof v === 'object') {
+              const tl = C.wrapTok(c, v.toks, mw, fs); c.font = font('400', sfs);
+              const sl = C.wrap(c, v.sub, mw); c.font = font('400', fs);
+              return { tok: tl, sub: sl, h: tl.length * LH + sl.length * SLH };
+            }
+            const t = C.wrap(c, v, mw); t.h = t.length * LH; return t;
+          });
+          return { r, ls, h: Math.max(...ls.map((x) => x.h)) + 2 * pad };
         });
         const h = (ti ? sec : 0) + gapT + base + rs.reduce((a, b) => a + b.h, 0); /* CM16-F4 was: gapT + base + rows */
         total += h; return { t, xs, rs, h };
       });
-      return { fs, pad, LH, base, gapT, sec, ts, total };
+      return { fs, pad, LH, base, gapT, sec, ts, total, sfs, SLH };
     };
     let Lay = null;
     for (let fs = 48; fs >= 18; fs -= 2) { Lay = lay(fs); if (Lay.total <= avail) break; }
-    const { fs, pad, LH, base, gapT, sec } = Lay;
+    const { fs, pad, LH, base, gapT, sec, sfs, SLH } = Lay;
     const secs = []; /* CM16-F4: section boxes for the harness */
     let yy = top;
     Lay.ts.forEach(({ t, xs, rs }, ti) => {
@@ -103,7 +117,14 @@ window.CM.Overview = (function () {
             const al = t.align[i];
             c.textAlign = al === 'l' ? 'left' : 'center';
             const tx = al === 'l' ? xs[i] + pad : (xs[i] + xs[i + 1]) / 2;
-            ls.forEach((s1, j) => c.fillText(s1, tx, mid + (j - (ls.length - 1) / 2) * LH));
+            /* ls.forEach((s1, j) => c.fillText(s1, tx, mid + (j - (ls.length - 1) / 2) * LH));  (CM14-CM17) */
+            if (ls.tok) { /* CM17-F2: date lines, then the smaller weekday line, centred as one block */
+              let ly = mid - ls.h / 2;
+              ls.tok.forEach((tl) => { C.drawTokLine(c, tl, (xs[i] + xs[i + 1]) / 2, ly + LH / 2, fs, fc); ly += LH; });
+              c.font = font('400', sfs); c.fillStyle = fc; c.textAlign = 'center';
+              ls.sub.forEach((s1) => { c.fillText(s1, (xs[i] + xs[i + 1]) / 2, ly + SLH / 2); ly += SLH; });
+              c.font = font((t.bold || []).indexOf(ri) >= 0 ? '700' : '400', fs);
+            } else ls.forEach((s1, j) => c.fillText(s1, tx, mid + (j - (ls.length - 1) / 2) * LH));
           });
         }
         yy += x.h;

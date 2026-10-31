@@ -1,6 +1,6 @@
 /* Calendar Maker CM13 ui: Design page (CM1) + page tabs. Adds P, save, hols, render, isLand, sheetCanvas to window.CM.
    Settings keys, defaults and validation live in core/cm_settings.js.
-   ?year=YYYY (from Calendar's "Make printable") wins over the saved year. */
+   ?year=YYYY (from Calendar's "Make printable") wins over the saved year; CM17-F1: else the last saved year, else this year. */
 (function () {
   'use strict';
   const CM = window.CM, S = CM.Settings, T = CM.Theme, R = CM.Render;

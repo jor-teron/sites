@@ -6,7 +6,8 @@
    'calendar-maker-holidays' (CM3): { fixed: null (= Calendar's built-in list) | [{m, d, name, r?, em?, ed?}],
      dated: [{date: 'YYYY-MM-DD', end?, name, r?}] }
    'calendar-maker-bg' (CM2): picture background as a JPEG data URL (<= 1600 px).
-   ?year=YYYY (from Calendar's "Make printable") wins over the saved year; the page opens on the current year. */
+   ?year=YYYY (from Calendar's "Make printable") wins over the saved year; CM17-F1: otherwise the last saved year
+   (1900-2200), else the current year (legacy CM1-CM17: always opened on the current year). */
 window.CM = window.CM || {};
 window.CM.Settings = (function () {
   'use strict';
@@ -58,7 +59,9 @@ window.CM.Settings = (function () {
     Object.keys(D).forEach((k) => { if (P[k] === undefined || P[k] === null) P[k] = D[k]; });
     RULES.forEach(([k, ok, fb]) => { if (!ok(P[k])) P[k] = fb(D); });
     P.lgsz = clampLg(P.lgsz); /* CM16-F1 */
-    P.year = D.year; /* opens on the current year unless Calendar passes ?year= */
+    /* P.year = D.year;  (CM1-CM17: opened on the current year unless Calendar passes ?year=) */
+    const sy = read(KEYS.settings).year; /* CM17-F1: last saved year if valid */
+    P.year = (Number.isInteger(sy) && sy >= 1900 && sy <= 2200) ? sy : D.year;
     const q = /[?&]year=(\d{4})/.exec(search || '');
     if (q) P.year = +q[1];
     return P;

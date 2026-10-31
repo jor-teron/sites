@@ -1,7 +1,8 @@
 /* Calendar Maker CM14 core: Year Overview numbers (no DOM). window.CM.Stats
    Day rules: off = Sunday, Saturday holiday (sat '24' = 2nd & 4th, 'all'), or any day of a Gazetted holiday.
    Restricted days are NOT off (never deducted), only counted and named. Multi-day holidays count every day.
-   Stats.year(y, hols, sat) -> { days, summary, streaks, stretches } */
+   Stats.year(y, hols, sat) -> { days, summary, streaks, stretches }
+   CM17-F2: streak / stretch .ft = ordinal From – To cell (fromTo), .names = every off day in order joined with ' + '. */
 window.CM = window.CM || {};
 window.CM.Stats = (function () {
   'use strict';
@@ -33,21 +34,48 @@ window.CM.Stats = (function () {
     return { total: days.length, sundays, sats, satRule: SAT_RULE[sat] || 'None', gaz, gazWk,
       totalHol: sundays + sats + gaz, actual, working: days.length - actual, restricted: n((x) => x.res.length > 0) };
   }
-  /* 'Sat 17 Oct – Thu 22 Oct' */
+  // CM14-CM17 (weekday + date text, grouped names):
+  //   /* 'Sat 17 Oct – Thu 22 Oct' */
+  //   const dayText = (x) => Hd.WD[x.wd] + ' ' + Hd.p2(x.d) + ' ' + Hd.MS[x.m];
+  //   const range = (days, a, b) => dayText(days[a]) + (a === b ? '' : ' – ' + dayText(days[b]));
+  //   /* 'Durga Puja + Diwali + Sunday + 2 Saturdays (Restricted: Bhai Dooj)'; weekends named only when not Gazetted */
+  //   function names(days, a, b) {
+  //     const g = [], r = []; let su = 0, sa = 0;
+  //     for (let i = a; i <= b; i++) {
+  //       const x = days[i];
+  //       x.gaz.forEach((s) => { if (g.indexOf(s) < 0) g.push(s); });
+  //       x.res.forEach((s) => { if (r.indexOf(s) < 0) r.push(s); });
+  //       if (!x.gaz.length) { if (x.sun) su++; else if (x.satOff) sa++; }
+  //     }
+  //     const w = (k, s) => (k ? [k === 1 ? s : k + ' ' + s + 's'] : []);
+  //     const parts = g.concat(w(su, 'Sunday'), w(sa, 'Saturday'));
+  //     return parts.join(' + ') + (r.length ? ' (Restricted: ' + r.join(', ') + ')' : '');
+  //   }
+  /* 'Sat 17 Oct – Thu 22 Oct' (CM14-CM17 text; kept for callers and tests) */
   const dayText = (x) => Hd.WD[x.wd] + ' ' + Hd.p2(x.d) + ' ' + Hd.MS[x.m];
   const range = (days, a, b) => dayText(days[a]) + (a === b ? '' : ' – ' + dayText(days[b]));
-  /* 'Durga Puja + Diwali + Sunday + 2 Saturdays (Restricted: Bhai Dooj)'; weekends named only when not Gazetted */
+  /* CM17-F2: From – To cell = { toks: ordinal tokens '23rd Jan – 27th Jan' (superscript suffix, as the Classic list),
+     sub: '(Friday to Tuesday)' }, text = plain version for tests */
+  function fromTo(days, a, b) {
+    const tk = (x) => ({ b: String(x.d), s: Hd.sfx(x.d), a: ' ' + Hd.MS[x.m] });
+    const A = days[a], B = days[b], toks = a === b ? [tk(A)] : [tk(A), { b: '–' }, tk(B)];
+    const sub = '(' + Hd.WDF[A.wd] + (a === b ? '' : ' to ' + Hd.WDF[B.wd]) + ')';
+    return { toks, sub, text: toks.map((k) => k.b + (k.s || '') + (k.a || '')).join(' ') + ' ' + sub };
+  }
+  /* CM17-F2: every off day in date order joined with ' + ': holiday names (a multi-day holiday once, at its first
+     day in the run), 'Saturday' / 'Sunday' for weekend days with no Gazetted holiday, Restricted as '(R) Name'.
+     'Netaji Jayanti + Saturday + Sunday + Republic Day + Busu Dima' */
   function names(days, a, b) {
-    const g = [], r = []; let su = 0, sa = 0;
+    const parts = [], seen = {};
+    const add = (s) => { if (!seen[s]) { seen[s] = 1; parts.push(s); } };
     for (let i = a; i <= b; i++) {
       const x = days[i];
-      x.gaz.forEach((s) => { if (g.indexOf(s) < 0) g.push(s); });
-      x.res.forEach((s) => { if (r.indexOf(s) < 0) r.push(s); });
-      if (!x.gaz.length) { if (x.sun) su++; else if (x.satOff) sa++; }
+      if (x.gaz.length) x.gaz.forEach(add);
+      else if (x.sun) parts.push('Sunday');
+      else if (x.satOff) parts.push('Saturday');
+      x.res.forEach((s) => add('(R) ' + s));
     }
-    const w = (k, s) => (k ? [k === 1 ? s : k + ' ' + s + 's'] : []);
-    const parts = g.concat(w(su, 'Sunday'), w(sa, 'Saturday'));
-    return parts.join(' + ') + (r.length ? ' (Restricted: ' + r.join(', ') + ')' : '');
+    return parts.join(' + ');
   }
   /* blocks of consecutive off days [{a, b}] */
   function blocks(days) {
@@ -62,7 +90,7 @@ window.CM.Stats = (function () {
   /* all runs of >= min (3) off days, longest first, ties by date */
   function streaks(days, min) {
     return blocks(days).filter((k) => k.b - k.a + 1 >= (min || 3))
-      .map((k) => ({ a: k.a, b: k.b, len: k.b - k.a + 1, from: range(days, k.a, k.b), names: names(days, k.a, k.b) }))
+      .map((k) => ({ a: k.a, b: k.b, len: k.b - k.a + 1, from: range(days, k.a, k.b), ft: fromTo(days, k.a, k.b), names: names(days, k.a, k.b) }))
       .sort(byLen);
   }
   /* Jor's stretches: span from an off-block start to a later off-block end (>= 2 blocks, so >= 1 working day),
@@ -78,11 +106,11 @@ window.CM.Stats = (function () {
     cand.sort(byLen);
     const picked = [];
     cand.forEach((s) => { if (!picked.some((p) => s.a <= p.b && p.a <= s.b)) picked.push(s); });
-    return picked.map((s) => Object.assign(s, { from: range(days, s.a, s.b), names: names(days, s.a, s.b) }));
+    return picked.map((s) => Object.assign(s, { from: range(days, s.a, s.b), ft: fromTo(days, s.a, s.b), names: names(days, s.a, s.b) }));
   }
   function year(y, hols, sat) {
     const days = classify(y, hols, sat);
     return { year: y, days, summary: summary(days, sat), streaks: streaks(days, 3), stretches: stretches(days) };
   }
-  return { SAT_RULE, classify, summary, blocks, streaks, stretches, names, range, year };
+  return { SAT_RULE, classify, summary, blocks, streaks, stretches, names, range, fromTo, year };
 })();
