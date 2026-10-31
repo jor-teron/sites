@@ -38,7 +38,7 @@
         seg(c, sx, sy, ex, ey, 8, 7, sleeve, 'rgba(0,0,0,0.35)');               // sleeve
         line(c, sx - 1, sy + 1, ex - 1, ey, 1, 'rgba(255,255,255,0.18)');
         seg(c, ex, ey, hx, hy, 5.6, 4.6, SKIN, 'rgba(120,70,40,0.35)');          // forearm
-        poly(c, [[ex - 3.8, ey - 1.5], [ex + 3.8, ey - 1.5], [ex + 3.6, ey + 2], [ex - 3.6, ey + 2]], col(0x2a56a8, 0.8));  // cuff
+        poly(c, [[ex - 3.8, ey - 1.5], [ex + 3.8, ey - 1.5], [ex + 3.6, ey + 2], [ex - 3.6, ey + 2]], PAL[2]);  // cuff (ARQ1d: team colour)
         hand(c, hx, hy, th);
         return [hx, hy];
     }
@@ -49,7 +49,7 @@
             line(c, hx - dx * 5, hy - dy * 5, g[0], g[1], 3.4, '#4a2c10'); line(c, g[0] + dy * 6, g[1] - dx * 6, g[0] - dy * 6, g[1] + dx * 6, 2.6, '#c9a040');
             line(c, g[0], g[1], e[0], e[1], 4.4, '#4e5458'); line(c, g[0], g[1], e[0], e[1], 2.4, '#dfe5ea'); hand(c, hx, hy, th); return;
         }
-        const dx = Math.sin(th), dy = Math.cos(th), L = kind === 'hammer' ? 21 : kind === 'spear' ? 46 : kind === 'net' ? 36 : 31;
+        const dx = Math.sin(th), dy = Math.cos(th), L = kind === 'hammer' ? 21 : kind === 'spear' ? 46 : kind === 'net' ? 36 : kind === 'hoe' ? 38 : 31;
         const bx = hx - dx * 6, by = hy - dy * 6, tx = hx + dx * L, ty = hy + dy * L;
         const px = -dy, py = dx;                 // perpendicular (forward side = +)
         // handle with grain
@@ -84,6 +84,8 @@
             for (let j = -2; j <= 2; j++) { c.beginPath(); c.moveTo(-2, j * 3); c.quadraticCurveTo(8, j * 3.3, 14, j * 1.5); c.stroke(); }
             c.beginPath(); c.ellipse(-2, 0, 2.4, 8, 0, 0, 2 * PI); c.lineWidth = 1.6; c.strokeStyle = '#7a5428'; c.stroke();
             c.restore();
+        } else if (kind === 'hoe') {     // ARQ1d farm hoe: flat iron blade at right angles to the haft
+            poly(c, [P(-1.5, -2), P(1.5, -2), P(12, 1), P(12, 5), P(-1.5, 3)], lin(c, P(0, 0)[0], P(0, 0)[1], P(12, 3)[0], P(12, 3)[1], ['#9a9a9a', '#6a6a6a']), '#2e2e2e', 0.9);
         } else if (kind === 'hammer') {
             const head = [P(-8, -4), P(8, -4), P(8, 5), P(-8, 5)];
             poly(c, head, lin(c, P(0, -4)[0], P(0, -4)[1], P(0, 5)[0], P(0, 5)[1], ['#a4a4a4', '#7a7a7a', '#4e4e4e']), '#2e2e2e', 1);
@@ -144,12 +146,16 @@
         if (pose === 'walk') {
             ph = f / 8 * 2 * PI; const s = Math.sin(ph);
             bob = Math.abs(Math.cos(ph)) * 2.6; lg = s; liftB = Math.max(0, -Math.cos(ph)) * 3 * (s < 0 ? 1 : 0.4); liftF = Math.max(0, Math.cos(ph)) * 3 * (s > 0 ? 1 : 0.4);
-            backTh = -s * 0.6; frontTh = s * 0.6; bend = 0.25; lean = 1.2;
+            backTh = -s * 0.8; frontTh = s * 0.8; bend = 0.25 + Math.abs(s) * 0.15; lean = 1.2;
+            if (kind === 'sword') { frontTh = 1.2 + s * 0.25; bend = 0.6; }   // ARQ1d: sword held ready while marching
         }
+        if (pose === 'idle' && kind === 'sword') { frontTh = 2.1; backTh = 0.9; bend = 0.7; lean = 1.5; lg = 0.35; }   // ARQ1d guard stance
         if (pose === 'work') {
             work = true;
             const e = [0, 0.18, 0.5, 0.86, 1, 0.55][f], sw = e * e * (3 - 2 * e);    // eased swing
             if (kind === 'basket') { frontTh = 0.75 + Math.sin(f / 6 * 2 * PI) * 0.4; backTh = 0.45 + Math.cos(f / 6 * 2 * PI) * 0.3; bend = 0.35; lean = 2 + Math.sin(f / 6 * 2 * PI); }
+            else if (kind === 'none') { frontTh = 0.9 + sw * 0.75; backTh = 1.5 - sw * 0.6; bend = 0.9 - sw * 0.8; lean = sw * 4; }   // ARQ1d punch
+            else if (kind === 'sword') { frontTh = 3.0 - sw * 2.5; backTh = 0.8 + sw * 0.3; bend = 0.15 + sw * 0.35; lean = sw * 6; lg = 0.3 + sw * 0.4; }   // ARQ1d lunging slash
             else { frontTh = 2.85 - sw * 2.15; backTh = frontTh - 0.3; bend = 0.1 + sw * 0.3; lean = sw * 3; }
             bob = kind !== 'basket' ? 1.6 - sw * 1.6 : 0.6;
         }

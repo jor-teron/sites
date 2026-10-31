@@ -56,7 +56,7 @@ const Art = AOE.art = (() => {
     function build(scene) {
         const { villager, setFem, setTeam, banner, carry, pine, leafy, stump, bush, pile, house, townCenter, deer, carcass, fishSpot, flag, barracks } = AOE.models;
         const T0 = performance.now();
-        const kinds = ['none', 'axe', 'pick', 'hammer', 'basket', 'spear', 'net', 'sword'];
+        const kinds = ['none', 'axe', 'pick', 'hammer', 'basket', 'spear', 'net', 'hoe', 'sword'];
         // ARQ1c: one baked set per team in play (cloth, caps, shields, flags, banners in team colour; skin / tools / wood keep theirs)
         const teams = MODE === 'aivai' ? ['ai1', 'ai2'] : MODE === 'play' ? ['p', 'ai1', 'ai2'] : ['p'];
         teams.forEach(id => { const tm = TEAM[id], pal = tm.pal;
@@ -64,9 +64,9 @@ const Art = AOE.art = (() => {
             add('banner' + tm.sfx, 20, 28, 10, 0, c => banner(c, pal));
         ['v_', 'v_f_'].forEach(sx => { const fem = sx === 'v_f_', pre = sx + tm.sfx; kinds.forEach(k => { if (fem && k === 'sword') return;
             const draw = (pose, f) => c => { setTeam(fem && tm.fpal || pal); setFem(fem); villager(c, k, pose, f); setFem(false); };
-            add(`${pre}${k}_idle`, 100, 130, 50, 118, draw('idle', 0));
-            for (let f = 0; f < 8; f++) add(`${pre}${k}_walk${f}`, 100, 130, 50, 118, draw('walk', f));
-            if (k !== 'none') for (let f = 0; f < 6; f++) add(`${pre}${k}_work${f}`, 100, 130, 50, 118, draw('work', f));
+            if (k !== 'hoe') { add(`${pre}${k}_idle`, 100, 130, 50, 118, draw('idle', 0));   // ARQ1d: hoe only has work frames (atlas page budget)
+            for (let f = 0; f < 8; f++) add(`${pre}${k}_walk${f}`, 100, 130, 50, 118, draw('walk', f)); }
+            for (let f = 0; f < 6; f++) add(`${pre}${k}_work${f}`, 100, 130, 50, 118, draw('work', f));
         }); }); });
         ['wood', 'food', 'gold', 'stone'].forEach(t => add('carry_' + t, 36, 34, 18, 20, c => carry(c, t)));
         for (let v = 0; v < 3; v++) {
@@ -77,6 +77,7 @@ const Art = AOE.art = (() => {
         for (let n = 0; n <= 4; n++) { setSeed(401); add('berry' + n, 136, 112, 68, 96, c => bush(c, n * 4)); }
         ['gold', 'stone'].forEach(k => { for (let n = 1; n <= 6; n++) { setSeed(k === 'gold' ? 501 : 601); add(`${k}${n}`, 140, 112, 70, 94, c => pile(c, k, n)); } });
         [[1, 0.33], [1, 0.66], [1, 1], [2, 0.33], [2, 0.66], [2, 1], [3, 0.33], [3, 0.66], [3, 1], [4, 1]].forEach((s, i) => { setSeed(701); add('house' + i, 150, 200, 75, 168, c => house(c, s[0], s[1])); });
+        for (let f = 0; f < 6; f++) add('smoke' + f, 70, 110, 22, 104, c => AOE.models.smoke(c, f));   // ARQ1d chimney smoke loop
         setSeed(901); add('barracks', 160, 200, 80, 150, barracks);
         setSeed(801); add('tc', 300, 320, 150, 240, townCenter);
         ['deer_', 'deer_a_'].forEach(pre => { const a = pre === 'deer_a_';

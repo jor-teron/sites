@@ -192,6 +192,7 @@ function drawTC(g, gu, t) {
     if (t.selected) { gu.lineStyle(4, tm.col, 1); gu.strokeEllipse(c.x, c.y, 300, 150); gu.lineStyle(2, 0xffffff, 0.9); gu.strokeEllipse(c.x, c.y, 306, 153); }
     sprite('tc', c.x, c.y, c.y + 40);
     sprite('flag' + tm.sfx + (Math.floor(animT / 140) % 4), c.x, c.y - 203, c.y + 40.5); sprite('banner' + tm.sfx, c.x - 40, c.y - 80, c.y + 40.6);
+    sprite('banner' + tm.sfx, c.x + 40, c.y - 80, c.y + 40.6); sprite('smoke' + (Math.floor(animT / 220 + c.x) % 6), c.x + 46, c.y - 166, c.y + 40.7);   // ARQ1d
     hpBar(g, t, c.x, c.y - 270, 120);
     const q = t.owner === 'p' ? trainQueue : factions[t.owner].queue, tt = t.owner === 'p' ? trainTimer : factions[t.owner].timer;
     if (q > 0) {          // training progress bar
@@ -207,7 +208,8 @@ function drawHouse(g, x, y, h) {
     if (h.selected) { gUnder.lineStyle(4, tm.col, 1); gUnder.strokeEllipse(p.x, p.y, 150, 76); gUnder.lineStyle(2, 0xffffff, 0.9); gUnder.strokeEllipse(p.x, p.y, 156, 79); }
     sprite(h.type && h.done ? 'barracks' : 'house' + idx, p.x, p.y, p.y + 10); hpBar(g, h, p.x, p.y - 196, 70);
     if (h.type && h.queue) { g.fillStyle(0x000000, 0.7); g.fillRect(p.x - 40, p.y - 180, 80, 10); g.fillStyle(0x55dd55, 1); g.fillRect(p.x - 38, p.y - 178, 76 * h.timer / MILITIA_TIME, 6); }
-    if (h.done) { sprite('flag' + tm.sfx + (Math.floor(animT / 140 + h.x) % 4), p.x + 30, p.y - (h.type ? 100 : 82), p.y + 10.5); sprite('banner' + tm.sfx, p.x - 22, p.y - 40, p.y + 10.6); }   // ARQ1c flag on a pole + banner
+    if (h.done) { sprite('flag' + tm.sfx + (Math.floor(animT / 140 + h.x) % 4), p.x + 30, p.y - (h.type ? 100 : 82), p.y + 10.5); sprite('banner' + tm.sfx, p.x - 22, p.y - 40, p.y + 10.6);
+        if (!h.type) sprite('smoke' + (Math.floor(animT / 220 + h.x + h.y) % 6), p.x + 23, p.y - 118, p.y + 10.7); }   // ARQ1d chimney smoke   // ARQ1c flag on a pole + banner
     if (!h.done) {
         g.fillStyle(0x000000, 0.7); g.fillRect(p.x - 40, p.y - 180, 80, 10);
         g.fillStyle(0x55aaff, 1); g.fillRect(p.x - 38, p.y - 178, 76 * h.progress, 6);
@@ -224,17 +226,18 @@ function drawDeer(d) {
 function drawVillager(g, gu, v) {
     const face = v.face || 1, working = v.state === 'gathering' || v.state === 'building' || v.state === 'hunting';
     const kind = (v.state === 'toHunt' || v.state === 'hunting') ? 'carcass' : v.state === 'building' ? 'hammer' : (v.node && mapData[v.node.y] && mapData[v.node.y][v.node.x] ? mapData[v.node.y][v.node.x].kind : (v.lastKind || null));
-    const tool = kind === 'hammer' ? 'hammer' : kind === 'tree' ? 'axe' : (kind === 'gold' || kind === 'stone') ? 'pick' : kind === 'berry' ? 'basket' : kind === 'carcass' ? 'spear' : kind === 'fish' ? 'net' : 'none';
+    const tool = kind === 'hammer' ? 'hammer' : kind === 'tree' ? 'axe' : (kind === 'gold' || kind === 'stone') ? 'pick' : kind === 'berry' ? 'basket' : kind === 'carcass' ? 'spear' : kind === 'fish' ? 'net' : kind === 'farm' ? 'hoe' : 'none';
     const t = animT / 1000 + (v.seed || 0) * 3;
     let name; const sx = TEAM[own(v)].sfx, pre = (v.fem ? 'v_f_' : 'v_') + sx;   // ARQ1c: team-baked frames
     if (v.mil) name = `v_${sx}sword_${v.state === 'attack' && v.swing ? 'work' + Math.floor(t * 6) % 6 : v.walking ? 'walk' + Math.floor(t * 12) % 8 : 'idle'}`;   // ARQ1b Militia
-    else if (v.state === 'attack' && v.swing) name = `${pre}none_${'walk' + Math.floor(t * 16) % 8}`;   // villager scuffle
+    else if (v.state === 'attack' && v.swing) name = `${pre}${tool === 'basket' ? 'none' : tool}_work${Math.floor(t * 9) % 6}`;   // ARQ1d villager scuffle: swings its tool (fists if none)
     else if (working && tool !== 'none') name = `${pre}${tool}_work${Math.floor(t * 9) % 6}`;
-    else if (v.walking) name = `${pre}${tool}_walk${Math.floor(t * 12) % 8}`;
-    else name = `${pre}${tool}_idle`;
+    else if (v.walking) name = `${pre}${tool === 'hoe' ? 'none' : tool}_walk${Math.floor(t * 12) % 8}`;
+    else name = `${pre}${tool === 'hoe' ? 'none' : tool}_idle`;
     if (v.owner) { gu.lineStyle(4, TEAM[v.owner].col, 0.9); gu.strokeEllipse(v.x, v.y + 2, 46, 18); }   // ARQ1a team ring
     if (v.selected) { gu.lineStyle(3, TEAM[own(v)].col, 1); gu.strokeEllipse(v.x, v.y + 2, 54, 22); gu.lineStyle(1.5, 0xffffff, 0.9); gu.strokeEllipse(v.x, v.y + 2, 58, 24); }
-    sprite(name, v.x, v.y, v.y + 0.2, face < 0);
+    const hit = v.hitT && animT - v.hitT < 140 ? (animT - v.hitT) / 140 : 0;   // ARQ1d: knock back on a hit
+    sprite(name, v.x - face * hit * (1 - hit) * 16, v.y, v.y + 0.2, face < 0);
     hpBar(g, v, v.x, v.y - 140, 36);
     if (v.carry > 0) {
         sprite('carry_' + v.carryType, v.x - face * 15, v.y - 46, v.y + 0.1, face < 0);
