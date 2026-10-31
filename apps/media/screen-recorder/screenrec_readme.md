@@ -9,4 +9,4 @@ Media app. Records the screen, a window or a tab with `getDisplayMedia` + `Media
 - Settings key `screenrec-settings-v1`: `quality` 720/1080/native, `fps` 15/30/60, `theme` system/light/dark (system follows `sites-hub.theme`), `mic`, `sys`.
 - Saved notice via `window.top.HubNotify.notice` if present, else a toast.
 - Phones: no `getDisplayMedia` → friendly "computers only" message.
-- Release: SC1 (assets `?v=SC1`).
+- Release: SC1.
