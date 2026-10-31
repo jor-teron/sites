@@ -31,7 +31,7 @@ Everything shared lives in `common/settings/` (release GS1):
 ## How to link a game (5 steps)
 
 1. **Load the library** before the game's own scripts:
-   `<script src="../common/settings/games-settings.js?v=GS1"></script>`
+   `<script src="../common/settings/games-settings.js"></script>`
 2. **Add a per-game settings file** (a "bridge") loaded after the config and before the logic.
    It wraps `GameSettings` and falls back to fixed defaults when the library is missing.
    Examples: `tetris/tetris_settings.js`, `tic-tac-toe/tic-tac-toe_settings.js`, `tennis-throw/modules/settings.js`.

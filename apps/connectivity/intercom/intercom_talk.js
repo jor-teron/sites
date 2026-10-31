@@ -213,6 +213,21 @@
       fire('missed', name);
       return;
     }
+    // IC3: public mesh (0000) — a device that is not trusted (token check) must be accepted first; nothing plays until then
+    var tr = (ICSave.get('trusted') || {})[m.did], trustedCaller = !!(tr && m.tok && tr.token === m.tok);
+    if (ICPeer.open() && !asked && !trustedCaller && !call._icOk) {
+      if (m.cont && talkers[from]) { call._icOk = true; } else {
+        var done = false, to = setTimeout(function () { finish(false); }, 30000);
+        var finish = function (ok) {
+          if (done) return; done = true; clearTimeout(to);
+          if (ok && !ICSave.get('dnd') && call.open !== false) { call._icOk = true; T.incoming(call); }
+          else { ICPeer.sendTo(from, { t: 'declined' }); try { call.close(); } catch (_) { /* */ } if (!ok) fire('missed', name); }
+        };
+        call.on('close', function () { finish(false); });
+        fire('ask', { name: name, video: !!m.video, answer: finish });
+        return;
+      }
+    }
     var cont = !!(m.cont && talkers[from]);
     if (talkers[from]) endTalker(from);   // a new talk from the same device replaces the old one
     var quiet = asked || cont;
@@ -241,6 +256,10 @@
     if (m.t === 'talk' && m.on === false) { if (t && (!m.sid || t.sid === m.sid)) endTalker(from); }
     else if (m.t === 'dnd') {
       fire('note', nameOf(from) + ' has Do Not Disturb on and did not hear you.');
+      if (sess && sess.calls[from]) { try { sess.calls[from].close(); } catch (_) { /* */ } delete sess.calls[from]; fire('talk', sess); }
+    }
+    else if (m.t === 'declined') {   // IC3
+      fire('note', nameOf(from) + ' declined.');
       if (sess && sess.calls[from]) { try { sess.calls[from].close(); } catch (_) { /* */ } delete sess.calls[from]; fire('talk', sess); }
     }
     else if (m.t === 'vid') { if (t && (!m.sid || t.sid === m.sid)) { t.cam = !!m.on; if (m.on) t.video = true; fire('talkers'); } }
@@ -298,6 +317,7 @@
     ICSave.set('trusted', tr);
     ICPeer.roster().forEach(function (d) {
       if (d.did !== did) return;
+      if (on && ICPeer.open()) return;   // IC3: trust a device on a private code
       if (on) { ICPeer.sendTo(d.id, { t: 'trust', did: ICSave.get('did'), name: ICSave.name(), token: tr[did].token }); trustSent[d.id] = 1; }
       else { ICPeer.sendTo(d.id, { t: 'untrust', did: ICSave.get('did') }); delete trustSent[d.id]; if (sess && sess.view && sess.to === d.id) T.stop(); }
     });
@@ -309,7 +329,7 @@
     var on = {}, tr = ICSave.get('trusted') || {};
     list.forEach(function (d) {
       on[d.id] = 1;
-      if (d.did && tr[d.did] && !trustSent[d.id]) { trustSent[d.id] = 1; ICPeer.sendTo(d.id, { t: 'trust', did: ICSave.get('did'), name: ICSave.name(), token: tr[d.did].token }); }
+      if (d.did && tr[d.did] && !trustSent[d.id] && !ICPeer.open()) {   /* IC3: tokens only on a private code */ trustSent[d.id] = 1; ICPeer.sendTo(d.id, { t: 'trust', did: ICSave.get('did'), name: ICSave.name(), token: tr[d.did].token }); }
     });
     Object.keys(trustSent).forEach(function (id) { if (!on[id]) delete trustSent[id]; });
     Object.keys(talkers).forEach(function (id) { if (!on[id]) endTalker(id); });

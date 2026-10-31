@@ -15,7 +15,6 @@
       PONG_CONFIG.WIN_SCORE wins. Controls: see PONG_CONFIG.keys; touch / mouse:
       drag on the left half moves the left paddle, a touch on the right half
       makes it a 2-player match (PONG_CONFIG.touch), tap = start / resume.
-      Cache-busting: bump ?v= on the CSS / JS below when they change.
       Themes: 5 code-drawn themes (assets/themes/, registered in core/registry.js) chosen with the
       Themes button (ui/picker.js); the pick is saved in localStorage "ping-pong.theme".
       Balls: 5 code-drawn ball models (assets/models/balls/), picked in the same panel (section "Ball"),
@@ -28,8 +27,8 @@
       shows name, version, score and New Game (hub bridge in ui/hub.js).
     ========================================================================
   -->
-  <link rel="stylesheet" href="ui/ping-pong.css?v=PPQ1a" />
-  <link rel="stylesheet" href="ui/picker.css?v=PPQ1a" />
+  <link rel="stylesheet" href="ui/ping-pong.css" />
+  <link rel="stylesheet" href="ui/picker.css" />
 </head>
 <body>
   <!-- Own bar: title + live score (hidden inside the hub) -->
@@ -58,38 +57,38 @@
   </div>
 
   <!-- Plain scripts; the order matters (shared globals, top-level code runs as each loads) -->
-  <script src="core/config.js?v=PPQ1a"></script>
-  <script src="core/registry.js?v=PPQ1a"></script>
-  <script src="core/state.js?v=PPQ1a"></script>
-  <script src="ui/dom.js?v=PPQ1a"></script>
-  <script src="assets/models/shared.js?v=PPQ1a"></script>
-  <script src="assets/models/net.js?v=PPQ1a"></script>
-  <script src="assets/models/paddles/classic.js?v=PPQ1a"></script>
-  <script src="assets/models/paddles/cricketbat.js?v=PPQ1a"></script>
-  <script src="assets/models/paddles/hockeystick.js?v=PPQ1a"></script>
-  <script src="assets/models/paddles/samuraisword.js?v=PPQ1a"></script>
-  <script src="assets/models/paddles/tennisracket.js?v=PPQ1a"></script>
-  <script src="assets/models/paddles/neonbar.js?v=PPQ1a"></script>
-  <script src="assets/models/paddles/bat.js?v=PPQ1a"></script>
-  <script src="assets/models/paddles/iceslab.js?v=PPQ1a"></script>
-  <script src="assets/models/paddles/flameblade.js?v=PPQ1a"></script>
-  <script src="assets/models/balls/classic.js?v=PPQ1a"></script>
-  <script src="assets/models/balls/pingpong.js?v=PPQ1a"></script>
-  <script src="assets/models/balls/iceball.js?v=PPQ1a"></script>
-  <script src="assets/models/balls/fireball.js?v=PPQ1a"></script>
-  <script src="assets/models/balls/football.js?v=PPQ1a"></script>
-  <script src="assets/themes/base.js?v=PPQ1a"></script>
-  <script src="assets/themes/classic.js?v=PPQ1a"></script>
-  <script src="assets/themes/neon.js?v=PPQ1a"></script>
-  <script src="assets/themes/tabletennis.js?v=PPQ1a"></script>
-  <script src="assets/themes/space.js?v=PPQ1a"></script>
-  <script src="assets/themes/ice.js?v=PPQ1a"></script>
-  <script src="ui/fx.js?v=PPQ1a"></script>
-  <script src="core/ai.js?v=PPQ1a"></script>
-  <script src="core/game.js?v=PPQ1a"></script>
-  <script src="core/input.js?v=PPQ1a"></script>
-  <script src="ui/picker.js?v=PPQ1a"></script>
-  <script src="ui/hub.js?v=PPQ1a"></script>
-  <script src="core/main.js?v=PPQ1a"></script>
+  <script src="core/config.js"></script>
+  <script src="core/registry.js"></script>
+  <script src="core/state.js"></script>
+  <script src="ui/dom.js"></script>
+  <script src="assets/models/shared.js"></script>
+  <script src="assets/models/net.js"></script>
+  <script src="assets/models/paddles/classic.js"></script>
+  <script src="assets/models/paddles/cricketbat.js"></script>
+  <script src="assets/models/paddles/hockeystick.js"></script>
+  <script src="assets/models/paddles/samuraisword.js"></script>
+  <script src="assets/models/paddles/tennisracket.js"></script>
+  <script src="assets/models/paddles/neonbar.js"></script>
+  <script src="assets/models/paddles/bat.js"></script>
+  <script src="assets/models/paddles/iceslab.js"></script>
+  <script src="assets/models/paddles/flameblade.js"></script>
+  <script src="assets/models/balls/classic.js"></script>
+  <script src="assets/models/balls/pingpong.js"></script>
+  <script src="assets/models/balls/iceball.js"></script>
+  <script src="assets/models/balls/fireball.js"></script>
+  <script src="assets/models/balls/football.js"></script>
+  <script src="assets/themes/base.js"></script>
+  <script src="assets/themes/classic.js"></script>
+  <script src="assets/themes/neon.js"></script>
+  <script src="assets/themes/tabletennis.js"></script>
+  <script src="assets/themes/space.js"></script>
+  <script src="assets/themes/ice.js"></script>
+  <script src="ui/fx.js"></script>
+  <script src="core/ai.js"></script>
+  <script src="core/game.js"></script>
+  <script src="core/input.js"></script>
+  <script src="ui/picker.js"></script>
+  <script src="ui/hub.js"></script>
+  <script src="core/main.js"></script>
 </body>
 </html>

@@ -2,9 +2,9 @@
 // generateLevel(n) is a pure function of the number n: same n -> identical level, every time.
 // 00 is a fixed demo showcase; 01-50 grow with n (taller towers, tougher materials, more pigs, platforms).
 // Every candidate is checked by validateLevel(); a failing candidate is re-rolled with the next attempt seed.
-import { WORLD_WIDTH, GROUND_Y, SLING_X, SLING_Y, MAX_PULL, LAUNCH_POWER, GRAVITY, BIRD_FRICTION_AIR, STEP_MS } from './config.js?v=sb1a';
-import { settleProblems } from './stability.js?v=sb1a';
-import { rngFor, MAX_LEVEL, LEVEL_COUNT, pad2, isLevelNumber } from './seed.js?v=sb1a';
+import { WORLD_WIDTH, GROUND_Y, SLING_X, SLING_Y, MAX_PULL, LAUNCH_POWER, GRAVITY, BIRD_FRICTION_AIR, STEP_MS } from './config.js';
+import { settleProblems } from './stability.js';
+import { rngFor, MAX_LEVEL, LEVEL_COUNT, pad2, isLevelNumber } from './seed.js';
 
 export { MAX_LEVEL, LEVEL_COUNT, pad2, isLevelNumber };
 

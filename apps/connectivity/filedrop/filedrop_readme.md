@@ -66,7 +66,7 @@ Toasts and camera messages:
 - `maxBytes`, `maxBytesIOS`, `warnBytesIOS`
 - `autoSave`, `sound`, `vibrate`, `camera`, `scanEveryMs`
 - Keep `peerPrefix` / `codePrefix` the same on both devices (changing them breaks pairing with older copies).
-- Bump `?v=20261004a` in `filedrop.html` after changing a file.
+- No `?v=` tags on file links (NV1): browsers fetch the latest.
 
 ## 9. Browser checklist
 1. Open on a PC and a phone: both show a QR and a code.

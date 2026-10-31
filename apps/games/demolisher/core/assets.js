@@ -11,8 +11,6 @@
 
 'use strict';
 
-/* Cache-bust tag, same as the ?v= on the scripts in demolisher.html. */
-const ART_VERSION = 'DMQ1b';
 const ART_DIR = 'assets/';
 
 /* Every sprite key = path under assets/ without ".svg". */
@@ -157,7 +155,7 @@ const Art = {
       this.images[key] = img;
       img.onload = () => { this.bake(key, img); this.settle(); };
       img.onerror = () => { this.failed.push(key); this.settle(); };
-      img.src = ART_DIR + key + '.svg?v=' + ART_VERSION;
+      img.src = ART_DIR + key + '.svg';
     }
   },
 
