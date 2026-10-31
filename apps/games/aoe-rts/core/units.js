@@ -6,6 +6,7 @@ function spawnVillager(tx, ty, owner) {
     const p = tileCenter(tx, ty), fem = trainedCount++ % 2 === 1;   // male, female, male, ...
     const v = { fem, x: p.x, y: p.y, state: 'idle', target: null, node: null, carry: 0, carryType: null, timer: 0, selected: false, face: 1, walking: false, seed: Math.random() };
     if (owner && owner !== 'p') v.owner = owner;
+    v.hp = HP.v;
     villagers.push(v);
     return v;
 }
@@ -46,7 +47,7 @@ function updateDeer(d, dt) {
     }
 }
 function orderMove(v, tx, ty, idx) {
-    v.house = null; v.prey = null;
+    v.house = null; v.prey = null; v.foe = null;
     v.node = null; v.state = 'moving'; v.target = tileCenter(tx, ty);
     if (idx) { const a = idx * 2.4, r = 18 * Math.sqrt(idx); v.target.x += Math.cos(a) * r * 1.6; v.target.y += Math.sin(a) * r * 0.8; }
 }
@@ -65,6 +66,7 @@ function spreadIdle(dt) {
 }
 function updateVillager(v, dt) {
     switch (v.state) {
+        case 'attack': fight(v, dt); break;   // ARQ1b
         case 'moving':
             if (stepTo(v, v.target, dt, 4)) v.state = 'idle';
             break;
@@ -123,7 +125,7 @@ function updateVillager(v, dt) {
         case 'building': {
             const h = v.house;
             if (!h || h.done) { v.state = 'idle'; v.house = null; break; }
-            h.progress += dt / HOUSE_BUILD_TIME;
+            h.progress += dt / (h.type ? BARRACKS_BUILD_TIME : HOUSE_BUILD_TIME);
             Sfx.play('hammer', 0.45);
             if (h.progress >= 1) { h.progress = 1; h.done = true; v.state = 'idle'; v.house = null; Sfx.play('built'); }
             break;

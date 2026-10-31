@@ -27,13 +27,20 @@ function viewRect(m) {
 // ============================================================================
 // INPUT
 // ============================================================================
-function villagerAt(px, py) {
+function villagerAt(px, py, any) {
     let best = null, bd = Infinity;   // villager body box ~40x110 above the feet; front-most (lowest y) wins ties
-    villagers.forEach(v => { if (v.owner || Math.abs(px - v.x) > 22 || py > v.y + 6 || py < v.y - 104) return; const d = Math.abs(px - v.x) + Math.abs(py - (v.y - 50)) * 0.3 - v.y * 0.01; if (d < bd) { bd = d; best = v; } });
+    villagers.forEach(v => { if ((v.owner && !any) || Math.abs(px - v.x) > 22 || py > v.y + 6 || py < v.y - 104) return; const d = Math.abs(px - v.x) + Math.abs(py - (v.y - 50)) * 0.3 - v.y * 0.01; if (d < bd) { bd = d; best = v; } });
     return best;
 }
 function deerAt(px, py) { let best = null, bd = Infinity; deer.forEach(d => { if (Math.abs(px - d.x) > 40 || py > d.y + 12 || py < d.y - 70) return; const k = Math.abs(px - d.x) + Math.abs(py - d.y + 30); if (k < bd) { bd = k; best = d; } }); return best; }
-function deselectAll() { villagers.forEach(u => u.selected = false); townCenter.selected = false; }
+function deselectAll() { villagers.forEach(u => u.selected = false); houses.forEach(h => h.selected = false); townCenter.selected = false; }
+/** ARQ1b: Town Center / House / Barracks drawn under a click (body boxes above the tile) */
+function buildingAt(px, py) {
+    const t = tcs.find(b => { const c = tileCenter(b.x + 0.5, b.y + 0.5); return Math.abs(px - c.x) < 110 && py > c.y - 250 && py < c.y + 40; });
+    return t || houses.find(h => { const c = tileCenter(h.x, h.y); return Math.abs(px - c.x) < 56 && py > c.y - 150 && py < c.y + 26; }) || null;
+}
+/** Enemy unit or building under a click (never in Open World) */
+function foeAt(px, py) { if (MODE === 'open') return null; const v = villagerAt(px, py, true); if (v) return own(v) !== 'p' ? v : null; const b = buildingAt(px, py); return b && own(b) !== 'p' ? b : null; }
 function onPointerDown(pointer) {
     const px = pointer.worldX, py = pointer.worldY;
     if (pointer.rightButtonDown() || pointer.middleButtonDown()) {
@@ -42,7 +49,7 @@ function onPointerDown(pointer) {
         return;
     }
     Sfx.play('tap', 0.05);
-    if (placing === 'house') { placeHouse(screenToTile(px, py)); return; }
+    if (placing) { placeHouse(screenToTile(px, py)); return; }
     dragSel = { sx: px, sy: py, ex: px, ey: py, x: pointer.x, y: pointer.y, active: false, shift: pointer.event.shiftKey };
 }
 function onPointerMove(pointer) {
@@ -75,6 +82,8 @@ function onPointerUp(pointer) {
     leftClick(d.sx, d.sy, d.shift);
 }
 function leftClick(px, py, shift) {
+    const foe = foeAt(px, py), sel = villagers.filter(u => u.selected);
+    if (foe && sel.length) { sel.forEach(u => orderAttack(u, foe)); Sfx.play('tap', 0.05); return; }   // tap / click an enemy = attack
     const v = villagerAt(px, py);
     if (v) {
         townCenter.selected = false;
@@ -83,8 +92,10 @@ function leftClick(px, py, shift) {
     }
     const t = screenToTile(px, py), cell = inMap(t.x, t.y) && mapData[t.y][t.x];
     const tcC = tileCenter(townCenter.x + 0.5, townCenter.y + 0.5);
-    const onTC = townCenter.owner === 'p' && ((cell && cell.kind === 'tc' && !cell.tc) || (Math.abs(px - tcC.x) < 110 && py > tcC.y - 250 && py < tcC.y + 40));
+    const onTC = townCenter.owner === 'p' && !townCenter.dead && ((cell && cell.kind === 'tc' && !cell.tc) || (Math.abs(px - tcC.x) < 110 && py > tcC.y - 250 && py < tcC.y + 40));
     if (onTC && !shift) { deselectAll(); townCenter.selected = true; return; }
+    const b = buildingAt(px, py);
+    if (b && b.type && b.done && !b.owner && !shift) { deselectAll(); b.selected = true; return; }
     if (!shift) deselectAll();     // empty ground / resource: deselect
 }
 /** AoE2-style right-click order for the selection */
@@ -95,16 +106,20 @@ function rightClick(px, py) {
     if (!inMap(t.x, t.y)) return;
     const cell = mapData[t.y][t.x];
     Sfx.play('tap', 0.05);
+    const foe = foeAt(px, py);
+    if (foe) { sel.forEach(u => orderAttack(u, foe)); return; }
+    if (sel.every(u => u.mil)) { sel.forEach((u, i) => orderMove(u, t.x, t.y, i)); return; }   // Militia only move / attack
     const dr = deerAt(px, py);
     if (dr) { sel.forEach(u => orderHunt(u, dr)); return; }
     if (cell && RES_TYPES[cell.kind]) sel.forEach(u => orderGather(u, t.x, t.y));
     else if (cell && cell.kind === 'tc') sel.forEach((u, i) => { if (u.carry > 0) u.state = 'returning'; else orderMove(u, t.x, t.y + 2, i); });
     else if (cell && cell.kind === 'house') { if (!cell.house.done) sel.forEach(u => orderBuild(u, cell.house)); }
     else sel.forEach((u, i) => orderMove(u, t.x, t.y, i));
+    sel.forEach((u, i) => { if (u.mil && u.state !== 'moving') orderMove(u, t.x, t.y, i); });
 }
 
 /** Map picker open or a text box focused: game keys are ignored */
-function pickerOpen() { const a = document.activeElement; return document.getElementById('title-overlay').style.display === 'flex' || document.getElementById('confirm-overlay').style.display === 'flex' || !!(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')); }
+function pickerOpen() { const a = document.activeElement; return !!gameOver || document.getElementById('title-overlay').style.display === 'flex' || document.getElementById('confirm-overlay').style.display === 'flex' || !!(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')); }
 window.addEventListener('keydown', e => {
     if (pickerOpen()) return;
     if (e.key === 'p' || e.key === 'P') setPaused(!paused);

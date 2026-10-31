@@ -63,6 +63,7 @@ function simStep(dt) {
     for (let i = 0; i < deer.length; i++) updateDeer(deer[i], dt);
     updateTraining(dt);
     updateAI(dt);
+    updateCombat(dt);
 }
 
 // ============================================================================

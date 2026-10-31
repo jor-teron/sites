@@ -42,6 +42,11 @@
     }
     function tool(c, kind, hx, hy, th) {
         if (!kind || kind === 'none' || kind === 'basket') return;
+        if (kind === 'sword') {   // ARQ1b Militia: short iron sword with a brass crossguard
+            const dx = Math.sin(th), dy = Math.cos(th), g = [hx + dx * 3, hy + dy * 3], e = [hx + dx * 36, hy + dy * 36];
+            line(c, hx - dx * 5, hy - dy * 5, g[0], g[1], 3.4, '#4a2c10'); line(c, g[0] + dy * 6, g[1] - dx * 6, g[0] - dy * 6, g[1] + dx * 6, 2.6, '#c9a040');
+            line(c, g[0], g[1], e[0], e[1], 4.4, '#4e5458'); line(c, g[0], g[1], e[0], e[1], 2.4, '#dfe5ea'); hand(c, hx, hy, th); return;
+        }
         const dx = Math.sin(th), dy = Math.cos(th), L = kind === 'hammer' ? 21 : kind === 'spear' ? 46 : kind === 'net' ? 36 : 31;
         const bx = hx - dx * 6, by = hy - dy * 6, tx = hx + dx * L, ty = hy + dy * L;
         const px = -dy, py = dx;                 // perpendicular (forward side = +)

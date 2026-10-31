@@ -131,7 +131,7 @@ function render() {
     const tx0 = Math.max(0, Math.min(...cs.map(c => c.x)) - 1), tx1 = Math.min(MAP_SIZE - 1, Math.max(...cs.map(c => c.x)) + 1);
     const ty0 = Math.max(0, Math.min(...cs.map(c => c.y)) - 1), ty1 = Math.min(MAP_SIZE - 1, Math.max(...cs.map(c => c.y)) + 3);
     const vis = (x, y) => { const p = tileCenter(x, y); return p.x > vr.x0 && p.x < vr.x1 && p.y > vr.y0 && p.y < vr.y1 + 120; };
-    if (placing === 'house') {              // show free tiles + hover preview while placing
+    if (placing) {              // show free tiles + hover preview while placing
         for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) if (!mapData[y][x] && isLand(x, y) && vis(x, y)) diamond(gu, x, y, 0xffffff, 0.06);
         if (hoverTile && inMap(hoverTile.x, hoverTile.y)) diamond(gu, hoverTile.x, hoverTile.y, mapData[hoverTile.y][hoverTile.x] || !isLand(hoverTile.x, hoverTile.y) ? 0xff3333 : 0x33ff33, 0.45);
     }
@@ -165,6 +165,10 @@ function drawNode(g, x, y, c) {
         const px = p.x + (hash(x, y, 1) - 0.5) * 20, py = p.y + (hash(x, y, 2) - 0.5) * 8, v = Math.floor(hash(x, y, 3) * 3);
         const name = frac < 0.25 ? 'stump' : (s > 0.45 ? 'pine' : 'leafy') + v + (frac < 0.6 ? '_cut' : '');
         sprite(name, px, py, py, hash(x, y, 4) > 0.5);
+    } else if (c.kind === 'farm') {   // ARQ1b: tilled field, crop greens -> gold as it is harvested
+        diamond(gUnder, x, y, 0x7a5a32, 0.95); const hw = TILE_WIDTH / 2 - 10, hh = TILE_HEIGHT / 2 - 5;
+        gUnder.lineStyle(5, frac > 0.5 ? 0x8aa040 : 0xc8a050, 1);
+        for (let i = 1; i < 6; i++) { const f = i / 6 - 0.5; gUnder.lineBetween(p.x - hw / 2 + f * hw, p.y - hh / 2 - f * hh, p.x + hw / 2 + f * hw, p.y + hh / 2 - f * hh); }
     } else if (c.kind === 'fish') {
         sprite('fish' + (Math.floor(animT / 260 + s * 4) % 4), p.x, p.y, p.y - 40, s > 0.5);
     } else if (c.kind === 'carcass') {
@@ -176,12 +180,19 @@ function drawNode(g, x, y, c) {
         if (c.kind === 'gold' && Math.sin(animT / 300 + x * 3 + y) > 0.97) { g.fillStyle(0xffffff, 0.9); g.fillCircle(p.x + 8, p.y - 40, 3); }
     }
 }
+/** ARQ1b: health bar over a unit / building when selected or damaged (green -> red) */
+function hpBar(g, e, x, y, w) {
+    const f = hpOf(e) / maxHp(e); if (f >= 1 && !e.selected) return;
+    g.fillStyle(0x000000, 0.7); g.fillRect(x - w / 2 - 2, y - 2, w + 4, 9);
+    g.fillStyle(f > 0.6 ? 0x44dd44 : f > 0.3 ? 0xe0c030 : 0xe03030, 1); g.fillRect(x - w / 2, y, w * Math.max(0, f), 5);
+}
 function drawTC(g, gu, t) {
     const c = tileCenter(t.x + 0.5, t.y + 0.5), tint = TEAM[t.owner].tint;
     if (tint) { gu.lineStyle(6, TEAM[t.owner].col, 0.8); gu.strokeEllipse(c.x, c.y, 280, 140); }
     if (t.selected) { gu.lineStyle(4, 0xffffff, 0.9); gu.strokeEllipse(c.x, c.y, 300, 150); }
     sprite('tc', c.x, c.y, c.y + 40);
     const fl = sprite('flag' + (Math.floor(animT / 140) % 4), c.x, c.y - 203, c.y + 40.5); if (tint) fl.setTint(tint);
+    hpBar(g, t, c.x, c.y - 270, 120);
     const q = t.owner === 'p' ? trainQueue : factions[t.owner].queue, tt = t.owner === 'p' ? trainTimer : factions[t.owner].timer;
     if (q > 0) {          // training progress bar
         const f = tt / TRAIN_TIME;
@@ -192,7 +203,9 @@ function drawTC(g, gu, t) {
 function drawHouse(g, x, y, h) {
     const p = tileCenter(x, y), pr = h.done ? 1 : h.progress;
     const idx = h.done ? 9 : Math.min(8, Math.floor(pr / (1 / 9)));
-    const im = sprite('house' + idx, p.x, p.y, p.y + 10); if (h.owner) { im.setTint(TEAM[h.owner].tint); g.fillStyle(TEAM[h.owner].col, 1); g.fillRect(p.x - 3, p.y - 150, 22, 12); g.fillRect(p.x - 3, p.y - 150, 3, 40); }
+    if (h.selected) { gUnder.lineStyle(4, 0xffffff, 0.9); gUnder.strokeEllipse(p.x, p.y, 150, 76); }
+    const im = sprite(h.type && h.done ? 'barracks' : 'house' + idx, p.x, p.y, p.y + 10); hpBar(g, h, p.x, p.y - 196, 70);
+    if (h.type && h.queue) { g.fillStyle(0x000000, 0.7); g.fillRect(p.x - 40, p.y - 180, 80, 10); g.fillStyle(0x55dd55, 1); g.fillRect(p.x - 38, p.y - 178, 76 * h.timer / MILITIA_TIME, 6); } if (h.owner) { im.setTint(TEAM[h.owner].tint); g.fillStyle(TEAM[h.owner].col, 1); g.fillRect(p.x - 3, p.y - 150, 22, 12); g.fillRect(p.x - 3, p.y - 150, 3, 40); }
     if (!h.done) {
         g.fillStyle(0x000000, 0.7); g.fillRect(p.x - 40, p.y - 180, 80, 10);
         g.fillStyle(0x55aaff, 1); g.fillRect(p.x - 38, p.y - 178, 76 * h.progress, 6);
@@ -212,12 +225,15 @@ function drawVillager(g, gu, v) {
     const tool = kind === 'hammer' ? 'hammer' : kind === 'tree' ? 'axe' : (kind === 'gold' || kind === 'stone') ? 'pick' : kind === 'berry' ? 'basket' : kind === 'carcass' ? 'spear' : kind === 'fish' ? 'net' : 'none';
     const t = animT / 1000 + (v.seed || 0) * 3;
     let name; const pre = v.fem ? 'v_f_' : 'v_';
-    if (working && tool !== 'none') name = `${pre}${tool}_work${Math.floor(t * 9) % 6}`;
+    if (v.mil) name = `v_sword_${v.state === 'attack' && v.swing ? 'work' + Math.floor(t * 6) % 6 : v.walking ? 'walk' + Math.floor(t * 12) % 8 : 'idle'}`;   // ARQ1b Militia
+    else if (v.state === 'attack' && v.swing) name = `${pre}none_${'walk' + Math.floor(t * 16) % 8}`;   // villager scuffle
+    else if (working && tool !== 'none') name = `${pre}${tool}_work${Math.floor(t * 9) % 6}`;
     else if (v.walking) name = `${pre}${tool}_walk${Math.floor(t * 12) % 8}`;
     else name = `${pre}${tool}_idle`;
     if (v.owner) { gu.lineStyle(4, TEAM[v.owner].col, 0.9); gu.strokeEllipse(v.x, v.y + 2, 46, 18); }   // ARQ1a team ring
     if (v.selected) { gu.lineStyle(3, 0xffff66, 1); gu.strokeEllipse(v.x, v.y + 2, 54, 22); }
     const im = sprite(name, v.x, v.y, v.y + 0.2, face < 0); if (v.owner) im.setTint(TEAM[v.owner].tint);
+    hpBar(g, v, v.x, v.y - 140, 36);
     if (v.carry > 0) {
         sprite('carry_' + v.carryType, v.x - face * 15, v.y - 46, v.y + 0.1, face < 0);
         const col = CARRY_COLORS[v.carryType];

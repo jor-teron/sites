@@ -71,5 +71,18 @@
         c.closePath(); c.fillStyle = lin(c, 0, -50, 30, -32, ['#3a6ad0', '#2a5ab0', '#1d4488']); c.fill(); c.strokeStyle = '#163266'; c.lineWidth = 0.8; c.stroke();
         ell(c, 14, -41 + Math.sin(ph + 3) * 2.6, 4, 4, '#d9b24a');
     }
-    Object.assign(AOE.models, { house, townCenter, flag });
+    /** ARQ1b Barracks: dark timber hall on a stone footing, slate roof, crossed swords on the front */
+    function barracks(c) {
+        const w = 58, d = 29, H = 46, y = -H - 6;
+        shadow(c, 74, 36); poly(c, [[-64, 0], [0, 32], [64, 0], [0, -32]], '#8a7a5a');
+        poly(c, leftF(w, d, 0, 6), '#8a8478'); poly(c, rightF(w, d, 0, 6), '#6a655c');
+        poly(c, leftF(w, d, -6, H), lin(c, -w, 0, 0, 0, ['#8a6238', '#6e4a28']), '#2e1c0a', 1); poly(c, rightF(w, d, -6, H), lin(c, 0, 0, w, 0, ['#5e4226', '#4a321a']), '#22140a', 1);
+        planks(c, w, d, -6, H, 6, 'rgba(30,18,8,0.5)', -1); planks(c, w, d, -6, H, 6, 'rgba(30,18,8,0.5)', 1);
+        poly(c, [[-38, 4], [-20, 13], [-20, -20], [-38, -29]], '#2a1a0c', '#140c04', 1);
+        const A = [-w - 5, y], F = [0, y + d + 3], B = [w + 5, y], apex = [0, y - 36], back = [0, y - d - 3];
+        poly(c, [back, A, apex], '#3e3e46'); poly(c, [A, F, apex], lin(c, A[0], 0, 0, 0, ['#6a6a76', '#545460']), '#22222a', 1); poly(c, [F, B, apex], '#40404a', '#22222a', 1);
+        roofTiles(c, A, F, apex, 9, 'rgba(20,20,28,0.5)'); roofTiles(c, F, B, apex, 9, 'rgba(10,10,16,0.5)');
+        line(c, 18, -36, 40, -18, 3, '#dfe5ea'); line(c, 40, -40, 18, -14, 3, '#dfe5ea'); line(c, 20, -24, 26, -30, 2.4, '#c9a040'); line(c, 32, -30, 38, -24, 2.4, '#c9a040');
+    }
+    Object.assign(AOE.models, { house, townCenter, flag, barracks });
 })();

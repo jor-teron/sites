@@ -36,6 +36,11 @@ const MAP_NUM = URL_MAP !== null ? URL_MAP : (storedMap() !== null ? storedMap()
 // ARQ1a: game mode from ?mode= (open | vs | aivai); no mode = start screen (shows Open World behind it)
 const URL_MODE = new URLSearchParams(location.search).get('mode'), MODE = ['vs', 'aivai'].indexOf(URL_MODE) >= 0 ? URL_MODE : 'open';
 const TEAM = { p: { tint: null, mm: '#3a6ad0', name: 'You' }, ai1: { tint: 0xff7a6a, col: 0xe03828, mm: '#e04030', name: 'Red' }, ai2: { tint: 0xffd86a, col: 0xf0c020, mm: '#f0c020', name: 'Gold' } };
+// ARQ1b: difficulty (?diff= or last picked), HP, melee, Militia, Barracks, Farm
+const DIFF = (() => { const q = new URLSearchParams(location.search).get('diff'); let s = null; try { s = localStorage.getItem('aoe-rts.diff'); } catch (e) {} return ['easy', 'normal', 'hard'].find(d => d === q) || ['easy', 'hard'].find(d => d === s) || 'normal'; })();
+const AI_LEVEL = { easy: { first: 600, every: 240, wave: 3, train: 1.5 }, normal: { first: 390, every: 180, wave: 5, train: 1 }, hard: { first: 220, every: 120, wave: 8, train: 0.7 } }[DIFF];
+const HP = { v: 25, mil: 45, tc: 600, house: 150, barracks: 350 }, ATK = { v: 2, mil: 6 }, ATK_RATE = 1, MELEE_R = 46, AGGRO_R = 300;
+const MILITIA_COST = { food: 60, gold: 20 }, MILITIA_TIME = 8, BARRACKS_COST = { wood: 150 }, BARRACKS_BUILD_TIME = 16, FARM_COST = { wood: 60 };
 function mapSizeFor(n) { return n <= 0 ? 16 : 16 * (1 + Math.ceil(n / 20)); }
 function mapLabel(n) { return String(n).padStart(2, '0'); }
 let MAP_SIZE = mapSizeFor(MAP_NUM);   // tiles per side (only the test hook swaps it)
@@ -80,6 +85,7 @@ const RES_TYPES = {
     gold:  { res: 'gold',  amount: 400, color: 0xe8c33a, label: 'Gold'  },
     stone: { res: 'stone', amount: 350, color: 0x9a9a9a, label: 'Stone' },
     carcass: { res: 'food', amount: 100, color: 0x8a5a2a, label: 'Food', rate: 0.3 },   // hunted deer (finite)
-    fish:  { res: 'food',  amount: 150, color: 0x9ad8ff, label: 'Food', rate: 0.45 }   // on water, gathered from shore
+    fish:  { res: 'food',  amount: 150, color: 0x9ad8ff, label: 'Food', rate: 0.45 },   // on water, gathered from shore
+    farm:  { res: 'food',  amount: 250, color: 0xc8a050, label: 'Food', rate: 0.7 }    // ARQ1b: placed field, finite
 };
 const CARRY_COLORS = { wood: 0x8b5a2b, food: 0xc0306a, gold: 0xe8c33a, stone: 0xbbbbbb };
