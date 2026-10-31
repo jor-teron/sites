@@ -4,7 +4,7 @@
   Pages: Design (landing: live A4 preview + options, Print, Download PDF) and Holidays (CM3).
   Styles: calendar-maker.css. Drawing: calendar-maker_render.js. Page logic: calendar-maker.js.
   Download PDF + background: calendar-maker_pdf.js (CM2, jsPDF in vendor/). Holidays page: calendar-maker_holidays.js (CM3).
-  Holiday List page (printable A4 list): calendar-maker_list.js (CM10).
+  Holiday List page (printable A4 list): calendar-maker_list.js (CM10; CM12 Classic layout default, Simple = CM10).
   Holiday defaults come from the Calendar app (../calendar/calendar_holidays.js), not a copy.
 -->
 <html lang="en">
@@ -100,6 +100,14 @@
     <div id="list-wrap"><canvas id="list-sheet" aria-label="A4 holiday list preview"></canvas></div>
     <aside class="list-opts">
       <label class="row col"><span>Header (optional)</span><input type="text" id="list-header" maxlength="80" placeholder="e.g. organisation name"></label>
+      <!--CM12--><label class="row col"><span>Layout</span><select id="list-layout"><option value="classic">Classic</option><option value="simple">Simple</option></select></label>
+      <div class="list-classic list-opts-in">
+        <label class="row col"><span>Subtitle</span><input type="text" id="list-sub" maxlength="80" placeholder="LIST OF HOLIDAYS"></label>
+        <label class="row"><input type="checkbox" id="list-deco"> <span>:: marks around header and subtitle</span></label>
+        <label class="row"><input type="checkbox" id="list-abcd"> <span>(a) (b) (c) (d) row</span></label>
+        <label class="row"><input type="checkbox" id="list-merge"> <span>Merge month cells (off = month on every row)</span></label>
+        <div class="row col"><span>Header row colour</span><div class="swatches" id="list-hcolours"></div><label class="cpick" title="Custom header colour"><input type="color" id="list-hcustom" aria-label="Custom header row colour"> Custom</label></div>
+      </div><!--/CM12-->
       <p class="note">Holidays for the year chosen on the Design page: main holidays, then Restricted Holidays. Colours and font colour follow the Design page.</p>
       <div class="acts"><button type="button" class="btn" id="list-print">Print</button><button type="button" class="btn" id="list-pdf">Download PDF</button></div>
     </aside>

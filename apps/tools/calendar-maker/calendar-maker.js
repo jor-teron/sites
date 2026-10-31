@@ -4,7 +4,7 @@
    ?year=YYYY (from Calendar's "Make printable") wins over the saved year. Exposes window.CM for CM2 / CM3 plug-ins. */
 window.CM = (function () {
   'use strict';
-  const SKEY = 'calendar-maker-settings', RELEASE = 'CM11'; /* CM10 */
+  const SKEY = 'calendar-maker-settings', RELEASE = 'CM12'; /* CM10; was 'CM11' */
   const $ = (id) => document.getElementById(id);
   let P = {};
   try { P = JSON.parse(localStorage.getItem(SKEY) || '{}') || {}; } catch (_) { P = {}; }
@@ -20,6 +20,11 @@ window.CM = (function () {
   if (!HEX.test(P.font)) P.font = D.font;
   if (!HEX.test(P.rcol)) P.rcol = D.rcol; /* CM9 */
   if (typeof P.lhead !== 'string') P.lhead = ''; /* CM10 */
+  /* CM12: holiday list layout (Classic default) + Classic options */
+  if (P.llay !== 'simple') P.llay = 'classic';
+  if (typeof P.lsub !== 'string') P.lsub = 'LIST OF HOLIDAYS';
+  ['ldeco', 'labcd', 'lmerge'].forEach((k) => { if (typeof P[k] !== 'boolean') P[k] = true; });
+  if (!HEX.test(P.lhc)) P.lhc = '#2e75b6';
   if (P.colour !== 'custom' && !window.CMRender.COLOURS[P.colour]) P.colour = 'green';
   if (['none', 'soft', 'pic'].indexOf(P.bg) < 0) P.bg = 'none'; /* CM4: unknown / old value -> white */
   P.year = D.year; /* opens on the current year unless Calendar passes ?year= */
