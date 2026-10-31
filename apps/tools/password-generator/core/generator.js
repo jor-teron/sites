@@ -1,4 +1,4 @@
-/* Password Generator PG1 — core logic.
+/* Password Generator PG2 — core logic.
    Builds a random password from selected character sets. */
 window.PG = window.PG || {};
 
@@ -9,10 +9,18 @@ PG.SETS = {
   symbol: '!@#$%^&*()-_=+[]{}|;:,.<>?'
 };
 
+// Secure random integer in [0, n) via crypto.getRandomValues (rejection sampling, no bias).
+PG.randInt = function (n) {
+  var limit = Math.floor(0x100000000 / n) * n;
+  var buf = new Uint32Array(1);
+  do { crypto.getRandomValues(buf); } while (buf[0] >= limit);
+  return buf[0] % n;
+};
+
 // Generate a password of given length using the chosen sets.
 // Guarantees at least one character from each selected set when possible.
 PG.generate = function (opts) {
-  var length = Math.max(4, Math.min(64, opts.length || 16));
+  var length = Math.max(8, Math.min(48, opts.length || 16));
   var pools = [];
   if (opts.lower) pools.push(PG.SETS.lower);
   if (opts.upper) pools.push(PG.SETS.upper);
@@ -26,17 +34,17 @@ PG.generate = function (opts) {
   // Ensure one from each pool
   for (var i = 0; i < pools.length && result.length < length; i++) {
     var pool = pools[i];
-    result.push(pool.charAt(Math.floor(Math.random() * pool.length)));
+    result.push(pool.charAt(PG.randInt(pool.length)));
   }
 
   // Fill the rest
   while (result.length < length) {
-    result.push(all.charAt(Math.floor(Math.random() * all.length)));
+    result.push(all.charAt(PG.randInt(all.length)));
   }
 
   // Shuffle
   for (var j = result.length - 1; j > 0; j--) {
-    var k = Math.floor(Math.random() * (j + 1));
+    var k = PG.randInt(j + 1);
     var tmp = result[j];
     result[j] = result[k];
     result[k] = tmp;

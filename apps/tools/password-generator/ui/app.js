@@ -1,4 +1,4 @@
-/* Password Generator PG1 — UI app.
+/* Password Generator PG2 — UI app.
    Length slider, character-set checkboxes, generate, copy. */
 (function () {
   'use strict';
@@ -51,6 +51,7 @@
       len.addEventListener('input', function () {
         state.length = parseInt(len.value, 10);
         if (lenVal) lenVal.textContent = state.length;
+        refresh();
       });
     }
 
@@ -58,7 +59,13 @@
       var el = document.getElementById('pg-' + key);
       if (el) {
         el.addEventListener('change', function () {
+          // Keep at least one set ticked.
+          if (!el.checked && !['lower', 'upper', 'digit', 'symbol'].some(function (k) { return k !== key && state[k]; })) {
+            el.checked = true;
+            return;
+          }
           state[key] = el.checked;
+          refresh();
         });
       }
     });
@@ -71,25 +78,46 @@
       copy.addEventListener('click', function () {
         var out = document.getElementById('pg-out');
         if (!out) return;
-        out.select();
-        try {
-          document.execCommand('copy');
-          copy.textContent = 'Copied';
+        function done(ok) {
+          copy.textContent = ok ? 'Copied' : 'Copy failed';
           setTimeout(function () { copy.textContent = 'Copy'; }, 1200);
-        } catch (e) {
-          copy.textContent = 'Select & copy';
+        }
+        function fallback() {
+          out.select();
+          var ok = false;
+          try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+          done(ok);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(out.value).then(function () { done(true); }, fallback);
+        } else {
+          fallback();
         }
       });
+    }
+  }
+
+  // New password into the existing output, without rebuilding the controls.
+  function refresh() {
+    var out = document.getElementById('pg-out');
+    var st = document.querySelector('.pg-strength');
+    var pw = PG.generate(state);
+    var str = PG.strength(pw);
+    if (out) out.value = pw;
+    if (st) {
+      st.className = 'pg-strength ' + str.cls;
+      st.textContent = str.label ? 'Strength: ' + str.label : '';
     }
   }
 
   function escapeHtml(s) {
     if (s == null) return '';
     return String(s)
-      .replace(/&/g, '&')
-      .replace(/</g, '<')
-      .replace(/>/g, '>')
-      .replace(/"/g, '"');
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   if (document.readyState === 'loading') {
