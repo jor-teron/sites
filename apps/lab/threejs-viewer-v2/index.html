@@ -1,14 +1,21 @@
-<!--
-  File: index.html
-  Project: threejs-viewer-v2
-  Role: Entry redirect only. Opens the real app page threejs-viewer-v2.html.
--->
 <!DOCTYPE html>
+<!-- Redirect entry point to threejs-viewer-v2.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "Open Three.js Viewer v2" link were always visible in <head>/<body>; both now live in <noscript>. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=threejs-viewer-v2.html">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Three.js Viewer v2</title>
+  <link rel="canonical" href="threejs-viewer-v2.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('threejs-viewer-v2.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=threejs-viewer-v2.html"></noscript>
 </head>
-<body><a href="threejs-viewer-v2.html">Open Three.js Viewer v2</a></body>
+<body><noscript><p><a href="threejs-viewer-v2.html">Open Three.js Viewer v2</a></p></noscript></body>
 </html>

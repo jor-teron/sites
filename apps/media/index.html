@@ -1,12 +1,21 @@
-<!doctype html>
-<!-- apps/media/index.html — redirect only: the Media tiles page is media.html (keeps ?query and #hash). -->
+<!DOCTYPE html>
+<!-- Redirect entry point to media.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "Media" link were always visible in <head>/<body>; both now live in <noscript>. -->
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Media</title>
-  <script>location.replace('media.html' + location.search + location.hash);</script>
-  <noscript><meta http-equiv="refresh" content="0; url=media.html" /></noscript>
+  <link rel="canonical" href="media.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('media.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=media.html"></noscript>
 </head>
-<body><p><a href="media.html">Media</a></p></body>
+<body><noscript><p><a href="media.html">Media</a></p></noscript></body>
 </html>

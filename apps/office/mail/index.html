@@ -1,22 +1,21 @@
-<!--
-  File: index.html
-  Project: mail
-  Purpose: Entry redirect. Opens the real client page mail.html.
-  Theme and mail UI live in mail.html, mail.css, mail.js, mail-config.js.
-  Personal use only. Not the Gmail web UI.
--->
 <!DOCTYPE html>
+<!-- Redirect entry point to mail.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "Open Mail" link were always visible in <head>/<body>; both now live in <noscript>. -->
 <html lang="en">
 <head>
-  <!-- Page title shown if redirect is slow. -->
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mail</title>
-  <!-- Immediate redirect to the project HTML file. -->
-  <meta http-equiv="refresh" content="0; url=mail.html">
   <link rel="canonical" href="mail.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('mail.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=mail.html"></noscript>
 </head>
-<body>
-  <!-- Fallback if the browser ignores the meta refresh. -->
-  <p><a href="mail.html">Open Mail</a></p>
-</body>
+<body><noscript><p><a href="mail.html">Open Mail</a></p></noscript></body>
 </html>

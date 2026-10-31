@@ -1,21 +1,21 @@
-<!--
-  File: index.html
-  Project: Demolisher
-  Purpose: Entry redirect. Opens the real game page demolisher.html.
-  Rule: project folder holds all files; index.html only forwards.
--->
 <!DOCTYPE html>
+<!-- Redirect entry point to demolisher.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "Open Demolisher" link were always visible in <head>/<body>; both now live in <noscript>. -->
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="0; url=demolisher.html" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Demolisher DMQ1b</title>
+  <link rel="canonical" href="demolisher.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
   <script>
-    /* Immediate redirect so the refresh meta is not the only path. */
-    window.location.replace('demolisher.html');
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('demolisher.html' + location.search + location.hash);
+    })();
   </script>
+  <noscript><meta http-equiv="refresh" content="0; url=demolisher.html"></noscript>
 </head>
-<body>
-  <p><a href="demolisher.html">Open Demolisher</a></p>
-</body>
+<body><noscript><p><a href="demolisher.html">Open Demolisher</a></p></noscript></body>
 </html>

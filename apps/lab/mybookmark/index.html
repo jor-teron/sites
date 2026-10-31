@@ -1,14 +1,21 @@
 <!DOCTYPE html>
-<!-- MyBookmark: entry point, redirects to mybookmark.html -->
+<!-- Redirect entry point to mybookmark.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "MyBookmark" link were always visible in <head>/<body>; both now live in <noscript>. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MyBookmark</title>
-  <meta http-equiv="refresh" content="0; url=mybookmark.html">
+  <link rel="canonical" href="mybookmark.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('mybookmark.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=mybookmark.html"></noscript>
 </head>
-<body>
-  <p>Opening <a href="mybookmark.html">MyBookmark</a>…</p>
-  <script>location.replace('mybookmark.html' + location.search + location.hash);</script>
-</body>
+<body><noscript><p><a href="mybookmark.html">MyBookmark</a></p></noscript></body>
 </html>

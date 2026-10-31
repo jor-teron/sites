@@ -1,31 +1,21 @@
 <!DOCTYPE html>
-<!--
-================================================================================
-File: index.html
-Project: local-ai-chat
-Description: Entry point that redirects to the main application file.
-Purpose: Satisfies the project structure rule requiring index.html to redirect
-         to the primary HTML file named after the project.
-Author: Grok
-Date: 2026-10-19 (R1: header refreshed; redirect unchanged)
-================================================================================
--->
+<!-- Redirect entry point to local-ai-chat.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "Local AI Chat" link were always visible in <head>/<body>; both now live in <noscript>. -->
 <html lang="en">
 <head>
-    <!-- Meta tags for character set and viewport -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirecting to Local AI Chat</title>
-    <!-- Immediate redirect to the main project file -->
-    <meta http-equiv="refresh" content="0; url=local-ai-chat.html">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local AI Chat</title>
+  <link rel="canonical" href="local-ai-chat.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('local-ai-chat.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=local-ai-chat.html"></noscript>
 </head>
-<body>
-    <!-- Fallback message if redirect is blocked -->
-    <p>Redirecting to <a href="local-ai-chat.html">Local AI Chat</a>...</p>
-    <!-- JavaScript fallback redirect -->
-    <script>
-        // Immediate client-side redirect as backup
-        window.location.href = "local-ai-chat.html";
-    </script>
-</body>
+<body><noscript><p><a href="local-ai-chat.html">Local AI Chat</a></p></noscript></body>
 </html>

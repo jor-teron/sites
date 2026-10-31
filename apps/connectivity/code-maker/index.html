@@ -1,6 +1,21 @@
 <!DOCTYPE html>
-<!-- Redirect entry point for Code Maker (QR1). -->
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="refresh" content="0; url=code-maker.html"><title>Code Maker</title>
-<script>location.replace("code-maker.html" + location.search + location.hash);</script></head>
-<body><p><a href="code-maker.html">Open Code Maker</a></p></body></html>
+<!-- Redirect entry point to code-maker.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "Open Code Maker" link were always visible in <head>/<body>; both now live in <noscript>. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Code Maker</title>
+  <link rel="canonical" href="code-maker.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('code-maker.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=code-maker.html"></noscript>
+</head>
+<body><noscript><p><a href="code-maker.html">Open Code Maker</a></p></noscript></body>
+</html>
