@@ -1,2 +1,8 @@
-exp-*/
+# Local API key (GEMINI_API_KEY=... or GOOGLE_API_KEY=...)
 .env
+
+# Folders left in this directory by the earlier scripts (exp-001/, and so on).
+exp-*/
+
+# Experiment output from ai-exp.sh: cage/, log-N.md, and .run/.
+experiments/
