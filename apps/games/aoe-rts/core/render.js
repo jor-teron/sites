@@ -142,7 +142,7 @@ function render() {
     }
     for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) if (rock[y * MAP_SIZE + x] && !mount[y * MAP_SIZE + x] && vis(x, y)) {   // R2b rock outcrops
         const p = tileCenter(x, y); sprite('rock' + Math.floor(hash(x, y, 11) * 4), p.x + (hash(x, y, 12) - 0.5) * 10, p.y + 10, p.y + 8, hash(x, y, 13) > 0.5); }
-    drawTC(g, gu);
+    tcs.forEach(t => drawTC(g, gu, t));
     deer.forEach(d => { if (d.x > vr.x0 && d.x < vr.x1 && d.y > vr.y0 && d.y < vr.y1 + 120) drawDeer(d); });
     villagers.forEach(v => { if (v.x > vr.x0 && v.x < vr.x1 && v.y > vr.y0 && v.y < vr.y1 + 120) drawVillager(g, gu, v); });
     for (let i = poolN; i < pool.length; i++) if (pool[i].visible) pool[i].setVisible(false);
@@ -156,7 +156,7 @@ function sprite(name, x, y, depth, flip) {
     let img = pool[poolN];
     if (!img) { img = scene.add.image(0, 0, 'art0'); pool.push(img); }
     poolN++;
-    Art.apply(img, name, x, y, flip, depth);
+    Art.apply(img, name, x, y, flip, depth); img.clearTint();
     return img;
 }
 function drawNode(g, x, y, c) {
@@ -176,21 +176,23 @@ function drawNode(g, x, y, c) {
         if (c.kind === 'gold' && Math.sin(animT / 300 + x * 3 + y) > 0.97) { g.fillStyle(0xffffff, 0.9); g.fillCircle(p.x + 8, p.y - 40, 3); }
     }
 }
-function drawTC(g, gu) {
-    const t = townCenter, c = tileCenter(t.x + 0.5, t.y + 0.5);
+function drawTC(g, gu, t) {
+    const c = tileCenter(t.x + 0.5, t.y + 0.5), tint = TEAM[t.owner].tint;
+    if (tint) { gu.lineStyle(6, TEAM[t.owner].col, 0.8); gu.strokeEllipse(c.x, c.y, 280, 140); }
     if (t.selected) { gu.lineStyle(4, 0xffffff, 0.9); gu.strokeEllipse(c.x, c.y, 300, 150); }
     sprite('tc', c.x, c.y, c.y + 40);
-    sprite('flag' + (Math.floor(animT / 140) % 4), c.x, c.y - 203, c.y + 40.5);
-    if (trainQueue > 0) {          // training progress bar
-        const f = trainTimer / TRAIN_TIME;
+    const fl = sprite('flag' + (Math.floor(animT / 140) % 4), c.x, c.y - 203, c.y + 40.5); if (tint) fl.setTint(tint);
+    const q = t.owner === 'p' ? trainQueue : factions[t.owner].queue, tt = t.owner === 'p' ? trainTimer : factions[t.owner].timer;
+    if (q > 0) {          // training progress bar
+        const f = tt / TRAIN_TIME;
         g.fillStyle(0x000000, 0.7); g.fillRect(c.x - 72, c.y - 290, 144, 14);
-        g.fillStyle(popCount() < popCap() ? 0x55dd55 : 0xdd5555, 1); g.fillRect(c.x - 70, c.y - 288, 140 * f, 10);
+        g.fillStyle(popCount(t.owner) < popCap(t.owner) ? 0x55dd55 : 0xdd5555, 1); g.fillRect(c.x - 70, c.y - 288, 140 * f, 10);
     }
 }
 function drawHouse(g, x, y, h) {
     const p = tileCenter(x, y), pr = h.done ? 1 : h.progress;
     const idx = h.done ? 9 : Math.min(8, Math.floor(pr / (1 / 9)));
-    sprite('house' + idx, p.x, p.y, p.y + 10);
+    const im = sprite('house' + idx, p.x, p.y, p.y + 10); if (h.owner) { im.setTint(TEAM[h.owner].tint); g.fillStyle(TEAM[h.owner].col, 1); g.fillRect(p.x - 3, p.y - 150, 22, 12); g.fillRect(p.x - 3, p.y - 150, 3, 40); }
     if (!h.done) {
         g.fillStyle(0x000000, 0.7); g.fillRect(p.x - 40, p.y - 180, 80, 10);
         g.fillStyle(0x55aaff, 1); g.fillRect(p.x - 38, p.y - 178, 76 * h.progress, 6);
@@ -213,8 +215,9 @@ function drawVillager(g, gu, v) {
     if (working && tool !== 'none') name = `${pre}${tool}_work${Math.floor(t * 9) % 6}`;
     else if (v.walking) name = `${pre}${tool}_walk${Math.floor(t * 12) % 8}`;
     else name = `${pre}${tool}_idle`;
+    if (v.owner) { gu.lineStyle(4, TEAM[v.owner].col, 0.9); gu.strokeEllipse(v.x, v.y + 2, 46, 18); }   // ARQ1a team ring
     if (v.selected) { gu.lineStyle(3, 0xffff66, 1); gu.strokeEllipse(v.x, v.y + 2, 54, 22); }
-    sprite(name, v.x, v.y, v.y + 0.2, face < 0);
+    const im = sprite(name, v.x, v.y, v.y + 0.2, face < 0); if (v.owner) im.setTint(TEAM[v.owner].tint);
     if (v.carry > 0) {
         sprite('carry_' + v.carryType, v.x - face * 15, v.y - 46, v.y + 0.1, face < 0);
         const col = CARRY_COLORS[v.carryType];

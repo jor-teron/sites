@@ -2,15 +2,16 @@
 // ============================================================================
 // VILLAGERS
 // ============================================================================
-function spawnVillager(tx, ty) {
+function spawnVillager(tx, ty, owner) {
     const p = tileCenter(tx, ty), fem = trainedCount++ % 2 === 1;   // male, female, male, ...
     const v = { fem, x: p.x, y: p.y, state: 'idle', target: null, node: null, carry: 0, carryType: null, timer: 0, selected: false, face: 1, walking: false, seed: Math.random() };
+    if (owner && owner !== 'p') v.owner = owner;
     villagers.push(v);
     return v;
 }
 /** Nearest drop-off point (edge of Town Center facing the villager) */
 function dropPoint(v) {
-    const c = tileCenter(townCenter.x + 0.5, townCenter.y + 0.5);
+    const t = tcOf(own(v)) || townCenter, c = tileCenter(t.x + 0.5, t.y + 0.5);
     const dx = v.x - c.x, dy = v.y - c.y, d = Math.hypot(dx, dy) || 1;
     return { x: c.x + dx / d * 112, y: c.y + dy / d * 58 };
 }
@@ -129,7 +130,7 @@ function updateVillager(v, dt) {
         }
         case 'returning':
             if (stepTo(v, dropPoint(v), dt, 6)) {
-                resources[v.carryType] += v.carry; Sfx.play('drop', 0.15);
+                resOf(own(v))[v.carryType] += v.carry; Sfx.play('drop', 0.15);
                 v.carry = 0;
                 const cell = v.node && mapData[v.node.y][v.node.x];
                 if (cell && (cell.amount > 0 || (cell.kind === 'berry' && !otherBerry(v)))) { v.state = 'toNode'; v.target = tileCenter(v.node.x, v.node.y); }

@@ -32,15 +32,19 @@ let riv = new Uint8Array(MAP_SIZE * MAP_SIZE);     // ARQ1t: river id + 1 on riv
 let aiStart = null;      // ARQ1t: reserved far start spot {x, y} for a future AI base
 let ground = new Uint8Array(MAP_SIZE * MAP_SIZE);  // R2b: ground look 0 grass, 1 lush, 2 dry, 3 dirt, 4 sand (visual only)
 let deer = [];           // R2c: { x, y, hx, hy, ant, state, timer, gx, gy, face, seed, cd }
-let trainedCount = 0;    // villagers made so far: even = male, odd = female
+let trainedCount = 0;
+let tcs = [], factions = {};   // ARQ1a: all Town Centers ({.., owner}); AI owners -> { res, queue, timer }    // villagers made so far: even = male, odd = female
 window.addEventListener('keydown', e => { if (e.key === 'Control' || e.key === 'Meta') ctrlHeld = true; });
 window.addEventListener('keyup', e => { if (e.key === 'Control' || e.key === 'Meta') ctrlHeld = false; });
 window.addEventListener('blur', () => { ctrlHeld = false; });
 
-function popCount() { return villagers.length; }
-function popCap() { return POP_BASE + POP_PER_HOUSE * houses.filter(h => h.done).length; }
+const own = u => u.owner || 'p';   // ARQ1a owners: 'p' (player), 'ai1', 'ai2'
+function resOf(o) { return o && o !== 'p' ? factions[o].res : resources; }
+function tcOf(o) { return tcs.find(t => t.owner === o) || null; }
+function popCount(o) { return villagers.filter(v => own(v) === (o || 'p')).length; }
+function popCap(o) { return POP_BASE + POP_PER_HOUSE * houses.filter(h => h.done && own(h) === (o || 'p')).length; }
 function canAfford(cost) { return Object.keys(cost).every(k => resources[k] >= cost[k]); }
-function pay(cost) { Object.keys(cost).forEach(k => resources[k] -= cost[k]); }
+function pay(cost, o) { const r = resOf(o); Object.keys(cost).forEach(k => r[k] -= cost[k]); }
 function refund(cost) { Object.keys(cost).forEach(k => resources[k] += cost[k]); }
 function costText(cost) { return Object.keys(cost).map(k => cost[k] + ' ' + k).join(', '); }
 

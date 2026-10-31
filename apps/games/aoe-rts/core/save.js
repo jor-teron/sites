@@ -7,7 +7,7 @@ const SAVE_KINDS = ['tree', 'berry', 'gold', 'stone', 'carcass', 'fish'];
 const V_STATES = ['idle', 'moving', 'toNode', 'gathering', 'toHunt', 'hunting', 'toBuild', 'building', 'returning'];
 const DEER_KEYS = ['x', 'y', 'hx', 'hy', 'state', 'timer', 'gx', 'gy', 'face', 'seed', 'cd', 'fx', 'fy'];
 let saveReady = false, saveBlocked = false;
-function saveKey(n) { return 'aoe-rts.save.' + mapLabel(n); }
+function saveKey(n) { return 'aoe-rts.save.' + (MODE === 'open' ? '' : MODE + '.') + mapLabel(n); }   // ARQ1a: Open World keeps the old key
 function hasSave(n) { try { return localStorage.getItem(saveKey(n)) !== null; } catch (e) { return false; } }
 function dropSave(n) { try { localStorage.removeItem(saveKey(n)); } catch (e) {} }
 const r1 = n => Math.round(n * 10) / 10, r4 = n => Math.round(n * 1e4) / 1e4;
@@ -17,10 +17,10 @@ function buildSave() {
     for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) { const c = mapData[y][x]; if (c && RES_TYPES[c.kind]) cells.push([x, y, c.kind, c.amount, c.max]); }
     return {
         v: SAVE_VER, map: MAP_NUM, size: MAP_SIZE, saved: Date.now(), res: Object.assign({}, resources),
-        cells, houses: houses.map(h => [h.x, h.y, r4(h.progress), h.done ? 1 : 0]),
+        cells, houses: houses.map(h => [h.x, h.y, r4(h.progress), h.done ? 1 : 0, own(h)]), ai: JSON.parse(JSON.stringify(factions)),
         villagers: villagers.map(v => ({ fem: v.fem ? 1 : 0, x: r1(v.x), y: r1(v.y), state: v.state, target: v.target ? { x: r1(v.target.x), y: r1(v.target.y) } : null,
             node: v.node ? { x: v.node.x, y: v.node.y } : null, carry: v.carry, carryType: v.carryType, timer: r4(v.timer), face: v.face, seed: r4(v.seed || 0),
-            lastKind: v.lastKind || null, house: v.house ? houses.indexOf(v.house) : -1, prey: v.prey ? deer.indexOf(v.prey) : -1 })),
+            lastKind: v.lastKind || null, house: v.house ? houses.indexOf(v.house) : -1, prey: v.prey ? deer.indexOf(v.prey) : -1, o: own(v) })),
         deer: deer.map(d => { const o = { ant: d.ant ? 1 : 0 }; DEER_KEYS.forEach(k => { if (typeof d[k] === 'number') o[k] = r4(d[k]); else if (d[k] != null) o[k] = d[k]; }); return o; }),
         train: { queue: trainQueue, timer: r4(trainTimer), count: trainedCount }, berryT: r4(berryT), animT: Math.round(animT),
         cam: cam ? { x: Math.round(cam.scrollX), y: Math.round(cam.scrollY), z: r4(cam.zoom) } : null
@@ -39,7 +39,7 @@ function decodeSave(s) {
     const cells = s.cells.map(c => { if (!Array.isArray(c) || !inMap(c[0], c[1]) || SAVE_KINDS.indexOf(c[2]) < 0) throw new Error('bad cell');
         return { x: c[0], y: c[1], cell: { kind: c[2], amount: Math.max(0, num(c[3])), max: Math.max(1, num(c[4])) } }; });
     const hs = s.houses.map(h => { if (!Array.isArray(h) || !inMap(h[0], h[1])) throw new Error('bad house');
-        return { x: h[0], y: h[1], progress: Math.min(1, Math.max(0, num(h[2]))), done: !!h[3] }; });   // houses on now-blocked tiles are dropped in resumeSave (R2b)
+        return { x: h[0], y: h[1], progress: Math.min(1, Math.max(0, num(h[2]))), done: !!h[3], owner: factions[h[4]] ? h[4] : undefined }; });   // houses on now-blocked tiles are dropped in resumeSave (R2b)
     const ds = s.deer.map(o => { const d = { ant: !!o.ant, state: ['graze', 'walk', 'flee'].indexOf(o.state) >= 0 ? o.state : 'graze', moving: false };
         ['x', 'y', 'hx', 'hy', 'timer', 'gx', 'gy', 'face', 'seed', 'cd'].forEach(k => d[k] = num(o[k]));
         if (d.state === 'flee') { d.fx = num(o.fx); d.fy = num(o.fy); } return d; });
@@ -48,6 +48,7 @@ function decodeSave(s) {
             node: o.node && inMap(o.node.x, o.node.y) ? { x: o.node.x, y: o.node.y } : null, carry: Math.max(0, Math.min(CARRY_MAX, num(o.carry))),
             carryType: o.carryType in START_RES ? o.carryType : null, timer: num(o.timer), selected: false, face: o.face < 0 ? -1 : 1, walking: false,
             seed: num(o.seed), lastKind: o.lastKind || null, house: hs[o.house] || null, prey: ds[o.prey] || null };
+        if (factions[o.o]) v.owner = o.o; else if (o.o && o.o !== 'p') throw new Error('bad owner');
         if (!v.carryType) v.carry = 0;
         // anything whose target is gone falls back to a safe state (re-planned next frame)
         if ((v.state === 'toHunt' || v.state === 'hunting') && !v.prey) v.state = 'idle';
@@ -55,8 +56,9 @@ function decodeSave(s) {
         if ((v.state === 'toNode' || v.state === 'gathering') && !v.node) v.state = 'idle';
         if ((v.state === 'moving' || v.state === 'toNode' || v.state === 'toBuild') && !v.target) v.state = 'idle';
         return v; });
+    const ai = s.ai || {}; Object.keys(factions).forEach(id => { const a = ai[id]; if (!a) return; Object.keys(START_RES).forEach(k => { if (a.res) num(a.res[k]); }); num(a.queue); num(a.timer); });
     const tr = s.train || {};
-    return { res, cells, hs, ds, vs, queue: Math.max(0, Math.min(QUEUE_MAX, Math.round(num(tr.queue || 0)))), ttimer: num(tr.timer || 0), count: Math.round(num(tr.count || 0)),
+    return { ai, res, cells, hs, ds, vs, queue: Math.max(0, Math.min(QUEUE_MAX, Math.round(num(tr.queue || 0)))), ttimer: num(tr.timer || 0), count: Math.round(num(tr.count || 0)),
         berryT: num(s.berryT || 0), animT: num(s.animT || 0), cam: s.cam && isFinite(s.cam.x) && isFinite(s.cam.y) && isFinite(s.cam.z) ? s.cam : null };
 }
 /** On scene create: restore this map's save if there is one; a corrupt save is dropped and the map starts fresh */
@@ -76,6 +78,7 @@ function resumeSave() {
                 const n = nearestLand(t.x, t.y), p = tileCenter(n.x, n.y); u.x = p.x; u.y = p.y; u.route = null; });
             deer.forEach(d => { if (!isLand(d.hx, d.hy)) { const n = nearestLand(Math.round(d.hx), Math.round(d.hy)); d.hx = n.x; d.hy = n.y; } });
             villagers.forEach(v => { if (v.house && houses.indexOf(v.house) < 0) { v.house = null; v.state = 'idle'; } });
+            Object.keys(factions).forEach(id => { if (d.ai[id]) factions[id] = d.ai[id]; });
             trainQueue = d.queue; trainTimer = d.ttimer; trainedCount = d.count; berryT = d.berryT; animT = d.animT;
             if (d.cam) { cam.setZoom(Phaser.Math.Clamp(d.cam.z, minZoom(), ZOOM_MAX)); cam.scrollX = d.cam.x; cam.scrollY = d.cam.y; }
             msg = 'Map ' + mapLabel(MAP_NUM) + ' resumed';
