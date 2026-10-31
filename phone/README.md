@@ -2,7 +2,7 @@
 
 A phone-style home screen for the Hub. Jor runs it as the **Android home screen inside a WebView**
 (PH3 will be the tiny APK). It works fully by gesture and behaves like a phone launcher.
-Open `phone/` (or `phone/index.html`) on the Hub's site.
+Open `phone/` (or `phone/phone.html`; `index.html` only redirects to it) on the Hub's site.
 
 ## Gestures
 
@@ -54,7 +54,8 @@ Desktop testing: mouse drags do the same; wheel down = drawer, wheel up = panel,
 
 | File | What |
 |---|---|
-| `index.html` | page, layers, script order. `<title>Phone PH1</title>`, every `?v=PH1` |
+| `phone.html` | page, layers, script order. `<title>Phone PH1</title>`, no `?v=` labels |
+| `index.html` | redirect only, to `phone.html` (keeps ?query and #hash) |
 | `phone.css` | Stopwatch palette, dark default; animations on transform / opacity only |
 | `phone_save.js` | the one save module (`PhoneSave`) |
 | `phone_apps.js` | catalog reader (`PhoneApps`), read only |
