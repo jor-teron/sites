@@ -1,26 +1,21 @@
 <!DOCTYPE html>
-<!--
-  Water Kingdom - Children's Learning App
-  index.html - Redirects to the main application file
-  Project: water-kingdom
-  Created for modular children's book about water.
-  This file ensures clean entry point and redirects to water-kingdom.html
--->
+<!-- Redirect entry point to water-kingdom.html (keeps ?query and #hash). NIX-L1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh only (no JS); visible text in <body> with its own styled heading. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Water Kingdom</title>
-  <!-- Immediate redirect to main HTML -->
-  <meta http-equiv="refresh" content="0; url=water-kingdom.html">
-  <style>
-    /* Simple fallback message styling */
-    body { font-family: sans-serif; text-align: center; padding: 50px; background: #e0f7fa; }
-  </style>
+  <link rel="canonical" href="water-kingdom.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('water-kingdom.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=water-kingdom.html"></noscript>
 </head>
-<body>
-  <h1>🌊 Water Kingdom</h1>
-  <p>Redirecting to the book...</p>
-  <p>If not redirected, <a href="water-kingdom.html">click here</a>.</p>
-</body>
+<body><noscript><p><a href="water-kingdom.html">Open Water Kingdom</a></p></noscript></body>
 </html>
