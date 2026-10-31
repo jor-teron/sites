@@ -63,6 +63,9 @@
       // H7: the Files icons on the Desktop-mode home screen (default on; off = just the wallpaper and the QR / link tiles)
       const showFiles = ui.switch('Show Files on the desktop', 'Drive icons on the left of the Desktop home screen. Files stays in the Start menu and App Hub',
         S.get('showFiles') !== '0', (on) => S.set('showFiles', on ? '' : '0'));
+      // H72: the QR / link tiles on the home screen (default off; Desktop and Phone mode)
+      const showTiles = ui.switch('Show tiles on the home screen', 'QR / link tiles on the home screen (Desktop and Phone)',
+        S.get('showTiles') === '1', (on) => S.set('showTiles', on ? '1' : ''));
       /* H52: moved to Settings → Hub bar (sec_hubbar.js)
       const meter = ui.switch('Busy meter in the taskbar', 'A small graph by the clock: how busy the Hub is (an estimate). Click it for System Monitor',
         S.get('trayMeter') === '1', (on) => S.set('trayMeter', on ? '1' : ''));
@@ -135,7 +138,7 @@
       // pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home screen'), showFiles, ui.title('Home button (Phone mode)'), home,
       //   homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), meter,
       //   ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev);   // (before H52)
-      pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home screen'), showFiles, ui.title('Home button (Phone mode)'), home,
+      pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home screen'), showFiles, showTiles, ui.title('Home button (Phone mode)'), home,
         homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), barLink,
         ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev);   // H52: Taskbar → link to Hub bar
       showNow();

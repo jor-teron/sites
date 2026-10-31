@@ -7,7 +7,7 @@ window.GMEncode = (function () {
       finish() { return Promise.resolve(new Blob([enc.finish()], { type: 'image/gif' })); }, cancel() {} };
   }
   function viaWorker(o) {
-    const w = new Worker('gifmaker_worker.js?v=GM2');
+    const w = new Worker('gifmaker_worker.js');
     let pending = [], doneR = null, failed = null;
     const fail = (msg) => { failed = new Error(msg); pending.forEach((p) => p.j(failed)); pending = []; if (doneR) doneR.j(failed); };
     w.onerror = (e) => { e.preventDefault && e.preventDefault(); fail(e.message || 'worker error'); };
@@ -31,7 +31,7 @@ window.GMEncode = (function () {
     if (ok !== null) return Promise.resolve(ok);
     if (typeof Worker === 'undefined') return Promise.resolve(ok = false);
     return new Promise((res) => {
-      let w; try { w = new Worker('gifmaker_worker.js?v=GM2'); } catch (_) { return res(ok = false); }
+      let w; try { w = new Worker('gifmaker_worker.js'); } catch (_) { return res(ok = false); }
       const t = setTimeout(() => { w.terminate(); res(ok = false); }, 3000);
       w.onerror = (e) => { e.preventDefault && e.preventDefault(); clearTimeout(t); w.terminate(); res(ok = false); };
       w.onmessage = (e) => { clearTimeout(t); w.terminate(); res(ok = e.data && e.data.type === 'error'); }; /* finish w/o start → error reply = alive */
