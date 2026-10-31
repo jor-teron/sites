@@ -85,7 +85,7 @@ function stepTo(v, t, dt, stopDist) {
     const gt = screenToTile(t.x, t.y), gkey = gt.y * 4096 + gt.x;
     if (!v.route || v.routeKey !== gkey) { const r = planRoute(v, t); if (!r) return false; v.route = r; v.routeKey = gkey; }
     else { const last = v.route[v.route.length - 1]; if (isLand(gt.x, gt.y)) { last.x = t.x; last.y = t.y; } }   // goal drifts inside its tile (drop point)
-    let s = VILLAGER_SPEED * dt;
+    const vt = screenToTile(v.x, v.y); let s = VILLAGER_SPEED * dt * (isHill(vt.x, vt.y) ? HILL_SPEED : 1);   // ARQ1t: slower uphill
     while (s > 0 && v.route.length) {
         const w = v.route[0], wx = w.x - v.x, wy = w.y - v.y, wd = Math.hypot(wx, wy), final = v.route.length === 1;
         if (final && Math.hypot(t.x - v.x, t.y - v.y) <= stopDist) break;

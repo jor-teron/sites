@@ -122,7 +122,7 @@ function render() {
         if (c.kind === 'house') drawHouse(g, x, y, c.house); else drawNode(g, x, y, c);
     }
     for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) if (rock[y * MAP_SIZE + x] && vis(x, y)) {   // R2b rock outcrops
-        const p = tileCenter(x, y); sprite('rock' + Math.floor(hash(x, y, 11) * 4), p.x + (hash(x, y, 12) - 0.5) * 10, p.y + 10, p.y + 8, hash(x, y, 13) > 0.5); }
+        const p = tileCenter(x, y); sprite((mount[y * MAP_SIZE + x] ? 'peak' : 'rock') + Math.floor(hash(x, y, 11) * 4), p.x + (hash(x, y, 12) - 0.5) * 10, p.y + 10, p.y + 8, hash(x, y, 13) > 0.5); }
     drawTC(g, gu);
     deer.forEach(d => { if (d.x > vr.x0 && d.x < vr.x1 && d.y > vr.y0 && d.y < vr.y1 + 120) drawDeer(d); });
     villagers.forEach(v => { if (v.x > vr.x0 && v.x < vr.x1 && v.y > vr.y0 && v.y < vr.y1 + 120) drawVillager(g, gu, v); });

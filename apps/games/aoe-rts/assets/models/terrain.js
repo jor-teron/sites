@@ -20,6 +20,19 @@
         for (let i = 0; i < 6; i++) ell(c, (rnd() - 0.5) * 100, 6 + (rnd() - 0.5) * 12, 2 + rnd() * 3, 1.5 + rnd() * 1.5, col(base, 0.9 + rnd() * 0.3));   // pebbles
     }
     AOE.models.rockOutcrop = rockOutcrop;
+    /** ARQ1t mountain: 2-3 tall rocky peaks with lit/shaded faces, strata lines and snow caps (impassable) */
+    AOE.models.mountainPeak = (c, v) => {
+        shadow(c, 70, 22);
+        const base = [0x6a6258, 0x5c564e, 0x726a5e, 0x625a50][v % 4], n = 2 + (v % 2), pk = [];
+        for (let i = 0; i < n; i++) pk.push([(i - (n - 1) / 2) * 44 + (rnd() - 0.5) * 16, (rnd() - 0.5) * 10, 34 + rnd() * 12, 80 + rnd() * 50 * (i === 1 ? 1.25 : 1)]);
+        pk.sort((a, b) => b[3] - a[3]).sort((a, b) => a[1] - b[1]);
+        pk.forEach(([x, y, w, h]) => { const top = [x + (rnd() - 0.5) * 8, y - h], B = [x + w * 0.15, y + 8];
+            poly(c, [[x - w, y], top, B], col(base, 1.2), col(base, 0.45), 1);
+            poly(c, [B, top, [x + w, y]], col(base, 0.7), col(base, 0.4), 1);
+            for (let s = 1; s <= 3; s++) { const t = s / 4; line(c, x - w * (1 - t), y - h * t, B[0] - w * 0.1, y - h * t + 6, 0.9, col(base, 0.5)); }
+            const sn = 0.28; poly(c, [[top[0] - w * sn, top[1] + h * sn], top, [top[0] + w * sn, top[1] + h * sn], [top[0] + w * 0.05, top[1] + h * sn * 0.7]], '#eef2f6', '#b8c0c8', 1);
+        });
+    };
 })();
 /** Ground painters used while baking grass chunks (core/render.js bakeChunk) */
 const TerrainArt = {
@@ -70,5 +83,5 @@ const TerrainArt = {
         for (let i = 0; i < 3; i++) { const rx = p.x + (hash(x, y, i + 260) - 0.5) * 70, ry = p.y + (hash(x, y, i + 270) - 0.5) * 30; c.beginPath(); c.moveTo(rx - 14, ry); c.quadraticCurveTo(rx, ry - 4, rx + 14, ry); c.stroke(); }
         c.restore();
     },
-    MINI: { rock: '#6e6a62', hill: 'rgba(255,240,170,0.28)', ford: '#7fc0d8', dirt: 'rgba(140,110,70,0.55)', sand: 'rgba(210,190,130,0.7)', lush: 'rgba(20,60,15,0.25)', dry: 'rgba(160,170,70,0.25)' }
+    MINI: { mount: '#9a958c', rock: '#6e6a62', hill: 'rgba(255,240,170,0.28)', ford: '#7fc0d8', dirt: 'rgba(140,110,70,0.55)', sand: 'rgba(210,190,130,0.7)', lush: 'rgba(20,60,15,0.25)', dry: 'rgba(160,170,70,0.25)' }
 };

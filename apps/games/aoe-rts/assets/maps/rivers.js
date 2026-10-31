@@ -33,6 +33,7 @@ function carveRivers(num, cx0, cy0, keep) {
         while (next < S - 2) { const span = [next, next + 1];
             if (span.every(a => cells(a).every(i => !lake[i]))) { fordAt[next] = fordAt[next + 1] = 1; next += 9 + Math.floor(R() * 7); } else next += 2; }
         for (let a = 0; a < S; a++) cells(a).forEach(i => {
+            if (!lake[i]) riv[i] = r + 1;   // ARQ1t: river id (for the ford check)
             if (fordAt[a] && !lake[i]) { if (!water[i]) ford[i] = 1; }
             else { water[i] = 1; ford[i] = 0; }
         });

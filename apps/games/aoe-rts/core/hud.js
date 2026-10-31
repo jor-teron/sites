@@ -32,7 +32,7 @@ function initMinimap() {
     b.moveTo(a.x * s, (a.y - 16) * s); b.lineTo((r.x + 32) * s, r.y * s); b.lineTo(d.x * s, (d.y + 16) * s); b.lineTo((l.x - 32) * s, l.y * s); b.closePath(); b.fill();
     const M = TerrainArt.MINI, GM = [null, M.lush, M.dry, M.dirt, M.sand];
     for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) { const i = y * MAP_SIZE + x;   // R2b: water + terrain
-        const fill = water[i] ? '#3a78c8' : rock[i] ? M.rock : ford[i] ? M.ford : GM[ground[i]];
+        const fill = water[i] ? '#3a78c8' : mount[i] ? M.mount : rock[i] ? M.rock : ford[i] ? M.ford : GM[ground[i]];
         const layers = [fill, !water[i] && !rock[i] && hill[i] ? M.hill : null];
         layers.forEach(f => { if (!f) return; const p = tileCenter(x, y), hw = TILE_WIDTH / 2 * s + 0.4, hh = TILE_HEIGHT / 2 * s + 0.4; b.fillStyle = f;
             b.beginPath(); b.moveTo(p.x * s, p.y * s - hh); b.lineTo(p.x * s + hw, p.y * s); b.lineTo(p.x * s, p.y * s + hh); b.lineTo(p.x * s - hw, p.y * s); b.closePath(); b.fill(); }); }
