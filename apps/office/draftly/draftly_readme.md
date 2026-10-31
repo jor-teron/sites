@@ -167,7 +167,7 @@ Messages show briefly at the bottom (2.2 s):
 - DOCX: images must be PNG / JPEG / GIF data (pasted or inserted); webp, svg and remote images are skipped. Floating / positioned content, column layout, fonts not installed on the reader's computer, and line spacing at exact multiples of the editor's are approximations. The combined Merge DOCX has one header / footer for all rows (row fields blank).
 - Paste (DF16): remote (http) images are skipped (offline); colspan / rowspan are flattened to plain cells; a table pasted inside a table cell becomes tab-separated lines; fonts (font-family), margins, alignment and line spacing from the source are not kept; HTML over 2 MB is pasted as plain text with a toast; Google Docs 11pt maps to 10pt (nearest Draftly size).
 - Times New Roman is used only if installed; otherwise Tinos (same widths).
-- Rename (File > Rename, or typing in the name box) moves the document to the new name; it does not make a copy. File > Delete document removes it after a confirm. Known bug DF15-B1: renaming to the name of another saved document replaces that document without a warning.
+- Rename (File > Rename, or typing in the name box) moves the document to the new name; it does not make a copy. File > Delete document removes it after a confirm. DF15-B1: renaming to a name another saved document has asks first: Use "name (n)", Replace (second confirm, deletes the other one) or Cancel. Edits stay under the old name until you choose.
 - Old version after an update: hard-refresh.
 
 ## 11. Change log
@@ -176,6 +176,7 @@ Messages show briefly at the bottom (2.2 s):
 - 2026-10-23 IST: MM3 Excel (.xlsx) import for Merge: own reader (no library), sheet dropdown (remembered), number and date formats as shown in Excel, live refresh like CSV; `samples/merge_sample.xlsx`.
 - 2026-10-23 IST: MM1 mail merge: Merge ribbon tab, CSV reader, live refresh, preview, Export all (zip / combined DOCX).
 - 2026-10-23 IST: orientation fix: saved only under `draftly_orientation` (config `storageKeyOrientation`); the old `undefined` key (written 2026-10-02 to 2026-10-21, when that config entry was missing) is migrated once at start-up and removed if it holds an orientation value. Invalid values are not saved.
+- 2026-10-31 IST: DF15-B1, rename no longer overwrites an existing document (File > Rename and the name box).
 - 2026-10-21 IST: Draftly dialogs (rename and delete) replace browser prompts; Dark/Light mode item in the File menu.
 - 2026-10-21 IST: slimmer top row (36 px, 28 px controls, smaller brand); hub bridge `draftly-hub.js` (tabs and title in the hub title bar).
 - 2026-10-04 21:14 IST: fit to screen, slim toolbar, Page popup, cleanup (margins box, status bar and version removed), Cmd keys, icon; hub name "Draftly" (commit 386541e).
