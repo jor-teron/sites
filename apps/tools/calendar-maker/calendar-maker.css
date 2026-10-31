@@ -60,11 +60,14 @@ body.land #sheet{aspect-ratio:297/210;max-width:calc((100vh - 90px) * 1.4142)}
   #sheet{max-width:100%}
   body.land #sheet{max-width:100%}
 }
-/* Print: only the A4 sheet image (it already holds its own ~7 mm margins) */
+/* Print: only the A4 sheet image (it already holds its own ~4 mm margins, CM5; was ~7 mm) */
 @page{size:A4 portrait;margin:0} /* CM4: overridden by #cm-page style for landscape */
 @media print{
   html,body{background:#fff}
   #app{display:none!important}
-  #print-img{display:block;width:209mm;height:auto;max-height:296mm;margin:0 auto;page-break-after:avoid}
-  body.land #print-img{width:296mm;max-height:209mm} /* CM4 */
+  /* CM4: #print-img{display:block;width:209mm;height:auto;max-height:296mm;margin:0 auto;page-break-after:avoid} */
+  #print-img{display:block;width:210mm;height:297mm;margin:0;page-break-after:avoid} /* CM5: full A4 */
+  /* body.land #print-img{width:296mm;max-height:209mm}  (CM4) */
+  body.land #print-img{width:297mm;height:210mm} /* CM5 */
+  html,body{margin:0;padding:0}
 }
