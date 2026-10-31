@@ -88,9 +88,12 @@
     input.focus();
   });
 
-  btnName.addEventListener('click', function () {
+  btnName.addEventListener('click', async function () {
     if (!window.SharedLinkDevices) return;
-    var n = window.prompt('Name for this device:', SharedLinkDevices.name());
+    /* UD1: Hub dialog instead of native prompt
+    var n = window.prompt('Name for this device:', SharedLinkDevices.name()); */
+    var n = window.UiDialog ? await UiDialog.ask('Name for this device:', SharedLinkDevices.name(), 'Save')
+                            : window.prompt('Name for this device:', SharedLinkDevices.name());
     if (n) { SharedLinkDevices.setName(n); PoohUI.notify({ icon: '✏️', title: 'Pooh Chat', text: 'This device is now “' + SharedLinkDevices.name() + '”' }); }
   });
 
