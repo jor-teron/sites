@@ -1,19 +1,21 @@
 <!DOCTYPE html>
-<!--
-File: index.html
-Project: aeroplane
-Purpose: Redirect entry point to the main application file aeroplane.html.
-Author: Generated for user request
-Date: 2026-10-17
--->
+<!-- Redirect entry point to aeroplane.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "aeroplane" link were always visible in <head>/<body>; both now live in <noscript>. -->
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=aeroplane.html">
-    <title>aeroplane</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>aeroplane</title>
+  <link rel="canonical" href="aeroplane.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('aeroplane.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=aeroplane.html"></noscript>
 </head>
-<body>
-    <!-- Immediate redirect to main app -->
-    <p>Redirecting to <a href="aeroplane.html">aeroplane</a>...</p>
-</body>
+<body><noscript><p><a href="aeroplane.html">aeroplane</a></p></noscript></body>
 </html>

@@ -1,10 +1,21 @@
 <!DOCTYPE html>
+<!-- Redirect entry point to gravity-sandbox.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "Gravity Sandbox" link were always visible in <head>/<body>; both now live in <noscript>. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gravity Sandbox GSQ1b</title>
-  <meta http-equiv="refresh" content="0; url=gravity-sandbox.html">
-  <script>location.replace("gravity-sandbox.html" + location.search + location.hash);</script>
+  <link rel="canonical" href="gravity-sandbox.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('gravity-sandbox.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=gravity-sandbox.html"></noscript>
 </head>
-<body><p>Moved: <a href="gravity-sandbox.html">Gravity Sandbox</a></p></body>
+<body><noscript><p><a href="gravity-sandbox.html">Gravity Sandbox</a></p></noscript></body>
 </html>

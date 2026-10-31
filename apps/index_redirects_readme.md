@@ -16,8 +16,9 @@ Every app folder has an `index.html` that only forwards to the real page (e.g. `
 - IX3 Lab: done (27 pages, incl. the "Moved" stubs to games/, office/ and renamed apps).
 - IX4 Media: done (15 pages; media/phone/index.html is a real page, not a redirect).
 - IX5 Office: done (12 pages).
+- IX6 Games: done (23 pages, done by Hub Apps Bot at Jor's request; Learn is Hub Games Bot's NIX-L1).
 - To do: About, Favorite, Settings, `tv/`.
-- Not ours: Games and Learn (Hub Games Bot), `apps/system/` and root `index.html` (Hub Main Bot).
+- Not ours: Learn (Hub Games Bot, NIX-L1), `apps/system/` and root `index.html` (Hub Main Bot).
 
 ## Legacy code notes
 - Old pages had a visible `<meta http-equiv="refresh">` in `<head>` and `<body><p><a href="<page>">Open <App></a></p></body>`. File Drop's had a fixed dark body colour. Each converted page keeps a one-line comment at the top describing the old form.
