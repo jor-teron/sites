@@ -4,6 +4,8 @@
     const SKIN = '#efc49a', SKIN_D = '#c9966a', SKIN_L = '#f8dcbc';
     let HAIR = '#6b4423', HAIR_D = '#3e2612', HAIR_L = '#9a6a3a';
     let FEM = false;   // R2a: female villager variant (slimmer, long braid, dress-length tunic, softer face)
+    let PAL = ['#5a8ae0', '#2f60bc', '#1a3e80', '#142c5c'];   // ARQ1c team cloth: light, mid, dark, outline (TEAM[..].pal)
+    function setTeam(p) { PAL = p; }
     function setFem(f) { FEM = f; if (f) { HAIR = '#8a3c1c'; HAIR_D = '#4e1e0c'; HAIR_L = '#c0683a'; } else { HAIR = '#6b4423'; HAIR_D = '#3e2612'; HAIR_L = '#9a6a3a'; } }
     const PANT = ['#3c2e1e', '#4f3e2a'], BOOT = '#2a1c10', BOOT_L = '#5a4030';
     /** tapered limb segment drawn as a quad with rounded joints */
@@ -157,13 +159,13 @@
         leg(c, 5, lg * 9, liftF, false);
         c.save(); c.translate(0, -bob);
         c.save(); c.translate(lean * 0.4, 0); c.rotate(lean * 0.012);
-        arm(c, -3, -58, backTh, FEM ? '#40206e' : '#1a3f80', 22, bend);
+        arm(c, -3, -58, backTh, PAL[2], 22, bend);
         if (kind === 'basket') basket(c);
         // tunic body with sleeves seams, hem and folds
         const HEM = FEM ? -13 : -26, HW = FEM ? 19 : 16.5;   // dress-length, flared tunic for women
         c.beginPath(); c.moveTo(-12, -63); c.quadraticCurveTo(0, -67, 12, -63); c.quadraticCurveTo(14, -52, 13, -40); c.quadraticCurveTo(HW - 0.5, -32, HW, HEM);
         c.quadraticCurveTo(8, HEM + 3, 0, HEM + 1.5); c.quadraticCurveTo(-8, HEM + 3, -HW, HEM); c.quadraticCurveTo(-15, -33, -12.5, -40); c.quadraticCurveTo(-14, -52, -12, -63); c.closePath();
-        c.fillStyle = FEM ? lin(c, -14, 0, 16, 0, ['#9a6ad0', '#6a3aa8', '#40206e']) : lin(c, -14, 0, 16, 0, ['#5a8ae0', '#2f60bc', '#1a3e80']); c.fill(); c.strokeStyle = FEM ? '#2c1450' : '#142c5c'; c.lineWidth = 1; c.stroke();
+        c.fillStyle = lin(c, -14, 0, 16, 0, PAL.slice(0, 3)); c.fill(); c.strokeStyle = PAL[3]; c.lineWidth = 1; c.stroke();
         c.save(); c.clip();
         poly(c, [[6, -66], [16, -66], [18, -20], [9, -20]], 'rgba(5,20,50,0.28)');                  // side shade
         poly(c, [[-HW, HEM - 4], [HW, HEM - 4], [HW + 1, HEM + 4], [-HW - 1, HEM + 4]], 'rgba(5,20,50,0.25)');              // hem shade
@@ -173,15 +175,18 @@
             line(c, l[0] + 1.2, l[1], l[2] + 1.2, l[3], 0.6, 'rgba(255,255,255,0.13)'); });
         line(c, -HW + 0.5, HEM - 0.5, HW, HEM - 0.5, 0.9, '#d9b24a');                                            // hem stitch
         // collar: V neck with lacing
-        poly(c, [[-5, -64.5], [0, -56], [6, -64.5]], '#d8b090', '#142c5c', 0.8);
+        poly(c, [[-5, -64.5], [0, -56], [6, -64.5]], '#d8b090', PAL[3], 0.8);
         line(c, -2, -61, 3, -61, 0.6, '#5a3a1a'); line(c, -1, -58.5, 2, -58.5, 0.6, '#5a3a1a');
         // belt with buckle and pouch
         poly(c, [[-13, -41.5], [13, -41.5], [13.6, -36.6], [-13.6, -36.6]], lin(c, 0, -41.5, 0, -36.6, ['#7a5028', '#5a3a1a', '#3a2410']), '#2a180a', 0.8);
         poly(c, [[2.5, -42], [8.5, -42], [8.5, -36], [2.5, -36]], null, '#d9b24a', 1.3); line(c, 4, -39, 7.5, -39, 0.8, '#f0d070');
         poly(c, [[-11, -37], [-4, -37], [-4.5, -30], [-10.5, -30]], '#6a4622', '#2e1c0a', 0.7); line(c, -11, -35, -4, -35, 0.7, '#3a2410');
         head(c, 2, -77, work);
+        if (kind === 'sword') {   // ARQ1c Militia: team cap + round team shield (iron rim and boss)
+            c.beginPath(); c.ellipse(3, -84, 11.5, 8, 0, PI, 2 * PI); c.closePath(); c.fillStyle = PAL[1]; c.fill(); c.strokeStyle = PAL[3]; c.lineWidth = 1; c.stroke(); line(c, -9, -84, 15, -84, 2, '#6a6a70');
+            ell(c, -11, -46, 11, 13, PAL[1]); c.lineWidth = 2.2; c.strokeStyle = '#5a5a62'; c.stroke(); line(c, -11, -58, -11, -34, 2.4, PAL[0]); ell(c, -11, -46, 2.6, 2.6, '#b8b8c0'); }
         c.restore();
-        const h = arm(c, 7 + lean * 0.4, -58, frontTh, FEM ? '#6a3aa8' : '#2a56a8', 22, bend);
+        const h = arm(c, 7 + lean * 0.4, -58, frontTh, PAL[1], 22, bend);
         tool(c, kind, h[0], h[1], frontTh);
         c.restore();
         if (FEM) c.restore();
@@ -192,5 +197,5 @@
         else { c.beginPath(); c.moveTo(-9, 6); c.quadraticCurveTo(-12, -6, -4, -10); c.lineTo(4, -10); c.quadraticCurveTo(12, -6, 9, 6); c.closePath(); c.fillStyle = '#7a5a34'; c.fill(); c.strokeStyle = '#3e2a14'; c.lineWidth = 0.8; c.stroke();
             line(c, -4, -9, 4, -9, 1.6, '#3e2a14'); const g = type === 'gold'; for (let i = 0; i < 3; i++) ell(c, -3 + i * 3, -12 + (i % 2), 2.6, 2.2, g ? '#f0c83a' : '#a8a8a2'); ell(c, -3.6, -12.8, 0.9, 0.7, g ? '#fff4b0' : '#e4e4e0'); }
     }
-    Object.assign(AOE.models, { villager, setFem, carry, seg });   // seg: shared tapered-limb helper (deer legs)
+    Object.assign(AOE.models, { villager, setFem, setTeam, carry, seg });   // seg: shared tapered-limb helper (deer legs)
 })();

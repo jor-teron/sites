@@ -1,6 +1,8 @@
 /** AOE RTS - ARQ1b combat: HP, melee attacks, auto-retaliate / auto-aggro, destruction, win / lose (classic script: shares top-level names with the other core/ and assets/ scripts; see index.html for load order).
  *  Units (villagers + militia) live in `villagers`; buildings are Town Centers (tcs, .w) and houses / barracks (houses, .progress). */
 let gameOver = null, aggroT = 0;
+/** ARQ1c: in Play every AI is on one side (they only attack the player) */
+const ally = (a, b) => a === b || (MODE === 'play' && a !== 'p' && b !== 'p');
 const isBld = e => !!e.w || e.progress !== undefined;
 function maxHp(e) { return e.w ? HP.tc : isBld(e) ? (e.type ? HP.barracks : HP.house) : e.mil ? HP.mil : HP.v; }
 function hpOf(e) { if (e.hp == null) e.hp = maxHp(e); return e.hp; }
@@ -10,8 +12,8 @@ function orderAttack(v, e) { v.house = null; v.prey = null; v.node = null; v.foe
 /** Nearest enemy unit within r (iso px); then enemy buildings unless unitsOnly */
 function nearestFoe(v, r, unitsOnly) {
     let best = null, bd = r; const o = own(v);
-    villagers.forEach(u => { if (own(u) === o) return; const d = isoDist(v.x, v.y, u.x, u.y); if (d < bd) { bd = d; best = u; } });
-    if (!best && !unitsOnly) [...tcs, ...houses].forEach(b => { if (own(b) === o) return; const p = posOf(b), d = isoDist(v.x, v.y, p.x, p.y) - reachOf(b); if (d < bd) { bd = d; best = b; } });
+    villagers.forEach(u => { if (ally(own(u), o)) return; const d = isoDist(v.x, v.y, u.x, u.y); if (d < bd) { bd = d; best = u; } });
+    if (!best && !unitsOnly) [...tcs, ...houses].forEach(b => { if (ally(own(b), o)) return; const p = posOf(b), d = isoDist(v.x, v.y, p.x, p.y) - reachOf(b); if (d < bd) { bd = d; best = b; } });
     return best;
 }
 function hurt(e, dmg, by) {
@@ -43,10 +45,10 @@ function fight(v, dt) {
 function updateCombat(dt) {
     if (MODE === 'open' || gameOver || (aggroT += dt) < 0.5) return; aggroT = 0;
     villagers.forEach(v => { if (v.state !== 'idle') return; const n = nearestFoe(v, v.mil ? AGGRO_R : 110, !v.mil); if (n) orderAttack(v, n); });
-    const ids = ['p', ...Object.keys(factions)].filter(o => o !== 'p' || MODE === 'vs');
+    const ids = ['p', ...Object.keys(factions)].filter(o => o !== 'p' || MODE === 'play');
     if (ids.length < 2) return;
     const live = ids.filter(o => tcOf(o) || villagers.some(v => own(v) === o));
-    if (live.length > 1) return;
-    gameOver = MODE === 'vs' ? (live[0] === 'p' ? 'win' : 'lose') : (live[0] || 'none');
+    if (MODE === 'play' ? live.includes('p') && live.length > 1 : live.length > 1) return;   // Play: win when every AI is gone
+    gameOver = MODE === 'play' ? (live[0] === 'p' ? 'win' : 'lose') : (live[0] || 'none');
     showEnd(gameOver);
 }

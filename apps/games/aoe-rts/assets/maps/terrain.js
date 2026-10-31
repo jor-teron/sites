@@ -67,6 +67,9 @@ function initTerrain(num) {
     cand.sort((p, q) => q[0] - p[0] || p[2] - q[2] || p[1] - q[1]);
     for (const c of cand) if (seen[c[2] * S + c[1]] && flatAt(c[1], c[2], 3)) { aiStart = { x: c[1], y: c[2] }; break; }
     if (aiStart) for (let y = aiStart.y - 2; y <= aiStart.y + 2; y++) for (let x = aiStart.x - 2; x <= aiStart.x + 2; x++) if (mapData[y][x] && mapData[y][x].kind !== 'tc' && mapData[y][x].kind !== 'fish') mapData[y][x] = null;
+    // ARQ1c: third base (2nd AI): flat, reachable, farthest from both the TC and aiStart (resources cleared by initAI only when used)
+    aiStart2 = null; let bd = 0;
+    if (aiStart) for (const c of cand) { const d = Math.min(c[0], Math.hypot(c[1] - aiStart.x, c[2] - aiStart.y)); if (d > bd && seen[c[2] * S + c[1]] && flatAt(c[1], c[2], 3)) { bd = d; aiStart2 = { x: c[1], y: c[2] }; } }
     // GROUND: grass shades from low-frequency noise, dirt patches, sand next to water (visual only)
     for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const i = y * S + x;
         if (water[i]) { ground[i] = 0; continue; }
@@ -92,7 +95,8 @@ function mapCheck() {
     const t = townCenter;
     return { land, cut, rivers: Object.keys(rivers).length, riversNoFord: Object.keys(rivers).filter(r => !fords[r]).length, lakeEdge, mountains: mt, mountInner: inner, ranges,
         tcFlat: flatAt(t.x, t.y, 3) && flatAt(t.x + 1, t.y + 1, 3), ai: aiStart, aiFlat: !!aiStart && flatAt(aiStart.x, aiStart.y, 3), aiReach: !!aiStart && !!seen[aiStart.y * S + aiStart.x],
-        aiDist: aiStart ? Math.round(Math.hypot(aiStart.x - t.x, aiStart.y - t.y)) : 0 };
+        aiDist: aiStart ? Math.round(Math.hypot(aiStart.x - t.x, aiStart.y - t.y)) : 0, ai2: aiStart2, ai2Flat: !!aiStart2 && flatAt(aiStart2.x, aiStart2.y, 3), ai2Reach: !!aiStart2 && !!seen[aiStart2.y * S + aiStart2.x],
+        ai2Dist: aiStart2 ? Math.round(Math.min(Math.hypot(aiStart2.x - t.x, aiStart2.y - t.y), Math.hypot(aiStart2.x - aiStart.x, aiStart2.y - aiStart.y))) : 0 };
 }
 /** Test hook: terrain counts + checks */
 function terrainReport() {

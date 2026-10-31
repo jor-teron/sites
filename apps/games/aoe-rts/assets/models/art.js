@@ -54,14 +54,20 @@ const Art = AOE.art = (() => {
     }
     // ---------- build all ----------
     function build(scene) {
-        const { villager, setFem, carry, pine, leafy, stump, bush, pile, house, townCenter, deer, carcass, fishSpot, flag, barracks } = AOE.models;
+        const { villager, setFem, setTeam, banner, carry, pine, leafy, stump, bush, pile, house, townCenter, deer, carcass, fishSpot, flag, barracks } = AOE.models;
         const T0 = performance.now();
         const kinds = ['none', 'axe', 'pick', 'hammer', 'basket', 'spear', 'net', 'sword'];
-        ['v_', 'v_f_'].forEach(pre => { const fem = pre === 'v_f_'; kinds.forEach(k => {
-            add(`${pre}${k}_idle`, 100, 130, 50, 118, c => { setFem(fem); villager(c, k, 'idle', 0); setFem(false); });
-            for (let f = 0; f < 8; f++) add(`${pre}${k}_walk${f}`, 100, 130, 50, 118, c => { setFem(fem); villager(c, k, 'walk', f); setFem(false); });
-            if (k !== 'none') for (let f = 0; f < 6; f++) add(`${pre}${k}_work${f}`, 100, 130, 50, 118, c => { setFem(fem); villager(c, k, 'work', f); setFem(false); });
-        }); });
+        // ARQ1c: one baked set per team in play (cloth, caps, shields, flags, banners in team colour; skin / tools / wood keep theirs)
+        const teams = MODE === 'aivai' ? ['ai1', 'ai2'] : MODE === 'play' ? ['p', 'ai1', 'ai2'] : ['p'];
+        teams.forEach(id => { const tm = TEAM[id], pal = tm.pal;
+            for (let f = 0; f < 4; f++) add('flag' + tm.sfx + f, 40, 60, 4, 56, c => flag(c, f, pal));
+            add('banner' + tm.sfx, 20, 28, 10, 0, c => banner(c, pal));
+        ['v_', 'v_f_'].forEach(sx => { const fem = sx === 'v_f_', pre = sx + tm.sfx; kinds.forEach(k => { if (fem && k === 'sword') return;
+            const draw = (pose, f) => c => { setTeam(fem && tm.fpal || pal); setFem(fem); villager(c, k, pose, f); setFem(false); };
+            add(`${pre}${k}_idle`, 100, 130, 50, 118, draw('idle', 0));
+            for (let f = 0; f < 8; f++) add(`${pre}${k}_walk${f}`, 100, 130, 50, 118, draw('walk', f));
+            if (k !== 'none') for (let f = 0; f < 6; f++) add(`${pre}${k}_work${f}`, 100, 130, 50, 118, draw('work', f));
+        }); }); });
         ['wood', 'food', 'gold', 'stone'].forEach(t => add('carry_' + t, 36, 34, 18, 20, c => carry(c, t)));
         for (let v = 0; v < 3; v++) {
             setSeed(101 + v); add(`pine${v}`, 120, 200, 60, 185, c => pine(c, v, 1)); setSeed(101 + v); add(`pine${v}_cut`, 120, 200, 60, 185, c => pine(c, v, 0.82));
@@ -80,7 +86,6 @@ const Art = AOE.art = (() => {
         for (let n = 1; n <= 3; n++) add('carcass' + n, 84, 44, 42, 30, c => carcass(c, n));
         for (let f = 0; f < 4; f++) add('fish' + f, 84, 50, 42, 26, c => fishSpot(c, f));
         for (let v = 0; v < 4; v++) { setSeed(901 + v); add('rock' + v, 140, 110, 70, 80, c => AOE.models.rockOutcrop(c, v)); }   // R2b
-        for (let f = 0; f < 4; f++) add('flag' + f, 40, 60, 4, 56, c => flag(c, f));
         pages.forEach((p, i) => {
             const h = p.y + p.rowH, cv = document.createElement('canvas'); cv.width = PAGE; cv.height = Math.max(2, h);
             cv.getContext('2d').drawImage(p.cv, 0, 0);

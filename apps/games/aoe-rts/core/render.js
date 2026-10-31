@@ -183,15 +183,15 @@ function drawNode(g, x, y, c) {
 /** ARQ1b: health bar over a unit / building when selected or damaged (green -> red) */
 function hpBar(g, e, x, y, w) {
     const f = hpOf(e) / maxHp(e); if (f >= 1 && !e.selected) return;
-    g.fillStyle(0x000000, 0.7); g.fillRect(x - w / 2 - 2, y - 2, w + 4, 9);
+    g.fillStyle(MODE === 'open' ? 0x000000 : TEAM[own(e)].col, 0.9); g.fillRect(x - w / 2 - 3, y - 3, w + 6, 11); g.fillStyle(0x000000, 0.75); g.fillRect(x - w / 2 - 1, y - 1, w + 2, 7);   // ARQ1c team outline
     g.fillStyle(f > 0.6 ? 0x44dd44 : f > 0.3 ? 0xe0c030 : 0xe03030, 1); g.fillRect(x - w / 2, y, w * Math.max(0, f), 5);
 }
 function drawTC(g, gu, t) {
-    const c = tileCenter(t.x + 0.5, t.y + 0.5), tint = TEAM[t.owner].tint;
-    if (tint) { gu.lineStyle(6, TEAM[t.owner].col, 0.8); gu.strokeEllipse(c.x, c.y, 280, 140); }
-    if (t.selected) { gu.lineStyle(4, 0xffffff, 0.9); gu.strokeEllipse(c.x, c.y, 300, 150); }
+    const c = tileCenter(t.x + 0.5, t.y + 0.5), tm = TEAM[t.owner];
+    if (MODE !== 'open') { gu.lineStyle(6, tm.col, 0.8); gu.strokeEllipse(c.x, c.y, 280, 140); }
+    if (t.selected) { gu.lineStyle(4, tm.col, 1); gu.strokeEllipse(c.x, c.y, 300, 150); gu.lineStyle(2, 0xffffff, 0.9); gu.strokeEllipse(c.x, c.y, 306, 153); }
     sprite('tc', c.x, c.y, c.y + 40);
-    const fl = sprite('flag' + (Math.floor(animT / 140) % 4), c.x, c.y - 203, c.y + 40.5); if (tint) fl.setTint(tint);
+    sprite('flag' + tm.sfx + (Math.floor(animT / 140) % 4), c.x, c.y - 203, c.y + 40.5); sprite('banner' + tm.sfx, c.x - 40, c.y - 80, c.y + 40.6);
     hpBar(g, t, c.x, c.y - 270, 120);
     const q = t.owner === 'p' ? trainQueue : factions[t.owner].queue, tt = t.owner === 'p' ? trainTimer : factions[t.owner].timer;
     if (q > 0) {          // training progress bar
@@ -203,9 +203,11 @@ function drawTC(g, gu, t) {
 function drawHouse(g, x, y, h) {
     const p = tileCenter(x, y), pr = h.done ? 1 : h.progress;
     const idx = h.done ? 9 : Math.min(8, Math.floor(pr / (1 / 9)));
-    if (h.selected) { gUnder.lineStyle(4, 0xffffff, 0.9); gUnder.strokeEllipse(p.x, p.y, 150, 76); }
-    const im = sprite(h.type && h.done ? 'barracks' : 'house' + idx, p.x, p.y, p.y + 10); hpBar(g, h, p.x, p.y - 196, 70);
-    if (h.type && h.queue) { g.fillStyle(0x000000, 0.7); g.fillRect(p.x - 40, p.y - 180, 80, 10); g.fillStyle(0x55dd55, 1); g.fillRect(p.x - 38, p.y - 178, 76 * h.timer / MILITIA_TIME, 6); } if (h.owner) { im.setTint(TEAM[h.owner].tint); g.fillStyle(TEAM[h.owner].col, 1); g.fillRect(p.x - 3, p.y - 150, 22, 12); g.fillRect(p.x - 3, p.y - 150, 3, 40); }
+    const tm = TEAM[own(h)];
+    if (h.selected) { gUnder.lineStyle(4, tm.col, 1); gUnder.strokeEllipse(p.x, p.y, 150, 76); gUnder.lineStyle(2, 0xffffff, 0.9); gUnder.strokeEllipse(p.x, p.y, 156, 79); }
+    sprite(h.type && h.done ? 'barracks' : 'house' + idx, p.x, p.y, p.y + 10); hpBar(g, h, p.x, p.y - 196, 70);
+    if (h.type && h.queue) { g.fillStyle(0x000000, 0.7); g.fillRect(p.x - 40, p.y - 180, 80, 10); g.fillStyle(0x55dd55, 1); g.fillRect(p.x - 38, p.y - 178, 76 * h.timer / MILITIA_TIME, 6); }
+    if (h.done) { sprite('flag' + tm.sfx + (Math.floor(animT / 140 + h.x) % 4), p.x + 30, p.y - (h.type ? 100 : 82), p.y + 10.5); sprite('banner' + tm.sfx, p.x - 22, p.y - 40, p.y + 10.6); }   // ARQ1c flag on a pole + banner
     if (!h.done) {
         g.fillStyle(0x000000, 0.7); g.fillRect(p.x - 40, p.y - 180, 80, 10);
         g.fillStyle(0x55aaff, 1); g.fillRect(p.x - 38, p.y - 178, 76 * h.progress, 6);
@@ -224,15 +226,15 @@ function drawVillager(g, gu, v) {
     const kind = (v.state === 'toHunt' || v.state === 'hunting') ? 'carcass' : v.state === 'building' ? 'hammer' : (v.node && mapData[v.node.y] && mapData[v.node.y][v.node.x] ? mapData[v.node.y][v.node.x].kind : (v.lastKind || null));
     const tool = kind === 'hammer' ? 'hammer' : kind === 'tree' ? 'axe' : (kind === 'gold' || kind === 'stone') ? 'pick' : kind === 'berry' ? 'basket' : kind === 'carcass' ? 'spear' : kind === 'fish' ? 'net' : 'none';
     const t = animT / 1000 + (v.seed || 0) * 3;
-    let name; const pre = v.fem ? 'v_f_' : 'v_';
-    if (v.mil) name = `v_sword_${v.state === 'attack' && v.swing ? 'work' + Math.floor(t * 6) % 6 : v.walking ? 'walk' + Math.floor(t * 12) % 8 : 'idle'}`;   // ARQ1b Militia
+    let name; const sx = TEAM[own(v)].sfx, pre = (v.fem ? 'v_f_' : 'v_') + sx;   // ARQ1c: team-baked frames
+    if (v.mil) name = `v_${sx}sword_${v.state === 'attack' && v.swing ? 'work' + Math.floor(t * 6) % 6 : v.walking ? 'walk' + Math.floor(t * 12) % 8 : 'idle'}`;   // ARQ1b Militia
     else if (v.state === 'attack' && v.swing) name = `${pre}none_${'walk' + Math.floor(t * 16) % 8}`;   // villager scuffle
     else if (working && tool !== 'none') name = `${pre}${tool}_work${Math.floor(t * 9) % 6}`;
     else if (v.walking) name = `${pre}${tool}_walk${Math.floor(t * 12) % 8}`;
     else name = `${pre}${tool}_idle`;
     if (v.owner) { gu.lineStyle(4, TEAM[v.owner].col, 0.9); gu.strokeEllipse(v.x, v.y + 2, 46, 18); }   // ARQ1a team ring
-    if (v.selected) { gu.lineStyle(3, 0xffff66, 1); gu.strokeEllipse(v.x, v.y + 2, 54, 22); }
-    const im = sprite(name, v.x, v.y, v.y + 0.2, face < 0); if (v.owner) im.setTint(TEAM[v.owner].tint);
+    if (v.selected) { gu.lineStyle(3, TEAM[own(v)].col, 1); gu.strokeEllipse(v.x, v.y + 2, 54, 22); gu.lineStyle(1.5, 0xffffff, 0.9); gu.strokeEllipse(v.x, v.y + 2, 58, 24); }
+    sprite(name, v.x, v.y, v.y + 0.2, face < 0);
     hpBar(g, v, v.x, v.y - 140, 36);
     if (v.carry > 0) {
         sprite('carry_' + v.carryType, v.x - face * 15, v.y - 46, v.y + 0.1, face < 0);

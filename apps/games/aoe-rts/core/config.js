@@ -33,12 +33,20 @@ const URL_MAP = (() => { const v = new URLSearchParams(location.search).get('map
 function storedMap() { try { const v = localStorage.getItem('aoe-rts.map'); return v !== null && /^\d{1,2}$/.test(v) ? parseInt(v, 10) : null; } catch (e) { return null; } }
 const MAP_NUM = URL_MAP !== null ? URL_MAP : (storedMap() !== null ? storedMap() : 0);
 /** Map number -> tiles per side: 00=16, 01-20=32, 21-40=48, 41-60=64, 61-80=80, 81-99=96 */
-// ARQ1a: game mode from ?mode= (open | vs | aivai); no mode = start screen (shows Open World behind it)
-const URL_MODE = new URLSearchParams(location.search).get('mode'), MODE = ['vs', 'aivai'].indexOf(URL_MODE) >= 0 ? URL_MODE : 'open';
-const TEAM = { p: { tint: null, mm: '#3a6ad0', name: 'You' }, ai1: { tint: 0xff7a6a, col: 0xe03828, mm: '#e04030', name: 'Red' }, ai2: { tint: 0xffd86a, col: 0xf0c020, mm: '#f0c020', name: 'Gold' } };
+// ARQ1a: game mode from ?mode= (open | play | aivai; ARQ1c: old 'vs' = 'play'); no mode = start screen (shows Open World behind it)
+const URL_MODE = new URLSearchParams(location.search).get('mode'), MODE = URL_MODE === 'vs' ? 'play' : ['play', 'aivai'].indexOf(URL_MODE) >= 0 ? URL_MODE : 'open';
+/** ARQ1c team colours (player as before: blue tunic, purple dress = fpal; Red; Gold): pal = cloth light, mid, dark, outline; sfx = baked sprite name part */
+const TEAM = { p: { col: 0x3a6ad0, mm: '#3a6ad0', name: 'You', sfx: '', pal: ['#5a8ae0', '#2f60bc', '#1a3e80', '#142c5c'], fpal: ['#9a6ad0', '#6a3aa8', '#40206e', '#2c1450'] },
+    ai1: { col: 0xd83a2c, mm: '#e04030', name: 'Red', sfx: 'r_', pal: ['#e8705e', '#c0392b', '#7e1e16', '#4e100a'] },
+    ai2: { col: 0xf0c020, mm: '#f0c020', name: 'Gold', sfx: 'y_', pal: ['#f6dc78', '#dcb02a', '#9a720e', '#5a4206'] } };
 // ARQ1b: difficulty (?diff= or last picked), HP, melee, Militia, Barracks, Farm
 const DIFF = (() => { const q = new URLSearchParams(location.search).get('diff'); let s = null; try { s = localStorage.getItem('aoe-rts.diff'); } catch (e) {} return ['easy', 'normal', 'hard'].find(d => d === q) || ['easy', 'hard'].find(d => d === s) || 'normal'; })();
-const AI_LEVEL = { easy: { first: 600, every: 240, wave: 3, train: 1.5 }, normal: { first: 390, every: 180, wave: 5, train: 1 }, hard: { first: 220, every: 120, wave: 8, train: 0.7 } }[DIFF];
+/** ARQ1c: level (= map number) -> enemy AIs in Play: solo up to [0], one AI (Red) up to [1], then two (Red + Gold) */
+const LEVEL_AIS = { easy: [15, 60], normal: [10, 50], hard: [5, 40] };
+const enemiesFor = (n, d) => n <= LEVEL_AIS[d][0] ? 0 : n <= LEVEL_AIS[d][1] ? 1 : 2;
+const AI_LEVEL = (() => { const b = { easy: { first: 600, every: 240, wave: 3, train: 1.5 }, normal: { first: 390, every: 180, wave: 5, train: 1 }, hard: { first: 220, every: 120, wave: 8, train: 0.7 } }[DIFF];
+    const [a, z] = LEVEL_AIS[DIFF], k = MODE !== 'play' ? 0 : MAP_NUM > z ? 0.5 : Math.max(0, Math.min(1, (MAP_NUM - a) / (z - a)));   // one-AI range ramps up with level
+    return { first: b.first * (1 - 0.35 * k), every: b.every * (1 - 0.25 * k), wave: b.wave + Math.round(3 * k), train: b.train * (1 - 0.2 * k) }; })();
 const HP = { v: 25, mil: 45, tc: 600, house: 150, barracks: 350 }, ATK = { v: 2, mil: 6 }, ATK_RATE = 1, MELEE_R = 46, AGGRO_R = 300;
 const MILITIA_COST = { food: 60, gold: 20 }, MILITIA_TIME = 8, BARRACKS_COST = { wood: 150 }, BARRACKS_BUILD_TIME = 16, FARM_COST = { wood: 60 };
 function mapSizeFor(n) { return n <= 0 ? 16 : 16 * (1 + Math.ceil(n / 20)); }

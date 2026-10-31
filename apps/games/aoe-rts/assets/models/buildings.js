@@ -63,12 +63,12 @@
         // dormer + chimney
         poly(c, [[36, ry - 30], [56, ry - 40], [56, ry - 62], [36, ry - 52]], '#7a756c', '#4a4640', 1); for (let i = 1; i < 4; i++) line(c, 36, ry - 30 - i * 7 + 0, 56, ry - 40 - i * 7, 0.8, '#4a4640'); ell(c, 46, ry - 57, 10, 3.5, '#3a3632');
     }
-    function flag(c, f) {
+    function flag(c, f, pal = ['#3a6ad0', '#2a5ab0', '#1d4488', '#163266']) {
         line(c, 0, 0, 0, -52, 2.6, '#3a2a1a'); ell(c, 0, -53, 2.4, 2.4, '#d9b24a');
         const ph = f / 4 * 2 * PI; c.beginPath(); c.moveTo(1, -50);
         for (let i = 0; i <= 8; i++) c.lineTo(1 + i * 3.6, -50 + Math.sin(ph + i * 0.7) * 2.6 + i * 0.3);
         for (let i = 8; i >= 0; i--) c.lineTo(1 + i * 3.6, -32 + Math.sin(ph + i * 0.7) * 2.6 + i * 0.6);
-        c.closePath(); c.fillStyle = lin(c, 0, -50, 30, -32, ['#3a6ad0', '#2a5ab0', '#1d4488']); c.fill(); c.strokeStyle = '#163266'; c.lineWidth = 0.8; c.stroke();
+        c.closePath(); c.fillStyle = lin(c, 0, -50, 30, -32, pal.slice(0, 3)); c.fill(); c.strokeStyle = pal[3]; c.lineWidth = 0.8; c.stroke();
         ell(c, 14, -41 + Math.sin(ph + 3) * 2.6, 4, 4, '#d9b24a');
     }
     /** ARQ1b Barracks: dark timber hall on a stone footing, slate roof, crossed swords on the front */
@@ -84,5 +84,10 @@
         roofTiles(c, A, F, apex, 9, 'rgba(20,20,28,0.5)'); roofTiles(c, F, B, apex, 9, 'rgba(10,10,16,0.5)');
         line(c, 18, -36, 40, -18, 3, '#dfe5ea'); line(c, 40, -40, 18, -14, 3, '#dfe5ea'); line(c, 20, -24, 26, -30, 2.4, '#c9a040'); line(c, 32, -30, 38, -24, 2.4, '#c9a040');
     }
-    Object.assign(AOE.models, { house, townCenter, flag, barracks });
+    /** ARQ1c: hanging team banner (cloth with a gold trim and a swallow-tail) for building fronts */
+    function banner(c, pal) {
+        line(c, -9, 1, 9, 1, 2, '#5a3a1a'); poly(c, [[-7, 2], [7, 2], [7, 24], [0, 19], [-7, 24]], lin(c, -7, 0, 7, 0, pal.slice(0, 3)), pal[3], 0.8);
+        line(c, -7, 5, 7, 5, 1.2, '#d9b24a'); ell(c, 0, 11, 2.6, 2.6, '#d9b24a');
+    }
+    Object.assign(AOE.models, { house, townCenter, flag, barracks, banner });
 })();

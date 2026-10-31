@@ -59,7 +59,7 @@ function updateMinimap(time) {
     c.drawImage(mmDots, 0, 0);
     c.fillStyle = '#8a4a1a'; deer.forEach(d => c.fillRect(d.x * s - 1.5, d.y * s - 1.5, 3, 3));   // deer: small brown dots
     c.fillStyle = '#ffffff';
-    villagers.forEach(v => { c.fillStyle = v.selected ? '#ffff66' : v.owner ? TEAM[v.owner].mm : '#ffffff'; c.fillRect(v.x * s - 1.5, v.y * s - 1.5, 3, 3); });
+    villagers.forEach(v => { c.fillStyle = v.selected ? '#ffff66' : TEAM[own(v)].mm; c.fillRect(v.x * s - 1.5, v.y * s - 1.5, 3, 3); });
     const r = viewRect(0);
     c.strokeStyle = '#ffffff'; c.lineWidth = 1; c.strokeRect(r.x0 * s + 0.5, r.y0 * s + 0.5, (r.x1 - r.x0) * s, (r.y1 - r.y0) * s);
 }
@@ -184,10 +184,12 @@ const askConfirm = (() => {
     const ms = document.getElementById('mode-overlay');
     ['pointerdown', 'mousedown', 'touchstart', 'wheel'].forEach(t => ms.addEventListener(t, e => e.stopPropagation(), { passive: true }));
     let diff = DIFF;   // ARQ1b difficulty (Vs AI / AI vs AI), remembered
-    const syncDiff = () => ms.querySelectorAll('button[data-diff]').forEach(b => b.classList.toggle('on', b.dataset.diff === diff));
+    const foes = (n, d) => n ? n + ' enemy AI' + (n > 1 ? 's' : '') + ' (' + ['ai1', 'ai2'].slice(0, n).map(k => TEAM[k].name).join(' + ') + ')' : 'solo, no enemies';   // ARQ1c
+    const syncDiff = () => { ms.querySelectorAll('button[data-diff]').forEach(b => b.classList.toggle('on', b.dataset.diff === diff));
+        document.getElementById('mode-foes').textContent = 'Level ' + mapLabel(MAP_NUM) + ' · ' + diff[0].toUpperCase() + diff.slice(1) + ': ' + foes(enemiesFor(MAP_NUM, diff)); };
     ms.querySelectorAll('button[data-diff]').forEach(b => b.addEventListener('click', () => { diff = b.dataset.diff; try { localStorage.setItem('aoe-rts.diff', diff); } catch (e) {} syncDiff(); })); syncDiff();
     ms.querySelectorAll('button[data-mode]').forEach(b => b.addEventListener('click', () => { location.search = '?map=' + mapLabel(MAP_NUM) + '&mode=' + b.dataset.mode + '&diff=' + diff; }));
-    if (MODE !== 'open') document.getElementById('pause-map').textContent += ' · ' + (MODE === 'vs' ? 'Vs AI' : 'AI vs AI') + ' · ' + DIFF[0].toUpperCase() + DIFF.slice(1);
+    if (MODE !== 'open') document.getElementById('pause-map').textContent += ' · ' + (MODE === 'play' ? 'Play · ' + foes(Object.keys(factions).length) : 'AI vs AI') + ' · ' + DIFF[0].toUpperCase() + DIFF.slice(1);
     document.getElementById('end-again').addEventListener('click', () => { dropSave(MAP_NUM); location.reload(); });
     document.getElementById('end-modes').addEventListener('click', () => { location.search = '?map=' + mapLabel(MAP_NUM); });
     document.getElementById('mode-btn').addEventListener('click', () => { writeSave(); location.search = '?map=' + mapLabel(MAP_NUM); });
