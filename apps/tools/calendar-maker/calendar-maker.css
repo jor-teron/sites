@@ -115,3 +115,9 @@ body.land #sheet{aspect-ratio:297/210;max-width:calc((100vh - 90px) * 1.4142)}
 .zoom-bar button{height:28px;padding:0 12px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
 .zoom-bar button:disabled{opacity:.5;cursor:default}
 .zoom-pct{min-width:44px;text-align:right;font-variant-numeric:tabular-nums}
+/* CM14: Year Overview page (same preview as the Holiday List, zoomable) */
+#ovw-wrap{flex:1;display:flex;min-width:0;overflow:auto;max-height:calc(100vh - 120px);touch-action:pan-x pan-y;padding:8px;box-sizing:border-box;flex-direction:column;align-items:center;justify-content:flex-start}
+#ovw-sheet{flex:none;width:100%;max-width:calc((100vh - 90px) * 0.7071);height:auto;aspect-ratio:210/297;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.25);border-radius:2px}
+#ovw-wrap.zoomed{align-items:flex-start;cursor:grab}
+#ovw-wrap.grabbing{cursor:grabbing;user-select:none}
+@media (max-width:760px){#ovw-sheet{max-width:100%}}

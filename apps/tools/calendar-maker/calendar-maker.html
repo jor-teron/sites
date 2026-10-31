@@ -27,6 +27,7 @@
       <button type="button" class="tab on" data-page="design" role="tab">Design</button>
       <button type="button" class="tab" data-page="hol" role="tab">Holidays</button>
       <!--CM10--><button type="button" class="tab" data-page="list" role="tab">Holiday List</button>
+      <!--CM14--><button type="button" class="tab" data-page="ovw" role="tab">Year Overview</button>
     </nav>
     <!--/CM3-->
   </header>
@@ -119,20 +120,37 @@
     </aside>
   </main>
   <!--/CM10-->
+  <!--CM14-->
+  <main id="page-ovw" class="page" hidden>
+    <div id="ovw-wrap"><canvas id="ovw-sheet" aria-label="A4 year overview preview"></canvas></div>
+    <aside class="list-opts">
+      <p class="note">Year overview for the year chosen on the Design page: totals, holiday streaks (3 or more days off in a row) and holiday stretches (days off at least as many as working days). Off days are Sundays, Saturday holidays (Design page setting) and Gazetted holidays. Restricted holidays are shown but never deducted. Header and header row colour follow the Holiday List page.</p>
+      <div class="acts"><button type="button" class="btn" id="ovw-print">Print</button><button type="button" class="btn" id="ovw-pdf">Download PDF</button></div>
+    </aside>
+  </main>
+  <!--/CM14-->
 </div>
 <img id="print-img" alt="">
 <script src="../../../shared/dialog/dialog.js"></script>
 <script src="../calendar/calendar_holidays.js"></script>
-<script src="calendar-maker_render.js"></script>
-<!--CM3-->
-<script src="calendar-maker_holidays.js"></script>
-<!--/CM3-->
-<script src="calendar-maker.js"></script>
-<!--CM2-->
+<!-- CM13: one namespace, window.CM; order matters (core -> render -> ui) -->
+<script src="core/cm_theme.js"></script>
+<script src="core/cm_canvas.js"></script>
+<script src="core/cm_holidays.js"></script>
+<script src="core/cm_settings.js"></script>
+<script src="core/cm_stats.js"></script><!--CM14-->
+<script src="render/cm_sheet.js"></script>
+<script src="render/cm_list.js"></script>
+<script src="render/cm_list_simple.js"></script>
+<script src="render/cm_list_classic.js"></script>
+<script src="render/cm_pdf.js"></script>
+<script src="render/cm_overview.js"></script><!--CM14-->
+<script src="ui/cm_holidays_page.js"></script>
+<script src="ui/cm_design_page.js"></script>
 <script src="vendor/jspdf.umd.min.js"></script>
-<script src="calendar-maker_pdf.js"></script>
-<script src="calendar-maker_list.js"></script> <!-- CM10 -->
-<script src="calendar-maker_zoom.js"></script> <!-- CM12-F2 -->
-<!--/CM2-->
+<script src="ui/cm_background.js"></script>
+<script src="ui/cm_list_page.js"></script>
+<script src="ui/cm_overview_page.js"></script><!--CM14-->
+<script src="ui/cm_zoom.js"></script>
 </body>
 </html>
