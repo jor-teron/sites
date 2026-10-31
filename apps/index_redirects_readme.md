@@ -14,7 +14,9 @@ Every app folder has an `index.html` that only forwards to the real page (e.g. `
 - IX1 Connectivity: done (13 pages).
 - IX2 Tools: done (16 pages, incl. the 4 "Moved" stubs to apps/system/ and live-subtitle-assam → caption-for-nei).
 - IX3 Lab: done (27 pages, incl. the "Moved" stubs to games/, office/ and renamed apps).
-- To do: Media, Office, About, Favorite, Settings, `tv/`.
+- IX4 Media: done (15 pages; media/phone/index.html is a real page, not a redirect).
+- IX5 Office: done (12 pages).
+- To do: About, Favorite, Settings, `tv/`.
 - Not ours: Games and Learn (Hub Games Bot), `apps/system/` and root `index.html` (Hub Main Bot).
 
 ## Legacy code notes
