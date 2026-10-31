@@ -1,6 +1,6 @@
 // HUD, hints, overlay, level picker and end-of-level (win/loss) handling.
-import { S, buildLevel } from './entities.js?v=sb1a';
-import { MAX_LEVEL, pad2, isLevelNumber } from './seed.js?v=sb1a';
+import { S, buildLevel } from './entities.js';
+import { MAX_LEVEL, pad2, isLevelNumber } from './seed.js';
 
 const levelInput = document.getElementById('lvl-input');
 const prevBtn = document.getElementById('lvl-prev');

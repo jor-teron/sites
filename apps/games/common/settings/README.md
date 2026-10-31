@@ -59,7 +59,7 @@ games follow it (Tic-Tac-Toe, Tetris). The settings page says so under the Theme
 ## Linking a game (example)
 
 ```html
-<script src="../common/settings/games-settings.js?v=GS1"></script>  <!-- before your game scripts -->
+<script src="../common/settings/games-settings.js"></script>  <!-- before your game scripts -->
 <script>
   const GS = window.GameSettings;                          // may be undefined: game must still work
   const S = GS ? GS.get.bind(GS) : k => ({ fpsLimit: 30, difficulty: 'normal', showHints: true })[k];
