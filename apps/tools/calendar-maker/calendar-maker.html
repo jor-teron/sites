@@ -24,10 +24,11 @@
     <b class="name">Calendar Maker</b>
     <!--CM3-->
     <nav id="tabs" role="tablist">
+      <!--CM16 order (was Design, Holidays, Holiday List, Year Overview); keep in step with CM.TABS in ui/cm_titlebar.js-->
       <button type="button" class="tab on" data-page="design" role="tab">Design</button>
-      <button type="button" class="tab" data-page="hol" role="tab">Holidays</button>
       <!--CM10--><button type="button" class="tab" data-page="list" role="tab">Holiday List</button>
       <!--CM14--><button type="button" class="tab" data-page="ovw" role="tab">Year Overview</button>
+      <button type="button" class="tab" data-page="hol" role="tab">Holidays</button>
     </nav>
     <!--/CM3-->
   </header>
@@ -152,5 +153,6 @@
 <script src="ui/cm_list_page.js"></script>
 <script src="ui/cm_overview_page.js"></script><!--CM14-->
 <script src="ui/cm_zoom.js"></script>
+<script src="ui/cm_titlebar.js"></script><!--CM16-->
 </body>
 </html>

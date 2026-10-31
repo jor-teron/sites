@@ -5,7 +5,8 @@
   'use strict';
   const CM = window.CM, S = CM.Settings, T = CM.Theme, R = CM.Render;
   /* const RELEASE = 'CM13';  (CM13) */
-  const RELEASE = 'CM14'; /* was 'CM12' (CM10-CM12), 'CM13' */
+  /* const RELEASE = 'CM14';  (CM14) */
+  const RELEASE = 'CM16'; /* was 'CM12' (CM10-CM12), 'CM13', 'CM14' */
   const $ = (id) => document.getElementById(id);
   const P = S.loadSettings(location.search);
   const save = () => S.saveSettings(P);
@@ -103,17 +104,39 @@
 
   /* CM3 tabs (only present once the Holidays page ships) */
   const tabs = $('tabs');
-  if (tabs) tabs.addEventListener('click', (e) => {
-    const b = e.target.closest('.tab'); if (!b) return;
+  /* CM16: was one click handler (kept below as a comment); now CM.showPage(page) so the Hub title bar
+     (ui/cm_titlebar.js) can switch pages too. CM.onPage(fn) listeners hear every switch. */
+  //   if (tabs) tabs.addEventListener('click', (e) => {
+  //     const b = e.target.closest('.tab'); if (!b) return;
+  //     tabs.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t === b));
+  //     $('page-design').hidden = b.dataset.page !== 'design';
+  //     $('page-hol').hidden = b.dataset.page !== 'hol';
+  //     if ($('page-list')) $('page-list').hidden = b.dataset.page !== 'list'; /* CM10 */
+  //     if ($('page-ovw')) $('page-ovw').hidden = b.dataset.page !== 'ovw'; /* CM14 */
+  //     if (b.dataset.page === 'hol' && CM.Hol) CM.Hol.show(P.year);
+  //     else if (b.dataset.page === 'list' && CM.listRender) { CM.listRender(); render(); } /* CM10 */
+  //     else if (b.dataset.page === 'ovw' && CM.ovwRender) { CM.ovwRender(); render(); } /* CM14 */
+  //     else render();
+  //   });
+  const pageFns = [];
+  CM.onPage = (fn) => { if (typeof fn === 'function') pageFns.push(fn); };
+  CM.page = 'design';
+  CM.showPage = (pg) => {
+    const b = tabs && tabs.querySelector('.tab[data-page="' + pg + '"]'); if (!b) return;
     tabs.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t === b));
-    $('page-design').hidden = b.dataset.page !== 'design';
-    $('page-hol').hidden = b.dataset.page !== 'hol';
-    if ($('page-list')) $('page-list').hidden = b.dataset.page !== 'list'; /* CM10 */
-    if ($('page-ovw')) $('page-ovw').hidden = b.dataset.page !== 'ovw'; /* CM14 */
-    if (b.dataset.page === 'hol' && CM.Hol) CM.Hol.show(P.year);
-    else if (b.dataset.page === 'list' && CM.listRender) { CM.listRender(); render(); } /* CM10 */
-    else if (b.dataset.page === 'ovw' && CM.ovwRender) { CM.ovwRender(); render(); } /* CM14 */
+    $('page-design').hidden = pg !== 'design';
+    $('page-hol').hidden = pg !== 'hol';
+    if ($('page-list')) $('page-list').hidden = pg !== 'list'; /* CM10 */
+    if ($('page-ovw')) $('page-ovw').hidden = pg !== 'ovw'; /* CM14 */
+    if (pg === 'hol' && CM.Hol) CM.Hol.show(P.year);
+    else if (pg === 'list' && CM.listRender) { CM.listRender(); render(); } /* CM10 */
+    else if (pg === 'ovw' && CM.ovwRender) { CM.ovwRender(); render(); } /* CM14 */
     else render();
+    CM.page = pg;
+    pageFns.forEach((fn) => fn(pg));
+  };
+  if (tabs) tabs.addEventListener('click', (e) => {
+    const b = e.target.closest('.tab'); if (b) CM.showPage(b.dataset.page);
   });
   window.addEventListener('storage', (e) => {
     if (e.key !== S.KEYS.settings) return;

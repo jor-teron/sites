@@ -1,7 +1,7 @@
 # Calendar Maker
 
 ## 1. What it is
-Design and print a one-sheet A4 year calendar: all 12 months on one A4 sheet (4 layouts), title "YYYY", big bold dates and holidays as filled tiles. Releases CM1 (design page + print), CM2 (Download PDF, background, holiday list strip), CM3 (Holidays page), CM4 (grid tables, year-only title, white default background, layouts), CM5 (fold 6th week, fill the sheet), CM6 (month name inside the grid, Sun-Sat weekday row in holiday colour, custom colour, font colour, tight title), CM7 (folded dates drawn as normal dates, all grid lines same weight), CM8 (uniform spreadsheet grid), CM9 (restricted holidays), CM10 (Holiday List page), CM11 (multi-day holidays, Day + Month input for every-year holidays), CM12 (Classic holiday list layout), CM13 (code restructure into core/, render/, ui/; no visible change), CM14 (Year Overview page). Release label in the About line: CM14. Works offline and from file://.
+Design and print a one-sheet A4 year calendar: all 12 months on one A4 sheet (4 layouts), title "YYYY", big bold dates and holidays as filled tiles. Releases CM1 (design page + print), CM2 (Download PDF, background, holiday list strip), CM3 (Holidays page), CM4 (grid tables, year-only title, white default background, layouts), CM5 (fold 6th week, fill the sheet), CM6 (month name inside the grid, Sun-Sat weekday row in holiday colour, custom colour, font colour, tight title), CM7 (folded dates drawn as normal dates, all grid lines same weight), CM8 (uniform spreadsheet grid), CM9 (restricted holidays), CM10 (Holiday List page), CM11 (multi-day holidays, Day + Month input for every-year holidays), CM12 (Classic holiday list layout), CM13 (code restructure into core/, render/, ui/; no visible change), CM14 (Year Overview page), CM16 (page tabs, Print and PDF in the Hub window title bar). Release label in the About line: CM16. Works offline and from file://.
 
 ## 2. Files
 - `calendar-maker.html` / `calendar-maker.css`: pages (Design, Holidays), layout, light / dark, phone layout (options below the preview), print stylesheet
@@ -20,6 +20,7 @@ Design and print a one-sheet A4 year calendar: all 12 months on one A4 sheet (4 
   - `ui/cm_holidays_page.js` (`CM.Hol`): Holidays page
   - `ui/cm_list_page.js`: Holiday List page controls, Print and PDF (adds `CM.listRender`)
   - `ui/cm_overview_page.js` (CM14): Year Overview page Print and PDF (adds `CM.ovwRender`)
+  - `ui/cm_titlebar.js` (CM16): Hub title bar (H49 `hubTitleBar`): tabs `CM.TABS`, Print / PDF buttons
   - `ui/cm_zoom.js` (`CM.Zoom`): preview zoom (Design, Holiday List, Year Overview)
 - `vendor/jspdf.umd.min.js` + `vendor/jspdf_LICENSE.txt`: jsPDF 4.2.1 (MIT), bundled, no CDN
 - `calendar-maker_icon.png`, `index.html` (opens `calendar-maker.html`, keeps `?year=`)
@@ -62,7 +63,9 @@ Design and print a one-sheet A4 year calendar: all 12 months on one A4 sheet (4 
   - Summary: Total days (365/366), Sundays, Saturday holidays (with the rule), Gazetted holidays (days), Gazetted on a Sunday / Saturday holiday, Total holidays (Sundays + Saturday holidays + Gazetted, overlaps counted twice), Actual holidays (each off day once), Working days (total − actual), Restricted holidays (days, not deducted).
   - Holiday streaks: every run of 3 or more off days in a row, longest first (ties by date), with From – To, days and the holidays in it ('Durga Puja + Sunday'; Sundays / Saturdays named only when they are not also Gazetted).
   - Holiday stretches (Jor's rule): a span that starts and ends on an off day, contains at least one working day, and has off days ≥ working days (restricted days count as working, named in brackets '(Restricted: …)'). The longest qualifying spans are picked first; any span overlapping an already picked one is dropped; all are listed longest first with Total / Off / Working.
+- **Hub title bar (CM16):** tab order Design, Holiday List, Year Overview, Holidays (in-app row too). In a Hub Desktop window, after the Hub's `hubTitleBarHello`, the app sends `hubTitleBar` `set` (4 tabs, Print and PDF buttons, activeTab) and adds `body.hub-titlebar`, which hides the in-app top row. Page switches send `update` (activeTab, buttons; Print / PDF are greyed out on Holidays). Hub tab clicks call `CM.showPage`; button clicks run the active page's own Print / Download PDF. Messages are accepted only from `window.parent` with the right origin and shape. Standalone, file:// without Hub and Phone mode keep the in-app row. CM15 adds About as one last line in `CM.TABS`.
 
+- Hub title bar (CM16): untested in a real Hub browser window; the app name in the in-app row is hidden too (the Hub shows it). No keyboard page shortcuts exist, so only clicks switch pages.
 - Year Overview (CM14): a stretch can be as short as 3 days (off, working, off); with very many holidays the text can reach 18 px and very long lists could still overflow the page.
 
 ## 5. Legacy code notes
@@ -75,7 +78,8 @@ Old code kept as comments next to the code that replaced it (moved with that cod
 - `render/cm_list.js`, `rows`: the single-day row (CM10).
 - `render/cm_list_simple.js`, `drawSimple`: CM10 column widths and date text.
 - `render/cm_pdf.js`, `save`: portrait-only PDF and its title / size (CM1-CM3).
-- `ui/cm_design_page.js`, `RELEASE`: the CM13 label (CM14).
+- `ui/cm_design_page.js`, `RELEASE`: the CM13 and CM14 labels (CM16).
+- `ui/cm_design_page.js`, tabs: the CM3-CM14 tab click handler (now `CM.showPage`, CM16).
 - `ui/cm_zoom.js`, start-up: the CM12-F2-CM13 preview list without the Year Overview.
 - `ui/cm_design_page.js`, colour swatches: the CM1-CM12-F3 swatch markup (lower-case labels).
 - `ui/cm_holidays_page.js`: `save` without the warning (CM3), the CM3-CM8 `draw()` (one list per section), the CM3-CM10 date inputs and `add` values.
