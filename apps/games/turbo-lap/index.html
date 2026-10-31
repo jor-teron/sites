@@ -1,158 +1,21 @@
 <!DOCTYPE html>
+<!-- Redirect entry point to turbo-lap.html (keeps ?query and #hash). NIX-G1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: index.html held the full game and turbo-lap.html was a visible "Moved" redirect back to it; NIX-G1 swapped them (game now in turbo-lap.html, git mv). -->
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<title>Turbo Lap TLQ1f</title>
-<link rel="icon" href="turbo-lap_icon.png">
-<link rel="stylesheet" href="ui/turbo-lap.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Turbo Lap TLQ1f</title>
+  <link rel="canonical" href="turbo-lap.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('turbo-lap.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=turbo-lap.html"></noscript>
 </head>
-<body>
-<canvas id="game"></canvas>
-
-<div id="touch" class="hidden" aria-hidden="true">
-  <div class="tbtn" id="tLeft" data-k="left">◀</div>
-  <div class="tbtn" id="tRight" data-k="right">▶</div>
-  <div class="tbtn" id="tBrake" data-k="brake">BRAKE</div>
-  <div class="tbtn" id="tGas" data-k="gas">GAS</div>
-  <div class="tbtn" id="tNitro" data-k="nitro">NITRO</div>
-  <div class="tbtn" id="tPause" data-k="pause">❚❚</div>
-</div>
-<div id="rotate" class="hidden"><div><div class="phone">📱</div>Rotate your phone<small>Turbo Lap plays in landscape</small></div></div>
-
-<button id="themeBtn" class="themefab hidden" type="button" aria-label="Themes (V)" title="Themes (V)">🎨</button>
-
-<div id="overlay">
-  <div id="panel-title" class="card">
-    <h1>TURBO <span>LAP</span></h1>
-    <div class="circuitrow">
-      <button id="prevBtn" class="nav" aria-label="Previous circuit">◀</button>
-      <div id="titleCircuit" class="circuitname">Circuit 00</div>
-      <img id="titleMap" class="titlemap" alt="" width="200" height="150">
-      <button id="nextBtn" class="nav" aria-label="Next circuit">▶</button>
-    </div>
-    <p id="titleTag" class="tag">1 lap · 5 cars · you start last. Finish in the top 3 to win!</p>
-    <p id="titleDemo" class="demo hidden">🤖 Circuit 00 is a demo: your car drives itself. Press any control key or touch the screen to take over.</p>
-    <p class="touchhelp">👆 drag on the left half to steer · GAS / BRAKE / NITRO on the right · ❚❚ pause</p>
-    <table class="keys">
-      <tr><td><kbd>↑</kbd> <kbd>W</kbd></td><td>Accelerate</td><td><kbd>←</kbd><kbd>→</kbd> <kbd>A</kbd><kbd>D</kbd></td><td>Steer</td></tr>
-      <tr><td><kbd>↓</kbd> <kbd>S</kbd></td><td>Brake</td><td><kbd>Space</kbd> <kbd>Shift</kbd></td><td>Nitro</td></tr>
-      <tr><td><kbd>P</kbd> <kbd>Esc</kbd></td><td>Pause</td><td><kbd>F</kbd></td><td>30/60 FPS</td></tr>
-      <tr><td><kbd>←</kbd><kbd>→</kbd></td><td>Circuit (title)</td><td><kbd>C</kbd></td><td>All circuits</td></tr>
-      <tr><td><kbd>V</kbd></td><td>Themes</td><td><kbd>G</kbd></td><td>Car garage</td></tr>
-    </table>
-    <p class="pad">🎮 Gamepad: stick/D-pad steer · A/RT gas · B/LT brake · X nitro · Start pause</p>
-    <p class="hint">Grass slows you down. Bumping other cars costs speed. Take hard bends off the gas.</p>
-    <p id="titleBest" class="best"></p>
-    <div class="row">
-      <button id="startBtn" class="primary">Start Race <small>Enter</small></button>
-      <button id="circuitsBtn">Circuits <small>C</small></button>
-      <button id="themesBtn">Theme: Auto <small>V</small></button>
-      <button id="carBtn">Car: Coupe <small>G</small></button>
-      <button id="fpsBtn">FPS: 30</button>
-      <button id="autoGasBtn">AUTO GAS: OFF</button>
-    </div>
-  </div>
-  <div id="panel-pause" class="card hidden">
-    <h2>Paused</h2>
-    <div class="row">
-      <button id="resumeBtn" class="primary">Resume <small>Enter / P</small></button>
-      <button id="pauseRestartBtn">Restart</button>
-      <button id="themesBtn2">Theme: Auto <small>V</small></button>
-      <button id="carBtn2">Car: Coupe <small>G</small></button>
-      <button id="pauseTitleBtn">Title <small>T</small></button>
-    </div>
-  </div>
-  <div id="panel-finish" class="card hidden">
-    <h2 id="finHead">Race Finished</h2>
-    <p id="finCircuit" class="small"></p>
-    <div id="finPos" class="pos">1st</div>
-    <p id="finNote" class="fnote"></p>
-    <table class="results">
-      <tr><td>Total time</td><td id="finTotal"></td></tr>
-      <tr><td>Best lap</td><td id="finLap"></td></tr>
-    </table>
-    <p id="finLaps" class="small"></p>
-    <p id="finRecord" class="small"></p>
-    <div class="row">
-      <button id="restartBtn" class="primary">Race Again <small>Enter</small></button>
-      <button id="nextCircuitBtn">Circuit 01 ▶ </button>
-      <button id="circuitsBtn2">Circuits <small>C</small></button>
-      <button id="themesBtn3">Theme: Auto <small>V</small></button>
-      <button id="carBtn3">Car: Coupe <small>G</small></button>
-      <button id="titleBtn">Title <small>T</small></button>
-    </div>
-  </div>
-  <div id="panel-picker" class="card picker hidden" role="dialog" aria-label="Choose a circuit">
-    <div class="pickhead">
-      <h2>Circuits</h2>
-      <button id="pickClose" class="nav" aria-label="Close">✕</button>
-    </div>
-    <p class="small">Finish in the top 3 to win. Laps: 00–09 · 1, 10–29 · 2, 30–54 · 3, 55–79 · 4, 80–99 · 5. Numbers get longer and harder. Best times shown.</p>
-    <div id="pickGrid" class="pickgrid" role="grid"></div>
-  </div>
-  <div id="panel-themes" class="card picker themes hidden" role="dialog" aria-label="Choose a theme">
-    <div class="pickhead">
-      <h2>Themes</h2>
-      <button id="themeClose" class="nav" aria-label="Close">✕</button>
-    </div>
-    <p class="small">Auto changes the look with the circuit (its last digit picks the theme). Pick one theme to use it on every circuit. Only the look changes, never the racing.</p>
-    <div id="themeGrid" class="pickgrid themegrid" role="listbox" aria-label="Themes"></div>
-  </div>
-  <div id="panel-cars" class="card picker cars hidden" role="dialog" aria-label="Choose a car">
-    <div class="pickhead">
-      <h2>Car garage</h2>
-      <button id="carClose" class="nav" aria-label="Close">✕</button>
-    </div>
-    <p class="small">Pick your car and its paint. Every car races the same: only the look changes. Your rivals get their own cars.</p>
-    <div id="carSwatches" class="swatches" role="radiogroup" aria-label="Paint"></div>
-    <div id="carGrid" class="pickgrid themegrid cargrid" role="listbox" aria-label="Cars"></div>
-  </div>
-</div>
-
-<script src="core/config.js"></script>
-<script src="core/registry.js"></script>
-<script src="core/track.js"></script>
-<script src="core/road.js"></script>
-<script src="core/circuits.js"></script>
-<script src="core/cars.js"></script>
-<script src="core/opponents.js"></script>
-<script src="core/sprites.js"></script>
-<script src="assets/cars/base.js"></script>
-<script src="assets/cars/coupe.js"></script>
-<script src="assets/cars/muscle.js"></script>
-<script src="assets/cars/formula.js"></script>
-<script src="assets/cars/rally.js"></script>
-<script src="assets/cars/pickup.js"></script>
-<script src="assets/cars/van.js"></script>
-<script src="assets/cars/wedge.js"></script>
-<script src="assets/cars/beetle.js"></script>
-<script src="assets/cars/buggy.js"></script>
-<script src="assets/cars/proto.js"></script>
-<script src="assets/themes/base.js"></script>
-<script src="assets/themes/coast.js"></script>
-<script src="assets/themes/desert.js"></script>
-<script src="assets/themes/snow.js"></script>
-<script src="assets/themes/night.js"></script>
-<script src="assets/themes/autumn.js"></script>
-<script src="assets/themes/tropical.js"></script>
-<script src="assets/themes/volcano.js"></script>
-<script src="assets/themes/canyon.js"></script>
-<script src="assets/themes/space.js"></script>
-<script src="assets/themes/candy.js"></script>
-<script src="core/render.js"></script>
-<script src="core/hud.js"></script>
-<script src="core/storage.js"></script>
-<script src="core/driver.js"></script>
-<script src="core/input.js"></script>
-<script src="core/touch.js"></script>
-<script src="ui/joystick.js"></script>
-<script src="ui/minimap.js"></script>
-<script src="core/game.js"></script>
-<script src="ui/picker.js"></script>
-<script src="ui/themes.js"></script>
-<script src="ui/cars.js"></script>
-<script src="core/main.js"></script>
-</body>
+<body><noscript><p><a href="turbo-lap.html">Turbo Lap TLQ1f</a></p></noscript></body>
 </html>

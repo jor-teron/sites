@@ -1,10 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Desert Road</title>
-  <meta http-equiv="refresh" content="0; url=index.html">
-  <script>location.replace("index.html" + location.search + location.hash);</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Desert Road RDR1a</title>
+  <link rel="stylesheet" href="ui/desert-road.css" />
 </head>
-<body><p>Moved: <a href="index.html">Desert Road</a></p></body>
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div>Score: <span id="score">0</span></div>
+  <div>Time: <span id="time">0.0</span>s</div>
+</div>
+<button id="pauseBtn" class="hidden" aria-label="Pause">⏸</button>
+<div id="padLeft" class="pad" aria-hidden="true">◀</div>
+<div id="padRight" class="pad" aria-hidden="true">▶</div>
+
+<div id="overlay">
+  <h1>🏜️ Desert Road</h1>
+  <p>
+    Dodge the cacti, animals and rocks on the road.<br>
+    Reach <strong>100 points</strong> as fast as you can.<br><br>
+    Steer with <span class="keys">◀ ▶</span> or <span class="keys">A / D</span>,
+    or hold the left / right side of the screen<br>
+    <span class="keys">Enter</span> / <span class="keys">Space</span> start · <span class="keys">Enter</span> / <span class="keys">⏸</span> pause
+  </p>
+  <div class="colors" id="colors" role="radiogroup" aria-label="Car colour"></div>
+  <p class="best" id="best"></p>
+  <button id="startBtn">Start Driving</button>
+</div>
+
+  <script src="core/config.js"></script>
+  <script src="core/core.js"></script>
+  <script src="core/storage.js"></script>
+  <script src="core/sprites.js"></script>
+  <script src="core/render.js"></script>
+  <script src="core/game.js"></script>
+  <script src="core/input.js"></script>
+  <script src="core/main.js"></script>
+</body>
 </html>

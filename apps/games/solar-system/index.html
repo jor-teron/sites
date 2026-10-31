@@ -1,38 +1,21 @@
 <!DOCTYPE html>
+<!-- Redirect entry point to solar-system.html (keeps ?query and #hash). NIX-G1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: index.html held the full game; NIX-G1 renamed it to solar-system.html (git mv). -->
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Solar System Explorer SSR1a</title>
-  <link rel="icon" href="solar-system_icon.png" />
-  <link rel="stylesheet" href="ui/solar.css" />
+  <link rel="canonical" href="solar-system.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('solar-system.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=solar-system.html"></noscript>
 </head>
-<body>
-  <canvas id="c"></canvas>
-  <aside id="info" hidden>
-    <button id="close" type="button" title="Close (Esc)">&times;</button>
-    <h2 id="i-name"></h2>
-    <div id="i-type"></div>
-    <div id="i-body">
-      <dl id="i-stats"></dl>
-      <div id="i-about"></div>
-      <h3 id="i-fh">Key facts</h3>
-      <ul id="i-facts"></ul>
-    </div>
-  </aside>
-  <nav id="ctl">
-    <button id="play" type="button" title="Pause / play (Space)">&#10074;&#10074;</button>
-    <button id="slower" type="button" title="Slower">&minus;</button>
-    <span id="speed">1&times;</span>
-    <button id="faster" type="button" title="Faster">+</button>
-    <button id="fit" type="button" title="Reset view">Fit</button>
-    <button id="list" type="button" title="Go to a planet" aria-expanded="false">Planets &#9662;</button>
-    <div id="menu" hidden></div>
-  </nav>
-  <div id="hint">Tap a planet &middot; drag to pan &middot; wheel or pinch to zoom</div>
-  <script src="core/data.js"></script>
-  <script src="core/about.js"></script>
-  <script src="core/art.js"></script>
-  <script src="core/solar.js"></script>
-</body>
+<body><noscript><p><a href="solar-system.html">Solar System Explorer SSR1a</a></p></noscript></body>
 </html>

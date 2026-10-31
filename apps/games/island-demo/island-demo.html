@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Island</title>
+  <link rel="stylesheet" href="island.css">
+</head>
+<body>
+  <canvas id="view"></canvas>
+  <div id="title">Demo island</div>
+  <div id="hud">
+    <div class="who">
+      <button id="male" type="button">Male</button>
+      <button id="female" class="on" type="button">Female</button>
+    </div>
+    <div id="who">Female</div>
+    <div id="hint">WASD move · Shift run · drag orbit · wheel zoom · C switch</div>
+  </div>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="island.js"></script>
+</body>
+</html>

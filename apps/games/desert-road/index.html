@@ -1,44 +1,21 @@
 <!DOCTYPE html>
+<!-- Redirect entry point to desert-road.html (keeps ?query and #hash). NIX-G1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: index.html held the full game and desert-road.html was a visible "Moved" redirect back to it; NIX-G1 swapped them (game now in desert-road.html, git mv). -->
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Desert Road RDR1a</title>
-  <link rel="stylesheet" href="ui/desert-road.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Desert Road</title>
+  <link rel="canonical" href="desert-road.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('desert-road.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=desert-road.html"></noscript>
 </head>
-<body>
-
-<canvas id="game"></canvas>
-
-<div id="hud">
-  <div>Score: <span id="score">0</span></div>
-  <div>Time: <span id="time">0.0</span>s</div>
-</div>
-<button id="pauseBtn" class="hidden" aria-label="Pause">⏸</button>
-<div id="padLeft" class="pad" aria-hidden="true">◀</div>
-<div id="padRight" class="pad" aria-hidden="true">▶</div>
-
-<div id="overlay">
-  <h1>🏜️ Desert Road</h1>
-  <p>
-    Dodge the cacti, animals and rocks on the road.<br>
-    Reach <strong>100 points</strong> as fast as you can.<br><br>
-    Steer with <span class="keys">◀ ▶</span> or <span class="keys">A / D</span>,
-    or hold the left / right side of the screen<br>
-    <span class="keys">Enter</span> / <span class="keys">Space</span> start · <span class="keys">Enter</span> / <span class="keys">⏸</span> pause
-  </p>
-  <div class="colors" id="colors" role="radiogroup" aria-label="Car colour"></div>
-  <p class="best" id="best"></p>
-  <button id="startBtn">Start Driving</button>
-</div>
-
-  <script src="core/config.js"></script>
-  <script src="core/core.js"></script>
-  <script src="core/storage.js"></script>
-  <script src="core/sprites.js"></script>
-  <script src="core/render.js"></script>
-  <script src="core/game.js"></script>
-  <script src="core/input.js"></script>
-  <script src="core/main.js"></script>
-</body>
+<body><noscript><p><a href="desert-road.html">Desert Road</a></p></noscript></body>
 </html>

@@ -1,30 +1,21 @@
 <!DOCTYPE html>
+<!-- Redirect entry point to island-demo.html (keeps ?query and #hash). NIX-G1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: index.html held the full game; NIX-G1 renamed it to island-demo.html (git mv). -->
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Island</title>
-  <link rel="stylesheet" href="island.css">
-</head>
-<body>
-  <canvas id="view"></canvas>
-  <div id="title">Demo island</div>
-  <div id="hud">
-    <div class="who">
-      <button id="male" type="button">Male</button>
-      <button id="female" class="on" type="button">Female</button>
-    </div>
-    <div id="who">Female</div>
-    <div id="hint">WASD move · Shift run · drag orbit · wheel zoom · C switch</div>
-  </div>
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
-    }
-  }
+  <link rel="canonical" href="island-demo.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('island-demo.html' + location.search + location.hash);
+    })();
   </script>
-  <script type="module" src="island.js"></script>
-</body>
+  <noscript><meta http-equiv="refresh" content="0; url=island-demo.html"></noscript>
+</head>
+<body><noscript><p><a href="island-demo.html">Island</a></p></noscript></body>
 </html>

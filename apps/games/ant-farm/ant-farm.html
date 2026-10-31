@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Ant Farm v0.3</title>
+  <link rel="icon" href="ant-farm_icon.png" />
+  <link rel="stylesheet" href="css/ant-farm.css" />
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <header id="bar">
+    <a id="back" href="../" title="Games">&#8592;</a>
+    <b>ANT FARM</b> <span id="ver">v0.3</span>
+    <select id="tool" title="Tap tool">
+      <option value="food">Drop food</option>
+      <option value="water">Drop water</option>
+    </select>
+    <button id="pause" type="button">Pause</button>
+    <button id="reset" type="button">Reset</button>
+    <label>Speed <input id="speed" type="range" min="0" max="6" step="1" value="2" /></label>
+    <label><input id="trails" type="checkbox" checked /> Trails</label>
+    <input id="seed" type="number" title="Colony seed" />
+    <button id="newc" type="button">New colony</button>
+  </header>
+  <div id="stats"></div>
+  <script src="../common/settings/games-settings.js"></script>
+  <script src="ant-farm_settings.js"></script>
+  <script src="core/world.js"></script>
+  <script src="core/colony.js"></script>
+  <script src="assets/models/ant.js"></script>
+  <script src="assets/draw/soil.js"></script>
+  <script src="assets/draw/surface.js"></script>
+  <script src="assets/draw/chamber.js"></script>
+  <script src="assets/draw/frame.js"></script>
+  <script src="core/render.js"></script>
+  <script src="core/ui.js"></script>
+</body>
+</html>
