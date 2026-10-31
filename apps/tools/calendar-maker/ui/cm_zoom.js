@@ -1,5 +1,5 @@
-/* Calendar Maker CM12-F2: display-only preview zoom (slider 25-400%, Fit, Ctrl+wheel, drag pan, pinch).
-   Only canvas.style.width changes; canvas.width/height (250 dpi render), Print and PDF are untouched. */
+/* Calendar Maker CM13 ui (was CM12-F2): display-only preview zoom (slider 25-400%, Fit, Ctrl+wheel, drag pan, pinch).
+   Only canvas.style.width changes; canvas.width/height (250 dpi render), Print and PDF are untouched. window.CM.Zoom */
 (function () {
   'use strict';
   var MIN = 25, MAX = 400, PX = 96 / 250; /* 100% = real A4 size (250 dpi canvas shown at 96 css px/in) */
@@ -71,7 +71,7 @@
     return { state: st, set: set, fit: function () { st.fit = true; apply(); }, refresh: apply, onWheel: onWheel, bar: bar };
   }
   var api = { MIN: MIN, MAX: MAX, clamp: clamp, fitPct: fitPct, attach: attach };
-  if (typeof window !== 'undefined') window.CMZoom = api;
+  if (typeof window !== 'undefined') { window.CM = window.CM || {}; window.CM.Zoom = api; }
   if (typeof document !== 'undefined' && document.addEventListener && document.getElementById) {
     var go = function () {
       [['preview-wrap', 'sheet'], ['list-wrap', 'list-sheet']].forEach(function (p) {

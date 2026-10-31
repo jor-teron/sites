@@ -1,0 +1,110 @@
+/* Calendar Maker CM13 core: holiday data and date maths (no DOM).
+   Merges the Calendar app's built-in list (window.CalHolidays) with the user's every-year and this-year-only holidays.
+   Holiday: {m (0-11), d, name, r?: true = Restricted (CM9), em?/ed?: end month/day, same year (CM11)}.
+   window.CM.Holidays */
+window.CM = window.CM || {};
+window.CM.Holidays = (function () {
+  'use strict';
+  const MN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
+    'October', 'November', 'December'];
+  const MS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  /* const WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];  (CM1-CM5) */
+  const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; /* CM6 */
+  const WDF = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const p2 = (n) => String(n).padStart(2, '0');
+  const dim = (y, m) => new Date(y, m + 1, 0).getDate();
+  const dow = (y, m, d) => new Date(y, m, d).getDay();
+  const mlen = (m) => new Date(2000, m + 1, 0).getDate(); /* leap year: Feb = 29 */
+  /* CM12: ordinal suffix 1st 2nd 3rd 4th 11th 12th 13th 21st */
+  const sfx = (n) => (n % 100 >= 11 && n % 100 <= 13) ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+  /* 'A', 'A & B', 'A, B & C' */
+  const join = (a) => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' & ' + a[a.length - 1];
+
+  /* CM11: end as m*100+d (a range only when the end is after the start) */
+  const endOf = (h) => (h.em != null && h.ed != null && (h.em * 100 + h.ed) > (h.m * 100 + h.d))
+    ? h.em * 100 + h.ed : h.m * 100 + h.d;
+  /* sorted, de-duplicated holiday list for the strip: [{m,d,name}] */
+  /* CM2-CM10 (single days only):
+  // function stripRows(hols) {
+  //   const map = {};
+  //   hols.forEach((h) => { const k = h.m * 100 + h.d; map[k] = map[k] ? map[k] + ' / ' + h.name : h.name; });
+  //   return Object.keys(map).map(Number).sort((a, b) => a - b).map((k) => ({ m: Math.floor(k / 100), d: k % 100, name: map[k] }));
+  // }
+  */
+  /* CM11: a range (em/ed = end month/day, same year) is ONE row; same start+end names joined with ' / ' */
+  function stripRows(hols) {
+    const map = {};
+    hols.forEach((h) => {
+      const k = (h.m * 100 + h.d) * 10000 + endOf(h);
+      map[k] = map[k] ? map[k] + ' / ' + h.name : h.name;
+    });
+    return Object.keys(map).map(Number).sort((a, b) => a - b).map((k) => {
+      const s = Math.floor(k / 10000), e = k % 10000, r = { m: Math.floor(s / 100), d: s % 100, name: map[k] };
+      if (e !== s) { r.em = Math.floor(e / 100); r.ed = e % 100; }
+      return r;
+    });
+  }
+  /* CM9: strip sections { gaz, res }, each date-sorted */
+  function stripSections(hols) {
+    return { gaz: stripRows((hols || []).filter((h) => !h.r)), res: stripRows((hols || []).filter((h) => h.r)) };
+  }
+  /* CM11: '05 Jan', '20–23 Oct', '30 Sep–02 Oct' */
+  function dateText(r) {
+    if (r.em == null) return p2(r.d) + ' ' + MS[r.m];
+    return r.em === r.m ? p2(r.d) + '–' + p2(r.ed) + ' ' + MS[r.m]
+      : p2(r.d) + ' ' + MS[r.m] + '–' + p2(r.ed) + ' ' + MS[r.em];
+  }
+  /* CM11: every [m, d] covered by a holiday (range or single) in year y */
+  function daysOf(h, y) {
+    const out = [], e = endOf(h);
+    for (let dt = new Date(y, h.m, h.d); dt.getFullYear() === y && dt.getMonth() * 100 + dt.getDate() <= e;
+      dt.setDate(dt.getDate() + 1)) out.push([dt.getMonth(), dt.getDate()]);
+    return out;
+  }
+
+  /* built-ins (Calendar app) = Gazetted, as {m, d, name} */
+  const builtIns = (y) => (window.CalHolidays
+    ? window.CalHolidays.list(y).map((h) => ({ m: h.m, d: h.d, name: h.name })) : []);
+  /* every-year list: the saved one, or the built-ins when never edited (null) */
+  const fixedOf = (H) => H.fixed || builtIns(2000);
+
+  /* merged holidays for year y from a validated H = {fixed: null | [...], dated: [...]} */
+  function forYear(H, y) {
+    /* const out = fixed()...map((h) => ({ m: h.m, d: h.d, name: h.name }));  (CM3-CM8) */
+    /* const out = fixed().filter(...).map((h) => ({ m: h.m, d: h.d, name: h.name, r: h.r === true }));
+       H.dated.forEach(... single day ...);  (CM9-CM10) */
+    /* CM11: ranges carry em/ed; 29 Feb start skipped in non-leap years, a 29 Feb end becomes 28 Feb */
+    const out = fixedOf(H).filter((h) => h.d <= dim(y, h.m)).map((h) => {
+      const o = { m: h.m, d: h.d, name: h.name, r: h.r === true };
+      if (h.em != null) {
+        const ed = Math.min(h.ed, dim(y, h.em));
+        if (h.em * 100 + ed > h.m * 100 + h.d) { o.em = h.em; o.ed = ed; }
+      }
+      return o;
+    });
+    H.dated.forEach((h) => {
+      if (+h.date.slice(0, 4) !== y) return;
+      const o = { m: +h.date.slice(5, 7) - 1, d: +h.date.slice(8, 10), name: h.name, r: h.r === true };
+      if (h.end) { o.em = +h.end.slice(5, 7) - 1; o.ed = +h.end.slice(8, 10); }
+      out.push(o);
+    });
+    return out;
+  }
+  /* CM11: every-year Day/Month values -> {m, d, em?, ed?} or null when invalid.
+     Day is clamped to the month (29 Feb allowed). */
+  function readFx(sd, sm, ed, em) {
+    if (sd === '' || sm === '' || sd == null || sm == null) return null;
+    const m = +sm, d = Math.min(+sd, mlen(m)), o = { m, d };
+    const hasE = ed !== '' && ed != null, hasM = em !== '' && em != null;
+    if (!hasE && !hasM) return o;
+    const eM = hasM ? +em : m; if (!hasE) return o; /* month alone, no day: still one day */
+    const eD = Math.min(+ed, mlen(eM));
+    if (eM * 100 + eD <= m * 100 + d) return null;
+    o.em = eM; o.ed = eD; return o;
+  }
+
+  return {
+    MN, MS, WD, WDF, p2, dim, dow, mlen, sfx, join, endOf, stripRows, stripSections, dateText, daysOf,
+    builtIns, fixedOf, forYear, readFx
+  };
+})();
