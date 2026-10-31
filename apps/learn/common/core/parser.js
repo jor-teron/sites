@@ -48,11 +48,11 @@ window.LRN = window.LRN || {};
 
   // load index + every card; returns {meta, cards:[{id, card|null}], notes:[strings]} and never rejects
   L.load = async function (base, ver, fallback) {
-    const q = '?v=' + encodeURIComponent(ver), notes = [];
+    const notes = [];   // ver is unused (kept so callers don't break)
     let idx = { meta: {}, ids: [] };
-    try { idx = L.parseIndex(await get(base + 'index.txt' + q)); } catch (e) { notes.push('index.txt could not be loaded'); }
+    try { idx = L.parseIndex(await get(base + 'index.txt')); } catch (e) { notes.push('index.txt could not be loaded'); }
     if (!idx.ids.length) idx.ids = (fallback || []).slice();
-    const cards = await Promise.all(idx.ids.map(id => get(base + id + '.txt' + q).then(t => ({ id, card: L.parseCard(t, id) }), () => { notes.push(id + '.txt could not be loaded'); return { id, card: null }; })));
+    const cards = await Promise.all(idx.ids.map(id => get(base + id + '.txt').then(t => ({ id, card: L.parseCard(t, id) }), () => { notes.push(id + '.txt could not be loaded'); return { id, card: null }; })));
     return { meta: idx.meta, cards, notes };
   };
 })();

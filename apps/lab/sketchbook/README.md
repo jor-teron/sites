@@ -67,7 +67,7 @@ Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself 
 - Page-number font depends on the device (handwriting font if installed, else cursive).
 - PDF export redraws all 50 pages on screen while it runs; can be slow on old phones.
 - If the jelly cannot draw (old browser, script error), a plain blue round ☰ button is shown instead; gestures still work.
-- Script/CSS tags carry ?v=… cache-busting; bump it when files change.
+- No ?v= tags on Script/CSS links (NV2): browsers fetch the latest.
 - No undo; crumples are permanent. No reset. Wrinkles can never be removed.
 - Grid thumbnails do not show wrinkles.
 - Wrinkles are drawn at the current screen size; they look a bit different after rotating.

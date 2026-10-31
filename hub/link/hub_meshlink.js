@@ -22,6 +22,8 @@
  *       first start (hub-controller.js), so "hosting a code" alone would keep every Hub off 0000; a host whose
  *       code nobody has used yet is on 0000 and can send that code as an invite. New code (another code) or a
  *       host Disconnect (SharedLink stopped, not live) clears the pairing → back to 0000.
+ * H73: always join 0000 at startup; private mesh only while a device is actually linked (SharedLink.connected,
+ *   host or joined). 'hub-mesh-paired' is no longer written or read (check() still clears a stale one).
  *   Joining a private code leaves 0000 (start() with the private code stops the public mesh first); Disconnect
  *   (host stop / a joined phone's Disconnect → reload as a host) rejoins 0000; the switch off leaves 0000.
  *   Public PeerJS server as before. On 0000 HubMesh itself refuses every channel except presence + invites.
@@ -48,11 +50,10 @@
     const L = window.SharedLink;
     const code = String(L.code || '');
     if (!code || code === PUB) return '';
-    if (L.role === 'join') return code;   // joined (connected, or lost the PC: keeps its mesh as in H50)
-    if (L.role === 'host' && L.live) {
-      if (L.connected && get(PAIR_KEY) !== code) put(PAIR_KEY, code);   // a device linked: private from now on
-      return get(PAIR_KEY) === code ? code : '';
-    }
+    // if (L.role === 'join') return code;   (H55)
+    // if (L.role === 'host' && L.live) { ...hub-mesh-paired... }   (H55)
+    if (L.role === 'join' && L.connected) return code;   // H73: private only while a device is linked right now
+    if (L.role === 'host' && L.live && L.connected) return code;   // H73
     return '';
   }
   /** this host's own code (for invites), when it has one */
@@ -83,7 +84,7 @@
       HubMesh.start(priv, { preferLobby: L.role === 'host' && desktop() }).catch((e) => console.warn('HubMesh start', e && e.message));
       return;
     }
-    if (L.role === 'join' && code && code !== PUB) return;   // joining (not linked yet): wait, no public detour
+    // if (L.role === 'join' && code && code !== PUB) return;   (H55) H73: not linked yet → stay on 0000
     if (!publicOn()) { if (HubMesh.state() !== 'stopped') HubMesh.stop(); return; }
     if (m && m.code === PUB) return;
     HubMesh.start(PUB, { preferLobby: false }).catch((e) => console.warn('HubMesh start', e && e.message));

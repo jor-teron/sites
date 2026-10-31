@@ -13,7 +13,6 @@
                and tiles are injected by the script.
                Inside the sites hub the HUD / buttons hide and
                Score / Best / New Game / Undo move to the hub bar.
-               Cache-busting: bump ?v= on the CSS / JS when they change.
   ============================================================
 -->
 <html lang="en">
@@ -21,7 +20,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>2048</title>
-  <link rel="stylesheet" href="2048.css?v=GS2" />
+  <link rel="stylesheet" href="2048.css" />
 </head>
 <body>
   <div id="app">
@@ -52,9 +51,9 @@
   </div>
 
   <!-- GS2: shared Games Settings (optional: the game runs with defaults if it fails to load) -->
-  <script src="../common/settings/games-settings.js?v=GS1"></script>
-  <script src="2048_config.js?v=20261003c"></script>
-  <script src="2048_settings.js?v=GS2"></script>
-  <script src="2048_logic.js?v=GS2"></script>
+  <script src="../common/settings/games-settings.js"></script>
+  <script src="2048_config.js"></script>
+  <script src="2048_settings.js"></script>
+  <script src="2048_logic.js"></script>
 </body>
 </html>

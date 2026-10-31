@@ -25,6 +25,7 @@
  *   sites-hub.homeBtn    '' = Home button goes to the Home screen (default) | 'apphub' = opens App Hub
  *                        (AH1-F1; hub.js __hubHome reads it per click)        → #home-btn title
  *   sites-hub.showFiles  '0' = no Files icons on the Desktop home (H7; default on) → html.hub-files-off, HubDrives.sync()
+ *   sites-hub.showTiles  '1' = QR / link tiles on the home (H72; default off, Desktop + Phone) → html.hub-tiles-off
  *   sites-hub.motion     'on' (default) | 'reduced' (no jelly) | 'off'        → html.hub-motion-*
  *   sites-hub.hoverFocus '1' = Focus window on hover (default off)       → html.hub-hover-focus
  *   sites-hub.snapEdges  '0' = no snapping to screen edges (default on)  → html.hub-snap-off
@@ -134,6 +135,8 @@
     const wasOff = root.classList.contains('hub-files-off');
     root.classList.toggle('hub-files-off', filesOff);
     if (filesOff !== wasOff && window.HubDrives) window.HubDrives.sync();
+    // H72: QR / link tiles on the home (Desktop + Phone; default off)
+    root.classList.toggle('hub-tiles-off', get('showTiles') !== '1');
     // screen mode chosen in Settings
     const m = get('wmMode') || 'auto';
     if (window.HubMode && window.HubMode.pref !== m) window.HubMode.setPref(m);

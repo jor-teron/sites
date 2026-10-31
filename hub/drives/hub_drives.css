@@ -33,6 +33,12 @@ html.hub-files-off body.wm-desktop .home { grid-template-columns: minmax(0, 1fr)
 html.hub-files-off body.wm-desktop #empty-text,
 html.hub-files-off body.wm-desktop .tiles { grid-column: 1; justify-self: end; width: min(100%, 520px); }
 
+/* H72: tiles switched off (Settings → Desktop, default): no QR / link tiles, Desktop and Phone mode (a load error in #empty-text stays visible);
+   Desktop: Files takes the full width, both off = just the wallpaper */
+html.hub-tiles-off .tiles, html.hub-tiles-off body.wm-desktop .tiles,
+html.hub-tiles-off #empty-text:not(.error), html.hub-tiles-off body.wm-desktop #empty-text:not(.error) { display: none; }
+html.hub-tiles-off body.wm-desktop .home { grid-template-columns: minmax(0, 1fr); }
+
 /* H7: Files pane = desktop icons. Column-first grid (top-left, down, then the next column), no boxes. */
 body.wm-desktop #desk-drives { padding: 2px; }
 .drv-grid { display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start; align-items: flex-start; gap: 6px 8px; max-height: 100%; height: 100%; }

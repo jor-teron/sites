@@ -34,13 +34,15 @@
 
     // Tiles shown before a list's channels. type 'link' opens href (same tab).
     // screen: which list shows the tile ('home' if missing). TV6: India
-    // moved from Home into More (first tile there, before the Home tile).
+    // moved from Home into More (TV-F1: after the Home tile, which is first there).
     // type 'action' runs TV.actions[action] (TV7: the Import panel). A list
     // without its own 'home' tile gets one after its tiles.
     CATEGORY_TILES: [
       { type: 'link', name: 'Hub', href: '../', group: 'Link', logo: '../shared/image/placeholder.png' },
       { type: 'category', key: 'kids', name: 'Kids', group: 'Category', logo: '../shared/image/placeholder.png' },
       { type: 'category', key: 'more', name: 'More', group: 'Category', logo: '../shared/image/placeholder.png' },
+      // TV-F1: More order is Home, India, Import, then channels (Home was auto-added last).
+      { type: 'category', key: 'home', name: 'Home', group: 'Category', logo: '../shared/image/placeholder.png', screen: 'more' },
       { type: 'category', key: 'india', name: 'India', group: 'Category', logo: '../shared/image/placeholder.png', screen: 'more' },
       { type: 'action', key: 'import', action: 'import', name: 'Import', group: 'Playlist', logo: '../shared/image/placeholder.png', screen: 'more' },
       // the Import list (TV7): Home, More, and the panel again (replace / clear)

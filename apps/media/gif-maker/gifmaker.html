@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>GIF Maker GM2</title>
   <script>/* theme early to avoid flash */try{var p=JSON.parse(localStorage.getItem('gifmaker-settings-v1')||'{}').theme||'dark',h=localStorage.getItem('sites-hub.theme');if(p==='dark'||(p==='system'&&(h?h==='dark':matchMedia('(prefers-color-scheme: dark)').matches)))document.documentElement.classList.add('dark');}catch(e){document.documentElement.classList.add('dark');}</script>
-  <link rel="stylesheet" href="gifmaker.css?v=GM2">
+  <link rel="stylesheet" href="gifmaker.css">
 </head>
 <body>
 <div id="app">
@@ -79,12 +79,12 @@
 <input type="file" id="pfile" accept="image/*" multiple hidden>
 <div id="dialog" hidden><div class="dbox"><p id="dlg-t"></p><div class="row"><span class="sp"></span><button id="dlg-no" class="btn">Cancel</button><button id="dlg-ok" class="btn acc">OK</button></div></div></div>
 <div id="toast" hidden></div>
-<script src="vendor/gifenc.js?v=GM2"></script>
-<script src="gifmaker_core.js?v=GM2"></script>
-<script src="gifmaker_save.js?v=GM2"></script>
-<script src="gifmaker_video.js?v=GM2"></script>
-<script src="gifmaker_encode.js?v=GM2"></script>
-<script src="gifmaker_photos.js?v=GM2"></script>
-<script src="gifmaker_app.js?v=GM2"></script>
+<script src="vendor/gifenc.js"></script>
+<script src="gifmaker_core.js"></script>
+<script src="gifmaker_save.js"></script>
+<script src="gifmaker_video.js"></script>
+<script src="gifmaker_encode.js"></script>
+<script src="gifmaker_photos.js"></script>
+<script src="gifmaker_app.js"></script>
 </body>
 </html>
