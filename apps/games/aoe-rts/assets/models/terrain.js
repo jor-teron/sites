@@ -59,27 +59,18 @@ const TerrainArt = {
         c.restore();
         if (hash(x, y, 210) > 0.7) { c.fillStyle = '#8a8474'; c.beginPath(); c.ellipse(p.x - 14, p.y + 4, 5, 3, 0, 0, 7); c.fill(); }
     },
-    /** ARQ1t2 mountain ground tile: a little height-mesh (4 shared corners + a raised centre), so neighbouring cells join into one
-     *  range; each facet is lit by its slope, high facets get snow. dep(x, y) = cells to the range edge (0 = not mountain). */
-    mountain(c, p, x, y, dep, hash) {
-        const hw = TILE_WIDTH / 2, hh = TILE_HEIGHT / 2, LIFT = 46;
-        const ch = (u, v) => Math.max(0, Math.min(dep(u - 1, v - 1), dep(u, v - 1), dep(u - 1, v), dep(u, v)) - 1) * 0.8;   // corner (u, v) height
-        const P = [[0, -1, ch(x, y)], [1, 0, ch(x + 1, y)], [0, 1, ch(x + 1, y + 1)], [-1, 0, ch(x, y + 1)]], d = dep(x, y);
-        const C = [(hash(x, y, 300) - 0.5) * 0.8, (hash(x, y, 301) - 0.5) * 0.6, 0.55 + (d - 1) * 0.75 + hash(x, y, 302) * 0.35];
-        for (let k = 0; k < 4; k++) { const a = P[k], b = P[(k + 1) % 4];
-            // world-ish normal of facet (a, b, C): x = screen-right, y = screen-down, z = up
-            const ux = a[0] - C[0], uy = a[1] - C[1], uz = a[2] - C[2], vx = b[0] - C[0], vy = b[1] - C[1], vz = b[2] - C[2];
-            let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; if (nz < 0) { nx = -nx; ny = -ny; nz = -nz; }
-            const lit = Math.max(0, (-0.6 * nx - 0.5 * ny + 0.62 * nz) / Math.hypot(nx, ny, nz)), f = 0.5 + 0.7 * lit;
-            const snow = C[2] > 1.2 && (Math.max(a[2], b[2]) > 0.5 || hash(x, y, 304 + k) > 0.5);
-            const base = snow ? [236, 240, 244] : [150 + hash(x, y, 303 + k) * 18, 142, 126];
-            c.fillStyle = `rgb(${base.map(v => Math.min(255, v * (snow ? 0.55 + 0.5 * lit : f)) | 0)})`;
-            const s = q => [p.x + q[0] * hw, p.y + q[1] * hh - q[2] * LIFT];
-            const A = s(a), Bq = s(b), Cq = s(C);
-            c.beginPath(); c.moveTo(A[0], A[1]); c.lineTo(Bq[0], Bq[1]); c.lineTo(Cq[0], Cq[1]); c.closePath(); c.fill(); c.strokeStyle = c.fillStyle; c.lineWidth = 1; c.stroke();
-            c.strokeStyle = 'rgba(40,34,26,0.25)'; c.lineWidth = 1.2;   // strata
-            for (let i = 1; i < 3; i++) { const t = i / 3; c.beginPath(); c.moveTo(Cq[0] + (A[0] - Cq[0]) * t, Cq[1] + (A[1] - Cq[1]) * t); c.lineTo(Cq[0] + (Bq[0] - Cq[0]) * t * (0.6 + hash(x, y, 310 + i + k * 3) * 0.4), Cq[1] + (Bq[1] - Cq[1]) * t); c.stroke(); }
-        }
+    /** ARQ1t3 mountain ground tile: a smooth low dome. ht(vx, vy) is the shared height (0..1) on a fine vertex grid
+     *  (n sub-steps per cell, 0 on the range edge); each cell is drawn as n x n small quads, shaded by slope (lit back-left). */
+    mountain(c, p, x, y, ht, n) {
+        const hw = TILE_WIDTH / 2, hh = TILE_HEIGHT / 2, LIFT = 54;
+        const pt = (i, j) => { const u = i / n - 0.5, v = j / n - 0.5, h = ht(x * n + i, y * n + j); return [p.x + (u - v) * hw, p.y + (u + v) * hh - h * LIFT, h]; };
+        for (let s = 0; s <= 2 * n - 2; s++) for (let i = Math.max(0, s - n + 1); i <= Math.min(n - 1, s); i++) { const j = s - i;
+            const a = pt(i, j), b = pt(i + 1, j), d = pt(i + 1, j + 1), e = pt(i, j + 1);
+            const gu = (b[2] + d[2] - a[2] - e[2]) / 2 * n, gv = (e[2] + d[2] - a[2] - b[2]) / 2 * n, h = (a[2] + b[2] + d[2] + e[2]) / 4;
+            const f = Math.max(0.55, Math.min(1.35, 1 + 0.55 * gu + 0.25 * gv)), m = Math.min(1, h * 1.4);   // slope light; green low -> earthy crest
+            const col = [96 + 34 * m + 30 * h * h, 122 - 6 * m + 24 * h * h, 58 + 12 * m + 24 * h * h].map(k => Math.min(255, k * f) | 0);
+            c.fillStyle = c.strokeStyle = `rgb(${col})`; c.lineWidth = 1;
+            c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.lineTo(d[0], d[1]); c.lineTo(e[0], e[1]); c.closePath(); c.fill(); c.stroke(); }
     },
     /** ARQ1t2 foothill fade: a soft rocky-brown shadow on the grass edges that touch a mountain (kept inside this tile) */
     foothill(c, p, x, y, isM) {
