@@ -887,3 +887,15 @@ kept.
 ================================================================================
  End of section 9 (D3). Next Team 3 section goes below this line.
 ================================================================================
+
+-- Testing rule (Jor, 30 Oct 2026) --
+- Do NOT test by default after coding. When a release is built, ask Jor:
+  "test it, or push directly?" He decides. A quick syntax check
+  (node --check) is always fine.
+- "Test" means: open the app in a real headless Chromium (Playwright,
+  /workspace/.venv-pw/bin/python), drive it with a script like a user,
+  check results, take screenshots, and fix bugs found before pushing.
+- Serve over http on ports 18890+ (never 8888); kill only your own pids.
+- Limits: file-manager paste and drag-drop are simulated events; phones,
+  real Microsoft Word and the real OS clipboard are not covered. Say
+  clearly in the report what was real and what was mocked.
