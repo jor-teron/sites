@@ -4,7 +4,10 @@
 Design and print a one-sheet A4 year calendar: all 12 months on one A4 sheet (4 layouts), title "YYYY", big bold dates and holidays as filled tiles. Releases CM1 (design page + print), CM2 (Download PDF, background, holiday list strip), CM3 (Holidays page), CM4 (grid tables, year-only title, white default background, layouts), CM5 (fold 6th week, fill the sheet), CM6 (month name inside the grid, Sun-Sat weekday row in holiday colour, custom colour, font colour, tight title), CM7 (folded dates drawn as normal dates, all grid lines same weight), CM8 (uniform spreadsheet grid), CM9 (restricted holidays), CM10 (Holiday List page), CM11 (multi-day holidays, Day + Month input for every-year holidays), CM12 (Classic holiday list layout), CM13 (code restructure into core/, render/, ui/; no visible change), CM14 (Year Overview page), CM16 (page tabs, Print and PDF in the Hub window title bar; CM16-F1 Legend size box; CM16-F2 striped holiday list rows; CM16-F3 Show restricted holidays switch; CM16-F4 plain Year Overview title and section gaps; CM16-F5 weekday row colour), CM15 (About page: Settings with app theme and reset, How to, About), CM17 (holiday list CSV export and import in About > Settings). Release label in the About line: CM17. Works offline and from file://.
 
 ## 2. Files
-- `calendar-maker.html` / `calendar-maker.css`: pages (Design, Holidays), layout, light / dark, phone layout (options below the preview), print stylesheet
+- `calendar-maker.html`: page markup; styles in `ui/css/` (CM18-R1, loaded in this order):
+  - `ui/css/cm_base.css`: theme variables, dark mode, shared controls (option rows, buttons, swatches, colour pickers)
+  - `ui/css/cm_layout.css`: app, tab row, Hub title-bar mode, previews, zoom, phone layout, print stylesheet
+  - `ui/css/cm_pages.css`: per-page sections (Design, Holidays, Holiday List, Year Overview, About)
 - Code (CM13): plain `<script>` tags, works from file://, one global namespace `window.CM`. Load order in the HTML matters: core -> render -> ui.
   - `core/cm_theme.js` (`CM.Theme`): font, holiday / restricted / header / month-fill / soft colour presets, colour names, grid style, text-colour rule (white text on dark fills)
   - `core/cm_canvas.js` (`CM.Canvas`): A4 sizes (2067 x 2923 px portrait or 2923 x 2067 px landscape = 250 dpi), layouts, margin, font string, cell fill, borders, fit-font, ellipsis, word / token wrap, underline
@@ -104,3 +107,7 @@ Old code kept as comments next to the code that replaced it (moved with that cod
 - `ui/cm_holidays_page.js`: `save` without the warning (CM3), the CM3-CM8 `draw()` (one list per section), the CM3-CM10 date inputs and `add` values.
 - CM18: core/cm_holidays.js stripSections 2-key return; render/cm_sheet.js hol map (Gazetted wins), isHol return, legend Restricted line, strip fill; render/cm_list.js listHols (showr only); render/cm_list_classic.js classicRows return; render/cm_list_simple.js / cm_list_classic.js heading fill rc; core/cm_stats.js classify entry and push; ui/cm_holidays_page.js chip button, chip toggle, split, add rs; core/cm_csv.js CM17 header, both serialize lines, type/repeat checks; ui/cm_design_page.js RELEASE 'CM17'; HTML CSV note (HTML comment).
 - CM18 CSV follow-up: core/cm_csv.js REP with CM17 'every year' / 'this year' and y / n / true / false, the 'unknown repeat' skip line, header comment on CM17 import; HTML note 'Older CM17 files still import.' (HTML comment).
+- CSS (CM18-R1 split `calendar-maker.css` into `ui/css/`; these commented-out rules were removed from the CSS and are kept here verbatim):
+  - Holidays page width (CM3-CM12): `.hol-wrap{display:flex;gap:16px;width:100%;max-width:1000px;margin:0 auto;flex-wrap:wrap}`
+  - Print image, portrait (CM4): `#print-img{display:block;width:209mm;height:auto;max-height:296mm;margin:0 auto;page-break-after:avoid}`
+  - Print image, landscape (CM4): `body.land #print-img{width:296mm;max-height:209mm}`
