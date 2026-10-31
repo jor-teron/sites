@@ -5,7 +5,9 @@
    Settings: Video (start with video, front/back) and Auto-answer (off by default, trusted devices list).
    Hub code, in order: #code= / ?hub= (QR), the Hub's {sharedLink:'hello'} (inside the Hub, after we post
    {sharedLink:'ready'}), parent.__hubRemote.code (phone Hub), localStorage 'jtsites-hub-ctrl-code' (desktop Hub),
-   'shared-link-join-code', our last code, else the code dialog. */
+   'shared-link-join-code', our last code, else the code dialog.
+   IC4: URL code, else the Hub's active private mesh (parent.HubMeshLink), else Public 0000; the Hub's own
+   Connect Code is only a fallback for older Hubs without HubMeshLink; standalone: last code, else 0000. */
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
@@ -35,36 +37,91 @@
   /* ---------- code ---------- */
   var ls = ICSave.ls;
   function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{4})/); return m ? m[1] : ''; }
-  function localCode() {
+  /* IC4: old code choice kept for reference (Hub's own Connect Code won; see readme Legacy code notes):
+  // function localCode() {
+  //   try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) return String(window.parent.__hubRemote.code); } catch (_) { /* * / }
+  //   var c = ls('jtsites-hub-ctrl-code'); if (/^\d{4}$/.test(c) && inHub) return c;
+  //   c = ls('shared-link-join-code'); if (/^\d{4}$/.test(c) && inHub) return c;
+  //   return '';
+  // }
+  // function go(c) {
+  //   if (started) { if (c === code) return; ICTalk.stop(); ICPeer.stop(); }
+  //   started = true; code = c; $('code-lbl').textContent = c === '0000' ? '0000 · Public' : c;
+  //   ICSave.setLastCode(c);
+  //   ICPeer.start(c).catch(function () { setStatus('PeerJS could not load (offline?)'); });
+  // }
+  // /* IC2: function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) { if (c) go(c); }); } * /
+  // function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub, or use Public to meet any device on the open Hub mesh (0000). Strangers there must be accepted before you hear them.', ['Cancel', 'Public', 'Join'], true).then(function (c) { if (c) go(c); }); }
+  // function boot() {
+  //   var c = urlCode();
+  //   if (c) return go(c);
+  //   if (inHub) {
+  //     var got = false;
+  //     addEventListener('message', function (e) {
+  //       var d = e.data; if (e.source !== window.parent || !d || d.sharedLink !== 'hello' || got) return;
+  //       if (/^\d{4}$/.test(String(d.code || ''))) { got = true; go(String(d.code)); }
+  //     });
+  //     try { window.parent.postMessage({ sharedLink: 'ready', app: 'intercom', types: ['x-none/'] }, '*'); } catch (_) { /* * / }
+  //     setTimeout(function () { if (!got && !started) { var l = localCode() || ICSave.lastCode(); if (l) go(l); else { setStatus('Not connected'); askCode(); } } }, 800);
+  //     return;
+  //   }
+  //   c = ICSave.lastCode() || ls('shared-link-join-code');
+  //   if (/^\d{4}$/.test(c)) go(c); else { setStatus('Not connected'); askCode(); }
+  // }
+  */
+  // IC4: default is Public 0000; private code only from the URL, an active Hub private mesh, or a manual pick.
+  function hml() { try { var h = window.parent !== window && window.parent.HubMeshLink; return h && typeof h.isPrivate === 'function' ? h : null; } catch (_) { return null; } }
+  function meshCode() { var h = hml(); if (!h) return ''; try { var c = h.isPrivate() ? String(h.privateCode() || '') : ''; return /^\d{4}$/.test(c) ? c : ''; } catch (_) { return ''; } }
+  function localCode() {   // IC2 sources, now only a fallback for an older Hub without HubMeshLink
     try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) return String(window.parent.__hubRemote.code); } catch (_) { /* */ }
     var c = ls('jtsites-hub-ctrl-code'); if (/^\d{4}$/.test(c) && inHub) return c;
     c = ls('shared-link-join-code'); if (/^\d{4}$/.test(c) && inHub) return c;
     return '';
   }
+  var manual = false, fixed = false;   // manual = user picked a code this session; fixed = code came from the URL
+  function desired() { return meshCode() || '0000'; }   // only used while inside a Hub with HubMeshLink
   function go(c) {
     if (started) { if (c === code) return; ICTalk.stop(); ICPeer.stop(); }
     started = true; code = c; $('code-lbl').textContent = c === '0000' ? '0000 · Public' : c;
-    ICSave.setLastCode(c);
+    ICSave.setLastCode(c); paintSwitch();
     ICPeer.start(c).catch(function () { setStatus('PeerJS could not load (offline?)'); });
   }
+  function pick(c) { if (c) { manual = true; go(c); } }
   /* IC2: function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) { if (c) go(c); }); } */
-  function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub, or use Public to meet any device on the open Hub mesh (0000). Strangers there must be accepted before you hear them.', ['Cancel', 'Public', 'Join'], true).then(function (c) { if (c) go(c); }); }
+  /* IC3: ...then(function (c) { if (c) go(c); }) */
+  function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub, or use Public to meet any device on the open Hub mesh (0000). Strangers there must be accepted before you hear them.', ['Cancel', 'Public', 'Join'], true).then(pick); }
+  function busy() { try { return !!ICTalk.talking() || ICTalk.talkers().length > 0; } catch (_) { return false; } }
+  var offer = '';
+  function paintSwitch() {
+    var el = $('ic-switch'); if (!el) return;
+    el.hidden = !offer || offer === code;
+    el.textContent = offer === '0000' ? 'Back to Public' : 'Switch to ' + offer;
+  }
+  function checkMesh() {   // IC4: follow the Hub joining / leaving a private mesh
+    if (!started || manual || fixed || !hml()) return;
+    var d = desired(); if (d === code) { offer = ''; paintSwitch(); return; }
+    if (!busy()) { offer = ''; go(d); toast(d === '0000' ? 'Hub left its private mesh — back to Public' : 'Hub joined private mesh ' + d); }
+    else { offer = d; paintSwitch(); }
+  }
   function boot() {
     var c = urlCode();
-    if (c) return go(c);
+    if (c) { fixed = true; return go(c); }
     if (inHub) {
-      var got = false;
+      if (hml()) return go(desired());
+      var got = false;   // older Hub without HubMeshLink: IC2 behaviour
       addEventListener('message', function (e) {
         var d = e.data; if (e.source !== window.parent || !d || d.sharedLink !== 'hello' || got) return;
-        if (/^\d{4}$/.test(String(d.code || ''))) { got = true; go(String(d.code)); }
+        if (/^\d{4}$/.test(String(d.code || '')) && !started) { got = true; go(String(d.code)); }
       });
       try { window.parent.postMessage({ sharedLink: 'ready', app: 'intercom', types: ['x-none/'] }, '*'); } catch (_) { /* */ }
-      setTimeout(function () { if (!got && !started) { var l = localCode() || ICSave.lastCode(); if (l) go(l); else { setStatus('Not connected'); askCode(); } } }, 800);
+      setTimeout(function () { if (!got && !started) go(localCode() || ICSave.lastCode() || '0000'); }, 800);
       return;
     }
-    c = ICSave.lastCode() || ls('shared-link-join-code');
-    if (/^\d{4}$/.test(c)) go(c); else { setStatus('Not connected'); askCode(); }
+    c = ICSave.lastCode();
+    go(/^\d{4}$/.test(c) ? c : '0000');
   }
+  setInterval(checkMesh, 5000);
+  if ($('ic-switch')) $('ic-switch').onclick = function () { var d = offer; offer = ''; if (d) go(d); };
   $('btn-code').onclick = askCode; $('btn-code2').onclick = askCode;
   function setStatus(t) { $('status').textContent = t; }
 
