@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Screen Share SS1</title>
+  <title>Screen Share SS2</title>
   <link rel="icon" href="screenshare_icon.png">
   <link rel="stylesheet" href="screenshare.css">
 </head>
@@ -13,7 +13,7 @@
   <div id="viewport"><div id="track">
     <section class="pane" id="pane-main"><div class="main">
       <div class="col">
-        <div class="bar"><div><b id="me-name"></b><div id="status" class="mut">Starting…</div></div>
+        <div class="bar"><div><b id="me-name"></b><div id="status" class="mut">Starting…</div><div id="code-lbl" class="mut small"></div></div>
           <button class="mini" id="btn-code">Code</button></div>
         <div id="mine" class="card" hidden>
           <video id="preview" autoplay playsinline muted></video>
@@ -50,8 +50,8 @@
       <h2>Look</h2>
       <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
       <h2>About</h2>
-      <div class="about"><img src="screenshare_icon.png" width="48" height="48" alt=""><div><b>Screen Share</b> <span id="ver">SS1</span>
-        <p>Share a screen, window or tab from a computer to devices on the same Hub Connect Code (up to 4 viewers). Phones and tablets can watch. Peer to peer over PeerJS; nothing is recorded or stored on a server.</p>
+      <div class="about"><img src="screenshare_icon.png" width="48" height="48" alt=""><div><b>Screen Share</b> <span id="ver">SS2</span>
+        <p>Share a screen, window or tab from a computer to devices on the same Hub Connect Code (up to 4 viewers). Starts on Public 0000, where you allow each new viewer. Phones and tablets can watch. Peer to peer over PeerJS; nothing is recorded or stored on a server.</p>
         <p>Lower quality or frame rate if viewers stutter. Tab audio works in Chrome and Edge when you pick a tab.</p></div></div>
     </div></section>
   </div></div>
@@ -71,6 +71,7 @@
 </div>
 
 <div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="4" placeholder="4-digit code"><div class="row" id="d-row"></div></div></div>
+<button class="mini" id="ss-switch" hidden></button>
 <div id="toast"></div>
 
 <script src="../../../shared/link/link_devices.js"></script>

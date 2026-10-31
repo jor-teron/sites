@@ -1,7 +1,9 @@
 /* Screen Share SS1 — UI: screens (Share, Settings), swipe 75 px, dialogs, sharer card, viewer.
    Hub code, in order (same as Video Chat VC1): #code= / ?hub= (QR), the Hub's {sharedLink:'hello'}
    (inside the Hub), parent.__hubRemote.code (phone Hub), localStorage 'jtsites-hub-ctrl-code'
-   (desktop Hub), 'shared-link-join-code', our last code, else the code dialog. */
+   (desktop Hub), 'shared-link-join-code', our last code, else the code dialog.
+   SS2: URL code, else the Hub's active private mesh (parent.HubMeshLink), else Public 0000; the Hub's own Connect
+   Code only in an older Hub without HubMeshLink. No dialog at start. On Public, untrusted viewers need Allow. */
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
@@ -17,6 +19,7 @@
       (buttons || ['OK']).forEach(function (b, i, a) {
         var el = document.createElement('button'); el.className = i === a.length - 1 ? 'btn sm' : 'mini'; el.textContent = b;
         el.onclick = function () {
+          if (ask && b === 'Public') { $('dialog').hidden = true; return res('0000'); }   // SS2
           if (ask && i === a.length - 1) { var c = (inp.value.match(/\d{4}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 4-digit code.'; return; } $('dialog').hidden = true; return res(c); }
           $('dialog').hidden = true; res(ask ? null : i);
         };
@@ -32,35 +35,92 @@
   /* ---------- code (identical flow to VC1) ---------- */
   function ls(k) { try { return localStorage.getItem(k) || ''; } catch (_) { return ''; } }
   function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{4})/); return m ? m[1] : ''; }
-  function localCode() {
+  // SS1 code choice, kept for reference:
+  // function localCode() {
+  //   try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) return String(window.parent.__hubRemote.code); } catch (_) { /* */ }
+  //   var c = ls('jtsites-hub-ctrl-code'); if (/^\d{4}$/.test(c) && inHub) return c;
+  //   c = ls('shared-link-join-code'); if (/^\d{4}$/.test(c) && inHub) return c;
+  //   return '';
+  // }
+  // function go(code) {
+  //   if (started) { if (code === SSPeer.code()) return; SSShare.stop(); SSShare.leave(true); SSPeer.stop(); }
+  //   started = true;
+  //   try { localStorage.setItem(LAST, code); } catch (_) { /* */ }
+  //   SSPeer.start(code).catch(function () { $('status').textContent = 'PeerJS could not load (offline?)'; });
+  // }
+  // function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) { if (c) go(c); }); }
+  // function boot() {
+  //   var c = urlCode();
+  //   if (c) return go(c);
+  //   if (inHub) {
+  //     var got = false;
+  //     addEventListener('message', function (e) {
+  //       var d = e.data; if (e.source !== window.parent || !d || d.sharedLink !== 'hello' || got) return;
+  //       if (/^\d{4}$/.test(String(d.code || ''))) { got = true; go(String(d.code)); }
+  //     });
+  //     try { window.parent.postMessage({ sharedLink: 'ready', app: 'screen-share', types: ['x-none/'] }, '*'); } catch (_) { /* */ }
+  //     setTimeout(function () { if (!got && !started) { var l = localCode() || ls(LAST); if (l) go(l); else askCode(); } }, 800);
+  //     return;
+  //   }
+  //   c = ls(LAST) || ls('shared-link-join-code');
+  //   if (/^\d{4}$/.test(c)) go(c); else { $('status').textContent = 'Not connected'; askCode(); }
+  // }
+  // SS2: default is Public 0000; private code only from the URL, an active Hub private mesh, or a manual pick.
+  function hml() { try { var h = window.parent !== window && window.parent.HubMeshLink; return h && typeof h.isPrivate === 'function' ? h : null; } catch (_) { return null; } }
+  function meshCode() { var h = hml(); if (!h) return ''; try { var c = h.isPrivate() ? String(h.privateCode() || '') : ''; return /^\d{4}$/.test(c) ? c : ''; } catch (_) { return ''; } }
+  function localCode() {   // SS1 sources, now only a fallback for an older Hub without HubMeshLink
     try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) return String(window.parent.__hubRemote.code); } catch (_) { /* */ }
     var c = ls('jtsites-hub-ctrl-code'); if (/^\d{4}$/.test(c) && inHub) return c;
     c = ls('shared-link-join-code'); if (/^\d{4}$/.test(c) && inHub) return c;
     return '';
   }
+  var manual = false, fixed = false;   // manual = user picked a code this session; fixed = code came from the URL
+  function desired() { return meshCode() || '0000'; }
+  function busyWhy() { return SSShare.sharing() ? 'Stop sharing first' : SSShare.watchingId() ? 'Stop watching first' : ''; }
   function go(code) {
-    if (started) { if (code === SSPeer.code()) return; SSShare.stop(); SSShare.leave(true); SSPeer.stop(); }
+    if (started) { if (code === SSPeer.code()) return; var b = busyWhy(); if (b) { toast(b); return false; } SSShare.stop(); SSShare.leave(true); SSPeer.stop(); }
     started = true;
     try { localStorage.setItem(LAST, code); } catch (_) { /* */ }
+    $('code-lbl').textContent = code === '0000' ? '0000 · Public' : 'Code ' + code; paintSwitch();
     SSPeer.start(code).catch(function () { $('status').textContent = 'PeerJS could not load (offline?)'; });
   }
-  function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) { if (c) go(c); }); }
+  function pick(c) { if (c && go(c) !== false) manual = true; }
+  function askCode() {
+    var b = busyWhy(); if (b && started) { toast(b); return; }
+    dialog('Enter the 4-digit Hub Connect Code shown on the Hub, or use Public to meet any device on the open Hub mesh (0000). On Public you allow each new viewer of your screen.', ['Cancel', 'Public', 'Join'], true).then(function (c) { if (!c) return; var w = busyWhy(); if (w && started) { toast(w); return; } pick(c); });
+  }
+  var offer = '';
+  function paintSwitch() {
+    var el = $('ss-switch'); if (!el) return;
+    el.hidden = !offer || offer === SSPeer.code();
+    el.textContent = offer === '0000' ? 'Back to Public' : 'Switch to ' + offer;
+  }
+  function checkMesh() {   // SS2: follow the Hub joining / leaving a private mesh, only when idle
+    if (!started || manual || fixed || !hml()) return;
+    var d = desired(); if (d === SSPeer.code()) { offer = ''; paintSwitch(); return; }
+    if (!busyWhy()) { offer = ''; go(d); toast(d === '0000' ? 'Hub left its private mesh — back to Public' : 'Hub joined private mesh ' + d); }
+    else { offer = d; paintSwitch(); }
+  }
   function boot() {
     var c = urlCode();
-    if (c) return go(c);
+    if (c) { fixed = true; return go(c); }
     if (inHub) {
-      var got = false;
+      if (hml()) return go(desired());
+      var got = false;   // older Hub without HubMeshLink: SS1 order, ending at 0000
       addEventListener('message', function (e) {
         var d = e.data; if (e.source !== window.parent || !d || d.sharedLink !== 'hello' || got) return;
-        if (/^\d{4}$/.test(String(d.code || ''))) { got = true; go(String(d.code)); }
+        if (/^\d{4}$/.test(String(d.code || '')) && !started) { got = true; go(String(d.code)); }
       });
       try { window.parent.postMessage({ sharedLink: 'ready', app: 'screen-share', types: ['x-none/'] }, '*'); } catch (_) { /* */ }
-      setTimeout(function () { if (!got && !started) { var l = localCode() || ls(LAST); if (l) go(l); else askCode(); } }, 800);
+      setTimeout(function () { if (!got && !started) { var l = localCode() || ls(LAST); go(/^\d{4}$/.test(l) ? l : '0000'); } }, 800);
       return;
     }
-    c = ls(LAST) || ls('shared-link-join-code');
-    if (/^\d{4}$/.test(c)) go(c); else { $('status').textContent = 'Not connected'; askCode(); }
+    c = ls(LAST);
+    go(/^\d{4}$/.test(c) ? c : '0000');
   }
+  setInterval(checkMesh, 5000);
+  window.__ssTest = { checkMesh: checkMesh, pick: pick };   // test hook (quick checks)
+  if ($('ss-switch')) $('ss-switch').onclick = function () { var b = busyWhy(); if (b) { toast(b); return; } var d = offer; offer = ''; if (d) go(d); };
   $('btn-code').onclick = askCode;
 
   /* ---------- live shares list ---------- */
@@ -113,7 +173,7 @@
   if (SSShare.isPhone()) { $('b-share').classList.add('dim'); $('l-audio').hidden = true; }
   $('b-share').onclick = function () {
     if (!SSShare.canShare()) { dialog(SSShare.isPhone() ? phoneMsg : 'This browser can’t share its screen. Use a recent Chrome, Edge, Firefox or Safari on a computer.', ['OK']); return; }
-    if (!started) { toast('Join a Hub code first'); askCode(); return; }
+    if (!started) { toast('Join a Hub code first'); askCode(); return; }   // SS2: not hit normally (boot always picks a code)
     SSShare.start().catch(function (e) { if (e.quiet) toast(e.message); else dialog(e.message, ['OK']); });
   };
   $('chk-audio').checked = SSStore.get('audio') === 'on';
@@ -126,6 +186,18 @@
   SSShare.on('viewers', paintViewers);
   SSShare.on('viewerJoined', function (n) { toast(n + ' is watching'); });
   SSShare.on('viewerLeft', function (n, why) { if (why !== 'again') toast(n + ' stopped watching'); });
+  /* SS2: Allow / Deny queue for viewers on Public */
+  var askQ = [], askOpen = null;
+  function nextAsk() {
+    if (askOpen || !askQ.length) return;
+    askOpen = askQ.shift();
+    dialog(askOpen.name + ' wants to watch your screen', ['Deny', 'Allow']).then(function (i) { var a = askOpen; if (!a) return; askOpen = null; SSShare.decide(a.id, i === 1); nextAsk(); });
+  }
+  SSShare.on('ask', function (a) { askQ.push(a); hubNotify({ icon: '🖥️', title: 'Screen Share', text: a.name + ' wants to watch your screen' }); nextAsk(); });
+  SSShare.on('decided', function (id, why) {
+    askQ = askQ.filter(function (a) { return a.id !== id; });
+    if (askOpen && askOpen.id === id) { askOpen = null; $('dialog').hidden = true; if (why === 'timeout') toast('No answer in 30 s — viewer declined'); nextAsk(); }
+  });
   SSShare.on('full', function (n) { toast((n || 'Someone') + ' tried to watch — ' + SSShare.MAXV + ' viewers max'); });
 
   /* ---------- viewer ---------- */
