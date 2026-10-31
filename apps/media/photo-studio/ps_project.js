@@ -143,7 +143,9 @@
       format: 'hps', version: VERSION, app: C.app, release: C.release, name: baseName(), created: new Date().toISOString(),
       canvas: { w: Ph.w, h: Ph.h, origW: Ph.origW, origH: Ph.origH }, output: { w: O.w, h: O.h },
       edits: e,
-      background: { name: bg.name, visible: bg.visible, opacity: bg.opacity, src: bgPath, type: bgType, fileName: bgName },
+      // legacy (HPS2): background: { name: bg.name, visible: bg.visible, opacity: bg.opacity, src: bgPath, type: bgType, fileName: bgName },
+      // HPS3: carry the background mask (key) so PE.masks.toHps can write masks/background.png
+      background: Object.assign({ name: bg.name, visible: bg.visible, opacity: bg.opacity, src: bgPath, type: bgType, fileName: bgName }, bg.mask ? { mask: bg.mask } : {}),
       images: imgs, layers: layers
     };
   };

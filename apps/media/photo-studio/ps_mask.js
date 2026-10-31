@@ -95,7 +95,9 @@
     if (!isOn(maskOf(bg)) || !x.canvas) return baseBg(x, P, cr, m, w, h, a, b, alpha);
     const tx = tmp(x.canvas.width, x.canvas.height);
     L.engineDraw(tx, P, cr, m, w, h, a, b);                     // draws with its own (absolute) transform
-    tx.setTransform(m[0] * a, m[2] * a, m[1] * b, m[3] * b, w / 2, h / 2);
+    // legacy (HPS3 first cut): tx.setTransform(m[0] * a, m[2] * a, m[1] * b, m[3] * b, w / 2, h / 2);   (b is undefined from Save -> NaN, mask skipped)
+    const bb = b == null ? a : b;
+    tx.setTransform(m[0] * a, m[2] * a, m[1] * bb, m[3] * bb, w / 2, h / 2);
     tx.translate(-cr.x - cr.w / 2, -cr.y - cr.h / 2);
     tx.globalCompositeOperation = 'destination-in'; tx.imageSmoothingEnabled = true;
     tx.drawImage(R.canvas(bg.mask.key), 0, 0, P.w, P.h);
