@@ -925,8 +925,9 @@ kept.
 - Older Hubs send nothing, so the line stays hidden until they update.
 
 -- H78: Redirect pages, no flash (31 Oct 2026) --
-- My 5 redirect pages (root index.html, apps/system/, apps/system/about/,
-  apps/system/devbench/, hub/controller/) now copy Hub Apps Bot's IX1
+- My 9 redirect pages (root index.html, apps/system/, apps/system/about/
+  index + about / contact / feedback.html, apps/system/devbench/,
+  hub/controller/ index + dpad.html) now copy Hub Apps Bot's IX1
   pattern (apps/index_redirects_readme.md): head script location.replace
   keeps ?query and #hash (About always goes to #about), meta refresh and
   the "Open …" link only in <noscript>, so no body text flashes.
