@@ -34,7 +34,12 @@
       <div class="row"><span>Year</span>
         <div class="yr"><button type="button" class="nav" id="y-prev" aria-label="Previous year">&#8249;</button><input type="number" id="year" min="1900" max="2200"><button type="button" class="nav" id="y-next" aria-label="Next year">&#8250;</button></div></div>
       <div class="row col"><span>Holiday colour</span>
-        <div class="swatches" id="colours"></div></div>
+        <div class="swatches" id="colours"></div>
+        <!--CM6--><label class="cpick" title="Custom colour"><input type="color" id="custom" aria-label="Custom holiday colour"> Custom</label><!--/CM6--></div>
+      <!--CM6-->
+      <div class="row"><span>Font colour</span>
+        <div class="cfont"><input type="color" id="font" aria-label="Font colour"><button type="button" class="btn" id="font-reset">Black</button></div></div>
+      <!--/CM6-->
       <label class="row"><span>Colour Sundays</span><input type="checkbox" class="sw" id="sundays"></label>
       <div class="row col"><span>Saturdays as holiday</span>
         <div class="seg" data-key="sat"><button type="button" data-v="none">None</button><button type="button" data-v="24">2nd &amp; 4th</button><button type="button" data-v="all">All</button></div></div>

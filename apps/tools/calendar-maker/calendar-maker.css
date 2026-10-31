@@ -54,6 +54,12 @@ body.land #sheet{aspect-ratio:297/210;max-width:calc((100vh - 90px) * 1.4142)}
 .hl .empty{color:var(--mut);font-size:13px}
 .note{font-size:12px;color:var(--mut)}
 #print-img{display:none}
+/* CM6: custom colour + font colour pickers */
+.cpick{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-size:13px;cursor:pointer;border-radius:8px;padding:2px 6px 2px 2px;border:2px solid transparent}
+.cpick.on{border-color:var(--fg)}
+.cpick input,.cfont input{width:34px;height:30px;padding:0;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer}
+.cfont{display:flex;align-items:center;gap:6px}
+.cfont .btn{height:30px;padding:0 10px;font-size:12px}
 @media (max-width:760px){
   .page{flex-direction:column}
   #opts{width:100%}

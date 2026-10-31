@@ -1,4 +1,4 @@
-/* Calendar Maker renderer (CM1): draws the whole A4 portrait sheet (all 12 months, 3 x 4) on a canvas.
+/* Calendar Maker renderer (CM1; CM6: o.colour may be a #rrggbb custom colour, o.font = text colour, default black): draws the whole A4 portrait sheet (all 12 months, 3 x 4) on a canvas.
    The same drawing is used for the on-screen preview, Print (as an image) and the PDF (CM2), so all three match.
    window.CMRender.draw(canvas, o) with o = { year, week:'sun'|'mon', colour, sundays, sat:'none'|'24'|'all',
      hols:[{m,d,name}], fold (CM5, default true), bg:{type:'none'|'soft'|'pic', colour, img, faint} (CM2), strip (CM2) }
@@ -13,8 +13,12 @@ window.CMRender = (function () {
   const layoutOf = (k) => LAYOUTS[k] || LAYOUTS.p3;
   const MN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const MS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  const COLOURS = { green: ['#15803d', '#fff'], red: ['#b91c1c', '#fff'], yellow: ['#facc15', '#111'], blue: ['#1d4ed8', '#fff'], orange: ['#ea580c', '#fff'] };
+  /* const WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];  (CM1-CM5) */
+  const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; /* CM6 */
+  /* const COLOURS = { green: ['#15803d', '#fff'], red: ['#b91c1c', '#fff'], yellow: ['#facc15', '#111'], blue: ['#1d4ed8', '#fff'], orange: ['#ea580c', '#fff'] };  (CM1-CM5: dark tiles, white text) */
+  /* CM6: light print colours, black text readable on all; [1] kept for callers but text uses the font colour */
+  const COLOURS = { green: ['#92d36e', '#000'], red: ['#f4a6a6', '#000'], yellow: ['#fde68a', '#000'], blue: ['#a5c8f5', '#000'], orange: ['#fdba74', '#000'] };
+  const isHex = (v) => /^#[0-9a-f]{6}$/i.test(v || '');
   const FONT = 'system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
   const dim = (y, m) => new Date(y, m + 1, 0).getDate();
   const dow = (y, m, d) => new Date(y, m, d).getDay();
@@ -35,7 +39,10 @@ window.CMRender = (function () {
     cv.width = W; cv.height = H;
     const c = cv.getContext('2d');
     const y = o.year, f = o.week === 'mon' ? 1 : 0;
-    const col = COLOURS[o.colour] || COLOURS.green;
+    /* const col = COLOURS[o.colour] || COLOURS.green;  (CM1-CM5) */
+    /* CM6: o.colour = preset key or a custom #rrggbb; o.font = text colour (default black) */
+    const fc = isHex(o.font) ? o.font : '#000000';
+    const col = [isHex(o.colour) ? o.colour : (COLOURS[o.colour] || COLOURS.green)[0], fc];
     const hol = {}; (o.hols || []).forEach((h) => { hol[h.m * 100 + h.d] = true; });
     const isHol = (m, d) => {
       const wd = dow(y, m, d);
@@ -56,13 +63,17 @@ window.CMRender = (function () {
     /* const M = Math.round(7 * PX_MM);  (CM1-CM4: ~7 mm page margin) */
     const M = Math.round(4 * PX_MM); /* CM5: ~4 mm, printer safe minimum */
     /* title */
-    c.fillStyle = '#111'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillStyle = fc; c.textAlign = 'center'; c.textBaseline = 'middle'; /* CM6: was '#111' */
     c.font = '800 150px ' + FONT;
     /* c.fillText('YEAR ' + y, W / 2, M + 85);  (CM1-CM3 title) */
     /* c.fillText(String(y), W / 2, M + 85); let top = M + 200;  (CM4: 150px title, 200px band) */
-    c.font = '800 120px ' + FONT; /* CM5: slimmer title band */
-    c.fillText(String(y), W / 2, M + 62); /* CM4: title is just YYYY */
-    let top = M + 130;
+    /* c.font = '800 120px ' + FONT; c.fillText(String(y), W / 2, M + 62); let top = M + 130;  (CM5: 130 px band) */
+    /* CM6: band fits the digits tightly (cap height ~0.72 em), ~1 mm under it */
+    const TFS = 110, capH = Math.round(TFS * 0.72);
+    c.font = '800 ' + TFS + 'px ' + FONT; c.textBaseline = 'alphabetic';
+    c.fillText(String(y), W / 2, M + capH);
+    c.textBaseline = 'middle';
+    let top = M + capH + Math.round(1.2 * PX_MM);
     /* holiday list strip (CM2) */
     let stripH = 0, rows = [];
     if (o.strip) {
@@ -82,16 +93,22 @@ window.CMRender = (function () {
       const x0 = M + (m % cols) * (mw + gx), y0 = top + Math.floor(m / cols) * (mh + gy);
       if (card) { c.fillStyle = 'rgba(255,255,255,.82)'; rr(c, x0 - 8, y0 - 6, mw + 16, mh + 12, 18); c.fill(); }
       /* CM4: each month is its own bordered grid table (month name above, weekday header row, 6 week rows) */
-      const nameH = Math.min(70, mh * 0.16), nfs = Math.round(Math.min(52, nameH * 0.75));
+      /* const nameH = Math.min(70, mh * 0.16), nfs = Math.round(Math.min(52, nameH * 0.75));
       c.fillStyle = '#111'; c.textAlign = 'left'; c.font = '700 ' + nfs + 'px ' + FONT;
-      c.fillText(MN[m], x0 + 6, y0 + nameH / 2);
+      c.fillText(MN[m], x0 + 6, y0 + nameH / 2);  (CM4-CM5: month name band above the grid) */
+      /* CM6: month name is the grid's first row, merged & centred across 7 columns, no fill */
+      const nameH = Math.min(62, mh * 0.13), nfs = Math.round(Math.min(46, nameH * 0.72));
+      c.fillStyle = fc; c.textAlign = 'center'; c.font = '700 ' + nfs + 'px ' + FONT;
+      c.fillText(MN[m], x0 + mw / 2, y0 + nameH / 2);
       const lead = (dow(y, m, 1) - f + 7) % 7, n = dim(y, m);
       const wkN = fold ? 5 : 6; /* CM5: 5 rows when folding, else 6 */
       /* const cw = mw / 7, gt = y0 + nameH, wh = Math.min(44, (mh - nameH) * 0.12), ch = (mh - nameH - wh) / 6;  (CM4) */
       const cw = mw / 7, gt = y0 + nameH, wh = Math.min(44, (mh - nameH) * 0.12), ch = (mh - nameH - wh) / wkN;
-      c.font = '700 ' + Math.round(Math.min(30, wh * 0.7)) + 'px ' + FONT; c.textAlign = 'center';
-      c.fillStyle = '#f1f1f1'; c.fillRect(x0, gt, mw, wh);
-      for (let i = 0; i < 7; i++) { c.fillStyle = '#444'; c.fillText(WD[(i + f) % 7], x0 + cw * i + cw / 2, gt + wh / 2); }
+      c.font = '700 ' + Math.round(Math.min(30, wh * 0.7, cw * 0.3)) + 'px ' + FONT; c.textAlign = 'center';
+      /* c.fillStyle = '#f1f1f1'; c.fillRect(x0, gt, mw, wh);  (CM4-CM5 grey) */
+      c.fillStyle = col[0]; c.fillRect(x0, gt, mw, wh); /* CM6: weekday row = holiday colour */
+      /* for (...) { c.fillStyle = '#444'; ... }  (CM4-CM5) */
+      for (let i = 0; i < 7; i++) { c.fillStyle = fc; c.fillText(WD[(i + f) % 7], x0 + cw * i + cw / 2, gt + wh / 2); }
       /* const lead = ..., n = ...;  (CM4: moved up in CM5) */
       /* const fs = Math.min(ch * 0.62, cw * 0.55);  (CM4) */
       const fs = Math.min(ch * 0.66, cw * 0.58); /* CM5: dates fill the bigger cells */
@@ -103,7 +120,7 @@ window.CMRender = (function () {
           if (h) { c.fillStyle = col[0]; c.beginPath(); c.moveTo(fx + cw - 1, fy + 1); c.lineTo(fx + cw - 1, fy + ch - 1); c.lineTo(fx + 1, fy + ch - 1); c.closePath(); c.fill(); }
           c.strokeStyle = '#888'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(fx + cw, fy); c.lineTo(fx, fy + ch); c.stroke();
           c.font = '700 ' + Math.round(fs * 0.6) + 'px ' + FONT;
-          c.fillStyle = h ? col[1] : '#111';
+          c.fillStyle = fc; /* CM6: was h ? col[1] : '#111' */
           c.fillText(String(d), fx + cw * 0.7, fy + ch * 0.7);
           c.font = '700 ' + Math.round(fs) + 'px ' + FONT;
           continue;
@@ -111,28 +128,30 @@ window.CMRender = (function () {
         const cx = x0 + (p % 7) * cw, cy = gt + wh + Math.floor(p / 7) * ch;
         const h = isHol(m, d);
         if (h) { c.fillStyle = col[0]; c.beginPath(); c.rect(cx + 1, cy + 1, cw - 2, ch - 2); c.fill(); } /* tile fills its cell */
-        c.fillStyle = h ? col[1] : '#111';
+        c.fillStyle = fc; /* CM6: was h ? col[1] : '#111' */
         c.fillText(String(d), cx + cw / 2, cy + ch / 2 + 2);
       }
       /* grid lines: inner lines thin, outer border a bit thicker (every cell, incl. empty ones) */
       c.strokeStyle = '#888'; c.lineWidth = 1.5; c.beginPath();
+      c.moveTo(x0, gt); c.lineTo(x0 + mw, gt); /* CM6: line under the month-name row */
       for (let i = 1; i < 7; i++) { c.moveTo(x0 + cw * i, gt); c.lineTo(x0 + cw * i, gt + wh + wkN * ch); }
       c.moveTo(x0, gt + wh); c.lineTo(x0 + mw, gt + wh);
       for (let r = 1; r < wkN; r++) { c.moveTo(x0, gt + wh + r * ch); c.lineTo(x0 + mw, gt + wh + r * ch); }
       c.stroke();
-      c.strokeStyle = '#333'; c.lineWidth = 3; c.strokeRect(x0, gt, mw, wh + wkN * ch);
+      /* c.strokeRect(x0, gt, mw, wh + wkN * ch);  (CM4-CM5) */
+      c.strokeStyle = '#333'; c.lineWidth = 3; c.strokeRect(x0, y0, mw, nameH + wh + wkN * ch); /* CM6: border includes the month row */
       /* CM1-CM3 (no grid): rounded tiles rr(c, cx + 3, cy + 3, cw - 6, ch - 6, 10), month name at y0 + 34, hh = 78 */
     }
     if (stripH) {
       const sy = H - M - stripH + 20;
       c.strokeStyle = '#999'; c.lineWidth = 2; c.beginPath(); c.moveTo(M, sy); c.lineTo(W - M, sy); c.stroke();
-      c.fillStyle = '#111'; c.textAlign = 'left'; c.font = '700 30px ' + FONT;
+      c.fillStyle = fc; c.textAlign = 'left'; c.font = '700 30px ' + FONT; /* CM6: was '#111' */
       c.fillText('Holidays', M, sy + 30);
       const per = Math.ceil(rows.length / 3), sw = (W - 2 * M) / 3;
       rows.forEach((r, i) => {
         const x = M + Math.floor(i / per) * sw, yy = sy + 72 + (i % per) * 40;
         c.fillStyle = col[0]; rr(c, x, yy - 14, 28, 28, 6); c.fill();
-        c.fillStyle = '#111'; c.font = '700 27px ' + FONT;
+        c.fillStyle = fc; c.font = '700 27px ' + FONT; /* CM6: was '#111' */
         const dt = String(r.d).padStart(2, '0') + ' ' + MS[r.m];
         c.fillText(dt, x + 40, yy + 2);
         c.font = '400 27px ' + FONT;
