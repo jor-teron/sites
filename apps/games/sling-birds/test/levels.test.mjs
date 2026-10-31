@@ -12,9 +12,9 @@ globalThis.window = { Matter: require(matterPath) };      // core/config.js read
 const M = globalThis.window.Matter;
 
 const core = path.resolve(here, '../core');
-const { generateLevel, validateLevel, MAX_LEVEL } = await import(core + '/levels.js?v=sb1a');
-const { makeGround, makeLeftWall, makeBlockBody, makePigBody, makePlatformBody } = await import(core + '/bodies.js?v=sb1a');
-const { mapSeed, rngFor } = await import(core + '/seed.js?v=sb1a');
+const { generateLevel, validateLevel, MAX_LEVEL } = await import(core + '/levels.js');
+const { makeGround, makeLeftWall, makeBlockBody, makePigBody, makePlatformBody } = await import(core + '/bodies.js');
+const { mapSeed, rngFor } = await import(core + '/seed.js');
 
 let fails = 0;
 const ok = (cond, msg) => { if (!cond) { fails++; console.log('FAIL', msg); } };

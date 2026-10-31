@@ -76,7 +76,7 @@ Status line messages:
 - `camera.idealWidth` / `idealHeight`, `camera.phoneFacing`, `camera.text`
 - `send.publicBaseUrl`, `send.idleMs`, `send.chunkBytes` (keep under 16300), `send.reconnectDelaysMs`, `send.reconnectGiveUpMs`
 - `text.status` (all messages)
-- Bump the `?v=` numbers in `ocr.html` / `ocr_send.html` after changing a file.
+- No `?v=` tags on file links (NV2): browsers fetch the latest.
 
 ## 9. Browser checklist
 1. Open over http(s): drop a photo of text → text appears.

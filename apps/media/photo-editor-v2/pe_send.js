@@ -14,7 +14,9 @@
   // HPS1 hooks (backward compatible): Hub Photo Studio loads this file too. It sets PE.config.appId
   // and PE.ui.notify (its in-app message box); without them Photo Editor v2 behaves exactly as before.
   const appId = PE.config.appId || 'photo-editor-v2';
-  const alert = (m) => (PE.ui && PE.ui.notify ? PE.ui.notify(m) : window.alert(m));
+  /* UD1: Hub dialog before native alert
+  const alert = (m) => (PE.ui && PE.ui.notify ? PE.ui.notify(m) : window.alert(m)); */
+  const alert = (m) => (PE.ui && PE.ui.notify ? PE.ui.notify(m) : window.UiDialog ? UiDialog.info(m, []) : window.alert(m));
   let hubHello = false, hubDevices = [];
 
   if (inHub) {

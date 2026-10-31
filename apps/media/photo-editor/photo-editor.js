@@ -344,7 +344,8 @@ const drawCropRectangle = () => {
 
     const applyCrop = () => {
         if (!originalImage || !originalImage.src || !isCropping || !(cropRect.width > 0 && cropRect.height > 0)) {
-            alert('No valid crop selection made.');
+            /* UD1: alert('No valid crop selection made.'); */
+            peAlert('No valid crop selection made.');
             return;
         }
 
@@ -410,7 +411,8 @@ const drawCropRectangle = () => {
 
     const downloadImage = () => {
         if (!originalImage || !originalImage.src) {
-            alert('No image to download!');
+            /* UD1: alert('No image to download!'); */
+            peAlert('No image to download!');
             return;
         }
         // Use photoCanvas.toDataURL() as it holds the final rendered image
@@ -425,7 +427,8 @@ const drawCropRectangle = () => {
 
     const printImage = () => {
         if (!originalImage || !originalImage.src) {
-            alert('No image to print!');
+            /* UD1: alert('No image to print!'); */
+            peAlert('No image to print!');
             return;
         }
         const printWindow = window.open('', '_blank');
@@ -496,7 +499,8 @@ const drawCropRectangle = () => {
         if (file && file.type.startsWith('image/')) {
             loadImage(file);
         } else {
-            alert('Please drop an image file!');
+            /* UD1: alert('Please drop an image file!'); */
+            peAlert('Please drop an image file!');
         }
     });
 
@@ -524,3 +528,6 @@ const drawCropRectangle = () => {
     // Then call redrawCanvas once to set up the initial display (shows overlay)
     redrawCanvas();
 });
+
+/* UD1: Hub dialog (shared/dialog) for messages; native alert if it is missing */
+function peAlert(m) { if (window.UiDialog) UiDialog.info(m, []); else alert(m); }
