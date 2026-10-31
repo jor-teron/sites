@@ -1,9 +1,9 @@
 // Slingshot: launch on release, band drawing and trajectory preview.
-import { Body, SLING_X, SLING_Y, LAUNCH_POWER, GROUND_Y, WORLD_WIDTH, STEP_MS, BIRD_FRICTION_AIR } from './config.js?v=sb1a';
-import { S } from './entities.js?v=sb1a';
-import { engine } from './physics.js?v=sb1a';
-import { ctx, w2s, SCALE } from './render.js?v=sb1a';
-import { updateHud } from './ui.js?v=sb1a';
+import { Body, SLING_X, SLING_Y, LAUNCH_POWER, GROUND_Y, WORLD_WIDTH, STEP_MS, BIRD_FRICTION_AIR } from './config.js';
+import { S } from './entities.js';
+import { engine } from './physics.js';
+import { ctx, w2s, SCALE } from './render.js';
+import { updateHud } from './ui.js';
 
 // Launch velocity (px per 60Hz step) for the current (already clamped) drag position, or null if too small.
 function launchVelocity() {
