@@ -21,6 +21,12 @@
 <div id="app">
   <header id="bar">
     <b class="name">Calendar Maker</b>
+    <!--CM3-->
+    <nav id="tabs" role="tablist">
+      <button type="button" class="tab on" data-page="design" role="tab">Design</button>
+      <button type="button" class="tab" data-page="hol" role="tab">Holidays</button>
+    </nav>
+    <!--/CM3-->
   </header>
   <main id="page-design" class="page">
     <div id="preview-wrap"><canvas id="sheet" aria-label="A4 calendar preview"></canvas></div>
@@ -52,11 +58,32 @@
       <p class="about"><img src="calendar-maker_icon.png" alt="" width="28" height="28"> <b>Calendar Maker</b> <span id="ver"></span><br>One A4 sheet with all 12 months. Holidays from the Calendar app. Works offline.</p>
     </aside>
   </main>
+  <!--CM3-->
+  <main id="page-hol" class="page" hidden>
+    <div class="hol-wrap">
+      <section>
+        <h2>Every year <small>same date every year</small></h2>
+        <div class="add"><input type="date" id="fx-date" aria-label="Date"><input type="text" id="fx-name" placeholder="Holiday name" maxlength="60"><button type="button" class="btn" id="fx-add">Add</button></div>
+        <ul class="hl" id="fx-list"></ul>
+        <button type="button" class="mini" id="fx-reset">Restore defaults</button>
+      </section>
+      <section>
+        <h2>This year only <small id="dt-year"></small></h2>
+        <div class="add"><input type="date" id="dt-date" aria-label="Date"><input type="text" id="dt-name" placeholder="e.g. Diwali" maxlength="60"><button type="button" class="btn" id="dt-add">Add</button></div>
+        <ul class="hl" id="dt-list"></ul>
+        <p class="note">For festivals whose date changes each year. Only the year chosen on the Design page is shown.</p>
+      </section>
+    </div>
+  </main>
+  <!--/CM3-->
 </div>
 <img id="print-img" alt="">
 <script src="../../../shared/dialog/dialog.js"></script>
 <script src="../calendar/calendar_holidays.js"></script>
 <script src="calendar-maker_render.js"></script>
+<!--CM3-->
+<script src="calendar-maker_holidays.js"></script>
+<!--/CM3-->
 <script src="calendar-maker.js"></script>
 <!--CM2-->
 <script src="vendor/jspdf.umd.min.js"></script>

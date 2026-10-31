@@ -1,0 +1,74 @@
+/* Calendar Maker CM3: Holidays page. Saved in 'calendar-maker-holidays':
+   { fixed: null (= Calendar's built-in list) | [{m (0-11), d, name}], dated: [{date:'YYYY-MM-DD', name}] }
+   Custom holidays stay in Calendar Maker only; the Calendar app is not changed. */
+window.CMHol = (function () {
+  'use strict';
+  const HKEY = 'calendar-maker-holidays';
+  const $ = (id) => document.getElementById(id);
+  const MS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const p2 = (n) => String(n).padStart(2, '0');
+  let H = {};
+  try { H = JSON.parse(localStorage.getItem(HKEY) || '{}') || {}; } catch (_) { H = {}; }
+  if (!Array.isArray(H.dated)) H.dated = [];
+  if (!Array.isArray(H.fixed)) H.fixed = null;
+  const defaults = () => (window.CalHolidays ? window.CalHolidays.list(2000).map((h) => ({ m: h.m, d: h.d, name: h.name })) : []);
+  const fixed = () => H.fixed || defaults();
+  const save = () => { try { localStorage.setItem(HKEY, JSON.stringify(H)); } catch (_) { /* */ } if (window.CM) window.CM.render(); };
+  const own = () => { if (!H.fixed) H.fixed = defaults(); return H.fixed; };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  let year = new Date().getFullYear();
+
+  function forYear(y) {
+    const out = fixed().filter((h) => h.d <= new Date(y, h.m + 1, 0).getDate()).map((h) => ({ m: h.m, d: h.d, name: h.name }));
+    H.dated.forEach((h) => { if (+h.date.slice(0, 4) === y) out.push({ m: +h.date.slice(5, 7) - 1, d: +h.date.slice(8, 10), name: h.name }); });
+    return out;
+  }
+
+  function draw() {
+    const fx = fixed().map((h, i) => ({ h, i })).sort((a, b) => a.h.m - b.h.m || a.h.d - b.h.d);
+    $('fx-list').innerHTML = fx.length ? fx.map(({ h, i }) => '<li data-i="' + i + '"><input type="date" data-act="date" value="' + year + '-' + p2(h.m + 1) + '-' + p2(h.d) + '" aria-label="Date"><span title="' + esc(h.name) + '"><b>' + h.d + ' ' + MS[h.m] + '</b> ' + esc(h.name) + '</span><button type="button" data-act="ren">Rename</button><button type="button" data-act="del">Delete</button></li>').join('') : '<li class="empty">No every-year holidays.</li>';
+    const dt = H.dated.map((h, i) => ({ h, i })).filter(({ h }) => +h.date.slice(0, 4) === year).sort((a, b) => (a.h.date < b.h.date ? -1 : 1));
+    $('dt-list').innerHTML = dt.length ? dt.map(({ h, i }) => '<li data-i="' + i + '"><input type="date" data-act="date" value="' + h.date + '" min="' + year + '-01-01" max="' + year + '-12-31" aria-label="Date"><span title="' + esc(h.name) + '">' + esc(h.name) + '</span><button type="button" data-act="ren">Rename</button><button type="button" data-act="del">Delete</button></li>').join('') : '<li class="empty">None for ' + year + ' yet.</li>';
+    $('dt-year').textContent = '(' + year + ')';
+    ['fx-date', 'dt-date'].forEach((id) => { $(id).min = year + '-01-01'; $(id).max = year + '-12-31'; });
+  }
+  function show(y) { year = y; draw(); }
+
+  async function act(list, e) {
+    const li = e.target.closest('li[data-i]'); if (!li) return;
+    const i = +li.dataset.i, a = e.target.dataset.act, isFx = list === 'fx';
+    const arr = isFx ? own() : H.dated, item = arr[i];
+    if (e.type === 'change' && a === 'date') {
+      const v = e.target.value; if (!v) return;
+      if (isFx) { item.m = +v.slice(5, 7) - 1; item.d = +v.slice(8, 10); } else item.date = v;
+      save(); draw(); return;
+    }
+    if (e.type !== 'click') return;
+    if (a === 'ren') {
+      const n = await window.UiDialog.ask('Rename holiday', item.name, 'Rename');
+      if (n && n.trim()) { item.name = n.trim().slice(0, 60); save(); draw(); }
+    } else if (a === 'del') {
+      if (await window.UiDialog.confirm('Delete holiday?', item.name, 'Delete', true)) { arr.splice(i, 1); save(); draw(); }
+    }
+  }
+  function add(isFx) {
+    const di = $(isFx ? 'fx-date' : 'dt-date'), ni = $(isFx ? 'fx-name' : 'dt-name');
+    const v = di.value, n = ni.value.trim().slice(0, 60);
+    if (!v || !n) { window.UiDialog.info('Add holiday', [['Needed', 'Pick a date and type a name.']]); return; }
+    if (isFx) own().push({ m: +v.slice(5, 7) - 1, d: +v.slice(8, 10), name: n });
+    else H.dated.push({ date: year + v.slice(4), name: n });
+    ni.value = ''; save(); draw();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    ['fx', 'dt'].forEach((k) => { const l = $(k + '-list'); l.addEventListener('click', (e) => act(k, e)); l.addEventListener('change', (e) => act(k, e)); });
+    $('fx-add').onclick = () => add(true);
+    $('dt-add').onclick = () => add(false);
+    $('fx-name').onkeydown = (e) => { if (e.key === 'Enter') add(true); };
+    $('dt-name').onkeydown = (e) => { if (e.key === 'Enter') add(false); };
+    $('fx-reset').onclick = async () => {
+      if (await window.UiDialog.confirm('Restore defaults?', 'Every-year holidays go back to the Calendar list. This-year-only holidays are kept.', 'Restore', true)) { H.fixed = null; save(); draw(); }
+    };
+  });
+  return { forYear, show };
+})();
