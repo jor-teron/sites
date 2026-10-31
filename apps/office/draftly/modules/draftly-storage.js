@@ -127,9 +127,33 @@ Draftly.storage.save = function save() {
       var tx = db.transaction(cfg.storeName, 'readwrite');
       var store = tx.objectStore(cfg.storeName);
       var old = Draftly.storage.loadedName;
+      var rec = { name: name, html: html, hf: Draftly.hf ? Draftly.hf.get() : undefined, updated: Date.now() };
+      /* DF15-B1 legacy (overwrote another saved document with the same name):
       store.put({ name: name, html: html, hf: Draftly.hf ? Draftly.hf.get() : undefined, updated: Date.now() });
       if (old && old !== name) store.delete(old);
+      */
+      /* DF15-B1: a new name that another document already has is never written over.
+         Check and move happen in one transaction: put new, then delete old (no copy left, nothing lost). */
+      var clash = false;
+      if (name !== old && Draftly.storage.replaceOk !== name) {
+        var chk = store.get(name);
+        chk.onsuccess = function () {
+          if (chk.result) {
+            clash = true;
+            /* Keep the edits under the old name until the user decides. */
+            if (old) { rec.name = old; store.put(rec); }
+          } else {
+            store.put(rec);
+            if (old) store.delete(old);
+          }
+        };
+      } else {
+        store.put(rec);
+        if (old && old !== name) store.delete(old);
+      }
       tx.oncomplete = function () {
+        if (Draftly.storage.replaceOk === name) Draftly.storage.replaceOk = '';
+        if (clash) { Draftly.storage.askNameClash(name, old); resolve(old || ''); return; }
         if (old && old !== name) {
           var b = Draftly.storage.readBackup();
           if (b && b.name === old) { try { localStorage.removeItem(cfg.storageKeyBackup); } catch (e) {} }
@@ -141,6 +165,72 @@ Draftly.storage.save = function save() {
       tx.onerror = function () { reject(tx.error); };
     });
   });
+};
+
+/* DF15-B1: name the user may replace on the next save (set only after a confirm). */
+Draftly.storage.replaceOk = '';
+Draftly.storage.clashOpen = false;
+
+/* DF15-B1: first free "name (n)" among saved documents. */
+Draftly.storage.freeName = function freeName(name) {
+  return Draftly.storage.listDocs().then(function (rows) {
+    var taken = {};
+    rows.forEach(function (r) { taken[r.name] = true; });
+    var base = name.replace(/ \(\d+\)$/, ''), n = 1;
+    while (taken[base + ' (' + n + ')']) n++;
+    return base + ' (' + n + ')';
+  });
+};
+
+/* DF15-B1: three-button choice in the Office dialog style. Resolves 'use' | 'replace' | null. */
+Draftly.storage.clashDialog = function clashDialog(name, free) {
+  return new Promise(function (resolve) {
+    function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+    var back = el('div', 'dlg-backdrop'), box = el('div', 'dlg');
+    box.setAttribute('role', 'alertdialog'); box.setAttribute('aria-modal', 'true');
+    var t = el('div', 'dlg-title', 'Name already used'); t.id = 'dlgTitle'; box.setAttribute('aria-labelledby', 'dlgTitle');
+    var m = el('div', 'dlg-message', 'A document named "' + name + '" already exists.'); m.id = 'dlgMsg'; box.setAttribute('aria-describedby', 'dlgMsg');
+    var row = el('div', 'dlg-actions');
+    var bc = el('button', 'dlg-btn dlg-cancel', 'Cancel');
+    var br = el('button', 'dlg-btn dlg-cancel dlg-danger', 'Replace');
+    var bu = el('button', 'dlg-btn dlg-ok', 'Use "' + free + '"');
+    var btns = [bc, br, bu];
+    btns.forEach(function (b) { b.type = 'button'; row.appendChild(b); });
+    box.appendChild(t); box.appendChild(m); box.appendChild(row); back.appendChild(box);
+    document.body.appendChild(back);
+    var done = false;
+    function close(v) { if (done) return; done = true; document.removeEventListener('keydown', onKey, true); back.remove(); resolve(v); }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(null); }
+      else if (e.key === 'Tab') { e.preventDefault(); var i = btns.indexOf(document.activeElement); btns[(i + (e.shiftKey ? -1 : 1) + 3) % 3].focus(); }
+    }
+    document.addEventListener('keydown', onKey, true);
+    bc.onclick = function () { close(null); };
+    br.onclick = function () { close('replace'); };
+    bu.onclick = function () { close('use'); };
+    back.addEventListener('mousedown', function (e) { if (e.target === back) close(null); });
+    bu.focus();
+  });
+};
+
+/* DF15-B1: the typed name belongs to another document. Ask once; edits stay under the old name meanwhile. */
+Draftly.storage.askNameClash = function askNameClash(name, old) {
+  var S = Draftly.storage;
+  if (S.clashOpen) return;
+  S.clashOpen = true;
+  var free = '';
+  S.freeName(name).then(function (f) { free = f; return S.clashDialog(name, f); }).then(function (pick) {
+    if (pick === 'use') return 'use';
+    if (pick !== 'replace') return null;
+    return Draftly.dialog.confirm({ title: 'Replace document?', message: 'The other document "' + name + '" will be deleted and this one renamed to it. This cannot be undone.', okLabel: 'Replace', danger: true })
+      .then(function (yes) { return yes ? 'replace' : null; });
+  }).then(function (pick) {
+    S.clashOpen = false;
+    if (pick === 'use') { S.setCurrentName(free, false); }
+    else if (pick === 'replace') { if (S.currentName() !== name) return; S.replaceOk = name; }
+    else { S.setCurrentName(old || free, false); if (old) return; }
+    return S.save().then(function (n) { if (Draftly.ui && Draftly.ui.showToast && n) Draftly.ui.showToast('Renamed to ' + n); });
+  }).catch(function () { S.clashOpen = false; });
 };
 
 /* Quick synchronous backup for page close; IndexedDB may not finish. */

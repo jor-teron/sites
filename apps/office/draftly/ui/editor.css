@@ -41,3 +41,11 @@
   font-style: italic;
   pointer-events: none;
 }
+
+/* DF18: base.css's "* { margin: 0; padding: 0 }" reset (kept there) took the indent off ul/ol,
+   so the outside bullets/numbers sat left of the page box and .editor's overflow:hidden clipped them.
+   Legacy: no list rule here (lists inherited padding: 0). Indent matches ol[data-style] in marks.css. */
+.editor ul, .editor ol { padding-left: 1.6em; list-style-position: outside; }
+.editor ul { list-style-type: disc; }
+.editor ul ul { list-style-type: circle; }
+.editor ul ul ul { list-style-type: square; }

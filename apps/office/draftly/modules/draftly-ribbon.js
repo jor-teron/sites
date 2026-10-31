@@ -69,8 +69,14 @@ Draftly.ribbon.rename = function rename() {
     Draftly.storage.setCurrentName(v, false);
     var input = document.getElementById('fileNameInput');
     if (input) { input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true })); }
+    /* DF15-B1 legacy (toast before the move; save could overwrite a doc with that name):
     if (Draftly.ui && Draftly.ui.showToast) Draftly.ui.showToast('Renamed to ' + v);
-    return true;
+    */
+    /* DF15-B1: save now; a name taken by another document opens the clash dialog instead. */
+    return Draftly.storage.save().then(function (n) {
+      if (n === v && Draftly.ui && Draftly.ui.showToast) Draftly.ui.showToast('Renamed to ' + v);
+      return n === v;
+    });
   });
 };
 
@@ -173,6 +179,11 @@ Draftly.ribbon.init = function init() {
   }
   /* File > Rename: a dialog (standalone and in the hub). The name box itself still edits in place. */
   bind('renameBtn', function () { Draftly.ribbon.rename(); });
+  /* DF15-B1: typing a new name in the name box saves (and checks for a clash) when the box is left. */
+  var nameBox = document.getElementById('fileNameInput');
+  if (nameBox) nameBox.addEventListener('change', function () {
+    if (Draftly.app && Draftly.app.ready && Draftly.storage.currentName() !== Draftly.storage.loadedName) Draftly.storage.save().catch(function () {});
+  });
   bind('deleteCurrentBtn', function () {
     var name = Draftly.storage.loadedName || Draftly.storage.currentName();
     if (name) Draftly.docs.deleteDoc(name);
