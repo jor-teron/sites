@@ -65,9 +65,11 @@
     const b = $('pdf'); b.disabled = true; b.textContent = 'Making PDF…';
     setTimeout(() => {
       try {
-        const doc = new J({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
-        doc.setProperties({ title: 'YEAR ' + P.year, creator: 'Calendar Maker' });
-        doc.addImage(CM.sheetCanvas().toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
+        /* CM1-CM3: new J({ orientation: 'portrait', ... }); title 'YEAR ' + P.year; image 210 x 297 */
+        const land = CM.isLand(); /* CM4 */
+        const doc = new J({ orientation: land ? 'landscape' : 'portrait', unit: 'mm', format: 'a4', compress: true });
+        doc.setProperties({ title: String(P.year), creator: 'Calendar Maker' });
+        doc.addImage(CM.sheetCanvas().toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, land ? 297 : 210, land ? 210 : 297);
         doc.save('calendar-' + P.year + '.pdf');
       } catch (e) {
         window.UiDialog.info('PDF failed', [['Error', String(e && e.message || e)]]);

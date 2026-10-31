@@ -12,6 +12,8 @@ html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-a
 .page[hidden]{display:none}
 #preview-wrap{flex:1;display:flex;justify-content:center;align-items:flex-start;min-width:0}
 #sheet{width:100%;max-width:calc((100vh - 90px) * 0.7071);height:auto;aspect-ratio:210/297;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.25);border-radius:2px}
+/* CM4 landscape preview */
+body.land #sheet{aspect-ratio:297/210;max-width:calc((100vh - 90px) * 1.4142)}
 #opts{width:320px;flex:none;display:flex;flex-direction:column;gap:10px}
 .row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px}
 .row.col{flex-direction:column;align-items:stretch}
@@ -56,11 +58,13 @@ html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-a
   .page{flex-direction:column}
   #opts{width:100%}
   #sheet{max-width:100%}
+  body.land #sheet{max-width:100%}
 }
 /* Print: only the A4 sheet image (it already holds its own ~7 mm margins) */
-@page{size:A4 portrait;margin:0}
+@page{size:A4 portrait;margin:0} /* CM4: overridden by #cm-page style for landscape */
 @media print{
   html,body{background:#fff}
   #app{display:none!important}
   #print-img{display:block;width:209mm;height:auto;max-height:296mm;margin:0 auto;page-break-after:avoid}
+  body.land #print-img{width:296mm;max-height:209mm} /* CM4 */
 }

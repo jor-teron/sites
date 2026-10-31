@@ -9,11 +9,23 @@ window.CMHol = (function () {
   const p2 = (n) => String(n).padStart(2, '0');
   let H = {};
   try { H = JSON.parse(localStorage.getItem(HKEY) || '{}') || {}; } catch (_) { H = {}; }
+  if (!H || typeof H !== 'object') H = {};
   if (!Array.isArray(H.dated)) H.dated = [];
-  if (!Array.isArray(H.fixed)) H.fixed = null;
+  if (!Array.isArray(H.fixed)) H.fixed = null; /* null = never edited -> built-in list; an array (even empty) is kept as is */
+  /* CM4: drop broken entries from a damaged key instead of crashing */
+  const okName = (h) => h && typeof h.name === 'string';
+  H.dated = H.dated.filter((h) => okName(h) && /^\d{4}-\d{2}-\d{2}$/.test(h.date));
+  if (H.fixed) H.fixed = H.fixed.filter((h) => okName(h) && h.m >= 0 && h.m <= 11 && h.d >= 1 && h.d <= 31);
   const defaults = () => (window.CalHolidays ? window.CalHolidays.list(2000).map((h) => ({ m: h.m, d: h.d, name: h.name })) : []);
   const fixed = () => H.fixed || defaults();
-  const save = () => { try { localStorage.setItem(HKEY, JSON.stringify(H)); } catch (_) { /* */ } if (window.CM) window.CM.render(); };
+  /* const save = () => { try { localStorage.setItem(HKEY, JSON.stringify(H)); } catch (_) { (empty) } if (window.CM) window.CM.render(); };  (CM3) */
+  let warned = false;
+  const save = () => {
+    try { localStorage.setItem(HKEY, JSON.stringify(H)); } catch (_) { /* CM4: tell the user once that changes are not kept */
+      if (!warned && window.UiDialog) { warned = true; window.UiDialog.info('Holidays not saved', [['Note', 'This browser is not letting the page save. Changes last for this visit only.']]); }
+    }
+    if (window.CM) window.CM.render();
+  };
   const own = () => { if (!H.fixed) H.fixed = defaults(); return H.fixed; };
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let year = new Date().getFullYear();
@@ -70,5 +82,5 @@ window.CMHol = (function () {
       if (await window.UiDialog.confirm('Restore defaults?', 'Every-year holidays go back to the Calendar list. This-year-only holidays are kept.', 'Restore', true)) { H.fixed = null; save(); draw(); }
     };
   });
-  return { forYear, show };
+  return { forYear, show, _H: H, _save: save, _own: own }; /* _ = test hooks */
 })();
