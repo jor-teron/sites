@@ -2667,3 +2667,93 @@ Line counts are HTML+JS+CSS, excluding vendor/.
    Found: [T2w1], [T2w2].
  - Games / Learn: title bars from file:// and in Phone mode (#245);
    Agent browser model on tablets. Found: [T2w2], [T1].
+
+
+==========================================================================
+Unreleased Team 2 work, detailed (added 31 Oct 2026)
+==========================================================================
+Why: Team 3 couldn't follow the short "HPS3 to HPS6" line, so it is spelled
+out here. Nothing below is approved unless it says parked or dropped.
+
+Checked against main at 7a551d6 (31 Oct 2026, PR #285): none of these items
+have been built by Team 3 yet. The last changes to photo-studio, slides,
+phone/, screen-wall and card_sun.js are still Team 2's own (HPS2, SL2, PH1,
+MW1, PD4.4). If Team 3 builds one later, mark it "built by Team 3" here.
+
+1. HUB PHOTO STUDIO (apps/media/photo-studio)
+   Shipped: HPS1 (basic editor, reuses Photo Editor v2's pe_*.js files) and
+   HPS2 (image, text and shape layers, opacity, blend modes, reordering,
+   .hps project file, .ora export), both in PR #250.
+   An .hps file is a ZIP holding project.json, images/, layers/ and
+   preview.png. Storage keys start with photo-studio-.
+   - HPS3 Selections and masks (about 45 min): rectangle, ellipse, lasso and
+     magic-wand selection. Edits and filters apply only inside the
+     selection. Each layer gets a brush mask you can paint to hide or show
+     parts of it. Masks are saved in .hps. Not built.
+   - HPS4 Retouch (about 40 min): healing brush, clone stamp, red-eye
+     removal, blur and smudge brushes. Not built.
+   - HPS5 and HPS6: scope was only discussed in chat with Jor and never
+     written down. Ask Jor before planning them.
+   - Known gaps a later HPS could fix:
+     - Undo history isn't saved in .hps.
+     - Export only goes to .ora (no PSD).
+     - Text layers use the device's fonts.
+     - The Sharpen preview at fit size looks stronger than the saved photo.
+     - Saves around 8000 px need several hundred MB and can fail on 4 GB
+       machines.
+     - Crop mode shows the photo before resizing.
+     - Photo Studio is missing from "Open with" in shared/fs/filetypes.js
+       (Hub-side file; still missing on main).
+
+2. SLIDES (apps/office/slides, .hslides is a JSON deck)
+   Shipped: SL1 (basic editor) in #251, SL2 (Present mode via
+   slides_show.js; F5 starts from the beginning, Shift+F5 or P from the
+   current slide) in #252.
+   - SL3: slide layouts, inserting pictures, themes. Not built.
+   - SL4: the shared Office pieces: shared ribbon, the HO1 Quick Access
+     Toolbar (Undo, Redo, Save, Print) and PDF export. Not built.
+
+3. LIVE LOCATION
+   - LL1: share live device locations over the Hub mesh (window.HubMesh,
+     shared/link/hub_mesh.js). Not built.
+   - LL2: location history (trails, last-seen times). Needs Jor's planned
+     home server: a light always-on Python or Node program on an old PC, a
+     Raspberry Pi or the Debian laptop, that joins the mesh, stores
+     positions in SQLite, and can also serve the Hub and run its own PeerJS
+     server. Not built.
+
+4. PHONE LAUNCHER (phone/, owned by Team 2)
+   - PH2: always-on location. PH3: wrap the launcher as an Android APK.
+     Neither built.
+   - The PH1 launcher must be fully gesture-driven with a category app
+     drawer, and phones should rejoin the mesh after the screen goes off.
+
+5. MEDIA
+   - VP1: a Video Player app. Not built.
+   - Gallery update so it can also handle music, sharing
+     apps/media/shared-media/media_files.js with Music Player MP1 (MP1 is
+     shipped). Not built.
+   - VD1 to VD3: a VirtualDub-style video editor (cut, join, filters),
+     handed over from Maker C, no name chosen yet. Not built.
+
+6. MULTI-SCREEN WALL
+   - MW2: follow-up to MW1. Scope still needs to be agreed with Jor.
+
+7. PARKED BY JOR
+   - AG11 (Agent app): only a Continue button when the step limit is hit.
+     Jor never planned to raise the limit to 100. AG12 is also parked.
+   - BS3b (Base): virtual rows for big tables. Optional.
+   - Second Screen Keyboard.
+
+8. DROPPED
+   - TP3 (call waiting and hold, voicemail, 3+ person conference).
+   - Walkie-Talkie.
+   - The shared-PeerJS-id idea (replaced by the H50 mesh).
+
+9. LEFT FOR TEAM 1
+   - My Day Sun & Moon card night bug
+     (apps/tools/dashboard/cards/card_sun.js). The PD4.2 night flip rotates
+     the .sd-rot group 180 degrees, and because the sun and moon sit inside
+     that group, at night the sun shows in the starry half. Maker B's two
+     fixes were dropped. The moon's position also comes from its phase,
+     not a real ephemeris.

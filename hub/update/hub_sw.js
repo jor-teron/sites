@@ -12,7 +12,8 @@
  *   · shell files with a NEWER ?v= than V (a release arrived before its worker): network first.
  *   · *.csv and hub/version.txt: network first, cached copy when offline.
  *   · pages and files under apps/ (and other same-origin html/css/js): network first, stored in
- *     RUNTIME the first time they're opened, so they also open offline.
+ *     RUNTIME the first time they're opened, so they also open offline. H74: stored under the bare
+ *     URL (query stripped), so each file keeps one copy however many ?v= labels it was fetched with.
  *   · same-origin images: cached copy at once (RUNTIME); a new image is fetched and stored on its first
  *     request. R58: a cached image is re-fetched in the background at most once per worker lifetime,
  *     and only when the cached copy is over a day old (its Date header), not on every request
@@ -225,6 +226,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
   if (nav || path.includes('/apps/') || /\.(html?|css|m?js|json|txt|md|webmanifest)$/i.test(path) || path.endsWith('/')) {
-    e.respondWith(networkFirst(req, RUNTIME, nav ? bare : req.url, nav)); return;
+    // (before H74) e.respondWith(networkFirst(req, RUNTIME, nav ? bare : req.url, nav)); return;
+    e.respondWith(networkFirst(req, RUNTIME, bare, nav)); return;   // H74: bare URL key (query stripped) = one cached copy per file, no ?v= pile-up
   }
 });

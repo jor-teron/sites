@@ -7,7 +7,7 @@
    CS.sqlMode({host, full: () => editor text, say}) -> {ensure, run(src, base), resetDb, downloadDb(name)} */
 window.CS = window.CS || {};
 (() => {
-  const DBKEY = 'learn.code-school.db', CAP = 2000000, SHOW = 500, V = '?v=1.15.2';
+  const DBKEY = 'learn.code-school.db', CAP = 2000000, SHOW = 500
   CS.SQL_STARTER = [
     '-- SQL asks questions about data kept in tables.', '-- Press Run (Ctrl+Enter). Each SELECT shows a table of results.', '',
     'SELECT * FROM students;', '', '-- Who scored more than 80?', 'SELECT s.name, m.subject, m.score', 'FROM marks m',
@@ -45,9 +45,9 @@ INSERT INTO marks (student_id, subject, score) VALUES (1,'Maths',78),(1,'English
   let engineP = null;
   const engine = () => engineP = engineP || (async () => {
     if (location.protocol !== 'file:' && window.WebAssembly) {
-      try { await loadScript('vendor/sql-wasm.js' + V); return await initSqlJs({ locateFile: f => 'vendor/' + f + V }); } catch (e) { /* fall back to asm.js */ }
+      try { await loadScript('vendor/sql-wasm.js'); return await initSqlJs({ locateFile: f => 'vendor/' + f }); } catch (e) { /* fall back to asm.js */ }
     }
-    await loadScript('vendor/sql-asm.js' + V); return await initSqlJs();
+    await loadScript('vendor/sql-asm.js'); return await initSqlJs();
   })().catch(e => { engineP = null; throw e; });
 
   CS.sqlMode = function ({ host, full, say }) {

@@ -1,5 +1,5 @@
 // Matter body factories shared by the game (entities.js) and the level tests.
-import { Bodies, Body, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, MAT } from './config.js?v=sb1a';
+import { Bodies, Body, WORLD_WIDTH, WORLD_HEIGHT, GROUND_Y, MAT } from './config.js';
 
 export function makeGround() {
   return Bodies.rectangle(WORLD_WIDTH / 2, GROUND_Y + 60, WORLD_WIDTH * 2, 120,

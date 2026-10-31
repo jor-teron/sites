@@ -8,7 +8,7 @@
  * Styles are skipped (the community build does not read them).
  * Export: values + formulas, sheet name and file name from the Hub title.
  */
-var SHEET_XLSX = { src: "vendor/sheetjs/xlsx.full.min.js?v=0.20.3", loading: null };
+var SHEET_XLSX = { src: "vendor/sheetjs/xlsx.full.min.js", loading: null };
 
 function xlsxLoad() {
   if (window.XLSX) return Promise.resolve(window.XLSX);

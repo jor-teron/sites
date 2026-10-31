@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Vision VS2</title>
   <script>/* theme early to avoid flash */try{var p=JSON.parse(localStorage.getItem('vision-settings-v1')||'{}').theme||'dark',h=localStorage.getItem('sites-hub.theme');if(p==='dark'||(p==='system'&&(h?h==='dark':matchMedia('(prefers-color-scheme: dark)').matches)))document.documentElement.classList.add('dark');}catch(e){document.documentElement.classList.add('dark');}</script>
-  <link rel="stylesheet" href="vision.css?v=VI-F1">
+  <link rel="stylesheet" href="vision.css">
 </head>
 <body>
 <div id="app">
@@ -76,9 +76,9 @@
 <div id="cam" hidden role="dialog" aria-label="Camera"><video id="cam-v" autoplay playsinline muted></video>
   <div class="row cam-bar"><button id="cam-no" class="btn">Cancel</button><span class="sp"></span><button id="cam-shot" class="btn acc big" aria-label="Capture">Capture</button><span class="sp"></span><button id="cam-sw" class="btn" hidden>Switch</button></div></div>
 <div id="toast" hidden></div>
-<script src="vision_save.js?v=VI-F1"></script>
-<script src="vision_ollama.js?v=VI-F1"></script>
-<script src="vision_gcv.js?v=VI-F1"></script>
-<script src="vision_app.js?v=VI-F1"></script>
+<script src="vision_save.js"></script>
+<script src="vision_ollama.js"></script>
+<script src="vision_gcv.js"></script>
+<script src="vision_app.js"></script>
 </body>
 </html>

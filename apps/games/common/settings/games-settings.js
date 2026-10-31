@@ -116,7 +116,7 @@
   var here = (document.currentScript && document.currentScript.src) || '';
   function pageUrl(game) {
     var base = here ? here.replace(/[^/]*$/, '') : '../common/settings/';
-    return base + 'games-settings.html?v=GS1' + (game ? '&from=' + encodeURIComponent(game) : '');
+    return base + 'games-settings.html' + (game ? '?from=' + encodeURIComponent(game) : '');
   }
 
   var GS = {

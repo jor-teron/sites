@@ -770,7 +770,7 @@
   const SYNC_GROUPS = {
     // desktop: ['taskPos', 'taskH', 'titleH', 'openMax', 'startHover', 'showFiles', 'trayMeter', 'hoverFocus',
     //   'snapEdges', 'snapMagnet', 'snapMagnetPx', 'workspaces', 'saverIdle', 'saverSec'],   // (before H52)
-    desktop: ['taskPos', 'taskH', 'titleH', 'openMax', 'startHover', 'showFiles', 'trayMeter', 'hoverFocus',
+    desktop: ['taskPos', 'taskH', 'titleH', 'openMax', 'startHover', 'showFiles', 'showTiles', 'trayMeter', 'hoverFocus',
       'snapEdges', 'snapMagnet', 'snapMagnetPx', 'workspaces', 'saverIdle', 'saverSec',
       // H52: Settings → Hub bar switches (Desktop-mode taskbar)
       // 'barShowDesk', 'barSearch', 'barTasks', 'barWorkspaces', 'barOsk', 'barPooh', 'barDevices', 'barUpdate', 'barClock'],   (H52)

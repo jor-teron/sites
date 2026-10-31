@@ -1,5 +1,5 @@
 /* GIF Maker worker: messages start {w,h,colors,loop,delay} → frame {buf} … → finish → reply {type:'done', buf} */
-importScripts('vendor/gifenc.js?v=GM2', 'gifmaker_core.js?v=GM2');
+importScripts('vendor/gifenc.js', 'gifmaker_core.js');
 let enc = null;
 onmessage = (e) => {
   const m = e.data;

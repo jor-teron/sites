@@ -115,4 +115,4 @@ Toasts:
 ## Release 5 (PE5): Sharpen and Resize
 - Adjust → Sharpen (0 to 100, default 0): 3×3 unsharp mask, debounced live preview, full resolution on save, undo / redo, cleared by Reset.
 - Resize dialog (toolbar or `E`): pixels or percent, aspect lock, presets, current and new size, both smaller (halving steps) and larger (2× steps) with `imageSmoothingQuality: 'high'`, capped at 4× or 8000 px on the longest side (whichever is smaller). Stored as the edit `k` (scale along the photo's own x / y axes), so undo / redo work and it follows later crops and rotations.
-- `<title>Photo Editor v2 PE5</title>`, every app `?v=PE5` (the shared/link scripts keep their own versions).
+- `<title>Photo Editor v2 PE5</title>`; no `?v=` tags (NV1).

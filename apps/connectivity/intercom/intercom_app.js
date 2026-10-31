@@ -20,6 +20,7 @@
       (buttons || ['OK']).forEach(function (b, i, a) {
         var el = document.createElement('button'); el.className = i === a.length - 1 ? 'btn' : 'mini'; el.textContent = b;
         el.onclick = function () {
+          if (ask && b === 'Public') { $('dialog').hidden = true; return res('0000'); }   // IC3
           if (ask && i === a.length - 1) { var c = (inp.value.match(/\d{4}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 4-digit code.'; return; } $('dialog').hidden = true; return res(c); }
           $('dialog').hidden = true; res(ask ? null : i);
         };
@@ -42,11 +43,12 @@
   }
   function go(c) {
     if (started) { if (c === code) return; ICTalk.stop(); ICPeer.stop(); }
-    started = true; code = c; $('code-lbl').textContent = c;
+    started = true; code = c; $('code-lbl').textContent = c === '0000' ? '0000 · Public' : c;
     ICSave.setLastCode(c);
     ICPeer.start(c).catch(function () { setStatus('PeerJS could not load (offline?)'); });
   }
-  function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) { if (c) go(c); }); }
+  /* IC2: function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) { if (c) go(c); }); } */
+  function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub, or use Public to meet any device on the open Hub mesh (0000). Strangers there must be accepted before you hear them.', ['Cancel', 'Public', 'Join'], true).then(function (c) { if (c) go(c); }); }
   function boot() {
     var c = urlCode();
     if (c) return go(c);
@@ -126,6 +128,9 @@
   ICPeer.on('signal', function (m, from) { ICTalk.signal(m, from); });
   ICPeer.on('call', function (c) { ICTalk.incoming(c); });
   ICPeer.on('online', function () { paintTalk(); });
+  ICTalk.on('ask', function (a) {   // IC3: untrusted caller on the public mesh
+    dialog((a.name || 'A device') + ' on the public mesh wants to ' + (a.video ? 'talk with video' : 'talk') + '. Accept?', ['Decline', 'Accept']).then(function (i) { ICTalk.unlock(); a.answer(i === 1); });
+  });
 
   /* ---------- talk button (tap = toggle, hold > 0.5 s = push-to-talk) ---------- */
   var downAt = 0, startedByDown = false, timeTxt = '';
