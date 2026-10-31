@@ -3,15 +3,17 @@
  *  build houses near the pop cap, farms when food runs short (or wood piles up), a Barracks, then Militia that attack in waves (AI_LEVEL). */
 const AI_TICK = 0.75, AI_POP_MAX = 40, AI_VILL_MAX = 18, AI_MIX = { food: 0.45, wood: 0.3, gold: 0.17, stone: 0.08 }, AI_KIND = { food: ['carcass', 'berry', 'fish', 'farm'], wood: ['tree'], gold: ['gold'], stone: ['stone'] };
 let aiT = 0;
-/** Mode setup (before resumeSave): AI Town Centers + starting villagers. Vs AI: ai1 at aiStart. AI vs AI: ai1 at the player spot, ai2 at aiStart. */
+/** Mode setup (before resumeSave): AI Town Centers + starting villagers. Play: 0-2 AIs by level (ai1 at aiStart, ai2 at aiStart2; an old save keeps
+ *  its own AIs). AI vs AI: ai1 (Red) at the player spot, ai2 (Gold) at aiStart. */
 function initAI() {
     townCenter.owner = MODE === 'aivai' ? 'ai1' : 'p'; tcs = [townCenter];
-    const ids = MODE === 'vs' ? ['ai1'] : MODE === 'aivai' ? ['ai1', 'ai2'] : [];
-    ids.forEach(id => { factions[id] = { res: Object.assign({}, START_RES), queue: 0, timer: 0 }; });
-    const far = MODE === 'vs' ? 'ai1' : 'ai2';
-    if (factions[far] && aiStart) { const t = { x: aiStart.x, y: aiStart.y, w: 2, h: 2, owner: far }; tcs.push(t);
-        for (let y = t.y; y < t.y + 2; y++) for (let x = t.x; x < t.x + 2; x++) mapData[y][x] = { kind: 'tc', tc: t }; }
-    else if (factions[far]) delete factions[far];   // no reserved spot on this map: one AI fewer
+    const n = MODE === 'play' ? savedAIs() ?? enemiesFor(MAP_NUM, DIFF) : 0, ids = MODE === 'aivai' ? ['ai1', 'ai2'] : ['ai1', 'ai2'].slice(0, n);
+    const spot = MODE === 'aivai' ? { ai2: aiStart } : { ai1: aiStart, ai2: aiStart2 };
+    ids.forEach(id => { factions[id] = { res: Object.assign({}, START_RES), queue: 0, timer: 0 }; const s = spot[id]; if (!s && MODE === 'aivai' && id === 'ai1') return;
+        if (!s) { delete factions[id]; return; }   // no reserved spot on this map: one AI fewer
+        const t = { x: s.x, y: s.y, w: 2, h: 2, owner: id }; tcs.push(t);
+        for (let y = t.y - 2; y <= t.y + 3; y++) for (let x = t.x - 2; x <= t.x + 3; x++) if (mapData[y] && mapData[y][x] && mapData[y][x].kind !== 'fish') mapData[y][x] = null;
+        for (let y = t.y; y < t.y + 2; y++) for (let x = t.x; x < t.x + 2; x++) mapData[y][x] = { kind: 'tc', tc: t }; });
     tcs.forEach(t => { if (t.owner !== 'p') [[t.x - 1, t.y + 2], [t.x + 2, t.y - 1], [t.x + 2, t.y + 2]].forEach(p => spawnVillager(p[0], p[1], t.owner)); });
 }
 function updateAI(dt) {
@@ -27,7 +29,7 @@ function updateAI(dt) {
         else if ((((f.miss || {}).food || f.res.wood > 300) && f.res.food < 400 || f.res.wood > 500) && farms() < 10) build('farm');   // food short or wood piling up
         const milMax = AI_LEVEL.wave * 2 + 2 * (f.waves || 0);   // standing army limit by difficulty
         rax.forEach(b => { if (b.done && !b.queue && pop < cap && all.length - mine.length < milMax && (mine.length >= 8 || f.res.food > 150) && canAfford(MILITIA_COST, id)) { pay(MILITIA_COST, id); b.queue = 1; } });
-        const army = all.filter(v => v.mil && v.state !== 'attack'), foe = MODE === 'vs' ? 'p' : id === 'ai1' ? 'ai2' : 'ai1';   // waves
+        const army = all.filter(v => v.mil && v.state !== 'attack'), foe = MODE === 'play' ? 'p' : id === 'ai1' ? 'ai2' : 'ai1';   // waves
         if (f.t >= (f.next || AI_LEVEL.first) && army.length >= AI_LEVEL.wave + (f.waves || 0)) {
             const tgt = tcOf(foe) || villagers.find(v => own(v) === foe) || houses.find(h => own(h) === foe);
             if (tgt) { army.forEach(v => orderAttack(v, tgt)); f.next = f.t + AI_LEVEL.every; f.waves = Math.min(6, (f.waves || 0) + 1); } }

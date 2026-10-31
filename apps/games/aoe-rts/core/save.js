@@ -7,7 +7,9 @@ const SAVE_KINDS = ['tree', 'berry', 'gold', 'stone', 'carcass', 'fish', 'farm']
 const V_STATES = ['idle', 'moving', 'toNode', 'gathering', 'toHunt', 'hunting', 'toBuild', 'building', 'returning'];
 const DEER_KEYS = ['x', 'y', 'hx', 'hy', 'state', 'timer', 'gx', 'gy', 'face', 'seed', 'cd', 'fx', 'fy'];
 let saveReady = false, saveBlocked = false;
-function saveKey(n) { return 'aoe-rts.save.' + (MODE === 'open' ? '' : MODE + '.') + mapLabel(n); }   // ARQ1a: Open World keeps the old key
+function saveKey(n) { return 'aoe-rts.save.' + (MODE === 'open' ? '' : (MODE === 'play' ? 'vs' : MODE) + '.') + mapLabel(n); }   // ARQ1a: Open World keeps the old key; ARQ1c: Play reuses the Vs AI saves
+/** ARQ1c: AI count stored in this map's Play save (old Vs AI saves keep their one AI), else null */
+function savedAIs() { try { const s = JSON.parse(localStorage.getItem(saveKey(MAP_NUM))); return s && s.ai ? Object.keys(s.ai).filter(k => TEAM[k]).length : null; } catch (e) { return null; } }
 function hasSave(n) { try { return localStorage.getItem(saveKey(n)) !== null; } catch (e) { return false; } }
 function dropSave(n) { try { localStorage.removeItem(saveKey(n)); } catch (e) {} }
 const r1 = n => Math.round(n * 10) / 10, r4 = n => Math.round(n * 1e4) / 1e4;

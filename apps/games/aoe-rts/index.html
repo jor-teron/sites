@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AOE RTS - Tiny Slice ARR1a ARQ1t ARQ1t2 ARQ1t3 ARQ1a ARQ1b</title>
+    <title>AOE RTS - Tiny Slice ARR1a ARQ1t ARQ1t2 ARQ1t3 ARQ1a ARQ1b ARQ1c</title>
     <!-- Project CSS -->
     <link rel="icon" href="aoe-rts_icon.png">
     <link rel="stylesheet" href="ui/aoe-rts.css">
@@ -28,7 +28,8 @@
         <p>Type 00-99 · same number = same map · 00 is a small demo · each map keeps its own save (this browser)</p></div></div>
     <!-- ARQ1a start screen: game mode -->
     <div id="mode-overlay"><div><h1>AOE RTS</h1><p>Choose a mode</p>
-        <div class="mode-col"><button data-mode="open">🌲 Open World<small>just you, build and gather</small></button><button data-mode="vs">⚔ Vs AI<small>you vs one AI · destroy its Town Center and villagers</small></button><button data-mode="aivai">👀 AI vs AI<small>watch two AIs fight</small></button></div>
+        <div class="mode-col"><button data-mode="open">🌲 Open World<small>just you, build and gather</small></button><button data-mode="play">⚔ Play<small>enemies grow with the level · destroy every AI Town Center and unit</small></button><button data-mode="aivai">👀 AI vs AI<small>watch Red vs Gold fight</small></button></div>
+        <p id="mode-foes"></p>
         <p>AI difficulty</p><div class="diff-row"><button data-diff="easy">Easy</button><button data-diff="normal">Normal</button><button data-diff="hard">Hard</button></div></div></div>
     <!-- ARQ1b game over -->
     <div id="end-overlay"><div><h1 id="end-msg"></h1><div class="diff-row"><button id="end-again">↺ Play again</button><button id="end-modes">Modes</button></div></div></div>

@@ -48,7 +48,7 @@ function update(time, delta) {
         for (let k = 0; k < n; k++) simStep(h);
     }
     const ai = id => innerWidth < 700 ? `${TEAM[id].name} Pop ${popCount(id)}/${popCap(id)}` : `${TEAM[id].name} W${factions[id].res.wood} F${factions[id].res.food} G${factions[id].res.gold} S${factions[id].res.stone} · Pop ${popCount(id)}/${popCap(id)}`;
-    const hud = MODE === 'aivai' ? Object.keys(factions).map(ai).join(' | ') : `Wood ${resources.wood} · Food ${resources.food} · Gold ${resources.gold} · Stone ${resources.stone} · Pop ${popCount()}/${popCap()}` + (factions.ai1 ? ' | ' + ai('ai1') : '');
+    const hud = MODE === 'aivai' ? Object.keys(factions).map(ai).join(' | ') : `Wood ${resources.wood} · Food ${resources.food} · Gold ${resources.gold} · Stone ${resources.stone} · Pop ${popCount()}/${popCap()}` + Object.keys(factions).map(k => ' | ' + ai(k)).join('');
     if (hudText.textContent !== hud) hudText.textContent = hud;
     updateBar();
     render();
