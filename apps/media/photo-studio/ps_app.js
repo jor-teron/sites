@@ -185,6 +185,32 @@
   }
   function rememberChip() { const c = PE.adjust.current(); if (c !== PSSave.state().adj) PSSave.setState('adj', c); }
 
+  // HPS4-F1: keep the floating option bars (Select / Mask / Retouch) off the paintable photo.
+  // When a bar is shown, #stage gets a top margin so it starts just below the bar; the engine's
+  // ResizeObserver on #stage refits the photo. Strokes that start on the bar hit the bar, never the photo.
+  function barFit() {
+    const stage = $('stage'); if (!stage) return;
+    let bottom = 0;
+    document.querySelectorAll('.ps-bar').forEach((b) => { if (!b.hidden) bottom = Math.max(bottom, b.getBoundingClientRect().bottom); });
+    const cur = parseFloat(stage.style.marginTop) || 0;
+    const natTop = stage.getBoundingClientRect().top - cur;
+    const need = bottom ? Math.max(0, Math.ceil(bottom + 4 - natTop)) : 0;
+    if (need !== cur) stage.style.marginTop = need ? need + 'px' : '';
+  }
+  function watchBars() {
+    const mo = new MutationObserver(() => requestAnimationFrame(barFit));
+    const ro = window.ResizeObserver ? new ResizeObserver(() => requestAnimationFrame(barFit)) : null;
+    const hook = () => document.querySelectorAll('.ps-bar').forEach((b) => {
+      if (b._psFit) return; b._psFit = 1;
+      mo.observe(b, { attributes: true, attributeFilter: ['hidden'] }); if (ro) ro.observe(b);
+    });
+    hook(); new MutationObserver(() => { hook(); requestAnimationFrame(barFit); }).observe(document.body, { childList: true });
+    window.addEventListener('resize', () => requestAnimationFrame(barFit));
+    barFit();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchBars);
+  else watchBars();
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })(window.PE);
