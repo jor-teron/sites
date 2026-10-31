@@ -914,3 +914,12 @@ kept.
   Browser confirm stays only as a fallback if shared/dialog is missing.
 - devbench.html links shared/dialog/dialog.css + dialog.js (relative,
   no ?v=). With H75 merged the Hub draws it over the whole desktop.
+
+-- H77: Who holds the public lobby (31 Oct 2026) --
+- The 0000 lobby now says who it is: welcome / roster / bye 'site' carry
+  lobby {dev, name, site}. Members keep it (roster only from the lobby).
+- HubMesh.lobbyInfo() → {dev, name, site, self} or null.
+- Settings > Devices > Public mesh: "Lobby: this device" or
+  "Lobby: <name> (<site>)", plus "· different site" if it is not this
+  site. Also shown while Refused (site) when the holder sent its info.
+- Older Hubs send nothing, so the line stays hidden until they update.

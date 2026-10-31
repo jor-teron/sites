@@ -713,7 +713,8 @@
     const list = ui.el('ul', 'conn-list pub-list'); list.id = 'pub-list';
     list.setAttribute('aria-label', 'Devices on the public mesh');
     const out = ui.el('p', 'upd-out', ''); out.id = 'pub-out'; out.setAttribute('aria-live', 'polite');
-    card.append(note, inv, list, out);
+    const holder = ui.el('p', 'opt-note pub-holder'); holder.id = 'pub-holder';   // H77: who holds the 0000 lobby
+    card.append(note, holder, inv, list, out);
     const clip = (v, n) => String(v == null ? '' : v).slice(0, n);
     const MODE = { desktop: 'Desktop mode', phone: 'Phone mode' };
     const WHY = { rate: 'Wait a few seconds between invites', 'no-code': 'This Hub has no code of its own to invite to', 'not-public': 'Not on the public mesh', offline: 'That device is gone', public: 'Not allowed on the public mesh' };
@@ -732,6 +733,7 @@
         row.append(j, d);
         inv.appendChild(row);
       });
+      holder.textContent = ''; holder.hidden = true; delete holder.dataset.other;
       if (!me || !me.public) {
         note.textContent = !on() ? 'Off: this Hub stays off the public mesh.'
           : ML.isPrivate() ? 'This Hub is in a private mesh (code ' + clip(ML.privateCode(), 12) + '), so it is not on 0000.' : 'Joining the public mesh…';
@@ -742,6 +744,13 @@
       const ls = linkState(me);   // H55b
       note.textContent = 'Public mesh 0000 · ' + ls.t + (ls.k === 'linked' || ls.k === 'lobby' ? ' · ' + ros.length + ' online' : '') + (own ? ' · your code ' + own : '') + '.';   // count only once linked
       note.dataset.state = ls.k;
+      const lh = M.lobbyInfo ? M.lobbyInfo() : null;   // H77: null = not known (older lobby / not linked yet)
+      if (lh) {
+        const here = location.protocol === 'file:' ? 'file' : location.host, other = !lh.self && lh.site !== here;
+        holder.textContent = lh.self ? 'Lobby: this device' : 'Lobby: ' + clip(lh.name || 'Device', 16) + ' (' + clip(lh.site || 'unknown site', 64) + ')' + (other ? ' · different site' : '');
+        holder.hidden = false;
+        if (other) holder.dataset.other = '1';
+      }
       if (ls.k === 'gaveup' || ls.k === 'retrying') inv.appendChild(retryBtn(M, 'pub-retry', draw));
       ros.forEach((r) => {
         const self = r.deviceId === me.deviceId;
