@@ -1,4 +1,4 @@
-/* Rock Paper Scissors RPS1 — logic. */
+/* Rock Paper Scissors RPSQ1a — logic. */
 window.RPS = window.RPS || {};
 
 RPS.CHOICES = [
