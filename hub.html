@@ -15,23 +15,23 @@
        bump the version with: python3 hub/tools/hub_bump.py --release NAME (README_technical section 13).
        It replaces every "?v=20261029s" in this file (and the other 6 build places) with today's IST date
        (YYYYMMDD, add a letter for a second deploy the same day, e.g. 20260928b). -->
-  <link rel="stylesheet" href="hub/core/hub_main.css?v=20261029s" />
-  <link rel="stylesheet" href="hub/controller/hub_controller.css?v=20261027h3132" />
-  <link rel="stylesheet" href="hub/viewer/hub_notification.css?v=20261027h26" />
-  <link rel="stylesheet" href="shared/style/no-scrollbar.css?v=20261029s" />
-  <link rel="stylesheet" href="shared/link/link.css?v=20261029s" />
-  <link rel="stylesheet" href="hub/link/hub_chat.css?v=20261027h27" />
+  <link rel="stylesheet" href="hub/core/hub_main.css" />
+  <link rel="stylesheet" href="hub/controller/hub_controller.css" />
+  <link rel="stylesheet" href="hub/viewer/hub_notification.css" />
+  <link rel="stylesheet" href="shared/style/no-scrollbar.css" />
+  <link rel="stylesheet" href="shared/link/link.css" />
+  <link rel="stylesheet" href="hub/link/hub_chat.css" />
   <!-- H27: Devices + Pooh Chat as full-height side panels -->
-  <link rel="stylesheet" href="hub/link/hub_panels.css?v=20261029s" />
+  <link rel="stylesheet" href="hub/link/hub_panels.css" />
   <!-- H66: Notification Centre 🔔 + side panel -->
-  <link rel="stylesheet" href="hub/viewer/hub_notifcenter.css?v=20261029s" />
-  <link rel="stylesheet" href="hub/menu/hub_flyout.css?v=20261029s" />
-  <link rel="stylesheet" href="hub/wm/wm.css?v=20261029s" />
-  <link rel="stylesheet" href="shared/dialog/dialog.css?v=20261029s" />
-  <link rel="stylesheet" href="shared/ctxmenu/ctxmenu.css?v=20261029s" />
-  <link rel="stylesheet" href="hub/update/hub_update.css?v=20261029s" />
+  <link rel="stylesheet" href="hub/viewer/hub_notifcenter.css" />
+  <link rel="stylesheet" href="hub/menu/hub_flyout.css" />
+  <link rel="stylesheet" href="hub/wm/wm.css" />
+  <link rel="stylesheet" href="shared/dialog/dialog.css" />
+  <link rel="stylesheet" href="shared/ctxmenu/ctxmenu.css" />
+  <link rel="stylesheet" href="hub/update/hub_update.css" />
   <!-- H61: Glass theme (html.hub-glass, Settings › Look); last so it overrides the files above -->
-  <link rel="stylesheet" href="hub/core/hub_glass.css?v=20261029s" />
+  <link rel="stylesheet" href="hub/core/hub_glass.css" />
 </head>
 <body>
   <header id="header">
@@ -111,83 +111,83 @@
   </div>
 
   <!-- One-connection release: role first (phone remote Hub joins instead of hosting) -->
-  <script src="hub/core/hub_role.js?v=20261029s"></script>
-  <script src="shared/vendor/qrcode.js?v=20261029s"></script>
+  <script src="hub/core/hub_role.js"></script>
+  <script src="shared/vendor/qrcode.js"></script>
   <!-- Hub config: menu label (HUB_MENU_LABEL) + category CSVs for the flyout -->
-  <script src="hub/core/hub_config.js?v=20261029s"></script>
-  <script src="hub/core/hub_appindex.js?v=20261029s"></script>
+  <script src="hub/core/hub_config.js"></script>
+  <script src="hub/core/hub_appindex.js"></script>
   <!-- R47: generated copy of every category CSV (window.SITES_CSV) for file:// / no server; tiny, sync, before the menu -->
-  <script src="hub/core/hub_catalog.js?v=20261029s"></script>
+  <script src="hub/core/hub_catalog.js"></script>
   <!-- Settings app choices (wallpaper, sizes, accent, theme, motion) applied live -->
-  <script src="shared/wallpaper/wallpapers.js?v=20261029s"></script>
-  <script src="hub/drives/hub_wallpapers.js?v=20261029s"></script>
+  <script src="shared/wallpaper/wallpapers.js"></script>
+  <script src="hub/drives/hub_wallpapers.js"></script>
   <!-- <script src="hub/core/hub_prefs.js?v=20261029s"></script> -->
   <!-- <script src="hub/core/hub_daynight.js?v=20261029s"></script> --><!-- H63: day / night schedule helper (Eye comfort; H64 Auto theme later) -->
   <!-- H64: hub_daynight.js + hub_autotheme.js now load before hub_prefs.js, so the first paint has the Auto theme -->
-  <script src="hub/core/hub_daynight.js?v=20261029s"></script><!-- H63: day / night schedule helper (Eye comfort, H64 Auto theme) -->
-  <script src="hub/core/hub_autotheme.js?v=20261029s"></script><!-- H64: Auto theme (Light by day, Dark by night) -->
-  <script src="hub/core/hub_prefs.js?v=20261029s"></script>
-  <script src="hub/core/hub_eye.js?v=20261029s"></script><!-- H63: Eye comfort warm layer + 🌙 -->
+  <script src="hub/core/hub_daynight.js"></script><!-- H63: day / night schedule helper (Eye comfort, H64 Auto theme) -->
+  <script src="hub/core/hub_autotheme.js"></script><!-- H64: Auto theme (Light by day, Dark by night) -->
+  <script src="hub/core/hub_prefs.js"></script>
+  <script src="hub/core/hub_eye.js"></script><!-- H63: Eye comfort warm layer + 🌙 -->
   <!-- Desktop mode (big screen + mouse): windows + taskbar; Phone mode = the single frame -->
-  <script src="hub/wm/wm_mode.js?v=20261029s"></script>
+  <script src="hub/wm/wm_mode.js"></script>
   <!-- Our own right-click / long-press menus (shared/ctxmenu); modules below register theirs -->
-  <script src="shared/ctxmenu/ctxmenu.js?v=20261029s"></script>
+  <script src="shared/ctxmenu/ctxmenu.js"></script>
   <script>window.__ctxInAppManual = true;</script>
-  <script src="shared/ctxmenu/ctx_in_app.js?v=20261029s"></script>
-  <script src="hub/menu/hub_ctx.js?v=20261029s"></script>
-  <script src="hub/wm/wm_windows.js?v=20261029s"></script>
-  <script src="hub/wm/wm_taskbar.js?v=20261029s"></script>
+  <script src="shared/ctxmenu/ctx_in_app.js"></script>
+  <script src="hub/menu/hub_ctx.js"></script>
+  <script src="hub/wm/wm_windows.js"></script>
+  <script src="hub/wm/wm_taskbar.js"></script>
   <!-- R10: two workspaces (Desktop mode); snapping is in hub_loader.js (R16a) -->
-  <script src="hub/wm/wm_workspaces.js?v=20261029s"></script>
+  <script src="hub/wm/wm_workspaces.js"></script>
   <!-- Optional taskbar busy meter (off by default; Settings → Desktop) -->
-  <script src="shared/perf/busy_meter.js?v=20261029s"></script>
-  <script src="hub/drives/hub_traymeter.js?v=20261029s"></script>
+  <script src="shared/perf/busy_meter.js"></script>
+  <script src="hub/drives/hub_traymeter.js"></script>
   <!-- App list + home tiles (plain JS data, work over http and file://) -->
-  <script src="hub/core/hub_apps.js?v=20261029s"></script>
-  <script src="hub/menu/hub_tiles.js?v=20261029s"></script>
+  <script src="hub/core/hub_apps.js"></script>
+  <script src="hub/menu/hub_tiles.js"></script>
   <script src="hub/core/hub.js?v=20261029s"></script>
   <!-- Desktop mouse only: GNOME 2 style category flyout (CSV parser shared with the category pages) -->
-  <script src="shared/tiles/tiles.js?v=20261029s"></script>
-  <script src="shared/favorites/favorites.js?v=20261029s"></script>
-  <script src="hub/menu/hub_flyout.js?v=20261029s"></script>
-  <script src="hub/menu/hub_ctx_menus.js?v=20261029s"></script>
-  <script src="hub/menu/hub_settings.js?v=20261029s"></script>
-  <script src="shared/dialog/dialog.js?v=20261029s"></script>
+  <script src="shared/tiles/tiles.js"></script>
+  <script src="shared/favorites/favorites.js"></script>
+  <script src="hub/menu/hub_flyout.js"></script>
+  <script src="hub/menu/hub_ctx_menus.js"></script>
+  <script src="hub/menu/hub_settings.js"></script>
+  <script src="shared/dialog/dialog.js"></script>
   <script src="hub/core/hub_dialog_bridge.js"></script><!-- H75: app frames ask the Hub to draw their dialogs -->
   <!-- Phone controller: settings, trackpad pointer, received-file cards, phone → hub files -->
-  <script src="hub/controller/hub_controller_config.js?v=20261027h26"></script>
+  <script src="hub/controller/hub_controller_config.js"></script>
   <!-- <script src="hub/viewer/hub_notify.js?v=20261027h26"></script>   (before H66) -->
-  <script src="hub/viewer/hub_notify.js?v=20261029s"></script>
+  <script src="hub/viewer/hub_notify.js"></script>
   <!-- H66: Notification Centre history + Do Not Disturb + 🔔 panel (window.HubNotifCenter; hub_notify.js saves into it) -->
-  <script src="hub/viewer/hub_notifcenter.js?v=20261029s"></script>
+  <script src="hub/viewer/hub_notifcenter.js"></script>
   <!-- H28: one key store for API keys (window.HubKeys; apps call window.top.HubKeys, Settings → API Keys) -->
-  <script src="hub/core/hub_keys.js?v=20261029s"></script>
+  <script src="hub/core/hub_keys.js"></script>
   <!-- H30.1: Hub settings saved to the connected folder (hub/hub-profile/hub.json; window.HubProfile) -->
-  <script src="hub/core/hub_profile.js?v=20261029s"></script>
-  <script src="hub/link/hub_pointer.js?v=20261029s"></script>
-  <script src="hub/link/hub_receive.js?v=20261029s"></script>
+  <script src="hub/core/hub_profile.js"></script>
+  <script src="hub/link/hub_pointer.js"></script>
+  <script src="hub/link/hub_receive.js"></script>
   <!-- SharedLink: one connection layer (PeerJS from the pinned CDN url in link_core.js) -->
-  <script src="shared/link/link_core.js?v=20261029s"></script>
-  <script src="shared/link/link_devices.js?v=20261029s"></script>
-  <script src="shared/link/link_files.js?v=20261029s"></script>
-  <script src="shared/link/link_ui.js?v=20261029s"></script>
-  <script src="shared/link/link_chat.js?v=20261029s"></script>
-  <script src="hub/controller/hub_textedit.js?v=20261027h26"></script>
-  <script src="hub/controller/hub-controller.js?v=20261029s"></script>
-  <script src="hub/link/hub_link.js?v=20261029s"></script>
-  <script src="hub/link/hub_sync.js?v=20261029s"></script><!-- H29.1: Send profile to a connected device -->
-  <script src="shared/link/hub_mesh.js?v=20261029s"></script><!-- H50: Hub mesh core (one shared connection per Connect Code) -->
-  <script src="hub/link/hub_meshlog.js?v=20261029s"></script><!-- H69: mesh connection log for the Mesh Viewer app -->
-  <script src="hub/link/hub_meshlink.js?v=20261029s"></script><!-- H50: start / stop the mesh with the Connect Code link -->
-  <script src="hub/link/hub_linkstate.js?v=20261027h3132"></script>
-  <script src="shared/link/link_scan.js?v=20261029s"></script>
-  <script src="hub/link/hub_remote.js?v=20261027h3132"></script>
-  <script src="hub/link/hub_chat.js?v=20261027h27"></script>
-  <script src="hub/link/hub_panels.js?v=20261029s"></script>
-  <script src="hub/link/hub-gamebar.js?v=20261029s"></script>
+  <script src="shared/link/link_core.js"></script>
+  <script src="shared/link/link_devices.js"></script>
+  <script src="shared/link/link_files.js"></script>
+  <script src="shared/link/link_ui.js"></script>
+  <script src="shared/link/link_chat.js"></script>
+  <script src="hub/controller/hub_textedit.js"></script>
+  <script src="hub/controller/hub-controller.js"></script>
+  <script src="hub/link/hub_link.js"></script>
+  <script src="hub/link/hub_sync.js"></script><!-- H29.1: Send profile to a connected device -->
+  <script src="shared/link/hub_mesh.js"></script><!-- H50: Hub mesh core (one shared connection per Connect Code) -->
+  <script src="hub/link/hub_meshlog.js"></script><!-- H69: mesh connection log for the Mesh Viewer app -->
+  <script src="hub/link/hub_meshlink.js"></script><!-- H50: start / stop the mesh with the Connect Code link -->
+  <script src="hub/link/hub_linkstate.js"></script>
+  <script src="shared/link/link_scan.js"></script>
+  <script src="hub/link/hub_remote.js"></script>
+  <script src="hub/link/hub_chat.js"></script>
+  <script src="hub/link/hub_panels.js"></script>
+  <script src="hub/link/hub-gamebar.js"></script>
   <!-- PWA service worker (root sw.js) + stale-shell guard / Check for update -->
-  <script src="hub/update/hub_update.js?v=20261029s"></script>
+  <script src="hub/update/hub_update.js"></script>
   <!-- R16a: everything not needed for the first paint (Drive, snap, keyboard, Viewer) loads here, after idle -->
-  <script src="hub/core/hub_loader.js?v=20261029s"></script>
+  <script src="hub/core/hub_loader.js"></script>
 </body>
 </html>
