@@ -16,7 +16,11 @@
   <link rel="icon" href="calendar-maker_icon.png">
   <link rel="stylesheet" href="../../../shared/dialog/dialog.css">
   <link rel="stylesheet" href="calendar-maker.css">
+  <!--CM1-CM16-F5 (theme always followed the Calendar app):
   <script>try{var s=JSON.parse(localStorage.getItem('calendar-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
+  -->
+  <!--CM15: own theme (calendar-maker-settings.theme: auto = follow the Calendar app as before, light, dark); same rule as CM.applyTheme in ui/cm_about_page.js-->
+  <script>try{var c=JSON.parse(localStorage.getItem('calendar-maker-settings')||'{}').theme,s=JSON.parse(localStorage.getItem('calendar-settings-v1')||'{}'),m=(c==='light'||c==='dark')?c:(s.theme||'dark'),t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
 </head>
 <body>
 <div id="app">
@@ -29,6 +33,7 @@
       <!--CM10--><button type="button" class="tab" data-page="list" role="tab">Holiday List</button>
       <!--CM14--><button type="button" class="tab" data-page="ovw" role="tab">Year Overview</button>
       <button type="button" class="tab" data-page="hol" role="tab">Holidays</button>
+      <!--CM15--><button type="button" class="tab" data-page="about" role="tab">About</button>
     </nav>
     <!--/CM3-->
   </header>
@@ -140,6 +145,36 @@
     </aside>
   </main>
   <!--/CM14-->
+  <!--CM15-->
+  <main id="page-about" class="page" hidden>
+    <div class="about-wrap">
+      <section class="card">
+        <h2>Settings</h2>
+        <div class="row col"><span>Theme <small>app screens only; never the printed pages</small></span>
+          <div class="seg" id="theme-seg"><button type="button" data-v="auto">Auto</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>
+        <p class="note">Auto follows the Calendar app's theme (which can follow the Hub or your device).</p>
+        <div class="row"><span>Design settings</span><button type="button" class="mini" id="reset-design">Reset to defaults</button></div>
+        <p class="note">Resets colours, layout, legend, background and Holiday List options. Your holidays are never touched.</p>
+      </section>
+      <section class="card">
+        <h2>How to</h2>
+        <ol class="howto">
+          <li><b>Holidays tab:</b> add holidays. <i>Every year</i> for fixed dates, <i>This year only</i> for festivals whose date changes. Pick a To date for a multi-day holiday, and Gazetted or Restricted for the type.</li>
+          <li><b>Design tab:</b> choose the year and the look: holiday, restricted, month label and weekday row colours, legend and its size, Saturdays, week start, layout, fold 6th week, background. Zoom the preview with Fit or the slider.</li>
+          <li><b>Holiday List tab:</b> Classic or Simple layout, header and subtitle, striped rows, and whether to show restricted holidays.</li>
+          <li><b>Year Overview tab:</b> summary of days off and working days, holiday streaks and holiday stretches for the year.</li>
+          <li><b>Print or Download PDF</b> on each of those three tabs. PDF files are named like <code>2027-calendar.pdf</code>, <code>2027-holiday-list.pdf</code>, <code>2027-year-overview.pdf</code>.</li>
+        </ol>
+      </section>
+      <section class="card">
+        <h2>About</h2>
+        <p class="about"><img src="calendar-maker_icon.png" alt="" width="28" height="28"> <b>Calendar Maker</b> <span id="about-ver"></span></p>
+        <p>Design and print a one-sheet A4 year calendar, a holiday list and a year overview.</p>
+        <p class="note">Works offline. Everything is saved in this browser's storage on this device.</p>
+      </section>
+    </div>
+  </main>
+  <!--/CM15-->
 </div>
 <img id="print-img" alt="">
 <script src="../../../shared/dialog/dialog.js"></script>
@@ -163,6 +198,7 @@
 <script src="ui/cm_list_page.js"></script>
 <script src="ui/cm_overview_page.js"></script><!--CM14-->
 <script src="ui/cm_zoom.js"></script>
+<script src="ui/cm_about_page.js"></script><!--CM15-->
 <script src="ui/cm_titlebar.js"></script><!--CM16-->
 </body>
 </html>

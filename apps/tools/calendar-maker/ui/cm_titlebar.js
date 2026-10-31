@@ -5,14 +5,15 @@
   'use strict';
   const CM = window.CM, V = 1;
   if (!CM || !CM.showPage || window.parent === window) return;
-  /* Tab order (Jor, CM16). CM15 adds { id: 'about', label: 'About' } as the last line. */
+  /* Tab order (Jor, CM16); CM15 added About as the last tab */
   CM.TABS = [
     { id: 'design', label: 'Design' },
     { id: 'list', label: 'Holiday List' },
     { id: 'ovw', label: 'Year Overview' },
     { id: 'hol', label: 'Holidays' },
+    { id: 'about', label: 'About' }, /* CM15 */
   ];
-  /* Print / PDF act on the active page's own buttons (the Holidays page has none: greyed out) */
+  /* Print / PDF act on the active page's own buttons (Holidays and About have none: greyed out) */
   const ACT = { design: ['print', 'pdf'], list: ['list-print', 'list-pdf'], ovw: ['ovw-print', 'ovw-pdf'] };
   let linked = false;
   const target = (location.origin && location.origin !== 'null') ? location.origin : '*';
