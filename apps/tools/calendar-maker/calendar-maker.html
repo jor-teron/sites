@@ -34,8 +34,20 @@
         <div class="seg" data-key="sat"><button type="button" data-v="none">None</button><button type="button" data-v="24">2nd &amp; 4th</button><button type="button" data-v="all">All</button></div></div>
       <div class="row col"><span>Week starts</span>
         <div class="seg" data-key="week"><button type="button" data-v="sun">Sunday</button><button type="button" data-v="mon">Monday</button></div></div>
+      <!--CM2-->
+      <div class="row col"><span>Background</span>
+        <div class="seg" data-key="bg"><button type="button" data-v="none">None</button><button type="button" data-v="soft">Soft colour</button><button type="button" data-v="pic">Picture</button></div></div>
+      <div class="row col" id="soft-row" hidden><span>Soft colour</span><div class="swatches" id="softs"></div></div>
+      <div class="row col" id="pic-row" hidden><span>Picture</span>
+        <div class="pic"><button type="button" class="mini" id="pic-pick">Choose picture…</button><button type="button" class="mini" id="pic-clear">Remove</button><input type="file" id="pic-file" accept="image/*" hidden></div>
+        <label class="faint"><span>Faintness</span><input type="range" id="faint" min="5" max="60" step="1"></label></div>
+      <label class="row"><span>Holiday list at the bottom</span><input type="checkbox" class="sw" id="strip"></label>
+      <!--/CM2-->
       <div class="acts">
         <button type="button" class="btn" id="print">Print</button>
+        <!--CM2-->
+        <button type="button" class="btn" id="pdf">Download PDF</button>
+        <!--/CM2-->
       </div>
       <p class="about"><img src="calendar-maker_icon.png" alt="" width="28" height="28"> <b>Calendar Maker</b> <span id="ver"></span><br>One A4 sheet with all 12 months. Holidays from the Calendar app. Works offline.</p>
     </aside>
@@ -46,5 +58,9 @@
 <script src="../calendar/calendar_holidays.js"></script>
 <script src="calendar-maker_render.js"></script>
 <script src="calendar-maker.js"></script>
+<!--CM2-->
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="calendar-maker_pdf.js"></script>
+<!--/CM2-->
 </body>
 </html>
