@@ -4,7 +4,7 @@
 // ============================================================================
 const pauseBtn = document.getElementById('pause-btn'), pauseOv = document.getElementById('pause-overlay');
 function setPaused(p) {
-    if (!p && document.getElementById('title-overlay').style.display === 'flex') return;
+    if (!p && (gameOver || document.getElementById('title-overlay').style.display === 'flex')) return;
     if (p && !paused) writeSave();
     paused = p; pauseBtn.textContent = p ? '▶' : '⏸'; pauseOv.style.display = p ? 'flex' : 'none';
 }
@@ -68,7 +68,7 @@ function updateMinimap(time) {
 // COMMAND BAR (DOM, big touch buttons)
 // ============================================================================
 const bar = document.getElementById('command-bar');
-const DEFAULT_INFO = 'Left-click/drag to select · right-click to gather, move or build · wheel zoom · right-drag pan · Space = Town Center · P pause · +/- speed';
+const DEFAULT_INFO = 'Left-click/drag to select · right-click to gather, move, build or attack · wheel zoom · right-drag pan · Space = Town Center · P pause · +/- speed';
 let flashTimer = 0;
 function flash(msg) {
     infoText.setText(msg); clearTimeout(flashTimer);
@@ -80,8 +80,11 @@ function button(id, label, sub, enabled) {
 }
 function updateBar() {
     const sel = villagers.filter(u => u.selected);
-    let html = '';
-    if (townCenter.selected) {
+    let html = ''; const rax = houses.find(h => h.selected);
+    if (rax) {   // ARQ1b Barracks
+        html = `<span class="sel">Barracks</span>` + button('militia', 'Train Militia', costText(MILITIA_COST) + ` · ${MILITIA_TIME}s`, canAfford(MILITIA_COST) && rax.queue < QUEUE_MAX) +
+            `<span class="queue">Queue ${rax.queue}${rax.queue ? ' · ' + Math.round(rax.timer / MILITIA_TIME * 100) + '%' : ''}${popCount() >= popCap() && rax.queue ? ' · need House!' : ''}</span>`;
+    } else if (townCenter.selected) {
         const full = popCount() >= popCap();
         const pct = trainQueue ? Math.round(trainTimer / TRAIN_TIME * 100) : 0;
         html = `<span class="sel">Town Center</span>` +
@@ -89,8 +92,9 @@ function updateBar() {
             (trainQueue ? button('cancel', 'Cancel', 'refund 50 food', true) : '') +
             `<span class="queue">Queue ${trainQueue}${trainQueue ? ' · ' + pct + '%' : ''}${full && trainQueue ? ' · need House!' : ''}</span>`;
     } else if (sel.length) {
-        html = `<span class="sel">${sel.length} villager${sel.length > 1 ? 's' : ''}</span>` +
-            button('house', placing ? 'Click a tile… (Esc)' : 'Build House', costText(HOUSE_COST) + ` · +${POP_PER_HOUSE} pop`, canAfford(HOUSE_COST)) +
+        const nm = sel.filter(u => u.mil).length, bt = (k, l, sub) => button(k, placing === k ? 'Click a tile… (Esc)' : l, sub, canAfford(BUILD_COST[k]));
+        html = `<span class="sel">${sel.length - nm ? sel.length - nm + ' villager' + (sel.length - nm > 1 ? 's' : '') : ''}${nm && sel.length - nm ? ' + ' : ''}${nm ? nm + ' militia' : ''}</span>` +
+            (sel.length > nm ? bt('house', 'Build House', costText(HOUSE_COST) + ` · +${POP_PER_HOUSE} pop`) + (MODE === 'open' ? '' : bt('barracks', 'Barracks', costText(BARRACKS_COST) + ' · Militia')) + bt('farm', 'Farm', costText(FARM_COST) + ' · food') : '') +
             button('deselect', 'Deselect', 'clear selection', true);
     } else {
         html = `<span class="sel">Nothing selected</span>` + button('idle', 'Select Idle', villagers.filter(u => !u.owner && u.state === 'idle').length + ' idle', true);
@@ -106,7 +110,8 @@ bar.addEventListener('pointerdown', e => {
     Sfx.init(); Sfx.play('tap');
     if (cmd === 'train') { if (canAfford(VILLAGER_COST) && trainQueue < QUEUE_MAX) { pay(VILLAGER_COST); trainQueue++; } }
     else if (cmd === 'cancel') { if (trainQueue) { trainQueue--; refund(VILLAGER_COST); if (!trainQueue) trainTimer = 0; } }
-    else if (cmd === 'house') { placing = placing ? null : 'house'; if (placing) flash('Left-click a free tile to place the House · right-click or Esc cancels'); }
+    else if (BUILD_COST[cmd]) { placing = placing === cmd ? null : cmd; if (placing) flash('Left-click a free tile to place the ' + cmd + ' · right-click or Esc cancels'); }
+    else if (cmd === 'militia') { const r = houses.find(h => h.selected); if (r && canAfford(MILITIA_COST) && r.queue < QUEUE_MAX) { pay(MILITIA_COST); r.queue++; } }
     else if (cmd === 'deselect') { villagers.forEach(u => u.selected = false); placing = null; }
     else if (cmd === 'idle') { villagers.forEach(u => u.selected = !u.owner && u.state === 'idle'); }
 });
@@ -152,7 +157,7 @@ const askConfirm = (() => {
     inp.addEventListener('keydown', e => e.stopPropagation());
     // keep taps inside the dialog away from the game (nothing steals focus or closes the picker)
     ['pointerdown', 'mousedown', 'touchstart', 'wheel'].forEach(t => ov.addEventListener(t, e => e.stopPropagation(), { passive: true }));
-    const go = n => { remember(n); location.search = '?map=' + mapLabel(n) + '&mode=' + MODE; };   // other map = page reload into it
+    const go = n => { remember(n); location.search = '?map=' + mapLabel(n) + '&mode=' + MODE + '&diff=' + DIFF; };   // other map = page reload into it
     const close = () => { ov.style.display = 'none'; inp.blur(); setPaused(false); };
     bResume.addEventListener('click', () => {
         const n = pick(); if (n === null) return;
@@ -178,10 +183,26 @@ const askConfirm = (() => {
     // ARQ1a start screen: no ?mode= -> pick Open World / Vs AI / AI vs AI (each mode keeps its own saves)
     const ms = document.getElementById('mode-overlay');
     ['pointerdown', 'mousedown', 'touchstart', 'wheel'].forEach(t => ms.addEventListener(t, e => e.stopPropagation(), { passive: true }));
-    ms.querySelectorAll('button[data-mode]').forEach(b => b.addEventListener('click', () => { location.search = '?map=' + mapLabel(MAP_NUM) + '&mode=' + b.dataset.mode; }));
+    let diff = DIFF;   // ARQ1b difficulty (Vs AI / AI vs AI), remembered
+    const syncDiff = () => ms.querySelectorAll('button[data-diff]').forEach(b => b.classList.toggle('on', b.dataset.diff === diff));
+    ms.querySelectorAll('button[data-diff]').forEach(b => b.addEventListener('click', () => { diff = b.dataset.diff; try { localStorage.setItem('aoe-rts.diff', diff); } catch (e) {} syncDiff(); })); syncDiff();
+    ms.querySelectorAll('button[data-mode]').forEach(b => b.addEventListener('click', () => { location.search = '?map=' + mapLabel(MAP_NUM) + '&mode=' + b.dataset.mode + '&diff=' + diff; }));
+    if (MODE !== 'open') document.getElementById('pause-map').textContent += ' · ' + (MODE === 'vs' ? 'Vs AI' : 'AI vs AI') + ' · ' + DIFF[0].toUpperCase() + DIFF.slice(1);
+    document.getElementById('end-again').addEventListener('click', () => { dropSave(MAP_NUM); location.reload(); });
+    document.getElementById('end-modes').addEventListener('click', () => { location.search = '?map=' + mapLabel(MAP_NUM); });
     document.getElementById('mode-btn').addEventListener('click', () => { writeSave(); location.search = '?map=' + mapLabel(MAP_NUM); });
     document.getElementById('mode-btn').addEventListener('pointerdown', e => e.stopPropagation());
     if (URL_MODE === null) { saveBlocked = true; paused = true; ms.style.display = 'flex'; }
-    window.aoeTest.ai = { MODE, get factions() { return factions; }, get tcs() { return tcs; } };
+    window.aoeTest.ai = { MODE, DIFF, get factions() { return factions; }, get tcs() { return tcs; }, get gameOver() { return gameOver; } };
     window.aoeTest.save = { buildSave, writeSave, hasSave, saveKey, open, get houses() { return houses; } };
 })();
+
+/** ARQ1b: game over overlay (win / lose, or which AI won in AI vs AI); the finished game's save is dropped */
+function showEnd(res) {
+    saveBlocked = true; dropSave(MAP_NUM); placing = null; paused = true;
+    const ov = document.getElementById('end-overlay'), msg = document.getElementById('end-msg');
+    msg.textContent = res === 'win' ? 'Victory!' : res === 'lose' ? 'Defeat' : TEAM[res] ? TEAM[res].name + ' wins!' : 'Draw';
+    msg.style.color = TEAM[res] ? '#' + TEAM[res].col.toString(16).padStart(6, '0') : '';
+    ['pointerdown', 'mousedown', 'touchstart', 'wheel'].forEach(t => ov.addEventListener(t, e => e.stopPropagation(), { passive: true }));
+    ov.style.display = 'flex'; Sfx.play(res === 'lose' ? 'error' : 'train');
+}

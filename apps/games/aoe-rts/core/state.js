@@ -42,8 +42,8 @@ const own = u => u.owner || 'p';   // ARQ1a owners: 'p' (player), 'ai1', 'ai2'
 function resOf(o) { return o && o !== 'p' ? factions[o].res : resources; }
 function tcOf(o) { return tcs.find(t => t.owner === o) || null; }
 function popCount(o) { return villagers.filter(v => own(v) === (o || 'p')).length; }
-function popCap(o) { return POP_BASE + POP_PER_HOUSE * houses.filter(h => h.done && own(h) === (o || 'p')).length; }
-function canAfford(cost) { return Object.keys(cost).every(k => resources[k] >= cost[k]); }
+function popCap(o) { return POP_BASE + POP_PER_HOUSE * houses.filter(h => h.done && !h.type && own(h) === (o || 'p')).length; }
+function canAfford(cost, o) { const r = resOf(o); return Object.keys(cost).every(k => r[k] >= cost[k]); }
 function pay(cost, o) { const r = resOf(o); Object.keys(cost).forEach(k => r[k] -= cost[k]); }
 function refund(cost) { Object.keys(cost).forEach(k => resources[k] += cost[k]); }
 function costText(cost) { return Object.keys(cost).map(k => cost[k] + ' ' + k).join(', '); }

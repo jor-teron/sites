@@ -54,9 +54,9 @@ const Art = AOE.art = (() => {
     }
     // ---------- build all ----------
     function build(scene) {
-        const { villager, setFem, carry, pine, leafy, stump, bush, pile, house, townCenter, deer, carcass, fishSpot, flag } = AOE.models;
+        const { villager, setFem, carry, pine, leafy, stump, bush, pile, house, townCenter, deer, carcass, fishSpot, flag, barracks } = AOE.models;
         const T0 = performance.now();
-        const kinds = ['none', 'axe', 'pick', 'hammer', 'basket', 'spear', 'net'];
+        const kinds = ['none', 'axe', 'pick', 'hammer', 'basket', 'spear', 'net', 'sword'];
         ['v_', 'v_f_'].forEach(pre => { const fem = pre === 'v_f_'; kinds.forEach(k => {
             add(`${pre}${k}_idle`, 100, 130, 50, 118, c => { setFem(fem); villager(c, k, 'idle', 0); setFem(false); });
             for (let f = 0; f < 8; f++) add(`${pre}${k}_walk${f}`, 100, 130, 50, 118, c => { setFem(fem); villager(c, k, 'walk', f); setFem(false); });
@@ -71,6 +71,7 @@ const Art = AOE.art = (() => {
         for (let n = 0; n <= 4; n++) { setSeed(401); add('berry' + n, 136, 112, 68, 96, c => bush(c, n * 4)); }
         ['gold', 'stone'].forEach(k => { for (let n = 1; n <= 6; n++) { setSeed(k === 'gold' ? 501 : 601); add(`${k}${n}`, 140, 112, 70, 94, c => pile(c, k, n)); } });
         [[1, 0.33], [1, 0.66], [1, 1], [2, 0.33], [2, 0.66], [2, 1], [3, 0.33], [3, 0.66], [3, 1], [4, 1]].forEach((s, i) => { setSeed(701); add('house' + i, 150, 200, 75, 168, c => house(c, s[0], s[1])); });
+        setSeed(901); add('barracks', 160, 200, 80, 150, barracks);
         setSeed(801); add('tc', 300, 320, 150, 240, townCenter);
         ['deer_', 'deer_a_'].forEach(pre => { const a = pre === 'deer_a_';
             add(pre + 'idle', 80, 90, 36, 82, c => deer(c, 'idle', 0, a));
