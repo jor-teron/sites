@@ -127,14 +127,26 @@ html.light .chip.danger { color: #b3261e; }
 .menu button:disabled { opacity: 0.4; cursor: default; }
 
 /* HPS3: selection / mask option bars (ps_select.js, ps_mask.js) — float at the top of the window */
+/* legacy (HPS3/HPS4): wrapping bar that could grow to 3 rows and cover the photo's top strip
 .ps-bar { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 30; max-width: calc(100vw - 16px);
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 6px 10px; border-radius: 14px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 6px 10px; border-radius: 14px; */
+/* HPS4-F1: one compact row that scrolls sideways; ps_app.js pushes #stage down below it (barFit) */
+.ps-bar { position: fixed; top: 6px; left: 50%; transform: translateX(-50%); z-index: 30; max-width: calc(100vw - 12px);
+  display: flex; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; white-space: nowrap;
+  align-items: center; gap: 4px 6px; padding: 4px 8px; border-radius: 12px;
   background: rgba(28, 29, 33, .94); border: 1px solid #33343b; box-shadow: 0 6px 20px rgba(0,0,0,.35); font-size: 13px; color: #d8d9de; }
 .ps-bar[hidden] { display: none; }
 .ps-bar .seg button { padding: 5px 10px; }
 .ps-barg { display: inline-flex; align-items: center; gap: 6px; }
 .ps-barg[hidden] { display: none; }
 .ps-bar input[type=range] { width: 96px; }
+.ps-bar > * { flex: 0 0 auto; }                                  /* HPS4-F1 */
+.ps-bar .chip { padding: 4px 9px; font-size: 12px; }             /* HPS4-F1: smaller chips */
+.ps-bar .seg button { padding: 4px 8px; font-size: 12px; }
+.ps-bar input[type=range] { width: 76px; }
+.ps-bar .btn { padding: 4px 10px; }
+@media (max-width: 1500px) { .ps-bar .ps-barg { font-size: 11px; gap: 3px; } .ps-bar input[type=range] { width: 64px; } }
+/* HPS4-F1: no margin transition on #stage (barFit measures the live top) */
 .ps-bar .chip:disabled { opacity: .45; }
 .ps-bar .btn { padding: 5px 14px; }
 html.light .ps-bar { background: rgba(250, 250, 252, .96); border-color: #d4d6db; color: #26272b; }

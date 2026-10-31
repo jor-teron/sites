@@ -7,6 +7,8 @@
  *                              images{ id:{path,name,type,w,h} }, layers[ bottom … top ] }
  *              images/      the original files, byte for byte (background + each image layer)
  *              masks/       HPS3: <layer id>.png, background.png, adjust.png — alpha = visibility (optional)
+ *              retouch/     HPS4: <layer id>.png, background.png — RGBA retouch patch over the layer's picture /
+ *                           the original photo, transparent where untouched (optional; version stays 1)
  *              layers/      PNGs for painted raster layers (none in HPS2; reserved, read if listed)
  *              preview.png  ≤ 256 px flattened preview
  * .ora = ZIP:  mimetype (first, stored) 'image/openraster', stack.xml, data/*.png (one full-size PNG per layer,
@@ -145,7 +147,9 @@
       edits: e,
       // legacy (HPS2): background: { name: bg.name, visible: bg.visible, opacity: bg.opacity, src: bgPath, type: bgType, fileName: bgName },
       // HPS3: carry the background mask (key) so PE.masks.toHps can write masks/background.png
-      background: Object.assign({ name: bg.name, visible: bg.visible, opacity: bg.opacity, src: bgPath, type: bgType, fileName: bgName }, bg.mask ? { mask: bg.mask } : {}),
+      // legacy (HPS3): background: Object.assign({ name: bg.name, visible: bg.visible, opacity: bg.opacity, src: bgPath, type: bgType, fileName: bgName }, bg.mask ? { mask: bg.mask } : {}),
+      // HPS4: also carry the background retouch patch (key) so PE.retouch.toHps can write retouch/background.png
+      background: Object.assign({ name: bg.name, visible: bg.visible, opacity: bg.opacity, src: bgPath, type: bgType, fileName: bgName }, bg.mask ? { mask: bg.mask } : {}, bg.retouch ? { retouch: bg.retouch } : {}),
       images: imgs, layers: layers
     };
   };
@@ -167,9 +171,11 @@
     }
     const J = P_.json(bgPath, bgf.blob.type || bgf.type || typeOf(bgExt), bgf.name, imgs);
     const masks = PE.masks ? await PE.masks.toHps(J) : [];    // HPS3: layer masks -> masks/*.png (rewrites J)
+    const retouch = PE.retouch ? await PE.retouch.toHps(J) : [];   // HPS4: retouch patches -> retouch/*.png (rewrites J)
     const prev = await renderSmall(256), prevBlob = await toBlob(prev); free(prev);
     entries.push({ name: 'project.json', data: JSON.stringify(J, null, 1), method: 'deflate' });
     entries.push(...masks);
+    entries.push(...retouch);                                  // HPS4
     entries.push({ name: bgPath, data: bgf.blob, method: 'store' });
     entries.push(...files);
     entries.push({ name: 'preview.png', data: prevBlob, method: 'store' });
@@ -262,6 +268,8 @@
       e.bg = { name: str(B.name, 'Background'), visible: B.visible !== false, opacity: clamp(num(B.opacity, 1), 0, 1) };
       // HPS3: masks (masks/*.png) for layers, the background and the Adjust area; older files have none
       if (PE.masks) await PE.masks.fromHps(J, e, async (name) => { const m = zip.get(name); return m ? m.blob('image/png') : null; });
+      // HPS4: retouch patches (retouch/*.png) for image layers and the background; older files have none
+      if (PE.retouch) await PE.retouch.fromHps(J, e, async (name) => { const m = zip.get(name); return m ? m.blob('image/png') : null; });
       closeImages(L.images);
       L.images = imgs; L.bgFile = { blob: bgBlob, name: str(B.fileName, 'background', 200), type: bgBlob.type };
       S.edits = e; S.history = [clone(e)]; S.index = 0;
