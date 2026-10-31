@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Compass CP2</title>
+  <script>/* theme early to avoid flash */try{var p=JSON.parse(localStorage.getItem('compass-settings-v1')||'{}').theme||'system',h=localStorage.getItem('sites-hub.theme');if(p==='dark'||(p==='system'&&(h?h==='dark':matchMedia('(prefers-color-scheme: dark)').matches)))document.documentElement.classList.add('dark');}catch(e){document.documentElement.classList.add('dark');}</script>
+  <link rel="stylesheet" href="compass.css?v=20261031cp2">
+</head>
+<body>
+<div id="top">
+  <div class="seg" id="tabs"><button data-v="compass">Compass</button><button data-v="speed">Speed</button></div>
+  <label class="chk"><input type="checkbox" id="awake"> Keep screen on</label>
+</div>
+<div id="app">
+<section id="pane-compass">
+  <div id="readout"><span id="deg">---°</span> <span id="card"></span></div>
+  <div id="sub" class="mut">Magnetic north</div>
+  <div id="dialwrap">
+    <svg id="dial" viewBox="-160 -160 320 320" aria-label="Compass dial">
+      <g id="rose"></g>
+      <g id="lockg" hidden><path d="M0,-150 L-7,-136 L7,-136 Z" class="lockm"/></g>
+      <path d="M0,-158 L-9,-140 L9,-140 Z" class="index"/>
+      <line x1="0" y1="-128" x2="0" y2="-100" class="indexl"/>
+    </svg>
+    <div id="lockinfo" class="mut"></div>
+  </div>
+  <div id="msg" class="msg" hidden></div>
+  <div id="cal" class="msg warn" hidden>Move phone in a figure-8 to calibrate</div>
+  <div class="ctl">
+    <button id="start" class="btn acc big">Start compass</button>
+    <div class="row">
+      <div class="seg" id="north"><button data-v="mag">Magnetic</button><button data-v="true">True</button></div>
+      <button id="lock" class="btn">Lock bearing</button>
+    </div>
+    <div class="row">
+      <button id="loc" class="btn">Get location</button>
+    </div>
+    <div class="row">
+      <span class="mut small">Theme</span>
+      <div class="seg" id="theme"><button data-v="system">Auto</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div>
+    </div>
+    <p id="decl" class="mut small"></p>
+  </div>
+</section>
+<section id="pane-speed" hidden>
+  <svg id="sdial" viewBox="-160 -160 320 290" aria-label="Speedometer">
+    <g id="sscale"></g>
+    <line id="sneedle" x1="0" y1="0" x2="0" y2="-118" class="sneedle"/>
+    <circle r="8" class="snub"/>
+    <text id="sval" y="62" class="sval">0</text>
+    <text id="sunit" y="92" class="sunit">km/h</text>
+  </svg>
+  <div id="gps" class="msg">Waiting for GPS…</div>
+  <div class="stats">
+    <div><span class="mut small">Top speed</span><b id="st-top">0</b></div>
+    <div><span class="mut small">Avg moving</span><b id="st-avg">0</b></div>
+    <div><span class="mut small">Distance</span><b id="st-dist">0</b></div>
+    <div><span class="mut small">Trip time</span><b id="st-time">0:00</b></div>
+    <div><span class="mut small">Altitude</span><b id="st-alt">—</b></div>
+    <div><span class="mut small">Low / high</span><b id="st-lh">—</b></div>
+  </div>
+  <div class="ctl">
+    <div class="row"><button id="trip" class="btn acc">Start trip</button><button id="reset" class="btn bad">Reset</button></div>
+    <div class="row">
+      <div class="seg" id="unit"><button data-v="metric">km/h · m</button><button data-v="imp">mph · ft</button></div>
+      <div class="seg" id="range"><button data-v="auto">Auto</button><button data-v="60">60</button><button data-v="160">160</button><button data-v="240">240</button></div>
+    </div>
+    <p class="mut small">GPS altitude only (no barometer in browsers), about ±10–30 m. Best outdoors with open sky.</p>
+  </div>
+</section>
+</div>
+<script src="compass_wmm.js?v=20261031cp1"></script>
+<script src="compass_app.js?v=20261031cp2"></script>
+<script src="compass_speed.js?v=20261031cp2"></script>
+</body>
+</html>
