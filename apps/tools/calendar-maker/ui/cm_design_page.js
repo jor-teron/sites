@@ -7,7 +7,8 @@
   /* const RELEASE = 'CM13';  (CM13) */
   /* const RELEASE = 'CM14';  (CM14) */
   /* const RELEASE = 'CM16';  (CM16-CM16-F5) */
-  const RELEASE = 'CM15'; /* was 'CM12' (CM10-CM12), 'CM13', 'CM14', 'CM16' */
+  /* const RELEASE = 'CM15';  (CM15) */
+  const RELEASE = 'CM17'; /* was 'CM12' (CM10-CM12), 'CM13', 'CM14', 'CM16', 'CM15' */
   CM.RELEASE = RELEASE; /* CM15: About card */
   const $ = (id) => document.getElementById(id);
   const P = S.loadSettings(location.search);
