@@ -1,9 +1,11 @@
-/* Shared Clipboard CB1/CB2 — UI + sync: screens (Clipboard, Devices, Settings), dots + 75 px wrap-around swipes,
+/* Shared Clipboard CB1/CB2/CB3 — UI + sync: screens (Clipboard, Devices, Settings), dots + 75 px wrap-around swipes,
    CB2: files by Ctrl+V paste / drag-drop (≤25 MB, 64 KB pieces, progress + Cancel), file cards, Save to folder, 200 MB file cap.
    in-app dialogs, Hub code, paste/drop/pick, send, history.
    Hub code, in order: #code= / ?hub= (QR), the Hub's {sharedLink:'hello'} (inside the Hub),
    parent.__hubRemote.code (phone Hub), localStorage 'jtsites-hub-ctrl-code' (desktop Hub),
    'shared-link-join-code', our last code, else the code dialog.
+   CB3: private only — URL code, else the Hub's HubMeshLink private code (public Hub -> stay offline), else the
+   older Hub sources, else last code; '0000' is always rejected; a 5 s check follows the Hub only when idle.
    Messages (through CBPeer's lobby): {k:'clip', it:{id, ts, kind, text?, img?, name}, priv?} to all or to one device;
    a new device gets {k:'recent', its:[…10 newest items shared with everyone]} from the lobby's own history. */
 (function () {
@@ -25,7 +27,7 @@
       (buttons || ['OK']).forEach(function (b, i, a) {
         var el = document.createElement('button'); el.className = i === a.length - 1 ? 'btn sm' + (/Clear/.test(b) ? ' bad' : '') : 'mini'; el.textContent = b;
         el.onclick = function () {
-          if (ask && i === a.length - 1) { var c = (inp.value.match(/\d{4}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 4-digit code.'; return; } $('dialog').hidden = true; return res(c); }
+          if (ask && i === a.length - 1) { var c = (inp.value.match(/\d{4}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 4-digit code.'; return; } if (c === '0000') { $('d-text').textContent = "Shared Clipboard is private only. Use your Hub's private code."; return; }   /* CB3 */ $('dialog').hidden = true; return res(c); }
           $('dialog').hidden = true; res(ask ? null : i);
         };
         row.appendChild(el);
@@ -38,36 +40,92 @@
 
   /* ---------- code ---------- */
   function ls(k) { try { return localStorage.getItem(k) || ''; } catch (_) { return ''; } }
+  /* Legacy (CB1/CB2 code order, replaced by CB3 — it could land on public 0000 and leak history/sends):
+       function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{4})/); return m ? m[1] : ''; }
+       function localCode() {
+         try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) return String(window.parent.__hubRemote.code); } catch (_) { /* * / }
+         var c = ls('jtsites-hub-ctrl-code'); if (/^\d{4}$/.test(c) && inHub) return c;
+         c = ls('shared-link-join-code'); if (/^\d{4}$/.test(c) && inHub) return c;
+         return '';
+       }
+       function go(c) {
+         if (started) { if (c === code) return; CBPeer.stop(); }
+         started = true; code = c; $('code-lbl').textContent = c;
+         try { localStorage.setItem(LAST, c); } catch (_) { /* * / }
+         CBPeer.start(c).catch(function () { setStatus('PeerJS could not load (offline?)'); });
+       }
+       function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) { if (c) go(c); }); }
+       function boot() {
+         var c = urlCode();
+         if (c) return go(c);
+         if (inHub) {
+           var got = false;
+           addEventListener('message', function (e) {
+             var d = e.data; if (e.source !== window.parent || !d || d.sharedLink !== 'hello' || got) return;
+             if (/^\d{4}$/.test(String(d.code || ''))) { got = true; go(String(d.code)); }
+           });
+           try { window.parent.postMessage({ sharedLink: 'ready', app: 'shared-clipboard', types: ['x-none/'] }, '*'); } catch (_) { /* * / }
+           setTimeout(function () { if (!got && !started) { var l = localCode() || ls(LAST); if (l) go(l); else { setStatus('Not connected'); askCode(); } } }, 800);
+           return;
+         }
+         c = ls(LAST) || ls('shared-link-join-code');
+         if (/^\d{4}$/.test(c)) go(c); else { setStatus('Not connected'); askCode(); }
+       }
+  */
+  /* CB3: private only — any '0000' (URL, Hub, last code, dialog) is rejected */
+  function ok(c) { c = String(c || ''); return /^\d{4}$/.test(c) && c !== '0000' ? c : ''; }
   function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{4})/); return m ? m[1] : ''; }
-  function localCode() {
-    try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) return String(window.parent.__hubRemote.code); } catch (_) { /* */ }
-    var c = ls('jtsites-hub-ctrl-code'); if (/^\d{4}$/.test(c) && inHub) return c;
-    c = ls('shared-link-join-code'); if (/^\d{4}$/.test(c) && inHub) return c;
+  function hml() { try { var h = window.parent !== window && window.parent.HubMeshLink; return h && typeof h.isPrivate === 'function' ? h : null; } catch (_) { return null; } }
+  function meshCode() { var h = hml(); if (!h) return ''; try { return h.isPrivate() ? ok(h.privateCode()) : ''; } catch (_) { return ''; } }
+  function localCode() {   // older Hub without HubMeshLink
+    try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) { var r = ok(window.parent.__hubRemote.code); if (r) return r; } } catch (_) { /* */ }
+    var c = ok(ls('jtsites-hub-ctrl-code')); if (c && inHub) return c;
+    c = ok(ls('shared-link-join-code')); if (c && inHub) return c;
     return '';
   }
+  function busy() { return Object.keys(xfers).length > 0; }
+  function needPrivate() {
+    if (started) { try { CBPeer.stop(); } catch (_) { /* */ } }
+    started = false; code = ''; $('code-lbl').textContent = '—'; setStatus('Private code needed');
+  }
   function go(c) {
+    c = ok(c); if (!c) return needPrivate();
     if (started) { if (c === code) return; CBPeer.stop(); }
     started = true; code = c; $('code-lbl').textContent = c;
     try { localStorage.setItem(LAST, c); } catch (_) { /* */ }
     CBPeer.start(c).catch(function () { setStatus('PeerJS could not load (offline?)'); });
   }
-  function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) { if (c) go(c); }); }
+  function askCode() {
+    dialog('Enter the 4-digit private Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) {
+      if (c) go(c);   // CB3: 0000 is refused inside the dialog, which stays open
+    });
+  }
+  var urlLocked = false;
   function boot() {
-    var c = urlCode();
-    if (c) return go(c);
+    var u = urlCode();
+    if (u) { urlLocked = true; if (ok(u)) return go(u); needPrivate(); return askCode(); }
+    var h = hml();
+    if (h) { var m = meshCode(); if (m) go(m); else needPrivate(); return; }   // Hub says public -> do not connect
     if (inHub) {
       var got = false;
       addEventListener('message', function (e) {
         var d = e.data; if (e.source !== window.parent || !d || d.sharedLink !== 'hello' || got) return;
-        if (/^\d{4}$/.test(String(d.code || ''))) { got = true; go(String(d.code)); }
+        if (ok(d.code)) { got = true; go(String(d.code)); }
       });
       try { window.parent.postMessage({ sharedLink: 'ready', app: 'shared-clipboard', types: ['x-none/'] }, '*'); } catch (_) { /* */ }
-      setTimeout(function () { if (!got && !started) { var l = localCode() || ls(LAST); if (l) go(l); else { setStatus('Not connected'); askCode(); } } }, 800);
+      setTimeout(function () { if (!got && !started) { var l = localCode() || ok(ls(LAST)); if (l) go(l); else { needPrivate(); askCode(); } } }, 800);
       return;
     }
-    c = ls(LAST) || ls('shared-link-join-code');
-    if (/^\d{4}$/.test(c)) go(c); else { setStatus('Not connected'); askCode(); }
+    var c = ok(ls(LAST)) || ok(ls('shared-link-join-code'));
+    if (c) go(c); else { needPrivate(); askCode(); }
   }
+  /* CB3: follow the Hub's private mesh every 5 s, only while no file is moving */
+  function follow() {
+    if (urlLocked || !hml() || busy()) return;
+    var m = meshCode();
+    if (m) { if (m !== code) go(m); } else if (started || code) needPrivate();
+  }
+  setInterval(follow, 5000);
   $('btn-code').onclick = askCode; $('btn-code2').onclick = askCode;
   function setStatus(t) { $('status').textContent = t; $('status2').textContent = t; }
 

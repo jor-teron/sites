@@ -1,4 +1,4 @@
-# Shared Clipboard — CB1 / CB2
+# Shared Clipboard — CB1 / CB2 / CB3
 
 Copy on one device, paste on another: text, links and images go to every device on the same Hub Connect Code (Connectivity → Share), or to one chosen device.
 
@@ -17,3 +17,15 @@ Copy on one device, paste on another: text, links and images go to every device 
 - **Cards:** icon by type, name, size, sender/time; Open (blob URL tab), Save, Share (`navigator.share` with files, only where `canShare`), Pin, Delete.
 - **Save folder (Settings):** where `showDirectoryPicker` exists (Chrome/Edge desktop) pick a folder once; the handle is kept in IndexedDB `clipboard-v1`/`kv` (DB version 2), permission is re-asked on use, and names get ` (1)`, ` (2)`… instead of overwriting. Otherwise, or when permission is refused, Save is a normal download. Nothing is ever saved automatically.
 - **Storage:** file blobs live in IndexedDB; all files together ≤ 200 MB — the oldest unpinned files go first, with a notice.
+
+## CB3 — private only (2026-11-01)
+
+- **Why:** on public 0000 anyone could receive the 10 newest shared items and every send. Shared Clipboard now never joins 0000.
+- **Code order:** `#code=` / `?hub=` / `join=` first; else inside the Hub `parent.HubMeshLink.isPrivate()` / `privateCode()` (try/catch for cross-origin) — if the Hub is public the app stays offline; else (older Hub) `{sharedLink:'hello'}`, `__hubRemote.code`, `jtsites-hub-ctrl-code`, `shared-link-join-code`; else the last code. Any `0000` from any source is rejected.
+- **Dialog:** typing 0000 shows "Shared Clipboard is private only. Use your Hub's private code." and asks again.
+- **No private code:** status "Private code needed", offline; local history (copy/download) still works.
+- **Follow the Hub:** every 5 s, while no file transfer is running, switch to a new Hub private code, or disconnect when the Hub turns public. A URL code is never overridden.
+
+## Legacy code notes
+
+- `clipboard_app.js`: the CB1/CB2 code order (`urlCode`/`localCode`/`go`/`askCode`/`boot`) is kept as an inline comment above the CB3 version.
