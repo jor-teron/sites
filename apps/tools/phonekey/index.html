@@ -1,36 +1,21 @@
 <!DOCTYPE html>
-<!--
-  Phone as a key (apps/tools/phonekey/index.html) — the PHONE side of the Hub's full-Drive
-  Google sign-in. Opened by scanning the QR on the computer (?hub=<Hub link code>&k=<room>).
-  One big "Sign in with Google" button (Google Identity Services, Mail's web client, scope drive +
-  openid email) → the token goes to the Hub over SharedLink (never in a URL) → "Sent ✓".
-  "Send again" renews quickly while this page stays open.
-  Files: phonekey.js, phonekey.css; shared/link (link_devices, link_core), shared/google
-  (google_config, google_gis).
--->
+<!-- Redirect entry point to phonekey.html (keeps ?query and #hash). IX8: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: IX8: this index.html WAS the real page; it was moved (git mv) to phonekey.html so index.html is only a redirect like every other app. -->
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="referrer" content="no-referrer" />
-  <title>Phone as a key</title>
-  <link rel="stylesheet" href="phonekey.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phone as a Key</title>
+  <link rel="canonical" href="phonekey.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('phonekey.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=phonekey.html"></noscript>
 </head>
-<body>
-  <main class="pk">
-    <div class="pk-ico" aria-hidden="true">&#128273;</div>
-    <h1>Phone as a key</h1>
-    <p class="pk-sub">Sign in to Google Drive on your computer's Hub.</p>
-    <p id="link" class="pk-link" role="status">Connecting to the Hub&hellip;</p>
-    <button type="button" id="go" class="pk-btn">Sign in with Google</button>
-    <button type="button" id="again" class="pk-btn pk-again" hidden>Send again</button>
-    <p id="msg" class="pk-msg" role="status"></p>
-    <p class="pk-note">The Hub gets full access to your Google Drive for about an hour. Nothing is stored on this phone.</p>
-  </main>
-  <script src="../../../shared/link/link_devices.js"></script>
-  <script src="../../../shared/link/link_core.js"></script>
-  <script src="../../../shared/google/google_config.js"></script>
-  <script src="../../../shared/google/google_gis.js"></script>
-  <script src="phonekey.js"></script>
-</body>
+<body><noscript><p><a href="phonekey.html">Open Phone as a Key</a></p></noscript></body>
 </html>

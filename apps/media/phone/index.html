@@ -1,50 +1,21 @@
 <!DOCTYPE html>
-<html>
+<!-- Redirect entry point to phone.html (keeps ?query and #hash). IX8: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: IX8: this index.html WAS the real page; it was moved (git mv) to phone.html so index.html is only a redirect like every other app. -->
+<html lang="en">
 <head>
-<title>Open Android App</title>
-<link type="text/css" rel="stylesheet" href="common.css">
-<link type="text/css" rel="stylesheet" href="phone.css">
-<link type="text/css" rel="stylesheet" href="../../../shared/style/no-scrollbar.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Open Android App</title>
+  <link rel="canonical" href="phone.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('phone.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=phone.html"></noscript>
 </head>
-<body>
-	
-<div class="clock"></div>
-<div>
-<span id="phone-model"> Lumo </span>	
-	<br >
-<span id="phone-company"><i> Made by Nokea </i> </span>	
-</div>
-
-
-<div class="home">
-<!--
-	<a href="https://www.google.com/" target="_blank"> 
-		<img class="icons" src="https://www.google.com/s2/favicons?domain=google.com&sz=128" >
-	</a>
-	<a href="vnd.youtube://"> 
-		<img src="https://www.google.com/s2/favicons?domain=https://www.youtube.com/&sz=128" alt="YouTube Logo">
-	</a>
--->
-	<a href="upi://pay">
-		<img src="../../../shared/image/placeholder.png">
-	</a>
-	<a href="tel://">
-		<img src="../../../shared/image/placeholder.png">
-	</a>
-	<a href="more-phone.html">
-		<img src="../../../shared/image/placeholder.png">
-	</a>
-
-</div>
-
-<!--
-<a href=""> Refresh </a>
-
-	<a href="intent:#Intent;action=android.settings.SETTINGS;end">
-		<img src="../../../shared/image/placeholder.png">
-	</a>
--->
-
-<script src="../../../shared/script/time.js"></script>
-</body>
+<body><noscript><p><a href="phone.html">Open Open Android App</a></p></noscript></body>
 </html>

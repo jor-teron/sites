@@ -1,26 +1,21 @@
-<!doctype html>
-<!-- Speed Test (ST1) — ping + download against files hosted in this app (data/). No outside services, no upload. -->
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Speed Test</title><link rel="stylesheet" href="speedtest.css">
-<script src="../../../shared/theme/hub_theme.js"></script></head><body>
-<main class="st">
-  <header class="st-head"><h1>Speed Test</h1>
-    <div class="seg" role="group" aria-label="Unit" id="unitSeg"><button class="btn" data-u="MBps">MB/s</button><button class="btn" data-u="Mbps">Mbps</button></div></header>
-  <section class="panel gauge-box">
-    <svg viewBox="0 0 200 120" class="gauge" aria-hidden="true">
-      <path d="M20 110 A80 80 0 0 1 180 110" class="g-bg"/><path id="gArc" d="M20 110 A80 80 0 0 1 180 110" class="g-fg"/>
-      <line id="gNeedle" x1="100" y1="110" x2="100" y2="40" class="g-needle"/><circle cx="100" cy="110" r="6" class="g-hub"/></svg>
-    <div class="g-val"><span id="speed">0.0</span> <span id="unit">MB/s</span></div>
-    <div id="status" class="mut" aria-live="polite">Ready</div>
-    <div class="row"><div class="seg" role="group" aria-label="Duration"><button class="btn" data-d="5">5 s</button><button class="btn" data-d="10">10 s</button><button class="btn" data-d="15">15 s</button></div>
-      <button id="start" class="btn primary">▶ Start</button></div>
-  </section>
-  <section class="panel grid">
-    <div><div class="mut">Ping avg</div><b id="pAvg">–</b></div><div><div class="mut">Best / worst</div><b id="pBW">–</b></div>
-    <div><div class="mut">Jitter</div><b id="pJit">–</b></div><div><div class="mut">Data used</div><b id="used">–</b></div>
-  </section>
-  <section class="panel"><div class="mut">Connection (browser estimate)</div><div id="conn">Not available</div></section>
-  <section class="panel"><h2>History <button id="clr" class="btn small">Clear</button></h2><ul id="hist" class="hist"></ul></section>
-</main>
-<script src="speedtest_core.js"></script><script src="speedtest_ui.js"></script>
-</body></html>
+<!DOCTYPE html>
+<!-- Redirect entry point to speedtest.html (keeps ?query and #hash). IX8: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: IX8: this index.html WAS the real page; it was moved (git mv) to speedtest.html so index.html is only a redirect like every other app. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Speed Test</title>
+  <link rel="canonical" href="speedtest.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('speedtest.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=speedtest.html"></noscript>
+</head>
+<body><noscript><p><a href="speedtest.html">Open Speed Test</a></p></noscript></body>
+</html>
