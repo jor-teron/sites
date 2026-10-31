@@ -77,3 +77,7 @@ body.land #sheet{aspect-ratio:297/210;max-width:calc((100vh - 90px) * 1.4142)}
   body.land #print-img{width:297mm;height:210mm} /* CM5 */
   html,body{margin:0;padding:0}
 }
+/* CM9: holiday type chip + restricted sub-heading */
+.hl .chip{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid #6aa84f;background:#92d36e;color:#000}
+.hl .chip.r{border-color:#999;background:#cfcfcf}
+.hl li.sub{font-weight:700;opacity:.8;padding-top:10px;border:0}
