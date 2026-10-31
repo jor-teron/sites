@@ -208,3 +208,22 @@ function showEnd(res) {
     ['pointerdown', 'mousedown', 'touchstart', 'wheel'].forEach(t => ov.addEventListener(t, e => e.stopPropagation(), { passive: true }));
     ov.style.display = 'flex'; Sfx.play(res === 'lose' ? 'error' : 'train');
 }
+
+/** ARQ1d team stats table (replaces the one-line top bar): one row per team, eliminated teams greyed; narrow screens show Pop + Army, tap to expand */
+let statsIds = '', statsCells = [], statsT = 0;
+function updateStats(force) {
+    const now = performance.now(); if (!force && now - statsT < 500) return; statsT = now;
+    const ids = MODE === 'aivai' ? Object.keys(factions) : ['p', ...Object.keys(factions)];
+    if (ids.join() !== statsIds) {   // build the table once; later updates only touch changed cells
+        statsIds = ids.join(); const x = ' class="x"';
+        hudText.innerHTML = `<table><tr><th></th><td>Pop</td><td${x}>Vil</td><td>Army</td><td${x}>Bld</td><td${x}>Food</td><td${x}>Wood</td><td${x}>Gold</td><td${x}>Stone</td></tr>` +
+            ids.map(id => `<tr><th><i style="background:${TEAM[id].mm}"></i>${TEAM[id].name}</th><td></td><td${x}></td><td></td>` + `<td${x}></td>`.repeat(5) + '</tr>').join('') + '</table>';
+        statsCells = [...hudText.querySelectorAll('tr')].slice(1).map(r => [r, ...r.querySelectorAll('td')]); force = true;
+    }
+    ids.forEach((id, i) => { const r = id === 'p' ? resources : factions[id].res, u = villagers.filter(v => own(v) === id), mil = u.filter(v => v.mil).length, row = statsCells[i];
+        const bld = tcs.filter(t => own(t) === id).length + houses.filter(h => own(h) === id && h.done).length, dead = !tcs.some(t => own(t) === id) && !u.length;
+        row[0].classList.toggle('dead', dead);
+        [popCount(id) + '/' + popCap(id), u.length - mil, mil, bld, ...['food', 'wood', 'gold', 'stone'].map(k => Math.floor(r[k]))].forEach((v, k) => { v = String(v); if (row[k + 1].textContent !== v) row[k + 1].textContent = v; }); });
+    if (force) document.getElementById('info').style.top = (document.getElementById('topbar').offsetHeight + 14) + 'px';
+}
+document.getElementById('topbar').addEventListener('pointerdown', e => { e.stopPropagation(); const t = document.getElementById('topbar'); t.classList.toggle('open'); updateStats(true); });

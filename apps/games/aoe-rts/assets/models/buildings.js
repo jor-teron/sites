@@ -2,9 +2,30 @@
 (() => {
     const { PI, add, rnd, setSeed, col, poly, ell, line, lerp, lin, shadow, leftF, rightF, planks, stones, roofTiles } = AOE.art;
     // ---------- buildings ----------
+    /** ARQ1d: soft drop shadow (radial fade, cast down-right) for buildings; nature keeps the plain shadow */
+    function soft(c, rx, ry) {
+        c.save(); c.translate(rx * 0.12, ry * 0.18); c.scale(1, ry / rx); const g = c.createRadialGradient(0, 0, rx * 0.3, 0, 0, rx * 1.1);
+        g.addColorStop(0, 'rgba(0,0,0,0.38)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.beginPath(); c.arc(0, 0, rx * 1.1, 0, 2 * PI); c.fill(); c.restore();
+    }
+    /** ARQ1d: timber beam on an iso wall face (t 0..1 along the face, heights above y) */
+    function beam(c, w, d, y, side, t0, h0, t1, h1, wd = 3.5) {
+        const P = (t, hh) => side < 0 ? [-w + w * t, y + d * t - hh] : [w * t, y + d - d * t - hh], a = P(t0, h0), b = P(t1, h1);
+        line(c, a[0], a[1], b[0], b[1], wd, '#5a3a1a'); line(c, a[0], a[1] - 1, b[0], b[1] - 1, 1, '#8a5a30');
+    }
+    /** ARQ1d: shuttered window on an iso face */
+    function win(c, w, d, y, side, t0, t1, h0, h1, lit) {
+        const P = (t, hh) => side < 0 ? [-w + w * t, y + d * t - hh] : [w * t, y + d - d * t - hh];
+        poly(c, [P(t0, h0), P(t1, h0), P(t1, h1), P(t0, h1)], lit ? '#ffd27a' : '#2a2018', '#4a2e12', 1.5);
+        const m = (t0 + t1) / 2, s = (t1 - t0) * 0.45; [[t0 - s, t0], [t1, t1 + s]].forEach(q => poly(c, [P(q[0], h0), P(q[1], h0), P(q[1], h1), P(q[0], h1)], '#7a4a24', '#3a2410', 0.8));
+        line(c, ...P(m, h0), ...P(m, h1), 1, '#4a2e12'); poly(c, [P(t0 - 0.02, h0), P(t1 + 0.02, h0), P(t1 + 0.02, h0 - 3), P(t0 - 0.02, h0 - 3)], '#6a4622', '#3a2410', 0.6);
+    }
+    /** ARQ1d: chimney smoke loop (baked frames) */
+    function smoke(c, f) {
+        for (let i = 0; i < 3; i++) { const t = ((f / 6) + i / 3) % 1; ell(c, Math.sin(t * 5 + i) * 4 + t * 10, -t * 70, 5 + t * 11, 4 + t * 9, `rgba(210,205,198,${(0.5 * (1 - t)).toFixed(2)})`); }
+    }
     function house(c, stage, k) {
         const w = 54, d = 27, H = 62, fh = 8;
-        shadow(c, 70, 34);
+        soft(c, 58, 26);
         poly(c, [[-64, 0], [0, 32], [64, 0], [0, -32]], '#9c8a66'); poly(c, [[-64, 0], [0, 32], [64, 0], [0, -32]], null, 'rgba(60,40,20,0.4)', 1);
         // stone foundation
         poly(c, [[-w, 0], [0, d], [w, 0], [0, -d]], '#8a8478');
@@ -16,11 +37,16 @@
         // walls: planks
         poly(c, leftF(w, d, y, wh), lin(c, -w, 0, 0, 0, ['#d8b27a', '#c9a26a']), '#6b4423', 1); planks(c, w, d, y, wh, Math.round(wh / 7), 'rgba(90,58,26,0.55)', -1);
         poly(c, rightF(w, d, y, wh), lin(c, 0, 0, w, 0, ['#b08a55', '#94723f']), '#5a3a1a', 1); planks(c, w, d, y, wh, Math.round(wh / 7), 'rgba(70,44,18,0.6)', 1);
+        if (stage > 2) [-1, 1].forEach(s => { beam(c, w, d, y, s, 0, H * 0.45, 1, H * 0.45); beam(c, w, d, y, s, 0, H - 2, 1, H - 2); beam(c, w, d, y, s, 0, 0, 0.3, H * 0.45, 2.5); beam(c, w, d, y, s, 1, 0, 0.7, H * 0.45, 2.5); });   // ARQ1d timber frame
         posts(H);
         const ry = y - H, A = [-w - 8, ry + 2], F = [0, ry + d + 6], B = [w + 8, ry + 2], apex = [0, ry - 58], back = [0, ry - d - 4];
         if (stage === 2) { line(c, A[0] + 8, ry, apex[0], apex[1], 3, '#6b4423'); line(c, B[0] - 8, ry, apex[0], apex[1], 3, '#6b4423'); line(c, F[0], ry + d, apex[0], apex[1], 3, '#6b4423'); return; }
         // door + window
+        poly(c, [[-33, y + 12], [-14, y + 21], [-14, y - 15], [-33, y - 23]], '#6b4423');                     // ARQ1d door frame + step
         poly(c, [[-30, y + 11], [-17, y + 17.5], [-17, y - 14], [-30, y - 20]], '#3a2412', '#20140a', 1); ell(c, -20, y - 1, 1.3, 1.3, '#d9b24a');
+        for (let i = 1; i < 3; i++) line(c, -30 + i * 4.3, y + 11 + i * 2.2, -30 + i * 4.3, y - 20 + i * 2.2, 0.7, '#20140a');
+        poly(c, [[-34, y + 13], [-13, y + 23], [-10, y + 21], [-31, y + 11]], '#a49a88', '#6a655c', 0.6);
+        win(c, w, d, y, -1, 0.15, 0.3, 30, 44, stage === 4);
         poly(c, [[16, y - 22], [30, y - 29], [30, y - 41], [16, y - 34]], stage === 4 ? '#ffd27a' : '#2a2018', '#5a3a1a', 2); line(c, 23, y - 25.5, 23, y - 37.5, 1, '#5a3a1a');
         const a = stage === 3 ? k : 1;
         c.globalAlpha = a;
@@ -29,11 +55,12 @@
         line(c, F[0], F[1], apex[0], apex[1], 2, '#c86a4a');
         c.globalAlpha = 1;
         if (stage === 3) { line(c, A[0] + 8, ry, apex[0], apex[1], 3, '#6b4423'); line(c, B[0] - 8, ry, apex[0], apex[1], 3, '#6b4423'); [[-w - 10, 4], [w + 10, 4]].forEach(o => { line(c, o[0], y + o[1], o[0], ry - 10, 2, '#8a6a3a'); for (let i = 0; i < 4; i++) line(c, o[0] - 6, y - i * 18, o[0] + 6, y - i * 18, 1.6, '#8a6a3a'); }); }
-        if (stage === 4) { poly(c, [[18, ry - 20], [28, ry - 25], [28, ry - 50], [18, ry - 45]], '#7a756c', '#4a4640', 1); for (let i = 1; i < 4; i++) line(c, 18, ry - 20 - i * 6, 28, ry - 25 - i * 6, 0.7, '#4a4640'); ell(c, 23, ry - 47.5, 5, 2.2, '#3a3632'); }
+        if (stage === 4) { poly(c, [[18, ry - 20], [28, ry - 25], [28, ry - 50], [18, ry - 45]], '#7a756c', '#4a4640', 1); for (let i = 1; i < 4; i++) line(c, 18, ry - 20 - i * 6, 28, ry - 25 - i * 6, 0.7, '#4a4640'); ell(c, 23, ry - 47.5, 5, 2.2, '#3a3632');
+            poly(c, [[15, y - 21], [31, y - 29], [31, y - 25], [15, y - 17]], '#7a4a24', '#3a2410', 0.6); for (let i = 0; i < 4; i++) ell(c, 17 + i * 4, y - 22 - i * 2, 2, 1.6, i % 2 ? '#e05080' : '#f0d040'); }   // flower box
     }
     function townCenter(c) {
         // paved pad (2x2 tiles)
-        shadow(c, 150, 60);
+        soft(c, 120, 52);
         poly(c, [[-128, 0], [0, 64], [128, 0], [0, -64]], '#a08a62', 'rgba(70,50,30,0.5)', 1.2);
         for (let i = 0; i < 70; i++) { const u = rnd() * 2 - 1, v = rnd() * 2 - 1; if (Math.abs(u) + Math.abs(v) > 0.95) continue; ell(c, u * 110 * 0.5 + v * 110 * 0.5, (v - u) * 28, 6 + rnd() * 4, 3 + rnd() * 1.5, col(0x9a8a6a, 0.85 + rnd() * 0.3)); }
         const W = 112, D = 56, FH = 24;
@@ -54,6 +81,11 @@
         line(c, -51, by + 24, -51, by - 18, 1, '#5a3a1a'); ell(c, -44, by + 6, 1.6, 1.6, '#d9b24a');
         [[24, 46], [60, 28]].forEach(p => { poly(c, [[p[0], by - p[1] + 5 - 30], [p[0] + 16, by - p[1] - 3 - 30], [p[0] + 16, by - p[1] - 23 - 30], [p[0], by - p[1] - 15 - 30]], '#ffd27a', '#5a3a1a', 2.5); line(c, p[0] + 8, by - p[1] + 1 - 30, p[0] + 8, by - p[1] - 19 - 30, 1.2, '#5a3a1a'); });
         poly(c, [[-82, by - 40], [-68, by - 33], [-68, by - 53], [-82, by - 60]], '#ffd27a', '#5a3a1a', 2.5);
+        // ARQ1d: lanterns by the door, flower boxes, shuttered upper window
+        [[-68, by - 8], [-34, by + 9]].forEach(p => { line(c, p[0], p[1], p[0] + 4, p[1] - 2, 1.2, '#2a1a0c'); poly(c, [[p[0] + 2, p[1] - 1], [p[0] + 7, p[1] - 1], [p[0] + 6.5, p[1] + 7], [p[0] + 2.5, p[1] + 7]], '#ffcc60', '#2a1a0c', 1); ell(c, p[0] + 4.5, p[1] + 3, 5, 5, 'rgba(255,200,90,0.25)'); });
+        [[24, 46], [60, 28]].forEach(p => { poly(c, [[p[0] - 1, by - p[1] - 23], [p[0] + 17, by - p[1] - 32], [p[0] + 17, by - p[1] - 28], [p[0] - 1, by - p[1] - 19]], '#7a4a24', '#3a2410', 0.6);
+            for (let i = 0; i < 4; i++) ell(c, p[0] + 2 + i * 4, by - p[1] - 24 - i * 2, 2.2, 1.7, i % 2 ? '#e05080' : '#f0d040'); });
+        win(c, w, d, by, -1, 0.45, 0.6, 56, 74, true);
         // hip roof with tiles
         const ry = by - h, A = [-w - 12, ry + 3], F = [0, ry + d + 9], B = [w + 12, ry + 3], apex = [0, ry - 95], back = [0, ry - d - 6];
         poly(c, [back, A, apex], '#9e3c26'); poly(c, [back, B, apex], '#5a1c10');
@@ -74,11 +106,14 @@
     /** ARQ1b Barracks: dark timber hall on a stone footing, slate roof, crossed swords on the front */
     function barracks(c) {
         const w = 58, d = 29, H = 46, y = -H - 6;
-        shadow(c, 74, 36); poly(c, [[-64, 0], [0, 32], [64, 0], [0, -32]], '#8a7a5a');
+        soft(c, 60, 30); poly(c, [[-64, 0], [0, 32], [64, 0], [0, -32]], '#8a7a5a');
         poly(c, leftF(w, d, 0, 6), '#8a8478'); poly(c, rightF(w, d, 0, 6), '#6a655c');
         poly(c, leftF(w, d, -6, H), lin(c, -w, 0, 0, 0, ['#8a6238', '#6e4a28']), '#2e1c0a', 1); poly(c, rightF(w, d, -6, H), lin(c, 0, 0, w, 0, ['#5e4226', '#4a321a']), '#22140a', 1);
         planks(c, w, d, -6, H, 6, 'rgba(30,18,8,0.5)', -1); planks(c, w, d, -6, H, 6, 'rgba(30,18,8,0.5)', 1);
+        [-1, 1].forEach(s => { beam(c, w, d, -6, s, 0, H - 2, 1, H - 2, 4); [0, 0.5, 1].forEach(t => beam(c, w, d, -6, s, t, 0, t, H, 4)); });   // ARQ1d heavy timber frame
+        win(c, w, d, -6, -1, 0.1, 0.2, 26, 38, false); win(c, w, d, -6, 1, 0.75, 0.85, 26, 38, false);
         poly(c, [[-38, 4], [-20, 13], [-20, -20], [-38, -29]], '#2a1a0c', '#140c04', 1);
+        [[-50, 0], [-46, 2]].forEach(p => line(c, p[0], p[1] - 4, p[0] + 3, p[1] - 30, 1.6, '#6a4a22')); line(c, -49, -26, -42, -24, 1.4, '#c0c4c8');   // spear rack by the door
         const A = [-w - 5, y], F = [0, y + d + 3], B = [w + 5, y], apex = [0, y - 36], back = [0, y - d - 3];
         poly(c, [back, A, apex], '#3e3e46'); poly(c, [A, F, apex], lin(c, A[0], 0, 0, 0, ['#6a6a76', '#545460']), '#22222a', 1); poly(c, [F, B, apex], '#40404a', '#22222a', 1);
         roofTiles(c, A, F, apex, 9, 'rgba(20,20,28,0.5)'); roofTiles(c, F, B, apex, 9, 'rgba(10,10,16,0.5)');
@@ -89,5 +124,5 @@
         line(c, -9, 1, 9, 1, 2, '#5a3a1a'); poly(c, [[-7, 2], [7, 2], [7, 24], [0, 19], [-7, 24]], lin(c, -7, 0, 7, 0, pal.slice(0, 3)), pal[3], 0.8);
         line(c, -7, 5, 7, 5, 1.2, '#d9b24a'); ell(c, 0, 11, 2.6, 2.6, '#d9b24a');
     }
-    Object.assign(AOE.models, { house, townCenter, flag, barracks, banner });
+    Object.assign(AOE.models, { house, townCenter, flag, barracks, banner, smoke });
 })();

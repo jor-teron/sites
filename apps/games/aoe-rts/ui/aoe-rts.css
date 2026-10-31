@@ -136,3 +136,12 @@ html, body {
 #end-overlay h1 { margin: 0 0 16px; color: #f0d9a0; font-size: 40px; }
 #end-overlay button { touch-action: manipulation; font-size: 18px; padding: 8px 18px; background: #5a4426; color: #fff; border: 2px solid #c8a46a; border-radius: 8px; cursor: pointer; }
 #mode-overlay small { display: block; font-size: 12px; color: #d8c8a0; margin-top: 2px; }
+
+/* ARQ1d team stats table */
+#topbar { pointer-events: auto; cursor: pointer; padding: 4px 8px; }
+#hud table { border-collapse: collapse; font-size: 13px; }
+#hud th, #hud td { padding: 1px 6px; text-align: right; white-space: nowrap; }
+#hud th { text-align: left; } #hud tr:first-child td { font-size: 11px; color: #c8b080; font-weight: normal; }
+#hud i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; border: 1px solid #000; vertical-align: -1px; }
+#hud tr.dead { opacity: 0.4; text-decoration: line-through; }
+@media (max-width: 600px) { #hud table { font-size: 11px; } #hud th, #hud td { padding: 0 3px; } #topbar:not(.open) #hud .x { display: none; } #topbar.open { max-width: calc(100% - 16px); z-index: 31; background: rgba(20,16,10,0.94); } }
