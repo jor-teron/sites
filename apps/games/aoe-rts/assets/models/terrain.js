@@ -20,19 +20,6 @@
         for (let i = 0; i < 6; i++) ell(c, (rnd() - 0.5) * 100, 6 + (rnd() - 0.5) * 12, 2 + rnd() * 3, 1.5 + rnd() * 1.5, col(base, 0.9 + rnd() * 0.3));   // pebbles
     }
     AOE.models.rockOutcrop = rockOutcrop;
-    /** ARQ1t mountain: 2-3 tall rocky peaks with lit/shaded faces, strata lines and snow caps (impassable) */
-    AOE.models.mountainPeak = (c, v) => {
-        shadow(c, 70, 22);
-        const base = [0x6a6258, 0x5c564e, 0x726a5e, 0x625a50][v % 4], n = 2 + (v % 2), pk = [];
-        for (let i = 0; i < n; i++) pk.push([(i - (n - 1) / 2) * 44 + (rnd() - 0.5) * 16, (rnd() - 0.5) * 10, 34 + rnd() * 12, 80 + rnd() * 50 * (i === 1 ? 1.25 : 1)]);
-        pk.sort((a, b) => b[3] - a[3]).sort((a, b) => a[1] - b[1]);
-        pk.forEach(([x, y, w, h]) => { const top = [x + (rnd() - 0.5) * 8, y - h], B = [x + w * 0.15, y + 8];
-            poly(c, [[x - w, y], top, B], col(base, 1.2), col(base, 0.45), 1);
-            poly(c, [B, top, [x + w, y]], col(base, 0.7), col(base, 0.4), 1);
-            for (let s = 1; s <= 3; s++) { const t = s / 4; line(c, x - w * (1 - t), y - h * t, B[0] - w * 0.1, y - h * t + 6, 0.9, col(base, 0.5)); }
-            const sn = 0.28; poly(c, [[top[0] - w * sn, top[1] + h * sn], top, [top[0] + w * sn, top[1] + h * sn], [top[0] + w * 0.05, top[1] + h * sn * 0.7]], '#eef2f6', '#b8c0c8', 1);
-        });
-    };
 })();
 /** Ground painters used while baking grass chunks (core/render.js bakeChunk) */
 const TerrainArt = {
@@ -71,6 +58,37 @@ const TerrainArt = {
         });
         c.restore();
         if (hash(x, y, 210) > 0.7) { c.fillStyle = '#8a8474'; c.beginPath(); c.ellipse(p.x - 14, p.y + 4, 5, 3, 0, 0, 7); c.fill(); }
+    },
+    /** ARQ1t2 mountain ground tile: a little height-mesh (4 shared corners + a raised centre), so neighbouring cells join into one
+     *  range; each facet is lit by its slope, high facets get snow. dep(x, y) = cells to the range edge (0 = not mountain). */
+    mountain(c, p, x, y, dep, hash) {
+        const hw = TILE_WIDTH / 2, hh = TILE_HEIGHT / 2, LIFT = 46;
+        const ch = (u, v) => Math.max(0, Math.min(dep(u - 1, v - 1), dep(u, v - 1), dep(u - 1, v), dep(u, v)) - 1) * 0.8;   // corner (u, v) height
+        const P = [[0, -1, ch(x, y)], [1, 0, ch(x + 1, y)], [0, 1, ch(x + 1, y + 1)], [-1, 0, ch(x, y + 1)]], d = dep(x, y);
+        const C = [(hash(x, y, 300) - 0.5) * 0.8, (hash(x, y, 301) - 0.5) * 0.6, 0.55 + (d - 1) * 0.75 + hash(x, y, 302) * 0.35];
+        for (let k = 0; k < 4; k++) { const a = P[k], b = P[(k + 1) % 4];
+            // world-ish normal of facet (a, b, C): x = screen-right, y = screen-down, z = up
+            const ux = a[0] - C[0], uy = a[1] - C[1], uz = a[2] - C[2], vx = b[0] - C[0], vy = b[1] - C[1], vz = b[2] - C[2];
+            let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; if (nz < 0) { nx = -nx; ny = -ny; nz = -nz; }
+            const lit = Math.max(0, (-0.6 * nx - 0.5 * ny + 0.62 * nz) / Math.hypot(nx, ny, nz)), f = 0.5 + 0.7 * lit;
+            const snow = C[2] > 1.2 && (Math.max(a[2], b[2]) > 0.5 || hash(x, y, 304 + k) > 0.5);
+            const base = snow ? [236, 240, 244] : [150 + hash(x, y, 303 + k) * 18, 142, 126];
+            c.fillStyle = `rgb(${base.map(v => Math.min(255, v * (snow ? 0.55 + 0.5 * lit : f)) | 0)})`;
+            const s = q => [p.x + q[0] * hw, p.y + q[1] * hh - q[2] * LIFT];
+            const A = s(a), Bq = s(b), Cq = s(C);
+            c.beginPath(); c.moveTo(A[0], A[1]); c.lineTo(Bq[0], Bq[1]); c.lineTo(Cq[0], Cq[1]); c.closePath(); c.fill(); c.strokeStyle = c.fillStyle; c.lineWidth = 1; c.stroke();
+            c.strokeStyle = 'rgba(40,34,26,0.25)'; c.lineWidth = 1.2;   // strata
+            for (let i = 1; i < 3; i++) { const t = i / 3; c.beginPath(); c.moveTo(Cq[0] + (A[0] - Cq[0]) * t, Cq[1] + (A[1] - Cq[1]) * t); c.lineTo(Cq[0] + (Bq[0] - Cq[0]) * t * (0.6 + hash(x, y, 310 + i + k * 3) * 0.4), Cq[1] + (Bq[1] - Cq[1]) * t); c.stroke(); }
+        }
+    },
+    /** ARQ1t2 foothill fade: a soft rocky-brown shadow on the grass edges that touch a mountain (kept inside this tile) */
+    foothill(c, p, x, y, isM) {
+        const hw = TILE_WIDTH / 2, hh = TILE_HEIGHT / 2, T = [p.x, p.y - hh], Rr = [p.x + hw, p.y], B = [p.x, p.y + hh], L = [p.x - hw, p.y];
+        const E = [[1, 0, Rr, B], [0, 1, B, L], [-1, 0, L, T], [0, -1, T, Rr]].filter(e => isM(x + e[0], y + e[1]));
+        if (!E.length) return;
+        c.save(); c.beginPath(); c.moveTo(T[0], T[1]); c.lineTo(Rr[0], Rr[1]); c.lineTo(B[0], B[1]); c.lineTo(L[0], L[1]); c.closePath(); c.clip(); c.lineCap = 'round';
+        E.forEach(e => [[40, 'rgba(110,100,80,0.18)'], [22, 'rgba(100,90,72,0.3)'], [9, 'rgba(85,77,62,0.45)']].forEach(([w, f]) => { c.strokeStyle = f; c.lineWidth = w; c.beginPath(); c.moveTo(e[2][0], e[2][1]); c.lineTo(e[3][0], e[3][1]); c.stroke(); }));
+        c.restore();
     },
     /** Ford: shallow, see-through water over sand with pebbles and a gentle current */
     ford(c, p, x, y, hash) {

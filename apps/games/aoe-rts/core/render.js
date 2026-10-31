@@ -14,11 +14,17 @@ function bakeGround(scene) {
     for (let cy0 = 0; cy0 < MAP_SIZE; cy0 += CHUNK) for (let cx0 = 0; cx0 < MAP_SIZE; cx0 += CHUNK) {
         const x1 = Math.min(MAP_SIZE, cx0 + CHUNK), y1 = Math.min(MAP_SIZE, cy0 + CHUNK);
         const left = tileCenter(cx0, y1 - 1).x - hw, right = tileCenter(x1 - 1, cy0).x + hw;
-        const top = tileCenter(cx0, cy0).y - hh, bottom = tileCenter(x1 - 1, y1 - 1).y + hh;
+        const top = tileCenter(cx0, cy0).y - hh - 150, bottom = tileCenter(x1 - 1, y1 - 1).y + hh;
         groundChunks.push({ img: null, key: 'ground' + groundChunks.length, cx0, cy0, cx1: x1, cy1: y1, x0: left, y0: top, x1: right, y1: bottom, used: 0 });
     }
 }
 const GROUND_CACHE = 16;   // baked chunks kept in memory (each ~1100x560 px)
+/** ARQ1t2: cells from each mountain cell to the range edge (8-neighbour layers; 0 = not mountain), cached per map */
+let mDepth = null, mDepthOf = null;
+function mountDepth() { if (mDepthOf === mount) return mDepth; const S = MAP_SIZE, d = new Uint8Array(S * S); let q = [];
+    for (let i = 0; i < S * S; i++) if (mount[i]) { const x = i % S, y = (i - x) / S; d[i] = 255; if ([-1, 0, 1].some(a => [-1, 0, 1].some(b => !inMap(x + a, y + b) || !mount[(y + b) * S + x + a]))) { d[i] = 1; q.push(i); } }
+    for (let k = 1; q.length; k++) { const n = []; q.forEach(i => { const x = i % S, y = (i - x) / S; for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const j = (y + b) * S + x + a; if (inMap(x + a, y + b) && d[j] === 255) { d[j] = k + 1; n.push(j); } } }); q = n; }
+    mDepth = d; mDepthOf = mount; return d; }
 /** Bake one grass chunk on demand (only chunks near the view exist as textures) */
 function bakeChunk(ch) {
     const hw = TILE_WIDTH / 2, hh = TILE_HEIGHT / 2;
@@ -50,16 +56,19 @@ function bakeChunk(ch) {
             c.moveTo(p.x, p.y - hh); c.lineTo(p.x + hw, p.y); c.lineTo(p.x, p.y + hh); c.lineTo(p.x - hw, p.y); c.closePath(); c.stroke();
         }
         drawWaterTiles(c, cx0, cy0, x1, y1);
+        const isMount = (hx, hy) => inMap(hx, hy) && mount[hy * MAP_SIZE + hx] === 1, dep = (hx, hy) => inMap(hx, hy) ? mountDepth()[hy * MAP_SIZE + hx] : 0;
         const isHill = (hx, hy) => inMap(hx, hy) && hill[hy * MAP_SIZE + hx] === 1;   // R2b: hills + fords
         for (let y = cy0; y < y1; y++) for (let x = cx0; x < x1; x++) { const i = y * MAP_SIZE + x;
-            if (ford[i]) TerrainArt.ford(c, tileCenter(x, y), x, y, hash); else if (hill[i]) TerrainArt.hill(c, tileCenter(x, y), x, y, isHill, hash); }
+            if (mount[i]) continue; if (ford[i]) TerrainArt.ford(c, tileCenter(x, y), x, y, hash); else { if (hill[i]) TerrainArt.hill(c, tileCenter(x, y), x, y, isHill, hash); if (!water[i]) TerrainArt.foothill(c, tileCenter(x, y), x, y, isMount); } }
+        for (let s = cx0 + cy0; s <= x1 + y1 - 2; s++) for (let x = cx0; x < x1; x++) { const y = s - x;   // ARQ1t2: mountains back to front
+            if (y >= cy0 && y < y1 && mount[y * MAP_SIZE + x]) TerrainArt.mountain(c, tileCenter(x, y), x, y, dep, hash); }
         if (Math.abs(tc.x - (left + right) / 2) < W / 2 + 220 && Math.abs(tc.y - (top + bottom) / 2) < H / 2 + 120) {  // dirt around TC
             const grd = c.createRadialGradient(tc.x, tc.y, 20, tc.x, tc.y, 180);
             grd.addColorStop(0, 'rgba(150,120,80,0.9)'); grd.addColorStop(0.6, 'rgba(140,110,70,0.5)'); grd.addColorStop(1, 'rgba(140,110,70,0)');
             c.fillStyle = grd; c.beginPath(); c.ellipse(tc.x, tc.y, 210, 108, 0, 0, 7); c.fill();
         }
         scene.textures.addCanvas(ch.key, cv);
-        ch.img = scene.add.image(left, top, ch.key).setOrigin(0, 0).setDepth(-10);
+        ch.img = scene.add.image(left, top, ch.key).setOrigin(0, 0).setDepth(-10 + (cx0 + cy0) * 1e-4);   // ARQ1t2: lower chunks over upper (peaks rise into them)
 }
 /** Water: deep-blue diamonds with ripples, then a sandy shoreline + foam band on edges that touch land */
 function drawWaterTiles(c, cx0, cy0, x1, y1) {
@@ -121,8 +130,8 @@ function render() {
         if (!c || c.kind === 'tc' || !vis(x, y)) continue;
         if (c.kind === 'house') drawHouse(g, x, y, c.house); else drawNode(g, x, y, c);
     }
-    for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) if (rock[y * MAP_SIZE + x] && vis(x, y)) {   // R2b rock outcrops
-        const p = tileCenter(x, y); sprite((mount[y * MAP_SIZE + x] ? 'peak' : 'rock') + Math.floor(hash(x, y, 11) * 4), p.x + (hash(x, y, 12) - 0.5) * 10, p.y + 10, p.y + 8, hash(x, y, 13) > 0.5); }
+    for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) if (rock[y * MAP_SIZE + x] && !mount[y * MAP_SIZE + x] && vis(x, y)) {   // R2b rock outcrops
+        const p = tileCenter(x, y); sprite('rock' + Math.floor(hash(x, y, 11) * 4), p.x + (hash(x, y, 12) - 0.5) * 10, p.y + 10, p.y + 8, hash(x, y, 13) > 0.5); }
     drawTC(g, gu);
     deer.forEach(d => { if (d.x > vr.x0 && d.x < vr.x1 && d.y > vr.y0 && d.y < vr.y1 + 120) drawDeer(d); });
     villagers.forEach(v => { if (v.x > vr.x0 && v.x < vr.x1 && v.y > vr.y0 && v.y < vr.y1 + 120) drawVillager(g, gu, v); });
