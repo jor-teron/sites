@@ -1,7 +1,21 @@
-<!doctype html>
-<!-- LEGACY (R53): Settings moved to apps/system/settings/. This page only redirects old links, saved windows and
-     cached Hubs there, keeping ?query and #hash (like hub/controller/dpad.html). Safe to delete once old links are gone. -->
-<html lang="en"><head><meta charset="utf-8" /><title>Settings</title>
-<script>location.replace('../system/settings/' + location.search + location.hash);</script>
-<noscript><meta http-equiv="refresh" content="0; url=../system/settings/" /></noscript>
-</head><body><p><a href="../system/settings/">Settings</a></p></body></html>
+<!DOCTYPE html>
+<!-- Redirect entry point to ../system/settings/ (keeps ?query and #hash). IX7: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: LEGACY (R53) stub: Settings moved to apps/system/settings/; old links/saved windows/cached Hubs land here. Had a visible "Settings" link in <body>, now in <noscript>. Safe to delete once old links are gone. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings</title>
+  <link rel="canonical" href="../system/settings/">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('../system/settings/' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=../system/settings/"></noscript>
+</head>
+<body><noscript><p><a href="../system/settings/">Open Settings</a></p></noscript></body>
+</html>

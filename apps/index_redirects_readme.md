@@ -17,7 +17,8 @@ Every app folder has an `index.html` that only forwards to the real page (e.g. `
 - IX4 Media: done (15 pages; media/phone/index.html is a real page, not a redirect).
 - IX5 Office: done (12 pages).
 - IX6 Games: done (23 pages, done by Hub Apps Bot at Jor's request; Learn is Hub Games Bot's NIX-L1).
-- To do: About, Favorite, Settings, `tv/`.
+- IX7 leftovers: done (9 pages: 6 Tools pages that used `window.location.href` with no meta refresh, so the IX2 search missed them — msword_diff, weather-chart, weather-hourly, caption-for-nei, learning-html, calculator-beta — plus About (keeps its `#about` default), Favorite, Settings).
+- `tv/`: excluded by Jor (left as is).
 - Not ours: Learn (Hub Games Bot, NIX-L1), `apps/system/` and root `index.html` (Hub Main Bot).
 
 ## Legacy code notes

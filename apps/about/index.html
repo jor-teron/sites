@@ -1,7 +1,21 @@
-<!doctype html>
-<!-- LEGACY (R53): About moved to apps/system/about/ (itself a redirect to Settings → About). This page only redirects
-     old links straight to apps/system/settings/, keeping ?query; #hash kept, else #about. Safe to delete later. -->
-<html lang="en"><head><meta charset="utf-8" /><title>About</title>
-<script>location.replace('../system/settings/' + location.search + (location.hash || '#about'));</script>
-<noscript><meta http-equiv="refresh" content="0; url=../system/settings/#about" /></noscript>
-</head><body><p><a href="../system/settings/#about">About</a></p></body></html>
+<!DOCTYPE html>
+<!-- Redirect entry point to ../system/settings/ (keeps ?query and #hash). IX7: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: LEGACY (R53) stub: About moved to apps/system/about/ (itself a redirect to Settings → About); this goes straight to apps/system/settings/, keeping ?query, #hash kept else #about. Had a visible "About" link in <body>, now in <noscript>. Safe to delete later. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About</title>
+  <link rel="canonical" href="../system/settings/#about">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('../system/settings/' + location.search + (location.hash || '#about'));
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=../system/settings/#about"></noscript>
+</head>
+<body><noscript><p><a href="../system/settings/#about">Open About</a></p></noscript></body>
+</html>
