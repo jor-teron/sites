@@ -109,7 +109,8 @@
   /* Print: draw the sheet to an image and print only that (see @media print) */
   $('print').onclick = () => CM.Pdf.print($('print-img'), CM.sheetCanvas());
   /* Download PDF (CM2, was in calendar-maker_pdf.js) */
-  $('pdf').onclick = () => CM.Pdf.save($('pdf'), CM.sheetCanvas, CM.isLand(), String(P.year), 'calendar-' + P.year + '.pdf');
+  /* CM16-F4 was: $('pdf').onclick = () => CM.Pdf.save($('pdf'), CM.sheetCanvas, CM.isLand(), String(P.year), 'calendar-' + P.year + '.pdf'); */
+  $('pdf').onclick = () => CM.Pdf.save($('pdf'), CM.sheetCanvas, CM.isLand(), String(P.year), P.year + '-calendar.pdf');
   $('ver').textContent = RELEASE;
 
   /* CM3 tabs (only present once the Holidays page ships) */
