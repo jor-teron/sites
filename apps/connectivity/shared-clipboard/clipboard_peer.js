@@ -1,4 +1,4 @@
-/* Shared Clipboard CB1 — presence + data relay over PeerJS data connections only (no media; the Hub's peer is never touched).
+/* Shared Clipboard CB1/CB2 — presence + data relay over PeerJS data connections only (no media; the Hub's peer is never touched).
    Ids: me = 'jtsites-<code>-cb-<random>'; lobby = 'jtsites-<code>-cb-0' (same pattern as Video Chat VC1).
    The first device to claim the lobby id keeps the roster; every device (lobby owner too) opens a data
    connection to the lobby and sends {t:'hi', id, name}; the lobby broadcasts {t:'roster', list}.
@@ -6,6 +6,7 @@
    {t:'to', to, msg} → one device. When a NEW device says hi, the lobby sends it the 10 most recent shared items
    ({k:'recent'} from the lobby page's own history, via CBPeer.provide). If the lobby goes away, each
    device waits a random 0.3–1.8 s and tries to claim it; its history is what late joiners get.
+   CB2: file pieces ({k:'fmeta'|'fchunk'|'fcancel'}) ride the same {t:'all'|'to'} relay unchanged; old lobbies relay them too.
    PeerJS: SharedLink.PEERJS_URL (link_core.js) when present, else the same pinned URL. */
 (function () {
   'use strict';
@@ -101,6 +102,8 @@
   L._provided = function () { return provider ? provider() : null; };
   L.start = start; L.stop = stop; L.on = on; L.send = send; L.sendTo = sendTo; L.rename = hi;
   L.provide = function (f) { provider = f; };
+  /* CB2: bytes still queued on our data channel to the lobby (file sends pace on this) */
+  L.buffered = function () { try { return (lconn && lconn.dataChannel && lconn.dataChannel.bufferedAmount) || 0; } catch (_) { return 0; } };
   L.online = function () { return !!(lconn && lconn.open); };
   L.isLobby = function () { return !!lobby; };
   L.roster = function () { return roster; };
