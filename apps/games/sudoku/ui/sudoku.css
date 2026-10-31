@@ -1,4 +1,4 @@
-/* Sudoku SDQ1a — UI styles. */
+/* Sudoku SDQ1b — UI styles. */
 :root {
   --bg: #0f1419;
   --panel: #1a2129;
@@ -17,7 +17,7 @@ html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--te
 button { font: inherit; color: inherit; }
 
 /* SDQ1a: "use all the space" - the board is the biggest square that fits; --b is its side. Controls go below (portrait) or beside (landscape). */
-.sd-wrap { --b: min(100vw - 16px, 100dvh - 250px); box-sizing: border-box; min-height: 100dvh; align-content: center; display: grid; grid-template-areas: 'title' 'board' 'side'; justify-content: center; padding: 8px; text-align: center; }
+.sd-wrap { --b: min(100vw - 16px, 100dvh - 300px); box-sizing: border-box; min-height: 100dvh; align-content: center; display: grid; grid-template-areas: 'title' 'board' 'side'; justify-content: center; padding: 8px; text-align: center; }
 .sd-title { grid-area: title; font-size: 1.4rem; margin: 0 0 8px; }
 .sd-side { grid-area: side; width: var(--b); max-width: 520px; justify-self: center; }
 @media (orientation: landscape) and (min-width: 560px) {
@@ -83,3 +83,9 @@ button { font: inherit; color: inherit; }
 .sd-status { min-height: 1.4em; margin: 8px 0; color: var(--muted); font-size: 0.9rem; }
 .sd-status.ok { color: var(--ok); }
 .sd-status.bad { color: var(--bad); }
+
+/* SDQ1b: level label + number input + Go */
+.sd-level { display: flex; gap: 8px; align-items: center; justify-content: center; margin: 0 0 8px; }
+.sd-label { color: var(--muted); font-size: 0.9rem; margin-right: auto; }
+.sd-level input { width: 4.2em; padding: 8px; text-align: center; font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.sd-level button { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; }

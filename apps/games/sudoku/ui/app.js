@@ -1,5 +1,6 @@
-/* Sudoku SD1/SDQ1a — UI and logic.
-   Click a cell, tap a number (or arrows + 1-9 / Backspace on a keyboard). Clashes show live. Check validates. New loads a random easy puzzle. */
+/* Sudoku SD1/SDQ1a/SDQ1b — UI and logic.
+   Click a cell, tap a number (or arrows + 1-9 / Backspace on a keyboard). Clashes show live. Check validates.
+   SDQ1b: 1000 seeded levels (core/gen.js); type a level 000-999 and Go. Last level, per-level progress and solved levels persist in localStorage ('sudoku.*'). */
 (function () {
   'use strict';
 
@@ -8,15 +9,45 @@
   var selected = -1;
   var status = '';
   var refocus = false;
+  var level = 0;
+  var MAX_SAVED = 60;   // SDQ1b: cap on levels with saved progress (oldest dropped)
 
-  function loadPuzzle() {
-    var p = SD_PUZZLES[Math.floor(Math.random() * SD_PUZZLES.length)];
+  // SDQ1b: storage helpers; any corrupt or missing value is ignored
+  function lsGet(k, def) { try { var v = JSON.parse(localStorage.getItem('sudoku.' + k)); return v == null ? def : v; } catch (e) { return def; } }
+  function lsSet(k, v) { try { localStorage.setItem('sudoku.' + k, JSON.stringify(v)); } catch (e) {} }
+  function pad3(n) { return ('00' + n).slice(-3); }
+
+  function saveProgress() {
+    var prog = lsGet('progress', {}), order = lsGet('order', []);
+    if (typeof prog !== 'object' || Array.isArray(prog)) prog = {};
+    if (!Array.isArray(order)) order = [];
+    var s = board.map(function (n, i) { return given[i] ? 0 : n; }).join('');
+    order = order.filter(function (l) { return l !== level; });
+    if (/[1-9]/.test(s)) { prog[level] = s; order.push(level); } else delete prog[level];
+    while (order.length > MAX_SAVED) delete prog[order.shift()];
+    lsSet('progress', prog); lsSet('order', order); lsSet('last', level);
+  }
+
+  function loadLevel(l) {
+    level = l;
+    var p = SD_GEN.generate(l).puzzle, prog = lsGet('progress', {}), s = prog && prog[l];
     board = p.slice();
     given = p.map(function (n) { return n !== 0; });
+    if (typeof s === 'string' && /^[0-9]{81}$/.test(s)) for (var i = 0; i < 81; i++) if (!given[i] && s[i] !== '0') board[i] = +s[i];
     selected = -1;
     status = '';
+    lsSet('last', l);
     render();
   }
+
+  function goLevel() {   // SDQ1b: digits only; empty/letters ignored kindly, >999 clamped
+    var el = document.getElementById('sd-level'), v = String(el ? el.value : '').replace(/\D/g, '');
+    if (!v) { status = 'Type a level from 000 to 999'; render(); return; }
+    saveProgress();
+    loadLevel(Math.min(999, parseInt(v, 10)));
+  }
+
+  function isSolved(l) { var s = lsGet('solved', []); return Array.isArray(s) && s.indexOf(l) >= 0; }
 
   function render() {
     var bad = clashes();
@@ -40,13 +71,15 @@
         '<h1 class="sd-title">🔢 Sudoku</h1>' +
         '<div class="sd-board" role="grid" aria-label="Sudoku board">' + cells + '</div>' +
         '<div class="sd-side">' +
+        '<div class="sd-level"><span class="sd-label">Level ' + pad3(level) + ' \u00b7 ' + SD_GEN.band(level) + (isSolved(level) ? ' \u2713' : '') + '</span>' +
+          '<input id="sd-level" type="text" inputmode="numeric" maxlength="3" pattern="[0-9]*" aria-label="Level number 000 to 999" placeholder="000" value="' + pad3(level) + '">' +
+          '<button type="button" id="sd-go">Go</button></div>' +
         '<div class="sd-pad">' + pad + '</div>' +
         '<div class="sd-status' + (status === 'ok' ? ' ok' : status ? ' bad' : '') + '" aria-live="polite">' +
           (status === 'ok' ? 'Correct!' : status === 'bad' ? 'Some numbers are wrong' : status || 'Tap a cell, then a number') +
         '</div>' +
         '<div class="sd-actions">' +
           '<button type="button" class="primary" id="sd-check">Check</button>' +
-          '<button type="button" id="sd-new">New puzzle</button>' +
         '</div>' +
         '</div>' +
       '</div>';
@@ -66,7 +99,7 @@
     return bad;
   }
 
-  function put(n) { if (selected < 0 || given[selected]) return; board[selected] = n; status = ''; render(); }
+  function put(n) { if (selected < 0 || given[selected]) return; board[selected] = n; status = ''; saveProgress(); render(); }
 
   function onKey(e) {   // SDQ1a: keyboard play on the focused cell
     var i = selected < 0 ? 0 : selected, k = e.key, mv = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -9, ArrowDown: 9 }[k];
@@ -105,8 +138,9 @@
     var check = document.getElementById('sd-check');
     if (check) check.addEventListener('click', doCheck);
 
-    var neu = document.getElementById('sd-new');
-    if (neu) neu.addEventListener('click', loadPuzzle);
+    var go = document.getElementById('sd-go'), inp = document.getElementById('sd-level');
+    if (go) go.addEventListener('click', goLevel);
+    if (inp) inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); goLevel(); } });
   }
 
   function doCheck() {
@@ -116,7 +150,12 @@
       render();
       return;
     }
-    if (isValid()) status = 'ok';
+    if (isValid()) {
+      status = 'ok';
+      var sv = lsGet('solved', []);
+      if (!Array.isArray(sv)) sv = [];
+      if (sv.indexOf(level) < 0) { sv.push(level); lsSet('solved', sv); }
+    }
     else status = 'bad';
     render();
   }
@@ -154,5 +193,6 @@
     return true;
   }
 
-  loadPuzzle();
+  var last = lsGet('last', 0);
+  loadLevel(typeof last === 'number' && last >= 0 && last <= 999 ? Math.floor(last) : 0);
 })();
