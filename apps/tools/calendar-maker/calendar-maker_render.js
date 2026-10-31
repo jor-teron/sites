@@ -1,7 +1,7 @@
 /* Calendar Maker renderer (CM1): draws the whole A4 portrait sheet (all 12 months, 3 x 4) on a canvas.
    The same drawing is used for the on-screen preview, Print (as an image) and the PDF (CM2), so all three match.
    window.CMRender.draw(canvas, o) with o = { year, week:'sun'|'mon', colour, sundays, sat:'none'|'24'|'all',
-     hols:[{m,d,name}], bg:{type:'none'|'soft'|'pic', colour, img, faint} (CM2), strip (CM2) }
+     hols:[{m,d,name}], fold (CM5, default true), bg:{type:'none'|'soft'|'pic', colour, img, faint} (CM2), strip (CM2) }
    Sheet size: 210 x 297 mm at 250 dpi = 2067 x 2923 px (scale 1 = one sheet pixel). */
 window.CMRender = (function () {
   'use strict';
@@ -53,22 +53,28 @@ window.CMRender = (function () {
       c.drawImage(bg.img, (W - iw) / 2, (H - ih) / 2, iw, ih);
       c.globalAlpha = 1;
     }
-    const M = Math.round(7 * PX_MM); /* ~7 mm page margin */
+    /* const M = Math.round(7 * PX_MM);  (CM1-CM4: ~7 mm page margin) */
+    const M = Math.round(4 * PX_MM); /* CM5: ~4 mm, printer safe minimum */
     /* title */
     c.fillStyle = '#111'; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.font = '800 150px ' + FONT;
     /* c.fillText('YEAR ' + y, W / 2, M + 85);  (CM1-CM3 title) */
-    c.fillText(String(y), W / 2, M + 85); /* CM4: title is just YYYY */
-    let top = M + 200;
+    /* c.fillText(String(y), W / 2, M + 85); let top = M + 200;  (CM4: 150px title, 200px band) */
+    c.font = '800 120px ' + FONT; /* CM5: slimmer title band */
+    c.fillText(String(y), W / 2, M + 62); /* CM4: title is just YYYY */
+    let top = M + 130;
     /* holiday list strip (CM2) */
     let stripH = 0, rows = [];
     if (o.strip) {
       rows = stripRows(o.hols || []);
       const per = Math.ceil(rows.length / 3);
-      stripH = rows.length ? 70 + per * 40 : 0;
+      /* stripH = rows.length ? 70 + per * 40 : 0;  (CM2-CM4) */
+      stripH = rows.length ? 60 + per * 40 : 0; /* CM5: only the height it needs */
     }
     /* const gx = 34, gy = 30, cols = 3, rowsN = 4;  (CM1-CM3) */
-    const gx = 34, gy = 30, cols = L.cols, rowsN = L.rows;
+    /* const gx = 34, gy = 30, cols = L.cols, rowsN = L.rows;  (CM4) */
+    const gx = Math.round(2.5 * PX_MM), gy = Math.round(2.5 * PX_MM), cols = L.cols, rowsN = L.rows; /* CM5: ~2.5 mm gaps */
+    const fold = o.fold !== false; /* CM5: fold 6th week into first row (default on) */
     const mw = (W - 2 * M - gx * (cols - 1)) / cols;
     const mh = (H - top - M - stripH - gy * (rowsN - 1)) / rowsN;
     const card = bg.type === 'pic' && bg.img;
@@ -79,15 +85,30 @@ window.CMRender = (function () {
       const nameH = Math.min(70, mh * 0.16), nfs = Math.round(Math.min(52, nameH * 0.75));
       c.fillStyle = '#111'; c.textAlign = 'left'; c.font = '700 ' + nfs + 'px ' + FONT;
       c.fillText(MN[m], x0 + 6, y0 + nameH / 2);
-      const cw = mw / 7, gt = y0 + nameH, wh = Math.min(44, (mh - nameH) * 0.12), ch = (mh - nameH - wh) / 6;
+      const lead = (dow(y, m, 1) - f + 7) % 7, n = dim(y, m);
+      const wkN = fold ? 5 : 6; /* CM5: 5 rows when folding, else 6 */
+      /* const cw = mw / 7, gt = y0 + nameH, wh = Math.min(44, (mh - nameH) * 0.12), ch = (mh - nameH - wh) / 6;  (CM4) */
+      const cw = mw / 7, gt = y0 + nameH, wh = Math.min(44, (mh - nameH) * 0.12), ch = (mh - nameH - wh) / wkN;
       c.font = '700 ' + Math.round(Math.min(30, wh * 0.7)) + 'px ' + FONT; c.textAlign = 'center';
       c.fillStyle = '#f1f1f1'; c.fillRect(x0, gt, mw, wh);
       for (let i = 0; i < 7; i++) { c.fillStyle = '#444'; c.fillText(WD[(i + f) % 7], x0 + cw * i + cw / 2, gt + wh / 2); }
-      const lead = (dow(y, m, 1) - f + 7) % 7, n = dim(y, m);
-      const fs = Math.min(ch * 0.62, cw * 0.55);
+      /* const lead = ..., n = ...;  (CM4: moved up in CM5) */
+      /* const fs = Math.min(ch * 0.62, cw * 0.55);  (CM4) */
+      const fs = Math.min(ch * 0.66, cw * 0.58); /* CM5: dates fill the bigger cells */
       c.font = '700 ' + Math.round(fs) + 'px ' + FONT;
       for (let d = 1; d <= n; d++) {
-        const p = lead + d - 1, cx = x0 + (p % 7) * cw, cy = gt + wh + Math.floor(p / 7) * ch;
+        const p = lead + d - 1;
+        if (fold && p >= 35) { /* CM5: folded date -> empty leading cell of row 1, same weekday column */
+          const fx = x0 + ((p - 35) % 7) * cw, fy = gt + wh, h = isHol(m, d);
+          if (h) { c.fillStyle = col[0]; c.beginPath(); c.moveTo(fx + cw - 1, fy + 1); c.lineTo(fx + cw - 1, fy + ch - 1); c.lineTo(fx + 1, fy + ch - 1); c.closePath(); c.fill(); }
+          c.strokeStyle = '#888'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(fx + cw, fy); c.lineTo(fx, fy + ch); c.stroke();
+          c.font = '700 ' + Math.round(fs * 0.6) + 'px ' + FONT;
+          c.fillStyle = h ? col[1] : '#111';
+          c.fillText(String(d), fx + cw * 0.7, fy + ch * 0.7);
+          c.font = '700 ' + Math.round(fs) + 'px ' + FONT;
+          continue;
+        }
+        const cx = x0 + (p % 7) * cw, cy = gt + wh + Math.floor(p / 7) * ch;
         const h = isHol(m, d);
         if (h) { c.fillStyle = col[0]; c.beginPath(); c.rect(cx + 1, cy + 1, cw - 2, ch - 2); c.fill(); } /* tile fills its cell */
         c.fillStyle = h ? col[1] : '#111';
@@ -95,11 +116,11 @@ window.CMRender = (function () {
       }
       /* grid lines: inner lines thin, outer border a bit thicker (every cell, incl. empty ones) */
       c.strokeStyle = '#888'; c.lineWidth = 1.5; c.beginPath();
-      for (let i = 1; i < 7; i++) { c.moveTo(x0 + cw * i, gt); c.lineTo(x0 + cw * i, gt + wh + 6 * ch); }
+      for (let i = 1; i < 7; i++) { c.moveTo(x0 + cw * i, gt); c.lineTo(x0 + cw * i, gt + wh + wkN * ch); }
       c.moveTo(x0, gt + wh); c.lineTo(x0 + mw, gt + wh);
-      for (let r = 1; r < 6; r++) { c.moveTo(x0, gt + wh + r * ch); c.lineTo(x0 + mw, gt + wh + r * ch); }
+      for (let r = 1; r < wkN; r++) { c.moveTo(x0, gt + wh + r * ch); c.lineTo(x0 + mw, gt + wh + r * ch); }
       c.stroke();
-      c.strokeStyle = '#333'; c.lineWidth = 3; c.strokeRect(x0, gt, mw, wh + 6 * ch);
+      c.strokeStyle = '#333'; c.lineWidth = 3; c.strokeRect(x0, gt, mw, wh + wkN * ch);
       /* CM1-CM3 (no grid): rounded tiles rr(c, cx + 3, cy + 3, cw - 6, ch - 6, 10), month name at y0 + 34, hh = 78 */
     }
     if (stripH) {
