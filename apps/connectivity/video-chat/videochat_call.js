@@ -1,4 +1,4 @@
-/* Video Chat VC2 — media + group call state (mesh, up to 4 people incl. me).
+/* Video Chat VC3 — media + group call state (mesh, up to 4 people incl. me).
    Invite: VCPeer.call(id, local, {kind:'invite', room, members}) + signal {t:'ring'}; the callee sees
      Accept/Decline (WebAudio ringtone) and who is already in. A VC1 device's call (no kind) is a 1:1 invite.
    Join: on Accept the newcomer calls every member listed in the invite with {kind:'join', room};
@@ -8,12 +8,17 @@
    Signals: ring, decline, busy, full, cancel, end, st. Leaving the roster / ICE failure drops a person;
      the call ends when nobody is left (1:1 keeps the VC1 messages).
    Screen share (desktop): getDisplayMedia → replaceTrack on every peer connection's video sender;
-     stop (or the browser's own Stop sharing) puts the camera back. */
+     stop (or the browser's own Stop sharing) puts the camera back.
+   VC3 (open 0000 mesh): a member answers {kind:'join'} only from a peer it expects for this room: people it
+     invited, people listed in the invite it accepted, ids a live member announces in {t:'expect'} (sent by the
+     inviter to members when it invites; withdrawn by {t:'unexpect'} if the invite is declined, cancelled
+     or unanswered) or in {t:'st', ids}. An unknown joiner waits up to 5 s for such news,
+     else the call is closed silently. Applies on every code. */
 (function () {
   'use strict';
   var C = {}, cb = {}, MAX = 4;
   var local = null, screen = null, facing = 'user', t0 = 0, tick = 0, ringT = 0, actx = null;
-  var room = '', P = {}, pending = null, order = 0, lastRL = [], myMute = false, myCam = true;
+  var room = '', allow = {}, P = {}, pending = null, order = 0, lastRL = [], myMute = false, myCam = true;
   C.MAX = MAX;
   C.on = function (n, f) { cb[n] = f; };
   function fire(n, a, b, c) { if (cb[n]) { try { cb[n](a, b, c); } catch (e) { console.warn(e); } } }
@@ -128,6 +133,10 @@
   function drop(id, why, quiet) {
     var p = P[id]; if (!p) return;
     delete P[id]; clearTimeout(p.ringTo); unmeter(id);
+    if (p.out && p.state === 'ringing') {   // VC3: invite declined / cancelled / unanswered — no longer expected
+      delete allow[id];
+      ids().forEach(function (i) { if (P[i].state === 'live') VCPeer.signal(i, { t: 'unexpect', room: room, id: id }); });
+    }
     try { p.call.close(); } catch (_) { /* */ }
     if (spk === id) { spk = null; fire('speaker', null); }
     if (!ids().length) return finish(why, quiet);
@@ -136,7 +145,7 @@
   function finish(why, quiet) {
     ring(false);
     var had = !!(ids().length || pending || room);
-    var old = P; P = {}; room = '';   // clear first: call.close() fires 'close' synchronously
+    var old = P; P = {}; room = ''; allow = {};   // clear first: call.close() fires 'close' synchronously
     Object.keys(old).forEach(function (id) { var p = old[id]; clearTimeout(p.ringTo); try { p.call.close(); } catch (_) { /* */ } });
     var pc = pending; pending = null;
     if (pc) { try { pc.call.close(); } catch (_) { /* */ } }
@@ -160,6 +169,8 @@
       var c = VCPeer.call(id, s, { kind: 'invite', room: room, members: members });
       if (!c) throw new Error('Could not reach ' + name);
       var p = add(id, name, c, 'ringing', true);
+      allow[id] = 1;   // VC3: tell live members to expect this invitee's join
+      members.forEach(function (m) { VCPeer.signal(m.id, { t: 'expect', room: room, id: id }); });
       VCPeer.signal(id, { t: 'ring', name: VCStore.name(), room: room, members: members });
       fire('state', fresh ? 'Ringing…' : 'Inviting ' + name + '…');
       if (!fresh) fire('note', 'Inviting ' + name + '…');
@@ -178,7 +189,12 @@
       }
       if (!room || md.room !== room || P[from]) { setTimeout(function () { try { c.close(); } catch (_) { /* */ } }, 300); return; }
       if (count() >= MAX) { VCPeer.signal(from, { t: 'full' }); setTimeout(function () { try { c.close(); } catch (_) { /* */ } }, 300); return; }
-      getMedia().then(function (s) { c.answer(s); add(from, name, c, 'connecting'); }).catch(function () { try { c.close(); } catch (_) { /* */ } });
+      /* VC2: getMedia().then(function (s) { c.answer(s); add(from, name, c, 'connecting'); }).catch(...);   // answered any join */
+      var r0 = room;
+      gate(from, r0, function (ok) {
+        if (!ok || room !== r0 || P[from] || count() >= MAX) { try { c.close(); } catch (_) { /* */ } return; }   // VC3: uninvited, closed silently
+        getMedia().then(function (s) { c.answer(s); add(from, name, c, 'connecting'); }).catch(function () { try { c.close(); } catch (_) { /* */ } });
+      });
       return;
     }
     if (room || pending) { VCPeer.signal(from, { t: 'busy' }); setTimeout(function () { try { c.close(); } catch (_) { /* */ } }, 500); return; }
@@ -188,12 +204,17 @@
     c.on('close', function () { if (pending && pending.call === c) { pending = null; ring(false); fire('ended', 'Missed call from ' + name, true); } });
     ring(true); fire('incoming', name, members.map(function (m) { return m.name; }));
   };
+  function gate(id, r, done) {   // VC3: wait up to 5 s for a live member to vouch for an unknown joiner
+    if (allow[id]) return done(true);
+    var n = 0, w = setInterval(function () { if (allow[id] || room !== r || ++n >= 10) { clearInterval(w); done(!!allow[id] && room === r); } }, +C._gateMs || 500);
+  }
   C.accept = function () {
     var pd = pending; if (!pd) return;
     ring(false);
     getMedia().then(function (s) {
       if (pending !== pd) return;
-      pending = null; room = pd.room;
+      pending = null; room = pd.room; allow = {}; allow[pd.from] = 1;
+      pd.members.forEach(function (m) { allow[m.id] = 1; });
       pd.call.answer(s); add(pd.from, pd.name, pd.call, 'connecting');
       pd.members.forEach(function (m) { joinCall(m.id, m.name); });
       fire('accepted', pd.name); fire('state', 'Connecting…');
@@ -230,12 +251,15 @@
     else if (m.t === 'busy') drop(from, p.name + ' is in another call');
     else if (m.t === 'full') drop(from, 'The call is full (' + MAX + ' people)');
     else if (m.t === 'end' || m.t === 'cancel') drop(from, p.name + (solo ? ' ended the call' : ' left'), !solo);
+    else if (m.t === 'expect') { if (p.state === 'live' && m.room === room && m.id) allow[String(m.id)] = 1; }   // VC3
+    else if (m.t === 'unexpect') { if (m.room === room && m.id && !P[String(m.id)]) delete allow[String(m.id)]; }
     else if (m.t === 'st') {
       var was = p.st.share;
       p.st = { mute: !!m.mute, cam: m.cam !== false, share: !!m.share };
       if (p.st.share && !was) fire('note', p.name + ' is sharing their screen');
       (Array.isArray(m.ids) ? m.ids : []).forEach(function (x) {
         x = String(x);
+        if (p.state === 'live' && x !== VCPeer.myId()) allow[x] = 1;   // VC3: vouched for by a live member
         if (x !== VCPeer.myId() && !P[x] && VCPeer.myId() < x) setTimeout(function () {   // give the newcomer time to dial us first
           if (P[x] || !room) return;
           var r = lastRL.filter(function (d) { return d.id === x; })[0]; joinCall(x, r ? r.name : 'Someone');
