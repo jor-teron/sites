@@ -155,6 +155,9 @@
         <p class="note">Auto follows the Calendar app's theme (which can follow the Hub or your device).</p>
         <div class="row"><span>Design settings</span><button type="button" class="mini" id="reset-design">Reset to defaults</button></div>
         <p class="note">Resets colours, layout, legend, background and Holiday List options. Your holidays are never touched.</p>
+        <!--CM17--><div class="row"><span>Holiday list</span><span><button type="button" class="mini" id="csv-export">Export holidays (CSV)</button> <button type="button" class="mini" id="csv-import">Import holidays (CSV)</button></span></div>
+        <input type="file" id="csv-file" accept=".csv,text/csv" hidden>
+        <p class="note">CSV columns: Name, Start, End, Type (Gazetted / Restricted), Repeat (Every year / This year). Opens in Excel. Import shows a preview first, then Add to existing or Replace all.</p>
       </section>
       <section class="card">
         <h2>How to</h2>
@@ -164,6 +167,7 @@
           <li><b>Holiday List tab:</b> Classic or Simple layout, header and subtitle, striped rows, and whether to show restricted holidays.</li>
           <li><b>Year Overview tab:</b> summary of days off and working days, holiday streaks and holiday stretches for the year.</li>
           <li><b>Print or Download PDF</b> on each of those three tabs. PDF files are named like <code>2027-calendar.pdf</code>, <code>2027-holiday-list.pdf</code>, <code>2027-year-overview.pdf</code>.</li>
+          <!--CM17--><li><b>Back up or edit in Excel:</b> About tab, Export holidays (CSV) saves <code>2027-holidays.csv</code>; Import holidays (CSV) brings a list back (Add to existing or Replace all).</li>
         </ol>
       </section>
       <section class="card">
@@ -185,6 +189,7 @@
 <script src="core/cm_holidays.js"></script>
 <script src="core/cm_settings.js"></script>
 <script src="core/cm_stats.js"></script><!--CM14-->
+<script src="core/cm_csv.js"></script><!--CM17-->
 <script src="render/cm_sheet.js"></script>
 <script src="render/cm_list.js"></script>
 <script src="render/cm_list_simple.js"></script>

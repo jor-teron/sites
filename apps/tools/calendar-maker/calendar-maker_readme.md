@@ -1,7 +1,7 @@
 # Calendar Maker
 
 ## 1. What it is
-Design and print a one-sheet A4 year calendar: all 12 months on one A4 sheet (4 layouts), title "YYYY", big bold dates and holidays as filled tiles. Releases CM1 (design page + print), CM2 (Download PDF, background, holiday list strip), CM3 (Holidays page), CM4 (grid tables, year-only title, white default background, layouts), CM5 (fold 6th week, fill the sheet), CM6 (month name inside the grid, Sun-Sat weekday row in holiday colour, custom colour, font colour, tight title), CM7 (folded dates drawn as normal dates, all grid lines same weight), CM8 (uniform spreadsheet grid), CM9 (restricted holidays), CM10 (Holiday List page), CM11 (multi-day holidays, Day + Month input for every-year holidays), CM12 (Classic holiday list layout), CM13 (code restructure into core/, render/, ui/; no visible change), CM14 (Year Overview page), CM16 (page tabs, Print and PDF in the Hub window title bar; CM16-F1 Legend size box; CM16-F2 striped holiday list rows; CM16-F3 Show restricted holidays switch; CM16-F4 plain Year Overview title and section gaps; CM16-F5 weekday row colour), CM15 (About page: Settings with app theme and reset, How to, About). Release label in the About line: CM15. Works offline and from file://.
+Design and print a one-sheet A4 year calendar: all 12 months on one A4 sheet (4 layouts), title "YYYY", big bold dates and holidays as filled tiles. Releases CM1 (design page + print), CM2 (Download PDF, background, holiday list strip), CM3 (Holidays page), CM4 (grid tables, year-only title, white default background, layouts), CM5 (fold 6th week, fill the sheet), CM6 (month name inside the grid, Sun-Sat weekday row in holiday colour, custom colour, font colour, tight title), CM7 (folded dates drawn as normal dates, all grid lines same weight), CM8 (uniform spreadsheet grid), CM9 (restricted holidays), CM10 (Holiday List page), CM11 (multi-day holidays, Day + Month input for every-year holidays), CM12 (Classic holiday list layout), CM13 (code restructure into core/, render/, ui/; no visible change), CM14 (Year Overview page), CM16 (page tabs, Print and PDF in the Hub window title bar; CM16-F1 Legend size box; CM16-F2 striped holiday list rows; CM16-F3 Show restricted holidays switch; CM16-F4 plain Year Overview title and section gaps; CM16-F5 weekday row colour), CM15 (About page: Settings with app theme and reset, How to, About), CM17 (holiday list CSV export and import in About > Settings). Release label in the About line: CM17. Works offline and from file://.
 
 ## 2. Files
 - `calendar-maker.html` / `calendar-maker.css`: pages (Design, Holidays), layout, light / dark, phone layout (options below the preview), print stylesheet
@@ -20,7 +20,8 @@ Design and print a one-sheet A4 year calendar: all 12 months on one A4 sheet (4 
   - `ui/cm_holidays_page.js` (`CM.Hol`): Holidays page
   - `ui/cm_list_page.js`: Holiday List page controls, Print and PDF (adds `CM.listRender`)
   - `ui/cm_overview_page.js` (CM14): Year Overview page Print and PDF (adds `CM.ovwRender`)
-  - `ui/cm_about_page.js` (CM15): About page (theme, reset design settings, version; adds `CM.applyTheme`, `CM.isDark`)
+  - `core/cm_csv.js` (CM17): holiday list CSV serialize / parse / merge, no DOM (`CM.Csv`)
+  - `ui/cm_about_page.js` (CM15): About page (theme, reset design settings, version; adds `CM.applyTheme`, `CM.isDark`; CM17 CSV export / import buttons, `CM.csvExport`, `CM.csvImport`)
   - `ui/cm_titlebar.js` (CM16): Hub title bar (H49 `hubTitleBar`): tabs `CM.TABS`, Print / PDF buttons
   - `ui/cm_zoom.js` (`CM.Zoom`): preview zoom (Design, Holiday List, Year Overview)
 - `vendor/jspdf.umd.min.js` + `vendor/jspdf_LICENSE.txt`: jsPDF 4.2.1 (MIT), bundled, no CDN
@@ -74,8 +75,10 @@ Design and print a one-sheet A4 year calendar: all 12 months on one A4 sheet (4 
 
 - Hub title bar (CM16): untested in a real Hub browser window; the app name in the in-app row is hidden too (the Hub shows it). No keyboard page shortcuts exist, so only clicks switch pages.
 - Year Overview (CM14): a stretch can be as short as 3 days (off, working, off); with very many holidays the text can reach 18 px and very long lists could still overflow the page.
+- **Holiday CSV export / import (CM17):** About > Settings, buttons 'Export holidays (CSV)' and 'Import holidays (CSV)'. Header `Name,Start,End,Type,Repeat`; Type Gazetted / Restricted; Repeat Every year (Start/End `DD-MM`, 29-02 allowed) or This year (`YYYY-MM-DD`); End blank = one day. Export writes every holiday (every-year list, or the built-ins when never edited, plus all this-year-only entries) as UTF-8 with BOM, CRLF, quoted names, file `YYYY-holidays.csv` (selected year; Blob + a[download], works from file://). Import: BOM optional, CRLF or LF, Type/Repeat any case, columns by header name (End column optional). Rows skipped with line number and reason: missing name, unknown type / repeat, bad start / end date, end before start, range crosses into another year. Preview dialog 'N holidays found, M rows skipped' then Add to existing (duplicates = same name + dates + repeat skipped and counted) or Replace all (second confirm; duplicates inside the file dropped). Nothing is saved before that choice; Cancel saves nothing. Then the Holidays page, sheet, list and overview refresh.
 
 ## 5. Legacy code notes
+- `ui/cm_design_page.js`: `const RELEASE = 'CM15'` kept as a comment (CM17 label).
 Old code kept as comments next to the code that replaced it (moved with that code in CM13). Each note says which releases used it.
 - `core/cm_theme.js`, top (COLOURS): the CM1-CM5 dark holiday tiles with white text and the CM6-CM12-F3 light-tint-only colour list.
 - `core/cm_canvas.js`, top: the fixed portrait size `W = 2067, H = 2923` (CM1-CM3).
