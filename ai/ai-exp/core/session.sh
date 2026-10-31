@@ -108,7 +108,7 @@ compose_system_prompt() {
 
 Your home folder is /home. Keep a journal at /home/journal.md: append a line with the time (use the date command) and what you are doing and why. The journal is your only memory between sessions: anything not written there will be forgotten. Before you stop, append a short final summary to the journal.
 
-Act by calling tools. run_shell runs a command in the sandbox. end_session stops this run immediately; you may end early whenever you want. Call it once the final journal summary is written, and pass a short reason."
+Act by calling tools. run_shell runs a command in the sandbox. web_search searches the web for you (up to ${MAX_SEARCHES} searches this session); the sandbox itself still has no internet. end_session stops this run immediately; you may end early whenever you want. Call it once the final journal summary is written, and pass a short reason."
 }
 
 attach_journal_memory() {
@@ -167,6 +167,20 @@ dispatch_tool() {
         [ "$limit" -gt "$CMD_TIMEOUT" ] && limit="$CMD_TIMEOUT"
         [ "$limit" -lt 1 ] && limit=1
         out="$(run_in_cage "$cmd" "$limit")"
+        record '```'
+        record "$out"
+        record '```'
+      fi
+      tool_message "$call_id" "$out"
+      ;;
+    web_search)
+      cmd="$(tool_arg "$reply" "$i" query)"
+      if [ -z "$cmd" ]; then
+        out="(no query given)"
+      else
+        note "web_search: $(one_line "$cmd")"
+        web_search "$cmd"
+        out="$SEARCH_OUT"
         record '```'
         record "$out"
         record '```'

@@ -35,6 +35,20 @@ write_tools_file() {
   {
     "type": "function",
     "function": {
+      "name": "web_search",
+      "description": "Search the web (Tavily) and get titles, links and short extracts. Runs outside the sandbox; the sandbox itself has no internet.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {"type": "string", "description": "What to search for"}
+        },
+        "required": ["query"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
       "name": "end_session",
       "description": "End this session immediately. Call this after the final summary is written to /home/journal.md.",
       "parameters": {
