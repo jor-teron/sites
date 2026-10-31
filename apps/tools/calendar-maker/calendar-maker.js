@@ -1,5 +1,5 @@
 /* Calendar Maker page logic (CM1). Settings in 'calendar-maker-settings':
-   { year, colour:'green'|'red'|'yellow'|'blue'|'orange', sundays (bool, default true), sat:'none'|'24'|'all',
+   { year, colour:'green'|'red'|'yellow'|'blue'|'orange'|'lgreen'|'lred'|'lyellow'|'lblue'|'lorange'|'custom', sundays (bool, default true), sat:'none'|'24'|'all',
      week:'sun'|'mon' (default from Calendar's 'calendar-settings-v1'), bg:'none'|'soft'|'pic', soft, faint, strip (CM2) }
    ?year=YYYY (from Calendar's "Make printable") wins over the saved year. Exposes window.CM for CM2 / CM3 plug-ins. */
 window.CM = (function () {
@@ -12,7 +12,7 @@ window.CM = (function () {
   try { cal = JSON.parse(localStorage.getItem('calendar-settings-v1') || '{}') || {}; } catch (_) { cal = {}; }
   const D = { year: new Date().getFullYear(), colour: 'green', sundays: true,
     sat: cal.satAll ? 'all' : (cal.sat24 ? '24' : 'none'), week: cal.week === 'mon' ? 'mon' : 'sun',
-    bg: 'none', soft: '#fef9e7', faint: 25, strip: false, layout: 'p3', fold: true, custom: '#92d36e', font: '#000000', rcol: '#cfcfcf', lhead: '', legend: true, mfill: '#d9d9d9' }; /* CM12-F3: legend + month row fill */ /* CM10: Holiday List header */ /* CM9: restricted holiday colour */ /* CM6: custom holiday colour + font colour */ /* CM5: fold on (existing users get it too) */ /* CM4: bg default None = white */
+    bg: 'none', soft: '#fef9e7', faint: 25, strip: false, layout: 'p3', fold: true, custom: '#15803d', /* CM12-F4: was '#92d36e' (CM6); saved custom values are kept */ font: '#000000', rcol: '#cfcfcf', lhead: '', legend: true, mfill: '#d9d9d9' }; /* CM12-F3: legend + month row fill */ /* CM10: Holiday List header */ /* CM9: restricted holiday colour */ /* CM6: custom holiday colour + font colour */ /* CM5: fold on (existing users get it too) */ /* CM4: bg default None = white */
   Object.keys(D).forEach((k) => { if (P[k] === undefined || P[k] === null) P[k] = D[k]; });
   if (!window.CMRender.LAYOUTS[P.layout]) P.layout = 'p3';
   const HEX = /^#[0-9a-f]{6}$/i; /* CM6 */
@@ -77,7 +77,9 @@ window.CM = (function () {
 
   /* UI */
   const cs = window.CMRender.COLOURS;
-  $('colours').innerHTML = Object.keys(cs).map((k) => '<button type="button" data-v="' + k + '" style="background:' + cs[k][0] + '" aria-label="' + k + '" title="' + k[0].toUpperCase() + k.slice(1) + '"></button>').join('');
+  /* $('colours').innerHTML = Object.keys(cs).map((k) => '<button type="button" data-v="' + k + '" style="background:' + cs[k][0] + '" aria-label="' + k + '" title="' + k[0].toUpperCase() + k.slice(1) + '"></button>').join('');  (CM1-CM12-F3) */
+  const cn = window.CMRender.COLOUR_NAMES || {}, cname = (k) => cn[k] || (k[0].toUpperCase() + k.slice(1)); /* CM12-F4 */
+  $('colours').innerHTML = Object.keys(cs).map((k) => '<button type="button" data-v="' + k + '" style="background:' + cs[k][0] + '" aria-label="' + cname(k) + '" title="' + cname(k) + '"></button>').join('');
   $('colours').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; P.colour = b.dataset.v; save(); render(); });
   document.querySelectorAll('.seg').forEach((s) => s.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return; P[s.dataset.key] = b.dataset.v; save(); render();

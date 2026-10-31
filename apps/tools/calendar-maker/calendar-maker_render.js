@@ -17,7 +17,11 @@ window.CMRender = (function () {
   const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; /* CM6 */
   /* const COLOURS = { green: ['#15803d', '#fff'], red: ['#b91c1c', '#fff'], yellow: ['#facc15', '#111'], blue: ['#1d4ed8', '#fff'], orange: ['#ea580c', '#fff'] };  (CM1-CM5: dark tiles, white text) */
   /* CM6: light print colours, black text readable on all; [1] kept for callers but text uses the font colour */
-  const COLOURS = { green: ['#92d36e', '#000'], red: ['#f4a6a6', '#000'], yellow: ['#fde68a', '#000'], blue: ['#a5c8f5', '#000'], orange: ['#fdba74', '#000'] };
+  /* const COLOURS = { green: ['#92d36e', '#000'], red: ['#f4a6a6', '#000'], yellow: ['#fde68a', '#000'], blue: ['#a5c8f5', '#000'], orange: ['#fdba74', '#000'] };  (CM6-CM12-F3: light tints only) */
+  /* CM12-F4: original strong CM1-CM5 colours back (black text kept), CM6 light tints kept as 'Light ...' presets */
+  const COLOURS = { green: ['#15803d', '#000'], red: ['#b91c1c', '#000'], yellow: ['#facc15', '#000'], blue: ['#1d4ed8', '#000'], orange: ['#ea580c', '#000'],
+    lgreen: ['#92d36e', '#000'], lred: ['#f4a6a6', '#000'], lyellow: ['#fde68a', '#000'], lblue: ['#a5c8f5', '#000'], lorange: ['#fdba74', '#000'] };
+  const COLOUR_NAMES = { green: 'Green', red: 'Red', yellow: 'Yellow', blue: 'Blue', orange: 'Orange', lgreen: 'Light green', lred: 'Light red (pink)', lyellow: 'Light yellow', lblue: 'Light blue', lorange: 'Light orange' }; /* CM12-F4 */
   const RCOLOURS = { grey: '#cfcfcf', silver: '#e3e3e3', stone: '#d6d3c4', lilac: '#d9c8ee', sky: '#c9e7f2' }; /* CM9: restricted presets */
   const isHex = (v) => /^#[0-9a-f]{6}$/i.test(v || '');
   const FONT = 'system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
@@ -255,5 +259,5 @@ window.CMRender = (function () {
     }
     return cv;
   }
-  return { last: api_last, draw, W, H, COLOURS, RCOLOURS, stripRows, stripSections, dateText, daysOf, endOf, LAYOUTS, layoutOf };
+  return { last: api_last, draw, W, H, COLOURS, COLOUR_NAMES, RCOLOURS, stripRows, stripSections, dateText, daysOf, endOf, LAYOUTS, layoutOf };
 })();
