@@ -14,6 +14,7 @@ Sketchbook,         sketchbook/,                  , , Tools, Paper sketchbook wi
 Code Lab,           code-lab/,                    code-lab/codelab_icon.png, , Tools, Jupyter-style code cells: run Python on a remote Jupyter server
 Image Gen,          image-gen/,                   image-gen/imagegen_icon.png, , Tools, Text-to-image: generate pictures from a prompt with your own Ollama
 Vision,             vision/,                      vision/vision_icon.png, , Tools, Ask a vision AI model on your own Ollama about a photo
+Compass,            compass/,                     compass/compass_icon.png, , Tools, Phone compass: heading - true or magnetic north - lock a bearing - works offline
 Paper Keyboard,     paper-keyboard/,              , , Tools, Phone keyboard that types on a desktop over PeerJS (demo)
 MyBookmark,         mybookmark/,                  , , Tools, View and manage your browser bookmarks: import - search - organise
 Wiki Extractor,     wiki-extractor/,              , , Tools, Extract plain text from Wikipedia pages and linked pages - download .txt
