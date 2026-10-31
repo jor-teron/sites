@@ -34,3 +34,6 @@ method is switched off (`qrEnabled: false`) and hidden in the UI. Its code is st
   token) on a shared computer.
 - A yellow **CORS / NETWORK ERROR** line in the log means the browser blocked a direct call.
   **Test CORS** checks this without signing in.
+
+## IX8 (1 Nov 2026)
+The page moved (git mv) from `index.html` to `gdrive-test.html`; `index.html` is now only a redirect. Legacy: the page used to be `index.html`.

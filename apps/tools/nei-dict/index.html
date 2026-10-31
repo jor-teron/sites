@@ -1,36 +1,21 @@
 <!DOCTYPE html>
+<!-- Redirect entry point to nei-dict.html (keeps ?query and #hash). IX8: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: IX8: this index.html WAS the real page; it was moved (git mv) to nei-dict.html so index.html is only a redirect like every other app. -->
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>nei-dict</title>
-  <link rel="stylesheet" href="dict.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NEI Dict</title>
+  <link rel="canonical" href="nei-dict.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('nei-dict.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=nei-dict.html"></noscript>
 </head>
-<body>
-  <header class="site-header">
-    <h1>nei-dict</h1>
-  </header>
-
-  <main>
-    <section class="search-panel">
-      <label for="q">Search</label>
-      <input id="q" type="search" placeholder="Type a word…" autocomplete="off" />
-      <button type="button" id="go">Search</button>
-    </section>
-    <section id="status" class="status" aria-live="polite"></section>
-    <section id="results" class="results"></section>
-  </main>
-
-  <footer class="site-footer">
-    <nav class="footer-nav">
-      <a href="index.html">Search</a>
-      <span class="footer-sep" aria-hidden="true">|</span>
-      <a href="about.html">About</a>
-      <span class="footer-sep" aria-hidden="true">|</span>
-      <span class="footer-meta">nei-dict 2026</span>
-    </nav>
-  </footer>
-
-  <script src="dict.js"></script>
-</body>
+<body><noscript><p><a href="nei-dict.html">Open NEI Dict</a></p></noscript></body>
 </html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<!--
+  Google Drive test (apps/lab/gdrive-test/gdrive-test.html) — Lab page to try the Hub's Google sign-in
+  with its WEB client (hubWebClientId, project "monorepo"; the same client "Phone as a key" uses)
+  through Google's sign-in window, then a first Drive call (the "hub" folder + first 10 files).
+  Shows the config status and every request / answer in a log (CORS errors marked).
+  The old QR / device-flow test is gone (that method is switched off). Setup steps: README.md here.
+  Files: gdt.js (page logic), gdt.css; shared/google/* (config, auth, GIS, Drive).
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Google Drive test</title>
+  <link rel="stylesheet" href="gdt.css" />
+</head>
+<body>
+  <main class="wrap">
+    <h1>&#9729;&#65039; Google Drive test <small>Hub web client (sign-in window)</small></h1>
+    <section class="card" id="cfg" aria-label="Config"></section>
+    <section class="card">
+      <div class="row">
+        <button type="button" id="start" class="big">Sign in</button>
+        <button type="button" id="list">List 10 files</button>
+        <button type="button" id="hub">Find “hub” folder</button>
+        <button type="button" id="cors">Test CORS</button>
+        <button type="button" id="signout" class="danger">Sign out</button>
+      </div>
+      <p id="state" class="state" role="status"></p>
+    </section>
+    <section class="card" aria-label="Drive files"><h2>Drive files</h2><ol id="files" class="files"><li class="muted">Sign in, then List 10 files.</li></ol></section>
+    <section class="card" aria-label="Log"><h2>Log <button type="button" id="clear" class="small">Clear</button> <button type="button" id="copy" class="small">Copy</button></h2><pre id="log" class="log"></pre></section>
+  </main>
+  <script src="../../../shared/google/google_config.js"></script>
+  <script src="../../../shared/google/google_auth.js"></script>
+  <script src="../../../shared/google/google_gis.js"></script>
+  <script src="../../../shared/google/gdrive_fs.js"></script>
+  <script src="gdt.js"></script>
+</body>
+</html>
