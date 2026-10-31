@@ -74,7 +74,8 @@
   if (typeof window !== 'undefined') { window.CM = window.CM || {}; window.CM.Zoom = api; }
   if (typeof document !== 'undefined' && document.addEventListener && document.getElementById) {
     var go = function () {
-      [['preview-wrap', 'sheet'], ['list-wrap', 'list-sheet']].forEach(function (p) {
+      /* [['preview-wrap', 'sheet'], ['list-wrap', 'list-sheet']]  (CM12-F2-CM13) */
+      [['preview-wrap', 'sheet'], ['list-wrap', 'list-sheet'], ['ovw-wrap', 'ovw-sheet']].forEach(function (p) { /* CM14 */
         var w = document.getElementById(p[0]), c = document.getElementById(p[1]);
         if (w && c && !w._zoom) w._zoom = attach(w, c);
       });

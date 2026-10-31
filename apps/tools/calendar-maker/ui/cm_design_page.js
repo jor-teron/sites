@@ -4,7 +4,8 @@
 (function () {
   'use strict';
   const CM = window.CM, S = CM.Settings, T = CM.Theme, R = CM.Render;
-  const RELEASE = 'CM13'; /* was 'CM12' (CM10-CM12) */
+  /* const RELEASE = 'CM13';  (CM13) */
+  const RELEASE = 'CM14'; /* was 'CM12' (CM10-CM12), 'CM13' */
   const $ = (id) => document.getElementById(id);
   const P = S.loadSettings(location.search);
   const save = () => S.saveSettings(P);
@@ -108,8 +109,10 @@
     $('page-design').hidden = b.dataset.page !== 'design';
     $('page-hol').hidden = b.dataset.page !== 'hol';
     if ($('page-list')) $('page-list').hidden = b.dataset.page !== 'list'; /* CM10 */
+    if ($('page-ovw')) $('page-ovw').hidden = b.dataset.page !== 'ovw'; /* CM14 */
     if (b.dataset.page === 'hol' && CM.Hol) CM.Hol.show(P.year);
     else if (b.dataset.page === 'list' && CM.listRender) { CM.listRender(); render(); } /* CM10 */
+    else if (b.dataset.page === 'ovw' && CM.ovwRender) { CM.ovwRender(); render(); } /* CM14 */
     else render();
   });
   window.addEventListener('storage', (e) => {

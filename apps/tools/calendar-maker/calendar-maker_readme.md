@@ -1,7 +1,7 @@
 # Calendar Maker
 
 ## 1. What it is
-Design and print a one-sheet A4 year calendar: all 12 months on one A4 sheet (4 layouts), title "YYYY", big bold dates and holidays as filled tiles. Releases CM1 (design page + print), CM2 (Download PDF, background, holiday list strip), CM3 (Holidays page), CM4 (grid tables, year-only title, white default background, layouts), CM5 (fold 6th week, fill the sheet), CM6 (month name inside the grid, Sun-Sat weekday row in holiday colour, custom colour, font colour, tight title), CM7 (folded dates drawn as normal dates, all grid lines same weight), CM8 (uniform spreadsheet grid), CM9 (restricted holidays), CM10 (Holiday List page), CM11 (multi-day holidays, Day + Month input for every-year holidays), CM12 (Classic holiday list layout), CM13 (code restructure into core/, render/, ui/; no visible change). Release label in the About line: CM13. Works offline and from file://.
+Design and print a one-sheet A4 year calendar: all 12 months on one A4 sheet (4 layouts), title "YYYY", big bold dates and holidays as filled tiles. Releases CM1 (design page + print), CM2 (Download PDF, background, holiday list strip), CM3 (Holidays page), CM4 (grid tables, year-only title, white default background, layouts), CM5 (fold 6th week, fill the sheet), CM6 (month name inside the grid, Sun-Sat weekday row in holiday colour, custom colour, font colour, tight title), CM7 (folded dates drawn as normal dates, all grid lines same weight), CM8 (uniform spreadsheet grid), CM9 (restricted holidays), CM10 (Holiday List page), CM11 (multi-day holidays, Day + Month input for every-year holidays), CM12 (Classic holiday list layout), CM13 (code restructure into core/, render/, ui/; no visible change), CM14 (Year Overview page). Release label in the About line: CM14. Works offline and from file://.
 
 ## 2. Files
 - `calendar-maker.html` / `calendar-maker.css`: pages (Design, Holidays), layout, light / dark, phone layout (options below the preview), print stylesheet
@@ -9,15 +9,18 @@ Design and print a one-sheet A4 year calendar: all 12 months on one A4 sheet (4 
   - `core/cm_theme.js` (`CM.Theme`): font, holiday / restricted / header / month-fill / soft colour presets, colour names, grid style, text-colour rule (white text on dark fills)
   - `core/cm_canvas.js` (`CM.Canvas`): A4 sizes (2067 x 2923 px portrait or 2923 x 2067 px landscape = 250 dpi), layouts, margin, font string, cell fill, borders, fit-font, ellipsis, word / token wrap, underline
   - `core/cm_holidays.js` (`CM.Holidays`): month / weekday names, date maths, ordinals, ranges, strip rows and sections, built-in list, merged holidays for a year, Day/Month input check
+  - `core/cm_stats.js` (`CM.Stats`, CM14): Year Overview numbers: day classification, summary, holiday streaks and stretches (no DOM)
   - `core/cm_settings.js` (`CM.Settings`): every saved key (`calendar-maker-settings`, `-holidays`, `-bg`) with defaults and validation in one place; `?year=` handling
   - `render/cm_sheet.js` (`CM.Render`): draws the A4 sheet; Preview, Print and PDF all use this drawing
   - `render/cm_list.js` (`CM.List`): Holiday List shared rows / header cleaning and the layout switch; `render/cm_list_simple.js` (Simple, CM10) and `render/cm_list_classic.js` (Classic, CM12) draw the two layouts
+  - `render/cm_overview.js` (`CM.Overview`, CM14): draws the A4 portrait Year Overview page
   - `render/cm_pdf.js` (`CM.Pdf`): Download PDF (jsPDF) and Print, used by the sheet and the list
   - `ui/cm_design_page.js`: Design page controls, tabs, release label (adds `CM.P`, `CM.save`, `CM.hols`, `CM.render`, `CM.isLand`, `CM.sheetCanvas`)
   - `ui/cm_background.js`: background colour / picture / faintness and holiday list strip controls
   - `ui/cm_holidays_page.js` (`CM.Hol`): Holidays page
   - `ui/cm_list_page.js`: Holiday List page controls, Print and PDF (adds `CM.listRender`)
-  - `ui/cm_zoom.js` (`CM.Zoom`): preview zoom
+  - `ui/cm_overview_page.js` (CM14): Year Overview page Print and PDF (adds `CM.ovwRender`)
+  - `ui/cm_zoom.js` (`CM.Zoom`): preview zoom (Design, Holiday List, Year Overview)
 - `vendor/jspdf.umd.min.js` + `vendor/jspdf_LICENSE.txt`: jsPDF 4.2.1 (MIT), bundled, no CDN
 - `calendar-maker_icon.png`, `index.html` (opens `calendar-maker.html`, keeps `?year=`)
 - Shared: `../calendar/calendar_holidays.js` (built-in holidays, `window.CalHolidays`, loaded not copied), `../../../shared/dialog/` (in-app dialogs)
@@ -54,6 +57,13 @@ Design and print a one-sheet A4 year calendar: all 12 months on one A4 sheet (4 
 - **Preview zoom (CM12-F2):** the Design sheet preview and the Holiday List preview each get a zoom bar: Fit (default) and a 25%-400% slider with % readout (100% = real A4 size). Ctrl + mouse wheel zooms around the cursor (plain wheel scrolls), drag pans when zoomed past fit, two-finger pinch zooms on touch. Display only (canvas CSS width): the 250 dpi render, Print and PDF are unchanged; re-rendering keeps the zoom (ui/cm_zoom.js).
 - **Legend + month label fill (CM12-F3):** a small key band below the month grids (own band with ~2 mm gap, never touches a grid; text ~58% of the date font): swatch in holiday colour "*Holiday", plus "*Restricted holiday" only when the year has one. Toggle "Show legend" (`legend`, default on; off = no space). Month-name row fill `mfill` (default light grey #d9d9d9 like the Excel sheet; White = no fill; custom picker). All layouts, preview/Print/PDF.
 - **Original colours back (CM12-F4):** the holiday colour presets are again the original strong CM1-CM5 colours: Green `#15803d` (default), Red `#b91c1c`, Yellow `#facc15`, Blue `#1d4ed8`, Orange `#ea580c`; the CM6 light tints stay as extra presets Light green `#92d36e`, Light red (pink) `#f4a6a6`, Light yellow, Light blue, Light orange (`colour: 'lgreen'` etc.). Text stays black (font colour setting). The Custom picker's starting value is now `#15803d`; a saved custom colour or saved preset is kept. Weekday row, tiles, legend swatch and the Holiday List pages all follow the chosen colour.
+- **Year Overview page (CM14):** a fourth tab, Year Overview: one A4 portrait 250 dpi page (zoomable preview, Print, Download PDF `overview-YYYY.pdf`) for the Design page's year, same holidays as the sheet (built-ins, Every year, This year only). Title band: optional Header (`lhead`), 'YEAR OVERVIEW', spaced year. Three all-borders #333 tables with header rows in the Holiday List header colour (`lhc`), font colour from the Design page, 4 mm margins; text shrinks (48 px down to 18 px) to fit one page; an empty table shows 'None'.
+  - Day rules: off day = Sunday (always, whatever "Colour Sundays" says), Saturday holiday (Design page setting: None / 2nd & 4th / All) or any day of a Gazetted holiday. Multi-day holidays count every day. Restricted days are never off and never deducted; they are only counted and named.
+  - Summary: Total days (365/366), Sundays, Saturday holidays (with the rule), Gazetted holidays (days), Gazetted on a Sunday / Saturday holiday, Total holidays (Sundays + Saturday holidays + Gazetted, overlaps counted twice), Actual holidays (each off day once), Working days (total − actual), Restricted holidays (days, not deducted).
+  - Holiday streaks: every run of 3 or more off days in a row, longest first (ties by date), with From – To, days and the holidays in it ('Durga Puja + Sunday'; Sundays / Saturdays named only when they are not also Gazetted).
+  - Holiday stretches (Jor's rule): a span that starts and ends on an off day, contains at least one working day, and has off days ≥ working days (restricted days count as working, named in brackets '(Restricted: …)'). The longest qualifying spans are picked first; any span overlapping an already picked one is dropped; all are listed longest first with Total / Off / Working.
+
+- Year Overview (CM14): a stretch can be as short as 3 days (off, working, off); with very many holidays the text can reach 18 px and very long lists could still overflow the page.
 
 ## 5. Legacy code notes
 Old code kept as comments next to the code that replaced it (moved with that code in CM13). Each note says which releases used it.
@@ -65,6 +75,8 @@ Old code kept as comments next to the code that replaced it (moved with that cod
 - `render/cm_list.js`, `rows`: the single-day row (CM10).
 - `render/cm_list_simple.js`, `drawSimple`: CM10 column widths and date text.
 - `render/cm_pdf.js`, `save`: portrait-only PDF and its title / size (CM1-CM3).
+- `ui/cm_design_page.js`, `RELEASE`: the CM13 label (CM14).
+- `ui/cm_zoom.js`, start-up: the CM12-F2-CM13 preview list without the Year Overview.
 - `ui/cm_design_page.js`, colour swatches: the CM1-CM12-F3 swatch markup (lower-case labels).
 - `ui/cm_holidays_page.js`: `save` without the warning (CM3), the CM3-CM8 `draw()` (one list per section), the CM3-CM10 date inputs and `add` values.
 
