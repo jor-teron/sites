@@ -22,7 +22,7 @@
     return { year: P.year, week: P.week, colour: P.colour === 'custom' ? P.custom : P.colour,
       font: P.font, /* CM6 */ rcolour: P.rcol, /* CM9 */ sundays: P.sundays, sat: P.sat, hols: hols(P.year),
       bg: { type: P.bg, colour: P.soft, img: CM.bgImg, faint: P.faint / 100 }, strip: P.strip, layout: P.layout,
-      fold: P.fold !== false, legend: P.legend, mfill: P.mfill }; /* CM12-F3 */
+      fold: P.fold !== false, legend: P.legend, mfill: P.mfill, lgsz: P.lgsz }; /* CM12-F3, CM16-F1 lgsz */
   }
   let raf = 0;
   function render() {
@@ -55,6 +55,10 @@
     $('sundays').checked = P.sundays !== false;
     $('fold').checked = P.fold !== false; /* CM5 */
     if ($('legend')) $('legend').checked = P.legend !== false; /* CM12-F3 */
+    if ($('lgsz-row')) { /* CM16-F1: hidden while the legend is off; don't overwrite while typing */
+      $('lgsz-row').hidden = P.legend === false; $('lgsz').disabled = P.legend === false;
+      if (document.activeElement !== $('lgsz')) $('lgsz').value = P.lgsz;
+    }
     if ($('mcustom')) { $('mcustom').value = P.mfill; markOn('#mfills button', P.mfill.toLowerCase()); }
     if (CM.onSync) CM.onSync();
   }
@@ -86,6 +90,12 @@
   $('fold').onchange = () => { P.fold = $('fold').checked; save(); render(); }; /* CM5 */
   /* CM12-F3: legend toggle + month row fill (White = none, Light grey, custom) */
   if ($('legend')) $('legend').onchange = () => { P.legend = $('legend').checked; save(); render(); };
+  /* CM16-F1: legend size, live on input (out-of-range typing is clamped for drawing, box fixed on change) */
+  if ($('lgsz')) {
+    $('lgsz').oninput = () => { const v = parseFloat($('lgsz').value); if (!isFinite(v)) return;
+      P.lgsz = S.clampLg(v); save(); render(); };
+    $('lgsz').onchange = () => { P.lgsz = S.clampLg(parseFloat($('lgsz').value)); $('lgsz').value = P.lgsz; save(); render(); };
+  }
   if ($('mfills')) swatches('mfills', T.MFILLS.map(([v, n]) => [v, v, n]), 'mfill');
   if ($('mcustom')) $('mcustom').oninput = () => { P.mfill = $('mcustom').value; save(); render(); };
   const setYear = (y) => {

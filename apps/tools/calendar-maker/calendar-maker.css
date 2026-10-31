@@ -123,3 +123,5 @@ body.land #sheet{aspect-ratio:297/210;max-width:calc((100vh - 90px) * 1.4142)}
 @media (max-width:760px){#ovw-sheet{max-width:100%}}
 /* CM16: in the Hub's Desktop window the page tabs live in the title bar (ui/cm_titlebar.js) */
 body.hub-titlebar #bar{display:none}
+/* CM16-F1: legend size box */
+.lgsz{display:flex;align-items:center;gap:6px}.lgsz input{width:72px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--card);color:inherit}

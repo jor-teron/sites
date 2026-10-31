@@ -97,7 +97,11 @@ window.CM.Render = (function () {
     /* CM12-F3: legend band below the grids (outside the uniform grid): gap + one line at ~58% of the date font.
        0 when off. */
     const UW = (W - 2 * M) / gCols, UH0 = (H - top - M - stripH) / gRows;
-    const LFS = o.legend !== false ? Math.max(14, Math.round(Math.min(UH0 * 0.6, UW * 0.42) * 0.58)) : 0;
+    /* const LFS = o.legend !== false ? Math.max(14, Math.round(Math.min(UH0 * 0.6, UW * 0.42) * 0.58)) : 0;  (CM12-F3-CM16) */
+    /* CM16-F1: legend font = lgsz (0.5-2 em, default 0.58) x the date font before the band is taken off; the band
+       (gap + 1.4 lines) is reserved below the grids, so the grids shrink to make room and nothing overlaps. */
+    const lgsz = typeof o.lgsz === 'number' && isFinite(o.lgsz) ? Math.min(2, Math.max(0.5, o.lgsz)) : 0.58;
+    const LFS = o.legend !== false ? Math.max(14, Math.round(Math.min(UH0 * 0.6, UW * 0.42) * lgsz)) : 0;
     const legGap = LFS ? Math.round(2 * PX_MM) : 0, legH = LFS ? legGap + Math.round(LFS * 1.4) : 0;
     const UH = (H - top - M - stripH - legH) / gRows;
     /* centred if any leftover */
@@ -186,6 +190,9 @@ window.CM.Render = (function () {
         lx += sz + LFS * 0.4 + c.measureText(label).width + LFS * 1.6;
       });
       api_last.legend = { y: ly - sz / 2, h: sz, font: LFS, items: items.length, gridBottom: gy0 + UH * gRows, dateFont: UFS };
+      /* CM16-F1: fit facts for tests, non-enumerable so the recorded layout facts stay the same */
+      Object.defineProperty(api_last.legend, 'fit', { value: { dateFont0: Math.round(Math.min(UH0 * 0.6, UW * 0.42)),
+        right: lx - LFS * 1.6, W, M, stripTop: H - M - stripH }, enumerable: false });
     } else api_last.legend = null;
     if (stripH) {
       const sy = H - M - stripH + 20;

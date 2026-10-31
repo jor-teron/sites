@@ -1,7 +1,7 @@
 /* Calendar Maker CM13 core: every saved key, with defaults and validation, in one place. window.CM.Settings
    'calendar-maker-settings' (CM1+): { year, colour: preset key | 'custom', sundays, sat: 'none'|'24'|'all',
      week: 'sun'|'mon' (default from Calendar's 'calendar-settings-v1'), bg: 'none'|'soft'|'pic', soft, faint,
-     strip (CM2), layout (CM4), fold (CM5), custom, font (CM6), rcol (CM9), lhead (CM10), legend, mfill (CM12-F3),
+     strip (CM2), layout (CM4), fold (CM5), custom, font (CM6), rcol (CM9), lhead (CM10), legend, mfill (CM12-F3), lgsz (CM16-F1),
      llay, lsub, ldeco, labcd, lmerge, lhc (CM12) }
    'calendar-maker-holidays' (CM3): { fixed: null (= Calendar's built-in list) | [{m, d, name, r?, em?, ed?}],
      dated: [{date: 'YYYY-MM-DD', end?, name, r?}] }
@@ -23,7 +23,8 @@ window.CM.Settings = (function () {
       sat: cal.satAll ? 'all' : (cal.sat24 ? '24' : 'none'), week: cal.week === 'mon' ? 'mon' : 'sun',
       bg: 'none', soft: '#fef9e7', faint: 25, strip: false, layout: 'p3', fold: true,
       custom: '#15803d', /* CM12-F4: was '#92d36e' (CM6); saved custom values are kept */
-      font: '#000000', rcol: '#cfcfcf', lhead: '', legend: true, mfill: '#d9d9d9' };
+      font: '#000000', rcol: '#cfcfcf', lhead: '', legend: true, mfill: '#d9d9d9', lgsz: 0.58 };
+    /* CM16-F1: legend size in em of the date font (0.58 = the CM12-F3 look) */
     /* CM12-F3: legend + month row fill */ /* CM10: Holiday List header */ /* CM9: restricted holiday colour */
     /* CM6: custom holiday colour + font colour */ /* CM5: fold on (existing users get it too) */
     /* CM4: bg default None = white */
@@ -38,6 +39,7 @@ window.CM.Settings = (function () {
     ['lhead', isStr, () => ''], /* CM10 */
     ['legend', isBool, () => true], /* CM12-F3 */
     ['mfill', (v) => T.HEX.test(v), (D) => D.mfill],
+    ['lgsz', (v) => typeof v === 'number' && isFinite(v), (D) => D.lgsz], /* CM16-F1: then clamped below */
     /* CM12: holiday list layout (Classic default) + Classic options */
     ['llay', (v) => v === 'simple', () => 'classic'],
     ['lsub', isStr, () => 'LIST OF HOLIDAYS'],
@@ -50,10 +52,17 @@ window.CM.Settings = (function () {
     const P = read(KEYS.settings), D = defaults(read(KEYS.calendar));
     Object.keys(D).forEach((k) => { if (P[k] === undefined || P[k] === null) P[k] = D[k]; });
     RULES.forEach(([k, ok, fb]) => { if (!ok(P[k])) P[k] = fb(D); });
+    P.lgsz = clampLg(P.lgsz); /* CM16-F1 */
     P.year = D.year; /* opens on the current year unless Calendar passes ?year= */
     const q = /[?&]year=(\d{4})/.exec(search || '');
     if (q) P.year = +q[1];
     return P;
+  }
+  /* CM16-F1: legend size 0.5-2 em, 2 decimals; anything not a number -> 0.58 */
+  function clampLg(v) {
+    v = typeof v === 'string' && v.trim() !== '' ? +v : v;
+    if (typeof v !== 'number' || !isFinite(v)) return 0.58;
+    return Math.round(Math.min(2, Math.max(0.5, v)) * 100) / 100;
   }
   const saveSettings = (P) => {
     try { localStorage.setItem(KEYS.settings, JSON.stringify(P)); } catch (_) { /* full / private mode */ }
@@ -91,5 +100,5 @@ window.CM.Settings = (function () {
   const saveBg = (url) => { try { localStorage.setItem(KEYS.bg, url); return true; } catch (_) { return false; } };
   const clearBg = () => { try { localStorage.removeItem(KEYS.bg); } catch (_) { /* */ } };
 
-  return { KEYS, defaults, RULES, loadSettings, saveSettings, loadHolidays, saveHolidays, loadBg, saveBg, clearBg };
+  return { KEYS, defaults, RULES, loadSettings, saveSettings, clampLg, /* CM16-F1 */ loadHolidays, saveHolidays, loadBg, saveBg, clearBg };
 })();
