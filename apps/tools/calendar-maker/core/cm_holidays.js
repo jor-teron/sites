@@ -2,6 +2,9 @@
    Merges the Calendar app's built-in list (window.CalHolidays) with the user's every-year and this-year-only holidays.
    Holiday: {m (0-11), d, name, r?: true = Restricted (CM9), t?: 'p' Public | 's' School (CM18), em?/ed?: end month/day, same year (CM11)}.
    CM18 types: typeOf(h) = 'p' | 's' from t, else 'r' when r, else 'g' (Gazetted). Old saves (no t) load unchanged.
+   CM19 moving (every year, date changes): {name, r?, t?, len (days, last known), dates: {'YYYY': {start, end?}}, off?: {'YYYY': 1}}.
+   off = removed for that year only (Delete > this year only), so it is not asked for again.
+   A year with no entry in dates is undated: not drawn, listed or counted (see needDate).
    window.CM.Holidays */
 window.CM = window.CM || {};
 window.CM.Holidays = (function () {
@@ -99,7 +102,36 @@ window.CM.Holidays = (function () {
       if (h.end) { o.em = +h.end.slice(5, 7) - 1; o.ed = +h.end.slice(8, 10); }
       out.push(o);
     });
+    /* CM19: moving holidays only in years that have a date */
+    (H.moving || []).forEach((h) => {
+      const v = h.dates && h.dates[y]; if (!v || !v.start) return;
+      const o = { m: +v.start.slice(5, 7) - 1, d: +v.start.slice(8, 10), name: h.name, r: h.r === true };
+      if (h.t === 'p' || h.t === 's') { o.t = h.t; o.r = false; }
+      if (v.end && v.end > v.start) { o.em = +v.end.slice(5, 7) - 1; o.ed = +v.end.slice(8, 10); }
+      out.push(o);
+    });
     return out;
+  }
+  /* CM19: moving holidays with no date for year y -> [{h, i}] */
+  const needDate = (H, y) => (H.moving || []).map((h, i) => ({ h, i }))
+    .filter(({ h }) => !(h.dates && h.dates[y]) && !(h.off && h.off[y])); /* off[y] = removed for that year only */
+  /* CM19: days between two YYYY-MM-DD (inclusive) */
+  const spanDays = (a, b) => Math.round((Date.UTC(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10)) -
+    Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10))) / 864e5) + 1;
+  /* CM19: end for a start using len days; clipped to 31 Dec of the same year; '' for one day */
+  function autoEnd(start, len) {
+    if (!start || !(len > 1)) return '';
+    const y = +start.slice(0, 4), dt = new Date(y, +start.slice(5, 7) - 1, +start.slice(8, 10) + len - 1);
+    const e = dt.getFullYear() !== y ? y + '-12-31' : y + '-' + p2(dt.getMonth() + 1) + '-' + p2(dt.getDate());
+    return e > start ? e : '';
+  }
+  /* CM19: set (or clear with start '') the date of moving holiday h in year y; keeps len as the last known length */
+  function setMoving(h, y, start, end, off) {
+    h.dates = h.dates || {};
+    if (h.off) { delete h.off[y]; if (!Object.keys(h.off).length) delete h.off; }
+    if (!start) { delete h.dates[y]; if (off) { h.off = h.off || {}; h.off[y] = 1; } return h; }
+    const v = { start }; if (end && end > start && end.slice(0, 4) === start.slice(0, 4)) v.end = end;
+    h.dates[y] = v; h.len = v.end ? spanDays(start, v.end) : 1; return h;
   }
   /* CM11: every-year Day/Month values -> {m, d, em?, ed?} or null when invalid.
      Day is clamped to the month (29 Feb allowed). */
@@ -116,6 +148,7 @@ window.CM.Holidays = (function () {
 
   return {
     MN, MS, WD, WDF, p2, dim, dow, mlen, sfx, join, endOf, stripRows, stripSections, dateText, daysOf,
-    builtIns, fixedOf, forYear, readFx, TYPES, TYPE_NAMES, RANK, typeOf, setType /* CM18 */
+    builtIns, fixedOf, forYear, readFx, TYPES, TYPE_NAMES, RANK, typeOf, setType, /* CM18 */
+    needDate, spanDays, autoEnd, setMoving /* CM19 */
   };
 })();

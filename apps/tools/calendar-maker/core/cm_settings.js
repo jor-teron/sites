@@ -5,6 +5,7 @@
      llay, lsub, ldeco, labcd, lmerge, lhc (CM12), lband, lbandc (CM16-F2), lshowr (CM16-F3), pcol, scol, lshowp, lshows (CM18), theme: 'auto'|'light'|'dark' (CM15) }
    'calendar-maker-holidays' (CM3): { fixed: null (= Calendar's built-in list) | [{m, d, name, r?, t?, em?, ed?}],
      dated: [{date: 'YYYY-MM-DD', end?, name, r?, t?}] }  (CM18: t 'p' Public | 's' School; none = r ? Restricted : Gazetted)
+     CM19: moving: [{name, r?, t?, len, dates: {'YYYY': {start, end?}}, off?: {'YYYY': 1}}] (every year, date changes); missing = [] (older saves load unchanged)
    'calendar-maker-bg' (CM2): picture background as a JPEG data URL (<= 1600 px).
    ?year=YYYY (from Calendar's "Make printable") wins over the saved year; CM17-F1: otherwise the last saved year
    (1900-2200), else the current year (legacy CM1-CM17: always opened on the current year). */
@@ -104,6 +105,20 @@ window.CM.Settings = (function () {
     H.dated.concat(H.fixed || []).forEach((h) => {
       if (h.t == null) return;
       if (h.t === 'p' || h.t === 's') delete h.r; else delete h.t;
+    });
+    /* CM19: moving holidays; a missing key is simply [] (fixed / dated never touched) */
+    if (!Array.isArray(H.moving)) H.moving = [];
+    H.moving = H.moving.filter((h) => okName(h));
+    H.moving.forEach((h) => {
+      if (!h.dates || typeof h.dates !== 'object' || Array.isArray(h.dates)) h.dates = {};
+      Object.keys(h.dates).forEach((y) => {
+        const v = h.dates[y];
+        if (!v || !DATE.test(v.start) || v.start.slice(0, 4) !== y) { delete h.dates[y]; return; }
+        if (v.end != null && !(DATE.test(v.end) && v.end.slice(0, 4) === y && v.end > v.start)) delete v.end;
+      });
+      if (h.off != null && (typeof h.off !== 'object' || Array.isArray(h.off))) delete h.off;
+      if (!(h.len >= 1 && h.len <= 366)) h.len = 1;
+      if (h.t != null) { if (h.t === 'p' || h.t === 's') delete h.r; else delete h.t; }
     });
     return H;
   }
