@@ -176,6 +176,7 @@ Messages show briefly at the bottom (2.2 s):
 - 2026-10-23 IST: MM3 Excel (.xlsx) import for Merge: own reader (no library), sheet dropdown (remembered), number and date formats as shown in Excel, live refresh like CSV; `samples/merge_sample.xlsx`.
 - 2026-10-23 IST: MM1 mail merge: Merge ribbon tab, CSV reader, live refresh, preview, Export all (zip / combined DOCX).
 - 2026-10-23 IST: orientation fix: saved only under `draftly_orientation` (config `storageKeyOrientation`); the old `undefined` key (written 2026-10-02 to 2026-10-21, when that config entry was missing) is migrated once at start-up and removed if it holds an orientation value. Invalid values are not saved.
+- 2026-10-31 IST: DF18, plain bulleted and numbered lists show their bullets/numbers in the editor and Merge preview (1.6em indent, same as styled lists).
 - 2026-10-31 IST: DF15-B1, rename no longer overwrites an existing document (File > Rename and the name box).
 - 2026-10-21 IST: Draftly dialogs (rename and delete) replace browser prompts; Dark/Light mode item in the File menu.
 - 2026-10-21 IST: slimmer top row (36 px, 28 px controls, smaller brand); hub bridge `draftly-hub.js` (tabs and title in the hub title bar).
