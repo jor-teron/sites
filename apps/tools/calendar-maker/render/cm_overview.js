@@ -1,6 +1,7 @@
 /* Calendar Maker CM14 render: Year Overview page, one A4 portrait 250 dpi canvas (preview, Print, PDF).
    window.CM.Overview.draw(canvas, o), o = { year, hols, sat, font, header, hcolour }.
-   Title band (optional Header, 'YEAR OVERVIEW', spaced year) like the Classic list, then three all-borders tables:
+   CM16-F4: title band is just 'YEAR OVERVIEW' + spaced year (legacy CM14: optional Header first), one blank row between sections.
+   Title band (legacy: optional Header, 'YEAR OVERVIEW', spaced year) like the Classic list, then three all-borders tables:
    Summary, Holiday streaks, Holiday stretches. Header rows use the list header colour; whole page shrinks to fit. */
 window.CM = window.CM || {};
 window.CM.Overview = (function () {
@@ -20,10 +21,10 @@ window.CM.Overview = (function () {
     ].map((r) => [r[0], String(r[1])]);
     return [
       { title: 'Summary', cols: [0.78, 0.22], head: ['Item', 'Days'], align: ['l', 'c'], rows: sum, bold: [6, 7] },
-      { title: 'Holiday streaks (3 or more days off in a row)', cols: [0.07, 0.33, 0.1, 0.5],
+      { title: 'Holiday Streaks', /* CM16-F4, was 'Holiday streaks (3 or more days off in a row)' */ cols: [0.07, 0.33, 0.1, 0.5],
         head: ['#', 'From – To', 'Days', 'Holidays in it'], align: ['c', 'c', 'c', 'l'],
         rows: s.streaks.map((k, i) => [String(i + 1), k.from, String(k.len), k.names]) },
-      { title: 'Holiday stretches (days off ≥ working days)', cols: [0.06, 0.3, 0.09, 0.07, 0.1, 0.38],
+      { title: 'Holiday Stretches', /* CM16-F4, was 'Holiday stretches (days off ≥ working days)' */ cols: [0.06, 0.3, 0.09, 0.07, 0.1, 0.38],
         head: ['#', 'From – To', 'Total', 'Off', 'Working', 'Holidays in it'], align: ['c', 'c', 'c', 'c', 'c', 'l'],
         rows: s.stretches.map((k, i) => [String(i + 1), k.from, String(k.len), String(k.off), String(k.work), k.names]) }
     ];
@@ -44,8 +45,7 @@ window.CM.Overview = (function () {
       if (ul) C.underline(c, txt, W / 2, ty + cap, fs);
       ty += cap + Math.round(fs * 0.4);
     };
-    const head = L.cleanHeader(o.header);
-    if (head) line(head, '800', 84, true);
+    /* CM16-F4: no user Header on the overview (was: const head = L.cleanHeader(o.header); if (head) line(head, '800', 84, true);) */
     line('YEAR OVERVIEW', '400', 60, true);
     { /* spaced year, as in the Classic list */
       const YFS = 100, digs = String(y).split(''); c.font = font('800', YFS);
@@ -60,7 +60,8 @@ window.CM.Overview = (function () {
     const lay = (fs) => {
       const pad = Math.round(fs * 0.35), LH = Math.round(fs * 1.2), base = LH + 2 * pad, gapT = Math.round(fs * 1.9);
       let total = 0;
-      const ts = tbs.map((t) => {
+      const sec = base; /* CM16-F4: one blank row between sections */
+      const ts = tbs.map((t, ti) => {
         const xs = [M]; t.cols.forEach((f, i) => xs.push(i === t.cols.length - 1 ? W - M : xs[i] + Math.round(TW * f)));
         c.font = font('400', fs);
         const rs = (t.rows.length ? t.rows : [null]).map((r) => {
@@ -68,16 +69,19 @@ window.CM.Overview = (function () {
           const ls = r.map((v, i) => C.wrap(c, v, xs[i + 1] - xs[i] - 2 * pad));
           return { r, ls, h: Math.max(...ls.map((x) => x.length)) * LH + 2 * pad };
         });
-        const h = gapT + base + rs.reduce((a, b) => a + b.h, 0);
+        const h = (ti ? sec : 0) + gapT + base + rs.reduce((a, b) => a + b.h, 0); /* CM16-F4 was: gapT + base + rows */
         total += h; return { t, xs, rs, h };
       });
-      return { fs, pad, LH, base, gapT, ts, total };
+      return { fs, pad, LH, base, gapT, sec, ts, total };
     };
     let Lay = null;
     for (let fs = 48; fs >= 18; fs -= 2) { Lay = lay(fs); if (Lay.total <= avail) break; }
-    const { fs, pad, LH, base, gapT } = Lay;
+    const { fs, pad, LH, base, gapT, sec } = Lay;
+    const secs = []; /* CM16-F4: section boxes for the harness */
     let yy = top;
-    Lay.ts.forEach(({ t, xs, rs }) => {
+    Lay.ts.forEach(({ t, xs, rs }, ti) => {
+      if (ti) yy += sec; /* CM16-F4 blank row gap */
+      const s0y = yy;
       c.textBaseline = 'alphabetic'; c.font = font('700', Math.round(fs * 1.1)); c.fillStyle = fc; c.textAlign = 'left';
       c.fillText(t.title, M, yy + gapT - Math.round(fs * 0.45));
       yy += gapT;
@@ -105,8 +109,9 @@ window.CM.Overview = (function () {
         yy += x.h;
       });
       C.borders(c, segs, [xs[0], t0, xs[xs.length - 1], yy], false);
+      secs.push({ title: t.title, top: s0y, bottom: yy });
     });
-    cv._cm14 = { stats: s, fs, top, bottom: yy, tables: tbs }; /* for the test harness */
+    cv._cm14 = { stats: s, fs, top, bottom: yy, tables: tbs, rowH: base, gap: sec, secs, avail, H, M }; /* for the test harness */
     return cv;
   }
   return { draw, tables };

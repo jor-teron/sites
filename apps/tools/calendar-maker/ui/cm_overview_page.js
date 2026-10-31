@@ -14,5 +14,6 @@
     document.body.classList.remove('land');
     CM.Pdf.print($('print-img'), canvas(), CM.render);
   };
-  $('ovw-pdf').onclick = () => CM.Pdf.save($('ovw-pdf'), canvas, false, 'Year overview ' + P.year, 'overview-' + P.year + '.pdf');
+  /* CM16-F4 was: $('ovw-pdf').onclick = () => CM.Pdf.save($('ovw-pdf'), canvas, false, 'Year overview ' + P.year, 'overview-' + P.year + '.pdf'); */
+  $('ovw-pdf').onclick = () => CM.Pdf.save($('ovw-pdf'), canvas, false, 'Year overview ' + P.year, P.year + '-year-overview.pdf');
 })();
