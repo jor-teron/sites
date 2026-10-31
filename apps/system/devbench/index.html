@@ -1,22 +1,21 @@
-<!--
-  File: index.html
-  Project: devbench
-  Role: Entry redirect only. Opens the real app page devbench.html.
-  Does not run tests. Kept separate so the project name is the main HTML file.
--->
 <!DOCTYPE html>
+<!-- Entry redirect to devbench.html, the real Devbench page (keeps ?query and #hash). H78: no visible body; colours follow the Hub theme. Legacy: meta refresh only (visible, in <head>) plus an always-visible "Open devbench" link; it dropped ?query and #hash. -->
 <html lang="en">
 <head>
-  <!-- Page title shown if redirect is slow. -->
   <meta charset="UTF-8">
-  <!-- Tell the browser to jump to the main app file. -->
-  <meta http-equiv="refresh" content="0; url=devbench.html">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>devbench</title>
-  <!-- Fallback link if meta refresh is blocked. -->
   <link rel="canonical" href="devbench.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('devbench.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=devbench.html"></noscript>
 </head>
-<body>
-  <!-- Visible fallback when automatic redirect does not run. -->
-  <p><a href="devbench.html">Open devbench</a></p>
-</body>
+<body><noscript><p><a href="devbench.html">Open devbench</a></p></noscript></body>
 </html>
