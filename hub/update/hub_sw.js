@@ -28,7 +28,7 @@
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
 const V = '20261029s';
-const CACHE = 'hub-shell-v126';  // 2026-10-29s: H66: Notification Centre (System app + 🔔 Hub bar panel, history, Do Not Disturb)
+const CACHE = 'hub-shell-v127';  // 2026-10-31: build bump after H72-H76 (H74 cache fix takes effect)
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
