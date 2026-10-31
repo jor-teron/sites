@@ -1,0 +1,62 @@
+/* Calendar Maker: pages - per-page styles (CM18-R1 split from calendar-maker.css; load order base > layout > pages) */
+
+/* ===== Design ===== */
+/* Legend size box (CM16-F1) */
+.lgsz{display:flex;align-items:center;gap:6px}.lgsz input{width:72px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--card);color:inherit}
+
+/* ===== Holidays ===== */
+/* CM3 */
+.hol-wrap{display:flex;gap:16px;width:100%;max-width:1600px;margin:0 auto;flex-wrap:wrap;padding:0 8px;box-sizing:border-box}
+.hol-wrap section{flex:1 1 360px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.hol-wrap h2{margin:0 0 10px;font-size:17px}
+.hol-wrap h2 small{font-weight:400;color:var(--mut);font-size:13px}
+.add{display:flex;gap:6px;margin-bottom:10px}
+.add input{height:38px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);padding:0 8px;font-size:14px;min-width:0}
+.add input[type=text]{flex:1}
+.add .btn{flex:none;padding:0 16px}
+.hl{list-style:none;margin:0 0 10px;padding:0}
+.hl li{display:flex;align-items:center;gap:6px;padding:6px 0;border-top:1px solid var(--line)}
+.hl li input[type=date]{height:32px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);font-size:13px;width:140px}
+.hl li span{flex:1;font-size:14px;overflow:hidden;text-overflow:ellipsis}
+.hl li button{height:30px;padding:0 10px;border-radius:15px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font-size:12px;cursor:pointer}
+.hl .empty{color:var(--mut);font-size:13px}
+/* Type chips (CM9, CM18) + sub-heading */
+.hl .chip{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid #6aa84f;background:#92d36e;color:#000}
+.hl .chip.r{border-color:#999;background:#cfcfcf}
+/* CM18: type select chip */
+.hl select.chip{color:#000}.hl .chip.p{border-color:#8e7cc3;background:#d9d2e9}.hl .chip.s{border-color:#bf9000;background:#fff2cc}
+.hl li.sub{font-weight:700;opacity:.8;padding-top:10px;border:0}
+/* Day/Month selects + To (CM11) */
+.add{flex-wrap:wrap}
+.add select,.hl li select{height:38px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);padding:0 4px;font-size:14px}
+.hl li select{height:32px;font-size:13px}
+.add .to{align-self:center;font-size:13px;opacity:.7}
+.hl{overflow-x:auto}
+/* Wide page, one-line rows (CM12-F1; overrides CM3 above) */
+.hol-wrap section{flex:1 1 480px;min-width:0}
+.hl li{flex-wrap:nowrap}
+.hl li span{flex:1 1 auto;min-width:120px;white-space:nowrap}
+.hl li select,.hl li input,.hl li button,.hl .chip{flex:none}
+.add input[type=text]{flex:1 1 220px;min-width:160px}
+@media (max-width:760px){.hl li{flex-wrap:wrap}.hl li span{flex-basis:100%;white-space:normal;order:-1}.hol-wrap{padding:0}}
+
+/* ===== Holiday List ===== */
+#list-header{height:38px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);padding:0 8px;font-size:14px}
+.list-classic[hidden]{display:none} /* CM12 */
+.list-opts-in{display:flex;flex-direction:column;gap:10px}
+#list-layout,#list-sub{height:38px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);padding:0 8px;font-size:14px}
+
+/* ===== Year Overview ===== */
+/* Preview + zoom live in cm_layout.css (CM14) */
+
+/* ===== About ===== */
+/* Version line (CM1) */
+.about{font-size:12px;color:var(--mut);line-height:1.5}
+.about img{vertical-align:middle;border-radius:6px}
+/* Cards (CM15) */
+.about-wrap{width:100%;max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.about-wrap .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;line-height:1.5;font-size:14px}
+.about-wrap h2{margin:0 0 10px;font-size:17px}
+.about-wrap .row{margin-bottom:8px}.about-wrap .row small{color:var(--mut);font-size:12px;margin-left:6px}
+.about-wrap .note{color:var(--mut);font-size:12px;margin:4px 0 12px}
+.howto{margin:0;padding-left:20px}.howto li{margin-bottom:6px}

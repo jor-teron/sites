@@ -1,0 +1,36 @@
+/* Calendar Maker: base - theme, page base, shared controls (CM18-R1 split from calendar-maker.css; load order base > layout > pages) */
+/* Theme variables + dark mode */
+:root{--bg:#f6f7f9;--fg:#15181d;--mut:#6b7280;--card:#fff;--line:#e3e6ea;--acc:#2563eb}
+:root.dark{--bg:#111316;--fg:#eef0f3;--mut:#9aa3ae;--card:#1c1f24;--line:#2b3037;--acc:#60a5fa}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+/* Shared controls: option rows, year, nav, segmented, swatches, switch, buttons (CM1) */
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px}
+.row.col{flex-direction:column;align-items:stretch}
+.row[hidden]{display:none}
+.yr{display:flex;align-items:center;gap:6px}
+.yr input{width:84px;height:36px;text-align:center;font-size:17px;font-weight:600;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+.nav{width:36px;height:36px;border-radius:18px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:22px;line-height:1;cursor:pointer}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{flex:1;height:34px;border:0;background:none;color:var(--fg);font-size:13px;cursor:pointer}
+.seg button.on{background:var(--acc);color:#fff;font-weight:600}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.swatches button{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);cursor:pointer}
+.swatches button.on{outline:3px solid var(--acc);outline-offset:2px}
+.sw{width:42px;height:24px;accent-color:var(--acc)}
+.pic{display:flex;gap:8px}
+.faint{display:flex;align-items:center;gap:10px}
+.faint input{flex:1}
+.mini{height:34px;padding:0 14px;border-radius:17px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:14px;cursor:pointer}
+.acts{display:flex;gap:8px}
+.btn{flex:1;height:42px;border-radius:21px;border:0;background:var(--acc);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+.btn:disabled{opacity:.5}
+/* Shared note text (CM3) */
+.note{font-size:12px;color:var(--mut)}
+/* Colour pickers (CM6) */
+/* CM6: custom colour + font colour pickers */
+.cpick{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-size:13px;cursor:pointer;border-radius:8px;padding:2px 6px 2px 2px;border:2px solid transparent}
+.cpick.on{border-color:var(--fg)}
+.cpick input,.cfont input{width:34px;height:30px;padding:0;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer}
+.cfont{display:flex;align-items:center;gap:6px}
+.cfont .btn{height:30px;padding:0 10px;font-size:12px}
