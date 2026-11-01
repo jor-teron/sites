@@ -81,6 +81,7 @@ body.app-open #home,body.drawer-open #home{opacity:0}
 #notices{list-style:none;margin:0;padding:0;max-height:30vh;overflow:auto}
 #notices li{padding:10px 12px;border-radius:12px;background:var(--card);margin-bottom:6px;font-size:14px}
 #notices li.none{background:none;color:var(--mut);padding:4px 2px}
+#notices li.nt{display:flex;align-items:center;gap:8px}#notices li.act{cursor:pointer}.nt-t{flex:1;min-width:0;overflow-wrap:anywhere}.nt-x{border:0;background:none;color:var(--mut);font-size:14px;padding:2px 6px;cursor:pointer}/* H81 */
 
 #apps{z-index:5;background:var(--bg);opacity:0;transform:scale(.94);transition:transform .22s ease,opacity .22s ease,visibility 0s .22s}
 #apps.open{opacity:1;transform:none;transition:transform .22s ease,opacity .22s ease}

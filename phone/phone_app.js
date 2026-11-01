@@ -272,9 +272,11 @@
       b.firstChild.textContent = x.e; b.lastChild.textContent = x.label;
       t.appendChild(b);
     });
+    if (window.HubNotify && HubNotify.render) HubNotify.render(); else {   // H81: Hub notices (phone/phone_notify.js)
     var n = $('notices'); n.textContent = '';
     if (!notices.length) { var li = document.createElement('li'); li.className = 'none'; li.textContent = 'No notices'; n.appendChild(li); }
     notices.forEach(function (x) { var l = document.createElement('li'); l.textContent = x; n.appendChild(l); });
+    }
     tick();
   }
   function openPanel() {
