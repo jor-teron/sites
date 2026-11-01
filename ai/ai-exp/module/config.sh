@@ -1,6 +1,13 @@
-# Tunable settings for ai-exp.sh. This is the only place defaults live.
+# Tunable settings shared by every versions/agent-vN.sh. This is the only place defaults live.
 # Export the same name before running the tool to override a default
 # (AI_MODEL and API_URL included). Empty values fall back to the default.
+
+# Version features. A version file sets these before sourcing module/.
+ENABLE_CONTINUE="${ENABLE_CONTINUE:-1}"        # --continue and journal memory
+ENABLE_END_SESSION="${ENABLE_END_SESSION:-0}"  # opt-in: end_session tool (AI ends early)
+ENABLE_TEXT_END="${ENABLE_TEXT_END:-0}"        # opt-in: a text-only reply ends the run instead of a nudge
+ENABLE_SEARCH="${ENABLE_SEARCH:-0}"            # opt-in: web_search tool (Tavily)
+AGENT_LABEL="${AGENT_LABEL:-agent}"
 
 # Seconds for the whole session.
 TIME_LIMIT="${TIME_LIMIT:-150}"

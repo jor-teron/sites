@@ -1,8 +1,7 @@
-# Local API key (GEMINI_API_KEY=... or GOOGLE_API_KEY=...)
+# Local API keys (GEMINI_API_KEY=..., TAVILY_API_KEY=...)
 .env
-
-# Folders left in this directory by the earlier scripts (exp-001/, and so on).
+# Folders left by the earlier single-file scripts
 exp-*/
-
-# Experiment output from ai-exp.sh: cage/, log-N.md, and .run/.
-experiments/
+# Experiment output (cage/, log*.md, .run/)
+experiments/*
+!experiments/.gitkeep

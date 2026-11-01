@@ -4,6 +4,17 @@ clock() { date +%H:%M:%S; }
 
 fail() { echo "Error: $*" >&2; exit 1; }
 
+# Read NAME=value from .env beside the version script, then the ai-exp root.
+env_value() {
+  local key="$1" f
+  for f in "${SCRIPT_DIR:-$AI_EXP_ROOT}/.env" "$AI_EXP_ROOT/.env"; do
+    [ -f "$f" ] || continue
+    sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?${key}[[:space:]]*=[[:space:]]*//p" "$f" \
+      | head -n1 | tr -d '\r' | sed -E "s/^[\"']//; s/[\"']\$//"
+    return 0
+  done
+}
+
 # Find a program even if it lives in /usr/sbin or /sbin.
 # chroot often does, and a login PATH is not always in effect.
 find_tool() {

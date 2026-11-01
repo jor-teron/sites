@@ -19,7 +19,7 @@ elapsed_s() {
 start_log() {
   : > "$LOG"
   record "# Experiment $NAME, session $SESSION"
-  record "Model: $MODEL"
+  record "Model: $MODEL ($AGENT_LABEL)"
   record "Started: $(date '+%Y-%m-%d %H:%M:%S'), ends $END_TEXT (${TIME_LIMIT}s)"
   record ""
   record "## Prompt"
@@ -48,5 +48,6 @@ finish_log() {
   esac
   record "Experiment folder: $EXP_DIR"
   record "AI journal: $CAGE/home/journal.md"
-  record "Continue it with: $0 --continue $NAME"
+  [ "$ENABLE_CONTINUE" = 1 ] && record "Continue it with: ${AGENT_CMD:-$0} --continue $NAME"
+  return 0
 }

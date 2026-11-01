@@ -10,7 +10,7 @@ a journal, and stop early. Everything it does is written to a markdown log.
 
 Usage:
   $0 <experiment-name> "<prompt>"
-  $0 --continue <experiment-name> ["<prompt>"]
+  ${AGENT_CMD:-$0} --continue <experiment-name> ["<prompt>"]
   $0 -c <experiment-name> ["<prompt>"]
 
 The experiment is created at:
@@ -19,9 +19,8 @@ The experiment is created at:
 prompt is used again. The AI's only memory of earlier sessions is the
 newest part of cage/home/journal.md.
 
-The AI calls run_shell to act and end_session when it has written its
-final journal summary. A reply with no tool call gets a "Carry on" nudge
-and the run keeps going.
+The AI acts by calling run_shell. A reply with no tool call gets a
+"Carry on" nudge and the run keeps going until the time limit.
 
 API key (first one found wins):
   1. GEMINI_API_KEY or GOOGLE_API_KEY in the environment
@@ -29,7 +28,8 @@ API key (first one found wins):
   3. A hidden prompt, when this is run from a terminal
 
 Needs: bash, curl, jq, a static busybox, unshare, chroot
-Settings: $AI_EXP_ROOT/core/config.sh
+Version: $AGENT_LABEL
+Settings: $AI_EXP_ROOT/module/config.sh
 EOF
   exit "$code"
 }
@@ -40,6 +40,7 @@ parse_args() {
     -h|--help) usage 0 ;;
     "") usage 1 ;;
     --continue|-c)
+      [ "$ENABLE_CONTINUE" = 1 ] || fail "$AGENT_LABEL has no --continue. Use a newer version (unset AGENT_VERSION)."
       CONTINUE=1
       shift
       [ $# -ge 1 ] && [ $# -le 2 ] || usage 1
@@ -69,8 +70,9 @@ prepare_experiment() {
 
   if [ "$CONTINUE" -eq 0 ]; then
     if [ -e "$EXP_DIR" ]; then
+      [ "$ENABLE_CONTINUE" = 1 ] || fail "'$NAME' already exists. Pick another name."
       fail "'$NAME' already exists. To pick up where it left off, run:
-  $0 --continue $NAME"
+  ${AGENT_CMD:-$0} --continue $NAME"
     fi
     mkdir -p "$RUN_DIR" || fail "Can't create $EXP_DIR"
     build_cage
@@ -79,7 +81,7 @@ prepare_experiment() {
     [ -d "$CAGE" ] || fail "No experiment called '$NAME' here (looked for $CAGE)."
     if [ -z "$PROMPT" ]; then
       [ -f "$RUN_DIR/prompt.txt" ] && PROMPT="$(cat "$RUN_DIR/prompt.txt")"
-      [ -n "$PROMPT" ] || fail "No saved prompt for '$NAME'. Give one: $0 --continue $NAME \"your prompt\""
+      [ -n "$PROMPT" ] || fail "No saved prompt for '$NAME'. Give one: ${AGENT_CMD:-$0} --continue $NAME \"your prompt\""
     fi
     mkdir -p "$RUN_DIR" "$CAGE/proc" "$CAGE/home" "$CAGE/tmp"
     last="$(cat "$RUN_DIR/session" 2>/dev/null || true)"
@@ -97,7 +99,7 @@ prepare_experiment() {
   fi
   echo "$SESSION" > "$RUN_DIR/session"
   printf '%s' "$PROMPT" > "$RUN_DIR/prompt.txt"
-  LOG="$EXP_DIR/log-$SESSION.md"
+  if [ "$ENABLE_CONTINUE" = 1 ]; then LOG="$EXP_DIR/log-$SESSION.md"; else LOG="$EXP_DIR/log.md"; fi
   MSGS="$RUN_DIR/messages-$SESSION.json"
 }
 
@@ -150,6 +152,15 @@ build_conversation() {
     || fail "Could not write $MSGS"
 }
 
+# Text sent when the AI replies without a tool call. Versions may override.
+nudge_text() {
+  if [ "$ENABLE_END_SESSION" = 1 ]; then
+    echo "Carry on, or do anything else you like. Call end_session if you want to finish early."
+  else
+    echo "Carry on, or do anything else you like."
+  fi
+}
+
 # Run one tool call from an assistant message. Sets END_KIND=ai when
 # end_session is called; the caller stops the loop immediately after that.
 dispatch_tool() {
@@ -174,6 +185,7 @@ dispatch_tool() {
       tool_message "$call_id" "$out"
       ;;
     web_search)
+      [ "$ENABLE_SEARCH" = 1 ] || { note "unknown tool: $name"; tool_message "$call_id" "(unknown tool: $name)"; return; }
       cmd="$(tool_arg "$reply" "$i" query)"
       if [ -z "$cmd" ]; then
         out="(no query given)"
@@ -188,6 +200,7 @@ dispatch_tool() {
       tool_message "$call_id" "$out"
       ;;
     end_session)
+      [ "$ENABLE_END_SESSION" = 1 ] || { note "unknown tool: $name"; tool_message "$call_id" "(unknown tool: $name)"; return; }
       reason="$(one_line "$(tool_arg "$reply" "$i" reason)")"
       [ -n "$reason" ] || reason="(no reason given)"
       note "end_session: $reason"
@@ -203,7 +216,8 @@ dispatch_tool() {
   esac
 }
 
-# A reply with no tool call gets a "Carry on" nudge and the loop keeps going
+# A reply with no tool call gets a "Carry on" nudge (or ends the run when
+# ENABLE_TEXT_END=1) and the loop keeps going
 # (as in agent-v2.sh). The AI ends the session early only by calling
 # end_session. Anything still running when the clock hits zero is "time's up".
 run_loop() {
@@ -246,7 +260,12 @@ run_loop() {
       ''|*[!0-9]*) ncalls=0 ;;
     esac
     if [ "$ncalls" -eq 0 ]; then
-      add_message "$("$JQ" -nc --arg c "[$(seconds_left)s left] Carry on, or do anything else you like. Call end_session if you want to finish early." '{role:"user",content:$c}')"
+      if [ "$ENABLE_TEXT_END" = 1 ]; then
+        END_KIND=text
+        END_REASON="$(one_line "$thought")"
+        break
+      fi
+      add_message "$("$JQ" -nc --arg c "[$(seconds_left)s left] $(nudge_text)" '{role:"user",content:$c}')"
       continue
     fi
 
@@ -256,4 +275,12 @@ run_loop() {
     done
     [ "$END_KIND" = ai ] && break
   done
+}
+
+# Extra system-prompt sentences for opt-in tools (empty when all are off).
+optin_prompt_notes() {
+  [ "$ENABLE_SEARCH" = 1 ] && printf ' You may also call web_search to search the web (up to %s searches); the sandbox itself still has no internet.' "$MAX_SEARCHES"
+  [ "$ENABLE_END_SESSION" = 1 ] && printf ' You may end early by calling end_session with a short reason, after writing your final journal summary.'
+  [ "$ENABLE_TEXT_END" = 1 ] && printf ' Replying without a tool call ends the session.'
+  return 0
 }
