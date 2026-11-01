@@ -1,4 +1,4 @@
-# Messages (MS3)
+# Messages (MS3 · CX1)
 
 ## What and why
 Private one-to-one text messages between devices, like SMS. Jor wants private messaging as an integral part of phone/;
@@ -45,3 +45,8 @@ None yet.
 - Files (messages_files.js): 📎 next to Send, any type, 100 MB cap. Wire {t:'fmeta'} → 64 KB {t:'fchunk', i, d} (back-pressure on bufferedAmount) → {t:'fend'}; receiver {t:'ack', id}. Duplicate chunks / finished ids ignored.
   Bytes in memory (blob URLs) until Save; history keeps only the file entry + a ≤200 px JPEG thumbnail for images. Outgoing files not sent before the app closed show ⚠ "Not sent".
 - Ticks: 🕓 waiting/sending, grey ✓ sent, grey ✓✓ delivered, blue ✓✓ read. Read receipt {t:'read', ids} goes when the chat is open and visible (rr:1 on incoming entries). MS1/MS2 history works unchanged; older peers ignore 'read'.
+
+## CX1 (Hub line)
+- messages_hubline.js (MSLine) wraps window.top.HubLine (H91) when present: text via HubLine.send ('delivered' → ✓✓; 'queued' → 🕓, Hub retries, our own P2P may still deliver; 'offline' → own queue),
+  HubLine.onMessage + takeInbox('msg') on start / when visible, merged into messages-history by id. #chat=<num> opens that chat.
+- Files and read receipts stay on Messages' own P2P link. No HubLine → behaviour unchanged.

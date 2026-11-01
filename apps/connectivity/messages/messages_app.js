@@ -1,4 +1,4 @@
-/* Messages MS3 — UI (MS3: files via MSFiles, WhatsApp ticks 🕓 ✓ ✓✓ blue ✓✓ with read receipts {t:'read', ids}; MS2: offline queue → auto-send when the person comes online, alerts + Hub DND via MSNotify). Code order (FC5): #code= (5 digits) > Hub private mesh (parent.HubMeshLink) > public lobby;
+/* Messages MS3 + CX1 — UI (CX1: text goes over the Hub's HubLine when present (MSLine), #chat=<num> opens a chat; MS3: files via MSFiles, WhatsApp ticks 🕓 ✓ ✓✓ blue ✓✓ with read receipts {t:'read', ids}; MS2: offline queue → auto-send when the person comes online, alerts + Hub DND via MSNotify). Code order (FC5): #code= (5 digits) > Hub private mesh (parent.HubMeshLink) > public lobby;
    every 5 s follow the Hub mesh when idle, else offer an in-bar Switch / Back to Public button.
    My number = this device's Hub number (SharedLinkDevices.code() / SharedLink.deviceCode(), self/parent/top). */
 (function () {
@@ -19,7 +19,7 @@
   function hubName() { var w = wins(); for (var i = 0; i < w.length; i++) { try { if (w[i].SharedLinkDevices) return String(w[i].SharedLinkDevices.name() || ''); } catch (_) {} } return ''; }
   var PUB = (function () { var w = wins(); for (var i = 0; i < w.length; i++) { try { var L = w[i].SharedLink; if (L && /^\d{5}$/.test(String(L.LOBBY || ''))) return String(L.LOBBY); } catch (_) {} } return '00000'; })();
   function hml() { try { var h = window.parent !== window && window.parent.HubMeshLink; return h && typeof h.isPrivate === 'function' ? h : null; } catch (_) { return null; } }
-  var myNum = hubNum(), code = '', fixed = false, manual = false, offer = '', cur = '', started = false, idleAt = Date.now();
+  var myNum = hubNum() || (window.MSLine && MSLine.myNumber()) || '', code = '', fixed = false, manual = false, offer = '', cur = '', started = false, idleAt = Date.now();
   function myName() { return S.get('name') || hubName() || 'Device'; }
   function who() { return { name: myName(), num: myNum }; }
   function rid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
@@ -147,6 +147,19 @@
   var busy = {};   // id -> true while a send is in flight (no double sends from flush + Retry)
   function deliver(num, e) {
     if (busy[e.id]) return Promise.resolve(false);
+    if (MSLine.has() && !hubQ[e.id]) {   // CX1: Hub line first; 'queued' = the Hub retries itself, so only our own P2P tries again
+      busy[e.id] = true;
+      return MSLine.send(num, { id: e.id, from: myNum, name: myName(), text: e.text, ts: e.ts }).then(function (r) {
+        delete busy[e.id];
+        if (r === 'delivered') { S.setSt(num, e.id, 'delivered'); renderChat(); renderList(); return true; }
+        if (r === 'queued') hubQ[e.id] = 1;
+        return p2p(num, e);
+      });
+    }
+    return p2p(num, e);
+  }
+  var hubQ = {};
+  function p2p(num, e) {
     if (!P.peerOf(num)) { S.setSt(num, e.id, 'queued'); renderChat(); renderList(); return Promise.resolve(false); }
     busy[e.id] = true;
     return P.send(num, { t: 'msg', id: e.id, from: myNum, name: myName(), text: e.text, ts: e.ts }).then(function (ok) {
@@ -169,6 +182,15 @@
   }
   $('compose').onsubmit = function (ev) { ev.preventDefault(); sendNow(); };
   $('in-text').onkeydown = function (ev) { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); sendNow(); } };
+  /* CX1: Hub line inbound + inbox, merged into history (dedupe by id) */
+  function inMsg(m) {
+    var isNew = S.addIn(m, m.from === cur && !document.hidden);
+    if (isNew) { renderList(); if (m.from === cur) { renderChat(); reads(); } var f = String(m.from); MSNotify.incoming(label(f, m.name), f, m.text, function () { open(f); }); }
+  }
+  MSLine.onMessage(inMsg);
+  function takeInbox() { MSLine.take().forEach(inMsg); }
+  function hashChat() { var h = /[#&?]chat=(\d{5})(?!\d)/.exec(location.hash); if (h && NUM.test(h[1]) && h[1] !== myNum) open(h[1]); }
+  addEventListener('hashchange', hashChat);
   $('b-back').onclick = function () { cur = ''; $('chat').hidden = true; $('pick').hidden = false; $('main').classList.remove('inchat'); renderList(); };
   $('b-new').onclick = function () {
     dialog('Type a 5-digit Hub number, or tap someone under Online now.', ['Cancel', 'Open'], true).then(function (v) {
@@ -195,7 +217,7 @@
       if (fn) MSFiles.data(m, conn, fn);
     }
   });
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && cur) { S.read(cur); renderList(); reads(); } });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) takeInbox(); if (!document.hidden && cur) { S.read(cur); renderList(); reads(); } });
   /* settings */
   $('b-set').onclick = function () { paintNotify(); $('in-name').value = myName(); $('num-lbl').textContent = myNum || '—'; $('sheet').hidden = false; };
   $('b-close').onclick = function () { $('sheet').hidden = true; };
@@ -213,4 +235,5 @@
   var pc = S.pickCode(location.hash, hml(), PUB); fixed = pc.fixed;
   if (/[#&?]code=\d{4}(?!\d)/.test(location.hash)) toast('Old 4-digit codes are no longer used');
   go(pc.code);
+  takeInbox(); hashChat();
 })();

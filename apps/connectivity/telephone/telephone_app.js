@@ -275,8 +275,30 @@
     call(dial);
   };
   function call(num) {
+    if (window.TPLine && TPLine.has() && TPSave.numOk(num) && !TPCall.find(num) && TPPeer.online() && !TPCall.busy()) return hubCall(num);
     TPCall.dial(num).then(function () { dial = ''; paintDial(); }, function (e) { dialog(e.message, ['OK']); });
   }
+
+  /* CX1: their Telephone is closed → ring through the Hub; once accepted, dial over our own lobby when they appear */
+  function hubCall(num) {
+    var nm = nameFor(num, '', '') || num, done = false; dial = ''; paintDial();
+    dialog('Calling ' + nm + ' through the Hub…', ['Cancel']).then(function () { done = true; });
+    TPLine.ring(num).then(function (r) {
+      if (done) return;
+      if (!r.accepted) { closeDlg(); dialog(nm + ' did not answer.', ['OK']); return; }
+      var t0 = Date.now();
+      (function wait() {
+        if (done) return;
+        if (TPCall.find(num)) { closeDlg(); TPCall.dial(num).catch(function (e) { dialog(e.message, ['OK']); }); return; }
+        if (Date.now() - t0 > 20000) { closeDlg(); dialog('Could not reach ' + nm + '’s Telephone.', ['OK']); return; }
+        setTimeout(wait, 500);
+      })();
+    });
+  }
+  function closeDlg() { var d = document.getElementById('dialog'); if (d) d.hidden = true; }
+  TPCall.on('ring', function (c) { if (window.TPLine && TPLine.expected(c.num)) setTimeout(function () { TPCall.answer().catch(function (e) { dialog(e.message, ['OK']); }); }, 300); });
+  function hubMissed() { if (!window.TPLine) return; TPLine.takeMissed().forEach(function (e) { TPSave.addLog({ dir: 'missed', num: e.num, name: e.name, at: e.at, why: 'missed' }); }); }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) hubMissed(); });
 
   /* ---------- call screen ---------- */
   var WHY = { dnd: 'Do Not Disturb', busy: 'Busy', declined: 'Call declined', noanswer: 'No answer', notfound: 'Not online', unreachable: 'Could not reach the phone', failed: 'Call could not connect', lost: 'Call dropped', mic: 'Microphone not available', missed: 'Missed call', cancelled: 'Call cancelled', done: 'Call ended' };
@@ -567,6 +589,6 @@
 
   /* ---------- start ---------- */
   paintMe(); paintSeg(); paintVol(); paintSink(); paintDnd(); paintList(); paintLog(); paintContacts(); paintCall(); paintBadge(); paintNotify();
-  boot();
+  boot(); hubMissed();
   window.TPApp = { show: show, dial: function () { return dial; }, page: function () { return page; } };   // test hook
 })();

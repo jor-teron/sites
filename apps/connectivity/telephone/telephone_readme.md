@@ -75,3 +75,8 @@ Why: Jor wants Do Not Disturb to belong to the Hub, with connectivity apps follo
 
 - TP2–TP6 Telephone Do Not Disturb (`paintDnd` / `setDnd` / `#b-dnd` / `#chk-dnd` / `#chk-dndfav` hooks in `telephone_app.js`, the `TPSave.get('dnd')` / `dndFav` check in `telephone_call.js`, presence `dnd` in `telephone_peer.js`) is kept as comments; the removed markup is noted in HTML comments in `telephone.html`. Replaced in TP7 by the Hub's DND (`TPDnd`).
 - FC5: `$('b-newnum')` handler kept as `//` comments in telephone_app.js; `checkClash` now returns early when `TPSave.fromHub()`. Old 4-digit code regexes kept in the TP1–TP4 `//` legacy blocks.
+
+## CX1 (Hub line)
+- telephone_hubline.js (TPLine) wraps window.top.HubLine (H91) when present. Calling a number whose Telephone is closed rings through HubLine.call(num,{video:false});
+  on accepted, Telephone dials over its own lobby as soon as the number appears (20 s). #call=<callId>&from=<num> auto-answers the next ring from that number (60 s).
+  takeInbox('missed'/'call') entries go into the call log as missed. Media stays P2P. No HubLine → unchanged.
