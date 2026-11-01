@@ -42,9 +42,9 @@ Desktop testing: mouse drags do the same; wheel down = drawer, wheel up = panel,
   standalone path as usual. The launcher runs no PeerJS peer of its own.
 - **H79 Hub mesh:** `/phone.html` loads the Hub link stack (`shared/link/link_core.js`, `link_devices.js`,
   `hub_mesh.js`, `hub/link/hub_meshlink.js`), so `window.HubMeshLink` exists and this device joins the public
-  **0000** lobby at startup (H73 rule, switch `sites-hub.meshPublic`). Intercom / Telephone / Screen Share /
-  Shared Clipboard read `parent.HubMeshLink` (isPrivate / privateCode → else 0000). With HubMeshLink the hello
-  reply sends only the private mesh code (none on 0000 = no reply); the saved Connect Code is used only without it.
+  **00000** lobby at startup (H73 rule, switch `sites-hub.meshPublic`). Intercom / Telephone / Screen Share /
+  Shared Clipboard read `parent.HubMeshLink` (isPrivate / privateCode → else 00000). With HubMeshLink the hello
+  reply sends only the private mesh code (none on 00000 = no reply); the saved Connect Code is used only without it.
 - **H80 Hub settings:** the phone reads the Hub's own keys, no copies. `sites-hub.theme` (light / dark, set by Hub
   Settings > Look, incl. Auto) and `sites-hub.accent` (`--acc`) apply at load (head script) and live (`storage`
   event + `{type:'hub-prefs'}` from a Settings frame). Phone theme default is now `system`, shown as **Hub** (follow
@@ -96,10 +96,16 @@ Multi-Screen Wall, Search. Theme System follows `sites-hub.theme`, then the devi
 - Full screen needs the WebView to support it (`onShowCustomView`); otherwise the tile shows a note.
 - Apps that navigate inside their frame add history entries, so Back steps back inside the app first.
 - Esc inside an app goes to the app, not the launcher (use the edge swipe or Back).
-- Notices are empty; no drag-to-reorder of icons yet; no wallpaper picker (the phone's wallpaper is used).
+- No drag-to-reorder of icons yet; no wallpaper picker (the phone's wallpaper is used).
 - Offline only works when the Hub's service worker was installed on that origin (visit the Hub once); PH3 bundles it.
 
 ## H82 — Do Not Disturb and call pop-up
 
 - Quick panel tile **Do Not Disturb** toggles the Hub-wide `window.HubDnd` (`sites-hub.dnd`), the same switch as the Hub's 🔔 and Settings › Do Not Disturb.
 - `/phone.html` loads `hub/core/hub_attention.js`: an app frame posting `{sharedLink:'attention', app, kind:'call', title, urgent, fav?}` gets an Answer / Decline card over the phone; replies go back as `{sharedLink:'attention-reply', app, kind:'call', action}`. Answer shows that app's frame. `kind:'call-end'` closes it. See hub/docs/README_technical_team3.txt (H82).
+
+## PH2 — Notices kept, one toast queue (2026-11-01 IST)
+
+- Notices survive a reload: saved in `localStorage` `sites-phone.notices` (newest first, last 50, this device only, never synced); ✕ and taps update it. Tap actions only work in the session that made them. File transfers still running at a reload come back as one "⚠️ Interrupted" notice each (pending names in `sites-phone.noticeFiles`). `HubNotify.clear()` empties the list.
+- Phone toasts and notice toasts now share one queue (`window.phoneToast(msg, ms)` in phone_notify.js), so neither cuts the other off; same look.
+- Comments updated for H83: the public lobby is 00000 (5 digits).
