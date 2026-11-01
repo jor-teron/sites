@@ -4,7 +4,7 @@
   File: apps/connectivity/pooh-chat/pooh-chat.html
   Role: The group lobby chat. Public 00000 = one room for everyone; a private 5-digit Hub code = a private room.
   Inside the Hub (parent has SharedChat) it relays through the Hub ({sharedLink:'chat', text}); standalone or in a
-  host without the relay (/phone.html) it runs its own lobby peer (pooh-chat-peer.js). Plain scripts, no build.
+  host without the relay (/phone.html) it uses the parent's HubMesh, or starts its own HubMesh standalone (H84). Plain scripts, no build.
   Legacy (release 4): status line "Connected · code", ✏️ and "Join Hub" buttons in the bar, link_scan.js + vendor/jsQR.js
   (4-digit Join dialog / Scan QR). Old bar kept below as a comment.
 -->
@@ -54,7 +54,8 @@
   <script src="vendor/jsQR.js"></script> -->
   <script src="../../../shared/share/share_wa.js"></script>
   <script src="pooh-chat-core.js"></script>
-  <script src="pooh-chat-peer.js"></script>
+  <script src="../../../shared/link/hub_mesh.js"></script>
+  <!-- PC1 first build (own pooh lobby, replaced by HubMesh / H84): <script src="pooh-chat-peer.js"></script> -->
   <script src="pooh-chat-ui.js"></script>
   <script src="../../../shared/dialog/dialog.js"></script>
   <script src="pooh-chat.js"></script>

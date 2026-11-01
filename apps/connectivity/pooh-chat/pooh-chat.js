@@ -1,48 +1,46 @@
 /*
-  Pooh Chat — boot (pooh-chat.js, PC1 + PC2). The group lobby chat.
-  - Room code (PC1, like FC5 apps): #code= / ?hub= (5 digits only; 4-digit codes are rejected), else the Hub's
-    private mesh (parent.HubMeshLink.isPrivate()/privateCode()), else SharedLink.LOBBY (self/parent/top), else '00000'.
-  - Relay mode: the parent runs the Hub chat (parent.SharedChat.send exists, same-origin — checked once at boot,
-    PoohCore.hasRelay). Protocol unchanged from release 4: post {sharedLink:'ready'}, send {sharedLink:'chat', text},
-    repaint from 'shared-chat-history' (the Hub writes it; storage event / 'message'). No own peer (no duplicates).
-    After Hub Main Bot's H84 the Hub carries that chat over HubMesh (00000 lobby / private mesh room).
-  - Own-peer mode (standalone, or a host without the relay such as /phone.html): PoohPeer lobby
-    'jtsites-<code>-pooh-0'; history in localStorage 'pooh-chat-history-<code>' (last 200, dedupe by id); backfill
-    of the last 50 on join. In a host, the Hub's private mesh is re-checked every 5 s and followed automatically
-    (unless the code came from the URL or was picked in Settings); while typing, a "Switch to / Back to Public"
-    button in the top bar offers it instead.
+  Pooh Chat — boot (pooh-chat.js, PC1 + PC2). The group lobby chat, on the Hub mesh (H84).
+  - Room code (FC5 order): #code= / ?hub= (5 digits only; 4-digit rejected) → the Hub's private mesh
+    (parent.HubMeshLink.isPrivate()/privateCode()) → SharedLink.LOBBY (self/parent/top) → '00000'.
+  - Transport (PoohCore.mode, checked once at boot, same-origin try/catch):
+    1) 'relay'  — parent.SharedChat.send exists (hub.html): release-4 relay unchanged ({sharedLink:'ready'},
+       {sharedLink:'chat', text}, repaint from 'shared-chat-history'). The Hub (H84) carries it over HubMesh.
+    2) 'parent' — parent.HubMesh.broadcast/onMsg exist but no relay (e.g. /phone.html): use the parent's HubMesh.
+       Never start a second HubMesh (same device id would clash). The room is whatever the parent mesh is in.
+    (2b) 'old' — parent has a HubMesh from before H84 (no broadcast): no transport, notice only (never a 2nd mesh).
+    3) 'own'    — standalone: HubMesh.start(code) (lobby jtsites-<code>-mesh-0, peers jtsites-<code>-mesh-<deviceId>).
+  - Modes 2/3: send HubMesh.broadcast({t:'chat', type:'chat', id, from (= SharedLinkDevices.id()), name, text, ts, room})
+    → {ok, via} | {ok:false, reason} (stopped/type/public/shape/size/rate → toast). Receive HubMesh.onMsg('chat').
+    History = SharedChat ('shared-chat-history', last 200, dedupe by id) — the same store the Hub uses.
+    No backfill (H84 has none; a Hub 'chat-sync' channel may come later).
+  - Own mode in a host: the Hub's private mesh is re-checked every 5 s and followed; while typing, a
+    "Switch to / Back to Public" button in the top bar offers it. A code from the URL or Settings stays put.
   - 🟢: share typed text (or the last message) to WhatsApp; long-press / Shift+click → share files. ↗ per message.
-  Legacy release-4 boot kept as comments at the end of this file (4-digit Join dialog / Scan QR, SharedLink.join).
+  Legacy (as comments at the end): PC1 first build (own pooh lobby), release-4 boot (4-digit Join / Scan QR).
 */
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var inHost = window.parent && window.parent !== window;
-  var relay = PoohCore.hasRelay(window);
-  var hubLinked = false, code = '', fixed = false, manual = false, offer = '', members = [];
-  var input = $('input'), form = $('composer'), btnWa = $('btn-wa'), fileShare = $('file-share');
-  var PUB = PoohCore.lobbyOf([window, safe(function () { return window.parent; }), safe(function () { return window.top; })]);
   function safe(f) { try { return f(); } catch (_) { return null; } }
+  var par = safe(function () { return window.parent !== window ? window.parent : null; });
+  var inHost = !!par;
+  var mode = PoohCore.mode(window), relay = mode === 'relay';
+  var M = mode === 'parent' ? par.HubMesh : (mode === 'own' ? window.HubMesh : null);
+  var hubLinked = false, code = '', fixed = false, manual = false, offer = '', members = [], unsub = [];
+  var input = $('input'), form = $('composer'), btnWa = $('btn-wa'), fileShare = $('file-share');
+  var PUB = PoohCore.lobbyOf([window, par, safe(function () { return window.top; })]);
   function myName() { return window.SharedLinkDevices ? SharedLinkDevices.name() : 'Device'; }
-  function myId() { return SharedChat.deviceId(); }
   function isMine(m) { return SharedChat.isMine(m); }
-
-  /* ---------- own history (own-peer mode only; never touches shared-chat-history) ---------- */
-  function key() { return 'pooh-chat-history-' + code; }
-  function hist() { if (relay) return SharedChat.history(); try { return JSON.parse(localStorage.getItem(key()) || '[]') || []; } catch (_) { return []; } }
-  function addMsgs(msgs) {
-    var r = PoohCore.merge(hist(), msgs);
-    if (r.added.length) { try { localStorage.setItem(key(), JSON.stringify(r.list)); } catch (_) { /* full */ } paint(); }
-    return r.added;
-  }
+  function hist() { return SharedChat.history(); }
   function paint() { PoohUI.render(hist(), isMine); }
-  function roomLabel() { return code === PUB ? 'Public' : 'Private room'; }
-  function paintRoom() { PoohUI.room(relay ? (PoohCore.meshCode(safe(function () { return window.parent; })) ? 'Private room' : 'Public') : roomLabel(), members.length); }
+  function room() { if (relay) return PoohCore.meshCode(par) || PUB; var r = M && safe(function () { return M.room(); }); return PoohCore.c5(r) || code || PUB; }
+  function roomLabel() { return room() === PUB ? 'Public' : 'Private room'; }
+  function paintRoom() { PoohUI.room(roomLabel(), members.length); }
+  SharedChat.on(paint);
   PoohUI.name(myName());
 
-  /* ---------- relay mode (inside the Hub) ---------- */
+  /* ---------- 1) relay (inside hub.html) ---------- */
   function bootRelay() {
-    SharedChat.on(paint);
     window.addEventListener('message', function (e) {
       var d = e.data;
       if (e.source !== window.parent || !d || typeof d !== 'object') return;
@@ -56,35 +54,50 @@
     PoohUI.status('Connecting to Hub…'); paintRoom(); paint();
   }
 
-  /* ---------- own-peer mode ---------- */
-  function desired() { return PoohCore.pickCode({ hash: location.hash, search: location.search, parent: inHost ? safe(function () { return window.parent; }) : null, wins: [window, safe(function () { return window.parent; }), safe(function () { return window.top; })] }); }
+  /* ---------- 2) / 3) HubMesh ---------- */
+  function paintPeers() {
+    members = safe(function () { return M.peers().map(function (p) { return p.name || 'Device'; }); }) || [];
+    paintRoom();
+    PoohUI.status(safe(function () { return M.linked(); }) ? 'Online' : (safe(function () { return M.state(); }) || 'Connecting…'));
+  }
+  function wire() {
+    SharedChat.init(function (m) {
+      var r = safe(function () { return M.broadcast(PoohCore.meshMsg(Object.assign({}, m, { room: m.room || room() }))); }) || { ok: false, reason: 'stopped' };
+      var why = PoohCore.sendResult(r);
+      if (why) PoohUI.notify({ icon: '⚠️', text: why + ' — saved here only' });
+    });
+    unsub.push(M.onMsg('chat', function (d, from) { if (d && d.type === 'chat') SharedChat.add(Object.assign({}, d, { from: from, room: d.room || room() })); }));
+    var onP = function () { paintPeers(); };
+    ['peers', 'status'].forEach(function (ev) { M.on(ev, onP); unsub.push(function () { M.off(ev, onP); }); });
+    addEventListener('pagehide', function () { unsub.forEach(function (f) { try { typeof f === 'function' && f(); } catch (_) { /* */ } }); unsub = []; });
+    paintPeers();
+  }
+  function bootParent() { wire(); paint(); setInterval(paintPeers, 5000); }
+  function desired() { return PoohCore.pickCode({ hash: location.hash, search: location.search, parent: inHost ? par : null, wins: [window, par, safe(function () { return window.top; })] }); }
   function go(c) {
-    if (c === code && PoohPeer.code() === c) return;
-    PoohPeer.stop();
+    if (c === code && M.room() === c) return;
     code = c; offer = ''; members = []; paintSwitch(); paintRoom(); paint();
-    PoohPeer.start(c, { history: hist, info: function () { return { name: myName(), did: myId() }; } })
-      .catch(function () { PoohUI.status('PeerJS could not load (offline?)'); PoohUI.notify({ icon: '⚠️', text: 'Could not connect (offline?)' }); });
+    M.start(c).then(paintPeers, function () { PoohUI.status('error'); PoohUI.notify({ icon: '⚠️', text: 'Could not connect (offline?)' }); });
   }
   function paintSwitch() {
     var el = $('pc-switch'); el.hidden = !offer || offer === code;
     el.textContent = offer === PUB ? 'Back to Public' : 'Switch to ' + offer;
   }
   function checkMesh() {
-    if (relay || fixed || manual || !inHost) return;
+    if (mode !== 'own' || fixed || manual || !inHost) return;
     var d = desired(); if (d === code) { offer = ''; paintSwitch(); return; }
-    if (document.activeElement === input && input.value.trim()) { offer = d; paintSwitch(); return; }   // typing: offer, don't yank
+    if (document.activeElement === input && input.value.trim()) { offer = d; paintSwitch(); return; }
     go(d); PoohUI.notify({ icon: '🐻', text: d === PUB ? 'Back to the Public room' : 'Moved to the private room' });
   }
-  function bootPeer() {
-    PoohPeer.on('status', function (t) { PoohUI.status(t); });
-    PoohPeer.on('online', function (on) { if (!on) PoohUI.status('Reconnecting…'); });
-    PoohPeer.on('roster', function (list) { members = list.map(function (x) { return x.name || 'Device'; }); paintRoom(); });
-    PoohPeer.on('messages', function (msgs) { addMsgs(msgs); });
+  function bootOwn() {
+    if (!M || typeof M.broadcast !== 'function') { PoohUI.status('error'); PoohUI.notify({ icon: '⚠️', text: 'Mesh not available (needs Hub H84)' }); return; }
+    wire();
+    addEventListener('pagehide', function () { try { M.stop(); } catch (_) { /* */ } });
     fixed = !!PoohCore.urlCode(location.hash, location.search);
     go(desired());
     setInterval(checkMesh, +window.__pcMeshMs || 5000);
   }
-  $('pc-switch').addEventListener('click', function () { var d = offer; offer = ''; if (d) { manual = false; go(d); } });
+  $('pc-switch').addEventListener('click', function () { var d = offer; offer = ''; if (d) go(d); });
 
   /* ---------- top bar: who's here / settings ---------- */
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -102,7 +115,7 @@
   async function rename() {
     if (!window.SharedLinkDevices || !window.UiDialog) return;
     var n = await UiDialog.ask('Name for this device:', SharedLinkDevices.name(), 'Save');
-    if (n) { SharedLinkDevices.setName(n); PoohUI.name(myName()); if (!relay) PoohPeer.rename(); openSettings(); }
+    if (n) { SharedLinkDevices.setName(n); PoohUI.name(myName()); if (mode === 'own') safe(function () { M.refresh(); }); openSettings(); }
   }
   async function changeCode() {
     if (!window.UiDialog) return;
@@ -114,8 +127,9 @@
   }
   function openSettings() {
     var rows = [setRow('This device', myName(), 'Rename', rename)];
-    if (relay) rows.push(setRow('Hub code', 'Uses the Hub\u2019s chat (' + (PoohCore.meshCode(safe(function () { return window.parent; })) ? 'private room' : 'Public') + ')', null));
-    else rows.push(setRow('Hub code', code === PUB ? PUB + ' · Public' : code + ' · Private room', 'Change', changeCode));
+    var r = room(), lbl = r === PUB ? PUB + ' · Public' : r + ' · Private room';
+    if (mode === 'own') rows.push(setRow('Hub code', lbl, 'Change', changeCode));
+    else rows.push(setRow('Hub code', lbl + ' (set by the Hub)', null));
     rows.push(el('p', 'muted small', 'Everyone on Public ' + PUB + ' shares one room. Pooh Chat · PC2'));
     PoohUI.sheet('Settings', rows);
   }
@@ -130,12 +144,7 @@
       if (!hubLinked) { PoohUI.notify({ icon: '⚠️', text: 'Hub not ready — not sent' }); return; }
       window.parent.postMessage({ sharedLink: 'chat', text: t }, '*');
       setTimeout(paint, 30);
-    } else {
-      var id = myId();
-      var m = { type: 'chat', id: id + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), from: id, name: myName(), text: t.slice(0, 2000), ts: Date.now() };
-      addMsgs([m]);
-      if (!PoohPeer.send(m)) PoohUI.notify({ icon: '⚠️', text: 'Not connected — saved here only' });
-    }
+    } else SharedChat.send(t);   // stores (dedupe by id) + broadcasts via wire(); failure → toast
     input.value = '';
     input.focus();
   });
@@ -160,8 +169,177 @@
     fileShare.value = '';
   });
 
-  if (relay) bootRelay(); else bootPeer();
+  if (mode === 'relay') bootRelay(); else if (mode === 'parent') bootParent();
+  else if (mode === 'old') { PoohUI.status('error'); paint(); PoohUI.notify({ icon: '⚠️', text: 'This Hub needs an update for Pooh Chat' }); }
+  else bootOwn();
 })();
+
+/* ===== Legacy: PC1 first build (own pooh lobby + pooh-chat-history-<code> + sync backfill), replaced by the H84 rework ===== */
+// /*
+//   Pooh Chat — boot (pooh-chat.js, PC1 + PC2). The group lobby chat.
+//   - Room code (PC1, like FC5 apps): #code= / ?hub= (5 digits only; 4-digit codes are rejected), else the Hub's
+//     private mesh (parent.HubMeshLink.isPrivate()/privateCode()), else SharedLink.LOBBY (self/parent/top), else '00000'.
+//   - Relay mode: the parent runs the Hub chat (parent.SharedChat.send exists, same-origin — checked once at boot,
+//     PoohCore.hasRelay). Protocol unchanged from release 4: post {sharedLink:'ready'}, send {sharedLink:'chat', text},
+//     repaint from 'shared-chat-history' (the Hub writes it; storage event / 'message'). No own peer (no duplicates).
+//     After Hub Main Bot's H84 the Hub carries that chat over HubMesh (00000 lobby / private mesh room).
+//   - Own-peer mode (standalone, or a host without the relay such as /phone.html): PoohPeer lobby
+//     'jtsites-<code>-pooh-0'; history in localStorage 'pooh-chat-history-<code>' (last 200, dedupe by id); backfill
+//     of the last 50 on join. In a host, the Hub's private mesh is re-checked every 5 s and followed automatically
+//     (unless the code came from the URL or was picked in Settings); while typing, a "Switch to / Back to Public"
+//     button in the top bar offers it instead.
+//   - 🟢: share typed text (or the last message) to WhatsApp; long-press / Shift+click → share files. ↗ per message.
+//   Legacy release-4 boot kept as comments at the end of this file (4-digit Join dialog / Scan QR, SharedLink.join).
+// */
+// (function () {
+//   'use strict';
+//   var $ = function (id) { return document.getElementById(id); };
+//   var inHost = window.parent && window.parent !== window;
+//   var relay = PoohCore.hasRelay(window);
+//   var hubLinked = false, code = '', fixed = false, manual = false, offer = '', members = [];
+//   var input = $('input'), form = $('composer'), btnWa = $('btn-wa'), fileShare = $('file-share');
+//   var PUB = PoohCore.lobbyOf([window, safe(function () { return window.parent; }), safe(function () { return window.top; })]);
+//   function safe(f) { try { return f(); } catch (_) { return null; } }
+//   function myName() { return window.SharedLinkDevices ? SharedLinkDevices.name() : 'Device'; }
+//   function myId() { return SharedChat.deviceId(); }
+//   function isMine(m) { return SharedChat.isMine(m); }
+// 
+//   /* ---------- own history (own-peer mode only; never touches shared-chat-history) ---------- */
+//   function key() { return 'pooh-chat-history-' + code; }
+//   function hist() { if (relay) return SharedChat.history(); try { return JSON.parse(localStorage.getItem(key()) || '[]') || []; } catch (_) { return []; } }
+//   function addMsgs(msgs) {
+//     var r = PoohCore.merge(hist(), msgs);
+//     if (r.added.length) { try { localStorage.setItem(key(), JSON.stringify(r.list)); } catch (_) { /* full */ } paint(); }
+//     return r.added;
+//   }
+//   function paint() { PoohUI.render(hist(), isMine); }
+//   function roomLabel() { return code === PUB ? 'Public' : 'Private room'; }
+//   function paintRoom() { PoohUI.room(relay ? (PoohCore.meshCode(safe(function () { return window.parent; })) ? 'Private room' : 'Public') : roomLabel(), members.length); }
+//   PoohUI.name(myName());
+// 
+//   /* ---------- relay mode (inside the Hub) ---------- */
+//   function bootRelay() {
+//     SharedChat.on(paint);
+//     window.addEventListener('message', function (e) {
+//       var d = e.data;
+//       if (e.source !== window.parent || !d || typeof d !== 'object') return;
+//       if (d.sharedLink === 'hello' || d.sharedLink === 'devices') {
+//         hubLinked = true;
+//         members = (d.devices || []).filter(function (x) { return x.online; }).map(function (x) { return x.name || 'Device'; });
+//         PoohUI.status('Hub · online'); paintRoom();
+//       } else if (d.sharedLink === 'message') setTimeout(paint, 30);
+//     });
+//     window.parent.postMessage({ sharedLink: 'ready', app: 'pooh-chat', types: ['x-none/'] }, '*');
+//     PoohUI.status('Connecting to Hub…'); paintRoom(); paint();
+//   }
+// 
+//   /* ---------- own-peer mode ---------- */
+//   function desired() { return PoohCore.pickCode({ hash: location.hash, search: location.search, parent: inHost ? safe(function () { return window.parent; }) : null, wins: [window, safe(function () { return window.parent; }), safe(function () { return window.top; })] }); }
+//   function go(c) {
+//     if (c === code && PoohPeer.code() === c) return;
+//     PoohPeer.stop();
+//     code = c; offer = ''; members = []; paintSwitch(); paintRoom(); paint();
+//     PoohPeer.start(c, { history: hist, info: function () { return { name: myName(), did: myId() }; } })
+//       .catch(function () { PoohUI.status('PeerJS could not load (offline?)'); PoohUI.notify({ icon: '⚠️', text: 'Could not connect (offline?)' }); });
+//   }
+//   function paintSwitch() {
+//     var el = $('pc-switch'); el.hidden = !offer || offer === code;
+//     el.textContent = offer === PUB ? 'Back to Public' : 'Switch to ' + offer;
+//   }
+//   function checkMesh() {
+//     if (relay || fixed || manual || !inHost) return;
+//     var d = desired(); if (d === code) { offer = ''; paintSwitch(); return; }
+//     if (document.activeElement === input && input.value.trim()) { offer = d; paintSwitch(); return; }   // typing: offer, don't yank
+//     go(d); PoohUI.notify({ icon: '🐻', text: d === PUB ? 'Back to the Public room' : 'Moved to the private room' });
+//   }
+//   function bootPeer() {
+//     PoohPeer.on('status', function (t) { PoohUI.status(t); });
+//     PoohPeer.on('online', function (on) { if (!on) PoohUI.status('Reconnecting…'); });
+//     PoohPeer.on('roster', function (list) { members = list.map(function (x) { return x.name || 'Device'; }); paintRoom(); });
+//     PoohPeer.on('messages', function (msgs) { addMsgs(msgs); });
+//     fixed = !!PoohCore.urlCode(location.hash, location.search);
+//     go(desired());
+//     setInterval(checkMesh, +window.__pcMeshMs || 5000);
+//   }
+//   $('pc-switch').addEventListener('click', function () { var d = offer; offer = ''; if (d) { manual = false; go(d); } });
+// 
+//   /* ---------- top bar: who's here / settings ---------- */
+//   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+//   $('btn-room').addEventListener('click', function () {
+//     var ul = el('ul', 'members');
+//     if (!members.length) ul.appendChild(el('li', 'muted', 'Nobody else here yet.'));
+//     members.forEach(function (n) { ul.appendChild(el('li', '', n)); });
+//     PoohUI.sheet((relay ? 'Hub devices' : roomLabel()) + ' · ' + members.length, [ul]);
+//   });
+//   function setRow(label, value, btn, fn) {
+//     var r = el('div', 'row'), l = el('div', 'grow'); l.appendChild(el('b', '', label)); l.appendChild(el('div', 'muted', value));
+//     r.appendChild(l); if (btn) { var b = el('button', 'mini', btn); b.type = 'button'; b.addEventListener('click', fn); r.appendChild(b); }
+//     return r;
+//   }
+//   async function rename() {
+//     if (!window.SharedLinkDevices || !window.UiDialog) return;
+//     var n = await UiDialog.ask('Name for this device:', SharedLinkDevices.name(), 'Save');
+//     if (n) { SharedLinkDevices.setName(n); PoohUI.name(myName()); if (!relay) PoohPeer.rename(); openSettings(); }
+//   }
+//   async function changeCode() {
+//     if (!window.UiDialog) return;
+//     var v = await UiDialog.ask('5-digit Hub code (' + PUB + ' = Public):', code || PUB, 'Join');
+//     if (v == null) return;
+//     var c = PoohCore.c5(String(v).trim());
+//     if (!c) { PoohUI.notify({ icon: '⚠️', text: 'Enter a 5-digit code' }); return; }
+//     manual = true; PoohUI.closeSheet(); go(c);
+//   }
+//   function openSettings() {
+//     var rows = [setRow('This device', myName(), 'Rename', rename)];
+//     if (relay) rows.push(setRow('Hub code', 'Uses the Hub\u2019s chat (' + (PoohCore.meshCode(safe(function () { return window.parent; })) ? 'private room' : 'Public') + ')', null));
+//     else rows.push(setRow('Hub code', code === PUB ? PUB + ' · Public' : code + ' · Private room', 'Change', changeCode));
+//     rows.push(el('p', 'muted small', 'Everyone on Public ' + PUB + ' shares one room. Pooh Chat · PC2'));
+//     PoohUI.sheet('Settings', rows);
+//   }
+//   $('btn-set').addEventListener('click', openSettings);
+// 
+//   /* ---------- composer ---------- */
+//   form.addEventListener('submit', function (e) {
+//     e.preventDefault();
+//     var t = input.value.trim();
+//     if (!t) return;
+//     if (relay) {
+//       if (!hubLinked) { PoohUI.notify({ icon: '⚠️', text: 'Hub not ready — not sent' }); return; }
+//       window.parent.postMessage({ sharedLink: 'chat', text: t }, '*');
+//       setTimeout(paint, 30);
+//     } else {
+//       var id = myId();
+//       var m = { type: 'chat', id: id + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), from: id, name: myName(), text: t.slice(0, 2000), ts: Date.now() };
+//       addMsgs([m]);
+//       if (!PoohPeer.send(m)) PoohUI.notify({ icon: '⚠️', text: 'Not connected — saved here only' });
+//     }
+//     input.value = '';
+//     input.focus();
+//   });
+// 
+//   /* 🟢 tap: WhatsApp text. Long press (or Shift+click): pick files and share them. */
+//   var pressT = 0, longDone = false;
+//   btnWa.addEventListener('pointerdown', function () { longDone = false; pressT = setTimeout(function () { longDone = true; fileShare.click(); }, 600); });
+//   ['pointerup', 'pointerleave'].forEach(function (ev) { btnWa.addEventListener(ev, function () { clearTimeout(pressT); }); });
+//   btnWa.addEventListener('click', function (e) {
+//     if (longDone) return;
+//     if (e.shiftKey) { fileShare.click(); return; }
+//     var t = input.value.trim();
+//     if (!t) { var h = hist(); t = h.length ? h[h.length - 1].text : ''; }
+//     if (t) ShareWA.text(t); else PoohUI.notify({ icon: '🟢', text: 'Nothing to share yet' });
+//   });
+//   fileShare.addEventListener('change', function () {
+//     var n = fileShare.files.length;
+//     ShareWA.files(fileShare.files).then(function (r) {
+//       if (r === 'downloaded') PoohUI.notify({ icon: '⬇️', text: n + ' file' + (n === 1 ? '' : 's') + ' downloaded' });
+//       else if (r === 'shared') PoohUI.notify({ icon: '🟢', text: n + ' file' + (n === 1 ? '' : 's') + ' shared' });
+//     });
+//     fileShare.value = '';
+//   });
+// 
+//   if (relay) bootRelay(); else bootPeer();
+// })();
+// 
 
 /* ===== Legacy: release-4 pooh-chat.js (removed in PC1), kept for reference ===== */
 // /*
