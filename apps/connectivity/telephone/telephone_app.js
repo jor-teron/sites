@@ -325,7 +325,7 @@
     $('v-wait').hidden = !(on && c.rvid && !vin);
     return on;
   }
-  TPCall.on('state', function () { paintCall(); paintList(); if (!TPCall.current()) seen(); if (!TPCall.busy()) checkClash(TPPeer.roster()); });
+  TPCall.on('state', function () { try { TPAlert.update(TPCall.current()); } catch (_) { /* TP6 */ } paintCall(); paintList(); if (!TPCall.current()) seen(); if (!TPCall.busy()) checkClash(TPPeer.roster()); });
   TPCall.on('tick', function () { var c = TPCall.current(); if (c && c.state === 'active') { $('c-state').textContent = fmt((Date.now() - c.t0) / 1000); document.title = '📞 ' + fmt((Date.now() - c.t0) / 1000) + ' · Telephone'; } });
   TPCall.on('ring', function (c) {
     if (inHub && document.hidden) { try { window.top.HubNotify.notice({ icon: '📞', title: 'Telephone', text: (c.name || c.num) + ' is calling', timeoutMs: 15000 }); } catch (_) { /* cross-origin / no Hub */ } }
@@ -529,8 +529,31 @@
   function paintSeg() { document.querySelectorAll('.seg[data-key=theme] button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === TPSave.get('theme')); }); }
   document.querySelectorAll('.seg[data-key=theme] button').forEach(function (b) { b.onclick = function () { TPSave.set('theme', b.dataset.v); paintSeg(); }; });
 
+  /* ---------- TP6 call notifications ---------- */
+  function paintNotify() {
+    var p = TPAlert.perm(), on = TPSave.get('callNotify') !== false && p === 'granted';
+    $('chk-notify').checked = on; $('chk-notify').disabled = p === 'unsupported';
+    $('notify-sub').textContent = p === 'unsupported' ? 'This browser can\'t show notifications' : p === 'denied' ? 'Blocked in the browser: allow notifications for this site in the browser settings' : 'A system notification when a call comes in and Telephone isn\'t in front';
+  }
+  function enableNotify() {
+    return TPAlert.request().then(function (p) {
+      if (p === 'granted') { TPSave.set('callNotify', true); toast('🔔 Call notifications on'); }
+      else { TPSave.set('callNotify', false); dialog(p === 'unsupported' ? 'This browser can\'t show notifications.' : 'Notifications are blocked in this browser. To get call notifications, allow notifications for this site in the browser\'s site settings, then turn this on again.', ['OK']); }
+      paintNotify();
+    });
+  }
+  $('chk-notify').onchange = function () { if (this.checked) enableNotify(); else { TPSave.set('callNotify', false); paintNotify(); toast('Call notifications off'); } };
+  TPAlert.hooks.who = function (c) { return nameFor(c.num, c.did, c.name); };
+  TPAlert.hooks.front = function () { show(0); paintCall(); };
+  TPAlert.hooks.action = function (a) { if (a === 'answer') $('b-answer').click(); else if (a === 'decline') $('b-decline').click(); };
+  TPAlert.hooks.hint = function () {   // one time, first call while permission is 'default'
+    var b = $('notify-hint'); if (!b) return;
+    b.hidden = false; b.onclick = function () { b.hidden = true; enableNotify(); };
+    setTimeout(function () { b.hidden = true; }, 20000);
+  };
+
   /* ---------- start ---------- */
-  paintMe(); paintSeg(); paintVol(); paintSink(); paintDnd(); paintList(); paintLog(); paintContacts(); paintCall(); paintBadge();
+  paintMe(); paintSeg(); paintVol(); paintSink(); paintDnd(); paintList(); paintLog(); paintContacts(); paintCall(); paintBadge(); paintNotify();
   boot();
   window.TPApp = { show: show, dial: function () { return dial; }, page: function () { return page; } };   // test hook
 })();
