@@ -79,3 +79,5 @@
 .hl li span{flex:1 1 140px;min-width:0;white-space:normal;overflow-wrap:anywhere}
 .mv-remind,.mv-need{max-width:none}
 .mv-need{width:100%}
+/* CM20: phones - sections and controls never widen the page */
+@media (max-width:899px){.hol-wrap>section{min-width:0}.hl li input[type=date]{max-width:100%}.add input[type=text]{min-width:0}}

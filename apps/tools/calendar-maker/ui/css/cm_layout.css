@@ -3,6 +3,7 @@
 #app{min-height:100vh;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 #bar{display:flex;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid var(--line)}
 #bar .name{font-size:17px;flex:1}
+/* #tabs{display:flex;gap:4px}  (CM1-CM19; CM20 override below) */
 #tabs{display:flex;gap:4px}
 .tab{height:34px;padding:0 14px;border-radius:17px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:14px;cursor:pointer}
 .tab.on{background:var(--acc);border-color:var(--acc);color:#fff}
@@ -53,3 +54,11 @@ body.hub-titlebar #bar{display:none}
   body.land #print-img{width:297mm;height:210mm}
   html,body{margin:0;padding:0}
 }
+/* CM20: in-page tab row fits phones - the tabs become a sideways-scrolling strip inside the viewport
+   (was: nav#tabs forced the page to ~507px at 360px). Title-bar mode (body.hub-titlebar hides #bar) untouched. */
+#bar{min-width:0;max-width:100%;box-sizing:border-box;flex-wrap:wrap}
+#bar .name{min-width:0}
+#tabs{min-width:0;max-width:100%;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#tabs::-webkit-scrollbar{display:none}
+.tab{flex:none}
+@media (max-width:600px){#bar{padding:8px 10px;gap:6px}#tabs{flex:1 1 100%}}
