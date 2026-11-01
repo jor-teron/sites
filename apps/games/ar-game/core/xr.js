@@ -4,7 +4,7 @@
  * plane, and select-ray catching. DOM overlay keeps the HUD visible.
  */
 import * as THREE from "three";
-import { AR_GAME_CONFIG } from "../ar-game_config.js";
+import { AR_GAME_CONFIG } from "./ar-game_config.js";
 import { view, hitTestRay } from "./ar.js";
 
 const X = AR_GAME_CONFIG.xr;

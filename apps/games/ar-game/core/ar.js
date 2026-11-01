@@ -4,7 +4,7 @@
  * canvas) and WebXR immersive-ar (renderer.xr).
  */
 import * as THREE from "three";
-import { AR_GAME_CONFIG } from "../ar-game_config.js";
+import { AR_GAME_CONFIG } from "./ar-game_config.js";
 
 /** Shared render state (exported object instead of top-level globals). */
 export const view = {

@@ -89,19 +89,19 @@ Idle / Walk / Jump clips are picked by short name (after the last `|`); missing 
 
 ```
 ar-game.html          entry (import map + UI)
-ar-game.css           full-screen HUD / pet picker / AR button
-ar-game_config.js     tunables + pet roster
-ar-game_logic.js      boot, scoring, theme/pet switch, XR toggle
-js/camera.js          getUserMedia start/stop
-js/ar.js              Three.js renderer / scene / hit tests
-js/xr.js              immersive-ar session, reticle, place, wander
-js/look.js            360° look: deviceorientation → camera, drag fallback, iOS permission
-js/zombie_model.js    code-built zombie: textures, pivots, shamble / flinch / death poses
-js/zombie_audio.js    Web Audio groans, hits, death, damage
-js/themes/zombie.js   zombie survival game (waves, lives, taps, arrow, HUD)
-js/ghost_audio.js     Web Audio proximity hum/whoosh for the Ghost chase
-js/pets.js            GLB cache, SkeletonUtils.clone, AnimationMixer, procedural pet
-js/themes/{pet,zombie,ghost}.js
+ui/ar-game.css        full-screen HUD / pet picker / AR button
+core/ar-game_config.js tunables + pet roster
+core/ar-game_logic.js boot, scoring, theme/pet switch, XR toggle
+core/camera.js        getUserMedia start/stop
+core/ar.js            Three.js renderer / scene / hit tests
+core/xr.js            immersive-ar session, reticle, place, wander
+core/look.js          360° look: deviceorientation → camera, drag fallback, iOS permission
+core/zombie_model.js  code-built zombie: textures, pivots, shamble / flinch / death poses
+core/zombie_audio.js  Web Audio groans, hits, death, damage
+core/themes/zombie.js zombie survival game (waves, lives, taps, arrow, HUD)
+core/ghost_audio.js   Web Audio proximity hum/whoosh for the Ghost chase
+core/pets.js          GLB cache, SkeletonUtils.clone, AnimationMixer, procedural pet
+core/themes/{pet,zombie,ghost}.js
 assets/models/pet/{dog,cat,chicken,bunny,ours}/
 vendor/three/         three.module.min.js + addons
 ```

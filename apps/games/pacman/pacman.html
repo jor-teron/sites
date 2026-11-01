@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Pac-Man Clone</title>
-<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="ui/style.css" />
 </head>
 <body>
 <div id="app">
@@ -30,13 +30,13 @@
 <!-- Classic scripts (not ES modules) so the game also runs when index.html is opened straight from disk (file://).
      Every file adds to one global namespace, window.PAC. Order matters: each file only uses the ones above it,
      and game.js boots the game. -->
-<script src="js/maze.js"></script>
-<script src="js/levels.js"></script>
-<script src="js/pacman.js"></script>
-<script src="js/ghosts.js"></script>
-<script src="js/fruit.js"></script>
-<script src="js/render.js"></script>
-<script src="js/input.js"></script>
-<script src="js/game.js"></script>
+<script src="core/maze.js"></script>
+<script src="core/levels.js"></script>
+<script src="core/pacman.js"></script>
+<script src="core/ghosts.js"></script>
+<script src="core/fruit.js"></script>
+<script src="core/render.js"></script>
+<script src="core/input.js"></script>
+<script src="core/game.js"></script>
 </body>
 </html>

@@ -4,13 +4,13 @@
  * WebXR mode: immersive-ar with hit-test + dom-overlay (Android Chrome/ARCore).
  */
 import { AR_GAME_CONFIG } from "./ar-game_config.js";
-import { startCamera, stopCamera } from "./js/camera.js";
-import { view, initRenderer, setTarget, hitTestScreen } from "./js/ar.js";
-import { isArSupported, startAr, endAr, isPresenting, isPlaced, wrapForAr, respawnNearby, updateXr } from "./js/xr.js";
-import { prefetchPets, loadSavedPetId, savePetId } from "./js/pets.js";
-import { PetTheme } from "./js/themes/pet.js";
-import { ZombieTheme } from "./js/themes/zombie.js";
-import { GhostTheme } from "./js/themes/ghost.js";
+import { startCamera, stopCamera } from "./camera.js";
+import { view, initRenderer, setTarget, hitTestScreen } from "./ar.js";
+import { isArSupported, startAr, endAr, isPresenting, isPlaced, wrapForAr, respawnNearby, updateXr } from "./xr.js";
+import { prefetchPets, loadSavedPetId, savePetId } from "./pets.js";
+import { PetTheme } from "./themes/pet.js";
+import { ZombieTheme } from "./themes/zombie.js";
+import { GhostTheme } from "./themes/ghost.js";
 
 const THEMES = { pet: PetTheme, zombie: ZombieTheme, ghost: GhostTheme };
 

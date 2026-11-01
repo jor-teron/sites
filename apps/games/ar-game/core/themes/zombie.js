@@ -10,7 +10,7 @@
  * you tap to drop (the XR wanderer moves it).
  */
 import * as THREE from "three";
-import { AR_GAME_CONFIG } from "../../ar-game_config.js";
+import { AR_GAME_CONFIG } from "../ar-game_config.js";
 import { view } from "../ar.js";
 import { isPresenting } from "../xr.js";
 import { createLookController, cameraYawPitch, wrapAngle } from "../look.js";

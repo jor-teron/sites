@@ -2,7 +2,7 @@
  * AR Theme Game — Pet theme (default). Multi-pet: Dog / Cat / Chicken /
  * Bunny (CC0 GLBs) + "Ours" (procedural, or assets/models/pet/ours/pet.glb).
  */
-import { AR_GAME_CONFIG } from "../../ar-game_config.js";
+import { AR_GAME_CONFIG } from "../ar-game_config.js";
 import { createPetInstance, updatePet, playAnim, disposePetInstance } from "../pets.js";
 import { view } from "../ar.js";
 

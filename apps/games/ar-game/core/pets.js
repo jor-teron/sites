@@ -6,7 +6,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { clone as cloneSkinned } from "three/addons/utils/SkeletonUtils.js";
-import { AR_GAME_CONFIG } from "../ar-game_config.js";
+import { AR_GAME_CONFIG } from "./ar-game_config.js";
 
 const loader = new GLTFLoader();
 

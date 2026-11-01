@@ -1,7 +1,7 @@
 import { mapData } from "./map.js";
-import { createPalm } from "./objects/palm.js";
-import { createCoconut } from "./objects/coconut.js";
-import { createRock } from "./objects/rock.js";
+import { createPalm } from "../assets/objects/palm.js";
+import { createCoconut } from "../assets/objects/coconut.js";
+import { createRock } from "../assets/objects/rock.js";
 
 const makers = {
   palm: createPalm,

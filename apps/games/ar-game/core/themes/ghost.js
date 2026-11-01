@@ -8,7 +8,7 @@
  * closer. WebXR mode keeps the simple hover/pulse behaviour.
  */
 import * as THREE from "three";
-import { AR_GAME_CONFIG } from "../../ar-game_config.js";
+import { AR_GAME_CONFIG } from "../ar-game_config.js";
 import { disposeObject, view } from "../ar.js";
 import { createLookController, cameraYawPitch, dirFromYawPitch, wrapAngle } from "../look.js";
 import { startGhostAudio, setGhostAudio, stopGhostAudio, ghostAudioState } from "../ghost_audio.js";

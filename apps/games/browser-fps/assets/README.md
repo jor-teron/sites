@@ -1,7 +1,7 @@
 # Browser FPS assets
 
 Models are ES modules (code-built with Three.js) or optional `.glb` files, chosen in
-`config/browser-fps_config.js` → `assets`:
+`core/browser-fps_config.js` → `assets`:
 
 ```js
 assets: {
@@ -52,7 +52,7 @@ Every module has a default export `{ kind, name, ... }`. Share geometry/material
 
 ### gun — `build() -> { group, mag, muzzle, sight, hands }`
 * **Gun space:** forward = **-Z**, up = +Y, origin ≈ receiver centre. One unit = 1 m before the viewmodel's
-  0.6 scale; the rig places it lower-right of the camera (`render/browser-fps_viewmodel.js`).
+  0.6 scale; the rig places it lower-right of the camera (`ui/browser-fps_viewmodel.js`).
 * `group`: all meshes. `mag`: Object3D for the magazine, child of `group`, at its rest position. The reload
   animation drops/raises it along Y.
 * `muzzle` (Vector3): barrel tip. Muzzle flash, tracers and the flash light start here.

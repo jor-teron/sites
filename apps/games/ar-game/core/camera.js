@@ -2,7 +2,7 @@
  * AR Theme Game — Camera module (ES module)
  * Rear camera → <video> background for the non-XR overlay mode.
  */
-import { AR_GAME_CONFIG } from "../ar-game_config.js";
+import { AR_GAME_CONFIG } from "./ar-game_config.js";
 
 let cameraEl = null;
 

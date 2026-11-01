@@ -13,7 +13,7 @@
  *   touches(pos, radius, height) -> bool  contact test against the collider (+ margin)
  */
 import * as THREE from 'three';
-import { buildRig, createAnimator, ANIM } from '../../logic/browser-fps_enemy_anim.js';
+import { buildRig, createAnimator, ANIM } from '../../core/browser-fps_enemy_anim.js';
 const FALLS = ANIM.falls;
 
 export const HEAD_MULT = 2.5;       // head shots deal this many times the damage

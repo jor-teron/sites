@@ -277,8 +277,8 @@ function fitHeight(root, meters) {
 async function loadModels(scene, getBodies) {
   const loader = new GLTFLoader();
   const jobs = [
-    ["female", "models/female/body_1k.glb", FEMALE_HEIGHT],
-    ["male", "models/male/body.glb", MALE_HEIGHT]
+    ["female", "assets/models/female/body_1k.glb", FEMALE_HEIGHT],
+    ["male", "assets/models/male/body.glb", MALE_HEIGHT]
   ];
   for (const [who, url, height] of jobs) {
     try {

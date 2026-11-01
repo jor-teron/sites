@@ -7,11 +7,11 @@
  * the functions other modules call (S.fire, S.damagePlayer, ...). Modules never import each other.
  */
 import * as THREE from 'three';
-import { createViewmodel } from '../render/browser-fps_viewmodel.js';
-import { createAudio } from '../audio/browser-fps_audio.js';
-import { buildIsland } from '../maps/browser-fps_island.js';
-import { buildSnow } from '../maps/browser-fps_snow.js';
-import { buildForest } from '../maps/browser-fps_forest.js';
+import { createViewmodel } from '../ui/browser-fps_viewmodel.js';
+import { createAudio } from '../ui/browser-fps_audio.js';
+import { buildIsland } from '../assets/maps/browser-fps_island.js';
+import { buildSnow } from '../assets/maps/browser-fps_snow.js';
+import { buildForest } from '../assets/maps/browser-fps_forest.js';
 import { createDoors } from './browser-fps_doors.js';
 import { setupIslandLook } from './browser-fps_look.js';
 import { createFx } from './browser-fps_fx.js';
