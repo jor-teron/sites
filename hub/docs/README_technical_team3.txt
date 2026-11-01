@@ -934,6 +934,16 @@ kept.
 - Colour follows the Hub theme before paint (sites-hub.theme, else the
   device setting). Each page keeps a one-line legacy comment on top.
 
+-- H79: Phone page on the Hub link stack (1 Nov 2026) --
+- The phone launcher page moved to /phone.html at the site root, next to
+  hub.html. Its files stay in phone/; phone/index.html redirects to
+  ../phone.html (keeps ?query and #hash, transparent).
+- /phone.html loads link_core, link_devices, hub_mesh and hub_meshlink
+  (same order as hub.html), so window.HubMeshLink exists and the device
+  joins the public 0000 lobby at startup. No stand-in needed.
+- App paths now come straight from the catalog (no '../'). The hello
+  reply to app frames sends only HubMeshLink.privateCode().
+
 NV-S2 (hub.html ?v= labels)
 - hub.html keeps one ?v= label only, on hub/core/hub.js. Settings > About,
   HubUpdate (build tag + update check) and hub_bump.py read the build there,

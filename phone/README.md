@@ -2,7 +2,8 @@
 
 A phone-style home screen for the Hub. Jor runs it as the **Android home screen inside a WebView**
 (PH3 will be the tiny APK). It works fully by gesture and behaves like a phone launcher.
-Open `phone/` (or `phone/phone.html`; `index.html` only redirects to it) on the Hub's site.
+Open `phone/` (or `/phone.html`; `phone/index.html` only redirects to it) on the Hub's site.
+H79: the page is `/phone.html` at the site root, next to `hub.html`; its own files stay in `phone/`.
 
 ## Gestures
 
@@ -39,6 +40,11 @@ Desktop testing: mouse drags do the same; wheel down = drawer, wheel up = panel,
   `{sharedLink:'hello', code, prefix:'jtsites-', devices:[]}` when this device has a Connect Code saved
   (`shared-link-join-code`, else the Hub's own `jtsites-hub-ctrl-code`). No code = no reply, and apps use their
   standalone path as usual. The launcher runs no PeerJS peer of its own.
+- **H79 Hub mesh:** `/phone.html` loads the Hub link stack (`shared/link/link_core.js`, `link_devices.js`,
+  `hub_mesh.js`, `hub/link/hub_meshlink.js`), so `window.HubMeshLink` exists and this device joins the public
+  **0000** lobby at startup (H73 rule, switch `sites-hub.meshPublic`). Intercom / Telephone / Screen Share /
+  Shared Clipboard read `parent.HubMeshLink` (isPrivate / privateCode → else 0000). With HubMeshLink the hello
+  reply sends only the private mesh code (none on 0000 = no reply); the saved Connect Code is used only without it.
 
 ## Transparent background
 
@@ -54,8 +60,8 @@ Desktop testing: mouse drags do the same; wheel down = drawer, wheel up = panel,
 
 | File | What |
 |---|---|
-| `phone.html` | page, layers, script order. `<title>Phone PH1</title>`, no `?v=` labels |
-| `index.html` | redirect only, to `phone.html` (keeps ?query and #hash) |
+| `/phone.html` (site root, H79) | page, layers, script order. `<title>Phone PH1</title>`, no `?v=` labels |
+| `index.html` | redirect only, to `../phone.html` (keeps ?query and #hash) |
 | `phone.css` | Stopwatch palette, dark default; animations on transform / opacity only |
 | `phone_save.js` | the one save module (`PhoneSave`) |
 | `phone_apps.js` | catalog reader (`PhoneApps`), read only |
