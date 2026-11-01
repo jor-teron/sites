@@ -14,12 +14,14 @@
 (function () {
   'use strict';
   const KEY = 'shared-link-join-code';
-  const RE = /^\d{4}$/;
+  // const RE = /^\d{4}$/;   (before H83)
+  const RE = /^\d{5}$/;   // H83: 5-digit codes; a saved old 4-digit join code is ignored
+  const PUB = '00000';   // H83 (SharedLink.LOBBY; link_core.js is not loaded yet here)
   let code = '';
   try {
     const u = new URL(location.href);
     const j = (u.searchParams.get('join') || '').trim();
-    if (j === '0000') {   // H55: joining 0000 by hand = the public mesh
+    if (j === PUB) {   // H55: joining 0000 by hand = the public mesh
       try { localStorage.removeItem(KEY); localStorage.removeItem('sites-hub.meshPublic'); } catch (_) { /* blocked */ }
       u.searchParams.delete('join');
       history.replaceState(history.state, '', u.pathname + u.search + u.hash);
@@ -33,7 +35,8 @@
       try { saved = localStorage.getItem(KEY) || ''; } catch (_) { /* blocked */ }
       const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
       // if (RE.test(saved) && touch) code = saved;   (before H55)
-      if (RE.test(saved) && saved !== '0000' && touch) code = saved;
+      // if (RE.test(saved) && saved !== '0000' && touch) code = saved;   (before H83)
+      if (RE.test(saved) && saved !== PUB && touch) code = saved;
     }
   } catch (_) { /* old browser: host */ }
   if (code) {

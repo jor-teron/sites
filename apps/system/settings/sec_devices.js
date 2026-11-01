@@ -497,6 +497,10 @@
     const guess = D && D.guess ? D.guess() : 'Device';
     // card.appendChild(ui.el('p', 'opt-note', 'The name your other devices see in Devices and Chat. Leave it empty to use \u201C' + guess + '\u201D.'));   (before H57)
     card.appendChild(ui.el('p', 'opt-note', 'The name your other devices see in Devices and Chat. Type your own, or tap \uD83C\uDFB2 for a new random one. Leave it empty for a random name.'));   // H57
+    if (D && D.code) {   // H83: this device's own 5-digit number (Telephone uses it as the phone number)
+      const num = ui.el('p', 'opt-note device-code', 'This device\u2019s number: ' + D.code()); num.id = 'device-code';
+      card.appendChild(num);
+    }
     const form = ui.el('form', 'key-line');
     form.autocomplete = 'off';
     const inp = ui.el('input', 'key-input device-input');
@@ -698,12 +702,12 @@
     const hub = S.hub();
     const M = hub && hub.HubMesh, ML = hub && hub.HubMeshLink;
     const on = () => S.get('meshPublic') !== '0';
-    const sw = ui.switch('Join public mesh', 'When this Hub is not in a private mesh, it joins the public mesh 0000 so nearby Hubs can see each other and invite you to their code',
+    const sw = ui.switch('Join public mesh', 'When this Hub is not in a private mesh, it joins the public mesh 00000 so nearby Hubs can see each other and invite you to their code',
       on(), (v) => { S.set('meshPublic', v ? '' : '0'); if (ML) ML.setPublic(v); setTimeout(draw, 300); });
     sw.id = 'mesh-public-sw';
     card.appendChild(sw);
-    card.appendChild(ui.el('p', 'opt-note', 'Anyone’s Hub can be on 0000, so it only shares a short device name, Desktop / Phone mode and the device ID, plus invites. ' +
-      'Profile sync, API keys and every app stay off the public mesh. Joining a Hub’s code leaves 0000; Disconnect comes back.'));
+    card.appendChild(ui.el('p', 'opt-note', 'Anyone’s Hub can be on 00000, so it only shares a short device name, Desktop / Phone mode and the device ID, plus invites. ' +
+      'Profile sync, API keys and every app stay off the public mesh. Joining a Hub’s code leaves 00000; Disconnect comes back.'));
     if (!M || !ML) {
       card.appendChild(ui.el('p', 'opt-note', 'Open Settings inside the Hub to see the public mesh.'));
       return card;
@@ -736,13 +740,13 @@
       holder.textContent = ''; holder.hidden = true; delete holder.dataset.other;
       if (!me || !me.public) {
         note.textContent = !on() ? 'Off: this Hub stays off the public mesh.'
-          : ML.isPrivate() ? 'This Hub is in a private mesh (code ' + clip(ML.privateCode(), 12) + '), so it is not on 0000.' : 'Joining the public mesh…';
+          : ML.isPrivate() ? 'This Hub is in a private mesh (code ' + clip(ML.privateCode(), 12) + '), so it is not on 00000.' : 'Joining the public mesh…';
         return;
       }
       const ros = M.roster().filter((r) => r.online || r.deviceId === me.deviceId).slice(0, PUB_SHOW);
       // note.textContent = 'On the public mesh 0000 · ' + ros.length + ' online' + (own ? ' · your code ' + own : '') + '.';   (before H55b: said "on" whatever the link state)
       const ls = linkState(me);   // H55b
-      note.textContent = 'Public mesh 0000 · ' + ls.t + (ls.k === 'linked' || ls.k === 'lobby' ? ' · ' + ros.length + ' online' : '') + (own ? ' · your code ' + own : '') + '.';   // count only once linked
+      note.textContent = 'Public mesh 00000 · ' + ls.t + (ls.k === 'linked' || ls.k === 'lobby' ? ' · ' + ros.length + ' online' : '') + (own ? ' · your code ' + own : '') + '.';   // count only once linked
       note.dataset.state = ls.k;
       const lh = M.lobbyInfo ? M.lobbyInfo() : null;   // H77: null = not known (older lobby / not linked yet)
       if (lh) {

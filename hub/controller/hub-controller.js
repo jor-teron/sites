@@ -39,7 +39,8 @@
 
   const PEER_PREFIX = 'jtsites-';
   const CODE_KEY = 'jtsites-hub-ctrl-code';              // localStorage: current pairing code
-  const CODE_RE = /^\d{4}$/;                            // 4 digits only; older letter codes are replaced
+  // const CODE_RE = /^\d{4}$/;   (before H83)
+  const CODE_RE = /^\d{5}$/;                            // H83: 5 digits only; older letter / 4-digit codes are replaced
   // Retry / backoff lives in shared/link/link_core.js now.
 
   // Controller button -> key injected into the app iframe (all buttons also post
@@ -82,15 +83,15 @@
 
   function loadCode() {
     // try { const c = (localStorage.getItem(CODE_KEY) || '').toUpperCase(); return CODE_RE.test(c) ? c : ''; } catch (_) { return ''; }   (before H55)
-    try { const c = (localStorage.getItem(CODE_KEY) || '').toUpperCase(); return CODE_RE.test(c) && c !== '0000' ? c : ''; } catch (_) { return ''; }   // H55: 0000 = public mesh, never a Hub's own code
+    try { const c = (localStorage.getItem(CODE_KEY) || '').toUpperCase(); return CODE_RE.test(c) && c !== '00000' ? c : ''; } catch (_) { return ''; }   // H55: 0000 = public mesh, never a Hub's own code (H83: 00000)
   }
   function saveCode(c) {
     try { localStorage.setItem(CODE_KEY, c); } catch (_) { /* ignore */ }
   }
 
-  /** New codes are 4 digits (SharedLink); older saved 6-letter codes keep working. */
+  /** New codes are 5 digits (SharedLink, H83); older saved 6-letter codes keep working. */
   function randomCode() {
-    return window.SharedLink ? SharedLink.randomCode(code) : String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    return window.SharedLink ? SharedLink.randomCode(code) : String(10000 + Math.floor(Math.random() * 90000));   // H83 (was 4 digits)
   }
 
   function setStatus(text) {
