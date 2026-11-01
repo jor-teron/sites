@@ -70,6 +70,12 @@
     resets the run. window.HUB_MESH_JOIN_WAIT_MS / HUB_MESH_RETRY_MS / HUB_MESH_GIVEUP_MS override them (tests,
     as H25's HUB_REMOTE_GIVEUP_MS). me(): + joinState ('linking' | 'linked' | 'lobby' | 'retrying' | 'refused' |
     'gaveup' | ''), joinSince, retryAt, joinWaitMs; stats(): + joinFails, lastJoinMs, joinState, joinGaveUp.
+  H84 group chat: channel 'chat' (CHAT_CH) is allowed on the public mesh (00000 = public room, a private code =
+    private room, no extra encryption) with a checked shape (chatOk: broadcast only, data.type 'chat', data.from =
+    sender, text <= 2000, id <= 80, name <= 40), on send and receive, private meshes too. API for app bots:
+    HubMesh.broadcast({t:'<channel>', ...data}) → {ok, via|reason} (t is the channel; on 00000 only 'chat' passes),
+    HubMesh.onMsg('<channel>', fn(data, fromDeviceId, env)) → unsubscribe, HubMesh.room() → current code,
+    HubMesh.linked() → in a mesh (lobby or welcomed). Relayed + direct copies are de-duplicated by envelope id.
   Not here (later releases): postMessage bridge for app frames (H50b), media calls (H50c), removing the
   per-app lobbies (H50d). Existing SharedLink behaviour (controller, H29 sync, Pooh Chat) is unchanged.
 */
@@ -92,6 +98,18 @@
   var PUBLIC_CODE = '00000', PUB_NAME = 16, PUB_ROSTER = 20, INVITE_CH = 'invite', INVITE_GAP_MS = 3000;
   // var INV_CODE_RE = /^\d{4}$/;   (before H83)
   var INV_CODE_RE = /^\d{5}$/;   // H83
+  /* H84: group chat over the mesh. Channel 'chat', broadcast only, data = SharedChat row
+     {type:'chat', id, from, name, text, ts, room}; from must be the sending device; text <= 2000. Allowed on the
+     public mesh too (00000 = the public room, Jor: no extra encryption), checked here both ways. */
+  var CHAT_CH = 'chat', CHAT_TEXT = 2000;
+  function chatOk(e) {
+    var d = e.data;
+    if (e.to !== '*' || !d || typeof d !== 'object' || Array.isArray(d) || d.type !== 'chat') return false;
+    if (typeof d.text !== 'string' || !d.text || d.text.length > CHAT_TEXT) return false;
+    if (typeof d.id !== 'string' || !d.id || d.id.length > 80 || d.from !== e.from) return false;
+    if (typeof d.name !== 'string' || d.name.length > 40) return false;
+    return true;
+  }
   /* H55b: join wait / retry / give up (one set for 0000 and private meshes) */
   function tune(k, d) { var v = +window[k]; return v > 0 ? v : d; }
   var JOIN_WAIT_MS = tune('HUB_MESH_JOIN_WAIT_MS', 60000), HELLO_MS = 2500;
@@ -102,6 +120,7 @@
   /** H55: may this envelope travel on the public mesh? (presence + a well-formed one-to-one invite only) */
   function pubAllowed(e) {
     if (e.ch === CTRL) return true;
+    if (e.ch === CHAT_CH) return chatOk(e);   // H84: group chat is the public room's one app channel
     if (e.ch !== INVITE_CH || e.to === '*') return false;
     var d = e.data;
     return !!(d && typeof d === 'object' && d.k === 'invite' && INV_CODE_RE.test(String(d.code)) && d.code !== PUBLIC_CODE);
@@ -229,7 +248,8 @@
     if (via !== 'local' && !rateOk(via === 'lobby' ? 'lobby:' + e.from : e.from)) { S.stats.dropRate++; return false; }
     if (!hooks.verify(e, connDev)) { S.stats.dropSpoof++; return false; }
     if (e.term < S.term) { S.stats.dropTerm++; return false; }   // older lobby term: ignore
-    if (S.pub && !pubAllowed(e)) { S.stats.dropPublic++; return false; }   // H55: presence + invites only on 0000
+    if (S.pub && !pubAllowed(e)) { S.stats.dropPublic++; return false; }   // H55: presence + invites only on 0000 (H84: + chat)
+    if (e.ch === CHAT_CH && !chatOk(e)) { S.stats.dropShape++; return false; }   // H84
     return true;
   }
 
@@ -708,6 +728,7 @@
   function sendEnv(e) {
     if (!S || !S.dev) return { ok: false, reason: 'stopped' };
     if (S.pub && !pubAllowed(e)) { S.stats.dropPublic++; return { ok: false, reason: 'public' }; }   // H55
+    if (e.ch === CHAT_CH && !chatOk(e)) { S.stats.dropShape++; return { ok: false, reason: 'shape' }; }   // H84
     if (sizeOf(e) > MAX_BYTES) { S.stats.dropSize++; return { ok: false, reason: 'size' }; }
     if (!outRateOk()) { S.stats.dropRate++; return { ok: false, reason: 'rate' }; }
     S.stats.sent++;
@@ -740,6 +761,18 @@
       peers: peers
     };
   }
+
+  /* ---------- H84: app message broadcast ----------
+   * broadcast({t:'chat', ...}) → sendEnv on channel t (CH_RE name) to '*'; onMsg(t, fn(data, from, env)) → unsubscribe.
+   * Thin wrapper over channel(t), so the same lobby relay + direct peers + dup(id) path is used. */
+  function broadcastMsg(obj) {
+    if (!S) return { ok: false, reason: 'stopped' };
+    var t = obj && obj.t;
+    if (!CH_RE.test(String(t || '')) || t === INVITE_CH) return { ok: false, reason: 'type' };
+    var data = Object.assign({}, obj); delete data.t;
+    return sendEnv(envelope(t, '*', data));
+  }
+  function onMsg(t, fn) { return channel(t).on(fn); }
 
   /* ---------- H55: invites (the only message besides presence on the public mesh) ---------- */
   function invite(to, code) {
@@ -848,6 +881,9 @@
       JOIN_WAIT_MS: JOIN_WAIT_MS, HELLO_MS: HELLO_MS, RETRY_MS: RETRY_MS, GIVEUP_MS: GIVEUP_MS },   // H55b
     // H55: public mesh
     PUBLIC_CODE: PUBLIC_CODE, isPublic: pub, invite: invite,
+    // H84: app messages to every device on the current mesh (relay + direct, de-duplicated by envelope id)
+    broadcast: broadcastMsg, onMsg: onMsg, room: function () { return S ? S.code : ''; },
+    linked: function () { return !!(S && (S.isLobby || (S.lobbyConn && S.lobbyConn.open && S.joinState === 'linked'))); },
     // tests only: put a raw envelope on the wire to one device (no checks on this side)
     _raw: function (to, env) { if (!S) return false; var r = S.direct.get(to); if (r && r.conn.open) return safeSend(r.conn, env); return viaLobby(env); },
     _env: function (ch, to, data) { return S ? envelope(ch, to, data) : null; }
