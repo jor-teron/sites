@@ -1,5 +1,11 @@
 # Changes
 
+## v3 module split (no behavior change)
+- `module/multi.sh` split into `shared-cage.sh`, `companion.sh`, `turns.sh`,
+  `timeline.sh` and `discovery.sh`; `multi.sh` removed. `agent-v3.sh` sources them.
+- `shared-cage.sh` has a documented interface so a v4 with separate cages only
+  swaps that file. New `CAGE_OF <name>` (discovery uses it to find files).
+
 ## v3 (agent-v3.sh)
 - New: two companions in ONE shared BusyBox cage, both Gemini (`AI_MODEL`),
   never told about each other or that they are AIs. Identical neutral prompt

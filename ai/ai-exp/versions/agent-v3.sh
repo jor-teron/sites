@@ -15,7 +15,16 @@ TIME_LIMIT="${TIME_LIMIT:-300}"                 # v3 default: discovery needs ti
 
 # shellcheck source=../module/main.sh
 source "$AI_EXP_ROOT/module/main.sh"
-# shellcheck source=../module/multi.sh
-source "$AI_EXP_ROOT/module/multi.sh"
+# v3 modules. A v4 with separate cages swaps only shared-cage.sh.
+# shellcheck source=../module/shared-cage.sh
+source "$AI_EXP_ROOT/module/shared-cage.sh"
+# shellcheck source=../module/companion.sh
+source "$AI_EXP_ROOT/module/companion.sh"
+# shellcheck source=../module/timeline.sh
+source "$AI_EXP_ROOT/module/timeline.sh"
+# shellcheck source=../module/discovery.sh
+source "$AI_EXP_ROOT/module/discovery.sh"
+# shellcheck source=../module/turns.sh
+source "$AI_EXP_ROOT/module/turns.sh"
 
 run_multi "$@"

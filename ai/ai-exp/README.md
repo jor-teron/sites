@@ -86,7 +86,11 @@ module/             shared code used by every version
   api.sh            Gemini (OpenAI-compatible) calls, tool list, key loading
   search.sh         web_search via Tavily (opt-in, host side)
   session.sh        args, experiment folders, continue, prompt, turn loop
-  multi.sh          v3 only: shared persistent cage, users, alternating clock, timeline, discovery
+  shared-cage.sh    v3: persistent shared cage, homes/passwd, nsenter exec, process limit, cleanup
+  companion.sh      v3: names, args, neutral prompt, per-person history, journal, continue
+  turns.sh          v3: global clock, alternation, random first, SOLO, early end, run_multi
+  timeline.sh       v3: per-person logs and merged timeline
+  discovery.sh      v3: file attribution, first-contact scan, summary
 misc/agent.py       obsolete Python version, kept for reference only (not used)
 experiments/        your runs (gitignored)
 ```
@@ -109,7 +113,7 @@ from their own real path.
 `TIME_LIMIT=150`, `REQUEST_GAP=5` (15 RPM free tier), `CMD_TIMEOUT=15`,
 `MAX_OUTPUT=4000`, `MAX_JOURNAL=8000`, `AI_MODEL`, `API_URL`, `BUSYBOX`,
 `EXPERIMENTS_DIR`. v3 adds `TIME_LIMIT=300`, `NAMES`, `NAME_POOL`, `SOLO`,
-`MAX_PROCS`. See `module/config.sh` and `module/multi.sh`. v3 also needs `nsenter`.
+`MAX_PROCS`. See `module/config.sh` and `module/companion.sh`, `module/shared-cage.sh`. v3 also needs `nsenter`.
 
 API key, first found wins: `GEMINI_API_KEY`/`GOOGLE_API_KEY` in the
 environment, `.env` beside the version script, `.env` in this folder, then a
@@ -129,6 +133,8 @@ and the `ENABLE_*` flags, and override any module function after the
 `nudge_text`, `run_loop`). The launcher picks it up automatically.
 Changing `module/` changes every version; to freeze one, give it its own
 copy of the function it depends on. A later v4 could give each person
-their own cage.
+their own cage by replacing only `module/shared-cage.sh`; its interface
+(`setup_users`, `start_shared_cage`, `run_as_in_cage`, `enforce_proc_limit`,
+`stop_shared_cage`, `CAGE_OF`) is documented at the top of that file.
 
 Needs: bash, curl, jq, static busybox, unshare, chroot (v3: nsenter too).
