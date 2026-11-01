@@ -359,7 +359,9 @@
     var m = e.data;
     if (!m || typeof m !== 'object') return;
     if (m.sharedLink === 'ready') {
-      var code = hubCode();
+      // var code = hubCode();   (PH1)
+      var H = window.HubMeshLink;   // H79: follow the Hub mesh: private code only while linked, else no hello (apps use 0000 via HubMeshLink)
+      var code = H ? H.privateCode() : hubCode();
       if (code) f.el.contentWindow.postMessage({ sharedLink: 'hello', code: code, prefix: 'jtsites-', devices: [] }, file ? '*' : location.origin);
     }
   });
