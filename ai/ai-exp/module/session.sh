@@ -1,37 +1,9 @@
 # Experiment folders, --continue, the system prompt, and the turn loop.
 
+# usage is replaced by module/flags.sh (agent.sh --help); kept as a fallback.
 usage() {
-  local code="${1:-1}"
-  cat <<EOF
-AI sandbox experiment
-
-Run an AI inside an offline BusyBox cage. It can run shell commands, keep
-a journal, and stop early. Everything it does is written to a markdown log.
-
-Usage:
-  $0 <experiment-name> "<prompt>"
-  ${AGENT_CMD:-$0} --continue <experiment-name> ["<prompt>"]
-  $0 -c <experiment-name> ["<prompt>"]
-
-The experiment is created at:
-  $EXPERIMENTS_DIR/<experiment-name>/
---continue keeps that cage as it was left. Without a prompt, the last
-prompt is used again. The AI's only memory of earlier sessions is the
-newest part of cage/home/journal.md.
-
-The AI acts by calling run_shell. A reply with no tool call gets a
-"Carry on" nudge and the run keeps going until the time limit.
-
-API key (first one found wins):
-  1. GEMINI_API_KEY or GOOGLE_API_KEY in the environment
-  2. A .env file next to this script:  GEMINI_API_KEY=your_key
-  3. A hidden prompt, when this is run from a terminal
-
-Needs: bash, curl, jq, a static busybox, unshare, chroot
-Version: $AGENT_LABEL
-Settings: $AI_EXP_ROOT/module/config.sh
-EOF
-  exit "$code"
+  echo "Usage: ${AGENT_CMD:-agent.sh} <name> \"prompt\" [flags]   (see --help)" >&2
+  exit "${1:-1}"
 }
 
 parse_args() {
@@ -40,7 +12,7 @@ parse_args() {
     -h|--help) usage 0 ;;
     "") usage 1 ;;
     --continue|-c)
-      [ "$ENABLE_CONTINUE" = 1 ] || fail "$AGENT_LABEL has no --continue. Use a newer version (unset AGENT_VERSION)."
+      [ "$ENABLE_CONTINUE" = 1 ] || fail "This experiment was made with --no-memory (preset v1), which has no --continue."
       CONTINUE=1
       shift
       [ $# -ge 1 ] && [ $# -le 2 ] || usage 1
@@ -103,14 +75,13 @@ prepare_experiment() {
   MSGS="$RUN_DIR/messages-$SESSION.json"
 }
 
+# One-companion prompt: v1 text; with journal memory (ENABLE_CONTINUE=1, v2)
+# it adds the "only memory" sentence. Identical to old versions/agent-v1/v2.sh.
 compose_system_prompt() {
-  local turns
-  turns=$(( TIME_LIMIT / REQUEST_GAP ))
-  SYSTEM_PROMPT="You are an AI alone inside a tiny offline Linux sandbox. Only BusyBox commands exist and there is no network. You have exactly ${TIME_LIMIT} seconds: you started at $(clock) and must finish by ${END_TEXT}. You get one turn every ${REQUEST_GAP} seconds (about ${turns} turns), so you may chain commands with ; or && in one call. The time left is shown after every command.
-
-Your home folder is /home. Keep a journal at /home/journal.md: append a line with the time (use the date command) and what you are doing and why. The journal is your only memory between sessions: anything not written there will be forgotten. Before you stop, append a short final summary to the journal.
-
-Act by calling tools. run_shell runs a command in the sandbox. web_search searches the web for you (up to ${MAX_SEARCHES} searches this session); the sandbox itself still has no internet. end_session stops this run immediately; you may end early whenever you want. Call it once the final journal summary is written, and pass a short reason."
+  SYSTEM_PROMPT="You are an AI alone inside a tiny offline Linux sandbox. Only BusyBox commands exist and there is no network. You have exactly ${TIME_LIMIT} seconds: you started at $(clock) and must finish by ${END_TEXT}. You get one turn every ${REQUEST_GAP} seconds (about $(( TIME_LIMIT / REQUEST_GAP )) turns), so you may chain commands with ; or && in one call. The time left is shown after every command. Act only by calling the run_shell tool. Your home folder is /home. Keep a journal at /home/journal.md: append a line with the time (use the date command) and what you are doing and why. Before time runs out, append a short final summary to the journal.$(optin_prompt_notes)"
+  if [ "$ENABLE_CONTINUE" = 1 ]; then
+    SYSTEM_PROMPT+=" The journal is your only memory between sessions: anything not written there will be forgotten."
+  fi
 }
 
 attach_journal_memory() {

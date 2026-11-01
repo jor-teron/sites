@@ -1,4 +1,4 @@
-# Tunable settings shared by every versions/agent-vN.sh. This is the only place defaults live.
+# Tunable settings (env defaults; agent.sh flags override them). The only place defaults live.
 # Export the same name before running the tool to override a default
 # (AI_MODEL and API_URL included). Empty values fall back to the default.
 

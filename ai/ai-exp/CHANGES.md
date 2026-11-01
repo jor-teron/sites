@@ -1,5 +1,29 @@
 # Changes
 
+## v5 (flags and presets)
+- One launcher, flags instead of versions: `agent.sh <name> ["prompt"] [flags]`,
+  flags before or after the name. New `module/flags.sh` parses, validates
+  (clear errors plus a `--help` hint), picks the modules and runs the engine.
+- Flags: `--companions N` (1-2), `--separate`, `--shared-folder`,
+  `--shared-localhost`, `--time`, `--gap` (fractional with 2 companions or
+  `--solo`), `--names`, `--solo`, `--end-session`, `--text-end`,
+  `--nudge/--no-nudge`, `--search`, `--memory/--no-memory` (`--journal`),
+  `--preset v1|v2|v3|v4|ai2ai`, `--ai2ai`, `-c/--continue`, `-h/--help [topic]`.
+  Env vars still work as defaults; flags override them.
+- Presets v1-v4 reproduce the old versions (prompts, timing, nudge, logs,
+  log label). Default (no flags) = v2. `ai2ai` = v4 setup with new wording.
+- Wording: multi-companion prompts say "there is no internet access" instead
+  of "there is no network" only with `--shared-localhost`; preset `v4` keeps
+  the exact v4 text.
+- `--separate` without `--shared-localhost` gives each cage its own network
+  namespace; without `--shared-folder` nothing is mounted at `/srv`.
+- Resolved flags saved to `<exp>/.run/flags`; `--continue` reuses them, allows
+  time/gap/opt-in changes, rejects setup flags. Folders made before v5 get
+  their preset inferred from the layout (noted on screen and in `.run/flags`).
+- Removed `versions/` and `AGENT_VERSION` (setting it is an error naming the
+  matching `--preset`). v1/v2 prompt moved into `session.sh`.
+- `MANUAL.md` updated (synced with the final flags); README shortened.
+
 ## v4 (agent-v4.sh)
 - New: each companion gets its OWN cage (`module/separate-cages.sh`, same
   interface as `shared-cage.sh`): own rootfs under `cages/<name>/`, own mount,
