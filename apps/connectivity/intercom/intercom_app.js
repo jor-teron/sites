@@ -7,9 +7,14 @@
    {sharedLink:'ready'}), parent.__hubRemote.code (phone Hub), localStorage 'jtsites-hub-ctrl-code' (desktop Hub),
    'shared-link-join-code', our last code, else the code dialog.
    IC4: URL code, else the Hub's active private mesh (parent.HubMeshLink), else Public 0000; the Hub's own
-   Connect Code is only a fallback for older Hubs without HubMeshLink; standalone: last code, else 0000. */
+   Connect Code is only a fallback for older Hubs without HubMeshLink; standalone: last code, else 0000.
+   IC5: minimal top bar (connection dot + name, no status line / Code button), Do Not Disturb follows the Hub (ICDnd),
+   call notifications + the Hub's call card for talk requests (ICAlert). */
 (function () {
   'use strict';
+  // FC5: Hub codes are 5 digits (H83); public lobby is SharedLink.LOBBY, else '00000'. Saved 4-digit codes are ignored.
+  var PUB = (function () { try { var S = window.SharedLink || (window.parent && window.parent.SharedLink) || (window.top && window.top.SharedLink); if (S && /^\d{5}$/.test(String(S.LOBBY || ''))) return String(S.LOBBY); } catch (_) {} return '00000'; })();
+  function c5(c) { c = String(c || ''); return /^\d{5}$/.test(c) ? c : ''; }   // FC5: drops saved 4-digit codes
   var $ = function (id) { return document.getElementById(id); };
   var inHub = window.parent !== window, page = 0, PAGES = 2, SW = 75, HOLD = 500, started = false, code = '';
 
@@ -22,8 +27,8 @@
       (buttons || ['OK']).forEach(function (b, i, a) {
         var el = document.createElement('button'); el.className = i === a.length - 1 ? 'btn' : 'mini'; el.textContent = b;
         el.onclick = function () {
-          if (ask && b === 'Public') { $('dialog').hidden = true; return res('0000'); }   // IC3
-          if (ask && i === a.length - 1) { var c = (inp.value.match(/\d{4}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 4-digit code.'; return; } $('dialog').hidden = true; return res(c); }
+          if (ask && b === 'Public') { $('dialog').hidden = true; return res(PUB); }   // IC3
+          if (ask && i === a.length - 1) { var c = (inp.value.match(/\d{5}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 5-digit code.'; return; } $('dialog').hidden = true; return res(c); }
           $('dialog').hidden = true; res(ask ? null : i);
         };
         row.appendChild(el);
@@ -36,7 +41,7 @@
 
   /* ---------- code ---------- */
   var ls = ICSave.ls;
-  function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{4})/); return m ? m[1] : ''; }
+  function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{5})/); return m ? m[1] : ''; }
   /* IC4: old code choice kept for reference (Hub's own Connect Code won; see readme Legacy code notes):
   // function localCode() {
   //   try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) return String(window.parent.__hubRemote.code); } catch (_) { /* * / }
@@ -71,36 +76,36 @@
   */
   // IC4: default is Public 0000; private code only from the URL, an active Hub private mesh, or a manual pick.
   function hml() { try { var h = window.parent !== window && window.parent.HubMeshLink; return h && typeof h.isPrivate === 'function' ? h : null; } catch (_) { return null; } }
-  function meshCode() { var h = hml(); if (!h) return ''; try { var c = h.isPrivate() ? String(h.privateCode() || '') : ''; return /^\d{4}$/.test(c) ? c : ''; } catch (_) { return ''; } }
+  function meshCode() { var h = hml(); if (!h) return ''; try { var c = h.isPrivate() ? String(h.privateCode() || '') : ''; return /^\d{5}$/.test(c) ? c : ''; } catch (_) { return ''; } }
   function localCode() {   // IC2 sources, now only a fallback for an older Hub without HubMeshLink
-    try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) return String(window.parent.__hubRemote.code); } catch (_) { /* */ }
-    var c = ls('jtsites-hub-ctrl-code'); if (/^\d{4}$/.test(c) && inHub) return c;
-    c = ls('shared-link-join-code'); if (/^\d{4}$/.test(c) && inHub) return c;
+    try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) { var r0 = c5(window.parent.__hubRemote.code); if (r0) return r0; } } catch (_) { /* */ }
+    var c = ls('jtsites-hub-ctrl-code'); if (/^\d{5}$/.test(c) && inHub) return c;
+    c = ls('shared-link-join-code'); if (/^\d{5}$/.test(c) && inHub) return c;
     return '';
   }
   var manual = false, fixed = false;   // manual = user picked a code this session; fixed = code came from the URL
-  function desired() { return meshCode() || '0000'; }   // only used while inside a Hub with HubMeshLink
+  function desired() { return meshCode() || PUB; }   // only used while inside a Hub with HubMeshLink
   function go(c) {
     if (started) { if (c === code) return; ICTalk.stop(); ICPeer.stop(); }
-    started = true; code = c; $('code-lbl').textContent = c === '0000' ? '0000 · Public' : c;
+    started = true; code = c; $('code-lbl').textContent = c === PUB ? PUB + ' · Public' : c;
     ICSave.setLastCode(c); paintSwitch();
     ICPeer.start(c).catch(function () { setStatus('PeerJS could not load (offline?)'); });
   }
   function pick(c) { if (c) { manual = true; go(c); } }
   /* IC2: function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) { if (c) go(c); }); } */
   /* IC3: ...then(function (c) { if (c) go(c); }) */
-  function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub, or use Public to meet any device on the open Hub mesh (0000). Strangers there must be accepted before you hear them.', ['Cancel', 'Public', 'Join'], true).then(pick); }
+  function askCode() { dialog('Enter the 5-digit Hub Connect Code shown on the Hub, or use Public to meet any device on the open Hub mesh (00000). Strangers there must be accepted before you hear them.', ['Cancel', 'Public', 'Join'], true).then(pick); }
   function busy() { try { return !!ICTalk.talking() || ICTalk.talkers().length > 0; } catch (_) { return false; } }
   var offer = '';
   function paintSwitch() {
     var el = $('ic-switch'); if (!el) return;
     el.hidden = !offer || offer === code;
-    el.textContent = offer === '0000' ? 'Back to Public' : 'Switch to ' + offer;
+    el.textContent = offer === PUB ? 'Back to Public' : 'Switch to ' + offer;
   }
   function checkMesh() {   // IC4: follow the Hub joining / leaving a private mesh
     if (!started || manual || fixed || !hml()) return;
     var d = desired(); if (d === code) { offer = ''; paintSwitch(); return; }
-    if (!busy()) { offer = ''; go(d); toast(d === '0000' ? 'Hub left its private mesh — back to Public' : 'Hub joined private mesh ' + d); }
+    if (!busy()) { offer = ''; go(d); toast(d === PUB ? 'Hub left its private mesh — back to Public' : 'Hub joined private mesh ' + d); }
     else { offer = d; paintSwitch(); }
   }
   function boot() {
@@ -111,19 +116,27 @@
       var got = false;   // older Hub without HubMeshLink: IC2 behaviour
       addEventListener('message', function (e) {
         var d = e.data; if (e.source !== window.parent || !d || d.sharedLink !== 'hello' || got) return;
-        if (/^\d{4}$/.test(String(d.code || '')) && !started) { got = true; go(String(d.code)); }
+        if (/^\d{5}$/.test(String(d.code || '')) && !started) { got = true; go(String(d.code)); }
       });
       try { window.parent.postMessage({ sharedLink: 'ready', app: 'intercom', types: ['x-none/'] }, '*'); } catch (_) { /* */ }
-      setTimeout(function () { if (!got && !started) go(localCode() || ICSave.lastCode() || '0000'); }, 800);
+      setTimeout(function () { if (!got && !started) go(localCode() || c5(ICSave.lastCode()) || PUB); }, 800);
       return;
     }
     c = ICSave.lastCode();
-    go(/^\d{4}$/.test(c) ? c : '0000');
+    go(/^\d{5}$/.test(c) ? c : PUB);
   }
   setInterval(checkMesh, 5000);
   if ($('ic-switch')) $('ic-switch').onclick = function () { var d = offer; offer = ''; if (d) go(d); };
-  $('btn-code').onclick = askCode; $('btn-code2').onclick = askCode;
-  function setStatus(t) { $('status').textContent = t; }
+  /* IC4: $('btn-code').onclick = askCode; $('btn-code2').onclick = askCode; */
+  if ($('btn-code')) $('btn-code').onclick = askCode;   // IC5: Code button removed from the Talk screen
+  $('btn-code2').onclick = askCode;
+  /* IC4: function setStatus(t) { $('status').textContent = t; } */
+  function setStatus(t) {   // IC5: status lives on the small dot before the name (tooltip / aria-label)
+    var d = $('conn'); if (!d) return;
+    d.title = t; d.setAttribute('aria-label', t);
+    d.className = 'conn ' + (/^Online/.test(t) ? 'ok' : /could not|Not connected/i.test(t) ? 'off' : 'wait');
+    if (/could not/i.test(t)) toast(t);
+  }
 
   /* ---------- device list + target ---------- */
   function target() { return ICSave.get('target') || 'all'; }
@@ -185,9 +198,16 @@
   ICPeer.on('signal', function (m, from) { ICTalk.signal(m, from); });
   ICPeer.on('call', function (c) { ICTalk.incoming(c); });
   ICPeer.on('online', function () { paintTalk(); });
+  /* IC3: ICTalk.on('ask', function (a) {
+    dialog(...).then(function (i) { ICTalk.unlock(); a.answer(i === 1); });
+  }); */
+  var asking = null;   // IC5: the talk request on screen (also the Hub's call card + notification)
   ICTalk.on('ask', function (a) {   // IC3: untrusted caller on the public mesh
-    dialog((a.name || 'A device') + ' on the public mesh wants to ' + (a.video ? 'talk with video' : 'talk') + '. Accept?', ['Decline', 'Accept']).then(function (i) { ICTalk.unlock(); a.answer(i === 1); });
+    asking = a; ICAlert.ring(a);
+    dialog((a.name || 'A device') + ' on the public mesh wants to ' + (a.video ? 'talk with video' : 'talk') + '. Accept?', ['Decline', 'Accept']).then(function (i) { if (asking === a) answerAsk(i === 1); });
   });
+  function answerAsk(ok) { var a = asking; if (!a) return; asking = null; $('dialog').hidden = true; ICAlert.ringEnd(); ICTalk.unlock(); a.answer(ok); }
+  ICTalk.on('askend', function (id) { if (asking && asking.id === id) { asking = null; $('dialog').hidden = true; } ICAlert.ringEnd(); });   // timeout / caller gone
 
   /* ---------- talk button (tap = toggle, hold > 0.5 s = push-to-talk) ---------- */
   var downAt = 0, startedByDown = false, timeTxt = '';
@@ -229,7 +249,7 @@
   ICTalk.on('talk', function (s) { if (!s) timeTxt = ''; paintTalk(); paintList(); });
   ICTalk.on('tick', function (ms) { timeTxt = fmt(ms); paintTalk(); });
   ICTalk.on('note', function (t) { toast(t); paintList(); });
-  ICTalk.on('missed', function (n) { toast('🌙 ' + n + ' tried to talk (Do Not Disturb is on)'); });
+  ICTalk.on('missed', function (n) { toast('🌙 Missed: ' + n + ' tried to talk' + (ICTalk.dndOn() ? ' (Do Not Disturb is on)' : '')); });
 
   /* ---------- who's talking banner ---------- */
   function paintBanner() {
@@ -273,7 +293,7 @@
   }
   function paintTitle() {
     var list = ICTalk.talkers(), s = ICTalk.talking(), cam = s && !s.starting && (s.camOn || s.view);
-    document.title = (cam ? '🔴 ' : '') + (list.length ? '🔊 ' + list.map(function (t) { return t.name; }).join(', ') + ' · Intercom IC2' : 'Intercom IC2');
+    document.title = (cam ? '🔴 ' : '') + (list.length ? '🔊 ' + list.map(function (t) { return t.name; }).join(', ') + ' · Intercom IC5' : 'Intercom IC5');   // IC5 (was IC2)
   }
   function twoWay(id) {
     var s = ICTalk.talking();
@@ -392,10 +412,11 @@
     toast(this.checked ? 'Auto-answer on: trusted devices can open this camera without a tap' : 'Auto-answer off');
     paintTalk();
   };
-  ICTalk.on('talkers', function () { paintBanner(); paintList(); paintStage(); });
+  ICTalk.on('talkers', function () { paintBanner(); paintList(); paintStage(); if (!ICTalk.talkers().length) ICAlert.quiet(); });
   ICTalk.on('talk', paintBanner);
   ICTalk.on('trust', paintTrust);
   ICTalk.on('heard', function (t) {
+    ICAlert.heard(t);   // IC5: system notification when not in front
     if (inHub && document.hidden) { try { window.top.HubNotify.notice({ icon: '🔊', title: 'Intercom', text: t.name + ' is talking' + (t.all ? ' to everyone' : ' to you'), timeoutMs: 6000 }); } catch (_) { /* cross-origin / no Hub */ } }
   });
   ICTalk.on('blocked', function (b) { $('sound').hidden = !b; });
@@ -403,6 +424,7 @@
   document.addEventListener('pointerdown', function () { if (!ICTalk.soundOk()) ICTalk.unlock(); }, true);
 
   /* ---------- DND + volume ---------- */
+  /* IC4 own Do Not Disturb (replaced in IC5 by the Hub's, ICDnd):
   function paintDnd() {
     var on = !!ICSave.get('dnd');
     $('b-dnd').classList.toggle('on', on); $('b-dnd').lastChild.textContent = on ? 'DND on' : 'DND off';
@@ -411,6 +433,30 @@
   function setDnd(v) { ICTalk.setDnd(v); paintDnd(); toast(v ? '🌙 Do Not Disturb on — nobody will be heard here' : 'Do Not Disturb off'); }
   $('b-dnd').onclick = function () { setDnd(!ICSave.get('dnd')); };
   $('chk-dnd').onchange = function () { setDnd(this.checked); };
+  */
+  function paintDnd() { var el = $('dnd-ind'); if (el) el.hidden = !ICTalk.dndOn(); }   // IC5: read-only 🌙
+  ICDnd.onChange(function () { paintDnd(); ICTalk.dndChanged(); paintList(); });
+
+  /* ---------- IC5: call notifications ---------- */
+  function paintNotify() {
+    var p = ICAlert.perm();
+    $('chk-notify').checked = ICSave.get('callNotify') !== false && p === 'granted';
+    $('chk-notify').disabled = p === 'unsupported';
+    $('notify-sub').textContent = p === 'unsupported' ? 'Not available in this browser' : p === 'denied' ? 'Blocked: allow notifications for this site in the browser settings' : 'When someone calls or talks and Intercom isn\'t in front';
+  }
+  function enableNotify() {
+    $('notify-hint').hidden = true;
+    return ICAlert.request().then(function (p) {
+      if (p === 'granted') { ICSave.set('callNotify', true); toast('🔔 Call notifications on'); }
+      else { ICSave.set('callNotify', false); dialog(p === 'unsupported' ? 'This browser can\'t show notifications.' : 'Notifications are blocked in this browser. Allow notifications for this site in the browser\'s site settings, then turn this on again.', ['OK']); }
+      paintNotify();
+    });
+  }
+  $('chk-notify').onchange = function () { if (this.checked) enableNotify(); else { ICSave.set('callNotify', false); paintNotify(); toast('Call notifications off'); } };
+  $('notify-hint').onclick = enableNotify;
+  ICAlert.hooks.front = function () { show(0); };
+  ICAlert.hooks.hint = function () { $('notify-hint').hidden = false; };
+  ICAlert.hooks.action = function (a) { answerAsk(a === 'answer'); };
   function paintVol() {
     var v = Math.round(ICSave.get('volume') * 100);
     $('vol').value = v; $('vol2').value = v; $('vol-n').textContent = v;
@@ -441,6 +487,6 @@
 
   /* ---------- start ---------- */
   $('me-name').textContent = ICSave.name();
-  paintSeg(); paintDnd(); paintVol(); paintList(); paintTalk(); paintBanner(); paintTrust();
+  paintSeg(); paintDnd(); paintNotify(); paintVol(); paintList(); paintTalk(); paintBanner(); paintTrust();
   boot();
 })();

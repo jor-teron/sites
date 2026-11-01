@@ -120,3 +120,6 @@ Status line messages:
 - `HubKeys.onChange` (name `gvision` or '') re-reads the key and refreshes the toolbar and popover.
 - No settings keys added or renamed. `?v=20261027r4` on the changed files (`ocr.html`, `ocr_send.html` for `ocr_config.js`).
 
+## FC5 (OCR) — 5-digit Hub codes, public 00000
+- **Why:** Hub codes are 5 digits since H83. The phone sender still picks the prefix by length: a 4-digit code with "Code from the OCR page" ticked → `jtocr-` (OCR's own standalone code, unchanged); anything else (5-digit Hub code) → `jtsites-`. Only comments changed.
+

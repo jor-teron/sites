@@ -3,7 +3,7 @@
  * Joins with SharedLink (shared/link):
  *   #hub=<code>              → the Hub's link (prefix 'jtsites-'); same saved code as the
  *                              Gamepad / File Drop ('shared-link-join-code')
- *   #code=<code>&p=jtocr-    → a standalone OCR computer (its own 4-digit code)
+ *   #code=<code>&p=jtocr-    → a standalone OCR computer (its own 4-digit code; FC5: Hub codes are 5 digits)
  *   no hash                  → the saved Hub code, else the code box (manual entry)
  * "Choose file" sends one file at a time tagged app:'ocr' (the Hub routes it into OCR).
  * SharedLink reconnects by itself; only Disconnect (here or on the computer) ends the link.
@@ -70,6 +70,7 @@
     $('code-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const c = $('code-in').value.trim().toUpperCase();
+      // FC5: only a 4-digit OCR code (box ticked) uses jtocr-; 5-digit Hub codes (H83) always use jtsites-
       if (c) join({ prefix: /^\d{4}$/.test(c) && $('code-ocr').checked ? 'jtocr-' : 'jtsites-', code: c });
     });
     $('disc').addEventListener('click', () => { SharedLink.stop(); setState('err', 'Disconnected'); sync(); });

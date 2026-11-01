@@ -10,6 +10,9 @@
    a new device gets {k:'recent', its:[…10 newest items shared with everyone]} from the lobby's own history. */
 (function () {
   'use strict';
+  // FC5: Hub codes are 5 digits (H83); public lobby is SharedLink.LOBBY, else '00000'. Saved 4-digit codes are ignored.
+  var PUB = (function () { try { var S = window.SharedLink || (window.parent && window.parent.SharedLink) || (window.top && window.top.SharedLink); if (S && /^\d{5}$/.test(String(S.LOBBY || ''))) return String(S.LOBBY); } catch (_) {} return '00000'; })();
+  function c5(c) { c = String(c || ''); return /^\d{5}$/.test(c) ? c : ''; }   // FC5: drops saved 4-digit codes
   var $ = function (id) { return document.getElementById(id); };
   var inHub = window.parent !== window, page = 0, PAGES = 3, SW = 75, started = false, code = '', myId = '';
   var LAST = 'clipboard-last-code', MAXPX = 1600;
@@ -27,7 +30,7 @@
       (buttons || ['OK']).forEach(function (b, i, a) {
         var el = document.createElement('button'); el.className = i === a.length - 1 ? 'btn sm' + (/Clear/.test(b) ? ' bad' : '') : 'mini'; el.textContent = b;
         el.onclick = function () {
-          if (ask && i === a.length - 1) { var c = (inp.value.match(/\d{4}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 4-digit code.'; return; } if (c === '0000') { $('d-text').textContent = "Shared Clipboard is private only. Use your Hub's private code."; return; }   /* CB3 */ $('dialog').hidden = true; return res(c); }
+          if (ask && i === a.length - 1) { var c = (inp.value.match(/\d{5}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 5-digit code.'; return; } if (c === PUB) { $('d-text').textContent = "Shared Clipboard is private only. Use your Hub's private code."; return; }   /* CB3 */ $('dialog').hidden = true; return res(c); }
           $('dialog').hidden = true; res(ask ? null : i);
         };
         row.appendChild(el);
@@ -43,7 +46,7 @@
   /* Legacy (CB1/CB2 code order, replaced by CB3 — it could land on public 0000 and leak history/sends):
        function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{4})/); return m ? m[1] : ''; }
        function localCode() {
-         try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) return String(window.parent.__hubRemote.code); } catch (_) { /* * / }
+         try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) { var r0 = c5(window.parent.__hubRemote.code); if (r0) return r0; } } catch (_) { /* * / }
          var c = ls('jtsites-hub-ctrl-code'); if (/^\d{4}$/.test(c) && inHub) return c;
          c = ls('shared-link-join-code'); if (/^\d{4}$/.test(c) && inHub) return c;
          return '';
@@ -73,8 +76,8 @@
        }
   */
   /* CB3: private only — any '0000' (URL, Hub, last code, dialog) is rejected */
-  function ok(c) { c = String(c || ''); return /^\d{4}$/.test(c) && c !== '0000' ? c : ''; }
-  function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{4})/); return m ? m[1] : ''; }
+  function ok(c) { c = String(c || ''); return /^\d{5}$/.test(c) && c !== PUB && c !== '00000' ? c : ''; }
+  function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{5})/); return m ? m[1] : ''; }
   function hml() { try { var h = window.parent !== window && window.parent.HubMeshLink; return h && typeof h.isPrivate === 'function' ? h : null; } catch (_) { return null; } }
   function meshCode() { var h = hml(); if (!h) return ''; try { return h.isPrivate() ? ok(h.privateCode()) : ''; } catch (_) { return ''; } }
   function localCode() {   // older Hub without HubMeshLink
@@ -96,8 +99,8 @@
     CBPeer.start(c).catch(function () { setStatus('PeerJS could not load (offline?)'); });
   }
   function askCode() {
-    dialog('Enter the 4-digit private Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) {
-      if (c) go(c);   // CB3: 0000 is refused inside the dialog, which stays open
+    dialog('Enter the 5-digit private Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) {
+      if (c) go(c);   // CB3: 00000 is refused inside the dialog, which stays open
     });
   }
   var urlLocked = false;

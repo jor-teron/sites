@@ -115,3 +115,9 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 @media (max-height:560px){#stage{height:min(46vh,240px)}}
 #ic-switch{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:15}
 #ic-switch[hidden]{display:none}
+.who{display:flex;align-items:center;gap:8px}
+/* IC5: connection dot + read-only Hub DND moon + one-time notification hint */
+.conn{flex:none;width:10px;height:10px;border-radius:50%;background:var(--mut)}
+.conn.ok{background:var(--good)}.conn.wait{background:#f59e0b}.conn.off{background:var(--mut)}
+.dnd-ind{color:var(--moon)}
+.set-row label small{display:block;font-size:12px}

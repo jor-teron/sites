@@ -8,6 +8,9 @@
    board replaces ours, then ops we made while offline are replayed and sent. If the lobby's board is empty, ours seeds it. */
 (function () {
   'use strict';
+  // FC5: Hub codes are 5 digits (H83); public lobby is SharedLink.LOBBY, else '00000'. Saved 4-digit codes are ignored.
+  var PUB = (function () { try { var S = window.SharedLink || (window.parent && window.parent.SharedLink) || (window.top && window.top.SharedLink); if (S && /^\d{5}$/.test(String(S.LOBBY || ''))) return String(S.LOBBY); } catch (_) {} return '00000'; })();
+  function c5(c) { c = String(c || ''); return /^\d{5}$/.test(c) ? c : ''; }   // FC5: drops saved 4-digit codes
   var $ = function (id) { return document.getElementById(id); };
   var inHub = window.parent !== window, page = 0, SW = 75, started = false, code = '', myId = '';
   var LAST = 'whiteboard-last-code';
@@ -27,7 +30,7 @@
         var el = document.createElement('button'); el.className = i === a.length - 1 ? 'btn sm' + (/Clear/.test(b) ? ' bad' : '') : 'mini'; el.textContent = b;
         el.onclick = function () {
           var last = i === a.length - 1;
-          if (ask === 'code' && last) { var c = (inp.value.match(/\d{4}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 4-digit code.'; return; } $('dialog').hidden = true; return res(c); }
+          if (ask === 'code' && last) { var c = (inp.value.match(/\d{5}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 5-digit code.'; return; } $('dialog').hidden = true; return res(c); }
           if (ask === 'text') { $('dialog').hidden = true; return res(last ? area.value.replace(/\s+$/, '') : null); }
           $('dialog').hidden = true; res(ask ? null : i);
         };
@@ -43,11 +46,11 @@
 
   /* ---------- code ---------- */
   function ls(k) { try { return localStorage.getItem(k) || ''; } catch (_) { return ''; } }
-  function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{4})/); return m ? m[1] : ''; }
+  function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{5})/); return m ? m[1] : ''; }
   function localCode() {
-    try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) return String(window.parent.__hubRemote.code); } catch (_) { /* */ }
-    var c = ls('jtsites-hub-ctrl-code'); if (/^\d{4}$/.test(c) && inHub) return c;
-    c = ls('shared-link-join-code'); if (/^\d{4}$/.test(c) && inHub) return c;
+    try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) { var r0 = c5(window.parent.__hubRemote.code); if (r0) return r0; } } catch (_) { /* */ }
+    var c = ls('jtsites-hub-ctrl-code'); if (/^\d{5}$/.test(c) && inHub) return c;
+    c = ls('shared-link-join-code'); if (/^\d{5}$/.test(c) && inHub) return c;
     return '';
   }
   function boardKey() { return code || 'local'; }
@@ -66,7 +69,7 @@
       return WBPeer.start(c);
     }).catch(function () { $('status').textContent = 'PeerJS could not load (offline?)'; });
   }
-  function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub. Every device on the same code shares this board.', ['Cancel', 'Join'], 'code').then(function (c) { if (c) go(c); }); }
+  function askCode() { dialog('Enter the 5-digit Hub Connect Code shown on the Hub. Every device on the same code shares this board.', ['Cancel', 'Join'], 'code').then(function (c) { if (c) go(c); }); }
   function boot() {
     var c = urlCode();
     if (c) return go(c);
@@ -74,14 +77,14 @@
       var got = false;
       addEventListener('message', function (e) {
         var d = e.data; if (e.source !== window.parent || !d || d.sharedLink !== 'hello' || got) return;
-        if (/^\d{4}$/.test(String(d.code || ''))) { got = true; go(String(d.code)); }
+        if (/^\d{5}$/.test(String(d.code || ''))) { got = true; go(String(d.code)); }
       });
       try { window.parent.postMessage({ sharedLink: 'ready', app: 'whiteboard', types: ['x-none/'] }, '*'); } catch (_) { /* */ }
-      setTimeout(function () { if (!got && !started) { var l = localCode() || ls(LAST); if (l) go(l); else { $('status').textContent = 'Not connected · drawing on this device'; askCode(); } } }, 800);
+      setTimeout(function () { if (!got && !started) { var l = localCode() || c5(ls(LAST)); if (l) go(l); else { $('status').textContent = 'Not connected · drawing on this device'; askCode(); } } }, 800);
       return;
     }
-    c = ls(LAST) || ls('shared-link-join-code');
-    if (/^\d{4}$/.test(c)) go(c); else { $('status').textContent = 'Not connected · drawing on this device'; askCode(); }
+    c = c5(ls(LAST)) || c5(ls('shared-link-join-code'));
+    if (/^\d{5}$/.test(c)) go(c); else { $('status').textContent = 'Not connected · drawing on this device'; askCode(); }
   }
   $('btn-code').onclick = function () { closePops(); askCode(); };
   $('btn-code2').onclick = askCode;

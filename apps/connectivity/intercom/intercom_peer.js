@@ -81,7 +81,7 @@
     }, delay || 0);
   }
   function relobby() { if (dead) return; emit('status', 'Reconnecting…'); setTimeout(claimLobby, 300 + Math.random() * 1500); }
-  function hi() { if (lconn && lconn.open) lconn.send({ t: 'hi', id: me.id, name: ICSave.name(), dnd: !!ICSave.get('dnd'), did: ICSave.get('did') }); }
+  function hi() { if (lconn && lconn.open) lconn.send({ t: 'hi', id: me.id, name: ICSave.name(), dnd: !!(window.ICDnd && ICDnd.isOn()) /* IC4: !!ICSave.get('dnd') */, did: ICSave.get('did') }); }
   function send(msg) { if (lconn && lconn.open) { lconn.send({ t: 'all', msg: msg }); return true; } return false; }
   function sendTo(to, msg) { if (lconn && lconn.open) { lconn.send({ t: 'to', to: to, msg: msg }); return true; } return false; }
   function stop() {
@@ -107,6 +107,6 @@
   L.online = function () { return !!(lconn && lconn.open); };
   L.roster = function () { return roster; };
   L.code = function () { return code; };
-  L.open = function () { return code === '0000'; };   // IC3: public Hub mesh (strangers share the namespace)
+  L.open = function () { return code === ((window.SharedLink && SharedLink.LOBBY) || '00000'); };   // FC5 (was '0000'); IC3: public Hub mesh (strangers share the namespace)
   window.ICPeer = L;
 })();

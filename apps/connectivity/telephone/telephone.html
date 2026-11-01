@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Telephone TP7</title>
+  <title>Telephone TP8</title>
   <link rel="icon" href="telephone_icon.png">
   <link rel="stylesheet" href="telephone.css">
 </head>
@@ -49,7 +49,7 @@
     <section class="pane" id="pane-set"><div class="set-wrap">
       <h2>This device</h2>
       <div class="set-row"><label for="in-name">Name</label><input id="in-name" maxlength="40"></div>
-      <div class="set-row"><span>My number</span><span><b id="num-lbl">—</b> <button class="mini" id="b-newnum">New number</button></span></div>
+      <div class="set-row"><span>My number</span><span><b id="num-lbl">—</b><!-- FC5: New number button removed --> </span></div>
       <div class="set-row"><span>Hub code</span><span><b id="code-lbl">—</b> <button class="mini" id="btn-code2">Change</button></span></div>
       <!-- TP7: removed the "Do Not Disturb" heading and rows #chk-dnd (Do Not Disturb) and #chk-dndfav (Favourites still ring); use the Hub's Settings > Do Not Disturb -->
       <h2>Sound</h2>
@@ -61,8 +61,8 @@
       <h2>Look</h2>
       <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
       <h2>About</h2>
-      <div class="about"><img src="telephone_icon.png" width="48" height="48" alt=""><div><b>Telephone</b> <span id="ver">TP7</span>
-        <p>Calls between your devices, peer to peer. Each device has its own 5-digit number; dial it or tap a phone in Online now. Starts on Public 0000 (every call still rings and must be answered); pick a private code above. Calls ring only while Telephone is open. Do Not Disturb follows the Hub. Nothing is recorded or stored on a server.</p></div></div>
+      <div class="about"><img src="telephone_icon.png" width="48" height="48" alt=""><div><b>Telephone</b> <span id="ver">TP8</span>
+        <p>Calls between your devices, peer to peer. Each device has its own 5-digit number; dial it or tap a phone in Online now. Starts on Public 00000 (every call still rings and must be answered); pick a private code above. Calls ring only while Telephone is open. Do Not Disturb follows the Hub. Nothing is recorded or stored on a server.</p></div></div>
     </div></section>
   </div></div>
 </div>
@@ -88,7 +88,7 @@
   </div>
 </div>
 
-<div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="4" placeholder="4-digit code"><div id="d-list" hidden></div><div id="d-form" hidden></div><div class="row" id="d-row"></div></div></div>
+<div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="5" placeholder="5-digit code"><div id="d-list" hidden></div><div id="d-form" hidden></div><div class="row" id="d-row"></div></div></div>
 <button class="mini" id="tp-switch" hidden></button>
 <button class="mini" id="notify-hint" hidden>🔔 Turn on call notifications so calls reach you when Telephone isn&rsquo;t in front</button>
 <div id="toast"></div>

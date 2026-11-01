@@ -57,6 +57,11 @@ Why: Jor wants Do Not Disturb to belong to the Hub, with connectivity apps follo
 - **Attention message** now carries `from: '<name> (<number>)'` and `fav: true` for a ⭐ contact.
 - **attention-reply:** `{sharedLink:'attention-reply', app:'telephone', kind:'call', action:'answer'|'decline'}` from `window.parent` only, while a call is ringing in, goes through the Answer / Decline buttons (Answer also shows the Phone pane / call screen). Anything else is ignored.
 
+## FC5 (TP8) — 5-digit Hub codes, public 00000
+- **Why:** the Hub moved to 5-digit codes in H83 (clean cut-over, no 4-digit fallback). Public lobby is now **00000** (`SharedLink.LOBBY`, fallback `'00000'` while H83 is not live).
+- **What:** URL `#code=` / `?hub=` / `join=`, the code dialog (maxlength 5, "5-digit code"), Hub hello codes, mesh codes and the last code now take exactly 5 digits. Saved 4-digit codes are ignored (`c5()`), so the app falls to Public or asks.
+- **Phone number:** this device's Hub number (`SharedLinkDevices.code()` / `SharedLink.deviceCode()`, looked up on this page, then parent, then top). With it: no own number picking, no clash renumbering, the **New number** button is gone. Without it (H83 not live) the TP2b picked + checked number is still used. Contacts and Recent keep working; old 4-digit contacts are still shown as old.
+
 ## Legacy code notes
 
 - TP5 removed markup (noted in an HTML comment in `telephone.html`): `#status` ("Online · code …") and `#btn-code` (Code) in the Phone bar; "🌙 DND" text became 🌙 only. The old `setStatus` (writing `#status`), the `btn-code` hook and the old `my-sub` text (name / long checking text) are kept as comments in `telephone_app.js`; the `btn-code` hook stays guarded.
@@ -64,3 +69,4 @@ Why: Jor wants Do Not Disturb to belong to the Hub, with connectivity apps follo
 - TP1–TP2b `localCode()` + `go()` + `askCode()` + `boot()` (Hub's own Connect Code first, code dialog when none) are kept as comments in `telephone_app.js` above the TP4 code choice.
 
 - TP2–TP6 Telephone Do Not Disturb (`paintDnd` / `setDnd` / `#b-dnd` / `#chk-dnd` / `#chk-dndfav` hooks in `telephone_app.js`, the `TPSave.get('dnd')` / `dndFav` check in `telephone_call.js`, presence `dnd` in `telephone_peer.js`) is kept as comments; the removed markup is noted in HTML comments in `telephone.html`. Replaced in TP7 by the Hub's DND (`TPDnd`).
+- FC5: `$('b-newnum')` handler kept as `//` comments in telephone_app.js; `checkClash` now returns early when `TPSave.fromHub()`. Old 4-digit code regexes kept in the TP1–TP4 `//` legacy blocks.

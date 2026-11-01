@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Intercom IC2</title>
+  <title>Intercom IC6</title>
   <link rel="icon" href="intercom_icon.png">
   <link rel="stylesheet" href="intercom.css">
 </head>
@@ -12,8 +12,10 @@
   <div id="dots"><button class="dot on" data-i="0" aria-label="Talk"></button><button class="dot" data-i="1" aria-label="Settings"></button></div>
   <div id="viewport"><div id="track">
     <section class="pane" id="pane-talk">
-      <div class="bar"><div class="who"><b id="me-name"></b><div id="status" class="mut">Starting…</div></div>
-        <button class="mini" id="btn-code">Code</button></div>
+      <!-- IC5: removed <div id="status" class="mut">Starting…</div> ("Online · code …") and <button class="mini" id="btn-code">Code</button>;
+           the status is the dot's tooltip, the code is changed in Settings. -->
+      <div class="bar"><div class="who"><span id="conn" class="conn wait" title="Starting…" aria-label="Starting…" role="img"></span><b id="me-name"></b><span id="dnd-ind" class="dnd-ind" hidden title="Do Not Disturb is on in the Hub" aria-label="Do Not Disturb is on in the Hub">🌙</span></div>
+        <button class="mini" id="notify-hint" hidden>🔔 Turn on call notifications</button></div>
       <div id="banner" hidden></div>
       <div id="sound" hidden>🔇 Tap here to turn on sound</div>
       <div id="camon" hidden><span class="rec"></span><span id="camon-t">Camera on</span><button class="mini stop" id="b-camstop">Stop</button></div>
@@ -21,14 +23,14 @@
       <div id="main">
         <div id="listcol">
           <ul id="devices"></ul>
-          <p id="empty" class="mut">No other devices yet. Open Intercom on another device with the same Hub code.</p>
+          <p id="empty" class="mut">No other devices online.</p><!-- IC4: No other devices yet. Open Intercom on another device with the same Hub code. -->
         </div>
         <div id="side">
           <button id="b-talk" aria-label="Talk"><span class="ic">🎙️</span><span id="talk-lbl">Talk</span></button>
           <div id="talk-to" class="mut">to Everyone</div>
           <div id="talk-hint" class="mut">Tap to talk, tap again to stop · or hold</div>
           <div class="sbrow"><button class="sb" id="b-vid" title="Video on talks">📹<span>Video off</span></button><button class="sb" id="b-flip" title="Switch camera (front / back)" aria-label="Switch camera">🔄</button></div>
-          <button class="sb" id="b-dnd" title="Do Not Disturb">🌙<span>DND off</span></button>
+          <!-- IC5: <button class="sb" id="b-dnd" title="Do Not Disturb">🌙<span>DND off</span></button> (DND is the Hub's now) -->
           <div class="vol"><span id="vol-ic">🔊</span><input type="range" id="vol" min="0" max="100" step="5" aria-label="Volume"><span id="vol-n" class="mut"></span></div>
         </div>
       </div>
@@ -39,8 +41,11 @@
       <div class="set-row"><span>Hub code</span><span><b id="code-lbl">—</b> <button class="mini" id="btn-code2">Change</button></span></div>
       <h2>Sound</h2>
       <div class="set-row"><label for="chk-chime">Chime before someone talks</label><input type="checkbox" id="chk-chime" class="sw"></div>
-      <div class="set-row"><label for="chk-dnd">Do Not Disturb</label><input type="checkbox" id="chk-dnd" class="sw"></div>
+      <!-- IC5: <div class="set-row"><label for="chk-dnd">Do Not Disturb</label><input type="checkbox" id="chk-dnd" class="sw"></div> -->
       <div class="set-row"><label for="vol2">Volume</label><input type="range" id="vol2" min="0" max="100" step="5"></div>
+      <h2>Alerts</h2>
+      <div class="set-row"><label for="chk-notify">Call notifications<small id="notify-sub" class="mut"></small></label><input type="checkbox" id="chk-notify" class="sw"></div>
+      <p class="note mut">Do Not Disturb is set in the Hub; Intercom follows it.</p>
       <h2>Video</h2>
       <div class="set-row"><label for="chk-video">Start talks with video</label><input type="checkbox" id="chk-video" class="sw"></div>
       <div class="set-row"><span>Camera</span><div class="seg" data-key="facing"><button data-v="user">Front</button><button data-v="environment">Back</button></div></div>
@@ -54,18 +59,20 @@
       <h2>Look</h2>
       <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
       <h2>About</h2>
-      <div class="about"><img src="intercom_icon.png" width="48" height="48" alt=""><div><b>Intercom</b> <span id="ver">IC3</span>
-        <p>Talk live to every device on the same Hub Connect Code, or pick one. Tap Talk to go live, tap again to stop (or hold and let go). A short chime plays before anyone is heard; Reply talks straight back. Turn on 📹 Video to be seen: the other side sees you first, like a doorbell, and can tap Two-way. Trusted devices can auto-answer (Settings). Do Not Disturb keeps this device quiet. Peer to peer over PeerJS; nothing is recorded or stored on a server.</p></div></div>
+      <div class="about"><img src="intercom_icon.png" width="48" height="48" alt=""><div><b>Intercom</b> <span id="ver">IC6</span>
+        <p>Talk live to every device on the same Hub Connect Code, or pick one. Tap Talk to go live, tap again to stop (or hold and let go). A short chime plays before anyone is heard; Reply talks straight back. Turn on 📹 Video to be seen: the other side sees you first, like a doorbell, and can tap Two-way. Trusted devices can auto-answer (Settings). The Hub's Do Not Disturb keeps this device quiet. Peer to peer over PeerJS; nothing is recorded or stored on a server.</p></div></div>
     </div></section>
   </div></div>
 </div>
 
-<div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="4" placeholder="4-digit code"><div class="row" id="d-row"></div></div></div>
+<div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="5" placeholder="5-digit code"><div class="row" id="d-row"></div></div></div>
 <button class="mini" id="ic-switch" hidden></button>
 <div id="toast"></div>
 
 <script src="../../../shared/link/link_devices.js"></script>
 <script src="intercom_save.js"></script>
+<script src="intercom_dnd.js"></script>
+<script src="intercom_alert.js"></script>
 <script src="intercom_peer.js"></script>
 <script src="intercom_talk.js"></script>
 <script src="intercom_app.js"></script>
