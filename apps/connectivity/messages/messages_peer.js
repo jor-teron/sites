@@ -1,8 +1,8 @@
-/* Messages MS2 — presence + direct messages over PeerJS (own peers; the Hub's peer and HubMesh are never touched;
+/* Messages MS3 — presence + direct messages over PeerJS (own peers; the Hub's peer and HubMesh are never touched;
    HubMesh public 00000 only carries the group 'chat' channel).
    Ids: me = 'jtsites-<code>-msg-<random>', lobby = 'jtsites-<code>-msg-0' (first device to claim it keeps the roster,
    Telephone TP2b pattern with failover). Each device sends {t:'hi', id, name, num}; lobby broadcasts {t:'roster', list}.
-   Messages never pass the lobby: a direct DataConnection to the recipient's own peer carries {t:'msg'} and {t:'ack', id}. */
+   Messages never pass the lobby: a direct DataConnection to the recipient's own peer carries {t:'msg'}, {t:'ack', id}, MS3 {t:'read', ids} and files {t:'fmeta'|'fchunk'|'fend'} (messages_files.js). */
 (function () {
   'use strict';
   var URL0 = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
@@ -35,11 +35,12 @@
   }
   function wire(conn) {   // a direct conversation link (either side)
     if (conn.metadata && conn.metadata.kind === 'msg-lobby') return;
-    conn.on('data', function (m) { if (m && (m.t === 'msg' || m.t === 'ack')) emit('data', m, conn); });
+    conn.on('data', function (m) { if (m && KINDS[m.t]) emit('data', m, conn); });
     conn.on('close', function () { if (direct[conn.peer] === conn) delete direct[conn.peer]; });
     conn.on('error', function () { /* close follows */ });
     direct[conn.peer] = conn;
   }
+  var KINDS = { msg: 1, ack: 1, read: 1, fmeta: 1, fchunk: 1, fend: 1 };
   function claimLobby() {
     if (dead) return;
     var p = new Peer(lobbyId()), settled = false;
@@ -73,18 +74,21 @@
   function hi() { if (lconn && lconn.open) lconn.send({ t: 'hi', id: me.id, name: info.name, num: info.num }); }
   function peerOf(num) { for (var i = 0; i < roster.length; i++) if (roster[i].num === num) return roster[i].id; return ''; }
   /* resolves true when handed to an open direct link, false when the number isn't online / link fails */
-  function send(num, m) {
+  /* MS3: resolves an open direct DataConnection to that number, or null */
+  function link(num) {
     var id = peerOf(num);
-    if (!id || !me) return Promise.resolve(false);
+    if (!id || !me) return Promise.resolve(null);
     var c = direct[id];
-    if (c && c.open) { try { c.send(m); return Promise.resolve(true); } catch (_) { return Promise.resolve(false); } }
+    if (c && c.open) return Promise.resolve(c);
     return new Promise(function (res) {
-      var k = me.connect(id, { reliable: true, metadata: { kind: 'msg' } }), t = setTimeout(function () { try { k.close(); } catch (_) { /* */ } res(false); }, 8000);
+      var k = me.connect(id, { reliable: true, metadata: { kind: 'msg' } }), t = setTimeout(function () { try { k.close(); } catch (_) { /* */ } res(null); }, 8000);
       wire(k);
-      k.on('open', function () { clearTimeout(t); try { k.send(m); res(true); } catch (_) { res(false); } });
-      k.on('error', function () { clearTimeout(t); res(false); });
+      k.on('open', function () { clearTimeout(t); res(k); });
+      k.on('error', function () { clearTimeout(t); res(null); });
     });
   }
+  function send(num, m) { return link(num).then(function (c) { if (!c) return false; try { c.send(m); return true; } catch (_) { return false; } }); }
+  function numOf(peer) { for (var i = 0; i < roster.length; i++) if (roster[i].id === peer) return roster[i].num; return ''; }
   function stop() {
     dead = true; clearTimeout(retryT);
     Object.keys(direct).forEach(function (k) { try { direct[k].close(); } catch (_) { /* */ } });
@@ -96,7 +100,7 @@
   }
   addEventListener('pagehide', stop);
   L.start = start; L.stop = stop; L.on = on; L.send = send; L.update = function (w) { info = w; hi(); };
-  L.roster = function () { return roster; }; L.peerOf = peerOf; L.code = function () { return code; };
+  L.roster = function () { return roster; }; L.peerOf = peerOf; L.link = link; L.numOf = numOf; L.code = function () { return code; };
   L.online = function () { return !!(lconn && lconn.open); };
   L._emit = emit; L._setRoster = function (r) { roster = r; };   // test hooks
   window.MSPeer = L;

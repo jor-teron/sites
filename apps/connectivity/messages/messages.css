@@ -50,3 +50,13 @@ h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
 #dnd-ind{font-size:14px}
 #msgs li .retry{min-height:36px;padding:6px 12px;font-size:13px}
 #b-send{min-width:52px;min-height:48px}
+/* MS3 files + ticks */
+.att{min-width:48px;min-height:48px;font-size:20px}
+.tick{letter-spacing:-3px;opacity:.85}.tick.rd{color:#53bdeb;opacity:1;font-weight:700}
+#msgs li.file{padding:6px;min-width:200px}
+#msgs li .thumb{display:block;max-width:240px;max-height:240px;border-radius:12px}
+.frow{display:flex;align-items:center;gap:8px;padding:4px}
+.fic{font-size:28px}.fnm{flex:1;min-width:0}.fnm b,.fnm small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#msgs li .fnm small{text-align:left;margin:0}
+.save{min-height:40px;min-width:64px}
+.ring{width:32px;height:32px;flex:none;border-radius:50%;background:conic-gradient(currentColor calc(var(--p,0)*360deg),rgba(127,127,127,.3) 0);-webkit-mask:radial-gradient(circle,transparent 9px,#000 10px);mask:radial-gradient(circle,transparent 9px,#000 10px)}

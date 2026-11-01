@@ -1,4 +1,4 @@
-/* Messages MS2 — UI (MS2: offline queue → auto-send when the person comes online, alerts + Hub DND via MSNotify). Code order (FC5): #code= (5 digits) > Hub private mesh (parent.HubMeshLink) > public lobby;
+/* Messages MS3 — UI (MS3: files via MSFiles, WhatsApp ticks 🕓 ✓ ✓✓ blue ✓✓ with read receipts {t:'read', ids}; MS2: offline queue → auto-send when the person comes online, alerts + Hub DND via MSNotify). Code order (FC5): #code= (5 digits) > Hub private mesh (parent.HubMeshLink) > public lobby;
    every 5 s follow the Hub mesh when idle, else offer an in-bar Switch / Back to Public button.
    My number = this device's Hub number (SharedLinkDevices.code() / SharedLink.deviceCode(), self/parent/top). */
 (function () {
@@ -69,7 +69,7 @@
     l.forEach(function (c) {
       var m = c.msgs[c.msgs.length - 1], li = document.createElement('li'), nm = label(c.num, c.name);
       if (c.num === cur) li.className = 'sel';
-      li.innerHTML = '<span class="av">' + esc(nm.charAt(0).toUpperCase()) + '</span><span class="nm"><b>' + esc(nm) + ' <span class="mut">' + c.num + '</span></b><small>' + (m ? (m.dir === 'out' ? 'You: ' : '') + esc(m.text.slice(0, 80)) : '') + '</small></span><span class="tm">' + (m ? hm(m.ts) : '') + (c.unread ? '<br><span class="ur">' + c.unread + '</span>' : '') + '</span>';
+      li.innerHTML = '<span class="av">' + esc(nm.charAt(0).toUpperCase()) + '</span><span class="nm"><b>' + esc(nm) + ' <span class="mut">' + c.num + '</span></b><small>' + (m ? (m.dir === 'out' ? 'You: ' : '') + esc(m.kind === 'file' ? '📎 ' + m.fname : String(m.text || '').slice(0, 80)) : '') + '</small></span><span class="tm">' + (m ? hm(m.ts) : '') + (c.unread ? '<br><span class="ur">' + c.unread + '</span>' : '') + '</span>';
       li.onclick = function () { open(c.num); };
       ul.appendChild(li);
     });
@@ -84,19 +84,64 @@
     var c = S.conv(cur), ul = $('msgs'); ul.innerHTML = '';
     $('c-name').textContent = label(cur); $('c-num').textContent = cur + (P.peerOf(cur) ? ' · online' : ' · not online');
     (c ? c.msgs : []).forEach(function (m) {
-      var li = document.createElement('li'); li.className = m.dir + ((m.st === 'queued' || m.st === 'unsent') ? ' unsent' : '');
-      li.textContent = m.text;
-      var s = document.createElement('small'); s.textContent = hm(m.ts) + (m.dir === 'out' ? (m.st === 'delivered' ? ' ✓✓ Delivered' : m.st === 'sent' ? ' ✓ Sent' : (m.st === 'queued' || m.st === 'unsent') ? ' 🕓 Waiting — sends when ' + label(cur) + ' is online' : '') : '');
-      if ((m.st === 'queued' || m.st === 'unsent') && P.peerOf(cur)) { var b = document.createElement('button'); b.className = 'mini retry'; b.textContent = 'Send now'; b.onclick = function () { deliver(cur, m); }; s.appendChild(b); }
+      var li = document.createElement('li'), wait = m.st === 'queued' || m.st === 'unsent';
+      li.className = m.dir + (wait || m.st === 'lost' ? ' unsent' : '');
+      if (m.kind === 'file') fileBody(li, m); else li.textContent = m.text;
+      var s = document.createElement('small'); s.textContent = hm(m.ts) + ' ';
+      if (m.dir === 'out') s.appendChild(tick(m));
+      if (wait && m.kind !== 'file') s.appendChild(document.createTextNode(' Waiting — sends when ' + label(cur) + ' is online'));
+      if (wait && m.kind === 'file') s.appendChild(document.createTextNode(' Waiting — kept only while Messages is open'));
+      if (m.st === 'lost') s.appendChild(document.createTextNode(' Not sent — the app was closed'));
+      if (wait && m.kind !== 'file' && P.peerOf(cur)) { var b = document.createElement('button'); b.className = 'mini retry'; b.textContent = 'Send now'; b.onclick = function () { deliver(cur, m); }; s.appendChild(b); }
       li.appendChild(s); ul.appendChild(li);
     });
     ul.scrollTop = ul.scrollHeight;
   }
+  /* MS3 ticks: 🕓 not out yet, grey ✓ sent, grey ✓✓ delivered, blue ✓✓ read */
+  function tick(m) {
+    var t = document.createElement('span'), st = m.st, sending = MSFiles.progress(m.id) >= 0;
+    t.className = 'tick' + (st === 'read' ? ' rd' : '');
+    t.textContent = st === 'read' || st === 'delivered' ? '✓✓' : st === 'sent' && !sending ? '✓' : st === 'lost' ? '⚠' : '🕓';
+    t.title = st === 'read' ? 'Read' : st === 'delivered' ? 'Delivered' : st === 'sent' ? 'Sent' : st === 'lost' ? 'Not sent' : 'Waiting';
+    t.setAttribute('aria-label', t.title); return t;
+  }
+  function fileBody(li, m) {
+    li.classList.add('file'); li.dataset.id = m.id;
+    var u = MSFiles.url(m.id), p = MSFiles.progress(m.id), img = /^image\//.test(m.mime) && (u || m.thumb);
+    if (img) { var im = document.createElement('img'); im.className = 'thumb'; im.alt = m.fname; im.src = u || m.thumb; li.appendChild(im); }
+    var row = document.createElement('div'); row.className = 'frow';
+    if (!img) { var ic = document.createElement('span'); ic.className = 'fic'; ic.textContent = /^video\//.test(m.mime) ? '🎬' : /pdf/.test(m.mime) ? '📕' : /^audio\//.test(m.mime) ? '🎵' : '📄'; row.appendChild(ic); }
+    var nm = document.createElement('span'); nm.className = 'fnm'; nm.innerHTML = '<b></b><small></small>'; nm.firstChild.textContent = m.fname; nm.lastChild.textContent = MSFiles.size(m.size); row.appendChild(nm);
+    if (p >= 0) { var r = document.createElement('span'); r.className = 'ring'; r.style.setProperty('--p', p); r.setAttribute('aria-label', Math.round(p * 100) + '%'); row.appendChild(r); }
+    else if (u && m.dir === 'in') { var b = document.createElement('button'); b.className = 'mini save'; b.textContent = 'Save'; b.onclick = function () { MSFiles.save(m.id, m.fname); }; row.appendChild(b); }
+    else if (!u && m.dir === 'in') { var x = document.createElement('small'); x.className = 'mut'; x.textContent = 'Not on this device any more'; nm.appendChild(x); }
+    li.appendChild(row);
+  }
+  MSFiles.on('progress', function (id, p) { var li = document.querySelector('#msgs li[data-id="' + id + '"] .ring'); if (li) { li.style.setProperty('--p', p); li.setAttribute('aria-label', Math.round(p * 100) + '%'); } });
+  MSFiles.on('change', function (num, isNew) {
+    renderList(); if (num === cur) { renderChat(); reads(); }
+    if (isNew) MSNotify.incoming(label(num, isNew.name), num, '📎 ' + isNew.fname, function () { open(num); });
+  });
+  /* MS3 read receipts: while this chat is open and visible, tell the sender which of their messages we have seen */
+  function reads() {
+    if (!cur || document.hidden || !P.peerOf(cur)) return;
+    var n = cur, ids = S.toReceipt(n); if (!ids.length) return;
+    P.send(n, { t: 'read', ids: ids.slice(-200) }).then(function (ok) { if (ok) S.receipted(n, ids); });
+  }
+  $('b-att').onclick = function () { if (!cur) return; if (!myNum) { toast('No Hub number on this device yet'); return; } $('in-file').click(); };
+  $('in-file').onchange = function () {
+    var fs = Array.prototype.slice.call(this.files || []), n = cur; this.value = '';
+    fs.forEach(function (f) {
+      if (f.size > MSFiles.MAX) { toast(f.name + ' is over 100 MB'); return; }
+      MSFiles.send(n, pendingName[n] || rosterName(n), who, f).then(function () { renderChat(); renderList(); });
+    });
+    if (fs.length && !P.peerOf(n)) toast('Files wait until ' + label(n) + ' is online, only while Messages stays open');
+  };
   function open(num, name) {
     cur = num; S.read(num);
     if (name) pendingName[num] = name;
     $('chat').hidden = false; $('pick').hidden = true; $('main').classList.add('inchat');
-    renderChat(); renderList(); $('in-text').focus();
+    renderChat(); renderList(); reads(); $('in-text').focus();
   }
   var pendingName = {};
   var busy = {};   // id -> true while a send is in flight (no double sends from flush + Retry)
@@ -132,18 +177,25 @@
     });
   };
   P.on('status', setStatus);
-  P.on('roster', function () { renderList(); renderChat(); flush(); });
+  P.on('roster', function () { renderList(); renderChat(); flush(); MSFiles.flush(); reads(); });
   P.on('data', function (m, conn) {
     if (m.t === 'msg') {
       var isNew = S.addIn(m, m.from === cur && !document.hidden);
       try { conn.send({ t: 'ack', id: m.id }); } catch (_) { /* */ }   // ack duplicates too, so a lost ack heals
-      if (isNew) { renderList(); if (m.from === cur) renderChat(); var f = String(m.from); MSNotify.incoming(label(f, m.name), f, m.text, function () { open(f); }); }
+      if (isNew) { renderList(); if (m.from === cur) { renderChat(); reads(); } var f = String(m.from); MSNotify.incoming(label(f, m.name), f, m.text, function () { open(f); }); }
     } else if (m.t === 'ack') {
-      var r = P.roster(), num = ''; for (var i = 0; i < r.length; i++) if (r[i].id === conn.peer) num = r[i].num;
-      if (num && S.ack(num, String(m.id))) renderChat();
+      var num = P.numOf(conn.peer); MSFiles.acked(String(m.id));
+      if (num && S.ack(num, String(m.id))) { renderChat(); renderList(); }
+    } else if (m.t === 'read' && Array.isArray(m.ids)) {
+      var rn = P.numOf(conn.peer), ch = false;
+      if (rn) m.ids.slice(0, 500).forEach(function (id) { if (S.setSt(rn, String(id), 'read')) ch = true; });
+      if (ch) renderChat();
+    } else if (m.t === 'fmeta' || m.t === 'fchunk' || m.t === 'fend') {
+      var fn = m.t === 'fmeta' && NUM.test(String(m.from)) ? String(m.from) : P.numOf(conn.peer);
+      if (fn) MSFiles.data(m, conn, fn);
     }
   });
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && cur) { S.read(cur); renderList(); } });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && cur) { S.read(cur); renderList(); reads(); } });
   /* settings */
   $('b-set').onclick = function () { paintNotify(); $('in-name').value = myName(); $('num-lbl').textContent = myNum || '—'; $('sheet').hidden = false; };
   $('b-close').onclick = function () { $('sheet').hidden = true; };

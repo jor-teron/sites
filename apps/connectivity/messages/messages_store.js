@@ -1,5 +1,7 @@
-/* Messages MS2 — the one save module (pure logic + localStorage). Key 'messages-history':
-   {convs:{<num>:{num, name, unread, msgs:[{id, dir:'in'|'out', text, ts, st:'queued'|'sent'|'delivered'|''  (MS1 'unsent' is read as queued)}]}}}.
+/* Messages MS3 — the one save module (pure logic + localStorage). Key 'messages-history':
+   {convs:{<num>:{num, name, unread, msgs:[{id, dir:'in'|'out', text, ts, st:'queued'|'sent'|'delivered'|''  (MS1 'unsent' is read as queued); MS3 adds st 'read' (blue ✓✓),
+   'lost' (a file that was only in memory when the app closed), file entries {kind:'file', fname, size, mime, thumb?} and rr:1 on
+   incoming messages whose read receipt went out.}]}}}.
    Caps: 500 messages per conversation, 3000 in total (oldest conversations trimmed first). */
 (function (root) {
   'use strict';
@@ -21,7 +23,15 @@
     for (var i = list.length - 1; i >= 0 && n > TOTAL; i--) { var c = list[i], cut = Math.min(c.msgs.length, n - TOTAL); c.msgs.splice(0, cut); n -= cut; if (!c.msgs.length) delete H.convs[c.num]; }
   }
   function list0() { return Object.keys(H.convs).map(function (k) { return H.convs[k]; }).sort(function (a, b) { return last(b) - last(a); }); }
+  var RANK = { lost: 0, queued: 0, unsent: 0, sent: 1, delivered: 2, read: 3 };
+  /* MS3: an outgoing file not yet sent when the app closed is gone (files live in memory only) */
+  Object.keys(H.convs).forEach(function (k) { H.convs[k].msgs.forEach(function (m) { if (m.kind === 'file' && m.dir === 'out' && RANK[m.st] < 1) m.st = 'lost'; }); });
   function find(c, id) { for (var i = c.msgs.length - 1; i >= 0; i--) if (c.msgs[i].id === id) return c.msgs[i]; return null; }
+  function fileEntry(id, dir, f, st) {
+    var e = { id: id, dir: dir, kind: 'file', fname: String(f.fname || 'file').slice(0, 200), size: +f.size || 0, mime: String(f.mime || '').slice(0, 100), ts: +f.ts || Date.now(), st: st };
+    if (typeof f.thumb === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(f.thumb) && f.thumb.length < 40000) e.thumb = f.thumb;
+    return e;
+  }
   var M = {
     NUM: NUM, CAP: CAP, TOTAL: TOTAL,
     validNum: function (n) { return NUM.test(String(n || '')); },
@@ -40,9 +50,21 @@
       var c = conv(num, name), e = { id: id, dir: 'out', text: text, ts: Date.now(), st: st || 'sent' };
       c.msgs.push(e); caps(); save(); return e;
     },
-    setSt: function (num, id, st) { var c = H.convs[num], e = c && find(c, id); if (!e || e.dir !== 'out') return false; if (e.st === 'delivered' && st !== 'delivered') return false; e.st = st; save(); return true; },
+    setSt: function (num, id, st) { var c = H.convs[num], e = c && find(c, id); if (!e || e.dir !== 'out') return false; if ((RANK[e.st] || 0) >= 2 && (RANK[st] || 0) <= (RANK[e.st] || 0)) return false; e.st = st; save(); return true; },
     /* MS2 queue: outgoing messages not yet delivered, oldest first: [{num, msg}] */
-    pending: function () { var o = []; Object.keys(H.convs).forEach(function (k) { H.convs[k].msgs.forEach(function (m) { if (m.dir === 'out' && m.st !== 'delivered') o.push({ num: k, msg: m }); }); }); return o.sort(function (a, b) { return a.msg.ts - b.msg.ts; }); },
+    pending: function () { var o = []; Object.keys(H.convs).forEach(function (k) { H.convs[k].msgs.forEach(function (m) { if (m.dir === 'out' && m.kind !== 'file' && (RANK[m.st] || 0) < 2) o.push({ num: k, msg: m }); }); }); return o.sort(function (a, b) { return a.msg.ts - b.msg.ts; }); },
+    /* MS3 files: entry {id, fname, size, mime, thumb}; incoming returns false on a duplicate */
+    addFileIn: function (num, name, f) {
+      if (!NUM.test(String(num)) || !f || !f.id) return false;
+      var c = conv(String(num), name), id = String(f.id).slice(0, 80);
+      if (find(c, id)) return false;
+      c.msgs.push(fileEntry(id, 'in', f, '')); c.unread++; caps(); save(); return true;
+    },
+    addFileOut: function (num, name, f) { var c = conv(num, name), e = fileEntry(f.id, 'out', f, 'queued'); c.msgs.push(e); caps(); save(); return e; },
+    find: function (num, id) { var c = H.convs[num]; return c ? find(c, id) : null; },
+    /* MS3 read receipts: incoming ids not yet receipted / mark them done */
+    toReceipt: function (num) { var c = H.convs[num]; return c ? c.msgs.filter(function (m) { return m.dir === 'in' && !m.rr; }).map(function (m) { return m.id; }) : []; },
+    receipted: function (num, ids) { var c = H.convs[num]; if (!c) return; ids.forEach(function (id) { var e = find(c, id); if (e) e.rr = 1; }); save(); },
     ack: function (num, id) { return M.setSt(num, id, 'delivered'); },
     read: function (num) { var c = H.convs[num]; if (c && c.unread) { c.unread = 0; save(); } },
     unread: function () { return list0().reduce(function (a, c) { return a + (c.unread || 0); }, 0); },

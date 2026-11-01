@@ -1,4 +1,4 @@
-# Messages (MS2)
+# Messages (MS3)
 
 ## What and why
 Private one-to-one text messages between devices, like SMS. Jor wants private messaging as an integral part of phone/;
@@ -26,7 +26,7 @@ messages_peer.js (lobby + direct links), messages_app.js (UI), messages_icon.png
 MS1: syntax + smoke only (node --check, static checks, node harness with stubs). No browser or two-device test yet.
 
 ## Limits
-Both devices must have Messages open (the queue waits until they do). Text only.
+Both devices must have Messages open (the queue waits until they do). Files only while both are online (queued in memory otherwise).
 
 ## Planned
 - MS2: automatic offline queue (send when the person comes online), notifications via HubNotify / attention card, Hub Do Not Disturb.
@@ -40,3 +40,8 @@ None yet.
 - Alerts (messages_notify.js): page hidden → Hub card (top.HubNotify.notice) in the Hub, else browser Notification. Setting `messages-settings-v1`.notify (default on).
 - Hub DND (TP7 pattern: parent.HubDnd, else 'sites-hub.dnd'): no alerts, messages still stored; 🌙 next to the name.
 - In-app notices use a Hub card when inside the Hub, the small in-app notice only standalone.
+
+## MS3
+- Files (messages_files.js): 📎 next to Send, any type, 100 MB cap. Wire {t:'fmeta'} → 64 KB {t:'fchunk', i, d} (back-pressure on bufferedAmount) → {t:'fend'}; receiver {t:'ack', id}. Duplicate chunks / finished ids ignored.
+  Bytes in memory (blob URLs) until Save; history keeps only the file entry + a ≤200 px JPEG thumbnail for images. Outgoing files not sent before the app closed show ⚠ "Not sent".
+- Ticks: 🕓 waiting/sending, grey ✓ sent, grey ✓✓ delivered, blue ✓✓ read. Read receipt {t:'read', ids} goes when the chat is open and visible (rr:1 on incoming entries). MS1/MS2 history works unchanged; older peers ignore 'read'.

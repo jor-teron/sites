@@ -27,7 +27,7 @@
     <section id="chat" hidden>
       <div class="chead"><button class="mini ico" id="b-back" aria-label="Back">←</button><div class="who"><b id="c-name"></b><small id="c-num" class="mut"></small></div></div>
       <ul id="msgs"></ul>
-      <form id="compose"><textarea id="in-text" rows="1" maxlength="2000" placeholder="Message"></textarea><button class="pri" id="b-send" aria-label="Send">➤</button></form>
+      <form id="compose"><button type="button" class="mini ico att" id="b-att" aria-label="Attach a file" title="Attach a file">📎</button><input type="file" id="in-file" multiple hidden><textarea id="in-text" rows="1" maxlength="2000" placeholder="Message"></textarea><button class="pri" id="b-send" aria-label="Send">➤</button></form>
     </section>
     <p id="pick" class="mut">Pick a conversation or someone online.</p>
   </div>
@@ -43,8 +43,8 @@
   <h2>Hub code</h2>
   <div class="set-row"><span>Code</span><span><b id="code-lbl">—</b> <button class="mini" id="b-code">Change</button></span></div>
   <h2>About</h2>
-  <div class="about"><img src="messages_icon.png" width="48" height="48" alt=""><div><b>Messages</b> <span id="ver">MS2</span>
-    <p>Private one-to-one messages, sent directly device to device by Hub number. History stays on this device; nothing is stored on a server. Group chat is Pooh Chat.</p></div></div>
+  <div class="about"><img src="messages_icon.png" width="48" height="48" alt=""><div><b>Messages</b> <span id="ver">MS3</span>
+    <p>Private one-to-one messages and files (up to 100 MB), sent directly device to device by Hub number. History stays on this device; nothing is stored on a server. Group chat is Pooh Chat.</p></div></div>
 </div></div>
 <div id="dlg" hidden><div class="card"><p id="dlg-t"></p><input id="dlg-in" inputmode="numeric" maxlength="5" hidden><div id="dlg-b" class="btns"></div></div></div>
 <div id="toast" hidden></div>
@@ -53,6 +53,7 @@
 <script src="messages_store.js"></script>
 <script src="messages_notify.js"></script>
 <script src="messages_peer.js"></script>
+<script src="messages_files.js"></script>
 <script src="messages_app.js"></script>
 </body>
 </html>
