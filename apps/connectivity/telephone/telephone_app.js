@@ -113,7 +113,7 @@
     if (started) { if (c === code) return; if (TPCall.busy()) { toast('Hang up first'); return; } TPCall.stop(); TPPeer.stop(); }
     started = true; code = c; $('code-lbl').textContent = c === '0000' ? '0000 · Public' : c;
     TPSave.setLastCode(c); paintSwitch();
-    TPPeer.start(c).catch(function () { setStatus('PeerJS could not load (offline?)'); });
+    TPPeer.start(c).catch(function () { setStatus('PeerJS could not load (offline?)'); toast('PeerJS could not load (offline?)'); });
   }
   function pick(c) { if (c) { manual = true; offer = ''; go(c); } }
   /* TP1: function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub. Phones with the same code can call each other.', ['Cancel', 'Join'], { ask: true }).then(function (c) { if (c) go(c); }); } */
@@ -148,8 +148,15 @@
   }
   setInterval(checkMesh, +window.__tpMeshMs || 5000);
   if ($('tp-switch')) $('tp-switch').onclick = function () { if (TPCall.busy()) { toast('Hang up first'); return; } var d = offer; offer = ''; if (d) go(d); };
-  $('btn-code').onclick = askCode; $('btn-code2').onclick = askCode;
-  function setStatus(t) { $('status').textContent = t; }
+  // TP4: $('btn-code').onclick = askCode; $('btn-code2').onclick = askCode;
+  if ($('btn-code')) $('btn-code').onclick = askCode;   // TP5: Code button removed from the Phone bar; Settings → Change stays
+  $('btn-code2').onclick = askCode;
+  // TP4: function setStatus(t) { $('status').textContent = t; }
+  function setStatus(t) {   // TP5: status text lives on the small dot next to the name (title / aria-label)
+    var el = $('net'); if (!el) return;
+    el.title = t; el.setAttribute('aria-label', t);
+    el.className = 'net ' + (/^Online/.test(t) ? 'on' : /could not|Not connected|Offline/i.test(t) ? 'off' : 'wait');
+  }
 
   /* ---------- my number ---------- */
   function paintMe() {
@@ -157,7 +164,8 @@
     $('me-name').textContent = TPSave.name();
     $('my-num').textContent = TPSave.get('num'); $('num-lbl').textContent = TPSave.get('num');
     $('mycard').classList.toggle('pend', pend);
-    $('my-sub').textContent = pend ? 'Checking that no other phone has this number…' : TPSave.name();
+    // TP2b: $('my-sub').textContent = pend ? 'Checking that no other phone has this number…' : TPSave.name();
+    $('my-sub').textContent = pend ? 'Checking…' : ''; $('my-sub').hidden = !pend;   // TP5: name only in the top bar
   }
   /* TP2b: check a new number before keeping it */
   var CHECK_MS = +window.__tpCheckMs || 5000, checkT = 0;
@@ -317,7 +325,7 @@
     $('v-wait').hidden = !(on && c.rvid && !vin);
     return on;
   }
-  TPCall.on('state', function () { paintCall(); paintList(); if (!TPCall.current()) seen(); if (!TPCall.busy()) checkClash(TPPeer.roster()); });
+  TPCall.on('state', function () { try { TPAlert.update(TPCall.current()); } catch (_) { /* TP6 */ } paintCall(); paintList(); if (!TPCall.current()) seen(); if (!TPCall.busy()) checkClash(TPPeer.roster()); });
   TPCall.on('tick', function () { var c = TPCall.current(); if (c && c.state === 'active') { $('c-state').textContent = fmt((Date.now() - c.t0) / 1000); document.title = '📞 ' + fmt((Date.now() - c.t0) / 1000) + ' · Telephone'; } });
   TPCall.on('ring', function (c) {
     if (inHub && document.hidden) { try { window.top.HubNotify.notice({ icon: '📞', title: 'Telephone', text: (c.name || c.num) + ' is calling', timeoutMs: 15000 }); } catch (_) { /* cross-origin / no Hub */ } }
@@ -521,8 +529,31 @@
   function paintSeg() { document.querySelectorAll('.seg[data-key=theme] button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === TPSave.get('theme')); }); }
   document.querySelectorAll('.seg[data-key=theme] button').forEach(function (b) { b.onclick = function () { TPSave.set('theme', b.dataset.v); paintSeg(); }; });
 
+  /* ---------- TP6 call notifications ---------- */
+  function paintNotify() {
+    var p = TPAlert.perm(), on = TPSave.get('callNotify') !== false && p === 'granted';
+    $('chk-notify').checked = on; $('chk-notify').disabled = p === 'unsupported';
+    $('notify-sub').textContent = p === 'unsupported' ? 'This browser can\'t show notifications' : p === 'denied' ? 'Blocked in the browser: allow notifications for this site in the browser settings' : 'A system notification when a call comes in and Telephone isn\'t in front';
+  }
+  function enableNotify() {
+    return TPAlert.request().then(function (p) {
+      if (p === 'granted') { TPSave.set('callNotify', true); toast('🔔 Call notifications on'); }
+      else { TPSave.set('callNotify', false); dialog(p === 'unsupported' ? 'This browser can\'t show notifications.' : 'Notifications are blocked in this browser. To get call notifications, allow notifications for this site in the browser\'s site settings, then turn this on again.', ['OK']); }
+      paintNotify();
+    });
+  }
+  $('chk-notify').onchange = function () { if (this.checked) enableNotify(); else { TPSave.set('callNotify', false); paintNotify(); toast('Call notifications off'); } };
+  TPAlert.hooks.who = function (c) { return nameFor(c.num, c.did, c.name); };
+  TPAlert.hooks.front = function () { show(0); paintCall(); };
+  TPAlert.hooks.action = function (a) { if (a === 'answer') $('b-answer').click(); else if (a === 'decline') $('b-decline').click(); };
+  TPAlert.hooks.hint = function () {   // one time, first call while permission is 'default'
+    var b = $('notify-hint'); if (!b) return;
+    b.hidden = false; b.onclick = function () { b.hidden = true; enableNotify(); };
+    setTimeout(function () { b.hidden = true; }, 20000);
+  };
+
   /* ---------- start ---------- */
-  paintMe(); paintSeg(); paintVol(); paintSink(); paintDnd(); paintList(); paintLog(); paintContacts(); paintCall(); paintBadge();
+  paintMe(); paintSeg(); paintVol(); paintSink(); paintDnd(); paintList(); paintLog(); paintContacts(); paintCall(); paintBadge(); paintNotify();
   boot();
   window.TPApp = { show: show, dial: function () { return dial; }, page: function () { return page; } };   // test hook
 })();

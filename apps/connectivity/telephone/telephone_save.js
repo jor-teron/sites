@@ -2,6 +2,7 @@
    'telephone-settings-v1' = { name, theme:'system'|'light'|'dark', num:'<5 digits, 10000–99999>', did:<16 hex, lasting device id>,
      volume:0.9 (0–1), sink:'' (chosen audio output id, where setSinkId exists), keytones:true,
      TP2: dnd:false, dndFav:true (favourites still ring when DND is on), facing:'user'|'environment', missedSeen:<ms>,
+     TP6: callNotify:true (system notification for incoming calls), notifyHinted:false (one-time first-call hint shown),
      TP2b: numAt:<ms when this number was set (later clashes: the newer one moves)>, oldNum:'<the 4-digit TP1/TP2 number it replaced>' }
    TP2b number check: the first number of a fresh device, or the 5-digit number replacing a saved 4-digit one, is only a
    candidate (pending) until the app has checked it against the online roster (checked()); until then save() keeps the
@@ -13,7 +14,7 @@
 (function () {
   'use strict';
   var KEY = 'telephone-settings-v1', LOG = 'telephone-log-v1', LAST = 'telephone-last-code', CON = 'telephone-contacts-v1', MAXLOG = 100, MAXCON = 200;
-  var P = { name: '', theme: 'dark', num: '', did: '', volume: 0.9, sink: '', keytones: true, dnd: false, dndFav: true, facing: 'user', missedSeen: 0, numAt: 0, oldNum: '' };
+  var P = { name: '', theme: 'dark', num: '', did: '', volume: 0.9, sink: '', keytones: true, dnd: false, dndFav: true, facing: 'user', missedSeen: 0, numAt: 0, oldNum: '', callNotify: true, notifyHinted: false };   // TP6: callNotify, notifyHinted
   try { Object.assign(P, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) { /* blocked / broken */ }
   if (['system', 'light', 'dark'].indexOf(P.theme) < 0) P.theme = 'dark';
   P.volume = Math.max(0, Math.min(1, +P.volume)); if (isNaN(P.volume)) P.volume = 0.9;

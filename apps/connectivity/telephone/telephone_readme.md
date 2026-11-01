@@ -1,4 +1,4 @@
-# Telephone — TP2b
+# Telephone — TP6
 
 Phone calls between devices on the same Hub Connect Code (Connectivity → Chat, after Intercom). Each device gets its own 5-digit number; dial it and only that device rings.
 
@@ -28,6 +28,29 @@ Phone calls between devices on the same Hub Connect Code (Connectivity → Chat,
 - A code picked with Code/Change (or Public) holds for the session. Safety unchanged: every call rings and must be answered, DND with favourites stays, and the 5-digit number check now covers every phone on 0000. On 0000, anyone online can see your name and number in Online now.
 - (TP3 stays reserved for the dropped call-waiting plan.)
 
+## TP5 — Minimal Phone screen
+
+Jor asked for a minimalist look: the device name was shown twice and the "Online · code 0000" line and Code button were no longer needed.
+
+- **Top bar:** the name once, with a small connection dot before it (green online, amber connecting, grey offline / PeerJS failed); the status text is the dot's tooltip / `aria-label` (`setStatus` writes there). Do Not Disturb is a 🌙 icon button (same `b-dnd`, `on` state, `aria-pressed`). The code is changed only in Settings → Hub code → Change; the `#tp-switch` offer button is unchanged.
+- **My number:** one line "My number 12345"; the name is no longer repeated under it, `#my-sub` only shows "Checking…" while a new number is checked.
+- **Shorter texts:** empty lists say "No other phones online." / "No calls yet." / "No contacts yet."; About is short and mentions Public 0000. "PeerJS could not load" also shows as a toast.
+- Title and About version say TP5.
+
+## TP6 — Incoming calls get your attention
+
+Calls didn't come to the front: when Telephone was in a background tab or behind another Hub app, a call only flashed the tab title. Browsers don't let a page raise its own window, so TP6 adds what a page is allowed to do (`telephone_alert.js`, `TPAlert`):
+
+- **System notification:** on an incoming call (state `incoming`; Do Not Disturb declines never get there), when the page is hidden or its host frame isn't visible / focused, and permission is `granted`, it shows "📞 <name or number> is calling" (tag `tp-call`, `requireInteraction`, `renotify`, icon `telephone_icon.png`). If a service worker registration already exists for the page it uses `showNotification` with Answer / Decline actions, else a plain `new Notification` with no actions. Tapping it focuses the window (and the host), shows the Phone pane and the call screen. It's closed when the call is answered, declined, missed or ended. All in try/catch; unsupported / denied = nothing extra.
+- **Permission:** never asked on load. Settings → Alerts → Call notifications asks for it when turned on; if the browser blocks it, an in-app message explains and the switch goes off. The first call that comes in while permission is still `default` shows a one-time "🔔 Turn on call notifications" button (tap = ask). Saved in `telephone-settings-v1` as `callNotify` and `notifyHinted`.
+- **Host hint (proposed contract for a future Hub system-wide notification):** inside a host only, Telephone posts to `window.parent`:
+  - ringing starts: `{sharedLink:'attention', app:'telephone', kind:'call', title:'📞 <who> is calling', urgent:true}`
+  - ringing stops (answered / declined / missed / ended): `{sharedLink:'attention', app:'telephone', kind:'call-end'}`
+  Hosts that don't know it ignore it. The idea: the Hub (and phone/) would show an urgent pop-over above any app and switch to Telephone on tap; that needs Hub Main Bot's side.
+- Title flashing, vibrate and ringtone are unchanged. A true pop-over above everything needs Hub support or the Android app (PH3).
+
 ## Legacy code notes
+
+- TP5 removed markup (noted in an HTML comment in `telephone.html`): `#status` ("Online · code …") and `#btn-code` (Code) in the Phone bar; "🌙 DND" text became 🌙 only. The old `setStatus` (writing `#status`), the `btn-code` hook and the old `my-sub` text (name / long checking text) are kept as comments in `telephone_app.js`; the `btn-code` hook stays guarded.
 
 - TP1–TP2b `localCode()` + `go()` + `askCode()` + `boot()` (Hub's own Connect Code first, code dialog when none) are kept as comments in `telephone_app.js` above the TP4 code choice.
