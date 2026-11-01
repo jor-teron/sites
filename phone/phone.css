@@ -20,7 +20,7 @@ body.app-open #home,body.drawer-open #home{opacity:0}
 #pages{display:flex;height:100%;transition:transform .28s cubic-bezier(.2,.8,.2,1);will-change:transform}
 #pages.drag{transition:none}
 .page{flex:0 0 100%;height:100%;display:flex;flex-direction:column;align-items:center;padding:12px 10px 0;min-width:0}
-.clock{text-align:center;padding:5vh 0 3vh;flex:none}
+.clock{text-align:center;padding:1.5vh 0 3vh;flex:none}/* PH5: was 5vh top */
 .clock .t{font-size:clamp(64px,22vw,120px);font-weight:200;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
 .clock .d{font-size:clamp(15px,4.3vw,20px);margin-top:6px;opacity:.95}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 6px;width:100%;max-width:560px;align-content:start}
@@ -31,7 +31,7 @@ body.app-open #home,body.drawer-open #home{opacity:0}
 #dots .dot.on::after{opacity:1}
 #dock-wrap{flex:none;padding:0 10px 12px;display:flex;flex-direction:column;align-items:center}
 #dock-handle{width:38px;height:4px;border-radius:2px;background:currentColor;opacity:.55;margin:2px 0 8px}
-#dock{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;width:100%;max-width:560px;padding:10px 6px;border-radius:26px;background:var(--glass)}
+#dock{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;width:100%;max-width:560px;padding:10px 6px;border-radius:26px;background:rgba(255,255,255,.18)}/* PH5: was var(--glass) */
 #dock .ic .lbl{display:none}
 
 /* ---------- icons ---------- */
