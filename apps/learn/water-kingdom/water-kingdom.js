@@ -17,6 +17,7 @@ const pageContent = document.getElementById('page-content');
 const pageIndicator = document.getElementById('page-indicator');
 const prevBtn = document.getElementById('prev-btn');
 const nextBtn = document.getElementById('next-btn');
+const doneBtn = document.getElementById('done-btn');   // LRN-WK1: was missing (ReferenceError on start)
 const chapterTitle = document.getElementById('chapter-title');
 const chapterMenu = document.getElementById('chapter-menu');
 const bookContainer = document.getElementById('book-container');
