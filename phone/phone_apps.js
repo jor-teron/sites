@@ -29,10 +29,10 @@
     get: function (id) { return apps[id] || null; },
     has: function (id) { return !!apps[id]; },
     cats: function () { return cats.slice(); },
-    /** cat '' or 'All' = every app; alphabetical. */
+    /** cat '' = every app (search uses it; PH4: the drawer has no All tab); alphabetical. */
     list: function (cat) {
       return Object.keys(apps).map(function (k) { return apps[k]; })
-        .filter(function (a) { return !cat || cat === 'All' || a.cat === cat; }).sort(byName);
+        .filter(function (a) { return !cat || a.cat === cat; }).sort(byName);
     },
     /** Name first, then category / description matches. */
     search: function (q) {
