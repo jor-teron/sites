@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Messages MS1</title>
+  <link rel="icon" href="messages_icon.png">
+  <link rel="stylesheet" href="messages.css">
+  <script>(function () { var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) {} var d = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches); document.documentElement.className = d ? 'dark' : ''; })();</script>
+</head>
+<body>
+<div id="app">
+  <header class="bar">
+    <div class="who"><span id="net" class="net" role="img" title="Starting…" aria-label="Starting…"></span><b id="me-name"></b></div>
+    <button class="mini" id="ms-switch" hidden></button>
+    <button class="mini ico" id="b-set" aria-label="Settings" title="Settings">⚙️</button>
+  </header>
+  <div id="main">
+    <aside id="listcol">
+      <button class="pri" id="b-new">＋ New message</button>
+      <ul id="convs"></ul>
+      <p id="conv-empty" class="mut">No messages yet.</p>
+      <div class="hd">Online now</div>
+      <ul id="online"></ul>
+      <p id="online-empty" class="mut">No other devices online.</p>
+    </aside>
+    <section id="chat" hidden>
+      <div class="chead"><button class="mini ico" id="b-back" aria-label="Back">←</button><div class="who"><b id="c-name"></b><small id="c-num" class="mut"></small></div></div>
+      <ul id="msgs"></ul>
+      <form id="compose"><textarea id="in-text" rows="1" maxlength="2000" placeholder="Message"></textarea><button class="pri" id="b-send" aria-label="Send">➤</button></form>
+    </section>
+    <p id="pick" class="mut">Pick a conversation or someone online.</p>
+  </div>
+</div>
+<div id="sheet" hidden><div class="card">
+  <div class="chead"><b>Settings</b><button class="mini" id="b-close">Done</button></div>
+  <h2>This device</h2>
+  <div class="set-row"><label for="in-name">Name</label><input id="in-name" maxlength="40"></div>
+  <div class="set-row"><span>My number</span><b id="num-lbl">—</b></div>
+  <h2>Hub code</h2>
+  <div class="set-row"><span>Code</span><span><b id="code-lbl">—</b> <button class="mini" id="b-code">Change</button></span></div>
+  <h2>About</h2>
+  <div class="about"><img src="messages_icon.png" width="48" height="48" alt=""><div><b>Messages</b> <span id="ver">MS1</span>
+    <p>Private one-to-one messages, sent directly device to device by Hub number. History stays on this device; nothing is stored on a server. Group chat is Pooh Chat.</p></div></div>
+</div></div>
+<div id="dlg" hidden><div class="card"><p id="dlg-t"></p><input id="dlg-in" inputmode="numeric" maxlength="5" hidden><div id="dlg-b" class="btns"></div></div></div>
+<div id="toast" hidden></div>
+<script src="../../../shared/link/link_core.js"></script>
+<script src="../../../shared/link/link_devices.js"></script>
+<script src="messages_store.js"></script>
+<script src="messages_peer.js"></script>
+<script src="messages_app.js"></script>
+</body>
+</html>
