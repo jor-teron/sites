@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Video Chat VC4</title>
+  <title>Video Chat VC5</title>
   <link rel="icon" href="videochat_icon.png">
   <link rel="stylesheet" href="videochat.css">
 </head>
@@ -12,23 +12,27 @@
   <div id="dots"><button class="dot on" data-i="0" aria-label="Call"></button><button class="dot" data-i="1" aria-label="Settings"></button></div>
   <div id="viewport"><div id="track">
     <section class="pane" id="pane-call">
-      <div class="bar"><div><b id="me-name"></b><div id="status" class="mut">Starting…</div></div>
-        <button class="mini" id="btn-code">Code</button></div>
+      <!-- VC4 bar (removed in VC5): <div class="bar"><div><b id="me-name"></b><div id="status" class="mut">Starting…</div></div><button class="mini" id="btn-code">Code</button></div> -->
+      <div class="bar"><div class="who"><b><span id="net" class="net" role="img" title="Starting…" aria-label="Starting…"></span><span id="me-name"></span></b></div></div>
       <ul id="devices"></ul>
-      <p id="empty" class="mut">No other devices yet. Open Video Chat on another device with the same Hub code.</p>
-      <p id="hint" class="mut">Call one device, then add up to two more from the call (＋).</p>
+      <!-- VC4 texts: "No other devices yet. Open Video Chat on another device with the same Hub code." / "Call one device, then add up to two more from the call (＋)." -->
+      <p id="empty" class="mut">No other devices online.</p>
+      <p id="hint" class="mut">Tap a device to call. Add up to 2 more with ＋.</p>
     </section>
     <section class="pane" id="pane-set"><div class="set-wrap">
       <h2>This device</h2>
       <div class="set-row"><label for="in-name">Name</label><input id="in-name" maxlength="40"></div>
+      <h2>Hub code</h2>
+      <div class="set-row"><span id="code-lbl">—</span><button class="mini" id="btn-code2">Change</button></div>
       <h2>Camera &amp; microphone</h2>
       <div class="set-row"><label for="sel-cam">Camera</label><select id="sel-cam"><option value="">Default</option></select></div>
       <div class="set-row"><label for="sel-mic">Microphone</label><select id="sel-mic"><option value="">Default</option></select></div>
       <h2>Look</h2>
       <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
       <h2>About</h2>
-      <div class="about"><img src="videochat_icon.png" width="48" height="48" alt=""><div><b>Video Chat</b> <span id="ver">VC4</span>
-        <p>Video calls between devices on the same Hub Connect Code: one-to-one or a group of up to 4 (everyone connects to everyone). Computers can share their screen during a call; phones can watch. Peer to peer over PeerJS; nothing is stored on a server.</p></div></div>
+      <div class="about"><img src="videochat_icon.png" width="48" height="48" alt=""><div><b>Video Chat</b> <span id="ver">VC5</span>
+        <!-- VC4 About: Video calls between devices on the same Hub Connect Code: one-to-one or a group of up to 4 (everyone connects to everyone). Computers can share their screen during a call; phones can watch. Peer to peer over PeerJS; nothing is stored on a server. -->
+        <p>Peer-to-peer video calls for up to 4 devices on your Hub code, or Public 00000. Computers can share their screen. Nothing is stored on a server.</p></div></div>
     </div></section>
   </div></div>
 </div>
@@ -45,7 +49,7 @@
     <button class="cb end" id="b-end" title="Leave">✕</button>
   </div>
   <div id="addsheet" hidden><div class="sheet"><div class="sh-head"><b>Add to call</b><span class="mut" id="add-note"></span><button class="mini" id="b-addclose">Close</button></div>
-    <ul id="addlist"></ul><p id="add-empty" class="mut">No other devices are online on this code.</p></div></div>
+    <ul id="addlist"></ul><p id="add-empty" class="mut">No other devices online.</p></div></div>
 </div>
 
 <div id="ringing" hidden><div class="box"><div class="big">📞</div><p><b id="r-name"></b><br><span class="mut" id="r-sub">is calling…</span></p>
