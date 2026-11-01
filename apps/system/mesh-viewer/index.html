@@ -4,7 +4,7 @@
   (shared/link/hub_mesh.js, window.HubMesh): this device, the devices in the mesh, the H55b join
   stats and a live connection log (hub/link/hub_meshlog.js, window.HubMeshLog, last 200 events).
   Data comes from the Hub page around us (window.parent, same origin, like System Monitor's Tasks tab).
-  Only two actions: Retry join now (HubMesh.retry(), as Settings › Devices Retry) and a link to
+  Actions: Forget a trusted device (H51), Retry join now (HubMesh.retry(), as Settings › Devices Retry) and a link to
   Settings › Devices. Opens as a window in Desktop mode, full screen in Phone mode.
   Files: mv.js (everything), mv.css (look), README.md.
 -->
@@ -41,7 +41,8 @@
       <section class="card wide" id="mv-devs-card">
         <h2>Devices in the mesh <span class="count" id="mv-count"></span></h2>
         <div class="devs" id="mv-devs"></div>
-        <p class="muted small">Trust and approval are not built yet (H51): every device here joined with the code. Last seen is the lobby's last heartbeat, refreshed about every 10 s.</p>
+        <!-- <p class="muted small">Trust and approval are not built yet (H51): every device here joined with the code. Last seen is the lobby's last heartbeat, refreshed about every 10 s.</p>   (before H51) -->
+        <p class="muted small">H51: messages are signed with each device's own key. On a private mesh a new device needs Allow on the lobby device; the public 00000 mesh stays open. Forget removes a device from this device's trust list. Last seen is the lobby's last heartbeat, refreshed about every 10 s.</p>
       </section>
       <section class="card wide" id="mv-log-card">
         <div class="log-head">

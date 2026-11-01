@@ -42,7 +42,11 @@
   }
 
   let H = null, M = null, offLog = null, logShown = 0, logSig = '';
-  const EVS = ['status', 'roster', 'peers', 'lobby'];
+  // const EVS = ['status', 'roster', 'peers', 'lobby'];   (before H51)
+  const EVS = ['status', 'roster', 'peers', 'lobby', 'trust', 'approval'];   // H51
+  /* H51: trust labels (HubMesh.trustOf) */
+  const TRUST_T = { self: 'This device', trusted: 'Trusted', new: 'New (signed, not trusted yet)', unsigned: 'Unsigned (old Hub or no key)', mismatch: 'KEY MISMATCH: refused' };
+  function trustOf(id) { try { return M.trustOf ? M.trustOf(id) : ''; } catch (_) { return ''; } }
   let pend = 0;
   const soon = () => { clearTimeout(pend); pend = setTimeout(draw, 30); };
 
@@ -93,7 +97,9 @@
       ['Join wait / retry / give up', [Lm.JOIN_WAIT_MS, Lm.RETRY_MS, Lm.GIVEUP_MS].map((v) => v ? (v / 1000) + ' s' : '?').join(' / ')],
       ['Direct links open', String((s.direct || []).length)],
       ['Messages sent / received', (s.sent | 0) + ' / ' + (s.recv | 0)],
-      ['Dropped (size, rate, shape, public)', [s.dropSize, s.dropRate, s.dropShape, s.dropPublic].map((v) => v | 0).join(', ')]
+      ['Dropped (size, rate, shape, public)', [s.dropSize, s.dropRate, s.dropShape, s.dropPublic].map((v) => v | 0).join(', ')],
+      ['Dropped (bad signature, key mismatch, untrusted)', [s.dropSig, s.dropKey, s.dropTrust].map((v) => v | 0).join(', '), '', 'mv-dropsec'],   // H51
+      ['Device key', me.keyState === 'on' ? 'On (messages signed)' : me.keyState === 'off' ? 'Off (no WebCrypto here: messages unsigned)' : 'Loading\u2026', '', 'mv-key']   // H51
     ]);
   }
 
@@ -112,8 +118,10 @@
       const nm = el('div', 'dev-name');
       nm.append(el('b', '', clip(r.name || 'Device', 40) + (self ? ' (this device)' : '')), el('span', 'dev-sub mono', clip(r.deviceId, 40)));
       const tags = el('div', 'dev-tags');
-      [r.lobby ? 'Lobby' : '', r.relay ? 'Relayed' : '', r.mode === 'desktop' ? 'Desktop' : r.mode === 'phone' ? 'Phone' : '', '#' + (r.joinOrder | 0),
-        'Trust: not checked (H51)'].filter(Boolean).forEach((t) => tags.appendChild(el('span', 'tag' + (t === 'Lobby' ? ' lobby' : ''), t)));
+      // [..., 'Trust: not checked (H51)'].filter(Boolean)...   (before H51)
+      [r.lobby ? 'Lobby' : '', r.relay ? 'Relayed' : '', r.mode === 'desktop' ? 'Desktop' : r.mode === 'phone' ? 'Phone' : '', '#' + (r.joinOrder | 0)].filter(Boolean).forEach((t) => tags.appendChild(el('span', 'tag' + (t === 'Lobby' ? ' lobby' : ''), t)));
+      const ts = trustOf(r.deviceId);   // H51
+      if (ts) { const tg = el('span', 'tag trust trust-' + ts, 'Trust: ' + (TRUST_T[ts] || ts)); tg.dataset.trust = ts; tags.appendChild(tg); if (ts === 'mismatch') tg.style.cssText = 'background:#dc2626;color:#fff'; else if (ts === 'trusted') tg.style.cssText = 'background:#16a34a;color:#fff'; }
       nm.appendChild(tags);
       const q = el('div', 'dev-q');
       let link;
@@ -124,6 +132,12 @@
       else link = r.relay || me.relay ? 'Through the lobby' : 'Via the lobby';
       q.append(el('span', 'st ' + (r.online ? 'on' : 'off'), r.online ? 'Online' : 'Offline'), el('span', 'muted', link));
       if (r.online && !self && r.lastSeen) q.appendChild(el('span', 'muted small', ' \u00B7 seen ' + ago(r.lastSeen)));
+      if (!self && M.forget && (ts === 'trusted' || ts === 'mismatch')) {   // H51: Forget = off the trust list (asked again next join)
+        const fb = el('button', 'btn small mv-forget', 'Forget'); fb.type = 'button';
+        fb.title = 'Remove from this device\u2019s trust list';
+        fb.addEventListener('click', () => { M.forget(r.deviceId); soon(); });
+        q.appendChild(fb);
+      }
       d.append(dot, nm, q);
       return d;
     }));

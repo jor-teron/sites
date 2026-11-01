@@ -36,6 +36,8 @@
     { approveJoin(hello, peerId) → bool (lobby, before a device enters the roster),
       sign(env) → env (before send), verify(env, peerId) → bool (after shape / size / rate checks) }.
     Defaults allow everything. Open risks are listed in hub/docs/README_technical_team2.txt (H50).
+    H51 (below the hooks): device keys, signed envelopes, private-mesh join approval, trust list; API trustOf(id),
+    trusted(), forget(id), keyState(), publicKey(), keyReady(), pendingApprovals(), on('trust' | 'approval', fn).
   API window.HubMesh:
     start(code, { preferLobby, name, mode }) / stop()     restart with another code = stop + start
     me() → { deviceId, name, mode, apps, lobby, relay, term, state, code }
@@ -141,6 +143,220 @@
     verify: function () { return true; }         // TODO(security): verify signatures / pinned keys
   };
 
+  /* ---------- H51: mesh security (join approval, device keys, trust) ----------
+   * Device key: one ECDSA P-256 key pair per browser, made with WebCrypto, private key NOT extractable, kept in
+   *   IndexedDB 'hub-mesh-keys' (store 'k', key 'device'). Public key = raw point, base64 (K.pub, ~88 chars).
+   *   No crypto.subtle (file://, http on a LAN address) or no IndexedDB = K.state 'off': nothing is signed, the
+   *   mesh still works, other devices see this one as 'unsigned'.
+   * Signing: every envelope THIS device sends gets pk + sig (base64 ECDSA-SHA256 over sigText(): v, ch, from, to,
+   *   t, term, id, data, pk; never 'skip'). Signing is async, so sends go through one ordered queue (wire()); a
+   *   relayed envelope keeps the sender's own pk + sig (the lobby can't change it without breaking it).
+   * Verifying (inbound(), one ordered queue before every data handler): bad sig = dropped (stats.dropSig);
+   *   a trusted id with another key = 'mismatch' (impersonation: dropped, notice once); unsigned from an id
+   *   trusted with a key = dropped (downgrade); unsigned from an unknown id = allowed ('unsigned', old Hubs).
+   * Trust list: localStorage 'hub-mesh-trust' (device-only, not a sites-hub.* key, so H29 profile sync never
+   *   sends it) = { deviceId: { pk, name, at, how: 'approved' | 'roster' | 'lobby' } }; pk '' = trusted unsigned.
+   * Join approval (private meshes only; the public 00000 lobby stays open): the lobby lets a hello through
+   *   when the device is trusted; an unknown one gets {k:'wait'} and the lobby device shows an Allow / Deny card
+   *   (HubAttention.ask, else confirm()). Allow = trusted, its next hello (every 2.5 s) is welcomed; Deny = bye
+   *   'denied' for this session; no answer in APPROVE_MS = asked again on a later hello. The lobby device trusts
+   *   itself (the creator of a private mesh needs nobody). A welcomed member trusts the lobby (it typed the code)
+   *   and the signed roster's keys ('roster'), so a takeover lobby already knows everyone.
+   * Private meshes: direct-link data from a device that is not trusted is dropped (stats.dropTrust).
+   */
+  var TRUST_K = 'hub-mesh-trust', APPROVE_MS = 50000, PK_MAX = 120;
+  var K = { state: 'loading', pub: '', priv: null, ready: null };
+  var subtle = (window.crypto && window.crypto.subtle && window.isSecureContext !== false) ? window.crypto.subtle : null;
+  var ALG = { name: 'ECDSA', namedCurve: 'P-256' }, SIG = { name: 'ECDSA', hash: 'SHA-256' };
+  function b64(buf) { var s = '', a = new Uint8Array(buf); for (var i = 0; i < a.length; i++) s += String.fromCharCode(a[i]); return btoa(s); }
+  function unb64(s) { var r = atob(s), a = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) a[i] = r.charCodeAt(i); return a; }
+  function idb(fn) {
+    return new Promise(function (res, rej) {
+      if (!window.indexedDB) { rej(new Error('no idb')); return; }
+      var q = indexedDB.open('hub-mesh-keys', 1);
+      q.onupgradeneeded = function () { q.result.createObjectStore('k'); };
+      q.onerror = function () { rej(q.error); };
+      q.onsuccess = function () {
+        var db = q.result, tx = db.transaction('k', 'readwrite'), st = tx.objectStore('k');
+        fn(st, res, rej);
+        tx.oncomplete = function () { db.close(); };
+        tx.onerror = function () { db.close(); rej(tx.error); };
+      };
+    });
+  }
+  K.ready = (function () {
+    if (!subtle || !window.btoa) { K.state = 'off'; return Promise.resolve(null); }
+    return idb(function (st, res) { var g = st.get('device'); g.onsuccess = function () { res(g.result || null); }; })
+      .then(function (pair) {
+        if (pair && pair.privateKey && pair.publicKey) return pair;
+        return subtle.generateKey(ALG, false, ['sign', 'verify']).then(function (np) {
+          return idb(function (st, res) { st.put({ privateKey: np.privateKey, publicKey: np.publicKey }, 'device').onsuccess = function () { res(np); }; });
+        });
+      })
+      .then(function (pair) { return subtle.exportKey('raw', pair.publicKey).then(function (raw) { K.priv = pair.privateKey; K.pub = b64(raw); K.state = 'on'; return K; }); })
+      .catch(function (e) { console.warn('HubMesh H51: no device key, messages go unsigned', e); K.state = 'off'; K.pub = ''; K.priv = null; return null; });
+  })();
+  function sigText(e) { return JSON.stringify([e.v, e.ch, e.from, e.to, e.t, e.term, e.id, e.data === undefined ? null : e.data, e.pk || '']); }
+  var sigMemo = new Map();   // envelope id -> Promise<{pk, sig} | null> (one signature per envelope, also for strip() copies)
+  function sigFor(e) {
+    var p = sigMemo.get(e.id);
+    if (p) return p;
+    p = K.ready.then(function () {
+      if (K.state !== 'on') return null;
+      var body = Object.assign({}, e, { pk: K.pub });
+      return subtle.sign(SIG, K.priv, enc.encode(sigText(body))).then(function (s) { return { pk: K.pub, sig: b64(s) }; });
+    }).catch(function () { return null; });
+    sigMemo.set(e.id, p);
+    if (sigMemo.size > 400) sigMemo.delete(sigMemo.keys().next().value);
+    return p;
+  }
+  var outQ = Promise.resolve();
+  /** H51: send an envelope (signs this device's own ones first, keeps the order of every send) */
+  function wire(conn, e) {
+    if (!conn || !conn.open) return false;
+    if (!e || typeof e !== 'object' || !S || e.from !== S.dev || e.sig || K.state === 'off') return rawSend(conn, e);
+    var p = sigFor(e);
+    outQ = outQ.then(function () { return p; }).then(function (s) { rawSend(conn, s ? Object.assign({}, e, s) : e); }, function () { rawSend(conn, e); });
+    return true;
+  }
+  var keyCache = new Map();
+  function pubKey(pk) {
+    var k = keyCache.get(pk);
+    if (!k) { k = subtle.importKey('raw', unb64(pk), ALG, false, ['verify']); keyCache.set(pk, k); if (keyCache.size > 64) keyCache.delete(keyCache.keys().next().value); }
+    return k;
+  }
+  function sigOk(e) {
+    try {
+      return pubKey(e.pk).then(function (k) { return subtle.verify(SIG, k, unb64(e.sig), enc.encode(sigText(e))); }).catch(function () { return false; });
+    } catch (_) { return Promise.resolve(false); }
+  }
+  /* trust list */
+  function trustAll() { try { var o = JSON.parse(localStorage.getItem(TRUST_K) || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (_) { return {}; } }
+  function trustGet(d) { var t = trustAll()[d]; return t && typeof t === 'object' ? t : null; }
+  function trustSet(d, pk, name, how) {
+    if (!DEV_RE.test(String(d))) return false;
+    var all = trustAll();
+    all[d] = { pk: typeof pk === 'string' && pk.length <= PK_MAX ? pk : '', name: String(name || 'Device').replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, 40), at: Date.now(), how: how || 'approved' };
+    var ids = Object.keys(all);
+    if (ids.length > 64) { ids.sort(function (a, b) { return (all[a].at || 0) - (all[b].at || 0); }); delete all[ids[0]]; }
+    try { localStorage.setItem(TRUST_K, JSON.stringify(all)); } catch (_) { return false; }
+    emit('trust', d);
+    return true;
+  }
+  function forget(d) {
+    var all = trustAll();
+    if (!all[d]) return false;
+    delete all[d];
+    try { localStorage.setItem(TRUST_K, JSON.stringify(all)); } catch (_) { return false; }
+    seen.delete(d); flagged.delete(d); denied.delete(d);
+    emit('trust', d);
+    return true;
+  }
+  var seen = new Map();      // deviceId -> { pk, signed } of the last verified envelope (this page run)
+  var flagged = new Set();   // deviceIds already noticed as 'mismatch'
+  var denied = new Set();    // lobby: denied this session
+  var pending = new Map();   // lobby: deviceId -> asked at
+  function say(title, text) { try { if (window.HubNotify && HubNotify.notice) HubNotify.notice({ icon: '\uD83D\uDEE1\uFE0F', title: title, text: text }); } catch (_) { /* no cards */ } }
+  function mismatch(d, why) {
+    if (S) S.stats.dropKey = (S.stats.dropKey || 0) + 1;
+    if (flagged.has(d)) return;
+    flagged.add(d);
+    var t = trustGet(d);
+    say('Mesh: device key mismatch', 'A device using the id of \u201C' + ((t && t.name) || d) + '\u201D sent a different key (' + why + '). It was refused. If you reset that device, Forget it in Mesh Viewer or Settings \u203A Devices.');
+    emit('trust', d);
+  }
+  /** trust state of a device: 'self' | 'trusted' | 'new' | 'unsigned' | 'mismatch' */
+  function trustOf(d) {
+    if (S && d === S.dev) return 'self';
+    if (flagged.has(d)) return 'mismatch';
+    var t = trustGet(d), s = seen.get(d);
+    if (t) return 'trusted';
+    if (s && !s.signed) return 'unsigned';
+    var r = S && S.roster.get(d);
+    if (!s && r && !r.pk) return 'unsigned';
+    return 'new';
+  }
+  var inQ = Promise.resolve();
+  /** H51: wrap a conn 'data' handler: signature + key checks first (ordered), then the handler */
+  function inbound(fn, via) {
+    return function (x) {
+      var me = S;
+      inQ = inQ.then(function () { return checkIn(x, via); }).then(function (ok) { if (ok && S === me) fn(x); }, function (err) { console.warn('HubMesh H51 verify', err); });
+    };
+  }
+  function checkIn(e, via) {
+    if (!S || !e || typeof e !== 'object' || !DEV_RE.test(String(e.from)) || e.from === S.dev) return true;   // shape checks come after
+    var d = e.from, t = trustGet(d);
+    var signed = typeof e.pk === 'string' && typeof e.sig === 'string' && e.pk.length <= PK_MAX && e.sig.length <= 200;
+    if (!signed) {
+      if (t && t.pk) { mismatch(d, 'unsigned message'); return false; }   // downgrade from a device we know signs
+      seen.set(d, { pk: '', signed: false });
+      if (!S.pub && via === 'direct' && !t) { S.stats.dropTrust = (S.stats.dropTrust || 0) + 1; return false; }
+      return true;
+    }
+    if (t && t.pk && t.pk !== e.pk) { mismatch(d, 'other key'); return false; }
+    if (!subtle) {   // can't check here: treat as unsigned (old browsers, file://)
+      seen.set(d, { pk: e.pk, signed: false });
+      if (!S.pub && via === 'direct' && !t) { S.stats.dropTrust = (S.stats.dropTrust || 0) + 1; return false; }
+      return true;
+    }
+    return sigOk(e).then(function (ok) {
+      if (!S) return false;
+      if (!ok) { S.stats.dropSig = (S.stats.dropSig || 0) + 1; return false; }
+      var was = seen.get(d);
+      seen.set(d, { pk: e.pk, signed: true });
+      if (!S.pub && via === 'direct' && !t) { S.stats.dropTrust = (S.stats.dropTrust || 0) + 1; return false; }
+      if (!was || !was.signed) emit('trust', d);
+      return true;
+    });
+  }
+  /** lobby, private mesh: 'ok' | 'wait' | 'deny' for a hello from d */
+  function gate(d, hello) {
+    var t = trustGet(d), s = seen.get(d) || { pk: '' };
+    if (t) { if (t.pk && s.pk && t.pk !== s.pk) return 'deny'; if (!t.pk && s.pk && s.signed) trustSet(d, s.pk, t.name, t.how); return 'ok'; }
+    if (denied.has(d)) return 'deny';
+    var at = pending.get(d);
+    if (at && Date.now() - at < APPROVE_MS) return 'wait';
+    ask(d, info(hello || {}).name, s);
+    return 'wait';
+  }
+  function ask(d, name, s) {
+    var me = S;
+    pending.set(d, Date.now());
+    var title = 'Allow \u201C' + name + '\u201D to join your mesh ' + me.code + '?';
+    var text = (s.signed ? 'Device ' : 'Unsigned device (no key check) ') + d + '. Deny if you don\u2019t know it.';
+    function done(ok) {
+      if (pending.get(d) === undefined) return;
+      pending.delete(d);
+      if (S !== me || ok == null) return;   // no answer: asked again on a later hello
+      if (ok) { var s2 = seen.get(d) || s; trustSet(d, s2.signed ? s2.pk : '', name, 'approved'); }
+      else denied.add(d);
+      emit('approval', { deviceId: d, name: name, allowed: !!ok });
+    }
+    emit('approval', { deviceId: d, name: name, pending: true });
+    var A = window.HubAttention;
+    if (A && A.ask) { A.ask({ id: 'mesh-' + d, title: title, text: text, ok: 'Allow', no: 'Deny', timeoutMs: APPROVE_MS }, done); return; }
+    setTimeout(function () { done(window.confirm(title + '\n' + text)); }, 0);
+  }
+  /** member: a welcome / roster from the lobby (already verified) on a private mesh: trust the lobby + roster keys */
+  function learnRoster(x) {
+    if (!S || S.pub || !x || !x.data || !Array.isArray(x.data.roster)) return;
+    var s = seen.get(x.from);
+    if (!trustGet(x.from)) trustSet(x.from, s && s.signed ? s.pk : '', (x.data.lobby && x.data.lobby.name) || 'Lobby', 'lobby');
+    x.data.roster.forEach(function (r) {
+      if (!r || !DEV_RE.test(String(r.deviceId)) || r.deviceId === S.dev || r.deviceId === x.from) return;
+      var pk = typeof r.pk === 'string' && r.pk.length <= PK_MAX ? r.pk : '';
+      var t = trustGet(r.deviceId);
+      if (!t) trustSet(r.deviceId, pk, r.name, 'roster');
+      else if (t.pk && pk && t.pk !== pk) mismatch(r.deviceId, 'roster key');
+    });
+  }
+  function trustList() {
+    var all = trustAll();
+    return Object.keys(all).map(function (d) { var t = all[d]; return { deviceId: d, name: String(t.name || 'Device').slice(0, 40), pk: t.pk || '', at: t.at || 0, how: t.how || '', state: trustOf(d) }; })
+      .sort(function (a, b) { return b.at - a.at; });
+  }
+
   /* ---------- state ---------- */
   var S = null;   // null = stopped
   function fresh(code, opts) {
@@ -152,7 +368,7 @@
       members: new Map(),     // lobby only: deviceId -> { conn, last }
       roster: new Map(),      // deviceId -> entry
       rv: 0, idRetry: 0, seen: [], seenSet: new Set(), buckets: new Map(), out: { tokens: RATE_BURST, at: Date.now() },
-      stats: { sent: 0, recv: 0, dropSize: 0, dropRate: 0, dropShape: 0, dropTerm: 0, dropSpoof: 0, relayed: 0, dropPublic: 0, joinGaveUp: 0 },   // H55b: + joinGaveUp (times)
+      stats: { sent: 0, recv: 0, dropSize: 0, dropRate: 0, dropShape: 0, dropTerm: 0, dropSpoof: 0, relayed: 0, dropPublic: 0, joinGaveUp: 0, dropSig: 0, dropKey: 0, dropTrust: 0 },   // H55b: + joinGaveUp (times); H51: + dropSig / dropKey / dropTrust
       hb: 0, seq: 0,
       pub: code === PUBLIC_CODE || !!(opts && opts.public), invOut: 0, invIn: new Map(),   // H55
       // H55b: join wait / retries
@@ -169,7 +385,9 @@
     var d = pid.slice(pre.length);
     return DEV_RE.test(d) ? d : '';
   }
-  function safeSend(conn, obj) { try { if (conn && conn.open) { conn.send(obj); return true; } } catch (_) { /* gone */ } return false; }
+  // function safeSend(conn, obj) { try { if (conn && conn.open) { conn.send(obj); return true; } } catch (_) { /* gone */ } return false; }   (before H51)
+  function rawSend(conn, obj) { try { if (conn && conn.open) { conn.send(obj); return true; } } catch (_) { /* gone */ } return false; }
+  function safeSend(conn, obj) { return wire(conn, obj); }   // H51: signs this device's envelopes (ordered queue)
   function status(st) { if (S) { S.state = st; emit('status', st); } }
 
   /* ---------- identity ---------- */
@@ -202,7 +420,8 @@
   // H77: who holds the lobby: the lobby adds { dev, name, site } to welcome / roster / bye; members keep it
   function holderSelf() { return { dev: S.dev, name: myName(), site: location.protocol === 'file:' ? 'file' : String(location.host).slice(0, 64) }; }
   function keepHolder(x) { var h = x.data && x.data.lobby; S.holder = h && typeof h === 'object' ? { dev: x.from, name: String(h.name || '').slice(0, nameCap()), site: String(h.site || '').slice(0, 64) } : null; }
-  function selfInfo() { return { deviceId: S.dev, name: myName(), mode: myMode(), apps: myApps() }; }
+  // function selfInfo() { return { deviceId: S.dev, name: myName(), mode: myMode(), apps: myApps() }; }   (before H51)
+  function selfInfo() { return { deviceId: S.dev, name: myName(), mode: myMode(), apps: myApps(), pk: K.pub || '' }; }   // H51: + public key
 
   /* ---------- envelopes ---------- */
   function envelope(ch, to, data) {
@@ -284,7 +503,8 @@
         // deviceId: r.deviceId, name: String(r.name || 'Device').slice(0, 40), ...   (before H55)
         deviceId: r.deviceId, name: String(r.name || 'Device').slice(0, nameCap()), mode: r.mode === 'desktop' ? 'desktop' : r.mode === 'phone' ? 'phone' : '',
         apps: !S.pub && r.apps && typeof r.apps === 'object' && !Array.isArray(r.apps) ? r.apps : {}, joinOrder: Number(r.joinOrder) || 0,   // H55: no apps on 0000
-        lastSeen: Number(r.lastSeen) || 0, online: !!r.online, lobby: r.deviceId === lobbyDev, relay: !!r.relay
+        lastSeen: Number(r.lastSeen) || 0, online: !!r.online, lobby: r.deviceId === lobbyDev, relay: !!r.relay,
+        pk: typeof r.pk === 'string' && r.pk.length <= PK_MAX ? r.pk : ''   // H51: the device's public key as the lobby saw it
       });
     });
     S.rv++;
@@ -317,13 +537,14 @@
     if (old && old.conn !== conn) { try { old.conn.close(); } catch (_) { /* gone */ } }
     var rec = { conn: conn, last: Date.now() };
     S.direct.set(d, rec);
-    conn.on('data', function (x) {
+    // conn.on('data', function (x) {   (before H51)
+    conn.on('data', inbound(function (x) {   // H51: signature / key / trust check first
       if (!S || S.direct.get(d) !== rec) return;
       rec.last = Date.now();
       if (!accept(x, 'direct', d)) return;
       if (x.ch === CTRL) return;   // direct conns carry only hb pings (ch _mesh) and data
       deliver(x);
-    });
+    }, 'direct'));
     conn.on('close', function () { if (S && S.direct.get(d) === rec) { S.direct.delete(d); } });
     conn.on('error', function () { /* close follows */ });
   }
@@ -426,7 +647,8 @@
       clearInterval(me.helloTimer);
       me.helloTimer = setInterval(function () { if (S !== me || me.lobbyConn !== conn || welcomed) { clearInterval(me.helloTimer); return; } hello(); }, HELLO_MS);
     });
-    conn.on('data', function (x) {
+    // conn.on('data', function (x) {   (before H51)
+    conn.on('data', inbound(function (x) {   // H51
       if (S !== me || me.lobbyConn !== conn) return;
       if (!x || badShape(x)) { me.stats.dropShape++; return; }
       if (x.ch === CTRL && x.data && x.data.k === 'welcome') {
@@ -439,6 +661,8 @@
         clearTimeout(me.claimTimer); me.claimTimer = 0;
         status('linked');
         keepHolder(x);   // H77
+        me.waitApproval = 0;   // H51
+        learnRoster(x);   // H51: private mesh: trust the lobby + its roster's keys
         setRoster(x.data.roster, x.term, x.from);
         emit('lobby', lobbyInfo());
         return;
@@ -447,7 +671,7 @@
       me.lobbyLast = Date.now();
       if (x.ch === CTRL) { ctrlFromLobby(x); return; }
       deliver(x);
-    });
+    }, 'lobby'));
     conn.on('close', function () {
       if (S !== me) return;
       if (!welcomed) endWait();
@@ -512,7 +736,9 @@
   }
   function ctrlFromLobby(x) {
     var k = x.data && x.data.k;
-    if (k === 'roster') { if (x.from !== S.lobbyDev) return; if (x.term > S.term) S.term = x.term; keepHolder(x); setRoster(x.data.roster, x.term, x.from); }
+    // if (k === 'roster') { if (x.from !== S.lobbyDev) return; if (x.term > S.term) S.term = x.term; keepHolder(x); setRoster(x.data.roster, x.term, x.from); }   (before H51)
+    if (k === 'roster') { if (x.from !== S.lobbyDev) return; if (x.term > S.term) S.term = x.term; keepHolder(x); learnRoster(x); setRoster(x.data.roster, x.term, x.from); }   // H51: + learnRoster
+    else if (k === 'wait') { if (!S.waitApproval) { S.waitApproval = Date.now(); emit('status', S.state); } }   // H51: the lobby is asking its user
     else if (k === 'bye') {   // the lobby refused us (site / denied / full): stop asking until start() again
       S.refused = String(x.data.reason || 'refused').slice(0, 20);
       keepHolder(x);   // H77: who refused us (older lobbies send nothing)
@@ -602,6 +828,7 @@
     var now = Date.now();
     // keep everyone's joinOrder; everyone but me is offline until they say hello to this lobby
     var info = selfInfo();
+    if (!me.pub) rosterList().forEach(function (r) { if (r.deviceId !== me.dev && !trustGet(r.deviceId) && r.pk) trustSet(r.deviceId, r.pk, r.name, 'roster'); });   // H51: a takeover lobby keeps the members it already knew
     var list = rosterList().map(function (r) { return Object.assign(r, { online: false, lobby: false }); });
     var mine = list.find(function (r) { return r.deviceId === me.dev; });
     if (!mine) { mine = { deviceId: me.dev, joinOrder: nextOrder(list) }; list.push(mine); }
@@ -625,12 +852,18 @@
     var d = devOfPeer(conn.peer), md = conn.metadata || {};
     if (md.kind !== 'mesh' || !d || md.dev !== d || d === me.dev) { conn.on('open', function () { try { conn.close(); } catch (_) { /* gone */ } }); return; }
     var rec = { conn: conn, last: Date.now(), hello: false };
-    conn.on('data', function (x) {
+    // conn.on('data', function (x) {   (before H51)
+    conn.on('data', inbound(function (x) {   // H51
       if (S !== me || !me.isLobby) return;
       rec.last = Date.now();
       if (!rec.hello) {
         if (badShape(x) || x.ch !== CTRL || !x.data || x.data.k !== 'hello' || x.from !== d) return;
         if (x.data.site && x.data.site !== location.host) { safeSend(conn, envelope(CTRL, d, { k: 'bye', reason: 'site', lobby: holderSelf() })); return; }   // same site only (weak: can be faked)
+        if (!me.pub) {   // H51: private mesh: trusted devices only; unknown ones wait for Allow on this device
+          var g = gate(d, x.data);
+          if (g === 'wait') { if (!rec.waitSent) { rec.waitSent = true; safeSend(conn, envelope(CTRL, d, { k: 'wait' })); } return; }
+          if (g !== 'ok') { safeSend(conn, envelope(CTRL, d, { k: 'bye', reason: 'denied', lobby: holderSelf() })); return; }
+        }
         if (!hooks.approveJoin(x.data, conn.peer)) { safeSend(conn, envelope(CTRL, d, { k: 'bye', reason: 'denied' })); return; }
         // if (!me.roster.has(d) && me.roster.size >= MAX_ROSTER) { pruneOffline(true); if (me.roster.size >= MAX_ROSTER) {   (before H55)
         if (!me.roster.has(d) && me.roster.size >= rosterCap()) { pruneOffline(true); if (me.roster.size >= rosterCap()) { safeSend(conn, envelope(CTRL, d, { k: 'bye', reason: 'full' })); return; } }
@@ -641,6 +874,7 @@
         if (x.term > me.term) { me.term = x.term + 1; }   // a member knew a newer term: stay above it
         var r = me.roster.get(d) || { deviceId: d, joinOrder: nextOrder() };
         Object.assign(r, info(x.data), { online: true, lastSeen: Date.now(), lobby: false });
+        r.pk = (seen.get(d) || {}).signed ? seen.get(d).pk : '';   // H51: the key this lobby verified
         me.roster.set(d, r);
         computeRelay();
         safeSend(conn, envelope(CTRL, d, { k: 'welcome', roster: rosterList(), lobby: holderSelf() }));
@@ -655,7 +889,7 @@
         return;
       }
       route(x);
-    });
+    }, 'member'));
     conn.on('close', function () {
       if (S !== me || me.members.get(d) !== rec) return;
       me.members.delete(d);
@@ -848,7 +1082,8 @@
     if (!S) return null;
     var r = S.roster.get(S.dev) || {};
     return { deviceId: S.dev, name: myName(), mode: myMode(), apps: myApps(), lobby: S.isLobby, relay: !!r.relay, term: S.term, state: S.state, code: S.code, joinOrder: r.joinOrder || 0, refused: S.refused || '', public: !!S.pub,   // H55: + public
-      joinState: S.joinState, joinSince: S.joining ? S.joinStart : 0, retryAt: S.retryAt, joinWaitMs: JOIN_WAIT_MS, gaveUp: S.gaveUp };   // H55b
+      joinState: S.joinState, joinSince: S.joining ? S.joinStart : 0, retryAt: S.retryAt, joinWaitMs: JOIN_WAIT_MS, gaveUp: S.gaveUp,   // H55b
+      waitApproval: S.waitApproval || 0, keyState: K.state, pk: K.pub || '' };   // H51
   }
 
   window.addEventListener('pagehide', function (e) { if (!e.persisted) stop(); });
@@ -876,6 +1111,10 @@
     stats: function () { return S ? Object.assign({ direct: Array.from(S.direct.keys()).filter(function (d) { return S.direct.get(d).conn.open; }) }, S.stats, { joinFails: S.joinFails, lastJoinMs: S.lastJoinMs, joinState: S.joinState }) : null; },   // H55b
     retry: function () { return retry('manual'); },   // H55b: Settings › Devices Retry (a fresh 5-minute run)
     hooks: hooks,
+    // H51: trust
+    trustOf: trustOf, trusted: trustList, forget: forget, keyState: function () { return K.state; }, publicKey: function () { return K.pub; },
+    keyReady: function () { return K.ready.then(function () { return K.state; }); },
+    pendingApprovals: function () { return Array.from(pending.keys()); },
     // LIMITS: { HB_MS: HB_MS, DEAD_MS: DEAD_MS, MAX_DIRECT: MAX_DIRECT, MAX_ROSTER: MAX_ROSTER, MAX_BYTES: MAX_BYTES, RATE_PER_S: RATE_PER_S, RATE_BURST: RATE_BURST },   (before H55)
     LIMITS: { HB_MS: HB_MS, DEAD_MS: DEAD_MS, MAX_DIRECT: MAX_DIRECT, MAX_ROSTER: MAX_ROSTER, MAX_BYTES: MAX_BYTES, RATE_PER_S: RATE_PER_S, RATE_BURST: RATE_BURST, PUB_ROSTER: PUB_ROSTER, PUB_NAME: PUB_NAME, INVITE_GAP_MS: INVITE_GAP_MS,
       JOIN_WAIT_MS: JOIN_WAIT_MS, HELLO_MS: HELLO_MS, RETRY_MS: RETRY_MS, GIVEUP_MS: GIVEUP_MS },   // H55b
@@ -885,7 +1124,9 @@
     broadcast: broadcastMsg, onMsg: onMsg, room: function () { return S ? S.code : ''; },
     linked: function () { return !!(S && (S.isLobby || (S.lobbyConn && S.lobbyConn.open && S.joinState === 'linked'))); },
     // tests only: put a raw envelope on the wire to one device (no checks on this side)
-    _raw: function (to, env) { if (!S) return false; var r = S.direct.get(to); if (r && r.conn.open) return safeSend(r.conn, env); return viaLobby(env); },
+    // _raw: function (to, env) { if (!S) return false; var r = S.direct.get(to); if (r && r.conn.open) return safeSend(r.conn, env); return viaLobby(env); },   (before H51)
+    _raw: function (to, env) { if (!S) return false; var r = S.direct.get(to); if (r && r.conn.open) return rawSend(r.conn, env); return viaLobby(env); },   // H51: raw = unsigned
+    _sigText: sigText, _sigFor: sigFor, _checkIn: checkIn,
     _env: function (ch, to, data) { return S ? envelope(ch, to, data) : null; }
   };
 })();

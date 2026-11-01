@@ -76,5 +76,28 @@
     }
     show(e.source, m);
   });
-  window.HubAttention = { count: function () { return cards.length; }, closeAll: function () { cards.slice().forEach(function (c) { close(c.src); }); } };
+  /* H51: a yes / no card for the Hub itself (mesh join approval): ask({id, title, text, ok, no, timeoutMs}, cb(bool | null))
+     cb(true) = ok, cb(false) = no, cb(null) = timed out / replaced. Shown even in Do Not Disturb (a device is waiting). */
+  function ask(o, cb) {
+    o = o || {}; var id = 'ask:' + String(o.id || Math.random());
+    var fired = false;
+    function fire(v) { if (fired) return; fired = true; close(id); try { cb(v); } catch (e) { console.warn('HubAttention.ask', e); } }
+    var prev = cards.find(function (c) { return c.src === id; }); if (prev && prev.fire) prev.fire(null);
+    css();
+    var c = document.createElement('div'); c.className = 'hub-att-card' + (dark() ? ' dk' : '');
+    var t = document.createElement('div'); t.className = 'hub-att-t'; t.textContent = String(o.title || 'Allow?');
+    c.appendChild(t);
+    if (o.text) { var x = document.createElement('div'); x.style.cssText = 'margin:-4px 0 10px;font-size:13px;opacity:.8;word-break:break-word'; x.textContent = String(o.text); c.appendChild(x); }
+    var bs = document.createElement('div'); bs.className = 'hub-att-b';
+    var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'hub-att-ok'; ok.textContent = String(o.ok || 'Allow');
+    var no = document.createElement('button'); no.type = 'button'; no.className = 'hub-att-no'; no.textContent = String(o.no || 'Deny');
+    ok.addEventListener('click', function () { fire(true); });
+    no.addEventListener('click', function () { fire(false); });
+    bs.append(ok, no); c.appendChild(bs); box().appendChild(c);
+    cards.push({ src: id, el: c, fire: fire });
+    if (o.timeoutMs > 0) setTimeout(function () { fire(null); }, o.timeoutMs);
+    return { close: function () { fire(null); } };
+  }
+  // window.HubAttention = { count: function () { return cards.length; }, closeAll: function () { cards.slice().forEach(function (c) { close(c.src); }); } };   (before H51)
+  window.HubAttention = { count: function () { return cards.length; }, closeAll: function () { cards.slice().forEach(function (c) { if (c.fire) c.fire(null); else close(c.src); }); }, ask: ask };   // H51: + ask
 })();

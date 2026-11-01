@@ -793,6 +793,49 @@
     return card;
   }
 
+  /* H51: trusted devices (HubMesh.trusted() / forget(); device-only list 'hub-mesh-trust', never synced) */
+  function trustCard(sub) {
+    const card = ui.el('section', 'card trust-card');
+    card.id = 'trusted';
+    card.appendChild(ui.el('h3', '', 'Trusted devices'));
+    const hub = S.hub(), M = hub && hub.HubMesh;
+    if (!M || !M.trusted) { card.appendChild(ui.el('p', 'opt-note', 'Open Settings inside the Hub to see trusted mesh devices.')); return card; }
+    const note = ui.el('p', 'opt-note'); note.id = 'trust-note';
+    const list = ui.el('ul', 'conn-list'); list.id = 'trust-list';
+    card.append(note, list);
+    const clip = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, n);
+    const HOW = { approved: 'Allowed here', roster: 'Introduced by the lobby', lobby: 'Lobby you joined' };
+    function draw() {
+      if (!card.isConnected && drawn) { stop(); return; }
+      drawn = true;
+      const ks = M.keyState ? M.keyState() : '';
+      note.textContent = 'Devices allowed into your private meshes. A new device needs Allow on the lobby device; the public 00000 mesh stays open. ' +
+        (ks === 'on' ? 'This device signs its mesh messages.' : ks === 'off' ? 'This browser has no WebCrypto here, so this device\u2019s messages are unsigned.' : '');
+      list.textContent = '';
+      const ts = M.trusted().slice(0, 30);
+      ts.forEach((t) => {
+        const li = ui.el('li', 'conn-dev trust-dev'); li.dataset.id = clip(t.deviceId, 40);
+        const top = ui.el('div', 'conn-top');
+        const fb = ui.el('button', 'btn trust-forget', 'Forget'); fb.type = 'button';
+        fb.addEventListener('click', () => { M.forget(t.deviceId); draw(); });
+        top.append(ui.el('b', 'conn-name', clip(t.name || 'Device', 40)), fb);
+        const meta = ui.el('div', 'conn-meta');
+        [clip(t.deviceId, 40), HOW[t.how] || '', t.pk ? 'Signed key' : 'Unsigned', t.state === 'mismatch' ? 'KEY MISMATCH' : '']
+          .filter(Boolean).forEach((x) => meta.appendChild(ui.el('span', 'conn-tag', x)));
+        li.append(top, meta); list.appendChild(li);
+      });
+      if (!ts.length) list.appendChild(ui.el('li', 'conn-empty', 'No trusted devices yet.'));
+    }
+    let drawn = false;
+    const onEv = () => setTimeout(draw, 0);
+    M.on('trust', onEv);
+    function stop() { M.off('trust', onEv); }
+    window.addEventListener('pagehide', stop);
+    draw();
+    if (sub === 'trusted') setTimeout(() => card.scrollIntoView({ block: 'start' }), 50);
+    return card;
+  }
+
   Settings.add({
     id: 'devices', title: 'Devices', icon: '\uD83D\uDCF2',
     render(pane, sub) {
@@ -800,7 +843,8 @@
       end.setAttribute('aria-hidden', 'true');
       // pane.append(deviceCard(sub), connectedCard(sub), profileCard(sub), syncCard(sub), end);   // (H29.2b)
       // pane.append(deviceCard(sub), connectedCard(sub), profileCard(sub), syncCard(sub), undoCard(sub), end);   // H29.3: + Undo last sync
-      pane.append(deviceCard(sub), connectedCard(sub), publicCard(sub), profileCard(sub), syncCard(sub), undoCard(sub), end);   // H55: + Public mesh
+      // pane.append(deviceCard(sub), connectedCard(sub), publicCard(sub), profileCard(sub), syncCard(sub), undoCard(sub), end);   // H55: + Public mesh
+      pane.append(deviceCard(sub), connectedCard(sub), trustCard(sub), publicCard(sub), profileCard(sub), syncCard(sub), undoCard(sub), end);   // H51: + Trusted devices
     }
   });
 })();
