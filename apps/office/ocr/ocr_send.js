@@ -4,7 +4,7 @@
  * - Inside the Hub: posts {sharedLink:'ready', app:'ocr', types} to the Hub; the QR opens
  *   ocr_send.html#hub=<Hub code> so a phone joins the Hub's own link (or is already on it).
  *   Files tagged app:'ocr' arrive as {sharedLink:'file'} postMessages.
- * - Standalone: SharedLink host role with its own 4-digit code (prefix 'jtocr-', kept in
+ * - Standalone: SharedLink host role with its own 4-digit code (FC5: Hub codes are 5 digits; prefix 'jtocr-', kept in
  *   localStorage 'jtocr-host-code' so a reload keeps it); the QR opens
  *   ocr_send.html#code=<code>&p=jtocr-. Phones may also type the code.
  * Only ✕ on the phone chip (manual Disconnect) ends the link. A received file goes through the

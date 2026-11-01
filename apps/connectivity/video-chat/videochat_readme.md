@@ -22,6 +22,11 @@ Video + audio calls between devices on the same Hub Connect Code (Connectivity �
 - **Join gating (all codes):** a member answers `{kind:'join', room}` only from a peer it expects for that room: people it invited, people listed in the invite it accepted, ids a live member sent in `{t:'expect', room, id}` (the inviter sends this to members when it invites; `{t:'unexpect'}` withdraws it if the invite is declined, cancelled or unanswered) or in `{t:'st', ids}`. An unknown joiner waits up to 5 s for that news, else its call is closed silently. Invites still ring with Accept / Decline.
 - VC2 compatibility: a VC2 inviter sends no `expect`, so a VC3 member admits its newcomer once the inviter's `st` lists them (within the 5 s wait); VC2 members ignore `expect` / `unexpect`.
 
+## FC5 (VC4) — 5-digit Hub codes, public 00000
+- **Why:** the Hub moved to 5-digit codes in H83 (clean cut-over, no 4-digit fallback). Public lobby is now **00000** (`SharedLink.LOBBY`, fallback `'00000'` while H83 is not live).
+- **What:** URL `#code=` / `?hub=` / `join=`, the code dialog (maxlength 5, "5-digit code"), Hub hello codes, mesh codes and the last code now take exactly 5 digits. Saved 4-digit codes are ignored (`c5()`), so the app falls to Public or asks.
+
 ## Legacy code notes
 
 - VC2 code choice (Hub's own Connect Code, then last code, else the Code dialog) is kept as comments in `videochat_app.js`; the VC2 "answer any join for my room" line is kept as a comment in `videochat_call.js`.
+- FC5: earlier `\d{4}` / `'0000'` lines stay in the VC1–VC2 `//` legacy blocks.

@@ -13,3 +13,10 @@ Join several phones, tablets or PCs on the same Hub Connect Code into one big sc
 - **Files:** `screenwall_save.js` (the one save module: `screenwall-settings-v1` `{name, theme, role}`, `screenwall-state-v1` host layout + content, `screenwall-image-v1` last picture, `screenwall-last-code`, theme), `screenwall_peer.js` (presence + relay), `screenwall_wall.js` (layout + drawing + picture compress/chunks), `screenwall_app.js` (UI, roles, editor, sync, full screen, swipes, dialogs).
 - Screens: Wall · Content · Settings (dots, 75 px wrap-around swipes; no swipes in full screen or on tiles). Dark by default; Theme System/Light/Dark (System follows `sites-hub.theme`).
 - **Not in MW1:** video on the wall (planned for MW2), per-device physical-size calibration (screens with very different pixel densities show content at different physical sizes), the host showing a slice itself.
+
+## FC5 (MW2) — 5-digit Hub codes, public 00000
+- **Why:** the Hub moved to 5-digit codes in H83 (clean cut-over, no 4-digit fallback). Public lobby is now **00000** (`SharedLink.LOBBY`, fallback `'00000'` while H83 is not live).
+- **What:** URL `#code=` / `?hub=` / `join=`, the code dialog (maxlength 5, "5-digit code"), Hub hello codes, mesh codes and the last code now take exactly 5 digits. Saved 4-digit codes are ignored (`c5()`), so the app falls to Public or asks.
+
+## Legacy code notes
+- FC5: replaced lines used `\d{4}`; see git history before FC5.

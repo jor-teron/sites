@@ -20,6 +20,12 @@ Share a computer's screen, window or tab with other devices on the same Hub Conn
 - **Trusted devices skip the prompt (same idea as IC3):** each device has a lasting `did` (sent in `hi` / roster). On a **private** code every device gives each other device a random token `{t:'trust', did, name, token}` (stored as `trusted` / `keys` in `screenshare-settings-v1`), so your own devices that have met on a private Hub code are trusted. On 0000 tokens are never sent: the sharer sends `{t:'prove', n}` and the viewer answers `{t:'proof', n, mac}` with HMAC-SHA256(token, `n|sharerId|viewerId`) via WebCrypto, so the 0000 lobby owner (which relays signals) never sees a token. No WebCrypto, or no / wrong proof within 6 s → the normal Allow / Deny prompt.
 - **New signals:** sharer → viewer `asking`, `denied`, `prove {n}`; viewer → sharer `proof {n, mac}`; both ways `trust` (private codes only).
 
+## FC5 (SS3) — 5-digit Hub codes, public 00000
+- **Why:** the Hub moved to 5-digit codes in H83 (clean cut-over, no 4-digit fallback). Public lobby is now **00000** (`SharedLink.LOBBY`, fallback `'00000'` while H83 is not live).
+- **What:** URL `#code=` / `?hub=` / `join=`, the code dialog (maxlength 5, "5-digit code"), Hub hello codes, mesh codes and the last code now take exactly 5 digits. Saved 4-digit codes are ignored (`c5()`), so the app falls to Public or asks.
+- `L.open()` (screenshare_peer.js) is true on `SharedLink.LOBBY || '00000'`.
+
 ## Legacy code notes
 
 - SS1 `localCode()` + `go()` + `askCode()` + `boot()` (Hub's own Connect Code first, code dialog when none) are kept as `//` comments in `screenshare_app.js` above the SS2 code choice. SS1 `onWatch(from, name)` (sends the screen to anyone who asks) is now `admit()`, reached directly only on private codes or for allowed / proven viewers.
+- FC5: earlier `\d{4}` / `'0000'` lines stay in the SS1 `//` legacy block.

@@ -7,6 +7,9 @@
    Code is only a fallback for older Hubs without HubMeshLink; standalone: last code, else 0000. */
 (function () {
   'use strict';
+  // FC5: Hub codes are 5 digits (H83); public lobby is SharedLink.LOBBY, else '00000'. Saved 4-digit codes are ignored.
+  var PUB = (function () { try { var S = window.SharedLink || (window.parent && window.parent.SharedLink) || (window.top && window.top.SharedLink); if (S && /^\d{5}$/.test(String(S.LOBBY || ''))) return String(S.LOBBY); } catch (_) {} return '00000'; })();
+  function c5(c) { c = String(c || ''); return /^\d{5}$/.test(c) ? c : ''; }   // FC5: drops saved 4-digit codes
   var $ = function (id) { return document.getElementById(id); };
   var inHub = window.parent !== window, page = 0, SW = 75, started = false;
   var LAST = 'videochat-last-code';
@@ -20,8 +23,8 @@
       (buttons || ['OK']).forEach(function (b, i, a) {
         var el = document.createElement('button'); el.className = i === a.length - 1 ? 'btn sm' : 'mini'; el.textContent = b;
         el.onclick = function () {
-          if (ask && b === 'Public') { $('dialog').hidden = true; return res('0000'); }   // VC3
-          if (ask && i === a.length - 1) { var c = (inp.value.match(/\d{4}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 4-digit code.'; return; } $('dialog').hidden = true; return res(c); }
+          if (ask && b === 'Public') { $('dialog').hidden = true; return res(PUB); }   // VC3
+          if (ask && i === a.length - 1) { var c = (inp.value.match(/\d{5}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 5-digit code.'; return; } $('dialog').hidden = true; return res(c); }
           $('dialog').hidden = true; res(ask ? null : i);
         };
         row.appendChild(el);
@@ -35,7 +38,7 @@
 
   /* ---------- code ---------- */
   function ls(k) { try { return localStorage.getItem(k) || ''; } catch (_) { return ''; } }
-  function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{4})/); return m ? m[1] : ''; }
+  function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{5})/); return m ? m[1] : ''; }
   /* VC3: old code choice kept for reference (Hub's own Connect Code won; see readme Legacy code notes):
   // function localCode() {
   //   try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) return String(window.parent.__hubRemote.code); } catch (_) { /* * / }
@@ -69,34 +72,34 @@
   */
   // VC3: default is Public 0000; private code only from the URL, an active Hub private mesh, or a manual pick.
   function hml() { try { var h = window.parent !== window && window.parent.HubMeshLink; return h && typeof h.isPrivate === 'function' ? h : null; } catch (_) { return null; } }
-  function meshCode() { var h = hml(); if (!h) return ''; try { var c = h.isPrivate() ? String(h.privateCode() || '') : ''; return /^\d{4}$/.test(c) ? c : ''; } catch (_) { return ''; } }
+  function meshCode() { var h = hml(); if (!h) return ''; try { var c = h.isPrivate() ? String(h.privateCode() || '') : ''; return /^\d{5}$/.test(c) ? c : ''; } catch (_) { return ''; } }
   function localCode() {   // VC1 sources, now only a fallback for an older Hub without HubMeshLink
-    try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) return String(window.parent.__hubRemote.code); } catch (_) { /* */ }
-    var c = ls('jtsites-hub-ctrl-code'); if (/^\d{4}$/.test(c) && inHub) return c;
-    c = ls('shared-link-join-code'); if (/^\d{4}$/.test(c) && inHub) return c;
+    try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) { var r0 = c5(window.parent.__hubRemote.code); if (r0) return r0; } } catch (_) { /* */ }
+    var c = ls('jtsites-hub-ctrl-code'); if (/^\d{5}$/.test(c) && inHub) return c;
+    c = ls('shared-link-join-code'); if (/^\d{5}$/.test(c) && inHub) return c;
     return '';
   }
   var manual = false, fixed = false, offer = '', code = '';   // manual = picked this session; fixed = from the URL
-  function desired() { return meshCode() || '0000'; }
+  function desired() { return meshCode() || PUB; }
   function go(c) {
     if (started) { if (c === code) return; if (VCCall.active()) { toast('Hang up first'); return; } VCPeer.stop(); }
-    started = true; code = c; $('btn-code').textContent = c === '0000' ? '0000 · Public' : c;
+    started = true; code = c; $('btn-code').textContent = c === PUB ? PUB + ' · Public' : c;
     try { localStorage.setItem(LAST, c); } catch (_) { /* */ }
     paintSwitch();
     VCPeer.start(c).catch(function () { $('status').textContent = 'PeerJS could not load (offline?)'; });
   }
   function pick(c) { if (c) { manual = true; offer = ''; go(c); } }
   /* VC1: function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) { if (c) go(c); }); } */
-  function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub, or use Public to meet every device on the open Hub mesh (0000). Calls still ring and must be accepted.', ['Cancel', 'Public', 'Join'], true).then(pick); }
+  function askCode() { dialog('Enter the 5-digit Hub Connect Code shown on the Hub, or use Public to meet every device on the open Hub mesh (00000). Calls still ring and must be accepted.', ['Cancel', 'Public', 'Join'], true).then(pick); }
   function paintSwitch() {
     var el = $('vc-switch'); if (!el) return;
     el.hidden = !offer || offer === code;
-    el.textContent = offer === '0000' ? 'Back to Public' : 'Switch to ' + offer;
+    el.textContent = offer === PUB ? 'Back to Public' : 'Switch to ' + offer;
   }
   function checkMesh() {   // VC3: follow the Hub joining / leaving a private mesh; never mid-call
     if (!started || manual || fixed || !hml()) return;
     var d = desired(); if (d === code) { offer = ''; paintSwitch(); return; }
-    if (!VCCall.active()) { offer = ''; go(d); toast(d === '0000' ? 'Hub left its private mesh — back to Public' : 'Hub joined private mesh ' + d); }
+    if (!VCCall.active()) { offer = ''; go(d); toast(d === PUB ? 'Hub left its private mesh — back to Public' : 'Hub joined private mesh ' + d); }
     else { offer = d; paintSwitch(); }
   }
   function boot() {
@@ -104,17 +107,17 @@
     if (c) { fixed = true; return go(c); }
     if (inHub) {
       if (hml()) return go(desired());
-      var got = false;   // older Hub without HubMeshLink: VC2 order, ending at 0000
+      var got = false;   // older Hub without HubMeshLink: VC2 order, ending at 00000
       addEventListener('message', function (e) {
         var d = e.data; if (e.source !== window.parent || !d || d.sharedLink !== 'hello' || got) return;
-        if (/^\d{4}$/.test(String(d.code || '')) && !started) { got = true; go(String(d.code)); }
+        if (/^\d{5}$/.test(String(d.code || '')) && !started) { got = true; go(String(d.code)); }
       });
       try { window.parent.postMessage({ sharedLink: 'ready', app: 'video-chat', types: ['x-none/'] }, '*'); } catch (_) { /* */ }
-      setTimeout(function () { if (!got && !started) go(localCode() || ls(LAST) || '0000'); }, 800);
+      setTimeout(function () { if (!got && !started) go(localCode() || c5(ls(LAST)) || PUB); }, 800);
       return;
     }
     c = ls(LAST);
-    go(/^\d{4}$/.test(c) ? c : '0000');
+    go(/^\d{5}$/.test(c) ? c : PUB);
   }
   setInterval(checkMesh, +window.__vcMeshMs || 5000);
   if ($('vc-switch')) $('vc-switch').onclick = function () { if (VCCall.active()) { toast('Hang up first'); return; } var d = offer; offer = ''; if (d) go(d); };

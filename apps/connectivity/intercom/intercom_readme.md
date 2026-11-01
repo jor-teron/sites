@@ -34,7 +34,13 @@ Why: Jor asked to "fix the intercom like you did on telephone" (Telephone TP5–
 - **Minimal top bar:** the name (already shown once) with a small connection dot before it (green online, amber connecting, grey failed); the status text is the dot's tooltip. The "Online · code …" line and the Code button are gone; change the code in Settings → Hub code → Change. The **Switch to / Back to Public** offer button is unchanged. Shorter empty text: "No other devices online."
 - Title and About say IC5.
 
+## FC5 (IC6) — 5-digit Hub codes, public 00000
+- **Why:** the Hub moved to 5-digit codes in H83 (clean cut-over, no 4-digit fallback). Public lobby is now **00000** (`SharedLink.LOBBY`, fallback `'00000'` while H83 is not live).
+- **What:** URL `#code=` / `?hub=` / `join=`, the code dialog (maxlength 5, "5-digit code"), Hub hello codes, mesh codes and the last code now take exactly 5 digits. Saved 4-digit codes are ignored (`c5()`), so the app falls to Public or asks.
+- `L.open()` (intercom_peer.js) is true on `SharedLink.LOBBY || '00000'`.
+
 ## Legacy code notes
 
 - IC2/IC3 `localCode()` + `boot()` (Hub's own Connect Code first, code dialog when none) are kept as comments in `intercom_app.js` above the IC4 code choice.
 - IC5: removed markup is kept as HTML comments in `intercom.html` (`#status`, `#btn-code`, `#b-dnd`, `#chk-dnd`, old empty text). The IC4 `setStatus`, `btn-code` hook, own-DND `paintDnd` / `setDnd` / button hooks and the IC3 ask handler are comments in `intercom_app.js`; `T.setDnd` and the `ICSave.get('dnd')` checks are comments in `intercom_talk.js` / `intercom_peer.js`.
+- FC5: earlier `\d{4}` / `'0000'` lines stay in the IC2–IC4 `//` legacy blocks.

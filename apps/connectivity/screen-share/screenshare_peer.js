@@ -99,6 +99,6 @@
   L.id = function () { return me && me.id; };
   L.roster = function () { return roster; };
   L.code = function () { return code; };
-  L.open = function () { return code === '0000'; };   // SS2: public Hub mesh (strangers share the namespace)
+  L.open = function () { return code === ((window.SharedLink && SharedLink.LOBBY) || '00000'); };   // FC5 (was '0000'); SS2: public Hub mesh (strangers share the namespace)
   window.SSPeer = L;
 })();

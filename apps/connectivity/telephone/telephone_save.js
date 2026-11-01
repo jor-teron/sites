@@ -44,6 +44,27 @@
     if (OLD.test(stored)) { P.oldNum = stored; migr = true; }   // moved ONCE: the next load finds 5 digits
     P.num = newNum([stored]); pending = true;
   }
+  /* FC5: the phone number is this device's Hub number (H83: SharedLinkDevices.code() / SharedLink.deviceCode(),
+     10000–99999, device-local). No own picking, clash check or New number then. Without that API (H83 not live),
+     the TP2b number above (picked + checked) stays in use. */
+  function hubNum() {
+    var w = [window]; try { if (window.parent !== window) w.push(window.parent); } catch (_) { /* */ }
+    try { if (window.top !== window) w.push(window.top); } catch (_) { /* */ }
+    for (var i = 0; i < w.length; i++) {
+      try {
+        var D = w[i].SharedLinkDevices, S = w[i].SharedLink, c = '';
+        if (D && typeof D.code === 'function') c = String(D.code() || '');
+        if (!NUM.test(c) && S && typeof S.deviceCode === 'function') c = String(S.deviceCode() || '');
+        if (NUM.test(c)) return c;
+      } catch (_) { /* cross-origin / not ready */ }
+    }
+    return '';
+  }
+  var fromHub = false, hn = hubNum();
+  if (hn) {
+        P.num = hn; pending = false; migr = false; fromHub = true;
+    if (stored !== hn) { P.numAt = Date.now(); stored = hn; }
+  }
   var log = [];
   try { log = JSON.parse(localStorage.getItem(LOG) || '[]'); } catch (_) { log = []; }
   if (!Array.isArray(log)) log = [];
@@ -93,6 +114,7 @@
     numOk: function (n) { return NUM.test(String(n || '')); },
     isOld: function (n) { return OLD.test(String(n || '')); },
     pending: function () { return pending; },
+    fromHub: function () { return fromHub; },   // FC5: number = this device's Hub number
     setNum: function (n) { P.num = String(n); P.numAt = Date.now(); if (!pending) save(); },   // later clash / New number
     checked: function (avoid) {   // TP2b: the roster answered (avoid = numbers online) or the wait ran out (avoid = null)
       if (!pending) return null;

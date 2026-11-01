@@ -107,6 +107,6 @@
   L.online = function () { return !!(lconn && lconn.open); };
   L.roster = function () { return roster; };
   L.code = function () { return code; };
-  L.open = function () { return code === '0000'; };   // IC3: public Hub mesh (strangers share the namespace)
+  L.open = function () { return code === ((window.SharedLink && SharedLink.LOBBY) || '00000'); };   // FC5 (was '0000'); IC3: public Hub mesh (strangers share the namespace)
   window.ICPeer = L;
 })();

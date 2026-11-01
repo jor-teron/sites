@@ -13,6 +13,9 @@
    our last code, else the code dialog. */
 (function () {
   'use strict';
+  // FC5: Hub codes are 5 digits (H83); public lobby is SharedLink.LOBBY, else '00000'. Saved 4-digit codes are ignored.
+  var PUB = (function () { try { var S = window.SharedLink || (window.parent && window.parent.SharedLink) || (window.top && window.top.SharedLink); if (S && /^\d{5}$/.test(String(S.LOBBY || ''))) return String(S.LOBBY); } catch (_) {} return '00000'; })();
+  function c5(c) { c = String(c || ''); return /^\d{5}$/.test(c) ? c : ''; }   // FC5: drops saved 4-digit codes
   var $ = function (id) { return document.getElementById(id); };
   var inHub = window.parent !== window, page = 0, PAGES = 3, SW = 75, started = false, code = '';
   var ME = SWSave.dev(), role = SWSave.get('role'), since = role === 'host' ? Date.now() : 0;
@@ -31,7 +34,7 @@
       (buttons || ['OK']).forEach(function (b, i, a) {
         var el = document.createElement('button'); el.className = i === a.length - 1 ? 'btn' : 'mini'; el.textContent = b;
         el.onclick = function () {
-          if (ask && i === a.length - 1) { var c = (inp.value.match(/\d{4}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 4-digit code.'; return; } $('dialog').hidden = true; return res(c); }
+          if (ask && i === a.length - 1) { var c = (inp.value.match(/\d{5}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 5-digit code.'; return; } $('dialog').hidden = true; return res(c); }
           $('dialog').hidden = true; res(ask ? null : i);
         };
         row.appendChild(el);
@@ -44,11 +47,11 @@
 
   /* ---------- code ---------- */
   var ls = SWSave.ls;
-  function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{4})/); return m ? m[1] : ''; }
+  function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{5})/); return m ? m[1] : ''; }
   function localCode() {
-    try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) return String(window.parent.__hubRemote.code); } catch (_) { /* */ }
-    var c = ls('jtsites-hub-ctrl-code'); if (/^\d{4}$/.test(c) && inHub) return c;
-    c = ls('shared-link-join-code'); if (/^\d{4}$/.test(c) && inHub) return c;
+    try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) { var r0 = c5(window.parent.__hubRemote.code); if (r0) return r0; } } catch (_) { /* */ }
+    var c = ls('jtsites-hub-ctrl-code'); if (/^\d{5}$/.test(c) && inHub) return c;
+    c = ls('shared-link-join-code'); if (/^\d{5}$/.test(c) && inHub) return c;
     return '';
   }
   function myInfo() {
@@ -61,7 +64,7 @@
     SWSave.setLastCode(c);
     SWPeer.start(c, myInfo()).catch(function () { setStatus('PeerJS could not load (offline?)'); });
   }
-  function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) { if (c) go(c); }); }
+  function askCode() { dialog('Enter the 5-digit Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) { if (c) go(c); }); }
   function boot() {
     var c = urlCode();
     if (c) return go(c);
@@ -69,14 +72,14 @@
       var got = false;
       addEventListener('message', function (e) {
         var d = e.data; if (e.source !== window.parent || !d || d.sharedLink !== 'hello' || got) return;
-        if (/^\d{4}$/.test(String(d.code || ''))) { got = true; go(String(d.code)); }
+        if (/^\d{5}$/.test(String(d.code || ''))) { got = true; go(String(d.code)); }
       });
       try { window.parent.postMessage({ sharedLink: 'ready', app: 'screen-wall', types: ['x-none/'] }, '*'); } catch (_) { /* */ }
-      setTimeout(function () { if (!got && !started) { var l = localCode() || SWSave.lastCode(); if (l) go(l); else { setStatus('Not connected'); askCode(); } } }, 800);
+      setTimeout(function () { if (!got && !started) { var l = localCode() || c5(SWSave.lastCode()); if (l) go(l); else { setStatus('Not connected'); askCode(); } } }, 800);
       return;
     }
-    c = SWSave.lastCode() || ls('shared-link-join-code');
-    if (/^\d{4}$/.test(c)) go(c); else { setStatus('Not connected'); askCode(); }
+    c = c5(SWSave.lastCode()) || c5(ls('shared-link-join-code'));
+    if (/^\d{5}$/.test(c)) go(c); else { setStatus('Not connected'); askCode(); }
   }
   $('btn-code').onclick = askCode; $('btn-code2').onclick = askCode;
   function setStatus(t) { $('status').textContent = t; }

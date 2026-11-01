@@ -17,6 +17,9 @@
    Code is only a fallback for older Hubs without HubMeshLink; standalone: last code, else 0000. Keyboard: digits, Backspace, Enter = call / answer, Esc = hang up. */
 (function () {
   'use strict';
+  // FC5: Hub codes are 5 digits (H83); public lobby is SharedLink.LOBBY, else '00000'. Saved 4-digit codes are ignored.
+  var PUB = (function () { try { var S = window.SharedLink || (window.parent && window.parent.SharedLink) || (window.top && window.top.SharedLink); if (S && /^\d{5}$/.test(String(S.LOBBY || ''))) return String(S.LOBBY); } catch (_) {} return '00000'; })();
+  function c5(c) { c = String(c || ''); return /^\d{5}$/.test(c) ? c : ''; }   // FC5: drops saved 4-digit codes
   var $ = function (id) { return document.getElementById(id); };
   var inHub = window.parent !== window, page = 0, PAGES = 4, SW = 75, started = false, code = '', dial = '', baseTitle = document.title;
 
@@ -50,8 +53,8 @@
             if (bad) { $('d-text').textContent = bad.text; if (fin[bad.k]) { fin[bad.k].classList.add('err'); fin[bad.k].focus(); } return; }
             $('dialog').hidden = true; return res(v);
           }
-          if (ask && b === 'Public') { $('dialog').hidden = true; return res('0000'); }   // TP4
-          if (ask && i === a.length - 1) { var c = (inp.value.match(/\d{4}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 4-digit code.'; return; } $('dialog').hidden = true; return res(c); }
+          if (ask && b === 'Public') { $('dialog').hidden = true; return res(PUB); }   // TP4
+          if (ask && i === a.length - 1) { var c = (inp.value.match(/\d{5}/) || [''])[0]; if (!c) { $('d-text').textContent = 'Enter the 5-digit code.'; return; } $('dialog').hidden = true; return res(c); }
           $('dialog').hidden = true; res(ask ? null : i);
         };
         row.appendChild(el);
@@ -66,7 +69,7 @@
 
   /* ---------- code ---------- */
   var ls = TPSave.ls;
-  function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{4})/); return m ? m[1] : ''; }
+  function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{5})/); return m ? m[1] : ''; }
   /* TP4: old code choice kept for reference (Hub's own Connect Code won; see readme Legacy code notes):
   // function localCode() {
   //   try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) return String(window.parent.__hubRemote.code); } catch (_) { /* * / }
@@ -100,33 +103,33 @@
   */
   // TP4: default is Public 0000; private code only from the URL, an active Hub private mesh, or a manual pick.
   function hml() { try { var h = window.parent !== window && window.parent.HubMeshLink; return h && typeof h.isPrivate === 'function' ? h : null; } catch (_) { return null; } }
-  function meshCode() { var h = hml(); if (!h) return ''; try { var c = h.isPrivate() ? String(h.privateCode() || '') : ''; return /^\d{4}$/.test(c) ? c : ''; } catch (_) { return ''; } }
+  function meshCode() { var h = hml(); if (!h) return ''; try { var c = h.isPrivate() ? String(h.privateCode() || '') : ''; return /^\d{5}$/.test(c) ? c : ''; } catch (_) { return ''; } }
   function localCode() {   // TP1 sources, now only a fallback for an older Hub without HubMeshLink
-    try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) return String(window.parent.__hubRemote.code); } catch (_) { /* */ }
-    var c = ls('jtsites-hub-ctrl-code'); if (/^\d{4}$/.test(c) && inHub) return c;
-    c = ls('shared-link-join-code'); if (/^\d{4}$/.test(c) && inHub) return c;
+    try { if (window.parent.__hubRemote && window.parent.__hubRemote.code) { var r0 = c5(window.parent.__hubRemote.code); if (r0) return r0; } } catch (_) { /* */ }
+    var c = ls('jtsites-hub-ctrl-code'); if (/^\d{5}$/.test(c) && inHub) return c;
+    c = ls('shared-link-join-code'); if (/^\d{5}$/.test(c) && inHub) return c;
     return '';
   }
   var manual = false, fixed = false, offer = '';   // manual = picked this session; fixed = from the URL
-  function desired() { return meshCode() || '0000'; }
+  function desired() { return meshCode() || PUB; }
   function go(c) {
     if (started) { if (c === code) return; if (TPCall.busy()) { toast('Hang up first'); return; } TPCall.stop(); TPPeer.stop(); }
-    started = true; code = c; $('code-lbl').textContent = c === '0000' ? '0000 · Public' : c;
+    started = true; code = c; $('code-lbl').textContent = c === PUB ? PUB + ' · Public' : c;
     TPSave.setLastCode(c); paintSwitch();
     TPPeer.start(c).catch(function () { setStatus('PeerJS could not load (offline?)'); toast('PeerJS could not load (offline?)'); });
   }
   function pick(c) { if (c) { manual = true; offer = ''; go(c); } }
   /* TP1: function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub. Phones with the same code can call each other.', ['Cancel', 'Join'], { ask: true }).then(function (c) { if (c) go(c); }); } */
-  function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub, or use Public to meet every phone on the open Hub mesh (0000). Every call still rings and must be answered.', ['Cancel', 'Public', 'Join'], { ask: true }).then(pick); }
+  function askCode() { dialog('Enter the 5-digit Hub Connect Code shown on the Hub, or use Public to meet every phone on the open Hub mesh (00000). Every call still rings and must be answered.', ['Cancel', 'Public', 'Join'], { ask: true }).then(pick); }
   function paintSwitch() {
     var el = $('tp-switch'); if (!el) return;
     el.hidden = !offer || offer === code;
-    el.textContent = offer === '0000' ? 'Back to Public' : 'Switch to ' + offer;
+    el.textContent = offer === PUB ? 'Back to Public' : 'Switch to ' + offer;
   }
   function checkMesh() {   // TP4: follow the Hub joining / leaving a private mesh; never mid-call
     if (!started || manual || fixed || !hml()) return;
     var d = desired(); if (d === code) { offer = ''; paintSwitch(); return; }
-    if (!TPCall.busy()) { offer = ''; go(d); toast(d === '0000' ? 'Hub left its private mesh — back to Public' : 'Hub joined private mesh ' + d); }
+    if (!TPCall.busy()) { offer = ''; go(d); toast(d === PUB ? 'Hub left its private mesh — back to Public' : 'Hub joined private mesh ' + d); }
     else { offer = d; paintSwitch(); }
   }
   function boot() {
@@ -134,17 +137,17 @@
     if (c) { fixed = true; return go(c); }
     if (inHub) {
       if (hml()) return go(desired());
-      var got = false;   // older Hub without HubMeshLink: TP1 order, ending at 0000
+      var got = false;   // older Hub without HubMeshLink: TP1 order, ending at 00000
       addEventListener('message', function (e) {
         var d = e.data; if (e.source !== window.parent || !d || d.sharedLink !== 'hello' || got) return;
-        if (/^\d{4}$/.test(String(d.code || '')) && !started) { got = true; go(String(d.code)); }
+        if (/^\d{5}$/.test(String(d.code || '')) && !started) { got = true; go(String(d.code)); }
       });
       try { window.parent.postMessage({ sharedLink: 'ready', app: 'telephone', types: ['x-none/'] }, '*'); } catch (_) { /* */ }
-      setTimeout(function () { if (!got && !started) go(localCode() || TPSave.lastCode() || '0000'); }, 800);
+      setTimeout(function () { if (!got && !started) go(localCode() || c5(TPSave.lastCode()) || PUB); }, 800);
       return;
     }
     c = TPSave.lastCode();
-    go(/^\d{4}$/.test(c) ? c : '0000');
+    go(/^\d{5}$/.test(c) ? c : PUB);
   }
   setInterval(checkMesh, +window.__tpMeshMs || 5000);
   if ($('tp-switch')) $('tp-switch').onclick = function () { if (TPCall.busy()) { toast('Hang up first'); return; } var d = offer; offer = ''; if (d) go(d); };
@@ -179,7 +182,7 @@
   }
   if (TPSave.pending()) checkT = setTimeout(function () { numChecked(null); }, CHECK_MS);
   function checkClash(list) {   // a later clash (a device that was offline when my number was picked)
-    if (TPSave.pending()) return;
+    if (TPSave.pending() || TPSave.fromHub()) return;   // FC5: the Hub number is unique per device, never renumbered
     var mine = TPSave.get('num'), did = TPSave.get('did'), my = +TPSave.get('numAt') || 0;
     var clash = list.filter(function (d) { var at = +d.at || 0; return d.num === mine && d.did && d.did !== did && (at < my || (at === my && d.did < did)); });
     if (!clash.length || TPCall.busy()) return;   // in a call: checked again when it ends
@@ -187,15 +190,18 @@
     TPSave.setNum(n); paintMe(); TPPeer.update(); paintDial();
     dialog('Your number changed: “' + (clash[0].name || 'Another device') + '” already had the number ' + mine + ' first, so this device now has the number ' + n + '. Other phones need the new number to call you (your contacts on them follow by themselves).', ['OK']);
   }
-  $('b-newnum').onclick = function () {
-    if (TPCall.busy()) { toast('Hang up first'); return; }
-    if (TPSave.pending()) { toast('Still checking your number…'); return; }
-    dialog('Get a new random number for this device? Other phones will need the new number to call you.', ['Cancel', 'New number']).then(function (i) {
-      if (i !== 1) return;
-      var n = TPSave.newNum(othersNums(TPPeer.roster()).concat(TPSave.get('num')));
-      TPSave.setNum(n); paintMe(); TPPeer.update(); toast('Your number is now ' + n);
-    });
-  };
+  /* FC5: New number button removed (the number is this device's Hub number). TP2b code:
+  // $('b-newnum').onclick = function () {
+  //   if (TPCall.busy()) { toast('Hang up first'); return; }
+  //   if (TPSave.pending()) { toast('Still checking your number…'); return; }
+  //   dialog('Get a new random number for this device? Other phones will need the new number to call you.', ['Cancel', 'New number']).then(function (i) {
+  //     if (i !== 1) return;
+  //     var n = TPSave.newNum(othersNums(TPPeer.roster()).concat(TPSave.get('num')));
+  //     TPSave.setNum(n); paintMe(); TPPeer.update(); toast('Your number is now ' + n);
+  //   });
+  // };
+  */
+  if ($('b-newnum')) $('b-newnum').hidden = true;
 
   /* ---------- names: contact first, then the device's own name ---------- */
   function initial(n) { return (n || '?').trim().charAt(0).toUpperCase() || '?'; }

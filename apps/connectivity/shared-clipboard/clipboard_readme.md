@@ -26,6 +26,12 @@ Copy on one device, paste on another: text, links and images go to every device 
 - **No private code:** status "Private code needed", offline; local history (copy/download) still works.
 - **Follow the Hub:** every 5 s, while no file transfer is running, switch to a new Hub private code, or disconnect when the Hub turns public. A URL code is never overridden.
 
+## FC5 (CB4) — 5-digit Hub codes, public 00000
+- **Why:** the Hub moved to 5-digit codes in H83 (clean cut-over, no 4-digit fallback). Public lobby is now **00000** (`SharedLink.LOBBY`, fallback `'00000'` while H83 is not live).
+- **What:** URL `#code=` / `?hub=` / `join=`, the code dialog (maxlength 5, "5-digit code"), Hub hello codes, mesh codes and the last code now take exactly 5 digits. Saved 4-digit codes are ignored (`c5()`), so the app falls to Public or asks.
+- Private only, as in CB3: `ok()` rejects `00000` (and the Hub's LOBBY) and anything that is not 5 digits.
+
 ## Legacy code notes
 
 - `clipboard_app.js`: the CB1/CB2 code order (`urlCode`/`localCode`/`go`/`askCode`/`boot`) is kept as an inline comment above the CB3 version.
+- FC5: the CB1/CB2 legacy block (4-digit) is kept unchanged as a comment.
