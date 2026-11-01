@@ -110,3 +110,6 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 /* VC3: non-blocking private-mesh switch offer */
 #vc-switch { position: fixed; left: 50%; top: 10px; transform: translateX(-50%); z-index: 60; }
 #vc-switch[hidden]{display:none}
+.who b{display:inline-flex;align-items:center}
+.net{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;flex:none;background:#f59e0b}
+.net.on{background:var(--good)}.net.off{background:var(--mut)}

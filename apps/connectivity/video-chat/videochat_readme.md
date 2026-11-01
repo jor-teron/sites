@@ -26,7 +26,14 @@ Video + audio calls between devices on the same Hub Connect Code (Connectivity �
 - **Why:** the Hub moved to 5-digit codes in H83 (clean cut-over, no 4-digit fallback). Public lobby is now **00000** (`SharedLink.LOBBY`, fallback `'00000'` while H83 is not live).
 - **What:** URL `#code=` / `?hub=` / `join=`, the code dialog (maxlength 5, "5-digit code"), Hub hello codes, mesh codes and the last code now take exactly 5 digits. Saved 4-digit codes are ignored (`c5()`), so the app falls to Public or asks.
 
+## VC5 — Clean, minimal call screen
+- **Why:** Jor asked for a clean minimalist UI, like Telephone TP5 / Intercom IC5.
+- **Top bar:** the device name once, with a small connection dot before it (green online, amber connecting, grey offline / PeerJS failed). The status text is the dot's tooltip / `aria-label` (`setStatus`). "PeerJS could not load" also shows as a toast.
+- **Removed from the main screen:** the "Online · code …" line (`#status`) and the Code button (`#btn-code`). The code is shown and changed in Settings → Hub code → Change (`#code-lbl`, `#btn-code2`). The `#vc-switch` offer button (Switch to / Back to Public) is unchanged. The call screen never showed the code and still doesn't (invites go through the device list / ＋, no code needed).
+- **Shorter texts:** "No other devices online." (main list and Add sheet), a one-line hint, short About mentioning Public 00000. Title and version say VC5.
+
 ## Legacy code notes
 
 - VC2 code choice (Hub's own Connect Code, then last code, else the Code dialog) is kept as comments in `videochat_app.js`; the VC2 "answer any join for my room" line is kept as a comment in `videochat_call.js`.
 - FC5: earlier `\d{4}` / `'0000'` lines stay in the VC1–VC2 `//` legacy blocks.
+- VC5: removed `#status` / `#btn-code` bar and old empty/hint/About texts are kept as HTML comments in `videochat.html`; the old `$('status')` / `btn-code` lines are `// VC4:` comments in `videochat_app.js` (the `btn-code` hook stays guarded).

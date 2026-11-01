@@ -83,10 +83,18 @@
   function desired() { return meshCode() || PUB; }
   function go(c) {
     if (started) { if (c === code) return; if (VCCall.active()) { toast('Hang up first'); return; } VCPeer.stop(); }
-    started = true; code = c; $('btn-code').textContent = c === PUB ? PUB + ' · Public' : c;
+    started = true; code = c;
+    // VC4: $('btn-code').textContent = c === PUB ? PUB + ' · Public' : c;
+    if ($('code-lbl')) $('code-lbl').textContent = c === PUB ? PUB + ' · Public' : c;   // VC5: code shown in Settings only
     try { localStorage.setItem(LAST, c); } catch (_) { /* */ }
     paintSwitch();
-    VCPeer.start(c).catch(function () { $('status').textContent = 'PeerJS could not load (offline?)'; });
+    // VC4: VCPeer.start(c).catch(function () { $('status').textContent = 'PeerJS could not load (offline?)'; });
+    VCPeer.start(c).catch(function () { setStatus('PeerJS could not load (offline?)'); toast('PeerJS could not load (offline?)'); });
+  }
+  function setStatus(t) {   // VC5: status lives on the small dot before the name (title / aria-label)
+    var el = $('net'); if (!el) return;
+    el.title = t; el.setAttribute('aria-label', t);
+    el.className = 'net ' + (/^Online/.test(t) ? 'on' : /could not|Not connected|Offline|fail/i.test(t) ? 'off' : 'wait');
   }
   function pick(c) { if (c) { manual = true; offer = ''; go(c); } }
   /* VC1: function askCode() { dialog('Enter the 4-digit Hub Connect Code shown on the Hub.', ['Cancel', 'Join'], true).then(function (c) { if (c) go(c); }); } */
@@ -121,7 +129,9 @@
   }
   setInterval(checkMesh, +window.__vcMeshMs || 5000);
   if ($('vc-switch')) $('vc-switch').onclick = function () { if (VCCall.active()) { toast('Hang up first'); return; } var d = offer; offer = ''; if (d) go(d); };
-  $('btn-code').onclick = askCode;
+  // VC4: $('btn-code').onclick = askCode;
+  if ($('btn-code')) $('btn-code').onclick = askCode;   // VC5: Code button removed from the bar; Settings → Change stays
+  if ($('btn-code2')) $('btn-code2').onclick = askCode;
 
   /* ---------- device list ---------- */
   function paintMe() { $('me-name').textContent = VCStore.name(); }
@@ -137,7 +147,8 @@
       li.append(av, nm, b); ul.appendChild(li);
     });
   }
-  VCPeer.on('status', function (t) { $('status').textContent = t; });
+  // VC4: VCPeer.on('status', function (t) { $('status').textContent = t; });
+  VCPeer.on('status', setStatus);
   VCPeer.on('roster', function (l) { paintList(l); VCCall.roster(l); if (!$('addsheet').hidden) paintAdd(); });
   VCPeer.on('signal', function (m, from) { VCCall.signal(m, from); });
   VCPeer.on('call', function (c) { VCCall.incoming(c); });
