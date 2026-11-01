@@ -1,4 +1,4 @@
-/* Messages MS1 — presence + direct messages over PeerJS (own peers; the Hub's peer and HubMesh are never touched;
+/* Messages MS2 — presence + direct messages over PeerJS (own peers; the Hub's peer and HubMesh are never touched;
    HubMesh public 00000 only carries the group 'chat' channel).
    Ids: me = 'jtsites-<code>-msg-<random>', lobby = 'jtsites-<code>-msg-0' (first device to claim it keeps the roster,
    Telephone TP2b pattern with failover). Each device sends {t:'hi', id, name, num}; lobby broadcasts {t:'roster', list}.
@@ -79,9 +79,10 @@
     var c = direct[id];
     if (c && c.open) { try { c.send(m); return Promise.resolve(true); } catch (_) { return Promise.resolve(false); } }
     return new Promise(function (res) {
-      var k = me.connect(id, { reliable: true, metadata: { kind: 'msg' } }), t = setTimeout(function () { res(false); }, 8000);
+      var k = me.connect(id, { reliable: true, metadata: { kind: 'msg' } }), t = setTimeout(function () { try { k.close(); } catch (_) { /* */ } res(false); }, 8000);
       wire(k);
       k.on('open', function () { clearTimeout(t); try { k.send(m); res(true); } catch (_) { res(false); } });
+      k.on('error', function () { clearTimeout(t); res(false); });
     });
   }
   function stop() {

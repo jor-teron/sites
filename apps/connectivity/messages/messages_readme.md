@@ -1,4 +1,4 @@
-# Messages (MS1)
+# Messages (MS2)
 
 ## What and why
 Private one-to-one text messages between devices, like SMS. Jor wants private messaging as an integral part of phone/;
@@ -13,7 +13,7 @@ Pooh Chat becomes the group lobby chat (over HubMesh, H84), Messages stays priva
   device peers `jtsites-<code>-msg-<random>`. Messages go over a direct DataConnection to the recipient's peer (WebRTC, already encrypted).
   Never via the lobby, a server or a third device. HubMesh is not used (public 00000 only allows the group 'chat' channel).
 - Shapes: `{t:'msg', id, from (my number), name, text (1–2000), ts}`, receiver replies `{t:'ack', id}` → ✓✓ delivered. Dedupe by id.
-- Recipient offline: the message is kept as "Not online — not sent" with Retry.
+- Recipient offline (MS2): the message is queued (🕓 Waiting) in `messages-history` and sent automatically when they appear in the roster (and every 20 s); ✓ Sent → ✓✓ Delivered on ack. Undelivered sends are retried; the receiver dedupes by id.
 - History: localStorage `messages-history`, per conversation (500 max), 3000 total (oldest conversations trimmed). Settings: `messages-settings-v1`.
 - Names: Telephone's saved contacts (`telephone-contacts-v1`, read-only) first, else the roster name.
 - UI: name once with a connection dot (green online / amber connecting / grey offline, tooltip + aria-label); Settings sheet: name, my number, Hub code (Change), About.
@@ -26,7 +26,7 @@ messages_peer.js (lobby + direct links), messages_app.js (UI), messages_icon.png
 MS1: syntax + smoke only (node --check, static checks, node harness with stubs). No browser or two-device test yet.
 
 ## Limits
-Both devices must have Messages open. No offline queue, no notifications, no Hub DND, text only.
+Both devices must have Messages open (the queue waits until they do). Text only.
 
 ## Planned
 - MS2: automatic offline queue (send when the person comes online), notifications via HubNotify / attention card, Hub Do Not Disturb.
@@ -34,3 +34,9 @@ Both devices must have Messages open. No offline queue, no notifications, no Hub
 
 ## Legacy code notes
 None yet.
+
+## MS2
+- Queue: st 'queued' | 'sent' | 'delivered' (MS1 'unsent' treated as queued). MSStore.pending().
+- Alerts (messages_notify.js): page hidden → Hub card (top.HubNotify.notice) in the Hub, else browser Notification. Setting `messages-settings-v1`.notify (default on).
+- Hub DND (TP7 pattern: parent.HubDnd, else 'sites-hub.dnd'): no alerts, messages still stored; 🌙 next to the name.
+- In-app notices use a Hub card when inside the Hub, the small in-app notice only standalone.

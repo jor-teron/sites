@@ -1,5 +1,5 @@
-/* Messages MS1 — the one save module (pure logic + localStorage). Key 'messages-history':
-   {convs:{<num>:{num, name, unread, msgs:[{id, dir:'in'|'out', text, ts, st:'sent'|'delivered'|'unsent'|''}]}}}.
+/* Messages MS2 — the one save module (pure logic + localStorage). Key 'messages-history':
+   {convs:{<num>:{num, name, unread, msgs:[{id, dir:'in'|'out', text, ts, st:'queued'|'sent'|'delivered'|''  (MS1 'unsent' is read as queued)}]}}}.
    Caps: 500 messages per conversation, 3000 in total (oldest conversations trimmed first). */
 (function (root) {
   'use strict';
@@ -41,6 +41,8 @@
       c.msgs.push(e); caps(); save(); return e;
     },
     setSt: function (num, id, st) { var c = H.convs[num], e = c && find(c, id); if (!e || e.dir !== 'out') return false; if (e.st === 'delivered' && st !== 'delivered') return false; e.st = st; save(); return true; },
+    /* MS2 queue: outgoing messages not yet delivered, oldest first: [{num, msg}] */
+    pending: function () { var o = []; Object.keys(H.convs).forEach(function (k) { H.convs[k].msgs.forEach(function (m) { if (m.dir === 'out' && m.st !== 'delivered') o.push({ num: k, msg: m }); }); }); return o.sort(function (a, b) { return a.msg.ts - b.msg.ts; }); },
     ack: function (num, id) { return M.setSt(num, id, 'delivered'); },
     read: function (num) { var c = H.convs[num]; if (c && c.unread) { c.unread = 0; save(); } },
     unread: function () { return list0().reduce(function (a, c) { return a + (c.unread || 0); }, 0); },

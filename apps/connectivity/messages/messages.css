@@ -45,3 +45,8 @@ h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
 #dlg-in{width:100%;font-size:24px;letter-spacing:.1em;text-align:center;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--card);color:var(--fg)}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:10px;z-index:30;font-size:14px}
 @media (max-width:700px){#listcol{width:100%;border-right:0}#main.inchat #listcol,#main:not(.inchat) #chat,#pick{display:none!important}}
+/* MS2 */
+.set-row.big{min-height:48px;cursor:pointer}.set-row.big input{width:26px;height:26px}
+#dnd-ind{font-size:14px}
+#msgs li .retry{min-height:36px;padding:6px 12px;font-size:13px}
+#b-send{min-width:52px;min-height:48px}

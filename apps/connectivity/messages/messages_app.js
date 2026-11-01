@@ -1,4 +1,4 @@
-/* Messages MS1 — UI. Code order (FC5): #code= (5 digits) > Hub private mesh (parent.HubMeshLink) > public lobby;
+/* Messages MS2 — UI (MS2: offline queue → auto-send when the person comes online, alerts + Hub DND via MSNotify). Code order (FC5): #code= (5 digits) > Hub private mesh (parent.HubMeshLink) > public lobby;
    every 5 s follow the Hub mesh when idle, else offer an in-bar Switch / Back to Public button.
    My number = this device's Hub number (SharedLinkDevices.code() / SharedLink.deviceCode(), self/parent/top). */
 (function () {
@@ -28,7 +28,7 @@
   function label(num, fallback) { return S.contactName(num) || fallback || (S.conv(num) && S.conv(num).name) || rosterName(num) || num; }
   function rosterName(num) { var r = P.roster(); for (var i = 0; i < r.length; i++) if (r[i].num === num) return r[i].name; return ''; }
   var tt = 0;
-  function toast(t) { var el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(tt); tt = setTimeout(function () { el.hidden = true; }, 2600); }
+  function toast(t) { if (window.MSNotify && MSNotify.hubCard({ icon: '💬', title: 'Messages', text: t, timeoutMs: 4000 })) return; var el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(tt); tt = setTimeout(function () { el.hidden = true; }, 2600); }
   /* in-app dialog (no alert/confirm/prompt); resolves the button text, or the typed 5 digits for 'ask' */
   function dialog(text, btns, ask) {
     return new Promise(function (res) {
@@ -77,39 +77,49 @@
     var on = $('online'), r = P.roster(); on.innerHTML = '';
     r.forEach(function (d) { var li = document.createElement('li'), nm = label(d.num, d.name); li.innerHTML = '<span class="av">' + esc(nm.charAt(0).toUpperCase()) + '</span><span class="nm"><b>' + esc(nm) + '</b><small>' + d.num + '</small></span>'; li.onclick = function () { open(d.num, d.name); }; on.appendChild(li); });
     $('online-empty').hidden = r.length > 0;
-    var u = S.unread(); document.title = (u ? '(' + u + ') ' : '') + 'Messages MS1';
+    var u = S.unread(); document.title = (u ? '(' + u + ') ' : '') + 'Messages';
   }
   function renderChat() {
     if (!cur) return;
     var c = S.conv(cur), ul = $('msgs'); ul.innerHTML = '';
     $('c-name').textContent = label(cur); $('c-num').textContent = cur + (P.peerOf(cur) ? ' · online' : ' · not online');
     (c ? c.msgs : []).forEach(function (m) {
-      var li = document.createElement('li'); li.className = m.dir + (m.st === 'unsent' ? ' unsent' : '');
+      var li = document.createElement('li'); li.className = m.dir + ((m.st === 'queued' || m.st === 'unsent') ? ' unsent' : '');
       li.textContent = m.text;
-      var s = document.createElement('small'); s.textContent = hm(m.ts) + (m.dir === 'out' ? (m.st === 'delivered' ? ' ✓✓' : m.st === 'sent' ? ' ✓' : m.st === 'unsent' ? ' · Not online — not sent' : '') : '');
-      if (m.st === 'unsent') { var b = document.createElement('button'); b.className = 'mini retry'; b.textContent = 'Retry'; b.onclick = function () { deliver(cur, m); }; s.appendChild(b); }
+      var s = document.createElement('small'); s.textContent = hm(m.ts) + (m.dir === 'out' ? (m.st === 'delivered' ? ' ✓✓ Delivered' : m.st === 'sent' ? ' ✓ Sent' : (m.st === 'queued' || m.st === 'unsent') ? ' 🕓 Waiting — sends when ' + label(cur) + ' is online' : '') : '');
+      if ((m.st === 'queued' || m.st === 'unsent') && P.peerOf(cur)) { var b = document.createElement('button'); b.className = 'mini retry'; b.textContent = 'Send now'; b.onclick = function () { deliver(cur, m); }; s.appendChild(b); }
       li.appendChild(s); ul.appendChild(li);
     });
     ul.scrollTop = ul.scrollHeight;
   }
   function open(num, name) {
-    cur = num; if (name && !S.conv(num)) S.conv(num); S.read(num);
+    cur = num; S.read(num);
     if (name) pendingName[num] = name;
     $('chat').hidden = false; $('pick').hidden = true; $('main').classList.add('inchat');
     renderChat(); renderList(); $('in-text').focus();
   }
   var pendingName = {};
+  var busy = {};   // id -> true while a send is in flight (no double sends from flush + Retry)
   function deliver(num, e) {
-    S.setSt(num, e.id, 'sent'); renderChat();
+    if (busy[e.id]) return Promise.resolve(false);
+    if (!P.peerOf(num)) { S.setSt(num, e.id, 'queued'); renderChat(); renderList(); return Promise.resolve(false); }
+    busy[e.id] = true;
     return P.send(num, { t: 'msg', id: e.id, from: myNum, name: myName(), text: e.text, ts: e.ts }).then(function (ok) {
-      if (!ok) { S.setSt(num, e.id, 'unsent'); toast('Not online — not sent'); }
-      renderChat(); renderList();
+      delete busy[e.id];
+      S.setSt(num, e.id, ok ? 'sent' : 'queued');   // 'sent' until the ack makes it ✓✓; queued ones go again when they come online
+      renderChat(); renderList(); return ok;
     });
   }
+  /* MS2 queue: every queued/sent-but-unacked message to someone now online goes again (receiver dedupes by id) */
+  function flush() {
+    if (!myNum) return;
+    S.pending().forEach(function (p) { if (P.peerOf(p.num)) deliver(p.num, p.msg); });
+  }
+  setInterval(flush, 20000);
   function sendNow() {
     var t = $('in-text').value; if (!cur || !S.validText(t)) return;
     if (!myNum) { toast('No Hub number on this device yet'); return; }
-    var e = S.addOut(cur, pendingName[cur] || rosterName(cur), t, rid(), 'sent'); $('in-text').value = '';
+    var e = S.addOut(cur, pendingName[cur] || rosterName(cur), t, rid(), 'queued'); $('in-text').value = '';
     deliver(cur, e);
   }
   $('compose').onsubmit = function (ev) { ev.preventDefault(); sendNow(); };
@@ -122,12 +132,12 @@
     });
   };
   P.on('status', setStatus);
-  P.on('roster', function () { renderList(); renderChat(); });
+  P.on('roster', function () { renderList(); renderChat(); flush(); });
   P.on('data', function (m, conn) {
     if (m.t === 'msg') {
       var isNew = S.addIn(m, m.from === cur && !document.hidden);
       try { conn.send({ t: 'ack', id: m.id }); } catch (_) { /* */ }   // ack duplicates too, so a lost ack heals
-      if (isNew) { renderList(); if (m.from === cur) renderChat(); }
+      if (isNew) { renderList(); if (m.from === cur) renderChat(); var f = String(m.from); MSNotify.incoming(label(f, m.name), f, m.text, function () { open(f); }); }
     } else if (m.t === 'ack') {
       var r = P.roster(), num = ''; for (var i = 0; i < r.length; i++) if (r[i].id === conn.peer) num = r[i].num;
       if (num && S.ack(num, String(m.id))) renderChat();
@@ -135,11 +145,19 @@
   });
   document.addEventListener('visibilitychange', function () { if (!document.hidden && cur) { S.read(cur); renderList(); } });
   /* settings */
-  $('b-set').onclick = function () { $('in-name').value = myName(); $('num-lbl').textContent = myNum || '—'; $('sheet').hidden = false; };
+  $('b-set').onclick = function () { paintNotify(); $('in-name').value = myName(); $('num-lbl').textContent = myNum || '—'; $('sheet').hidden = false; };
   $('b-close').onclick = function () { $('sheet').hidden = true; };
   $('in-name').onchange = function () { S.set('name', this.value.trim().slice(0, 40)); $('me-name').textContent = myName(); P.update(who()); };
+  function paintNotify() {
+    var on = S.get('notify') !== false, pm = MSNotify.perm();
+    $('chk-notify').checked = on;
+    $('notify-note').textContent = MSNotify.dnd() ? '🌙 Hub Do Not Disturb is on — messages arrive silently.' : MSNotify.inHub ? 'Shown as a Hub card when Messages is in the background.' : pm === 'granted' ? 'Browser notifications are allowed.' : pm === 'denied' ? 'Browser notifications are blocked for this site.' : pm === 'unsupported' ? 'This browser has no notifications.' : 'Tap the switch to allow browser notifications.';
+    $('dnd-ind').hidden = !MSNotify.dnd();
+  }
+  $('chk-notify').onchange = function () { var on = this.checked; S.set('notify', on); if (on && !MSNotify.inHub) MSNotify.ask().then(paintNotify); else paintNotify(); };
+  MSNotify.onDnd(paintNotify);
   addEventListener('storage', function (e) { if (e.key === 'sites-hub.theme') { var d = e.newValue ? e.newValue === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; document.documentElement.className = d ? 'dark' : ''; } });
-  $('me-name').textContent = myName(); setStatus('connecting'); renderList();
+  $('me-name').textContent = myName(); setStatus('connecting'); paintNotify(); renderList();
   var pc = S.pickCode(location.hash, hml(), PUB); fixed = pc.fixed;
   if (/[#&?]code=\d{4}(?!\d)/.test(location.hash)) toast('Old 4-digit codes are no longer used');
   go(pc.code);
