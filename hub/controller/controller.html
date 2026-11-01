@@ -8,9 +8,9 @@
   <meta name="theme-color" content="#dde1e7" />
   <title>Gamepad Controller</title>
   <link rel="icon" href="controller_icon.png" />
-  <!-- Cache-busting: bump ?v= on every asset below when any of them changes (e.g. 20261003d). -->
-  <link rel="stylesheet" href="controller.css?v=20261012a" />
-  <link rel="stylesheet" href="ctrl_tabs.css?v=20261012a" />
+  <!-- NV-S3: no ?v= labels (the Hub service worker caches files under their bare URL since H74). -->
+  <link rel="stylesheet" href="controller.css" />
+  <link rel="stylesheet" href="ctrl_tabs.css" />
 </head>
 <body class="theme-light mode-both view-pad">
   <div id="rotate-overlay" hidden>
@@ -145,16 +145,16 @@
     </div>
   </div>
 
-  <script src="vendor/jsQR.js?v=20261012a"></script>
-  <script src="controller_config.js?v=20261012a"></script>
-  <script src="kb_common.js?v=20261012a"></script>
-  <script src="kb_pc.js?v=20261012a"></script>
-  <script src="kb_phone.js?v=20261012a"></script>
-  <script src="ctrl_trackpad.js?v=20261012a"></script>
-  <script src="ctrl_tabs.js?v=20261012a"></script>
-  <script src="../../shared/link/link_core.js?v=20261012a"></script>
-  <script src="../../shared/link/link_devices.js?v=20261028h50a"></script>
-  <script src="controller_logic.js?v=20261012a"></script>
-  <script src="ctrl_settings.js?v=20261012a"></script>
+  <script src="vendor/jsQR.js"></script>
+  <script src="controller_config.js"></script>
+  <script src="kb_common.js"></script>
+  <script src="kb_pc.js"></script>
+  <script src="kb_phone.js"></script>
+  <script src="ctrl_trackpad.js"></script>
+  <script src="ctrl_tabs.js"></script>
+  <script src="../../shared/link/link_core.js"></script>
+  <script src="../../shared/link/link_devices.js"></script>
+  <script src="controller_logic.js"></script>
+  <script src="ctrl_settings.js"></script>
 </body>
 </html>
