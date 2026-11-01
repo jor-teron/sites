@@ -128,7 +128,7 @@
       codeRow.appendChild(lsRow);
     }
     const form = el('form', 'hp-join'); form.autocomplete = 'off';
-    const inp = el('input'); inp.type = 'text'; inp.inputMode = 'numeric'; inp.maxLength = 4; inp.placeholder = 'Join code'; inp.setAttribute('aria-label', 'Join code');
+    const inp = el('input'); inp.type = 'text'; inp.inputMode = 'numeric'; inp.maxLength = 5; inp.placeholder = 'Join code'; inp.setAttribute('aria-label', 'Join code');
     const scan = el('button', 'hp-btn hp-scan', '📷'); scan.type = 'button'; scan.title = 'Scan a QR code'; scan.setAttribute('aria-label', 'Scan a QR code');
     const go = el('button', 'hp-go', 'Join'); go.type = 'submit';
     form.append(inp, scan, go);
@@ -206,7 +206,7 @@
       location.replace(location.pathname + '?join=' + c);
     }
     form.addEventListener('submit', (e) => { e.preventDefault(); join(inp.value); });
-    inp.addEventListener('input', () => { inp.value = inp.value.replace(/\D/g, '').slice(0, 4); flash(''); });
+    inp.addEventListener('input', () => { inp.value = inp.value.replace(/\D/g, '').slice(0, 5); flash(''); });
     /* H59 legacy: SharedLinkScan.ask opened a second "Join a Hub" code dialog instead of the camera.
     scan.addEventListener('click', () => {
       if (!window.SharedLinkScan) { err.textContent = 'Scanner not available.'; return; }

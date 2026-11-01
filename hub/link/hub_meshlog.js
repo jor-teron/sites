@@ -79,7 +79,7 @@
     if (list && list.length) seen.forEach((v, id) => { if (!next.has(id)) add('presence', v.name + ' (' + id + ') left the list'); });
     seen = next;
   });
-  M.on('invite', (i) => { if (i) add('presence', 'Invite from ' + clip(i.name, 16) + ' to join code ' + clip(i.code, 4)); });
+  M.on('invite', (i) => { if (i) add('presence', 'Invite from ' + clip(i.name, 16) + ' to join code ' + clip(i.code, 5)); });
   /* the Connect Code link (SharedLink), for context */
   const L = window.SharedLink;
   if (L && L.on) {
