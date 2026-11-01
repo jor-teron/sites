@@ -28,7 +28,7 @@
 
   /* ---------- small UI helpers ---------- */
   var toastT = 0;
-  function toast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, 2200); }
+  function toast(msg) { if (window.phoneToast) return window.phoneToast(msg, 2200); var t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, 2200); }
   var dlgDone = null;
   /** In-app dialog: buttons [{label, cls}] → Promise(index, -1 = dismissed). */
   function ask(msg, buttons) {
@@ -379,7 +379,7 @@
     if (!m || typeof m !== 'object') return;
     if (m.sharedLink === 'ready') {
       // var code = hubCode();   (PH1)
-      var H = window.HubMeshLink;   // H79: follow the Hub mesh: private code only while linked, else no hello (apps use 0000 via HubMeshLink)
+      var H = window.HubMeshLink;   // H79: follow the Hub mesh: private code only while linked, else no hello (apps use 00000 via HubMeshLink)
       var code = H ? H.privateCode() : hubCode();
       if (code) f.el.contentWindow.postMessage({ sharedLink: 'hello', code: code, prefix: 'jtsites-', devices: [] }, file ? '*' : location.origin);
     }
