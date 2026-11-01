@@ -16,7 +16,8 @@
 
   /* ---------- data clean-up (apps that left the catalog) ---------- */
   function clean() {
-    d.dock = d.dock.filter(A.has);
+    // d.dock = d.dock.filter(A.has);   (PH1)
+    // PH5: dock ids stay saved even when not in the catalog yet ('message'); renderHome hides them
     d.pages = d.pages.map(function (p) { return p.filter(A.has); });
     d.pages = d.pages.filter(function (p, i) { return i === 0 || p.length; });
     if (d.pages.length < 2) d.pages.push([]);   // always a page to swipe to (+ hint)
@@ -163,8 +164,9 @@
       dots.appendChild(b);
     });
     var dock = $('dock'); dock.textContent = '';
-    d.dock.forEach(function (id) { dock.appendChild(iconBtn(A.get(id), 'dock')); });
-    dock.style.gridTemplateColumns = 'repeat(' + Math.max(4, d.dock.length) + ',1fr)';
+    var dk = d.dock.filter(A.has);   // PH5: hide dock ids the catalog doesn't have (yet)
+    dk.forEach(function (id) { dock.appendChild(iconBtn(A.get(id), 'dock')); });
+    dock.style.gridTemplateColumns = 'repeat(' + Math.max(4, dk.length) + ',1fr)';
     if (page >= d.pages.length) page = d.pages.length - 1;
     showPage(page, true);
     tick();

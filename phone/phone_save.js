@@ -4,6 +4,8 @@
  * theme: 'system' | 'light' | 'dark' (default dark; System follows sites-hub.theme, then the device).
  * H80: default 'system' (shown as "Hub": follows the Hub theme). th80 marks saves made from H80 on; older saves
  * (which always held 'dark', the PH1 default) move to 'system' once. Light / Dark stay as a phone-only override.
+ * PH5: ph5 marks saves made from PH5 on; older saves get the PH5 home (TV only) and dock once, settings kept.
+ * Dock ids not in the catalog yet (e.g. 'message') stay saved; phone_app.js only hides them.
  * wall: 'auto' (transparent inside the Android WebView, test gradient in a normal browser) | 'none' | '#rrggbb'.
  * Everything is repaired on load (unknown ids dropped later by phone_app.js, bad types reset to defaults).
  * Storage blocked / full → keeps working in memory only.
@@ -16,10 +18,12 @@
   var DEFAULTS = {
     v: 1,
     // Clock = Stopwatch for now (no Clock app in the catalog yet).
-    dock: ['telephone', 'intercom', 'camera', 'gallery', 'stopwatch'],
-    pages: [['calendar', 'dashboard', 'weather-chart', 'calculator', 'video-chat', 'pooh-chat', 'files', 'news', 'tv', 'sound-recorder', 'screen-wall', 'search'], []],
+    // dock: ['telephone', 'intercom', 'camera', 'gallery', 'stopwatch'],   (PH1)
+    // pages: [['calendar', 'dashboard', 'weather-chart', 'calculator', 'video-chat', 'pooh-chat', 'files', 'news', 'tv', 'sound-recorder', 'screen-wall', 'search'], []],   (PH1)
+    dock: ['message', 'telephone', 'camera'],   // PH5: 'message' shows once the app is in the catalog
+    pages: [['tv'], []],   // PH5
     recent: [],
-    settings: { theme: 'system', wall: 'auto', clock24: true, keepAlive: 2, th80: true }
+    settings: { theme: 'system', wall: 'auto', clock24: true, keepAlive: 2, th80: true, ph5: true }
   };
   var mem = null;
 
@@ -44,6 +48,7 @@
     }
     o.recent = ids(d.recent, 8);
     var s = d.settings || {};
+    if (!s.ph5) { o.pages = clone(DEFAULTS.pages); o.dock = clone(DEFAULTS.dock); }   // PH5: older saves get the new home + dock once
     if (['system', 'light', 'dark'].indexOf(s.theme) >= 0 && s.th80) o.settings.theme = s.theme;   // H80: pre-H80 saves follow the Hub
     if (s.wall === 'auto' || s.wall === 'none' || /^#[0-9a-f]{6}$/i.test(s.wall || '')) o.settings.wall = s.wall;
     if (typeof s.clock24 === 'boolean') o.settings.clock24 = s.clock24;

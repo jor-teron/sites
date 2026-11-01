@@ -115,3 +115,10 @@ Multi-Screen Wall, Search. Theme System follows `sites-hub.theme`, then the devi
 - The drawer has no **All** tab; tabs are only the catalog categories (Favorite stays a normal tab).
 - It opens on the last-used category (`localStorage` `sites-phone.cat`, this device only); missing or gone → the first catalog category.
 - Swipes move between real categories only. Search still looks across every app.
+
+## PH5 — Home cleanup (2026-11-01 IST)
+
+- New defaults: home page 1 holds only **TV**; the dock is **Message, Telephone, Camera**. Message stays hidden until the app is in the catalog, then appears by itself (dock ids are no longer dropped from the save).
+- One-time move: saves without `settings.ph5` get the new home and dock once; theme, wallpaper, clock and keep-alive settings and recent apps are kept. Fresh installs and Reset get the new defaults.
+- The clock sits higher on page 1 (top gap 1.5vh, was 5vh; still below the safe area).
+- The dock is light glass in both themes: `rgba(255,255,255,.18)` (was `--glass`, black in dark theme).
