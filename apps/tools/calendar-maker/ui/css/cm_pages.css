@@ -66,3 +66,16 @@
 .mv-need h2{margin:0 0 10px;font-size:17px}
 .mv-need h2 small{font-weight:400;color:var(--mut);font-size:13px}
 .mv-note{font-weight:600}
+/* CM20: Holidays page uses full width, max 2 columns (1 on narrow), rows wrap so no button is hidden.
+   Overrides (kept above as legacy): .hol-wrap flex max-width:1600px; .hol-wrap section flex:1 1 480px;
+   .hl{overflow-x:auto}; .hl li{flex-wrap:nowrap}; .hl li span{min-width:120px;white-space:nowrap};
+   .mv-remind/.mv-need max-width:1600px */
+#page-hol{min-width:0;box-sizing:border-box}
+.hol-wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;width:100%;max-width:none;margin:0;box-sizing:border-box;align-items:start}
+@media (min-width:900px){.hol-wrap{grid-template-columns:repeat(2,minmax(0,1fr))}.hol-wrap>section:nth-child(3){grid-column:1 / -1}}
+.hol-wrap section{min-width:0;box-sizing:border-box}
+.hl{overflow-x:visible}
+.hl li{flex-wrap:wrap}
+.hl li span{flex:1 1 140px;min-width:0;white-space:normal;overflow-wrap:anywhere}
+.mv-remind,.mv-need{max-width:none}
+.mv-need{width:100%}
