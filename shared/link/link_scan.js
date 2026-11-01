@@ -27,9 +27,9 @@
       var card = document.createElement('div');
       card.style.cssText = 'background:#16202e;color:#eef;padding:16px;border-radius:16px;display:grid;gap:10px;width:min(360px,100%);font:16px system-ui,sans-serif';
       var h = document.createElement('b'); h.textContent = opts.title || 'Join the Hub';
-      var hint = document.createElement('small'); hint.textContent = 'Type the 4-digit code under the Hub QR, or scan it.';
+      var hint = document.createElement('small'); hint.textContent = 'Type the 5-digit code under the Hub QR, or scan it.';
       var input = document.createElement('input');
-      input.inputMode = 'numeric'; input.maxLength = 6; input.placeholder = '1234'; input.autocomplete = 'off';
+      input.inputMode = 'numeric'; input.maxLength = 6; input.placeholder = '12345'; input.autocomplete = 'off';
       input.style.cssText = 'min-height:52px;font-size:28px;text-align:center;letter-spacing:.3em;border-radius:12px;border:2px solid #2b7cff;background:#0f1419;color:#fff';
       var video = document.createElement('video');
       video.playsInline = true; video.muted = true; video.hidden = true;
@@ -54,7 +54,7 @@
         resolve(code || null);
       }
       function onKey(e) { if (e.key === 'Escape') close(null); else if (e.key === 'Enter' && document.activeElement === input) submit(); }
-      function submit() { var c = parse(input.value); if (c) close(c); else msg.textContent = 'Enter the 4-digit code.'; }
+      function submit() { var c = parse(input.value); if (c) close(c); else msg.textContent = 'Enter the 5-digit code.'; }
       document.addEventListener('keydown', onKey, true);
       join.addEventListener('click', submit);
       cancel.addEventListener('click', function () { close(null); });

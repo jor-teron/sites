@@ -33,7 +33,7 @@ const CONTROLLER_CONFIG = {
   code: {
     minLength: 4,                  // shorter codes are rejected
     maxLength: 8,                  // input maxlength
-    bareHashPattern: /^\d{4}$/, // a bare "#1234" hash (no "code=") is accepted if it matches
+    bareHashPattern: /^\d{5}$/, // H83 (was \d{4}): a bare "#1234" hash (no "code=") is accepted if it matches
     hashParam: 'code',             // hash parameter holding the code: #code=ABC123
   },
 
