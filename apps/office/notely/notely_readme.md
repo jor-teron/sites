@@ -1,16 +1,16 @@
 # Notely
 
 ## 1. What it is
-One page of plain-text notes that saves itself as you type. Open and download `.txt` files, change the text size, System (follows the Hub), light or dark theme. Works on phones and desktops, offline.
+One page of plain-text notes that saves itself as you type. Open and download `.txt` files. Fixed 16 px text with word wrap; the theme always follows the system / Hub (NL2). Works on phones and desktops, offline.
 
 ## 2. Files
 - `notely.html` / `notely.css`: toolbar, text area, undo bar, layout
 - `notely_config.js`: themes, font sizes, timings, file name, storage keys
 - `nl_store.js`: safe localStorage access (never throws)
-- `nl_theme.js`: theme mode System / Light / Dark (System follows the Hub via `shared/theme/hub_theme.js`)
+- `nl_theme.js`: theme follows the system / Hub live via `shared/theme/hub_theme.js`, Hub accent kept
 - `nl_editor.js`: text area, autosave, word / character count, text size, one-time import from Notepad
 - `nl_files.js`: Open (picker or drag-and-drop) and Download
-- `nl_clear.js`: Clear with a 5-second Undo
+- `parked/`: NOT loaded, kept for reuse: `nl_clear.js` (Clear + Undo), `nl_theme_cycle.js` (NL1 theme button), `nl_fontsize.js` (A− / A+)
 - `nl_keys.js`: keyboard shortcuts
 - `nl_handoff.js`: "Open with Notely" from the Files app (sessionStorage `notely-handoff`, asks before replacing notes)
 - `nl_main.js`: start-up and buttons
@@ -22,9 +22,8 @@ One page of plain-text notes that saves itself as you type. Open and download `.
 - **Count:** words and characters show on the right of the toolbar.
 - **Open:** pick a text file, or drag one onto the page. It replaces the current text (Ctrl+Z can bring the old text back where the browser supports it). Limit 5 MB; line endings become `\n`.
 - **Download:** saves the text as `Notely.txt`.
-- **Clear:** asks first, then shows "Text cleared. Undo" for 5 s.
-- **A− / A+:** text size 12–32 px in steps of 2 (default 17). Remembered.
-- **Theme:** the button cycles System (default) → Light → Dark and shows the current mode. System follows the Hub's dark / light live; a Hub accent colour replaces the theme accent. Remembered (an old saved light / dark choice is kept).
+- **Text:** fixed 16 px, word wrap on (no sideways scroll).
+- **Theme:** always follows the system / Hub dark / light live; a Hub accent colour replaces the theme accent. No button.
 - **Tab** inserts a tab character instead of leaving the text area.
 - **From Notepad:** the first time Notely opens with no notes, it copies the old Notepad text once. Notepad's own text is never changed.
 
@@ -39,7 +38,7 @@ Works inside the hub. Keys from the phone's PC Keys / Phone Keys are typed into 
 ## 5. Saved data
 localStorage keys (not tied to the folder, so moving the app keeps the notes):
 - `notely-text`: the notes
-- `notely-theme`, `notely-font`: theme and text size
+- `notely-theme`, `notely-font`: no longer used since NL2 (ignored, left in storage)
 - `notely-imported`: set after the one-time Notepad import
 - `notepad-text`: Notepad's notes, only read
 
@@ -59,31 +58,31 @@ Shown briefly in the toolbar:
 - Up to 420 px tall (landscape phones): slimmer toolbar.
 
 ## 8. Safe settings (`notely_config.js`)
-- `defaultTheme`, `themes` (colours)
-- `fontSize.min`, `.max`, `.step`, `.default`
+- `themes` (colours)
+- `fontSize` (fixed px, 16)
 - `autosaveMs`
-- `undoMs`: how long Undo stays after Clear
 - `filename`
 - `maxOpenBytes`
 - Leave `keys` alone: changing them hides existing notes.
 
 ## 9. Browser checklist
 1. Type, reload: the text is still there.
-2. A+ twice, reload: still bigger.
+2. Long line wraps; no sideways scroll.
 3. Theme to Light, reload: still Light.
-4. Clear → OK → Undo: the text is back.
+4. Switch the Hub to Light / Dark: Notely follows at once.
 5. Download: `Notely.txt` has the same text.
 6. Open a `.txt` file: it replaces the text and says "Opened …".
 
 ## 10. Known limits
 - One note only.
 - Plain text only (no formatting).
-- Opening or Clear replaces the text; only Ctrl+Z (where supported) or the 5-second Undo bring it back.
+- Opening a file replaces the text; only Ctrl+Z (where supported) brings it back.
 - Saved per browser and site; not shared between devices.
 - Old version after an update: hard-refresh.
 
 ## 11. Change log
 - 2026-10-27 IST: NL1 System theme mode (default), follows the Hub theme and accent live.
+- 2026-11-01 IST: NL2 clean-up: Clear, A− / A+ and the theme button removed (code parked in `parked/`); theme always follows system / Hub; fixed 16 px; word wrap on.
 - 2026-10-04 23:24 IST: moved from `apps/tools/notely/` to `apps/office/notely/`, now in the hub's Office menu; notes are kept (commit 3a32f4e).
 - 2026-10-04 11:39 IST: new app (commit 5aeb4bf).
 

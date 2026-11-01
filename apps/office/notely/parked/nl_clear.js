@@ -1,4 +1,5 @@
-/* Notely — nl_clear.js: Clear (confirm) with a 5-second Undo bar. */
+/* PARKED (NL2): not loaded by notely.html; kept so it may be reused. Needs #btn-clear, #undo-bar/#btn-undo, config undoMs: 5000 and NL.clear.init().
+   Notely — nl_clear.js: Clear (confirm) with a 5-second Undo bar. */
 NL.clear = (function () {
   const C = NL.config;
   let bar, kept = null, timer = 0;

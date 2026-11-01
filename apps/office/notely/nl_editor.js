@@ -1,7 +1,8 @@
-/* Notely — nl_editor.js: the textarea — autosave, counts, font size, undo-friendly inserts. */
+/* Notely — nl_editor.js: the textarea — autosave, counts, undo-friendly inserts. NL2: fixed 16 px text (config fontSize), word wrap on; 'notely-font' ignored
+   (A− / A+ parked in parked/nl_fontsize.js). */
 NL.editor = (function () {
   const C = NL.config, S = NL.store;
-  let ta, status, timer = 0, size = C.fontSize.default;
+  let ta, status, timer = 0;
 
   function save() { clearTimeout(timer); timer = 0; S.set(C.keys.text, ta.value); }
   function count() {
@@ -11,14 +12,6 @@ NL.editor = (function () {
     status.textContent = words + (words === 1 ? ' word' : ' words') + ' · ' + chars + (chars === 1 ? ' character' : ' characters');
   }
   function changed() { count(); clearTimeout(timer); timer = setTimeout(save, C.autosaveMs); }
-
-  function setSize(px) {
-    size = Math.max(C.fontSize.min, Math.min(C.fontSize.max, px));
-    ta.style.fontSize = size + 'px';
-    S.set(C.keys.font, String(size));
-    document.getElementById('btn-smaller').disabled = size <= C.fontSize.min;
-    document.getElementById('btn-bigger').disabled = size >= C.fontSize.max;
-  }
 
   // Insert at the caret through the browser's undo stack when possible.
   function insert(text) {
@@ -50,8 +43,8 @@ NL.editor = (function () {
       S.set(C.keys.imported, '1');
     }
     ta.value = S.get(C.keys.text) || '';
-    const f = parseInt(S.get(C.keys.font), 10);
-    setSize(isFinite(f) ? f : C.fontSize.default);
+    ta.style.fontSize = C.fontSize + 'px';
+    ta.wrap = 'soft';
     ta.addEventListener('input', changed);
     window.addEventListener('pagehide', () => { if (timer) save(); });
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && timer) save(); });
@@ -60,8 +53,6 @@ NL.editor = (function () {
 
   return {
     init, insert, replaceAll, save,
-    bigger() { setSize(size + C.fontSize.step); },
-    smaller() { setSize(size - C.fontSize.step); },
     get value() { return ta.value; },
     get el() { return ta; },
   };
