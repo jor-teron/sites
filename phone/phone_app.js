@@ -10,7 +10,8 @@
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   var A = window.PhoneApps, G = window.PhoneGesture, S = window.PhoneSave;
-  var RELEASE = 'PH1';
+  // var RELEASE = 'PH1';   (PH1)
+  var RELEASE = 'PH6';
   var d = S.load();
   var root = document.documentElement;
 
@@ -19,6 +20,15 @@
     // d.dock = d.dock.filter(A.has);   (PH1)
     // PH5: dock ids stay saved even when not in the catalog yet ('message'); renderHome hides them
     d.pages = d.pages.map(function (p) { return p.filter(A.has); });
+    // PH6: page 1 holds the clock, so only pageCap(0) = 16 apps fit; overflow moves to the next page(s)
+    for (var i = 0; i < d.pages.length; i++) {
+      var cap = i === 0 ? 16 : S.PAGE_MAX;
+      if (d.pages[i].length > cap) {
+        var extra = d.pages[i].splice(cap);
+        if (i + 1 >= d.pages.length) d.pages.push([]);
+        d.pages[i + 1] = extra.concat(d.pages[i + 1]);
+      }
+    }
     d.pages = d.pages.filter(function (p, i) { return i === 0 || p.length; });
     if (d.pages.length < 2) d.pages.push([]);   // always a page to swipe to (+ hint)
     d.recent = d.recent.filter(A.has);
@@ -185,10 +195,25 @@
   function push(layer) { stack.push(layer); history.pushState({ ph: stack.length, layer: layer }, ''); }
   function back() { if (stack.length) history.back(); }
   function replaceTop(layer) { stack[stack.length - 1] = layer; history.replaceState({ ph: stack.length, layer: layer }, ''); }
-  history.replaceState({ ph: 0 }, '');
+  // history.replaceState({ ph: 0 }, '');   (PH1)
+  // PH6: Back after a reload. A reload with layers open leaves our old {ph:n} entries in the session history,
+  // but no layers are open any more, so Back walked those entries and seemed dead. Two parts:
+  //  1. on load, if the current entry is a stale {ph:n>0}, go(-n) back to our own base entry (async; while it
+  //     settles popstate does nothing), then mark that entry {ph:0};
+  //  2. any popstate that lands on an entry deeper than the open layers (stale, or a Forward press) is
+  //     skipped with history.back(), so one Back press never "does nothing". Depth only falls, so no loop.
+  var settling = false;
+  var st0h = history.state;
+  if (st0h && typeof st0h.ph === 'number' && st0h.ph > 0) {
+    settling = true;
+    history.go(-st0h.ph);
+    setTimeout(function () { if (settling) { settling = false; history.replaceState({ ph: 0 }, ''); } }, 600);   // fallback
+  } else history.replaceState({ ph: 0 }, '');
   addEventListener('popstate', function (e) {
     var depth = (e.state && typeof e.state.ph === 'number') ? e.state.ph : 0;
+    if (settling) { settling = false; if (!stack.length) { history.replaceState({ ph: 0 }, ''); return; } }   // PH6
     while (stack.length > depth) closeLayer(stack.pop());
+    if (depth > stack.length) history.back();   // PH6: stale entry, skip it
   });
   function closeLayer(l) {
     if (l === 'drawer') closeDrawerUI();
@@ -257,7 +282,8 @@
   var notices = [];   // PH1: empty; later releases add Hub notices here
   function tiles() {
     var th = d.settings.theme;
-    var fs = !!document.fullscreenElement;
+    // var fs = !!document.fullscreenElement;   (PH1)
+    var fs = !!(document.fullscreenElement || document.webkitFullscreenElement);   // PH6
     return [
       { id: 'theme', e: th === 'dark' ? '🌙' : th === 'light' ? '☀️' : '🌓', label: 'Theme: ' + (th === 'system' ? 'Hub' : th[0].toUpperCase() + th.slice(1)) },   // H80: system = follow Hub
       { id: 'fullscreen', e: '⛶', label: fs ? 'Exit full screen' : 'Full screen', on: fs, off: !(root.requestFullscreen || root.webkitRequestFullscreen) },
@@ -303,7 +329,7 @@
     } else if (id === 'fullscreen') {
       toggleFullscreen();
     } else if (id === 'intercom' || id === 'telephone') {
-      if (A.has(id)) openApp(id); else ask(id + ' is not in the Hub catalog on this device.');
+      if (A.has(id)) openApp(id); else ask((id === 'intercom' ? 'Intercom' : 'Telephone') + ' is not in the Hub catalog on this device.');   // PH6: proper name
     } else if (id === 'location') {
       var l = locationApp();
       if (l) openApp(l);
@@ -326,6 +352,7 @@
     Promise.resolve(p).catch(function () { toast('Full screen is not available here'); }).then(function () { setTimeout(renderPanel, 150); });
   }
   document.addEventListener('fullscreenchange', function () { if (top() === 'panel') renderPanel(); });
+  document.addEventListener('webkitfullscreenchange', function () { if (top() === 'panel') renderPanel(); });   // PH6
 
   /* ---------- apps (iframes) ---------- */
   var frames = [];   // [{id, el}] most recent first
@@ -341,6 +368,13 @@
     if (a !== HUB_SETTINGS) {   // H80: not in recent (recent lists catalog apps)
       d.recent = [id].concat(d.recent.filter(function (x) { return x !== id; })).slice(0, 8);
       persist();
+    }
+    if (a.newTab) {   // PH6: catalog newTab apps can't run in a frame: open a real tab, no iframe
+      var w = null;
+      try { w = window.open(a.url, '_blank'); } catch (_) { /* blocked */ }
+      if (!w) toast('Could not open ' + a.name + ' in a new tab (pop-ups blocked?)');
+      if (top() === 'drawer' || top() === 'sheet' || top() === 'panel') back();
+      return;
     }
     var f = frames.filter(function (x) { return x.id === id; })[0];
     if (!f) {
@@ -383,6 +417,10 @@
     if (!file && e.origin !== location.origin) return;
     var m = e.data;
     if (!m || typeof m !== 'object') return;
+    if (m.type === 'hub-back') {   // PH6: the app handled Back itself
+      if (m.handled === true && hbWait && hbWait.f === f) { clearTimeout(hbWait.t); hbWait = null; }
+      return;
+    }
     if (m.sharedLink === 'ready') {
       // var code = hubCode();   (PH1)
       var H = window.HubMeshLink;   // H79: follow the Hub mesh: private code only while linked, else no hello (apps use 00000 via HubMeshLink)
@@ -390,6 +428,26 @@
       if (code) f.el.contentWindow.postMessage({ sharedLink: 'hello', code: code, prefix: 'jtsites-', devices: [] }, file ? '*' : location.origin);
     }
   });
+
+  /* PH6: window.hubBack() for the Android launcher (evaluateJavascript). Synchronous; true = handled,
+   * false = bare home (launcher hides the Page). With an app on top: post {type:'hub-back'} into its frame;
+   * a reply {type:'hub-back', handled:true} from that frame within 150 ms keeps the app open, else it closes.
+   * A second press while waiting closes the app at once. */
+  var hbWait = null;
+  window.hubBack = function () {
+    if (dlgDone) { dlgDone(-1); return true; }
+    if (!stack.length) return false;
+    if (hbWait) { clearTimeout(hbWait.t); hbWait = null; back(); return true; }
+    var f = top() === 'app' && frames.filter(function (x) { return x.id === cur; })[0];
+    if (f && f.el.contentWindow) {
+      var file = location.protocol === 'file:';
+      try { f.el.contentWindow.postMessage({ type: 'hub-back' }, file ? '*' : location.origin); } catch (_) { back(); return true; }
+      hbWait = { f: f, t: setTimeout(function () { hbWait = null; if (top() === 'app' && cur === f.id) back(); }, 150) };
+      return true;
+    }
+    back();
+    return true;
+  };
 
   // H82: Answer on the attention pop-up (hub/core/hub_attention.js) shows that app's frame
   window.__hubAttentionFocus = function (win) {
@@ -427,18 +485,18 @@
     for (var i = 0; i < d.pages.length; i++) { if (d.pages[i].length < pageCap(i)) { d.pages[i].push(id); break; } }
     if (i === d.pages.length) d.pages.push([id]);
     persist(); renderHome();
-    toast(A.get(id).name + ' pinned to page ' + (i + 1));
+    toast((A.get(id) || { name: id }).name + ' pinned to page ' + (i + 1));
   }
   function unpin(id) {
     d.pages = d.pages.map(function (p) { return p.filter(function (x) { return x !== id; }); });
-    persist(); renderHome(); toast(A.get(id).name + ' removed from home');
+    persist(); renderHome(); toast((A.get(id) || { name: id }).name + ' removed from home');
   }
   function dockAdd(id) {
-    if (d.dock.indexOf(id) >= 0) return;
+    if (d.dock.indexOf(id) >= 0) return true;   // PH6: true/false consistently
     if (d.dock.length >= S.DOCK_MAX) { ask('The dock is full (' + S.DOCK_MAX + ' apps). Remove one from the dock first.'); return false; }
-    d.dock.push(id); persist(); renderHome(); toast(A.get(id).name + ' added to the dock');
+    d.dock.push(id); persist(); renderHome(); toast((A.get(id) || { name: id }).name + ' added to the dock'); return true;
   }
-  function dockRemove(id) { d.dock = d.dock.filter(function (x) { return x !== id; }); persist(); renderHome(); toast(A.get(id).name + ' removed from the dock'); }
+  function dockRemove(id) { d.dock = d.dock.filter(function (x) { return x !== id; }); persist(); renderHome(); toast((A.get(id) || { name: id }).name + ' removed from the dock'); }
   function menu(id) {
     var a = A.get(id); if (!a) return;
     openSheet(function (box) {

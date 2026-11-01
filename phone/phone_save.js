@@ -1,7 +1,7 @@
 /*
  * Phone launcher PH1 — the ONE save module. localStorage key 'phone-launcher-v1':
  *   { v:1, pages:[[appId…]…], dock:[appId…≤5], recent:[appId…≤8], settings:{theme, wall, clock24, keepAlive} }
- * theme: 'system' | 'light' | 'dark' (default dark; System follows sites-hub.theme, then the device).
+ * theme: 'system' | 'light' | 'dark' (PH6: default 'system', shown as "Hub": follows sites-hub.theme, then the device).
  * H80: default 'system' (shown as "Hub": follows the Hub theme). th80 marks saves made from H80 on; older saves
  * (which always held 'dark', the PH1 default) move to 'system' once. Light / Dark stay as a phone-only override.
  * PH5: ph5 marks saves made from PH5 on; older saves get the PH5 home (TV only) and dock once, settings kept.
