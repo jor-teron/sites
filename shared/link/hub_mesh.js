@@ -108,6 +108,27 @@
      {k:'req', room} asks for recent chat; {k:'rows', room, rows:[<= SYNC_ROWS chat rows]} answers (<= SYNC_BYTES
      of JSON). Checked here on send and receive (private meshes too); link_chat.js does the asking / merging. */
   var SYNC_CH = 'chat-sync', SYNC_ROWS = 50, SYNC_BYTES = 128 * 1024;
+  /* H91 Hub Line (hub/link/hub_line.js): channels 'call' and 'msg', one device only (never '*'), allowed on the
+     public mesh, shape-checked both ways, data <= LINE_MSG_BYTES (64 KB) for msg / 2 KB for call. Every device
+     advertises its 5-digit number (SharedLinkDevices.code()) as roster 'num' so a number finds a device. */
+  var CALL_CH = 'call', MSG_CH = 'msg', LINE_MSG_BYTES = 64 * 1024, LINE_CALL_BYTES = 2048;
+  var NUM_RE = /^[1-9]\d{4}$/, CALL_K = /^(ring|busy|accept|cancel|end)$/;
+  function str(v, n) { return typeof v === 'string' && v.length <= n; }
+  function lineOk(e) {
+    var d = e.data;
+    if (e.to === '*' || !d || typeof d !== 'object' || Array.isArray(d)) return false;
+    if (e.ch === CALL_CH) {
+      if (!CALL_K.test(String(d.k)) || !str(d.callId, 64) || !d.callId || !NUM_RE.test(String(d.from))) return false;
+      if (d.name != null && !str(d.name, 40)) return false;
+      if (d.video != null && typeof d.video !== 'boolean') return false;
+      return sizeOf(d) <= LINE_CALL_BYTES;
+    }
+    if (d.k === 'ack') return str(d.id, 80) && !!d.id && sizeOf(d) <= 256;
+    if (d.k !== 'msg' || !str(d.id, 80) || !d.id || !NUM_RE.test(String(d.from)) || typeof d.text !== 'string' || typeof d.at !== 'number') return false;
+    if (d.name != null && !str(d.name, 40)) return false;
+    return sizeOf(d) <= LINE_MSG_BYTES;
+  }
+  function myNum() { var D = window.SharedLinkDevices; try { var n = D && D.code ? String(D.code()) : ''; return NUM_RE.test(n) ? n : ''; } catch (_) { return ''; } }
   function rowOk(r) {
     return !!(r && typeof r === 'object' && !Array.isArray(r) && r.type === 'chat' && typeof r.text === 'string' && r.text && r.text.length <= CHAT_TEXT &&
       typeof r.id === 'string' && r.id && r.id.length <= 80 && typeof r.from === 'string' && r.from.length <= 40 &&
@@ -140,6 +161,7 @@
     if (e.ch === CTRL) return true;
     if (e.ch === CHAT_CH) return chatOk(e);   // H84: group chat is the public room's one app channel
     if (e.ch === SYNC_CH) return syncOk(e);   // H89: + chat catch-up (one device only)
+    if (e.ch === CALL_CH || e.ch === MSG_CH) return lineOk(e);   // H91: Hub Line (one device only)
     if (e.ch !== INVITE_CH || e.to === '*') return false;
     var d = e.data;
     return !!(d && typeof d === 'object' && d.k === 'invite' && INV_CODE_RE.test(String(d.code)) && d.code !== PUBLIC_CODE);
@@ -438,7 +460,8 @@
   function holderSelf() { return { dev: S.dev, name: myName(), site: location.protocol === 'file:' ? 'file' : String(location.host).slice(0, 64) }; }
   function keepHolder(x) { var h = x.data && x.data.lobby; S.holder = h && typeof h === 'object' ? { dev: x.from, name: String(h.name || '').slice(0, nameCap()), site: String(h.site || '').slice(0, 64) } : null; }
   // function selfInfo() { return { deviceId: S.dev, name: myName(), mode: myMode(), apps: myApps() }; }   (before H51)
-  function selfInfo() { return { deviceId: S.dev, name: myName(), mode: myMode(), apps: myApps(), pk: K.pub || '' }; }   // H51: + public key
+  // function selfInfo() { return { deviceId: S.dev, name: myName(), mode: myMode(), apps: myApps(), pk: K.pub || '' }; }   // H51: + public key   (before H91)
+  function selfInfo() { return { deviceId: S.dev, name: myName(), mode: myMode(), apps: myApps(), pk: K.pub || '', num: myNum() }; }   // H51: + public key; H91: + 5-digit number
 
   /* ---------- envelopes ---------- */
   function envelope(ch, to, data) {
@@ -487,6 +510,7 @@
     if (S.pub && !pubAllowed(e)) { S.stats.dropPublic++; return false; }   // H55: presence + invites only on 0000 (H84: + chat)
     if (e.ch === CHAT_CH && !chatOk(e)) { S.stats.dropShape++; return false; }   // H84
     if (e.ch === SYNC_CH && !syncOk(e)) { S.stats.dropShape++; return false; }   // H89
+    if ((e.ch === CALL_CH || e.ch === MSG_CH) && !lineOk(e)) { S.stats.dropShape++; return false; }   // H91
     return true;
   }
 
@@ -522,7 +546,8 @@
         deviceId: r.deviceId, name: String(r.name || 'Device').slice(0, nameCap()), mode: r.mode === 'desktop' ? 'desktop' : r.mode === 'phone' ? 'phone' : '',
         apps: !S.pub && r.apps && typeof r.apps === 'object' && !Array.isArray(r.apps) ? r.apps : {}, joinOrder: Number(r.joinOrder) || 0,   // H55: no apps on 0000
         lastSeen: Number(r.lastSeen) || 0, online: !!r.online, lobby: r.deviceId === lobbyDev, relay: !!r.relay,
-        pk: typeof r.pk === 'string' && r.pk.length <= PK_MAX ? r.pk : ''   // H51: the device's public key as the lobby saw it
+        pk: typeof r.pk === 'string' && r.pk.length <= PK_MAX ? r.pk : '',   // H51: the device's public key as the lobby saw it
+        num: NUM_RE.test(String(r.num)) ? String(r.num) : ''   // H91: Hub Line number
       });
     });
     S.rv++;
@@ -939,7 +964,8 @@
   function info(o) {
     var apps = {};
     if (!pub() && o.apps && typeof o.apps === 'object' && !Array.isArray(o.apps)) Object.keys(o.apps).slice(0, 32).forEach(function (a) { if (CH_RE.test(a)) { var v = cleanIdentity(o.apps[a]); if (v) apps[a] = v; } });
-    return { name: String(o.name || 'Device').replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, nameCap()), mode: o.mode === 'desktop' ? 'desktop' : o.mode === 'phone' ? 'phone' : '', apps: apps };
+    // return { name: ..., mode: ..., apps: apps };   (before H91)
+    return { name: String(o.name || 'Device').replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, nameCap()), mode: o.mode === 'desktop' ? 'desktop' : o.mode === 'phone' ? 'phone' : '', apps: apps, num: NUM_RE.test(String(o.num)) ? String(o.num) : '' };   // H91: + num
   }
   function memberGone(d) {
     var r = S.roster.get(d);
@@ -1003,6 +1029,7 @@
     if (S.pub && !pubAllowed(e)) { S.stats.dropPublic++; return { ok: false, reason: 'public' }; }   // H55
     if (e.ch === CHAT_CH && !chatOk(e)) { S.stats.dropShape++; return { ok: false, reason: 'shape' }; }   // H84
     if (e.ch === SYNC_CH && !syncOk(e)) { S.stats.dropShape++; return { ok: false, reason: 'shape' }; }   // H89
+    if ((e.ch === CALL_CH || e.ch === MSG_CH) && !lineOk(e)) { S.stats.dropShape++; return { ok: false, reason: 'shape' }; }   // H91
     if (sizeOf(e) > MAX_BYTES) { S.stats.dropSize++; return { ok: false, reason: 'size' }; }
     if (!outRateOk()) { S.stats.dropRate++; return { ok: false, reason: 'rate' }; }
     S.stats.sent++;
@@ -1161,6 +1188,8 @@
     // H55: public mesh
     PUBLIC_CODE: PUBLIC_CODE, isPublic: pub, invite: invite,
     SYNC: { CH: SYNC_CH, ROWS: SYNC_ROWS, BYTES: SYNC_BYTES },   // H89
+    LINE: { CALL: CALL_CH, MSG: MSG_CH, MSG_BYTES: LINE_MSG_BYTES, CALL_BYTES: LINE_CALL_BYTES }, myNumber: myNum,   // H91
+    _lineOk: function (ch, to, data) { return lineOk({ ch: ch, to: to, data: data }); },   // tests
     // H84: app messages to every device on the current mesh (relay + direct, de-duplicated by envelope id)
     broadcast: broadcastMsg, onMsg: onMsg, room: function () { return S ? S.code : ''; },
     linked: function () { return !!(S && (S.isLobby || (S.lobbyConn && S.lobbyConn.open && S.joinState === 'linked'))); },
