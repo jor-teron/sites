@@ -13,6 +13,9 @@
   - init(sendFn): sendFn(msg) puts a message on the wire. Host (Hub) sends to all;
     a joined device sends with bcast:true so the Hub re-broadcasts it.
   - add(msg) stores an incoming message (dedupe by id) and fires on('add').
+  - H84: rows may carry room (the mesh code it was sent in). One history for every room (not split).
+    send() takes an optional room from window.HubMesh.room(); dedupe by id drops a copy that arrives twice
+    (mesh relay + direct, or mesh + old SharedLink).
   - readOnly mode (Pooh Chat inside the Hub): never writes; re-reads on 'storage'.
 */
 (function () {
@@ -31,6 +34,7 @@
     var list = history();
     if (list.some(function (x) { return x.id === m.id; })) return false;
     var row = { type: 'chat', id: String(m.id || Date.now()), from: String(m.from || ''), name: String(m.name || 'Device').slice(0, 40), text: String(m.text).slice(0, 2000), ts: Number(m.ts) || Date.now() };
+    if (m.room) row.room = String(m.room).slice(0, 12);   // H84: mesh room tag (00000 / private code), display only
     list.push(row);
     store(list);
     fire(row);
@@ -56,6 +60,8 @@
     var myId = myDeviceId();
     var m = { type: 'chat', id: myId + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), from: myId,
       name: window.SharedLinkDevices ? SharedLinkDevices.name() : 'Device', text: text.slice(0, 2000), ts: Date.now() };
+    var room = window.HubMesh && HubMesh.room ? HubMesh.room() : '';   // H84
+    if (room) m.room = room;
     add(m);
     try { sendFn(m); } catch (e) { console.warn('SharedChat send', e); }
     return m;
