@@ -14,7 +14,7 @@ H79: the page is `/phone.html` at the site root, next to `hub.html`; its own fil
 | Home | swipe down | quick panel |
 | Any app icon | tap | open the app full screen inside the launcher |
 | Any app icon | long-press (≈0.5 s) | menu: Open · Pin to home / Remove from home · Add to dock / Remove from dock · App info |
-| Drawer | swipe left / right | next / previous category tab (All first) |
+| Drawer | swipe left / right | next / previous category tab |
 | Drawer | drag up / down | scroll the list (with a fling) |
 | Drawer | pull down at the top of the list or on the header, or Back | close |
 | Quick panel | swipe up, tap below it, or Back | close |
@@ -28,7 +28,7 @@ Desktop testing: mouse drags do the same; wheel down = drawer, wheel up = panel,
 - **Home:** big clock + date on page 1, pinned apps in a 4-column grid (6 on wide screens), pages with dots,
   a dock of up to 5 apps. Page 1 holds 16 apps, later pages 24; pinning fills the first page with room.
 - **Drawer:** search box (name first, then category / description), category tabs from the Hub catalog
-  (`HUB_CAT_CSV` order) plus All, icons in alphabetical order.
+  (`HUB_CAT_CSV` order; PH4: no All tab), icons in alphabetical order.
 - **Quick panel:** tiles Theme (Dark → Light → System), Full screen, Intercom, Telephone, Location
   (placeholder dialog until Live Location LL1 exists), Settings; Notices list (empty in PH1).
 - **Settings** (sheet): Theme, 24 h / 12 h clock, Apps kept open (1 or 2), Test wallpaper, Reset home layout, About.
@@ -109,3 +109,9 @@ Multi-Screen Wall, Search. Theme System follows `sites-hub.theme`, then the devi
 - Notices survive a reload: saved in `localStorage` `sites-phone.notices` (newest first, last 50, this device only, never synced); ✕ and taps update it. Tap actions only work in the session that made them. File transfers still running at a reload come back as one "⚠️ Interrupted" notice each (pending names in `sites-phone.noticeFiles`). `HubNotify.clear()` empties the list.
 - Phone toasts and notice toasts now share one queue (`window.phoneToast(msg, ms)` in phone_notify.js), so neither cuts the other off; same look.
 - Comments updated for H83: the public lobby is 00000 (5 digits).
+
+## PH4 — Drawer without All (2026-11-01 IST)
+
+- The drawer has no **All** tab; tabs are only the catalog categories (Favorite stays a normal tab).
+- It opens on the last-used category (`localStorage` `sites-phone.cat`, this device only); missing or gone → the first catalog category.
+- Swipes move between real categories only. Search still looks across every app.

@@ -198,7 +198,10 @@
   var top = function () { return stack[stack.length - 1] || ''; };
 
   /* ---------- drawer ---------- */
-  var cats = ['All'].concat(A.cats()), cat = 'All';
+  // var cats = ['All'].concat(A.cats()), cat = 'All';   (PH1)
+  var CATKEY = 'sites-phone.cat', cats = A.cats(), cat = '';   // PH4: no All tab; open on the last-used category
+  try { cat = localStorage.getItem(CATKEY) || ''; } catch (_) { /* blocked */ }
+  if (cats.indexOf(cat) < 0) cat = cats[0] || '';
   function renderTabs() {
     var t = $('tabs'); t.textContent = '';
     cats.forEach(function (c) {
@@ -220,6 +223,7 @@
   function setCat(c) {
     if (cats.indexOf(c) < 0 || (c === cat && !$('search').value)) return;
     cat = c;
+    try { localStorage.setItem(CATKEY, c); } catch (_) { /* blocked */ }   // PH4
     if ($('search').value) $('search').value = '';
     renderTabs(); renderList();
     var on = $('tabs').querySelector('.tab.on');
@@ -583,7 +587,8 @@
         if (Math.abs(v) > 2) fling = requestAnimationFrame(step);
       } else if (dm === 'cat') {
         list.style.transform = '';
-        var i = cats.indexOf($('search').value ? 'All' : cat);
+        // var i = cats.indexOf($('search').value ? 'All' : cat);   (PH1)
+        var i = cats.indexOf(cat);   // PH4: swipes move between real categories
         if (G.passed(dx, vx, -1) && i < cats.length - 1) setCat(cats[i + 1]);
         else if (G.passed(dx, vx, 1) && i > 0) setCat(cats[i - 1]);
       }
