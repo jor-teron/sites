@@ -956,6 +956,21 @@ kept.
   a phone frame. Settings only uses parent.HubPrefs / HubMode / __hubHome
   / top.HubKeys behind guards, so no Settings edits were needed.
 
+-- H81: Hub dialogs and notifications on the phone page (1 Nov 2026) --
+- /phone.html loads shared/dialog/dialog.css + dialog.js and
+  hub/core/hub_dialog_bridge.js. The bridge sets window.__hubDialogHost
+  (the marker dialog.js checks on its same-origin parent), so UiDialog in
+  a phone app frame is drawn over the whole phone screen. Bridge is
+  DOM-light (only checks the sender is one of this page's iframes); no
+  hub/ edits. The phone's own #dialog for launcher prompts is unchanged.
+- phone/phone_notify.js gives window.HubNotify (notice / start / progress /
+  done / fail, also callable as HubNotify(o)) and window.hubToast, the API
+  apps call as window.top.HubNotify. Each notice goes to the quick panel
+  Notices list (newest first, max 30, tap runs onClick, x dismisses) and a
+  3 s #toast (none under sites-hub.dnd '1'). Not saved across reloads.
+- Hub notices for Intercom / Telephone calls are text only (no accept /
+  decline buttons on the Hub either); the app frame stays the place to answer.
+
 NV-S2 (hub.html ?v= labels)
 - hub.html keeps one ?v= label only, on hub/core/hub.js. Settings > About,
   HubUpdate (build tag + update check) and hub_bump.py read the build there,

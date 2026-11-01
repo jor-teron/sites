@@ -51,6 +51,10 @@ Desktop testing: mouse drags do the same; wheel down = drawer, wheel up = panel,
   the Hub, then the device); Light / Dark stay as a phone-only override. Saves without `th80` (pre-H80, always
   'dark') move to Hub once. Mesh on/off stays `sites-hub.meshPublic` (H79). Quick panel tile **Hub Settings**
   opens `apps/system/settings/index.html` in a phone app frame (not added to Recent).
+- **H81 Hub dialogs and notices:** `/phone.html` loads the Hub's dialog bridge (`shared/dialog/*`,
+  `hub/core/hub_dialog_bridge.js`), so app dialogs (UiDialog) draw over the whole phone screen like on the Hub.
+  `phone/phone_notify.js` gives apps `window.top.HubNotify.notice(...)` / `hubToast`: each notice shows a short
+  toast and is listed in the quick panel's **Notices** (tap = the app's action, ✕ = dismiss). Not kept after reload.
 
 ## Transparent background
 
