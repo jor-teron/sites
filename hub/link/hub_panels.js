@@ -15,7 +15,7 @@
  *                'shared-link-device-name' (another tab / Settings opened on its own: it also re-sends
  *                the name to the link) and on SharedLink 'devices' / pop-up open.
  *                The SharedLinkUI.mountName box (hub_link.js) is still made, but removed here unused.
- *   Join       : 4-digit box + Join + 📷 (SharedLinkScan.ask) → location ?join=CODE (as
+ *   Join       : 5-digit box (H83; was 4) + Join + 📷 (SharedLinkScan.ask) → location ?join=CODE (as
  *                hub_remote.js). Own code is rejected (H31: on a phone whose link is down it rejoins now). A join that has not connected after
  *                20 s shows "Hub not found — check the code" (sessionStorage 'hub-join-try').
  *                H55: 0000 is the public mesh, not a Hub: on a joined phone it disconnects (back to 0000),
@@ -97,12 +97,12 @@
     /* Join *\/
     const s3 = el('section', 'hp-sec'); s3.appendChild(el('h3', '', 'Join with code'));
     const form = el('form', 'hp-card hp-join'); form.autocomplete = 'off';
-    const inp = el('input'); inp.type = 'text'; inp.inputMode = 'numeric'; inp.maxLength = 4; inp.placeholder = '0000'; inp.setAttribute('aria-label', 'Hub code');
+    const inp = el('input'); inp.type = 'text'; inp.inputMode = 'numeric'; inp.maxLength = 5; inp.placeholder = '00000'; inp.setAttribute('aria-label', 'Hub code');   // H83 (was 4 / '0000')
     const go = el('button', 'hp-go', 'Join'); go.type = 'submit';
     const scan = el('button', 'hp-btn hp-scan', '📷'); scan.type = 'button'; scan.title = 'Scan a QR code'; scan.setAttribute('aria-label', 'Scan a QR code');
     const err = el('div', 'hp-err'); err.setAttribute('role', 'status');
     form.append(inp, go, scan, err);
-    s3.append(form, el('div', 'hp-hint', 'Type the 4-digit code shown on the other Hub, or scan its QR code.'));
+    s3.append(form, el('div', 'hp-hint', 'Type the 5-digit code shown on the other Hub, or scan its QR code.'));
     body.append(s1, s3, s2);
     if (extra) extra.remove();
     pop.appendChild(body);
@@ -190,11 +190,11 @@
     function join(c) {
       flash('');
       c = String(c || '').replace(/\D/g, '');
-      if (!/^\d{4}$/.test(c)) { flash('Enter the 4-digit code.'); return; }
-      if (c === '0000') {   // H55: 0000 = the public mesh: leave a private Hub (joined: Disconnect) and turn public on
+      if (!/^\d{5}$/.test(c)) { flash('Enter the 5-digit code.'); return; }   // H83
+      if (c === '00000') {   // H55 (H83: 00000): 0000 = the public mesh: leave a private Hub (joined: Disconnect) and turn public on
         if (R && window.__hubRemoteApi) { try { localStorage.removeItem('sites-hub.meshPublic'); } catch (_) { /* blocked */ } window.__hubRemoteApi.disconnect(); return; }
         if (window.HubMeshLink) window.HubMeshLink.setPublic(true);
-        flash(window.HubMeshLink && window.HubMeshLink.isPrivate() ? 'Public mesh 0000 is on; this Hub joins it when it leaves its private mesh.' : 'Joined the public mesh 0000 (Settings \u203A Devices).');
+        flash(window.HubMeshLink && window.HubMeshLink.isPrivate() ? 'Public mesh 00000 is on; this Hub joins it when it leaves its private mesh.' : 'Joined the public mesh 00000 (Settings \u203A Devices).');
         return;
       }
       if (c === myCode()) {
@@ -258,7 +258,7 @@
   function codeFromScan(text) {
     const t = String(text || '').trim();
     let c = '';
-    if (/^\d{4}$/.test(t)) c = t;
+    if (/^\d{5}$/.test(t)) c = t;   // H83
     else {
       try {
         const u = new URL(t);
@@ -267,7 +267,7 @@
       } catch (_) { c = window.SharedLinkScan ? SharedLinkScan.parse(t) : ''; }
     }
     c = String(c).replace(/\D/g, '');
-    return /^\d{4}$/.test(c) ? c : '';
+    return /^\d{5}$/.test(c) ? c : '';   // H83
   }
   let cam = null;   // the open modal (one at a time)
   function openCam(onCode) {

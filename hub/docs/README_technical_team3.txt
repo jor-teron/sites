@@ -1006,3 +1006,30 @@ NV-S2 (hub.html ?v= labels)
   AND allowFavs(); otherwise HubNotify notice 'Missed call: <title>' (kept in
   the Notification Centre / phone Notices). fav:true is the app's own claim
   that the caller is a favourite. Telephone TP6 sends urgent:true, no fav.
+
+-- H83: 5-digit codes, public lobby 00000, per-device 5-digit number (1 Nov 2026) --
+- Clean cut-over (nothing saved yet): no dual lobby, no migration. A Hub on
+  H83 does not see a Hub still on 0000.
+- shared/link/link_core.js: SharedLink.CODE_LEN = 5, SharedLink.LOBBY =
+  SharedLink.PUBLIC_CODE = '00000', SharedLink.CODE_RE = /^\d{5}$/,
+  SharedLink.isCode(c) (5 digits and not the lobby). randomCode() gives
+  00001-99999 (never 00000). host(): a saved 4-digit code or a lobby code
+  is ignored and a new 5-digit code is made (6-letter app codes unchanged).
+- shared/link/hub_mesh.js: HubMesh.PUBLIC_CODE = '00000'; invite codes must
+  be 5 digits.
+- hub/core/hub_role.js (?join=, saved join code), hub/link/hub_panels.js
+  (Join box max 5, placeholder 00000, scan), hub/link/hub_meshlink.js
+  (own private code) all use 5 digits; ?join=00000 = the public mesh.
+  A saved old 4-digit join code is ignored (the device starts as host).
+- Device number: shared/link/link_devices.js SharedLinkDevices.code()
+  (also SharedLink.deviceCode()): 10000-99999, made once, kept in the
+  device-local key 'shared-link-device-code' (not synced); a saved value
+  that is not 5 digits is replaced. Settings > Devices > Device name shows
+  "This device's number: 12345" (#device-code).
+- App bots: read window.parent.SharedLink (or your own loaded link_core.js)
+  .LOBBY / .CODE_LEN / .isCode instead of hardcoding '0000' / \d{4};
+  Telephone can use SharedLinkDevices.code() as the phone number. The
+  number is not yet in the HubMesh roster and has no clash check (Telephone
+  TP2b's check still applies if Telephone keeps its own).
+- Settings > Devices public mesh texts and the H77 lobby holder line say
+  00000. No ?v= labels, build number or hub-shell CACHE change.

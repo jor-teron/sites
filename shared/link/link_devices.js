@@ -127,6 +127,20 @@
     if (lsSet(ID_KEY, memId)) { var back = lsGet(ID_KEY); if (ID_RE.test(back)) memId = back; }   // blocked storage: per-page id
     return memId;
   }
+  /* H83: this device's own 5-digit number (10000–99999, never the lobby 00000), made once and kept in the
+     device-local key 'shared-link-device-code' (not synced). Telephone uses it as the phone number. A saved value
+     that is not 5 digits (e.g. an old 4-digit one) is replaced. */
+  var CODE_KEY = 'shared-link-device-code', CODE_NUM_RE = /^[1-9]\d{4}$/, memCode = '';
+  function code() {
+    var v = lsGet(CODE_KEY);
+    if (CODE_NUM_RE.test(v)) return v;
+    if (memCode) return memCode;
+    var n = 0;
+    try { var a = new Uint32Array(1); crypto.getRandomValues(a); n = a[0] % 90000; } catch (_) { n = Math.floor(Math.random() * 90000); }
+    memCode = String(10000 + n);
+    if (lsSet(CODE_KEY, memCode)) { var back = lsGet(CODE_KEY); if (CODE_NUM_RE.test(back)) memCode = back; }
+    return memCode;
+  }
   function oldIds() { return lsGet(OLD_KEY).split(',').filter(function (x) { return OLD_RE.test(x); }); }   // comma list
   function isMe(x) { x = String(x || ''); return !!x && (x === id() || oldIds().indexOf(x) >= 0); }
 
@@ -145,6 +159,8 @@
   id();   // H50a: convert an old 'd-…' id on first load (not only when Chat first asks)
   // window.SharedLinkDevices = { id: id, name: name, setName: setName, guess: guess };   // (before H50a)
   // window.SharedLinkDevices = { id: id, oldIds: oldIds, isMe: isMe, ID_RE: ID_RE, name: name, setName: setName, guess: guess };   // (before H57)
+  code();   // H83: make this device's number on first load
   name();   // H57: give an unnamed device its random name on first start
-  window.SharedLinkDevices = { id: id, oldIds: oldIds, isMe: isMe, ID_RE: ID_RE, name: name, setName: setName, guess: guess, roll: roll, randomName: randomName, isUnset: isUnset, ADJ: ADJ, NOUN: NOUN };
+  // window.SharedLinkDevices = { id: id, oldIds: oldIds, isMe: isMe, ID_RE: ID_RE, name: name, ...   (before H83)
+  window.SharedLinkDevices = { id: id, code: code, CODE_KEY: CODE_KEY, oldIds: oldIds, isMe: isMe, ID_RE: ID_RE, name: name, setName: setName, guess: guess, roll: roll, randomName: randomName, isUnset: isUnset, ADJ: ADJ, NOUN: NOUN };
 })();

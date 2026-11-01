@@ -12,7 +12,7 @@ One PeerJS connection layer for every app. Plain JS, script tags, no build.
 
 ## Behaviour rules
 - PeerJS default config only. Never set `iceServers`: the default list carries the PeerJS TURN relay (needed behind CGNAT / mobile data).
-- Host peer id = `prefix + code` (Hub: `jtsites-`, same as the Gamepad). New codes are 4 digits; saved older 6-letter codes keep working.
+- Host peer id = `prefix + code` (Hub: `jtsites-`, same as the Gamepad). New codes are 5 digits (H83: `SharedLink.CODE_LEN`, lobby `SharedLink.LOBBY` = 00000, `SharedLinkDevices.code()` = this device's 5-digit number); saved 4-digit host codes are regenerated; saved older 6-letter codes keep working.
 - Code survives reload (host: caller's key, Hub uses `jtsites-hub-ctrl-code`; join: `shared-link-join-code`). `unavailable-id` after a reload → same code retried with backoff; network trouble → backoff, never a silent new code.
 - Only a manual Disconnect (`stop()`) sends `bye` and ends the link. `pause()` (page hide) drops the peer quietly so devices reconnect.
 - Connections with `metadata.kind === 'link'` speak SharedLink; others (old Gamepad, `kind:'files'`) go to `onLegacy(conn)` and are still listed as devices.

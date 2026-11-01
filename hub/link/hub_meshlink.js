@@ -40,7 +40,7 @@
   const off = () => { try { return localStorage.getItem('hub-mesh-off') === '1'; } catch (_) { return false; } };
   const desktop = () => !window.__hubRemote && !!(window.HubMode && window.HubMode.mode === 'desktop');
   /* H55: public mesh */
-  const PUB = HubMesh.PUBLIC_CODE || '0000';
+  const PUB = HubMesh.PUBLIC_CODE || '00000';   // H83 (was '0000')
   const PUB_KEY = 'sites-hub.meshPublic', PAIR_KEY = 'hub-mesh-paired';
   const get = (k) => { try { return localStorage.getItem(k) || ''; } catch (_) { return ''; } };
   const put = (k, v) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (_) { /* blocked */ } };
@@ -57,7 +57,7 @@
     return '';
   }
   /** this host's own code (for invites), when it has one */
-  function ownCode() { const L = window.SharedLink; const c = String(L.code || ''); return L.role === 'host' && L.live && /^\d{4}$/.test(c) && c !== PUB ? c : ''; }
+  function ownCode() { const L = window.SharedLink; const c = String(L.code || ''); return L.role === 'host' && L.live && /^\d{5}$/.test(c) && c !== PUB ? c : ''; }   // H83: 5 digits (was \d{4})
   // function check() {   (H50)
   //   const L = window.SharedLink;
   //   const code = String(L.code || '');

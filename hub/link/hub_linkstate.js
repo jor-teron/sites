@@ -1,7 +1,7 @@
 /*
  * Hub — SharedLink state in the 🎮 Devices popover + bar (2026-10-13). Loaded after hub_link.js.
  *   Host Hub:  a count badge on the 🎮 icon (devices really online, heartbeat-checked), and a
- *              "Code 1234 · ↻ New code" row: fresh random 4-digit code, re-registers the peer,
+ *              "Code 1234 · ↻ New code" row: fresh random 5-digit code (H83; was 4-digit), re-registers the peer,
  *              saved, QR tiles redrawn (hub-controller.js newCode). Joined devices must pair again.
  *   Phone (joined, window.__hubRemote): "⏏ Disconnect from Hub" button in the same popover
  *              (moved out of the Menu). H31: no "Hub 1234 · Connected" state line; the dot on 🎮 shows it.

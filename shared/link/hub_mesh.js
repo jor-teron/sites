@@ -88,8 +88,10 @@
   var CODE_RE = /^[A-Za-z0-9]{3,12}$/;
   var IDK = 'hub-mesh-id-';
   /* H55: public mesh */
-  var PUBLIC_CODE = '0000', PUB_NAME = 16, PUB_ROSTER = 20, INVITE_CH = 'invite', INVITE_GAP_MS = 3000;
-  var INV_CODE_RE = /^\d{4}$/;
+  // var PUBLIC_CODE = '0000', ...   (before H83)
+  var PUBLIC_CODE = '00000', PUB_NAME = 16, PUB_ROSTER = 20, INVITE_CH = 'invite', INVITE_GAP_MS = 3000;
+  // var INV_CODE_RE = /^\d{4}$/;   (before H83)
+  var INV_CODE_RE = /^\d{5}$/;   // H83
   /* H55b: join wait / retry / give up (one set for 0000 and private meshes) */
   function tune(k, d) { var v = +window[k]; return v > 0 ? v : d; }
   var JOIN_WAIT_MS = tune('HUB_MESH_JOIN_WAIT_MS', 60000), HELLO_MS = 2500;

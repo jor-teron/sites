@@ -95,14 +95,18 @@
   function save(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* blocked */ } }
   function drop(k) { try { localStorage.removeItem(k); } catch (_) { /* blocked */ } }
 
-  /* Random 4-digit code (avoid = skip this one). H55: never '0000' (the public Hub mesh, hub_mesh.js). */
-  var PUBLIC_CODE = '0000';
+  /* Random code (H83: 5 digits; was 4) (avoid = skip this one). H55: never '0000' (the public Hub mesh, hub_mesh.js). */
+  // var PUBLIC_CODE = '0000';   (before H83)
+  /* H83: 5-digit codes. CODE_LEN = 5, PUBLIC_CODE / LOBBY = '00000', CODE_RE = /^\d{5}$/. */
+  var CODE_LEN = 5, PUBLIC_CODE = '00000', CODE_RE = /^\d{5}$/;
   function randomCode(avoid) {
     var c = avoid;
     // while (c === avoid) c = String(Math.floor(Math.random() * 10000)).padStart(4, '0');   (before H55)
-    while (c === avoid || c === PUBLIC_CODE) c = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    // while (c === avoid || c === PUBLIC_CODE) c = String(Math.floor(Math.random() * 10000)).padStart(4, '0');   (before H83)
+    while (c === avoid || c === PUBLIC_CODE) c = String(Math.floor(Math.random() * 100000)).padStart(CODE_LEN, '0');
     return c;
   }
+  function isCode(c) { return CODE_RE.test(String(c || '')) && String(c) !== PUBLIC_CODE; }   // H83: a private 5-digit code
 
   function safeSend(conn, msg) {
     try { if (conn && conn.open) { conn.send(msg); return true; } } catch (_) { /* gone */ }
@@ -216,7 +220,10 @@
     S.prefix = S.opts.prefix || 'jtsites-';
     var key = S.opts.codeKey;
     // S.code = S.opts.code || (key && load(key)) || randomCode('');   (before H55)
-    S.code = S.opts.code || (key && load(key) !== PUBLIC_CODE && load(key)) || randomCode('');   // H55: a saved 0000 is never hosted
+    // S.code = S.opts.code || (key && load(key) !== PUBLIC_CODE && load(key)) || randomCode('');   // H55: a saved 0000 is never hosted   (before H83)
+    var sv = key ? load(key) : '';
+    if (sv === PUBLIC_CODE || sv === '0000' || /^\d{4}$/.test(sv)) sv = '';   // H83: a saved old 4-digit code (or a lobby) is regenerated
+    S.code = S.opts.code || sv || randomCode('');
     if (key) save(key, S.code);
     S.idRetry = 0; S.netRetry = 0;
     return loadPeer().then(function () { startHost(false); return S.code; },
@@ -451,7 +458,9 @@
     PEERJS_URL: PEERJS_URL,
     loadPeer: loadPeer,
     randomCode: randomCode,
-    PUBLIC_CODE: PUBLIC_CODE,   // H55
+    PUBLIC_CODE: PUBLIC_CODE,   // H55 (H83: '00000')
+    LOBBY: PUBLIC_CODE, CODE_LEN: CODE_LEN, CODE_RE: CODE_RE, isCode: isCode,   // H83
+    deviceCode: function () { return window.SharedLinkDevices && window.SharedLinkDevices.code ? window.SharedLinkDevices.code() : ''; },   // H83
     on: on, off: off, emit: emit,
     host: host, join: join, newCode: newCode, stop: stop,
     pause: destroy,   // drop the peer quietly (page hide): no bye, devices reconnect
