@@ -1,5 +1,23 @@
 # Changes
 
+## v4 (agent-v4.sh)
+- New: each companion gets its OWN cage (`module/separate-cages.sh`, same
+  interface as `shared-cage.sh`): own rootfs under `cages/<name>/`, own mount,
+  PID and UTS namespaces, hostname = name, `/etc/passwd` with only that user.
+- Hidden link 1: `<experiment>/shared/` bind-mounted read-write at `/srv` in both.
+- Hidden link 2: both cages join one unprivileged network namespace (lo only),
+  so localhost listeners are reachable across cages. A holder process owns the
+  user+net namespace; cages are `unshare`d inside it via `nsenter`.
+- `REQUEST_GAP` may be fractional when a version sets `FRACTIONAL_GAP=1`
+  (v4 default 4.35 s; `gap_ms` in config.sh). The prompt rounds the per-person
+  interval ("about every 9 seconds"). v1-v3 still require whole numbers.
+- `module/discovery-links.sh`: `/srv` files are attributed to the person whose
+  turn wrote them; summary adds first `/srv` touch, first read of the other's
+  `/srv` file, first network use.
+- Small shared changes: `shared-cage.sh` gains `build_cages`/`repair_cages`
+  and `CAGE_ROOT_NAME` (v3 behavior unchanged); `companion.sh` reads journals
+  via `CAGE_OF`; `turns.sh` uses `gap_ms`. Launcher default is now v4.
+
 ## v3 module split (no behavior change)
 - `module/multi.sh` split into `shared-cage.sh`, `companion.sh`, `turns.sh`,
   `timeline.sh` and `discovery.sh`; `multi.sh` removed. `agent-v3.sh` sources them.

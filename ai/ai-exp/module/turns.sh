@@ -80,7 +80,7 @@ now_ms() { local t="${EPOCHREALTIME:-}"; if [ -n "$t" ]; then t="${t/./}"; echo 
 multi_loop() {
   local now wait k j n cand best due every gap
   trap 'echo; tl "## Stopped by you at $(clock)"; exit 130' INT
-  gap=$(( REQUEST_GAP * 1000 )); every=$(( gap * 2 ))
+  gap="$(gap_ms)"; every=$(( gap * 2 ))
   n="${#USERS[@]}"
   LAST_REQUEST=0
   NEXT=$(( RANDOM % n ))        # random first speaker
