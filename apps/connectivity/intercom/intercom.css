@@ -113,7 +113,11 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 #trust-list li small{display:block;color:var(--mut);font-size:12px}
 @media (max-width:420px){#side{width:124px}#b-talk{width:112px;height:112px}#b-talk .ic{font-size:30px}#main{gap:8px;padding:0 10px 10px}#stage,#camon{width:calc(100% - 20px)}}
 @media (max-height:560px){#stage{height:min(46vh,240px)}}
-#ic-switch{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:15}
+/* IC6 (FX1 legacy): #ic-switch{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:15} */
+#ic-switch{flex:none;white-space:nowrap}
+/* FX1 */
+.bar{flex:none;flex-wrap:wrap}
+#empty{flex:none}
 #ic-switch[hidden]{display:none}
 .who{display:flex;align-items:center;gap:8px}
 /* IC5: connection dot + read-only Hub DND moon + one-time notification hint */

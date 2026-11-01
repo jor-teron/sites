@@ -32,7 +32,12 @@ Video + audio calls between devices on the same Hub Connect Code (Connectivity �
 - **Removed from the main screen:** the "Online · code …" line (`#status`) and the Code button (`#btn-code`). The code is shown and changed in Settings → Hub code → Change (`#code-lbl`, `#btn-code2`). The `#vc-switch` offer button (Switch to / Back to Public) is unchanged. The call screen never showed the code and still doesn't (invites go through the device list / ＋, no code needed).
 - **Shorter texts:** "No other devices online." (main list and Add sheet), a one-line hint, short About mentioning Public 00000. Title and version say VC5.
 
+## FX1 (VC6) — overlay fix
+- Why: Jor reported something covering the first device row ("No other devices online." / first device hidden).
+- What: the Switch to/Back to Public button are no longer position:fixed; they sit in the normal layout (top bar / under it), so they can't float over the list. Top bar and texts are flex:none so they never squash or overlap. Switch-button JS unchanged.
+
 ## Legacy code notes
+- FX1: old fixed-position CSS for the switch button and its old markup at the end of the body are kept as comments (VC5).
 
 - VC2 code choice (Hub's own Connect Code, then last code, else the Code dialog) is kept as comments in `videochat_app.js`; the VC2 "answer any join for my room" line is kept as a comment in `videochat_call.js`.
 - FC5: earlier `\d{4}` / `'0000'` lines stay in the VC1–VC2 `//` legacy blocks.

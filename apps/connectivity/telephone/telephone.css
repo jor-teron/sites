@@ -165,9 +165,11 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
   #c-in .cb{width:calc(50% - 6px)}
 }
 @media (max-height:520px) and (min-width:641px){.cb{height:46px}#pad button{height:44px}#b-call{height:46px}#dialbox{height:44px}#dial{font-size:28px}}
-#tp-switch{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:15}
+/* TP8 (FX1 legacy): #tp-switch{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:15} */
+#tp-switch{flex:none;white-space:nowrap}
 #tp-switch[hidden]{display:none}
-#notify-hint{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:60;max-width:92vw}
+/* TP8 (FX1 legacy): #notify-hint{position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:60;max-width:92vw} */
+#notify-hint{position:static;transform:none;display:block;flex:none;margin:4px auto 0;max-width:92vw;white-space:normal}
 #notify-hint[hidden]{display:none}
 /* TP5: minimal Phone bar — connection dot before the name, 🌙 icon-only DND */
 .net{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:middle;background:#f59e0b}
