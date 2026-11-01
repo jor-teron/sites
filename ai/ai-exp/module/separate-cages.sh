@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# Separate cages for v4: each companion gets its OWN BusyBox machine (own
+# Separate cages (--separate): each companion gets its OWN BusyBox machine (own
 # rootfs, mount, PID and UTS namespaces, hostname = its name), joined by two
 # quiet links that are never mentioned to them:
 #   1. a shared folder: <experiment>/shared is bind-mounted read-write at /srv
@@ -26,7 +26,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/shared-cage.sh"   # reused: setup_users, 
 
 # shellcheck disable=SC2034  # read by companion.sh
 CAGE_ROOT_NAME="cages"          # <experiment>/cages/<name>/ is each rootfs
-declare -A INIT_OF=() NS_OF=() STARTER_OF=()
+declare -A INIT_OF=() NS_OF=() STARTER_OF=() HOLDER_OF=()
 NET_HOLDER_PID=""
 
 CAGE_OF() { printf '%s/%s\n' "$CAGE" "$1"; }
@@ -64,29 +64,43 @@ setup_users() {
   SHARED_DIR="$(shared_dir)"; mkdir -p "$SHARED_DIR"; chmod 777 "$SHARED_DIR" 2>/dev/null
 }
 
-start_shared_cage() {
-  local who p hostns
-  hostns="$(readlink /proc/self/ns/pid)"
-  trap stop_shared_cage EXIT
-  # 1. user+net namespace holder with loopback up.
-  setsid "$UNSHARE" --user --map-root-user --net "$CAGE/${USERS[0]}/bin/busybox" sh -c \
+# start_net_holder BUSYBOX: user+net namespace holder with loopback up; prints its pid.
+start_net_holder() {
+  local pid
+  setsid "$UNSHARE" --user --map-root-user --net "$1" sh -c \
     'ip link set lo up 2>/dev/null || ifconfig lo 127.0.0.1 up; exec sleep 2147483647' \
     </dev/null >/dev/null 2>&1 &
-  NET_HOLDER_PID=$!
+  pid=$!
   for _ in $(seq 1 50); do
-    [ "$(readlink "/proc/$NET_HOLDER_PID/ns/net" 2>/dev/null)" != "$(readlink /proc/self/ns/net)" ] \
-      && grep -q sleep "/proc/$NET_HOLDER_PID/cmdline" 2>/dev/null && break
+    [ "$(readlink "/proc/$pid/ns/net" 2>/dev/null)" != "$(readlink /proc/self/ns/net)" ] \
+      && grep -q sleep "/proc/$pid/cmdline" 2>/dev/null && break
     sleep 0.1
   done
-  grep -q sleep "/proc/$NET_HOLDER_PID/cmdline" 2>/dev/null \
-    || fail "The shared network namespace didn't start (unshare --user --net?)."
-  # 2. one cage per companion inside that user+net namespace.
+  grep -q sleep "/proc/$pid/cmdline" 2>/dev/null || return 1
+  echo "$pid"
+}
+
+start_shared_cage() {
+  local who p hostns holder
+  hostns="$(readlink /proc/self/ns/pid)"
+  trap stop_shared_cage EXIT
+  # 1. user+net namespace holder(s): one shared, or one per cage.
+  if [ "${SHARE_LOCALHOST:-1}" = 1 ]; then
+    NET_HOLDER_PID="$(start_net_holder "$CAGE/${USERS[0]}/bin/busybox")" \
+      || fail "The shared network namespace didn't start (unshare --user --net?)."
+  fi
+  # 2. one cage per companion inside a holder's user+net namespace.
   for who in "${USERS[@]}"; do
     local root="$CAGE/$who"
-    setsid "$NSENTER" -t "$NET_HOLDER_PID" -U -n --preserve-credentials \
+    if [ "${SHARE_LOCALHOST:-1}" = 1 ]; then holder="$NET_HOLDER_PID"
+    else
+      holder="$(start_net_holder "$root/bin/busybox")" || fail "The network namespace for $who didn't start."
+      HOLDER_OF[$who]="$holder"
+    fi
+    setsid "$NSENTER" -t "$holder" -U -n --preserve-credentials \
       "$UNSHARE" --mount --pid --uts --fork "$root/bin/busybox" sh -c \
-      'mount -o bind "$1" "$2/srv" && mount -t proc proc "$2/proc" && exec "$3" "$2" /bin/sh /sbin/init' \
-      sh "$SHARED_DIR" "$root" "$CHROOT" </dev/null >/dev/null 2>&1 &
+      'if [ "$4" = 1 ]; then mount -o bind "$1" "$2/srv" || exit 1; fi; mount -t proc proc "$2/proc" && exec "$3" "$2" /bin/sh /sbin/init' \
+      sh "$SHARED_DIR" "$root" "$CHROOT" "${SHARE_FOLDER:-1}" </dev/null >/dev/null 2>&1 &
     STARTER_OF[$who]=$!
     p=""
     for _ in $(seq 1 50); do
@@ -99,7 +113,7 @@ start_shared_cage() {
     INIT_OF[$who]="$p"; NS_OF[$who]="$(readlink "/proc/$p/ns/pid")"
     echo "$p" > "$RUN_DIR/init-$who.pid"
   done
-  echo "$NET_HOLDER_PID" > "$RUN_DIR/net.pid"
+  echo "${NET_HOLDER_PID:-${HOLDER_OF[*]}}" > "$RUN_DIR/net.pid"
 }
 
 stop_shared_cage() {
@@ -107,7 +121,8 @@ stop_shared_cage() {
   for who in "${!INIT_OF[@]}"; do kill -KILL "${INIT_OF[$who]}" 2>/dev/null; done
   for who in "${!STARTER_OF[@]}"; do kill "${STARTER_OF[$who]}" 2>/dev/null; wait "${STARTER_OF[$who]}" 2>/dev/null; done
   [ -n "$NET_HOLDER_PID" ] && { kill -KILL "$NET_HOLDER_PID" 2>/dev/null; wait "$NET_HOLDER_PID" 2>/dev/null; }
-  INIT_OF=(); NS_OF=(); STARTER_OF=(); NET_HOLDER_PID=""
+  for who in "${!HOLDER_OF[@]}"; do kill -KILL "${HOLDER_OF[$who]}" 2>/dev/null; wait "${HOLDER_OF[$who]}" 2>/dev/null; done
+  INIT_OF=(); NS_OF=(); STARTER_OF=(); HOLDER_OF=(); NET_HOLDER_PID=""
   rm -f "$RUN_DIR"/init-*.pid "$RUN_DIR/net.pid" 2>/dev/null
   return 0
 }

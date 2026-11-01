@@ -43,7 +43,7 @@ Precedence: explicit flag > environment variable > preset > built-in default.
 | `--preset P` | `v2` | - | Start from a preset: `v1`, `v2`, `v3`, `v4`, `ai2ai` (section 4). |
 | `--ai2ai` | - | - | Same as `--preset ai2ai`. |
 | `--companions N` | 1 | - | Number of companions. 1 and 2 are supported (N>2 is rejected for now). |
-| `--separate` | off (shared when N>1) | - | One cage per companion instead of one shared machine. |
+| `--separate` | off (shared when N>1) | - | One cage per companion instead of one shared machine. Without the two link flags below the cages share nothing (each has its own loopback and its own empty `/srv`). |
 | `--shared-folder` | off | - | With `--separate`: `<exp>/shared/` is mounted read-write at `/srv` in every cage. |
 | `--shared-localhost` | off | - | With `--separate`: all cages share one network namespace (loopback only, no internet), so `nc -l` in one is reachable on 127.0.0.1 from the others. |
 | `--time S` | 150 (presets v3/v4/ai2ai: 300) | `TIME_LIMIT` | Session length in seconds (whole number). |
@@ -95,7 +95,8 @@ At creation the resolved settings are written to `<exp>/.run/flags`
 flags. Rules on continue:
 
 - May change: `--time`, `--gap`, `--end-session`, `--text-end`,
-  `--nudge`/`--no-nudge`, `--search`, and the prompt.
+  `--nudge`/`--no-nudge`, `--search`, and the prompt. These apply to that
+  session only; `.run/flags` keeps the settings from creation.
 - Error if given: `--preset`, `--companions`, `--separate`,
   `--shared-folder`, `--shared-localhost`, `--solo`, `--names`, `--memory`
   (they define the setup).
@@ -130,7 +131,7 @@ Two companions:
 ### Discovery (summary-N.md)
 For each companion: first command that mentions the other's name, uses
 their home, or uses a file the other made earlier; first output showing the
-other's name. With `--separate` also: first touch of `/srv`, first read of a
+other's name. With `--shared-folder` or `--shared-localhost` also: first touch of `/srv`, first read of a
 `/srv` file the other wrote, first network use (nc/telnet/wget/curl to
 127.0.0.1/localhost, or a listener such as `nc -l`/`httpd`).
 Attribution is by whose turn it was, so output from one companion's

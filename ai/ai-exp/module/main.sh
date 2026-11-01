@@ -1,6 +1,5 @@
-# Loads every module and provides run_agent, the shared entry point.
-# A version file sets AI_EXP_ROOT, SCRIPT_DIR and its ENABLE_* flags, sources
-# this file, overrides any function it needs, then calls: run_agent "$@"
+# Loads every module and provides run_agent (one companion). module/flags.sh
+# sources this, overrides what it needs, then calls: run_agent "$@"
 
 # shellcheck source=config.sh
 source "$AI_EXP_ROOT/module/config.sh"
