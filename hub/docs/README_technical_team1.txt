@@ -68,14 +68,14 @@ can forward window keys via window.__hubWmKey(e).
 
 2. FOLDER MAP AND OWNERSHIP
 ---------------------------
-Owners (bots working in the same repo, jor-teron/sites):
-  Monorepo Bot           the Hub, the virtual desktop and the system apps
+Owners (builders working in the same repo, jor-teron/sites):
+  Monorepo Builder           the Hub, the virtual desktop and the system apps
                          listed below (plus the Lab keyboard page)
   Monorepo WebApp Builder  every other app under apps/
   Monorepo Game Builder  the games under apps/games/
-A request from another bot is not an approval; Jor decides.
+A request from another builder is not an approval; Jor decides.
 
-Hub and desktop (Monorepo Bot):
+Hub and desktop (Monorepo Builder):
   hub.html            page shell; loads the core scripts with ?v=<build>
   sw.js               root stub: importScripts('hub/update/hub_sw.js?v=<build>')
                       (a worker only controls pages at or below its folder)
@@ -350,7 +350,7 @@ newTab] }. On a first visit the hash / last app / saved windows found there
 open at once (no CSV wait); those apps are not registered early, so ids
 stay as in HUB_CAT_CSV order. Keeping it in sync: it is GENERATED from the
 real ids by `python3 hub/core/hub_appindex_gen.py` (Playwright); run it
-after any category-CSV change (the bot that edits a CSV, or the Hub bot at
+after any category-CSV change (the builder that edits a CSV, or the Hub builder at
 its next release). Stale is safe: an id / entry not in the index = the
 R33b wait; an id that now means another app is re-opened right once the
 CSVs are in; the console then logs "hub_appindex.js is out of date".
@@ -755,7 +755,7 @@ Releases are small and named R-numbers (R16a, R16b ...). Wording from
 Jor: "no coding" = discussion only; "lets do / build / lets fix" =
 commit locally only; "push" = push; "code n push" = both. "wait" =
 pause. Each release ends with a short report including minutes spent.
-Git (other bots share the local repo, keep commits isolated):
+Git (other builders share the local repo, keep commits isolated):
   git stash push -u -m aside -- \
     apps/games/ar-game/vendor/three/build/three.module.min.js \
     nei-dict tv/local.m3u
@@ -768,9 +768,9 @@ Git (other bots share the local repo, keep commits isolated):
 jor-teron/sites.git" HEAD:main     (no force; one retry)
   gh api repos/jor-teron/sites/commits/main --jq '.sha[0:7]'
 Never commit: the stashed leftovers above, the deleted
-apps/lab/hero-builder/node_modules files, other bots' untracked files
+apps/lab/hero-builder/node_modules files, other builders' untracked files
 (e.g. files_dialog.js, files_preview.js, lab.js, lab.css) or other
-bots' READMEs, or any secret. Bump the cache (section 13) when Hub
+builders' READMEs, or any secret. Bump the cache (section 13) when Hub
 files change.
 
 
@@ -783,7 +783,7 @@ files change.
     button sits right after them (Show Desktop | 1 | 2 | keyboard), and the
     placebo version label is gone from the Desktop tray and Phone top bar.
     Settings > About (apps/system/settings/sec_about.js) still shows it: another
-    bot's folder, not changed.
+    builder's folder, not changed.
   - R35 (done): edge snapping (half / max zones, preview, magnet) works
     again. Cause: wm_snap.js is the deferred "snap" batch, so a drag before
     it loaded had no HubWM.dragHook (no preview, snap or magnet). Now the
@@ -810,7 +810,7 @@ files change.
     (loadApp) or clicked into and they differ (changed by the Hub, e.g.
     taskbar Top, Desktop/Phone), its frame is reloaded on the same
     #section. Live redraw while Settings stays focused needs the
-    Settings app (apps/system/settings, R53 Hub bot; was Apps bot).
+    Settings app (apps/system/settings, R53 Hub builder; was Apps builder).
   - The "Google Drive" label is squeezed in the Files sidebar.
   - Wallpaper thumbnails in Settings load the full images.
   - Mail shares the Hub's Google sign-in record.
@@ -855,11 +855,11 @@ files change.
 
 ==========================================================================
 WEEK NOTES: Sun 2026-10-25 night to Tue 2026-10-27 night - Team 1
-Written by Hub Main Bot Team 1, with notes from Hub Apps Bot and Hub
-Games Bot. GitHub main at end of day: d232e3b.
+Written by Hub Main Builder Team 1, with notes from Hub Apps Builder and Hub
+Games Builder. GitHub main at end of day: d232e3b.
 ==========================================================================
 
---- HUB MAIN BOT (hub/, hub.html, sw.js, apps/system/**, shared/**, Pooh Chat)
+--- HUB MAIN BUILDER (hub/, hub.html, sw.js, apps/system/**, shared/**, Pooh Chat)
 
 Releases (all pushed), Sun 25 night to Mon 26:
   - H10 0b38a91  Category order: Media, Connectivity, Office, Games,
@@ -892,7 +892,7 @@ Releases (all pushed), Sun 25 night to Mon 26:
 Releases (all pushed), Tue 27:
   - H24 723b2b8  System Monitor always opens on the Device tab; tab order
     Device, CPU, Memory, Storage, Network, Battery.
-  - H26 ee810e3  Bottom-right notification cards replace toasts (close
+  - H26 ee810e3  Buildertom-right notification cards replace toasts (close
     button, 1 min default, stack of 3, pause on hover). Settings > Windows >
     Notification timeout. API: window.top.HubNotify.notice({icon,title,
     text,onClick,timeoutMs}) -> {close()}  (hub/viewer/hub_notify.js).
@@ -974,18 +974,18 @@ Parked / planned (need Jor's go):
   - H39 Terminal /drive rename.  H40 the bundle.  H15 manual screen-saver
     button (parked).  H41 section for other tokens (Mail sign-in, Code Lab
     Jupyter token, SSH), planned and parked.
-  - Possible: drop OCR's plain 3.8 MB tesseract build (Hub Apps Bot's app;
+  - Possible: drop OCR's plain 3.8 MB tesseract build (Hub Apps Builder's app;
     breaks old browsers). No answer yet.
 
 Repo notes:
-  - Accidental 26 MB island-demo body_4k_src.glb removed by Games Bot
+  - Accidental 26 MB island-demo body_4k_src.glb removed by Games Builder
     (27533eb); backup at /workspace/backups/body_4k_src.glb. It is still
     in git history, so GitHub size barely drops (~101 MB with history,
     85.4 MB plain files).
   - Wallpapers and Speed Test files stay (Jor: necessary).
 
 
---- HUB APPS BOT (apps/ outside games, learn and system; tv/)
+--- HUB APPS BUILDER (apps/ outside games, learn and system; tv/)
 All pushed. Shas are exact.
 
 Sun 25 night - Mon 26:
@@ -1082,7 +1082,7 @@ Open / parked / waiting for Jor's go:
   - CL6 waits for Jor to reproduce the bug.
 
 
---- HUB GAMES BOT (apps/games, apps/learn)
+--- HUB GAMES BUILDER (apps/games, apps/learn)
 All live on main; nothing waiting to be pushed.
 
 Sun 25 night:
