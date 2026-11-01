@@ -188,6 +188,7 @@
     if (isNew) { renderList(); if (m.from === cur) { renderChat(); reads(); } var f = String(m.from); MSNotify.incoming(label(f, m.name), f, m.text, function () { open(f); }); }
   }
   MSLine.onMessage(inMsg);
+  MSLine.onDelivered(function (id, to) { delete hubQ[id]; if (to && S.ack(to, id)) { renderChat(); renderList(); } });   // CX1.1
   function takeInbox() { MSLine.take().forEach(inMsg); }
   function hashChat() { var h = /[#&?]chat=(\d{5})(?!\d)/.exec(location.hash); if (h && NUM.test(h[1]) && h[1] !== myNum) open(h[1]); }
   addEventListener('hashchange', hashChat);

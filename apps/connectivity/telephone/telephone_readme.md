@@ -77,6 +77,6 @@ Why: Jor wants Do Not Disturb to belong to the Hub, with connectivity apps follo
 - FC5: `$('b-newnum')` handler kept as `//` comments in telephone_app.js; `checkClash` now returns early when `TPSave.fromHub()`. Old 4-digit code regexes kept in the TP1–TP4 `//` legacy blocks.
 
 ## CX1 (Hub line)
-- telephone_hubline.js (TPLine) wraps window.top.HubLine (H91) when present. Calling a number whose Telephone is closed rings through HubLine.call(num,{video:false});
+- telephone_hubline.js (TPLine) wraps window.top.HubLine (H91) when present. Calling a number whose Telephone is closed rings through HubLine.call(num,{video:false}) (CX1.1: a decline reason is shown as is);
   on accepted, Telephone dials over its own lobby as soon as the number appears (20 s). #call=<callId>&from=<num> auto-answers the next ring from that number (60 s).
-  takeInbox('missed'/'call') entries go into the call log as missed. Media stays P2P. No HubLine → unchanged.
+  takeInbox('missed') entries go into the call log as missed. Media stays P2P. No HubLine → unchanged.

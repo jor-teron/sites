@@ -48,5 +48,5 @@ None yet.
 
 ## CX1 (Hub line)
 - messages_hubline.js (MSLine) wraps window.top.HubLine (H91) when present: text via HubLine.send ('delivered' → ✓✓; 'queued' → 🕓, Hub retries, our own P2P may still deliver; 'offline' → own queue),
-  HubLine.onMessage + takeInbox('msg') on start / when visible, merged into messages-history by id. #chat=<num> opens that chat.
+  HubLine.onMessage + takeInbox('msg') on start / when visible, merged into messages-history by id; CX1.1 HubLine.onDelivered({id,to}) turns a Hub-queued message ✓✓. #chat=<num> opens that chat.
 - Files and read receipts stay on Messages' own P2P link. No HubLine → behaviour unchanged.

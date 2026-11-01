@@ -285,7 +285,7 @@
     dialog('Calling ' + nm + ' through the Hub…', ['Cancel']).then(function () { done = true; });
     TPLine.ring(num).then(function (r) {
       if (done) return;
-      if (!r.accepted) { closeDlg(); dialog(nm + ' did not answer.', ['OK']); return; }
+      if (!r.accepted) { closeDlg(); dialog(r.reason ? nm + ': ' + r.reason : nm + ' did not answer.', ['OK']); return; }
       var t0 = Date.now();
       (function wait() {
         if (done) return;
