@@ -1089,3 +1089,14 @@ NV-S2 (hub.html ?v= labels)
 - hub/build.txt line 2 corrected to hub-shell-v127 (was still v126).
 - Only the list in hub_sw.js is changed; no phone/ files are edited. When
   Hub Phone Bot adds or renames a phone/ file, it must also be added here.
+
+-- H86: Pooh Chat in a desktop window can send (1 Nov 2026) --
+- hub/link/hub_chat.js: the {sharedLink:'chat', text} relay listener used to
+  accept only #app-frame, so in desktop mode (Pooh Chat in a .wm-body
+  iframe) sends were dropped. It now accepts any Hub iframe whose src
+  contains pooh-chat (event.source matched to that iframe's contentWindow).
+- poohOpen() (stops chat notices while Pooh Chat shows the messages) now
+  checks #app-frame as before plus any on-screen desktop window showing
+  Pooh Chat; a minimised / hidden window does not count.
+- Pooh Chat files unchanged (release-4 postMessage relay). No ?v=, build or
+  CACHE change. Found by Hub Apps Bot while testing PC1.
