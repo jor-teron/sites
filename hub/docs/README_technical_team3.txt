@@ -1076,3 +1076,16 @@ NV-S2 (hub.html ?v= labels)
   hub_mesh / link_chat itself, HubMesh.start('00000' or the private code),
   and use the same 'chat' channel and message shape; only when NOT inside
   a Hub (a Hub frame keeps relaying through the parent).
+
+-- H85: offline cache catches up with the phone page + build.txt fix (1 Nov 2026) --
+- hub/update/hub_sw.js SHELL gains the H81/H82 engine files hub.html and
+  /phone.html load (hub/core/hub_dialog_bridge.js, hub_dnd.js,
+  hub_attention.js) and the phone look (phone.html, phone/, phone/index.html,
+  phone/phone.css, phone_notify.js, phone_save.js, phone_apps.js,
+  phone_gesture.js, phone_app.js), so /phone.html opens offline after one
+  visit to either page. The changed hub_sw.js bytes make browsers install the
+  new worker (imported scripts are byte-checked); CACHE name and V are NOT
+  bumped, so the install fills the same hub-shell-v127 cache.
+- hub/build.txt line 2 corrected to hub-shell-v127 (was still v126).
+- Only the list in hub_sw.js is changed; no phone/ files are edited. When
+  Hub Phone Bot adds or renames a phone/ file, it must also be added here.
