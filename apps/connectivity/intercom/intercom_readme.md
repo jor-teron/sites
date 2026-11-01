@@ -1,4 +1,4 @@
-# Intercom — IC2
+# Intercom — IC5
 
 Live, tap-to-talk audio between devices on the same Hub Connect Code (Connectivity → Chat). Talk to everyone at once or pick one device.
 
@@ -24,6 +24,17 @@ Live, tap-to-talk audio between devices on the same Hub Connect Code (Connectivi
 - **Following the Hub:** every 5 s Intercom re-reads `HubMeshLink` (read-only). If the Hub joined or left a private mesh and nobody is talking, it switches by itself with a toast; during a talk it only shows a **Switch to <code>** / **Back to Public** button at the top.
 - A code picked with Code/Change (or Public) holds for the session; the default logic never overrides it. IC3 Accept/Decline on 0000 is unchanged.
 
+## IC5 — like Telephone: Hub Do Not Disturb, Hub call card, notifications, minimal top bar
+
+Why: Jor asked to "fix the intercom like you did on telephone" (Telephone TP5–TP7, Hub H82).
+
+- **Do Not Disturb follows the Hub:** Intercom's own 🌙 DND button and Settings switch are gone. `intercom_dnd.js` (`ICDnd`) reads `window.parent.HubDnd` (isOn / allowFavs / on('change')) inside a host, else localStorage `sites-hub.dnd` / `sites-hub.dndFavs` (`'1'` = on) + the `storage` event. While it is on, an incoming talk is closed silently (`{t:'dnd'}` to the talker) and shows "🌙 Missed: … tried to talk"; presence `dnd` follows the Hub; turning it on stops anything being heard and any camera view; auto-answer views are refused (`dnd`). Intercom has no contacts, so a **trusted device** (token-checked, Settings → Auto-answer) counts as a favourite and still gets through when the Hub's "Favourites still ring" is on. A read-only 🌙 next to the name shows it. The old `dnd` value in `intercom-settings-v1` is ignored.
+- **Hub call card (talk requests):** Intercom has no ringing for normal talks (they play after a chime). The one thing that waits for an answer is the IC3 Accept / Decline request from an untrusted device on Public 0000. While it waits, Intercom posts (inside a host only) `{sharedLink:'attention', app:'intercom', kind:'call', title:'🔔 <who> is calling', urgent:true, from}` (+ `fav:true` for a trusted device), and `{kind:'call-end'}` when it is answered, declined, times out (30 s) or the caller leaves. The host's `{sharedLink:'attention-reply', app:'intercom', kind:'call', action:'answer'|'decline'}` is accepted only from `window.parent` while a request waits, and goes through the same Accept / Decline path (Answer also shows the Talk screen).
+- **System notifications (`intercom_alert.js`, `ICAlert`):** when Intercom isn't in front and permission is `granted`: "🔔 <who> is calling" for a request (tag `ic-call`, stays until handled) and "🔊 <who> is talking" for a talk that is playing (tag `ic-talk`). Click = focus + Talk screen; closed when the request ends or nobody talks any more. Settings → Alerts → **Call notifications** asks for permission; never on load. The first request / talk while permission is `default` shows a one-time "🔔 Turn on call notifications" button. Saved as `callNotify` / `notifyHinted`.
+- **Minimal top bar:** the name (already shown once) with a small connection dot before it (green online, amber connecting, grey failed); the status text is the dot's tooltip. The "Online · code …" line and the Code button are gone; change the code in Settings → Hub code → Change. The **Switch to / Back to Public** offer button is unchanged. Shorter empty text: "No other devices online."
+- Title and About say IC5.
+
 ## Legacy code notes
 
 - IC2/IC3 `localCode()` + `boot()` (Hub's own Connect Code first, code dialog when none) are kept as comments in `intercom_app.js` above the IC4 code choice.
+- IC5: removed markup is kept as HTML comments in `intercom.html` (`#status`, `#btn-code`, `#b-dnd`, `#chk-dnd`, old empty text). The IC4 `setStatus`, `btn-code` hook, own-DND `paintDnd` / `setDnd` / button hooks and the IC3 ask handler are comments in `intercom_app.js`; `T.setDnd` and the `ICSave.get('dnd')` checks are comments in `intercom_talk.js` / `intercom_peer.js`.

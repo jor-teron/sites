@@ -4,12 +4,13 @@
      did:<random, this device's lasting id>, autoAnswer:false,
      trusted:{ <did>: {name, token} }   (devices allowed to open this device's camera/mic without a tap),
      keys:{ <did>: {name, token} } }    (devices that trust THIS device: token proves it when asking to view) 
+   IC5: callNotify:true (system notification for calls / talks when not in front), notifyHinted:false; dnd is ignored (Hub DND).
    'intercom-last-code'   = last Hub Connect Code used.
    Theme 'system' follows the Hub's sites-hub.theme when set, else the OS. Default theme: dark. */
 (function () {
   'use strict';
   var KEY = 'intercom-settings-v1', LAST = 'intercom-last-code';
-  var P = { name: '', theme: 'dark', dnd: false, volume: 0.8, chime: true, target: 'all', video: false, facing: 'user', did: '', autoAnswer: false, trusted: {}, keys: {} };
+  var P = { name: '', theme: 'dark', dnd: false, volume: 0.8, chime: true, target: 'all', video: false, facing: 'user', did: '', autoAnswer: false, callNotify: true, notifyHinted: false, trusted: {}, keys: {} };
   try { Object.assign(P, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (_) { /* blocked */ }
   if (['system', 'light', 'dark'].indexOf(P.theme) < 0) P.theme = 'dark';
   P.volume = Math.max(0, Math.min(1, +P.volume)); if (isNaN(P.volume)) P.volume = 0.8;

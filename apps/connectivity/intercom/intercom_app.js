@@ -7,7 +7,9 @@
    {sharedLink:'ready'}), parent.__hubRemote.code (phone Hub), localStorage 'jtsites-hub-ctrl-code' (desktop Hub),
    'shared-link-join-code', our last code, else the code dialog.
    IC4: URL code, else the Hub's active private mesh (parent.HubMeshLink), else Public 0000; the Hub's own
-   Connect Code is only a fallback for older Hubs without HubMeshLink; standalone: last code, else 0000. */
+   Connect Code is only a fallback for older Hubs without HubMeshLink; standalone: last code, else 0000.
+   IC5: minimal top bar (connection dot + name, no status line / Code button), Do Not Disturb follows the Hub (ICDnd),
+   call notifications + the Hub's call card for talk requests (ICAlert). */
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
@@ -122,8 +124,16 @@
   }
   setInterval(checkMesh, 5000);
   if ($('ic-switch')) $('ic-switch').onclick = function () { var d = offer; offer = ''; if (d) go(d); };
-  $('btn-code').onclick = askCode; $('btn-code2').onclick = askCode;
-  function setStatus(t) { $('status').textContent = t; }
+  /* IC4: $('btn-code').onclick = askCode; $('btn-code2').onclick = askCode; */
+  if ($('btn-code')) $('btn-code').onclick = askCode;   // IC5: Code button removed from the Talk screen
+  $('btn-code2').onclick = askCode;
+  /* IC4: function setStatus(t) { $('status').textContent = t; } */
+  function setStatus(t) {   // IC5: status lives on the small dot before the name (tooltip / aria-label)
+    var d = $('conn'); if (!d) return;
+    d.title = t; d.setAttribute('aria-label', t);
+    d.className = 'conn ' + (/^Online/.test(t) ? 'ok' : /could not|Not connected/i.test(t) ? 'off' : 'wait');
+    if (/could not/i.test(t)) toast(t);
+  }
 
   /* ---------- device list + target ---------- */
   function target() { return ICSave.get('target') || 'all'; }
@@ -185,9 +195,16 @@
   ICPeer.on('signal', function (m, from) { ICTalk.signal(m, from); });
   ICPeer.on('call', function (c) { ICTalk.incoming(c); });
   ICPeer.on('online', function () { paintTalk(); });
+  /* IC3: ICTalk.on('ask', function (a) {
+    dialog(...).then(function (i) { ICTalk.unlock(); a.answer(i === 1); });
+  }); */
+  var asking = null;   // IC5: the talk request on screen (also the Hub's call card + notification)
   ICTalk.on('ask', function (a) {   // IC3: untrusted caller on the public mesh
-    dialog((a.name || 'A device') + ' on the public mesh wants to ' + (a.video ? 'talk with video' : 'talk') + '. Accept?', ['Decline', 'Accept']).then(function (i) { ICTalk.unlock(); a.answer(i === 1); });
+    asking = a; ICAlert.ring(a);
+    dialog((a.name || 'A device') + ' on the public mesh wants to ' + (a.video ? 'talk with video' : 'talk') + '. Accept?', ['Decline', 'Accept']).then(function (i) { if (asking === a) answerAsk(i === 1); });
   });
+  function answerAsk(ok) { var a = asking; if (!a) return; asking = null; $('dialog').hidden = true; ICAlert.ringEnd(); ICTalk.unlock(); a.answer(ok); }
+  ICTalk.on('askend', function (id) { if (asking && asking.id === id) { asking = null; $('dialog').hidden = true; } ICAlert.ringEnd(); });   // timeout / caller gone
 
   /* ---------- talk button (tap = toggle, hold > 0.5 s = push-to-talk) ---------- */
   var downAt = 0, startedByDown = false, timeTxt = '';
@@ -229,7 +246,7 @@
   ICTalk.on('talk', function (s) { if (!s) timeTxt = ''; paintTalk(); paintList(); });
   ICTalk.on('tick', function (ms) { timeTxt = fmt(ms); paintTalk(); });
   ICTalk.on('note', function (t) { toast(t); paintList(); });
-  ICTalk.on('missed', function (n) { toast('🌙 ' + n + ' tried to talk (Do Not Disturb is on)'); });
+  ICTalk.on('missed', function (n) { toast('🌙 Missed: ' + n + ' tried to talk' + (ICTalk.dndOn() ? ' (Do Not Disturb is on)' : '')); });
 
   /* ---------- who's talking banner ---------- */
   function paintBanner() {
@@ -273,7 +290,7 @@
   }
   function paintTitle() {
     var list = ICTalk.talkers(), s = ICTalk.talking(), cam = s && !s.starting && (s.camOn || s.view);
-    document.title = (cam ? '🔴 ' : '') + (list.length ? '🔊 ' + list.map(function (t) { return t.name; }).join(', ') + ' · Intercom IC2' : 'Intercom IC2');
+    document.title = (cam ? '🔴 ' : '') + (list.length ? '🔊 ' + list.map(function (t) { return t.name; }).join(', ') + ' · Intercom IC5' : 'Intercom IC5');   // IC5 (was IC2)
   }
   function twoWay(id) {
     var s = ICTalk.talking();
@@ -392,10 +409,11 @@
     toast(this.checked ? 'Auto-answer on: trusted devices can open this camera without a tap' : 'Auto-answer off');
     paintTalk();
   };
-  ICTalk.on('talkers', function () { paintBanner(); paintList(); paintStage(); });
+  ICTalk.on('talkers', function () { paintBanner(); paintList(); paintStage(); if (!ICTalk.talkers().length) ICAlert.quiet(); });
   ICTalk.on('talk', paintBanner);
   ICTalk.on('trust', paintTrust);
   ICTalk.on('heard', function (t) {
+    ICAlert.heard(t);   // IC5: system notification when not in front
     if (inHub && document.hidden) { try { window.top.HubNotify.notice({ icon: '🔊', title: 'Intercom', text: t.name + ' is talking' + (t.all ? ' to everyone' : ' to you'), timeoutMs: 6000 }); } catch (_) { /* cross-origin / no Hub */ } }
   });
   ICTalk.on('blocked', function (b) { $('sound').hidden = !b; });
@@ -403,6 +421,7 @@
   document.addEventListener('pointerdown', function () { if (!ICTalk.soundOk()) ICTalk.unlock(); }, true);
 
   /* ---------- DND + volume ---------- */
+  /* IC4 own Do Not Disturb (replaced in IC5 by the Hub's, ICDnd):
   function paintDnd() {
     var on = !!ICSave.get('dnd');
     $('b-dnd').classList.toggle('on', on); $('b-dnd').lastChild.textContent = on ? 'DND on' : 'DND off';
@@ -411,6 +430,30 @@
   function setDnd(v) { ICTalk.setDnd(v); paintDnd(); toast(v ? '🌙 Do Not Disturb on — nobody will be heard here' : 'Do Not Disturb off'); }
   $('b-dnd').onclick = function () { setDnd(!ICSave.get('dnd')); };
   $('chk-dnd').onchange = function () { setDnd(this.checked); };
+  */
+  function paintDnd() { var el = $('dnd-ind'); if (el) el.hidden = !ICTalk.dndOn(); }   // IC5: read-only 🌙
+  ICDnd.onChange(function () { paintDnd(); ICTalk.dndChanged(); paintList(); });
+
+  /* ---------- IC5: call notifications ---------- */
+  function paintNotify() {
+    var p = ICAlert.perm();
+    $('chk-notify').checked = ICSave.get('callNotify') !== false && p === 'granted';
+    $('chk-notify').disabled = p === 'unsupported';
+    $('notify-sub').textContent = p === 'unsupported' ? 'Not available in this browser' : p === 'denied' ? 'Blocked: allow notifications for this site in the browser settings' : 'When someone calls or talks and Intercom isn\'t in front';
+  }
+  function enableNotify() {
+    $('notify-hint').hidden = true;
+    return ICAlert.request().then(function (p) {
+      if (p === 'granted') { ICSave.set('callNotify', true); toast('🔔 Call notifications on'); }
+      else { ICSave.set('callNotify', false); dialog(p === 'unsupported' ? 'This browser can\'t show notifications.' : 'Notifications are blocked in this browser. Allow notifications for this site in the browser\'s site settings, then turn this on again.', ['OK']); }
+      paintNotify();
+    });
+  }
+  $('chk-notify').onchange = function () { if (this.checked) enableNotify(); else { ICSave.set('callNotify', false); paintNotify(); toast('Call notifications off'); } };
+  $('notify-hint').onclick = enableNotify;
+  ICAlert.hooks.front = function () { show(0); };
+  ICAlert.hooks.hint = function () { $('notify-hint').hidden = false; };
+  ICAlert.hooks.action = function (a) { answerAsk(a === 'answer'); };
   function paintVol() {
     var v = Math.round(ICSave.get('volume') * 100);
     $('vol').value = v; $('vol2').value = v; $('vol-n').textContent = v;
@@ -441,6 +484,6 @@
 
   /* ---------- start ---------- */
   $('me-name').textContent = ICSave.name();
-  paintSeg(); paintDnd(); paintVol(); paintList(); paintTalk(); paintBanner(); paintTrust();
+  paintSeg(); paintDnd(); paintNotify(); paintVol(); paintList(); paintTalk(); paintBanner(); paintTrust();
   boot();
 })();

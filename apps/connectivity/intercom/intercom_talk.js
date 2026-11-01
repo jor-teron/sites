@@ -16,6 +16,8 @@
      tap and no 2-minute limit, until either side stops ({t:'viewstop'}) or the viewer leaves. Refusals:
      {t:'viewno', why:'off'|'dnd'|'untrusted'|'busy'|'camera'}. */
 (function () {
+  // IC5: Do Not Disturb is the Hub's (ICDnd); the old own setting was ICSave.get('dnd').
+  function dndOn() { try { return !!(window.ICDnd && ICDnd.isOn()); } catch (_) { return false; } }
   'use strict';
   var T = {}, cb = {}, MAXMS = 120000, CHIME_MS = 450, VIEW_WAIT = 12000;
   var sess = null, talkers = {}, actx = null, wantView = {}, trustSent = {};
@@ -207,24 +209,29 @@
     var name = String(m.name || nameOf(from)).slice(0, 40);
     var asked = !!(m.view && wantView[from]);
     if (asked) { clearTimeout(wantView[from]); delete wantView[from]; }
-    if (ICSave.get('dnd') && !asked) {
+    // IC5: a trusted device (token checked) counts as a favourite: it still gets through when the Hub allows favourites.
+    var tr = (ICSave.get('trusted') || {})[m.did], trustedCaller = !!(tr && m.tok && tr.token === m.tok);
+    var favOk = trustedCaller && !!(window.ICDnd && ICDnd.allowFavs());
+    /* IC4: if (ICSave.get('dnd') && !asked) { */
+    if (dndOn() && !asked && !favOk) {
       ICPeer.sendTo(from, { t: 'dnd' });
       try { call.close(); } catch (_) { /* */ }
       fire('missed', name);
       return;
     }
     // IC3: public mesh (0000) — a device that is not trusted (token check) must be accepted first; nothing plays until then
-    var tr = (ICSave.get('trusted') || {})[m.did], trustedCaller = !!(tr && m.tok && tr.token === m.tok);
     if (ICPeer.open() && !asked && !trustedCaller && !call._icOk) {
       if (m.cont && talkers[from]) { call._icOk = true; } else {
         var done = false, to = setTimeout(function () { finish(false); }, 30000);
         var finish = function (ok) {
           if (done) return; done = true; clearTimeout(to);
-          if (ok && !ICSave.get('dnd') && call.open !== false) { call._icOk = true; T.incoming(call); }
+          fire('askend', from);   // IC5
+          /* IC4: if (ok && !ICSave.get('dnd') && call.open !== false) */
+          if (ok && !dndOn() && call.open !== false) { call._icOk = true; T.incoming(call); }
           else { ICPeer.sendTo(from, { t: 'declined' }); try { call.close(); } catch (_) { /* */ } if (!ok) fire('missed', name); }
         };
         call.on('close', function () { finish(false); });
-        fire('ask', { name: name, video: !!m.video, answer: finish });
+        fire('ask', { id: from, name: name, video: !!m.video, fav: trustedCaller, answer: finish });
         return;
       }
     }
@@ -287,7 +294,7 @@
   function viewAsked(m, from) {
     var tr = (ICSave.get('trusted') || {})[m.did], why = '';
     if (!tr || !m.token || tr.token !== m.token) why = 'untrusted';
-    else if (ICSave.get('dnd')) why = 'dnd';
+    else if (dndOn()) why = 'dnd';   // IC4: ICSave.get('dnd')
     else if (!ICSave.get('autoAnswer')) why = 'off';
     else if (sess && !(sess.view && sess.to === from)) why = 'busy';
     if (why) { ICPeer.sendTo(from, { t: 'viewno', why: why }); fire('refused', { name: tr ? tr.name : nameOf(from), why: why }); return; }
@@ -300,7 +307,7 @@
   T.requestView = function (id) {   // ask a device that trusts this one to open its camera (no tap there)
     var d = dev(id), k = d && d.did && (ICSave.get('keys') || {})[d.did];
     if (!k) return Promise.reject(new Error('That device has not trusted this one.'));
-    if (ICSave.get('dnd')) return Promise.reject(new Error('Turn off Do Not Disturb here first.'));
+    if (dndOn()) return Promise.reject(new Error('Do Not Disturb is on in the Hub. Turn it off there first.'));   // IC4: ICSave.get('dnd'), 'here'
     audioCtx();
     clearTimeout(wantView[id]);
     wantView[id] = setTimeout(function () { delete wantView[id]; fire('note', (d.name || 'The device') + ' did not answer.'); fire('viewing'); }, VIEW_WAIT);
@@ -335,10 +342,18 @@
     Object.keys(talkers).forEach(function (id) { if (!on[id]) endTalker(id); });
     if (sess && !sess.all && !on[sess.to]) { T.stop(); fire('note', 'The device left.'); }
   };
+  /* IC4 own DND switch (replaced in IC5 by the Hub's DND):
   T.setDnd = function (v) {
     ICSave.set('dnd', !!v); ICPeer.update();
     if (v) { Object.keys(talkers).forEach(endTalker); if (sess && sess.view) T.stop(); }
+  }; */
+  T.dndChanged = function () {   // IC5: the Hub's DND changed; turning on stops what is heard and any camera view
+    ICPeer.update();
+    if (!dndOn()) return;
+    if (sess && sess.view) T.stop();
+    Object.keys(talkers).forEach(function (id) { if (!talkers[id].mine) endTalker(id); });
   };
+  T.dndOn = dndOn;
   T.talkers = function () {
     return Object.keys(talkers).map(function (id) {
       var t = talkers[id];

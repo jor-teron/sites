@@ -81,7 +81,7 @@
     }, delay || 0);
   }
   function relobby() { if (dead) return; emit('status', 'Reconnecting…'); setTimeout(claimLobby, 300 + Math.random() * 1500); }
-  function hi() { if (lconn && lconn.open) lconn.send({ t: 'hi', id: me.id, name: ICSave.name(), dnd: !!ICSave.get('dnd'), did: ICSave.get('did') }); }
+  function hi() { if (lconn && lconn.open) lconn.send({ t: 'hi', id: me.id, name: ICSave.name(), dnd: !!(window.ICDnd && ICDnd.isOn()) /* IC4: !!ICSave.get('dnd') */, did: ICSave.get('did') }); }
   function send(msg) { if (lconn && lconn.open) { lconn.send({ t: 'all', msg: msg }); return true; } return false; }
   function sendTo(to, msg) { if (lconn && lconn.open) { lconn.send({ t: 'to', to: to, msg: msg }); return true; } return false; }
   function stop() {
