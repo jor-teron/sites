@@ -45,6 +45,12 @@ Desktop testing: mouse drags do the same; wheel down = drawer, wheel up = panel,
   **0000** lobby at startup (H73 rule, switch `sites-hub.meshPublic`). Intercom / Telephone / Screen Share /
   Shared Clipboard read `parent.HubMeshLink` (isPrivate / privateCode → else 0000). With HubMeshLink the hello
   reply sends only the private mesh code (none on 0000 = no reply); the saved Connect Code is used only without it.
+- **H80 Hub settings:** the phone reads the Hub's own keys, no copies. `sites-hub.theme` (light / dark, set by Hub
+  Settings > Look, incl. Auto) and `sites-hub.accent` (`--acc`) apply at load (head script) and live (`storage`
+  event + `{type:'hub-prefs'}` from a Settings frame). Phone theme default is now `system`, shown as **Hub** (follow
+  the Hub, then the device); Light / Dark stay as a phone-only override. Saves without `th80` (pre-H80, always
+  'dark') move to Hub once. Mesh on/off stays `sites-hub.meshPublic` (H79). Quick panel tile **Hub Settings**
+  opens `apps/system/settings/index.html` in a phone app frame (not added to Recent).
 
 ## Transparent background
 

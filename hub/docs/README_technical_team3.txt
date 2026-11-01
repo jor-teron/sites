@@ -944,6 +944,18 @@ kept.
 - App paths now come straight from the catalog (no '../'). The hello
   reply to app frames sends only HubMeshLink.privateCode().
 
+-- H80: Phone page shares Hub settings and theme (1 Nov 2026) --
+- /phone.html follows sites-hub.theme and sites-hub.accent (head script
+  before paint, then live on 'storage' and on {type:'hub-prefs'} posted by
+  Settings in a phone frame). html / body stay transparent.
+- Phone theme default 'system' = follow Hub (label Hub); Light / Dark are
+  a phone-only override. Old saves without th80 move to Hub once.
+- No new keys; meshPublic was already shared in H79. Wallpaper not shared
+  (the phone shows the Android wallpaper).
+- Quick panel tile 'Hub Settings' opens apps/system/settings/index.html in
+  a phone frame. Settings only uses parent.HubPrefs / HubMode / __hubHome
+  / top.HubKeys behind guards, so no Settings edits were needed.
+
 NV-S2 (hub.html ?v= labels)
 - hub.html keeps one ?v= label only, on hub/core/hub.js. Settings > About,
   HubUpdate (build tag + update check) and hub_bump.py read the build there,
