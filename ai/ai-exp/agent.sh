@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Launcher. Always run this; it hands off to the newest versions/agent-vN.sh.
+# Launcher. Always run this; it hands off to the newest versions/agent-vN.sh (v3 now).
 # Pin a version with AGENT_VERSION=N, e.g.  AGENT_VERSION=1 ./agent.sh exp1 "prompt"
 set -u
 ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
