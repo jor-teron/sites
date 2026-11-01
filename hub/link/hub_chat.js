@@ -80,7 +80,14 @@
     log.scrollTop = log.scrollHeight;
   }
   function setUnread(n) { unread = n; badge.textContent = n > 99 ? '99+' : String(n); badge.hidden = !n; }
-  function poohOpen() { return /pooh-chat/.test(String(frame && frame.src || '')); }
+  // function poohOpen() { return /pooh-chat/.test(String(frame && frame.src || '')); }   (before H86: #app-frame only)
+  // H86: Pooh Chat can also run in a desktop window (.wm-body iframe), so look at every Hub iframe showing it.
+  function poohFrames() {
+    return Array.prototype.filter.call(document.querySelectorAll('iframe'), (f) => /pooh-chat/.test(String(f.src || '')));
+  }
+  function poohOpen() {   // #app-frame as before; a desktop window only while it is on screen (not minimised / hidden)
+    return poohFrames().some((f) => f === frame || f.getClientRects().length > 0);
+  }
 
   function open() {
     hideToast(); setUnread(0); paint();
@@ -115,9 +122,10 @@
     if (N && N.notice) card = N.notice({ icon: '🐻', title: title, text: text, onClick: () => { card = null; toastN = 0; open(); } });
   });
 
-  /* Pooh Chat inside the Hub sends through here. */
+  /* Pooh Chat inside the Hub sends through here (H86: from #app-frame or a desktop window). */
   window.addEventListener('message', (e) => {
-    if (!frame || e.source !== frame.contentWindow) return;
+    // if (!frame || e.source !== frame.contentWindow) return;   (before H86: #app-frame only)
+    if (!e.source || !poohFrames().some((f) => f.contentWindow === e.source)) return;   // H86: any Hub iframe showing Pooh Chat
     const d = e.data;
     if (d && d.sharedLink === 'chat' && typeof d.text === 'string') SharedChat.send(d.text);
   });
