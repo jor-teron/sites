@@ -783,7 +783,9 @@
   //   eyeWarm / eyeMode / eyeFrom / eyeTo and barEye are not listed in SYNC_GROUPS = Shared group (like theme)
   // const SYNC_SKIP = new Set(['wmMode', 'eyeNow']);   (before H66)
   // H66: dnd (Notification Centre Do Not Disturb) is this device's own; barNotif is not listed = Shared (like barEye)
-  const SYNC_SKIP = new Set(['wmMode', 'eyeNow', 'dnd']);
+  // const SYNC_SKIP = new Set(['wmMode', 'eyeNow', 'dnd']);   (before H82)
+  // H82: dndFavs (DND favourites still ring) is this device's own too
+  const SYNC_SKIP = new Set(['wmMode', 'eyeNow', 'dnd', 'dndFavs']);
   const SYNC_MAX_ITEMS = 2000;
   /** 'shared' | 'desktop' | 'phone' for a 'sites-hub.<name>' setting (scope 'hub') or an app key (scope 'app') */
   function groupOf(scope, name) {

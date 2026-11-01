@@ -259,9 +259,11 @@
       { id: 'telephone', e: '📞', label: 'Telephone', off: !A.has('telephone') },
       { id: 'location', e: '📍', label: 'Location', off: !locationApp() },
       { id: 'settings', e: '⚙️', label: 'Settings' },
-      { id: 'hub-settings', e: '🛠️', label: 'Hub Settings' }   // H80
+      { id: 'hub-settings', e: '🛠️', label: 'Hub Settings' },   // H80
+      { id: 'dnd', e: '🔕', label: 'Do Not Disturb', on: dndOn() }   // H82
     ];
   }
+  function dndOn() { return window.HubDnd ? HubDnd.isOn() : false; }   // H82
   function locationApp() { return ['live-location', 'location', 'live-location-share'].filter(A.has)[0] || ''; }
   function renderPanel() {
     var t = $('tiles'); t.textContent = '';
@@ -304,6 +306,8 @@
       openSettings();
     } else if (id === 'hub-settings') {
       openApp(HUB_SETTINGS.id);   // H80
+    } else if (id === 'dnd' && window.HubDnd) {   // H82
+      HubDnd.set(!HubDnd.isOn()); renderPanel(); toast('Do Not Disturb ' + (HubDnd.isOn() ? 'on' : 'off'));
     }
   }
   function toggleFullscreen() {
@@ -380,6 +384,13 @@
       if (code) f.el.contentWindow.postMessage({ sharedLink: 'hello', code: code, prefix: 'jtsites-', devices: [] }, file ? '*' : location.origin);
     }
   });
+
+  // H82: Answer on the attention pop-up (hub/core/hub_attention.js) shows that app's frame
+  window.__hubAttentionFocus = function (win) {
+    var f = frames.filter(function (x) { return x.el.contentWindow === win; })[0];
+    if (f) openApp(f.id);
+  };
+  if (window.HubDnd) HubDnd.on('change', function () { if (top() === 'panel') renderPanel(); });   // H82
 
   /* ---------- sheet: long-press menu, app info, settings ---------- */
   function openSheet(build) {

@@ -47,6 +47,7 @@
   }
   const dnd = () => { try { return localStorage.getItem(DND) === '1'; } catch (_) { return false; } };
   function setDnd(on) {
+    if (window.HubDnd) { window.HubDnd.set(on); changed(); return; }   // H82: one switch (HubDnd fires its change)
     try { if (on) localStorage.setItem(DND, '1'); else localStorage.removeItem(DND); } catch (_) { /* blocked */ }
     changed();
   }
@@ -292,6 +293,7 @@
     });
   }
   window.addEventListener('storage', (e) => { if (!e.key || e.key === KEY || e.key === DND) changed(); });
+  if (window.HubDnd) window.HubDnd.on('change', () => changed());   // H82: Settings / phone tile / apps set it here too
   // trim an over-long list left by an older build / another tab
   (function () { const l = read(); if (l.length > MAX) write(l); })();
   paintBtn();
