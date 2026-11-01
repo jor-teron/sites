@@ -1,6 +1,7 @@
 /* Telephone TP2b — the one save module. localStorage only:
    'telephone-settings-v1' = { name, theme:'system'|'light'|'dark', num:'<5 digits, 10000–99999>', did:<16 hex, lasting device id>,
      volume:0.9 (0–1), sink:'' (chosen audio output id, where setSinkId exists), keytones:true,
+     TP7: dnd / dndFav are no longer used (DND is the Hub's); old saved values are ignored, left in place.
      TP2: dnd:false, dndFav:true (favourites still ring when DND is on), facing:'user'|'environment', missedSeen:<ms>,
      TP6: callNotify:true (system notification for incoming calls), notifyHinted:false (one-time first-call hint shown),
      TP2b: numAt:<ms when this number was set (later clashes: the newer one moves)>, oldNum:'<the 4-digit TP1/TP2 number it replaced>' }

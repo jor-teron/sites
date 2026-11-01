@@ -5,6 +5,9 @@
       Closed when the call is answered, declined, missed or ended. Never asks permission by itself (Settings does).
    2. a host hint to window.parent (inside a host only): {sharedLink:'attention', app:'telephone', kind:'call', title, urgent:true}
       when ringing starts and {sharedLink:'attention', app:'telephone', kind:'call-end'} when it stops (unknown hosts ignore it).
+   TP7: the attention message also carries from:'<name> (<number>)' and fav:true for a ⭐ contact; the host's
+   {sharedLink:'attention-reply', app:'telephone', kind:'call', action:'answer'|'decline'} (from window.parent only, while a call
+   is ringing in) answers / declines through the same path as the Answer / Decline buttons.
    Setting: telephone-settings-v1 callNotify (true by default; it only works once the browser permission is 'granted'). */
 (function () {
   'use strict';
@@ -65,7 +68,10 @@
         if (ringing) A.update(null);
         var who = (hooks.who ? hooks.who(c) : '') || c.name || c.num || 'Someone', title = '📞 ' + who + ' is calling';
         ringing = { cid: cid };
-        post({ sharedLink: 'attention', app: 'telephone', kind: 'call', title: title, urgent: true });
+        // TP6: post({ sharedLink: 'attention', app: 'telephone', kind: 'call', title: title, urgent: true });
+        var msg = { sharedLink: 'attention', app: 'telephone', kind: 'call', title: title, urgent: true, from: who + (c.num && who !== c.num ? ' (' + c.num + ')' : '') };   // TP7: from + fav
+        try { if (hooks.fav && hooks.fav(c)) msg.fav = true; } catch (_) { /* */ }
+        post(msg);
         notify(title, cid);
         if (perm() === 'default' && TPSave.get('callNotify') !== false && !TPSave.get('notifyHinted') && hooks.hint) { TPSave.set('notifyHinted', true); try { hooks.hint(); } catch (_) { /* */ } }
       } else if (!on && ringing) {
@@ -80,5 +86,14 @@
       bring(); if (hooks.action) hooks.action(d.action);
     });
   } catch (_) { /* */ }
+  window.addEventListener('message', function (e) {   // TP7: the Hub's call card (H82) Answer / Decline
+    var d = e && e.data;
+    if (!inHub || !d || e.source !== window.parent || d.sharedLink !== 'attention-reply' || d.app !== 'telephone' || d.kind !== 'call') return;
+    if (d.action !== 'answer' && d.action !== 'decline') return;
+    var c = window.TPCall && TPCall.current();
+    if (!c || c.dir !== 'in' || c.state !== 'incoming') return;   // no incoming call: ignore
+    if (d.action === 'answer') { try { if (hooks.front) hooks.front(); } catch (_) { /* */ } }
+    if (hooks.action) hooks.action(d.action);
+  });
   window.TPAlert = A;
 })();

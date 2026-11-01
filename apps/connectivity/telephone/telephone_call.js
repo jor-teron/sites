@@ -9,6 +9,7 @@
    Output: <audio>.setSinkId(sink) where the browser has it (Chrome/Edge desktop, Android Chrome); else the browser decides.
    Tones are WebAudio oscillators (no files): ringback 440+480 Hz 2 s on / 4 s off, busy 480+620 Hz ½ s on/off ×4,
    ringtone 2 short warbles every 3 s, "not online" three rising notes, keypad DTMF 120 ms.
+   TP7: DND is the Hub's (TPDnd, telephone_dnd.js); "favourites ring" = the Hub's allowFavs().
    TP2 Do Not Disturb: a ring while DND is on (and the caller is not a favourite contact with "favourites ring" on) is
      declined without a sound: {t:'dnd', cid} to the caller ("Do Not Disturb") and a missed entry why:'dnd' here.
    TP2 video (IC2 / Video Chat pattern, but one-way streams so nothing is renegotiated): during an active call, Video on =
@@ -292,9 +293,10 @@
     if (m.t === 'ring') {
       var num = /^\d{4,5}$/.test(String(m.num)) ? String(m.num) : '', nm = String(m.name || '').slice(0, 40) || 'Device';
       var did = /^[0-9a-f]{16}$/.test(String(m.did || '')) ? String(m.did) : '';
-      if (TPSave.get('dnd')) {
+      // TP2–TP6: if (TPSave.get('dnd')) { var ct = …; if (!(ct && ct.fav && TPSave.get('dndFav'))) { … } }   (Telephone's own DND)
+      if (window.TPDnd && TPDnd.isOn()) {   // TP7: follow the Hub's Do Not Disturb
         var ct = TPSave.contact(num, did);
-        if (!(ct && ct.fav && TPSave.get('dndFav'))) {   // silent: no ring, no screen; logged as missed (DND)
+        if (!(ct && ct.fav && TPDnd.allowFavs())) {   // silent: no ring, no screen; logged as missed (DND)
           TPPeer.sendTo(from, { t: 'dnd', cid: m.cid });
           TPSave.addLog({ dir: 'missed', num: num, name: nm, did: did, why: 'dnd' }); fire('missed', { num: num, name: nm, did: did, why: 'dnd' });
           return;
