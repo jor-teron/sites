@@ -86,7 +86,7 @@
   }
   function relobby() { if (dead) return; emit('status', 'Reconnecting…'); setTimeout(claimLobby, 300 + Math.random() * 1500); }
   function hi() {
-    if (lconn && lconn.open) lconn.send({ t: 'hi', id: me.id, name: TPSave.name(), num: TPSave.pending() ? '' : TPSave.get('num'), did: TPSave.get('did'), busy: !!(window.TPCall && TPCall.busy()), dnd: !!TPSave.get('dnd'), since: since, at: TPSave.get('numAt'), old: TPSave.get('oldNum') });
+    if (lconn && lconn.open) lconn.send({ t: 'hi', id: me.id, name: TPSave.name(), num: TPSave.pending() ? '' : TPSave.get('num'), did: TPSave.get('did'), busy: !!(window.TPCall && TPCall.busy()), dnd: !!(window.TPDnd && TPDnd.isOn()) /* TP7; was !!TPSave.get('dnd') */, since: since, at: TPSave.get('numAt'), old: TPSave.get('oldNum') });
   }
   function sendTo(to, msg) { if (lconn && lconn.open) { lconn.send({ t: 'to', to: to, msg: msg }); return true; } return false; }
   function stop() {

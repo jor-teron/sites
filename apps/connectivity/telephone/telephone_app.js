@@ -479,6 +479,7 @@
   $('b-addcon').onclick = function () { editContact(null); };
 
   /* ---------- Do Not Disturb ---------- */
+  /* TP2–TP6 (Telephone's own DND, removed in TP7):
   function paintDnd() {
     var on = !!TPSave.get('dnd');
     $('b-dnd').classList.toggle('on', on); $('b-dnd').setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -488,6 +489,11 @@
   $('b-dnd').onclick = function () { setDnd(!TPSave.get('dnd')); };
   $('chk-dnd').onchange = function () { setDnd(this.checked); };
   $('chk-dndfav').onchange = function () { TPSave.set('dndFav', this.checked); };
+  */
+  function paintDnd() {   // TP7: read-only 🌙 next to the name while the Hub's DND is on
+    var el = $('dnd-ind'); if (el) el.hidden = !(window.TPDnd && TPDnd.isOn());
+  }
+  if (window.TPDnd) TPDnd.onChange(function () { paintDnd(); try { TPPeer.update(); } catch (_) { /* */ } });
   $('b-clear').onclick = function () { dialog('Clear all recent calls on this device?', ['Cancel', 'Clear']).then(function (i) { if (i === 1) { TPSave.clearLog(); toast('Recent calls cleared'); } }); };
   setInterval(function () { if (page === 1) paintLog(); }, 60000);   // keep "Today / Yesterday" right
 
@@ -545,6 +551,7 @@
   $('chk-notify').onchange = function () { if (this.checked) enableNotify(); else { TPSave.set('callNotify', false); paintNotify(); toast('Call notifications off'); } };
   TPAlert.hooks.who = function (c) { return nameFor(c.num, c.did, c.name); };
   TPAlert.hooks.front = function () { show(0); paintCall(); };
+  TPAlert.hooks.fav = function (c) { var ct = TPSave.contact(c.num, c.did); return !!(ct && ct.fav); };   // TP7
   TPAlert.hooks.action = function (a) { if (a === 'answer') $('b-answer').click(); else if (a === 'decline') $('b-decline').click(); };
   TPAlert.hooks.hint = function () {   // one time, first call while permission is 'default'
     var b = $('notify-hint'); if (!b) return;

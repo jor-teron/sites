@@ -49,8 +49,18 @@ Calls didn't come to the front: when Telephone was in a background tab or behind
   Hosts that don't know it ignore it. The idea: the Hub (and phone/) would show an urgent pop-over above any app and switch to Telephone on tap; that needs Hub Main Bot's side.
 - Title flashing, vibrate and ringtone are unchanged. A true pop-over above everything needs Hub support or the Android app (PH3).
 
+## TP7 — Do Not Disturb follows the Hub; Answer / Decline from the Hub's call card
+
+Why: Jor wants Do Not Disturb to belong to the Hub, with connectivity apps following it automatically (Hub H82, PR #350).
+
+- **No own DND:** the 🌙 `#b-dnd` button and the Settings "Do Not Disturb" / "Favourites still ring" rows are gone. `telephone_dnd.js` (`TPDnd`) reads `window.parent.HubDnd` (isOn / allowFavs / on('change')) inside a host, else localStorage `sites-hub.dnd` / `sites-hub.dndFavs` (`'1'` = on) plus the `storage` event. While the Hub's DND is on, an incoming call is declined silently (`{t:'dnd'}` to the caller) and logged as missed (Do Not Disturb), except a ⭐ contact when the Hub's "Favourites still ring" is on. Presence `dnd` follows the Hub. A read-only 🌙 next to the name shows it ("Do Not Disturb is on in the Hub"). Old `dnd` / `dndFav` values in `telephone-settings-v1` are ignored.
+- **Attention message** now carries `from: '<name> (<number>)'` and `fav: true` for a ⭐ contact.
+- **attention-reply:** `{sharedLink:'attention-reply', app:'telephone', kind:'call', action:'answer'|'decline'}` from `window.parent` only, while a call is ringing in, goes through the Answer / Decline buttons (Answer also shows the Phone pane / call screen). Anything else is ignored.
+
 ## Legacy code notes
 
 - TP5 removed markup (noted in an HTML comment in `telephone.html`): `#status` ("Online · code …") and `#btn-code` (Code) in the Phone bar; "🌙 DND" text became 🌙 only. The old `setStatus` (writing `#status`), the `btn-code` hook and the old `my-sub` text (name / long checking text) are kept as comments in `telephone_app.js`; the `btn-code` hook stays guarded.
 
 - TP1–TP2b `localCode()` + `go()` + `askCode()` + `boot()` (Hub's own Connect Code first, code dialog when none) are kept as comments in `telephone_app.js` above the TP4 code choice.
+
+- TP2–TP6 Telephone Do Not Disturb (`paintDnd` / `setDnd` / `#b-dnd` / `#chk-dnd` / `#chk-dndfav` hooks in `telephone_app.js`, the `TPSave.get('dnd')` / `dndFav` check in `telephone_call.js`, presence `dnd` in `telephone_peer.js`) is kept as comments; the removed markup is noted in HTML comments in `telephone.html`. Replaced in TP7 by the Hub's DND (`TPDnd`).
