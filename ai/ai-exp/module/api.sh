@@ -2,12 +2,9 @@
 # conversation file the session appends to.
 
 load_api_key() {
-  local env_file="$AI_EXP_ROOT/.env"
   API_KEY="${GEMINI_API_KEY:-${GOOGLE_API_KEY:-}}"
-  if [ -z "$API_KEY" ] && [ -f "$env_file" ]; then
-    API_KEY="$(sed -n -E 's/^[[:space:]]*(export[[:space:]]+)?(GEMINI_API_KEY|GOOGLE_API_KEY)[[:space:]]*=[[:space:]]*//p' \
-               "$env_file" | head -n1 | tr -d '\r' | sed -E "s/^[\"']//; s/[\"']\$//")"
-  fi
+  [ -n "$API_KEY" ] || API_KEY="$(env_value GEMINI_API_KEY)"
+  [ -n "$API_KEY" ] || API_KEY="$(env_value GOOGLE_API_KEY)"
   if [ -z "$API_KEY" ] && [ -t 0 ]; then
     read -r -s -p "Gemini API key (input hidden): " API_KEY
     echo
@@ -16,7 +13,8 @@ load_api_key() {
 }
 
 write_tools_file() {
-  cat > "$TOOLS_FILE" <<'JSON'
+  local all
+  all="$(cat <<'JSON'
 [
   {
     "type": "function",
@@ -62,6 +60,10 @@ write_tools_file() {
   }
 ]
 JSON
+)"
+  "$JQ" --argjson s "$ENABLE_SEARCH" --argjson e "$ENABLE_END_SESSION" \
+    'map(select((.function.name != "web_search" or $s == 1) and (.function.name != "end_session" or $e == 1)))' \
+    <<<"$all" > "$TOOLS_FILE"
 }
 
 add_message() {

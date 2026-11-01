@@ -3,12 +3,8 @@
 SEARCH_COUNT=0
 
 load_tavily_key() {
-  local env_file="$AI_EXP_ROOT/.env"
   TAVILY_KEY="${TAVILY_API_KEY:-}"
-  if [ -z "$TAVILY_KEY" ] && [ -f "$env_file" ]; then
-    TAVILY_KEY="$(sed -n -E 's/^[[:space:]]*(export[[:space:]]+)?TAVILY_API_KEY[[:space:]]*=[[:space:]]*//p' \
-                  "$env_file" | head -n1 | tr -d '\r' | sed -E "s/^[\"']//; s/[\"']\$//")"
-  fi
+  [ -n "$TAVILY_KEY" ] || TAVILY_KEY="$(env_value TAVILY_API_KEY)"
 }
 
 # $1 is the query. Sets SEARCH_OUT to compact text for the AI, cut to MAX_OUTPUT
