@@ -1,6 +1,7 @@
 /*
  * Hub — SharedLink state in the 🎮 Devices popover + bar (2026-10-13). Loaded after hub_link.js.
  *   Host Hub:  a count badge on the 🎮 icon (devices really online, heartbeat-checked), and a
+ *              H92: "Number 12345 · Pad 67890 · ↻ New pad code" (only the Gamepad pairs again). Before:
  *              "Code 1234 · ↻ New code" row: fresh random 5-digit code (H83; was 4-digit), re-registers the peer,
  *              saved, QR tiles redrawn (hub-controller.js newCode). Joined devices must pair again.
  *   Phone (joined, window.__hubRemote): "⏏ Disconnect from Hub" button in the same popover
@@ -37,19 +38,20 @@
   }
 
   /* host */
-  act.textContent = '↻ New code';
+  // H92: the link code is the Hub's number (fixed); this button only renews the Gamepad's private pad code.
+  act.textContent = '↻ New pad code';
+  act.title = 'New Gamepad pairing code (joined devices stay connected)';
   act.addEventListener('click', async (e) => {
     e.stopPropagation();
     const hc = window.__hubController;
-    if (!hc || !hc.newCode) return;
-    if (SharedLink.devices.some((d) => d.online)) {   // R26: the Hub's own dialog (browser confirm only as a fallback)
+    if (!hc || !(hc.newPadCode || hc.newCode)) return;
+    if (hc.connected) {   // R26: the Hub's own dialog (browser confirm only as a fallback)
       const ok = window.UiDialog
-        ? await window.UiDialog.confirm('New code?', 'Connected devices must pair again.', 'New code', true)
-        : confirm('New code: connected devices must pair again. Continue?');
+        ? await window.UiDialog.confirm('New pad code?', 'The Gamepad must pair again.', 'New pad code', true)
+        : confirm('New pad code: the Gamepad must pair again. Continue?');
       if (!ok) return;
     }
-    if (SharedLink.role === 'host') SharedLink.stop(true);   // say bye to joined devices
-    hc.newCode();
+    if (hc.newPadCode) hc.newPadCode(); else hc.newCode();
     paint();
   });
   const badge = document.createElement('span');
@@ -59,7 +61,8 @@
   function paint() {
     const n = SharedLink.devices.filter((d) => d.online).length;
     const code = (window.__hubController && window.__hubController.code) || SharedLink.code || '——';
-    info.textContent = 'Code ' + code + ' · ' + n + ' device' + (n === 1 ? '' : 's');
+    const pad = window.__hubController && window.__hubController.padCode;   // H92
+    info.textContent = 'Number ' + code + (pad ? ' · Pad ' + pad : '') + ' · ' + n + ' device' + (n === 1 ? '' : 's');
     badge.textContent = String(n);
     badge.hidden = !n;
   }

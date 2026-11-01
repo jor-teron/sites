@@ -5,7 +5,8 @@
   - PEERJS_URL is the ONE place PeerJS is pinned; loadPeer() injects it when
     window.Peer is missing. PeerJS default config only (no iceServers): the
     default list includes the PeerJS TURN relay, needed behind CGNAT.
-  - host({prefix, code, codeKey, onLegacy}): registers prefix + code and keeps
+  - host({prefix, code, codeKey, onLegacy, alias}): alias (H92) = private Gamepad pad code on a 2nd peer id;
+    a code still taken after the retries emits 'taken'(code). Registers prefix + code and keeps
     it across reloads (code in localStorage), with unavailable-id / network
     backoff. Connections with metadata.kind 'link' speak the SharedLink
     protocol; anything else (old Gamepad, kind 'files') goes to onLegacy(conn).
@@ -132,6 +133,7 @@
     var p = S.peer;
     S.peer = null;
     try { if (p) p.destroy(); } catch (_) { /* gone */ }
+    killAlias();   // H92
   }
 
   /* ---------- host ---------- */
@@ -241,32 +243,14 @@
       S.idRetry = 0; S.netRetry = 0;
       status('Waiting for devices…', 'listening');
     });
+    startAlias();   // H92: the private pad code (gamepad only) on a second peer id
     p.on('connection', function (conn) {
       if (S.peer !== p) return;
-      var md = conn.metadata || {};
-      if (md.kind === 'link') { attachLink(conn); return; }
-      if (md.kind !== 'files') trackLegacy(conn, md.name);
-      if (S.opts.onLegacy) S.opts.onLegacy(conn);
-      else conn.on('open', function () { try { conn.close(); } catch (_) { /* gone */ } });
+      onHostConn(conn);
     });
     p.on('error', function (err) {
       if (S.peer !== p) return;
-      var type = err && err.type;
-      if (type === 'unavailable-id') {
-        if (S.idRetry < ID_RETRY_MS.length) {
-          var d = ID_RETRY_MS[S.idRetry++];
-          status('Code still in use (previous session) — retrying ' + S.idRetry + '/' + ID_RETRY_MS.length + '…', 'retry');
-          retry(d);
-        } else {
-          destroy();
-          status('Code ' + code + ' is still in use — press "New code"', 'error');
-        }
-      } else if (/^(network|server-error|socket-error|socket-closed)$/.test(type)) {
-        status('Network problem — retrying…', 'retry');
-        retry(NET_RETRY_MS[Math.min(S.netRetry++, NET_RETRY_MS.length - 1)]);
-      } else if (type !== 'peer-unavailable') {
-        status('Error: ' + (type || 'unknown'), 'error');
-      }
+      hostError(err, code);
     });
     p.on('disconnected', function () {
       if (S.peer !== p || p.destroyed) return;
@@ -277,6 +261,70 @@
         try { p.reconnect(); } catch (_) { startHost(true); }
       }, NET_RETRY_MS[Math.min(S.netRetry++, NET_RETRY_MS.length - 1)]);
     });
+  }
+
+  function onHostConn(conn) {
+    var md = conn.metadata || {};
+    if (md.kind === 'link') { attachLink(conn); return; }
+    if (md.kind !== 'files') trackLegacy(conn, md.name);
+    if (S.opts.onLegacy) S.opts.onLegacy(conn);
+    else conn.on('open', function () { try { conn.close(); } catch (_) { /* gone */ } });
+  }
+
+  function hostError(err, code) {
+    var type = err && err.type;
+    if (type === 'unavailable-id') {
+      if (S.idRetry < ID_RETRY_MS.length) {
+        var d = ID_RETRY_MS[S.idRetry++];
+        status('Code still in use (previous session) — retrying ' + S.idRetry + '/' + ID_RETRY_MS.length + '…', 'retry');
+        retry(d);
+      } else {
+        destroy();
+        status('Code ' + code + ' is still in use', 'error');
+        emit('taken', code);   // H92: the Hub asks "Pick a new number" / "Retry" (never a silent change)
+      }
+    } else if (/^(network|server-error|socket-error|socket-closed)$/.test(type)) {
+      status('Network problem — retrying…', 'retry');
+      retry(NET_RETRY_MS[Math.min(S.netRetry++, NET_RETRY_MS.length - 1)]);
+    } else if (type !== 'peer-unavailable') {
+      status('Error: ' + (type || 'unknown'), 'error');
+    }
+  }
+
+  /* H92: alias = private pad code. Only a Gamepad (metadata.pad, or an old non-link pad) may use it; devices use
+     the main code (the Hub's 5-digit number). Errors here never touch the main peer; a busy id retries quietly. */
+  function startAlias() {
+    var a = S.opts.alias;
+    killAlias();
+    if (!a || a === S.code) return;
+    var ap = S.apeer = new window.Peer(S.prefix + a, { debug: 0 });
+    ap.on('connection', function (conn) {
+      if (S.apeer !== ap) return;
+      var md = conn.metadata || {};
+      if (md.kind === 'link' && !md.pad) { conn.on('open', function () { try { conn.close(); } catch (_) { /* gone */ } }); return; }
+      onHostConn(conn);
+    });
+    ap.on('error', function (err) {
+      if (S.apeer !== ap || (err && err.type) === 'peer-unavailable') return;
+      clearTimeout(S.atimer);
+      S.atimer = setTimeout(function () { if (S.apeer === ap && S.role === 'host') startAlias(); }, 5000);
+    });
+  }
+  function killAlias() {
+    clearTimeout(S.atimer);
+    var ap = S.apeer; S.apeer = null;
+    try { if (ap) ap.destroy(); } catch (_) { /* gone */ }
+  }
+  /* H92: change the pad code (alias) without touching the main code / joined devices. */
+  function setAlias(a) {
+    S.opts.alias = String(a || '');
+    if (S.role === 'host' && S.peer) startAlias();
+  }
+  /* H92: host again on a given code (a new number), or retry the same one after 'taken'. */
+  function rehost(c) {
+    if (S.role !== 'host') return Promise.resolve(S.code);
+    if (c && c !== S.code) { stop(true); S.code = String(c); if (S.opts.codeKey) save(S.opts.codeKey, S.code); }
+    return loadPeer().then(function () { startHost(false); return S.code; });
   }
 
   function retry(ms) {
@@ -462,7 +510,8 @@
     LOBBY: PUBLIC_CODE, CODE_LEN: CODE_LEN, CODE_RE: CODE_RE, isCode: isCode,   // H83
     deviceCode: function () { return window.SharedLinkDevices && window.SharedLinkDevices.code ? window.SharedLinkDevices.code() : ''; },   // H83
     on: on, off: off, emit: emit,
-    host: host, join: join, newCode: newCode, stop: stop,
+    host: host, join: join, newCode: newCode, stop: stop, setAlias: setAlias, rehost: rehost,   // H92: + setAlias, rehost
+   
     pause: destroy,   // drop the peer quietly (page hide): no bye, devices reconnect
     restart: function () { if (S.role === 'host') startHost(false); else if (S.code) startJoin(); },
     send: send,

@@ -143,7 +143,8 @@
     var ready = keep.filter(function (x) { return devOf(x.to); });
     if (!ready.length) return;
     flushing = true;
-    ready.reduce(function (p, x) { return p.then(function () { return wireMsg(devOf(x.to), x.m, x.to).then(function (ok) { if (ok) unqueue(x.m.id); }); }); }, Promise.resolve())
+    var me = myNumber();   // H92: a queued message goes out from the current number (it may have been changed)
+    ready.reduce(function (p, x) { if (me && x.m.from !== me) x.m.from = me; return p.then(function () { return wireMsg(devOf(x.to), x.m, x.to).then(function (ok) { if (ok) unqueue(x.m.id); }); }); }, Promise.resolve())
       .then(function () { flushing = false; }, function () { flushing = false; });
   }
 
@@ -222,6 +223,8 @@
     m.onMsg('call', function (d, from) { if (d && typeof d === 'object') gotCall(d, from); });
     ['roster', 'peers'].forEach(function (ev) { m.on(ev, function () { setTimeout(flush, 300); }); });
   }
+  // H92: a new number (SharedLinkDevices.setCode): advertise it on the mesh roster now, then resend the outbox from it.
+  window.addEventListener('hub-number-changed', function () { var m = M(); try { if (m && m.refresh) m.refresh(); } catch (_) { /* mesh down */ } setTimeout(flush, 500); });
   wire();
   if (!wired) document.addEventListener('DOMContentLoaded', wire);
   setInterval(function () { wire(); flush(); }, 15000);

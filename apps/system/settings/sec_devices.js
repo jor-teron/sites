@@ -498,7 +498,7 @@
     // card.appendChild(ui.el('p', 'opt-note', 'The name your other devices see in Devices and Chat. Leave it empty to use \u201C' + guess + '\u201D.'));   (before H57)
     card.appendChild(ui.el('p', 'opt-note', 'The name your other devices see in Devices and Chat. Type your own, or tap \uD83C\uDFB2 for a new random one. Leave it empty for a random name.'));   // H57
     if (D && D.code) {   // H83: this device's own 5-digit number (Telephone uses it as the phone number)
-      const num = ui.el('p', 'opt-note device-code', 'This device\u2019s number: ' + D.code()); num.id = 'device-code';
+      const num = ui.el('p', 'opt-note device-code', 'This device\u2019s number: ' + D.code() + ' (also this Hub\u2019s connect code; the Gamepad uses its own pad code in \uD83C\uDFAE Devices)'); num.id = 'device-code';
       card.appendChild(num);
     }
     const form = ui.el('form', 'key-line');

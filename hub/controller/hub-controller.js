@@ -41,6 +41,11 @@
   const CODE_KEY = 'jtsites-hub-ctrl-code';              // localStorage: current pairing code
   // const CODE_RE = /^\d{4}$/;   (before H83)
   const CODE_RE = /^\d{5}$/;                            // H83: 5 digits only; older letter / 4-digit codes are replaced
+  /* H92: the Hub's link code IS its 5-digit number (SharedLinkDevices.code(), HubLine's number). The Gamepad pairs on a
+     separate private pad code ('hub-pad-code', a 2nd peer id via SharedLink.host alias) with its own "New pad code".
+     First run: the old pairing code (CODE_KEY) becomes the pad code. Number taken → HubAttention card, never silent. */
+  const PAD_KEY = 'hub-pad-code';
+  let padCode = '';
   // Retry / backoff lives in shared/link/link_core.js now.
 
   // Controller button -> key injected into the app iframe (all buttons also post
@@ -84,6 +89,27 @@
   function loadCode() {
     // try { const c = (localStorage.getItem(CODE_KEY) || '').toUpperCase(); return CODE_RE.test(c) ? c : ''; } catch (_) { return ''; }   (before H55)
     try { const c = (localStorage.getItem(CODE_KEY) || '').toUpperCase(); return CODE_RE.test(c) && c !== '00000' ? c : ''; } catch (_) { return ''; }   // H55: 0000 = public mesh, never a Hub's own code (H83: 00000)
+  }
+  function myNumber() {   // H92
+    const D = window.SharedLinkDevices;
+    try { const n = D && D.code ? String(D.code()) : ''; return CODE_RE.test(n) && n !== '00000' ? n : ''; } catch (_) { return ''; }
+  }
+  function loadPad() {   // H92: saved pad code, else migrate the old pairing code, else a fresh one
+    let p = '';
+    try { p = localStorage.getItem(PAD_KEY) || ''; } catch (_) { /* blocked */ }
+    if (!CODE_RE.test(p) || p === '00000' || p === code) p = loadCode();
+    if (!p || p === code) p = randomCode();
+    try { localStorage.setItem(PAD_KEY, p); } catch (_) { /* blocked */ }
+    return p;
+  }
+  function newPadCode() {   // H92: only the Gamepad must pair again; joined devices stay
+    releaseHeld();
+    const c = conn; conn = null;
+    try { if (c) c.close(); } catch (_) {}
+    padCode = randomCode();
+    try { localStorage.setItem(PAD_KEY, padCode); } catch (_) { /* blocked */ }
+    if (window.SharedLink && SharedLink.setAlias) SharedLink.setAlias(padCode);
+    renderPairing();
   }
   function saveCode(c) {
     try { localStorage.setItem(CODE_KEY, c); } catch (_) { /* ignore */ }
@@ -151,8 +177,8 @@
       if (qrHost) qrHost.innerHTML = '';
       return;
     }
-    const url = controllerUrl(code);
-    if (codeEl) codeEl.textContent = code;
+    const url = controllerUrl(padCode || code);   // H92: the Gamepad QR / code is the pad code
+    if (codeEl) codeEl.textContent = padCode || code;
     if (urlEl) { urlEl.textContent = url; urlEl.href = url; }
     renderQr(url);
     announceLink();
@@ -161,7 +187,7 @@
   /** Tell the home tiles (hub.js) the current controller link, so the Gamepad QR tile
    *  shows the exact same QR / code as the popover. */
   function announceLink() {
-    const url = code ? controllerUrl(code) : '';
+    const url = code ? controllerUrl(padCode || code) : '';   // H92
     const cu = code ? connectUrl(code) : '';
     try { window.dispatchEvent(new CustomEvent('hub-ctrl-link', { detail: { url: url, code: code, connectUrl: cu } })); } catch (_) { /* old browser */ }
   }
@@ -498,7 +524,7 @@
     setConnectedIndicator(!!(conn && conn.open));
     renderPairing();
     pairing = true;
-    SharedLink.host({ prefix: PEER_PREFIX, code: code, onLegacy: onLegacy }).catch(() => setStatus('PeerJS could not load (offline?)'));
+    SharedLink.host({ prefix: PEER_PREFIX, code: code, alias: padCode, onLegacy: onLegacy }).catch(() => setStatus('PeerJS could not load (offline?)'));
   }
 
   // Phone remote Hub: no host; hub_remote.js joins. Still announce Connect QR
@@ -573,6 +599,17 @@
       // A pad that just (re)joined is the controller even before its first key.
       SharedLink._targets(id).forEach((c) => { if (c.metadata && c.metadata.pad && c.peer === id) attachConn(c, true); });
     });
+    // H92: the number is taken by another Hub (after link_core's retries): ask, never change it silently
+    SharedLink.on('taken', (c) => {
+      if (c !== code) return;
+      const D = window.SharedLinkDevices;
+      const again = () => (SharedLink.rehost ? SharedLink.rehost() : startPairing());
+      if (!window.HubAttention || !HubAttention.ask) { setStatus('Number ' + c + ' is in use by another Hub'); return; }
+      HubAttention.ask({ id: 'hub-number-taken', title: 'Number ' + c + ' is in use', text: 'Another Hub is using this number, so phones and Messages cannot reach this Hub. Pick a new number (people must use the new one), or retry.', ok: 'Pick a new number', no: 'Retry' }, (v) => {
+        if (v === true && D && D.setCode) { let n = c; while (n === c) n = String(10000 + Math.floor(Math.random() * 90000)); D.setCode(n); }   // phone numbers never start with 0; → 'hub-number-changed' below
+        else if (v === false) again();
+      });
+    });
     SharedLink.on('status', (text, state) => {
       if (state === 'listening' && conn && conn.open) text = 'Controller connected';
       setStatus(text);
@@ -580,13 +617,23 @@
   }
 
   /** Make and remember a fresh pairing code, then listen on it. */
-  function newCode() {
+  // function newCode() { releaseHeld(); destroyPeer(); code = randomCode(); saveCode(code); startPairing(); }   (before H92)
+  function newCode() {   // H92: the link code is the number now; a missing number falls back to the old random code
     releaseHeld();
     destroyPeer();
-    code = randomCode();
-    saveCode(code);
+    code = myNumber() || randomCode();
+    if (!padCode) padCode = loadPad();
     startPairing();
   }
+  // H92: the user picked a new number → host on it at once (HubLine re-advertises it, hub_line.js)
+  window.addEventListener('hub-number-changed', (e) => {
+    const n = e && e.detail && e.detail.num;
+    if (!CODE_RE.test(String(n)) || n === code) return;
+    code = String(n);
+    if (padCode === code) padCode = randomCode();
+    if (window.SharedLink && SharedLink.role === 'host' && SharedLink.rehost) SharedLink.rehost(code); else startPairing();
+    renderPairing();
+  });
 
   /** Close the phone link and stop listening (the code is kept; opening the popover or
    *  reloading the hub listens again). */
@@ -612,7 +659,7 @@
   if (popoverBackdrop) popoverBackdrop.addEventListener('click', () => closePopover());
   if (popover) popover.addEventListener('click', (e) => e.stopPropagation());
   if (disconnectBtn) disconnectBtn.addEventListener('click', () => disconnect());
-  if (newCodeBtn) newCodeBtn.addEventListener('click', (e) => { e.stopPropagation(); newCode(); });
+  if (newCodeBtn) newCodeBtn.addEventListener('click', (e) => { e.stopPropagation(); newPadCode(); });   // H92 (was newCode)
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && popover && !popover.hidden) closePopover();
@@ -630,25 +677,28 @@
 
   // Boot: a remembered code starts listening at once (phone can reconnect after a reload).
   // The Gamepad QR tile needs a live code too, so a first visit makes one here.
-  code = loadCode();
+  // code = loadCode(); if (code) startPairing(); else newCode();   (before H92)
+  code = myNumber();
+  padCode = loadPad();   // H92: migrates the old pairing code on first run
   if (code) startPairing();
   else newCode();
 
   /** Shared link for the home tiles: same code as the popover QR; listens again if stopped. */
   window.HubCtrlLink = {
-    get url() { return code ? controllerUrl(code) : ''; },
+    get url() { return code ? controllerUrl(padCode || code) : ''; },   // H92: pad code
     get connectUrl() { return code ? connectUrl(code) : ''; },
     ensure() {
       if (!code) newCode();
       else if (!SharedLink.live) startPairing();
-      return code ? controllerUrl(code) : '';
+      return code ? controllerUrl(padCode || code) : '';
     },
   };
   announceLink();
 
   // Expose tiny API for debugging / tests
   window.__hubController = {
-    openPopover, closePopover, disconnect, startPairing, newCode,
+    openPopover, closePopover, disconnect, startPairing, newCode, newPadCode,   // H92: + newPadCode
+    get padCode() { return padCode; },
     key: forwardKey,   // Hub OSK (hub/osk/osk.js): same message as a phone keyboard key
     get code() { return code; },
     get status() { return statusEl ? statusEl.textContent : ''; },

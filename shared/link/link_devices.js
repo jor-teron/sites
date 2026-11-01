@@ -141,6 +141,16 @@
     if (lsSet(CODE_KEY, memCode)) { var back = lsGet(CODE_KEY); if (CODE_NUM_RE.test(back)) memCode = back; }
     return memCode;
   }
+  /* H92: the user picked a new number ("Pick a new number" card). Saved, then 'hub-number-changed' {old, num} so
+     the Hub re-hosts on it and HubLine / HubMesh advertise it at once. Never called silently. */
+  function setCode(n) {
+    n = String(n || '');
+    if (!CODE_NUM_RE.test(n)) return code();
+    var old = code();
+    memCode = n; lsSet(CODE_KEY, n);
+    if (old !== n) { try { window.dispatchEvent(new CustomEvent('hub-number-changed', { detail: { old: old, num: n } })); } catch (_) { /* old browser */ } }
+    return n;
+  }
   function oldIds() { return lsGet(OLD_KEY).split(',').filter(function (x) { return OLD_RE.test(x); }); }   // comma list
   function isMe(x) { x = String(x || ''); return !!x && (x === id() || oldIds().indexOf(x) >= 0); }
 
@@ -162,5 +172,6 @@
   code();   // H83: make this device's number on first load
   name();   // H57: give an unnamed device its random name on first start
   // window.SharedLinkDevices = { id: id, oldIds: oldIds, isMe: isMe, ID_RE: ID_RE, name: name, ...   (before H83)
-  window.SharedLinkDevices = { id: id, code: code, CODE_KEY: CODE_KEY, oldIds: oldIds, isMe: isMe, ID_RE: ID_RE, name: name, setName: setName, guess: guess, roll: roll, randomName: randomName, isUnset: isUnset, ADJ: ADJ, NOUN: NOUN };
+  // window.SharedLinkDevices = { id: id, code: code, CODE_KEY: ...   (before H92)
+  window.SharedLinkDevices = { id: id, code: code, setCode: setCode, CODE_KEY: CODE_KEY, oldIds: oldIds, isMe: isMe, ID_RE: ID_RE, name: name, setName: setName, guess: guess, roll: roll, randomName: randomName, isUnset: isUnset, ADJ: ADJ, NOUN: NOUN };
 })();

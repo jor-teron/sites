@@ -168,7 +168,8 @@
     function paintHub() {
       const c = myCode();
       codeEl.textContent = c || '——';
-      paintQr(c);   // H59
+      const hc = window.__hubController;
+      paintQr((!R && hc && hc.padCode) || c);   // H59; H92: the Gamepad QR carries the private pad code
       paintName();
     }
     function paintName() {   // H46
