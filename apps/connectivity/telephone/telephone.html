@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Telephone TP2b</title>
+  <title>Telephone TP5</title>
   <link rel="icon" href="telephone_icon.png">
   <link rel="stylesheet" href="telephone.css">
 </head>
@@ -12,15 +12,16 @@
   <div id="dots"><button class="dot on" data-i="0" aria-label="Phone"></button><button class="dot" data-i="1" aria-label="Recent calls"><span class="bdg" id="badge" hidden></span></button><button class="dot" data-i="2" aria-label="Contacts"></button><button class="dot" data-i="3" aria-label="Settings"></button></div>
   <div id="viewport"><div id="track">
     <section class="pane" id="pane-phone">
-      <div class="bar"><div class="who"><b id="me-name"></b><div id="status" class="mut">Starting…</div></div>
-        <span class="btns"><button class="mini" id="b-dnd" title="Do Not Disturb: calls are declined silently and logged as missed">🌙 DND</button><button class="mini" id="btn-code">Code</button></span></div>
+      <!-- TP5: removed <div id="status" class="mut">Starting…</div> and <button class="mini" id="btn-code">Code</button>; the code stays in Settings -->
+      <div class="bar"><div class="who"><b><span id="net" class="net" role="img" title="Starting…" aria-label="Starting…"></span><span id="me-name"></span></b></div>
+        <span class="btns"><button class="mini ico" id="b-dnd" title="Do Not Disturb: calls are declined silently and logged as missed" aria-label="Do Not Disturb" aria-pressed="false">🌙</button></span></div>
       <div id="sound" hidden>🔇 Tap here to turn on sound</div>
       <div id="main">
         <div id="listcol">
-          <div id="mycard"><span class="mut">My number</span><b id="my-num">–––––</b><span id="my-sub" class="mut"></span></div>
+          <div id="mycard"><span class="mut">My number</span><b id="my-num">–––––</b><span id="my-sub" class="mut" hidden></span></div>
           <div class="hd">Online now</div>
           <ul id="devices"></ul>
-          <p id="empty" class="mut">No other phones yet. Open Telephone on another device with the same Hub code.</p>
+          <p id="empty" class="mut">No other phones online.</p>
         </div>
         <div id="side">
           <div id="dialbox"><output id="dial" aria-live="polite"></output><button id="b-back" aria-label="Delete digit" title="Delete">⌫</button></div>
@@ -38,12 +39,12 @@
     <section class="pane" id="pane-log">
       <div class="bar"><div class="who"><b>Recent calls</b><div id="log-sub" class="mut"></div></div><button class="mini" id="b-clear">Clear</button></div>
       <ul id="log"></ul>
-      <p id="log-empty" class="mut">No calls yet. Calls you make, take and miss show up here. Tap one to call back.</p>
+      <p id="log-empty" class="mut">No calls yet.</p>
     </section>
     <section class="pane" id="pane-con">
       <div class="bar"><div class="who"><b>Contacts</b><div id="con-sub" class="mut"></div></div><button class="mini" id="b-addcon">＋ Add</button></div>
       <ul id="contacts"></ul>
-      <p id="con-empty" class="mut">No contacts yet. Tap ＋ Add, or ＋ next to a number in Recent calls.</p>
+      <p id="con-empty" class="mut">No contacts yet.</p>
     </section>
     <section class="pane" id="pane-set"><div class="set-wrap">
       <h2>This device</h2>
@@ -60,8 +61,8 @@
       <h2>Look</h2>
       <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
       <h2>About</h2>
-      <div class="about"><img src="telephone_icon.png" width="48" height="48" alt=""><div><b>Telephone</b> <span id="ver">TP2b</span>
-        <p>A phone for every device on the same Hub Connect Code. Each device gets its own 5-digit number (10000–99999), checked against the phones online before it is kept; if two devices still end up with the same number, the one that got it last picks a new one and says so. Dial it on the keypad or tap a phone in Online now: only that device rings, with Answer and Decline. Contacts keep names and numbers, show who is online, and ⭐ favourites. During a call: Mute, Speaker, Video (front or back camera) and Hang up. Recent calls keeps calls in, out and missed with a red badge for new missed calls; tap one to call back or ＋ to save it. Do Not Disturb declines calls silently (favourites can still ring). Calls ring only while Telephone is open on the other device. Peer to peer over PeerJS; nothing is recorded or stored on a server.</p></div></div>
+      <div class="about"><img src="telephone_icon.png" width="48" height="48" alt=""><div><b>Telephone</b> <span id="ver">TP5</span>
+        <p>Calls between your devices, peer to peer. Each device has its own 5-digit number; dial it or tap a phone in Online now. Starts on Public 0000 (every call still rings and must be answered); pick a private code above. Calls ring only while Telephone is open. Nothing is recorded or stored on a server.</p></div></div>
     </div></section>
   </div></div>
 </div>

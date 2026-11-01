@@ -1,4 +1,4 @@
-# Telephone — TP2b
+# Telephone — TP5
 
 Phone calls between devices on the same Hub Connect Code (Connectivity → Chat, after Intercom). Each device gets its own 5-digit number; dial it and only that device rings.
 
@@ -28,6 +28,17 @@ Phone calls between devices on the same Hub Connect Code (Connectivity → Chat,
 - A code picked with Code/Change (or Public) holds for the session. Safety unchanged: every call rings and must be answered, DND with favourites stays, and the 5-digit number check now covers every phone on 0000. On 0000, anyone online can see your name and number in Online now.
 - (TP3 stays reserved for the dropped call-waiting plan.)
 
+## TP5 — Minimal Phone screen
+
+Jor asked for a minimalist look: the device name was shown twice and the "Online · code 0000" line and Code button were no longer needed.
+
+- **Top bar:** the name once, with a small connection dot before it (green online, amber connecting, grey offline / PeerJS failed); the status text is the dot's tooltip / `aria-label` (`setStatus` writes there). Do Not Disturb is a 🌙 icon button (same `b-dnd`, `on` state, `aria-pressed`). The code is changed only in Settings → Hub code → Change; the `#tp-switch` offer button is unchanged.
+- **My number:** one line "My number 12345"; the name is no longer repeated under it, `#my-sub` only shows "Checking…" while a new number is checked.
+- **Shorter texts:** empty lists say "No other phones online." / "No calls yet." / "No contacts yet."; About is short and mentions Public 0000. "PeerJS could not load" also shows as a toast.
+- Title and About version say TP5.
+
 ## Legacy code notes
+
+- TP5 removed markup (noted in an HTML comment in `telephone.html`): `#status` ("Online · code …") and `#btn-code` (Code) in the Phone bar; "🌙 DND" text became 🌙 only. The old `setStatus` (writing `#status`), the `btn-code` hook and the old `my-sub` text (name / long checking text) are kept as comments in `telephone_app.js`; the `btn-code` hook stays guarded.
 
 - TP1–TP2b `localCode()` + `go()` + `askCode()` + `boot()` (Hub's own Connect Code first, code dialog when none) are kept as comments in `telephone_app.js` above the TP4 code choice.
