@@ -49,7 +49,11 @@ EXPERIMENTS_DIR="${EXPERIMENTS_DIR:-$AI_EXP_ROOT/experiments}"
 
 validate_config() {
   local name val
-  for name in TIME_LIMIT REQUEST_GAP CMD_TIMEOUT MAX_OUTPUT MAX_JOURNAL API_TIMEOUT_FLOOR MAX_SEARCHES SEARCH_RESULTS; do
+  if [ "${FRACTIONAL_GAP:-0}" = 1 ]; then
+    [[ "$REQUEST_GAP" =~ ^[0-9]+(\.[0-9]{1,3})?$ ]] && [ "$(gap_ms)" -ge 1000 ] \
+      || fail "REQUEST_GAP must be a number of seconds >= 1, up to 3 decimals (got: ${REQUEST_GAP:-empty})"
+  fi
+  for name in TIME_LIMIT $([ "${FRACTIONAL_GAP:-0}" = 1 ] || echo REQUEST_GAP) CMD_TIMEOUT MAX_OUTPUT MAX_JOURNAL API_TIMEOUT_FLOOR MAX_SEARCHES SEARCH_RESULTS; do
     val="${!name}"
     case "$val" in
       ''|*[!0-9]*) fail "$name must be a positive whole number (got: ${val:-empty})" ;;
@@ -62,4 +66,13 @@ validate_config() {
   [ -n "$MODEL" ] || fail "AI_MODEL is empty"
   [ -n "$API_URL" ] || fail "API_URL is empty"
   [ -n "$EXPERIMENTS_DIR" ] || fail "EXPERIMENTS_DIR is empty"
+}
+
+# REQUEST_GAP in milliseconds ("5" -> 5000, "4.35" -> 4350). Fractions are
+# only accepted when the version sets FRACTIONAL_GAP=1 (v4).
+gap_ms() {
+  local whole="${REQUEST_GAP%%.*}" frac=""
+  [[ "$REQUEST_GAP" == *.* ]] && frac="${REQUEST_GAP#*.}"
+  frac="${frac}000"; frac="${frac:0:3}"
+  printf '%s\n' $(( 10#${whole:-0} * 1000 + 10#$frac ))
 }

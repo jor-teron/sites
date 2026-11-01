@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # Shared cage for v3: ONE persistent BusyBox machine that every companion uses.
 #
-# INTERFACE (a v4 with separate cages swaps only this file; keep these names):
+# INTERFACE (v4 swaps this file for separate-cages.sh, which keeps these names):
 #   MAX_PROCS                     process limit per cage (env, default 40)
 #   setup_users                   make /etc/passwd, /etc/group, /home/<name>, /dev/null,
 #                                 /etc/hostname and /sbin/init for every name in USERS[@]
@@ -13,6 +13,8 @@
 #   stop_shared_cage              kill everything in the cage (safe to call twice)
 #   CAGE_OF WHO                   print the host folder holding WHO's filesystem
 #                                 (used by discovery to find files they made)
+#   build_cages / repair_cages    new run: build the rootfs(es); --continue: recreate mount points
+#   CAGE_ROOT_NAME                folder under the experiment holding the cage(s) (default "cage")
 # Uses from other modules: CAGE, RUN_DIR, USERS, UNSHARE, CHROOT, NSENTER,
 # TIMEOUT, CAGE_TZ, CMD_KILL_GRACE, MAX_OUTPUT (module/config.sh, cage.sh, companion.sh).
 #
@@ -24,6 +26,9 @@ MAX_PROCS="${MAX_PROCS:-40}"  # processes allowed in the cage (init excluded)
 
 # All companions share one machine.
 CAGE_OF() { printf '%s\n' "$CAGE"; }
+# New run: build the rootfs. Continue: make sure the mount points exist.
+build_cages() { build_cage; }
+repair_cages() { mkdir -p "$CAGE/proc" "$CAGE/home" "$CAGE/tmp"; }
 
 # /etc/passwd, /etc/group, homes, /dev/null for the shared cage.
 setup_users() {

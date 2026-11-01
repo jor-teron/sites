@@ -70,22 +70,22 @@ pick_names() {
 prepare_multi() {
   local last
   mkdir -p "$EXPERIMENTS_DIR" || fail "Can't create $EXPERIMENTS_DIR"
-  EXP_DIR="$EXPERIMENTS_DIR/$NAME"; CAGE="$EXP_DIR/cage"; RUN_DIR="$EXP_DIR/.run"
+  EXP_DIR="$EXPERIMENTS_DIR/$NAME"; CAGE="$EXP_DIR/${CAGE_ROOT_NAME:-cage}"; RUN_DIR="$EXP_DIR/.run"
   TOOLS_FILE="$RUN_DIR/tools.json"; REPLY_FILE="$RUN_DIR/reply.json"
   if [ "$CONTINUE" -eq 0 ]; then
     [ -e "$EXP_DIR" ] && fail "'$NAME' already exists. To pick up where it left off, run:
   ${AGENT_CMD:-$0} --continue $NAME"
     pick_names
     mkdir -p "$RUN_DIR" || fail "Can't create $EXP_DIR"
-    build_cage
+    build_cages
     printf '%s\n' "${USERS[@]}" > "$RUN_DIR/names"
     SESSION=1
   else
     [ -d "$CAGE" ] || fail "No experiment called '$NAME' here (looked for $CAGE)."
-    [ -s "$RUN_DIR/names" ] || fail "'$NAME' was not made by v3 (no .run/names)."
+    [ -s "$RUN_DIR/names" ] || fail "'$NAME' was not made by v3/v4 (no .run/names)."
     mapfile -t USERS < "$RUN_DIR/names"
     [ "$PROMPT_GIVEN" = 1 ] || PROMPT="$(cat "$RUN_DIR/prompt.txt" 2>/dev/null)"
-    mkdir -p "$CAGE/proc" "$CAGE/home" "$CAGE/tmp"
+    repair_cages
     last="$(cat "$RUN_DIR/session" 2>/dev/null)"; last="${last//[[:space:]]/}"
     case "$last" in ''|*[!0-9]*) last=0 ;; esac
     SESSION=$(( 10#$last + 1 ))
@@ -105,10 +105,11 @@ prepare_multi() {
 
 compose_person_prompt() {
   local who="$1" every turns
-  every=$(( REQUEST_GAP * 2 )); turns=$(( TIME_LIMIT / every ))
+  local ms; ms=$(( $(gap_ms) * 2 ))
+  every=$(( (ms + 500) / 1000 )); turns=$(( TIME_LIMIT * 1000 / ms ))   # 8.7 s -> "about 9"
   PERSON_PROMPT="You're logged in as ${who} on this machine. It is a small offline Linux computer: only BusyBox commands are installed and there is no network. You have ${TIME_LIMIT} seconds this session: it started at $(clock) and ends at ${END_TEXT}. You get a turn about every ${every} seconds (about ${turns} turns), so you may chain commands with ; or && in one call. The time left is shown after every command. Act only by calling the run_shell tool. Your home folder is /home/${who}. Keep notes at /home/${who}/journal.md: append a line with the time (use the date command) and what you are doing and why. Before time runs out, append a short summary to it.$(person_optin_notes "$who") Your notes are your only memory between sessions: anything not written there will be forgotten."
   if [ "$SESSION" -gt 1 ]; then
-    local jf="$CAGE/home/$who/journal.md" j
+    local jf; jf="$(CAGE_OF "$who")/home/$who/journal.md"; local j
     if [ -s "$jf" ]; then
       j="$(tail -c "$MAX_JOURNAL" "$jf")"
       [ "$(wc -c < "$jf")" -gt "$MAX_JOURNAL" ] && j="...(older entries cut)

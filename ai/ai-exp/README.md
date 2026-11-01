@@ -12,8 +12,34 @@ It keeps a journal at `/home/journal.md`; every step is logged with the time.
 ./agent.sh --help
 ```
 
-`agent.sh` now runs **v3** (two people, one machine) by default. Use
-`AGENT_VERSION=2 ./agent.sh ...` for the single-AI runs.
+`agent.sh` now runs **v4** (two people, two machines, hidden links) by
+default. Use `AGENT_VERSION=3 ./agent.sh ...` for one shared machine, or
+`AGENT_VERSION=2` for the single-AI runs.
+
+## v4: two companions, two machines, two hidden links
+
+Like v3 (same neutral prompt, names, SOLO, `--continue`, `ENABLE_*`,
+per-person logs, timeline, summary), but each person gets their **own** cage:
+own BusyBox files, own `/home`, own process list (`ps` shows only theirs), own
+hostname (their name). Nothing in the prompt mentions the other person, `/srv`
+or the network. Two links join the cages:
+
+1. **Shared folder**: `<experiment>/shared/` is bind-mounted read-write at
+   `/srv` in both cages.
+2. **Shared localhost**: both cages live in ONE network namespace with only
+   `lo` (no outside network), so `nc -l -p 5555` in one cage is reachable with
+   `nc 127.0.0.1 5555` from the other.
+
+Timing: `REQUEST_GAP=4.35` (v4 allows up to 3 decimals; the clock is in ms),
+so each person gets a turn about every 8.7 s; the prompt says "about every 9
+seconds". `TIME_LIMIT` defaults to 300.
+
+`summary-N.md` adds, per person: first touch of `/srv`, first read of a `/srv`
+file the other wrote, first network use (nc/telnet/wget/curl to 127.0.0.1 or
+localhost, or a listener such as `nc -l`/`httpd`).
+
+Folder: `cages/<name>/` (each rootfs), `shared/` (behind `/srv`), plus the v3
+files (`timeline-N.md`, `summary-N.md`, `log-<name>-N.md`, `.run/`).
 
 ## v3: two companions in one machine
 
@@ -76,7 +102,8 @@ agent.sh            launcher: always run this
 versions/
   agent-v1.sh       one session, run_shell only, "Carry on" nudge, log.md
   agent-v2.sh       v1 + --continue/-c, journal memory, log-N.md per session
-  agent-v3.sh       two people in one shared cage, timeline + discovery (default)
+  agent-v3.sh       two people in one shared cage, timeline + discovery
+  agent-v4.sh       two people in separate cages + shared /srv + shared localhost (default)
 module/             shared code used by every version
   main.sh           loads the modules, run_agent entry point
   config.sh         settings and feature flags (only place defaults live)
@@ -91,6 +118,8 @@ module/             shared code used by every version
   turns.sh          v3: global clock, alternation, random first, SOLO, early end, run_multi
   timeline.sh       v3: per-person logs and merged timeline
   discovery.sh      v3: file attribution, first-contact scan, summary
+  separate-cages.sh v4: one cage per person, shared /srv, shared netns (same interface as shared-cage.sh)
+  discovery-links.sh v4: /srv attribution, first /srv touch/read, first network use
 misc/agent.py       obsolete Python version, kept for reference only (not used)
 experiments/        your runs (gitignored)
 ```
@@ -137,4 +166,4 @@ their own cage by replacing only `module/shared-cage.sh`; its interface
 (`setup_users`, `start_shared_cage`, `run_as_in_cage`, `enforce_proc_limit`,
 `stop_shared_cage`, `CAGE_OF`) is documented at the top of that file.
 
-Needs: bash, curl, jq, static busybox, unshare, chroot (v3: nsenter too).
+Needs: bash, curl, jq, static busybox, unshare, chroot (v3/v4: nsenter too).
