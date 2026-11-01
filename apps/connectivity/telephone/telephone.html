@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Telephone TP8</title>
+  <title>Telephone TP9</title>
   <link rel="icon" href="telephone_icon.png">
   <link rel="stylesheet" href="telephone.css">
 </head>
@@ -13,7 +13,8 @@
   <div id="viewport"><div id="track">
     <section class="pane" id="pane-phone">
       <!-- TP5: removed <div id="status" class="mut">Starting…</div> and <button class="mini" id="btn-code">Code</button>; the code stays in Settings -->
-      <div class="bar"><div class="who"><b><span id="net" class="net" role="img" title="Starting…" aria-label="Starting…"></span><span id="me-name"></span><span id="dnd-ind" class="dnd-ind" title="Do Not Disturb is on in the Hub" aria-label="Do Not Disturb is on in the Hub" hidden>🌙</span></b></div></div>
+      <div class="bar"><div class="who"><b><span id="net" class="net" role="img" title="Starting…" aria-label="Starting…"></span><span id="me-name"></span><span id="dnd-ind" class="dnd-ind" title="Do Not Disturb is on in the Hub" aria-label="Do Not Disturb is on in the Hub" hidden>🌙</span></b></div><button class="mini" id="tp-switch" hidden></button></div>
+      <button class="mini" id="notify-hint" hidden>🔔 Turn on call notifications so calls reach you when Telephone isn&rsquo;t in front</button>
       <!-- TP7: removed <span class="btns"><button class="mini ico" id="b-dnd" …>🌙</button></span>; DND is the Hub's now -->
       <div id="sound" hidden>🔇 Tap here to turn on sound</div>
       <div id="main">
@@ -61,7 +62,7 @@
       <h2>Look</h2>
       <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
       <h2>About</h2>
-      <div class="about"><img src="telephone_icon.png" width="48" height="48" alt=""><div><b>Telephone</b> <span id="ver">TP8</span>
+      <div class="about"><img src="telephone_icon.png" width="48" height="48" alt=""><div><b>Telephone</b> <span id="ver">TP9</span>
         <p>Calls between your devices, peer to peer. Each device has its own 5-digit number; dial it or tap a phone in Online now. Starts on Public 00000 (every call still rings and must be answered); pick a private code above. Calls ring only while Telephone is open. Do Not Disturb follows the Hub. Nothing is recorded or stored on a server.</p></div></div>
     </div></section>
   </div></div>
@@ -89,8 +90,9 @@
 </div>
 
 <div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="5" placeholder="5-digit code"><div id="d-list" hidden></div><div id="d-form" hidden></div><div class="row" id="d-row"></div></div></div>
+<!-- TP8 (moved into the call pane in FX1):
 <button class="mini" id="tp-switch" hidden></button>
-<button class="mini" id="notify-hint" hidden>🔔 Turn on call notifications so calls reach you when Telephone isn&rsquo;t in front</button>
+<button class="mini" id="notify-hint" hidden>🔔 Turn on call notifications so calls reach you when Telephone isn&rsquo;t in front</button> -->
 <div id="toast"></div>
 
 <script src="../../../shared/link/link_core.js"></script>

@@ -62,7 +62,12 @@ Why: Jor wants Do Not Disturb to belong to the Hub, with connectivity apps follo
 - **What:** URL `#code=` / `?hub=` / `join=`, the code dialog (maxlength 5, "5-digit code"), Hub hello codes, mesh codes and the last code now take exactly 5 digits. Saved 4-digit codes are ignored (`c5()`), so the app falls to Public or asks.
 - **Phone number:** this device's Hub number (`SharedLinkDevices.code()` / `SharedLink.deviceCode()`, looked up on this page, then parent, then top). With it: no own number picking, no clash renumbering, the **New number** button is gone. Without it (H83 not live) the TP2b picked + checked number is still used. Contacts and Recent keep working; old 4-digit contacts are still shown as old.
 
+## FX1 (TP9) — overlay fix
+- Why: Jor reported something covering the first device row ("No other devices online." / first device hidden).
+- What: the Switch to/Back to Public button and the notifications banner are no longer position:fixed; they sit in the normal layout (top bar / under it), so they can't float over the list. Top bar and texts are flex:none so they never squash or overlap. Switch-button JS unchanged.
+
 ## Legacy code notes
+- FX1: old fixed-position CSS for the switch button / notify banner and its old markup at the end of the body are kept as comments (TP8).
 
 - TP5 removed markup (noted in an HTML comment in `telephone.html`): `#status` ("Online · code …") and `#btn-code` (Code) in the Phone bar; "🌙 DND" text became 🌙 only. The old `setStatus` (writing `#status`), the `btn-code` hook and the old `my-sub` text (name / long checking text) are kept as comments in `telephone_app.js`; the `btn-code` hook stays guarded.
 

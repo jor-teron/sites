@@ -39,7 +39,12 @@ Why: Jor asked to "fix the intercom like you did on telephone" (Telephone TP5–
 - **What:** URL `#code=` / `?hub=` / `join=`, the code dialog (maxlength 5, "5-digit code"), Hub hello codes, mesh codes and the last code now take exactly 5 digits. Saved 4-digit codes are ignored (`c5()`), so the app falls to Public or asks.
 - `L.open()` (intercom_peer.js) is true on `SharedLink.LOBBY || '00000'`.
 
+## FX1 (IC7) — overlay fix
+- Why: Jor reported something covering the first device row ("No other devices online." / first device hidden).
+- What: the Switch to/Back to Public button and the notifications banner are no longer position:fixed; they sit in the normal layout (top bar / under it), so they can't float over the list. Top bar and texts are flex:none so they never squash or overlap. Switch-button JS unchanged.
+
 ## Legacy code notes
+- FX1: old fixed-position CSS for the switch button / notify banner and its old markup at the end of the body are kept as comments (IC6).
 
 - IC2/IC3 `localCode()` + `boot()` (Hub's own Connect Code first, code dialog when none) are kept as comments in `intercom_app.js` above the IC4 code choice.
 - IC5: removed markup is kept as HTML comments in `intercom.html` (`#status`, `#btn-code`, `#b-dnd`, `#chk-dnd`, old empty text). The IC4 `setStatus`, `btn-code` hook, own-DND `paintDnd` / `setDnd` / button hooks and the IC3 ask handler are comments in `intercom_app.js`; `T.setDnd` and the `ICSave.get('dnd')` checks are comments in `intercom_talk.js` / `intercom_peer.js`.

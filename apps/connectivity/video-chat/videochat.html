@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Video Chat VC5</title>
+  <title>Video Chat VC6</title>
   <link rel="icon" href="videochat_icon.png">
   <link rel="stylesheet" href="videochat.css">
 </head>
@@ -13,7 +13,7 @@
   <div id="viewport"><div id="track">
     <section class="pane" id="pane-call">
       <!-- VC4 bar (removed in VC5): <div class="bar"><div><b id="me-name"></b><div id="status" class="mut">Starting…</div></div><button class="mini" id="btn-code">Code</button></div> -->
-      <div class="bar"><div class="who"><b><span id="net" class="net" role="img" title="Starting…" aria-label="Starting…"></span><span id="me-name"></span></b></div></div>
+      <div class="bar"><div class="who"><b><span id="net" class="net" role="img" title="Starting…" aria-label="Starting…"></span><span id="me-name"></span></b></div><button class="mini" id="vc-switch" hidden></button></div>
       <ul id="devices"></ul>
       <!-- VC4 texts: "No other devices yet. Open Video Chat on another device with the same Hub code." / "Call one device, then add up to two more from the call (＋)." -->
       <p id="empty" class="mut">No other devices online.</p>
@@ -30,7 +30,7 @@
       <h2>Look</h2>
       <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
       <h2>About</h2>
-      <div class="about"><img src="videochat_icon.png" width="48" height="48" alt=""><div><b>Video Chat</b> <span id="ver">VC5</span>
+      <div class="about"><img src="videochat_icon.png" width="48" height="48" alt=""><div><b>Video Chat</b> <span id="ver">VC6</span>
         <!-- VC4 About: Video calls between devices on the same Hub Connect Code: one-to-one or a group of up to 4 (everyone connects to everyone). Computers can share their screen during a call; phones can watch. Peer to peer over PeerJS; nothing is stored on a server. -->
         <p>Peer-to-peer video calls for up to 4 devices on your Hub code, or Public 00000. Computers can share their screen. Nothing is stored on a server.</p></div></div>
     </div></section>
@@ -57,7 +57,7 @@
   <div class="row"><button class="btn bad" id="b-decline">Decline</button><button class="btn good" id="b-accept">Accept</button></div></div></div>
 
 <div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="5" placeholder="5-digit code"><div class="row" id="d-row"></div></div></div>
-<button class="mini" id="vc-switch" hidden></button>
+<!-- VC5 (moved into the top bar in FX1): <button class="mini" id="vc-switch" hidden></button> -->
 <div id="toast"></div>
 
 <script src="../../../shared/link/link_devices.js"></script>

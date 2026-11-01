@@ -9,6 +9,9 @@
  *   others left with name + time; last 100), input bar pinned at the bottom. Closes on outside
  *   click / Esc. New message while closed (and Pooh Chat not open) → one notification card (H26, HubNotify.notice)
  *   (6 s, updates in place, no sound); tapping it opens the panel.
+ * H84: transport = HubMesh channel 'chat' (HubMesh.broadcast / onMsg), so chat reaches every device on the
+ *   current mesh: 00000 = public room, a private code = private room. SharedLink still sent as before (a no-op with no link)
+ *   (fallback, older Hubs); duplicates dropped by SharedChat id. One history for all rooms (rows tagged room).
  */
 (function () {
   'use strict';
@@ -20,8 +23,16 @@
   let unread = 0, toastN = 0;
 
   // H19: a joined Hub sends with bcast so the host relays it to the other devices too.
-  SharedChat.init((m) => SharedLink.send(SharedLink.role === 'join' ? Object.assign({ bcast: true }, m) : m));
+  // SharedChat.init((m) => SharedLink.send(SharedLink.role === 'join' ? Object.assign({ bcast: true }, m) : m));   (before H84)
+  // H84: chat goes over the Hub mesh (every device on 00000 or the private code). The old SharedLink path stays
+  // as a fallback / for Hubs before H84 (sent as before); SharedChat dedupes by id.
+  const M = window.HubMesh;
+  SharedChat.init((m) => {
+    if (M && M.broadcast) { try { M.broadcast(Object.assign({ t: 'chat' }, m)); } catch (e) { console.warn('chat mesh', e); } }
+    SharedLink.send(SharedLink.role === 'join' ? Object.assign({ bcast: true }, m) : m);
+  });
   SharedChat.listen();
+  if (M && M.onMsg) M.onMsg('chat', (d, from) => { if (d && d.type === 'chat') SharedChat.add(Object.assign({}, d, { from: from, room: d.room || (M.room ? M.room() : '') })); });
 
   /* ---------- panel ---------- */
   const panel = document.createElement('div');
@@ -69,7 +80,14 @@
     log.scrollTop = log.scrollHeight;
   }
   function setUnread(n) { unread = n; badge.textContent = n > 99 ? '99+' : String(n); badge.hidden = !n; }
-  function poohOpen() { return /pooh-chat/.test(String(frame && frame.src || '')); }
+  // function poohOpen() { return /pooh-chat/.test(String(frame && frame.src || '')); }   (before H86: #app-frame only)
+  // H86: Pooh Chat can also run in a desktop window (.wm-body iframe), so look at every Hub iframe showing it.
+  function poohFrames() {
+    return Array.prototype.filter.call(document.querySelectorAll('iframe'), (f) => /pooh-chat/.test(String(f.src || '')));
+  }
+  function poohOpen() {   // #app-frame as before; a desktop window only while it is on screen (not minimised / hidden)
+    return poohFrames().some((f) => f === frame || f.getClientRects().length > 0);
+  }
 
   function open() {
     hideToast(); setUnread(0); paint();
@@ -93,7 +111,7 @@
   /* ---------- incoming ---------- */
   SharedChat.on((m) => {
     if (!panel.hidden) { paint(); return; }
-    if (!m || m.mine || m.from === 'host') return;   // own / storage repaint
+    if (!m || m.mine || m.from === 'host' || SharedChat.isMine(m)) return;   // own / storage repaint (H84: + isMine)
     if (poohOpen()) return;                           // Pooh Chat is showing it
     setUnread(unread + 1);
     toastN++;
@@ -104,9 +122,10 @@
     if (N && N.notice) card = N.notice({ icon: '🐻', title: title, text: text, onClick: () => { card = null; toastN = 0; open(); } });
   });
 
-  /* Pooh Chat inside the Hub sends through here. */
+  /* Pooh Chat inside the Hub sends through here (H86: from #app-frame or a desktop window). */
   window.addEventListener('message', (e) => {
-    if (!frame || e.source !== frame.contentWindow) return;
+    // if (!frame || e.source !== frame.contentWindow) return;   (before H86: #app-frame only)
+    if (!e.source || !poohFrames().some((f) => f.contentWindow === e.source)) return;   // H86: any Hub iframe showing Pooh Chat
     const d = e.data;
     if (d && d.sharedLink === 'chat' && typeof d.text === 'string') SharedChat.send(d.text);
   });

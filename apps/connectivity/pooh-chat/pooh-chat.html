@@ -1,43 +1,61 @@
 <!DOCTYPE html>
 <!--
-  Project: sites — Pooh Chat (release 4)
+  Project: sites — Pooh Chat (PC2)
   File: apps/connectivity/pooh-chat/pooh-chat.html
-  Role: The built-in group chat on the one Hub link (shared/link).
-  Inside the Hub it talks through the Hub's link (postMessage); standalone on a phone it
-  joins the Hub (saved code, code entry or Scan QR). History: SharedChat (last 200).
-  Look: WebRTC Chat's dark neon gradients + Pooh's honey warmth. Plain scripts, no build.
+  Role: The group lobby chat. Public 00000 = one room for everyone; a private 5-digit Hub code = a private room.
+  Inside the Hub (parent has SharedChat) it relays through the Hub ({sharedLink:'chat', text}); standalone or in a
+  host without the relay (/phone.html) it uses the parent's HubMesh, or starts its own HubMesh standalone (H84). Plain scripts, no build.
+  Legacy (release 4): status line "Connected · code", ✏️ and "Join Hub" buttons in the bar, link_scan.js + vendor/jsQR.js
+  (4-digit Join dialog / Scan QR). Old bar kept below as a comment.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Pooh Chat</title>
+  <title>Pooh Chat · PC2</title>
   <link rel="stylesheet" href="pooh-chat.css">
   <link rel="stylesheet" href="../../../shared/dialog/dialog.css">
 </head>
 <body>
   <div id="app">
     <header id="top">
+      <!-- release 4 bar:
       <h1><span class="honey">🍯</span> Pooh Chat <span class="bear">🐻</span></h1>
       <span id="status" class="status" title="Link status"><i class="dot"></i><b id="status-text">…</b></span>
       <button type="button" id="btn-name" class="ghost" title="Rename this device">✏️</button>
-      <button type="button" id="btn-join" class="ghost" hidden>Join Hub</button>
+      <button type="button" id="btn-join" class="ghost" hidden>Join Hub</button> -->
+      <span class="honey" aria-hidden="true">🍯</span>
+      <div class="who"><b><span id="net" class="net wait" role="img" title="Starting…" aria-label="Starting…"></span><span id="me-name">…</span></b>
+        <button type="button" id="btn-room" class="room" title="Who's here" aria-label="Who's here"><span id="room-lbl">Public</span> · <span id="room-n">0</span> 🐻</button></div>
+      <button type="button" id="pc-switch" class="mini" hidden></button>
+      <button type="button" id="btn-set" class="ghost" title="Settings" aria-label="Settings">⚙️</button>
     </header>
     <main id="log" aria-live="polite"></main>
     <form id="composer" autocomplete="off">
-      <button type="button" id="btn-wa" class="wa" title="Share to WhatsApp" aria-label="Share to WhatsApp">🟢</button>
-      <input id="input" type="text" maxlength="2000" placeholder="Say something sweet…" enterkeyhint="send">
+      <button type="button" id="btn-wa" class="wa" title="Share to WhatsApp (long-press: files)" aria-label="Share to WhatsApp">🟢</button>
+      <input id="input" type="text" maxlength="2000" placeholder="Message…" enterkeyhint="send">
       <button type="submit" id="btn-send" class="send">Send</button>
     </form>
     <input type="file" id="file-share" multiple hidden>
+  </div>
+  <div id="sheet" class="sheet" hidden>
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+      <h2 id="sheet-title">Settings</h2>
+      <div id="sheet-body"></div>
+      <div class="row end"><button type="button" id="sheet-close" class="ghost">Close</button></div>
+    </div>
   </div>
   <script src="../../../shared/link/link_core.js"></script>
   <script src="../../../shared/link/link_devices.js"></script>
   <script src="../../../shared/link/link_files.js"></script>
   <script src="../../../shared/link/link_chat.js"></script>
+  <!-- PC1: 4-digit Join / Scan QR removed (files kept, unlinked):
   <script src="../../../shared/link/link_scan.js"></script>
+  <script src="vendor/jsQR.js"></script> -->
   <script src="../../../shared/share/share_wa.js"></script>
-  <script src="vendor/jsQR.js"></script>
+  <script src="pooh-chat-core.js"></script>
+  <script src="../../../shared/link/hub_mesh.js"></script>
+  <!-- PC1 first build (own pooh lobby, replaced by HubMesh / H84): <script src="pooh-chat-peer.js"></script> -->
   <script src="pooh-chat-ui.js"></script>
   <script src="../../../shared/dialog/dialog.js"></script>
   <script src="pooh-chat.js"></script>

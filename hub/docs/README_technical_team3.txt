@@ -1033,3 +1033,70 @@ NV-S2 (hub.html ?v= labels)
   TP2b's check still applies if Telephone keeps its own).
 - Settings > Devices public mesh texts and the H77 lobby holder line say
   00000. No ?v= labels, build number or hub-shell CACHE change.
+
+-- H84: Hub group chat over the Mesh (00000 public room, private code = private room) (1 Nov 2026) --
+- Transport: hub/link/hub_chat.js now sends SharedChat messages with
+  HubMesh.broadcast({t:'chat', ...msg}) and receives them with
+  HubMesh.onMsg('chat', fn) → SharedChat.add. Chat reaches every device on
+  the current mesh (lobby relay + direct peers, as every mesh channel).
+  00000 = the public room, a private Mesh code = a private room. No extra
+  encryption (Jor: it is a public lobby; PeerJS DTLS only).
+- Fallback: the old SharedLink send (bcast:true from a joined Hub, host
+  relays) is still made as before, so Hubs before H84 and a Connect link
+  without a mesh keep working. A message that arrives on both paths (or
+  relayed + direct) is dropped by SharedChat's id dedupe.
+- Message format unchanged {type:'chat', id, from, name, text, ts}; new
+  optional room (the mesh code it was sent in, from HubMesh.room()). ONE
+  history 'shared-chat-history' (last 200) for every room, not split;
+  room is a tag only (not filtered in the bubble yet).
+- shared/link/hub_mesh.js: channel 'chat' is the one app channel allowed
+  on the public mesh (H55 allowed only presence + invites). chatOk() checks
+  it on send and receive (private meshes too): to '*' only, data.type
+  'chat', data.from = the sending device, text 1-2000, id <= 80, name <= 40.
+  Normal per-sender rate limit (60/s, burst 120) and 240 KiB limit apply.
+- Mesh message API for app bots (new):
+    HubMesh.broadcast({t:'<channel>', ...data}) → {ok, via} | {ok:false,
+      reason} ('stopped' | 'type' | 'public' | 'shape' | 'size' | 'rate');
+      t = channel name /^[a-z][a-z0-9-]{0,31}$/, not 'invite'; the rest of
+      the object (without t) is the data. On 00000 only 'chat' passes.
+    HubMesh.onMsg('<channel>', fn(data, fromDeviceId, env)) → unsubscribe.
+    HubMesh.room() → current mesh code ('' when stopped).
+    HubMesh.linked() → true when lobby or welcomed by the lobby.
+  These wrap the existing HubMesh.channel(name). App frames have no
+  postMessage bridge to it yet; Pooh Chat inside the Hub keeps posting
+  {sharedLink:'chat', text} (unchanged) and repaints from localStorage.
+- Bubble: own messages (SharedChat.isMine) no longer count as unread.
+- Unchanged: Pooh Chat paths / files, the {sharedLink:'chat'} relay, bubble
+  UI, barPooh, notices, notifcenter mapping. No ?v=, build or CACHE change.
+- phone/ (Hub Phone Bot): phone.html would need shared/link/link_chat.js
+  and a small relay like hub_chat.js (init with HubMesh.broadcast, onMsg
+  'chat' → SharedChat.add, and the {sharedLink:'chat'} frame listener) to
+  give Pooh Chat inside the phone page a working chat.
+- Pooh Chat standalone (Hub Apps Bot, PC1): load link_core / link_devices /
+  hub_mesh / link_chat itself, HubMesh.start('00000' or the private code),
+  and use the same 'chat' channel and message shape; only when NOT inside
+  a Hub (a Hub frame keeps relaying through the parent).
+
+-- H85: offline cache catches up with the phone page + build.txt fix (1 Nov 2026) --
+- hub/update/hub_sw.js SHELL gains the H81/H82 engine files hub.html and
+  /phone.html load (hub/core/hub_dialog_bridge.js, hub_dnd.js,
+  hub_attention.js) and the phone look (phone.html, phone/, phone/index.html,
+  phone/phone.css, phone_notify.js, phone_save.js, phone_apps.js,
+  phone_gesture.js, phone_app.js), so /phone.html opens offline after one
+  visit to either page. The changed hub_sw.js bytes make browsers install the
+  new worker (imported scripts are byte-checked); CACHE name and V are NOT
+  bumped, so the install fills the same hub-shell-v127 cache.
+- hub/build.txt line 2 corrected to hub-shell-v127 (was still v126).
+- Only the list in hub_sw.js is changed; no phone/ files are edited. When
+  Hub Phone Bot adds or renames a phone/ file, it must also be added here.
+
+-- H86: Pooh Chat in a desktop window can send (1 Nov 2026) --
+- hub/link/hub_chat.js: the {sharedLink:'chat', text} relay listener used to
+  accept only #app-frame, so in desktop mode (Pooh Chat in a .wm-body
+  iframe) sends were dropped. It now accepts any Hub iframe whose src
+  contains pooh-chat (event.source matched to that iframe's contentWindow).
+- poohOpen() (stops chat notices while Pooh Chat shows the messages) now
+  checks #app-frame as before plus any on-screen desktop window showing
+  Pooh Chat; a minimised / hidden window does not count.
+- Pooh Chat files unchanged (release-4 postMessage relay). No ?v=, build or
+  CACHE change. Found by Hub Apps Bot while testing PC1.

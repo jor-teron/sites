@@ -74,6 +74,8 @@ const SHELL = [
   'hub/viewer/hub_notifcenter.js', 'hub/viewer/hub_notifcenter.css',   // H66: Notification Centre (hub.html loads them)
   'apps/system/notifications/', 'apps/system/notifications/index.html', 'apps/system/notifications/nc.js', 'apps/system/notifications/nc.css', 'apps/system/notifications/notifications_icon.png',   // H66: the Notification Centre app opens offline too
   'hub/controller/vendor/jsQR.js',   // H59: the 🎮 pop-up's 📷 camera scanner (lazy-loaded) works offline
+  'hub/core/hub_dialog_bridge.js', 'hub/core/hub_dnd.js', 'hub/core/hub_attention.js',   // H85: H81/H82 engine files (hub.html + phone.html load them)
+  'phone.html', 'phone/', 'phone/index.html', 'phone/phone.css', 'phone/phone_notify.js', 'phone/phone_save.js', 'phone/phone_apps.js', 'phone/phone_gesture.js', 'phone/phone_app.js',   // H85: the phone look opens offline too
 ];
 const OFFLINE = 'hub/update/hub_offline.html';
 const abs = (p) => new URL(p, self.registration.scope).href;

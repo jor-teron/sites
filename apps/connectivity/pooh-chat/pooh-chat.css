@@ -1,9 +1,73 @@
 /*
+  Pooh Chat — styles (PC2). Pooh honey look, tidied: dark (navy + honey) and light (cream + honey).
+  Top bar: 🍯, dot + name once, room chip (Public / Private room · n), in-flow Switch button, ⚙️. No position:fixed
+  in the header (FX1). Bubbles: mine right (honey), others left. Sheet = in-app Settings / Who's here.
+  Legacy (release 4) CSS kept as a comment at the end.
+*/
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+:root { --bg: #11131f; --bg2: #1b1830; --fg: #f5efe2; --mut: #b9b0cf; --bar: rgba(255,178,46,.14); --line: rgba(255,255,255,.1);
+  --me: linear-gradient(135deg, #ffb22e, #ff8a2e); --me-fg: #2a1500; --them: #2a2440; --them-fg: #f5efe2; --chip: rgba(255,255,255,.08); --card: #1f1c33; }
+html.light { --bg: #fff8ea; --bg2: #ffeccc; --fg: #2a1d08; --mut: #7a6a4f; --bar: rgba(255,178,46,.22); --line: rgba(0,0,0,.08);
+  --me: linear-gradient(135deg, #ffbe45, #ff9a3c); --me-fg: #2a1500; --them: #ffffff; --them-fg: #2a1d08; --chip: rgba(0,0,0,.05); --card: #fffdf7; }
+body { font-family: "Fredoka", system-ui, sans-serif; color: var(--fg); background: linear-gradient(170deg, var(--bg), var(--bg2)); }
+#app { display: flex; flex-direction: column; height: 100dvh; max-width: 720px; margin: 0 auto; }
+
+#top { flex: none; display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 6px 10px; background: var(--bar); border-bottom: 1px solid var(--line); }
+.honey { font-size: 22px; flex: none; }
+.who { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.who b { display: flex; align-items: center; gap: 6px; font-size: 16px; white-space: nowrap; overflow: hidden; }
+#me-name { overflow: hidden; text-overflow: ellipsis; }
+.net { width: 9px; height: 9px; border-radius: 50%; flex: none; background: #9a9aa6; }
+.net.on { background: #3dd68c; } .net.wait { background: #f0a020; } .net.off { background: #9a9aa6; }
+.room { align-self: flex-start; min-height: 24px; min-width: 0; padding: 0 8px; margin-top: 2px; font-size: 12px; border-radius: 10px; background: var(--chip); color: var(--mut); }
+
+button { min-height: 44px; min-width: 44px; border: 0; border-radius: 14px; padding: 0 14px; font: inherit; font-size: 15px; color: var(--fg); cursor: pointer; background: transparent; }
+button.ghost { background: var(--chip); }
+button.mini { min-height: 34px; padding: 0 12px; font-size: 13px; background: var(--chip); flex: none; }
+button:active { transform: scale(.96); }
+
+#log { flex: 1; min-height: 0; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 3px; }
+.msg { position: relative; max-width: 80%; padding: 6px 10px 5px; border-radius: 16px; font-size: 15px; line-height: 1.35; word-wrap: break-word; }
+.msg.first { margin-top: 8px; }
+.msg.me { align-self: flex-end; background: var(--me); color: var(--me-fg); border-bottom-right-radius: 5px; }
+.msg.them { align-self: flex-start; background: var(--them); color: var(--them-fg); border: 1px solid var(--line); border-bottom-left-radius: 5px; }
+.msg .who { display: block; font-size: 12px; font-weight: 600; color: #e0912a; margin-bottom: 1px; }
+.msg .when { font-size: 10px; opacity: .6; margin-left: 8px; float: right; margin-top: 5px; }
+.msg .wa-one { position: absolute; top: -8px; right: -8px; min-height: 26px; min-width: 26px; padding: 0; font-size: 12px; border-radius: 50%; background: #25d366; color: #fff; opacity: 0; transition: opacity .2s; }
+.msg:hover .wa-one, .msg:focus-within .wa-one, .msg.sel .wa-one { opacity: 1; }
+.sys { align-self: center; margin: auto 0; font-size: 13px; color: var(--mut); }
+
+#composer { flex: none; display: flex; gap: 8px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--bar); }
+#input { flex: 1; min-width: 0; min-height: 46px; border: 2px solid rgba(255,178,46,.4); border-radius: 16px; padding: 0 14px; font: inherit; font-size: 16px; color: var(--fg); background: var(--chip); outline: none; }
+#input:focus { border-color: #ffb22e; }
+.send { background: linear-gradient(135deg, #ffb22e, #ff7a2e); color: #2a1500; font-weight: 700; }
+.wa { background: #1a8f4a; font-size: 18px; padding: 0 10px; }
+
+/* in-app sheet (overlay above the whole app, not part of the header) */
+.sheet { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; justify-content: center; background: rgba(0,0,0,.45); }
+.sheet[hidden] { display: none; }
+.sheet .card { width: min(100%, 460px); max-height: 80dvh; overflow-y: auto; padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); border-radius: 18px 18px 0 0; background: var(--card); color: var(--fg); }
+@media (min-width: 600px) { .sheet { align-items: center; } .sheet .card { border-radius: 18px; } }
+.sheet h2 { margin: 0 0 10px; font-size: 17px; }
+.row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.row.end { justify-content: flex-end; border: 0; }
+.grow { flex: 1; min-width: 0; }
+.muted { color: var(--mut); font-size: 13px; } .small { font-size: 12px; }
+.members { list-style: none; margin: 0; padding: 0; } .members li { padding: 8px 0; border-bottom: 1px solid var(--line); }
+
+/* H32: standalone toast */
+.pooh-toast { position: fixed; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom)); transform: translate(-50%, 12px); max-width: min(92vw, 420px); padding: 10px 16px; border-radius: 14px; background: var(--card); border: 1px solid rgba(255,190,80,.45); color: var(--fg); font-size: 14px; box-shadow: 0 6px 24px rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 50; }
+.pooh-toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* ===== Legacy: release-4 pooh-chat.css (replaced in PC2) =====
+/ *
   Pooh Chat — styles (release 4). WebRTC Chat's dark neon look (deep navy, electric
   blue / violet gradients, glow, pop-in bubbles) mixed with Pooh's honey amber and
   rounded friendly shapes. Message log takes nearly all the height. Big tap targets.
   prefers-reduced-motion: no animation.
-*/
+* /
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body {
@@ -49,7 +113,7 @@ button:active { transform: scale(.95); }
 .send { background: linear-gradient(135deg, #ffb22e, #ff7a2e); color: #2a1500; font-weight: 700; }
 .wa { background: #1a8f4a; font-size: 18px; padding: 0 10px; }
 
-/* H32: standalone toast (inside the Hub, notices are Hub cards instead) */
+/ * H32: standalone toast (inside the Hub, notices are Hub cards instead) * /
 .pooh-toast { position: fixed; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom)); transform: translate(-50%, 12px); max-width: min(92vw, 420px); padding: 10px 16px; border-radius: 14px; background: rgba(20,16,40,.95); border: 1px solid rgba(255,190,80,.45); color: #fff; font-size: 14px; box-shadow: 0 6px 24px rgba(0,0,0,.45); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 50; }
 .pooh-toast.show { opacity: 1; transform: translate(-50%, 0); }
 
@@ -58,3 +122,4 @@ button:active { transform: scale(.95); }
 @keyframes bob { 50% { transform: translateY(-3px) rotate(-6deg); } }
 @keyframes shimmer { to { background-position: 100% 0; } }
 @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
+===== end legacy ===== */
