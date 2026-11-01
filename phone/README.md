@@ -98,3 +98,8 @@ Multi-Screen Wall, Search. Theme System follows `sites-hub.theme`, then the devi
 - Esc inside an app goes to the app, not the launcher (use the edge swipe or Back).
 - Notices are empty; no drag-to-reorder of icons yet; no wallpaper picker (the phone's wallpaper is used).
 - Offline only works when the Hub's service worker was installed on that origin (visit the Hub once); PH3 bundles it.
+
+## H82 — Do Not Disturb and call pop-up
+
+- Quick panel tile **Do Not Disturb** toggles the Hub-wide `window.HubDnd` (`sites-hub.dnd`), the same switch as the Hub's 🔔 and Settings › Do Not Disturb.
+- `/phone.html` loads `hub/core/hub_attention.js`: an app frame posting `{sharedLink:'attention', app, kind:'call', title, urgent, fav?}` gets an Answer / Decline card over the phone; replies go back as `{sharedLink:'attention-reply', app, kind:'call', action}`. Answer shows that app's frame. `kind:'call-end'` closes it. See hub/docs/README_technical_team3.txt (H82).

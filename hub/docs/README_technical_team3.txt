@@ -976,3 +976,33 @@ NV-S2 (hub.html ?v= labels)
   HubUpdate (build tag + update check) and hub_bump.py read the build there,
   so don't remove it. Every other src / href is bare; the service worker
   stores shell files under origin + pathname, so no label is needed.
+
+-- H82: Hub-wide Do Not Disturb (HubDnd) + attention call pop-up (1 Nov 2026) --
+- hub/core/hub_dnd.js (DOM-free, loaded by hub.html and /phone.html) gives
+  window.HubDnd: isOn(), set(on), allowFavs(), setAllowFavs(on),
+  on('change', fn), off('change', fn); fn gets {on, favs}. Fires on set /
+  setAllowFavs and on the storage event (other tabs / frames).
+- Keys (this device only, hub_profile.js SYNC_SKIP): 'sites-hub.dnd' '1' =
+  on (H66 key, unchanged), 'sites-hub.dndFavs' '1' = favourites still ring.
+- hub_notifcenter.js setDnd() goes through HubDnd.set and repaints on its
+  change, so the bell switch, Settings and the phone tile are one switch.
+- Settings > Do Not Disturb (sec_dnd.js, after Hub bar): Do Not Disturb and
+  Favourites still ring; parent.HubDnd when present, else the keys.
+- Phone quick panel: tile 'Do Not Disturb' (on = lit).
+- App bots: read window.parent.HubDnd (or top) if present, else
+  localStorage 'sites-hub.dnd' === '1' + the 'storage' event.
+- hub/core/hub_attention.js (both pages). App frame -> window.parent,
+  same origin, sender must be one of the page's iframes:
+    {sharedLink:'attention', app, kind:'call', title, urgent?, from?, fav?}
+    {sharedLink:'attention', app, kind:'call-end'}
+  Host -> event.source on a button:
+    {sharedLink:'attention-reply', app, kind:'call', action:'answer'|'decline'}
+  'call' shows a card (z-index 2100, above UiDialog 2000, light / dark)
+  with the title, Answer and Decline; one card per source frame. Answer
+  also brings the app forward (HubWM.idOf + focus on the Hub desktop;
+  window.__hubAttentionFocus on the phone shows that frame). 'call-end'
+  from the same frame closes it.
+- DND: while HubDnd.isOn() no card unless urgent === true AND fav === true
+  AND allowFavs(); otherwise HubNotify notice 'Missed call: <title>' (kept in
+  the Notification Centre / phone Notices). fav:true is the app's own claim
+  that the caller is a favourite. Telephone TP6 sends urgent:true, no fav.
