@@ -11,9 +11,9 @@
    known bugs, unreleased work, and what is planned or parked.
 
  AUTHORS
-   Part 1  Hub   - Monorepo Hub Bot   (hub/, apps/system/, shared hub code)
-   Part 2  Apps  - Monorepo Apps Bot  (apps/* except games and system)
-   Part 3  Games - Monorepo Games Bot (apps/games/)
+   Part 1  Hub   - Monorepo Hub Builder   (hub/, apps/system/, shared hub code)
+   Part 2  Apps  - Monorepo Apps Builder  (apps/* except games and system)
+   Part 3  Games - Monorepo Games Builder (apps/games/)
 
  CONTENTS
    Notes (read first)
@@ -50,18 +50,18 @@
  PART 1: Hub
 ================================================================================
 
-# Hub side — Technical Handover (Monorepo Hub Bot)
+# Hub side — Technical Handover (Monorepo Hub Builder)
 
 Repo: jor-teron/sites, branch main. Checked against origin/main after `git fetch` on 22 Oct 2026, ~15:40 IST (build 20261022e / hub-shell-v78, release R54b, all 5 R53–R54b PRs merged).
 Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin/main`, `gh pr list --state all --limit 200`, hub/docs/hub_readme.md and hub/docs/README_technical.txt. The dirty working tree of /workspace/sites was not touched. Items I could not check are marked **[unverified]**.
 
 ## 1. Ownership and repo layout
 - Who owns what
-  - Hub Bot owns `hub/**`, `hub.html`, root `sw.js`, `apps/system/**`, `shared/**` (except Office-only `apps/office/shared/`), the category menu, and `hub/docs/README_technical.txt` + `hub/docs/hub_readme.md`.
-  - Apps Bot owns `apps/*` except games and system (clone `/workspace/sites_apps`).
-  - Games Bot owns `apps/games/**` (clone `/workspace/sites_games`).
-  - Each category CSV belongs to its category's owner; the generator and `hub_catalog.js`/`hub_appindex.js` are Hub's, but every bot regenerates them after its CSV edits.
-- Hub Bot clone: `/workspace/sites`. Every release branches from origin/main and goes in by PR.
+  - Hub Builder owns `hub/**`, `hub.html`, root `sw.js`, `apps/system/**`, `shared/**` (except Office-only `apps/office/shared/`), the category menu, and `hub/docs/README_technical.txt` + `hub/docs/hub_readme.md`.
+  - Apps Builder owns `apps/*` except games and system (clone `/workspace/sites_apps`).
+  - Games Builder owns `apps/games/**` (clone `/workspace/sites_games`).
+  - Each category CSV belongs to its category's owner; the generator and `hub_catalog.js`/`hub_appindex.js` are Hub's, but every builder regenerates them after its CSV edits.
+- Hub Builder clone: `/workspace/sites`. Every release branches from origin/main and goes in by PR.
 - Stack: plain static HTML/CSS/JS, no bundler, served from GitHub Pages (https://jor-teron.github.io/sites/) **[unverified: exact deploy path]**. Must also open from file://.
 - Layout on origin/main
   - `hub.html` — the shell page (all `?v=` tags live here).
@@ -95,7 +95,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   - Source of truth: `apps/<cat>/<cat>-apps.csv` (header `name, path, icon, newtab, section`; `#` comments; section order = first appearance; empty section = "Other", last).
   - Categories in the menu: … Lab, then System (R53). System sections include "Hub tools" (D-Pad Controller, R53c).
   - `hub_catalog.js` (R47) — generated copy of all CSVs so the Hub lists apps from file:// without fetch. Regenerate: `python3 hub/core/hub_appindex_gen.py --catalog-only`.
-  - `hub_appindex.js` (R33c) — search / first-visit index. Full regen needs Playwright (venv); other bots sometimes hand-add rows.
+  - `hub_appindex.js` (R33c) — search / first-visit index. Full regen needs Playwright (venv); other builders sometimes hand-add rows.
   - `hub_apps.js` — LEGACY (R30/R33a): only "<Category> Page" rows + hidden system rows; the 60 old app rows kept in a commented archive block.
   - `hub_flyout.js` — Start / category flyout. CSVs start loading as soon as it is in; hash/last app/saved windows open when their CSV registers (R33b, 4 s cap). Cached Start list in `sites-hub.startList`, rebuilt when a CSV / hub_apps.js changes (R16c).
 - Virtual desktop (`hub/wm/`)
@@ -197,8 +197,8 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - File System Access handles lose permission after reload; the user must press "Allow access" (a user gesture).
 - GitHub push protection blocks Google client secrets; that is why the QR device flow is off and tvClientSecret stays empty.
 - Keyboard keys: handle each key once (R29) — deferred modules re-binding caused doubles.
-- Playwright tests: venv `/workspace/.venv-pw`, serve on a fresh random port, kill only our own server pid (never broad pkill — other bots share the box).
-- Three bots share one box: never touch the other clones, and never touch /workspace/sites' dirty tree for docs work.
+- Playwright tests: venv `/workspace/.venv-pw`, serve on a fresh random port, kill only our own server pid (never broad pkill — other builders share the box).
+- Three builders share one box: never touch the other clones, and never touch /workspace/sites' dirty tree for docs work.
 - Local `main` in /workspace/sites is 119 commits behind origin/main; pull before branching.
 
 ## 6. Known bugs and fixes still needed
@@ -207,7 +207,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Fixed in R56: phone-mode idle check (09:00 refresh could reload over an open app), Lab → Games deep links (aeroplane, island-demo, aoe-rts).
 - Fixed in R57: hub_link / hub_settings / hub_saver origin checks; html-include error box uses textContent.
 - Fixed in R58: SW install records missed shell files (retried), 'hub-meta' kept on activate, images no longer re-fetched on every request, automatic update check never clears caches / reloads, loader retry keeps batch order, manifest any / maskable icons split, gamebar hub-hello to location.origin, old #contact / #feedback / #transcribe / #vdesktop links, dead CAT_PAGES rows.
-- Broken `apps/tools/vDesktop/wallpaper.csv` path — Apps bot's area **[unverified: no reference found by `git grep` on origin/main; may be a runtime/404 path or already gone]**.
+- Broken `apps/tools/vDesktop/wallpaper.csv` path — Apps builder's area **[unverified: no reference found by `git grep` on origin/main; may be a runtime/404 path or already gone]**.
 - ~~Added PC folders that need access again are hidden in Files~~ fixed in R56 (greyed with "Allow access").
 - Disk's Add folder and Google sign-in not yet tested on a real PC (box Playwright only).
 - Leaked TV (device-flow) client secret: Jor must delete/rotate it in Google Cloud Console. Code keeps tvClientId/tvClientSecret empty.
@@ -215,12 +215,12 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 
 ## 7. Unreleased work
 - Hub: none. Every local branch in /workspace/sites (r36…r51, hub/r53…r54b, plus chess and games/desert-road-refactor) has 0 commits not in origin/main. No open Hub PRs.
-- Dirty tree in /workspace/sites (not Hub changes, note only): 199 deleted files under `apps/lab/hero-builder` (node_modules) and 1 deleted file under `apps/games/ar-game` (vendor). Apps bot proposes a separate PR to drop hero-builder node_modules from git after asking Jor.
+- Dirty tree in /workspace/sites (not Hub changes, note only): 199 deleted files under `apps/lab/hero-builder` (node_modules) and 1 deleted file under `apps/games/ar-game` (vendor). Apps builder proposes a separate PR to drop hero-builder node_modules from git after asking Jor.
 - Local `main` is behind origin/main (119 commits) — pull only.
 
 ## 8. Planned and parked
 - R52a–d: app lists as JS instead of CSV (split into four; testing last). Parked as too long.
-- R55 Terminal (system app): a shared Hub command list where each feature registers its own commands; file commands on added PC folders (ls, cd, cat, cp, mv, rm via fs_ops); `ssh user@host` opens `apps/connectivity/ssh/#host=user@host:22` (Apps bot's SSH S1, #108, already accepts it). Parked: needs more design.
+- R55 Terminal (system app): a shared Hub command list where each feature registers its own commands; file commands on added PC folders (ls, cd, cat, cp, mv, rm via fs_ops); `ssh user@host` opens `apps/connectivity/ssh/#host=user@host:22` (Apps builder's SSH S1, #108, already accepts it). Parked: needs more design.
 - R48 `hub-tabs-ok` acknowledgement in the hub-gamebar tab bridge.
 - Keyboard shortcuts + a Ctrl+K command/search box (could share R55's command list).
 - R34 TV poster. R37 Google Drive label. R39 web browser app. R40 review.
@@ -242,7 +242,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Every release: change-log entry in hub_readme.md + build bump (section 3), numbered R<nn><letter>.
 - End each release with a short report including minutes spent.
 - Lists, never wide tables (Jor reads on a phone).
-- Bots code themselves; no cloud agents.
+- Builders code themselves; no cloud agents.
 - Times in IST.
 
 ## 10. How to test
@@ -257,10 +257,10 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
  PART 2: Apps
 ================================================================================
 
-# Monorepo Apps Bot: technical handover (jor-teron/sites)
+# Monorepo Apps Builder: technical handover (jor-teron/sites)
 
 - Written 22 Oct 2026, ~15:45 IST, from read-only research: origin/main @ 44ddd7d (#110), Hub build 20261022e (hub-shell-v78, R54b).
-- Scope: everything under `apps/*` **except** `apps/games/` (Monorepo Games Bot). Hub files (`hub/`, repo-root `shared/`) belong to Monorepo Hub Bot (the boss, wins conflicts).
+- Scope: everything under `apps/*` **except** `apps/games/` (Monorepo Games Builder). Hub files (`hub/`, repo-root `shared/`) belong to Monorepo Hub Builder (the boss, wins conflicts).
 - Working clone: `/workspace/sites_apps` on the shared box. Git identity `jor-teron`. Branch from `origin/main`, one PR per release.
 
 ## 1. Apps owned (folder, files, how it works)
@@ -431,7 +431,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 
 ### 1.14 Settings pieces (now `apps/system/settings/`)
 - #47 About update/Clear Cache labels and the release read from `hub/build.txt`; #70 Screen saver picker (`sites-hub.saverIdle`). #18 is an older Settings PR and its author isn't verified (see §2.4).
-- **Hub Bot now owns** the screen-saver control (`sec_desktop.js`) and the whole `apps/system/` move. `apps/settings/index.html` and the old `apps/tools/{files,sysmon,viewer,devbench}` folders are redirect stubs.
+- **Hub Builder now owns** the screen-saver control (`sec_desktop.js`) and the whole `apps/system/` move. `apps/settings/index.html` and the old `apps/tools/{files,sysmon,viewer,devbench}` folders are redirect stubs.
 
 ### 1.15 Image Gen: `apps/lab/image-gen/` (Lab → Tools, after Code Lab), release IG3 (IG1 → IG3; IG2 skipped for now)
 - Text-to-image through the user's own Ollama. Screens: Generate · Gallery · Settings (dots, 75 px wrap-around swipes, ←/→).
@@ -510,7 +510,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Connectivity, Favorite, Lab, Media, Office and Tools CSVs get the optional LAST column `description` (header `name, path, icon, newtab, section, description`): one plain searchable line per app, under ~90 chars, no commas (`:` or ` - ` instead). 67 descriptions, written from each app's readme / page. Empty icon/newtab/section cells kept empty.
 - Duplicates removed: TV stays in Favorite (Watch) and leaves Media (its folder is repo-root `tv/`, not a category; Favorite is what the Hub already shows, and keeps Favorite from going empty). Caption for NEI stays in Tools (Language), its folder `apps/tools/caption-for-nei/`, and leaves Favorite. App ids are folder-based, so `#caption-for-nei` / `#tv` links do not change.
 - Code Lab icon set explicitly to `code-lab/codelab_icon.png` (the default `code-lab_icon.png` does not exist).
-- `hub_catalog.js` regenerated (`--catalog-only`); `hub_appindex.js` left for the Hub bot. Checked on main's code (before H48c): tiles.js and hub.js find columns by header name, so the 6th cell is ignored; every category page draws the same tiles, no broken images, no errors. The live Hub index differs from the committed one only in Caption for NEI (Favorite → Tools) and the Code Lab icon.
+- `hub_catalog.js` regenerated (`--catalog-only`); `hub_appindex.js` left for the Hub builder. Checked on main's code (before H48c): tiles.js and hub.js find columns by header name, so the 6th cell is ignored; every category page draws the same tiles, no broken images, no errors. The live Hub index differs from the committed one only in Caption for NEI (Favorite → Tools) and the Code Lab icon.
 
 ### 1.23 Base safe start: `apps/office/base/` (Office), release BS3 (BS3a)
 - Why: on a slow laptop Base once looked frozen at start-up. It was a one-off, but three weak spots could leave Base blank for good: storage that never answers, broken saved data, and (later, BS3b) very big tables.
@@ -526,7 +526,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Bar order: Undo | Redo | Save | Print, then the ribbon tabs (File, Home, ...). Save = save now + "✓ Saved" tick (download stays in File). Print = the app's existing print flow. Disabled when unavailable; phone (<=820px) icons only, tabs scroll sideways (<=600px).
 - Shortcuts Ctrl/Cmd+Z, Ctrl+Y, Ctrl+Shift+Z, Ctrl+S, Ctrl+P all route through OfficeQuick (one capture keydown); browser Save/Print dialogs are prevented. Old per-app Z/Y/S/P handlers removed (draftly-history/-docs/-export, spreadsheet_keys). Inside plain text fields Ctrl+Z stays native.
 - Undo/Redo: Draftly = D.history, Spreadsheet = UNDO stack. Base has no history yet: Undo/Redo stay disabled (design later); Save (BaseStore.saveNow) and Print work.
-- Hub title bar (contract H49, Hub side owned by Hub Main Bot 2): app -> Hub `{hubTitleBar:{v:1,op:'set',buttons:[{id,label,icon,enabled,title}],tabs:[{id,label}],activeTab}}`, `op:'update'` (partial patch by id; Save label becomes '✓ Saved' / 'Save failed' for 1.8s), `op:'clear'`; posted with `postMessage(msg, location.origin)` ('*' only on file://). Hub -> app `{hubTitleBarHello:{v:1}}` (app replies with set) and `{hubTitleBarClick:{v:1,kind:'button'|'tab',id}}`. Checks `event.origin===location.origin && event.source===window.parent`. Max 8 buttons / 10 tabs, text labels. Nothing is sent before hello.
+- Hub title bar (contract H49, Hub side owned by Hub Main Builder 2): app -> Hub `{hubTitleBar:{v:1,op:'set',buttons:[{id,label,icon,enabled,title}],tabs:[{id,label}],activeTab}}`, `op:'update'` (partial patch by id; Save label becomes '✓ Saved' / 'Save failed' for 1.8s), `op:'clear'`; posted with `postMessage(msg, location.origin)` ('*' only on file://). Hub -> app `{hubTitleBarHello:{v:1}}` (app replies with set) and `{hubTitleBarClick:{v:1,kind:'button'|'tab',id}}`. Checks `event.origin===location.origin && event.source===window.parent`. Max 8 buttons / 10 tabs, text labels. Nothing is sent before hello.
 - In the Hub without hello (`body.in-hub`), the bar moves into the ribbon row as an in-app fallback (`.of-quick-fallback`); after hello `body.hub-titlebar` hides it. Apps still send the old hub-app tabs, so the Hub should prefer hubTitleBar tabs when both arrive.
 - Versions: every touched script/css uses `?v=HO1`. No build bump. base.html only got 4 added lines (BS3a lines untouched). Tested headless (desktop 1280 + phone 390) standalone and in a harness frame: 115 checks pass.
 
@@ -602,7 +602,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - App list READ ONLY from `../hub/core/hub_appindex.js` (`HUB_APP_INDEX`) + `../hub/core/hub_config.js` (category order). One save module `phone_save.js`: `phone-launcher-v1` `{v, pages, dock, recent, settings:{theme, wall, clock24, keepAlive}}`, repaired on load, memory-only fallback. Defaults: dock Telephone, Intercom, Camera, Gallery, Stopwatch (Clock stand-in).
 - Stopwatch palette, dark default, System/Light/Dark following `sites-hub.theme`; home text always white + shadow. Settings sheet has About. In-app dialogs only. `<title>Phone PH1</title>`, every `?v=PH1`. Files: `phone/index.html`, `phone.css`, `phone_save.js`, `phone_apps.js`, `phone_gesture.js`, `phone_app.js`, `README.md`. No build bump; no other hub/, shared/ or apps/system edits; no CSV change.
 - Tested headless Chrome (puppeteer `/workspace/ph1-test/t.js`, CDP touch at 412×915 + mouse at 1280×800): 87/87 checks (transparent html/body + alpha-0 screenshot, ?bg=, WebView UA, page swipes / short drag / flick, drawer from home and dock, category swipes, alphabetical, search + no match, list scroll vs close, panel tiles, theme cycle, Location placeholder, long-press menu, pin / unpin, dock full / remove / add, app info, open + full-screen iframe + title, handshake hello, edge swipe back, kept alive + reused, history Back, 2-frame limit, Settings + About + test wallpaper, save after reload, bad save repaired, desktop drag / wheel / keys / edge drag, no native dialogs, no errors). Shots in `/workspace/ph1-shots`.
-- Limits: not yet run in a real Android WebView; Full screen needs WebView support; apps that navigate inside their frame add history entries (Back steps inside the app first); Esc inside an app goes to the app; no icon drag-to-reorder; notices empty; offline only with the Hub's service worker installed. phone/ ownership still to agree with Hub Main Bot 2 before PH2/PH3.
+- Limits: not yet run in a real Android WebView; Full screen needs WebView support; apps that navigate inside their frame add history entries (Back steps inside the app first); Esc inside an app goes to the app; no icon drag-to-reorder; notices empty; offline only with the Hub's service worker installed. phone/ ownership still to agree with Hub Main Builder 2 before PH2/PH3.
 
 ### 1.32 Photo Editor v2 Sharpen + Resize: `apps/media/photo-editor-v2/` (Media), release PE5
 - Naming: the app's own scheme is "release N" (release 3 Send, release 4 Send QR in the readme), so this is release 5 = PE5. `<title>Photo Editor v2 PE5</title>`, every app `?v=PE5` (was 20261004a / 20261011x); the four shared/link scripts keep their own ?v=. `PE.config.release = 'PE5'`.
@@ -704,13 +704,13 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - #50 ONNX Runner.
 - #59 MyBookmark, #61 remove the old Bookmark icon, #63 MyBookmark duplicates.
 
-### 2.3 Hub-side counterparts (Hub Bot's, listed for context)
+### 2.3 Hub-side counterparts (Hub Builder's, listed for context)
 - #51 R44 title tabs (Draftly bridge).
 - #60 R46 MyBookmark in the Hub index.
 - #67 R47 hub_catalog.js.
 - #71–74 R49 screen saver.
 
-### 2.4 Older non-games, non-hub PRs (authorship by this bot NOT verified)
+### 2.4 Older non-games, non-hub PRs (authorship by this builder NOT verified)
 - #2 nei-dict, #3 TV Player, #4–7 Transcribe, #10 wiki-extractor, #11 myllm, #12/#15/#16 Story R1–R4, #18 Settings remove Hub version.
 
 ## 3. Lessons and gotchas
@@ -742,7 +742,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - ONNX Runner: depends on the CDN, so it doesn't work offline.
 
 ## 5. Unreleased / uncommitted state (checked 22 Oct ~15:35 IST)
-- Open PRs from this bot: **none**. Hub's #99/#101/#103/#105/#106 are merged too.
+- Open PRs from this builder: **none**. Hub's #99/#101/#103/#105/#106 are merged too.
 - Local branches
   - All 25 track an origin branch, and none have commits that aren't pushed to their upstream.
   - All correspond to merged PRs, so they're stale and safe to delete locally and remotely after confirming.
@@ -757,10 +757,10 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   - 4 × `apps/connectivity/ssh/vendor/build/*` (`shim-buffer.js`, `ssh-lib-entry.js`, `stub-empty.js`, `stub-stream.js`)
     - These are the esbuild **source inputs** for `ssh-lib.min.js`.
     - They're committed in #108 and needed for a rebuild per `vendor/README.md`. They're missing from disk only.
-  - 1 × `apps/games/ar-game/vendor/three/build/three.module.min.js`: Games Bot's area.
+  - 1 × `apps/games/ar-game/vendor/three/build/three.module.min.js`: Games Builder's area.
 - Recommendations (nothing was changed)
   - SSH build files: restore with `git checkout -- apps/connectivity/ssh/vendor/build`. Do NOT commit their deletion.
-  - ar-game file: restore with `git checkout -- apps/games/ar-game`, and tell Games Bot.
+  - ar-game file: restore with `git checkout -- apps/games/ar-game`, and tell Games Builder.
   - hero-builder node_modules: either restore it (`git checkout -- apps/lab/hero-builder/node_modules`), or ask Jor for a separate PR that removes it from git and adds `node_modules/` to `.gitignore`. The second is preferable, since it shrinks the repo, but check first whether any hero-builder page imports from node_modules.
 
 ## 6. Planned and parked work
@@ -794,7 +794,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - **Merge only when Jor himself says "push"**
   - "code and push" or "push after coding/tests" means merge once the tests pass. "push all" means every open PR of mine. "no coding" means a plan only.
   - Approvals relayed by other agents don't count.
-- Don't touch: `apps/games/`, `hub/`, root `shared/`, Settings → Desktop screen saver (`sec_desktop.js`), Hub Bot's `apps/system/` structure.
+- Don't touch: `apps/games/`, `hub/`, root `shared/`, Settings → Desktop screen saver (`sec_desktop.js`), Hub Builder's `apps/system/` structure.
 
 ## 8. Setup and testing
 - Static server: `cd /workspace/sites_apps && python3 -m http.server 8765`, then open `http://localhost:8765/apps/<cat>/<app>/<app>.html`. Most apps also work from `file://`.
@@ -818,22 +818,22 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   - Keep it on the LAN or VPN only; never forward the port to the internet.
   - Box test: `sshd` or a local OpenSSH on 22 plus the relay on 8022. websockify is installed at `/usr/bin/websockify`.
 - Rebuilding vendor bundles: in a scratch folder (not the repo), use `npm i` + `esbuild` per `apps/connectivity/ssh/vendor/README.md` and `apps/lab/code-lab/vendor/README.md`.
-- Deployment: GitHub Pages `https://jor-teron.github.io/sites/…`, after a merge to main. Hub Bot bumps `hub/build.txt`.
+- Deployment: GitHub Pages `https://jor-teron.github.io/sites/…`, after a merge to main. Hub Builder bumps `hub/build.txt`.
 
 ================================================================================
  PART 3: Games
 ================================================================================
 
-# apps/games — Technical Handover (Monorepo Games Bot)
+# apps/games — Technical Handover (Monorepo Games Builder)
 
 Repo: jor-teron/sites, branch main. Checked against origin/main at merge 0890e5a (PR #103), 22 Oct 2026, ~15:40 IST.
 Sources: git log of apps/games, `gh pr list/view`, and file reads of origin/main. Items I could not check are marked **[unverified]**.
 
 ## 1. Overview and ownership
 - Who owns what
-  - Games Bot owns `apps/games/**`. That includes the games catalog CSV and the Lab section inside Games.
-  - Hub Bot owns `hub/**`, including `hub/core/*`, `hub/controller/` and README_technical.txt.
-  - Apps Bot owns the other app categories (`apps/*` except games), including its own top-level Lab category (`apps/lab/...`).
+  - Games Builder owns `apps/games/**`. That includes the games catalog CSV and the Lab section inside Games.
+  - Hub Builder owns `hub/**`, including `hub/core/*`, `hub/controller/` and README_technical.txt.
+  - Apps Builder owns the other app categories (`apps/*` except games), including its own top-level Lab category (`apps/lab/...`).
 - Stack
   - Plain static HTML, CSS and JS. There's no build step and no bundler.
   - Every game has its own folder with an `index.html` entry.
@@ -875,7 +875,7 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   - Saves: none found.
 
 ### Arcade
-- **ping-pong/** (~2400 lines; renamed from `pong/` by the Games bot)
+- **ping-pong/** (~2400 lines; renamed from `pong/` by the Games builder)
   - Files: `ping-pong.html` (+ `index.html`), `core/{config,state,registry,ai,game,input,main}.js`, `ui/{dom,fx,hub,picker}.js`, `ui/ping-pong.css`, `ui/picker.css`, `assets/{models,themes}/`.
   - Saves: localStorage `ping-pong.theme`, `ping-pong.ball`, `ping-pong.paddle`.
 - **snake/** (~780 lines)
@@ -1031,7 +1031,7 @@ Line counts are HTML+JS+CSS, excluding vendor/.
 
 ## 3. Release history (merged PRs touching apps/games)
 - Pre-PR history: most older games arrived with the "Folder rearrange" commit 8cb4c69 on 2026-10-02 or through hub commits (Pac-Man and Sling Birds in "Hub R15", c560d9f). No game PRs exist for those.
-- PR numbers between the ones below belong to Hub Bot or Apps Bot.
+- PR numbers between the ones below belong to Hub Builder or Apps Builder.
 
 ### Neon Raid (ex Contra Alpha)
 - #9: Fix Contra Alpha scoring, fire keys, retry and redirect.
@@ -1101,7 +1101,7 @@ Line counts are HTML+JS+CSS, excluding vendor/.
 ## 4. Lessons and gotchas
 - Push rule
   - Code and commit locally only. Push, open a PR and merge **only when the user says "push"** (or "code and push").
-  - The reason is that three bots work in one repo and early pushes conflict.
+  - The reason is that three builders work in one repo and early pushes conflict.
   - "No coding" means discuss and plan only. No Cloud Agent or Cursor; fix things directly.
 - Git workflow
   - Run `git status` first, then `git fetch`, and branch from **origin/main**. The local main is often stale; it is currently 24 behind.
@@ -1124,7 +1124,7 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   - Neon Fist 3D uses ES modules plus an import map, so it needs to be served over http(s); file:// won't work.
   - Saves are validated before being applied (AoE `decodeSave`, NF3D sanitize, which upgrades v1/v2 to v3). Keep that pattern, and bump the version or keep old saves loading.
   - browser-fps and island-alpha still load libraries from a CDN rather than vendor/, so they won't work offline.
-- Stopping subagents: never use StopSubagent `all:true`. It also cancels other bots' turns, so stop by subagent id.
+- Stopping subagents: never use StopSubagent `all:true`. It also cancels other builders' turns, so stop by subagent id.
 
 ## 5. Known bugs and rough edges
 - No TODO, FIXME or HACK markers were found in apps/games code outside vendor/.
@@ -1159,7 +1159,7 @@ Line counts are HTML+JS+CSS, excluding vendor/.
 - Local branches: 35 `games/*` branches. `git log origin/main..<branch>` is **empty for all of them**, so there are no unpushed commits. Every branch is merged or upstream.
 - Uncommitted changes in /workspace/sites_games (local main, 24 behind origin/main): **200 tracked files show as deleted**.
   - `apps/games/ar-game/vendor/three/build/three.module.min.js`
-  - 199 files under `apps/lab/hero-builder/node_modules/` (Apps Bot area)
+  - 199 files under `apps/lab/hero-builder/node_modules/` (Apps Builder area)
   - These look like leftover working-tree deletions, not intended work.
   - **Recommend:** `git restore .` (or `git checkout -- .`) and `git pull` before the next branch. I didn't touch it because this task is read-only.
 - No stashes were checked **[unverified]**.
@@ -1229,7 +1229,7 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   (v96 left for H42, PR #211, still open). Playwright: 16/16 (pop-up, live repaint, standalone,
   storage event, joined-phone mode), no console errors. About 7 minutes.
 
-2026-10-28 IST, H47 (Team 2, week 2): H47: hub_appindex.js regenerated with hub_appindex_gen.py (122 apps). Adds Connectivity Screen Share SS1, Video Chat VC2, Whiteboard WB1, Shared Clipboard CB1, Intercom IC1, plus Gallery, GIF Maker, Screen Recorder, Image Gen, Vision; TV now listed under Favorite; Code Lab now under Lab (its lab-apps.csv icon path code-lab_icon.png is wrong, file is codelab_icon.png: Apps bot fix).
+2026-10-28 IST, H47 (Team 2, week 2): H47: hub_appindex.js regenerated with hub_appindex_gen.py (122 apps). Adds Connectivity Screen Share SS1, Video Chat VC2, Whiteboard WB1, Shared Clipboard CB1, Intercom IC1, plus Gallery, GIF Maker, Screen Recorder, Image Gen, Vision; TV now listed under Favorite; Code Lab now under Lab (its lab-apps.csv icon path code-lab_icon.png is wrong, file is codelab_icon.png: Apps builder fix).
   Build 20261028b / hub-shell-v98. Generator run with system Chrome (Playwright bundled browser
   missing on the box). hub.html load: no 4xx responses, no broken images. About 6 minutes.
 
@@ -1246,7 +1246,7 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   > description; whole-query name prefix +50; groups sorted by their best row. Not touched:
   wm_taskbar.js, hub_appindex_gen.py, tiles.js. Planned: H48b taskbar search button after Show
   desktop, H48c optional CSV description column (last column), H48d descriptions filled in by the
-  Apps / Games bots. Index regenerated (123 apps; line order kept so the diff is the Search row
+  Apps / Games builders. Index regenerated (123 apps; line order kept so the diff is the Search row
   only). Bump 20261028b / v98 -> 20261028c / hub-shell-v99. Playwright (system Chrome): 27/27
   (standalone, Start > System > Search window, settings / device / tetris / games, keys, Enter,
   windows, workspace + Show desktop actions, Phone mode #search), no console errors or 4xx.
@@ -1286,10 +1286,10 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   (Search standalone + in Hub matches 'organise' / 'unix' / 'battery' / 'wallpaper preferences'
   only in System descriptions; index rows = live __hubAppIndex; System flyout, App Hub #cat=System
   and system.html list the same 9 apps with no description text leaked), no console errors / 4xx,
-  no 'out of date' notice. H48d: Apps / Games bots fill their own CSVs (format above).
+  no 'out of date' notice. H48d: Apps / Games builders fill their own CSVs (format above).
 
-2026-10-28 IST, H48d index (Team 2, week 2): hub_appindex.js regenerated after #228 (Apps bot) and
-  #229 (Games bot) were merged into h48-search-app (merge commit, no rebase; no conflicts). Run:
+2026-10-28 IST, H48d index (Team 2, week 2): hub_appindex.js regenerated after #228 (Apps builder) and
+  #229 (Games builder) were merged into h48-search-app (merge commit, no rebase; no conflicts). Run:
   /workspace/.venv-pw/bin/python via runpy with playwright BrowserType.launch patched to
   executable_path=/usr/bin/google-chrome, headless=True. 124 apps, every category row has a 6th
   description item (Games 33, Lab 27, Learn 16, Tools 11, Office 10, Connectivity 9, Media 9,
@@ -1297,7 +1297,7 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   Tools only; code-lab icon codelab_icon.png. Old line order restored after the run. No bump.
 
 2026-10-28 IST, H49 (Team 2, week 2): Office quick actions and tabs on the Hub window title bar.
-  Hub side of HO1 (Apps bot; app side apps/office/shared/office-hubbar.js + office-quick.js, used
+  Hub side of HO1 (Apps builder; app side apps/office/shared/office-hubbar.js + office-quick.js, used
   by Draftly, Spreadsheet and Base). Code: hub/link/hub-gamebar.js (makeBar(frame, bar,
   {titleBar:true}) for window bars only; the Phone header #gamebar never uses it), hub/wm/wm.css,
   hub/wm/wm_windows.js (drag / dblclick ignore .gb-qbtn).
@@ -1543,7 +1543,7 @@ Line counts are HTML+JS+CSS, excluding vendor/.
     two tabs converting at once settle on the last write. A page still running a cached pre-H50a
     link_devices.js would not accept the new id and writes a fresh 'd-...' one; the next new page
     converts it again and remembers it too (so chat 'You' still holds). Pages loading the file with
-    an old ?v= (Apps bot's connectivity apps, photo editor, OCR, paper scan, paper keyboard, filedrop)
+    an old ?v= (Apps builder's connectivity apps, photo editor, OCR, paper scan, paper keyboard, filedrop)
     get the new file when their HTTP cache expires (GitHub Pages ~10 min); Settings and Controller now
     use ?v=20261028h50a.
   API SharedLinkDevices: id(), oldIds() -> [ids], isMe(id) -> current or old id of this device, ID_RE.
@@ -1552,7 +1552,7 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   Never synced: the id is not a 'sites-hub.*' key, so HubProfile.collect / exportData / H29 sync never
     carry it (tested: id and key name absent from exportData({}), exportData({what:'everything',
     keys:true}) and collect()). Two devices with one id would be clones; the mesh (H50) relies on this.
-  Screen Wall (apps/connectivity/screen-wall, Apps bot, not edited): SWSave.dev() returns
+  Screen Wall (apps/connectivity/screen-wall, Apps builder, not edited): SWSave.dev() returns
     SharedLinkDevices.id() and uses it only as an opaque string (<= 40 chars) for the roster and the
     host's cells:{<dev>:{r,c}} layout. Works with the new format; after the one-time conversion a
     display's saved cell (keyed by its old d- id) is not found, so the host places it again once.
@@ -1568,7 +1568,7 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   Files: shared/link/hub_mesh.js (new, window.HubMesh), hub/link/hub_meshlink.js (new, Hub glue),
     hub.html (both loaded after hub_sync.js), hub/update/hub_sw.js (precache both),
     apps/system/settings/sec_devices.js (Hub mesh list in Connected devices; ?v=20261028h50) +
-    settings.css (.mesh-*), shared/link/README.md. No Apps bot file edited.
+    settings.css (.mesh-*), shared/link/README.md. No Apps builder file edited.
   Peers: device peer 'jtsites-' + code + '-mesh-' + deviceId (H50a id); lobby peer
     'jtsites-' + code + '-mesh-0', a second Peer opened only by the device holding the lobby (the lobby
     device talks to itself in-process). The PeerJS broker's unavailable-id is the lock: one holder.
@@ -1733,7 +1733,7 @@ Line counts are HTML+JS+CSS, excluding vendor/.
   Settings › Hub bar (sec_hubbar.js, ?v=20261029h52b; settings.css .bar-donly): help text now "the bar at the
     bottom (or top) in Desktop mode, and the top bar in Phone mode. One set of switches for both modes";
     a "Desktop only" tag on Show Desktop, Search, Window buttons, Workspaces, On-screen keyboard, Busy meter,
-    Clock (DESK_ONLY). Bottom note: Pooh / Devices / Update go with the Shared group.
+    Clock (DESK_ONLY). Buildertom note: Pooh / Devices / Update go with the Shared group.
   H29 (hub_profile.js): barPooh, barDevices, barUpdate removed from SYNC_GROUPS.desktop (so Shared); the
     Desktop-only bar keys and trayMeter stay Desktop. Search rows (search_items.js ?v=20261029h52b): Hub bar,
     Pooh, Devices, Update rows also match "phone top bar".
@@ -1852,7 +1852,7 @@ Line counts are HTML+JS+CSS, excluding vendor/.
     whatever the state) show Linking… Ns (seconds into the wait), Lobby (you), Linked, Retrying in Ns,
     Refused (reason), Not linked: tap Retry; data-state = the key. Retry button (#mesh-retry / #pub-retry)
     while retrying or given up. Empty public list says "Not linked to the public mesh yet." until linked.
-    Both cards redraw every 1 s (was 5 s / 3 s).
+    Builderh cards redraw every 1 s (was 5 s / 3 s).
   Tests (system Chrome headless, PeerJS stand-in broker; broker.py now takes BK.delay = {peer id or suffix:
     seconds} to delay a connection open (inf = never) and BK.deaf = ids that hold their id but receive
     nothing; original kept as h50test/broker_preH55b.py): H55b core 32/32 (/workspace/h55btest/t55b.py:
