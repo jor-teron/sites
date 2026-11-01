@@ -106,6 +106,7 @@ Video Chat, video-chat/, , , Chat, Video and audio calls: one-to-one or groups o
 Screen Share, screen-share/, screen-share/screenshare_icon.png, , Chat, Share your computer screen window or tab with phones and other devices
 Intercom, intercom/, intercom/intercom_icon.png, , Chat, Tap-to-talk live voice or video to all devices or one - trusted devices can look in
 Telephone, telephone/, telephone/telephone_icon.png, , Chat, Phone calls between your devices: own numbers - contacts - missed-call badge - Do Not Disturb - video calls
+Messages,  messages/,  messages/messages_icon.png, , Chat, Private one-to-one messages between devices by Hub number - sent directly - history on this device
 SSH,        ssh/,        , , Remote, SSH terminal in the browser: password login - saved hosts - auto-reconnect
 `,
   "Tools": `# Tools — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
