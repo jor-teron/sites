@@ -86,9 +86,15 @@
     var m = d.settings.theme, t = hubTheme();
     var dark = m === 'dark' || (m === 'system' && (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)));
     root.classList.toggle('dark', dark);
+    // H80: the Hub accent (sites-hub.accent, Settings > Look) colours the phone too; unset = phone's own blue
+    var acc = ''; try { acc = localStorage.getItem('sites-hub.accent') || ''; } catch (_) { /* blocked */ }
+    if (/^#[0-9a-f]{6}$/i.test(acc)) root.style.setProperty('--acc', acc); else root.style.removeProperty('--acc');
   }
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme); } catch (_) { /* old */ }
-  addEventListener('storage', function (e) { if (e.key === 'sites-hub.theme') applyTheme(); });
+  // addEventListener('storage', function (e) { if (e.key === 'sites-hub.theme') applyTheme(); });   (PH1)
+  addEventListener('storage', function (e) { if (!e.key || e.key === 'sites-hub.theme' || e.key === 'sites-hub.accent') applyTheme(); });   // H80
+  // H80: Hub Settings in a phone frame posts {type:'hub-prefs'} after each change (settings_store.js)
+  addEventListener('message', function (e) { if (e.origin === location.origin && e.data && e.data.type === 'hub-prefs') applyTheme(); });
   var qs = new URLSearchParams(location.search);
   var isWebView = /; wv\)/.test(navigator.userAgent) || qs.get('webview') === '1';
   /** ?bg=none|transparent|auto|<hex> beats the setting (for testing in a browser). */
@@ -247,12 +253,13 @@
     var th = d.settings.theme;
     var fs = !!document.fullscreenElement;
     return [
-      { id: 'theme', e: th === 'dark' ? '🌙' : th === 'light' ? '☀️' : '🌓', label: 'Theme: ' + th[0].toUpperCase() + th.slice(1) },
+      { id: 'theme', e: th === 'dark' ? '🌙' : th === 'light' ? '☀️' : '🌓', label: 'Theme: ' + (th === 'system' ? 'Hub' : th[0].toUpperCase() + th.slice(1)) },   // H80: system = follow Hub
       { id: 'fullscreen', e: '⛶', label: fs ? 'Exit full screen' : 'Full screen', on: fs, off: !(root.requestFullscreen || root.webkitRequestFullscreen) },
       { id: 'intercom', e: '📢', label: 'Intercom', off: !A.has('intercom') },
       { id: 'telephone', e: '📞', label: 'Telephone', off: !A.has('telephone') },
       { id: 'location', e: '📍', label: 'Location', off: !locationApp() },
-      { id: 'settings', e: '⚙️', label: 'Settings' }
+      { id: 'settings', e: '⚙️', label: 'Settings' },
+      { id: 'hub-settings', e: '🛠️', label: 'Hub Settings' }   // H80
     ];
   }
   function locationApp() { return ['live-location', 'location', 'live-location-share'].filter(A.has)[0] || ''; }
@@ -282,7 +289,7 @@
     if (id === 'theme') {
       var order = ['dark', 'light', 'system'];
       d.settings.theme = order[(order.indexOf(d.settings.theme) + 1) % 3];
-      persist(); applyTheme(); renderPanel(); toast('Theme: ' + d.settings.theme);
+      persist(); applyTheme(); renderPanel(); toast('Theme: ' + (d.settings.theme === 'system' ? 'follow Hub' : d.settings.theme));
     } else if (id === 'fullscreen') {
       toggleFullscreen();
     } else if (id === 'intercom' || id === 'telephone') {
@@ -293,6 +300,8 @@
       else ask('Live Location (LL1) is not built yet. This tile will open it once it is.');
     } else if (id === 'settings') {
       openSettings();
+    } else if (id === 'hub-settings') {
+      openApp(HUB_SETTINGS.id);   // H80
     }
   }
   function toggleFullscreen() {
@@ -312,11 +321,15 @@
   function hubCode() {
     try { return (localStorage.getItem('shared-link-join-code') || localStorage.getItem('jtsites-hub-ctrl-code') || '').toUpperCase(); } catch (_) { return ''; }
   }
+  // H80: Hub Settings (apps/system/settings/) is a system app, not in the catalog; opened in a phone frame
+  var HUB_SETTINGS = { id: 'hub-settings', name: 'Settings', url: 'apps/system/settings/index.html' };
   function openApp(id) {
-    var a = A.get(id);
+    var a = id === HUB_SETTINGS.id ? HUB_SETTINGS : A.get(id);
     if (!a) { ask('That app is no longer in the Hub catalog.'); return; }
-    d.recent = [id].concat(d.recent.filter(function (x) { return x !== id; })).slice(0, 8);
-    persist();
+    if (a !== HUB_SETTINGS) {   // H80: not in recent (recent lists catalog apps)
+      d.recent = [id].concat(d.recent.filter(function (x) { return x !== id; })).slice(0, 8);
+      persist();
+    }
     var f = frames.filter(function (x) { return x.id === id; })[0];
     if (!f) {
       var el = document.createElement('iframe');
@@ -454,7 +467,7 @@
   function openSettings() {
     openSheet(function (box) {
       var h = document.createElement('div'); h.className = 'sh-head'; h.innerHTML = '<div><b>Phone settings</b><small>Release ' + RELEASE + '</small></div>'; box.appendChild(h);
-      row(box, 'Theme', seg('theme', ['system', 'light', 'dark'], ['System', 'Light', 'Dark']));
+      row(box, 'Theme', seg('theme', ['system', 'light', 'dark'], ['Hub', 'Light', 'Dark']));
       row(box, 'Clock', seg('clock24', [true, false], ['24 h', '12 h']));
       row(box, 'Apps kept open', seg('keepAlive', [1, 2], ['1', '2']));
       var w = document.createElement('div'); w.className = 'sw-c';
