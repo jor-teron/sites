@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Intercom IC6</title>
+  <title>Intercom IC7</title>
   <link rel="icon" href="intercom_icon.png">
   <link rel="stylesheet" href="intercom.css">
 </head>
@@ -15,7 +15,7 @@
       <!-- IC5: removed <div id="status" class="mut">Starting…</div> ("Online · code …") and <button class="mini" id="btn-code">Code</button>;
            the status is the dot's tooltip, the code is changed in Settings. -->
       <div class="bar"><div class="who"><span id="conn" class="conn wait" title="Starting…" aria-label="Starting…" role="img"></span><b id="me-name"></b><span id="dnd-ind" class="dnd-ind" hidden title="Do Not Disturb is on in the Hub" aria-label="Do Not Disturb is on in the Hub">🌙</span></div>
-        <button class="mini" id="notify-hint" hidden>🔔 Turn on call notifications</button></div>
+        <button class="mini" id="notify-hint" hidden>🔔 Turn on call notifications</button><button class="mini" id="ic-switch" hidden></button></div>
       <div id="banner" hidden></div>
       <div id="sound" hidden>🔇 Tap here to turn on sound</div>
       <div id="camon" hidden><span class="rec"></span><span id="camon-t">Camera on</span><button class="mini stop" id="b-camstop">Stop</button></div>
@@ -59,14 +59,14 @@
       <h2>Look</h2>
       <div class="set-row"><span>Theme</span><div class="seg" data-key="theme"><button data-v="system">System</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
       <h2>About</h2>
-      <div class="about"><img src="intercom_icon.png" width="48" height="48" alt=""><div><b>Intercom</b> <span id="ver">IC6</span>
+      <div class="about"><img src="intercom_icon.png" width="48" height="48" alt=""><div><b>Intercom</b> <span id="ver">IC7</span>
         <p>Talk live to every device on the same Hub Connect Code, or pick one. Tap Talk to go live, tap again to stop (or hold and let go). A short chime plays before anyone is heard; Reply talks straight back. Turn on 📹 Video to be seen: the other side sees you first, like a doorbell, and can tap Two-way. Trusted devices can auto-answer (Settings). The Hub's Do Not Disturb keeps this device quiet. Peer to peer over PeerJS; nothing is recorded or stored on a server.</p></div></div>
     </div></section>
   </div></div>
 </div>
 
 <div id="dialog" hidden><div class="box"><p id="d-text"></p><input id="d-input" hidden inputmode="numeric" maxlength="5" placeholder="5-digit code"><div class="row" id="d-row"></div></div></div>
-<button class="mini" id="ic-switch" hidden></button>
+<!-- IC6 (moved into the top bar in FX1): <button class="mini" id="ic-switch" hidden></button> -->
 <div id="toast"></div>
 
 <script src="../../../shared/link/link_devices.js"></script>

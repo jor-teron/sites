@@ -108,7 +108,13 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 #c-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #c-state,#c-time{flex:none}
 /* VC3: non-blocking private-mesh switch offer */
-#vc-switch { position: fixed; left: 50%; top: 10px; transform: translateX(-50%); z-index: 60; }
+/* VC5 (FX1 legacy): #vc-switch { position: fixed; left: 50%; top: 10px; transform: translateX(-50%); z-index: 60; } */
+#vc-switch{flex:none;white-space:nowrap}
+/* FX1: keep bar/texts fixed-size so nothing can overlap the first device row */
+.bar{flex:none}
+#devices{flex:0 1 auto}
+#empty,#hint{flex:none}
+.bar .who{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #vc-switch[hidden]{display:none}
 .who b{display:inline-flex;align-items:center}
 .net{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;flex:none;background:#f59e0b}
