@@ -104,6 +104,22 @@
      {type:'chat', id, from, name, text, ts, room}; from must be the sending device; text <= 2000. Allowed on the
      public mesh too (00000 = the public room, Jor: no extra encryption), checked here both ways. */
   var CHAT_CH = 'chat', CHAT_TEXT = 2000;
+  /* H89: chat catch-up. Channel 'chat-sync', one device only (never '*'), allowed on the public mesh too:
+     {k:'req', room} asks for recent chat; {k:'rows', room, rows:[<= SYNC_ROWS chat rows]} answers (<= SYNC_BYTES
+     of JSON). Checked here on send and receive (private meshes too); link_chat.js does the asking / merging. */
+  var SYNC_CH = 'chat-sync', SYNC_ROWS = 50, SYNC_BYTES = 128 * 1024;
+  function rowOk(r) {
+    return !!(r && typeof r === 'object' && !Array.isArray(r) && r.type === 'chat' && typeof r.text === 'string' && r.text && r.text.length <= CHAT_TEXT &&
+      typeof r.id === 'string' && r.id && r.id.length <= 80 && typeof r.from === 'string' && r.from.length <= 40 &&
+      (r.name == null || (typeof r.name === 'string' && r.name.length <= 40)) && typeof r.ts === 'number' && (r.room == null || (typeof r.room === 'string' && r.room.length <= 12)));
+  }
+  function syncOk(e) {
+    var d = e.data;
+    if (e.to === '*' || !d || typeof d !== 'object' || Array.isArray(d) || typeof d.room !== 'string' || d.room.length > 12) return false;
+    if (d.k === 'req') return true;
+    if (d.k !== 'rows' || !Array.isArray(d.rows) || d.rows.length > SYNC_ROWS || !d.rows.every(rowOk)) return false;
+    return sizeOf(d) <= SYNC_BYTES;
+  }
   function chatOk(e) {
     var d = e.data;
     if (e.to !== '*' || !d || typeof d !== 'object' || Array.isArray(d) || d.type !== 'chat') return false;
@@ -123,6 +139,7 @@
   function pubAllowed(e) {
     if (e.ch === CTRL) return true;
     if (e.ch === CHAT_CH) return chatOk(e);   // H84: group chat is the public room's one app channel
+    if (e.ch === SYNC_CH) return syncOk(e);   // H89: + chat catch-up (one device only)
     if (e.ch !== INVITE_CH || e.to === '*') return false;
     var d = e.data;
     return !!(d && typeof d === 'object' && d.k === 'invite' && INV_CODE_RE.test(String(d.code)) && d.code !== PUBLIC_CODE);
@@ -368,7 +385,7 @@
       members: new Map(),     // lobby only: deviceId -> { conn, last }
       roster: new Map(),      // deviceId -> entry
       rv: 0, idRetry: 0, seen: [], seenSet: new Set(), buckets: new Map(), out: { tokens: RATE_BURST, at: Date.now() },
-      stats: { sent: 0, recv: 0, dropSize: 0, dropRate: 0, dropShape: 0, dropTerm: 0, dropSpoof: 0, relayed: 0, dropPublic: 0, joinGaveUp: 0, dropSig: 0, dropKey: 0, dropTrust: 0 },   // H55b: + joinGaveUp (times); H51: + dropSig / dropKey / dropTrust
+      stats: { sent: 0, recv: 0, dropSize: 0, dropRate: 0, dropShape: 0, dropTerm: 0, dropSpoof: 0, relayed: 0, dropPublic: 0, joinGaveUp: 0, dropSig: 0, dropKey: 0, dropTrust: 0, redials: 0 },   /* H89: + redials */   // H55b: + joinGaveUp (times); H51: + dropSig / dropKey / dropTrust
       hb: 0, seq: 0,
       pub: code === PUBLIC_CODE || !!(opts && opts.public), invOut: 0, invIn: new Map(),   // H55
       // H55b: join wait / retries
@@ -469,6 +486,7 @@
     if (e.term < S.term) { S.stats.dropTerm++; return false; }   // older lobby term: ignore
     if (S.pub && !pubAllowed(e)) { S.stats.dropPublic++; return false; }   // H55: presence + invites only on 0000 (H84: + chat)
     if (e.ch === CHAT_CH && !chatOk(e)) { S.stats.dropShape++; return false; }   // H84
+    if (e.ch === SYNC_CH && !syncOk(e)) { S.stats.dropShape++; return false; }   // H89
     return true;
   }
 
@@ -629,17 +647,28 @@
   // }
 
   /** H55b: join the lobby, waiting up to JOIN_WAIT_MS for open + welcome; 'hello' every HELLO_MS until welcome */
-  function joinLobby() {
+  /* H89 (the ~60 s join after two pages open together): when a device dials -0 while nobody holds it yet (both
+     pages are still racing, the other one claims -0 a moment later), the PeerJS broker queues the OFFER / ICE
+     messages for the missing id and hands them to the new lobby late or not at all, so the data channel never
+     opens and no error comes back. The join then sat out the whole H55b JOIN_WAIT_MS (60 s). Fix: a join whose
+     connection is still not OPEN after REDIAL_MS[n] (4 s, then 8 s) is closed and dialled again (same wait, same
+     run, not a join failure); at most 2 redials, so a slow carrier-NAT / TURN link keeps most of its 60 s. A join
+     that opened (e.g. waiting for H51 approval) is never redialled. stats().redials counts them. */
+  var REDIAL_MS = [4000, 8000];
+  // function joinLobby() {   (before H89)
+  function joinLobby(redial) {
+    redial = redial | 0;
     if (!S || S.isLobby || !S.peer || !S.peer.open || S.gaveUp) return;
-    clearTimeout(S.joinTimer); clearTimeout(S.retryTimer); S.retryTimer = 0; S.retryAt = 0;
+    clearTimeout(S.joinTimer); clearTimeout(S.redialTimer);   // H89: + redial clearTimeout(S.retryTimer); S.retryTimer = 0; S.retryAt = 0;
     var me = S;
     status('joining');
     var conn = me.peer.connect(lobbyPeerId(), { reliable: true, serialization: 'json', metadata: { kind: 'mesh', v: 1, dev: me.dev } });
     me.lobbyConn = conn; me.lobbyLast = Date.now(); me.lobbyAsk = Date.now();
-    me.joining = conn; me.joinStart = Date.now(); me.joinState = 'linking';
+    // me.joining = conn; me.joinStart = Date.now(); me.joinState = 'linking';   (before H89)
+    me.joining = conn; if (!redial || !me.joinStart) me.joinStart = Date.now(); me.joinState = 'linking';   // H89: a redial keeps the wait's start
     var welcomed = false;
     function hello() { if (S === me && me.lobbyConn === conn && !welcomed) safeSend(conn, envelope(CTRL, '*', Object.assign({ k: 'hello', site: location.host }, selfInfo()))); }
-    function endWait() { clearInterval(me.helloTimer); me.helloTimer = 0; clearTimeout(me.joinTimer); me.joinTimer = 0; if (me.joining === conn) me.joining = null; }
+    function endWait() { if (me.joining !== conn && me.lobbyConn !== conn) return;   /* H89: a redialled (old) conn closing late must not clear the new join's timers */ clearInterval(me.helloTimer); me.helloTimer = 0; clearTimeout(me.joinTimer); me.joinTimer = 0; clearTimeout(me.redialTimer); me.redialTimer = 0; if (me.joining === conn) me.joining = null; }   // H89: + redialTimer
     conn.on('open', function () {
       if (S !== me || me.lobbyConn !== conn) return;
       me.lobbyLast = Date.now();
@@ -685,7 +714,17 @@
       me.lobbyConn = null;
       try { conn.close(); } catch (_) { /* gone */ }
       joinFailed('timeout');   // H50: lobbyLost('no-answer')
-    }, JOIN_WAIT_MS);
+    // }, JOIN_WAIT_MS);   (before H89)
+    }, Math.max(1000, JOIN_WAIT_MS - (Date.now() - me.joinStart)));   // H89: a redial gets what is left of the wait
+    // H89: not open yet = the offer was probably lost in the lobby race: dial again (max REDIAL_MS.length times)
+    if (redial < REDIAL_MS.length) me.redialTimer = setTimeout(function () {
+      if (S !== me || me.lobbyConn !== conn || welcomed || conn.open || me.isLobby || !me.peer || !me.peer.open) return;
+      endWait();
+      me.lobbyConn = null;
+      me.stats.redials = (me.stats.redials || 0) + 1;
+      try { conn.close(); } catch (_) { /* gone */ }
+      joinLobby(redial + 1);
+    }, REDIAL_MS[redial]);
   }
   /* H55b: join bookkeeping */
   function joinOk() { var me = S; me.joinFails = 0; me.failStart = 0; me.gaveUp = false; clearTimeout(me.retryTimer); me.retryTimer = 0; me.retryAt = 0; }
@@ -963,6 +1002,7 @@
     if (!S || !S.dev) return { ok: false, reason: 'stopped' };
     if (S.pub && !pubAllowed(e)) { S.stats.dropPublic++; return { ok: false, reason: 'public' }; }   // H55
     if (e.ch === CHAT_CH && !chatOk(e)) { S.stats.dropShape++; return { ok: false, reason: 'shape' }; }   // H84
+    if (e.ch === SYNC_CH && !syncOk(e)) { S.stats.dropShape++; return { ok: false, reason: 'shape' }; }   // H89
     if (sizeOf(e) > MAX_BYTES) { S.stats.dropSize++; return { ok: false, reason: 'size' }; }
     if (!outRateOk()) { S.stats.dropRate++; return { ok: false, reason: 'rate' }; }
     S.stats.sent++;
@@ -1070,7 +1110,7 @@
   function stop() {
     if (!S) return;
     var old = S; S = null;
-    clearTimeout(old.claimTimer); clearTimeout(old.joinTimer); clearTimeout(old.retryTimer); clearInterval(old.helloTimer);   // H55b: + retry / hello
+    clearTimeout(old.claimTimer); clearTimeout(old.joinTimer); clearTimeout(old.retryTimer); clearInterval(old.helloTimer); clearTimeout(old.redialTimer);   // H55b: + retry / hello; H89: + redial
     try { if (old.lobbyConn) old.lobbyConn.close(); } catch (_) { /* gone */ }
     old.direct.forEach(function (r) { try { r.conn.close(); } catch (_) { /* gone */ } });
     old.members.forEach(function (m) { try { m.conn.close(); } catch (_) { /* gone */ } });
@@ -1120,6 +1160,7 @@
       JOIN_WAIT_MS: JOIN_WAIT_MS, HELLO_MS: HELLO_MS, RETRY_MS: RETRY_MS, GIVEUP_MS: GIVEUP_MS },   // H55b
     // H55: public mesh
     PUBLIC_CODE: PUBLIC_CODE, isPublic: pub, invite: invite,
+    SYNC: { CH: SYNC_CH, ROWS: SYNC_ROWS, BYTES: SYNC_BYTES },   // H89
     // H84: app messages to every device on the current mesh (relay + direct, de-duplicated by envelope id)
     broadcast: broadcastMsg, onMsg: onMsg, room: function () { return S ? S.code : ''; },
     linked: function () { return !!(S && (S.isLobby || (S.lobbyConn && S.lobbyConn.open && S.joinState === 'linked'))); },

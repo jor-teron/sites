@@ -17,6 +17,12 @@
     send() takes an optional room from window.HubMesh.room(); dedupe by id drops a copy that arrives twice
     (mesh relay + direct, or mesh + old SharedLink).
   - readOnly mode (Pooh Chat inside the Hub): never writes; re-reads on 'storage'.
+  - H89 chat catch-up: meshSync(HubMesh) (called once by the page that owns the mesh, hub_chat.js) asks for recent
+    chat over HubMesh channel 'chat-sync' when this device joins / rejoins a room: a member asks the lobby, the lobby
+    asks each new device; the other side answers with its last 50 rows of that room (<= ~96 KB, signed like every
+    H51 envelope). Answers are taken only from a device we asked in the last 30 s, for the current room; merged
+    by id (addMany: no duplicates, history kept in ts order, one quiet repaint fire(null), so nothing counts as
+    unread or makes a notice). One answer per asking device per 5 s.
 */
 (function () {
   'use strict';
@@ -75,6 +81,79 @@
 
   window.addEventListener('storage', function (e) { if (e.key === KEY) fire(null); });   // other tab / Hub wrote
 
+  /* H89: merge rows from a catch-up answer: dedupe by id, keep ts order, quiet (fire(null) once) */
+  function clean(m) {
+    var row = { type: 'chat', id: String(m.id).slice(0, 80), from: String(m.from || '').slice(0, 40), name: String(m.name || 'Device').slice(0, 40), text: String(m.text).slice(0, 2000), ts: Number(m.ts) || 0 };
+    if (m.room) row.room = String(m.room).slice(0, 12);
+    return row;
+  }
+  function addMany(rows) {
+    if (!Array.isArray(rows) || !rows.length) return 0;
+    var list = history(), ids = new Set(list.map(function (x) { return x.id; })), n = 0;
+    rows.forEach(function (m) { if (m && m.type === 'chat' && m.text && m.id && !ids.has(String(m.id))) { ids.add(String(m.id)); list.push(clean(m)); n++; } });
+    if (!n) return 0;
+    list.sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
+    store(list);
+    fire(null);
+    return n;
+  }
+  var SYNC_ROWS = 50, SYNC_BYTES = 96 * 1024, ASK_MS = 30000, ANSWER_GAP_MS = 5000;
+  function recent(room) {
+    var rows = history().filter(function (m) { return m && m.room === room && m.text && m.id; }).slice(-SYNC_ROWS).map(clean);
+    while (rows.length && JSON.stringify(rows).length > SYNC_BYTES) rows.shift();   // cap: drop the oldest
+    return rows;
+  }
+  var synced = false;
+  function meshSync(M) {
+    if (synced || !M || !M.channel || !M.on) return false;
+    var ch;
+    try { ch = M.channel('chat-sync'); } catch (_) { return false; }
+    synced = true;
+    var asked = new Map(), answered = new Map(), seenPeers = new Set(), room = '';
+    function ask(dev) {
+      var r = M.room ? M.room() : '';
+      if (!r || !dev) return;
+      asked.set(dev, Date.now());
+      ch.send(dev, { k: 'req', room: r });
+    }
+    function check() {
+      var me = M.me && M.me();
+      var r = M.room ? M.room() : '';
+      if (!me || !r) return;
+      if (r !== room) { room = r; seenPeers.clear(); asked.clear(); }
+      var linked = M.linked ? M.linked() : false;
+      if (!linked) return;
+      var lobby = M.lobbyId ? M.lobbyId() : '';
+      (M.peers() || []).forEach(function (p) {
+        if (seenPeers.has(p.deviceId)) return;
+        seenPeers.add(p.deviceId);
+        // a member asks the lobby; the lobby asks every device that comes in (it may have missed chat itself)
+        if (me.lobby || p.deviceId === lobby) ask(p.deviceId);
+      });
+      (M.peers() || []).length || seenPeers.clear();
+    }
+    ch.on(function (d, from) {
+      if (!d || typeof d !== 'object') return;
+      var r = M.room ? M.room() : '';
+      if (d.room !== r) return;
+      if (d.k === 'req') {
+        var last = answered.get(from) || 0;
+        if (Date.now() - last < ANSWER_GAP_MS) return;
+        answered.set(from, Date.now());
+        var rows = recent(r);
+        if (rows.length) ch.send(from, { k: 'rows', room: r, rows: rows });
+      } else if (d.k === 'rows') {
+        var at = asked.get(from) || 0;
+        if (!at || Date.now() - at > ASK_MS) return;   // unasked dumps are ignored
+        asked.delete(from);
+        addMany(d.rows.map(function (m) { return Object.assign({}, m, { room: r }); }));
+      }
+    });
+    ['peers', 'lobby', 'status'].forEach(function (ev) { M.on(ev, function () { setTimeout(check, 0); }); });
+    setTimeout(check, 0);
+    return true;
+  }
+
   window.SharedChat = {
     KEY: KEY,
     init: function (fn) { sendFn = fn; },
@@ -84,6 +163,7 @@
     isMine: isMine,
     deviceId: myDeviceId,
     send: send,
+    addMany: addMany, meshSync: meshSync,   // H89
     clear: function () { store([]); fire(null); },
     on: function (f) { fns.push(f); return f; }
   };

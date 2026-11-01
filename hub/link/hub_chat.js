@@ -12,6 +12,7 @@
  * H84: transport = HubMesh channel 'chat' (HubMesh.broadcast / onMsg), so chat reaches every device on the
  *   current mesh: 00000 = public room, a private code = private room. SharedLink still sent as before (a no-op with no link)
  *   (fallback, older Hubs); duplicates dropped by SharedChat id. One history for all rooms (rows tagged room).
+ * H89: SharedChat.meshSync(HubMesh): recent chat of the room is fetched on join ('chat-sync', link_chat.js).
  */
 (function () {
   'use strict';
@@ -33,6 +34,7 @@
   });
   SharedChat.listen();
   if (M && M.onMsg) M.onMsg('chat', (d, from) => { if (d && d.type === 'chat') SharedChat.add(Object.assign({}, d, { from: from, room: d.room || (M.room ? M.room() : '') })); });
+  if (M && SharedChat.meshSync) SharedChat.meshSync(M);   // H89: chat catch-up when this device joins a room (quiet, not unread)
 
   /* ---------- panel ---------- */
   const panel = document.createElement('div');
