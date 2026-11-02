@@ -1,4 +1,4 @@
-/* Calendar Maker CM14 render: Year Overview page, one A4 portrait 250 dpi canvas (preview, Print, PDF).
+/* Calendar Maker CM14 render (CM23: shared Streaks/Stretches column grid): Year Overview page, one A4 portrait 250 dpi canvas (preview, Print, PDF).
    window.CM.Overview.draw(canvas, o), o = { year, hols, sat, font, header, hcolour }.
    CM17-F2: From – To = ordinal dates with superscript suffix + a smaller '(Friday to Tuesday)' line; Holidays in it
    = every off day in order joined with ' + '.
@@ -10,6 +10,11 @@ window.CM.Overview = (function () {
   'use strict';
   const T = window.CM.Theme, C = window.CM.Canvas, St = window.CM.Stats, L = window.CM.List;
   const W = C.W, H = C.H, PX_MM = C.PX_MM, font = C.font;
+
+  /* CM23: one shared column grid for Streaks + Stretches (# / From – To / middle block / Holidays in it).
+     Total/Off 8%, Working 11% (header fit). Middle block = Days in Streaks = Total + Off + Working in Stretches, so both tables line up. */
+  const GRID = { num: 0.06, ft: 0.22, mid: [0.08, 0.08, 0.11], names: 0.45 };
+  const midSum = GRID.mid.reduce((a, b) => a + b, 0);
 
   /* table data from the stats */
   function tables(s) {
@@ -24,10 +29,10 @@ window.CM.Overview = (function () {
       u.school ? [['School holidays (days, not deducted)', u.school]] : []).map((r) => [r[0], String(r[1])]);
     return [
       { title: 'Summary', cols: [0.78, 0.22], head: ['Item', 'Days'], align: ['l', 'c'], rows: sum, bold: [6, 7] },
-      { title: 'Holiday Streaks', /* CM16-F4, was 'Holiday streaks (3 or more days off in a row)' */ cols: [0.07, 0.33, 0.1, 0.5],
+      { title: 'Holiday Streaks', /* CM16-F4, was 'Holiday streaks (3 or more days off in a row)' */ cols: [GRID.num, GRID.ft, midSum, GRID.names], /* CM23: was [0.07, 0.33, 0.1, 0.5] */
         head: ['#', 'From – To', 'Days', 'Holidays in it'], align: ['c', 'c', 'c', 'l'],
         rows: s.streaks.map((k, i) => [String(i + 1), k.ft, String(k.len), k.names]) }, /* CM17-F2: k.ft was k.from (CM14-CM17) */
-      { title: 'Holiday Stretches', /* CM16-F4, was 'Holiday stretches (days off ≥ working days)' */ cols: [0.06, 0.3, 0.09, 0.07, 0.1, 0.38],
+      { title: 'Holiday Stretches', /* CM16-F4, was 'Holiday stretches (days off ≥ working days)' */ cols: [GRID.num, GRID.ft].concat(GRID.mid, [GRID.names]), /* CM23: was [0.06, 0.3, 0.09, 0.07, 0.1, 0.38] */
         head: ['#', 'From – To', 'Total', 'Off', 'Working', 'Holidays in it'], align: ['c', 'c', 'c', 'c', 'c', 'l'],
         rows: s.stretches.map((k, i) => [String(i + 1), k.ft, String(k.len), String(k.off), String(k.work), k.names]) } /* CM17-F2: k.ft was k.from */
     ];
