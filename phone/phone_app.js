@@ -11,7 +11,8 @@
   var $ = function (id) { return document.getElementById(id); };
   var A = window.PhoneApps, G = window.PhoneGesture, S = window.PhoneSave;
   // var RELEASE = 'PH1';   (PH1)
-  var RELEASE = 'PH6';
+  // var RELEASE = 'PH6';   (PH6)
+  var RELEASE = 'PH7';
   var d = S.load();
   var root = document.documentElement;
 
@@ -145,6 +146,25 @@
   }
   document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); });
 
+  /* ---------- PH7: bottom-up grids ---------- */
+  // Column count must match .grid in phone.css (4, or 6 at min-width 700px).
+  var wideMq = window.matchMedia ? matchMedia('(min-width:700px)') : null;   // PH7
+  function gridCols() { return wideMq && wideMq.matches ? 6 : 4; }   // PH7
+  // PH7: rows of `cols`, rendered last row first, so item 0 sits bottom-left and rows fill upward.
+  function upGrid(items, where) {
+    var g = document.createElement('div'), cols = gridCols(), rows = [];
+    g.className = 'grid up';
+    for (var i = 0; i < items.length; i += cols) rows.push(items.slice(i, i + cols));
+    rows.reverse().forEach(function (row) {
+      row.forEach(function (a, k) {
+        var b = iconBtn(a, where);
+        if (k === 0) b.style.gridColumnStart = '1';   // a short top row must not pull the next row up
+        g.appendChild(b);
+      });
+    });
+    return g;
+  }
+
   /* ---------- home pages + dock ---------- */
   var page = 0;
   function renderHome() {
@@ -157,9 +177,9 @@
         pg.appendChild(c);
       }
       if (p.length) {
-        var g = document.createElement('div'); g.className = 'grid';
-        p.forEach(function (id) { g.appendChild(iconBtn(A.get(id), 'home')); });
-        pg.appendChild(g);
+        // var g = document.createElement('div'); g.className = 'grid';   (PH6)
+        // p.forEach(function (id) { g.appendChild(iconBtn(A.get(id), 'home')); });
+        pg.appendChild(upGrid(p.map(function (id) { return A.get(id); }), 'home'));   // PH7: bottom-up
       } else if (i > 0) {
         var e = document.createElement('div'); e.className = 'empty';
         e.textContent = 'Swipe up for all apps. Long-press an app to pin it here.';
@@ -226,7 +246,15 @@
 
   /* ---------- drawer ---------- */
   // var cats = ['All'].concat(A.cats()), cat = 'All';   (PH1)
-  var CATKEY = 'sites-phone.cat', cats = A.cats(), cat = '';   // PH4: no All tab; open on the last-used category
+  // var CATKEY = 'sites-phone.cat', cats = A.cats(), cat = '';   (PH4)
+  // PH7: the Favorite category is hidden in the phone only (catalog unchanged); its apps join the first tab.
+  function isFav(c) { return /^favou?rites?$/i.test(String(c || '')); }   // PH7
+  var CATKEY = 'sites-phone.cat', allCats = A.cats(), cats = allCats.filter(function (c) { return !isFav(c); }), cat = '';   // PH7
+  function catList(c) {   // PH7
+    var out = A.list(c);
+    if (c && c === cats[0]) allCats.filter(isFav).forEach(function (f) { out = out.concat(A.list(f)); });
+    return out.sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
+  }
   try { cat = localStorage.getItem(CATKEY) || ''; } catch (_) { /* blocked */ }
   if (cats.indexOf(cat) < 0) cat = cats[0] || '';
   function renderTabs() {
@@ -239,13 +267,16 @@
   }
   function renderList() {
     var q = $('search').value, list = $('list');
-    var items = q.trim() ? A.search(q) : A.list(cat);
+    // var items = q.trim() ? A.search(q) : A.list(cat);   (PH6)
+    var items = q.trim() ? A.search(q) : catList(cat);   // PH7
     list.textContent = '';
     if (!items.length) { var n = document.createElement('div'); n.className = 'none'; n.textContent = 'No apps match “' + q.trim() + '”'; list.appendChild(n); return; }
-    var g = document.createElement('div'); g.className = 'grid'; g.setAttribute('role', 'list');
-    items.forEach(function (a) { g.appendChild(iconBtn(a, 'drawer')); });
+    // var g = document.createElement('div'); g.className = 'grid'; g.setAttribute('role', 'list');   (PH6)
+    // items.forEach(function (a) { g.appendChild(iconBtn(a, 'drawer')); });
+    var g = upGrid(items, 'drawer'); g.setAttribute('role', 'list');   // PH7: bottom-up, like home
     list.appendChild(g);
-    list.scrollTop = 0;
+    // list.scrollTop = 0;   (PH6)
+    list.scrollTop = list.scrollHeight;   // PH7: rest at the bottom; scroll up for more
   }
   function setCat(c) {
     if (cats.indexOf(c) < 0 || (c === cat && !$('search').value)) return;
@@ -631,7 +662,9 @@
     move: function (dx, dy, axis, e) {
       var list = $('list');
       if (axis === 'y') {
-        if (!dm) dm = (dy > 0 && (st0 <= 0 || !list.contains(e.target) && $('drawer-head').contains(e.target))) ? 'close' : 'scroll';
+        // if (!dm) dm = (dy > 0 && (st0 <= 0 || !list.contains(e.target) && $('drawer-head').contains(e.target))) ? 'close' : 'scroll';   (PH6)
+        // PH7: list rests at its bottom; pull down closes from there, or from the bottom bar
+        if (!dm) dm = (dy > 0 && (st0 >= list.scrollHeight - list.clientHeight - 1 || !list.contains(e.target) && $('drawer-head').contains(e.target))) ? 'close' : 'scroll';
         if (dm === 'close') { var dr = $('drawer'); dr.classList.add('drag'); dr.style.transform = 'translateY(' + Math.max(0, dy) + 'px)'; }
         else list.scrollTop = st0 - dy;
       } else { dm = 'cat'; list.style.transform = 'translateX(' + dx * 0.25 + 'px)'; }
@@ -722,6 +755,11 @@
   applyTheme(); applyWall(); renderHome();
   document.title = 'Phone ' + RELEASE;
   addEventListener('resize', function () { showPage(page, true); });
+  var lastCols = gridCols();   // PH7: re-chunk rows when the column count changes
+  addEventListener('resize', function () {
+    if (gridCols() === lastCols) return;
+    lastCols = gridCols(); renderHome(); if (drawerBuilt) renderList();
+  });
   window.PhoneLauncher = {
     RELEASE: RELEASE, state: function () { return JSON.parse(JSON.stringify(d)); }, stack: function () { return stack.slice(); },
     page: function () { return page; }, cat: function () { return cat; }, frames: function () { return frames.map(function (f) { return f.id; }); },

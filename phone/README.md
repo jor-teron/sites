@@ -1,4 +1,4 @@
-# Phone launcher (`phone/`), release PH6
+# Phone launcher (`phone/`), release PH7
 
 A phone-style home screen for the Hub. Jor runs it as the **Android home screen inside a WebView**
 (PH3 will be the tiny APK). It works fully by gesture and behaves like a phone launcher.
@@ -71,7 +71,7 @@ Desktop testing: mouse drags do the same; wheel down = drawer, wheel up = panel,
 
 | File | What |
 |---|---|
-| `/phone.html` (site root, H79) | page, layers, script order. `<title>Phone PH1</title>` (phone_app.js sets the live title, `Phone PH6`), no `?v=` labels |
+| `/phone.html` (site root, H79) | page, layers, script order. `<title>Phone PH1</title>` (phone_app.js sets the live title, `Phone PH7`), no `?v=` labels |
 | `index.html` | redirect only, to `../phone.html` (keeps ?query and #hash) |
 | `phone.css` | Stopwatch palette, dark default; animations on transform / opacity only |
 | `phone_save.js` | the one save module (`PhoneSave`) |
@@ -114,7 +114,7 @@ PH5 on (older saves get the PH5 home and dock once). PH6: page 1 keeps at most 1
 
 ## PH4 — Drawer without All (2026-11-01 IST)
 
-- The drawer has no **All** tab; tabs are only the catalog categories (Favorite stays a normal tab).
+- The drawer has no **All** tab; tabs are only the catalog categories (PH7: Favorite is now hidden, see PH7).
 - It opens on the last-used category (`localStorage` `sites-phone.cat`, this device only); missing or gone → the first catalog category.
 - Swipes move between real categories only. Search still looks across every app.
 
@@ -142,3 +142,11 @@ PH5 on (older saves get the PH5 home and dock once). PH6: page 1 keeps at most 1
 - **Page 1 cap:** older saves with more than 16 apps on page 1 move the extra to the next page(s).
 - Null-safe toasts for pin / unpin / dock when an app left the catalog; Intercom / Telephone missing dialogs use proper names.
 - Full screen tile state also reads `webkitFullscreenElement`. Release name `PH6` (title + About).
+
+## PH7 — Bottom-up home and drawer (2026-11-02 IST)
+
+- **Home:** pinned apps fill from the bottom. The first app sits bottom-left, the bottom row fills left to right, then the row above. The grid sits just above the dots and dock; page 1's clock stays at the top. Rows are 4 wide (6 at 700px and wider, matching `.grid` in phone.css) and are re-chunked when that changes on resize.
+- **Drawer:** search and category tabs are a bottom bar (CSS `order`, phone.html unchanged). The app list fills bottom-up the same way (first app alphabetically at bottom-left) and opens scrolled to its bottom; scroll up for more.
+- **Drawer gestures:** pull down closes when the list is at its bottom resting position or the drag starts on the bottom bar; otherwise it scrolls (fling kept). Left/right still changes category.
+- **Favorite hidden (phone only):** no Favorite tab; its apps (e.g. TV) are listed under the first tab. Search still finds them. A saved last-used Favorite falls back to the first tab. `hub_config.js` and the catalog are unchanged.
+- Release name `PH7`.

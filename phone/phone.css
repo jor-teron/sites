@@ -129,4 +129,12 @@ body.app-open #home,body.drawer-open #home{opacity:0}
 #toast{position:fixed;left:50%;bottom:110px;z-index:21;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:7px 14px;border-radius:16px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:86vw;text-align:center}
 #toast.show{opacity:1}
 @media (min-width:700px){:root{--ic:60px}.grid{grid-template-columns:repeat(6,1fr)}#tiles{grid-template-columns:repeat(6,1fr)}#panel-box{max-width:720px;margin:0 auto}}
+/* PH7: bottom-up home grid + drawer bottom bar */
+.page .grid.up{margin-top:auto;padding-bottom:10px}
+#drawer-head{order:2;padding:6px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+#list-vp{order:1}
+#drawer-head .grab{display:none}
+#list{display:flex;flex-direction:column}
+#list .grid.up{margin:auto auto 0;flex:none}
+#tabs{padding:6px 0 8px}
 @media (prefers-reduced-motion:reduce){#pages,#drawer,#panel-box,#apps,#sheet-box{transition:none!important}}
