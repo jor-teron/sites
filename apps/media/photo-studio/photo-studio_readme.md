@@ -1,4 +1,4 @@
-# Hub Photo Studio (HPS5)
+# Hub Photo Studio (HPS5.1)
 
 The Hub's bigger photo editor (Media → Photo). Release **HPS1** had exactly Photo Editor v2's
 feature set (PE5) under its own name, settings and About. Release **HPS2** adds **layers** (image,
@@ -79,6 +79,10 @@ HPS3 added one more, backward compatible:
 Photo Editor v2 never replaces `drawPhoto` and never sets `adjustMask`, so it draws exactly as before (PE5 test 46/46).
 Studio loads `pe_view.js` / `pe_io.js` and every other engine file straight from the
 Photo Editor v2 copy.
+
+## Title bar buttons (HPS5.1)
+
+`ps_titlebar.js`: Export (PNG), Save (.hps project) and Print sit in the Hub window title bar (hubTitleBar contract, like Calendar Maker). Standalone or on the phone they show as a slim row at the top. Each one clicks the matching Save-menu button, which stays unchanged.
 
 ## New blank page (HPS5)
 - **＋** at the top of the toolbar: Paper size **A4** (2480×3508), **Letter** (2550×3300), **Indian Legal**
