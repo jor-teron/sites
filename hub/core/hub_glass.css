@@ -1,5 +1,8 @@
 /*
  * H61 Glass theme (hub/core/hub_glass.css), Windows 7 / Vista Aero and iPhone style glass.
+ * H102 "clearer, shinier glass": lighter tint (~0.20-0.26 bars, 0.34 menus), blur(20px) saturate(200%)
+ * brightness(1.08), brighter Aero top shine (0.32 -> 0.06 at 50 %, lower band 0.08), crisp white edge (0.42) +
+ * inset top highlight 0.45 and a faint bottom inner shade. Solid fallbacks unchanged. Old values kept as H61b notes.
  * H61b "smoky glass": the H61 milky white tint (50-70 % white, dark text) hid the wallpaper and looked weak.
  * Glass now follows the Desktop right-pane tiles (.tile in hub_main.css: clear tint, thin bright edge, white
  * text with a dark shadow) but the tint is a clear DARK smoke (~25 % on bars, ~40 % on menus / dialogs /
@@ -20,21 +23,24 @@
  * backdrop root for the Start menu inside #header.
  */
 html.hub-glass {
-  --gl-fx: blur(24px) saturate(180%);              /* H61: blur(18px) saturate(175%) */
-  --gl-tint: rgba(20, 24, 32, 0.40);               /* bars: smoked glass. H61: rgba(255, 255, 255, 0.50) */
-  --gl-tint-dim: rgba(20, 24, 32, 0.33);           /* inactive title bars. H61: rgba(255, 255, 255, 0.38) */
-  --gl-tint-menu: rgba(18, 22, 30, 0.44);          /* menus / pop-ups: long lists. H61: rgba(250, 251, 254, 0.70) */
+  --gl-fx: blur(20px) saturate(200%) brightness(1.08);   /* H102. H61b: blur(24px) saturate(180%). H61: blur(18px) saturate(175%) */
+  --gl-tint: rgba(20, 24, 32, 0.26);               /* bars: clear glass (H102). H61b: rgba(20, 24, 32, 0.40). H61: rgba(255, 255, 255, 0.50) */
+  --gl-tint-dim: rgba(20, 24, 32, 0.20);           /* inactive title bars (H102). H61b: rgba(20, 24, 32, 0.33). H61: rgba(255, 255, 255, 0.38) */
+  --gl-tint-menu: rgba(18, 22, 30, 0.34);          /* menus / pop-ups: long lists (H102). H61b: rgba(18, 22, 30, 0.44). H61: rgba(250, 251, 254, 0.70) */
   --gl-solid: rgba(30, 34, 44, 0.96);              /* H61: rgba(243, 245, 249, 0.97) */
-  --gl-line: rgba(255, 255, 255, 0.22);            /* thin bright glass edge. H61: rgba(255, 255, 255, 0.60) */
+  --gl-line: rgba(255, 255, 255, 0.42);            /* crisp white glass edge (H102). H61b: rgba(255, 255, 255, 0.22). H61: rgba(255, 255, 255, 0.60) */
   --gl-edge: rgba(0, 0, 0, 0.28);                  /* outer dark hairline. H61: rgba(20, 30, 50, 0.22) */
   /* H61: --gl-gloss: linear-gradient(180deg, rgba(255,255,255,.62) 0%, rgba(255,255,255,.20) 46%,
      rgba(255,255,255,.04) 54%, rgba(255,255,255,.14) 100%); */
-  --gl-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 50%,
-    rgba(255, 255, 255, 0) 52%, rgba(255, 255, 255, 0.03) 100%);   /* faint Aero shine */
+  /* H61b: --gl-gloss: linear-gradient(180deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,.04) 50%,
+     rgba(255,255,255,0) 52%, rgba(255,255,255,.03) 100%); */
+  --gl-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0) 52%, rgba(255, 255, 255, 0.08) 100%);   /* H102: bright Aero shine + lower band */
   /* H61: --gl-gloss-soft: linear-gradient(180deg, rgba(255,255,255,.45) 0%, rgba(255,255,255,0) 36%); */
-  --gl-gloss-soft: linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0) 30%);
+  /* H61b: --gl-gloss-soft: linear-gradient(180deg, rgba(255,255,255,.09) 0%, rgba(255,255,255,0) 30%); */
+  --gl-gloss-soft: linear-gradient(180deg, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0) 34%);   /* H102 */
   --gl-shadow: 0 18px 48px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.20);
-  --gl-inset: inset 0 1px 0 rgba(255, 255, 255, 0.20);            /* H61: inset 0 1px 0 rgba(255,255,255,.75) */
+  --gl-inset: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(0, 0, 0, 0.18);   /* H102: crisp top edge + thin bottom shade. H61b: inset 0 1px 0 rgba(255,255,255,.20). H61: inset 0 1px 0 rgba(255,255,255,.75) */
   --gl-text: #ffffff;                                               /* H61: #142033 */
   --gl-muted: rgba(255, 255, 255, 0.74);
   --gl-sep: rgba(255, 255, 255, 0.14);
