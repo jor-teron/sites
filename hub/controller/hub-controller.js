@@ -606,7 +606,8 @@
       const again = () => (SharedLink.rehost ? SharedLink.rehost() : startPairing());
       if (!window.HubAttention || !HubAttention.ask) { setStatus('Number ' + c + ' is in use by another Hub'); return; }
       HubAttention.ask({ id: 'hub-number-taken', title: 'Number ' + c + ' is in use', text: 'Another Hub is using this number, so phones and Messages cannot reach this Hub. Pick a new number (people must use the new one), or retry.', ok: 'Pick a new number', no: 'Retry' }, (v) => {
-        if (v === true && D && D.setCode) { let n = c; while (n === c) n = String(10000 + Math.floor(Math.random() * 90000)); D.setCode(n); }   // phone numbers never start with 0; → 'hub-number-changed' below
+        // if (v === true && D && D.setCode) { let n = c; while (n === c) n = String(10000 + Math.floor(Math.random() * 90000)); D.setCode(n); }   (H92)
+        if (v === true) { if (window.HubCtx && HubCtx.openApp) HubCtx.openApp(HubCtx.SETTINGS, { hash: 'devices' }); else setStatus('Change your number in Settings > Devices'); }   // H93: only in Settings, never random
         else if (v === false) again();
       });
     });

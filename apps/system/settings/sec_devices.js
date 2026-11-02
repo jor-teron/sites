@@ -487,6 +487,46 @@
 
   /* H46: Device name (was the editable box in the Hub's 🎮 Devices pop-up) */
   const NAME_KEY = 'shared-link-device-name';
+  /* H93: choose your own number (only in Settings > Devices). 5 digits, not starting with 0 (lobby 00000), a confirm
+     first; a number taken by another Hub (SharedLink 'taken') shows here and is never swapped for another. */
+  const NUM_RE = /^[1-9]\d{4}$/;
+  function checkNumber(v) { return NUM_RE.test(String(v || '')) ? '' : 'Use exactly 5 digits, not starting with 0'; }
+  function numberForm(D, num, hub) {
+    const wrap = ui.el('div', 'number-change');
+    const btn = ui.el('button', 'key-btn', 'Change number'); btn.type = 'button'; btn.id = 'number-change';
+    const form = ui.el('form', 'key-line'); form.autocomplete = 'off'; form.hidden = true;
+    const inp = ui.el('input', 'key-input'); inp.type = 'text'; inp.id = 'number-input'; inp.maxLength = 5;
+    inp.inputMode = 'numeric'; inp.pattern = '[0-9]*'; inp.placeholder = '5 digits'; inp.setAttribute('aria-label', 'New number');
+    const save = ui.el('button', 'key-btn key-save', 'Save'); save.type = 'submit'; save.id = 'number-save';
+    const cancel = ui.el('button', 'key-btn', 'Cancel'); cancel.type = 'button'; cancel.id = 'number-cancel';
+    const out = ui.el('p', 'key-out', ''); out.setAttribute('aria-live', 'polite');
+    form.append(inp, save, cancel); wrap.append(btn, form, out);
+    const say = (t, ok) => { out.className = 'key-out ' + (ok ? 'ok' : 'bad'); out.textContent = t; };
+    const show = (on) => { form.hidden = !on; btn.hidden = on; if (on) { inp.value = ''; inp.focus(); } };
+    btn.addEventListener('click', () => { out.textContent = ''; show(true); });
+    cancel.addEventListener('click', () => show(false));
+    inp.addEventListener('input', () => { inp.value = inp.value.replace(/\D/g, '').slice(0, 5); out.textContent = ''; });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const v = inp.value, bad = checkNumber(v);
+      if (bad) { say(bad); return; }
+      if (v === D.code()) { show(false); return; }
+      const U = window.UiDialog, text = 'People who have your old number ' + D.code() + ' won\u2019t reach you anymore. Give them ' + v + '.';
+      const ok = U ? await U.confirm('Change your number to ' + v + '?', text, 'Change', true) : window.confirm(text);
+      if (!ok) return;
+      D.setCode(v);   // → 'hub-number-changed' on the Hub: it re-hosts, HubLine follows (H92)
+      num.textContent = num.textContent.replace(/\d{5}/, D.code());
+      show(false); say('Saved \u2014 your number is now ' + D.code(), true);
+    });
+    const L = hub && hub.SharedLink;
+    if (L && L.on) {
+      const onTaken = (c) => { if (String(c) === D.code()) { say('Number ' + c + ' is in use by another Hub. Pick another one.'); show(true); } };
+      L.on('taken', onTaken);
+      if (L.off) window.addEventListener('pagehide', () => L.off('taken', onTaken));
+    }
+    return wrap;
+  }
+  window.__secDevicesCheckNumber = checkNumber;   // H93: test hook
   function deviceCard(sub) {
     const card = ui.el('section', 'card');
     card.id = 'device';
@@ -500,6 +540,7 @@
     if (D && D.code) {   // H83: this device's own 5-digit number (Telephone uses it as the phone number)
       const num = ui.el('p', 'opt-note device-code', 'This device\u2019s number: ' + D.code() + ' (also this Hub\u2019s connect code; the Gamepad uses its own pad code in \uD83C\uDFAE Devices)'); num.id = 'device-code';
       card.appendChild(num);
+      if (D.setCode) card.appendChild(numberForm(D, num, hub));   // H93: the number is changed only here
     }
     const form = ui.el('form', 'key-line');
     form.autocomplete = 'off';
