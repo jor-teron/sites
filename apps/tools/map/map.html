@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<!-- Map MAP1: minimal full-screen OpenStreetMap with My location and place search (Nominatim, on submit only). -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Map</title>
+  <link rel="icon" href="map_icon.svg">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="map.css">
+</head>
+<body>
+<div id="map"></div>
+<form id="search" autocomplete="off"><input id="q" type="search" placeholder="Search a place" enterkeyhint="search"><button class="jelly" type="submit">Go</button></form>
+<div id="results" hidden></div>
+<button id="me" class="jelly" aria-label="My location">◎ My location</button>
+<div id="note" hidden></div>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="map_view.js"></script>
+<script src="map_search.js"></script>
+<script src="map_app.js"></script>
+</body>
+</html>
