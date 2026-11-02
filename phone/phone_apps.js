@@ -58,16 +58,39 @@
     });
     secOrder[cat] = ord;
   }
-  function loadSections() {   // PH8: → Promise; never rejects
+  // ---------- PH11: last good copy of each CSV in localStorage; draw from it at once, refresh quietly ----------
+  var CSVKEY = 'phone-csv-v1:';   // PH11
+  function csvGet(url) { try { return localStorage.getItem(CSVKEY + url); } catch (_) { return null; } }   // PH11
+  function csvPut(url, t) { try { if (t.length < 60000) localStorage.setItem(CSVKEY + url, t); } catch (_) { /* quota: skip */ } }   // PH11
+  function csvFetch(url) { return fetch(url, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); }); }   // PH11
+  var secLis = [];   // PH11: every onSections fn, called again when a fresh CSV differs
+  function clearCat(cat) { Object.keys(secOf).forEach(function (id) { if (apps[id] && apps[id].cat === cat) delete secOf[id]; }); delete secOrder[cat]; }   // PH11
+  function secFire(list) { list.forEach(function (f) { try { f(); } catch (_) { /* ignore */ } }); }   // PH11
+  // function loadSections() {   // PH8: → Promise; never rejects   (PH8, PH11: rewritten below)
+  //   ... fetch(map[cat], { cache: 'no-cache' }) per category, secReady after all   (PH8)
+  function loadSections() {   // PH11: → Promise; never rejects. Cached copies apply now; fresh text re-delivers only if changed
     var map = window.HUB_CAT_CSV || {}, built = window.SITES_CSV || {};
     if (!window.fetch || !window.Promise) { secReady = true; return { then: function (f) { f(); } }; }
-    return Promise.all(Object.keys(map).map(function (cat) {
-      var read = typeof built[cat] === 'string' ? Promise.resolve(built[cat])
-        : fetch(map[cat], { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); });
-      return read.then(function (t) { try { applyCsv(cat, t); } catch (_) { /* bad CSV: flat */ } }, function () { /* offline: flat */ });
+    var keys = Object.keys(map), allCached = keys.length > 0, changed = false;
+    keys.forEach(function (cat) {
+      if (typeof built[cat] === 'string') { try { applyCsv(cat, built[cat]); } catch (_) { /* flat */ } return; }
+      var c = csvGet(map[cat]);
+      if (c == null) { allCached = false; return; }
+      try { applyCsv(cat, c); } catch (_) { /* bad copy: flat */ }
+    });
+    if (allCached) { secReady = true; secFire(secCbs.splice(0)); }   // PH11: draw from the local copy straight away
+    return Promise.all(keys.map(function (cat) {
+      if (typeof built[cat] === 'string') return null;
+      return csvFetch(map[cat]).then(function (t) {
+        var old = csvGet(map[cat]);
+        if (old === t && allCached) return;
+        csvPut(map[cat], t); clearCat(cat);
+        try { applyCsv(cat, t); } catch (_) { /* bad CSV: flat */ }
+        changed = true;
+      }, function () { /* offline: keep the copy, or flat */ });
     })).then(function () {
-      secReady = true;
-      secCbs.splice(0).forEach(function (f) { try { f(); } catch (_) { /* ignore */ } });
+      if (!secReady) { secReady = true; secFire(secCbs.splice(0)); }
+      else if (changed) secFire(secLis.slice());   // PH11: re-deliver only when the text changed
     });
   }
   // ---------- PH10: phone/hidden-apps.csv (category, id, note) ----------
@@ -90,12 +113,20 @@
     });
     return out;
   }
-  function loadHidden() {   // PH10: never rejects; failure = nothing hidden by the CSV
-    var done = function () { hidReady = true; hidCbs.splice(0).forEach(function (f) { try { f(); } catch (_) { /* ignore */ } }); };
+  // function loadHidden() {   (PH10, PH11: rewritten below with a local copy)
+  //   fetch(HIDDEN_CSV, { cache: 'no-cache' }) → csvHid → done   (PH10)
+  var hidLis = [];   // PH11
+  function loadHidden() {   // PH11: never rejects; failure = nothing hidden by the CSV; local copy first
+    var done = function () { hidReady = true; secFire(hidCbs.splice(0)); };
     if (!window.fetch || !window.Promise) { done(); return; }
-    fetch(HIDDEN_CSV, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
-      .then(function (t) { try { csvHid = parseHidden(t); } catch (_) { csvHid = []; } }, function () { csvHid = []; })
-      .then(done, done);
+    var c = csvGet(HIDDEN_CSV);
+    if (c != null) { try { csvHid = parseHidden(c); } catch (_) { csvHid = []; } done(); }
+    csvFetch(HIDDEN_CSV).then(function (t) {
+      if (t === c) return;
+      csvPut(HIDDEN_CSV, t);
+      try { csvHid = parseHidden(t); } catch (_) { csvHid = []; }
+      if (hidReady) secFire(hidLis.slice()); else done();
+    }, function () { if (!hidReady) { csvHid = []; done(); } });
   }
   var byName = function (a, b) { return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }); };
   window.PhoneApps = {
@@ -131,11 +162,13 @@
       return g;
     },
     /** PH8: run fn once sections are loaded (at once if already). */
-    onSections: function (fn) { if (secReady) fn(); else secCbs.push(fn); },
+    // onSections: function (fn) { if (secReady) fn(); else secCbs.push(fn); },   (PH8)
+    onSections: function (fn) { secLis.push(fn); if (secReady) fn(); else secCbs.push(fn); },   // PH11: also called on a changed refresh
     sectionsReady: function () { return secReady; },
     /** PH10: [{id, category, note}] from phone/hidden-apps.csv ([] until loaded or when it fails). */
     csvHidden: function () { return csvHid.map(function (x) { return { id: x.id, category: x.category, note: x.note }; }); },
-    onHidden: function (fn) { if (hidReady) fn(); else hidCbs.push(fn); },   // PH10
+    // onHidden: function (fn) { if (hidReady) fn(); else hidCbs.push(fn); },   (PH10)
+    onHidden: function (fn) { hidLis.push(fn); if (hidReady) fn(); else hidCbs.push(fn); },   // PH11: also called on a changed refresh
     count: function () { return Object.keys(apps).length; }
   };
   loadSections();   // PH8

@@ -176,3 +176,10 @@ PH5 on (older saves get the PH5 home and dock once). PH6: page 1 keeps at most 1
 - **Rule:** hidden = (CSV ∪ `settings.hidden`) − `settings.unhidden`. Hidden apps are left out of the drawer, sections, search, home pages and dock. Their ids stay saved in pages / dock / recent (`clean()` doesn't drop them), so Unhide puts them back where they were. Both lists ≤200 ids, repaired on load (`phone_save.js`).
 - Offline: `phone/hidden-apps.csv` must be added to the `hub/update/hub_sw.js` SHELL list.
 - Release name `PH10`.
+
+## PH11 — Drawer scrolls up, Hub cache, faster drawer (2026-11-02 IST)
+- **Scroll rule:** the list stays bottom-up and opens at its bottom. A pull down inside the list now scrolls up to the apps above (with fling). It closes the drawer only when the list is already at its very top, when the list doesn't overflow, or when the pull starts on the search bar or the category bar.
+- **Cache:** `phone.html` now turns on Hub's existing service worker (`sw.js` at the site root, `updateViaCache: 'none'`), registered from `phone_app.js` when the page isn't controlled yet. Phone shares Hub's cached icons. No reload-on-update logic here (that stays Hub's).
+- **CSV local copy:** the last good text of each category CSV and `phone/hidden-apps.csv` is kept in localStorage (`phone-csv-v1:<url>`, skipped if >60 KB or over quota). Sections / hidden apps draw from it at once, then a fresh copy is fetched quietly and re-delivered only if the text changed (`onSections` / `onHidden` fns run again).
+- **Icon warm-up:** after the drawer renders, its lazy icons that aren't loaded yet are switched to eager, so the apps above are ready when you scroll up.
+- Release name `PH11`.

@@ -15,7 +15,8 @@
   // var RELEASE = 'PH7';   (PH7)
   // var RELEASE = 'PH8';   (PH8)
   // var RELEASE = 'PH9';   (PH9)
-  var RELEASE = 'PH10';
+  // var RELEASE = 'PH10';   (PH10)
+  var RELEASE = 'PH11';
   var d = S.load();
   var root = document.documentElement;
 
@@ -331,6 +332,10 @@
     });
     // list.scrollTop = 0;   (PH6)
     list.scrollTop = list.scrollHeight;   // PH7: rest at the bottom; scroll up for more
+    warmIcons(list);   // PH11
+  }
+  function warmIcons(root) {   // PH11: lazy drawer icons above the fold load now, so scrolling up shows them ready
+    Array.prototype.forEach.call(root.querySelectorAll('img[loading="lazy"]'), function (img) { if (!img.complete) img.loading = 'eager'; });
   }
   function setCat(c) {
     if (cats.indexOf(c) < 0 || (c === cat && !$('search').value)) return;
@@ -744,7 +749,9 @@
         // PH7: list rests at its bottom; pull down closes from there, or from the bottom bar
         // if (!dm) dm = (dy > 0 && (st0 >= list.scrollHeight - list.clientHeight - 1 || !list.contains(e.target) && $('drawer-head').contains(e.target))) ? 'close' : 'scroll';   (PH7)
         // PH9: search on top, tab bar at the bottom (both outside #list): pull down there closes; in the list only at rest
-        if (!dm) dm = (dy > 0 && (st0 >= list.scrollHeight - list.clientHeight - 1 || !list.contains(e.target))) ? 'close' : 'scroll';
+        // if (!dm) dm = (dy > 0 && (st0 >= list.scrollHeight - list.clientHeight - 1 || !list.contains(e.target))) ? 'close' : 'scroll';   (PH9)
+        // PH11: in the list a pull down scrolls up to the apps above; it closes only at the very top, when nothing overflows, or from the bars
+        if (!dm) dm = (dy > 0 && (st0 <= 0 || list.scrollHeight <= list.clientHeight + 1 || !list.contains(e.target))) ? 'close' : 'scroll';
         if (dm === 'close') { var dr = $('drawer'); dr.classList.add('drag'); dr.style.transform = 'translateY(' + Math.max(0, dy) + 'px)'; }
         else list.scrollTop = st0 - dy;
       } else { dm = 'cat'; list.style.transform = 'translateX(' + dx * 0.25 + 'px)'; }
@@ -834,6 +841,8 @@
   /* ---------- start ---------- */
   applyTheme(); applyWall(); renderHome();
   document.title = 'Phone ' + RELEASE;
+  // PH11: turn on Hub's cache (root sw.js, same as hub/update/hub_update.js); no reload logic here, that's Hub's
+  if ('serviceWorker' in navigator && !navigator.serviceWorker.controller) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(function () { /* blocked / file: */ });
   if (A.onHidden) A.onHidden(function () { renderHome(); if (drawerBuilt) renderList(); });   // PH10: CSV loaded
   if (A.onSections) A.onSections(function () { if (drawerBuilt && !$('search').value) renderList(); });   // PH8
   addEventListener('resize', function () { showPage(page, true); });
