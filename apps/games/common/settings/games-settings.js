@@ -97,7 +97,7 @@
     'car-run', 'chess', 'contra-alpha', 'demolisher', 'desert-road', 'dino-run', 'gravity-sandbox',
     'hero-builder', 'island-alpha', 'island-conquest', 'island-demo', 'landcraft', 'neon-fist-3d',
     'neon-fist', 'neon-raid', 'pacman', 'ping-pong', 'sling-birds', 'snake', 'solar-system',
-    'space-invader', 'swell-foop', 'tennis-throw', 'tetris', 'tic-tac-toe', 'tower-defence', 'turbo-lap',
+    'space-invader', 'swell-foop', 'tennis-throw', 'connect-4', 'tetris', 'tic-tac-toe', 'tower-defence', 'turbo-lap',
     // short aliases some games already use
     'td', 'nf3d', 'slingbirds', 'hero-viewer'];
   var GAME_EXACT = ['td_best'];

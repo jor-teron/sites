@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<!--
+  Connect 4 (C4-1) — page. Info (status + score) / board / buttons: stacked in
+  portrait, side by side in landscape. Rules + CPU levels: core/config.js.
+  Board + win check: core/board.js. Computer: core/ai.js. Drawing/animation: ui/render.js.
+  Sound: ui/sound.js. Shared settings bridge: ui/settings.js. Wiring: core/game.js.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Connect 4 C4-1</title>
+  <link rel="stylesheet" href="ui/style.css">
+</head>
+<body>
+  <div class="container" id="app">
+    <div class="side side-info">
+      <h1 class="title">Connect 4</h1>
+      <p class="status" id="status">Red's turn</p>
+      <div class="score">
+        <div class="chip chip-r"><span id="lblR">Red</span><b id="scR">0</b></div>
+        <div class="chip chip-y"><span id="lblY">Yellow</span><b id="scY">0</b></div>
+        <div class="chip"><span>Draws</span><b id="scD">0</b></div>
+      </div>
+    </div>
+    <div class="board-wrap" id="boardWrap"><canvas id="board" aria-label="Connect 4 board"></canvas></div>
+    <div class="side side-btns" id="btns">
+      <button id="newBtn">New game</button>
+      <button id="undoBtn">Undo</button>
+      <select id="modeSel" aria-label="Mode">
+        <option value="2p">2 Players</option>
+        <option value="easy">vs CPU Easy</option>
+        <option value="medium">vs CPU Medium</option>
+        <option value="hard">vs CPU Hard</option>
+      </select>
+      <button id="clearBtn" class="link">Reset score</button>
+      <span id="gearSlot" class="gear-slot"></span>
+    </div>
+  </div>
+  <!-- Shared Games Settings (optional: the game runs with defaults if it fails to load) -->
+  <script src="../common/settings/games-settings.js"></script>
+  <script src="core/config.js"></script>
+  <script src="ui/settings.js"></script>
+  <script src="core/board.js"></script>
+  <script src="core/ai.js"></script>
+  <script src="ui/sound.js"></script>
+  <script src="ui/render.js"></script>
+  <script src="core/game.js"></script>
+</body>
+</html>
