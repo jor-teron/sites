@@ -24,6 +24,7 @@
     try { const items = await FsOps.list(dir); if (dir !== cur()) return; st.items = items; }
     catch (e) { st.items = []; fail(e); }
     render();
+    if (FX.drives && FX.drives.meter) FX.drives.meter();   // H109: usage may have changed
   }
 
   function sorted() {
@@ -59,6 +60,24 @@
     row.append(mk, up); box.append(row); return box;
   }
 
+  /* H109: a small coloured type label (TXT, PDF, PNG ...) on the file icon in grid view. */
+  const BADGE = [
+    [/^(txt|log|rtf)$/, 'doc'], [/^(md|markdown)$/, 'md'], [/^(csv|tsv|xlsx?|ods)$/, 'sheet'], [/^pdf$/, 'pdf'],
+    [/^(png|jpe?g|gif|webp|bmp|ico|avif|svg|heic)$/, 'img'], [/^(mp3|wav|ogg|m4a|flac|aac|opus)$/, 'audio'],
+    [/^(mp4|webm|mkv|mov|avi|m4v)$/, 'video'], [/^(zip|7z|rar|gz|tgz|tar|bz2|xz)$/, 'zip'],
+    [/^(js|mjs|cjs|ts|py|sh|c|h|cpp|java|rs|go|sql|css)$/, 'code'], [/^(html?|xml)$/, 'web'], [/^(json|ya?ml|toml|ini|cfg|conf)$/, 'data'],
+    [/^(docx?|odt|pptx?|odp)$/, 'office']
+  ];
+  function badge(name) {
+    const m = /\.([a-z0-9]{1,5})$/i.exec(name);
+    if (!m) return null;
+    const ext = m[1].toLowerCase();
+    const hit = BADGE.find((b) => b[0].test(ext));
+    const b = el('span', 'badge b-' + (hit ? hit[1] : 'other'), ext === 'jpeg' ? 'JPG' : ext.slice(0, 4).toUpperCase());
+    b.setAttribute('aria-hidden', 'true');
+    return b;
+  }
+
   function item(e) {
     const it = el('div', 'item' + (st.sel.has(e.name) ? ' sel' : '') + (st.clip && st.clip.mode === 'cut' && st.clip.dir === cur() && st.clip.entries.some((c) => c.name === e.name) ? ' cut' : ''));
     it.dataset.name = e.name;
@@ -70,6 +89,8 @@
     const ico = el('span', 'item-ico', icon(e));
     it.append(chk, ico, el('span', 'item-name', e.name));
     if (FX.thumbs) FX.thumbs.attach(ico, e);   // R12b: preview instead of the icon (lazy)
+    const bd = e.kind === 'file' ? badge(e.name) : null;   // H109: file-type label (sibling: thumbs replace ico's children)
+    if (bd) it.appendChild(bd);
     if (st.view === 'list') {
       it.append(el('span', 'item-date', e.kind === 'file' ? dateText(e.modified) : ''),
         el('span', 'item-size', e.kind === 'file' ? size(e.size) : ''));

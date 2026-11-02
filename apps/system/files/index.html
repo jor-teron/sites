@@ -30,6 +30,12 @@
     <aside class="side">
       <h1 class="side-title"><img src="files_icon.png" alt="" /> Files</h1>
       <div id="drives" class="drives" role="list" aria-label="Drives"></div>
+      <!-- H109: quick links (folders on the Local drive) + footer (Manage drives, storage meter) -->
+      <nav id="quick" class="quick" aria-label="Quick access" hidden></nav>
+      <div class="side-foot">
+        <div id="manage-slot"></div>
+        <div id="storage" class="storage" hidden><b><i></i></b><span></span></div>
+      </div>
     </aside>
     <main class="main">
       <!-- H106: Explorer-style toolbar. Row 1: Back / Forward / Up, path (breadcrumbs), search.

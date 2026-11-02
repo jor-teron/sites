@@ -9,7 +9,8 @@
  * then shows the QR sign-in panel (#gd-panel, shared/google/gdrive_connect.js) instead of files;
  * signed in → a normal drive (Drive adapter, shared/google/gdrive_fs.js) with a ⏏ Sign out button,
  * opened at the "hub" folder of My Drive (crumb "Google Drive › hub"); "Renew" when a phone sign-in ran out.
- * API FX.drives: draw(), open(id, fromClick, path), go(depth), up(), fromHash().
+ * H109: quick links (Documents, Photos, ... on Local; made on first click) and the storage meter.
+ * API FX.drives: draw(), open(id, fromClick, path), go(depth), up(), fromHash(), meter().
  */
 (function () {
   'use strict';
@@ -43,10 +44,75 @@
       rows.push(r);
     }
     if (!list.length) rows.unshift(el('p', 'drive-none', 'This browser has no file storage for web pages.'));
-    const m = el('a', 'drive-manage', '\u2699 Manage drives'); m.href = DISK; m.id = 'manage-drives';
+    // H109: "Manage drives" is a small icon row in the sidebar footer (above the storage meter)
+    const m = el('a', 'drive-manage'); m.href = DISK; m.id = 'manage-drives'; m.title = 'Add or remove drives in Disk';
+    m.innerHTML = svg(GEAR); m.append(el('span', '', 'Manage drives'));
     m.addEventListener('click', (e) => { e.preventDefault(); openDisk(); });
-    rows.push(m);
+    $('manage-slot').replaceChildren(m);
     $('drives').replaceChildren(...rows);
+    drawQuick(list.some((d) => d.id === 'local'));
+    meter();
+  }
+
+  /* H109: quick links — Documents, Photos, Downloads, Music, Videos: folders at the top of the Local drive.
+     A missing folder is made on its first click (never at start-up), then opened. */
+  const svg = (d) => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + d + '"/></svg>';
+  const GEAR = 'M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4zM19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4z';
+  const QUICK = [
+    ['Documents', 'M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v5h5M9 13h6M9 17h6'],
+    ['Photos', 'M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM3 16l5-5 4 4 3-3 6 6M15.5 9.5h.01'],
+    ['Downloads', 'M12 4v11M7 10l5 5 5-5M4 19h16'],
+    ['Music', 'M9 18V6l11-2v12M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z'],
+    ['Videos', 'M4 6h11a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zM16 10l5-3v10l-5-3']
+  ];
+  function drawQuick(hasLocal) {
+    const q = $('quick');
+    q.hidden = !hasLocal;
+    if (!hasLocal) { q.replaceChildren(); return; }
+    const rows = [el('p', 'quick-title', 'Quick access')];
+    for (const [name, d] of QUICK) {
+      const b = btn('quick-link', '', 'Open ' + name + ' (Local)', () => openQuick(name));
+      b.dataset.q = name; b.innerHTML = svg(d); b.append(el('span', '', name));
+      rows.push(b);
+    }
+    q.replaceChildren(...rows);
+    paintQuick();
+  }
+  function paintQuick() {
+    const here = st.driveId === 'local' && st.stack.length === 2 ? st.stack[1].name : '';
+    $('quick').querySelectorAll('.quick-link').forEach((b) => {
+      const on = b.dataset.q === here;
+      b.classList.toggle('on', on);
+      if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
+  }
+  async function openQuick(name) {
+    try {
+      const root = await D.handle('local');
+      if (!root) throw new Error('Local drive not found');
+      await root.getDirectoryHandle(name, { create: true });   // made on first use
+      await openDrive('local', true, name);
+    } catch (e) { fail(e); }
+  }
+
+  /* H109: storage meter — navigator.storage.estimate(): what this site uses of its quota (Local drive,
+     caches, settings). Hidden when the browser has no estimate. */
+  let meterT = 0;
+  function meter() { clearTimeout(meterT); meterT = setTimeout(paintMeter, 250); }
+  async function paintMeter() {
+    const box = $('storage');
+    const S = navigator.storage;
+    if (!S || typeof S.estimate !== 'function') { box.hidden = true; return; }
+    let est;
+    try { est = await S.estimate(); } catch (_) { box.hidden = true; return; }
+    const used = est.usage || 0, quota = est.quota || 0;
+    if (!quota) { box.hidden = true; return; }
+    const pct = Math.min(100, used / quota * 100);
+    box.querySelector('i').style.width = Math.max(pct, used ? 1.5 : 0) + '%';
+    box.classList.toggle('full', pct >= 90);
+    box.querySelector('span').textContent = FX.size(used) + ' of ' + FX.size(quota) + ' used';
+    box.title = 'Storage for this site (Local drive, caches, settings): ' + pct.toFixed(pct < 1 ? 2 : 0) + '% used';
+    box.hidden = false;
   }
   /** R56: "Allow access" click → ask the browser, then redraw and open the folder. */
   async function allowDrive(d) {
@@ -195,6 +261,7 @@
     $('up').disabled = n < 2;
     $('back').disabled = !hist.back.length;
     $('fwd').disabled = !hist.fwd.length;
+    paintQuick();   // H109
   }
 
   /* H106: navigation history (Back / Forward). Each place = { id, stack } (a copy of the folder path
@@ -246,5 +313,5 @@
       if (ok === !st.stack.length) openDrive('gdrive', false);
     }
   });
-  FX.drives = { draw, open: openDrive, go, up, into, fromHash, crumbs, back, forward };   // H106: + back, forward
+  FX.drives = { draw, open: openDrive, go, up, into, fromHash, crumbs, back, forward, meter };   // H106: + back, forward; H109: + meter
 })();
