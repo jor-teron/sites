@@ -293,3 +293,5 @@ the engine draws exactly as before. On a 4 GB Celeron keep enlargements to about
 
 ## HPS5.2
 Ctrl+S saves the project (.hps), Ctrl+Shift+S exports PNG, Ctrl+P prints (ps_keys.js). Photo Editor v2 keeps Ctrl+S = export.
+
+HPS5.3: title bar / floating row order Save, Export, Print with icon + label (row at top left, icons only on <=480px). Ctrl+E exports PNG (Ctrl+Shift+S still works).
