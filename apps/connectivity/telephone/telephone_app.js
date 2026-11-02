@@ -1,4 +1,4 @@
-/* Telephone TP2b — UI: screens (Phone, Recent, Contacts, Settings), dots + 75 px wrap-around swipes, in-app dialogs only.
+/* Telephone TP2b (TP10: see note below) — UI: screens (Phone, Recent, Contacts, Settings), dots + 75 px wrap-around swipes, in-app dialogs only.
    TP2: contacts (add / edit / delete with an in-app confirm, ⭐ favourites, online state, add from Recent), names from
    contacts everywhere (online list, keypad, Recent, ringing screen), missed-call badge on the Recent dot + "(n)" in the tab
    title (cleared when Recent is seen; Hub notice when hidden inside the Hub), Do Not Disturb (🌙 on Phone + Settings),
@@ -15,8 +15,12 @@
    'shared-link-join-code', our last code, else the code dialog.
    TP4: URL code, else the Hub's active private mesh (parent.HubMeshLink), else Public 0000; the Hub's own Connect
    Code is only a fallback for older Hubs without HubMeshLink; standalone: last code, else 0000. Keyboard: digits, Backspace, Enter = call / answer, Esc = hang up. */
+/* TP10: Phone pane top bar (status dot, name, 🌙) and the My number card removed; Online now replaced by Recent
+   (last RECENT_MAX calls, same rows as the Recent pane, tap = call back). Roster still tracked for dialling.
+   Settings hides Name + Hub code inside the Hub. All paints of removed elements are null-safe. */
 (function () {
   'use strict';
+  var RECENT_MAX = 20;   // TP10: rows in the Phone pane's Recent list
   // FC5: Hub codes are 5 digits (H83); public lobby is SharedLink.LOBBY, else '00000'. Saved 4-digit codes are ignored.
   var PUB = (function () { try { var S = window.SharedLink || (window.parent && window.parent.SharedLink) || (window.top && window.top.SharedLink); if (S && /^\d{5}$/.test(String(S.LOBBY || ''))) return String(S.LOBBY); } catch (_) {} return '00000'; })();
   function c5(c) { c = String(c || ''); return /^\d{5}$/.test(c) ? c : ''; }   // FC5: drops saved 4-digit codes
@@ -164,9 +168,11 @@
   /* ---------- my number ---------- */
   function paintMe() {
     var pend = TPSave.pending();
-    $('me-name').textContent = TPSave.name();
-    $('my-num').textContent = TPSave.get('num'); $('num-lbl').textContent = TPSave.get('num');
-    $('mycard').classList.toggle('pend', pend);
+    if ($('me-name')) $('me-name').textContent = TPSave.name();   // TP10: null-safe, elements may be gone
+    if ($('my-num')) $('my-num').textContent = TPSave.get('num');
+    if ($('num-lbl')) $('num-lbl').textContent = TPSave.get('num') + (pend ? ' (checking…)' : '');
+    if ($('mycard')) $('mycard').classList.toggle('pend', pend);
+    if (!$('my-sub')) return;
     // TP2b: $('my-sub').textContent = pend ? 'Checking that no other phone has this number…' : TPSave.name();
     $('my-sub').textContent = pend ? 'Checking…' : ''; $('my-sub').hidden = !pend;   // TP5: name only in the top bar
   }
@@ -218,9 +224,10 @@
 
   /* ---------- online list ---------- */
   function paintList() {
-    var ul = $('devices'), list = TPPeer.roster().filter(function (d) { return d.num; }).slice().sort(function (a, b) { return (a.name || '').localeCompare(b.name || '') || a.num.localeCompare(b.num); });
+    var ul = $('devices'); if (!ul) { paintDial(); return; }   // TP10: Online now list removed; roster still used for dialling
+    var list = TPPeer.roster().filter(function (d) { return d.num; }).slice().sort(function (a, b) { return (a.name || '').localeCompare(b.name || '') || a.num.localeCompare(b.num); });
     ul.innerHTML = '';
-    $('empty').hidden = list.length > 0;
+    if ($('empty')) $('empty').hidden = list.length > 0;
     list.forEach(function (d) {
       var li = document.createElement('li'); li.dataset.id = d.id; li.dataset.num = d.num; li.className = d.busy ? 'busy' : '';
       var ct = TPSave.contact(d.num, d.did), who = ct ? ct.name : (d.name || 'Device');
@@ -408,11 +415,16 @@
   }
   var LWHY = { dnd: 'do not disturb', busy: 'busy', declined: 'declined', noanswer: 'no answer', notfound: 'not online', unreachable: 'not reached', failed: 'failed', cancelled: 'cancelled', mic: 'no microphone', lost: 'dropped' };
   function paintLog() {
-    var ul = $('log'), l = TPSave.log(), online = {};
+    var l = TPSave.log(), online = {};
     TPPeer.roster().forEach(function (d) { if (d.num) online[d.num] = d; });
-    ul.innerHTML = ''; $('log-empty').hidden = l.length > 0; $('b-clear').hidden = !l.length;
+    fillLog($('log'), l, online); fillLog($('recent'), l.slice(0, RECENT_MAX), online);   // TP10
+    if ($('recent-empty')) $('recent-empty').hidden = l.length > 0;
+    $('log-empty').hidden = l.length > 0; $('b-clear').hidden = !l.length;
     var miss = l.filter(function (e) { return e.dir === 'missed'; }).length;
     $('log-sub').textContent = l.length ? l.length + ' call' + (l.length === 1 ? '' : 's') + (miss ? ' · ' + miss + ' missed' : '') : '';
+  }
+  function fillLog(ul, l, online) {   // TP10: shared row rendering (Recent pane + Phone pane Recent)
+    if (!ul) return; ul.innerHTML = '';
     l.forEach(function (e) {
       var li = document.createElement('li'); li.className = e.dir; li.dataset.num = e.num;
       var ic = document.createElement('span'); ic.className = 'ic'; ic.textContent = e.dir === 'in' ? '↙' : e.dir === 'out' ? '↗' : '✕';
@@ -554,6 +566,9 @@
   })();
 
   /* ---------- settings ---------- */
+  // TP10: inside the Hub, Name and Hub code come from the Hub → hide those rows (standalone keeps them)
+  var hubbed = (function () { try { return window.top !== window && (TPSave.fromHub() || !!(window.top.HubLine)); } catch (_) { return TPSave.fromHub(); } })();
+  if (hubbed) ['row-name', 'row-code'].forEach(function (id) { var r = $(id); if (r) r.hidden = true; });
   var inName = $('in-name');
   inName.value = TPSave.get('name') || TPSave.name();
   inName.addEventListener('change', function () { TPSave.set('name', inName.value.trim().slice(0, 40)); paintMe(); TPPeer.update(); toast('Name saved'); });

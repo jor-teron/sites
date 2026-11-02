@@ -178,3 +178,15 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 #mycard{flex-direction:row;align-items:baseline;gap:10px}
 #mycard #my-num{font-size:32px}
 @media (max-width:640px){#mycard #my-num{font-size:28px}}
+/* TP10: Phone pane Recent list (same rows as the Recent pane) */
+#recent{list-style:none;margin:0;padding:0;overflow-y:auto;min-height:0;flex:1}
+#recent li{display:flex;align-items:center;gap:10px;padding:9px 8px;border-bottom:1px solid var(--line);border-radius:10px;cursor:pointer;user-select:none}
+#recent li:hover{background:color-mix(in srgb,var(--acc) 10%,transparent)}
+#recent li .ic{width:36px;height:36px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:17px;font-weight:700;background:var(--card);border:1px solid var(--line)}
+#recent li.in .ic{color:var(--good)}#recent li.out .ic{color:var(--acc)}#recent li.missed .ic{color:var(--bad)}
+#recent li.missed .nm{color:var(--bad)}
+#recent li .tm{flex:none;text-align:right;font-size:12px;color:var(--mut);line-height:1.35}
+#recent li .add{margin-left:2px}
+#recent-empty{text-align:center;padding:16px}
+.set-row[hidden]{display:none}
+@media (max-width:640px){#recent{order:4;overflow:visible}#recent-empty{order:5}}
