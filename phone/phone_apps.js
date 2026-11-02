@@ -70,6 +70,33 @@
       secCbs.splice(0).forEach(function (f) { try { f(); } catch (_) { /* ignore */ } });
     });
   }
+  // ---------- PH10: phone/hidden-apps.csv (category, id, note) ----------
+  var HIDDEN_CSV = 'phone/hidden-apps.csv';   // PH10: relative to /phone.html
+  var csvHid = [], hidReady = false, hidCbs = [];   // PH10
+  function parseHidden(text) {   // PH10: header row names the columns; '#' lines skipped; match by id only
+    var rows = String(text || '').split(/\r?\n/).map(function (l) { return l.trim(); })
+      .filter(function (l) { return l && l.charAt(0) !== '#'; })
+      .map(function (l) { return l.split(',').map(function (c) { return c.trim(); }); });
+    var cols = ['category', 'id', 'note'];
+    if (rows.length && rows[0].map(function (h) { return h.toLowerCase(); }).indexOf('id') >= 0) cols = rows.shift().map(function (h) { return h.toLowerCase(); });
+    var ci = cols.indexOf('id'), cc = cols.indexOf('category'), cn = cols.indexOf('note'), out = [], seen = {};
+    rows.forEach(function (r) {
+      var id = ci >= 0 ? r[ci] || '' : '';
+      if (!id || seen[id] || id.length >= 80) return;
+      seen[id] = 1;
+      var c = cc >= 0 ? r[cc] || '' : '';
+      if (c && apps[id] && apps[id].cat.toLowerCase() !== c.toLowerCase()) console.warn('[phone] hidden-apps.csv: ' + id + ' is in ' + apps[id].cat + ', not ' + c);
+      out.push({ id: id, category: c, note: cn >= 0 ? r[cn] || '' : '' });
+    });
+    return out;
+  }
+  function loadHidden() {   // PH10: never rejects; failure = nothing hidden by the CSV
+    var done = function () { hidReady = true; hidCbs.splice(0).forEach(function (f) { try { f(); } catch (_) { /* ignore */ } }); };
+    if (!window.fetch || !window.Promise) { done(); return; }
+    fetch(HIDDEN_CSV, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(function (t) { try { csvHid = parseHidden(t); } catch (_) { csvHid = []; } }, function () { csvHid = []; })
+      .then(done, done);
+  }
   var byName = function (a, b) { return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }); };
   window.PhoneApps = {
     get: function (id) { return apps[id] || null; },
@@ -106,7 +133,11 @@
     /** PH8: run fn once sections are loaded (at once if already). */
     onSections: function (fn) { if (secReady) fn(); else secCbs.push(fn); },
     sectionsReady: function () { return secReady; },
+    /** PH10: [{id, category, note}] from phone/hidden-apps.csv ([] until loaded or when it fails). */
+    csvHidden: function () { return csvHid.map(function (x) { return { id: x.id, category: x.category, note: x.note }; }); },
+    onHidden: function (fn) { if (hidReady) fn(); else hidCbs.push(fn); },   // PH10
     count: function () { return Object.keys(apps).length; }
   };
   loadSections();   // PH8
+  loadHidden();   // PH10
 })();

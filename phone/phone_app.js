@@ -14,7 +14,8 @@
   // var RELEASE = 'PH6';   (PH6)
   // var RELEASE = 'PH7';   (PH7)
   // var RELEASE = 'PH8';   (PH8)
-  var RELEASE = 'PH9';
+  // var RELEASE = 'PH9';   (PH9)
+  var RELEASE = 'PH10';
   var d = S.load();
   var root = document.documentElement;
 
@@ -38,6 +39,29 @@
   }
   clean();
   function persist() { clean(); if (!S.save(d)) toast('Could not save (storage full or blocked)'); }
+  /* ---------- PH10: hidden apps = (CSV ∪ settings.hidden) − settings.unhidden; saved ids stay, only rendering skips them ---------- */
+  function csvHiddenIds() { return A.csvHidden ? A.csvHidden().map(function (x) { return x.id; }) : []; }   // PH10
+  function hiddenIds() {   // PH10
+    var st = d.settings, out = [];
+    csvHiddenIds().concat(st.hidden || []).forEach(function (id) { if (out.indexOf(id) < 0 && (st.unhidden || []).indexOf(id) < 0) out.push(id); });
+    return out;
+  }
+  function isHidden(id) { return hiddenIds().indexOf(id) >= 0; }   // PH10
+  function shown(a) { return !!a && !isHidden(a.id); }   // PH10
+  function hideApp(id) {   // PH10
+    var st = d.settings;
+    st.unhidden = (st.unhidden || []).filter(function (x) { return x !== id; });
+    if (csvHiddenIds().indexOf(id) < 0 && (st.hidden || []).indexOf(id) < 0) st.hidden = (st.hidden || []).concat([id]);
+    persist(); renderHome(); if (drawerBuilt) renderList();
+    toast((A.get(id) || { name: id }).name + ' hidden');
+  }
+  function unhideApp(id) {   // PH10
+    var st = d.settings;
+    st.hidden = (st.hidden || []).filter(function (x) { return x !== id; });
+    if (csvHiddenIds().indexOf(id) >= 0 && (st.unhidden || []).indexOf(id) < 0) st.unhidden = (st.unhidden || []).concat([id]);
+    persist(); renderHome(); if (drawerBuilt) renderList();
+    toast((A.get(id) || { name: id }).name + ' unhidden');
+  }
   var pageCap = function (i) { return i === 0 ? 16 : S.PAGE_MAX; };
 
   /* ---------- small UI helpers ---------- */
@@ -181,7 +205,8 @@
       if (p.length) {
         // var g = document.createElement('div'); g.className = 'grid';   (PH6)
         // p.forEach(function (id) { g.appendChild(iconBtn(A.get(id), 'home')); });
-        pg.appendChild(upGrid(p.map(function (id) { return A.get(id); }), 'home'));   // PH7: bottom-up
+        // pg.appendChild(upGrid(p.map(function (id) { return A.get(id); }), 'home'));   (PH9)
+        pg.appendChild(upGrid(p.map(function (id) { return A.get(id); }).filter(shown), 'home'));   // PH10: hidden apps not drawn
       } else if (i > 0) {
         var e = document.createElement('div'); e.className = 'empty';
         e.textContent = 'Swipe up for all apps. Long-press an app to pin it here.';
@@ -196,7 +221,8 @@
       dots.appendChild(b);
     });
     var dock = $('dock'); dock.textContent = '';
-    var dk = d.dock.filter(A.has);   // PH5: hide dock ids the catalog doesn't have (yet)
+    // var dk = d.dock.filter(A.has);   (PH9)
+    var dk = d.dock.filter(function (id) { return A.has(id) && !isHidden(id); });   // PH5 + PH10
     dk.forEach(function (id) { dock.appendChild(iconBtn(A.get(id), 'dock')); });
     dock.style.gridTemplateColumns = 'repeat(' + Math.max(4, dk.length) + ',1fr)';
     if (page >= d.pages.length) page = d.pages.length - 1;
@@ -287,7 +313,8 @@
   function renderList() {
     var q = $('search').value, list = $('list');
     // var items = q.trim() ? A.search(q) : A.list(cat);   (PH6)
-    var items = q.trim() ? A.search(q) : catList(cat);   // PH7
+    // var items = q.trim() ? A.search(q) : catList(cat);   (PH9)
+    var items = (q.trim() ? A.search(q) : catList(cat)).filter(shown);   // PH10
     list.textContent = '';
     if (!items.length) { var n = document.createElement('div'); n.className = 'none'; n.textContent = 'No apps match “' + q.trim() + '”'; list.appendChild(n); return; }
     // var g = document.createElement('div'); g.className = 'grid'; g.setAttribute('role', 'list');   (PH6)
@@ -296,6 +323,7 @@
     // list.appendChild(g);
     // PH8: search = flat; a tab = sections, first section at the bottom (nearest the bar), later ones above.
     var groups = q.trim() ? [{ name: '', apps: items }] : catGroups(cat);
+    groups = groups.map(function (sg) { return { name: sg.name, apps: sg.apps.filter(shown) }; }).filter(function (sg) { return sg.apps.length; });   // PH10
     groups.slice().reverse().forEach(function (sg) {
       if (sg.name) { var h = document.createElement('div'); h.className = 'sec-h'; h.setAttribute('role', 'heading'); h.setAttribute('aria-level', '3'); h.textContent = sg.name; list.appendChild(h); }
       var g = upGrid(sg.apps, 'drawer'); g.setAttribute('role', 'list'); if (sg.name) g.setAttribute('aria-label', sg.name);
@@ -564,6 +592,7 @@
       if (d.dock.indexOf(id) >= 0) sheetBtn(box, '⤓', 'Remove from dock', function () { back(); dockRemove(id); });
       else sheetBtn(box, '⤒', 'Add to dock', function () { back(); dockAdd(id); });
       sheetBtn(box, 'ⓘ', 'App info', function () { info(id); });
+      if (!isHidden(id)) sheetBtn(box, '🙈', 'Hide app', function () { back(); hideApp(id); });   // PH10
     });
   }
   function info(id) {
@@ -614,6 +643,9 @@
         w.appendChild(b);
       });
       row(box, 'Test wallpaper', w);
+      var hb = document.createElement('button'); hb.type = 'button'; hb.className = 'mini'; hb.id = 'hidden-open';   // PH10
+      hb.textContent = 'Show (' + hiddenIds().length + ')'; hb.addEventListener('click', openHidden);
+      row(box, 'Hidden apps', hb);
       var rs = document.createElement('button'); rs.type = 'button'; rs.className = 'mini'; rs.textContent = 'Reset';
       rs.addEventListener('click', function () {
         ask('Reset the home pages, dock and settings to the defaults?', [{ label: 'Cancel' }, { label: 'Reset', cls: 'danger' }]).then(function (i) {
@@ -628,6 +660,26 @@
         'In an app, swipe from the left edge or press Back to come home. The background is see-through, so the phone wallpaper shows; ' +
         '“Test wallpaper” (or <code>?bg=</code>) is only for trying it in a browser. ' + A.count() + ' apps from the Hub catalog. Saved on this device only.';
       box.appendChild(ab);
+    });
+  }
+
+  function openHidden() {   // PH10: list effective-hidden apps with Unhide (re-uses the open sheet)
+    openSheet(function (box) {
+      var h = document.createElement('div'); h.className = 'sh-head'; h.innerHTML = '<div><b>Hidden apps</b><small></small></div>';
+      h.querySelector('small').textContent = 'From phone/hidden-apps.csv or hidden on this phone'; box.appendChild(h);
+      var list = hiddenIds(), csv = csvHiddenIds();
+      if (!list.length) { var n = document.createElement('p'); n.className = 'hid-none'; n.textContent = 'No hidden apps. Long-press an app and pick “Hide app”.'; box.appendChild(n); }
+      list.forEach(function (id) {
+        var a = A.get(id) || { id: id, name: id, cat: '(not in catalog)', icon: '' };
+        var r = document.createElement('div'); r.className = 'hid-row'; r.dataset.app = id;
+        r.appendChild(iconBox(a));
+        var t = document.createElement('div'); t.className = 'hid-t'; t.innerHTML = '<b></b><small></small>';
+        t.firstChild.textContent = a.name; t.lastChild.textContent = a.cat + ' · ' + (csv.indexOf(id) >= 0 && (d.settings.hidden || []).indexOf(id) < 0 ? 'CSV' : 'This phone');
+        r.appendChild(t);
+        var u = document.createElement('button'); u.type = 'button'; u.className = 'mini'; u.textContent = 'Unhide';
+        u.addEventListener('click', function () { unhideApp(id); openHidden(); });
+        r.appendChild(u); box.appendChild(r);
+      });
     });
   }
 
@@ -782,6 +834,7 @@
   /* ---------- start ---------- */
   applyTheme(); applyWall(); renderHome();
   document.title = 'Phone ' + RELEASE;
+  if (A.onHidden) A.onHidden(function () { renderHome(); if (drawerBuilt) renderList(); });   // PH10: CSV loaded
   if (A.onSections) A.onSections(function () { if (drawerBuilt && !$('search').value) renderList(); });   // PH8
   addEventListener('resize', function () { showPage(page, true); });
   var lastCols = gridCols();   // PH7: re-chunk rows when the column count changes
@@ -792,6 +845,6 @@
   window.PhoneLauncher = {
     RELEASE: RELEASE, state: function () { return JSON.parse(JSON.stringify(d)); }, stack: function () { return stack.slice(); },
     page: function () { return page; }, cat: function () { return cat; }, frames: function () { return frames.map(function (f) { return f.id; }); },
-    open: openApp, back: back
+    open: openApp, back: back, hide: hideApp, unhide: unhideApp, hidden: hiddenIds, openHidden: openHidden   // PH10
   };
 })();

@@ -1,4 +1,4 @@
-# Phone launcher (`phone/`), release PH9
+# Phone launcher (`phone/`), release PH10
 
 A phone-style home screen for the Hub. Jor runs it as the **Android home screen inside a WebView**
 (PH3 will be the tiny APK). It works fully by gesture and behaves like a phone launcher.
@@ -71,7 +71,7 @@ Desktop testing: mouse drags do the same; wheel down = drawer, wheel up = panel,
 
 | File | What |
 |---|---|
-| `/phone.html` (site root, H79) | page, layers, script order. `<title>Phone PH1</title>` (phone_app.js sets the live title, `Phone PH9`), no `?v=` labels |
+| `/phone.html` (site root, H79) | page, layers, script order. `<title>Phone PH1</title>` (phone_app.js sets the live title, `Phone PH10`), no `?v=` labels |
 | `index.html` | redirect only, to `../phone.html` (keeps ?query and #hash) |
 | `phone.css` | Stopwatch palette, dark default; animations on transform / opacity only |
 | `phone_save.js` | the one save module (`PhoneSave`) |
@@ -163,3 +163,16 @@ PH5 on (older saves get the PH5 home and dock once). PH6: page 1 keeps at most 1
 - **Category bar:** same look as the home dock (rounded 26px glass panel, light blur). Each category is a larger button, emoji over a short label: Games 🎮, Media 🎬, Office 📄, Connectivity 📡, Tools 🛠️, Lab 🧪, Learn 📚, System ⚙️, anything else 📁. Selected = accent (`--acc`). The bar scrolls sideways when it doesn't fit; the selected tab is scrolled into view. `role=tab`, `aria-selected`, `aria-label` and keyboard activation kept; taps go through the gesture code; left/right swipe still changes category.
 - **Closing:** pull down on the search bar or the category bar, or in the list when it rests at its bottom. The list stays bottom-up and opens scrolled to its bottom.
 - Release name `PH9`.
+
+## PH10 — Hidden apps (2026-11-02 IST)
+- **`phone/hidden-apps.csv`** (new) hides apps from the phone for everyone; the Hub catalog and desktop are unchanged. Format:
+  ```
+  # lines starting with # are comments
+  category, id, note
+  Games,    sudoku,     icon missing
+  ```
+  Columns are read by the header row, cells trimmed. Only `id` (the catalog id shown in App info) is used to match; `category` is for reading, and a mismatch only logs a `console.warn`. `note` is for you (no commas). Ships with no active rows. A missing / failing CSV hides nothing and logs no errors. API: `PhoneApps.csvHidden()` → `[{id, category, note}]`, `PhoneApps.onHidden(fn)`.
+- **On this phone:** long-press → **Hide app** adds the id to `settings.hidden`. Phone settings → **Hidden apps** lists every hidden app (icon, name, category, source `CSV` or `This phone`) with **Unhide**: a local one is removed from `settings.hidden`; a CSV one is added to `settings.unhidden` (shown again on this phone only; delete the CSV line to unhide for everyone).
+- **Rule:** hidden = (CSV ∪ `settings.hidden`) − `settings.unhidden`. Hidden apps are left out of the drawer, sections, search, home pages and dock. Their ids stay saved in pages / dock / recent (`clean()` doesn't drop them), so Unhide puts them back where they were. Both lists ≤200 ids, repaired on load (`phone_save.js`).
+- Offline: `phone/hidden-apps.csv` must be added to the `hub/update/hub_sw.js` SHELL list.
+- Release name `PH10`.

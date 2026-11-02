@@ -8,6 +8,7 @@
  * Dock ids not in the catalog yet (e.g. 'message') stay saved; phone_app.js only hides them.
  * wall: 'auto' (transparent inside the Android WebView, test gradient in a normal browser) | 'none' | '#rrggbb'.
  * Everything is repaired on load (unknown ids dropped later by phone_app.js, bad types reset to defaults).
+ * PH10: settings.hidden = ids hidden on this phone; settings.unhidden = ids from phone/hidden-apps.csv shown again here (≤200 each).
  * Storage blocked / full → keeps working in memory only.
  */
 (function () {
@@ -15,6 +16,7 @@
   var KEY = 'phone-launcher-v1';
   var PAGE_MAX = 24;          // apps per home page (page 1 also holds the clock: phone_app.js shows fewer)
   var DOCK_MAX = 5;
+  var HIDDEN_MAX = 200;        // PH10
   var DEFAULTS = {
     v: 1,
     // Clock = Stopwatch for now (no Clock app in the catalog yet).
@@ -23,7 +25,7 @@
     dock: ['message', 'telephone', 'camera'],   // PH5: 'message' shows once the app is in the catalog
     pages: [['tv'], []],   // PH5
     recent: [],
-    settings: { theme: 'system', wall: 'auto', clock24: true, keepAlive: 2, th80: true, ph5: true }
+    settings: { theme: 'system', wall: 'auto', clock24: true, keepAlive: 2, th80: true, ph5: true, hidden: [], unhidden: [] }
   };
   var mem = null;
 
@@ -52,6 +54,9 @@
     if (['system', 'light', 'dark'].indexOf(s.theme) >= 0 && s.th80) o.settings.theme = s.theme;   // H80: pre-H80 saves follow the Hub
     if (s.wall === 'auto' || s.wall === 'none' || /^#[0-9a-f]{6}$/i.test(s.wall || '')) o.settings.wall = s.wall;
     if (typeof s.clock24 === 'boolean') o.settings.clock24 = s.clock24;
+    o.settings.hidden = ids(s.hidden, HIDDEN_MAX);   // PH10: hidden on this phone
+    o.settings.unhidden = ids(s.unhidden, HIDDEN_MAX);   // PH10: CSV-hidden ids unhidden on this phone
+    o.settings.hidden = o.settings.hidden.filter(function (x) { return o.settings.unhidden.indexOf(x) < 0; });   // PH10: never both
     if (s.keepAlive === 1 || s.keepAlive === 2) o.settings.keepAlive = s.keepAlive;
     return o;
   }

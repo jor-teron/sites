@@ -155,4 +155,10 @@ body.app-open #home,body.drawer-open #home{opacity:0}
 #tabs .tab .tl{max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none}
 #tabs .tab.on{background:var(--acc);color:#fff}
 #tabs .tab:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+/* PH10: Hidden apps sheet */
+.hid-row{display:flex;align-items:center;gap:12px;padding:8px 2px;border-top:1px solid var(--line)}
+.hid-row .im{width:40px;height:40px;border-radius:12px;overflow:hidden;display:grid;place-items:center;flex:none}
+.hid-row .im img{width:100%;height:100%;object-fit:cover}.hid-row .im .lt{font-size:18px;font-weight:600;color:#fff}
+.hid-t{flex:1;min-width:0}.hid-t b{display:block;font-size:15px}.hid-t small{color:var(--mut)}
+.hid-none{color:var(--mut);font-size:14px}
 @media (prefers-reduced-motion:reduce){#pages,#drawer,#panel-box,#apps,#sheet-box{transition:none!important}}

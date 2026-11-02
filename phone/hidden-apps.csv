@@ -1,0 +1,7 @@
+# Phone hidden apps (PH10). One app per line. Lines starting with # are comments.
+# category = the app's Hub category (Games, Media, Office...), for grouping and reading
+# id       = the app's catalog id (shown in App info), e.g. tv, sudoku
+# note     = optional reason (no commas)
+# Unhide on one phone: Phone settings > Hidden apps > Unhide. For everyone: delete the line.
+category, id, note
+# Games,    sudoku,     icon missing
