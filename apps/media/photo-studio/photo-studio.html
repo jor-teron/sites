@@ -127,7 +127,7 @@
     </button>
     <span id="ps-tools" class="ps-slot"></span><!-- HPS: heavy-feature tools (PE.studio.addTool) go here -->
     <span class="sep"></span>
-    <button class="tb" id="tb-save" data-act="save" type="button" tabindex="-1" title="Save (Ctrl+S)">
+    <button class="tb" id="tb-save" data-act="save" type="button" tabindex="-1" title="Save (Ctrl+S project, Ctrl+Shift+S PNG)">
       <svg viewBox="0 0 24 24"><path d="M12 3.5v11"/><path d="M7.5 10.5l4.5 4.5 4.5-4.5"/><path d="M4.5 19.5h15"/></svg>
     </button>
     <button class="tb" id="tb-settings" data-ps="settings" type="button" tabindex="-1" title="Settings and About (,)">
@@ -138,11 +138,11 @@
   <div id="pop-save" class="pop menu" hidden>
     <div class="menu-head" id="save-info"></div>
     <button type="button" tabindex="-1" data-act="saveJpeg">Save JPEG</button>
-    <button type="button" tabindex="-1" data-act="savePng">Save PNG</button>
-    <button type="button" tabindex="-1" id="ps-save-hps" title="Layers and edits, to keep working later">Save project (.hps)</button>
+    <button type="button" tabindex="-1" data-act="savePng" title="Ctrl+Shift+S">Save PNG</button>
+    <button type="button" tabindex="-1" id="ps-save-hps" title="Layers and edits, to keep working later (Ctrl+S)">Save project (.hps)</button>
     <button type="button" tabindex="-1" id="ps-export-ora" title="OpenRaster layers for GIMP and Krita">Export layers (.ora)</button>
     <button type="button" tabindex="-1" id="ps-open-hps">Open project (.hps)</button>
-    <button type="button" tabindex="-1" data-act="print">Print 🖨</button>
+    <button type="button" tabindex="-1" data-act="print" title="Ctrl+P">Print 🖨</button>
     <button type="button" tabindex="-1" data-act="send">Send 📤</button>
   </div>
 
@@ -180,13 +180,13 @@
       <div class="ps-head"><h2 id="ps-set-title">Settings</h2><button type="button" tabindex="-1" class="btn ghost" id="ps-set-close">Done</button></div>
       <div class="ps-row"><span>Theme</span>
         <div class="seg" data-key="theme"><button type="button" tabindex="-1" data-v="system">System</button><button type="button" tabindex="-1" data-v="light">Light</button><button type="button" tabindex="-1" data-v="dark">Dark</button></div></div>
-      <div class="ps-row"><span>Ctrl+S saves as<small>Auto = PNG for PNG photos, else JPEG</small></span>
+      <div class="ps-row"><span>Photo export saves as<small>Auto = PNG for PNG photos, else JPEG</small></span>
         <div class="seg" data-key="format"><button type="button" tabindex="-1" data-v="auto">Auto</button><button type="button" tabindex="-1" data-v="jpeg">JPEG</button><button type="button" tabindex="-1" data-v="png">PNG</button></div></div>
       <div class="ps-row"><span>JPEG quality<small>Also used by Print and Send</small></span>
         <div class="seg" data-key="quality"><button type="button" tabindex="-1" data-v="0.8">Smaller</button><button type="button" tabindex="-1" data-v="0.92">High</button><button type="button" tabindex="-1" data-v="0.98">Best</button></div></div>
       <h3>Keyboard</h3>
       <div class="ps-keys">
-        <span><kbd>Ctrl</kbd>+<kbd>O</kbd> Open</span><span><kbd>Ctrl</kbd>+<kbd>S</kbd> Save</span>
+        <span><kbd>Ctrl</kbd>+<kbd>O</kbd> Open</span><span><kbd>Ctrl</kbd>+<kbd>S</kbd> Save project</span><span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> Export PNG</span><span><kbd>Ctrl</kbd>+<kbd>P</kbd> Print</span>
         <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Y</kbd> Undo / redo</span><span><kbd>C</kbd> Crop (<kbd>Enter</kbd> applies)</span>
         <span><kbd>R</kbd> / <kbd>Shift</kbd>+<kbd>R</kbd> Rotate</span><span><kbd>H</kbd> / <kbd>V</kbd> Flip</span>
         <span><kbd>A</kbd> Adjust</span><span><kbd>E</kbd> Resize</span>
@@ -296,5 +296,6 @@
 <script src="ps_project.js"></script>
 <script src="ps_app.js"></script>
 <script src="ps_titlebar.js"></script> <!-- HPS5.1 -->
+<script src="ps_keys.js"></script>     <!-- HPS5.2 -->
 </body>
 </html>

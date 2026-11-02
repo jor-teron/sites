@@ -290,3 +290,6 @@ the engine draws exactly as before. On a 4 GB Celeron keep enlargements to about
 - Single-screen editor, so no screen dots / swipes; Settings is a sheet.
 - The Send device chooser is Photo Editor v2's (dark-styled) chooser in both themes.
 - Not yet tried on a real phone or laptop.
+
+## HPS5.2
+Ctrl+S saves the project (.hps), Ctrl+Shift+S exports PNG, Ctrl+P prints (ps_keys.js). Photo Editor v2 keeps Ctrl+S = export.

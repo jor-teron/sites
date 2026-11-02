@@ -7,9 +7,9 @@
   'use strict';
   const V = 1;
   const BTNS = [
-    { id: 'export', label: 'Export', icon: '⤓', title: 'Export as PNG', sel: '[data-act="savePng"]' },
-    { id: 'save', label: 'Save', icon: '💾', title: 'Save project (.hps) to keep editing later', sel: '#ps-save-hps' },
-    { id: 'print', label: 'Print', icon: '⎙', title: 'Print', sel: '[data-act="print"]' },
+    { id: 'export', label: 'Export', icon: '⤓', title: 'Export as PNG (Ctrl+Shift+S)', sel: '[data-act="savePng"]' },
+    { id: 'save', label: 'Save', icon: '💾', title: 'Save project (.hps) to keep editing later (Ctrl+S)', sel: '#ps-save-hps' },
+    { id: 'print', label: 'Print', icon: '⎙', title: 'Print (Ctrl+P)', sel: '[data-act="print"]' },
   ];
   const run = (id) => { const b = BTNS.find((x) => x.id === id); const el = b && document.querySelector(b.sel); if (el && !el.disabled) el.click(); };
 
