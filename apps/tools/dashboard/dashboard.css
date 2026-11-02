@@ -155,3 +155,6 @@ ul.list li:last-child{border-bottom:0}
 .ph-txt{font-size:15px}.ph-lbl{font-weight:600;margin-bottom:4px}
 .ph-bar{height:12px;border-radius:8px;background:var(--acc2);overflow:hidden;margin-bottom:4px}.ph-bar>div{height:100%;background:var(--acc);border-radius:8px}
 @media(min-width:1000px){.nw-m,.ph-txt{font-size:16px}.ph-cell{width:150px;height:56px}.ph-pct{font-size:24px}}
+/* PD4.5: sun below the horizon at night = faint hollow ring; moon glows a little more */
+.sd-sun.below{fill:none;stroke:#f59e0b;stroke-opacity:.45;stroke-width:2;stroke-dasharray:3 3}
+.sd-rot.flip .sd-moon{filter:drop-shadow(0 0 7px #bcd3ffcc)}

@@ -167,8 +167,11 @@
     name.textContent = place.name;
     outer.appendChild(name);
 
+    /* PD4.5: after sunset the sun is below the horizon, so it shows as a faint hollow ring
+       (the flipped dial puts the night side on top; a bright sun there looked wrong). */
+    var below = !!(s.sunrise && s.sunset && (now < s.sunrise || now > s.sunset));
     var sun = point(cx, cy, R, aNow);
-    root.appendChild(svg('circle', { cx: sun.x, cy: sun.y, r: 10, 'class': 'sd-sun' }));
+    root.appendChild(svg('circle', { cx: sun.x, cy: sun.y, r: 10, 'class': 'sd-sun' + (below ? ' below' : '') }));
     /* Moon lags the sun by phase x 24 h around the dial (derived from phase, not an ephemeris; rotates with the dial) */
     var mp = point(cx, cy, R, aNow - mo.phase * 360);
     root.appendChild(moonIcon(mp.x, mp.y, 10, mo.phase));
