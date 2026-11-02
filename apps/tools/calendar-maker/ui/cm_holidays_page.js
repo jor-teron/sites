@@ -1,10 +1,12 @@
-/* Calendar Maker CM13 ui: Holidays page (CM3). window.CM.Hol (old window.CMHol API kept, _ = test hooks).
+/* Calendar Maker CM13 (CM21) ui: Holidays page (CM3). window.CM.Hol (old window.CMHol API kept, _ = test hooks).
    CM11: optional range end, additive: fixed {em, ed} (end month/day, same year), dated {end:'YYYY-MM-DD'}; no end = one day.
    Every-year input is Day + Month selects (no year); 29 Feb only shows in leap years.
    CM9: any holiday may carry r:true = Restricted; missing r = Gazetted (older saves load unchanged).
    CM18: type select per row (Gazetted, Restricted, Public, School); t 'p' / 's' for Public / School (Hd.setType).
    CM19: third repeat choice 'Every year, date changes' (H.moving, see core/cm_holidays.js): carried to every year by
    name; a year with no date shows in 'Needs a date for YYYY' at the top and is not drawn or counted.
+   CM21: card order Every year, Every year date changes, This year only; Repeat select per row moves a holiday between
+   cards (ui/cm_hol_move.js), keeping name, type and length.
    Saved in 'calendar-maker-holidays' (see core/cm_settings.js). Custom holidays stay in Calendar Maker only;
    the Calendar app is not changed. */
 window.CM = window.CM || {};
@@ -51,7 +53,8 @@ window.CM.Hol = (function () {
   const chip = (h) => { const t = Hd.typeOf(h);
     return '<select class="chip ' + t + '" data-act="type" aria-label="Type" title="Holiday type">' + Hd.TYPES.map((k) =>
       '<option value="' + k + '"' + (k === t ? ' selected' : '') + '>' + Hd.TYPE_NAMES[k] + '</option>').join('') + '</select>'; };
-  const rowBtns = (h) => chip(h) +
+  /* const rowBtns = (h) => chip(h) +  (CM18-CM20) */
+  const rowBtns = (h, k) => chip(h) + window.CM.HolMove.sel(k) + /* CM21: Repeat select moves the row to another card */
     '<button type="button" data-act="ren">Rename</button><button type="button" data-act="del">Delete</button></li>';
   /* const split = (rows, empty) => {
     const g = rows.filter((x) => !x.h.r), r = rows.filter((x) => x.h.r);
@@ -81,7 +84,7 @@ window.CM.Hol = (function () {
     /* CM3-CM10 fixed row: <input type="date" data-act="date" value="YEAR-MM-DD"> ... <b>d Mon</b> name */
     const fx = fixed().map((h, i) => ({ h, i })).sort((a, b) => a.h.m - b.h.m || a.h.d - b.h.d)
       .map(({ h, i }) => ({ h, html: '<li data-i="' + i + '">' + dm('s', h.m, h.d, false) + dm('e', h.em, h.ed, true) +
-        '<span title="' + esc(h.name) + '"><b>' + label(h) + '</b> ' + esc(h.name) + '</span>' + rowBtns(h) }));
+        '<span title="' + esc(h.name) + '"><b>' + label(h) + '</b> ' + esc(h.name) + '</span>' + rowBtns(h, 'fx') }));
     $('fx-list').innerHTML = fx.length ? split(fx, 'No gazetted every-year holidays.')
       : '<li class="empty">No every-year holidays.</li>';
     const dt = H.dated.map((h, i) => ({ h, i })).filter(({ h }) => +h.date.slice(0, 4) === year)
@@ -89,7 +92,7 @@ window.CM.Hol = (function () {
       .map(({ h, i }) => ({ h, html: '<li data-i="' + i + '"><input type="date" data-act="date" value="' + h.date + '"' +
         yrange() + ' aria-label="Date"><input type="date" data-act="end" value="' + (h.end || '') + '"' + yrange() +
         ' aria-label="To (optional)" title="To (optional)"><span title="' + esc(h.name) + '"><b>' + dlabel(h) + '</b>' +
-        esc(h.name) + '</span>' + rowBtns(h) })); /* CM11: + To date */
+        esc(h.name) + '</span>' + rowBtns(h, 'dt') })); /* CM11: + To date */
     $('dt-list').innerHTML = dt.length ? split(dt, 'No gazetted ones for ' + year + '.')
       : '<li class="empty">None for ' + year + ' yet.</li>';
     $('dt-year').textContent = '(' + year + ')';
@@ -102,7 +105,7 @@ window.CM.Hol = (function () {
     return '<li data-i="' + i + '"><input type="date" data-act="mstart" value="' + (v.start || '') + '"' + yrange() +
       ' aria-label="Date for ' + year + '"><input type="date" data-act="mend" value="' + (v.end || '') + '"' + yrange() +
       ' aria-label="To (optional)" title="To (optional)"><span title="' + esc(h.name) + '"><b>' + (v.start ? dlabel({ date: v.start, end: v.end }) ||
-      (+v.start.slice(8, 10) + ' ' + MS[+v.start.slice(5, 7) - 1] + ' ') : '') + '</b>' + esc(h.name) + '</span>' + rowBtns(h); };
+      (+v.start.slice(8, 10) + ' ' + MS[+v.start.slice(5, 7) - 1] + ' ') : '') + '</b>' + esc(h.name) + '</span>' + rowBtns(h, 'mv'); };
   const needN = (y) => Hd.needDate(H, y).length;
   const needText = (y) => { const n = needN(y); return n ? n + ' holiday' + (n === 1 ? ' needs a date' : 's need dates') + ' for ' + y : ''; };
   /* CM19: small note on Design / Holiday List (elements with class mv-note) */
@@ -143,6 +146,7 @@ window.CM.Hol = (function () {
       Hd.setMoving(item, year, cur.start, v); save(); draw(); return;
     }
     if (e.type === 'change' && a === 'type') { Hd.setType(item, e.target.value); save(); draw(); return; }
+    if (e.type === 'change' && a === 'rep') { await moveTo('mv', H.moving, item, e.target.value); return; } /* CM21 */
     if (e.type !== 'click') return;
     if (a === 'ren') {
       const n = await window.UiDialog.ask('Rename holiday', item.name, 'Rename');
@@ -167,6 +171,12 @@ window.CM.Hol = (function () {
     H.moving.push(it);
     $('mv-name').value = ''; $('mv-date').value = ''; $('mv-end').value = '';
     save(); draw();
+  }
+  /* CM21: Repeat select -> move to another card (ui/cm_hol_move.js); own() first so built-ins become user-owned */
+  async function moveTo(from, arr, item, to) {
+    if (to === 'fx') own();
+    if (await window.CM.HolMove.move(H, from, to, arr, item, year)) save();
+    draw();
   }
   function show(y) { year = y; draw(); }
 
@@ -197,6 +207,7 @@ window.CM.Hol = (function () {
       save(); draw(); return;
     }
     if (e.type === 'change' && a === 'type') { Hd.setType(item, e.target.value); save(); draw(); return; } /* CM18 */
+    if (e.type === 'change' && a === 'rep') { await moveTo(list, arr, item, e.target.value); return; } /* CM21 */
     if (e.type !== 'click') return;
     /* if (a === 'type') { if (item.r) delete item.r; else item.r = true; save(); draw(); return; }  (CM9-CM17 chip toggle) */
     if (a === 'ren') {
