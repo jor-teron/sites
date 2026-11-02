@@ -26,6 +26,7 @@ HR.msgs = (function () {
       .map(function (m) {
         var o = { role: m.role, content: m.content || '' };
         if (m.tool_calls && m.tool_calls.length) o.tool_calls = m.tool_calls;
+        if (m.role === 'user' && m.images && m.images.length) o.images = m.images;   /* AG11: base64 JPEG, Ollama's own field */
         if (m.role === 'tool') { o.tool_name = m.tool_name; if (m.tool_call_id) o.tool_call_id = m.tool_call_id; }
         return o;
       });

@@ -16,6 +16,7 @@
         }) };
       }
       if (m.role === 'tool') { var qid = q.shift(); return { role: 'tool', tool_call_id: m.tool_call_id || qid || 'call_0', content: m.content || '' }; }
+      if (m.images && m.images.length) return { role: m.role, content: [{ type: 'text', text: m.content || 'What is in this picture?' }].concat(m.images.map(function (b) { return { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b } }; })) };   /* AG11 */
       return { role: m.role, content: m.content || '' };
     });
   }

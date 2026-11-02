@@ -9,6 +9,7 @@
    AG4: render() redraws the open chat (HR.chats switches chats; ＋ / New chat lives in app/gui/chats.js).
    AG5: retry(m) drops the last reply (and its tool steps) and re-runs; resend(m, text) edits a user message, drops
    everything after it and re-runs (both via run()); token counts land on the reply as usage {p, o}; HR.meter updates.
+   AG11: 📷 photos (HR.attach) ride on the user message as m.images; Image mode sends via runImage() -> HR.imode.
    AG7: every model call goes to HR.usage; live shell output -> chip.live; write_file undo info -> chip / step Undo. */
 HR.chat = (function () {
   var log, input, sendBtn, ctrl = null, curTool = null, LONG = 20000;
@@ -55,12 +56,15 @@ HR.chat = (function () {
   }
   function send() {
     if (ctrl) { ctrl.abort(); return; }
-    var text = input.value.trim();
-    if (!text) return;
+    var text = input.value.trim(), image = HR.imode && HR.imode.get() === 'image', pics = !image && HR.attach ? HR.attach.peek() : [];
+    if (!text && !pics.length) return;
+    if (image) { runImage(text); return; }
     if (!HR.model.current()) { HR.model.load(); return; }
+    if (pics.length && !HR.attach.ok()) { HR.view.infoCard('📷 ' + HR.models.current().label + ' can\'t see photos', 'Switch to Ollama (a vision model like gemma3 or llava), an OpenAI-compatible vision model, or Gemini — or remove the photo.'); return; }
     var h = log.querySelector('.hello'); if (h) h.remove();
     input.value = ''; grow();
-    var u = HR.msgs.add({ role: 'user', content: text }); HR.view.bubble(u); HR.logs.user(text);
+    var u = { role: 'user', content: text }; if (pics.length) { u.images = pics; HR.attach.clear(); }
+    u = HR.msgs.add(u); HR.view.bubble(u); HR.logs.user((pics.length ? '📷 ×' + pics.length + ' ' : '') + text);
     run();
   }
   /* AG5: re-run from a user message: retry (drop the reply after it) or edit (new text) */
@@ -96,10 +100,17 @@ HR.chat = (function () {
       HR.notify({ icon: '⚠️', title: 'Agent', text: (opts.adapter.label) + ': ' + (e.kind === 'unreachable' ? 'can\'t reach ' + opts.cfg.base : e.message) });
     }).then(function () { ctrl = null; busy(false); HR.msgs.save(); HR.meter.update(); input.focus(); });
   }
+  /* AG11: Image mode -> HR.imode.run (Ollama /api/generate); same Send / Stop button */
+  function runImage(text) {
+    var h = log.querySelector('.hello'); if (h) h.remove();
+    input.value = ''; grow(); HR.view.clearErrors();
+    ctrl = new AbortController(); busy(true);
+    HR.imode.run(text, ctrl.signal).then(function () { ctrl = null; busy(false); HR.msgs.save(); HR.meter.update(); input.focus(); });
+  }
   function grow() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 180) + 'px'; }
   function init() {
     log = document.getElementById('log'); input = document.getElementById('input'); sendBtn = document.getElementById('btnSend');
-    HR.view.init(log);
+    HR.view.init(log); if (HR.attach) HR.attach.init(); if (HR.imode) HR.imode.init();
     sendBtn.onclick = send;
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
     input.addEventListener('input', grow);

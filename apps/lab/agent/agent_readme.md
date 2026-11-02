@@ -26,6 +26,7 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 - `app/models/browser.js` — AG2 `HR.browser` + the `browser` adapter: Story Mini via a worker, tap-to-download, own cache, Stop, remove
 - `app/models/browser_worker.js` — AG2 module Web Worker: Agent's own Transformers.js 3.7.0, `text-generation` pipeline, streams tokens
 - `vendor/transformers-3.7.0/` — pinned `transformers.min.js` + plain ORT wasm (12 MB total; see its README)
+- `app/models/imagegen.js` — AG11 `HR.imagegen`: Ollama `/api/generate` text → image, image model list + pick (from Lab Image Gen)
 - `app/models/ollama.js` — `HR.ollama`: `tags()`, streaming `chat()` (NDJSON, AbortController, `tools` param, collects `tool_calls`), `tps()`; registered as the default `ollama` adapter
 - `app/storage/fs.js` — `HR.fs`: File System Access folder (handle kept in IndexedDB `agent`/`kv`/`root`, permission re-check on load), safe relative paths, list / read / write / append / walk
 - `app/storage/logs.js` — `HR.logs`: daily Markdown chat log `agent/chats/YYYY_MM/YYYY_MM_DD.md` (the diary)
@@ -48,6 +49,8 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 - `app/gui/approve.js` — `HR.approve`: Approve / Deny card (path, size, preview)
 - `app/gui/folder.js` — `HR.folder`: top-bar folder chip, Settings → Folder (Pick / Reconnect, unsupported note)
 - `app/gui/helperset.js` — Settings → Helper (On / Off, URL, token, Test, status)
+- `app/gui/attach.js` — AG11 `HR.attach`: 📷 button, photo chips, `shrink()` (≤1024 px JPEG), `ok()` (provider takes images)
+- `app/gui/imagemode.js` — AG11 `HR.imode`: Chat | Image toggle, `run(prompt)` makes a picture into an assistant bubble with ⬇ Download
 - `app/gui/chat.js` — `HR.chat`: input, send / Stop, UI hooks for the loop, `render()`
 - `app/gui/edit.js` — AG5 `HR.edit`: ✎ Edit / ↻ Retry / ⧉ Copy on bubbles (hover or tap)
 - `app/gui/meter.js` — AG5 `HR.meter`: token / context meter above the composer
@@ -106,3 +109,4 @@ Ollama only answers browser pages whose origin is in `OLLAMA_ORIGINS`. Example: 
 - **AG9** — Hub keys, Show thinking live, steps pane default Off (done)
 - **AG10** — Settings clean-up: cards, switches, Hub keys line (done)
 - **Later** — system prompt presets, export / import sessions, trash cleanup (parked: no auto-delete)
+- **AG11** — Vision + Image Gen merged in (both old Lab apps stay in Legacy, untouched). **📷 Photo:** button left of the message box; picked photos are downscaled to ≤1024 px JPEG and show as chips (✕ removes, up to 4); on Send they go with the user message (Ollama `images`, OpenAI-compatible `image_url` parts, Gemini `inlineData`) and show as thumbnails in the bubble. The Browser model can't see photos → a notice card. Saved in the chat file as `: images <json>`. **Image mode:** the 💬 Chat / 🖼 Image chip flips the composer; in Image mode Send calls Ollama `/api/generate` (1024×1024, 8 steps, like Image Gen) at the Ollama URL, with progress in a note, Stop works, and the picture lands in an assistant bubble with ⬇ Download (stored as ≤1024 px JPEG, `: image <b64>`). Model: new setting `imageModel` (auto-picked from installed models, z-image first, then saved). Errors (image gen off in Ollama ≥ 0.32.6, no image model, unreachable) show notice cards.

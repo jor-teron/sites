@@ -4,6 +4,7 @@
    AG2 kind 'download' -> the Browser model card, HR.bcard). AG5: each user / assistant bubble gets HR.edit actions. AG9: Show thinking live (thinkLive) keeps the Thinking box open
    while thinking streams and folds it when the answer starts (a tap on it leaves it to the user).
    AG7: tool(m).live(text) streams shell output into the chip; write_file chips get ↶ Undo write (undoBtn, HR.trash).
+   AG11: m.images (photo thumbs) / m.image (made picture + ⬇ Download) above the text.
    AG10: inside the Hub, key / URL errors say Hub › API Keys and get an Open button (hubBtn). */
 HR.view = (function () {
   var log;
@@ -24,6 +25,10 @@ HR.view = (function () {
     var auto = 0, user = false;   /* AG9 thinkLive: 1 = we opened it while thinking streams; a tap on the summary hands control to the user */
     sum.addEventListener('click', function () { user = true; });
     if (m.role === 'assistant') b.append(think);
+    var pics = (m.images || []).concat(m.image ? [m.image] : []);   /* AG11: photo thumbs (user) or the made picture (assistant) */
+    if (pics.length) { var pr = el('div', 'pics' + (m.image ? ' big' : '')); pics.forEach(function (x) { var im = new Image(); im.src = 'data:image/jpeg;base64,' + x; im.alt = m.image ? 'Made picture' : 'Photo'; pr.appendChild(im); });
+      if (m.image) { var dl = el('a', 'hb wide dl', '⬇ Download'); dl.href = 'data:image/jpeg;base64,' + m.image; dl.download = 'agent-image-' + Date.now() + '.jpg'; pr.appendChild(dl); }
+      b.append(pr); }
     b.append(body, calls, stat); log.appendChild(b);
     function paint(live) {
       var sp = HR.msgs.splitThink(m.raw != null ? m.raw : m.content);

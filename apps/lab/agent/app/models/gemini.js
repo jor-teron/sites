@@ -11,7 +11,7 @@
     function push(role, parts) { if (!parts.length) return; var l = contents[contents.length - 1]; if (l && l.role === role) l.parts = l.parts.concat(parts); else contents.push({ role: role, parts: parts }); }
     list.forEach(function (m) {
       if (m.role === 'system') sys.push(m.content);
-      else if (m.role === 'user') push('user', [{ text: m.content || ' ' }]);
+      else if (m.role === 'user') push('user', [{ text: m.content || ' ' }].concat((m.images || []).map(function (b) { return { inlineData: { mimeType: 'image/jpeg', data: b } }; })));   /* AG11 photos */
       else if (m.role === 'assistant') push('model', (m.content ? [{ text: m.content }] : []).concat((m.tool_calls || []).map(function (c) {
         var f = c.function || {}, p = { functionCall: { name: f.name, args: typeof f.arguments === 'string' ? JSON.parse(f.arguments || '{}') : (f.arguments || {}) } };
         if (c.thoughtSignature) p.thoughtSignature = c.thoughtSignature; return p; })));

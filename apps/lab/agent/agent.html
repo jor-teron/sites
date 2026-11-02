@@ -11,6 +11,7 @@
   Scripts (order matters): app/core (migrate, messages, tools, perms, loop, prompt, memory, helper, hubkeys), app/models (net, registry, ollama, openai, gemini, browser [+ browser_worker.js]), app/storage (fs, logs, threadfmt, threads, usage, trash), app/tools/* (time, files, memory, shell, web),
   app/gui (settings, model, steps, bubbles, approve, folder, helperset, provider, hubrows, browsercard, chat, chats, chatsearch, meter, edit, usageview), app/main.js.
   Offline (AG8): agent_sw.js, Agent's own service worker (scope this folder), registered by app/main.js.
+  AG11: 📷 photo attach (Vision) and a Chat | Image toggle (Image Gen) next to the composer.
   AG10: Settings = 8 collapsible cards (ui/settings.css); inside the Hub key / base fields hide behind "Keys come from Hub › API Keys".
 -->
 <html lang="en">
@@ -52,7 +53,11 @@
   <section class="chat" aria-label="Chat">
     <div id="log" class="log" aria-live="polite"></div>
     <div id="meter" class="meter" hidden><span class="mt-bar"><i id="meterFill"></i></span><span id="meterText" class="mt-t"></span></div>
+    <div id="photoRow" class="photo-row" hidden></div>
     <div class="composer">
+      <button type="button" class="hb mode" id="btnMode" aria-pressed="false">💬 Chat</button>
+      <button type="button" class="hb pic" id="btnPhoto" title="Attach a photo" aria-label="Attach a photo">📷</button>
+      <input type="file" id="photoFile" accept="image/*" multiple hidden>
       <textarea id="input" rows="1" placeholder="Message the model…  (Enter sends, Shift+Enter new line)" aria-label="Message"></textarea>
       <button type="button" class="hb send" id="btnSend" title="Send" aria-label="Send">➤</button>
     </div>
@@ -158,6 +163,7 @@
 <script src="app/models/openai.js"></script>
 <script src="app/models/gemini.js"></script>
 <script src="app/models/browser.js"></script>
+<script src="app/models/imagegen.js"></script>
 <script src="app/storage/fs.js"></script>
 <script src="app/storage/logs.js"></script>
 <script src="app/storage/threadfmt.js"></script>
@@ -179,6 +185,8 @@
 <script src="app/gui/provider.js"></script>
 <script src="app/gui/hubrows.js"></script>
 <script src="app/gui/browsercard.js"></script>
+<script src="app/gui/attach.js"></script>
+<script src="app/gui/imagemode.js"></script>
 <script src="app/gui/chat.js"></script>
 <script src="app/gui/chats.js"></script>
 <script src="app/gui/chatsearch.js"></script>
