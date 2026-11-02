@@ -12,7 +12,8 @@
   C.version = '1.0';
   // legacy: C.release = 'HPS2';
   // legacy: C.release = 'HPS3';
-  C.release = 'HPS4';                // HPS1: Photo Editor v2 feature set, own name / settings / About · HPS2: layers + .hps / .ora · HPS3: selections + layer masks · HPS4: retouch
+  // legacy: C.release = 'HPS4';
+  C.release = 'HPS5';                // HPS1: Photo Editor v2 feature set, own name / settings / About · HPS2: layers + .hps / .ora · HPS3: selections + layer masks · HPS4: retouch · HPS5: New blank page (ps_blank.js)
 
   // HPS2: about 12 MP for the working copy on every device (layers stay smooth on a 4 GB Celeron).
   // Bigger photos are reduced once on open (with a message); Resize and image layers keep to the same cap.

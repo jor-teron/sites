@@ -9,7 +9,8 @@
   // PDF → hidden iframe with the blob URL; image → srcdoc iframe fitting the image to the page.
   // Fallback: open the blob in a new tab (the browser's own viewer prints it).
   let frame = null;
-  function printBlob(blob, kind) {
+  function printBlob(blob, kind, opt) {
+    const pg = opt && opt.page;   // HPS5 (Photo Studio): { wIn, hIn } = print at that true paper size, no margin
     const url = URL.createObjectURL(blob);
     if (frame) frame.remove();
     const f = frame = document.createElement('iframe');
@@ -26,11 +27,14 @@
         const im = f.contentDocument && f.contentDocument.querySelector('img');
         if (im && !im.complete) im.onload = im.onerror = fire; else fire();
       };
-      f.srcdoc = '<!doctype html><html><head><style>@page{margin:10mm}html,body{margin:0;height:100%}' +
+      f.srcdoc = pg ? '<!doctype html><html><head><style>@page{size:' + pg.wIn + 'in ' + pg.hIn + 'in;margin:0}html,body{margin:0}' +
+        'img{display:block;width:' + pg.wIn + 'in;height:' + pg.hIn + 'in}</style></head><body><img src="' + url + '" alt=""></body></html>' :
+        '<!doctype html><html><head><style>@page{margin:10mm}html,body{margin:0;height:100%}' +
         'body{display:flex;align-items:center;justify-content:center}' +
         'img{max-width:100%;max-height:100vh;object-fit:contain}</style></head><body><img src="' + url + '" alt=""></body></html>';
     }
     document.body.appendChild(f);
   }
+  PE.printBlob = printBlob;      // HPS5: Photo Studio prints blank pages with { page }
   PE.print = () => PE.io.save('jpeg', (blob) => printBlob(blob, 'image'));
 })(window.PE);

@@ -1,4 +1,4 @@
-# Hub Photo Studio (HPS4)
+# Hub Photo Studio (HPS5)
 
 The Hub's bigger photo editor (Media → Photo). Release **HPS1** had exactly Photo Editor v2's
 feature set (PE5) under its own name, settings and About. Release **HPS2** adds **layers** (image,
@@ -50,6 +50,7 @@ Studio's own files:
 | `ps_project.js` | HPS2: `.hps` save / open and `.ora` export (`PE.project`); HPS3: masks in / out, Adjust area in the .ora |
 | `ps_select.js` | HPS3: pixel store `PE.pix`, selections `PE.select`, marching ants, the `PE.view.adjustMask` hook, selection bar |
 | `ps_mask.js` | HPS3: layer masks `PE.masks`: drawing hooks, mask brush, mask bar, .hps mask entries |
+| `ps_blank.js` | HPS5: New blank page `PE.blank`: ＋ card, blank PNG via PE.io.load, Open/drop/paste → image layer on a blank page, checkerboard preview, true-size print |
 | `ps_retouch.js` | HPS4: retouch `PE.retouch`: healing, clone, red-eye, blur, smudge, RGBA patches, retouch bar, .hps retouch entries |
 
 Photo Editor v2 stores nothing in localStorage of its own, and Studio writes only
@@ -78,6 +79,19 @@ HPS3 added one more, backward compatible:
 Photo Editor v2 never replaces `drawPhoto` and never sets `adjustMask`, so it draws exactly as before (PE5 test 46/46).
 Studio loads `pe_view.js` / `pe_io.js` and every other engine file straight from the
 Photo Editor v2 copy.
+
+## New blank page (HPS5)
+- **＋** at the top of the toolbar: Paper size **A4** (2480×3508), **Letter** (2550×3300), **Indian Legal**
+  (8.5×14 in, 2550×4200), **Square** (3000×3000), **Custom** (px, kept under the 12 MP cap); all 300 dpi.
+  Orientation Portrait / Landscape (not for Square). Background **White** or **Transparent**. Create.
+- Start screen is unchanged (nothing loaded). If work is open, "Replace current work?" asks first.
+- The page is the background layer. While a blank page is open, Open photo / drop / paste add the
+  picture as an **image layer** (Layers panel opens) instead of replacing the page.
+- Transparent pages show a checkerboard on screen only; Auto save is PNG and keeps transparency.
+- Print of a blank page uses the true paper size with no margin (`PE.printBlob(blob, 'image', { page })`
+  in Photo Editor v2's pe_print.js, backwards compatible: PE2 still prints with a 10 mm margin).
+- Last choice kept in `photo-studio-state-v1` → `blank: { paper, orient, bg, cw, ch }`.
+- Limit: a blank page saved as .hps reopens as a normal photo (picture → replaces, normal print).
 
 ## Retouch (HPS4)
 One toolbar button (Retouch) opens a floating bar: Healing, Clone, Red-eye, Blur, Smudge, with Size,

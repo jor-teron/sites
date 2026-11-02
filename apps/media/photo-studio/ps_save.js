@@ -2,7 +2,7 @@
  * Hub Photo Studio (HPS1) — ps_save.js, the ONE save module (Hub Drive can replace it later).
  * localStorage only, keys owned by Photo Studio (Photo Editor v2 stores nothing of its own):
  *   'photo-studio-settings-v1' = { theme:'system'|'light'|'dark', format:'auto'|'jpeg'|'png', quality:0.8|0.92|0.98 }
- *   'photo-studio-state-v1'    = { adj:'b'|'c'|'s'|'w'|'sh' }  (last Adjust chip, restored on start)
+ *   'photo-studio-state-v1'    = { adj:'b'|'c'|'s'|'w'|'sh', blank:{paper,orient,bg,cw,ch} (HPS5 New blank) }
  * Theme 'system' follows the Hub's sites-hub.theme when set, else the device. Default theme: dark.
  * Loaded in <head> so the theme class is set before the first paint.
  */
