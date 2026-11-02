@@ -154,7 +154,7 @@
     if (st) {
       var a1 = angleOf(st.t, s.noon);
       while (a1 > aNow) a1 -= 360;
-      var a2 = aNow - (st.night ? 6 : 9); /* stop short so the arrowhead touches the sun dot (night: the now mark) */
+      var a2 = aNow - 9; /* stop short so the arrowhead touches the sun dot */
       if (a2 - a1 > 4) {
         root.appendChild(svg('path', { d: arc(cx, cy, R, a1, a2),
           'class': 'sd-prog' + (st.night ? ' night' : ''), 'marker-end': 'url(#sd-arrow-' + (st.night ? 'night' : 'day') + ')' }));
@@ -167,11 +167,8 @@
     name.textContent = place.name;
     outer.appendChild(name);
 
-    /* MD1: at night the sun is drawn straight across from "now", on the day (yellow) side, like the Earth
-       with you on the dark side; a small "now" mark ends the night arrow instead. Day view unchanged. */
-    var below = !!(s.sunrise && s.sunset && (now < s.sunrise || now > s.sunset));
-    if (below) { var pNow = point(cx, cy, R, aNow); root.appendChild(svg('circle', { cx: pNow.x, cy: pNow.y, r: 5, 'class': 'sd-now' })); }
-    var sun = point(cx, cy, R, below ? aNow + 180 : aNow);
+    /* MD2a: the sun simply follows the clock around the dial, day and night (PD4.2 night flip, PD4.5 ring and MD1 undone). */
+    var sun = point(cx, cy, R, aNow);
     root.appendChild(svg('circle', { cx: sun.x, cy: sun.y, r: 10, 'class': 'sd-sun' }));
     /* Moon lags the sun by phase x 24 h around the dial (derived from phase, not an ephemeris; rotates with the dial) */
     var mp = point(cx, cy, R, aNow - mo.phase * 360);
@@ -211,13 +208,7 @@
     var wrap = el('div', { 'class': 'sun-wrap' });
     var dl = dial(s, mo, now, place);
     wrap.appendChild(dl);
-    /* PD4.2: night = before sunrise or after sunset -> flip. Start from the previous state so the switch animates. */
-    var night = !!(s.sunrise && s.sunset && (now < s.sunrise || now > s.sunset));
-    var rot = dl.querySelector('.sd-rot');
-    if (box._flip) rot.classList.add('flip');
-    if (box._flip !== undefined && box._flip !== night) requestAnimationFrame(function() { requestAnimationFrame(function() { rot.classList.toggle('flip', night); }); });
-    else rot.classList.toggle('flip', night);
-    box._flip = night;
+    /* MD2a: no night flip (PD4.2 undone); noon stays on top. MD2b adds a dial-only flip. */
     var info = el('div', { 'class': 'sun-info' }, [
       el('div', { 'class': 'sun-next', text: nx[0] + ' in ' + dur(nx[1] - now) }),
       row(el, 'Dawn (civil)', hhmm(s.dawn)),
