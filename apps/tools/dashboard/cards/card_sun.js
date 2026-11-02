@@ -154,7 +154,7 @@
     if (st) {
       var a1 = angleOf(st.t, s.noon);
       while (a1 > aNow) a1 -= 360;
-      var a2 = aNow - 9; /* stop short so the arrowhead touches the sun dot */
+      var a2 = aNow - (st.night ? 6 : 9); /* stop short so the arrowhead touches the sun dot (night: the now mark) */
       if (a2 - a1 > 4) {
         root.appendChild(svg('path', { d: arc(cx, cy, R, a1, a2),
           'class': 'sd-prog' + (st.night ? ' night' : ''), 'marker-end': 'url(#sd-arrow-' + (st.night ? 'night' : 'day') + ')' }));
@@ -167,11 +167,12 @@
     name.textContent = place.name;
     outer.appendChild(name);
 
-    /* PD4.5: after sunset the sun is below the horizon, so it shows as a faint hollow ring
-       (the flipped dial puts the night side on top; a bright sun there looked wrong). */
+    /* MD1: at night the sun is drawn straight across from "now", on the day (yellow) side, like the Earth
+       with you on the dark side; a small "now" mark ends the night arrow instead. Day view unchanged. */
     var below = !!(s.sunrise && s.sunset && (now < s.sunrise || now > s.sunset));
-    var sun = point(cx, cy, R, aNow);
-    root.appendChild(svg('circle', { cx: sun.x, cy: sun.y, r: 10, 'class': 'sd-sun' + (below ? ' below' : '') }));
+    if (below) { var pNow = point(cx, cy, R, aNow); root.appendChild(svg('circle', { cx: pNow.x, cy: pNow.y, r: 5, 'class': 'sd-now' })); }
+    var sun = point(cx, cy, R, below ? aNow + 180 : aNow);
+    root.appendChild(svg('circle', { cx: sun.x, cy: sun.y, r: 10, 'class': 'sd-sun' }));
     /* Moon lags the sun by phase x 24 h around the dial (derived from phase, not an ephemeris; rotates with the dial) */
     var mp = point(cx, cy, R, aNow - mo.phase * 360);
     root.appendChild(moonIcon(mp.x, mp.y, 10, mo.phase));

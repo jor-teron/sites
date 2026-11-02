@@ -38,3 +38,4 @@ Adding a card: create `cards/card_x.js` calling `MyDay.register(...)`, add a `<s
 - **PD7** — Family card: medicine times, birthdays in next 7 days, shopping list with total
 - **PD8** — News: Assam / India headlines (done) + Phone card (battery, storage)
 - **PD9** — TV mode (bigger text, remote nav, auto-refresh 15 min) + power/network log
+- **MD1** — Sun & Moon dial: at night the sun sits on the day (yellow) side, straight across from now; the night arrow ends at a small now mark.
