@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<!-- Live Location LL1: share your position with devices on your private Hub mesh while this page is open. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Live Location</title>
+  <link rel="icon" href="live-location_icon.svg">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="live-location.css">
+</head>
+<body>
+<div id="app">
+  <div class="bar"><div class="who"><b id="me-name"></b><div id="status" class="mut">Starting…</div></div><button class="mini jelly" id="btn-code">Code</button></div>
+  <button id="share" class="jelly" aria-pressed="false"><span class="knob"></span><span id="share-lbl">Share my location</span></button>
+  <div id="geo-note" class="mut" hidden></div>
+  <div id="map"></div>
+  <div id="list"></div>
+  <div id="empty" class="mut">Nobody is sharing yet. Ask a device on your Hub to open Live Location and tap “Share my location”.</div>
+  <div id="code-box" hidden><input id="code-in" inputmode="numeric" maxlength="5" placeholder="5-digit private code"><button class="mini jelly" id="code-go">Join</button></div>
+</div>
+<script src="../../../shared/link/link_devices.js"></script>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="ll_store.js"></script>
+<script src="ll_peer.js"></script>
+<script src="ll_geo.js"></script>
+<script src="ll_map.js"></script>
+<script src="ll_app.js"></script>
+</body>
+</html>

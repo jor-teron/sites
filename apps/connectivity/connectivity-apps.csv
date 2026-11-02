@@ -15,4 +15,5 @@ Screen Share, screen-share/, screen-share/screenshare_icon.png, , Chat, Share yo
 Intercom, intercom/, intercom/intercom_icon.png, , Chat, Tap-to-talk live voice or video to all devices or one - trusted devices can look in
 Telephone, telephone/, telephone/telephone_icon.png, , Chat, Phone calls between your devices: own numbers - contacts - missed-call badge - Do Not Disturb - video calls
 Messages,  messages/,  messages/messages_icon.png, , Chat, Private one-to-one messages between devices by Hub number - sent directly - history on this device
+Live Location, live-location/, live-location/live-location_icon.svg, , Share, See where your devices are on a live map - sharing only while you choose - private code only
 SSH,        ssh/,        , , Remote, SSH terminal in the browser: password login - saved hosts - auto-reconnect
