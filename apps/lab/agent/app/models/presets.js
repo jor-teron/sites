@@ -9,7 +9,7 @@ HR.presets = (function () {
     { id: 'openrouter', label: 'OpenRouter', base: 'https://openrouter.ai/api/v1', hub: 'openrouter', eg: 'openai/gpt-4o-mini' },
     { id: 'xai', label: 'xAI', base: 'https://api.x.ai/v1', hub: 'xai', eg: 'grok-4' },
     { id: 'deepseek', label: 'DeepSeek', base: 'https://api.deepseek.com/v1', hub: 'deepseek', eg: 'deepseek-chat' },
-    { id: 'deepinfra', label: 'DeepInfra', base: 'https://api.deepinfra.com/v1/openai', hub: '', eg: 'meta-llama/Llama-3.3-70B-Instruct' },
+    { id: 'deepinfra', label: 'DeepInfra', base: 'https://api.deepinfra.com/v1/openai', hub: 'deepinfra', eg: 'meta-llama/Llama-3.3-70B-Instruct' }, /* AG12.1: Hub key (H111) */
     { id: 'openai', label: 'OpenAI', base: 'https://api.openai.com/v1', hub: 'openai_key', eg: 'gpt-4o-mini' },
     { id: 'custom', label: 'Custom', base: '', hub: '', eg: 'local model name' }];
   var ORDER = ['browser', 'ollama', 'gemini'].concat(OA.map(function (p) { return p.id; }));

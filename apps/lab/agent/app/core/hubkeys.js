@@ -4,12 +4,12 @@
    unset. Hub values win; Agent's own fields are the fallback (standalone, or the Hub has none). onChange from the Hub
    re-reads the key, then calls our listeners (Settings rows repaint, models reload, web tools follow at once).
    forProvider(p, base) -> the Hub key name for a provider + base URL: gemini -> gemini; OpenAI-compatible base host
-   api.groq.com -> groq, openrouter.ai -> openrouter, api.deepseek.com -> deepseek, api.x.ai -> xai, the Hub's
+   api.groq.com -> groq, openrouter.ai -> openrouter, api.deepseek.com -> deepseek, api.x.ai -> xai, api.deepinfra.com -> deepinfra (AG12.1), the Hub's
    openai_base host (or api.openai.com when the Hub has no base) -> openai_key. named(base): base is one of those 4 presets
    (then Agent keeps that base even when the Hub has an openai_base; HR.models.base). */
 HR.hubKeys = (function () {
-  var NAMES = ['tavily', 'gemini', 'openai_base', 'openai_key', 'ollama_url', 'groq', 'openrouter', 'deepseek', 'xai'];
-  var HOSTS = { 'api.groq.com': 'groq', 'openrouter.ai': 'openrouter', 'api.deepseek.com': 'deepseek', 'api.x.ai': 'xai' };
+  var NAMES = ['tavily', 'gemini', 'openai_base', 'openai_key', 'ollama_url', 'groq', 'openrouter', 'deepseek', 'xai', 'deepinfra'];  /* AG12.1: + deepinfra (Hub H111) */
+  var HOSTS = { 'api.groq.com': 'groq', 'openrouter.ai': 'openrouter', 'api.deepseek.com': 'deepseek', 'api.x.ai': 'xai', 'api.deepinfra.com': 'deepinfra' };
   var cache = {}, subs = [], api = null, hooked = false;
   function hub() { if (api) return api; try { var h = window.top && window.top !== window ? window.top.HubKeys : null; api = h && typeof h.get === 'function' ? h : null; } catch (e) { api = null; } return api; }
   function host(u) { try { return new URL(u).host; } catch (e) { return ''; } }
