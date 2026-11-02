@@ -8,6 +8,7 @@
  * selected a tap adds / removes. Right-click / long-press = FX.menu.
  * Drag & drop: drag items onto a folder, a path crumb or a drive = move (Ctrl = copy);
  * drop files from the computer into the folder (or onto a sub-folder) = upload.
+ * H107: status bar (#status: count, total size, selection) + sticky list column header (click = sort).
  * API FX.view: load(), render(), dropTarget(el, getDir, driveId), selectAll(), clear(), focusFirst().
  */
 (function () {
@@ -112,7 +113,7 @@
     if (!cur()) list.replaceChildren(el('p', 'empty', 'Pick a drive on the left.'));
     else if (!st.items.length) list.replaceChildren(emptyBox());   // H105: centred, with real buttons
     else if (!st.shown.length) list.replaceChildren(el('p', 'empty', 'Nothing matches \u201c' + st.q + '\u201d.'));
-    else list.replaceChildren(...st.shown.map(item));
+    else list.replaceChildren(...(st.view === 'list' ? [head()] : []), ...st.shown.map(item));   // H107: sticky column header
     list.scrollTop = keep;
     paintSel();
   }
@@ -123,8 +124,48 @@
       it.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     list.classList.toggle('selecting', st.sel.size > 0);
-    const n = st.sel.size;
-    $('selinfo').textContent = n ? n + ' selected' : (cur() ? st.shown.length + (st.shown.length === 1 ? ' item' : ' items') : '');
+    $('selinfo').textContent = '';   // H107: counts moved to the status bar
+    status();
+  }
+
+  /* H107: status bar — item count (+ files' total size), selection count + size. */
+  function status() {
+    const sb = $('status');
+    if (!sb) return;
+    if (!cur()) { sb.hidden = true; return; }
+    sb.hidden = false;
+    const all = st.shown, n = all.length;
+    const sum = (arr) => arr.reduce((t, e) => t + (e.kind === 'file' ? (e.size || 0) : 0), 0);
+    const files = all.filter((e) => e.kind === 'file');
+    let left = n + (n === 1 ? ' item' : ' items');
+    if (files.length) left += ' \u00b7 ' + size(sum(all));
+    sb.children[0].textContent = left;
+    const sel = all.filter((e) => st.sel.has(e.name));
+    const sf = sel.filter((e) => e.kind === 'file');
+    sb.children[1].textContent = sel.length ? sel.length + ' selected' + (sf.length ? ' \u00b7 ' + size(sum(sel)) : '') : '';
+  }
+
+  /* H107: list-view column header (Name | Date modified | Size); click = sort, again = flip. Same state as #sort. */
+  const COLS = [['name', 'Name', 'h-name'], ['modified', 'Date modified', 'h-date'], ['size', 'Size', 'h-size']];
+  function head() {
+    const h = el('div', 'lhead'); h.setAttribute('role', 'presentation');
+    COLS.forEach(([k, label, cls]) => {
+      const b = el('button', 'hcol ' + cls + (st.sort === k ? ' on' : ''));
+      b.type = 'button'; b.dataset.k = k;
+      b.append(el('span', '', label));
+      if (st.sort === k) {
+        b.insertAdjacentHTML('beforeend', '<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="' + (st.dir === 1 ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6') + '"/></svg>');
+        b.setAttribute('aria-sort', st.dir === 1 ? 'ascending' : 'descending');
+      }
+      b.title = 'Sort by ' + label.toLowerCase();
+      h.appendChild(b);
+    });
+    return h;
+  }
+  function sortBy(k, d) {
+    st.sort = k; st.dir = d;
+    FX.setPref('sort', st.sort); FX.setPref('dir', String(st.dir));
+    render();
   }
 
   const entryOf = (it) => st.shown.find((e) => e.name === it.dataset.name);
@@ -145,6 +186,9 @@
 
   list.addEventListener('pointerdown', (e) => { lastPointer = e.pointerType || 'mouse'; }, true);
   list.addEventListener('click', (e) => {
+    const hc = e.target.closest('.hcol');
+    if (hc) { const k = hc.dataset.k; sortBy(k, st.sort === k ? -st.dir : (k === 'name' ? 1 : -1)); return; }
+    if (e.target.closest('.lhead')) return;
     const it = e.target.closest('.item');
     if (!it) { if (e.target === list || e.target.classList.contains('empty')) clear(); return; }
     const name = it.dataset.name;
@@ -220,9 +264,7 @@
   $('view').addEventListener('click', (e) => { const b = e.target.closest('button[data-v]'); if (b) setView(b.dataset.v); });
   $('sort').addEventListener('change', () => {
     const [k, d] = $('sort').value.split('-');
-    st.sort = k; st.dir = d === 'desc' ? -1 : 1;
-    FX.setPref('sort', st.sort); FX.setPref('dir', String(st.dir));
-    render();
+    sortBy(k, d === 'desc' ? -1 : 1);
   });
   $('search').addEventListener('input', () => { st.q = $('search').value; render(); });
 

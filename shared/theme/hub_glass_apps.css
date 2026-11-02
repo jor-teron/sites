@@ -54,6 +54,10 @@ html.light.hub-glass .search { background: rgba(0, 0, 0, 0.26); }
 html.light.hub-glass .search-box svg, html.light.hub-glass .path-ico, html.light.hub-glass .crumb-sep { color: rgba(255, 255, 255, 0.85); }
 html.light.hub-glass .tb:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
 html.light.hub-glass .selinfo { opacity: 1; }
+html.light.hub-glass .lhead { background: rgba(10, 12, 18, 0.55); }   /* H107 */
+html.light.hub-glass .status { background: rgba(10, 12, 18, 0.34); color: rgba(255, 255, 255, 0.85); }
+html.light.hub-glass .hcol { color: rgba(255, 255, 255, 0.8); }
+html.light.hub-glass .hcol.on, html.light.hub-glass .status-sel { color: #fff; }
 html.light.hub-glass .badge { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55), 0 1px 3px rgba(0, 0, 0, 0.5); }
 /* Reduce transparency: solid dark slate (same as the Hub's solid glass) */
 html.light.hub-glass.hub-glass-solid {
