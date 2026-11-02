@@ -143,6 +143,12 @@ body.wm-desktop #wm-desk { display: block; position: absolute; inset: 0; overflo
 .gb-qbtn:focus-visible { outline: 2px solid var(--accent, #4c8dff); outline-offset: -2px; }
 .gb-qbtn:disabled, .gb-qbtn.gb-qbtn-off { opacity: 0.35; cursor: default; }
 .gb-qlabel { font-size: calc(var(--wm-title-h) * 0.44); }
+/* H110 align:'left': buttons right after the title, spare space after them (still drags) */
+.wm-win:has(.wm-gb.gb-qa-left) .wm-title { flex: 0 1 auto; min-width: 0; max-width: 40%; }
+.wm-gb.gb-qa-left { flex: 1 1 auto; }
+.gb-qa.gb-qa-left { margin-right: auto; }
+/* H110 showLabel: icon + label */
+.gb-qbtn.gb-qbtn-both { display: inline-flex; align-items: center; gap: calc(var(--wm-title-h) * 0.18); max-width: calc(var(--wm-title-h) * 6); }
 .gb-fold-btn { display: none; }
 .wm-gb.gb-fold .gb-tbtabs { display: none; }
 .wm-gb.gb-fold .gb-fold-btn { flex: 0 0 auto; display: inline-flex; align-items: center; height: calc(var(--wm-title-h) - 4px); opacity: 1; font-weight: 600; }

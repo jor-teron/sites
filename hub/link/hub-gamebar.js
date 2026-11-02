@@ -33,8 +33,13 @@
  * H49 Hub title bar (HO1 Office Quick Access: apps/office/shared/office-hubbar.js is the app side).
  * Desktop mode window bars only (__hubGamebarAttach); the Phone mode #gamebar never uses it.
  *   hub → app  {hubTitleBarHello:{v:1}}       with every hub-hello burst after an iframe load
- *   app → hub  {hubTitleBar:{v:1, op:'set', buttons:[{id,label,icon,enabled,title}],
- *               tabs:[{id,label}], activeTab}}
+ *   app → hub  {hubTitleBar:{v:1, op:'set', buttons:[{id,label,icon,enabled,title,showLabel}],
+ *               tabs:[{id,label}], activeTab, align}}
+ *   H110: align 'right' (default) | 'left'. 'left' puts the quick buttons right after the
+ *     window title (the title shrinks to its text, ellipsis when long; the spare bar space
+ *     after the buttons still drags / double-click maximises). Anything else = 'right'.
+ *   H110: showLabel true on a button draws icon + label together; without it the button shows
+ *     the icon if given, else the label (unchanged).
  *   app → hub  {hubTitleBar:{v:1, op:'update', buttons:[{id, label?, icon?, enabled?, title?}],
  *               activeTab?}}                  patch by id (unknown ids ignored)
  *   app → hub  {hubTitleBar:{v:1, op:'clear'}}
@@ -146,6 +151,7 @@
       if (app.version != null && app.version !== '') title.appendChild(el('span', 'gb-ver', 'v' + str(app.version, 16)));
       bar.appendChild(title);
       bar.classList.toggle('gb-has-tb', !!tb);
+      bar.classList.toggle('gb-qa-left', !!(tb && tb.align === 'left' && tb.buttons.length));   // H110
       if (tb) renderTbButtons();
       // Legacy: renderTabs(d);   H49: hubTitleBar tabs win over hub-app tabs (never both)
       if (tb && tb.tabs.length) renderTbTabs(d); else renderTabs(d);
@@ -184,12 +190,18 @@
       if (full || src.icon != null) o.icon = str(src.icon, 4);
       if (full || src.enabled != null) o.enabled = src.enabled !== false;
       if (full || src.title != null) o.title = str(src.title, 60);
+      if (full || src.showLabel != null) o.showLabel = src.showLabel === true;   // H110
       return o;
     }
     function paintTbButton(btn, b) {
       btn.textContent = '';
-      if (b.icon) btn.appendChild(el('span', 'gb-qicon', b.icon));
+      // H110: showLabel = icon + label together
+      if (b.icon && b.showLabel && b.label) {
+        btn.appendChild(el('span', 'gb-qicon', b.icon));
+        btn.appendChild(el('span', 'gb-qlabel', b.label));
+      } else if (b.icon) btn.appendChild(el('span', 'gb-qicon', b.icon));
       else btn.appendChild(el('span', 'gb-qlabel', b.label));
+      btn.classList.toggle('gb-qbtn-both', !!(b.icon && b.showLabel && b.label));
       btn.title = b.title || b.label;
       btn.setAttribute('aria-label', b.label);
       btn.disabled = !b.enabled;
@@ -197,7 +209,7 @@
     }
     function renderTbButtons() {
       if (!tb.buttons.length) return;
-      const grp = el('div', 'gb-qa');
+      const grp = el('div', tb.align === 'left' ? 'gb-qa gb-qa-left' : 'gb-qa');
       grp.setAttribute('role', 'toolbar');
       tb.buttons.forEach((b) => {
         const btn = el('button', 'gb-qbtn');
@@ -305,7 +317,7 @@
         const buttons = (Array.isArray(m.buttons) ? m.buttons : []).filter((b) => b && b.id != null).slice(0, TB_MAX_BUTTONS).map((b) => tbButton(b, true));
         const tabs = (Array.isArray(m.tabs) ? m.tabs : []).filter((t) => t && t.id != null).slice(0, TB_MAX_TABS)
           .map((t) => ({ id: str(t.id, 32), label: str(t.label != null ? t.label : t.id, 20) }));
-        tb = { buttons, tabs, activeTab: m.activeTab != null ? str(m.activeTab, 32) : (tabs[0] ? tabs[0].id : '') };
+        tb = { buttons, tabs, align: m.align === 'left' ? 'left' : 'right', activeTab: m.activeTab != null ? str(m.activeTab, 32) : (tabs[0] ? tabs[0].id : '') };
         clearRetries();
         draw();
       } else if (m.op === 'update' && tb) {
