@@ -1,6 +1,6 @@
 /* ps_keys.js - HPS5.3 Photo Studio shortcuts (overrides photo-editor-v2's pe_input.js Ctrl+S, which stays unchanged there)
  *   Ctrl+S        = Save project (.hps)   same as #ps-save-hps
- *   Ctrl+E        = Export PNG (HPS5.3; plain E = Resize untouched)
+ *   Ctrl+E        = Export PNG (HPS5.3; plain E = Eraser since HPS6.1, see ps_erase.js)
  *   Ctrl+Shift+S  = Export PNG (alias)            same as [data-act="savePng"]
  *   Ctrl+P        = Print                 same as [data-act="print"] (no browser print of the page)
  * Capture-phase listener on window, runs before pe_input.js's bubble listener. */

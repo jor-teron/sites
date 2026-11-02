@@ -52,6 +52,7 @@ Studio's own files:
 | `ps_mask.js` | HPS3: layer masks `PE.masks`: drawing hooks, mask brush, mask bar, .hps mask entries |
 | `ps_blank.js` | HPS5: New blank page `PE.blank`: ＋ card, blank PNG via PE.io.load, Open/drop/paste → image layer on a blank page, checkerboard preview, true-size print |
 | `ps_retouch.js` | HPS4: retouch `PE.retouch`: healing, clone, red-eye, blur, smudge, RGBA patches, retouch bar, .hps retouch entries |
+| `ps_erase.js` | HPS6.1: plain Eraser `PE.erase` (E): paints Hide / Restore (Show) into the target's mask via `PE.masks.ext`; Size, Hardness, Strength, erase bar |
 
 Photo Editor v2 stores nothing in localStorage of its own, and Studio writes only
 `photo-studio-*` keys (plus the shared `shared-link-*` keys written by `shared/link` for Send),
@@ -295,3 +296,5 @@ the engine draws exactly as before. On a 4 GB Celeron keep enlargements to about
 Ctrl+S saves the project (.hps), Ctrl+Shift+S exports PNG, Ctrl+P prints (ps_keys.js). Photo Editor v2 keeps Ctrl+S = export.
 
 HPS5.3: title bar / floating row order Save, Export, Print with icon + label (row at top left, icons only on <=480px). Ctrl+E exports PNG (Ctrl+Shift+S still works).
+
+HPS6.1: Eraser (E) toolbar button: erases to transparent (checkerboard, see-through PNG) by painting the layer / Background mask; Restore paints it back; Size, Hardness, Strength, [ ] resize; respects a selection; one stroke = one undo. Plain E was Resize (Resize stays on its button). Mask brush also gained the selection clip.

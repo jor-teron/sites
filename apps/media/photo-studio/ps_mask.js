@@ -6,7 +6,7 @@
  * carries it along. The background's mask is S.edits.bg.mask, over the whole original photo.
  * Opaque = shown, transparent = hidden. Masks apply in the preview, Save / Print / Send and the .ora export,
  * and are kept in the .hps as masks/<id>.png (alpha = visibility).
- * Mask brush (B): paint Hide / Show with size + hardness on the selected layer (or the background);
+ * Mask brush (B): paint Hide / Show with size + hardness; HPS6.1: Strength + selection clip, shared with the Eraser (ps_erase.js) on the selected layer (or the background);
  * Mask on / off, Delete mask, Mask from selection; Delete with a selection hides that area (Clear).
  * One stroke = one undo step.
  */
@@ -108,7 +108,9 @@
   // ---------- brush ----------
   const stagePos = (e) => { const r = V.stage.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
   const modal = () => !!document.querySelector('.dlg-wrap:not([hidden])');
-  const active = () => M.on && !!S.photo && !PE.crop.active && !PE.resize.open && !L.open && !modal();
+  // HPS6.1: M.ext (the Eraser, ps_erase.js) can drive this brush with its own { on, size, hard, str, paint }.
+  M.opts = () => (M.ext && M.ext.on ? M.ext : M);
+  const active = () => (M.on || !!(M.ext && M.ext.on)) && !!S.photo && !PE.crop.active && !PE.resize.open && !L.open && !modal();
   M.active = active;
   let hover = null;
   // screen point -> mask pixel, and the brush radius in mask px
@@ -120,22 +122,29 @@
   }
   function radius(id, Mp, c) {
     const ppp = Math.hypot(Mp.A, Mp.C) || 1, b = boxOf(id);
-    let r = (M.size / 2) / ppp;                                   // photo px
+    let r = (M.opts().size / 2) / ppp;                                   // photo px
     if (id !== 'bg') r /= (L.get(id).scale || 1);
     return Math.max(0.5, r * c.width / b.w);
   }
   function dab(x, p, r) {
-    const g = x.createRadialGradient(p.x, p.y, 0, p.x, p.y, r), h = Math.min(0.99, M.hard / 100);
+    const g = x.createRadialGradient(p.x, p.y, 0, p.x, p.y, r), h = Math.min(0.99, M.opts().hard / 100);
     g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(h, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)');
     x.fillStyle = g; x.beginPath(); x.arc(p.x, p.y, r, 0, Math.PI * 2); x.fill();
   }
+  // HPS6.1: dabs go to a stroke buffer (st.s); the mask = start mask (st.base) +/- that buffer at Strength,
+  // clipped to the active selection. legacy (HPS3): dabs went straight into st.c, selection ignored.
   function paintTo(st, p) {
-    const x = st.c.getContext('2d'), q = toMask(st.id, p, st.Mp, st.c), r = st.r;
-    x.globalCompositeOperation = M.paint === 'hide' ? 'destination-out' : 'source-over';
+    const x = st.s.getContext('2d'), q = toMask(st.id, p, st.Mp, st.c), r = st.r;
     const last = st.last || q, d = Math.hypot(q.x - last.x, q.y - last.y), step = Math.max(0.5, r * 0.25), n = Math.max(1, Math.ceil(d / step));
     for (let i = st.last ? 1 : 0; i <= n; i++) dab(x, { x: last.x + (q.x - last.x) * i / n, y: last.y + (q.y - last.y) * i / n }, r);
-    x.globalCompositeOperation = 'source-over';
     st.last = q;
+    const o = M.opts(), c = st.c.getContext('2d');
+    let src = st.s;
+    if (st.sel) { const t = st.t.getContext('2d'); t.globalCompositeOperation = 'copy'; t.drawImage(st.s, 0, 0); t.globalCompositeOperation = 'destination-in'; t.drawImage(st.sel, 0, 0); t.globalCompositeOperation = 'source-over'; src = st.t; }
+    c.globalCompositeOperation = 'copy'; c.drawImage(st.base, 0, 0);
+    c.globalCompositeOperation = o.paint === 'hide' ? 'destination-out' : 'source-over';
+    c.globalAlpha = o.str == null ? 1 : Math.max(0, Math.min(1, o.str / 100));
+    c.drawImage(src, 0, 0); c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
   }
   function onDown(e) {
     if (!active() || !e.target.closest || !e.target.closest('#stage') || e.target.closest('button, #empty, .ps-bar')) return;
@@ -150,7 +159,10 @@
     const live = { key, on: true };
     if (id === 'bg') S.edits.bg = Object.assign({}, L.bg(), { mask: live }); else Object.assign(L.get(id), { mask: live });
     const Mp = L.mapping();
-    M.stroke = { pid: e.pointerId, id, c, key, Mp, r: radius(id, Mp, c), last: null };
+    const base = canvas(c.width, c.height); base.getContext('2d').drawImage(c, 0, 0);
+    let sel = null, tc = null;
+    if (Sel.key()) { sel = canvas(c.width, c.height); drawSelInto(sel.getContext('2d'), id); tc = canvas(c.width, c.height); }
+    M.stroke = { pid: e.pointerId, id, c, key, Mp, r: radius(id, Mp, c), last: null, base, s: canvas(c.width, c.height), sel, t: tc };
     try { V.stage.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
     paintTo(M.stroke, stagePos(e)); redraw();
   }
@@ -179,12 +191,12 @@
   }
   function drawCursor() {
     if (!hover || !active()) return;
-    const ctx = $('view').getContext('2d'), d = V.dpr, r = M.size / 2;
+    const o = M.opts(), ctx = $('view').getContext('2d'), d = V.dpr, r = o.size / 2;
     ctx.save(); ctx.setTransform(d, 0, 0, d, 0, 0);
     ctx.beginPath(); ctx.arc(hover.x, hover.y, r, 0, Math.PI * 2);
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.stroke();
     ctx.lineWidth = 1.2; ctx.strokeStyle = '#fff'; ctx.stroke();
-    if (M.hard < 95) { ctx.beginPath(); ctx.arc(hover.x, hover.y, r * M.hard / 100, 0, Math.PI * 2); ctx.setLineDash([3, 3]); ctx.stroke(); }
+    if (o.hard < 95) { ctx.beginPath(); ctx.arc(hover.x, hover.y, r * o.hard / 100, 0, Math.PI * 2); ctx.setLineDash([3, 3]); ctx.stroke(); }
     ctx.restore();
   }
 
@@ -247,6 +259,7 @@
       if (PE.crop.active) PE.crop.cancel();
       if (L.open) L.toggle(false);
       if (Sel.on) Sel.toggle(false);
+      if (M.ext && M.ext.on) M.ext.toggle(false);
     } else { hover = null; V.stage.style.cursor = ''; }
     M.on = on; syncBar(); V.requestRender();
   };
