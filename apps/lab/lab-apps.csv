@@ -3,9 +3,8 @@
 # section = optional group heading for Lab only (first appearance sets the order; empty = "Other", shown last).
 # description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
 name, path, icon, newtab, section, description
-MyLLM,              myllm/,                       , , AI, Train a tiny character-level language model from scratch in your browser
+MyLLM,              myllm/,                       , , AI, Plan and train a tiny character-level language model in your browser
 Story,              story/,                       , , AI, Type a beginning and get a short story from a tiny on-device AI model
-LLM Calculator,     llm-calc/,                    , , AI, Plan a tiny LLM: parameters - file size - memory and training time
 ONNX Runner,        onnx-runner/,                 , , AI, Run any .onnx machine learning model in the browser - nothing uploaded
 Agent,              agent/,                       , , AI, Browser AI agent with tools: local Ollama - OpenAI-compatible API or Gemini
 
@@ -35,3 +34,4 @@ Keyboard,           keyboard/,                    , , Legacy, On-screen keyboard
 Local AI Chat,      local-ai-chat/,               , , Legacy, Chat with a small AI model (SmolLM2) running fully in your browser
 Image Gen,          image-gen/,                   image-gen/imagegen_icon.png, , Legacy, Text-to-image: generate pictures from a prompt with your own Ollama
 Vision,             vision/,                      vision/vision_icon.png, , Legacy, Ask a vision AI model on your own Ollama about a photo
+LLM Calculator,     llm-calc/,                    , , Legacy, Plan a tiny LLM: parameters - file size - memory and training time (now the Plan tab in MyLLM)

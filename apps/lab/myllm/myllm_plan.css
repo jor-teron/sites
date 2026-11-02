@@ -1,0 +1,132 @@
+/* myllm_plan.css — ML1 2026-11-02: LLM Calculator R13 styles (apps/lab/llm-calc/llm-calc.css), scoped under #plan so they do not clash with MyLLM. Generated once, edit by hand. */
+#plan { --bg:#f6f7fb; --card:#fff; --fg:#1d2230; --mute:#6b7280; --acc:#6c5ce7; --bad:#e5484d; --line:#e5e7eb; --jelly:cubic-bezier(.3,1.8,.5,1); }
+@media (prefers-color-scheme: dark) {
+#plan { --bg:#0f1117; --card:#1a1d27; --fg:#e8eaf0; --mute:#9aa3b2; --acc:#a29bfe; --bad:#ff6b6b; --line:#2a2f3c; } }
+#plan * { box-sizing: border-box; }
+#plan { margin:0; font:16px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--fg); }
+#plan header { padding:14px 16px 4px; }
+#plan h1 { margin:0; font-size:1.3rem; }
+#plan .sub { margin:0; color:var(--mute); font-size:.9rem; }
+#plan .card { background:var(--card); border-radius:18px; padding:12px 14px; margin:10px 0; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+#plan h2 { font-size:1rem; margin:4px 0 6px; color:var(--acc); }
+#plan h3 { font-size:.9rem; margin:14px 0 4px; color:var(--mute); }
+#plan .hrow { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0; }
+#plan .bad { color:var(--bad); }
+#plan .warns { margin:8px 0 0; padding-left:18px; color:var(--bad); font-size:.85rem; }
+#plan .warns:empty { display:none; }
+#plan table { width:100%; border-collapse:collapse; font-size:.9rem; }
+#plan td { padding:5px 0; border-bottom:1px solid var(--line); }
+#plan td:last-child { text-align:right; font-variant-numeric:tabular-nums; padding-left:8px; }
+#plan .field { display:flex; align-items:center; gap:8px; min-height:52px; border-bottom:1px solid var(--line); }
+#plan .field:last-of-type { border-bottom:0; }
+#plan .field label { flex:1; }
+#plan input[type=number], #plan select { width:9.5em; min-height:44px; font-size:1rem; padding:6px 10px; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--fg); }
+#plan input:disabled { opacity:.45; }
+#plan .sw { width:28px; height:28px; accent-color:var(--acc); margin:0 auto 0 0; }
+#plan .info, #plan .btn { min-width:44px; min-height:44px; border:0; border-radius:14px; background:transparent; color:var(--acc); font-size:1.3rem; cursor:pointer; transition:transform .25s var(--jelly); }
+#plan .btn { background:var(--acc); color:#fff; font-size:1rem; padding:0 18px; margin-top:8px; }
+#plan .btn.ghost { background:transparent; color:var(--bad); border:1px solid var(--line); }
+#plan .info:active, #plan .btn:active { transform:scale(.85,1.12); }
+#plan .note { color:var(--mute); font-size:.85rem; margin:6px 0; }
+#plan .resetrow { text-align:center; padding:4px 0 24px; }
+#plan dt { font-weight:600; margin-top:8px; }
+#plan dd { margin:0 0 4px; color:var(--mute); }
+#plan .big { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; text-align:center; }
+#plan .big > div { background:var(--bg); border-radius:14px; padding:8px 4px; }
+#plan .big .wide { grid-column:1 / -1; }
+#plan .big small { display:block; color:var(--mute); font-size:.75rem; }
+#plan .big b { font-size:1.2rem; font-variant-numeric:tabular-nums; }
+#plan .panes { padding:0 12px 20px; max-width:720px; margin:0 auto; }
+#plan .out { position:sticky; top:0; z-index:5; padding-top:6px; background:var(--bg); }
+#plan .rbar { position:relative; display:grid; grid-template-columns:repeat(4,1fr) 22px; align-items:center; gap:4px; width:100%; min-height:56px; padding:6px 10px; border:0; border-radius:16px; background:var(--card); color:var(--fg); font:inherit; text-align:center; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,.12); transition:transform .25s var(--jelly); }
+#plan .rbar:active { transform:scale(.97,1.03); }
+#plan .rbar small { display:block; color:var(--mute); font-size:.7rem; }
+#plan .rbar b { font-size:.92rem; font-variant-numeric:tabular-nums; white-space:nowrap; }
+#plan .rbar .chev { font-style:normal; color:var(--acc); transition:transform .25s var(--jelly); }
+#plan .rbar[aria-expanded=true] .chev { transform:rotate(180deg); }
+#plan .dot { position:absolute; top:6px; right:8px; width:10px; height:10px; border-radius:50%; background:var(--bad); }
+#plan .rfull { display:none; max-height:70vh; overflow:auto; overscroll-behavior:contain; margin:8px 0 4px; }
+#plan .out.open .rfull { display:block; animation:plan-pop .3s var(--jelly); }
+@media (min-width: 800px) {
+#plan .panes { display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,420px); gap:18px; max-width:1180px; align-items:start; }
+#plan .in { grid-column:1; grid-row:1; }
+#plan .out { grid-column:2; grid-row:1; top:0; padding-top:10px; background:transparent; max-height:100vh; overflow:auto; overscroll-behavior:contain; }
+#plan .rbar { display:none; }
+#plan .rfull, #plan .out.open .rfull { display:block; max-height:none; overflow:visible; margin:0 0 10px; animation:none; }
+}
+dialog#help { border:0; border-radius:20px; background:var(--card); color:var(--fg); max-width:min(92vw,460px); max-height:86vh; overflow:auto; padding:18px; }
+dialog#help::backdrop { background:rgba(0,0,0,.45); }
+dialog#help[open] { animation:plan-pop .35s cubic-bezier(.3,1.6,.5,1); }
+@keyframes plan-pop {from { transform:scale(.85); opacity:0; } }
+#plan .rm h4 { margin:10px 0 4px; font-size:.85rem; color:var(--mute); font-weight:600; }
+#plan .rm button { display:flex; justify-content:space-between; align-items:center; gap:12px; width:100%; min-height:44px; padding:0 12px; margin:0; border:0; border-bottom:1px solid var(--line); background:transparent; color:var(--fg); font:inherit; font-size:.95rem; text-align:left; cursor:pointer; border-radius:10px; transition:transform .25s var(--jelly), background .15s; }
+#plan .rm button span:last-child { font-variant-numeric:tabular-nums; font-weight:600; color:var(--acc); }
+#plan .rm button.cur { background:color-mix(in srgb, var(--acc) 14%, transparent); }
+#plan .rm button:active { transform:scale(.96,1.04); }
+#plan .field.flash input, #plan .field.flash select { animation:plan-flash .6s ease; }
+@keyframes plan-flash {30% { box-shadow:0 0 0 3px var(--acc); } }
+@media (prefers-reduced-motion: reduce) {
+#plan * { animation:none !important; transition:none !important; } }
+#plan input[type=text] { width:9.5em; min-height:44px; font-size:1rem; padding:6px 10px; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--fg); }
+#plan #exportCard .btn { width:100%; min-height:52px; font-size:1.05rem; }
+#plan .note:empty { display:none; }
+#plan .printsum { display:none; }
+@media print {
+@page { size:A4; margin:14mm; }
+#plan { color-scheme:light; }
+#plan { background:#fff !important; color:#000 !important; font-size:10.5pt; }
+body .container > header, #train, #plan .panes, dialog#help { display:none !important; }
+#plan .printsum { display:block; color:#000; }
+#plan .printsum h1 { font-size:18pt; margin:0 0 2pt; }
+#plan .printsum h3 { color:#000; font-size:11pt; margin:10pt 0 3pt; }
+#plan .ps-date { margin:0 0 6pt; color:#333; }
+#plan .ps-what { margin:0 0 4pt; }
+#plan .ps-cols { display:grid; grid-template-columns:1fr 1fr; gap:14pt; }
+#plan .printsum table { font-size:10pt; }
+#plan .printsum td { border-bottom:1px solid #bbb; padding:2.5pt 0; }
+#plan .printsum ul { margin:0; padding-left:16pt; }
+#plan .ps-foot { margin-top:10pt; font-size:9pt; color:#333; }
+#plan * { animation:none !important; }
+}
+#plan .sw { appearance:none; -webkit-appearance:none; width:52px; height:32px; border-radius:16px; background:var(--line); position:relative; cursor:pointer; transition:background .2s; outline-offset:6px; margin:6px auto 6px 0; }
+#plan .sw::after { content:''; position:absolute; top:3px; left:3px; width:26px; height:26px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:transform .25s cubic-bezier(.3,1.6,.5,1); }
+#plan .sw:checked { background:var(--acc); }
+#plan .sw:checked::after { transform:translateX(20px); }
+#plan .sw:active::after { width:30px; }
+#plan .field.off { opacity:.45; }
+#plan .field.off .sw, #plan .field.off select { cursor:not-allowed; }
+#plan .field.al-bad { outline:2px solid var(--bad); outline-offset:-2px; border-radius:10px; padding:0 6px; }
+#plan .field.al-amber { outline:2px solid #e0a020; outline-offset:-2px; border-radius:10px; padding:0 6px; }
+#plan .alert { margin:4px 0 8px; font-size:.85rem; }
+#plan .alert p { margin:2px 0; }
+#plan .atext.bad { color:var(--bad); }
+#plan .atext.amber { color:#b07a00; }
+@media (prefers-color-scheme: dark) {
+#plan .atext.amber { color:#f0b840; } }
+#plan .fixes { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 2px; }
+#plan .btn.fix { min-height:44px; min-width:44px; padding:0 16px; transition:transform .15s cubic-bezier(.3,1.6,.5,1); }
+#plan .btn.fix:active { transform:scale(.92); }
+#plan .warns li.cnt { color:var(--bad); font-weight:600; list-style:none; margin-left:-18px; }
+#plan .field.rev select { width:auto; }
+#plan .field.rev input { width:6.5em; }
+#plan .field.rev.manual input { outline:2px dashed #e0a020; outline-offset:-2px; }
+#plan #revCard { padding-top:6px; padding-bottom:6px; }
+#plan #revOut:empty { display:none; }
+#plan input.ro { background:transparent; border-style:dashed; color:var(--mute, inherit); }
+#plan header.top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+#plan .btn.copy { margin-top:0; min-height:44px; }
+#plan .dlrow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+#plan #exportCard .dlrow .btn { width:auto; flex:1 1 140px; }
+#plan .tick { display:inline-flex; align-items:center; gap:8px; min-height:44px; min-width:44px; font-size:1rem; cursor:pointer; }
+#plan .tick input { width:24px; height:24px; margin:0; }
+#plan .field.wc #wcUrl { flex:1; min-width:0; min-height:44px; }
+#plan .wcb { min-height:44px; padding:0 14px; border-radius:10px; border:1px solid var(--line); background:transparent; color:var(--fg); font:inherit; cursor:pointer; transition:transform .25s var(--jelly); }
+#plan .wcb:active { transform:scale(.94,1.06); }
+@media (prefers-reduced-motion: reduce) {
+#plan .wcb { transition:none; }
+#plan .wcb:active { transform:none; } }
+
+/* ML1: MyLLM is always dark, so Plan uses the calculator's dark palette */
+#plan { --bg:#0d1017; --card:#161b26; --fg:#e6e9f0; --mute:#8b93a7; --acc:#7c9cff; --bad:#ff6b6b; --line:#262d3d; margin:0 -14px; }
+#plan header.top { padding:6px 14px 0; }
+#plan .btn { color:#0d1017; }
