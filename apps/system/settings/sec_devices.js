@@ -847,6 +847,21 @@
     return card;
   }
 
+  /* H97: this device's trust passcode (HubTrust): another device types it to pair instead of waiting for Allow */
+  function passRow(hub) {
+    const T = hub && hub.HubTrust, row = ui.el('div', 'trust-pass');
+    if (!T) return row;
+    const val = ui.el('b', 'trust-pass-val', T.myPasscode());
+    const btn = ui.el('button', 'btn trust-pass-change', 'Change'); btn.type = 'button';
+    btn.addEventListener('click', () => {
+      const p = window.prompt('New 6-digit passcode. Devices already paired stay trusted.', '');
+      if (p == null) return;
+      if (!T.setPasscode(p)) { window.alert('The passcode must be 6 digits.'); return; }
+      val.textContent = T.myPasscode();
+    });
+    row.append(ui.el('span', 'opt-note', 'Passcode: '), val, btn);
+    return row;
+  }
   /* H51: trusted devices (HubMesh.trusted() / forget(); device-only list 'hub-mesh-trust', never synced) */
   function trustCard(sub) {
     const card = ui.el('section', 'card trust-card');
@@ -856,9 +871,9 @@
     if (!M || !M.trusted) { card.appendChild(ui.el('p', 'opt-note', 'Open Settings inside the Hub to see trusted mesh devices.')); return card; }
     const note = ui.el('p', 'opt-note'); note.id = 'trust-note';
     const list = ui.el('ul', 'conn-list'); list.id = 'trust-list';
-    card.append(note, list);
+    card.append(note, passRow(hub), list);
     const clip = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, n);
-    const HOW = { approved: 'Allowed here', roster: 'Introduced by the lobby', lobby: 'Lobby you joined' };
+    const HOW = { approved: 'Allowed here', roster: 'Introduced by the lobby', lobby: 'Lobby you joined', passcode: 'Paired by passcode' };   // H97: + passcode
     function draw() {
       if (!card.isConnected && drawn) { stop(); return; }
       drawn = true;

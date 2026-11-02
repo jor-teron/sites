@@ -70,6 +70,7 @@ const SHELL = [
   'hub/link/hub_sync.js',   // H29.1
   'shared/link/hub_mesh.js', 'hub/link/hub_meshlink.js',   // H50
   'hub/link/hub_line.js',   // H91: Hub Line
+  'hub/link/hub_trust.js',   // H97: HubTrust
   'hub/link/hub_meshlog.js',   // H69: mesh connection log (hub.html loads it)
   'apps/system/mesh-viewer/', 'apps/system/mesh-viewer/index.html', 'apps/system/mesh-viewer/mv.js', 'apps/system/mesh-viewer/mv.css', 'apps/system/mesh-viewer/mesh-viewer_icon.png',   // H69: Mesh Viewer opens offline too (the log and roster live in the Hub page)
   'hub/viewer/hub_notifcenter.js', 'hub/viewer/hub_notifcenter.css',   // H66: Notification Centre (hub.html loads them)

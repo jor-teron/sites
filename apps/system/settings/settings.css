@@ -305,3 +305,7 @@ button.tap { width: 100%; text-align: left; border: 1px solid var(--line); font:
 .eye-times[hidden] { display: none; }
 .eye-time { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 6px 14px; border: 1px solid var(--line); border-radius: 12px; }
 .eye-time input { font: inherit; min-height: 36px; padding: 2px 8px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: inherit; color-scheme: light dark; }
+
+/* H97: trust passcode row */
+.trust-pass { display: flex; align-items: center; gap: 8px; margin: 6px 0 10px; }
+.trust-pass-val { font-size: 1.1em; letter-spacing: 2px; }

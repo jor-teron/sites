@@ -134,6 +134,14 @@
     if (d.name != null && !str(d.name, 40)) return false;
     return sizeOf(d) <= LINE_MSG_BYTES;
   }
+  /* H97: passcode pairing channel 'pair' (hub/link/hub_trust.js): {k:'hi'|'nonce'|'proof'|'ok'|'no', n?, h?, name?, why?} */
+  var PAIR_CH = 'pair', PAIR_K = /^(hi|nonce|proof|ok|no)$/;
+  function pairOk(e) {
+    var d = e.data;
+    if (e.to === '*' || !d || typeof d !== 'object' || Array.isArray(d) || !PAIR_K.test(String(d.k))) return false;
+    if ((d.n != null && !str(d.n, 64)) || (d.h != null && !str(d.h, 128)) || (d.name != null && !str(d.name, 40)) || (d.why != null && !str(d.why, 20))) return false;
+    return sizeOf(d) <= 512;
+  }
   function myNum() { var D = window.SharedLinkDevices; try { var n = D && D.code ? String(D.code()) : ''; return NUM_RE.test(n) ? n : ''; } catch (_) { return ''; } }
   function rowOk(r) {
     return !!(r && typeof r === 'object' && !Array.isArray(r) && r.type === 'chat' && typeof r.text === 'string' && r.text && r.text.length <= CHAT_TEXT &&
@@ -168,6 +176,7 @@
     if (e.ch === CHAT_CH) return chatOk(e);   // H84: group chat is the public room's one app channel
     if (e.ch === SYNC_CH) return syncOk(e);   // H89: + chat catch-up (one device only)
     if (e.ch === CALL_CH || e.ch === MSG_CH) return lineOk(e);   // H91: Hub Line (one device only)
+    if (e.ch === PAIR_CH) return pairOk(e);   // H97: passcode pairing (hub_trust.js, one device only)
     if (e.ch !== INVITE_CH || e.to === '*') return false;
     var d = e.data;
     return !!(d && typeof d === 'object' && d.k === 'invite' && INV_CODE_RE.test(String(d.code)) && d.code !== PUBLIC_CODE);
@@ -1200,6 +1209,9 @@
     trustOf: trustOf, trusted: trustList, forget: forget, keyState: function () { return K.state; }, publicKey: function () { return K.pub; },
     keyReady: function () { return K.ready.then(function () { return K.state; }); },
     pendingApprovals: function () { return Array.from(pending.keys()); },
+    // H97: the verified signing key of a device seen this run ('' = none / unsigned); trust it ('passcode' pairing)
+    peerKey: function (d) { var s = seen.get(d); return s && s.signed ? s.pk : ''; },
+    trustAdd: function (d, name) { var s = seen.get(d); if (!DEV_RE.test(String(d)) || !s || !s.signed) return false; trustSet(d, s.pk, name || 'Device', 'passcode'); return true; },
     // LIMITS: { HB_MS: HB_MS, DEAD_MS: DEAD_MS, MAX_DIRECT: MAX_DIRECT, MAX_ROSTER: MAX_ROSTER, MAX_BYTES: MAX_BYTES, RATE_PER_S: RATE_PER_S, RATE_BURST: RATE_BURST },   (before H55)
     LIMITS: { HB_MS: HB_MS, DEAD_MS: DEAD_MS, MAX_DIRECT: MAX_DIRECT, MAX_ROSTER: MAX_ROSTER, MAX_BYTES: MAX_BYTES, RATE_PER_S: RATE_PER_S, RATE_BURST: RATE_BURST, PUB_ROSTER: PUB_ROSTER, PUB_NAME: PUB_NAME, INVITE_GAP_MS: INVITE_GAP_MS,
       JOIN_WAIT_MS: JOIN_WAIT_MS, HELLO_MS: HELLO_MS, RETRY_MS: RETRY_MS, GIVEUP_MS: GIVEUP_MS },   // H55b
