@@ -1,5 +1,7 @@
 /* Calendar Maker CM13 ui (was CM12-F2): display-only preview zoom (slider 25-400%, Fit, Ctrl+wheel, drag pan, pinch).
-   Only canvas.style.width changes; canvas.width/height (250 dpi render), Print and PDF are untouched. window.CM.Zoom */
+   Only canvas.style.width changes; canvas.width/height (250 dpi render), Print and PDF are untouched. window.CM.Zoom
+   CM22: Fit uses the real wrap size (minus zoom bar) and sets the width itself; ResizeObserver refits on tab show/resize;
+   zoom keeps an anchor fixed (slider/Fit-less = visible centre, Ctrl+wheel = pointer, pinch = finger midpoint). */
 (function () {
   'use strict';
   var MIN = 25, MAX = 400, PX = 96 / 250; /* 100% = real A4 size (250 dpi canvas shown at 96 css px/in) */
@@ -22,11 +24,15 @@
     bar.appendChild(fitB); bar.appendChild(sl); bar.appendChild(out);
     wrap.insertBefore(bar, wrap.firstChild || null);
     function availW() { return Math.max(100, (wrap.clientWidth || 794) - 16); }
-    function availH() { return Math.max(100, (wrap.clientHeight || 0) - 16); }
+    function availH() { return Math.max(100, (wrap.clientHeight || 0) - 16 - (bar.offsetHeight || 0) - 6); } /* CM22: minus bar */
     function cvAspect() { return [cv.width || 210, cv.height || 297]; }
     function fitNow() { var a = cvAspect(); return fitPct(availW(), availH(), a[0], a[1]); }
     function apply() {
-      if (st.fit) { st.z = fitNow(); cv.style.width = ''; cv.style.maxWidth = ''; wrap.classList.remove('zoomed'); }
+      if (st.fit) { /* CM22: width set from real space (was style.width='' + CSS vh guess) */
+        if (!wrap.clientWidth) return; /* hidden tab: refit when shown */
+        st.z = fitNow(); var a = cvAspect(), k = Math.min(availW() / (a[0] * PX), availH() / (a[1] * PX));
+        cv.style.width = Math.floor(a[0] * PX * k) + 'px'; cv.style.maxWidth = 'none'; wrap.classList.remove('zoomed');
+      }
       else {
         var wpx = cvAspect()[0] * PX * st.z / 100;
         cv.style.width = Math.round(wpx) + 'px'; cv.style.maxWidth = 'none';
@@ -35,16 +41,16 @@
       sl.value = st.z; out.textContent = st.z + '%'; fitB.disabled = st.fit;
     }
     function set(z, cx, cy) {
-      var old = cv.getBoundingClientRect ? cv.getBoundingClientRect() : null;
+      /* CM22: keep the canvas point under (cx,cy) still; default anchor = centre of the visible area */
+      var wr = wrap.getBoundingClientRect(), old = cv.getBoundingClientRect();
+      if (cx == null) { cx = wr.left + wrap.clientWidth / 2; cy = wr.top + (bar.offsetHeight + wrap.clientHeight) / 2; }
+      var fx = old.width ? (cx - old.left) / old.width : 0.5, fy = old.height ? (cy - old.top) / old.height : 0.5;
       st.z = clamp(z); st.fit = false; apply();
-      if (old && cx != null && old.width) { /* keep the point under the cursor still */
-        var nw = cv.getBoundingClientRect(), k = nw.width / old.width;
-        var px = cx - old.left, py = cy - old.top;
-        wrap.scrollLeft += (nw.left - old.left) + px * k - px; wrap.scrollTop += (nw.top - old.top) + py * k - py;
-      }
+      var nw = cv.getBoundingClientRect();
+      wrap.scrollLeft += nw.left + fx * nw.width - cx; wrap.scrollTop += nw.top + fy * nw.height - cy;
     }
     sl.addEventListener('input', function () { set(sl.value); });
-    fitB.addEventListener('click', function () { st.fit = true; apply(); });
+    fitB.addEventListener('click', function () { st.fit = true; apply(); wrap.scrollLeft = 0; wrap.scrollTop = 0; });
     function onWheel(e) {
       if (!e.ctrlKey) return; /* plain wheel scrolls */
       e.preventDefault();
@@ -55,20 +61,22 @@
     var pts = {}, drag = null, pinch = null;
     function n() { return Object.keys(pts).length; }
     wrap.addEventListener('pointerdown', function (e) {
+      if (bar.contains(e.target)) return; /* CM22: Fit/slider clicks never start a drag (capture ate the click) */
       pts[e.pointerId] = e;
-      if (n() === 2) { var p = Object.values(pts); pinch = { d: Math.hypot(p[0].clientX - p[1].clientX, p[0].clientY - p[1].clientY), z: st.z }; drag = null; }
+      if (n() === 2) { var p = Object.values(pts); pinch = { d: Math.hypot(p[0].clientX - p[1].clientX, p[0].clientY - p[1].clientY), z: st.z, x: (p[0].clientX + p[1].clientX) / 2, y: (p[0].clientY + p[1].clientY) / 2 }; /* CM22 midpoint */ drag = null; }
       else if (wrap.classList.contains('zoomed')) { drag = { x: e.clientX, y: e.clientY, l: wrap.scrollLeft, t: wrap.scrollTop }; wrap.classList.add('grabbing'); if (wrap.setPointerCapture) wrap.setPointerCapture(e.pointerId); }
     });
     wrap.addEventListener('pointermove', function (e) {
       if (!pts[e.pointerId]) return; pts[e.pointerId] = e;
-      if (pinch && n() === 2) { var p = Object.values(pts), d = Math.hypot(p[0].clientX - p[1].clientX, p[0].clientY - p[1].clientY); if (pinch.d) set(pinch.z * d / pinch.d); }
+      if (pinch && n() === 2) { var p = Object.values(pts), d = Math.hypot(p[0].clientX - p[1].clientX, p[0].clientY - p[1].clientY); if (pinch.d) set(pinch.z * d / pinch.d, pinch.x, pinch.y); }
       else if (drag) { wrap.scrollLeft = drag.l - (e.clientX - drag.x); wrap.scrollTop = drag.t - (e.clientY - drag.y); }
     });
     function up(e) { delete pts[e.pointerId]; if (n() < 2) pinch = null; if (!n()) { drag = null; wrap.classList.remove('grabbing'); } }
     wrap.addEventListener('pointerup', up); wrap.addEventListener('pointercancel', up);
     if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('resize', function () { if (st.fit) apply(); });
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(function () { if (st.fit) apply(); }).observe(wrap); /* CM22 */
     apply();
-    return { state: st, set: set, fit: function () { st.fit = true; apply(); }, refresh: apply, onWheel: onWheel, bar: bar };
+    return { state: st, set: set, fit: function () { st.fit = true; apply(); wrap.scrollLeft = 0; wrap.scrollTop = 0; }, refresh: apply, onWheel: onWheel, bar: bar };
   }
   var api = { MIN: MIN, MAX: MAX, clamp: clamp, fitPct: fitPct, attach: attach };
   if (typeof window !== 'undefined') { window.CM = window.CM || {}; window.CM.Zoom = api; }

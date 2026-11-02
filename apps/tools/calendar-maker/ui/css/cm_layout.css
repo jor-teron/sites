@@ -62,3 +62,20 @@ body.hub-titlebar #bar{display:none}
 #tabs::-webkit-scrollbar{display:none}
 .tab{flex:none}
 @media (max-width:600px){#bar{padding:8px 10px;gap:6px}#tabs{flex:1 1 100%}}
+
+/* CM22: full-height viewers + centred zoom + see-through zoom bar. Overrides (kept above as legacy):
+   #app min-height:100vh; wraps max-height:calc(100vh - 120px); .zoomed align-items:flex-start; .zoom-bar background:var(--bg). */
+html,body{height:100%;margin:0}
+#app{height:100vh;height:100dvh;min-height:0;box-sizing:border-box;overflow:hidden}
+#app>header{flex:none}
+.page{min-height:0;overflow:auto;box-sizing:border-box}
+#opts,.list-opts{min-height:0;overflow:auto}
+#preview-wrap,#list-wrap,#ovw-wrap{flex:1 1 auto;min-height:0;max-height:none;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;overflow:auto}
+#preview-wrap.zoomed,#list-wrap.zoomed,#ovw-wrap.zoomed{align-items:stretch}
+#sheet,#list-sheet,#ovw-sheet{flex:none;margin:auto;max-width:none}
+.zoom-bar{flex:none;position:sticky;top:0;left:0;background:color-mix(in srgb,var(--bg) 60%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-radius:10px}
+@media (max-width:760px){
+  .page{display:flex}
+  #preview-wrap,#list-wrap,#ovw-wrap{flex:none;height:100%}
+  #opts,.list-opts{overflow:visible;flex:none}
+}
