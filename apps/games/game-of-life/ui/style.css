@@ -1,0 +1,34 @@
+/*
+ * Game of Life — styles (LIFE-1). Follows the shared theme (html.dark).
+ * Portrait: bar / grid / controls stacked. Landscape on short screens: grid left, controls right.
+ * The canvas fills #gridWrap; JS fits the grid inside it.
+ */
+:root { --bg: #f1f5f9; --panel: #ffffff; --text: #0f172a; --muted: #475569; --border: #cbd5e1; }
+html.dark { --bg: #0f172a; --panel: #1e293b; --text: #f1f5f9; --muted: #94a3b8; --border: #334155; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; height: 100dvh; background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overflow: hidden; user-select: none; }
+.container { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 6px;
+  padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left)); }
+.bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex: 0 0 auto; }
+.title { font-size: 1.1rem; margin-right: auto; }
+.chip { padding: 2px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); font-size: .85rem; }
+.hint { width: 100%; font-size: .8rem; color: var(--muted); min-height: 0; }
+.hint:empty { display: none; }
+.grid-wrap { flex: 1 1 auto; min-height: 0; min-width: 0; border-radius: 8px; overflow: hidden; }
+#grid { display: block; touch-action: none; }
+.controls { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
+button, select { font: inherit; font-size: .88rem; padding: 7px 11px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--panel); color: var(--text); cursor: pointer; }
+.speed { display: flex; align-items: center; gap: 6px; font-size: .85rem; }
+.speed input { width: 110px; }
+.gear-slot { display: inline-flex; flex: 0 0 auto; }
+.gear-slot a { position: static !important; display: inline-flex !important; visibility: visible !important; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .container { display: grid; grid-template-columns: 1fr 210px; grid-template-rows: auto 1fr; }
+  .bar { grid-column: 2; grid-row: 1; } .grid-wrap { grid-column: 1; grid-row: 1 / 3; }
+  .controls { grid-column: 2; grid-row: 2; overflow-y: auto; }
+  .row { justify-content: flex-start; } .speed input { width: 90px; }
+  button, select { padding: 6px 8px; font-size: .82rem; }
+}

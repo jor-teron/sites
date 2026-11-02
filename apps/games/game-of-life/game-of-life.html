@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<!--
+  Game of Life (LIFE-1) — page. Top bar (counters) / grid / controls; controls move to
+  the side in landscape on short screens. Config: core/config.js. Simulation: core/life.js.
+  Patterns: core/patterns.js. Drawing + zoom/pan: ui/render.js. Settings bridge: ui/settings.js.
+  Wiring + input + loop: core/game.js.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Game of Life LIFE-1</title>
+  <link rel="stylesheet" href="ui/style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="bar">
+      <h1 class="title">Game of Life</h1>
+      <span class="chip">Gen <b id="gen">0</b></span>
+      <span class="chip">Live <b id="pop">0</b></span>
+      <span id="hint" class="hint"></span>
+    </div>
+    <div class="grid-wrap" id="gridWrap"><canvas id="grid" aria-label="Life grid"></canvas></div>
+    <div class="controls">
+      <div class="row">
+        <button id="playBtn">Play</button>
+        <button id="stepBtn">Step</button>
+        <button id="clearBtn">Clear</button>
+        <button id="randBtn">Random</button>
+        <button id="modeBtn">✏️ Draw</button>
+        <span id="gearSlot" class="gear-slot"></span>
+      </div>
+      <div class="row">
+        <label class="speed">Speed <input type="range" id="speed" step="1"> <span id="speedVal"></span></label>
+        <select id="patSel" aria-label="Pattern"><option value="">Pattern…</option></select>
+        <button id="centreBtn">Place at centre</button>
+      </div>
+    </div>
+  </div>
+  <!-- Shared Games Settings (optional: the game runs with defaults if it fails to load) -->
+  <script src="../common/settings/games-settings.js"></script>
+  <script src="core/config.js"></script>
+  <script src="ui/settings.js"></script>
+  <script src="core/life.js"></script>
+  <script src="core/patterns.js"></script>
+  <script src="ui/render.js"></script>
+  <script src="core/game.js"></script>
+</body>
+</html>

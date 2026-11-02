@@ -94,7 +94,7 @@
    * '.', '-' or '_' (or equals one of the exact keys). Never 'games.settings'.
    */
   var GAME_PREFIXES = ['2048', 'aeroplane', 'ant-farm', 'aoe-rts', 'aquarium', 'ar-game', 'browser-fps',
-    'car-run', 'chess', 'contra-alpha', 'demolisher', 'desert-road', 'dino-run', 'gravity-sandbox',
+    'car-run', 'chess', 'contra-alpha', 'demolisher', 'desert-road', 'dino-run', 'game-of-life', 'gravity-sandbox',
     'hero-builder', 'island-alpha', 'island-conquest', 'island-demo', 'landcraft', 'neon-fist-3d',
     'neon-fist', 'neon-raid', 'pacman', 'ping-pong', 'sling-birds', 'snake', 'solar-system',
     'space-invader', 'swell-foop', 'tennis-throw', 'connect-4', 'tetris', 'tic-tac-toe', 'tower-defence', 'turbo-lap',
