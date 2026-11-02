@@ -4,7 +4,7 @@
  * 00000 lobby unless a private Connect Code is on) under its 5-digit number SharedLinkDevices.code(): HubMesh
  * advertises it as roster 'num'. No second PeerJS peer: everything goes through HubMesh channels 'call' and 'msg'
  * (one device only, shape / size checked in hub_mesh.js, H51-signed like every envelope). On a private mesh the
- * Line reaches the devices of that mesh only (the mesh is one code at a time).
+ * Line reaches the devices of that mesh only (the mesh is one code at a time). H95: plus the public line on 00000.
  * Wire (data of the envelope):
  *   call: {k:'ring', callId, from:<num>, name, video:bool}   caller → callee
  *         {k:'accept' | 'busy' | 'cancel' | 'end', callId, from:<num>}   either way
@@ -43,6 +43,9 @@
   var RING_MS = 45000, ACK_MS = 8000, NUM_RE = /^[1-9]\d{4}$/;
   var phone = !!window.PhoneLauncher || /\/phone\.html$/.test(location.pathname);
   function M() { return window.HubMesh; }
+  // H95: the main mesh plus, while it is private, the public line on 00000 (HubMesh.publicLine, hub_meshlink.js)
+  function meshes() { var m = M(); if (!m) return []; var p = m.publicLineIf && m.publicLineIf(); return p && p.state() !== 'stopped' ? [m, p] : [m]; }
+  function meshOf(dev) { var l = meshes(); for (var i = 0; i < l.length; i++) { if ((l[i].peers() || []).some(function (p) { return p.deviceId === dev; })) return l[i]; } return l[0] || null; }
   function load(k) { try { var v = JSON.parse(localStorage.getItem(k) || '[]'); return Array.isArray(v) ? v : []; } catch (_) { return []; } }
   function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v.slice(-MAX))); } catch (_) { /* full / blocked */ } }
   function clip(v, n) { return String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, n); }
@@ -52,14 +55,16 @@
   function devOf(num) {
     var m = M(); if (!m || !NUM_RE.test(String(num))) return '';
     var me = m.me && m.me();
-    var hit = (m.peers() || []).filter(function (p) { return p.num === String(num) && (!me || p.deviceId !== me.deviceId); });
+    // var hit = (m.peers() || []).filter(...)   (H91: main mesh only)
+    var hit = [];   // H95: every mesh this device is on
+    meshes().forEach(function (x) { (x.peers() || []).forEach(function (p) { if (p.num === String(num) && (!me || p.deviceId !== me.deviceId)) hit.push(p); }); });
     if (!hit.length) return '';
     // a number claimed twice: prefer a trusted device (H51), then the newest joiner
     hit.sort(function (a, b) { var ta = m.trustOf && m.trustOf(a.deviceId) === 'trusted', tb = m.trustOf && m.trustOf(b.deviceId) === 'trusted'; return (tb - ta) || (b.joinOrder - a.joinOrder); });
     return hit[0].deviceId;
   }
-  function numOf(dev) { var m = M(); var r = m && (m.roster() || []).filter(function (x) { return x.deviceId === dev; })[0]; return r && r.num ? r.num : ''; }
-  function chan(name) { var m = M(); try { return m && m.channel ? m.channel(name) : null; } catch (_) { return null; } }
+  function numOf(dev) { var m = meshOf(dev); var r = m && (m.roster() || []).filter(function (x) { return x.deviceId === dev; })[0]; return r && r.num ? r.num : ''; }   // H95: meshOf
+  function chan(name, dev) { var m = meshOf(dev); try { return m && m.channel ? m.channel(name) : null; } catch (_) { return null; } }   // H95: the mesh that has dev
 
   /* ---------- listeners ---------- */
   var onMsgFns = [], onCallFns = [];
@@ -100,7 +105,7 @@
 
   /* ---------- messages ---------- */
   function gotMsg(d, fromDev) {
-    var c = chan('msg');
+    var c = chan('msg', fromDev);
     if (d.k === 'ack') { var w = acks.get(d.id); if (w) { acks.delete(d.id); w(true); } return; }   // delivered() fires from wireMsg
     if (d.k !== 'msg') return;
     var known = numOf(fromDev);
@@ -116,7 +121,7 @@
   var acks = new Map();   // msg id -> resolve(bool)
   function waitAck(id) { return new Promise(function (res) { acks.set(id, res); setTimeout(function () { if (acks.get(id) === res) { acks.delete(id); res(false); } }, ACK_MS); }); }
   var onDelFns = [];
-  function wireMsg(dev, m, to) { var c = chan('msg'); if (!c) return Promise.resolve(false); var r = c.send(dev, m); if (!r || !r.ok) return Promise.resolve(false); return waitAck(m.id).then(function (ok) { if (ok) tell(onDelFns, { id: m.id, to: to }); return ok; }); }
+  function wireMsg(dev, m, to) { var c = chan('msg', dev); if (!c) return Promise.resolve(false); var r = c.send(dev, m); if (!r || !r.ok) return Promise.resolve(false); return waitAck(m.id).then(function (ok) { if (ok) tell(onDelFns, { id: m.id, to: to }); return ok; }); }
   function queue(num, m) { var q = load(OUT_K).filter(function (x) { return x.m.id !== m.id; }); q.push({ to: num, m: m, at: Date.now() }); save(OUT_K, q); }
   function unqueue(id) { save(OUT_K, load(OUT_K).filter(function (x) { return x.m.id !== id; })); }
   function send(num, payload) {
@@ -150,7 +155,7 @@
 
   /* ---------- calls ---------- */
   var calls = new Map();   // callId -> {dir:'in'|'out', dev, num, resolve, timer, card}
-  function callSend(dev, d) { var c = chan('call'); return c ? c.send(dev, Object.assign({ from: myNumber() }, d)) : { ok: false }; }
+  function callSend(dev, d) { var c = chan('call', dev); return c ? c.send(dev, Object.assign({ from: myNumber() }, d)) : { ok: false }; }
   function missed(x) {
     var e = { kind: 'missed', from: x.num, name: x.name, at: x.at, video: !!x.video, callId: x.callId };
     if (store(e)) { var N = window.HubNotify; if (N && N.notice) N.notice({ icon: '\uD83D\uDCDE', title: 'Missed call', text: x.name + ' (' + x.num + ')', onClick: function () { openApp('telephone', 'from=' + x.num); } }); }
@@ -214,20 +219,28 @@
   }
 
   /* ---------- wiring ---------- */
-  var wired = false;
+  var wired = false, wiredSet = [];
   function wire() {
     var m = M();
+    var p = m && m.publicLineIf && m.publicLineIf();   // H95: wire the public line once it exists
+    if (p && wiredSet.indexOf(p) < 0) wireOne(p);
     if (wired || !m || !m.onMsg || !m.on) return;
     wired = true;
+    wireOne(m);
+  }
+  function wireOne(m) {
+    if (!m.onMsg || !m.on) return;
+    wiredSet.push(m);
     m.onMsg('msg', function (d, from) { if (d && typeof d === 'object') gotMsg(d, from); });
     m.onMsg('call', function (d, from) { if (d && typeof d === 'object') gotCall(d, from); });
     ['roster', 'peers'].forEach(function (ev) { m.on(ev, function () { setTimeout(flush, 300); }); });
   }
   // H92: a new number (SharedLinkDevices.setCode): advertise it on the mesh roster now, then resend the outbox from it.
-  window.addEventListener('hub-number-changed', function () { var m = M(); try { if (m && m.refresh) m.refresh(); } catch (_) { /* mesh down */ } setTimeout(flush, 500); });
+  window.addEventListener('hub-number-changed', function () { var m = M(); wire(); try { if (m && m.refresh) m.refresh(); } catch (_) { /* mesh down */ } setTimeout(flush, 500); });
   wire();
   if (!wired) document.addEventListener('DOMContentLoaded', wire);
   setInterval(function () { wire(); flush(); }, 15000);
+  setInterval(wire, 3000);   // H95: pick up the public line soon after hub_meshlink.js makes it
 
   window.HubLine = {
     myNumber: myNumber,

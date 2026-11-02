@@ -195,7 +195,7 @@
       if (c === '00000') {   // H55 (H83: 00000): 0000 = the public mesh: leave a private Hub (joined: Disconnect) and turn public on
         if (R && window.__hubRemoteApi) { try { localStorage.removeItem('sites-hub.meshPublic'); } catch (_) { /* blocked */ } window.__hubRemoteApi.disconnect(); return; }
         if (window.HubMeshLink) window.HubMeshLink.setPublic(true);
-        flash(window.HubMeshLink && window.HubMeshLink.isPrivate() ? 'Public mesh 00000 is on; this Hub joins it when it leaves its private mesh.' : 'Joined the public mesh 00000 (Settings \u203A Devices).');
+        flash(window.HubMeshLink && window.HubMeshLink.isPrivate() ? 'The public Hub network 00000 is always on, alongside your private mesh.' : 'The public Hub network 00000 is always on (Settings \u203A Devices).');   // H95
         return;
       }
       if (c === myCode()) {

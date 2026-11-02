@@ -699,7 +699,7 @@
       const me = M.me();
       list.textContent = '';
       // if (!me) { note.textContent = 'Mesh off: it starts when a Connect Code link is on.'; return; }   (H50)
-      if (!me) { note.textContent = 'Mesh off: it starts when a Connect Code link is on (or with Join public mesh below).'; return; }   // H55
+      if (!me) { note.textContent = 'Mesh off: it starts when a Connect Code link is on (the public mesh below is always on).'; return; }   // H55
       if (me.public) { note.textContent = 'Not in a private mesh: this device is on the public mesh ' + clip(me.code, 12) + ' (see Public mesh below).'; return; }   // H55
       // const st = { lobby: 'this device is the lobby', linked: 'linked', joining: 'joining…', takeover: 'lobby lost, taking over…', claiming: 'claiming the lobby…', refused: 'refused by the lobby (' + clip(me.refused, 20) + ')' }[me.state] || clip(me.state, 20);   (before H55b)
       // note.textContent = 'Code ' + clip(me.code, 12) + ' · term ' + me.term + ' · ' + st + '. Shared by all Hub apps (one connection per Connect Code).';   (before H55b)
@@ -742,13 +742,19 @@
     card.appendChild(ui.el('h3', '', 'Public mesh'));
     const hub = S.hub();
     const M = hub && hub.HubMesh, ML = hub && hub.HubMeshLink;
-    const on = () => S.get('meshPublic') !== '0';
+    // const on = () => S.get('meshPublic') !== '0';   (H55 … H93)
+    const on = () => true;   // H95: always on by design, no switch
+    /* H55 … H93: 'Join public mesh' switch (removed in H95)
     const sw = ui.switch('Join public mesh', 'When this Hub is not in a private mesh, it joins the public mesh 00000 so nearby Hubs can see each other and invite you to their code',
       on(), (v) => { S.set('meshPublic', v ? '' : '0'); if (ML) ML.setPublic(v); setTimeout(draw, 300); });
     sw.id = 'mesh-public-sw';
-    card.appendChild(sw);
-    card.appendChild(ui.el('p', 'opt-note', 'Anyone’s Hub can be on 00000, so it only shares a short device name, Desktop / Phone mode and the device ID, plus invites. ' +
-      'Profile sync, API keys and every app stay off the public mesh. Joining a Hub’s code leaves 00000; Disconnect comes back.'));
+    card.appendChild(sw); */
+    // H95: status line instead of the switch: 'Connected to the Hub network as NNNNN' / 'Offline — will reconnect automatically'
+    const net = ui.el('p', 'opt-note net-status'); net.id = 'net-status';
+    card.appendChild(net);
+    card.appendChild(ui.el('p', 'opt-note', 'Every Hub joins the public network 00000 on its own, like phones on a cell network, so Telephone and Messages can reach any online number. ' +
+      'It only shares a short device name, Desktop / Phone mode, the device ID and your number; calls and messages go only to the one device they are for. ' +
+      'Profile sync, API keys and every app stay off the public mesh. A private code works alongside it.'));
     if (!M || !ML) {
       card.appendChild(ui.el('p', 'opt-note', 'Open Settings inside the Hub to see the public mesh.'));
       return card;
@@ -767,6 +773,13 @@
       if (!card.isConnected && drawn) { stop(); return; }
       drawn = true;
       const me = M.me(), own = ML.ownCode();
+      // H95: the public line is the main mesh on 00000, or the second instance while in a private mesh
+      const PL = me && me.public ? M : (M.publicLineIf && M.publicLineIf());
+      const plm = PL && PL.me ? PL.me() : null, D = hub.SharedLinkDevices;
+      const num = D && D.code ? String(D.code()) : '';
+      const up = !!(plm && PL.linked && PL.linked());
+      net.textContent = up ? 'Connected to the Hub network as ' + num : 'Offline \u2014 will reconnect automatically';
+      net.dataset.state = up ? 'on' : 'off';
       inv.textContent = ''; list.textContent = '';
       ML.invites().forEach((v, i) => {
         const row = ui.el('div', 'pub-invite');
@@ -781,7 +794,7 @@
       holder.textContent = ''; holder.hidden = true; delete holder.dataset.other;
       if (!me || !me.public) {
         note.textContent = !on() ? 'Off: this Hub stays off the public mesh.'
-          : ML.isPrivate() ? 'This Hub is in a private mesh (code ' + clip(ML.privateCode(), 12) + '), so it is not on 00000.' : 'Joining the public mesh…';
+          : ML.isPrivate() ? 'This Hub is also in a private mesh (code ' + clip(ML.privateCode(), 12) + '); the public network stays on for calls and messages.' : 'Joining the public mesh…';   // H95
         return;
       }
       const ros = M.roster().filter((r) => r.online || r.deviceId === me.deviceId).slice(0, PUB_SHOW);

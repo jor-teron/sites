@@ -84,6 +84,12 @@
 (function () {
   'use strict';
   if (window.HubMesh) return;
+  /* H95: the whole mesh is one instance made by make(). window.HubMesh is the main one (every existing caller);
+     HubMesh.publicLine() lazily makes a second instance that hub_meshlink.js keeps on the public 00000 lobby while
+     the main one is in a private mesh, so Hub Line numbers stay reachable (cell-network style, always on).
+     Its peer ids differ (the code is in the id); keys / trust are shared through IndexedDB / localStorage. */
+  var pubInst = null;
+  function make() {
 
   var PREFIX = 'jtsites-';
   var HB_MS = 2000, DEAD_MS = 6000, CLAIM_JITTER_MS = 1500, RANK_MS = 3000;
@@ -409,6 +415,7 @@
       rv: 0, idRetry: 0, seen: [], seenSet: new Set(), buckets: new Map(), out: { tokens: RATE_BURST, at: Date.now() },
       stats: { sent: 0, recv: 0, dropSize: 0, dropRate: 0, dropShape: 0, dropTerm: 0, dropSpoof: 0, relayed: 0, dropPublic: 0, joinGaveUp: 0, dropSig: 0, dropKey: 0, dropTrust: 0, redials: 0 },   /* H89: + redials */   // H55b: + joinGaveUp (times); H51: + dropSig / dropKey / dropTrust
       hb: 0, seq: 0,
+      nums: new Map(),   // H95: deviceId -> 5-digit number the device announced itself (signed hb), not via the lobby
       pub: code === PUBLIC_CODE || !!(opts && opts.public), invOut: 0, invIn: new Map(),   // H55
       // H55b: join wait / retries
       joining: null, joinStart: 0, helloTimer: 0, joinState: '', joinFails: 0, lastJoinMs: 0, failStart: 0,
@@ -529,9 +536,19 @@
   /* ---------- roster ---------- */
   function rosterList() {
     var out = [];
-    S.roster.forEach(function (r) { out.push(Object.assign({}, r, { apps: Object.assign({}, r.apps) })); });
+    // S.roster.forEach(function (r) { out.push(Object.assign({}, r, { apps: Object.assign({}, r.apps) })); });   (before H95)
+    S.roster.forEach(function (r) { var o = Object.assign({}, r, { apps: Object.assign({}, r.apps) }); var n = r.deviceId === S.dev ? myNum() : S.nums.get(r.deviceId); if (n) o.num = n; out.push(o); });   // H95: self-announced number wins (older lobbies drop num)
     out.sort(function (a, b) { return a.joinOrder - b.joinOrder; });
     return out;
+  }
+  /* H95: each device announces its own number on its signed heartbeat (direct and lobby links), so Hub Line finds it
+     even when the lobby holder runs an older Hub that drops roster 'num' (H91 relied on the holder alone). */
+  function heardNum(x) {
+    if (!S || !x || !x.data || x.data.k !== 'hb' || !DEV_RE.test(String(x.from))) return;
+    var n = NUM_RE.test(String(x.data.num)) ? String(x.data.num) : '';
+    if ((S.nums.get(x.from) || '') === n) return;
+    if (n) S.nums.set(x.from, n); else S.nums.delete(x.from);
+    emit('roster', rosterList()); emit('peers', peers());
   }
   function onlineSorted() { return rosterList().filter(function (r) { return r.online; }); }
   function amDirect() { var me = S.roster.get(S.dev); return !me || !me.relay; }
@@ -585,7 +602,7 @@
       if (!S || S.direct.get(d) !== rec) return;
       rec.last = Date.now();
       if (!accept(x, 'direct', d)) return;
-      if (x.ch === CTRL) return;   // direct conns carry only hb pings (ch _mesh) and data
+      if (x.ch === CTRL) { heardNum(x); return; }   // direct conns carry only hb pings (ch _mesh) and data; H95: + their number
       deliver(x);
     }, 'direct'));
     conn.on('close', function () { if (S && S.direct.get(d) === rec) { S.direct.delete(d); } });
@@ -810,7 +827,7 @@
       S.joinState = 'refused'; S.joining = null; clearInterval(S.helloTimer); clearTimeout(S.joinTimer);   // H55b
       status('refused');
     }
-    else if (k === 'hb') { /* lobbyLast already updated */ }
+    else if (k === 'hb') { heardNum(x); }   /* lobbyLast already updated; H95: the holder's own number */
   }
   function lobbyMissing() { if (S && !S.isLobby && S.lobbyConn) { var c = S.lobbyConn; S.lobbyConn = null; S.joining = null; clearInterval(S.helloTimer); clearTimeout(S.joinTimer);   /* H55b: -0 is free: end the join wait */ try { c.close(); } catch (_) { /* gone */ } lobbyLost('missing'); } }
 
@@ -949,6 +966,7 @@
       if (!accept(x, 'member', d)) return;
       var rr = me.roster.get(d); if (rr) rr.lastSeen = Date.now();
       if (x.ch === CTRL) {
+        heardNum(x);   // H95
         if (x.data && x.data.k === 'info') { var r2 = me.roster.get(d); if (r2) { Object.assign(r2, info(Object.assign({}, r2, x.data))); broadcastRoster(); emit('roster', rosterList()); } }
         return;
       }
@@ -1003,12 +1021,12 @@
     // direct conns: ping, drop dead ones
     S.direct.forEach(function (r, d) {
       if (r.conn.open && now - r.last > DEAD_MS) { closeDirect(d); return; }
-      if (r.conn.open) safeSend(r.conn, envelope(CTRL, d, { k: 'hb' }));
+      if (r.conn.open) safeSend(r.conn, envelope(CTRL, d, { k: 'hb', num: myNum() }));
     });
     if (S.isLobby) {
       S.members.forEach(function (m, d) {
         if (now - m.last > DEAD_MS) { S.members.delete(d); try { m.conn.close(); } catch (_) { /* gone */ } memberGone(d); return; }
-        safeSend(m.conn, envelope(CTRL, d, { k: 'hb' }));
+        safeSend(m.conn, envelope(CTRL, d, { k: 'hb', num: myNum() }));
       });
       var me = S.roster.get(S.dev); if (me) me.lastSeen = now;
       if (++S.hb % 5 === 0) { pruneOffline(false); broadcastRoster(); }   // every 10 s: lastSeen refresh
@@ -1016,7 +1034,7 @@
       /* H55b: a join inside its JOIN_WAIT_MS: no heartbeat takeover (its own deadline decides) */
     } else if (S.lobbyConn && S.lobbyConn.open) {
       if (now - S.lobbyLast > DEAD_MS) { var c = S.lobbyConn; S.lobbyConn = null; try { c.close(); } catch (_) { /* gone */ } lobbyLost('dead'); return; }
-      safeSend(S.lobbyConn, envelope(CTRL, S.lobbyDev || '*', { k: 'hb' }));
+      safeSend(S.lobbyConn, envelope(CTRL, S.lobbyDev || '*', { k: 'hb', num: myNum() }));
     // } else if (!S.lobbyConn && !S.claimTimer && !S.lobbyPeer && S.peer && S.peer.open && S.state !== 'lobby') {   (before H55b)
     } else if (!S.lobbyConn && !S.claimTimer && !S.lobbyPeer && !S.retryTimer && !S.gaveUp && !S.refused && S.peer && S.peer.open && S.state !== 'lobby') {   // H55b: not while waiting to retry / given up
       lobbyLost('idle');   // nothing pending: try again
@@ -1158,7 +1176,7 @@
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') retry('visible'); });
   window.addEventListener('online', function () { retry('online'); });
 
-  window.HubMesh = {
+  return {
     start: start, stop: stop, me: me,
     peers: peers, roster: function () { return S ? rosterList() : []; },
     on: on, off: off, channel: channel,
@@ -1199,4 +1217,8 @@
     _sigText: sigText, _sigFor: sigFor, _checkIn: checkIn,
     _env: function (ch, to, data) { return S ? envelope(ch, to, data) : null; }
   };
+  }
+  window.HubMesh = make();
+  window.HubMesh.publicLine = function () { return pubInst || (pubInst = make()); };   // H95
+  window.HubMesh.publicLineIf = function () { return pubInst; };   // H95: the second instance, or null (never made)
 })();

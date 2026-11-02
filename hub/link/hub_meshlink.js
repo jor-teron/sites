@@ -31,6 +31,9 @@
  *   list window.HubMeshLink.invites() (Settings › Devices shows Accept / Dismiss). Accept = the same path as
  *   🎮 Devices › Join (location ?join=CODE, hub_role.js → hub_remote.js). window.HubMeshLink:
  *   { publicOn(), setPublic(on), isPrivate(), privateCode(), invite(deviceId), invites(), accept(i), dismiss(i) }.
+ * H95: always-on public Hub network. publicOn() is always true (the Settings switch is gone, a saved '0' is
+ *   ignored); while a private mesh is on, HubMesh.publicLine() (a second instance) keeps this device on 00000 so
+ *   Hub Line numbers stay reachable. Online / tab visible re-check at once; a number change refreshes both.
  * H55b: a mesh that gave up joining (5 minutes of failed joins) gets one fresh run when a Connect link opens or
  *   closes (HubMesh.retry()); HubMesh itself also retries on tab visible / back online.
  */
@@ -44,7 +47,17 @@
   const PUB_KEY = 'sites-hub.meshPublic', PAIR_KEY = 'hub-mesh-paired';
   const get = (k) => { try { return localStorage.getItem(k) || ''; } catch (_) { return ''; } };
   const put = (k, v) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (_) { /* blocked */ } };
-  const publicOn = () => get(PUB_KEY) !== '0';
+  // const publicOn = () => get(PUB_KEY) !== '0';   (H55 … H93)
+  const publicOn = () => true;   // H95: always on by design (cell network), no switch; an old '0' is ignored
+  /* H95: while the main mesh is private, a second HubMesh instance (HubMesh.publicLine()) stays on 00000 so this
+     device's number is still reachable by Hub Line; back on 00000 the second one stops (the main one is public). */
+  function pubLine(on) {
+    const P = on ? (HubMesh.publicLine && HubMesh.publicLine()) : (HubMesh.publicLineIf && HubMesh.publicLineIf());
+    if (!P) return;
+    if (!on) { if (P.state() !== 'stopped') P.stop(); return; }
+    const pm = P.me();
+    if (!(pm && pm.code === PUB)) P.start(PUB, { preferLobby: false }).catch((e) => console.warn('HubMesh public line', e && e.message));
+  }
   /** the private mesh code this Hub is in, or '' */
   function privateCode() {
     const L = window.SharedLink;
@@ -73,10 +86,11 @@
   function check() {   // H55
     const L = window.SharedLink;
     if (L.role === 'host' && !L.live && get(PAIR_KEY)) put(PAIR_KEY, '');   // host Disconnect: unpaired
-    if (off()) { if (HubMesh.state() !== 'stopped') HubMesh.stop(); return; }
+    if (off()) { if (HubMesh.state() !== 'stopped') HubMesh.stop(); pubLine(false); return; }
     const code = String(L.code || '');
     const priv = privateCode();
     const m = HubMesh.me();
+    pubLine(!!priv);   // H95
     if (priv) {
       // H50 rule kept: a joined phone starts its mesh only once connected
       if (L.role === 'join' && !L.connected && !(m && m.code === priv)) { if (m && m.public) HubMesh.stop(); return; }
@@ -102,6 +116,11 @@
     if (e.key === PUB_KEY || e.key === null) setTimeout(check, 0);   // H55: switch changed in another tab
   });
   window.addEventListener('hub-prefs', () => setTimeout(check, 0));   // H55: Settings frame changed the switch
+  // H95: back online / tab woken → check now (HubMesh itself also restarts a run that gave up)
+  window.addEventListener('online', () => setTimeout(check, 0));
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { setTimeout(check, 0); const P = HubMesh.publicLineIf && HubMesh.publicLineIf(); if (P && P.me() && P.me().gaveUp) P.retry(); } });
+  // H95: a new number (H92 / H93) → advertise it on the public line too (hub_line.js refreshes the main mesh)
+  window.addEventListener('hub-number-changed', () => { const P = HubMesh.publicLineIf && HubMesh.publicLineIf(); try { if (P && P.me()) P.refresh(); } catch (_) { /* down */ } });
   window.__hubMeshCheck = check;
 
   /* ---------- H55: invites ---------- */
@@ -128,7 +147,8 @@
   window.HubMeshLink = {
     PUBLIC_CODE: PUB,
     publicOn,
-    setPublic(on) { put(PUB_KEY, on ? '' : '0'); check(); },
+    // setPublic(on) { put(PUB_KEY, on ? '' : '0'); check(); },   (H55 … H93)
+    setPublic() { put(PUB_KEY, ''); check(); },   // H95: always on; kept so old callers don't break
     isPrivate: () => !!privateCode(),
     privateCode,
     ownCode,
