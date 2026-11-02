@@ -73,6 +73,7 @@
     get: function (k) { return S[k]; },
     /* Telephone's saved contacts, read-only ('telephone-contacts-v1', TPSave's CON key) */
     contactName: function (num) {
+      try { if (root.HubContacts) { var hc = root.HubContacts.byNum(num); if (hc) return hc.name; } } catch (_) { /* CT1: fall back below */ }
       try { var s = ls(), a = JSON.parse((s && s.getItem('telephone-contacts-v1')) || '[]'); for (var i = 0; i < a.length; i++) if (a[i] && String(a[i].num) === num && a[i].name) return String(a[i].name).slice(0, 40); } catch (_) { /* */ }
       return '';
     },

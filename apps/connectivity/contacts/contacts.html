@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<!-- CT1 Contacts — the shared contact list (../shared/contacts_store.js) with Call / Message / Video call. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contacts</title>
+  <link rel="icon" href="contacts_icon.svg">
+  <link rel="stylesheet" href="contacts.css">
+</head>
+<body>
+<header><h1>Contacts</h1><input id="q" type="search" placeholder="🔍 Search name or number" autocomplete="off"></header>
+<main><ul id="list"></ul><p id="empty" class="mut" hidden>No contacts yet. Tap “+ New contact”.</p></main>
+<button id="b-new" class="big pr">+ New contact</button>
+<div id="sheet" class="ov" hidden><div class="card">
+  <div class="av big-av" id="d-av"></div><h2 id="d-name"></h2><p class="mut" id="d-num"></p>
+  <div class="acts">
+    <button class="act pr" id="d-call"><span>📞</span>Call</button>
+    <button class="act pr" id="d-msg"><span>💬</span>Message</button>
+    <button class="act pr" id="d-vid"><span>🎥</span>Video call</button>
+  </div>
+  <div class="row"><button class="btn" id="d-edit">✏️ Edit</button><button class="btn" id="d-close">Close</button></div>
+</div></div>
+<div id="form" class="ov" hidden><div class="card">
+  <h2 id="f-title">New contact</h2>
+  <label>Name<input id="f-name" maxlength="40" autocomplete="off"></label>
+  <label>Number (5 digits)<input id="f-num" inputmode="numeric" maxlength="5" autocomplete="off"></label>
+  <label class="chk"><input type="checkbox" id="f-fav"> ⭐ Favourite</label>
+  <p id="f-err" class="err" hidden></p>
+  <div class="row"><button class="btn bad" id="f-del" hidden>🗑 Delete</button><button class="btn" id="f-cancel">Cancel</button><button class="btn ok" id="f-save">Save</button></div>
+</div></div>
+<div id="dlg" class="ov" hidden><div class="card"><p id="dlg-t"></p><div class="row" id="dlg-b"></div></div></div>
+<script src="../shared/contacts_store.js"></script>
+<script src="ct_theme.js"></script>
+<script src="ct_open.js"></script>
+<script src="ct_app.js"></script>
+</body>
+</html>

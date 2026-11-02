@@ -69,7 +69,7 @@
   try { log = JSON.parse(localStorage.getItem(LOG) || '[]'); } catch (_) { log = []; }
   if (!Array.isArray(log)) log = [];
   log = log.filter(function (e) { return e && /^(in|out|missed)$/.test(e.dir) && /^\d{1,8}$/.test(String(e.num)) && +e.at > 0; }).slice(0, MAXLOG);
-  var cons = [];
+  var cons = [], HC = window.HubContacts || null;   // CT1: contacts live in ../shared/contacts_store.js when loaded (same key)
   function cleanCon(x) {   // repair: keep only well-formed contacts
     if (!x || typeof x !== 'object') return null;
     var num = String(x.num || '').replace(/\D/g, ''), nm = String(x.name || '').trim().slice(0, 40);
@@ -105,7 +105,7 @@
   addEventListener('storage', function (e) {
     if (e.key === 'sites-hub.theme') theme();
     if (e.key === LOG) { try { log = JSON.parse(e.newValue || '[]') || []; } catch (_) { /* */ } if (window.TPSave && TPSave.onlog) TPSave.onlog(); }
-    if (e.key === CON) { cons = loadCons(e.newValue); sortCons(); if (window.TPSave && TPSave.oncontacts) TPSave.oncontacts(); }
+    if (e.key === CON && !HC) { cons = loadCons(e.newValue); sortCons(); if (window.TPSave && TPSave.oncontacts) TPSave.oncontacts(); }
   });
   window.TPSave = {
     get: function (k) { return P[k]; },
@@ -133,26 +133,29 @@
     setLastCode: function (c) { try { localStorage.setItem(LAST, c); } catch (_) { /* */ } },
     onlog: null,
     /* contacts (TP2) */
-    contacts: function () { return cons.map(function (x) { return Object.assign({}, x); }); },
+    contacts: function () { if (HC) return HC.list(); return cons.map(function (x) { return Object.assign({}, x); }); },
     contact: function (num, did) {   // by device id first (it survives a new number), then by number
+      if (HC) return HC.byNum(num, did);
       var hit = did ? cons.filter(function (x) { return x.did && x.did === did; })[0] : null;
       return hit || cons.filter(function (x) { return x.num === String(num); })[0] || null;
     },
     saveContact: function (x) {   // add (no id) or edit (id) → returns the saved copy, or null when invalid / full
+      if (HC) return HC.save(x);
       var y = cleanCon(Object.assign({}, x, { id: x.id || hex(4) })); if (!y) return null;
       var i = -1; cons.forEach(function (c, k) { if (c.id === x.id) i = k; });
       if (i >= 0) cons[i] = y; else { if (cons.length >= MAXCON) return null; cons.push(y); }
       saveCons(); return Object.assign({}, y);
     },
-    deleteContact: function (id) { var n = cons.length; cons = cons.filter(function (c) { return c.id !== id; }); if (cons.length !== n) saveCons(); return cons.length !== n; },
+    deleteContact: function (id) { if (HC) return HC.remove(id); var n = cons.length; cons = cons.filter(function (c) { return c.id !== id; }); if (cons.length !== n) saveCons(); return cons.length !== n; },
     followNum: function (did, num, old) {   // a known device came back with a new number → update its contact(s)
       var ch = [];   // by device id; TP2b: a contact without a device id that still has the device's old 4-digit number too
       if (!NUM.test(num)) return ch;
+      if (HC) cons = HC.list();
       cons.forEach(function (c) {
         var hit = c.did ? c.did === did : (OLD.test(old || '') && c.num === old && OLD.test(c.num));
         if (hit && c.num !== num) { c.num = num; if (!c.did && /^[0-9a-f]{16}$/.test(did)) c.did = did; ch.push(c.name); }
       });
-      if (ch.length) saveCons();
+      if (ch.length) { if (HC) cons.forEach(function (c) { if (ch.indexOf(c.name) >= 0) HC.save(c); }); else saveCons(); }
       return ch;
     },
     followLog: function (did, num, old) {   // TP2b: Recent entries that still have the device's old 4-digit number
@@ -164,6 +167,7 @@
     },
     oncontacts: null
   };
+  if (HC) HC.onChange(function () { if (TPSave.oncontacts) TPSave.oncontacts(); });
   if (fresh) save();
   theme();
 })();

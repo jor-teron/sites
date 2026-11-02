@@ -590,5 +590,16 @@
   /* ---------- start ---------- */
   paintMe(); paintSeg(); paintVol(); paintSink(); paintDnd(); paintList(); paintLog(); paintContacts(); paintCall(); paintBadge(); paintNotify();
   boot(); hubMissed();
+  /* CT1 deep link: #dial=<5 digits>[&video=1] (Contacts) → fills the dial pad and calls once the lobby is up;
+     video=1 turns the camera on when the call connects. #call=<callId>&from= (incoming Hub Line) is separate. */
+  function dialLink() {
+    var m = /[#&]dial=(\d{4,5})/.exec(location.hash); if (!m) return;
+    var num = m[1], vid = /[#&]video=1/.test(location.hash), t0 = Date.now();
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (_) { /* */ }
+    show(0); dial = num; paintDial();
+    if (vid) { var off = false; TPCall.on('state', function () { var c = TPCall.current(); if (!off && c && c.state === 'active' && c.num === num) { off = true; TPCall.video(true).catch(function () { /* camera refused */ }); } }); }
+    (function wait() { if (TPPeer.online() || Date.now() - t0 > 15000) call(num); else setTimeout(wait, 400); })();
+  }
+  dialLink(); addEventListener('hashchange', dialLink);   // also when the Hub re-opens an already open Telephone
   window.TPApp = { show: show, dial: function () { return dial; }, page: function () { return page; } };   // test hook
 })();
