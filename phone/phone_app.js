@@ -13,7 +13,8 @@
   // var RELEASE = 'PH1';   (PH1)
   // var RELEASE = 'PH6';   (PH6)
   // var RELEASE = 'PH7';   (PH7)
-  var RELEASE = 'PH8';
+  // var RELEASE = 'PH8';   (PH8)
+  var RELEASE = 'PH9';
   var d = S.load();
   var root = document.documentElement;
 
@@ -270,11 +271,16 @@
   }
   try { cat = localStorage.getItem(CATKEY) || ''; } catch (_) { /* blocked */ }
   if (cats.indexOf(cat) < 0) cat = cats[0] || '';
+  var CAT_EMOJI = { games: '🎮', media: '🎬', office: '📄', connectivity: '📡', tools: '🛠️', lab: '🧪', learn: '📚', system: '⚙️' };   // PH9
+  function catEmoji(c) { return CAT_EMOJI[String(c || '').toLowerCase()] || '📁'; }   // PH9
   function renderTabs() {
     var t = $('tabs'); t.textContent = '';
     cats.forEach(function (c) {
       var b = document.createElement('button'); b.type = 'button'; b.className = 'tab' + (c === cat ? ' on' : '');
-      b.dataset.cat = c; b.textContent = c; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', c === cat);
+      // b.dataset.cat = c; b.textContent = c; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', c === cat);   (PH8)
+      b.dataset.cat = c; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', c === cat); b.setAttribute('aria-label', c);   // PH9
+      b.innerHTML = '<span class="te" aria-hidden="true"></span><span class="tl"></span>';   // PH9: emoji over label
+      b.firstChild.textContent = catEmoji(c); b.lastChild.textContent = c;
       t.appendChild(b);
     });
   }
@@ -308,7 +314,7 @@
     if (on) { var t = $('tabs'); t.scrollLeft = on.offsetLeft - t.clientWidth / 2 + on.offsetWidth / 2; }
   }
   $('search').addEventListener('input', function () {
-    $('tabs').querySelectorAll('.tab').forEach(function (b) { b.classList.toggle('on', !$('search').value && b.dataset.cat === cat); });
+    $('tabs').querySelectorAll('.tab').forEach(function (b) { var on = !$('search').value && b.dataset.cat === cat; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });   // PH9: aria too
     renderList();
   });
   $('search').addEventListener('keydown', function (e) {
@@ -684,7 +690,9 @@
       if (axis === 'y') {
         // if (!dm) dm = (dy > 0 && (st0 <= 0 || !list.contains(e.target) && $('drawer-head').contains(e.target))) ? 'close' : 'scroll';   (PH6)
         // PH7: list rests at its bottom; pull down closes from there, or from the bottom bar
-        if (!dm) dm = (dy > 0 && (st0 >= list.scrollHeight - list.clientHeight - 1 || !list.contains(e.target) && $('drawer-head').contains(e.target))) ? 'close' : 'scroll';
+        // if (!dm) dm = (dy > 0 && (st0 >= list.scrollHeight - list.clientHeight - 1 || !list.contains(e.target) && $('drawer-head').contains(e.target))) ? 'close' : 'scroll';   (PH7)
+        // PH9: search on top, tab bar at the bottom (both outside #list): pull down there closes; in the list only at rest
+        if (!dm) dm = (dy > 0 && (st0 >= list.scrollHeight - list.clientHeight - 1 || !list.contains(e.target))) ? 'close' : 'scroll';
         if (dm === 'close') { var dr = $('drawer'); dr.classList.add('drag'); dr.style.transform = 'translateY(' + Math.max(0, dy) + 'px)'; }
         else list.scrollTop = st0 - dy;
       } else { dm = 'cat'; list.style.transform = 'translateX(' + dx * 0.25 + 'px)'; }

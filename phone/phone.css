@@ -142,4 +142,17 @@ body.app-open #home,body.drawer-open #home{opacity:0}
 #list .grid.up+.sec-h{margin-top:18px}
 #list .sec-h~.grid.up{margin:0 auto}
 #list .sec-h:first-child{margin-top:auto}
+/* PH9: search back on top; dock-style category bar at the bottom (#drawer-head flattened, phone.html unchanged) */
+#drawer-head{display:contents}
+#search{order:0;flex:none;width:auto;margin:10px 12px 4px}
+#list-vp{order:1}
+#tabs{order:2;flex:none;display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;margin:4px 10px calc(10px + env(safe-area-inset-bottom));padding:8px 6px;
+  border-radius:26px;background:rgba(255,255,255,.18);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 1px 6px rgba(0,0,0,.18);touch-action:none}
+#tabs::-webkit-scrollbar{display:none}
+:root:not(.dark) #tabs{background:rgba(0,0,0,.06)}
+#tabs .tab{flex:1 0 64px;height:auto;min-width:64px;padding:6px 4px;border:0;border-radius:16px;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--fg)}
+#tabs .tab .te{font-size:22px;line-height:1.1;pointer-events:none}
+#tabs .tab .tl{max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none}
+#tabs .tab.on{background:var(--acc);color:#fff}
+#tabs .tab:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){#pages,#drawer,#panel-box,#apps,#sheet-box{transition:none!important}}

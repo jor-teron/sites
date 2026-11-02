@@ -1,4 +1,4 @@
-# Phone launcher (`phone/`), release PH8
+# Phone launcher (`phone/`), release PH9
 
 A phone-style home screen for the Hub. Jor runs it as the **Android home screen inside a WebView**
 (PH3 will be the tiny APK). It works fully by gesture and behaves like a phone launcher.
@@ -16,7 +16,7 @@ H79: the page is `/phone.html` at the site root, next to `hub.html`; its own fil
 | Any app icon | long-press (≈0.5 s) | menu: Open · Pin to home / Remove from home · Add to dock / Remove from dock · App info |
 | Drawer | swipe left / right | next / previous category tab |
 | Drawer | drag up / down | scroll the list (with a fling) |
-| Drawer | pull down at the top of the list or on the header, or Back | close |
+| Drawer | pull down on the search bar or the category bar, or in the list when it rests at its bottom, or Back | close (PH9) |
 | Quick panel | swipe up, tap below it, or Back | close |
 | Open app | swipe right from the left edge, or Back | home (the app stays alive) |
 
@@ -71,7 +71,7 @@ Desktop testing: mouse drags do the same; wheel down = drawer, wheel up = panel,
 
 | File | What |
 |---|---|
-| `/phone.html` (site root, H79) | page, layers, script order. `<title>Phone PH1</title>` (phone_app.js sets the live title, `Phone PH8`), no `?v=` labels |
+| `/phone.html` (site root, H79) | page, layers, script order. `<title>Phone PH1</title>` (phone_app.js sets the live title, `Phone PH9`), no `?v=` labels |
 | `index.html` | redirect only, to `../phone.html` (keeps ?query and #hash) |
 | `phone.css` | Stopwatch palette, dark default; animations on transform / opacity only |
 | `phone_save.js` | the one save module (`PhoneSave`) |
@@ -157,3 +157,9 @@ PH5 on (older saves get the PH5 home and dock once). PH6: page 1 keeps at most 1
 - **Drawer:** a heading above each section's grid. Bottom-up like PH7: the first section sits at the bottom next to the bar, later sections stack above; inside a section the first app is bottom-left. Favorite apps (e.g. TV) are a **Favorite** section at the very bottom of the first tab. Search stays one flat list.
 - **Fallback:** a CSV that fails to load (offline, 404) leaves that tab flat, no headings, no errors. `hub/update/hub_sw.js` already caches every `apps/*/*-apps.csv` (network first), so sections also show offline once cached.
 - Release name `PH8`.
+
+## PH9 — Search on top, dock-style category bar (2026-11-02 IST)
+- **Layout:** search bar back at the top of the drawer; category bar stays at the bottom. Done in CSS only: `#drawer-head` is `display:contents`, so `#search` (order 0), `#list-vp` (1) and `#tabs` (2) are laid out by `#drawer`. phone.html unchanged.
+- **Category bar:** same look as the home dock (rounded 26px glass panel, light blur). Each category is a larger button, emoji over a short label: Games 🎮, Media 🎬, Office 📄, Connectivity 📡, Tools 🛠️, Lab 🧪, Learn 📚, System ⚙️, anything else 📁. Selected = accent (`--acc`). The bar scrolls sideways when it doesn't fit; the selected tab is scrolled into view. `role=tab`, `aria-selected`, `aria-label` and keyboard activation kept; taps go through the gesture code; left/right swipe still changes category.
+- **Closing:** pull down on the search bar or the category bar, or in the list when it rests at its bottom. The list stays bottom-up and opens scrolled to its bottom.
+- Release name `PH9`.
