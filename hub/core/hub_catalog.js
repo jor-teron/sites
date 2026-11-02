@@ -131,6 +131,7 @@ NE-India Dictionary,   nei-dict/,        , , Language, Northeast India dictionar
 Caption for NEI,       caption-for-nei/, , , Language, Live captions for English - Assamese - Hindi - Bengali and Nepali
 Learning HTML (Basic), learning-html/,   , , Learn, Try HTML: type code and see the result live as you type
 Speed Test,            speedtest/,       , , Network, Test your internet speed: ping and download from this site
+Device Benchmark,      devbench/,        , , Device, Quick speed tests for phones TVs and PCs: CPU GPU memory and AI
 Altimeter,             altimeter/,          , , Weather, GPS altitude from your phone location - needs location permission
 Password Generator,    password-generator/, , , , Generate strong passwords with options - works offline
 Map,                   map/,             map/map_icon.svg, , Navigation, Simple OpenStreetMap: find your location and search places
@@ -216,7 +217,6 @@ Settings,              settings/,        , , System, Wallpaper theme taskbar dev
 System Monitor,        sysmon/,          , , System, Live device info with CPU memory storage network and battery graphs
 Mesh Viewer,           mesh-viewer/,     , , System, See this Hub's mesh network: devices online join stats and a live connection log
 Notification Centre,   notifications/,   , , System, Past Hub notifications on this device: filter by app - clear - Do Not Disturb
-Device Benchmark,      devbench/,        , , System, Quick speed tests for phones TVs and PCs: CPU GPU memory and AI
 Terminal,              terminal/,        , , System, Unix style command line to browse drives edit files and open Hub apps
 App Hub,               apphub/,          , , System, Browse every category and app in one place
 Search,                search/,          search/search_icon.png, , System, Find apps Settings pages Hub actions and open windows
