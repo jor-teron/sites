@@ -2,6 +2,7 @@
    {convs:{<num>:{num, name, unread, msgs:[{id, dir:'in'|'out', text, ts, st:'queued'|'sent'|'delivered'|''  (MS1 'unsent' is read as queued); MS3 adds st 'read' (blue ✓✓),
    'lost' (a file that was only in memory when the app closed), file entries {kind:'file', fname, size, mime, thumb?} and rr:1 on
    incoming messages whose read receipt went out.}]}}}.
+   MS4: removeMsg(num, id) deletes one message (this device only); remove(num) a whole chat.
    Caps: 500 messages per conversation, 3000 in total (oldest conversations trimmed first). */
 (function (root) {
   'use strict';
@@ -68,6 +69,7 @@
     ack: function (num, id) { return M.setSt(num, id, 'delivered'); },
     read: function (num) { var c = H.convs[num]; if (c && c.unread) { c.unread = 0; save(); } },
     unread: function () { return list0().reduce(function (a, c) { return a + (c.unread || 0); }, 0); },
+    removeMsg: function (num, id) { var c = H.convs[num]; if (!c) return false; for (var i = c.msgs.length - 1; i >= 0; i--) if (c.msgs[i].id === id) { c.msgs.splice(i, 1); save(); return true; } return false; },   // MS4
     remove: function (num) { delete H.convs[num]; save(); },
     set: function (k, v) { S[k] = v; try { var s = ls(); s && s.setItem(SET, JSON.stringify(S)); } catch (_) { /* */ } },
     get: function (k) { return S[k]; },

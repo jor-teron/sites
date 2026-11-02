@@ -10,43 +10,37 @@
 </head>
 <body>
 <div id="app">
-  <header class="bar">
-    <div class="who"><span id="net" class="net" role="img" title="Starting…" aria-label="Starting…"></span><b id="me-name"></b><span id="dnd-ind" title="Hub Do Not Disturb is on" aria-label="Do Not Disturb on" hidden>🌙</span></div>
-    <button class="mini" id="ms-switch" hidden></button>
-    <button class="mini ico" id="b-set" aria-label="Settings" title="Settings">⚙️</button>
-  </header>
+  <!-- MS4: header bar removed (#net status dot, #me-name, 🌙 #dnd-ind); New message + ⚙️ share one row in the list column -->
   <div id="main">
     <aside id="listcol">
-      <button class="pri" id="b-new">＋ New message</button>
+      <div class="toprow"><button class="pri" id="b-new">＋ New message</button><button class="mini" id="ms-switch" hidden></button><button class="mini ico" id="b-set" aria-label="Settings" title="Settings">⚙️</button></div>
       <ul id="convs"></ul>
       <p id="conv-empty" class="mut">No messages yet.</p>
-      <div class="hd">Online now</div>
-      <ul id="online"></ul>
-      <p id="online-empty" class="mut">No other devices online.</p>
+      <!-- MS4: Online now (#online / #online-empty) removed; peers still tracked for sending and names -->
     </aside>
     <section id="chat" hidden>
-      <div class="chead"><button class="mini ico" id="b-back" aria-label="Back">←</button><div class="who"><b id="c-name"></b><small id="c-num" class="mut"></small></div></div>
+      <div class="chead"><button class="mini ico" id="b-back" aria-label="Back">←</button><div class="who"><b id="c-name"></b><small id="c-num" class="mut"></small></div><button class="mini ico" id="b-delchat" aria-label="Delete this chat" title="Delete this chat">🗑</button></div>
       <ul id="msgs"></ul>
       <form id="compose"><button type="button" class="mini ico att" id="b-att" aria-label="Attach a file" title="Attach a file">📎</button><input type="file" id="in-file" multiple hidden><textarea id="in-text" rows="1" maxlength="2000" placeholder="Message"></textarea><button class="pri" id="b-send" aria-label="Send">➤</button></form>
     </section>
-    <p id="pick" class="mut">Pick a conversation or someone online.</p>
+    <p id="pick" class="mut">Pick a conversation, or tap ＋ New message.</p>
   </div>
 </div>
 <div id="sheet" hidden><div class="card">
   <div class="chead"><b>Settings</b><button class="mini" id="b-close">Done</button></div>
   <h2>This device</h2>
-  <div class="set-row"><label for="in-name">Name</label><input id="in-name" maxlength="40"></div>
+  <div class="set-row" id="row-name"><label for="in-name">Name</label><input id="in-name" maxlength="40"></div>
   <div class="set-row"><span>My number</span><b id="num-lbl">—</b></div>
   <h2>Alerts</h2>
   <label class="set-row big" for="chk-notify"><span>Notify me of new messages</span><input type="checkbox" id="chk-notify"></label>
   <p id="notify-note" class="mut"></p>
-  <h2>Hub code</h2>
-  <div class="set-row"><span>Code</span><span><b id="code-lbl">—</b> <button class="mini" id="b-code">Change</button></span></div>
+  <div id="sec-code"><h2>Hub code</h2>
+  <div class="set-row"><span>Code</span><span><b id="code-lbl">—</b> <button class="mini" id="b-code">Change</button></span></div></div>
   <h2>About</h2>
-  <div class="about"><img src="messages_icon.png" width="48" height="48" alt=""><div><b>Messages</b> <span id="ver">MS3 · CX1</span>
-    <p>Private one-to-one messages and files (up to 100 MB), sent directly device to device by Hub number. History stays on this device; nothing is stored on a server. Group chat is Pooh Chat.</p></div></div>
+  <div class="about"><img src="messages_icon.png" width="48" height="48" alt=""><div><b>Messages</b> <span id="ver">MS4</span>
+    <p>Private one-to-one messages and files (up to 100 MB), sent directly device to device by number (inside the Hub it&rsquo;s the Hub&rsquo;s number). Inside the Hub, messages arrive even when Messages is closed. History stays on this device; nothing is stored on a server. Deleting removes only your own copy. Group chat is Pooh Chat.</p></div></div>
 </div></div>
-<div id="dlg" hidden><div class="card"><p id="dlg-t"></p><input id="dlg-in" inputmode="numeric" maxlength="5" hidden><div id="dlg-b" class="btns"></div></div></div>
+<div id="dlg" hidden><div class="card"><p id="dlg-t"></p><input id="dlg-in" inputmode="numeric" maxlength="5" hidden><div id="dlg-x" hidden></div><div id="dlg-b" class="btns"></div></div></div>
 <div id="toast" hidden></div>
 <script src="../../../shared/link/link_core.js"></script>
 <script src="../../../shared/link/link_devices.js"></script>

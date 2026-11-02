@@ -1,6 +1,10 @@
 /* Messages MS3 + CX1 — UI (CX1: text goes over the Hub's HubLine when present (MSLine), #chat=<num> opens a chat; MS3: files via MSFiles, WhatsApp ticks 🕓 ✓ ✓✓ blue ✓✓ with read receipts {t:'read', ids}; MS2: offline queue → auto-send when the person comes online, alerts + Hub DND via MSNotify). Code order (FC5): #code= (5 digits) > Hub private mesh (parent.HubMeshLink) > public lobby;
    every 5 s follow the Hub mesh when idle, else offer an in-bar Switch / Back to Public button.
    My number = this device's Hub number (SharedLinkDevices.code() / SharedLink.deviceCode(), self/parent/top). */
+/* MS4: header bar gone (no status dot / name / 🌙); New message + ⚙️ in one row; Online now removed (roster still used);
+   New message = contact picker (HubContacts, search) + Type a number; delete this device's copy only: a chat (long-press /
+   right-click a conversation, or 🗑 in the chat header) or one message (long-press / right-click a bubble); in-app confirm cards.
+   Inside the Hub, Settings hides Name + Hub code. */
 (function () {
   'use strict';
   var S = MSStore, P = MSPeer, NUM = /^[1-9]\d{4}$/;
@@ -33,7 +37,7 @@
   function dialog(text, btns, ask) {
     return new Promise(function (res) {
       $('dlg-t').textContent = text; var inp = $('dlg-in'); inp.hidden = !ask; inp.value = '';
-      var b = $('dlg-b'); b.innerHTML = '';
+      $('dlg-x').hidden = true; var b = $('dlg-b'); b.innerHTML = '';
       btns.forEach(function (n, i) {
         var x = document.createElement('button'); x.className = i === btns.length - 1 ? 'pri' : 'mini'; x.textContent = n;
         x.onclick = function () {
@@ -45,7 +49,7 @@
       $('dlg').hidden = false; if (ask) inp.focus();
     });
   }
-  function setStatus(st) { var d = S.dot(st), el = $('net'); el.className = 'net ' + d.cls; el.title = d.t + (code ? ' · ' + (code === PUB ? 'Public ' + PUB : 'code ' + code) : ''); el.setAttribute('aria-label', el.title); }
+  function setStatus(st) { var d = S.dot(st), el = $('net'); if (!el) return; el.className = 'net ' + d.cls; el.title = d.t + (code ? ' · ' + (code === PUB ? 'Public ' + PUB : 'code ' + code) : ''); el.setAttribute('aria-label', el.title); }
   function go(c) {
     if (started && c === code) return;
     if (started) P.stop();
@@ -70,13 +74,11 @@
       var m = c.msgs[c.msgs.length - 1], li = document.createElement('li'), nm = label(c.num, c.name);
       if (c.num === cur) li.className = 'sel';
       li.innerHTML = '<span class="av">' + esc(nm.charAt(0).toUpperCase()) + '</span><span class="nm"><b>' + esc(nm) + ' <span class="mut">' + c.num + '</span></b><small>' + (m ? (m.dir === 'out' ? 'You: ' : '') + esc(m.kind === 'file' ? '📎 ' + m.fname : String(m.text || '').slice(0, 80)) : '') + '</small></span><span class="tm">' + (m ? hm(m.ts) : '') + (c.unread ? '<br><span class="ur">' + c.unread + '</span>' : '') + '</span>';
-      li.onclick = function () { open(c.num); };
+      li.onclick = function () { if (li._lp) { li._lp = false; return; } open(c.num); };
+      longPress(li, function () { delChat(c.num); });
       ul.appendChild(li);
     });
     $('conv-empty').hidden = l.length > 0;
-    var on = $('online'), r = P.roster(); on.innerHTML = '';
-    r.forEach(function (d) { var li = document.createElement('li'), nm = label(d.num, d.name); li.innerHTML = '<span class="av">' + esc(nm.charAt(0).toUpperCase()) + '</span><span class="nm"><b>' + esc(nm) + '</b><small>' + d.num + '</small></span>'; li.onclick = function () { open(d.num, d.name); }; on.appendChild(li); });
-    $('online-empty').hidden = r.length > 0;
     var u = S.unread(); document.title = (u ? '(' + u + ') ' : '') + 'Messages';
   }
   function renderChat() {
@@ -93,7 +95,7 @@
       if (wait && m.kind === 'file') s.appendChild(document.createTextNode(' Waiting — kept only while Messages is open'));
       if (m.st === 'lost') s.appendChild(document.createTextNode(' Not sent — the app was closed'));
       if (wait && m.kind !== 'file' && P.peerOf(cur)) { var b = document.createElement('button'); b.className = 'mini retry'; b.textContent = 'Send now'; b.onclick = function () { deliver(cur, m); }; s.appendChild(b); }
-      li.appendChild(s); ul.appendChild(li);
+      li.appendChild(s); longPress(li, function () { delMsg(cur, m.id); }); ul.appendChild(li);
     });
     ul.scrollTop = ul.scrollHeight;
   }
@@ -193,12 +195,67 @@
   function hashChat() { var h = /[#&?]chat=(\d{5})(?!\d)/.exec(location.hash); if (h && NUM.test(h[1]) && h[1] !== myNum) open(h[1]); }
   addEventListener('hashchange', hashChat);
   $('b-back').onclick = function () { cur = ''; $('chat').hidden = true; $('pick').hidden = false; $('main').classList.remove('inchat'); renderList(); };
-  $('b-new').onclick = function () {
-    dialog('Type a 5-digit Hub number, or tap someone under Online now.', ['Cancel', 'Open'], true).then(function (v) {
-      if (!NUM.test(v)) { if (/^\d{5}$/.test(v)) toast('Not a valid number'); return; }
-      if (v === myNum) { toast('That is this device'); return; } open(v);
+  /* MS4: New message picker — saved contacts (HubContacts) with a search filter, plus Type a number */
+  function contacts() { try { return window.HubContacts ? HubContacts.list() : []; } catch (_) { return []; } }
+  function fillPick(box, q) {
+    var ul = box.querySelector('ul'); ul.innerHTML = ''; q = q.trim().toLowerCase();
+    var l = contacts().filter(function (c) { return c && NUM.test(String(c.num)) && String(c.num) !== myNum && (!q || String(c.name).toLowerCase().indexOf(q) >= 0 || String(c.num).indexOf(q) >= 0); });
+    l.forEach(function (c) { var li = document.createElement('li'); li.innerHTML = '<span class="av">' + esc(String(c.name || '?').charAt(0).toUpperCase()) + '</span><span class="nm"><b>' + esc(c.name || c.num) + (c.fav ? ' ⭐' : '') + '</b><small>' + esc(c.num) + (P.peerOf(String(c.num)) ? ' · online' : '') + '</small></span>'; li.onclick = function () { closeDlg(); open(String(c.num), c.name); }; ul.appendChild(li); });
+    box.querySelector('.mut').hidden = l.length > 0;
+  }
+  function closeDlg() { $('dlg').hidden = true; $('dlg-x').hidden = true; $('dlg-x').innerHTML = ''; }
+  function newMsg() {
+    var x = $('dlg-x'), has = contacts().length > 0;
+    x.innerHTML = (has ? '<input id="pk-q" type="search" placeholder="Search contacts" autocomplete="off"><ul id="pk-list"></ul><p class="mut">No matching contacts.</p>' : '<p class="mut">No saved contacts yet.</p><ul hidden></ul>') + '<div class="hd">Type a number</div><input id="pk-num" inputmode="numeric" maxlength="5" placeholder="5-digit number">';
+    x.hidden = false; $('dlg-in').hidden = true; $('dlg-t').textContent = 'New message';
+    if (has) { fillPick(x, ''); $('pk-q').oninput = function () { fillPick(x, this.value); }; }
+    var b = $('dlg-b'); b.innerHTML = '';
+    function go2() {
+      var v = $('pk-num').value.trim();
+      if (!NUM.test(v)) { toast('Enter a 5-digit number'); return; }
+      if (v === myNum) { toast('That is this device'); return; }
+      closeDlg(); open(v);
+    }
+    [['Cancel', 'mini', closeDlg], ['Open', 'pri', go2]].forEach(function (d) { var k = document.createElement('button'); k.textContent = d[0]; k.className = d[1]; k.onclick = d[2]; b.appendChild(k); });
+    $('pk-num').onkeydown = function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); go2(); } };
+    $('dlg').hidden = false; (has ? $('pk-q') : $('pk-num')).focus();
+  }
+  $('b-new').onclick = newMsg;
+  /* MS4: delete — this device's copy only */
+  function confirmDel(text) {
+    return new Promise(function (res) {
+      closeDlg(); $('dlg-t').textContent = text; $('dlg-in').hidden = true; var b = $('dlg-b'); b.innerHTML = '';
+      [['Cancel', 'mini', false], ['Delete', 'pri danger', true]].forEach(function (d) { var k = document.createElement('button'); k.textContent = d[0]; k.className = d[1]; k.onclick = function () { closeDlg(); res(d[2]); }; b.appendChild(k); });
+      $('dlg').hidden = false;
     });
-  };
+  }
+  function dropMem(num, id) { delete busy[id]; delete hubQ[id]; delete pendingName[num]; }
+  function delChat(num) {
+    return confirmDel('Delete this chat? This removes it only from this device.').then(function (ok) {
+      if (!ok) return false;
+      var c = S.conv(num); if (c) c.msgs.forEach(function (m) { delete busy[m.id]; delete hubQ[m.id]; });
+      delete pendingName[num]; S.remove(num);   // queued files vanish too: MSFiles drops ids no longer in history
+      if (cur === num) $('b-back').onclick(); else renderList();
+      toast('Chat deleted'); return true;
+    });
+  }
+  function delMsg(num, id) {
+    return confirmDel('Delete this message? This removes it only from this device.').then(function (ok) {
+      if (!ok) return false;
+      delete busy[id]; delete hubQ[id]; S.removeMsg(num, id); renderChat(); renderList(); return true;
+    });
+  }
+  /* long-press ≈ 500 ms (cancelled on move / release), or right-click on PC */
+  function longPress(el, fn) {
+    var t = 0, x0 = 0, y0 = 0;
+    function stop() { clearTimeout(t); t = 0; }
+    el.addEventListener('pointerdown', function (e) { if (e.button) return; x0 = e.clientX; y0 = e.clientY; stop(); t = setTimeout(function () { t = 0; el._lp = true; setTimeout(function () { el._lp = false; }, 600); fn(); }, 500); });
+    el.addEventListener('pointermove', function (e) { if (t && (Math.abs(e.clientX - x0) > 8 || Math.abs(e.clientY - y0) > 8)) stop(); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (n) { el.addEventListener(n, stop); });
+    el.addEventListener('contextmenu', function (e) { e.preventDefault(); stop(); fn(); });
+  }
+  $('b-delchat').onclick = function () { if (cur) delChat(cur); };
+  window.MSApp = { delChat: delChat, delMsg: delMsg, newMsg: newMsg };   // MS4: test hooks
   P.on('status', setStatus);
   P.on('roster', function () { renderList(); renderChat(); flush(); MSFiles.flush(); reads(); });
   P.on('data', function (m, conn) {
@@ -222,17 +279,20 @@
   /* settings */
   $('b-set').onclick = function () { paintNotify(); $('in-name').value = myName(); $('num-lbl').textContent = myNum || '—'; $('sheet').hidden = false; };
   $('b-close').onclick = function () { $('sheet').hidden = true; };
-  $('in-name').onchange = function () { S.set('name', this.value.trim().slice(0, 40)); $('me-name').textContent = myName(); P.update(who()); };
+  $('in-name').onchange = function () { S.set('name', this.value.trim().slice(0, 40)); if ($('me-name')) $('me-name').textContent = myName(); P.update(who()); };
   function paintNotify() {
     var on = S.get('notify') !== false, pm = MSNotify.perm();
     $('chk-notify').checked = on;
     $('notify-note').textContent = MSNotify.dnd() ? '🌙 Hub Do Not Disturb is on — messages arrive silently.' : MSNotify.inHub ? 'Shown as a Hub card when Messages is in the background.' : pm === 'granted' ? 'Browser notifications are allowed.' : pm === 'denied' ? 'Browser notifications are blocked for this site.' : pm === 'unsupported' ? 'This browser has no notifications.' : 'Tap the switch to allow browser notifications.';
-    $('dnd-ind').hidden = !MSNotify.dnd();
+    if ($('dnd-ind')) $('dnd-ind').hidden = !MSNotify.dnd();
   }
   $('chk-notify').onchange = function () { var on = this.checked; S.set('notify', on); if (on && !MSNotify.inHub) MSNotify.ask().then(paintNotify); else paintNotify(); };
   MSNotify.onDnd(paintNotify);
   addEventListener('storage', function (e) { if (e.key === 'sites-hub.theme') { var d = e.newValue ? e.newValue === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; document.documentElement.className = d ? 'dark' : ''; } });
-  $('me-name').textContent = myName(); setStatus('connecting'); paintNotify(); renderList();
+  // MS4: inside the Hub, Name and Hub code come from the Hub → hide them (standalone keeps them)
+  var hubbed = (function () { try { return window.top !== window && (!!hubNum() || !!window.top.HubLine); } catch (_) { return false; } })();
+  if (hubbed) ['row-name', 'sec-code'].forEach(function (id) { if ($(id)) $(id).hidden = true; });
+  if ($('me-name')) $('me-name').textContent = myName(); setStatus('connecting'); paintNotify(); renderList();
   var pc = S.pickCode(location.hash, hml(), PUB); fixed = pc.fixed;
   if (/[#&?]code=\d{4}(?!\d)/.test(location.hash)) toast('Old 4-digit codes are no longer used');
   go(pc.code);

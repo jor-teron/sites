@@ -60,3 +60,13 @@ h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
 #msgs li .fnm small{text-align:left;margin:0}
 .save{min-height:40px;min-width:64px}
 .ring{width:32px;height:32px;flex:none;border-radius:50%;background:conic-gradient(currentColor calc(var(--p,0)*360deg),rgba(127,127,127,.3) 0);-webkit-mask:radial-gradient(circle,transparent 9px,#000 10px);mask:radial-gradient(circle,transparent 9px,#000 10px)}
+/* MS4: one top row, picker, delete */
+.toprow{display:flex;gap:8px;align-items:stretch}.toprow #b-new{flex:1;min-height:48px}.toprow .ico{min-width:48px;font-size:20px}
+.chead #b-delchat{margin-left:auto;min-width:44px;min-height:40px}
+#dlg-x input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--card);color:var(--fg);font:inherit;margin:6px 0}
+#pk-num{font-size:22px;letter-spacing:.1em;text-align:center}
+#pk-list{max-height:45dvh;overflow-y:auto}
+#pk-list li{display:flex;align-items:center;gap:10px;padding:10px 8px;min-height:52px;border-bottom:1px solid var(--line);border-radius:10px;cursor:pointer}
+#pk-list li:hover{background:color-mix(in srgb,var(--acc) 12%,transparent)}
+.pri.danger{background:var(--bad)}
+#convs li,#msgs li{-webkit-touch-callout:none}
