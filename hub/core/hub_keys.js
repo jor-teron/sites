@@ -28,7 +28,7 @@
  *                                        the backup, fires onChange('', null) so Settings › API Keys repaints
  *   HubKeys.clearBackup()
  * Names: lowercase letters, digits, '_', '-', '.' (1–40). Known: tavily, gemini, openai_base,
- * openai_key, ollama_url, groq, openrouter, deepseek, xai (H28.1), gvision (H28.2); anything else is a custom key. Standalone app fallback:
+ * openai_key, ollama_url, groq, openrouter, deepseek, xai (H28.1), gvision (H28.2), deepinfra (H111); anything else is a custom key. Standalone app fallback:
  *   const k = window.top?.HubKeys ? await window.top.HubKeys.get('tavily') : localKey;
  * Readme: hub/keys.readme.md.
  */
@@ -48,6 +48,8 @@
     { name: 'openrouter', label: 'OpenRouter', kind: 'key', url: 'https://openrouter.ai/settings/keys', hint: 'Hundreds of models behind one key; some :free models.' },
     { name: 'deepseek', label: 'DeepSeek', kind: 'key', url: 'https://platform.deepseek.com/api_keys', hint: 'DeepSeek models. Paid (prepaid balance).' },
     { name: 'xai', label: 'Grok API (xAI)', kind: 'key', url: 'https://console.x.ai', hint: 'Grok models from xAI. Paid per token.' },
+    // H111
+    { name: 'deepinfra', label: 'DeepInfra', kind: 'key', url: 'https://deepinfra.com/dash/api_keys', hint: 'Open models (Llama, Qwen, DeepSeek and more), OpenAI-style at https://api.deepinfra.com/v1/openai. Paid per token.' },
     // H28.2
     { name: 'gvision', label: 'Google Cloud Vision', kind: 'key', url: 'https://console.cloud.google.com/apis/credentials', hint: 'Image labels and text (OCR). Needs a billing account; first 1,000 units a month free.' },
   ];

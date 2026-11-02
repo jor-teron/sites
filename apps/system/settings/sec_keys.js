@@ -85,6 +85,7 @@
     groq: (v) => modelsTest('https://api.groq.com/openai/v1/models', v),
     deepseek: (v) => modelsTest('https://api.deepseek.com/models', v),
     xai: (v) => modelsTest('https://api.x.ai/v1/models', v),
+    deepinfra: (v) => modelsTest('https://api.deepinfra.com/v1/openai/models', v),   // H111: 401 on a bad key
     async openrouter(v) {
       const r = await fetchT('https://openrouter.ai/api/v1/key', { headers: { Authorization: 'Bearer ' + v } });
       if (r.status === 401 || r.status === 403) return { ok: false, text: 'Key rejected (' + r.status + ')' };
