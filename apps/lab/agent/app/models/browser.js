@@ -8,6 +8,7 @@ HR.browser = (function () {
   var ID = 'onnx-community/TinyStories-3M-ONNX', CACHE = 'agent-browser-model', MAX = 200;
   var FILE = 'https://huggingface.co/' + ID + '/resolve/main/onnx/model_quantized.onnx';
   var SIZE = { model: 20.6, engine: 12.0 };   // MB
+  var LABEL = 'Story Mini · 3M · 20 MB';     // AG13: the one label used everywhere (3M = 3 million parameters, 20 MB = model download)
   var w = null, job = null, Q = '&plain=1&noarena=1';
   function fail(k, m) { return HR.net.fail(k, m); }
   function kill() { if (w) { w.terminate(); w = null; } }
@@ -61,8 +62,8 @@ HR.browser = (function () {
       return { tool_calls: [], eval_count: m.count, eval_duration: m.ms * 1e6, done_reason: m.count >= MAX ? 'length' : 'stop' };
     });
   }
-  return { id: ID, size: SIZE, ready: ready, cached: cached, download: download, remove: remove, busy: function () { return !!job; }, chat: chat };
+  return { id: ID, size: SIZE, label: LABEL, ready: ready, cached: cached, download: download, remove: remove, busy: function () { return !!job; }, chat: chat };
 })();
 HR.models.register({ id: 'browser', label: 'Browser', needsKey: false,
-  models: function () { return Promise.resolve([{ name: 'tinystories-3m', label: 'Story Mini (' + HR.browser.size.model + ' MB)' }]); },
+  models: function () { return Promise.resolve([{ name: 'tinystories-3m', label: HR.browser.label }]); },
   chat: HR.browser.chat });

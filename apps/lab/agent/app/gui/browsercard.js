@@ -10,10 +10,10 @@ HR.bcard = (function () {
     if (card && card.isConnected) { HR.view.bottom(true); return; }
     var v = HR.view, s = HR.browser.size;
     card = v.el('div', 'dcard');
-    var t = v.el('div', 'ec-t', '📦 Browser model · Story Mini'), p = v.el('div', 'ec-b'),
+    var t = v.el('div', 'ec-t', '📦 Browser model · ' + HR.browser.label), p = v.el('div', 'ec-b'),
       bar = v.el('progress', 'dbar'), st = v.el('div', 'hint'), row = v.el('div', 'ec-row start'),
       go = v.el('button', 'hb wide', 'Download ' + Math.round(s.model + s.engine) + ' MB'), x = v.el('button', 'hb', '✕');
-    p.textContent = 'Runs in this browser with no Ollama and no API key. One-time download: model ' + s.model + ' MB (TinyStories-3M from Hugging Face) + engine '
+    p.textContent = 'Runs in this browser with no Ollama and no API key. One-time download: model ' + s.model + ' MB (' + HR.browser.label + ', TinyStories-3M from Hugging Face) + engine '
       + s.engine + ' MB (about 3 MB compressed, from this site). Uses Wi-Fi or mobile data. It writes short children\'s stories — tools are off. Remove it any time in Settings ⚙.';
     bar.hidden = true; go.type = x.type = 'button'; x.setAttribute('aria-label', 'Dismiss');
     x.onclick = function () { if (ctrl) ctrl.abort(); ctrl = null; hide(); };
@@ -21,7 +21,7 @@ HR.bcard = (function () {
       if (ctrl) { ctrl.abort(); return; }
       ctrl = new AbortController(); go.textContent = 'Cancel'; bar.hidden = false; bar.removeAttribute('value'); st.textContent = 'Starting the engine…';
       HR.browser.download(function (l, tot) { bar.max = tot; bar.value = l; st.textContent = mb(l) + ' / ' + mb(tot) + ' MB'; }, ctrl.signal).then(function () {
-        ctrl = null; t.textContent = '✓ Browser model ready'; p.textContent = 'Story Mini is saved in this browser. Type the start of a story (e.g. "Once upon a time, a cat") and send.';
+        ctrl = null; t.textContent = '✓ Browser model ready'; p.textContent = HR.browser.label + ' is saved in this browser. Type the start of a story (e.g. "Once upon a time, a cat") and send.';
         bar.hidden = true; st.textContent = ''; row.hidden = true; HR.steps.note('Browser model downloaded and cached (' + HR.browser.id + ').');
         if (document.hidden) HR.notify({ icon: '📦', title: 'Agent', text: 'Browser model ready', onClick: function () { window.focus(); } });
         setTimeout(hide, 6000);
@@ -40,7 +40,7 @@ HR.bcard = (function () {
   }
   function draw() {
     var on = HR.browser.ready(); $('btnBrowserRm').disabled = !on;
-    $('browserStat').textContent = on ? 'Story Mini (' + HR.browser.id + ') is downloaded in this browser (~' + HR.browser.size.model + ' MB).'
+    $('browserStat').textContent = on ? HR.browser.label + ' is downloaded in this browser (' + HR.browser.id + ').'
       : 'Not downloaded. Pick Browser in Model (or use it when another provider is offline) and tap Download in the chat.';
   }
   function init() {

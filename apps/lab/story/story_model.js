@@ -5,9 +5,9 @@
                lazy load (one model at a time), streamed generation, stop.
 */
 export const MODELS = {
-  lite: { id: "onnx-community/TinyStories-656K-ONNX", label: "Lite" }, // ~1 MB q8
-  mini: { id: "onnx-community/TinyStories-3M-ONNX", label: "Mini" },   // ~20 MB q8
-  pro:  { id: "Xenova/llama2.c-stories42M", label: "Pro" },            // ~44 MB q8
+  lite: { id: "onnx-community/TinyStories-656K-ONNX", label: "Lite · 0.7M · 1 MB" }, // ~1 MB q8
+  mini: { id: "onnx-community/TinyStories-3M-ONNX", label: "Mini · 3M · 20 MB" },   // ~20 MB q8
+  pro:  { id: "Xenova/llama2.c-stories42M", label: "Pro · 42M · 44 MB" },            // ~44 MB q8
 };
 
 let worker = null;
