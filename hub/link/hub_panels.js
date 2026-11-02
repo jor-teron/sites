@@ -122,7 +122,7 @@
       if (act) {
         act.classList.add('hp-mini');
         act.textContent = R ? '\u23CF' : '\u21BB';
-        act.title = R ? 'Disconnect from Hub' : 'New code';
+        act.title = R ? 'Disconnect from Hub' : 'New Gamepad pairing code';
         act.setAttribute('aria-label', act.title);
       }
       codeRow.appendChild(lsRow);
@@ -135,7 +135,23 @@
     const err = el('div', 'hp-err'); err.setAttribute('role', 'status');
     const joinWrap = el('div', 'hp-joinwrap');
     joinWrap.append(form, err);
-    body.append(qrBox, codeRow, joinWrap);
+    /* H94: on the host Hub, two labelled cards: 'This Hub' (number, no QR / buttons; changes only in
+       Settings › Devices) and 'Gamepad' (pairing QR + the pad code under it + ↻ New pad code). */
+    let padEl = null;
+    if (!R) {
+      const hubSec = el('section', 'hp-sec hp-sec-hub'); hubSec.appendChild(el('h3', '', 'This Hub'));
+      const hubCard = el('div', 'hp-card hp-hubcard');
+      hubCard.append(codeEl, el('div', 'hp-hint', 'Phones and Messages reach you on this number'));
+      hubSec.appendChild(hubCard);
+      const padSec = el('section', 'hp-sec hp-sec-pad'); padSec.appendChild(el('h3', '', 'Gamepad'));
+      const padCard = el('div', 'hp-card hp-padcard');
+      padEl = el('div', 'hp-code hp-padcode', '——'); padEl.id = 'hp-pad';
+      codeRow.innerHTML = ''; codeRow.appendChild(padEl);
+      if (lsRow) codeRow.appendChild(lsRow);
+      padCard.append(qrBox, el('div', 'hp-codelbl', 'Gamepad pairing code'), codeRow);
+      padSec.appendChild(padCard);
+      body.append(hubSec, padSec, joinWrap);
+    } else body.append(qrBox, codeRow, joinWrap);
     if (extra) extra.remove();   // name box + devices list (hub_link.js): Settings › Devices has them
     pop.appendChild(body);
     if (head) { head.classList.add('hp-head-min'); pop.insertBefore(head, pop.firstChild); }
@@ -169,7 +185,9 @@
       const c = myCode();
       codeEl.textContent = c || '——';
       const hc = window.__hubController;
-      paintQr((!R && hc && hc.padCode) || c);   // H59; H92: the Gamepad QR carries the private pad code
+      const pc = (!R && hc && hc.padCode) || c;
+      paintQr(pc);   // H59; H92: the Gamepad QR carries the private pad code
+      if (padEl) padEl.textContent = pc || '——';   // H94: always the code the QR carries
       paintName();
     }
     function paintName() {   // H46
@@ -186,6 +204,8 @@
     });
     if (window.SharedLink) SharedLink.on('devices', () => setTimeout(paintName, 0));
     window.addEventListener('hub-ctrl-link', () => setTimeout(paintHub, 0));
+    window.addEventListener('hub-pad-code', () => setTimeout(paintHub, 0));   // H94: ↻ New pad code
+    window.addEventListener('hub-number-changed', () => setTimeout(paintHub, 0));
     if (window.SharedLink) ['status', 'open'].forEach((ev) => SharedLink.on(ev, () => setTimeout(paintHub, 0)));
 
     function join(c) {

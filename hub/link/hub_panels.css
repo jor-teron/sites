@@ -200,3 +200,9 @@ body:not(.wm-desktop) .hp-cam-card { width: min(94vw, 520px); }   /* Phone mode:
 }
 .hp-cam .hp-cam-cancel:hover { border-color: var(--accent, #6ea8fe); }
 html.hub-light .hp-cam { --hp-bg: rgba(248, 249, 252, 0.97); --hp-card: #fff; --hp-line: rgba(0, 0, 0, 0.12); --hp-text: #1d2330; --hp-muted: #5f6672; }
+
+/* H94: host pop-up = 'This Hub' card + 'Gamepad' card */
+.hp-min .hp-sec { width: 100%; }
+.hp-min .hp-hubcard, .hp-min .hp-padcard { align-items: center; text-align: center; gap: 8px; }
+.hp-min .hp-padcard .hp-qr { margin-bottom: 4px; }
+.hp-min .hp-padcode { font-size: 28px; }

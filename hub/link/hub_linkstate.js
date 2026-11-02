@@ -62,7 +62,9 @@
     const n = SharedLink.devices.filter((d) => d.online).length;
     const code = (window.__hubController && window.__hubController.code) || SharedLink.code || '——';
     const pad = window.__hubController && window.__hubController.padCode;   // H92
-    info.textContent = 'Number ' + code + (pad ? ' · Pad ' + pad : '') + ' · ' + n + ' device' + (n === 1 ? '' : 's');
+    // H94: number and pad code each have their own card in the pop-up; this line only counts devices
+    info.textContent = n + ' device' + (n === 1 ? '' : 's');
+    info.title = 'Number ' + code + (pad ? ' · Gamepad pairing code ' + pad : '');
     badge.textContent = String(n);
     badge.hidden = !n;
   }

@@ -110,6 +110,7 @@
     try { localStorage.setItem(PAD_KEY, padCode); } catch (_) { /* blocked */ }
     if (window.SharedLink && SharedLink.setAlias) SharedLink.setAlias(padCode);
     renderPairing();
+    try { window.dispatchEvent(new CustomEvent('hub-pad-code', { detail: padCode })); } catch (_) { /* old browser */ }   // H94
   }
   function saveCode(c) {
     try { localStorage.setItem(CODE_KEY, c); } catch (_) { /* ignore */ }
