@@ -9,7 +9,7 @@
   /* const RELEASE = 'CM16';  (CM16-CM16-F5) */
   /* const RELEASE = 'CM15';  (CM15) */
   /* const RELEASE = 'CM17';  (CM17-CM17-F2) */
-  const RELEASE = 'CM24'; /* was 'CM23', 'CM22', 'CM21', 'CM20', 'CM19' */ /* was 'CM12' (CM10-CM12), 'CM13', 'CM14', 'CM16', 'CM15', 'CM17' */ /* was 'CM18' */
+  const RELEASE = 'CM25'; /* was 'CM24', 'CM23', 'CM22', 'CM21', 'CM20', 'CM19' */ /* was 'CM12' (CM10-CM12), 'CM13', 'CM14', 'CM16', 'CM15', 'CM17' */ /* was 'CM18' */
   CM.RELEASE = RELEASE; /* CM15: About card */
   const $ = (id) => document.getElementById(id);
   const P = S.loadSettings(location.search);
@@ -184,4 +184,6 @@
   });
   save();
   render();
+  /* CM25: deep link calendar-maker.html#holidays (Calendar's Edit holidays button) opens the Holidays page */
+  if (/^#hol(idays)?$/.test(location.hash)) CM.showPage('hol');
 })();

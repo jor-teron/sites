@@ -1,7 +1,7 @@
 # Calendar
 
 ## 1. What it is
-A basic calendar (releases C1 + C4, C5) with four swipe screens: **Month** (default), **Year**, **Holiday List** and **Settings**. Includes C3 Indian holidays. No events or notes yet (C2 parked). Version 1.2.
+A basic calendar (releases C1 + C4, C5) with four swipe screens: **Month** (default), **Year**, **Holiday List** and **Settings**. Includes C3 Indian holidays. No events or notes yet (C2 parked). Version C6 (was 1.2).
 
 ## 2. Files
 - `calendar.html` / `calendar.css`: page, layout, light / dark, safe-area
@@ -34,3 +34,6 @@ Red holiday cells (tint + darker-red / light number), Saturday holiday options, 
 
 ## C5.1 (2026-10-27)
 Red-day cells (month grid and Year view) are solid #b91c1c in both themes; date numbers keep the normal text colour (dark in light theme, white in dark theme). Today ring and selected outline still show. Show only the date is On by default (saved choices kept).
+
+## C6 (2026-11-02)
+Calendar now reads Calendar Maker's holiday list (`calendar-maker-holidays`) using Calendar Maker's own code (`../calendar-maker/core/cm_theme.js`, `cm_holidays.js`, `cm_settings.js`, wrapped by `calendar_shared_hols.js` = `window.CalShared`). Never edited there = the built-in list, as before. Shows every-year, moving (that year's date), this-year-only and multi-day holidays. Gazetted stay red. New settings in `calendar-settings-v1`: `showR`, `showP`, `showS` (Show Restricted / Public / School, default off, separate from Calendar Maker's Design ticks); shown days get Calendar Maker's colours (rcol / pcol / scol, else grey / light purple / light yellow), with a colour dot and (R)/(P)/(S) in the lists. Gazetted wins a shared date. Updates live when Calendar Maker saves. Holiday List has an **Edit holidays** button (opens `calendar-maker.html#holidays`). Version label C6 (was 1.2). Old code: C5 `hols`/`red` and the "Fixed-date holidays only" note are kept as comments.

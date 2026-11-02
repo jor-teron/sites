@@ -120,3 +120,6 @@ Old code kept as comments next to the code that replaced it (moved with that cod
   - Holidays page width (CM3-CM12): `.hol-wrap{display:flex;gap:16px;width:100%;max-width:1000px;margin:0 auto;flex-wrap:wrap}`
   - Print image, portrait (CM4): `#print-img{display:block;width:209mm;height:auto;max-height:296mm;margin:0 auto;page-break-after:avoid}`
   - Print image, landscape (CM4): `body.land #print-img{width:296mm;max-height:209mm}`
+
+## CM25 (2026-11-02)
+`calendar-maker.html#holidays` opens straight on the Holidays page (used by Calendar C6's Edit holidays button). Calendar C6 now reads this app's `calendar-maker-holidays` through `core/cm_theme.js`, `core/cm_holidays.js` and `core/cm_settings.js` (loaded as-is, no refactor needed: they have no DOM or canvas needs for holiday reading). Calendar Maker's output is unchanged. Label CM25.
