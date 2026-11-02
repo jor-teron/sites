@@ -1,4 +1,4 @@
-# Phone launcher (`phone/`), release PH7
+# Phone launcher (`phone/`), release PH8
 
 A phone-style home screen for the Hub. Jor runs it as the **Android home screen inside a WebView**
 (PH3 will be the tiny APK). It works fully by gesture and behaves like a phone launcher.
@@ -71,7 +71,7 @@ Desktop testing: mouse drags do the same; wheel down = drawer, wheel up = panel,
 
 | File | What |
 |---|---|
-| `/phone.html` (site root, H79) | page, layers, script order. `<title>Phone PH1</title>` (phone_app.js sets the live title, `Phone PH7`), no `?v=` labels |
+| `/phone.html` (site root, H79) | page, layers, script order. `<title>Phone PH1</title>` (phone_app.js sets the live title, `Phone PH8`), no `?v=` labels |
 | `index.html` | redirect only, to `../phone.html` (keeps ?query and #hash) |
 | `phone.css` | Stopwatch palette, dark default; animations on transform / opacity only |
 | `phone_save.js` | the one save module (`PhoneSave`) |
@@ -150,3 +150,10 @@ PH5 on (older saves get the PH5 home and dock once). PH6: page 1 keeps at most 1
 - **Drawer gestures:** pull down closes when the list is at its bottom resting position or the drag starts on the bottom bar; otherwise it scrolls (fling kept). Left/right still changes category.
 - **Favorite hidden (phone only):** no Favorite tab; its apps (e.g. TV) are listed under the first tab. Search still finds them. A saved last-used Favorite falls back to the first tab. `hub_config.js` and the catalog are unchanged.
 - Release name `PH7`.
+
+## PH8 — Sections inside drawer categories (2026-11-02 IST)
+- **Source:** each category's `apps/<cat>/<cat>-apps.csv` (`window.HUB_CAT_CSV`), `section` column. `phone_apps.js` `loadSections()` reads `window.SITES_CSV[cat]` when present, else fetches the CSV (`cache: 'no-cache'`). Parsing mirrors `shared/tiles/tiles.js` (`TilesCsv.parse/groups`, used by the Hub flyout): `#` comments skipped, columns by header (old 5-column rows work), cells trimmed, paths relative to the CSV folder, first appearance sets section order, empty section = **Other**, shown last. Rows map to apps by resolved path (trailing `/` and `index.html` ignored).
+- **API:** `PhoneApps.sections(cat)` → `[{name, apps}]` (CSV order inside a section); `PhoneApps.onSections(fn)` re-renders the drawer once loaded.
+- **Drawer:** a heading above each section's grid. Bottom-up like PH7: the first section sits at the bottom next to the bar, later sections stack above; inside a section the first app is bottom-left. Favorite apps (e.g. TV) are a **Favorite** section at the very bottom of the first tab. Search stays one flat list.
+- **Fallback:** a CSV that fails to load (offline, 404) leaves that tab flat, no headings, no errors. `hub/update/hub_sw.js` already caches every `apps/*/*-apps.csv` (network first), so sections also show offline once cached.
+- Release name `PH8`.

@@ -12,7 +12,8 @@
   var A = window.PhoneApps, G = window.PhoneGesture, S = window.PhoneSave;
   // var RELEASE = 'PH1';   (PH1)
   // var RELEASE = 'PH6';   (PH6)
-  var RELEASE = 'PH7';
+  // var RELEASE = 'PH7';   (PH7)
+  var RELEASE = 'PH8';
   var d = S.load();
   var root = document.documentElement;
 
@@ -255,6 +256,18 @@
     if (c && c === cats[0]) allCats.filter(isFav).forEach(function (f) { out = out.concat(A.list(f)); });
     return out.sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
   }
+  function catGroups(c) {   // PH8: sections of c; Favorite apps become a 'Favorite' section first (bottom) of the first tab
+    var g = A.sections ? A.sections(c) : [{ name: '', apps: catList(c) }];
+    if (c && c === cats[0]) {
+      var fav = [];
+      allCats.filter(isFav).forEach(function (f) { fav = fav.concat(A.list(f)); });
+      if (fav.length) {
+        if (g.length === 1 && !g[0].name) g[0].name = 'Other';
+        g = [{ name: 'Favorite', apps: fav }].concat(g.filter(function (x) { return x.apps.length; }));
+      }
+    }
+    return g;
+  }
   try { cat = localStorage.getItem(CATKEY) || ''; } catch (_) { /* blocked */ }
   if (cats.indexOf(cat) < 0) cat = cats[0] || '';
   function renderTabs() {
@@ -273,8 +286,15 @@
     if (!items.length) { var n = document.createElement('div'); n.className = 'none'; n.textContent = 'No apps match “' + q.trim() + '”'; list.appendChild(n); return; }
     // var g = document.createElement('div'); g.className = 'grid'; g.setAttribute('role', 'list');   (PH6)
     // items.forEach(function (a) { g.appendChild(iconBtn(a, 'drawer')); });
-    var g = upGrid(items, 'drawer'); g.setAttribute('role', 'list');   // PH7: bottom-up, like home
-    list.appendChild(g);
+    // var g = upGrid(items, 'drawer'); g.setAttribute('role', 'list');   (PH7)
+    // list.appendChild(g);
+    // PH8: search = flat; a tab = sections, first section at the bottom (nearest the bar), later ones above.
+    var groups = q.trim() ? [{ name: '', apps: items }] : catGroups(cat);
+    groups.slice().reverse().forEach(function (sg) {
+      if (sg.name) { var h = document.createElement('div'); h.className = 'sec-h'; h.setAttribute('role', 'heading'); h.setAttribute('aria-level', '3'); h.textContent = sg.name; list.appendChild(h); }
+      var g = upGrid(sg.apps, 'drawer'); g.setAttribute('role', 'list'); if (sg.name) g.setAttribute('aria-label', sg.name);
+      list.appendChild(g);
+    });
     // list.scrollTop = 0;   (PH6)
     list.scrollTop = list.scrollHeight;   // PH7: rest at the bottom; scroll up for more
   }
@@ -754,6 +774,7 @@
   /* ---------- start ---------- */
   applyTheme(); applyWall(); renderHome();
   document.title = 'Phone ' + RELEASE;
+  if (A.onSections) A.onSections(function () { if (drawerBuilt && !$('search').value) renderList(); });   // PH8
   addEventListener('resize', function () { showPage(page, true); });
   var lastCols = gridCols();   // PH7: re-chunk rows when the column count changes
   addEventListener('resize', function () {

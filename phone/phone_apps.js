@@ -5,6 +5,9 @@
  * Category order: window.HUB_CAT_CSV keys (hub/core/hub_config.js); unknown categories go last.
  * H79: the launcher page is /phone.html at the site root, so paths stay as the catalog has them, like hub.html
  * (absolute http(s) URLs are kept). Before H79 it lived in phone/ and every path got '../'.
+ * PH8: sections per category from window.HUB_CAT_CSV (apps/<cat>/<cat>-apps.csv), parsed like shared/tiles/tiles.js
+ *   (TilesCsv.parse/groups): '#' comments, header by name, first appearance sets section order, empty = "Other" last.
+ *   window.SITES_CSV text is used first when present; otherwise fetch. No CSV = no sections (flat list).
  */
 (function () {
   'use strict';
@@ -24,6 +27,49 @@
     var ia = order.indexOf(a), ib = order.indexOf(b);
     return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
   });
+
+  // ---------- PH8: sections from the category CSVs ----------
+  var secOf = {}, secOrder = {}, secReady = false, secCbs = [];   // PH8
+  var norm = function (u) { return String(u || '').replace(/^\.?\//, '').replace(/index\.html?$/i, '').replace(/\/+$/, '').toLowerCase(); };   // PH8
+  function joinPath(dir, rel) {   // PH8: same rules as hub_flyout.js joinPath
+    var out = [], all = (dir + rel).split('/');
+    all.forEach(function (p, i) { if (p === '..') out.pop(); else if (p !== '.' && (p !== '' || i === all.length - 1)) out.push(p); });
+    return out.join('/');
+  }
+  function parseCsv(text) {   // PH8: mirrors TilesCsv.parse (shared/tiles/tiles.js)
+    var rows = String(text || '').split(/\r?\n/).map(function (l) { return l.trim(); })
+      .filter(function (l) { return l && l.charAt(0) !== '#'; })
+      .map(function (l) { return l.split(',').map(function (c) { return c.trim(); }); });
+    var cols = ['name', 'path', 'icon', 'newtab', 'section', 'description'];
+    if (rows.length && rows[0][0].toLowerCase() === 'name' && (rows[0][1] || '').toLowerCase() === 'path') cols = rows.shift().map(function (h) { return h.toLowerCase(); });
+    var at = function (r, k) { var i = cols.indexOf(k); return i >= 0 ? r[i] || '' : ''; };
+    return rows.filter(function (r) { return at(r, 'name') && at(r, 'path'); })
+      .map(function (r) { return { path: at(r, 'path'), section: at(r, 'section') }; });
+  }
+  function applyCsv(cat, text) {   // PH8
+    var dir = String(window.HUB_CAT_CSV[cat] || '').replace(/[^\/]*$/, ''), byPath = {}, n = 0;
+    Object.keys(apps).forEach(function (id) { if (apps[id].cat === cat) byPath[norm(apps[id].url)] = id; });
+    var ord = [];
+    parseCsv(text).forEach(function (r) {
+      var id = byPath[norm(/^(https?:)?\/\//i.test(r.path) ? r.path : joinPath(dir, r.path))];
+      if (!id || secOf[id] != null) return;
+      secOf[id] = { s: r.section, i: n++ };
+      if (r.section && ord.indexOf(r.section) < 0) ord.push(r.section);
+    });
+    secOrder[cat] = ord;
+  }
+  function loadSections() {   // PH8: → Promise; never rejects
+    var map = window.HUB_CAT_CSV || {}, built = window.SITES_CSV || {};
+    if (!window.fetch || !window.Promise) { secReady = true; return { then: function (f) { f(); } }; }
+    return Promise.all(Object.keys(map).map(function (cat) {
+      var read = typeof built[cat] === 'string' ? Promise.resolve(built[cat])
+        : fetch(map[cat], { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); });
+      return read.then(function (t) { try { applyCsv(cat, t); } catch (_) { /* bad CSV: flat */ } }, function () { /* offline: flat */ });
+    })).then(function () {
+      secReady = true;
+      secCbs.splice(0).forEach(function (f) { try { f(); } catch (_) { /* ignore */ } });
+    });
+  }
   var byName = function (a, b) { return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }); };
   window.PhoneApps = {
     get: function (id) { return apps[id] || null; },
@@ -46,6 +92,21 @@
       });
       return hit.concat(soft);
     },
+    /** PH8: [{name, apps}] in CSV order; '' name = no heading (CSV not loaded or no sections). */
+    sections: function (cat) {
+      var list = this.list(cat), ord = secOrder[cat];
+      if (!ord || !ord.length) return [{ name: '', apps: list }];
+      var g = ord.map(function (n) { return { name: n, apps: [] }; }), rest = [];
+      list.slice().sort(function (a, b) { return (secOf[a.id] ? secOf[a.id].i : 1e9) - (secOf[b.id] ? secOf[b.id].i : 1e9) || byName(a, b); })
+        .forEach(function (a) { var k = secOf[a.id] ? ord.indexOf(secOf[a.id].s) : -1; if (k >= 0) g[k].apps.push(a); else rest.push(a); });
+      g = g.filter(function (x) { return x.apps.length; });
+      if (rest.length) g.push({ name: 'Other', apps: rest });
+      return g;
+    },
+    /** PH8: run fn once sections are loaded (at once if already). */
+    onSections: function (fn) { if (secReady) fn(); else secCbs.push(fn); },
+    sectionsReady: function () { return secReady; },
     count: function () { return Object.keys(apps).length; }
   };
+  loadSections();   // PH8
 })();

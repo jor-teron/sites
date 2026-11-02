@@ -137,4 +137,9 @@ body.app-open #home,body.drawer-open #home{opacity:0}
 #list{display:flex;flex-direction:column}
 #list .grid.up{margin:auto auto 0;flex:none}
 #tabs{padding:6px 0 8px}
+/* PH8: section headings in the drawer (heading above its bottom-up grid) */
+#list .sec-h{flex:none;width:100%;max-width:560px;margin:14px auto 6px;padding:0 4px;font-size:13px;font-weight:600;color:var(--mut);pointer-events:none}
+#list .grid.up+.sec-h{margin-top:18px}
+#list .sec-h~.grid.up{margin:0 auto}
+#list .sec-h:first-child{margin-top:auto}
 @media (prefers-reduced-motion:reduce){#pages,#drawer,#panel-box,#apps,#sheet-box{transition:none!important}}
