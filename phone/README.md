@@ -183,3 +183,8 @@ PH5 on (older saves get the PH5 home and dock once). PH6: page 1 keeps at most 1
 - **CSV local copy:** the last good text of each category CSV and `phone/hidden-apps.csv` is kept in localStorage (`phone-csv-v1:<url>`, skipped if >60 KB or over quota). Sections / hidden apps draw from it at once, then a fresh copy is fetched quietly and re-delivered only if the text changed (`onSections` / `onHidden` fns run again).
 - **Icon warm-up:** after the drawer renders, its lazy icons that aren't loaded yet are switched to eager, so the apps above are ready when you scroll up.
 - Release name `PH11`.
+
+## PH12 — Night blue default wallpaper
+- **Default:** Hub's Night gradient (`#0B1033 → #26307A → #5562C4`, from `hub_wallpapers.js` / `hub_main.css`) is the phone wallpaper, also inside the Android WebView. It slides slowly like Hub's (`#wall.night`, 24 s), static under `prefers-reduced-motion`.
+- **Setting:** the row is now "Wallpaper": Night blue, See-through (needs a transparent APK WebView), and 5 plain colours. Saved `'auto'` becomes `'night'` on load. `?bg=night` (or `auto`) works.
+- Release name `PH12`.

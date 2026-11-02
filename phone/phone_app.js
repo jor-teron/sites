@@ -16,7 +16,8 @@
   // var RELEASE = 'PH8';   (PH8)
   // var RELEASE = 'PH9';   (PH9)
   // var RELEASE = 'PH10';   (PH10)
-  var RELEASE = 'PH11';
+  // var RELEASE = 'PH11';   (PH11)
+  var RELEASE = 'PH12';
   var d = S.load();
   var root = document.documentElement;
 
@@ -136,12 +137,13 @@
   addEventListener('message', function (e) { if (e.origin === location.origin && e.data && e.data.type === 'hub-prefs') applyTheme(); });
   var qs = new URLSearchParams(location.search);
   var isWebView = /; wv\)/.test(navigator.userAgent) || qs.get('webview') === '1';
-  /** ?bg=none|transparent|auto|<hex> beats the setting (for testing in a browser). */
+  /** ?bg=none|transparent|night|<hex> beats the setting (for testing in a browser). */
   function wallValue() {
     var q = (qs.get('bg') || '').trim().replace(/^#/, '');
     if (q) {
       if (/^(none|transparent|0)$/i.test(q)) return 'none';
-      if (/^auto$/i.test(q)) return 'auto';
+      // if (/^auto$/i.test(q)) return 'auto';   (PH11)
+      if (/^(auto|night)$/i.test(q)) return 'night';   // PH12
       if (/^[0-9a-f]{3}$/i.test(q)) q = q.replace(/(.)/g, '$1$1');
       if (/^[0-9a-f]{6}$/i.test(q)) return '#' + q.toLowerCase();
     }
@@ -149,9 +151,12 @@
   }
   function applyWall() {
     var w = wallValue(), el = $('wall');
-    if (w === 'none' || (w === 'auto' && isWebView)) { el.hidden = true; el.style.background = ''; return; }
+    // if (w === 'none' || (w === 'auto' && isWebView)) { el.hidden = true; el.style.background = ''; return; }   (PH11)
+    if (w === 'none') { el.hidden = true; el.style.background = ''; return; }   // PH12: Night shows in the WebView too
     el.hidden = false;
-    el.style.background = w === 'auto' ? '' : w;
+    // el.style.background = w === 'auto' ? '' : w;   (PH11)
+    el.style.background = /^#[0-9a-f]{6}$/i.test(w || '') ? w : '';   // PH12: '' = CSS Night gradient
+    el.classList.toggle('night', !el.style.background);   // PH12: slide only on Night
   }
 
   /* ---------- clock ---------- */
@@ -631,7 +636,8 @@
     return s;
   }
   function row(box, label, ctl) { var r = document.createElement('div'); r.className = 'set-row'; var s = document.createElement('span'); s.textContent = label; r.appendChild(s); r.appendChild(ctl); box.appendChild(r); }
-  var WALLS = [['auto', 'Auto'], ['none', 'None'], ['#0f172a', ''], ['#1e3a8a', ''], ['#14532d', ''], ['#7c2d12', ''], ['#e5e7eb', '']];
+  // var WALLS = [['auto', 'Auto'], ['none', 'None'], ['#0f172a', ''], ['#1e3a8a', ''], ['#14532d', ''], ['#7c2d12', ''], ['#e5e7eb', '']];   (PH11)
+  var WALLS = [['night', 'Night blue'], ['none', 'See-through (needs APK support)'], ['#0f172a', ''], ['#1e3a8a', ''], ['#14532d', ''], ['#7c2d12', ''], ['#e5e7eb', '']];   // PH12
   function openSettings() {
     openSheet(function (box) {
       var h = document.createElement('div'); h.className = 'sh-head'; h.innerHTML = '<div><b>Phone settings</b><small>Release ' + RELEASE + '</small></div>'; box.appendChild(h);
@@ -641,13 +647,16 @@
       var w = document.createElement('div'); w.className = 'sw-c';
       WALLS.forEach(function (x) {
         var b = document.createElement('button'); b.type = 'button'; b.dataset.wall = x[0]; b.title = x[1] || x[0];
-        b.setAttribute('aria-label', 'Test wallpaper ' + (x[1] || x[0]));
-        b.style.background = x[0] === 'auto' ? 'linear-gradient(160deg,#1e3a5f,#3b1f4f)' : x[0] === 'none' ? 'repeating-conic-gradient(#999 0 25%,#fff 0 50%) 0 0/10px 10px' : x[0];
+        // b.setAttribute('aria-label', 'Test wallpaper ' + (x[1] || x[0]));   (PH11)
+        b.setAttribute('aria-label', 'Wallpaper ' + (x[1] || x[0]));   // PH12
+        // PH12: 'night' swatch (was 'auto')
+        b.style.background = x[0] === 'night' ? 'linear-gradient(180deg,#0B1033,#5562C4,#0B1033)' : x[0] === 'none' ? 'repeating-conic-gradient(#999 0 25%,#fff 0 50%) 0 0/10px 10px' : x[0];
         b.classList.toggle('on', d.settings.wall === x[0]);
         b.addEventListener('click', function () { d.settings.wall = x[0]; persist(); applyWall(); w.querySelectorAll('button').forEach(function (y) { y.classList.toggle('on', y === b); }); });
         w.appendChild(b);
       });
-      row(box, 'Test wallpaper', w);
+      // row(box, 'Test wallpaper', w);   (PH11)
+      row(box, 'Wallpaper', w);   // PH12
       var hb = document.createElement('button'); hb.type = 'button'; hb.className = 'mini'; hb.id = 'hidden-open';   // PH10
       hb.textContent = 'Show (' + hiddenIds().length + ')'; hb.addEventListener('click', openHidden);
       row(box, 'Hidden apps', hb);
@@ -662,8 +671,9 @@
       var ab = document.createElement('div'); ab.className = 'about'; ab.id = 'about';
       ab.innerHTML = '<b>About · Phone ' + RELEASE + '</b><br>A phone-style home screen for the Hub, made to run as the Android home screen in a WebView. ' +
         'Swipe left / right for pages, up for all apps, down for the quick panel. Long-press an app to pin it, dock it or see its info. ' +
-        'In an app, swipe from the left edge or press Back to come home. The background is see-through, so the phone wallpaper shows; ' +
-        '“Test wallpaper” (or <code>?bg=</code>) is only for trying it in a browser. ' + A.count() + ' apps from the Hub catalog. Saved on this device only.';
+        // PH12: help text was 'The background is see-through … “Test wallpaper” (or ?bg=) is only for trying it in a browser.'   (PH11)
+        'In an app, swipe from the left edge or press Back to come home. The wallpaper is Hub\'s Night blue by default; ' +
+        '“See-through” shows the Android wallpaper only if the APK\'s WebView is transparent (<code>?bg=</code> overrides). ' + A.count() + ' apps from the Hub catalog. Saved on this device only.';
       box.appendChild(ab);
     });
   }

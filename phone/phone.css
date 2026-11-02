@@ -9,7 +9,12 @@
 html,body{margin:0;height:100%;background:transparent!important;color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;overscroll-behavior:none;touch-action:none}
 button{font:inherit;color:inherit}
-#wall{position:fixed;inset:0;z-index:0;background:linear-gradient(160deg,#1e3a5f 0%,#3b1f4f 55%,#0f172a 100%)}
+/* #wall{position:fixed;inset:0;z-index:0;background:linear-gradient(160deg,#1e3a5f 0%,#3b1f4f 55%,#0f172a 100%)}   (PH11) */
+/* PH12: Hub's Night blue gradient (hub_main.css #empty), tall and slowly sliding */
+#wall{position:fixed;inset:0;z-index:0;background-color:#0B1033;background-image:linear-gradient(180deg,#0B1033 0%,#26307A 25%,#5562C4 50%,#26307A 75%,#0B1033 100%);background-size:100% 300%;background-position:50% 0%}
+#wall.night{animation:ph-night 24s ease-in-out infinite alternate}
+@keyframes ph-night{from{background-position:50% 0%}to{background-position:50% 100%}}
+@media (prefers-reduced-motion:reduce){#wall.night{animation:none;background-image:linear-gradient(180deg,#0B1033 0%,#26307A 50%,#5562C4 100%);background-size:100% 100%}}
 #wall[hidden]{display:none}
 
 /* ---------- home ---------- */

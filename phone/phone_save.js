@@ -6,7 +6,7 @@
  * (which always held 'dark', the PH1 default) move to 'system' once. Light / Dark stay as a phone-only override.
  * PH5: ph5 marks saves made from PH5 on; older saves get the PH5 home (TV only) and dock once, settings kept.
  * Dock ids not in the catalog yet (e.g. 'message') stay saved; phone_app.js only hides them.
- * wall: 'auto' (transparent inside the Android WebView, test gradient in a normal browser) | 'none' | '#rrggbb'.
+ * wall: 'night' (PH12 default: Hub Night blue gradient, also in the WebView) | 'none' (see-through) | '#rrggbb'. Old 'auto' -> 'night'.
  * Everything is repaired on load (unknown ids dropped later by phone_app.js, bad types reset to defaults).
  * PH10: settings.hidden = ids hidden on this phone; settings.unhidden = ids from phone/hidden-apps.csv shown again here (≤200 each).
  * Storage blocked / full → keeps working in memory only.
@@ -25,7 +25,8 @@
     dock: ['message', 'telephone', 'camera'],   // PH5: 'message' shows once the app is in the catalog
     pages: [['tv'], []],   // PH5
     recent: [],
-    settings: { theme: 'system', wall: 'auto', clock24: true, keepAlive: 2, th80: true, ph5: true, hidden: [], unhidden: [] }
+    // settings: { theme: 'system', wall: 'auto', clock24: true, keepAlive: 2, th80: true, ph5: true, hidden: [], unhidden: [] }   (PH11)
+    settings: { theme: 'system', wall: 'night', clock24: true, keepAlive: 2, th80: true, ph5: true, hidden: [], unhidden: [] }
   };
   var mem = null;
 
@@ -52,7 +53,8 @@
     var s = d.settings || {};
     if (!s.ph5) { o.pages = clone(DEFAULTS.pages); o.dock = clone(DEFAULTS.dock); }   // PH5: older saves get the new home + dock once
     if (['system', 'light', 'dark'].indexOf(s.theme) >= 0 && s.th80) o.settings.theme = s.theme;   // H80: pre-H80 saves follow the Hub
-    if (s.wall === 'auto' || s.wall === 'none' || /^#[0-9a-f]{6}$/i.test(s.wall || '')) o.settings.wall = s.wall;
+    // if (s.wall === 'auto' || s.wall === 'none' || /^#[0-9a-f]{6}$/i.test(s.wall || '')) o.settings.wall = s.wall;   (PH11)
+    if (s.wall === 'night' || s.wall === 'none' || /^#[0-9a-f]{6}$/i.test(s.wall || '')) o.settings.wall = s.wall;   // PH12: 'auto' (or anything else) -> default 'night'
     if (typeof s.clock24 === 'boolean') o.settings.clock24 = s.clock24;
     o.settings.hidden = ids(s.hidden, HIDDEN_MAX);   // PH10: hidden on this phone
     o.settings.unhidden = ids(s.unhidden, HIDDEN_MAX);   // PH10: CSV-hidden ids unhidden on this phone
