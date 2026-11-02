@@ -23,6 +23,7 @@ name, path, icon, newtab, section, description
 Swell Foop,        swell-foop/,    , , Puzzle, Tap groups of same-coloured balls to clear the board - bigger groups score more
 Tetris,            tetris/,        , , Puzzle, Classic falling blocks: clear lines before the stack reaches the top
 Tic-Tac-Toe,       tic-tac-toe/,   , , Puzzle, Get three in a row on a 3x3 grid - play a friend or the computer
+Connect 4,        connect-4/, , , Puzzle, Drop red and yellow discs to line up four - play a friend or the computer
 Ping Pong,         ping-pong/,     , , Arcade, Paddle and ball table tennis - return the ball and outscore your opponent
 Snake,             snake/,         , , Arcade, Steer the snake to eat food and grow longer without hitting yourself
 Space Invaders,    space-invader/, , , Arcade, Retro shooter: move your cannon and blast waves of descending aliens
@@ -39,6 +40,7 @@ AoE RTS,           aoe-rts/,       , , Strategy, Tiny real-time strategy in Age 
 Gravity Sandbox,   gravity-sandbox/, , , Simulator, Drop planets - stars and black holes and watch gravity make orbits
 Solar System,      solar-system/,  , , Simulator, Explore the Sun and planets: tap a planet for key facts - pan and zoom
 Aquarium,          aquarium/,      , , Simulator, Virtual fish tank: meet the fish - feed them and keep the water clean
+Game of Life,      game-of-life/,  , , Simulator, Conway's cellular automaton: paint cells or drop gliders and guns and watch them evolve
 Browser FPS,       browser-fps/,   , , 3D, 3D first-person shooter: explore or fight on camp - island - snow and forest maps
 LandCraft,         landcraft/,     , , 3D, Voxel block world in Minecraft style: explore - break and place blocks - swim
 Island Conquest,   island-conquest/, , , Beta, Strategy: send ships to capture islands from the AI before it takes yours
@@ -107,6 +109,9 @@ Screen Share, screen-share/, screen-share/screenshare_icon.png, , Chat, Share yo
 Intercom, intercom/, intercom/intercom_icon.png, , Chat, Tap-to-talk live voice or video to all devices or one - trusted devices can look in
 Telephone, telephone/, telephone/telephone_icon.png, , Chat, Phone calls between your devices: own numbers - contacts - missed-call badge - Do Not Disturb - video calls
 Messages,  messages/,  messages/messages_icon.png, , Chat, Private one-to-one messages between devices by Hub number - sent directly - history on this device
+Contacts,  contacts/,  contacts/contacts_icon.svg, , Chat, One contact list for Telephone and Messages: search - favourites - call - message - video call
+Live Location, live-location/, live-location/live-location_icon.svg, , Share, See where your devices are on a live map - sharing only while you choose - private code only
+Find My Device, find-device/, find-device/find-device_icon.svg, , Share, Ring or locate a device on the open Hub mesh - needs the app open on that device
 SSH,        ssh/,        , , Remote, SSH terminal in the browser: password login - saved hosts - auto-reconnect
 `,
   "Tools": `# Tools — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
@@ -128,23 +133,20 @@ Learning HTML (Basic), learning-html/,   , , Learn, Try HTML: type code and see 
 Speed Test,            speedtest/,       , , Network, Test your internet speed: ping and download from this site
 Altimeter,             altimeter/,          , , Weather, GPS altitude from your phone location - needs location permission
 Password Generator,    password-generator/, , , , Generate strong passwords with options - works offline
+Map,                   map/,             map/map_icon.svg, , Navigation, Simple OpenStreetMap: find your location and search places
 `,
   "Lab": `# Lab apps — one per line. Paths are relative to this folder. Lines starting with # are comments.
 # icon optional (empty = <folder>/<folder>_icon.png or a letter tile); newtab 1 = own tab on desktop;
 # section = optional group heading for Lab only (first appearance sets the order; empty = "Other", shown last).
 # description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
 name, path, icon, newtab, section, description
-MyLLM,              myllm/,                       , , AI, Train a tiny character-level language model from scratch in your browser
-Local AI Chat,      local-ai-chat/,               , , AI, Chat with a small AI model (SmolLM2) running fully in your browser
+MyLLM,              myllm/,                       , , AI, Plan and train a tiny character-level language model in your browser
 Story,              story/,                       , , AI, Type a beginning and get a short story from a tiny on-device AI model
-LLM Calculator,     llm-calc/,                    , , AI, Plan a tiny LLM: parameters - file size - memory and training time
 ONNX Runner,        onnx-runner/,                 , , AI, Run any .onnx machine learning model in the browser - nothing uploaded
 Agent,              agent/,                       , , AI, Browser AI agent with tools: local Ollama - OpenAI-compatible API or Gemini
 
 Sketchbook,         sketchbook/,                  , , Tools, Paper sketchbook with 50 pages: draw with finger mouse or pen
 Code Lab,           code-lab/,                    code-lab/codelab_icon.png, , Tools, Jupyter-style code cells: run Python on a remote Jupyter server
-Image Gen,          image-gen/,                   image-gen/imagegen_icon.png, , Tools, Text-to-image: generate pictures from a prompt with your own Ollama
-Vision,             vision/,                      vision/vision_icon.png, , Tools, Ask a vision AI model on your own Ollama about a photo
 Compass,            compass/,                     compass/compass_icon.png, , Tools, Phone compass + GPS speedometer and altimeter: true or magnetic north - lock a bearing - trip stats
 Paper Keyboard,     paper-keyboard/,              , , Tools, Phone keyboard that types on a desktop over PeerJS (demo)
 MyBookmark,         mybookmark/,                  , , Tools, View and manage your browser bookmarks: import - search - organise
@@ -166,6 +168,10 @@ Notepad,            ../office/notepad/,           , , Legacy, Old simple notepad
 Calculator (Legacy), ../tools/calculator-beta/,   , , Legacy, Old basic calculator with keyboard support
 Webcam,             ../media/webcam/,             , , Legacy, Old webcam viewer: see your camera and save a snapshot
 Keyboard,           keyboard/,                    , , Legacy, On-screen keyboard demo and test bed for the Hub keyboard
+Local AI Chat,      local-ai-chat/,               , , Legacy, Chat with a small AI model (SmolLM2) running fully in your browser
+Image Gen,          image-gen/,                   image-gen/imagegen_icon.png, , Legacy, Text-to-image: generate pictures from a prompt with your own Ollama
+Vision,             vision/,                      vision/vision_icon.png, , Legacy, Ask a vision AI model on your own Ollama about a photo
+LLM Calculator,     llm-calc/,                    , , Legacy, Plan a tiny LLM: parameters - file size - memory and training time (now the Plan tab in MyLLM)
 `,
   "Learn": `# Learn — tiles page + Hub menu flyout. This CSV is the source of truth for the Learn category (see README.md).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
