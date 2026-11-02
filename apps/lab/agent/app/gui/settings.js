@@ -16,9 +16,11 @@
    defaults 'off' (only for people with no saved choice — saved values always win via all()).
    AG10: Settings = collapsible cards (Model, Folder & Memory, Permissions, Web, Helper, Display, Usage, Advanced; last open
    card remembered in 'agent.setCard'); on/off settings are big switches (sw()); same keys as before, nothing renamed.
+   AG12: provider also 'groq' | 'openrouter' | 'xai' | 'deepseek' | 'deepinfra' | 'custom' ('openai' = api.openai.com now), customBase
+   (Custom tab base URL), <id>Model / model_<id> per tab.
    prices {'provider|model': {in, out}} $ per 1M tokens (Settings → Usage, app/gui/usageview.js). */
 HR.set = (function () {
-  var KEY = 'agent.settings', DEF = { theme: 'dark', baseUrl: 'http://localhost:11434', model: '', think: 'auto', tools: 'on', maxSteps: 8, saveChats: 'on', helper: 'off', helperUrl: 'http://127.0.0.1:11500', helperToken: '', provider: 'ollama', openaiBase: 'https://api.openai.com/v1', browserModel: '',
+  var KEY = 'agent.settings', DEF = { theme: 'dark', baseUrl: 'http://localhost:11434', model: '', think: 'auto', tools: 'on', maxSteps: 8, saveChats: 'on', helper: 'off', helperUrl: 'http://127.0.0.1:11500', helperToken: '', provider: 'ollama', openaiBase: 'https://api.openai.com/v1', customBase: '', browserModel: '',
     autoWrite: 'off', autoShell: 'off', allowWrite: 'on', allowShell: 'on', memory: 'on', showThink: 'on', showSteps: 'off', thinkLive: 'on', notifyLong: 'on', tokenMeter: 'on', ctxMax: 8192, liveShell: 'off', prices: {}, allowWeb: 'on', tavilyKey: '', webDepth: 'basic' };
   function all() { var s = {}; try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { s = {}; } return Object.assign({}, DEF, s); }
   function get(k) { return all()[k]; }
@@ -63,7 +65,7 @@ HR.set = (function () {
     });
   }
   function draw() {
-    seg('setProv', 'provider', [['ollama', 'Ollama'], ['openai', 'OpenAI-compatible'], ['gemini', 'Gemini'], ['browser', 'Browser']], function () { HR.provider.changed(); });
+    seg('setProv', 'provider', HR.models.all().map(function (a) { return [a.id, a.label]; }),   /* AG12: every tab, in order */ function () { HR.provider.changed(); });
     seg('setTheme', 'theme', [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']], applyTheme);
     seg('setThink', 'think', [['auto', 'Auto'], ['on', 'On'], ['off', 'Off']]);
     sw('setTools', 'tools');

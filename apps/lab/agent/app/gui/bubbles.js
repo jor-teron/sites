@@ -116,8 +116,8 @@ HR.view = (function () {
     var c = el('div', 'ecard'), t = el('div', 'ec-t'), p = el('div', 'ec-b');
     var prov = HR.models.id(), lab = HR.models.current().label, hubName = '';
     if (prov !== 'ollama' && e.kind !== 'abort') {
-      var cb = HR.models.base(), kn = HR.hubKeys ? HR.hubKeys.forProvider(prov, cb) || 'openai_key' : '';
-      if (e.kind === 'nokey') { hubName = kn; t.textContent = '🔑 ' + lab + ' needs an API key'; p.textContent = inHub() ? 'Add ' + kn + ' in Hub › API Keys.' : 'Add it in Settings ⚙ → Model. It is stored only in this browser on this device.'; }
+      var cb = HR.models.base(), kn = HR.hubKeys ? HR.models.hubName(prov, cb) : '';
+      if (e.kind === 'nokey') { hubName = kn; t.textContent = '🔑 ' + lab + ' needs an API key'; p.textContent = inHub() && kn ? 'Add ' + kn + ' in Hub › API Keys.' : 'Add it in Settings ⚙ → Model. It is stored only in this browser on this device.'; }
       else if (e.kind === 'unreachable') { t.textContent = '🔌 Can\'t reach ' + cb; p.textContent = 'Check the base URL (' + where('Settings ⚙ → Model') + ') and your connection. The provider must allow browser (CORS) requests; OpenAI, Groq, OpenRouter and Gemini do. ' + (e.message || ''); }
       else if (e.kind === 'empty') { t.textContent = '📦 No models listed'; p.textContent = 'Type a model name in Settings ⚙ → Model.'; }
       else {

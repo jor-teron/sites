@@ -6,7 +6,7 @@
 HR.hubRows = (function () {
   function modelKey() {
     var p = HR.models.def(), b = HR.models.base(p);
-    return p === 'browser' ? '' : p === 'ollama' ? 'ollama_url' : HR.hubKeys.forProvider(p, b) || 'openai_key';
+    return p === 'browser' ? '' : p === 'ollama' ? 'ollama_url' : HR.models.hubName(p, b);   /* AG12: '' = no Hub slot (DeepInfra) */
   }
   function line(id, n, what) {
     var el = document.getElementById(id); if (!el) return;

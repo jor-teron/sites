@@ -52,7 +52,7 @@ HR.chats = (function () {
   async function refresh() { rows = await HR.threads.list().catch(function () { return []; }); draw(); }
   /* AG5: the chat's own provider + model (no saved pair -> Settings default) */
   function useModel(c) {
-    var p = c && c.provider || '', m = c && c.model || '';
+    var p = HR.migrate.legacy(c && c.provider || '', c && c.updated), m = c && c.model || '';   /* AG12 */
     if (p === HR.models.chosen() && m && m === HR.model.current() && !HR.models.fallen()) { HR.models.setChat(p, m); return; }
     HR.models.setChat(p, m); HR.model.load();
   }

@@ -12,6 +12,7 @@
   app/gui (settings, model, steps, bubbles, approve, folder, helperset, provider, hubrows, browsercard, chat, chats, chatsearch, meter, edit, usageview), app/main.js.
   Offline (AG8): agent_sw.js, Agent's own service worker (scope this folder), registered by app/main.js.
   AG11: 📷 photo attach (Vision) and a Chat | Image toggle (Image Gen) next to the composer.
+  AG12: a tab per provider (app/models/presets.js), grouped model picker with search + Recent (app/gui/pickgroups.js).
   AG10: Settings = 8 collapsible cards (ui/settings.css); inside the Hub key / base fields hide behind "Keys come from Hub › API Keys".
 -->
 <html lang="en">
@@ -79,8 +80,7 @@
       <p class="hint">Ollama must allow this page: OLLAMA_ORIGINS = <code id="setOrigin"></code></p>
     </div>
     <div id="provOnline" hidden>
-      <div id="provOA"><div class="ec-row start" id="provPresets"></div>
-      <input id="setOABase" class="inp gap hub-hide" type="url" spellcheck="false" placeholder="https://api.openai.com/v1" aria-label="OpenAI-compatible base URL"></div>
+      <div id="provOA"><input id="setOABase" class="inp gap hub-hide" type="url" spellcheck="false" placeholder="Custom base URL, e.g. http://localhost:1234/v1" aria-label="Custom base URL"></div>
       <input id="setKey" class="inp gap hub-hide" type="password" spellcheck="false" autocomplete="off" placeholder="API key" aria-label="API key">
       <p class="hint hub-hide" id="keyNote"></p>
       <input id="setModelName" class="inp gap" type="text" spellcheck="false" aria-label="Model name">
@@ -145,6 +145,7 @@
 <dialog id="pick" class="dlg pick" aria-labelledby="pickTitle">
   <div class="dlg-head"><h2 id="pickTitle">Model for this chat</h2><button type="button" class="hb" id="btnModels" title="Reload models" aria-label="Reload models">↻</button><button type="button" class="hb" id="pickClose" aria-label="Close">✕</button></div>
   <div class="seg" id="pickProv" role="radiogroup" aria-label="Provider"></div>
+  <input id="pickFind" class="inp gap" type="search" spellcheck="false" autocomplete="off" placeholder="🔍 Search models" aria-label="Search models">
   <div id="pickList" class="pk-list"></div>
   <button type="button" class="hb wide pk-def" id="pickDef">Make default for new chats</button>
 </dialog>
@@ -160,6 +161,7 @@
 <script src="app/models/net.js"></script>
 <script src="app/models/registry.js"></script>
 <script src="app/models/ollama.js"></script>
+<script src="app/models/presets.js"></script>
 <script src="app/models/openai.js"></script>
 <script src="app/models/gemini.js"></script>
 <script src="app/models/browser.js"></script>
@@ -176,6 +178,7 @@
 <script src="app/tools/shell.js"></script>
 <script src="app/tools/web.js"></script>
 <script src="app/gui/settings.js"></script>
+<script src="app/gui/pickgroups.js"></script>
 <script src="app/gui/model.js"></script>
 <script src="app/gui/steps.js"></script>
 <script src="app/gui/bubbles.js"></script>

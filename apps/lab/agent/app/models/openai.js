@@ -56,5 +56,6 @@
       })
       .catch(function (e) { throw N.wrap(e); });
   }
-  HR.models.register({ id: 'openai', label: 'OpenAI-compatible', needsKey: true, models: models, chat: chat, toOA: toOA });
+  /* AG12: one adapter, registered once per preset tab (app/models/presets.js); Custom needs no key (LM Studio / vLLM) */
+  HR.presets.OA.forEach(function (p) { HR.models.register({ id: p.id, label: p.label, oa: true, needsKey: p.id !== 'custom', models: models, chat: chat, toOA: toOA }); });
 })();

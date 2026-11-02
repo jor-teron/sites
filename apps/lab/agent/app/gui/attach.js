@@ -33,7 +33,7 @@ HR.attach = (function () {
         .catch(function (e) { HR.view.infoCard('📷 Photo not added', e.message || 'Could not read that picture.'); });
     });
   }
-  function ok() { var p = HR.models.id(); return p === 'ollama' || p === 'openai' || p === 'gemini'; }
+  function ok() { var p = HR.models.id(); return p !== 'browser' && !!HR.models.current(); }   /* AG12: every tab but Browser */
   function show(on) { btn.hidden = !on; row.hidden = !on || !pics.length; }
   function init() {
     btn = document.getElementById('btnPhoto'); file = document.getElementById('photoFile'); row = document.getElementById('photoRow');
