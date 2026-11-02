@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<!-- Find My Device FD1: ring or locate any device on public 00000 that has Find My Device open. No permissions yet (FD2). -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Find My Device</title>
+  <link rel="icon" href="find-device_icon.svg">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="find-device.css">
+  <script>(function () { var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) {} var d = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches); document.documentElement.className = d ? 'dark' : ''; })();</script>
+</head>
+<body>
+<div id="app">
+  <div class="bar"><b id="my-num">—</b><span id="status" class="mut">Starting…</span><span id="count" class="pill">0 online</span></div>
+  <div id="find"><input id="in-num" inputmode="numeric" maxlength="5" placeholder="Find by number"><button class="mini jelly" id="b-pick" title="Pick a contact">👤</button><button class="act jelly" id="b-ring2">🔔</button><button class="act jelly" id="b-loc2">📍</button></div>
+  <div id="picker" hidden><ul id="pick-list"></ul></div>
+  <div id="note" class="mut" hidden></div>
+  <ul id="devs"></ul>
+  <p id="empty" class="mut">No other device has Find My Device open right now. The other device needs Find My Device open (FD2 will let the Hub answer when it's closed).</p>
+  <div id="mapbox" hidden><div class="mhead"><span id="m-info" class="mut"></span><a id="m-g" target="_blank" rel="noopener">Open in Google Maps</a><button class="mini jelly" id="m-close">✕</button></div><div id="map"></div></div>
+</div>
+<div id="ringcard" hidden><div class="rc"><div class="big">🔔</div><p>Someone is looking for this device.</p><p>From: <b id="rc-from"></b></p><p id="rc-hint" class="hint" hidden>Tap to sound</p><button class="stop jelly" id="rc-stop">Stop</button></div></div>
+<div id="toast" hidden></div>
+<script src="../../../shared/link/link_core.js"></script>
+<script src="../../../shared/link/link_devices.js"></script>
+<script src="../shared/contacts_store.js"></script>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="fd_peer.js"></script>
+<script src="fd_ring.js"></script>
+<script src="fd_locate.js"></script>
+<script src="fd_app.js"></script>
+</body>
+</html>

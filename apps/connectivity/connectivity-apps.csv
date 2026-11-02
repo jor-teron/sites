@@ -17,4 +17,5 @@ Telephone, telephone/, telephone/telephone_icon.png, , Chat, Phone calls between
 Messages,  messages/,  messages/messages_icon.png, , Chat, Private one-to-one messages between devices by Hub number - sent directly - history on this device
 Contacts,  contacts/,  contacts/contacts_icon.svg, , Chat, One contact list for Telephone and Messages: search - favourites - call - message - video call
 Live Location, live-location/, live-location/live-location_icon.svg, , Share, See where your devices are on a live map - sharing only while you choose - private code only
+Find My Device, find-device/, find-device/find-device_icon.svg, , Share, Ring or locate a device on the open Hub mesh - needs the app open on that device
 SSH,        ssh/,        , , Remote, SSH terminal in the browser: password login - saved hosts - auto-reconnect
