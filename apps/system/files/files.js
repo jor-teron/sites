@@ -1,12 +1,14 @@
 /*
- * Files app start-up (apps/system/files/files.js) — wires the toolbar (⇧ Up, ＋ Folder,
- * ⇪ Upload, ↻ Refresh, Select, view, sort, search) and opens the drive from the hash
+ * Files app start-up (apps/system/files/files.js) — wires the toolbar (H106: Back, Forward, Up,
+ * New folder, Upload, Refresh, More; view / sort / search live in files_view.js) and opens the drive from the hash
  * (#drive=<id>&path=<a/b>, set by the Hub's drive tiles and kept by a window session), else Local.
  * Modules (load order): files_core, files_view, files_drives, files_actions, files_viewer, files_thumbs, files_menu.
  */
 (function () {
   'use strict';
   const { $, st } = FX;
+  $('back').addEventListener('click', () => FX.drives.back());   // H106
+  $('fwd').addEventListener('click', () => FX.drives.forward());
   $('up').addEventListener('click', () => FX.drives.up());
   $('refresh').addEventListener('click', () => { FX.say(''); FX.view.load(); });
   $('mkdir').addEventListener('click', () => FX.act.newFolder());

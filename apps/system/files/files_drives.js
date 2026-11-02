@@ -167,23 +167,69 @@
     go(st.stack.length - 1);
   }
 
+  /* H106: breadcrumbs — drive › folder › sub-folder; each crumb opens that folder. Long paths keep the
+     drive and the last 2 folders and fold the middle into "…" (a menu of the hidden folders). */
   function crumbs() {
-    const out = [];
+    const out = [], n = st.stack.length;
+    const fold = n > 4 ? [1, n - 3] : null;   // hidden: stack[1 .. n-3]
     st.stack.forEach((s, i) => {
+      if (fold && i >= fold[0] && i <= fold[1]) {
+        if (i === fold[0]) {
+          out.push(el('span', 'crumb-sep', '\u203A'));
+          const hid = st.stack.slice(fold[0], fold[1] + 1);
+          out.push(btn('crumb crumb-more', '\u2026', 'Show ' + hid.length + ' hidden folders', (e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            CtxMenu.open(r.left, r.bottom + 4, hid.map((h, j) => ({ label: h.name, icon: '\uD83D\uDCC1', action: () => go(fold[0] + j) })));
+          }));
+        }
+        return;
+      }
       if (i) out.push(el('span', 'crumb-sep', '\u203A'));
       const b = btn('crumb', s.name, null, () => go(i));
-      if (i === st.stack.length - 1) b.setAttribute('aria-current', 'page');
+      if (i === n - 1) b.setAttribute('aria-current', 'page');
       else FX.view.dropTarget(b, () => s.handle);
       out.push(b);
     });
     $('crumbs').replaceChildren(...out);
-    $('up').disabled = st.stack.length < 2;
+    $('crumbs').scrollLeft = 1e6;   // keep the open folder in view
+    $('up').disabled = n < 2;
+    $('back').disabled = !hist.back.length;
+    $('fwd').disabled = !hist.fwd.length;
   }
+
+  /* H106: navigation history (Back / Forward). Each place = { id, stack } (a copy of the folder path
+     with its handles); go() records the place it leaves. Storage logic is unchanged. */
+  const hist = { back: [], fwd: [], here: null, busy: false };
+  const keyOf = (p) => p ? p.id + '/' + p.stack.map((s) => s.name).join('/') : '';
+  function track() {
+    const now = st.driveId && st.stack.length ? { id: st.driveId, stack: st.stack.slice() } : null;
+    if (!hist.busy && hist.here && now && keyOf(hist.here) !== keyOf(now)) {
+      hist.back.push(hist.here); hist.fwd = [];
+      if (hist.back.length > 50) hist.back.shift();
+    }
+    if (now) hist.here = now;
+  }
+  async function travel(from, to) {
+    if (!from.length || hist.busy) return;
+    const p = from.pop();
+    if (hist.here) to.push(hist.here);
+    hist.busy = true;
+    try {
+      if (p.id === st.driveId) { st.stack = p.stack.slice(); go(st.stack.length - 1); }
+      else await openDrive(p.id, false, p.stack.slice(1).map((s) => s.name).join('/'));
+    } finally { hist.busy = false; }
+    hist.here = st.driveId && st.stack.length ? { id: st.driveId, stack: st.stack.slice() } : p;
+    crumbs();
+  }
+  const back = () => travel(hist.back, hist.fwd);
+  const forward = () => travel(hist.fwd, hist.back);
+
   /** Show folder number `depth` of the path (0 = drive root). */
   function go(depth) {
     st.stack = st.stack.slice(0, depth + 1);
     st.sel.clear(); st.anchor = ''; st.q = '';
     $('search').value = '';
+    track();   // H106
     crumbs();
     setHash();
     FX.view.load();
@@ -200,5 +246,5 @@
       if (ok === !st.stack.length) openDrive('gdrive', false);
     }
   });
-  FX.drives = { draw, open: openDrive, go, up, into, fromHash, crumbs };
+  FX.drives = { draw, open: openDrive, go, up, into, fromHash, crumbs, back, forward };   // H106: + back, forward
 })();

@@ -2,7 +2,7 @@
  * Files menu + keys (apps/system/files/files_menu.js) — the right-click / long-press menu
  * (shared/ctxmenu) for the selection or for the open folder, and the keyboard:
  *   Enter open · Delete delete · F2 rename · Ctrl/Cmd+C copy · +X cut · +V paste · +A select all
- *   Backspace or Alt+↑ up a folder · Esc clear selection · arrows move between items
+ *   Backspace or Alt+↑ up a folder · Alt+← back · Alt+→ forward (H106) · Esc clear selection · arrows move between items
  * API FX.menu: forItems(x, y), forFolder(x, y).
  */
 (function () {
@@ -41,7 +41,7 @@
       { label: 'Paste', icon: '\uD83D\uDCCB', hint: MOD + 'V', disabled: !st.clip, action: () => A().paste() },
       { sep: true },
       { label: 'Select all', icon: '\u2611', hint: MOD + 'A', disabled: !st.shown.length, action: () => FX.view.selectAll() },
-      { label: st.view === 'grid' ? 'List view' : 'Grid view', icon: st.view === 'grid' ? '\u2630' : '\u25A6', action: () => $('view').click() },
+      { label: st.view === 'grid' ? 'List view' : 'Grid view', icon: st.view === 'grid' ? '\u2630' : '\u25A6', action: () => FX.view.toggle() },
       { label: 'Refresh', icon: '\u21BB', action: () => FX.view.load() },
       { label: FX.singleClick() ? 'Open with double click' : 'Open with single click', icon: '\uD83D\uDDB1',
         action: () => { FX.setSingleClick(!FX.singleClick()); FX.say(FX.singleClick() ? 'A single click now opens items.' : 'A double click now opens items.'); } },
@@ -84,6 +84,8 @@
     else if (k === 'F2') { if (sel.length === 1) A().rename(sel[0]); else used = false; }
     else if (k === 'Enter') { const e1 = sel.length === 1 ? sel[0] : focusedItem; if (e1) A().open(e1); else used = false; }
     else if (k === 'Backspace' || (e.altKey && k === 'ArrowUp')) FX.drives.up();
+    else if (e.altKey && k === 'ArrowLeft') FX.drives.back();      // H106
+    else if (e.altKey && k === 'ArrowRight') FX.drives.forward();  // H106
     else if (k === 'Escape') { if (st.sel.size) FX.view.clear(); else used = false; }
     else if (!mod && !e.altKey && ['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Home', 'End'].indexOf(k) >= 0) arrow(k, e.shiftKey);
     else if (k === 'ContextMenu' || (e.shiftKey && k === 'F10')) {

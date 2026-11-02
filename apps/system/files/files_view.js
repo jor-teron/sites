@@ -84,7 +84,7 @@
     // drop selections that are no longer shown
     Array.from(st.sel).forEach((n) => { if (!st.shown.some((e) => e.name === n)) st.sel.delete(n); });
     list.className = 'list v-' + st.view + (st.sel.size ? ' selecting' : '');
-    $('view').textContent = st.view === 'grid' ? '\u2630 List' : '\u25A6 Grid';
+    $('view').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === st.view ? 'true' : 'false'));   // H106: lit = current view
     $('sort').value = st.sort + (st.dir === 1 ? '-asc' : '-desc');
     const keep = list.scrollTop;
     if (FX.thumbs) FX.thumbs.reset();
@@ -194,7 +194,9 @@
   function focusFirst() { const f = list.querySelector('.item.sel') || list.querySelector('.item'); if (f) f.focus(); }
 
   // toolbar: view / sort / search
-  $('view').addEventListener('click', () => { st.view = st.view === 'grid' ? 'list' : 'grid'; FX.setPref('view', st.view); render(); });
+  // H106: segmented Grid | List (a click on the lit one does nothing; FX.view.toggle flips, for the menu)
+  function setView(v) { if (v === st.view) return; st.view = v; FX.setPref('view', st.view); render(); }
+  $('view').addEventListener('click', (e) => { const b = e.target.closest('button[data-v]'); if (b) setView(b.dataset.v); });
   $('sort').addEventListener('change', () => {
     const [k, d] = $('sort').value.split('-');
     st.sort = k; st.dir = d === 'desc' ? -1 : 1;
@@ -203,5 +205,5 @@
   });
   $('search').addEventListener('input', () => { st.q = $('search').value; render(); });
 
-  FX.view = { load, render, paintSel, dropTarget, selectAll, clear, pick, focusFirst, entryOf };
+  FX.view = { toggle: () => setView(st.view === 'grid' ? 'list' : 'grid'), load, render, paintSel, dropTarget, selectAll, clear, pick, focusFirst, entryOf };
 })();
