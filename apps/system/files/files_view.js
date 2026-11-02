@@ -47,6 +47,18 @@
       d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   }
 
+  /** H105: empty folder: big icon, text, hint, New folder + Upload (same as the toolbar buttons). */
+  function emptyBox() {
+    const box = el('div', 'empty empty-box');
+    box.append(el('div', 'empty-ico', '\uD83D\uDCC2'), el('p', 'empty-title', 'This folder is empty'), el('p', 'empty-hint', 'Drop files here'));
+    const row = el('div', 'empty-btns');
+    const mk = el('button', 'btn primary', '\uFF0B New folder'); mk.type = 'button';
+    mk.addEventListener('click', () => document.getElementById('mkdir').click());
+    const up = el('button', 'btn', '\u21EA Upload'); up.type = 'button';
+    up.addEventListener('click', () => document.getElementById('upload').click());
+    row.append(mk, up); box.append(row); return box;
+  }
+
   function item(e) {
     const it = el('div', 'item' + (st.sel.has(e.name) ? ' sel' : '') + (st.clip && st.clip.mode === 'cut' && st.clip.dir === cur() && st.clip.entries.some((c) => c.name === e.name) ? ' cut' : ''));
     it.dataset.name = e.name;
@@ -77,7 +89,7 @@
     const keep = list.scrollTop;
     if (FX.thumbs) FX.thumbs.reset();
     if (!cur()) list.replaceChildren(el('p', 'empty', 'Pick a drive on the left.'));
-    else if (!st.items.length) list.replaceChildren(el('p', 'empty', 'This folder is empty. Drop files here, or use \uFF0B Folder / \u21EA Upload.'));
+    else if (!st.items.length) list.replaceChildren(emptyBox());   // H105: centred, with real buttons
     else if (!st.shown.length) list.replaceChildren(el('p', 'empty', 'Nothing matches \u201c' + st.q + '\u201d.'));
     else list.replaceChildren(...st.shown.map(item));
     list.scrollTop = keep;

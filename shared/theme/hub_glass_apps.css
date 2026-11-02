@@ -38,7 +38,7 @@ html.light.hub-glass:has(> body .term, > body #term, > body #out) { --ga-tint: r
 html.light.hub-glass input, html.light.hub-glass select, html.light.hub-glass textarea {
   background-color: rgba(0, 0, 0, 0.22); color: #fff; border-color: rgba(255, 255, 255, 0.28); color-scheme: dark;
 }
-html.light.hub-glass ::placeholder { color: rgba(255, 255, 255, 0.60); }
+html.light.hub-glass ::placeholder { color: rgba(255, 255, 255, 0.72); }   /* H105: was .60 */
 html.light.hub-glass option { background: #1e222c; color: #fff; }
 html.light.hub-glass a { color: color-mix(in srgb, var(--accent) 55%, #fff); }
 /* Reduce transparency: solid dark slate (same as the Hub's solid glass) */
