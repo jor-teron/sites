@@ -1,4 +1,4 @@
-/* Live Location LL1 — Leaflet map (vendor/leaflet, OSM tiles) + device list.
+/* Live Location LL1.1 — invalidateSize() on resize / sheet toggle; Leaflet map (vendor/leaflet, OSM tiles) + device list.
    One circle marker per device; grey after 2 min of silence; tap a list row to fly there. */
 (function () {
   'use strict';
@@ -9,7 +9,9 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(map);
     setInterval(render, 1000);
+    addEventListener('resize', resize); setTimeout(resize, 50);
   }
+  function resize() { if (map) map.invalidateSize(); }
   function ago(t) { var s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 60 ? s + 's ago' : s < 3600 ? Math.round(s / 60) + 'm ago' : Math.round(s / 3600) + 'h ago'; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function put(id, d, mine) {
@@ -34,7 +36,8 @@
     });
     list.innerHTML = html;
     document.getElementById('empty').hidden = ids.length > 0;
+    var bl = document.getElementById('btn-list'); if (bl) bl.textContent = '👥 ' + ids.length;
   }
   document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('.dev'); if (b) fly(b.getAttribute('data-id')); });
-  window.LLMap = { init: init, put: put, drop: drop, fly: fly, devices: function () { return devs; } };
+  window.LLMap = { init: init, put: put, drop: drop, fly: fly, devices: function () { return devs; }, resize: resize };
 })();

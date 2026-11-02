@@ -17,7 +17,7 @@
     stop(); cb = onFix; errCb = onErr; last = null;
     if (!navigator.geolocation) { if (errCb) errCb('This browser has no location support.'); return false; }
     wid = navigator.geolocation.watchPosition(fix, function (e) {
-      if (errCb) errCb(e.code === 1 ? 'Location permission was denied.' : 'Could not get your location yet…');
+      if (errCb) errCb(e.code === 1 ? 'Location permission was denied.' : 'Could not get your location yet…', e.code === 1);   // LL1.1: 2nd arg = denied
     }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 });
     return true;
   }

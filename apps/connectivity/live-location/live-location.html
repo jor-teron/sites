@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Live Location LL1: share your position with devices on your private Hub mesh while this page is open. -->
+<!-- Live Location LL1.1 (full-screen map, toggle in the top row, device sheet): share your position with devices on your private Hub mesh while this page is open. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -11,13 +11,18 @@
 </head>
 <body>
 <div id="app">
-  <div class="bar"><div class="who"><b id="me-name"></b><div id="status" class="mut">Starting…</div></div><button class="mini jelly" id="btn-code">Code</button></div>
-  <button id="share" class="jelly" aria-pressed="false"><span class="knob"></span><span id="share-lbl">Share my location</span></button>
+  <div class="bar">
+    <button id="share" class="jelly" aria-pressed="false"><span class="knob"></span><span id="share-lbl">Share</span></button>
+    <span id="status" class="mut">Starting…</span>
+    <button class="mini jelly" id="btn-code" title="Private code">Code</button>
+    <button class="mini jelly" id="btn-list" aria-expanded="false" title="Devices">👥 0</button>
+  </div>
   <div id="geo-note" class="mut" hidden></div>
-  <div id="map"></div>
-  <div id="list"></div>
-  <div id="empty" class="mut">Nobody is sharing yet. Ask a device on your Hub to open Live Location and tap “Share my location”.</div>
   <div id="code-box" hidden><input id="code-in" inputmode="numeric" maxlength="5" placeholder="5-digit private code"><button class="mini jelly" id="code-go">Join</button></div>
+  <div id="mapwrap"><div id="map"></div>
+    <div id="sheet" hidden><div id="list"></div><div id="empty" class="mut">Nobody is sharing yet.</div></div>
+  </div>
+  <span id="me-name" hidden></span>
 </div>
 <script src="../../../shared/link/link_devices.js"></script>
 <script src="vendor/leaflet/leaflet.js"></script>

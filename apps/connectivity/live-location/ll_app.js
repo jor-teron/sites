@@ -1,11 +1,12 @@
-/* Live Location LL1 — glue: private mesh code, share toggle, peer messages.
+/* Live Location LL1.1 — glue: sharing ON by default on a private code (share:false remembered when turned off; a denied
+   permission shows on the toggle and is not retried this session); device list = bottom sheet from 👥; private mesh code, share toggle, peer messages.
    Code order: #code=/?hub= in URL, the Hub's HubMeshLink private code, last code ('live-location-settings-v1'), else the code box.
    Public 00000 is refused (location is private). Messages over LLPeer.send: {k:'pos', lat, lon, acc, at, name} and {k:'off'}.
    New devices get our latest position via LLPeer.provide (lobby) and on every roster change we re-send. */
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var PUB = '00000', code = '', started = false, lastFix = null, ME = 'me';
+  var PUB = '00000', code = '', started = false, lastFix = null, ME = 'me', denied = false;
   function ok(c) { c = String(c || ''); return /^\d{5}$/.test(c) && c !== PUB ? c : ''; }
   function urlCode() { var m = (location.hash + '&' + location.search).match(/(?:code|hub|join)=(\d{5})/); return m ? m[1] : ''; }
   function meshCode() {
@@ -14,20 +15,25 @@
   }
   function status(t) { $('status').textContent = t; }
   function go(c) {
-    c = ok(c); if (!c) { status('Private code needed'); $('code-box').hidden = false; return; }
+    c = ok(c); if (!c) { status('Private code needed'); $('code-box').hidden = false; LLMap.resize(); return; }
     if (started && c === code) return;
     if (started) LLPeer.stop();
-    started = true; code = c; LLStore.setCode(c); $('code-box').hidden = true; $('btn-code').textContent = c;
+    started = true; code = c; LLStore.setCode(c); $('code-box').hidden = true; $('btn-code').textContent = c; LLMap.resize();
     LLPeer.start(c).catch(function () { status('PeerJS could not load (offline?)'); });
+    if (LLStore.share() && !denied && !LLGeo.on()) setShare(true);   // LL1.1: auto-share
   }
   function pos() { return lastFix ? { k: 'pos', lat: lastFix.lat, lon: lastFix.lon, acc: lastFix.acc, at: lastFix.at, name: LLStore.name() } : null; }
   function setShare(on) {
     $('share').classList.toggle('on', on); $('share').setAttribute('aria-pressed', on ? 'true' : 'false');
-    $('share-lbl').textContent = on ? 'Sharing my location' : 'Share my location';
+    $('share').classList.remove('denied');
+    $('share-lbl').textContent = on ? 'Sharing' : 'Share';
     $('geo-note').hidden = true;
     if (on) {
       LLGeo.start(function (f) { lastFix = f; LLMap.put(ME, pos(), true); LLPeer.send(pos()); },
-        function (msg) { $('geo-note').textContent = msg; $('geo-note').hidden = false; });
+        function (msg, perm) {
+          if (perm) { denied = true; LLGeo.stop(); $('share').classList.remove('on'); $('share').classList.add('denied'); $('share').setAttribute('aria-pressed', 'false'); $('share-lbl').textContent = 'No access'; msg = 'Location is blocked. Allow it in the browser’s site settings, then tap Share.'; }
+          $('geo-note').textContent = msg; $('geo-note').hidden = false;
+        });
     } else {
       LLGeo.stop(); lastFix = null; LLMap.drop(ME); LLPeer.send({ k: 'off' });
     }
@@ -39,8 +45,12 @@
   });
   LLPeer.on('roster', function () { var p = pos(); if (p) LLPeer.send(p); });
   LLPeer.provide(function () { return pos() || { k: 'none' }; });
-  $('share').addEventListener('click', function () { setShare(!LLGeo.on()); });
-  $('btn-code').addEventListener('click', function () { $('code-box').hidden = !$('code-box').hidden; $('code-in').focus(); });
+  $('share').addEventListener('click', function () {
+    if (!code) { $('code-box').hidden = false; $('code-in').focus(); return; }
+    var on = !LLGeo.on(); denied = false; LLStore.setShare(on); setShare(on);
+  });
+  $('btn-list').addEventListener('click', function () { var s = $('sheet'); s.hidden = !s.hidden; this.setAttribute('aria-expanded', s.hidden ? 'false' : 'true'); LLMap.resize(); });
+  $('btn-code').addEventListener('click', function () { $('code-box').hidden = !$('code-box').hidden; $('code-in').focus(); LLMap.resize(); });
   $('code-go').addEventListener('click', function () { go($('code-in').value.trim()); });
   addEventListener('pagehide', function () { if (LLGeo.on()) { LLPeer.send({ k: 'off' }); LLGeo.stop(); } });
   $('me-name').textContent = LLStore.name();
