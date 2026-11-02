@@ -1,4 +1,4 @@
-/* Calendar Maker CM13 ui: Design page (CM1) + page tabs. Adds P, save, hols, render, isLand, sheetCanvas to window.CM.
+/* Calendar Maker CM13 ui: Design page (CM1) + page tabs. CM24: Show Restricted / Public / School ticks filter the sheet. Adds P, save, hols, render, isLand, sheetCanvas to window.CM.
    Settings keys, defaults and validation live in core/cm_settings.js.
    ?year=YYYY (from Calendar's "Make printable") wins over the saved year; CM17-F1: else the last saved year, else this year. */
 (function () {
@@ -9,7 +9,7 @@
   /* const RELEASE = 'CM16';  (CM16-CM16-F5) */
   /* const RELEASE = 'CM15';  (CM15) */
   /* const RELEASE = 'CM17';  (CM17-CM17-F2) */
-  const RELEASE = 'CM23'; /* was 'CM22', 'CM21', 'CM20', 'CM19' */ /* was 'CM12' (CM10-CM12), 'CM13', 'CM14', 'CM16', 'CM15', 'CM17' */ /* was 'CM18' */
+  const RELEASE = 'CM24'; /* was 'CM23', 'CM22', 'CM21', 'CM20', 'CM19' */ /* was 'CM12' (CM10-CM12), 'CM13', 'CM14', 'CM16', 'CM15', 'CM17' */ /* was 'CM18' */
   CM.RELEASE = RELEASE; /* CM15: About card */
   const $ = (id) => document.getElementById(id);
   const P = S.loadSettings(location.search);
@@ -22,9 +22,12 @@
   }
   Object.assign(CM, { P, save, hols, render, bgImg: null, sheet: null });
 
+  /* CM24: leave out unticked types (Design sheet only; List / Overview call hols() unfiltered) */
+  const HIDE = { r: 'dshowr', p: 'dshowp', s: 'dshows' };
+  const shown = (list) => (list || []).filter((h) => { const k = HIDE[CM.Holidays.typeOf(h)]; return !k || P[k] !== false; });
   function opts() {
     return { year: P.year, week: P.week, colour: P.colour === 'custom' ? P.custom : P.colour,
-      font: P.font, /* CM6 */ rcolour: P.rcol, /* CM9 */ sundays: P.sundays, sat: P.sat, hols: hols(P.year),
+      font: P.font, /* CM6 */ rcolour: P.rcol, /* CM9 */ sundays: P.sundays, sat: P.sat, hols: shown(hols(P.year)), /* CM24: was hols: hols(P.year) */
       bg: { type: P.bg, colour: P.soft, img: CM.bgImg, faint: P.faint / 100 }, strip: P.strip, layout: P.layout,
       fold: P.fold !== false, legend: P.legend, mfill: P.mfill, lgsz: P.lgsz, /* CM12-F3, CM16-F1 lgsz */
       wfill: P.wfill, wmatch: P.wmatch === true, /* CM16-F5 */
@@ -72,6 +75,7 @@
       $('wcustom').value = P.wfill; markOn('#wfills button', P.wmatch ? '' : P.wfill.toLowerCase());
       $('wmatch').checked = P.wmatch === true; $('wcustom').disabled = P.wmatch === true;
     }
+    Object.values(HIDE).forEach((k) => { if ($(k)) $(k).checked = P[k] !== false; }); /* CM24 */
     if (CM.onSync) CM.onSync();
   }
 
@@ -103,6 +107,7 @@
   if ($('custom')) $('custom').oninput = () => { P.custom = $('custom').value; P.colour = 'custom'; save(); render(); };
   if ($('font')) $('font').oninput = () => { P.font = $('font').value; save(); render(); };
   if ($('font-reset')) $('font-reset').onclick = () => { P.font = '#000000'; save(); render(); };
+  Object.values(HIDE).forEach((k) => { if ($(k)) $(k).onchange = () => { P[k] = $(k).checked; save(); render(); }; }); /* CM24 */
   $('sundays').onchange = () => { P.sundays = $('sundays').checked; save(); render(); };
   $('fold').onchange = () => { P.fold = $('fold').checked; save(); render(); }; /* CM5 */
   /* CM12-F3: legend toggle + month row fill (White = none, Light grey, custom) */

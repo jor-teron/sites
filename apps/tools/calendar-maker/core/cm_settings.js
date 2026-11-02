@@ -54,6 +54,7 @@ window.CM.Settings = (function () {
     ['lshowr', isBool, () => true], /* CM16-F3: restricted section on the Holiday List */
     ['pcol', (v) => T.HEX.test(v), (D) => D.pcol], ['scol', (v) => T.HEX.test(v), (D) => D.scol], /* CM18 */
     ['lshowp', isBool, () => true], ['lshows', isBool, () => true], /* CM18: Public / School list sections */
+    ['dshowr', isBool, () => true], ['dshowp', isBool, () => true], ['dshows', isBool, () => true], /* CM24: Design sheet Restricted / Public / School */
     ['theme', (v) => v === 'light' || v === 'dark', () => 'auto'], /* CM15: app UI theme only */
     ['colour', (v) => v === 'custom' || !!T.COLOURS[v], () => 'green'],
     ['bg', (v) => ['none', 'soft', 'pic'].indexOf(v) >= 0, () => 'none'] /* CM4: unknown / old value -> white */
