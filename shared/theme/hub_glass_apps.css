@@ -1,0 +1,50 @@
+/*
+ * H103 Glass for the system apps (shared/theme/hub_glass_apps.css).
+ * Added by shared/theme/hub_theme.js (only under /apps/system/) when the Hub's Glass theme is on:
+ * html.hub-glass (+ html.hub-glass-solid = Reduce transparency) on top of html.light.
+ * How the wallpaper shows: the Hub makes a system app's window body a blurred glass pane
+ * (hub/core/hub_glass.css, backdrop-filter on .wm-body) and its iframe transparent, so the app only
+ * paints a clear smoke tint here. Same values as H102: tint 0.22-0.34 (dense text 0.50+), bright top
+ * shine, crisp white edge, white text with a dark glow. Apps keep their own layout; this only swaps the
+ * colour variables (--bg / --card / --side / --line / --text ...) that every system app already uses.
+ */
+html.light.hub-glass {
+  --ga-tint: rgba(20, 24, 32, 0.30);
+  --ga-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(255, 255, 255, 0) 100%);
+  --ga-glow: 0 1px 2px rgba(0, 0, 0, 0.65);
+  --bg: transparent; --side: rgba(10, 12, 18, 0.22); --card: rgba(255, 255, 255, 0.10); --card2: rgba(255, 255, 255, 0.14);
+  --sheet: rgba(24, 28, 38, 0.86); --chip: rgba(255, 255, 255, 0.14); --bar: rgba(255, 255, 255, 0.08);
+  --tb: rgba(255, 255, 255, 0.12); --tb-hi: rgba(255, 255, 255, 0.22); --tb-line: rgba(255, 255, 255, 0.30);
+  --line: rgba(255, 255, 255, 0.20); --text: #ffffff; --muted: rgba(255, 255, 255, 0.76); --desc: rgba(255, 255, 255, 0.82);
+  --msg: rgba(255, 255, 255, 0.86); --soft: rgba(255, 255, 255, 0.10); --soft2: rgba(255, 255, 255, 0.18); --grid: rgba(255, 255, 255, 0.10);
+  --ok: #6ef0b8; --bad: #ff9c9c; --warn: #ffd166;
+  --hi: color-mix(in srgb, var(--accent) 34%, rgba(255, 255, 255, 0.08));
+  --shadow: inset 0 1px 0 rgba(255, 255, 255, 0.30), 0 1px 3px rgba(0, 0, 0, 0.18);
+  /* pop-ups (dialogs / context menus) stay dense and readable */
+  --uid-bg: rgba(24, 28, 38, 0.92); --uid-line: rgba(255, 255, 255, 0.22); --uid-text: #fff; --uid-muted: rgba(255, 255, 255, 0.74); --uid-bad: #ff9c9c;
+  --ctx-bg: rgba(24, 28, 38, 0.92); --ctx-line: rgba(255, 255, 255, 0.22); --ctx-text: #fff; --ctx-muted: rgba(255, 255, 255, 0.74); --ctx-bad: #ff9c9c;
+  --toast: rgba(0, 0, 0, 0.75); --toast-text: #fff;
+  /* Terminal: dark glass + its green (dense text) */
+  --fg: #5dff8a; --dim: #3fd06a; --err: #c8ffb0; --glow: rgba(51, 255, 102, 0.30); --edge: rgba(120, 255, 160, 0.30);
+  --panel: rgba(0, 0, 0, 0.30); --askbg: rgba(60, 50, 10, 0.55);
+  color-scheme: light;   /* must match the Hub page, or Chrome paints the iframe opaque */
+  background: var(--ga-shine), var(--ga-tint) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+html.light.hub-glass body { background: transparent !important; color: var(--text); text-shadow: var(--ga-glow); }
+/* the Terminal's output is dense text: darker glass */
+html.light.hub-glass:has(> body .term, > body #term, > body #out) { --ga-tint: rgba(4, 8, 6, 0.55); }
+/* cards / rows: a crisp white edge */
+html.light.hub-glass input, html.light.hub-glass select, html.light.hub-glass textarea {
+  background-color: rgba(0, 0, 0, 0.22); color: #fff; border-color: rgba(255, 255, 255, 0.28); color-scheme: dark;
+}
+html.light.hub-glass ::placeholder { color: rgba(255, 255, 255, 0.60); }
+html.light.hub-glass option { background: #1e222c; color: #fff; }
+html.light.hub-glass a { color: color-mix(in srgb, var(--accent) 55%, #fff); }
+/* Reduce transparency: solid dark slate (same as the Hub's solid glass) */
+html.light.hub-glass.hub-glass-solid {
+  --ga-tint: rgb(30, 34, 44); --ga-shine: none; --ga-glow: none;
+  --side: #262a35; --card: #343946; --card2: #3b404e; --line: rgba(255, 255, 255, 0.14);
+  --panel: #10161a; --sheet: #2b303c;
+}
+html.light.hub-glass.hub-glass-solid:has(> body .term, > body #term, > body #out) { --ga-tint: #07120a; }

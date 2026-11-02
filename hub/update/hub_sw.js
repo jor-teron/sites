@@ -52,6 +52,7 @@ const SHELL = [
   'shared/ctxmenu/ctxmenu.js', 'shared/ctxmenu/ctxmenu.css', 'shared/ctxmenu/ctx_in_app.js', 'shared/dialog/dialog.js', 'shared/dialog/dialog.css',
   'shared/tiles/tiles.js', 'shared/tiles/tiles.css', 'shared/favorites/favorites.js',
   'shared/theme/hub_theme.js',   // H22
+  'shared/theme/hub_glass_apps.css',   // H103
   'shared/link/link_core.js', 'shared/link/link_devices.js', 'shared/link/link_files.js', 'shared/link/link_ui.js', 'shared/link/link_chat.js', 'shared/link/link_scan.js', 'shared/link/link.css',
   'shared/image/hub_icon_192.png', 'shared/image/hub_icon_512.png',
   // Start menu / taskbar / home icons and the app lists, so a first visit also works offline

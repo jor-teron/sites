@@ -97,6 +97,13 @@ html.hub-glass .wm-win.wm-active .wm-bar {
 html.hub-glass .wm-bar button, html.hub-glass .wm-bar svg { color: inherit; }
 html.hub-glass .wm-bar button:hover { background: var(--gl-hover); }
 html.hub-glass .wm-body, html.hub-glass .wm-body iframe { background: #f4f5f8; }   /* while an app loads */
+/* H103: system apps are glass too (shared/theme/hub_glass_apps.css paints only a clear tint), so their
+   window body is a blurred glass pane and the iframe is transparent. Other apps keep the solid body. */
+html.hub-glass .wm-body:has(> iframe[src*="apps/system/"]) {
+  background: rgba(20, 24, 32, 0.10); -webkit-backdrop-filter: var(--gl-fx); backdrop-filter: var(--gl-fx);
+}
+html.hub-glass .wm-body > iframe[src*="apps/system/"] { background: transparent; }
+html.hub-glass.hub-glass-solid .wm-body:has(> iframe[src*="apps/system/"]) { background: rgb(30, 34, 44); }
 html.hub-glass .wm-close-btn:hover { text-shadow: none; background: #e81123; color: #fff; }
 
 /* ---------- Desktop taskbar (blur on ::before: no backdrop root for anything inside) ---------- */

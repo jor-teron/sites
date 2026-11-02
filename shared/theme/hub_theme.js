@@ -11,6 +11,10 @@
  * Paints <html>: class 'light', data-theme="dark|light", --accent, color-scheme.
  * Live: 'storage' event, a {type:'hub-prefs'} postMessage from the Hub, window focus.
  * Use: <script src="../../../shared/theme/hub_theme.js?v=…"></script> in <head> (auto-init, no flash).
+ * H103: system apps (path /apps/system/) also get Glass: when the Hub has Glass on (sites-hub.glass '1',
+ *   theme not 'dark', themeAuto not '1', or theme 'glass') → html.hub-glass (+ html.hub-glass-solid for
+ *   sites-hub.glassSolid '1'), on top of html.light, and shared/theme/hub_glass_apps.css is added once.
+ *   Other app categories are unchanged (they still see Light).
  * API: HubTheme.apply(), .hub(), .effective(), .own() / .setOwn(pref) (own-key apps only), .onChange(fn).
  */
 (function () {
@@ -35,6 +39,25 @@
     apply(); return true;
   }
 
+  // H103: Glass for opted-in apps (system category only for now)
+  const GLASS_OK = /\/apps\/system\//.test(location.pathname);
+  const glassCss = me && me.src ? me.src.replace(/hub_theme\.js(\?.*)?$/, 'hub_glass_apps.css') : '';
+  function glassOn() {
+    const t = read(P + 'theme');
+    return read(P + 'themeAuto') !== '1' && (t === 'glass' || (read(P + 'glass') === '1' && t !== 'dark'));
+  }
+  function applyGlass(eff) {
+    const g = GLASS_OK && own() === 'system' && eff === 'light' && glassOn();   // an own-theme pick (Terminal) wins
+    root.classList.toggle('hub-glass', g);
+    root.classList.toggle('hub-glass-solid', g && read(P + 'glassSolid') === '1');
+    if (g && glassCss && !document.getElementById('hub-glass-apps-css')) {
+      const l = document.createElement('link');
+      l.id = 'hub-glass-apps-css'; l.rel = 'stylesheet'; l.href = glassCss;
+      (document.head || root).appendChild(l);
+    }
+    return g ? (root.classList.contains('hub-glass-solid') ? 'gs' : 'g') : '';
+  }
+
   let last = '';
   function apply() {
     const eff = effective(), acc = read(P + 'accent');
@@ -42,7 +65,8 @@
     root.dataset.theme = eff;
     root.style.colorScheme = eff;
     if (/^#[0-9a-f]{6}$/i.test(acc)) root.style.setProperty('--accent', acc); else root.style.removeProperty('--accent');
-    const sig = eff + '|' + acc;
+    const gl = applyGlass(eff);   // H103
+    const sig = eff + '|' + acc + '|' + gl;
     if (sig !== last) { last = sig; fns.forEach((fn) => { try { fn(eff); } catch (_) { /* app bug */ } }); }
   }
   function onChange(fn) { if (typeof fn === 'function') fns.push(fn); }
