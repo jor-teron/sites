@@ -1,12 +1,19 @@
 /*
- * Star Pinball — physics (PIN-1a). No page code: a world object stepped in fixed sub-steps.
+ * Star Pinball — physics (PIN-1a; drop targets, spinner, ramp, hole PIN-1b). No page code: a world
+ * object stepped in fixed sub-steps.
  * Ball: position, velocity and spin (a rolling disc: friction at a contact turns slide into spin and back).
  * Each sub-step: move the flippers and plunger, add gravity, move the ball, then push it out of every
  * wall segment, arc, bumper, post, flipper and the plunger, bouncing with restitution e plus friction.
  * Moving parts (flippers, plunger) hit with their own surface speed (ω × r), so a flip really throws.
  * Speed is capped (PB_CONFIG.vmax) and a sub-step is 1/1440 s, so the ball moves < 3 units per sub-step
  * against a 15-unit radius: it cannot tunnel through anything.
- * world.step(input) → events [{ type: 'bumper' | 'sling' | 'sensor' | 'drain' | 'escape', id }]
+ * PIN-1b: the ball has a mode: 'table' (on the playfield), 'ramp' (on the raised ramp: it moves along
+ * the ramp path with gravity on the climb and leaves the playfield layer, so it cannot hit or pass
+ * anything there) or 'hole' (held in the saucer, then kicked out).
+ * Drop targets are solid segments while up; the bank pops back up once all are down (when the ball
+ * is clear of it). The spinner is a flap the ball passes through: it spins with the crossing speed.
+ * world.step(input) → events [{ type: 'bumper' | 'sling' | 'sensor' | 'drop' | 'dropsClear' |
+ *   'dropsReset' | 'spin' | 'rampIn' | 'ramp' | 'rampBack' | 'hole' | 'kick' | 'drain' | 'escape', id }]
  */
 const PBPhysics = (() => {
   const C = PB_CONFIG, T = PB_TABLE, r = C.ballR, h = C.step, I = 0.4; // I = 2/5 (m = 1, per r²)
@@ -17,11 +24,13 @@ const PBPhysics = (() => {
       flippers: T.flippers.map((f) => ({ ...f, a: f.rest, w: 0 })),
       plunger: { y: T.plunger.rest, v: 0, pull: 0, firing: 0 },
       cool: {}, inSensor: {},
+      drops: Object.fromEntries(T.drops.map((d) => [d.id, true])), dropsAt: 0,   // up = true; time to pop back up
+      spinner: { a: 0, w: 0 }, ramp: null, holeT: 0,
     };
     w.step = (input) => step(w, input || {});
     return w;
   }
-  function newBall(w) { w.ball = { x: T.plunger.laneX, y: w.plunger.y - r - 0.5, vx: 0, vy: 0, w: 0, ang: 0, live: true }; w.inSensor = {}; return w.ball; }
+  function newBall(w) { w.ball = { x: T.plunger.laneX, y: w.plunger.y - r - 0.5, vx: 0, vy: 0, w: 0, ang: 0, live: true, mode: 'table' }; w.inSensor = {}; w.ramp = null; return w.ball; }
   const tipOf = (f) => [f.p[0] + f.len * Math.cos(f.a), f.p[1] + f.len * Math.sin(f.a)];
 
   /** Closest point on segment ab to p, and the parameter s 0..1. */
@@ -36,6 +45,18 @@ const PBPhysics = (() => {
     if (ang >= A.a0 && ang <= A.a1) return [A.c[0] + vx / d * A.R, A.c[1] + vy / d * A.R];
     const e0 = [A.c[0] + Math.cos(A.a0) * A.R, A.c[1] + Math.sin(A.a0) * A.R], e1 = [A.c[0] + Math.cos(A.a1) * A.R, A.c[1] + Math.sin(A.a1) * A.R];
     return Math.hypot(p[0] - e0[0], p[1] - e0[1]) < Math.hypot(p[0] - e1[0], p[1] - e1[1]) ? e0 : e1;
+  }
+
+  // ramp path: cumulative length and height per point
+  const RP = T.ramp.path, RS = [0];
+  for (let i = 1; i < RP.length; i++) RS.push(RS[i - 1] + Math.hypot(RP[i][0] - RP[i - 1][0], RP[i][1] - RP[i - 1][1]));
+  const RL = RS[RS.length - 1];
+  /** Point, tangent and slope (dh/ds) on the ramp at distance s. */
+  function rampAt(s) {
+    let i = 1; while (i < RP.length - 1 && RS[i] < s) i++;
+    const L = RS[i] - RS[i - 1], u = Math.max(0, Math.min(1, (s - RS[i - 1]) / L));
+    const a = RP[i - 1], b = RP[i], tx = (b[0] - a[0]) / L, ty = (b[1] - a[1]) / L;
+    return { x: a[0] + (b[0] - a[0]) * u, y: a[1] + (b[1] - a[1]) * u, tx, ty, slope: (T.ramp.hgt[i] - T.ramp.hgt[i - 1]) / L };
   }
 
   /**
@@ -82,11 +103,56 @@ const PBPhysics = (() => {
     }
   }
 
+  function stepSpinner(w, ev) {
+    const sp = w.spinner; if (!sp.w) return;
+    const before = Math.floor(sp.a / Math.PI);
+    sp.a += sp.w * h; sp.w *= 1 - C.spinner.decay * h;
+    if (Math.floor(sp.a / Math.PI) !== before) ev.push({ type: 'spin' });
+    if (sp.w < 0.6) { sp.w = 0; sp.a = Math.round(sp.a / Math.PI) * Math.PI; }
+  }
+  function stepDrops(w, ev) {
+    if (!w.dropsAt || w.t < w.dropsAt) return;
+    const b = w.ball;
+    if (b && b.live && b.mode === 'table' && b.x < 34 + r + 12 && b.y > 400 && b.y < 610) { w.dropsAt = w.t + 0.1; return; }  // wait until the ball is clear
+    for (const d of T.drops) w.drops[d.id] = true;
+    w.dropsAt = 0; ev.push({ type: 'dropsReset' });
+  }
+  /** On the ramp: move along the path; gravity on the climb, a little drag. */
+  function stepRamp(w, ev) {
+    const b = w.ball, R = w.ramp, RC = C.ramp;
+    let at = rampAt(R.s);
+    R.v += -RC.g * at.slope * h - RC.drag * R.v * h;
+    R.s += R.v * h;
+    if (R.s <= 0) {                                         // too slow: rolls back out of the entry
+      const p = rampAt(0), v = Math.min(Math.abs(R.v), 600) + 30;
+      Object.assign(b, { x: p.x, y: p.y, vx: -p.tx * v, vy: -p.ty * v, mode: 'table' }); w.ramp = null;
+      ev.push({ type: 'rampBack' }); return;
+    }
+    if (R.s >= RL) {                                        // made it: drop into the left inlane
+      const p = rampAt(RL), v = Math.max(RC.exitMin, Math.min(RC.exitMax, R.v));
+      Object.assign(b, { x: p.x, y: p.y, vx: p.tx * v, vy: p.ty * v, mode: 'table' }); w.ramp = null;
+      ev.push({ type: 'ramp' }); return;
+    }
+    at = rampAt(R.s); b.x = at.x; b.y = at.y; b.vx = at.tx * R.v; b.vy = at.ty * R.v; b.ang += R.v / r * h;
+  }
+
   function step(w, input) {
     const ev = [], b = w.ball;
     w.t += h;
     moveParts(w, input);
+    stepSpinner(w, ev); stepDrops(w, ev);
     if (!b || !b.live) return ev;
+    if (b.mode === 'ramp') { stepRamp(w, ev); return ev; }
+    if (b.mode === 'hole') {
+      w.holeT -= h;
+      if (w.holeT <= 0) {
+        const HC = C.hole, kx = 0.2, ky = 1, L = Math.hypot(kx, ky);
+        Object.assign(b, { x: T.hole.c[0], y: T.hole.c[1], vx: kx / L * HC.kick, vy: ky / L * HC.kick, mode: 'table' });
+        w.cool.hole = w.t + HC.cool; ev.push({ type: 'kick' });
+      }
+      return ev;
+    }
+    const py0 = b.y;
     b.vy += C.gravity * h;
     const dk = 1 - C.drag * h; b.vx *= dk; b.vy *= dk; b.w *= 1 - C.spinDecay * h;
     b.x += b.vx * h; b.y += b.vy * h; b.ang += b.w * h;
@@ -103,6 +169,16 @@ const PBPhysics = (() => {
           const sgn = (b.x - s.a[0]) * dx + (b.y - s.a[1]) * dy > 0 ? 1 : -1;
           b.vx += sgn * dx / L * C.slingKick; b.vy += sgn * dy / L * C.slingKick;
           w.cool['s' + i] = w.t + C.slingCooldown; ev.push({ type: 'sling', id: i });
+        }
+      }
+      for (const d of T.drops) {
+        if (!w.drops[d.id]) continue;
+        for (const sg of d.segs) {
+          const q = closestSeg([b.x, b.y], sg[0], sg[1]), hit = contact(b, q[0], q[1], 0, 0, 0, C.wallE, C.wallMu);
+          if (hit > C.drop.minHit && w.drops[d.id]) {
+            w.drops[d.id] = false; ev.push({ type: 'drop', id: d.id });
+            if (T.drops.every((x) => !w.drops[x.id])) { w.dropsAt = w.t + C.drop.resetDelay; ev.push({ type: 'dropsClear' }); }
+          }
         }
       }
       for (const A of T.arcs) { const q = closestArc([b.x, b.y], A); contact(b, q[0], q[1], 0, 0, 0, C.wallE, C.wallMu); }
@@ -136,6 +212,20 @@ const PBPhysics = (() => {
       if (inside && !w.inSensor[s.id]) ev.push({ type: 'sensor', id: s.id, kind: s.kind });
       w.inSensor[s.id] = inside;
     }
+    // spinner: the ball crossing its line spins it
+    const SP = T.spinner;
+    if (b.x > SP.a[0] && b.x < SP.b[0] && (py0 - SP.a[1]) * (b.y - SP.a[1]) < 0) w.spinner.w = Math.min(90, w.spinner.w + Math.abs(b.vy) * C.spinner.kick);
+    // ramp entry: moving up inside the covered channel
+    const M = T.ramp.mouth;
+    if (b.vy < 0 && b.y < M.y && b.x > M.x0 && b.x < M.x1 && b.y > M.y - 60) {
+      const v = Math.max(1, -b.vy); w.ramp = { s: 0, v }; b.mode = 'ramp'; ev.push({ type: 'rampIn' }); return ev;
+    }
+    // hole: a slow enough ball over it is caught
+    const hx = b.x - T.hole.c[0], hy = b.y - T.hole.c[1];
+    if (hx * hx + hy * hy < C.hole.R * C.hole.R && sp < C.hole.maxSpeed && !(w.cool.hole > w.t)) {
+      Object.assign(b, { x: T.hole.c[0], y: T.hole.c[1], vx: 0, vy: 0, w: 0, mode: 'hole' }); w.holeT = C.hole.hold;
+      ev.push({ type: 'hole' }); return ev;
+    }
     if (b.y > T.drainY && b.x < T.playMaxX) { b.live = false; ev.push({ type: 'drain' }); }
     else if (b.x < 0 || b.x > C.W || b.y < -40 || b.y > C.H + 60) { b.live = false; ev.push({ type: 'escape' }); }
     return ev;
@@ -146,8 +236,9 @@ const PBPhysics = (() => {
     for (const s of T.walls) { if (s.kind === 'gate') continue; const q = closestSeg(p, s.a, s.b); m = Math.min(m, Math.hypot(x - q[0], y - q[1])); }
     for (const A of T.arcs) { const q = closestArc(p, A); m = Math.min(m, Math.hypot(x - q[0], y - q[1])); }
     for (const c of T.circles) m = Math.min(m, Math.hypot(x - c.c[0], y - c.c[1]) - c.R);
+    for (const d of T.drops) if (w.drops[d.id]) for (const sg of d.segs) { const q = closestSeg(p, sg[0], sg[1]); m = Math.min(m, Math.hypot(x - q[0], y - q[1])); }
     for (const f of w.flippers) { const q = closestSeg(p, f.p, tipOf(f)); m = Math.min(m, Math.hypot(x - q[0], y - q[1]) - (f.rp + (f.rt - f.rp) * q[2])); }
     return m - r;
   }
-  return { create, newBall, tipOf, closestSeg, closestArc, clearance };
+  return { create, newBall, tipOf, closestSeg, closestArc, clearance, rampAt, rampLength: RL };
 })();
