@@ -234,7 +234,8 @@
     }
     if (!inFrame) {
       err('open: not running inside the Hub.');
-      dim('Open the Hub (hub.html) and start Terminal there, or go to hub.html#' + a.id);
+      // (before H129d) dim('Open the Hub (hub.html) and start Terminal there, or go to hub.html#' + a.id);
+      dim('Open the Hub (index.html) and start Terminal there, or go to desktop/desktop.html#' + a.id);
       return;
     }
     // file:// (no frame access): ask the Hub by message; hub.js checks the sender is its own frame

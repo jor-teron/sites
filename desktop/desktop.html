@@ -14,6 +14,10 @@
   <!-- PWA: installable hub (manifest + root sw.js → hub/update/hub_sw.js); both resolve from the site root via <base> (H129a),
        so the root sw.js (scope = the whole site) controls desktop/ too. -->
   <!-- R59: the manifest link is added only on http(s); on file:// Chrome cannot load it (CORS error) -->
+  <!-- H129d: opening the desktop page saves Desktop as this device's mode (the root index.html mode entry reads
+       sites-hub.mode and goes straight there next time). Not for a Connect QR join link (?join=CODE: often a phone
+       scanning it, which keeps its own choice) and not when this page is inside a frame. -->
+  <script>try { if (window === top && !/[?&]join=/.test(location.search)) localStorage.setItem('sites-hub.mode', 'desktop'); } catch (_) { /* blocked */ }</script>
   <script>if (/^https?:$/.test(location.protocol)) { const l = document.createElement('link'); l.rel = 'manifest'; l.href = 'manifest.webmanifest'; document.head.appendChild(l); }</script>
   <meta name="theme-color" content="#0B1033" />
   <link rel="apple-touch-icon" href="shared/image/hub_icon_192.png" />
@@ -21,7 +25,7 @@
        file below carries ?v=HUB_VERSION. When you change hub_main.css / hub_controller.css / hub_notification.css /
        hub*.js / hub_apps.js / hub_tiles.js (or vendor/),
        bump the version with: python3 hub/tools/hub_bump.py --release NAME (README_technical section 13).
-       It replaces every "?v=20261104i" in this file (and the other 7 build places, H129a) with today's IST date
+       It replaces every "?v=20261104j" in this file (and the other 7 build places, H129a) with today's IST date
        (YYYYMMDD, add a letter for a second deploy the same day, e.g. 20260928b). -->
   <link rel="stylesheet" href="hub/core/hub_main.css" />
   <!-- <link rel="stylesheet" href="hub/controller/hub_controller.css" />   (before H129c) -->
@@ -140,8 +144,8 @@
   <!-- Settings app choices (wallpaper, sizes, accent, theme, motion) applied live -->
   <script src="shared/wallpaper/wallpapers.js"></script>
   <script src="hub/drives/hub_wallpapers.js"></script>
-  <!-- <script src="hub/core/hub_prefs.js?v=20261104i"></script> -->
-  <!-- <script src="hub/core/hub_daynight.js?v=20261104i"></script> --><!-- H63: day / night schedule helper (Eye comfort; H64 Auto theme later) -->
+  <!-- <script src="hub/core/hub_prefs.js?v=20261104j"></script> -->
+  <!-- <script src="hub/core/hub_daynight.js?v=20261104j"></script> --><!-- H63: day / night schedule helper (Eye comfort; H64 Auto theme later) -->
   <!-- H64: hub_daynight.js + hub_autotheme.js now load before hub_prefs.js, so the first paint has the Auto theme -->
   <!-- <script src="hub/core/hub_daynight.js"></script> --><!-- H63: day / night schedule helper (Eye comfort, H64 Auto theme)   (before H127) -->
   <!-- <script src="hub/core/hub_autotheme.js"></script> --><!-- H64: Auto theme (Light by day, Dark by night)   (before H127) -->
@@ -175,7 +179,7 @@
   <script src="hub/core/hub_apps.js"></script>
   <!-- <script src="hub/menu/hub_tiles.js"></script>   (before H129b) -->
   <script src="desktop/menu/hub_tiles.js"></script>
-  <script src="hub/core/hub.js?v=20261104i"></script>
+  <script src="hub/core/hub.js?v=20261104j"></script>
   <!-- Desktop mouse only: GNOME 2 style category flyout (CSV parser shared with the category pages) -->
   <script src="shared/tiles/tiles.js"></script>
   <script src="shared/favorites/favorites.js"></script>
@@ -187,6 +191,7 @@
   <script src="desktop/menu/hub_settings.js"></script>
   <script src="shared/dialog/dialog.js"></script>
   <script src="hub/core/hub_dialog_bridge.js"></script><!-- H75: app frames ask the Hub to draw their dialogs -->
+  <script src="desktop/mode/hub_osmode.js"></script><!-- H129d: Switch to Phone | Touch / Choose mode… (HubOsMode) -->
   <!-- Phone controller: settings, trackpad pointer, received-file cards, phone → hub files -->
   <!-- <script src="hub/controller/hub_controller_config.js"></script>   (before H129c) -->
   <script src="desktop/controller/hub_controller_config.js"></script>

@@ -57,6 +57,28 @@
         setTimeout(showNow, 50);
       });
       mode.classList.add('seg-col');
+      // H129d: the other mode's PAGE (Desktop / Phone | Touch, the root index.html mode entry), not the Screen
+      // mode above (that is phone mode inside this desktop page and stays). Switch = only on the desktop page
+      // (HubOsMode, desktop/mode/hub_osmode.js); Choose mode… = index.html?choose (clears the saved choice).
+      const osHub = () => { const h = S.hub(); return h && h.HubOsMode ? h : null; };
+      const osSwitch = ui.el('button', 'tap', 'Switch to Phone | Touch \u203A');
+      osSwitch.type = 'button';
+      osSwitch.id = 'os-switch';
+      osSwitch.appendChild(ui.el('small', '', 'Open the phone page instead: one app at a time, with swipes. Asks first; open windows will close'));
+      osSwitch.addEventListener('click', () => { const h = osHub(); if (h) h.HubOsMode.switchTo('phone'); });
+      if (!osHub()) osSwitch.style.display = 'none';   // phone.html / Settings on its own: the phone side has its own switch (Hub Apps Builder 2)
+      const osChoose = ui.el('button', 'tap', 'Choose mode\u2026 \u203A');
+      osChoose.type = 'button';
+      osChoose.id = 'os-choose';
+      osChoose.appendChild(ui.el('small', '', 'Show the Desktop and Phone | Touch cards again (index.html?choose); the one you pick opens next time'));
+      osChoose.addEventListener('click', () => {
+        const h = osHub();
+        if (h) { h.HubOsMode.choose(); return; }
+        // phone.html (Settings in its frame) / Settings on its own: just go there, in the whole tab
+        const w = window.top;
+        try { w.location.assign(w === window ? new URL('../../../index.html?choose', location.href).href : new URL('index.html?choose', w.document.baseURI).href); }
+        catch (_) { location.assign('../../../index.html?choose'); }
+      });
       // R51: new Desktop-mode windows open maximised (default on)
       // const openMax = ui.switch('Open windows maximised', 'New windows fill the screen; Restore gives the normal size',
       //   S.get('openMax') !== '0', (on) => S.set('openMax', on ? '1' : '0'));
@@ -194,10 +216,14 @@
       // pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home screen'), showFiles, showTiles, ui.title('Home button (Phone mode)'), home,
       //   homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), barLink,
       //   ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev);   // H52: Taskbar → link to Hub bar   (before H65)
-      pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home screen'), showFiles, showTiles, ui.title('Home button (Phone mode)'), home,
+      // pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home screen'), showFiles, showTiles, ui.title('Home button (Phone mode)'), home,
+      //   homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), barLink,
+      //   ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev,
+      //   brTitle, brSwitch, brWork, brLen, brStatus);   // H65: + Computer break   (before H129d)
+      pane.append(ui.title('Screen mode'), mode, note, osSwitch, osChoose, openMax, ui.title('Home screen'), showFiles, showTiles, ui.title('Home button (Phone mode)'), home,
         homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), barLink,
         ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev,
-        brTitle, brSwitch, brWork, brLen, brStatus);   // H65: + Computer break
+        brTitle, brSwitch, brWork, brLen, brStatus);   // H65: + Computer break; H129d: + Switch to Phone | Touch, Choose mode…
       showNow();
       if (sub === 'break') setTimeout(() => brTitle.scrollIntoView({ block: 'start' }), 50);   // H65: #desktop/break
     }

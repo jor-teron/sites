@@ -43,7 +43,8 @@ srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), functools.partial(Quiet,
 threading.Thread(target=srv.serve_forever, daemon=True).start()
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page()
-    pg.goto('http://127.0.0.1:%d/hub.html' % srv.server_port)
+    # pg.goto('http://127.0.0.1:%d/hub.html' % srv.server_port)   (before H129d: hub.html removed)
+    pg.goto('http://127.0.0.1:%d/desktop/desktop.html' % srv.server_port)
     pg.wait_for_function('window.__hubAppIndex && Object.keys(window.__hubAppIndex()).length > 0')
     pg.wait_for_timeout(4500)   # every CSV registered (4 s cap)
     idx = pg.evaluate('window.__hubAppIndex()'); b.close()

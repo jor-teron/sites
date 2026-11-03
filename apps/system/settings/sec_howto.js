@@ -96,8 +96,12 @@
       <ul>
         <li>One app at a time, full screen. Open the menu with <b>Home</b> at the top left.</li>
         <li>Use the phone's <b>Back</b> to go back to the previous app or to the home screen.</li>
-        <li>Each app has its own link (for example <code>hub.html#2048</code>) and the last app you used opens
+        <!-- (before H129d) <li>Each app has its own link (for example <code>hub.html#2048</code>) and the last app you used opens
+          again next time.</li> -->
+        <li>Each app has its own link (for example <code>desktop/#2048</code>) and the last app you used opens
           again next time.</li>
+        <li>The site's front page asks once: <b>Desktop</b> or <b>Phone | Touch</b>, and remembers it. To change:
+          <b>Settings › Desktop › Switch to Phone | Touch</b> or <b>Choose mode…</b>.</li>
         <li>A phone can also be a game controller (D-pad) for a tablet through the <b>Controller</b>.</li>
       </ul>` },
     { t: 'Drives & Files', h: `
