@@ -12,6 +12,8 @@
   if (!window.SharedLink) return;
   const pop = document.getElementById('ctrl-popover');
   const ctrlBtn = document.getElementById('ctrl-btn');
+  // H127: part of the Hub core (hub_core.js): on a page without the desktop's Devices popover (phone shell, bare page)
+  // this file does nothing; the 🎮 badge is only drawn when #ctrl-btn exists (null-safe below).
   if (!pop) return;
 
   const row = document.createElement('div');
