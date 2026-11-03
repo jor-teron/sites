@@ -1,8 +1,14 @@
 /* Hub Office Slides SL1 — the one save module (SLSave). localStorage, with a memory fallback (like Base BS3a):
      'slides-settings-v1'    = { theme:'system'|'light'|'dark' }   (default dark; 'system' follows the Hub's sites-hub.theme, else the OS)
      'slides-decks-v1'       = { current:'<id>', decks:[{ id, name, updated, count }] }   (the deck list, newest first)
-     'slides-deck-v1:<id>'   = { id, name, created, updated, cur, slides:[{ id, title, body }] }
+     'slides-deck-v1:<id>'   = { id, name, created, updated, cur, fmt, theme, slides:[{ id, layout, title, body, body2, bg, pics }] }
    body = bullet text, one bullet per line; a leading TAB = indented one level (the .hslides file uses {text, level}).
+   SL3: fmt = 3 (SL1 / SL2 records have none), theme = deck theme id (missing = 'light', the SL1 / SL2 look),
+     layout (missing = 'tc', Title + Content), body2 (right column of Two Columns), bg ('#rrggbb' per-slide background
+     override, '' = the theme's), pics = [{ id, key, x, y, w, h, iw, ih, fit:'cover'|'contain', inl }] in 960 x 540 design px.
+     A picture's data URL lives in IndexedDB (slides_pics.js) under `key`; only pictures that could not be stored there
+     (inl: true) carry `src` in this record. Missing fields = the old defaults, so SL1 / SL2 decks open unchanged.
+     Legacy (SL1 / SL2): 'slides-deck-v1:<id>' = { id, name, created, updated, cur, slides:[{ id, title, body }] }
    If storage is missing, full or throws, Slides keeps working in memory (SLSave.memOnly) and shows a banner
    (once, dismissable): changes then last only until the page closes (use Export). Saves never throw.
    Auto-save: SLSave.saveDeck(deck) is debounced 400 ms; flush() writes now (also on pagehide / hidden). */
@@ -40,14 +46,55 @@
 
   function uid() { return Math.random().toString(36).slice(2, 10); }
   function str(x, max) { return (typeof x === 'string' ? x : (typeof x === 'number' ? String(x) : '')).slice(0, max || 2000); }
+  /* SL3 layouts + deck themes (ids are stored; names are shown) */
+  var LAYOUTS = [['title', 'Title'], ['tc', 'Title + Content'], ['two', 'Two Columns'], ['sec', 'Section Header'],
+    ['pic', 'Picture + Caption'], ['to', 'Title Only'], ['blank', 'Blank']];
+  /* SL3 ships two deck themes. To add one: an entry here + a .slide.th-<id> rule in slides.css (the CSS variables
+     --s-bg --s-tc --s-fg --s-acc --s-mut --s-ph --s-em --s-ft --s-fb --s-tw --s-line). Unknown ids load as 'light'. */
+  var THEMES = [['light', 'Light'], ['dark', 'Dark']];
+  function ids(a) { return a.map(function (x) { return x[0]; }); }
+  var LAY_IDS = ids(LAYOUTS), THEME_IDS = ids(THEMES);
+  function num(x, lo, hi, d) { x = +x; return isFinite(x) ? Math.max(lo, Math.min(hi, Math.round(x * 10) / 10)) : d; }
+  function cleanPic(p) {
+    p = p && typeof p === 'object' ? p : {};
+    var key = typeof p.key === 'string' && /^[a-z0-9-]{1,40}$/.test(p.key) ? p.key : '';
+    var src = window.SLPics && SLPics.validSrc(p.src) ? p.src : '';
+    if (!key && !src) return null;
+    var w = num(p.w, 8, 4000, 320), h = num(p.h, 8, 4000, 180);
+    return { id: str(p.id, 20) || uid(), key: key, src: src, x: num(p.x, -4000, 4000, 0), y: num(p.y, -4000, 4000, 0), w: w, h: h,
+      iw: num(p.iw, 1, 20000, w) | 0, ih: num(p.ih, 1, 20000, h) | 0, fit: p.fit === 'contain' ? 'contain' : 'cover', inl: !!(p.inl || (src && !key)) };
+  }
   function cleanSlide(s) {
     s = s && typeof s === 'object' ? s : {};
-    return { id: str(s.id, 20) || uid(), title: str(s.title, 300), body: str(s.body, 5000) };
+    var pics = (Array.isArray(s.pics) ? s.pics : []).slice(0, 50).map(cleanPic).filter(Boolean);
+    return { id: str(s.id, 20) || uid(), layout: LAY_IDS.indexOf(s.layout) >= 0 ? s.layout : 'tc',
+      title: str(s.title, 300), body: str(s.body, 5000), body2: str(s.body2, 5000),
+      bg: typeof s.bg === 'string' && /^#[0-9a-f]{6}$/i.test(s.bg) ? s.bg.toLowerCase() : '', pics: pics };
+  }
+  /* a copy that shares the (immutable) picture data; used by Duplicate and Undo */
+  function cloneSlide(s, newIds) {
+    var c = Object.assign({}, s, { pics: (s.pics || []).map(function (p) { var q = Object.assign({}, p); if (newIds) q.id = uid(); return q; }) });
+    if (newIds) c.id = uid();
+    return c;
+  }
+  /* what goes to localStorage: pictures stored in IndexedDB lose their (long) src */
+  function slim(d) {
+    var o = Object.assign({}, d, { fmt: 3 });
+    o.slides = d.slides.map(function (s) {
+      if (!s.pics || !s.pics.length) return s;
+      return Object.assign({}, s, { pics: s.pics.map(function (p) {
+        var q = { id: p.id, key: p.key, x: p.x, y: p.y, w: p.w, h: p.h, iw: p.iw, ih: p.ih, fit: p.fit };
+        if (p.inl || !p.key) { q.src = p.src; q.inl = true; }
+        return q;
+      }) });
+    });
+    return o;
   }
   function cleanDeck(d, id) {
     d = d && typeof d === 'object' ? d : {};
     var out = { id: str(d.id, 20) || id || uid(), name: str(d.name, 80).trim() || 'Untitled deck',
-      created: +d.created || Date.now(), updated: +d.updated || Date.now(), cur: 0, slides: [] };
+      created: +d.created || Date.now(), updated: +d.updated || Date.now(), cur: 0,
+      theme: THEME_IDS.indexOf(d.theme) >= 0 ? d.theme : 'light', slides: [] };
     var seen = {};
     (Array.isArray(d.slides) ? d.slides : []).slice(0, 500).forEach(function (s) {
       var c = cleanSlide(s); if (seen[c.id]) c.id = uid(); seen[c.id] = 1; out.slides.push(c);
@@ -87,7 +134,7 @@
   function flush() {
     clearTimeout(t); if (!pending) return true;
     var d = pending; pending = null; d.updated = Date.now();
-    var a = wr(DK + d.id, d); putIndex(d);
+    var a = wr(DK + d.id, slim(d)); putIndex(d);
     if (SL.onSaved) SL.onSaved(a && !memOnly);
     return a;
   }
@@ -96,7 +143,14 @@
 
   Object.assign(SL, {
     KEYS: { SET: SET, IDX: IDX, DECK: DK },
-    uid: uid, cleanDeck: cleanDeck, cleanSlide: cleanSlide,
+    uid: uid, cleanDeck: cleanDeck, cleanSlide: cleanSlide, cleanPic: cleanPic, cloneSlide: cloneSlide,
+    LAYOUTS: LAYOUTS, THEMES: THEMES,
+    /* every picture key used by any saved deck (start-up clean-up of the picture store) */
+    picKeys: function () {
+      var keep = {};
+      index().decks.forEach(function (x) { var d = rd(DK + x.id); ((d && d.slides) || []).forEach(function (s) { ((s && s.pics) || []).forEach(function (p) { if (p && p.key) keep[p.key] = 1; }); }); });
+      return keep;
+    },
     onWarn: function (fn) { warnFn = fn; if (memOnly) fn(msg(why0)); },
     get: function (k) { return P[k]; },
     set: function (k, v) { P[k] = v; wr(SET, P); if (k === 'theme') theme(); },
@@ -104,8 +158,8 @@
     list: function () { return index().decks; },
     currentId: function () { return index().current; },
     load: function (id) { var d = rd(DK + id); return d ? cleanDeck(d, id) : null; },
-    newDeck: function (name, slides) {
-      var d = cleanDeck({ id: uid(), name: name, slides: slides || [{}] });
+    newDeck: function (name, slides, theme) {
+      var d = cleanDeck({ id: uid(), name: name, slides: slides || [{}], theme: theme });
       pending = d; flush(); return d;
     },
     saveDeck: function (d) { pending = d; clearTimeout(t); t = setTimeout(flush, 400); },

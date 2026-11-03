@@ -9,12 +9,14 @@
    - After the last slide: a black end screen "End of slideshow, tap or press to exit" (← goes back).
    - The slide counter and the small ‹ › ✕ buttons show on a change or when the mouse / finger moves, and fade after
      2 s idle; the mouse cursor hides with them.
-   - Screen Wake Lock while presenting when the browser has it (re-asked when the page becomes visible again). */
+   - Screen Wake Lock while presenting when the browser has it (re-asked when the page becomes visible again).
+   SL3: enter(list, start, theme). Each slide is dressed by SLEdit.paint (layout + deck theme classes, per-slide
+   background, pictures through the same blob: URLs), so Present shows exactly what the editor shows. */
 (function () {
   'use strict';
   var IDLE = 2000;
   var $ = function (id) { return document.getElementById(id); };
-  var el, fitEl, slideEl, endEl, countEl, cb = {}, on = false, mode = '', i = 0, n = 0, slides = [], atEnd = false;
+  var el, fitEl, slideEl, endEl, countEl, cb = {}, on = false, mode = '', i = 0, n = 0, slides = [], atEnd = false, theme = 'light';
   var idleT = 0, numBuf = '', numT = 0, lock = null, p0 = null;
 
   function fsEl() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
@@ -54,7 +56,8 @@
   }
   function draw() {
     endEl.hidden = !atEnd; fitEl.hidden = atEnd;
-    if (!atEnd) { slideEl.innerHTML = SLEdit.html(slides[i], i, { show: true }); slideEl.setAttribute('aria-label', 'Slide ' + (i + 1) + ' of ' + n); }
+    /* legacy (SL2): slideEl.innerHTML = SLEdit.html(slides[i], i, { show: true }); */
+    if (!atEnd) { SLEdit.paint(slideEl, slides[i], i, { show: true }, theme, 'slide sv pv'); slideEl.setAttribute('aria-label', 'Slide ' + (i + 1) + ' of ' + n); }
     countEl.textContent = atEnd ? 'End' : (i + 1) + ' / ' + n;
     $('show-prev').disabled = !atEnd && i === 0; $('show-next').disabled = false;
     poke();
@@ -114,8 +117,9 @@
     if (e.clientX - r.left < r.width / 3) prev(); else next();
   }
 
-  function enter(list, start) {
+  function enter(list, start, th) {
     if (on || !list || !list.length) return false;
+    theme = th || 'light';
     slides = list; n = list.length; i = Math.max(0, Math.min(n - 1, start | 0)); atEnd = false; numBuf = '';
     on = true; mode = 'overlay';
     el.hidden = false; document.documentElement.classList.add('presenting');
