@@ -16,7 +16,8 @@
   // legacy: C.release = 'HPS5.1';
   // legacy: C.release = 'HPS5.2';
   // legacy: C.release = 'HPS5.3';
-  C.release = 'HPS5.4';                // HPS1: Photo Editor v2 feature set, own name / settings / About · HPS2: layers + .hps / .ora · HPS3: selections + layer masks · HPS4: retouch · HPS5: New blank page (ps_blank.js) · HPS5.1: Export / Save / Print in the title bar (ps_titlebar.js) · HPS5.2: Ctrl+S saves .hps, Ctrl+Shift+S PNG, Ctrl+P print (ps_keys.js) · HPS5.3: Save / Export / Print with labels, top-left row, Ctrl+E export · HPS5.4: Hub title bar buttons on the left with icon + label (H110)
+  // legacy: C.release = 'HPS5.4';
+  C.release = 'HPS6';                  // HPS1: Photo Editor v2 feature set, own name / settings / About · HPS2: layers + .hps / .ora · HPS3: selections + layer masks · HPS4: retouch · HPS5: New blank page (ps_blank.js) · HPS5.1: Export / Save / Print in the title bar (ps_titlebar.js) · HPS5.2: Ctrl+S saves .hps, Ctrl+Shift+S PNG, Ctrl+P print (ps_keys.js) · HPS5.3: Save / Export / Print with labels, top-left row, Ctrl+E export · HPS5.4: Hub title bar buttons on the left with icon + label (H110) · HPS6: Close project (Ctrl+W / Alt+W, ps_close.js) + own hover tips (ps_tip.js, Settings delay)
 
   // HPS2: about 12 MP for the working copy on every device (layers stay smooth on a 4 GB Celeron).
   // Bigger photos are reduced once on open (with a message); Resize and image layers keep to the same cap.

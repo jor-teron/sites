@@ -679,6 +679,20 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Standalone / Phone: unchanged in-app top row.
 - Test: headless iframe parent sends `hubTitleBarHello`; app replies align 'left' with icon + showLabel on all 3 buttons; no page errors.
 
+### 1.39 Hub Photo Studio close project + tooltips, release HPS6
+- **Close project** (`ps_close.js`, new): Ctrl+W, Alt+W (backup) or Save menu → "Close project ✕" closes the open photo / project and goes back to the start card; the app stays open.
+  - Unsaved changes → in-app dialog `#dlg-close`: Save (writes the .hps through `PE.project.save`, closes only if the save worked) / Don't save / Cancel. Enter = Save, Esc = Cancel; other keys are swallowed while it is open (Ctrl+S does nothing there).
+  - "Unsaved" = `JSON(S.edits)` differs from the clean point: a new photo / blank page, an opened .hps (after its edits load), or a successful .hps save. A PNG / JPEG export is not a project save, so it still asks.
+  - Close resets the engine (`S.photo = null`, edits / history cleared), emits `'photo'` (Studio features already treat that as closed: tools off, layer images freed, selection cleared), closes the old bitmap. API: `PE.closeProject.request()` / `.now()` / `.isDirty()` / `.markSaved()`.
+  - Shortcuts are in `ps_keys.js` (capture, preventDefault). Caveat: in a normal Chrome / Edge tab Ctrl+W closes the tab before the page sees it; it works in an installed app window. Alt+W always works. Plain W stays Magic wand.
+- **Hover tips** (`ps_tip.js`, new, loaded in `<head>`): the app's own tooltip replaces the browser's slow `title` tip.
+  - One delegated `pointerover` listener; on hover `title` moves to `data-tip` (plus a start-up sweep, so disabled buttons don't show the native tip). Icon-only elements without a name get the text as `aria-label`. Icon-only `[aria-label]` elements show their label.
+  - Settings → "Hover tips": Off / 100 ms (default) / 500 ms / 1000 ms, saved as `tip` (0 = Off) in `photo-studio-settings-v1` (`ps_save.js`). Off = no tips at all (native ones stay off too).
+  - Mouse only (no tips on touch / pen); hidden on press, key, wheel, scroll and pointer leave. One reused fixed `#ps-tip`, no observers or idle timers. Light theme style in `photo-studio.css`.
+- Settings keyboard list: added Ctrl+W / Alt+W; fixed the stale "E Resize" to "E Eraser" (since HPS6.1).
+- No Photo Editor v2 (`pe_*.js`) changes.
+- Test (headless puppeteer): 37/37. Ctrl+W on a clean photo closes directly; edited → dialog; Don't save / Esc / Save(.hps then close) paths; opened .hps is clean; menu item; Ctrl+S / Ctrl+E / Ctrl+P / E unchanged; tip measured at ~101 ms, 500 / 1000 ms delays, Off, touch, light theme; no page errors.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
