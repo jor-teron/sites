@@ -1,5 +1,6 @@
 /* My Day — service worker. MD2a: network-first for app files (fresh when online, cache only offline). Scope = this folder. */
-var VER='myday-md2b';
+/* legacy: var VER='myday-md2b'; */
+var VER='myday-md3';
 var FILES=['./','dashboard.html','dashboard.css','dashboard_store.js','dashboard_core.js','dashboard_settings.js','dashboard_app.js',
   'dashboard_sun.js','dashboard_today.js','../calendar/calendar_holidays.js','cards/weather_aqi.js','cards/card_weather.js','cards/card_sun.js','cards/card_todo.js','cards/card_schedule.js','cards/card_habits.js','cards/card_water.js','cards/card_notes.js','cards/card_links.js','cards/card_news.js','cards/card_phone.js','manifest.json','dashboard_icon.svg','dashboard_icon_192.png','dashboard_icon_512.png'];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(VER).then(function(c){return c.addAll(FILES);}).then(function(){return self.skipWaiting();}));});
