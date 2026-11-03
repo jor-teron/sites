@@ -101,7 +101,8 @@
   /** The window's url + the app's current #hash when it is still on the page it opened. */
   function curUrl(w) {
     try {
-      const l = w.frame.contentWindow.location, base = new URL(w.url, location.href);
+      // (before H129a) const l = w.frame.contentWindow.location, base = new URL(w.url, location.href);   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+      const l = w.frame.contentWindow.location, base = new URL(w.url, document.baseURI);
       if (l.origin === base.origin && l.pathname === base.pathname) return w.url.split('#')[0] + (l.hash || '');
     } catch (_) { /* cross-origin / not loaded */ }
     return w.url;
@@ -561,7 +562,8 @@
         let doc = null;
         try { doc = w.frame.contentDocument; } catch (_) { doc = null; }
         return {
-          id: w.id, key: w.key, inst: w.inst, name: w.name, icon: w.icon ? new URL(w.icon, location.href).href : '',
+          // (before H129a) id: w.id, key: w.key, inst: w.inst, name: w.name, icon: w.icon ? new URL(w.icon, location.href).href : '',   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+          id: w.id, key: w.key, inst: w.inst, name: w.name, icon: w.icon ? new URL(w.icon, document.baseURI).href : '',
           url: curUrl(w), min: !!w.min, max: !!w.max, snap: w.snap || '', ws: w.ws, wsCount: wsCount(), hidden: !onWs(w), active: w === active, z: +w.el.style.zIndex || 0,
           sameOrigin: !!doc, nodes: doc ? doc.getElementsByTagName('*').length : null, title: doc ? doc.title : ''
         };

@@ -310,7 +310,8 @@
   let pendingUrl = '';
   function replaceFrame(url) {
     try {
-      frame.contentWindow.location.replace(new URL(url, location.href).href);
+      // (before H129a) frame.contentWindow.location.replace(new URL(url, location.href).href);   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+      frame.contentWindow.location.replace(new URL(url, document.baseURI).href);
     } catch (_) {
       frame.src = url;
     }
@@ -346,7 +347,8 @@
     if (app.newTab && !opts.forceFrame) {
       setOpen(false);
       // window.open(frameUrlFor(app.entryUrl), '_blank', 'noopener');   // before H72a: a relative path was resolved against the CALLING page (e.g. App Hub frame -> apps/system/apphub/hub/controller/)
-      window.open(new URL(frameUrlFor(app.entryUrl), location.href).href, '_blank', 'noopener');   // H72a: always resolve against hub.html
+      // (before H129a) window.open(new URL(frameUrlFor(app.entryUrl), location.href).href, '_blank', 'noopener');   // H72a: always resolve against hub.html   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+      window.open(new URL(frameUrlFor(app.entryUrl), document.baseURI).href, '_blank', 'noopener');   // H72a: always resolve against hub.html
       return;
     }
     const id = appIdFor(app.entryUrl);
@@ -356,7 +358,8 @@
     const toHash = (f) => {
       try { if (hash && f.contentWindow.location.hash !== hash) f.contentWindow.location.hash = hash; }
       catch (_) {   // file:// (opaque origins): the hash cannot be read, but the frame can still be pointed at the same page + hash (hashchange only, no reload)
-        try { if (hash) f.contentWindow.location.replace(new URL(frameUrlFor(app.entryUrl) + hash, location.href).href); } catch (__) { /* ignore */ }
+        // (before H129a) try { if (hash) f.contentWindow.location.replace(new URL(frameUrlFor(app.entryUrl) + hash, location.href).href); } catch (__) { /* ignore */ }   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+        try { if (hash) f.contentWindow.location.replace(new URL(frameUrlFor(app.entryUrl) + hash, document.baseURI).href); } catch (__) { /* ignore */ }
       }
     };
     if (wmOn()) {   // Desktop mode: own window (focuses the existing one; opts.newInstance = another); hash via HubWM.onActive
@@ -452,7 +455,9 @@
     // frame's location.protocol throws (an uncaught SecurityError at every frame load before).
     try { const l = frame.contentWindow.location; loc = { protocol: l.protocol, pathname: l.pathname }; doc = frame.contentDocument; } catch (_) { return; }
     if (!loc || (loc.protocol !== 'http:' && loc.protocol !== 'https:' && loc.protocol !== 'file:')) return;
-    const base = location.pathname.replace(/[^/]*$/, '');
+    // (before H129a) const base = location.pathname.replace(/[^/]*$/, '');
+    // (before H129a) if (loc.pathname.indexOf(base) !== 0) return;   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+    const base = new URL('./', document.baseURI).pathname;
     if (loc.pathname.indexOf(base) !== 0) return;
     let rel;
     try { rel = decodeURI(loc.pathname.slice(base.length)).replace(/index\.html$/i, ''); } catch (_) { return; }
@@ -1000,9 +1005,12 @@
     const from = phone ? null : window.HubWM.list().find((w) => { try { return w.frame.contentWindow === e.source; } catch (_) { return false; } });
     if (!phone && !from) return;
     let u;
-    try { u = new URL(String(d.url || ''), location.href); } catch (_) { return; }
+    // (before H129a) try { u = new URL(String(d.url || ''), location.href); } catch (_) { return; }   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+    try { u = new URL(String(d.url || ''), document.baseURI); } catch (_) { return; }
     if (u.protocol !== location.protocol || (!IS_FILE && u.origin !== location.origin)) return;
-    const base = location.pathname.replace(/[^/]*$/, '');
+    // (before H129a) const base = location.pathname.replace(/[^/]*$/, '');
+    // (before H129a) if (u.pathname.indexOf(base) !== 0) return;   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+    const base = new URL('./', document.baseURI).pathname;
     if (u.pathname.indexOf(base) !== 0) return;
     let rel;
     try { rel = decodeURI(u.pathname.slice(base.length)).replace(/index\.html$/i, ''); } catch (_) { return; }

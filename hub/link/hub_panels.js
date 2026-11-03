@@ -164,7 +164,8 @@
       if (msg) errT = setTimeout(() => { err.textContent = ''; }, 4000);
     }
     function gamepadUrl(c) {
-      const u = new URL('hub/controller/controller.html', location.href);
+      // (before H129a) const u = new URL('hub/controller/controller.html', location.href);   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+      const u = new URL('hub/controller/controller.html', document.baseURI);
       u.search = ''; u.hash = 'code=' + c;
       return u.href;
     }

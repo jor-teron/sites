@@ -54,7 +54,8 @@
   const unread = () => read().filter((x) => !x.read).length;
 
   /* ---------- source app ---------- */
-  const BASE = (() => { try { return new URL('.', location.href).href; } catch (_) { return ''; } })();
+  // (before H129a) const BASE = (() => { try { return new URL('.', location.href).href; } catch (_) { return ''; } })();   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+  const BASE = (() => { try { return new URL('.', document.baseURI).href; } catch (_) { return ''; } })();
   function idx() { return window.HUB_APP_INDEX || {}; }
   function fromEntry(rel) {
     let best = null, bl = 0;
