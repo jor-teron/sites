@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!--
+  VNC — VNC1: remote desktop in the browser through the SSH app's websockify relay (?token=host:port + allowlist).
+  Styles: vnc.css. Modules: vnc_hosts.js (saved hosts in localStorage + list/editor UI),
+  vnc_view.js (noVNC RFB session, status, pop-up toolbar), vnc_app.js (wiring, theme, screens).
+  noVNC v1.7.0 is bundled in vendor/novnc/ (MPL-2.0, see LICENSE.txt). Passwords are stored only if you save them on the host.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>VNC</title>
+  <link rel="icon" href="vnc_icon.svg">
+  <script>try{var t=localStorage.getItem('sites-hub.theme');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}</script>
+  <link rel="stylesheet" href="vnc.css">
+</head>
+<body>
+<section id="home" class="screen">
+  <header class="top"><img src="vnc_icon.svg" alt=""><h1>VNC</h1><button id="addBtn" class="big jelly">＋ Add host</button></header>
+  <p class="hint">Remote desktop through your relay. Help: <a href="readme.md" target="_blank">readme</a></p>
+  <ul id="hosts"></ul>
+  <p id="empty" class="hint">No hosts yet. Tap “Add host”.</p>
+</section>
+
+<dialog id="edit">
+  <form method="dialog" id="editForm">
+    <h2 id="editTitle">Add host</h2>
+    <label>Name<input name="name" required placeholder="pc-main"></label>
+    <label>Relay URL<input name="relay" required placeholder="wss://pc-main.tailnet.ts.net:8022"></label>
+    <label>VNC host<input name="host" required placeholder="127.0.0.1"></label>
+    <label>VNC port<input name="port" type="number" value="5900" min="1" max="65535"></label>
+    <label>Password (optional, saved on this device)<input name="password" type="password" autocomplete="off"></label>
+    <div class="row"><button value="cancel" formnovalidate class="big ghost jelly">Cancel</button><button value="ok" class="big jelly">Save</button></div>
+  </form>
+</dialog>
+
+<section id="view" class="screen" hidden>
+  <div id="screen"></div>
+  <div id="status" class="status"><p id="statusText">Connecting…</p><div class="row"><button id="reconnect" class="big jelly" hidden>Reconnect</button><button id="back" class="big ghost jelly">Back</button></div></div>
+  <button id="handle" class="handle jelly" aria-label="Menu" title="Menu">☰</button>
+  <div id="tools" class="tools" hidden>
+    <button data-act="cad" class="jelly">Ctrl-Alt-Del</button>
+    <button data-act="kbd" class="jelly">Keyboard</button>
+    <button data-act="clip" class="jelly">Send clipboard</button>
+    <button data-act="scale" class="jelly">Scale: fit</button>
+    <button data-act="viewonly" class="jelly">View only: off</button>
+    <button data-act="full" class="jelly">Fullscreen</button>
+    <button data-act="bye" class="jelly danger">Disconnect</button>
+  </div>
+  <input id="kbdInput" class="kbd" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Keyboard input">
+</section>
+
+<dialog id="pw"><form method="dialog"><h2>Password</h2><input id="pwInput" type="password" autocomplete="off"><div class="row"><button value="cancel" class="big ghost jelly">Cancel</button><button value="ok" class="big jelly">OK</button></div></form></dialog>
+<div id="toast" class="toast" hidden></div>
+<script type="module" src="vnc_app.js"></script>
+</body>
+</html>
