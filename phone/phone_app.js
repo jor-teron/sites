@@ -18,7 +18,8 @@
   // var RELEASE = 'PH10';   (PH10)
   // var RELEASE = 'PH11';   (PH11)
   // var RELEASE = 'PH12';   (PH12)
-  var RELEASE = 'PH13';
+  // var RELEASE = 'PH13';   (PH13)
+  var RELEASE = 'PH14';   // PH14: Connect on the phone (phone_connect.js, hub/core/hub_core.js)
   var d = S.load();
   var root = document.documentElement;
 
@@ -388,9 +389,11 @@
       { id: 'location', e: '📍', label: 'Location', off: !locationApp() },
       { id: 'settings', e: '⚙️', label: 'Settings' },
       { id: 'hub-settings', e: '🛠️', label: 'Hub Settings' },   // H80
-      { id: 'dnd', e: '🔕', label: 'Do Not Disturb', on: dndOn() }   // H82
+      { id: 'dnd', e: '🔕', label: 'Do Not Disturb', on: dndOn() },   // H82
+      { id: 'connect', e: '🔗', label: connectLabel(), on: !!(window.PhoneConnect && PhoneConnect.state() === 'private'), off: !window.PhoneConnect }   // PH14
     ];
   }
+  function connectLabel() { var C = window.PhoneConnect; if (!C) return 'Connect'; var st = C.state(); return st === 'private' ? 'Connected · ' + C.count() : st === 'public' ? 'Connect · 00000' : 'Connect'; }   // PH14
   function dndOn() { return window.HubDnd ? HubDnd.isOn() : false; }   // H82
   function locationApp() { return ['live-location', 'location', 'live-location-share'].filter(A.has)[0] || ''; }
   function renderPanel() {
@@ -436,6 +439,8 @@
       openApp(HUB_SETTINGS.id);   // H80
     } else if (id === 'dnd' && window.HubDnd) {   // H82
       HubDnd.set(!HubDnd.isOn()); renderPanel(); toast('Do Not Disturb ' + (HubDnd.isOn() ? 'on' : 'off'));
+    } else if (id === 'connect' && window.PhoneConnect) {   // PH14: the Connect sheet replaces the panel
+      PhoneConnect.open();
     }
   }
   function toggleFullscreen() {
@@ -895,6 +900,9 @@
   window.PhoneLauncher = {
     RELEASE: RELEASE, state: function () { return JSON.parse(JSON.stringify(d)); }, stack: function () { return stack.slice(); },
     page: function () { return page; }, cat: function () { return cat; }, frames: function () { return frames.map(function (f) { return f.id; }); },
-    open: openApp, back: back, hide: hideApp, unhide: unhideApp, hidden: hiddenIds, openHidden: openHidden   // PH10
+    open: openApp, back: back, hide: hideApp, unhide: unhideApp, hidden: hiddenIds, openHidden: openHidden,   // PH10
+    // PH14: for phone_connect.js (the Connect sheet uses the launcher's sheet, in-app dialog and toast)
+    top: top, openSheet: openSheet, closeSheet: closeSheetUI, ask: ask, toast: toast, sheetBtn: sheetBtn,
+    renderPanel: renderPanel, panelOpen: function () { return top() === 'panel'; }
   };
 })();
