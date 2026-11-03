@@ -42,6 +42,7 @@ window.HUB_APP_INDEX = {
   "go": ["Games", "apps/games/go/", "Go", "apps/games/go/go_icon.png", 0, "Surround more of the board than your rival - capture stones - play a friend or computer"],
   "blockade": ["Games", "apps/games/blockade/", "Blockade", "apps/games/blockade/blockade_icon.png", 0, "Race two pawns to the far home squares and block your rival with walls"],
   "battleship": ["Games", "apps/games/battleship/", "Battleship", "apps/games/battleship/battleship_icon.png", 0, "Hide five ships and take turns firing to sink the rival fleet - play a friend or computer"],
+  "ludo": ["Games", "apps/games/ludo/", "Ludo", "apps/games/ludo/ludo_icon.png", 0, "Race four tokens round the cross board and home - 2 to 4 players on one device"],
   "aoe-rts": ["Games", "apps/games/aoe-rts/", "AoE RTS", "apps/games/aoe-rts/aoe-rts_icon.png", 0, "Tiny real-time strategy in Age of Empires style: gather - build and command units"],
   "gravity-sandbox": ["Games", "apps/games/gravity-sandbox/", "Gravity Sandbox", "apps/games/gravity-sandbox/gravity-sandbox_icon.png", 0, "Drop planets - stars and black holes and watch gravity make orbits"],
   "solar-system": ["Games", "apps/games/solar-system/", "Solar System", "apps/games/solar-system/solar-system_icon.png", 0, "Explore the Sun and planets: tap a planet for key facts - pan and zoom"],
