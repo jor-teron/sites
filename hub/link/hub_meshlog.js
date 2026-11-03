@@ -63,6 +63,18 @@
   });
   /* roster diff → device online / offline / removed */
   let seen = new Map();   // deviceId -> { name, online }
+  /* H112: a private-mesh member leaving → one 🔌 HubNotify card (newest roster name), max 1 per device per LEFT_GAP_MS;
+     never on 00000, never for this device, only while this device is still in the mesh (lobby / linked). */
+  const LEFT_GAP_MS = 60000, leftAt = new Map();
+  function leftCard(id, nm) {
+    const me = meNow() || {}, st = (() => { try { return M.state(); } catch (_) { return ''; } })();
+    if (me.public || !me.code || me.code === (M.PUBLIC_CODE || '00000') || (st !== 'lobby' && st !== 'linked')) return;
+    const now = Date.now(), at = leftAt.get(id) || 0;
+    if (now - at < LEFT_GAP_MS) return;
+    leftAt.set(id, now);
+    const N = window.HubNotify;
+    if (N && N.notice) N.notice({ icon: '\uD83D\uDD0C', title: nm + ' left the mesh', text: 'Private mesh ' + clip(me.code, 12) });
+  }
   M.on('roster', (list) => {
     const me = meNow(), mine = me ? me.deviceId : '';
     const next = new Map();
@@ -72,11 +84,11 @@
       next.set(id, { name: nm, online: !!r.online });
       if (!was && r.online) add('open', nm + ' (' + id + ') joined the mesh');
       else if (!was && !r.online) add('presence', nm + ' (' + id + ') listed, offline');
-      else if (was && was.online && !r.online) add('close', nm + ' (' + id + ') went offline');
+      else if (was && was.online && !r.online) { add('close', nm + ' (' + id + ') went offline'); leftCard(id, nm); }
       else if (was && !was.online && r.online) add('open', nm + ' (' + id + ') is back online');
       else if (was && was.name !== nm) add('presence', was.name + ' is now called ' + nm);
     });
-    if (list && list.length) seen.forEach((v, id) => { if (!next.has(id)) add('presence', v.name + ' (' + id + ') left the list'); });
+    if (list && list.length) seen.forEach((v, id) => { if (!next.has(id)) { add('presence', v.name + ' (' + id + ') left the list'); if (v.online) leftCard(id, v.name); } });
     seen = next;
   });
   M.on('invite', (i) => { if (i) add('presence', 'Invite from ' + clip(i.name, 16) + ' to join code ' + clip(i.code, 5)); });
