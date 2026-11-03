@@ -500,9 +500,32 @@
       return (await mounts()).map((m) => m.name).filter((n) => n.toLowerCase().indexOf(word.toLowerCase()) === 0);
     }
 
+    /* H121: a start folder in the hash, #drive=<id>&path=<a/b> (Files › Terminal, same form as the Files hash)
+       -> '/drive/<mount>/a/b', or '' (no hash, unknown drive). The hash is dropped once read. */
+    async function hashDir() {
+      const q = new URLSearchParams(location.hash.slice(1));
+      const id = q.get('drive');
+      if (!id) return '';
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (_) { /* ignore */ }
+      const m = (await mounts()).find((x) => x.id === id);
+      if (!m) return '';
+      const rel = String(q.get('path') || '').split('/').filter((x) => x && x !== '.' && x !== '..').join('/');
+      return '/drive/' + m.name + (rel ? '/' + rel : '');
+    }
+    const tryDir = async (p) => { const n = await resolve(p); return n.type === 'dir'; };
+    window.addEventListener('hashchange', async () => {   // H121: Files › Terminal again while this Terminal is open (Phone mode)
+      await S.ready;
+      const t = await hashDir();
+      if (!t || t === S.cwd) return;
+      try { if (!(await tryDir(t))) throw E('ENOTDIR'); } catch (e) { if (!e || e.code !== 'EPERM') { fail('cd', t, e); return; } }
+      S.old = S.cwd; setCwd(t);
+      ctx.dim('cd ' + pretty(t));
+    });
+
     async function init() {
-      let saved = ls_get(CWD_KEY) || '';
-      const tryDir = async (p) => { const n = await resolve(p); return n.type === 'dir'; };
+      // (before H121) let saved = ls_get(CWD_KEY) || '';
+      let saved = (await hashDir().catch(() => '')) || ls_get(CWD_KEY) || '';   // H121: the hash folder wins
+      // (before H121) const tryDir = async (p) => { const n = await resolve(p); return n.type === 'dir'; };   (moved up, shared with hashchange)
       let cwd = HOME;
       if (saved && saved.charAt(0) === '/') {
         try { if (await tryDir(saved)) cwd = saved; } catch (e) { if (e && e.code === 'EPERM') cwd = saved; }   // needs permission: cannot check, keep
