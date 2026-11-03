@@ -29,9 +29,12 @@
   'use strict';
   if (!window.SharedLink) return;
 
+  // H127: part of the Hub core (hub/core/hub_core.js), so it also runs on a page with no #app-frame / #ctrl-popover
+  // (phone shell, bare page): hubFrame may be null; every use below is null-safe (no frame = nothing to post to).
   const hubFrame = document.getElementById('app-frame');
   /** Target iframe: focused window (Desktop mode) or the Hub frame. */
-  const curFrame = () => (window.__hubAppFrame ? window.__hubAppFrame() : hubFrame);
+  // const curFrame = () => (window.__hubAppFrame ? window.__hubAppFrame() : hubFrame);   (before H127)
+  const curFrame = () => (window.__hubAppFrame ? window.__hubAppFrame() : hubFrame) || null;
   const allFrames = () => (window.__hubAppFrames ? window.__hubAppFrames() : [hubFrame].filter(Boolean));
   const frameOf = (src) => allFrames().find((f) => f.contentWindow === src) || null;
   /** Receiver registered by the target frame ({ app, types } on the iframe element). */
@@ -79,7 +82,8 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = name; a.style.display = 'none';
-    document.body.appendChild(a); a.click(); a.remove();
+    // document.body.appendChild(a); a.click(); a.remove();   (before H127)
+    (document.body || document.documentElement).appendChild(a); a.click(); a.remove();   // H127: null-safe
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
@@ -149,7 +153,8 @@
     x.type = 'button'; x.textContent = '×';
     x.addEventListener('click', () => box.remove());
     box.appendChild(x);
-    document.body.appendChild(box);
+    // document.body.appendChild(box);   (before H127)
+    (document.body || document.documentElement).appendChild(box);   // H127: null-safe
     setTimeout(() => box.remove(), 15000);
   }
   let pending = null;   // file waiting for its app to load

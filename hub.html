@@ -13,7 +13,7 @@
        file below carries ?v=HUB_VERSION. When you change hub_main.css / hub_controller.css / hub_notification.css /
        hub*.js / hub_apps.js / hub_tiles.js (or vendor/),
        bump the version with: python3 hub/tools/hub_bump.py --release NAME (README_technical section 13).
-       It replaces every "?v=20261104e" in this file (and the other 6 build places) with today's IST date
+       It replaces every "?v=20261104f" in this file (and the other 6 build places) with today's IST date
        (YYYYMMDD, add a letter for a second deploy the same day, e.g. 20260928b). -->
   <link rel="stylesheet" href="hub/core/hub_main.css" />
   <link rel="stylesheet" href="hub/controller/hub_controller.css" />
@@ -115,7 +115,7 @@
   </div>
 
   <!-- One-connection release: role first (phone remote Hub joins instead of hosting) -->
-  <script src="hub/core/hub_role.js"></script>
+  <!-- <script src="hub/core/hub_role.js"></script>   (before H127; now the first file of hub_core.js part 'boot', below) -->
   <script src="shared/vendor/qrcode.js"></script>
   <!-- Hub config: menu label (HUB_MENU_LABEL) + category CSVs for the flyout -->
   <script src="hub/core/hub_config.js"></script>
@@ -125,12 +125,16 @@
   <!-- Settings app choices (wallpaper, sizes, accent, theme, motion) applied live -->
   <script src="shared/wallpaper/wallpapers.js"></script>
   <script src="hub/drives/hub_wallpapers.js"></script>
-  <!-- <script src="hub/core/hub_prefs.js?v=20261104e"></script> -->
-  <!-- <script src="hub/core/hub_daynight.js?v=20261104e"></script> --><!-- H63: day / night schedule helper (Eye comfort; H64 Auto theme later) -->
+  <!-- <script src="hub/core/hub_prefs.js?v=20261104f"></script> -->
+  <!-- <script src="hub/core/hub_daynight.js?v=20261104f"></script> --><!-- H63: day / night schedule helper (Eye comfort; H64 Auto theme later) -->
   <!-- H64: hub_daynight.js + hub_autotheme.js now load before hub_prefs.js, so the first paint has the Auto theme -->
-  <script src="hub/core/hub_daynight.js"></script><!-- H63: day / night schedule helper (Eye comfort, H64 Auto theme) -->
-  <script src="hub/core/hub_autotheme.js"></script><!-- H64: Auto theme (Light by day, Dark by night) -->
-  <script src="hub/core/hub_prefs.js"></script>
+  <!-- <script src="hub/core/hub_daynight.js"></script> --><!-- H63: day / night schedule helper (Eye comfort, H64 Auto theme)   (before H127) -->
+  <!-- <script src="hub/core/hub_autotheme.js"></script> --><!-- H64: Auto theme (Light by day, Dark by night)   (before H127) -->
+  <!-- <script src="hub/core/hub_prefs.js"></script>   (before H127) -->
+  <!-- H127: Hub core entry (screen-free core: role, theme / accent, settings, link + mesh). Part 'boot' here =
+       hub_role.js, hub_daynight.js, hub_autotheme.js, hub_prefs.js (same order; nothing above reads __hubRemote).
+       Parts 'link' and 'mesh' start further down at their old places, so the script order is unchanged. -->
+  <script src="hub/core/hub_core.js" data-parts="boot"></script>
   <script src="hub/core/hub_eye.js"></script><!-- H63: Eye comfort warm layer + 🌙 -->
   <script src="hub/core/hub_break.js"></script><!-- H65: Computer break (25 / 5 Hub lock); early, so a reload mid-break locks at once -->
   <!-- Desktop mode (big screen + mouse): windows + taskbar; Phone mode = the single frame -->
@@ -150,7 +154,7 @@
   <!-- App list + home tiles (plain JS data, work over http and file://) -->
   <script src="hub/core/hub_apps.js"></script>
   <script src="hub/menu/hub_tiles.js"></script>
-  <script src="hub/core/hub.js?v=20261104e"></script>
+  <script src="hub/core/hub.js?v=20261104f"></script>
   <!-- Desktop mouse only: GNOME 2 style category flyout (CSV parser shared with the category pages) -->
   <script src="shared/tiles/tiles.js"></script>
   <script src="shared/favorites/favorites.js"></script>
@@ -168,27 +172,33 @@
   <script src="hub/viewer/hub_notifcenter.js"></script>
   <script src="hub/core/hub_attention.js"></script><!-- H82: app call pop-up (sharedLink attention) -->
   <!-- H28: one key store for API keys (window.HubKeys; apps call window.top.HubKeys, Settings → API Keys) -->
-  <script src="hub/core/hub_keys.js"></script>
+  <!-- <script src="hub/core/hub_keys.js"></script>   (before H127; now in hub_core.js part 'link') -->
   <!-- H30.1: Hub settings saved to the connected folder (hub/hub-profile/hub.json; window.HubProfile) -->
-  <script src="hub/core/hub_profile.js"></script>
+  <!-- <script src="hub/core/hub_profile.js"></script>   (before H127; now in hub_core.js part 'link') -->
   <script src="hub/link/hub_pointer.js"></script>
   <script src="hub/link/hub_receive.js"></script>
   <!-- SharedLink: one connection layer (PeerJS from the pinned CDN url in link_core.js) -->
-  <script src="shared/link/link_core.js"></script>
+  <!-- <script src="shared/link/link_core.js"></script>   (before H127)
   <script src="shared/link/link_devices.js"></script>
   <script src="shared/link/link_files.js"></script>
   <script src="shared/link/link_ui.js"></script>
-  <script src="shared/link/link_chat.js"></script>
+  <script src="shared/link/link_chat.js"></script> -->
+  <!-- H127: core part 'link' = hub_keys.js, hub_profile.js (moved down past hub_pointer / hub_receive, which use neither),
+       link_core.js, link_devices.js, link_files.js, link_ui.js, link_chat.js -->
+  <script>HubCore.load('link');</script>
   <script src="hub/controller/hub_textedit.js"></script>
   <script src="hub/controller/hub-controller.js"></script>
-  <script src="hub/link/hub_link.js"></script>
-  <script src="hub/link/hub_sync.js"></script><!-- H29.1: Send profile to a connected device -->
-  <script src="shared/link/hub_mesh.js"></script><!-- H50: Hub mesh core (one shared connection per Connect Code) -->
-  <script src="hub/link/hub_meshlog.js"></script><!-- H69: mesh connection log for the Mesh Viewer app -->
-  <script src="hub/link/hub_meshlink.js"></script><!-- H50: start / stop the mesh with the Connect Code link -->
-  <script src="hub/link/hub_line.js"></script><!-- H91: Hub Line (calls / messages to this device's number over the mesh) -->
-  <script src="hub/link/hub_trust.js"></script><!-- H97: HubTrust passcode pairing -->
-  <script src="hub/link/hub_linkstate.js"></script>
+  <!-- <script src="hub/link/hub_link.js"></script>   (before H127)
+  <script src="hub/link/hub_sync.js"></script> H29.1: Send profile to a connected device
+  <script src="shared/link/hub_mesh.js"></script> H50: Hub mesh core (one shared connection per Connect Code)
+  <script src="hub/link/hub_meshlog.js"></script> H69: mesh connection log for the Mesh Viewer app
+  <script src="hub/link/hub_meshlink.js"></script> H50: start / stop the mesh with the Connect Code link
+  <script src="hub/link/hub_line.js"></script> H91: Hub Line (calls / messages to this device's number over the mesh)
+  <script src="hub/link/hub_trust.js"></script> H97: HubTrust passcode pairing
+  <script src="hub/link/hub_linkstate.js"></script> -->
+  <!-- H127: core part 'mesh' (after hub-controller.js, as before) = hub_link.js, hub_sync.js, hub_mesh.js, hub_meshlog.js,
+       hub_meshlink.js, hub_line.js, hub_trust.js, hub_linkstate.js -->
+  <script>HubCore.load('mesh');</script>
   <script src="shared/link/link_scan.js"></script>
   <script src="hub/link/hub_remote.js"></script>
   <script src="hub/link/hub_chat.js"></script>

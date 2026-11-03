@@ -27,8 +27,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261104e';
-const CACHE = 'hub-shell-v137';  // 2026-11-04e: Network drive thumbnails
+const V = '20261104f';
+const CACHE = 'hub-shell-v138';  // 2026-11-04f: Hub core entry
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -75,6 +75,7 @@ const SHELL = [
   'hub/link/hub_line.js',   // H91: Hub Line
   'hub/link/hub_trust.js',   // H97: HubTrust
   'hub/link/hub_meshlog.js',   // H69: mesh connection log (hub.html loads it)
+  'hub/core/hub_core.js',   // H127: Hub core entry (loads role, theme, settings, link + mesh in order)
   'apps/system/mesh-viewer/', 'apps/system/mesh-viewer/index.html', 'apps/system/mesh-viewer/mv.js', 'apps/system/mesh-viewer/mv.css', 'apps/system/mesh-viewer/mesh-viewer_icon.png',   // H69: Mesh Viewer opens offline too (the log and roster live in the Hub page)
   'hub/viewer/hub_notifcenter.js', 'hub/viewer/hub_notifcenter.css',   // H66: Notification Centre (hub.html loads them)
   'apps/system/notifications/', 'apps/system/notifications/index.html', 'apps/system/notifications/nc.js', 'apps/system/notifications/nc.css', 'apps/system/notifications/notifications_icon.png',   // H66: the Notification Centre app opens offline too
