@@ -96,7 +96,7 @@
   var GAME_PREFIXES = ['2048', 'aeroplane', 'ant-farm', 'aoe-rts', 'aquarium', 'ar-game', 'battleship', 'blockade', 'browser-fps',
     'car-run', 'chess', 'contra-alpha', 'demolisher', 'desert-road', 'dino-run', 'game-of-life', 'go', 'gravity-sandbox',
     'hero-builder', 'island-alpha', 'island-conquest', 'island-demo', 'landcraft', 'ludo', 'neon-fist-3d',
-    'neon-fist', 'neon-raid', 'pacman', 'ping-pong', 'sling-birds', 'snake', 'solar-system',
+    'neon-fist', 'neon-raid', 'orbito', 'pacman', 'ping-pong', 'sling-birds', 'snake', 'solar-system',
     'space-invader', 'swell-foop', 'tennis-throw', 'connect-4', 'tetris', 'tic-tac-toe', 'tower-defence', 'turbo-lap',
     // short aliases some games already use
     'td', 'nf3d', 'slingbirds', 'hero-viewer'];

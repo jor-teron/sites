@@ -20,6 +20,9 @@
  *           webdav_fs.js + webdav_accounts.js are loaded. Ids 'webdav:<n>', listed after Google Drive;
  *           handle(id) = WebDavFs.root(account); access() 'granted' (a bad password shows up as an error
  *           when the folder is opened); allow() → true; remove(id) deletes the saved account (no files touched).
+ *   sftp    "SFTP server" (H119): each saved SFTP server (shared/fs/sftp_accounts.js), only when sftp_fs.js +
+ *           sftp_accounts.js are loaded. Ids 'sftp:<n>', listed right after the WebDAV drives; handle(id) =
+ *           SftpFs.root(account) (through the relay hub/relay/sftp_relay.py); access / allow / remove like webdav.
  * Changes are announced on BroadcastChannel 'sites-fs' ({type:'drives'}) so every open page redraws.
  *
  * API window.FsDrives:
@@ -87,11 +90,17 @@
       const w = window.WebDavAccounts.list().map((a) => ({ id: a.id, name: a.name || 'Network drive', kind: 'webdav' }));
       out.splice(at < 0 ? out.length : at, 0, ...w);   // right after Google Drive
     }
+    if (hasS()) {   // H119: SFTP servers right after the WebDAV drives
+      const at = out.findIndex((d) => d.kind === 'folder');
+      const s = window.SftpAccounts.list().map((a) => ({ id: a.id, name: a.name || 'SFTP server', kind: 'sftp' }));
+      out.splice(at < 0 ? out.length : at, 0, ...s);
+    }
     return out;
   }
   async function rec(id) { return (await folders()).find((f) => f.id === id) || null; }
   async function handle(id) {
     if (isW(id)) { const a = hasW() && window.WebDavAccounts.get(id); return a ? window.WebDavFs.root(a) : null; }
+    if (isS(id)) { const a = hasS() && window.SftpAccounts.get(id); return a ? window.SftpFs.root(a) : null; }   // H119
     if (id === 'gdrive') return hasG() && gdriveState() === 'ok' ? window.GDriveFs.hubRoot() : null;   // the "hub" folder
     if (id === 'local') {
       if (!hasLocal) return null;
@@ -103,6 +112,7 @@
   }
   async function access(id) {
     if (isW(id)) return hasW() && window.WebDavAccounts.get(id) ? 'granted' : 'denied';
+    if (isS(id)) return hasS() && window.SftpAccounts.get(id) ? 'granted' : 'denied';   // H119
     if (id === 'gdrive') return gdriveState() === 'ok' ? 'granted' : 'prompt';
     if (id === 'local') return hasLocal ? 'granted' : 'denied';
     const h = await handle(id);
@@ -111,6 +121,7 @@
   }
   async function allow(id) {
     if (isW(id)) return !!(hasW() && window.WebDavAccounts.get(id));
+    if (isS(id)) return !!(hasS() && window.SftpAccounts.get(id));   // H119
     if (id === 'gdrive') return gdriveState() === 'ok';
     const h = await handle(id);
     if (!h) return false;
@@ -132,11 +143,17 @@
   async function remove(id) {
     if (id === 'local' || id === 'gdrive') return;
     if (isW(id)) { if (hasW()) window.WebDavAccounts.remove(id); changed(); return; }
+    if (isS(id)) {   // H119: forget the account and log out of its relay session
+      if (hasS()) { const a = window.SftpAccounts.get(id); if (a) window.SftpFs.close(a); window.SftpAccounts.remove(id); }
+      changed(); return;
+    }
     await tx('readwrite', (s) => s.delete(id));
     changed();
   }
   function hasW() { return !!(window.WebDavFs && window.WebDavAccounts); }
   const isW = (id) => /^webdav:/.test(String(id));
+  function hasS() { return !!(window.SftpFs && window.SftpAccounts); }   // H119
+  const isS = (id) => /^sftp:/.test(String(id));
   function hasG() { return !!(window.GDriveFs && window.GoogleAuth); }
   function gdriveState() {
     if (!hasG()) return '';

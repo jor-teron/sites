@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <!--
-  Ludo (LUDO-1a, computer seats LUDO-1b) — page. The classic cross-board race game for 2 to 4 players on one device.
+  Ludo (LUDO-1a; computer seats LUDO-1b; animation, sound, house rules LUDO-1c) — page. The classic cross-board race game for 2 to 4 players on one device.
   Info (status, players) / board / die + buttons: stacked in portrait, side by side in short landscape.
   Numbers + options: core/config.js. Board geometry: core/board.js. Rules: core/rules.js.
   Drawing (on change only): ui/render.js. Shared settings bridge: ui/settings.js. Wiring + saves: core/game.js.
-  Classic scripts only (file:// works). Computer seats: core/ai.js (1b). 1c adds sound, animation and house rules.
+  Classic scripts only (file:// works). Computer seats: core/ai.js (1b). Animation: ui/anim.js, sounds: ui/sound.js (1c).
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Ludo LUDO-1b</title>
+  <title>Ludo LUDO-1c</title>
   <link rel="stylesheet" href="ui/style.css">
 </head>
 <body>
@@ -43,6 +43,13 @@
         <button data-c="blue" class="cp" style="--c:#2563eb">Blue</button><button data-s="blue" class="seat">Person</button>
       </div>
       <p class="small" id="setupMsg"></p>
+      <fieldset class="house" id="houseRules">
+        <legend>House rules</legend>
+        <label class="hr"><input type="checkbox" id="hrExact"> Exact roll needed to reach home</label>
+        <label class="hr"><input type="checkbox" id="hrOut1"> A 1 or a 6 brings a token out</label>
+        <label class="hr"><input type="checkbox" id="hrNoCap"> No extra roll for a capture</label>
+        <label class="hr"><input type="checkbox" id="hrBlocks"> Two tokens on one square make a block nobody can pass</label>
+      </fieldset>
       <div class="row end"><button id="setupCancel">Cancel</button><button id="setupStart" class="primary">Start</button></div>
     </div>
   </div>
@@ -50,18 +57,20 @@
     <div class="help-card" role="dialog" aria-label="How to play Ludo">
       <h2>How to play</h2>
       <ul>
-        <li><b>Goal:</b> be the first to race all 4 of your tokens round the board and into the centre.</li>
-        <li><b>Roll:</b> tap the die. Tokens that can move glow, and a dot shows where each would land. Tap one to move it.</li>
-        <li><b>Coming out:</b> a token leaves its yard only on a 6, onto your coloured start square.</li>
-        <li><b>6s:</b> a 6 gives you another roll. Three 6s in a row and you lose the turn.</li>
-        <li><b>Capture:</b> land on a single rival token to send it back to its yard, and roll again.
-            Squares with a star, and every start square, are safe: no captures there, and tokens can share them.</li>
-        <li><b>Home:</b> after one lap, go up your coloured column to the centre. You need the exact number to finish.
-            Getting a token home gives you another roll.</li>
-        <li>If you can't move, the turn passes by itself. The others play on for 2nd, 3rd and 4th place.</li>
-        <li><b>Computer players:</b> in New game, set any colour to the computer at Easy, Medium or Hard. It rolls and moves by itself with a short pause so you can follow.</li>
-        <li><b>Auto-move:</b> when only one move is possible it is made for you.</li>
+        <li><b>The aim:</b> get all 4 of your tokens once round the board and into the middle before anyone else.</li>
+        <li><b>Your turn:</b> tap the die. The tokens you can move light up, and a dot shows where each one would land. Tap the one you want.</li>
+        <li><b>Starting:</b> tokens wait in your corner. You need a 6 to bring one out onto your coloured start square.</li>
+        <li><b>Rolling a 6:</b> you get another go. But if you roll three 6s in a row, you lose your turn.</li>
+        <li><b>Knocking out:</b> land on a single token of another colour and it goes back to its corner. You get another go too.</li>
+        <li><b>Safe squares:</b> squares with a star, and every coloured start square, are safe. Nobody can be knocked out there, and tokens can share them.</li>
+        <li><b>Going home:</b> after one lap your token turns up the path of your own colour to the middle. You need the exact number to get in, and getting a token home gives you another go.</li>
+        <li><b>Stuck?</b> If none of your tokens can move, your turn is skipped for you.</li>
+        <li><b>Winning:</b> the first player with all 4 tokens home wins. Everyone else plays on for 2nd, 3rd and 4th.</li>
+        <li><b>Computer players:</b> in New game, tap the button next to a colour to make it the computer (Easy, Medium or Hard). It plays by itself, a little slowly, so you can follow.</li>
+        <li><b>Auto-move:</b> when there is only one move you can make, it is made for you.</li>
+        <li><b>House rules:</b> tick them in New game to change how you play: no exact roll to finish, a 1 or a 6 to come out, no extra go for knocking out, or blocks (two of your tokens on one square stop everyone else getting past).</li>
       </ul>
+      <p class="small" id="helpRules"></p>
       <button id="helpClose">Got it</button>
     </div>
   </div>
@@ -73,6 +82,8 @@
   <script src="core/rules.js"></script>
   <script src="core/ai.js"></script>
   <script src="ui/render.js"></script>
+  <script src="ui/anim.js"></script>
+  <script src="ui/sound.js"></script>
   <script src="core/game.js"></script>
 </body>
 </html>

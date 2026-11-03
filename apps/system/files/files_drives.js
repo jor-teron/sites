@@ -13,6 +13,8 @@
  *   saved WebDAV server, kind 'webdav', 🌐 + its name, a small ⚙ to Settings › Network drives). No network drive
  *   → just a small "+ Add network drive" link there. Opening a WebDAV drive first lists its top folder; a wrong
  *   password / no reply shows the "not connected" note (+ Settings button) and a red dot on the row until it opens.
+ * H119: SFTP servers (kind 'sftp', shared/fs/sftp_fs.js through hub/relay/sftp_relay.py) join the same group, 🔐 + name + ⚙,
+ *   after the WebDAV drives; the same first-open check, with relay-specific messages (token, relay down, allowlist).
  * H109: quick links (Documents, Photos, ... on Local; made on first click) and the storage meter.
  * API FX.drives: draw(), open(id, fromClick, path), go(depth), up(), fromHash(), meter().
  */
@@ -36,14 +38,27 @@
     try { hub = window.parent !== window && window.parent.__hubOpenApp ? window.parent : null; } catch (_) { hub = null; }
     if (!(hub && hub.__hubOpenApp('apps/system/settings/', { hash: 'drives' }) !== false)) location.href = '../settings/#drives';
   }
+  /* H119: why an SFTP drive didn't open (codes from hub/relay/sftp_relay.py via shared/fs/sftp_fs.js). */
+  function sftpMsg(e, name) {
+    const c = (e && e.sftp) || '', q = '\u201c' + name + '\u201d';
+    const fix = ' Check it in Settings \u203A Network drives.';
+    if (c === 'token') return 'The relay refused the token for ' + q + '.' + fix;
+    if (c === 'auth' || c === 'denied') return 'Wrong user or password for ' + q + '.' + fix;
+    if (c === 'allow') return 'The relay doesn\u2019t allow ' + q + ': add its host:port to the relay allowlist.';
+    if (c === 'hostkey') return 'The server key of ' + q + ' changed, so the relay refused it (see sftp_known_hosts next to the relay).';
+    if (c === 'notfound') return 'The folder of ' + q + ' was not found on the server.' + fix;
+    return 'Can\u2019t reach ' + q + '. Is the SFTP relay running (python3 hub/relay/sftp_relay.py) and the server on? From the https Hub the relay must be wss://.';
+  }
   const netBad = new Map();   // H118: drive id → message of the last failed open (red dot until it opens)
   async function draw() {
     const list = await D.list();
     const rows = [];
     let netHead = false;
-    const isNet = (d) => d.kind === 'gdrive' || d.kind === 'webdav';
+    // (before H119) const isNet = (d) => d.kind === 'gdrive' || d.kind === 'webdav';
+    const isNet = (d) => d.kind === 'gdrive' || d.kind === 'webdav' || d.kind === 'sftp';   // H119: + SFTP
     for (const d of list.filter((x) => !isNet(x)).concat(list.filter(isNet))) {   // H118: local + folders first
-      const net = d.kind === 'gdrive' || d.kind === 'webdav';
+      // (before H119) const net = d.kind === 'gdrive' || d.kind === 'webdav';
+      const net = isNet(d);
       if (net && !(d.kind === 'gdrive' && D.gdriveState() !== 'ok') && !netHead) {
         netHead = true; rows.push(el('p', 'drive-group', '\uD83C\uDF10 Network drives'));
       }
@@ -55,16 +70,20 @@
       if (netBad.has(d.id)) r.title = netBad.get(d.id);
       r.setAttribute('role', 'listitem');
       const open = btn('drive-open', '', lock ? 'Allow access to ' + d.name : 'Open ' + d.name, () => (lock ? allowDrive(d) : openDrive(d.id, true)));
-      open.append(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : d.kind === 'webdav' ? '\uD83C\uDF10' : '\uD83D\uDCC2'), el('span', 'drive-name', d.name));
+      // (before H119) open.append(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : d.kind === 'webdav' ? '\uD83C\uDF10' : '\uD83D\uDCC2'), el('span', 'drive-name', d.name));
+      open.append(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : d.kind === 'webdav' ? '\uD83C\uDF10' : d.kind === 'sftp' ? '\uD83D\uDD10' : '\uD83D\uDCC2'), el('span', 'drive-name', d.name));   // H119: 🔐 SFTP
       r.appendChild(open);
-      if (d.kind === 'webdav') r.appendChild(btn('drive-x drive-set', '\u2699', d.name + ': settings (Settings \u203A Network drives)', openNetSettings));
+      // (before H119) if (d.kind === 'webdav') r.appendChild(btn('drive-x drive-set', '\u2699', d.name + ': settings (Settings \u203A Network drives)', openNetSettings));
+      if (d.kind === 'webdav' || d.kind === 'sftp') r.appendChild(btn('drive-x drive-set', '\u2699', d.name + ': settings (Settings \u203A Network drives)', openNetSettings));   // H119: + SFTP
       if (lock) r.appendChild(btn('drive-allow', 'Allow access', 'Allow access to ' + d.name, () => allowDrive(d)));
       else FX.view.dropTarget(open, () => D.handle(d.id), d.id);
       rows.push(r);
     }
-    if (!list.some((d) => d.kind === 'webdav') && window.WebDavAccounts) {   // H118
+    // (before H119) if (!list.some((d) => d.kind === 'webdav') && window.WebDavAccounts) {   // H118
+    if (!list.some((d) => d.kind === 'webdav' || d.kind === 'sftp') && (window.WebDavAccounts || window.SftpAccounts)) {   // H118, H119: + SFTP
       const a = el('a', 'drive-addnet', '\uFF0B Add network drive'); a.href = '../settings/#drives';
-      a.title = 'Add a WebDAV server in Settings \u203A Network drives';
+      // (before H119) a.title = 'Add a WebDAV server in Settings \u203A Network drives';
+      a.title = 'Add a WebDAV or SFTP server in Settings \u203A Network drives';
       a.addEventListener('click', (e) => { e.preventDefault(); openNetSettings(); });
       rows.push(a);
     }
@@ -249,10 +268,11 @@
       return;
     }
     const d = (await D.list()).find((x) => x.id === id);
-    if (d && d.kind === 'webdav') {   // H118: try the server once; a failure = note + red dot
+    // (before H119) if (d && d.kind === 'webdav') {   // H118: try the server once; a failure = note + red dot
+    if (d && (d.kind === 'webdav' || d.kind === 'sftp')) {   // H118: try the server once; a failure = note + red dot (H119: + SFTP)
       try { for await (const _ of h.keys()) break; netBad.delete(id); }
       catch (e) {
-        const m = e && e.name === 'NotAllowedError' ? 'Wrong user or password for \u201c' + d.name + '\u201d. Check it in Settings \u203A Network drives.'
+        const m = d.kind === 'sftp' ? sftpMsg(e, d.name) : e && e.name === 'NotAllowedError' ? 'Wrong user or password for \u201c' + d.name + '\u201d. Check it in Settings \u203A Network drives.'
           : 'Can\u2019t reach \u201c' + d.name + '\u201d. Check it in Settings \u203A Network drives (it must be on, https and allow CORS).';
         netBad.set(id, m);
         st.driveId = id; st.driveName = d.name; st.stack = []; draw(); crumbs(); setHash(); FX.view.load();

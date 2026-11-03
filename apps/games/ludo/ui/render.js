@@ -1,9 +1,11 @@
 /*
- * Ludo — canvas renderer (LUDO-1a). No animation loop: draw() runs only when something changes.
+ * Ludo — canvas renderer (LUDO-1a; LUDO-1c: sliding token, blocks). No loop of its own: draw() runs when
+ * something changes, and ui/anim.js calls setState() for each frame of a short slide.
  * Draws the 15 x 15 cross board (yards, track, coloured start squares and home columns, stars on the
  * safe squares, the centre triangles), the tokens (shared squares split into small tokens), the glowing
  * tokens that may move and a dot where each would land. Also draws the die face on its own small canvas.
- * 1c can animate by calling setState() with in-between token positions; nothing here keeps time.
+ * setState({ s, moves, anim: { color, k, x, y } (a token mid-slide, grid units), hold: [{ color, k, p }] (a
+ * captured token still drawn where it was until the slide ends) }). With the blocks house rule a block gets a ring.
  */
 const LDRender = (() => {
   const C = LD_CONFIG, B = LDBoard, G = 15;
@@ -65,9 +67,11 @@ const LDRender = (() => {
   }
 
   /** Where every token is drawn (pixels), shared squares split into a 2 x 2 group. Used for taps too. */
-  function layout(s) {
+  function layout(s, anim, hold) {
     const groups = new Map(), out = [];
     for (const c of s.players) s.tokens[c].forEach((p, k) => {
+      if (anim && anim.color === c && anim.k === k) return;                 // drawn on top, below
+      const h = hold && hold.find((o) => o.color === c && o.k === k); if (h) p = h.p;
       const [x, y] = B.cellOf(c, p, k), key = p < 0 ? c + 'y' + k : x + ',' + y;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push({ color: c, k, p, x, y });
@@ -80,7 +84,21 @@ const LDRender = (() => {
         out.push({ color: t.color, k: t.k, p: t.p, x: (t.x + dx) * cell, y: (t.y + dy) * cell, r, extra: n > 4 && i === 3 ? n - 3 : 0 });
       });
     }
+    if (anim) out.push({ color: anim.color, k: anim.k, p: -2, x: anim.x * cell, y: anim.y * cell, r: cell * 0.38, extra: 0 });
     return out;
+  }
+  /** Blocks house rule: a ring round every square holding 2+ tokens of one colour. */
+  function drawBlocks(s, T) {
+    if (!(s.rules && s.rules.blocks)) return;
+    for (const c of s.players) {
+      const n = {};
+      s.tokens[c].forEach((p) => { const i = B.abs(c, p); if (i >= 0) n[i] = (n[i] || 0) + 1; });
+      for (const i in n) if (n[i] >= 2) {
+        const [x, y] = B.TRACK[i];
+        g.lineWidth = Math.max(2, cell * 0.12); g.strokeStyle = C.hex[c];
+        g.strokeRect(x * cell + g.lineWidth / 2, y * cell + g.lineWidth / 2, cell - g.lineWidth, cell - g.lineWidth);
+      }
+    }
   }
 
   function draw() {
@@ -94,7 +112,8 @@ const LDRender = (() => {
       const [x, y] = B.cellOf(s.turn, m.to, m.k);
       g.beginPath(); g.arc(x * cell, y * cell, cell * 0.16, 0, 7); g.fillStyle = T.ink; g.globalAlpha = 0.55; g.fill(); g.globalAlpha = 1;
     }
-    spots = layout(s);
+    drawBlocks(s, T);
+    spots = layout(s, st.anim, st.hold);
     for (const t of spots) {
       const glow = t.color === s.turn && legal.has(t.k);
       token(t.x, t.y, t.r, t.color, T, glow);

@@ -7,8 +7,9 @@
  * Saves wins per colour, options and the game in progress in localStorage (LD_CONFIG.storeKey).
  * Computer seats (1b): in setup each playing colour is a Person or Computer Easy / Medium / Hard; seatAct()
  * rolls for a computer seat after LD_CONFIG.cpuRollMs and moves (LDAI.choose) after cpuMoveMs.
- * Plug-in point: onEvent() is where 1c adds
- * sound and animation (every roll / move returns an event object from LDRules).
+ * LUDO-1c: the die tumbles and tokens slide square by square (ui/anim.js, skipped for reduced motion or
+ * Low graphics); the computer waits for each animation. Sounds (ui/sound.js) + vibration use the shared
+ * settings. House rules are ticked in New game and kept in the game state (state.rules).
  */
 (() => {
   const R = LDRules, CFG = LD_CONFIG, S = LD_SETTINGS;
@@ -18,10 +19,12 @@
 
   function load() {
     try { const s = JSON.parse(localStorage.getItem(CFG.storeKey)); if (s && s.wins) return s; } catch (_) {}
-    return { wins: { red: 0, green: 0, yellow: 0, blue: 0 }, auto: true, players: CFG.colors.slice(), seats: {}, game: null };
+    return { wins: { red: 0, green: 0, yellow: 0, blue: 0 }, auto: true, players: CFG.colors.slice(), seats: {}, house: {}, game: null };
   }
   const saved = load();
   if (!saved.seats) saved.seats = {};
+  if (!saved.house) saved.house = {};
+  const houseVal = (key) => (key in saved.house ? saved.house[key] : CFG.rules[key]);
   const save = () => { try { localStorage.setItem(CFG.storeKey, JSON.stringify(saved)); } catch (_) {} };
 
   let s = null, flash = '', lockUntil = 0, timer = 0, rng = () => 1 + Math.floor(Math.random() * 6);
@@ -40,6 +43,7 @@
     return '';
   }
   function showSetup() {
+    LDAnim.finish();
     pick = (s ? s.players : saved.players).slice();
     clearTimeout(timer); lockUntil = 0;    // computer seats wait while the panel is open
     $('setup').hidden = false; $('setupCancel').hidden = !s; drawSetup();
@@ -55,25 +59,40 @@
     const p = setupProblem();
     $('setupMsg').textContent = p || pick.length + ' players: ' + pick.map((c) => NAME[c] + (seatOf(c) === 'human' ? '' : ' (' + lvlName(seatOf(c)) + ')')).join(', ') + '. ' + NAME[pick[0]] + ' starts.';
     $('setupStart').disabled = !!p;
+    for (const [id, key, val] of CFG.houseRules) $(id).checked = houseVal(key) === val;
   }
   function startGame() {
     if (setupProblem()) return;
-    clearTimeout(timer);
-    const seats = {}; pick.forEach((c) => { seats[c] = seatOf(c); });
-    saved.players = pick.slice(); s = R.create(pick, seats); flash = ''; lockUntil = 0;
+    LDAnim.finish(); clearTimeout(timer);
+    const seats = {}, rules = {}; pick.forEach((c) => { seats[c] = seatOf(c); });
+    for (const [, key] of CFG.houseRules) rules[key] = houseVal(key);
+    saved.players = pick.slice(); s = R.create(pick, seats, rules); flash = ''; lockUntil = 0; view = {};
     $('setup').hidden = true; persist(); refresh(); seatAct();
   }
 
   // ---- turn steps ----
-  function onEvent(ev) { /* 1c: sound + animation hook (ev from LDRules.roll / LDRules.move) */ return ev; }
+  // Every roll / move: rules first (state saved at once), then the short animation, then what comes next.
+  let rolling = false, view = {};
+  const busy = () => locked() || LDAnim.busy();
+  function onEvent(ev) {                    // sound for the start of a step (the end sounds are in afterMove)
+    if (ev && (ev.type === 'roll' || ev.type === 'nomove' || ev.type === 'three6')) LDSound.roll();
+    return ev;
+  }
   function rollDie(v) {
-    if (!s || s.phase !== 'roll' || locked()) return null;
+    if (!s || s.phase !== 'roll' || busy()) return null;
     const c = s.turn, ev = onEvent(R.roll(s, v || rng()));
     if (!ev) return null;
-    if (ev.type === 'three6') { flash = NAME[c] + ' rolled a third 6 in a row – turn lost'; holdThenNext(); }
+    shown = ev.die; flash = ''; persist();
+    rolling = true; refresh();
+    LDAnim.die(ev.die, (f) => LDRender.drawDie($('die'), f, c, false), () => { rolling = false; afterRoll(ev); });
+    return ev;
+  }
+  function afterRoll(ev) {
+    const c = ev.color;
+    if (ev.type === 'three6') { flash = NAME[c] + ' rolled a third 6 in a row – turn lost'; LDSound.pass(); holdThenNext(); }
     else if (ev.type === 'nomove') { flash = NAME[c] + ' rolled ' + ev.die + ' – no move' + (ev.again ? ', roll again' : ', turn passes'); holdThenNext(); }
-    else { flash = ''; persist(); refresh(); maybeAuto(); return ev; }
-    persist(); refresh(); return ev;
+    refresh();
+    if (ev.type === 'roll') { maybeAuto(); seatAct(); }
   }
   function holdThenNext() { lockUntil = Date.now() + CFG.passDelayMs; clearTimeout(timer); timer = setTimeout(() => { flash = ''; refresh(); seatAct(); }, CFG.passDelayMs); }
   function maybeAuto() {
@@ -81,40 +100,61 @@
     if (!saved.auto || !human(s.turn) || new Set(moves.map((m) => m.from)).size !== 1) return;
     clearTimeout(timer); timer = setTimeout(() => { if (s.phase === 'move') moveToken(moves[0].k); }, CFG.autoDelayMs);
   }
+  /** Grid points a token passes through, one per square (yard → start square counts as one step). */
+  function pathPts(c, k, from, to) {
+    if (from < 0) return [LDBoard.cellOf(c, -1, k), LDBoard.cellOf(c, 0, k)];
+    const out = []; for (let q = from; q <= to; q++) out.push(LDBoard.cellOf(c, q, k)); return out;
+  }
   function moveToken(k) {
-    if (!s || s.phase !== 'move') return null;
-    const c = s.turn, ev = onEvent(R.move(s, k));
+    if (!s || s.phase !== 'move' || LDAnim.busy()) return null;
+    const c = s.turn, m = R.legalMoves(s).find((x) => x.k === k);
+    if (!m) return null;
+    const hold = m.capture.map((o) => ({ color: o.color, k: o.k, p: s.tokens[o.color][o.k] }));
+    const ev = onEvent(R.move(s, k));
     if (!ev) return null;
     clearTimeout(timer);
-    const bits = [];
+    const bits = []; let place = -1;
     if (ev.capture.length) bits.push(NAME[c] + ' sent ' + ev.capture.map((o) => NAME[o.color]).join(' and ') + ' back to the yard');
     if (ev.home) bits.push(NAME[c] + ' token reached home');
     if (ev.finished) {
-      const place = s.finished.indexOf(c);
+      place = s.finished.indexOf(c);
       bits.push(NAME[c] + ' finished ' + ORD[place] + (place === 0 ? ' – wins!' : ''));
       if (place === 0) saved.wins[c] = (saved.wins[c] || 0) + 1;
-      S.vibrate(place === 0 ? [80, 40, 160] : 60);
     }
     if (ev.again) bits.push(bits.length ? 'roll again' : NAME[c] + ' rolled a 6 – roll again');
-    flash = bits.join(' – ');
-    persist(); refresh(); seatAct();
+    persist();                               // saved before the slide: a reload mid-slide shows the finished move
+    const pts = pathPts(c, k, ev.from, ev.to), n = pts.length - 1;
+    let lastI = 0;
+    flash = ''; view = { anim: { color: c, k, x: pts[0][0], y: pts[0][1] }, hold }; refresh();
+    LDAnim.path(pts, (x, y, i) => {
+      if (i !== lastI) { lastI = i; if (i < n) LDSound.step(); }
+      view.anim = { color: c, k, x, y };
+      LDRender.setState({ s, moves: [], anim: view.anim, hold });
+    }, () => {
+      view = {}; flash = bits.join(' – ');
+      if (place === 0) { LDSound.win(); S.vibrate([80, 40, 160]); }
+      else if (place > 0) { LDSound.finish(); S.vibrate(60); }
+      else if (ev.capture.length) { LDSound.capture(); S.vibrate(40); }
+      else if (ev.home) { LDSound.home(); S.vibrate(25); }
+      else LDSound.move();
+      refresh(); seatAct();
+    });
     return ev;
   }
-  /** Computer seat on turn: pause, roll, pause, move (moveToken / holdThenNext call back here for the next step). */
+  /** Computer seat on turn: pause, roll, pause, move. afterRoll / afterMove / holdThenNext call back here. */
   function seatAct() {
     if (!s || s.phase === 'over' || human(s.turn) || !$('setup').hidden) return;
     clearTimeout(timer);
     if (s.phase === 'move') { timer = setTimeout(cpuMove, CFG.cpuMoveMs); return; }
     timer = setTimeout(() => {
       if (!s || s.phase !== 'roll' || human(s.turn) || !$('setup').hidden) return;
-      if (locked()) { seatAct(); return; }
-      const ev = rollDie(); if (!ev) return;
-      shown = ev.die; refresh();
-      if (ev.type === 'roll') { clearTimeout(timer); timer = setTimeout(cpuMove, CFG.cpuMoveMs); }
+      if (busy()) { seatAct(); return; }
+      rollDie();
     }, Math.max(CFG.cpuRollMs, lockUntil - Date.now()));
   }
   function cpuMove() {
     if (!s || s.phase !== 'move' || human(s.turn) || !$('setup').hidden) return;
+    if (LDAnim.busy()) { seatAct(); return; }
     const k = LDAI.choose(s, s.seats[s.turn]);
     if (k >= 0) moveToken(k);
   }
@@ -123,10 +163,12 @@
   function refresh() {
     if (!s) return;
     const moves = R.legalMoves(s);
-    LDRender.setState({ s, moves: locked() || !human(s.turn) ? [] : moves });
+    LDRender.setState({ s, moves: busy() || !human(s.turn) ? [] : moves, anim: view.anim, hold: view.hold });
     const c = s.turn;
     let t;
     if (s.phase === 'over') t = 'Game over: ' + s.finished.map((q, i) => ORD[i] + ' ' + NAME[q]).join(', ');
+    else if (rolling) t = who(c) + ' rolls…';
+    else if (view.anim) t = who(view.anim.color) + ' moves…';
     else if (flash && (locked() || s.phase === 'roll')) t = flash + (locked() ? '' : human(c) ? ' · ' + NAME[c] + ': tap the die' : ' · ' + who(c) + ' to roll');
     else if (!human(c)) t = s.phase === 'roll' ? who(c) + ' is rolling…' : who(c) + ' rolled ' + s.die + ', moving…';
     else if (s.phase === 'roll') t = NAME[c] + "'s turn: tap the die to roll";
@@ -145,10 +187,10 @@
       el.dataset.c = q;
       $('chips').appendChild(el);
     }
-    const canRoll = s.phase === 'roll' && !locked() && human(c);
+    const canRoll = s.phase === 'roll' && !busy() && human(c);
     $('dieBtn').disabled = !canRoll;
     $('dieBtn').setAttribute('aria-label', canRoll ? 'Roll the die' : 'Die: ' + (s.die || '–'));
-    LDRender.drawDie($('die'), s.phase === 'move' ? s.die : lastDie(), c, canRoll);
+    if (!rolling) LDRender.drawDie($('die'), s.phase === 'move' ? s.die : lastDie(), c, canRoll);
     $('autoBtn').textContent = 'Auto-move: ' + (saved.auto ? 'on' : 'off');
   }
   let shown = 0;
@@ -158,14 +200,20 @@
   const cv = $('board'); LDRender.init(cv);
   cv.addEventListener('pointerdown', (e) => {
     e.preventDefault();
-    if (!s || s.phase !== 'move' || locked() || !human(s.turn)) return;
+    if (!s || s.phase !== 'move' || busy() || !human(s.turn)) return;
     const t = LDRender.tokenAt(e.clientX, e.clientY);
     if (t) moveToken(t.k);
   });
   $('dieBtn').addEventListener('click', () => { const ev = rollDie(); if (ev) shown = ev.die; refresh(); });
   $('autoBtn').addEventListener('click', () => { saved.auto = !saved.auto; save(); refresh(); if (s && s.phase === 'move') maybeAuto(); });
   $('newBtn').addEventListener('click', showSetup);
-  $('helpBtn').addEventListener('click', () => { $('help').hidden = false; });
+  function rulesLine() {
+    const ru = R.rulesOf(s), on = CFG.houseRules.filter(([, key, val]) => ru[key] === val && val !== CFG.rules[key]).map((h) => h[3]);
+    if (!ru.exactHome) on.unshift('Any roll big enough takes a token home (no exact roll needed)');
+    return on.length ? 'House rules this game: ' + on.join('; ') + '.' : 'This game uses the classic rules (no house rules).';
+  }
+  $('helpBtn').addEventListener('click', () => { $('helpRules').textContent = rulesLine(); $('help').hidden = false; });
+  for (const [id, key, val] of CFG.houseRules) $(id).addEventListener('change', () => { saved.house[key] = $(id).checked ? val : !val; save(); drawSetup(); });
   $('helpClose').addEventListener('click', () => { $('help').hidden = true; });
   $('help').addEventListener('click', (e) => { if (e.target.id === 'help') $('help').hidden = true; });
   $('clearBtn').addEventListener('click', () => { for (const c of CFG.colors) saved.wins[c] = 0; save(); refresh(); });
@@ -182,7 +230,7 @@
   $('setupCancel').addEventListener('click', () => { $('setup').hidden = true; flash = ''; refresh(); maybeAuto(); seatAct(); });
   document.addEventListener('keydown', (e) => {
     if (e.key === ' ' || e.key === 'Enter') { if ($('setup').hidden && $('help').hidden) { e.preventDefault(); $('dieBtn').click(); } }
-    else if (e.key >= '1' && e.key <= '4' && s && s.phase === 'move' && human(s.turn) && !locked()) moveToken(+e.key - 1);
+    else if (e.key >= '1' && e.key <= '4' && s && s.phase === 'move' && human(s.turn) && !busy()) moveToken(+e.key - 1);
     else if (e.key === 'Escape') $('help').hidden = true;
   });
 
@@ -207,6 +255,7 @@
     move: (k) => moveToken(k), start: (cols, seats) => { if (seats) Object.assign(saved.seats, seats); pick = cols.slice(); startGame(); return !$('setup').hidden ? false : true; },
     setup: showSetup, seat: (c, t) => { saved.seats[c] = t; save(); drawSetup(); }, unlock: () => { lockUntil = 0; clearTimeout(timer); flash = ''; refresh(); },
     setState: (x) => { s = x; persist(); refresh(); }, state: () => R.clone(s), raw: () => s,
-    tokenPx: (c, k) => LDRender.tokenPx(c, k), locked,
+    tokenPx: (c, k) => LDRender.tokenPx(c, k), locked, busy: () => LDAnim.busy(), rulesLine: () => rulesLine(),
+    house: (o) => { Object.assign(saved.house, o); save(); drawSetup(); },
   };
 })();
