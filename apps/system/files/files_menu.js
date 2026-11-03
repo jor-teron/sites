@@ -3,6 +3,7 @@
  * (shared/ctxmenu) for the selection or for the open folder, and the keyboard:
  *   Enter open · Delete delete · F2 rename · Ctrl/Cmd+C copy · +X cut · +V paste · +A select all
  *   Backspace or Alt+↑ up a folder · Alt+← back · Alt+→ forward (H106) · Esc clear selection · arrows move between items
+ * The folder (blank space) menu has Terminal (H121): the Terminal app opened at this folder.
  * API FX.menu: forItems(x, y), forFolder(x, y).
  */
 (function () {
@@ -39,6 +40,7 @@
       { label: 'New folder', icon: '\uFF0B', action: () => A().newFolder() },
       { label: 'Upload files\u2026', icon: '\u21EA', action: () => $('file-in').click() },
       { label: 'Paste', icon: '\uD83D\uDCCB', hint: MOD + 'V', disabled: !st.clip, action: () => A().paste() },
+      { label: 'Terminal', icon: '>_', disabled: !A().terminalOk(), action: () => A().terminal() },   // H121: Terminal at this folder (not on network drives)
       { sep: true },
       { label: 'Select all', icon: '\u2611', hint: MOD + 'A', disabled: !st.shown.length, action: () => FX.view.selectAll() },
       { label: st.view === 'grid' ? 'List view' : 'Grid view', icon: st.view === 'grid' ? '\u2630' : '\u25A6', action: () => FX.view.toggle() },

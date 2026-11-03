@@ -11,6 +11,8 @@
  * ('themeSunrise' / 'themeSunset', '' = 06:00 / 18:00) and an Offset slider -2 h .. +2 h, 15 min steps
  * ('themeOffset' minutes, '' = 0); the effective 'light' / 'dark' stays in 'theme' (hub/core/hub_autotheme.js).
  * Status line: 'Dark now. Light at 07:00.' Light / Dark / Glass clear Auto; Auto clears Glass.
+ * H104 Theme: Auto / Light / Dark / Glass / XP. XP = key 'xp' '1' + theme 'light' (like Glass, so apps reading
+ * sites-hub.theme see Light). Every pick sets glass and xp to match (only one of them is ever '1'); Auto clears both.
  */
 (function () {
   'use strict';
@@ -62,6 +64,7 @@
         solid.style.display = v === 'glass' ? '' : 'none';
       });
       */
+      /* H64 (before H104):
       // H64: Auto / Light / Dark / Glass. Auto = themeAuto '1'; the effective 'light' / 'dark' is kept in
       // theme (by the Hub's hub_autotheme.js, or this page's copy when Settings runs on its own), so apps
       // reading sites-hub.theme follow. Picking Light / Dark / Glass clears Auto; Auto clears Glass.
@@ -80,6 +83,34 @@
         S.set('glass', v === 'glass' ? '1' : '');
         if (v === 'auto') autoNow();
         else S.set('theme', v === 'glass' ? 'light' : v);
+        solid.style.display = v === 'glass' ? '' : 'none';
+        autoBox.hidden = v !== 'auto';
+        autoStatus();
+      });
+      */
+      // H104: Auto / Light / Dark / Glass / XP. Auto = themeAuto '1'; the effective 'light' / 'dark' is kept in
+      // theme (by the Hub's hub_autotheme.js, or this page's copy when Settings runs on its own), so apps
+      // reading sites-hub.theme follow. Glass and XP are both saved with theme 'light' + their own key '1'.
+      // Picking Light / Dark / Glass / XP clears Auto; Auto clears Glass and XP.
+      const AT = () => { const h = S.hub && S.hub(); return (h && h.HubAutoTheme) || window.HubAutoTheme || null; };
+      const curTheme = () => {
+        if (S.get('themeAuto') === '1') return 'auto';
+        const t = S.get('theme');
+        if (t === 'dark') return 'dark';
+        if (t === 'xp' || S.get('xp') === '1') return 'xp';   // XP wins over a stale glass '1' (as in hub_prefs.js)
+        return (t === 'glass' || S.get('glass') === '1') ? 'glass' : 'light';
+      };
+      const autoNow = () => { const a = AT(); if (a && a.on()) S.set('theme', a.effective()); };   // write the effective theme now
+      const theme = ui.choice([
+        { value: 'auto', label: 'Auto', hint: 'Light by day' }, { value: 'light', label: 'Light' },
+        { value: 'dark', label: 'Dark' }, { value: 'glass', label: 'Glass', hint: 'Frosted' },
+        { value: 'xp', label: 'XP', hint: 'Classic blue' }
+      ], curTheme(), (v) => {
+        S.set('themeAuto', v === 'auto' ? '1' : '');   // first: while Auto is still on, the Hub would clear a new glass / xp '1'
+        S.set('glass', v === 'glass' ? '1' : '');
+        S.set('xp', v === 'xp' ? '1' : '');
+        if (v === 'auto') autoNow();
+        else S.set('theme', v === 'glass' || v === 'xp' ? 'light' : v);
         solid.style.display = v === 'glass' ? '' : 'none';
         autoBox.hidden = v !== 'auto';
         autoStatus();
@@ -140,7 +171,8 @@
       autoBox.hidden = curTheme() !== 'auto';
       autoStatus();
       S.onChange((k) => {   // own picks + other tabs / the Hub's clock switch (storage events)
-        if (k && k.indexOf('theme') !== 0 && k !== 'glass') return;
+        // if (k && k.indexOf('theme') !== 0 && k !== 'glass') return;   (before H104)
+        if (k && k.indexOf('theme') !== 0 && k !== 'glass' && k !== 'xp') return;
         const c = curTheme();
         theme.repaint(c); autoBox.hidden = c !== 'auto'; solid.style.display = c === 'glass' ? '' : 'none';
         autoStatus();
@@ -228,7 +260,8 @@
         ui.note('Theme and accent colour the Hub menu, taskbar and windows. Apps keep their own look (with Glass, apps that follow the Hub are Light).'),
         eyeTitle, ... */
       pane.append(ui.title('Accent colour'), row, ui.title('Theme'), theme, autoBox, solid, ui.title('Animations'), motion,
-        ui.note('Theme and accent colour the Hub menu, taskbar and windows. Apps keep their own look (with Glass, apps that follow the Hub are Light). Auto is Light by day and Dark by night, from the Sunrise and Sunset times above (no location used); apps that follow the Hub switch with it.'),
+        // ui.note('Theme and accent colour the Hub menu, taskbar and windows. Apps keep their own look (with Glass, apps that follow the Hub are Light). Auto is Light by day and Dark by night, from the Sunrise and Sunset times above (no location used); apps that follow the Hub switch with it.'),   (before H104)
+        ui.note('Theme and accent colour the Hub menu, taskbar and windows. Apps keep their own look (with Glass or XP, apps that follow the Hub are Light; System apps follow Glass and XP too). XP brings its own Green hills wallpaper until you pick another one. Auto is Light by day and Dark by night, from the Sunrise and Sunset times above (no location used); apps that follow the Hub switch with it.'),
         eyeTitle, wRow, when, times, st,
         ui.note('A warm, orange tint over the whole Hub and its apps, easier on the eyes at night (like Night Light). It fades in and out over a few seconds. The \uD83C\uDF19 button (Settings \u203A Hub bar) turns it on or off until the next scheduled change. A web page cannot change the real screen colour, so the phone status bar and other apps stay as they are.'));
       if (sub === 'eye') setTimeout(() => eyeTitle.scrollIntoView({ block: 'start' }), 50);   // H63: #look/eye

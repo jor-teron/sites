@@ -25,7 +25,10 @@
   Settings.add({
     id: 'wallpaper', title: 'Wallpaper', icon: '\uD83D\uDDBC\uFE0F',
     render(pane) {
-      const cur = () => S.get('wallpaper', 'night');
+      // const cur = () => S.get('wallpaper', 'night');   (before H104)
+      // H104: the default follows the theme (XP = Green hills, hub_wallpapers.js hubWallpaperDefault)
+      const def = () => (window.hubWallpaperDefault ? window.hubWallpaperDefault() : 'night');
+      const cur = () => S.get('wallpaper') || def();
       const preview = ui.el('div', 'wp-preview');
       preview.appendChild(ui.el('div', 'wp-preview-win'));
       preview.appendChild(ui.el('div', 'wp-preview-bar'));
@@ -33,7 +36,8 @@
       const pics = ui.el('div', 'wp-grid wp-pics');
       const idOf = (v) => (/^mine/.test(v) ? 'mine' : v);
       const pick = (v) => {
-        S.set('wallpaper', v === 'night' ? '' : v);
+        // S.set('wallpaper', v === 'night' ? '' : v);   (before H104)
+        S.set('wallpaper', v === def() ? '' : v);   // H104: the theme's default is saved as '' (so Night under XP is kept)
         paint(preview, window.hubWallpaper(v));
         pane.querySelectorAll('.wp-thumb').forEach((t) => t.classList.toggle('on', t.dataset.id === idOf(v)));
         custom.classList.toggle('on', /^#/.test(v));

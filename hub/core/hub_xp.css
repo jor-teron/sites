@@ -1,0 +1,241 @@
+/*
+ * H104 XP theme (hub/core/hub_xp.css), a Windows XP "Luna blue" look for the Hub chrome.
+ * Settings › Look › XP: hub_prefs.js sets html.hub-xp on top of html.hub-light (keys: sites-hub.xp '1' +
+ * sites-hub.theme 'light', like Glass; apps that read sites-hub.theme still see Light). Auto and Dark never
+ * show XP; XP wins over a stale glass '1' (hub_prefs.js never sets hub-glass with hub-xp).
+ * XP surfaces: window frames + Luna title bars (rounded top, white bold title with a soft shadow),
+ *   blue min / max / gear buttons and a red close button, the Desktop taskbar (blue gradient, green Start
+ *   button on the left, tray + clock on a lighter blue band), the Start menu (blue header band + orange line,
+ *   white left column, light-blue flyout on the right; CSS only, the menu is not restructured), right-click
+ *   menus, dialogs, side panels, received-file cards and the Phone-mode top bar: off-white (#ECE9D8) with thin
+ *   blue borders, Tahoma, then Segoe UI, then system fonts.
+ * Wallpaper: XP's own default is Green hills (shared/wallpaper/hub_hills.jpg, our own drawing), shown while
+ *   sites-hub.wallpaper is empty (hub_wallpapers.js hubWallpaperDefault()).
+ * App contents (iframes) keep their own look; System apps add shared/theme/hub_xp_apps.css (hub_theme.js).
+ * XP is opaque (no blur), so Reduce transparency has nothing to do here; Eye comfort's warm layer and the
+ * H65 break lock sit above everything as before. Loaded after hub_glass.css in hub.html.
+ */
+html.hub-xp {
+  --xp-font: Tahoma, "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --xp-face: #ece9d8;                       /* dialog / menu face */
+  --xp-face-hi: #f6f5ef;
+  --xp-edge: #0831d9;                       /* active frame edge */
+  --xp-frame: #0058ee;                      /* active frame */
+  --xp-frame-off: #7a96df;                  /* inactive frame */
+  --xp-sel: #316ac5;                        /* selection blue */
+  --xp-line: #aca899;                       /* grey 3-D line */
+  --xp-orange: #e6852f;
+  --xp-bar: linear-gradient(180deg, #0058ee 0%, #3593ff 4%, #288eff 6%, #127dff 8%, #036ffc 10%, #0262ee 14%,
+    #0057e5 20%, #0054e3 24%, #0055eb 56%, #005bf5 66%, #026afe 76%, #0062ef 86%, #0052d6 92%, #0040ab 94%, #003092 100%);
+  --xp-bar-off: linear-gradient(180deg, #a5bdf0 0%, #9db6ec 6%, #8aa6e6 14%, #7f9ce2 30%, #7a96df 60%, #829fe3 82%, #8aa6e6 92%, #7a96df 100%);
+  --xp-task: linear-gradient(180deg, #1f2f86 0%, #3165c4 3%, #3682e5 6%, #4490e6 10%, #3883e5 12%, #2b71e0 15%, #2663da 18%,
+    #235bd6 20%, #2258d5 23%, #2157d6 38%, #245ddb 54%, #2562df 86%, #245fdc 89%, #2158d4 92%, #1d4ec0 95%, #1941a5 98%);
+  --xp-tray: linear-gradient(180deg, #0c59b9 1%, #139ee9 6%, #18b5f2 10%, #139beb 14%, #1290e8 19%, #0d8dea 63%,
+    #0d9ff1 81%, #0f9eed 88%, #119be9 91%, #1392e2 94%, #137ed7 97%, #095bc9 100%);
+  --xp-start: linear-gradient(180deg, #3d953d 0%, #5fbf5f 6%, #4aa84a 14%, #389b38 40%, #2f8f2f 70%, #2b862b 88%, #1f6e1f 100%);
+  --xp-btn: linear-gradient(180deg, #5d93f5 0%, #3c7cf0 20%, #2565e6 55%, #1e5bdd 80%, #2a6ae8 100%);
+  --xp-close: linear-gradient(180deg, #e9997a 0%, #e2683f 22%, #d6491c 55%, #c9411a 80%, #d65a2c 100%);
+  /* right-click menus (shared/ctxmenu) and dialogs (shared/dialog) read these */
+  --ctx-bg: var(--xp-face-hi); --ctx-text: #000; --ctx-muted: #6d6d6d; --ctx-line: var(--xp-line); --ctx-bad: #c42b2b;
+  --wm-hi: color-mix(in srgb, var(--xp-sel) 22%, transparent);
+}
+html.hub-xp body, html.hub-xp button, html.hub-xp input, html.hub-xp select, html.hub-xp textarea { font-family: var(--xp-font); }
+
+/* ---------- windows: blue frame + Luna title bar; the app inside stays as it is ---------- */
+html.hub-xp .wm-win {
+  border: 1px solid var(--xp-edge);
+  border-radius: 8px 8px 0 0;
+  background: var(--xp-frame);
+  box-shadow: 2px 4px 14px rgba(0, 0, 0, 0.35);
+}
+html.hub-xp .wm-win:not(.wm-active) { border-color: #6f86cf; background: var(--xp-frame-off); }
+html.hub-xp .wm-win.wm-max, html.hub-xp .wm-win.wm-snap-l, html.hub-xp .wm-win.wm-snap-r { border-radius: 0; }
+html.hub-xp .wm-bar {
+  background: var(--xp-bar-off);
+  color: #d8e4f8;
+  border-radius: 7px 7px 0 0;
+  font-weight: 700;
+  text-shadow: 1px 1px 1px rgba(10, 24, 131, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+html.hub-xp .wm-win.wm-active .wm-bar { background: var(--xp-bar); color: #fff; text-shadow: 1px 1px 1px #0f1089; }
+html.hub-xp .wm-win.wm-max .wm-bar, html.hub-xp .wm-win.wm-snap-l .wm-bar, html.hub-xp .wm-win.wm-snap-r .wm-bar { border-radius: 0; }
+html.hub-xp .wm-title { font-weight: 700; letter-spacing: 0.01em; }
+/* thin frame on the sides + bottom (the title bar is the top of the frame) */
+html.hub-xp .wm-body { border: 3px solid var(--xp-frame); border-top: 0; background: var(--xp-face); }
+html.hub-xp .wm-win:not(.wm-active) .wm-body { border-color: var(--xp-frame-off); }
+html.hub-xp .wm-win.wm-max .wm-body { border-width: 0; }
+html.hub-xp .wm-body iframe { background: #fff; }
+/* min / max / gear: blue rounded squares with a white glyph; close: red */
+html.hub-xp .wm-btns { gap: 2px; padding-right: 3px; }
+html.hub-xp .wm-btn {
+  width: calc(var(--wm-title-h) - 6px); height: calc(var(--wm-title-h) - 6px);
+  border: 1px solid #fff; border-radius: 3px;
+  background: var(--xp-btn); color: #fff;
+  font-weight: 700; font-size: calc(var(--wm-title-h) * 0.50);
+  text-shadow: none;
+  box-shadow: inset -1px -1px 2px rgba(0, 0, 40, 0.35), inset 1px 1px 2px rgba(255, 255, 255, 0.45);
+  display: inline-flex; align-items: center; justify-content: center; padding: 0;
+}
+html.hub-xp .wm-gear { display: none; }
+html.hub-xp .wm-win.has-settings .wm-gear { display: inline-flex; }
+html.hub-xp .wm-btn:hover { background: var(--xp-btn); filter: brightness(1.15); }
+html.hub-xp .wm-btn:active { filter: brightness(0.9); }
+html.hub-xp .wm-close-btn, html.hub-xp .wm-close-btn:hover { background: var(--xp-close); color: #fff; }
+html.hub-xp .wm-win:not(.wm-active) .wm-btn { opacity: 0.82; }
+html.hub-xp .wm-bar .wm-gb { color: inherit; }
+
+/* ---------- Desktop taskbar: blue bar, green Start, lighter blue tray band ---------- */
+html.hub-xp body.wm-desktop #wm-taskbar {
+  background: var(--xp-task);
+  border-top: 1px solid #0c2f9c;
+  color: #fff;
+  padding-left: 0; padding-right: 0;
+  --wm-hover: rgba(255, 255, 255, 0.16);
+}
+html.hub-xp.hub-task-top body.wm-desktop #wm-taskbar { border-top: 0; border-bottom: 1px solid #0c2f9c; }
+html.hub-xp body.wm-desktop #wm-taskbar button, html.hub-xp body.wm-desktop #wm-taskbar .wm-clock { color: #fff; }
+html.hub-xp #wm-start {
+  height: 100%;
+  padding: 0 20px 0 10px;
+  margin-right: 6px;
+  border-radius: 0 12px 12px 0;
+  background: var(--xp-start);
+  color: #fff;
+  font-style: italic; font-weight: 700;
+  font-size: calc(var(--wm-task-h) * 0.42);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.55);
+  box-shadow: inset -2px 0 3px rgba(0, 0, 0, 0.30), inset 0 1px 2px rgba(255, 255, 255, 0.40), 2px 0 4px rgba(0, 0, 0, 0.30);
+}
+html.hub-xp #wm-start:hover { background: var(--xp-start); filter: brightness(1.10); }
+html.hub-xp #wm-start[aria-expanded="true"] { background: var(--xp-start); filter: brightness(0.88); }
+html.hub-xp .wm-start-logo { border-radius: 4px; filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.45)); }
+html.hub-xp .wm-task {
+  border-radius: 3px;
+  background: linear-gradient(180deg, #4b93f7 0%, #3c81f3 12%, #3b7fef 80%, #2f6fdf 100%);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 40, 0.30), inset 1px 1px 1px rgba(255, 255, 255, 0.35);
+  color: #fff; text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.35);
+}
+html.hub-xp .wm-task:hover { background: linear-gradient(180deg, #5ea1f8 0%, #4c8ff6 50%, #437fe8 100%); }
+html.hub-xp .wm-task.active { background: linear-gradient(180deg, #1a48b0 0%, #1e52b7 50%, #1c4fb2 100%); box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.45); }
+html.hub-xp .wm-task.active::after { display: none; }
+html.hub-xp .wm-tray, html.hub-xp body.wm-desktop #wm-taskbar .wm-clock {
+  align-self: stretch; height: auto;
+  background: var(--xp-tray);
+}
+html.hub-xp .wm-tray {
+  margin-right: -4px;   /* closes the taskbar gap so tray + clock are one band */
+  padding: 0 4px 0 10px;
+  border-left: 1px solid #1042af;
+  box-shadow: inset 1px 0 1px #18bbff;
+}
+html.hub-xp body.wm-desktop #wm-taskbar .wm-clock {
+  display: flex; align-items: center;
+  padding: 0 12px 0 6px;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.35);
+}
+html.hub-xp.hub-bar-off-clock body.wm-desktop #wm-taskbar .wm-clock { display: none !important; }
+html.hub-xp body.wm-desktop #wm-taskbar svg { filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.35)); }
+
+/* ---------- Phone mode top bar: the same blue bar; Home ▾ is the green button ---------- */
+html.hub-xp body:not(.wm-desktop) #header { background: var(--xp-task); border-bottom: 1px solid #0c2f9c; color: #fff; }
+html.hub-xp body:not(.wm-desktop) #header .header-right,
+html.hub-xp body:not(.wm-desktop) #header button { color: #fff; }
+html.hub-xp body:not(.wm-desktop) #header .cat-btn {
+  background: var(--xp-start); color: #fff; font-style: italic; font-weight: 700;
+  border-radius: 0 12px 12px 0; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- Start menu: blue header band + orange line, white left column, light-blue flyout ---------- */
+html.hub-xp .menu {
+  --text: #000; --muted: #444;
+  background: #fff;
+  border: 1px solid var(--xp-edge);
+  border-radius: 8px 8px 0 0;
+  padding-top: 0;
+  box-shadow: 3px 4px 14px rgba(0, 0, 0, 0.40);
+}
+html.hub-xp .menu::before {
+  content: 'Hub';
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center;
+  height: 48px; margin: 0 -6px 6px; padding: 0 14px;
+  background: linear-gradient(180deg, #1868ce 0%, #0e60cb 12%, #0e60cb 20%, #1164cf 32%, #1667cf 33%, #1b6cd3 47%,
+    #1e70d9 54%, #2476dc 60%, #2978dc 65%, #267ddc 77%, #2b80df 79%, #2d7fdc 90%, #3a8ae1 98%);
+  border-radius: 7px 7px 0 0;
+  border-bottom: 2px solid var(--xp-orange);
+  border-image: linear-gradient(90deg, rgba(230, 133, 47, 0.15), var(--xp-orange) 30%, var(--xp-orange) 70%, rgba(230, 133, 47, 0.15)) 1;
+  color: #fff; font-family: var(--xp-font); font-weight: 700; font-size: 17px; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.55);
+  letter-spacing: 0.02em;
+}
+html.hub-xp .menu .menu-cat, html.hub-xp .menu button.app { color: #000; border-radius: 0; }
+html.hub-xp .menu .menu-cat .cat-icon { box-shadow: none; }
+html.hub-xp .menu .menu-cat:hover, html.hub-xp .menu button.app:hover,
+html.hub-xp .menu .menu-cat.fly-on, html.hub-xp .menu .menu-cat[aria-expanded="true"] { background: var(--xp-sel); color: #fff; }
+html.hub-xp .menu input { background: #fff; color: #000; border: 1px solid #7f9db9; border-radius: 0; }
+html.hub-xp .menu-fly {
+  --text: #00136b; --muted: #3a4f86;
+  background: #d3e5fa;
+  border: 1px solid #95bdee;
+  border-left: 2px solid var(--xp-orange);
+  border-radius: 0;
+  box-shadow: 3px 4px 12px rgba(0, 0, 0, 0.35);
+}
+html.hub-xp .menu-fly .fly-head { color: #00136b; font-weight: 700; }
+html.hub-xp .menu-fly .fly-sec { border-top-color: #95bdee; }
+html.hub-xp .menu-fly .fly-app { color: #00136b; border-radius: 0; }
+html.hub-xp .menu-fly .fly-app:hover { background: var(--xp-sel); color: #fff; }
+
+/* ---------- right-click menus (shared/ctxmenu) + title-bar tab menu ---------- */
+html.hub-xp .ctx {
+  background: var(--xp-face-hi);
+  border: 1px solid var(--xp-sel);
+  border-radius: 2px;
+  padding: 2px;
+  box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.35);
+}
+html.hub-xp .ctx-item { border-radius: 0; min-height: 30px; }
+html.hub-xp .ctx-item:hover, html.hub-xp .ctx-item:focus-visible, html.hub-xp .ctx-item:focus { background: var(--xp-sel); color: #fff; }
+html.hub-xp .ctx-item:hover .ctx-hint, html.hub-xp .ctx-item:focus .ctx-hint { color: #dfe8f8; }
+html.hub-xp .ctx-item:disabled { background: transparent; color: #6d6d6d; }
+html.hub-xp .gb-tabmenu { background: var(--xp-face-hi); color: #000; border: 1px solid var(--xp-sel); border-radius: 2px; }
+html.hub-xp .gb-tabmenu-it { border-radius: 0; }
+html.hub-xp .gb-tabmenu-it:hover { background: var(--xp-sel); color: #fff; }
+
+/* ---------- dialogs (shared/dialog) ---------- */
+html.hub-xp .uid {
+  --uid-bg: var(--xp-face); --uid-line: var(--xp-line); --uid-text: #000; --uid-muted: #3c3c3c; --uid-bad: #c42b2b;
+  border: 1px solid var(--xp-edge);
+  border-top: 4px solid var(--xp-frame);
+  border-radius: 8px 8px 0 0;
+  box-shadow: 3px 5px 16px rgba(0, 0, 0, 0.40);
+}
+html.hub-xp .uid-in { background: #fff; color: #000; border: 1px solid #7f9db9; border-radius: 0; }
+html.hub-xp .uid-btn {
+  border: 1px solid #003c74; border-radius: 3px;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f3ee 70%, #e3e1d8 100%); color: #000;
+  min-height: 34px; padding: 0 16px;
+}
+html.hub-xp .uid-btn:hover { box-shadow: inset 0 0 0 2px #f8b636; }
+html.hub-xp .uid-btn.primary { color: #000; box-shadow: inset 0 0 0 2px #7aa2e8; }
+html.hub-xp .uid-btn.danger { color: #c42b2b; }
+
+/* ---------- 🎮 Devices + Pooh + 🔔 side panels, camera pop-up ---------- */
+html.hub-xp .hub-side-panel, html.hub-xp #ctrl-popover, html.hub-xp .hp-cam {
+  --hp-bg: var(--xp-face); --hp-head: #d6dff7; --hp-card: #fff; --hp-field: #fff;
+  --hp-line: var(--xp-line); --hp-text: #000; --hp-muted: #4d4d4d;
+  --text: #000; --muted: #4d4d4d; --line: var(--xp-line);
+}
+html.hub-xp .hub-side-panel, html.hub-xp #ctrl-popover { border-left: 1px solid var(--xp-edge); }
+html.hub-xp .hp-cam-card { border: 1px solid var(--xp-edge); border-radius: 8px 8px 0 0; }
+
+/* ---------- received-file cards (hub_notification.css) ---------- */
+html.hub-xp #hub-notify .hn-card, html.hub-xp .hn-more {
+  background: #ffffe1; color: #000;   /* XP balloon yellow */
+  border: 1px solid #000; border-radius: 6px;
+  box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.30);
+}
+html.hub-xp .hn-text, html.hub-xp .hn-meta, html.hub-xp .hn-close { color: #3c3c3c; }
+
+/* menus / dialogs set their own font (system-ui); use the XP font there too */
+html.hub-xp .ctx, html.hub-xp .ctx-item, html.hub-xp .uid, html.hub-xp .uid button, html.hub-xp .uid input, html.hub-xp .gb-tabmenu { font-family: var(--xp-font); }

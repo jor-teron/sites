@@ -1,6 +1,6 @@
 /*
  * Files app look (apps/system/files/files.css). Dark like the Hub; drives left, folder right
- * (grid of big icons or list, round checkboxes, drop highlights, progress bar, viewers);
+ * (grid of big icons or list, selection highlight (H123: no round checkboxes), drop highlights, progress bar, viewers);
  * under 640 px the drives become a row of chips on top. Big tap targets, jelly presses.
  * Dialogs + menu: shared/dialog/dialog.css, shared/ctxmenu/ctxmenu.css.
  */
@@ -136,18 +136,20 @@ button:disabled { opacity: .4; cursor: default; }
 .item-ico { flex: none; text-align: center; }
 .item-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .item-size, .item-date { color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; flex: none; }
+/* H123: select ticks removed — the .item.sel highlight alone shows selection. Legacy round checkbox:
 .chk { position: absolute; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--muted); background: var(--bg);
   display: none; place-items: center; font-size: 13px; color: #0b0d12; z-index: 1; }
 .item.sel .chk { background: var(--accent); border-color: var(--accent); }
 .item.sel .chk::after { content: '\2713'; font-weight: 900; }
 .item:hover .chk, .list.selecting .chk, .item.sel .chk { display: grid; }
 @media (pointer: coarse) { .chk { display: grid; width: 28px; height: 28px; } }
+*/
 
 .list.v-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 6px; align-content: start; }
 .list.v-grid .item { flex-direction: column; justify-content: flex-start; gap: 4px; padding: 12px 6px 10px; min-height: 120px; text-align: center; }
 .list.v-grid .item-ico { font-size: 48px; line-height: 1.1; }
 .list.v-grid .item-name { font-size: .88rem; width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; word-break: break-word; }
-.list.v-grid .chk { top: 6px; left: 6px; }
+/* H123: .list.v-grid .chk { top: 6px; left: 6px; } */
 /* H109: file-type badge on the grid icon (files_view.js badge()); lower right of the 48 px icon */
 .badge { display: none; }
 .list.v-grid .badge { display: block; position: absolute; top: 46px; left: calc(50% + 4px); padding: 0 4px; border-radius: 4px; font: 800 9.5px/15px system-ui, sans-serif;
@@ -156,7 +158,7 @@ button:disabled { opacity: .4; cursor: default; }
 .b-pdf { background: #dc2626 !important; } .b-img { background: #9333ea !important; } .b-audio { background: #db2777 !important; }
 .b-video { background: #ea580c !important; } .b-zip { background: #a16207 !important; } .b-code { background: #ca8a04 !important; color: #1a1400 !important; }
 .b-web { background: #e2541f !important; } .b-data { background: #0891b2 !important; } .b-office { background: #2563eb !important; }
-.list.v-list .item { min-height: 48px; padding: 4px 10px 4px 40px; }
+.list.v-list .item { min-height: 48px; padding: 4px 10px 4px 12px; }   /* H123: was 40px left (room for the tick) */
 .list.v-list .item-ico { font-size: 1.4rem; width: 30px; }
 .list.v-list .item-name { flex: 1; white-space: nowrap; }
 .list.v-list .item-date { width: 150px; text-align: right; }
@@ -174,11 +176,11 @@ button:disabled { opacity: .4; cursor: default; }
   font-size: 11px; line-height: 16px; font-variant-numeric: tabular-nums; pointer-events: none; }
 .list.v-list .thumb-play { width: 16px; height: 16px; line-height: 16px; font-size: 8px; }
 .list.v-list .thumb-dur { display: none; }
-.list.v-list .chk { left: 9px; top: 50%; margin-top: -11px; }
-@media (pointer: coarse) { .list.v-list .chk { margin-top: -14px; } }
+/* H123: .list.v-list .chk { left: 9px; top: 50%; margin-top: -11px; }
+@media (pointer: coarse) { .list.v-list .chk { margin-top: -14px; } } */
 
 /* H107: list column header (sticky; same widths as the row cells) + status bar */
-.lhead { position: sticky; top: -6px; z-index: 2; display: flex; align-items: center; gap: 12px; margin: -6px -8px 4px; padding: 0 20px 0 83px;
+.lhead { position: sticky; top: -6px; z-index: 2; display: flex; align-items: center; gap: 12px; margin: -6px -8px 4px; padding: 0 20px 0 55px;   /* H123: was 83px (tick column gone) */
   min-height: 34px; background: var(--bg); border-bottom: 1px solid var(--line); }
 .hcol { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 6px; border: 0; border-radius: 6px; background: transparent;
   color: var(--muted); font-size: .8rem; font-weight: 600; white-space: nowrap; }
