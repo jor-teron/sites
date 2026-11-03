@@ -2,8 +2,12 @@
 <!--
   Phone launcher, release PH1 — a phone-style home screen for an Android WebView (Jor's home screen).
   Real page is /phone.html (H79: moved to the site root next to hub.html); phone/index.html only redirects here
-  (keeps ?query and #hash). No ?v= labels. H79: loads the Hub link stack (link_core, link_devices, hub_mesh,
-  hub_meshlink) so window.HubMeshLink exists and this device joins the public 00000 lobby, like hub.html.
+  (keeps ?query and #hash). (PH1 … PH13: "No ?v= labels"; PH14 adds ?v=PH14 to the phone files it changed.)
+  H79: loads the Hub link stack so window.HubMeshLink exists and this device joins the public 00000 lobby, like hub.html.
+  PH14: the separate link / mesh tags (link_core, link_devices, hub_mesh, hub_meshlink, hub_line, hub_trust) are
+  replaced by ONE hub/core/hub_core.js (H127: parts boot + link + mesh, parser-blocking, same globals). Only the core
+  and shared/ scripts load here, no desktop-shell file (hub.html's hub/controller, hub_remote.js, hub_panels.js, Game
+  Bar). phone/phone_connect.js = the Connect sheet + #net-dot (host / join / Disconnect, re-implemented for the phone).
   Fully gesture driven: swipe left/right = home pages, swipe up = app drawer, swipe down = quick panel,
   long-press an app = menu, left-edge swipe or Back (history) = close. html/body stay TRANSPARENT so the
   Android wallpaper shows through; #wall is an optional test wallpaper (Settings or ?bg=).
@@ -17,14 +21,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#000000">
-  <title>Phone PH1</title>
+  <!-- <title>Phone PH1</title>   (PH1 … PH13; phone_app.js sets the live title) -->
+  <title>Phone PH14</title>
   <link rel="icon" href="favicon.ico">
-  <link rel="stylesheet" href="phone/phone.css">
+  <!-- <link rel="stylesheet" href="phone/phone.css">   (before PH14) -->
+  <link rel="stylesheet" href="phone/phone.css?v=PH14">
 <link rel="stylesheet" href="shared/dialog/dialog.css"><!-- H81 -->
   <script>try{var s=JSON.parse(localStorage.getItem('phone-launcher-v1')||'{}'),m=(s.settings&&s.settings.th80&&s.settings.theme)||'system',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}try{var a=localStorage.getItem('sites-hub.accent');if(/^#[0-9a-f]{6}$/i.test(a||''))document.documentElement.style.setProperty('--acc',a)}catch(e){}</script>
 </head>
 <body>
 <div id="wall" hidden></div>
+<!-- PH14: network status dot (grey offline · blue public 00000 · green private) + other-device count; tap = Connect.
+     Outside #home so the home gestures don't catch it. -->
+<button id="net-dot" type="button" data-st="off" aria-label="Connect"><span class="nd-c" aria-hidden="true"></span><span class="nd-n"></span></button>
 
 <main id="home" aria-label="Home">
   <div id="pages-vp">
@@ -73,22 +82,27 @@
 
 <script src="hub/core/hub_config.js"></script>
 <script src="hub/core/hub_appindex.js"></script>
-<!-- H79: Hub link stack (DOM-free), same order as hub.html; no private Mesh at startup (H73) -->
+<!-- H79: Hub link stack (DOM-free), same order as hub.html; no private Mesh at startup (H73)   (H79 … PH13)
 <script src="shared/link/link_core.js"></script>
 <script src="shared/link/link_devices.js"></script>
 <script src="shared/link/hub_mesh.js"></script>
-<script src="hub/link/hub_meshlink.js"></script>
+<script src="hub/link/hub_meshlink.js"></script> -->
 <!-- H81: Hub dialogs (app frames ask this page to draw UiDialog; bridge sets window.__hubDialogHost) and notices -->
 <script src="shared/dialog/dialog.js"></script>
 <script src="hub/core/hub_dialog_bridge.js"></script>
 <script src="hub/core/hub_dnd.js"></script><!-- H82 -->
 <script src="phone/phone_notify.js"></script>
 <script src="hub/core/hub_attention.js"></script><!-- H82 -->
+<!-- PH14: the whole Hub core (boot + link + mesh, incl. hub_line H91 and hub_trust H97) in one tag, after the dialogs
+     and notices like hub.html (link part after the notifications). Every global exists for the next tag. -->
+<script src="hub/core/hub_core.js"></script>
 <script src="phone/phone_save.js"></script>
 <script src="phone/phone_apps.js"></script>
 <script src="phone/phone_gesture.js"></script>
-<script src="phone/phone_app.js"></script>
-<script src="hub/link/hub_line.js"></script><!-- H91: Hub Line -->
-<script src="hub/link/hub_trust.js"></script><!-- H97: HubTrust -->
+<!-- <script src="phone/phone_app.js"></script>   (before PH14) -->
+<script src="phone/phone_app.js?v=PH14"></script>
+<script src="phone/phone_connect.js?v=PH14"></script><!-- PH14: Connect sheet + status dot (waits for HubCore.ready) -->
+<!-- <script src="hub/link/hub_line.js"></script>   H91: Hub Line   (before PH14; now in hub_core.js part 'mesh')
+<script src="hub/link/hub_trust.js"></script>   H97: HubTrust   (before PH14; now in hub_core.js part 'mesh') -->
 </body>
 </html>
