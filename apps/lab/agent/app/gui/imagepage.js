@@ -1,5 +1,5 @@
 /* Agent — app/gui/imagepage.js: the Image page (AG14; AG15: its own page image.html, provider tabs). HR.imgpage.
-   Tabs = HR.imgProviders in ORDER (pollinations, deepinfra, ollama; AG16 adds gemini, openrouter), a tab only when
+   Tabs = HR.imgProviders in ORDER (AG16: pollinations, gemini, deepinfra, openrouter, ollama), a tab only when
    provider.ready(). Last tab: setting `imageProvider`; each tab's last model: `imageModel_<id>` (Ollama falls back to the
    AG14 `imageModel`). Steps (`imageSteps`, default 8) shown only when the provider supports them. Generate / ■ Stop
    (AbortController); progress 'step c / t' (Ollama) or an indeterminate bar. Cooldown (Pollinations 50 s): last start
@@ -9,7 +9,7 @@
    Gallery (HR.imgstore, IndexedDB 'agent-images'): newest first; tap = large view with ⬇ Download and 🗑 Delete. */
 HR.imgpage = (function () {
   var $ = function (id) { return document.getElementById(id); }, ctrl = null, urls = [], cur = null, tick = null, prov = '';
-  var ORDER = ['pollinations', 'deepinfra', 'ollama'], PULL = 'ollama pull x/z-image-turbo';
+  var ORDER = ['pollinations', 'gemini', 'deepinfra', 'openrouter', 'ollama'], PULL = 'ollama pull x/z-image-turbo';
   function P() { return HR.imgProviders[prov]; }
   function tabs() { return ORDER.filter(function (id) { var p = HR.imgProviders[id]; try { return p && p.ready(); } catch (e) { return false; } }); }
   function help(e) {
@@ -18,8 +18,9 @@ HR.imgpage = (function () {
       case 'disabled': return ['🖼 Image generation is off in this Ollama', e.message + ' — Ollama 0.32.6 and later have it switched off for now. Use Ollama 0.32.5 on macOS, or try the Pollinations tab.'];
       case 'nomodel': return ['🖼 No image model yet', (e.message || 'No image model') + '. Install one (or x/flux2-klein), or try the Pollinations tab:'];
       case 'unreachable': return ['📡 Can\'t reach ' + who, e.message + (prov === 'ollama' ? ' Ollama must be running (OLLAMA_ORIGINS must allow this page).' : '')];
-      case 'nokey': return ['🔑 Key problem', e.message + ' Check the key in Hub › API Keys › DeepInfra.'];
-      case 'nocredit': return ['💳 No credit left', e.message + ' Add credit on deepinfra.com, or use the free Pollinations tab.'];
+      case 'nokey': return ['🔑 Key problem', e.message + ' Check the key in Hub › API Keys › ' + who + '.'];
+      case 'quota': return ['🚫 Image generation blocked', e.message + ' Try the free Pollinations tab, or turn on billing for the Gemini key.'];
+      case 'nocredit': return ['💳 No credit left', e.message + ' Add credit on the provider\'s site, or use the free Pollinations tab.'];
       case 'busy': return ['⏳ Busy right now', e.message];
       case 'noimage': return ['🖼 No picture came back', e.message];
       default: return ['😕 That didn\'t work', e.message || 'Something went wrong.'];

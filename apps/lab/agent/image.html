@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   Agent — image.html: the Image page (AG15; was the AG14 slide-over inside agent.html). Own URL, Back works; '← Chat' goes to agent.html.
-  Provider tabs (only ready ones): Pollinations (free, no key, 50 s cooldown), DeepInfra (when a DeepInfra key exists), Ollama.
+  Provider tabs (only ready ones): Pollinations (free, no key, 50 s cooldown), Gemini, DeepInfra, OpenRouter (each when its key exists; AG16), Ollama.
   Same settings (localStorage 'agent.settings'), keys (Hub first, app/core/hubkeys.js) and gallery (IndexedDB 'agent-images').
   Scripts: hubkeys, presets, registry (keys + Ollama URL), settings (HR.set only), imagegen + img_* providers, imagestore, imagepage.
 -->
@@ -53,7 +53,9 @@
 <script src="app/gui/settings.js"></script>
 <script src="app/models/imagegen.js"></script>
 <script src="app/models/img_pollinations.js"></script>
+<script src="app/models/img_gemini.js"></script>
 <script src="app/models/img_deepinfra.js"></script>
+<script src="app/models/img_openrouter.js"></script>
 <script src="app/models/img_ollama.js"></script>
 <script src="app/storage/imagestore.js"></script>
 <script src="app/gui/imagepage.js"></script>
