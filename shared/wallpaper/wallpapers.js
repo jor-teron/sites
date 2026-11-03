@@ -8,9 +8,12 @@
  * (file://, no fetch) and the wallpaper paints at once on start (no flash).
  * The wallpaper uses the image URL directly (background-image, cover); nothing is copied.
  * xp_small.jpg is only the thumbnail of xp.jpg.
+ * H104: hub_hills.jpg (Green hills) is our own drawing (an SVG rendered to JPG, not the Microsoft picture);
+ *   it is the default wallpaper of the XP theme (window.HUB_THEME_WALLPAPER in hub/drives/hub_wallpapers.js).
  */
 window.HUB_PICTURES = [
   ['xp.jpg', 'Hills', 'xp_small.jpg', 0],
+  ['hub_hills.jpg', 'Green hills', '', 0],   // H104: XP theme default
   ['bess.jpg', 'Daisy', '', 0],
   ['dalia.jpg', 'Dahlia', '', 0],
   ['dog_01.jpg', 'Puppy', '', 1],
