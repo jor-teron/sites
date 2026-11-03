@@ -16,6 +16,10 @@
  *           panel, shared/google/gdrive_connect.js, does that). gdriveState() → 'setup' (no client
  *           id in google_config.js) | 'connect' | 'renew' (phone / popup sign-in ran out) | 'ok'.
  *           R9b: the handle is the "hub" folder in My Drive (GDriveFs.hubRoot()). Sign-in changes redraw like drive changes.
+ *   webdav  "Network drive" (H116): each saved WebDAV server (shared/fs/webdav_accounts.js), only when
+ *           webdav_fs.js + webdav_accounts.js are loaded. Ids 'webdav:<n>', listed after Google Drive;
+ *           handle(id) = WebDavFs.root(account); access() 'granted' (a bad password shows up as an error
+ *           when the folder is opened); allow() → true; remove(id) deletes the saved account (no files touched).
  * Changes are announced on BroadcastChannel 'sites-fs' ({type:'drives'}) so every open page redraws.
  *
  * API window.FsDrives:
@@ -78,10 +82,16 @@
     if (hasG()) out.push({ id: 'gdrive', name: 'Google Drive', kind: 'gdrive' });
     (await folders()).sort((a, b) => (a.added || 0) - (b.added || 0))
       .forEach((f) => out.push({ id: f.id, name: f.name, kind: 'folder' }));
+    if (hasW()) {
+      const at = out.findIndex((d) => d.kind === 'folder');
+      const w = window.WebDavAccounts.list().map((a) => ({ id: a.id, name: a.name || 'Network drive', kind: 'webdav' }));
+      out.splice(at < 0 ? out.length : at, 0, ...w);   // right after Google Drive
+    }
     return out;
   }
   async function rec(id) { return (await folders()).find((f) => f.id === id) || null; }
   async function handle(id) {
+    if (isW(id)) { const a = hasW() && window.WebDavAccounts.get(id); return a ? window.WebDavFs.root(a) : null; }
     if (id === 'gdrive') return hasG() && gdriveState() === 'ok' ? window.GDriveFs.hubRoot() : null;   // the "hub" folder
     if (id === 'local') {
       if (!hasLocal) return null;
@@ -92,6 +102,7 @@
     return r ? r.handle : null;
   }
   async function access(id) {
+    if (isW(id)) return hasW() && window.WebDavAccounts.get(id) ? 'granted' : 'denied';
     if (id === 'gdrive') return gdriveState() === 'ok' ? 'granted' : 'prompt';
     if (id === 'local') return hasLocal ? 'granted' : 'denied';
     const h = await handle(id);
@@ -99,6 +110,7 @@
     try { return h.queryPermission ? await h.queryPermission({ mode: 'readwrite' }) : 'granted'; } catch (_) { return 'prompt'; }
   }
   async function allow(id) {
+    if (isW(id)) return !!(hasW() && window.WebDavAccounts.get(id));
     if (id === 'gdrive') return gdriveState() === 'ok';
     const h = await handle(id);
     if (!h) return false;
@@ -119,9 +131,12 @@
   }
   async function remove(id) {
     if (id === 'local' || id === 'gdrive') return;
+    if (isW(id)) { if (hasW()) window.WebDavAccounts.remove(id); changed(); return; }
     await tx('readwrite', (s) => s.delete(id));
     changed();
   }
+  function hasW() { return !!(window.WebDavFs && window.WebDavAccounts); }
+  const isW = (id) => /^webdav:/.test(String(id));
   function hasG() { return !!(window.GDriveFs && window.GoogleAuth); }
   function gdriveState() {
     if (!hasG()) return '';
