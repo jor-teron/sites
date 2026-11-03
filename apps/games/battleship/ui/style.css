@@ -1,0 +1,68 @@
+/*
+ * Battleship — styles (SHIP-1). Follows the shared theme (html.dark).
+ * Portrait: info / grids (big over small) / buttons stacked. Wide screens: the two grids side by side.
+ * Short landscape (phones): info + buttons in a left column, grids on the right.
+ * Grid sizes are set by JS (largest square that fits each .wrap).
+ */
+:root { --bg: #f1f5f9; --panel: #ffffff; --text: #0f172a; --muted: #475569; --border: #cbd5e1; --accent: #2563eb; }
+html.dark { --bg: #0f172a; --panel: #1e293b; --text: #f1f5f9; --muted: #cbd5e1; --border: #334155; --accent: #60a5fa; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; height: 100dvh; background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overflow: hidden; user-select: none; }
+.container { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 6px;
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
+.side { flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; }
+.side-info { flex-direction: column; gap: 3px; text-align: center; }
+.title { font-size: 1.25rem; }
+.status { font-weight: 600; min-height: 1.3em; font-size: .95rem; }
+.note { min-height: 1.2em; font-size: .85rem; color: var(--muted); }
+.score { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
+.chip { display: flex; gap: 4px; align-items: center; padding: 2px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); font-size: .8rem; }
+.boards { flex: 1 1 auto; min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.wrap { min-height: 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#bigWrap { flex: 3 1 0; } #miniWrap { flex: 2 1 0; }
+.cap { font-size: .75rem; font-weight: 600; color: var(--muted); line-height: 1.2; }
+canvas { border-radius: 6px; touch-action: none; display: block; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+.tray { display: none; flex: 0 0 auto; flex-wrap: wrap; gap: 5px; justify-content: center; align-content: center; }
+.placing .tray { display: flex; } .placing #miniWrap { display: none; }
+.tray button { font-size: .8rem; padding: 5px 8px; }
+.tray button.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+.tray button.done { opacity: .6; }
+.tray i { display: inline-block; height: 8px; background: #64748b; border-radius: 4px; margin-left: 4px; vertical-align: middle; }
+button, select { font: inherit; font-size: .9rem; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--panel); color: var(--text); cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:disabled { opacity: .45; cursor: default; }
+button.link { background: none; border-color: transparent; color: var(--muted); text-decoration: underline; }
+[hidden] { display: none !important; }
+.gear-slot { display: inline-flex; align-items: center; flex: 0 0 auto; }
+.gear-slot a { position: static !important; display: inline-flex !important; visibility: visible !important; }
+.help, .cover { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; padding: 12px; z-index: 10; }
+.cover { background: var(--bg); z-index: 20; }
+.help-card { background: var(--panel); color: var(--text); border-radius: 12px; padding: 16px 18px; max-width: 460px; max-height: 100%; overflow: auto; }
+.cover .help-card { text-align: center; border: 1px solid var(--border); }
+.cover p { margin: 4px 0 14px; line-height: 1.4; }
+.help-card h2 { font-size: 1.1rem; margin-bottom: 8px; }
+.help-card ul { padding-left: 18px; margin-bottom: 12px; font-size: .9rem; line-height: 1.4; }
+.help-card li { margin-bottom: 5px; }
+@media (orientation: landscape) { .boards { flex-direction: row; } .placing .tray { flex-direction: column; flex-wrap: nowrap; max-width: 150px; } }
+@media (orientation: landscape) and (max-height: 560px) {
+  .container { display: grid; grid-template-columns: 172px 1fr; grid-template-rows: auto 1fr; gap: 6px 8px; }
+  .side-info { grid-column: 1; grid-row: 1; }
+  .side-btns { grid-column: 1; grid-row: 2; flex-direction: row; flex-wrap: wrap; align-content: flex-start; justify-content: space-between; overflow-y: auto; min-height: 0; gap: 4px; }
+  .boards { grid-column: 2; grid-row: 1 / span 2; }
+  .title { font-size: 1rem; } .status { font-size: .8rem; } .note { font-size: .72rem; }
+  .chip { font-size: .72rem; padding: 1px 7px; }
+  button { width: calc(50% - 2px); padding: 4px 6px; font-size: .78rem; }
+  select { width: 100%; padding: 4px 6px; font-size: .78rem; }
+  .tray button { width: auto; }
+}
+@media (orientation: portrait) and (max-height: 700px) {
+  .container { gap: 4px; }
+  .title { font-size: .95rem; } .status { font-size: .82rem; } .note { font-size: .7rem; }
+  .chip { font-size: .68rem; padding: 1px 6px; }
+  .side-btns { gap: 4px; }
+  button, select { padding: 4px 8px; font-size: .78rem; }
+  .tray { gap: 3px; } .tray button { padding: 3px 6px; font-size: .7rem; } .tray i { display: none; }
+  .boards { gap: 3px; } .cap { font-size: .68rem; }
+}
