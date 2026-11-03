@@ -14,13 +14,18 @@
  *   heading here now just points there (kept below as comments).
  * H53: a device joined to a Hub (Connect QR / join code) follows the choice too (it used to be forced into Phone);
  *   the note says so, and what Auto does there (Desktop on a big screen, no mouse needed).
+ * H65: Computer break (#desktop/break), after Screen saver: On / Off switch (key 'breakOn', '1' = on, default Off),
+ *   Work minutes 5..120 (key 'breakWork', '' = 25) and Break minutes 1..30 (key 'breakLen', '' = 5); a status line.
+ *   The Hub's hub/core/hub_break.js runs the timer and draws the lock (both modes; synced in the Shared group).
+ *   Turning it off is refused while a break runs (the lock covers Settings anyway).
  */
 (function () {
   'use strict';
   const S = window.SettingsStore, ui = window.Settings.ui;
   Settings.add({
     id: 'desktop', title: 'Desktop', icon: '\uD83D\uDDA5\uFE0F',
-    render(pane) {
+    // render(pane) {   (before H65)
+    render(pane, sub) {   // H65: sub 'break' scrolls to Computer break
       const note = ui.note('');
       const showNow = () => {
         const h = S.hub();
@@ -135,13 +140,66 @@
       const HOME_OLD = 'This Hub window is still running an older build: reload the Hub (Update ready) and the Home button will open App Hub.';
       const hubHasHome = () => { try { return !window.parent || window.parent === window || typeof window.parent.__hubHome === 'function'; } catch (_) { return true; } };
       const homeNote = ui.note(HOME_NOTE + (S.get('homeBtn') === 'apphub' && !hubHasHome() ? ' ' + HOME_OLD : ''));
+      // H65: Computer break (hub/core/hub_break.js): work N minutes, then the Hub locks for M minutes, no Skip
+      const brHub = () => { const h = S.hub(); return (h && h.HubBreak) || null; };
+      const brNorm = (v, def, lo, hi) => {   // same rules as hub_break.js
+        const s = String(v == null ? '' : v).trim();
+        if (!/^\d+$/.test(s)) return def;
+        return Math.max(lo, Math.min(hi, parseInt(s, 10)));
+      };
+      const BR = { work: { key: 'breakWork', def: 25, lo: 5, hi: 120, label: 'Work for' },
+        len: { key: 'breakLen', def: 5, lo: 1, hi: 30, label: 'Break for' } };
+      const brTitle = ui.title('Computer break');
+      const brStatus = ui.note('');
+      const brPaint = () => {
+        const b = brHub(), st = b && b.state();
+        if (S.get('breakOn') !== '1') brStatus.textContent = 'Off. When on, the Hub locks for a short break after each work period. There is no Skip; it unlocks by itself.';
+        else if (!st) brStatus.textContent = 'On. Open Settings from the Hub to see the time to the next break.';
+        else if (st.locked) brStatus.textContent = 'On a break now.';
+        else if (st.nextBreakIn != null) brStatus.textContent = 'On. Next break in ' + Math.max(1, Math.ceil(st.nextBreakIn / 60000)) + ' min.';
+        else brStatus.textContent = 'On.';
+      };
+      const brSwitch = ui.switch('Computer break', 'Work, then the whole Hub locks for a break with a countdown. Other tabs and apps are not locked',
+        S.get('breakOn') === '1', (v) => {
+          const b = brHub();
+          if (!v && b && b.locked && b.locked()) { Settings.open('desktop/break'); return; }   // no turning off mid-break
+          S.set('breakOn', v ? '1' : '');
+          setTimeout(brPaint, 50);
+        });
+      brSwitch.dataset.key = 'breakOn';
+      const brRow = (o) => {
+        const l = ui.el('label', 'saver-pick saver-min break-min');
+        const i = ui.el('input');
+        Object.assign(i, { type: 'number', min: o.lo, max: o.hi, step: 1, inputMode: 'numeric' });
+        i.setAttribute('aria-label', o.label + ' (minutes)');
+        i.dataset.key = o.key;
+        i.value = brNorm(S.get(o.key, ''), o.def, o.lo, o.hi);
+        l.append(ui.el('span', 'break-lbl', o.label), i, ui.el('span', '', 'minutes'), ui.el('small', 'opt-note', o.lo + '\u2013' + o.hi + ', default ' + o.def));
+        const save = () => {
+          const n = brNorm(i.value, o.def, o.lo, o.hi);
+          i.value = n;
+          if (S.get(o.key, '') !== (n === o.def ? '' : String(n))) S.set(o.key, n === o.def ? '' : String(n));
+          setTimeout(brPaint, 50);
+        };
+        i.addEventListener('change', save);
+        i.addEventListener('blur', save);
+        return l;
+      };
+      const brWork = brRow(BR.work), brLen = brRow(BR.len);
+      brPaint();
+      const brT = setInterval(() => { if (!brStatus.isConnected) clearInterval(brT); else brPaint(); }, 15000);
       // pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home screen'), showFiles, ui.title('Home button (Phone mode)'), home,
       //   homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), meter,
       //   ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev);   // (before H52)
+      // pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home screen'), showFiles, showTiles, ui.title('Home button (Phone mode)'), home,
+      //   homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), barLink,
+      //   ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev);   // H52: Taskbar → link to Hub bar   (before H65)
       pane.append(ui.title('Screen mode'), mode, note, openMax, ui.title('Home screen'), showFiles, showTiles, ui.title('Home button (Phone mode)'), home,
         homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), barLink,
-        ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev);   // H52: Taskbar → link to Hub bar
+        ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev,
+        brTitle, brSwitch, brWork, brLen, brStatus);   // H65: + Computer break
       showNow();
+      if (sub === 'break') setTimeout(() => brTitle.scrollIntoView({ block: 'start' }), 50);   // H65: #desktop/break
     }
   });
 })();

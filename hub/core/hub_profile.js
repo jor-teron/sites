@@ -763,6 +763,8 @@
    *   H64: Auto theme themeAuto / themeSunrise / themeSunset / themeOffset = Shared (not listed), with theme;
    *        a receiver in Auto rewrites theme from its own clock at once (hub_autotheme.js)
    *   H66: the Hub bar barNotif = Shared (not listed); dnd never synced; notifs (the history) is in EXCLUDE
+   *   H65: Computer break breakOn / breakWork / breakLen = Shared (not listed); the running timer is kept in
+   *        'hub-break.*' keys (outside 'sites-hub.'), so it is never in a profile or a sync
    *   Never synced: wmMode, H63 eyeNow (the 🌙 override); (each device's own Screen mode choice; a phone must not be switched to Desktop).
    * Keys are never part of a sync payload (exportData({ keys: false }); diffData ignores "keys"). (H29.1)
    * H29.2: keys are, when the sender ticks 'Include API keys' (exportData({ keys: true })) and the receiver
