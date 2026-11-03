@@ -14,6 +14,7 @@
   AG11: 📷 photo attach (Vision) and a Chat | Image toggle (Image Gen) next to the composer.
   AG12: a tab per provider (app/models/presets.js), grouped model picker with search + Recent (app/gui/pickgroups.js).
   AG14: 🖼 Image page (app/gui/imagepage.js, gallery in IndexedDB via app/storage/imagestore.js); the composer Chat | Image toggle is gone.
+  AG15: 🖼 is a link to image.html, the Image page's own page (provider tabs Pollinations / DeepInfra / Ollama).
   AG10: Settings = 8 collapsible cards (ui/settings.css); inside the Hub key / base fields hide behind "Keys come from Hub › API Keys".
 -->
 <html lang="en">
@@ -29,7 +30,6 @@
   <link rel="stylesheet" href="ui/steps.css">
   <link rel="stylesheet" href="ui/chats.css">
   <link rel="stylesheet" href="ui/settings.css">
-  <link rel="stylesheet" href="ui/imagepage.css">
   <script src="../../../shared/theme/hub_theme.js"></script>
   <script>try{var s=JSON.parse(localStorage.getItem('agent.settings')||localStorage.getItem('harness.settings')||'{}'),m=s.theme||'dark';document.documentElement.dataset.ht=m==='light'?'light':m==='system'?(localStorage.getItem('sites-hub.theme')==='light'?'light':'dark'):'dark'}catch(e){document.documentElement.dataset.ht='dark'}</script>
 </head>
@@ -40,7 +40,7 @@
   <button type="button" class="chip mchip" id="modelChip" aria-haspopup="dialog">Loading…</button>
   <span class="grow"></span>
   <button type="button" class="chip" id="btnFolder" hidden>📁 Pick folder</button>
-  <button type="button" class="hb" id="btnImage" title="Image" aria-label="Make a picture">🖼</button>
+  <a class="hb" id="btnImage" href="image.html" title="Image" aria-label="Make a picture">🖼</a>
   <button type="button" class="hb" id="btnSteps" title="Steps" aria-label="Show steps">☰<span id="stepCount" class="badge"></span></button>
   <button type="button" class="hb" id="btnClear" title="New chat" aria-label="New chat">＋</button>
   <button type="button" class="hb" id="btnSet" title="Settings" aria-label="Settings">⚙</button>
@@ -70,28 +70,6 @@
     <div id="stepList" class="st-list"></div>
   </aside>
 </div>
-<section id="imgPage" class="imgpage" aria-label="Image" hidden>
-  <div class="ig-top"><h2>🖼 Image</h2><span class="grow"></span><button type="button" class="hb ig-x" id="imgClose" title="Back to chat" aria-label="Back to chat">✕</button></div>
-  <div class="ig-body">
-    <textarea id="imgPrompt" class="inp ig-prompt" rows="3" placeholder="Describe a picture to make…" aria-label="Picture prompt"></textarea>
-    <div class="ig-opts">
-      <label class="lbl">Model <select id="imgModel" class="inp" aria-label="Image model"></select></label>
-      <label class="lbl">Steps <input id="imgSteps" class="inp num" type="number" min="1" max="50" step="1"></label>
-      <span class="ig-size">📐 1024 × 1024</span>
-    </div>
-    <button type="button" class="hb ig-go" id="imgGo">✨ Generate</button>
-    <div id="imgBar" class="ig-bar" hidden><span class="mt-bar"><i id="imgFill"></i></span><span id="imgStep" class="mt-t"></span></div>
-    <div id="imgCard" class="ig-card" hidden></div>
-    <h3 class="ig-h">Gallery</h3>
-    <p id="imgEmpty" class="hint">No pictures yet. They stay in this browser, apart from your chats.</p>
-    <div id="imgGrid" class="ig-grid"></div>
-  </div>
-</section>
-<dialog id="imgView" class="dlg ig-view" aria-label="Picture">
-  <img id="imgBig" alt="">
-  <p id="imgCap" class="hint"></p>
-  <div class="ec-row"><a id="imgDl" class="hb wide ig-a" href="#">⬇ Download</a><button type="button" class="hb wide" id="imgDel">🗑 Delete</button><button type="button" class="hb wide" id="imgViewX">✕ Close</button></div>
-</dialog>
 <dialog id="settings" class="dlg setdlg" aria-labelledby="setTitle">
   <div class="dlg-head"><h2 id="setTitle">Settings</h2><button type="button" class="hb" id="setClose" aria-label="Close">✕</button></div>
   <div class="set-grid">
@@ -189,14 +167,12 @@
 <script src="app/models/openai.js"></script>
 <script src="app/models/gemini.js"></script>
 <script src="app/models/browser.js"></script>
-<script src="app/models/imagegen.js"></script>
 <script src="app/storage/fs.js"></script>
 <script src="app/storage/logs.js"></script>
 <script src="app/storage/threadfmt.js"></script>
 <script src="app/storage/threads.js"></script>
 <script src="app/storage/usage.js"></script>
 <script src="app/storage/trash.js"></script>
-<script src="app/storage/imagestore.js"></script>
 <script src="app/tools/time.js"></script>
 <script src="app/tools/files.js"></script>
 <script src="app/tools/memory.js"></script>
@@ -214,7 +190,6 @@
 <script src="app/gui/hubrows.js"></script>
 <script src="app/gui/browsercard.js"></script>
 <script src="app/gui/attach.js"></script>
-<script src="app/gui/imagepage.js"></script>
 <script src="app/gui/chat.js"></script>
 <script src="app/gui/chats.js"></script>
 <script src="app/gui/chatsearch.js"></script>

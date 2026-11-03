@@ -1,21 +1,32 @@
-/* Agent — ui/imagepage.css: AG14 Image page slide-over, gallery grid and large view (bouncy like components.css). */
-.imgpage{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
-.imgpage.on{transform:none}.imgpage[hidden]{display:none}
-.ig-top{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}.ig-top h2{margin:0;font-size:19px}
-.hb.ig-x{min-width:44px;height:44px;font-size:20px}
-.ig-body{flex:1;overflow:auto;padding:14px;max-width:900px;width:100%;margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column;gap:12px}
+/* Agent — ui/imagepage.css: the Image page (AG14 slide-over; AG15: own page image.html, provider tabs, cooldown,
+   indeterminate bar, phone width), gallery grid and large view (bouncy like components.css). */
+body.igbody{min-height:100vh;display:flex;flex-direction:column}
+.hb.ig-back{height:44px;padding:0 14px;font-size:17px;font-weight:600}
+.ig-body{flex:1;overflow:auto;padding:14px;max-width:900px;width:100%;margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
+.ig-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px}
+.ig-tab{flex:0 0 auto;min-height:48px;padding:0 18px;border-radius:24px;border:1.5px solid var(--line);background:var(--card);color:inherit;font:inherit;font-size:16px;font-weight:600;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.ig-tab:active{transform:scale(.92)}.ig-tab.on{background:var(--acc);border-color:var(--acc);color:var(--ink);transform:scale(1.04)}
+.ig-note{margin:-4px 0 0}
 .ig-prompt{width:100%;min-height:96px;font-size:17px;resize:vertical;box-sizing:border-box}
-.ig-opts{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.ig-opts select{min-width:180px;height:40px}.ig-size{color:var(--mut);font-size:14px}
-.hb.ig-go{height:56px;font-size:19px;font-weight:700;background:var(--acc);border-color:var(--acc);color:var(--ink);border-radius:14px}
+.ig-prompt.shake{animation:igshake .35s}
+@keyframes igshake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.ig-opts{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.ig-opts select{min-width:180px;max-width:100%;height:44px}.ig-size{color:var(--mut);font-size:14px}
+.ig-opts .lbl[hidden]{display:none}
+.hb.ig-go{height:58px;font-size:19px;font-weight:700;background:var(--acc);border-color:var(--acc);color:var(--ink);border-radius:14px;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.hb.ig-go:active{transform:scale(.95)}
 .hb.ig-go.stop{background:var(--err);border-color:var(--err)}
-.ig-bar[hidden],.ig-card[hidden]{display:none}.ig-bar{display:flex;align-items:center;gap:8px}.ig-bar .mt-bar{flex:1}
+.hb.ig-go.wait,.hb.ig-go:disabled{opacity:.6;cursor:default}
+.ig-bar[hidden],.ig-card[hidden]{display:none}.ig-bar{display:flex;align-items:center;gap:8px}.ig-bar .mt-bar{flex:1;overflow:hidden;position:relative}
+.ig-bar.indet .mt-bar i{width:35%!important;position:absolute;animation:igslide 1.2s ease-in-out infinite}
+@keyframes igslide{from{left:-35%}to{left:100%}}
 .ig-card{border:1.5px solid var(--line);border-radius:14px;background:var(--card);padding:12px 14px;animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
 .ig-card h3{margin:0 0 6px}.ig-card p{margin:0 0 10px}
 .ig-cmd{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.ig-cmd code{padding:8px 10px;border-radius:8px;background:var(--bg);user-select:all;font-size:15px}
-.ig-cmd .hb{height:40px}
+.ig-cmd .hb{height:44px}
 .ig-h{margin:6px 0 0}
 .ig-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
 .ig-th{padding:0;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card);aspect-ratio:1;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
 .ig-th:hover{transform:scale(1.05)}.ig-th:active{transform:scale(.92)}.ig-th img{width:100%;height:100%;object-fit:cover;display:block}
 .ig-view{max-width:min(96vw,900px)}.ig-view img{max-width:100%;max-height:70vh;display:block;margin:0 auto;border-radius:10px}
 .ig-view .hb{height:44px}.ig-a{display:inline-flex;align-items:center;text-decoration:none;color:inherit}
+@media (max-width:520px){.ig-body{padding:10px}.ig-opts select{min-width:0;width:100%}.ig-opts .lbl{flex:1 1 100%}}

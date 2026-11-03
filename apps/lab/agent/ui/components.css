@@ -106,3 +106,4 @@
 .pk-grp{display:flex;flex-direction:column;gap:4px}.pk-grp>summary{min-height:40px;display:flex;align-items:center;padding:0 10px;font-size:13px;font-weight:600;color:var(--mut);cursor:pointer;border-radius:10px;user-select:none}
 .pk-grp>summary:hover{background:var(--card)}.pk-grp[open]>summary{color:var(--acc)}.pk-grp .pk-row{margin-left:10px}
 .pick .pk-list{gap:4px}
+a.hb{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;color:inherit;box-sizing:border-box}   /* AG15: 🖼 and ← Chat are links */

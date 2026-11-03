@@ -5,13 +5,14 @@
    (query stripped); offline, the cached copy is served (pages fall back to agent.html). Install precaches the
    shell list (agent.html's local src= / href=, + index.html, agent.html, the icon). Activate deletes the old
    'agent-shell-*' / 'agent-vendor-*' caches once. 'agent-browser-model' (Browser model files) is never touched here.
+   AG15: the shell list also reads image.html (the Image page); VER only changes this file so browsers re-install.
    Never cached: non-GET, anything cross-origin, and same-origin paths outside this folder except the shell list. */
-var FILES = 'agent-files';
+var FILES = 'agent-files', VER = 'agent-ag15', PAGES = ['agent.html', 'image.html'];   /* AG15: VER bump re-installs; image.html's files precached too */
 var BASE = new URL('./', self.location.href).href;
 function bare(u) { var x = new URL(u); x.search = ''; x.hash = ''; return x.href; }
 function shellList() {
-  return fetch(BASE + 'agent.html', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (h) {
-    var urls = ['agent.html', 'index.html', 'agent_icon.png'], re = /\s(?:src|href)="([^"#:]+)"/g, m;
+  return Promise.all(PAGES.map(function (p) { return fetch(BASE + p, { cache: 'no-store' }).then(function (r) { return r.text(); }).catch(function () { return ''; }); })).then(function (hs) {
+    var urls = PAGES.concat(['index.html', 'agent_icon.png']), re = /\s(?:src|href)="([^"#:]+)"/g, m, h = hs.join('\n');
     while ((m = re.exec(h))) if (!/^(\/\/|data:|mailto:)/.test(m[1])) urls.push(m[1]);
     return urls.map(function (u) { return bare(new URL(u, BASE).href); }).filter(function (u, i, a) { return a.indexOf(u) === i; });
   });

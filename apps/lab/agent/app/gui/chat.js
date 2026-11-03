@@ -9,7 +9,7 @@
    AG4: render() redraws the open chat (HR.chats switches chats; ＋ / New chat lives in app/gui/chats.js).
    AG5: retry(m) drops the last reply (and its tool steps) and re-runs; resend(m, text) edits a user message, drops
    everything after it and re-runs (both via run()); token counts land on the reply as usage {p, o}; HR.meter updates.
-   AG11: 📷 photos (HR.attach) ride on the user message as m.images. AG14: image gen moved to the Image page (imagepage.js).
+   AG11: 📷 photos (HR.attach) ride on the user message as m.images. AG14: image gen moved to the Image page (imagepage.js; AG15: image.html).
    AG7: every model call goes to HR.usage; live shell output -> chip.live; write_file undo info -> chip / step Undo. */
 HR.chat = (function () {
   var log, input, sendBtn, ctrl = null, curTool = null, LONG = 20000;
@@ -102,7 +102,7 @@ HR.chat = (function () {
   function grow() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 180) + 'px'; }
   function init() {
     log = document.getElementById('log'); input = document.getElementById('input'); sendBtn = document.getElementById('btnSend');
-    HR.view.init(log); if (HR.attach) HR.attach.init(); if (HR.imgpage) HR.imgpage.init();
+    HR.view.init(log); if (HR.attach) HR.attach.init();
     sendBtn.onclick = send;
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
     input.addEventListener('input', grow);
