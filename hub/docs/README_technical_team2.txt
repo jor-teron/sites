@@ -693,6 +693,14 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - No Photo Editor v2 (`pe_*.js`) changes.
 - Test (headless puppeteer): 37/37. Ctrl+W on a clean photo closes directly; edited → dialog; Don't save / Esc / Save(.hps then close) paths; opened .hps is clean; menu item; Ctrl+S / Ctrl+E / Ctrl+P / E unchanged; tip measured at ~101 ms, 500 / 1000 ms delays, Off, touch, light theme; no page errors.
 
+### 1.40 My Day Auto theme follows the Hub, release MD3
+- `apps/tools/dashboard/`. Settings › Theme › Auto used to follow only the device `prefers-color-scheme`, even inside the Hub (parked by Team 1 as MD3).
+- `dashboard_core.js` `applyTheme()`: Auto → inside the Hub (`MyDay.inHub()`: framed by a same-origin parent) reads `localStorage['sites-hub.theme']`: 'dark' = Dark, anything else (incl. unset) = Light, the Hub default since H60a. The Hub's own Auto (H64) writes the effective light / dark into that key, so it follows too. Standalone → device `prefers-color-scheme`, as before. Light / Dark picks unchanged. Old function kept as a `legacy` comment.
+- Live (`dashboard_app.js`): `storage` event for `sites-hub.theme` / `myday.theme`, a same-origin `{type:'hub-prefs'}` postMessage and window `focus` (same signals as `shared/theme/hub_theme.js`), plus the existing `prefers-color-scheme` change listener. `data-theme` is only rewritten when it changes. No timers or polling.
+- Release id: `<title>My Day MD3</title>` (legacy comment), SW cache `myday-md3` (legacy `myday-md2b`). No `?v=` (removed in NV3). Readme line added.
+- Test (headless puppeteer, same-origin host page iframing My Day): 18/18. Hub dark / light, live switch both ways through storage, hub-prefs message, unset = Light, explicit Light / Dark beat the Hub and stay on Hub changes, back to Auto; standalone Auto follows emulated light / dark live and ignores the Hub key; explicit picks standalone; no page errors.
+- Caveat: standalone (own tab / installed PWA) Auto ignores the Hub key by design, while `index.html` (IX1) paints its brief redirect background from the Hub key first, so a standalone launch can show a one-frame colour change when the two differ.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
