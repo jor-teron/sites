@@ -12,9 +12,32 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:
 .mini.danger{background:var(--bad);border-color:var(--bad);color:#fff}
 .mini.sq{width:32px;padding:0;text-align:center}
 .danger-t{color:var(--bad)!important}
-/* top bar */
-#top{display:flex;align-items:center;gap:6px;padding:8px 12px;flex:none;min-width:0}
-.deck-btn{display:flex;align-items:center;gap:6px;min-width:0;max-width:44vw;height:34px;padding:0 10px;border:0;border-radius:10px;background:none;color:var(--fg);font:600 16px system-ui,sans-serif;cursor:pointer}
+/* SL4 top row + ribbon: the shared ../shared/office-ribbon.css + office-quick.css, coloured from the Slides theme.
+   Legacy (SL1 - SL3) top bar: #top{display:flex;align-items:center;gap:6px;padding:8px 12px;flex:none;min-width:0},
+   .deck-btn{...;max-width:44vw;height:34px;padding:0 10px;...;font:600 16px system-ui,sans-serif} */
+body{--of-bg:var(--card);--of-group:var(--bg);--of-border:var(--line);--of-text:var(--fg);--of-muted:var(--mut);--of-hover:color-mix(in srgb,var(--fg) 10%,transparent);--of-active:var(--acc);--of-focus:var(--acc);--of-ui-font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--of-font:600 12.5px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#top{min-width:0;padding:0 8px}
+.of-tab{width:auto;min-width:var(--of-tab-w);padding:0 10px;white-space:nowrap}
+.deck-btn{display:flex;align-items:center;gap:6px;min-width:0;max-width:34vw;height:28px;padding:0 8px;border:0;border-radius:7px;background:none;color:var(--fg);font:600 14px system-ui,sans-serif;cursor:pointer;flex:0 1 auto}
+#top .gear{width:32px;height:28px;border-radius:7px;border:0;background:none;font-size:16px}
+#top .gear:hover{background:var(--of-hover)}
+#of-ribbon{flex:none;gap:8px;padding:4px 8px}
+#of-ribbon button{font:500 13px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:2px}
+#of-ribbon button:disabled{opacity:.4;cursor:default;background:transparent}
+#of-ribbon .sq{min-width:28px;padding:0 6px;justify-content:center}
+#of-ribbon .split{display:inline-flex}
+#of-ribbon .split #b-add{border-radius:6px 0 0 6px;background:var(--acc);color:#fff}
+#of-ribbon .split #b-addlay{border-radius:0 6px 6px 0;background:var(--acc);color:#fff;border-left:1px solid rgba(255,255,255,.35);min-width:22px;padding:0 5px}
+#of-ribbon .split button:hover{filter:brightness(1.1)}
+/* ⋯ every slide action (phones): last in the ribbon row, stays at the right edge while the row scrolls */
+#b-more{position:sticky;right:0;margin-left:auto;flex:none;height:28px;min-width:32px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--fg);font-size:16px;box-shadow:-8px 0 8px var(--card)}
+.of-file-menu.menu{width:auto;min-width:220px;z-index:30;background:var(--card);border-color:var(--line)}
+.menu button small{color:var(--mut);font-size:11px;margin-left:6px}
+/* the Quick Access bar: quick buttons on the Slides colours */
+.of-quick{background:var(--bg)}
+/* in the Hub the Hub bar shows the tabs, deck name and gear: the own top row hides (slides_hub.js sets body.in-hub) */
+body.in-hub #top{display:none}
+#main{padding-top:10px!important}
 .deck-btn:hover,.deck-btn[aria-expanded=true]{background:color-mix(in srgb,var(--fg) 8%,transparent)}
 #deck-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .caret{color:var(--mut);font-size:12px}
@@ -202,13 +225,11 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border:1px solid var(--l
 html.presenting #app>*:not(#show){visibility:hidden}
 /* phones / narrow windows: the slide list becomes a strip on top */
 @media (max-width:760px){
-  #top{padding:6px 8px;gap:4px}
-  .deck-btn{font-size:15px;padding:0 6px;max-width:38vw}
+  #top{padding:0 6px;gap:4px}
+  .deck-btn{display:none}
   #saved{display:none}
-  #b-add{padding:0 10px}
-  #b-show{padding:0 10px}
-  #b-show .lbl,#b-lay .lbl,#b-pic .lbl,#b-theme .lbl{display:none}
-  #b-lay,#b-pic,#b-theme{padding:0 8px}
+  #of-ribbon .lbl{display:none}
+  #of-ribbon #b-add .lbl,#of-ribbon #b-pic .lbl,#of-ribbon #b-show .lbl,#of-ribbon #r-show0 .lbl{display:inline}
   #main{flex-direction:column;gap:8px;padding:0 8px 8px}
   #list{width:auto;height:84px;overflow-x:auto;overflow-y:hidden}
   #list-in{flex-direction:row;padding:6px 40px 6px 6px;height:100%;width:max-content}
@@ -218,7 +239,19 @@ html.presenting #app>*:not(#show){visibility:hidden}
   #warn{margin:0 8px 6px}
   #stage{justify-content:flex-start;padding-top:10px}
 }
-@media (max-width:1000px){#b-lay .lbl,#b-pic .lbl,#b-theme .lbl{display:none}}
-/* SL3: on phones Layout and Theme live in the ⋯ slide menu only (Picture stays on the bar) */
-@media (max-width:480px){#b-lay,#b-theme,#b-add .lbl{display:none}}
-@media (max-width:380px){#b-up,#b-down{display:none}}
+/* legacy (SL3) phone top bar: @media (max-width:1000px){#b-lay .lbl,#b-pic .lbl,#b-theme .lbl{display:none}}
+   @media (max-width:480px){#b-lay,#b-theme,#b-add .lbl{display:none}} @media (max-width:380px){#b-up,#b-down{display:none}}
+   SL4: every ribbon control stays; the row scrolls sideways and ⋯ (sticky) has them all too. */
+@media (max-width:480px){#of-ribbon #b-add .lbl,#of-ribbon #b-pic .lbl,#of-ribbon #b-show .lbl,#of-ribbon #r-show0 .lbl{display:none}}
+/* SL4 print / PDF: only the print view (slides_print.js), one 960 x 540 page per slide = 10in x 5.625in at 96 px/in */
+#print{display:none}
+@media print{
+  @page{size:10in 5.625in;margin:0}
+  html,body{height:auto!important;overflow:visible!important;background:#fff!important}
+  #app{display:none!important}
+  #print{display:block!important}
+  #print .pp{width:960px;height:540px;overflow:hidden;position:relative;break-after:page;page-break-after:always;break-inside:avoid}
+  #print .pp:last-child{break-after:auto;page-break-after:auto}
+  #print .slide{position:absolute;left:0;top:0;border-radius:0;box-shadow:none}
+  #print,#print *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}

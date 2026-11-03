@@ -6,10 +6,14 @@
    SL3: ▦ Layout (this slide) and ＋ Slide ▾ (a new slide with a layout) open the in-app layout picker; 🎨 Theme picks
    the deck theme and this slide's background; 🖼 Picture / paste / drop inserts a picture (SLPics: downscaled,
    re-encoded, kept in IndexedDB). App Undo / Redo (Ctrl+Z / Ctrl+Y or Ctrl+Shift+Z outside the text, ⋯ menu) covers
-   pictures, layouts, themes and backgrounds; text keeps the browser's own undo inside the text boxes. */
+   pictures, layouts, themes and backgrounds; text keeps the browser's own undo inside the text boxes.
+   SL4: the Office ribbon (../shared/office-ribbon.js: File = the deck menu, Home / Insert / Design / Slide Show; the ⋯ menu
+   at the end of the ribbon keeps every slide action for phones), the HO1 Quick Access bar (../shared/office-quick.js:
+   Undo / Redo = this app undo, Save = SLSave.flush + ✓ Saved, Print = SLPrint; Ctrl+Z / Y / S / P; in the Hub title bar
+   after hubTitleBarHello), the Hub app bar (slides_hub.js) and Print / Export PDF (slides_print.js). */
 (function () {
   'use strict';
-  var VERSION = 'SL3';   /* legacy: 'SL2' */
+  var VERSION = 'SL4';   /* legacy: 'SL3' · 'SL2' */
   var $ = function (id) { return document.getElementById(id); };
   var deck = null;
 
@@ -76,6 +80,7 @@
 
   /* ---------- menus ---------- */
   function closeMenus() {
+    if (ribbon && !$('menu-deck').hidden) ribbon.setFile(false);
     ['menu-deck', 'menu-slide'].forEach(function (id) { $(id).hidden = true; });
     $('b-deck').setAttribute('aria-expanded', 'false'); $('b-more').setAttribute('aria-expanded', 'false');
   }
@@ -122,7 +127,7 @@
     deck = d; SLSave.setCurrent(d.id);
     $('deck-name').textContent = d.name; document.title = d.name + ' · Slides ' + VERSION;
     undo = []; redo = [];
-    renderAll();
+    renderAll(); SLHub.title();
     /* pictures come from IndexedDB a moment later; draw again once they are there */
     var need = d.slides.some(function (s) { return (s.pics || []).some(function (p) { return !p.src && p.key; }); });
     if (need) SLPics.hydrate(d).then(function () { if (deck === d) renderAll(); });
@@ -132,6 +137,16 @@
     SLEdit.show(deck.slides[deck.cur], deck.theme || 'light');
     $('pos').textContent = 'Slide ' + (deck.cur + 1) + ' of ' + deck.slides.length;
     $('b-up').disabled = deck.cur === 0; $('b-down').disabled = deck.cur === deck.slides.length - 1;
+    syncRibbon();
+  }
+  /* SL4: ribbon state (theme buttons, delete, undo / redo) + the Quick Access bar */
+  function syncRibbon() {
+    if (!deck) return;
+    var th = deck.theme || 'light';
+    [].forEach.call(document.querySelectorAll('#of-ribbon [data-theme]'), function (b) { b.setAttribute('aria-pressed', b.dataset.theme === th ? 'true' : 'false'); });
+    $('r-del').disabled = deck.slides.length <= 1; $('r-del').title = deck.slides.length <= 1 ? 'A deck keeps at least one slide' : 'Delete this slide (asks first)';
+    $('r-undo').disabled = !undo.length; $('r-redo').disabled = !redo.length;
+    if (window.OfficeQuick) OfficeQuick.refresh();
   }
   function select(i) {
     if (i === deck.cur || i < 0 || i >= deck.slides.length) return;
@@ -200,7 +215,7 @@
   function renameDeck() {
     askName('Rename deck', deck.name, 'Rename').then(function (n) {
       if (!n || n === deck.name) return;
-      deck.name = n; $('deck-name').textContent = n; document.title = n + ' · Slides ' + VERSION; dirty(); SLSave.flush(); toast('Renamed');
+      deck.name = n; $('deck-name').textContent = n; document.title = n + ' · Slides ' + VERSION; dirty(); SLSave.flush(); toast('Renamed'); SLHub.title();
     });
   }
   function deleteDeck() {
@@ -246,12 +261,12 @@
   function textOf(s) { return { title: s.title, body: s.body, body2: s.body2 }; }
   function sameText(a, b) { return a.title === b.title && a.body === b.body && a.body2 === b.body2; }
   /* e = { label, kind:'slide'|'theme', id, before (slide copy) | theme, after (text right after a layout change) } */
-  function pushUndo(e) { undo.push(e); if (undo.length > 50) undo.shift(); redo = []; }
+  function pushUndo(e) { undo.push(e); if (undo.length > 50) undo.shift(); redo = []; syncRibbon(); }
   function recordSlide(slide, before, label) { pushUndo({ label: label, kind: 'slide', id: slide.id, before: before, after: textOf(slide) }); }
   function swap(from, to, verb) {
     var e = from.pop();
     while (e && e.kind === 'slide' && !slideById(e.id)) e = from.pop();   /* that slide was deleted since */
-    if (!e) { toast('Nothing to ' + verb.toLowerCase()); return false; }
+    if (!e) { toast('Nothing to ' + verb.toLowerCase()); syncRibbon(); return false; }
     if (e.kind === 'theme') {
       to.push({ label: e.label, kind: 'theme', before: deck.theme });
       deck.theme = e.before; renderAll();
@@ -263,7 +278,7 @@
       if (e.after && sameText(e.after, s)) { s.title = b.title; s.body = b.body; s.body2 = b.body2; }
       if (i !== deck.cur) { SLSave.flush(); deck.cur = i; renderAll(); } else { SLList.update(i); showSlide(); }
     }
-    dirty(); toast(verb + ': ' + e.label); return true;
+    dirty(); toast(verb + ': ' + e.label); syncRibbon(); return true;
   }
 
   /* ---------- SL3 layouts ---------- */
@@ -419,7 +434,7 @@
     $('set-store').textContent = SLSave.memOnly ? 'Memory only: changes are lost when Slides closes. Use Export.' : 'Saved on this device as you type (' + SLSave.list().length + ' decks)';
   }
   function openSettings() { closeMenus(); syncSettings(); $('settings').hidden = false; $('set-x').focus(); }
-  function closeSettings() { $('settings').hidden = true; $('b-set').focus(); }
+  function closeSettings() { $('settings').hidden = true; try { $('b-set').focus({ preventScroll: true }); } catch (_) { /* */ } }
   [].forEach.call(document.querySelectorAll('.seg[data-key]'), function (sg) {
     sg.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; SLSave.set(sg.dataset.key, b.dataset.v); syncSettings(); });
   });
@@ -428,7 +443,7 @@
   $('settings').addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeSettings(); } });
 
   /* ---------- wiring ---------- */
-  $('b-deck').onclick = function () { openMenu('menu-deck', $('b-deck'), false); };
+  /* SL4: File (#b-deck) opens #menu-deck through the shared ribbon (legacy: openMenu('menu-deck', $('b-deck'), false)) */
   $('b-more').onclick = function () { openMenu('menu-slide', $('b-more'), true); };
   $('b-add').onclick = addSlide;
   $('b-up').onclick = function () { nudge(-1); };
@@ -441,6 +456,7 @@
     if (a === 'new') newDeck(); else if (a === 'open') openDeck(); else if (a === 'rename') renameDeck();
     else if (a === 'import') { $('file-in').value = ''; $('file-in').click(); } else if (a === 'export') exportDeck(); else if (a === 'deldeck') deleteDeck();
     else if (a === 'show0') present(true); else if (a === 'showcur') present(false);
+    else if (a === 'print') printDeck(); else if (a === 'pdf') exportPdf(); else if (a === 'settings') openSettings();
   });
   $('b-addlay').onclick = function () { openPick('add'); };
   $('b-lay').onclick = function () { openPick('layout'); };
@@ -452,7 +468,32 @@
     if (a === 'add') addSlide(); else if (a === 'dup') dupSlide(); else if (a === 'up') nudge(-1); else if (a === 'down') nudge(1); else if (a === 'del') delSlide();
     else if (a === 'addlay') openPick('add'); else if (a === 'lay') openPick('layout'); else if (a === 'theme') openPick('theme'); else if (a === 'pic') pickPicture();
     else if (a === 'undo') swap(undo, redo, 'Undo'); else if (a === 'redo') swap(redo, undo, 'Redo');
+    else if (a === 'show0') present(true); else if (a === 'showcur') present(false); else if (a === 'pdf') exportPdf();
   });
+  /* SL4 ribbon buttons (the rest keep their SL1 - SL3 ids and handlers above) */
+  $('b-name').onclick = renameDeck;
+  $('r-dup').onclick = dupSlide; $('r-del').onclick = delSlide;
+  $('r-undo').onclick = function () { swap(undo, redo, 'Undo'); };
+  $('r-redo').onclick = function () { swap(redo, undo, 'Redo'); };
+  $('r-addlay').onclick = function () { openPick('add'); };
+  $('r-show0').onclick = function () { present(true); };
+  [].forEach.call(document.querySelectorAll('#of-ribbon [data-theme]'), function (b) { b.onclick = function () { setTheme(b.dataset.theme); syncRibbon(); }; });
+
+  /* ---------- SL4 Print / Export PDF (slides_print.js) ---------- */
+  var printing = false;
+  function printDeck(pdf) {
+    if (printing || SLShow.on() || !deck) return Promise.resolve(false);
+    closeMenus(); SLSave.flush(); SLEdit.select('');
+    printing = true; status('Preparing ' + deck.slides.length + (deck.slides.length === 1 ? ' page…' : ' pages…'));
+    return SLPrint.run(deck, { pdf: !!pdf }).then(function () { printing = false; SLSave.onSaved(true); return true; }, function () { printing = false; SLSave.onSaved(true); toast('Could not print'); return false; });
+  }
+  function exportPdf() {
+    closeMenus();
+    return dialog({ title: 'Export PDF', msg: 'The print window opens with one 16:9 page per slide (' + deck.slides.length + (deck.slides.length === 1 ? ' page' : ' pages') +
+      ', pictures and theme included). Choose “Save as PDF” as the destination (Printer), then Save.', buttons: [{ label: 'Cancel', v: false }, { label: 'Continue', v: true, cls: 'acc' }] })
+      .then(function (v) { return v === true ? printDeck(true) : false; });
+  }
+  SLPrint.source(function () { return deck; });
   menuKeys($('menu-deck')); menuKeys($('menu-slide'));
   $('file-in').addEventListener('change', function () { var f = this.files && this.files[0]; if (f) importFile(f); });
   /* drop a .hslides file anywhere to import it; SL3: drop a picture to add it (where it lands on the slide) */
@@ -475,10 +516,9 @@
     if (!$('dialog').hidden || !$('settings').hidden) return;
     var tg = e.target, typing = tg && (tg.tagName === 'TEXTAREA' || tg.tagName === 'INPUT' || tg.isContentEditable);
     var menus = !$('menu-deck').hidden || !$('menu-slide').hidden;
-    /* SL3: app undo / redo outside the text boxes (inside them the browser's own text undo works) */
-    if ((e.ctrlKey || e.metaKey) && !e.altKey && !typing && (e.key === 'z' || e.key === 'Z' || e.key === 'y' || e.key === 'Y')) {
-      e.preventDefault(); if ((e.key === 'y' || e.key === 'Y') || e.shiftKey) swap(redo, undo, 'Redo'); else swap(undo, redo, 'Undo'); return;
-    }
+    /* SL3: app undo / redo outside the text boxes (inside them the browser's own text undo works).
+       SL4: routed by OfficeQuick (undoKey below); legacy SL3 handler here:
+       if ((e.ctrlKey || e.metaKey) && !e.altKey && !typing && (z | y)) { e.preventDefault(); swap(redo | undo) } */
     /* SL3: the selected picture: Delete / Backspace removes it (Undo brings it back), arrows nudge it, Esc drops the selection */
     var sp = SLEdit.selected();
     if (sp && !typing && !menus && !e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -504,11 +544,44 @@
   } });
   SLList.init({ onSelect: select, onMove: move, onNudge: nudge, onEnter: function () { SLEdit.focusTitle(); }, theme: function () { return deck ? deck.theme || 'light' : 'light'; } });
 
+  /* ---------- SL4 ribbon + Quick Access + Hub bar ---------- */
+  var TABS = [{ id: 'home', label: 'Home' }, { id: 'insert', label: 'Insert' }, { id: 'design', label: 'Design' }, { id: 'show', label: 'Slide Show' }];
+  var ribbon = OfficeRibbon.create({ tabs: TABS, prefix: 'sl-', storageKey: 'slides-ribbon-tab', tabsEl: $('of-tabs'), fileBtn: $('b-deck'), fileMenu: $('menu-deck'),
+    panelSelector: '#of-ribbon .of-panel', onTab: function () { if (window.OfficeQuick) OfficeQuick.refresh(); SLHub.tab(); } });
+  function activeTab() { return ribbon.current || 'home'; }
+  function selectTab(id) { if (!$('menu-deck').hidden) ribbon.setFile(false); ribbon.select(id); }
+  /* the File menu: under File standalone; in the Hub (own top row hidden) at the frame's top-left */
+  function openFile() {
+    var m = $('menu-deck'), open = !m.hidden;
+    closeMenus(); if (open) return;
+    ribbon.setFile(true);
+    if (document.body.classList.contains('in-hub')) { m.style.top = '8px'; m.style.left = '8px'; }
+    var f = m.querySelector('button'); if (f) f.focus();
+  }
+  $('b-deck').addEventListener('click', function () { if (!$('menu-deck').hidden) { $('menu-slide').hidden = true; var f = $('menu-deck').querySelector('button'); if (f) f.focus(); } });
+  function blocked() { return SLShow.on() || !$('dialog').hidden || !$('settings').hidden || !$('pick').hidden; }
+  OfficeQuick.register({
+    app: 'Slides',
+    undo: function () { if (!blocked()) swap(undo, redo, 'Undo'); }, redo: function () { if (!blocked()) swap(redo, undo, 'Redo'); },
+    canUndo: function () { return !!deck && undo.length > 0; }, canRedo: function () { return !!deck && redo.length > 0; },
+    save: function () { if (!deck) return false; SLSave.saveDeck(deck); return SLSave.flush() !== false && !SLSave.memOnly; },
+    canSave: function () { return !!deck; },
+    print: function () { if (!blocked()) printDeck(false); },
+    /* Ctrl+Z / Y: the app undo outside the text boxes; inside them (and in dialogs) the browser's own text undo */
+    undoKey: function (ev) { var t = ev.target; return !blocked() && !(t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.isContentEditable)); },
+    tabs: function () { return [{ id: 'file', label: 'File' }].concat(TABS); },
+    activeTab: activeTab,
+    onTab: function (id) { if (id === 'file') openFile(); else selectTab(id); },
+    mount: $('top'), before: $('b-deck'), fallback: $('of-ribbon')
+  });
+  SLHub.init({ tabs: TABS, activeTab: activeTab, selectTab: selectTab, openFile: openFile, openSettings: openSettings,
+    title: function () { return deck ? deck.name : 'Slides'; } });
+
   /* ---------- start: the last deck, else the newest, else a first deck ---------- */
   (function boot() {
     var id = SLSave.currentId(), d = id && SLSave.load(id);
     if (!d) { var f = SLSave.list()[0]; d = f && SLSave.load(f.id); }
-    if (!d) d = SLSave.newDeck('My first deck', [{ title: 'Welcome to Slides', body: 'Type a title above and bullets here\nOne bullet per line\n\tPress Tab to indent a line\nAdd slides with ＋ Slide' }]);
+    if (!d) d = SLSave.newDeck('My first deck', [{ title: 'Welcome to Slides', body: 'Type a title above and bullets here\nOne bullet per line\n\tPress Tab to indent a line\nAdd slides with ＋ New slide' }]);   /* legacy (SL1 – SL3): …Add slides with ＋ Slide */
     showDeck(d); if (!SLSave.memOnly) status('Saved');
     /* SL3: a few seconds after start, drop stored pictures that no deck uses any more */
     if (!SLSave.memOnly) setTimeout(function () { var keep = SLSave.picKeys(); deck.slides.forEach(function (s) { (s.pics || []).forEach(function (p) { if (p.key) keep[p.key] = 1; }); }); SLPics.gc(keep); }, 4000);
@@ -523,6 +596,8 @@
     importText: function (t) { var r = SLFile.parse(t); if (!r.error) r.done = importParsed(r); return r; },
     setLayout: function (l) { setLayout(l); }, setTheme: function (t) { setTheme(t); }, setBg: function (c) { setBg(c); },
     addSlide: function (l) { addSlide(l); }, insertPicture: insertPicture, undo: function () { return swap(undo, redo, 'Undo'); }, redo: function () { return swap(redo, undo, 'Redo'); },
-    busy: function () { return busy; }
+    busy: function () { return busy; },
+    /* SL4 */
+    tab: activeTab, selectTab: selectTab, print: printDeck, exportPdf: exportPdf, canUndo: function () { return undo.length > 0; }, canRedo: function () { return redo.length > 0; }
   };
 })();
