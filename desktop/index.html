@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<!-- H129a: the desktop Hub page is desktop/desktop.html; this folder index (the address desktop/) only redirects
+     there and keeps ?query and #hash (e.g. desktop/?join=CODE, desktop/#2048). -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hub</title>
+  <meta name="theme-color" content="#0B1033">
+  <style>html,body{margin:0;background:#0B1033}</style>
+  <script>location.replace('desktop.html' + location.search + location.hash);</script>
+  <noscript><meta http-equiv="refresh" content="0; url=desktop.html"></noscript>
+</head>
+<body><noscript><p><a href="desktop.html">Open the Hub</a></p></noscript></body>
+</html>

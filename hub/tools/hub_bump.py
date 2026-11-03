@@ -2,8 +2,9 @@
 """
 Hub build bump (hub/tools/hub_bump.py), H3. Python 3, no dependencies.
 
-Moves the Hub build tag and shell cache name in all 7 places at once:
-  1. hub.html                 every ?v=<tag> (script / link tags)
+Moves the Hub build tag and shell cache name in all 8 places at once:
+  1. hub.html                 every ?v=<tag> (H129a: the redirect stub's build-stamp comment; before H129a: script / link tags)
+  1b. desktop/desktop.html      every ?v=<tag> (script / link tags; H129a: the desktop Hub page)
   2. sw.js                    importScripts('hub/update/hub_sw.js?v=<tag>')
   3. hub/update/hub_sw.js     const V = '<tag>'
   4. hub/update/hub_sw.js     const CACHE = 'hub-shell-vNN';  // comment
@@ -13,7 +14,7 @@ Moves the Hub build tag and shell cache name in all 7 places at once:
 hub/version.txt (the user-facing version) changes only with --version.
 
 Usage (from the repo root or anywhere):
-  python3 hub/tools/hub_bump.py --check                 all 7 places agree? (exit 1 if not)
+  python3 hub/tools/hub_bump.py --check                 all 8 places agree? (exit 1 if not)
   python3 hub/tools/hub_bump.py --release H3 --dry-run  show every change, write nothing
   python3 hub/tools/hub_bump.py --release H3            next tag + next hub-shell-vNN
   python3 hub/tools/hub_bump.py --release H3 --tag 20261024a --cache hub-shell-v90
@@ -33,6 +34,7 @@ IST = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
 # (label, path, regex with ONE group = the value; findall → every hit must agree)
 PLACES = [
     ('hub.html ?v=', 'hub.html', r'\?v=(' + TAG_RE + r')\b'),
+    ('desktop ?v=', 'desktop/desktop.html', r'\?v=(' + TAG_RE + r')\b'),   # H129a
     ('sw.js importScripts', 'sw.js', r"hub_sw\.js\?v=(" + TAG_RE + r")'"),
     ('hub_sw.js V', 'hub/update/hub_sw.js', r"^const V = '(" + TAG_RE + r")';"),
     ('hub_sw.js CACHE', 'hub/update/hub_sw.js', r"^const CACHE = '(hub-shell-v\d+)';"),
@@ -90,14 +92,14 @@ def next_tag(cur, today):
 
 
 def main():
-    ap = argparse.ArgumentParser(description='Bump the Hub build in all 7 places (see the file header).')
+    ap = argparse.ArgumentParser(description='Bump the Hub build in all 8 places (see the file header).')   # (before H129a) 7
     ap.add_argument('--release', help="release name for build.txt line 3, e.g. H3")
     ap.add_argument('--tag', help='new build tag (default: computed), e.g. 20261024a')
     ap.add_argument('--cache', help='new shell cache name (default: hub-shell-v<NN+1>)')
     ap.add_argument('--note', help='comment after the CACHE line (default: the release)')
     ap.add_argument('--version', help='also write hub/version.txt (e.g. v0.300 + today IST)')
     ap.add_argument('--dry-run', action='store_true', help='show every change, write nothing')
-    ap.add_argument('--check', action='store_true', help='only verify all 7 places agree')
+    ap.add_argument('--check', action='store_true', help='only verify all 8 places agree')   # (before H129a) 7
     ap.add_argument('--force', action='store_true', help='bump even when the places disagree now')
     a = ap.parse_args()
 
@@ -110,7 +112,7 @@ def main():
         if probs:
             print('MISMATCH:\n  ' + '\n  '.join(probs))
             return 1
-        print('OK: all 7 places at %s / %s' % (tag, cache))
+        print('OK: all 8 places at %s / %s' % (tag, cache))   # (before H129a) all 7 places
         return 0
 
     if probs and not a.force:
@@ -148,6 +150,7 @@ def main():
 
     T = TAG_RE
     add('hub.html', r'\?v=' + T + r'\b', '?v=' + new_tag, 'hub.html ?v=')
+    add('desktop/desktop.html', r'\?v=' + T + r'\b', '?v=' + new_tag, 'desktop ?v=')   # H129a
     add('sw.js', r"(hub_sw\.js\?v=)" + T + "'", r'\g<1>' + new_tag + "'", 'sw.js importScripts')
     add('hub/update/hub_sw.js', r"^const V = '" + T + "';", "const V = '%s';" % new_tag, 'hub_sw.js V')
     add('hub/update/hub_sw.js', r"^const CACHE = 'hub-shell-v\d+';.*$",
@@ -190,7 +193,7 @@ def main():
     if probs2 or tag2 != new_tag or cache2 != new_cache:
         print('After the bump the places disagree:\n  ' + '\n  '.join(probs2))
         return 1
-    print('Done: all 7 places at %s / %s. Add the hub_readme.md change-log entry.' % (new_tag, new_cache))
+    print('Done: all 8 places at %s / %s. Add the hub_readme.md change-log entry.' % (new_tag, new_cache))   # (before H129a) all 7 places
     return 0
 
 

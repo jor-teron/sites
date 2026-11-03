@@ -67,7 +67,8 @@
   let base = '';
   try { base = new URL('../../', me && me.src ? me.src : location.href).href; } catch (_) { base = ''; }
   // same-folder relative paths for the site root page (hub.html / phone.html): keeps the URLs (and the SW cache keys) as before
-  try { if (base === new URL('./', location.href).href) base = ''; } catch (_) { /* keep absolute */ }
+  // (before H129a) try { if (base === new URL('./', location.href).href) base = ''; } catch (_) { /* keep absolute */ }   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+  try { if (base === new URL('./', document.baseURI).href) base = ''; } catch (_) { /* keep absolute */ }
 
   const state = {};   // part → 'loading' | 'done'
   const waits = {};   // part → [resolve]

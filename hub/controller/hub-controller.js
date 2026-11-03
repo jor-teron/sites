@@ -133,14 +133,16 @@
 
   /** Connect QR: the phone opens the Hub homepage already joined (hub_role.js). */
   function connectUrl(c) {
-    const u = new URL('hub.html', location.href);
+    // (before H129a) const u = new URL('hub.html', location.href);   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+    const u = new URL('hub.html', document.baseURI);
     u.search = '?join=' + c;
     u.hash = '';
     return u.href;
   }
 
   function controllerUrl(c) {
-    const u = new URL('hub/controller/controller.html', location.href);
+    // (before H129a) const u = new URL('hub/controller/controller.html', location.href);   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+    const u = new URL('hub/controller/controller.html', document.baseURI);
     u.hash = 'code=' + c;
     return u.href;
   }

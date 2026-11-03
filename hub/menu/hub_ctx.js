@@ -20,7 +20,7 @@
 (function () {
   'use strict';
   if (!window.CtxMenu || !window.CtxInApp) return;
-  const V = '20261104f';
+  const V = '20261104g';
   const reg = [];
   const isDesk = () => !!(window.HubMode && window.HubMode.isDesktop());
 
@@ -97,7 +97,8 @@
   }
   function newTab(entry) {
     const u = window.__hubFrameUrl ? window.__hubFrameUrl(entry) : entry;
-    window.open(new URL(u, location.href).href, '_blank', 'noopener');
+    // (before H129a) window.open(new URL(u, location.href).href, '_blank', 'noopener');   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+    window.open(new URL(u, document.baseURI).href, '_blank', 'noopener');
   }
   const shiftClick = (el) => el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, shiftKey: true }));
 
@@ -109,7 +110,8 @@
     try { if (frame.contentWindow.location.protocol === 'about:') return; } catch (_) { return; }
     const s = doc.createElement('script');
     s.id = 'hub-ctx-in-app';
-    s.src = new URL('shared/ctxmenu/ctx_in_app.js?v=' + V, location.href).href;
+    // (before H129a) s.src = new URL('shared/ctxmenu/ctx_in_app.js?v=' + V, location.href).href;   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+    s.src = new URL('shared/ctxmenu/ctx_in_app.js?v=' + V, document.baseURI).href;
     (doc.head || doc.documentElement).appendChild(s);
   };
 

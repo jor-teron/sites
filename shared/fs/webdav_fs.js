@@ -97,7 +97,8 @@
     if (!into) throw dom('InvalidModificationError', 'WebDAV: the server root can\u2019t be moved');
     if (into.conn.base !== h.conn.base) throw dom('InvalidModificationError', 'WebDAV: move works only within one server');
     const dir = h.kind === 'directory';
-    const dest = new URL(into.conn.url(into.path.concat(name), dir), location.href).href;
+    // (before H129a) const dest = new URL(into.conn.url(into.path.concat(name), dir), location.href).href;   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+    const dest = new URL(into.conn.url(into.path.concat(name), dir), document.baseURI).href;
     await h.conn.req('MOVE', h.path, { dir, headers: { Destination: dest, Overwrite: 'F' } });
     h.name = name; h.parent = into; h.path = into.path.concat(name);
   }

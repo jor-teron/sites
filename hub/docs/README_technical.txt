@@ -1,6 +1,42 @@
 Team 1 (Hub Bot Team 1): started Mon 26 Oct 2026. Docs: README_technical_team1.txt
 
 ================================================================================
+Desktop address: desktop/desktop.html (H129a, 2026-11-04 IST, build 20261104g)
+================================================================================
+Step a of 3 of H129 (desktop shell into desktop/). New layout of the Hub split:
+  hub/        the shared core (hub/core/hub_core.js and every hub/* file: NOT moved in H129a)
+  desktop/    the desktop screen on top of the core: desktop/desktop.html = the desktop Hub page
+              (the page that was hub.html). H129b / H129c move the desktop-only files (wm/, menus,
+              panels, Game Bar, hub-controller.js) here.
+  phone/      the phone screen (phone.html + phone/, Hub Apps Builder 2; untouched by H129a)
+Addresses (all keep ?query and #hash, meta refresh in <noscript> + location.replace):
+  hub.html            → desktop/desktop.html   (tiny redirect; bookmarks, the installed app's start_url,
+                                                Connect QR hub.html?join=CODE, hub.html#app links)
+  index.html (root)   → desktop/desktop.html   (before H129a → hub.html)
+  desktop/            = desktop/index.html → desktop.html (folder index redirect)
+  The old full hub.html is kept at hub/docs/hub_html_before_H129a.txt (it has its own comments, so it
+  could not be commented out inside the stub).
+How desktop.html still finds every file: <base href="../"> right after <meta charset>. All its script /
+link tags keep the same root-relative paths as hub.html, and so does everything the Hub builds at run
+time (app catalog entries apps/..., iframe src, hub_loader.js batches, CSV fetches, wallpapers, the
+sw.js registration, manifest.webmanifest): they resolve from the site root exactly as before, and the
+service worker cache keys are unchanged. Run-time code that resolved a path against location.href now
+uses document.baseURI (identical on a page with no <base>, e.g. phone.html): hub.js (replaceFrame,
+newTab open, hash re-point, frame → app rel path, hub-open-url message), hub_link.js (receiver url),
+hub-controller.js (Connect QR = <root>hub.html?join=CODE, controller.html), hub_panels.js,
+hub_notifcenter.js (BASE), hub_core.js (same-folder base check), hub_ctx.js, hub_ctx_menus.js,
+wm_windows.js, shared/fs/webdav_fs.js (MOVE Destination). location.pathname + '?join=' / hash pushState
+stay as they were (absolute paths, so they keep the page at desktop/desktop.html).
+Rule for new Hub code: resolve root-relative paths with new URL(p, document.baseURI), never location.href;
+never write a bare href="#x" link in desktop.html (with <base> it would point at the site root).
+Build stamp: hub.html keeps a comment "hub/core/hub.js?v=<tag>" because update checks (hub_update.js
+latest(), Settings › About standaloneCheck(), and old clients) fetch hub.html and read that tag;
+hub_bump.py moves it with the rest (now 8 places: + desktop/desktop.html every ?v=).
+Service worker: the root sw.js (scope = the whole site) controls desktop/. SHELL has hub.html (stub),
+desktop/desktop.html and desktop/index.html; a navigation to desktop/ is served the desktop/index.html copy.
+manifest start_url stays hub.html (changing it would change the installed app's identity).
+
+================================================================================
 Hub core entry: hub/core/hub_core.js (H127, 2026-11-04 IST, build 20261104f)
 ================================================================================
 Step 1 of 3 of the Hub split: core (no screen of its own) / desktop shell (hub.html) / phone shell
