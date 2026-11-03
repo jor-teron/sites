@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<!--
+  Star Pinball (PIN-1a) — page. Title bar (score, ball, best, buttons) / the table canvas: a bar on
+  top in portrait, a side panel on wide screens. Numbers: core/config.js. Table layout: core/table.js.
+  Physics (fixed sub-steps): core/physics.js. Drawing: ui/render.js. Shared settings bridge: ui/settings.js.
+  Loop, controls, balls, score + high score: core/game.js. Classic scripts only, so it opens from file://.
+  An original space table: no art or names from any other pinball game.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Star Pinball PIN-1a</title>
+  <link rel="stylesheet" href="ui/style.css">
+</head>
+<body>
+  <div class="container" id="app">
+    <div class="side side-info">
+      <h1 class="title">Star Pinball</h1>
+      <div class="score">
+        <div class="chip">Score <b id="score">0</b></div>
+        <div class="chip">Ball <b id="ball">1 / 3</b></div>
+        <div class="chip">Best <b id="best">0</b></div>
+      </div>
+      <div class="btns">
+        <button id="pauseBtn">Pause</button>
+        <button id="newBtn">New game</button>
+        <button id="helpBtn">How to play</button>
+        <span id="gearSlot" class="gear-slot"></span>
+      </div>
+      <p class="keys">Z / ← left flipper · / / → right flipper · hold Space to pull the plunger, let go to launch · P pause</p>
+    </div>
+    <div class="board-wrap" id="boardWrap"><canvas id="board" aria-label="Pinball table"></canvas></div>
+  </div>
+  <div class="overlay" id="pause" hidden><div class="card"><h2>Paused</h2><p>Tap or press P to play on.</p></div></div>
+  <div class="overlay" id="over" hidden><div class="card"><h2 id="overText">Game over</h2><button id="againBtn">Play again</button></div></div>
+  <div class="overlay help" id="help" hidden>
+    <div class="card help-card" role="dialog" aria-label="How to play Star Pinball">
+      <h2>How to play</h2>
+      <ul>
+        <li>Keep the ball on the table with the two flippers. You have 3 balls.</li>
+        <li><b>Launch:</b> hold Space (or hold the bottom-right corner of the screen), then let go. Hold longer for a stronger shot.</li>
+        <li><b>Flippers:</b> Z or ← for the left one, / or → for the right one. On a phone, hold the left or right half of the screen.</li>
+        <li>Score: pop bumpers 100, slingshots 30, each star lane at the top 250, and 2,000 more when all three stars are lit.</li>
+        <li>A ball that falls between or beside the flippers is lost. Your best score is kept.</li>
+      </ul>
+      <button id="helpClose">Got it</button>
+    </div>
+  </div>
+  <!-- Shared Games Settings (optional: the game runs with defaults if it fails to load) -->
+  <script src="../common/settings/games-settings.js"></script>
+  <script src="core/config.js"></script>
+  <script src="ui/settings.js"></script>
+  <script src="core/table.js"></script>
+  <script src="core/physics.js"></script>
+  <script src="ui/render.js"></script>
+  <script src="core/game.js"></script>
+</body>
+</html>

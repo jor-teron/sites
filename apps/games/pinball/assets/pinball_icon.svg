@@ -1,0 +1,11 @@
+<!-- Star Pinball (PIN-1a) — icon source: night sky, ringed star, two pop bumpers, flippers and the ball. pinball_icon.png (128 px, hub tile) is drawn from the same layout. Original art. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <rect x="4" y="4" width="120" height="120" rx="24" fill="#1d1452"/>
+  <g fill="#e0e7ff"><circle cx="14" cy="20" r="1"/><circle cx="108" cy="14" r="1.2"/><circle cx="100" cy="46" r="0.8"/><circle cx="22" cy="96" r="1"/><circle cx="112" cy="92" r="1"/><circle cx="40" cy="12" r="0.8"/></g>
+  <circle cx="64" cy="40" r="27.5" fill="none" stroke="#38bdf8" stroke-width="5"/>
+  <polygon points="64,20 68.7,33.5 83,33.8 71.6,42.5 75.8,56.2 64,48 52.2,56.2 56.4,42.5 45,33.8 59.3,33.5" fill="#facc15"/>
+  <circle cx="33" cy="71" r="13" fill="#a78bfa"/><circle cx="95" cy="71" r="13" fill="#a78bfa"/>
+  <line x1="30" y1="104" x2="56" y2="114" stroke="#f8fafc" stroke-width="8" stroke-linecap="round"/>
+  <line x1="98" y1="104" x2="72" y2="114" stroke="#f8fafc" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="65" cy="93" r="9" fill="#cbd5e1" stroke="#475569" stroke-width="1.5"/>
+</svg>
