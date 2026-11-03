@@ -130,6 +130,8 @@
   }
   var byName = function (a, b) { return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }); };
   window.PhoneApps = {
+    /** PH13: drop the PH11 CSV local copies (keys phone-csv-v1:*); refilled on the next load. */
+    clearCopies: function () { try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf(CSVKEY) === 0) localStorage.removeItem(k); }); } catch (_) { /* none */ } },   // PH13
     get: function (id) { return apps[id] || null; },
     has: function (id) { return !!apps[id]; },
     cats: function () { return cats.slice(); },

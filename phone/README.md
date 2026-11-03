@@ -188,3 +188,8 @@ PH5 on (older saves get the PH5 home and dock once). PH6: page 1 keeps at most 1
 - **Default:** Hub's Night gradient (`#0B1033 → #26307A → #5562C4`, from `hub_wallpapers.js` / `hub_main.css`) is the phone wallpaper, also inside the Android WebView. It slides slowly like Hub's (`#wall.night`, 24 s), static under `prefers-reduced-motion`.
 - **Setting:** the row is now "Wallpaper": Night blue, See-through (needs a transparent APK WebView), and 5 plain colours. Saved `'auto'` becomes `'night'` on load. `?bg=night` (or `auto`) works.
 - Release name `PH12`.
+
+## PH13 — Reload (get latest)
+- **Phone settings → "Reload (get latest)"** (row "Phone PH13", above About): asks Hub's service worker to re-fetch every SHELL file (`{type:'refresh'}`, same as `hub_update.js`; also `registration.update()`), waits for `sw-refreshed` (max 8 s), clears the PH11 CSV copies (`PhoneApps.clearCopies()`, keys `phone-csv-v1:*`), then reloads the page. No service worker: just clears and reloads.
+- Home pages, dock, hidden apps and settings (`phone-launcher-v1`) are untouched. Cached images in `hub-rt-1` are left alone (the SW re-checks them within a day). No `window.hubRefresh` (APK hook cancelled).
+- Release name `PH13`.

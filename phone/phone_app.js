@@ -17,7 +17,8 @@
   // var RELEASE = 'PH9';   (PH9)
   // var RELEASE = 'PH10';   (PH10)
   // var RELEASE = 'PH11';   (PH11)
-  var RELEASE = 'PH12';
+  // var RELEASE = 'PH12';   (PH12)
+  var RELEASE = 'PH13';
   var d = S.load();
   var root = document.documentElement;
 
@@ -551,6 +552,33 @@
   };
   if (window.HubDnd) HubDnd.on('change', function () { if (top() === 'panel') renderPanel(); });   // H82
 
+  /* ---------- PH13: Reload (get latest): SW {type:'refresh'} (as hub_update.js), clear CSV copies, reload. User data untouched ---------- */
+  var gettingLatest = false;   // PH13
+  function getLatest(btn) {   // PH13
+    if (gettingLatest) return; gettingLatest = true;
+    if (btn) { btn.disabled = true; btn.textContent = 'Getting latest…'; }
+    toast('Getting latest…');
+    var sw = ('serviceWorker' in navigator) && location.protocol.indexOf('http') === 0 ? navigator.serviceWorker : null;
+    var swRefresh = !sw ? Promise.resolve(null) : new Promise(function (res) {
+      var fin = false, t;
+      function end(v) { if (fin) return; fin = true; clearTimeout(t); try { sw.removeEventListener('message', on); } catch (_) { /* none */ } res(v); }
+      function on(e) { if (e.data && e.data.type === 'sw-refreshed') end(e.data.changed || []); }
+      t = setTimeout(function () { end(null); }, 8000);   // no answer in 8 s: reload anyway
+      sw.getRegistration().then(function (reg) {
+        if (!reg) return end(null);
+        try { if (reg.update) reg.update().catch(function () { /* offline */ }); } catch (_) { /* none */ }
+        var w = sw.controller || reg.active;
+        if (!w) return end(null);
+        sw.addEventListener('message', on);
+        w.postMessage({ type: 'refresh' });
+      }).catch(function () { end(null); });
+    });
+    swRefresh.then(function () {
+      if (A.clearCopies) A.clearCopies();   // phone-csv-v1:* only
+      location.reload();
+    });
+  }
+
   /* ---------- sheet: long-press menu, app info, settings ---------- */
   function openSheet(build) {
     var box = $('sheet-box'); box.textContent = '';
@@ -668,6 +696,9 @@
         });
       });
       row(box, 'Home layout', rs);
+      var gl = document.createElement('button'); gl.type = 'button'; gl.className = 'mini'; gl.id = 'get-latest'; gl.textContent = 'Reload (get latest)';   // PH13
+      gl.addEventListener('click', function () { getLatest(gl); });   // PH13
+      row(box, 'Phone ' + RELEASE, gl);   // PH13: next to About
       var ab = document.createElement('div'); ab.className = 'about'; ab.id = 'about';
       ab.innerHTML = '<b>About · Phone ' + RELEASE + '</b><br>A phone-style home screen for the Hub, made to run as the Android home screen in a WebView. ' +
         'Swipe left / right for pages, up for all apps, down for the quick panel. Long-press an app to pin it, dock it or see its info. ' +
