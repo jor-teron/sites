@@ -33,7 +33,7 @@ window.HUB_APP_INDEX = {
   "demolisher": ["Games", "apps/games/demolisher/", "Demolisher", "apps/games/demolisher/demolisher_icon.png", 0, "Side-scrolling action: smash buildings and fight enemies with physics weapons"],
   "sling-birds": ["Games", "apps/games/sling-birds/", "Sling Birds", "apps/games/sling-birds/sling-birds_icon.png", 0, "Physics slingshot: launch birds to knock down towers and defeat the pigs"],
   "pacman": ["Games", "apps/games/pacman/", "Pacman", "apps/games/pacman/pacman_icon.png", 0, "Maze chase: eat every dot and dodge the ghosts - power pellets turn the tables"],
-  "pinball": ["Games", "apps/games/pinball/", "Star Pinball", "apps/games/pinball/pinball_icon.png", 0, "Original space pinball table: launch the ball and flip it into pop bumpers and star lanes - 3 balls and a high score"],
+  "pinball": ["Games", "apps/games/pinball/", "Star Pinball", "apps/games/pinball/pinball_icon.png", 0, "Original space pinball table: ramp, spinner, drop targets and a mission hole - rise from Cadet to Admiral, 3 balls and a high score"],
   "dino-run": ["Games", "apps/games/dino-run/", "Dino Run", "apps/games/dino-run/dino-run_icon.png", 0, "Endless runner: jump the dinosaur over obstacles - pick your dino and theme"],
   "car-run": ["Games", "apps/games/car-run/", "Car Run", "apps/games/car-run/car-run_icon.png", 0, "Endless driving: change lanes - jump and use nitro to dodge traffic and potholes"],
   "desert-road": ["Games", "apps/games/desert-road/", "Desert Road", "apps/games/desert-road/desert-road_icon.png", 0, "Drive a desert highway and dodge cacti - animals and rocks on the road"],
