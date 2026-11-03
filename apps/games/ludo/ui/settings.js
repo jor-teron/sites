@@ -1,9 +1,10 @@
 /*
- * Ludo — shared Games Settings bridge (LUDO-1a), same shape as tic-tac-toe/ui/settings.js.
+ * Ludo — shared Games Settings bridge (LUDO-1a; difficulty used from LUDO-1b), same shape as tic-tac-toe/ui/settings.js.
  * Reads window.GameSettings; if it did not load, every call falls back to fixed defaults.
  *
  * Used:     theme (light / dark; auto = Hub theme, else device),
- *           (1c adds sfx + masterVolume, 1b adds difficulty for computer seats),
+ *           difficulty (the first level a seat gets when switched to the computer in New game),
+ *           (1c adds sfx + masterVolume),
  *           vibration (a player finishes), ⚙ gear (button row).
  * Not used: fpsLimit (no animation loop: the board is drawn only when something changes), showFps, autoPause (turn-based), controls / 3D options, hints.
  * Load order: games-settings.js → core/config.js → this file → the rest.

@@ -1,9 +1,10 @@
 /*
  * Ludo — config (LUDO-1a). All tunable numbers live here.
+ * LUDO-1b: computer seats (seats, seatNames, levels, cpu pauses, Hard weights in `ai`).
  * Classic 15 x 15 cross board: 4 home yards (red top-left, green top-right, yellow bottom-right,
  * blue bottom-left), a 52-square track, a 5-square home column per colour and the centre home.
  * Colour order = turn order (clockwise). Coordinates: x = column 0..14, y = row 0..14 from the top left.
- * 1b plugs computer seats in through `seats`; 1c turns house rules on through `rules`.
+ * 1c turns house rules on through `rules`.
  */
 const LD_CONFIG = {
   colors: ['red', 'green', 'yellow', 'blue'],
@@ -21,7 +22,16 @@ const LD_CONFIG = {
     captureBonus: true,          // sending a token home earns another roll
     homeBonus: true,             // reaching the centre earns another roll
   },
-  seats: { human: 'human' },     // 1b adds computer seat types
+  seats: { human: 'human', easy: 'easy', medium: 'medium', hard: 'hard' },
+  seatNames: { human: 'Person', easy: 'Computer: Easy', medium: 'Computer: Medium', hard: 'Computer: Hard' },
+  levels: ['easy', 'medium', 'hard'],
+  difficultyToLevel: { easy: 'easy', normal: 'medium', hard: 'hard' },   // shared Difficulty = first level a seat switches to
+  cpuRollMs: 700,                // computer seats: pause before rolling
+  cpuMoveMs: 650,                // ... and between the roll and the move, so people can follow
+  ai: {                          // Hard weights (core/ai.js)
+    capture: 60, captureProgress: 1.5, exit: 35, home: 40, enterColumn: 25, progress: 1,
+    danger: 2, dangerBase: 8, escape: 1.6, block: 12, threaten: 2,
+  },
   autoDelayMs: 450,              // pause before moving the only legal token (when Auto-move is on)
   passDelayMs: 900,              // pause after "no move" / "three 6s" before the next player
   storeKey: 'ludo.state',        // wins, options and the game in progress (prefix = folder name)

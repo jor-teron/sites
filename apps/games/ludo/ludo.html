@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <!--
-  Ludo (LUDO-1a) — page. The classic cross-board race game for 2 to 4 players on one device.
+  Ludo (LUDO-1a, computer seats LUDO-1b) — page. The classic cross-board race game for 2 to 4 players on one device.
   Info (status, players) / board / die + buttons: stacked in portrait, side by side in short landscape.
   Numbers + options: core/config.js. Board geometry: core/board.js. Rules: core/rules.js.
   Drawing (on change only): ui/render.js. Shared settings bridge: ui/settings.js. Wiring + saves: core/game.js.
-  Classic scripts only (file:// works). 1b adds core/ai.js (computer seats); 1c adds sound, animation and house rules.
+  Classic scripts only (file:// works). Computer seats: core/ai.js (1b). 1c adds sound, animation and house rules.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Ludo LUDO-1a</title>
+  <title>Ludo LUDO-1b</title>
   <link rel="stylesheet" href="ui/style.css">
 </head>
 <body>
@@ -34,12 +34,13 @@
   <div class="help" id="setup" hidden>
     <div class="help-card" role="dialog" aria-label="New game">
       <h2>New game: who plays?</h2>
-      <p class="small">Tap the colours that play (2 to 4). Two players sit opposite each other.</p>
+      <p class="small">Tap the colours that play (2 to 4). Two players sit opposite each other.
+        Tap the button beside a colour to make it a person or the computer (Easy, Medium or Hard).</p>
       <div class="color-pick" id="colorPick">
-        <button data-c="red" class="cp" style="--c:#dc2626">Red</button>
-        <button data-c="green" class="cp" style="--c:#16a34a">Green</button>
-        <button data-c="yellow" class="cp" style="--c:#eab308">Yellow</button>
-        <button data-c="blue" class="cp" style="--c:#2563eb">Blue</button>
+        <button data-c="red" class="cp" style="--c:#dc2626">Red</button><button data-s="red" class="seat">Person</button>
+        <button data-c="green" class="cp" style="--c:#16a34a">Green</button><button data-s="green" class="seat">Person</button>
+        <button data-c="yellow" class="cp" style="--c:#eab308">Yellow</button><button data-s="yellow" class="seat">Person</button>
+        <button data-c="blue" class="cp" style="--c:#2563eb">Blue</button><button data-s="blue" class="seat">Person</button>
       </div>
       <p class="small" id="setupMsg"></p>
       <div class="row end"><button id="setupCancel">Cancel</button><button id="setupStart" class="primary">Start</button></div>
@@ -58,6 +59,7 @@
         <li><b>Home:</b> after one lap, go up your coloured column to the centre. You need the exact number to finish.
             Getting a token home gives you another roll.</li>
         <li>If you can't move, the turn passes by itself. The others play on for 2nd, 3rd and 4th place.</li>
+        <li><b>Computer players:</b> in New game, set any colour to the computer at Easy, Medium or Hard. It rolls and moves by itself with a short pause so you can follow.</li>
         <li><b>Auto-move:</b> when only one move is possible it is made for you.</li>
       </ul>
       <button id="helpClose">Got it</button>
@@ -69,6 +71,7 @@
   <script src="ui/settings.js"></script>
   <script src="core/board.js"></script>
   <script src="core/rules.js"></script>
+  <script src="core/ai.js"></script>
   <script src="ui/render.js"></script>
   <script src="core/game.js"></script>
 </body>

@@ -40,7 +40,10 @@ button.link { background: none; border-color: transparent; color: var(--muted); 
 .help-card ul { padding-left: 18px; margin-bottom: 12px; font-size: .9rem; line-height: 1.4; }
 .help-card li { margin-bottom: 5px; }
 .small { font-size: .85rem; color: var(--muted); margin: 6px 0 10px; }
-.color-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.color-pick { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 8px; }
+.seat { font-size: 14px; padding: 8px 6px; }
+.seat:disabled { opacity: .45; }
+.seat:not([data-t="human"]) { font-weight: 600; }
 .cp { border: 2px solid var(--c); font-weight: 600; padding: 12px; }
 .cp[aria-pressed="true"] { background: var(--c); color: #fff; }
 @media (orientation: portrait) and (max-height: 700px) {
