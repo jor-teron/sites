@@ -1,5 +1,5 @@
 /*
- * Star Pinball — styles (PIN-1a; message panel PIN-1b). Follows the shared theme (html.dark) for the title bar and panels;
+ * Star Pinball — styles (PIN-1a; message panel PIN-1b; pause card + How to play sections PIN-1c). Follows the shared theme (html.dark) for the title bar and panels;
  * the table itself is always a night-sky space table (drawn on the canvas).
  * Portrait: a compact title bar on top, the table below. Wide screens: a side panel on the left
  * and a wider canvas (more backdrop around the table). The canvas size is set by JS.
@@ -39,6 +39,18 @@ button { font: inherit; font-size: .84rem; padding: 4px 10px; border-radius: 8px
 .help-card { text-align: left; }
 .help-card ul { padding-left: 18px; margin-bottom: 12px; font-size: .9rem; line-height: 1.4; }
 .help-card li { margin-bottom: 5px; }
+.help-card h3 { font-size: .95rem; margin: 10px 0 4px; }
+.help-card p { font-size: .9rem; line-height: 1.4; margin-bottom: 6px; }
+.help-card table.ctl { border-collapse: collapse; font-size: .85rem; margin: 2px 0 8px; width: 100%; }
+.help-card .ctl th, .help-card .ctl td { text-align: left; padding: 3px 6px; border-bottom: 1px solid rgba(148,163,184,.25); vertical-align: top; }
+.help-card .ctl th { font-weight: 600; opacity: .8; }
+/* PIN-1c pause card */
+.pause-card { min-width: 260px; }
+.pause-card .p-info { font-weight: 600; font-variant-numeric: tabular-nums; }
+.pause-card .p-mission { font-size: .9rem; opacity: .85; margin-bottom: 12px; }
+.pause-card .p-btns { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.pause-card .p-btns button { min-height: 40px; }
+.p-hint { font-size: .8rem; opacity: .7; }
 /* wide screens: side panel */
 @media (min-aspect-ratio: 1/1) {
   .container { flex-direction: row; }

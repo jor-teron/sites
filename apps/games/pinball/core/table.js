@@ -1,5 +1,5 @@
 /*
- * Star Pinball — the table layout (PIN-1a, PIN-1b parts): an original space table, all drawn in code.
+ * Star Pinball — the table layout (PIN-1a, PIN-1b parts, PIN-1c ramp entry): an original space table, all drawn in code.
  * Plain data, read by core/physics.js (collisions) and ui/render.js (drawing).
  *   walls   — line segments { a, b, e, mu, kind: 'wall' | 'sling' | 'gate', n (gate: one-way normal) }
  *   arcs    — the curved top { c, R, a0, a1 } (angles in radians, y down; π..2π = top half)
@@ -8,7 +8,8 @@
  *   flippers, plunger (in the launch lane on the right), drainY (ball below = lost)
  *   PIN-1b: drops   — 4 drop targets on the left wall { id, segs } (solid while up; bevelled ends so no ledge)
  *           spinner — a flap across the right orbit lane { a, b } (no collision, spins when crossed)
- *           ramp    — covered entry on the right (walls in `walls`), mouth { x0, x1, y } and a raised path
+ *           ramp    — PIN-1c: a covered entry channel leaning right (PB_CONFIG.rampEntry; was an upright mouth
+ *                     that most left-flipper shots clipped); its walls are in `walls`, entry frame { base, ax, px, w, len, on } and a raised path
  *                     { path, hgt } that crosses the top and drops the ball into the left inlane
  *           hole    — kick-out saucer { c } under the middle star lane (catches, holds, kicks out)
  * Left / right parts are mirror images about the playfield centre x = 280.
@@ -40,12 +41,16 @@ const PB_TABLE = (() => {
   sensors.push({ c: [45, 860], R: 16, id: 'outL', kind: 'out' }, { c: [515, 860], R: 16, id: 'outR', kind: 'out' });
   sensors.push({ c: [92, 870], R: 14, id: 'inL', kind: 'in' }, { c: [468, 870], R: 14, id: 'inR', kind: 'in' });
 
-  // ramp entry (PIN-1b): a covered channel open at the bottom, with a peaked roof (no shelf on top)
-  wall([440, 480], [440, 570]); wall([490, 480], [490, 570]);
-  wall([440, 480], [465, 455]); wall([465, 455], [490, 480]);
+  // ramp entry (PIN-1b; leaning + wider PIN-1c): a covered channel open at the bottom, leaning to the right
+  // so shots from either flipper line up with it, with a peaked roof (no shelf on top)
+  const RE = C.rampEntry, ta = RE.tilt * Math.PI / 180;
+  const ax = [Math.sin(ta), -Math.cos(ta)], px = [Math.cos(ta), Math.sin(ta)];          // up the channel / across it
+  const at = (al, ac) => [RE.top[0] + ax[0] * (al - RE.len) + px[0] * ac, RE.top[1] + ax[1] * (al - RE.len) + px[1] * ac];
+  const TL = at(RE.len, -RE.w / 2), TR = at(RE.len, RE.w / 2), BL = at(0, -RE.w / 2), BR = at(0, RE.w / 2), PK = at(RE.len + 25, 0);
+  wall(TL, BL); wall(TR, BR); wall(TL, PK); wall(PK, TR);
   const ramp = {
-    mouth: { x0: 440, x1: 490, y: 525 },                 // ball moving up past y in the channel goes onto the ramp
-    path: [[465, 525], [465, 380], [452, 318], [405, 272], [320, 252], [230, 256], [160, 284], [115, 330], [97, 400], [93, 520], [92, 660], [92, 800]],
+    entry: { base: at(0, 0), ax, px, w: RE.w, len: RE.len, on: RE.len * RE.at },   // channel frame: past `on` moving up = on the ramp
+    path: [at(RE.len * RE.at, 0), [465, 380], [452, 318], [405, 272], [320, 252], [230, 256], [160, 284], [115, 330], [97, 400], [93, 520], [92, 660], [92, 800]],
     hgt:  [0, 0.55, 0.8, 0.95, 1, 1, 0.97, 0.9, 0.75, 0.5, 0.3, 0.1],   // climb, cross the top, run down to the left inlane
   };
   // drop target bank (PIN-1b): 4 targets on the left wall; face 14 units out (less than the ball, nothing gets behind)
