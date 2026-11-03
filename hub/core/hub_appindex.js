@@ -39,6 +39,7 @@ window.HUB_APP_INDEX = {
   "turbo-lap": ["Games", "apps/games/turbo-lap/", "Turbo Lap", "apps/games/turbo-lap/turbo-lap_icon.png", 0, "Top-down lap racing against AI cars with gas - brake and steering"],
   "tower-defence": ["Games", "apps/games/tower-defence/", "Tower Defence", "apps/games/tower-defence/tower-defence_icon.png", 0, "Build gun - cannon and frost towers to stop enemy waves on many maps"],
   "chess": ["Games", "apps/games/chess/", "Chess", "apps/games/chess/chess_icon.png", 0, "Classic chess against the computer with hints and undo - two levels for learners"],
+  "go": ["Games", "apps/games/go/", "Go", "apps/games/go/go_icon.png", 0, "Surround more of the board than your rival - capture stones - play a friend or computer"],
   "aoe-rts": ["Games", "apps/games/aoe-rts/", "AoE RTS", "apps/games/aoe-rts/aoe-rts_icon.png", 0, "Tiny real-time strategy in Age of Empires style: gather - build and command units"],
   "gravity-sandbox": ["Games", "apps/games/gravity-sandbox/", "Gravity Sandbox", "apps/games/gravity-sandbox/gravity-sandbox_icon.png", 0, "Drop planets - stars and black holes and watch gravity make orbits"],
   "solar-system": ["Games", "apps/games/solar-system/", "Solar System", "apps/games/solar-system/solar-system_icon.png", 0, "Explore the Sun and planets: tap a planet for key facts - pan and zoom"],
